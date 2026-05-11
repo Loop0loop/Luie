@@ -44,6 +44,7 @@
        letter-spacing, word-spacing 은 Editor 외부 컨테이너에서
        CSS custom property로 주입 → store 변경 시 즉시 반영(reactive). */
     font-size: 1rem;
+    line-height: var(--editor-line-height, inherit);
     letter-spacing: var(--editor-letter-spacing, 0.05em);
     word-spacing: var(--editor-word-spacing, 0.06em);
     word-break: keep-all;
@@ -51,6 +52,7 @@
 
     /* 커서(caret)를 accent 색상으로 */
     caret-color: var(--accent-bg, #2563eb);
+    text-size-adjust: 100%;
 
     /* ── 렌더링 품질 ── */
     -webkit-font-smoothing: antialiased;
@@ -90,6 +92,7 @@
     /* --editor-line-height 는 Editor.tsx에서 ProseMirror root에 CSS var로 주입된다.
        fallback 1.4 = 커서가 한국어 글자와 거의 같은 높이로 보이는 최적값 */
     line-height: var(--editor-line-height, 1.4);
+    min-height: calc(var(--editor-font-size, 1rem) * var(--editor-line-height, 1.4));
 }
 
 /* ================================================================

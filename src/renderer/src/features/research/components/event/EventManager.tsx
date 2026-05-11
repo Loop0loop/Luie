@@ -124,7 +124,7 @@ export default function EventManager() {
         <SidebarPeekContent
           groups={Object.entries(groupedEvents).map(([name, events]) => ({
             name,
-            items: events.map((e) => ({ id: e.id, label: e.name })),
+            items: events.map((e) => ({ id: e.id, label: e.name, sublabel: e.description ?? undefined })),
           }))}
           selectedId={selectedEventId}
           onSelect={setSelectedEventId}

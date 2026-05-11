@@ -600,6 +600,7 @@ export const koBase = {
       renameProject: "프로젝트 이름 수정",
       refresh: "새로고침",
     },
+    expand: "펼치기",
   },
   research: {
     title: {

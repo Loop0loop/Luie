@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 type PeekItem = {
   id: string;
   label: string;
+  sublabel?: string;
 };
 
 type PeekGroup = {
@@ -66,17 +67,24 @@ export function SidebarPeekContent({
               type="button"
               onClick={() => onSelect(item.id)}
               className={[
-                "w-full text-left flex items-baseline gap-1.5 pl-6 pr-3 py-[2px]",
-                "text-[11px] leading-snug truncate transition-colors",
+                "w-full text-left flex items-start gap-1.5 pl-6 pr-3 py-[2px]",
+                "text-[11px] leading-snug transition-colors",
                 item.id === selectedId
                   ? "text-accent font-medium"
                   : "text-fg/55 hover:text-fg",
               ].join(" ")}
             >
-              <span className="text-[9px] text-muted/35 shrink-0 w-3.5 text-right tabular-nums">
+              <span className="text-[9px] text-muted/35 shrink-0 w-3.5 text-right tabular-nums mt-px">
                 {i + 1}.
               </span>
-              <span className="truncate">{item.label}</span>
+              <span className="min-w-0 flex flex-col">
+                <span className="truncate">{item.label}</span>
+                {item.sublabel && (
+                  <span className="truncate text-[10px] text-fg/30 font-normal mt-px">
+                    {item.sublabel}
+                  </span>
+                )}
+              </span>
             </button>
           ))}
         </div>

@@ -124,7 +124,7 @@ export default function FactionManager() {
         <SidebarPeekContent
           groups={Object.entries(groupedFactions).map(([name, factions]) => ({
             name,
-            items: factions.map((f) => ({ id: f.id, label: f.name })),
+            items: factions.map((f) => ({ id: f.id, label: f.name, sublabel: f.description ?? undefined })),
           }))}
           selectedId={selectedFactionId}
           onSelect={setSelectedFactionId}

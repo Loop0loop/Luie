@@ -1,29 +1,32 @@
+import { useEffect, useRef, useState } from "react";
 import {
-  Undo2,
-  Redo2,
-  Bold,
-  Italic,
-  Underline,
-  Strikethrough,
-  AlignLeft,
   AlignCenter,
+  AlignJustify,
+  AlignLeft,
   AlignRight,
+  Bold,
+  ChevronDown,
+  Eraser,
+  Eye,
+  FileOutput,
   Highlighter,
-  Type,
-  Smartphone,
+  Italic,
+  Minus,
   Monitor,
-  Network,
-  List,
-  ListOrdered,
+  MoreHorizontal,
+  Palette,
+  Pilcrow,
+  Redo2,
+  Smartphone,
+  Strikethrough,
+  Underline,
+  Undo2,
 } from "lucide-react";
 import type { Editor } from "@tiptap/react";
-import { cn } from "@shared/types/utils";
-import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useTranslation } from "react-i18next";
-import {
-  EDITOR_TOOLBAR_FONT_MIN,
-  EDITOR_TOOLBAR_FONT_STEP,
-} from "@shared/constants";
+
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { cn } from "@shared/types/utils";
 import { FontSelector } from "./FontSelector";
 
 interface EditorToolbarProps {
@@ -31,31 +34,48 @@ interface EditorToolbarProps {
   isMobileView?: boolean;
   onToggleMobileView?: () => void;
   onOpenWorldGraph?: () => void;
+  onOpenPreview?: () => void;
+  onOpenExport?: () => void;
+  canOpenExport?: boolean;
 }
 
-// Reusable Button Config
-const ToggleButton = ({
+type ParagraphStyle = "paragraph" | "heading1" | "heading2" | "heading3";
+
+const FONT_SIZE_OPTIONS = [10, 11, 12, 14, 16, 18, 20, 24, 28, 32];
+
+const getParagraphStyle = (editor: Editor): ParagraphStyle => {
+  if (editor.isActive("heading", { level: 1 })) return "heading1";
+  if (editor.isActive("heading", { level: 2 })) return "heading2";
+  if (editor.isActive("heading", { level: 3 })) return "heading3";
+  return "paragraph";
+};
+
+const ToolbarButton = ({
   active,
-  onClick,
-  title,
   children,
   className,
   disabled,
+  label,
+  onClick,
+  title,
 }: {
   active?: boolean;
-  onClick: () => void;
-  title?: string;
   children: React.ReactNode;
   className?: string;
   disabled?: boolean;
+  label: string;
+  onClick: () => void;
+  title?: string;
 }) => (
   <button
+    type="button"
+    aria-label={label}
     className={cn(
-      "flex items-center justify-center rounded text-muted hover:bg-hover hover:text-fg transition-colors disabled:opacity-50 disabled:pointer-events-none",
+      "flex h-8 min-w-8 items-center justify-center rounded-md px-2 text-xs text-muted transition-colors hover:bg-hover hover:text-fg disabled:pointer-events-none disabled:opacity-45",
       active && "bg-accent/15 text-accent",
-      className || "w-7 h-7"
+      className,
     )}
-    title={title}
+    title={title ?? label}
     onClick={onClick}
     disabled={disabled}
   >
@@ -63,462 +83,353 @@ const ToggleButton = ({
   </button>
 );
 
-const Divider = () => <div className="w-px h-4 bg-border mx-1.5" />;
+const Divider = () => <div className="mx-1 h-5 w-px shrink-0 bg-border/70" />;
 
-// --- MODES ---
+function SliderMenu({
+  label,
+  max,
+  min,
+  onChange,
+  step,
+  suffix,
+  value,
+}: {
+  label: string;
+  max: number;
+  min: number;
+  onChange: (value: number) => void;
+  step: number;
+  suffix?: string;
+  value: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
-const DefaultToolbar = ({
-  editor,
-  isMobileView,
-  onToggleMobileView,
-  onOpenWorldGraph,
-}: EditorToolbarProps) => {
-  const { t } = useTranslation();
-  const fontSize = useEditorStore((state) => state.fontSize);
-  const setFontSize = useEditorStore((state) => state.setFontSize);
-  const letterSpacing = useEditorStore((state) => state.letterSpacing ?? 0.05);
-  const wordSpacing = useEditorStore((state) => state.wordSpacing ?? 0.06);
-  const paragraphSpacing = useEditorStore((state) => state.paragraphSpacing ?? 1.0);
-  const updateSettings = useEditorStore((state) => state.updateSettings);
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!ref.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
-    <div className="flex items-center justify-between h-9 px-2">
-      <div className="flex items-center gap-0.5">
-        <ToggleButton onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo()} title={t("toolbar.tooltip.undo")}>
-          <Undo2 className="icon-md" />
-        </ToggleButton>
-        <ToggleButton onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo()} title={t("toolbar.tooltip.redo")}>
-          <Redo2 className="icon-md" />
-        </ToggleButton>
-        <Divider />
-        <FontSelector />
-        <Divider />
-        {/* Size Picker */}
-        <ToggleButton onClick={() => setFontSize(Math.max(EDITOR_TOOLBAR_FONT_MIN, fontSize - EDITOR_TOOLBAR_FONT_STEP))}>
-          <span style={{ fontSize: "var(--editor-toolbar-plus-minus-font-size)" }}>-</span>
-        </ToggleButton>
-        <input
-          className="w-10 h-7 border-none bg-transparent text-center text-xs text-fg hover:bg-hover hover:rounded select-none outline-none cursor-default"
-          value={fontSize}
-          readOnly
-          tabIndex={-1}
-        />
-        <ToggleButton onClick={() => setFontSize(fontSize + EDITOR_TOOLBAR_FONT_STEP)}>
-          <span style={{ fontSize: "var(--editor-toolbar-plus-minus-font-size)" }}>+</span>
-        </ToggleButton>
-
-        <Divider />
-
-        {/* Letter Spacing (자간) */}
-        <ToggleButton
-          onClick={() => updateSettings({ letterSpacing: Math.max(0, Number((letterSpacing - 0.01).toFixed(2))) })}
-          title={t("toolbar.tooltip.letterSpacingDecrease", "자간 줄이기")}
-        >
-          <span style={{ fontSize: "var(--editor-toolbar-plus-minus-font-size)" }}>-</span>
-        </ToggleButton>
-        <span
-          className="text-xs font-medium text-muted w-14 text-center select-none cursor-default"
-          title={t("toolbar.tooltip.letterSpacing", "자간")}
-        >
-          자간 {letterSpacing.toFixed(2)}
-        </span>
-        <ToggleButton
-          onClick={() => updateSettings({ letterSpacing: Math.min(0.3, Number((letterSpacing + 0.01).toFixed(2))) })}
-          title={t("toolbar.tooltip.letterSpacingIncrease", "자간 늘리기")}
-        >
-          <span style={{ fontSize: "var(--editor-toolbar-plus-minus-font-size)" }}>+</span>
-        </ToggleButton>
-
-        <Divider />
-
-        {/* Word Spacing (어간) */}
-        <ToggleButton
-          onClick={() => updateSettings({ wordSpacing: Math.max(0, Number((wordSpacing - 0.01).toFixed(2))) })}
-          title={t("toolbar.tooltip.wordSpacingDecrease", "어간 줄이기")}
-        >
-          <span style={{ fontSize: "var(--editor-toolbar-plus-minus-font-size)" }}>-</span>
-        </ToggleButton>
-        <span
-          className="text-xs font-medium text-muted w-14 text-center select-none cursor-default"
-          title={t("toolbar.tooltip.wordSpacing", "어간")}
-        >
-          어간 {wordSpacing.toFixed(2)}
-        </span>
-        <ToggleButton
-          onClick={() => updateSettings({ wordSpacing: Math.min(0.2, Number((wordSpacing + 0.01).toFixed(2))) })}
-          title={t("toolbar.tooltip.wordSpacingIncrease", "어간 늘리기")}
-        >
-          <span style={{ fontSize: "var(--editor-toolbar-plus-minus-font-size)" }}>+</span>
-        </ToggleButton>
-
-        <Divider />
-
-        {/* Paragraph Spacing (문단 간격) */}
-        <ToggleButton
-          onClick={() => updateSettings({ paragraphSpacing: Math.max(0, Number((paragraphSpacing - 0.1).toFixed(1))) })}
-          title={t("toolbar.tooltip.paragraphSpacingDecrease", "문단 간격 줄이기")}
-        >
-          <span style={{ fontSize: "var(--editor-toolbar-plus-minus-font-size)" }}>-</span>
-        </ToggleButton>
-        <span
-          className="text-xs font-medium text-muted w-14 text-center select-none cursor-default"
-          title={t("toolbar.tooltip.paragraphSpacing", "문단 간격")}
-        >
-          문단 {paragraphSpacing.toFixed(1)}
-        </span>
-        <ToggleButton
-          onClick={() => updateSettings({ paragraphSpacing: Math.min(3.0, Number((paragraphSpacing + 0.1).toFixed(1))) })}
-          title={t("toolbar.tooltip.paragraphSpacingIncrease", "문단 간격 늘리기")}
-        >
-          <span style={{ fontSize: "var(--editor-toolbar-plus-minus-font-size)" }}>+</span>
-        </ToggleButton>
-
-        <Divider />
-
-        <button
-          className={cn(
-            "flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-element text-[11px] text-muted border border-transparent cursor-pointer transition-colors",
-            isMobileView && "bg-active text-accent font-semibold border-active"
-          )}
-          onClick={onToggleMobileView}
-          title={t("toolbar.tooltip.toggleMobileView")}
-        >
-          {isMobileView ? <Smartphone className="icon-sm" /> : <Monitor className="icon-sm" />}
-          <span>{isMobileView ? t("toolbar.view.mobile") : t("toolbar.view.desktop")}</span>
-        </button>
-
-        <Divider />
-
-        <ToggleButton active={editor?.isActive("bold")} onClick={() => editor?.chain().focus().toggleBold().run()} title={t("toolbar.tooltip.bold")}>
-          <Bold className="icon-md" />
-        </ToggleButton>
-        <ToggleButton active={editor?.isActive("italic")} onClick={() => editor?.chain().focus().toggleItalic().run()} title={t("toolbar.tooltip.italic")}>
-          <Italic className="icon-md" />
-        </ToggleButton>
-        <ToggleButton active={editor?.isActive("underline")} onClick={() => editor?.chain().focus().toggleUnderline().run()} title={t("toolbar.tooltip.underline")}>
-          <Underline className="icon-md" />
-        </ToggleButton>
-        <ToggleButton active={editor?.isActive("strike")} onClick={() => editor?.chain().focus().toggleStrike().run()} title={t("toolbar.tooltip.strikethrough")}>
-          <Strikethrough className="icon-md" />
-        </ToggleButton>
-
-        <Divider />
-
-        {/* Color Picker */}
-        <div className="relative w-7 h-7 flex items-center justify-center" title={t("toolbar.tooltip.textColor")}>
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        className="flex h-8 items-center gap-1 rounded-md border border-border/70 bg-background px-2 text-xs text-fg transition-colors hover:bg-hover"
+        onClick={() => setOpen((current) => !current)}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        title={label}
+      >
+        <span>{label}</span>
+        <span className="text-muted">{value.toFixed(step < 1 ? 2 : 0)}{suffix}</span>
+        <ChevronDown className="h-3 w-3 opacity-60" />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-md border border-border bg-panel p-3 shadow-xl">
+          <div className="mb-2 flex items-center justify-between text-xs">
+            <span className="font-medium text-fg">{label}</span>
+            <span className="text-muted">{value.toFixed(step < 1 ? 2 : 0)}{suffix}</span>
+          </div>
           <input
-            type="color"
-            className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
-            onChange={(e) => editor?.chain().focus().setColor(e.target.value).run()}
-            value={editor?.getAttributes("textStyle").color || "#000000"}
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={value}
+            className="w-full accent-[var(--accent-bg)]"
+            aria-label={label}
+            onChange={(event) => onChange(Number(event.target.value))}
           />
-          <button className="flex items-center justify-center w-7 h-7 rounded text-muted hover:bg-hover hover:text-fg transition-colors">
-            <Type className="icon-md" style={{ color: editor?.getAttributes("textStyle").color || "currentColor" }} />
-          </button>
         </div>
-
-        <ToggleButton active={editor?.isActive("highlight")} onClick={() => editor?.chain().focus().toggleHighlight().run()} title={t("toolbar.tooltip.highlight")}>
-          <Highlighter className="icon-md" />
-        </ToggleButton>
-      </div>
-
-      {/* Right */}
-      <div className="flex items-center gap-0.5">
-        <ToggleButton active={editor?.isActive({ textAlign: "left" })} onClick={() => editor?.chain().focus().setTextAlign("left").run()} title={t("toolbar.tooltip.alignLeft")}>
-          <AlignLeft className="icon-md" />
-        </ToggleButton>
-        <ToggleButton active={editor?.isActive({ textAlign: "center" })} onClick={() => editor?.chain().focus().setTextAlign("center").run()} title={t("toolbar.tooltip.alignCenter")}>
-          <AlignCenter className="icon-md" />
-        </ToggleButton>
-        <ToggleButton active={editor?.isActive({ textAlign: "right" })} onClick={() => editor?.chain().focus().setTextAlign("right").run()} title={t("toolbar.tooltip.alignRight")}>
-          <AlignRight className="icon-md" />
-        </ToggleButton>
-
-        <Divider />
-
-        <button
-          className={cn(
-            "flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-element text-[11px] text-muted border border-transparent transition-colors",
-            onOpenWorldGraph
-              ? "cursor-pointer hover:bg-hover hover:text-fg"
-              : "cursor-not-allowed opacity-50"
-          )}
-          onClick={onOpenWorldGraph}
-          title={t("toolbar.tooltip.openWorldGraph")}
-          disabled={!onOpenWorldGraph}
-        >
-          <Network className="icon-sm" />
-          <span>{t("toolbar.view.graph")}</span>
-        </button>
-      </div>
+      )}
     </div>
-  )
-}
-
-const DocsToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
-  const { t } = useTranslation();
-  const fontSize = useEditorStore((state) => state.fontSize);
-  const setFontSize = useEditorStore((state) => state.setFontSize);
-  const letterSpacing = useEditorStore((state) => state.letterSpacing ?? 0.05);
-  const wordSpacing = useEditorStore((state) => state.wordSpacing ?? 0.06);
-  const paragraphSpacing = useEditorStore((state) => state.paragraphSpacing ?? 1.0);
-  const updateSettings = useEditorStore((state) => state.updateSettings);
-
-  return (
-    <div className="flex flex-wrap items-center gap-1 justify-center w-full px-2">
-      <ToggleButton onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo()} className="w-8 h-8 rounded-full hover:bg-surface-hover" title={t("toolbar.tooltip.undo")}>
-        <Undo2 className="w-4 h-4" />
-      </ToggleButton>
-      <ToggleButton onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo()} className="w-8 h-8 rounded-full hover:bg-surface-hover" title={t("toolbar.tooltip.redo")}>
-        <Redo2 className="w-4 h-4" />
-      </ToggleButton>
-      <div className="w-px h-5 bg-border mx-2" />
-
-      <FontSelector />
-      <div className="w-px h-5 bg-border mx-2" />
-
-      <div className="flex items-center border border-border/50 rounded overflow-hidden h-7 bg-background">
-        <button onClick={() => setFontSize(Math.max(EDITOR_TOOLBAR_FONT_MIN, fontSize - EDITOR_TOOLBAR_FONT_STEP))} className="px-2 hover:bg-hover">-</button>
-        <input className="w-8 text-center text-xs bg-transparent outline-none" value={fontSize} readOnly />
-        <button onClick={() => setFontSize(fontSize + EDITOR_TOOLBAR_FONT_STEP)} className="px-2 hover:bg-hover">+</button>
-      </div>
-
-      <div className="w-px h-5 bg-border mx-2" />
-
-      {/* Letter Spacing (자간) */}
-      <div className="flex items-center border border-border/50 rounded overflow-hidden h-7 bg-background" title={t("toolbar.tooltip.letterSpacing", "자간")}>
-        <button onClick={() => updateSettings({ letterSpacing: Math.max(0, Number((letterSpacing - 0.01).toFixed(2))) })} className="px-2 hover:bg-hover text-xs">-</button>
-        <span className="w-16 text-center text-xs text-muted select-none">자{letterSpacing.toFixed(2)}</span>
-        <button onClick={() => updateSettings({ letterSpacing: Math.min(0.3, Number((letterSpacing + 0.01).toFixed(2))) })} className="px-2 hover:bg-hover text-xs">+</button>
-      </div>
-
-      <div className="w-px h-5 bg-border mx-2" />
-
-      {/* Word Spacing (어간) */}
-      <div className="flex items-center border border-border/50 rounded overflow-hidden h-7 bg-background" title={t("toolbar.tooltip.wordSpacing", "어간")}>
-        <button onClick={() => updateSettings({ wordSpacing: Math.max(0, Number((wordSpacing - 0.01).toFixed(2))) })} className="px-2 hover:bg-hover text-xs">-</button>
-        <span className="w-16 text-center text-xs text-muted select-none">어{wordSpacing.toFixed(2)}</span>
-        <button onClick={() => updateSettings({ wordSpacing: Math.min(0.2, Number((wordSpacing + 0.01).toFixed(2))) })} className="px-2 hover:bg-hover text-xs">+</button>
-      </div>
-
-      <div className="w-px h-5 bg-border mx-2" />
-
-      {/* Paragraph Spacing (문단 간격) */}
-      <div className="flex items-center border border-border/50 rounded overflow-hidden h-7 bg-background" title={t("toolbar.tooltip.paragraphSpacing", "문단 간격")}>
-        <button onClick={() => updateSettings({ paragraphSpacing: Math.max(0, Number((paragraphSpacing - 0.1).toFixed(1))) })} className="px-2 hover:bg-hover text-xs">-</button>
-        <span className="w-16 text-center text-xs text-muted select-none">문단{paragraphSpacing.toFixed(1)}</span>
-        <button onClick={() => updateSettings({ paragraphSpacing: Math.min(3.0, Number((paragraphSpacing + 0.1).toFixed(1))) })} className="px-2 hover:bg-hover text-xs">+</button>
-      </div>
-
-      <div className="w-px h-5 bg-border mx-2" />
-
-      <ToggleButton active={editor?.isActive("bold")} onClick={() => editor?.chain().focus().toggleBold().run()} className="w-8 h-8 rounded-full hover:bg-surface-hover" title={t("toolbar.tooltip.bold")}>
-        <Bold className="w-4 h-4" />
-      </ToggleButton>
-      <ToggleButton active={editor?.isActive("italic")} onClick={() => editor?.chain().focus().toggleItalic().run()} className="w-8 h-8 rounded-full hover:bg-surface-hover" title={t("toolbar.tooltip.italic")}>
-        <Italic className="w-4 h-4" />
-      </ToggleButton>
-      <ToggleButton active={editor?.isActive("underline")} onClick={() => editor?.chain().focus().toggleUnderline().run()} className="w-8 h-8 rounded-full hover:bg-surface-hover" title={t("toolbar.tooltip.underline")}>
-        <Underline className="w-4 h-4" />
-      </ToggleButton>
-      {/* Color Picker (Simplified) */}
-      <div className="relative w-8 h-8 flex items-center justify-center hover:bg-surface-hover rounded-full cursor-pointer transition-colors" title={t("toolbar.tooltip.textColor")}>
-        <Type className="w-4 h-4" style={{ color: editor?.getAttributes("textStyle").color || "currentColor" }} />
-        <input type="color" className="absolute inset-0 opacity-0 cursor-pointer rounded-full" onChange={(e) => editor?.chain().focus().setColor(e.target.value).run()} />
-      </div>
-
-      <div className="w-px h-5 bg-border mx-2" />
-
-      <ToggleButton active={editor?.isActive({ textAlign: "left" })} onClick={() => editor?.chain().focus().setTextAlign("left").run()} className="w-8 h-8 rounded-full hover:bg-surface-hover" title={t("toolbar.tooltip.alignLeft")}>
-        <AlignLeft className="w-4 h-4" />
-      </ToggleButton>
-      <ToggleButton active={editor?.isActive({ textAlign: "center" })} onClick={() => editor?.chain().focus().setTextAlign("center").run()} className="w-8 h-8 rounded-full hover:bg-surface-hover" title={t("toolbar.tooltip.alignCenter")}>
-        <AlignCenter className="w-4 h-4" />
-      </ToggleButton>
-
-      <div className="w-px h-5 bg-border mx-2" />
-
-      <button
-        className={cn(
-          "flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-element text-[11px] text-muted border border-transparent transition-colors",
-          onOpenWorldGraph
-            ? "cursor-pointer hover:bg-hover hover:text-fg"
-            : "cursor-not-allowed opacity-50"
-        )}
-        onClick={onOpenWorldGraph}
-        title={t("toolbar.tooltip.openWorldGraph")}
-        disabled={!onOpenWorldGraph}
-      >
-        <Network className="w-3.5 h-3.5" />
-        <span>{t("toolbar.view.graph")}</span>
-      </button>
-    </div>
-  )
-}
-
-const WordToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
-  const { t } = useTranslation();
-
-  return (
-    <div className="flex flex-col w-full bg-panel text-fg border-b border-border">
-      {/* Ribbon Tabs */}
-      <div className="flex items-center gap-1 px-2 pt-1 border-b border-border">
-        <span className="px-4 py-1.5 text-xs bg-background border-t border-x border-border rounded-t font-semibold text-accent cursor-default">{t("toolbar.ribbon.home")}</span>
-        <span className="px-4 py-1.5 text-xs text-muted-foreground hover:bg-surface-hover cursor-pointer rounded-t">{t("toolbar.ribbon.insert")}</span>
-        <span className="px-4 py-1.5 text-xs text-muted-foreground hover:bg-surface-hover cursor-pointer rounded-t">{t("toolbar.ribbon.draw")}</span>
-        <span className="px-4 py-1.5 text-xs text-muted-foreground hover:bg-surface-hover cursor-pointer rounded-t">{t("toolbar.ribbon.view")}</span>
-        <button
-          className={cn(
-            "ml-auto mr-2 px-3 py-1 text-[11px] rounded border border-border bg-background/80 text-muted-foreground transition-colors",
-            onOpenWorldGraph
-              ? "cursor-pointer hover:bg-hover hover:text-fg"
-              : "cursor-not-allowed opacity-50"
-          )}
-          onClick={onOpenWorldGraph}
-          title={t("toolbar.tooltip.openWorldGraph")}
-          disabled={!onOpenWorldGraph}
-        >
-          <span className="inline-flex items-center gap-1.5">
-            <Network className="w-3.5 h-3.5" />
-            <span>{t("toolbar.view.graph")}</span>
-          </span>
-        </button>
-      </div>
-      {/* Ribbon Content (Home) */}
-      <div className="flex items-center h-20 px-4 py-2 gap-4 bg-panel">
-        {/* Clipboard Group (Mock) */}
-        <div className="flex flex-col items-center justify-center gap-1 border-r border-border pr-2 opacity-50">
-          <span className="text-[10px] text-muted-foreground">{t("toolbar.ribbon.paste")}</span>
-        </div>
-
-        {/* Font Group */}
-        <div className="flex flex-col gap-1 border-r border-border pr-4">
-          <div className="flex gap-1">
-            <FontSelector />
-            {/* Size (Static for now in Word mode to keep simple, or use store) */}
-            <div className="w-12 h-6 bg-background border border-border flex items-center justify-center text-xs">11</div>
-          </div>
-          <div className="flex gap-0.5">
-            <ToggleButton active={editor?.isActive("bold")} onClick={() => editor?.chain().focus().toggleBold().run()} className="w-6 h-6 hover:bg-hover"><Bold className="w-3.5 h-3.5" /></ToggleButton>
-            <ToggleButton active={editor?.isActive("italic")} onClick={() => editor?.chain().focus().toggleItalic().run()} className="w-6 h-6 hover:bg-hover"><Italic className="w-3.5 h-3.5" /></ToggleButton>
-            <ToggleButton active={editor?.isActive("underline")} onClick={() => editor?.chain().focus().toggleUnderline().run()} className="w-6 h-6 hover:bg-hover"><Underline className="w-3.5 h-3.5" /></ToggleButton>
-            <ToggleButton active={editor?.isActive("strike")} onClick={() => editor?.chain().focus().toggleStrike().run()} className="w-6 h-6 hover:bg-hover"><Strikethrough className="w-3.5 h-3.5" /></ToggleButton>
-          </div>
-        </div>
-
-        {/* Paragraph Group */}
-        <div className="flex flex-col gap-1 border-r border-border pr-4">
-          <div className="flex gap-0.5">
-            <ToggleButton onClick={() => editor?.chain().focus().toggleBulletList().run()} active={editor?.isActive('bulletList')} className="w-6 h-6 hover:bg-hover"><List className="w-3.5 h-3.5" /></ToggleButton>
-            <ToggleButton onClick={() => editor?.chain().focus().toggleOrderedList().run()} active={editor?.isActive('orderedList')} className="w-6 h-6 hover:bg-hover"><ListOrdered className="w-3.5 h-3.5" /></ToggleButton>
-          </div>
-          <div className="flex gap-0.5">
-            <ToggleButton active={editor?.isActive({ textAlign: "left" })} onClick={() => editor?.chain().focus().setTextAlign("left").run()} className="w-6 h-6 hover:bg-hover"><AlignLeft className="w-3.5 h-3.5" /></ToggleButton>
-            <ToggleButton active={editor?.isActive({ textAlign: "center" })} onClick={() => editor?.chain().focus().setTextAlign("center").run()} className="w-6 h-6 hover:bg-hover"><AlignCenter className="w-3.5 h-3.5" /></ToggleButton>
-            <ToggleButton active={editor?.isActive({ textAlign: "right" })} onClick={() => editor?.chain().focus().setTextAlign("right").run()} className="w-6 h-6 hover:bg-hover"><AlignRight className="w-3.5 h-3.5" /></ToggleButton>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const ScrivenerToolbar = ({ editor, onOpenWorldGraph }: EditorToolbarProps) => {
-  const { t } = useTranslation();
-  const fontSize = useEditorStore((state) => state.fontSize);
-  const setFontSize = useEditorStore((state) => state.setFontSize);
-  const letterSpacing = useEditorStore((state) => state.letterSpacing ?? 0.05);
-  const wordSpacing = useEditorStore((state) => state.wordSpacing ?? 0.06);
-  const paragraphSpacing = useEditorStore((state) => state.paragraphSpacing ?? 1.0);
-  const updateSettings = useEditorStore((state) => state.updateSettings);
-
-  return (
-    <div className="flex items-center gap-2 p-1 bg-surface border-b border-border shadow-inner px-3">
-      <FontSelector />
-      <div className="flex items-center gap-1 bg-background border border-border rounded px-1">
-        <button onClick={() => setFontSize(Math.max(EDITOR_TOOLBAR_FONT_MIN, fontSize - EDITOR_TOOLBAR_FONT_STEP))} className="hover:text-accent">-</button>
-        <span className="text-xs w-6 text-center">{fontSize}</span>
-        <button onClick={() => setFontSize(fontSize + EDITOR_TOOLBAR_FONT_STEP)} className="hover:text-accent">+</button>
-      </div>
-
-      <div className="w-px h-4 bg-border mx-1" />
-
-      {/* Letter Spacing (자간) */}
-      <div className="flex items-center gap-1 bg-background border border-border rounded px-1" title={t("toolbar.tooltip.letterSpacing", "자간")}>
-        <button onClick={() => updateSettings({ letterSpacing: Math.max(0, Number((letterSpacing - 0.01).toFixed(2))) })} className="hover:text-accent text-xs">-</button>
-        <span className="text-xs w-10 text-center text-muted select-none">자{letterSpacing.toFixed(2)}</span>
-        <button onClick={() => updateSettings({ letterSpacing: Math.min(0.3, Number((letterSpacing + 0.01).toFixed(2))) })} className="hover:text-accent text-xs">+</button>
-      </div>
-
-      <div className="w-px h-4 bg-border mx-1" />
-
-      {/* Word Spacing (어간) */}
-      <div className="flex items-center gap-1 bg-background border border-border rounded px-1" title={t("toolbar.tooltip.wordSpacing", "어간")}>
-        <button onClick={() => updateSettings({ wordSpacing: Math.max(0, Number((wordSpacing - 0.01).toFixed(2))) })} className="hover:text-accent text-xs">-</button>
-        <span className="text-xs w-10 text-center text-muted select-none">어{wordSpacing.toFixed(2)}</span>
-        <button onClick={() => updateSettings({ wordSpacing: Math.min(0.2, Number((wordSpacing + 0.01).toFixed(2))) })} className="hover:text-accent text-xs">+</button>
-      </div>
-
-      <div className="w-px h-4 bg-border mx-1" />
-
-      {/* Paragraph Spacing (문단 간격) */}
-      <div className="flex items-center gap-1 bg-background border border-border rounded px-1" title={t("toolbar.tooltip.paragraphSpacing", "문단 간격")}>
-        <button onClick={() => updateSettings({ paragraphSpacing: Math.max(0, Number((paragraphSpacing - 0.1).toFixed(1))) })} className="hover:text-accent text-xs">-</button>
-        <span className="text-xs w-10 text-center text-muted select-none">문{paragraphSpacing.toFixed(1)}</span>
-        <button onClick={() => updateSettings({ paragraphSpacing: Math.min(3.0, Number((paragraphSpacing + 0.1).toFixed(1))) })} className="hover:text-accent text-xs">+</button>
-      </div>
-
-      <div className="w-px h-4 bg-border mx-1" />
-
-      <ToggleButton active={editor?.isActive("bold")} onClick={() => editor?.chain().focus().toggleBold().run()} className="w-6 h-6 hover:bg-hover rounded"><Bold className="w-3.5 h-3.5" /></ToggleButton>
-      <ToggleButton active={editor?.isActive("italic")} onClick={() => editor?.chain().focus().toggleItalic().run()} className="w-6 h-6 hover:bg-hover rounded"><Italic className="w-3.5 h-3.5" /></ToggleButton>
-      <ToggleButton active={editor?.isActive("underline")} onClick={() => editor?.chain().focus().toggleUnderline().run()} className="w-6 h-6 hover:bg-hover rounded"><Underline className="w-3.5 h-3.5" /></ToggleButton>
-
-      <div className="w-px h-4 bg-border mx-1" />
-
-      <ToggleButton active={editor?.isActive({ textAlign: "left" })} onClick={() => editor?.chain().focus().setTextAlign("left").run()} className="w-6 h-6 hover:bg-hover rounded"><AlignLeft className="w-3.5 h-3.5" /></ToggleButton>
-      <ToggleButton active={editor?.isActive({ textAlign: "center" })} onClick={() => editor?.chain().focus().setTextAlign("center").run()} className="w-6 h-6 hover:bg-hover rounded"><AlignCenter className="w-3.5 h-3.5" /></ToggleButton>
-      <ToggleButton active={editor?.isActive({ textAlign: "right" })} onClick={() => editor?.chain().focus().setTextAlign("right").run()} className="w-6 h-6 hover:bg-hover rounded"><AlignRight className="w-3.5 h-3.5" /></ToggleButton>
-
-      <div className="ml-auto" />
-      <button
-        className={cn(
-          "flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-element text-[11px] text-muted border border-transparent transition-colors",
-          onOpenWorldGraph
-            ? "cursor-pointer hover:bg-hover hover:text-fg"
-            : "cursor-not-allowed opacity-50"
-        )}
-        onClick={onOpenWorldGraph}
-        title={t("toolbar.tooltip.openWorldGraph")}
-        disabled={!onOpenWorldGraph}
-      >
-        <Network className="w-3.5 h-3.5" />
-        <span>{t("toolbar.view.graph")}</span>
-      </button>
-    </div>
-  )
+  );
 }
 
 export default function EditorToolbar({
   editor,
   isMobileView,
   onToggleMobileView,
-  onOpenWorldGraph,
+  onOpenPreview,
+  onOpenExport,
+  canOpenExport = true,
 }: EditorToolbarProps) {
-  const uiMode = useEditorStore((state) => state.uiMode);
+  const { t } = useTranslation();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+  const fontSize = useEditorStore((state) => state.fontSize);
+  const lineHeight = useEditorStore((state) => state.lineHeight);
+  const letterSpacing = useEditorStore((state) => state.letterSpacing ?? 0.05);
+  const paragraphSpacing = useEditorStore((state) => state.paragraphSpacing ?? 1);
+  const setFontSize = useEditorStore((state) => state.setFontSize);
+  const updateSettings = useEditorStore((state) => state.updateSettings);
 
-  if (!editor) {
-    return null;
-  }
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!moreRef.current?.contains(event.target as Node)) {
+        setMoreOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  if (!editor) return null;
+
+  const paragraphStyle = getParagraphStyle(editor);
+  const openPreview = onOpenPreview ?? onOpenExport;
+  const openExport = onOpenExport ?? onOpenPreview;
+  const hasExportAction = Boolean(openExport);
+
+  const applyParagraphStyle = (style: ParagraphStyle) => {
+    const chain = editor.chain().focus();
+    if (style === "paragraph") {
+      chain.setParagraph().run();
+      return;
+    }
+    const level = style === "heading1" ? 1 : style === "heading2" ? 2 : 3;
+    chain.toggleHeading({ level }).run();
+  };
+
+  const clearFormatting = () => {
+    editor.chain().focus().unsetAllMarks().clearNodes().setTextAlign("left").run();
+  };
+
+  const selectAll = () => {
+    editor.chain().focus().selectAll().run();
+    setMoreOpen(false);
+  };
 
   return (
-    <div className="flex flex-col select-none transition-all duration-300">
-      {uiMode === 'docs' && <DocsToolbar editor={editor} isMobileView={isMobileView} onToggleMobileView={onToggleMobileView} onOpenWorldGraph={onOpenWorldGraph} />}
-      {uiMode === 'editor' && <WordToolbar editor={editor} isMobileView={isMobileView} onToggleMobileView={onToggleMobileView} onOpenWorldGraph={onOpenWorldGraph} />}
-      {uiMode === 'scrivener' && <ScrivenerToolbar editor={editor} isMobileView={isMobileView} onToggleMobileView={onToggleMobileView} onOpenWorldGraph={onOpenWorldGraph} />}
-      {(uiMode === 'default' || !uiMode) && <DefaultToolbar editor={editor} isMobileView={isMobileView} onToggleMobileView={onToggleMobileView} onOpenWorldGraph={onOpenWorldGraph} />}
+    <div className="flex w-full select-none items-center overflow-x-auto border-b border-border bg-panel px-2 py-1.5">
+      <div className="flex min-w-max flex-1 items-center gap-1">
+        <ToolbarButton
+          label={t("toolbar.tooltip.undo", "되돌리기")}
+          onClick={() => editor.chain().focus().undo().run()}
+          disabled={!editor.can().undo()}
+        >
+          <Undo2 className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton
+          label={t("toolbar.tooltip.redo", "다시 실행")}
+          onClick={() => editor.chain().focus().redo().run()}
+          disabled={!editor.can().redo()}
+        >
+          <Redo2 className="h-4 w-4" />
+        </ToolbarButton>
 
-      {/* Additional Toolbar Elements logic if needed */}
+        <Divider />
+
+        <select
+          className="h-8 rounded-md border border-border/70 bg-background px-2 text-xs text-fg outline-none hover:bg-hover"
+          value={paragraphStyle}
+          aria-label={t("toolbar.paragraphStyle", "문단 스타일")}
+          onChange={(event) => applyParagraphStyle(event.target.value as ParagraphStyle)}
+        >
+          <option value="paragraph">{t("toolbar.paragraph.paragraph", "문단 스타일")}</option>
+          <option value="heading1">{t("toolbar.paragraph.heading1", "제목 1")}</option>
+          <option value="heading2">{t("toolbar.paragraph.heading2", "제목 2")}</option>
+          <option value="heading3">{t("toolbar.paragraph.heading3", "제목 3")}</option>
+        </select>
+
+        <FontSelector />
+        <select
+          className="h-8 rounded-md border border-border/70 bg-background px-2 text-xs text-fg outline-none hover:bg-hover"
+          value={fontSize}
+          aria-label={t("toolbar.fontSize", "크기")}
+          onChange={(event) => void setFontSize(Number(event.target.value))}
+        >
+          {FONT_SIZE_OPTIONS.map((size) => (
+            <option key={size} value={size}>{size}pt</option>
+          ))}
+        </select>
+
+        <Divider />
+
+        <ToolbarButton
+          active={editor.isActive("bold")}
+          label={t("toolbar.tooltip.bold", "굵게")}
+          onClick={() => editor.chain().focus().toggleBold().run()}
+        >
+          <Bold className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton
+          active={editor.isActive("italic")}
+          label={t("toolbar.tooltip.italic", "기울임")}
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+        >
+          <Italic className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton
+          active={editor.isActive("underline")}
+          label={t("toolbar.tooltip.underline", "밑줄")}
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+        >
+          <Underline className="h-4 w-4" />
+        </ToolbarButton>
+
+        <Divider />
+
+        <SliderMenu
+          label={t("toolbar.tooltip.letterSpacing", "자간")}
+          min={0}
+          max={0.3}
+          step={0.01}
+          value={letterSpacing}
+          onChange={(value) => void updateSettings({ letterSpacing: Number(value.toFixed(2)) })}
+        />
+        <SliderMenu
+          label={t("toolbar.tooltip.lineHeight", "줄간격")}
+          min={1}
+          max={2.4}
+          step={0.05}
+          value={lineHeight}
+          onChange={(value) => void updateSettings({ lineHeight: Number(value.toFixed(2)) })}
+        />
+        <SliderMenu
+          label={t("toolbar.tooltip.paragraphSpacing", "문단간격")}
+          min={0}
+          max={3}
+          step={0.1}
+          value={paragraphSpacing}
+          onChange={(value) => void updateSettings({ paragraphSpacing: Number(value.toFixed(1)) })}
+        />
+
+        <Divider />
+
+        <ToolbarButton
+          label={t("toolbar.sceneDivider", "장면 구분")}
+          className="gap-1.5"
+          onClick={() => editor.chain().focus().setHorizontalRule().run()}
+        >
+          <Minus className="h-4 w-4" />
+          <span>{t("toolbar.sceneDivider", "장면 구분")}</span>
+        </ToolbarButton>
+
+        {onToggleMobileView && (
+          <ToolbarButton
+            active={isMobileView}
+            label={t("toolbar.tooltip.toggleMobileView", "PC / 모바일")}
+            className="gap-1.5"
+            onClick={onToggleMobileView}
+          >
+            {isMobileView ? <Smartphone className="h-4 w-4" /> : <Monitor className="h-4 w-4" />}
+            <span>{isMobileView ? t("toolbar.view.mobile", "모바일") : t("toolbar.view.desktop", "PC")}</span>
+          </ToolbarButton>
+        )}
+
+        <Divider />
+
+        <ToolbarButton
+          label={t("toolbar.preview", "미리보기")}
+          className="gap-1.5"
+          onClick={() => openPreview?.()}
+          disabled={!canOpenExport || !openPreview}
+        >
+          <Eye className="h-4 w-4" />
+          <span>{t("toolbar.preview", "미리보기")}</span>
+        </ToolbarButton>
+        <ToolbarButton
+          label={t("toolbar.export", "내보내기")}
+          className="gap-1.5"
+          onClick={() => openExport?.()}
+          disabled={!canOpenExport || !hasExportAction}
+        >
+          <FileOutput className="h-4 w-4" />
+          <span>{t("toolbar.export", "내보내기")}</span>
+        </ToolbarButton>
+
+        <Divider />
+
+        <ToolbarButton
+          label={t("toolbar.tooltip.clearFormatting", "서식 초기화")}
+          className="gap-1.5"
+          onClick={clearFormatting}
+        >
+          <Eraser className="h-4 w-4" />
+          <span>{t("toolbar.clearFormatting", "서식 초기화")}</span>
+        </ToolbarButton>
+
+        <div className="relative" ref={moreRef}>
+          <ToolbarButton
+            active={moreOpen}
+            label={t("toolbar.more", "더보기")}
+            onClick={() => setMoreOpen((current) => !current)}
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </ToolbarButton>
+          {moreOpen && (
+            <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-md border border-border bg-panel p-1 shadow-xl">
+              <label className="flex cursor-pointer items-center gap-2 rounded px-3 py-2 text-xs text-fg hover:bg-hover">
+                <Palette className="h-4 w-4 text-muted" />
+                <span className="flex-1">{t("toolbar.tooltip.textColor", "글자 색")}</span>
+                <input
+                  type="color"
+                  className="h-5 w-6 cursor-pointer border-0 bg-transparent p-0"
+                  value={editor.getAttributes("textStyle").color || "#000000"}
+                  onChange={(event) => editor.chain().focus().setColor(event.target.value).run()}
+                  aria-label={t("toolbar.tooltip.textColor", "글자 색")}
+                />
+              </label>
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs text-fg hover:bg-hover"
+                onClick={() => editor.chain().focus().toggleHighlight().run()}
+              >
+                <Highlighter className="h-4 w-4 text-muted" />
+                <span>{t("toolbar.tooltip.highlight", "형광펜")}</span>
+              </button>
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs text-fg hover:bg-hover"
+                onClick={() => editor.chain().focus().toggleStrike().run()}
+              >
+                <Strikethrough className="h-4 w-4 text-muted" />
+                <span>{t("toolbar.tooltip.strikethrough", "취소선")}</span>
+              </button>
+              <div className="my-1 h-px bg-border" />
+              {[
+                { icon: AlignLeft, label: t("toolbar.tooltip.alignLeft", "왼쪽 정렬"), value: "left" },
+                { icon: AlignCenter, label: t("toolbar.tooltip.alignCenter", "가운데 정렬"), value: "center" },
+                { icon: AlignRight, label: t("toolbar.tooltip.alignRight", "오른쪽 정렬"), value: "right" },
+                { icon: AlignJustify, label: t("toolbar.tooltip.alignJustify", "양쪽 정렬"), value: "justify" },
+              ].map(({ icon: Icon, label, value }) => (
+                <button
+                  key={value}
+                  type="button"
+                  className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs text-fg hover:bg-hover"
+                  onClick={() => editor.chain().focus().setTextAlign(value).run()}
+                >
+                  <Icon className="h-4 w-4 text-muted" />
+                  <span>{label}</span>
+                </button>
+              ))}
+              <div className="my-1 h-px bg-border" />
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs text-fg hover:bg-hover"
+                onClick={selectAll}
+              >
+                <Pilcrow className="h-4 w-4 text-muted" />
+                <span>{t("toolbar.selectAll", "전체 선택")}</span>
+              </button>
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs text-fg hover:bg-hover"
+                onClick={clearFormatting}
+              >
+                <Eraser className="h-4 w-4 text-muted" />
+                <span>{t("toolbar.clearFormatting", "서식 초기화")}</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

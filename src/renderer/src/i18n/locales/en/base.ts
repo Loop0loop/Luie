@@ -600,6 +600,7 @@ export const enBase = {
       renameProject: "Rename project",
       refresh: "Refresh",
     },
+    expand: "Expand",
   },
   research: {
     title: {

@@ -604,6 +604,7 @@ export const jaBase = {
       renameProject: "プロジェクト名を変更",
       refresh: "更新",
     },
+    expand: "展開",
   },
   research: {
     title: {

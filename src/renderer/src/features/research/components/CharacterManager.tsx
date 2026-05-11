@@ -126,7 +126,7 @@ export default function CharacterManager() {
         <SidebarPeekContent
           groups={Object.entries(groupedCharacters).map(([name, chars]) => ({
             name,
-            items: chars.map((c) => ({ id: c.id, label: c.name })),
+            items: chars.map((c) => ({ id: c.id, label: c.name, sublabel: c.description ?? undefined })),
           }))}
           selectedId={selectedCharacterId}
           onSelect={setSelectedCharacterId}

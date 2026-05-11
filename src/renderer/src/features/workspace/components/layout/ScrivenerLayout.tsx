@@ -96,6 +96,7 @@ export default function ScrivenerLayout({
   const inspectorPanelRef = useRef<PanelImperativeHandle | null>(null);
   const previousPanelCountRef = useRef(panels.length);
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
+  const maxWidth = useEditorStore((state) => state.maxWidth);
   const handleEditorSplitLayoutChanged = useCallback(
     (layout: Layout) => {
       panels.forEach((panel, panelIndex) => {
@@ -331,7 +332,10 @@ export default function ScrivenerLayout({
                       className="h-full w-full overflow-y-scroll custom-scrollbar p-8 bg-panel text-fg"
                       data-editor-scroll-container="true"
                     >
-                      <div className="max-w-3xl mx-auto min-h-[500px]">
+                      <div
+                        className="mx-auto min-h-[500px] w-full"
+                        style={{ maxWidth: `${maxWidth ?? 800}px` }}
+                      >
                         {renderMainContent()}
                       </div>
                     </div>

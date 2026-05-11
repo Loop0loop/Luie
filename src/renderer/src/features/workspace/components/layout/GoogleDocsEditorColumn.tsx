@@ -56,7 +56,13 @@ export function GoogleDocsEditorColumn({
     >
       {editor && (
         <div className="relative z-40 flex w-full shrink-0 justify-center border-b border-border bg-background py-1">
-          <EditorToolbar editor={editor} onOpenWorldGraph={onOpenWorldGraph} />
+          <EditorToolbar
+            editor={editor}
+            onOpenPreview={onOpenExport}
+            onOpenExport={onOpenExport}
+            canOpenExport={Boolean(onOpenExport)}
+            onOpenWorldGraph={onOpenWorldGraph}
+          />
         </div>
       )}
 
