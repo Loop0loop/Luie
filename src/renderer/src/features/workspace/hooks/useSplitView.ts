@@ -13,6 +13,7 @@ import { useProjectStore } from "@renderer/features/project/stores/projectStore"
 import { useProjectLayoutStore } from "@renderer/features/workspace/stores/projectLayoutStore";
 import type { Snapshot } from "@shared/types";
 
+
 export function useSplitView() {
   const panels = useUIStore((state) => state.panels);
   const contextTab = useUIStore((state) => state.contextTab);
@@ -71,13 +72,6 @@ export function useSplitView() {
     addPanel({ type: "export" });
   }, [addPanel]);
 
-  const startResizeSplit = useCallback(
-    (_e: React.MouseEvent) => {
-      // Deprecated with react-resizable-panels
-    },
-    [],
-  );
-
   return {
     panels,
     contextTab,
@@ -89,6 +83,5 @@ export function useSplitView() {
     handleSplitView,
     handleOpenSnapshot,
     handleOpenExport,
-    startResizeSplit,
   };
 }

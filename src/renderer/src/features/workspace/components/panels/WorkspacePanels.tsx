@@ -76,27 +76,25 @@ export function WorkspacePanels({
                                         onClose={() => removePanel(panel.id)}
                                     />
                                 ) : panel.content.type === "snapshot" && panel.content.snapshot ? (
-                                    <SnapshotViewer
-                                        snapshot={panel.content.snapshot}
-                                        currentContent={
-                                            chapters.find(
-                                                (c) =>
-                                                    c.projectId === currentProjectId &&
-                                                    c.id === panel.content.snapshot?.chapterId,
-                                            )?.content ?? ""
-                                        }
-                                        onApplySnapshotText={async (nextContent: string) => {
-                                            const snapshotChapter = chapters.find(
-                                                (c) =>
-                                                    c.projectId === currentProjectId &&
-                                                    c.id === panel.content.snapshot?.chapterId,
-                                            );
-                                            const targetChapterId = snapshotChapter?.id ?? activeChapterId;
-                                            const targetTitle = snapshotChapter?.title ?? activeChapterTitle;
-                                            if (!targetChapterId) return;
-                                            await onSave(targetTitle, nextContent, targetChapterId);
-                                        }}
-                                    />
+                                    (() => {
+                                        const snapshotChapter = chapters.find(
+                                            (c) =>
+                                                c.projectId === currentProjectId &&
+                                                c.id === panel.content.snapshot?.chapterId,
+                                        );
+                                        return (
+                                            <SnapshotViewer
+                                                snapshot={panel.content.snapshot}
+                                                currentContent={snapshotChapter?.content ?? ""}
+                                                onApplySnapshotText={async (nextContent: string) => {
+                                                    const targetChapterId = snapshotChapter?.id ?? activeChapterId;
+                                                    const targetTitle = snapshotChapter?.title ?? activeChapterTitle;
+                                                    if (!targetChapterId) return;
+                                                    await onSave(targetTitle, nextContent, targetChapterId);
+                                                }}
+                                            />
+                                        );
+                                    })()
                                 ) : panel.content.type === "export" ? (
                                     <ExportPreviewPanel title={activeChapterTitle} />
                                 ) : (

@@ -11,10 +11,19 @@ import SynopsisSection from "@renderer/features/research/components/SynopsisSect
 import { cn } from "@shared/types/utils";
 import { FeatureErrorBoundary } from "@renderer/shared/error-boundaries/FeatureErrorBoundary";
 
+export type ResearchPanelTab =
+  | "character"
+  | "event"
+  | "faction"
+  | "world"
+  | "scrap"
+  | "analysis"
+  | "synopsis";
+
 interface ResearchPanelProps {
-  activeTab: string; // 'character' | 'event' | 'faction' | 'world' | 'scrap' | 'analysis' | 'synopsis'
+  activeTab: ResearchPanelTab;
   onClose?: () => void;
-  onTabChange?: (tab: "character" | "event" | "faction" | "world" | "scrap" | "analysis" | "synopsis") => void;
+  onTabChange?: (tab: ResearchPanelTab) => void;
 }
 
 export default function ResearchPanel({
