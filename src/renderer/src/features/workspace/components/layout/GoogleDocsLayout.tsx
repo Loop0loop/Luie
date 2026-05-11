@@ -1,5 +1,10 @@
 import { useRef } from "react";
-import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
+import {
+  Group as PanelGroup,
+  Panel,
+  Separator as PanelResizeHandle,
+  type PanelImperativeHandle,
+} from "react-resizable-panels";
 import { Menu } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import WindowBar from "@renderer/features/workspace/components/WindowBar";
@@ -11,6 +16,9 @@ import { GoogleDocsRightPanel } from "./GoogleDocsRightPanel";
 import type { GoogleDocsLayoutProps } from "./googleDocsLayout.types";
 import { useGoogleDocsLayoutState } from "./useGoogleDocsLayoutState";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
+import { SidebarHoverStrip } from "@renderer/features/workspace/components/SidebarHoverStrip";
 
 export default function GoogleDocsLayout({
   children,
@@ -49,7 +57,9 @@ export default function GoogleDocsLayout({
     setTrashRefreshKey,
     trashRefreshKey,
   } = useGoogleDocsLayoutState(currentProjectId ?? null);
+  const enableAnimations = useEditorStore((state) => state.enableAnimations);
   const docsLayoutGroupRef = useRef<HTMLDivElement | null>(null);
+  const docsSidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
   const docsLayoutGroupWidth = useElementWidth(docsLayoutGroupRef);
   const docsSidebarSize = getResponsivePanelSize(
     docsLayoutGroupWidth,
@@ -58,6 +68,15 @@ export default function GoogleDocsLayout({
   const rightPanelSize = rightPanelConfig
     ? getResponsivePanelSize(docsLayoutGroupWidth, rightPanelConfig)
     : null;
+  const {
+    isClosing: isSidebarClosing,
+    shouldRender: shouldRenderSidebar,
+  } = useResizablePanelPresence({
+    enableAnimations,
+    isOpen: isSidebarOpen,
+    openSize: toPanelPercentSize(docsSidebarRatio),
+    panelRef: docsSidebarPanelRef,
+  });
 
   return (
     <div className="flex h-screen flex-col bg-background font-sans text-foreground transition-colors duration-200">
@@ -77,7 +96,13 @@ export default function GoogleDocsLayout({
       />
 
       <div className="relative flex flex-1 flex-row overflow-hidden">
-        {!isSidebarOpen && (
+        {!shouldRenderSidebar && !isPanelRailOpen && !activeRightTab && sidebar && (
+          <SidebarHoverStrip onExpand={() => setDocsSidebarOpen(true)}>
+            {sidebar}
+          </SidebarHoverStrip>
+        )}
+
+        {!isSidebarOpen && !shouldRenderSidebar && (
           <div className="pointer-events-auto absolute left-4 top-4 z-50">
             <button
               onClick={() => setDocsSidebarOpen(true)}
@@ -96,14 +121,24 @@ export default function GoogleDocsLayout({
           elementRef={docsLayoutGroupRef}
           onLayoutChanged={onLayoutChanged}
         >
-          {isSidebarOpen && (
+          {shouldRenderSidebar && (
             <>
               <Panel
                 id="left-sidebar"
+                panelRef={docsSidebarPanelRef}
+                collapsible
+                collapsedSize={0}
+                data-panel-animated="true"
                 defaultSize={toPanelPercentSize(docsSidebarRatio)}
                 minSize={docsSidebarSize.minSize}
                 maxSize={docsSidebarSize.maxSize}
-                className="flex min-w-0 shrink-0 flex-col overflow-hidden border-r border-border bg-background"
+                className={`flex min-w-0 shrink-0 flex-col overflow-hidden border-r border-border bg-background ${
+                  enableAnimations
+                    ? isSidebarClosing
+                      ? "animate-out slide-out-to-left fade-out duration-200"
+                      : "animate-in slide-in-from-left fade-in duration-200"
+                    : ""
+                }`}
               >
                 {sidebar}
               </Panel>
@@ -145,7 +180,7 @@ export default function GoogleDocsLayout({
             trashRefreshKey={trashRefreshKey}
           />
 
-          {!isSidebarOpen && !activeRightTab && (
+          {!shouldRenderSidebar && !activeRightTab && (
             <Panel
               id="docs-layout-placeholder"
               defaultSize={0}

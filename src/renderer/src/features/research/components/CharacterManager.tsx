@@ -28,6 +28,7 @@ import {
 import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
 import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
 import { useCollapsibleSidebar } from "@renderer/features/workspace/hooks/useCollapsibleSidebar";
+import { SidebarCollapseStrip } from "@renderer/features/workspace/components/SidebarCollapseStrip";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 
 export default function CharacterManager() {
@@ -79,8 +80,8 @@ export default function CharacterManager() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const panelGroupRef = useRef<GroupImperativeHandle | null>(null);
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
-  const { isCollapsed, onResize: handleSidebarResize } =
-    useCollapsibleSidebar(baseOnResize);
+  const { isCollapsed, onResize: handleSidebarResize, toggle } =
+    useCollapsibleSidebar(sidebarFeature, baseOnResize);
 
   const { isLayoutReady } = useFixedPixelPanelGroupLayout({
     containerRef,
@@ -114,63 +115,68 @@ export default function CharacterManager() {
 
   return (
     <div
-      ref={containerRef}
       className="flex w-full h-full bg-canvas overflow-hidden"
       style={{
         visibility: shouldHideUntilLayoutReady ? "hidden" : undefined,
       }}
     >
-      <PanelGroup
-        groupRef={panelGroupRef}
-        orientation="horizontal"
-        className="h-full! w-full!"
-      >
-        {/* LEFT SIDEBAR - Character List */}
-        <Panel
-          id="sidebar"
-          defaultSize={toPxSize(sidebarWidth)}
-          minSize={toPxSize(sidebarConfig.minPx)}
-          maxSize={toPxSize(sidebarConfig.maxPx)}
-          collapsible
-          collapsedSize={toPxSize(0)}
-          onResize={handleSidebarResize}
-          className="bg-sidebar border-r border-border flex flex-col overflow-y-auto"
+      {/* Toggle strip — in flex flow, pushes main content */}
+      <SidebarCollapseStrip isCollapsed={isCollapsed} onToggle={toggle} />
+
+      {/* PanelGroup wrapper — containerRef excludes strip width */}
+      <div ref={containerRef} className="flex-1 min-w-0 h-full overflow-hidden">
+        <PanelGroup
+          groupRef={panelGroupRef}
+          orientation="horizontal"
+          className="h-full! w-full!"
         >
-          <CharacterSidebarList
-            t={t}
-            selectedCharacterId={selectedCharacterId}
-            setSelectedCharacterId={setSelectedCharacterId}
-            onViewAll={handleViewAll}
-            isTemplateModalOpen={isTemplateModalOpen}
-            setIsTemplateModalOpen={setIsTemplateModalOpen}
-            handleAddCharacter={handleAddCharacter}
-            groupedCharacters={groupedCharacters}
-          />
-        </Panel>
+          {/* LEFT SIDEBAR - Character List */}
+          <Panel
+            id="sidebar"
+            defaultSize={isCollapsed ? toPxSize(0) : toPxSize(sidebarWidth)}
+            minSize={toPxSize(sidebarConfig.minPx)}
+            maxSize={toPxSize(sidebarConfig.maxPx)}
+            collapsible
+            collapsedSize={toPxSize(0)}
+            onResize={handleSidebarResize}
+            className="bg-sidebar border-r border-border flex flex-col overflow-y-auto"
+          >
+            <CharacterSidebarList
+              t={t}
+              selectedCharacterId={selectedCharacterId}
+              setSelectedCharacterId={setSelectedCharacterId}
+              onViewAll={handleViewAll}
+              isTemplateModalOpen={isTemplateModalOpen}
+              setIsTemplateModalOpen={setIsTemplateModalOpen}
+              handleAddCharacter={handleAddCharacter}
+              groupedCharacters={groupedCharacters}
+            />
+          </Panel>
 
-        {/* Resizer Handle */}
-        <PanelResizeHandle
-          {...resizeHandleProps}
-          className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative"
-        ></PanelResizeHandle>
+          {/* Resizer Handle */}
+          <PanelResizeHandle
+            {...resizeHandleProps}
+            className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative"
+          ></PanelResizeHandle>
 
-        {/* RIGHT MAIN - Wiki View */}
-        <Panel id="main" minSize={toPercentSize(20)}>
-          <div className="h-full w-full overflow-hidden flex flex-col">
-            {selectedChar ? (
-              <WikiDetailView
-                key={selectedChar.id} // Force re-mount when switching char to avoid stale state
-                characterId={selectedChar.id}
-              />
-            ) : (
-              <CharacterGallery
-                groupedCharacters={groupedCharacters}
-                onSelect={setSelectedCharacterId}
-              />
-            )}
-          </div>
-        </Panel>
-      </PanelGroup>
+          {/* RIGHT MAIN - Wiki View */}
+          <Panel id="main" minSize={toPercentSize(20)}>
+            <div className="h-full w-full overflow-hidden flex flex-col">
+              {selectedChar ? (
+                <WikiDetailView
+                  key={selectedChar.id}
+                  characterId={selectedChar.id}
+                />
+              ) : (
+                <CharacterGallery
+                  groupedCharacters={groupedCharacters}
+                  onSelect={setSelectedCharacterId}
+                />
+              )}
+            </div>
+          </Panel>
+        </PanelGroup>
+      </div>
     </div>
   );
 }

@@ -53,6 +53,7 @@ export default function EditorLayout({
 
   const maxWidth = useEditorStore((state) => state.maxWidth);
   const activeRightTab = useUIStore((state) => state.docsRightTab);
+  const isBinderBarOpen = useUIStore((state) => state.regions.rightRail.open);
   const updatePanelSize = useUIStore((state) => state.updatePanelSize);
   const [isBinderRailHoverSuppressed, setIsBinderRailHoverSuppressed] =
     useState(false);
@@ -136,6 +137,7 @@ export default function EditorLayout({
           topOffset={sidebarTopOffset}
           activationWidthPx={320}
           closeDelayMs={260}
+          suppressHoverOpen={isBinderBarOpen || Boolean(activeRightTab)}
         >
           <div className="h-full flex flex-col bg-panel border-r border-border min-w-[280px]">
             {sidebar}

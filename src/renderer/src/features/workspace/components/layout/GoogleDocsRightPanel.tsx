@@ -2,7 +2,11 @@ import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "re
 import { History } from "lucide-react";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useTranslation } from "react-i18next";
-import { Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
+import {
+  Panel,
+  Separator as PanelResizeHandle,
+  type PanelImperativeHandle,
+} from "react-resizable-panels";
 import Editor from "@renderer/features/editor/components/Editor";
 import {
   type ResponsivePanelSize,
@@ -11,6 +15,7 @@ import {
 } from "@shared/constants/layoutSizing";
 import { beginLayoutRestoring } from "@renderer/features/workspace/hooks/useProjectLayoutPersistence";
 import { getDocsRightPanelId } from "../../utils/docsLayoutModel";
+import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
 
 const ResearchPanel = lazy(
   () => import("@renderer/features/research/components/ResearchPanel"),
@@ -153,8 +158,17 @@ export function GoogleDocsRightPanel({
 }: GoogleDocsRightPanelProps) {
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
   const [renderedTab, setRenderedTab] = useState(activeRightTab);
-  const [isClosing, setIsClosing] = useState(false);
   const restoreFrameRef = useRef<number | null>(null);
+  const panelRef = useRef<PanelImperativeHandle | null>(null);
+  const {
+    isClosing,
+    shouldRender: shouldRenderPanel,
+  } = useResizablePanelPresence({
+    enableAnimations,
+    isOpen: Boolean(activeRightTab),
+    openSize: toPanelPercentSize(rightPanelRatio),
+    panelRef,
+  });
 
   useLayoutEffect(() => {
     if (!activeRightTab) return;
@@ -178,28 +192,15 @@ export function GoogleDocsRightPanel({
     if (!activeRightTab || activeRightTab === renderedTab) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setRenderedTab(activeRightTab);
-    setIsClosing(false);
   }, [activeRightTab, renderedTab]);
 
   useEffect(() => {
-    if (!activeRightTab && renderedTab) {
-      if (enableAnimations) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setIsClosing(true);
-        const timer = setTimeout(() => {
-          setRenderedTab(null);
-          setIsClosing(false);
-        }, 200);
-        return () => clearTimeout(timer);
-      } else {
-        setRenderedTab(null);
-        return undefined;
-      }
-    }
-    return undefined;
-  }, [activeRightTab, enableAnimations, renderedTab]);
+    if (shouldRenderPanel || !renderedTab) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRenderedTab(null);
+  }, [renderedTab, shouldRenderPanel]);
 
-  if (!renderedTab || !rightPanelSize) {
+  if (!shouldRenderPanel || !renderedTab || !rightPanelSize) {
     return null;
   }
 
@@ -219,6 +220,10 @@ export function GoogleDocsRightPanel({
       <Panel
         key={getDocsRightPanelId(renderedTab)}
         id={getDocsRightPanelId(renderedTab)}
+        panelRef={panelRef}
+        collapsible
+        collapsedSize={0}
+        data-panel-animated="true"
         defaultSize={toPanelPercentSize(rightPanelRatio)}
         minSize={rightPanelSize.minSize}
         maxSize={rightPanelSize.maxSize}

@@ -9,6 +9,20 @@ import {
 import { createLogger } from "@shared/logger";
 
 const logger = createLogger("useLayoutPersist");
+let layoutPersistenceSuppressionDepth = 0;
+
+export function suppressLayoutPersistenceFor(durationMs: number): void {
+  layoutPersistenceSuppressionDepth += 1;
+  window.setTimeout(() => {
+    layoutPersistenceSuppressionDepth = Math.max(
+      0,
+      layoutPersistenceSuppressionDepth - 1,
+    );
+  }, durationMs);
+}
+
+const isLayoutPersistenceSuppressed = (): boolean =>
+  layoutPersistenceSuppressionDepth > 0;
 
 export interface LayoutPersistEntry {
   /** Must match the Panel's `id` prop */
@@ -157,6 +171,12 @@ export function useLayoutPersist(
 
   return useCallback(
     (layout: Layout) => {
+      if (isLayoutPersistenceSuppressed()) {
+        logger.debug(`[useLayoutPersist] Suppressed layout surface commit`, {
+          layout,
+        });
+        return;
+      }
       if (isHandlingLayoutRef.current) {
         logger.warn(`[useLayoutPersist] Re-entrant onLayoutChanged ignored`);
         return;
