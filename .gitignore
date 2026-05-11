@@ -84,3 +84,5 @@ coverage/
 text.txt
 
 native/haptics/build/Release/
+# Added by code-review-graph
+.code-review-graph/

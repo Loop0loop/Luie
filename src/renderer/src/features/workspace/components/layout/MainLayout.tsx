@@ -32,12 +32,13 @@ import {
 } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
-import { SidebarHoverStrip } from "@renderer/features/workspace/components/SidebarHoverStrip";
 
 interface MainLayoutProps {
   children: ReactNode;
   sidebar?: ReactNode;
   contextPanel?: ReactNode;
+  compactSidebarHover?: ReactNode;
+  compactContextHover?: ReactNode;
   additionalPanels?: ReactNode;
   additionalPanelIds?: string[];
   onOpenExport?: () => void;
@@ -47,6 +48,8 @@ export default function MainLayout({
   children,
   sidebar,
   contextPanel,
+  compactSidebarHover,
+  compactContextHover,
   additionalPanels,
   additionalPanelIds = [],
   onOpenExport,
@@ -151,13 +154,8 @@ export default function MainLayout({
       <WindowBar />
 
       <div className="relative min-h-0 flex-1">
-        {!shouldRenderSidebar && sidebar && (
-          <SidebarHoverStrip
-            onExpand={() => setRegionOpen("leftSidebar", true)}
-          >
-            {sidebar}
-          </SidebarHoverStrip>
-        )}
+        {!shouldRenderSidebar && compactSidebarHover}
+        {!shouldRenderContext && compactContextHover}
 
         <PanelGroup
           id="main-layout-group"
