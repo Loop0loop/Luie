@@ -38,6 +38,8 @@ export const koWorkspace = {
       addComment: "댓글 추가",
       toggleMobileView: "모바일 뷰 전환",
       openWorldGraph: "월드 그래프 열기",
+      fontSizeIncrease: "글자 크기 늘리기",
+      fontSizeDecrease: "글자 크기 줄이기",
       view: {
         mobile: "Mobile View",
         desktop: "PC View",
@@ -47,6 +49,12 @@ export const koWorkspace = {
       mobile: "Mobile",
       desktop: "PC",
       graph: "그래프",
+    },
+    layout: {
+      default: "기본 레이아웃",
+      scrivener: "스크리브너 (3분할)",
+      docs: "구글 닥스 스타일",
+      focus: "집중 모드",
     },
   },
   textEditor: {

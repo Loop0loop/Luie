@@ -38,6 +38,8 @@ export const enWorkspace = {
       addComment: "Add Comment",
       toggleMobileView: "Toggle mobile view",
       openWorldGraph: "Open world graph",
+      fontSizeIncrease: "Increase font size",
+      fontSizeDecrease: "Decrease font size",
       view: {
         mobile: "Mobile View",
         desktop: "PC View",
@@ -47,6 +49,12 @@ export const enWorkspace = {
       mobile: "Mobile",
       desktop: "Desktop",
       graph: "Graph",
+    },
+    layout: {
+      default: "Default layout",
+      scrivener: "Scrivener (3-pane)",
+      docs: "Google Docs style",
+      focus: "Focus mode",
     },
   },
   textEditor: {

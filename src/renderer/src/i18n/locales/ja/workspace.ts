@@ -38,6 +38,8 @@ export const jaWorkspace = {
       addComment: "コメントを追加",
       toggleMobileView: "モバイル表示を切替",
       openWorldGraph: "ワールドグラフを開く",
+      fontSizeIncrease: "文字サイズを大きく",
+      fontSizeDecrease: "文字サイズを小さく",
       view: {
         mobile: "モバイル表示",
         desktop: "PC表示",
@@ -47,6 +49,12 @@ export const jaWorkspace = {
       mobile: "モバイル",
       desktop: "PC",
       graph: "グラフ",
+    },
+    layout: {
+      default: "デフォルトレイアウト",
+      scrivener: "スクリブナー（3分割）",
+      docs: "Google Docsスタイル",
+      focus: "フォーカスモード",
     },
   },
   textEditor: {

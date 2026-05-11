@@ -351,13 +351,12 @@ export default function ScrivenerLayout({
             </div>
 
             {/* Scrivener Info Line */}
-            <div className="h-6 bg-surface border-t border-border flex items-center px-3 text-xs text-muted justify-between shrink-0">
+            <div className="h-6 bg-surface border-t border-border flex items-center px-3 text-xs text-muted shrink-0">
               <span>
                 {t("editor.status.charLabel")} {charCount}
                 {t("editor.status.separator")}
                 {t("editor.status.wordLabel")} {wordCount}
               </span>
-              <span>{t("scrivener.target", { count: 2000 })}</span>
             </div>
           </Panel>
 

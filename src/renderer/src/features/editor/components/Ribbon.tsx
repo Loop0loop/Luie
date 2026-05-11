@@ -17,8 +17,13 @@ import {
   Monitor,
   Smartphone,
   Network,
+  LayoutDashboard,
+  Columns3,
+  FileText,
+  Maximize2,
 } from "lucide-react";
 import { cn } from "@shared/types/utils";
+import type { EditorUiMode } from "@shared/types";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { FontSelector } from "./FontSelector";
 
@@ -39,6 +44,10 @@ export default function Ribbon({
 }: RibbonProps) {
   const { t } = useTranslation();
   const maxWidth = useEditorStore((state) => state.maxWidth);
+  const fontSize = useEditorStore((state) => state.fontSize);
+  const setFontSize = useEditorStore((state) => state.setFontSize);
+  const uiMode = useEditorStore((state) => state.uiMode);
+  const setUiMode = useEditorStore((state) => state.setUiMode);
   if (!editor) return null;
 
   const isActive = (nameOrAttrs: string | Record<string, unknown>, attributes?: Record<string, unknown>) =>
@@ -81,15 +90,49 @@ export default function Ribbon({
           <FontSelector />
           <div className="h-4 w-px bg-border/20" />
           <div className="flex items-center">
-            <button className="px-1 hover:bg-surface-hover rounded text-xs transition-colors">-</button>
+            <button
+              className="px-1 hover:bg-surface-hover rounded text-xs transition-colors"
+              onClick={() => void setFontSize(Math.max(10, fontSize - 1))}
+              title={t("toolbar.tooltip.fontSizeDecrease")}
+            >-</button>
             <input
               type="text"
-              defaultValue="11"
-              className="w-6 text-center bg-transparent text-xs border border-border/50 rounded mx-1"
+              value={fontSize}
+              className="w-7 text-center bg-transparent text-xs border border-border/50 rounded mx-1"
               readOnly
             />
-            <button className="px-1 hover:bg-surface-hover rounded text-xs transition-colors">+</button>
+            <button
+              className="px-1 hover:bg-surface-hover rounded text-xs transition-colors"
+              onClick={() => void setFontSize(Math.min(30, fontSize + 1))}
+              title={t("toolbar.tooltip.fontSizeIncrease")}
+            >+</button>
           </div>
+        </div>
+
+        {/* Layout Mode Switcher */}
+        <div className="flex items-center gap-0.5 pr-2 border-r border-border/20">
+          {(
+            [
+              { mode: "default" as EditorUiMode, icon: <LayoutDashboard className="w-3.5 h-3.5" />, title: t("toolbar.layout.default") },
+              { mode: "scrivener" as EditorUiMode, icon: <Columns3 className="w-3.5 h-3.5" />, title: t("toolbar.layout.scrivener") },
+              { mode: "docs" as EditorUiMode, icon: <FileText className="w-3.5 h-3.5" />, title: t("toolbar.layout.docs") },
+              { mode: "focus" as EditorUiMode, icon: <Maximize2 className="w-3.5 h-3.5" />, title: t("toolbar.layout.focus") },
+            ]
+          ).map(({ mode, icon, title }) => (
+            <button
+              key={mode}
+              className={cn(
+                "flex items-center gap-1 px-2 py-1 rounded text-[11px] transition-colors",
+                uiMode === mode
+                  ? "bg-accent/15 text-accent"
+                  : "text-muted hover:bg-surface-hover hover:text-fg"
+              )}
+              onClick={() => void setUiMode(mode)}
+              title={title}
+            >
+              {icon}
+            </button>
+          ))}
         </div>
 
         {/* Layout Toggle (PC / Mobile) */}
