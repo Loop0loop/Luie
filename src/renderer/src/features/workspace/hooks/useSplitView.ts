@@ -19,7 +19,6 @@ export function useSplitView() {
   const contextTab = useUIStore((state) => state.contextTab);
   const addPanelBase = useUIStore((state) => state.addPanel);
   const removePanel = useUIStore((state) => state.removePanel);
-  const setPanels = useUIStore((state) => state.setPanels);
   const setContextTab = useUIStore((state) => state.setContextTab);
   const currentProjectId = useProjectStore((state) => state.currentItem?.id);
   const getProjectLayout = useProjectLayoutStore((state) => state.getProjectLayout);
@@ -78,7 +77,6 @@ export function useSplitView() {
     setContextTab,
     addPanel,
     removePanel,
-    setPanels,
     handleSelectResearchItem,
     handleSplitView,
     handleOpenSnapshot,

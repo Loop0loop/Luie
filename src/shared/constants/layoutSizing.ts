@@ -1,5 +1,8 @@
 import { normalizeSidebarWidthInput } from "./sidebarSizing";
 
+/** Minimum size (%) for each split panel in the workspace panel group. */
+export const SPLIT_PANEL_MIN_SIZE_PERCENT = 15;
+
 const clampNumber = (value: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, value));
 

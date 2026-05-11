@@ -6,6 +6,7 @@ import type { ResizablePanelData } from "@renderer/features/workspace/stores/uiS
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import type { Chapter } from "@shared/types";
 import { toPercentSize } from "@shared/constants/sidebarSizing";
+import { SPLIT_PANEL_MIN_SIZE_PERCENT } from "@shared/constants/layoutSizing";
 
 // Lazy Loaded Panels
 const ResearchPanel = React.lazy(
@@ -48,7 +49,7 @@ export function WorkspacePanels({
                     <Panel
                         id={panel.id}
                         defaultSize={toPercentSize(panel.size)}
-                        minSize={15}
+                        minSize={SPLIT_PANEL_MIN_SIZE_PERCENT}
                         onMouseDownCapture={() => {
                             setFocusedClosableTarget({ kind: "panel", id: panel.id });
                         }}
