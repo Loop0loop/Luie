@@ -1,4 +1,12 @@
 import { beforeAll, afterAll, beforeEach, vi } from "vitest";
+
+if (typeof globalThis.ResizeObserver === "undefined") {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
 import * as path from "node:path";
 import * as fs from "node:fs";
 import { sql } from "drizzle-orm";

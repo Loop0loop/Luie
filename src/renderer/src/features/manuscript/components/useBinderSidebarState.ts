@@ -150,7 +150,7 @@ export function useBinderSidebarState(projectId?: string | null) {
     ? getEditorLayoutPanelSurface(activeRightTab)
     : getEditorLayoutPanelSurface("character");
   const savedRatio =
-    layoutSurfaceRatios[activePanelSurface] ??
+    layoutSurfaceRatios[activePanelSurface] ||
     getLayoutSurfaceDefaultRatio(activePanelSurface);
 
   const widthConfig = getLayoutSurfaceConfig(activePanelSurface);

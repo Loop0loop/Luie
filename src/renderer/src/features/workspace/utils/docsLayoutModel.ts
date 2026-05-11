@@ -62,7 +62,7 @@ export const getDocsLayoutSurfaceState = (
       ? getLayoutSurfaceConfig(activePanelSurface)
       : null,
     rightPanelRatio: activePanelSurface
-      ? layoutSurfaceRatios[activePanelSurface] ??
+      ? layoutSurfaceRatios[activePanelSurface] ||
         getLayoutSurfaceDefaultRatio(activePanelSurface)
       : null,
   };
