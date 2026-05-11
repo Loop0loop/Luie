@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  ChevronsRight,
   RotateCcw,
   ArrowRight,
   FileText,
@@ -48,6 +49,7 @@ function CompactContent({
   const { t } = useTranslation();
   const dialog = useDialog();
   const addPanel = useUIStore((s) => s.addPanel);
+  const setRegionOpen = useUIStore((s) => s.setRegionOpen);
   const currentProjectId = useProjectStore((s) => s.currentProject?.id);
   const allChapters = useChapterStore((s) => s.chapters);
   const reloadChapters = useChapterStore((s) => s.loadAll);
@@ -340,7 +342,15 @@ function CompactContent({
 
       </div>
 
-      {/* compact hover keeps sidebar collapsed; no force-expand action */}
+      {/* 하단 펼치기 토글 */}
+      <button
+        type="button"
+        onClick={() => setRegionOpen("leftSidebar", true)}
+        className="shrink-0 flex items-center justify-center gap-1.5 h-9 border-t border-border/40 text-[12px] text-muted hover:text-fg hover:bg-surface-hover transition-colors"
+      >
+        <ChevronsRight size={13} />
+        <span>{t("sidebar.expand")}</span>
+      </button>
     </div>
   );
 }
