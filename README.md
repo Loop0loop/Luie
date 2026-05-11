@@ -169,7 +169,6 @@ project.luie
 ```
 
 이 구조를 통해 프로젝트 이동, 백업, 복구를 단순화할 수 있었습니다.
-actecd
 ---
 
 ## Why Zustand Store Separation?
@@ -288,7 +287,7 @@ actecd
 ![Plot Board](./assets/portfolio/sanp/plot.png)
 
 ## Scrap
-![Scrap](./assets/portfolio/sanp/Scrap.png)
+![Scrap](./assets/portfolio/sanp/scrapp.png)
 
 ## Terms
 ![Terms](./assets/portfolio/sanp/terms.png)
