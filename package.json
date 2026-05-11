@@ -1,6 +1,6 @@
 {
   "name": "luie",
-  "version": "0.1.27",
+  "version": "0.1.28",
   "description": "흐름을 방해하지 않는 집필 도구",
   "main": "out/main/index.js",
   "type": "module",
@@ -158,7 +158,8 @@
     "typescript-eslint": "8.57.0",
     "vite": "7.3.1",
     "vitest": "4.0.18",
-    "zustand": "5.0.11"
+    "zustand": "5.0.11",
+    "@types/bun": "latest"
   },
   "bun": {
     "onlyBuiltDependencies": [
