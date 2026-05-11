@@ -31,6 +31,7 @@ import { useCollapsibleSidebar } from "@renderer/features/workspace/hooks/useCol
 import { SidebarCollapseStrip } from "@renderer/features/workspace/components/SidebarCollapseStrip";
 import { SidebarPeekContent } from "@renderer/features/workspace/components/SidebarPeekContent";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { useTermStore } from "@renderer/features/research/stores/termStore";
 
 export default function CharacterManager() {
   const { t } = useTranslation();
@@ -114,6 +115,28 @@ export default function CharacterManager() {
     selectedChar,
   } = useCharacterManager(t);
 
+  const allTerms = useTermStore((s) => s.terms);
+  const projectTerms = allTerms.filter((term) => term.projectId === currentProjectId);
+
+  const peekGroups = [
+    ...Object.entries(groupedCharacters).map(([name, chars]) => ({
+      name,
+      items: chars.map((c) => ({ id: c.id, label: c.name, sublabel: c.description ?? undefined })),
+    })),
+    ...(projectTerms.length > 0
+      ? [
+          {
+            name: t("world.term.label", "고유명사"),
+            items: projectTerms.map((term) => ({
+              id: term.id,
+              label: term.term,
+              sublabel: term.definition ?? undefined,
+            })),
+          },
+        ]
+      : []),
+  ];
+
   return (
     <div
       className="relative flex w-full h-full bg-canvas overflow-hidden"
@@ -124,10 +147,7 @@ export default function CharacterManager() {
       {/* Toggle strip — in flex flow; peek content shown on hover when collapsed */}
       <SidebarCollapseStrip isCollapsed={isCollapsed} onToggle={toggle}>
         <SidebarPeekContent
-          groups={Object.entries(groupedCharacters).map(([name, chars]) => ({
-            name,
-            items: chars.map((c) => ({ id: c.id, label: c.name, sublabel: c.description ?? undefined })),
-          }))}
+          groups={peekGroups}
           selectedId={selectedCharacterId}
           onSelect={setSelectedCharacterId}
           addLabel="캐릭터 추가"

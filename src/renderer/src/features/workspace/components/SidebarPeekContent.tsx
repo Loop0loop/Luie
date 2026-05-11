@@ -65,7 +65,7 @@ export function SidebarPeekContent({
             <button
               key={item.id}
               type="button"
-              onClick={() => onSelect(item.id)}
+              onClick={(e) => { e.stopPropagation(); onSelect(item.id); }}
               className={[
                 "w-full text-left flex items-start gap-1.5 pl-6 pr-3 py-[2px]",
                 "text-[11px] leading-snug transition-colors",

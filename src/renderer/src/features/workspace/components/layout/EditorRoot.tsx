@@ -491,6 +491,7 @@ export default function EditorRoot() {
               <SidebarCompactHover
                 onSelectChapter={handleSelectChapter}
                 onSelectResearchItem={handleSelectResearchItem}
+                activeChapterId={activeChapterId ?? undefined}
               />
             }
             compactContextHover={

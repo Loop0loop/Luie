@@ -5,9 +5,7 @@ import {
   AlignLeft,
   AlignRight,
   Bold,
-  ChevronDown,
   Eraser,
-  Eye,
   FileOutput,
   Highlighter,
   Italic,
@@ -17,6 +15,7 @@ import {
   Palette,
   Pilcrow,
   Redo2,
+  SlidersHorizontal,
   Smartphone,
   Strikethrough,
   Underline,
@@ -85,66 +84,87 @@ const ToolbarButton = ({
 
 const Divider = () => <div className="mx-1 h-5 w-px shrink-0 bg-border/70" />;
 
-function SliderMenu({
-  label,
-  max,
-  min,
-  onChange,
-  step,
-  suffix,
-  value,
+function TypographyMenu({
+  letterSpacing,
+  lineHeight,
+  paragraphSpacing,
+  onLetterSpacingChange,
+  onLineHeightChange,
+  onParagraphSpacingChange,
 }: {
-  label: string;
-  max: number;
-  min: number;
-  onChange: (value: number) => void;
-  step: number;
-  suffix?: string;
-  value: number;
+  letterSpacing: number;
+  lineHeight: number;
+  paragraphSpacing: number;
+  onLetterSpacingChange: (v: number) => void;
+  onLineHeightChange: (v: number) => void;
+  onParagraphSpacingChange: (v: number) => void;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (!ref.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
+    const handler = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  const sliders = [
+    {
+      label: t("toolbar.tooltip.letterSpacing", "자간"),
+      min: 0, max: 0.3, step: 0.01,
+      value: letterSpacing,
+      onChange: onLetterSpacingChange,
+      display: letterSpacing.toFixed(2),
+    },
+    {
+      label: t("toolbar.tooltip.lineHeight", "줄간격"),
+      min: 1, max: 2.4, step: 0.05,
+      value: lineHeight,
+      onChange: onLineHeightChange,
+      display: lineHeight.toFixed(2),
+    },
+    {
+      label: t("toolbar.tooltip.paragraphSpacing", "문단간격"),
+      min: 0, max: 3, step: 0.1,
+      value: paragraphSpacing,
+      onChange: onParagraphSpacingChange,
+      display: paragraphSpacing.toFixed(1),
+    },
+  ];
 
   return (
     <div className="relative" ref={ref}>
-      <button
-        type="button"
-        className="flex h-8 items-center gap-1 rounded-md border border-border/70 bg-background px-2 text-xs text-fg transition-colors hover:bg-hover"
-        onClick={() => setOpen((current) => !current)}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        title={label}
+      <ToolbarButton
+        active={open}
+        label={t("toolbar.typography", "타이포그래피")}
+        onClick={() => setOpen((v) => !v)}
       >
-        <span>{label}</span>
-        <span className="text-muted">{value.toFixed(step < 1 ? 2 : 0)}{suffix}</span>
-        <ChevronDown className="h-3 w-3 opacity-60" />
-      </button>
+        <SlidersHorizontal className="h-4 w-4" />
+      </ToolbarButton>
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-md border border-border bg-panel p-3 shadow-xl">
-          <div className="mb-2 flex items-center justify-between text-xs">
-            <span className="font-medium text-fg">{label}</span>
-            <span className="text-muted">{value.toFixed(step < 1 ? 2 : 0)}{suffix}</span>
-          </div>
-          <input
-            type="range"
-            min={min}
-            max={max}
-            step={step}
-            value={value}
-            className="w-full accent-[var(--accent-bg)]"
-            aria-label={label}
-            onChange={(event) => onChange(Number(event.target.value))}
-          />
+        <div className="absolute left-1/2 top-full z-50 mt-1 w-52 -translate-x-1/2 rounded-md border border-border bg-panel p-3 shadow-xl">
+          <p className="mb-3 text-xs font-medium text-fg">{t("toolbar.typography", "타이포그래피")}</p>
+          {sliders.map(({ label, min, max, step, value, onChange, display }) => (
+            <div key={label} className="mb-3 last:mb-0">
+              <div className="mb-1 flex items-center justify-between text-xs">
+                <span className="text-muted">{label}</span>
+                <span className="font-medium tabular-nums text-fg">{display}</span>
+              </div>
+              <input
+                type="range"
+                min={min}
+                max={max}
+                step={step}
+                value={value}
+                className="w-full accent-[var(--accent-bg)]"
+                aria-label={label}
+                onChange={(e) => onChange(Number(e.target.value))}
+              />
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -155,7 +175,6 @@ export default function EditorToolbar({
   editor,
   isMobileView,
   onToggleMobileView,
-  onOpenPreview,
   onOpenExport,
   canOpenExport = true,
 }: EditorToolbarProps) {
@@ -170,21 +189,16 @@ export default function EditorToolbar({
   const updateSettings = useEditorStore((state) => state.updateSettings);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (!moreRef.current?.contains(event.target as Node)) {
-        setMoreOpen(false);
-      }
+    const handler = (event: MouseEvent) => {
+      if (!moreRef.current?.contains(event.target as Node)) setMoreOpen(false);
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   if (!editor) return null;
 
   const paragraphStyle = getParagraphStyle(editor);
-  const openPreview = onOpenPreview ?? onOpenExport;
-  const openExport = onOpenExport ?? onOpenPreview;
-  const hasExportAction = Boolean(openExport);
 
   const applyParagraphStyle = (style: ParagraphStyle) => {
     const chain = editor.chain().focus();
@@ -206,8 +220,9 @@ export default function EditorToolbar({
   };
 
   return (
-    <div className="flex w-full select-none items-center overflow-x-auto border-b border-border bg-panel px-2 py-1.5">
-      <div className="flex min-w-max flex-1 items-center gap-1">
+    <div className="flex w-full select-none items-center justify-center border-b border-border bg-panel px-2 py-1.5">
+      <div className="flex items-center gap-1">
+        {/* Undo / Redo */}
         <ToolbarButton
           label={t("toolbar.tooltip.undo", "되돌리기")}
           onClick={() => editor.chain().focus().undo().run()}
@@ -225,6 +240,7 @@ export default function EditorToolbar({
 
         <Divider />
 
+        {/* Paragraph style / Font / Size */}
         <select
           className="h-8 rounded-md border border-border/70 bg-background px-2 text-xs text-fg outline-none hover:bg-hover"
           value={paragraphStyle}
@@ -251,6 +267,7 @@ export default function EditorToolbar({
 
         <Divider />
 
+        {/* Inline formatting: B / I / U / S */}
         <ToolbarButton
           active={editor.isActive("bold")}
           label={t("toolbar.tooltip.bold", "굵게")}
@@ -272,36 +289,53 @@ export default function EditorToolbar({
         >
           <Underline className="h-4 w-4" />
         </ToolbarButton>
+        <ToolbarButton
+          active={editor.isActive("strike")}
+          label={t("toolbar.tooltip.strikethrough", "취소선")}
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+        >
+          <Strikethrough className="h-4 w-4" />
+        </ToolbarButton>
 
         <Divider />
 
-        <SliderMenu
-          label={t("toolbar.tooltip.letterSpacing", "자간")}
-          min={0}
-          max={0.3}
-          step={0.01}
-          value={letterSpacing}
-          onChange={(value) => void updateSettings({ letterSpacing: Number(value.toFixed(2)) })}
-        />
-        <SliderMenu
-          label={t("toolbar.tooltip.lineHeight", "줄간격")}
-          min={1}
-          max={2.4}
-          step={0.05}
-          value={lineHeight}
-          onChange={(value) => void updateSettings({ lineHeight: Number(value.toFixed(2)) })}
-        />
-        <SliderMenu
-          label={t("toolbar.tooltip.paragraphSpacing", "문단간격")}
-          min={0}
-          max={3}
-          step={0.1}
-          value={paragraphSpacing}
-          onChange={(value) => void updateSettings({ paragraphSpacing: Number(value.toFixed(1)) })}
+        {/* Color + Highlight */}
+        <label
+          className="flex h-8 min-w-8 cursor-pointer items-center justify-center rounded-md px-2 text-muted transition-colors hover:bg-hover hover:text-fg"
+          title={t("toolbar.tooltip.textColor", "글자 색")}
+        >
+          <Palette className="h-4 w-4" />
+          <input
+            type="color"
+            className="sr-only"
+            value={editor.getAttributes("textStyle").color || "#000000"}
+            onChange={(event) => editor.chain().focus().setColor(event.target.value).run()}
+            aria-label={t("toolbar.tooltip.textColor", "글자 색")}
+          />
+        </label>
+        <ToolbarButton
+          active={editor.isActive("highlight")}
+          label={t("toolbar.tooltip.highlight", "형광펜")}
+          onClick={() => editor.chain().focus().toggleHighlight().run()}
+        >
+          <Highlighter className="h-4 w-4" />
+        </ToolbarButton>
+
+        <Divider />
+
+        {/* Typography: letter-spacing / line-height / paragraph-spacing in one popover */}
+        <TypographyMenu
+          letterSpacing={letterSpacing}
+          lineHeight={lineHeight}
+          paragraphSpacing={paragraphSpacing}
+          onLetterSpacingChange={(v) => void updateSettings({ letterSpacing: Number(v.toFixed(2)) })}
+          onLineHeightChange={(v) => void updateSettings({ lineHeight: Number(v.toFixed(2)) })}
+          onParagraphSpacingChange={(v) => void updateSettings({ paragraphSpacing: Number(v.toFixed(1)) })}
         />
 
         <Divider />
 
+        {/* Scene divider */}
         <ToolbarButton
           label={t("toolbar.sceneDivider", "장면 구분")}
           className="gap-1.5"
@@ -311,6 +345,7 @@ export default function EditorToolbar({
           <span>{t("toolbar.sceneDivider", "장면 구분")}</span>
         </ToolbarButton>
 
+        {/* View toggle */}
         {onToggleMobileView && (
           <ToolbarButton
             active={isMobileView}
@@ -323,22 +358,12 @@ export default function EditorToolbar({
           </ToolbarButton>
         )}
 
-        <Divider />
-
-        <ToolbarButton
-          label={t("toolbar.preview", "미리보기")}
-          className="gap-1.5"
-          onClick={() => openPreview?.()}
-          disabled={!canOpenExport || !openPreview}
-        >
-          <Eye className="h-4 w-4" />
-          <span>{t("toolbar.preview", "미리보기")}</span>
-        </ToolbarButton>
+        {/* Export */}
         <ToolbarButton
           label={t("toolbar.export", "내보내기")}
           className="gap-1.5"
-          onClick={() => openExport?.()}
-          disabled={!canOpenExport || !hasExportAction}
+          onClick={() => onOpenExport?.()}
+          disabled={!canOpenExport || !onOpenExport}
         >
           <FileOutput className="h-4 w-4" />
           <span>{t("toolbar.export", "내보내기")}</span>
@@ -346,15 +371,7 @@ export default function EditorToolbar({
 
         <Divider />
 
-        <ToolbarButton
-          label={t("toolbar.tooltip.clearFormatting", "서식 초기화")}
-          className="gap-1.5"
-          onClick={clearFormatting}
-        >
-          <Eraser className="h-4 w-4" />
-          <span>{t("toolbar.clearFormatting", "서식 초기화")}</span>
-        </ToolbarButton>
-
+        {/* More: alignment, select all, clear formatting (destructive → safely hidden) */}
         <div className="relative" ref={moreRef}>
           <ToolbarButton
             active={moreOpen}
@@ -365,34 +382,6 @@ export default function EditorToolbar({
           </ToolbarButton>
           {moreOpen && (
             <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-md border border-border bg-panel p-1 shadow-xl">
-              <label className="flex cursor-pointer items-center gap-2 rounded px-3 py-2 text-xs text-fg hover:bg-hover">
-                <Palette className="h-4 w-4 text-muted" />
-                <span className="flex-1">{t("toolbar.tooltip.textColor", "글자 색")}</span>
-                <input
-                  type="color"
-                  className="h-5 w-6 cursor-pointer border-0 bg-transparent p-0"
-                  value={editor.getAttributes("textStyle").color || "#000000"}
-                  onChange={(event) => editor.chain().focus().setColor(event.target.value).run()}
-                  aria-label={t("toolbar.tooltip.textColor", "글자 색")}
-                />
-              </label>
-              <button
-                type="button"
-                className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs text-fg hover:bg-hover"
-                onClick={() => editor.chain().focus().toggleHighlight().run()}
-              >
-                <Highlighter className="h-4 w-4 text-muted" />
-                <span>{t("toolbar.tooltip.highlight", "형광펜")}</span>
-              </button>
-              <button
-                type="button"
-                className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs text-fg hover:bg-hover"
-                onClick={() => editor.chain().focus().toggleStrike().run()}
-              >
-                <Strikethrough className="h-4 w-4 text-muted" />
-                <span>{t("toolbar.tooltip.strikethrough", "취소선")}</span>
-              </button>
-              <div className="my-1 h-px bg-border" />
               {[
                 { icon: AlignLeft, label: t("toolbar.tooltip.alignLeft", "왼쪽 정렬"), value: "left" },
                 { icon: AlignCenter, label: t("toolbar.tooltip.alignCenter", "가운데 정렬"), value: "center" },

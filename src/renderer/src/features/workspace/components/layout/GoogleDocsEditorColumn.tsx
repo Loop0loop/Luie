@@ -55,7 +55,7 @@ export function GoogleDocsEditorColumn({
       className="relative z-0 flex min-w-0 flex-1 flex-col bg-secondary/30 transition-colors duration-200"
     >
       {editor && (
-        <div className="relative z-40 flex w-full shrink-0 justify-center border-b border-border bg-background py-1">
+        <div className="relative z-40 flex w-full shrink-0">
           <EditorToolbar
             editor={editor}
             onOpenPreview={onOpenExport}
