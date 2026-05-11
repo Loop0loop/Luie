@@ -13,7 +13,7 @@ dist/
 .bkit/audit
 .bkit/runtime
 .bkit/state
-
+.bkit/snapshots
 
 # Logs
 logs
