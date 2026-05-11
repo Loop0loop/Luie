@@ -123,10 +123,10 @@ export default function ScrivenerLayout({
   ]);
 
   const binderRatio =
-    layoutSurfaceRatios["scrivener.binder"] ??
+    layoutSurfaceRatios["scrivener.binder"] ||
     getLayoutSurfaceDefaultRatio("scrivener.binder");
   const inspectorRatio =
-    layoutSurfaceRatios["scrivener.inspector"] ??
+    layoutSurfaceRatios["scrivener.inspector"] ||
     getLayoutSurfaceDefaultRatio("scrivener.inspector");
   const {
     isClosing: isSidebarClosing,

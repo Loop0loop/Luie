@@ -93,7 +93,7 @@ export function GoogleDocsPanelRail({
     return (
       <button
         type="button"
-        onClick={() => onToggleOpen(true)}
+        onClick={() => onSelectTab(activeRightTab ?? "character")}
         className={cn(
           "absolute right-2 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-border/50 bg-background text-muted-foreground shadow-sm hover:bg-surface-hover hover:text-fg",
           enableAnimations ? "transition-colors duration-150" : "transition-none",

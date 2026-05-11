@@ -56,7 +56,7 @@ export const getDocsLayoutSurfaceState = (
     activePanelSurface,
     docsSidebarConfig: getLayoutSurfaceConfig("docs.sidebar"),
     docsSidebarRatio:
-      layoutSurfaceRatios["docs.sidebar"] ??
+      layoutSurfaceRatios["docs.sidebar"] ||
       getLayoutSurfaceDefaultRatio("docs.sidebar"),
     rightPanelConfig: activePanelSurface
       ? getLayoutSurfaceConfig(activePanelSurface)

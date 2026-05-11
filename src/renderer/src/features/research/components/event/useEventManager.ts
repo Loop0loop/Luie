@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { type TFunction } from "i18next";
 import { useEventStore } from "@renderer/features/research/stores/eventStore";
@@ -33,19 +33,20 @@ export function useEventManager(t: TFunction) {
 
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
-  // Sync with global store selection
+  const selectedEventIdRef = useRef(selectedEventId);
+  useEffect(() => {
+    selectedEventIdRef.current = selectedEventId;
+  }, [selectedEventId]);
+
+  // Sync with global store selection — store 변경 시에만 실행
   useEffect(() => {
     if (
       currentEventFromStore?.id &&
-      currentEventFromStore.id !== selectedEventId
+      currentEventFromStore.id !== selectedEventIdRef.current
     ) {
-      const syncTimer = window.setTimeout(() => {
-        setSelectedEventId(currentEventFromStore.id);
-      }, 0);
-      return () => window.clearTimeout(syncTimer);
+      setSelectedEventId(currentEventFromStore.id);
     }
-    return undefined;
-  }, [currentEventFromStore, selectedEventId]);
+  }, [currentEventFromStore]);
 
   useEffect(() => {
     if (currentProject) {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { type TFunction } from "i18next";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
@@ -37,19 +37,22 @@ export function useCharacterManager(t: TFunction) {
   );
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
+  // ref로 현재 로컬 선택값을 추적 — sync effect가 로컬 클릭에 반응하지 않도록
+  const selectedCharacterIdRef = useRef(selectedCharacterId);
+  useEffect(() => {
+    selectedCharacterIdRef.current = selectedCharacterId;
+  }, [selectedCharacterId]);
+
   // Sync with global store selection (e.g. from SmartLinkService)
+  // selectedCharacterId를 deps에서 제거: store가 바뀔 때만 실행
   useEffect(() => {
     if (
       currentCharacterFromStore?.id &&
-      currentCharacterFromStore.id !== selectedCharacterId
+      currentCharacterFromStore.id !== selectedCharacterIdRef.current
     ) {
-      const syncTimer = window.setTimeout(() => {
-        setSelectedCharacterId(currentCharacterFromStore.id);
-      }, 0);
-      return () => window.clearTimeout(syncTimer);
+      setSelectedCharacterId(currentCharacterFromStore.id);
     }
-    return undefined;
-  }, [currentCharacterFromStore, selectedCharacterId]);
+  }, [currentCharacterFromStore]);
 
   useEffect(() => {
     if (currentProject) {

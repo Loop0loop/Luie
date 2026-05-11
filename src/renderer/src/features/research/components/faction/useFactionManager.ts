@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { type TFunction } from "i18next";
 import { useFactionStore } from "@renderer/features/research/stores/factionStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
@@ -35,19 +35,20 @@ export function useFactionManager(t: TFunction) {
     null,
   );
 
-  // Sync with global store selection
+  const selectedFactionIdRef = useRef(selectedFactionId);
+  useEffect(() => {
+    selectedFactionIdRef.current = selectedFactionId;
+  }, [selectedFactionId]);
+
+  // Sync with global store selection — store 변경 시에만 실행
   useEffect(() => {
     if (
       currentFactionFromStore?.id &&
-      currentFactionFromStore.id !== selectedFactionId
+      currentFactionFromStore.id !== selectedFactionIdRef.current
     ) {
-      const syncTimer = window.setTimeout(() => {
-        setSelectedFactionId(currentFactionFromStore.id);
-      }, 0);
-      return () => window.clearTimeout(syncTimer);
+      setSelectedFactionId(currentFactionFromStore.id);
     }
-    return undefined;
-  }, [currentFactionFromStore, selectedFactionId]);
+  }, [currentFactionFromStore]);
 
   useEffect(() => {
     if (currentProject) {

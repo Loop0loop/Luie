@@ -103,10 +103,10 @@ export default function MainLayout({
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
 
   const sidebarRatio =
-    layoutSurfaceRatios["default.sidebar"] ??
+    layoutSurfaceRatios["default.sidebar"] ||
     getLayoutSurfaceDefaultRatio("default.sidebar");
   const contextRatio =
-    layoutSurfaceRatios["default.panel"] ??
+    layoutSurfaceRatios["default.panel"] ||
     getLayoutSurfaceDefaultRatio("default.panel");
 
   const [sidebarDefaultSize, setSidebarDefaultSize] = useState(() =>
