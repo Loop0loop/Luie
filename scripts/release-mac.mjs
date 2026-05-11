@@ -140,26 +140,51 @@ async function ensureRelease({ owner, repo, tag, token, commitish }) {
   throw new Error(`Failed to create release for ${tag}: ${createResponse.status}${reason}`);
 }
 
+async function walkFiles(dir) {
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    const absolutePath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...(await walkFiles(absolutePath)));
+      continue;
+    }
+    if (entry.isFile()) {
+      files.push(absolutePath);
+    }
+  }
+  return files;
+}
+
 async function collectMacAssets(version) {
-  const dirEntries = await fs.readdir(distDir, { withFileTypes: true });
-  const macCandidates = dirEntries
-    .filter((entry) => entry.isFile())
-    .map((entry) => entry.name)
-    .filter((name) => /\.(dmg|zip)$/i.test(name));
+  const allFiles = await walkFiles(distDir);
+  const dmgZipFiles = allFiles.filter((absolutePath) => /\.(dmg|zip)$/i.test(absolutePath));
+  const dmgZipNames = dmgZipFiles.map((absolutePath) => path.basename(absolutePath));
 
-  const preferred = macCandidates.filter((name) => name.includes(version));
-  const selected = (preferred.length > 0 ? preferred : macCandidates).sort((a, b) =>
-    a.localeCompare(b),
-  );
+  const preferredNames = dmgZipNames.filter((name) => name.includes(version));
+  const preferredSet = new Set(preferredNames);
+  const selectedDmgZipFiles =
+    preferredSet.size > 0
+      ? dmgZipFiles.filter((absolutePath) => preferredSet.has(path.basename(absolutePath)))
+      : dmgZipFiles;
 
-  if (selected.length === 0) {
+  if (selectedDmgZipFiles.length === 0) {
     fail(`No macOS release assets (.dmg/.zip) found in ${distDir}`);
   }
 
-  return selected.map((name) => ({
-    name,
-    absolutePath: path.join(distDir, name),
-  }));
+  const metaFiles = allFiles.filter((absolutePath) => {
+    const name = path.basename(absolutePath);
+    return name === "latest-mac.yml" || /\.blockmap$/i.test(name);
+  });
+
+  const selected = [...selectedDmgZipFiles, ...metaFiles]
+    .sort((a, b) => path.basename(a).localeCompare(path.basename(b)))
+    .map((absolutePath) => ({
+      name: path.basename(absolutePath),
+      absolutePath,
+    }));
+
+  return selected;
 }
 
 function detectMimeType(fileName) {
