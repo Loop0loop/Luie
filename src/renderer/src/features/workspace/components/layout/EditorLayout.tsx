@@ -16,7 +16,7 @@ import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { BinderSidebar, BinderSidebarRail } from "@renderer/features/manuscript/components/BinderSidebar";
 import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@shared/constants/configs";
-import { toPercentSize } from "@shared/constants/sidebarSizing";
+import { SIDEBAR_WIDTH_CONFIG, toPercentSize } from "@shared/constants/sidebarSizing";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 import { getPanelLayoutValue } from "@renderer/features/workspace/hooks/useLayoutPersist";
 
@@ -53,7 +53,6 @@ export default function EditorLayout({
 
   const maxWidth = useEditorStore((state) => state.maxWidth);
   const activeRightTab = useUIStore((state) => state.docsRightTab);
-  const isBinderBarOpen = useUIStore((state) => state.regions.rightRail.open);
   const updatePanelSize = useUIStore((state) => state.updatePanelSize);
   const [isBinderRailHoverSuppressed, setIsBinderRailHoverSuppressed] =
     useState(false);
@@ -135,11 +134,13 @@ export default function EditorLayout({
         <FocusHoverSidebar
           side="left"
           topOffset={sidebarTopOffset}
-          activationWidthPx={320}
+          activationWidthPx={SIDEBAR_WIDTH_CONFIG.mainSidebar.minPx}
           closeDelayMs={260}
-          suppressHoverOpen={isBinderBarOpen || Boolean(activeRightTab)}
         >
-          <div className="h-full flex flex-col bg-panel border-r border-border min-w-[280px]">
+          <div
+            className="h-full flex flex-col bg-panel border-r border-border"
+            style={{ minWidth: SIDEBAR_WIDTH_CONFIG.mainSidebar.minPx }}
+          >
             {sidebar}
           </div>
         </FocusHoverSidebar>
