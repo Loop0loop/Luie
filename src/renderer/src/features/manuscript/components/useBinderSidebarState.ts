@@ -9,38 +9,33 @@ import {
 } from "@shared/constants/layoutSizing";
 import { useLayoutSurfaceResizeCommit } from "@renderer/features/workspace/hooks/useLayoutSurfaceResizeCommit";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
-import {
-  sanitizePersistedDocsRightTab,
-  useProjectLayoutStore,
-} from "@renderer/features/workspace/stores/projectLayoutStore";
+import { useProjectLayoutStore } from "@renderer/features/workspace/stores/projectLayoutStore";
 import { BINDER_VALID_TABS, type BinderTab } from "./binderSidebar.shared";
+import {
+  openEditorBinderTab,
+  setEditorBinderRailOpen,
+} from "@renderer/features/workspace/services/layoutRegionActions";
 
 export function useBinderSidebarState(projectId?: string | null) {
   const {
-    isSidebarOpen,
     docsRightTab,
     rightPanelOpen,
     rightPanelActiveTab,
     isPanelRailOpen,
     isRightRailOpen,
-    openRightPanelTab,
     closeRightPanel,
-    setRegionOpen,
     layoutSurfaceRatios,
     setLayoutSurfaceRatio,
     setFocusedClosableTarget,
     uiHasHydrated,
   } = useUIStore(
     useShallow((state) => ({
-      isSidebarOpen: state.regions.leftSidebar.open,
       docsRightTab: state.docsRightTab,
       rightPanelOpen: state.regions.rightPanel.open,
       rightPanelActiveTab: state.regions.rightPanel.activeTab,
       isPanelRailOpen: state.regions.rightRail.open,
       isRightRailOpen: state.regions.rightRail.open,
-      openRightPanelTab: state.openRightPanelTab,
       closeRightPanel: state.closeRightPanel,
-      setRegionOpen: state.setRegionOpen,
       layoutSurfaceRatios: state.layoutSurfaceRatios,
       setLayoutSurfaceRatio: state.setLayoutSurfaceRatio,
       setFocusedClosableTarget: state.setFocusedClosableTarget,
@@ -80,32 +75,16 @@ export function useBinderSidebarState(projectId?: string | null) {
         closeRightPanel();
         return;
       }
-      openRightPanelTab(tab);
+      openEditorBinderTab(tab);
     },
-    [closeRightPanel, openRightPanelTab],
+    [closeRightPanel],
   );
 
   const setRailOpen = useCallback(
     (open: boolean) => {
-      setRegionOpen("rightRail", open);
-      if (!projectId || !uiHasHydrated || !projectLayoutHasHydrated) return;
-      upsertProjectLayout(projectId, {
-        docs: {
-          sidebarOpen: isSidebarOpen,
-          binderBarOpen: open,
-          rightTab: sanitizePersistedDocsRightTab(activeRightTab),
-        },
-      });
+      setEditorBinderRailOpen(open);
     },
-    [
-      activeRightTab,
-      isSidebarOpen,
-      projectId,
-      projectLayoutHasHydrated,
-      setRegionOpen,
-      uiHasHydrated,
-      upsertProjectLayout,
-    ],
+    [],
   );
 
   const resizeHandlers = {

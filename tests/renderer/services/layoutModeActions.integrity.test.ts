@@ -11,7 +11,6 @@ const createOptions = (overrides: OptionsOverrides = {}) => ({
   docsRightTab: null as DocsRightTab,
   activeChapterId: "chapter-1",
   openDocsRightTab: vi.fn(),
-  openRightPanelTab: vi.fn(),
   closeRightPanel: vi.fn(),
   toggleLeftSidebar: vi.fn(),
   setDocsRightTab: vi.fn(),
@@ -34,7 +33,7 @@ describe("layoutModeActions integrity", () => {
     const docsOptions = createOptions({ isDocsMode: true });
     createLayoutModeActions(docsOptions).openResearchTab("world");
 
-    expect(docsOptions.openRightPanelTab).toHaveBeenCalledWith("world");
+    expect(docsOptions.openDocsRightTab).toHaveBeenCalledWith("world");
     expect(docsOptions.addPanel).not.toHaveBeenCalled();
     expect(docsOptions.handleSelectResearchItem).not.toHaveBeenCalled();
 
@@ -45,7 +44,7 @@ describe("layoutModeActions integrity", () => {
       type: "research",
       tab: "world",
     });
-    expect(defaultOptions.openRightPanelTab).not.toHaveBeenCalled();
+    expect(defaultOptions.openDocsRightTab).not.toHaveBeenCalled();
   });
 
   it("keeps context toggle semantics mode-specific", () => {
@@ -62,7 +61,7 @@ describe("layoutModeActions integrity", () => {
       docsRightTab: null,
     });
     createLayoutModeActions(docsWithoutTab).toggleContextPanel();
-    expect(docsWithoutTab.openRightPanelTab).toHaveBeenCalledWith("character");
+    expect(docsWithoutTab.openDocsRightTab).toHaveBeenCalledWith("character");
     expect(docsWithoutTab.setContextOpen).not.toHaveBeenCalled();
 
     const defaultMode = createOptions({
@@ -78,7 +77,7 @@ describe("layoutModeActions integrity", () => {
     const noChapter = createOptions({ activeChapterId: null });
     createLayoutModeActions(noChapter).openEditorInSplit();
     expect(noChapter.addPanel).not.toHaveBeenCalled();
-    expect(noChapter.openRightPanelTab).not.toHaveBeenCalled();
+    expect(noChapter.openDocsRightTab).not.toHaveBeenCalled();
 
     const docsMode = createOptions({
       isDocsMode: true,
@@ -89,7 +88,7 @@ describe("layoutModeActions integrity", () => {
       type: "editor",
       id: "chapter-9",
     });
-    expect(docsMode.openRightPanelTab).toHaveBeenCalledWith("editor");
+    expect(docsMode.openDocsRightTab).toHaveBeenCalledWith("editor");
 
     const defaultMode = createOptions({
       isDocsMode: false,
@@ -100,6 +99,6 @@ describe("layoutModeActions integrity", () => {
       type: "editor",
       id: "chapter-9",
     });
-    expect(defaultMode.openRightPanelTab).not.toHaveBeenCalled();
+    expect(defaultMode.openDocsRightTab).not.toHaveBeenCalled();
   });
 });

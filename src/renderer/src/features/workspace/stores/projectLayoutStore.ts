@@ -104,6 +104,9 @@ export type ProjectLayoutState = {
     sections: ScrivenerSectionsState;
   };
   editor: {
+    sidebarOpen: boolean;
+    binderRailOpen: boolean;
+    rightTab: PersistedDocsRightTab;
     activeChapterId: string | null;
     scrollYByChapter: Record<string, number>;
   };
@@ -112,7 +115,13 @@ export type ProjectLayoutState = {
   layoutSurfaceRatios: Record<LayoutSurfaceId, number>;
 };
 
-type ProjectLayoutPatch = Partial<Omit<ProjectLayoutState, "workspace">> & {
+type ProjectLayoutPatch = {
+  main?: Partial<ProjectLayoutState["main"]>;
+  docs?: Partial<ProjectLayoutState["docs"]>;
+  scrivener?: Partial<ProjectLayoutState["scrivener"]>;
+  editor?: Partial<ProjectLayoutState["editor"]>;
+  sidebarWidths?: ProjectLayoutState["sidebarWidths"];
+  layoutSurfaceRatios?: ProjectLayoutState["layoutSurfaceRatios"];
   workspace?: Partial<ProjectWorkspaceLayoutState>;
 };
 
@@ -132,6 +141,9 @@ const createDefaultProjectLayoutState = (): ProjectLayoutState => ({
     sections: { ...DEFAULT_SCRIVENER_SECTIONS },
   },
   editor: {
+    sidebarOpen: true,
+    binderRailOpen: true,
+    rightTab: null,
     activeChapterId: null,
     scrollYByChapter: {},
   },
@@ -310,6 +322,17 @@ const sanitizeProjectLayoutState = (input: unknown): ProjectLayoutState => {
   const scrivenerInput = isRecord(input.scrivener) ? input.scrivener : {};
   const editorInput = isRecord(input.editor) ? input.editor : {};
   const workspaceInput = isRecord(input.workspace) ? input.workspace : {};
+  const docsSidebarOpen =
+    typeof docsInput.sidebarOpen === "boolean"
+      ? docsInput.sidebarOpen
+      : defaults.docs.sidebarOpen;
+  const docsBinderBarOpen =
+    typeof docsInput.binderBarOpen === "boolean"
+      ? docsInput.binderBarOpen
+      : defaults.docs.binderBarOpen;
+  const docsRightTab = sanitizePersistedDocsRightTab(
+    docsInput.rightTab as DocsRightTab | null | undefined,
+  );
 
   return {
     main: {
@@ -323,15 +346,9 @@ const sanitizeProjectLayoutState = (input: unknown): ProjectLayoutState => {
           : defaults.main.contextOpen,
     },
     docs: {
-      sidebarOpen:
-        typeof docsInput.sidebarOpen === "boolean"
-          ? docsInput.sidebarOpen
-          : defaults.docs.sidebarOpen,
-      binderBarOpen:
-        typeof docsInput.binderBarOpen === "boolean"
-          ? docsInput.binderBarOpen
-          : defaults.docs.binderBarOpen,
-      rightTab: sanitizePersistedDocsRightTab(docsInput.rightTab as DocsRightTab | null | undefined),
+      sidebarOpen: docsSidebarOpen,
+      binderBarOpen: docsBinderBarOpen,
+      rightTab: docsRightTab,
     },
     scrivener: {
       sidebarOpen:
@@ -345,6 +362,20 @@ const sanitizeProjectLayoutState = (input: unknown): ProjectLayoutState => {
       sections: sanitizeScrivenerSections(scrivenerInput.sections),
     },
     editor: {
+      sidebarOpen:
+        typeof editorInput.sidebarOpen === "boolean"
+          ? editorInput.sidebarOpen
+          : docsSidebarOpen,
+      binderRailOpen:
+        typeof editorInput.binderRailOpen === "boolean"
+          ? editorInput.binderRailOpen
+          : docsBinderBarOpen,
+      rightTab:
+        editorInput.rightTab === undefined
+          ? docsRightTab
+          : sanitizePersistedDocsRightTab(
+              editorInput.rightTab as DocsRightTab | null | undefined,
+            ),
       activeChapterId:
         typeof editorInput.activeChapterId === "string" || editorInput.activeChapterId === null
           ? editorInput.activeChapterId
@@ -446,7 +477,10 @@ const mergeProjectLayoutState = (
       ...(patch.docs
         ? {
             ...patch.docs,
-            rightTab: sanitizePersistedDocsRightTab(patch.docs.rightTab),
+            rightTab:
+              patch.docs.rightTab === undefined
+                ? previous.docs.rightTab
+                : sanitizePersistedDocsRightTab(patch.docs.rightTab),
           }
         : {}),
     },
@@ -463,6 +497,10 @@ const mergeProjectLayoutState = (
     editor: {
       ...previous.editor,
       ...(patch.editor ?? {}),
+      rightTab:
+        patch.editor?.rightTab === undefined
+          ? previous.editor.rightTab
+          : sanitizePersistedDocsRightTab(patch.editor.rightTab),
       scrollYByChapter: {
         ...previous.editor?.scrollYByChapter,
         ...(patch.editor?.scrollYByChapter ?? {}),

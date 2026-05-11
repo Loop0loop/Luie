@@ -109,6 +109,64 @@ describe("projectLayoutStore", () => {
     expect(saved.docs.rightTab).toBe("snapshot");
   });
 
+  it("stores docs and editor right rail state independently", () => {
+    const store = projectLayoutModule.useProjectLayoutStore.getState();
+
+    store.upsertProjectLayout("project-a", {
+      docs: {
+        sidebarOpen: true,
+        binderBarOpen: false,
+        rightTab: "world",
+      },
+    });
+    store.upsertProjectLayout("project-a", {
+      editor: {
+        sidebarOpen: false,
+        binderRailOpen: true,
+        rightTab: "event",
+      },
+    });
+
+    const saved = projectLayoutModule.useProjectLayoutStore
+      .getState()
+      .getProjectLayout("project-a");
+    expect(saved.docs.sidebarOpen).toBe(true);
+    expect(saved.docs.binderBarOpen).toBe(false);
+    expect(saved.docs.rightTab).toBe("world");
+    expect(saved.editor.sidebarOpen).toBe(false);
+    expect(saved.editor.binderRailOpen).toBe(true);
+    expect(saved.editor.rightTab).toBe("event");
+  });
+
+  it("keeps existing right tabs when partial chrome patches omit them", () => {
+    const store = projectLayoutModule.useProjectLayoutStore.getState();
+
+    store.upsertProjectLayout("project-a", {
+      docs: {
+        rightTab: "world",
+      },
+      editor: {
+        rightTab: "event",
+      },
+    });
+    store.upsertProjectLayout("project-a", {
+      docs: {
+        binderBarOpen: false,
+      },
+      editor: {
+        binderRailOpen: false,
+      },
+    });
+
+    const saved = projectLayoutModule.useProjectLayoutStore
+      .getState()
+      .getProjectLayout("project-a");
+    expect(saved.docs.rightTab).toBe("world");
+    expect(saved.docs.binderBarOpen).toBe(false);
+    expect(saved.editor.rightTab).toBe("event");
+    expect(saved.editor.binderRailOpen).toBe(false);
+  });
+
   it("merges sidebar widths and layout ratios without dropping existing values", () => {
     const store = projectLayoutModule.useProjectLayoutStore.getState();
 

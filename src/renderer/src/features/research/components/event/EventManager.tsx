@@ -29,6 +29,7 @@ import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSi
 import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
 import { useCollapsibleSidebar } from "@renderer/features/workspace/hooks/useCollapsibleSidebar";
 import { SidebarCollapseStrip } from "@renderer/features/workspace/components/SidebarCollapseStrip";
+import { SidebarPeekContent } from "@renderer/features/workspace/components/SidebarPeekContent";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 
 export default function EventManager() {
@@ -113,13 +114,24 @@ export default function EventManager() {
 
   return (
     <div
-      className="flex w-full h-full bg-canvas overflow-hidden"
+      className="relative flex w-full h-full bg-canvas overflow-hidden"
       style={{
         visibility: shouldHideUntilLayoutReady ? "hidden" : undefined,
       }}
     >
-      {/* Toggle strip — in flex flow, pushes main content */}
-      <SidebarCollapseStrip isCollapsed={isCollapsed} onToggle={toggle} />
+      {/* Toggle strip — in flex flow; peek content shown on hover when collapsed */}
+      <SidebarCollapseStrip isCollapsed={isCollapsed} onToggle={toggle}>
+        <SidebarPeekContent
+          groups={Object.entries(groupedEvents).map(([name, events]) => ({
+            name,
+            items: events.map((e) => ({ id: e.id, label: e.name })),
+          }))}
+          selectedId={selectedEventId}
+          onSelect={setSelectedEventId}
+          addLabel="사건 추가"
+          onAdd={handleAddEvent}
+        />
+      </SidebarCollapseStrip>
 
       {/* PanelGroup wrapper — containerRef excludes strip width */}
       <div ref={containerRef} className="flex-1 min-w-0 h-full overflow-hidden">

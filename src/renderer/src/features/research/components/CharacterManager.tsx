@@ -29,6 +29,7 @@ import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSi
 import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
 import { useCollapsibleSidebar } from "@renderer/features/workspace/hooks/useCollapsibleSidebar";
 import { SidebarCollapseStrip } from "@renderer/features/workspace/components/SidebarCollapseStrip";
+import { SidebarPeekContent } from "@renderer/features/workspace/components/SidebarPeekContent";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 
 export default function CharacterManager() {
@@ -115,13 +116,24 @@ export default function CharacterManager() {
 
   return (
     <div
-      className="flex w-full h-full bg-canvas overflow-hidden"
+      className="relative flex w-full h-full bg-canvas overflow-hidden"
       style={{
         visibility: shouldHideUntilLayoutReady ? "hidden" : undefined,
       }}
     >
-      {/* Toggle strip — in flex flow, pushes main content */}
-      <SidebarCollapseStrip isCollapsed={isCollapsed} onToggle={toggle} />
+      {/* Toggle strip — in flex flow; peek content shown on hover when collapsed */}
+      <SidebarCollapseStrip isCollapsed={isCollapsed} onToggle={toggle}>
+        <SidebarPeekContent
+          groups={Object.entries(groupedCharacters).map(([name, chars]) => ({
+            name,
+            items: chars.map((c) => ({ id: c.id, label: c.name })),
+          }))}
+          selectedId={selectedCharacterId}
+          onSelect={setSelectedCharacterId}
+          addLabel="캐릭터 추가"
+          onAdd={handleAddCharacter}
+        />
+      </SidebarCollapseStrip>
 
       {/* PanelGroup wrapper — containerRef excludes strip width */}
       <div ref={containerRef} className="flex-1 min-w-0 h-full overflow-hidden">

@@ -624,6 +624,9 @@ const projectLayoutStateSchema = z.strictObject({
     sections: uiScrivenerSectionsSchema,
   }),
   editor: z.strictObject({
+    sidebarOpen: z.boolean().optional(),
+    binderRailOpen: z.boolean().optional(),
+    rightTab: uiRightPanelTabSchema.nullable().optional(),
     activeChapterId: z.string().nullable(),
     scrollYByChapter: z.record(z.string(), z.number()),
   }).optional(),

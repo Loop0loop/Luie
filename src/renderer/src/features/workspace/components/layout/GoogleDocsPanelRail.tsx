@@ -3,6 +3,7 @@ import {
   Calendar,
   ChevronLeft,
   Globe,
+  PanelRightOpen,
   Plus,
   Shield,
   Sparkles,
@@ -10,14 +11,11 @@ import {
   User,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useRef } from "react";
 import { cn } from "@shared/types/utils";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import type { DocsLayoutPanelTab } from "@shared/constants/layoutSizing";
 import type { DragItemType } from "@shared/ui/GlobalDragContext";
-import type { PanelImperativeHandle } from "react-resizable-panels";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
-import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
 
 type RailTabConfig = {
   dataType: DragItemType;
@@ -90,25 +88,29 @@ export function GoogleDocsPanelRail({
 }: GoogleDocsPanelRailProps) {
   const { t } = useTranslation();
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
-  const railPresenceRef = useRef<PanelImperativeHandle | null>(null);
-  const { isClosing, shouldRender } = useResizablePanelPresence({
-    durationMs: 180,
-    enableAnimations,
-    isOpen,
-    openSize: "56px",
-    panelRef: railPresenceRef,
-  });
 
-  if (!shouldRender) return null;
+  if (!isOpen) {
+    return (
+      <button
+        type="button"
+        onClick={() => onToggleOpen(true)}
+        className={cn(
+          "absolute right-2 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-border/50 bg-background text-muted-foreground shadow-sm hover:bg-surface-hover hover:text-fg",
+          enableAnimations ? "transition-colors duration-150" : "transition-none",
+        )}
+        title={t("sidebar.toggle.open")}
+      >
+        <PanelRightOpen className="h-5 w-5" />
+      </button>
+    );
+  }
 
   return (
     <div
       className={cn(
         "z-10 flex h-full w-14 shrink-0 flex-col items-center gap-4 overflow-hidden border-l border-border bg-background py-4",
         enableAnimations
-          ? isClosing
-            ? "animate-out slide-out-to-right fade-out duration-180"
-            : "animate-in slide-in-from-right fade-in duration-180"
+          ? "animate-in slide-in-from-right fade-in duration-180"
           : "transition-none",
       )}
     >

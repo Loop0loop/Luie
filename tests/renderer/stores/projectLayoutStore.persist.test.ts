@@ -208,6 +208,9 @@ describe("projectLayoutStore persist rehydrate", () => {
     expect(module.useProjectLayoutStore.getState().hasHydrated).toBe(true);
     expect(state.main.sidebarOpen).toBe(false);
     expect(state.docs.rightTab).toBe("world");
+    expect(state.editor.sidebarOpen).toBe(false);
+    expect(state.editor.binderRailOpen).toBe(true);
+    expect(state.editor.rightTab).toBe("world");
     expect(state.scrivener.sections.events).toBe(true);
     expect(state.scrivener.sections.analysis).toBe(true);
     expect(state.sidebarWidths.characterSidebar).toBe(336);
@@ -295,6 +298,66 @@ describe("projectLayoutStore persist rehydrate", () => {
     expect(state.docs.sidebarOpen).toBe(false);
     expect(state.docs.binderBarOpen).toBe(false);
     expect(state.workspace.researchPanelSizes).toEqual({ character: 64 });
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("rehydrates explicit editor chrome state independently from docs", async () => {
+    const { module, warn } = await loadProjectLayoutStore({
+      byProject: {
+        "project-1": {
+          main: {
+            sidebarOpen: true,
+            contextOpen: true,
+          },
+          docs: {
+            sidebarOpen: true,
+            binderBarOpen: false,
+            rightTab: "character",
+          },
+          scrivener: {
+            sidebarOpen: true,
+            inspectorOpen: true,
+            sections: {
+              manuscript: true,
+              characters: true,
+              events: false,
+              factions: false,
+              world: false,
+              scrap: false,
+              snapshots: false,
+              analysis: false,
+              trash: false,
+            },
+          },
+          editor: {
+            sidebarOpen: false,
+            binderRailOpen: true,
+            rightTab: "event",
+            activeChapterId: "chapter-1",
+            scrollYByChapter: {
+              "chapter-1": 120,
+            },
+          },
+          workspace: {
+            panels: [],
+          },
+          sidebarWidths: {},
+          layoutSurfaceRatios: {},
+        },
+      },
+    });
+
+    const state = module.useProjectLayoutStore
+      .getState()
+      .getProjectLayout("project-1");
+    expect(state.docs.sidebarOpen).toBe(true);
+    expect(state.docs.binderBarOpen).toBe(false);
+    expect(state.docs.rightTab).toBe("character");
+    expect(state.editor.sidebarOpen).toBe(false);
+    expect(state.editor.binderRailOpen).toBe(true);
+    expect(state.editor.rightTab).toBe("event");
+    expect(state.editor.activeChapterId).toBe("chapter-1");
+    expect(state.editor.scrollYByChapter["chapter-1"]).toBe(120);
     expect(warn).not.toHaveBeenCalled();
   });
 

@@ -14,9 +14,6 @@ import {
   useProjectLayoutStore,
 } from "@renderer/features/workspace/stores/projectLayoutStore";
 
-const isDocsLikeMode = (uiMode: EditorUiMode): boolean =>
-  uiMode === "docs" || uiMode === "editor";
-
 let layoutRestoringDepth = 0;
 
 export const beginLayoutRestoring = (): (() => void) => {
@@ -74,7 +71,10 @@ export function useProjectLayoutPersistence(
   const endLayoutRestoringRef = useRef<(() => void) | null>(null);
 
   const isSupportedMode =
-    uiMode === "default" || isDocsLikeMode(uiMode) || uiMode === "scrivener";
+    uiMode === "default" ||
+    uiMode === "docs" ||
+    uiMode === "editor" ||
+    uiMode === "scrivener";
 
   const areScrivenerSectionsEqual = (
     left: ProjectLayoutState["scrivener"]["sections"],
@@ -187,10 +187,14 @@ export function useProjectLayoutPersistence(
     if (uiMode === "default") {
       setSidebarOpen(saved.main.sidebarOpen);
       setContextOpen(saved.main.contextOpen);
-    } else if (isDocsLikeMode(uiMode)) {
+    } else if (uiMode === "docs") {
       setSidebarOpen(saved.docs.sidebarOpen);
       setBinderBarOpen(saved.docs.binderBarOpen);
       setDocsRightTab(sanitizePersistedDocsRightTab(saved.docs.rightTab));
+    } else if (uiMode === "editor") {
+      setSidebarOpen(saved.editor.sidebarOpen);
+      setBinderBarOpen(saved.editor.binderRailOpen);
+      setDocsRightTab(sanitizePersistedDocsRightTab(saved.editor.rightTab));
     } else if (uiMode === "scrivener") {
       setScrivenerSidebarOpen(saved.scrivener.sidebarOpen);
       setScrivenerInspectorOpen(saved.scrivener.inspectorOpen);
@@ -311,7 +315,7 @@ export function useProjectLayoutPersistence(
       return;
     }
 
-    if (isDocsLikeMode(uiMode)) {
+    if (uiMode === "docs") {
       const sanitizedTab = sanitizePersistedDocsRightTab(docsRightTab);
       if (
         saved.docs.sidebarOpen === isSidebarOpen &&
@@ -325,6 +329,27 @@ export function useProjectLayoutPersistence(
         docs: {
           sidebarOpen: isSidebarOpen,
           binderBarOpen: isBinderBarOpen,
+          rightTab: sanitizedTab,
+        },
+        ...layoutPatch,
+      });
+      return;
+    }
+
+    if (uiMode === "editor") {
+      const sanitizedTab = sanitizePersistedDocsRightTab(docsRightTab);
+      if (
+        saved.editor.sidebarOpen === isSidebarOpen &&
+        saved.editor.binderRailOpen === isBinderBarOpen &&
+        saved.editor.rightTab === sanitizedTab &&
+        !hasLayoutSizingChanged
+      ) {
+        return;
+      }
+      upsertProjectLayout(projectId, {
+        editor: {
+          sidebarOpen: isSidebarOpen,
+          binderRailOpen: isBinderBarOpen,
           rightTab: sanitizedTab,
         },
         ...layoutPatch,

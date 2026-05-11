@@ -23,10 +23,6 @@ import { useChapterManagement } from "@renderer/features/manuscript/hooks/useCha
 import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import { useWorkspaceDropHandlers } from "@renderer/features/workspace/hooks/useWorkspaceDropHandlers";
 import { useProjectLayoutPersistence } from "@renderer/features/workspace/hooks/useProjectLayoutPersistence";
-import {
-  sanitizePersistedDocsRightTab,
-  useProjectLayoutStore,
-} from "@renderer/features/workspace/stores/projectLayoutStore";
 import { emitShortcutCommand } from "@renderer/features/workspace/hooks/useShortcutCommand";
 import { useDialog } from "@shared/ui/useDialog";
 import { openDocsRightTab as openDocsPanelTab } from "@renderer/features/workspace/services/docsPanelService";
@@ -113,11 +109,8 @@ export default function EditorRoot() {
     setWorldTab,
     docsRightTab,
     setDocsRightTab,
-    openRightPanelTab,
     closeRightPanel,
-    isBinderBarOpen,
     isManuscriptMenuOpen,
-    uiHasHydrated,
   } = useUIStore(
     useShallow((state) => ({
       isSidebarOpen: state.isSidebarOpen,
@@ -127,62 +120,20 @@ export default function EditorRoot() {
       setWorldTab: state.setWorldTab,
       docsRightTab: state.docsRightTab,
       setDocsRightTab: state.setDocsRightTab,
-      openRightPanelTab: state.openRightPanelTab,
       closeRightPanel: state.closeRightPanel,
-      isBinderBarOpen: state.isBinderBarOpen,
       isManuscriptMenuOpen: state.isManuscriptMenuOpen,
-      uiHasHydrated: state.hasHydrated,
     })),
   );
   const currentProject = useProjectStore((state) => state.currentProject);
   const updateProject = useProjectStore((state) => state.updateProject);
-  const projectLayoutHasHydrated = useProjectLayoutStore(
-    (state) => state.hasHydrated,
-  );
-  const upsertProjectLayout = useProjectLayoutStore(
-    (state) => state.upsertProjectLayout,
-  );
 
   useProjectLayoutPersistence(currentProject?.id ?? null, uiMode);
 
   const setProjectAwareSidebarOpen = useCallback(
     (open: boolean) => {
       setSidebarOpen(open);
-      if (!currentProject?.id || !uiHasHydrated || !projectLayoutHasHydrated) {
-        return;
-      }
-
-      if (uiMode === "docs" || uiMode === "editor") {
-        upsertProjectLayout(currentProject.id, {
-          docs: {
-            sidebarOpen: open,
-            binderBarOpen: isBinderBarOpen,
-            rightTab: sanitizePersistedDocsRightTab(docsRightTab),
-          },
-        });
-        return;
-      }
-
-      if (uiMode === "default") {
-        upsertProjectLayout(currentProject.id, {
-          main: {
-            sidebarOpen: open,
-            contextOpen: isContextOpen,
-          },
-        });
-      }
     },
-    [
-      currentProject?.id,
-      docsRightTab,
-      isBinderBarOpen,
-      isContextOpen,
-      projectLayoutHasHydrated,
-      setSidebarOpen,
-      uiHasHydrated,
-      uiMode,
-      upsertProjectLayout,
-    ],
+    [setSidebarOpen],
   );
 
   const toggleProjectAwareSidebar = useCallback(
@@ -278,7 +229,6 @@ export default function EditorRoot() {
         docsRightTab,
         activeChapterId: activeChapterId ?? null,
         openDocsRightTab,
-        openRightPanelTab,
         closeRightPanel,
         toggleLeftSidebar: toggleProjectAwareSidebar,
         setDocsRightTab,
@@ -302,7 +252,6 @@ export default function EditorRoot() {
       isSidebarOpen,
       isContextOpen,
       openDocsRightTab,
-      openRightPanelTab,
       closeRightPanel,
       toggleProjectAwareSidebar,
       setDocsRightTab,
