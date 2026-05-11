@@ -2,6 +2,10 @@ import { useCallback, useMemo, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { openDocsRightTab } from "@renderer/features/workspace/services/docsPanelService";
+import {
+  setDocsBinderRailOpen,
+  setDocsSidebarOpen as setDocsSidebarRegionOpen,
+} from "@renderer/features/workspace/services/layoutRegionActions";
 import type { DocsLayoutPanelTab } from "@shared/constants/layoutSizing";
 import { useLayoutPersist } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import {
@@ -15,7 +19,7 @@ import {
   getDocsLayoutSurfaceState,
 } from "../../utils/docsLayoutModel";
 
-export function useGoogleDocsLayoutState() {
+export function useGoogleDocsLayoutState(projectId?: string | null) {
   const [trashRefreshKey, setTrashRefreshKey] = useState(0);
   const [pageMargins, setPageMargins] = useState<DocsPageMargins>({
     left: EDITOR_RULER_DEFAULT_MARGIN_LEFT_PX,
@@ -30,9 +34,7 @@ export function useGoogleDocsLayoutState() {
     isRightPanelOpen,
     isPanelRailOpen,
     layoutSurfaceRatios,
-    setRegionOpen,
     closeRightPanel,
-    setPanelRailOpen,
     setFocusedClosableTarget,
   } = useUIStore(
     useShallow((state) => ({
@@ -42,9 +44,7 @@ export function useGoogleDocsLayoutState() {
       isRightPanelOpen: state.regions.rightPanel.open,
       isPanelRailOpen: state.regions.rightRail.open,
       layoutSurfaceRatios: state.layoutSurfaceRatios,
-      setRegionOpen: state.setRegionOpen,
       closeRightPanel: state.closeRightPanel,
-      setPanelRailOpen: state.setBinderBarOpen,
       setFocusedClosableTarget: state.setFocusedClosableTarget,
     })),
   );
@@ -72,7 +72,21 @@ export function useGoogleDocsLayoutState() {
     () => buildDocsLayoutPersistEntries(activeRightTab),
     [activeRightTab],
   );
-  const onLayoutChanged = useLayoutPersist(layoutEntries);
+  const onLayoutChanged = useLayoutPersist(layoutEntries, { projectId });
+
+  const setPanelRailOpen = useCallback(
+    (open: boolean) => {
+      setDocsBinderRailOpen(open);
+    },
+    [],
+  );
+
+  const setDocsSidebarOpen = useCallback(
+    (open: boolean) => {
+      setDocsSidebarRegionOpen(open);
+    },
+    [],
+  );
 
   const {
     activePanelSurface,
@@ -95,10 +109,10 @@ export function useGoogleDocsLayoutState() {
     pageMargins,
     rightPanelConfig,
     rightPanelRatio,
+    setDocsSidebarOpen,
     setFocusedClosableTarget,
     setPageMargins,
     setPanelRailOpen,
-    setRegionOpen,
     setTrashRefreshKey,
     trashRefreshKey,
   };

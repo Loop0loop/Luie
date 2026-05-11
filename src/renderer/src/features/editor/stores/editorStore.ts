@@ -14,6 +14,9 @@ export type { EditorSettings, EditorTheme, FontFamily, FontPreset };
 import {
   DEFAULT_EDITOR_FONT_SIZE,
   DEFAULT_EDITOR_LINE_HEIGHT,
+  DEFAULT_EDITOR_LETTER_SPACING,
+  DEFAULT_EDITOR_WORD_SPACING,
+  DEFAULT_EDITOR_PARAGRAPH_SPACING,
   DEFAULT_EDITOR_MAX_WIDTH,
   DEFAULT_EDITOR_THEME,
   DEFAULT_EDITOR_THEME_ACCENT,
@@ -40,6 +43,9 @@ const DEFAULT_SETTINGS: EditorSettings = {
   customFontFamily: undefined,
   fontSize: DEFAULT_EDITOR_FONT_SIZE,
   lineHeight: DEFAULT_EDITOR_LINE_HEIGHT,
+  letterSpacing: DEFAULT_EDITOR_LETTER_SPACING,
+  wordSpacing: DEFAULT_EDITOR_WORD_SPACING,
+  paragraphSpacing: DEFAULT_EDITOR_PARAGRAPH_SPACING,
   maxWidth: DEFAULT_EDITOR_MAX_WIDTH,
   spellcheckEnabled: true,
   theme: DEFAULT_EDITOR_THEME,
@@ -49,6 +55,12 @@ const DEFAULT_SETTINGS: EditorSettings = {
   themeTexture: DEFAULT_EDITOR_THEME_TEXTURE as ThemeTexture,
   uiMode: "default",
   enableAnimations: true,
+  entityColors: {
+    character: "#2563eb", // blue-600
+    event: "#d97706", // amber-600
+    faction: "#059669", // emerald-600
+    term: "#7c3aed", // violet-600
+  },
 };
 
 export const useEditorStore = create<EditorStore>((set, get) => ({
@@ -78,6 +90,9 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       lineHeight: current.lineHeight,
       maxWidth: current.maxWidth,
       spellcheckEnabled: current.spellcheckEnabled ?? true,
+      letterSpacing: current.letterSpacing ?? DEFAULT_EDITOR_LETTER_SPACING,
+      wordSpacing: current.wordSpacing ?? DEFAULT_EDITOR_WORD_SPACING,
+      paragraphSpacing: current.paragraphSpacing ?? DEFAULT_EDITOR_PARAGRAPH_SPACING,
       theme: current.theme,
       themeTemp: current.themeTemp ?? DEFAULT_EDITOR_THEME_TEMP,
       themeContrast: current.themeContrast ?? DEFAULT_EDITOR_THEME_CONTRAST,
@@ -85,6 +100,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       themeTexture: current.themeTexture ?? DEFAULT_EDITOR_THEME_TEXTURE,
       uiMode: current.uiMode ?? "default",
       enableAnimations: current.enableAnimations ?? true,
+      entityColors: current.entityColors ?? DEFAULT_SETTINGS.entityColors,
       ...newSettings,
     };
     const response = await api.settings.setEditor(updated);

@@ -2,7 +2,9 @@ import { useCallback } from "react";
 import type { DragData } from "@shared/ui/GlobalDragContext";
 import type { EditorUiMode } from "@shared/types";
 import { openDocsRightTab } from "@renderer/features/workspace/services/docsPanelService";
+import { openEditorBinderTab } from "@renderer/features/workspace/services/layoutRegionActions";
 import type {
+  DocsRightTab,
   ResizablePanelData,
   WorldTab,
 } from "@renderer/features/workspace/stores/uiStore";
@@ -44,7 +46,6 @@ export function useWorkspaceDropHandlers({
   addPanel,
 }: DropHandlerDependencies) {
   const isDocsLikeMode = uiMode === "docs" || uiMode === "editor";
-
   const getDocsTabByDragType = useCallback((type: DragData["type"]) => {
     switch (type) {
       case "character":
@@ -71,6 +72,16 @@ export function useWorkspaceDropHandlers({
         return null;
     }
   }, []);
+  const openModeRightTab = useCallback(
+    (tab: Exclude<DocsRightTab, null>) => {
+      if (uiMode === "editor") {
+        openEditorBinderTab(tab);
+        return;
+      }
+      openDocsRightTab(tab);
+    },
+    [uiMode],
+  );
 
   const handleDropToCenter = useCallback(
     (data: DragData) => {
@@ -82,7 +93,7 @@ export function useWorkspaceDropHandlers({
       if (isDocsLikeMode) {
         const docsTab = getDocsTabByDragType(data.type);
         if (docsTab) {
-          openDocsRightTab(docsTab);
+          openModeRightTab(docsTab);
         }
         return;
       }
@@ -160,7 +171,7 @@ export function useWorkspaceDropHandlers({
       handleSelectChapter,
       handleSelectResearchItem,
       isDocsLikeMode,
-      addPanel,
+      openModeRightTab,
       setMainView,
       setWorldTab,
       uiMode,
@@ -172,7 +183,7 @@ export function useWorkspaceDropHandlers({
       if (isDocsLikeMode) {
         const docsTab = getDocsTabByDragType(data.type);
         if (docsTab) {
-          openDocsRightTab(docsTab);
+          openModeRightTab(docsTab);
         }
         return;
       }
@@ -214,7 +225,7 @@ export function useWorkspaceDropHandlers({
           break;
       }
     },
-    [addPanel, getDocsTabByDragType, isDocsLikeMode],
+    [addPanel, getDocsTabByDragType, isDocsLikeMode, openModeRightTab],
   );
 
   return {

@@ -12,6 +12,7 @@ import {
   buildDefaultSidebarWidths,
   getSynchronizedSidebarWidthFeatures,
   normalizeSidebarWidthInput,
+  normalizeSidebarWidthsWithMigrations,
 } from "@shared/constants/sidebarSizing";
 import {
   clearFocusedClosableTarget,
@@ -19,6 +20,7 @@ import {
   setFocusedClosableTarget as setTransientFocusedClosableTarget,
 } from "@renderer/features/workspace/stores/closableFocusStore";
 import {
+  buildRegionsFromLegacyState,
   cloneRegions,
   DEFAULT_REGIONS,
   getRightPanelTabByFeature,
@@ -29,6 +31,7 @@ import { DEFAULT_SCRIVENER_SECTIONS } from "./uiStore.types";
 import type {
   ContextTab,
   MainView,
+  RightPanelContent,
   ResizablePanelData,
   ScrivenerSectionId,
   UIStore,
@@ -37,6 +40,25 @@ import type {
 const DEFAULT_SIDEBAR_WIDTHS: Record<string, number> = buildDefaultSidebarWidths();
 const DEFAULT_LAYOUT_SURFACE_RATIOS: Record<LayoutSurfaceId, number> =
   buildDefaultLayoutSurfaceRatios();
+
+export const buildStablePanelId = (content: RightPanelContent): string => {
+  if (content.type === "research" && content.tab) {
+    if (content.id) {
+      return `research-${content.tab}-${content.id}`;
+    }
+    return `research-${content.tab}`;
+  }
+  if (content.type === "editor" && content.id) {
+    return `editor-${content.id}`;
+  }
+  if (content.type === "export") {
+    return "export-preview";
+  }
+  if (content.type === "snapshot" && content.snapshot?.id) {
+    return `snapshot-${content.snapshot.id}`;
+  }
+  return `panel-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+};
 
 export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) => ({
   view: DEFAULT_UI_VIEW as UIStore["view"],
@@ -64,7 +86,7 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
   setWorldTab: (worldTab) =>
     set((state) => (state.worldTab === worldTab ? state : { worldTab })),
 
-  addPanel: (content, insertAt) => {
+  addPanel: (content, insertAt, initialSize) => {
     let nextFocusedPanelId: string | null = null;
     set((state) => {
       const existing = state.panels.find((panel) =>
@@ -77,9 +99,14 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
       }
 
       const newPanel: ResizablePanelData = {
-        id: `panel-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: buildStablePanelId(content),
         content,
-        size: state.panels.length === 0 ? 100 : 50,
+        size:
+          typeof initialSize === "number" && Number.isFinite(initialSize)
+            ? Math.min(90, Math.max(15, initialSize))
+            : state.panels.length === 0
+              ? 100
+              : 50,
       };
       const newPanels = [...state.panels];
       if (insertAt !== undefined && insertAt >= 0 && insertAt <= newPanels.length) {
@@ -87,10 +114,12 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
       } else {
         newPanels.push(newPanel);
       }
-      const sizePerPanel = 100 / newPanels.length;
-      newPanels.forEach((panel) => {
-        panel.size = sizePerPanel;
-      });
+      if (initialSize === undefined || !Number.isFinite(initialSize)) {
+        const sizePerPanel = 100 / newPanels.length;
+        newPanels.forEach((panel) => {
+          panel.size = sizePerPanel;
+        });
+      }
       nextFocusedPanelId = newPanel.id;
       return {
         ...state,
@@ -306,6 +335,27 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
         regions: nextRegions,
       };
     }),
+  setSidebarWidths: (widths) =>
+    set((state) => {
+      const normalizedSidebarWidths = normalizeSidebarWidthsWithMigrations({
+        ...state.sidebarWidths,
+        ...widths,
+      });
+      const nextRegions = buildRegionsFromLegacyState({
+        isSidebarOpen: state.isSidebarOpen,
+        isContextOpen: state.isContextOpen,
+        docsRightTab: state.docsRightTab,
+        isBinderBarOpen: state.isBinderBarOpen,
+        scrivenerSidebarOpen: state.scrivenerSidebarOpen,
+        scrivenerInspectorOpen: state.scrivenerInspectorOpen,
+        sidebarWidths: normalizedSidebarWidths,
+        regions: state.regions,
+      });
+      return {
+        sidebarWidths: normalizedSidebarWidths,
+        regions: nextRegions,
+      };
+    }),
   setLayoutSurfaceRatio: (surface, ratio) =>
     set((state) => {
       const normalizedRatios = normalizeLayoutSurfaceRatiosWithMigrations({
@@ -323,6 +373,19 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
           ...state.layoutSurfaceRatios,
           [surface]: nextRatio,
         },
+      };
+    }),
+  setLayoutSurfaceRatios: (ratios) =>
+    set((state) => {
+      const normalizedRatios = normalizeLayoutSurfaceRatiosWithMigrations(
+        {
+          ...state.layoutSurfaceRatios,
+          ...ratios,
+        },
+        state.sidebarWidths,
+      );
+      return {
+        layoutSurfaceRatios: normalizedRatios,
       };
     }),
   setRegionOpen: (region, open) => {
@@ -402,19 +465,15 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
       const isAlreadyOpen =
         state.regions.rightPanel.open &&
         state.regions.rightPanel.activeTab === nextTab &&
-        state.docsRightTab === nextTab &&
-        state.regions.rightRail.open &&
-        state.isBinderBarOpen;
+        state.docsRightTab === nextTab;
       if (isAlreadyOpen) return state;
       const nextRegions = cloneRegions(state.regions);
       nextRegions.rightPanel.open = true;
       nextRegions.rightPanel.activeTab = nextTab;
-      nextRegions.rightRail.open = true;
       return {
         docsRightTab: nextTab,
         isContextOpen: true,
         scrivenerInspectorOpen: true,
-        isBinderBarOpen: true,
         regions: nextRegions,
       };
     });

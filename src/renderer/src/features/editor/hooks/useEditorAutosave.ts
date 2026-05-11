@@ -13,6 +13,12 @@ interface UseEditorAutosaveProps {
 
 const RETRY_DELAYS = [1000, 2000, 5000];
 
+const clearTimerRef = (timerRef: { current: NodeJS.Timeout | null }) => {
+  const timer = timerRef.current;
+  if (timer) clearTimeout(timer);
+  timerRef.current = null;
+};
+
 export function useEditorAutosave({
   onSave,
   title,
@@ -21,16 +27,13 @@ export function useEditorAutosave({
   const { showToast } = useToast();
   const { t } = useTranslation();
   const [saveStatus, setSaveStatus] = useState<
-    "idle" | "saving" | "saved" | "error"
+    "idle" | "saving" | "saved" | "error" | "unsaved"
   >("idle");
 
   // 🔐 Unmount guard — prevents setState after component is gone
   const isMountedRef = useRef(true);
   useEffect(() => {
     isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
   }, []);
 
   useEffect(() => {
@@ -44,6 +47,11 @@ export function useEditorAutosave({
   const pendingDraftRef = useRef<{ title: string; content: string } | null>(
     null,
   );
+  const onSaveRef = useRef(onSave);
+
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
 
   // ✅ Separate timer refs so each can be individually cleared
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -85,11 +93,7 @@ export function useEditorAutosave({
           latestDraft.content === currentContent;
         api.lifecycle?.setDirty?.(!isLatestDraftSaved);
 
-        // ✅ Track idle reset timer so we can cancel on unmount
-        if (idleResetTimerRef.current) clearTimeout(idleResetTimerRef.current);
-        idleResetTimerRef.current = setTimeout(() => {
-          if (isMountedRef.current) setSaveStatus("idle");
-        }, 2000);
+        // Removed idle reset logic so "saved" status stays visible
       } catch (error) {
         api.logger.error("Autosave failed", error);
 
@@ -156,10 +160,12 @@ export function useEditorAutosave({
       content === lastSavedRef.current.content
     ) {
       api.lifecycle?.setDirty?.(false);
+      setSaveStatus("saved");
       return;
     }
 
     api.lifecycle?.setDirty?.(true);
+    setSaveStatus("unsaved");
 
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
 
@@ -175,10 +181,27 @@ export function useEditorAutosave({
   // ✅ Full cleanup on unmount: cancel ALL pending timers + reset retry state
   useEffect(() => {
     return () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-      if (idleResetTimerRef.current) clearTimeout(idleResetTimerRef.current);
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      clearTimerRef(debounceTimerRef);
+      clearTimerRef(idleResetTimerRef);
+      clearTimerRef(retryTimerRef);
+      const latestDraft = latestDraftRef.current;
+      const save = onSaveRef.current;
+      if (
+        save &&
+        (latestDraft.title !== lastSavedRef.current.title ||
+          latestDraft.content !== lastSavedRef.current.content)
+      ) {
+        void Promise.resolve(save(latestDraft.title, latestDraft.content))
+          .then(() => {
+            lastSavedRef.current = latestDraft;
+            api.lifecycle?.setDirty?.(false);
+          })
+          .catch((error) => {
+            api.logger.error("Autosave flush on unmount failed", error);
+          });
+      }
       retryCount.current = 0;
+      isMountedRef.current = false;
     };
   }, []);
 

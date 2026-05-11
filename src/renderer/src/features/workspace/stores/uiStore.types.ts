@@ -128,7 +128,11 @@ export interface UIStore {
   setView: (view: UIStore["view"]) => void;
   setContextTab: (tab: ContextTab) => void;
   setWorldTab: (tab: WorldTab) => void;
-  addPanel: (content: RightPanelContent, insertAt?: number) => void;
+  addPanel: (
+    content: RightPanelContent,
+    insertAt?: number,
+    initialSize?: number,
+  ) => void;
   removePanel: (id: string) => void;
   updatePanelSize: (id: string, size: number) => void;
   setPanels: (panels: ResizablePanelData[]) => void;
@@ -145,7 +149,9 @@ export interface UIStore {
   ) => void;
   setScrivenerSections: (sections: Partial<ScrivenerSectionsState>) => void;
   setSidebarWidth: (feature: string, width: number) => void;
+  setSidebarWidths: (widths: Record<string, number>) => void;
   setLayoutSurfaceRatio: (surface: LayoutSurfaceId, ratio: number) => void;
+  setLayoutSurfaceRatios: (ratios: Record<string, number>) => void;
   setRegionOpen: (region: RegionId, open: boolean) => void;
   setRegionWidth: (
     region: Exclude<RegionId, "rightRail">,

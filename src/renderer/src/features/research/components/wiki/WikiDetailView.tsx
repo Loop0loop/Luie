@@ -1,30 +1,79 @@
-import { useMemo, useEffect } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Trash2, User } from "lucide-react";
-import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
-import { BufferedInput } from "@shared/ui/BufferedInput";
-import { Infobox } from "@renderer/features/research/components/wiki/Infobox";
-import { WikiSection } from "@renderer/features/research/components/wiki/WikiSection";
-import { useDialog } from "@shared/ui/useDialog";
-import { SUPPORTED_LANGUAGES, i18n } from "@renderer/i18n";
-import { CHARACTER_TEMPLATES } from "@shared/constants";
+import { BookOpen, Sparkles, Trash2, User, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
-import { parseStructuredAttributes } from "@renderer/features/research/utils/parseStructuredAttributes";
+import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { CHARACTER_TEMPLATES } from "@shared/constants";
+import { BufferedInput } from "@shared/ui/BufferedInput";
+import { useDialog } from "@shared/ui/useDialog";
+import { cn } from "@shared/types/utils";
+import { Infobox } from "./Infobox";
+import { WikiContentPanel } from "./WikiContentPanel";
+import { CharacterVisualPanel } from "./CharacterVisualPanel";
+import { useCharacterWikiAttrs } from "./hooks/useCharacterWikiAttrs";
+import { type CharacterViewMode, CHARACTER_VIEW_MODE_KEY } from "./types";
 
-// Types for Dynamic Customization
-type WikiSectionData = {
-  id: string;
-  label: string;
+const getViewModeStorageKey = (id?: string) =>
+  id ? `${CHARACTER_VIEW_MODE_KEY}:${id}` : CHARACTER_VIEW_MODE_KEY;
+
+const readViewMode = (id?: string): CharacterViewMode => {
+  const stored = localStorage.getItem(getViewModeStorageKey(id));
+  return stored === "visual" || stored === "wiki" ? stored : "wiki";
 };
 
-type CustomField = {
-  key: string;
-  label: string;
-  type: "text" | "textarea" | "select";
-  options?: string[];
-  placeholder?: string;
+// ── AddTagInline ──────────────────────────────────────────────────────────
+
+type AddTagInlineProps = {
+  onAdd: (tag: string) => void;
+  placeholder: string;
 };
+
+function AddTagInline({ onAdd, placeholder }: AddTagInlineProps) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState("");
+  const ref = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) ref.current?.focus();
+  }, [editing]);
+
+  const commit = () => {
+    const trimmed = value.trim();
+    if (trimmed) onAdd(trimmed);
+    setValue("");
+    setEditing(false);
+  };
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className="text-[12px] text-muted/50 hover:text-accent transition-colors px-1 bg-transparent border-none cursor-pointer"
+      >
+        {placeholder}
+      </button>
+    );
+  }
+
+  return (
+    <input
+      ref={ref}
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") { e.preventDefault(); commit(); }
+        if (e.key === "Escape") { setValue(""); setEditing(false); }
+      }}
+      onBlur={commit}
+      className="text-[12px] bg-transparent border-b border-accent/60 outline-none w-20 text-fg pb-0.5 placeholder:text-muted/40"
+      placeholder="입력 후 Enter"
+    />
+  );
+}
+
+// ── WikiDetailView ────────────────────────────────────────────────────────
 
 interface WikiDetailViewProps {
   characterId?: string;
@@ -33,167 +82,69 @@ interface WikiDetailViewProps {
 export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
   const { t } = useTranslation();
   const dialog = useDialog();
-  const {
-    currentItem: character,
-    updateCharacter,
-    loadCharacter,
-    deleteCharacter,
-    setCurrent,
-  } = useCharacterStore(
-    useShallow((state) => ({
-      currentItem: state.currentItem,
-      updateCharacter: state.updateCharacter,
-      loadCharacter: state.loadCharacter,
-      deleteCharacter: state.deleteCharacter,
-      setCurrent: state.setCurrent,
-    })),
-  );
-  const mainView = useUIStore((state) => state.mainView);
-  const setMainView = useUIStore((state) => state.setMainView);
 
+  // ── Store ───────────────────────────────────────────────────────────────
+  const { character, loadCharacter, updateCharacter, deleteCharacter, setCurrent } =
+    useCharacterStore(
+      useShallow((s) => ({
+        character:       s.currentItem,
+        loadCharacter:   s.loadCharacter,
+        updateCharacter: s.updateCharacter,
+        deleteCharacter: s.deleteCharacter,
+        setCurrent:      s.setCurrent,
+      })),
+    );
+
+  const { mainView, setMainView } = useUIStore(
+    useShallow((s) => ({ mainView: s.mainView, setMainView: s.setMainView })),
+  );
+
+  // ── Attribute hook ──────────────────────────────────────────────────────
+  const attrs = useCharacterWikiAttrs();
+
+  // ── View mode (persisted per character) ────────────────────────────────
+  const currentViewModeStorageKey = getViewModeStorageKey(character?.id ?? characterId);
+  const [viewModeState, setViewModeState] = useState<{
+    storageKey: string;
+    mode: CharacterViewMode;
+  }>(() => ({
+    storageKey: getViewModeStorageKey(characterId),
+    mode: readViewMode(characterId),
+  }));
+  const viewMode =
+    viewModeState.storageKey === currentViewModeStorageKey
+      ? viewModeState.mode
+      : readViewMode(character?.id ?? characterId);
+
+  const switchViewMode = (mode: CharacterViewMode) => {
+    setViewModeState({ storageKey: currentViewModeStorageKey, mode });
+    localStorage.setItem(currentViewModeStorageKey, mode);
+  };
+
+  // ── Character load ──────────────────────────────────────────────────────
   useEffect(() => {
-    if (characterId) {
-      void loadCharacter(characterId);
-    }
+    if (characterId) void loadCharacter(characterId);
   }, [characterId, loadCharacter]);
 
-  const attributes = useMemo(() => {
-    if (!character) return {};
-    return parseStructuredAttributes(character.attributes);
-  }, [character]);
-
+  // ── Template resolution ─────────────────────────────────────────────────
   const currentTemplate = useMemo(() => {
-    const templateId = attributes.templateId || "basic";
-    return (
-      CHARACTER_TEMPLATES.find((t) => t.id === templateId) ||
-      CHARACTER_TEMPLATES[0]
-    );
-  }, [attributes.templateId]);
+    const templateId = attrs.getSectionContent("templateId") || "basic";
+    return CHARACTER_TEMPLATES.find((tmpl) => tmpl.id === templateId) ?? CHARACTER_TEMPLATES[0];
+  }, [attrs]);
 
-  const defaultSectionLabels = useMemo(() => {
-    return t("character.defaultSections", { returnObjects: true }) as string[];
-  }, [t]);
-
-  const defaultLabelById = useMemo(() => {
-    return {
-      overview: defaultSectionLabels[0],
-      appearance: defaultSectionLabels[1],
-      personality: defaultSectionLabels[2],
-      background: defaultSectionLabels[3],
-      relations: defaultSectionLabels[4],
-      notes: defaultSectionLabels[5],
-    } as Record<string, string | undefined>;
-  }, [defaultSectionLabels]);
-
-  const defaultLabelSet = useMemo(() => {
-    const labels = new Set<string>();
-    SUPPORTED_LANGUAGES.forEach((lang) => {
-      const bundle = i18n.getResourceBundle(lang, "common") as
-        | {
-            character?: { defaultSections?: string[] };
-          }
-        | undefined;
-      bundle?.character?.defaultSections?.forEach((label) => labels.add(label));
-    });
-    return labels;
-  }, []);
-
-  const sections: WikiSectionData[] = useMemo(() => {
-    if (attributes.sections) {
-      return (attributes.sections as WikiSectionData[]).map((section) => {
-        const defaultLabel = defaultLabelById[section.id];
-        if (!defaultLabel) return section;
-        if (!defaultLabelSet.has(section.label)) return section;
-        return { ...section, label: defaultLabel };
-      });
-    }
-    return [
-      { id: "overview", label: defaultSectionLabels[0] ?? "1" },
-      { id: "appearance", label: defaultSectionLabels[1] ?? "2" },
-      { id: "personality", label: defaultSectionLabels[2] ?? "3" },
-      { id: "background", label: defaultSectionLabels[3] ?? "4" },
-      { id: "relations", label: defaultSectionLabels[4] ?? "5" },
-      { id: "notes", label: defaultSectionLabels[5] ?? "6" },
-    ];
-  }, [
-    attributes.sections,
-    defaultLabelById,
-    defaultLabelSet,
-    defaultSectionLabels,
-  ]);
-
-  const customFields: CustomField[] = useMemo(() => {
-    return (attributes.customFields as CustomField[]) || [];
-  }, [attributes.customFields]);
-
-  if (!character) {
-    return (
-      <div className="flex items-center justify-center h-full text-muted">
-        {t("character.noSelection")}
-      </div>
-    );
-  }
-
-  const handleUpdate = (field: string, value: string) => {
-    updateCharacter({ id: character.id, [field]: value });
-  };
-
-  const handleAttrUpdate = (key: string, value: unknown) => {
-    const newAttrs = { ...attributes, [key]: value };
-    updateCharacter({ id: character.id, attributes: newAttrs });
-  };
-
-  // Section Management
-  const addSection = () => {
-    const newId = `section_${Date.now()}`;
-    const newSections = [
-      ...sections,
-      {
-        id: newId,
-        label: `${sections.length + 1}. ${t("character.newSection")}`,
-      },
-    ];
-    handleAttrUpdate("sections", newSections);
-  };
-
-  const renameSection = (id: string, newLabel: string) => {
-    const newSections = sections.map((s) =>
-      s.id === id ? { ...s, label: newLabel } : s,
-    );
-    handleAttrUpdate("sections", newSections);
-  };
-
-  const deleteSection = (id: string) => {
-    void (async () => {
-      const confirmed = await dialog.confirm({
-        title: t("character.wiki.sectionDeleteTitle"),
-        message: t("character.deleteSectionConfirm"),
-        isDestructive: true,
-      });
-      if (!confirmed) return;
-      const newSections = sections.filter((section) => section.id !== id);
-      handleAttrUpdate("sections", newSections);
-    })();
-  };
-
-  // Custom Field Management
+  // ── Custom field handlers ───────────────────────────────────────────────
   const addCustomField = () => {
-    const newKey = `custom_${Date.now()}`;
-    const newField: CustomField = {
-      key: newKey,
-      label: t("character.newFieldLabel"),
-      type: "text",
-    };
-    const newFields = [...customFields, newField];
-    handleAttrUpdate("customFields", newFields);
+    const key = `custom_${Date.now()}`;
+    attrs.setCustomFields([
+      ...attrs.customFields,
+      { key, label: t("character.newFieldLabel"), type: "text" },
+    ]);
   };
 
-  const updateCustomFieldLabel = (key: string, newLabel: string) => {
-    const newFields = customFields.map((f) =>
-      f.key === key ? { ...f, label: newLabel } : f,
+  const updateCustomFieldLabel = (key: string, newLabel: string) =>
+    attrs.setCustomFields(
+      attrs.customFields.map((f) => (f.key === key ? { ...f, label: newLabel } : f)),
     );
-    handleAttrUpdate("customFields", newFields);
-  };
 
   const deleteCustomField = (key: string) => {
     void (async () => {
@@ -203,11 +154,11 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
         isDestructive: true,
       });
       if (!confirmed) return;
-      const newFields = customFields.filter((field) => field.key !== key);
-      handleAttrUpdate("customFields", newFields);
+      attrs.setCustomFields(attrs.customFields.filter((f) => f.key !== key));
     })();
   };
 
+  // ── Character delete ────────────────────────────────────────────────────
   const handleDeleteCharacter = () => {
     void (async () => {
       const confirmed = await dialog.confirm({
@@ -216,144 +167,190 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
         isDestructive: true,
       });
       if (!confirmed) return;
-      await deleteCharacter(character.id);
+      await deleteCharacter(character!.id);
       setCurrent(null);
-      if (mainView.type === "character" && mainView.id === character.id) {
+      if (mainView.type === "character" && mainView.id === character!.id) {
         setMainView({ type: "editor" });
       }
     })();
   };
 
-  // Merge Base Fields + Custom Fields
-  const allInfoboxFields = [...currentTemplate.fields, ...customFields];
+  // ── Empty state ─────────────────────────────────────────────────────────
+  if (!character) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted">
+        {t("character.noSelection")}
+      </div>
+    );
+  }
+
+  // ── Infobox rows ────────────────────────────────────────────────────────
+  const allFields = [...currentTemplate.fields, ...attrs.customFields];
+  const infoboxRows = allFields.map((field) => {
+    const isCustom = attrs.customFields.some((cf) => cf.key === field.key);
+    const isTemplateField = "labelKey" in field;
+    return {
+      label:       isTemplateField ? t(field.labelKey) : field.label,
+      value:       attrs.getSectionContent(field.key) || undefined,
+      placeholder: isTemplateField && field.placeholderKey
+        ? t(field.placeholderKey)
+        : "placeholder" in field ? field.placeholder : undefined,
+      type:    field.type,
+      options: isTemplateField && field.optionKeys
+        ? field.optionKeys.map((k) => t(k))
+        : "options" in field ? field.options : undefined,
+      isCustom,
+      onSave:      (v: string) => attrs.setAttr(field.key, v),
+      onLabelSave: isCustom ? (v: string) => updateCustomFieldLabel(field.key, v) : undefined,
+      onDelete:    isCustom ? () => deleteCustomField(field.key) : undefined,
+    };
+  });
+
+  // ── Render ──────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex-1 overflow-auto p-8 sm:p-6 flex flex-col gap-6 bg-panel text-fg min-w-0">
-      {/* 1. AUTHENTIC NAMUWIKI HEADER */}
-      <div className="border-b-2 border-(--namu-border) pb-4 mb-6 flex flex-col gap-3">
-        <div className="flex items-start gap-3">
+    <div className="flex-1 overflow-auto px-8 py-7 sm:px-6 sm:py-6 flex flex-col gap-5 bg-panel text-fg min-w-0">
+
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-2 pb-4 border-b border-border">
+        <div className="flex items-center gap-2">
           <BufferedInput
-            className="text-3xl font-extrabold text-fg leading-tight border-none bg-transparent w-full focus:outline-none"
+            className="text-[26px] font-extrabold text-fg leading-tight border-none bg-transparent flex-1 focus:outline-none min-w-0"
             value={character.name}
-            onSave={(val) => handleUpdate("name", val)}
+            onSave={(val) => updateCharacter({ id: character.id, name: val })}
           />
-          <button
-            type="button"
-            onClick={handleDeleteCharacter}
-            className="mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-destructive/10 hover:text-destructive"
-            title={t("character.wiki.deleteCharacterTitle")}
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="text-[13px] text-muted bg-surface border border-border px-3 py-1.5 rounded self-start flex items-center gap-2">
-          <span className="font-bold">
-            {t("character.classificationLabel")}
-          </span>
-          <span className="text-(--namu-link) cursor-pointer hover:underline">
-            {t(currentTemplate.nameKey)}
-          </span>
-          <span className="text-border">|</span>
-          <BufferedInput
-            className="inline w-auto font-semibold text-(--namu-link) bg-transparent border-none p-1 focus:outline-none focus:bg-active rounded-sm"
-            value={character.description || ""}
-            placeholder={t("character.uncategorized")}
-            onSave={(val) => handleUpdate("description", val)}
-          />
-        </div>
-      </div>
 
-      {/* 2. BODY CONTENT (Wiki Layout) */}
-      <div className="@container">
-        <div className="flex flex-col @min-[700px]:flex-row gap-8 items-start min-h-0">
-          {/* LEFT: Content & TOC */}
-          <div className="flex-1 flex flex-col gap-8 min-w-75 w-full @min-[700px]:order-1 order-2">
-            {/* TOC (Inline) */}
-            <div className="bg-(--namu-table-bg) border border-(--namu-border) p-4 inline-block min-w-50 rounded">
-              <div className="font-bold text-center mb-3 text-fg text-sm">
-                {t("character.tocLabel")}
-              </div>
-              <div className="flex flex-col gap-1.5 text-sm">
-                {sections.map((sec) => (
-                  <a
-                    key={sec.id}
-                    className="text-(--namu-link) no-underline cursor-pointer hover:underline"
-                    href={`#${sec.id}`}
-                  >
-                    {sec.label}
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            {/* Sections */}
-            {sections.map((sec) => (
-              <WikiSection
-                key={sec.id}
-                id={sec.id}
-                label={sec.label}
-                content={(attributes[sec.id] as string) || ""}
-                onRename={(val) => renameSection(sec.id, val)}
-                onUpdateContent={(val) => handleAttrUpdate(sec.id, val)}
-                onDelete={() => deleteSection(sec.id)}
-              />
-            ))}
-
-            {/* Add Section Button */}
+          {/* View mode toggle */}
+          <div className="flex items-center gap-1 p-0.5 rounded-lg bg-surface-hover border border-border/60 shrink-0">
             <button
               type="button"
-              onClick={addSection}
-              className="p-3 border-2 border-dashed border-border rounded-lg text-center text-subtle cursor-pointer mt-4 w-full bg-transparent hover:text-fg hover:border-fg transition-colors"
+              onClick={() => switchViewMode("wiki")}
+              title="위키 뷰"
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors",
+                viewMode === "wiki"
+                  ? "bg-surface text-fg shadow-sm"
+                  : "text-muted hover:text-fg",
+              )}
             >
-              {t("character.addSection")}
+              <BookOpen size={12} />
+              위키
+            </button>
+            <button
+              type="button"
+              onClick={() => switchViewMode("visual")}
+              title="시각화 뷰"
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors",
+                viewMode === "visual"
+                  ? "bg-surface text-fg shadow-sm"
+                  : "text-muted hover:text-fg",
+              )}
+            >
+              <Sparkles size={12} />
+              시각화
             </button>
           </div>
 
-          {/* RIGHT: Authentic Infobox */}
-          {/* Use order-first on mobile (default) to put it on top, order-last on Desktop to put it on right */}
-          <div className="w-full @min-[700px]:w-[320px] shrink-0 @min-[700px]:order-2 order-1">
-            <Infobox
-              title={character.name}
-              image={<User size={80} color="var(--border-active)" />}
-              rows={allInfoboxFields.map((field) => {
-                const isCustom = customFields.some(
-                  (cf) => cf.key === field.key,
-                );
-                const isTemplateField = "labelKey" in field;
-                const label = isTemplateField ? t(field.labelKey) : field.label;
-                const placeholder =
-                  isTemplateField && field.placeholderKey
-                    ? t(field.placeholderKey)
-                    : "placeholder" in field
-                      ? field.placeholder
-                      : undefined;
-                const options =
-                  isTemplateField && field.optionKeys
-                    ? field.optionKeys.map((key) => t(key))
-                    : "options" in field
-                      ? field.options
-                      : undefined;
-                return {
-                  label,
-                  value: attributes[field.key] as string | undefined,
-                  placeholder,
-                  type: field.type,
-                  options,
-                  isCustom,
-                  onSave: (v) => handleAttrUpdate(field.key, v),
-                  onLabelSave: isCustom
-                    ? (v) => updateCustomFieldLabel(field.key, v)
-                    : undefined,
-                  onDelete: isCustom
-                    ? () => deleteCustomField(field.key)
-                    : undefined,
-                };
-              })}
-              onAddField={addCustomField}
-            />
-          </div>
+          <button
+            type="button"
+            onClick={handleDeleteCharacter}
+            title={t("character.wiki.deleteCharacterTitle")}
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-destructive/10 hover:text-destructive"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-1.5 text-[12px] text-muted">
+          <span className="font-medium">{t("character.classificationLabel")}</span>
+          <span className="text-border/60">·</span>
+          <span className="text-accent/80">{t(currentTemplate.nameKey)}</span>
+          <span className="text-border/60">·</span>
+          <BufferedInput
+            className="inline min-w-[60px] font-medium text-accent/80 bg-transparent border-none p-0 focus:outline-none focus:bg-active focus:rounded-sm focus:px-1 transition-all"
+            value={character.description || ""}
+            placeholder={t("character.uncategorized")}
+            onSave={(val) => updateCharacter({ id: character.id, description: val })}
+          />
         </div>
       </div>
+
+      {/* ── Body ────────────────────────────────────────────────────────── */}
+      {viewMode === "wiki" ? (
+        <>
+          {/* Identity anchor — wiki only */}
+          <div className="flex flex-col gap-3">
+            <BufferedInput
+              className="text-[15px] italic text-fg/70 bg-transparent border-none w-full p-0 focus:outline-none placeholder:text-muted/35 leading-relaxed"
+              value={attrs.tagline}
+              placeholder="이 인물을 한 마디로 표현한다면..."
+              onSave={attrs.setTagline}
+            />
+            {/* Roles */}
+            <div className="flex items-center flex-wrap gap-1.5 min-h-[22px]">
+              <span className="text-[11px] text-muted/60 font-medium w-6 shrink-0">역할</span>
+              {attrs.roles.map((role) => (
+                <span
+                  key={role}
+                  className="group/tag flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[12px] font-medium"
+                  style={{ backgroundColor: `${attrs.characterColor}18`, color: attrs.characterColor }}
+                >
+                  {role}
+                  <button
+                    type="button"
+                    onClick={() => attrs.removeRole(role)}
+                    className="opacity-0 group-hover/tag:opacity-100 transition-opacity hover:text-destructive ml-0.5"
+                  >
+                    <X size={9} />
+                  </button>
+                </span>
+              ))}
+              <AddTagInline onAdd={attrs.addRole} placeholder="+ 역할" />
+            </div>
+            {/* Keywords */}
+            <div className="flex items-center flex-wrap gap-1.5 min-h-[22px]">
+              <span className="text-[11px] text-muted/60 font-medium w-6 shrink-0">태그</span>
+              {attrs.keywords.map((kw) => (
+                <span
+                  key={kw}
+                  className="group/tag flex items-center gap-0.5 px-2 py-0.5 rounded-full border border-border/60 text-muted text-[12px]"
+                >
+                  #{kw}
+                  <button
+                    type="button"
+                    onClick={() => attrs.removeKeyword(kw)}
+                    className="opacity-0 group-hover/tag:opacity-100 transition-opacity hover:text-destructive ml-0.5"
+                  >
+                    <X size={9} />
+                  </button>
+                </span>
+              ))}
+              <AddTagInline onAdd={attrs.addKeyword} placeholder="+ 태그" />
+            </div>
+          </div>
+          <div className="h-px bg-border/30" />
+          {/* Two-column — sections left, Infobox right */}
+          <div className="@container">
+            <div className="flex flex-col @min-[700px]:flex-row gap-8 items-start">
+              <div className="flex-1 min-w-0 w-full @min-[700px]:order-1 order-2">
+                <WikiContentPanel attrs={attrs} />
+              </div>
+              <div className="w-full @min-[700px]:w-[280px] shrink-0 @min-[700px]:order-2 order-1">
+                <Infobox
+                  title={character.name}
+                  image={<User size={80} color="var(--border-active)" />}
+                  rows={infoboxRows}
+                  onAddField={addCustomField}
+                />
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        /* Visual: full-width visualization panel */
+        <CharacterVisualPanel characterId={character.id} characterName={character.name} attrs={attrs} />
+      )}
     </div>
   );
 }

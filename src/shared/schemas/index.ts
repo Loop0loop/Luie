@@ -477,6 +477,9 @@ export const editorSettingsSchema = z.strictObject({
   customFontFamily: z.string().max(200).optional(),
   fontSize: z.number().int().positive(),
   lineHeight: z.number().positive(),
+  letterSpacing: z.number().min(0).max(0.3).optional().default(0.05),
+  wordSpacing: z.number().min(0).max(0.2).optional().default(0.06),
+  paragraphSpacing: z.number().min(0).max(3).optional().default(1.0),
   maxWidth: z.number().int().positive(),
   spellcheckEnabled: z.boolean().optional().default(true),
   theme: z.enum(["light", "dark", "sepia"]),
@@ -493,6 +496,12 @@ export const editorSettingsSchema = z.strictObject({
     .pipe(z.enum(["default", "docs", "editor", "scrivener"]))
     .catch("default"),
   enableAnimations: z.boolean().optional().default(true),
+  entityColors: z.object({
+    character: z.string(),
+    event: z.string(),
+    faction: z.string(),
+    term: z.string(),
+  }).optional(),
 });
 
 export const settingsAutoSaveSchema = z.strictObject({
@@ -549,6 +558,8 @@ const uiMainViewSchema = z.strictObject({
 const uiScrivenerSectionsSchema = z.strictObject({
   manuscript: z.boolean(),
   characters: z.boolean(),
+  events: z.boolean(),
+  factions: z.boolean(),
   world: z.boolean(),
   scrap: z.boolean(),
   snapshots: z.boolean(),
@@ -612,6 +623,36 @@ const projectLayoutStateSchema = z.strictObject({
     inspectorOpen: z.boolean(),
     sections: uiScrivenerSectionsSchema,
   }),
+  editor: z.strictObject({
+    sidebarOpen: z.boolean().optional(),
+    binderRailOpen: z.boolean().optional(),
+    rightTab: uiRightPanelTabSchema.nullable().optional(),
+    activeChapterId: z.string().nullable(),
+    scrollYByChapter: z.record(z.string(), z.number()),
+  }).optional(),
+  workspace: z.strictObject({
+    panels: z.array(
+      z.strictObject({
+        id: z.string().min(1),
+        content: z.strictObject({
+          type: z.enum(["research", "editor", "export"]),
+          id: z.string().optional(),
+          tab: z
+            .enum(["character", "world", "event", "faction", "scrap", "analysis"])
+            .optional(),
+        }),
+        size: z.number().finite(),
+      }),
+    ),
+    researchPanelSizes: z
+      .partialRecord(
+        z.enum(["character", "world", "event", "faction", "scrap", "analysis"]),
+        z.number().finite(),
+      )
+      .optional(),
+  }).optional(),
+  sidebarWidths: z.record(z.string(), z.number().finite()).optional(),
+  layoutSurfaceRatios: z.record(z.string(), z.number().finite()).optional(),
 });
 
 export const projectLayoutPersistedStateSchema = z.strictObject({

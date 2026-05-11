@@ -33,6 +33,9 @@ export const IPC_CHANNELS = {
   CHARACTER_GET_ALL: "character:get-all",
   CHARACTER_UPDATE: "character:update",
   CHARACTER_DELETE: "character:delete",
+  CHARACTER_GENERATE_IMAGE: "character:generate-image",
+  CHARACTER_GENERATE_QUOTE: "character:generate-quote",
+  CHARACTER_GENERATE_STATS: "character:generate-stats",
 
   // Event Channels
   EVENT_CREATE: "event:create",

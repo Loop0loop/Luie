@@ -10,6 +10,7 @@ type LayoutSurfaceRatioSetter = (surface: LayoutSurfaceId, ratio: number) => voi
 
 type UseLayoutSurfaceResizeCommitOptions = {
   idleMs?: number;
+  onCommit?: (surface: LayoutSurfaceId, ratio: number) => void;
 };
 
 export function useLayoutSurfaceResizeCommit(
@@ -37,7 +38,8 @@ export function useLayoutSurfaceResizeCommit(
 
     lastCommittedRatioRef.current = nextRatio;
     setLayoutSurfaceRatio(surface, nextRatio);
-  }, [setLayoutSurfaceRatio, surface]);
+    options?.onCommit?.(surface, nextRatio);
+  }, [options, setLayoutSurfaceRatio, surface]);
 
   const scheduleFlush = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);

@@ -14,7 +14,7 @@ type UseProjectMemoNotesOptions = {
 export function useProjectMemoNotes(options: UseProjectMemoNotesOptions) {
   const {
     defaultNotes = [],
-    flushOnCleanup = false,
+    flushOnCleanup = true,
     projectId,
     projectPath,
   } = options;

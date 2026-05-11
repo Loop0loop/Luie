@@ -108,4 +108,177 @@ describe("projectLayoutStore", () => {
     const saved = projectLayoutModule.useProjectLayoutStore.getState().getProjectLayout("project-a");
     expect(saved.docs.rightTab).toBe("snapshot");
   });
+
+  it("stores docs and editor right rail state independently", () => {
+    const store = projectLayoutModule.useProjectLayoutStore.getState();
+
+    store.upsertProjectLayout("project-a", {
+      docs: {
+        sidebarOpen: true,
+        binderBarOpen: false,
+        rightTab: "world",
+      },
+    });
+    store.upsertProjectLayout("project-a", {
+      editor: {
+        sidebarOpen: false,
+        binderRailOpen: true,
+        rightTab: "event",
+      },
+    });
+
+    const saved = projectLayoutModule.useProjectLayoutStore
+      .getState()
+      .getProjectLayout("project-a");
+    expect(saved.docs.sidebarOpen).toBe(true);
+    expect(saved.docs.binderBarOpen).toBe(false);
+    expect(saved.docs.rightTab).toBe("world");
+    expect(saved.editor.sidebarOpen).toBe(false);
+    expect(saved.editor.binderRailOpen).toBe(true);
+    expect(saved.editor.rightTab).toBe("event");
+  });
+
+  it("keeps existing right tabs when partial chrome patches omit them", () => {
+    const store = projectLayoutModule.useProjectLayoutStore.getState();
+
+    store.upsertProjectLayout("project-a", {
+      docs: {
+        rightTab: "world",
+      },
+      editor: {
+        rightTab: "event",
+      },
+    });
+    store.upsertProjectLayout("project-a", {
+      docs: {
+        binderBarOpen: false,
+      },
+      editor: {
+        binderRailOpen: false,
+      },
+    });
+
+    const saved = projectLayoutModule.useProjectLayoutStore
+      .getState()
+      .getProjectLayout("project-a");
+    expect(saved.docs.rightTab).toBe("world");
+    expect(saved.docs.binderBarOpen).toBe(false);
+    expect(saved.editor.rightTab).toBe("event");
+    expect(saved.editor.binderRailOpen).toBe(false);
+  });
+
+  it("merges sidebar widths and layout ratios without dropping existing values", () => {
+    const store = projectLayoutModule.useProjectLayoutStore.getState();
+
+    store.upsertProjectLayout("project-a", {
+      sidebarWidths: {
+        characterSidebar: 330,
+      },
+      layoutSurfaceRatios: {
+        "docs.panel.character": 38,
+      },
+    });
+    store.upsertProjectLayout("project-a", {
+      sidebarWidths: {
+        factionSidebar: 350,
+      },
+      layoutSurfaceRatios: {
+        "docs.panel.faction": 41,
+      },
+    });
+
+    const saved = projectLayoutModule.useProjectLayoutStore
+      .getState()
+      .getProjectLayout("project-a");
+    expect(saved.sidebarWidths.characterSidebar).toBe(330);
+    expect(saved.sidebarWidths.factionSidebar).toBe(350);
+    expect(saved.layoutSurfaceRatios["docs.panel.character"]).toBe(38);
+    expect(saved.layoutSurfaceRatios["docs.panel.faction"]).toBe(41);
+  });
+
+  it("stores workspace research panel layout with its last split size", () => {
+    const store = projectLayoutModule.useProjectLayoutStore.getState();
+
+    store.upsertProjectLayout("project-a", {
+      workspace: {
+        panels: [
+          {
+            id: "research-character",
+            content: { type: "research", tab: "character" },
+            size: 62.5,
+          },
+          {
+            id: "research-faction",
+            content: { type: "research", tab: "faction" },
+            size: 37.5,
+          },
+        ],
+        researchPanelSizes: {
+          character: 62.5,
+          event: 48,
+          faction: 37.5,
+        },
+      },
+    });
+
+    const saved = projectLayoutModule.useProjectLayoutStore
+      .getState()
+      .getProjectLayout("project-a");
+
+    expect(saved.workspace.panels).toEqual([
+      {
+        id: "research-character",
+        content: { type: "research", tab: "character" },
+        size: 62.5,
+      },
+      {
+        id: "research-faction",
+        content: { type: "research", tab: "faction" },
+        size: 37.5,
+      },
+    ]);
+    expect(saved.workspace.researchPanelSizes).toEqual({
+      character: 62.5,
+      event: 48,
+      faction: 37.5,
+    });
+  });
+
+  it("keeps independent research panel sizes when only one tab is updated", () => {
+    const store = projectLayoutModule.useProjectLayoutStore.getState();
+
+    store.upsertProjectLayout("project-a", {
+      workspace: {
+        researchPanelSizes: {
+          character: 61,
+          event: 44,
+          faction: 39,
+          world: 53,
+          scrap: 47,
+          analysis: 58,
+        },
+      },
+    });
+
+    store.upsertProjectLayout("project-a", {
+      workspace: {
+        researchPanelSizes: {
+          event: 50,
+        },
+      },
+    });
+
+    const saved = projectLayoutModule.useProjectLayoutStore
+      .getState()
+      .getProjectLayout("project-a");
+
+    expect(saved.workspace.researchPanelSizes).toEqual({
+      character: 61,
+      event: 50,
+      faction: 39,
+      world: 53,
+      scrap: 47,
+      analysis: 58,
+    });
+  });
 });

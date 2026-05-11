@@ -55,6 +55,7 @@ const settingsTabFallback = (
 );
 
 export default function SettingsModal({ onClose }: SettingsModalProps) {
+  const settings = useSettingsManager();
   const {
     t,
     i18n,
@@ -92,7 +93,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     handleSyncNow,
     handleToggleAutoSync,
     handleResolveConflict,
-  } = useSettingsManager();
+  } = settings;
 
   const tabs = useMemo(
     () =>
@@ -125,12 +126,12 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 onClick={() => setActiveTab(tab.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   activeTab === tab.id
-                    ? "bg-fg text-app shadow-md"
+                    ? "bg-accent text-accent-fg shadow-md"
                     : "text-muted hover:bg-surface-hover hover:text-fg"
                 }`}
               >
                 <tab.icon
-                  className={`w-4 h-4 ${activeTab === tab.id ? "text-app" : "text-subtle"}`}
+                  className={`w-4 h-4 ${activeTab === tab.id ? "text-accent-fg" : "text-subtle"}`}
                 />
                 {tab.label}
               </button>
@@ -163,8 +164,14 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                   t={t}
                   localFontSize={localFontSize}
                   localLineHeight={localLineHeight}
+                  localLetterSpacing={settings.localLetterSpacing}
+                  localWordSpacing={settings.localWordSpacing}
+                  localParagraphSpacing={settings.localParagraphSpacing}
                   onSetLocalFontSize={setLocalFontSize}
                   onSetLocalLineHeight={setLocalLineHeight}
+                  onSetLocalLetterSpacing={settings.setLocalLetterSpacing}
+                  onSetLocalWordSpacing={settings.setLocalWordSpacing}
+                  onSetLocalParagraphSpacing={settings.setLocalParagraphSpacing}
                 />
               )}
 

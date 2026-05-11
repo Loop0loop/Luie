@@ -6,7 +6,7 @@ import {
   useCallback,
 } from "react";
 import { type Editor } from "@tiptap/react";
-import { Panel, Group as PanelGroup } from "react-resizable-panels";
+import { Panel, Group as PanelGroup, type Layout } from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
 import FocusHoverSidebar from "@renderer/features/manuscript/components/FocusHoverSidebar";
 import Ribbon from "@renderer/features/editor/components/Ribbon";
@@ -18,6 +18,7 @@ import { BinderSidebar, BinderSidebarRail } from "@renderer/features/manuscript/
 import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@shared/constants/configs";
 import { toPercentSize } from "@shared/constants/sidebarSizing";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
+import { getPanelLayoutValue } from "@renderer/features/workspace/hooks/useLayoutPersist";
 
 interface EditorLayoutProps {
   children?: ReactNode;
@@ -52,6 +53,8 @@ export default function EditorLayout({
 
   const maxWidth = useEditorStore((state) => state.maxWidth);
   const activeRightTab = useUIStore((state) => state.docsRightTab);
+  const isBinderBarOpen = useUIStore((state) => state.regions.rightRail.open);
+  const updatePanelSize = useUIStore((state) => state.updatePanelSize);
   const [isBinderRailHoverSuppressed, setIsBinderRailHoverSuppressed] =
     useState(false);
   const binderRailHoverSuppressionTimeoutRef = useRef<ReturnType<
@@ -74,6 +77,17 @@ export default function EditorLayout({
   }, []);
 
   const editorLayoutGroupWidth = useElementWidth(editorLayoutGroupRef);
+
+  const handleEditorLayoutChanged = useCallback(
+    (layout: Layout) => {
+      additionalPanelIds.forEach((panelId, panelIndex) => {
+        const rawSize = getPanelLayoutValue(layout, panelId, panelIndex + 1);
+        if (typeof rawSize !== "number" || !Number.isFinite(rawSize)) return;
+        updatePanelSize(panelId, rawSize);
+      });
+    },
+    [additionalPanelIds, updatePanelSize],
+  );
 
   useEffect(
     () => () => {
@@ -123,6 +137,7 @@ export default function EditorLayout({
           topOffset={sidebarTopOffset}
           activationWidthPx={320}
           closeDelayMs={260}
+          suppressHoverOpen={isBinderBarOpen || Boolean(activeRightTab)}
         >
           <div className="h-full flex flex-col bg-panel border-r border-border min-w-[280px]">
             {sidebar}
@@ -138,6 +153,7 @@ export default function EditorLayout({
             className="flex w-full h-full flex-1 overflow-hidden relative"
             id="editor-layout-group"
             elementRef={editorLayoutGroupRef}
+            onLayoutChanged={handleEditorLayoutChanged}
           >
             <Panel
               id="main-editor-view"
@@ -149,13 +165,13 @@ export default function EditorLayout({
 
                 {/* Scrollable Editor Area */}
                 <div
-                  className="flex-1 h-full overflow-y-auto bg-sidebar flex flex-col items-center custom-scrollbar shrink-0 relative"
+                  className="flex-1 h-full overflow-y-scroll bg-background flex flex-col items-center custom-scrollbar shrink-0 relative"
                   data-editor-scroll-container="true"
                 >
-                  {/* A4 페이지 (max-width 적용) */}
+                  {/* Editor Container (No Paper Shadow) */}
                   <div
-                    className="min-h-[1056px] bg-surface text-fg shadow-xl border border-border py-12 px-12 my-8 transition-shadow duration-150 ease-out shrink-0"
-                    style={{ width: maxWidth ?? 816 }}
+                    className="min-h-full bg-transparent text-fg py-12 px-8 transition-all duration-150 ease-out shrink-0"
+                    style={{ width: maxWidth ?? 816, maxWidth: "100%" }}
                   >
                     {/* 챕터 제목 */}
                     {activeChapterTitle && (
@@ -197,6 +213,7 @@ export default function EditorLayout({
           </PanelGroup>
 
           <BinderSidebarRail
+            currentProjectId={currentProjectId}
             sidebarTopOffset={sidebarTopOffset}
             suppressHoverOpen={isBinderRailHoverSuppressed}
           />

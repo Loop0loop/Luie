@@ -27,6 +27,7 @@ export const AppearanceTab = memo(function AppearanceTab({
         themeTexture,
         uiMode,
         enableAnimations,
+        entityColors,
         updateSettings: onApplySettings,
     } = useEditorStore(
         useShallow((state) => ({
@@ -37,6 +38,7 @@ export const AppearanceTab = memo(function AppearanceTab({
             themeTexture: state.themeTexture,
             uiMode: state.uiMode,
             enableAnimations: state.enableAnimations,
+            entityColors: state.entityColors,
             updateSettings: state.updateSettings,
         }))
     );
@@ -101,7 +103,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                         <button
                             key={accent}
                             onClick={() => onApplySettings({ themeAccent: accent })}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${themeAccent === accent ? "ring-2 ring-offset-2 ring-text-primary scale-110" : "hover:scale-110"
+                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${themeAccent === accent ? "ring-2 ring-offset-2 ring-accent scale-110" : "hover:scale-110"
                                 }`}
                             style={{
                                 backgroundColor: `var(--color-bg-${accent}, ${accent === "blue"
@@ -161,7 +163,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                                 key={c}
                                 onClick={() => onApplySettings({ themeContrast: c })}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${themeContrast === c
-                                    ? "bg-text-primary text-bg-app border-transparent"
+                                    ? "bg-accent text-accent-fg border-transparent"
                                     : "border-border text-muted hover:text-fg"
                                     }`}
                             >
@@ -180,7 +182,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                     <p className="text-sm text-muted mt-1">{t("settings.uiMode.description")}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                    {(["default", "docs", "editor", "scrivener"] as const).map((mode) => (
+                    {(["default", "docs", "editor", "scrivener", "focus"] as const).map((mode) => (
                         <button
                             key={mode}
                             onClick={() => onApplySettings({ uiMode: mode })}
@@ -194,6 +196,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                                 {mode === "docs" && t("settings.uiMode.docs")}
                                 {mode === "editor" && t("settings.uiMode.editor")}
                                 {mode === "scrivener" && t("settings.uiMode.scrivener")}
+                                {mode === "focus" && t("settings.uiMode.focus")}
                             </div>
                         </button>
                     ))}
@@ -220,7 +223,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                     <button
                         onClick={() => onApplySettings({ themeTemp: "neutral" })}
                         className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-colors duration-150 ${themeTemp === "neutral"
-                            ? "border-text-secondary bg-text-secondary/5 ring-1 ring-text-secondary"
+                            ? "border-accent bg-accent/5 ring-1 ring-accent"
                             : "border-border hover:bg-surface-hover"
                             }`}
                     >
@@ -238,6 +241,41 @@ export const AppearanceTab = memo(function AppearanceTab({
                         <span className="text-sm font-semibold text-fg mb-1">{t("settings.appearance.atmosphere.warm.title")}</span>
                         <span className="text-xs text-muted">{t("settings.appearance.atmosphere.warm.description")}</span>
                     </button>
+                </div>
+            </section>
+
+            <div className="h-px bg-border my-6" />
+
+            <section className="space-y-4">
+                <div>
+                    <h3 className="text-base font-semibold text-fg">{t("settings.appearance.entityColors.title", "세계관 요소 색상")}</h3>
+                    <p className="text-sm text-muted mt-1">{t("settings.appearance.entityColors.description", "에디터 및 그래프에서 표시되는 요소들의 고유 색상을 지정합니다.")}</p>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {(["character", "event", "faction", "term"] as const).map((type) => (
+                        <div key={type} className="flex flex-col items-center gap-2 p-3 rounded-xl border border-border bg-surface hover:bg-surface-hover transition-colors">
+                            <span className="text-sm font-medium text-fg capitalize">{t(`research.graph.entity.${type}`, type)}</span>
+                            <div className="relative w-8 h-8 rounded-full overflow-hidden border border-border/50 ring-2 ring-transparent focus-within:ring-accent transition-all cursor-pointer">
+                                <input
+                                    type="color"
+                                    value={entityColors?.[type as keyof typeof entityColors] ?? "#000000"}
+                                    onChange={(e) => {
+                                        onApplySettings({
+                                            entityColors: {
+                                                character: entityColors?.character ?? "#2563eb",
+                                                event: entityColors?.event ?? "#d97706",
+                                                faction: entityColors?.faction ?? "#059669",
+                                                term: entityColors?.term ?? "#7c3aed",
+                                                [type]: e.target.value
+                                            }
+                                        });
+                                    }}
+                                    className="absolute -top-2 -left-2 w-12 h-12 cursor-pointer border-0 p-0 m-0"
+                                    title={t(`research.graph.entity.${type}`, type)}
+                                />
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </section>
 

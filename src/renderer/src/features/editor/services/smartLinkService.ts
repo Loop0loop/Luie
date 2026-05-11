@@ -6,6 +6,7 @@ import { useTermStore } from '@renderer/features/research/stores/termStore';
 import { useUIStore } from '@renderer/features/workspace/stores/uiStore';
 import type { Character, Term } from '@shared/types';
 import { openDocsRightTab } from '@renderer/features/workspace/services/docsPanelService';
+import { openEditorBinderTab } from '@renderer/features/workspace/services/layoutRegionActions';
 
 type SmartLinkEntityType = "character" | "term";
 
@@ -101,10 +102,12 @@ class SmartLinkService {
     const uiMode = useEditorStore.getState().uiMode;
 
     if (uiMode === "docs" || uiMode === "editor") {
+      const openRightTab =
+        uiMode === "editor" ? openEditorBinderTab : openDocsRightTab;
       if (type === "character") {
-        openDocsRightTab("character");
+        openRightTab("character");
       } else {
-        openDocsRightTab("world");
+        openRightTab("world");
         uiStore.setWorldTab("terms");
       }
     } else {

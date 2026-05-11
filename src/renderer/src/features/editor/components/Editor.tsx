@@ -7,10 +7,12 @@ import {
 import "@renderer/styles/components/editor.css";
 import { cn } from "@shared/types/utils";
 import EditorToolbar from "@renderer/features/editor/components/EditorToolbar";
+import EditorBubbleMenu from "@renderer/features/editor/components/EditorBubbleMenu";
 import { useBufferedInput } from "@renderer/features/editor/hooks/useBufferedInput";
 import { useEditorAutosave } from "@renderer/features/editor/hooks/useEditorAutosave";
 import { useEditorStats } from "@renderer/features/editor/hooks/useEditorStats";
 import { useEditorConfig } from "@renderer/features/editor/hooks/useEditorConfig";
+import { useEditorScrollRestoration } from "@renderer/features/editor/hooks/useEditorScrollRestoration";
 import { api } from "@shared/api";
 import { useTranslation } from "react-i18next";
 import { useDialog } from "@shared/ui/useDialog";
@@ -22,6 +24,7 @@ import { useSmartLinkClickHandler } from "@renderer/features/editor/components/h
 import { useTypewriterScroll } from "@renderer/features/editor/components/hooks/useTypewriterScroll";
 import StatusFooter from "@shared/ui/StatusFooter";
 import { EditorSyncBus } from "@renderer/features/workspace/utils/EditorSyncBus";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
 import { useTermStore } from "@renderer/features/research/stores/termStore";
 import type { Character, Term } from "@shared/types";
@@ -61,8 +64,9 @@ function Editor({
 }: EditorProps) {
   const { t } = useTranslation();
   const dialog = useDialog();
-  const { fontFamilyCss, fontSize, lineHeight, getFontFamily } =
+  const { fontFamilyCss, fontSize, lineHeight, letterSpacing, wordSpacing, paragraphSpacing, getFontFamily } =
     useEditorConfig();
+  const entityColors = useEditorStore((state) => state.entityColors);
   const { updateStats } = useEditorStats();
   const [isMobileView, setIsMobileView] = useState(false);
 
@@ -92,6 +96,8 @@ function Editor({
     title,
     content,
   });
+
+  useEditorScrollRestoration(chapterId);
 
   // Tiptap Extensions imported remotely
 
@@ -286,6 +292,17 @@ function Editor({
     <div
       className="flex flex-col h-full w-full bg-transparent text-foreground relative box-border overflow-hidden"
       data-testid="editor"
+      style={{
+        "--entity-character-color": entityColors?.character ?? "#2563eb",
+        "--entity-event-color": entityColors?.event ?? "#d97706",
+        "--entity-faction-color": entityColors?.faction ?? "#059669",
+        "--entity-term-color": entityColors?.term ?? "#7c3aed",
+        // 자간/어간: CSS custom property로 주입 → editorProps dep array 무관하게 reactive
+        "--editor-letter-spacing": `${letterSpacing}em`,
+        "--editor-word-spacing": `${wordSpacing}em`,
+        "--editor-line-height": String(lineHeight),
+        "--editor-paragraph-spacing": `${paragraphSpacing}em`,
+      } as React.CSSProperties}
     >
       {!hideToolbar && (
         <div className="shrink-0 border-b border-border z-10">
@@ -304,13 +321,13 @@ function Editor({
       <div
         className={cn(
           "flex-1 flex flex-col min-h-0",
-          scrollable ? "overflow-y-auto px-10 py-5" : "",
+          scrollable ? "overflow-y-scroll px-10 py-5" : "",
         )}
         data-editor-scroll-container={scrollable ? "true" : undefined}
       >
         <div
           className={cn(
-            "w-full flex flex-col flex-1 min-h-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] bg-transparent border-none shadow-none m-0",
+            "w-full max-w-[800px] mx-auto flex flex-col flex-1 min-h-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] bg-transparent border-none shadow-none m-0",
             isMobileView &&
               "w-107.5 max-w-107.5 h-[95%] mx-auto my-5 border-8 border-[#2c2c2e] rounded-[48px] bg-editor-bg shadow-[0_0_0_2px_rgba(69,69,69,0.9),0_25px_50px_-12px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.05)] overflow-hidden relative",
             // If not scrollable (Docs mode), we don't want h-full constraining it, we want it to check mobile view or just flow
@@ -367,6 +384,7 @@ function Editor({
                   : "block h-auto",
               )}
             />
+            {editor && <EditorBubbleMenu editor={editor} />}
           </div>
         </div>
       </div>

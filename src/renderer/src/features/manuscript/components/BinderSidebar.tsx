@@ -1,7 +1,9 @@
+import { useLayoutEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft } from "lucide-react";
 import { Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
-import FocusHoverSidebar from "@renderer/features/manuscript/components/FocusHoverSidebar";
+import { PanelRightOpen } from "lucide-react";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { beginLayoutRestoring } from "@renderer/features/workspace/hooks/useProjectLayoutPersistence";
 import {
   getResponsivePanelSize,
   toPanelPercentSize,
@@ -34,13 +36,34 @@ export function BinderSidebar({
         savedRatio,
         setActiveRightTab,
         setFocusedClosableTarget,
-        setRegionOpen,
+        setRailOpen,
         widthConfig,
-    } = useBinderSidebarState();
+    } = useBinderSidebarState(currentProjectId ?? null);
     const binderSize = getResponsivePanelSize(groupWidthPx, widthConfig);
+    const restoreFrameRef = useRef<number | null>(null);
+
+    useLayoutEffect(() => {
+        if (!activeRightTab) return;
+        const endRestoring = beginLayoutRestoring();
+        restoreFrameRef.current = requestAnimationFrame(() => {
+            restoreFrameRef.current = requestAnimationFrame(() => {
+                restoreFrameRef.current = null;
+                endRestoring();
+            });
+        });
+        return () => {
+            if (restoreFrameRef.current !== null) {
+                cancelAnimationFrame(restoreFrameRef.current);
+                restoreFrameRef.current = null;
+            }
+            endRestoring();
+        };
+    }, [activeRightTab, savedRatio]);
+
     const handleClosePanel = () => {
         onManualClose?.();
         setActiveRightTab(null);
+        setRailOpen(false);
     };
 
     if (!activeRightTab) return null;
@@ -74,7 +97,7 @@ export function BinderSidebar({
                 {isPanelRailOpen ? (
                     <BinderSidebarTabs
                         activeTab={activeRightTab}
-                        onCloseRail={() => setRegionOpen("rightRail", false)}
+                        onCloseRail={() => setRailOpen(false)}
                         onTabClick={handleRightTabClick}
                         t={t}
                     />
@@ -82,7 +105,7 @@ export function BinderSidebar({
                     <BinderSidebarTabs
                         activeTab={activeRightTab}
                         compact
-                        onOpenRail={() => setRegionOpen("rightRail", true)}
+                        onOpenRail={() => setRailOpen(true)}
                         onTabClick={handleRightTabClick}
                         t={t}
                     />
@@ -93,52 +116,62 @@ export function BinderSidebar({
 }
 
 export function BinderSidebarRail({
+    currentProjectId,
     sidebarTopOffset,
-    suppressHoverOpen = false,
 }: {
+    currentProjectId?: string | null;
     sidebarTopOffset: number;
     suppressHoverOpen?: boolean;
 }) {
     const { t } = useTranslation();
+    const enableAnimations = useEditorStore((state) => state.enableAnimations);
     const {
         activeRightTab,
         isRightRailOpen,
         setActiveRightTab,
-        setRegionOpen,
-    } = useBinderSidebarState();
+        setRailOpen,
+    } = useBinderSidebarState(currentProjectId ?? null);
 
     if (activeRightTab) return null;
 
     if (!isRightRailOpen) {
         return (
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
-                <button
-                    onClick={() => setRegionOpen("rightRail", true)}
-                    className="w-8 h-12 bg-background border border-r-0 border-border shadow-sm rounded-l-lg flex items-center justify-center hover:bg-surface-hover transition-colors duration-150 text-muted-foreground"
-                    title={t("sidebar.toggle.open")}
-                >
-                    <ChevronLeft className="w-5 h-5" />
-                </button>
-            </div>
+            <button
+                type="button"
+                onClick={() => setRailOpen(true)}
+                className={`fixed right-2 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-border/50 bg-panel text-muted-foreground shadow-sm hover:bg-surface-hover hover:text-fg ${
+                    enableAnimations ? "transition-colors duration-150" : "transition-none"
+                }`}
+                style={{
+                    top: sidebarTopOffset + 16,
+                }}
+                title={t("sidebar.toggle.open")}
+            >
+                <PanelRightOpen className="h-5 w-5" />
+            </button>
         );
     }
 
     return (
-        <FocusHoverSidebar
-            side="right"
-            topOffset={sidebarTopOffset}
-            activationWidthPx={84}
-            closeDelayMs={240}
-            suppressHoverOpen={suppressHoverOpen}
+        <div
+            className={`fixed right-0 z-50 bg-panel shadow-xl ${
+                enableAnimations
+                    ? "animate-in slide-in-from-right fade-in duration-180"
+                    : ""
+            }`}
+            style={{
+                top: sidebarTopOffset,
+                height: `calc(100vh - ${sidebarTopOffset}px)`,
+            }}
         >
             <div className="h-full flex flex-row shadow-xl">
                 <BinderSidebarTabs
                     activeTab={activeRightTab}
-                    onCloseRail={() => setRegionOpen("rightRail", false)}
+                    onCloseRail={() => setRailOpen(false)}
                     onTabClick={setActiveRightTab}
                     t={t}
                 />
             </div>
-        </FocusHoverSidebar>
+        </div>
     );
 }

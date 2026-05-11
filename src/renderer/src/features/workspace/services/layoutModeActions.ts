@@ -9,7 +9,6 @@ type LayoutModeActionsOptions = {
   docsRightTab: DocsRightTab;
   activeChapterId?: string | null;
   openDocsRightTab: (tab: Exclude<DocsRightTab, null>) => void;
-  openRightPanelTab?: (tab: Exclude<DocsRightTab, null>) => void;
   closeRightPanel?: () => void;
   toggleLeftSidebar?: () => void;
   setDocsRightTab: (tab: DocsRightTab) => void;
@@ -35,7 +34,7 @@ const RESEARCH_TAB_TO_DOCS_TAB: Record<
 };
 
 export function createLayoutModeActions(options: LayoutModeActionsOptions) {
-  const openDocsTab = options.openRightPanelTab ?? options.openDocsRightTab;
+  const openDocsTab = options.openDocsRightTab;
   const closeDocsPanel = options.closeRightPanel ?? (() => options.setDocsRightTab(null));
   const toggleSidebar = options.toggleLeftSidebar ?? (() => options.setSidebarOpen(!options.isSidebarOpen));
 

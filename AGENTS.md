@@ -1,6 +1,6 @@
-# Lagnage: Korean
+# Language: Korean
 
-Awlwas Korean Prompt
+Always Korean Prompt
 
 # PROJECT KNOWLEDGE BASE
 

@@ -54,11 +54,17 @@ jobs:
           bun run build
           bunx electron-builder --win nsis-web --${{ matrix.arch }} --config electron-builder.json --publish never
 
+      - name: List Windows dist outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          find dist -maxdepth 2 -type f -print | sort
+
       - name: Upload Windows assets to release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ steps.release_meta.outputs.release_tag }}
         run: |
           set -euo pipefail
 
@@ -67,7 +73,23 @@ jobs:
             || gh release view "$RELEASE_TAG" >/dev/null
 
           shopt -s nullglob
-          assets=(dist/*.exe dist/*.7z dist/*.yml dist/*.blockmap)
+          installers=(dist/*.exe)
+          packages=(dist/*.7z)
+          assets=(dist/*.exe dist/*.7z dist/*.blockmap)
+          if [ -f dist/latest.yml ]; then
+            assets+=(dist/latest.yml)
+          fi
+          if [ -f dist/latest-${{ matrix.arch }}.yml ]; then
+            assets+=(dist/latest-${{ matrix.arch }}.yml)
+          fi
+          if [ "${#installers[@]}" -eq 0 ]; then
+            echo "No Windows nsis-web installer .exe found in dist"
+            exit 1
+          fi
+          if [ "${#packages[@]}" -eq 0 ]; then
+            echo "No Windows nsis-web package .7z found in dist"
+            exit 1
+          fi
           if [ "${#assets[@]}" -eq 0 ]; then
             echo "No Windows release assets found in dist"
             exit 1
@@ -82,6 +104,7 @@ jobs:
           path: |
             dist/*.exe
             dist/*.7z
-            dist/*.yml
+            dist/latest.yml
+            dist/latest-${{ matrix.arch }}.yml
             dist/*.blockmap
           if-no-files-found: warn

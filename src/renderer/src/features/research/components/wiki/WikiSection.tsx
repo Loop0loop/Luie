@@ -2,12 +2,27 @@ import { Trash2 } from "lucide-react";
 import { BufferedInput, BufferedTextArea } from "@shared/ui/BufferedInput";
 import { useTranslation } from "react-i18next";
 
+/**
+ * Section-specific writing prompts shown as placeholder text.
+ * Guides the writer with targeted questions instead of a blank slate.
+ */
+const SECTION_PROMPTS: Readonly<Record<string, string>> = {
+  overview: "이 인물을 한 문장으로 소개한다면? 작가로서 이 캐릭터에게 끌린 이유는?",
+  appearance:
+    "독자가 처음 이 인물을 봤을 때 어떤 인상을 받을까? 가장 먼저 눈에 띄는 것은?",
+  personality: "이 캐릭터의 핵심 동기는 무엇인가? 무엇이 그들을 움직이는가?",
+  background: "현재 이야기에 가장 큰 영향을 미친 과거의 사건은?",
+  relations:
+    "이 인물이 가장 중요하게 생각하는 관계는? 그 관계가 이야기에 미치는 영향은?",
+  notes: "작가로서 이 캐릭터에 대해 기록해두고 싶은 것들...",
+} as const;
+
 type WikiSectionProps = {
   id: string;
   label: string;
   content: string;
-  onRename: (newLabel: string) => void;
-  onUpdateContent: (newContent: string) => void;
+  onRename: (next: string) => void;
+  onUpdateContent: (next: string) => void;
   onDelete: () => void;
 };
 
@@ -20,33 +35,43 @@ export function WikiSection({
   onDelete,
 }: WikiSectionProps) {
   const { t } = useTranslation();
+  const placeholder =
+    SECTION_PROMPTS[id] ?? t("character.wiki.sectionPlaceholder");
+
   return (
-    <div id={id} className="mb-8">
-      <div className="border-b border-(--namu-border) pb-2 mb-3 flex items-center justify-between">
-        <div className="flex-1">
-            <BufferedInput
+    <div id={id} className="group/section flex flex-col gap-3">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+          <div className="w-[3px] h-5 bg-accent rounded-full shrink-0" />
+          <BufferedInput
             value={label}
-            className="border-none bg-transparent w-full text-[22px] font-bold text-fg p-1 focus:outline-none focus:bg-surface-hover focus:rounded"
+            className="flex-1 border-none bg-transparent text-[15px] font-semibold text-fg/80 p-0 focus:outline-none leading-snug min-w-0"
             onSave={onRename}
-            />
+          />
         </div>
-        <div className="flex gap-2">
-          <button 
-            type="button"
-            className="bg-none border-none text-subtle cursor-pointer p-1 rounded transition-all hover:bg-surface-hover hover:text-danger" 
-            onClick={onDelete}
-            title={t("character.wiki.sectionDeleteTitle")}
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onDelete}
+          title={t("character.wiki.sectionDeleteTitle")}
+          className="opacity-0 group-hover/section:opacity-100 transition-opacity p-1 rounded text-muted hover:text-destructive hover:bg-destructive/10 shrink-0"
+        >
+          <Trash2 size={12} />
+        </button>
       </div>
-      <BufferedTextArea
-        className="w-full min-h-30 leading-relaxed p-3 border border-border rounded bg-surface text-fg resize-y focus:outline-2 focus:outline-accent focus:border-transparent font-sans"
-        value={content || ""}
-        placeholder={t("character.wiki.sectionPlaceholder")}
-        onSave={onUpdateContent}
-      />
+
+      {/* Divider */}
+      <div className="h-px bg-border/40" />
+
+      {/* Writing area — borderless, accent margin line */}
+      <div className="pl-4 border-l-2 border-accent/20">
+        <BufferedTextArea
+          value={content}
+          placeholder={placeholder}
+          className="w-full min-h-[100px] bg-transparent border-none text-fg text-[14px] leading-[2.1] resize-y placeholder:text-muted/35 focus:outline-none p-0"
+          onSave={onUpdateContent}
+        />
+      </div>
     </div>
   );
 }

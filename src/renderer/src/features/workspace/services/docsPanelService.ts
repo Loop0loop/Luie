@@ -1,11 +1,13 @@
-import { useUIStore, type DocsRightTab } from "../stores/uiStore";
+import type { DocsRightTab } from "../stores/uiStore";
+import {
+  openDocsBinderTab,
+  setDocsBinderRailOpen,
+} from "./layoutRegionActions";
 
 export function ensureDocsPanelVisible(): void {
-  const uiStore = useUIStore.getState();
-  uiStore.setRegionOpen("rightRail", true);
+  setDocsBinderRailOpen(true);
 }
 
 export function openDocsRightTab(tab: Exclude<DocsRightTab, null>): void {
-  const uiStore = useUIStore.getState();
-  uiStore.openRightPanelTab(tab);
+  openDocsBinderTab(tab);
 }

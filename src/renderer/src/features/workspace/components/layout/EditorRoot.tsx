@@ -106,11 +106,9 @@ export default function EditorRoot() {
     isContextOpen,
     setSidebarOpen,
     setContextOpen,
-    toggleLeftSidebar,
     setWorldTab,
     docsRightTab,
     setDocsRightTab,
-    openRightPanelTab,
     closeRightPanel,
     isManuscriptMenuOpen,
   } = useUIStore(
@@ -119,11 +117,9 @@ export default function EditorRoot() {
       isContextOpen: state.isContextOpen,
       setSidebarOpen: state.setSidebarOpen,
       setContextOpen: state.setContextOpen,
-      toggleLeftSidebar: state.toggleLeftSidebar,
       setWorldTab: state.setWorldTab,
       docsRightTab: state.docsRightTab,
       setDocsRightTab: state.setDocsRightTab,
-      openRightPanelTab: state.openRightPanelTab,
       closeRightPanel: state.closeRightPanel,
       isManuscriptMenuOpen: state.isManuscriptMenuOpen,
     })),
@@ -132,6 +128,18 @@ export default function EditorRoot() {
   const updateProject = useProjectStore((state) => state.updateProject);
 
   useProjectLayoutPersistence(currentProject?.id ?? null, uiMode);
+
+  const setProjectAwareSidebarOpen = useCallback(
+    (open: boolean) => {
+      setSidebarOpen(open);
+    },
+    [setSidebarOpen],
+  );
+
+  const toggleProjectAwareSidebar = useCallback(
+    () => setProjectAwareSidebarOpen(!isSidebarOpen),
+    [isSidebarOpen, setProjectAwareSidebarOpen],
+  );
 
   const {
     chapters,
@@ -221,12 +229,11 @@ export default function EditorRoot() {
         docsRightTab,
         activeChapterId: activeChapterId ?? null,
         openDocsRightTab,
-        openRightPanelTab,
         closeRightPanel,
-        toggleLeftSidebar,
+        toggleLeftSidebar: toggleProjectAwareSidebar,
         setDocsRightTab,
         setContextOpen,
-        setSidebarOpen,
+        setSidebarOpen: setProjectAwareSidebarOpen,
         addPanel,
         handleSelectResearchItem,
         handleOpenExport,
@@ -245,12 +252,11 @@ export default function EditorRoot() {
       isSidebarOpen,
       isContextOpen,
       openDocsRightTab,
-      openRightPanelTab,
       closeRightPanel,
-      toggleLeftSidebar,
+      toggleProjectAwareSidebar,
       setDocsRightTab,
       setContextOpen,
-      setSidebarOpen,
+      setProjectAwareSidebarOpen,
       addPanel,
       handleSelectResearchItem,
       handleOpenExport,
@@ -294,7 +300,7 @@ export default function EditorRoot() {
     openChapterByIndex,
     handleRenameProject,
     handleQuickExport,
-    setSidebarOpen,
+    setSidebarOpen: setProjectAwareSidebarOpen,
     isSidebarOpen,
     layoutModeActions,
     setWorldTab,

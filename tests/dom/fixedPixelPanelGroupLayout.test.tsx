@@ -3,7 +3,7 @@
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useRef, type MutableRefObject } from "react";
+import { useEffect, useRef, type MutableRefObject } from "react";
 import { useFixedPixelPanelGroupLayout } from "../../src/renderer/src/features/workspace/hooks/useFixedPixelPanelGroupLayout.js";
 
 type MountedView = {
@@ -44,13 +44,17 @@ const flushAsync = async () => {
 
 function FixedLayoutHarness({
   group,
+  onReadyChange,
+  widthPx = 320,
 }: {
   group: GroupLike;
+  onReadyChange?: (isReady: boolean) => void;
+  widthPx?: number;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const groupRef = useRef(group) as MutableRefObject<GroupLike | null>;
 
-  useFixedPixelPanelGroupLayout({
+  const { isLayoutReady } = useFixedPixelPanelGroupLayout({
     containerRef,
     groupRef: groupRef as MutableRefObject<{
       getLayout: () => Record<string, number>;
@@ -59,7 +63,7 @@ function FixedLayoutHarness({
     fixedPanels: [
       {
         id: "memo-sidebar",
-        widthPx: 320,
+        widthPx,
         minPx: 220,
         maxPx: 420,
       },
@@ -67,6 +71,10 @@ function FixedLayoutHarness({
     flexPanelId: "memo-content",
     flexPanelMinPercent: 20,
   });
+
+  useEffect(() => {
+    onReadyChange?.(isLayoutReady);
+  }, [isLayoutReady, onReadyChange]);
 
   return <div ref={containerRef}>layout harness</div>;
 }
@@ -159,5 +167,83 @@ describe("useFixedPixelPanelGroupLayout", () => {
       "memo-sidebar": 32,
       "memo-content": 68,
     });
+  });
+
+  it("marks layout ready after the first fixed-pixel layout is applied", async () => {
+    const readyStates: boolean[] = [];
+    const group = {
+      getLayout: () => ({
+        "memo-sidebar": 32,
+        "memo-content": 68,
+      }),
+      setLayout: vi.fn(),
+    };
+
+    const view = mountView(
+      <FixedLayoutHarness
+        group={group}
+        onReadyChange={(isReady) => readyStates.push(isReady)}
+      />,
+    );
+    mountedViews.push(view);
+    await flushAsync();
+    await act(async () => {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    });
+
+    expect(readyStates).toContain(false);
+    expect(readyStates.at(-1)).toBe(true);
+  });
+
+  it("marks layout not ready again when the target fixed width changes", async () => {
+    const readyStates: boolean[] = [];
+    const group = {
+      getLayout: () => ({
+        "memo-sidebar": 32,
+        "memo-content": 68,
+      }),
+      setLayout: vi.fn(),
+    };
+
+    const view = mountView(
+      <FixedLayoutHarness
+        group={group}
+        widthPx={320}
+        onReadyChange={(isReady) => readyStates.push(isReady)}
+      />,
+    );
+    mountedViews.push(view);
+    await flushAsync();
+    await act(async () => {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    });
+
+    expect(readyStates.at(-1)).toBe(true);
+
+    act(() => {
+      view.root.render(
+        <FixedLayoutHarness
+          group={group}
+          widthPx={360}
+          onReadyChange={(isReady) => readyStates.push(isReady)}
+        />,
+      );
+    });
+    await flushAsync();
+
+    expect(readyStates.at(-1)).toBe(false);
+
+    await act(async () => {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    });
+
+    expect(group.setLayout).toHaveBeenLastCalledWith({
+      "memo-sidebar": 36,
+      "memo-content": 64,
+    });
+    expect(readyStates.at(-1)).toBe(true);
   });
 });

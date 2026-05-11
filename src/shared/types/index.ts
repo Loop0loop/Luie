@@ -774,6 +774,9 @@ export interface EditorSettings {
   customFontFamily?: string;
   fontSize: number;
   lineHeight: number;
+  letterSpacing: number;
+  wordSpacing: number;
+  paragraphSpacing: number;
   maxWidth: number;
   spellcheckEnabled: boolean;
   theme: EditorTheme;
@@ -783,6 +786,12 @@ export interface EditorSettings {
   themeTexture: ThemeTexture;
   uiMode: EditorUiMode;
   enableAnimations: boolean;
+  entityColors?: {
+    character: string;
+    event: string;
+    faction: string;
+    term: string;
+  };
 }
 
 export interface AppSettings {

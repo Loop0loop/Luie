@@ -3,6 +3,7 @@ import type { KeyboardEvent } from "react";
 import { Handle, Position, NodeToolbar, useReactFlow } from "reactflow";
 import { cn } from "@renderer/lib/utils";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import type { WorldEntitySourceType } from "@shared/types";
 import { Trash2, Palette, Edit2, Maximize2 } from "lucide-react";
 import { Button } from "@renderer/components/ui/button";
@@ -39,10 +40,21 @@ export const CustomEntityNode = memo(
 
     const [isEditing, setIsEditing] = useState(false);
     const [editLabel, setEditLabel] = useState(label);
-    const theme =
+    const entityColors = useEditorStore((state) => state.entityColors);
+    const baseTheme =
       GRAPH_ENTITY_CANVAS_THEME_TOKENS[
         entityType as keyof typeof GRAPH_ENTITY_CANVAS_THEME_TOKENS
       ] ?? GRAPH_ENTITY_CANVAS_THEME_TOKENS.WorldEntity;
+
+    const mappedType = entityType.toLowerCase() as keyof typeof entityColors;
+    const customColor = entityColors?.[mappedType];
+
+    const theme = {
+      ...baseTheme,
+      accent: customColor ?? baseTheme.accent,
+      handle: customColor ?? baseTheme.handle,
+      glow: customColor ? `${customColor}33` : baseTheme.glow,
+    };
 
     const effectiveEditLabel = isEditing ? editLabel : label;
 

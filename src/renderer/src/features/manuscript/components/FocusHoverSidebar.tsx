@@ -1,6 +1,7 @@
 import { type ReactNode, useState, useRef, useEffect, useCallback } from "react";
 import { cn } from "@shared/types/utils";
 import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@shared/constants/configs";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 
 interface FocusHoverSidebarProps {
   children: ReactNode;
@@ -38,6 +39,7 @@ export default function FocusHoverSidebar({
   suppressHoverOpen = false,
 }: FocusHoverSidebarProps) {
   const [isHoverOpen, setIsHoverOpen] = useState(false);
+  const enableAnimations = useEditorStore((state) => state.enableAnimations);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const hoverOpenRef = useRef(false);
   const sidebarRectRef = useRef<DOMRect | null>(null);
@@ -88,8 +90,8 @@ export default function FocusHoverSidebar({
     closeTimeoutRef.current = window.setTimeout(() => {
       closeTimeoutRef.current = null;
       closeHoverSidebar();
-    }, closeDelayMs);
-  }, [closeDelayMs, closeHoverSidebar, forceOpen, isResizing]);
+    }, enableAnimations ? closeDelayMs : 0);
+  }, [closeDelayMs, closeHoverSidebar, enableAnimations, forceOpen, isResizing]);
 
   useEffect(() => {
     const updateSidebarMetrics = () => {
@@ -225,7 +227,8 @@ export default function FocusHoverSidebar({
       {/* 트리거 힌트 영역 */}
       <div
         className={cn(
-          "fixed z-50 transition-colors duration-150",
+          "fixed z-50",
+          enableAnimations ? "transition-colors duration-150" : "transition-none",
           side === "left" ? "left-0" : "right-0",
           isOpen ? "pointer-events-none" : "hover:bg-accent/10"
         )}
@@ -236,7 +239,10 @@ export default function FocusHoverSidebar({
       <div
         ref={sidebarRef}
         className={cn(
-          "fixed z-50 transition-transform duration-150 ease-out shadow-xl bg-panel will-change-transform",
+          "fixed z-50 shadow-xl bg-panel will-change-transform",
+          enableAnimations
+            ? "transition-transform duration-150 ease-out"
+            : "transition-none",
           side === "left"
             ? "left-0 border-r border-border"
             : "right-0 border-l border-border",
