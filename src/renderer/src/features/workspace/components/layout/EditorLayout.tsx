@@ -14,7 +14,8 @@ import WindowBar from "@renderer/features/workspace/components/WindowBar";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
-import { BinderSidebar, BinderSidebarRail } from "@renderer/features/manuscript/components/BinderSidebar";
+import { BinderSidebar } from "@renderer/features/manuscript/components/BinderSidebar";
+import { BinderBarCompactHover } from "@renderer/features/workspace/components/BinderBarCompactHover";
 import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@shared/constants/configs";
 import { SIDEBAR_WIDTH_CONFIG, toPercentSize } from "@shared/constants/sidebarSizing";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
@@ -213,8 +214,7 @@ export default function EditorLayout({
             )}
           </PanelGroup>
 
-          <BinderSidebarRail
-            currentProjectId={currentProjectId}
+          <BinderBarCompactHover
             sidebarTopOffset={sidebarTopOffset}
             suppressHoverOpen={isBinderRailHoverSuppressed}
           />
