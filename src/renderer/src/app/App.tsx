@@ -239,11 +239,11 @@ export default function App() {
       isSplitView: false,
       splitRatio: 0.5,
       splitSide: "right",
-      isSidebarOpen: uiState.isSidebarOpen,
-      isContextOpen: uiState.isContextOpen,
+      leftSidebarOpen: uiState.regions.leftSidebar.open,
+      rightPanelOpen: uiState.regions.rightPanel.open,
       isManuscriptMenuOpen: uiState.isManuscriptMenuOpen,
-      docsRightTab: uiState.docsRightTab,
-      isBinderBarOpen: uiState.isBinderBarOpen,
+      rightPanelActiveTab: uiState.regions.rightPanel.activeTab,
+      rightRailOpen: uiState.regions.rightRail.open,
     };
     const snapshot = captureUiModeIntegritySnapshot({
       editor: useEditorStore.getState(),

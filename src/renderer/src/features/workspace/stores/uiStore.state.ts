@@ -65,13 +65,7 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
   contextTab: DEFAULT_UI_CONTEXT_TAB as ContextTab,
   worldTab: "terms",
   panels: [],
-  isSidebarOpen: DEFAULT_REGIONS.leftSidebar.open,
-  isContextOpen: DEFAULT_REGIONS.rightPanel.open,
   isManuscriptMenuOpen: false,
-  docsRightTab: DEFAULT_REGIONS.rightPanel.activeTab,
-  isBinderBarOpen: DEFAULT_REGIONS.rightRail.open,
-  scrivenerSidebarOpen: DEFAULT_REGIONS.leftSidebar.open,
-  scrivenerInspectorOpen: DEFAULT_REGIONS.rightPanel.open,
   scrivenerSections: { ...DEFAULT_SCRIVENER_SECTIONS },
   hasHydrated: false,
   sidebarWidths: { ...DEFAULT_SIDEBAR_WIDTHS },
@@ -154,124 +148,11 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
     })),
   setPanels: (panels) => set({ panels }),
 
-  setSidebarOpen: (isSidebarOpen) =>
-    set((state) => {
-      const unchanged =
-        state.isSidebarOpen === isSidebarOpen &&
-        state.regions.leftSidebar.open === isSidebarOpen;
-      if (unchanged) return state;
-      return {
-        isSidebarOpen,
-        regions: {
-          ...state.regions,
-          leftSidebar: {
-            ...state.regions.leftSidebar,
-            open: isSidebarOpen,
-          },
-        },
-      };
-    }),
-  setContextOpen: (isContextOpen) =>
-    set((state) => {
-      const unchanged =
-        state.isContextOpen === isContextOpen &&
-        state.regions.rightPanel.open === isContextOpen;
-      if (unchanged) return state;
-      const nextRegions = cloneRegions(state.regions);
-      nextRegions.rightPanel.open = isContextOpen;
-      return {
-        isContextOpen,
-        scrivenerInspectorOpen: isContextOpen,
-        regions: nextRegions,
-      };
-    }),
   setManuscriptMenuOpen: (isManuscriptMenuOpen) =>
     set((state) =>
       state.isManuscriptMenuOpen === isManuscriptMenuOpen
         ? state
         : { isManuscriptMenuOpen }),
-  setDocsRightTab: (docsRightTab) => {
-    set((state) => {
-      const nextRightPanelOpen = docsRightTab !== null;
-      const nextRegions = {
-        ...state.regions,
-        rightPanel: {
-          ...state.regions.rightPanel,
-          open: nextRightPanelOpen,
-          activeTab: docsRightTab,
-        },
-      };
-      if (
-        state.docsRightTab === docsRightTab &&
-        state.regions.rightPanel.open === nextRightPanelOpen &&
-        state.regions.rightPanel.activeTab === docsRightTab
-      ) {
-        return state;
-      }
-      return {
-        docsRightTab,
-        isContextOpen: nextRightPanelOpen,
-        scrivenerInspectorOpen: nextRightPanelOpen,
-        regions: nextRegions,
-      };
-    });
-    if (docsRightTab !== null) {
-      setTransientFocusedClosableTarget({ kind: "docs-tab" });
-    } else if (getFocusedClosableTarget()?.kind === "docs-tab") {
-      clearFocusedClosableTarget();
-    }
-  },
-  setBinderBarOpen: (isBinderBarOpen) =>
-    set((state) => {
-      const unchanged =
-        state.isBinderBarOpen === isBinderBarOpen &&
-        state.regions.rightRail.open === isBinderBarOpen;
-      if (unchanged) return state;
-      return {
-        isBinderBarOpen,
-        regions: {
-          ...state.regions,
-          rightRail: {
-            ...state.regions.rightRail,
-            open: isBinderBarOpen,
-          },
-        },
-      };
-    }),
-  setScrivenerSidebarOpen: (scrivenerSidebarOpen) =>
-    set((state) => {
-      const unchanged =
-        state.scrivenerSidebarOpen === scrivenerSidebarOpen &&
-        state.regions.leftSidebar.open === scrivenerSidebarOpen;
-      if (unchanged) return state;
-      return {
-        scrivenerSidebarOpen,
-        regions: {
-          ...state.regions,
-          leftSidebar: {
-            ...state.regions.leftSidebar,
-            open: scrivenerSidebarOpen,
-          },
-        },
-      };
-    }),
-  setScrivenerInspectorOpen: (scrivenerInspectorOpen) =>
-    set((state) => {
-      const unchanged =
-        state.scrivenerInspectorOpen === scrivenerInspectorOpen &&
-        state.regions.rightPanel.open === scrivenerInspectorOpen;
-      if (unchanged) return state;
-      return {
-        scrivenerInspectorOpen,
-        regions: {
-          ...state.regions,
-          rightPanel: {
-            ...state.regions.rightPanel,
-            open: scrivenerInspectorOpen,
-          },
-        },
-      };
-    }),
   setScrivenerSectionOpen: (section, isOpen) =>
     set((state) => {
       if (state.scrivenerSections[section] === isOpen) return state;
@@ -342,12 +223,6 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
         ...widths,
       });
       const nextRegions = buildRegionsFromLegacyState({
-        isSidebarOpen: state.isSidebarOpen,
-        isContextOpen: state.isContextOpen,
-        docsRightTab: state.docsRightTab,
-        isBinderBarOpen: state.isBinderBarOpen,
-        scrivenerSidebarOpen: state.scrivenerSidebarOpen,
-        scrivenerInspectorOpen: state.scrivenerInspectorOpen,
         sidebarWidths: normalizedSidebarWidths,
         regions: state.regions,
       });
@@ -393,23 +268,10 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
       if (state.regions[region].open === open) return state;
       const nextRegions = cloneRegions(state.regions);
       nextRegions[region].open = open;
-      const patch: Partial<UIStore> = { regions: nextRegions };
-      if (region === "leftSidebar") {
-        patch.isSidebarOpen = open;
-        patch.scrivenerSidebarOpen = open;
+      if (region === "rightPanel" && !open) {
+        nextRegions.rightPanel.activeTab = null;
       }
-      if (region === "rightPanel") {
-        patch.isContextOpen = open;
-        patch.scrivenerInspectorOpen = open;
-        patch.docsRightTab = open ? state.docsRightTab : null;
-        if (!open) {
-          nextRegions.rightPanel.activeTab = null;
-        }
-      }
-      if (region === "rightRail") {
-        patch.isBinderBarOpen = open;
-      }
-      return patch;
+      return { regions: nextRegions };
     });
     if (
       region === "rightPanel" &&
@@ -464,35 +326,22 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
       if (!nextTab) return state;
       const isAlreadyOpen =
         state.regions.rightPanel.open &&
-        state.regions.rightPanel.activeTab === nextTab &&
-        state.docsRightTab === nextTab;
+        state.regions.rightPanel.activeTab === nextTab;
       if (isAlreadyOpen) return state;
       const nextRegions = cloneRegions(state.regions);
       nextRegions.rightPanel.open = true;
       nextRegions.rightPanel.activeTab = nextTab;
-      return {
-        docsRightTab: nextTab,
-        isContextOpen: true,
-        scrivenerInspectorOpen: true,
-        regions: nextRegions,
-      };
+      return { regions: nextRegions };
     });
     setTransientFocusedClosableTarget({ kind: "docs-tab" });
   },
   closeRightPanel: () => {
     set((state) => {
-      if (!state.regions.rightPanel.open && state.docsRightTab === null) {
-        return state;
-      }
+      if (!state.regions.rightPanel.open) return state;
       const nextRegions = cloneRegions(state.regions);
       nextRegions.rightPanel.open = false;
       nextRegions.rightPanel.activeTab = null;
-      return {
-        docsRightTab: null,
-        isContextOpen: false,
-        scrivenerInspectorOpen: false,
-        regions: nextRegions,
-      };
+      return { regions: nextRegions };
     });
     if (getFocusedClosableTarget()?.kind === "docs-tab") {
       clearFocusedClosableTarget();
@@ -503,11 +352,7 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
       const nextOpen = !state.regions.leftSidebar.open;
       const nextRegions = cloneRegions(state.regions);
       nextRegions.leftSidebar.open = nextOpen;
-      return {
-        isSidebarOpen: nextOpen,
-        scrivenerSidebarOpen: nextOpen,
-        regions: nextRegions,
-      };
+      return { regions: nextRegions };
     }),
   setRightPanelWidth: (tab, width) =>
     set((state) => {
@@ -556,30 +401,20 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
         };
       }
 
-      if (focusedTarget?.kind === "docs-tab" && state.docsRightTab) {
+      if (focusedTarget?.kind === "docs-tab" && state.regions.rightPanel.open) {
         handled = true;
         const nextRegions = cloneRegions(state.regions);
         nextRegions.rightPanel.open = false;
         nextRegions.rightPanel.activeTab = null;
-        return {
-          docsRightTab: null,
-          isContextOpen: false,
-          scrivenerInspectorOpen: false,
-          regions: nextRegions,
-        };
+        return { regions: nextRegions };
       }
 
-      if (state.docsRightTab) {
+      if (state.regions.rightPanel.open) {
         handled = true;
         const nextRegions = cloneRegions(state.regions);
         nextRegions.rightPanel.open = false;
         nextRegions.rightPanel.activeTab = null;
-        return {
-          docsRightTab: null,
-          isContextOpen: false,
-          scrivenerInspectorOpen: false,
-          regions: nextRegions,
-        };
+        return { regions: nextRegions };
       }
 
       if (state.panels.length > 0) {

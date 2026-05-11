@@ -106,22 +106,18 @@ export default function EditorRoot() {
   const {
     isSidebarOpen,
     isContextOpen,
-    setSidebarOpen,
-    setContextOpen,
+    setRegionOpen,
     setWorldTab,
     docsRightTab,
-    setDocsRightTab,
     closeRightPanel,
     isManuscriptMenuOpen,
   } = useUIStore(
     useShallow((state) => ({
-      isSidebarOpen: state.isSidebarOpen,
-      isContextOpen: state.isContextOpen,
-      setSidebarOpen: state.setSidebarOpen,
-      setContextOpen: state.setContextOpen,
+      isSidebarOpen: state.regions.leftSidebar.open,
+      isContextOpen: state.regions.rightPanel.open,
+      setRegionOpen: state.setRegionOpen,
       setWorldTab: state.setWorldTab,
-      docsRightTab: state.docsRightTab,
-      setDocsRightTab: state.setDocsRightTab,
+      docsRightTab: state.regions.rightPanel.activeTab,
       closeRightPanel: state.closeRightPanel,
       isManuscriptMenuOpen: state.isManuscriptMenuOpen,
     })),
@@ -133,9 +129,9 @@ export default function EditorRoot() {
 
   const setProjectAwareSidebarOpen = useCallback(
     (open: boolean) => {
-      setSidebarOpen(open);
+      setRegionOpen("leftSidebar", open);
     },
-    [setSidebarOpen],
+    [setRegionOpen],
   );
 
   const toggleProjectAwareSidebar = useCallback(
@@ -222,20 +218,22 @@ export default function EditorRoot() {
     openDocsPanelTab(tab);
   }, []);
 
+  const setContextOpen = useCallback(
+    (open: boolean) => setRegionOpen("rightPanel", open),
+    [setRegionOpen],
+  );
+
   const layoutModeActions = useMemo(
     () =>
       createLayoutModeActions({
         isDocsMode,
-        isSidebarOpen,
         isContextOpen,
         docsRightTab,
         activeChapterId: activeChapterId ?? null,
         openDocsRightTab,
         closeRightPanel,
         toggleLeftSidebar: toggleProjectAwareSidebar,
-        setDocsRightTab,
         setContextOpen,
-        setSidebarOpen: setProjectAwareSidebarOpen,
         addPanel,
         handleSelectResearchItem,
         handleOpenExport,
@@ -251,14 +249,11 @@ export default function EditorRoot() {
       activeChapterId,
       docsRightTab,
       isDocsMode,
-      isSidebarOpen,
       isContextOpen,
       openDocsRightTab,
       closeRightPanel,
       toggleProjectAwareSidebar,
-      setDocsRightTab,
       setContextOpen,
-      setProjectAwareSidebarOpen,
       addPanel,
       handleSelectResearchItem,
       handleOpenExport,
@@ -280,10 +275,10 @@ export default function EditorRoot() {
 
   const handleExpandContext = useCallback(
     (tab: "synopsis" | "characters" | "terms") => {
-      setContextOpen(true);
+      setRegionOpen("rightPanel", true);
       setContextTab(tab);
     },
-    [setContextOpen, setContextTab],
+    [setRegionOpen, setContextTab],
   );
 
   const handleRenameProject = useCallback(async () => {

@@ -52,7 +52,7 @@ export default function EditorLayout({
   const { t } = useTranslation();
 
   const maxWidth = useEditorStore((state) => state.maxWidth);
-  const activeRightTab = useUIStore((state) => state.docsRightTab);
+  const activeRightTab = useUIStore((state) => state.regions.rightPanel.activeTab);
   const updatePanelSize = useUIStore((state) => state.updatePanelSize);
   const [isBinderRailHoverSuppressed, setIsBinderRailHoverSuppressed] =
     useState(false);

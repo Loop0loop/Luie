@@ -37,23 +37,18 @@ export function useProjectLayoutPersistence(
   uiMode: EditorUiMode,
 ): void {
   const hasHydrated = useUIStore((state) => state.hasHydrated);
-  const isSidebarOpen = useUIStore((state) => state.isSidebarOpen);
-  const isContextOpen = useUIStore((state) => state.isContextOpen);
-  const isBinderBarOpen = useUIStore((state) => state.isBinderBarOpen);
-  const docsRightTab = useUIStore((state) => state.docsRightTab);
-  const scrivenerSidebarOpen = useUIStore((state) => state.scrivenerSidebarOpen);
-  const scrivenerInspectorOpen = useUIStore((state) => state.scrivenerInspectorOpen);
+  const isSidebarOpen = useUIStore((state) => state.regions.leftSidebar.open);
+  const isContextOpen = useUIStore((state) => state.regions.rightPanel.open);
+  const isBinderBarOpen = useUIStore((state) => state.regions.rightRail.open);
+  const docsRightTab = useUIStore((state) => state.regions.rightPanel.activeTab);
   const scrivenerSections = useUIStore((state) => state.scrivenerSections);
   const sidebarWidths = useUIStore((state) => state.sidebarWidths);
   const layoutSurfaceRatios = useUIStore((state) => state.layoutSurfaceRatios);
   const panels = useUIStore((state) => state.panels);
 
-  const setSidebarOpen = useUIStore((state) => state.setSidebarOpen);
-  const setContextOpen = useUIStore((state) => state.setContextOpen);
-  const setBinderBarOpen = useUIStore((state) => state.setBinderBarOpen);
-  const setDocsRightTab = useUIStore((state) => state.setDocsRightTab);
-  const setScrivenerSidebarOpen = useUIStore((state) => state.setScrivenerSidebarOpen);
-  const setScrivenerInspectorOpen = useUIStore((state) => state.setScrivenerInspectorOpen);
+  const setRegionOpen = useUIStore((state) => state.setRegionOpen);
+  const openRightPanelTab = useUIStore((state) => state.openRightPanelTab);
+  const closeRightPanel = useUIStore((state) => state.closeRightPanel);
   const setScrivenerSections = useUIStore((state) => state.setScrivenerSections);
   const setSidebarWidths = useUIStore((state) => state.setSidebarWidths);
   const setLayoutSurfaceRatios = useUIStore((state) => state.setLayoutSurfaceRatios);
@@ -184,20 +179,28 @@ export function useProjectLayoutPersistence(
     setLayoutSurfaceRatios(saved.layoutSurfaceRatios);
     setPanels(saved.workspace.panels);
 
+    const restoreTab = (savedTab: ReturnType<typeof sanitizePersistedDocsRightTab>) => {
+      if (savedTab !== null) {
+        openRightPanelTab(savedTab);
+      } else {
+        closeRightPanel();
+      }
+    };
+
     if (uiMode === "default") {
-      setSidebarOpen(saved.main.sidebarOpen);
-      setContextOpen(saved.main.contextOpen);
+      setRegionOpen("leftSidebar", saved.main.sidebarOpen);
+      setRegionOpen("rightPanel", saved.main.contextOpen);
     } else if (uiMode === "docs") {
-      setSidebarOpen(saved.docs.sidebarOpen);
-      setBinderBarOpen(saved.docs.binderBarOpen);
-      setDocsRightTab(sanitizePersistedDocsRightTab(saved.docs.rightTab));
+      setRegionOpen("leftSidebar", saved.docs.sidebarOpen);
+      setRegionOpen("rightRail", saved.docs.binderBarOpen);
+      restoreTab(sanitizePersistedDocsRightTab(saved.docs.rightTab));
     } else if (uiMode === "editor") {
-      setSidebarOpen(saved.editor.sidebarOpen);
-      setBinderBarOpen(saved.editor.binderRailOpen);
-      setDocsRightTab(sanitizePersistedDocsRightTab(saved.editor.rightTab));
+      setRegionOpen("leftSidebar", saved.editor.sidebarOpen ?? false);
+      setRegionOpen("rightRail", saved.editor.binderRailOpen ?? false);
+      restoreTab(sanitizePersistedDocsRightTab(saved.editor.rightTab));
     } else if (uiMode === "scrivener") {
-      setScrivenerSidebarOpen(saved.scrivener.sidebarOpen);
-      setScrivenerInspectorOpen(saved.scrivener.inspectorOpen);
+      setRegionOpen("leftSidebar", saved.scrivener.sidebarOpen);
+      setRegionOpen("rightPanel", saved.scrivener.inspectorOpen);
       setScrivenerSections(saved.scrivener.sections);
     }
 
@@ -235,16 +238,13 @@ export function useProjectLayoutPersistence(
   }, [
     getProjectLayout,
     projectId,
-    setBinderBarOpen,
-    setContextOpen,
-    setDocsRightTab,
-    setScrivenerInspectorOpen,
+    setRegionOpen,
+    openRightPanelTab,
+    closeRightPanel,
     setScrivenerSections,
-    setScrivenerSidebarOpen,
     setLayoutSurfaceRatios,
     setPanels,
     setSidebarWidths,
-    setSidebarOpen,
     uiMode,
     hasHydrated,
     projectLayoutHasHydrated,
@@ -359,8 +359,8 @@ export function useProjectLayoutPersistence(
 
     if (uiMode === "scrivener") {
       if (
-        saved.scrivener.sidebarOpen === scrivenerSidebarOpen &&
-        saved.scrivener.inspectorOpen === scrivenerInspectorOpen &&
+        saved.scrivener.sidebarOpen === isSidebarOpen &&
+        saved.scrivener.inspectorOpen === isContextOpen &&
         areScrivenerSectionsEqual(saved.scrivener.sections, scrivenerSections) &&
         !hasLayoutSizingChanged
       ) {
@@ -368,8 +368,8 @@ export function useProjectLayoutPersistence(
       }
       upsertProjectLayout(projectId, {
         scrivener: {
-          sidebarOpen: scrivenerSidebarOpen,
-          inspectorOpen: scrivenerInspectorOpen,
+          sidebarOpen: isSidebarOpen,
+          inspectorOpen: isContextOpen,
           sections: scrivenerSections,
         },
         ...layoutPatch,
@@ -383,9 +383,7 @@ export function useProjectLayoutPersistence(
     layoutSurfaceRatios,
     panels,
     projectId,
-    scrivenerInspectorOpen,
     scrivenerSections,
-    scrivenerSidebarOpen,
     sidebarWidths,
     uiMode,
     hasHydrated,

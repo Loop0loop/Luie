@@ -41,9 +41,9 @@ export function useSidebarLogic({
   const dialog = useDialog();
   const updateProject = useProjectStore((state) => state.updateProject);
   const currentProject = useProjectStore((state) => state.currentProject);
-  const { setSidebarOpen, setManuscriptMenuOpen } = useUIStore(
+  const { setRegionOpen, setManuscriptMenuOpen } = useUIStore(
     useShallow((state) => ({
-      setSidebarOpen: state.setSidebarOpen,
+      setRegionOpen: state.setRegionOpen,
       setManuscriptMenuOpen: state.setManuscriptMenuOpen,
     })),
   );
@@ -81,7 +81,7 @@ export function useSidebarLogic({
 
   useShortcutCommand((command: ShortcutCommand) => {
     if (command.type === "sidebar.section.toggle") {
-      setSidebarOpen(true);
+      setRegionOpen("leftSidebar", true);
       if (command.section === "manuscript") setManuscriptOpen((prev) => !prev);
       if (command.section === "research") setResearchOpen((prev) => !prev);
       if (command.section === "snapshot") setSnapshotOpen((prev) => !prev);
@@ -90,7 +90,7 @@ export function useSidebarLogic({
     }
 
     if (command.type === "sidebar.section.open") {
-      setSidebarOpen(true);
+      setRegionOpen("leftSidebar", true);
       if (command.section === "manuscript") setManuscriptOpen(true);
       if (command.section === "research") setResearchOpen(true);
       if (command.section === "snapshot") setSnapshotOpen(true);

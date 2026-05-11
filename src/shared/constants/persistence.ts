@@ -1,4 +1,4 @@
-export const UI_STORE_SCHEMA_VERSION = 2;
+export const UI_STORE_SCHEMA_VERSION = 3;
 export const PROJECT_LAYOUT_SCHEMA_VERSION = 3;
 export const WORLD_SCRAP_MEMOS_SCHEMA_VERSION = 2;
 

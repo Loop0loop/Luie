@@ -112,13 +112,7 @@ export interface UIStore {
   contextTab: ContextTab;
   worldTab: WorldTab;
   panels: ResizablePanelData[];
-  isSidebarOpen: boolean;
-  isContextOpen: boolean;
   isManuscriptMenuOpen: boolean;
-  docsRightTab: DocsRightTab;
-  isBinderBarOpen: boolean;
-  scrivenerSidebarOpen: boolean;
-  scrivenerInspectorOpen: boolean;
   scrivenerSections: ScrivenerSectionsState;
   hasHydrated: boolean;
   regions: UIRegionsState;
@@ -136,13 +130,7 @@ export interface UIStore {
   removePanel: (id: string) => void;
   updatePanelSize: (id: string, size: number) => void;
   setPanels: (panels: ResizablePanelData[]) => void;
-  setSidebarOpen: (isOpen: boolean) => void;
-  setContextOpen: (isOpen: boolean) => void;
   setManuscriptMenuOpen: (isOpen: boolean) => void;
-  setDocsRightTab: (tab: DocsRightTab) => void;
-  setBinderBarOpen: (isOpen: boolean) => void;
-  setScrivenerSidebarOpen: (isOpen: boolean) => void;
-  setScrivenerInspectorOpen: (isOpen: boolean) => void;
   setScrivenerSectionOpen: (
     section: ScrivenerSectionId,
     isOpen: boolean,

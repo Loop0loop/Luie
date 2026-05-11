@@ -39,7 +39,7 @@ export function useGoogleDocsLayoutState(projectId?: string | null) {
   } = useUIStore(
     useShallow((state) => ({
       isSidebarOpen: state.regions.leftSidebar.open,
-      docsRightTab: state.docsRightTab,
+      docsRightTab: state.regions.rightPanel.activeTab,
       rightPanelActiveTab: state.regions.rightPanel.activeTab,
       isRightPanelOpen: state.regions.rightPanel.open,
       isPanelRailOpen: state.regions.rightRail.open,

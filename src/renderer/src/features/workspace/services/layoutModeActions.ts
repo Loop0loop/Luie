@@ -4,15 +4,12 @@ type SidebarSection = "snapshot" | "trash";
 
 type LayoutModeActionsOptions = {
   isDocsMode: boolean;
-  isSidebarOpen: boolean;
   isContextOpen: boolean;
   docsRightTab: DocsRightTab;
   activeChapterId?: string | null;
   openDocsRightTab: (tab: Exclude<DocsRightTab, null>) => void;
-  closeRightPanel?: () => void;
-  toggleLeftSidebar?: () => void;
-  setDocsRightTab: (tab: DocsRightTab) => void;
-  setSidebarOpen: (isOpen: boolean) => void;
+  closeRightPanel: () => void;
+  toggleLeftSidebar: () => void;
   setContextOpen: (isOpen: boolean) => void;
   addPanel: (content: { type: "editor" | "research" | "export"; id?: string; tab?: ResearchTab }) => void;
   handleSelectResearchItem: (tab: ResearchTab) => void;
@@ -35,8 +32,8 @@ const RESEARCH_TAB_TO_DOCS_TAB: Record<
 
 export function createLayoutModeActions(options: LayoutModeActionsOptions) {
   const openDocsTab = options.openDocsRightTab;
-  const closeDocsPanel = options.closeRightPanel ?? (() => options.setDocsRightTab(null));
-  const toggleSidebar = options.toggleLeftSidebar ?? (() => options.setSidebarOpen(!options.isSidebarOpen));
+  const closeDocsPanel = options.closeRightPanel;
+  const toggleSidebar = options.toggleLeftSidebar;
 
   return {
     openResearchTab(tab: ResearchTab) {
@@ -52,7 +49,7 @@ export function createLayoutModeActions(options: LayoutModeActionsOptions) {
       // Keep export preview surface consistent across layouts:
       // always open it in split-panel mode rather than docs-only right tab mode.
       if (options.isDocsMode && options.docsRightTab === "export") {
-        options.setDocsRightTab(null);
+        closeDocsPanel();
       }
       options.addPanel({ type: "export" });
     },

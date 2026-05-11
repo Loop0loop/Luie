@@ -148,12 +148,7 @@ export const buildUiStorePersistOptions = (): PersistOptions<
     view: state.view,
     contextTab: state.contextTab,
     worldTab: state.worldTab,
-    isSidebarOpen: state.isSidebarOpen,
-    isContextOpen: state.isContextOpen,
     isManuscriptMenuOpen: state.isManuscriptMenuOpen,
-    isBinderBarOpen: state.isBinderBarOpen,
-    scrivenerSidebarOpen: state.scrivenerSidebarOpen,
-    scrivenerInspectorOpen: state.scrivenerInspectorOpen,
     scrivenerSections: state.scrivenerSections,
     sidebarWidths: normalizeSidebarWidthsWithMigrations(state.sidebarWidths),
     layoutSurfaceRatios: normalizeLayoutSurfaceRatiosWithMigrations(
@@ -190,7 +185,7 @@ export const buildUiStorePersistOptions = (): PersistOptions<
       return currentState;
     }
 
-    const typedPersisted = parsedPersisted.data as Partial<UIStore>;
+    const typedPersisted = parsedPersisted.data;
     const normalizedSidebarWidths = normalizeSidebarWidthsWithMigrations(
       typedPersisted.sidebarWidths ?? DEFAULT_SIDEBAR_WIDTHS,
     );
@@ -198,6 +193,8 @@ export const buildUiStorePersistOptions = (): PersistOptions<
       typedPersisted.layoutSurfaceRatios ?? DEFAULT_LAYOUT_SURFACE_RATIOS,
       normalizedSidebarWidths,
     );
+    // Support reading legacy persisted fields for backward compatibility.
+    // Newer saves only contain `regions`; older saves may contain flat booleans.
     const migratedRegions = buildRegionsFromLegacyState({
       isSidebarOpen:
         typeof typedPersisted.isSidebarOpen === "boolean"
@@ -224,19 +221,12 @@ export const buildUiStorePersistOptions = (): PersistOptions<
       regions: typedPersisted.regions ?? DEFAULT_REGIONS,
     });
 
-    const docsRightTab =
-      normalizeRightPanelTab(typedPersisted.docsRightTab) ??
-      migratedRegions.rightPanel.activeTab;
-
     return {
       ...currentState,
-      ...typedPersisted,
-      isSidebarOpen: migratedRegions.leftSidebar.open,
-      isContextOpen: migratedRegions.rightPanel.open,
-      docsRightTab,
-      isBinderBarOpen: migratedRegions.rightRail.open,
-      scrivenerSidebarOpen: migratedRegions.leftSidebar.open,
-      scrivenerInspectorOpen: migratedRegions.rightPanel.open,
+      view: typedPersisted.view ?? currentState.view,
+      contextTab: typedPersisted.contextTab ?? currentState.contextTab,
+      worldTab: typedPersisted.worldTab ?? currentState.worldTab,
+      isManuscriptMenuOpen: typedPersisted.isManuscriptMenuOpen ?? currentState.isManuscriptMenuOpen,
       scrivenerSections:
         typedPersisted.scrivenerSections === undefined
           ? { ...DEFAULT_SCRIVENER_SECTIONS }

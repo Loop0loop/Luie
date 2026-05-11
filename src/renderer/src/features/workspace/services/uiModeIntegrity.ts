@@ -9,11 +9,11 @@ export type UiModeIntegrityUiState = {
   isSplitView: boolean;
   splitRatio: number;
   splitSide: SplitSide;
-  isSidebarOpen: boolean;
-  isContextOpen: boolean;
+  leftSidebarOpen: boolean;
+  rightPanelOpen: boolean;
   isManuscriptMenuOpen: boolean;
-  docsRightTab: DocsRightTab;
-  isBinderBarOpen: boolean;
+  rightPanelActiveTab: DocsRightTab;
+  rightRailOpen: boolean;
 };
 
 export type UiModeIntegritySnapshot = {
@@ -24,11 +24,11 @@ export type UiModeIntegritySnapshot = {
   isSplitView: boolean;
   splitRatio: number;
   splitSide: SplitSide;
-  isSidebarOpen: boolean;
-  isContextOpen: boolean;
+  leftSidebarOpen: boolean;
+  rightPanelOpen: boolean;
   isManuscriptMenuOpen: boolean;
-  docsRightTab: DocsRightTab;
-  isBinderBarOpen: boolean;
+  rightPanelActiveTab: DocsRightTab;
+  rightRailOpen: boolean;
   activeProjectId: string | null;
   activeChapterId: string | null;
   fontFamily: EditorSettings["fontFamily"];
@@ -57,11 +57,11 @@ export function captureUiModeIntegritySnapshot(input: {
     isSplitView: input.ui.isSplitView,
     splitRatio: input.ui.splitRatio,
     splitSide: input.ui.splitSide,
-    isSidebarOpen: input.ui.isSidebarOpen,
-    isContextOpen: input.ui.isContextOpen,
+    leftSidebarOpen: input.ui.leftSidebarOpen,
+    rightPanelOpen: input.ui.rightPanelOpen,
     isManuscriptMenuOpen: input.ui.isManuscriptMenuOpen,
-    docsRightTab: input.ui.docsRightTab,
-    isBinderBarOpen: input.ui.isBinderBarOpen,
+    rightPanelActiveTab: input.ui.rightPanelActiveTab,
+    rightRailOpen: input.ui.rightRailOpen,
     activeProjectId: input.activeProjectId ?? null,
     activeChapterId: input.activeChapterId ?? null,
     fontFamily: input.editor.fontFamily,
@@ -85,11 +85,11 @@ const NON_LAYOUT_KEYS: Array<keyof Omit<UiModeIntegritySnapshot, "uiMode">> = [
   "splitRatio",
   "splitSide",
   "splitSide",
-  "isSidebarOpen",
-  "isContextOpen",
+  "leftSidebarOpen",
+  "rightPanelOpen",
   "isManuscriptMenuOpen",
-  "docsRightTab",
-  "isBinderBarOpen",
+  "rightPanelActiveTab",
+  "rightRailOpen",
   "activeProjectId",
   "activeChapterId",
   "fontFamily",

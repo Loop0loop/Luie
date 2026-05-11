@@ -18,7 +18,6 @@ import {
 
 export function useBinderSidebarState(projectId?: string | null) {
   const {
-    docsRightTab,
     rightPanelOpen,
     rightPanelActiveTab,
     isPanelRailOpen,
@@ -30,7 +29,6 @@ export function useBinderSidebarState(projectId?: string | null) {
     uiHasHydrated,
   } = useUIStore(
     useShallow((state) => ({
-      docsRightTab: state.docsRightTab,
       rightPanelOpen: state.regions.rightPanel.open,
       rightPanelActiveTab: state.regions.rightPanel.activeTab,
       isPanelRailOpen: state.regions.rightRail.open,
@@ -61,9 +59,7 @@ export function useBinderSidebarState(projectId?: string | null) {
     [projectId, projectLayoutHasHydrated, uiHasHydrated, upsertProjectLayout],
   );
 
-  const activeTabCandidate = rightPanelOpen
-    ? (docsRightTab ?? rightPanelActiveTab)
-    : null;
+  const activeTabCandidate = rightPanelOpen ? rightPanelActiveTab : null;
   const activeRightTab: BinderTab | null =
     activeTabCandidate && BINDER_VALID_TABS.includes(activeTabCandidate as BinderTab)
       ? (activeTabCandidate as BinderTab)
