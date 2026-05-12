@@ -36,7 +36,7 @@ export function SnapshotDiffModal({
       isOpen={isOpen}
       onClose={onClose}
       title={t("snapshot.diff.title")}
-      width="800px"
+      width="640px"
     >
       <div className="flex flex-col h-[70vh]">
         <div className="flex items-center justify-between px-4 py-2 bg-panel border-b border-border shrink-0">

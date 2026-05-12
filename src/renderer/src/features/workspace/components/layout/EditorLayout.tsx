@@ -67,6 +67,7 @@ export default function EditorLayout({
 
   const editorLayoutGroupRef = useRef<HTMLDivElement>(null);
   const [isToolbarVisible, setIsToolbarVisible] = useState(false);
+  const [isToolbarHoverZoneActive, setIsToolbarHoverZoneActive] = useState(false);
   const toolbarHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToolbar = useCallback(() => {
@@ -78,10 +79,15 @@ export default function EditorLayout({
   }, []);
 
   const scheduleHide = useCallback(() => {
+    if (toolbarHideTimerRef.current !== null) {
+      clearTimeout(toolbarHideTimerRef.current);
+      toolbarHideTimerRef.current = null;
+    }
+    setIsToolbarHoverZoneActive(false);
     toolbarHideTimerRef.current = setTimeout(() => {
       toolbarHideTimerRef.current = null;
       setIsToolbarVisible(false);
-    }, 400);
+    }, 220);
   }, []);
 
   const editorLayoutGroupWidth = useElementWidth(editorLayoutGroupRef);
@@ -137,7 +143,8 @@ export default function EditorLayout({
           side="left"
           topOffset={sidebarTopOffset}
           activationWidthPx={SIDEBAR_WIDTH_CONFIG.mainSidebar.minPx}
-          closeDelayMs={260}
+          closeDelayMs={180}
+          suppressHoverOpen={isToolbarHoverZoneActive}
         >
           <div
             className="h-full flex flex-col bg-panel border-r border-border"
@@ -152,17 +159,26 @@ export default function EditorLayout({
 
           {/* Hover trigger strip — activates floating toolbar */}
           <div
-            className="absolute inset-x-0 top-0 z-30 h-7 pointer-events-auto"
-            onMouseEnter={showToolbar}
+            className="absolute inset-x-0 -top-10 z-30 h-24 pointer-events-auto"
+            onMouseEnter={() => {
+              setIsToolbarHoverZoneActive(true);
+              showToolbar();
+            }}
+            onMouseLeave={scheduleHide}
           />
 
           {/* Floating Toolbar Overlay */}
           <div
             className={cn(
-              "absolute inset-x-0 top-0 z-40 transition-opacity duration-200",
-              isToolbarVisible ? "opacity-100" : "opacity-0 pointer-events-none",
+              "absolute inset-x-0 top-0 z-40 transition-all duration-200 ease-out",
+              isToolbarVisible
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 -translate-y-2 pointer-events-none",
             )}
-            onMouseEnter={showToolbar}
+            onMouseEnter={() => {
+              setIsToolbarHoverZoneActive(true);
+              showToolbar();
+            }}
             onMouseLeave={scheduleHide}
           >
             <Ribbon
@@ -245,8 +261,9 @@ export default function EditorLayout({
             activeChapterId={activeChapterId}
             currentProjectId={currentProjectId}
             sidebarTopOffset={sidebarTopOffset}
-            suppressHoverOpen={isBinderRailHoverSuppressed}
+            suppressHoverOpen={isBinderRailHoverSuppressed || isToolbarHoverZoneActive}
             onServingStateChange={setIsCompactBinderServing}
+            containerWidthPx={editorLayoutGroupWidth}
           />
         </div>
       </div>

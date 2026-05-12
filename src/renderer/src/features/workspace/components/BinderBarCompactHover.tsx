@@ -1,5 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
-import { ChevronsRight, ChevronRight } from "lucide-react";
+import {
+  type PointerEvent as ReactPointerEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import FocusHoverSidebar from "@renderer/features/manuscript/components/FocusHoverSidebar";
 import {
@@ -9,6 +15,12 @@ import {
 import { BinderSidebarPanelBody } from "@renderer/features/manuscript/components/BinderSidebarPanelBody";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { api } from "@shared/api";
+import {
+  getEditorLayoutPanelSurface,
+  getLayoutSurfaceConfig,
+  getLayoutSurfaceDefaultRatio,
+  normalizeLayoutSurfaceRatioInput,
+} from "@shared/constants/layoutSizing";
 
 type BinderBarCompactHoverProps = {
   activeChapterId?: string;
@@ -16,11 +28,10 @@ type BinderBarCompactHoverProps = {
   sidebarTopOffset: number;
   suppressHoverOpen?: boolean;
   onServingStateChange?: (serving: boolean) => void;
+  containerWidthPx: number;
 };
 
 const RAIL_WIDTH_PX = 44;
-const EXPANDED_WIDTH_PX = 120;
-const CONTENT_WIDTH_PX = 420;
 
 export function BinderBarCompactHover({
   activeChapterId,
@@ -28,14 +39,22 @@ export function BinderBarCompactHover({
   sidebarTopOffset,
   suppressHoverOpen = false,
   onServingStateChange,
+  containerWidthPx,
 }: BinderBarCompactHoverProps) {
   const { t } = useTranslation();
-  const [isExpanded, setIsExpanded] = useState(false);
   const [activeCompactTab, setActiveCompactTab] = useState<BinderTab | null>(
     null,
   );
+  const dragStateRef = useRef<{
+    surface: ReturnType<typeof getEditorLayoutPanelSurface>;
+    startX: number;
+    startRatio: number;
+  } | null>(null);
+  const layoutSurfaceRatios = useUIStore((state) => state.layoutSurfaceRatios);
+  const setLayoutSurfaceRatio = useUIStore(
+    (state) => state.setLayoutSurfaceRatio,
+  );
   const closeRightPanel = useUIStore((state) => state.closeRightPanel);
-  const rightPanelOpen = useUIStore((state) => state.regions.rightPanel.open);
 
   const tabItems = useMemo(() => buildBinderTabItems(t), [t]);
   const activeTabLabel = useMemo(
@@ -48,46 +67,90 @@ export function BinderBarCompactHover({
     void api.logger.debug("compact-binder.serving-state", {
       activeCompactTab,
       serving: activeCompactTab !== null,
-      isExpanded,
     });
-  }, [activeCompactTab, onServingStateChange, isExpanded]);
+  }, [activeCompactTab, onServingStateChange]);
 
-  useEffect(() => {
-    if (!rightPanelOpen) return;
-    void api.logger.warn("compact-binder.force-close-right-panel", {
-      reason: "rightPanelOpen detected while compact binder is mounted",
-      activeCompactTab,
-      isExpanded,
-    });
-    closeRightPanel();
-  }, [rightPanelOpen, closeRightPanel, activeCompactTab, isExpanded]);
+  const activeContentWidth = useMemo(() => {
+    if (activeCompactTab === null) return RAIL_WIDTH_PX;
+    const surface = getEditorLayoutPanelSurface(activeCompactTab);
+    const config = getLayoutSurfaceConfig(surface);
+    const ratio =
+      layoutSurfaceRatios[surface] ?? getLayoutSurfaceDefaultRatio(surface);
+    const referenceWidth =
+      Number.isFinite(containerWidthPx) && containerWidthPx > 0
+        ? containerWidthPx
+        : window.innerWidth;
+    const widthByRatio = Math.round((referenceWidth * ratio) / 100);
+    return Math.max(config.minPx, Math.min(config.maxPx, widthByRatio));
+  }, [activeCompactTab, containerWidthPx, layoutSurfaceRatios]);
+
+  const handleResizePointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (activeCompactTab === null) return;
+      const surface = getEditorLayoutPanelSurface(activeCompactTab);
+      const currentRatio =
+        layoutSurfaceRatios[surface] ?? getLayoutSurfaceDefaultRatio(surface);
+      dragStateRef.current = {
+        surface,
+        startX: event.clientX,
+        startRatio: currentRatio,
+      };
+      event.currentTarget.setPointerCapture(event.pointerId);
+      event.preventDefault();
+    },
+    [activeCompactTab, layoutSurfaceRatios],
+  );
+
+  const handleResizePointerMove = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      const dragState = dragStateRef.current;
+      if (!dragState) return;
+      const config = getLayoutSurfaceConfig(dragState.surface);
+      const referenceWidth =
+        Number.isFinite(containerWidthPx) && containerWidthPx > 0
+          ? containerWidthPx
+          : window.innerWidth;
+      if (!(referenceWidth > 0)) return;
+      const delta = dragState.startX - event.clientX;
+      const startWidth = (referenceWidth * dragState.startRatio) / 100;
+      const nextWidth = Math.max(
+        config.minPx,
+        Math.min(config.maxPx, startWidth + delta),
+      );
+      const nextRatioRaw = (nextWidth / referenceWidth) * 100;
+      const nextRatio = normalizeLayoutSurfaceRatioInput(
+        dragState.surface,
+        nextRatioRaw,
+      );
+      if (nextRatio === null) return;
+      setLayoutSurfaceRatio(dragState.surface, nextRatio);
+    },
+    [containerWidthPx, setLayoutSurfaceRatio],
+  );
+
+  const endResize = useCallback(() => {
+    dragStateRef.current = null;
+  }, []);
 
   return (
     <FocusHoverSidebar
       side="right"
       topOffset={sidebarTopOffset}
       activationWidthPx={RAIL_WIDTH_PX}
+      closeDelayMs={180}
       suppressHoverOpen={suppressHoverOpen}
     >
       <div
         className="h-full border-l border-border/40 bg-sidebar/75 shadow-lg backdrop-blur-sm overflow-hidden transition-[width] duration-150"
         style={{
-          width:
-            activeCompactTab !== null
-              ? CONTENT_WIDTH_PX
-              : isExpanded
-                ? EXPANDED_WIDTH_PX
-                : RAIL_WIDTH_PX,
+          width: activeCompactTab !== null ? activeContentWidth : RAIL_WIDTH_PX,
         }}
       >
         <div className="h-full flex flex-col">
           {activeCompactTab === null ? (
             <div className="flex-1 overflow-y-auto py-2 flex flex-col items-center gap-1.5">
               {tabItems.map((item) => (
-                <div
-                  key={item.tab}
-                  className={`w-full ${isExpanded ? "px-2" : "px-1"} flex items-center ${isExpanded ? "gap-2" : "justify-center"}`}
-                >
+                <div key={item.tab} className="w-full px-1 flex items-center justify-center">
                   <button
                     type="button"
                     onClick={() => {
@@ -97,36 +160,26 @@ export function BinderBarCompactHover({
                       });
                       closeRightPanel();
                       setActiveCompactTab(item.tab);
-                      setIsExpanded(true);
                     }}
                     title={item.title}
                     className="w-10 h-10 flex items-center justify-center rounded-full transition-[background-color,color,transform] duration-150 active:scale-95 text-muted hover:text-fg hover:bg-surface-hover"
                   >
                     {item.icon}
                   </button>
-                  {isExpanded && (
-                    <button
-                      type="button"
-                      className="min-w-0 flex-1 text-left text-xs text-fg/70 hover:text-fg truncate"
-                      onClick={() => {
-                        void api.logger.info("compact-binder.open-tab", {
-                          tab: item.tab,
-                          source: "label-button",
-                        });
-                        closeRightPanel();
-                        setActiveCompactTab(item.tab);
-                        setIsExpanded(true);
-                      }}
-                      title={item.title}
-                    >
-                      {item.title}
-                    </button>
-                  )}
                 </div>
               ))}
             </div>
           ) : (
-            <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="relative flex-1 min-h-0 overflow-hidden">
+              <div
+                role="separator"
+                aria-orientation="vertical"
+                className="absolute left-0 top-0 bottom-0 z-20 w-2 cursor-col-resize bg-transparent hover:bg-accent/20"
+                onPointerDown={handleResizePointerDown}
+                onPointerMove={handleResizePointerMove}
+                onPointerUp={endResize}
+                onPointerCancel={endResize}
+              />
               <div className="h-10 px-3 border-b border-border/50 flex items-center text-xs font-medium text-fg/80">
                 <span className="truncate">{activeTabLabel}</span>
               </div>
@@ -142,41 +195,6 @@ export function BinderBarCompactHover({
               </div>
             </div>
           )}
-
-          <button
-            type="button"
-            onClick={() => {
-              if (activeCompactTab !== null) {
-                void api.logger.info("compact-binder.close-content", {
-                  activeCompactTab,
-                });
-                setActiveCompactTab(null);
-                return;
-              }
-              void api.logger.info("compact-binder.toggle-expand", {
-                nextExpanded: !isExpanded,
-              });
-              setIsExpanded((prev) => !prev);
-            }}
-            className="h-9 border-t border-border/40 flex items-center justify-center gap-1.5 text-[12px] text-muted hover:text-fg hover:bg-surface-hover transition-colors"
-            title={
-              activeCompactTab !== null || isExpanded
-                ? t("sidebar.toggle.close")
-                : t("sidebar.toggle.open")
-            }
-          >
-            {activeCompactTab !== null || isExpanded ? (
-              <>
-                <ChevronRight size={13} />
-                <span>{t("sidebar.toggle.close")}</span>
-              </>
-            ) : (
-              <>
-                <ChevronsRight size={13} />
-                <span>{t("sidebar.expand")}</span>
-              </>
-            )}
-          </button>
         </div>
       </div>
     </FocusHoverSidebar>

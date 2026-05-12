@@ -12,6 +12,10 @@ import {
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useProjectLayoutStore } from "@renderer/features/workspace/stores/projectLayoutStore";
 import type { Snapshot } from "@shared/types";
+import {
+  getEditorLayoutPanelSurface,
+  getLayoutSurfaceDefaultRatio,
+} from "@shared/constants/layoutSizing";
 
 
 export function useSplitView() {
@@ -25,12 +29,18 @@ export function useSplitView() {
 
   const addPanel = useCallback(
     (content: RightPanelContent, insertAt?: number) => {
+      const projectLayout = currentProjectId
+        ? getProjectLayout(currentProjectId)
+        : null;
+      const savedResearchPanelSizes = projectLayout?.workspace.researchPanelSizes;
       const initialSize =
-        content.type === "research" && content.tab && currentProjectId
-          ? getProjectLayout(currentProjectId).workspace.researchPanelSizes[
-              content.tab
-            ]
-          : undefined;
+        content.type === "research" && content.tab
+          ? (currentProjectId
+              ? savedResearchPanelSizes?.[content.tab]
+              : undefined)
+          : content.type === "snapshot"
+            ? getLayoutSurfaceDefaultRatio(getEditorLayoutPanelSurface("snapshot"))
+            : undefined;
       addPanelBase(content, insertAt, initialSize);
     },
     [addPanelBase, currentProjectId, getProjectLayout],
@@ -38,7 +48,12 @@ export function useSplitView() {
 
   const handleSelectResearchItem = useCallback(
     (type: ResearchTab) => {
-      addPanel({ type: "research", tab: type });
+      const alreadyOpen = panels.some(
+        (p) => p.content.type === "research" && p.content.tab === type,
+      );
+      if (!alreadyOpen) {
+        addPanel({ type: "research", tab: type });
+      }
 
       const contextMap: Record<ResearchTab, ContextTab> = {
         character: "characters",
@@ -50,7 +65,7 @@ export function useSplitView() {
       };
       setContextTab(contextMap[type]);
     },
-    [addPanel, setContextTab],
+    [addPanel, setContextTab, panels],
   );
 
   const handleSplitView = useCallback(
