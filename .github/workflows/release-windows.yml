@@ -74,17 +74,12 @@ jobs:
 
           shopt -s nullglob
           installers=(dist/*.exe)
-          packages=(dist/*.7z)
           assets=(dist/*.exe dist/*.7z dist/*.blockmap)
           if [ -f dist/latest.yml ]; then
             assets+=(dist/latest.yml)
           fi
           if [ -f dist/latest-${{ matrix.arch }}.yml ]; then
             assets+=(dist/latest-${{ matrix.arch }}.yml)
-          fi
-          if [ "${#packages[@]}" -eq 0 ]; then
-            echo "No Windows nsis-web package .7z found in dist"
-            exit 1
           fi
           if [ "${{ matrix.arch }}" = "x64" ] && [ "${#installers[@]}" -eq 0 ]; then
             echo "No Windows nsis-web installer .exe found in dist for x64 build"

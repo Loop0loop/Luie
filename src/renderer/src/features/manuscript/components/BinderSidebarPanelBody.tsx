@@ -1,6 +1,7 @@
 import { ChevronLeft, Pin, PinOff, X } from "lucide-react";
 import React, { Suspense } from "react";
 import type { BinderTab } from "./binderSidebar.shared";
+import type { Snapshot } from "@shared/types";
 
 const ResearchPanel = React.lazy(
   () => import("@renderer/features/research/components/ResearchPanel"),
@@ -25,6 +26,7 @@ export function BinderSidebarPanelBody(props: {
   currentProjectId?: string;
   onBackToSnapshotList: () => void;
   onClose: () => void;
+  onOpenSnapshot?: (snapshot: Snapshot) => void;
   isPinned: boolean;
   pinLocked?: boolean;
   onTogglePinned: () => void;
@@ -84,7 +86,7 @@ export function BinderSidebarPanelBody(props: {
           )}
           {props.activeTab === "snapshot" &&
             (props.activeChapterId ? (
-              <SnapshotList chapterId={props.activeChapterId} />
+              <SnapshotList chapterId={props.activeChapterId} onOpenSnapshot={props.onOpenSnapshot} />
             ) : (
               <div className="p-4 text-xs text-muted italic text-center">
                 {props.t("snapshot.list.selectChapter")}

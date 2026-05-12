@@ -12,9 +12,10 @@ import { useShallow } from "zustand/react/shallow";
 
 interface SnapshotListProps {
   chapterId: string;
+  onOpenSnapshot?: (snapshot: Snapshot) => void;
 }
 
-export function SnapshotList({ chapterId }: SnapshotListProps) {
+export function SnapshotList({ chapterId, onOpenSnapshot }: SnapshotListProps) {
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -118,7 +119,11 @@ export function SnapshotList({ chapterId }: SnapshotListProps) {
   );
 
   const handleCompare = (snapshot: Snapshot) => {
-    handleOpenSnapshot(snapshot);
+    if (onOpenSnapshot) {
+      onOpenSnapshot(snapshot);
+    } else {
+      handleOpenSnapshot(snapshot);
+    }
   };
 
   const handleRestore = async (snapshot: Snapshot) => {

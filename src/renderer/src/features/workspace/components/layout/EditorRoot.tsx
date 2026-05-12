@@ -432,8 +432,6 @@ export default function EditorRoot() {
             editor={docEditor}
             onOpenSettings={() => setIsSettingsOpen(true)}
             onOpenExport={handleQuickExport}
-            onRenameChapter={handleRenameChapter}
-            onSaveChapter={handleSave}
             onOpenWorldGraph={handleOpenWorldGraph}
             additionalPanels={additionalPanelsComponent}
             additionalPanelIds={additionalPanelIds}
