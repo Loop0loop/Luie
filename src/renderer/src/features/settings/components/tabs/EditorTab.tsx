@@ -1,5 +1,5 @@
-import { memo, useState } from "react";
-import { Minus, Plus } from "lucide-react";
+import { memo, useMemo, useState } from "react";
+import { Check, Loader2, Minus, Plus, Search } from "lucide-react";
 import type { TFunction } from "i18next";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useShallow } from "zustand/react/shallow";
@@ -56,6 +56,7 @@ export const EditorTab = memo(function EditorTab({
   );
 
   const [customInput, setCustomInput] = useState(customFontFamily ?? "");
+  const [fontSearch, setFontSearch] = useState("");
 
   const {
     fonts: systemFonts,
@@ -63,8 +64,13 @@ export const EditorTab = memo(function EditorTab({
     isSupported: isSystemFontsSupported,
   } = useSystemFonts();
 
-  const isPresetFont = (family: string): family is FontFamilyPreset =>
-    FONT_FAMILIES.some((f) => f.id === family);
+  const PRESET_IDS = new Set(FONT_FAMILIES.map((f) => f.id));
+
+  const filteredFonts = useMemo(() => {
+    const base = systemFonts.filter((f) => !PRESET_IDS.has(f.family as FontFamilyPreset));
+    const q = fontSearch.trim().toLowerCase();
+    return q ? base.filter((f) => f.family.toLowerCase().includes(q)) : base;
+  }, [systemFonts, fontSearch]);
 
   return (
     <div className="space-y-8 max-w-2xl">
@@ -146,51 +152,68 @@ export const EditorTab = memo(function EditorTab({
         <>
           <div className="h-px bg-border my-6" />
 
-          <section className="space-y-4">
+          <section className="space-y-3">
             <h3 className="text-base font-semibold text-fg">
               {t("settings.section.systemFonts", "System Fonts")}
             </h3>
             {isLoadingSystemFonts ? (
-              <div className="text-sm text-muted">{t("loading")}</div>
+              <div className="flex items-center gap-2 py-4 text-sm text-muted">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>{t("loading")}</span>
+              </div>
             ) : systemFonts.length > 0 ? (
-              <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                {systemFonts.map((font) => {
-                  const isSelected =
-                    fontFamily === font.family &&
-                    !fontPreset &&
-                    !customFontFamily;
-                  const isDisabled = isPresetFont(font.family);
-                  return (
-                    <button
-                      key={font.family}
-                      onClick={() => {
-                        if (!isDisabled) {
-                          onApplySettings({
-                            fontFamily: font.family,
-                            fontPreset: undefined,
-                            customFontFamily: undefined,
-                          });
-                        }
-                      }}
-                      disabled={isDisabled}
-                      className={`p-3 rounded-lg border text-left transition-colors duration-150 ${
-                        isSelected
-                          ? "border-accent ring-1 ring-accent bg-accent/5"
-                          : "border-border hover:bg-surface-hover"
-                      } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                    >
-                      <span
-                        className="text-lg block mb-1"
-                        style={{ fontFamily: font.family }}
-                      >
-                        Aa
-                      </span>
-                      <span className="text-xs text-muted truncate block">
-                        {font.family}
-                      </span>
-                    </button>
-                  );
-                })}
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
+                  <input
+                    type="text"
+                    value={fontSearch}
+                    onChange={(e) => setFontSearch(e.target.value)}
+                    placeholder={t("settings.systemFonts.search", "폰트 검색...")}
+                    className="w-full pl-8 pr-3 py-2 text-sm border border-border rounded-lg bg-surface text-fg focus:outline-none focus:ring-1 focus:ring-accent"
+                  />
+                </div>
+                <div className="max-h-52 overflow-y-auto rounded-lg border border-border divide-y divide-border scrollbar-hide">
+                  {filteredFonts.length > 0 ? (
+                    filteredFonts.map((font) => {
+                      const isSelected =
+                        fontFamily === font.family &&
+                        !fontPreset &&
+                        !customFontFamily;
+                      return (
+                        <button
+                          key={font.family}
+                          onClick={() =>
+                            onApplySettings({
+                              fontFamily: font.family,
+                              fontPreset: undefined,
+                              customFontFamily: undefined,
+                            })
+                          }
+                          className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-colors duration-100 ${
+                            isSelected
+                              ? "bg-accent/10 text-accent"
+                              : "hover:bg-surface-hover text-fg"
+                          }`}
+                        >
+                          <span
+                            className="text-sm truncate"
+                            style={{ fontFamily: font.family }}
+                          >
+                            {font.family}
+                          </span>
+                          {isSelected && (
+                            <Check className="w-3.5 h-3.5 shrink-0 ml-2 text-accent" />
+                          )}
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className="py-6 text-center text-sm text-muted">
+                      {t("settings.systemFonts.noResults", "검색 결과가 없습니다")}
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="text-sm text-muted">

@@ -6,6 +6,7 @@ import {
   Panel,
   Separator as PanelResizeHandle,
   type PanelImperativeHandle,
+  type PanelSize,
 } from "react-resizable-panels";
 import Editor from "@renderer/features/editor/components/Editor";
 import {
@@ -200,6 +201,14 @@ export function GoogleDocsRightPanel({
     setRenderedTab(null);
   }, [renderedTab, shouldRenderPanel]);
 
+  const handlePanelResize = (panelSize: PanelSize) => {
+    const isCollapsed =
+      panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
+    if (isCollapsed) {
+      closeRightPanel();
+    }
+  };
+
   if (!shouldRenderPanel || !renderedTab || !rightPanelSize) {
     return null;
   }
@@ -227,6 +236,7 @@ export function GoogleDocsRightPanel({
         defaultSize={toPanelPercentSize(rightPanelRatio)}
         minSize={rightPanelSize.minSize}
         maxSize={rightPanelSize.maxSize}
+        onResize={handlePanelResize}
         onMouseDownCapture={onFocus}
         className={`flex min-w-0 shrink-0 flex-col overflow-hidden border-l border-border bg-background ${
           enableAnimations

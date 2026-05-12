@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import FocusHoverSidebar from "@renderer/features/manuscript/components/FocusHoverSidebar";
 import {
   buildBinderTabItems,
+  BINDER_VALID_TABS,
   type BinderTab,
 } from "@renderer/features/manuscript/components/binderSidebar.shared";
 import { BinderSidebarPanelBody } from "@renderer/features/manuscript/components/BinderSidebarPanelBody";
@@ -26,6 +27,10 @@ import {
   getEditorLayoutPanelSurface,
   getLayoutSurfaceDefaultRatio,
   normalizeLayoutSurfaceRatioInput,
+  COMPACT_BINDER_RAIL_WIDTH_PX,
+  COMPACT_BINDER_MIN_WIDTH_PX,
+  COMPACT_BINDER_MAX_WIDTH_PX,
+  COMPACT_BINDER_SNAPSHOT_VIEWER_WIDTH_PX,
 } from "@shared/constants/layoutSizing";
 
 const SnapshotViewer = lazy(
@@ -41,10 +46,6 @@ type BinderBarCompactHoverProps = {
   containerWidthPx: number;
 };
 
-const RAIL_WIDTH_PX = 44;
-const COMPACT_MIN_PX = 260;
-const COMPACT_MAX_PX = 720;
-
 export function BinderBarCompactHover({
   activeChapterId,
   currentProjectId,
@@ -55,9 +56,24 @@ export function BinderBarCompactHover({
 }: BinderBarCompactHoverProps) {
   const { t } = useTranslation();
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
-  const [activeCompactTab, setActiveCompactTab] = useState<BinderTab | null>(null);
   const [isPinned, setIsPinned] = useState(false);
   const [selectedSnapshot, setSelectedSnapshot] = useState<Snapshot | null>(null);
+  const rightRailOpen = useUIStore((state) => state.regions.rightRail.open);
+  const rightPanelActiveTab = useUIStore(
+    (state) => state.regions.rightPanel.activeTab,
+  );
+  const setRegionOpen = useUIStore((state) => state.setRegionOpen);
+  const openRightPanelTab = useUIStore((state) => state.openRightPanelTab);
+  const closeRightPanel = useUIStore((state) => state.closeRightPanel);
+  const setFocusedClosableTarget = useUIStore(
+    (state) => state.setFocusedClosableTarget,
+  );
+  const activeCompactTab =
+    rightRailOpen &&
+    rightPanelActiveTab &&
+    BINDER_VALID_TABS.includes(rightPanelActiveTab as BinderTab)
+      ? (rightPanelActiveTab as BinderTab)
+      : null;
 
   const activeChapterContent = useChapterStore(
     (state) => activeChapterId ? state.items.find((c) => c.id === activeChapterId)?.content : undefined,
@@ -83,6 +99,20 @@ export function BinderBarCompactHover({
 
   const tabItems = useMemo(() => buildBinderTabItems(t), [t]);
 
+  const openCompactTab = useCallback(
+    (tab: BinderTab) => {
+      setRegionOpen("rightRail", true);
+      openRightPanelTab(tab);
+      setFocusedClosableTarget({ kind: "compact-binder" });
+    },
+    [openRightPanelTab, setFocusedClosableTarget, setRegionOpen],
+  );
+
+  const closeCompactTab = useCallback(() => {
+    setRegionOpen("rightRail", false);
+    closeRightPanel();
+  }, [closeRightPanel, setRegionOpen]);
+
   useEffect(() => {
     onServingStateChangeRef.current?.(activeCompactTab !== null);
     void api.logger.debug("compact-binder.serving-state", {
@@ -92,13 +122,13 @@ export function BinderBarCompactHover({
   }, [activeCompactTab]);
 
   const activeContentWidth = useMemo(() => {
-    if (activeCompactTab === null) return RAIL_WIDTH_PX;
+    if (activeCompactTab === null) return COMPACT_BINDER_RAIL_WIDTH_PX;
     const referenceWidth =
       Number.isFinite(containerWidthPx) && containerWidthPx > 0
         ? containerWidthPx
         : window.innerWidth;
     const widthByRatio = Math.round((referenceWidth * activeTabRatio) / 100);
-    return Math.max(COMPACT_MIN_PX, Math.min(COMPACT_MAX_PX, widthByRatio));
+    return Math.max(COMPACT_BINDER_MIN_WIDTH_PX, Math.min(COMPACT_BINDER_MAX_WIDTH_PX, widthByRatio));
   }, [activeCompactTab, containerWidthPx, activeTabRatio]);
 
   const handleResizePointerDown = useCallback(
@@ -127,7 +157,7 @@ export function BinderBarCompactHover({
       if (!(referenceWidth > 0)) return;
       const delta = dragState.startX - event.clientX;
       const startWidth = (referenceWidth * dragState.startRatio) / 100;
-      const nextWidth = Math.max(COMPACT_MIN_PX, Math.min(COMPACT_MAX_PX, startWidth + delta));
+      const nextWidth = Math.max(COMPACT_BINDER_MIN_WIDTH_PX, Math.min(COMPACT_BINDER_MAX_WIDTH_PX, startWidth + delta));
       const nextRatioRaw = (nextWidth / referenceWidth) * 100;
       const nextRatio = normalizeLayoutSurfaceRatioInput(dragState.surface, nextRatioRaw);
       if (nextRatio === null) return;
@@ -140,8 +170,6 @@ export function BinderBarCompactHover({
     dragStateRef.current = null;
   }, []);
 
-  const setFocusedClosableTarget = useUIStore((state) => state.setFocusedClosableTarget);
-
   // luie:close-compact-binder is dispatched by closeFocusedSurface (app.closeWindow / Cmd+W)
   // Priority: close snapshot viewer first, then binder tab
   useEffect(() => {
@@ -150,17 +178,17 @@ export function BinderBarCompactHover({
         setSelectedSnapshot(null);
         return;
       }
-      setActiveCompactTab(null);
+      closeCompactTab();
     };
     window.addEventListener("luie:close-compact-binder", handleClose);
     return () => window.removeEventListener("luie:close-compact-binder", handleClose);
-  }, [selectedSnapshot]);
+  }, [closeCompactTab, selectedSnapshot]);
 
   return (
     <FocusHoverSidebar
       side="right"
       topOffset={sidebarTopOffset}
-      activationWidthPx={RAIL_WIDTH_PX}
+      activationWidthPx={COMPACT_BINDER_RAIL_WIDTH_PX}
       closeDelayMs={180}
       suppressHoverOpen={suppressHoverOpen}
       forceOpen={(isPinned && activeCompactTab !== null) || selectedSnapshot !== null}
@@ -168,7 +196,10 @@ export function BinderBarCompactHover({
       <div className="h-full flex flex-row">
         {/* Snapshot Viewer — rendered to the LEFT of the binder panel */}
         {selectedSnapshot !== null && (
-          <div className="h-full w-[480px] shrink-0 border-l border-border/40 bg-panel overflow-hidden relative">
+          <div
+            className="h-full shrink-0 border-l border-border/40 bg-panel overflow-hidden relative"
+            style={{ width: COMPACT_BINDER_SNAPSHOT_VIEWER_WIDTH_PX }}
+          >
             <button
               type="button"
               onClick={() => setSelectedSnapshot(null)}
@@ -190,7 +221,7 @@ export function BinderBarCompactHover({
         <div
           className="h-full border-l border-border/40 bg-panel overflow-hidden transition-[width] duration-150 ease-out"
           style={{
-            width: activeCompactTab !== null ? activeContentWidth : RAIL_WIDTH_PX,
+            width: activeCompactTab !== null ? activeContentWidth : COMPACT_BINDER_RAIL_WIDTH_PX,
           }}
           onMouseEnter={() => setFocusedClosableTarget({ kind: "compact-binder" })}
         >
@@ -206,8 +237,7 @@ export function BinderBarCompactHover({
                           tab: item.tab,
                           source: "icon-button",
                         });
-                        setActiveCompactTab(item.tab);
-                        setFocusedClosableTarget({ kind: "compact-binder" });
+                        openCompactTab(item.tab);
                       }}
                       title={item.title}
                       className="w-10 h-10 flex items-center justify-center rounded-full transition-[background-color,color,transform] duration-150 active:scale-95 text-muted hover:text-fg hover:bg-surface-hover"
@@ -220,7 +250,7 @@ export function BinderBarCompactHover({
             ) : (
               <div
                 className={cn(
-                  "relative flex-1 min-h-0 overflow-hidden",
+                  "relative flex-1 min-h-0 overflow-hidden flex flex-col",
                   enableAnimations && "animate-in fade-in duration-150",
                 )}
               >
@@ -233,26 +263,26 @@ export function BinderBarCompactHover({
                   onPointerUp={endResize}
                   onPointerCancel={endResize}
                 />
-                <div className="h-10 px-3 border-b border-border/50 flex items-center justify-between text-xs font-medium text-fg/80">
+                <div className="shrink-0 h-10 px-3 border-b border-border/50 flex items-center justify-between text-xs font-medium text-fg/80">
                   <span className="truncate">
                     {tabItems.find((item) => item.tab === activeCompactTab)?.title ?? ""}
                   </span>
                   <button
                     type="button"
-                    onClick={() => setActiveCompactTab(null)}
+                    onClick={closeCompactTab}
                     className="ml-2 shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted hover:text-fg hover:bg-surface-hover transition-colors"
                     aria-label={t("snapshot.close")}
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <div className="h-[calc(100%-2.5rem)] overflow-hidden">
+                <div className="flex-1 min-h-0 overflow-hidden">
                   <BinderSidebarPanelBody
                     activeChapterId={activeChapterId}
                     activeTab={activeCompactTab}
                     currentProjectId={currentProjectId}
-                    onBackToSnapshotList={() => setActiveCompactTab("snapshot")}
-                    onClose={() => setActiveCompactTab(null)}
+                    onBackToSnapshotList={() => openCompactTab("snapshot")}
+                    onClose={closeCompactTab}
                     onOpenSnapshot={setSelectedSnapshot}
                     isPinned={isPinned}
                     onTogglePinned={() => setIsPinned((prev) => !prev)}

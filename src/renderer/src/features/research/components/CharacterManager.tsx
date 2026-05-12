@@ -27,7 +27,11 @@ import {
 } from "@shared/constants/sidebarSizing";
 import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
 import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
-import { useCollapsibleSidebar } from "@renderer/features/workspace/hooks/useCollapsibleSidebar";
+import {
+  getCollapsibleSidebarPanelSize,
+  shouldHideCollapsibleSidebarLayout,
+  useCollapsibleSidebar,
+} from "@renderer/features/workspace/hooks/useCollapsibleSidebar";
 import { SidebarCollapseStrip } from "@renderer/features/workspace/components/SidebarCollapseStrip";
 import { SidebarPeekContent } from "@renderer/features/workspace/components/SidebarPeekContent";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
@@ -82,8 +86,12 @@ export default function CharacterManager() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const panelGroupRef = useRef<GroupImperativeHandle | null>(null);
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
-  const { isCollapsed, onResize: handleSidebarResize, toggle } =
-    useCollapsibleSidebar(sidebarFeature, baseOnResize);
+  const {
+    isCollapsed,
+    isHydrated: isCollapseHydrated,
+    onResize: handleSidebarResize,
+    toggle,
+  } = useCollapsibleSidebar(sidebarFeature, baseOnResize);
 
   const { isLayoutReady } = useFixedPixelPanelGroupLayout({
     containerRef,
@@ -100,9 +108,13 @@ export default function CharacterManager() {
     flexPanelId: "main",
     flexPanelMinPercent: 20,
   });
-  const shouldHideUntilLayoutReady =
-    !enableAnimations &&
-    (!uiHasHydrated || !projectLayoutHasHydrated || !isLayoutReady);
+  const shouldHideUntilLayoutReady = shouldHideCollapsibleSidebarLayout({
+    enableAnimations,
+    uiHasHydrated,
+    projectLayoutHasHydrated,
+    isLayoutReady,
+    isCollapseHydrated,
+  });
 
   const {
     selectedCharacterId,
@@ -116,12 +128,18 @@ export default function CharacterManager() {
   } = useCharacterManager(t);
 
   const allTerms = useTermStore((s) => s.terms);
-  const projectTerms = allTerms.filter((term) => term.projectId === currentProjectId);
+  const projectTerms = allTerms.filter(
+    (term) => term.projectId === currentProjectId,
+  );
 
   const peekGroups = [
     ...Object.entries(groupedCharacters).map(([name, chars]) => ({
       name,
-      items: chars.map((c) => ({ id: c.id, label: c.name, sublabel: c.description ?? undefined })),
+      items: chars.map((c) => ({
+        id: c.id,
+        label: c.name,
+        sublabel: c.description ?? undefined,
+      })),
     })),
     ...(projectTerms.length > 0
       ? [
@@ -165,7 +183,10 @@ export default function CharacterManager() {
           {/* LEFT SIDEBAR - Character List */}
           <Panel
             id="sidebar"
-            defaultSize={isCollapsed ? toPxSize(0) : toPxSize(sidebarWidth)}
+            defaultSize={getCollapsibleSidebarPanelSize(
+              isCollapsed,
+              sidebarWidth,
+            )}
             minSize={toPxSize(sidebarConfig.minPx)}
             maxSize={toPxSize(sidebarConfig.maxPx)}
             collapsible

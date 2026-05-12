@@ -4,6 +4,7 @@ import {
   Panel,
   Separator as PanelResizeHandle,
   type PanelImperativeHandle,
+  type PanelSize,
 } from "react-resizable-panels";
 import { Menu } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -77,6 +78,13 @@ export default function GoogleDocsLayout({
     openSize: toPanelPercentSize(docsSidebarRatio),
     panelRef: docsSidebarPanelRef,
   });
+  const handleSidebarResize = (panelSize: PanelSize) => {
+    const isCollapsed =
+      panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
+    if (isCollapsed) {
+      setDocsSidebarOpen(false);
+    }
+  };
 
   return (
     <div className="flex h-screen flex-col bg-background font-sans text-foreground transition-colors duration-200">
@@ -132,6 +140,7 @@ export default function GoogleDocsLayout({
                 defaultSize={toPanelPercentSize(docsSidebarRatio)}
                 minSize={docsSidebarSize.minSize}
                 maxSize={docsSidebarSize.maxSize}
+                onResize={handleSidebarResize}
                 className={`flex min-w-0 shrink-0 flex-col overflow-hidden border-r border-border bg-background ${
                   enableAnimations
                     ? isSidebarClosing

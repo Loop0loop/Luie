@@ -16,8 +16,8 @@ export function useSettingsManager() {
   const editorPreferences = useSettingsEditorPreferences();
   const menuBarSettings = useSettingsMenuBar(t, showToast);
   const shortcutSettings = useSettingsShortcuts(activeTab, t, showToast);
-  const recoverySettings = useSettingsRecovery(t, showToast);
-  const syncSettings = useSettingsSync(t, showToast);
+  const recoverySettings = useSettingsRecovery(activeTab, t, showToast);
+  const syncSettings = useSettingsSync(activeTab, t, showToast);
 
   return {
     t,

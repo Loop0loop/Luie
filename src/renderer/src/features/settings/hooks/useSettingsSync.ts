@@ -7,6 +7,7 @@ import {
   syncRunResultSchema,
   syncStatusSchema,
 } from "@shared/schemas/index.js";
+import type { SettingsTabId } from "@renderer/features/settings/components/tabs/types";
 
 type ShowToast = ToastContextType["showToast"];
 
@@ -25,7 +26,7 @@ const DEFAULT_SYNC_STATUS: SyncStatus = {
   },
 };
 
-export function useSettingsSync(t: TFunction, showToast: ShowToast) {
+export function useSettingsSync(activeTab: SettingsTabId, t: TFunction, showToast: ShowToast) {
   const syncActionLockRef = useRef(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(DEFAULT_SYNC_STATUS);
   const [isSyncBusy, setIsSyncBusy] = useState(false);
@@ -42,6 +43,8 @@ export function useSettingsSync(t: TFunction, showToast: ShowToast) {
   }, []);
 
   useEffect(() => {
+    if (activeTab !== "sync") return;
+
     let cancelled = false;
 
     void (async () => {
@@ -61,9 +64,11 @@ export function useSettingsSync(t: TFunction, showToast: ShowToast) {
       cancelled = true;
       unsubscribe();
     };
-  }, [refreshSyncStatus]);
+  }, [activeTab, refreshSyncStatus]);
 
   useEffect(() => {
+    if (activeTab !== "sync") return;
+
     const unsubscribe = api.sync.onAuthResult((result) => {
       if (!result) return;
 
@@ -100,7 +105,7 @@ export function useSettingsSync(t: TFunction, showToast: ShowToast) {
     });
 
     return unsubscribe;
-  }, [refreshSyncStatus, showToast, t]);
+  }, [activeTab, refreshSyncStatus, showToast, t]);
 
   const runSyncAction = useCallback(async (action: () => Promise<void>) => {
     if (syncActionLockRef.current) return;

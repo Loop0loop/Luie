@@ -403,7 +403,10 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
     // Capture kind before entering set() — will be used for side-effects after
     const focusedKind = getFocusedClosableTarget()?.kind;
 
-    // compact-binder lives in component-local state; close it via a DOM event
+    // compact-binder state lives in BinderBarCompactHover (component-local).
+    // We can't mutate it from the store, so we bridge via a DOM custom event.
+    // The component listens for "luie:close-compact-binder" and handles priority
+    // (snapshot viewer → binder tab). This is intentional and not a store leak.
     if (focusedKind === "compact-binder") {
       clearFocusedClosableTarget();
       window.dispatchEvent(new CustomEvent("luie:close-compact-binder"));

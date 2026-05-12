@@ -27,7 +27,11 @@ import {
 } from "@shared/constants/sidebarSizing";
 import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
 import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
-import { useCollapsibleSidebar } from "@renderer/features/workspace/hooks/useCollapsibleSidebar";
+import {
+  getCollapsibleSidebarPanelSize,
+  shouldHideCollapsibleSidebarLayout,
+  useCollapsibleSidebar,
+} from "@renderer/features/workspace/hooks/useCollapsibleSidebar";
 import { SidebarCollapseStrip } from "@renderer/features/workspace/components/SidebarCollapseStrip";
 import { SidebarPeekContent } from "@renderer/features/workspace/components/SidebarPeekContent";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
@@ -81,8 +85,12 @@ export default function EventManager() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const panelGroupRef = useRef<GroupImperativeHandle | null>(null);
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
-  const { isCollapsed, onResize: handleSidebarResize, toggle } =
-    useCollapsibleSidebar(sidebarFeature, baseOnResize);
+  const {
+    isCollapsed,
+    isHydrated: isCollapseHydrated,
+    onResize: handleSidebarResize,
+    toggle,
+  } = useCollapsibleSidebar(sidebarFeature, baseOnResize);
 
   const { isLayoutReady } = useFixedPixelPanelGroupLayout({
     containerRef,
@@ -99,9 +107,13 @@ export default function EventManager() {
     flexPanelId: "main",
     flexPanelMinPercent: 20,
   });
-  const shouldHideUntilLayoutReady =
-    !enableAnimations &&
-    (!uiHasHydrated || !projectLayoutHasHydrated || !isLayoutReady);
+  const shouldHideUntilLayoutReady = shouldHideCollapsibleSidebarLayout({
+    enableAnimations,
+    uiHasHydrated,
+    projectLayoutHasHydrated,
+    isLayoutReady,
+    isCollapseHydrated,
+  });
 
   const {
     selectedEventId,
@@ -124,7 +136,11 @@ export default function EventManager() {
         <SidebarPeekContent
           groups={Object.entries(groupedEvents).map(([name, events]) => ({
             name,
-            items: events.map((e) => ({ id: e.id, label: e.name, sublabel: e.description ?? undefined })),
+            items: events.map((e) => ({
+              id: e.id,
+              label: e.name,
+              sublabel: e.description ?? undefined,
+            })),
           }))}
           selectedId={selectedEventId}
           onSelect={setSelectedEventId}
@@ -143,7 +159,10 @@ export default function EventManager() {
           {/* LEFT SIDEBAR - Event List */}
           <Panel
             id="sidebar"
-            defaultSize={isCollapsed ? toPxSize(0) : toPxSize(sidebarWidth)}
+            defaultSize={getCollapsibleSidebarPanelSize(
+              isCollapsed,
+              sidebarWidth,
+            )}
             minSize={toPxSize(sidebarConfig.minPx)}
             maxSize={toPxSize(sidebarConfig.maxPx)}
             collapsible

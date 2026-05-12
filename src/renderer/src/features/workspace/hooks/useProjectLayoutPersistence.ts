@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { EditorUiMode } from "@shared/types";
 import {
   normalizeLayoutSurfaceRatiosWithMigrations,
@@ -64,6 +64,7 @@ export function useProjectLayoutPersistence(
   const restoreTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const restoreFrameRef = useRef<number | null>(null);
   const endLayoutRestoringRef = useRef<(() => void) | null>(null);
+  const [restoreEpoch, setRestoreEpoch] = useState(0);
 
   const isSupportedMode =
     uiMode === "default" ||
@@ -214,6 +215,7 @@ export function useProjectLayoutPersistence(
     restoreTimerRef.current = setTimeout(() => {
       isRestoringRef.current = false;
       restoreTimerRef.current = null;
+      setRestoreEpoch((current) => current + 1);
       restoreFrameRef.current = requestAnimationFrame(() => {
         restoreFrameRef.current = requestAnimationFrame(() => {
           restoreFrameRef.current = null;
@@ -389,6 +391,7 @@ export function useProjectLayoutPersistence(
     hasHydrated,
     projectLayoutHasHydrated,
     isSupportedMode,
+    restoreEpoch,
     getProjectLayout,
     upsertProjectLayout,
   ]);

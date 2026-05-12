@@ -11,6 +11,7 @@ import {
   dbRecoveryResultSchema,
   dbRecoveryStatusSchema,
 } from "@shared/schemas/index.js";
+import type { SettingsTabId } from "@renderer/features/settings/components/tabs/types";
 
 type ShowToast = ToastContextType["showToast"];
 
@@ -55,7 +56,7 @@ const buildFallbackResult = (
   message,
 });
 
-export function useSettingsRecovery(t: TFunction, showToast: ShowToast) {
+export function useSettingsRecovery(activeTab: SettingsTabId, t: TFunction, showToast: ShowToast) {
   const currentProject = useProjectStore((state) => state.currentProject);
   const projects = useProjectStore((state) => state.projects);
   const mountedRef = useRef(true);
@@ -139,8 +140,9 @@ export function useSettingsRecovery(t: TFunction, showToast: ShowToast) {
   }, [t]);
 
   useEffect(() => {
+    if (activeTab !== "recovery") return;
     void refreshRecoveryStatus();
-  }, [refreshRecoveryStatus]);
+  }, [activeTab, refreshRecoveryStatus]);
 
   useEffect(
     () => () => {

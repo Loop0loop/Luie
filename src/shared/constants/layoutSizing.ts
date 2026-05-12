@@ -302,3 +302,13 @@ export const getResponsivePanelSize = (
 
 export const toPanelPixelSize = (value: number): string =>
   `${Math.max(0, Math.round(value))}px`;
+
+// ─── CompactBinder (EditorLayout overlay hover sidebar) ──────────────────────
+/** Width of the icon-only rail when no panel is expanded. */
+export const COMPACT_BINDER_RAIL_WIDTH_PX = 44;
+/** Minimum panel width when a tab is open — intentionally narrower than NESTED_MANAGER_PANEL_CONFIG.minPx (420). */
+export const COMPACT_BINDER_MIN_WIDTH_PX = 260;
+/** Maximum panel width when a tab is open. */
+export const COMPACT_BINDER_MAX_WIDTH_PX = 720;
+/** Width of the SnapshotViewer overlay that slides in to the left of the binder panel. */
+export const COMPACT_BINDER_SNAPSHOT_VIEWER_WIDTH_PX = 480;
