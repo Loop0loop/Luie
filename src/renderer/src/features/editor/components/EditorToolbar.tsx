@@ -26,6 +26,7 @@ import type { Editor } from "@tiptap/react";
 import { useTranslation } from "react-i18next";
 
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { cn } from "@shared/types/utils";
 import { FontSelector } from "./FontSelector";
 
@@ -412,6 +413,7 @@ export default function EditorToolbar({
   editor,
   isMobileView,
   onToggleMobileView,
+  onOpenWorldGraph,
   onOpenExport,
   canOpenExport = true,
 }: EditorToolbarProps) {
@@ -419,6 +421,10 @@ export default function EditorToolbar({
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
   useClickOutside(moreRef, () => setMoreOpen(false));
+
+  const worldTab = useUIStore((s) => s.worldTab);
+  const setWorldTab = useUIStore((s) => s.setWorldTab);
+  const isCanvasOpen = worldTab === "graph";
 
   const fontSize = useEditorStore((state) => state.fontSize);
   const lineHeight = useEditorStore((state) => state.lineHeight);
@@ -609,16 +615,36 @@ export default function EditorToolbar({
           </ToolbarButton>
         )}
 
-        {/* Export */}
-        <ToolbarButton
-          label={t("toolbar.export", "내보내기")}
-          className="gap-1.5"
-          onClick={() => onOpenExport?.()}
-          disabled={!canOpenExport || !onOpenExport}
-        >
-          <FileOutput className="h-4 w-4" />
-          <span>{t("toolbar.export", "내보내기")}</span>
-        </ToolbarButton>
+        {/* Editor / Canvas segment toggle */}
+        <div className="flex h-7 items-center rounded-md border border-border bg-muted/20 p-0.5 text-xs font-medium">
+          <button
+            type="button"
+            onClick={() => {
+              if (isCanvasOpen) {
+                setWorldTab("terms");
+                window.location.hash = "";
+              }
+            }}
+            className={cn(
+              "flex h-full items-center rounded px-2.5 transition-colors",
+              !isCanvasOpen ? "bg-panel text-fg shadow-sm" : "text-muted hover:text-fg",
+            )}
+          >
+            {t("toolbar.editor", "에디터")}
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenWorldGraph?.()}
+            disabled={!onOpenWorldGraph}
+            className={cn(
+              "flex h-full items-center rounded px-2.5 transition-colors",
+              isCanvasOpen ? "bg-panel text-fg shadow-sm" : "text-muted hover:text-fg",
+              !onOpenWorldGraph && "opacity-40",
+            )}
+          >
+            {t("toolbar.canvas", "캔버스")}
+          </button>
+        </div>
 
         <Divider />
 
@@ -633,6 +659,16 @@ export default function EditorToolbar({
           </ToolbarButton>
           {moreOpen && (
             <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-lg border border-border bg-panel p-1 shadow-xl">
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs text-fg transition-colors hover:bg-hover disabled:opacity-40"
+                disabled={!canOpenExport || !onOpenExport}
+                onClick={() => { onOpenExport?.(); setMoreOpen(false); }}
+              >
+                <FileOutput className="h-3.5 w-3.5 text-muted" />
+                <span>{t("toolbar.export", "내보내기")}</span>
+              </button>
+              <div className="my-1 h-px bg-border/60" />
               {(
                 [
                   { icon: AlignLeft, label: t("toolbar.tooltip.alignLeft", "왼쪽 정렬"), value: "left" },
