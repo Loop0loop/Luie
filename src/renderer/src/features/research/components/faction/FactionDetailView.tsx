@@ -1,6 +1,6 @@
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Shield } from "lucide-react";
+import { BookOpen, Shield, Sparkles } from "lucide-react";
 import { useFactionStore } from "@renderer/features/research/stores/factionStore";
 import { BufferedInput } from "@shared/ui/BufferedInput";
 import { Infobox } from "@renderer/features/research/components/wiki/Infobox";
@@ -8,6 +8,8 @@ import { WikiSection } from "@renderer/features/research/components/wiki/WikiSec
 import { useDialog } from "@shared/ui/useDialog";
 import { useShallow } from "zustand/react/shallow";
 import { parseStructuredAttributes } from "@renderer/features/research/utils/parseStructuredAttributes";
+import { cn } from "@shared/types/utils";
+import { EntityVisualPanel } from "@renderer/features/research/components/wiki/visual";
 
 type WikiSectionData = {
     id: string;
@@ -74,6 +76,17 @@ export default function FactionDetailView({ factionId }: FactionDetailViewProps)
     const customFields: CustomField[] = useMemo(() => {
         return (attributes.customFields as CustomField[]) || [];
     }, [attributes.customFields]);
+
+    // View mode (persisted per faction)
+    const storageKey = `faction-view-mode:${factionId ?? ""}`;
+    const [viewMode, setViewMode] = useState<"wiki" | "visual">(() => {
+        const stored = localStorage.getItem(storageKey);
+        return stored === "visual" ? "visual" : "wiki";
+    });
+    const switchViewMode = (mode: "wiki" | "visual") => {
+        setViewMode(mode);
+        localStorage.setItem(storageKey, mode);
+    };
 
     if (!factionObj) {
         return (
@@ -153,11 +166,35 @@ export default function FactionDetailView({ factionId }: FactionDetailViewProps)
     return (
         <div className="flex-1 overflow-auto p-8 sm:p-6 flex flex-col gap-6 bg-panel text-fg min-w-0">
             <div className="border-b-2 border-(--namu-border) pb-4 mb-6 flex flex-col gap-3">
-                <BufferedInput
-                    className="text-3xl font-extrabold text-fg leading-tight border-none bg-transparent w-full focus:outline-none"
-                    value={factionObj.name}
-                    onSave={(val) => handleUpdate("name", val)}
-                />
+                <div className="flex items-center gap-2">
+                    <BufferedInput
+                        className="text-3xl font-extrabold text-fg leading-tight border-none bg-transparent flex-1 focus:outline-none min-w-0"
+                        value={factionObj.name}
+                        onSave={(val) => handleUpdate("name", val)}
+                    />
+                    <div className="flex items-center gap-1 p-0.5 rounded-lg bg-surface-hover border border-border/60 shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => switchViewMode("wiki")}
+                            className={cn(
+                                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors",
+                                viewMode === "wiki" ? "bg-surface text-fg shadow-sm" : "text-muted hover:text-fg",
+                            )}
+                        >
+                            <BookOpen size={12} /> {t("entityVisual.toggle.wiki")}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => switchViewMode("visual")}
+                            className={cn(
+                                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors",
+                                viewMode === "visual" ? "bg-surface text-fg shadow-sm" : "text-muted hover:text-fg",
+                            )}
+                        >
+                            <Sparkles size={12} /> {t("entityVisual.toggle.visual")}
+                        </button>
+                    </div>
+                </div>
                 <div className="text-[13px] text-muted bg-surface border border-border px-3 py-1.5 rounded self-start flex items-center gap-2">
                     <span className="font-bold">{t("faction.classificationLabel", "Classification")}</span>
                     <span className="text-(--namu-link) cursor-pointer hover:underline">{t("faction.template.basic", "Basic Faction")}</span>
@@ -171,6 +208,9 @@ export default function FactionDetailView({ factionId }: FactionDetailViewProps)
                 </div>
             </div>
 
+            {viewMode === "visual" ? (
+                <EntityVisualPanel kind="faction" id={factionObj.id} name={factionObj.name} />
+            ) : (
             <div className="@container">
                 <div className="flex flex-col @min-[700px]:flex-row gap-8 items-start min-h-0">
                     <div className="flex-1 flex flex-col gap-8 min-w-75 w-full @min-[700px]:order-1 order-2">
@@ -230,6 +270,7 @@ export default function FactionDetailView({ factionId }: FactionDetailViewProps)
                     </div>
                 </div>
             </div>
+            )}
         </div>
     );
 }

@@ -10,8 +10,6 @@ import { type Editor as TiptapEditor } from "@tiptap/react";
 import { useTranslation } from "react-i18next";
 import Editor from "@renderer/features/editor/components/Editor";
 import { SmartLinkTooltip } from "@renderer/features/editor/components/SmartLinkTooltip";
-import { SidebarCompactHover } from "@renderer/features/workspace/components/SidebarCompactHover";
-import { ContextCompactHover } from "@renderer/features/workspace/components/ContextCompactHover";
 
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import {
@@ -273,14 +271,6 @@ export default function EditorRoot() {
     window.location.hash = "#world-graph";
   }, [setWorldTab]);
 
-  const handleExpandContext = useCallback(
-    (tab: "synopsis" | "characters" | "terms") => {
-      setRegionOpen("rightPanel", true);
-      setContextTab(tab);
-    },
-    [setRegionOpen, setContextTab],
-  );
-
   const handleRenameProject = useCallback(async () => {
     if (!currentProject?.id) return;
 
@@ -486,16 +476,6 @@ export default function EditorRoot() {
                   onTabChange={setContextTab}
                 />
               </Suspense>
-            }
-            compactSidebarHover={
-              <SidebarCompactHover
-                onSelectChapter={handleSelectChapter}
-                onSelectResearchItem={handleSelectResearchItem}
-                activeChapterId={activeChapterId ?? undefined}
-              />
-            }
-            compactContextHover={
-              <ContextCompactHover onExpandWithTab={handleExpandContext} />
             }
             onOpenExport={handleQuickExport}
             additionalPanels={additionalPanelsComponent}

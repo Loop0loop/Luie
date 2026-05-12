@@ -37,8 +37,6 @@ interface MainLayoutProps {
   children: ReactNode;
   sidebar?: ReactNode;
   contextPanel?: ReactNode;
-  compactSidebarHover?: ReactNode;
-  compactContextHover?: ReactNode;
   additionalPanels?: ReactNode;
   additionalPanelIds?: string[];
   onOpenExport?: () => void;
@@ -48,8 +46,6 @@ export default function MainLayout({
   children,
   sidebar,
   contextPanel,
-  compactSidebarHover,
-  compactContextHover,
   additionalPanels,
   additionalPanelIds = [],
   onOpenExport,
@@ -154,9 +150,6 @@ export default function MainLayout({
       <WindowBar />
 
       <div className="relative min-h-0 flex-1">
-        {!shouldRenderSidebar && compactSidebarHover}
-        {!shouldRenderContext && compactContextHover}
-
         <PanelGroup
           id="main-layout-group"
           orientation="horizontal"
@@ -171,6 +164,13 @@ export default function MainLayout({
             panelRef={sidebarPanelRef}
             collapsible
             collapsedSize={0}
+            onResize={(panelSize) => {
+              const isCollapsed =
+                panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
+              if (isCollapsed) {
+                setRegionOpen("leftSidebar", false);
+              }
+            }}
             data-panel-animated="true"
             defaultSize={sidebarDefaultSize}
             minSize={mainSidebarSize.minSize}
@@ -280,6 +280,13 @@ export default function MainLayout({
             panelRef={contextPanelRef}
             collapsible
             collapsedSize={0}
+            onResize={(panelSize) => {
+              const isCollapsed =
+                panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
+              if (isCollapsed) {
+                setRegionOpen("rightPanel", false);
+              }
+            }}
             data-panel-animated="true"
             defaultSize={contextDefaultSize}
             minSize={mainContextSize.minSize}
