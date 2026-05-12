@@ -140,6 +140,24 @@ export function BinderBarCompactHover({
     dragStateRef.current = null;
   }, []);
 
+  // Cmd+W (Mac) / Ctrl+W (Windows·Linux): close snapshot viewer first, then binder tab
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!((e.metaKey || e.ctrlKey) && e.key === "w")) return;
+      if (selectedSnapshot !== null) {
+        e.preventDefault();
+        setSelectedSnapshot(null);
+        return;
+      }
+      if (activeCompactTab !== null) {
+        e.preventDefault();
+        setActiveCompactTab(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeCompactTab, selectedSnapshot]);
+
   return (
     <FocusHoverSidebar
       side="right"
@@ -152,13 +170,7 @@ export function BinderBarCompactHover({
       <div className="h-full flex flex-row">
         {/* Snapshot Viewer — rendered to the LEFT of the binder panel */}
         {selectedSnapshot !== null && (
-          <div
-            className={cn(
-              "h-full w-[480px] shrink-0 border-l border-border/40 bg-panel overflow-hidden relative",
-              enableAnimations &&
-                "animate-in fade-in slide-in-from-right-2 duration-200",
-            )}
-          >
+          <div className="h-full w-[480px] shrink-0 border-l border-border/40 bg-panel overflow-hidden relative">
             <button
               type="button"
               onClick={() => setSelectedSnapshot(null)}
@@ -176,21 +188,16 @@ export function BinderBarCompactHover({
           </div>
         )}
 
-        {/* Binder panel */}
+        {/* Binder panel — no backdrop-blur/shadow (FocusHoverSidebar owns the shadow) */}
         <div
-          className="h-full border-l border-border/40 bg-sidebar/75 shadow-lg backdrop-blur-sm overflow-hidden transition-[width] duration-200 ease-out"
+          className="h-full border-l border-border/40 bg-panel overflow-hidden transition-[width] duration-150 ease-out"
           style={{
             width: activeCompactTab !== null ? activeContentWidth : RAIL_WIDTH_PX,
           }}
         >
           <div className="h-full flex flex-col">
             {activeCompactTab === null ? (
-              <div
-                className={cn(
-                  "flex-1 overflow-y-auto py-2 flex flex-col items-center gap-1.5",
-                  enableAnimations && "animate-in fade-in duration-200",
-                )}
-              >
+              <div className="flex-1 overflow-y-auto py-2 flex flex-col items-center gap-1.5">
                 {tabItems.map((item) => (
                   <div key={item.tab} className="w-full px-1 flex items-center justify-center">
                     <button
@@ -214,8 +221,7 @@ export function BinderBarCompactHover({
               <div
                 className={cn(
                   "relative flex-1 min-h-0 overflow-hidden",
-                  enableAnimations &&
-                    "animate-in fade-in slide-in-from-right-2 duration-200 [animation-delay:100ms] [animation-fill-mode:both]",
+                  enableAnimations && "animate-in fade-in duration-150",
                 )}
               >
                 <div

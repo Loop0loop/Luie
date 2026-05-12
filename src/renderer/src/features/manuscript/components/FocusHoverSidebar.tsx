@@ -246,7 +246,7 @@ export default function FocusHoverSidebar({
       <div
         ref={sidebarRef}
         className={cn(
-          "fixed z-50 shadow-xl bg-panel will-change-transform",
+          "fixed z-50 shadow-xl bg-panel will-change-transform [contain:layout_paint]",
           enableAnimations
             ? "transition-transform duration-150 ease-out"
             : "transition-none",
