@@ -14,15 +14,15 @@ import WindowBar from "@renderer/features/workspace/components/WindowBar";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
-import { BinderSidebar } from "@renderer/features/manuscript/components/BinderSidebar";
-import { BinderBarCompactHover } from "@renderer/features/workspace/components/BinderBarCompactHover";
+import {
+  BinderSidebar,
+  BinderSidebarRail,
+} from "@renderer/features/manuscript/components/BinderSidebar";
 import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@shared/constants/configs";
 import { SIDEBAR_WIDTH_CONFIG, toPercentSize } from "@shared/constants/sidebarSizing";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 import { getPanelLayoutValue } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import { cn } from "@shared/types/utils";
-
-const ENABLE_LEGACY_BINDER_SIDEBAR = false;
 
 interface EditorLayoutProps {
   children?: ReactNode;
@@ -56,11 +56,9 @@ export default function EditorLayout({
   const { t } = useTranslation();
 
   const maxWidth = useEditorStore((state) => state.maxWidth);
-  const activeRightTab = useUIStore((state) => state.regions.rightPanel.activeTab);
   const updatePanelSize = useUIStore((state) => state.updatePanelSize);
   const [isBinderRailHoverSuppressed, setIsBinderRailHoverSuppressed] =
     useState(false);
-  const [isCompactBinderServing, setIsCompactBinderServing] = useState(false);
   const binderRailHoverSuppressionTimeoutRef = useRef<ReturnType<
     typeof setTimeout
   > | null>(null);
@@ -236,17 +234,15 @@ export default function EditorLayout({
 
             {additionalPanels}
 
-            {ENABLE_LEGACY_BINDER_SIDEBAR && !isCompactBinderServing && (
-              <BinderSidebar
-                activeChapterId={activeChapterId}
-                currentProjectId={currentProjectId}
-                groupWidthPx={editorLayoutGroupWidth}
-                onManualClose={handleBinderSidebarManualClose}
-                sidebarTopOffset={sidebarTopOffset}
-              />
-            )}
+            <BinderSidebar
+              activeChapterId={activeChapterId}
+              currentProjectId={currentProjectId}
+              groupWidthPx={editorLayoutGroupWidth}
+              onManualClose={handleBinderSidebarManualClose}
+              sidebarTopOffset={sidebarTopOffset}
+            />
 
-            {!activeRightTab && additionalPanelIds.length === 0 && (
+            {additionalPanelIds.length === 0 && (
               <Panel
                 id="editor-layout-placeholder"
                 defaultSize={0}
@@ -257,13 +253,10 @@ export default function EditorLayout({
             )}
           </PanelGroup>
 
-          <BinderBarCompactHover
-            activeChapterId={activeChapterId}
-            currentProjectId={currentProjectId}
+          <BinderSidebarRail
+            currentProjectId={currentProjectId ?? null}
             sidebarTopOffset={sidebarTopOffset}
             suppressHoverOpen={isBinderRailHoverSuppressed || isToolbarHoverZoneActive}
-            onServingStateChange={setIsCompactBinderServing}
-            containerWidthPx={editorLayoutGroupWidth}
           />
         </div>
       </div>

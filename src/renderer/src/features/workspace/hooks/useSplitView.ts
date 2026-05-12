@@ -23,6 +23,7 @@ export function useSplitView() {
   const contextTab = useUIStore((state) => state.contextTab);
   const addPanelBase = useUIStore((state) => state.addPanel);
   const removePanel = useUIStore((state) => state.removePanel);
+  const setPanels = useUIStore((state) => state.setPanels);
   const setContextTab = useUIStore((state) => state.setContextTab);
   const currentProjectId = useProjectStore((state) => state.currentItem?.id);
   const getProjectLayout = useProjectLayoutStore((state) => state.getProjectLayout);
@@ -48,11 +49,16 @@ export function useSplitView() {
 
   const handleSelectResearchItem = useCallback(
     (type: ResearchTab) => {
-      const alreadyOpen = panels.some(
-        (p) => p.content.type === "research" && p.content.tab === type,
-      );
-      if (!alreadyOpen) {
+      const existingResearch = panels.find((p) => p.content.type === "research");
+
+      if (!existingResearch) {
         addPanel({ type: "research", tab: type });
+      } else if (existingResearch.content.tab !== type) {
+        // 다른 탭으로 교체 — research 패널은 항상 하나만 유지
+        const replaced = { ...existingResearch, content: { type: "research" as const, tab: type } };
+        const next = panels.filter((p) => p.content.type !== "research").concat(replaced);
+        const sizePerPanel = 100 / next.length;
+        setPanels(next.map((p) => ({ ...p, size: sizePerPanel })));
       }
 
       const contextMap: Record<ResearchTab, ContextTab> = {
@@ -65,7 +71,7 @@ export function useSplitView() {
       };
       setContextTab(contextMap[type]);
     },
-    [addPanel, setContextTab, panels],
+    [addPanel, setContextTab, panels, setPanels],
   );
 
   const handleSplitView = useCallback(
