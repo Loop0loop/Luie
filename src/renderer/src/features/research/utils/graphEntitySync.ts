@@ -1,4 +1,4 @@
-import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
+  import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
 import { useEventStore } from "@renderer/features/research/stores/eventStore";
 import { useFactionStore } from "@renderer/features/research/stores/factionStore";
 import { useTermStore } from "@renderer/features/research/stores/termStore";

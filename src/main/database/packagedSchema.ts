@@ -126,8 +126,8 @@ export const PACKAGED_SCHEMA_INDEX_PATCHES: ReadonlyArray<IndexPatch> = [
     sql: 'CREATE INDEX IF NOT EXISTS "WorldEntity_projectId_createdAt_idx" ON "WorldEntity"("projectId", "createdAt");',
   },
   {
-    name: "ScrapMemo_projectId_sortOrder_updatedAt_idx",
-    sql: 'CREATE INDEX IF NOT EXISTS "ScrapMemo_projectId_sortOrder_updatedAt_idx" ON "ScrapMemo"("projectId", "sortOrder", "updatedAt");',
+    name: "ScrapMemo_projectId_sortOrder_updatedAt_desc_idx",
+    sql: 'CREATE INDEX IF NOT EXISTS "ScrapMemo_projectId_sortOrder_updatedAt_desc_idx" ON "ScrapMemo"("projectId", "sortOrder", "updatedAt" DESC);',
   },
 ];
 
