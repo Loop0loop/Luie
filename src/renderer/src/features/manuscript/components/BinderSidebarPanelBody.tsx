@@ -1,4 +1,4 @@
-import { ChevronLeft, X } from "lucide-react";
+import { ChevronLeft, Pin, PinOff, X } from "lucide-react";
 import React, { Suspense } from "react";
 import type { BinderTab } from "./binderSidebar.shared";
 
@@ -25,13 +25,24 @@ export function BinderSidebarPanelBody(props: {
   currentProjectId?: string;
   onBackToSnapshotList: () => void;
   onClose: () => void;
+  isPinned: boolean;
+  pinLocked?: boolean;
+  onTogglePinned: () => void;
   t: (key: string) => string;
 }) {
   return (
     <div className="flex-1 h-full overflow-hidden relative min-w-0">
       <button
+        onClick={props.onTogglePinned}
+        disabled={props.pinLocked}
+        className="absolute top-4 right-12 p-1.5 rounded-full bg-surface/90 border border-border/50 text-muted hover:text-fg hover:bg-surface disabled:opacity-60 disabled:cursor-default disabled:hover:text-muted disabled:hover:bg-surface/90 z-50 shadow-sm transition-colors duration-150"
+        title={props.isPinned ? "Unpin" : "Pin"}
+      >
+        {props.isPinned ? <Pin className="w-4 h-4" /> : <PinOff className="w-4 h-4" />}
+      </button>
+      <button
         onClick={props.onClose}
-        className="absolute top-2 right-2 p-1.5 rounded-full bg-surface/90 border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-colors duration-150"
+        className="absolute top-4 right-2 p-1.5 rounded-full bg-surface/90 border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-colors duration-150"
         title={props.t("sidebar.toggle.close")}
       >
         <X className="w-4 h-4" />
@@ -40,7 +51,7 @@ export function BinderSidebarPanelBody(props: {
       {props.activeTab === "snapshot" && (
         <button
           onClick={props.onBackToSnapshotList}
-          className="absolute top-2 left-3 p-1.5 rounded-full bg-surface/90 border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-colors duration-150"
+          className="absolute top-4 left-3 p-1.5 rounded-full bg-surface/90 border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-colors duration-150"
           title={props.t("back")}
         >
           <ChevronLeft className="w-4 h-4" />

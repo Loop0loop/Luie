@@ -129,9 +129,13 @@ export function useBinderSidebarState(projectId?: string | null) {
   const handleRightTabClick = useCallback(
     (tab: BinderTab) => {
       setFocusedClosableTarget({ kind: "docs-tab" });
+      if (!isPanelRailOpen && activeRightTab === tab) {
+        setRailOpen(true);
+        return;
+      }
       setActiveRightTab(activeRightTab === tab ? null : tab);
     },
-    [activeRightTab, setActiveRightTab, setFocusedClosableTarget],
+    [activeRightTab, isPanelRailOpen, setActiveRightTab, setFocusedClosableTarget, setRailOpen],
   );
 
   const handleResize = useCallback(

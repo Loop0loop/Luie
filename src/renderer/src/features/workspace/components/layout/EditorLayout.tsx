@@ -56,6 +56,9 @@ export default function EditorLayout({
   const { t } = useTranslation();
 
   const maxWidth = useEditorStore((state) => state.maxWidth);
+  const rightPanelOpen = useUIStore((state) => state.regions.rightPanel.open);
+  const rightPanelActiveTab = useUIStore((state) => state.regions.rightPanel.activeTab);
+  const isPanelRailOpen = useUIStore((state) => state.regions.rightRail.open);
   const updatePanelSize = useUIStore((state) => state.updatePanelSize);
   const [isBinderRailHoverSuppressed, setIsBinderRailHoverSuppressed] =
     useState(false);
@@ -89,6 +92,8 @@ export default function EditorLayout({
   }, []);
 
   const editorLayoutGroupWidth = useElementWidth(editorLayoutGroupRef);
+  // BinderSidebar 렌더 조건과 동일: rightPanel이 열려있고 activeTab 있고 rail도 열려있을 때
+  const isBinderPanelVisible = Boolean(rightPanelOpen && rightPanelActiveTab && isPanelRailOpen);
 
   const handleEditorLayoutChanged = useCallback(
     (layout: Layout) => {
@@ -114,6 +119,16 @@ export default function EditorLayout({
     },
     [],
   );
+
+  useEffect(() => {
+    if (!isBinderPanelVisible) return;
+    setIsToolbarVisible(false);
+    setIsToolbarHoverZoneActive(false);
+    if (toolbarHideTimerRef.current !== null) {
+      clearTimeout(toolbarHideTimerRef.current);
+      toolbarHideTimerRef.current = null;
+    }
+  }, [isBinderPanelVisible]);
 
   const handleBinderSidebarManualClose = useCallback(() => {
     if (binderRailHoverSuppressionTimeoutRef.current !== null) {
@@ -156,37 +171,41 @@ export default function EditorLayout({
         <div className="flex-1 h-full overflow-hidden flex flex-row relative">
 
           {/* Hover trigger strip — activates floating toolbar */}
-          <div
-            className="absolute inset-x-0 -top-10 z-30 h-24 pointer-events-auto"
-            onMouseEnter={() => {
-              setIsToolbarHoverZoneActive(true);
-              showToolbar();
-            }}
-            onMouseLeave={scheduleHide}
-          />
+          {!isBinderPanelVisible && (
+            <div
+              className="absolute inset-x-0 top-0 z-30 h-11 pointer-events-auto"
+              onMouseEnter={() => {
+                setIsToolbarHoverZoneActive(true);
+                showToolbar();
+              }}
+              onMouseLeave={scheduleHide}
+            />
+          )}
 
           {/* Floating Toolbar Overlay */}
-          <div
-            className={cn(
-              "absolute inset-x-0 top-0 z-40 transition-all duration-200 ease-out",
-              isToolbarVisible
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 -translate-y-2 pointer-events-none",
-            )}
-            onMouseEnter={() => {
-              setIsToolbarHoverZoneActive(true);
-              showToolbar();
-            }}
-            onMouseLeave={scheduleHide}
-          >
-            <Ribbon
-              editor={editor}
-              onOpenSettings={onOpenSettings}
-              activeChapterId={activeChapterId}
-              onOpenExportPreview={onOpenExport}
-              onOpenWorldGraph={onOpenWorldGraph}
-            />
-          </div>
+          {!isBinderPanelVisible && (
+            <div
+              className={cn(
+                "absolute inset-x-0 top-0 z-40 transition-all duration-200 ease-out",
+                isToolbarVisible
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 -translate-y-2 pointer-events-none",
+              )}
+              onMouseEnter={() => {
+                setIsToolbarHoverZoneActive(true);
+                showToolbar();
+              }}
+              onMouseLeave={scheduleHide}
+            >
+              <Ribbon
+                editor={editor}
+                onOpenSettings={onOpenSettings}
+                activeChapterId={activeChapterId}
+                onOpenExportPreview={onOpenExport}
+                onOpenWorldGraph={onOpenWorldGraph}
+              />
+            </div>
+          )}
 
           {/* Editor Column Wrapper */}
           <PanelGroup
@@ -242,7 +261,7 @@ export default function EditorLayout({
               sidebarTopOffset={sidebarTopOffset}
             />
 
-            {additionalPanelIds.length === 0 && (
+            {!isBinderPanelVisible && additionalPanelIds.length === 0 && (
               <Panel
                 id="editor-layout-placeholder"
                 defaultSize={0}

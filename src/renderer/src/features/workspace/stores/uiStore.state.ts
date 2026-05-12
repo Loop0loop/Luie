@@ -83,10 +83,31 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
   addPanel: (content, insertAt, initialSize) => {
     let nextFocusedPanelId: string | null = null;
     set((state) => {
+      if (content.type === "snapshot" && content.snapshot?.id) {
+        const existingSnapshotIndex = state.panels.findIndex(
+          (panel) => panel.content.type === "snapshot",
+        );
+        if (existingSnapshotIndex >= 0) {
+          const nextPanels = [...state.panels];
+          nextPanels[existingSnapshotIndex] = {
+            ...nextPanels[existingSnapshotIndex],
+            id: buildStablePanelId(content),
+            content,
+          };
+          nextFocusedPanelId = nextPanels[existingSnapshotIndex].id;
+          return {
+            ...state,
+            panels: nextPanels,
+          };
+        }
+      }
+
       const existing = state.panels.find((panel) =>
         panel.content.type === content.type &&
-        panel.content.id === content.id &&
-        panel.content.tab === content.tab,
+        (content.type === "snapshot"
+          ? panel.content.snapshot?.id === content.snapshot?.id
+          : panel.content.id === content.id &&
+            panel.content.tab === content.tab),
       );
       if (existing || state.panels.length >= 3) {
         return state;

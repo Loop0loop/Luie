@@ -13,7 +13,6 @@ import {
   type ProjectLayoutState,
   useProjectLayoutStore,
 } from "@renderer/features/workspace/stores/projectLayoutStore";
-import { api } from "@shared/api";
 
 let layoutRestoringDepth = 0;
 
@@ -198,13 +197,7 @@ export function useProjectLayoutPersistence(
     } else if (uiMode === "editor") {
       setRegionOpen("leftSidebar", saved.editor.sidebarOpen ?? false);
       setRegionOpen("rightRail", saved.editor.binderRailOpen ?? false);
-      // Editor compact binder mode: do not restore legacy right panel tab.
-      void api.logger.info("layout-restore.editor.compact-binder-guard", {
-        action: "closeRightPanel",
-        savedRightTab: saved.editor.rightTab ?? null,
-        savedBinderRailOpen: saved.editor.binderRailOpen ?? null,
-      });
-      closeRightPanel();
+      restoreTab(sanitizePersistedDocsRightTab(saved.editor.rightTab));
     } else if (uiMode === "scrivener") {
       setRegionOpen("leftSidebar", saved.scrivener.sidebarOpen);
       setRegionOpen("rightPanel", saved.scrivener.inspectorOpen);
@@ -344,8 +337,7 @@ export function useProjectLayoutPersistence(
     }
 
     if (uiMode === "editor") {
-      // Editor compact binder mode: do not persist legacy right panel tab.
-      const sanitizedTab = null;
+      const sanitizedTab = sanitizePersistedDocsRightTab(docsRightTab);
       if (
         saved.editor.sidebarOpen === isSidebarOpen &&
         saved.editor.binderRailOpen === isBinderBarOpen &&

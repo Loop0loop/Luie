@@ -23,6 +23,8 @@ interface FocusHoverSidebarProps {
   closeDelayMs?: number;
   /** 강제로 hover-open을 막습니다. explicit close 직후 재개방 방지용입니다. */
   suppressHoverOpen?: boolean;
+  /** hover-open 상태가 바뀔 때 호출합니다. */
+  onOpenChange?: (isOpen: boolean) => void;
 }
 
 export default function FocusHoverSidebar({
@@ -37,6 +39,7 @@ export default function FocusHoverSidebar({
   closeTolerancePx = 12,
   closeDelayMs = 220,
   suppressHoverOpen = false,
+  onOpenChange,
 }: FocusHoverSidebarProps) {
   const [isHoverOpen, setIsHoverOpen] = useState(false);
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
@@ -57,6 +60,10 @@ export default function FocusHoverSidebar({
 
   // 최종 열림 상태는 props와 내부 state의 조합
   const isOpen = forceOpen || isResizing || isHoverOpen;
+
+  useEffect(() => {
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
 
   const clearPendingClose = useCallback(() => {
     if (closeTimeoutRef.current !== null) {

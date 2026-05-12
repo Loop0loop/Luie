@@ -45,6 +45,7 @@ export function BinderBarCompactHover({
   const [activeCompactTab, setActiveCompactTab] = useState<BinderTab | null>(
     null,
   );
+  const [isPinned, setIsPinned] = useState(false);
   const dragStateRef = useRef<{
     surface: ReturnType<typeof getEditorLayoutPanelSurface>;
     startX: number;
@@ -190,6 +191,8 @@ export function BinderBarCompactHover({
                   currentProjectId={currentProjectId}
                   onBackToSnapshotList={() => setActiveCompactTab("snapshot")}
                   onClose={() => setActiveCompactTab(null)}
+                  isPinned={isPinned}
+                  onTogglePinned={() => setIsPinned((prev) => !prev)}
                   t={t}
                 />
               </div>
