@@ -1,6 +1,7 @@
 export type FocusedClosableTarget =
   | { kind: "panel"; id: string }
-  | { kind: "docs-tab" };
+  | { kind: "docs-tab" }
+  | { kind: "compact-binder" };
 
 let focusedClosableTarget: FocusedClosableTarget | null = null;
 

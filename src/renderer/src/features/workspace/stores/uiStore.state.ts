@@ -400,6 +400,16 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
     setTransientFocusedClosableTarget(focusedClosableTarget);
   },
   closeFocusedSurface: () => {
+    // Capture kind before entering set() — will be used for side-effects after
+    const focusedKind = getFocusedClosableTarget()?.kind;
+
+    // compact-binder lives in component-local state; close it via a DOM event
+    if (focusedKind === "compact-binder") {
+      clearFocusedClosableTarget();
+      window.dispatchEvent(new CustomEvent("luie:close-compact-binder"));
+      return true;
+    }
+
     let handled = false;
     set((state) => {
       const normalizePanelSizes = (panels: ResizablePanelData[]): ResizablePanelData[] => {

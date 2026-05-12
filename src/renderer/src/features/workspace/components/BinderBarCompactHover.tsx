@@ -140,23 +140,21 @@ export function BinderBarCompactHover({
     dragStateRef.current = null;
   }, []);
 
-  // Cmd+W (Mac) / Ctrl+W (Windows·Linux): close snapshot viewer first, then binder tab
+  const setFocusedClosableTarget = useUIStore((state) => state.setFocusedClosableTarget);
+
+  // luie:close-compact-binder is dispatched by closeFocusedSurface (app.closeWindow / Cmd+W)
+  // Priority: close snapshot viewer first, then binder tab
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!((e.metaKey || e.ctrlKey) && e.key === "w")) return;
+    const handleClose = () => {
       if (selectedSnapshot !== null) {
-        e.preventDefault();
         setSelectedSnapshot(null);
         return;
       }
-      if (activeCompactTab !== null) {
-        e.preventDefault();
-        setActiveCompactTab(null);
-      }
+      setActiveCompactTab(null);
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeCompactTab, selectedSnapshot]);
+    window.addEventListener("luie:close-compact-binder", handleClose);
+    return () => window.removeEventListener("luie:close-compact-binder", handleClose);
+  }, [selectedSnapshot]);
 
   return (
     <FocusHoverSidebar
@@ -194,6 +192,7 @@ export function BinderBarCompactHover({
           style={{
             width: activeCompactTab !== null ? activeContentWidth : RAIL_WIDTH_PX,
           }}
+          onMouseEnter={() => setFocusedClosableTarget({ kind: "compact-binder" })}
         >
           <div className="h-full flex flex-col">
             {activeCompactTab === null ? (
@@ -208,6 +207,7 @@ export function BinderBarCompactHover({
                           source: "icon-button",
                         });
                         setActiveCompactTab(item.tab);
+                        setFocusedClosableTarget({ kind: "compact-binder" });
                       }}
                       title={item.title}
                       className="w-10 h-10 flex items-center justify-center rounded-full transition-[background-color,color,transform] duration-150 active:scale-95 text-muted hover:text-fg hover:bg-surface-hover"
