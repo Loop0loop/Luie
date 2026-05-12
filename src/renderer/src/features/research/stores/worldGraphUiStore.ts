@@ -11,7 +11,7 @@ export type GraphIdeTab =
   | "timeline"
   | "notes"
   | "entity"
-  | "library";
+  | "plugins";
 
 export type GraphVisibilityFilter = {
   entityTypes: string[];
@@ -91,7 +91,7 @@ const GRAPH_IDE_TABS = new Set<GraphIdeTab>([
   "timeline",
   "notes",
   "entity",
-  "library",
+  "plugins",
 ]);
 
 const clampSidebarWidth = (width: number): number =>

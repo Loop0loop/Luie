@@ -12,7 +12,7 @@ import { SynopsisEditor } from "@renderer/features/research/components/world/Syn
 import { MindMapBoard } from "@renderer/features/research/components/world/MindMapBoard";
 import { DrawingCanvas } from "@renderer/features/research/components/world/DrawingCanvas";
 import { PlotBoard } from "@renderer/features/research/components/world/PlotBoard";
-import { WorldGraphPanel } from "@renderer/features/research/components/world/graph/WorldGraphPanel";
+import { WorldCanvasPanel } from "@renderer/features/research/components/world/canvas/WorldCanvasPanel";
 import WindowBar from "@renderer/features/workspace/components/WindowBar";
 
 interface WorldSectionProps {
@@ -156,7 +156,7 @@ export default function WorldSection({
 
       <div className="min-h-0 flex-1 overflow-hidden">
         {graphOnly ? (
-          <WorldGraphPanel />
+          <WorldCanvasPanel />
         ) : (
           <>
             {worldTab === "terms" && <TermManager termId={worldId} />}
@@ -164,7 +164,7 @@ export default function WorldSection({
             {worldTab === "mindmap" && <MindMapBoard />}
             {worldTab === "drawing" && <DrawingCanvas />}
             {worldTab === "plot" && <PlotBoard />}
-            {worldTab === "graph" && <WorldGraphPanel />}
+            {worldTab === "graph" && <WorldCanvasPanel />}
           </>
         )}
       </div>
