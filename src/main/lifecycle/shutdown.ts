@@ -252,12 +252,29 @@ export const registerShutdownHandlers = (logger: Logger): void => {
       }
 
       try {
+        const checkpointResult = db.runWalCheckpoint("FULL");
+        logger.info("Main DB WAL checkpoint completed during quit", {
+          checkpointResult,
+        });
+      } catch (error) {
+        logger.warn("Main DB WAL checkpoint failed during quit", error);
+      }
+
+      try {
         await db.disconnect();
       } catch (error) {
         logger.warn("DB disconnect failed during quit", error);
       }
       try {
         const cacheDb = await loadCacheDb();
+        try {
+          const checkpointResult = cacheDb.runWalCheckpoint("FULL");
+          logger.info("Cache DB WAL checkpoint completed during quit", {
+            checkpointResult,
+          });
+        } catch (checkpointError) {
+          logger.warn("Cache DB WAL checkpoint failed during quit", checkpointError);
+        }
         await cacheDb.disconnect();
       } catch (error) {
         logger.warn("Cache DB disconnect failed during quit", error);

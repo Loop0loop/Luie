@@ -80,8 +80,10 @@ class CacheDatabaseService {
   ): DrizzleDatabaseHandle<CacheDrizzleClient> {
     const sqlite = new BetterSqliteDatabase(context.dbPath);
     sqlite.pragma("journal_mode = WAL");
+    sqlite.pragma("synchronous = FULL");
     sqlite.pragma("foreign_keys = ON");
     sqlite.pragma("busy_timeout = 5000");
+    sqlite.pragma("wal_autocheckpoint = 1000");
     const client = drizzle(sqlite, { schema: cacheSchema });
     return { sqlite, client };
   }
@@ -144,6 +146,36 @@ class CacheDatabaseService {
       throw new Error("Cache database path not initialized");
     }
     return this.dbPath;
+  }
+
+  getConnectionPragmas(): {
+    journalMode: string;
+    foreignKeys: number;
+    busyTimeout: number;
+    synchronous: number;
+    walAutocheckpoint: number;
+  } {
+    if (!this.drizzleHandle) {
+      throw new Error("Cache database is not initialized. Call cacheDb.initialize() first.");
+    }
+
+    const sqlite = this.drizzleHandle.sqlite;
+    return {
+      journalMode: String(sqlite.pragma("journal_mode", { simple: true }) ?? ""),
+      foreignKeys: Number(sqlite.pragma("foreign_keys", { simple: true }) ?? 0),
+      busyTimeout: Number(sqlite.pragma("busy_timeout", { simple: true }) ?? 0),
+      synchronous: Number(sqlite.pragma("synchronous", { simple: true }) ?? 0),
+      walAutocheckpoint: Number(
+        sqlite.pragma("wal_autocheckpoint", { simple: true }) ?? 0,
+      ),
+    };
+  }
+
+  runWalCheckpoint(mode: "PASSIVE" | "FULL" | "RESTART" | "TRUNCATE" = "FULL"): unknown {
+    if (!this.drizzleHandle) {
+      throw new Error("Cache database is not initialized. Call cacheDb.initialize() first.");
+    }
+    return this.drizzleHandle.sqlite.pragma(`wal_checkpoint(${mode})`);
   }
 
   async disconnect(): Promise<void> {

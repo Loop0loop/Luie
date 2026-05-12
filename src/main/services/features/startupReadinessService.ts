@@ -207,10 +207,57 @@ class StartupReadinessService {
     try {
       const cacheDb = await loadCacheDb();
       await Promise.all([db.initialize(), cacheDb.initialize()]);
+      const mainPragmas = db.getConnectionPragmas();
+      const cachePragmas = cacheDb.getConnectionPragmas();
+
+      const invalidReasons: string[] = [];
+      if (mainPragmas.journalMode.toLowerCase() !== "wal") {
+        invalidReasons.push(`main.journal_mode=${mainPragmas.journalMode}`);
+      }
+      if (cachePragmas.journalMode.toLowerCase() !== "wal") {
+        invalidReasons.push(`cache.journal_mode=${cachePragmas.journalMode}`);
+      }
+      if (mainPragmas.foreignKeys !== 1) {
+        invalidReasons.push(`main.foreign_keys=${mainPragmas.foreignKeys}`);
+      }
+      if (cachePragmas.foreignKeys !== 1) {
+        invalidReasons.push(`cache.foreign_keys=${cachePragmas.foreignKeys}`);
+      }
+      if (mainPragmas.busyTimeout < 5000) {
+        invalidReasons.push(`main.busy_timeout=${mainPragmas.busyTimeout}`);
+      }
+      if (cachePragmas.busyTimeout < 5000) {
+        invalidReasons.push(`cache.busy_timeout=${cachePragmas.busyTimeout}`);
+      }
+      if (mainPragmas.synchronous < 2) {
+        invalidReasons.push(`main.synchronous=${mainPragmas.synchronous}`);
+      }
+      if (cachePragmas.synchronous < 2) {
+        invalidReasons.push(`cache.synchronous=${cachePragmas.synchronous}`);
+      }
+      if (mainPragmas.walAutocheckpoint <= 0) {
+        invalidReasons.push(
+          `main.wal_autocheckpoint=${mainPragmas.walAutocheckpoint}`,
+        );
+      }
+      if (cachePragmas.walAutocheckpoint <= 0) {
+        invalidReasons.push(
+          `cache.wal_autocheckpoint=${cachePragmas.walAutocheckpoint}`,
+        );
+      }
+
+      if (invalidReasons.length > 0) {
+        return buildCheck(
+          "sqliteWal",
+          false,
+          `SQLite PRAGMA validation failed: ${invalidReasons.join(", ")}`,
+        );
+      }
+
       return buildCheck(
         "sqliteWal",
         true,
-        "WAL mode enforced during DB initialization",
+        `WAL/PRAGMA validated (main=${mainPragmas.journalMode}, cache=${cachePragmas.journalMode}, sync=${mainPragmas.synchronous}/${cachePragmas.synchronous}, timeout=${mainPragmas.busyTimeout}/${cachePragmas.busyTimeout})`,
       );
     } catch (error) {
       return buildCheck("sqliteWal", false, this.toErrorMessage(error));

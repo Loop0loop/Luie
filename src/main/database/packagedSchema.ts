@@ -26,6 +26,11 @@ type ColumnPatch = {
   sql: string;
 };
 
+type IndexPatch = {
+  name: string;
+  sql: string;
+};
+
 export const PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
   {
     table: "Term",
@@ -96,6 +101,33 @@ export const PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
     table: "WorldEntity",
     column: "deletedAt",
     sql: 'ALTER TABLE "WorldEntity" ADD COLUMN "deletedAt" DATETIME;',
+  },
+];
+
+export const PACKAGED_SCHEMA_INDEX_PATCHES: ReadonlyArray<IndexPatch> = [
+  {
+    name: "Character_projectId_createdAt_idx",
+    sql: 'CREATE INDEX IF NOT EXISTS "Character_projectId_createdAt_idx" ON "Character"("projectId", "createdAt");',
+  },
+  {
+    name: "Event_projectId_createdAt_idx",
+    sql: 'CREATE INDEX IF NOT EXISTS "Event_projectId_createdAt_idx" ON "Event"("projectId", "createdAt");',
+  },
+  {
+    name: "Faction_projectId_createdAt_idx",
+    sql: 'CREATE INDEX IF NOT EXISTS "Faction_projectId_createdAt_idx" ON "Faction"("projectId", "createdAt");',
+  },
+  {
+    name: "Term_projectId_createdAt_idx",
+    sql: 'CREATE INDEX IF NOT EXISTS "Term_projectId_createdAt_idx" ON "Term"("projectId", "createdAt");',
+  },
+  {
+    name: "WorldEntity_projectId_createdAt_idx",
+    sql: 'CREATE INDEX IF NOT EXISTS "WorldEntity_projectId_createdAt_idx" ON "WorldEntity"("projectId", "createdAt");',
+  },
+  {
+    name: "ScrapMemo_projectId_sortOrder_updatedAt_idx",
+    sql: 'CREATE INDEX IF NOT EXISTS "ScrapMemo_projectId_sortOrder_updatedAt_idx" ON "ScrapMemo"("projectId", "sortOrder", "updatedAt");',
   },
 ];
 

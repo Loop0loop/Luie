@@ -7,6 +7,7 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import {
   PACKAGED_SCHEMA_COLUMN_PATCHES,
+  PACKAGED_SCHEMA_INDEX_PATCHES,
 } from "./packagedSchema.js";
 import { resolveMigrationPathContext } from "./migrationPathResolver.js";
 
@@ -147,14 +148,23 @@ export function ensurePackagedSqliteSchema(
       database.exec(patch.sql);
       patchedColumns += 1;
     }
+    let patchedIndexes = 0;
+    for (const patch of PACKAGED_SCHEMA_INDEX_PATCHES) {
+      database.exec(patch.sql);
+      patchedIndexes += 1;
+    }
     if (patchedColumns > 0) {
       logger.info("Applied column patches to existing database", { patchedColumns });
+    }
+    if (patchedIndexes > 0) {
+      logger.info("Applied index patches to existing database", { patchedIndexes });
     }
 
     logger.info("Packaged SQLite Drizzle migration ensured", {
       dbPath,
       migrationsFolder,
       wasPrismaBaseline: hasProjectTable && !hasDrizzleMigrations,
+      patchedIndexes,
     });
   } finally {
     database.close();

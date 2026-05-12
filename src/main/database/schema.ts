@@ -116,6 +116,10 @@ export const character = sqliteTable(
   createWorldEntryColumns(),
   (table) => [
     index("Character_projectId_name_idx").on(table.projectId, table.name),
+    index("Character_projectId_createdAt_idx").on(
+      table.projectId,
+      table.createdAt,
+    ),
     foreignKey({
       name: "Character_projectId_fkey",
       columns: [table.projectId],
@@ -126,6 +130,10 @@ export const character = sqliteTable(
 
 export const event = sqliteTable("Event", createWorldEntryColumns(), (table) => [
   index("Event_projectId_name_idx").on(table.projectId, table.name),
+  index("Event_projectId_createdAt_idx").on(
+    table.projectId,
+    table.createdAt,
+  ),
   foreignKey({
     name: "Event_projectId_fkey",
     columns: [table.projectId],
@@ -135,6 +143,10 @@ export const event = sqliteTable("Event", createWorldEntryColumns(), (table) => 
 
 export const faction = sqliteTable("Faction", createWorldEntryColumns(), (table) => [
   index("Faction_projectId_name_idx").on(table.projectId, table.name),
+  index("Faction_projectId_createdAt_idx").on(
+    table.projectId,
+    table.createdAt,
+  ),
   foreignKey({
     name: "Faction_projectId_fkey",
     columns: [table.projectId],
@@ -178,6 +190,11 @@ export const scrapMemo = sqliteTable(
   (table) => [
     index("ScrapMemo_projectId_sortOrder_idx").on(table.projectId, table.sortOrder),
     index("ScrapMemo_projectId_updatedAt_idx").on(table.projectId, table.updatedAt),
+    index("ScrapMemo_projectId_sortOrder_updatedAt_idx").on(
+      table.projectId,
+      table.sortOrder,
+      table.updatedAt,
+    ),
     foreignKey({
       name: "ScrapMemo_projectId_fkey",
       columns: [table.projectId],
@@ -202,6 +219,10 @@ export const term = sqliteTable(
   },
   (table) => [
     index("Term_projectId_term_idx").on(table.projectId, table.term),
+    index("Term_projectId_createdAt_idx").on(
+      table.projectId,
+      table.createdAt,
+    ),
     foreignKey({
       name: "Term_projectId_fkey",
       columns: [table.projectId],
@@ -258,6 +279,10 @@ export const worldEntity = sqliteTable(
   (table) => [
     index("WorldEntity_projectId_type_idx").on(table.projectId, table.type),
     index("WorldEntity_projectId_name_idx").on(table.projectId, table.name),
+    index("WorldEntity_projectId_createdAt_idx").on(
+      table.projectId,
+      table.createdAt,
+    ),
     foreignKey({
       name: "WorldEntity_projectId_fkey",
       columns: [table.projectId],
