@@ -28,7 +28,6 @@ export function SyncConflictResolverModal({
   const [resolvingKey, setResolvingKey] = useState<string | null>(null);
   const hasConflicts = conflicts.total > 0;
   const refreshDisabled = isBusy || isRefreshing || !!resolvingKey;
-  const conflictItems = conflicts.items ?? [];
   const dateFormatter = useMemo(
     () =>
       new Intl.DateTimeFormat(undefined, {
@@ -39,7 +38,7 @@ export function SyncConflictResolverModal({
   );
   const displayConflictItems = useMemo(
     () =>
-      conflictItems.map((item) => ({
+      (conflicts.items ?? []).map((item) => ({
         ...item,
         itemKey: `${item.type}:${item.id}`,
         localUpdatedLabel: dateFormatter.format(new Date(item.localUpdatedAt)),
@@ -47,7 +46,7 @@ export function SyncConflictResolverModal({
           new Date(item.remoteUpdatedAt),
         ),
       })),
-    [conflictItems, dateFormatter],
+    [conflicts.items, dateFormatter],
   );
 
   const handleRefresh = async () => {

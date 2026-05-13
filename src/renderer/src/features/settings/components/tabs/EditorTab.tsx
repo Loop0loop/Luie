@@ -11,6 +11,7 @@ const FONT_FAMILIES: Array<{ id: FontFamilyPreset; label: string }> = [
   { id: "serif", label: "Serif" },
   { id: "mono", label: "Mono" },
 ];
+const PRESET_IDS = new Set(FONT_FAMILIES.map((f) => f.id));
 
 interface EditorTabProps {
   t: TFunction;
@@ -63,8 +64,6 @@ export const EditorTab = memo(function EditorTab({
     isLoading: isLoadingSystemFonts,
     isSupported: isSystemFontsSupported,
   } = useSystemFonts();
-
-  const PRESET_IDS = new Set(FONT_FAMILIES.map((f) => f.id));
 
   const filteredFonts = useMemo(() => {
     const base = systemFonts.filter((f) => !PRESET_IDS.has(f.family as FontFamilyPreset));

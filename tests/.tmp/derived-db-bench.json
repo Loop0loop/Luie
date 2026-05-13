@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-13T02:34:18.389Z",
+  "generatedAt": "2026-05-13T05:10:17.493Z",
   "thresholds": {
     "list50Ms": 50,
     "openOneMs": 30,
@@ -11,10 +11,10 @@
         "chapters": 1000,
         "chars": 5000
       },
-      "seedMs": 50.67,
+      "seedMs": 54.66,
       "list50Ms": 0.08,
-      "openOneMs": 0.07,
-      "enqueue500Ms": 2.64,
+      "openOneMs": 0.08,
+      "enqueue500Ms": 2.75,
       "pendingCounts": {
         "searchPending": 500,
         "memoryPending": 500
@@ -26,10 +26,10 @@
         "chapters": 3000,
         "chars": 5000
       },
-      "seedMs": 153.08,
-      "list50Ms": 0.08,
-      "openOneMs": 0.06,
-      "enqueue500Ms": 2.23,
+      "seedMs": 151.78,
+      "list50Ms": 0.07,
+      "openOneMs": 0.05,
+      "enqueue500Ms": 2.17,
       "pendingCounts": {
         "searchPending": 500,
         "memoryPending": 500
@@ -41,10 +41,10 @@
         "chapters": 1000,
         "chars": 15000
       },
-      "seedMs": 130.36,
+      "seedMs": 129.27,
       "list50Ms": 0.07,
       "openOneMs": 0.13,
-      "enqueue500Ms": 2.51,
+      "enqueue500Ms": 2.33,
       "pendingCounts": {
         "searchPending": 500,
         "memoryPending": 500

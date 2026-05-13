@@ -28,7 +28,7 @@ async function fetchWithRetry(
   url: string,
   options: RequestInit,
 ): Promise<Response> {
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+  const runAttempt = async (attempt: number): Promise<Response> => {
     try {
       const response = await fetch(url, options);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -36,9 +36,10 @@ async function fetchWithRetry(
     } catch (error) {
       if (attempt === MAX_RETRIES) throw error;
       await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * Math.pow(2, attempt - 1)));
+      return runAttempt(attempt + 1);
     }
-  }
-  throw new Error("UNREACHABLE: retry loop exited without result or throw");
+  };
+  return runAttempt(1);
 }
 
 const toNullableString = (value: unknown): string | null =>

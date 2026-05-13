@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type RefObject } from "react";
 import WindowBar from "@renderer/features/workspace/components/WindowBar";
 import type { Project, SnapshotRestoreCandidate } from "@shared/types";
 import { api } from "@shared/api";
@@ -20,6 +20,80 @@ interface ProjectTemplateSelectorProps {
   onOpenLuieFile?: () => void;
   onRestoreBackup?: (filePath: string) => Promise<boolean> | boolean;
 }
+
+const renderProjectContextMenu = ({
+  menuOpenId,
+  localProjects,
+  menuRef,
+  menuPosition,
+  closeMenu,
+  onOpenProject,
+  handleRepairProjectPath,
+  handleAttachProjectPackage,
+  handleMaterializeProjectPackage,
+  setRenameDialog,
+  setDeleteDialog,
+}: {
+  menuOpenId: string | null;
+  localProjects: Project[];
+  menuRef: RefObject<HTMLElement | null>;
+  menuPosition: { x: number; y: number };
+  closeMenu: () => void;
+  onOpenProject?: (project: Project) => void;
+  handleRepairProjectPath: (project: Project) => Promise<void>;
+  handleAttachProjectPackage: (project: Project) => Promise<void>;
+  handleMaterializeProjectPackage: (project: Project) => Promise<void>;
+  setRenameDialog: (input: {
+    isOpen: boolean;
+    projectId: string;
+    currentTitle: string;
+  }) => void;
+  setDeleteDialog: (input: {
+    isOpen: boolean;
+    projectId: string;
+    projectTitle: string;
+    mode: "delete" | "removeMissing";
+    deleteFile: boolean;
+  }) => void;
+}) => {
+  if (!menuOpenId) return null;
+  const project = localProjects.find((item) => item.id === menuOpenId);
+  if (!project) return null;
+
+  return (
+    <ProjectContextMenu
+      project={project}
+      menuRef={menuRef}
+      menuPosition={menuPosition}
+      closeMenu={closeMenu}
+      onOpenProject={onOpenProject}
+      onRepairPath={handleRepairProjectPath}
+      onAttachLuie={handleAttachProjectPackage}
+      onMaterializeLuie={handleMaterializeProjectPackage}
+      onRenameRequest={(targetProject) =>
+        setRenameDialog({
+          isOpen: true,
+          projectId: targetProject.id,
+          currentTitle: targetProject.title,
+        })
+      }
+      onDeleteRequest={(targetProject) =>
+        setDeleteDialog({
+          isOpen: true,
+          projectId: targetProject.id,
+          projectTitle: targetProject.title,
+          mode:
+            targetProject.attachmentStatus === "missing-attachment" ||
+            targetProject.attachmentStatus === "invalid-attachment" ||
+            targetProject.attachmentStatus === "unsupported-legacy-container"
+              ? "removeMissing"
+              : "delete",
+          deleteFile: false,
+        })
+      }
+    />
+  );
+};
 
 export default function ProjectTemplateSelector({
   onSelectProject,
@@ -120,46 +194,19 @@ export default function ProjectTemplateSelector({
         />
       )}
 
-      {/* Context Menu rendered at root level */}
-      {menuOpenId &&
-        (() => {
-          const p = localProjects.find((proj) => proj.id === menuOpenId);
-          if (!p) return null;
-
-          return (
-            <ProjectContextMenu
-              project={p}
-              menuRef={menuRef}
-              menuPosition={menuPosition}
-              closeMenu={closeMenu}
-              onOpenProject={onOpenProject}
-              onRepairPath={selectorState.handleRepairProjectPath}
-              onAttachLuie={selectorState.handleAttachProjectPackage}
-              onMaterializeLuie={selectorState.handleMaterializeProjectPackage}
-              onRenameRequest={(project) =>
-                setRenameDialog({
-                  isOpen: true,
-                  projectId: project.id,
-                  currentTitle: project.title,
-                })
-              }
-              onDeleteRequest={(project) =>
-                setDeleteDialog({
-                  isOpen: true,
-                  projectId: project.id,
-                  projectTitle: project.title,
-                  mode:
-                    project.attachmentStatus === "missing-attachment" ||
-                    project.attachmentStatus === "invalid-attachment" ||
-                    project.attachmentStatus === "unsupported-legacy-container"
-                      ? "removeMissing"
-                      : "delete",
-                  deleteFile: false,
-                })
-              }
-            />
-          );
-        })()}
+      {renderProjectContextMenu({
+        menuOpenId,
+        localProjects,
+        menuRef,
+        menuPosition,
+        closeMenu,
+        onOpenProject,
+        handleRepairProjectPath: selectorState.handleRepairProjectPath,
+        handleAttachProjectPackage: selectorState.handleAttachProjectPackage,
+        handleMaterializeProjectPackage: selectorState.handleMaterializeProjectPackage,
+        setRenameDialog,
+        setDeleteDialog,
+      })}
 
       {/* Custom Dialogs */}
       <ProjectActionDialogs state={selectorState} actions={selectorState} />
