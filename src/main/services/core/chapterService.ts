@@ -33,6 +33,9 @@ const {
 } = schema;
 
 const logger = createLogger("ChapterService");
+const ENABLE_STRESS_TRACE =
+  process.env.LUIE_STRESS_TRACE === "1" ||
+  process.env.LUIE_STRESS_TRACE === "true";
 
 const loadAutoSaveManager = async () =>
   (await import("../../manager/autoSaveManager.js")).autoSaveManager;
@@ -47,6 +50,19 @@ const loadChapterSearchCacheService = async () =>
 const fireAndForget = (promise: Promise<unknown>, context: string) => {
   void promise.catch((error) => {
     logger.warn(`Deferred task failed: ${context}`, { error });
+  });
+};
+
+const perfNow = () => Date.now();
+const logTrace = (
+  op: string,
+  chapterId: string,
+  checkpoints: Record<string, number>,
+) => {
+  if (!ENABLE_STRESS_TRACE) return;
+  logger.info(`[stress-trace] ${op}`, {
+    chapterId,
+    ...checkpoints,
   });
 };
 
@@ -216,6 +232,7 @@ export class ChapterService {
 
   async createChapter(input: ChapterCreateInput) {
     try {
+      const startedAt = perfNow();
       if (!input.title || input.title.trim().length === 0) {
         throw new ServiceError(
           ErrorCode.REQUIRED_FIELD_MISSING,
@@ -252,16 +269,19 @@ export class ChapterService {
       }).returning();
 
       const created = inserted[0];
+      const insertedAt = perfNow();
       await this.upsertChapterBody({
         chapterId: String(created.id),
         content: String(created.content ?? ""),
         now,
       });
+      const bodyUpsertedAt = perfNow();
       await this.enqueueDerivedJobs({
         projectId: String(created.projectId),
         chapterId: String(created.id),
         reason: "chapter:create",
       });
+      const derivedQueuedAt = perfNow();
 
       logger.info("Chapter created successfully", { chapterId: created.id });
       fireAndForget(
@@ -279,7 +299,17 @@ export class ChapterService {
         })(),
         "chapter:create:search-cache-upsert",
       );
+      const cacheDeferredAt = perfNow();
       await projectService.persistPackageAfterMutation(input.projectId, "chapter:create");
+      const persistedAt = perfNow();
+      logTrace("chapter.create", String(created.id), {
+        totalMs: persistedAt - startedAt,
+        insertMs: insertedAt - startedAt,
+        bodyUpsertMs: bodyUpsertedAt - insertedAt,
+        queueMs: derivedQueuedAt - bodyUpsertedAt,
+        cacheDispatchMs: cacheDeferredAt - derivedQueuedAt,
+        persistMs: persistedAt - cacheDeferredAt,
+      });
       return created;
     } catch (error) {
       logger.error("Failed to create chapter", error);
@@ -372,6 +402,7 @@ export class ChapterService {
 
   async updateChapter(input: ChapterUpdateInput) {
     try {
+      const startedAt = perfNow();
       const store = db.getClient();
       const currentRows = await store
         .select({ projectId: chapter.projectId, deletedAt: chapter.deletedAt })
@@ -444,6 +475,7 @@ export class ChapterService {
       }
 
       const updatedChapter = updated[0];
+      const rowUpdatedAt = perfNow();
       if (input.content !== undefined) {
         await this.upsertChapterBody({
           chapterId: String(updatedChapter.id),
@@ -460,26 +492,44 @@ export class ChapterService {
           createdAt: now,
         });
       }
+      const bodyAndRevisionAt = perfNow();
       await this.enqueueDerivedJobs({
         projectId: String(updatedChapter.projectId),
         chapterId: String(updatedChapter.id),
         reason: "chapter:update",
       });
+      const derivedQueuedAt = perfNow();
 
       logger.info("Chapter updated successfully", {
         chapterId: updatedChapter.id,
       });
-      const chapterSearchCacheService = await loadChapterSearchCacheService();
-      await chapterSearchCacheService.upsertChapter({
-        chapterId: String(updatedChapter.id),
-        projectId: String(updatedChapter.projectId),
-        title: updatedChapter.title,
-        synopsis: updatedChapter.synopsis ?? null,
-        content: await this.readChapterContent(String(updatedChapter.id)),
-        wordCount: updatedChapter.wordCount,
-        order: updatedChapter.order,
-      });
+      const updateContent = input.content ?? await this.readChapterContent(String(updatedChapter.id));
+      fireAndForget(
+        (async () => {
+          const chapterSearchCacheService = await loadChapterSearchCacheService();
+          await chapterSearchCacheService.upsertChapter({
+            chapterId: String(updatedChapter.id),
+            projectId: String(updatedChapter.projectId),
+            title: updatedChapter.title,
+            synopsis: updatedChapter.synopsis ?? null,
+            content: updateContent,
+            wordCount: updatedChapter.wordCount,
+            order: updatedChapter.order,
+          });
+        })(),
+        "chapter:update:search-cache-upsert",
+      );
+      const cacheDispatchedAt = perfNow();
       await projectService.persistPackageAfterMutation(String(updatedChapter.projectId), "chapter:update");
+      const persistedAt = perfNow();
+      logTrace("chapter.update", String(updatedChapter.id), {
+        totalMs: persistedAt - startedAt,
+        updateRowMs: rowUpdatedAt - startedAt,
+        bodyAndRevisionMs: bodyAndRevisionAt - rowUpdatedAt,
+        queueMs: derivedQueuedAt - bodyAndRevisionAt,
+        cacheDispatchMs: cacheDispatchedAt - derivedQueuedAt,
+        persistMs: persistedAt - cacheDispatchedAt,
+      });
       return {
         ...updatedChapter,
         content: await this.readChapterContent(String(updatedChapter.id)),
