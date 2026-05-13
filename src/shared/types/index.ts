@@ -390,6 +390,7 @@ export interface ChapterCreateInput {
   title: string;
   synopsis?: string;
   order?: number;
+  clientMutationId?: string;
 }
 
 export interface ChapterUpdateInput {

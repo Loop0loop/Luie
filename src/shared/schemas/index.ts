@@ -58,6 +58,7 @@ export const chapterCreateSchema = z.object({
   projectId: z.string().uuid("Invalid project ID"),
   title: z.string().min(1, "Title is required"),
   synopsis: z.string().optional(),
+  clientMutationId: z.string().uuid("Invalid client mutation ID").optional(),
 });
 
 export const chapterUpdateSchema = z.object({

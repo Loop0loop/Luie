@@ -75,8 +75,9 @@ export class ChapterService {
     chapterId: string;
     content: string;
     now: string;
+    tx?: ReturnType<typeof db.getClient>;
   }): Promise<void> {
-    const store = db.getClient();
+    const store = input.tx ?? db.getClient();
     await store
       .insert(chapterBody)
       .values({
@@ -99,17 +100,56 @@ export class ChapterService {
     projectId: string;
     chapterId: string;
     reason: string;
+    tx?: ReturnType<typeof db.getClient>;
   }): Promise<void> {
     const now = new Date().toISOString();
-    const store = db.getClient();
-    await store.run(
-      sql`INSERT INTO "SearchDirtyQueue" ("id","projectId","sourceType","sourceId","reason","status","attempts","createdAt","updatedAt")
-          VALUES (${crypto.randomUUID()}, ${input.projectId}, 'chapter', ${input.chapterId}, ${input.reason}, 'pending', 0, ${now}, ${now});`,
+    const store = input.tx ?? db.getClient();
+    const pendingSearchRows = await store.all<{ id: string }>(
+      sql`SELECT "id" FROM "SearchDirtyQueue"
+          WHERE "projectId" = ${input.projectId}
+            AND "sourceType" = 'chapter'
+            AND "sourceId" = ${input.chapterId}
+            AND "status" = 'pending'
+          ORDER BY "updatedAt" DESC
+          LIMIT 1;`,
     );
-    await store.run(
-      sql`INSERT INTO "MemoryBuildJob" ("id","projectId","targetType","targetId","jobType","status","priority","attempts","createdAt","updatedAt")
-          VALUES (${crypto.randomUUID()}, ${input.projectId}, 'chapter', ${input.chapterId}, 'rebuild_chunks', 'pending', 100, 0, ${now}, ${now});`,
+    if (pendingSearchRows.length > 0) {
+      await store.run(
+        sql`UPDATE "SearchDirtyQueue"
+            SET "reason" = ${input.reason},
+                "updatedAt" = ${now}
+            WHERE "id" = ${pendingSearchRows[0].id};`,
+      );
+    } else {
+      await store.run(
+        sql`INSERT INTO "SearchDirtyQueue" ("id","projectId","sourceType","sourceId","reason","status","attempts","createdAt","updatedAt")
+            VALUES (${crypto.randomUUID()}, ${input.projectId}, 'chapter', ${input.chapterId}, ${input.reason}, 'pending', 0, ${now}, ${now});`,
+      );
+    }
+
+    const pendingMemoryRows = await store.all<{ id: string }>(
+      sql`SELECT "id" FROM "MemoryBuildJob"
+          WHERE "projectId" = ${input.projectId}
+            AND "targetType" = 'chapter'
+            AND "targetId" = ${input.chapterId}
+            AND "jobType" = 'rebuild_chunks'
+            AND "status" = 'pending'
+          ORDER BY "updatedAt" DESC
+          LIMIT 1;`,
     );
+    if (pendingMemoryRows.length > 0) {
+      await store.run(
+        sql`UPDATE "MemoryBuildJob"
+            SET "priority" = 100,
+                "updatedAt" = ${now}
+            WHERE "id" = ${pendingMemoryRows[0].id};`,
+      );
+    } else {
+      await store.run(
+        sql`INSERT INTO "MemoryBuildJob" ("id","projectId","targetType","targetId","jobType","status","priority","attempts","createdAt","updatedAt")
+            VALUES (${crypto.randomUUID()}, ${input.projectId}, 'chapter', ${input.chapterId}, 'rebuild_chunks', 'pending', 100, 0, ${now}, ${now});`,
+      );
+    }
   }
 
   private async readChapterContent(chapterId: string): Promise<string> {
@@ -259,32 +299,49 @@ export class ChapterService {
           : 0;
       const nextOrder = input.order ?? maxOrderValue + 1;
 
-      const now = new Date().toISOString();
-      const inserted = await store.insert(chapter).values({
-        id: crypto.randomUUID(),
-        projectId: input.projectId,
-        title: input.title,
-        synopsis: input.synopsis ?? null,
-        order: nextOrder,
-        content: "",
-        createdAt: now,
-        updatedAt: now,
-      }).returning();
+      if (input.clientMutationId) {
+        const existingRows = await store
+          .select()
+          .from(chapter)
+          .where(eq(chapter.id, input.clientMutationId))
+          .limit(1);
+        if (existingRows.length > 0) {
+          return existingRows[0];
+        }
+      }
 
-      const created = inserted[0];
+      const now = new Date().toISOString();
+      const chapterId = input.clientMutationId ?? crypto.randomUUID();
+      const created = await store.transaction(async (tx) => {
+        const inserted = await tx.insert(chapter).values({
+          id: chapterId,
+          projectId: input.projectId,
+          title: input.title,
+          synopsis: input.synopsis ?? null,
+          order: nextOrder,
+          content: "",
+          createdAt: now,
+          updatedAt: now,
+        }).returning();
+        const createdRow = inserted[0];
+        await this.upsertChapterBody({
+          chapterId: String(createdRow.id),
+          content: String(createdRow.content ?? ""),
+          now,
+          tx,
+        });
+        await this.enqueueDerivedJobs({
+          projectId: String(createdRow.projectId),
+          chapterId: String(createdRow.id),
+          reason: "chapter:create",
+          tx,
+        });
+        return createdRow;
+      });
+
       const insertedAt = perfNow();
-      await this.upsertChapterBody({
-        chapterId: String(created.id),
-        content: String(created.content ?? ""),
-        now,
-      });
-      const bodyUpsertedAt = perfNow();
-      await this.enqueueDerivedJobs({
-        projectId: String(created.projectId),
-        chapterId: String(created.id),
-        reason: "chapter:create",
-      });
-      const derivedQueuedAt = perfNow();
+      const bodyUpsertedAt = insertedAt;
+      const derivedQueuedAt = insertedAt;
 
       logger.info("Chapter created successfully", { chapterId: created.id });
       fireAndForget(
@@ -463,45 +520,50 @@ export class ChapterService {
       }
 
       const now = new Date().toISOString();
-      const updated = await store
-        .update(chapter)
-        .set({ ...(updateData as Partial<typeof chapter.$inferInsert>), updatedAt: now })
-        .where(eq(chapter.id, input.id))
-        .returning();
+      const updatedChapter = await store.transaction(async (tx) => {
+        const updated = await tx
+          .update(chapter)
+          .set({ ...(updateData as Partial<typeof chapter.$inferInsert>), updatedAt: now })
+          .where(eq(chapter.id, input.id))
+          .returning();
 
-      if (updated.length === 0) {
-        throw new ServiceError(
-          ErrorCode.CHAPTER_NOT_FOUND,
-          "Chapter not found",
-          { id: input.id },
-        );
-      }
+        if (updated.length === 0) {
+          throw new ServiceError(
+            ErrorCode.CHAPTER_NOT_FOUND,
+            "Chapter not found",
+            { id: input.id },
+          );
+        }
 
-      const updatedChapter = updated[0];
-      const rowUpdatedAt = perfNow();
-      if (input.content !== undefined) {
-        await this.upsertChapterBody({
-          chapterId: String(updatedChapter.id),
-          content: input.content,
-          now,
+        const chapterRow = updated[0];
+        if (input.content !== undefined) {
+          await this.upsertChapterBody({
+            chapterId: String(chapterRow.id),
+            content: input.content,
+            now,
+            tx,
+          });
+          const contentHash = this.hashContent(input.content);
+          await tx.insert(chapterRevision).values({
+            id: crypto.randomUUID(),
+            chapterId: String(chapterRow.id),
+            contentHash,
+            content: input.content,
+            reason: "manual_save",
+            createdAt: now,
+          });
+        }
+        await this.enqueueDerivedJobs({
+          projectId: String(chapterRow.projectId),
+          chapterId: String(chapterRow.id),
+          reason: "chapter:update",
+          tx,
         });
-        const contentHash = this.hashContent(input.content);
-        await store.insert(chapterRevision).values({
-          id: crypto.randomUUID(),
-          chapterId: String(updatedChapter.id),
-          contentHash,
-          content: input.content,
-          reason: "manual_save",
-          createdAt: now,
-        });
-      }
-      const bodyAndRevisionAt = perfNow();
-      await this.enqueueDerivedJobs({
-        projectId: String(updatedChapter.projectId),
-        chapterId: String(updatedChapter.id),
-        reason: "chapter:update",
+        return chapterRow;
       });
-      const derivedQueuedAt = perfNow();
+      const rowUpdatedAt = perfNow();
+      const bodyAndRevisionAt = rowUpdatedAt;
+      const derivedQueuedAt = rowUpdatedAt;
 
       logger.info("Chapter updated successfully", {
         chapterId: updatedChapter.id,

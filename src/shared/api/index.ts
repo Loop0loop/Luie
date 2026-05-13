@@ -90,6 +90,7 @@ export type RendererApi = {
       projectId: string;
       title: string;
       synopsis?: string;
+      clientMutationId?: string;
     }) => Promise<IPCResponse<Chapter>>;
     get: (id: string) => Promise<IPCResponse<Chapter>>;
     getAll: (projectId: string) => Promise<IPCResponse<Chapter[]>>;

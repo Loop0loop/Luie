@@ -64,34 +64,24 @@ class DbMaintenanceService {
     reason: string;
   }): Promise<void> {
     const now = new Date().toISOString();
-    await db.getClient().insert(searchDirtyQueue).values({
-      id: crypto.randomUUID(),
-      projectId: input.projectId,
-      sourceType: "chapter",
-      sourceId: input.chapterId,
-      reason: input.reason,
-      status: "pending",
-      attempts: 0,
-      error: null,
-      createdAt: now,
-      updatedAt: now,
-    });
+    const client = db.getClient();
+    await client.run(
+      sql`INSERT INTO "SearchDirtyQueue" ("id","projectId","sourceType","sourceId","reason","status","attempts","createdAt","updatedAt")
+          VALUES (${crypto.randomUUID()}, ${input.projectId}, 'chapter', ${input.chapterId}, ${input.reason}, 'pending', 0, ${now}, ${now})
+          ON CONFLICT("projectId","sourceType","sourceId") WHERE "status"='pending'
+          DO UPDATE SET "reason"=excluded."reason", "updatedAt"=excluded."updatedAt";`,
+    );
   }
 
   async rebuildSearchIndex(projectId: string): Promise<{ success: boolean }> {
     const now = new Date().toISOString();
-    await db.getClient().insert(searchDirtyQueue).values({
-      id: crypto.randomUUID(),
-      projectId,
-      sourceType: "chapter",
-      sourceId: projectId,
-      reason: "search:rebuild-all",
-      status: "pending",
-      attempts: 0,
-      error: null,
-      createdAt: now,
-      updatedAt: now,
-    });
+    const client = db.getClient();
+    await client.run(
+      sql`INSERT INTO "SearchDirtyQueue" ("id","projectId","sourceType","sourceId","reason","status","attempts","createdAt","updatedAt")
+          VALUES (${crypto.randomUUID()}, ${projectId}, 'chapter', ${projectId}, 'search:rebuild-all', 'pending', 0, ${now}, ${now})
+          ON CONFLICT("projectId","sourceType","sourceId") WHERE "status"='pending'
+          DO UPDATE SET "reason"=excluded."reason", "updatedAt"=excluded."updatedAt";`,
+    );
     return { success: true };
   }
 
@@ -138,19 +128,12 @@ class DbMaintenanceService {
     const client = db.getClient();
     const now = new Date().toISOString();
     if (input.sourceType && input.sourceId) {
-      await client.insert(memoryBuildJob).values({
-        id: crypto.randomUUID(),
-        projectId: input.projectId,
-        targetType: input.sourceType,
-        targetId: input.sourceId,
-        jobType: "rebuild_chunks",
-        status: "pending",
-        priority: 100,
-        attempts: 0,
-        error: null,
-        createdAt: now,
-        updatedAt: now,
-      });
+      await client.run(
+        sql`INSERT INTO "MemoryBuildJob" ("id","projectId","targetType","targetId","jobType","status","priority","attempts","createdAt","updatedAt")
+            VALUES (${crypto.randomUUID()}, ${input.projectId}, ${input.sourceType}, ${input.sourceId}, 'rebuild_chunks', 'pending', 100, 0, ${now}, ${now})
+            ON CONFLICT("projectId","targetType","targetId","jobType") WHERE "status"='pending'
+            DO UPDATE SET "priority"=excluded."priority", "updatedAt"=excluded."updatedAt";`,
+      );
       return { queued: 1, processed: 0 };
     } else {
       const chapters = await client
@@ -158,23 +141,15 @@ class DbMaintenanceService {
         .from(chapter)
         .where(eq(chapter.projectId, input.projectId))
         .orderBy(asc(chapter.order));
-      if (chapters.length > 0) {
-        await client.insert(memoryBuildJob).values(
-          chapters.map((row) => ({
-            id: crypto.randomUUID(),
-            projectId: input.projectId,
-            targetType: "chapter",
-            targetId: row.id,
-            jobType: "rebuild_chunks",
-            status: "pending",
-            priority: 100,
-            attempts: 0,
-            error: null,
-            createdAt: now,
-            updatedAt: now,
-          })),
+      await chapters.reduce<Promise<void>>(async (prev, row) => {
+        await prev;
+        await client.run(
+          sql`INSERT INTO "MemoryBuildJob" ("id","projectId","targetType","targetId","jobType","status","priority","attempts","createdAt","updatedAt")
+              VALUES (${crypto.randomUUID()}, ${input.projectId}, 'chapter', ${row.id}, 'rebuild_chunks', 'pending', 100, 0, ${now}, ${now})
+              ON CONFLICT("projectId","targetType","targetId","jobType") WHERE "status"='pending'
+              DO UPDATE SET "priority"=excluded."priority", "updatedAt"=excluded."updatedAt";`,
         );
-      }
+      }, Promise.resolve());
       return { queued: chapters.length, processed: 0 };
     }
   }

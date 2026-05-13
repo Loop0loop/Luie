@@ -23,6 +23,23 @@ export function createProjectApi({
   | "maintenance"
   | "autoSave"
 > {
+  const createClientMutationId = (): string => {
+    if (
+      typeof globalThis.crypto !== "undefined" &&
+      typeof globalThis.crypto.randomUUID === "function"
+    ) {
+      return globalThis.crypto.randomUUID();
+    }
+    const template = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx";
+    let seed = Date.now();
+    return template.replace(/[xy]/g, (char) => {
+      const random = (seed + Math.random() * 16) % 16 | 0;
+      seed = Math.floor(seed / 16);
+      const value = char === "x" ? random : (random & 0x3) | 0x8;
+      return value.toString(16);
+    });
+  };
+
   return {
     project: {
       create: (input) => safeInvoke(IPC_CHANNELS.PROJECT_CREATE, input),
@@ -51,7 +68,15 @@ export function createProjectApi({
         ),
     },
     chapter: {
-      create: (input) => safeInvoke(IPC_CHANNELS.CHAPTER_CREATE, input),
+      create: (input) =>
+        safeInvoke(IPC_CHANNELS.CHAPTER_CREATE, {
+          ...input,
+          clientMutationId:
+            typeof input.clientMutationId === "string" &&
+              input.clientMutationId.length > 0
+              ? input.clientMutationId
+              : createClientMutationId(),
+        }),
       get: (id) => safeInvokeCore("chapter.get", IPC_CHANNELS.CHAPTER_GET, id),
       getAll: (projectId) =>
         safeInvokeCore("chapter.getAll", IPC_CHANNELS.CHAPTER_GET_ALL, projectId),
