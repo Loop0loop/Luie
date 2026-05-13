@@ -12,7 +12,14 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import type { WorldGraphNode, WorldGraphCanvasBlock, WorldGraphCanvasEdge } from "@shared/types";
-import { CANVAS_FLOW_MIN_ZOOM, CANVAS_FLOW_MAX_ZOOM, CANVAS_FLOW_DEFAULT_VIEWPORT, CANVAS_FLOW_BG_DOT_GAP, CANVAS_FLOW_BG_DOT_SIZE } from "../shared/constants";
+import {
+  GRAPH_CANVAS_FLOW_MIN_ZOOM,
+  GRAPH_CANVAS_FLOW_MAX_ZOOM,
+  GRAPH_CANVAS_FLOW_DEFAULT_VIEWPORT,
+  GRAPH_CANVAS_BG_DOT_GAP_PX,
+  GRAPH_CANVAS_BG_DOT_SIZE_PX,
+  GRAPH_CANVAS_FIT_VIEW_PADDING,
+} from "../shared";
 import { GRAPH_ENTITY_CANVAS_THEME_TOKENS } from "../shared/theme/graphThemeConstants";
 import { EntityNode } from "../components/nodes/EntityNode";
 import { MemoNode } from "../components/nodes/MemoNode";
@@ -122,19 +129,19 @@ function CanvasViewInner({
         onNodeClick={(_, node) => onSelectNode(node.id)}
         onPaneClick={() => onSelectNode(null)}
         connectionMode={ConnectionMode.Loose}
-        minZoom={CANVAS_FLOW_MIN_ZOOM}
-        maxZoom={CANVAS_FLOW_MAX_ZOOM}
-        defaultViewport={CANVAS_FLOW_DEFAULT_VIEWPORT}
+        minZoom={GRAPH_CANVAS_FLOW_MIN_ZOOM}
+        maxZoom={GRAPH_CANVAS_FLOW_MAX_ZOOM}
+        defaultViewport={GRAPH_CANVAS_FLOW_DEFAULT_VIEWPORT}
         deleteKeyCode="Delete"
         fitView
-        fitViewOptions={{ padding: 0.12 }}
+        fitViewOptions={{ padding: GRAPH_CANVAS_FIT_VIEW_PADDING }}
         proOptions={{ hideAttribution: true }}
         className="bg-app"
       >
         <Background
           variant={BackgroundVariant.Dots}
-          gap={CANVAS_FLOW_BG_DOT_GAP}
-          size={CANVAS_FLOW_BG_DOT_SIZE}
+          gap={GRAPH_CANVAS_BG_DOT_GAP_PX}
+          size={GRAPH_CANVAS_BG_DOT_SIZE_PX}
           color="rgba(255,255,255,0.06)"
         />
         <MiniMap

@@ -47,6 +47,41 @@ export interface Chapter {
   deletedAt?: string | Date | null;
 }
 
+export type ChapterSaveStateType =
+  | "idle"
+  | "dirty"
+  | "saving"
+  | "saved"
+  | "failed";
+
+export interface DerivedSyncState {
+  search: "queued" | "synced" | "failed";
+  memory: "queued" | "synced" | "failed";
+}
+
+export interface ChapterSaveResult extends Chapter {
+  saveState: {
+    type: ChapterSaveStateType;
+    at: number;
+    error?: string;
+  };
+  derivedSyncState: DerivedSyncState;
+}
+
+export interface SearchIndexStatus {
+  projectId: string;
+  projectionCount: number;
+  ftsCount: number | null;
+  pendingQueueCount: number;
+}
+
+export interface MigrationHealth {
+  chapterCount: number;
+  chapterBodyCount: number;
+  missingBodyCount: number;
+  hashMismatchCount: number;
+}
+
 export interface Character {
   id: string;
   projectId: string;

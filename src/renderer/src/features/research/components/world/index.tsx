@@ -135,7 +135,7 @@ export default function WorldSection({
         </div>
       )}
 
-      {!graphOnly && (
+      {!graphOnly && worldTab !== "graph" && (
         <div className="flex w-full items-center justify-between shrink-0 select-none border-b border-border/40 bg-sidebar/30 backdrop-blur-xl px-4 py-1.5 text-muted z-20">
           <div className="flex items-center gap-1 bg-element/80 rounded-lg p-1 border border-border/40">
             {WORLD_TAB_ITEMS.map((item) => (

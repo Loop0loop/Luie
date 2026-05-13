@@ -469,6 +469,28 @@ export default function EditorToolbar({
     return map[v];
   };
 
+  if (isCanvasOpen) {
+    return (
+      <div className="flex w-full select-none items-center justify-end border-b border-border bg-panel px-2 py-1.5">
+        <div className="flex h-7 items-center rounded-md border border-border bg-muted/20 p-0.5 text-xs font-medium">
+          <button
+            type="button"
+            onClick={() => setWorldTab("terms")}
+            className="flex h-full items-center rounded px-2.5 text-muted transition-colors hover:text-fg"
+          >
+            {t("toolbar.editor", "에디터")}
+          </button>
+          <button
+            type="button"
+            className="flex h-full items-center rounded bg-panel px-2.5 text-fg shadow-sm"
+          >
+            {t("toolbar.canvas", "캔버스")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex w-full select-none items-center justify-center border-b border-border bg-panel px-2 py-1.5">
       <div className="flex items-center gap-0.5">
@@ -619,16 +641,7 @@ export default function EditorToolbar({
         <div className="flex h-7 items-center rounded-md border border-border bg-muted/20 p-0.5 text-xs font-medium">
           <button
             type="button"
-            onClick={() => {
-              if (isCanvasOpen) {
-                setWorldTab("terms");
-                window.location.hash = "";
-              }
-            }}
-            className={cn(
-              "flex h-full items-center rounded px-2.5 transition-colors",
-              !isCanvasOpen ? "bg-panel text-fg shadow-sm" : "text-muted hover:text-fg",
-            )}
+            className="flex h-full items-center rounded bg-panel px-2.5 text-fg shadow-sm"
           >
             {t("toolbar.editor", "에디터")}
           </button>
@@ -637,8 +650,7 @@ export default function EditorToolbar({
             onClick={() => onOpenWorldGraph?.()}
             disabled={!onOpenWorldGraph}
             className={cn(
-              "flex h-full items-center rounded px-2.5 transition-colors",
-              isCanvasOpen ? "bg-panel text-fg shadow-sm" : "text-muted hover:text-fg",
+              "flex h-full items-center rounded px-2.5 text-muted transition-colors hover:text-fg",
               !onOpenWorldGraph && "opacity-40",
             )}
           >

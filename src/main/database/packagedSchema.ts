@@ -9,6 +9,11 @@ export const PACKAGED_SCHEMA_REQUIRED_TABLES = [
   "ProjectLocalState",
   "ProjectSettings",
   "Chapter",
+  "ChapterBody",
+  "ChapterRevision",
+  "SearchDirtyQueue",
+  "MemoryChunk",
+  "MemoryBuildJob",
   "Character",
   "Event",
   "Faction",
@@ -139,6 +144,35 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
   ProjectLocalState: ["projectId", "lastOpenedAt"],
   ProjectSettings: ["id", "projectId", "autoSave", "autoSaveInterval"],
   Chapter: ["id", "projectId", "order", "wordCount", "deletedAt"],
+  ChapterBody: ["chapterId", "content", "contentHash", "updatedAt"],
+  ChapterRevision: ["id", "chapterId", "contentHash", "content", "reason"],
+  SearchDirtyQueue: [
+    "id",
+    "projectId",
+    "sourceType",
+    "sourceId",
+    "reason",
+    "status",
+    "attempts",
+  ],
+  MemoryChunk: [
+    "id",
+    "projectId",
+    "sourceType",
+    "sourceId",
+    "chunkIndex",
+    "content",
+    "contentHash",
+  ],
+  MemoryBuildJob: [
+    "id",
+    "projectId",
+    "targetType",
+    "targetId",
+    "jobType",
+    "status",
+    "priority",
+  ],
   Character: ["id", "projectId", "firstAppearance", "attributes", "deletedAt"],
   Event: ["id", "projectId", "name", "deletedAt"],
   Faction: ["id", "projectId", "name", "deletedAt"],
@@ -192,6 +226,62 @@ CREATE TABLE IF NOT EXISTS "Chapter" (
     "updatedAt" DATETIME NOT NULL,
     "deletedAt" DATETIME,
     CONSTRAINT "Chapter_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "ChapterBody" (
+    "chapterId" TEXT NOT NULL PRIMARY KEY,
+    "content" TEXT NOT NULL DEFAULT '',
+    "contentHash" TEXT NOT NULL DEFAULT '',
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "ChapterBody_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "ChapterRevision" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "chapterId" TEXT NOT NULL,
+    "contentHash" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "reason" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "ChapterRevision_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "SearchDirtyQueue" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "sourceType" TEXT NOT NULL,
+    "sourceId" TEXT NOT NULL,
+    "reason" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "attempts" INTEGER NOT NULL DEFAULT 0,
+    "error" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+CREATE TABLE IF NOT EXISTS "MemoryChunk" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "sourceType" TEXT NOT NULL,
+    "sourceId" TEXT NOT NULL,
+    "chapterId" TEXT,
+    "chunkIndex" INTEGER NOT NULL,
+    "content" TEXT NOT NULL,
+    "contentHash" TEXT NOT NULL,
+    "startOffset" INTEGER,
+    "endOffset" INTEGER,
+    "tokenCount" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+CREATE TABLE IF NOT EXISTS "MemoryBuildJob" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "targetType" TEXT NOT NULL,
+    "targetId" TEXT NOT NULL,
+    "jobType" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "priority" INTEGER NOT NULL DEFAULT 50,
+    "attempts" INTEGER NOT NULL DEFAULT 0,
+    "error" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
 );
 CREATE TABLE IF NOT EXISTS "Character" (
     "id" TEXT NOT NULL PRIMARY KEY,
@@ -310,6 +400,14 @@ CREATE UNIQUE INDEX IF NOT EXISTS "ProjectAttachment_projectPath_key" ON "Projec
 CREATE UNIQUE INDEX IF NOT EXISTS "ProjectSettings_projectId_key" ON "ProjectSettings"("projectId");
 CREATE INDEX IF NOT EXISTS "ProjectLocalState_lastOpenedAt_idx" ON "ProjectLocalState"("lastOpenedAt");
 CREATE INDEX IF NOT EXISTS "Chapter_projectId_order_idx" ON "Chapter"("projectId", "order");
+CREATE INDEX IF NOT EXISTS "ChapterRevision_chapterId_createdAt_idx" ON "ChapterRevision"("chapterId", "createdAt");
+CREATE INDEX IF NOT EXISTS "SearchDirtyQueue_projectId_status_idx" ON "SearchDirtyQueue"("projectId", "status");
+CREATE INDEX IF NOT EXISTS "SearchDirtyQueue_source_idx" ON "SearchDirtyQueue"("sourceType", "sourceId");
+CREATE UNIQUE INDEX IF NOT EXISTS "MemoryChunk_source_chunkIndex_key" ON "MemoryChunk"("sourceType", "sourceId", "chunkIndex");
+CREATE INDEX IF NOT EXISTS "MemoryChunk_projectId_source_idx" ON "MemoryChunk"("projectId", "sourceType", "sourceId");
+CREATE INDEX IF NOT EXISTS "MemoryChunk_projectId_chapterId_idx" ON "MemoryChunk"("projectId", "chapterId");
+CREATE INDEX IF NOT EXISTS "MemoryBuildJob_projectId_status_priority_idx" ON "MemoryBuildJob"("projectId", "status", "priority");
+CREATE INDEX IF NOT EXISTS "MemoryBuildJob_target_idx" ON "MemoryBuildJob"("targetType", "targetId");
 CREATE INDEX IF NOT EXISTS "Character_projectId_name_idx" ON "Character"("projectId", "name");
 CREATE INDEX IF NOT EXISTS "Event_projectId_name_idx" ON "Event"("projectId", "name");
 CREATE INDEX IF NOT EXISTS "Faction_projectId_name_idx" ON "Faction"("projectId", "name");

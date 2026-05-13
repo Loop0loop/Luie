@@ -45,6 +45,31 @@ function computeMigrationHash(sqlContent: string): string {
   return crypto.createHash("sha256").update(sqlContent).digest("hex").slice(0, 16);
 }
 
+function backfillChapterBody(database: InstanceType<typeof Database>, logger: LoggerLike): void {
+  if (!sqliteTableExists(database, "Chapter") || !sqliteTableExists(database, "ChapterBody")) {
+    return;
+  }
+
+  const rows = database
+    .prepare(`SELECT "id", "content", "updatedAt" FROM "Chapter" WHERE "id" NOT IN (SELECT "chapterId" FROM "ChapterBody");`)
+    .all() as Array<{ id: string; content: string; updatedAt: string }>;
+
+  if (rows.length === 0) return;
+
+  const insert = database.prepare(
+    `INSERT INTO "ChapterBody" ("chapterId","content","contentHash","updatedAt") VALUES (?, ?, ?, ?);`,
+  );
+  const tx = database.transaction(() => {
+    for (const row of rows) {
+      const content = String(row.content ?? "");
+      const contentHash = crypto.createHash("sha256").update(content).digest("hex");
+      insert.run(row.id, content, contentHash, row.updatedAt ?? new Date().toISOString());
+    }
+  });
+  tx();
+  logger.info("Backfilled ChapterBody rows", { count: rows.length });
+}
+
 /**
  * Marks all existing Drizzle migrations as already applied.
  * Used when migrating from a Prisma-managed database that already has
@@ -159,6 +184,8 @@ export function ensurePackagedSqliteSchema(
     if (patchedIndexes > 0) {
       logger.info("Applied index patches to existing database", { patchedIndexes });
     }
+
+    backfillChapterBody(database, logger);
 
     logger.info("Packaged SQLite Drizzle migration ensured", {
       dbPath,

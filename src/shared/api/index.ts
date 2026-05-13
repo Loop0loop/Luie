@@ -2,6 +2,7 @@ import type { IPCResponse } from "@shared/ipc/index.js";
 import type {
   AppSettings,
   Chapter,
+  ChapterSaveResult,
   Character,
   Event,
   Faction,
@@ -9,6 +10,7 @@ import type {
   Project,
   ProjectOpenResult,
   SearchResult,
+  SearchIndexStatus,
   Snapshot,
   SnapshotRestoreCandidate,
   Term,
@@ -28,6 +30,7 @@ import type {
   RuntimeSupabaseConfigView,
   SyncAuthResult,
   StartupReadiness,
+  MigrationHealth,
   WorldEntity,
   EntityRelation,
   WorldGraphData,
@@ -95,7 +98,7 @@ export type RendererApi = {
       title?: string;
       content?: string;
       synopsis?: string;
-    }) => Promise<IPCResponse<Chapter>>;
+    }) => Promise<IPCResponse<ChapterSaveResult>>;
     delete: (id: string) => Promise<IPCResponse<unknown>>;
     restore: (id: string) => Promise<IPCResponse<Chapter>>;
     purge: (id: string) => Promise<IPCResponse<unknown>>;
@@ -307,6 +310,21 @@ export type RendererApi = {
     query: string;
     type?: "all" | "character" | "term";
   }) => Promise<IPCResponse<SearchResult[]>>;
+  searchAdmin: {
+    getIndexStatus: (projectId: string) => Promise<IPCResponse<SearchIndexStatus>>;
+    rebuildIndex: (projectId: string) => Promise<IPCResponse<{ success: boolean }>>;
+  };
+  memoryAdmin: {
+    rebuildChunks: (input: {
+      projectId: string;
+      sourceType?: string;
+      sourceId?: string;
+    }) => Promise<IPCResponse<{ queued: number; processed: number }>>;
+  };
+  maintenance: {
+    runIntegrityCheck: () => Promise<IPCResponse<{ ok: boolean; rows: string[] }>>;
+    getMigrationHealth: () => Promise<IPCResponse<MigrationHealth>>;
+  };
   autoSave: (
     chapterId: string,
     content: string,

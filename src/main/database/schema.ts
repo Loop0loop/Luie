@@ -99,6 +99,116 @@ export const chapter = sqliteTable(
   ],
 );
 
+export const chapterBody = sqliteTable(
+  "ChapterBody",
+  {
+    chapterId: text("chapterId").primaryKey().notNull(),
+    content: text("content").notNull().default(""),
+    contentHash: text("contentHash").notNull().default(""),
+    updatedAt: text("updatedAt").notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "ChapterBody_chapterId_fkey",
+      columns: [table.chapterId],
+      foreignColumns: [chapter.id],
+    }).onDelete("cascade").onUpdate("cascade"),
+  ],
+);
+
+export const chapterRevision = sqliteTable(
+  "ChapterRevision",
+  {
+    id: text("id").primaryKey().notNull(),
+    chapterId: text("chapterId").notNull(),
+    contentHash: text("contentHash").notNull(),
+    content: text("content").notNull(),
+    reason: text("reason").notNull(),
+    createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("ChapterRevision_chapterId_createdAt_idx").on(table.chapterId, table.createdAt),
+    foreignKey({
+      name: "ChapterRevision_chapterId_fkey",
+      columns: [table.chapterId],
+      foreignColumns: [chapter.id],
+    }).onDelete("cascade").onUpdate("cascade"),
+  ],
+);
+
+export const searchDirtyQueue = sqliteTable(
+  "SearchDirtyQueue",
+  {
+    id: text("id").primaryKey().notNull(),
+    projectId: text("projectId").notNull(),
+    sourceType: text("sourceType").notNull(),
+    sourceId: text("sourceId").notNull(),
+    reason: text("reason").notNull(),
+    status: text("status").notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(0),
+    error: text("error"),
+    createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updatedAt").notNull(),
+  },
+  (table) => [
+    index("SearchDirtyQueue_projectId_status_idx").on(table.projectId, table.status),
+    index("SearchDirtyQueue_source_idx").on(table.sourceType, table.sourceId),
+  ],
+);
+
+export const memoryChunk = sqliteTable(
+  "MemoryChunk",
+  {
+    id: text("id").primaryKey().notNull(),
+    projectId: text("projectId").notNull(),
+    sourceType: text("sourceType").notNull(),
+    sourceId: text("sourceId").notNull(),
+    chapterId: text("chapterId"),
+    chunkIndex: integer("chunkIndex").notNull(),
+    content: text("content").notNull(),
+    contentHash: text("contentHash").notNull(),
+    startOffset: integer("startOffset"),
+    endOffset: integer("endOffset"),
+    tokenCount: integer("tokenCount").notNull().default(0),
+    createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updatedAt").notNull(),
+  },
+  (table) => [
+    index("MemoryChunk_projectId_source_idx").on(table.projectId, table.sourceType, table.sourceId),
+    index("MemoryChunk_projectId_chapterId_idx").on(table.projectId, table.chapterId),
+    uniqueIndex("MemoryChunk_source_chunkIndex_key").on(
+      table.sourceType,
+      table.sourceId,
+      table.chunkIndex,
+    ),
+  ],
+);
+
+export const memoryBuildJob = sqliteTable(
+  "MemoryBuildJob",
+  {
+    id: text("id").primaryKey().notNull(),
+    projectId: text("projectId").notNull(),
+    targetType: text("targetType").notNull(),
+    targetId: text("targetId").notNull(),
+    jobType: text("jobType").notNull(),
+    status: text("status").notNull().default("pending"),
+    priority: integer("priority").notNull().default(50),
+    attempts: integer("attempts").notNull().default(0),
+    error: text("error"),
+    createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updatedAt").notNull(),
+  },
+  (table) => [
+    index("MemoryBuildJob_projectId_status_priority_idx").on(
+      table.projectId,
+      table.status,
+      table.priority,
+    ),
+    index("MemoryBuildJob_target_idx").on(table.targetType, table.targetId),
+  ],
+);
+
 const createWorldEntryColumns = () => ({
   id: text("id").primaryKey().notNull(),
   projectId: text("projectId").notNull(),

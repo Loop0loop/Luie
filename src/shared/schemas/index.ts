@@ -185,6 +185,12 @@ export const searchQuerySchema = z.object({
   type: z.enum(["all", "character", "term"]).optional(),
 });
 
+export const rebuildMemoryChunksSchema = z.object({
+  projectId: projectIdSchema,
+  sourceType: z.string().min(1).optional(),
+  sourceId: z.string().min(1).optional(),
+});
+
 export const exportRequestSchema = z.object({
   projectId: projectIdSchema,
   chapterId: chapterIdSchema,

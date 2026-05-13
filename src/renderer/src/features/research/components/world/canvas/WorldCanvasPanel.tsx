@@ -114,15 +114,15 @@ export function WorldCanvasPanel() {
   }
 
   return (
-    <div className="relative flex h-full min-h-0 bg-app">
-      <CanvasNavRail
-        activeTab={activeTab}
-        onSelectTab={handleSelectTab}
-        onRefresh={handleRefresh}
-        isRefreshing={graphLoading}
-      />
+    <div className="flex h-full min-h-0 overflow-hidden bg-app">
+        <CanvasNavRail
+          activeTab={activeTab}
+          onSelectTab={handleSelectTab}
+          onRefresh={handleRefresh}
+          isRefreshing={graphLoading}
+        />
 
-      <div className="relative min-h-0 flex-1 overflow-hidden">
+        <div className="relative min-h-0 flex-1 overflow-hidden">
         {activeTab === "canvas" && (
           <CanvasView
             graphNodes={graphNodes}
@@ -173,7 +173,7 @@ export function WorldCanvasPanel() {
             onUninstall={(id) => void uninstallPlugin(id)}
           />
         )}
-      </div>
+        </div>
     </div>
   );
 }

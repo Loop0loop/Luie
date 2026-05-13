@@ -2,7 +2,7 @@ import { and, asc, count, desc, eq, inArray, isNull, like, sql } from "drizzle-o
 import { db } from "../../database/index.js";
 import { cacheDb } from "../../database/cacheDb.js";
 import { chapterSearchDocument } from "../../database/cacheSchema.js";
-import { chapter } from "../../database/schema.js";
+import { chapter, chapterBody } from "../../database/schema.js";
 import { createLogger } from "../../../shared/logger/index.js";
 
 const getCacheClient = () => cacheDb.getClient();
@@ -252,6 +252,36 @@ class ChapterSearchCacheService {
     );
   }
 
+  async getIndexStatus(projectId: string): Promise<{
+    projectId: string;
+    projectionCount: number;
+    ftsCount: number | null;
+    pendingQueueCount: number;
+  }> {
+    const cacheClient = getCacheClient();
+    const projectionRows = await cacheClient
+      .select({ count: count() })
+      .from(chapterSearchDocument)
+      .where(eq(chapterSearchDocument.projectId, projectId));
+    const projectionCount = toSafeNumber(projectionRows[0]?.count);
+    const ftsCount = await this.countProjectFtsRows(projectId);
+    const mainClient = getMainClient();
+    const queueRows = await mainClient.all<{ count: unknown }>(
+      sql`SELECT COUNT(*) as count FROM "SearchDirtyQueue" WHERE "projectId" = ${projectId} AND "status" = 'pending';`,
+    );
+    return {
+      projectId,
+      projectionCount,
+      ftsCount,
+      pendingQueueCount: toSafeNumber(queueRows[0]?.count),
+    };
+  }
+
+  async rebuildProjectIndex(projectId: string): Promise<{ success: boolean }> {
+    await this.rebuildProject(projectId);
+    return { success: true };
+  }
+
   async clearChapter(chapterId: string): Promise<void> {
     const client = getCacheClient();
     await Promise.all([
@@ -313,10 +343,12 @@ class ChapterSearchCacheService {
         title: chapter.title,
         synopsis: chapter.synopsis,
         content: chapter.content,
+        bodyContent: chapterBody.content,
         wordCount: chapter.wordCount,
         order: chapter.order,
       })
       .from(chapter)
+      .leftJoin(chapterBody, eq(chapterBody.chapterId, chapter.id))
       .where(and(eq(chapter.projectId, projectId), isNull(chapter.deletedAt)))
       .orderBy(asc(chapter.order));
 
@@ -335,7 +367,7 @@ class ChapterSearchCacheService {
         searchText: buildSearchText({
           title: ch.title,
           synopsis: ch.synopsis,
-          content: ch.content,
+          content: ch.bodyContent ?? ch.content,
         }),
         wordCount: ch.wordCount,
         chapterOrder: ch.order,
@@ -351,7 +383,7 @@ class ChapterSearchCacheService {
           searchText: buildSearchText({
             title: ch.title,
             synopsis: ch.synopsis,
-            content: ch.content,
+            content: ch.bodyContent ?? ch.content,
           }),
         });
       }),

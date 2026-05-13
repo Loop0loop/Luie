@@ -1,7 +1,12 @@
 import { useCallback, useState } from "react";
 import { useReactFlow, type Node, type Edge, type Connection, addEdge } from "reactflow";
 import type { WorldEntitySourceType } from "@shared/types";
-import { CANVAS_NODE_DEFAULT_WIDTH, CANVAS_NODE_DEFAULT_HEIGHT } from "../shared/constants";
+import {
+  GRAPH_CANVAS_NODE_DEFAULT_WIDTH_PX,
+  GRAPH_CANVAS_NODE_DEFAULT_HEIGHT_PX,
+  GRAPH_CANVAS_FIT_VIEW_PADDING,
+  GRAPH_CANVAS_FIT_VIEW_DURATION_MS,
+} from "../shared";
 
 export function useCanvasInteractions(
   nodes: Node[],
@@ -20,7 +25,7 @@ export function useCanvasInteractions(
   );
 
   const handleFitView = useCallback(() => {
-    fitView({ padding: 0.12, duration: 400 });
+    fitView({ padding: GRAPH_CANVAS_FIT_VIEW_PADDING, duration: GRAPH_CANVAS_FIT_VIEW_DURATION_MS });
   }, [fitView]);
 
   const handleAutoLayout = useCallback(async () => {
@@ -28,8 +33,8 @@ export function useCanvasInteractions(
     setIsAutoLayoutRunning(true);
 
     const COLS = 4;
-    const GAP_X = CANVAS_NODE_DEFAULT_WIDTH + 40;
-    const GAP_Y = CANVAS_NODE_DEFAULT_HEIGHT + 40;
+    const GAP_X = GRAPH_CANVAS_NODE_DEFAULT_WIDTH_PX + 40;
+    const GAP_Y = GRAPH_CANVAS_NODE_DEFAULT_HEIGHT_PX + 40;
     const OFFSET_X = 60;
     const OFFSET_Y = 60;
 
@@ -43,7 +48,7 @@ export function useCanvasInteractions(
 
     onNodesChange(updated);
     setIsAutoLayoutRunning(false);
-    setTimeout(() => fitView({ padding: 0.12, duration: 400 }), 50);
+    setTimeout(() => fitView({ padding: GRAPH_CANVAS_FIT_VIEW_PADDING, duration: GRAPH_CANVAS_FIT_VIEW_DURATION_MS }), 50);
   }, [isAutoLayoutRunning, nodes, onNodesChange, fitView]);
 
   const buildEntityNode = useCallback(

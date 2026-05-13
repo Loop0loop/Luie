@@ -18,6 +18,9 @@ export function createProjectApi({
   | "export"
   | "fs"
   | "search"
+  | "searchAdmin"
+  | "memoryAdmin"
+  | "maintenance"
   | "autoSave"
 > {
   return {
@@ -161,6 +164,22 @@ export function createProjectApi({
         safeInvoke(IPC_CHANNELS.FS_APPROVE_PROJECT_PATH, projectPath),
     },
     search: (query) => safeInvoke(IPC_CHANNELS.SEARCH, query),
+    searchAdmin: {
+      getIndexStatus: (projectId) =>
+        safeInvoke(IPC_CHANNELS.SEARCH_INDEX_STATUS, projectId),
+      rebuildIndex: (projectId) =>
+        safeInvoke(IPC_CHANNELS.SEARCH_REBUILD_INDEX, projectId),
+    },
+    memoryAdmin: {
+      rebuildChunks: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_REBUILD_CHUNKS, input),
+    },
+    maintenance: {
+      runIntegrityCheck: () =>
+        safeInvoke(IPC_CHANNELS.DB_RUN_INTEGRITY_CHECK),
+      getMigrationHealth: () =>
+        safeInvoke(IPC_CHANNELS.DB_GET_MIGRATION_HEALTH),
+    },
     autoSave: autoSave.autoSave,
   };
 }

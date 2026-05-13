@@ -14,6 +14,7 @@ import {
   worldMentionService,
   worldReplicaService,
   graphPluginService,
+  dbMaintenanceService,
 } from "../services/index.js";
 import { registerProjectHandlers } from "./project/index.js";
 import { registerSearchHandlers } from "./search/index.js";
@@ -55,6 +56,7 @@ export async function registerAllIPCHandlers(): Promise<void> {
   registerSearchHandlers({
     logger,
     searchService,
+    dbMaintenanceService,
   });
 
   registerSystemHandlers({

@@ -3,6 +3,7 @@
  */
 
 import { app } from "electron";
+import crypto from "node:crypto";
 import * as fs from "fs/promises";
 import path from "path";
 import { eq, and, isNull, desc, asc, sql } from "drizzle-orm";
@@ -24,7 +25,12 @@ import { trackKeywordAppearances } from "./chapterKeywords.js";
 import { sanitizeName } from "../../../shared/utils/sanitize.js";
 import { isTestEnv } from "../../utils/environment.js";
 
-const { chapter, project } = schema;
+const {
+  chapter,
+  chapterBody,
+  chapterRevision,
+  project,
+} = schema;
 
 const logger = createLogger("ChapterService");
 
@@ -38,7 +44,74 @@ const loadChapterSearchCacheService = async () =>
   (await import("../features/chapterSearchCacheService.js"))
     .chapterSearchCacheService;
 
+const loadMemoryProjectionService = async () =>
+  (await import("../features/memory/memoryProjectionService.js"))
+    .memoryProjectionService;
+
 export class ChapterService {
+  private hashContent(content: string): string {
+    return crypto.createHash("sha256").update(content).digest("hex");
+  }
+
+  private async upsertChapterBody(input: {
+    chapterId: string;
+    content: string;
+    now: string;
+  }): Promise<void> {
+    const store = db.getClient();
+    await store
+      .insert(chapterBody)
+      .values({
+        chapterId: input.chapterId,
+        content: input.content,
+        contentHash: this.hashContent(input.content),
+        updatedAt: input.now,
+      })
+      .onConflictDoUpdate({
+        target: [chapterBody.chapterId],
+        set: {
+          content: input.content,
+          contentHash: this.hashContent(input.content),
+          updatedAt: input.now,
+        },
+      });
+  }
+
+  private async enqueueDerivedJobs(input: {
+    projectId: string;
+    chapterId: string;
+    reason: string;
+  }): Promise<void> {
+    const now = new Date().toISOString();
+    const store = db.getClient();
+    await store.run(
+      sql`INSERT INTO "SearchDirtyQueue" ("id","projectId","sourceType","sourceId","reason","status","attempts","createdAt","updatedAt")
+          VALUES (${crypto.randomUUID()}, ${input.projectId}, 'chapter', ${input.chapterId}, ${input.reason}, 'pending', 0, ${now}, ${now});`,
+    );
+    await store.run(
+      sql`INSERT INTO "MemoryBuildJob" ("id","projectId","targetType","targetId","jobType","status","priority","attempts","createdAt","updatedAt")
+          VALUES (${crypto.randomUUID()}, ${input.projectId}, 'chapter', ${input.chapterId}, 'rebuild_chunks', 'pending', 100, 0, ${now}, ${now});`,
+    );
+  }
+
+  private async readChapterContent(chapterId: string): Promise<string> {
+    const store = db.getClient();
+    const bodyRows = await store
+      .select({ content: chapterBody.content })
+      .from(chapterBody)
+      .where(eq(chapterBody.chapterId, chapterId))
+      .limit(1);
+    if (bodyRows.length > 0 && typeof bodyRows[0].content === "string") {
+      return bodyRows[0].content;
+    }
+    const chapterRows = await store
+      .select({ content: chapter.content })
+      .from(chapter)
+      .where(eq(chapter.id, chapterId))
+      .limit(1);
+    return chapterRows.length > 0 ? String(chapterRows[0].content ?? "") : "";
+  }
+
   private async resolveProjectTitle(
     projectId: string | undefined,
   ): Promise<string> {
@@ -177,6 +250,16 @@ export class ChapterService {
       }).returning();
 
       const created = inserted[0];
+      await this.upsertChapterBody({
+        chapterId: String(created.id),
+        content: String(created.content ?? ""),
+        now,
+      });
+      await this.enqueueDerivedJobs({
+        projectId: String(created.projectId),
+        chapterId: String(created.id),
+        reason: "chapter:create",
+      });
 
       logger.info("Chapter created successfully", { chapterId: created.id });
       const chapterSearchCacheService = await loadChapterSearchCacheService();
@@ -188,6 +271,13 @@ export class ChapterService {
         content: created.content,
         wordCount: created.wordCount,
         order: created.order,
+      });
+      const memoryProjectionService = await loadMemoryProjectionService();
+      await memoryProjectionService.processPendingChunkJobs({
+        projectId: String(created.projectId),
+        sourceType: "chapter",
+        sourceId: String(created.id),
+        limit: 1,
       });
       await projectService.persistPackageAfterMutation(input.projectId, "chapter:create");
       return created;
@@ -209,7 +299,18 @@ export class ChapterService {
     try {
       const store = db.getClient();
       const rows = await store
-        .select()
+        .select({
+          id: chapter.id,
+          projectId: chapter.projectId,
+          title: chapter.title,
+          content: chapter.content,
+          synopsis: chapter.synopsis,
+          order: chapter.order,
+          wordCount: chapter.wordCount,
+          createdAt: chapter.createdAt,
+          updatedAt: chapter.updatedAt,
+          deletedAt: chapter.deletedAt,
+        })
         .from(chapter)
         .where(and(eq(chapter.id, id), isNull(chapter.deletedAt)))
         .limit(1);
@@ -222,7 +323,11 @@ export class ChapterService {
         );
       }
 
-      return rows[0];
+      const result = rows[0];
+      return {
+        ...result,
+        content: await this.readChapterContent(id),
+      };
     } catch (error) {
       logger.error("Failed to get chapter", error);
       throw error;
@@ -232,12 +337,28 @@ export class ChapterService {
   async getAllChapters(projectId: string) {
     try {
       const chapters = await db.getClient()
-        .select()
+        .select({
+          id: chapter.id,
+          projectId: chapter.projectId,
+          title: chapter.title,
+          content: chapter.content,
+          synopsis: chapter.synopsis,
+          order: chapter.order,
+          wordCount: chapter.wordCount,
+          createdAt: chapter.createdAt,
+          updatedAt: chapter.updatedAt,
+          deletedAt: chapter.deletedAt,
+        })
         .from(chapter)
         .where(and(eq(chapter.projectId, projectId), isNull(chapter.deletedAt)))
         .orderBy(asc(chapter.order));
 
-      return chapters;
+      return await Promise.all(
+        chapters.map(async (item) => ({
+          ...item,
+          content: await this.readChapterContent(String(item.id)),
+        })),
+      );
     } catch (error) {
       logger.error("Failed to get all chapters", error);
       throw new ServiceError(
@@ -253,7 +374,7 @@ export class ChapterService {
     try {
       const store = db.getClient();
       const currentRows = await store
-        .select({ projectId: chapter.projectId, content: chapter.content, deletedAt: chapter.deletedAt })
+        .select({ projectId: chapter.projectId, deletedAt: chapter.deletedAt })
         .from(chapter)
         .where(eq(chapter.id, input.id))
         .limit(1);
@@ -270,9 +391,13 @@ export class ChapterService {
       const updateData: Record<string, unknown> = {};
 
       if (input.title !== undefined) updateData.title = input.title;
+      const persistedContent = await this.readChapterContent(input.id);
       await this.applyContentUpdate(
         input,
-        current as { projectId?: unknown; content?: unknown } | null,
+        { ...(current as object), content: persistedContent } as {
+          projectId?: unknown;
+          content?: unknown;
+        } | null,
         updateData,
       );
       if (input.synopsis !== undefined) updateData.synopsis = input.synopsis;
@@ -293,7 +418,7 @@ export class ChapterService {
 
       if (
         hasOnlyContentUpdate &&
-        String(current?.content ?? "") === String(input.content ?? "")
+        persistedContent === String(input.content ?? "")
       ) {
         const existing = await store
           .select()
@@ -319,6 +444,27 @@ export class ChapterService {
       }
 
       const updatedChapter = updated[0];
+      if (input.content !== undefined) {
+        await this.upsertChapterBody({
+          chapterId: String(updatedChapter.id),
+          content: input.content,
+          now,
+        });
+        const contentHash = this.hashContent(input.content);
+        await store.insert(chapterRevision).values({
+          id: crypto.randomUUID(),
+          chapterId: String(updatedChapter.id),
+          contentHash,
+          content: input.content,
+          reason: "manual_save",
+          createdAt: now,
+        });
+      }
+      await this.enqueueDerivedJobs({
+        projectId: String(updatedChapter.projectId),
+        chapterId: String(updatedChapter.id),
+        reason: "chapter:update",
+      });
 
       logger.info("Chapter updated successfully", {
         chapterId: updatedChapter.id,
@@ -329,12 +475,30 @@ export class ChapterService {
         projectId: String(updatedChapter.projectId),
         title: updatedChapter.title,
         synopsis: updatedChapter.synopsis ?? null,
-        content: updatedChapter.content,
+        content: await this.readChapterContent(String(updatedChapter.id)),
         wordCount: updatedChapter.wordCount,
         order: updatedChapter.order,
       });
+      const memoryProjectionService = await loadMemoryProjectionService();
+      await memoryProjectionService.processPendingChunkJobs({
+        projectId: String(updatedChapter.projectId),
+        sourceType: "chapter",
+        sourceId: String(updatedChapter.id),
+        limit: 1,
+      });
       await projectService.persistPackageAfterMutation(String(updatedChapter.projectId), "chapter:update");
-      return updatedChapter;
+      return {
+        ...updatedChapter,
+        content: await this.readChapterContent(String(updatedChapter.id)),
+        saveState: {
+          type: "saved",
+          at: Date.now(),
+        },
+        derivedSyncState: {
+          search: "queued",
+          memory: "queued",
+        },
+      };
     } catch (error) {
       logger.error("Failed to update chapter", error);
       if (error instanceof ServiceError) {
@@ -427,7 +591,7 @@ export class ChapterService {
     try {
       const store = db.getClient();
       const currentRows = await store
-        .select({ projectId: chapter.projectId, content: chapter.content })
+        .select({ projectId: chapter.projectId })
         .from(chapter)
         .where(eq(chapter.id, id))
         .limit(1);
@@ -455,9 +619,10 @@ export class ChapterService {
         );
       }
 
+      const restoredContent = await this.readChapterContent(id);
       await trackKeywordAppearances(
         id,
-        String(current.content ?? ""),
+        restoredContent,
         String(current.projectId),
       );
       const chapterSearchCacheService = await loadChapterSearchCacheService();
@@ -466,7 +631,7 @@ export class ChapterService {
         projectId: String(current.projectId),
         title: restored[0].title,
         synopsis: restored[0].synopsis ?? null,
-        content: restored[0].content,
+        content: restoredContent,
         wordCount: restored[0].wordCount,
         order: restored[0].order,
       });

@@ -74,6 +74,11 @@ export const IPC_CHANNELS = {
 
   // Search
   SEARCH: "search",
+  SEARCH_INDEX_STATUS: "search:index-status",
+  SEARCH_REBUILD_INDEX: "search:rebuild-index",
+  MEMORY_REBUILD_CHUNKS: "memory:rebuild-chunks",
+  DB_RUN_INTEGRITY_CHECK: "db:run-integrity-check",
+  DB_GET_MIGRATION_HEALTH: "db:get-migration-health",
 
   // Analysis (원고 분석)
   ANALYSIS_START: "analysis:start",
