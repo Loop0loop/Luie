@@ -4,9 +4,28 @@ import { memoryProjectionService } from "./memory/memoryProjectionService.js";
 
 const logger = createLogger("DerivedJobWorker");
 
-const TICK_INTERVAL_MS = 1500;
-const SEARCH_BATCH_SIZE = 20;
-const MEMORY_BATCH_SIZE = 20;
+const toPositiveInt = (value: string | undefined, fallback: number): number => {
+  if (!value) return fallback;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
+};
+
+const TICK_INTERVAL_MS = toPositiveInt(
+  process.env.LUIE_DERIVED_TICK_MS,
+  2000,
+);
+const SEARCH_BATCH_SIZE = toPositiveInt(
+  process.env.LUIE_DERIVED_SEARCH_BATCH,
+  5,
+);
+const MEMORY_BATCH_SIZE = toPositiveInt(
+  process.env.LUIE_DERIVED_MEMORY_BATCH,
+  2,
+);
+const MEMORY_PROJECTS_PER_TICK = toPositiveInt(
+  process.env.LUIE_DERIVED_MEMORY_PROJECTS_PER_TICK,
+  1,
+);
 
 class DerivedJobWorker {
   private timer: NodeJS.Timeout | null = null;
@@ -25,6 +44,7 @@ class DerivedJobWorker {
       tickIntervalMs: TICK_INTERVAL_MS,
       searchBatchSize: SEARCH_BATCH_SIZE,
       memoryBatchSize: MEMORY_BATCH_SIZE,
+      memoryProjectsPerTick: MEMORY_PROJECTS_PER_TICK,
     });
   }
 
@@ -64,21 +84,20 @@ class DerivedJobWorker {
       });
 
       const projectsToProcess = await dbMaintenanceService.listProjectsWithPendingMemoryJobs(
-        MEMORY_BATCH_SIZE,
+        MEMORY_PROJECTS_PER_TICK,
       );
 
       let memoryQueued = 0;
       let memoryProcessed = 0;
-      const memoryResults = await Promise.all(
-        projectsToProcess.map((projectId) =>
-          memoryProjectionService.processPendingChunkJobs({
-            projectId,
-            limit: MEMORY_BATCH_SIZE,
-          }),
-        ),
-      );
-      memoryQueued = memoryResults.reduce((sum, item) => sum + item.queued, 0);
-      memoryProcessed = memoryResults.reduce((sum, item) => sum + item.processed, 0);
+      await projectsToProcess.reduce<Promise<void>>(async (prev, projectId) => {
+        await prev;
+        const result = await memoryProjectionService.processPendingChunkJobs({
+          projectId,
+          limit: MEMORY_BATCH_SIZE,
+        });
+        memoryQueued += result.queued;
+        memoryProcessed += result.processed;
+      }, Promise.resolve());
 
       if (search.queued > 0 || memoryQueued > 0) {
         logger.info("Derived job worker tick processed", {

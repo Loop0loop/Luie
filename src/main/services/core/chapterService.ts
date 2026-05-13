@@ -226,7 +226,10 @@ export class ChapterService {
     updateData.wordCount = input.content.length;
     if (!projectId) return;
 
-    await trackKeywordAppearances(input.id, input.content, projectId);
+    fireAndForget(
+      trackKeywordAppearances(input.id, input.content, projectId),
+      "chapter:update:track-keyword-appearances",
+    );
     autoExtractService.scheduleAnalysis(input.id, projectId, input.content);
   }
 
