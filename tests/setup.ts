@@ -68,6 +68,11 @@ beforeEach(async () => {
   await cacheClient.delete(cacheSchema.characterAppearance).where(sql`1=1`);
 
   await client.delete(schema.snapshot).where(sql`1=1`);
+  await client.delete(schema.memoryChunk).where(sql`1=1`);
+  await client.delete(schema.memoryBuildJob).where(sql`1=1`);
+  await client.delete(schema.searchDirtyQueue).where(sql`1=1`);
+  await client.delete(schema.chapterRevision).where(sql`1=1`);
+  await client.delete(schema.chapterBody).where(sql`1=1`);
   await client.delete(schema.scrapMemo).where(sql`1=1`);
   await client.delete(schema.worldDocument).where(sql`1=1`);
   await client.delete(schema.projectLocalState).where(sql`1=1`);

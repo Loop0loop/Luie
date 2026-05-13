@@ -4,6 +4,7 @@ import {
   useUIStore,
   type WorldTab,
 } from "@renderer/features/workspace/stores/uiStore";
+import EditorToolbar from "@renderer/features/editor/components/EditorToolbar";
 
 import TabButton from "@shared/ui/TabButton";
 
@@ -68,6 +69,15 @@ export default function WorldSection({
     window.location.hash = "";
   }, [onOpenSettings]);
 
+  const handleOpenCanvas = useCallback(() => {
+    setWorldTab("graph");
+    if (graphOnly) {
+      window.location.hash = "#world-graph";
+    }
+  }, [graphOnly, setWorldTab]);
+
+  const shouldShowCanvasToggleBar = graphOnly || worldTab === "graph";
+
   useEffect(() => {
     if (!graphOnly) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -94,45 +104,12 @@ export default function WorldSection({
   return (
     <div className="relative flex h-full min-h-0 flex-col bg-app">
       {graphOnly && <WindowBar />}
-      {/* 
-        Fix: Always render the top menu bar for the Graph view.
-        If it's graphOnly (standalone window/tab), render the standalone top bar.
-      */}
-      {graphOnly && (
-        <div className="flex w-full items-center justify-between gap-2 shrink-0 border-b border-border/40 bg-element/30 px-3 py-2 text-muted backdrop-blur-md">
-          <div className="flex min-w-0 items-center gap-2 pl-16">
-            {" "}
-            {/* pl-16 avoid macOS traffic lights */}
-            <button
-              type="button"
-              onClick={handleBack}
-              className="rounded-md border border-border/50 bg-element/50 px-3 py-1 text-[11px] text-fg hover:bg-element-hover transition-colors"
-            >
-              {t("world.graph.menu.back")}
-            </button>
-            <span className="truncate text-xs font-medium text-fg/80 max-w-[32ch]">
-              {projectTitle ?? t("world.graph.overlay.title")}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleOpenSettings}
-              className="rounded-md border border-border/50 bg-element/50 px-3 py-1 text-[11px] text-fg hover:bg-element-hover transition-colors"
-              title="Cmd/Ctrl+,"
-            >
-              {t("world.graph.menu.settings")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsGuideOpen((prev) => !prev)}
-              className="rounded-md border border-border/50 bg-element/50 px-3 py-1 text-[11px] text-fg hover:bg-element-hover transition-colors"
-              title="Cmd/Ctrl+/"
-            >
-              {t("world.graph.menu.help")}
-            </button>
-          </div>
-        </div>
+      {shouldShowCanvasToggleBar && (
+        <EditorToolbar
+          editor={null}
+          canvasToggleOnly
+          onOpenWorldGraph={handleOpenCanvas}
+        />
       )}
 
       {!graphOnly && worldTab !== "graph" && (

@@ -88,6 +88,16 @@ class DerivedJobWorker {
           queued: search.queued,
         });
       }
+      const longPending = await dbMaintenanceService.getLongPendingStats();
+      if (
+        longPending.searchLongPendingCount > 0 ||
+        longPending.memoryLongPendingCount > 0
+      ) {
+        logger.warn("Derived job worker long pending detected", {
+          searchLongPendingCount: longPending.searchLongPendingCount,
+          memoryLongPendingCount: longPending.memoryLongPendingCount,
+        });
+      }
     } catch (error) {
       logger.warn("Derived job worker tick failed", {
         error: error instanceof Error ? error.message : String(error),

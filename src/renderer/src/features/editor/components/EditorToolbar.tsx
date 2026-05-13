@@ -32,6 +32,7 @@ import { FontSelector } from "./FontSelector";
 
 interface EditorToolbarProps {
   editor: Editor | null;
+  canvasToggleOnly?: boolean;
   isMobileView?: boolean;
   onToggleMobileView?: () => void;
   onOpenWorldGraph?: () => void;
@@ -411,6 +412,7 @@ function TypographyMenu({
 
 export default function EditorToolbar({
   editor,
+  canvasToggleOnly = false,
   isMobileView,
   onToggleMobileView,
   onOpenWorldGraph,
@@ -432,6 +434,52 @@ export default function EditorToolbar({
   const paragraphSpacing = useEditorStore((state) => state.paragraphSpacing ?? 1);
   const setFontSize = useEditorStore((state) => state.setFontSize);
   const updateSettings = useEditorStore((state) => state.updateSettings);
+
+  const renderEditorCanvasToggle = () => (
+    <div className="flex h-7 items-center rounded-md border border-border bg-muted/20 p-0.5 text-xs font-medium">
+      <button
+        type="button"
+        onClick={() => {
+          if (isCanvasOpen) {
+            setWorldTab("terms");
+            window.location.hash = "";
+          }
+        }}
+        className={cn(
+          "flex h-full items-center rounded px-2.5 transition-colors",
+          !isCanvasOpen
+            ? "bg-panel text-fg shadow-sm"
+            : "text-muted hover:text-fg",
+        )}
+      >
+        {t("toolbar.editor", "에디터")}
+      </button>
+      <button
+        type="button"
+        onClick={() => onOpenWorldGraph?.()}
+        disabled={!onOpenWorldGraph}
+        className={cn(
+          "flex h-full items-center rounded px-2.5 transition-colors",
+          isCanvasOpen
+            ? "bg-panel text-fg shadow-sm"
+            : "text-muted hover:text-fg",
+          !onOpenWorldGraph && "opacity-40",
+        )}
+      >
+        {t("toolbar.canvas", "캔버스")}
+      </button>
+    </div>
+  );
+
+  if (canvasToggleOnly) {
+    return (
+      <div className="flex w-full select-none items-center justify-center border-b border-border bg-panel px-2 py-1.5">
+        <div className="flex items-center gap-0.5">
+          {renderEditorCanvasToggle()}
+        </div>
+      </div>
+    );
+  }
 
   if (!editor) return null;
 
@@ -616,35 +664,7 @@ export default function EditorToolbar({
         )}
 
         {/* Editor / Canvas segment toggle */}
-        <div className="flex h-7 items-center rounded-md border border-border bg-muted/20 p-0.5 text-xs font-medium">
-          <button
-            type="button"
-            onClick={() => {
-              if (isCanvasOpen) {
-                setWorldTab("terms");
-                window.location.hash = "";
-              }
-            }}
-            className={cn(
-              "flex h-full items-center rounded px-2.5 transition-colors",
-              !isCanvasOpen ? "bg-panel text-fg shadow-sm" : "text-muted hover:text-fg",
-            )}
-          >
-            {t("toolbar.editor", "에디터")}
-          </button>
-          <button
-            type="button"
-            onClick={() => onOpenWorldGraph?.()}
-            disabled={!onOpenWorldGraph}
-            className={cn(
-              "flex h-full items-center rounded px-2.5 transition-colors",
-              isCanvasOpen ? "bg-panel text-fg shadow-sm" : "text-muted hover:text-fg",
-              !onOpenWorldGraph && "opacity-40",
-            )}
-          >
-            {t("toolbar.canvas", "캔버스")}
-          </button>
-        </div>
+        {renderEditorCanvasToggle()}
 
         <Divider />
 

@@ -18,6 +18,7 @@ const logger = createLogger("DbMaintenanceService");
 const MAX_SEARCH_ATTEMPTS = 5;
 const SEARCH_RETRY_BASE_BACKOFF_MS = 2_000;
 const STALE_RUNNING_THRESHOLD_MS = 30_000;
+const LONG_PENDING_THRESHOLD_MS = 60_000;
 
 class DbMaintenanceService {
   async recoverStaleRunningJobs(): Promise<void> {
@@ -311,6 +312,38 @@ class DbMaintenanceService {
       .orderBy(asc(memoryBuildJob.projectId))
       .limit(limit);
     return rows.map((row) => row.projectId);
+  }
+
+  async getLongPendingStats(): Promise<{
+    searchLongPendingCount: number;
+    memoryLongPendingCount: number;
+  }> {
+    const cutoffIso = new Date(Date.now() - LONG_PENDING_THRESHOLD_MS).toISOString();
+    const client = db.getClient();
+    const [searchRows, memoryRows] = await Promise.all([
+      client
+        .select({ count: sql<number>`count(*)` })
+        .from(searchDirtyQueue)
+        .where(
+          and(
+            eq(searchDirtyQueue.status, "pending"),
+            sql`${searchDirtyQueue.updatedAt} <= ${cutoffIso}`,
+          ),
+        ),
+      client
+        .select({ count: sql<number>`count(*)` })
+        .from(memoryBuildJob)
+        .where(
+          and(
+            eq(memoryBuildJob.status, "pending"),
+            sql`${memoryBuildJob.updatedAt} <= ${cutoffIso}`,
+          ),
+        ),
+    ]);
+    return {
+      searchLongPendingCount: Number(searchRows[0]?.count ?? 0),
+      memoryLongPendingCount: Number(memoryRows[0]?.count ?? 0),
+    };
   }
 
   async runIntegrityCheck(): Promise<{ ok: boolean; rows: string[] }> {
