@@ -234,6 +234,8 @@ export const buildUiStorePersistOptions = (): PersistOptions<
       sidebarWidths: normalizedSidebarWidths,
       layoutSurfaceRatios: normalizedLayoutSurfaceRatios,
       regions: migratedRegions,
+      docsRightTab: migratedRegions.rightPanel.activeTab,
+      isBinderBarOpen: migratedRegions.rightRail.open,
     };
   },
   onRehydrateStorage: () => {

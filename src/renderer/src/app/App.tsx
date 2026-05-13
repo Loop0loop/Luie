@@ -232,6 +232,15 @@ export default function App() {
     if (!import.meta.env.DEV) return;
 
     const uiState = useUIStore.getState();
+    if (
+      !uiState ||
+      !uiState.regions ||
+      !uiState.regions.leftSidebar ||
+      !uiState.regions.rightPanel ||
+      !uiState.regions.rightRail
+    ) {
+      return;
+    }
     const integrityUiState: UiModeIntegrityUiState = {
       view: uiState.view,
       contextTab: uiState.contextTab,

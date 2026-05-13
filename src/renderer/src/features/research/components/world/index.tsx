@@ -40,6 +40,7 @@ export default function WorldSection({
   onBackToEditor,
   onOpenSettings,
 }: WorldSectionProps) {
+  void projectTitle;
   const { t } = useTranslation();
   const worldTab = useUIStore((state) => state.worldTab);
   const setWorldTab = useUIStore((state) => state.setWorldTab);

@@ -28,29 +28,33 @@ class DbMaintenanceService {
       .select()
       .from(searchDirtyQueue)
       .where(eq(searchDirtyQueue.status, "running"));
-    for (const row of runningSearch) {
-      const updatedAtMs = Date.parse(row.updatedAt);
-      if (!Number.isFinite(updatedAtMs) || now - updatedAtMs < STALE_RUNNING_THRESHOLD_MS) {
-        continue;
-      }
+    const staleSearchIds = runningSearch
+      .filter((row) => {
+        const updatedAtMs = Date.parse(row.updatedAt);
+        return Number.isFinite(updatedAtMs) && now - updatedAtMs >= STALE_RUNNING_THRESHOLD_MS;
+      })
+      .map((row) => row.id);
+    if (staleSearchIds.length > 0) {
       await client
         .update(searchDirtyQueue)
         .set({ status: "pending", updatedAt: new Date().toISOString() })
-        .where(eq(searchDirtyQueue.id, row.id));
+        .where(inArray(searchDirtyQueue.id, staleSearchIds));
     }
     const runningMemory = await client
       .select()
       .from(memoryBuildJob)
       .where(eq(memoryBuildJob.status, "running"));
-    for (const row of runningMemory) {
-      const updatedAtMs = Date.parse(row.updatedAt);
-      if (!Number.isFinite(updatedAtMs) || now - updatedAtMs < STALE_RUNNING_THRESHOLD_MS) {
-        continue;
-      }
+    const staleMemoryIds = runningMemory
+      .filter((row) => {
+        const updatedAtMs = Date.parse(row.updatedAt);
+        return Number.isFinite(updatedAtMs) && now - updatedAtMs >= STALE_RUNNING_THRESHOLD_MS;
+      })
+      .map((row) => row.id);
+    if (staleMemoryIds.length > 0) {
       await client
         .update(memoryBuildJob)
         .set({ status: "pending", updatedAt: new Date().toISOString() })
-        .where(eq(memoryBuildJob.id, row.id));
+        .where(inArray(memoryBuildJob.id, staleMemoryIds));
     }
   }
 
@@ -133,7 +137,6 @@ class DbMaintenanceService {
   }): Promise<{ queued: number; processed: number }> {
     const client = db.getClient();
     const now = new Date().toISOString();
-    let queued = 0;
     if (input.sourceType && input.sourceId) {
       await client.insert(memoryBuildJob).values({
         id: crypto.randomUUID(),
@@ -148,7 +151,7 @@ class DbMaintenanceService {
         createdAt: now,
         updatedAt: now,
       });
-      queued = 1;
+      return { queued: 1, processed: 0 };
     } else {
       const chapters = await client
         .select({ id: chapter.id })
@@ -172,9 +175,8 @@ class DbMaintenanceService {
           })),
         );
       }
-      queued = chapters.length;
+      return { queued: chapters.length, processed: 0 };
     }
-    return { queued, processed: 0 };
   }
 
   private canRetrySearchRow(row: {
@@ -208,54 +210,60 @@ class DbMaintenanceService {
     }
 
     const projects = Array.from(new Set(rows.map((row) => row.projectId)));
-    let processed = 0;
-    let failed = 0;
-    for (const projectId of projects) {
-      const projectRows = rows.filter((row) => row.projectId === projectId);
-      const now = new Date().toISOString();
-      await client
-        .update(searchDirtyQueue)
-        .set({ status: "running", updatedAt: now })
-        .where(
-          and(
-            eq(searchDirtyQueue.projectId, projectId),
-            inArray(
-              searchDirtyQueue.id,
-              projectRows.map((row) => row.id),
+    const results = await Promise.all(
+      projects.map(async (projectId) => {
+        const projectRows = rows.filter((row) => row.projectId === projectId);
+        const now = new Date().toISOString();
+        await client
+          .update(searchDirtyQueue)
+          .set({ status: "running", updatedAt: now })
+          .where(
+            and(
+              eq(searchDirtyQueue.projectId, projectId),
+              inArray(
+                searchDirtyQueue.id,
+                projectRows.map((row) => row.id),
+              ),
             ),
-          ),
-        );
-      try {
-        await chapterSearchCacheService.rebuildProjectIndex(projectId);
-        for (const row of projectRows) {
-          await client
-            .update(searchDirtyQueue)
-            .set({
-              status: "completed",
-              attempts: row.attempts + 1,
-              error: null,
-              updatedAt: now,
-            })
-            .where(eq(searchDirtyQueue.id, row.id));
+          );
+        try {
+          await chapterSearchCacheService.rebuildProjectIndex(projectId);
+          await Promise.all(
+            projectRows.map(async (row) =>
+              client
+                .update(searchDirtyQueue)
+                .set({
+                  status: "completed",
+                  attempts: row.attempts + 1,
+                  error: null,
+                  updatedAt: now,
+                })
+                .where(eq(searchDirtyQueue.id, row.id)),
+            ),
+          );
+          return { processed: projectRows.length, failed: 0 };
+        } catch (error) {
+          await Promise.all(
+            projectRows.map(async (row) => {
+              const attempts = row.attempts + 1;
+              const nextStatus = attempts >= MAX_SEARCH_ATTEMPTS ? "failed" : "pending";
+              await client
+                .update(searchDirtyQueue)
+                .set({
+                  status: nextStatus,
+                  attempts,
+                  error: error instanceof Error ? error.message : "UNKNOWN_ERROR",
+                  updatedAt: now,
+                })
+                .where(eq(searchDirtyQueue.id, row.id));
+            }),
+          );
+          return { processed: 0, failed: projectRows.length };
         }
-        processed += projectRows.length;
-      } catch (error) {
-        for (const row of projectRows) {
-          const attempts = row.attempts + 1;
-          const nextStatus = attempts >= MAX_SEARCH_ATTEMPTS ? "failed" : "pending";
-          await client
-            .update(searchDirtyQueue)
-            .set({
-              status: nextStatus,
-              attempts,
-              error: error instanceof Error ? error.message : "UNKNOWN_ERROR",
-              updatedAt: now,
-            })
-            .where(eq(searchDirtyQueue.id, row.id));
-        }
-        failed += projectRows.length;
-      }
-    }
+      }),
+    );
+    const processed = results.reduce((sum, item) => sum + item.processed, 0);
+    const failed = results.reduce((sum, item) => sum + item.failed, 0);
     logger.info("Processed search dirty queue", {
       queued: rows.length,
       processed,

@@ -41,6 +41,11 @@ const DEFAULT_SIDEBAR_WIDTHS: Record<string, number> = buildDefaultSidebarWidths
 const DEFAULT_LAYOUT_SURFACE_RATIOS: Record<LayoutSurfaceId, number> =
   buildDefaultLayoutSurfaceRatios();
 
+const buildLegacyRegionFields = (regions: UIStore["regions"]) => ({
+  docsRightTab: regions.rightPanel.activeTab,
+  isBinderBarOpen: regions.rightRail.open,
+});
+
 export const buildStablePanelId = (content: RightPanelContent): string => {
   if (content.type === "research" && content.tab) {
     if (content.id) {
@@ -71,6 +76,7 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
   sidebarWidths: { ...DEFAULT_SIDEBAR_WIDTHS },
   layoutSurfaceRatios: { ...DEFAULT_LAYOUT_SURFACE_RATIOS },
   regions: cloneRegions(DEFAULT_REGIONS),
+  ...buildLegacyRegionFields(DEFAULT_REGIONS),
   mainView: { type: "editor" } as MainView,
 
   setView: (view) =>
@@ -235,6 +241,7 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
       return {
         sidebarWidths: nextSidebarWidths,
         regions: nextRegions,
+        ...buildLegacyRegionFields(nextRegions),
       };
     }),
   setSidebarWidths: (widths) =>
@@ -250,6 +257,7 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
       return {
         sidebarWidths: normalizedSidebarWidths,
         regions: nextRegions,
+        ...buildLegacyRegionFields(nextRegions),
       };
     }),
   setLayoutSurfaceRatio: (surface, ratio) =>
@@ -292,7 +300,7 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
       if (region === "rightPanel" && !open) {
         nextRegions.rightPanel.activeTab = null;
       }
-      return { regions: nextRegions };
+      return { regions: nextRegions, ...buildLegacyRegionFields(nextRegions) };
     });
     if (
       region === "rightPanel" &&
@@ -314,6 +322,7 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
         nextRegions.leftSidebar.widthPx = normalized;
         return {
           regions: nextRegions,
+          ...buildLegacyRegionFields(nextRegions),
           sidebarWidths: {
             ...state.sidebarWidths,
             mainSidebar: normalized,
@@ -335,6 +344,7 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
       nextRegions.rightPanel.widthByTab[activeTab] = normalized;
       return {
         regions: nextRegions,
+        ...buildLegacyRegionFields(nextRegions),
         sidebarWidths: {
           ...state.sidebarWidths,
           [targetFeature]: normalized,
@@ -352,7 +362,7 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
       const nextRegions = cloneRegions(state.regions);
       nextRegions.rightPanel.open = true;
       nextRegions.rightPanel.activeTab = nextTab;
-      return { regions: nextRegions };
+      return { regions: nextRegions, ...buildLegacyRegionFields(nextRegions) };
     });
     setTransientFocusedClosableTarget({ kind: "docs-tab" });
   },
@@ -362,7 +372,7 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
       const nextRegions = cloneRegions(state.regions);
       nextRegions.rightPanel.open = false;
       nextRegions.rightPanel.activeTab = null;
-      return { regions: nextRegions };
+      return { regions: nextRegions, ...buildLegacyRegionFields(nextRegions) };
     });
     if (getFocusedClosableTarget()?.kind === "docs-tab") {
       clearFocusedClosableTarget();
@@ -373,7 +383,7 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
       const nextOpen = !state.regions.leftSidebar.open;
       const nextRegions = cloneRegions(state.regions);
       nextRegions.leftSidebar.open = nextOpen;
-      return { regions: nextRegions };
+      return { regions: nextRegions, ...buildLegacyRegionFields(nextRegions) };
     }),
   setRightPanelWidth: (tab, width) =>
     set((state) => {
@@ -388,6 +398,7 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
       nextRegions.rightPanel.widthByTab[normalizedTab] = normalizedWidth;
       return {
         regions: nextRegions,
+        ...buildLegacyRegionFields(nextRegions),
         sidebarWidths: {
           ...state.sidebarWidths,
           [targetFeature]: normalizedWidth,
@@ -440,7 +451,7 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
         const nextRegions = cloneRegions(state.regions);
         nextRegions.rightPanel.open = false;
         nextRegions.rightPanel.activeTab = null;
-        return { regions: nextRegions };
+        return { regions: nextRegions, ...buildLegacyRegionFields(nextRegions) };
       }
 
       if (state.regions.rightPanel.open) {
@@ -448,7 +459,7 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
         const nextRegions = cloneRegions(state.regions);
         nextRegions.rightPanel.open = false;
         nextRegions.rightPanel.activeTab = null;
-        return { regions: nextRegions };
+        return { regions: nextRegions, ...buildLegacyRegionFields(nextRegions) };
       }
 
       if (state.panels.length > 0) {

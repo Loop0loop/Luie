@@ -135,7 +135,7 @@ export default defineConfig({
       emptyOutDir: true,
       minify: isDebugProfileBuild ? false : "esbuild",
       cssCodeSplit: true,
-      chunkSizeWarningLimit: 400,
+      chunkSizeWarningLimit: 500,
       rollupOptions: {
         input: {
           index: resolve("src/renderer/index.html"),

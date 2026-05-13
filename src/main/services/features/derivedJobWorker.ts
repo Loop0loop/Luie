@@ -36,9 +36,16 @@ class DerivedJobWorker {
     }
 
     const startedAt = Date.now();
-    while (this.inTick && Date.now() - startedAt < 5_000) {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
+    await new Promise<void>((resolve) => {
+      const poll = () => {
+        if (!this.inTick || Date.now() - startedAt >= 5_000) {
+          resolve();
+          return;
+        }
+        setTimeout(poll, 50);
+      };
+      poll();
+    });
 
     logger.info("Derived job worker stopped", {
       drained: !this.inTick,
@@ -62,14 +69,16 @@ class DerivedJobWorker {
 
       let memoryQueued = 0;
       let memoryProcessed = 0;
-      for (const projectId of projectsToProcess) {
-        const result = await memoryProjectionService.processPendingChunkJobs({
-          projectId,
-          limit: MEMORY_BATCH_SIZE,
-        });
-        memoryQueued += result.queued;
-        memoryProcessed += result.processed;
-      }
+      const memoryResults = await Promise.all(
+        projectsToProcess.map((projectId) =>
+          memoryProjectionService.processPendingChunkJobs({
+            projectId,
+            limit: MEMORY_BATCH_SIZE,
+          }),
+        ),
+      );
+      memoryQueued = memoryResults.reduce((sum, item) => sum + item.queued, 0);
+      memoryProcessed = memoryResults.reduce((sum, item) => sum + item.processed, 0);
 
       if (search.queued > 0 || memoryQueued > 0) {
         logger.info("Derived job worker tick processed", {

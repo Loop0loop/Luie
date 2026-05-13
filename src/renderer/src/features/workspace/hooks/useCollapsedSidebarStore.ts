@@ -25,7 +25,17 @@ export const useCollapsedSidebarStore = create<CollapsedSidebarStore>()(
     }),
     {
       name: "luie:research-sidebar-collapsed",
+      version: 1,
       storage: createJSONStorage(() => localStorage),
+      migrate: (persistedState) =>
+        (persistedState as Partial<CollapsedSidebarStore>) ?? {
+          collapsedSidebars: {},
+          hasHydrated: false,
+        },
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        ...(persistedState as Partial<CollapsedSidebarStore>),
+      }),
       onRehydrateStorage: () => (state) => {
         state?._setHydrated();
       },

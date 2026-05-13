@@ -53,13 +53,7 @@ export function useSystemFonts(): UseSystemFontsResult {
 
   useEffect(() => {
     if (!isSupported) return;
-    if (fontCache) {
-      setFonts(fontCache);
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
+    if (fontCache) return;
     loadSystemFonts()
       .then((result) => {
         setFonts(result);

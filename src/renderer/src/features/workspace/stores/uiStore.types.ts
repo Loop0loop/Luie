@@ -116,6 +116,10 @@ export interface UIStore {
   scrivenerSections: ScrivenerSectionsState;
   hasHydrated: boolean;
   regions: UIRegionsState;
+  // Legacy compatibility fields. Keep synchronized with `regions` for tests and
+  // older selectors that still read flat state.
+  docsRightTab: DocsRightTab;
+  isBinderBarOpen: boolean;
   sidebarWidths: Record<string, number>;
   layoutSurfaceRatios: Record<LayoutSurfaceId, number>;
   mainView: MainView;

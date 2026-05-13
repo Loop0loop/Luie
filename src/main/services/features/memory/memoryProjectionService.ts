@@ -111,7 +111,8 @@ class MemoryProjectionService {
     const chapterMap = new Map(chapters.map((row) => [row.id, row]));
 
     let processed = 0;
-    for (const job of jobs) {
+    await Promise.all(
+      jobs.map(async (job) => {
       const now = new Date().toISOString();
       await client
         .update(memoryBuildJob)
@@ -133,7 +134,7 @@ class MemoryProjectionService {
             updatedAt: now,
           })
           .where(eq(memoryBuildJob.id, job.id));
-        continue;
+        return;
       }
 
       try {
@@ -150,24 +151,25 @@ class MemoryProjectionService {
               ),
             );
 
-          for (let index = 0; index < chunks.length; index++) {
-            const chunkItem = chunks[index];
-            await tx.insert(memoryChunk).values({
-              id: crypto.randomUUID(),
-              projectId: source.projectId,
-              sourceType: "chapter",
-              sourceId: job.targetId,
-              chapterId: job.targetId,
-              chunkIndex: index,
-              content: chunkItem.content,
-              contentHash: sha256(chunkItem.content),
-              startOffset: chunkItem.startOffset,
-              endOffset: chunkItem.endOffset,
-              tokenCount: chunkItem.content.length,
-              createdAt: now,
-              updatedAt: now,
-            });
-          }
+          await Promise.all(
+            chunks.map(async (chunkItem, index) =>
+              tx.insert(memoryChunk).values({
+                id: crypto.randomUUID(),
+                projectId: source.projectId,
+                sourceType: "chapter",
+                sourceId: job.targetId,
+                chapterId: job.targetId,
+                chunkIndex: index,
+                content: chunkItem.content,
+                contentHash: sha256(chunkItem.content),
+                startOffset: chunkItem.startOffset,
+                endOffset: chunkItem.endOffset,
+                tokenCount: chunkItem.content.length,
+                createdAt: now,
+                updatedAt: now,
+              }),
+            ),
+          );
 
           await tx
             .update(memoryBuildJob)
@@ -193,7 +195,8 @@ class MemoryProjectionService {
           })
           .where(eq(memoryBuildJob.id, job.id));
       }
-    }
+      }),
+    );
 
     logger.info("Processed memory chunk jobs", {
       projectId: input.projectId,

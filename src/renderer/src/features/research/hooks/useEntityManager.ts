@@ -51,8 +51,11 @@ export function useEntityManager<
       currentItemFromStore?.id &&
       currentItemFromStore.id !== selectedIdRef.current
     ) {
-      setSelectedId(currentItemFromStore.id);
+      const nextId = currentItemFromStore.id;
+      const timer = window.setTimeout(() => setSelectedId(nextId), 0);
+      return () => window.clearTimeout(timer);
     }
+    return undefined;
   }, [currentItemFromStore]);
 
   // 프로젝트 변경 시 데이터 로드
