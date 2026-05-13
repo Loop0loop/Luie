@@ -44,6 +44,12 @@ const loadChapterSearchCacheService = async () =>
   (await import("../features/chapterSearchCacheService.js"))
     .chapterSearchCacheService;
 
+const fireAndForget = (promise: Promise<unknown>, context: string) => {
+  void promise.catch((error) => {
+    logger.warn(`Deferred task failed: ${context}`, { error });
+  });
+};
+
 export class ChapterService {
   private hashContent(content: string): string {
     return crypto.createHash("sha256").update(content).digest("hex");
@@ -258,16 +264,21 @@ export class ChapterService {
       });
 
       logger.info("Chapter created successfully", { chapterId: created.id });
-      const chapterSearchCacheService = await loadChapterSearchCacheService();
-      await chapterSearchCacheService.upsertChapter({
-        chapterId: String(created.id),
-        projectId: String(created.projectId),
-        title: created.title,
-        synopsis: created.synopsis ?? null,
-        content: created.content,
-        wordCount: created.wordCount,
-        order: created.order,
-      });
+      fireAndForget(
+        (async () => {
+          const chapterSearchCacheService = await loadChapterSearchCacheService();
+          await chapterSearchCacheService.upsertChapter({
+            chapterId: String(created.id),
+            projectId: String(created.projectId),
+            title: created.title,
+            synopsis: created.synopsis ?? null,
+            content: created.content,
+            wordCount: created.wordCount,
+            order: created.order,
+          });
+        })(),
+        "chapter:create:search-cache-upsert",
+      );
       await projectService.persistPackageAfterMutation(input.projectId, "chapter:create");
       return created;
     } catch (error) {

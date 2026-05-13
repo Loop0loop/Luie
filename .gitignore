@@ -36,6 +36,9 @@ plugin/installed/*
 dev-cache.db-shm
 dev-cache.db-wal
 /drizzle/migrations
+drizzle/cache
+drizzle/migrations
+drizzle/main/meta
 
 
 # Dizzle
@@ -86,3 +89,8 @@ text.txt
 native/haptics/build/Release/
 # Added by code-review-graph
 .code-review-graph/
+
+
+# test
+tests/.tmp
+test-results

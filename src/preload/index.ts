@@ -45,6 +45,7 @@ function sanitizeForIpc(value: unknown, seen = new WeakSet<object>()): unknown {
 }
 
 const LONG_TIMEOUT_CHANNELS = new Set<string>([
+  IPC_CHANNELS.CHAPTER_CREATE,
   IPC_CHANNELS.SNAPSHOT_IMPORT_FILE,
   IPC_CHANNELS.EXPORT_CREATE,
   IPC_CHANNELS.PROJECT_OPEN_LUIE,

@@ -49,6 +49,7 @@ import { collectDuplicateProjectPathGroups } from "./project/projectPathReconcil
 const logger = createLogger("ProjectService");
 
 const DEBOUNCED_PACKAGE_EXPORT_REASONS = new Set<string>([
+  "chapter:create",
   "chapter:update",
   "world-document:graph",
   "snapshot:create",
