@@ -21,6 +21,7 @@ type DbMaintenanceServiceLike = {
     sourceType?: string;
     sourceId?: string;
   }) => Promise<unknown>;
+  getMemoryJobStatus: (projectId: string) => Promise<unknown>;
   runIntegrityCheck: () => Promise<unknown>;
   getMigrationHealth: () => Promise<unknown>;
 };
@@ -61,6 +62,14 @@ export function registerSearchIPCHandlers(
       argsSchema: z.tuple([rebuildMemoryChunksSchema]),
       handler: (input: { projectId: string; sourceType?: string; sourceId?: string }) =>
         dbMaintenanceService.rebuildMemoryChunks(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_JOB_STATUS,
+      logTag: "MEMORY_JOB_STATUS",
+      failMessage: "Failed to get memory job status",
+      argsSchema: z.tuple([projectIdSchema]),
+      handler: (projectId: string) =>
+        dbMaintenanceService.getMemoryJobStatus(projectId),
     },
     {
       channel: IPC_CHANNELS.DB_RUN_INTEGRITY_CHECK,

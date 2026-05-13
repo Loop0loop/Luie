@@ -22,6 +22,8 @@ const FIRST_RENDERER_FALLBACK_MS = 8000; // 8s 지나면 강제로 Renderer 준�
 
 const loadAutoSaveManager = async () =>
   (await import("../manager/autoSaveManager.js")).autoSaveManager; // 시작 로딩 줄이기 위하여 lazy inport
+const loadDerivedJobWorker = async () =>
+  (await import("../services/features/derivedJobWorker.js")).derivedJobWorker;
 
 // CSP : isPacked? 
 const buildProdCspPolicy = () =>
@@ -158,6 +160,12 @@ export const registerAppReady = (
     logger.info("App is ready", {
       startupElapsedMs: Date.now() - startupStartedAtMs,
     });
+    try {
+      const derivedJobWorker = await loadDerivedJobWorker();
+      derivedJobWorker.start();
+    } catch (error) {
+      logger.warn("Failed to start derived job worker", error);
+    }
 
     const isDev = isDevEnv();
     const cspPolicy = resolveCspPolicy(isDev);

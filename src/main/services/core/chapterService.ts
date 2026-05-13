@@ -44,10 +44,6 @@ const loadChapterSearchCacheService = async () =>
   (await import("../features/chapterSearchCacheService.js"))
     .chapterSearchCacheService;
 
-const loadMemoryProjectionService = async () =>
-  (await import("../features/memory/memoryProjectionService.js"))
-    .memoryProjectionService;
-
 export class ChapterService {
   private hashContent(content: string): string {
     return crypto.createHash("sha256").update(content).digest("hex");
@@ -272,13 +268,6 @@ export class ChapterService {
         wordCount: created.wordCount,
         order: created.order,
       });
-      const memoryProjectionService = await loadMemoryProjectionService();
-      await memoryProjectionService.processPendingChunkJobs({
-        projectId: String(created.projectId),
-        sourceType: "chapter",
-        sourceId: String(created.id),
-        limit: 1,
-      });
       await projectService.persistPackageAfterMutation(input.projectId, "chapter:create");
       return created;
     } catch (error) {
@@ -478,13 +467,6 @@ export class ChapterService {
         content: await this.readChapterContent(String(updatedChapter.id)),
         wordCount: updatedChapter.wordCount,
         order: updatedChapter.order,
-      });
-      const memoryProjectionService = await loadMemoryProjectionService();
-      await memoryProjectionService.processPendingChunkJobs({
-        projectId: String(updatedChapter.projectId),
-        sourceType: "chapter",
-        sourceId: String(updatedChapter.id),
-        limit: 1,
       });
       await projectService.persistPackageAfterMutation(String(updatedChapter.projectId), "chapter:update");
       return {

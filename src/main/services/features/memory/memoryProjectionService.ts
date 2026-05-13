@@ -5,6 +5,8 @@ import { chapter, chapterBody, memoryBuildJob, memoryChunk } from "../../../data
 import { createLogger } from "../../../../shared/logger/index.js";
 
 const logger = createLogger("MemoryProjectionService");
+const MAX_JOB_ATTEMPTS = 5;
+const BASE_RETRY_BACKOFF_MS = 2_000;
 
 function sha256(input: string): string {
   return crypto.createHash("sha256").update(input).digest("hex");
@@ -27,6 +29,20 @@ function chunkText(input: string, chunkSize = 1000): Array<{
 }
 
 class MemoryProjectionService {
+  private canRetry(job: {
+    status: string;
+    attempts: number;
+    updatedAt: string;
+  }): boolean {
+    if (job.status === "pending") return true;
+    if (job.status !== "failed") return false;
+    if (job.attempts >= MAX_JOB_ATTEMPTS) return false;
+    const updatedAtMs = Date.parse(job.updatedAt);
+    if (!Number.isFinite(updatedAtMs)) return true;
+    const backoffMs = BASE_RETRY_BACKOFF_MS * Math.max(1, job.attempts);
+    return Date.now() - updatedAtMs >= backoffMs;
+  }
+
   async enqueueChapterChunkRebuild(input: {
     projectId: string;
     chapterId: string;
@@ -58,13 +74,12 @@ class MemoryProjectionService {
   }): Promise<{ queued: number; processed: number }> {
     const client = db.getClient();
     const limit = input.limit ?? 20;
-    const jobs = await client
+    const candidates = await client
       .select()
       .from(memoryBuildJob)
       .where(
         and(
           eq(memoryBuildJob.projectId, input.projectId),
-          eq(memoryBuildJob.status, "pending"),
           eq(memoryBuildJob.jobType, "rebuild_chunks"),
           eq(memoryBuildJob.targetType, input.sourceType ?? "chapter"),
           input.sourceId
@@ -73,7 +88,10 @@ class MemoryProjectionService {
         ),
       )
       .orderBy(asc(memoryBuildJob.priority), asc(memoryBuildJob.createdAt))
-      .limit(limit);
+      .limit(Math.max(limit * 3, 30));
+    const jobs = candidates
+      .filter((job) => this.canRetry(job))
+      .slice(0, limit);
 
     if (jobs.length === 0) {
       return { queued: 0, processed: 0 };
@@ -95,13 +113,22 @@ class MemoryProjectionService {
     let processed = 0;
     for (const job of jobs) {
       const now = new Date().toISOString();
+      await client
+        .update(memoryBuildJob)
+        .set({
+          status: "running",
+          updatedAt: now,
+        })
+        .where(eq(memoryBuildJob.id, job.id));
       const source = chapterMap.get(job.targetId);
       if (!source) {
+        const attempts = job.attempts + 1;
+        const nextStatus = attempts >= MAX_JOB_ATTEMPTS ? "failed" : "pending";
         await client
           .update(memoryBuildJob)
           .set({
-            status: "failed",
-            attempts: job.attempts + 1,
+            status: nextStatus,
+            attempts,
             error: "SOURCE_NOT_FOUND",
             updatedAt: now,
           })
@@ -109,49 +136,63 @@ class MemoryProjectionService {
         continue;
       }
 
-      const sourceContent = String(source.bodyContent ?? source.content ?? "");
-      const chunks = chunkText(sourceContent, 1000);
+      try {
+        const sourceContent = String(source.bodyContent ?? source.content ?? "");
+        const chunks = chunkText(sourceContent, 1000);
 
-      await client.transaction(async (tx) => {
-        await tx
-          .delete(memoryChunk)
-          .where(
-            and(
-              eq(memoryChunk.sourceType, "chapter"),
-              eq(memoryChunk.sourceId, job.targetId),
-            ),
-          );
+        await client.transaction(async (tx) => {
+          await tx
+            .delete(memoryChunk)
+            .where(
+              and(
+                eq(memoryChunk.sourceType, "chapter"),
+                eq(memoryChunk.sourceId, job.targetId),
+              ),
+            );
 
-        for (let index = 0; index < chunks.length; index++) {
-          const chunkItem = chunks[index];
-          await tx.insert(memoryChunk).values({
-            id: crypto.randomUUID(),
-            projectId: source.projectId,
-            sourceType: "chapter",
-            sourceId: job.targetId,
-            chapterId: job.targetId,
-            chunkIndex: index,
-            content: chunkItem.content,
-            contentHash: sha256(chunkItem.content),
-            startOffset: chunkItem.startOffset,
-            endOffset: chunkItem.endOffset,
-            tokenCount: chunkItem.content.length,
-            createdAt: now,
-            updatedAt: now,
-          });
-        }
+          for (let index = 0; index < chunks.length; index++) {
+            const chunkItem = chunks[index];
+            await tx.insert(memoryChunk).values({
+              id: crypto.randomUUID(),
+              projectId: source.projectId,
+              sourceType: "chapter",
+              sourceId: job.targetId,
+              chapterId: job.targetId,
+              chunkIndex: index,
+              content: chunkItem.content,
+              contentHash: sha256(chunkItem.content),
+              startOffset: chunkItem.startOffset,
+              endOffset: chunkItem.endOffset,
+              tokenCount: chunkItem.content.length,
+              createdAt: now,
+              updatedAt: now,
+            });
+          }
 
-        await tx
+          await tx
+            .update(memoryBuildJob)
+            .set({
+              status: "completed",
+              attempts: job.attempts + 1,
+              error: null,
+              updatedAt: now,
+            })
+            .where(eq(memoryBuildJob.id, job.id));
+        });
+        processed += 1;
+      } catch (error) {
+        const attempts = job.attempts + 1;
+        const nextStatus = attempts >= MAX_JOB_ATTEMPTS ? "failed" : "pending";
+        await client
           .update(memoryBuildJob)
           .set({
-            status: "completed",
-            attempts: job.attempts + 1,
-            error: null,
+            status: nextStatus,
+            attempts,
+            error: error instanceof Error ? error.message : "UNKNOWN_ERROR",
             updatedAt: now,
           })
           .where(eq(memoryBuildJob.id, job.id));
-      });
-      processed += 1;
+      }
     }
 
     logger.info("Processed memory chunk jobs", {

@@ -77,6 +77,7 @@ export const IPC_CHANNELS = {
   SEARCH_INDEX_STATUS: "search:index-status",
   SEARCH_REBUILD_INDEX: "search:rebuild-index",
   MEMORY_REBUILD_CHUNKS: "memory:rebuild-chunks",
+  MEMORY_JOB_STATUS: "memory:job-status",
   DB_RUN_INTEGRITY_CHECK: "db:run-integrity-check",
   DB_GET_MIGRATION_HEALTH: "db:get-migration-health",
 

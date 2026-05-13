@@ -31,6 +31,7 @@ import type {
   SyncAuthResult,
   StartupReadiness,
   MigrationHealth,
+  MemoryJobStatus,
   WorldEntity,
   EntityRelation,
   WorldGraphData,
@@ -320,6 +321,7 @@ export type RendererApi = {
       sourceType?: string;
       sourceId?: string;
     }) => Promise<IPCResponse<{ queued: number; processed: number }>>;
+    getJobStatus: (projectId: string) => Promise<IPCResponse<MemoryJobStatus>>;
   };
   maintenance: {
     runIntegrityCheck: () => Promise<IPCResponse<{ ok: boolean; rows: string[] }>>;

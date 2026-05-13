@@ -21,6 +21,8 @@ const loadAutoSaveManager = async () =>
 
 const loadCacheDb = async () =>
   (await import("../database/cacheDb.js")).cacheDb;
+const loadDerivedJobWorker = async () =>
+  (await import("../services/features/derivedJobWorker.js")).derivedJobWorker;
 
 const sendQuitPhase = (
   targetWindow: BrowserWindow | null,
@@ -245,6 +247,12 @@ export const registerShutdownHandlers = (logger: Logger): void => {
       }
 
       sendQuitPhase(mainWindow, "finalize", "마무리 정리 중입니다...");
+      try {
+        const derivedJobWorker = await loadDerivedJobWorker();
+        await derivedJobWorker.stop();
+      } catch (error) {
+        logger.warn("Failed to stop derived job worker during quit", error);
+      }
       try {
         await snapshotService.pruneSnapshotsAllProjects();
       } catch (error) {

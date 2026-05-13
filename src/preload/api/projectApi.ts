@@ -173,6 +173,8 @@ export function createProjectApi({
     memoryAdmin: {
       rebuildChunks: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_REBUILD_CHUNKS, input),
+      getJobStatus: (projectId) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_JOB_STATUS, projectId),
     },
     maintenance: {
       runIntegrityCheck: () =>

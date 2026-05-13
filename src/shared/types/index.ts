@@ -73,6 +73,18 @@ export interface SearchIndexStatus {
   projectionCount: number;
   ftsCount: number | null;
   pendingQueueCount: number;
+  pendingCount?: number;
+  runningCount?: number;
+  failedCount?: number;
+  lastProcessedAt?: string | null;
+}
+
+export interface MemoryJobStatus {
+  projectId: string;
+  pendingCount: number;
+  runningCount: number;
+  failedCount: number;
+  lastProcessedAt: string | null;
 }
 
 export interface MigrationHealth {

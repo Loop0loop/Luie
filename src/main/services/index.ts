@@ -16,6 +16,7 @@ export * from "./features/analysis/manuscriptAnalysisService.js";
 export * from "./features/dbRecoveryService.js";
 export * from "./features/dbMaintenanceService.js";
 export * from "./features/memory/memoryProjectionService.js";
+export * from "./features/derivedJobWorker.js";
 export * from "./features/sync/syncAuthService.js";
 export * from "./features/sync/syncMapper.js";
 export * from "./features/sync/syncRepository.js";
