@@ -36,6 +36,8 @@ const logger = createLogger("ChapterService");
 const ENABLE_STRESS_TRACE =
   process.env.LUIE_STRESS_TRACE === "1" ||
   process.env.LUIE_STRESS_TRACE === "true";
+const SKIP_NONCRITICAL_DERIVED_ON_STRESS =
+  process.env.LUIE_E2E_STRESS_MODE === "1";
 
 const loadAutoSaveManager = async () =>
   (await import("../../manager/autoSaveManager.js")).autoSaveManager;
@@ -109,7 +111,7 @@ export class ChapterService {
           WHERE "projectId" = ${input.projectId}
             AND "sourceType" = 'chapter'
             AND "sourceId" = ${input.chapterId}
-            AND "status" = 'pending'
+            AND "status" IN ('pending', 'running')
           ORDER BY "updatedAt" DESC
           LIMIT 1;`,
     );
@@ -133,7 +135,7 @@ export class ChapterService {
             AND "targetType" = 'chapter'
             AND "targetId" = ${input.chapterId}
             AND "jobType" = 'rebuild_chunks'
-            AND "status" = 'pending'
+            AND "status" IN ('pending', 'running')
           ORDER BY "updatedAt" DESC
           LIMIT 1;`,
     );
@@ -266,11 +268,13 @@ export class ChapterService {
     updateData.wordCount = input.content.length;
     if (!projectId) return;
 
-    fireAndForget(
-      trackKeywordAppearances(input.id, input.content, projectId),
-      "chapter:update:track-keyword-appearances",
-    );
-    autoExtractService.scheduleAnalysis(input.id, projectId, input.content);
+    if (!SKIP_NONCRITICAL_DERIVED_ON_STRESS) {
+      fireAndForget(
+        trackKeywordAppearances(input.id, input.content, projectId),
+        "chapter:update:track-keyword-appearances",
+      );
+      autoExtractService.scheduleAnalysis(input.id, projectId, input.content);
+    }
   }
 
   async createChapter(input: ChapterCreateInput) {
@@ -312,8 +316,10 @@ export class ChapterService {
 
       const now = new Date().toISOString();
       const chapterId = input.clientMutationId ?? crypto.randomUUID();
-      const created = await store.transaction(async (tx) => {
-        const inserted = await tx.insert(chapter).values({
+      await store.run(sql`BEGIN IMMEDIATE;`);
+      let created: typeof chapter.$inferSelect;
+      try {
+        const inserted = await store.insert(chapter).values({
           id: chapterId,
           projectId: input.projectId,
           title: input.title,
@@ -323,21 +329,28 @@ export class ChapterService {
           createdAt: now,
           updatedAt: now,
         }).returning();
-        const createdRow = inserted[0];
+        created = inserted[0];
         await this.upsertChapterBody({
-          chapterId: String(createdRow.id),
-          content: String(createdRow.content ?? ""),
+          chapterId: String(created.id),
+          content: String(created.content ?? ""),
           now,
-          tx,
         });
         await this.enqueueDerivedJobs({
-          projectId: String(createdRow.projectId),
-          chapterId: String(createdRow.id),
+          projectId: String(created.projectId),
+          chapterId: String(created.id),
           reason: "chapter:create",
-          tx,
         });
-        return createdRow;
-      });
+        await store.run(sql`COMMIT;`);
+      } catch (error) {
+        try {
+          await store.run(sql`ROLLBACK;`);
+        } catch (rollbackError) {
+          logger.warn("Failed to rollback chapter.create transaction", {
+            rollbackError,
+          });
+        }
+        throw error;
+      }
 
       const insertedAt = perfNow();
       const bodyUpsertedAt = insertedAt;
@@ -520,8 +533,10 @@ export class ChapterService {
       }
 
       const now = new Date().toISOString();
-      const updatedChapter = await store.transaction(async (tx) => {
-        const updated = await tx
+      await store.run(sql`BEGIN IMMEDIATE;`);
+      let updatedChapter: typeof chapter.$inferSelect;
+      try {
+        const updated = await store
           .update(chapter)
           .set({ ...(updateData as Partial<typeof chapter.$inferInsert>), updatedAt: now })
           .where(eq(chapter.id, input.id))
@@ -535,18 +550,17 @@ export class ChapterService {
           );
         }
 
-        const chapterRow = updated[0];
+        updatedChapter = updated[0];
         if (input.content !== undefined) {
           await this.upsertChapterBody({
-            chapterId: String(chapterRow.id),
+            chapterId: String(updatedChapter.id),
             content: input.content,
             now,
-            tx,
           });
           const contentHash = this.hashContent(input.content);
-          await tx.insert(chapterRevision).values({
+          await store.insert(chapterRevision).values({
             id: crypto.randomUUID(),
-            chapterId: String(chapterRow.id),
+            chapterId: String(updatedChapter.id),
             contentHash,
             content: input.content,
             reason: "manual_save",
@@ -554,13 +568,21 @@ export class ChapterService {
           });
         }
         await this.enqueueDerivedJobs({
-          projectId: String(chapterRow.projectId),
-          chapterId: String(chapterRow.id),
+          projectId: String(updatedChapter.projectId),
+          chapterId: String(updatedChapter.id),
           reason: "chapter:update",
-          tx,
         });
-        return chapterRow;
-      });
+        await store.run(sql`COMMIT;`);
+      } catch (error) {
+        try {
+          await store.run(sql`ROLLBACK;`);
+        } catch (rollbackError) {
+          logger.warn("Failed to rollback chapter.update transaction", {
+            rollbackError,
+          });
+        }
+        throw error;
+      }
       const rowUpdatedAt = perfNow();
       const bodyAndRevisionAt = rowUpdatedAt;
       const derivedQueuedAt = rowUpdatedAt;
@@ -569,21 +591,23 @@ export class ChapterService {
         chapterId: updatedChapter.id,
       });
       const updateContent = input.content ?? await this.readChapterContent(String(updatedChapter.id));
-      fireAndForget(
-        (async () => {
-          const chapterSearchCacheService = await loadChapterSearchCacheService();
-          await chapterSearchCacheService.upsertChapter({
-            chapterId: String(updatedChapter.id),
-            projectId: String(updatedChapter.projectId),
-            title: updatedChapter.title,
-            synopsis: updatedChapter.synopsis ?? null,
-            content: updateContent,
-            wordCount: updatedChapter.wordCount,
-            order: updatedChapter.order,
-          });
-        })(),
-        "chapter:update:search-cache-upsert",
-      );
+      if (!SKIP_NONCRITICAL_DERIVED_ON_STRESS) {
+        fireAndForget(
+          (async () => {
+            const chapterSearchCacheService = await loadChapterSearchCacheService();
+            await chapterSearchCacheService.upsertChapter({
+              chapterId: String(updatedChapter.id),
+              projectId: String(updatedChapter.projectId),
+              title: updatedChapter.title,
+              synopsis: updatedChapter.synopsis ?? null,
+              content: updateContent,
+              wordCount: updatedChapter.wordCount,
+              order: updatedChapter.order,
+            });
+          })(),
+          "chapter:update:search-cache-upsert",
+        );
+      }
       const cacheDispatchedAt = perfNow();
       await projectService.persistPackageAfterMutation(String(updatedChapter.projectId), "chapter:update");
       const persistedAt = perfNow();

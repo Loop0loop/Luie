@@ -8,6 +8,10 @@
       ],
       "cwd": "/Users/user/Luie",
       "type": "stdio"
+    },
+    "context-mode": {
+      "command": "context-mode",
+      "type": "stdio"
     }
   }
 }

@@ -13,9 +13,13 @@ export type LaunchedApp = {
 };
 
 export async function launchApp(
-  options: { waitForRender?: boolean; waitForApi?: boolean } = {},
+  options: {
+    waitForRender?: boolean;
+    waitForApi?: boolean;
+    envOverrides?: Record<string, string>;
+  } = {},
 ): Promise<LaunchedApp> {
-  const { waitForRender = false, waitForApi = true } = options;
+  const { waitForRender = false, waitForApi = true, envOverrides = {} } = options;
   const testDbDir = path.join(
     process.cwd(),
     "tests",
@@ -33,6 +37,7 @@ export async function launchApp(
       NODE_ENV: "production",
       E2E_DISABLE_SINGLE_INSTANCE: "1",
       DATABASE_URL: databaseUrl,
+      ...envOverrides,
     },
   });
 

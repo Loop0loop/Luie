@@ -70,6 +70,9 @@ const registerLuieProtocol = async (
 };
 
 const bootstrapLogger = createLogger("Main");
+const isSyncDisabledForRuntime =
+  process.env.LUIE_DISABLE_SYNC === "1" ||
+  process.env.LUIE_E2E_STRESS_MODE === "1";
 
 if (!registerSingleInstance(bootstrapLogger)) {
   app.exit(0);
@@ -123,6 +126,12 @@ if (!registerSingleInstance(bootstrapLogger)) {
   registerAppReady(logger, {
     startupStartedAtMs,
     onFirstRendererReady: () => {
+      if (isSyncDisabledForRuntime) {
+        logger.info("Startup checkpoint: sync service initialization skipped", {
+          reason: "runtime-flag",
+        });
+        return;
+      }
       const syncInitializeStartedAt = Date.now();
       syncService.initialize(); // Sync Services Ready
       logger.info("Startup checkpoint: sync service initialized", {

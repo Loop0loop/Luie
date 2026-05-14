@@ -287,13 +287,14 @@ class DbMaintenanceService {
 
   async listProjectsWithPendingMemoryJobs(limit = 20): Promise<string[]> {
     const client = db.getClient();
-    const rows = await client
-      .select({ projectId: memoryBuildJob.projectId })
-      .from(memoryBuildJob)
-      .where(inArray(memoryBuildJob.status, ["pending", "failed"]))
-      .groupBy(memoryBuildJob.projectId)
-      .orderBy(asc(memoryBuildJob.projectId))
-      .limit(limit);
+    const rows = await client.all<{ projectId: string }>(
+      sql`SELECT "projectId"
+          FROM "MemoryBuildJob"
+          WHERE "status" IN ('pending', 'failed')
+          GROUP BY "projectId"
+          ORDER BY MAX("updatedAt") DESC
+          LIMIT ${limit};`,
+    );
     return rows.map((row) => row.projectId);
   }
 

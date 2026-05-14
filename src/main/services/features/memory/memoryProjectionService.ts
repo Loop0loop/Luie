@@ -74,19 +74,19 @@ class MemoryProjectionService {
   }): Promise<{ queued: number; processed: number }> {
     const client = db.getClient();
     const limit = input.limit ?? 20;
+    const jobFilters = [
+      eq(memoryBuildJob.projectId, input.projectId),
+      eq(memoryBuildJob.jobType, "rebuild_chunks"),
+      inArray(memoryBuildJob.status, ["pending", "failed"]),
+      eq(memoryBuildJob.targetType, input.sourceType ?? "chapter"),
+    ];
+    if (input.sourceId) {
+      jobFilters.push(eq(memoryBuildJob.targetId, input.sourceId));
+    }
     const candidates = await client
       .select()
       .from(memoryBuildJob)
-      .where(
-        and(
-          eq(memoryBuildJob.projectId, input.projectId),
-          eq(memoryBuildJob.jobType, "rebuild_chunks"),
-          eq(memoryBuildJob.targetType, input.sourceType ?? "chapter"),
-          input.sourceId
-            ? eq(memoryBuildJob.targetId, input.sourceId)
-            : eq(memoryBuildJob.targetType, "chapter"),
-        ),
-      )
+      .where(and(...jobFilters))
       .orderBy(asc(memoryBuildJob.priority), asc(memoryBuildJob.createdAt))
       .limit(Math.max(limit * 3, 30));
     const jobs = candidates
@@ -111,8 +111,8 @@ class MemoryProjectionService {
     const chapterMap = new Map(chapters.map((row) => [row.id, row]));
 
     let processed = 0;
-    await Promise.all(
-      jobs.map(async (job) => {
+    await jobs.reduce<Promise<void>>(async (prev, job) => {
+      await prev;
       const now = new Date().toISOString();
       await client
         .update(memoryBuildJob)
@@ -141,37 +141,37 @@ class MemoryProjectionService {
         const sourceContent = String(source.bodyContent ?? source.content ?? "");
         const chunks = chunkText(sourceContent, 1000);
 
-        await client.transaction(async (tx) => {
-          await tx
+        client.transaction((tx) => {
+          tx
             .delete(memoryChunk)
             .where(
               and(
                 eq(memoryChunk.sourceType, "chapter"),
                 eq(memoryChunk.sourceId, job.targetId),
               ),
-            );
+            )
+            .run();
 
-          await Promise.all(
-            chunks.map(async (chunkItem, index) =>
-              tx.insert(memoryChunk).values({
-                id: crypto.randomUUID(),
-                projectId: source.projectId,
-                sourceType: "chapter",
-                sourceId: job.targetId,
-                chapterId: job.targetId,
-                chunkIndex: index,
-                content: chunkItem.content,
-                contentHash: sha256(chunkItem.content),
-                startOffset: chunkItem.startOffset,
-                endOffset: chunkItem.endOffset,
-                tokenCount: chunkItem.content.length,
-                createdAt: now,
-                updatedAt: now,
-              }),
-            ),
-          );
+          for (let index = 0; index < chunks.length; index += 1) {
+            const chunkItem = chunks[index];
+            tx.insert(memoryChunk).values({
+              id: crypto.randomUUID(),
+              projectId: source.projectId,
+              sourceType: "chapter",
+              sourceId: job.targetId,
+              chapterId: job.targetId,
+              chunkIndex: index,
+              content: chunkItem.content,
+              contentHash: sha256(chunkItem.content),
+              startOffset: chunkItem.startOffset,
+              endOffset: chunkItem.endOffset,
+              tokenCount: chunkItem.content.length,
+              createdAt: now,
+              updatedAt: now,
+            }).run();
+          }
 
-          await tx
+          tx
             .update(memoryBuildJob)
             .set({
               status: "completed",
@@ -179,7 +179,8 @@ class MemoryProjectionService {
               error: null,
               updatedAt: now,
             })
-            .where(eq(memoryBuildJob.id, job.id));
+            .where(eq(memoryBuildJob.id, job.id))
+            .run();
         });
         processed += 1;
       } catch (error) {
@@ -194,9 +195,15 @@ class MemoryProjectionService {
             updatedAt: now,
           })
           .where(eq(memoryBuildJob.id, job.id));
+        logger.warn("Memory chunk job failed", {
+          jobId: job.id,
+          targetId: job.targetId,
+          attempts,
+          nextStatus,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
-      }),
-    );
+    }, Promise.resolve());
 
     logger.info("Processed memory chunk jobs", {
       projectId: input.projectId,

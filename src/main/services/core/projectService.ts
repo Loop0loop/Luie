@@ -54,6 +54,9 @@ const DEBOUNCED_PACKAGE_EXPORT_REASONS = new Set<string>([
   "world-document:graph",
   "snapshot:create",
 ]);
+const isPackageExportDisabledForRuntime =
+  process.env.LUIE_DISABLE_PACKAGE_EXPORT === "1" ||
+  process.env.LUIE_E2E_STRESS_MODE === "1";
 
 type PackageExportAttemptResult = {
   exported: boolean;
@@ -903,6 +906,13 @@ export class ProjectService {
     projectId: string,
     reason: string,
   ): Promise<void> {
+    if (isPackageExportDisabledForRuntime) {
+      logger.info("Package export skipped by runtime flag", {
+        projectId,
+        reason,
+      });
+      return;
+    }
     if (this.shouldDebouncePackageExport(reason)) {
       this.schedulePackageExport(projectId, `${reason}:debounced`);
       return;

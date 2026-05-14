@@ -31,7 +31,14 @@ test("measures write-loop stability on 1000x5000 dataset @stress", async () => {
   const contentSize = 5000;
   const contentBase = "가".repeat(contentSize);
 
-  const { app, page, testDbDir } = await launchApp();
+  const { app, page, testDbDir } = await launchApp({
+    envOverrides: {
+      LUIE_E2E_STRESS_MODE: "1",
+      LUIE_DISABLE_SYNC: "1",
+      LUIE_DISABLE_STARTUP_MAINTENANCE: "1",
+      LUIE_DISABLE_PACKAGE_EXPORT: "1",
+    },
+  });
 
   const call = async <T>(fn: () => Promise<ApiResponse<T>>, label: string) => {
     const started = performance.now();

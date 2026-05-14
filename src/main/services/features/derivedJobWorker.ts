@@ -3,6 +3,9 @@ import { dbMaintenanceService } from "./dbMaintenanceService.js";
 import { memoryProjectionService } from "./memory/memoryProjectionService.js";
 
 const logger = createLogger("DerivedJobWorker");
+const isStressMode =
+  process.env.LUIE_E2E_STRESS_MODE === "1" ||
+  process.env.LUIE_DERIVED_STRESS_MODE === "1";
 
 const toPositiveInt = (value: string | undefined, fallback: number): number => {
   if (!value) return fallback;
@@ -12,19 +15,19 @@ const toPositiveInt = (value: string | undefined, fallback: number): number => {
 
 const TICK_INTERVAL_MS = toPositiveInt(
   process.env.LUIE_DERIVED_TICK_MS,
-  2000,
+  isStressMode ? 500 : 2000,
 );
 const SEARCH_BATCH_SIZE = toPositiveInt(
   process.env.LUIE_DERIVED_SEARCH_BATCH,
-  5,
+  isStressMode ? 50 : 5,
 );
 const MEMORY_BATCH_SIZE = toPositiveInt(
   process.env.LUIE_DERIVED_MEMORY_BATCH,
-  2,
+  isStressMode ? 50 : 2,
 );
 const MEMORY_PROJECTS_PER_TICK = toPositiveInt(
   process.env.LUIE_DERIVED_MEMORY_PROJECTS_PER_TICK,
-  1,
+  isStressMode ? 4 : 1,
 );
 
 class DerivedJobWorker {

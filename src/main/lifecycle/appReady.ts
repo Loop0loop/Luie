@@ -19,6 +19,9 @@ type AppReadyOptions = {
 
 const STARTUP_MAINTENANCE_DELAY_MS = 1500; // Renderer가 준비 된 후 1.5s 뒤에 mainInstance 작업 실행
 const FIRST_RENDERER_FALLBACK_MS = 8000; // 8s 지나면 강제로 Renderer 준비완료처리 -> 무한로딩 방지
+const isStartupMaintenanceDisabled =
+  process.env.LUIE_DISABLE_STARTUP_MAINTENANCE === "1" ||
+  process.env.LUIE_E2E_STRESS_MODE === "1";
 
 const loadAutoSaveManager = async () =>
   (await import("../manager/autoSaveManager.js")).autoSaveManager; // 시작 로딩 줄이기 위하여 lazy inport
@@ -213,6 +216,13 @@ export const registerAppReady = (
 
     
     const scheduleStartupMaintenance = (reason: string): void => { // 앱을 보여준 후 무거운 후처리 작업을 조금 뒤 에약
+      if (isStartupMaintenanceDisabled) {
+        logger.info("Deferred startup maintenance skipped", {
+          reason: "runtime-flag",
+          trigger: reason,
+        });
+        return;
+      }
       if (startupMaintenanceScheduled) return; // 이미 됬으면 종료
       startupMaintenanceScheduled = true;
       logger.info("Deferred startup maintenance scheduled", {
