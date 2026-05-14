@@ -8,8 +8,7 @@ import {
   Search,
   StickyNote,
 } from "lucide-react";
-import { Button } from "@renderer/components/ui/button";
-import { Separator } from "@renderer/components/ui/separator";
+import { cn } from "@renderer/lib/utils";
 import { Input } from "@renderer/components/ui/input";
 import { CANVAS_TOOLBAR_ACTION_KEYS } from "../shared/constants";
 
@@ -23,12 +22,41 @@ interface CanvasToolbarProps {
   onSearch?: (query: string) => void;
 }
 
+interface ToolbarButtonProps {
+  icon: React.ReactNode;
+  label?: string;
+  title: string;
+  onClick?: () => void;
+}
+
+function ToolbarButton({ icon, label, title, onClick }: ToolbarButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      aria-label={title}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12px] transition-colors",
+        "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+        "active:scale-[0.97]",
+      )}
+    >
+      {icon}
+      {label ? <span>{label}</span> : null}
+    </button>
+  );
+}
+
+function ToolbarDivider() {
+  return <div className="mx-1 h-4 w-px bg-border/50" />;
+}
+
 /**
- * 캔버스 상단 툴바.
- * - 좌측: 생성/연결/그룹/정렬/뷰핏 액션
- * - 우측: 빠른 검색 (Outline과 별개로 캔버스 stage 내 검색)
+ * 캔버스 상단 툴바 — Obsidian 스타일.
  *
- * 액션 콜백은 모두 optional로 받아 셸 단계에서 안전하게 마운트된다.
+ * 미니멀한 아이콘 + 라벨 버튼. 배경은 투명, 하단 border로 구분.
+ * 우측에 인라인 검색 필드.
  */
 export function CanvasToolbar({
   onAddNode,
@@ -42,69 +70,57 @@ export function CanvasToolbar({
   const { t } = useTranslation();
 
   return (
-    <div className="flex h-10 shrink-0 items-center gap-1 border-b border-border bg-background px-2">
-      <Button variant="ghost" size="sm" onClick={onAddNode}>
-        <Plus />
-        {t(CANVAS_TOOLBAR_ACTION_KEYS.addNode)}
-      </Button>
-      <Button variant="ghost" size="sm" onClick={onAddNote}>
-        <StickyNote />
-        {t(CANVAS_TOOLBAR_ACTION_KEYS.addNote)}
-      </Button>
+    <div className="flex h-9 shrink-0 items-center border-b border-border/50 bg-background px-2">
+      <ToolbarButton
+        icon={<Plus className="size-3.5" />}
+        label={t(CANVAS_TOOLBAR_ACTION_KEYS.addNode)}
+        title={t(CANVAS_TOOLBAR_ACTION_KEYS.addNode)}
+        onClick={onAddNode}
+      />
+      <ToolbarButton
+        icon={<StickyNote className="size-3.5" />}
+        label={t(CANVAS_TOOLBAR_ACTION_KEYS.addNote)}
+        title={t(CANVAS_TOOLBAR_ACTION_KEYS.addNote)}
+        onClick={onAddNote}
+      />
 
-      <Separator orientation="vertical" className="mx-1 h-5" />
+      <ToolbarDivider />
 
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        aria-label={t(CANVAS_TOOLBAR_ACTION_KEYS.connect)}
+      <ToolbarButton
+        icon={<Link2 className="size-3.5" />}
         title={t(CANVAS_TOOLBAR_ACTION_KEYS.connect)}
         onClick={onConnect}
-      >
-        <Link2 />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        aria-label={t(CANVAS_TOOLBAR_ACTION_KEYS.group)}
+      />
+      <ToolbarButton
+        icon={<Frame className="size-3.5" />}
         title={t(CANVAS_TOOLBAR_ACTION_KEYS.group)}
         onClick={onGroup}
-      >
-        <Frame />
-      </Button>
+      />
 
-      <Separator orientation="vertical" className="mx-1 h-5" />
+      <ToolbarDivider />
 
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        aria-label={t(CANVAS_TOOLBAR_ACTION_KEYS.autoLayout)}
+      <ToolbarButton
+        icon={<LayoutGrid className="size-3.5" />}
         title={t(CANVAS_TOOLBAR_ACTION_KEYS.autoLayout)}
         onClick={onAutoLayout}
-      >
-        <LayoutGrid />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        aria-label={t(CANVAS_TOOLBAR_ACTION_KEYS.fitView)}
+      />
+      <ToolbarButton
+        icon={<Maximize2 className="size-3.5" />}
         title={t(CANVAS_TOOLBAR_ACTION_KEYS.fitView)}
         onClick={onFitView}
-      >
-        <Maximize2 />
-      </Button>
+      />
 
       <div className="ml-auto flex items-center">
         <div className="relative">
           <Search
             aria-hidden
-            className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute left-2 top-1/2 size-3 -translate-y-1/2 text-muted-foreground"
           />
           <Input
             type="search"
             placeholder={t(CANVAS_TOOLBAR_ACTION_KEYS.searchPlaceholder)}
             onChange={(e) => onSearch?.(e.target.value)}
-            className="h-7 w-44 pl-7 text-[12px]"
+            className="h-6 w-40 rounded-md border-border/50 bg-transparent pl-7 text-[11px] placeholder:text-muted-foreground/60 focus-visible:border-primary/40 focus-visible:ring-0"
           />
         </div>
       </div>

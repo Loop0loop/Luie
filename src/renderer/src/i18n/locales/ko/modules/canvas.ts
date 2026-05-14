@@ -61,6 +61,9 @@ export const koCanvas = {
       field: {
         type: "유형",
         id: "ID",
+        firstAppearance: "최초 등장",
+        subType: "분류",
+        description: "설명",
       },
       type: {
         node: "노드",
@@ -88,5 +91,15 @@ export const koCanvas = {
   empty: {
     error: "캔버스를 불러오지 못했습니다.",
     retry: "다시 시도",
+  },
+  node: {
+    kind: {
+      episode: "회차",
+      character: "인물",
+      event: "사건",
+      place: "장소",
+      note: "메모",
+    },
+    derived: "후보",
   },
 } as const;

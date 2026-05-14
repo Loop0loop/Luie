@@ -61,6 +61,9 @@ export const enCanvas = {
       field: {
         type: "Type",
         id: "ID",
+        firstAppearance: "First appearance",
+        subType: "Subtype",
+        description: "Description",
       },
       type: {
         node: "Node",
@@ -88,5 +91,15 @@ export const enCanvas = {
   empty: {
     error: "Could not load the canvas.",
     retry: "Retry",
+  },
+  node: {
+    kind: {
+      episode: "Episode",
+      character: "Character",
+      event: "Event",
+      place: "Place",
+      note: "Note",
+    },
+    derived: "Derived",
   },
 } as const;

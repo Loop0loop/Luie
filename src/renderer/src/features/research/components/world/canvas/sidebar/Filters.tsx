@@ -9,7 +9,7 @@ import { ToggleListRow } from "./ToggleListRow";
 
 /**
  * Filters: 캔버스에 표시할 노드 종류를 토글한다.
- * 전체 작품 Scope에서 캔버스가 난잡해지는 걸 막는 1차 안전장치.
+ * collapsible — 기본 열림.
  */
 export function Filters() {
   const { t } = useTranslation();
@@ -17,8 +17,8 @@ export function Filters() {
   const toggleFilter = useCanvasUiStore((s) => s.toggleFilter);
 
   return (
-    <SidebarSection title={t(CANVAS_SECTION_KEYS.filters)}>
-      <ul className="flex flex-col gap-0.5">
+    <SidebarSection title={t(CANVAS_SECTION_KEYS.filters)} collapsible>
+      <ul className="flex flex-col">
         {CANVAS_FILTER_OPTIONS.map((option) => (
           <li key={option.id}>
             <ToggleListRow

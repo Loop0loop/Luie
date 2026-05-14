@@ -9,7 +9,7 @@ import { ToggleListRow } from "./ToggleListRow";
 
 /**
  * Layers: 캔버스에 보여줄 시각 레이어를 토글한다.
- * 토글 자체는 즉시 store에 반영되며, Stage가 이를 구독해 표시 방식을 바꾼다.
+ * collapsible — 기본 열림.
  */
 export function LayerToggles() {
   const { t } = useTranslation();
@@ -17,8 +17,8 @@ export function LayerToggles() {
   const toggleLayer = useCanvasUiStore((s) => s.toggleLayer);
 
   return (
-    <SidebarSection title={t(CANVAS_SECTION_KEYS.layers)}>
-      <ul className="flex flex-col gap-0.5">
+    <SidebarSection title={t(CANVAS_SECTION_KEYS.layers)} collapsible>
+      <ul className="flex flex-col">
         {CANVAS_LAYER_OPTIONS.map((option) => (
           <li key={option.id}>
             <ToggleListRow

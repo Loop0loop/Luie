@@ -42,8 +42,8 @@ function useDescribeScope(): (scope: CanvasScope) => string {
 }
 
 /**
- * Scope: 캔버스가 보여줄 범위(현재 화 / 범위 / 전체)를 고른다.
- * 현재 활성 프리셋은 secondary로 강조해 항상 "지금 어디를 보고 있는가"가 보이게 한다.
+ * Scope: 캔버스가 보여줄 범위를 고른다.
+ * 현재 활성 프리셋은 accent dot으로 강조.
  */
 export function ScopeSelector() {
   const { t } = useTranslation();
@@ -54,9 +54,9 @@ export function ScopeSelector() {
   return (
     <SidebarSection title={t(CANVAS_SECTION_KEYS.scope)}>
       <div className="flex flex-col gap-2">
-        <div className="flex items-baseline gap-1.5 px-1 text-[12px]">
+        <div className="flex items-baseline gap-1.5 text-[12px]">
           <span className="text-muted-foreground">
-            {t("canvas.sidebar.scope.currentLabel")}
+            {t("canvas.sidebar.scope.currentLabel")}:
           </span>
           <span className="font-medium text-foreground">
             {describeScope(scope)}
@@ -71,12 +71,15 @@ export function ScopeSelector() {
                 type="button"
                 onClick={() => setScope(preset.scope)}
                 className={cn(
-                  "inline-flex h-6 items-center rounded-md px-2 text-[11px] transition-colors",
+                  "inline-flex h-6 items-center gap-1.5 rounded-md px-2 text-[11px] transition-colors",
                   active
-                    ? "bg-secondary text-secondary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                 )}
               >
+                {active ? (
+                  <span className="size-1.5 rounded-full bg-primary" />
+                ) : null}
                 {t(preset.labelKey)}
               </button>
             );

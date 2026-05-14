@@ -61,6 +61,9 @@ export const jaCanvas = {
       field: {
         type: "種別",
         id: "ID",
+        firstAppearance: "初登場",
+        subType: "分類",
+        description: "説明",
       },
       type: {
         node: "ノード",
@@ -88,5 +91,15 @@ export const jaCanvas = {
   empty: {
     error: "キャンバスを読み込めませんでした。",
     retry: "再試行",
+  },
+  node: {
+    kind: {
+      episode: "話",
+      character: "人物",
+      event: "事件",
+      place: "場所",
+      note: "メモ",
+    },
+    derived: "候補",
   },
 } as const;
