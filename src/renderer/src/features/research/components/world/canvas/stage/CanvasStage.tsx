@@ -3,6 +3,7 @@ import ReactFlow, {
   Background,
   BackgroundVariant,
   MiniMap,
+  PanOnScrollMode,
   type Edge,
   type Node,
   type NodeMouseHandler,
@@ -24,13 +25,15 @@ interface CanvasStageProps {
 /**
  * 캔버스 stage. react-flow 컨테이너.
  *
- * 주의: ReactFlowProvider는 부모(WorldCanvasPanel)에서 감싸야 한다.
- * Outline 같은 사이드 컴포넌트들도 useReactFlow()를 사용하므로
- * Provider 범위가 캔버스 전체여야 한다.
+ * Obsidian 트랙패드 UX:
+ *   - 두 손가락 스크롤(트랙패드 wheel) → pan (양방향 자유)
+ *   - 핀치(ctrlKey + wheel) → zoom
+ *   - 빈 영역 좌클릭 + drag → 박스 셀렉션
+ *   - 미들/우클릭 + drag → pan (좌클릭은 셀렉션/노드 이동에 양보)
+ *   - 노드 좌클릭 + drag → 노드 이동
+ *   - 더블클릭 → 줌하지 않음 (다음 단계에서 노드 편집 진입)
  *
- * - 5종 nodeTypes 등록
- * - 기본 Controls 대신 CanvasControls
- * - 드래그 종료 시 onNodeMoved 콜백
+ * Provider는 부모(WorldCanvasPanel)에서 감싼다.
  */
 export function CanvasStage({ nodes, edges, onNodeMoved }: CanvasStageProps) {
   const showMiniMap = useCanvasUiStore((s) => s.showMiniMap);
@@ -72,7 +75,22 @@ export function CanvasStage({ nodes, edges, onNodeMoved }: CanvasStageProps) {
         onEdgeClick={handleEdgeClick}
         onPaneClick={handlePaneClick}
         onNodeDragStop={handleNodeDragStop}
+        // ── Obsidian 트랙패드 UX ──────────────────────────────
+        panOnScroll
+        panOnScrollMode={PanOnScrollMode.Free}
+        panOnScrollSpeed={0.8}
+        zoomOnPinch
+        zoomOnScroll={false}
+        zoomOnDoubleClick={false}
+        // 좌클릭 빈영역 drag = 박스 셀렉션, 미들/우클릭 = pan
+        selectionOnDrag
+        panOnDrag={[1, 2]}
+        // ── 줌 한계 ───────────────────────────────────────────
+        minZoom={0.2}
+        maxZoom={2.5}
+        // ── 기타 ──────────────────────────────────────────────
         fitView
+        fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
         proOptions={{ hideAttribution: true }}
         defaultEdgeOptions={{
           type: "smoothstep",

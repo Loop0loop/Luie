@@ -11,13 +11,26 @@ import type {
   CanvasScope,
 } from "../types";
 
-/** 레이아웃 너비/높이 (px) */
+/**
+ * 레이아웃 너비/높이.
+ *
+ * - DEFAULT_RATIO_*: 첫 렌더에서 사용할 비율(%). 컨테이너 너비를 모를 때 fallback.
+ * - *_PX: 컨테이너 너비를 알 때 % 변환에 쓰는 픽셀 기준값.
+ *
+ * 비율과 px는 둘 다 필요하다. 컨테이너가 마운트되기 전에는 비율로
+ * 첫 렌더가 안정되어야 하고, 측정 후에는 px 기반 클램프가 정확해야 한다.
+ */
 export const CANVAS_LAYOUT = {
-  SIDEBAR_WIDTH: 260,
-  BINDER_WIDTH: 360,
-  TOOLBAR_HEIGHT: 40,
-  SIDEBAR_MIN_WIDTH: 220,
-  BINDER_MIN_WIDTH: 320,
+  // 기본 비율 (1440px 기준 산출)
+  SIDEBAR_DEFAULT_RATIO: 18,
+  BINDER_DEFAULT_RATIO: 25,
+  // 픽셀 제약
+  SIDEBAR_MIN_PX: 220,
+  SIDEBAR_MAX_PX: 420,
+  BINDER_MIN_PX: 320,
+  BINDER_MAX_PX: 520,
+  // 레이아웃 기타
+  TOOLBAR_HEIGHT: 36,
 } as const;
 
 /** Sidebar / Binder 섹션 i18n key */
