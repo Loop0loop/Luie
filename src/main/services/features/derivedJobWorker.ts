@@ -3,6 +3,8 @@ import { dbMaintenanceService } from "./dbMaintenanceService.js";
 import { memoryProjectionService } from "./memory/memoryProjectionService.js";
 
 const logger = createLogger("DerivedJobWorker");
+const loadAutoSaveManager = async () =>
+  (await import("../../manager/autoSaveManager.js")).autoSaveManager;
 const isStressMode =
   process.env.LUIE_E2E_STRESS_MODE === "1" ||
   process.env.LUIE_DERIVED_STRESS_MODE === "1";
@@ -34,6 +36,7 @@ class DerivedJobWorker {
   private timer: NodeJS.Timeout | null = null;
   private running = false;
   private inTick = false;
+  private lastEditDeferLogAt = 0;
 
   start(): void {
     if (this.running) return;
@@ -82,6 +85,18 @@ class DerivedJobWorker {
     const startedAt = Date.now();
 
     try {
+      const autoSaveManager = await loadAutoSaveManager();
+      const pendingSaveCount = autoSaveManager.getPendingSaveCount();
+      if (!isStressMode && pendingSaveCount > 0) {
+        if (Date.now() - this.lastEditDeferLogAt >= 10_000) {
+          this.lastEditDeferLogAt = Date.now();
+          logger.info("Derived job worker tick deferred for active editing", {
+            pendingSaveCount,
+          });
+        }
+        return;
+      }
+
       const search = await dbMaintenanceService.processPendingSearchJobs({
         limit: SEARCH_BATCH_SIZE,
       });

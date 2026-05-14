@@ -7,7 +7,6 @@ import { useChapterStore } from "@renderer/features/manuscript/stores/chapterSto
 import { useShallow } from "zustand/react/shallow";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { api } from "@shared/api";
-import { hasReadableLuieAttachment } from "@shared/projectAttachment";
 import type { Chapter } from "@shared/types";
 import {
   consumePendingChapterNavigation,
@@ -23,7 +22,6 @@ export function useChapterManagement() {
     content: string;
   } | null>(null);
   const currentProject = useProjectStore((state) => state.currentItem);
-  const hasLuieAttachment = hasReadableLuieAttachment(currentProject);
   const {
     items: chapters,
     currentItem: currentChapter,
@@ -329,7 +327,6 @@ export function useChapterManagement() {
         });
       }
 
-      api.logger.info(`Saving: ${normalizedTitle}`);
       if (normalizedTitle !== previousTitle) {
         await updateChapter({
           id: chapterId,
@@ -343,24 +340,31 @@ export function useChapterManagement() {
         content: newContent,
       };
 
-      try {
-        await api.autoSave(chapterId, newContent, currentProject.id);
-      } catch (error) {
-        api.logger.warn("Auto snapshot failed", error);
-      }
-
-      if (hasLuieAttachment) {
-        api.logger.info("Luie package export scheduled", {
-          projectId: currentProject.id,
+      void api
+        .autoSave(chapterId, newContent, currentProject.id)
+        .then((response) => {
+          if (!response.success) {
+            api.logger.warn("Auto-save enqueue failed", {
+              chapterId,
+              projectId: currentProject.id,
+              error: response.error,
+            });
+          }
+        })
+        .catch((error) => {
+          api.logger.warn("Auto-save enqueue failed", {
+            chapterId,
+            projectId: currentProject.id,
+            error,
+          });
         });
-      }
+
     },
     [
       activeChapterId,
       updateChapter,
       currentProject,
       chapters,
-      hasLuieAttachment,
     ],
   );
 

@@ -13,7 +13,6 @@ import { useEditorAutosave } from "@renderer/features/editor/hooks/useEditorAuto
 import { useEditorStats } from "@renderer/features/editor/hooks/useEditorStats";
 import { useEditorConfig } from "@renderer/features/editor/hooks/useEditorConfig";
 import { useEditorScrollRestoration } from "@renderer/features/editor/hooks/useEditorScrollRestoration";
-import { api } from "@shared/api";
 import { useTranslation } from "react-i18next";
 import { useDialog } from "@shared/ui/useDialog";
 import { openQuickExportEntry } from "@renderer/features/workspace/services/exportEntryService";
@@ -87,6 +86,9 @@ function Editor({
 
   const [content, setContent] = useState(initialContent);
   const updateStatsRef = useRef(updateStats);
+  const selectionAnalyzeTimerRef = useRef<number | null>(null);
+  const lastSelectionSampleRef = useRef("");
+  const lastSelectionEmitAtRef = useRef(0);
 
   useEffect(() => {
     updateStatsRef.current = updateStats;
@@ -109,6 +111,9 @@ function Editor({
       if (updateContentRef.current) {
         window.clearTimeout(updateContentRef.current);
       }
+      if (selectionAnalyzeTimerRef.current) {
+        window.clearTimeout(selectionAnalyzeTimerRef.current);
+      }
     };
   }, []);
 
@@ -118,10 +123,6 @@ function Editor({
       editable: !readOnly,
       content: initialContent,
       onUpdate: ({ editor }) => {
-        if (!readOnly) {
-          api.lifecycle?.setDirty?.(true);
-        }
-
         if (updateContentRef.current) {
           window.clearTimeout(updateContentRef.current);
         }
@@ -133,16 +134,34 @@ function Editor({
           setContent((previous) => (previous === html ? previous : html));
           updateStatsRef.current(text);
           updateContentRef.current = null;
-        }, 500);
+        }, 900);
       },
       onSelectionUpdate: ({ editor }) => {
-        const { from } = editor.state.selection;
-        const $pos = editor.state.doc.resolve(from);
+        if (selectionAnalyzeTimerRef.current) {
+          window.clearTimeout(selectionAnalyzeTimerRef.current);
+        }
+        selectionAnalyzeTimerRef.current = window.setTimeout(() => {
+          const { from } = editor.state.selection;
+          const $pos = editor.state.doc.resolve(from);
+          const node = $pos.nodeAfter || $pos.nodeBefore || $pos.parent;
+          if (!(node && (node.isText || node.textContent))) {
+            return;
+          }
 
-        // Find the node around the cursor
-        const node = $pos.nodeAfter || $pos.nodeBefore || $pos.parent;
-        if (node && (node.isText || node.textContent)) {
           const text = node.textContent || "";
+          if (text.length < 2) {
+            return;
+          }
+          const now = Date.now();
+          if (
+            text === lastSelectionSampleRef.current &&
+            now - lastSelectionEmitAtRef.current < 800
+          ) {
+            return;
+          }
+          lastSelectionSampleRef.current = text;
+          lastSelectionEmitAtRef.current = now;
+
           const charStore = useCharacterStore.getState();
           const termStore = useTermStore.getState();
 
@@ -158,9 +177,8 @@ function Editor({
           );
           if (term) {
             EditorSyncBus.emit("FOCUS_ENTITY", { entityId: term.id });
-            return;
           }
-        }
+        }, 120);
       },
       editorProps: {
         attributes: {

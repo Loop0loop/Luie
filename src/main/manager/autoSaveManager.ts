@@ -57,6 +57,10 @@ export class AutoSaveManager extends EventEmitter {
   private pendingSaves = new Map<string, PendingSave>();
   private lastSaveAt = new Map<string, number>();
   private firstQueuedAt = new Map<string, number>();
+  private verifiedChapterProjectId = new Map<string, string>();
+  private mirrorWriteQueue = new Map<string, Promise<void>>();
+  private mirrorPendingPayload = new Map<string, PendingSave>();
+  private warmupPromise: Promise<void> | null = null;
 
   private stats = {
     triggered: 0,
@@ -98,6 +102,7 @@ export class AutoSaveManager extends EventEmitter {
       logger.warn("Auto-save error event", payload);
     });
     this.startCleanupInterval();
+    void this.prewarmDependencies();
   }
 
   static getInstance(): AutoSaveManager {
@@ -165,6 +170,8 @@ export class AutoSaveManager extends EventEmitter {
     this.pendingSaves.delete(chapterId);
     this.lastSaveAt.delete(chapterId);
     this.firstQueuedAt.delete(chapterId);
+    this.verifiedChapterProjectId.delete(chapterId);
+    this.mirrorPendingPayload.delete(`${projectId}:${chapterId}`);
 
     const snapshotKey = `${projectId}:${chapterId}`;
     this.lastSnapshotAt.delete(snapshotKey);
@@ -219,25 +226,29 @@ export class AutoSaveManager extends EventEmitter {
       return;
     }
 
-    const db = await loadDb();
-    const store = db.getClient();
-    const chapters = await store
-      .select({ projectId: chapter.projectId, deletedAt: chapter.deletedAt })
-      .from(chapter)
-      .where(eq(chapter.id, chapterId))
-      .limit(1);
-    const chapterData = chapters[0] ?? null;
-    if (
-      !chapterData ||
-      String(chapterData.projectId) !== projectId ||
-      Boolean(chapterData.deletedAt)
-    ) {
-      this.stats.skippedMissingChapter += 1;
-      logger.info("Skipping auto-save for missing/deleted chapter", {
-        chapterId,
-        projectId,
-      });
-      return;
+    const knownProjectId = this.verifiedChapterProjectId.get(chapterId);
+    if (knownProjectId !== projectId) {
+      const db = await loadDb();
+      const store = db.getClient();
+      const chapters = await store
+        .select({ projectId: chapter.projectId, deletedAt: chapter.deletedAt })
+        .from(chapter)
+        .where(eq(chapter.id, chapterId))
+        .limit(1);
+      const chapterData = chapters[0] ?? null;
+      if (
+        !chapterData ||
+        String(chapterData.projectId) !== projectId ||
+        Boolean(chapterData.deletedAt)
+      ) {
+        this.stats.skippedMissingChapter += 1;
+        logger.info("Skipping auto-save for missing/deleted chapter", {
+          chapterId,
+          projectId,
+        });
+        return;
+      }
+      this.verifiedChapterProjectId.set(chapterId, projectId);
     }
 
     // Track pending content
@@ -251,8 +262,13 @@ export class AutoSaveManager extends EventEmitter {
     this.pendingSaves.set(chapterId, { chapterId, content, projectId, timestamp: Date.now() });
     this.lastSaveAt.set(chapterId, Date.now());
 
-    // Immediately write mirror (crash safety net)
-    await this.mirrorStore.writeLatestMirror(projectId, chapterId, content);
+    // Keep mirror up-to-date without blocking autosave acceptance.
+    this.queueMirrorWrite({
+      projectId,
+      chapterId,
+      content,
+      timestamp: Date.now(),
+    });
 
     // Emergency micro snapshot for very short content
     void maybeCreateEmergencySnapshot({
@@ -323,11 +339,7 @@ export class AutoSaveManager extends EventEmitter {
       this.emit("saved", { chapterId });
 
       // Post-save: update mirror and maybe enqueue snapshot
-      await this.mirrorStore.writeLatestMirror(
-        pending.projectId,
-        pending.chapterId,
-        pending.content,
-      );
+      this.queueMirrorWrite(pending);
       this.maybeEnqueueSnapshot(
         pending.projectId,
         pending.chapterId,
@@ -657,6 +669,60 @@ export class AutoSaveManager extends EventEmitter {
   clearProject(projectId: string) {
     this.stopAutoSave(projectId);
     this.configs.delete(projectId);
+    for (const [chapterId, knownProjectId] of this.verifiedChapterProjectId) {
+      if (knownProjectId === projectId) {
+        this.verifiedChapterProjectId.delete(chapterId);
+      }
+    }
+  }
+
+  private prewarmDependencies(): void {
+    if (this.warmupPromise) return;
+    this.warmupPromise = Promise.all([
+      loadChapterService(),
+      loadSnapshotService(),
+      loadDb(),
+    ])
+      .then(() => undefined)
+      .catch((error) => {
+        logger.warn("Auto-save dependency prewarm failed", { error });
+      });
+  }
+
+  private queueMirrorWrite(pending: PendingSave): void {
+    const key = `${pending.projectId}:${pending.chapterId}`;
+    this.mirrorPendingPayload.set(key, pending);
+    if (this.mirrorWriteQueue.has(key)) {
+      return;
+    }
+
+    const worker = (async () => {
+      while (true) {
+        const next = this.mirrorPendingPayload.get(key);
+        if (!next) break;
+        this.mirrorPendingPayload.delete(key);
+        await this.mirrorStore.writeLatestMirror(
+          next.projectId,
+          next.chapterId,
+          next.content,
+        );
+      }
+    })()
+      .catch((error) => {
+        logger.warn("Mirror write queue processing failed", {
+          key,
+          error,
+        });
+      })
+      .finally(() => {
+        this.mirrorWriteQueue.delete(key);
+        const pendingNext = this.mirrorPendingPayload.get(key);
+        if (pendingNext) {
+          this.queueMirrorWrite(pendingNext);
+        }
+      });
+
+    this.mirrorWriteQueue.set(key, worker);
   }
 }
 
