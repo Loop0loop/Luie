@@ -6,6 +6,7 @@ import { enScrivener } from "./en/scrivener";
 import { enTrash } from "./en/trash";
 import { enMisc } from "./en/misc";
 import { enWorldGraph } from "./en/modules/worldGraph";
+import { enCanvas } from "./en/modules/canvas";
 
 const enWorkspaceWithWorldGraph = {
   ...enWorkspace,
@@ -27,5 +28,6 @@ export const en = {
     ...enScrivener,
     ...enTrash,
     ...enMisc,
+    canvas: enCanvas,
   },
 } as const;

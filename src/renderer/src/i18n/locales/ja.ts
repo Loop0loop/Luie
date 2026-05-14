@@ -6,6 +6,7 @@ import { jaScrivener } from "./ja/scrivener";
 import { jaTrash } from "./ja/trash";
 import { jaMisc } from "./ja/misc";
 import { jaWorldGraph } from "./ja/modules/worldGraph";
+import { jaCanvas } from "./ja/modules/canvas";
 
 const jaWorkspaceWithWorldGraph = {
   ...jaWorkspace,
@@ -27,5 +28,6 @@ export const ja = {
     ...jaScrivener,
     ...jaTrash,
     ...jaMisc,
+    canvas: jaCanvas,
   },
 } as const;

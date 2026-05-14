@@ -17,7 +17,8 @@
         "get_hub_nodes_tool",
         "query_graph_tool",
         "query_graph_tool",
-        "semantic_search_nodes_tool"
+        "semantic_search_nodes_tool",
+        "build_or_update_graph_tool"
       ]
     }
   }

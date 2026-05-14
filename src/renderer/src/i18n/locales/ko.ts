@@ -6,6 +6,7 @@ import { koScrivener } from "./ko/scrivener";
 import { koTrash } from "./ko/trash";
 import { koMisc } from "./ko/misc";
 import { koWorldGraph } from "./ko/modules/worldGraph";
+import { koCanvas } from "./ko/modules/canvas";
 
 const koWorkspaceWithWorldGraph = {
   ...koWorkspace,
@@ -27,5 +28,6 @@ export const ko = {
     ...koScrivener,
     ...koTrash,
     ...koMisc,
+    canvas: koCanvas,
   },
 } as const;

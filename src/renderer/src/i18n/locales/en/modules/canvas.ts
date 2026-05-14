@@ -1,0 +1,92 @@
+export const enCanvas = {
+  sidebar: {
+    scope: {
+      title: "Scope",
+      currentLabel: "Current",
+      preset: {
+        all: "All",
+        currentEpisode: "Current",
+        episodeRange: "Range",
+      },
+      describe: {
+        currentEpisode: "Ep. {{episode}}",
+        episodeRange: "Ep. {{from}}–{{to}}",
+        all: "Whole work",
+        none: "Range",
+      },
+    },
+    outline: {
+      title: "Outline",
+      empty: "No nodes yet.",
+      groups: {
+        episodes: "Episodes",
+        characters: "Characters",
+        events: "Events",
+        places: "Places",
+        notes: "Notes",
+      },
+    },
+    layers: {
+      title: "Layers",
+      canonical: { label: "Canonical", hint: "Confirmed structure" },
+      derived: { label: "Derived", hint: "Auto-detected candidates" },
+      timeline: { label: "Timeline overlay" },
+      relationStrength: { label: "Relation strength" },
+      conflict: { label: "Conflict markers" },
+      foreshadowing: { label: "Foreshadowing" },
+    },
+    filters: {
+      title: "Filters",
+      episode: "Episodes",
+      character: "Characters",
+      event: "Events",
+      place: "Places",
+      note: "Notes",
+      relation: "Relations",
+    },
+  },
+  toolbar: {
+    addNode: "Node",
+    addNote: "Note",
+    connect: "Connect",
+    group: "Group",
+    autoLayout: "Auto layout",
+    fitView: "Fit view",
+    searchPlaceholder: "Search",
+  },
+  binder: {
+    inspector: {
+      title: "Inspector",
+      empty: "Nothing selected.",
+      field: {
+        type: "Type",
+        id: "ID",
+      },
+      type: {
+        node: "Node",
+        edge: "Edge",
+      },
+    },
+    related: {
+      title: "Related",
+      empty: "No related items.",
+    },
+    suggestions: {
+      title: "Suggestions",
+      empty: "No pending candidates.",
+    },
+    agent: {
+      title: "Agent",
+      summarizeScope: "Summarize current scope",
+      processCandidates: "Process candidates",
+      checkTimeline: "Check timeline",
+      edgeConflict: "Check relation conflicts",
+      summarizeNode: "Summarize this node",
+      findRelated: "Find related manuscript",
+    },
+  },
+  empty: {
+    error: "Could not load the canvas.",
+    retry: "Retry",
+  },
+} as const;
