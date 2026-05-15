@@ -47,6 +47,8 @@ export type SidebarWidthFeature =
   | "memoSidebar"
   | "worldGraphSidebar"
   | "worldGraphInspector"
+  | "canvasSidebar"
+  | "canvasBinder"
   | "binder"
   | "context"
   | "inspector";
@@ -114,6 +116,10 @@ export const SIDEBAR_WIDTH_CONFIG: Record<
   memoSidebar: { ...PANEL_SIDEBAR_WIDTH_CONFIG },
   worldGraphSidebar: { ...PANEL_SIDEBAR_WIDTH_CONFIG },
   worldGraphInspector: { ...PANEL_WIDTH_CONFIG },
+  // Canvas feature — VS Code Activity Bar 모델: IconBar(고정 44px) + ActivityBar(가변).
+  // canvasSidebar는 ActivityBar 폭만 표현. IconBar 폭은 캔버스 컴포넌트 상수로 관리.
+  canvasSidebar: { minPx: 200, maxPx: 320, defaultPx: 248 },
+  canvasBinder: { minPx: 280, maxPx: 420, defaultPx: 320 },
   binder: { ...PANEL_SIDEBAR_WIDTH_CONFIG },
   context: { ...PANEL_WIDTH_CONFIG },
   inspector: { ...PANEL_WIDTH_CONFIG },
