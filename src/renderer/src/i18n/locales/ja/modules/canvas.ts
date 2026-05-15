@@ -26,6 +26,12 @@ export const jaCanvas = {
         notes: "メモ",
       },
     },
+    display: {
+      title: "表示",
+    },
+    advanced: {
+      title: "詳細",
+    },
     layers: {
       title: "レイヤー",
       canonical: { label: "Canonical", hint: "確定構造" },
@@ -57,7 +63,7 @@ export const jaCanvas = {
   binder: {
     inspector: {
       title: "インスペクター",
-      empty: "選択された項目がありません。",
+      empty: "ノードを選択してください。",
       field: {
         type: "種別",
         id: "ID",

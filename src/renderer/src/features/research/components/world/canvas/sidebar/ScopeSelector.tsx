@@ -53,15 +53,12 @@ export function ScopeSelector() {
 
   return (
     <SidebarSection title={t(CANVAS_SECTION_KEYS.scope)}>
-      <div className="flex flex-col gap-2">
-        <div className="flex items-baseline gap-1.5 text-[12px]">
-          <span className="text-muted-foreground">
-            {t("canvas.sidebar.scope.currentLabel")}:
-          </span>
-          <span className="font-medium text-foreground">
-            {describeScope(scope)}
-          </span>
-        </div>
+      <div className="flex flex-col gap-1.5 px-1">
+        <p className="text-[11px] leading-snug text-muted">
+          <span>{t("canvas.sidebar.scope.currentLabel")}</span>
+          <span className="mx-1 opacity-40">·</span>
+          <span className="text-fg/90">{describeScope(scope)}</span>
+        </p>
         <div className="flex flex-wrap gap-1">
           {CANVAS_SCOPE_PRESETS.map((preset) => {
             const active = isSameScope(scope, preset.scope);
@@ -70,16 +67,14 @@ export function ScopeSelector() {
                 key={preset.id}
                 type="button"
                 onClick={() => setScope(preset.scope)}
+                aria-pressed={active}
                 className={cn(
-                  "inline-flex h-6 items-center gap-1.5 rounded-md px-2 text-[11px] transition-colors",
+                  "inline-flex h-6 items-center rounded-sm px-2 text-[11px] transition-colors",
                   active
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                    ? "bg-active text-fg"
+                    : "text-muted hover:bg-surface-hover hover:text-fg",
                 )}
               >
-                {active ? (
-                  <span className="size-1.5 rounded-full bg-primary" />
-                ) : null}
                 {t(preset.labelKey)}
               </button>
             );

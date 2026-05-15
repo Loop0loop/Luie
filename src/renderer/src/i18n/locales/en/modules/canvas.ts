@@ -26,6 +26,12 @@ export const enCanvas = {
         notes: "Notes",
       },
     },
+    display: {
+      title: "Display",
+    },
+    advanced: {
+      title: "Advanced",
+    },
     layers: {
       title: "Layers",
       canonical: { label: "Canonical", hint: "Confirmed structure" },
@@ -57,7 +63,7 @@ export const enCanvas = {
   binder: {
     inspector: {
       title: "Inspector",
-      empty: "Nothing selected.",
+      empty: "Select a node.",
       field: {
         type: "Type",
         id: "ID",

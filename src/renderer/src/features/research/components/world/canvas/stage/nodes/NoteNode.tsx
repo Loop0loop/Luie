@@ -13,7 +13,7 @@ function NoteNodeImpl(props: NodeProps<CanvasNodeData>) {
       {...props}
       bodySlot={
         excerpt ? (
-          <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-[11px] leading-snug text-muted-foreground">
+          <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-[11px] leading-snug text-muted">
             {excerpt}
           </p>
         ) : undefined

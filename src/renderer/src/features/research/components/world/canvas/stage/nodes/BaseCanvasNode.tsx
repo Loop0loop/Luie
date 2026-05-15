@@ -42,11 +42,9 @@ function BaseCanvasNodeImpl({
   return (
     <div
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition-all",
+        "group relative flex flex-col overflow-hidden rounded-lg border bg-surface text-fg shadow-sm transition-all",
         "hover:shadow-md",
-        selected
-          ? "border-primary ring-2 ring-primary/20"
-          : "border-border/60",
+        selected ? "border-accent ring-2 ring-accent/20" : "border-border",
         isDerived && "border-dashed opacity-75",
       )}
       style={{
@@ -63,24 +61,24 @@ function BaseCanvasNodeImpl({
 
       <div className="flex flex-col gap-1 px-3 py-2 pl-3.5">
         {/* 헤더: 아이콘 + 종류 라벨 */}
-        <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+        <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted">
           <Icon className="size-3 shrink-0" style={{ color: tint }} />
           <span>{t(CANVAS_NODE_LABEL_KEY[kind])}</span>
           {isDerived ? (
-            <span className="ml-auto rounded-sm bg-muted px-1 py-px text-[9px] font-medium normal-case tracking-normal text-muted-foreground">
+            <span className="ml-auto rounded-sm bg-active px-1 py-px text-[9px] font-medium normal-case tracking-normal text-muted">
               {t("canvas.node.derived")}
             </span>
           ) : null}
         </div>
 
         {/* 제목 */}
-        <div className="text-[13px] font-semibold leading-tight text-foreground">
+        <div className="text-[13px] font-semibold leading-tight text-fg">
           {title}
         </div>
 
         {/* 부제 */}
         {subtitle ? (
-          <div className="truncate text-[11px] leading-tight text-muted-foreground">
+          <div className="truncate text-[11px] leading-tight text-muted">
             {subtitle}
           </div>
         ) : null}
@@ -93,22 +91,22 @@ function BaseCanvasNodeImpl({
       <Handle
         type="target"
         position={Position.Top}
-        className="size-1.5! border! border-border! bg-background!"
+        className="size-1.5! border! border-border! bg-panel!"
       />
       <Handle
         type="source"
         position={Position.Bottom}
-        className="size-1.5! border! border-border! bg-background!"
+        className="size-1.5! border! border-border! bg-panel!"
       />
       <Handle
         type="target"
         position={Position.Left}
-        className="size-1.5! border! border-border! bg-background!"
+        className="size-1.5! border! border-border! bg-panel!"
       />
       <Handle
         type="source"
         position={Position.Right}
-        className="size-1.5! border! border-border! bg-background!"
+        className="size-1.5! border! border-border! bg-panel!"
       />
     </div>
   );

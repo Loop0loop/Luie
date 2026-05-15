@@ -1,31 +1,29 @@
-import type { WorldGraphNode } from "@shared/types";
 import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { ScopeSelector } from "./ScopeSelector";
-import { CanvasOutline } from "./CanvasOutline";
-import { LayerToggles } from "./LayerToggles";
+import { DisplayLayers } from "./DisplayLayers";
 import { Filters } from "./Filters";
 
-interface CanvasSidebarProps {
-  graphNodes: readonly WorldGraphNode[];
-}
-
 /**
- * 좌측 사이드바 — Obsidian 스타일.
+ * 좌측 사이드바 — 워크스페이스(MainLayout/ScrivenerLayout) 사이드바 톤과
+ * 동일한 결로 통일.
  *
- * 구성:
- *   Scope    : 어디를 볼지 (항상 열림)
- *   Outline  : 어떤 노드가 있는지 / 빠른 이동 (가변 높이, fill)
- *   Layers   : 어떤 레이어를 보일지 (collapsible)
- *   Filters  : 어떤 노드 종류를 보일지 (collapsible)
+ * 구성 (위에서 아래로 사용 빈도 순):
+ *   Scope        : 어디를 볼지 — 항상 노출, 컴팩트한 pill 그룹
+ *   표시 (Display): 매일 쓰는 핵심 레이어 (Canonical, Derived, Timeline)
+ *   고급          : 관계 강도/충돌/복선 — 기본 접힘
+ *   필터          : 노드 종류 토글 — 기본 접힘 (기본값으로 모두 켜짐)
+ *
+ * 아웃라인은 캔버스 사이드바에서 제거. 노드 추가는 toolbar로,
+ * 노드 탐색/이동은 캔버스 자체에서 한다. 캔버스 안에서 다른 패널을
+ * 흉내내지 않는 게 흐름을 끊지 않는 핵심.
  */
-export function CanvasSidebar({ graphNodes }: CanvasSidebarProps) {
+export function CanvasSidebar() {
   return (
-    <aside className="flex h-full w-full flex-col overflow-hidden bg-background">
+    <aside className="flex h-full w-full flex-col overflow-hidden bg-sidebar text-fg">
       <ScrollArea className="min-h-0 flex-1">
-        <div className="flex flex-col gap-1 py-2">
+        <div className="flex flex-col">
           <ScopeSelector />
-          <CanvasOutline graphNodes={graphNodes} />
-          <LayerToggles />
+          <DisplayLayers />
           <Filters />
         </div>
       </ScrollArea>

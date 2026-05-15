@@ -1,9 +1,11 @@
-import { useCallback, type MouseEvent as ReactMouseEvent } from "react";
+import { useCallback, useEffect, type MouseEvent as ReactMouseEvent } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
   MiniMap,
   PanOnScrollMode,
+  useEdgesState,
+  useNodesState,
   type Edge,
   type Node,
   type NodeMouseHandler,
@@ -33,6 +35,16 @@ interface CanvasStageProps {
  *   - 노드 좌클릭 + drag → 노드 이동
  *   - 더블클릭 → 줌하지 않음 (다음 단계에서 노드 편집 진입)
  *
+ * 상태 모델:
+ *   props.nodes/edges는 도메인 store에서 파생되는 "원본". 이걸 그대로
+ *   <ReactFlow nodes>에 controlled로 박으면 react-flow가 internal state를
+ *   업데이트하지 않아 드래그가 시각적으로 안 따라온다(망가진 DnD).
+ *
+ *   대신 useNodesState/useEdgesState로 internal state를 두고, props가
+ *   바뀔 때만 sync한다. 드래그 위치는 react-flow가 직접 갱신하고,
+ *   onNodeDragStop에서 외부 store에 영구 저장 → 다음 prop sync는
+ *   같은 위치로 되돌리지 않는다.
+ *
  * Provider는 부모(WorldCanvasPanel)에서 감싼다.
  */
 export function CanvasStage({ nodes, edges, onNodeMoved }: CanvasStageProps) {
@@ -40,6 +52,21 @@ export function CanvasStage({ nodes, edges, onNodeMoved }: CanvasStageProps) {
   const selectNode = useCanvasUiStore((s) => s.selectNode);
   const selectEdge = useCanvasUiStore((s) => s.selectEdge);
   const clearSelection = useCanvasUiStore((s) => s.clearSelection);
+
+  const [rfNodes, setRfNodes, onNodesChange] =
+    useNodesState<CanvasNodeData>(nodes);
+  const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState(edges);
+
+  // props가 바뀌면 internal state로 흘려보낸다.
+  // 드래그 중에는 props.position이 그대로이므로 화면이 튀지 않고,
+  // 드래그 종료 후 store가 갱신되면 같은 위치로 동기화된다.
+  useEffect(() => {
+    setRfNodes(nodes);
+  }, [nodes, setRfNodes]);
+
+  useEffect(() => {
+    setRfEdges(edges);
+  }, [edges, setRfEdges]);
 
   const handleNodeClick = useCallback<NodeMouseHandler>(
     (_event, node) => selectNode(node.id),
@@ -68,8 +95,10 @@ export function CanvasStage({ nodes, edges, onNodeMoved }: CanvasStageProps) {
   return (
     <div className="relative h-full min-h-0 w-full">
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
+        nodes={rfNodes}
+        edges={rfEdges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
         nodeTypes={CANVAS_NODE_TYPES}
         onNodeClick={handleNodeClick}
         onEdgeClick={handleEdgeClick}
@@ -101,14 +130,14 @@ export function CanvasStage({ nodes, edges, onNodeMoved }: CanvasStageProps) {
           variant={BackgroundVariant.Dots}
           gap={CANVAS_STAGE.GRID_GAP}
           size={CANVAS_STAGE.GRID_DOT_SIZE}
-          className="bg-background!"
+          className="bg-app!"
         />
         {showMiniMap ? (
           <MiniMap
             pannable
             zoomable
             position="bottom-left"
-            className="rounded-lg! border! border-border/60! bg-background/80! shadow-sm!"
+            className="rounded-lg! border! border-border! bg-panel/85! shadow-sm!"
           />
         ) : null}
       </ReactFlow>

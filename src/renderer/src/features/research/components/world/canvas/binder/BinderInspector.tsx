@@ -22,21 +22,23 @@ interface InspectorRowProps {
 
 function InspectorRow({ label, children }: InspectorRowProps) {
   return (
-    <div className="grid grid-cols-[72px_1fr] items-baseline gap-x-3 gap-y-0.5">
-      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground/70">
+    <div className="grid grid-cols-[80px_1fr] items-baseline gap-x-3 gap-y-0.5">
+      <dt className="text-[10px] font-medium uppercase tracking-wider text-muted">
         {label}
       </dt>
-      <dd className="text-[12px] leading-snug text-foreground">{children}</dd>
+      <dd className="text-[12px] leading-snug text-fg">{children}</dd>
     </div>
   );
 }
 
 /**
- * 선택된 노드/엣지의 메타 정보를 표시.
+ * 인스펙터 본문.
  *
- * - selection.kind === "none"  : 빈 상태
- * - selection.kind === "node"  : 노드 카드 헤더 + 필드 목록
- * - selection.kind === "edge"  : ID만 (다음 단계에서 EntityRelation lookup 추가)
+ * - 선택 없음: 단일 안내문 (섹션 헤더는 BinderBar가 따로 그림)
+ * - 노드/엣지 선택: 헤더 카드 + 메타 필드
+ *
+ * 빈 상태에서 다른 섹션은 BinderBar 레벨에서 렌더되지 않으므로
+ * 여기서는 인스펙터 본문만 책임진다.
  */
 export function BinderInspector({
   selection,
@@ -46,7 +48,7 @@ export function BinderInspector({
 
   if (selection.kind === "none") {
     return (
-      <p className="py-1 text-[12px] text-muted-foreground">
+      <p className="px-1 py-2 text-[12px] leading-relaxed text-muted">
         {t("canvas.binder.inspector.empty")}
       </p>
     );
@@ -59,7 +61,9 @@ export function BinderInspector({
           {t("canvas.binder.inspector.type.edge")}
         </InspectorRow>
         <InspectorRow label={t("canvas.binder.inspector.field.id")}>
-          <code className="font-mono text-[11px]">{selection.id}</code>
+          <code className="font-mono text-[11px] text-muted">
+            {selection.id}
+          </code>
         </InspectorRow>
       </div>
     );
@@ -69,7 +73,7 @@ export function BinderInspector({
   const node = graphNodes.find((n) => n.id === selection.id);
   if (!node) {
     return (
-      <p className="py-1 text-[12px] text-muted-foreground">
+      <p className="px-1 py-2 text-[12px] text-muted">
         {t("canvas.binder.inspector.empty")}
       </p>
     );
@@ -81,10 +85,10 @@ export function BinderInspector({
 
   return (
     <div className="flex flex-col gap-3 py-1">
-      {/* 헤더 카드: 아이콘 + 종류 + 이름 */}
+      {/* 헤더 카드 — surface tone */}
       <div
         className={cn(
-          "flex items-start gap-2.5 rounded-md border border-border/60 bg-card px-2.5 py-2",
+          "flex items-start gap-2.5 rounded-md border border-border bg-surface px-2.5 py-2",
         )}
       >
         <div
@@ -94,10 +98,10 @@ export function BinderInspector({
           <Icon className="size-3.5" />
         </div>
         <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted">
             {t(CANVAS_NODE_LABEL_KEY[kind])}
           </span>
-          <span className="truncate text-[13px] font-semibold leading-tight text-foreground">
+          <span className="truncate text-[13px] font-semibold leading-tight text-fg">
             {node.name}
           </span>
         </div>
@@ -106,7 +110,9 @@ export function BinderInspector({
       {/* 필드 */}
       <dl className="flex flex-col gap-1.5">
         {node.firstAppearance ? (
-          <InspectorRow label={t("canvas.binder.inspector.field.firstAppearance")}>
+          <InspectorRow
+            label={t("canvas.binder.inspector.field.firstAppearance")}
+          >
             {node.firstAppearance}
           </InspectorRow>
         ) : null}
@@ -116,16 +122,16 @@ export function BinderInspector({
           </InspectorRow>
         ) : null}
         {node.description ? (
-          <InspectorRow label={t("canvas.binder.inspector.field.description")}>
-            <span className="whitespace-pre-wrap text-foreground/80">
+          <InspectorRow
+            label={t("canvas.binder.inspector.field.description")}
+          >
+            <span className="whitespace-pre-wrap text-fg/85">
               {node.description}
             </span>
           </InspectorRow>
         ) : null}
         <InspectorRow label={t("canvas.binder.inspector.field.id")}>
-          <code className="font-mono text-[11px] text-muted-foreground">
-            {node.id}
-          </code>
+          <code className="font-mono text-[11px] text-muted">{node.id}</code>
         </InspectorRow>
       </dl>
     </div>

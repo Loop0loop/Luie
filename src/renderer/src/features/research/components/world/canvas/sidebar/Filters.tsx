@@ -17,7 +17,11 @@ export function Filters() {
   const toggleFilter = useCanvasUiStore((s) => s.toggleFilter);
 
   return (
-    <SidebarSection title={t(CANVAS_SECTION_KEYS.filters)} collapsible>
+    <SidebarSection
+      title={t(CANVAS_SECTION_KEYS.filters)}
+      collapsible
+      defaultCollapsed
+    >
       <ul className="flex flex-col">
         {CANVAS_FILTER_OPTIONS.map((option) => (
           <li key={option.id}>

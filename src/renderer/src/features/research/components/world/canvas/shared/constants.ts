@@ -22,13 +22,14 @@ import type {
  */
 export const CANVAS_LAYOUT = {
   // 기본 비율 (1440px 기준 산출)
-  SIDEBAR_DEFAULT_RATIO: 18,
-  BINDER_DEFAULT_RATIO: 25,
-  // 픽셀 제약
-  SIDEBAR_MIN_PX: 220,
-  SIDEBAR_MAX_PX: 420,
-  BINDER_MIN_PX: 320,
-  BINDER_MAX_PX: 520,
+  // Obsidian/Scrivener 풍: 양 사이드는 좁고 본문이 넓다.
+  SIDEBAR_DEFAULT_RATIO: 16,
+  BINDER_DEFAULT_RATIO: 18,
+  // 픽셀 제약 — Inspector 패턴에 맞춘 좁은 폭.
+  SIDEBAR_MIN_PX: 200,
+  SIDEBAR_MAX_PX: 320,
+  BINDER_MIN_PX: 240,
+  BINDER_MAX_PX: 360,
   // 레이아웃 기타
   TOOLBAR_HEIGHT: 36,
 } as const;
@@ -36,8 +37,8 @@ export const CANVAS_LAYOUT = {
 /** Sidebar / Binder 섹션 i18n key */
 export const CANVAS_SECTION_KEYS = {
   scope: "canvas.sidebar.scope.title",
-  outline: "canvas.sidebar.outline.title",
-  layers: "canvas.sidebar.layers.title",
+  display: "canvas.sidebar.display.title",
+  advanced: "canvas.sidebar.advanced.title",
   filters: "canvas.sidebar.filters.title",
   inspector: "canvas.binder.inspector.title",
   related: "canvas.binder.related.title",
@@ -67,7 +68,8 @@ export interface CanvasLayerOption {
   hintKey?: string;
 }
 
-export const CANVAS_LAYER_OPTIONS: readonly CanvasLayerOption[] = [
+/** 사이드바 "표시" 섹션의 핵심 레이어 — 항상 노출. */
+export const CANVAS_LAYER_PRIMARY: readonly CanvasLayerOption[] = [
   {
     id: "canonical",
     labelKey: "canvas.sidebar.layers.canonical.label",
@@ -82,6 +84,10 @@ export const CANVAS_LAYER_OPTIONS: readonly CanvasLayerOption[] = [
     id: "timeline",
     labelKey: "canvas.sidebar.layers.timeline.label",
   },
+] as const;
+
+/** 사이드바 "고급 옵션" — 기본 접힘. */
+export const CANVAS_LAYER_ADVANCED: readonly CanvasLayerOption[] = [
   {
     id: "relation-strength",
     labelKey: "canvas.sidebar.layers.relationStrength.label",
@@ -94,6 +100,12 @@ export const CANVAS_LAYER_OPTIONS: readonly CanvasLayerOption[] = [
     id: "foreshadowing",
     labelKey: "canvas.sidebar.layers.foreshadowing.label",
   },
+] as const;
+
+/** Layers 전체 — 호환용. (loop 등 기존 코드용) */
+export const CANVAS_LAYER_OPTIONS: readonly CanvasLayerOption[] = [
+  ...CANVAS_LAYER_PRIMARY,
+  ...CANVAS_LAYER_ADVANCED,
 ] as const;
 
 /** Filter 옵션 */

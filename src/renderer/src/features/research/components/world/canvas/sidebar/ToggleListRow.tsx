@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { cn } from "@renderer/lib/utils";
 
 interface ToggleListRowProps {
@@ -8,11 +9,10 @@ interface ToggleListRowProps {
 }
 
 /**
- * 사이드바의 토글 행 — Obsidian 스타일.
+ * 사이드바 토글 행. 작은 사각 체크박스 + 라벨.
  *
- * 체크박스 대신 좌측에 작은 원형 인디케이터를 사용.
- * 활성 상태는 accent 색상 dot, 비활성은 빈 원.
- * 행 전체가 클릭 영역.
+ * 워크스페이스 사이드바와 같은 hover 톤(`bg-surface-hover`)과
+ * fg/muted 텍스트 토큰을 쓴다. 색 dot이나 글로우는 쓰지 않는다.
  */
 export function ToggleListRow({
   label,
@@ -26,23 +26,25 @@ export function ToggleListRow({
       onClick={onToggle}
       aria-pressed={checked}
       className={cn(
-        "group flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors",
-        "hover:bg-muted/60",
-        checked ? "text-foreground" : "text-muted-foreground",
+        "group flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left transition-colors",
+        "hover:bg-surface-hover",
+        checked ? "text-fg" : "text-muted",
       )}
     >
       <span
         aria-hidden
         className={cn(
-          "flex size-2.5 shrink-0 rounded-full border transition-all",
+          "flex size-3 shrink-0 items-center justify-center rounded-[3px] border transition-colors",
           checked
-            ? "border-primary bg-primary shadow-[0_0_4px_rgba(var(--color-primary),0.3)]"
-            : "border-border bg-transparent",
+            ? "border-fg/70 bg-fg/80 text-background"
+            : "border-border bg-transparent group-hover:border-fg/40",
         )}
-      />
+      >
+        {checked ? <Check className="size-2.5" strokeWidth={3} /> : null}
+      </span>
       <span className="flex-1 truncate text-[12px] leading-tight">{label}</span>
       {hint ? (
-        <span className="shrink-0 text-[10px] leading-tight text-muted-foreground/60">
+        <span className="shrink-0 text-[10px] leading-tight text-muted/70">
           {hint}
         </span>
       ) : null}

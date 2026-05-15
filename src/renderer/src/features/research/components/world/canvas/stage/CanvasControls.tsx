@@ -18,7 +18,7 @@ function ControlButton({ icon, label, onClick }: ControlButtonProps) {
       title={label}
       className={cn(
         "flex size-7 items-center justify-center rounded-md transition-colors",
-        "text-muted-foreground hover:bg-muted hover:text-foreground",
+        "text-muted hover:bg-surface-hover hover:text-fg",
         "active:scale-95",
       )}
     >
@@ -28,15 +28,7 @@ function ControlButton({ icon, label, onClick }: ControlButtonProps) {
 }
 
 /**
- * Obsidian 스타일 캔버스 컨트롤.
- *
- * react-flow 기본 Controls를 쓰지 않고, 프로젝트 디자인 시스템에 맞춘
- * 커스텀 컨트롤 바를 하단 우측에 배치한다.
- *
- * 스타일:
- *   - 반투명 배경 + border + backdrop-blur
- *   - 작은 아이콘 버튼 (7x7)
- *   - hover 시 muted 배경
+ * 캔버스 줌/리셋 컨트롤 — 우측 하단 floating bar.
  */
 export function CanvasControls() {
   const { t } = useTranslation();
@@ -50,8 +42,8 @@ export function CanvasControls() {
     <div
       className={cn(
         "absolute bottom-3 right-3 z-10",
-        "flex items-center gap-0.5 rounded-lg border border-border/60",
-        "bg-background/80 px-1 py-0.5 shadow-sm backdrop-blur-sm",
+        "flex items-center gap-0.5 rounded-lg border border-border",
+        "bg-panel/85 px-1 py-0.5 shadow-sm backdrop-blur-sm",
       )}
     >
       <ControlButton

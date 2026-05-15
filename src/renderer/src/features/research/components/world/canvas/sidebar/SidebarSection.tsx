@@ -4,9 +4,9 @@ import { cn } from "@renderer/lib/utils";
 
 interface SidebarSectionProps {
   title: string;
-  /** 섹션 헤더 우측 슬롯 (액션 버튼 등) */
+  /** 섹션 헤더 우측 슬롯 */
   action?: ReactNode;
-  /** 섹션 본문이 가득 차야 할 때 (Outline 같은 가변 높이 영역) */
+  /** 본문 영역이 남은 공간을 채워야 하는지 */
   fill?: boolean;
   /** 접기/펼치기 가능 여부 */
   collapsible?: boolean;
@@ -17,12 +17,11 @@ interface SidebarSectionProps {
 }
 
 /**
- * 사이드바 섹션 셸 — Obsidian 스타일.
+ * 사이드바 섹션 셸 — 워크스페이스 사이드바 톤(`text-muted`,
+ * uppercase tracking)과 동일한 헤더 스타일.
  *
- * - 섹션 타이틀: 11px, uppercase, muted. 클릭 시 접기/펼치기.
- * - 접힌 상태에서는 chevron이 회전하고 본문이 숨겨진다.
- * - 헤더 우측에 액션 버튼 배치 가능.
- * - `fill`을 켜면 본문 영역이 남은 공간을 채운다.
+ * 헤더 클릭 시 접기/펼치기. 토큰은 `text-fg`/`text-muted`/`bg-surface-hover`로
+ * 통일해서 워크스페이스 내 다른 사이드바(Scrivener Binder 등)와 결을 맞춘다.
  */
 export function SidebarSection({
   title,
@@ -46,20 +45,20 @@ export function SidebarSection({
     >
       <header
         className={cn(
-          "flex h-7 items-center gap-1 px-3",
-          collapsible && "cursor-pointer select-none hover:bg-muted/50",
+          "flex h-7 items-center gap-1 px-2",
+          collapsible && "cursor-pointer select-none rounded-sm hover:bg-surface-hover",
         )}
         onClick={collapsible ? () => setCollapsed((c) => !c) : undefined}
       >
         {collapsible ? (
           <ChevronDown
             className={cn(
-              "size-3 shrink-0 text-muted-foreground transition-transform duration-150",
+              "size-3 shrink-0 text-muted transition-transform duration-150",
               isCollapsed && "-rotate-90",
             )}
           />
         ) : null}
-        <span className="flex-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        <span className="flex-1 text-[10px] font-semibold uppercase tracking-wider text-muted">
           {title}
         </span>
         {action && !isCollapsed ? (
@@ -72,7 +71,12 @@ export function SidebarSection({
         ) : null}
       </header>
       {!isCollapsed ? (
-        <div className={cn("px-2 pb-1", fill && "min-h-0 flex-1 overflow-hidden")}>
+        <div
+          className={cn(
+            "px-1 pb-2",
+            fill && "min-h-0 flex-1 overflow-hidden",
+          )}
+        >
           {children}
         </div>
       ) : null}

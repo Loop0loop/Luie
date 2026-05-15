@@ -52,7 +52,7 @@ export function WorldCanvasPanel() {
   return (
     <ReactFlowProvider>
       <CanvasLayout
-        sidebar={<CanvasSidebar graphNodes={graphNodes} />}
+        sidebar={<CanvasSidebar />}
         main={
           <div className="flex h-full min-h-0 flex-col">
             <CanvasToolbar />
@@ -66,14 +66,14 @@ export function WorldCanvasPanel() {
               {/* 에러 오버레이 */}
               {error ? (
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                  <div className="pointer-events-auto flex flex-col items-center gap-2 rounded-lg border border-border/60 bg-background/90 px-4 py-3 shadow-sm backdrop-blur-sm">
-                    <p className="text-[12px] text-muted-foreground">
+                  <div className="pointer-events-auto flex flex-col items-center gap-2 rounded-lg border border-border bg-panel/95 px-4 py-3 shadow-sm backdrop-blur-sm">
+                    <p className="text-[12px] text-muted">
                       {t("canvas.empty.error")}
                     </p>
                     <button
                       type="button"
                       onClick={handleRetry}
-                      className="rounded-md border border-border/60 bg-background px-2.5 py-1 text-[11px] text-foreground transition-colors hover:bg-muted"
+                      className="rounded-md border border-border bg-surface px-2.5 py-1 text-[11px] text-fg transition-colors hover:bg-surface-hover"
                     >
                       {t("canvas.empty.retry")}
                     </button>
@@ -83,7 +83,7 @@ export function WorldCanvasPanel() {
 
               {/* 로딩 인디케이터 */}
               {isLoading && !error ? (
-                <div className="pointer-events-none absolute right-3 top-3 rounded-full border border-border/60 bg-background/80 px-2.5 py-1 text-[10px] text-muted-foreground shadow-sm backdrop-blur-sm">
+                <div className="pointer-events-none absolute right-3 top-3 rounded-full border border-border bg-panel/80 px-2.5 py-1 text-[10px] text-muted shadow-sm backdrop-blur-sm">
                   {t("loading")}
                 </div>
               ) : null}

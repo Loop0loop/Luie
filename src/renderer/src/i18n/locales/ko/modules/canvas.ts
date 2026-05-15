@@ -26,6 +26,12 @@ export const koCanvas = {
         notes: "메모",
       },
     },
+    display: {
+      title: "표시",
+    },
+    advanced: {
+      title: "고급",
+    },
     layers: {
       title: "레이어",
       canonical: { label: "Canonical", hint: "확정된 구조" },
@@ -57,7 +63,7 @@ export const koCanvas = {
   binder: {
     inspector: {
       title: "인스펙터",
-      empty: "선택된 항목이 없습니다.",
+      empty: "노드를 선택하세요.",
       field: {
         type: "유형",
         id: "ID",

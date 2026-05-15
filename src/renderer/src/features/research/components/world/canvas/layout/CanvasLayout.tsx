@@ -18,15 +18,14 @@ interface CanvasLayoutProps {
 }
 
 /**
- * 캔버스 3분할 리사이즈 레이아웃: Sidebar | Main | BinderBar.
+ * 캔버스 3분할 리사이즈 레이아웃: Sidebar | Main | Inspector(BinderBar).
  *
- * 기존 workspace 레이아웃(ScrivenerLayout, GoogleDocsLayout) 패턴 그대로:
- *   - PanelGroup: id + elementRef
- *   - Panel: defaultSize는 비율(%), minSize/maxSize는 컨테이너 너비 기반 % 변환
- *   - PanelResizeHandle: data-separator-feature + 히트 영역 확장 div
+ * 톤은 워크스페이스 MainLayout/ScrivenerLayout과 동일하게 둔다:
+ *   - 좌측 사이드바: `bg-sidebar` + 우측 border
+ *   - 메인        : `bg-app`
+ *   - 우측 인스펙터: `bg-panel` + 좌측 border
  *
- * defaultSize는 첫 렌더에 사용. 측정 전에도 안정된 비율이 보이도록 상수 사용.
- * minSize/maxSize는 measure 후 px 기반으로 계산되어 너무 작아지지 않게 보호한다.
+ * Resize handle 스타일도 워크스페이스 레이아웃과 같은 1px bar.
  */
 export function CanvasLayout({ sidebar, main, binder }: CanvasLayoutProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -56,14 +55,14 @@ export function CanvasLayout({ sidebar, main, binder }: CanvasLayoutProps) {
         defaultSize={toPanelPercentSize(CANVAS_LAYOUT.SIDEBAR_DEFAULT_RATIO)}
         minSize={sidebarSize.minSize}
         maxSize={sidebarSize.maxSize}
-        className="flex min-w-0 shrink-0 flex-col overflow-hidden bg-background"
+        className="flex min-w-0 shrink-0 flex-col overflow-hidden border-r border-border bg-sidebar"
       >
         {sidebar}
       </Panel>
 
       <PanelResizeHandle
         data-separator-feature="canvas.sidebar"
-        className="relative z-10 w-1 shrink-0 cursor-col-resize bg-border/40 transition-colors hover:bg-accent/60 focus-visible:bg-accent/60"
+        className="relative z-10 w-1 shrink-0 cursor-col-resize bg-border/40 transition-colors hover:bg-accent/50 active:bg-accent/80"
       >
         <div className="absolute inset-y-0 -left-1 -right-1" />
       </PanelResizeHandle>
@@ -72,19 +71,19 @@ export function CanvasLayout({ sidebar, main, binder }: CanvasLayoutProps) {
       <Panel
         id="canvas-main"
         minSize={30}
-        className="min-w-0 flex-1 overflow-hidden bg-background"
+        className="min-w-0 flex-1 overflow-hidden bg-app"
       >
         {main}
       </Panel>
 
       <PanelResizeHandle
         data-separator-feature="canvas.binder"
-        className="relative z-10 w-1 shrink-0 cursor-col-resize bg-border/40 transition-colors hover:bg-accent/60 focus-visible:bg-accent/60"
+        className="relative z-10 w-1 shrink-0 cursor-col-resize bg-border/40 transition-colors hover:bg-accent/50 active:bg-accent/80"
       >
         <div className="absolute inset-y-0 -left-1 -right-1" />
       </PanelResizeHandle>
 
-      {/* Right BinderBar */}
+      {/* Right Inspector */}
       <Panel
         id="canvas-binder"
         collapsible
@@ -92,7 +91,7 @@ export function CanvasLayout({ sidebar, main, binder }: CanvasLayoutProps) {
         defaultSize={toPanelPercentSize(CANVAS_LAYOUT.BINDER_DEFAULT_RATIO)}
         minSize={binderSize.minSize}
         maxSize={binderSize.maxSize}
-        className="flex min-w-0 shrink-0 flex-col overflow-hidden bg-background"
+        className="flex min-w-0 shrink-0 flex-col overflow-hidden border-l border-border bg-panel"
       >
         {binder}
       </Panel>

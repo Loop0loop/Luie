@@ -38,7 +38,7 @@ function ToolbarButton({ icon, label, title, onClick }: ToolbarButtonProps) {
       aria-label={title}
       className={cn(
         "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12px] transition-colors",
-        "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+        "text-muted hover:bg-surface-hover hover:text-fg",
         "active:scale-[0.97]",
       )}
     >
@@ -53,10 +53,10 @@ function ToolbarDivider() {
 }
 
 /**
- * 캔버스 상단 툴바 — Obsidian 스타일.
+ * 캔버스 상단 툴바 — 워크스페이스 ribbon 톤.
  *
- * 미니멀한 아이콘 + 라벨 버튼. 배경은 투명, 하단 border로 구분.
- * 우측에 인라인 검색 필드.
+ * 검색은 우측에 인라인. 사이드바에서 검색을 빼서 흐름이 끊기지 않도록
+ * 상단 한 곳에 모은다.
  */
 export function CanvasToolbar({
   onAddNode,
@@ -70,7 +70,7 @@ export function CanvasToolbar({
   const { t } = useTranslation();
 
   return (
-    <div className="flex h-9 shrink-0 items-center border-b border-border/50 bg-background px-2">
+    <div className="flex h-9 shrink-0 items-center border-b border-border bg-surface px-2">
       <ToolbarButton
         icon={<Plus className="size-3.5" />}
         label={t(CANVAS_TOOLBAR_ACTION_KEYS.addNode)}
@@ -114,13 +114,13 @@ export function CanvasToolbar({
         <div className="relative">
           <Search
             aria-hidden
-            className="pointer-events-none absolute left-2 top-1/2 size-3 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute left-2 top-1/2 size-3 -translate-y-1/2 text-muted"
           />
           <Input
             type="search"
             placeholder={t(CANVAS_TOOLBAR_ACTION_KEYS.searchPlaceholder)}
             onChange={(e) => onSearch?.(e.target.value)}
-            className="h-6 w-40 rounded-md border-border/50 bg-transparent pl-7 text-[11px] placeholder:text-muted-foreground/60 focus-visible:border-primary/40 focus-visible:ring-0"
+            className="h-6 w-40 rounded-md border-border bg-transparent pl-7 text-[11px] placeholder:text-muted/70 focus-visible:border-accent/50 focus-visible:ring-0"
           />
         </div>
       </div>
