@@ -6,6 +6,7 @@
  */
 
 import type {
+  CanvasActivity,
   CanvasLayerId,
   CanvasNodeFilterId,
   CanvasScope,
@@ -22,14 +23,16 @@ import type {
  */
 export const CANVAS_LAYOUT = {
   // 기본 비율 (1440px 기준 산출)
-  // Obsidian/Scrivener 풍: 양 사이드는 좁고 본문이 넓다.
-  SIDEBAR_DEFAULT_RATIO: 16,
+  // ActivityRail(44px) + SidePanel을 합친 폭이라 단일 사이드바보다 살짝 넉넉.
+  SIDEBAR_DEFAULT_RATIO: 18,
   BINDER_DEFAULT_RATIO: 18,
-  // 픽셀 제약 — Inspector 패턴에 맞춘 좁은 폭.
-  SIDEBAR_MIN_PX: 200,
-  SIDEBAR_MAX_PX: 320,
+  // 픽셀 제약 — Rail(44) + Panel(min 200/max 320) 합산 기준.
+  SIDEBAR_MIN_PX: 244,
+  SIDEBAR_MAX_PX: 360,
   BINDER_MIN_PX: 240,
   BINDER_MAX_PX: 360,
+  /** Activity Rail 폭(px). VS Code 기본값과 동일한 44px. */
+  ACTIVITY_RAIL_PX: 44,
   // 레이아웃 기타
   TOOLBAR_HEIGHT: 36,
 } as const;
@@ -40,10 +43,34 @@ export const CANVAS_SECTION_KEYS = {
   display: "canvas.sidebar.display.title",
   advanced: "canvas.sidebar.advanced.title",
   filters: "canvas.sidebar.filters.title",
+  outline: "canvas.sidebar.outline.title",
+  search: "canvas.sidebar.search.title",
+  view: "canvas.sidebar.view.title",
   inspector: "canvas.binder.inspector.title",
   related: "canvas.binder.related.title",
   suggestions: "canvas.binder.suggestions.title",
   agent: "canvas.binder.agent.title",
+} as const;
+
+/**
+ * Activity Rail 항목.
+ *
+ * VS Code Activity Bar를 캔버스 도메인으로 재해석. 한 번에 하나만
+ * 활성이며, label은 i18n key, icon은 lucide-react 컴포넌트.
+ *
+ * 항목을 늘리지 않는다 — Memory/Entities 같은 앱 전역 자료는 캔버스
+ * 외곽 (워크스페이스 사이드바)이 담당하고, 캔버스 안에서는 시각화
+ * 작업에 직접 필요한 활동만 둔다.
+ */
+export interface CanvasActivityDef {
+  id: CanvasActivity;
+  labelKey: string;
+}
+
+export const CANVAS_ACTIVITY_KEYS = {
+  view: "canvas.sidebar.activity.view",
+  outline: "canvas.sidebar.activity.outline",
+  search: "canvas.sidebar.activity.search",
 } as const;
 
 /** Scope 프리셋. label은 i18n key. */

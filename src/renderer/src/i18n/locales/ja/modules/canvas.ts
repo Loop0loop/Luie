@@ -32,6 +32,20 @@ export const jaCanvas = {
     advanced: {
       title: "詳細",
     },
+    activity: {
+      view: "ビュー",
+      outline: "アウトライン",
+      search: "検索",
+    },
+    view: {
+      title: "ビュー",
+    },
+    search: {
+      title: "検索",
+      placeholder: "ノード/関係を検索",
+      empty: "検索語を入力してください。",
+      noResults: "結果がありません。",
+    },
     layers: {
       title: "レイヤー",
       canonical: { label: "Canonical", hint: "確定構造" },

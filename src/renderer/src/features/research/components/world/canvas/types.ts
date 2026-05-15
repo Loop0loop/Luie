@@ -52,6 +52,17 @@ export interface CanvasSelection {
   id: string | null;
 }
 
+/**
+ * 사이드바의 활동(activity) — VS Code Activity Bar 모델.
+ *
+ * - view    : 캔버스 뷰 컨트롤러 (Scope / 레이어 / 필터)
+ * - outline : 현재 캔버스 노드의 트리 탐색
+ * - search  : 캔버스 안 노드/관계 검색
+ *
+ * 한 번에 하나만 활성. 사이드바 자체의 표시/숨김은 외곽 layout이 담당.
+ */
+export type CanvasActivity = "view" | "outline" | "search";
+
 /** worldBuildingStore의 entity type을 캔버스 노드 종류로 매핑 */
 export const ENTITY_TYPE_TO_CANVAS_KIND: Record<
   WorldEntitySourceType,

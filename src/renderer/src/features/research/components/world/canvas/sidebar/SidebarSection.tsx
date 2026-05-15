@@ -45,7 +45,7 @@ export function SidebarSection({
     >
       <header
         className={cn(
-          "flex h-7 items-center gap-1 px-2",
+          "flex h-7 items-center gap-1 px-3",
           collapsible && "cursor-pointer select-none rounded-sm hover:bg-surface-hover",
         )}
         onClick={collapsible ? () => setCollapsed((c) => !c) : undefined}
@@ -58,7 +58,7 @@ export function SidebarSection({
             )}
           />
         ) : null}
-        <span className="flex-1 text-[10px] font-semibold uppercase tracking-wider text-muted">
+        <span className="flex-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
           {title}
         </span>
         {action && !isCollapsed ? (
@@ -73,7 +73,7 @@ export function SidebarSection({
       {!isCollapsed ? (
         <div
           className={cn(
-            "px-1 pb-2",
+            "px-2 pb-2",
             fill && "min-h-0 flex-1 overflow-hidden",
           )}
         >

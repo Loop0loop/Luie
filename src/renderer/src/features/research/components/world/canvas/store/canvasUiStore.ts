@@ -11,6 +11,7 @@
 
 import { create } from "zustand";
 import type {
+  CanvasActivity,
   CanvasLayerId,
   CanvasNodeFilterId,
   CanvasScope,
@@ -46,6 +47,10 @@ export interface CanvasUiState {
   selection: CanvasSelection;
   showTimelineStrip: boolean;
   showMiniMap: boolean;
+  /** 사이드바의 활성 activity (Activity Rail에서 선택). */
+  activity: CanvasActivity;
+  /** Search activity의 쿼리 문자열. activity 전환과 별개로 보존. */
+  searchQuery: string;
 
   setScope: (scope: CanvasScope) => void;
   toggleLayer: (id: CanvasLayerId) => void;
@@ -55,6 +60,8 @@ export interface CanvasUiState {
   clearSelection: () => void;
   setShowTimelineStrip: (visible: boolean) => void;
   setShowMiniMap: (visible: boolean) => void;
+  setActivity: (activity: CanvasActivity) => void;
+  setSearchQuery: (query: string) => void;
 }
 
 export const useCanvasUiStore = create<CanvasUiState>((set) => ({
@@ -64,6 +71,8 @@ export const useCanvasUiStore = create<CanvasUiState>((set) => ({
   selection: DEFAULT_SELECTION,
   showTimelineStrip: false,
   showMiniMap: false,
+  activity: "view",
+  searchQuery: "",
 
   setScope: (scope) => set({ scope }),
 
@@ -88,4 +97,8 @@ export const useCanvasUiStore = create<CanvasUiState>((set) => ({
   setShowTimelineStrip: (visible) => set({ showTimelineStrip: visible }),
 
   setShowMiniMap: (visible) => set({ showMiniMap: visible }),
+
+  setActivity: (activity) => set({ activity }),
+
+  setSearchQuery: (searchQuery) => set({ searchQuery }),
 }));

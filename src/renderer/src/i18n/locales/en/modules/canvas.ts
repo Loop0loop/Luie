@@ -32,6 +32,20 @@ export const enCanvas = {
     advanced: {
       title: "Advanced",
     },
+    activity: {
+      view: "View",
+      outline: "Outline",
+      search: "Search",
+    },
+    view: {
+      title: "View",
+    },
+    search: {
+      title: "Search",
+      placeholder: "Search nodes / relations",
+      empty: "Type to search.",
+      noResults: "No results.",
+    },
     layers: {
       title: "Layers",
       canonical: { label: "Canonical", hint: "Confirmed structure" },

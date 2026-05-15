@@ -32,6 +32,20 @@ export const koCanvas = {
     advanced: {
       title: "고급",
     },
+    activity: {
+      view: "뷰",
+      outline: "아웃라인",
+      search: "검색",
+    },
+    view: {
+      title: "뷰",
+    },
+    search: {
+      title: "검색",
+      placeholder: "노드/관계 검색",
+      empty: "검색어를 입력하세요.",
+      noResults: "결과가 없습니다.",
+    },
     layers: {
       title: "레이어",
       canonical: { label: "Canonical", hint: "확정된 구조" },

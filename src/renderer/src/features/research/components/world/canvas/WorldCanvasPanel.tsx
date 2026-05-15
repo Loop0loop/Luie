@@ -52,7 +52,7 @@ export function WorldCanvasPanel() {
   return (
     <ReactFlowProvider>
       <CanvasLayout
-        sidebar={<CanvasSidebar />}
+        sidebar={<CanvasSidebar graphNodes={graphNodes} />}
         main={
           <div className="flex h-full min-h-0 flex-col">
             <CanvasToolbar />
