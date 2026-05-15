@@ -13,7 +13,7 @@ import { SynopsisEditor } from "@renderer/features/research/components/world/Syn
 import { MindMapBoard } from "@renderer/features/research/components/world/MindMapBoard";
 import { DrawingCanvas } from "@renderer/features/research/components/world/DrawingCanvas";
 import { PlotBoard } from "@renderer/features/research/components/world/PlotBoard";
-import { WorldCanvasPanel } from "@renderer/features/research/components/world/canvas/WorldCanvasPanel";
+import { WorldCanvasPanel } from "@renderer/features/canvas/WorldCanvasPanel";
 import WindowBar from "@renderer/features/workspace/components/WindowBar";
 
 interface WorldSectionProps {
