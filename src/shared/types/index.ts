@@ -510,6 +510,28 @@ export interface SearchResult {
   metadata?: Record<string, unknown>;
 }
 
+export interface MemoryChunkSearchQuery {
+  projectId: string;
+  query: string;
+  limit?: number;
+}
+
+export interface MemoryChunkSearchResult {
+  chunkId: string;
+  chapterId: string | null;
+  content: string;
+  startOffset: number | null;
+  endOffset: number | null;
+  score: number;
+}
+
+export interface MemoryChunkBacklink {
+  chunkId: string;
+  chapterId: string | null;
+  offset: number;
+  endOffset: number | null;
+}
+
 // Settings Types
 export type FontFamilyPreset = "system-ui" | "serif" | "mono";
 export type FontFamily = FontFamilyPreset | string;

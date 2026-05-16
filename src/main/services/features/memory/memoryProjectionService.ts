@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../../database/index.js";
 import { chapter, chapterBody, memoryBuildJob, memoryChunk } from "../../../database/schema.js";
 import { createLogger } from "../../../../shared/logger/index.js";
@@ -12,18 +12,105 @@ function sha256(input: string): string {
   return crypto.createHash("sha256").update(input).digest("hex");
 }
 
-function chunkText(input: string, chunkSize = 1000): Array<{
+const DEFAULT_CHUNK_TARGET = 500;
+const DEFAULT_CHUNK_OVERLAP = 50;
+const DEFAULT_CHUNK_HARD_CAP = 1000;
+
+export function chunkText(
+  input: string,
+  chunkTarget = DEFAULT_CHUNK_TARGET,
+  overlap = DEFAULT_CHUNK_OVERLAP,
+  hardCap = DEFAULT_CHUNK_HARD_CAP,
+): Array<{
   content: string;
   startOffset: number;
   endOffset: number;
 }> {
   const chunks: Array<{ content: string; startOffset: number; endOffset: number }> = [];
-  let start = 0;
-  while (start < input.length) {
-    const end = Math.min(input.length, start + chunkSize);
-    const content = input.slice(start, end);
-    chunks.push({ content, startOffset: start, endOffset: end });
-    start = end;
+  if (input.length === 0) return chunks;
+
+  const pushChunk = (startOffset: number, endOffset: number) => {
+    if (endOffset <= startOffset) return;
+    const content = input.slice(startOffset, endOffset);
+    if (content.length === 0) return;
+    chunks.push({ content, startOffset, endOffset });
+  };
+
+  const splitOversizedSegment = (segmentStart: number, segmentEnd: number) => {
+    let cursor = segmentStart;
+    while (cursor < segmentEnd) {
+      const maxEnd = Math.min(segmentEnd, cursor + hardCap);
+      let end = maxEnd;
+      if (maxEnd < segmentEnd) {
+        const preferredStart = Math.min(maxEnd, cursor + Math.floor(chunkTarget * 0.7));
+        const window = input.slice(preferredStart, maxEnd);
+        const breakOffset = Math.max(
+          window.lastIndexOf("\n"),
+          window.lastIndexOf(" "),
+          window.lastIndexOf("."),
+          window.lastIndexOf(","),
+        );
+        if (breakOffset >= 0) {
+          end = preferredStart + breakOffset + 1;
+        }
+      }
+      pushChunk(cursor, end);
+      if (end >= segmentEnd) break;
+      cursor = Math.max(cursor + 1, end - overlap);
+    }
+  };
+
+  const paragraphBoundaries: Array<{ start: number; end: number }> = [];
+  let paragraphStart = 0;
+  const separator = /\n{2,}/g;
+  for (const match of input.matchAll(separator)) {
+    const sepStart = match.index ?? 0;
+    const sepEnd = sepStart + match[0].length;
+    paragraphBoundaries.push({ start: paragraphStart, end: sepEnd });
+    paragraphStart = sepEnd;
+  }
+  if (paragraphStart < input.length) {
+    paragraphBoundaries.push({ start: paragraphStart, end: input.length });
+  }
+
+  let currentStart: number | null = null;
+  let currentEnd = 0;
+  for (const paragraph of paragraphBoundaries) {
+    const paragraphLength = paragraph.end - paragraph.start;
+    if (paragraphLength > hardCap) {
+      if (currentStart !== null) {
+        pushChunk(currentStart, currentEnd);
+        currentStart = null;
+      }
+      splitOversizedSegment(paragraph.start, paragraph.end);
+      continue;
+    }
+
+    if (currentStart === null) {
+      currentStart = paragraph.start;
+      currentEnd = paragraph.end;
+      continue;
+    }
+
+    const nextLength = paragraph.end - currentStart;
+    if (nextLength <= chunkTarget) {
+      currentEnd = paragraph.end;
+      continue;
+    }
+
+    pushChunk(currentStart, currentEnd);
+    const overlapStart = Math.max(currentStart, currentEnd - overlap);
+    currentStart = overlapStart;
+    currentEnd = paragraph.end;
+
+    if (currentEnd - currentStart > hardCap) {
+      splitOversizedSegment(currentStart, currentEnd);
+      currentStart = null;
+    }
+  }
+
+  if (currentStart !== null) {
+    pushChunk(currentStart, currentEnd);
   }
   return chunks;
 }
@@ -139,9 +226,16 @@ class MemoryProjectionService {
 
       try {
         const sourceContent = String(source.bodyContent ?? source.content ?? "");
-        const chunks = chunkText(sourceContent, 1000);
+        const chunks = chunkText(sourceContent);
 
         client.transaction((tx) => {
+          tx.run(
+            sql`DELETE FROM "MemoryChunkFts"
+                WHERE "chunkId" IN (
+                  SELECT "id" FROM "MemoryChunk"
+                  WHERE "sourceType" = 'chapter' AND "sourceId" = ${job.targetId}
+                );`,
+          );
           tx
             .delete(memoryChunk)
             .where(
@@ -154,8 +248,9 @@ class MemoryProjectionService {
 
           for (let index = 0; index < chunks.length; index += 1) {
             const chunkItem = chunks[index];
+            const chunkId = crypto.randomUUID();
             tx.insert(memoryChunk).values({
-              id: crypto.randomUUID(),
+              id: chunkId,
               projectId: source.projectId,
               sourceType: "chapter",
               sourceId: job.targetId,
@@ -169,6 +264,10 @@ class MemoryProjectionService {
               createdAt: now,
               updatedAt: now,
             }).run();
+            tx.run(
+              sql`INSERT INTO "MemoryChunkFts" ("chunkId","projectId","chapterId","content")
+                  VALUES (${chunkId}, ${source.projectId}, ${job.targetId}, ${chunkItem.content});`,
+            );
           }
 
           tx

@@ -330,7 +330,7 @@ export default function ScrivenerLayout({
                   className="min-w-0 relative flex flex-col"
                 >
                   <EditorDropZones />
-                  {(mainView.type === "world" || mainView.type === "analysis") ? (
+                  {(mainView.type === "world" || mainView.type === "analysis" || mainView.type === "canvas") ? (
                     <div className="h-full w-full bg-panel text-fg">
                       {renderMainContent()}
                     </div>

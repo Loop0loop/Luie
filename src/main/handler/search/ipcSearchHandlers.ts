@@ -2,6 +2,8 @@ import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import type { SearchQuery } from "../../../shared/types/index.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import {
+  memoryChunkIdSchema,
+  memoryChunkSearchSchema,
   projectIdSchema,
   rebuildMemoryChunksSchema,
   searchQuerySchema,
@@ -11,6 +13,12 @@ import type { LoggerLike } from "../core/types.js";
 
 type SearchServiceLike = {
   search: (input: SearchQuery) => Promise<unknown>;
+  searchChunks: (input: {
+    projectId: string;
+    query: string;
+    limit?: number;
+  }) => Promise<unknown>;
+  getChunkBacklink: (chunkId: string) => Promise<unknown>;
 };
 
 type DbMaintenanceServiceLike = {
@@ -70,6 +78,21 @@ export function registerSearchIPCHandlers(
       argsSchema: z.tuple([projectIdSchema]),
       handler: (projectId: string) =>
         dbMaintenanceService.getMemoryJobStatus(projectId),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_SEARCH_CHUNKS,
+      logTag: "MEMORY_SEARCH_CHUNKS",
+      failMessage: "Failed to search memory chunks",
+      argsSchema: z.tuple([memoryChunkSearchSchema]),
+      handler: (input: { projectId: string; query: string; limit?: number }) =>
+        searchService.searchChunks(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_GET_CHUNK_BACKLINK,
+      logTag: "MEMORY_GET_CHUNK_BACKLINK",
+      failMessage: "Failed to get memory chunk backlink",
+      argsSchema: z.tuple([memoryChunkIdSchema]),
+      handler: (chunkId: string) => searchService.getChunkBacklink(chunkId),
     },
     {
       channel: IPC_CHANNELS.DB_RUN_INTEGRITY_CHECK,

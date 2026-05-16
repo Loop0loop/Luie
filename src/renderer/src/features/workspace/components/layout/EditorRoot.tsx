@@ -409,7 +409,7 @@ export default function EditorRoot() {
         <UpdaterNotification />
       </Suspense>
       <Suspense fallback={layoutFallback}>
-        {uiMode === "docs" ? (
+        {uiMode === "docs" && mainViewType !== "canvas" ? (
           <GoogleDocsLayout
             sidebar={
               <Suspense fallback={null}>
@@ -431,7 +431,7 @@ export default function EditorRoot() {
           >
             {sharedEditor}
           </GoogleDocsLayout>
-        ) : uiMode === "editor" ? (
+        ) : uiMode === "editor" && mainViewType !== "canvas" ? (
           <EditorLayout
             sidebar={
               <Suspense fallback={null}>
@@ -450,7 +450,7 @@ export default function EditorRoot() {
           >
             {sharedEditor}
           </EditorLayout>
-        ) : uiMode === "scrivener" ? (
+        ) : uiMode === "scrivener" && mainViewType !== "canvas" ? (
           <ScrivenerLayout
             sidebar={
               <Suspense fallback={null}>

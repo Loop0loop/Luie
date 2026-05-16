@@ -32,6 +32,9 @@ import type {
   StartupReadiness,
   MigrationHealth,
   MemoryJobStatus,
+  MemoryChunkSearchQuery,
+  MemoryChunkSearchResult,
+  MemoryChunkBacklink,
   WorldEntity,
   EntityRelation,
   WorldGraphData,
@@ -323,6 +326,14 @@ export type RendererApi = {
       sourceId?: string;
     }) => Promise<IPCResponse<{ queued: number; processed: number }>>;
     getJobStatus: (projectId: string) => Promise<IPCResponse<MemoryJobStatus>>;
+  };
+  memory: {
+    searchChunks: (
+      input: MemoryChunkSearchQuery,
+    ) => Promise<IPCResponse<MemoryChunkSearchResult[]>>;
+    getChunkBacklink: (
+      chunkId: string,
+    ) => Promise<IPCResponse<MemoryChunkBacklink>>;
   };
   maintenance: {
     runIntegrityCheck: () => Promise<IPCResponse<{ ok: boolean; rows: string[] }>>;

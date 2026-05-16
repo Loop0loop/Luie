@@ -141,6 +141,18 @@ export const PACKAGED_SCHEMA_INDEX_PATCHES: ReadonlyArray<IndexPatch> = [
     table: "ScrapMemo",
     sql: 'CREATE INDEX IF NOT EXISTS "ScrapMemo_projectId_sortOrder_updatedAt_desc_idx" ON "ScrapMemo"("projectId", "sortOrder", "updatedAt" DESC);',
   },
+  {
+    name: "MemoryChunkFts",
+    table: "MemoryChunk",
+    sql: `CREATE VIRTUAL TABLE IF NOT EXISTS "MemoryChunkFts"
+USING fts5(
+    "chunkId" UNINDEXED,
+    "projectId" UNINDEXED,
+    "chapterId" UNINDEXED,
+    "content",
+    tokenize = 'unicode61'
+);`,
+  },
 ];
 
 export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyArray<string>>> = {

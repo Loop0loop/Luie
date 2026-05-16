@@ -186,6 +186,14 @@ export const searchQuerySchema = z.object({
   type: z.enum(["all", "character", "term"]).optional(),
 });
 
+export const memoryChunkSearchSchema = z.object({
+  projectId: projectIdSchema,
+  query: z.string().min(1, "Query is required"),
+  limit: z.number().int().positive().max(100).optional(),
+});
+
+export const memoryChunkIdSchema = z.string().uuid("Invalid chunk ID");
+
 export const rebuildMemoryChunksSchema = z.object({
   projectId: projectIdSchema,
   sourceType: z.string().min(1).optional(),

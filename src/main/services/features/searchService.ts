@@ -2,12 +2,17 @@
  * Search service - 통합 검색 (고유명사 우선)
  */
 
-import { and, desc, eq, isNull, like, or } from "drizzle-orm";
+import { and, desc, eq, isNull, like, or, sql } from "drizzle-orm";
 import { db } from "../../database/index.js";
-import { character, term } from "../../database/schema.js";
+import { character, memoryChunk, term } from "../../database/schema.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
-import type { SearchQuery } from "../../../shared/types/index.js";
+import type {
+  MemoryChunkBacklink,
+  MemoryChunkSearchQuery,
+  MemoryChunkSearchResult,
+  SearchQuery,
+} from "../../../shared/types/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import { escapeLike } from "../../utils/queryHelpers.js";
 
@@ -25,6 +30,10 @@ interface SearchResult {
 }
 
 export class SearchService {
+  private buildFtsQuery(query: string): string {
+    return `"${query.replaceAll('"', '""').trim()}"`;
+  }
+
   async search(input: SearchQuery): Promise<SearchResult[]> {
     try {
       const results: SearchResult[] = [];
@@ -156,6 +165,96 @@ export class SearchService {
 
   async searchChapters(projectId: string, query: string) {
     return this.search({ projectId, query, type: "all" });
+  }
+
+  async searchChunks(input: MemoryChunkSearchQuery): Promise<MemoryChunkSearchResult[]> {
+    const normalizedQuery = input.query.trim();
+    if (normalizedQuery.length === 0) {
+      return [];
+    }
+    const limit = Math.max(1, Math.min(input.limit ?? 20, 100));
+
+    try {
+      const client = db.getClient();
+      const ftsQuery = this.buildFtsQuery(normalizedQuery);
+      const rows = client.all<{
+        chunkId: string;
+        chapterId: string | null;
+        content: string;
+        startOffset: number | null;
+        endOffset: number | null;
+        score: number;
+      }>(sql`
+        SELECT
+          fts."chunkId" AS "chunkId",
+          mc."chapterId" AS "chapterId",
+          mc."content" AS "content",
+          mc."startOffset" AS "startOffset",
+          mc."endOffset" AS "endOffset",
+          bm25("MemoryChunkFts") AS "score"
+        FROM "MemoryChunkFts" fts
+        INNER JOIN "MemoryChunk" mc ON mc."id" = fts."chunkId"
+        WHERE fts."projectId" = ${input.projectId}
+          AND "MemoryChunkFts" MATCH ${ftsQuery}
+        ORDER BY bm25("MemoryChunkFts"), mc."chapterId", mc."chunkIndex"
+        LIMIT ${limit};
+      `);
+
+      return rows.map((row) => ({
+        chunkId: row.chunkId,
+        chapterId: row.chapterId ?? null,
+        content: row.content,
+        startOffset: row.startOffset ?? null,
+        endOffset: row.endOffset ?? null,
+        score: typeof row.score === "number" ? row.score : Number(row.score ?? 0),
+      }));
+    } catch (error) {
+      logger.error("Memory chunk search failed", { input, error });
+      throw new ServiceError(
+        ErrorCode.SEARCH_QUERY_FAILED,
+        "Memory chunk search failed",
+        { input },
+        error,
+      );
+    }
+  }
+
+  async getChunkBacklink(chunkId: string): Promise<MemoryChunkBacklink> {
+    try {
+      const rows = await db.getClient()
+        .select({
+          id: memoryChunk.id,
+          chapterId: memoryChunk.chapterId,
+          startOffset: memoryChunk.startOffset,
+          endOffset: memoryChunk.endOffset,
+        })
+        .from(memoryChunk)
+        .where(eq(memoryChunk.id, chunkId))
+        .limit(1);
+      if (rows.length === 0) {
+        throw new ServiceError(
+          ErrorCode.SEARCH_QUERY_FAILED,
+          "Memory chunk not found",
+          { chunkId },
+        );
+      }
+      const row = rows[0];
+      return {
+        chunkId: row.id,
+        chapterId: row.chapterId ?? null,
+        offset: row.startOffset ?? 0,
+        endOffset: row.endOffset ?? null,
+      };
+    } catch (error) {
+      if (error instanceof ServiceError) throw error;
+      logger.error("Memory chunk backlink lookup failed", { chunkId, error });
+      throw new ServiceError(
+        ErrorCode.SEARCH_QUERY_FAILED,
+        "Memory chunk backlink lookup failed",
+        { chunkId },
+        error,
+      );
+    }
   }
 
   async getQuickAccess(projectId: string) {
