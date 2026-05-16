@@ -36,6 +36,9 @@ interface EditorToolbarProps {
   isMobileView?: boolean;
   onToggleMobileView?: () => void;
   onOpenWorldGraph?: () => void;
+  onOpenCanvas?: () => void;
+  onCloseCanvas?: () => void;
+  isCanvasMode?: boolean;
   onOpenPreview?: () => void;
   onOpenExport?: () => void;
   canOpenExport?: boolean;
@@ -450,6 +453,9 @@ export default function EditorToolbar({
   isMobileView,
   onToggleMobileView,
   onOpenWorldGraph,
+  onOpenCanvas,
+  onCloseCanvas,
+  isCanvasMode = false,
   onOpenExport,
   canOpenExport = true,
 }: EditorToolbarProps) {
@@ -477,14 +483,16 @@ export default function EditorToolbar({
       <button
         type="button"
         onClick={() => {
-          if (isCanvasOpen) {
+          if (isCanvasMode) {
+            onCloseCanvas?.();
+          } else if (isCanvasOpen) {
             setWorldTab("terms");
             window.location.hash = "";
           }
         }}
         className={cn(
           "flex h-full items-center rounded px-2.5 transition-colors",
-          !isCanvasOpen
+          !isCanvasOpen && !isCanvasMode
             ? "bg-panel text-fg shadow-sm"
             : "text-muted hover:text-fg",
         )}
@@ -493,14 +501,18 @@ export default function EditorToolbar({
       </button>
       <button
         type="button"
-        onClick={() => onOpenWorldGraph?.()}
-        disabled={!onOpenWorldGraph}
+        onClick={() => {
+          if (onOpenCanvas) {
+            onOpenCanvas();
+          } else {
+            onOpenWorldGraph?.();
+          }
+        }}
         className={cn(
           "flex h-full items-center rounded px-2.5 transition-colors",
-          isCanvasOpen
+          isCanvasOpen || isCanvasMode
             ? "bg-panel text-fg shadow-sm"
             : "text-muted hover:text-fg",
-          !onOpenWorldGraph && "opacity-40",
         )}
       >
         {t("toolbar.canvas", "캔버스")}

@@ -5,6 +5,7 @@ import {
   PanelRightOpen,
   PanelLeftClose,
   PanelLeftOpen,
+  ChevronLeft,
 } from "lucide-react";
 import {
   Panel,
@@ -40,6 +41,8 @@ interface MainLayoutProps {
   additionalPanels?: ReactNode;
   additionalPanelIds?: string[];
   onOpenExport?: () => void;
+  isCanvasMode?: boolean;
+  onCloseCanvas?: () => void;
 }
 
 export default function MainLayout({
@@ -49,6 +52,8 @@ export default function MainLayout({
   additionalPanels,
   additionalPanelIds = [],
   onOpenExport,
+  isCanvasMode = false,
+  onCloseCanvas,
 }: MainLayoutProps) {
   const { t } = useTranslation();
   const {
@@ -218,6 +223,17 @@ export default function MainLayout({
             </button>
 
             <div className="flex-1" />
+
+            {isCanvasMode && onCloseCanvas && (
+              <button
+                className="flex items-center gap-1 bg-transparent border border-border text-muted cursor-pointer px-3 py-1 rounded-md text-xs transition-colors hover:bg-active hover:text-fg mr-2"
+                onClick={onCloseCanvas}
+                title={t("toolbar.editor")}
+              >
+                <ChevronLeft className="icon-xs" />
+                {t("toolbar.editor")}
+              </button>
+            )}
 
             <button
               className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-colors duration-150 hover:bg-active hover:text-fg"

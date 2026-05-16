@@ -22,6 +22,9 @@ type GoogleDocsEditorColumnProps = {
   editor?: TiptapEditor | null;
   onOpenExport?: () => void;
   onOpenWorldGraph?: () => void;
+  onOpenCanvas?: () => void;
+  onCloseCanvas?: () => void;
+  isCanvasMode?: boolean;
   pageMargins: DocsPageMargins;
   setPageMargins: (margins: DocsPageMargins) => void;
 };
@@ -33,6 +36,9 @@ export function GoogleDocsEditorColumn({
   editor,
   onOpenExport,
   onOpenWorldGraph,
+  onOpenCanvas,
+  onCloseCanvas,
+  isCanvasMode = false,
   pageMargins,
   setPageMargins,
 }: GoogleDocsEditorColumnProps) {
@@ -54,14 +60,17 @@ export function GoogleDocsEditorColumn({
       minSize={toPercentSize(10)}
       className="relative z-0 flex min-w-0 flex-1 flex-col bg-secondary/30 transition-colors duration-200"
     >
-      {editor && (
+      {(editor || isCanvasMode) && (
         <div className="relative z-40 flex w-full shrink-0">
           <EditorToolbar
-            editor={editor}
+            editor={editor ?? null}
             onOpenPreview={onOpenExport}
             onOpenExport={onOpenExport}
             canOpenExport={Boolean(onOpenExport)}
             onOpenWorldGraph={onOpenWorldGraph}
+            onOpenCanvas={onOpenCanvas}
+            onCloseCanvas={onCloseCanvas}
+            isCanvasMode={isCanvasMode}
           />
         </div>
       )}
@@ -79,31 +88,38 @@ export function GoogleDocsEditorColumn({
             className="relative flex min-w-0 flex-col bg-transparent"
           >
             <EditorDropZones />
-            <main
-              className="custom-scrollbar relative flex flex-1 flex-col items-center overflow-y-scroll bg-sidebar"
-              data-editor-scroll-container="true"
-            >
-              <div className="sticky top-0 z-30 flex w-full shrink-0 justify-center bg-sidebar/95 pb-2 pt-4 select-none backdrop-blur-sm">
-                <div className="border border-border bg-background shadow-sm">
-                  <EditorRuler onMarginsChange={setPageMargins} />
-                </div>
-              </div>
-
-              <div
-                className="relative mb-8 box-border flex min-h-0 flex-col border border-border bg-background shadow-sm transition-shadow duration-150 ease-in-out"
-                style={{
-                  width: `${EDITOR_A4_PAGE_WIDTH_PX}px`,
-                  minHeight: `${EDITOR_A4_PAGE_HEIGHT_PX}px`,
-                  paddingTop: `${EDITOR_PAGE_VERTICAL_PADDING_PX}px`,
-                  paddingBottom: `${EDITOR_PAGE_VERTICAL_PADDING_PX}px`,
-                  paddingLeft: `${pageMargins.left}px`,
-                  paddingRight: `${pageMargins.right}px`,
-                  color: "var(--editor-text, var(--text-primary))",
-                }}
-              >
+            {isCanvasMode ? (
+              /* Canvas mode: full-height, no A4 page wrapper */
+              <div className="flex flex-1 flex-col overflow-hidden">
                 {children}
               </div>
-            </main>
+            ) : (
+              <main
+                className="custom-scrollbar relative flex flex-1 flex-col items-center overflow-y-scroll bg-sidebar"
+                data-editor-scroll-container="true"
+              >
+                <div className="sticky top-0 z-30 flex w-full shrink-0 justify-center bg-sidebar/95 pb-2 pt-4 select-none backdrop-blur-sm">
+                  <div className="border border-border bg-background shadow-sm">
+                    <EditorRuler onMarginsChange={setPageMargins} />
+                  </div>
+                </div>
+
+                <div
+                  className="relative mb-8 box-border flex min-h-0 flex-col border border-border bg-background shadow-sm transition-shadow duration-150 ease-in-out"
+                  style={{
+                    width: `${EDITOR_A4_PAGE_WIDTH_PX}px`,
+                    minHeight: `${EDITOR_A4_PAGE_HEIGHT_PX}px`,
+                    paddingTop: `${EDITOR_PAGE_VERTICAL_PADDING_PX}px`,
+                    paddingBottom: `${EDITOR_PAGE_VERTICAL_PADDING_PX}px`,
+                    paddingLeft: `${pageMargins.left}px`,
+                    paddingRight: `${pageMargins.right}px`,
+                    color: "var(--editor-text, var(--text-primary))",
+                  }}
+                >
+                  {children}
+                </div>
+              </main>
+            )}
             <StatusFooter onOpenExport={onOpenExport} />
           </Panel>
 

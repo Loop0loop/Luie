@@ -9,6 +9,9 @@ interface RibbonProps {
   activeChapterId?: string;
   onOpenExportPreview?: () => void;
   onOpenWorldGraph?: () => void;
+  onOpenCanvas?: () => void;
+  onCloseCanvas?: () => void;
+  isCanvasMode?: boolean;
 }
 
 export default function Ribbon({
@@ -16,6 +19,9 @@ export default function Ribbon({
   activeChapterId,
   onOpenExportPreview,
   onOpenWorldGraph,
+  onOpenCanvas,
+  onCloseCanvas,
+  isCanvasMode = false,
 }: RibbonProps) {
   const maxWidth = useEditorStore((state) => state.maxWidth);
   const updateSettings = useEditorStore((state) => state.updateSettings);
@@ -33,6 +39,9 @@ export default function Ribbon({
         onOpenExport={onOpenExportPreview}
         canOpenExport={Boolean(activeChapterId)}
         onOpenWorldGraph={onOpenWorldGraph}
+        onOpenCanvas={onOpenCanvas}
+        onCloseCanvas={onCloseCanvas}
+        isCanvasMode={isCanvasMode}
       />
     </div>
   );

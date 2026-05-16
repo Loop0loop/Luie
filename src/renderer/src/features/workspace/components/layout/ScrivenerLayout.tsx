@@ -18,6 +18,7 @@ import WikiDetailView from "@renderer/features/research/components/wiki/WikiDeta
 import EventDetailView from "@renderer/features/research/components/event/EventDetailView";
 import FactionDetailView from "@renderer/features/research/components/faction/FactionDetailView";
 import WorldSection from "@renderer/features/research/components/WorldSection";
+import { CanvasPane } from "@renderer/features/canvas";
 import MemoMainView from "@renderer/features/research/components/memo/MemoMainView";
 import AnalysisSection from "@renderer/features/research/components/AnalysisSection";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
@@ -56,6 +57,7 @@ interface ScrivenerLayoutProps {
   onOpenSettings?: () => void;
   onOpenExport?: () => void;
   onOpenWorldGraph?: () => void;
+  onCloseCanvas?: () => void;
   additionalPanels?: ReactNode;
 }
 
@@ -68,6 +70,7 @@ export default function ScrivenerLayout({
   onOpenSettings,
   onOpenExport,
   onOpenWorldGraph,
+  onCloseCanvas,
   additionalPanels,
 }: ScrivenerLayoutProps) {
   const { t } = useTranslation();
@@ -205,6 +208,8 @@ export default function ScrivenerLayout({
         return <MemoMainView />;
       case "analysis":
         return <AnalysisSection />;
+      case "canvas":
+        return <CanvasPane />;
       case "editor":
       default:
         return children;
@@ -224,6 +229,8 @@ export default function ScrivenerLayout({
           activeChapterId={activeChapterId}
           onOpenExportPreview={onOpenExport}
           onOpenWorldGraph={onOpenWorldGraph}
+          isCanvasMode={mainView.type === "canvas"}
+          onCloseCanvas={onCloseCanvas}
         />
         {/* Scrivener-specific toolbar items could go here if separate */}
       </div>

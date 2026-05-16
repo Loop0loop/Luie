@@ -276,9 +276,12 @@ export default function EditorRoot() {
   }, [activeChapterId, dialog.toast, t]);
 
   const handleOpenWorldGraph = useCallback(() => {
-    setWorldTab("graph");
-    window.location.hash = "#world-graph";
-  }, [setWorldTab]);
+    setMainView({ type: "canvas" });
+  }, [setMainView]);
+
+  const handleCloseCanvas = useCallback(() => {
+    setMainView({ type: "editor" });
+  }, [setMainView]);
 
   const handleRenameProject = useCallback(async () => {
     if (!currentProject?.id) return;
@@ -460,6 +463,7 @@ export default function EditorRoot() {
             onOpenSettings={() => setIsSettingsOpen(true)}
             onOpenExport={handleQuickExport}
             onOpenWorldGraph={handleOpenWorldGraph}
+            onCloseCanvas={handleCloseCanvas}
             additionalPanels={additionalPanelsComponent}
           >
             {sharedEditor}
@@ -489,6 +493,8 @@ export default function EditorRoot() {
                 />
               </Suspense>
             }
+            isCanvasMode={mainViewType === "canvas"}
+            onCloseCanvas={handleCloseCanvas}
             onOpenExport={handleQuickExport}
             additionalPanels={additionalPanelsComponent}
             additionalPanelIds={additionalPanelIds}
@@ -506,7 +512,7 @@ export default function EditorRoot() {
 
       {isSettingsOpen && (
         <Suspense fallback={null}>
-          <SettingsModal onClose={() => setIsSettingsOpen(false)} />
+          <SettingsModal onClose={() => setIsSettingsOpen(false)} />    
         </Suspense>
       )}
       <SmartLinkTooltip isSettingsOpen={isSettingsOpen} />
