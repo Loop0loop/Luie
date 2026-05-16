@@ -30,6 +30,7 @@ export type SidebarWidthFeature =
   | "editorAnalysis"
   | "editorSnapshot"
   | "editorTrash"
+  | "editorCanvas"
   | "character"
   | "event"
   | "faction"
@@ -96,6 +97,7 @@ export const SIDEBAR_WIDTH_CONFIG: Record<
   editorAnalysis: { ...PANEL_WIDTH_CONFIG },
   editorSnapshot: { ...PANEL_WIDTH_CONFIG },
   editorTrash: { ...PANEL_WIDTH_CONFIG },
+  editorCanvas: { ...PANEL_WIDTH_CONFIG },
   // Legacy shared right-panel keys (read only for migration)
   character: { ...PANEL_WIDTH_CONFIG },
   event: { ...PANEL_WIDTH_CONFIG },

@@ -38,6 +38,7 @@ export const EDITOR_LAYOUT_PANEL_SURFACE_MAP = {
   analysis: "editor.panel.analysis",
   snapshot: "editor.panel.snapshot",
   trash: "editor.panel.trash",
+  canvas: "editor.panel.canvas",
 } as const;
 
 export type DefaultLayoutPanelSurfaceKey =
@@ -128,6 +129,7 @@ export const LAYOUT_SURFACE_CONFIG: Record<
   "editor.panel.analysis": { ...NESTED_MANAGER_PANEL_CONFIG, defaultRatio: 38 },
   "editor.panel.snapshot": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 26 },
   "editor.panel.trash": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 26 },
+  "editor.panel.canvas": { ...DEFAULT_INSPECTOR_CONFIG, defaultRatio: 26 },
   "scrivener.binder": { ...DEFAULT_BINDER_CONFIG },
   "scrivener.inspector": { ...DEFAULT_INSPECTOR_CONFIG },
   "canvas.activity": {
@@ -166,6 +168,7 @@ const LEGACY_WIDTH_KEYS_BY_LAYOUT_SURFACE: Record<LayoutSurfaceId, string[]> = {
   "editor.panel.analysis": ["editorAnalysis", "analysis"],
   "editor.panel.snapshot": ["editorSnapshot", "snapshot"],
   "editor.panel.trash": ["editorTrash", "trash"],
+  "editor.panel.canvas": ["editorCanvas"],
   "scrivener.binder": ["scrivenerBinder", "binder"],
   "scrivener.inspector": ["scrivenerInspector", "inspector"],
   "canvas.activity": ["canvasActivity"],

@@ -124,6 +124,11 @@ export function useBinderSidebarState(projectId?: string | null) {
       setLayoutSurfaceRatio,
       { onCommit: persistLayoutSurfaceRatio },
     ),
+    canvas: useLayoutSurfaceResizeCommit(
+      getEditorLayoutPanelSurface("canvas"),
+      setLayoutSurfaceRatio,
+      { onCommit: persistLayoutSurfaceRatio },
+    ),
   } satisfies Record<BinderTab, (panelSize: PanelSize) => void>;
 
   const handleRightTabClick = useCallback(

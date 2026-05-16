@@ -30,6 +30,7 @@ export type DocsRightTab =
   | "trash"
   | "editor"
   | "export"
+  | "canvas"
   | null;
 
 export type RightPanelTab = Exclude<DocsRightTab, null>;

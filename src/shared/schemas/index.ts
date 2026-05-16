@@ -546,6 +546,7 @@ const uiRightPanelTabSchema = z.enum([
   "trash",
   "editor",
   "export",
+  "canvas",
 ]);
 
 const uiMainViewSchema = z.strictObject({
@@ -558,6 +559,7 @@ const uiMainViewSchema = z.strictObject({
     "memo",
     "trash",
     "analysis",
+    "canvas",
   ]),
   id: z.string().optional(),
 });

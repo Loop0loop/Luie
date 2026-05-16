@@ -3,6 +3,7 @@ import {
   Calendar,
   Globe,
   History,
+  LayoutGrid,
   Shield,
   Sparkles,
   StickyNote,
@@ -23,6 +24,7 @@ export const BINDER_VALID_TABS: BinderTab[] = [
   "analysis",
   "snapshot",
   "trash",
+  "canvas",
 ];
 
 type BinderTabItem = {
@@ -83,6 +85,11 @@ export function buildBinderTabItems(
       icon: <Trash2 className="w-5 h-5" />,
       title: t("sidebar.section.trash"),
       type: "trash",
+    },
+    {
+      tab: "canvas",
+      icon: <LayoutGrid className="w-5 h-5" />,
+      title: t("canvas.binder.title"),
     },
   ];
 }

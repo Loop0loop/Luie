@@ -31,6 +31,7 @@ export const RIGHT_PANEL_TABS = [
   "trash",
   "editor",
   "export",
+  "canvas",
 ] as const satisfies readonly RightPanelTab[];
 
 export const RIGHT_PANEL_TAB_FEATURE_MAP: Record<
@@ -47,6 +48,7 @@ export const RIGHT_PANEL_TAB_FEATURE_MAP: Record<
   trash: "docsTrash",
   editor: "docsEditor",
   export: "docsExport",
+  canvas: "editorCanvas",
 };
 
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -94,6 +96,9 @@ export const getRightPanelTabByFeature = (
     case "docsExport":
     case "export":
       return "export";
+    case "editorCanvas":
+    case "canvas":
+      return "canvas";
     default:
       return null;
   }

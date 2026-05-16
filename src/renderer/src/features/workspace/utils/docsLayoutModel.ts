@@ -4,6 +4,7 @@ import {
   getDocsLayoutPanelSurface,
   getLayoutSurfaceConfig,
   getLayoutSurfaceDefaultRatio,
+  DOCS_LAYOUT_PANEL_SURFACE_MAP,
   type DocsLayoutPanelTab,
   type LayoutSurfaceConfig,
   type LayoutSurfaceId,
@@ -20,12 +21,21 @@ export type DocsLayoutSurfaceState = {
 export const getDocsRightPanelId = (tab: DocsLayoutPanelTab): string =>
   `right-context-panel-${tab}`;
 
+const isDocsLayoutPanelTab = (tab: DocsRightTab): tab is DocsLayoutPanelTab =>
+  tab !== null &&
+  Object.prototype.hasOwnProperty.call(DOCS_LAYOUT_PANEL_SURFACE_MAP, tab);
+
 export const getActiveDocsRightTab = (
   isRightPanelOpen: boolean,
   docsRightTab: DocsRightTab,
-  fallbackTab: DocsLayoutPanelTab | null,
-): DocsLayoutPanelTab | null =>
-  isRightPanelOpen ? docsRightTab ?? fallbackTab : null;
+  fallbackTab: DocsRightTab,
+): DocsLayoutPanelTab | null => {
+  if (!isRightPanelOpen) return null;
+  const candidate = docsRightTab ?? fallbackTab;
+  if (candidate === null) return null;
+  // canvas and other editor-only tabs are not valid DocsLayoutPanelTabs.
+  return isDocsLayoutPanelTab(candidate) ? candidate : (isDocsLayoutPanelTab(fallbackTab) ? fallbackTab : null);
+};
 
 export const buildDocsLayoutPersistEntries = (
   activeRightTab: DocsLayoutPanelTab | null,

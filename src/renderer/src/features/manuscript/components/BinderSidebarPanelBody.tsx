@@ -9,6 +9,9 @@ const ResearchPanel = React.lazy(
 const WorldPanel = React.lazy(
   () => import("@renderer/features/research/components/WorldPanel"),
 );
+const CanvasBinderPanel = React.lazy(
+  () => import("@renderer/features/canvas/components/binder/CanvasBinderPanel"),
+);
 const SnapshotList = React.lazy(() =>
   import("@renderer/features/snapshot/components/SnapshotList").then((m) => ({
     default: m.SnapshotList,
@@ -100,6 +103,7 @@ export function BinderSidebarPanelBody(props: {
                 {props.t("sidebar.trashEmpty")}
               </div>
             ))}
+          {props.activeTab === "canvas" && <CanvasBinderPanel />}
         </Suspense>
       </div>
     </div>
