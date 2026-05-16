@@ -5,14 +5,13 @@
  * Data: chapterStore.items + projectStore.currentItem (existing stores, no new IPC).
  * Drag & drop reorder: reuses DraggableItem from @shared/ui (same as Sidebar.tsx).
  */
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { FileText, Plus } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
-import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
-import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useCanvasViewStore } from "@renderer/features/canvas/stores";
 import {
   PanelRoot,
@@ -28,13 +27,16 @@ export default function ExplorerPanel() {
 
   const currentProject = useProjectStore((state) => state.currentItem);
 
-  const { chapters, currentChapter } = useChapterStore(
+  const { items, currentChapter } = useChapterStore(
     useShallow((state) => ({
-      chapters: state.items.filter(
-        (c) => c.projectId === currentProject?.id,
-      ),
+      items: state.items,
       currentChapter: state.currentItem,
     })),
+  );
+
+  const chapters = useMemo(
+    () => items.filter((c) => c.projectId === currentProject?.id),
+    [items, currentProject?.id],
   );
 
   const { scope, setScope } = useCanvasViewStore(
@@ -44,17 +46,11 @@ export default function ExplorerPanel() {
     })),
   );
 
-  const setMainView = useUIStore((state) => state.setMainView);
-  const setUiMode = useEditorStore((state) => state.setUiMode);
-
   const activeScopeChapterId =
     scope?.kind === "single-chapter" ? scope.chapterId : null;
 
   const handleSelectChapter = (chapterId: string) => {
     setScope({ kind: "single-chapter", chapterId });
-    setMainView({ type: "canvas", id: chapterId });
-    // Canvas runs inside EditorLayout — ensure we're in editor mode.
-    void setUiMode("editor");
   };
 
   return (
