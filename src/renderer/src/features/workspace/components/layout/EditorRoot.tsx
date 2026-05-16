@@ -65,6 +65,9 @@ const CanvasActivityShell = lazy(
   () =>
     import("@renderer/features/canvas/components/CanvasActivityShell"),
 );
+const CanvasPane = lazy(
+  () => import("@renderer/features/canvas/components/CanvasPane"),
+);
 const ContextPanel = lazy(
   () => import("@renderer/features/workspace/components/panels/ContextPanel"),
 );
@@ -448,17 +451,7 @@ export default function EditorRoot() {
           <ScrivenerLayout
             sidebar={
               <Suspense fallback={null}>
-                {mainViewType === "canvas" ? (
-                  <Sidebar
-                    onOpenSettings={() => setIsSettingsOpen(true)}
-                    onPrefetchSettings={prefetchSettings}
-                    onSelectResearchItem={handleSelectResearchItem}
-                    onSplitView={handleSplitView}
-                    canvasContent={<CanvasActivityShell />}
-                  />
-                ) : (
-                  <ScrivenerSidebar />
-                )}
+                <ScrivenerSidebar />
               </Suspense>
             }
             activeChapterId={activeChapterId ?? undefined}
@@ -480,6 +473,11 @@ export default function EditorRoot() {
                   onPrefetchSettings={prefetchSettings}
                   onSelectResearchItem={handleSelectResearchItem}
                   onSplitView={handleSplitView}
+                  canvasContent={
+                    mainViewType === "canvas" ? (
+                      <CanvasActivityShell />
+                    ) : undefined
+                  }
                 />
               </Suspense>
             }
@@ -495,7 +493,13 @@ export default function EditorRoot() {
             additionalPanels={additionalPanelsComponent}
             additionalPanelIds={additionalPanelIds}
           >
-            {sharedEditor}
+            {mainViewType === "canvas" ? (
+              <Suspense fallback={layoutFallback}>
+                <CanvasPane />
+              </Suspense>
+            ) : (
+              sharedEditor
+            )}
           </MainLayout>
         )}
       </Suspense>

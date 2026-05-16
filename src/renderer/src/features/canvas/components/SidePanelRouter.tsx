@@ -1,22 +1,30 @@
 /**
  * SidePanelRouter — routes the active canvas activity panel to its content
- * component. P2 stage: every panel is a labelled placeholder so we can verify
- * Sidebar integration before P4 ships real content.
+ * component. Collapsed state hides the panel area entirely (icon rail stays).
  */
-import { useTranslation } from "react-i18next";
+import { lazy, Suspense } from "react";
 import { useCanvasViewStore } from "../stores";
 import type { CanvasActivityPanel } from "../types";
 
-const PLACEHOLDER_BY_PANEL: Record<CanvasActivityPanel, string> = {
-  explorer: "explorer",
-  canvas: "canvas",
-  entities: "entities",
-  memory: "memory",
-  search: "search",
+const ExplorerPanel = lazy(() => import("./activity/ExplorerPanel"));
+const CanvasControlPanel = lazy(() => import("./activity/CanvasControlPanel"));
+const EntitiesPanel = lazy(() => import("./activity/EntitiesPanel"));
+const MemoryPanel = lazy(() => import("./activity/MemoryPanel"));
+const SearchPanel = lazy(() => import("./activity/SearchPanel"));
+
+const PANEL_MAP: Record<CanvasActivityPanel, React.LazyExoticComponent<() => React.JSX.Element>> = {
+  explorer: ExplorerPanel,
+  canvas: CanvasControlPanel,
+  entities: EntitiesPanel,
+  memory: MemoryPanel,
+  search: SearchPanel,
 };
 
+const panelFallback = (
+  <div className="flex h-full items-center justify-center text-xs text-muted" />
+);
+
 export default function SidePanelRouter() {
-  const { t } = useTranslation();
   const activePanel = useCanvasViewStore((state) => state.activePanel);
   const isActivityCollapsed = useCanvasViewStore(
     (state) => state.isActivityCollapsed,
@@ -26,18 +34,15 @@ export default function SidePanelRouter() {
     return null;
   }
 
-  const i18nKey = PLACEHOLDER_BY_PANEL[activePanel];
+  const ActivePanel = PANEL_MAP[activePanel];
   return (
     <div
-      className="flex h-full min-w-0 flex-1 flex-col bg-sidebar"
+      className="flex h-full min-w-0 flex-1 flex-col bg-sidebar overflow-hidden"
       data-testid={`canvas-side-panel-${activePanel}`}
     >
-      <div className="flex items-center px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
-        {t(`canvas.activity.${i18nKey}`)}
-      </div>
-      <div className="flex-1 overflow-y-auto px-4 py-2 text-xs text-muted">
-        {/* P4 will replace this with real panel content. */}
-      </div>
+      <Suspense fallback={panelFallback}>
+        <ActivePanel />
+      </Suspense>
     </div>
   );
 }

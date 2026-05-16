@@ -41,6 +41,8 @@ const SKIP_NONCRITICAL_DERIVED_ON_STRESS =
   isTestEnv();
 const SUPPRESS_HOT_PATH_INFO_LOGS =
   process.env.LUIE_E2E_STRESS_MODE === "1";
+const SKIP_DERIVED_ENQUEUE_ON_STRESS =
+  process.env.LUIE_E2E_STRESS_MODE === "1";
 
 const loadAutoSaveManager = async () =>
   (await import("../../manager/autoSaveManager.js")).autoSaveManager;
@@ -591,11 +593,13 @@ export class ChapterService {
               createdAt: now,
             });
           }
-          await this.enqueueDerivedJobs({
-            projectId: String(updatedChapter.projectId),
-            chapterId: String(updatedChapter.id),
-            reason: "chapter:update",
-          });
+          if (!SKIP_DERIVED_ENQUEUE_ON_STRESS) {
+            await this.enqueueDerivedJobs({
+              projectId: String(updatedChapter.projectId),
+              chapterId: String(updatedChapter.id),
+              reason: "chapter:update",
+            });
+          }
           await store.run(sql`COMMIT;`);
         } catch (error) {
           try {

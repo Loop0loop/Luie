@@ -29,6 +29,8 @@ export async function launchApp(
   fs.mkdirSync(testDbDir, { recursive: true });
   const testDbPath = path.join(testDbDir, "test.db");
   const databaseUrl = `file:${testDbPath}`;
+  const testCacheDbPath = path.join(testDbDir, "test-cache.db");
+  const cacheDatabaseUrl = `file:${testCacheDbPath}`;
 
   const app = await electron.launch({
     args: [process.cwd()],
@@ -36,7 +38,8 @@ export async function launchApp(
       ...process.env,
       NODE_ENV: "production",
       E2E_DISABLE_SINGLE_INSTANCE: "1",
-      DATABASE_URL: databaseUrl,
+      LUIE_RUNTIME_DATABASE_URL: databaseUrl,
+      LUIE_RUNTIME_CACHE_DATABASE_URL: cacheDatabaseUrl,
       ...envOverrides,
     },
   });
