@@ -5,6 +5,18 @@ export const koCanvas = {
   workspace: {
     title: "캔버스",
   },
+  activity: {
+    explorer: "탐색기",
+    canvas: "캔버스",
+    entities: "엔티티",
+    memory: "메모리",
+    search: "검색",
+  },
+  panel: {
+    views: "뷰",
+    range: "범위",
+    layers: "레이어",
+  },
   mode: {
     flowMap: {
       label: "플로우 맵",
@@ -27,6 +39,23 @@ export const koCanvas = {
       description: "Memory 엔진이 만든 chunk와 entity 관계를 표시합니다.",
     },
     comingSoon: "곧 제공",
+  },
+  range: {
+    currentChapter: "현재 화",
+    threeChapters: "±3화",
+    currentPart: "현재 부",
+    wholeProject: "전체 프로젝트",
+  },
+  layer: {
+    scene: "장면",
+    character: "인물",
+    event: "사건",
+    memo: "메모",
+    aiHint: "AI 힌트",
+  },
+  empty: {
+    title: "선택된 화가 없습니다",
+    description: "화를 선택하면 캔버스가 표시됩니다.",
   },
   sidebar: {
     activity: "활동",

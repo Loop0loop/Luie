@@ -103,7 +103,8 @@ export type MainView = {
     | "world"
     | "memo"
     | "trash"
-    | "analysis";
+    | "analysis"
+    | "canvas";
   id?: string;
 };
 

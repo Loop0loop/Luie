@@ -5,6 +5,18 @@ export const enCanvas = {
   workspace: {
     title: "Canvas",
   },
+  activity: {
+    explorer: "Explorer",
+    canvas: "Canvas",
+    entities: "Entities",
+    memory: "Memory",
+    search: "Search",
+  },
+  panel: {
+    views: "Views",
+    range: "Range",
+    layers: "Layers",
+  },
   mode: {
     flowMap: {
       label: "Flow Map",
@@ -27,6 +39,23 @@ export const enCanvas = {
       description: "Show chunks and entities from the memory engine.",
     },
     comingSoon: "Coming soon",
+  },
+  range: {
+    currentChapter: "Current Chapter",
+    threeChapters: "±3 Chapters",
+    currentPart: "Current Part",
+    wholeProject: "Whole Project",
+  },
+  layer: {
+    scene: "Scene",
+    character: "Character",
+    event: "Event",
+    memo: "Memo",
+    aiHint: "AI Hint",
+  },
+  empty: {
+    title: "No chapter selected",
+    description: "Pick a chapter to render the canvas.",
   },
   sidebar: {
     activity: "Activity",

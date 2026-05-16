@@ -1,3 +1,18 @@
+/**
+ * canvasViewStore — view-model state for the canvas viewport + activity sidebar.
+ *
+ * Persisted across sessions:
+ *   - mode, scope, layers, focuses (range/preset memory)
+ *   - zoom/pan (last viewport)
+ *   - activePanel + isActivityCollapsed + isBinderCollapsed (P2 sidebar shell)
+ *
+ * NOT persisted:
+ *   - selection (transient, reset between sessions)
+ *
+ * Layout RATIOS for canvas.activity / canvas.binder live in `uiStore.layoutSurfaceRatios`.
+ * This store only owns logical view state.
+ */
+
 import { create } from "zustand";
 import {
   createJSONStorage,
@@ -5,173 +20,150 @@ import {
   type StateStorage,
 } from "zustand/middleware";
 import type {
-  CanvasFocus,
+  CanvasActivityPanel,
   CanvasLayer,
   CanvasMode,
+  CanvasScope,
   CanvasSelection,
-  CanvasViewPreset,
+  CanvasViewport,
 } from "../types/canvas.types";
-import type { CanvasScope } from "../types/canvasScope.types";
-import { getDefaultCanvasMode } from "../utils/canvasModeRegistry";
 
-/**
- * Canvas View State — 사용자가 "어떻게 보고 있는가"를 표현. PRD §10.4.
- *
- *   mode      : 현재 활성 시각화 모드 (flow-map 등)
- *   scope     : 현재 입력 chapter 범위 (single/range/arc/custom)
- *   selection : 선택된 노드/엣지
- *   layers    : 활성 시각 레이어 토글
- *   focus     : 강조할 종류 필터
- *   zoom/pan  : 캔버스 viewport
- *   preset    : 마지막으로 적용한 View Preset (적용 후 사용자가 수정해도
- *               기록은 남겨, 다시 같은 Preset 클릭 시 reset 가능)
- *
- * persist는 worldGraphUiStore 패턴을 인용 — 부분 저장 + sanitize +
- * version migration.
- */
+/* ─────────────────────────────────────────── constants */
 
-type LayerMap = Readonly<Record<CanvasLayer, boolean>>;
-type FocusMap = Readonly<Record<CanvasFocus, boolean>>;
+const STORAGE_KEY = "canvas_view_v2";
+const SCHEMA_VERSION = 2;
 
-const DEFAULT_LAYERS: LayerMap = {
-  scene: true,
-  character: true,
-  event: true,
-  memo: false,
-  "ai-hint": false,
-};
+const ALL_MODES: ReadonlyArray<CanvasMode> = [
+  "flow-map",
+  "scene-board",
+  "timeline",
+  "character-map",
+  "memory-map",
+];
 
-const DEFAULT_FOCUSES: FocusMap = {
-  character: false,
-  event: false,
-  location: false,
-  foreshadow: false,
-  conflict: false,
-};
+const ALL_LAYERS: ReadonlyArray<CanvasLayer> = [
+  "scene",
+  "character",
+  "event",
+  "memo",
+  "ai-hint",
+];
 
-const DEFAULT_SELECTION: CanvasSelection = { kind: "none", id: null };
+const ALL_ACTIVITY_PANELS: ReadonlyArray<CanvasActivityPanel> = [
+  "explorer",
+  "canvas",
+  "entities",
+  "memory",
+  "search",
+];
 
-const DEFAULT_VIEWPORT = { zoom: 1, pan: { x: 0, y: 0 } } as const;
+const DEFAULT_LAYERS: ReadonlyArray<CanvasLayer> = [
+  "scene",
+  "character",
+  "event",
+  "memo",
+];
 
-interface CanvasViewState {
-  mode: CanvasMode;
-  /** 현재 scope. null이면 빈 상태(empty) — projection도 empty가 된다. */
-  scope: CanvasScope | null;
-  selection: CanvasSelection;
-  layers: LayerMap;
-  focuses: FocusMap;
-  zoom: number;
-  pan: { x: number; y: number };
-  /** 마지막으로 적용한 Preset. 적용 후 사용자 수정과는 별개로 기록만. */
-  lastPreset: CanvasViewPreset | null;
-  hasHydrated: boolean;
+const ZOOM_MIN = 0.25;
+const ZOOM_MAX = 3;
 
-  setMode: (mode: CanvasMode) => void;
-  setScope: (scope: CanvasScope | null) => void;
-  selectNode: (id: string | null) => void;
-  selectEdge: (id: string | null) => void;
-  clearSelection: () => void;
-  toggleLayer: (id: CanvasLayer) => void;
-  toggleFocus: (id: CanvasFocus) => void;
-  setLayers: (layers: Partial<Record<CanvasLayer, boolean>>) => void;
-  setFocuses: (focuses: Partial<Record<CanvasFocus, boolean>>) => void;
-  setViewport: (viewport: { zoom?: number; pan?: { x: number; y: number } }) => void;
-  setLastPreset: (preset: CanvasViewPreset | null) => void;
-}
+/* ─────────────────────────────────────────── helpers */
 
-const STORAGE_KEY = "canvas_view_v1";
-const SCHEMA_VERSION = 1;
-
-const isRecord = (v: unknown): v is Record<string, unknown> =>
-  Boolean(v) && typeof v === "object" && !Array.isArray(v);
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
 const isCanvasMode = (value: unknown): value is CanvasMode =>
-  value === "flow-map" ||
-  value === "scene-board" ||
-  value === "timeline" ||
-  value === "character-map" ||
-  value === "memory-map";
+  typeof value === "string" && ALL_MODES.includes(value as CanvasMode);
+
+const isCanvasLayer = (value: unknown): value is CanvasLayer =>
+  typeof value === "string" && ALL_LAYERS.includes(value as CanvasLayer);
+
+const isCanvasActivityPanel = (value: unknown): value is CanvasActivityPanel =>
+  typeof value === "string" &&
+  ALL_ACTIVITY_PANELS.includes(value as CanvasActivityPanel);
 
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
 
-/**
- * Persist payload sanitize — partial 입력에서 신뢰할 수 있는 값만 받는다.
- *
- * Scope는 union이라 잘못된 형태로 저장되면 캔버스가 깨질 수 있어
- * 각 type별로 필수 필드만 검증해 통과시킨다. 검증 실패 시 null로
- * 떨어뜨려 빈 상태에서 시작.
- */
+const clampZoom = (zoom: number): number =>
+  Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom));
+
 const sanitizePersistedScope = (input: unknown): CanvasScope | null => {
   if (!isRecord(input)) return null;
-  switch (input.type) {
-    case "single-chapter":
-      return typeof input.chapterId === "string"
-        ? { type: "single-chapter", chapterId: input.chapterId }
-        : null;
-    case "chapter-range":
-      return typeof input.fromChapterId === "string" &&
-        typeof input.toChapterId === "string"
-        ? {
-            type: "chapter-range",
-            fromChapterId: input.fromChapterId,
-            toChapterId: input.toChapterId,
-          }
-        : null;
-    case "arc":
-      return typeof input.arcId === "string"
-        ? { type: "arc", arcId: input.arcId }
-        : null;
-    case "custom":
-      return Array.isArray(input.chapterIds) &&
-        input.chapterIds.every((v) => typeof v === "string")
-        ? { type: "custom", chapterIds: input.chapterIds as string[] }
-        : null;
-    default:
-      return null;
+  const kind = input.kind;
+  if (kind === "single-chapter" && typeof input.chapterId === "string") {
+    return { kind, chapterId: input.chapterId };
   }
+  if (kind === "three-chapters" && typeof input.centerChapterId === "string") {
+    return { kind, centerChapterId: input.centerChapterId };
+  }
+  if (kind === "current-part" && typeof input.partId === "string") {
+    return { kind, partId: input.partId };
+  }
+  if (kind === "whole-project" && typeof input.projectId === "string") {
+    return { kind, projectId: input.projectId };
+  }
+  return null;
+};
+
+const sanitizeViewport = (input: unknown): CanvasViewport => {
+  const fallback: CanvasViewport = { zoom: 1, pan: { x: 0, y: 0 } };
+  if (!isRecord(input)) return fallback;
+  const zoom = isFiniteNumber(input.zoom) ? clampZoom(input.zoom) : 1;
+  const panInput = isRecord(input.pan) ? input.pan : null;
+  const pan: CanvasViewport["pan"] = {
+    x: panInput && isFiniteNumber(panInput.x) ? panInput.x : 0,
+    y: panInput && isFiniteNumber(panInput.y) ? panInput.y : 0,
+  };
+  return { zoom, pan };
 };
 
 const sanitizePersistedState = (
   input: unknown,
 ): Partial<CanvasViewState> => {
   if (!isRecord(input)) return {};
-  return {
-    ...(isCanvasMode(input.mode) ? { mode: input.mode } : {}),
-    scope: sanitizePersistedScope(input.scope),
-    ...(isRecord(input.layers)
-      ? {
-          layers: { ...DEFAULT_LAYERS, ...filterBoolMap(input.layers) } as LayerMap,
-        }
-      : {}),
-    ...(isRecord(input.focuses)
-      ? {
-          focuses: {
-            ...DEFAULT_FOCUSES,
-            ...filterBoolMap(input.focuses),
-          } as FocusMap,
-        }
-      : {}),
-    ...(isFiniteNumber(input.zoom) ? { zoom: clampZoom(input.zoom) } : {}),
-    ...(isRecord(input.pan) &&
-    isFiniteNumber(input.pan.x) &&
-    isFiniteNumber(input.pan.y)
-      ? { pan: { x: input.pan.x, y: input.pan.y } }
-      : {}),
-  };
-};
 
-function filterBoolMap(
-  input: Record<string, unknown>,
-): Record<string, boolean> {
-  const out: Record<string, boolean> = {};
-  for (const [k, v] of Object.entries(input)) {
-    if (typeof v === "boolean") out[k] = v;
+  const next: Partial<CanvasViewState> = {};
+
+  if (isCanvasMode(input.mode)) next.mode = input.mode;
+
+  const scope = sanitizePersistedScope(input.scope);
+  next.scope = scope; // explicit null is meaningful (no scope chosen)
+
+  if (Array.isArray(input.layers)) {
+    const layers = input.layers.filter(isCanvasLayer);
+    if (layers.length > 0) next.layers = layers;
   }
-  return out;
-}
 
-const clampZoom = (z: number): number => Math.min(2.5, Math.max(0.2, z));
+  if (Array.isArray(input.focuses)) {
+    const focuses = input.focuses.filter(
+      (id): id is string => typeof id === "string",
+    );
+    next.focuses = focuses;
+  }
+
+  if (isRecord(input.viewport)) {
+    next.viewport = sanitizeViewport(input.viewport);
+  }
+
+  if (typeof input.lastPreset === "string") {
+    next.lastPreset = input.lastPreset;
+  }
+
+  if (isCanvasActivityPanel(input.activePanel)) {
+    next.activePanel = input.activePanel;
+  }
+
+  if (typeof input.isActivityCollapsed === "boolean") {
+    next.isActivityCollapsed = input.isActivityCollapsed;
+  }
+
+  if (typeof input.isBinderCollapsed === "boolean") {
+    next.isBinderCollapsed = input.isBinderCollapsed;
+  }
+
+  return next;
+};
 
 const createNoopStorage = (): StateStorage => ({
   getItem: () => null,
@@ -179,48 +171,115 @@ const createNoopStorage = (): StateStorage => ({
   removeItem: () => undefined,
 });
 
+/* ─────────────────────────────────────────── state shape */
+
+export interface CanvasViewState {
+  /* viewport ─────── */
+  mode: CanvasMode;
+  scope: CanvasScope | null;
+  layers: CanvasLayer[];
+  focuses: string[];
+  viewport: CanvasViewport;
+  lastPreset: string | null;
+  selection: CanvasSelection;
+
+  /* sidebar ─────── */
+  activePanel: CanvasActivityPanel;
+  isActivityCollapsed: boolean;
+  isBinderCollapsed: boolean;
+
+  /* actions: viewport */
+  setMode: (mode: CanvasMode) => void;
+  setScope: (scope: CanvasScope | null) => void;
+  toggleLayer: (layer: CanvasLayer) => void;
+  setLayers: (layers: CanvasLayer[]) => void;
+  setFocuses: (focuses: string[]) => void;
+  setViewport: (viewport: Partial<CanvasViewport>) => void;
+  setLastPreset: (preset: string | null) => void;
+  selectNode: (nodeId: string | null) => void;
+  selectEdge: (edgeId: string | null) => void;
+  clearSelection: () => void;
+
+  /* actions: sidebar */
+  setActivePanel: (panel: CanvasActivityPanel) => void;
+  toggleActivity: () => void;
+  toggleBinder: () => void;
+  setActivityCollapsed: (collapsed: boolean) => void;
+  setBinderCollapsed: (collapsed: boolean) => void;
+}
+
+/* ─────────────────────────────────────────── store */
+
 export const useCanvasViewStore = create<CanvasViewState>()(
   persist(
     (set) => ({
-      mode: getDefaultCanvasMode(),
+      mode: "flow-map",
       scope: null,
-      selection: DEFAULT_SELECTION,
-      layers: { ...DEFAULT_LAYERS },
-      focuses: { ...DEFAULT_FOCUSES },
-      zoom: DEFAULT_VIEWPORT.zoom,
-      pan: { ...DEFAULT_VIEWPORT.pan },
+      layers: [...DEFAULT_LAYERS],
+      focuses: [],
+      viewport: { zoom: 1, pan: { x: 0, y: 0 } },
       lastPreset: null,
-      hasHydrated: false,
+      selection: { kind: "none" },
+
+      activePanel: "explorer",
+      isActivityCollapsed: false,
+      isBinderCollapsed: false,
 
       setMode: (mode) => set({ mode }),
-      setScope: (scope) => set({ scope, selection: DEFAULT_SELECTION }),
-      selectNode: (id) =>
-        set({ selection: id ? { kind: "node", id } : DEFAULT_SELECTION }),
-      selectEdge: (id) =>
-        set({ selection: id ? { kind: "edge", id } : DEFAULT_SELECTION }),
-      clearSelection: () => set({ selection: DEFAULT_SELECTION }),
-      toggleLayer: (id) =>
+      setScope: (scope) => set({ scope }),
+      toggleLayer: (layer) =>
         set((state) => ({
-          layers: { ...state.layers, [id]: !state.layers[id] } as LayerMap,
-        })),
-      toggleFocus: (id) =>
-        set((state) => ({
-          focuses: { ...state.focuses, [id]: !state.focuses[id] } as FocusMap,
+          layers: state.layers.includes(layer)
+            ? state.layers.filter((value) => value !== layer)
+            : [...state.layers, layer],
         })),
       setLayers: (layers) =>
-        set((state) => ({
-          layers: { ...state.layers, ...layers } as LayerMap,
-        })),
+        set({
+          layers: layers.filter(isCanvasLayer),
+        }),
       setFocuses: (focuses) =>
+        set({
+          focuses: focuses.filter((id) => typeof id === "string"),
+        }),
+      setViewport: (next) =>
         set((state) => ({
-          focuses: { ...state.focuses, ...focuses } as FocusMap,
+          viewport: {
+            zoom:
+              next.zoom !== undefined && isFiniteNumber(next.zoom)
+                ? clampZoom(next.zoom)
+                : state.viewport.zoom,
+            pan: {
+              x:
+                next.pan && isFiniteNumber(next.pan.x)
+                  ? next.pan.x
+                  : state.viewport.pan.x,
+              y:
+                next.pan && isFiniteNumber(next.pan.y)
+                  ? next.pan.y
+                  : state.viewport.pan.y,
+            },
+          },
         })),
-      setViewport: ({ zoom, pan }) =>
-        set((state) => ({
-          zoom: zoom !== undefined ? clampZoom(zoom) : state.zoom,
-          pan: pan ?? state.pan,
-        })),
-      setLastPreset: (preset) => set({ lastPreset: preset }),
+      setLastPreset: (lastPreset) => set({ lastPreset }),
+      selectNode: (nodeId) =>
+        set({
+          selection: nodeId ? { kind: "node", id: nodeId } : { kind: "none" },
+        }),
+      selectEdge: (edgeId) =>
+        set({
+          selection: edgeId ? { kind: "edge", id: edgeId } : { kind: "none" },
+        }),
+      clearSelection: () => set({ selection: { kind: "none" } }),
+
+      setActivePanel: (activePanel) =>
+        set({ activePanel, isActivityCollapsed: false }),
+      toggleActivity: () =>
+        set((state) => ({ isActivityCollapsed: !state.isActivityCollapsed })),
+      toggleBinder: () =>
+        set((state) => ({ isBinderCollapsed: !state.isBinderCollapsed })),
+      setActivityCollapsed: (isActivityCollapsed) =>
+        set({ isActivityCollapsed }),
+      setBinderCollapsed: (isBinderCollapsed) => set({ isBinderCollapsed }),
     }),
     {
       name: STORAGE_KEY,
@@ -230,24 +289,23 @@ export const useCanvasViewStore = create<CanvasViewState>()(
           ? createNoopStorage()
           : localStorage,
       ),
-      partialize: (state) => ({
-        mode: state.mode,
-        scope: state.scope,
-        layers: state.layers,
-        focuses: state.focuses,
-        zoom: state.zoom,
-        pan: state.pan,
-      }),
       migrate: (persistedState) => sanitizePersistedState(persistedState),
       merge: (persistedState, currentState) => ({
         ...currentState,
         ...sanitizePersistedState(persistedState),
       }),
-      onRehydrateStorage: () => (state) => {
-        if (state) state.hasHydrated = true;
-      },
+      onRehydrateStorage: () => () => undefined,
+      partialize: (state) => ({
+        mode: state.mode,
+        scope: state.scope,
+        layers: state.layers,
+        focuses: state.focuses,
+        viewport: state.viewport,
+        lastPreset: state.lastPreset,
+        activePanel: state.activePanel,
+        isActivityCollapsed: state.isActivityCollapsed,
+        isBinderCollapsed: state.isBinderCollapsed,
+      }),
     },
   ),
 );
-
-export type { CanvasViewState };

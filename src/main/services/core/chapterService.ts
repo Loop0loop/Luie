@@ -39,6 +39,8 @@ const ENABLE_STRESS_TRACE =
 const SKIP_NONCRITICAL_DERIVED_ON_STRESS =
   process.env.LUIE_E2E_STRESS_MODE === "1" ||
   isTestEnv();
+const SUPPRESS_HOT_PATH_INFO_LOGS =
+  process.env.LUIE_E2E_STRESS_MODE === "1";
 
 const loadAutoSaveManager = async () =>
   (await import("../../manager/autoSaveManager.js")).autoSaveManager;
@@ -373,7 +375,9 @@ export class ChapterService {
       const bodyUpsertedAt = insertedAt;
       const derivedQueuedAt = insertedAt;
 
-      logger.info("Chapter created successfully", { chapterId: created.id });
+      if (!SUPPRESS_HOT_PATH_INFO_LOGS) {
+        logger.info("Chapter created successfully", { chapterId: created.id });
+      }
       if (!SKIP_NONCRITICAL_DERIVED_ON_STRESS) {
         fireAndForget(
           (async () => {
@@ -611,9 +615,11 @@ export class ChapterService {
       const bodyAndRevisionAt = rowUpdatedAt;
       const derivedQueuedAt = rowUpdatedAt;
 
-      logger.info("Chapter updated successfully", {
-        chapterId: updatedChapter.id,
-      });
+      if (!SUPPRESS_HOT_PATH_INFO_LOGS) {
+        logger.info("Chapter updated successfully", {
+          chapterId: updatedChapter.id,
+        });
+      }
       const updateContent = input.content ?? await this.readChapterContent(String(updatedChapter.id));
       if (!SKIP_NONCRITICAL_DERIVED_ON_STRESS) {
         fireAndForget(

@@ -89,6 +89,7 @@ export class ProjectService {
     async (projectId: string) => await this.exportProjectPackage(projectId),
     logger,
   );
+  private hasLoggedRuntimeExportSkip = false;
 
   async reconcileProjectPathDuplicates(): Promise<{
     duplicateGroups: number;
@@ -907,10 +908,13 @@ export class ProjectService {
     reason: string,
   ): Promise<void> {
     if (isPackageExportDisabledForRuntime) {
-      logger.info("Package export skipped by runtime flag", {
-        projectId,
-        reason,
-      });
+      if (!this.hasLoggedRuntimeExportSkip) {
+        logger.info("Package export skipped by runtime flag", {
+          projectId,
+          reason,
+        });
+        this.hasLoggedRuntimeExportSkip = true;
+      }
       return;
     }
     if (this.shouldDebouncePackageExport(reason)) {

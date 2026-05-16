@@ -1,8 +1,25 @@
 /**
- * Canvas feature 인덱스 — 외부에서 사용하는 진입점만 export.
+ * Canvas feature public surface.
  *
- * 내부 모듈(stores/hooks/types 등)은 캔버스 안에서만 import한다. 다른
- * feature가 캔버스 내부를 직접 import하면 boundary가 무너지므로 인덱스에
- * 추가 export하지 않는다.
+ * Phases:
+ *   P0 — viewport pane shell only.
+ *   P1 — canvasViewStore + types.
+ *   P2 — Sidebar shell + ScrivenerLayout integration.
+ *
+ * Note: WorldCanvasPanel was removed in P0; consumers (graph tab, world-graph window)
+ * now mount {@link CanvasPane} as the viewport-only entry point.
  */
-export { WorldCanvasPanel } from "./WorldCanvasPanel";
+export { default as CanvasPane } from "./components/CanvasPane";
+export { useCanvasViewStore } from "./stores";
+export type { CanvasViewState } from "./stores";
+export type {
+  CanvasMode,
+  CanvasAvailableMode,
+  CanvasRange,
+  CanvasLayer,
+  CanvasActivityPanel,
+  CanvasScope,
+  CanvasViewport,
+  CanvasSelection,
+} from "./types";
+export { CANVAS_AVAILABLE_MODES } from "./types";

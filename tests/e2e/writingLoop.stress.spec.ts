@@ -1,9 +1,16 @@
 import { expect, test } from "@playwright/test";
+import { randomUUID } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { closeApp, launchApp } from "./_helpers/electronApp";
 
 type ApiResponse<T> = { success?: boolean; data?: T; error?: unknown };
+type TimedWriteSample = {
+  phase: "seed" | "burst";
+  index: number;
+  chapterId: string;
+  elapsedMs: number;
+};
 
 const toNumber = (raw: string | undefined, fallback: number) => {
   if (!raw) return fallback;
@@ -50,7 +57,7 @@ test("measures write-loop stability on 1000x5000 dataset @stress", async () => {
     return { response, elapsed };
   };
 
-  const suffix = Math.floor(Date.now() / 1000);
+  const suffix = `${Date.now()}-${process.pid}-${randomUUID().slice(0, 8)}`;
   const projectPath = `/tmp/writing-loop-${suffix}.luie`;
   const project = await call(
     async () =>
@@ -92,6 +99,7 @@ test("measures write-loop stability on 1000x5000 dataset @stress", async () => {
   const createDurationMs = performance.now() - createStartedAt;
 
   const saveLatencies: number[] = [];
+  const timedWriteSamples: TimedWriteSample[] = [];
   const saveStartedAt = performance.now();
 
   for (let i = 0; i < chapterIds.length; i += 1) {
@@ -108,6 +116,12 @@ test("measures write-loop stability on 1000x5000 dataset @stress", async () => {
       `chapter.update.seed[${i}]`,
     );
     saveLatencies.push(result.elapsed);
+    timedWriteSamples.push({
+      phase: "seed",
+      index: i,
+      chapterId: chapterIds[i],
+      elapsedMs: result.elapsed,
+    });
   }
 
   for (let i = 0; i < burstOps; i += 1) {
@@ -125,6 +139,12 @@ test("measures write-loop stability on 1000x5000 dataset @stress", async () => {
       `chapter.update.burst[${i}]`,
     );
     saveLatencies.push(result.elapsed);
+    timedWriteSamples.push({
+      phase: "burst",
+      index: i,
+      chapterId: targetChapterId,
+      elapsedMs: result.elapsed,
+    });
   }
   const saveDurationMs = performance.now() - saveStartedAt;
 
@@ -180,6 +200,13 @@ test("measures write-loop stability on 1000x5000 dataset @stress", async () => {
       max: Math.max(...saveLatencies),
       avg: saveLatencies.reduce((sum, value) => sum + value, 0) / saveLatencies.length,
       count: saveLatencies.length,
+    },
+    slowWriteDiagnostics: {
+      above1000msCount: timedWriteSamples.filter((item) => item.elapsedMs >= 1000).length,
+      above2000msCount: timedWriteSamples.filter((item) => item.elapsedMs >= 2000).length,
+      topSlowWrites: [...timedWriteSamples]
+        .sort((a, b) => b.elapsedMs - a.elapsedMs)
+        .slice(0, 12),
     },
     derivedStatus: {
       search: lastSearchStatus,

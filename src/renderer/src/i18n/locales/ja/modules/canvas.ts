@@ -5,6 +5,18 @@ export const jaCanvas = {
   workspace: {
     title: "キャンバス",
   },
+  activity: {
+    explorer: "エクスプローラー",
+    canvas: "キャンバス",
+    entities: "エンティティ",
+    memory: "メモリー",
+    search: "検索",
+  },
+  panel: {
+    views: "ビュー",
+    range: "範囲",
+    layers: "レイヤー",
+  },
   mode: {
     flowMap: {
       label: "フローマップ",
@@ -27,6 +39,23 @@ export const jaCanvas = {
       description: "メモリエンジンが生成したチャンクとエンティティを表示します。",
     },
     comingSoon: "近日公開",
+  },
+  range: {
+    currentChapter: "現在の話",
+    threeChapters: "±3話",
+    currentPart: "現在の部",
+    wholeProject: "プロジェクト全体",
+  },
+  layer: {
+    scene: "シーン",
+    character: "キャラクター",
+    event: "イベント",
+    memo: "メモ",
+    aiHint: "AIヒント",
+  },
+  empty: {
+    title: "話が選択されていません",
+    description: "話を選択するとキャンバスが表示されます。",
   },
   sidebar: {
     activity: "アクティビティ",

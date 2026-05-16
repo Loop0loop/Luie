@@ -52,7 +52,9 @@ export type LayoutSurfaceId =
   | (typeof DOCS_LAYOUT_PANEL_SURFACE_MAP)[DocsLayoutPanelTab]
   | "scrivener.binder"
   | "scrivener.inspector"
-  | (typeof EDITOR_LAYOUT_PANEL_SURFACE_MAP)[EditorLayoutPanelTab];
+  | (typeof EDITOR_LAYOUT_PANEL_SURFACE_MAP)[EditorLayoutPanelTab]
+  | "canvas.activity"
+  | "canvas.binder";
 
 export type LayoutSurfaceRole = "sidebar" | "panel" | "binder" | "inspector";
 
@@ -128,6 +130,18 @@ export const LAYOUT_SURFACE_CONFIG: Record<
   "editor.panel.trash": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 26 },
   "scrivener.binder": { ...DEFAULT_BINDER_CONFIG },
   "scrivener.inspector": { ...DEFAULT_INSPECTOR_CONFIG },
+  "canvas.activity": {
+    role: "sidebar",
+    defaultRatio: 18,
+    minPx: 220,
+    maxPx: 380,
+  },
+  "canvas.binder": {
+    role: "inspector",
+    defaultRatio: 19,
+    minPx: 220,
+    maxPx: 420,
+  },
 };
 
 const LEGACY_WIDTH_KEYS_BY_LAYOUT_SURFACE: Record<LayoutSurfaceId, string[]> = {
@@ -154,6 +168,8 @@ const LEGACY_WIDTH_KEYS_BY_LAYOUT_SURFACE: Record<LayoutSurfaceId, string[]> = {
   "editor.panel.trash": ["editorTrash", "trash"],
   "scrivener.binder": ["scrivenerBinder", "binder"],
   "scrivener.inspector": ["scrivenerInspector", "inspector"],
+  "canvas.activity": ["canvasActivity"],
+  "canvas.binder": ["canvasBinder"],
 };
 
 const getViewportWidth = (): number =>
@@ -312,3 +328,11 @@ export const COMPACT_BINDER_MIN_WIDTH_PX = 260;
 export const COMPACT_BINDER_MAX_WIDTH_PX = 720;
 /** Width of the SnapshotViewer overlay that slides in to the left of the binder panel. */
 export const COMPACT_BINDER_SNAPSHOT_VIEWER_WIDTH_PX = 480;
+
+// ─── Canvas (CanvasPane viewport chrome + activity icon rail) ────────────────
+/** Width of the icon-only activity rail inside the canvas Sidebar. */
+export const CANVAS_ICON_RAIL_WIDTH_PX = 44;
+/** Height of the canvas viewport toolbar (mode/range/zoom). */
+export const CANVAS_TOOLBAR_HEIGHT_PX = 36;
+/** Height of the canvas viewport status bar (mode/chapter/counts). */
+export const CANVAS_STATUS_BAR_HEIGHT_PX = 28;
