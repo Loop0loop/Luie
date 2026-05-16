@@ -1,33 +1,51 @@
 /**
- * CanvasPane — viewport-only shell for the canvas feature.
+ * CanvasPane — viewport shell for the canvas feature.
  *
- * Phase 3 layout:
- *   ┌─────────────── CanvasToolbar (fixed height) ───────────────┐
- *   │                                                            │
- *   │         viewport area (P5 will replace empty state)        │
- *   │                                                            │
- *   ├──────────────  CanvasStatusBar (fixed height) ─────────────┤
+ * P5 layout:
+ *   ┌─────────────── CanvasToolbar ───────────────┐
+ *   │                                             │
+ *   │   CanvasViewport (nodes/edges) or           │
+ *   │   CanvasEmptyState (no scope/nodes)         │
+ *   │                                             │
+ *   └─────────────── CanvasStatusBar ─────────────┘
  *
- * The pane never owns the activity sidebar or binder — those live in the
- * surrounding Sidebar (P2) and BinderSidebar (P6). CanvasPane is mounted as
- * the MainLayout `children` slot when `mainView.type === "canvas"`.
+ * Hooks:
+ *   useCanvasScope     — auto-sets scope from active chapter
+ *   useCanvasProjection — builds projection from worldBuildingStore
  */
 import CanvasToolbar from "./viewport/CanvasToolbar";
 import CanvasStatusBar from "./viewport/CanvasStatusBar";
 import CanvasEmptyState from "./viewport/CanvasEmptyState";
+import CanvasViewport from "./viewport/CanvasViewport";
+import { useCanvasScope } from "../hooks/useCanvasScope";
+import { useCanvasProjection } from "../hooks/useCanvasProjection";
 
 export default function CanvasPane() {
+  // Auto-resolve scope from active chapter.
+  useCanvasScope();
+
+  const { projection, status } = useCanvasProjection();
+
   return (
     <div
       className="flex h-full w-full flex-col bg-canvas"
       data-testid="canvas-pane"
     >
       <CanvasToolbar />
+
       <div className="relative flex-1 min-h-0 overflow-hidden">
-        {/* P5 will mount <CanvasViewport /> here when projection is available. */}
-        <CanvasEmptyState />
+        {status === "idle" || status === "error" || !projection ? (
+          <CanvasEmptyState />
+        ) : status === "loading" ? (
+          <div className="flex h-full items-center justify-center text-xs text-muted">
+            {/* loading state — projection is being built */}
+          </div>
+        ) : (
+          <CanvasViewport projection={projection} />
+        )}
       </div>
-      <CanvasStatusBar />
+
+      <CanvasStatusBar projection={projection} />
     </div>
   );
 }

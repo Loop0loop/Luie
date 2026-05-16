@@ -11,6 +11,7 @@ import { useShallow } from "zustand/react/shallow";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
+import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useCanvasViewStore } from "@renderer/features/canvas/stores";
 import {
   PanelRoot,
@@ -42,11 +43,15 @@ export default function ExplorerPanel() {
     })),
   );
 
+  const setMainView = useUIStore((state) => state.setMainView);
+
   const activeScopeChapterId =
     scope?.kind === "single-chapter" ? scope.chapterId : null;
 
   const handleSelectChapter = (chapterId: string) => {
     setScope({ kind: "single-chapter", chapterId });
+    // Ensure canvas mode is active in MainLayout.
+    setMainView({ type: "canvas", id: chapterId });
   };
 
   return (

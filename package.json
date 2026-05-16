@@ -61,6 +61,7 @@
     "bench:writing-loop:profiles:all": "node scripts/run-writing-loop-profiles.mjs --include-500",
     "bench:writing-loop:repeat": "node scripts/run-writing-loop-repeat.mjs",
     "bench:writing-loop:fullprod": "bunx playwright test --project=stress tests/e2e/writingLoop.fullprod.spec.ts",
+    "bench:writing-loop:fullprod:repeat": "node scripts/run-writing-loop-fullprod-repeat.mjs",
     "check:writing-loop-regression": "node scripts/check-writing-loop-regression.mjs",
     "check:writing-loop-profiles-regression": "node scripts/check-writing-loop-profiles-regression.mjs",
     "check:derived-db-bench": "node scripts/benchmark-derived-db.mjs --assert --json-out tests/.tmp/derived-db-bench.json",

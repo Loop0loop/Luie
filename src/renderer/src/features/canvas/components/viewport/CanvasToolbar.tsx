@@ -1,42 +1,189 @@
 /**
  * CanvasToolbar — top chrome of the canvas viewport.
  *
- * P3 shell: lays out fixed-height bar with placeholder slots for the mode
- * dropdown, range picker, and zoom controls. Wiring to canvasViewStore arrives
- * in P5.
+ * P5: mode dropdown, range picker, zoom controls wired to canvasViewStore.
  */
 import { useTranslation } from "react-i18next";
+import { ZoomIn, ZoomOut, Maximize2, ChevronDown } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import { CANVAS_TOOLBAR_HEIGHT_PX } from "@shared/constants/layoutSizing";
+import { cn } from "@shared/types/utils";
+import { useCanvasViewStore } from "../../stores";
+import {
+  CANVAS_AVAILABLE_MODES,
+  type CanvasMode,
+  type CanvasRange,
+} from "../../types";
+
+const MODE_I18N: Record<CanvasMode, string> = {
+  "flow-map": "canvas.mode.flowMap.label",
+  "scene-board": "canvas.mode.sceneBoard.label",
+  "timeline": "canvas.mode.timeline.label",
+  "character-map": "canvas.mode.characterMap.label",
+  "memory-map": "canvas.mode.memoryMap.label",
+};
+
+const RANGE_I18N: Record<CanvasRange, string> = {
+  "current-chapter": "canvas.range.currentChapter",
+  "three-chapters": "canvas.range.threeChapters",
+  "current-part": "canvas.range.currentPart",
+  "whole-project": "canvas.range.wholeProject",
+};
+
+const ALL_RANGES: CanvasRange[] = [
+  "current-chapter",
+  "three-chapters",
+  "current-part",
+  "whole-project",
+];
+
+const ZOOM_STEP = 0.15;
+const ZOOM_MIN = 0.25;
+const ZOOM_MAX = 3;
 
 export default function CanvasToolbar() {
   const { t } = useTranslation();
+
+  const { mode, scope, viewport, setMode, setScope, setViewport } =
+    useCanvasViewStore(
+      useShallow((state) => ({
+        mode: state.mode,
+        scope: state.scope,
+        viewport: state.viewport,
+        setMode: state.setMode,
+        setScope: state.setScope,
+        setViewport: state.setViewport,
+      })),
+    );
+
+  const currentRange: CanvasRange = (() => {
+    if (!scope) return "current-chapter";
+    if (scope.kind === "single-chapter") return "current-chapter";
+    if (scope.kind === "three-chapters") return "three-chapters";
+    if (scope.kind === "current-part") return "current-part";
+    return "whole-project";
+  })();
+
+  const handleRangeChange = (range: CanvasRange) => {
+    if (range === "current-chapter") {
+      const chapterId =
+        scope?.kind === "single-chapter"
+          ? scope.chapterId
+          : scope?.kind === "three-chapters"
+            ? scope.centerChapterId
+            : null;
+      setScope(chapterId ? { kind: "single-chapter", chapterId } : null);
+    } else if (range === "three-chapters") {
+      const chapterId =
+        scope?.kind === "single-chapter"
+          ? scope.chapterId
+          : scope?.kind === "three-chapters"
+            ? scope.centerChapterId
+            : null;
+      setScope(
+        chapterId ? { kind: "three-chapters", centerChapterId: chapterId } : null,
+      );
+    } else {
+      setScope(null);
+    }
+  };
+
+  const zoomIn = () =>
+    setViewport({ zoom: Math.min(ZOOM_MAX, viewport.zoom + ZOOM_STEP) });
+  const zoomOut = () =>
+    setViewport({ zoom: Math.max(ZOOM_MIN, viewport.zoom - ZOOM_STEP) });
+  const fitView = () =>
+    setViewport({ zoom: 1, pan: { x: 0, y: 0 } });
+
   return (
     <div
-      className="flex shrink-0 items-center gap-2 border-b border-border/40 bg-surface px-3 text-xs text-muted"
+      className="flex shrink-0 items-center gap-1 border-b border-border/40 bg-surface px-2"
       style={{ height: CANVAS_TOOLBAR_HEIGHT_PX }}
       data-testid="canvas-toolbar"
     >
-      {/* Mode dropdown — wired in P5 */}
-      <span className="opacity-60" aria-hidden>
-        {t("canvas.panel.views")}
-      </span>
-      <span className="h-3 w-px bg-border/60" aria-hidden />
-      {/* Range picker — wired in P5 */}
-      <span className="opacity-60" aria-hidden>
-        {t("canvas.panel.range")}
-      </span>
-      <div className="ml-auto flex items-center gap-1">
-        {/* Zoom controls — wired in P5 */}
-        <span className="opacity-60" aria-hidden>
-          {t("canvas.toolbar.zoomOut")}
-        </span>
-        <span className="opacity-60" aria-hidden>
-          {t("canvas.toolbar.zoomIn")}
-        </span>
-        <span className="opacity-60" aria-hidden>
-          {t("canvas.toolbar.fitView")}
-        </span>
+      {/* Mode selector */}
+      <div className="relative">
+        <select
+          value={mode}
+          onChange={(e) => {
+            const next = e.target.value as CanvasMode;
+            if ((CANVAS_AVAILABLE_MODES as readonly string[]).includes(next)) {
+              setMode(next);
+            }
+          }}
+          className={cn(
+            "appearance-none bg-element border border-border/60 rounded px-2 py-0.5",
+            "text-[11px] text-fg cursor-pointer pr-5",
+            "focus:outline-none focus:border-accent",
+          )}
+          aria-label={t("canvas.panel.views")}
+        >
+          {(Object.keys(MODE_I18N) as CanvasMode[]).map((m) => {
+            const available = (CANVAS_AVAILABLE_MODES as readonly string[]).includes(m);
+            return (
+              <option key={m} value={m} disabled={!available}>
+                {t(MODE_I18N[m])}{!available ? ` (${t("canvas.mode.comingSoon")})` : ""}
+              </option>
+            );
+          })}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 icon-xs text-muted" />
       </div>
+
+      <span className="h-3 w-px bg-border/60" aria-hidden />
+
+      {/* Range selector */}
+      <div className="relative">
+        <select
+          value={currentRange}
+          onChange={(e) => handleRangeChange(e.target.value as CanvasRange)}
+          className={cn(
+            "appearance-none bg-element border border-border/60 rounded px-2 py-0.5",
+            "text-[11px] text-fg cursor-pointer pr-5",
+            "focus:outline-none focus:border-accent",
+          )}
+          aria-label={t("canvas.panel.range")}
+        >
+          {ALL_RANGES.map((r) => (
+            <option key={r} value={r}>
+              {t(RANGE_I18N[r])}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 icon-xs text-muted" />
+      </div>
+
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Zoom controls */}
+      <span className="text-[11px] text-muted tabular-nums">
+        {Math.round(viewport.zoom * 100)}%
+      </span>
+      <button
+        type="button"
+        onClick={zoomOut}
+        title={t("canvas.toolbar.zoomOut")}
+        className="flex h-6 w-6 items-center justify-center rounded hover:bg-surface-hover text-muted hover:text-fg transition-colors"
+      >
+        <ZoomOut className="icon-xs" />
+      </button>
+      <button
+        type="button"
+        onClick={zoomIn}
+        title={t("canvas.toolbar.zoomIn")}
+        className="flex h-6 w-6 items-center justify-center rounded hover:bg-surface-hover text-muted hover:text-fg transition-colors"
+      >
+        <ZoomIn className="icon-xs" />
+      </button>
+      <button
+        type="button"
+        onClick={fitView}
+        title={t("canvas.toolbar.fitView")}
+        className="flex h-6 w-6 items-center justify-center rounded hover:bg-surface-hover text-muted hover:text-fg transition-colors"
+      >
+        <Maximize2 className="icon-xs" />
+      </button>
     </div>
   );
 }
