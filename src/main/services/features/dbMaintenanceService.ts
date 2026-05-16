@@ -21,6 +21,71 @@ const STALE_RUNNING_THRESHOLD_MS = 30_000;
 const LONG_PENDING_THRESHOLD_MS = 60_000;
 
 class DbMaintenanceService {
+  private async upsertPendingSearchJob(input: {
+    projectId: string;
+    sourceType: string;
+    sourceId: string;
+    reason: string;
+    now: string;
+  }): Promise<void> {
+    const client = db.getClient();
+    const existing = await client.all<{ id: string }>(
+      sql`SELECT "id" FROM "SearchDirtyQueue"
+          WHERE "projectId" = ${input.projectId}
+            AND "sourceType" = ${input.sourceType}
+            AND "sourceId" = ${input.sourceId}
+            AND "status" = 'pending'
+          ORDER BY "updatedAt" DESC
+          LIMIT 1;`,
+    );
+    if (existing.length > 0) {
+      await client.run(
+        sql`UPDATE "SearchDirtyQueue"
+            SET "reason" = ${input.reason},
+                "updatedAt" = ${input.now}
+            WHERE "id" = ${existing[0].id};`,
+      );
+      return;
+    }
+    await client.run(
+      sql`INSERT INTO "SearchDirtyQueue" ("id","projectId","sourceType","sourceId","reason","status","attempts","createdAt","updatedAt")
+          VALUES (${crypto.randomUUID()}, ${input.projectId}, ${input.sourceType}, ${input.sourceId}, ${input.reason}, 'pending', 0, ${input.now}, ${input.now});`,
+    );
+  }
+
+  private async upsertPendingMemoryBuildJob(input: {
+    projectId: string;
+    targetType: string;
+    targetId: string;
+    priority: number;
+    now: string;
+  }): Promise<void> {
+    const client = db.getClient();
+    const existing = await client.all<{ id: string }>(
+      sql`SELECT "id" FROM "MemoryBuildJob"
+          WHERE "projectId" = ${input.projectId}
+            AND "targetType" = ${input.targetType}
+            AND "targetId" = ${input.targetId}
+            AND "jobType" = 'rebuild_chunks'
+            AND "status" = 'pending'
+          ORDER BY "updatedAt" DESC
+          LIMIT 1;`,
+    );
+    if (existing.length > 0) {
+      await client.run(
+        sql`UPDATE "MemoryBuildJob"
+            SET "priority" = ${input.priority},
+                "updatedAt" = ${input.now}
+            WHERE "id" = ${existing[0].id};`,
+      );
+      return;
+    }
+    await client.run(
+      sql`INSERT INTO "MemoryBuildJob" ("id","projectId","targetType","targetId","jobType","status","priority","attempts","createdAt","updatedAt")
+          VALUES (${crypto.randomUUID()}, ${input.projectId}, ${input.targetType}, ${input.targetId}, 'rebuild_chunks', 'pending', ${input.priority}, 0, ${input.now}, ${input.now});`,
+    );
+  }
+
   async recoverStaleRunningJobs(): Promise<void> {
     const client = db.getClient();
     const now = Date.now();
@@ -64,24 +129,24 @@ class DbMaintenanceService {
     reason: string;
   }): Promise<void> {
     const now = new Date().toISOString();
-    const client = db.getClient();
-    await client.run(
-      sql`INSERT INTO "SearchDirtyQueue" ("id","projectId","sourceType","sourceId","reason","status","attempts","createdAt","updatedAt")
-          VALUES (${crypto.randomUUID()}, ${input.projectId}, 'chapter', ${input.chapterId}, ${input.reason}, 'pending', 0, ${now}, ${now})
-          ON CONFLICT("projectId","sourceType","sourceId") WHERE "status"='pending'
-          DO UPDATE SET "reason"=excluded."reason", "updatedAt"=excluded."updatedAt";`,
-    );
+    await this.upsertPendingSearchJob({
+      projectId: input.projectId,
+      sourceType: "chapter",
+      sourceId: input.chapterId,
+      reason: input.reason,
+      now,
+    });
   }
 
   async rebuildSearchIndex(projectId: string): Promise<{ success: boolean }> {
     const now = new Date().toISOString();
-    const client = db.getClient();
-    await client.run(
-      sql`INSERT INTO "SearchDirtyQueue" ("id","projectId","sourceType","sourceId","reason","status","attempts","createdAt","updatedAt")
-          VALUES (${crypto.randomUUID()}, ${projectId}, 'chapter', ${projectId}, 'search:rebuild-all', 'pending', 0, ${now}, ${now})
-          ON CONFLICT("projectId","sourceType","sourceId") WHERE "status"='pending'
-          DO UPDATE SET "reason"=excluded."reason", "updatedAt"=excluded."updatedAt";`,
-    );
+    await this.upsertPendingSearchJob({
+      projectId,
+      sourceType: "chapter",
+      sourceId: projectId,
+      reason: "search:rebuild-all",
+      now,
+    });
     return { success: true };
   }
 
@@ -128,12 +193,13 @@ class DbMaintenanceService {
     const client = db.getClient();
     const now = new Date().toISOString();
     if (input.sourceType && input.sourceId) {
-      await client.run(
-        sql`INSERT INTO "MemoryBuildJob" ("id","projectId","targetType","targetId","jobType","status","priority","attempts","createdAt","updatedAt")
-            VALUES (${crypto.randomUUID()}, ${input.projectId}, ${input.sourceType}, ${input.sourceId}, 'rebuild_chunks', 'pending', 100, 0, ${now}, ${now})
-            ON CONFLICT("projectId","targetType","targetId","jobType") WHERE "status"='pending'
-            DO UPDATE SET "priority"=excluded."priority", "updatedAt"=excluded."updatedAt";`,
-      );
+      await this.upsertPendingMemoryBuildJob({
+        projectId: input.projectId,
+        targetType: input.sourceType,
+        targetId: input.sourceId,
+        priority: 100,
+        now,
+      });
       return { queued: 1, processed: 0 };
     } else {
       const chapters = await client
@@ -143,12 +209,13 @@ class DbMaintenanceService {
         .orderBy(asc(chapter.order));
       await chapters.reduce<Promise<void>>(async (prev, row) => {
         await prev;
-        await client.run(
-          sql`INSERT INTO "MemoryBuildJob" ("id","projectId","targetType","targetId","jobType","status","priority","attempts","createdAt","updatedAt")
-              VALUES (${crypto.randomUUID()}, ${input.projectId}, 'chapter', ${row.id}, 'rebuild_chunks', 'pending', 100, 0, ${now}, ${now})
-              ON CONFLICT("projectId","targetType","targetId","jobType") WHERE "status"='pending'
-              DO UPDATE SET "priority"=excluded."priority", "updatedAt"=excluded."updatedAt";`,
-        );
+        await this.upsertPendingMemoryBuildJob({
+          projectId: input.projectId,
+          targetType: "chapter",
+          targetId: row.id,
+          priority: 100,
+          now,
+        });
       }, Promise.resolve());
       return { queued: chapters.length, processed: 0 };
     }

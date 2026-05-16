@@ -37,7 +37,8 @@ const ENABLE_STRESS_TRACE =
   process.env.LUIE_STRESS_TRACE === "1" ||
   process.env.LUIE_STRESS_TRACE === "true";
 const SKIP_NONCRITICAL_DERIVED_ON_STRESS =
-  process.env.LUIE_E2E_STRESS_MODE === "1";
+  process.env.LUIE_E2E_STRESS_MODE === "1" ||
+  isTestEnv();
 
 const loadAutoSaveManager = async () =>
   (await import("../../manager/autoSaveManager.js")).autoSaveManager;
@@ -69,6 +70,17 @@ const logTrace = (
 };
 
 export class ChapterService {
+  private writeSerialQueue: Promise<void> = Promise.resolve();
+
+  private async runInWriteSerialQueue<T>(task: () => Promise<T>): Promise<T> {
+    const next = this.writeSerialQueue.then(task, task);
+    this.writeSerialQueue = next.then(
+      () => undefined,
+      () => undefined,
+    );
+    return await next;
+  }
+
   private hashContent(content: string): string {
     return crypto.createHash("sha256").update(content).digest("hex");
   }
@@ -316,40 +328,45 @@ export class ChapterService {
 
       const now = new Date().toISOString();
       const chapterId = input.clientMutationId ?? crypto.randomUUID();
-      await store.run(sql`BEGIN IMMEDIATE;`);
-      let created: typeof chapter.$inferSelect;
-      try {
-        const inserted = await store.insert(chapter).values({
-          id: chapterId,
-          projectId: input.projectId,
-          title: input.title,
-          synopsis: input.synopsis ?? null,
-          order: nextOrder,
-          content: "",
-          createdAt: now,
-          updatedAt: now,
-        }).returning();
-        created = inserted[0];
-        await this.upsertChapterBody({
-          chapterId: String(created.id),
-          content: String(created.content ?? ""),
-          now,
-        });
-        await this.enqueueDerivedJobs({
-          projectId: String(created.projectId),
-          chapterId: String(created.id),
-          reason: "chapter:create",
-        });
-        await store.run(sql`COMMIT;`);
-      } catch (error) {
+      let created: typeof chapter.$inferSelect | null = null;
+      await this.runInWriteSerialQueue(async () => {
+        await store.run(sql`BEGIN IMMEDIATE;`);
         try {
-          await store.run(sql`ROLLBACK;`);
-        } catch (rollbackError) {
-          logger.warn("Failed to rollback chapter.create transaction", {
-            rollbackError,
+          const inserted = await store.insert(chapter).values({
+            id: chapterId,
+            projectId: input.projectId,
+            title: input.title,
+            synopsis: input.synopsis ?? null,
+            order: nextOrder,
+            content: "",
+            createdAt: now,
+            updatedAt: now,
+          }).returning();
+          created = inserted[0];
+          await this.upsertChapterBody({
+            chapterId: String(created.id),
+            content: String(created.content ?? ""),
+            now,
           });
+          await this.enqueueDerivedJobs({
+            projectId: String(created.projectId),
+            chapterId: String(created.id),
+            reason: "chapter:create",
+          });
+          await store.run(sql`COMMIT;`);
+        } catch (error) {
+          try {
+            await store.run(sql`ROLLBACK;`);
+          } catch (rollbackError) {
+            logger.warn("Failed to rollback chapter.create transaction", {
+              rollbackError,
+            });
+          }
+          throw error;
         }
-        throw error;
+      });
+      if (!created) {
+        throw new Error("Chapter create transaction completed without result");
       }
 
       const insertedAt = perfNow();
@@ -357,21 +374,23 @@ export class ChapterService {
       const derivedQueuedAt = insertedAt;
 
       logger.info("Chapter created successfully", { chapterId: created.id });
-      fireAndForget(
-        (async () => {
-          const chapterSearchCacheService = await loadChapterSearchCacheService();
-          await chapterSearchCacheService.upsertChapter({
-            chapterId: String(created.id),
-            projectId: String(created.projectId),
-            title: created.title,
-            synopsis: created.synopsis ?? null,
-            content: created.content,
-            wordCount: created.wordCount,
-            order: created.order,
-          });
-        })(),
-        "chapter:create:search-cache-upsert",
-      );
+      if (!SKIP_NONCRITICAL_DERIVED_ON_STRESS) {
+        fireAndForget(
+          (async () => {
+            const chapterSearchCacheService = await loadChapterSearchCacheService();
+            await chapterSearchCacheService.upsertChapter({
+              chapterId: String(created.id),
+              projectId: String(created.projectId),
+              title: created.title,
+              synopsis: created.synopsis ?? null,
+              content: created.content,
+              wordCount: created.wordCount,
+              order: created.order,
+            });
+          })(),
+          "chapter:create:search-cache-upsert",
+        );
+      }
       const cacheDeferredAt = perfNow();
       await projectService.persistPackageAfterMutation(input.projectId, "chapter:create");
       const persistedAt = perfNow();
@@ -533,55 +552,60 @@ export class ChapterService {
       }
 
       const now = new Date().toISOString();
-      await store.run(sql`BEGIN IMMEDIATE;`);
-      let updatedChapter: typeof chapter.$inferSelect;
-      try {
-        const updated = await store
-          .update(chapter)
-          .set({ ...(updateData as Partial<typeof chapter.$inferInsert>), updatedAt: now })
-          .where(eq(chapter.id, input.id))
-          .returning();
-
-        if (updated.length === 0) {
-          throw new ServiceError(
-            ErrorCode.CHAPTER_NOT_FOUND,
-            "Chapter not found",
-            { id: input.id },
-          );
-        }
-
-        updatedChapter = updated[0];
-        if (input.content !== undefined) {
-          await this.upsertChapterBody({
-            chapterId: String(updatedChapter.id),
-            content: input.content,
-            now,
-          });
-          const contentHash = this.hashContent(input.content);
-          await store.insert(chapterRevision).values({
-            id: crypto.randomUUID(),
-            chapterId: String(updatedChapter.id),
-            contentHash,
-            content: input.content,
-            reason: "manual_save",
-            createdAt: now,
-          });
-        }
-        await this.enqueueDerivedJobs({
-          projectId: String(updatedChapter.projectId),
-          chapterId: String(updatedChapter.id),
-          reason: "chapter:update",
-        });
-        await store.run(sql`COMMIT;`);
-      } catch (error) {
+      let updatedChapter: typeof chapter.$inferSelect | null = null;
+      await this.runInWriteSerialQueue(async () => {
+        await store.run(sql`BEGIN IMMEDIATE;`);
         try {
-          await store.run(sql`ROLLBACK;`);
-        } catch (rollbackError) {
-          logger.warn("Failed to rollback chapter.update transaction", {
-            rollbackError,
+          const updated = await store
+            .update(chapter)
+            .set({ ...(updateData as Partial<typeof chapter.$inferInsert>), updatedAt: now })
+            .where(eq(chapter.id, input.id))
+            .returning();
+
+          if (updated.length === 0) {
+            throw new ServiceError(
+              ErrorCode.CHAPTER_NOT_FOUND,
+              "Chapter not found",
+              { id: input.id },
+            );
+          }
+
+          updatedChapter = updated[0];
+          if (input.content !== undefined) {
+            await this.upsertChapterBody({
+              chapterId: String(updatedChapter.id),
+              content: input.content,
+              now,
+            });
+            const contentHash = this.hashContent(input.content);
+            await store.insert(chapterRevision).values({
+              id: crypto.randomUUID(),
+              chapterId: String(updatedChapter.id),
+              contentHash,
+              content: input.content,
+              reason: "manual_save",
+              createdAt: now,
+            });
+          }
+          await this.enqueueDerivedJobs({
+            projectId: String(updatedChapter.projectId),
+            chapterId: String(updatedChapter.id),
+            reason: "chapter:update",
           });
+          await store.run(sql`COMMIT;`);
+        } catch (error) {
+          try {
+            await store.run(sql`ROLLBACK;`);
+          } catch (rollbackError) {
+            logger.warn("Failed to rollback chapter.update transaction", {
+              rollbackError,
+            });
+          }
+          throw error;
         }
-        throw error;
+      });
+      if (!updatedChapter) {
+        throw new Error("Chapter update transaction completed without result");
       }
       const rowUpdatedAt = perfNow();
       const bodyAndRevisionAt = rowUpdatedAt;

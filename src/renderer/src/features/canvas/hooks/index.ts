@@ -6,4 +6,5 @@ export {
   useCanvasFocuses,
   useCanvasViewport,
 } from "./useCanvasViewState";
-export { useCanvasLayout, CANVAS_LAYOUT_FEATURES } from "./useCanvasLayout";
+export { useCanvasLayout, CANVAS_SURFACE } from "./useCanvasLayout";
+export { useCanvasSurfaceResizeCommit } from "./useCanvasSurfaceResizeCommit";

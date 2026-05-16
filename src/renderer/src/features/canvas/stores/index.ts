@@ -9,7 +9,8 @@ export {
 } from "./canvasViewStore";
 export {
   useCanvasLayoutStore,
-  CANVAS_LAYOUT_FEATURES,
+  CANVAS_SURFACE,
+  isKnownCanvasSurface,
   type CanvasLayoutState,
 } from "./canvasLayoutStore";
 export {

@@ -175,6 +175,7 @@ export function ensurePackagedSqliteSchema(
     }
     let patchedIndexes = 0;
     for (const patch of PACKAGED_SCHEMA_INDEX_PATCHES) {
+      if (!sqliteTableExists(database, patch.table)) continue;
       database.exec(patch.sql);
       patchedIndexes += 1;
     }

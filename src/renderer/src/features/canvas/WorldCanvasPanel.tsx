@@ -1,15 +1,12 @@
 /**
- * Canvas feature 외부 진입점.
+ * Canvas feature 외부 진입점. 외부 import 시그니처는 변경 금지.
  *
- * 다른 feature(`research/components/world/index.tsx` 등)는 이 모듈을
- * import하므로 export 시그니처는 변경 금지(이름/파일 경로 유지).
- * 내부 구현은 Phase별로 교체된다.
- *
- * 현재 상태: Phase 0a — 뼈대만 자리잡고 placeholder 노출.
+ * 내부는 `CanvasWorkspace`(3-pane shell). 모든 영역의 데이터 흐름은
+ * canvas store와 hook을 통해 흘러가며, 외부 feature는 이 컴포넌트만 렌더하면
+ * 캔버스 전체가 자기 책임 영역 안에서 동작한다.
  */
-
-import { CanvasPlaceholder } from "./components/CanvasPlaceholder";
+import { CanvasWorkspace } from "./components/CanvasWorkspace";
 
 export function WorldCanvasPanel() {
-  return <CanvasPlaceholder />;
+  return <CanvasWorkspace />;
 }
