@@ -61,6 +61,10 @@ const DocsSidebar = lazy(
 const ScrivenerSidebar = lazy(
   () => import("@renderer/features/manuscript/components/ScrivenerSidebar"),
 );
+const CanvasActivityShell = lazy(
+  () =>
+    import("@renderer/features/canvas/components/CanvasActivityShell"),
+);
 const ContextPanel = lazy(
   () => import("@renderer/features/workspace/components/panels/ContextPanel"),
 );
@@ -109,6 +113,7 @@ export default function EditorRoot() {
     docsRightTab,
     closeRightPanel,
     isManuscriptMenuOpen,
+    mainViewType,
   } = useUIStore(
     useShallow((state) => ({
       isSidebarOpen: state.regions.leftSidebar.open,
@@ -118,6 +123,7 @@ export default function EditorRoot() {
       docsRightTab: state.regions.rightPanel.activeTab,
       closeRightPanel: state.closeRightPanel,
       isManuscriptMenuOpen: state.isManuscriptMenuOpen,
+      mainViewType: state.mainView.type,
     })),
   );
   const currentProject = useProjectStore((state) => state.currentProject);
@@ -442,7 +448,17 @@ export default function EditorRoot() {
           <ScrivenerLayout
             sidebar={
               <Suspense fallback={null}>
-                <ScrivenerSidebar />
+                {mainViewType === "canvas" ? (
+                  <Sidebar
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                    onPrefetchSettings={prefetchSettings}
+                    onSelectResearchItem={handleSelectResearchItem}
+                    onSplitView={handleSplitView}
+                    canvasContent={<CanvasActivityShell />}
+                  />
+                ) : (
+                  <ScrivenerSidebar />
+                )}
               </Suspense>
             }
             activeChapterId={activeChapterId ?? undefined}

@@ -203,7 +203,11 @@ export class ProjectService {
         projectPath: projectPath ?? null,
       };
     } catch (error) {
-      logger.error("Failed to create project", error);
+      logger.error("Failed to create project", {
+        input,
+        error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
       if (error instanceof ServiceError) {
         throw error;
       }

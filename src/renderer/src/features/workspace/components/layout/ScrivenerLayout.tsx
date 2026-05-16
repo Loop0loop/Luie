@@ -20,6 +20,7 @@ import FactionDetailView from "@renderer/features/research/components/faction/Fa
 import WorldSection from "@renderer/features/research/components/WorldSection";
 import MemoMainView from "@renderer/features/research/components/memo/MemoMainView";
 import AnalysisSection from "@renderer/features/research/components/AnalysisSection";
+import { CanvasPane } from "@renderer/features/canvas";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { Menu, ChevronRight } from "lucide-react";
 import {
@@ -205,6 +206,8 @@ export default function ScrivenerLayout({
         return <MemoMainView />;
       case "analysis":
         return <AnalysisSection />;
+      case "canvas":
+        return <CanvasPane />;
       case "editor":
       default:
         return children;
@@ -323,7 +326,9 @@ export default function ScrivenerLayout({
                   className="min-w-0 relative flex flex-col"
                 >
                   <EditorDropZones />
-                  {(mainView.type === "world" || mainView.type === "analysis") ? (
+                  {(mainView.type === "world" ||
+                    mainView.type === "analysis" ||
+                    mainView.type === "canvas") ? (
                     <div className="h-full w-full bg-panel text-fg">
                       {renderMainContent()}
                     </div>

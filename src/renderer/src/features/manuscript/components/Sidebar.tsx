@@ -1,4 +1,4 @@
-import { lazy, memo, Suspense } from "react";
+import { lazy, memo, Suspense, type ReactNode } from "react";
 import { cn } from "@shared/types/utils";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import {
@@ -45,6 +45,13 @@ interface SidebarProps {
     type: "character" | "event" | "faction" | "world" | "scrap" | "analysis",
   ) => void;
   onSplitView?: (type: "vertical" | "horizontal", contentId: string) => void;
+  /**
+   * When provided, replaces the manuscript sidebar contents with `canvasContent`.
+   * The outer shell (width/background/border/scroll) stays identical so the
+   * surrounding panel does not need to know about the canvas mode. Used by the
+   * canvas Activity Shell (P2). Falsy → renders the normal binder UI.
+   */
+  canvasContent?: ReactNode;
 }
 
 function Sidebar({
@@ -52,6 +59,7 @@ function Sidebar({
   onPrefetchSettings,
   onSelectResearchItem,
   onSplitView,
+  canvasContent,
 }: SidebarProps) {
   const {
     t,
@@ -346,91 +354,97 @@ function Sidebar({
 
   return (
     <div className="h-full flex flex-col select-none" data-testid="sidebar">
-      {menuOpenId && (
-        <div
-          className="fixed inset-0 z-modal bg-transparent"
-          onPointerDown={closeMenu}
-        />
-      )}
-      {/* Context Menu Popup */}
-      {menuOpenId && (
-        <div
-          ref={menuRef}
-          className="fixed z-modal bg-panel border border-border rounded-lg shadow-lg min-w-42.5 p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col"
-          style={{ top: menuPosition.y, left: menuPosition.x }}
-        >
-          <div
-            className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
-            onClick={() => void handleAction("open_below", menuOpenId)}
-          >
-            <ArrowDownFromLine className="icon-sm" />{" "}
-            {t("sidebar.menu.openBelow")}
+      {canvasContent ? (
+        canvasContent
+      ) : (
+        <>
+          {menuOpenId && (
+            <div
+              className="fixed inset-0 z-modal bg-transparent"
+              onPointerDown={closeMenu}
+            />
+          )}
+          {/* Context Menu Popup */}
+          {menuOpenId && (
+            <div
+              ref={menuRef}
+              className="fixed z-modal bg-panel border border-border rounded-lg shadow-lg min-w-42.5 p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col"
+              style={{ top: menuPosition.y, left: menuPosition.x }}
+            >
+              <div
+                className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
+                onClick={() => void handleAction("open_below", menuOpenId)}
+              >
+                <ArrowDownFromLine className="icon-sm" />{" "}
+                {t("sidebar.menu.openBelow")}
+              </div>
+              <div
+                className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
+                onClick={() => void handleAction("open_right", menuOpenId)}
+              >
+                <ArrowRightFromLine className="icon-sm" />{" "}
+                {t("sidebar.menu.openRight")}
+              </div>
+              <div className="h-px bg-border my-1" />
+              <div
+                className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
+                onClick={() => void handleAction("rename", menuOpenId)}
+              >
+                <Edit2 className="icon-sm" /> {t("sidebar.menu.rename")}
+              </div>
+              <div
+                className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
+                onClick={() => void handleAction("duplicate", menuOpenId)}
+              >
+                <Copy className="icon-sm" /> {t("sidebar.menu.duplicate")}
+              </div>
+              <div
+                className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
+                onClick={() => void handleAction("delete", menuOpenId)}
+                style={{ color: "hsl(var(--destructive))" }}
+              >
+                <Trash2 className="icon-sm" /> {t("sidebar.menu.delete")}
+              </div>
+            </div>
+          )}
+          <div className="p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <h2 className="text-sm font-bold text-fg">
+                {currentProjectTitle || t("sidebar.defaultProjectTitle")}
+              </h2>
+              <button
+                type="button"
+                className="p-1 rounded hover:bg-active text-muted hover:text-fg"
+                onClick={handleRenameProject}
+                title={t("sidebar.tooltip.renameProject")}
+                disabled={!currentProjectId}
+              >
+                <Edit2 className="icon-xs" />
+              </button>
+            </div>
+            <div className="text-[11px] text-muted uppercase tracking-wider">
+              {t("sidebar.binderTitle")}
+            </div>
           </div>
-          <div
-            className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
-            onClick={() => void handleAction("open_right", menuOpenId)}
-          >
-            <ArrowRightFromLine className="icon-sm" />{" "}
-            {t("sidebar.menu.openRight")}
-          </div>
-          <div className="h-px bg-border my-1" />
-          <div
-            className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
-            onClick={() => void handleAction("rename", menuOpenId)}
-          >
-            <Edit2 className="icon-sm" /> {t("sidebar.menu.rename")}
-          </div>
-          <div
-            className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
-            onClick={() => void handleAction("duplicate", menuOpenId)}
-          >
-            <Copy className="icon-sm" /> {t("sidebar.menu.duplicate")}
-          </div>
-          <div
-            className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
-            onClick={() => void handleAction("delete", menuOpenId)}
-            style={{ color: "hsl(var(--destructive))" }}
-          >
-            <Trash2 className="icon-sm" /> {t("sidebar.menu.delete")}
-          </div>
-        </div>
-      )}
-      <div className="p-4">
-        <div className="flex items-center gap-2 mb-1">
-          <h2 className="text-sm font-bold text-fg">
-            {currentProjectTitle || t("sidebar.defaultProjectTitle")}
-          </h2>
-          <button
-            type="button"
-            className="p-1 rounded hover:bg-active text-muted hover:text-fg"
-            onClick={handleRenameProject}
-            title={t("sidebar.tooltip.renameProject")}
-            disabled={!currentProjectId}
-          >
-            <Edit2 className="icon-xs" />
-          </button>
-        </div>
-        <div className="text-[11px] text-muted uppercase tracking-wider">
-          {t("sidebar.binderTitle")}
-        </div>
-      </div>
 
-      <div className="flex-1 min-h-0 py-3 [content-visibility:auto] overflow-y-auto">
-        {sidebarItems.map((item, index) => (
-          <div key={getItemKey(index, item)}>{renderItem(item)}</div>
-        ))}
-      </div>
+          <div className="flex-1 min-h-0 py-3 [content-visibility:auto] overflow-y-auto">
+            {sidebarItems.map((item, index) => (
+              <div key={getItemKey(index, item)}>{renderItem(item)}</div>
+            ))}
+          </div>
 
-      <div className="p-3">
-        <button
-          className="flex items-center gap-2 w-full p-2 bg-transparent border-none rounded-md text-muted text-[13px] cursor-pointer hover:bg-surface-hover hover:text-fg transition-colors"
-          onClick={onOpenSettings}
-          onPointerEnter={onPrefetchSettings}
-        >
-          <Settings className="icon-md" />
-          <span>{t("sidebar.settingsLabel")}</span>
-        </button>
-      </div>
+          <div className="p-3">
+            <button
+              className="flex items-center gap-2 w-full p-2 bg-transparent border-none rounded-md text-muted text-[13px] cursor-pointer hover:bg-surface-hover hover:text-fg transition-colors"
+              onClick={onOpenSettings}
+              onPointerEnter={onPrefetchSettings}
+            >
+              <Settings className="icon-md" />
+              <span>{t("sidebar.settingsLabel")}</span>
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

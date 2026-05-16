@@ -4,6 +4,8 @@ import { db } from "../../../database/index.js";
 import * as schema from "../../../database/schema.js";
 import type { MainDrizzleClient, DbLike } from "../../../database/databaseTypes.js";
 import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
+import { ServiceError } from "../../../utils/serviceError.js";
+import { ErrorCode } from "../../../../shared/constants/errorCode.js";
 
 const { project, projectAttachment } = schema;
 
@@ -23,6 +25,14 @@ const toNullableString = (value: unknown): string | null =>
 const toProjectPathKey = (projectPath: string): string => {
   const resolved = path.resolve(projectPath);
   return process.platform === "win32" ? resolved.toLowerCase() : resolved;
+};
+
+const isProjectPathUniqueConstraintError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) return false;
+  return (
+    error.message.includes("UNIQUE constraint failed") &&
+    error.message.includes("ProjectAttachment.projectPath")
+  );
 };
 
 const getLegacyProjectAttachmentPath = async (
@@ -215,18 +225,62 @@ export const setProjectAttachmentPath = async (
   const normalizedProjectPath = toNullableString(projectPath);
 
   if (normalizedProjectPath) {
+    const existingPathOwner = await (store as MainDrizzleClient)
+      .select({ projectId: projectAttachment.projectId })
+      .from(projectAttachment)
+      .where(eq(projectAttachment.projectPath, normalizedProjectPath))
+      .limit(1);
+    if (
+      existingPathOwner.length > 0 &&
+      String(existingPathOwner[0].projectId) !== projectId
+    ) {
+      throw new ServiceError(
+        ErrorCode.VALIDATION_FAILED,
+        "Project path is already registered",
+        {
+          projectId,
+          projectPath: normalizedProjectPath,
+          conflictProjectId: String(existingPathOwner[0].projectId),
+        },
+      );
+    }
+
     const now = new Date().toISOString();
-    await store.insert(projectAttachment).values({
-      projectId,
-      projectPath: normalizedProjectPath,
-      updatedAt: now,
-    }).onConflictDoUpdate({
-      target: projectAttachment.projectId,
-      set: {
+    try {
+      await store.insert(projectAttachment).values({
+        projectId,
         projectPath: normalizedProjectPath,
         updatedAt: now,
-      },
-    });
+      }).onConflictDoUpdate({
+        target: projectAttachment.projectId,
+        set: {
+          projectPath: normalizedProjectPath,
+          updatedAt: now,
+        },
+      });
+    } catch (error) {
+      if (isProjectPathUniqueConstraintError(error)) {
+        const conflict = await (store as MainDrizzleClient)
+          .select({ projectId: projectAttachment.projectId })
+          .from(projectAttachment)
+          .where(eq(projectAttachment.projectPath, normalizedProjectPath))
+          .limit(1);
+        throw new ServiceError(
+          ErrorCode.VALIDATION_FAILED,
+          "Project path is already registered",
+          {
+            projectId,
+            projectPath: normalizedProjectPath,
+            conflictProjectId:
+              conflict.length > 0
+                ? String(conflict[0].projectId)
+                : undefined,
+          },
+          error,
+        );
+      }
+      throw error;
+    }
   } else {
     await store
       .delete(projectAttachment)

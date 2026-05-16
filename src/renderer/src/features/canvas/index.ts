@@ -10,6 +10,9 @@
  * now mount {@link CanvasPane} as the viewport-only entry point.
  */
 export { default as CanvasPane } from "./components/CanvasPane";
+export { default as CanvasActivityShell } from "./components/CanvasActivityShell";
+export { default as CanvasIconRail } from "./components/CanvasIconRail";
+export { default as SidePanelRouter } from "./components/SidePanelRouter";
 export { useCanvasViewStore } from "./stores";
 export type { CanvasViewState } from "./stores";
 export type {
