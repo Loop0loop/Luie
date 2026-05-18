@@ -2,7 +2,7 @@
  * Window Manager - BrowserWindow 관리
  */
 
-import { BrowserWindow, type BrowserWindowConstructorOptions } from "electron"
+import { app, BrowserWindow, type BrowserWindowConstructorOptions } from "electron"
 import { join } from "path"
 import windowStateKeeper from "electron-window-state"
 import { createLogger } from "../../shared/logger/index.js"
@@ -30,6 +30,12 @@ import {
 } from "./window/windowRouting.js"
 
 const logger = createLogger("WindowManager")
+
+const resolvePreloadEntryPath = (): string =>
+  join(app.getAppPath(), "out", "preload", "index.cjs")
+
+const resolveRendererIndexPath = (): string =>
+  join(app.getAppPath(), "out", "renderer", "index.html")
 
 class WindowManager {
   private mainWindow: BrowserWindow | null = null
@@ -68,7 +74,7 @@ class WindowManager {
       webPreferences:
         options.webPreferences ??
         createSecureWebPreferences(
-          join(__dirname, "../preload/index.cjs"),
+          resolvePreloadEntryPath(),
           this.isSpellcheckEnabled(),
         ),
     })
@@ -111,7 +117,6 @@ class WindowManager {
     window: BrowserWindow
   }): Promise<void> {
     const environment = await loadRendererRoute({
-      baseDir: __dirname,
       label: input.label,
       logger,
       route: input.route,
@@ -187,7 +192,7 @@ class WindowManager {
       )
       this.mainWindow.webContents.openDevTools({ mode: "detach" })
     } else {
-      const indexPath = join(__dirname, "../renderer/index.html")
+      const indexPath = resolveRendererIndexPath()
       logger.info("Loading production renderer", {
         path: indexPath,
         isPackaged: environment.isPackaged,

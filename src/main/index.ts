@@ -125,9 +125,6 @@ if (!registerSingleInstance(bootstrapLogger)) {
     void handleDeepLinkUrl(callbackUrl);
   }
 
-  const utilityStarted = await utilityProcessBridge.start();
-  logger.info("Startup checkpoint: utility process", { utilityStarted });
-
   registerAppReady(logger, {
     startupStartedAtMs,
     onFirstRendererReady: () => {
@@ -144,6 +141,11 @@ if (!registerSingleInstance(bootstrapLogger)) {
         startupElapsedMs: Date.now() - startupStartedAtMs,
       });
     },
+  });
+
+  void app.whenReady().then(async () => {
+    const utilityStarted = await utilityProcessBridge.start();
+    logger.info("Startup checkpoint: utility process", { utilityStarted });
   });
 
   app.on("before-quit", () => {

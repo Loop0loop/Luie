@@ -6,7 +6,6 @@ import type { ModelRuntimeClient } from "./modelRuntimeClient.js";
 import { DeterministicProvider } from "./providers/deterministicProvider.js";
 import { LlamaCppProvider } from "./providers/llamaCppProvider.js";
 import { LlamaServerProvider } from "./providers/llamaServerProvider.js";
-import { settingsManager } from "../../manager/settingsManager.js";
 
 const logger = createLogger("ModelRuntimeFactory");
 const deterministicProvider = new DeterministicProvider();
@@ -54,7 +53,18 @@ export async function resolveModelRuntimeClient(
   const configuredPath = row[0]?.llmModelPath ?? process.env.LUIE_LLM_MODEL_PATH ?? null;
   const embeddingConfiguredPath =
     row[0]?.llmEmbeddingModelPath ?? process.env.LUIE_LLM_EMBEDDING_MODEL_PATH ?? null;
-  const localLlm = settingsManager.getLlmSettings();
+  let localLlm: {
+    defaultModelPath?: string;
+    llmProviderHint?: "llamacpp" | "llamaserver" | "none";
+  } = {};
+  if (process.type === "browser") {
+    try {
+      const { settingsManager } = await import("../../manager/settingsManager.js");
+      localLlm = settingsManager.getLlmSettings();
+    } catch (error) {
+      logger.warn("Failed to read LLM settings from settings manager", { error });
+    }
+  }
   const providerHint =
     row[0]?.llmProviderHint ??
     process.env.LUIE_LLM_PROVIDER_HINT ??

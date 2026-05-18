@@ -24,6 +24,8 @@ import {
   embeddingProjector,
   ragQaService,
 } from "../services/index.js";
+import { utilityProcessBridge } from "../services/features/utility/utilityProcessBridge.js";
+import type { BrowserWindow } from "electron";
 import { registerProjectHandlers } from "./project/index.js";
 import { registerSearchHandlers } from "./search/index.js";
 import { registerSystemHandlers } from "./system/index.js";
@@ -82,7 +84,19 @@ export async function registerAllIPCHandlers(): Promise<void> {
   registerAnalysisHandlers({
     logger,
     manuscriptAnalysisService,
-    ragQaService,
+    ragQaService: {
+      ask: async (input, window: BrowserWindow) => {
+        try {
+          return await utilityProcessBridge.askRagQa(input, window.webContents.id);
+        } catch (error) {
+          logger.warn("Utility RAG ask failed; falling back to main RAG service", {
+            error,
+          });
+          return await ragQaService.ask(input, window);
+        }
+      },
+      stop: (runId?: string) => utilityProcessBridge.stopRagQa(runId),
+    },
   });
 
   logger.info("IPC handlers registered successfully");

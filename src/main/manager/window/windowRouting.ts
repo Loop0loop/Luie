@@ -41,7 +41,6 @@ const buildDevRendererUrl = (
 }
 
 export const loadRendererRoute = async (input: {
-  baseDir: string
   label: string
   logger: LoggerLike
   route?: RendererRouteTarget
@@ -60,7 +59,7 @@ export const loadRendererRoute = async (input: {
     return environment
   }
 
-  const indexPath = join(input.baseDir, "../renderer/index.html")
+  const indexPath = join(app.getAppPath(), "out", "renderer", "index.html")
   input.logger.info(`Loading ${input.label} (prod)`, { path: indexPath })
   await input.window.loadFile(indexPath, {
     hash: route.hash?.startsWith("#") ? route.hash.slice(1) : route.hash,
