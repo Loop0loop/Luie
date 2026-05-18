@@ -1,8 +1,7 @@
 /**
- * SearchPanel — search input + scope toggle checkboxes.
+ * SearchPanel — 검색 입력 + 범위 토글.
  *
- * P4: UI shell only. Full-text search wiring deferred to the search feature
- * implementation milestone.
+ * 전문 검색 연결은 search 기능 구현 단계에서 진행합니다.
  */
 import { useTranslation } from "react-i18next";
 import SearchInput from "@shared/ui/SearchInput";
@@ -12,51 +11,44 @@ import {
   PanelBody,
   PanelSection,
   PanelEmpty,
+  ToggleChip,
 } from "./shared";
+
+const SCOPE_KEYS = [
+  { key: "chapters", i18nKey: "sidebar.section.manuscript" },
+  { key: "characters", i18nKey: "research.title.characters" },
+  { key: "terms", i18nKey: "research.title.world" },
+  { key: "events", i18nKey: "research.title.events" },
+] as const;
 
 export default function SearchPanel() {
   const { t } = useTranslation();
+
   return (
     <PanelRoot>
       <PanelHeader title={t("canvas.activity.search")} />
       <PanelBody>
-        {/* Search input */}
-        <div className="px-4 pb-2">
+        <div className="px-4 pb-2 pt-2">
           <SearchInput
             value=""
             onChange={() => undefined}
-            placeholder={t("canvas.activity.search")}
+            placeholder={t("canvas.search.placeholder")}
             variant="context"
           />
         </div>
 
-        {/* Scope toggles */}
-        <PanelSection title="SCOPE">
-          {(
-            [
-              { key: "chapters", label: t("sidebar.section.manuscript") },
-              { key: "characters", label: t("research.title.characters") },
-              { key: "terms", label: t("research.title.world") },
-              { key: "events", label: t("research.title.events") },
-            ] as const
-          ).map(({ key, label }) => (
-            <label
+        <PanelSection title={t("canvas.search.scope")}>
+          {SCOPE_KEYS.map(({ key, i18nKey }) => (
+            <ToggleChip
               key={key}
-              className="flex items-center gap-2.5 px-4 py-1.5 pl-9 text-[13px] text-muted cursor-pointer hover:text-fg hover:bg-surface-hover transition-all"
-            >
-              <input
-                type="checkbox"
-                defaultChecked
-                className="accent-accent"
-                onChange={() => undefined}
-              />
-              <span className="truncate">{label}</span>
-            </label>
+              label={t(i18nKey)}
+              checked
+              onChange={() => undefined}
+            />
           ))}
         </PanelSection>
 
-        {/* Results placeholder */}
-        <PanelSection title="RESULTS" defaultOpen={false}>
+        <PanelSection title={t("canvas.search.results")} defaultOpen={false}>
           <PanelEmpty message={t("canvas.status.empty")} />
         </PanelSection>
       </PanelBody>

@@ -1,5 +1,7 @@
 import { createLogger } from "../../../shared/logger/index.js";
 import { dbMaintenanceService } from "./dbMaintenanceService.js";
+import { embeddingProjector } from "./memory/embeddingProjector.js";
+import { chapterSummaryProjector } from "./memory/chapterSummaryProjector.js";
 import { memoryProjectionService } from "./memory/memoryProjectionService.js";
 
 const logger = createLogger("DerivedJobWorker");
@@ -31,12 +33,33 @@ const MEMORY_PROJECTS_PER_TICK = toPositiveInt(
   process.env.LUIE_DERIVED_MEMORY_PROJECTS_PER_TICK,
   isStressMode ? 4 : 1,
 );
+const SUMMARY_BATCH_SIZE = toPositiveInt(
+  process.env.LUIE_DERIVED_SUMMARY_BATCH,
+  isStressMode ? 2 : 1,
+);
+const EMBEDDING_BATCH_SIZE = toPositiveInt(
+  process.env.LUIE_DERIVED_EMBEDDING_BATCH,
+  isStressMode ? 5 : 2,
+);
+const TICK_WARN_THRESHOLD_MS = toPositiveInt(
+  process.env.LUIE_DERIVED_TICK_WARN_MS,
+  100,
+);
+const TICK_WARN_THRESHOLD_WITH_SUMMARY_MS = toPositiveInt(
+  process.env.LUIE_DERIVED_TICK_WARN_SUMMARY_MS,
+  5000,
+);
+const TICK_WARN_THRESHOLD_WITH_EMBEDDING_MS = toPositiveInt(
+  process.env.LUIE_DERIVED_TICK_WARN_EMBEDDING_MS,
+  8000,
+);
 
 class DerivedJobWorker {
   private timer: NodeJS.Timeout | null = null;
   private running = false;
   private inTick = false;
   private lastEditDeferLogAt = 0;
+  private lastTickSlowWarnAt = 0;
 
   start(): void {
     if (this.running) return;
@@ -107,6 +130,10 @@ class DerivedJobWorker {
 
       let memoryQueued = 0;
       let memoryProcessed = 0;
+      let summaryQueued = 0;
+      let summaryProcessed = 0;
+      let embeddingQueued = 0;
+      let embeddingProcessed = 0;
       await projectsToProcess.reduce<Promise<void>>(async (prev, projectId) => {
         await prev;
         const result = await memoryProjectionService.processPendingChunkJobs({
@@ -115,9 +142,21 @@ class DerivedJobWorker {
         });
         memoryQueued += result.queued;
         memoryProcessed += result.processed;
+        const summaryResult = await chapterSummaryProjector.processPendingSummaryJobs({
+          projectId,
+          limit: SUMMARY_BATCH_SIZE,
+        });
+        summaryQueued += summaryResult.queued;
+        summaryProcessed += summaryResult.processed;
+        const embeddingResult = await embeddingProjector.processPendingEmbeddingJobs({
+          projectId,
+          limit: EMBEDDING_BATCH_SIZE,
+        });
+        embeddingQueued += embeddingResult.queued;
+        embeddingProcessed += embeddingResult.processed;
       }, Promise.resolve());
 
-      if (search.queued > 0 || memoryQueued > 0) {
+      if (search.queued > 0 || memoryQueued > 0 || summaryQueued > 0 || embeddingQueued > 0) {
         logger.info("Derived job worker tick processed", {
           elapsedMs: Date.now() - startedAt,
           searchQueued: search.queued,
@@ -125,6 +164,10 @@ class DerivedJobWorker {
           searchFailed: search.failed,
           memoryQueued,
           memoryProcessed,
+          summaryQueued,
+          summaryProcessed,
+          embeddingQueued,
+          embeddingProcessed,
           projectCount: projectsToProcess.length,
         });
       }
@@ -142,6 +185,28 @@ class DerivedJobWorker {
         logger.warn("Derived job worker long pending detected", {
           searchLongPendingCount: longPending.searchLongPendingCount,
           memoryLongPendingCount: longPending.memoryLongPendingCount,
+        });
+      }
+      const elapsedMs = Date.now() - startedAt;
+      const thresholdMs =
+        embeddingQueued > 0 || embeddingProcessed > 0
+          ? TICK_WARN_THRESHOLD_WITH_EMBEDDING_MS
+          : summaryQueued > 0 || summaryProcessed > 0
+            ? TICK_WARN_THRESHOLD_WITH_SUMMARY_MS
+          : TICK_WARN_THRESHOLD_MS;
+      if (
+        elapsedMs >= thresholdMs &&
+        Date.now() - this.lastTickSlowWarnAt >= 10_000
+      ) {
+        this.lastTickSlowWarnAt = Date.now();
+        logger.warn("Derived job worker tick elapsed exceeded threshold", {
+          elapsedMs,
+          thresholdMs,
+          searchBatchSize: SEARCH_BATCH_SIZE,
+          memoryBatchSize: MEMORY_BATCH_SIZE,
+          summaryBatchSize: SUMMARY_BATCH_SIZE,
+          embeddingBatchSize: EMBEDDING_BATCH_SIZE,
+          memoryProjectsPerTick: MEMORY_PROJECTS_PER_TICK,
         });
       }
     } catch (error) {

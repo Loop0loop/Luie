@@ -1,8 +1,6 @@
 /**
  * useCanvasProjection — builds a CanvasProjection from the current
- * mode + scope using the Phase 0 adapter (worldBuildingStore).
- *
- * P7 will replace buildProjection() with an IPC call.
+ * mode + scope using the renderer-side adapter (worldBuildingStore).
  *
  * Returns { projection, status } where status is:
  *   "idle"    — scope is null, nothing to show
@@ -14,8 +12,11 @@ import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { useCanvasViewStore } from "../stores";
-import { buildProjection } from "../services/canvasProjectionClient";
-import type { CanvasProjection, CanvasProjectionStatus } from "../types";
+import {
+  buildProjection,
+  type CanvasProjection,
+  type CanvasProjectionStatus,
+} from "../types";
 
 export interface UseCanvasProjectionResult {
   projection: CanvasProjection | null;

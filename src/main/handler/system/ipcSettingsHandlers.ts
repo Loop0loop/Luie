@@ -3,7 +3,9 @@ import type { EditorSettings } from "../../../shared/types/index.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import {
   editorSettingsSchema,
+  settingsHfTokenSchema,
   settingsLanguageSchema,
+  settingsLlmDefaultModelSchema,
   settingsMenuBarModeSchema,
   settingsShortcutsSchema,
   settingsAutoSaveSchema,
@@ -13,6 +15,7 @@ import { z } from "zod";
 import type { SettingsManager } from "../../manager/settingsManager.js";
 import type { LoggerLike } from "../core/types.js";
 import { applyApplicationMenu } from "../../lifecycle/menu.js";
+import { modelStorageService } from "../../services/llm/modelStorageService.js";
 
 const loadSettingsManager = (() => {
   let cached: Promise<{ settingsManager: SettingsManager }> | null = null;
@@ -175,6 +178,46 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
         const settingsManager = await loadSettingsManager();
         return settingsManager.getWindowBounds();
       },
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_GET_LLM_MODELS,
+      logTag: "SETTINGS_GET_LLM_MODELS",
+      failMessage: "Failed to get llm model settings",
+      handler: async () => modelStorageService.getView(),
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_SET_LLM_DEFAULT_MODEL,
+      logTag: "SETTINGS_SET_LLM_DEFAULT_MODEL",
+      failMessage: "Failed to set llm default model",
+      argsSchema: z.tuple([settingsLlmDefaultModelSchema]),
+      handler: async (input: { modelPath: string; modelId?: string }) =>
+        modelStorageService.setDefaultModel(input),
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL,
+      logTag: "SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL",
+      failMessage: "Failed to download default llm model",
+      handler: () => {
+        void modelStorageService.downloadDefaultModel().catch((err) => {
+          logger.error("Background model download failed", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        });
+        return { started: true };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_GET_LLM_DOWNLOAD_STATUS,
+      logTag: "SETTINGS_GET_LLM_DOWNLOAD_STATUS",
+      failMessage: "Failed to get llm download status",
+      handler: async () => modelStorageService.getDownloadStatus(),
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_SET_HF_TOKEN,
+      logTag: "SETTINGS_SET_HF_TOKEN",
+      failMessage: "Failed to set huggingface token",
+      argsSchema: z.tuple([settingsHfTokenSchema]),
+      handler: async (input: { token: string }) => modelStorageService.setHuggingFaceToken(input.token),
     },
     {
       channel: IPC_CHANNELS.SETTINGS_RESET,

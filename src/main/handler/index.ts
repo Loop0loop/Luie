@@ -2,6 +2,11 @@ import { createLogger } from "../../shared/logger/index.js";
 import {
   chapterService,
   characterService,
+  sceneService,
+  noteService,
+  synopsisService,
+  plotService,
+  scrapMemoService,
   eventService,
   factionService,
   projectService,
@@ -15,6 +20,9 @@ import {
   worldReplicaService,
   graphPluginService,
   dbMaintenanceService,
+  chapterSummaryProjector,
+  embeddingProjector,
+  ragQaService,
 } from "../services/index.js";
 import { registerProjectHandlers } from "./project/index.js";
 import { registerSearchHandlers } from "./search/index.js";
@@ -38,6 +46,11 @@ export async function registerAllIPCHandlers(): Promise<void> {
   registerWorldHandlers({
     logger,
     characterService,
+    sceneService,
+    noteService,
+    synopsisService,
+    plotService,
+    scrapMemoService,
     termService,
     eventService,
     factionService,
@@ -57,6 +70,8 @@ export async function registerAllIPCHandlers(): Promise<void> {
     logger,
     searchService,
     dbMaintenanceService,
+    chapterSummaryProjector,
+    embeddingProjector,
   });
 
   registerSystemHandlers({
@@ -67,6 +82,7 @@ export async function registerAllIPCHandlers(): Promise<void> {
   registerAnalysisHandlers({
     logger,
     manuscriptAnalysisService,
+    ragQaService,
   });
 
   logger.info("IPC handlers registered successfully");

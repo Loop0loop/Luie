@@ -15,6 +15,8 @@ import { useToast } from "@shared/ui/ToastContext";
 import { Modal } from "@shared/ui/Modal";
 import { useTranslation } from "react-i18next";
 import { api } from "@shared/api";
+import type { RagQaErrorPayload, RagQaStreamPayload } from "@shared/types";
+import { requestChapterNavigation } from "@renderer/features/workspace/services/chapterNavigation";
 
 export default function AnalysisSection() {
   const { t } = useTranslation();
@@ -54,6 +56,14 @@ export default function AnalysisSection() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [analyzedChapterId, setAnalyzedChapterId] = useState<string>("");
+  const [ragQuestion, setRagQuestion] = useState("");
+  const [ragRunId, setRagRunId] = useState<string | null>(null);
+  const [ragAnswer, setRagAnswer] = useState("");
+  const [ragError, setRagError] = useState<string | null>(null);
+  const [ragEvidence, setRagEvidence] = useState<
+    Array<{ chunkId: string; chapterId: string | null; offset: number; quote: string }>
+  >([]);
+  const [ragLoading, setRagLoading] = useState(false);
   const { showToast } = useToast();
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -85,6 +95,34 @@ export default function AnalysisSection() {
       unsubscribeError();
     };
   }, [addStreamItem, setError, showToast, t]);
+
+  useEffect(() => {
+    if (!ragRunId) return;
+
+    const unsubscribeRagStream = api.rag.onStream((payload: RagQaStreamPayload) => {
+      if (payload.delta) {
+        setRagAnswer((prev) => prev + payload.delta);
+      }
+      if (payload.done) {
+        setRagLoading(false);
+        if (payload.result) {
+          setRagAnswer(payload.result.answer ?? "");
+          setRagEvidence(payload.result.evidence ?? []);
+        }
+      }
+    }, ragRunId);
+
+    const unsubscribeRagError = api.rag.onError((payload: RagQaErrorPayload) => {
+      setRagLoading(false);
+      setRagError(payload.message ?? t("analysis.toast.error"));
+      showToast(payload.message ?? t("analysis.toast.error"), "error");
+    }, ragRunId);
+
+    return () => {
+      unsubscribeRagStream();
+      unsubscribeRagError();
+    };
+  }, [ragRunId, showToast, t]);
 
   // Cleanup on unmount or tab switch
   useEffect(() => {
@@ -157,6 +195,58 @@ export default function AnalysisSection() {
       }
     },
     [analyzedChapterId, activeChapterId, chapters, setCurrent, showToast, t],
+  );
+
+  const handleAskRag = useCallback(async () => {
+    if (!currentProject?.id) return;
+    const question = ragQuestion.trim();
+    if (!question) return;
+
+    setRagError(null);
+    setRagAnswer("");
+    setRagEvidence([]);
+    setRagLoading(true);
+
+    const response = await api.rag.ask({
+      projectId: currentProject.id,
+      question,
+      chapterId: activeChapterId || undefined,
+    });
+    if (!response.success || !response.data?.runId) {
+      setRagLoading(false);
+      const message = response.error?.message ?? t("analysis.toast.error");
+      setRagError(message);
+      showToast(message, "error");
+      return;
+    }
+
+    setRagRunId(response.data.runId);
+  }, [activeChapterId, currentProject?.id, ragQuestion, showToast, t]);
+
+  const handleStopRag = useCallback(async () => {
+    const runId = ragRunId;
+    await api.rag.stop(runId ?? undefined);
+    setRagLoading(false);
+  }, [ragRunId]);
+
+  const handleJumpEvidence = useCallback(
+    async (item: { chunkId: string; chapterId: string | null; quote: string }) => {
+      if (!item.chapterId) return;
+
+      const backlink = await api.memory.getChunkBacklink(item.chunkId);
+      if (!backlink.success) {
+        showToast(t("analysis.toast.error"), "error");
+        return;
+      }
+
+      const query = item.quote?.trim().slice(0, 48) || undefined;
+      requestChapterNavigation({
+        chapterId: item.chapterId,
+        query,
+      });
+      showToast(t("analysis.toast.navigateChapter", { title: item.chapterId }), "info");
+    },
+    [showToast, t],
   );
 
   return (
@@ -328,6 +418,67 @@ export default function AnalysisSection() {
           })}
 
           <div ref={bottomRef} className="h-12" />
+
+          <section className="rounded-2xl border border-border/50 bg-surface/40 p-5 space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm font-semibold tracking-wide uppercase opacity-80">
+                RAG Q&A
+              </h3>
+              {ragRunId && (
+                <span className="text-[11px] text-text-tertiary">
+                  run: {ragRunId}
+                </span>
+              )}
+            </div>
+            <textarea
+              value={ragQuestion}
+              onChange={(e) => setRagQuestion(e.target.value)}
+              placeholder="질문을 입력하세요. 예: 유란이 황궁 정보를 아는 게 모순이야?"
+              className="w-full min-h-[90px] rounded-lg border border-border bg-bg-panel px-3 py-2 text-sm outline-none focus:border-accent"
+            />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => void handleAskRag()}
+                disabled={ragLoading || !ragQuestion.trim() || !currentProject}
+                className="px-3 py-1.5 rounded-md border border-border text-sm hover:border-text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                질문하기
+              </button>
+              <button
+                onClick={() => void handleStopRag()}
+                disabled={!ragLoading}
+                className="px-3 py-1.5 rounded-md border border-border text-sm hover:border-text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                중단
+              </button>
+            </div>
+            {ragLoading && (
+              <p className="text-sm text-text-secondary">응답 생성 중...</p>
+            )}
+            {ragError && <p className="text-sm text-red-500">{ragError}</p>}
+            {ragAnswer && (
+              <div className="rounded-lg border border-border/50 bg-bg-panel p-3 whitespace-pre-wrap text-sm leading-7">
+                {ragAnswer}
+              </div>
+            )}
+            {ragEvidence.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold tracking-wide uppercase opacity-70">Evidence</p>
+                {ragEvidence.map((item, index) => (
+                  <button
+                    key={`${item.chunkId}-${index}`}
+                    onClick={() => void handleJumpEvidence(item)}
+                    className="w-full text-left rounded-md border border-border/50 px-3 py-2 hover:bg-surface-hover transition-colors"
+                  >
+                    <div className="text-xs text-text-tertiary mb-1">
+                      E{index + 1} · chapter: {item.chapterId ?? "N/A"} · offset: {item.offset}
+                    </div>
+                    <div className="text-sm whitespace-pre-wrap line-clamp-3">{item.quote}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
       </div>
 

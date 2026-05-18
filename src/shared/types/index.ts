@@ -47,6 +47,20 @@ export interface Chapter {
   deletedAt?: string | Date | null;
 }
 
+export interface Scene {
+  id: string;
+  projectId: string;
+  chapterId: string;
+  title: string;
+  body: string;
+  startOffset?: number | null;
+  endOffset?: number | null;
+  order: number;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  deletedAt?: string | Date | null;
+}
+
 export type ChapterSaveStateType =
   | "idle"
   | "dirty"
@@ -167,11 +181,33 @@ export interface SnapshotRestoreCandidate {
 export interface Note {
   id: string;
   projectId: string;
+  chapterId?: string | null;
   title: string;
-  content: string;
-  tags: string[];
+  body: string;
   createdAt: string | Date;
   updatedAt: string | Date;
+  deletedAt?: string | Date | null;
+}
+
+export interface Synopsis {
+  id: string;
+  projectId: string;
+  chapterId?: string | null;
+  title: string;
+  body: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  deletedAt?: string | Date | null;
+}
+
+export interface Plot {
+  id: string;
+  projectId: string;
+  title: string;
+  body: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  deletedAt?: string | Date | null;
 }
 
 export type WorldSynopsisStatus = "draft" | "working" | "locked";
@@ -255,10 +291,12 @@ export interface WorldMindmapData {
 
 export interface ScrapMemo {
   id: string;
+  projectId?: string;
   title: string;
   content: string;
   tags: string[];
   updatedAt: string;
+  deletedAt?: string | Date | null;
 }
 
 export interface WorldScrapMemosData {
@@ -400,6 +438,80 @@ export interface ChapterUpdateInput {
   synopsis?: string;
 }
 
+export interface SceneCreateInput {
+  projectId: string;
+  chapterId: string;
+  title: string;
+  body?: string;
+  startOffset?: number;
+  endOffset?: number;
+  order?: number;
+}
+
+export interface SceneUpdateInput {
+  id: string;
+  chapterId?: string;
+  title?: string;
+  body?: string;
+  startOffset?: number | null;
+  endOffset?: number | null;
+  order?: number;
+}
+
+export interface NoteCreateInput {
+  projectId: string;
+  chapterId?: string;
+  title: string;
+  body?: string;
+}
+
+export interface NoteUpdateInput {
+  id: string;
+  chapterId?: string | null;
+  title?: string;
+  body?: string;
+}
+
+export interface SynopsisCreateInput {
+  projectId: string;
+  chapterId?: string;
+  title: string;
+  body?: string;
+}
+
+export interface SynopsisUpdateInput {
+  id: string;
+  chapterId?: string | null;
+  title?: string;
+  body?: string;
+}
+
+export interface PlotCreateInput {
+  projectId: string;
+  title: string;
+  body?: string;
+}
+
+export interface PlotUpdateInput {
+  id: string;
+  title?: string;
+  body?: string;
+}
+
+export interface ScrapMemoCreateInput {
+  projectId: string;
+  title: string;
+  content: string;
+  tags?: string[];
+}
+
+export interface ScrapMemoUpdateInput {
+  id: string;
+  title?: string;
+  content?: string;
+  tags?: string[];
+}
+
 // Character Types
 export interface CharacterCreateInput {
   projectId: string;
@@ -530,6 +642,69 @@ export interface MemoryChunkBacklink {
   chapterId: string | null;
   offset: number;
   endOffset: number | null;
+}
+
+export interface ChapterSummaryResult {
+  chapterId: string;
+  summary: string;
+  isFallback: boolean;
+  model: string | null;
+  generatedAt: string;
+}
+
+export interface ChapterSummaryStatus {
+  projectId: string;
+  pendingCount: number;
+  runningCount: number;
+  failedCount: number;
+  completedCount: number;
+}
+
+export interface MemoryEmbeddingStatus {
+  projectId: string;
+  pendingCount: number;
+  runningCount: number;
+  failedCount: number;
+  completedCount: number;
+}
+
+export interface RagQaRequest {
+  projectId: string;
+  question: string;
+  chapterId?: string;
+}
+
+export interface RagQaEvidence {
+  chunkId: string;
+  chapterId: string | null;
+  offset: number;
+  quote: string;
+}
+
+export interface RagQaResult {
+  runId: string;
+  projectId: string;
+  question: string;
+  answer: string;
+  evidence: RagQaEvidence[];
+  createdAt: string;
+}
+
+export interface RagQaRunHandle {
+  runId: string;
+}
+
+export interface RagQaStreamPayload {
+  runId: string;
+  delta?: string;
+  done: boolean;
+  result?: RagQaResult;
+}
+
+export interface RagQaErrorPayload {
+  runId?: string;
+  code: string;
+  message: string;
 }
 
 // Settings Types
@@ -878,6 +1053,41 @@ export interface AppSettings {
   menuBarMode?: WindowMenuBarMode;
   sync?: SyncSettings;
   startup?: StartupSettings;
+  llm?: {
+    modelsDir?: string;
+    defaultModelPath?: string;
+    defaultModelId?: string;
+    llmProviderHint?: "llamacpp" | "none";
+    hfTokenCipher?: string;
+  };
+}
+
+export interface LocalLlmModelInfo {
+  id: string;
+  fileName: string;
+  path: string;
+  sizeBytes: number;
+  modifiedAt: string;
+  isDefault: boolean;
+}
+
+export interface LlmModelSettingsView {
+  modelsDir: string;
+  defaultModelPath: string | null;
+  defaultModelId: string | null;
+  models: LocalLlmModelInfo[];
+  hasHuggingFaceToken: boolean;
+}
+
+export interface LlmModelDownloadStatus {
+  active: boolean;
+  modelId: string;
+  fileName: string;
+  downloadedBytes: number;
+  totalBytes: number | null;
+  percent: number | null;
+  startedAt?: string;
+  error?: string;
 }
 
 export type ShortcutAction =

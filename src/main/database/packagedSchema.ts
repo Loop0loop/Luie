@@ -9,11 +9,17 @@ export const PACKAGED_SCHEMA_REQUIRED_TABLES = [
   "ProjectLocalState",
   "ProjectSettings",
   "Chapter",
+  "Scene",
   "ChapterBody",
   "ChapterRevision",
   "SearchDirtyQueue",
   "MemoryChunk",
   "MemoryBuildJob",
+  "MemoryEmbedding",
+  "ChapterSummary",
+  "Note",
+  "Synopsis",
+  "Plot",
   "Character",
   "Event",
   "Faction",
@@ -64,6 +70,11 @@ export const PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
     sql: 'ALTER TABLE "Chapter" ADD COLUMN "synopsis" TEXT;',
   },
   {
+    table: "MemoryChunk",
+    column: "sceneId",
+    sql: 'ALTER TABLE "MemoryChunk" ADD COLUMN "sceneId" TEXT;',
+  },
+  {
     table: "Chapter",
     column: "wordCount",
     sql: 'ALTER TABLE "Chapter" ADD COLUMN "wordCount" INTEGER NOT NULL DEFAULT 0;',
@@ -107,6 +118,56 @@ export const PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
     table: "WorldEntity",
     column: "deletedAt",
     sql: 'ALTER TABLE "WorldEntity" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "Scene",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Scene" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "Note",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Note" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "Synopsis",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Synopsis" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "Plot",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Plot" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "ScrapMemo",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "ScrapMemo" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "ProjectSettings",
+    column: "llmModelPath",
+    sql: 'ALTER TABLE "ProjectSettings" ADD COLUMN "llmModelPath" TEXT;',
+  },
+  {
+    table: "ProjectSettings",
+    column: "llmEmbeddingModelPath",
+    sql: 'ALTER TABLE "ProjectSettings" ADD COLUMN "llmEmbeddingModelPath" TEXT;',
+  },
+  {
+    table: "ProjectSettings",
+    column: "llmEmbeddingDimension",
+    sql: 'ALTER TABLE "ProjectSettings" ADD COLUMN "llmEmbeddingDimension" INTEGER NOT NULL DEFAULT 1024;',
+  },
+  {
+    table: "ProjectSettings",
+    column: "llmProviderHint",
+    sql: 'ALTER TABLE "ProjectSettings" ADD COLUMN "llmProviderHint" TEXT;',
+  },
+  {
+    table: "ChapterSummary",
+    column: "contentHash",
+    sql: 'ALTER TABLE "ChapterSummary" ADD COLUMN "contentHash" TEXT NOT NULL DEFAULT "";',
   },
 ];
 
@@ -161,8 +222,18 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
   Project: ["id", "title"],
   ProjectAttachment: ["projectId", "projectPath"],
   ProjectLocalState: ["projectId", "lastOpenedAt"],
-  ProjectSettings: ["id", "projectId", "autoSave", "autoSaveInterval"],
+  ProjectSettings: [
+    "id",
+    "projectId",
+    "autoSave",
+    "autoSaveInterval",
+    "llmModelPath",
+    "llmEmbeddingModelPath",
+    "llmEmbeddingDimension",
+    "llmProviderHint",
+  ],
   Chapter: ["id", "projectId", "order", "wordCount", "deletedAt"],
+  Scene: ["id", "projectId", "chapterId", "title", "body", "order", "deletedAt"],
   ChapterBody: ["chapterId", "content", "contentHash", "updatedAt"],
   ChapterRevision: ["id", "chapterId", "contentHash", "content", "reason"],
   SearchDirtyQueue: [
@@ -182,6 +253,7 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
     "chunkIndex",
     "content",
     "contentHash",
+    "sceneId",
   ],
   MemoryBuildJob: [
     "id",
@@ -192,11 +264,33 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
     "status",
     "priority",
   ],
+  MemoryEmbedding: [
+    "id",
+    "chunkId",
+    "projectId",
+    "contentHash",
+    "vec",
+    "dimension",
+  ],
+  ChapterSummary: [
+    "id",
+    "projectId",
+    "chapterId",
+    "chapterNumber",
+    "summary",
+    "contentHash",
+    "isFallback",
+    "model",
+    "generatedAt",
+  ],
+  Note: ["id", "projectId", "title", "body", "deletedAt"],
+  Synopsis: ["id", "projectId", "title", "body", "deletedAt"],
+  Plot: ["id", "projectId", "title", "body", "deletedAt"],
   Character: ["id", "projectId", "firstAppearance", "attributes", "deletedAt"],
   Event: ["id", "projectId", "name", "deletedAt"],
   Faction: ["id", "projectId", "name", "deletedAt"],
   WorldDocument: ["id", "projectId", "docType", "payload"],
-  ScrapMemo: ["id", "projectId", "title", "content", "tags", "sortOrder", "updatedAt"],
+  ScrapMemo: ["id", "projectId", "title", "content", "tags", "sortOrder", "updatedAt", "deletedAt"],
   Term: ["id", "projectId", "term", "order", "deletedAt"],
   Snapshot: ["id", "projectId", "content", "contentLength", "type"],
   WorldEntity: ["id", "projectId", "type", "name", "positionX", "positionY", "deletedAt"],
@@ -231,6 +325,10 @@ CREATE TABLE IF NOT EXISTS "ProjectSettings" (
     "projectId" TEXT NOT NULL,
     "autoSave" BOOLEAN NOT NULL DEFAULT 1,
     "autoSaveInterval" INTEGER NOT NULL DEFAULT 30,
+    "llmModelPath" TEXT,
+    "llmEmbeddingModelPath" TEXT,
+    "llmEmbeddingDimension" INTEGER NOT NULL DEFAULT 1024,
+    "llmProviderHint" TEXT,
     CONSTRAINT "ProjectSettings_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "Chapter" (
@@ -245,6 +343,21 @@ CREATE TABLE IF NOT EXISTS "Chapter" (
     "updatedAt" DATETIME NOT NULL,
     "deletedAt" DATETIME,
     CONSTRAINT "Chapter_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "Scene" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "chapterId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "body" TEXT NOT NULL DEFAULT '',
+    "startOffset" INTEGER,
+    "endOffset" INTEGER,
+    "order" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME,
+    CONSTRAINT "Scene_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "Scene_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "ChapterBody" (
     "chapterId" TEXT NOT NULL PRIMARY KEY,
@@ -280,6 +393,7 @@ CREATE TABLE IF NOT EXISTS "MemoryChunk" (
     "sourceType" TEXT NOT NULL,
     "sourceId" TEXT NOT NULL,
     "chapterId" TEXT,
+    "sceneId" TEXT,
     "chunkIndex" INTEGER NOT NULL,
     "content" TEXT NOT NULL,
     "contentHash" TEXT NOT NULL,
@@ -301,6 +415,66 @@ CREATE TABLE IF NOT EXISTS "MemoryBuildJob" (
     "error" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
+);
+CREATE TABLE IF NOT EXISTS "MemoryEmbedding" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "chunkId" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "contentHash" TEXT NOT NULL DEFAULT '',
+    "vec" BLOB NOT NULL,
+    "dimension" INTEGER NOT NULL,
+    "model" TEXT,
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    CONSTRAINT "MemoryEmbedding_chunkId_fkey" FOREIGN KEY ("chunkId") REFERENCES "MemoryChunk" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "ChapterSummary" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "chapterId" TEXT NOT NULL,
+    "chapterNumber" INTEGER NOT NULL DEFAULT 0,
+    "summary" TEXT NOT NULL,
+    "contentHash" TEXT NOT NULL DEFAULT "",
+    "isFallback" INTEGER NOT NULL DEFAULT 0,
+    "model" TEXT,
+    "generatedAt" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "ChapterSummary_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "Note" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "chapterId" TEXT,
+    "title" TEXT NOT NULL,
+    "body" TEXT NOT NULL DEFAULT '',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME,
+    CONSTRAINT "Note_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "Note_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "Synopsis" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "chapterId" TEXT,
+    "title" TEXT NOT NULL,
+    "body" TEXT NOT NULL DEFAULT '',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME,
+    CONSTRAINT "Synopsis_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "Synopsis_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "Plot" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "body" TEXT NOT NULL DEFAULT '',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME,
+    CONSTRAINT "Plot_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "Character" (
     "id" TEXT NOT NULL PRIMARY KEY,
@@ -356,6 +530,7 @@ CREATE TABLE IF NOT EXISTS "ScrapMemo" (
     "sortOrder" INTEGER NOT NULL DEFAULT 0,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME,
     CONSTRAINT "ScrapMemo_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "Term" (
@@ -419,14 +594,23 @@ CREATE UNIQUE INDEX IF NOT EXISTS "ProjectAttachment_projectPath_key" ON "Projec
 CREATE UNIQUE INDEX IF NOT EXISTS "ProjectSettings_projectId_key" ON "ProjectSettings"("projectId");
 CREATE INDEX IF NOT EXISTS "ProjectLocalState_lastOpenedAt_idx" ON "ProjectLocalState"("lastOpenedAt");
 CREATE INDEX IF NOT EXISTS "Chapter_projectId_order_idx" ON "Chapter"("projectId", "order");
+CREATE INDEX IF NOT EXISTS "Scene_projectId_chapterId_order_idx" ON "Scene"("projectId", "chapterId", "order");
 CREATE INDEX IF NOT EXISTS "ChapterRevision_chapterId_createdAt_idx" ON "ChapterRevision"("chapterId", "createdAt");
 CREATE INDEX IF NOT EXISTS "SearchDirtyQueue_projectId_status_idx" ON "SearchDirtyQueue"("projectId", "status");
 CREATE INDEX IF NOT EXISTS "SearchDirtyQueue_source_idx" ON "SearchDirtyQueue"("sourceType", "sourceId");
 CREATE UNIQUE INDEX IF NOT EXISTS "MemoryChunk_source_chunkIndex_key" ON "MemoryChunk"("sourceType", "sourceId", "chunkIndex");
 CREATE INDEX IF NOT EXISTS "MemoryChunk_projectId_source_idx" ON "MemoryChunk"("projectId", "sourceType", "sourceId");
 CREATE INDEX IF NOT EXISTS "MemoryChunk_projectId_chapterId_idx" ON "MemoryChunk"("projectId", "chapterId");
+CREATE INDEX IF NOT EXISTS "MemoryChunk_projectId_sceneId_idx" ON "MemoryChunk"("projectId", "sceneId");
 CREATE INDEX IF NOT EXISTS "MemoryBuildJob_projectId_status_priority_idx" ON "MemoryBuildJob"("projectId", "status", "priority");
 CREATE INDEX IF NOT EXISTS "MemoryBuildJob_target_idx" ON "MemoryBuildJob"("targetType", "targetId");
+CREATE UNIQUE INDEX IF NOT EXISTS "MemoryEmbedding_chunkId_key" ON "MemoryEmbedding"("chunkId");
+CREATE INDEX IF NOT EXISTS "MemoryEmbedding_projectId_idx" ON "MemoryEmbedding"("projectId");
+CREATE UNIQUE INDEX IF NOT EXISTS "ChapterSummary_chapterId_key" ON "ChapterSummary"("chapterId");
+CREATE INDEX IF NOT EXISTS "ChapterSummary_projectId_idx" ON "ChapterSummary"("projectId");
+CREATE INDEX IF NOT EXISTS "Note_projectId_updatedAt_idx" ON "Note"("projectId", "updatedAt");
+CREATE INDEX IF NOT EXISTS "Synopsis_projectId_updatedAt_idx" ON "Synopsis"("projectId", "updatedAt");
+CREATE INDEX IF NOT EXISTS "Plot_projectId_updatedAt_idx" ON "Plot"("projectId", "updatedAt");
 CREATE INDEX IF NOT EXISTS "Character_projectId_name_idx" ON "Character"("projectId", "name");
 CREATE INDEX IF NOT EXISTS "Event_projectId_name_idx" ON "Event"("projectId", "name");
 CREATE INDEX IF NOT EXISTS "Faction_projectId_name_idx" ON "Faction"("projectId", "name");

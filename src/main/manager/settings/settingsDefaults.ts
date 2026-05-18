@@ -166,4 +166,5 @@ export const getDefaultSettings = (): AppSettings => ({
     autoSync: true,
   } as SyncSettings,
   startup: {},
+  llm: {},
 });

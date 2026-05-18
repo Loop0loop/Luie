@@ -228,10 +228,10 @@ export default function MainLayout({
               <button
                 className="flex items-center gap-1 bg-transparent border border-border text-muted cursor-pointer px-3 py-1 rounded-md text-xs transition-colors hover:bg-active hover:text-fg mr-2"
                 onClick={onCloseCanvas}
-                title={t("toolbar.editor")}
+                title={t("toolbar.editor", "에디터")}
               >
                 <ChevronLeft className="icon-xs" />
-                {t("toolbar.editor")}
+                {t("toolbar.editor", "에디터")}
               </button>
             )}
 
@@ -279,7 +279,7 @@ export default function MainLayout({
               )}
             </PanelGroup>
           </div>
-          <StatusFooter onOpenExport={onOpenExport} />
+          {!isCanvasMode && <StatusFooter onOpenExport={onOpenExport} />}
         </Panel>
 
         {shouldRenderContext && (

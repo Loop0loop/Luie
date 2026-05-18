@@ -1,8 +1,22 @@
 import crypto from "node:crypto";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../../../database/index.js";
-import { chapter, chapterBody, memoryBuildJob, memoryChunk } from "../../../database/schema.js";
+import {
+  chapter,
+  chapterBody,
+  character,
+  event,
+  faction,
+  memoryBuildJob,
+  memoryChunk,
+  note,
+  plot,
+  scene,
+  scrapMemo,
+  synopsis,
+} from "../../../database/schema.js";
 import { createLogger } from "../../../../shared/logger/index.js";
+import { MEMORY_JOB_TYPES, MEMORY_TARGET_TYPES } from "./memoryJobConstants.js";
 
 const logger = createLogger("MemoryProjectionService");
 const MAX_JOB_ATTEMPTS = 5;
@@ -10,6 +24,15 @@ const BASE_RETRY_BACKOFF_MS = 2_000;
 
 function sha256(input: string): string {
   return crypto.createHash("sha256").update(input).digest("hex");
+}
+
+function yieldToEventLoop(): Promise<void> {
+  return new Promise((resolve) => setImmediate(resolve));
+}
+
+function estimateTokenCountFromChars(content: string): number {
+  // Phase 1 uses a cheap proxy for token count. Real tokenizer integration belongs to Phase 2+.
+  return content.length;
 }
 
 const DEFAULT_CHUNK_TARGET = 500;
@@ -33,6 +56,7 @@ export function chunkText(
     if (endOffset <= startOffset) return;
     const content = input.slice(startOffset, endOffset);
     if (content.length === 0) return;
+    if (content.trim().length === 0) return;
     chunks.push({ content, startOffset, endOffset });
   };
 
@@ -141,9 +165,9 @@ class MemoryProjectionService {
     await client.insert(memoryBuildJob).values({
       id: crypto.randomUUID(),
       projectId: input.projectId,
-      targetType: "chapter",
+      targetType: MEMORY_TARGET_TYPES.CHAPTER,
       targetId: input.chapterId,
-      jobType: "rebuild_chunks",
+      jobType: MEMORY_JOB_TYPES.REBUILD_CHUNKS,
       status: "pending",
       priority: input.priority ?? 100,
       attempts: 0,
@@ -163,9 +187,9 @@ class MemoryProjectionService {
     const limit = input.limit ?? 20;
     const jobFilters = [
       eq(memoryBuildJob.projectId, input.projectId),
-      eq(memoryBuildJob.jobType, "rebuild_chunks"),
+      eq(memoryBuildJob.jobType, MEMORY_JOB_TYPES.REBUILD_CHUNKS),
       inArray(memoryBuildJob.status, ["pending", "failed"]),
-      eq(memoryBuildJob.targetType, input.sourceType ?? "chapter"),
+      eq(memoryBuildJob.targetType, input.sourceType ?? MEMORY_TARGET_TYPES.CHAPTER),
     ];
     if (input.sourceId) {
       jobFilters.push(eq(memoryBuildJob.targetId, input.sourceId));
@@ -184,22 +208,182 @@ class MemoryProjectionService {
       return { queued: 0, processed: 0 };
     }
 
-    const chapterIds = jobs.map((job) => job.targetId);
-    const chapters = await client
-      .select({
-        id: chapter.id,
-        projectId: chapter.projectId,
-        content: chapter.content,
-        bodyContent: chapterBody.content,
-      })
-      .from(chapter)
-      .leftJoin(chapterBody, eq(chapterBody.chapterId, chapter.id))
-      .where(inArray(chapter.id, chapterIds));
-    const chapterMap = new Map(chapters.map((row) => [row.id, row]));
+    const chapterIds = jobs
+      .filter((job) => job.targetType === MEMORY_TARGET_TYPES.CHAPTER)
+      .map((job) => job.targetId);
+    const sceneIds = jobs
+      .filter((job) => job.targetType === MEMORY_TARGET_TYPES.SCENE)
+      .map((job) => job.targetId);
+    const noteIds = jobs
+      .filter((job) => job.targetType === MEMORY_TARGET_TYPES.NOTE)
+      .map((job) => job.targetId);
+    const synopsisIds = jobs
+      .filter((job) => job.targetType === MEMORY_TARGET_TYPES.SYNOPSIS)
+      .map((job) => job.targetId);
+    const plotIds = jobs
+      .filter((job) => job.targetType === MEMORY_TARGET_TYPES.PLOT)
+      .map((job) => job.targetId);
+    const eventIds = jobs
+      .filter((job) => job.targetType === MEMORY_TARGET_TYPES.EVENT)
+      .map((job) => job.targetId);
+    const characterIds = jobs
+      .filter((job) => job.targetType === MEMORY_TARGET_TYPES.CHARACTER)
+      .map((job) => job.targetId);
+    const factionIds = jobs
+      .filter((job) => job.targetType === MEMORY_TARGET_TYPES.FACTION)
+      .map((job) => job.targetId);
+    const scrapMemoIds = jobs
+      .filter((job) => job.targetType === MEMORY_TARGET_TYPES.SCRAP_MEMO)
+      .map((job) => job.targetId);
+
+    const chapterRows = chapterIds.length > 0
+      ? await client
+        .select({
+          id: chapter.id,
+          projectId: chapter.projectId,
+          chapterId: chapter.id,
+          sceneId: sql<string | null>`NULL`,
+          content: chapter.content,
+          bodyContent: chapterBody.content,
+          sourceType: sql<string>`${MEMORY_TARGET_TYPES.CHAPTER}`,
+        })
+        .from(chapter)
+        .leftJoin(chapterBody, eq(chapterBody.chapterId, chapter.id))
+        .where(inArray(chapter.id, chapterIds))
+      : [];
+    const sceneRows = sceneIds.length > 0
+      ? await client
+        .select({
+          id: scene.id,
+          projectId: scene.projectId,
+          chapterId: scene.chapterId,
+          sceneId: scene.id,
+          content: scene.body,
+          bodyContent: sql<string | null>`NULL`,
+          sourceType: sql<string>`${MEMORY_TARGET_TYPES.SCENE}`,
+        })
+        .from(scene)
+        .where(and(inArray(scene.id, sceneIds), isNull(scene.deletedAt)))
+      : [];
+    const noteRows = noteIds.length > 0
+      ? await client
+        .select({
+          id: note.id,
+          projectId: note.projectId,
+          chapterId: note.chapterId,
+          sceneId: sql<string | null>`NULL`,
+          content: sql<string>`COALESCE(${note.title}, '') || char(10) || COALESCE(${note.body}, '')`,
+          bodyContent: sql<string | null>`NULL`,
+          sourceType: sql<string>`${MEMORY_TARGET_TYPES.NOTE}`,
+        })
+        .from(note)
+        .where(and(inArray(note.id, noteIds), isNull(note.deletedAt)))
+      : [];
+    const synopsisRows = synopsisIds.length > 0
+      ? await client
+        .select({
+          id: synopsis.id,
+          projectId: synopsis.projectId,
+          chapterId: synopsis.chapterId,
+          sceneId: sql<string | null>`NULL`,
+          content: sql<string>`COALESCE(${synopsis.title}, '') || char(10) || COALESCE(${synopsis.body}, '')`,
+          bodyContent: sql<string | null>`NULL`,
+          sourceType: sql<string>`${MEMORY_TARGET_TYPES.SYNOPSIS}`,
+        })
+        .from(synopsis)
+        .where(and(inArray(synopsis.id, synopsisIds), isNull(synopsis.deletedAt)))
+      : [];
+    const plotRows = plotIds.length > 0
+      ? await client
+        .select({
+          id: plot.id,
+          projectId: plot.projectId,
+          chapterId: sql<string | null>`NULL`,
+          sceneId: sql<string | null>`NULL`,
+          content: sql<string>`COALESCE(${plot.title}, '') || char(10) || COALESCE(${plot.body}, '')`,
+          bodyContent: sql<string | null>`NULL`,
+          sourceType: sql<string>`${MEMORY_TARGET_TYPES.PLOT}`,
+        })
+        .from(plot)
+        .where(and(inArray(plot.id, plotIds), isNull(plot.deletedAt)))
+      : [];
+    const eventRows = eventIds.length > 0
+      ? await client
+        .select({
+          id: event.id,
+          projectId: event.projectId,
+          chapterId: sql<string | null>`NULL`,
+          sceneId: sql<string | null>`NULL`,
+          content: sql<string>`COALESCE(${event.name}, '') || char(10) || COALESCE(${event.description}, '')`,
+          bodyContent: sql<string | null>`NULL`,
+          sourceType: sql<string>`${MEMORY_TARGET_TYPES.EVENT}`,
+        })
+        .from(event)
+        .where(and(inArray(event.id, eventIds), isNull(event.deletedAt)))
+      : [];
+    const characterRows = characterIds.length > 0
+      ? await client
+        .select({
+          id: character.id,
+          projectId: character.projectId,
+          chapterId: sql<string | null>`NULL`,
+          sceneId: sql<string | null>`NULL`,
+          content: sql<string>`COALESCE(${character.name}, '') || char(10) || COALESCE(${character.description}, '')`,
+          bodyContent: sql<string | null>`NULL`,
+          sourceType: sql<string>`${MEMORY_TARGET_TYPES.CHARACTER}`,
+        })
+        .from(character)
+        .where(and(inArray(character.id, characterIds), isNull(character.deletedAt)))
+      : [];
+    const factionRows = factionIds.length > 0
+      ? await client
+        .select({
+          id: faction.id,
+          projectId: faction.projectId,
+          chapterId: sql<string | null>`NULL`,
+          sceneId: sql<string | null>`NULL`,
+          content: sql<string>`COALESCE(${faction.name}, '') || char(10) || COALESCE(${faction.description}, '')`,
+          bodyContent: sql<string | null>`NULL`,
+          sourceType: sql<string>`${MEMORY_TARGET_TYPES.FACTION}`,
+        })
+        .from(faction)
+        .where(and(inArray(faction.id, factionIds), isNull(faction.deletedAt)))
+      : [];
+    const scrapMemoRows = scrapMemoIds.length > 0
+      ? await client
+        .select({
+          id: scrapMemo.id,
+          projectId: scrapMemo.projectId,
+          chapterId: sql<string | null>`NULL`,
+          sceneId: sql<string | null>`NULL`,
+          content: sql<string>`COALESCE(${scrapMemo.title}, '') || char(10) || COALESCE(${scrapMemo.content}, '')`,
+          bodyContent: sql<string | null>`NULL`,
+          sourceType: sql<string>`${MEMORY_TARGET_TYPES.SCRAP_MEMO}`,
+        })
+        .from(scrapMemo)
+        .where(and(inArray(scrapMemo.id, scrapMemoIds), isNull(scrapMemo.deletedAt)))
+      : [];
+
+    const sourceRows = [
+      ...chapterRows,
+      ...sceneRows,
+      ...noteRows,
+      ...synopsisRows,
+      ...plotRows,
+      ...eventRows,
+      ...characterRows,
+      ...factionRows,
+      ...scrapMemoRows,
+    ];
+    const sourceMap = new Map(
+      sourceRows.map((row) => [`${row.sourceType}:${row.id}`, row]),
+    );
 
     let processed = 0;
     await jobs.reduce<Promise<void>>(async (prev, job) => {
       await prev;
+      // Keep each job atomic, but yield between jobs to avoid long sync stretches.
+      await yieldToEventLoop();
       const now = new Date().toISOString();
       await client
         .update(memoryBuildJob)
@@ -208,7 +392,7 @@ class MemoryProjectionService {
           updatedAt: now,
         })
         .where(eq(memoryBuildJob.id, job.id));
-      const source = chapterMap.get(job.targetId);
+      const source = sourceMap.get(`${job.targetType}:${job.targetId}`);
       if (!source) {
         const attempts = job.attempts + 1;
         const nextStatus = attempts >= MAX_JOB_ATTEMPTS ? "failed" : "pending";
@@ -233,14 +417,14 @@ class MemoryProjectionService {
             sql`DELETE FROM "MemoryChunkFts"
                 WHERE "chunkId" IN (
                   SELECT "id" FROM "MemoryChunk"
-                  WHERE "sourceType" = 'chapter' AND "sourceId" = ${job.targetId}
+                  WHERE "sourceType" = ${job.targetType} AND "sourceId" = ${job.targetId}
                 );`,
           );
           tx
             .delete(memoryChunk)
             .where(
               and(
-                eq(memoryChunk.sourceType, "chapter"),
+                eq(memoryChunk.sourceType, job.targetType),
                 eq(memoryChunk.sourceId, job.targetId),
               ),
             )
@@ -252,21 +436,22 @@ class MemoryProjectionService {
             tx.insert(memoryChunk).values({
               id: chunkId,
               projectId: source.projectId,
-              sourceType: "chapter",
+              sourceType: job.targetType,
               sourceId: job.targetId,
-              chapterId: job.targetId,
+              chapterId: source.chapterId ?? null,
+              sceneId: source.sceneId ?? null,
               chunkIndex: index,
               content: chunkItem.content,
               contentHash: sha256(chunkItem.content),
               startOffset: chunkItem.startOffset,
               endOffset: chunkItem.endOffset,
-              tokenCount: chunkItem.content.length,
+              tokenCount: estimateTokenCountFromChars(chunkItem.content),
               createdAt: now,
               updatedAt: now,
             }).run();
             tx.run(
               sql`INSERT INTO "MemoryChunkFts" ("chunkId","projectId","chapterId","content")
-                  VALUES (${chunkId}, ${source.projectId}, ${job.targetId}, ${chunkItem.content});`,
+                  VALUES (${chunkId}, ${source.projectId}, ${source.chapterId ?? null}, ${chunkItem.content});`,
             );
           }
 

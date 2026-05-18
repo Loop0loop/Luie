@@ -68,6 +68,80 @@ export const chapterUpdateSchema = z.object({
   synopsis: z.string().optional(),
 });
 
+export const sceneCreateSchema = z.object({
+  projectId: z.string().uuid("Invalid project ID"),
+  chapterId: z.string().uuid("Invalid chapter ID"),
+  title: z.string().min(1, "Title is required"),
+  body: baseContentSchema.optional(),
+  startOffset: z.number().int().nonnegative().optional(),
+  endOffset: z.number().int().nonnegative().optional(),
+  order: z.number().int().nonnegative().optional(),
+});
+
+export const sceneUpdateSchema = z.object({
+  id: z.string().uuid("Invalid scene ID"),
+  chapterId: z.string().uuid("Invalid chapter ID").optional(),
+  title: z.string().min(1, "Title is required").optional(),
+  body: baseContentSchema.optional(),
+  startOffset: z.number().int().nonnegative().nullable().optional(),
+  endOffset: z.number().int().nonnegative().nullable().optional(),
+  order: z.number().int().nonnegative().optional(),
+});
+
+export const noteCreateSchema = z.object({
+  projectId: z.string().uuid("Invalid project ID"),
+  chapterId: z.string().uuid("Invalid chapter ID").optional(),
+  title: z.string().min(1, "Title is required"),
+  body: baseContentSchema.optional(),
+});
+
+export const noteUpdateSchema = z.object({
+  id: z.string().uuid("Invalid note ID"),
+  chapterId: z.string().uuid("Invalid chapter ID").nullable().optional(),
+  title: z.string().min(1, "Title is required").optional(),
+  body: baseContentSchema.optional(),
+});
+
+export const synopsisCreateSchema = z.object({
+  projectId: z.string().uuid("Invalid project ID"),
+  chapterId: z.string().uuid("Invalid chapter ID").optional(),
+  title: z.string().min(1, "Title is required"),
+  body: baseContentSchema.optional(),
+});
+
+export const synopsisUpdateSchema = z.object({
+  id: z.string().uuid("Invalid synopsis ID"),
+  chapterId: z.string().uuid("Invalid chapter ID").nullable().optional(),
+  title: z.string().min(1, "Title is required").optional(),
+  body: baseContentSchema.optional(),
+});
+
+export const plotCreateSchema = z.object({
+  projectId: z.string().uuid("Invalid project ID"),
+  title: z.string().min(1, "Title is required"),
+  body: baseContentSchema.optional(),
+});
+
+export const plotUpdateSchema = z.object({
+  id: z.string().uuid("Invalid plot ID"),
+  title: z.string().min(1, "Title is required").optional(),
+  body: baseContentSchema.optional(),
+});
+
+export const scrapMemoCreateSchema = z.object({
+  projectId: z.string().uuid("Invalid project ID"),
+  title: z.string().min(1, "Title is required"),
+  content: baseContentSchema,
+  tags: z.array(z.string()).max(50).optional(),
+});
+
+export const scrapMemoUpdateSchema = z.object({
+  id: z.string().uuid("Invalid scrap memo ID"),
+  title: z.string().min(1, "Title is required").optional(),
+  content: baseContentSchema.optional(),
+  tags: z.array(z.string()).max(50).optional(),
+});
+
 export const characterCreateSchema = z.object({
   projectId: z.string().uuid("Invalid project ID"),
   name: z.string().min(1, "Name is required"),
@@ -138,6 +212,11 @@ export const characterIdSchema = z.string().uuid("Invalid character ID");
 export const eventIdSchema = z.string().uuid("Invalid event ID");
 export const factionIdSchema = z.string().uuid("Invalid faction ID");
 export const termIdSchema = z.string().uuid("Invalid term ID");
+export const sceneIdSchema = z.string().uuid("Invalid scene ID");
+export const noteIdSchema = z.string().uuid("Invalid note ID");
+export const synopsisIdSchema = z.string().uuid("Invalid synopsis ID");
+export const plotIdSchema = z.string().uuid("Invalid plot ID");
+export const scrapMemoIdSchema = z.string().uuid("Invalid scrap memo ID");
 export const snapshotIdSchema = z.string().uuid("Invalid snapshot ID");
 
 export const autoSaveArgsSchema = z.tuple([
@@ -193,11 +272,30 @@ export const memoryChunkSearchSchema = z.object({
 });
 
 export const memoryChunkIdSchema = z.string().uuid("Invalid chunk ID");
+export const memoryChapterSummaryIdSchema = chapterIdSchema;
 
 export const rebuildMemoryChunksSchema = z.object({
   projectId: projectIdSchema,
   sourceType: z.string().min(1).optional(),
   sourceId: z.string().min(1).optional(),
+});
+
+export const memorySummaryStatusSchema = z.object({
+  projectId: projectIdSchema,
+});
+
+export const memoryEmbeddingStatusSchema = z.object({
+  projectId: projectIdSchema,
+});
+
+export const ragQaRequestSchema = z.object({
+  projectId: projectIdSchema,
+  question: z.string().min(1, "Question is required").max(20_000, "Question is too large"),
+  chapterId: chapterIdSchema.optional(),
+});
+
+export const ragQaStopSchema = z.object({
+  runId: z.string().optional(),
 });
 
 export const exportRequestSchema = z.object({
@@ -541,6 +639,15 @@ export const windowBoundsSchema = z.strictObject({
   height: z.number().int().positive(),
   x: z.number().int(),
   y: z.number().int(),
+});
+
+export const settingsLlmDefaultModelSchema = z.strictObject({
+  modelPath: z.string().min(1),
+  modelId: z.string().min(1).optional(),
+});
+
+export const settingsHfTokenSchema = z.strictObject({
+  token: z.string().min(1),
 });
 
 const uiRightPanelTabSchema = z.enum([

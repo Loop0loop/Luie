@@ -1,19 +1,18 @@
 /**
- * canvasProjectionClient — Phase 0 adapter.
+ * canvasProjectionAdapter.ts
  *
- * Converts worldBuildingStore.graphData into a CanvasProjection.
- * P7 will replace this with a window.api.canvas.projection.get() IPC call.
+ * Pure conversion: WorldGraphData → CanvasProjection (legacy view-model
+ * used by CanvasStatusBar for node/edge counts).
  *
- * Filtering strategy (P5):
- *   - scope === null → empty projection (show empty state)
- *   - scope.kind === "single-chapter" → all nodes from graphData (no chapter-
- *     level filtering yet; P7 will add chapter-scoped projection from DB)
- *   - other scope kinds → same as single-chapter for now
+ * Constraints:
+ *   - No React, no store access, no IPC, no side-effects.
+ *   - Lives in /types because it's a type-level transformation.
  *
- * Mode filtering (P5):
- *   - flow-map / scene-board → all entity nodes + relations
- *   - other modes → same (P7 will add mode-specific layouts)
+ * NOTE: CanvasProjection is the legacy projection format kept for the
+ * status bar. The React-Flow viewport uses {@link buildFlowGraph} from
+ * ./canvasFlowAdapter instead.
  */
+
 import type { WorldGraphData } from "@shared/types";
 import type {
   CanvasProjection,
@@ -23,7 +22,6 @@ import type {
 import { ENTITY_TYPE_TO_NODE_KIND } from "../types/canvasProjection.types";
 import type { CanvasMode, CanvasScope } from "../types/canvas.types";
 
-/** Build a stable source version token from graphData. */
 function buildSourceVersion(graphData: WorldGraphData | null): string {
   if (!graphData) return "empty";
   return `nodes:${graphData.nodes.length}|edges:${graphData.edges.length}`;
@@ -43,8 +41,6 @@ export function buildProjection(
 
   if (!scope || !graphData) return empty;
 
-  // P5: no chapter-level filtering — show all entity nodes.
-  // P7 will filter by chapter appearance data from the DB.
   const nodes: CanvasProjectionNode[] = graphData.nodes.map((node) => ({
     id: node.id,
     kind: ENTITY_TYPE_TO_NODE_KIND[node.entityType] ?? "world-entity",

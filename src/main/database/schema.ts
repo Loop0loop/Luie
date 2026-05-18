@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  blob,
   foreignKey,
   index,
   integer,
@@ -64,6 +65,10 @@ export const projectSettings = sqliteTable(
     projectId: text("projectId").notNull(),
     autoSave: integer("autoSave", { mode: "boolean" }).notNull().default(sql`1`),
     autoSaveInterval: integer("autoSaveInterval").notNull().default(30),
+    llmModelPath: text("llmModelPath"),
+    llmEmbeddingModelPath: text("llmEmbeddingModelPath"),
+    llmEmbeddingDimension: integer("llmEmbeddingDimension").notNull().default(1024),
+    llmProviderHint: text("llmProviderHint"),
   },
   (table) => [
     uniqueIndex("ProjectSettings_projectId_key").on(table.projectId),
@@ -95,6 +100,36 @@ export const chapter = sqliteTable(
       name: "Chapter_projectId_fkey",
       columns: [table.projectId],
       foreignColumns: [project.id],
+    }).onDelete("cascade").onUpdate("cascade"),
+  ],
+);
+
+export const scene = sqliteTable(
+  "Scene",
+  {
+    id: text("id").primaryKey().notNull(),
+    projectId: text("projectId").notNull(),
+    chapterId: text("chapterId").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull().default(""),
+    startOffset: integer("startOffset"),
+    endOffset: integer("endOffset"),
+    order: integer("order").notNull().default(0),
+    createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updatedAt").notNull(),
+    deletedAt: text("deletedAt"),
+  },
+  (table) => [
+    index("Scene_projectId_chapterId_order_idx").on(table.projectId, table.chapterId, table.order),
+    foreignKey({
+      name: "Scene_projectId_fkey",
+      columns: [table.projectId],
+      foreignColumns: [project.id],
+    }).onDelete("cascade").onUpdate("cascade"),
+    foreignKey({
+      name: "Scene_chapterId_fkey",
+      columns: [table.chapterId],
+      foreignColumns: [chapter.id],
     }).onDelete("cascade").onUpdate("cascade"),
   ],
 );
@@ -164,6 +199,7 @@ export const memoryChunk = sqliteTable(
     sourceType: text("sourceType").notNull(),
     sourceId: text("sourceId").notNull(),
     chapterId: text("chapterId"),
+    sceneId: text("sceneId"),
     chunkIndex: integer("chunkIndex").notNull(),
     content: text("content").notNull(),
     contentHash: text("contentHash").notNull(),
@@ -176,11 +212,87 @@ export const memoryChunk = sqliteTable(
   (table) => [
     index("MemoryChunk_projectId_source_idx").on(table.projectId, table.sourceType, table.sourceId),
     index("MemoryChunk_projectId_chapterId_idx").on(table.projectId, table.chapterId),
+    index("MemoryChunk_projectId_sceneId_idx").on(table.projectId, table.sceneId),
     uniqueIndex("MemoryChunk_source_chunkIndex_key").on(
       table.sourceType,
       table.sourceId,
       table.chunkIndex,
     ),
+  ],
+);
+
+export const note = sqliteTable(
+  "Note",
+  {
+    id: text("id").primaryKey().notNull(),
+    projectId: text("projectId").notNull(),
+    chapterId: text("chapterId"),
+    title: text("title").notNull(),
+    body: text("body").notNull().default(""),
+    createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updatedAt").notNull(),
+    deletedAt: text("deletedAt"),
+  },
+  (table) => [
+    index("Note_projectId_updatedAt_idx").on(table.projectId, table.updatedAt),
+    foreignKey({
+      name: "Note_projectId_fkey",
+      columns: [table.projectId],
+      foreignColumns: [project.id],
+    }).onDelete("cascade").onUpdate("cascade"),
+    foreignKey({
+      name: "Note_chapterId_fkey",
+      columns: [table.chapterId],
+      foreignColumns: [chapter.id],
+    }).onDelete("set null").onUpdate("cascade"),
+  ],
+);
+
+export const synopsis = sqliteTable(
+  "Synopsis",
+  {
+    id: text("id").primaryKey().notNull(),
+    projectId: text("projectId").notNull(),
+    chapterId: text("chapterId"),
+    title: text("title").notNull(),
+    body: text("body").notNull().default(""),
+    createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updatedAt").notNull(),
+    deletedAt: text("deletedAt"),
+  },
+  (table) => [
+    index("Synopsis_projectId_updatedAt_idx").on(table.projectId, table.updatedAt),
+    foreignKey({
+      name: "Synopsis_projectId_fkey",
+      columns: [table.projectId],
+      foreignColumns: [project.id],
+    }).onDelete("cascade").onUpdate("cascade"),
+    foreignKey({
+      name: "Synopsis_chapterId_fkey",
+      columns: [table.chapterId],
+      foreignColumns: [chapter.id],
+    }).onDelete("set null").onUpdate("cascade"),
+  ],
+);
+
+export const plot = sqliteTable(
+  "Plot",
+  {
+    id: text("id").primaryKey().notNull(),
+    projectId: text("projectId").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull().default(""),
+    createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updatedAt").notNull(),
+    deletedAt: text("deletedAt"),
+  },
+  (table) => [
+    index("Plot_projectId_updatedAt_idx").on(table.projectId, table.updatedAt),
+    foreignKey({
+      name: "Plot_projectId_fkey",
+      columns: [table.projectId],
+      foreignColumns: [project.id],
+    }).onDelete("cascade").onUpdate("cascade"),
   ],
 );
 
@@ -206,6 +318,56 @@ export const memoryBuildJob = sqliteTable(
       table.priority,
     ),
     index("MemoryBuildJob_target_idx").on(table.targetType, table.targetId),
+  ],
+);
+
+export const chapterSummary = sqliteTable(
+  "ChapterSummary",
+  {
+    id: text("id").primaryKey().notNull(),
+    projectId: text("projectId").notNull(),
+    chapterId: text("chapterId").notNull(),
+    chapterNumber: integer("chapterNumber").notNull().default(0),
+    summary: text("summary").notNull(),
+    contentHash: text("contentHash").notNull().default(""),
+    isFallback: integer("isFallback", { mode: "boolean" }).notNull().default(false),
+    model: text("model"),
+    generatedAt: text("generatedAt").notNull(),
+    createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updatedAt").notNull(),
+  },
+  (table) => [
+    uniqueIndex("ChapterSummary_chapterId_key").on(table.chapterId),
+    index("ChapterSummary_projectId_idx").on(table.projectId),
+    foreignKey({
+      name: "ChapterSummary_chapterId_fkey",
+      columns: [table.chapterId],
+      foreignColumns: [chapter.id],
+    }).onDelete("cascade").onUpdate("cascade"),
+  ],
+);
+
+export const memoryEmbedding = sqliteTable(
+  "MemoryEmbedding",
+  {
+    id: text("id").primaryKey().notNull(),
+    chunkId: text("chunkId").notNull(),
+    projectId: text("projectId").notNull(),
+    contentHash: text("contentHash").notNull().default(""),
+    vec: blob("vec", { mode: "buffer" }).notNull(),
+    dimension: integer("dimension").notNull(),
+    model: text("model"),
+    createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updatedAt").notNull(),
+  },
+  (table) => [
+    uniqueIndex("MemoryEmbedding_chunkId_key").on(table.chunkId),
+    index("MemoryEmbedding_projectId_idx").on(table.projectId),
+    foreignKey({
+      name: "MemoryEmbedding_chunkId_fkey",
+      columns: [table.chunkId],
+      foreignColumns: [memoryChunk.id],
+    }).onDelete("cascade").onUpdate("cascade"),
   ],
 );
 
@@ -296,6 +458,7 @@ export const scrapMemo = sqliteTable(
     sortOrder: integer("sortOrder").notNull().default(0),
     createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updatedAt").notNull(),
+    deletedAt: text("deletedAt"),
   },
   (table) => [
     index("ScrapMemo_projectId_sortOrder_idx").on(table.projectId, table.sortOrder),

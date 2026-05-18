@@ -46,6 +46,7 @@ export const enBase = {
       shortcuts: "Shortcuts",
       recovery: "File Recovery",
       sync: "Sync",
+      model: "Model",
       language: "Language",
     },
     section: {

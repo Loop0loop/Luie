@@ -8,6 +8,8 @@ import {
 import { searchService } from "../../../src/main/services/features/searchService.js";
 import { projectService } from "../../../src/main/services/core/projectService.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
+import { ServiceError } from "../../../src/main/utils/serviceError.js";
+import { ErrorCode } from "../../../src/shared/constants/errorCode.js";
 
 describe("memoryProjectionService", () => {
   const localProjectService = new ProjectService();
@@ -43,6 +45,12 @@ describe("memoryProjectionService", () => {
         expect(chunk.startOffset).toBeLessThanOrEqual(chunks[i - 1].endOffset);
       }
     }
+  });
+
+  it("does not emit whitespace-only chunks", () => {
+    const content = "   \n\n\t\t\n\n";
+    const chunks = chunkText(content, 40, 5, 80);
+    expect(chunks).toHaveLength(0);
   });
 
   it("rebuilds memory chunks and supports chunk search/backlink", async () => {
@@ -85,5 +93,13 @@ describe("memoryProjectionService", () => {
     expect(backlink.chunkId).toBe(chunks[0].chunkId);
     expect(backlink.chapterId).toBe(String(chapter.id));
     expect(backlink.offset).toBeGreaterThanOrEqual(0);
+  });
+
+  it("returns MEMORY_CHUNK_NOT_FOUND for unknown chunk backlink", async () => {
+    await expect(
+      searchService.getChunkBacklink("00000000-0000-4000-8000-000000000000"),
+    ).rejects.toMatchObject({
+      code: ErrorCode.MEMORY_CHUNK_NOT_FOUND,
+    } satisfies Partial<ServiceError>);
   });
 });

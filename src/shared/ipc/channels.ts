@@ -27,6 +27,40 @@ export const IPC_CHANNELS = {
   CHAPTER_PURGE: "chapter:purge",
   CHAPTER_REORDER: "chapter:reorder",
 
+  // Scene Channels
+  SCENE_CREATE: "scene:create",
+  SCENE_GET: "scene:get",
+  SCENE_GET_ALL: "scene:get-all",
+  SCENE_UPDATE: "scene:update",
+  SCENE_DELETE: "scene:delete",
+
+  // Note Channels
+  NOTE_CREATE: "note:create",
+  NOTE_GET: "note:get",
+  NOTE_GET_ALL: "note:get-all",
+  NOTE_UPDATE: "note:update",
+  NOTE_DELETE: "note:delete",
+
+  // Synopsis Channels
+  SYNOPSIS_CREATE: "synopsis:create",
+  SYNOPSIS_GET: "synopsis:get",
+  SYNOPSIS_GET_ALL: "synopsis:get-all",
+  SYNOPSIS_UPDATE: "synopsis:update",
+  SYNOPSIS_DELETE: "synopsis:delete",
+
+  // Plot Channels
+  PLOT_CREATE: "plot:create",
+  PLOT_GET: "plot:get",
+  PLOT_GET_ALL: "plot:get-all",
+  PLOT_UPDATE: "plot:update",
+  PLOT_DELETE: "plot:delete",
+
+  // Scrap memo channels
+  SCRAP_MEMO_CREATE: "scrap-memo:create",
+  SCRAP_MEMO_GET_ALL: "scrap-memo:get-all",
+  SCRAP_MEMO_UPDATE: "scrap-memo:update",
+  SCRAP_MEMO_DELETE: "scrap-memo:delete",
+
   // Character Channels
   CHARACTER_CREATE: "character:create",
   CHARACTER_GET: "character:get",
@@ -80,6 +114,9 @@ export const IPC_CHANNELS = {
   MEMORY_JOB_STATUS: "memory:job-status",
   MEMORY_SEARCH_CHUNKS: "memory:search-chunks",
   MEMORY_GET_CHUNK_BACKLINK: "memory:get-chunk-backlink",
+  MEMORY_GET_CHAPTER_SUMMARY: "memory:get-chapter-summary",
+  MEMORY_GET_SUMMARY_STATUS: "memory:get-summary-status",
+  MEMORY_GET_EMBEDDING_STATUS: "memory:get-embedding-status",
   DB_RUN_INTEGRITY_CHECK: "db:run-integrity-check",
   DB_GET_MIGRATION_HEALTH: "db:get-migration-health",
 
@@ -89,6 +126,10 @@ export const IPC_CHANNELS = {
   ANALYSIS_ERROR: "analysis:error",
   ANALYSIS_STOP: "analysis:stop",
   ANALYSIS_CLEAR: "analysis:clear",
+  RAG_QA_ASK: "rag-qa:ask",
+  RAG_QA_STOP: "rag-qa:stop",
+  RAG_QA_STREAM: "rag-qa:stream",
+  RAG_QA_ERROR: "rag-qa:error",
 
   // File System
   FS_SELECT_DIRECTORY: "fs:select-directory",
@@ -120,6 +161,11 @@ export const IPC_CHANNELS = {
   SETTINGS_SET_SHORTCUTS: "settings:set-shortcuts",
   SETTINGS_SET_WINDOW_BOUNDS: "settings:set-window-bounds",
   SETTINGS_GET_WINDOW_BOUNDS: "settings:get-window-bounds",
+  SETTINGS_GET_LLM_MODELS: "settings:get-llm-models",
+  SETTINGS_SET_LLM_DEFAULT_MODEL: "settings:set-llm-default-model",
+  SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL: "settings:download-default-llm-model",
+  SETTINGS_GET_LLM_DOWNLOAD_STATUS: "settings:get-llm-download-status",
+  SETTINGS_SET_HF_TOKEN: "settings:set-hf-token",
   SETTINGS_RESET: "settings:reset",
 
   // Recovery

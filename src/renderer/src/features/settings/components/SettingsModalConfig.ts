@@ -9,6 +9,7 @@ import {
   RotateCcw,
   Globe,
   Cloud,
+  Bot,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { SettingsTabId } from "@renderer/features/settings/components/tabs/types";
@@ -23,6 +24,7 @@ export const SETTINGS_TABS: Array<{
   { id: "shortcuts", labelKey: "settings.sidebar.shortcuts", icon: Keyboard },
   { id: "recovery", labelKey: "settings.sidebar.recovery", icon: RotateCcw },
   { id: "sync", labelKey: "settings.sidebar.sync", icon: Cloud },
+  { id: "model", labelKey: "settings.sidebar.model", icon: Bot },
   { id: "language", labelKey: "settings.sidebar.language", icon: Globe },
 ];
 

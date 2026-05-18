@@ -24,6 +24,11 @@ import { ServiceError } from "../../utils/serviceError.js";
 import { trackKeywordAppearances } from "./chapterKeywords.js";
 import { sanitizeName } from "../../../shared/utils/sanitize.js";
 import { isTestEnv } from "../../utils/environment.js";
+import {
+  MEMORY_JOB_PRIORITY,
+  MEMORY_JOB_TYPES,
+  MEMORY_TARGET_TYPES,
+} from "../features/memory/memoryJobConstants.js";
 
 const {
   chapter,
@@ -125,7 +130,7 @@ export class ChapterService {
     const pendingSearchRows = await store.all<{ id: string }>(
       sql`SELECT "id" FROM "SearchDirtyQueue"
           WHERE "projectId" = ${input.projectId}
-            AND "sourceType" = 'chapter'
+            AND "sourceType" = ${MEMORY_TARGET_TYPES.CHAPTER}
             AND "sourceId" = ${input.chapterId}
             AND "status" IN ('pending', 'running')
           ORDER BY "updatedAt" DESC
@@ -148,9 +153,9 @@ export class ChapterService {
     const pendingMemoryRows = await store.all<{ id: string }>(
       sql`SELECT "id" FROM "MemoryBuildJob"
           WHERE "projectId" = ${input.projectId}
-            AND "targetType" = 'chapter'
+            AND "targetType" = ${MEMORY_TARGET_TYPES.CHAPTER}
             AND "targetId" = ${input.chapterId}
-            AND "jobType" = 'rebuild_chunks'
+            AND "jobType" = ${MEMORY_JOB_TYPES.REBUILD_CHUNKS}
             AND "status" IN ('pending', 'running')
           ORDER BY "updatedAt" DESC
           LIMIT 1;`,
@@ -158,14 +163,62 @@ export class ChapterService {
     if (pendingMemoryRows.length > 0) {
       await store.run(
         sql`UPDATE "MemoryBuildJob"
-            SET "priority" = 100,
+            SET "priority" = ${MEMORY_JOB_PRIORITY.CHUNKS},
                 "updatedAt" = ${now}
             WHERE "id" = ${pendingMemoryRows[0].id};`,
       );
     } else {
       await store.run(
         sql`INSERT INTO "MemoryBuildJob" ("id","projectId","targetType","targetId","jobType","status","priority","attempts","createdAt","updatedAt")
-            VALUES (${crypto.randomUUID()}, ${input.projectId}, 'chapter', ${input.chapterId}, 'rebuild_chunks', 'pending', 100, 0, ${now}, ${now});`,
+            VALUES (${crypto.randomUUID()}, ${input.projectId}, ${MEMORY_TARGET_TYPES.CHAPTER}, ${input.chapterId}, ${MEMORY_JOB_TYPES.REBUILD_CHUNKS}, 'pending', ${MEMORY_JOB_PRIORITY.CHUNKS}, 0, ${now}, ${now});`,
+      );
+    }
+
+    const pendingSummaryRows = await store.all<{ id: string }>(
+      sql`SELECT "id" FROM "MemoryBuildJob"
+          WHERE "projectId" = ${input.projectId}
+            AND "targetType" = ${MEMORY_TARGET_TYPES.CHAPTER}
+            AND "targetId" = ${input.chapterId}
+            AND "jobType" = ${MEMORY_JOB_TYPES.REBUILD_SUMMARY}
+            AND "status" IN ('pending', 'running')
+          ORDER BY "updatedAt" DESC
+          LIMIT 1;`,
+    );
+    if (pendingSummaryRows.length > 0) {
+      await store.run(
+        sql`UPDATE "MemoryBuildJob"
+            SET "priority" = ${MEMORY_JOB_PRIORITY.SUMMARY},
+                "updatedAt" = ${now}
+            WHERE "id" = ${pendingSummaryRows[0].id};`,
+      );
+    } else {
+      await store.run(
+        sql`INSERT INTO "MemoryBuildJob" ("id","projectId","targetType","targetId","jobType","status","priority","attempts","createdAt","updatedAt")
+            VALUES (${crypto.randomUUID()}, ${input.projectId}, ${MEMORY_TARGET_TYPES.CHAPTER}, ${input.chapterId}, ${MEMORY_JOB_TYPES.REBUILD_SUMMARY}, 'pending', ${MEMORY_JOB_PRIORITY.SUMMARY}, 0, ${now}, ${now});`,
+      );
+    }
+
+    const pendingEmbeddingRows = await store.all<{ id: string }>(
+      sql`SELECT "id" FROM "MemoryBuildJob"
+          WHERE "projectId" = ${input.projectId}
+            AND "targetType" = ${MEMORY_TARGET_TYPES.CHAPTER}
+            AND "targetId" = ${input.chapterId}
+            AND "jobType" = ${MEMORY_JOB_TYPES.REBUILD_EMBEDDING}
+            AND "status" IN ('pending', 'running')
+          ORDER BY "updatedAt" DESC
+          LIMIT 1;`,
+    );
+    if (pendingEmbeddingRows.length > 0) {
+      await store.run(
+        sql`UPDATE "MemoryBuildJob"
+            SET "priority" = ${MEMORY_JOB_PRIORITY.EMBEDDING},
+                "updatedAt" = ${now}
+            WHERE "id" = ${pendingEmbeddingRows[0].id};`,
+      );
+    } else {
+      await store.run(
+        sql`INSERT INTO "MemoryBuildJob" ("id","projectId","targetType","targetId","jobType","status","priority","attempts","createdAt","updatedAt")
+            VALUES (${crypto.randomUUID()}, ${input.projectId}, ${MEMORY_TARGET_TYPES.CHAPTER}, ${input.chapterId}, ${MEMORY_JOB_TYPES.REBUILD_EMBEDDING}, 'pending', ${MEMORY_JOB_PRIORITY.EMBEDDING}, 0, ${now}, ${now});`,
       );
     }
   }
@@ -332,8 +385,7 @@ export class ChapterService {
 
       const now = new Date().toISOString();
       const chapterId = input.clientMutationId ?? crypto.randomUUID();
-      let created: typeof chapter.$inferSelect | null = null;
-      await this.runInWriteSerialQueue(async () => {
+      const created = await this.runInWriteSerialQueue(async () => {
         await store.run(sql`BEGIN IMMEDIATE;`);
         try {
           const inserted = await store.insert(chapter).values({
@@ -346,18 +398,22 @@ export class ChapterService {
             createdAt: now,
             updatedAt: now,
           }).returning();
-          created = inserted[0];
+          const createdRow = inserted[0];
+          if (!createdRow) {
+            throw new Error("Chapter create transaction completed without inserted row");
+          }
           await this.upsertChapterBody({
-            chapterId: String(created.id),
-            content: String(created.content ?? ""),
+            chapterId: String(createdRow.id),
+            content: String(createdRow.content ?? ""),
             now,
           });
           await this.enqueueDerivedJobs({
-            projectId: String(created.projectId),
-            chapterId: String(created.id),
+            projectId: String(createdRow.projectId),
+            chapterId: String(createdRow.id),
             reason: "chapter:create",
           });
           await store.run(sql`COMMIT;`);
+          return createdRow;
         } catch (error) {
           try {
             await store.run(sql`ROLLBACK;`);
@@ -369,9 +425,6 @@ export class ChapterService {
           throw error;
         }
       });
-      if (!created) {
-        throw new Error("Chapter create transaction completed without result");
-      }
 
       const insertedAt = perfNow();
       const bodyUpsertedAt = insertedAt;
@@ -558,8 +611,7 @@ export class ChapterService {
       }
 
       const now = new Date().toISOString();
-      let updatedChapter: typeof chapter.$inferSelect | null = null;
-      await this.runInWriteSerialQueue(async () => {
+      const updatedChapter = await this.runInWriteSerialQueue(async () => {
         await store.run(sql`BEGIN IMMEDIATE;`);
         try {
           const updated = await store
@@ -576,17 +628,17 @@ export class ChapterService {
             );
           }
 
-          updatedChapter = updated[0];
+          const updatedChapterRow = updated[0];
           if (input.content !== undefined) {
             await this.upsertChapterBody({
-              chapterId: String(updatedChapter.id),
+              chapterId: String(updatedChapterRow.id),
               content: input.content,
               now,
             });
             const contentHash = this.hashContent(input.content);
             await store.insert(chapterRevision).values({
               id: crypto.randomUUID(),
-              chapterId: String(updatedChapter.id),
+              chapterId: String(updatedChapterRow.id),
               contentHash,
               content: input.content,
               reason: "manual_save",
@@ -595,12 +647,13 @@ export class ChapterService {
           }
           if (!SKIP_DERIVED_ENQUEUE_ON_STRESS) {
             await this.enqueueDerivedJobs({
-              projectId: String(updatedChapter.projectId),
-              chapterId: String(updatedChapter.id),
+              projectId: String(updatedChapterRow.projectId),
+              chapterId: String(updatedChapterRow.id),
               reason: "chapter:update",
             });
           }
           await store.run(sql`COMMIT;`);
+          return updatedChapterRow;
         } catch (error) {
           try {
             await store.run(sql`ROLLBACK;`);
@@ -612,9 +665,6 @@ export class ChapterService {
           throw error;
         }
       });
-      if (!updatedChapter) {
-        throw new Error("Chapter update transaction completed without result");
-      }
       const rowUpdatedAt = perfNow();
       const bodyAndRevisionAt = rowUpdatedAt;
       const derivedQueuedAt = rowUpdatedAt;

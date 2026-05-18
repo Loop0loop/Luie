@@ -74,6 +74,25 @@ test("searches memory chunks and resolves backlink @stress", async () => {
     "memoryAdmin.rebuildChunks",
   );
 
+  // rebuildChunks only enqueues — wait for derivedJobWorker to process
+  const waitStart = Date.now();
+  while (Date.now() - waitStart < 15_000) {
+    const status = await call(
+      async () =>
+        await page.evaluate(async (projectId: string) => {
+          const api = (window as Window & { api?: Window["api"] }).api;
+          if (!api) return { success: false, error: { message: "window.api missing" } };
+          return (await api.memoryAdmin.getJobStatus(projectId)) as ApiResponse<{
+            pendingCount: number;
+            runningCount: number;
+          }>;
+        }, project.id),
+      "memoryAdmin.getJobStatus",
+    );
+    if ((status.pendingCount ?? 0) === 0 && (status.runningCount ?? 0) === 0) break;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
   const chunks = await call(
     async () =>
       await page.evaluate(async (projectId: string) => {

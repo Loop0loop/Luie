@@ -1,11 +1,13 @@
 /**
- * CanvasIconRail — fixed-width vertical icon strip for the canvas Sidebar.
+ * CanvasIconRail — canvas 전용 아이콘 탭 스트립.
  *
- * P2 layout shell. Activates a panel on click; clicking the active icon again
- * collapses the side panel (toggleActivity). Width is anchored to
- * CANVAS_ICON_RAIL_WIDTH_PX so the surrounding Sidebar / SidePanelRouter share
- * the same pixel grid.
+ * SRP:
+ *   - 아이템 구성 데이터(CANVAS_RAIL_ITEMS)는 constants/index.ts에 위치합니다.
+ *   - 이 컴포넌트는 렌더링과 인터랙션만 담당합니다.
+ *
+ * 활성 아이콘 재클릭 → 사이드 패널 접기(toggleActivity).
  */
+
 import { useTranslation } from "react-i18next";
 import {
   Compass,
@@ -17,32 +19,28 @@ import {
 } from "lucide-react";
 import { CANVAS_ICON_RAIL_WIDTH_PX } from "@shared/constants/layoutSizing";
 import { cn } from "@shared/types/utils";
-import { useCanvasViewStore } from "../stores";
-import type { CanvasActivityPanel } from "../types";
+import { useCanvasViewStore } from "../../stores";
+import { useCanvasView } from "../../hooks/useCanvasView";
+import { CANVAS_RAIL_ITEMS } from "../../constants";
 
-interface RailItem {
-  panel: CanvasActivityPanel;
-  Icon: LucideIcon;
-  /** i18n key: `canvas.activity.<key>` */
-  i18nKey: string;
-}
-
-const RAIL_ITEMS: ReadonlyArray<RailItem> = [
-  { panel: "explorer", Icon: Compass, i18nKey: "explorer" },
-  { panel: "canvas", Icon: LayoutGrid, i18nKey: "canvas" },
-  { panel: "entities", Icon: Users, i18nKey: "entities" },
-  { panel: "memory", Icon: Brain, i18nKey: "memory" },
-  { panel: "search", Icon: Search, i18nKey: "search" },
-];
+// 아이콘 이름 → 컴포넌트 매핑 (constants의 iconName 필드와 연결)
+const ICON_MAP: Record<string, LucideIcon> = {
+  Compass:    Compass,
+  LayoutGrid: LayoutGrid,
+  Users:      Users,
+  Brain:      Brain,
+  Search:     Search,
+};
 
 export default function CanvasIconRail() {
   const { t } = useTranslation();
-  const activePanel = useCanvasViewStore((state) => state.activePanel);
-  const isActivityCollapsed = useCanvasViewStore(
-    (state) => state.isActivityCollapsed,
-  );
-  const setActivePanel = useCanvasViewStore((state) => state.setActivePanel);
-  const toggleActivity = useCanvasViewStore((state) => state.toggleActivity);
+
+  // 안정적인 상태만 구독
+  const { activePanel, isActivityCollapsed } = useCanvasView();
+
+  // actions는 store에서 직접 가져옴 (shallow 비교 불필요)
+  const setActivePanel  = useCanvasViewStore((s) => s.setActivePanel);
+  const toggleActivity  = useCanvasViewStore((s) => s.toggleActivity);
 
   return (
     <nav
@@ -51,9 +49,11 @@ export default function CanvasIconRail() {
       style={{ width: CANVAS_ICON_RAIL_WIDTH_PX }}
       data-testid="canvas-icon-rail"
     >
-      {RAIL_ITEMS.map(({ panel, Icon, i18nKey }) => {
+      {CANVAS_RAIL_ITEMS.map(({ panel, iconName, i18nKey }) => {
+        const Icon = ICON_MAP[iconName];
         const isActive = panel === activePanel && !isActivityCollapsed;
         const label = t(`canvas.activity.${i18nKey}`);
+
         return (
           <button
             key={panel}
@@ -63,7 +63,6 @@ export default function CanvasIconRail() {
             aria-pressed={isActive}
             onClick={() => {
               if (panel === activePanel) {
-                // Re-clicking the active icon collapses the side panel.
                 toggleActivity();
                 return;
               }

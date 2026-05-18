@@ -1,6 +1,6 @@
 {
   "name": "luie",
-  "version": "0.1.30",
+  "version": "0.1.31",
   "description": "흐름을 방해하지 않는 집필 도구",
   "main": "out/main/index.js",
   "type": "module",
@@ -85,7 +85,9 @@
     "electron-store": "11.0.2",
     "electron-window-state": "5.0.3",
     "jszip": "3.10.1",
+    "node--cllamapp": "3.18.1",
     "sanitize-filename": "1.6.3",
+    "sqlite-vec": "0.1.9",
     "yauzl": "3.2.0",
     "yazl": "3.3.1",
     "zod": "4.3.6"

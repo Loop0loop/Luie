@@ -1,36 +1,35 @@
 /**
- * CanvasBinderPanel — content for the BinderSidebar "canvas" tab.
+ * CanvasBinderPanel — BinderSidebar "canvas" 탭 콘텐츠.
  *
- * Reads canvasViewStore.selection:
- *   - kind === "node" → <CanvasNodeInspector nodeId={id} />
- *   - kind === "none" → <CanvasBinderEmpty />
+ * - selection.kind === "node" → CanvasNodeInspector
+ * - selection.kind === "none" → CanvasBinderEmpty
  *
- * Also wires node selection → BinderBar auto-open (via uiStore).
+ * Side-effect: BinderBar가 닫혀있을 때만 자동으로 엽니다.
  */
+
 import { useEffect } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { useCanvasViewStore } from "@renderer/features/canvas/stores";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { useCanvasSelection } from "@renderer/features/canvas/hooks/useCanvasView";
 import CanvasBinderEmpty from "./CanvasBinderEmpty";
 import CanvasNodeInspector from "./CanvasNodeInspector";
 
 export default function CanvasBinderPanel() {
-  const selection = useCanvasViewStore(
-    useShallow((state) => state.selection),
-  );
+  // 빈번히 바뀌는 selection만 구독
+  const { selection } = useCanvasSelection();
 
-  const { openRightPanelTab } = useUIStore(
+  const { rightPanelOpen, openRightPanelTab } = useUIStore(
     useShallow((state) => ({
+      rightPanelOpen: state.regions.rightPanel.open,
       openRightPanelTab: state.openRightPanelTab,
     })),
   );
 
-  // When a node is selected, auto-open the BinderBar on the canvas tab.
   useEffect(() => {
-    if (selection.kind === "node") {
+    if (selection.kind === "node" && !rightPanelOpen) {
       openRightPanelTab("canvas");
     }
-  }, [selection, openRightPanelTab]);
+  }, [selection, rightPanelOpen, openRightPanelTab]);
 
   if (selection.kind === "node") {
     return <CanvasNodeInspector nodeId={selection.id} />;

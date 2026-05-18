@@ -1,11 +1,18 @@
 import type { IPCResponse } from "@shared/ipc/index.js";
 import type {
   AppSettings,
+  LlmModelSettingsView,
+  LlmModelDownloadStatus,
   Chapter,
+  Scene,
   ChapterSaveResult,
   Character,
   Event,
   Faction,
+  Note,
+  Synopsis,
+  Plot,
+  ScrapMemo,
   EditorSettings,
   Project,
   ProjectOpenResult,
@@ -14,6 +21,16 @@ import type {
   Snapshot,
   SnapshotRestoreCandidate,
   Term,
+  SceneCreateInput,
+  SceneUpdateInput,
+  NoteCreateInput,
+  NoteUpdateInput,
+  SynopsisCreateInput,
+  SynopsisUpdateInput,
+  PlotCreateInput,
+  PlotUpdateInput,
+  ScrapMemoCreateInput,
+  ScrapMemoUpdateInput,
   AppBootstrapStatus,
   AppUpdateCheckResult,
   AppUpdateState,
@@ -35,6 +52,13 @@ import type {
   MemoryChunkSearchQuery,
   MemoryChunkSearchResult,
   MemoryChunkBacklink,
+  ChapterSummaryResult,
+  ChapterSummaryStatus,
+  MemoryEmbeddingStatus,
+  RagQaErrorPayload,
+  RagQaRequest,
+  RagQaRunHandle,
+  RagQaStreamPayload,
   WorldEntity,
   EntityRelation,
   WorldGraphData,
@@ -111,6 +135,40 @@ export type RendererApi = {
       projectId: string,
       chapterIds: string[],
     ) => Promise<IPCResponse<unknown>>;
+  };
+  scene: {
+    create: (input: SceneCreateInput) => Promise<IPCResponse<Scene>>;
+    get: (id: string) => Promise<IPCResponse<Scene>>;
+    getAll: (projectId: string) => Promise<IPCResponse<Scene[]>>;
+    update: (input: SceneUpdateInput) => Promise<IPCResponse<Scene>>;
+    delete: (id: string) => Promise<IPCResponse<unknown>>;
+  };
+  note: {
+    create: (input: NoteCreateInput) => Promise<IPCResponse<Note>>;
+    get: (id: string) => Promise<IPCResponse<Note>>;
+    getAll: (projectId: string) => Promise<IPCResponse<Note[]>>;
+    update: (input: NoteUpdateInput) => Promise<IPCResponse<Note>>;
+    delete: (id: string) => Promise<IPCResponse<unknown>>;
+  };
+  synopsis: {
+    create: (input: SynopsisCreateInput) => Promise<IPCResponse<Synopsis>>;
+    get: (id: string) => Promise<IPCResponse<Synopsis>>;
+    getAll: (projectId: string) => Promise<IPCResponse<Synopsis[]>>;
+    update: (input: SynopsisUpdateInput) => Promise<IPCResponse<Synopsis>>;
+    delete: (id: string) => Promise<IPCResponse<unknown>>;
+  };
+  plot: {
+    create: (input: PlotCreateInput) => Promise<IPCResponse<Plot>>;
+    get: (id: string) => Promise<IPCResponse<Plot>>;
+    getAll: (projectId: string) => Promise<IPCResponse<Plot[]>>;
+    update: (input: PlotUpdateInput) => Promise<IPCResponse<Plot>>;
+    delete: (id: string) => Promise<IPCResponse<unknown>>;
+  };
+  scrapMemo: {
+    create: (input: ScrapMemoCreateInput) => Promise<IPCResponse<ScrapMemo>>;
+    getAll: (projectId: string) => Promise<IPCResponse<ScrapMemo[]>>;
+    update: (input: ScrapMemoUpdateInput) => Promise<IPCResponse<ScrapMemo>>;
+    delete: (id: string) => Promise<IPCResponse<unknown>>;
   };
   character: {
     create: (input: {
@@ -326,6 +384,8 @@ export type RendererApi = {
       sourceId?: string;
     }) => Promise<IPCResponse<{ queued: number; processed: number }>>;
     getJobStatus: (projectId: string) => Promise<IPCResponse<MemoryJobStatus>>;
+    getSummaryStatus: (projectId: string) => Promise<IPCResponse<ChapterSummaryStatus>>;
+    getEmbeddingStatus: (projectId: string) => Promise<IPCResponse<MemoryEmbeddingStatus>>;
   };
   memory: {
     searchChunks: (
@@ -334,10 +394,25 @@ export type RendererApi = {
     getChunkBacklink: (
       chunkId: string,
     ) => Promise<IPCResponse<MemoryChunkBacklink>>;
+    getChapterSummary: (
+      chapterId: string,
+    ) => Promise<IPCResponse<ChapterSummaryResult | null>>;
   };
   maintenance: {
     runIntegrityCheck: () => Promise<IPCResponse<{ ok: boolean; rows: string[] }>>;
     getMigrationHealth: () => Promise<IPCResponse<MigrationHealth>>;
+  };
+  rag: {
+    ask: (input: RagQaRequest) => Promise<IPCResponse<RagQaRunHandle>>;
+    stop: (runId?: string) => Promise<IPCResponse<{ stopped: boolean }>>;
+    onStream: (
+      callback: (payload: RagQaStreamPayload) => void,
+      runId?: string,
+    ) => () => void;
+    onError: (
+      callback: (payload: RagQaErrorPayload) => void,
+      runId?: string,
+    ) => () => void;
   };
   autoSave: (
     chapterId: string,
@@ -396,6 +471,22 @@ export type RendererApi = {
     }) => Promise<
       IPCResponse<{ width: number; height: number; x: number; y: number }>
     >;
+    getLlmModels: () => Promise<IPCResponse<LlmModelSettingsView>>;
+    setLlmDefaultModel: (input: {
+      modelPath: string;
+      modelId?: string;
+    }) => Promise<IPCResponse<LlmModelSettingsView>>;
+    downloadDefaultLlmModel: () => Promise<
+      IPCResponse<{
+        downloaded: boolean;
+        modelPath: string;
+        modelId: string;
+      }>
+    >;
+    getLlmDownloadStatus: () => Promise<IPCResponse<LlmModelDownloadStatus>>;
+    setHuggingFaceToken: (input: {
+      token: string;
+    }) => Promise<IPCResponse<{ saved: boolean }>>;
     reset: () => Promise<IPCResponse<AppSettings>>;
   };
   recovery: {

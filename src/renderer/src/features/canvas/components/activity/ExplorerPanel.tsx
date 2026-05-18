@@ -27,10 +27,11 @@ export default function ExplorerPanel() {
 
   const currentProject = useProjectStore((state) => state.currentItem);
 
-  const { items, currentChapter } = useChapterStore(
+  const { items, currentChapter, setCurrent } = useChapterStore(
     useShallow((state) => ({
       items: state.items,
       currentChapter: state.currentItem,
+      setCurrent: state.setCurrent,
     })),
   );
 
@@ -50,7 +51,12 @@ export default function ExplorerPanel() {
     scope?.kind === "single-chapter" ? scope.chapterId : null;
 
   const handleSelectChapter = (chapterId: string) => {
+    // chapter를 먼저 찾고 없으면 early return — 부분적으로 깨진 상태 방지 (M12 수정)
+    const chapter = items.find((c) => c.id === chapterId);
+    if (!chapter) return;
+
     setScope({ kind: "single-chapter", chapterId });
+    setCurrent(chapter);
   };
 
   return (

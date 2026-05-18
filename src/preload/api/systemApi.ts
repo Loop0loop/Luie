@@ -106,6 +106,33 @@ export function createSystemApi({
           IPC_CHANNELS.SETTINGS_SET_WINDOW_BOUNDS,
           bounds,
         ),
+      getLlmModels: () =>
+        safeInvokeCore(
+          "settings.getLlmModels",
+          IPC_CHANNELS.SETTINGS_GET_LLM_MODELS,
+        ),
+      setLlmDefaultModel: (input) =>
+        safeInvokeCore(
+          "settings.setLlmDefaultModel",
+          IPC_CHANNELS.SETTINGS_SET_LLM_DEFAULT_MODEL,
+          input,
+        ),
+      downloadDefaultLlmModel: () =>
+        safeInvokeCore(
+          "settings.downloadDefaultLlmModel",
+          IPC_CHANNELS.SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL,
+        ),
+      getLlmDownloadStatus: () =>
+        safeInvokeCore(
+          "settings.getLlmDownloadStatus",
+          IPC_CHANNELS.SETTINGS_GET_LLM_DOWNLOAD_STATUS,
+        ),
+      setHuggingFaceToken: (input) =>
+        safeInvokeCore(
+          "settings.setHuggingFaceToken",
+          IPC_CHANNELS.SETTINGS_SET_HF_TOKEN,
+          input,
+        ),
       reset: () => safeInvoke(IPC_CHANNELS.SETTINGS_RESET),
     },
     recovery: {

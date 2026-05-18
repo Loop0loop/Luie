@@ -25,6 +25,7 @@ import type {
   CanvasMode,
   CanvasScope,
   CanvasSelection,
+  CanvasType,
   CanvasViewport,
 } from "../types/canvas.types";
 
@@ -82,6 +83,9 @@ const isCanvasActivityPanel = (value: unknown): value is CanvasActivityPanel =>
   typeof value === "string" &&
   ALL_ACTIVITY_PANELS.includes(value as CanvasActivityPanel);
 
+const isCanvasType = (value: unknown): value is CanvasType =>
+  value === "dynamic" || value === "static";
+
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
 
@@ -120,11 +124,12 @@ const sanitizeViewport = (input: unknown): CanvasViewport => {
 
 const sanitizePersistedState = (
   input: unknown,
-): Partial<CanvasViewState> => {
+): Partial<CanvasViewPersistedState> => {
   if (!isRecord(input)) return {};
 
-  const next: Partial<CanvasViewState> = {};
+  const next: Partial<CanvasViewPersistedState> = {};
 
+  if (isCanvasType(input.canvasType)) next.canvasType = input.canvasType;
   if (isCanvasMode(input.mode)) next.mode = input.mode;
 
   const scope = sanitizePersistedScope(input.scope);
@@ -171,9 +176,29 @@ const createNoopStorage = (): StateStorage => ({
   removeItem: () => undefined,
 });
 
+/* ─────────────────────────────────────────── persisted state shape
+ * 이 타입이 partialize 반환값과 sanitizePersistedState 반환값의
+ * 단일 진실 공급원입니다. 새 persist 필드 추가 시 반드시 여기에 먼저 추가하세요.
+ */
+type CanvasViewPersistedState = {
+  canvasType: CanvasType;
+  mode: CanvasMode;
+  scope: CanvasScope | null;
+  layers: CanvasLayer[];
+  focuses: string[];
+  viewport: CanvasViewport;
+  lastPreset: string | null;
+  activePanel: CanvasActivityPanel;
+  isActivityCollapsed: boolean;
+  isBinderCollapsed: boolean;
+};
+
 /* ─────────────────────────────────────────── state shape */
 
 export interface CanvasViewState {
+  /* canvas type ─── */
+  canvasType: CanvasType;
+
   /* viewport ─────── */
   mode: CanvasMode;
   scope: CanvasScope | null;
@@ -189,6 +214,7 @@ export interface CanvasViewState {
   isBinderCollapsed: boolean;
 
   /* actions: viewport */
+  setCanvasType: (type: CanvasType) => void;
   setMode: (mode: CanvasMode) => void;
   setScope: (scope: CanvasScope | null) => void;
   toggleLayer: (layer: CanvasLayer) => void;
@@ -213,6 +239,7 @@ export interface CanvasViewState {
 export const useCanvasViewStore = create<CanvasViewState>()(
   persist(
     (set) => ({
+      canvasType: "dynamic" as CanvasType,
       mode: "flow-map",
       scope: null,
       layers: [...DEFAULT_LAYERS],
@@ -226,6 +253,7 @@ export const useCanvasViewStore = create<CanvasViewState>()(
       isBinderCollapsed: false,
 
       setMode: (mode) => set({ mode }),
+      setCanvasType: (canvasType) => set({ canvasType }),
       setScope: (scope) => set({ scope }),
       toggleLayer: (layer) =>
         set((state) => ({
@@ -295,7 +323,8 @@ export const useCanvasViewStore = create<CanvasViewState>()(
         ...sanitizePersistedState(persistedState),
       }),
       onRehydrateStorage: () => () => undefined,
-      partialize: (state) => ({
+      partialize: (state): CanvasViewPersistedState => ({
+        canvasType: state.canvasType,
         mode: state.mode,
         scope: state.scope,
         layers: state.layers,

@@ -7,6 +7,7 @@ import { useSettingsMenuBar } from "./useSettingsMenuBar";
 import { useSettingsRecovery } from "./useSettingsRecovery";
 import { useSettingsShortcuts } from "./useSettingsShortcuts";
 import { useSettingsSync } from "./useSettingsSync";
+import { useSettingsModel } from "./useSettingsModel";
 
 export function useSettingsManager() {
   const { t, i18n } = useTranslation();
@@ -18,6 +19,7 @@ export function useSettingsManager() {
   const shortcutSettings = useSettingsShortcuts(activeTab, t, showToast);
   const recoverySettings = useSettingsRecovery(activeTab, t, showToast);
   const syncSettings = useSettingsSync(activeTab, t, showToast);
+  const modelSettings = useSettingsModel(activeTab, showToast);
 
   return {
     t,
@@ -29,5 +31,6 @@ export function useSettingsManager() {
     ...shortcutSettings,
     ...recoverySettings,
     ...syncSettings,
+    ...modelSettings,
   };
 }
