@@ -38,16 +38,6 @@
       기능 명세서 구현 및 PRD 작성<br/>
       .luie package 및 프로젝트 구조 설계
     </td>
-    <td width="250" align="center">
-      <img src="./assets/portfolio/teams/yujin.png" width="180"/><br/><br/>
-      <strong>
-        <a href="https://github.com/yujinverse">김유진</a>
-      </strong><br/><br/>
-      랜딩 페이지 제작<br/>
-      디자인 및 UI/UX 설계<br/>
-      계획 및 회고 정리
-    </td>
-  </tr>
 </table>
 
 # 프로젝트 소개
