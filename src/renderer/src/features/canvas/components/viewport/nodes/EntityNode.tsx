@@ -3,29 +3,22 @@
  *
  * Visual: Obsidian-style card.
  *   - Left colour strip (kind colour from CANVAS_NODE_KIND_COLOUR)
- *   - Kind badge + label
+ *   - Kind badge (i18n) + label
  *   - Handles on all four sides (visually hidden until hover)
  */
 
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "reactflow";
+import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
 import { CANVAS_NODE_KIND_COLOUR } from "../../../types";
 import type { RFEntityNodeData } from "../../../types/reactFlow.types";
-
-const KIND_LABEL: Record<RFEntityNodeData["kind"], string> = {
-  chapter: "챕터",
-  character: "캐릭터",
-  event: "사건",
-  faction: "세력",
-  term: "용어",
-  "world-entity": "세계",
-};
 
 const HANDLE_CLASS =
   "h-2! w-2! border-border! bg-surface! opacity-0 transition-opacity hover:opacity-100";
 
 function EntityNodeInner({ data }: NodeProps<RFEntityNodeData>) {
+  const { t } = useTranslation();
   const colour = CANVAS_NODE_KIND_COLOUR[data.kind];
 
   return (
@@ -53,7 +46,7 @@ function EntityNodeInner({ data }: NodeProps<RFEntityNodeData>) {
             className="mb-0.5 text-[9px] font-semibold uppercase tracking-widest"
             style={{ color: colour }}
           >
-            {KIND_LABEL[data.kind]}
+            {t(`canvas.node.kind.${data.kind}`)}
           </span>
           <span
             className={cn(

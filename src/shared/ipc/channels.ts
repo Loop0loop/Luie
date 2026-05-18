@@ -27,6 +27,40 @@ export const IPC_CHANNELS = {
   CHAPTER_PURGE: "chapter:purge",
   CHAPTER_REORDER: "chapter:reorder",
 
+  // Scene Channels
+  SCENE_CREATE: "scene:create",
+  SCENE_GET: "scene:get",
+  SCENE_GET_ALL: "scene:get-all",
+  SCENE_UPDATE: "scene:update",
+  SCENE_DELETE: "scene:delete",
+
+  // Note Channels
+  NOTE_CREATE: "note:create",
+  NOTE_GET: "note:get",
+  NOTE_GET_ALL: "note:get-all",
+  NOTE_UPDATE: "note:update",
+  NOTE_DELETE: "note:delete",
+
+  // Synopsis Channels
+  SYNOPSIS_CREATE: "synopsis:create",
+  SYNOPSIS_GET: "synopsis:get",
+  SYNOPSIS_GET_ALL: "synopsis:get-all",
+  SYNOPSIS_UPDATE: "synopsis:update",
+  SYNOPSIS_DELETE: "synopsis:delete",
+
+  // Plot Channels
+  PLOT_CREATE: "plot:create",
+  PLOT_GET: "plot:get",
+  PLOT_GET_ALL: "plot:get-all",
+  PLOT_UPDATE: "plot:update",
+  PLOT_DELETE: "plot:delete",
+
+  // Scrap memo channels
+  SCRAP_MEMO_CREATE: "scrap-memo:create",
+  SCRAP_MEMO_GET_ALL: "scrap-memo:get-all",
+  SCRAP_MEMO_UPDATE: "scrap-memo:update",
+  SCRAP_MEMO_DELETE: "scrap-memo:delete",
+
   // Character Channels
   CHARACTER_CREATE: "character:create",
   CHARACTER_GET: "character:get",

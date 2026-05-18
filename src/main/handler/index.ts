@@ -2,6 +2,11 @@ import { createLogger } from "../../shared/logger/index.js";
 import {
   chapterService,
   characterService,
+  sceneService,
+  noteService,
+  synopsisService,
+  plotService,
+  scrapMemoService,
   eventService,
   factionService,
   projectService,
@@ -40,6 +45,11 @@ export async function registerAllIPCHandlers(): Promise<void> {
   registerWorldHandlers({
     logger,
     characterService,
+    sceneService,
+    noteService,
+    synopsisService,
+    plotService,
+    scrapMemoService,
     termService,
     eventService,
     factionService,

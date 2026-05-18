@@ -68,6 +68,9 @@ const CanvasActivityShell = lazy(
 const CanvasPane = lazy(
   () => import("@renderer/features/canvas/components/CanvasPane"),
 );
+const CanvasInspectorPanel = lazy(
+  () => import("@renderer/features/canvas/components/binder/CanvasInspectorPanel"),
+);
 const ContextPanel = lazy(
   () => import("@renderer/features/workspace/components/panels/ContextPanel"),
 );
@@ -487,10 +490,14 @@ export default function EditorRoot() {
             }
             contextPanel={
               <Suspense fallback={null}>
-                <ContextPanel
-                  activeTab={contextTab}
-                  onTabChange={setContextTab}
-                />
+                {mainViewType === "canvas" ? (
+                  <CanvasInspectorPanel />
+                ) : (
+                  <ContextPanel
+                    activeTab={contextTab}
+                    onTabChange={setContextTab}
+                  />
+                )}
               </Suspense>
             }
             isCanvasMode={mainViewType === "canvas"}

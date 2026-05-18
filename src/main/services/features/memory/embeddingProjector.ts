@@ -4,6 +4,7 @@ import { db } from "../../../database/index.js";
 import { memoryBuildJob, memoryChunk, memoryEmbedding } from "../../../database/schema.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import { resolveModelRuntimeClient } from "../../llm/modelRuntimeFactory.js";
+import { MEMORY_JOB_TYPES, MEMORY_TARGET_TYPES } from "./memoryJobConstants.js";
 
 const logger = createLogger("EmbeddingProjector");
 const MAX_ATTEMPTS = 3;
@@ -36,9 +37,9 @@ export class EmbeddingProjector {
       .where(
         and(
           eq(memoryBuildJob.projectId, input.projectId),
-          eq(memoryBuildJob.jobType, "rebuild_embedding"),
+          eq(memoryBuildJob.jobType, MEMORY_JOB_TYPES.REBUILD_EMBEDDING),
           inArray(memoryBuildJob.status, ["pending", "failed"]),
-          eq(memoryBuildJob.targetType, "chapter"),
+          eq(memoryBuildJob.targetType, MEMORY_TARGET_TYPES.CHAPTER),
         ),
       )
       .orderBy(asc(memoryBuildJob.priority), asc(memoryBuildJob.createdAt))
@@ -49,30 +50,20 @@ export class EmbeddingProjector {
 
     const runtime = await resolveModelRuntimeClient(input.projectId);
     const runtimeAvailable = await runtime.isAvailable();
-    const now = new Date().toISOString();
+    if (!runtimeAvailable) {
+      // Keep jobs pending so they can be processed when a model becomes available.
+      return { queued: jobs.length, processed: 0 };
+    }
     let processed = 0;
 
     for (const job of jobs) {
+      const now = new Date().toISOString();
       await client
         .update(memoryBuildJob)
         .set({ status: "running", updatedAt: now })
         .where(eq(memoryBuildJob.id, job.id));
 
       try {
-        if (!runtimeAvailable) {
-          await client
-            .update(memoryBuildJob)
-            .set({
-              status: "completed",
-              attempts: job.attempts + 1,
-              error: null,
-              updatedAt: now,
-            })
-            .where(eq(memoryBuildJob.id, job.id));
-          processed += 1;
-          continue;
-        }
-
         const chunkRows = await client
           .select({
             chunkId: memoryChunk.id,
@@ -85,7 +76,7 @@ export class EmbeddingProjector {
           .where(
             and(
               eq(memoryChunk.projectId, input.projectId),
-              eq(memoryChunk.sourceType, "chapter"),
+              eq(memoryChunk.sourceType, MEMORY_TARGET_TYPES.CHAPTER),
               eq(memoryChunk.sourceId, job.targetId),
             ),
           )
@@ -95,13 +86,10 @@ export class EmbeddingProjector {
           await client
             .update(memoryBuildJob)
             .set({
-              status: "completed",
-              attempts: job.attempts + 1,
-              error: null,
+              status: "pending",
               updatedAt: now,
             })
             .where(eq(memoryBuildJob.id, job.id));
-          processed += 1;
           continue;
         }
 
@@ -199,7 +187,7 @@ export class EmbeddingProjector {
       .where(
         and(
           eq(memoryBuildJob.projectId, projectId),
-          eq(memoryBuildJob.jobType, "rebuild_embedding"),
+          eq(memoryBuildJob.jobType, MEMORY_JOB_TYPES.REBUILD_EMBEDDING),
         ),
       )
       .groupBy(memoryBuildJob.status);

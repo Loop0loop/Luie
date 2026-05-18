@@ -4,6 +4,7 @@
 
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "reactflow";
+import { useTranslation } from "react-i18next";
 import { Clock } from "lucide-react";
 import { cn } from "@shared/types/utils";
 import type { RFTimelineNodeData } from "../../../types/reactFlow.types";
@@ -12,6 +13,7 @@ const HANDLE_CLASS =
   "h-2! w-2! border-border! bg-surface! opacity-0 transition-opacity hover:opacity-100";
 
 function TimelineNodeInner({ data }: NodeProps<RFTimelineNodeData>) {
+  const { t } = useTranslation();
   const tint = data.color ?? "var(--accent-bg)";
 
   return (
@@ -33,11 +35,11 @@ function TimelineNodeInner({ data }: NodeProps<RFTimelineNodeData>) {
           <Clock className="h-3 w-3 text-white" />
         </div>
         <span className="truncate text-[12px] font-medium text-fg">
-          {data.content || "타임라인"}
+          {data.content || t("canvas.node.fallbackTimeline")}
         </span>
         {data.isHeld && (
           <span className="ml-auto shrink-0 text-[9px] uppercase tracking-wider text-muted">
-            보류
+            {t("canvas.node.held")}
           </span>
         )}
       </div>

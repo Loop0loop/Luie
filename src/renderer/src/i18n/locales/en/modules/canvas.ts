@@ -77,6 +77,38 @@ export const enCanvas = {
     error: "Could not load the canvas.",
     stale: "Source changed — refresh required.",
   },
+  inspector: {
+    emptyTitle: "Select a node",
+    emptyDescription: "Click a node on the canvas to see its details.",
+  },
+  memory: {
+    status: "Status",
+    recent: "Recent",
+    conflicts: "Conflicts",
+    unlinked: "Unlinked",
+  },
+  search: {
+    placeholder: "Search...",
+    scope: "Scope",
+    results: "Results",
+  },
+  node: {
+    kind: {
+      chapter: "Chapter",
+      character: "Character",
+      event: "Event",
+      faction: "Faction",
+      term: "Term",
+      "world-entity": "World Entity",
+    },
+    deselect: "Deselect",
+    description: "Description",
+    connections: "Connections",
+    fallbackTitle: "Untitled",
+    fallbackMemo: "Memo",
+    fallbackTimeline: "Timeline",
+    held: "Held",
+  },
   toolbar: {
     fitView: "Fit view",
     zoomIn: "Zoom in",

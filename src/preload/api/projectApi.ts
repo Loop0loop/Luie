@@ -10,6 +10,11 @@ export function createProjectApi({
   RendererApi,
   | "project"
   | "chapter"
+  | "scene"
+  | "note"
+  | "synopsis"
+  | "plot"
+  | "scrapMemo"
   | "character"
   | "event"
   | "faction"
@@ -89,6 +94,40 @@ export function createProjectApi({
       purge: (id) => safeInvoke(IPC_CHANNELS.CHAPTER_PURGE, id),
       reorder: (projectId, chapterIds) =>
         safeInvoke(IPC_CHANNELS.CHAPTER_REORDER, projectId, chapterIds),
+    },
+    scene: {
+      create: (input) => safeInvoke(IPC_CHANNELS.SCENE_CREATE, input),
+      get: (id) => safeInvoke(IPC_CHANNELS.SCENE_GET, id),
+      getAll: (projectId) => safeInvoke(IPC_CHANNELS.SCENE_GET_ALL, projectId),
+      update: (input) => safeInvoke(IPC_CHANNELS.SCENE_UPDATE, input),
+      delete: (id) => safeInvoke(IPC_CHANNELS.SCENE_DELETE, id),
+    },
+    note: {
+      create: (input) => safeInvoke(IPC_CHANNELS.NOTE_CREATE, input),
+      get: (id) => safeInvoke(IPC_CHANNELS.NOTE_GET, id),
+      getAll: (projectId) => safeInvoke(IPC_CHANNELS.NOTE_GET_ALL, projectId),
+      update: (input) => safeInvoke(IPC_CHANNELS.NOTE_UPDATE, input),
+      delete: (id) => safeInvoke(IPC_CHANNELS.NOTE_DELETE, id),
+    },
+    synopsis: {
+      create: (input) => safeInvoke(IPC_CHANNELS.SYNOPSIS_CREATE, input),
+      get: (id) => safeInvoke(IPC_CHANNELS.SYNOPSIS_GET, id),
+      getAll: (projectId) => safeInvoke(IPC_CHANNELS.SYNOPSIS_GET_ALL, projectId),
+      update: (input) => safeInvoke(IPC_CHANNELS.SYNOPSIS_UPDATE, input),
+      delete: (id) => safeInvoke(IPC_CHANNELS.SYNOPSIS_DELETE, id),
+    },
+    plot: {
+      create: (input) => safeInvoke(IPC_CHANNELS.PLOT_CREATE, input),
+      get: (id) => safeInvoke(IPC_CHANNELS.PLOT_GET, id),
+      getAll: (projectId) => safeInvoke(IPC_CHANNELS.PLOT_GET_ALL, projectId),
+      update: (input) => safeInvoke(IPC_CHANNELS.PLOT_UPDATE, input),
+      delete: (id) => safeInvoke(IPC_CHANNELS.PLOT_DELETE, id),
+    },
+    scrapMemo: {
+      create: (input) => safeInvoke(IPC_CHANNELS.SCRAP_MEMO_CREATE, input),
+      getAll: (projectId) => safeInvoke(IPC_CHANNELS.SCRAP_MEMO_GET_ALL, projectId),
+      update: (input) => safeInvoke(IPC_CHANNELS.SCRAP_MEMO_UPDATE, input),
+      delete: (id) => safeInvoke(IPC_CHANNELS.SCRAP_MEMO_DELETE, id),
     },
     character: {
       create: (input) => safeInvoke(IPC_CHANNELS.CHARACTER_CREATE, input),

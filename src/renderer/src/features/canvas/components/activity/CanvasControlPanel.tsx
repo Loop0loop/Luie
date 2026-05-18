@@ -21,6 +21,7 @@ import {
   PanelHeader,
   PanelBody,
   PanelSection,
+  ToggleChip,
 } from "./shared";
 
 /* ─── mode meta ─────────────────────────────────────────────────────────── */
@@ -30,7 +31,7 @@ const ALL_MODES: CanvasMode[] = [
   "scene-board",
   "timeline",
   "character-map",
-  "memory-map",
+  "memory-map", 
 ];
 
 const MODE_I18N: Record<CanvasMode, string> = {
@@ -187,24 +188,12 @@ export default function CanvasControlPanel() {
           {ALL_RANGES.map((range) => {
             const isActive = currentRange === range;
             return (
-              <label
+              <ToggleChip
                 key={range}
-                className={cn(
-                  "flex items-center gap-2.5 px-4 py-1.5 pl-9 text-[13px] cursor-pointer transition-all",
-                  isActive
-                    ? "text-fg font-medium"
-                    : "text-muted hover:text-fg hover:bg-surface-hover",
-                )}
-              >
-                <input
-                  type="radio"
-                  name="canvas-range"
-                  checked={isActive}
-                  onChange={() => handleRangeChange(range)}
-                  className="accent-accent"
-                />
-                <span className="truncate">{t(RANGE_I18N[range])}</span>
-              </label>
+                label={t(RANGE_I18N[range])}
+                checked={isActive}
+                onChange={() => handleRangeChange(range)}
+              />
             );
           })}
         </PanelSection>
@@ -214,23 +203,12 @@ export default function CanvasControlPanel() {
           {ALL_LAYERS.map((layer) => {
             const isChecked = layers.includes(layer);
             return (
-              <label
+              <ToggleChip
                 key={layer}
-                className={cn(
-                  "flex items-center gap-2.5 px-4 py-1.5 pl-9 text-[13px] cursor-pointer transition-all",
-                  isChecked
-                    ? "text-fg"
-                    : "text-muted hover:text-fg hover:bg-surface-hover",
-                )}
-              >
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={() => toggleLayer(layer)}
-                  className="accent-accent"
-                />
-                <span className="truncate">{t(LAYER_I18N[layer])}</span>
-              </label>
+                label={t(LAYER_I18N[layer])}
+                checked={isChecked}
+                onChange={() => toggleLayer(layer)}
+              />
             );
           })}
         </PanelSection>

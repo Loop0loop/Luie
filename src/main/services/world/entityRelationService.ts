@@ -31,6 +31,11 @@ import {
     term,
     worldEntity,
     project,
+    scene,
+    note,
+    synopsis,
+    plot,
+    scrapMemo,
 } from "../../database/schema.js";
 
 const logger = createLogger("EntityRelationService");
@@ -264,12 +269,17 @@ export class EntityRelationService {
     async getWorldGraph(projectId: string): Promise<WorldGraphData> {
         try {
             const client = await this.getClient();
-            const [characters, factions, events, terms, worldEntities, edges] = await Promise.all([
+            const [characters, factions, events, terms, worldEntities, scenes, notes, synopses, plots, scraps, edges] = await Promise.all([
                 client.select().from(character).where(and(eq(character.projectId, projectId), isNull(character.deletedAt))),
                 client.select().from(faction).where(and(eq(faction.projectId, projectId), isNull(faction.deletedAt))),
                 client.select().from(event).where(and(eq(event.projectId, projectId), isNull(event.deletedAt))),
                 client.select().from(term).where(and(eq(term.projectId, projectId), isNull(term.deletedAt))),
                 client.select().from(worldEntity).where(eq(worldEntity.projectId, projectId)),
+                client.select().from(scene).where(eq(scene.projectId, projectId)),
+                client.select().from(note).where(eq(note.projectId, projectId)),
+                client.select().from(synopsis).where(eq(synopsis.projectId, projectId)),
+                client.select().from(plot).where(eq(plot.projectId, projectId)),
+                client.select().from(scrapMemo).where(eq(scrapMemo.projectId, projectId)),
                 client.select().from(entityRelation).where(eq(entityRelation.projectId, projectId)),
             ]);
 
@@ -324,6 +334,71 @@ export class EntityRelationService {
                     attributes: parseAttributes(w.attributes),
                     positionX: w.positionX ?? 0,
                     positionY: w.positionY ?? 0,
+                })),
+                ...scenes.map((item): WorldGraphNode => ({
+                    id: `scene:${item.id}`,
+                    entityType: "WorldEntity",
+                    subType: "Concept",
+                    name: `Scene · ${item.title}`,
+                    description: item.body?.slice(0, 240) ?? null,
+                    firstAppearance: null,
+                    attributes: { sourceType: "scene", sourceId: item.id, chapterId: item.chapterId },
+                    positionX: 0,
+                    positionY: 0,
+                })),
+                ...notes.map((item): WorldGraphNode => ({
+                    id: `note:${item.id}`,
+                    entityType: "WorldEntity",
+                    subType: "Concept",
+                    name: `Note · ${item.title}`,
+                    description: item.body?.slice(0, 240) ?? null,
+                    firstAppearance: null,
+                    attributes: { sourceType: "note", sourceId: item.id, chapterId: item.chapterId ?? null },
+                    positionX: 0,
+                    positionY: 0,
+                })),
+                ...synopses.map((item): WorldGraphNode => ({
+                    id: `synopsis:${item.id}`,
+                    entityType: "WorldEntity",
+                    subType: "Rule",
+                    name: `Synopsis · ${item.title}`,
+                    description: item.body?.slice(0, 240) ?? null,
+                    firstAppearance: null,
+                    attributes: { sourceType: "synopsis", sourceId: item.id, chapterId: item.chapterId ?? null },
+                    positionX: 0,
+                    positionY: 0,
+                })),
+                ...plots.map((item): WorldGraphNode => ({
+                    id: `plot:${item.id}`,
+                    entityType: "WorldEntity",
+                    subType: "Rule",
+                    name: `Plot · ${item.title}`,
+                    description: item.body?.slice(0, 240) ?? null,
+                    firstAppearance: null,
+                    attributes: { sourceType: "plot", sourceId: item.id },
+                    positionX: 0,
+                    positionY: 0,
+                })),
+                ...scraps.map((item): WorldGraphNode => ({
+                    id: `scrap:${item.id}`,
+                    entityType: "WorldEntity",
+                    subType: "Item",
+                    name: `Scrap · ${item.title}`,
+                    description: item.content?.slice(0, 240) ?? null,
+                    firstAppearance: null,
+                    attributes: {
+                        sourceType: "scrapMemo",
+                        sourceId: item.id,
+                        tags: (() => {
+                            try {
+                                return JSON.parse(item.tags ?? "[]") as string[];
+                            } catch {
+                                return [];
+                            }
+                        })(),
+                    },
+                    positionX: 0,
+                    positionY: 0,
                 })),
             ];
 

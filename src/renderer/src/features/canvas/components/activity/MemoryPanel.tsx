@@ -1,8 +1,7 @@
 /**
  * MemoryPanel — Status / Recent / Conflicts / Unlinked UI shell.
  *
- * P4: layout + section structure only. Data wiring deferred to the memory
- * engine feature (separate implementation milestone).
+ * 데이터 연결은 memory 엔진 구현 단계에서 진행합니다.
  */
 import { useTranslation } from "react-i18next";
 import {
@@ -19,16 +18,16 @@ export default function MemoryPanel() {
     <PanelRoot>
       <PanelHeader title={t("canvas.activity.memory")} />
       <PanelBody>
-        <PanelSection title="STATUS">
+        <PanelSection title={t("canvas.memory.status")}>
           <PanelEmpty message={t("canvas.status.empty")} />
         </PanelSection>
-        <PanelSection title="RECENT" defaultOpen={false}>
+        <PanelSection title={t("canvas.memory.recent")} defaultOpen={false}>
           <PanelEmpty message={t("canvas.status.empty")} />
         </PanelSection>
-        <PanelSection title="CONFLICTS" defaultOpen={false}>
+        <PanelSection title={t("canvas.memory.conflicts")} defaultOpen={false}>
           <PanelEmpty message={t("canvas.status.empty")} />
         </PanelSection>
-        <PanelSection title="UNLINKED" defaultOpen={false}>
+        <PanelSection title={t("canvas.memory.unlinked")} defaultOpen={false}>
           <PanelEmpty message={t("canvas.status.empty")} />
         </PanelSection>
       </PanelBody>

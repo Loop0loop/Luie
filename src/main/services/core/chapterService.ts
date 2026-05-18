@@ -24,6 +24,11 @@ import { ServiceError } from "../../utils/serviceError.js";
 import { trackKeywordAppearances } from "./chapterKeywords.js";
 import { sanitizeName } from "../../../shared/utils/sanitize.js";
 import { isTestEnv } from "../../utils/environment.js";
+import {
+  MEMORY_JOB_PRIORITY,
+  MEMORY_JOB_TYPES,
+  MEMORY_TARGET_TYPES,
+} from "../features/memory/memoryJobConstants.js";
 
 const {
   chapter,
@@ -125,7 +130,7 @@ export class ChapterService {
     const pendingSearchRows = await store.all<{ id: string }>(
       sql`SELECT "id" FROM "SearchDirtyQueue"
           WHERE "projectId" = ${input.projectId}
-            AND "sourceType" = 'chapter'
+            AND "sourceType" = ${MEMORY_TARGET_TYPES.CHAPTER}
             AND "sourceId" = ${input.chapterId}
             AND "status" IN ('pending', 'running')
           ORDER BY "updatedAt" DESC
@@ -148,9 +153,9 @@ export class ChapterService {
     const pendingMemoryRows = await store.all<{ id: string }>(
       sql`SELECT "id" FROM "MemoryBuildJob"
           WHERE "projectId" = ${input.projectId}
-            AND "targetType" = 'chapter'
+            AND "targetType" = ${MEMORY_TARGET_TYPES.CHAPTER}
             AND "targetId" = ${input.chapterId}
-            AND "jobType" = 'rebuild_chunks'
+            AND "jobType" = ${MEMORY_JOB_TYPES.REBUILD_CHUNKS}
             AND "status" IN ('pending', 'running')
           ORDER BY "updatedAt" DESC
           LIMIT 1;`,
@@ -158,23 +163,23 @@ export class ChapterService {
     if (pendingMemoryRows.length > 0) {
       await store.run(
         sql`UPDATE "MemoryBuildJob"
-            SET "priority" = 100,
+            SET "priority" = ${MEMORY_JOB_PRIORITY.CHUNKS},
                 "updatedAt" = ${now}
             WHERE "id" = ${pendingMemoryRows[0].id};`,
       );
     } else {
       await store.run(
         sql`INSERT INTO "MemoryBuildJob" ("id","projectId","targetType","targetId","jobType","status","priority","attempts","createdAt","updatedAt")
-            VALUES (${crypto.randomUUID()}, ${input.projectId}, 'chapter', ${input.chapterId}, 'rebuild_chunks', 'pending', 100, 0, ${now}, ${now});`,
+            VALUES (${crypto.randomUUID()}, ${input.projectId}, ${MEMORY_TARGET_TYPES.CHAPTER}, ${input.chapterId}, ${MEMORY_JOB_TYPES.REBUILD_CHUNKS}, 'pending', ${MEMORY_JOB_PRIORITY.CHUNKS}, 0, ${now}, ${now});`,
       );
     }
 
     const pendingSummaryRows = await store.all<{ id: string }>(
       sql`SELECT "id" FROM "MemoryBuildJob"
           WHERE "projectId" = ${input.projectId}
-            AND "targetType" = 'chapter'
+            AND "targetType" = ${MEMORY_TARGET_TYPES.CHAPTER}
             AND "targetId" = ${input.chapterId}
-            AND "jobType" = 'rebuild_summary'
+            AND "jobType" = ${MEMORY_JOB_TYPES.REBUILD_SUMMARY}
             AND "status" IN ('pending', 'running')
           ORDER BY "updatedAt" DESC
           LIMIT 1;`,
@@ -182,23 +187,23 @@ export class ChapterService {
     if (pendingSummaryRows.length > 0) {
       await store.run(
         sql`UPDATE "MemoryBuildJob"
-            SET "priority" = 90,
+            SET "priority" = ${MEMORY_JOB_PRIORITY.SUMMARY},
                 "updatedAt" = ${now}
             WHERE "id" = ${pendingSummaryRows[0].id};`,
       );
     } else {
       await store.run(
         sql`INSERT INTO "MemoryBuildJob" ("id","projectId","targetType","targetId","jobType","status","priority","attempts","createdAt","updatedAt")
-            VALUES (${crypto.randomUUID()}, ${input.projectId}, 'chapter', ${input.chapterId}, 'rebuild_summary', 'pending', 90, 0, ${now}, ${now});`,
+            VALUES (${crypto.randomUUID()}, ${input.projectId}, ${MEMORY_TARGET_TYPES.CHAPTER}, ${input.chapterId}, ${MEMORY_JOB_TYPES.REBUILD_SUMMARY}, 'pending', ${MEMORY_JOB_PRIORITY.SUMMARY}, 0, ${now}, ${now});`,
       );
     }
 
     const pendingEmbeddingRows = await store.all<{ id: string }>(
       sql`SELECT "id" FROM "MemoryBuildJob"
           WHERE "projectId" = ${input.projectId}
-            AND "targetType" = 'chapter'
+            AND "targetType" = ${MEMORY_TARGET_TYPES.CHAPTER}
             AND "targetId" = ${input.chapterId}
-            AND "jobType" = 'rebuild_embedding'
+            AND "jobType" = ${MEMORY_JOB_TYPES.REBUILD_EMBEDDING}
             AND "status" IN ('pending', 'running')
           ORDER BY "updatedAt" DESC
           LIMIT 1;`,
@@ -206,14 +211,14 @@ export class ChapterService {
     if (pendingEmbeddingRows.length > 0) {
       await store.run(
         sql`UPDATE "MemoryBuildJob"
-            SET "priority" = 80,
+            SET "priority" = ${MEMORY_JOB_PRIORITY.EMBEDDING},
                 "updatedAt" = ${now}
             WHERE "id" = ${pendingEmbeddingRows[0].id};`,
       );
     } else {
       await store.run(
         sql`INSERT INTO "MemoryBuildJob" ("id","projectId","targetType","targetId","jobType","status","priority","attempts","createdAt","updatedAt")
-            VALUES (${crypto.randomUUID()}, ${input.projectId}, 'chapter', ${input.chapterId}, 'rebuild_embedding', 'pending', 80, 0, ${now}, ${now});`,
+            VALUES (${crypto.randomUUID()}, ${input.projectId}, ${MEMORY_TARGET_TYPES.CHAPTER}, ${input.chapterId}, ${MEMORY_JOB_TYPES.REBUILD_EMBEDDING}, 'pending', ${MEMORY_JOB_PRIORITY.EMBEDDING}, 0, ${now}, ${now});`,
       );
     }
   }

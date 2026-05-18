@@ -5,6 +5,7 @@
 
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "reactflow";
+import { useTranslation } from "react-i18next";
 import { StickyNote } from "lucide-react";
 import type { RFMemoNodeData } from "../../../types/reactFlow.types";
 
@@ -12,6 +13,7 @@ const HANDLE_CLASS =
   "h-2! w-2! border-border! bg-surface! opacity-0 transition-opacity hover:opacity-100";
 
 function MemoNodeInner({ data }: NodeProps<RFMemoNodeData>) {
+  const { t } = useTranslation();
   const tint = data.color ?? "var(--bg-panel)";
 
   return (
@@ -26,7 +28,7 @@ function MemoNodeInner({ data }: NodeProps<RFMemoNodeData>) {
         <header className="flex items-center gap-1.5 border-b border-border/40 px-2.5 py-1.5">
           <StickyNote className="h-3 w-3 shrink-0 text-muted" aria-hidden />
           <span className="truncate text-[11px] font-semibold text-fg">
-            {data.title || "메모"}
+            {data.title || t("canvas.node.fallbackMemo")}
           </span>
         </header>
 

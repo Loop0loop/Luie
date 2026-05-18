@@ -71,7 +71,7 @@ class DatabaseService {
     });
 
     ensurePackagedSqliteSchema(context.dbPath, logger);
-    this.drizzleHandle = this.createDrizzleClient(context);
+    this.drizzleHandle = await this.createDrizzleClient(context);
 
     if (context.isPackaged) {
       try {
@@ -84,11 +84,11 @@ class DatabaseService {
     logger.info("Database service initialized");
   }
 
-  private createDrizzleClient(
+  private async createDrizzleClient(
     context: PreparedDatabaseContext,
-  ): DrizzleDatabaseHandle<MainDrizzleClient> {
+  ): Promise<DrizzleDatabaseHandle<MainDrizzleClient>> {
     const sqlite = new BetterSqliteDatabase(context.dbPath);
-    void this.tryLoadSqliteVecExtension(sqlite);
+    await this.tryLoadSqliteVecExtension(sqlite);
     sqlite.pragma("journal_mode = WAL");
     sqlite.pragma("synchronous = FULL");
     sqlite.pragma("foreign_keys = ON");

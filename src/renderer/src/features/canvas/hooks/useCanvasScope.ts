@@ -7,50 +7,52 @@
  *   - activeChapterId changes → only update scope if scope was auto-set
  *     (i.e. user hasn't manually changed range)
  *
- * Returns the resolved scope (may still be null if no chapter is active).
+ * scope는 effect deps에서 제외하고 ref로 읽습니다.
+ * scope 자체가 변경될 때 effect가 재실행되면 불필요한 순환이 발생하기 때문입니다.
  */
 import { useEffect, useRef } from "react";
-import { useShallow } from "zustand/react/shallow";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useCanvasViewStore } from "../stores";
 import type { CanvasScope } from "../types";
 
 export function useCanvasScope(): CanvasScope | null {
-  const { scope, setScope } = useCanvasViewStore(
-    useShallow((state) => ({
-      scope: state.scope,
-      setScope: state.setScope,
-    })),
-  );
+  const scope = useCanvasViewStore((state) => state.scope);
+  const setScope = useCanvasViewStore((state) => state.setScope);
 
   const activeChapterId = useChapterStore(
     (state) => state.currentItem?.id ?? null,
   );
 
-  // Track whether the current scope was auto-set (vs user-chosen).
+  // scope를 ref로 읽어 effect deps에서 제외합니다.
+  const scopeRef = useRef(scope);
+  scopeRef.current = scope;
+
+  // 자동 설정된 chapterId를 추적합니다.
   const autoSetChapterIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!activeChapterId) return;
 
-    // No scope yet → auto-set to current chapter.
-    if (!scope) {
+    const currentScope = scopeRef.current;
+
+    // scope가 없으면 현재 챕터로 자동 설정합니다.
+    if (!currentScope) {
       setScope({ kind: "single-chapter", chapterId: activeChapterId });
       autoSetChapterIdRef.current = activeChapterId;
       return;
     }
 
-    // Active chapter changed and scope was previously auto-set → follow it.
+    // 챕터가 바뀌었고 이전 scope가 자동 설정된 것이라면 따라갑니다.
     if (
       autoSetChapterIdRef.current !== null &&
       autoSetChapterIdRef.current !== activeChapterId &&
-      scope.kind === "single-chapter" &&
-      scope.chapterId === autoSetChapterIdRef.current
+      currentScope.kind === "single-chapter" &&
+      currentScope.chapterId === autoSetChapterIdRef.current
     ) {
       setScope({ kind: "single-chapter", chapterId: activeChapterId });
       autoSetChapterIdRef.current = activeChapterId;
     }
-  }, [activeChapterId, scope, setScope]);
+  }, [activeChapterId, setScope]);
 
   return scope;
 }

@@ -19,36 +19,26 @@ import ReactFlow, {
   MarkerType,
   PanOnScrollMode,
   type OnSelectionChangeParams,
-  useReactFlow,
 } from "reactflow";
 import {
   File,
   FileText,
-  HelpCircle,
   Image,
-  Maximize2,
-  Minus,
-  MoreHorizontal,
-  Redo2,
-  RotateCcw,
-  Settings,
-  Undo2,
-  ZoomIn,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import {
-  CANVAS_FIT_VIEW_PADDING,
   CANVAS_RF_EDGE_TYPE_RELATION,
   CANVAS_RF_NODE_TYPE_ENTITY,
   CANVAS_ZOOM_MAX,
   CANVAS_ZOOM_MIN,
+  CANVAS_FIT_VIEW_PADDING,
 } from "@shared/constants/canvasSizing";
-import { cn } from "@shared/types/utils";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { useCanvasViewStore } from "../../stores";
 import { buildFlowGraph } from "../../types";
 import { buildProjection } from "../../types/canvasProjectionAdapter";
+import { CanvasFloatingToolbar } from "./CanvasFloatingToolbar";
 import { RelationEdge } from "./edges/RelationEdge";
 import { EntityNode } from "./nodes/EntityNode";
 
@@ -67,116 +57,6 @@ const DEFAULT_EDGE_OPTIONS = {
 } as const;
 
 const FIT_VIEW_OPTIONS = { padding: CANVAS_FIT_VIEW_PADDING } as const;
-
-// ─── Right floating toolbar (Obsidian-style, vertical center) ────────────────
-
-const TOOLBAR_BTN_BASE =
-  "flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-hover hover:text-fg";
-
-const TOOLBAR_DIVIDER = "my-1 h-px w-4 bg-border/40";
-
-function RightToolbar() {
-  const { t } = useTranslation();
-  const { zoomIn, zoomOut, fitView, zoomTo } = useReactFlow();
-
-  return (
-    <div
-      className="pointer-events-auto absolute right-3 top-1/2 z-10 flex -translate-y-1/2 flex-col items-center gap-0.5 rounded-lg border border-border/40 bg-panel/95 p-1 shadow-panel backdrop-blur-sm"
-      data-testid="canvas-right-toolbar"
-    >
-      {/* 핸들 (드래그 그립 — 추후 위치 조정 기능용) */}
-      <div className="flex h-3 items-center justify-center" aria-hidden>
-        <MoreHorizontal className="h-3 w-3 text-muted/40" />
-      </div>
-
-      {/* 설정 */}
-      <button
-        type="button"
-        title={t("canvas.toolbar.settings")}
-        className={TOOLBAR_BTN_BASE}
-        onClick={() => undefined}
-      >
-        <Settings className="h-3.5 w-3.5" />
-      </button>
-
-      <div className={TOOLBAR_DIVIDER} aria-hidden />
-
-      {/* 줌인 */}
-      <button
-        type="button"
-        title={t("canvas.toolbar.zoomIn")}
-        className={TOOLBAR_BTN_BASE}
-        onClick={() => zoomIn({ duration: 200 })}
-      >
-        <ZoomIn className="h-3.5 w-3.5" />
-      </button>
-
-      {/* 줌 리셋 */}
-      <button
-        type="button"
-        title={t("canvas.toolbar.resetZoom")}
-        className={TOOLBAR_BTN_BASE}
-        onClick={() => zoomTo(1, { duration: 200 })}
-      >
-        <RotateCcw className="h-3.5 w-3.5" />
-      </button>
-
-      {/* 핏 뷰 */}
-      <button
-        type="button"
-        title={t("canvas.toolbar.fitView")}
-        className={TOOLBAR_BTN_BASE}
-        onClick={() =>
-          fitView({ padding: CANVAS_FIT_VIEW_PADDING, duration: 300 })
-        }
-      >
-        <Maximize2 className="h-3.5 w-3.5" />
-      </button>
-
-      {/* 줌 아웃 */}
-      <button
-        type="button"
-        title={t("canvas.toolbar.zoomOut")}
-        className={TOOLBAR_BTN_BASE}
-        onClick={() => zoomOut({ duration: 200 })}
-      >
-        <Minus className="h-3.5 w-3.5" />
-      </button>
-
-      <div className={TOOLBAR_DIVIDER} aria-hidden />
-
-      {/* Undo / Redo (UI only) */}
-      <button
-        type="button"
-        title={t("canvas.toolbar.undo")}
-        className={cn(TOOLBAR_BTN_BASE, "cursor-not-allowed opacity-40")}
-        disabled
-      >
-        <Undo2 className="h-3.5 w-3.5" />
-      </button>
-      <button
-        type="button"
-        title={t("canvas.toolbar.redo")}
-        className={cn(TOOLBAR_BTN_BASE, "cursor-not-allowed opacity-40")}
-        disabled
-      >
-        <Redo2 className="h-3.5 w-3.5" />
-      </button>
-
-      <div className={TOOLBAR_DIVIDER} aria-hidden />
-
-      {/* 도움말 */}
-      <button
-        type="button"
-        title={t("canvas.toolbar.help")}
-        className={TOOLBAR_BTN_BASE}
-        onClick={() => undefined}
-      >
-        <HelpCircle className="h-3.5 w-3.5" />
-      </button>
-    </div>
-  );
-}
 
 // ─── Bottom create toolbar (Obsidian-style, 3 slots) ─────────────────────────
 
@@ -307,7 +187,7 @@ export default function StaticCanvasViewport() {
         />
 
         {/* useReactFlow()를 쓰므로 반드시 <ReactFlow> 내부에 위치 */}
-        <RightToolbar />
+        <CanvasFloatingToolbar />
       </ReactFlow>
 
       {/* useReactFlow() 미사용이므로 외부 가능 */}

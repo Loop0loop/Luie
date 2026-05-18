@@ -56,13 +56,24 @@ export class LlamaCppProvider implements ModelRuntimeClient {
       return;
     }
     this.embeddingPromise = (async () => {
-      const dynamicImport = new Function("id", "return import(id)") as (id: string) => Promise<unknown>;
-      const mod = await dynamicImport("node-llama-cpp");
-      const getLlama = (mod as { getLlama: () => Promise<unknown> }).getLlama;
-      const llama = await getLlama();
       const embeddingModelPath = this.context.embeddingModelPath ?? this.context.modelPath;
-      const model = await (llama as { loadModel: (input: { modelPath: string }) => Promise<unknown> })
-        .loadModel({ modelPath: embeddingModelPath });
+      const isSameModel = embeddingModelPath === this.context.modelPath;
+
+      let model: unknown;
+      if (isSameModel) {
+        if (!this.context.model) {
+          await this.ensureLoaded();
+        }
+        model = this.context.model;
+      } else {
+        const dynamicImport = new Function("id", "return import(id)") as (id: string) => Promise<unknown>;
+        const mod = await dynamicImport("node-llama-cpp");
+        const getLlama = (mod as { getLlama: () => Promise<unknown> }).getLlama;
+        const llama = await getLlama();
+        model = await (llama as { loadModel: (input: { modelPath: string }) => Promise<unknown> })
+          .loadModel({ modelPath: embeddingModelPath });
+      }
+
       const embeddingContext = await (model as {
         createEmbeddingContext?: () => Promise<unknown>;
       }).createEmbeddingContext?.();

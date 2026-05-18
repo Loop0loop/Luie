@@ -32,6 +32,8 @@ interface SearchResult {
 
 export class SearchService {
   private static readonly RRF_K = 60;
+  private runtimeCache = new Map<string, { runtime: Awaited<ReturnType<typeof resolveModelRuntimeClient>>; expiresAt: number }>();
+  private static readonly RUNTIME_CACHE_TTL_MS = 30_000;
 
   private buildFtsQuery(query: string): string {
     const tokens = query.trim().split(/\s+/).filter(Boolean);
@@ -184,17 +186,15 @@ export class SearchService {
       const ftsQuery = this.buildFtsQuery(normalizedQuery);
       const ftsRows = client.all<{
         chunkId: string;
-        rank: number;
       }>(sql`
-        SELECT fts."chunkId" AS "chunkId",
-               row_number() OVER (ORDER BY bm25("MemoryChunkFts"), fts."chunkId") AS "rank"
+        SELECT fts."chunkId" AS "chunkId"
         FROM "MemoryChunkFts" fts
         WHERE fts."projectId" = ${input.projectId}
           AND "MemoryChunkFts" MATCH ${ftsQuery}
         ORDER BY bm25("MemoryChunkFts"), fts."chunkId"
         LIMIT ${Math.max(limit, 50)};
       `);
-      const runtime = await resolveModelRuntimeClient(input.projectId);
+      const runtime = await this.resolveRuntimeCached(input.projectId);
       let denseRanks: Array<{ chunkId: string; rank: number }> = [];
       const queryVectors = await runtime.embed([normalizedQuery]);
       const queryVector = queryVectors?.[0] ?? null;
@@ -202,7 +202,7 @@ export class SearchService {
         denseRanks = await this.searchByVector(input.projectId, queryVector, Math.max(limit, 50));
       }
       const merged = this.mergeWithRRF(
-        ftsRows.map((row) => ({ chunkId: row.chunkId, rank: Number(row.rank) })),
+        ftsRows.map((row, index) => ({ chunkId: row.chunkId, rank: index + 1 })),
         denseRanks,
         limit,
       );
@@ -246,6 +246,19 @@ export class SearchService {
     }
   }
 
+  private async resolveRuntimeCached(projectId: string): Promise<Awaited<ReturnType<typeof resolveModelRuntimeClient>>> {
+    const cached = this.runtimeCache.get(projectId);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.runtime;
+    }
+    const runtime = await resolveModelRuntimeClient(projectId);
+    this.runtimeCache.set(projectId, {
+      runtime,
+      expiresAt: Date.now() + SearchService.RUNTIME_CACHE_TTL_MS,
+    });
+    return runtime;
+  }
+
   private mergeWithRRF(
     ftsResults: Array<{ chunkId: string; rank: number }>,
     denseResults: Array<{ chunkId: string; rank: number }>,
@@ -279,6 +292,7 @@ export class SearchService {
         SELECT "chunkId"
         FROM "MemoryEmbedding"
         WHERE "projectId" = ${projectId}
+          AND "dimension" = ${queryVec.length}
         ORDER BY vec_distance_cosine("vec", ${queryVecBlob})
         LIMIT ${limit};
       `);

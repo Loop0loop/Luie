@@ -22,6 +22,7 @@
 
 import { lazy, Suspense } from "react";
 import { useCanvasViewStore } from "../stores";
+import { FeatureErrorBoundary } from "@renderer/shared/error-boundaries/FeatureErrorBoundary";
 import CanvasToolbar from "./viewport/CanvasToolbar";
 import CanvasStatusBar from "./viewport/CanvasStatusBar";
 import CanvasEmptyState from "./viewport/CanvasEmptyState";
@@ -71,13 +72,15 @@ export default function CanvasPane() {
       <CanvasToolbar />
 
       <div className="relative min-h-0 flex-1 overflow-hidden">
-        {isStatic ? (
-          <Suspense fallback={loadingFallback}>
-            <StaticCanvasViewport />
-          </Suspense>
-        ) : (
-          <DynamicContent />
-        )}
+        <FeatureErrorBoundary featureName="Canvas">
+          {isStatic ? (
+            <Suspense fallback={loadingFallback}>
+              <StaticCanvasViewport />
+            </Suspense>
+          ) : (
+            <DynamicContent />
+          )}
+        </FeatureErrorBoundary>
       </div>
 
       <CanvasStatusBar projection={isStatic ? null : projection} />

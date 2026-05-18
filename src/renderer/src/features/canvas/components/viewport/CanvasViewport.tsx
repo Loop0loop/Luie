@@ -1,5 +1,5 @@
 /**
- * CanvasViewport — React-Flow based canvas viewport (read-only UI/UX shell).
+ * CanvasViewport — React-Flow based canvas viewport (read-only, dynamic mode).
  *
  * Props:
  *   projection — scope/mode-filtered CanvasProjection from useCanvasProjection.
@@ -9,7 +9,7 @@
  *   - Infinite dot-grid background
  *   - Card-style entity nodes with left colour strip
  *   - Smooth bezier relation edges with optional labels
- *   - MiniMap + Controls
+ *   - Controls (좌하단) — 미니맵 없음 (Obsidian 스타일)
  *
  * Interaction (read-only — UI/UX scaffolding stage):
  *   - Pan / zoom: enabled
@@ -24,11 +24,8 @@ import { useCallback, useMemo } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
-  Controls,
   MarkerType,
-  MiniMap,
   PanOnScrollMode,
-  type Node,
   type OnSelectionChangeParams,
 } from "reactflow";
 import { useShallow } from "zustand/react/shallow";
@@ -42,10 +39,9 @@ import {
 import { useCanvasViewStore } from "../../stores";
 import {
   buildFlowGraph,
-  CANVAS_NODE_KIND_COLOUR,
-  type CanvasNodeKind,
   type CanvasProjection,
 } from "../../types";
+import { CanvasFloatingToolbar } from "./CanvasFloatingToolbar";
 import { RelationEdge } from "./edges/RelationEdge";
 import { EntityNode } from "./nodes/EntityNode";
 
@@ -64,14 +60,6 @@ const DEFAULT_EDGE_OPTIONS = {
 } as const;
 
 const FIT_VIEW_OPTIONS = { padding: CANVAS_FIT_VIEW_PADDING } as const;
-
-const FALLBACK_MINIMAP_COLOUR = "var(--bg-element)";
-
-function getMiniMapNodeColour(node: Node): string {
-  const data = node.data as { kind?: CanvasNodeKind } | undefined;
-  if (!data?.kind) return FALLBACK_MINIMAP_COLOUR;
-  return CANVAS_NODE_KIND_COLOUR[data.kind] ?? FALLBACK_MINIMAP_COLOUR;
-}
 
 // ─── props ────────────────────────────────────────────────────────────────────
 
@@ -93,7 +81,6 @@ export default function CanvasViewport({ projection }: CanvasViewportProps) {
 
   const selectedNodeId = selection.kind === "node" ? selection.id : null;
 
-  // projection is already scope-filtered — no raw graphData access needed
   const { nodes, edges } = useMemo(
     () => buildFlowGraph(projection, selectedNodeId),
     [projection, selectedNodeId],
@@ -149,17 +136,8 @@ export default function CanvasViewport({ projection }: CanvasViewportProps) {
           className="opacity-40"
         />
 
-        <Controls
-          showInteractive={false}
-          className="border-border! bg-panel! shadow-panel! [&>button]:border-border! [&>button]:bg-panel! [&>button]:text-muted! [&>button:hover]:bg-surface-hover! [&>button:hover]:text-fg!"
-        />
-
-        <MiniMap
-          nodeColor={getMiniMapNodeColour}
-          maskColor="var(--bg-canvas)"
-          className="border-border! bg-panel! shadow-panel!"
-          style={{ background: "var(--bg-panel)" }}
-        />
+        {/* useReactFlow()를 쓰므로 반드시 <ReactFlow> 내부에 위치 */}
+        <CanvasFloatingToolbar />
       </ReactFlow>
     </div>
   );

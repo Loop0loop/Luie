@@ -4,6 +4,7 @@ import { db } from "../../../database/index.js";
 import { chapter, chapterBody, chapterSummary, memoryBuildJob } from "../../../database/schema.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import { resolveModelRuntimeClient } from "../../llm/modelRuntimeFactory.js";
+import { MEMORY_JOB_TYPES, MEMORY_TARGET_TYPES } from "./memoryJobConstants.js";
 
 const logger = createLogger("ChapterSummaryProjector");
 const MAX_ATTEMPTS = 3;
@@ -54,9 +55,9 @@ export class ChapterSummaryProjector {
       .where(
         and(
           eq(memoryBuildJob.projectId, input.projectId),
-          eq(memoryBuildJob.jobType, "rebuild_summary"),
+          eq(memoryBuildJob.jobType, MEMORY_JOB_TYPES.REBUILD_SUMMARY),
           inArray(memoryBuildJob.status, ["pending", "failed"]),
-          eq(memoryBuildJob.targetType, "chapter"),
+          eq(memoryBuildJob.targetType, MEMORY_TARGET_TYPES.CHAPTER),
         ),
       )
       .orderBy(asc(memoryBuildJob.priority), asc(memoryBuildJob.createdAt))
@@ -245,7 +246,7 @@ export class ChapterSummaryProjector {
       .where(
         and(
           eq(memoryBuildJob.projectId, projectId),
-          eq(memoryBuildJob.jobType, "rebuild_summary"),
+          eq(memoryBuildJob.jobType, MEMORY_JOB_TYPES.REBUILD_SUMMARY),
         ),
       )
       .groupBy(memoryBuildJob.status);

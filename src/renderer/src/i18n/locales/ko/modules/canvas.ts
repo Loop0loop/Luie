@@ -77,6 +77,38 @@ export const koCanvas = {
     error: "캔버스를 불러오지 못했습니다.",
     stale: "원본이 변경되어 새로 고침이 필요합니다.",
   },
+  inspector: {
+    emptyTitle: "노드를 선택하세요",
+    emptyDescription: "캔버스에서 노드를 클릭하면 상세 정보가 표시됩니다.",
+  },
+  memory: {
+    status: "상태",
+    recent: "최근",
+    conflicts: "충돌",
+    unlinked: "미연결",
+  },
+  search: {
+    placeholder: "검색...",
+    scope: "범위",
+    results: "결과",
+  },
+  node: {
+    kind: {
+      chapter: "챕터",
+      character: "캐릭터",
+      event: "사건",
+      faction: "세력",
+      term: "용어",
+      "world-entity": "세계 엔티티",
+    },
+    deselect: "선택 해제",
+    description: "설명",
+    connections: "연결",
+    fallbackTitle: "제목 없음",
+    fallbackMemo: "메모",
+    fallbackTimeline: "타임라인",
+    held: "보류",
+  },
   toolbar: {
     fitView: "화면 맞춤",
     zoomIn: "확대",

@@ -104,6 +104,35 @@ export const chapter = sqliteTable(
   ],
 );
 
+export const scene = sqliteTable(
+  "Scene",
+  {
+    id: text("id").primaryKey().notNull(),
+    projectId: text("projectId").notNull(),
+    chapterId: text("chapterId").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull().default(""),
+    startOffset: integer("startOffset"),
+    endOffset: integer("endOffset"),
+    order: integer("order").notNull().default(0),
+    createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updatedAt").notNull(),
+  },
+  (table) => [
+    index("Scene_projectId_chapterId_order_idx").on(table.projectId, table.chapterId, table.order),
+    foreignKey({
+      name: "Scene_projectId_fkey",
+      columns: [table.projectId],
+      foreignColumns: [project.id],
+    }).onDelete("cascade").onUpdate("cascade"),
+    foreignKey({
+      name: "Scene_chapterId_fkey",
+      columns: [table.chapterId],
+      foreignColumns: [chapter.id],
+    }).onDelete("cascade").onUpdate("cascade"),
+  ],
+);
+
 export const chapterBody = sqliteTable(
   "ChapterBody",
   {
@@ -169,6 +198,7 @@ export const memoryChunk = sqliteTable(
     sourceType: text("sourceType").notNull(),
     sourceId: text("sourceId").notNull(),
     chapterId: text("chapterId"),
+    sceneId: text("sceneId"),
     chunkIndex: integer("chunkIndex").notNull(),
     content: text("content").notNull(),
     contentHash: text("contentHash").notNull(),
@@ -181,11 +211,84 @@ export const memoryChunk = sqliteTable(
   (table) => [
     index("MemoryChunk_projectId_source_idx").on(table.projectId, table.sourceType, table.sourceId),
     index("MemoryChunk_projectId_chapterId_idx").on(table.projectId, table.chapterId),
+    index("MemoryChunk_projectId_sceneId_idx").on(table.projectId, table.sceneId),
     uniqueIndex("MemoryChunk_source_chunkIndex_key").on(
       table.sourceType,
       table.sourceId,
       table.chunkIndex,
     ),
+  ],
+);
+
+export const note = sqliteTable(
+  "Note",
+  {
+    id: text("id").primaryKey().notNull(),
+    projectId: text("projectId").notNull(),
+    chapterId: text("chapterId"),
+    title: text("title").notNull(),
+    body: text("body").notNull().default(""),
+    createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updatedAt").notNull(),
+  },
+  (table) => [
+    index("Note_projectId_updatedAt_idx").on(table.projectId, table.updatedAt),
+    foreignKey({
+      name: "Note_projectId_fkey",
+      columns: [table.projectId],
+      foreignColumns: [project.id],
+    }).onDelete("cascade").onUpdate("cascade"),
+    foreignKey({
+      name: "Note_chapterId_fkey",
+      columns: [table.chapterId],
+      foreignColumns: [chapter.id],
+    }).onDelete("set null").onUpdate("cascade"),
+  ],
+);
+
+export const synopsis = sqliteTable(
+  "Synopsis",
+  {
+    id: text("id").primaryKey().notNull(),
+    projectId: text("projectId").notNull(),
+    chapterId: text("chapterId"),
+    title: text("title").notNull(),
+    body: text("body").notNull().default(""),
+    createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updatedAt").notNull(),
+  },
+  (table) => [
+    index("Synopsis_projectId_updatedAt_idx").on(table.projectId, table.updatedAt),
+    foreignKey({
+      name: "Synopsis_projectId_fkey",
+      columns: [table.projectId],
+      foreignColumns: [project.id],
+    }).onDelete("cascade").onUpdate("cascade"),
+    foreignKey({
+      name: "Synopsis_chapterId_fkey",
+      columns: [table.chapterId],
+      foreignColumns: [chapter.id],
+    }).onDelete("set null").onUpdate("cascade"),
+  ],
+);
+
+export const plot = sqliteTable(
+  "Plot",
+  {
+    id: text("id").primaryKey().notNull(),
+    projectId: text("projectId").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull().default(""),
+    createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updatedAt").notNull(),
+  },
+  (table) => [
+    index("Plot_projectId_updatedAt_idx").on(table.projectId, table.updatedAt),
+    foreignKey({
+      name: "Plot_projectId_fkey",
+      columns: [table.projectId],
+      foreignColumns: [project.id],
+    }).onDelete("cascade").onUpdate("cascade"),
   ],
 );
 

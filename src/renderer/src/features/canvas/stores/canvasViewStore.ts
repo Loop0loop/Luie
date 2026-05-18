@@ -121,10 +121,10 @@ const sanitizeViewport = (input: unknown): CanvasViewport => {
 
 const sanitizePersistedState = (
   input: unknown,
-): Partial<CanvasViewState> => {
+): Partial<CanvasViewPersistedState> => {
   if (!isRecord(input)) return {};
 
-  const next: Partial<CanvasViewState> = {};
+  const next: Partial<CanvasViewPersistedState> = {};
 
   if (isCanvasMode(input.mode)) next.mode = input.mode;
 
@@ -171,6 +171,22 @@ const createNoopStorage = (): StateStorage => ({
   setItem: () => undefined,
   removeItem: () => undefined,
 });
+
+/* ─────────────────────────────────────────── persisted state shape
+ * 이 타입이 partialize 반환값과 sanitizePersistedState 반환값의
+ * 단일 진실 공급원입니다. 새 persist 필드 추가 시 반드시 여기에 먼저 추가하세요.
+ */
+type CanvasViewPersistedState = {
+  mode: CanvasMode;
+  scope: CanvasScope | null;
+  layers: CanvasLayer[];
+  focuses: string[];
+  viewport: CanvasViewport;
+  lastPreset: string | null;
+  activePanel: CanvasActivityPanel;
+  isActivityCollapsed: boolean;
+  isBinderCollapsed: boolean;
+};
 
 /* ─────────────────────────────────────────── state shape */
 
@@ -302,7 +318,7 @@ export const useCanvasViewStore = create<CanvasViewState>()(
         ...sanitizePersistedState(persistedState),
       }),
       onRehydrateStorage: () => () => undefined,
-      partialize: (state) => ({
+      partialize: (state): CanvasViewPersistedState => ({
         mode: state.mode,
         scope: state.scope,
         layers: state.layers,

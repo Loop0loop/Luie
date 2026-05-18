@@ -7,6 +7,7 @@
 
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
+import { X } from "lucide-react";
 import { useCanvasViewStore } from "@renderer/features/canvas/stores";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import {
@@ -14,15 +15,6 @@ import {
   ENTITY_TYPE_TO_NODE_KIND,
 } from "@renderer/features/canvas/types";
 import type { CanvasNodeKind } from "@renderer/features/canvas/types";
-
-const KIND_LABEL: Record<CanvasNodeKind, string> = {
-  chapter: "챕터",
-  character: "캐릭터",
-  event: "사건",
-  faction: "세력",
-  term: "용어",
-  "world-entity": "세계 엔티티",
-};
 
 interface CanvasNodeInspectorProps {
   nodeId: string;
@@ -74,30 +66,16 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
             aria-hidden
           />
           <span className="text-[10px] font-semibold uppercase tracking-widest text-muted">
-            {KIND_LABEL[kind]}
+            {t(`canvas.node.kind.${kind}`)}
           </span>
           <button
             type="button"
             onClick={clearSelection}
             className="ml-auto rounded p-0.5 text-muted transition-colors hover:bg-surface-hover hover:text-fg"
-            title={t("canvas.status.empty")}
-            aria-label="선택 해제"
+            title={t("canvas.node.deselect")}
+            aria-label={t("canvas.node.deselect")}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <X className="h-3 w-3" aria-hidden />
           </button>
         </div>
         <h3 className="mt-1 text-sm font-bold leading-snug text-fg">
@@ -111,7 +89,7 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
         {node.description && (
           <section>
             <h4 className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted">
-              {t("common.description") || "설명"}
+              {t("canvas.node.description")}
             </h4>
             <p className="text-xs leading-relaxed text-fg/80">
               {node.description}
@@ -122,7 +100,7 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
         {/* Connections */}
         <section>
           <h4 className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted">
-            {t("canvas.activity.entities")} ({connectedNodes.length})
+            {t("canvas.node.connections")} ({connectedNodes.length})
           </h4>
           {connectedNodes.length === 0 ? (
             <p className="text-xs italic text-muted">
