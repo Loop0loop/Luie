@@ -4,6 +4,7 @@ import type { GenerateOptions, ModelRuntimeClient } from "../modelRuntimeClient.
 type LlamaContext = {
   modelPath: string;
   embeddingModelPath: string | null;
+  contextSize: number;
   model?: unknown;
   context?: unknown;
   embeddingModel?: unknown;
@@ -18,8 +19,12 @@ export class LlamaCppProvider implements ModelRuntimeClient {
   private modelPromise: Promise<void> | null = null;
   private embeddingPromise: Promise<void> | null = null;
 
-  constructor(modelPath: string, embeddingModelPath?: string | null) {
-    this.context = { modelPath, embeddingModelPath: embeddingModelPath ?? null };
+  constructor(modelPath: string, embeddingModelPath?: string | null, contextSize?: number) {
+    this.context = {
+      modelPath,
+      embeddingModelPath: embeddingModelPath ?? null,
+      contextSize: Math.max(2048, contextSize ?? 131_072),
+    };
   }
 
   private async ensureLoaded(): Promise<void> {
@@ -37,7 +42,7 @@ export class LlamaCppProvider implements ModelRuntimeClient {
       const model = await (llama as { loadModel: (input: { modelPath: string }) => Promise<unknown> })
         .loadModel({ modelPath: this.context.modelPath });
       const context = await (model as { createContext: (input: { contextSize: number }) => Promise<unknown> })
-        .createContext({ contextSize: 4096 });
+        .createContext({ contextSize: this.context.contextSize });
       this.context.model = model;
       this.context.context = context;
     })();

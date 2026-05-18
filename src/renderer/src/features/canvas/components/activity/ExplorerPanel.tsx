@@ -27,10 +27,11 @@ export default function ExplorerPanel() {
 
   const currentProject = useProjectStore((state) => state.currentItem);
 
-  const { items, currentChapter } = useChapterStore(
+  const { items, currentChapter, setCurrent } = useChapterStore(
     useShallow((state) => ({
       items: state.items,
       currentChapter: state.currentItem,
+      setCurrent: state.setCurrent,
     })),
   );
 
@@ -50,7 +51,13 @@ export default function ExplorerPanel() {
     scope?.kind === "single-chapter" ? scope.chapterId : null;
 
   const handleSelectChapter = (chapterId: string) => {
+    // scope와 currentItem을 동기화합니다 (M12 수정).
+    // scope만 설정하면 에디터로 돌아갔을 때 이전 챕터가 열려있는 문제가 발생합니다.
     setScope({ kind: "single-chapter", chapterId });
+    const chapter = items.find((c) => c.id === chapterId);
+    if (chapter) {
+      setCurrent(chapter);
+    }
   };
 
   return (

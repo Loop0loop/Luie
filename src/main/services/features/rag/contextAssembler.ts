@@ -19,9 +19,11 @@ export type RagContextPacket = {
   evidence: RagQaEvidence[];
 };
 
-const LAYER0_CHAR_LIMIT = 12_000;
-const LAYER1_CHAR_LIMIT = 120_000;
-const LAYER2_CHAR_LIMIT = 8_000;
+// Default prompt budget is conservative to avoid context overflow on
+// runtimes with smaller context windows.
+const LAYER0_CHAR_LIMIT = 6_000;
+const LAYER1_CHAR_LIMIT = 24_000;
+const LAYER2_CHAR_LIMIT = 4_000;
 
 function trimByChars(input: string, limit: number): string {
   if (input.length <= limit) return input;

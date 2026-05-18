@@ -1,12 +1,8 @@
 /**
  * RelationEdge — Obsidian Canvas 스타일 관계 엣지.
  *
- * 디자인 레퍼런스:
- *   - 기본 색상: var(--text-muted) (Obsidian 기본 엣지 색상)
- *   - strokeWidth: 1.5px
- *   - 베지어 곡선
- *   - 레이블: 작은 pill, 배경 blur
- *   - 화살표: 작은 closed arrow
+ * strokeWidth / opacity / transition은 data-selected attribute + CSS로 처리합니다.
+ * stroke 색상만 런타임 동적값이므로 인라인 스타일로 유지합니다 (M1 수정).
  */
 
 import { memo } from "react";
@@ -16,6 +12,7 @@ import {
   getBezierPath,
   type EdgeProps,
 } from "reactflow";
+import { CANVAS_EDGE_DEFAULTS } from "../../../constants";
 import type { RFRelationEdgeData } from "../../../types/reactFlow.types";
 
 function RelationEdgeInner({
@@ -39,10 +36,19 @@ function RelationEdgeInner({
     targetPosition,
   });
 
-  // Obsidian: 기본 엣지는 muted 색상, 선택 시 accent
+  // stroke 색상만 런타임 동적값 — 인라인 스타일 정당화됨
   const strokeColour = selected
     ? "var(--accent-bg)"
     : (data?.color ?? "var(--text-secondary)");
+
+  const strokeWidth = selected
+    ? CANVAS_EDGE_DEFAULTS.strokeWidthSelected
+    : CANVAS_EDGE_DEFAULTS.strokeWidth;
+
+  const opacity = selected
+    ? CANVAS_EDGE_DEFAULTS.opacitySelected
+    : CANVAS_EDGE_DEFAULTS.opacity;
+
   const label = data?.label;
 
   return (
@@ -53,9 +59,9 @@ function RelationEdgeInner({
         markerEnd={markerEnd}
         style={{
           stroke: strokeColour,
-          strokeWidth: selected ? 2 : 1.5,
-          opacity: selected ? 1 : 0.6,
-          transition: "stroke 0.15s, stroke-width 0.15s, opacity 0.15s",
+          strokeWidth,
+          opacity,
+          transition: `stroke ${CANVAS_EDGE_DEFAULTS.transitionDuration}ms, stroke-width ${CANVAS_EDGE_DEFAULTS.transitionDuration}ms, opacity ${CANVAS_EDGE_DEFAULTS.transitionDuration}ms`,
         }}
       />
 

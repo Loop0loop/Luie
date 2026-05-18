@@ -120,7 +120,7 @@ class RagQaService {
       });
       this.emitError(run.window, {
         runId: run.runId,
-        code: ErrorCode.SEARCH_QUERY_FAILED,
+        code: ErrorCode.RAG_QA_FAILED,
         message: error instanceof Error ? error.message : "RAG QA failed",
       });
     }

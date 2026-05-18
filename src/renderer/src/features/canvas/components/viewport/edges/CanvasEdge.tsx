@@ -1,11 +1,8 @@
 /**
  * CanvasEdge — 자유 연결 캔버스 엣지 (Obsidian Canvas 스타일).
  *
- * 디자인 레퍼런스:
- *   - 기본 색상: var(--accent-bg) (사용자 지정 색상 지원)
- *   - smooth step 경로 (borderRadius: 12)
- *   - 양방향 화살표 지원
- *   - 레이블: pill 형태, 색상 tint
+ * strokeWidth / opacity / transition은 className으로 처리합니다.
+ * stroke 색상과 borderColor만 런타임 동적값이므로 인라인 스타일로 유지합니다 (M1 수정).
  */
 
 import { memo } from "react";
@@ -15,6 +12,7 @@ import {
   getSmoothStepPath,
   type EdgeProps,
 } from "reactflow";
+import { CANVAS_CANVAS_EDGE_DEFAULTS } from "../../../constants";
 import type { RFCanvasEdgeData } from "../../../types/reactFlow.types";
 
 function CanvasEdgeInner({
@@ -40,9 +38,18 @@ function CanvasEdgeInner({
     borderRadius: 12,
   });
 
+  // stroke 색상만 런타임 동적값 — 인라인 스타일 정당화됨
   const strokeColour = data?.color ?? "var(--accent-bg)";
   const label = data?.label;
   const isBidirectional = data?.direction === "bidirectional";
+
+  const strokeWidth = selected
+    ? CANVAS_CANVAS_EDGE_DEFAULTS.strokeWidthSelected
+    : CANVAS_CANVAS_EDGE_DEFAULTS.strokeWidth;
+
+  const opacity = selected
+    ? CANVAS_CANVAS_EDGE_DEFAULTS.opacitySelected
+    : CANVAS_CANVAS_EDGE_DEFAULTS.opacity;
 
   return (
     <>
@@ -53,9 +60,9 @@ function CanvasEdgeInner({
         markerStart={isBidirectional ? markerStart : undefined}
         style={{
           stroke: strokeColour,
-          strokeWidth: selected ? 2.5 : 2,
-          opacity: selected ? 1 : 0.8,
-          transition: "stroke-width 0.15s, opacity 0.15s",
+          strokeWidth,
+          opacity,
+          transition: `stroke-width ${CANVAS_CANVAS_EDGE_DEFAULTS.transitionDuration}ms, opacity ${CANVAS_CANVAS_EDGE_DEFAULTS.transitionDuration}ms`,
         }}
       />
 

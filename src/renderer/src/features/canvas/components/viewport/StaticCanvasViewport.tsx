@@ -1,11 +1,12 @@
 /**
  * StaticCanvasViewport — 정적 세계관 설계 캔버스 (UI/UX 밑작업).
  *
- * Obsidian Canvas 스타일:
- *   - 미니맵 없음 (Obsidian Canvas는 미니맵 미제공)
- *   - 우측 세로 플로팅 툴바 (수직 중앙)
- *   - 하단 중앙 노드 생성 툴바 (3 슬롯)
- *   - 미니멀한 외곽선/아이콘
+ * 데이터 흐름:
+ *   useStaticProjection() → CanvasProjection (프로젝트 전체 엔티티)
+ *   buildFlowGraph(projection, selectedNodeId) → RF nodes/edges
+ *
+ * worldBuildingStore를 직접 구독하지 않습니다 (C3 수정).
+ * 모든 store 구독은 훅 레이어에서 처리합니다.
  *
  * 동작:
  *   - 노드 드래그 가능 (저장 로직은 추후 연결)
@@ -20,11 +21,7 @@ import ReactFlow, {
   PanOnScrollMode,
   type OnSelectionChangeParams,
 } from "reactflow";
-import {
-  File,
-  FileText,
-  Image,
-} from "lucide-react";
+import { File, FileText, Image } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import {
@@ -34,10 +31,9 @@ import {
   CANVAS_ZOOM_MIN,
   CANVAS_FIT_VIEW_PADDING,
 } from "@shared/constants/canvasSizing";
-import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { useCanvasViewStore } from "../../stores";
 import { buildFlowGraph } from "../../types";
-import { buildProjection } from "../../types/canvasProjectionAdapter";
+import { useStaticProjection } from "../../hooks/useStaticProjection";
 import { CanvasFloatingToolbar } from "./CanvasFloatingToolbar";
 import { RelationEdge } from "./edges/RelationEdge";
 import { EntityNode } from "./nodes/EntityNode";
@@ -67,21 +63,9 @@ function BottomCreateToolbar() {
   const { t } = useTranslation();
 
   const items = [
-    {
-      key: "blank",
-      icon: <File className="h-4 w-4" />,
-      label: t("canvas.create.blank"),
-    },
-    {
-      key: "text",
-      icon: <FileText className="h-4 w-4" />,
-      label: t("canvas.create.text"),
-    },
-    {
-      key: "media",
-      icon: <Image className="h-4 w-4" />,
-      label: t("canvas.create.media"),
-    },
+    { key: "blank", icon: <File className="h-4 w-4" />,     label: t("canvas.create.blank") },
+    { key: "text",  icon: <FileText className="h-4 w-4" />, label: t("canvas.create.text")  },
+    { key: "media", icon: <Image className="h-4 w-4" />,    label: t("canvas.create.media") },
   ] as const;
 
   return (
@@ -109,6 +93,9 @@ function BottomCreateToolbar() {
 // ─── main component ───────────────────────────────────────────────────────────
 
 export default function StaticCanvasViewport() {
+  // worldBuildingStore 직접 구독 없음 — useStaticProjection이 담당 (C3 수정)
+  const projection = useStaticProjection();
+
   const { selection, selectNode, clearSelection } = useCanvasViewStore(
     useShallow((state) => ({
       selection: state.selection,
@@ -117,19 +104,7 @@ export default function StaticCanvasViewport() {
     })),
   );
 
-  const graphData = useWorldBuildingStore((state) => state.graphData);
-
   const selectedNodeId = selection.kind === "node" ? selection.id : null;
-
-  const projection = useMemo(
-    () =>
-      buildProjection(
-        graphData,
-        "flow-map",
-        graphData ? { kind: "whole-project", projectId: "" } : null,
-      ),
-    [graphData],
-  );
 
   const { nodes, edges } = useMemo(
     () => buildFlowGraph(projection, selectedNodeId),
