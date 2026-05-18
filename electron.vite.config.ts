@@ -95,6 +95,10 @@ export default defineConfig({
       // V8 bytecode compilation for source code protection
       // Note: bytecode feature requires electron-vite@2.0.0+
       rollupOptions: {
+        input: {
+          index: resolve("src/main/index.ts"),
+          utilityProcessMain: resolve("src/main/utility/utilityProcessMain.ts"),
+        },
         external: mainExternal,
         output: {
           format: "es",

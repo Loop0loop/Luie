@@ -93,6 +93,7 @@ if (!registerSingleInstance(bootstrapLogger)) {
     { extractAuthCallbackUrl, handleDeepLinkUrl },
     { registerShutdownHandlers },
     { syncService },
+    { utilityProcessBridge },
   ] = await Promise.all([
     import("./prismaEnv.js"),
     import("./lifecycle/appReady.js"),
@@ -100,6 +101,7 @@ if (!registerSingleInstance(bootstrapLogger)) {
     import("./lifecycle/deepLink.js"),
     import("./lifecycle/shutdown.js"),
     import("./services/features/sync/syncService.js"),
+    import("./services/features/utility/utilityProcessBridge.js"),
   ]);
 
   registerCrashReporting(logger);
@@ -123,6 +125,9 @@ if (!registerSingleInstance(bootstrapLogger)) {
     void handleDeepLinkUrl(callbackUrl);
   }
 
+  const utilityStarted = await utilityProcessBridge.start();
+  logger.info("Startup checkpoint: utility process", { utilityStarted });
+
   registerAppReady(logger, {
     startupStartedAtMs,
     onFirstRendererReady: () => {
@@ -139,6 +144,10 @@ if (!registerSingleInstance(bootstrapLogger)) {
         startupElapsedMs: Date.now() - startupStartedAtMs,
       });
     },
+  });
+
+  app.on("before-quit", () => {
+    utilityProcessBridge.stop();
   });
   registerShutdownHandlers(logger);
 }
