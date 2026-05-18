@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "../../database/index.js";
 import { note } from "../../database/schema.js";
 import { createLogger } from "../../../shared/logger/index.js";
@@ -25,7 +25,7 @@ class NoteService {
       }).returning();
 
       if (!created) {
-        throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Failed to create note", { input });
+        throw new ServiceError(ErrorCode.NOTE_CREATE_FAILED, "Failed to create note", { input });
       }
 
       await dbMaintenanceService.rebuildMemoryChunks({
@@ -39,29 +39,47 @@ class NoteService {
     } catch (error) {
       logger.error("Failed to create note", error);
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Failed to create note", { input }, error);
+      throw new ServiceError(ErrorCode.NOTE_CREATE_FAILED, "Failed to create note", { input }, error);
     }
   }
 
   async getNote(id: string) {
-    const [found] = await db.getClient().select().from(note).where(eq(note.id, id)).limit(1);
-    if (!found) throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Note not found", { id });
+    const [found] = await db
+      .getClient()
+      .select()
+      .from(note)
+      .where(and(eq(note.id, id), isNull(note.deletedAt)))
+      .limit(1);
+    if (!found) throw new ServiceError(ErrorCode.NOTE_NOT_FOUND, "Note not found", { id });
     return found;
   }
 
   async getAllNotes(projectId: string) {
-    return db.getClient().select().from(note).where(eq(note.projectId, projectId)).orderBy(asc(note.updatedAt));
+    return db
+      .getClient()
+      .select()
+      .from(note)
+      .where(and(eq(note.projectId, projectId), isNull(note.deletedAt)))
+      .orderBy(asc(note.updatedAt));
   }
 
   async updateNote(input: NoteUpdateInput) {
     try {
+      const [current] = await db
+        .getClient()
+        .select({ id: note.id, projectId: note.projectId })
+        .from(note)
+        .where(and(eq(note.id, input.id), isNull(note.deletedAt)))
+        .limit(1);
+      if (!current) throw new ServiceError(ErrorCode.NOTE_NOT_FOUND, "Note not found", { id: input.id });
+
       const patch: Partial<typeof note.$inferInsert> = { updatedAt: new Date().toISOString() };
       if (input.chapterId !== undefined) patch.chapterId = input.chapterId;
       if (input.title !== undefined) patch.title = input.title;
       if (input.body !== undefined) patch.body = input.body;
 
       const [updated] = await db.getClient().update(note).set(patch).where(eq(note.id, input.id)).returning();
-      if (!updated) throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Note not found", { id: input.id });
+      if (!updated) throw new ServiceError(ErrorCode.NOTE_NOT_FOUND, "Note not found", { id: input.id });
 
       await dbMaintenanceService.rebuildMemoryChunks({
         projectId: String(updated.projectId),
@@ -74,16 +92,22 @@ class NoteService {
     } catch (error) {
       logger.error("Failed to update note", error);
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Failed to update note", { input }, error);
+      throw new ServiceError(ErrorCode.NOTE_UPDATE_FAILED, "Failed to update note", { input }, error);
     }
   }
 
   async deleteNote(id: string) {
     try {
-      const [current] = await db.getClient().select({ id: note.id, projectId: note.projectId }).from(note).where(eq(note.id, id)).limit(1);
-      if (!current) throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Note not found", { id });
+      const [current] = await db
+        .getClient()
+        .select({ id: note.id, projectId: note.projectId })
+        .from(note)
+        .where(and(eq(note.id, id), isNull(note.deletedAt)))
+        .limit(1);
+      if (!current) throw new ServiceError(ErrorCode.NOTE_NOT_FOUND, "Note not found", { id });
 
-      await db.getClient().delete(note).where(eq(note.id, id));
+      const now = new Date().toISOString();
+      await db.getClient().update(note).set({ deletedAt: now, updatedAt: now }).where(eq(note.id, id));
       await dbMaintenanceService.rebuildMemoryChunks({
         projectId: String(current.projectId),
         sourceType: MEMORY_TARGET_TYPES.NOTE,
@@ -95,7 +119,7 @@ class NoteService {
     } catch (error) {
       logger.error("Failed to delete note", error);
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Failed to delete note", { id }, error);
+      throw new ServiceError(ErrorCode.NOTE_DELETE_FAILED, "Failed to delete note", { id }, error);
     }
   }
 }

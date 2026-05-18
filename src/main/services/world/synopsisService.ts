@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "../../database/index.js";
 import { synopsis } from "../../database/schema.js";
 import { createLogger } from "../../../shared/logger/index.js";
@@ -24,7 +24,7 @@ class SynopsisService {
         updatedAt: now,
       }).returning();
 
-      if (!created) throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Failed to create synopsis", { input });
+      if (!created) throw new ServiceError(ErrorCode.SYNOPSIS_CREATE_FAILED, "Failed to create synopsis", { input });
 
       await dbMaintenanceService.rebuildMemoryChunks({
         projectId: input.projectId,
@@ -37,29 +37,47 @@ class SynopsisService {
     } catch (error) {
       logger.error("Failed to create synopsis", error);
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Failed to create synopsis", { input }, error);
+      throw new ServiceError(ErrorCode.SYNOPSIS_CREATE_FAILED, "Failed to create synopsis", { input }, error);
     }
   }
 
   async getSynopsis(id: string) {
-    const [found] = await db.getClient().select().from(synopsis).where(eq(synopsis.id, id)).limit(1);
-    if (!found) throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Synopsis not found", { id });
+    const [found] = await db
+      .getClient()
+      .select()
+      .from(synopsis)
+      .where(and(eq(synopsis.id, id), isNull(synopsis.deletedAt)))
+      .limit(1);
+    if (!found) throw new ServiceError(ErrorCode.SYNOPSIS_NOT_FOUND, "Synopsis not found", { id });
     return found;
   }
 
   async getAllSynopsis(projectId: string) {
-    return db.getClient().select().from(synopsis).where(eq(synopsis.projectId, projectId)).orderBy(asc(synopsis.updatedAt));
+    return db
+      .getClient()
+      .select()
+      .from(synopsis)
+      .where(and(eq(synopsis.projectId, projectId), isNull(synopsis.deletedAt)))
+      .orderBy(asc(synopsis.updatedAt));
   }
 
   async updateSynopsis(input: SynopsisUpdateInput) {
     try {
+      const [current] = await db
+        .getClient()
+        .select({ id: synopsis.id, projectId: synopsis.projectId })
+        .from(synopsis)
+        .where(and(eq(synopsis.id, input.id), isNull(synopsis.deletedAt)))
+        .limit(1);
+      if (!current) throw new ServiceError(ErrorCode.SYNOPSIS_NOT_FOUND, "Synopsis not found", { id: input.id });
+
       const patch: Partial<typeof synopsis.$inferInsert> = { updatedAt: new Date().toISOString() };
       if (input.chapterId !== undefined) patch.chapterId = input.chapterId;
       if (input.title !== undefined) patch.title = input.title;
       if (input.body !== undefined) patch.body = input.body;
 
       const [updated] = await db.getClient().update(synopsis).set(patch).where(eq(synopsis.id, input.id)).returning();
-      if (!updated) throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Synopsis not found", { id: input.id });
+      if (!updated) throw new ServiceError(ErrorCode.SYNOPSIS_NOT_FOUND, "Synopsis not found", { id: input.id });
 
       await dbMaintenanceService.rebuildMemoryChunks({
         projectId: String(updated.projectId),
@@ -72,16 +90,22 @@ class SynopsisService {
     } catch (error) {
       logger.error("Failed to update synopsis", error);
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Failed to update synopsis", { input }, error);
+      throw new ServiceError(ErrorCode.SYNOPSIS_UPDATE_FAILED, "Failed to update synopsis", { input }, error);
     }
   }
 
   async deleteSynopsis(id: string) {
     try {
-      const [current] = await db.getClient().select({ id: synopsis.id, projectId: synopsis.projectId }).from(synopsis).where(eq(synopsis.id, id)).limit(1);
-      if (!current) throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Synopsis not found", { id });
+      const [current] = await db
+        .getClient()
+        .select({ id: synopsis.id, projectId: synopsis.projectId })
+        .from(synopsis)
+        .where(and(eq(synopsis.id, id), isNull(synopsis.deletedAt)))
+        .limit(1);
+      if (!current) throw new ServiceError(ErrorCode.SYNOPSIS_NOT_FOUND, "Synopsis not found", { id });
 
-      await db.getClient().delete(synopsis).where(eq(synopsis.id, id));
+      const now = new Date().toISOString();
+      await db.getClient().update(synopsis).set({ deletedAt: now, updatedAt: now }).where(eq(synopsis.id, id));
       await dbMaintenanceService.rebuildMemoryChunks({
         projectId: String(current.projectId),
         sourceType: MEMORY_TARGET_TYPES.SYNOPSIS,
@@ -93,7 +117,7 @@ class SynopsisService {
     } catch (error) {
       logger.error("Failed to delete synopsis", error);
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Failed to delete synopsis", { id }, error);
+      throw new ServiceError(ErrorCode.SYNOPSIS_DELETE_FAILED, "Failed to delete synopsis", { id }, error);
     }
   }
 }

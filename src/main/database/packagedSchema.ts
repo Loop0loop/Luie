@@ -120,6 +120,31 @@ export const PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
     sql: 'ALTER TABLE "WorldEntity" ADD COLUMN "deletedAt" DATETIME;',
   },
   {
+    table: "Scene",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Scene" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "Note",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Note" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "Synopsis",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Synopsis" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "Plot",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Plot" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "ScrapMemo",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "ScrapMemo" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
     table: "ProjectSettings",
     column: "llmModelPath",
     sql: 'ALTER TABLE "ProjectSettings" ADD COLUMN "llmModelPath" TEXT;',
@@ -208,7 +233,7 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
     "llmProviderHint",
   ],
   Chapter: ["id", "projectId", "order", "wordCount", "deletedAt"],
-  Scene: ["id", "projectId", "chapterId", "title", "body", "order"],
+  Scene: ["id", "projectId", "chapterId", "title", "body", "order", "deletedAt"],
   ChapterBody: ["chapterId", "content", "contentHash", "updatedAt"],
   ChapterRevision: ["id", "chapterId", "contentHash", "content", "reason"],
   SearchDirtyQueue: [
@@ -258,14 +283,14 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
     "model",
     "generatedAt",
   ],
-  Note: ["id", "projectId", "title", "body"],
-  Synopsis: ["id", "projectId", "title", "body"],
-  Plot: ["id", "projectId", "title", "body"],
+  Note: ["id", "projectId", "title", "body", "deletedAt"],
+  Synopsis: ["id", "projectId", "title", "body", "deletedAt"],
+  Plot: ["id", "projectId", "title", "body", "deletedAt"],
   Character: ["id", "projectId", "firstAppearance", "attributes", "deletedAt"],
   Event: ["id", "projectId", "name", "deletedAt"],
   Faction: ["id", "projectId", "name", "deletedAt"],
   WorldDocument: ["id", "projectId", "docType", "payload"],
-  ScrapMemo: ["id", "projectId", "title", "content", "tags", "sortOrder", "updatedAt"],
+  ScrapMemo: ["id", "projectId", "title", "content", "tags", "sortOrder", "updatedAt", "deletedAt"],
   Term: ["id", "projectId", "term", "order", "deletedAt"],
   Snapshot: ["id", "projectId", "content", "contentLength", "type"],
   WorldEntity: ["id", "projectId", "type", "name", "positionX", "positionY", "deletedAt"],
@@ -330,6 +355,7 @@ CREATE TABLE IF NOT EXISTS "Scene" (
     "order" INTEGER NOT NULL DEFAULT 0,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME,
     CONSTRAINT "Scene_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "Scene_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -424,6 +450,7 @@ CREATE TABLE IF NOT EXISTS "Note" (
     "body" TEXT NOT NULL DEFAULT '',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME,
     CONSTRAINT "Note_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "Note_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -435,6 +462,7 @@ CREATE TABLE IF NOT EXISTS "Synopsis" (
     "body" TEXT NOT NULL DEFAULT '',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME,
     CONSTRAINT "Synopsis_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "Synopsis_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -445,6 +473,7 @@ CREATE TABLE IF NOT EXISTS "Plot" (
     "body" TEXT NOT NULL DEFAULT '',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME,
     CONSTRAINT "Plot_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "Character" (
@@ -501,6 +530,7 @@ CREATE TABLE IF NOT EXISTS "ScrapMemo" (
     "sortOrder" INTEGER NOT NULL DEFAULT 0,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME,
     CONSTRAINT "ScrapMemo_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "Term" (

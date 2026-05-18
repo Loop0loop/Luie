@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../../database/index.js";
 import {
   character,
@@ -223,42 +223,42 @@ class DbMaintenanceService {
       const scenes = await client
         .select({ id: scene.id })
         .from(scene)
-        .where(eq(scene.projectId, input.projectId))
+        .where(and(eq(scene.projectId, input.projectId), isNull(scene.deletedAt)))
         .orderBy(asc(scene.order));
       const notes = await client
         .select({ id: note.id })
         .from(note)
-        .where(eq(note.projectId, input.projectId))
+        .where(and(eq(note.projectId, input.projectId), isNull(note.deletedAt)))
         .orderBy(asc(note.updatedAt));
       const synopses = await client
         .select({ id: synopsis.id })
         .from(synopsis)
-        .where(eq(synopsis.projectId, input.projectId))
+        .where(and(eq(synopsis.projectId, input.projectId), isNull(synopsis.deletedAt)))
         .orderBy(asc(synopsis.updatedAt));
       const plots = await client
         .select({ id: plot.id })
         .from(plot)
-        .where(eq(plot.projectId, input.projectId))
+        .where(and(eq(plot.projectId, input.projectId), isNull(plot.deletedAt)))
         .orderBy(asc(plot.updatedAt));
       const events = await client
         .select({ id: event.id })
         .from(event)
-        .where(eq(event.projectId, input.projectId))
+        .where(and(eq(event.projectId, input.projectId), isNull(event.deletedAt)))
         .orderBy(asc(event.updatedAt));
       const factions = await client
         .select({ id: faction.id })
         .from(faction)
-        .where(eq(faction.projectId, input.projectId))
+        .where(and(eq(faction.projectId, input.projectId), isNull(faction.deletedAt)))
         .orderBy(asc(faction.updatedAt));
       const scraps = await client
         .select({ id: scrapMemo.id })
         .from(scrapMemo)
-        .where(eq(scrapMemo.projectId, input.projectId))
+        .where(and(eq(scrapMemo.projectId, input.projectId), isNull(scrapMemo.deletedAt)))
         .orderBy(asc(scrapMemo.updatedAt));
       const characters = await client
         .select({ id: character.id })
         .from(character)
-        .where(eq(character.projectId, input.projectId))
+        .where(and(eq(character.projectId, input.projectId), isNull(character.deletedAt)))
         .orderBy(asc(character.updatedAt));
 
       const targets: Array<{ targetType: string; targetId: string }> = [

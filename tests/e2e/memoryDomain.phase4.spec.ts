@@ -61,7 +61,7 @@ test("phase4 domain CRUD -> rebuild -> memory search/backlink @stress", async ()
     "chapter.update",
   );
 
-  await call(
+  const createdDomain = await call(
     async () =>
       await page.evaluate(async (input: { projectId: string; chapterId: string }) => {
         const api = (window as Window & { api?: Window["api"] }).api;
@@ -123,6 +123,19 @@ test("phase4 domain CRUD -> rebuild -> memory search/backlink @stress", async ()
 
   await call(
     async () =>
+      await page.evaluate(async (input: { noteId: string }) => {
+        const api = (window as Window & { api?: Window["api"] }).api;
+        if (!api) return { success: false, error: { message: "window.api missing" } };
+        return (await api.note.update({
+          id: input.noteId,
+          body: "phase4-note-updated-token 으로 갱신된 노트 본문",
+        })) as ApiResponse<{ id: string }>;
+      }, { noteId: String(createdDomain.noteId) }),
+    "note.update",
+  );
+
+  await call(
+    async () =>
       await page.evaluate(async (projectId: string) => {
         const api = (window as Window & { api?: Window["api"] }).api;
         if (!api) return { success: false, error: { message: "window.api missing" } };
@@ -132,6 +145,7 @@ test("phase4 domain CRUD -> rebuild -> memory search/backlink @stress", async ()
   );
 
   const waitStart = Date.now();
+  let drained = false;
   while (Date.now() - waitStart < 20_000) {
     const status = await call(
       async () =>
@@ -145,9 +159,13 @@ test("phase4 domain CRUD -> rebuild -> memory search/backlink @stress", async ()
         }, project.id),
       "memory.getJobStatus",
     );
-    if ((status.pendingCount ?? 0) === 0 && (status.runningCount ?? 0) === 0) break;
+    if ((status.pendingCount ?? 0) === 0 && (status.runningCount ?? 0) === 0) {
+      drained = true;
+      break;
+    }
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
+  expect(drained).toBe(true);
 
   const queryAndBacklink = async (query: string) => {
     const rows = await call(
@@ -184,7 +202,7 @@ test("phase4 domain CRUD -> rebuild -> memory search/backlink @stress", async ()
   };
 
   await queryAndBacklink("phase4-scene-token");
-  await queryAndBacklink("phase4-note-token");
+  await queryAndBacklink("phase4-note-updated-token");
   await queryAndBacklink("phase4-synopsis-token");
   await queryAndBacklink("phase4-plot-token");
   await queryAndBacklink("phase4-scrap-token");

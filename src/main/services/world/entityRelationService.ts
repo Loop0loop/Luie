@@ -6,6 +6,10 @@ import { eq, asc, inArray, isNull, and } from "drizzle-orm";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import {
+    CANVAS_AUX_NODE_SUBTYPES,
+    MEMORY_DOMAIN_SOURCE_TYPES,
+} from "../../../shared/constants/memoryDomain.js";
+import {
     isRelationAllowed,
     isWorldEntityBackedType,
 } from "../../../shared/constants/worldRelationRules.js";
@@ -336,58 +340,73 @@ export class EntityRelationService {
                     positionY: w.positionY ?? 0,
                 })),
                 ...scenes.map((item): WorldGraphNode => ({
-                    id: `scene:${item.id}`,
+                    id: item.id,
                     entityType: "WorldEntity",
-                    subType: "Concept",
+                    subType: CANVAS_AUX_NODE_SUBTYPES.SCENE,
                     name: `Scene · ${item.title}`,
                     description: item.body?.slice(0, 240) ?? null,
                     firstAppearance: null,
-                    attributes: { sourceType: "scene", sourceId: item.id, chapterId: item.chapterId },
+                    attributes: {
+                        sourceType: MEMORY_DOMAIN_SOURCE_TYPES.SCENE,
+                        sourceId: item.id,
+                        chapterId: item.chapterId,
+                    },
                     positionX: 0,
                     positionY: 0,
                 })),
                 ...notes.map((item): WorldGraphNode => ({
-                    id: `note:${item.id}`,
+                    id: item.id,
                     entityType: "WorldEntity",
-                    subType: "Concept",
+                    subType: CANVAS_AUX_NODE_SUBTYPES.NOTE,
                     name: `Note · ${item.title}`,
                     description: item.body?.slice(0, 240) ?? null,
                     firstAppearance: null,
-                    attributes: { sourceType: "note", sourceId: item.id, chapterId: item.chapterId ?? null },
+                    attributes: {
+                        sourceType: MEMORY_DOMAIN_SOURCE_TYPES.NOTE,
+                        sourceId: item.id,
+                        chapterId: item.chapterId ?? null,
+                    },
                     positionX: 0,
                     positionY: 0,
                 })),
                 ...synopses.map((item): WorldGraphNode => ({
-                    id: `synopsis:${item.id}`,
+                    id: item.id,
                     entityType: "WorldEntity",
-                    subType: "Rule",
+                    subType: CANVAS_AUX_NODE_SUBTYPES.SYNOPSIS,
                     name: `Synopsis · ${item.title}`,
                     description: item.body?.slice(0, 240) ?? null,
                     firstAppearance: null,
-                    attributes: { sourceType: "synopsis", sourceId: item.id, chapterId: item.chapterId ?? null },
+                    attributes: {
+                        sourceType: MEMORY_DOMAIN_SOURCE_TYPES.SYNOPSIS,
+                        sourceId: item.id,
+                        chapterId: item.chapterId ?? null,
+                    },
                     positionX: 0,
                     positionY: 0,
                 })),
                 ...plots.map((item): WorldGraphNode => ({
-                    id: `plot:${item.id}`,
+                    id: item.id,
                     entityType: "WorldEntity",
-                    subType: "Rule",
+                    subType: CANVAS_AUX_NODE_SUBTYPES.PLOT,
                     name: `Plot · ${item.title}`,
                     description: item.body?.slice(0, 240) ?? null,
                     firstAppearance: null,
-                    attributes: { sourceType: "plot", sourceId: item.id },
+                    attributes: {
+                        sourceType: MEMORY_DOMAIN_SOURCE_TYPES.PLOT,
+                        sourceId: item.id,
+                    },
                     positionX: 0,
                     positionY: 0,
                 })),
                 ...scraps.map((item): WorldGraphNode => ({
-                    id: `scrap:${item.id}`,
+                    id: item.id,
                     entityType: "WorldEntity",
-                    subType: "Item",
+                    subType: CANVAS_AUX_NODE_SUBTYPES.SCRAP,
                     name: `Scrap · ${item.title}`,
                     description: item.content?.slice(0, 240) ?? null,
                     firstAppearance: null,
                     attributes: {
-                        sourceType: "scrapMemo",
+                        sourceType: MEMORY_DOMAIN_SOURCE_TYPES.SCRAP_MEMO,
                         sourceId: item.id,
                         tags: (() => {
                             try {

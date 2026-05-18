@@ -56,6 +56,8 @@ export function PanelBody({ children }: { children: ReactNode }) {
 }
 
 // ─── PanelSection ─────────────────────────────────────────────────────────────
+// actions 슬롯에 <button>이 들어올 수 있으므로 헤더를 <div>로 유지합니다.
+// <button> 안에 <button>을 넣으면 HTML 스펙 위반 + hydration 에러가 발생합니다.
 
 export function PanelSection({
   title,
@@ -68,17 +70,24 @@ export function PanelSection({
   defaultOpen?: boolean;
   children: ReactNode;
   actions?: ReactNode;
-  /** 섹션 우측에 표시할 카운트 배지 */
   count?: number;
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
     <div>
-      <button
-        type="button"
-        className="flex w-full items-center px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted transition-colors hover:text-fg"
+      {/* 헤더: <div role="button"> — actions 슬롯의 <button> 중첩을 허용하기 위해 */}
+      <div
+        role="button"
+        tabIndex={0}
+        className="flex w-full cursor-pointer items-center px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted transition-colors hover:text-fg"
         onClick={() => setIsOpen((v) => !v)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setIsOpen((v) => !v);
+          }
+        }}
         aria-expanded={isOpen}
       >
         {isOpen ? (
@@ -93,14 +102,16 @@ export function PanelSection({
           </span>
         )}
         {actions && (
+          // stopPropagation으로 헤더 클릭(토글)과 actions 클릭을 분리합니다.
           <span
             className="ml-1"
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
           >
             {actions}
           </span>
         )}
-      </button>
+      </div>
 
       {isOpen && (
         <div className="animate-in fade-in slide-in-from-top-1 duration-100">

@@ -58,6 +58,7 @@ export interface Scene {
   order: number;
   createdAt: string | Date;
   updatedAt: string | Date;
+  deletedAt?: string | Date | null;
 }
 
 export type ChapterSaveStateType =
@@ -185,6 +186,7 @@ export interface Note {
   body: string;
   createdAt: string | Date;
   updatedAt: string | Date;
+  deletedAt?: string | Date | null;
 }
 
 export interface Synopsis {
@@ -195,6 +197,7 @@ export interface Synopsis {
   body: string;
   createdAt: string | Date;
   updatedAt: string | Date;
+  deletedAt?: string | Date | null;
 }
 
 export interface Plot {
@@ -204,6 +207,7 @@ export interface Plot {
   body: string;
   createdAt: string | Date;
   updatedAt: string | Date;
+  deletedAt?: string | Date | null;
 }
 
 export type WorldSynopsisStatus = "draft" | "working" | "locked";
@@ -292,6 +296,7 @@ export interface ScrapMemo {
   content: string;
   tags: string[];
   updatedAt: string;
+  deletedAt?: string | Date | null;
 }
 
 export interface WorldScrapMemosData {

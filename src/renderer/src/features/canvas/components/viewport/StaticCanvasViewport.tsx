@@ -58,10 +58,10 @@ const DEFAULT_EDGE_OPTIONS = {
 
 const FIT_VIEW_OPTIONS = { padding: CANVAS_FIT_VIEW_PADDING } as const;
 
-// ─── Bottom create toolbar (Obsidian-style, 3 slots) ─────────────────────────
+// ─── Bottom create toolbar ────────────────────────────────────────────────────
 
 const CREATE_BTN_BASE =
-  "flex h-11 w-11 items-center justify-center rounded-md border border-border/40 bg-element text-muted transition-all hover:border-accent/40 hover:bg-surface-hover hover:text-fg";
+  "flex h-8 w-8 items-center justify-center rounded-md border border-border/40 bg-element text-muted transition-all hover:border-accent/40 hover:bg-surface-hover hover:text-fg";
 
 function BottomCreateToolbar() {
   const { t } = useTranslation();
@@ -69,27 +69,27 @@ function BottomCreateToolbar() {
   const items = [
     {
       key: "blank",
-      icon: <File className="h-5 w-5" />,
+      icon: <File className="h-4 w-4" />,
       label: t("canvas.create.blank"),
     },
     {
       key: "text",
-      icon: <FileText className="h-5 w-5" />,
+      icon: <FileText className="h-4 w-4" />,
       label: t("canvas.create.text"),
     },
     {
       key: "media",
-      icon: <Image className="h-5 w-5" />,
+      icon: <Image className="h-4 w-4" />,
       label: t("canvas.create.media"),
     },
   ] as const;
 
   return (
     <div
-      className="pointer-events-auto absolute bottom-4 left-1/2 z-10 -translate-x-1/2"
+      className="pointer-events-auto absolute bottom-3 left-1/2 z-10 -translate-x-1/2"
       data-testid="canvas-create-toolbar"
     >
-      <div className="flex items-center gap-1 rounded-lg border border-border/40 bg-panel/95 p-1.5 shadow-panel backdrop-blur-sm">
+      <div className="flex items-center gap-0.5 rounded-lg border border-border/40 bg-panel/95 p-1 shadow-panel backdrop-blur-sm">
         {items.map((item) => (
           <button
             key={item.key}

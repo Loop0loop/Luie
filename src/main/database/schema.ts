@@ -117,6 +117,7 @@ export const scene = sqliteTable(
     order: integer("order").notNull().default(0),
     createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updatedAt").notNull(),
+    deletedAt: text("deletedAt"),
   },
   (table) => [
     index("Scene_projectId_chapterId_order_idx").on(table.projectId, table.chapterId, table.order),
@@ -230,6 +231,7 @@ export const note = sqliteTable(
     body: text("body").notNull().default(""),
     createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updatedAt").notNull(),
+    deletedAt: text("deletedAt"),
   },
   (table) => [
     index("Note_projectId_updatedAt_idx").on(table.projectId, table.updatedAt),
@@ -256,6 +258,7 @@ export const synopsis = sqliteTable(
     body: text("body").notNull().default(""),
     createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updatedAt").notNull(),
+    deletedAt: text("deletedAt"),
   },
   (table) => [
     index("Synopsis_projectId_updatedAt_idx").on(table.projectId, table.updatedAt),
@@ -281,6 +284,7 @@ export const plot = sqliteTable(
     body: text("body").notNull().default(""),
     createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updatedAt").notNull(),
+    deletedAt: text("deletedAt"),
   },
   (table) => [
     index("Plot_projectId_updatedAt_idx").on(table.projectId, table.updatedAt),
@@ -454,6 +458,7 @@ export const scrapMemo = sqliteTable(
     sortOrder: integer("sortOrder").notNull().default(0),
     createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updatedAt").notNull(),
+    deletedAt: text("deletedAt"),
   },
   (table) => [
     index("ScrapMemo_projectId_sortOrder_idx").on(table.projectId, table.sortOrder),

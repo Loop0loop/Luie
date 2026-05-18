@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "../../database/index.js";
 import { scene } from "../../database/schema.js";
 import { createLogger } from "../../../shared/logger/index.js";
@@ -28,7 +28,7 @@ class SceneService {
       }).returning();
 
       if (!created) {
-        throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Failed to create scene", { input });
+        throw new ServiceError(ErrorCode.SCENE_CREATE_FAILED, "Failed to create scene", { input });
       }
 
       await dbMaintenanceService.rebuildMemoryChunks({
@@ -42,20 +42,30 @@ class SceneService {
     } catch (error) {
       logger.error("Failed to create scene", error);
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Failed to create scene", { input }, error);
+      throw new ServiceError(ErrorCode.SCENE_CREATE_FAILED, "Failed to create scene", { input }, error);
     }
   }
 
   async getScene(id: string) {
-    const [found] = await db.getClient().select().from(scene).where(eq(scene.id, id)).limit(1);
+    const [found] = await db
+      .getClient()
+      .select()
+      .from(scene)
+      .where(and(eq(scene.id, id), isNull(scene.deletedAt)))
+      .limit(1);
     if (!found) {
-      throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Scene not found", { id });
+      throw new ServiceError(ErrorCode.SCENE_NOT_FOUND, "Scene not found", { id });
     }
     return found;
   }
 
   async getAllScenes(projectId: string) {
-    return db.getClient().select().from(scene).where(eq(scene.projectId, projectId)).orderBy(asc(scene.order));
+    return db
+      .getClient()
+      .select()
+      .from(scene)
+      .where(and(eq(scene.projectId, projectId), isNull(scene.deletedAt)))
+      .orderBy(asc(scene.order));
   }
 
   async updateScene(input: SceneUpdateInput) {
@@ -64,9 +74,9 @@ class SceneService {
         id: scene.id,
         projectId: scene.projectId,
         chapterId: scene.chapterId,
-      }).from(scene).where(eq(scene.id, input.id)).limit(1);
+      }).from(scene).where(and(eq(scene.id, input.id), isNull(scene.deletedAt))).limit(1);
       if (!current) {
-        throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Scene not found", { id: input.id });
+        throw new ServiceError(ErrorCode.SCENE_NOT_FOUND, "Scene not found", { id: input.id });
       }
 
       const patch: Partial<typeof scene.$inferInsert> = { updatedAt: new Date().toISOString() };
@@ -79,7 +89,7 @@ class SceneService {
 
       const [updated] = await db.getClient().update(scene).set(patch).where(eq(scene.id, input.id)).returning();
       if (!updated) {
-        throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Scene not found", { id: input.id });
+        throw new ServiceError(ErrorCode.SCENE_NOT_FOUND, "Scene not found", { id: input.id });
       }
 
       await dbMaintenanceService.rebuildMemoryChunks({
@@ -93,7 +103,7 @@ class SceneService {
     } catch (error) {
       logger.error("Failed to update scene", error);
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Failed to update scene", { input }, error);
+      throw new ServiceError(ErrorCode.SCENE_UPDATE_FAILED, "Failed to update scene", { input }, error);
     }
   }
 
@@ -102,13 +112,14 @@ class SceneService {
       const [current] = await db.getClient().select({
         id: scene.id,
         projectId: scene.projectId,
-      }).from(scene).where(eq(scene.id, id)).limit(1);
+      }).from(scene).where(and(eq(scene.id, id), isNull(scene.deletedAt))).limit(1);
 
       if (!current) {
-        throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Scene not found", { id });
+        throw new ServiceError(ErrorCode.SCENE_NOT_FOUND, "Scene not found", { id });
       }
 
-      await db.getClient().delete(scene).where(eq(scene.id, id));
+      const now = new Date().toISOString();
+      await db.getClient().update(scene).set({ deletedAt: now, updatedAt: now }).where(eq(scene.id, id));
 
       await dbMaintenanceService.rebuildMemoryChunks({
         projectId: String(current.projectId),
@@ -121,7 +132,7 @@ class SceneService {
     } catch (error) {
       logger.error("Failed to delete scene", error);
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError(ErrorCode.DB_QUERY_FAILED, "Failed to delete scene", { id }, error);
+      throw new ServiceError(ErrorCode.SCENE_DELETE_FAILED, "Failed to delete scene", { id }, error);
     }
   }
 }

@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../../../database/index.js";
 import {
   chapter,
@@ -263,7 +263,7 @@ class MemoryProjectionService {
           sourceType: sql<string>`${MEMORY_TARGET_TYPES.SCENE}`,
         })
         .from(scene)
-        .where(inArray(scene.id, sceneIds))
+        .where(and(inArray(scene.id, sceneIds), isNull(scene.deletedAt)))
       : [];
     const noteRows = noteIds.length > 0
       ? await client
@@ -277,7 +277,7 @@ class MemoryProjectionService {
           sourceType: sql<string>`${MEMORY_TARGET_TYPES.NOTE}`,
         })
         .from(note)
-        .where(inArray(note.id, noteIds))
+        .where(and(inArray(note.id, noteIds), isNull(note.deletedAt)))
       : [];
     const synopsisRows = synopsisIds.length > 0
       ? await client
@@ -291,7 +291,7 @@ class MemoryProjectionService {
           sourceType: sql<string>`${MEMORY_TARGET_TYPES.SYNOPSIS}`,
         })
         .from(synopsis)
-        .where(inArray(synopsis.id, synopsisIds))
+        .where(and(inArray(synopsis.id, synopsisIds), isNull(synopsis.deletedAt)))
       : [];
     const plotRows = plotIds.length > 0
       ? await client
@@ -305,7 +305,7 @@ class MemoryProjectionService {
           sourceType: sql<string>`${MEMORY_TARGET_TYPES.PLOT}`,
         })
         .from(plot)
-        .where(inArray(plot.id, plotIds))
+        .where(and(inArray(plot.id, plotIds), isNull(plot.deletedAt)))
       : [];
     const eventRows = eventIds.length > 0
       ? await client
@@ -319,7 +319,7 @@ class MemoryProjectionService {
           sourceType: sql<string>`${MEMORY_TARGET_TYPES.EVENT}`,
         })
         .from(event)
-        .where(inArray(event.id, eventIds))
+        .where(and(inArray(event.id, eventIds), isNull(event.deletedAt)))
       : [];
     const characterRows = characterIds.length > 0
       ? await client
@@ -333,7 +333,7 @@ class MemoryProjectionService {
           sourceType: sql<string>`${MEMORY_TARGET_TYPES.CHARACTER}`,
         })
         .from(character)
-        .where(inArray(character.id, characterIds))
+        .where(and(inArray(character.id, characterIds), isNull(character.deletedAt)))
       : [];
     const factionRows = factionIds.length > 0
       ? await client
@@ -347,7 +347,7 @@ class MemoryProjectionService {
           sourceType: sql<string>`${MEMORY_TARGET_TYPES.FACTION}`,
         })
         .from(faction)
-        .where(inArray(faction.id, factionIds))
+        .where(and(inArray(faction.id, factionIds), isNull(faction.deletedAt)))
       : [];
     const scrapMemoRows = scrapMemoIds.length > 0
       ? await client
@@ -361,7 +361,7 @@ class MemoryProjectionService {
           sourceType: sql<string>`${MEMORY_TARGET_TYPES.SCRAP_MEMO}`,
         })
         .from(scrapMemo)
-        .where(inArray(scrapMemo.id, scrapMemoIds))
+        .where(and(inArray(scrapMemo.id, scrapMemoIds), isNull(scrapMemo.deletedAt)))
       : [];
 
     const sourceRows = [
