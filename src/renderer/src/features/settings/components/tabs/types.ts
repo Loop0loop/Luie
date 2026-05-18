@@ -4,7 +4,8 @@ export type SettingsTabId =
   | "shortcuts"
   | "recovery"
   | "sync"
-  | "language";
+  | "language"
+  | "model";
 
 export type ShortcutActionMeta = {
   id: string;

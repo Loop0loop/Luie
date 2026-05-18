@@ -161,6 +161,11 @@ export const IPC_CHANNELS = {
   SETTINGS_SET_SHORTCUTS: "settings:set-shortcuts",
   SETTINGS_SET_WINDOW_BOUNDS: "settings:set-window-bounds",
   SETTINGS_GET_WINDOW_BOUNDS: "settings:get-window-bounds",
+  SETTINGS_GET_LLM_MODELS: "settings:get-llm-models",
+  SETTINGS_SET_LLM_DEFAULT_MODEL: "settings:set-llm-default-model",
+  SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL: "settings:download-default-llm-model",
+  SETTINGS_GET_LLM_DOWNLOAD_STATUS: "settings:get-llm-download-status",
+  SETTINGS_SET_HF_TOKEN: "settings:set-hf-token",
   SETTINGS_RESET: "settings:reset",
 
   // Recovery

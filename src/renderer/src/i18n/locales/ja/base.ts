@@ -46,6 +46,7 @@ export const jaBase = {
       shortcuts: "ショートカット (Shortcuts)",
       recovery: "ファイル復元 (File Recovery)",
       sync: "同期 (Sync)",
+      model: "モデル (Model)",
       language: "言語 (Language)",
     },
     section: {

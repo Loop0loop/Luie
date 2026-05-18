@@ -2,13 +2,10 @@
  * StaticCanvasViewport — 정적 세계관 설계 캔버스 (UI/UX 밑작업).
  *
  * SRP:
- *   - 데이터: useStaticProjection() (worldBuildingStore 직접 구독 없음)
- *   - 선택 상태: useCanvasSelection() (빈번히 바뀌는 상태만 구독)
+ *   - 데이터: useStaticProjection()
+ *   - 선택 상태: useCanvasSelection()
  *   - 렌더링: ReactFlow + CanvasFloatingToolbar + BottomCreateToolbar
- *
- * 동작:
- *   - 노드 드래그 가능 (저장 로직은 추후 연결)
- *   - 새 노드 추가 / 엣지 연결 / 삭제: 비활성 (UI shell only)
+ *   - BottomCreateToolbar는 별도 파일로 분리됩니다.
  */
 
 import { useCallback, useMemo } from "react";
@@ -19,8 +16,6 @@ import ReactFlow, {
   PanOnScrollMode,
   type OnSelectionChangeParams,
 } from "reactflow";
-import { File, FileText, Image } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import {
   CANVAS_RF_EDGE_TYPE_RELATION,
   CANVAS_RF_NODE_TYPE_ENTITY,
@@ -33,6 +28,7 @@ import { buildFlowGraph } from "../../types";
 import { useStaticProjection } from "../../hooks/useStaticProjection";
 import { useCanvasSelection } from "../../hooks/useCanvasView";
 import { CanvasFloatingToolbar } from "./CanvasFloatingToolbar";
+import { BottomCreateToolbar } from "./BottomCreateToolbar";
 import { RelationEdge } from "./edges/RelationEdge";
 import { EntityNode } from "./nodes/EntityNode";
 
@@ -52,53 +48,13 @@ const DEFAULT_EDGE_OPTIONS = {
 
 const FIT_VIEW_OPTIONS = { padding: CANVAS_FIT_VIEW_PADDING } as const;
 
-// ─── Bottom create toolbar ────────────────────────────────────────────────────
-
-const CREATE_BTN_BASE =
-  "flex h-8 w-8 items-center justify-center rounded-md border border-border/40 bg-element text-muted transition-all hover:border-accent/40 hover:bg-surface-hover hover:text-fg";
-
-function BottomCreateToolbar() {
-  const { t } = useTranslation();
-
-  const items = [
-    { key: "blank", icon: <File className="h-4 w-4" />,     label: t("canvas.create.blank") },
-    { key: "text",  icon: <FileText className="h-4 w-4" />, label: t("canvas.create.text")  },
-    { key: "media", icon: <Image className="h-4 w-4" />,    label: t("canvas.create.media") },
-  ] as const;
-
-  return (
-    <div
-      className="pointer-events-auto absolute bottom-3 left-1/2 z-10 -translate-x-1/2"
-      data-testid="canvas-create-toolbar"
-    >
-      <div className="flex items-center gap-0.5 rounded-lg border border-border/40 bg-panel/95 p-1 shadow-panel backdrop-blur-sm">
-        {items.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            title={item.label}
-            onClick={() => undefined}
-            className={CREATE_BTN_BASE}
-          >
-            {item.icon}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── main component ───────────────────────────────────────────────────────────
+// ─── component ────────────────────────────────────────────────────────────────
 
 export default function StaticCanvasViewport() {
-  // 데이터: worldBuildingStore 직접 구독 없음 (C3 수정)
   const projection = useStaticProjection();
-
-  // 선택 상태만 구독 — 빈번히 바뀌는 상태를 분리해 불필요한 리렌더 방지
   const { selection } = useCanvasSelection();
 
-  // actions는 store에서 직접 가져옴 (shallow 비교 불필요)
-  const selectNode    = useCanvasViewStore((s) => s.selectNode);
+  const selectNode     = useCanvasViewStore((s) => s.selectNode);
   const clearSelection = useCanvasViewStore((s) => s.clearSelection);
 
   const selectedNodeId = selection.kind === "node" ? selection.id : null;

@@ -5,6 +5,9 @@
  * 인라인 매직 넘버를 제거하고 한 곳에서 관리합니다.
  */
 
+/** getSmoothStepPath borderRadius — CanvasEdge(FreeEdge) 경로 곡률 */
+export const CANVAS_EDGE_BORDER_RADIUS = 12 as const;
+
 // ─── RelationEdge (엔티티 관계 엣지) ─────────────────────────────────────────
 
 export const CANVAS_RELATION_EDGE_DEFAULTS = {

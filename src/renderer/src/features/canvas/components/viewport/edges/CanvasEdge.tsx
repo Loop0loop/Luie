@@ -1,19 +1,19 @@
 /**
  * CanvasEdge — 자유 연결 캔버스 엣지 (Obsidian Canvas 스타일).
  *
- * strokeWidth / opacity / transition은 className으로 처리합니다.
- * stroke 색상과 borderColor만 런타임 동적값이므로 인라인 스타일로 유지합니다 (M1 수정).
+ * stroke 색상만 런타임 동적값이므로 인라인 스타일로 유지합니다.
+ * strokeWidth / opacity / transition은 상수 참조로 처리합니다.
  */
 
 import { memo } from "react";
 import {
   BaseEdge,
-  EdgeLabelRenderer,
   getSmoothStepPath,
   type EdgeProps,
 } from "reactflow";
-import { CANVAS_FREE_EDGE_DEFAULTS } from "../../../constants";
+import { CANVAS_FREE_EDGE_DEFAULTS, CANVAS_EDGE_BORDER_RADIUS } from "../../../constants";
 import type { RFCanvasEdgeData } from "../../../types/reactFlow.types";
+import { EdgeLabel } from "./EdgeLabel";
 
 function CanvasEdgeInner({
   id,
@@ -35,7 +35,7 @@ function CanvasEdgeInner({
     targetX,
     targetY,
     targetPosition,
-    borderRadius: 12,
+    borderRadius: CANVAS_EDGE_BORDER_RADIUS,
   });
 
   // stroke 색상만 런타임 동적값 — 인라인 스타일 정당화됨
@@ -67,20 +67,9 @@ function CanvasEdgeInner({
       />
 
       {label && (
-        <EdgeLabelRenderer>
-          <div
-            style={{
-              position: "absolute",
-              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-              pointerEvents: "all",
-              color: strokeColour,
-              borderColor: `${strokeColour}40`,
-            }}
-            className="nodrag nopan rounded-full border bg-panel/95 px-2 py-0.5 text-[10px] font-medium shadow-sm backdrop-blur-sm"
-          >
-            {label}
-          </div>
-        </EdgeLabelRenderer>
+        <EdgeLabel labelX={labelX} labelY={labelY} color={strokeColour}>
+          {label}
+        </EdgeLabel>
       )}
     </>
   );

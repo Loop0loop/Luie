@@ -4,17 +4,17 @@
  * SRP:
  *   - 상수(MODE_I18N, RANGE_I18N 등)는 constants/index.ts에 위치합니다.
  *   - 이 컴포넌트는 렌더링과 인터랙션만 담당합니다.
- *
- * 좌측: [동적 | 정적] 세그먼트 토글
- *   - 동적 모드: 모드 드롭다운 + 범위 드롭다운 표시
- *   - 정적 모드: 드롭다운 숨김
- * 우측: 줌 퍼센트 + 줌 컨트롤 (동적 모드에서만)
  */
 
 import { useTranslation } from "react-i18next";
 import { ZoomIn, ZoomOut, Maximize2, ChevronDown } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { CANVAS_TOOLBAR_HEIGHT_PX } from "@shared/constants/layoutSizing";
+import {
+  CANVAS_ZOOM_MIN,
+  CANVAS_ZOOM_MAX,
+  CANVAS_ZOOM_STEP,
+} from "@shared/constants/canvasSizing";
 import { cn } from "@shared/types/utils";
 import { useCanvasViewStore } from "../../stores";
 import { useCanvasView } from "../../hooks/useCanvasView";
@@ -22,6 +22,7 @@ import {
   CANVAS_AVAILABLE_MODES,
   type CanvasMode,
   type CanvasRange,
+  type CanvasScope,
   type CanvasType,
 } from "../../types";
 import {
@@ -30,12 +31,20 @@ import {
   CANVAS_RANGE_I18N,
 } from "../../constants";
 
-// ─── 줌 상수 ─────────────────────────────────────────────────────────────────
-// CANVAS_ZOOM_MIN/MAX는 @shared/constants/canvasSizing에 있지만
-// 툴바 버튼용 step은 여기서만 사용하므로 로컬 상수로 유지합니다.
-const ZOOM_STEP = 0.15;
-const ZOOM_MIN = 0.25;
-const ZOOM_MAX = 3;
+// ─── 순수 헬퍼 ───────────────────────────────────────────────────────────────
+
+/**
+ * scope에서 현재 챕터 ID를 추출합니다.
+ * handleRangeChange에서 중복 추출 로직을 제거하기 위해 분리합니다.
+ */
+function getCurrentChapterId(scope: CanvasScope | null): string | null {
+  if (!scope) return null;
+  if (scope.kind === "single-chapter") return scope.chapterId;
+  if (scope.kind === "three-chapters") return scope.centerChapterId;
+  return null;
+}
+
+// ─── 상수 ────────────────────────────────────────────────────────────────────
 
 const CANVAS_TYPE_OPTIONS: ReadonlyArray<{ value: CanvasType; i18nKey: string }> = [
   { value: "dynamic", i18nKey: "canvas.type.dynamic" },
@@ -89,15 +98,17 @@ export default function CanvasToolbar() {
   const { canvasType, mode, scope } = useCanvasView();
 
   // viewport는 줌 표시용으로만 필요 — 별도 구독으로 분리
-  const viewport = useCanvasViewStore(
-    useShallow((s) => s.viewport),
-  );
+  const viewport = useCanvasViewStore(useShallow((s) => s.viewport));
 
-  // actions는 store에서 직접 가져옴 (shallow 비교 불필요)
-  const setCanvasType = useCanvasViewStore((s) => s.setCanvasType);
-  const setMode       = useCanvasViewStore((s) => s.setMode);
-  const setScope      = useCanvasViewStore((s) => s.setScope);
-  const setViewport   = useCanvasViewStore((s) => s.setViewport);
+  // actions는 관련된 것끼리 묶어서 한 번에 가져옴
+  const { setCanvasType, setMode, setScope, setViewport } = useCanvasViewStore(
+    useShallow((s) => ({
+      setCanvasType: s.setCanvasType,
+      setMode:       s.setMode,
+      setScope:      s.setScope,
+      setViewport:   s.setViewport,
+    })),
+  );
 
   const isDynamic = canvasType === "dynamic";
 
@@ -111,30 +122,18 @@ export default function CanvasToolbar() {
 
   const handleRangeChange = (range: CanvasRange) => {
     if (range === "current-chapter") {
-      const chapterId =
-        scope?.kind === "single-chapter"
-          ? scope.chapterId
-          : scope?.kind === "three-chapters"
-            ? scope.centerChapterId
-            : null;
+      const chapterId = getCurrentChapterId(scope);
       setScope(chapterId ? { kind: "single-chapter", chapterId } : null);
     } else if (range === "three-chapters") {
-      const chapterId =
-        scope?.kind === "single-chapter"
-          ? scope.chapterId
-          : scope?.kind === "three-chapters"
-            ? scope.centerChapterId
-            : null;
-      setScope(
-        chapterId ? { kind: "three-chapters", centerChapterId: chapterId } : null,
-      );
+      const chapterId = getCurrentChapterId(scope);
+      setScope(chapterId ? { kind: "three-chapters", centerChapterId: chapterId } : null);
     } else {
       setScope(null);
     }
   };
 
-  const zoomIn  = () => setViewport({ zoom: Math.min(ZOOM_MAX, viewport.zoom + ZOOM_STEP) });
-  const zoomOut = () => setViewport({ zoom: Math.max(ZOOM_MIN, viewport.zoom - ZOOM_STEP) });
+  const zoomIn  = () => setViewport({ zoom: Math.min(CANVAS_ZOOM_MAX, viewport.zoom + CANVAS_ZOOM_STEP) });
+  const zoomOut = () => setViewport({ zoom: Math.max(CANVAS_ZOOM_MIN, viewport.zoom - CANVAS_ZOOM_STEP) });
   const fitView = () => setViewport({ zoom: 1, pan: { x: 0, y: 0 } });
 
   return (
@@ -149,7 +148,6 @@ export default function CanvasToolbar() {
         <>
           <span className="h-3 w-px bg-border/60" aria-hidden />
 
-          {/* Mode selector */}
           <div className="relative">
             <select
               value={mode}
@@ -180,7 +178,6 @@ export default function CanvasToolbar() {
 
           <span className="h-3 w-px bg-border/60" aria-hidden />
 
-          {/* Range selector */}
           <div className="relative">
             <select
               value={currentRange}

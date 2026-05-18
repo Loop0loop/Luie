@@ -1,6 +1,8 @@
 import type { IPCResponse } from "@shared/ipc/index.js";
 import type {
   AppSettings,
+  LlmModelSettingsView,
+  LlmModelDownloadStatus,
   Chapter,
   Scene,
   ChapterSaveResult,
@@ -469,6 +471,22 @@ export type RendererApi = {
     }) => Promise<
       IPCResponse<{ width: number; height: number; x: number; y: number }>
     >;
+    getLlmModels: () => Promise<IPCResponse<LlmModelSettingsView>>;
+    setLlmDefaultModel: (input: {
+      modelPath: string;
+      modelId?: string;
+    }) => Promise<IPCResponse<LlmModelSettingsView>>;
+    downloadDefaultLlmModel: () => Promise<
+      IPCResponse<{
+        downloaded: boolean;
+        modelPath: string;
+        modelId: string;
+      }>
+    >;
+    getLlmDownloadStatus: () => Promise<IPCResponse<LlmModelDownloadStatus>>;
+    setHuggingFaceToken: (input: {
+      token: string;
+    }) => Promise<IPCResponse<{ saved: boolean }>>;
     reset: () => Promise<IPCResponse<AppSettings>>;
   };
   recovery: {

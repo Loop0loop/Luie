@@ -45,6 +45,13 @@ const SyncTab = lazy(() =>
     }),
   ),
 );
+const ModelTab = lazy(() =>
+  import("@renderer/features/settings/components/tabs/ModelTab").then(
+    (module) => ({
+      default: module.ModelTab,
+    }),
+  ),
+);
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -215,6 +222,26 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                   onSyncNow={handleSyncNow}
                   onToggleAutoSync={handleToggleAutoSync}
                   onResolveConflict={handleResolveConflict}
+                />
+              )}
+
+              {activeTab === "model" && (
+                <ModelTab
+                  t={t}
+                  modelView={settings.modelView}
+                  isBusy={settings.isModelBusy}
+                  manualModelPath={settings.manualModelPath}
+                  onChangeManualPath={settings.setManualModelPath}
+                  onRefresh={() => void settings.refreshModelView()}
+                  onDownloadDefault={() => void settings.handleDownloadDefaultModel()}
+                  onSaveManualPath={() => void settings.handleSetManualModelPath()}
+                  onSelectModel={(modelPath, modelId) =>
+                    void settings.handleSetLocalModel(modelPath, modelId)
+                  }
+                  hfToken={settings.hfToken}
+                  onChangeHfToken={settings.setHfToken}
+                  onSaveHfToken={() => void settings.handleSaveHfToken()}
+                  downloadStatus={settings.downloadStatus}
                 />
               )}
 

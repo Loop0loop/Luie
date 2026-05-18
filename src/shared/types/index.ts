@@ -1053,6 +1053,41 @@ export interface AppSettings {
   menuBarMode?: WindowMenuBarMode;
   sync?: SyncSettings;
   startup?: StartupSettings;
+  llm?: {
+    modelsDir?: string;
+    defaultModelPath?: string;
+    defaultModelId?: string;
+    llmProviderHint?: "llamacpp" | "none";
+    hfTokenCipher?: string;
+  };
+}
+
+export interface LocalLlmModelInfo {
+  id: string;
+  fileName: string;
+  path: string;
+  sizeBytes: number;
+  modifiedAt: string;
+  isDefault: boolean;
+}
+
+export interface LlmModelSettingsView {
+  modelsDir: string;
+  defaultModelPath: string | null;
+  defaultModelId: string | null;
+  models: LocalLlmModelInfo[];
+  hasHuggingFaceToken: boolean;
+}
+
+export interface LlmModelDownloadStatus {
+  active: boolean;
+  modelId: string;
+  fileName: string;
+  downloadedBytes: number;
+  totalBytes: number | null;
+  percent: number | null;
+  startedAt?: string;
+  error?: string;
 }
 
 export type ShortcutAction =

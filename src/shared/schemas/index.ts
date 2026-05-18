@@ -641,6 +641,15 @@ export const windowBoundsSchema = z.strictObject({
   y: z.number().int(),
 });
 
+export const settingsLlmDefaultModelSchema = z.strictObject({
+  modelPath: z.string().min(1),
+  modelId: z.string().min(1).optional(),
+});
+
+export const settingsHfTokenSchema = z.strictObject({
+  token: z.string().min(1),
+});
+
 const uiRightPanelTabSchema = z.enum([
   "character",
   "event",

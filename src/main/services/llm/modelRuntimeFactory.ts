@@ -5,6 +5,7 @@ import { createLogger } from "../../../shared/logger/index.js";
 import type { ModelRuntimeClient } from "./modelRuntimeClient.js";
 import { DeterministicProvider } from "./providers/deterministicProvider.js";
 import { LlamaCppProvider } from "./providers/llamaCppProvider.js";
+import { settingsManager } from "../../manager/settingsManager.js";
 
 const logger = createLogger("ModelRuntimeFactory");
 const deterministicProvider = new DeterministicProvider();
@@ -40,7 +41,13 @@ export async function resolveModelRuntimeClient(
   const configuredPath = row[0]?.llmModelPath ?? process.env.LUIE_LLM_MODEL_PATH ?? null;
   const embeddingConfiguredPath =
     row[0]?.llmEmbeddingModelPath ?? process.env.LUIE_LLM_EMBEDDING_MODEL_PATH ?? null;
-  const providerHint = row[0]?.llmProviderHint ?? process.env.LUIE_LLM_PROVIDER_HINT ?? null;
+  const localLlm = settingsManager.getLlmSettings();
+  const providerHint =
+    row[0]?.llmProviderHint ??
+    localLlm.llmProviderHint ??
+    process.env.LUIE_LLM_PROVIDER_HINT ??
+    null;
+  const fallbackModelPath = localLlm.defaultModelPath ?? null;
   const envContextSize = Number.parseInt(process.env.LUIE_LLM_CONTEXT_SIZE ?? "", 10);
   const configuredContextSize = Number.isFinite(envContextSize) ? envContextSize : undefined;
 
@@ -48,8 +55,9 @@ export async function resolveModelRuntimeClient(
     return deterministicProvider;
   }
 
-  if (configuredPath && (providerHint === "llamacpp" || providerHint === null)) {
-    return getOrCreateLlamaProvider(configuredPath, embeddingConfiguredPath, configuredContextSize);
+  const effectiveModelPath = configuredPath ?? fallbackModelPath;
+  if (effectiveModelPath && (providerHint === "llamacpp" || providerHint === null)) {
+    return getOrCreateLlamaProvider(effectiveModelPath, embeddingConfiguredPath, configuredContextSize);
   }
 
   logger.info("LLM provider path is not configured, using deterministic fallback", {

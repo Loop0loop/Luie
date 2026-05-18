@@ -152,6 +152,7 @@ export class SettingsManager {
       menuBarMode: settings.menuBarMode ?? current.menuBarMode,
       sync: settings.sync ?? current.sync,
       startup: settings.startup ?? current.startup,
+      llm: settings.llm ?? current.llm,
     };
     this.store.set(merged);
     logger.info("Settings updated", { settings: merged });
@@ -255,6 +256,41 @@ export class SettingsManager {
 
   setMenuBarMode(mode: WindowMenuBarMode): void {
     this.store.set("menuBarMode", mode);
+  }
+
+  getLlmSettings(): {
+    modelsDir?: string;
+    defaultModelPath?: string;
+    defaultModelId?: string;
+    llmProviderHint?: "llamacpp" | "none";
+    hfTokenCipher?: string;
+  } {
+    const llm = this.store.get("llm") ?? {};
+    return {
+      modelsDir: llm.modelsDir,
+      defaultModelPath: llm.defaultModelPath,
+      defaultModelId: llm.defaultModelId,
+      llmProviderHint: (llm as { llmProviderHint?: "llamacpp" | "none" }).llmProviderHint,
+      hfTokenCipher: (llm as { hfTokenCipher?: string }).hfTokenCipher,
+    };
+  }
+
+  setLlmSettings(settings: {
+    modelsDir?: string;
+    defaultModelPath?: string;
+    defaultModelId?: string;
+    llmProviderHint?: "llamacpp" | "none";
+    hfTokenCipher?: string;
+  }): void {
+    const current = this.store.get("llm") ?? {};
+    this.store.set("llm", {
+      ...current,
+      ...settings,
+    });
+    logger.info("LLM settings updated", {
+      hasDefaultModelPath: Boolean(settings.defaultModelPath),
+      defaultModelId: settings.defaultModelId,
+    });
   }
 
   getSyncSettings(): SyncSettings {
