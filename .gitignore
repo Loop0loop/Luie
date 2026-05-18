@@ -40,8 +40,6 @@ drizzle/cache
 drizzle/migrations
 drizzle/main/meta
 drizzle/main
-
-# Dizzle
 drizzle/app-dev-cache.db-shm
 drizzle/app-dev-cache.db-wal
 drizzle/app-dev.db-shm
