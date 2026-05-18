@@ -40,7 +40,18 @@ export function registerRagQaIPCHandlers(
             "윈도우를 찾을 수 없습니다.",
           );
         }
-        return ragService.ask(input, targetWindow);
+        try {
+          return await ragService.ask(input, targetWindow);
+        } catch (error) {
+          const cause = error instanceof Error ? error.message : String(error);
+          throw new ServiceError(
+            ErrorCode.RAG_QA_FAILED,
+            `Failed to start RAG QA: ${cause}`,
+            {
+              cause,
+            },
+          );
+        }
       },
     },
     {

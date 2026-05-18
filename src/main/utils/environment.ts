@@ -3,6 +3,8 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 
 const resolveIsPackaged = (): boolean => {
+  if (process.env.LUIE_APP_IS_PACKAGED === "1") return true;
+  if (process.env.LUIE_APP_IS_PACKAGED === "0") return false;
   if (process.type !== "browser") {
     return process.env.NODE_ENV === "production";
   }

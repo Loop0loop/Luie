@@ -1,4 +1,3 @@
-import { parentPort } from "node:worker_threads";
 import { ErrorCode } from "../../shared/constants/errorCode.js";
 import type {
   RagQaErrorPayload,
@@ -23,11 +22,32 @@ type UtilityEventEnvelope =
   | { type: "event"; event: "ragQa.stream"; payload: RagQaStreamPayload }
   | { type: "event"; event: "ragQa.error"; payload: RagQaErrorPayload };
 
+type MessagePortLike = {
+  postMessage: (message: UtilityEventEnvelope) => void;
+};
+
+const processWithParentPort = process as typeof process & { parentPort?: MessagePortLike };
+const processWithSend = process as typeof process & {
+  send?: (message: UtilityEventEnvelope) => void;
+};
+
+const outboundPort: MessagePortLike | null = processWithParentPort.parentPort ?? null;
+
 class RagQaWorker {
   private activeRuns = new Map<string, ActiveRun>();
 
   private post(message: UtilityEventEnvelope): void {
-    parentPort?.postMessage(message);
+    if (outboundPort) {
+      outboundPort.postMessage(message);
+      return;
+    }
+    if (typeof processWithSend.send === "function") {
+      processWithSend.send(message);
+      return;
+    }
+    logger.warn("Utility RAG QA event dropped: no outbound channel", {
+      event: message.event,
+    });
   }
 
   private emitStream(payload: RagQaStreamPayload): void {
