@@ -12,7 +12,7 @@ import {
   getBezierPath,
   type EdgeProps,
 } from "reactflow";
-import { CANVAS_EDGE_DEFAULTS } from "../../../constants";
+import { CANVAS_RELATION_EDGE_DEFAULTS } from "../../../constants";
 import type { RFRelationEdgeData } from "../../../types/reactFlow.types";
 
 function RelationEdgeInner({
@@ -42,12 +42,12 @@ function RelationEdgeInner({
     : (data?.color ?? "var(--text-secondary)");
 
   const strokeWidth = selected
-    ? CANVAS_EDGE_DEFAULTS.strokeWidthSelected
-    : CANVAS_EDGE_DEFAULTS.strokeWidth;
+    ? CANVAS_RELATION_EDGE_DEFAULTS.strokeWidthSelected
+    : CANVAS_RELATION_EDGE_DEFAULTS.strokeWidth;
 
   const opacity = selected
-    ? CANVAS_EDGE_DEFAULTS.opacitySelected
-    : CANVAS_EDGE_DEFAULTS.opacity;
+    ? CANVAS_RELATION_EDGE_DEFAULTS.opacitySelected
+    : CANVAS_RELATION_EDGE_DEFAULTS.opacity;
 
   const label = data?.label;
 
@@ -61,7 +61,7 @@ function RelationEdgeInner({
           stroke: strokeColour,
           strokeWidth,
           opacity,
-          transition: `stroke ${CANVAS_EDGE_DEFAULTS.transitionDuration}ms, stroke-width ${CANVAS_EDGE_DEFAULTS.transitionDuration}ms, opacity ${CANVAS_EDGE_DEFAULTS.transitionDuration}ms`,
+          transition: `stroke ${CANVAS_RELATION_EDGE_DEFAULTS.transitionDuration}ms, stroke-width ${CANVAS_RELATION_EDGE_DEFAULTS.transitionDuration}ms, opacity ${CANVAS_RELATION_EDGE_DEFAULTS.transitionDuration}ms`,
         }}
       />
 

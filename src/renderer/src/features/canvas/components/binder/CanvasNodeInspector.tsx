@@ -6,7 +6,6 @@
  */
 
 import { useTranslation } from "react-i18next";
-import { useShallow } from "zustand/react/shallow";
 import { X } from "lucide-react";
 import { useCanvasViewStore } from "@renderer/features/canvas/stores";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
@@ -24,9 +23,8 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
   const { t } = useTranslation();
 
   const graphData = useWorldBuildingStore((state) => state.graphData);
-  const clearSelection = useCanvasViewStore(
-    useShallow((state) => state.clearSelection),
-  );
+  // action은 store에서 직접 가져옴 (shallow 비교 불필요)
+  const clearSelection = useCanvasViewStore((s) => s.clearSelection);
 
   const node = graphData?.nodes.find((n) => n.id === nodeId) ?? null;
 

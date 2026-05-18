@@ -51,13 +51,12 @@ export default function ExplorerPanel() {
     scope?.kind === "single-chapter" ? scope.chapterId : null;
 
   const handleSelectChapter = (chapterId: string) => {
-    // scope와 currentItem을 동기화합니다 (M12 수정).
-    // scope만 설정하면 에디터로 돌아갔을 때 이전 챕터가 열려있는 문제가 발생합니다.
-    setScope({ kind: "single-chapter", chapterId });
+    // chapter를 먼저 찾고 없으면 early return — 부분적으로 깨진 상태 방지 (M12 수정)
     const chapter = items.find((c) => c.id === chapterId);
-    if (chapter) {
-      setCurrent(chapter);
-    }
+    if (!chapter) return;
+
+    setScope({ kind: "single-chapter", chapterId });
+    setCurrent(chapter);
   };
 
   return (

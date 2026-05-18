@@ -1,24 +1,22 @@
 /**
- * CanvasBinderPanel — BinderSidebar "canvas" tab content.
+ * CanvasBinderPanel — BinderSidebar "canvas" 탭 콘텐츠.
  *
  * - selection.kind === "node" → CanvasNodeInspector
  * - selection.kind === "none" → CanvasBinderEmpty
  *
- * Side-effect: 노드가 선택됐을 때 BinderBar가 닫혀있는 경우에만 자동으로 엽니다.
- * 이미 열려있거나 사용자가 직접 닫은 경우에는 강제로 다시 열지 않습니다.
+ * Side-effect: BinderBar가 닫혀있을 때만 자동으로 엽니다.
  */
 
 import { useEffect } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { useCanvasViewStore } from "@renderer/features/canvas/stores";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { useCanvasSelection } from "@renderer/features/canvas/hooks/useCanvasView";
 import CanvasBinderEmpty from "./CanvasBinderEmpty";
 import CanvasNodeInspector from "./CanvasNodeInspector";
 
 export default function CanvasBinderPanel() {
-  const selection = useCanvasViewStore(
-    useShallow((state) => state.selection),
-  );
+  // 빈번히 바뀌는 selection만 구독
+  const { selection } = useCanvasSelection();
 
   const { rightPanelOpen, openRightPanelTab } = useUIStore(
     useShallow((state) => ({
@@ -27,8 +25,6 @@ export default function CanvasBinderPanel() {
     })),
   );
 
-  // BinderBar가 닫혀있을 때만 자동으로 엽니다.
-  // 이미 열려있으면 사용자 의도를 존중해 강제 재오픈하지 않습니다.
   useEffect(() => {
     if (selection.kind === "node" && !rightPanelOpen) {
       openRightPanelTab("canvas");

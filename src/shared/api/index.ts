@@ -403,8 +403,14 @@ export type RendererApi = {
   rag: {
     ask: (input: RagQaRequest) => Promise<IPCResponse<RagQaRunHandle>>;
     stop: (runId?: string) => Promise<IPCResponse<{ stopped: boolean }>>;
-    onStream: (callback: (payload: RagQaStreamPayload) => void) => () => void;
-    onError: (callback: (payload: RagQaErrorPayload) => void) => () => void;
+    onStream: (
+      callback: (payload: RagQaStreamPayload) => void,
+      runId?: string,
+    ) => () => void;
+    onError: (
+      callback: (payload: RagQaErrorPayload) => void,
+      runId?: string,
+    ) => () => void;
   };
   autoSave: (
     chapterId: string,

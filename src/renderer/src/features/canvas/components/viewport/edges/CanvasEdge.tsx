@@ -12,7 +12,7 @@ import {
   getSmoothStepPath,
   type EdgeProps,
 } from "reactflow";
-import { CANVAS_CANVAS_EDGE_DEFAULTS } from "../../../constants";
+import { CANVAS_FREE_EDGE_DEFAULTS } from "../../../constants";
 import type { RFCanvasEdgeData } from "../../../types/reactFlow.types";
 
 function CanvasEdgeInner({
@@ -44,12 +44,12 @@ function CanvasEdgeInner({
   const isBidirectional = data?.direction === "bidirectional";
 
   const strokeWidth = selected
-    ? CANVAS_CANVAS_EDGE_DEFAULTS.strokeWidthSelected
-    : CANVAS_CANVAS_EDGE_DEFAULTS.strokeWidth;
+    ? CANVAS_FREE_EDGE_DEFAULTS.strokeWidthSelected
+    : CANVAS_FREE_EDGE_DEFAULTS.strokeWidth;
 
   const opacity = selected
-    ? CANVAS_CANVAS_EDGE_DEFAULTS.opacitySelected
-    : CANVAS_CANVAS_EDGE_DEFAULTS.opacity;
+    ? CANVAS_FREE_EDGE_DEFAULTS.opacitySelected
+    : CANVAS_FREE_EDGE_DEFAULTS.opacity;
 
   return (
     <>
@@ -62,7 +62,7 @@ function CanvasEdgeInner({
           stroke: strokeColour,
           strokeWidth,
           opacity,
-          transition: `stroke-width ${CANVAS_CANVAS_EDGE_DEFAULTS.transitionDuration}ms, opacity ${CANVAS_CANVAS_EDGE_DEFAULTS.transitionDuration}ms`,
+          transition: `stroke-width ${CANVAS_FREE_EDGE_DEFAULTS.transitionDuration}ms, opacity ${CANVAS_FREE_EDGE_DEFAULTS.transitionDuration}ms`,
         }}
       />
 

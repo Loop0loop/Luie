@@ -13,11 +13,13 @@ import {
 import { searchService } from "../searchService.js";
 import type { RagQaEvidence } from "../../../../shared/types/index.js";
 import { escapeLike } from "../../../utils/queryHelpers.js";
+import { createLogger } from "../../../../shared/logger/index.js";
 
 export type RagContextPacket = {
   assembledPrompt: string;
   evidence: RagQaEvidence[];
 };
+const logger = createLogger("RagContextAssembler");
 
 // Default prompt budget is conservative to avoid context overflow on
 // runtimes with smaller context windows.
@@ -34,23 +36,38 @@ function formatLayer(name: string, body: string): string {
   return `## ${name}\n${body.trim()}\n`;
 }
 
+function isMissingTableError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return /no such table/i.test(error.message);
+}
+
 async function buildLayer0ProjectSummary(projectId: string): Promise<string> {
-  const [synopses, plots] = await Promise.all([
-    db
-      .getClient()
-      .select({ title: synopsis.title, body: synopsis.body })
-      .from(synopsis)
-      .where(and(eq(synopsis.projectId, projectId), isNull(synopsis.deletedAt)))
-      .orderBy(asc(synopsis.updatedAt))
-      .limit(40),
-    db
-      .getClient()
-      .select({ title: plot.title, body: plot.body })
-      .from(plot)
-      .where(and(eq(plot.projectId, projectId), isNull(plot.deletedAt)))
-      .orderBy(asc(plot.updatedAt))
-      .limit(40),
-  ]);
+  let synopses: Array<{ title: string; body: string }> = [];
+  let plots: Array<{ title: string; body: string }> = [];
+
+  try {
+    [synopses, plots] = await Promise.all([
+      db
+        .getClient()
+        .select({ title: synopsis.title, body: synopsis.body })
+        .from(synopsis)
+        .where(and(eq(synopsis.projectId, projectId), isNull(synopsis.deletedAt)))
+        .orderBy(asc(synopsis.updatedAt))
+        .limit(40),
+      db
+        .getClient()
+        .select({ title: plot.title, body: plot.body })
+        .from(plot)
+        .where(and(eq(plot.projectId, projectId), isNull(plot.deletedAt)))
+        .orderBy(asc(plot.updatedAt))
+        .limit(40),
+    ]);
+  } catch (error) {
+    if (!isMissingTableError(error)) {
+      throw error;
+    }
+    logger.warn("Layer0 skipped due to missing table", { projectId, error });
+  }
 
   const content = [
     "[PROJECT SYNOPSIS]",
@@ -63,18 +80,31 @@ async function buildLayer0ProjectSummary(projectId: string): Promise<string> {
 }
 
 async function buildLayer1ChapterSummaries(projectId: string): Promise<string> {
-  const rows = await db
-    .getClient()
-    .select({
-      chapterId: chapterSummary.chapterId,
-      chapterNumber: chapterSummary.chapterNumber,
-      summary: chapterSummary.summary,
-      chapterTitle: chapter.title,
-    })
-    .from(chapterSummary)
-    .leftJoin(chapter, eq(chapter.id, chapterSummary.chapterId))
-    .where(eq(chapterSummary.projectId, projectId))
-    .orderBy(asc(chapterSummary.chapterNumber), asc(chapterSummary.updatedAt));
+  let rows: Array<{
+    chapterId: string;
+    chapterNumber: number;
+    summary: string;
+    chapterTitle: string | null;
+  }> = [];
+  try {
+    rows = await db
+      .getClient()
+      .select({
+        chapterId: chapterSummary.chapterId,
+        chapterNumber: chapterSummary.chapterNumber,
+        summary: chapterSummary.summary,
+        chapterTitle: chapter.title,
+      })
+      .from(chapterSummary)
+      .leftJoin(chapter, eq(chapter.id, chapterSummary.chapterId))
+      .where(eq(chapterSummary.projectId, projectId))
+      .orderBy(asc(chapterSummary.chapterNumber), asc(chapterSummary.updatedAt));
+  } catch (error) {
+    if (!isMissingTableError(error)) {
+      throw error;
+    }
+    logger.warn("Layer1 skipped due to missing table", { projectId, error });
+  }
 
   const content = rows
     .map((row) => `- [#${row.chapterNumber}] (${row.chapterId}) ${row.chapterTitle ?? "Untitled"}\n${row.summary}`)

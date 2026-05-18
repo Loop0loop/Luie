@@ -1,12 +1,10 @@
 /**
  * StaticCanvasViewport — 정적 세계관 설계 캔버스 (UI/UX 밑작업).
  *
- * 데이터 흐름:
- *   useStaticProjection() → CanvasProjection (프로젝트 전체 엔티티)
- *   buildFlowGraph(projection, selectedNodeId) → RF nodes/edges
- *
- * worldBuildingStore를 직접 구독하지 않습니다 (C3 수정).
- * 모든 store 구독은 훅 레이어에서 처리합니다.
+ * SRP:
+ *   - 데이터: useStaticProjection() (worldBuildingStore 직접 구독 없음)
+ *   - 선택 상태: useCanvasSelection() (빈번히 바뀌는 상태만 구독)
+ *   - 렌더링: ReactFlow + CanvasFloatingToolbar + BottomCreateToolbar
  *
  * 동작:
  *   - 노드 드래그 가능 (저장 로직은 추후 연결)
@@ -23,7 +21,6 @@ import ReactFlow, {
 } from "reactflow";
 import { File, FileText, Image } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useShallow } from "zustand/react/shallow";
 import {
   CANVAS_RF_EDGE_TYPE_RELATION,
   CANVAS_RF_NODE_TYPE_ENTITY,
@@ -34,6 +31,7 @@ import {
 import { useCanvasViewStore } from "../../stores";
 import { buildFlowGraph } from "../../types";
 import { useStaticProjection } from "../../hooks/useStaticProjection";
+import { useCanvasSelection } from "../../hooks/useCanvasView";
 import { CanvasFloatingToolbar } from "./CanvasFloatingToolbar";
 import { RelationEdge } from "./edges/RelationEdge";
 import { EntityNode } from "./nodes/EntityNode";
@@ -93,16 +91,15 @@ function BottomCreateToolbar() {
 // ─── main component ───────────────────────────────────────────────────────────
 
 export default function StaticCanvasViewport() {
-  // worldBuildingStore 직접 구독 없음 — useStaticProjection이 담당 (C3 수정)
+  // 데이터: worldBuildingStore 직접 구독 없음 (C3 수정)
   const projection = useStaticProjection();
 
-  const { selection, selectNode, clearSelection } = useCanvasViewStore(
-    useShallow((state) => ({
-      selection: state.selection,
-      selectNode: state.selectNode,
-      clearSelection: state.clearSelection,
-    })),
-  );
+  // 선택 상태만 구독 — 빈번히 바뀌는 상태를 분리해 불필요한 리렌더 방지
+  const { selection } = useCanvasSelection();
+
+  // actions는 store에서 직접 가져옴 (shallow 비교 불필요)
+  const selectNode    = useCanvasViewStore((s) => s.selectNode);
+  const clearSelection = useCanvasViewStore((s) => s.clearSelection);
 
   const selectedNodeId = selection.kind === "node" ? selection.id : null;
 

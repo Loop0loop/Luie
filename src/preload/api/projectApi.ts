@@ -264,8 +264,10 @@ export function createProjectApi({
     rag: {
       ask: (input) => safeInvoke(IPC_CHANNELS.RAG_QA_ASK, input),
       stop: (runId) => safeInvoke(IPC_CHANNELS.RAG_QA_STOP, { runId }),
-      onStream: (callback) => {
+      onStream: (callback, runId) => {
         const listener = (_event: unknown, payload: unknown) => {
+          const typed = payload as { runId?: string };
+          if (runId && typed.runId !== runId) return;
           callback(payload as never);
         };
         ipcRenderer.on(IPC_CHANNELS.RAG_QA_STREAM, listener);
@@ -273,8 +275,10 @@ export function createProjectApi({
           ipcRenderer.removeListener(IPC_CHANNELS.RAG_QA_STREAM, listener);
         };
       },
-      onError: (callback) => {
+      onError: (callback, runId) => {
         const listener = (_event: unknown, payload: unknown) => {
+          const typed = payload as { runId?: string };
+          if (runId && typed.runId && typed.runId !== runId) return;
           callback(payload as never);
         };
         ipcRenderer.on(IPC_CHANNELS.RAG_QA_ERROR, listener);

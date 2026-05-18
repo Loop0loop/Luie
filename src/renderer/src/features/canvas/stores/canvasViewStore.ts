@@ -83,6 +83,9 @@ const isCanvasActivityPanel = (value: unknown): value is CanvasActivityPanel =>
   typeof value === "string" &&
   ALL_ACTIVITY_PANELS.includes(value as CanvasActivityPanel);
 
+const isCanvasType = (value: unknown): value is CanvasType =>
+  value === "dynamic" || value === "static";
+
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
 
@@ -126,6 +129,7 @@ const sanitizePersistedState = (
 
   const next: Partial<CanvasViewPersistedState> = {};
 
+  if (isCanvasType(input.canvasType)) next.canvasType = input.canvasType;
   if (isCanvasMode(input.mode)) next.mode = input.mode;
 
   const scope = sanitizePersistedScope(input.scope);
@@ -177,6 +181,7 @@ const createNoopStorage = (): StateStorage => ({
  * 단일 진실 공급원입니다. 새 persist 필드 추가 시 반드시 여기에 먼저 추가하세요.
  */
 type CanvasViewPersistedState = {
+  canvasType: CanvasType;
   mode: CanvasMode;
   scope: CanvasScope | null;
   layers: CanvasLayer[];
@@ -319,6 +324,7 @@ export const useCanvasViewStore = create<CanvasViewState>()(
       }),
       onRehydrateStorage: () => () => undefined,
       partialize: (state): CanvasViewPersistedState => ({
+        canvasType: state.canvasType,
         mode: state.mode,
         scope: state.scope,
         layers: state.layers,

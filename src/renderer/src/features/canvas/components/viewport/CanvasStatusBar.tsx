@@ -1,22 +1,16 @@
 /**
- * CanvasStatusBar — bottom chrome of the canvas viewport.
+ * CanvasStatusBar — canvas 뷰포트 하단 크롬.
  *
- * P5: mode label, active chapter title, node/edge count wired to stores.
+ * SRP:
+ *   - MODE_I18N은 constants/index.ts의 CANVAS_MODE_I18N을 사용합니다.
+ *   - 이 컴포넌트는 렌더링만 담당합니다.
  */
 import { useTranslation } from "react-i18next";
-import { useShallow } from "zustand/react/shallow";
 import { CANVAS_STATUS_BAR_HEIGHT_PX } from "@shared/constants/layoutSizing";
-import { useCanvasViewStore } from "../../stores";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
+import { useCanvasView } from "../../hooks/useCanvasView";
+import { CANVAS_MODE_I18N } from "../../constants";
 import type { CanvasProjection } from "../../types";
-
-const MODE_I18N: Record<string, string> = {
-  "flow-map": "canvas.mode.flowMap.label",
-  "scene-board": "canvas.mode.sceneBoard.label",
-  "timeline": "canvas.mode.timeline.label",
-  "character-map": "canvas.mode.characterMap.label",
-  "memory-map": "canvas.mode.memoryMap.label",
-};
 
 interface CanvasStatusBarProps {
   projection: CanvasProjection | null;
@@ -25,12 +19,8 @@ interface CanvasStatusBarProps {
 export default function CanvasStatusBar({ projection }: CanvasStatusBarProps) {
   const { t } = useTranslation();
 
-  const { mode, scope } = useCanvasViewStore(
-    useShallow((state) => ({
-      mode: state.mode,
-      scope: state.scope,
-    })),
-  );
+  // 안정적인 상태만 구독
+  const { mode, scope } = useCanvasView();
 
   const activeChapterTitle = useChapterStore((state) => {
     const chapterId =
@@ -52,23 +42,19 @@ export default function CanvasStatusBar({ projection }: CanvasStatusBarProps) {
       style={{ height: CANVAS_STATUS_BAR_HEIGHT_PX }}
       data-testid="canvas-status-bar"
     >
-      {/* Mode */}
       <span className="font-medium text-fg/70">
-        {t(MODE_I18N[mode] ?? "canvas.mode.flowMap.label")}
+        {t(CANVAS_MODE_I18N[mode] ?? CANVAS_MODE_I18N["flow-map"])}
       </span>
 
-      {/* Chapter title */}
       {activeChapterTitle && (
         <>
           <span className="opacity-40">·</span>
-          <span className="truncate max-w-[160px]">{activeChapterTitle}</span>
+          <span className="max-w-[160px] truncate">{activeChapterTitle}</span>
         </>
       )}
 
-      {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Counts */}
       {projection && (
         <span className="tabular-nums opacity-60">
           {nodeCount}N · {edgeCount}E

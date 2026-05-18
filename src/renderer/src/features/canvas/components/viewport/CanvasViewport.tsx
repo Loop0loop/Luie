@@ -28,7 +28,6 @@ import ReactFlow, {
   PanOnScrollMode,
   type OnSelectionChangeParams,
 } from "reactflow";
-import { useShallow } from "zustand/react/shallow";
 import {
   CANVAS_FIT_VIEW_PADDING,
   CANVAS_RF_EDGE_TYPE_RELATION,
@@ -41,6 +40,7 @@ import {
   buildFlowGraph,
   type CanvasProjection,
 } from "../../types";
+import { useCanvasSelection } from "../../hooks/useCanvasView";
 import { CanvasFloatingToolbar } from "./CanvasFloatingToolbar";
 import { RelationEdge } from "./edges/RelationEdge";
 import { EntityNode } from "./nodes/EntityNode";
@@ -71,13 +71,12 @@ interface CanvasViewportProps {
 // ─── component ────────────────────────────────────────────────────────────────
 
 export default function CanvasViewport({ projection }: CanvasViewportProps) {
-  const { selection, selectNode, clearSelection } = useCanvasViewStore(
-    useShallow((state) => ({
-      selection: state.selection,
-      selectNode: state.selectNode,
-      clearSelection: state.clearSelection,
-    })),
-  );
+  // 선택 상태만 구독 — 빈번히 바뀌는 상태를 분리해 불필요한 리렌더 방지
+  const { selection } = useCanvasSelection();
+
+  // actions는 store에서 직접 가져옴 (shallow 비교 불필요)
+  const selectNode     = useCanvasViewStore((s) => s.selectNode);
+  const clearSelection = useCanvasViewStore((s) => s.clearSelection);
 
   const selectedNodeId = selection.kind === "node" ? selection.id : null;
 

@@ -1,10 +1,14 @@
 /**
  * CanvasToolbar — canvas 뷰포트 상단 크롬.
  *
+ * SRP:
+ *   - 상수(MODE_I18N, RANGE_I18N 등)는 constants/index.ts에 위치합니다.
+ *   - 이 컴포넌트는 렌더링과 인터랙션만 담당합니다.
+ *
  * 좌측: [동적 | 정적] 세그먼트 토글
  *   - 동적 모드: 모드 드롭다운 + 범위 드롭다운 표시
  *   - 정적 모드: 드롭다운 숨김
- * 우측: 줌 퍼센트 + 줌 컨트롤 (동적 모드에서만 — 정적 모드는 우측 툴바가 담당)
+ * 우측: 줌 퍼센트 + 줌 컨트롤 (동적 모드에서만)
  */
 
 import { useTranslation } from "react-i18next";
@@ -13,47 +17,32 @@ import { useShallow } from "zustand/react/shallow";
 import { CANVAS_TOOLBAR_HEIGHT_PX } from "@shared/constants/layoutSizing";
 import { cn } from "@shared/types/utils";
 import { useCanvasViewStore } from "../../stores";
+import { useCanvasView } from "../../hooks/useCanvasView";
 import {
   CANVAS_AVAILABLE_MODES,
   type CanvasMode,
   type CanvasRange,
   type CanvasType,
 } from "../../types";
+import {
+  CANVAS_MODE_I18N,
+  CANVAS_ALL_RANGES,
+  CANVAS_RANGE_I18N,
+} from "../../constants";
 
-// ─── constants ────────────────────────────────────────────────────────────────
-
-const MODE_I18N: Record<CanvasMode, string> = {
-  "flow-map": "canvas.mode.flowMap.label",
-  "scene-board": "canvas.mode.sceneBoard.label",
-  "timeline": "canvas.mode.timeline.label",
-  "character-map": "canvas.mode.characterMap.label",
-  "memory-map": "canvas.mode.memoryMap.label",
-};
-
-const RANGE_I18N: Record<CanvasRange, string> = {
-  "current-chapter": "canvas.range.currentChapter",
-  "three-chapters": "canvas.range.threeChapters",
-  "current-part": "canvas.range.currentPart",
-  "whole-project": "canvas.range.wholeProject",
-};
-
-const ALL_RANGES: CanvasRange[] = [
-  "current-chapter",
-  "three-chapters",
-  "current-part",
-  "whole-project",
-];
-
+// ─── 줌 상수 ─────────────────────────────────────────────────────────────────
+// CANVAS_ZOOM_MIN/MAX는 @shared/constants/canvasSizing에 있지만
+// 툴바 버튼용 step은 여기서만 사용하므로 로컬 상수로 유지합니다.
 const ZOOM_STEP = 0.15;
 const ZOOM_MIN = 0.25;
 const ZOOM_MAX = 3;
 
-const CANVAS_TYPE_OPTIONS: { value: CanvasType; i18nKey: string }[] = [
+const CANVAS_TYPE_OPTIONS: ReadonlyArray<{ value: CanvasType; i18nKey: string }> = [
   { value: "dynamic", i18nKey: "canvas.type.dynamic" },
-  { value: "static", i18nKey: "canvas.type.static" },
-];
+  { value: "static",  i18nKey: "canvas.type.static"  },
+] as const;
 
-// ─── sub-components ───────────────────────────────────────────────────────────
+// ─── CanvasTypeToggle ─────────────────────────────────────────────────────────
 
 function CanvasTypeToggle({
   value,
@@ -80,9 +69,7 @@ function CanvasTypeToggle({
             aria-pressed={isActive}
             className={cn(
               "h-full rounded-sm px-2 text-[10px] font-medium leading-none transition-colors",
-              isActive
-                ? "bg-panel text-fg shadow-sm"
-                : "text-muted hover:text-fg",
+              isActive ? "bg-panel text-fg shadow-sm" : "text-muted hover:text-fg",
             )}
           >
             {t(i18nKey)}
@@ -98,27 +85,19 @@ function CanvasTypeToggle({
 export default function CanvasToolbar() {
   const { t } = useTranslation();
 
-  const {
-    canvasType,
-    mode,
-    scope,
-    viewport,
-    setCanvasType,
-    setMode,
-    setScope,
-    setViewport,
-  } = useCanvasViewStore(
-    useShallow((state) => ({
-      canvasType: state.canvasType,
-      mode: state.mode,
-      scope: state.scope,
-      viewport: state.viewport,
-      setCanvasType: state.setCanvasType,
-      setMode: state.setMode,
-      setScope: state.setScope,
-      setViewport: state.setViewport,
-    })),
+  // 안정적인 상태 (canvasType, mode, scope)
+  const { canvasType, mode, scope } = useCanvasView();
+
+  // viewport는 줌 표시용으로만 필요 — 별도 구독으로 분리
+  const viewport = useCanvasViewStore(
+    useShallow((s) => s.viewport),
   );
+
+  // actions는 store에서 직접 가져옴 (shallow 비교 불필요)
+  const setCanvasType = useCanvasViewStore((s) => s.setCanvasType);
+  const setMode       = useCanvasViewStore((s) => s.setMode);
+  const setScope      = useCanvasViewStore((s) => s.setScope);
+  const setViewport   = useCanvasViewStore((s) => s.setViewport);
 
   const isDynamic = canvasType === "dynamic";
 
@@ -147,19 +126,15 @@ export default function CanvasToolbar() {
             ? scope.centerChapterId
             : null;
       setScope(
-        chapterId
-          ? { kind: "three-chapters", centerChapterId: chapterId }
-          : null,
+        chapterId ? { kind: "three-chapters", centerChapterId: chapterId } : null,
       );
     } else {
       setScope(null);
     }
   };
 
-  const zoomIn = () =>
-    setViewport({ zoom: Math.min(ZOOM_MAX, viewport.zoom + ZOOM_STEP) });
-  const zoomOut = () =>
-    setViewport({ zoom: Math.max(ZOOM_MIN, viewport.zoom - ZOOM_STEP) });
+  const zoomIn  = () => setViewport({ zoom: Math.min(ZOOM_MAX, viewport.zoom + ZOOM_STEP) });
+  const zoomOut = () => setViewport({ zoom: Math.max(ZOOM_MIN, viewport.zoom - ZOOM_STEP) });
   const fitView = () => setViewport({ zoom: 1, pan: { x: 0, y: 0 } });
 
   return (
@@ -168,10 +143,8 @@ export default function CanvasToolbar() {
       style={{ height: CANVAS_TOOLBAR_HEIGHT_PX }}
       data-testid="canvas-toolbar"
     >
-      {/* ── 동적 / 정적 토글 ── */}
       <CanvasTypeToggle value={canvasType} onChange={setCanvasType} />
 
-      {/* ── 동적 모드 전용 컨트롤 ── */}
       {isDynamic && (
         <>
           <span className="h-3 w-px bg-border/60" aria-hidden />
@@ -182,26 +155,21 @@ export default function CanvasToolbar() {
               value={mode}
               onChange={(e) => {
                 const next = e.target.value as CanvasMode;
-                if (
-                  (CANVAS_AVAILABLE_MODES as readonly string[]).includes(next)
-                ) {
+                if ((CANVAS_AVAILABLE_MODES as readonly string[]).includes(next)) {
                   setMode(next);
                 }
               }}
               className={cn(
                 "appearance-none rounded border border-border/60 bg-element px-2 py-0.5 pr-5",
-                "cursor-pointer text-[11px] text-fg",
-                "focus:border-accent focus:outline-none",
+                "cursor-pointer text-[11px] text-fg focus:border-accent focus:outline-none",
               )}
               aria-label={t("canvas.panel.views")}
             >
-              {(Object.keys(MODE_I18N) as CanvasMode[]).map((m) => {
-                const available = (
-                  CANVAS_AVAILABLE_MODES as readonly string[]
-                ).includes(m);
+              {(Object.keys(CANVAS_MODE_I18N) as CanvasMode[]).map((m) => {
+                const available = (CANVAS_AVAILABLE_MODES as readonly string[]).includes(m);
                 return (
                   <option key={m} value={m} disabled={!available}>
-                    {t(MODE_I18N[m])}
+                    {t(CANVAS_MODE_I18N[m])}
                     {!available ? ` (${t("canvas.mode.comingSoon")})` : ""}
                   </option>
                 );
@@ -216,19 +184,16 @@ export default function CanvasToolbar() {
           <div className="relative">
             <select
               value={currentRange}
-              onChange={(e) =>
-                handleRangeChange(e.target.value as CanvasRange)
-              }
+              onChange={(e) => handleRangeChange(e.target.value as CanvasRange)}
               className={cn(
                 "appearance-none rounded border border-border/60 bg-element px-2 py-0.5 pr-5",
-                "cursor-pointer text-[11px] text-fg",
-                "focus:border-accent focus:outline-none",
+                "cursor-pointer text-[11px] text-fg focus:border-accent focus:outline-none",
               )}
               aria-label={t("canvas.panel.range")}
             >
-              {ALL_RANGES.map((r) => (
+              {CANVAS_ALL_RANGES.map((r) => (
                 <option key={r} value={r}>
-                  {t(RANGE_I18N[r])}
+                  {t(CANVAS_RANGE_I18N[r])}
                 </option>
               ))}
             </select>
@@ -237,10 +202,8 @@ export default function CanvasToolbar() {
         </>
       )}
 
-      {/* ── Spacer ── */}
       <div className="flex-1" />
 
-      {/* ── 동적 모드 줌 컨트롤 (정적 모드는 우측 툴바가 담당) ── */}
       {isDynamic && (
         <>
           <span className="text-[11px] text-muted tabular-nums">
