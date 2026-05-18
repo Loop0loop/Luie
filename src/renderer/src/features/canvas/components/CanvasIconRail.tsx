@@ -1,11 +1,10 @@
 /**
- * CanvasIconRail — fixed-width vertical icon strip for the canvas Sidebar.
+ * CanvasIconRail — canvas 전용 아이콘 탭 스트립.
  *
- * P2 layout shell. Activates a panel on click; clicking the active icon again
- * collapses the side panel (toggleActivity). Width is anchored to
- * CANVAS_ICON_RAIL_WIDTH_PX so the surrounding Sidebar / SidePanelRouter share
- * the same pixel grid.
+ * 활성 아이콘 재클릭 → 사이드 패널 접기(toggleActivity).
+ * 너비는 CANVAS_ICON_RAIL_WIDTH_PX 상수로 고정.
  */
+
 import { useTranslation } from "react-i18next";
 import {
   Compass,
@@ -23,7 +22,6 @@ import type { CanvasActivityPanel } from "../types";
 interface RailItem {
   panel: CanvasActivityPanel;
   Icon: LucideIcon;
-  /** i18n key: `canvas.activity.<key>` */
   i18nKey: string;
 }
 
@@ -33,7 +31,7 @@ const RAIL_ITEMS: ReadonlyArray<RailItem> = [
   { panel: "entities", Icon: Users, i18nKey: "entities" },
   { panel: "memory", Icon: Brain, i18nKey: "memory" },
   { panel: "search", Icon: Search, i18nKey: "search" },
-];
+] as const;
 
 export default function CanvasIconRail() {
   const { t } = useTranslation();
@@ -54,6 +52,7 @@ export default function CanvasIconRail() {
       {RAIL_ITEMS.map(({ panel, Icon, i18nKey }) => {
         const isActive = panel === activePanel && !isActivityCollapsed;
         const label = t(`canvas.activity.${i18nKey}`);
+
         return (
           <button
             key={panel}
@@ -63,7 +62,6 @@ export default function CanvasIconRail() {
             aria-pressed={isActive}
             onClick={() => {
               if (panel === activePanel) {
-                // Re-clicking the active icon collapses the side panel.
                 toggleActivity();
                 return;
               }

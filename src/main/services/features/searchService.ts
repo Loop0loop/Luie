@@ -31,7 +31,9 @@ interface SearchResult {
 
 export class SearchService {
   private buildFtsQuery(query: string): string {
-    return `"${query.replaceAll('"', '""').trim()}"`;
+    const tokens = query.trim().split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) return '""';
+    return tokens.map((t) => `"${t.replaceAll('"', '""')}"`).join(" AND ");
   }
 
   async search(input: SearchQuery): Promise<SearchResult[]> {
@@ -233,7 +235,7 @@ export class SearchService {
         .limit(1);
       if (rows.length === 0) {
         throw new ServiceError(
-          ErrorCode.SEARCH_QUERY_FAILED,
+          ErrorCode.MEMORY_CHUNK_NOT_FOUND,
           "Memory chunk not found",
           { chunkId },
         );

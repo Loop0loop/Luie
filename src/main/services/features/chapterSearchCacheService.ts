@@ -41,7 +41,9 @@ function buildSearchText(input: {
 }
 
 function buildFtsQuery(query: string): string {
-  return `"${query.replaceAll('"', '""').trim()}"`;
+  const tokens = query.trim().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return '""';
+  return tokens.map((t) => `"${t.replaceAll('"', '""')}"`).join(" AND ");
 }
 
 function toSafeNumber(value: unknown): number {

@@ -31,12 +31,17 @@ const MEMORY_PROJECTS_PER_TICK = toPositiveInt(
   process.env.LUIE_DERIVED_MEMORY_PROJECTS_PER_TICK,
   isStressMode ? 4 : 1,
 );
+const TICK_WARN_THRESHOLD_MS = toPositiveInt(
+  process.env.LUIE_DERIVED_TICK_WARN_MS,
+  100,
+);
 
 class DerivedJobWorker {
   private timer: NodeJS.Timeout | null = null;
   private running = false;
   private inTick = false;
   private lastEditDeferLogAt = 0;
+  private lastTickSlowWarnAt = 0;
 
   start(): void {
     if (this.running) return;
@@ -142,6 +147,20 @@ class DerivedJobWorker {
         logger.warn("Derived job worker long pending detected", {
           searchLongPendingCount: longPending.searchLongPendingCount,
           memoryLongPendingCount: longPending.memoryLongPendingCount,
+        });
+      }
+      const elapsedMs = Date.now() - startedAt;
+      if (
+        elapsedMs >= TICK_WARN_THRESHOLD_MS &&
+        Date.now() - this.lastTickSlowWarnAt >= 10_000
+      ) {
+        this.lastTickSlowWarnAt = Date.now();
+        logger.warn("Derived job worker tick elapsed exceeded threshold", {
+          elapsedMs,
+          thresholdMs: TICK_WARN_THRESHOLD_MS,
+          searchBatchSize: SEARCH_BATCH_SIZE,
+          memoryBatchSize: MEMORY_BATCH_SIZE,
+          memoryProjectsPerTick: MEMORY_PROJECTS_PER_TICK,
         });
       }
     } catch (error) {

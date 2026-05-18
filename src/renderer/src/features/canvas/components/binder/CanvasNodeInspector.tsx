@@ -1,33 +1,27 @@
 /**
- * CanvasNodeInspector — shows details for the selected canvas node.
+ * CanvasNodeInspector — BinderBar panel for the selected canvas node.
  *
- * P6: reads from canvasViewStore.selection + worldBuildingStore.graphData.
- * Displays: name, kind, description, connected relations.
+ * Shows: kind badge, name, description, connected relations list.
  * P7 will add chapter-level metadata (wordCount, scenes, etc.).
  */
+
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { useCanvasViewStore } from "@renderer/features/canvas/stores";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
-import { ENTITY_TYPE_TO_NODE_KIND } from "@renderer/features/canvas/types";
+import {
+  CANVAS_NODE_KIND_COLOUR,
+  ENTITY_TYPE_TO_NODE_KIND,
+} from "@renderer/features/canvas/types";
 import type { CanvasNodeKind } from "@renderer/features/canvas/types";
 
 const KIND_LABEL: Record<CanvasNodeKind, string> = {
-  chapter: "Chapter",
-  character: "Character",
-  event: "Event",
-  faction: "Faction",
-  term: "Term",
-  "world-entity": "World Entity",
-};
-
-const KIND_COLOUR: Record<CanvasNodeKind, string> = {
-  chapter: "var(--color-accent, #3b82f6)",
-  character: "#f97316",
-  event: "#a855f7",
-  faction: "#ef4444",
-  term: "#22c55e",
-  "world-entity": "#64748b",
+  chapter: "챕터",
+  character: "캐릭터",
+  event: "사건",
+  faction: "세력",
+  term: "용어",
+  "world-entity": "세계 엔티티",
 };
 
 interface CanvasNodeInspectorProps {
@@ -38,16 +32,15 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
   const { t } = useTranslation();
 
   const graphData = useWorldBuildingStore((state) => state.graphData);
-
-  const selection = useCanvasViewStore(
-    useShallow((state) => state.selection),
+  const clearSelection = useCanvasViewStore(
+    useShallow((state) => state.clearSelection),
   );
 
   const node = graphData?.nodes.find((n) => n.id === nodeId) ?? null;
 
   if (!node) {
     return (
-      <div className="p-4 text-xs text-muted italic">
+      <div className="p-4 text-xs italic text-muted">
         {t("canvas.status.empty")}
       </div>
     );
@@ -55,83 +48,119 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
 
   const kind: CanvasNodeKind =
     ENTITY_TYPE_TO_NODE_KIND[node.entityType] ?? "world-entity";
-  const colour = KIND_COLOUR[kind];
+  const colour = CANVAS_NODE_KIND_COLOUR[kind];
 
-  // Connected relations
-  const relations = graphData?.edges.filter(
-    (e) => e.sourceId === nodeId || e.targetId === nodeId,
-  ) ?? [];
+  const relations =
+    graphData?.edges.filter(
+      (e) => e.sourceId === nodeId || e.targetId === nodeId,
+    ) ?? [];
 
   const connectedNodeIds = new Set(
-    relations.flatMap((e) => [e.sourceId, e.targetId]).filter((id) => id !== nodeId),
+    relations
+      .flatMap((e) => [e.sourceId, e.targetId])
+      .filter((id) => id !== nodeId),
   );
-  const connectedNodes = graphData?.nodes.filter((n) =>
-    connectedNodeIds.has(n.id),
-  ) ?? [];
-
-  void selection; // used by parent to decide which component to render
+  const connectedNodes =
+    graphData?.nodes.filter((n) => connectedNodeIds.has(n.id)) ?? [];
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="shrink-0 border-b border-border/40 px-4 py-3">
         <div className="flex items-center gap-2">
           <span
-            className="h-2.5 w-2.5 rounded-full shrink-0"
+            className="h-2.5 w-2.5 shrink-0 rounded-full"
             style={{ background: colour }}
             aria-hidden
           />
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted">
             {KIND_LABEL[kind]}
           </span>
+          <button
+            type="button"
+            onClick={clearSelection}
+            className="ml-auto rounded p-0.5 text-muted transition-colors hover:bg-surface-hover hover:text-fg"
+            title={t("canvas.status.empty")}
+            aria-label="선택 해제"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </div>
-        <h3 className="mt-1 text-sm font-bold text-fg leading-snug">
+        <h3 className="mt-1 text-sm font-bold leading-snug text-fg">
           {node.name}
         </h3>
       </div>
 
-      {/* Body */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+      {/* ── Body ── */}
+      <div className="flex-1 space-y-4 overflow-y-auto px-4 py-3">
         {/* Description */}
         {node.description && (
-          <div>
-            <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
-              {t("common.description") || "Description"}
-            </div>
-            <p className="text-xs text-fg/80 leading-relaxed">
+          <section>
+            <h4 className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted">
+              {t("common.description") || "설명"}
+            </h4>
+            <p className="text-xs leading-relaxed text-fg/80">
               {node.description}
             </p>
-          </div>
+          </section>
         )}
 
         {/* Connections */}
-        <div>
-          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
+        <section>
+          <h4 className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted">
             {t("canvas.activity.entities")} ({connectedNodes.length})
-          </div>
+          </h4>
           {connectedNodes.length === 0 ? (
-            <p className="text-xs text-muted italic">{t("canvas.status.empty")}</p>
+            <p className="text-xs italic text-muted">
+              {t("canvas.status.empty")}
+            </p>
           ) : (
-            <ul className="space-y-1">
+            <ul className="space-y-1.5">
               {connectedNodes.map((cn) => {
-                const cnKind = ENTITY_TYPE_TO_NODE_KIND[cn.entityType] ?? "world-entity";
+                const cnKind =
+                  ENTITY_TYPE_TO_NODE_KIND[cn.entityType] ?? "world-entity";
+                const cnColour = CANVAS_NODE_KIND_COLOUR[cnKind];
+                const rel = relations.find(
+                  (e) =>
+                    (e.sourceId === nodeId && e.targetId === cn.id) ||
+                    (e.targetId === nodeId && e.sourceId === cn.id),
+                );
                 return (
                   <li
                     key={cn.id}
                     className="flex items-center gap-2 text-xs text-fg/80"
                   >
                     <span
-                      className="h-1.5 w-1.5 rounded-full shrink-0"
-                      style={{ background: KIND_COLOUR[cnKind] }}
+                      className="h-1.5 w-1.5 shrink-0 rounded-full"
+                      style={{ background: cnColour }}
                       aria-hidden
                     />
-                    {cn.name}
+                    <span className="truncate">{cn.name}</span>
+                    {rel?.relation && (
+                      <span className="ml-auto shrink-0 text-[10px] text-muted">
+                        {rel.relation}
+                      </span>
+                    )}
                   </li>
                 );
               })}
             </ul>
           )}
-        </div>
+        </section>
       </div>
     </div>
   );

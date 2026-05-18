@@ -64,6 +64,8 @@ export const projectSettings = sqliteTable(
     projectId: text("projectId").notNull(),
     autoSave: integer("autoSave", { mode: "boolean" }).notNull().default(sql`1`),
     autoSaveInterval: integer("autoSaveInterval").notNull().default(30),
+    llmModelPath: text("llmModelPath"),
+    llmProviderHint: text("llmProviderHint"),
   },
   (table) => [
     uniqueIndex("ProjectSettings_projectId_key").on(table.projectId),
@@ -206,6 +208,31 @@ export const memoryBuildJob = sqliteTable(
       table.priority,
     ),
     index("MemoryBuildJob_target_idx").on(table.targetType, table.targetId),
+  ],
+);
+
+export const chapterSummary = sqliteTable(
+  "ChapterSummary",
+  {
+    id: text("id").primaryKey().notNull(),
+    projectId: text("projectId").notNull(),
+    chapterId: text("chapterId").notNull(),
+    chapterNumber: integer("chapterNumber").notNull().default(0),
+    summary: text("summary").notNull(),
+    isFallback: integer("isFallback", { mode: "boolean" }).notNull().default(false),
+    model: text("model"),
+    generatedAt: text("generatedAt").notNull(),
+    createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updatedAt").notNull(),
+  },
+  (table) => [
+    uniqueIndex("ChapterSummary_chapterId_key").on(table.chapterId),
+    index("ChapterSummary_projectId_idx").on(table.projectId),
+    foreignKey({
+      name: "ChapterSummary_chapterId_fkey",
+      columns: [table.chapterId],
+      foreignColumns: [chapter.id],
+    }).onDelete("cascade").onUpdate("cascade"),
   ],
 );
 

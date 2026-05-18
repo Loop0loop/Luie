@@ -12,6 +12,15 @@ function sha256(input: string): string {
   return crypto.createHash("sha256").update(input).digest("hex");
 }
 
+function yieldToEventLoop(): Promise<void> {
+  return new Promise((resolve) => setImmediate(resolve));
+}
+
+function estimateTokenCountFromChars(content: string): number {
+  // Phase 1 uses a cheap proxy for token count. Real tokenizer integration belongs to Phase 2+.
+  return content.length;
+}
+
 const DEFAULT_CHUNK_TARGET = 500;
 const DEFAULT_CHUNK_OVERLAP = 50;
 const DEFAULT_CHUNK_HARD_CAP = 1000;
@@ -33,6 +42,7 @@ export function chunkText(
     if (endOffset <= startOffset) return;
     const content = input.slice(startOffset, endOffset);
     if (content.length === 0) return;
+    if (content.trim().length === 0) return;
     chunks.push({ content, startOffset, endOffset });
   };
 
@@ -200,6 +210,8 @@ class MemoryProjectionService {
     let processed = 0;
     await jobs.reduce<Promise<void>>(async (prev, job) => {
       await prev;
+      // Keep each job atomic, but yield between jobs to avoid long sync stretches.
+      await yieldToEventLoop();
       const now = new Date().toISOString();
       await client
         .update(memoryBuildJob)
@@ -260,7 +272,7 @@ class MemoryProjectionService {
               contentHash: sha256(chunkItem.content),
               startOffset: chunkItem.startOffset,
               endOffset: chunkItem.endOffset,
-              tokenCount: chunkItem.content.length,
+              tokenCount: estimateTokenCountFromChars(chunkItem.content),
               createdAt: now,
               updatedAt: now,
             }).run();

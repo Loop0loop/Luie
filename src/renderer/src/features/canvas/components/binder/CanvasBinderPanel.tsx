@@ -1,12 +1,13 @@
 /**
- * CanvasBinderPanel — content for the BinderSidebar "canvas" tab.
+ * CanvasBinderPanel — BinderSidebar "canvas" tab content.
  *
- * Reads canvasViewStore.selection:
- *   - kind === "node" → <CanvasNodeInspector nodeId={id} />
- *   - kind === "none" → <CanvasBinderEmpty />
+ * - selection.kind === "node" → CanvasNodeInspector
+ * - selection.kind === "none" → CanvasBinderEmpty
  *
- * Also wires node selection → BinderBar auto-open (via uiStore).
+ * Side-effect: auto-opens the BinderBar on the canvas tab when a node
+ * is selected in the viewport.
  */
+
 import { useEffect } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useCanvasViewStore } from "@renderer/features/canvas/stores";
@@ -19,13 +20,11 @@ export default function CanvasBinderPanel() {
     useShallow((state) => state.selection),
   );
 
-  const { openRightPanelTab } = useUIStore(
-    useShallow((state) => ({
-      openRightPanelTab: state.openRightPanelTab,
-    })),
+  const openRightPanelTab = useUIStore(
+    useShallow((state) => state.openRightPanelTab),
   );
 
-  // When a node is selected, auto-open the BinderBar on the canvas tab.
+  // Auto-open BinderBar when a node is selected.
   useEffect(() => {
     if (selection.kind === "node") {
       openRightPanelTab("canvas");

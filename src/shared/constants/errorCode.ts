@@ -72,6 +72,7 @@ export const ErrorCode = {
   // Search Errors (93xx)
   SEARCH_INDEX_FAILED: 'SRC_9301',
   SEARCH_QUERY_FAILED: 'SRC_9302',
+  MEMORY_CHUNK_NOT_FOUND: 'SRC_9303',
 
   // Auto Extract Errors (94xx)
   AUTO_EXTRACT_FAILED: 'AUT_9401',
