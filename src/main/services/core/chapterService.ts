@@ -168,6 +168,30 @@ export class ChapterService {
             VALUES (${crypto.randomUUID()}, ${input.projectId}, 'chapter', ${input.chapterId}, 'rebuild_chunks', 'pending', 100, 0, ${now}, ${now});`,
       );
     }
+
+    const pendingSummaryRows = await store.all<{ id: string }>(
+      sql`SELECT "id" FROM "MemoryBuildJob"
+          WHERE "projectId" = ${input.projectId}
+            AND "targetType" = 'chapter'
+            AND "targetId" = ${input.chapterId}
+            AND "jobType" = 'rebuild_summary'
+            AND "status" IN ('pending', 'running')
+          ORDER BY "updatedAt" DESC
+          LIMIT 1;`,
+    );
+    if (pendingSummaryRows.length > 0) {
+      await store.run(
+        sql`UPDATE "MemoryBuildJob"
+            SET "priority" = 90,
+                "updatedAt" = ${now}
+            WHERE "id" = ${pendingSummaryRows[0].id};`,
+      );
+    } else {
+      await store.run(
+        sql`INSERT INTO "MemoryBuildJob" ("id","projectId","targetType","targetId","jobType","status","priority","attempts","createdAt","updatedAt")
+            VALUES (${crypto.randomUUID()}, ${input.projectId}, 'chapter', ${input.chapterId}, 'rebuild_summary', 'pending', 90, 0, ${now}, ${now});`,
+      );
+    }
   }
 
   private async readChapterContent(chapterId: string): Promise<string> {

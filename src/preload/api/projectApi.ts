@@ -201,12 +201,16 @@ export function createProjectApi({
         safeInvoke(IPC_CHANNELS.MEMORY_REBUILD_CHUNKS, input),
       getJobStatus: (projectId) =>
         safeInvoke(IPC_CHANNELS.MEMORY_JOB_STATUS, projectId),
+      getSummaryStatus: (projectId) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_GET_SUMMARY_STATUS, { projectId }),
     },
     memory: {
       searchChunks: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_SEARCH_CHUNKS, input),
       getChunkBacklink: (chunkId) =>
         safeInvoke(IPC_CHANNELS.MEMORY_GET_CHUNK_BACKLINK, chunkId),
+      getChapterSummary: (chapterId) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_GET_CHAPTER_SUMMARY, chapterId),
     },
     maintenance: {
       runIntegrityCheck: () =>

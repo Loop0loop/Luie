@@ -193,11 +193,16 @@ export const memoryChunkSearchSchema = z.object({
 });
 
 export const memoryChunkIdSchema = z.string().uuid("Invalid chunk ID");
+export const memoryChapterSummaryIdSchema = chapterIdSchema;
 
 export const rebuildMemoryChunksSchema = z.object({
   projectId: projectIdSchema,
   sourceType: z.string().min(1).optional(),
   sourceId: z.string().min(1).optional(),
+});
+
+export const memorySummaryStatusSchema = z.object({
+  projectId: projectIdSchema,
 });
 
 export const exportRequestSchema = z.object({

@@ -1,5 +1,6 @@
 import { createLogger } from "../../../shared/logger/index.js";
 import { dbMaintenanceService } from "./dbMaintenanceService.js";
+import { chapterSummaryProjector } from "./memory/chapterSummaryProjector.js";
 import { memoryProjectionService } from "./memory/memoryProjectionService.js";
 
 const logger = createLogger("DerivedJobWorker");
@@ -30,6 +31,10 @@ const MEMORY_BATCH_SIZE = toPositiveInt(
 const MEMORY_PROJECTS_PER_TICK = toPositiveInt(
   process.env.LUIE_DERIVED_MEMORY_PROJECTS_PER_TICK,
   isStressMode ? 4 : 1,
+);
+const SUMMARY_BATCH_SIZE = toPositiveInt(
+  process.env.LUIE_DERIVED_SUMMARY_BATCH,
+  isStressMode ? 2 : 1,
 );
 const TICK_WARN_THRESHOLD_MS = toPositiveInt(
   process.env.LUIE_DERIVED_TICK_WARN_MS,
@@ -112,6 +117,8 @@ class DerivedJobWorker {
 
       let memoryQueued = 0;
       let memoryProcessed = 0;
+      let summaryQueued = 0;
+      let summaryProcessed = 0;
       await projectsToProcess.reduce<Promise<void>>(async (prev, projectId) => {
         await prev;
         const result = await memoryProjectionService.processPendingChunkJobs({
@@ -120,9 +127,15 @@ class DerivedJobWorker {
         });
         memoryQueued += result.queued;
         memoryProcessed += result.processed;
+        const summaryResult = await chapterSummaryProjector.processPendingSummaryJobs({
+          projectId,
+          limit: SUMMARY_BATCH_SIZE,
+        });
+        summaryQueued += summaryResult.queued;
+        summaryProcessed += summaryResult.processed;
       }, Promise.resolve());
 
-      if (search.queued > 0 || memoryQueued > 0) {
+      if (search.queued > 0 || memoryQueued > 0 || summaryQueued > 0) {
         logger.info("Derived job worker tick processed", {
           elapsedMs: Date.now() - startedAt,
           searchQueued: search.queued,
@@ -130,6 +143,8 @@ class DerivedJobWorker {
           searchFailed: search.failed,
           memoryQueued,
           memoryProcessed,
+          summaryQueued,
+          summaryProcessed,
           projectCount: projectsToProcess.length,
         });
       }

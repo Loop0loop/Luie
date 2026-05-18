@@ -5,10 +5,12 @@ export function registerSearchHandlers(options: {
   logger: AppLogger;
   searchService: Parameters<typeof registerSearchIPCHandlers>[1];
   dbMaintenanceService: Parameters<typeof registerSearchIPCHandlers>[2];
+  chapterSummaryProjector: Parameters<typeof registerSearchIPCHandlers>[3];
 }): void {
   registerSearchIPCHandlers(
     options.logger,
     options.searchService,
     options.dbMaintenanceService,
+    options.chapterSummaryProjector,
   );
 }

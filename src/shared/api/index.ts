@@ -35,6 +35,8 @@ import type {
   MemoryChunkSearchQuery,
   MemoryChunkSearchResult,
   MemoryChunkBacklink,
+  ChapterSummaryResult,
+  ChapterSummaryStatus,
   WorldEntity,
   EntityRelation,
   WorldGraphData,
@@ -326,6 +328,7 @@ export type RendererApi = {
       sourceId?: string;
     }) => Promise<IPCResponse<{ queued: number; processed: number }>>;
     getJobStatus: (projectId: string) => Promise<IPCResponse<MemoryJobStatus>>;
+    getSummaryStatus: (projectId: string) => Promise<IPCResponse<ChapterSummaryStatus>>;
   };
   memory: {
     searchChunks: (
@@ -334,6 +337,9 @@ export type RendererApi = {
     getChunkBacklink: (
       chunkId: string,
     ) => Promise<IPCResponse<MemoryChunkBacklink>>;
+    getChapterSummary: (
+      chapterId: string,
+    ) => Promise<IPCResponse<ChapterSummaryResult | null>>;
   };
   maintenance: {
     runIntegrityCheck: () => Promise<IPCResponse<{ ok: boolean; rows: string[] }>>;

@@ -532,6 +532,22 @@ export interface MemoryChunkBacklink {
   endOffset: number | null;
 }
 
+export interface ChapterSummaryResult {
+  chapterId: string;
+  summary: string;
+  isFallback: boolean;
+  model: string | null;
+  generatedAt: string;
+}
+
+export interface ChapterSummaryStatus {
+  projectId: string;
+  pendingCount: number;
+  runningCount: number;
+  failedCount: number;
+  completedCount: number;
+}
+
 // Settings Types
 export type FontFamilyPreset = "system-ui" | "serif" | "mono";
 export type FontFamily = FontFamilyPreset | string;
