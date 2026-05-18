@@ -1,6 +1,6 @@
 import { app, safeStorage } from "electron";
 import path from "node:path";
-import { promises as fs } from "node:fs";
+import { promises as fs, createReadStream } from "node:fs";
 import { createHash } from "node:crypto";
 import { createLogger } from "../../../shared/logger/index.js";
 import { settingsManager } from "../../manager/settingsManager.js";
@@ -23,8 +23,13 @@ async function ensureDir(target: string): Promise<void> {
 }
 
 async function hashFileSha256(filePath: string): Promise<string> {
-  const data = await fs.readFile(filePath);
-  return createHash("sha256").update(data).digest("hex");
+  return new Promise((resolve, reject) => {
+    const hash = createHash("sha256");
+    createReadStream(filePath)
+      .on("data", (chunk) => hash.update(chunk))
+      .on("end", () => resolve(hash.digest("hex")))
+      .on("error", reject);
+  });
 }
 
 async function listGgufFiles(modelsDir: string, defaultPath: string | null): Promise<LocalLlmModelInfo[]> {
@@ -131,6 +136,11 @@ class ModelStorageService {
   }
 
   async downloadDefaultModel(): Promise<{ downloaded: boolean; modelPath: string; modelId: string }> {
+    if (this.downloadStatus.active) {
+      const llm = settingsManager.getLlmSettings();
+      const modelsDir = llm.modelsDir ?? this.getDefaultModelsDir();
+      return { downloaded: false, modelPath: path.join(modelsDir, DEFAULT_MODEL.fileName), modelId: DEFAULT_MODEL.modelId };
+    }
     const llm = settingsManager.getLlmSettings();
     const modelsDir = llm.modelsDir ?? this.getDefaultModelsDir();
     await ensureDir(modelsDir);

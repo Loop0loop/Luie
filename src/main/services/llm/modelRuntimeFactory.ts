@@ -15,12 +15,13 @@ function getOrCreateLlamaProvider(
   modelPath: string,
   embeddingModelPath?: string | null,
   contextSize?: number,
+  gpuLayers?: number,
 ): LlamaCppProvider {
-  const key = `${modelPath}::${embeddingModelPath ?? ""}::${contextSize ?? ""}`;
+  const key = `${modelPath}::${embeddingModelPath ?? ""}::${contextSize ?? ""}::${gpuLayers ?? ""}`;
   if (llamaProviderSingle?.key === key) {
     return llamaProviderSingle.provider;
   }
-  const provider = new LlamaCppProvider(modelPath, embeddingModelPath, contextSize);
+  const provider = new LlamaCppProvider(modelPath, embeddingModelPath, contextSize, gpuLayers);
   llamaProviderSingle = { key, provider };
   return provider;
 }
@@ -50,6 +51,8 @@ export async function resolveModelRuntimeClient(
   const fallbackModelPath = localLlm.defaultModelPath ?? null;
   const envContextSize = Number.parseInt(process.env.LUIE_LLM_CONTEXT_SIZE ?? "", 10);
   const configuredContextSize = Number.isFinite(envContextSize) ? envContextSize : undefined;
+  const envGpuLayers = Number.parseInt(process.env.LUIE_LLM_GPU_LAYERS ?? "", 10);
+  const configuredGpuLayers = Number.isFinite(envGpuLayers) ? envGpuLayers : undefined;
 
   if (providerHint === "none") {
     return deterministicProvider;
@@ -57,7 +60,7 @@ export async function resolveModelRuntimeClient(
 
   const effectiveModelPath = configuredPath ?? fallbackModelPath;
   if (effectiveModelPath && (providerHint === "llamacpp" || providerHint === null)) {
-    return getOrCreateLlamaProvider(effectiveModelPath, embeddingConfiguredPath, configuredContextSize);
+    return getOrCreateLlamaProvider(effectiveModelPath, embeddingConfiguredPath, configuredContextSize, configuredGpuLayers);
   }
 
   logger.info("LLM provider path is not configured, using deterministic fallback", {

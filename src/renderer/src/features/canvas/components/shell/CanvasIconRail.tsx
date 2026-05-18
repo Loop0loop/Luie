@@ -19,9 +19,9 @@ import {
 } from "lucide-react";
 import { CANVAS_ICON_RAIL_WIDTH_PX } from "@shared/constants/layoutSizing";
 import { cn } from "@shared/types/utils";
-import { useCanvasViewStore } from "../stores";
-import { useCanvasView } from "../hooks/useCanvasView";
-import { CANVAS_RAIL_ITEMS } from "../constants";
+import { useCanvasViewStore } from "../../stores";
+import { useCanvasView } from "../../hooks/useCanvasView";
+import { CANVAS_RAIL_ITEMS } from "../../constants";
 
 // 아이콘 이름 → 컴포넌트 매핑 (constants의 iconName 필드와 연결)
 const ICON_MAP: Record<string, LucideIcon> = {

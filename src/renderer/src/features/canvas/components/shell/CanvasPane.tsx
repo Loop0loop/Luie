@@ -21,17 +21,17 @@
  */
 
 import { lazy, Suspense } from "react";
-import { useCanvasViewStore } from "../stores";
+import { useCanvasViewStore } from "../../stores";
 import { FeatureErrorBoundary } from "@renderer/shared/error-boundaries/FeatureErrorBoundary";
-import CanvasToolbar from "./viewport/CanvasToolbar";
-import CanvasStatusBar from "./viewport/CanvasStatusBar";
-import CanvasEmptyState from "./viewport/CanvasEmptyState";
-import CanvasViewport from "./viewport/CanvasViewport";
-import { useCanvasScope } from "../hooks/useCanvasScope";
-import { useCanvasProjection } from "../hooks/useCanvasProjection";
+import CanvasToolbar from "../viewport/CanvasToolbar";
+import CanvasStatusBar from "../viewport/CanvasStatusBar";
+import CanvasEmptyState from "../viewport/CanvasEmptyState";
+import CanvasViewport from "../viewport/CanvasViewport";
+import { useCanvasScope } from "../../hooks/useCanvasScope";
+import { useCanvasProjection } from "../../hooks/useCanvasProjection";
 
 const StaticCanvasViewport = lazy(
-  () => import("./viewport/StaticCanvasViewport"),
+  () => import("../viewport/StaticCanvasViewport"),
 );
 
 const loadingFallback = (

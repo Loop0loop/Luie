@@ -1,10 +1,14 @@
 import fs from "node:fs/promises";
 import type { GenerateOptions, ModelRuntimeClient } from "../modelRuntimeClient.js";
 
+// Larger than any real transformer layer count → effectively "offload all layers to GPU"
+const GPU_LAYERS_MAX = 999;
+
 type LlamaContext = {
   modelPath: string;
   embeddingModelPath: string | null;
   contextSize: number;
+  gpuLayers: number;
   model?: unknown;
   context?: unknown;
   embeddingModel?: unknown;
@@ -19,11 +23,13 @@ export class LlamaCppProvider implements ModelRuntimeClient {
   private modelPromise: Promise<void> | null = null;
   private embeddingPromise: Promise<void> | null = null;
 
-  constructor(modelPath: string, embeddingModelPath?: string | null, contextSize?: number) {
+  constructor(modelPath: string, embeddingModelPath?: string | null, contextSize?: number, gpuLayers?: number) {
     this.context = {
       modelPath,
       embeddingModelPath: embeddingModelPath ?? null,
-      contextSize: Math.max(2048, contextSize ?? 131_072),
+      contextSize: Math.max(2048, contextSize ?? 4_096),
+      // GPU_LAYERS_MAX > any real transformer layer count → offload all layers to GPU (Metal/CUDA/Vulkan)
+      gpuLayers: gpuLayers ?? GPU_LAYERS_MAX,
     };
   }
 
@@ -35,12 +41,13 @@ export class LlamaCppProvider implements ModelRuntimeClient {
     this.modelPromise = (async () => {
       const dynamicImport = new Function("id", "return import(id)") as (id: string) => Promise<unknown>;
       const mod = await dynamicImport("node-llama-cpp");
-      const getLlama = (mod as { getLlama: () => Promise<unknown> }).getLlama;
-      const llama = await getLlama();
+      const getLlama = (mod as { getLlama: (options?: { gpu?: string }) => Promise<unknown> }).getLlama;
+      // gpu: "auto" lets node-llama-cpp pick Metal (macOS), CUDA, or Vulkan automatically.
+      const llama = await getLlama({ gpu: "auto" });
       // The package API is intentionally accessed via loose typing to avoid
       // compile-time coupling across minor API differences.
-      const model = await (llama as { loadModel: (input: { modelPath: string }) => Promise<unknown> })
-        .loadModel({ modelPath: this.context.modelPath });
+      const model = await (llama as { loadModel: (input: { modelPath: string; gpuLayers?: number }) => Promise<unknown> })
+        .loadModel({ modelPath: this.context.modelPath, gpuLayers: this.context.gpuLayers });
       const context = await (model as { createContext: (input: { contextSize: number }) => Promise<unknown> })
         .createContext({ contextSize: this.context.contextSize });
       this.context.model = model;
@@ -73,10 +80,10 @@ export class LlamaCppProvider implements ModelRuntimeClient {
       } else {
         const dynamicImport = new Function("id", "return import(id)") as (id: string) => Promise<unknown>;
         const mod = await dynamicImport("node-llama-cpp");
-        const getLlama = (mod as { getLlama: () => Promise<unknown> }).getLlama;
-        const llama = await getLlama();
-        model = await (llama as { loadModel: (input: { modelPath: string }) => Promise<unknown> })
-          .loadModel({ modelPath: embeddingModelPath });
+        const getLlama = (mod as { getLlama: (options?: { gpu?: string }) => Promise<unknown> }).getLlama;
+        const llama = await getLlama({ gpu: "auto" });
+        model = await (llama as { loadModel: (input: { modelPath: string; gpuLayers?: number }) => Promise<unknown> })
+          .loadModel({ modelPath: embeddingModelPath, gpuLayers: this.context.gpuLayers });
       }
 
       const embeddingContext = await (model as {

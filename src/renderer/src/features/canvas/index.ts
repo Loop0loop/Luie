@@ -12,10 +12,10 @@
  *   P6b — React-Flow viewport (Obsidian-style) — read-only UI/UX scaffolding.
  */
 
-export { default as CanvasPane } from "./components/CanvasPane";
-export { default as CanvasActivityShell } from "./components/CanvasActivityShell";
-export { default as CanvasIconRail } from "./components/CanvasIconRail";
-export { default as SidePanelRouter } from "./components/SidePanelRouter";
+export { default as CanvasPane } from "./components/shell/CanvasPane";
+export { default as CanvasActivityShell } from "./components/shell/CanvasActivityShell";
+export { default as CanvasIconRail } from "./components/shell/CanvasIconRail";
+export { default as SidePanelRouter } from "./components/shell/SidePanelRouter";
 
 export { useCanvasViewStore } from "./stores";
 export type { CanvasViewState } from "./stores";

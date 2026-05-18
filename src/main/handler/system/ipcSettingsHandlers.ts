@@ -197,7 +197,14 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       channel: IPC_CHANNELS.SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL,
       logTag: "SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL",
       failMessage: "Failed to download default llm model",
-      handler: async () => modelStorageService.downloadDefaultModel(),
+      handler: () => {
+        void modelStorageService.downloadDefaultModel().catch((err) => {
+          logger.error("Background model download failed", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        });
+        return { started: true };
+      },
     },
     {
       channel: IPC_CHANNELS.SETTINGS_GET_LLM_DOWNLOAD_STATUS,

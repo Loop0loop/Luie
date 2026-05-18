@@ -63,10 +63,10 @@ const ScrivenerSidebar = lazy(
 );
 const CanvasActivityShell = lazy(
   () =>
-    import("@renderer/features/canvas/components/CanvasActivityShell"),
+    import("@renderer/features/canvas/components/shell/CanvasActivityShell"),
 );
 const CanvasPane = lazy(
-  () => import("@renderer/features/canvas/components/CanvasPane"),
+  () => import("@renderer/features/canvas/components/shell/CanvasPane"),
 );
 const CanvasInspectorPanel = lazy(
   () => import("@renderer/features/canvas/components/binder/CanvasInspectorPanel"),
