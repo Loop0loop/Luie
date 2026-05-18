@@ -5,6 +5,7 @@ import {
   chapterIdSchema,
   memoryChunkIdSchema,
   memoryChunkSearchSchema,
+  memoryEmbeddingStatusSchema,
   memorySummaryStatusSchema,
   projectIdSchema,
   rebuildMemoryChunksSchema,
@@ -28,6 +29,10 @@ type ChapterSummaryProjectorLike = {
   getSummaryStatus: (projectId: string) => Promise<unknown>;
 };
 
+type EmbeddingProjectorLike = {
+  getEmbeddingStatus: (projectId: string) => Promise<unknown>;
+};
+
 type DbMaintenanceServiceLike = {
   getSearchIndexStatus: (projectId: string) => Promise<unknown>;
   rebuildSearchIndex: (projectId: string) => Promise<unknown>;
@@ -46,6 +51,7 @@ export function registerSearchIPCHandlers(
   searchService: SearchServiceLike,
   dbMaintenanceService: DbMaintenanceServiceLike,
   chapterSummaryProjector: ChapterSummaryProjectorLike,
+  embeddingProjector: EmbeddingProjectorLike,
 ): void {
   registerIpcHandlers(logger, [
     {
@@ -117,6 +123,14 @@ export function registerSearchIPCHandlers(
       argsSchema: z.tuple([memorySummaryStatusSchema]),
       handler: (input: { projectId: string }) =>
         chapterSummaryProjector.getSummaryStatus(input.projectId),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_GET_EMBEDDING_STATUS,
+      logTag: "MEMORY_GET_EMBEDDING_STATUS",
+      failMessage: "Failed to get embedding status",
+      argsSchema: z.tuple([memoryEmbeddingStatusSchema]),
+      handler: (input: { projectId: string }) =>
+        embeddingProjector.getEmbeddingStatus(input.projectId),
     },
     {
       channel: IPC_CHANNELS.DB_RUN_INTEGRITY_CHECK,

@@ -548,6 +548,14 @@ export interface ChapterSummaryStatus {
   completedCount: number;
 }
 
+export interface MemoryEmbeddingStatus {
+  projectId: string;
+  pendingCount: number;
+  runningCount: number;
+  failedCount: number;
+  completedCount: number;
+}
+
 // Settings Types
 export type FontFamilyPreset = "system-ui" | "serif" | "mono";
 export type FontFamily = FontFamilyPreset | string;

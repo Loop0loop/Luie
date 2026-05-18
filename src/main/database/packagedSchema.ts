@@ -14,6 +14,7 @@ export const PACKAGED_SCHEMA_REQUIRED_TABLES = [
   "SearchDirtyQueue",
   "MemoryChunk",
   "MemoryBuildJob",
+  "MemoryEmbedding",
   "ChapterSummary",
   "Character",
   "Event",
@@ -116,6 +117,16 @@ export const PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
   },
   {
     table: "ProjectSettings",
+    column: "llmEmbeddingModelPath",
+    sql: 'ALTER TABLE "ProjectSettings" ADD COLUMN "llmEmbeddingModelPath" TEXT;',
+  },
+  {
+    table: "ProjectSettings",
+    column: "llmEmbeddingDimension",
+    sql: 'ALTER TABLE "ProjectSettings" ADD COLUMN "llmEmbeddingDimension" INTEGER NOT NULL DEFAULT 1024;',
+  },
+  {
+    table: "ProjectSettings",
     column: "llmProviderHint",
     sql: 'ALTER TABLE "ProjectSettings" ADD COLUMN "llmProviderHint" TEXT;',
   },
@@ -177,7 +188,16 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
   Project: ["id", "title"],
   ProjectAttachment: ["projectId", "projectPath"],
   ProjectLocalState: ["projectId", "lastOpenedAt"],
-  ProjectSettings: ["id", "projectId", "autoSave", "autoSaveInterval", "llmModelPath", "llmProviderHint"],
+  ProjectSettings: [
+    "id",
+    "projectId",
+    "autoSave",
+    "autoSaveInterval",
+    "llmModelPath",
+    "llmEmbeddingModelPath",
+    "llmEmbeddingDimension",
+    "llmProviderHint",
+  ],
   Chapter: ["id", "projectId", "order", "wordCount", "deletedAt"],
   ChapterBody: ["chapterId", "content", "contentHash", "updatedAt"],
   ChapterRevision: ["id", "chapterId", "contentHash", "content", "reason"],
@@ -207,6 +227,14 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
     "jobType",
     "status",
     "priority",
+  ],
+  MemoryEmbedding: [
+    "id",
+    "chunkId",
+    "projectId",
+    "contentHash",
+    "vec",
+    "dimension",
   ],
   ChapterSummary: [
     "id",
@@ -259,6 +287,8 @@ CREATE TABLE IF NOT EXISTS "ProjectSettings" (
     "autoSave" BOOLEAN NOT NULL DEFAULT 1,
     "autoSaveInterval" INTEGER NOT NULL DEFAULT 30,
     "llmModelPath" TEXT,
+    "llmEmbeddingModelPath" TEXT,
+    "llmEmbeddingDimension" INTEGER NOT NULL DEFAULT 1024,
     "llmProviderHint" TEXT,
     CONSTRAINT "ProjectSettings_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -330,6 +360,18 @@ CREATE TABLE IF NOT EXISTS "MemoryBuildJob" (
     "error" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
+);
+CREATE TABLE IF NOT EXISTS "MemoryEmbedding" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "chunkId" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "contentHash" TEXT NOT NULL DEFAULT '',
+    "vec" BLOB NOT NULL,
+    "dimension" INTEGER NOT NULL,
+    "model" TEXT,
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    CONSTRAINT "MemoryEmbedding_chunkId_fkey" FOREIGN KEY ("chunkId") REFERENCES "MemoryChunk" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "ChapterSummary" (
     "id" TEXT NOT NULL PRIMARY KEY,
@@ -470,6 +512,8 @@ CREATE INDEX IF NOT EXISTS "MemoryChunk_projectId_source_idx" ON "MemoryChunk"("
 CREATE INDEX IF NOT EXISTS "MemoryChunk_projectId_chapterId_idx" ON "MemoryChunk"("projectId", "chapterId");
 CREATE INDEX IF NOT EXISTS "MemoryBuildJob_projectId_status_priority_idx" ON "MemoryBuildJob"("projectId", "status", "priority");
 CREATE INDEX IF NOT EXISTS "MemoryBuildJob_target_idx" ON "MemoryBuildJob"("targetType", "targetId");
+CREATE UNIQUE INDEX IF NOT EXISTS "MemoryEmbedding_chunkId_key" ON "MemoryEmbedding"("chunkId");
+CREATE INDEX IF NOT EXISTS "MemoryEmbedding_projectId_idx" ON "MemoryEmbedding"("projectId");
 CREATE UNIQUE INDEX IF NOT EXISTS "ChapterSummary_chapterId_key" ON "ChapterSummary"("chapterId");
 CREATE INDEX IF NOT EXISTS "ChapterSummary_projectId_idx" ON "ChapterSummary"("projectId");
 CREATE INDEX IF NOT EXISTS "Character_projectId_name_idx" ON "Character"("projectId", "name");

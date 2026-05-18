@@ -18,4 +18,8 @@ export class DeterministicProvider implements ModelRuntimeClient {
   async *generateStream(prompt: string, options?: GenerateOptions): AsyncIterable<string> {
     yield await this.generate(prompt, options);
   }
+
+  async embed(_texts: string[]): Promise<Float32Array[] | null> {
+    return null;
+  }
 }

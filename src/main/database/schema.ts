@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  blob,
   foreignKey,
   index,
   integer,
@@ -65,6 +66,8 @@ export const projectSettings = sqliteTable(
     autoSave: integer("autoSave", { mode: "boolean" }).notNull().default(sql`1`),
     autoSaveInterval: integer("autoSaveInterval").notNull().default(30),
     llmModelPath: text("llmModelPath"),
+    llmEmbeddingModelPath: text("llmEmbeddingModelPath"),
+    llmEmbeddingDimension: integer("llmEmbeddingDimension").notNull().default(1024),
     llmProviderHint: text("llmProviderHint"),
   },
   (table) => [
@@ -233,6 +236,30 @@ export const chapterSummary = sqliteTable(
       name: "ChapterSummary_chapterId_fkey",
       columns: [table.chapterId],
       foreignColumns: [chapter.id],
+    }).onDelete("cascade").onUpdate("cascade"),
+  ],
+);
+
+export const memoryEmbedding = sqliteTable(
+  "MemoryEmbedding",
+  {
+    id: text("id").primaryKey().notNull(),
+    chunkId: text("chunkId").notNull(),
+    projectId: text("projectId").notNull(),
+    contentHash: text("contentHash").notNull().default(""),
+    vec: blob("vec", { mode: "buffer" }).notNull(),
+    dimension: integer("dimension").notNull(),
+    model: text("model"),
+    createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updatedAt").notNull(),
+  },
+  (table) => [
+    uniqueIndex("MemoryEmbedding_chunkId_key").on(table.chunkId),
+    index("MemoryEmbedding_projectId_idx").on(table.projectId),
+    foreignKey({
+      name: "MemoryEmbedding_chunkId_fkey",
+      columns: [table.chunkId],
+      foreignColumns: [memoryChunk.id],
     }).onDelete("cascade").onUpdate("cascade"),
   ],
 );

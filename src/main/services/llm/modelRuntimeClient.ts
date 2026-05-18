@@ -8,7 +8,7 @@ export interface ModelRuntimeClient {
   isAvailable(): Promise<boolean>;
   generate(prompt: string, options?: GenerateOptions): Promise<string>;
   generateStream(prompt: string, options?: GenerateOptions): AsyncIterable<string>;
-  embed?(texts: string[]): Promise<Float32Array[]>;
+  embed(texts: string[]): Promise<Float32Array[] | null>;
 }
 
 export type GenerateResultMeta = {

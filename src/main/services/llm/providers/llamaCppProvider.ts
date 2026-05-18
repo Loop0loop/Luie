@@ -3,9 +3,12 @@ import type { GenerateOptions, ModelRuntimeClient } from "../modelRuntimeClient.
 
 type LlamaContext = {
   modelPath: string;
+  embeddingModelPath: string | null;
   model?: unknown;
   context?: unknown;
-};
+  embeddingModel?: unknown;
+  embeddingContext?: unknown;
+};  
 
 // Minimal runtime wrapper with lazy dynamic import to keep startup resilient
 // when node-llama-cpp is not installed.
@@ -13,9 +16,10 @@ export class LlamaCppProvider implements ModelRuntimeClient {
   readonly providerName = "llamacpp";
   private context: LlamaContext;
   private modelPromise: Promise<void> | null = null;
+  private embeddingPromise: Promise<void> | null = null;
 
-  constructor(modelPath: string) {
-    this.context = { modelPath };
+  constructor(modelPath: string, embeddingModelPath?: string | null) {
+    this.context = { modelPath, embeddingModelPath: embeddingModelPath ?? null };
   }
 
   private async ensureLoaded(): Promise<void> {
@@ -42,6 +46,36 @@ export class LlamaCppProvider implements ModelRuntimeClient {
     } catch (error) {
       // Allow retry after transient/model initialization failures.
       this.modelPromise = null;
+      throw error;
+    }
+  }
+
+  private async ensureEmbeddingLoaded(): Promise<void> {
+    if (this.embeddingPromise) {
+      await this.embeddingPromise;
+      return;
+    }
+    this.embeddingPromise = (async () => {
+      const dynamicImport = new Function("id", "return import(id)") as (id: string) => Promise<unknown>;
+      const mod = await dynamicImport("node-llama-cpp");
+      const getLlama = (mod as { getLlama: () => Promise<unknown> }).getLlama;
+      const llama = await getLlama();
+      const embeddingModelPath = this.context.embeddingModelPath ?? this.context.modelPath;
+      const model = await (llama as { loadModel: (input: { modelPath: string }) => Promise<unknown> })
+        .loadModel({ modelPath: embeddingModelPath });
+      const embeddingContext = await (model as {
+        createEmbeddingContext?: () => Promise<unknown>;
+      }).createEmbeddingContext?.();
+      if (!embeddingContext) {
+        throw new Error("Embedding context is not supported by current model/runtime");
+      }
+      this.context.embeddingModel = model;
+      this.context.embeddingContext = embeddingContext;
+    })();
+    try {
+      await this.embeddingPromise;
+    } catch (error) {
+      this.embeddingPromise = null;
       throw error;
     }
   }
@@ -81,5 +115,27 @@ export class LlamaCppProvider implements ModelRuntimeClient {
 
   async *generateStream(prompt: string, options?: GenerateOptions): AsyncIterable<string> {
     yield await this.generate(prompt, options);
+  }
+
+  async embed(texts: string[]): Promise<Float32Array[] | null> {
+    if (texts.length === 0) return [];
+    try {
+      await this.ensureEmbeddingLoaded();
+      const context = this.context.embeddingContext as {
+        getEmbeddingFor: (text: string) => Promise<{ vector: Float32Array } | Float32Array>;
+      };
+      const vectors: Float32Array[] = [];
+      for (const text of texts) {
+        const result = await context.getEmbeddingFor(text);
+        if (result instanceof Float32Array) {
+          vectors.push(result);
+        } else {
+          vectors.push(result.vector);
+        }
+      }
+      return vectors;
+    } catch {
+      return null;
+    }
   }
 }

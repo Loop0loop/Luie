@@ -205,6 +205,10 @@ export const memorySummaryStatusSchema = z.object({
   projectId: projectIdSchema,
 });
 
+export const memoryEmbeddingStatusSchema = z.object({
+  projectId: projectIdSchema,
+});
+
 export const exportRequestSchema = z.object({
   projectId: projectIdSchema,
   chapterId: chapterIdSchema,

@@ -15,7 +15,8 @@
     "!**/node_modules/better-sqlite3/deps/**"
   ],
   "asarUnpack": [
-    "node_modules/node-llama-cpp/**"
+    "node_modules/node-llama-cpp/**",
+    "node_modules/sqlite-vec/**"
   ],
   "electronLanguages": ["en", "ko", "ja"],
   "extraResources": [

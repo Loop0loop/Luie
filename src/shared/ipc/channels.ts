@@ -82,6 +82,7 @@ export const IPC_CHANNELS = {
   MEMORY_GET_CHUNK_BACKLINK: "memory:get-chunk-backlink",
   MEMORY_GET_CHAPTER_SUMMARY: "memory:get-chapter-summary",
   MEMORY_GET_SUMMARY_STATUS: "memory:get-summary-status",
+  MEMORY_GET_EMBEDDING_STATUS: "memory:get-embedding-status",
   DB_RUN_INTEGRITY_CHECK: "db:run-integrity-check",
   DB_GET_MIGRATION_HEALTH: "db:get-migration-health",
 

@@ -1,5 +1,6 @@
 import { createLogger } from "../../../shared/logger/index.js";
 import { dbMaintenanceService } from "./dbMaintenanceService.js";
+import { embeddingProjector } from "./memory/embeddingProjector.js";
 import { chapterSummaryProjector } from "./memory/chapterSummaryProjector.js";
 import { memoryProjectionService } from "./memory/memoryProjectionService.js";
 
@@ -36,6 +37,10 @@ const SUMMARY_BATCH_SIZE = toPositiveInt(
   process.env.LUIE_DERIVED_SUMMARY_BATCH,
   isStressMode ? 2 : 1,
 );
+const EMBEDDING_BATCH_SIZE = toPositiveInt(
+  process.env.LUIE_DERIVED_EMBEDDING_BATCH,
+  isStressMode ? 5 : 2,
+);
 const TICK_WARN_THRESHOLD_MS = toPositiveInt(
   process.env.LUIE_DERIVED_TICK_WARN_MS,
   100,
@@ -43,6 +48,10 @@ const TICK_WARN_THRESHOLD_MS = toPositiveInt(
 const TICK_WARN_THRESHOLD_WITH_SUMMARY_MS = toPositiveInt(
   process.env.LUIE_DERIVED_TICK_WARN_SUMMARY_MS,
   5000,
+);
+const TICK_WARN_THRESHOLD_WITH_EMBEDDING_MS = toPositiveInt(
+  process.env.LUIE_DERIVED_TICK_WARN_EMBEDDING_MS,
+  8000,
 );
 
 class DerivedJobWorker {
@@ -123,6 +132,8 @@ class DerivedJobWorker {
       let memoryProcessed = 0;
       let summaryQueued = 0;
       let summaryProcessed = 0;
+      let embeddingQueued = 0;
+      let embeddingProcessed = 0;
       await projectsToProcess.reduce<Promise<void>>(async (prev, projectId) => {
         await prev;
         const result = await memoryProjectionService.processPendingChunkJobs({
@@ -137,9 +148,15 @@ class DerivedJobWorker {
         });
         summaryQueued += summaryResult.queued;
         summaryProcessed += summaryResult.processed;
+        const embeddingResult = await embeddingProjector.processPendingEmbeddingJobs({
+          projectId,
+          limit: EMBEDDING_BATCH_SIZE,
+        });
+        embeddingQueued += embeddingResult.queued;
+        embeddingProcessed += embeddingResult.processed;
       }, Promise.resolve());
 
-      if (search.queued > 0 || memoryQueued > 0 || summaryQueued > 0) {
+      if (search.queued > 0 || memoryQueued > 0 || summaryQueued > 0 || embeddingQueued > 0) {
         logger.info("Derived job worker tick processed", {
           elapsedMs: Date.now() - startedAt,
           searchQueued: search.queued,
@@ -149,6 +166,8 @@ class DerivedJobWorker {
           memoryProcessed,
           summaryQueued,
           summaryProcessed,
+          embeddingQueued,
+          embeddingProcessed,
           projectCount: projectsToProcess.length,
         });
       }
@@ -170,8 +189,10 @@ class DerivedJobWorker {
       }
       const elapsedMs = Date.now() - startedAt;
       const thresholdMs =
-        summaryQueued > 0 || summaryProcessed > 0
-          ? TICK_WARN_THRESHOLD_WITH_SUMMARY_MS
+        embeddingQueued > 0 || embeddingProcessed > 0
+          ? TICK_WARN_THRESHOLD_WITH_EMBEDDING_MS
+          : summaryQueued > 0 || summaryProcessed > 0
+            ? TICK_WARN_THRESHOLD_WITH_SUMMARY_MS
           : TICK_WARN_THRESHOLD_MS;
       if (
         elapsedMs >= thresholdMs &&
@@ -184,6 +205,7 @@ class DerivedJobWorker {
           searchBatchSize: SEARCH_BATCH_SIZE,
           memoryBatchSize: MEMORY_BATCH_SIZE,
           summaryBatchSize: SUMMARY_BATCH_SIZE,
+          embeddingBatchSize: EMBEDDING_BATCH_SIZE,
           memoryProjectsPerTick: MEMORY_PROJECTS_PER_TICK,
         });
       }

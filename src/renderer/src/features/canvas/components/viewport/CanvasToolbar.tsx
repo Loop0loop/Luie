@@ -66,7 +66,7 @@ function CanvasTypeToggle({
 
   return (
     <div
-      className="flex items-center rounded-md border border-border/60 bg-element p-0.5"
+      className="flex h-5 items-center rounded border border-border/60 bg-element p-px"
       role="group"
       aria-label={t("canvas.type.label")}
     >
@@ -79,7 +79,7 @@ function CanvasTypeToggle({
             onClick={() => onChange(optValue)}
             aria-pressed={isActive}
             className={cn(
-              "rounded px-2.5 py-0.5 text-[11px] font-medium transition-all duration-100",
+              "h-full rounded-sm px-2 text-[10px] font-medium leading-none transition-colors",
               isActive
                 ? "bg-panel text-fg shadow-sm"
                 : "text-muted hover:text-fg",

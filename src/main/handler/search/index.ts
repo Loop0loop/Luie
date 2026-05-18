@@ -6,11 +6,13 @@ export function registerSearchHandlers(options: {
   searchService: Parameters<typeof registerSearchIPCHandlers>[1];
   dbMaintenanceService: Parameters<typeof registerSearchIPCHandlers>[2];
   chapterSummaryProjector: Parameters<typeof registerSearchIPCHandlers>[3];
+  embeddingProjector: Parameters<typeof registerSearchIPCHandlers>[4];
 }): void {
   registerSearchIPCHandlers(
     options.logger,
     options.searchService,
     options.dbMaintenanceService,
     options.chapterSummaryProjector,
+    options.embeddingProjector,
   );
 }

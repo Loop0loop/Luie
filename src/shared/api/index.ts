@@ -37,6 +37,7 @@ import type {
   MemoryChunkBacklink,
   ChapterSummaryResult,
   ChapterSummaryStatus,
+  MemoryEmbeddingStatus,
   WorldEntity,
   EntityRelation,
   WorldGraphData,
@@ -329,6 +330,7 @@ export type RendererApi = {
     }) => Promise<IPCResponse<{ queued: number; processed: number }>>;
     getJobStatus: (projectId: string) => Promise<IPCResponse<MemoryJobStatus>>;
     getSummaryStatus: (projectId: string) => Promise<IPCResponse<ChapterSummaryStatus>>;
+    getEmbeddingStatus: (projectId: string) => Promise<IPCResponse<MemoryEmbeddingStatus>>;
   };
   memory: {
     searchChunks: (

@@ -88,6 +88,7 @@ class DatabaseService {
     context: PreparedDatabaseContext,
   ): DrizzleDatabaseHandle<MainDrizzleClient> {
     const sqlite = new BetterSqliteDatabase(context.dbPath);
+    void this.tryLoadSqliteVecExtension(sqlite);
     sqlite.pragma("journal_mode = WAL");
     sqlite.pragma("synchronous = FULL");
     sqlite.pragma("foreign_keys = ON");
@@ -95,6 +96,23 @@ class DatabaseService {
     sqlite.pragma("wal_autocheckpoint = 1000");
     const client = drizzle(sqlite, { schema });
     return { sqlite, client };
+  }
+
+  private async tryLoadSqliteVecExtension(sqlite: BetterSqliteDatabase.Database): Promise<void> {
+    try {
+      const dynamicImport = new Function("id", "return import(id)") as (id: string) => Promise<unknown>;
+      const mod = await dynamicImport("sqlite-vec");
+      const getLoadablePath = (mod as { getLoadablePath?: () => string }).getLoadablePath;
+      const loadablePath = getLoadablePath?.();
+      if (loadablePath) {
+        sqlite.loadExtension(loadablePath);
+        logger.info("sqlite-vec extension loaded", { loadablePath });
+      }
+    } catch (error) {
+      logger.warn("sqlite-vec extension is unavailable; vector search disabled", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   private async prepareDatabaseContext(): Promise<PreparedDatabaseContext> {

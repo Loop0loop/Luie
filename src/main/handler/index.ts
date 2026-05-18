@@ -16,6 +16,7 @@ import {
   graphPluginService,
   dbMaintenanceService,
   chapterSummaryProjector,
+  embeddingProjector,
 } from "../services/index.js";
 import { registerProjectHandlers } from "./project/index.js";
 import { registerSearchHandlers } from "./search/index.js";
@@ -59,6 +60,7 @@ export async function registerAllIPCHandlers(): Promise<void> {
     searchService,
     dbMaintenanceService,
     chapterSummaryProjector,
+    embeddingProjector,
   });
 
   registerSystemHandlers({

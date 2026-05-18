@@ -203,6 +203,8 @@ export function createProjectApi({
         safeInvoke(IPC_CHANNELS.MEMORY_JOB_STATUS, projectId),
       getSummaryStatus: (projectId) =>
         safeInvoke(IPC_CHANNELS.MEMORY_GET_SUMMARY_STATUS, { projectId }),
+      getEmbeddingStatus: (projectId) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_GET_EMBEDDING_STATUS, { projectId }),
     },
     memory: {
       searchChunks: (input) =>
