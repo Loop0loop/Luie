@@ -6,6 +6,7 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import {
+  PACKAGED_SCHEMA_BOOTSTRAP_SQL,
   PACKAGED_SCHEMA_COLUMN_PATCHES,
   PACKAGED_SCHEMA_INDEX_PATCHES,
 } from "./packagedSchema.js";
@@ -163,6 +164,12 @@ export function ensurePackagedSqliteSchema(
 
     // Run Drizzle migrate — applies only migrations not yet in __drizzle_migrations
     migrate(drizzleDb, { migrationsFolder });
+
+    // Safety net: run the full bootstrap SQL to create any tables that were skipped
+    // by the Prisma baseline path (markInitialMigrationAsApplied records migrations
+    // as applied without executing their SQL). All statements use CREATE TABLE IF NOT
+    // EXISTS / CREATE INDEX IF NOT EXISTS, so this is fully idempotent.
+    database.exec(PACKAGED_SCHEMA_BOOTSTRAP_SQL);
 
     // Apply column patches for existing DBs that may be missing columns
     // added after the initial schema was created (e.g. deletedAt on WorldEntity).

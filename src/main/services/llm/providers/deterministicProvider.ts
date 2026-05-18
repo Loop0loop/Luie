@@ -9,6 +9,10 @@ export class DeterministicProvider implements ModelRuntimeClient {
     return true;
   }
 
+  isModelLoaded(): boolean {
+    return true;
+  }
+
   async generate(prompt: string, _options?: GenerateOptions): Promise<string> {
     const normalized = prompt.replace(/\s+/g, " ").trim();
     const head = normalized.slice(0, 500);

@@ -91,6 +91,11 @@ export class ChapterSummaryProjector {
     );
     const runtime = await resolveModelRuntimeClient(input.projectId);
     const runtimeAvailable = await runtime.isAvailable();
+    // Only process if the model is already loaded — do not trigger a cold model load
+    // from a background job, as that would silently consume gigabytes of RAM.
+    if (!runtimeAvailable || !runtime.isModelLoaded()) {
+      return { queued: jobs.length, processed: 0 };
+    }
 
     let processed = 0;
     for (const job of jobs) {

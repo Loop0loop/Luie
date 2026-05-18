@@ -11,6 +11,8 @@ type LlamaContext = {
   gpuLayers: number;
   model?: unknown;
   context?: unknown;
+  // LlamaCompletion class reference cached from dynamic import to avoid re-importing per call
+  LlamaCompletion?: unknown;
   embeddingModel?: unknown;
   embeddingContext?: unknown;
 };  
@@ -41,7 +43,10 @@ export class LlamaCppProvider implements ModelRuntimeClient {
     this.modelPromise = (async () => {
       const dynamicImport = new Function("id", "return import(id)") as (id: string) => Promise<unknown>;
       const mod = await dynamicImport("node-llama-cpp");
-      const getLlama = (mod as { getLlama: (options?: { gpu?: string }) => Promise<unknown> }).getLlama;
+      const { getLlama, LlamaCompletion } = mod as {
+        getLlama: (options?: { gpu?: string }) => Promise<unknown>;
+        LlamaCompletion: unknown;
+      };
       // gpu: "auto" lets node-llama-cpp pick Metal (macOS), CUDA, or Vulkan automatically.
       const llama = await getLlama({ gpu: "auto" });
       // The package API is intentionally accessed via loose typing to avoid
@@ -52,6 +57,7 @@ export class LlamaCppProvider implements ModelRuntimeClient {
         .createContext({ contextSize: this.context.contextSize });
       this.context.model = model;
       this.context.context = context;
+      this.context.LlamaCompletion = LlamaCompletion;
     })();
     try {
       await this.modelPromise;
@@ -106,33 +112,38 @@ export class LlamaCppProvider implements ModelRuntimeClient {
   async isAvailable(): Promise<boolean> {
     try {
       await fs.access(this.context.modelPath);
-      await this.ensureLoaded();
       return true;
     } catch {
       return false;
     }
   }
 
+  isModelLoaded(): boolean {
+    return this.context.model !== undefined;
+  }
+
   async generate(prompt: string, options?: GenerateOptions): Promise<string> {
     await this.ensureLoaded();
-    const sequence = await (this.context.context as {
-      createSequence: () => Promise<{
-        evaluate: (input: string, options?: { temperature?: number; maxTokens?: number }) => Promise<string>;
-        dispose?: () => Promise<void> | void;
-        free?: () => Promise<void> | void;
-        release?: () => Promise<void> | void;
-      }>;
-    }).createSequence();
+    // node-llama-cpp v3 API: context.getSequence() → LlamaCompletion.generateCompletion()
+    // (createSequence() does not exist in v3; replaced by getSequence() + LlamaCompletion)
+    const ctx = this.context.context as { getSequence: () => { dispose: () => void } };
+    const LlamaCompletionCls = this.context.LlamaCompletion as new (opts: {
+      contextSequence: unknown;
+    }) => {
+      generateCompletion: (
+        input: string,
+        opts?: { maxTokens?: number; temperature?: number },
+      ) => Promise<string>;
+    };
+    const sequence = ctx.getSequence();
+    const completion = new LlamaCompletionCls({ contextSequence: sequence });
     try {
-      return await sequence.evaluate(prompt, {
+      return await completion.generateCompletion(prompt, {
         temperature: options?.temperature ?? 0.2,
         maxTokens: options?.maxTokens ?? 256,
       });
     } finally {
-      const cleanup = sequence.dispose ?? sequence.free ?? sequence.release;
-      if (cleanup) {
-        await cleanup.call(sequence);
-      }
+      sequence.dispose();
     }
   }
 
