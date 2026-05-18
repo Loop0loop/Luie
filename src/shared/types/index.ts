@@ -1057,7 +1057,7 @@ export interface AppSettings {
     modelsDir?: string;
     defaultModelPath?: string;
     defaultModelId?: string;
-    llmProviderHint?: "llamacpp" | "none";
+    llmProviderHint?: "llamacpp" | "llamaserver" | "none";
     hfTokenCipher?: string;
   };
 }

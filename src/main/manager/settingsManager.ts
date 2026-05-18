@@ -262,7 +262,7 @@ export class SettingsManager {
     modelsDir?: string;
     defaultModelPath?: string;
     defaultModelId?: string;
-    llmProviderHint?: "llamacpp" | "none";
+    llmProviderHint?: "llamacpp" | "llamaserver" | "none";
     hfTokenCipher?: string;
   } {
     const llm = this.store.get("llm") ?? {};
@@ -270,7 +270,7 @@ export class SettingsManager {
       modelsDir: llm.modelsDir,
       defaultModelPath: llm.defaultModelPath,
       defaultModelId: llm.defaultModelId,
-      llmProviderHint: (llm as { llmProviderHint?: "llamacpp" | "none" }).llmProviderHint,
+      llmProviderHint: (llm as { llmProviderHint?: "llamacpp" | "llamaserver" | "none" }).llmProviderHint,
       hfTokenCipher: (llm as { hfTokenCipher?: string }).hfTokenCipher,
     };
   }
@@ -279,7 +279,7 @@ export class SettingsManager {
     modelsDir?: string;
     defaultModelPath?: string;
     defaultModelId?: string;
-    llmProviderHint?: "llamacpp" | "none";
+    llmProviderHint?: "llamacpp" | "llamaserver" | "none";
     hfTokenCipher?: string;
   }): void {
     const current = this.store.get("llm") ?? {};

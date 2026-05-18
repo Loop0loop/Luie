@@ -49,7 +49,9 @@ jobs:
         run: node scripts/ci/sync-release-version-from-tag.mjs
 
       - name: Build Windows nsis-web package
+        shell: bash
         run: |
+          set -euo pipefail
           bun run generate
           bun run build
           bunx electron-builder --win nsis-web --${{ matrix.arch }} --config electron-builder.json --publish never

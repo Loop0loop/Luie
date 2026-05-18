@@ -6,6 +6,7 @@ import {
   character,
   event,
   faction,
+  memoryChunk,
   plot,
   synopsis,
   term,
@@ -186,7 +187,54 @@ async function buildLayer3Evidence(projectId: string, question: string): Promise
   section: string;
   evidence: RagQaEvidence[];
 }> {
-  const rows = await searchService.searchChunks({ projectId, query: question, limit: 10 });
+  let rows = await searchService.searchChunks({ projectId, query: question, limit: 10 });
+  if (rows.length === 0) {
+    const normalizedQuestion = question.trim();
+    const escaped = escapeLike(normalizedQuestion);
+    const rawTokens = normalizedQuestion
+      .replace(/[^0-9A-Za-z가-힣_\s]/g, " ")
+      .split(/\s+/)
+      .map((token) => token.trim())
+      .filter((token) => token.length >= 2)
+      .slice(0, 8);
+    const tokenPredicates = rawTokens
+      .map((token) => escapeLike(token))
+      .filter((token): token is string => token.length > 0)
+      .map((token) => like(memoryChunk.content, `%${token}%`));
+    const lexicalPredicate =
+      tokenPredicates.length > 0
+        ? or(...tokenPredicates)
+        : escaped
+          ? like(memoryChunk.content, `%${escaped}%`)
+          : undefined;
+    if (lexicalPredicate) {
+      const lexicalRows = await db
+        .getClient()
+        .select({
+          chunkId: memoryChunk.id,
+          chapterId: memoryChunk.chapterId,
+          content: memoryChunk.content,
+          startOffset: memoryChunk.startOffset,
+        })
+        .from(memoryChunk)
+        .where(
+          and(
+            eq(memoryChunk.projectId, projectId),
+            lexicalPredicate,
+          ),
+        )
+        .orderBy(asc(memoryChunk.updatedAt))
+        .limit(10);
+      rows = lexicalRows.map((row) => ({
+        chunkId: row.chunkId,
+        chapterId: row.chapterId,
+        content: row.content,
+        startOffset: row.startOffset,
+        endOffset: null,
+        score: 0,
+      }));
+    }
+  }
   const evidence: RagQaEvidence[] = rows.map((row) => ({
     chunkId: row.chunkId,
     chapterId: row.chapterId,

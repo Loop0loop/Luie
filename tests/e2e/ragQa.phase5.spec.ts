@@ -73,6 +73,53 @@ test("phase5 rag qa ask -> done -> evidence @stress", async () => {
     "memory.rebuildChunks",
   );
 
+  // rebuildChunks는 큐 적재만 수행하므로 실제 처리 완료까지 대기한다.
+  const waitStart = Date.now();
+  while (Date.now() - waitStart < 15_000) {
+    const status = await call(
+      async () =>
+        await page.evaluate(async (projectId: string) => {
+          const api = (window as Window & { api?: Window["api"] }).api;
+          if (!api) return { success: false, error: { message: "window.api missing" } };
+          return (await api.memoryAdmin.getJobStatus(projectId)) as ApiResponse<{
+            pendingCount: number;
+            runningCount: number;
+          }>;
+        }, project.id),
+      "memoryAdmin.getJobStatus",
+    );
+    if ((status.pendingCount ?? 0) === 0 && (status.runningCount ?? 0) === 0) break;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
+  await call(
+    async () =>
+      await page.evaluate(async (projectId: string) => {
+        const api = (window as Window & { api?: Window["api"] }).api;
+        if (!api) return { success: false, error: { message: "window.api missing" } };
+        return (await api.searchAdmin.rebuildIndex(projectId)) as ApiResponse<{ success: boolean }>;
+      }, project.id),
+    "searchAdmin.rebuildIndex",
+  );
+
+  const searchWaitStart = Date.now();
+  while (Date.now() - searchWaitStart < 15_000) {
+    const status = await call(
+      async () =>
+        await page.evaluate(async (projectId: string) => {
+          const api = (window as Window & { api?: Window["api"] }).api;
+          if (!api) return { success: false, error: { message: "window.api missing" } };
+          return (await api.searchAdmin.getIndexStatus(projectId)) as ApiResponse<{
+            pendingCount: number;
+            runningCount: number;
+          }>;
+        }, project.id),
+      "searchAdmin.getIndexStatus",
+    );
+    if ((status.pendingCount ?? 0) === 0 && (status.runningCount ?? 0) === 0) break;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
   const streamResult = await call(
     async () =>
       await page.evaluate(async (input: { projectId: string; chapterId: string }) => {
