@@ -146,6 +146,7 @@ test("phase4 domain CRUD -> rebuild -> memory search/backlink @stress", async ()
 
   const waitStart = Date.now();
   let drained = false;
+  let lastStatus: { pendingCount: number; runningCount: number } | null = null;
   while (Date.now() - waitStart < 20_000) {
     const status = await call(
       async () =>
@@ -159,13 +160,17 @@ test("phase4 domain CRUD -> rebuild -> memory search/backlink @stress", async ()
         }, project.id),
       "memory.getJobStatus",
     );
+    lastStatus = status;
     if ((status.pendingCount ?? 0) === 0 && (status.runningCount ?? 0) === 0) {
       drained = true;
       break;
     }
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
-  expect(drained).toBe(true);
+  expect(
+    drained,
+    `memory build queue did not drain in 20s (lastStatus=${JSON.stringify(lastStatus)})`,
+  ).toBe(true);
 
   const queryAndBacklink = async (query: string) => {
     const rows = await call(

@@ -273,16 +273,44 @@ class DbMaintenanceService {
         ...scraps.map((row) => ({ targetType: MEMORY_TARGET_TYPES.SCRAP_MEMO, targetId: row.id })),
       ];
 
-      await targets.reduce<Promise<void>>(async (prev, target) => {
-        await prev;
-        await this.upsertPendingMemoryBuildJob({
-          projectId: input.projectId,
-          targetType: target.targetType,
-          targetId: target.targetId,
-          priority: MEMORY_JOB_PRIORITY.CHUNKS,
-          now,
-        });
-      }, Promise.resolve());
+      const existingPending = await client
+        .select({
+          targetType: memoryBuildJob.targetType,
+          targetId: memoryBuildJob.targetId,
+        })
+        .from(memoryBuildJob)
+        .where(
+          and(
+            eq(memoryBuildJob.projectId, input.projectId),
+            eq(memoryBuildJob.jobType, MEMORY_JOB_TYPES.REBUILD_CHUNKS),
+            eq(memoryBuildJob.status, "pending"),
+          ),
+        );
+
+      const existingKeys = new Set(
+        existingPending.map((row) => `${row.targetType}:${row.targetId}`),
+      );
+
+      const toInsert = targets.filter(
+        (target) => !existingKeys.has(`${target.targetType}:${target.targetId}`),
+      );
+
+      if (toInsert.length > 0) {
+        await client.insert(memoryBuildJob).values(
+          toInsert.map((target) => ({
+            id: crypto.randomUUID(),
+            projectId: input.projectId,
+            targetType: target.targetType,
+            targetId: target.targetId,
+            jobType: MEMORY_JOB_TYPES.REBUILD_CHUNKS,
+            status: "pending",
+            priority: MEMORY_JOB_PRIORITY.CHUNKS,
+            attempts: 0,
+            createdAt: now,
+            updatedAt: now,
+          })),
+        );
+      }
       return { queued: targets.length, processed: 0 };
     }
   }
