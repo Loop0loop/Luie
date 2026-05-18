@@ -53,6 +53,10 @@ import type {
   ChapterSummaryResult,
   ChapterSummaryStatus,
   MemoryEmbeddingStatus,
+  RagQaErrorPayload,
+  RagQaRequest,
+  RagQaRunHandle,
+  RagQaStreamPayload,
   WorldEntity,
   EntityRelation,
   WorldGraphData,
@@ -395,6 +399,12 @@ export type RendererApi = {
   maintenance: {
     runIntegrityCheck: () => Promise<IPCResponse<{ ok: boolean; rows: string[] }>>;
     getMigrationHealth: () => Promise<IPCResponse<MigrationHealth>>;
+  };
+  rag: {
+    ask: (input: RagQaRequest) => Promise<IPCResponse<RagQaRunHandle>>;
+    stop: (runId?: string) => Promise<IPCResponse<{ stopped: boolean }>>;
+    onStream: (callback: (payload: RagQaStreamPayload) => void) => () => void;
+    onError: (callback: (payload: RagQaErrorPayload) => void) => () => void;
   };
   autoSave: (
     chapterId: string,

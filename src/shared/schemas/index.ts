@@ -288,6 +288,16 @@ export const memoryEmbeddingStatusSchema = z.object({
   projectId: projectIdSchema,
 });
 
+export const ragQaRequestSchema = z.object({
+  projectId: projectIdSchema,
+  question: z.string().min(1, "Question is required").max(20_000, "Question is too large"),
+  chapterId: chapterIdSchema.optional(),
+});
+
+export const ragQaStopSchema = z.object({
+  runId: z.string().optional(),
+});
+
 export const exportRequestSchema = z.object({
   projectId: projectIdSchema,
   chapterId: chapterIdSchema,

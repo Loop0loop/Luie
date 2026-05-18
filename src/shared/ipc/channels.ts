@@ -126,6 +126,10 @@ export const IPC_CHANNELS = {
   ANALYSIS_ERROR: "analysis:error",
   ANALYSIS_STOP: "analysis:stop",
   ANALYSIS_CLEAR: "analysis:clear",
+  RAG_QA_ASK: "rag-qa:ask",
+  RAG_QA_STOP: "rag-qa:stop",
+  RAG_QA_STREAM: "rag-qa:stream",
+  RAG_QA_ERROR: "rag-qa:error",
 
   // File System
   FS_SELECT_DIRECTORY: "fs:select-directory",

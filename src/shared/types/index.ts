@@ -668,6 +668,45 @@ export interface MemoryEmbeddingStatus {
   completedCount: number;
 }
 
+export interface RagQaRequest {
+  projectId: string;
+  question: string;
+  chapterId?: string;
+}
+
+export interface RagQaEvidence {
+  chunkId: string;
+  chapterId: string | null;
+  offset: number;
+  quote: string;
+}
+
+export interface RagQaResult {
+  runId: string;
+  projectId: string;
+  question: string;
+  answer: string;
+  evidence: RagQaEvidence[];
+  createdAt: string;
+}
+
+export interface RagQaRunHandle {
+  runId: string;
+}
+
+export interface RagQaStreamPayload {
+  runId: string;
+  delta?: string;
+  done: boolean;
+  result?: RagQaResult;
+}
+
+export interface RagQaErrorPayload {
+  runId?: string;
+  code: string;
+  message: string;
+}
+
 // Settings Types
 export type FontFamilyPreset = "system-ui" | "serif" | "mono";
 export type FontFamily = FontFamilyPreset | string;

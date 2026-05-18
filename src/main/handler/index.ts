@@ -22,6 +22,7 @@ import {
   dbMaintenanceService,
   chapterSummaryProjector,
   embeddingProjector,
+  ragQaService,
 } from "../services/index.js";
 import { registerProjectHandlers } from "./project/index.js";
 import { registerSearchHandlers } from "./search/index.js";
@@ -81,6 +82,7 @@ export async function registerAllIPCHandlers(): Promise<void> {
   registerAnalysisHandlers({
     logger,
     manuscriptAnalysisService,
+    ragQaService,
   });
 
   logger.info("IPC handlers registered successfully");

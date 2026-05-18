@@ -4,6 +4,7 @@ import type { PreloadApiModuleContext } from "./types.js";
 
 export function createProjectApi({
   autoSave,
+  ipcRenderer,
   safeInvoke,
   safeInvokeCore,
 }: PreloadApiModuleContext): Pick<
@@ -27,6 +28,7 @@ export function createProjectApi({
   | "memoryAdmin"
   | "memory"
   | "maintenance"
+  | "rag"
   | "autoSave"
 > {
   const createClientMutationId = (): string => {
@@ -258,6 +260,28 @@ export function createProjectApi({
         safeInvoke(IPC_CHANNELS.DB_RUN_INTEGRITY_CHECK),
       getMigrationHealth: () =>
         safeInvoke(IPC_CHANNELS.DB_GET_MIGRATION_HEALTH),
+    },
+    rag: {
+      ask: (input) => safeInvoke(IPC_CHANNELS.RAG_QA_ASK, input),
+      stop: (runId) => safeInvoke(IPC_CHANNELS.RAG_QA_STOP, { runId }),
+      onStream: (callback) => {
+        const listener = (_event: unknown, payload: unknown) => {
+          callback(payload as never);
+        };
+        ipcRenderer.on(IPC_CHANNELS.RAG_QA_STREAM, listener);
+        return () => {
+          ipcRenderer.removeListener(IPC_CHANNELS.RAG_QA_STREAM, listener);
+        };
+      },
+      onError: (callback) => {
+        const listener = (_event: unknown, payload: unknown) => {
+          callback(payload as never);
+        };
+        ipcRenderer.on(IPC_CHANNELS.RAG_QA_ERROR, listener);
+        return () => {
+          ipcRenderer.removeListener(IPC_CHANNELS.RAG_QA_ERROR, listener);
+        };
+      },
     },
     autoSave: autoSave.autoSave,
   };
