@@ -26,7 +26,6 @@
 <table align="center">
   <tr>
     <th width="250" align="center">LEADER</th>
-    <th width="250" align="center">MEMBER</th>
   </tr>
   <tr>
     <td width="250" align="center">
