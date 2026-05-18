@@ -2,6 +2,7 @@
 export type {
   CanvasMode,
   CanvasAvailableMode,
+  CanvasType,
   CanvasRange,
   CanvasLayer,
   CanvasActivityPanel,

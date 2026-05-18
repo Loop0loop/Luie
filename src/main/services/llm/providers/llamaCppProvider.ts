@@ -37,7 +37,13 @@ export class LlamaCppProvider implements ModelRuntimeClient {
       this.context.model = model;
       this.context.context = context;
     })();
-    await this.modelPromise;
+    try {
+      await this.modelPromise;
+    } catch (error) {
+      // Allow retry after transient/model initialization failures.
+      this.modelPromise = null;
+      throw error;
+    }
   }
 
   async isAvailable(): Promise<boolean> {
@@ -55,12 +61,22 @@ export class LlamaCppProvider implements ModelRuntimeClient {
     const sequence = await (this.context.context as {
       createSequence: () => Promise<{
         evaluate: (input: string, options?: { temperature?: number; maxTokens?: number }) => Promise<string>;
+        dispose?: () => Promise<void> | void;
+        free?: () => Promise<void> | void;
+        release?: () => Promise<void> | void;
       }>;
     }).createSequence();
-    return await sequence.evaluate(prompt, {
-      temperature: options?.temperature ?? 0.2,
-      maxTokens: options?.maxTokens ?? 256,
-    });
+    try {
+      return await sequence.evaluate(prompt, {
+        temperature: options?.temperature ?? 0.2,
+        maxTokens: options?.maxTokens ?? 256,
+      });
+    } finally {
+      const cleanup = sequence.dispose ?? sequence.free ?? sequence.release;
+      if (cleanup) {
+        await cleanup.call(sequence);
+      }
+    }
   }
 
   async *generateStream(prompt: string, options?: GenerateOptions): AsyncIterable<string> {

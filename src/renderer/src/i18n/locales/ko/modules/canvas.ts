@@ -56,6 +56,10 @@ export const koCanvas = {
   empty: {
     title: "선택된 화가 없습니다",
     description: "화를 선택하면 캔버스가 표시됩니다.",
+    noNodes: {
+      title: "연결된 요소가 없습니다",
+      description: "이 화에 연결된 캐릭터, 사건, 세력 등이 없습니다.",
+    },
   },
   sidebar: {
     activity: "활동",
@@ -77,5 +81,20 @@ export const koCanvas = {
     fitView: "화면 맞춤",
     zoomIn: "확대",
     zoomOut: "축소",
+    resetZoom: "줌 초기화",
+    settings: "설정",
+    undo: "실행 취소",
+    redo: "다시 실행",
+    help: "도움말",
+  },
+  type: {
+    label: "캔버스 유형",
+    dynamic: "동적",
+    static: "정적",
+  },
+  create: {
+    blank: "빈 노드",
+    text: "텍스트 노드",
+    media: "미디어 노드",
   },
 } as const;

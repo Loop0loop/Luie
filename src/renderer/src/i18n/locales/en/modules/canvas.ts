@@ -56,6 +56,10 @@ export const enCanvas = {
   empty: {
     title: "No chapter selected",
     description: "Pick a chapter to render the canvas.",
+    noNodes: {
+      title: "No connected elements",
+      description: "This chapter has no linked characters, events, or factions.",
+    },
   },
   sidebar: {
     activity: "Activity",
@@ -77,5 +81,20 @@ export const enCanvas = {
     fitView: "Fit view",
     zoomIn: "Zoom in",
     zoomOut: "Zoom out",
+    resetZoom: "Reset zoom",
+    settings: "Settings",
+    undo: "Undo",
+    redo: "Redo",
+    help: "Help",
+  },
+  type: {
+    label: "Canvas type",
+    dynamic: "Dynamic",
+    static: "Static",
+  },
+  create: {
+    blank: "Blank node",
+    text: "Text node",
+    media: "Media node",
   },
 } as const;

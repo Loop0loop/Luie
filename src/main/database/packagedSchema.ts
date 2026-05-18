@@ -119,6 +119,11 @@ export const PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
     column: "llmProviderHint",
     sql: 'ALTER TABLE "ProjectSettings" ADD COLUMN "llmProviderHint" TEXT;',
   },
+  {
+    table: "ChapterSummary",
+    column: "contentHash",
+    sql: 'ALTER TABLE "ChapterSummary" ADD COLUMN "contentHash" TEXT NOT NULL DEFAULT "";',
+  },
 ];
 
 export const PACKAGED_SCHEMA_INDEX_PATCHES: ReadonlyArray<IndexPatch> = [
@@ -209,6 +214,7 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
     "chapterId",
     "chapterNumber",
     "summary",
+    "contentHash",
     "isFallback",
     "model",
     "generatedAt",
@@ -331,6 +337,7 @@ CREATE TABLE IF NOT EXISTS "ChapterSummary" (
     "chapterId" TEXT NOT NULL,
     "chapterNumber" INTEGER NOT NULL DEFAULT 0,
     "summary" TEXT NOT NULL,
+    "contentHash" TEXT NOT NULL DEFAULT "",
     "isFallback" INTEGER NOT NULL DEFAULT 0,
     "model" TEXT,
     "generatedAt" TEXT NOT NULL,

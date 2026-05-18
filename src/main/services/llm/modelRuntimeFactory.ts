@@ -8,13 +8,14 @@ import { LlamaCppProvider } from "./providers/llamaCppProvider.js";
 
 const logger = createLogger("ModelRuntimeFactory");
 const deterministicProvider = new DeterministicProvider();
-const llamaProviderCache = new Map<string, LlamaCppProvider>();
+let llamaProviderSingle: { path: string; provider: LlamaCppProvider } | null = null;
 
 function getOrCreateLlamaProvider(modelPath: string): LlamaCppProvider {
-  const existing = llamaProviderCache.get(modelPath);
-  if (existing) return existing;
+  if (llamaProviderSingle?.path === modelPath) {
+    return llamaProviderSingle.provider;
+  }
   const provider = new LlamaCppProvider(modelPath);
-  llamaProviderCache.set(modelPath, provider);
+  llamaProviderSingle = { path: modelPath, provider };
   return provider;
 }
 
@@ -38,15 +39,11 @@ export async function resolveModelRuntimeClient(
   }
 
   if (configuredPath && (providerHint === "llamacpp" || providerHint === null)) {
-    const provider = getOrCreateLlamaProvider(configuredPath);
-    if (await provider.isAvailable()) {
-      return provider;
-    }
-    logger.warn("LlamaCpp provider unavailable, falling back to deterministic", {
-      projectId,
-      configuredPath,
-    });
+    return getOrCreateLlamaProvider(configuredPath);
   }
 
+  logger.info("LLM provider path is not configured, using deterministic fallback", {
+    projectId,
+  });
   return deterministicProvider;
 }

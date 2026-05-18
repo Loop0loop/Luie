@@ -25,6 +25,7 @@ import type {
   CanvasMode,
   CanvasScope,
   CanvasSelection,
+  CanvasType,
   CanvasViewport,
 } from "../types/canvas.types";
 
@@ -174,6 +175,9 @@ const createNoopStorage = (): StateStorage => ({
 /* ─────────────────────────────────────────── state shape */
 
 export interface CanvasViewState {
+  /* canvas type ─── */
+  canvasType: CanvasType;
+
   /* viewport ─────── */
   mode: CanvasMode;
   scope: CanvasScope | null;
@@ -189,6 +193,7 @@ export interface CanvasViewState {
   isBinderCollapsed: boolean;
 
   /* actions: viewport */
+  setCanvasType: (type: CanvasType) => void;
   setMode: (mode: CanvasMode) => void;
   setScope: (scope: CanvasScope | null) => void;
   toggleLayer: (layer: CanvasLayer) => void;
@@ -213,6 +218,7 @@ export interface CanvasViewState {
 export const useCanvasViewStore = create<CanvasViewState>()(
   persist(
     (set) => ({
+      canvasType: "dynamic" as CanvasType,
       mode: "flow-map",
       scope: null,
       layers: [...DEFAULT_LAYERS],
@@ -226,6 +232,7 @@ export const useCanvasViewStore = create<CanvasViewState>()(
       isBinderCollapsed: false,
 
       setMode: (mode) => set({ mode }),
+      setCanvasType: (canvasType) => set({ canvasType }),
       setScope: (scope) => set({ scope }),
       toggleLayer: (layer) =>
         set((state) => ({

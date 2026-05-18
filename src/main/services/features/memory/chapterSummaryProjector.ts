@@ -36,6 +36,10 @@ function buildSummaryPrompt(content: string): string {
   ].join("\n");
 }
 
+function computeContentHash(content: string): string {
+  return crypto.createHash("sha256").update(content).digest("hex");
+}
+
 export class ChapterSummaryProjector {
   async processPendingSummaryJobs(input: {
     projectId: string;
@@ -74,6 +78,18 @@ export class ChapterSummaryProjector {
       .leftJoin(chapterBody, eq(chapterBody.chapterId, chapter.id))
       .where(inArray(chapter.id, chapterIds));
     const sourceMap = new Map(sourceRows.map((row) => [row.chapterId, row]));
+    const existingSummaries = await client
+      .select({
+        chapterId: chapterSummary.chapterId,
+        contentHash: chapterSummary.contentHash,
+      })
+      .from(chapterSummary)
+      .where(inArray(chapterSummary.chapterId, chapterIds));
+    const existingSummaryHashMap = new Map(
+      existingSummaries.map((row) => [row.chapterId, row.contentHash ?? ""]),
+    );
+    const runtime = await resolveModelRuntimeClient(input.projectId);
+    const runtimeAvailable = await runtime.isAvailable();
 
     let processed = 0;
     for (const job of jobs) {
@@ -100,22 +116,36 @@ export class ChapterSummaryProjector {
 
       try {
         const content = String(source.bodyContent ?? source.chapterContent ?? "");
-        const runtime = await resolveModelRuntimeClient(source.projectId);
-        const runtimeAvailable = await runtime.isAvailable();
+        const contentHash = computeContentHash(content);
+        const existingContentHash = existingSummaryHashMap.get(source.chapterId);
+        if (existingContentHash && existingContentHash === contentHash) {
+          await client
+            .update(memoryBuildJob)
+            .set({
+              status: "completed",
+              attempts: job.attempts + 1,
+              error: null,
+              updatedAt: now,
+            })
+            .where(eq(memoryBuildJob.id, job.id));
+          processed += 1;
+          continue;
+        }
         let summary: string;
         let modelName: string | null = null;
         let isFallback = false;
 
-        if (runtimeAvailable) {
+        if (runtimeAvailable && runtime.providerName !== "deterministic") {
           summary = trimTo200Chars(await runtime.generate(buildSummaryPrompt(content), {
             maxTokens: 256,
             temperature: 0.2,
           }));
           modelName = runtime.providerName;
-          isFallback = runtime.providerName === "deterministic";
+          isFallback = false;
         } else {
           summary = trimTo200Chars(content.slice(0, 500));
           isFallback = true;
+          modelName = null;
         }
 
         await client
@@ -126,6 +156,7 @@ export class ChapterSummaryProjector {
             chapterId: source.chapterId,
             chapterNumber: source.chapterNumber,
             summary,
+            contentHash,
             isFallback,
             model: modelName,
             generatedAt: now,
@@ -137,6 +168,7 @@ export class ChapterSummaryProjector {
               projectId: source.projectId,
               chapterNumber: source.chapterNumber,
               summary,
+              contentHash,
               isFallback,
               model: modelName,
               generatedAt: now,

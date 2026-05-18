@@ -1,16 +1,23 @@
 /**
  * CanvasViewport — React-Flow based canvas viewport (read-only UI/UX shell).
  *
+ * Props:
+ *   projection — scope/mode-filtered CanvasProjection from useCanvasProjection.
+ *                Non-null guaranteed by CanvasPane (only rendered when status === "ready").
+ *
  * Visual language: Obsidian Canvas
  *   - Infinite dot-grid background
- *   - Card-style nodes with rounded corners and subtle shadow
- *   - Smooth bezier edges with optional labels
- *   - MiniMap and Controls anchored to the bottom corners
+ *   - Card-style entity nodes with left colour strip
+ *   - Smooth bezier relation edges with optional labels
+ *   - MiniMap + Controls
  *
  * Interaction (read-only — UI/UX scaffolding stage):
- *   - Drag, pan, zoom: all enabled visually but no persistence yet
+ *   - Pan / zoom: enabled
  *   - Node click → canvasViewStore.selectNode (renderer-only state)
- *   - Edge add / delete / reconnect: disabled
+ *   - Node drag / edge connect / delete: disabled
+ *
+ * Store dependency: canvasViewStore only (selection state).
+ * worldBuildingStore is NOT accessed here — data flows in via projection prop.
  */
 
 import { useCallback, useMemo } from "react";
@@ -25,14 +32,10 @@ import ReactFlow, {
   type OnSelectionChangeParams,
 } from "reactflow";
 import { useShallow } from "zustand/react/shallow";
-import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import {
   CANVAS_FIT_VIEW_PADDING,
-  CANVAS_RF_EDGE_TYPE_CANVAS,
   CANVAS_RF_EDGE_TYPE_RELATION,
   CANVAS_RF_NODE_TYPE_ENTITY,
-  CANVAS_RF_NODE_TYPE_MEMO,
-  CANVAS_RF_NODE_TYPE_TIMELINE,
   CANVAS_ZOOM_MAX,
   CANVAS_ZOOM_MIN,
 } from "@shared/constants/canvasSizing";
@@ -41,25 +44,19 @@ import {
   buildFlowGraph,
   CANVAS_NODE_KIND_COLOUR,
   type CanvasNodeKind,
+  type CanvasProjection,
 } from "../../types";
-import { CanvasEdge } from "./edges/CanvasEdge";
 import { RelationEdge } from "./edges/RelationEdge";
 import { EntityNode } from "./nodes/EntityNode";
-import { MemoNode } from "./nodes/MemoNode";
-import { TimelineNode } from "./nodes/TimelineNode";
-import CanvasEmptyState from "./CanvasEmptyState";
 
-// ─── static type maps (defined outside component so RF doesn't warn) ──────────
+// ─── static type maps ─────────────────────────────────────────────────────────
 
 const NODE_TYPES = {
   [CANVAS_RF_NODE_TYPE_ENTITY]: EntityNode,
-  [CANVAS_RF_NODE_TYPE_MEMO]: MemoNode,
-  [CANVAS_RF_NODE_TYPE_TIMELINE]: TimelineNode,
 } as const;
 
 const EDGE_TYPES = {
   [CANVAS_RF_EDGE_TYPE_RELATION]: RelationEdge,
-  [CANVAS_RF_EDGE_TYPE_CANVAS]: CanvasEdge,
 } as const;
 
 const DEFAULT_EDGE_OPTIONS = {
@@ -76,9 +73,16 @@ function getMiniMapNodeColour(node: Node): string {
   return CANVAS_NODE_KIND_COLOUR[data.kind] ?? FALLBACK_MINIMAP_COLOUR;
 }
 
+// ─── props ────────────────────────────────────────────────────────────────────
+
+interface CanvasViewportProps {
+  /** Scope/mode-filtered projection. Non-null — CanvasPane only renders this when status === "ready". */
+  projection: CanvasProjection;
+}
+
 // ─── component ────────────────────────────────────────────────────────────────
 
-export default function CanvasViewport() {
+export default function CanvasViewport({ projection }: CanvasViewportProps) {
   const { selection, selectNode, clearSelection } = useCanvasViewStore(
     useShallow((state) => ({
       selection: state.selection,
@@ -87,13 +91,12 @@ export default function CanvasViewport() {
     })),
   );
 
-  const graphData = useWorldBuildingStore((state) => state.graphData);
-
   const selectedNodeId = selection.kind === "node" ? selection.id : null;
 
+  // projection is already scope-filtered — no raw graphData access needed
   const { nodes, edges } = useMemo(
-    () => buildFlowGraph(graphData, selectedNodeId),
-    [graphData, selectedNodeId],
+    () => buildFlowGraph(projection, selectedNodeId),
+    [projection, selectedNodeId],
   );
 
   const handleSelectionChange = useCallback(
@@ -110,10 +113,6 @@ export default function CanvasViewport() {
   const handlePaneClick = useCallback(() => {
     clearSelection();
   }, [clearSelection]);
-
-  if (nodes.length === 0) {
-    return <CanvasEmptyState />;
-  }
 
   return (
     <div className="h-full w-full" data-testid="canvas-viewport">

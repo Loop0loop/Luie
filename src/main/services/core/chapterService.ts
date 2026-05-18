@@ -356,8 +356,7 @@ export class ChapterService {
 
       const now = new Date().toISOString();
       const chapterId = input.clientMutationId ?? crypto.randomUUID();
-      let created: typeof chapter.$inferSelect | null = null;
-      await this.runInWriteSerialQueue(async () => {
+      const created = await this.runInWriteSerialQueue(async () => {
         await store.run(sql`BEGIN IMMEDIATE;`);
         try {
           const inserted = await store.insert(chapter).values({
@@ -370,18 +369,22 @@ export class ChapterService {
             createdAt: now,
             updatedAt: now,
           }).returning();
-          created = inserted[0];
+          const createdRow = inserted[0];
+          if (!createdRow) {
+            throw new Error("Chapter create transaction completed without inserted row");
+          }
           await this.upsertChapterBody({
-            chapterId: String(created.id),
-            content: String(created.content ?? ""),
+            chapterId: String(createdRow.id),
+            content: String(createdRow.content ?? ""),
             now,
           });
           await this.enqueueDerivedJobs({
-            projectId: String(created.projectId),
-            chapterId: String(created.id),
+            projectId: String(createdRow.projectId),
+            chapterId: String(createdRow.id),
             reason: "chapter:create",
           });
           await store.run(sql`COMMIT;`);
+          return createdRow;
         } catch (error) {
           try {
             await store.run(sql`ROLLBACK;`);
@@ -393,9 +396,6 @@ export class ChapterService {
           throw error;
         }
       });
-      if (!created) {
-        throw new Error("Chapter create transaction completed without result");
-      }
 
       const insertedAt = perfNow();
       const bodyUpsertedAt = insertedAt;
@@ -582,8 +582,7 @@ export class ChapterService {
       }
 
       const now = new Date().toISOString();
-      let updatedChapter: typeof chapter.$inferSelect | null = null;
-      await this.runInWriteSerialQueue(async () => {
+      const updatedChapter = await this.runInWriteSerialQueue(async () => {
         await store.run(sql`BEGIN IMMEDIATE;`);
         try {
           const updated = await store
@@ -600,17 +599,17 @@ export class ChapterService {
             );
           }
 
-          updatedChapter = updated[0];
+          const updatedChapterRow = updated[0];
           if (input.content !== undefined) {
             await this.upsertChapterBody({
-              chapterId: String(updatedChapter.id),
+              chapterId: String(updatedChapterRow.id),
               content: input.content,
               now,
             });
             const contentHash = this.hashContent(input.content);
             await store.insert(chapterRevision).values({
               id: crypto.randomUUID(),
-              chapterId: String(updatedChapter.id),
+              chapterId: String(updatedChapterRow.id),
               contentHash,
               content: input.content,
               reason: "manual_save",
@@ -619,12 +618,13 @@ export class ChapterService {
           }
           if (!SKIP_DERIVED_ENQUEUE_ON_STRESS) {
             await this.enqueueDerivedJobs({
-              projectId: String(updatedChapter.projectId),
-              chapterId: String(updatedChapter.id),
+              projectId: String(updatedChapterRow.projectId),
+              chapterId: String(updatedChapterRow.id),
               reason: "chapter:update",
             });
           }
           await store.run(sql`COMMIT;`);
+          return updatedChapterRow;
         } catch (error) {
           try {
             await store.run(sql`ROLLBACK;`);
@@ -636,9 +636,6 @@ export class ChapterService {
           throw error;
         }
       });
-      if (!updatedChapter) {
-        throw new Error("Chapter update transaction completed without result");
-      }
       const rowUpdatedAt = perfNow();
       const bodyAndRevisionAt = rowUpdatedAt;
       const derivedQueuedAt = rowUpdatedAt;

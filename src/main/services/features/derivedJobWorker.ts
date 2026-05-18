@@ -40,6 +40,10 @@ const TICK_WARN_THRESHOLD_MS = toPositiveInt(
   process.env.LUIE_DERIVED_TICK_WARN_MS,
   100,
 );
+const TICK_WARN_THRESHOLD_WITH_SUMMARY_MS = toPositiveInt(
+  process.env.LUIE_DERIVED_TICK_WARN_SUMMARY_MS,
+  5000,
+);
 
 class DerivedJobWorker {
   private timer: NodeJS.Timeout | null = null;
@@ -165,16 +169,21 @@ class DerivedJobWorker {
         });
       }
       const elapsedMs = Date.now() - startedAt;
+      const thresholdMs =
+        summaryQueued > 0 || summaryProcessed > 0
+          ? TICK_WARN_THRESHOLD_WITH_SUMMARY_MS
+          : TICK_WARN_THRESHOLD_MS;
       if (
-        elapsedMs >= TICK_WARN_THRESHOLD_MS &&
+        elapsedMs >= thresholdMs &&
         Date.now() - this.lastTickSlowWarnAt >= 10_000
       ) {
         this.lastTickSlowWarnAt = Date.now();
         logger.warn("Derived job worker tick elapsed exceeded threshold", {
           elapsedMs,
-          thresholdMs: TICK_WARN_THRESHOLD_MS,
+          thresholdMs,
           searchBatchSize: SEARCH_BATCH_SIZE,
           memoryBatchSize: MEMORY_BATCH_SIZE,
+          summaryBatchSize: SUMMARY_BATCH_SIZE,
           memoryProjectsPerTick: MEMORY_PROJECTS_PER_TICK,
         });
       }

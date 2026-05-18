@@ -219,6 +219,7 @@ export const chapterSummary = sqliteTable(
     chapterId: text("chapterId").notNull(),
     chapterNumber: integer("chapterNumber").notNull().default(0),
     summary: text("summary").notNull(),
+    contentHash: text("contentHash").notNull().default(""),
     isFallback: integer("isFallback", { mode: "boolean" }).notNull().default(false),
     model: text("model"),
     generatedAt: text("generatedAt").notNull(),
