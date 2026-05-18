@@ -278,12 +278,12 @@ export class EntityRelationService {
                 client.select().from(faction).where(and(eq(faction.projectId, projectId), isNull(faction.deletedAt))),
                 client.select().from(event).where(and(eq(event.projectId, projectId), isNull(event.deletedAt))),
                 client.select().from(term).where(and(eq(term.projectId, projectId), isNull(term.deletedAt))),
-                client.select().from(worldEntity).where(eq(worldEntity.projectId, projectId)),
-                client.select().from(scene).where(eq(scene.projectId, projectId)),
-                client.select().from(note).where(eq(note.projectId, projectId)),
-                client.select().from(synopsis).where(eq(synopsis.projectId, projectId)),
-                client.select().from(plot).where(eq(plot.projectId, projectId)),
-                client.select().from(scrapMemo).where(eq(scrapMemo.projectId, projectId)),
+                client.select().from(worldEntity).where(and(eq(worldEntity.projectId, projectId), isNull(worldEntity.deletedAt))),
+                client.select().from(scene).where(and(eq(scene.projectId, projectId), isNull(scene.deletedAt))),
+                client.select().from(note).where(and(eq(note.projectId, projectId), isNull(note.deletedAt))),
+                client.select().from(synopsis).where(and(eq(synopsis.projectId, projectId), isNull(synopsis.deletedAt))),
+                client.select().from(plot).where(and(eq(plot.projectId, projectId), isNull(plot.deletedAt))),
+                client.select().from(scrapMemo).where(and(eq(scrapMemo.projectId, projectId), isNull(scrapMemo.deletedAt))),
                 client.select().from(entityRelation).where(eq(entityRelation.projectId, projectId)),
             ]);
 
@@ -469,12 +469,17 @@ export class EntityRelationService {
 
             for (const proj of projects) {
             const projectId = String(proj.id);
-            const [characters, factions, events, terms, worldEntities, relations] = await Promise.all([
+            const [characters, factions, events, terms, worldEntities, scenes, notes, synopses, plots, scraps, relations] = await Promise.all([
                 client.select({ id: character.id }).from(character).where(and(eq(character.projectId, projectId), isNull(character.deletedAt))),
                 client.select({ id: faction.id }).from(faction).where(and(eq(faction.projectId, projectId), isNull(faction.deletedAt))),
                 client.select({ id: event.id }).from(event).where(and(eq(event.projectId, projectId), isNull(event.deletedAt))),
                 client.select({ id: term.id }).from(term).where(and(eq(term.projectId, projectId), isNull(term.deletedAt))),
-                client.select({ id: worldEntity.id }).from(worldEntity).where(eq(worldEntity.projectId, projectId)),
+                client.select({ id: worldEntity.id }).from(worldEntity).where(and(eq(worldEntity.projectId, projectId), isNull(worldEntity.deletedAt))),
+                client.select({ id: scene.id }).from(scene).where(and(eq(scene.projectId, projectId), isNull(scene.deletedAt))),
+                client.select({ id: note.id }).from(note).where(and(eq(note.projectId, projectId), isNull(note.deletedAt))),
+                client.select({ id: synopsis.id }).from(synopsis).where(and(eq(synopsis.projectId, projectId), isNull(synopsis.deletedAt))),
+                client.select({ id: plot.id }).from(plot).where(and(eq(plot.projectId, projectId), isNull(plot.deletedAt))),
+                client.select({ id: scrapMemo.id }).from(scrapMemo).where(and(eq(scrapMemo.projectId, projectId), isNull(scrapMemo.deletedAt))),
                 client.select({ id: entityRelation.id, sourceId: entityRelation.sourceId, targetId: entityRelation.targetId }).from(entityRelation).where(eq(entityRelation.projectId, projectId)),
             ]);
 
@@ -484,6 +489,11 @@ export class EntityRelationService {
                 ...events.map((item: { id: string }) => String(item.id)),
                 ...terms.map((item: { id: string }) => String(item.id)),
                 ...worldEntities.map((item: { id: string }) => String(item.id)),
+                ...scenes.map((item: { id: string }) => String(item.id)),
+                ...notes.map((item: { id: string }) => String(item.id)),
+                ...synopses.map((item: { id: string }) => String(item.id)),
+                ...plots.map((item: { id: string }) => String(item.id)),
+                ...scraps.map((item: { id: string }) => String(item.id)),
             ]);
 
             const orphanIds = relations

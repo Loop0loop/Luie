@@ -36,4 +36,4 @@ export type { CanvasFlowGraph } from "./canvasFlowAdapter";
 export { buildFlowGraph } from "./canvasFlowAdapter";
 
 // ─── Renderer-only design tokens ──────────────────────────────────────────────
-export { CANVAS_NODE_KIND_COLOUR } from "./canvasTokens";
+export { CANVAS_NODE_KIND_COLOUR, CANVAS_NODE_KIND_BG } from "./canvasTokens";

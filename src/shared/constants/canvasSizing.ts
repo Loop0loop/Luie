@@ -13,12 +13,13 @@
  */
 
 // ─── Node geometry (px) ───────────────────────────────────────────────────────
+// Obsidian Canvas 기준: 기본 카드 200×100px, 최소 높이 64px
 
-export const CANVAS_ENTITY_NODE_WIDTH_PX = 180 as const;
-export const CANVAS_ENTITY_NODE_HEIGHT_PX = 52 as const;
-export const CANVAS_MEMO_NODE_WIDTH_PX = 200 as const;
-export const CANVAS_MEMO_NODE_MIN_HEIGHT_PX = 80 as const;
-export const CANVAS_TIMELINE_NODE_WIDTH_PX = 220 as const;
+export const CANVAS_ENTITY_NODE_WIDTH_PX = 200 as const;
+export const CANVAS_ENTITY_NODE_HEIGHT_PX = 64 as const;
+export const CANVAS_MEMO_NODE_WIDTH_PX = 220 as const;
+export const CANVAS_MEMO_NODE_MIN_HEIGHT_PX = 90 as const;
+export const CANVAS_TIMELINE_NODE_WIDTH_PX = 240 as const;
 export const CANVAS_TIMELINE_NODE_HEIGHT_PX = 64 as const;
 
 // ─── Auto-layout grid (px) ────────────────────────────────────────────────────

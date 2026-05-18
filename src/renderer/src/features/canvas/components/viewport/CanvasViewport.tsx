@@ -130,10 +130,10 @@ export default function CanvasViewport({ projection }: CanvasViewportProps) {
       >
         <Background
           variant={BackgroundVariant.Dots}
-          gap={24}
-          size={1.5}
+          gap={20}
+          size={1.2}
           color="var(--border-default)"
-          className="opacity-40"
+          className="opacity-30"
         />
 
         {/* useReactFlow()를 쓰므로 반드시 <ReactFlow> 내부에 위치 */}
