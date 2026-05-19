@@ -205,6 +205,30 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       },
     },
     {
+      channel: IPC_CHANNELS.SETTINGS_SET_PROJECT_LLM,
+      logTag: "SETTINGS_SET_PROJECT_LLM",
+      failMessage: "Failed to set project llm settings",
+      argsSchema: z.tuple([z.object({
+        projectId: z.string(),
+        modelPath: z.string().nullable().optional(),
+        providerHint: z.enum(["llamacpp", "llamaserver", "none"]).nullable().optional(),
+      })]),
+      handler: async (input: { projectId: string; modelPath?: string | null; providerHint?: "llamacpp" | "llamaserver" | "none" | null }) => {
+        const { db } = await import("../../database/index.js");
+        const { projectSettings } = await import("../../database/schema.js");
+        const { eq } = await import("drizzle-orm");
+        const store = db.getClient();
+        await store
+          .update(projectSettings)
+          .set({
+            ...(input.modelPath !== undefined ? { llmModelPath: input.modelPath } : {}),
+            ...(input.providerHint !== undefined ? { llmProviderHint: input.providerHint } : {}),
+          })
+          .where(eq(projectSettings.projectId, input.projectId));
+        return { ok: true };
+      },
+    },
+    {
       channel: IPC_CHANNELS.SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL,
       logTag: "SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL",
       failMessage: "Failed to download default llm model",

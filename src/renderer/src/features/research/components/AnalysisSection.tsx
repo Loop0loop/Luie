@@ -108,15 +108,25 @@ export default function AnalysisSection() {
 
   const handleSelectModel = useCallback(async (modelPath: string) => {
     setConfigLoading(true);
-    const res = await api.settings.setLlmDefaultModel({ modelPath });
+    const [res] = await Promise.all([
+      api.settings.setLlmDefaultModel({ modelPath }),
+      currentProject?.id
+        ? api.settings.setProjectLlm({ projectId: currentProject.id, modelPath })
+        : Promise.resolve(null),
+    ]);
     setConfigLoading(false);
     if (res.success && res.data) setModelView(res.data);
-  }, []);
+  }, [currentProject?.id]);
 
   const handleSelectProvider = useCallback(async (hint: "llamacpp" | "llamaserver" | "none") => {
     setProviderHint(hint);
-    await api.settings.setLlmProviderHint({ providerHint: hint });
-  }, []);
+    await Promise.all([
+      api.settings.setLlmProviderHint({ providerHint: hint }),
+      currentProject?.id
+        ? api.settings.setProjectLlm({ projectId: currentProject.id, providerHint: hint })
+        : Promise.resolve(null),
+    ]);
+  }, [currentProject?.id]);
 
   const handleSend = useCallback(async () => {
     if (!currentProject?.id || !input.trim() || isStreaming) return;

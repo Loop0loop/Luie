@@ -21,7 +21,7 @@ export class SidecarManager {
   constructor(private readonly idleTimeoutMs: number = DEFAULT_IDLE_TIMEOUT_MS) {}
 
   /** Start sidecar if needed. Returns base URL (e.g. "http://127.0.0.1:8080"). */
-  async start(modelPath: string, gpuLayers?: number): Promise<string> {
+  async start(modelPath: string): Promise<string> {
     if (this.state.status === "running") {
       this.resetIdleTimer();
       return this.state.baseUrl;
@@ -30,7 +30,7 @@ export class SidecarManager {
       return this.state.promise;
     }
 
-    const promise = this.doStart(modelPath, gpuLayers);
+    const promise = this.doStart(modelPath);
     this.state = { status: "starting", promise };
 
     try {
@@ -87,7 +87,7 @@ export class SidecarManager {
     this.idleTimer = null;
   }
 
-  private async doStart(modelPath: string, gpuLayers?: number): Promise<string> {
+  private async doStart(modelPath: string): Promise<string> {
     // 1. Explicit base URL override — connect to external server, no spawn.
     const envUrl = process.env.LLAMA_SERVER_BASE_URL;
     if (envUrl) {
@@ -100,10 +100,10 @@ export class SidecarManager {
 
     // 2. Spawn llama-server binary from LLAMA_SERVER_PATH or PATH.
     const binaryPath = process.env.LLAMA_SERVER_PATH ?? "llama-server";
-    return this.spawnServer(binaryPath, modelPath, gpuLayers);
+    return this.spawnServer(binaryPath, modelPath);
   }
 
-  private async spawnServer(binaryPath: string, modelPath: string, gpuLayersParam?: number): Promise<string> {
+  private async spawnServer(binaryPath: string, modelPath: string): Promise<string> {
     const port = await this.findFreePort();
     const configuredContextSize = Number.parseInt(process.env.LUIE_LLM_CONTEXT_SIZE ?? "", 10);
     const contextSize =
@@ -112,11 +112,9 @@ export class SidecarManager {
         : DEFAULT_CONTEXT_SIZE;
     const configuredGpuLayers = Number.parseInt(process.env.LUIE_LLM_GPU_LAYERS ?? "", 10);
     const gpuLayers =
-      gpuLayersParam !== undefined
-        ? gpuLayersParam
-        : Number.isFinite(configuredGpuLayers) && configuredGpuLayers >= 0
-          ? configuredGpuLayers
-          : DEFAULT_GPU_LAYERS;
+      Number.isFinite(configuredGpuLayers) && configuredGpuLayers >= 0
+        ? configuredGpuLayers
+        : DEFAULT_GPU_LAYERS;
     const configuredParallel = Number.parseInt(process.env.LUIE_LLM_SERVER_PARALLEL ?? "", 10);
     const parallel =
       Number.isFinite(configuredParallel) && configuredParallel > 0

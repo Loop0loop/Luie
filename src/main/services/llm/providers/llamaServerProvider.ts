@@ -3,7 +3,6 @@ import { sidecarManager } from "../sidecarManager.js";
 
 type LlamaServerProviderOptions = {
   modelPath: string;
-  gpuLayers?: number;
 };
 
 export class LlamaServerProvider implements ModelRuntimeClient {
@@ -37,7 +36,7 @@ export class LlamaServerProvider implements ModelRuntimeClient {
   }
 
   async *generateStream(prompt: string, options?: GenerateOptions): AsyncIterable<string> {
-    const baseUrl = await sidecarManager.start(this.options.modelPath, this.options.gpuLayers);
+    const baseUrl = await sidecarManager.start(this.options.modelPath);
     sidecarManager.resetIdleTimer();
 
     let response: Response;

@@ -6,7 +6,6 @@ import type { ModelRuntimeClient } from "./modelRuntimeClient.js";
 import { DeterministicProvider } from "./providers/deterministicProvider.js";
 import { LlamaCppProvider } from "./providers/llamaCppProvider.js";
 import { LlamaServerProvider } from "./providers/llamaServerProvider.js";
-import { SplitRuntimeProvider } from "./splitRuntimeProvider.js";
 
 const logger = createLogger("ModelRuntimeFactory");
 const deterministicProvider = new DeterministicProvider();
@@ -28,12 +27,12 @@ function getOrCreateLlamaProvider(
   return provider;
 }
 
-function getOrCreateLlamaServerProvider(modelPath: string, gpuLayers?: number): LlamaServerProvider {
-  const key = `${modelPath}::${gpuLayers ?? ""}`;
+function getOrCreateLlamaServerProvider(modelPath: string): LlamaServerProvider {
+  const key = modelPath;
   if (llamaServerProviderSingle?.key === key) {
     return llamaServerProviderSingle.provider;
   }
-  const provider = new LlamaServerProvider({ modelPath, gpuLayers });
+  const provider = new LlamaServerProvider({ modelPath });
   llamaServerProviderSingle = { key, provider };
   return provider;
 }
@@ -83,14 +82,7 @@ export async function resolveModelRuntimeClient(
 
   const effectiveModelPath = configuredPath ?? fallbackModelPath;
   if (effectiveModelPath && providerHint === "llamaserver") {
-    const llamaServerProvider = getOrCreateLlamaServerProvider(effectiveModelPath, configuredGpuLayers);
-    const embeddingProvider = getOrCreateLlamaProvider(
-      embeddingConfiguredPath ?? effectiveModelPath,
-      null,
-      configuredContextSize,
-      configuredGpuLayers,
-    );
-    return new SplitRuntimeProvider(llamaServerProvider, embeddingProvider);
+    return getOrCreateLlamaServerProvider(effectiveModelPath);
   }
   if (effectiveModelPath && (providerHint === "llamacpp" || providerHint === null)) {
     return getOrCreateLlamaProvider(effectiveModelPath, embeddingConfiguredPath, configuredContextSize, configuredGpuLayers);

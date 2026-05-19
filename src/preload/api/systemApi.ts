@@ -135,6 +135,8 @@ export function createSystemApi({
         ),
       setLlmProviderHint: (input) =>
         safeInvoke(IPC_CHANNELS.SETTINGS_SET_LLM_PROVIDER_HINT, input),
+      setProjectLlm: (input) =>
+        safeInvoke(IPC_CHANNELS.SETTINGS_SET_PROJECT_LLM, input),
       reset: () => safeInvoke(IPC_CHANNELS.SETTINGS_RESET),
     },
     recovery: {
