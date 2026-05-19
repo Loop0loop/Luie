@@ -6,6 +6,7 @@ const logger = createLogger("SidecarManager");
 const DEFAULT_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_GPU_LAYERS = 999;
 const DEFAULT_CONTEXT_SIZE = 4096;
+const DEFAULT_PARALLEL = 1;
 
 
 type SidecarState =
@@ -104,14 +105,37 @@ export class SidecarManager {
 
   private async spawnServer(binaryPath: string, modelPath: string): Promise<string> {
     const port = await this.findFreePort();
-    logger.info("Spawning llama-server", { binaryPath, modelPath, port });
+    const configuredContextSize = Number.parseInt(process.env.LUIE_LLM_CONTEXT_SIZE ?? "", 10);
+    const contextSize =
+      Number.isFinite(configuredContextSize) && configuredContextSize > 0
+        ? configuredContextSize
+        : DEFAULT_CONTEXT_SIZE;
+    const configuredGpuLayers = Number.parseInt(process.env.LUIE_LLM_GPU_LAYERS ?? "", 10);
+    const gpuLayers =
+      Number.isFinite(configuredGpuLayers) && configuredGpuLayers >= 0
+        ? configuredGpuLayers
+        : DEFAULT_GPU_LAYERS;
+    const configuredParallel = Number.parseInt(process.env.LUIE_LLM_SERVER_PARALLEL ?? "", 10);
+    const parallel =
+      Number.isFinite(configuredParallel) && configuredParallel > 0
+        ? configuredParallel
+        : DEFAULT_PARALLEL;
+
+    logger.info("Spawning llama-server", {
+      binaryPath,
+      modelPath,
+      port,
+      contextSize,
+      gpuLayers,
+      parallel,
+    });
 
     const proc = spawn(binaryPath, [
       "--model", modelPath,
       "--port", String(port),
-      "--ctx-size", String(DEFAULT_CONTEXT_SIZE),
-      "--n-gpu-layers", String(DEFAULT_GPU_LAYERS),
-      "--parallel", "1",
+      "--ctx-size", String(contextSize),
+      "--n-gpu-layers", String(gpuLayers),
+      "--parallel", String(parallel),
     ], {
       stdio: ["ignore", "pipe", "pipe"],
       detached: false,
