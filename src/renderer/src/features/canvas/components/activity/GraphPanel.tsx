@@ -1,115 +1,91 @@
-/**
- * EntitiesPanel — lists Characters, Terms (Concepts/Items), Events, Factions
- * from existing stores. Clicking an entity will wire to BinderBar in P6.
- */
 import { useTranslation } from "react-i18next";
-import { User, BookOpen, Calendar, Shield } from "lucide-react";
-import { useShallow } from "zustand/react/shallow";
-import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
-import { useTermStore } from "@renderer/features/research/stores/termStore";
-import { useEventStore } from "@renderer/features/research/stores/eventStore";
-import { useFactionStore } from "@renderer/features/research/stores/factionStore";
-import { useProjectStore } from "@renderer/features/project/stores/projectStore";
+import { Settings2, Crosshair, Network, Layers } from "lucide-react";
+import { useGraphStore } from "../../stores/graph/graphStore";
 import {
   PanelRoot,
   PanelHeader,
   PanelBody,
   PanelSection,
-  PanelItem,
-  PanelEmpty,
 } from "./shared";
 
-export default function EntitiesPanel() {
+export default function GraphPanel() {
   const { t } = useTranslation();
-
-  const currentProjectId = useProjectStore(
-    (state) => state.currentItem?.id ?? null,
-  );
-
-  const characters = useCharacterStore(
-    useShallow((state) =>
-      state.items.filter((c) => c.projectId === currentProjectId),
-    ),
-  );
-  const terms = useTermStore(
-    useShallow((state) =>
-      state.items.filter((term) => term.projectId === currentProjectId),
-    ),
-  );
-  const events = useEventStore(
-    useShallow((state) =>
-      state.items.filter((ev) => ev.projectId === currentProjectId),
-    ),
-  );
-  const factions = useFactionStore(
-    useShallow((state) =>
-      state.items.filter((f) => f.projectId === currentProjectId),
-    ),
-  );
+  const { mode, depth, setMode, setDepth } = useGraphStore();
 
   return (
     <PanelRoot>
       <PanelHeader title={t("canvas.activity.graph")} />
       <PanelBody>
-        {/* Characters */}
-        <PanelSection title={t("research.title.characters")}>
-          {characters.length === 0 ? (
-            <PanelEmpty message={t("canvas.status.empty")} />
-          ) : (
-            characters.map((c) => (
-              <PanelItem
-                key={c.id}
-                label={c.name}
-                icon={<User className="icon-sm text-muted" />}
-                // P6: onClick → canvasViewStore.selectNode + open BinderBar
-              />
-            ))
-          )}
+        {/* Mode Selection */}
+        <PanelSection title="Graph Scope">
+          <div className="flex flex-col gap-1.5 px-4 pb-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setMode("episode")}
+              className={`flex items-center gap-2 rounded px-2 py-1.5 text-xs transition-colors ${
+                mode === "episode" ? "bg-active font-medium text-fg" : "text-muted hover:bg-surface-hover hover:text-fg"
+              }`}
+            >
+              <Crosshair className="icon-xs" />
+              <span>Episode Graph (Current)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("character")}
+              className={`flex items-center gap-2 rounded px-2 py-1.5 text-xs transition-colors ${
+                mode === "character" ? "bg-active font-medium text-fg" : "text-muted hover:bg-surface-hover hover:text-fg"
+              }`}
+            >
+              <Network className="icon-xs" />
+              <span>Character Graph</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("event")}
+              className={`flex items-center gap-2 rounded px-2 py-1.5 text-xs transition-colors ${
+                mode === "event" ? "bg-active font-medium text-fg" : "text-muted hover:bg-surface-hover hover:text-fg"
+              }`}
+            >
+              <Layers className="icon-xs" />
+              <span>Event Graph</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("world")}
+              className={`flex items-center gap-2 rounded px-2 py-1.5 text-xs transition-colors ${
+                mode === "world" ? "bg-active font-medium text-fg" : "text-muted hover:bg-surface-hover hover:text-fg"
+              }`}
+            >
+              <Settings2 className="icon-xs" />
+              <span>World Graph</span>
+            </button>
+          </div>
         </PanelSection>
 
-        {/* Terms (Concepts / Items) */}
-        <PanelSection title={t("research.title.world")} defaultOpen={false}>
-          {terms.length === 0 ? (
-            <PanelEmpty message={t("canvas.status.empty")} />
-          ) : (
-            terms.map((term) => (
-              <PanelItem
-                key={term.id}
-                label={term.term}
-                icon={<BookOpen className="icon-sm text-muted" />}
-              />
-            ))
-          )}
+        {/* Depth Control */}
+        <PanelSection title="Depth Limit" defaultOpen>
+          <div className="px-4 pb-3 pt-2">
+            <div className="flex items-center justify-between text-[11px] text-muted mb-2">
+              <span>Depth: {depth}</span>
+              <span>1-hop to 3-hop</span>
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={3}
+              step={1}
+              value={depth}
+              onChange={(e) => setDepth(Number(e.target.value) as 1 | 2 | 3)}
+              className="w-full accent-accent"
+            />
+          </div>
         </PanelSection>
 
-        {/* Events */}
-        <PanelSection title={t("research.title.events")} defaultOpen={false}>
-          {events.length === 0 ? (
-            <PanelEmpty message={t("canvas.status.empty")} />
-          ) : (
-            events.map((ev) => (
-              <PanelItem
-                key={ev.id}
-                label={ev.name}
-                icon={<Calendar className="icon-sm text-muted" />}
-              />
-            ))
-          )}
-        </PanelSection>
-
-        {/* Factions */}
-        <PanelSection title={t("research.title.factions")} defaultOpen={false}>
-          {factions.length === 0 ? (
-            <PanelEmpty message={t("canvas.status.empty")} />
-          ) : (
-            factions.map((f) => (
-              <PanelItem
-                key={f.id}
-                label={f.name}
-                icon={<Shield className="icon-sm text-muted" />}
-              />
-            ))
-          )}
+        {/* Relationship Filters Placeholder */}
+        <PanelSection title="Relationships" defaultOpen={false}>
+          <div className="px-4 py-2 text-[11px] text-muted">
+            Filters for relationships (Appear, Dialog, Conflict) will go here.
+          </div>
         </PanelSection>
       </PanelBody>
     </PanelRoot>

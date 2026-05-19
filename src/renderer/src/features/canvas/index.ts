@@ -31,7 +31,7 @@ export type { CanvasPanelLayout, UseCanvasProjectionResult } from "./hooks";
 export type {
   CanvasMode,
   CanvasAvailableMode,
-  CanvasType,
+
   CanvasRange,
   CanvasLayer,
   CanvasActivityPanel,

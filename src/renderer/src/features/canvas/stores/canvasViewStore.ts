@@ -18,6 +18,7 @@ import {
   createJSONStorage,
   persist,
   type StateStorage,
+} from "zustand/middleware";
 import type {
   CanvasActivityPanel,
   CanvasLayer,

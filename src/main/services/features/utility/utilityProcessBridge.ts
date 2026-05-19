@@ -38,6 +38,10 @@ type PendingRequest = {
   timeout: ReturnType<typeof setTimeout>;
 };
 
+type PendingRagEvent =
+  | { kind: "stream"; payload: RagQaStreamPayload }
+  | { kind: "error"; payload: RagQaErrorPayload };
+
 const unwrapMessage = (raw: unknown): unknown => {
   if (raw && typeof raw === "object" && "data" in (raw as Record<string, unknown>)) {
     return (raw as { data?: unknown }).data;
@@ -50,6 +54,8 @@ export class UtilityProcessBridge {
   private requestSeq = 0;
   private pendingRequests = new Map<string, PendingRequest>();
   private ragRunToWebContentsId = new Map<string, number>();
+  private pendingRagEvents = new Map<string, PendingRagEvent[]>();
+  private pendingRagEventTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private startingPromise: Promise<boolean> | null = null;
   private stoppingPromise: Promise<void> | null = null;
 
@@ -81,7 +87,10 @@ export class UtilityProcessBridge {
         this.clearPendingRequests("Utility process exited");
         this.emitCrashErrorsToActiveRuns("RAG utility process exited unexpectedly");
         this.ragRunToWebContentsId.clear();
-        this.utilityChild = null;
+        this.clearPendingRagEvents();
+        if (this.utilityChild === child) {
+          this.utilityChild = null;
+        }
       });
       child.on("message", (message) => this.onMessage(unwrapMessage(message) as UtilityOutboundMessage));
       this.utilityChild = child;
@@ -126,6 +135,7 @@ export class UtilityProcessBridge {
           clearTimeout(timeout);
           child.off("message", onMessage);
           this.ragRunToWebContentsId.clear();
+          this.clearPendingRagEvents();
           this.utilityChild = null;
           this.stoppingPromise = null;
           resolve();
@@ -172,6 +182,7 @@ export class UtilityProcessBridge {
     const runHandle = result as RagQaRunHandle;
     if (runHandle?.runId) {
       this.ragRunToWebContentsId.set(runHandle.runId, targetWebContentsId);
+      this.flushPendingRagEvents(runHandle.runId);
     }
     return runHandle;
   }
@@ -264,7 +275,10 @@ export class UtilityProcessBridge {
 
   private forwardRagStream(payload: RagQaStreamPayload): void {
     const targetId = this.ragRunToWebContentsId.get(payload.runId);
-    if (!targetId) return;
+    if (!targetId) {
+      this.enqueuePendingRagEvent(payload.runId, { kind: "stream", payload });
+      return;
+    }
     const target = webContents.fromId(targetId);
     if (!target || target.isDestroyed()) {
       this.ragRunToWebContentsId.delete(payload.runId);
@@ -279,7 +293,10 @@ export class UtilityProcessBridge {
   private forwardRagError(payload: RagQaErrorPayload): void {
     if (!payload.runId) return;
     const targetId = this.ragRunToWebContentsId.get(payload.runId);
-    if (!targetId) return;
+    if (!targetId) {
+      this.enqueuePendingRagEvent(payload.runId, { kind: "error", payload });
+      return;
+    }
     const target = webContents.fromId(targetId);
     if (!target || target.isDestroyed()) {
       this.ragRunToWebContentsId.delete(payload.runId);
@@ -307,6 +324,45 @@ export class UtilityProcessBridge {
         message,
       } satisfies RagQaErrorPayload);
     }
+  }
+
+  private enqueuePendingRagEvent(runId: string, event: PendingRagEvent): void {
+    const events = this.pendingRagEvents.get(runId) ?? [];
+    events.push(event);
+    this.pendingRagEvents.set(runId, events);
+    if (!this.pendingRagEventTimers.has(runId)) {
+      const timer = setTimeout(() => {
+        this.pendingRagEventTimers.delete(runId);
+        this.pendingRagEvents.delete(runId);
+      }, 500);
+      this.pendingRagEventTimers.set(runId, timer);
+    }
+  }
+
+  private flushPendingRagEvents(runId: string): void {
+    const timer = this.pendingRagEventTimers.get(runId);
+    if (timer) {
+      clearTimeout(timer);
+      this.pendingRagEventTimers.delete(runId);
+    }
+    const events = this.pendingRagEvents.get(runId);
+    if (!events || events.length === 0) return;
+    this.pendingRagEvents.delete(runId);
+    for (const event of events) {
+      if (event.kind === "stream") {
+        this.forwardRagStream(event.payload);
+      } else {
+        this.forwardRagError(event.payload);
+      }
+    }
+  }
+
+  private clearPendingRagEvents(): void {
+    for (const timer of this.pendingRagEventTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.pendingRagEventTimers.clear();
+    this.pendingRagEvents.clear();
   }
 
   private nextRequestId(): string {

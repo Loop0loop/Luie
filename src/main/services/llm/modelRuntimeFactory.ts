@@ -79,6 +79,9 @@ function getOrCreateLlamaProvider(
   if (llamaProviderSingle?.key === key) {
     return llamaProviderSingle.provider;
   }
+  if (llamaProviderSingle && llamaProviderSingle.key !== key) {
+    llamaProviderSingle.provider.dispose();
+  }
   const provider = new LlamaCppProvider(modelPath, embeddingModelPath, contextSize, gpuLayers);
   llamaProviderSingle = { key, provider };
   return provider;
@@ -94,11 +97,18 @@ function getOrCreateLlamaServerProvider(
   if (llamaServerProviderSingle?.key === key) {
     return llamaServerProviderSingle.provider;
   }
+  const sharedFallback = getOrCreateLlamaProvider(
+    modelPath,
+    embeddingModelPath,
+    contextSize,
+    gpuLayers,
+  );
   const provider = new LlamaServerProvider({
     modelPath,
     embeddingModelPath: embeddingModelPath ?? null,
     contextSize,
     gpuLayers,
+    fallbackProvider: sharedFallback,
   });
   llamaServerProviderSingle = { key, provider };
   return provider;

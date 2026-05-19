@@ -75,6 +75,10 @@ export class LlamaCppProvider implements ModelRuntimeClient {
     }
   }
 
+  dispose(): void {
+    this.unload();
+  }
+
   private async ensureLoaded(): Promise<void> {
     if (this.modelPromise) {
       await this.modelPromise;
@@ -169,6 +173,9 @@ export class LlamaCppProvider implements ModelRuntimeClient {
         throw new Error("Generation aborted");
       }
       await this.ensureLoaded();
+      if (options?.signal?.aborted) {
+        throw new Error("Generation aborted");
+      }
       // node-llama-cpp v3 API: context.getSequence() → LlamaCompletion.generateCompletion()
       // (createSequence() does not exist in v3; replaced by getSequence() + LlamaCompletion)
       const ctx = this.context.context as { getSequence: () => { dispose: () => void } };
@@ -287,6 +294,7 @@ export class LlamaCppProvider implements ModelRuntimeClient {
           throw generationError;
         }
       } finally {
+        await generationPromise.catch(() => {});
         sequence.dispose();
       }
     } finally {
