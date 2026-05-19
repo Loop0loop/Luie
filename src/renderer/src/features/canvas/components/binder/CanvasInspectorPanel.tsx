@@ -14,7 +14,8 @@ import { useTranslation } from "react-i18next";
 import { MousePointerClick } from "lucide-react";
 import { useCanvasViewStore } from "@renderer/features/canvas/stores";
 import CanvasNodeInspector from "./CanvasNodeInspector";
-import CanvasBinderTabBar, { type CanvasBinderTab } from "./CanvasBinderTabBar";
+import CanvasBinderTabBar from "./CanvasBinderTabBar";
+import type { CanvasBinderTab } from "../../types";
 import CanvasAIPlaceholder from "./CanvasAIPlaceholder";
 
 export default function CanvasInspectorPanel() {
@@ -31,7 +32,7 @@ export default function CanvasInspectorPanel() {
       ) : selection.kind === "node" ? (
         <CanvasNodeInspector nodeId={selection.id} />
       ) : (
-        <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+        <div className="flex h-full flex-col items-center justify-center gap-panel-gap px-6 text-center">
           <MousePointerClick className="h-7 w-7 text-subtle opacity-30" aria-hidden />
           <div className="space-y-1">
             <p className="text-xs font-medium text-fg/60">

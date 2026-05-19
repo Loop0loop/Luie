@@ -11,7 +11,7 @@ import {
   getBezierPath,
   type EdgeProps,
 } from "reactflow";
-import { CANVAS_RELATION_EDGE_DEFAULTS } from "../../../constants";
+import { getEdgeStyle } from "../../../utils/edgeStyles";
 import type { RFRelationEdgeData } from "../../../types/reactFlow.types";
 import { EdgeLabel } from "./EdgeLabel";
 
@@ -36,19 +36,11 @@ function RelationEdgeInner({
     targetPosition,
   });
 
-  // stroke 색상만 런타임 동적값 — 인라인 스타일 정당화됨
   const strokeColour = selected
     ? "var(--accent-bg)"
     : (data?.color ?? "var(--text-secondary)");
 
-  const strokeWidth = selected
-    ? CANVAS_RELATION_EDGE_DEFAULTS.strokeWidthSelected
-    : CANVAS_RELATION_EDGE_DEFAULTS.strokeWidth;
-
-  const opacity = selected
-    ? CANVAS_RELATION_EDGE_DEFAULTS.opacitySelected
-    : CANVAS_RELATION_EDGE_DEFAULTS.opacity;
-
+  const edgeStyle = getEdgeStyle(selected ?? false, strokeColour);
   const label = data?.label;
 
   return (
@@ -57,12 +49,7 @@ function RelationEdgeInner({
         id={id}
         path={edgePath}
         markerEnd={markerEnd}
-        style={{
-          stroke: strokeColour,
-          strokeWidth,
-          opacity,
-          transition: `stroke ${CANVAS_RELATION_EDGE_DEFAULTS.transitionDuration}ms, stroke-width ${CANVAS_RELATION_EDGE_DEFAULTS.transitionDuration}ms, opacity ${CANVAS_RELATION_EDGE_DEFAULTS.transitionDuration}ms`,
-        }}
+        style={edgeStyle}
       />
 
       {/* color 없음 → EdgeLabel이 기본 muted 스타일 적용 */}

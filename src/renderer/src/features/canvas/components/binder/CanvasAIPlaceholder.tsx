@@ -10,7 +10,7 @@ export default function CanvasAIPlaceholder() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-muted">
+    <div className="flex h-full flex-col items-center justify-center gap-panel-gap px-6 text-center text-muted">
       <Sparkles className="h-7 w-7 opacity-30" aria-hidden />
       <div className="space-y-1">
         <p className="text-xs font-medium text-fg/60">

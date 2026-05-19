@@ -9,7 +9,7 @@ import { File, FileText, Image } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const CREATE_BTN_CLASS =
-  "flex h-8 w-8 items-center justify-center rounded-md border border-border/40 bg-element text-muted transition-all hover:border-accent/40 hover:bg-surface-hover hover:text-fg";
+  "flex h-8 w-8 items-center justify-center rounded-control border border-border/40 bg-element text-muted transition-all hover:border-accent/40 hover:bg-surface-hover hover:text-fg";
 
 const CREATE_ITEMS = [
   { key: "blank", Icon: File,     i18nKey: "canvas.create.blank" },
@@ -25,7 +25,7 @@ export function BottomCreateToolbar() {
       className="pointer-events-auto absolute bottom-3 left-1/2 z-10 -translate-x-1/2"
       data-testid="canvas-create-toolbar"
     >
-      <div className="flex items-center gap-0.5 rounded-lg border border-border/40 bg-panel/95 p-1 shadow-panel backdrop-blur-sm">
+        <div className="flex items-center gap-0.5 rounded-panel border border-border/40 bg-panel/95 p-1 shadow-panel backdrop-blur-sm">
         {CREATE_ITEMS.map(({ key, Icon, i18nKey }) => (
           <button
             key={key}

@@ -8,9 +8,10 @@
 
 import { useTranslation } from "react-i18next";
 import { Diamond, Unlink } from "lucide-react";
+import type { CanvasEmptyStateVariant } from "../../types";
 
 interface CanvasEmptyStateProps {
-  variant?: "no-scope" | "no-nodes";
+  variant?: CanvasEmptyStateVariant;
 }
 
 export default function CanvasEmptyState({

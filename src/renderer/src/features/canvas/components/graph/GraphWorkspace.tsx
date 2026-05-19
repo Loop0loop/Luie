@@ -6,7 +6,7 @@ import GraphInspector from "./GraphInspector";
 export default function GraphWorkspace() {
   return (
     <ReactFlowProvider>
-      <div className="flex h-full w-full flex-col bg-app">
+      <div className="flex h-full w-full flex-col bg-canvas">
         <GraphToolbar />
         <div className="relative min-h-0 flex-1 overflow-hidden">
           <GraphSurface />

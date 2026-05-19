@@ -32,7 +32,7 @@ import { CANVAS_FIT_VIEW_PADDING } from "@shared/constants/canvasSizing";
 
 // h-9 w-9 — 이전 h-7보다 크게, 아이콘도 h-4.5로 업
 const BTN =
-  "flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-hover hover:text-fg";
+  "flex h-9 w-9 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg";
 
 const DIVIDER = "my-1 h-px w-5 bg-border/40";
 

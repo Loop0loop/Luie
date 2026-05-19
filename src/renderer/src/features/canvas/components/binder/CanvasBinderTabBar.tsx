@@ -6,8 +6,7 @@
 
 import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
-
-export type CanvasBinderTab = "elements" | "ai";
+import type { CanvasBinderTab } from "../../types";
 
 interface CanvasBinderTabBarProps {
   activeTab: CanvasBinderTab;

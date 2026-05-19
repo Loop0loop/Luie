@@ -21,7 +21,7 @@ function TimelineNodeInner({ data }: NodeProps<RFTimelineNodeData>) {
 
       <div
         className={cn(
-          `flex h-full w-full items-center gap-3 overflow-hidden rounded-lg border border-border bg-panel px-3 py-2.5 transition-shadow ${CANVAS_NODE_SHADOW_CLASS}`,
+          `flex h-full w-full items-center gap-3 overflow-hidden rounded-panel border border-border bg-panel px-3 py-2.5 transition-shadow ${CANVAS_NODE_SHADOW_CLASS}`,
           data.isHeld && "opacity-50",
         )}
       >

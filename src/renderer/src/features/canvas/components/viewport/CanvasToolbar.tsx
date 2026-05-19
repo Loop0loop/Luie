@@ -10,12 +10,8 @@ import { useTranslation } from "react-i18next";
 import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { CANVAS_TOOLBAR_HEIGHT_PX } from "@shared/constants/layoutSizing";
-import {
-  CANVAS_ZOOM_MIN,
-  CANVAS_ZOOM_MAX,
-  CANVAS_ZOOM_STEP,
-} from "@shared/constants/canvasSizing";
 import { useCanvasViewStore } from "../../stores";
+import { createViewportActions } from "../../utils/viewportActions";
 
 
 
@@ -30,15 +26,14 @@ export default function CanvasToolbar() {
 
   const setViewport = useCanvasViewStore((s) => s.setViewport);
 
-
-
-  const zoomIn  = () => setViewport({ zoom: Math.min(CANVAS_ZOOM_MAX, viewport.zoom + CANVAS_ZOOM_STEP) });
-  const zoomOut = () => setViewport({ zoom: Math.max(CANVAS_ZOOM_MIN, viewport.zoom - CANVAS_ZOOM_STEP) });
-  const fitView = () => setViewport({ zoom: 1, pan: { x: 0, y: 0 } });
+  const actions = createViewportActions(viewport.zoom);
+  const zoomIn  = () => setViewport(actions.zoomIn());
+  const zoomOut = () => setViewport(actions.zoomOut());
+  const fitView = () => setViewport(actions.fitView());
 
   return (
     <div
-      className="flex shrink-0 items-center gap-1.5 border-b border-border/40 bg-sidebar px-2"
+      className="flex shrink-0 items-center gap-1.5 border-b border-border/40 bg-sidebar px-control-x"
       style={{ height: CANVAS_TOOLBAR_HEIGHT_PX }}
       data-testid="canvas-toolbar"
     >
@@ -53,7 +48,7 @@ export default function CanvasToolbar() {
             type="button"
             onClick={zoomOut}
             title={t("canvas.toolbar.zoomOut")}
-            className="flex h-7 w-7 items-center justify-center rounded text-subtle transition-colors hover:bg-surface hover:text-fg"
+            className="flex h-control-y w-control-x items-center justify-center rounded-control text-subtle transition-colors hover:bg-surface hover:text-fg"
           >
             <ZoomOut className="icon-xs" />
           </button>
@@ -61,7 +56,7 @@ export default function CanvasToolbar() {
             type="button"
             onClick={zoomIn}
             title={t("canvas.toolbar.zoomIn")}
-            className="flex h-7 w-7 items-center justify-center rounded text-subtle transition-colors hover:bg-surface hover:text-fg"
+            className="flex h-control-y w-control-x items-center justify-center rounded-control text-subtle transition-colors hover:bg-surface hover:text-fg"
           >
             <ZoomIn className="icon-xs" />
           </button>
@@ -69,7 +64,7 @@ export default function CanvasToolbar() {
             type="button"
             onClick={fitView}
             title={t("canvas.toolbar.fitView")}
-            className="flex h-7 w-7 items-center justify-center rounded text-subtle transition-colors hover:bg-surface hover:text-fg"
+            className="flex h-control-y w-control-x items-center justify-center rounded-control text-subtle transition-colors hover:bg-surface hover:text-fg"
           >
             <Maximize2 className="icon-xs" />
           </button>

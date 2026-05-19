@@ -97,7 +97,7 @@ export default function CanvasControlPanel() {
                 disabled={!isAvailable}
                 onClick={() => isAvailable && setMode(m)}
                 className={cn(
-                  "flex w-full items-center gap-2 rounded-control px-2 py-1.5 text-sm transition-colors",
+                  "flex w-full items-center gap-2 rounded-control px-control-x py-control-y text-sm transition-colors",
                   isActive
                     ? "bg-active font-medium text-fg"
                     : isAvailable

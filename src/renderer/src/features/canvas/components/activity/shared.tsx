@@ -34,7 +34,7 @@ export function PanelHeader({
   subtitle?: string;
 }) {
   return (
-    <div className="shrink-0 border-b border-border bg-panel px-4 py-3">
+    <div className="shrink-0 border-b border-border bg-panel px-panel-pad py-control-y">
       <h2 className="text-sm font-semibold text-fg">{title}</h2>
       {subtitle && (
         <div className="mt-1 truncate text-xs text-subtle">
@@ -75,12 +75,12 @@ export function PanelSection({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="mb-3 px-2">
+    <div className="mb-3 px-control-x">
       {/* 헤더: <div role="button"> — actions 슬롯의 <button> 중첩을 허용하기 위해 */}
       <div
         role="button"
         tabIndex={0}
-        className="group flex w-full cursor-pointer items-center rounded-control px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted transition-colors hover:bg-surface-hover hover:text-fg"
+        className="group flex w-full cursor-pointer items-center rounded-control px-control-x py-control-y text-xs font-semibold uppercase tracking-wide text-muted transition-colors hover:bg-surface-hover hover:text-fg"
         onClick={() => setIsOpen((v) => !v)}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -145,7 +145,7 @@ export function PanelItem({
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
       className={cn(
-        "flex cursor-pointer items-center gap-2 rounded-control px-2 py-1.5 text-sm transition-colors",
+        "flex cursor-pointer items-center gap-2 rounded-control px-control-x py-control-y text-sm transition-colors",
         active
           ? "bg-active font-medium text-fg"
           : "text-muted hover:bg-surface hover:text-fg",
@@ -174,7 +174,7 @@ export function PanelItem({
 
 export function PanelEmpty({ message }: { message: string }) {
   return (
-    <div className="px-4 py-3 text-xs italic text-muted">{message}</div>
+    <div className="px-panel-pad py-control-y text-xs italic text-muted">{message}</div>
   );
 }
 
@@ -194,7 +194,7 @@ export function ToggleChip({
   return (
     <label
       className={cn(
-        "flex cursor-pointer items-center gap-2 rounded-control px-2 py-1.5 text-sm transition-all",
+        "flex cursor-pointer items-center gap-2 rounded-control px-control-x py-control-y text-sm transition-all",
         checked
           ? "bg-active font-medium text-fg"
           : "text-muted hover:bg-surface-hover hover:text-fg",

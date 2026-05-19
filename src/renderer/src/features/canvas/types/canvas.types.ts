@@ -13,9 +13,10 @@ export type CanvasMode =
   | "memory-map";
 
 /** Modes that have a real implementation today. Other modes show "coming soon". */
-export const CANVAS_AVAILABLE_MODES = ["flow-map", "scene-board"] as const;
+import { CANVAS_AVAILABLE_MODES as _CANVAS_AVAILABLE_MODES } from "../constants/i18n";
+export { CANVAS_AVAILABLE_MODES } from "../constants/i18n";
 
-export type CanvasAvailableMode = (typeof CANVAS_AVAILABLE_MODES)[number];
+export type CanvasAvailableMode = (typeof _CANVAS_AVAILABLE_MODES)[number];
 
 
 

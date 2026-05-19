@@ -8,12 +8,13 @@ const nodeTypes = {
   pensive: PensiveNode,
 };
 
+// TODO: Replace demo data with real projection data (P7)
 const initialNodes: Node<GraphNodeData>[] = [
   { id: "1", type: "pensive", position: { x: 250, y: 250 }, data: { label: "Main Character", type: "character", isFocused: true } },
   { id: "2", type: "pensive", position: { x: 150, y: 150 }, data: { label: "Ally 1", type: "character" } },
   { id: "3", type: "pensive", position: { x: 350, y: 180 }, data: { label: "Antagonist", type: "character" } },
   { id: "4", type: "pensive", position: { x: 200, y: 350 }, data: { label: "Incident", type: "event" } },
-  { id: "5", type: "pensive", position: { x: 300, y: 380 }, data: { label: "Location A", type: "location" } },
+  { id: "5", type: "pensive", position: { x: 300, y: 380 }, data: { label: "Location A", type: "world-entity" } },
 ];
 
 const initialEdges: Edge[] = [
@@ -33,7 +34,7 @@ export default function GraphSurface() {
   }, [setFocusId]);
 
   return (
-    <div className="h-full w-full bg-app">
+    <div className="h-full w-full bg-canvas">
       <ReactFlow
         nodes={nodes}
         edges={edges}

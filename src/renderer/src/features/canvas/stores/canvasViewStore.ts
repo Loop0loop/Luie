@@ -27,19 +27,15 @@ import type {
   CanvasSelection,
   CanvasViewport,
 } from "../types/canvas.types";
+import {
+  sanitizePersistedState,
+  type CanvasViewPersistedState,
+} from "./canvasViewSchema";
 
 /* ─────────────────────────────────────────── constants */
 
 const STORAGE_KEY = "canvas_view_v2";
 const SCHEMA_VERSION = 2;
-
-const ALL_MODES: ReadonlyArray<CanvasMode> = [
-  "flow-map",
-  "scene-board",
-  "timeline",
-  "character-map",
-  "memory-map",
-];
 
 const ALL_LAYERS: ReadonlyArray<CanvasLayer> = [
   "scene",
@@ -49,14 +45,6 @@ const ALL_LAYERS: ReadonlyArray<CanvasLayer> = [
   "ai-hint",
 ];
 
-const ALL_ACTIVITY_PANELS: ReadonlyArray<CanvasActivityPanel> = [
-  "explorer",
-  "graph",
-  "canvas",
-  "memory",
-  "search",
-];
-
 const DEFAULT_LAYERS: ReadonlyArray<CanvasLayer> = [
   "scene",
   "character",
@@ -64,131 +52,20 @@ const DEFAULT_LAYERS: ReadonlyArray<CanvasLayer> = [
   "memo",
 ];
 
-const ZOOM_MIN = 0.25;
-const ZOOM_MAX = 3;
-
-/* ─────────────────────────────────────────── helpers */
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value) && typeof value === "object" && !Array.isArray(value);
-
-const isCanvasMode = (value: unknown): value is CanvasMode =>
-  typeof value === "string" && ALL_MODES.includes(value as CanvasMode);
-
 const isCanvasLayer = (value: unknown): value is CanvasLayer =>
   typeof value === "string" && ALL_LAYERS.includes(value as CanvasLayer);
-
-const isCanvasActivityPanel = (value: unknown): value is CanvasActivityPanel =>
-  typeof value === "string" &&
-  ALL_ACTIVITY_PANELS.includes(value as CanvasActivityPanel);
-
-
 
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
 
 const clampZoom = (zoom: number): number =>
-  Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom));
-
-const sanitizePersistedScope = (input: unknown): CanvasScope | null => {
-  if (!isRecord(input)) return null;
-  const kind = input.kind;
-  if (kind === "single-chapter" && typeof input.chapterId === "string") {
-    return { kind, chapterId: input.chapterId };
-  }
-  if (kind === "three-chapters" && typeof input.centerChapterId === "string") {
-    return { kind, centerChapterId: input.centerChapterId };
-  }
-  if (kind === "current-part" && typeof input.partId === "string") {
-    return { kind, partId: input.partId };
-  }
-  if (kind === "whole-project" && typeof input.projectId === "string") {
-    return { kind, projectId: input.projectId };
-  }
-  return null;
-};
-
-const sanitizeViewport = (input: unknown): CanvasViewport => {
-  const fallback: CanvasViewport = { zoom: 1, pan: { x: 0, y: 0 } };
-  if (!isRecord(input)) return fallback;
-  const zoom = isFiniteNumber(input.zoom) ? clampZoom(input.zoom) : 1;
-  const panInput = isRecord(input.pan) ? input.pan : null;
-  const pan: CanvasViewport["pan"] = {
-    x: panInput && isFiniteNumber(panInput.x) ? panInput.x : 0,
-    y: panInput && isFiniteNumber(panInput.y) ? panInput.y : 0,
-  };
-  return { zoom, pan };
-};
-
-const sanitizePersistedState = (
-  input: unknown,
-): Partial<CanvasViewPersistedState> => {
-  if (!isRecord(input)) return {};
-
-  const next: Partial<CanvasViewPersistedState> = {};
-
-
-  if (isCanvasMode(input.mode)) next.mode = input.mode;
-
-  const scope = sanitizePersistedScope(input.scope);
-  next.scope = scope; // explicit null is meaningful (no scope chosen)
-
-  if (Array.isArray(input.layers)) {
-    const layers = input.layers.filter(isCanvasLayer);
-    if (layers.length > 0) next.layers = layers;
-  }
-
-  if (Array.isArray(input.focuses)) {
-    const focuses = input.focuses.filter(
-      (id): id is string => typeof id === "string",
-    );
-    next.focuses = focuses;
-  }
-
-  if (isRecord(input.viewport)) {
-    next.viewport = sanitizeViewport(input.viewport);
-  }
-
-  if (typeof input.lastPreset === "string") {
-    next.lastPreset = input.lastPreset;
-  }
-
-  if (isCanvasActivityPanel(input.activePanel)) {
-    next.activePanel = input.activePanel;
-  }
-
-  if (typeof input.isActivityCollapsed === "boolean") {
-    next.isActivityCollapsed = input.isActivityCollapsed;
-  }
-
-  if (typeof input.isBinderCollapsed === "boolean") {
-    next.isBinderCollapsed = input.isBinderCollapsed;
-  }
-
-  return next;
-};
+  Math.min(3, Math.max(0.25, zoom));
 
 const createNoopStorage = (): StateStorage => ({
   getItem: () => null,
   setItem: () => undefined,
   removeItem: () => undefined,
 });
-
-/* ─────────────────────────────────────────── persisted state shape
- * 이 타입이 partialize 반환값과 sanitizePersistedState 반환값의
- * 단일 진실 공급원입니다. 새 persist 필드 추가 시 반드시 여기에 먼저 추가하세요.
- */
-type CanvasViewPersistedState = {
-  mode: CanvasMode;
-  scope: CanvasScope | null;
-  layers: CanvasLayer[];
-  focuses: string[];
-  viewport: CanvasViewport;
-  lastPreset: string | null;
-  activePanel: CanvasActivityPanel;
-  isActivityCollapsed: boolean;
-  isBinderCollapsed: boolean;
-};
 
 /* ─────────────────────────────────────────── state shape */
 
