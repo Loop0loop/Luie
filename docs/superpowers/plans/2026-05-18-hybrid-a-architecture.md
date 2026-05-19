@@ -1,5 +1,19 @@
 # Hybrid-A Architecture Implementation Plan
 
+## Execution Status (2026-05-19)
+
+- 완료:
+  - Utility process bridge 기반 `RAG_QA_ASK/STOP` 경로 고정(main fallback 제거)
+  - Utility process 기동/헬스체크/요청 타임아웃 분리 및 재진입 가드
+  - Utility 환경 패키징 판정 오동작 수정(`LUIE_APP_IS_PACKAGED` 전달)
+  - Utility DB/bootstrap 경로 안정화 및 `DerivedJobWorker` 시작 순서 수정(DB init 이후 시작)
+  - Utility RAG stream/error 이벤트 전송 채널 보강(`parentPort` + `process.send`)
+  - `tests/e2e/ragQa.phase5.spec.ts` 통과 확인
+- 진행 중:
+  - `tests/e2e/ragQa.metrics.spec.ts` 지표 재측정(로컬 환경별 Electron launch 변동 있음)
+- 보강:
+  - `tests/e2e/ragQa.phase5.spec.ts`, `tests/e2e/ragQa.metrics.spec.ts`에 run-level 20s 타임아웃/정리(`rag.stop`) 추가
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** llama.cpp 추론을 Electron Main Process 밖으로 완전히 분리하여 Main RAM을 6GB → ~380MB로 줄이고, GPU offload(Metal)를 활성화한다.

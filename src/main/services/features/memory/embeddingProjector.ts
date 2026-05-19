@@ -49,10 +49,11 @@ export class EmbeddingProjector {
     if (jobs.length === 0) return { queued: 0, processed: 0 };
 
     const runtime = await resolveModelRuntimeClient(input.projectId);
-    const runtimeAvailable = await runtime.isAvailable();
-    // Only process if the model is already loaded — do not trigger a cold model load
-    // from a background job, as that would silently consume gigabytes of RAM.
-    if (!runtimeAvailable || !runtime.isModelLoaded()) {
+    // For llamacpp: skip if model not yet in RAM — cold load from background
+    // would silently consume gigabytes of RAM.
+    // For llamaserver/deterministic: always process (embed() returns null → job
+    // still completes without vectors, which is acceptable for non-embedding providers).
+    if (runtime.providerName === "llamacpp" && !runtime.isModelLoaded()) {
       return { queued: jobs.length, processed: 0 };
     }
     let processed = 0;
