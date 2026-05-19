@@ -4,12 +4,12 @@
 
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { app } from "electron";
 import BetterSqliteDatabase from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { DB_NAME } from "../../shared/constants/index.js";
 import { createLogger } from "../../shared/logger/index.js";
 import { isProdEnv, isTestEnv } from "../utils/environment.js";
+import { resolveUserDataPath } from "../utils/userDataPath.js";
 import { ensureSafeAbsolutePath } from "../utils/pathValidation.js";
 import * as schema from "./schema.js";
 import { seedIfEmpty } from "./seedDefaults.js";
@@ -61,11 +61,12 @@ class DatabaseService {
     const context = await this.prepareDatabaseContext();
     this.dbPath = context.dbPath;
 
+    const userDataPath = resolveUserDataPath();
     logger.info("Initializing database", {
       isPackaged: context.isPackaged,
       isTest: context.isTest,
       hasEnvDb: Boolean(process.env.DATABASE_URL),
-      userDataPath: app.getPath("userData"),
+      userDataPath,
       dbPath: context.dbPath,
       datasourceUrl: context.datasourceUrl,
     });
@@ -117,7 +118,7 @@ class DatabaseService {
 
   private async prepareDatabaseContext(): Promise<PreparedDatabaseContext> {
     const isPackaged = isProdEnv();
-    const userDataPath = app.getPath("userData");
+    const userDataPath = resolveUserDataPath();
     const isTest = isTestEnv();
     const envDb = isTestEnv()
       ? process.env.DATABASE_URL

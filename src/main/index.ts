@@ -108,9 +108,6 @@ if (!registerSingleInstance(bootstrapLogger)) {
 
   initDatabaseEnv();
 
-  // Disable GPU acceleration for better stability
-  app.disableHardwareAcceleration();
-
   if (process.platform === "darwin") {
     app.on("open-url", (event, url) => {
       event.preventDefault();

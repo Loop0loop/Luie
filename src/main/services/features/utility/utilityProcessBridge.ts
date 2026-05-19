@@ -12,6 +12,7 @@ import { createLogger } from "../../../../shared/logger/index.js";
 
 const logger = createLogger("UtilityProcessBridge");
 const START_TIMEOUT_MS = 5_000;
+const REQUEST_TIMEOUT_MS = 20_000;
 const STOP_TIMEOUT_MS = 2_000;
 
 type UtilityOutboundMessage =
@@ -46,16 +47,25 @@ export class UtilityProcessBridge {
   private requestSeq = 0;
   private pendingRequests = new Map<string, PendingRequest>();
   private ragRunToWebContentsId = new Map<string, number>();
+  private startingPromise: Promise<boolean> | null = null;
 
   async start(): Promise<boolean> {
     if (this.utilityChild) return true;
+    if (this.startingPromise) return await this.startingPromise;
 
     const entryPath = app.isPackaged
       ? path.join(process.resourcesPath, "app.asar", "out", "main", "utilityProcessMain.js")
       : path.join(app.getAppPath(), "out", "main", "utilityProcessMain.js");
 
-    try {
-      const child = utilityProcess.fork(entryPath);
+    const run = async (): Promise<boolean> => {
+      try {
+      const child = utilityProcess.fork(entryPath, [], {
+        env: {
+          ...process.env,
+          LUIE_APP_IS_PACKAGED: app.isPackaged ? "1" : "0",
+          LUIE_USER_DATA_PATH: app.getPath("userData"),
+        },
+      });
       child.on("spawn", () => {
         logger.info("Utility process spawned", { pid: child.pid, entryPath });
       });
@@ -75,10 +85,15 @@ export class UtilityProcessBridge {
       }
       logger.info("Utility process health check passed", { pid: child.pid });
       return true;
-    } catch (error) {
-      logger.error("Failed to start utility process", { entryPath, error });
-      return false;
-    }
+      } catch (error) {
+        logger.error("Failed to start utility process", { entryPath, error });
+        return false;
+      } finally {
+        this.startingPromise = null;
+      }
+    };
+    this.startingPromise = run();
+    return await this.startingPromise;
   }
 
   stop(): void {
@@ -117,6 +132,12 @@ export class UtilityProcessBridge {
   }
 
   async askRagQa(input: RagQaRequest, targetWebContentsId: number): Promise<RagQaRunHandle> {
+    if (!this.utilityChild) {
+      const started = await this.start();
+      if (!started || !this.utilityChild) {
+        throw new Error("Utility process is not running");
+      }
+    }
     const result = await this.request("ragQa.ask", input);
     const runHandle = result as RagQaRunHandle;
     if (runHandle?.runId) {
@@ -164,7 +185,7 @@ export class UtilityProcessBridge {
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(requestId);
         reject(new Error(`Utility request timeout: ${method}`));
-      }, START_TIMEOUT_MS);
+      }, REQUEST_TIMEOUT_MS);
       this.pendingRequests.set(requestId, { resolve, reject, timeout });
       if (method === "ragQa.ask") {
         child.postMessage({
@@ -193,6 +214,10 @@ export class UtilityProcessBridge {
       if (message.ok) {
         pending.resolve(message.result);
       } else {
+        logger.error("Utility request failed", {
+          requestId: message.requestId,
+          error: message.error,
+        });
         pending.reject(new Error(message.error));
       }
       return;

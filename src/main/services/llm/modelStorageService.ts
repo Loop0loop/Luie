@@ -32,7 +32,10 @@ async function hashFileSha256(filePath: string): Promise<string> {
   });
 }
 
-async function listGgufFiles(modelsDir: string, defaultPath: string | null): Promise<LocalLlmModelInfo[]> {
+async function listGgufFiles(
+  modelsDir: string,
+  defaultPath: string | null,
+): Promise<LocalLlmModelInfo[]> {
   await ensureDir(modelsDir);
   const entries = await fs.readdir(modelsDir, { withFileTypes: true });
   const models: LocalLlmModelInfo[] = [];
@@ -91,7 +94,9 @@ class ModelStorageService {
   }
 
   getConfiguredModelsDir(): string {
-    return settingsManager.getLlmSettings().modelsDir ?? this.getDefaultModelsDir();
+    return (
+      settingsManager.getLlmSettings().modelsDir ?? this.getDefaultModelsDir()
+    );
   }
 
   async getView(): Promise<LlmModelSettingsView> {
@@ -124,22 +129,34 @@ class ModelStorageService {
     return { saved: true };
   }
 
-  async setDefaultModel(input: { modelPath: string; modelId?: string }): Promise<LlmModelSettingsView> {
+  async setDefaultModel(input: {
+    modelPath: string;
+    modelId?: string;
+  }): Promise<LlmModelSettingsView> {
     const resolved = path.resolve(input.modelPath);
     await fs.access(resolved);
     settingsManager.setLlmSettings({
       defaultModelPath: resolved,
-      defaultModelId: input.modelId ?? path.basename(resolved, path.extname(resolved)),
+      defaultModelId:
+        input.modelId ?? path.basename(resolved, path.extname(resolved)),
       llmProviderHint: "llamacpp",
     });
     return this.getView();
   }
 
-  async downloadDefaultModel(): Promise<{ downloaded: boolean; modelPath: string; modelId: string }> {
+  async downloadDefaultModel(): Promise<{
+    downloaded: boolean;
+    modelPath: string;
+    modelId: string;
+  }> {
     if (this.downloadStatus.active) {
       const llm = settingsManager.getLlmSettings();
       const modelsDir = llm.modelsDir ?? this.getDefaultModelsDir();
-      return { downloaded: false, modelPath: path.join(modelsDir, DEFAULT_MODEL.fileName), modelId: DEFAULT_MODEL.modelId };
+      return {
+        downloaded: false,
+        modelPath: path.join(modelsDir, DEFAULT_MODEL.fileName),
+        modelId: DEFAULT_MODEL.modelId,
+      };
     }
     const llm = settingsManager.getLlmSettings();
     const modelsDir = llm.modelsDir ?? this.getDefaultModelsDir();
@@ -180,7 +197,9 @@ class ModelStorageService {
         active: false,
         error: `HTTP ${response.status} ${response.statusText}`,
       };
-      throw new Error(`Model download failed: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Model download failed: ${response.status} ${response.statusText}`,
+      );
     }
 
     const total = Number(response.headers.get("content-length") ?? "0");
@@ -208,7 +227,11 @@ class ModelStorageService {
 
     await fs.rename(partPath, modelPath);
     const sha256 = await hashFileSha256(modelPath);
-    await fs.writeFile(`${modelPath}.sha256`, `${sha256}  ${DEFAULT_MODEL.fileName}\n`, "utf8");
+    await fs.writeFile(
+      `${modelPath}.sha256`,
+      `${sha256}  ${DEFAULT_MODEL.fileName}\n`,
+      "utf8",
+    );
 
     settingsManager.setLlmSettings({
       defaultModelPath: modelPath,
@@ -223,7 +246,11 @@ class ModelStorageService {
       totalBytes: total > 0 ? total : null,
       percent: 100,
     };
-    logger.info("Default model download completed", { modelPath, downloaded, total });
+    logger.info("Default model download completed", {
+      modelPath,
+      downloaded,
+      total,
+    });
     return { downloaded: true, modelPath, modelId: DEFAULT_MODEL.modelId };
   }
 }

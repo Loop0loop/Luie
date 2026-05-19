@@ -1,5 +1,28 @@
 # Hybrid-A Architecture Implementation Plan
 
+## Execution Status (2026-05-19)
+
+- 완료:
+  - Utility process bridge 기반 `RAG_QA_ASK/STOP` 경로 고정(main fallback 제거)
+  - Utility process 기동/헬스체크/요청 타임아웃 분리 및 재진입 가드
+  - Utility 환경 패키징 판정 오동작 수정(`LUIE_APP_IS_PACKAGED` 전달)
+  - Utility DB/bootstrap 경로 안정화 및 `DerivedJobWorker` 시작 순서 수정(DB init 이후 시작)
+  - Utility RAG stream/error 이벤트 전송 채널 보강(`parentPort` + `process.send`)
+  - `app.disableHardwareAcceleration()` 제거
+  - `LlamaCppProvider` idle unload 추가(`LUIE_LLM_IDLE_UNLOAD_MS`)
+  - sidecar GPU/컨텍스트 env 연동(`LUIE_LLM_GPU_LAYERS`, `LUIE_LLM_CONTEXT_SIZE`, `LUIE_LLM_SERVER_PARALLEL`)
+  - `tests/e2e/ragQa.phase5.spec.ts` 통과 확인
+- 진행 중:
+  - `tests/e2e/ragQa.metrics.spec.ts` 지표 재측정(로컬 환경별 Electron launch 변동 있음)
+- 보강:
+  - `tests/e2e/ragQa.phase5.spec.ts`, `tests/e2e/ragQa.metrics.spec.ts`에 run-level 20s 타임아웃/정리(`rag.stop`) 추가
+  - `snapshotService.restoreSnapshot` 시 `chapterBody` 동기화
+  - snapshot artifact 디렉토리 키를 `projectId`로 통일
+
+- 검증 메모:
+  - 현재 Codex 실행 환경에서는 Electron GUI 초기화 단계에서 `SIGABRT`가 간헐 발생하여 E2E 재현이 막힐 수 있음.
+  - 크래시 리포트는 `RegisterApplication`/`AppKit` 초기화 구간 abort를 가리킴(앱 로직 이전 단계).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** llama.cpp 추론을 Electron Main Process 밖으로 완전히 분리하여 Main RAM을 6GB → ~380MB로 줄이고, GPU offload(Metal)를 활성화한다.

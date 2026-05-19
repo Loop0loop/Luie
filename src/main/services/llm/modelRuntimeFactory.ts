@@ -1,3 +1,5 @@
+import path from "node:path";
+import { access, readFile, readdir } from "node:fs/promises";
 import { db } from "../../database/index.js";
 import { projectSettings } from "../../database/schema.js";
 import { eq } from "drizzle-orm";
@@ -6,11 +8,56 @@ import type { ModelRuntimeClient } from "./modelRuntimeClient.js";
 import { DeterministicProvider } from "./providers/deterministicProvider.js";
 import { LlamaCppProvider } from "./providers/llamaCppProvider.js";
 import { LlamaServerProvider } from "./providers/llamaServerProvider.js";
+import { resolveUserDataPath } from "../../utils/userDataPath.js";
 
 const logger = createLogger("ModelRuntimeFactory");
 const deterministicProvider = new DeterministicProvider();
 let llamaProviderSingle: { key: string; provider: LlamaCppProvider } | null = null;
 let llamaServerProviderSingle: { key: string; provider: LlamaServerProvider } | null = null;
+
+type GlobalLlmSettings = {
+  defaultModelPath: string | null;
+  llmProviderHint: "llamacpp" | "llamaserver" | "none" | null;
+};
+
+async function loadGlobalLlmSettingsFromFile(): Promise<GlobalLlmSettings> {
+  try {
+    const userDataPath = resolveUserDataPath();
+    const settingsPath = path.join(userDataPath, "settings.json");
+    const raw = await readFile(settingsPath, "utf8");
+    const parsed = JSON.parse(raw) as { llm?: { defaultModelPath?: string; llmProviderHint?: "llamacpp" | "llamaserver" | "none" } };
+    return {
+      defaultModelPath: parsed.llm?.defaultModelPath ?? null,
+      llmProviderHint: parsed.llm?.llmProviderHint ?? null,
+    };
+  } catch {
+    logger.warn("Failed to load global LLM settings from settings.json", {
+      userDataPath: resolveUserDataPath(),
+    });
+    return {
+      defaultModelPath: null,
+      llmProviderHint: null,
+    };
+  }
+}
+
+async function resolveModelPathFromModelsDir(): Promise<string | null> {
+  try {
+    const modelsDir = path.join(resolveUserDataPath(), "models");
+    const entries = await readdir(modelsDir, { withFileTypes: true });
+    const candidates = entries
+      .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".gguf"))
+      .map((entry) => path.join(modelsDir, entry.name))
+      .sort((a, b) => a.localeCompare(b));
+    return candidates[0] ?? null;
+  } catch (error) {
+    logger.warn("Failed to resolve model from userData/models directory", {
+      userDataPath: resolveUserDataPath(),
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
 
 function getOrCreateLlamaProvider(
   modelPath: string,
@@ -53,24 +100,23 @@ export async function resolveModelRuntimeClient(
   const configuredPath = row[0]?.llmModelPath ?? process.env.LUIE_LLM_MODEL_PATH ?? null;
   const embeddingConfiguredPath =
     row[0]?.llmEmbeddingModelPath ?? process.env.LUIE_LLM_EMBEDDING_MODEL_PATH ?? null;
-  let localLlm: {
-    defaultModelPath?: string;
-    llmProviderHint?: "llamacpp" | "llamaserver" | "none";
-  } = {};
-  if (process.type === "browser") {
+  const globalLlm = await loadGlobalLlmSettingsFromFile();
+  let fallbackModelPath = globalLlm.defaultModelPath;
+  if (!fallbackModelPath) {
+    fallbackModelPath = await resolveModelPathFromModelsDir();
+  }
+  if (fallbackModelPath) {
     try {
-      const { settingsManager } = await import("../../manager/settingsManager.js");
-      localLlm = settingsManager.getLlmSettings();
-    } catch (error) {
-      logger.warn("Failed to read LLM settings from settings manager", { error });
+      await access(fallbackModelPath);
+    } catch {
+      fallbackModelPath = null;
     }
   }
   const providerHint =
     row[0]?.llmProviderHint ??
     process.env.LUIE_LLM_PROVIDER_HINT ??
-    localLlm.llmProviderHint ??
+    globalLlm.llmProviderHint ??
     null;
-  const fallbackModelPath = localLlm.defaultModelPath ?? null;
   const envContextSize = Number.parseInt(process.env.LUIE_LLM_CONTEXT_SIZE ?? "", 10);
   const configuredContextSize = Number.isFinite(envContextSize) ? envContextSize : undefined;
   const envGpuLayers = Number.parseInt(process.env.LUIE_LLM_GPU_LAYERS ?? "", 10);
@@ -81,6 +127,15 @@ export async function resolveModelRuntimeClient(
   }
 
   const effectiveModelPath = configuredPath ?? fallbackModelPath;
+  logger.info("Resolving model runtime client", {
+    projectId,
+    hasProjectModelPath: Boolean(row[0]?.llmModelPath),
+    hasFallbackModelPath: Boolean(fallbackModelPath),
+    fallbackSource: globalLlm.defaultModelPath ? "settings.json" : fallbackModelPath ? "models-dir" : "none",
+    providerHint,
+    hasEmbeddingModelPath: Boolean(embeddingConfiguredPath),
+    processType: process.type,
+  });
   if (effectiveModelPath && providerHint === "llamaserver") {
     return getOrCreateLlamaServerProvider(effectiveModelPath);
   }

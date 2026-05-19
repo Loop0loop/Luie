@@ -134,6 +134,19 @@ test("phase5 rag qa ask -> done -> evidence @stress", async () => {
         }>>((resolve) => {
           let activeRunId: string | null = null;
           let answerBuffer = "";
+          let settled = false;
+
+          const settle = (value: ApiResponse<{
+            runId: string;
+            answer: string;
+            evidenceCount: number;
+            firstEvidenceChunkId: string | null;
+          }>) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeoutId);
+            resolve(value);
+          };
 
           const offStream = api.rag.onStream((payload) => {
             if (!activeRunId) return;
@@ -142,7 +155,7 @@ test("phase5 rag qa ask -> done -> evidence @stress", async () => {
             if (payload.done) {
               offStream();
               offError();
-              resolve({
+              settle({
                 success: true,
                 data: {
                   runId: activeRunId,
@@ -159,11 +172,23 @@ test("phase5 rag qa ask -> done -> evidence @stress", async () => {
             if (activeRunId && payload.runId && payload.runId !== activeRunId) return;
             offStream();
             offError();
-            resolve({
+            settle({
               success: false,
               error: { message: payload.message ?? "rag failed" },
             });
           });
+
+          const timeoutId = setTimeout(() => {
+            if (activeRunId) {
+              void api.rag.stop(activeRunId);
+            }
+            offStream();
+            offError();
+            settle({
+              success: false,
+              error: { message: "rag stream timeout (20s)" },
+            });
+          }, 20_000);
 
           void api.rag
             .ask({
@@ -175,7 +200,7 @@ test("phase5 rag qa ask -> done -> evidence @stress", async () => {
               if (!resp.success || !resp.data?.runId) {
                 offStream();
                 offError();
-                resolve({
+                settle({
                   success: false,
                   error: { message: resp.error?.message ?? "ask failed" },
                 });

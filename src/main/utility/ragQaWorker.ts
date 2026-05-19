@@ -1,4 +1,3 @@
-import { parentPort } from "node:worker_threads";
 import { ErrorCode } from "../../shared/constants/errorCode.js";
 import type {
   RagQaErrorPayload,
@@ -23,11 +22,62 @@ type UtilityEventEnvelope =
   | { type: "event"; event: "ragQa.stream"; payload: RagQaStreamPayload }
   | { type: "event"; event: "ragQa.error"; payload: RagQaErrorPayload };
 
+type MessagePortLike = {
+  postMessage: (message: UtilityEventEnvelope) => void;
+};
+
+const processWithParentPort = process as typeof process & { parentPort?: MessagePortLike };
+const processWithSend = process as typeof process & {
+  send?: (message: UtilityEventEnvelope) => void;
+};
+
+const outboundPort: MessagePortLike | null = processWithParentPort.parentPort ?? null;
+
+function normalizeCoreAnswer(raw: string): string {
+  const withoutCodeFence = raw.replace(/```[\s\S]*?```/g, "").trim();
+  const lines = withoutCodeFence
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+  const filtered = lines.filter(
+    (line) =>
+      !/^okay[,!]?/i.test(line) &&
+      !/^let'?s\s+/i.test(line) &&
+      !/^starting with/i.test(line) &&
+      !/^the user/i.test(line),
+  );
+  const deduped: string[] = [];
+  let repeatCount = 0;
+  for (const line of filtered) {
+    const last = deduped[deduped.length - 1];
+    if (last === line) {
+      repeatCount += 1;
+      if (repeatCount > 1) continue;
+    } else {
+      repeatCount = 0;
+    }
+    deduped.push(line);
+  }
+  const merged = deduped.join("\n");
+  return merged.slice(0, 1800).trim();
+}
+
+
 class RagQaWorker {
   private activeRuns = new Map<string, ActiveRun>();
 
   private post(message: UtilityEventEnvelope): void {
-    parentPort?.postMessage(message);
+    if (outboundPort) {
+      outboundPort.postMessage(message);
+      return;
+    }
+    if (typeof processWithSend.send === "function") {
+      processWithSend.send(message);
+      return;
+    }
+    logger.warn("Utility RAG QA event dropped: no outbound channel", {
+      event: message.event,
+    });
   }
 
   private emitStream(payload: RagQaStreamPayload): void {
@@ -95,7 +145,7 @@ class RagQaWorker {
         runId: run.runId,
         projectId: run.request.projectId,
         question: run.request.question,
-        answer: chunks.join(""),
+        answer: normalizeCoreAnswer(chunks.join("")),
         evidence,
         createdAt: new Date().toISOString(),
       };

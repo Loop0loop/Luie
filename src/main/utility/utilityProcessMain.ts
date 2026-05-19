@@ -1,8 +1,25 @@
 import { createLogger } from "../../shared/logger/index.js";
 import type { RagQaRequest } from "../../shared/types/index.js";
+import { db } from "../database/index.js";
+import { cacheDb } from "../database/cacheDb.js";
 
 const logger = createLogger("UtilityProcessMain");
 let ragWorkerPromise: Promise<typeof import("./ragQaWorker.js")["ragQaWorker"]> | null = null;
+let readyPromise: Promise<void> | null = null;
+
+const ensureReady = async (): Promise<void> => {
+  if (!readyPromise) {
+    readyPromise = Promise.all([db.initialize(), cacheDb.initialize()])
+      .then(() => {
+        logger.info("Utility database bootstrap completed");
+      })
+      .catch((error) => {
+        readyPromise = null;
+        throw error;
+      });
+  }
+  await readyPromise;
+};
 
 const getRagQaWorker = async () => {
   if (!ragWorkerPromise) {
@@ -76,6 +93,7 @@ const onMessage = (raw: unknown): void => {
   if (message?.type === "request") {
     void (async () => {
       try {
+        await ensureReady();
         if (message.method === "ragQa.ask") {
           const ragQaWorker = await getRagQaWorker();
           const result = await ragQaWorker.ask(message.payload);
