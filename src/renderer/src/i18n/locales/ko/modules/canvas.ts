@@ -70,6 +70,14 @@ export const koCanvas = {
     title: "바인더",
     expand: "바인더 펼치기",
     collapse: "바인더 접기",
+    tab: {
+      elements: "요소",
+      ai: "AI",
+    },
+    ai: {
+      title: "AI 어시스턴트",
+      description: "AI 기능은 준비 중입니다.",
+    },
   },
   status: {
     empty: "표시할 내용이 없습니다.",

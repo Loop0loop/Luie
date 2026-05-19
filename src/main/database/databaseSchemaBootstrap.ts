@@ -10,6 +10,11 @@ import {
   PACKAGED_SCHEMA_COLUMN_PATCHES,
   PACKAGED_SCHEMA_INDEX_PATCHES,
 } from "./packagedSchema.js";
+import {
+  ENTITY_RELATION_POINTER_NORMALIZE_INSERT_TRIGGER_SQL,
+  ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_SQL,
+  ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_TRIGGER_SQL,
+} from "./entityRelationPointerSql.js";
 import { resolveMigrationPathContext } from "./migrationPathResolver.js";
 
 const DRIZZLE_MIGRATIONS_TABLE = "__drizzle_migrations";
@@ -42,6 +47,18 @@ function sqliteTableHasColumn(
   return rows.some((row) => row.name === columnName);
 }
 
+function sqliteTriggerExists(
+  database: InstanceType<typeof Database>,
+  triggerName: string,
+): boolean {
+  const row = database
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type = 'trigger' AND name = ? LIMIT 1;",
+    )
+    .get(triggerName);
+  return Boolean(row);
+}
+
 function computeMigrationHash(sqlContent: string): string {
   return crypto.createHash("sha256").update(sqlContent).digest("hex").slice(0, 16);
 }
@@ -69,6 +86,28 @@ function backfillChapterBody(database: InstanceType<typeof Database>, logger: Lo
   });
   tx();
   logger.info("Backfilled ChapterBody rows", { count: rows.length });
+}
+
+function enforceEntityRelationPointerConsistency(
+  database: InstanceType<typeof Database>,
+  logger: LoggerLike,
+): void {
+  if (!sqliteTableExists(database, "EntityRelation")) return;
+  const hasInsertTrigger = sqliteTriggerExists(
+    database,
+    "EntityRelation_pointer_normalize_insert",
+  );
+  const hasUpdateTrigger = sqliteTriggerExists(
+    database,
+    "EntityRelation_pointer_normalize_update",
+  );
+  // Backfill once before triggers are installed (or when one is missing).
+  if (!hasInsertTrigger || !hasUpdateTrigger) {
+    database.exec(ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_SQL);
+  }
+  database.exec(ENTITY_RELATION_POINTER_NORMALIZE_INSERT_TRIGGER_SQL);
+  database.exec(ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_TRIGGER_SQL);
+  logger.info("EntityRelation pointer consistency enforced");
 }
 
 /**
@@ -194,6 +233,7 @@ export function ensurePackagedSqliteSchema(
     }
 
     backfillChapterBody(database, logger);
+    enforceEntityRelationPointerConsistency(database, logger);
 
     logger.info("Packaged SQLite Drizzle migration ensured", {
       dbPath,

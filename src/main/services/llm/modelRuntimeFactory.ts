@@ -20,6 +20,15 @@ type GlobalLlmSettings = {
   llmProviderHint: "llamacpp" | "llamaserver" | "none" | null;
 };
 
+type ModelPathCache = {
+  expiresAt: number;
+  globalLlm: GlobalLlmSettings;
+  fallbackModelPath: string | null;
+};
+
+const MODEL_PATH_CACHE_TTL_MS = 10_000;
+let modelPathCache: ModelPathCache | null = null;
+
 async function loadGlobalLlmSettingsFromFile(): Promise<GlobalLlmSettings> {
   try {
     const userDataPath = resolveUserDataPath();
@@ -100,18 +109,28 @@ export async function resolveModelRuntimeClient(
   const configuredPath = row[0]?.llmModelPath ?? process.env.LUIE_LLM_MODEL_PATH ?? null;
   const embeddingConfiguredPath =
     row[0]?.llmEmbeddingModelPath ?? process.env.LUIE_LLM_EMBEDDING_MODEL_PATH ?? null;
-  const globalLlm = await loadGlobalLlmSettingsFromFile();
-  let fallbackModelPath = globalLlm.defaultModelPath;
-  if (!fallbackModelPath) {
-    fallbackModelPath = await resolveModelPathFromModelsDir();
-  }
-  if (fallbackModelPath) {
-    try {
-      await access(fallbackModelPath);
-    } catch {
-      fallbackModelPath = null;
+  const now = Date.now();
+  if (!modelPathCache || modelPathCache.expiresAt <= now) {
+    const globalLlm = await loadGlobalLlmSettingsFromFile();
+    let fallbackModelPath = globalLlm.defaultModelPath;
+    if (!fallbackModelPath) {
+      fallbackModelPath = await resolveModelPathFromModelsDir();
     }
+    if (fallbackModelPath) {
+      try {
+        await access(fallbackModelPath);
+      } catch {
+        fallbackModelPath = null;
+      }
+    }
+    modelPathCache = {
+      expiresAt: now + MODEL_PATH_CACHE_TTL_MS,
+      globalLlm,
+      fallbackModelPath,
+    };
   }
+  const globalLlm = modelPathCache.globalLlm;
+  const fallbackModelPath = modelPathCache.fallbackModelPath;
   const providerHint =
     row[0]?.llmProviderHint ??
     process.env.LUIE_LLM_PROVIDER_HINT ??

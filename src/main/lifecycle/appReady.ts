@@ -144,12 +144,6 @@ const runDeferredStartupMaintenance = async (logger: Logger): Promise<void> => {
     await entityRelationService.cleanupOrphanRelationsAcrossProjects({
       dryRun: false,
     });
-    await entityRelationService.reconcileWorldEntityPointersAcrossProjects({
-      dryRun: true,
-    });
-    await entityRelationService.reconcileWorldEntityPointersAcrossProjects({
-      dryRun: false,
-    });
   } catch (error) {
     logger.warn("Entity relation orphan cleanup skipped", error);
   }

@@ -69,6 +69,23 @@ const unwrapInbound = (raw: unknown): unknown => {
   return raw;
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isValidInboundMessage = (value: unknown): value is UtilityInboundMessage => {
+  if (!isRecord(value) || typeof value.type !== "string") return false;
+  if (value.type === "ping" || value.type === "shutdown") return true;
+  if (value.type !== "request") return false;
+  if (typeof value.requestId !== "string") return false;
+  if (value.method === "ragQa.ask") {
+    return isRecord(value.payload);
+  }
+  if (value.method === "ragQa.stop") {
+    return value.payload === undefined || isRecord(value.payload);
+  }
+  return false;
+};
+
 const post = (message: UtilityOutboundMessage): void => {
   if (inboundPort) {
     inboundPort.postMessage(message);
@@ -80,7 +97,22 @@ const post = (message: UtilityOutboundMessage): void => {
 };
 
 const onMessage = (raw: unknown): void => {
-  const message = unwrapInbound(raw) as UtilityInboundMessage;
+  const unwrapped = unwrapInbound(raw);
+  if (!isValidInboundMessage(unwrapped)) {
+    if (isRecord(unwrapped) && typeof unwrapped.requestId === "string") {
+      post({
+        type: "response",
+        requestId: unwrapped.requestId,
+        ok: false,
+        error: "Invalid utility request payload",
+      });
+    }
+    logger.warn("Invalid utility inbound message received", {
+      rawType: typeof unwrapped,
+    });
+    return;
+  }
+  const message = unwrapped;
   if (message?.type === "ping") {
     post({ type: "pong", requestId: message.requestId, pid: process.pid });
     return;

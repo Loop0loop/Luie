@@ -1,8 +1,9 @@
-import { and, eq, isNotNull, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "../../../database/index.js";
 import { entityRelation, worldEntity } from "../../../database/schema.js";
 import type { WorldEntitySourceType } from "../../../../shared/types/index.js";
 import type { GraphDocumentPayload } from "./shared.js";
+import { buildCanonicalWorldEntityPointers } from "../../world/entityRelationPointers.js";
 import {
   resolvePluginNodeEntityType,
   resolvePluginRelationType,
@@ -20,15 +21,7 @@ export const replaceProjectWorldEntityGraph = async (
   const edges = graphPayload.edges ?? [];
 
   client.transaction((tx) => {
-    tx.delete(entityRelation).where(
-      and(
-        eq(entityRelation.projectId, projectId),
-        or(
-          isNotNull(entityRelation.sourceWorldEntityId),
-          isNotNull(entityRelation.targetWorldEntityId),
-        ),
-      ),
-    ).run();
+    tx.delete(entityRelation).where(eq(entityRelation.projectId, projectId)).run();
     tx.delete(worldEntity).where(eq(worldEntity.projectId, projectId)).run();
 
     if (nodes.length > 0) {
@@ -54,33 +47,43 @@ export const replaceProjectWorldEntityGraph = async (
 
     if (edges.length > 0) {
       tx.insert(entityRelation).values(
-        edges.map((edge) => ({
-          id: edge.id,
-          projectId,
-          sourceId: edge.sourceId,
-          sourceType: resolvePluginRelationType(
+        edges.map((edge) => {
+          const sourceType = resolvePluginRelationType(
             edge.sourceType as WorldEntitySourceType,
-          )!,
-          targetId: edge.targetId,
-          targetType: resolvePluginRelationType(
+          )!;
+          const targetType = resolvePluginRelationType(
             edge.targetType as WorldEntitySourceType,
-          )!,
-          relation: edge.relation,
-          attributes:
-            edge.attributes && typeof edge.attributes === "object"
-              ? JSON.stringify(edge.attributes)
-              : null,
-          sourceWorldEntityId: edge.sourceId,
-          targetWorldEntityId: edge.targetId,
-          createdAt:
-            edge.createdAt && !Number.isNaN(new Date(edge.createdAt).getTime())
-              ? new Date(edge.createdAt).toISOString()
-              : now.toISOString(),
-          updatedAt:
-            edge.updatedAt && !Number.isNaN(new Date(edge.updatedAt).getTime())
-              ? new Date(edge.updatedAt).toISOString()
-              : now.toISOString(),
-        })),
+          )!;
+          const pointers = buildCanonicalWorldEntityPointers({
+            sourceId: edge.sourceId,
+            sourceType,
+            targetId: edge.targetId,
+            targetType,
+          });
+          return {
+            id: edge.id,
+            projectId,
+            sourceId: edge.sourceId,
+            sourceType,
+            targetId: edge.targetId,
+            targetType,
+            relation: edge.relation,
+            attributes:
+              edge.attributes && typeof edge.attributes === "object"
+                ? JSON.stringify(edge.attributes)
+                : null,
+            sourceWorldEntityId: pointers.sourceWorldEntityId,
+            targetWorldEntityId: pointers.targetWorldEntityId,
+            createdAt:
+              edge.createdAt && !Number.isNaN(new Date(edge.createdAt).getTime())
+                ? new Date(edge.createdAt).toISOString()
+                : now.toISOString(),
+            updatedAt:
+              edge.updatedAt && !Number.isNaN(new Date(edge.updatedAt).getTime())
+                ? new Date(edge.updatedAt).toISOString()
+                : now.toISOString(),
+          };
+        }),
       ).run();
     }
   });

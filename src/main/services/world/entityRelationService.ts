@@ -41,6 +41,7 @@ import {
     plot,
     scrapMemo,
 } from "../../database/schema.js";
+import { buildCanonicalWorldEntityPointers } from "./entityRelationPointers.js";
 
 const logger = createLogger("EntityRelationService");
 
@@ -79,31 +80,29 @@ function parseAttributes(raw: string | null | undefined): WorldEntityAttributes 
 }
 
 function toEntityRelation(row: RawRow): EntityRelation {
+    const sourceType = (row.sourceType ?? "Character") as WorldEntitySourceType;
+    const targetType = (row.targetType ?? "Character") as WorldEntitySourceType;
+    const sourceId = String(row.sourceId ?? "");
+    const targetId = String(row.targetId ?? "");
+    const pointers = buildCanonicalWorldEntityPointers({
+        sourceId,
+        sourceType,
+        targetId,
+        targetType,
+    });
     return {
         id: row.id,
         projectId: String(row.projectId ?? ""),
-        sourceId: String(row.sourceId ?? ""),
-        sourceType: (row.sourceType ?? "Character") as WorldEntitySourceType,
-        targetId: String(row.targetId ?? ""),
-        targetType: (row.targetType ?? "Character") as WorldEntitySourceType,
+        sourceId,
+        sourceType,
+        targetId,
+        targetType,
         relation: (row.relation ?? "belongs_to") as RelationKind,
         attributes: parseAttributes(row.attributes),
-        sourceWorldEntityId: (row.sourceWorldEntityId as string | null | undefined) ?? null,
-        targetWorldEntityId: (row.targetWorldEntityId as string | null | undefined) ?? null,
+        sourceWorldEntityId: pointers.sourceWorldEntityId,
+        targetWorldEntityId: pointers.targetWorldEntityId,
         createdAt: (row.createdAt as string | Date) ?? new Date(),
         updatedAt: (row.updatedAt as string | Date) ?? new Date(),
-    };
-}
-
-function buildCanonicalWorldEntityPointers(input: {
-    sourceId: string;
-    sourceType: WorldEntitySourceType;
-    targetId: string;
-    targetType: WorldEntitySourceType;
-}): Pick<typeof entityRelation.$inferInsert, "sourceWorldEntityId" | "targetWorldEntityId"> {
-    return {
-        sourceWorldEntityId: isWorldEntityBackedType(input.sourceType) ? input.sourceId : null,
-        targetWorldEntityId: isWorldEntityBackedType(input.targetType) ? input.targetId : null,
     };
 }
 
@@ -448,6 +447,15 @@ export class EntityRelationService {
             ];
 
             const typedEdges: EntityRelation[] = edges.map((e): EntityRelation => ({
+                ...(() => {
+                    const pointers = buildCanonicalWorldEntityPointers({
+                        sourceId: e.sourceId ?? "",
+                        sourceType: (e.sourceType ?? "Character") as WorldEntitySourceType,
+                        targetId: e.targetId ?? "",
+                        targetType: (e.targetType ?? "Character") as WorldEntitySourceType,
+                    });
+                    return pointers;
+                })(),
                 id: e.id,
                 projectId: e.projectId ?? projectId,
                 sourceId: e.sourceId ?? "",
@@ -456,8 +464,6 @@ export class EntityRelationService {
                 targetType: (e.targetType ?? "Character") as WorldEntitySourceType,
                 relation: (e.relation ?? "belongs_to") as RelationKind,
                 attributes: e.attributes ? (parseAttributes(e.attributes) as Record<string, unknown>) : null,
-                sourceWorldEntityId: e.sourceWorldEntityId ?? null,
-                targetWorldEntityId: e.targetWorldEntityId ?? null,
                 createdAt: (e.createdAt as string | Date) ?? new Date(),
                 updatedAt: (e.updatedAt as string | Date) ?? new Date(),
             }));

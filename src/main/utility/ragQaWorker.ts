@@ -9,6 +9,7 @@ import type {
 import { createLogger } from "../../shared/logger/index.js";
 import { resolveModelRuntimeClient } from "../services/llm/modelRuntimeFactory.js";
 import { assembleRagContext } from "../services/features/rag/contextAssembler.js";
+import { normalizeCoreAnswer } from "../services/features/rag/normalizeCoreAnswer.js";
 
 const logger = createLogger("UtilityRagQaWorker");
 
@@ -16,6 +17,7 @@ type ActiveRun = {
   runId: string;
   request: RagQaRequest;
   aborted: boolean;
+  abortController: AbortController;
 };
 
 type UtilityEventEnvelope =
@@ -32,36 +34,6 @@ const processWithSend = process as typeof process & {
 };
 
 const outboundPort: MessagePortLike | null = processWithParentPort.parentPort ?? null;
-
-function normalizeCoreAnswer(raw: string): string {
-  const withoutCodeFence = raw.replace(/```[\s\S]*?```/g, "").trim();
-  const lines = withoutCodeFence
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-  const filtered = lines.filter(
-    (line) =>
-      !/^okay[,!]?/i.test(line) &&
-      !/^let'?s\s+/i.test(line) &&
-      !/^starting with/i.test(line) &&
-      !/^the user/i.test(line),
-  );
-  const deduped: string[] = [];
-  let repeatCount = 0;
-  for (const line of filtered) {
-    const last = deduped[deduped.length - 1];
-    if (last === line) {
-      repeatCount += 1;
-      if (repeatCount > 1) continue;
-    } else {
-      repeatCount = 0;
-    }
-    deduped.push(line);
-  }
-  const merged = deduped.join("\n");
-  return merged.slice(0, 1800).trim();
-}
-
 
 class RagQaWorker {
   private activeRuns = new Map<string, ActiveRun>();
@@ -94,7 +66,12 @@ class RagQaWorker {
 
   async ask(input: RagQaRequest): Promise<RagQaRunHandle> {
     const runId = this.buildRunId();
-    const run: ActiveRun = { runId, request: input, aborted: false };
+    const run: ActiveRun = {
+      runId,
+      request: input,
+      aborted: false,
+      abortController: new AbortController(),
+    };
     this.activeRuns.set(runId, run);
     void this.execute(run).finally(() => {
       this.activeRuns.delete(runId);
@@ -107,11 +84,13 @@ class RagQaWorker {
       const run = this.activeRuns.get(runId);
       if (!run) return { stopped: false };
       run.aborted = true;
+      run.abortController.abort();
       return { stopped: true };
     }
     let stopped = false;
     for (const run of this.activeRuns.values()) {
       run.aborted = true;
+      run.abortController.abort();
       stopped = true;
     }
     return { stopped };
@@ -133,6 +112,7 @@ class RagQaWorker {
       for await (const delta of runtime.generateStream(assembledPrompt, {
         temperature: 0.2,
         maxTokens: 1200,
+        signal: run.abortController.signal,
       })) {
         if (run.aborted) return;
         chunks.push(delta);

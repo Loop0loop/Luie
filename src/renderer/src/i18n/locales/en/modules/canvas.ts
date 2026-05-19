@@ -70,6 +70,14 @@ export const enCanvas = {
     title: "Binder",
     expand: "Expand binder",
     collapse: "Collapse binder",
+    tab: {
+      elements: "Elements",
+      ai: "AI",
+    },
+    ai: {
+      title: "AI Assistant",
+      description: "AI features are coming soon.",
+    },
   },
   status: {
     empty: "Nothing to show.",

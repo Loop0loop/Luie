@@ -66,6 +66,14 @@ export const jaCanvas = {
     title: "バインダー",
     expand: "バインダーを展開",
     collapse: "バインダーを折りたたむ",
+    tab: {
+      elements: "要素",
+      ai: "AI",
+    },
+    ai: {
+      title: "AIアシスタント",
+      description: "AI機能は近日公開予定です。",
+    },
   },
   status: {
     empty: "表示する内容がありません。",

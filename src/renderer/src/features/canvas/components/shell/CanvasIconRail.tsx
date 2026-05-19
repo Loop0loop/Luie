@@ -23,29 +23,24 @@ import { useCanvasViewStore } from "../../stores";
 import { useCanvasView } from "../../hooks/useCanvasView";
 import { CANVAS_RAIL_ITEMS } from "../../constants";
 
-// 아이콘 이름 → 컴포넌트 매핑 (constants의 iconName 필드와 연결)
 const ICON_MAP: Record<string, LucideIcon> = {
-  Compass:    Compass,
-  LayoutGrid: LayoutGrid,
-  Users:      Users,
-  Brain:      Brain,
-  Search:     Search,
+  Compass,
+  LayoutGrid,
+  Users,
+  Brain,
+  Search,
 };
 
 export default function CanvasIconRail() {
   const { t } = useTranslation();
-
-  // 안정적인 상태만 구독
   const { activePanel, isActivityCollapsed } = useCanvasView();
-
-  // actions는 store에서 직접 가져옴 (shallow 비교 불필요)
-  const setActivePanel  = useCanvasViewStore((s) => s.setActivePanel);
-  const toggleActivity  = useCanvasViewStore((s) => s.toggleActivity);
+  const setActivePanel = useCanvasViewStore((s) => s.setActivePanel);
+  const toggleActivity = useCanvasViewStore((s) => s.toggleActivity);
 
   return (
     <nav
       aria-label={t("canvas.sidebar.activity")}
-      className="flex h-full shrink-0 flex-col items-center gap-1 border-r border-border/40 bg-sidebar py-2"
+      className="flex h-full shrink-0 flex-col items-center gap-0.5 border-r border-border/40 bg-sidebar px-1.5 py-2"
       style={{ width: CANVAS_ICON_RAIL_WIDTH_PX }}
       data-testid="canvas-icon-rail"
     >
@@ -69,19 +64,19 @@ export default function CanvasIconRail() {
               setActivePanel(panel);
             }}
             className={cn(
-              "relative flex h-9 w-9 items-center justify-center rounded-md transition-colors",
+              "relative flex h-8 w-8 items-center justify-center rounded-md transition-colors",
               isActive
-                ? "text-fg"
-                : "text-muted opacity-40 hover:opacity-70 hover:text-fg",
+                ? "bg-active text-fg"
+                : "text-subtle hover:bg-surface hover:text-fg",
             )}
           >
             {isActive && (
               <span
                 aria-hidden
-                className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r bg-accent"
+                className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-r-full bg-accent"
               />
             )}
-            <Icon className="h-4 w-4" />
+            <Icon className="h-[15px] w-[15px]" />
           </button>
         );
       })}

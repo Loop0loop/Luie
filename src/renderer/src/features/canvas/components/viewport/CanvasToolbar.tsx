@@ -44,6 +44,42 @@ function getCurrentChapterId(scope: CanvasScope | null): string | null {
   return null;
 }
 
+// ─── SelectPill ───────────────────────────────────────────────────────────────
+
+function SelectPill<T extends string>({
+  value,
+  onChange,
+  options,
+  ariaLabel,
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  options: ReadonlyArray<{ value: T; label: string; disabled?: boolean }>;
+  ariaLabel: string;
+}) {
+  return (
+    <div className="relative flex items-center">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as T)}
+        aria-label={ariaLabel}
+        className={cn(
+          "h-6 appearance-none rounded border border-border/50 bg-sidebar",
+          "cursor-pointer px-2 pr-6 text-[11px] text-fg",
+          "transition-colors hover:border-border focus:border-accent focus:outline-none",
+        )}
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value} disabled={opt.disabled}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-subtle" />
+    </div>
+  );
+}
+
 // ─── 상수 ────────────────────────────────────────────────────────────────────
 
 const CANVAS_TYPE_OPTIONS: ReadonlyArray<{ value: CanvasType; i18nKey: string }> = [
@@ -138,7 +174,7 @@ export default function CanvasToolbar() {
 
   return (
     <div
-      className="flex shrink-0 items-center gap-1.5 border-b border-border/40 bg-surface px-2"
+      className="flex shrink-0 items-center gap-1.5 border-b border-border/40 bg-sidebar px-2"
       style={{ height: CANVAS_TOOLBAR_HEIGHT_PX }}
       data-testid="canvas-toolbar"
     >
@@ -146,56 +182,31 @@ export default function CanvasToolbar() {
 
       {isDynamic && (
         <>
-          <span className="h-3 w-px bg-border/60" aria-hidden />
-
-          <div className="relative">
-            <select
-              value={mode}
-              onChange={(e) => {
-                const next = e.target.value as CanvasMode;
-                if ((CANVAS_AVAILABLE_MODES as readonly string[]).includes(next)) {
-                  setMode(next);
-                }
-              }}
-              className={cn(
-                "appearance-none rounded border border-border/60 bg-element px-2 py-0.5 pr-5",
-                "cursor-pointer text-[11px] text-fg focus:border-accent focus:outline-none",
-              )}
-              aria-label={t("canvas.panel.views")}
-            >
-              {(Object.keys(CANVAS_MODE_I18N) as CanvasMode[]).map((m) => {
-                const available = (CANVAS_AVAILABLE_MODES as readonly string[]).includes(m);
-                return (
-                  <option key={m} value={m} disabled={!available}>
-                    {t(CANVAS_MODE_I18N[m])}
-                    {!available ? ` (${t("canvas.mode.comingSoon")})` : ""}
-                  </option>
-                );
-              })}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 icon-xs text-muted" />
-          </div>
-
-          <span className="h-3 w-px bg-border/60" aria-hidden />
-
-          <div className="relative">
-            <select
-              value={currentRange}
-              onChange={(e) => handleRangeChange(e.target.value as CanvasRange)}
-              className={cn(
-                "appearance-none rounded border border-border/60 bg-element px-2 py-0.5 pr-5",
-                "cursor-pointer text-[11px] text-fg focus:border-accent focus:outline-none",
-              )}
-              aria-label={t("canvas.panel.range")}
-            >
-              {CANVAS_ALL_RANGES.map((r) => (
-                <option key={r} value={r}>
-                  {t(CANVAS_RANGE_I18N[r])}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 icon-xs text-muted" />
-          </div>
+          <span className="h-3 w-px bg-border/40" aria-hidden />
+          <SelectPill
+            value={mode}
+            onChange={(next) => {
+              if ((CANVAS_AVAILABLE_MODES as readonly string[]).includes(next)) {
+                setMode(next as CanvasMode);
+              }
+            }}
+            options={(Object.keys(CANVAS_MODE_I18N) as CanvasMode[]).map((m) => ({
+              value: m,
+              label: `${t(CANVAS_MODE_I18N[m])}${!(CANVAS_AVAILABLE_MODES as readonly string[]).includes(m) ? ` (${t("canvas.mode.comingSoon")})` : ""}`,
+              disabled: !(CANVAS_AVAILABLE_MODES as readonly string[]).includes(m),
+            }))}
+            ariaLabel={t("canvas.panel.views")}
+          />
+          <span className="h-3 w-px bg-border/40" aria-hidden />
+          <SelectPill
+            value={currentRange}
+            onChange={handleRangeChange}
+            options={CANVAS_ALL_RANGES.map((r) => ({
+              value: r,
+              label: t(CANVAS_RANGE_I18N[r]),
+            }))}
+            ariaLabel={t("canvas.panel.range")}
+          />
         </>
       )}
 
@@ -210,7 +221,7 @@ export default function CanvasToolbar() {
             type="button"
             onClick={zoomOut}
             title={t("canvas.toolbar.zoomOut")}
-            className="flex h-6 w-6 items-center justify-center rounded text-muted transition-colors hover:bg-surface-hover hover:text-fg"
+            className="flex h-7 w-7 items-center justify-center rounded text-subtle transition-colors hover:bg-surface hover:text-fg"
           >
             <ZoomOut className="icon-xs" />
           </button>
@@ -218,7 +229,7 @@ export default function CanvasToolbar() {
             type="button"
             onClick={zoomIn}
             title={t("canvas.toolbar.zoomIn")}
-            className="flex h-6 w-6 items-center justify-center rounded text-muted transition-colors hover:bg-surface-hover hover:text-fg"
+            className="flex h-7 w-7 items-center justify-center rounded text-subtle transition-colors hover:bg-surface hover:text-fg"
           >
             <ZoomIn className="icon-xs" />
           </button>
@@ -226,7 +237,7 @@ export default function CanvasToolbar() {
             type="button"
             onClick={fitView}
             title={t("canvas.toolbar.fitView")}
-            className="flex h-6 w-6 items-center justify-center rounded text-muted transition-colors hover:bg-surface-hover hover:text-fg"
+            className="flex h-7 w-7 items-center justify-center rounded text-subtle transition-colors hover:bg-surface hover:text-fg"
           >
             <Maximize2 className="icon-xs" />
           </button>
