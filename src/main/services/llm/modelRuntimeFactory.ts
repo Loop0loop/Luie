@@ -84,12 +84,22 @@ function getOrCreateLlamaProvider(
   return provider;
 }
 
-function getOrCreateLlamaServerProvider(modelPath: string): LlamaServerProvider {
-  const key = modelPath;
+function getOrCreateLlamaServerProvider(
+  modelPath: string,
+  embeddingModelPath?: string | null,
+  contextSize?: number,
+  gpuLayers?: number,
+): LlamaServerProvider {
+  const key = `${modelPath}::${embeddingModelPath ?? ""}::${contextSize ?? ""}::${gpuLayers ?? ""}`;
   if (llamaServerProviderSingle?.key === key) {
     return llamaServerProviderSingle.provider;
   }
-  const provider = new LlamaServerProvider({ modelPath });
+  const provider = new LlamaServerProvider({
+    modelPath,
+    embeddingModelPath: embeddingModelPath ?? null,
+    contextSize,
+    gpuLayers,
+  });
   llamaServerProviderSingle = { key, provider };
   return provider;
 }
@@ -166,7 +176,12 @@ export async function resolveModelRuntimeClient(
     processType: process.type,
   });
   if (effectiveModelPath && providerHint === "llamaserver") {
-    return getOrCreateLlamaServerProvider(effectiveModelPath);
+    return getOrCreateLlamaServerProvider(
+      effectiveModelPath,
+      embeddingConfiguredPath,
+      configuredContextSize,
+      configuredGpuLayers,
+    );
   }
   if (effectiveModelPath && (providerHint === "llamacpp" || providerHint === null)) {
     return getOrCreateLlamaProvider(effectiveModelPath, embeddingConfiguredPath, configuredContextSize, configuredGpuLayers);

@@ -1,4 +1,6 @@
 import { ErrorCode } from "../../shared/constants/errorCode.js";
+import path from "node:path";
+import { readFile } from "node:fs/promises";
 import type {
   RagQaErrorPayload,
   RagQaRequest,
@@ -10,6 +12,7 @@ import { createLogger } from "../../shared/logger/index.js";
 import { resolveModelRuntimeClient } from "../services/llm/modelRuntimeFactory.js";
 import { assembleRagContext } from "../services/features/rag/contextAssembler.js";
 import { normalizeCoreAnswer } from "../services/features/rag/normalizeCoreAnswer.js";
+import { resolveUserDataPath } from "../utils/userDataPath.js";
 
 const logger = createLogger("UtilityRagQaWorker");
 
@@ -37,6 +40,74 @@ const outboundPort: MessagePortLike | null = processWithParentPort.parentPort ??
 
 class RagQaWorker {
   private activeRuns = new Map<string, ActiveRun>();
+  private generationConfigCache:
+    | { expiresAt: number; temperature: number; maxTokens: number }
+    | null = null;
+  private static readonly DEFAULT_TEMPERATURE = 0.2;
+  private static readonly DEFAULT_MAX_TOKENS = 1200;
+  private static readonly GENERATION_CONFIG_TTL_MS = 10_000;
+
+  private clampTemperature(value: unknown): number {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      return RagQaWorker.DEFAULT_TEMPERATURE;
+    }
+    return Math.min(2, Math.max(0, value));
+  }
+
+  private clampMaxTokens(value: unknown): number {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      return RagQaWorker.DEFAULT_MAX_TOKENS;
+    }
+    return Math.min(4096, Math.max(128, Math.floor(value)));
+  }
+
+  private async loadGenerationConfig(): Promise<{
+    temperature: number;
+    maxTokens: number;
+  }> {
+    const now = Date.now();
+    if (this.generationConfigCache && this.generationConfigCache.expiresAt > now) {
+      return {
+        temperature: this.generationConfigCache.temperature,
+        maxTokens: this.generationConfigCache.maxTokens,
+      };
+    }
+    const envTemperature = Number.parseFloat(process.env.LUIE_RAG_TEMPERATURE ?? "");
+    const envMaxTokens = Number.parseInt(process.env.LUIE_RAG_MAX_TOKENS ?? "", 10);
+    let temperature = this.clampTemperature(envTemperature);
+    let maxTokens = this.clampMaxTokens(envMaxTokens);
+    try {
+      const settingsPath = path.join(resolveUserDataPath(), "settings.json");
+      const raw = await readFile(settingsPath, "utf8");
+      const parsed = JSON.parse(raw) as {
+        llm?: { ragTemperature?: unknown; ragMaxTokens?: unknown };
+      };
+      if (Number.isFinite(envTemperature) === false) {
+        temperature = this.clampTemperature(parsed.llm?.ragTemperature);
+      }
+      if (Number.isFinite(envMaxTokens) === false) {
+        maxTokens = this.clampMaxTokens(parsed.llm?.ragMaxTokens);
+      }
+    } catch {
+      // defaults/env만 사용
+    }
+    this.generationConfigCache = {
+      expiresAt: now + RagQaWorker.GENERATION_CONFIG_TTL_MS,
+      temperature,
+      maxTokens,
+    };
+    return { temperature, maxTokens };
+  }
+
+  private isAbortError(error: unknown): boolean {
+    if (!error || typeof error !== "object") return false;
+    const candidate = error as { name?: unknown; message?: unknown };
+    if (candidate.name === "AbortError") return true;
+    if (typeof candidate.message === "string" && /aborted/i.test(candidate.message)) {
+      return true;
+    }
+    return false;
+  }
 
   private post(message: UtilityEventEnvelope): void {
     if (outboundPort) {
@@ -98,28 +169,51 @@ class RagQaWorker {
 
   private async execute(run: ActiveRun): Promise<void> {
     try {
+      const generationConfig = await this.loadGenerationConfig();
       const { assembledPrompt, evidence } = await assembleRagContext({
         projectId: run.request.projectId,
         question: run.request.question,
         chapterId: run.request.chapterId,
+        signal: run.abortController.signal,
       });
 
-      if (run.aborted) return;
+      if (run.aborted) {
+        this.emitError({
+          runId: run.runId,
+          code: ErrorCode.RAG_QA_ABORTED,
+          message: "RAG QA aborted",
+        });
+        return;
+      }
 
       const runtime = await resolveModelRuntimeClient(run.request.projectId);
       const chunks: string[] = [];
 
       for await (const delta of runtime.generateStream(assembledPrompt, {
-        temperature: 0.2,
-        maxTokens: 1200,
+        temperature: generationConfig.temperature,
+        maxTokens: generationConfig.maxTokens,
         signal: run.abortController.signal,
       })) {
-        if (run.aborted) return;
+        if (run.aborted) {
+          this.emitError({
+            runId: run.runId,
+            code: ErrorCode.RAG_QA_ABORTED,
+            message: "RAG QA aborted",
+          });
+          return;
+        }
         chunks.push(delta);
         this.emitStream({ runId: run.runId, delta, done: false });
       }
 
-      if (run.aborted) return;
+      if (run.aborted) {
+        this.emitError({
+          runId: run.runId,
+          code: ErrorCode.RAG_QA_ABORTED,
+          message: "RAG QA aborted",
+        });
+        return;
+      }
 
       const result: RagQaResult = {
         runId: run.runId,
@@ -137,6 +231,14 @@ class RagQaWorker {
         evidenceCount: evidence.length,
       });
     } catch (error) {
+      if (this.isAbortError(error) || run.aborted) {
+        this.emitError({
+          runId: run.runId,
+          code: ErrorCode.RAG_QA_ABORTED,
+          message: "RAG QA aborted",
+        });
+        return;
+      }
       logger.error("RAG QA failed", {
         runId: run.runId,
         projectId: run.request.projectId,

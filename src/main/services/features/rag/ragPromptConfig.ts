@@ -32,6 +32,8 @@ const DEFAULT_CONFIG: RagPromptConfig = {
 };
 
 const USER_CONFIG_FILE = "rag-qa-instruction.json";
+const CONFIG_CACHE_TTL_MS = 10_000;
+let configCache: { expiresAt: number; value: RagPromptConfig } | null = null;
 
 function normalizeConfig(raw: unknown): RagPromptConfig {
   if (!raw || typeof raw !== "object") return DEFAULT_CONFIG;
@@ -45,15 +47,26 @@ function normalizeConfig(raw: unknown): RagPromptConfig {
 }
 
 export async function loadRagPromptConfig(): Promise<RagPromptConfig> {
+  const now = Date.now();
+  if (configCache && configCache.expiresAt > now) {
+    return configCache.value;
+  }
   const filePath = path.join(resolveUserDataPath(), USER_CONFIG_FILE);
   try {
     const raw = await readFile(filePath, "utf8");
     const parsed = JSON.parse(raw) as unknown;
     const config = normalizeConfig(parsed);
+    configCache = {
+      expiresAt: now + CONFIG_CACHE_TTL_MS,
+      value: config,
+    };
     logger.info("Loaded custom RAG prompt config", { filePath });
     return config;
   } catch {
+    configCache = {
+      expiresAt: now + CONFIG_CACHE_TTL_MS,
+      value: DEFAULT_CONFIG,
+    };
     return DEFAULT_CONFIG;
   }
 }
-

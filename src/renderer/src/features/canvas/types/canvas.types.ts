@@ -17,17 +17,7 @@ export const CANVAS_AVAILABLE_MODES = ["flow-map", "scene-board"] as const;
 
 export type CanvasAvailableMode = (typeof CANVAS_AVAILABLE_MODES)[number];
 
-/**
- * Canvas type — determines which viewport is rendered.
- *
- * "dynamic" — scope-filtered view of a chapter's connected entities.
- *             Driven by useCanvasProjection (scope + mode).
- *
- * "static"  — free-form world-building canvas.
- *             Shows all project entities; nodes are draggable.
- *             Editing features (add/connect/delete) wired in a later phase.
- */
-export type CanvasType = "dynamic" | "static";
+
 
 /** Range of source data the canvas should render. */
 export type CanvasRange =

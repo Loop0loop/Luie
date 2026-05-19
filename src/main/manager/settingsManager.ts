@@ -264,6 +264,8 @@ export class SettingsManager {
     defaultModelId?: string;
     llmProviderHint?: "llamacpp" | "llamaserver" | "none";
     hfTokenCipher?: string;
+    ragTemperature?: number;
+    ragMaxTokens?: number;
   } {
     const llm = this.store.get("llm") ?? {};
     return {
@@ -272,6 +274,8 @@ export class SettingsManager {
       defaultModelId: llm.defaultModelId,
       llmProviderHint: (llm as { llmProviderHint?: "llamacpp" | "llamaserver" | "none" }).llmProviderHint,
       hfTokenCipher: (llm as { hfTokenCipher?: string }).hfTokenCipher,
+      ragTemperature: (llm as { ragTemperature?: number }).ragTemperature,
+      ragMaxTokens: (llm as { ragMaxTokens?: number }).ragMaxTokens,
     };
   }
 
@@ -281,6 +285,8 @@ export class SettingsManager {
     defaultModelId?: string;
     llmProviderHint?: "llamacpp" | "llamaserver" | "none";
     hfTokenCipher?: string;
+    ragTemperature?: number;
+    ragMaxTokens?: number;
   }): void {
     const current = this.store.get("llm") ?? {};
     const next = {
@@ -294,6 +300,9 @@ export class SettingsManager {
       defaultModelId: next.defaultModelId,
       providerHint: next.llmProviderHint,
       hasHfTokenCipher: Boolean(next.hfTokenCipher),
+      ragTemperature:
+        typeof next.ragTemperature === "number" ? next.ragTemperature : undefined,
+      ragMaxTokens: typeof next.ragMaxTokens === "number" ? next.ragMaxTokens : undefined,
     });
   }
 
