@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@shared/api";
-import type { LlmModelDownloadStatus, LlmModelSettingsView } from "@shared/types";
+import type {
+  LlmModelDownloadStatus,
+  LlmModelSettingsView,
+  MigrationHealth,
+} from "@shared/types";
 import type { SettingsTabId } from "@renderer/features/settings/components/tabs/types";
 import type { ToastType } from "@shared/ui/ToastContext";
 
@@ -27,6 +31,7 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     totalBytes: null,
     percent: null,
   });
+  const [migrationHealth, setMigrationHealth] = useState<MigrationHealth | null>(null);
 
   const refreshModelView = useCallback(async () => {
     const response = await api.settings.getLlmModels();
@@ -42,6 +47,19 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     if (activeTab !== "model") return;
     void refreshModelView();
   }, [activeTab, refreshModelView]);
+
+  const refreshMigrationHealth = useCallback(async () => {
+    const response = await api.maintenance.getMigrationHealth();
+    if (!response.success || !response.data) {
+      return;
+    }
+    setMigrationHealth(response.data);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab !== "model") return;
+    void refreshMigrationHealth();
+  }, [activeTab, refreshMigrationHealth]);
 
   useEffect(() => {
     if (activeTab !== "model") return;
@@ -149,5 +167,7 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     setHfToken,
     handleSaveHfToken,
     downloadStatus,
+    migrationHealth,
+    refreshMigrationHealth,
   };
 }

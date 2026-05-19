@@ -188,6 +188,11 @@ export const searchDirtyQueue = sqliteTable(
   (table) => [
     index("SearchDirtyQueue_projectId_status_idx").on(table.projectId, table.status),
     index("SearchDirtyQueue_source_idx").on(table.sourceType, table.sourceId),
+    foreignKey({
+      name: "SearchDirtyQueue_projectId_fkey",
+      columns: [table.projectId],
+      foreignColumns: [project.id],
+    }).onDelete("cascade").onUpdate("cascade"),
   ],
 );
 
@@ -218,6 +223,11 @@ export const memoryChunk = sqliteTable(
       table.sourceId,
       table.chunkIndex,
     ),
+    foreignKey({
+      name: "MemoryChunk_projectId_fkey",
+      columns: [table.projectId],
+      foreignColumns: [project.id],
+    }).onDelete("cascade").onUpdate("cascade"),
   ],
 );
 
@@ -318,6 +328,11 @@ export const memoryBuildJob = sqliteTable(
       table.priority,
     ),
     index("MemoryBuildJob_target_idx").on(table.targetType, table.targetId),
+    foreignKey({
+      name: "MemoryBuildJob_projectId_fkey",
+      columns: [table.projectId],
+      foreignColumns: [project.id],
+    }).onDelete("cascade").onUpdate("cascade"),
   ],
 );
 

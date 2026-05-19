@@ -390,7 +390,8 @@ CREATE TABLE IF NOT EXISTS "SearchDirtyQueue" (
     "attempts" INTEGER NOT NULL DEFAULT 0,
     "error" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "SearchDirtyQueue_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "MemoryChunk" (
     "id" TEXT NOT NULL PRIMARY KEY,
@@ -406,7 +407,8 @@ CREATE TABLE IF NOT EXISTS "MemoryChunk" (
     "endOffset" INTEGER,
     "tokenCount" INTEGER NOT NULL DEFAULT 0,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "MemoryChunk_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "MemoryBuildJob" (
     "id" TEXT NOT NULL PRIMARY KEY,
@@ -419,7 +421,8 @@ CREATE TABLE IF NOT EXISTS "MemoryBuildJob" (
     "attempts" INTEGER NOT NULL DEFAULT 0,
     "error" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "MemoryBuildJob_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "MemoryEmbedding" (
     "id" TEXT NOT NULL PRIMARY KEY,

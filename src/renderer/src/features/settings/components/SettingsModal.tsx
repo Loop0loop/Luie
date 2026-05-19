@@ -242,6 +242,10 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                   onChangeHfToken={settings.setHfToken}
                   onSaveHfToken={() => void settings.handleSaveHfToken()}
                   downloadStatus={settings.downloadStatus}
+                  migrationHealth={settings.migrationHealth}
+                  onRefreshMigrationHealth={() =>
+                    void settings.refreshMigrationHealth()
+                  }
                 />
               )}
 

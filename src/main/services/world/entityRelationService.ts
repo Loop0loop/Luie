@@ -95,6 +95,18 @@ function toEntityRelation(row: RawRow): EntityRelation {
     };
 }
 
+function buildCanonicalWorldEntityPointers(input: {
+    sourceId: string;
+    sourceType: WorldEntitySourceType;
+    targetId: string;
+    targetType: WorldEntitySourceType;
+}): Pick<typeof entityRelation.$inferInsert, "sourceWorldEntityId" | "targetWorldEntityId"> {
+    return {
+        sourceWorldEntityId: isWorldEntityBackedType(input.sourceType) ? input.sourceId : null,
+        targetWorldEntityId: isWorldEntityBackedType(input.targetType) ? input.targetId : null,
+    };
+}
+
 export class EntityRelationService {
     private async getClient() {
         return db.getClient();
@@ -124,9 +136,15 @@ export class EntityRelationService {
                 updatedAt: new Date().toISOString(),
             };
 
-            // FK 연결 — WorldEntity-backed 타입인 경우 DB FK 설정
-            if (isWorldEntityBackedType(input.sourceType)) insertData.sourceWorldEntityId = input.sourceId;
-            if (isWorldEntityBackedType(input.targetType)) insertData.targetWorldEntityId = input.targetId;
+            Object.assign(
+                insertData,
+                buildCanonicalWorldEntityPointers({
+                    sourceId: input.sourceId,
+                    sourceType: input.sourceType,
+                    targetId: input.targetId,
+                    targetType: input.targetType,
+                }),
+            );
 
             const client = await this.getClient();
             const [result] = await client.insert(entityRelation).values(insertData).returning();
@@ -211,6 +229,15 @@ export class EntityRelationService {
             if (input.attributes !== undefined) {
                 updateData.attributes = JSON.stringify(input.attributes);
             }
+            Object.assign(
+                updateData,
+                buildCanonicalWorldEntityPointers({
+                    sourceId: String(current.sourceId),
+                    sourceType: current.sourceType as WorldEntitySourceType,
+                    targetId: String(current.targetId),
+                    targetType: current.targetType as WorldEntitySourceType,
+                }),
+            );
 
             const [updated] = await client.update(entityRelation).set(updateData).where(eq(entityRelation.id, input.id)).returning();
 
@@ -527,6 +554,74 @@ export class EntityRelationService {
             scannedRelations,
             orphanRelations,
             removedRelations,
+        };
+    }
+
+    async reconcileWorldEntityPointersAcrossProjects(options?: { dryRun?: boolean }): Promise<{
+        dryRun: boolean;
+        scannedRelations: number;
+        mismatchedRelations: number;
+        fixedRelations: number;
+    }> {
+        const dryRun = options?.dryRun ?? false;
+        const client = await this.getClient();
+        const relations = await client.select({
+            id: entityRelation.id,
+            sourceId: entityRelation.sourceId,
+            sourceType: entityRelation.sourceType,
+            targetId: entityRelation.targetId,
+            targetType: entityRelation.targetType,
+            sourceWorldEntityId: entityRelation.sourceWorldEntityId,
+            targetWorldEntityId: entityRelation.targetWorldEntityId,
+        }).from(entityRelation);
+
+        let mismatchedRelations = 0;
+        let fixedRelations = 0;
+
+        for (const relation of relations) {
+            const expectedSourceWorldEntityId = isWorldEntityBackedType(
+                relation.sourceType as WorldEntitySourceType,
+            )
+                ? String(relation.sourceId)
+                : null;
+            const expectedTargetWorldEntityId = isWorldEntityBackedType(
+                relation.targetType as WorldEntitySourceType,
+            )
+                ? String(relation.targetId)
+                : null;
+
+            const sourceMismatch =
+                (relation.sourceWorldEntityId ?? null) !== expectedSourceWorldEntityId;
+            const targetMismatch =
+                (relation.targetWorldEntityId ?? null) !== expectedTargetWorldEntityId;
+
+            if (!sourceMismatch && !targetMismatch) continue;
+            mismatchedRelations += 1;
+            if (dryRun) continue;
+
+            const result = await client
+                .update(entityRelation)
+                .set({
+                    sourceWorldEntityId: expectedSourceWorldEntityId,
+                    targetWorldEntityId: expectedTargetWorldEntityId,
+                    updatedAt: new Date().toISOString(),
+                })
+                .where(eq(entityRelation.id, relation.id));
+            fixedRelations += result.changes;
+        }
+
+        logger.info("Entity relation world-entity pointer reconciliation completed", {
+            dryRun,
+            scannedRelations: relations.length,
+            mismatchedRelations,
+            fixedRelations,
+        });
+
+        return {
+            dryRun,
+            scannedRelations: relations.length,
+            mismatchedRelations,
+            fixedRelations,
         };
     }
 }

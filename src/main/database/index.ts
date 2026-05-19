@@ -32,6 +32,7 @@ class DatabaseService {
   private drizzleHandle: DrizzleDatabaseHandle<MainDrizzleClient> | null = null;
   private dbPath: string | null = null;
   private initPromise: Promise<void> | null = null;
+  private sqliteVecLoaded = false;
 
   private constructor() {
   }
@@ -107,9 +108,11 @@ class DatabaseService {
       const loadablePath = getLoadablePath?.();
       if (loadablePath) {
         sqlite.loadExtension(loadablePath);
+        this.sqliteVecLoaded = true;
         logger.info("sqlite-vec extension loaded", { loadablePath });
       }
     } catch (error) {
+      this.sqliteVecLoaded = false;
       logger.warn("sqlite-vec extension is unavailable; vector search disabled", {
         error: error instanceof Error ? error.message : String(error),
       });
@@ -200,6 +203,10 @@ class DatabaseService {
       throw new Error("Database is not initialized. Call db.initialize() first.");
     }
     return this.drizzleHandle.sqlite.pragma(`wal_checkpoint(${mode})`);
+  }
+
+  isVectorSearchEnabled(): boolean {
+    return this.sqliteVecLoaded;
   }
 
   async disconnect(): Promise<void> {

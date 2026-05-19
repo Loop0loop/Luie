@@ -34,6 +34,7 @@ type SqliteDatabaseLike = {
   prepare: (sql: string) => SqliteStatementLike;
   close: () => void;
   pragma?: (sql: string) => unknown;
+  supportsPreparedRun?: boolean;
 };
 
 const DRIZZLE_MIGRATIONS_TABLE = "__drizzle_migrations";
@@ -58,6 +59,7 @@ function openSqliteDatabase(dbPath: string): SqliteDatabaseLike {
       prepare: (sql) => database.prepare(sql),
       close: () => database.close(),
       pragma: (sql) => database.pragma(sql),
+      supportsPreparedRun: true,
     };
   } catch {
     const { DatabaseSync } = require("node:sqlite") as {
@@ -75,6 +77,7 @@ function openSqliteDatabase(dbPath: string): SqliteDatabaseLike {
       exec: (sql) => database.exec(sql),
       prepare: (sql) => database.prepare(sql),
       close: () => database.close(),
+      supportsPreparedRun: false,
     };
   }
 }
@@ -170,9 +173,16 @@ function markInitialMigrationAsApplied(
     const hash = computeMigrationHash(sqlContent);
 
     if (existingHashSet.has(hash)) continue;
-    if (!insertStmt.run) continue;
-
-    insertStmt.run(hash, new Date().toISOString());
+    const createdAt = new Date().toISOString();
+    if (database.supportsPreparedRun && insertStmt.run) {
+      insertStmt.run(hash, createdAt);
+    } else {
+      const escapedHash = hash.replaceAll("'", "''");
+      const escapedCreatedAt = createdAt.replaceAll("'", "''");
+      database.exec(
+        `INSERT INTO "${DRIZZLE_MIGRATIONS_TABLE}" (hash, created_at) VALUES ('${escapedHash}', '${escapedCreatedAt}');`,
+      );
+    }
     appliedCount += 1;
   }
 
@@ -196,7 +206,7 @@ function runDrizzleMigrate(
   }
 
   try {
-    const drizzleDb = drizzle(drizzleResult.database as never);
+    const drizzleDb = drizzle(drizzleResult.database as any);
     migrate(drizzleDb, { migrationsFolder });
   } finally {
     (drizzleResult.database as { close: () => void }).close();
@@ -239,6 +249,11 @@ export function dropPackagedCacheOptionalFtsArtifacts(
       });
     }
   } finally {
+    try {
+      database.exec("PRAGMA trusted_schema = OFF;");
+    } catch {
+      // `node:sqlite` fallback may not support this pragma on older runtimes.
+    }
     database.close();
   }
 }

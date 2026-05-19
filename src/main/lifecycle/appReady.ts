@@ -144,8 +144,36 @@ const runDeferredStartupMaintenance = async (logger: Logger): Promise<void> => {
     await entityRelationService.cleanupOrphanRelationsAcrossProjects({
       dryRun: false,
     });
+    await entityRelationService.reconcileWorldEntityPointersAcrossProjects({
+      dryRun: true,
+    });
+    await entityRelationService.reconcileWorldEntityPointersAcrossProjects({
+      dryRun: false,
+    });
   } catch (error) {
     logger.warn("Entity relation orphan cleanup skipped", error);
+  }
+
+  try {
+    const { dbMaintenanceService } = await import(
+      "../services/features/dbMaintenanceService.js"
+    );
+    await dbMaintenanceService.purgeOrphanDerivedRows({
+      dryRun: true,
+    });
+    await dbMaintenanceService.purgeOrphanDerivedRows({
+      dryRun: false,
+    });
+    await dbMaintenanceService.purgeInvalidEmbeddings({
+      dryRun: true,
+      limit: 5000,
+    });
+    await dbMaintenanceService.purgeInvalidEmbeddings({
+      dryRun: false,
+      limit: 5000,
+    });
+  } catch (error) {
+    logger.warn("Invalid embedding cleanup skipped", error);
   }
 
   logger.info("Deferred startup maintenance completed", {
