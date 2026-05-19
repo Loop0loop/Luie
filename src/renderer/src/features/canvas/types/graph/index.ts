@@ -13,7 +13,7 @@ export interface GraphFilterState {
 
 export type GraphNodeData = {
   label: string;
-  type: "character" | "event" | "location" | "faction" | "chapter";
+  type: "character" | "event" | "world-entity" | "faction" | "chapter";
   isFocused?: boolean;
 };
 

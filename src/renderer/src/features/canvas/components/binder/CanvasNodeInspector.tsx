@@ -30,7 +30,7 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
 
   if (!node) {
     return (
-      <div className="p-4 text-xs italic text-muted">
+      <div className="p-panel-pad text-xs italic text-muted">
         {t("canvas.status.empty")}
       </div>
     );
@@ -56,7 +56,7 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* ── Header ── */}
-      <div className="shrink-0 border-b border-border/40 px-4 py-3">
+      <div className="shrink-0 border-b border-border/40 px-panel-pad py-control-y">
         <div className="flex items-center gap-2">
           <span
             className="h-2.5 w-2.5 shrink-0 rounded-full"
@@ -69,7 +69,7 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
           <button
             type="button"
             onClick={clearSelection}
-            className="ml-auto rounded p-0.5 text-muted transition-colors hover:bg-surface-hover hover:text-fg"
+            className="ml-auto rounded-control p-0.5 text-muted transition-colors hover:bg-surface-hover hover:text-fg"
             title={t("canvas.node.deselect")}
             aria-label={t("canvas.node.deselect")}
           >
@@ -82,7 +82,7 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
       </div>
 
       {/* ── Body ── */}
-      <div className="flex-1 space-y-4 overflow-y-auto px-4 py-3">
+      <div className="flex-1 space-y-4 overflow-y-auto px-panel-pad py-control-y">
         {/* Description */}
         {node.description && (
           <section>

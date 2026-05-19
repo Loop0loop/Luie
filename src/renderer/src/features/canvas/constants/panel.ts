@@ -5,6 +5,7 @@
  */
 
 import type { CanvasActivityPanel } from "../types/canvas.types";
+import type { CanvasRailIconName } from "../types/canvasPanel.types";
 
 // ─── SidePanelRouter ──────────────────────────────────────────────────────────
 
@@ -22,7 +23,7 @@ export interface CanvasRailItem {
   readonly panel: CanvasActivityPanel;
   /** `canvas.activity.${i18nKey}` 형태로 사용 */
   readonly i18nKey: string;
-  readonly iconName: "Compass" | "LayoutGrid" | "Waypoints" | "Brain" | "Search";
+  readonly iconName: CanvasRailIconName;
 }
 
 export const CANVAS_RAIL_ITEMS: ReadonlyArray<CanvasRailItem> = [

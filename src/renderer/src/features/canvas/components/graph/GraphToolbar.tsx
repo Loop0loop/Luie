@@ -11,11 +11,11 @@ export default function GraphToolbar() {
 
   return (
     <div
-      className="flex shrink-0 items-center gap-1.5 border-b border-border/40 bg-sidebar px-2"
+      className="flex shrink-0 items-center gap-1.5 border-b border-border/40 bg-sidebar px-control-x"
       style={{ height: CANVAS_TOOLBAR_HEIGHT_PX }}
       data-testid="graph-toolbar"
     >
-      <div className="flex-1 px-2 text-sm font-medium text-fg">
+      <div className="flex-1 px-control-x text-sm font-medium text-fg">
         {t("canvas.activity.graph")}
       </div>
 
@@ -26,7 +26,7 @@ export default function GraphToolbar() {
         type="button"
         onClick={() => zoomOut()}
         title={t("canvas.toolbar.zoomOut")}
-        className="flex h-7 w-7 items-center justify-center rounded text-subtle transition-colors hover:bg-surface hover:text-fg"
+        className="flex h-control-y w-control-x items-center justify-center rounded-control text-subtle transition-colors hover:bg-surface hover:text-fg"
       >
         <ZoomOut className="icon-xs" />
       </button>
@@ -34,7 +34,7 @@ export default function GraphToolbar() {
         type="button"
         onClick={() => zoomIn()}
         title={t("canvas.toolbar.zoomIn")}
-        className="flex h-7 w-7 items-center justify-center rounded text-subtle transition-colors hover:bg-surface hover:text-fg"
+        className="flex h-control-y w-control-x items-center justify-center rounded-control text-subtle transition-colors hover:bg-surface hover:text-fg"
       >
         <ZoomIn className="icon-xs" />
       </button>
@@ -42,7 +42,7 @@ export default function GraphToolbar() {
         type="button"
         onClick={() => fitView()}
         title={t("canvas.toolbar.fitView")}
-        className="flex h-7 w-7 items-center justify-center rounded text-subtle transition-colors hover:bg-surface hover:text-fg"
+        className="flex h-control-y w-control-x items-center justify-center rounded-control text-subtle transition-colors hover:bg-surface hover:text-fg"
       >
         <Maximize2 className="icon-xs" />
       </button>

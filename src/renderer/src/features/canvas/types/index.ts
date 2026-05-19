@@ -4,3 +4,6 @@ export * from './reactFlow.types';
 export * from './canvasTokens';
 export * from './canvasFlowAdapter';
 export * from './canvasProjectionAdapter';
+export * from './canvasBinder.types';
+export * from './canvasEmptyState.types';
+export * from './canvasPanel.types';

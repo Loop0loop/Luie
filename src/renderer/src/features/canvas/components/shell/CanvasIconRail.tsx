@@ -64,7 +64,7 @@ export default function CanvasIconRail() {
               setActivePanel(panel);
             }}
             className={cn(
-              "relative flex h-8 w-8 items-center justify-center rounded-md transition-colors",
+              "relative flex h-8 w-8 items-center justify-center rounded-control transition-colors",
               isActive
                 ? "bg-active text-fg"
                 : "text-subtle hover:bg-surface hover:text-fg",

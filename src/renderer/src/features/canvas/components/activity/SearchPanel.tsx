@@ -28,7 +28,7 @@ export default function SearchPanel() {
     <PanelRoot>
       <PanelHeader title={t("canvas.activity.search")} />
       <PanelBody>
-        <div className="px-3 pb-3 pt-2">
+        <div className="px-control-x pb-3 pt-2">
           <SearchInput
             value=""
             onChange={() => undefined}

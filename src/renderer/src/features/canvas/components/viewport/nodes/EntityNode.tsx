@@ -6,7 +6,7 @@ import { memo } from "react";
 import { Handle, Position, type NodeProps } from "reactflow";
 import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
-import { CANVAS_NODE_KIND_COLOUR, CANVAS_NODE_KIND_BG } from "../../../types";
+import { getNodeStyle } from "../../../utils/nodeStyles";
 import type { RFEntityNodeData } from "../../../types/reactFlow.types";
 import {
   CANVAS_HANDLE_CLASS,
@@ -17,8 +17,7 @@ import {
 
 function EntityNodeInner({ data }: NodeProps<RFEntityNodeData>) {
   const { t } = useTranslation();
-  const colour = CANVAS_NODE_KIND_COLOUR[data.kind];
-  const bgTint = CANVAS_NODE_KIND_BG[data.kind];
+  const { colour, bgTint } = getNodeStyle(data.kind);
 
   return (
     <div className="group relative h-full w-full">
@@ -29,7 +28,7 @@ function EntityNodeInner({ data }: NodeProps<RFEntityNodeData>) {
 
       <div
         className={cn(
-          "flex h-full w-full flex-col overflow-hidden rounded-lg border transition-all duration-150",
+          "flex h-full w-full flex-col overflow-hidden rounded-panel border transition-all duration-150",
           data.isSelected
             ? `border-accent ${CANVAS_NODE_SELECTED_SHADOW_CLASS}`
             : `border-border ${CANVAS_NODE_SHADOW_CLASS} hover:border-border-active`,

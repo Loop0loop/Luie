@@ -21,7 +21,7 @@ function MemoNodeInner({ data }: NodeProps<RFMemoNodeData>) {
       <Handle type="source" position={Position.Right}  id="right"  className={CANVAS_HANDLE_CLASS} />
 
       <div
-        className={`flex min-h-[90px] w-full flex-col overflow-hidden rounded-lg border border-border transition-shadow ${CANVAS_NODE_SHADOW_CLASS}`}
+        className={`flex min-h-[90px] w-full flex-col overflow-hidden rounded-panel border border-border transition-shadow ${CANVAS_NODE_SHADOW_CLASS}`}
         style={{ background: tint }}
       >
         <header className="flex items-center gap-1.5 border-b border-border/30 px-3 py-2">
