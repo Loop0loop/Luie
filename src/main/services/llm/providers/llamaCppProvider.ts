@@ -177,7 +177,12 @@ export class LlamaCppProvider implements ModelRuntimeClient {
       }) => {
         generateCompletion: (
           input: string,
-          opts?: { maxTokens?: number; temperature?: number },
+          opts?: {
+            maxTokens?: number;
+            temperature?: number;
+            signal?: AbortSignal;
+            stopOnAbortSignal?: boolean;
+          },
         ) => Promise<string>;
       };
       const sequence = ctx.getSequence();
@@ -186,6 +191,8 @@ export class LlamaCppProvider implements ModelRuntimeClient {
         const output = await completion.generateCompletion(prompt, {
           temperature: options?.temperature ?? 0.2,
           maxTokens: options?.maxTokens ?? 256,
+          signal: options?.signal,
+          stopOnAbortSignal: true,
         });
         if (options?.signal?.aborted) {
           throw new Error("Generation aborted");
@@ -262,6 +269,10 @@ export class LlamaCppProvider implements ModelRuntimeClient {
         while (!finished || queue.length > 0) {
           if (queue.length === 0) {
             await new Promise<void>((resolve) => {
+              if (finished || queue.length > 0) {
+                resolve();
+                return;
+              }
               notify = resolve;
             });
             continue;

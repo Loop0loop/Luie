@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
 import {
   Compass,
   LayoutGrid,
-  Users,
+  Waypoints,
   Brain,
   Search,
   type LucideIcon,
@@ -26,7 +26,7 @@ import { CANVAS_RAIL_ITEMS } from "../../constants";
 const ICON_MAP: Record<string, LucideIcon> = {
   Compass,
   LayoutGrid,
-  Users,
+  Waypoints,
   Brain,
   Search,
 };

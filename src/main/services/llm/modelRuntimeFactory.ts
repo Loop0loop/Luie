@@ -28,6 +28,7 @@ type ModelPathCache = {
 
 const MODEL_PATH_CACHE_TTL_MS = 10_000;
 let modelPathCache: ModelPathCache | null = null;
+let modelPathCacheInflight: Promise<ModelPathCache> | null = null;
 
 async function loadGlobalLlmSettingsFromFile(): Promise<GlobalLlmSettings> {
   try {
@@ -111,23 +112,32 @@ export async function resolveModelRuntimeClient(
     row[0]?.llmEmbeddingModelPath ?? process.env.LUIE_LLM_EMBEDDING_MODEL_PATH ?? null;
   const now = Date.now();
   if (!modelPathCache || modelPathCache.expiresAt <= now) {
-    const globalLlm = await loadGlobalLlmSettingsFromFile();
-    let fallbackModelPath = globalLlm.defaultModelPath;
-    if (!fallbackModelPath) {
-      fallbackModelPath = await resolveModelPathFromModelsDir();
+    if (!modelPathCacheInflight) {
+      modelPathCacheInflight = (async (): Promise<ModelPathCache> => {
+        const globalLlm = await loadGlobalLlmSettingsFromFile();
+        let fallbackModelPath = globalLlm.defaultModelPath;
+        if (!fallbackModelPath) {
+          fallbackModelPath = await resolveModelPathFromModelsDir();
+        }
+        if (fallbackModelPath) {
+          try {
+            await access(fallbackModelPath);
+          } catch {
+            fallbackModelPath = null;
+          }
+        }
+        const result: ModelPathCache = {
+          expiresAt: Date.now() + MODEL_PATH_CACHE_TTL_MS,
+          globalLlm,
+          fallbackModelPath,
+        };
+        modelPathCache = result;
+        return result;
+      })().finally(() => {
+        modelPathCacheInflight = null;
+      });
     }
-    if (fallbackModelPath) {
-      try {
-        await access(fallbackModelPath);
-      } catch {
-        fallbackModelPath = null;
-      }
-    }
-    modelPathCache = {
-      expiresAt: now + MODEL_PATH_CACHE_TTL_MS,
-      globalLlm,
-      fallbackModelPath,
-    };
+    modelPathCache = await modelPathCacheInflight;
   }
   const globalLlm = modelPathCache.globalLlm;
   const fallbackModelPath = modelPathCache.fallbackModelPath;

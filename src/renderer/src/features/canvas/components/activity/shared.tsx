@@ -11,7 +11,7 @@
  *   PanelEmpty   : text-xs text-muted italic
  */
 import { type ReactNode, useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { cn } from "@shared/types/utils";
 
 // ─── PanelRoot ────────────────────────────────────────────────────────────────
@@ -34,10 +34,10 @@ export function PanelHeader({
   subtitle?: string;
 }) {
   return (
-    <div className="shrink-0 border-b border-border/40 px-3 py-2.5">
-      <h2 className="text-[13px] font-semibold text-fg">{title}</h2>
+    <div className="shrink-0 border-b border-border bg-panel px-4 py-3">
+      <h2 className="text-sm font-semibold text-fg">{title}</h2>
       {subtitle && (
-        <div className="mt-0.5 truncate text-[10px] uppercase tracking-wider text-subtle">
+        <div className="mt-1 truncate text-xs text-subtle">
           {subtitle}
         </div>
       )}
@@ -75,12 +75,12 @@ export function PanelSection({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div>
+    <div className="mb-3 px-2">
       {/* 헤더: <div role="button"> — actions 슬롯의 <button> 중첩을 허용하기 위해 */}
       <div
         role="button"
         tabIndex={0}
-        className="flex w-full cursor-pointer items-center rounded px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-subtle transition-colors hover:bg-surface hover:text-fg"
+        className="group flex w-full cursor-pointer items-center rounded-control px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted transition-colors hover:bg-surface-hover hover:text-fg"
         onClick={() => setIsOpen((v) => !v)}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -90,21 +90,22 @@ export function PanelSection({
         }}
         aria-expanded={isOpen}
       >
-        {isOpen ? (
-          <ChevronDown className="mr-1.5 icon-xs opacity-70" />
-        ) : (
-          <ChevronRight className="mr-1.5 icon-xs opacity-70" />
-        )}
+        <span
+          className="mr-1.5 transition-transform duration-200"
+          style={{ transform: isOpen ? "rotate(90deg)" : "rotate(0deg)" }}
+        >
+          <ChevronRight className="icon-xs opacity-70" />
+        </span>
         <span className="flex-1 text-left">{title}</span>
         {count !== undefined && (
-          <span className="mr-1 rounded-full bg-surface px-1.5 py-0.5 text-[10px] tabular-nums text-muted">
+          <span className="mr-1 rounded-full bg-surface px-1.5 py-0.5 text-[10px] font-medium text-subtle group-hover:bg-active group-hover:text-muted">
             {count}
           </span>
         )}
         {actions && (
           // stopPropagation으로 헤더 클릭(토글)과 actions 클릭을 분리합니다.
           <span
-            className="ml-1"
+            className="ml-1 opacity-0 transition-opacity group-hover:opacity-100"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
           >
@@ -114,7 +115,7 @@ export function PanelSection({
       </div>
 
       {isOpen && (
-        <div className="animate-in fade-in slide-in-from-top-1 duration-100">
+        <div className="mt-1 flex flex-col gap-0.5 animate-in fade-in slide-in-from-top-1 duration-100">
           {children}
         </div>
       )}
@@ -144,10 +145,10 @@ export function PanelItem({
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
       className={cn(
-        "flex cursor-pointer items-center gap-2 rounded-sm px-3 py-1 text-xs transition-colors",
+        "flex cursor-pointer items-center gap-2 rounded-control px-2 py-1.5 text-sm transition-colors",
         active
-          ? "border-l-2 border-accent bg-active font-medium text-fg"
-          : "border-l-2 border-transparent text-muted hover:bg-surface hover:text-fg",
+          ? "bg-active font-medium text-fg"
+          : "text-muted hover:bg-surface hover:text-fg",
         className,
       )}
       onClick={onClick}
@@ -158,7 +159,11 @@ export function PanelItem({
         }
       }}
     >
-      {icon && <span className="shrink-0">{icon}</span>}
+      {icon && (
+        <span className={cn("shrink-0", active ? "text-fg" : "text-subtle")}>
+          {icon}
+        </span>
+      )}
       <span className="min-w-0 flex-1 truncate">{label}</span>
       {badge && <span className="ml-auto shrink-0 pl-2">{badge}</span>}
     </div>
@@ -189,7 +194,7 @@ export function ToggleChip({
   return (
     <label
       className={cn(
-        "flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-[12px] transition-all",
+        "flex cursor-pointer items-center gap-2 rounded-control px-2 py-1.5 text-sm transition-all",
         checked
           ? "bg-active font-medium text-fg"
           : "text-muted hover:bg-surface-hover hover:text-fg",
@@ -211,24 +216,22 @@ export function ToggleChip({
       />
       <span
         className={cn(
-          "h-3.5 w-3.5 shrink-0 rounded-sm border transition-colors",
+          "h-3.5 w-3.5 shrink-0 rounded-sm border transition-colors flex items-center justify-center",
           checked
-            ? "border-accent bg-accent"
-            : "border-border/60 bg-element",
+            ? "border-accent bg-accent text-on-accent"
+            : "border-border bg-element text-transparent",
         )}
         aria-hidden
       >
-        {checked && (
-          <svg viewBox="0 0 10 10" className="h-full w-full text-white" fill="none">
-            <path
-              d="M2 5l2.5 2.5L8 3"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        )}
+        <svg viewBox="0 0 10 10" className="h-2.5 w-2.5" fill="none">
+          <path
+            d="M2 5l2.5 2.5L8 3"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </span>
     </label>
   );

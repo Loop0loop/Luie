@@ -97,17 +97,17 @@ export default function CanvasControlPanel() {
                 disabled={!isAvailable}
                 onClick={() => isAvailable && setMode(m)}
                 className={cn(
-                  "flex w-full items-center gap-2 px-4 py-1.5 pl-9 text-[13px] transition-all",
+                  "flex w-full items-center gap-2 rounded-control px-2 py-1.5 text-sm transition-colors",
                   isActive
-                    ? "border-l-[3px] border-accent bg-active font-medium text-fg"
+                    ? "bg-active font-medium text-fg"
                     : isAvailable
-                      ? "cursor-pointer border-l-2 border-transparent text-muted hover:bg-surface-hover hover:text-fg"
-                      : "cursor-not-allowed border-l-2 border-transparent text-muted/40",
+                      ? "cursor-pointer text-muted hover:bg-surface hover:text-fg"
+                      : "cursor-not-allowed text-subtle opacity-50",
                 )}
               >
                 <span className="flex-1 truncate text-left">{t(CANVAS_MODE_I18N[m])}</span>
                 {!isAvailable && <Lock className="icon-xs shrink-0 opacity-40" />}
-                {isActive && isAvailable && <Check className="icon-xs shrink-0 text-accent" />}
+                {isActive && isAvailable && <Check className="icon-xs shrink-0 text-fg" />}
               </button>
             );
           })}

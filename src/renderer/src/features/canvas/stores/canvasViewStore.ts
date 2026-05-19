@@ -52,8 +52,8 @@ const ALL_LAYERS: ReadonlyArray<CanvasLayer> = [
 
 const ALL_ACTIVITY_PANELS: ReadonlyArray<CanvasActivityPanel> = [
   "explorer",
+  "graph",
   "canvas",
-  "entities",
   "memory",
   "search",
 ];

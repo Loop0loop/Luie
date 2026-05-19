@@ -12,14 +12,10 @@ export function normalizeCoreAnswer(raw: string): string {
       !/^the user/i.test(line),
   );
   const deduped: string[] = [];
-  let repeatCount = 0;
   for (const line of filtered) {
     const last = deduped[deduped.length - 1];
     if (last === line) {
-      repeatCount += 1;
-      if (repeatCount > 1) continue;
-    } else {
-      repeatCount = 0;
+      continue;
     }
     deduped.push(line);
   }

@@ -71,7 +71,7 @@ export default function ExplorerPanel() {
           actions={
             <button
               type="button"
-              className="p-0.5 rounded hover:bg-active text-muted hover:text-fg"
+              className="flex h-5 w-5 items-center justify-center rounded-control text-muted transition-colors hover:bg-active hover:text-fg"
               title={t("sidebar.addChapter")}
               // Chapter creation is handled by the main editor flow; this is
               // intentionally a no-op placeholder until P7 wires IPC.
