@@ -2,10 +2,10 @@
  * Snapshot service - 버전 관리 스냅샷 비즈니스 로직
  */
 
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "../../../database/index.js";
-import { chapter, project, snapshot } from "../../../database/schema.js";
+import { chapter, chapterBody, project, snapshot } from "../../../database/schema.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import {
   ErrorCode,
@@ -280,12 +280,20 @@ export class SnapshotService {
       const nextContent =
         typeof found.content === "string" ? found.content : "";
 
+      const contentHash = createHash("sha256").update(nextContent).digest("hex");
       const now = new Date().toISOString();
       db.getClient().transaction((tx) => {
         tx.update(chapter).set({
           content: nextContent,
           wordCount: nextContent.length,
+          updatedAt: now,
         }).where(eq(chapter.id, chapterId)).run();
+        tx.insert(chapterBody)
+          .values({ chapterId, content: nextContent, contentHash, updatedAt: now })
+          .onConflictDoUpdate({
+            target: [chapterBody.chapterId],
+            set: { content: nextContent, contentHash, updatedAt: now },
+          }).run();
         tx.update(project).set({ updatedAt: now }).where(eq(project.id, found.projectId)).run();
       });
 

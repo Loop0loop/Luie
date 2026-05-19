@@ -19,7 +19,6 @@ import {
   LUIE_SNAPSHOTS_DIR,
   SNAPSHOT_BACKUP_DIR,
 } from "../../../../shared/constants/index.js";
-import { sanitizeName } from "../../../../shared/utils/sanitize.js";
 import type { SnapshotCreateInput } from "../../../../shared/types/index.js";
 import { ServiceError } from "../../../utils/serviceError.js";
 import { writeFileAtomic, readMaybeGzip } from "../../../utils/atomicWrite.js";
@@ -201,14 +200,11 @@ const resolveArtifactRoots = async (): Promise<string[]> => {
 
   for (const project of projects) {
     if (!project.projectPath) continue;
-    const safeProjectName = sanitizeName(
-      project.title ?? "",
-      String(project.id),
-    );
+    const projectDirName = String(project.id);
     try {
       const projectBaseDir = resolveProjectBaseDir(project.projectPath);
-      roots.add(resolveLocalSnapshotDir(projectBaseDir, safeProjectName));
-      roots.add(path.join(projectBaseDir, `backup${safeProjectName}`));
+      roots.add(resolveLocalSnapshotDir(projectBaseDir, projectDirName));
+      roots.add(path.join(projectBaseDir, `backup${projectDirName}`));
     } catch (error) {
       logger.warn("Skipping snapshot artifact roots for invalid projectPath", {
         projectId: project.id,
@@ -515,13 +511,13 @@ export async function writeFullSnapshotArtifact(
   let localPath: string | undefined;
   let projectBackupPath: string | undefined;
 
-  const safeProjectName = sanitizeName(project.title ?? "", String(project.id));
+  const projectDirName = String(project.id);
   let projectBaseDir: string | null = null;
 
   if (projectPath) {
     try {
       projectBaseDir = resolveProjectBaseDir(projectPath);
-      const localDir = resolveLocalSnapshotDir(projectBaseDir, safeProjectName);
+      const localDir = resolveLocalSnapshotDir(projectBaseDir, projectDirName);
       await fs.mkdir(localDir, { recursive: true });
       localPath = path.join(localDir, fileName);
       await writeFileAtomic(localPath, buffer);
@@ -541,7 +537,7 @@ export async function writeFullSnapshotArtifact(
   const backupDir = path.join(
     app.getPath("userData"),
     SNAPSHOT_BACKUP_DIR,
-    safeProjectName,
+    projectDirName,
   );
   await fs.mkdir(backupDir, { recursive: true });
   const backupPath = path.join(backupDir, fileName);
@@ -550,7 +546,7 @@ export async function writeFullSnapshotArtifact(
   if (projectBaseDir) {
     const projectBackupDir = path.join(
       projectBaseDir,
-      `backup${safeProjectName}`,
+      `backup${projectDirName}`,
     );
     await fs.mkdir(projectBackupDir, { recursive: true });
     projectBackupPath = path.join(projectBackupDir, fileName);
