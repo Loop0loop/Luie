@@ -12,8 +12,8 @@ import type { CanvasActivityPanel } from "../../types";
 import { useCanvasView } from "../../hooks/useCanvasView";
 
 const ExplorerPanel      = lazy(() => import("../activity/ExplorerPanel"));
+const GraphPanel         = lazy(() => import("../activity/GraphPanel"));
 const CanvasControlPanel = lazy(() => import("../activity/CanvasControlPanel"));
-const EntitiesPanel      = lazy(() => import("../activity/EntitiesPanel"));
 const MemoryPanel        = lazy(() => import("../activity/MemoryPanel"));
 const SearchPanel        = lazy(() => import("../activity/SearchPanel"));
 
@@ -24,8 +24,8 @@ const PANEL_MAP: Record<
   React.LazyExoticComponent<() => React.JSX.Element>
 > = {
   explorer:  ExplorerPanel,
+  graph:     GraphPanel,
   canvas:    CanvasControlPanel,
-  entities:  EntitiesPanel,
   memory:    MemoryPanel,
   search:    SearchPanel,
 };

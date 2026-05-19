@@ -125,14 +125,14 @@ export default function CanvasViewport({ projection }: CanvasViewportProps) {
         zoomOnScroll={false}
         zoomOnPinch
         proOptions={{ hideAttribution: true }}
-        className="bg-canvas"
+        className="bg-app"
       >
         <Background
           variant={BackgroundVariant.Dots}
           gap={20}
           size={1.2}
-          color="var(--border-default)"
-          className="opacity-30"
+          color="var(--text-subtle)"
+          className="opacity-20"
         />
 
         {/* useReactFlow()를 쓰므로 반드시 <ReactFlow> 내부에 위치 */}

@@ -1,4 +1,5 @@
 import { and, asc, eq, isNull, or, sql } from "drizzle-orm";
+import type { AnyColumn, SQLWrapper } from "drizzle-orm";
 import { db } from "../../../database/index.js";
 import {
   chapter,
@@ -43,7 +44,7 @@ function isMissingTableError(error: unknown): boolean {
   return /no such table/i.test(error.message);
 }
 
-function likeWithEscape(columnSql: unknown, pattern: string) {
+function likeWithEscape(columnSql: AnyColumn | SQLWrapper, pattern: string) {
   return sql`${columnSql} LIKE ${pattern} ESCAPE '\\'`;
 }
 
@@ -143,7 +144,7 @@ async function buildLayer2RelatedEntities(projectId: string, question: string): 
         ),
       )
       .orderBy(
-        sql`CASE WHEN ${character.name} LIKE ${prefix} ESCAPE '\' THEN 0 ELSE 1 END`,
+        sql`CASE WHEN ${character.name} LIKE ${prefix} ESCAPE '\\' THEN 0 ELSE 1 END`,
         asc(character.updatedAt),
       )
       .limit(20),
@@ -163,7 +164,7 @@ async function buildLayer2RelatedEntities(projectId: string, question: string): 
         ),
       )
       .orderBy(
-        sql`CASE WHEN ${faction.name} LIKE ${prefix} ESCAPE '\' THEN 0 ELSE 1 END`,
+        sql`CASE WHEN ${faction.name} LIKE ${prefix} ESCAPE '\\' THEN 0 ELSE 1 END`,
         asc(faction.updatedAt),
       )
       .limit(20),
@@ -183,7 +184,7 @@ async function buildLayer2RelatedEntities(projectId: string, question: string): 
         ),
       )
       .orderBy(
-        sql`CASE WHEN ${event.name} LIKE ${prefix} ESCAPE '\' THEN 0 ELSE 1 END`,
+        sql`CASE WHEN ${event.name} LIKE ${prefix} ESCAPE '\\' THEN 0 ELSE 1 END`,
         asc(event.updatedAt),
       )
       .limit(20),
@@ -203,11 +204,23 @@ async function buildLayer2RelatedEntities(projectId: string, question: string): 
         ),
       )
       .orderBy(
-        sql`CASE WHEN ${term.term} LIKE ${prefix} ESCAPE '\' THEN 0 ELSE 1 END`,
+        sql`CASE WHEN ${term.term} LIKE ${prefix} ESCAPE '\\' THEN 0 ELSE 1 END`,
         asc(term.updatedAt),
       )
       .limit(20),
   ]);
+  if (charactersResult.status === "rejected") {
+    logger.warn("Layer2 character query failed", { projectId, error: charactersResult.reason });
+  }
+  if (factionsResult.status === "rejected") {
+    logger.warn("Layer2 faction query failed", { projectId, error: factionsResult.reason });
+  }
+  if (eventsResult.status === "rejected") {
+    logger.warn("Layer2 event query failed", { projectId, error: eventsResult.reason });
+  }
+  if (termsResult.status === "rejected") {
+    logger.warn("Layer2 term query failed", { projectId, error: termsResult.reason });
+  }
   const characters = charactersResult.status === "fulfilled" ? charactersResult.value : [];
   const factions = factionsResult.status === "fulfilled" ? factionsResult.value : [];
   const events = eventsResult.status === "fulfilled" ? eventsResult.value : [];

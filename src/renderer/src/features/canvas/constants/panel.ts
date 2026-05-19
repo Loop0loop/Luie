@@ -10,8 +10,8 @@ import type { CanvasActivityPanel } from "../types/canvas.types";
 
 export const CANVAS_PANEL_KEYS: ReadonlyArray<CanvasActivityPanel> = [
   "explorer",
+  "graph",
   "canvas",
-  "entities",
   "memory",
   "search",
 ] as const;
@@ -22,13 +22,13 @@ export interface CanvasRailItem {
   readonly panel: CanvasActivityPanel;
   /** `canvas.activity.${i18nKey}` 형태로 사용 */
   readonly i18nKey: string;
-  readonly iconName: "Compass" | "LayoutGrid" | "Users" | "Brain" | "Search";
+  readonly iconName: "Compass" | "LayoutGrid" | "Waypoints" | "Brain" | "Search";
 }
 
 export const CANVAS_RAIL_ITEMS: ReadonlyArray<CanvasRailItem> = [
   { panel: "explorer",  i18nKey: "explorer",  iconName: "Compass"    },
+  { panel: "graph",     i18nKey: "graph",     iconName: "Waypoints"  },
   { panel: "canvas",    i18nKey: "canvas",    iconName: "LayoutGrid" },
-  { panel: "entities",  i18nKey: "entities",  iconName: "Users"      },
   { panel: "memory",    i18nKey: "memory",    iconName: "Brain"      },
   { panel: "search",    i18nKey: "search",    iconName: "Search"     },
 ] as const;

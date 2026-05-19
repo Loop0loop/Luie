@@ -49,7 +49,7 @@ export default function EntitiesPanel() {
 
   return (
     <PanelRoot>
-      <PanelHeader title={t("canvas.activity.entities")} />
+      <PanelHeader title={t("canvas.activity.graph")} />
       <PanelBody>
         {/* Characters */}
         <PanelSection title={t("research.title.characters")}>

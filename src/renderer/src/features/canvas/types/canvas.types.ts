@@ -47,8 +47,8 @@ export type CanvasLayer =
 /** Activity panel currently shown inside the canvas Sidebar. */
 export type CanvasActivityPanel =
   | "explorer"
+  | "graph"
   | "canvas"
-  | "entities"
   | "memory"
   | "search";
 
