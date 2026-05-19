@@ -206,15 +206,6 @@ class RagQaWorker {
         this.emitStream({ runId: run.runId, delta, done: false });
       }
 
-      if (run.aborted) {
-        this.emitError({
-          runId: run.runId,
-          code: ErrorCode.RAG_QA_ABORTED,
-          message: "RAG QA aborted",
-        });
-        return;
-      }
-
       const result: RagQaResult = {
         runId: run.runId,
         projectId: run.request.projectId,

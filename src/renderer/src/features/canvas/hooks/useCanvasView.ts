@@ -27,7 +27,7 @@ import { useCanvasViewStore } from "../stores";
 export function useCanvasView() {
   return useCanvasViewStore(
     useShallow((s) => ({
-      canvasType:           s.canvasType,
+
       mode:                 s.mode,
       scope:                s.scope,
       layers:               s.layers,

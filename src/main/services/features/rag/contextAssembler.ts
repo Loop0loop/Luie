@@ -125,11 +125,19 @@ async function buildLayer1ChapterSummaries(projectId: string): Promise<string> {
 }
 
 async function buildLayer2RelatedEntities(projectId: string, question: string): Promise<string> {
-  const escaped = escapeLike(question.trim());
-  if (!escaped) return "(none)";
-
-  const prefix = `${escaped}%`;
-  const contains = `%${escaped}%`;
+  const normalizedQuestion = question.trim();
+  const rawTokens = normalizedQuestion
+    .replace(/[^0-9A-Za-z가-힣_\s]/g, " ")
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2)
+    .slice(0, 6);
+  const escapedTokens = rawTokens
+    .map((token) => escapeLike(token))
+    .filter((token) => token.length > 0);
+  if (escapedTokens.length === 0) return "(none)";
+  const firstToken = escapedTokens[0];
+  const prefix = `${firstToken}%`;
 
   const [charactersResult, factionsResult, eventsResult, termsResult] = await Promise.allSettled([
     db
@@ -140,11 +148,10 @@ async function buildLayer2RelatedEntities(projectId: string, question: string): 
         and(
           eq(character.projectId, projectId),
           isNull(character.deletedAt),
-          or(
-            likeWithEscape(character.name, prefix),
-            likeWithEscape(character.name, contains),
-            likeWithEscape(character.description, contains),
-          ),
+          or(...escapedTokens.flatMap((token) => [
+            likeWithEscape(character.name, `%${token}%`),
+            likeWithEscape(character.description, `%${token}%`),
+          ])),
         ),
       )
       .orderBy(
@@ -160,11 +167,10 @@ async function buildLayer2RelatedEntities(projectId: string, question: string): 
         and(
           eq(faction.projectId, projectId),
           isNull(faction.deletedAt),
-          or(
-            likeWithEscape(faction.name, prefix),
-            likeWithEscape(faction.name, contains),
-            likeWithEscape(faction.description, contains),
-          ),
+          or(...escapedTokens.flatMap((token) => [
+            likeWithEscape(faction.name, `%${token}%`),
+            likeWithEscape(faction.description, `%${token}%`),
+          ])),
         ),
       )
       .orderBy(
@@ -180,11 +186,10 @@ async function buildLayer2RelatedEntities(projectId: string, question: string): 
         and(
           eq(event.projectId, projectId),
           isNull(event.deletedAt),
-          or(
-            likeWithEscape(event.name, prefix),
-            likeWithEscape(event.name, contains),
-            likeWithEscape(event.description, contains),
-          ),
+          or(...escapedTokens.flatMap((token) => [
+            likeWithEscape(event.name, `%${token}%`),
+            likeWithEscape(event.description, `%${token}%`),
+          ])),
         ),
       )
       .orderBy(
@@ -200,11 +205,10 @@ async function buildLayer2RelatedEntities(projectId: string, question: string): 
         and(
           eq(term.projectId, projectId),
           isNull(term.deletedAt),
-          or(
-            likeWithEscape(term.term, prefix),
-            likeWithEscape(term.term, contains),
-            likeWithEscape(term.definition, contains),
-          ),
+          or(...escapedTokens.flatMap((token) => [
+            likeWithEscape(term.term, `%${token}%`),
+            likeWithEscape(term.definition, `%${token}%`),
+          ])),
         ),
       )
       .orderBy(
@@ -269,31 +273,38 @@ async function buildLayer3Evidence(projectId: string, question: string): Promise
           ? likeWithEscape(memoryChunk.content, `%${escaped}%`)
           : undefined;
     if (lexicalPredicate) {
-      const lexicalRows = await db
-        .getClient()
-        .select({
-          chunkId: memoryChunk.id,
-          chapterId: memoryChunk.chapterId,
-          content: memoryChunk.content,
-          startOffset: memoryChunk.startOffset,
-        })
-        .from(memoryChunk)
-        .where(
-          and(
-            eq(memoryChunk.projectId, projectId),
-            lexicalPredicate,
-          ),
-        )
-        .orderBy(asc(memoryChunk.updatedAt))
-        .limit(10);
-      rows = lexicalRows.map((row) => ({
-        chunkId: row.chunkId,
-        chapterId: row.chapterId,
-        content: row.content,
-        startOffset: row.startOffset,
-        endOffset: null,
-        score: 0,
-      }));
+      try {
+        const lexicalRows = await db
+          .getClient()
+          .select({
+            chunkId: memoryChunk.id,
+            chapterId: memoryChunk.chapterId,
+            content: memoryChunk.content,
+            startOffset: memoryChunk.startOffset,
+          })
+          .from(memoryChunk)
+          .where(
+            and(
+              eq(memoryChunk.projectId, projectId),
+              lexicalPredicate,
+            ),
+          )
+          .orderBy(asc(memoryChunk.updatedAt))
+          .limit(10);
+        rows = lexicalRows.map((row) => ({
+          chunkId: row.chunkId,
+          chapterId: row.chapterId,
+          content: row.content,
+          startOffset: row.startOffset,
+          endOffset: null,
+          score: 0,
+        }));
+      } catch (error) {
+        logger.warn("Layer3 lexical fallback failed; using empty lexical rows", {
+          projectId,
+          error,
+        });
+      }
     }
   }
   const evidence: RagQaEvidence[] = rows.map((row) => ({

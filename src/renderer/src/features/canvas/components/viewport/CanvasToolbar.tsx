@@ -15,19 +15,8 @@ import {
   CANVAS_ZOOM_MAX,
   CANVAS_ZOOM_STEP,
 } from "@shared/constants/canvasSizing";
-import { cn } from "@shared/types/utils";
 import { useCanvasViewStore } from "../../stores";
-import { useCanvasView } from "../../hooks/useCanvasView";
-  CANVAS_AVAILABLE_MODES,
-  type CanvasMode,
-  type CanvasRange,
-  type CanvasScope,
-} from "../../types";
-import {
-  CANVAS_MODE_I18N,
-  CANVAS_ALL_RANGES,
-  CANVAS_RANGE_I18N,
-} from "../../constants";
+
 
 
 
@@ -36,20 +25,10 @@ import {
 export default function CanvasToolbar() {
   const { t } = useTranslation();
 
-  // 안정적인 상태 (mode, scope)
-  const { mode, scope } = useCanvasView();
-
   // viewport는 줌 표시용으로만 필요 — 별도 구독으로 분리
   const viewport = useCanvasViewStore(useShallow((s) => s.viewport));
 
-  // actions는 관련된 것끼리 묶어서 한 번에 가져옴
-  const { setMode, setScope, setViewport } = useCanvasViewStore(
-    useShallow((s) => ({
-      setMode:       s.setMode,
-      setScope:      s.setScope,
-      setViewport:   s.setViewport,
-    })),
-  );
+  const setViewport = useCanvasViewStore((s) => s.setViewport);
 
 
 

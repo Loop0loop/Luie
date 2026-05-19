@@ -118,8 +118,17 @@ const onMessage = (raw: unknown): void => {
     return;
   }
   if (message?.type === "shutdown") {
-    post({ type: "shutdown-ack", requestId: message.requestId });
-    setTimeout(() => process.exit(0), 0);
+    void (async () => {
+      try {
+        const ragQaWorker = await getRagQaWorker();
+        ragQaWorker.stop();
+      } catch (error) {
+        logger.warn("Failed to stop RAG worker before shutdown", { error });
+      } finally {
+        post({ type: "shutdown-ack", requestId: message.requestId });
+        setTimeout(() => process.exit(0), 150);
+      }
+    })();
     return;
   }
   if (message?.type === "request") {

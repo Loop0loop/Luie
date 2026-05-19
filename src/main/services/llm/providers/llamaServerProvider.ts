@@ -8,6 +8,7 @@ type LlamaServerProviderOptions = {
   embeddingModelPath?: string | null;
   contextSize?: number;
   gpuLayers?: number;
+  fallbackProvider?: LlamaCppProvider;
 };
 
 export class LlamaServerProvider implements ModelRuntimeClient {
@@ -28,6 +29,9 @@ export class LlamaServerProvider implements ModelRuntimeClient {
   }
 
   private getOrCreateFallback(): LlamaCppProvider {
+    if (this.options.fallbackProvider) {
+      return this.options.fallbackProvider;
+    }
     if (!this.llamaCppFallback) {
       this.llamaCppFallback = new LlamaCppProvider(
         this.options.modelPath,
