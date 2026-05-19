@@ -15,6 +15,7 @@ import { searchService } from "../searchService.js";
 import type { RagQaEvidence } from "../../../../shared/types/index.js";
 import { escapeLike } from "../../../utils/queryHelpers.js";
 import { createLogger } from "../../../../shared/logger/index.js";
+import { loadRagPromptConfig } from "./ragPromptConfig.js";
 
 export type RagContextPacket = {
   assembledPrompt: string;
@@ -265,9 +266,10 @@ export async function assembleRagContext(input: {
     buildLayer2RelatedEntities(input.projectId, input.question),
     buildLayer3Evidence(input.projectId, input.question),
   ]);
+  const promptConfig = await loadRagPromptConfig();
 
   const prompt = [
-    "당신은 웹소설 집필 어시스턴트입니다.",
+    promptConfig.systemInstruction,
     "반드시 근거(E1..En) 기반으로만 답변하세요.",
     "근거가 부족하면 '근거 부족'을 명시하세요.",
     formatLayer("Layer 0 — Project Summary", layer0),
@@ -276,7 +278,7 @@ export async function assembleRagContext(input: {
     formatLayer("Layer 3 — Retrieved Evidence", layer3.section),
     `## Focus Chapter\n${input.chapterId ?? "(not specified)"}`,
     `## User Question\n${input.question}`,
-    "## Output Rules\n- 한국어\n- 핵심 답변 후 근거 번호(E1..En) 명시\n- 모순 판단이면 모순 지점과 화수를 분리\n",
+    "## Output Rules\n- 한국어\n- 자연스러운 대화형 답변\n- 사고 과정/중간 추론/자기 설명 출력 금지\n- 같은 문장 반복 출력 금지\n- 사용자가 명시적으로 요청한 경우에만 고정 포맷/목록 사용\n",
   ].join("\n\n");
 
   return {

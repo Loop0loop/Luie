@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import { app } from "electron";
+import { resolveUserDataPath } from "../utils/userDataPath.js";
 import { isProdEnv, isTestEnv } from "../utils/environment.js";
 
 export const DRIZZLE_MIGRATIONS_ROOT_DIR = "drizzle";
@@ -34,4 +34,5 @@ export const resolveMigrationPathContext = (
   };
 };
 
-export const resolveUserDataMigrationScratchPath = (): string => path.join(app.getPath("userData"), "drizzle");
+export const resolveUserDataMigrationScratchPath = (): string =>
+  path.join(resolveUserDataPath(), "drizzle");

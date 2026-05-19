@@ -146,6 +146,14 @@ test("rag qa metrics snapshot @stress", async () => {
           let runId: string | null = null;
           let firstTokenMs: number | null = null;
           let answer = "";
+          let settled = false;
+
+          const settle = (value: RagRunMetrics) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeoutId);
+            resolve(value);
+          };
 
           const offStream = api.rag.onStream((payload) => {
             if (!runId || payload.runId !== runId) return;
@@ -156,7 +164,7 @@ test("rag qa metrics snapshot @stress", async () => {
             if (payload.done) {
               offStream();
               offError();
-              resolve({
+              settle({
                 success: true,
                 firstTokenMs,
                 totalMs: performance.now() - startedAt,
@@ -170,7 +178,7 @@ test("rag qa metrics snapshot @stress", async () => {
             if (runId && payload.runId && payload.runId !== runId) return;
             offStream();
             offError();
-            resolve({
+            settle({
               success: false,
               firstTokenMs,
               totalMs: performance.now() - startedAt,
@@ -178,6 +186,21 @@ test("rag qa metrics snapshot @stress", async () => {
               errorMessage: payload.message ?? "rag failed",
             });
           });
+
+          const timeoutId = setTimeout(() => {
+            if (runId) {
+              void api.rag.stop(runId);
+            }
+            offStream();
+            offError();
+            settle({
+              success: false,
+              firstTokenMs,
+              totalMs: performance.now() - startedAt,
+              evidenceCount: 0,
+              errorMessage: "rag stream timeout (20s)",
+            });
+          }, 20_000);
 
           void api.rag.ask({
             projectId: input.projectId,
@@ -187,7 +210,7 @@ test("rag qa metrics snapshot @stress", async () => {
             if (!resp.success || !resp.data?.runId) {
               offStream();
               offError();
-              resolve({
+              settle({
                 success: false,
                 firstTokenMs: null,
                 totalMs: performance.now() - startedAt,

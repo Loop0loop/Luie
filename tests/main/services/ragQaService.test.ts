@@ -106,4 +106,46 @@ describe("ragQaService", () => {
       message: "runtime failed",
     });
   });
+
+  it("stop 호출 시 진행 중 스트림을 중단한다", async () => {
+    mocked.assembleRagContext.mockResolvedValue({
+      assembledPrompt: "prompt",
+      evidence: [],
+    });
+
+    mocked.resolveModelRuntimeClient.mockResolvedValue({
+      generateStream: async function* () {
+        yield "첫";
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        yield "째";
+      },
+    });
+
+    const windowMock = createWindowMock();
+    const handle = await ragQaService.ask(
+      { projectId: "p1", question: "중단 테스트" },
+      windowMock,
+    );
+
+    await waitFor(() => {
+      const send = (windowMock as any).webContents.send as ReturnType<typeof vi.fn>;
+      return send.mock.calls.some(
+        (call) =>
+          call[0] === IPC_CHANNELS.RAG_QA_STREAM &&
+          call[1]?.runId === handle.runId &&
+          call[1]?.delta === "첫",
+      );
+    });
+
+    const stopped = ragQaService.stop(handle.runId);
+    expect(stopped).toEqual({ stopped: true });
+
+    await new Promise((resolve) => setTimeout(resolve, 80));
+
+    const send = (windowMock as any).webContents.send as ReturnType<typeof vi.fn>;
+    const doneCall = send.mock.calls.find(
+      (call) => call[0] === IPC_CHANNELS.RAG_QA_STREAM && call[1]?.runId === handle.runId && call[1]?.done === true,
+    );
+    expect(doneCall).toBeUndefined();
+  });
 });

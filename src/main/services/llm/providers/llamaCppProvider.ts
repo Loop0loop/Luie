@@ -3,6 +3,7 @@ import type { GenerateOptions, ModelRuntimeClient } from "../modelRuntimeClient.
 
 // Larger than any real transformer layer count → effectively "offload all layers to GPU"
 const GPU_LAYERS_MAX = 999;
+const DEFAULT_IDLE_UNLOAD_MS = 10 * 60 * 1000;
 
 type LlamaContext = {
   modelPath: string;
@@ -24,8 +25,15 @@ export class LlamaCppProvider implements ModelRuntimeClient {
   private context: LlamaContext;
   private modelPromise: Promise<void> | null = null;
   private embeddingPromise: Promise<void> | null = null;
+  private idleUnloadTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly idleUnloadMs: number;
 
   constructor(modelPath: string, embeddingModelPath?: string | null, contextSize?: number, gpuLayers?: number) {
+    const configuredIdle = Number.parseInt(process.env.LUIE_LLM_IDLE_UNLOAD_MS ?? "", 10);
+    this.idleUnloadMs =
+      Number.isFinite(configuredIdle) && configuredIdle > 0
+        ? configuredIdle
+        : DEFAULT_IDLE_UNLOAD_MS;
     this.context = {
       modelPath,
       embeddingModelPath: embeddingModelPath ?? null,
@@ -33,6 +41,33 @@ export class LlamaCppProvider implements ModelRuntimeClient {
       // GPU_LAYERS_MAX > any real transformer layer count → offload all layers to GPU (Metal/CUDA/Vulkan)
       gpuLayers: gpuLayers ?? GPU_LAYERS_MAX,
     };
+  }
+
+  private scheduleIdleUnload(): void {
+    if (this.idleUnloadMs <= 0) return;
+    if (this.idleUnloadTimer) {
+      clearTimeout(this.idleUnloadTimer);
+    }
+    this.idleUnloadTimer = setTimeout(() => {
+      this.unload();
+    }, this.idleUnloadMs);
+    if (typeof this.idleUnloadTimer.unref === "function") {
+      this.idleUnloadTimer.unref();
+    }
+  }
+
+  private unload(): void {
+    this.modelPromise = null;
+    this.embeddingPromise = null;
+    this.context.model = undefined;
+    this.context.context = undefined;
+    this.context.LlamaCompletion = undefined;
+    this.context.embeddingModel = undefined;
+    this.context.embeddingContext = undefined;
+    if (this.idleUnloadTimer) {
+      clearTimeout(this.idleUnloadTimer);
+      this.idleUnloadTimer = null;
+    }
   }
 
   private async ensureLoaded(): Promise<void> {
@@ -144,6 +179,7 @@ export class LlamaCppProvider implements ModelRuntimeClient {
       });
     } finally {
       sequence.dispose();
+      this.scheduleIdleUnload();
     }
   }
 
@@ -167,6 +203,7 @@ export class LlamaCppProvider implements ModelRuntimeClient {
           vectors.push(result.vector);
         }
       }
+      this.scheduleIdleUnload();
       return vectors;
     } catch {
       return null;

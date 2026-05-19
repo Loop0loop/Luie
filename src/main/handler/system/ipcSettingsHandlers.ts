@@ -194,6 +194,58 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
         modelStorageService.setDefaultModel(input),
     },
     {
+      channel: IPC_CHANNELS.SETTINGS_SET_LLM_PROVIDER_HINT,
+      logTag: "SETTINGS_SET_LLM_PROVIDER_HINT",
+      failMessage: "Failed to set llm provider hint",
+      argsSchema: z.tuple([z.object({ providerHint: z.enum(["llamacpp", "llamaserver", "none"]) })]),
+      handler: async (input: { providerHint: "llamacpp" | "llamaserver" | "none" }) => {
+        const settingsManager = await loadSettingsManager();
+        settingsManager.setLlmSettings({ llmProviderHint: input.providerHint });
+        return { providerHint: input.providerHint };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_SET_PROJECT_LLM,
+      logTag: "SETTINGS_SET_PROJECT_LLM",
+      failMessage: "Failed to set project llm settings",
+      argsSchema: z.tuple([z.object({
+        projectId: z.string(),
+        modelPath: z.string().nullable().optional(),
+        providerHint: z.enum(["llamacpp", "llamaserver", "none"]).nullable().optional(),
+      })]),
+      handler: async (input: { projectId: string; modelPath?: string | null; providerHint?: "llamacpp" | "llamaserver" | "none" | null }) => {
+        const { db } = await import("../../database/index.js");
+        const { projectSettings } = await import("../../database/schema.js");
+        const store = db.getClient();
+        const nowDefaults = {
+          autoSave: true,
+          autoSaveInterval: 30,
+        };
+        await store
+          .insert(projectSettings)
+          .values({
+            id: input.projectId,
+            projectId: input.projectId,
+            ...nowDefaults,
+            ...(input.modelPath !== undefined ? { llmModelPath: input.modelPath } : {}),
+            ...(input.providerHint !== undefined ? { llmProviderHint: input.providerHint } : {}),
+          })
+          .onConflictDoUpdate({
+            target: [projectSettings.projectId],
+            set: {
+              ...(input.modelPath !== undefined ? { llmModelPath: input.modelPath } : {}),
+              ...(input.providerHint !== undefined ? { llmProviderHint: input.providerHint } : {}),
+            },
+          });
+        logger.info("Project LLM settings upserted", {
+          projectId: input.projectId,
+          hasModelPath: input.modelPath !== undefined ? Boolean(input.modelPath) : undefined,
+          providerHint: input.providerHint,
+        });
+        return { ok: true };
+      },
+    },
+    {
       channel: IPC_CHANNELS.SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL,
       logTag: "SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL",
       failMessage: "Failed to download default llm model",

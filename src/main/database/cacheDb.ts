@@ -1,11 +1,11 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { app } from "electron";
 import BetterSqliteDatabase from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { CACHE_DB_NAME } from "../../shared/constants/index.js";
 import { createLogger } from "../../shared/logger/index.js";
 import { isProdEnv, isTestEnv } from "../utils/environment.js";
+import { resolveUserDataPath } from "../utils/userDataPath.js";
 import { ensureSafeAbsolutePath } from "../utils/pathValidation.js";
 import * as cacheSchema from "./cacheSchema.js";
 import type {
@@ -60,11 +60,12 @@ class CacheDatabaseService {
     const context = await this.prepareDatabaseContext();
     this.dbPath = context.dbPath;
 
+    const userDataPath = resolveUserDataPath();
     logger.info("Initializing cache database", {
       isPackaged: context.isPackaged,
       isTest: context.isTest,
       hasEnvDb: Boolean(process.env[CACHE_ENV_KEY]),
-      userDataPath: app.getPath("userData"),
+      userDataPath,
       dbPath: context.dbPath,
       datasourceUrl: context.datasourceUrl,
     });
@@ -90,7 +91,7 @@ class CacheDatabaseService {
 
   private async prepareDatabaseContext(): Promise<PreparedCacheDatabaseContext> {
     const isPackaged = isProdEnv();
-    const userDataPath = app.getPath("userData");
+    const userDataPath = resolveUserDataPath();
     const isTest = isTestEnv();
     const envDb = isTestEnv()
       ? process.env[CACHE_ENV_KEY]

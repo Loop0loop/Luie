@@ -283,13 +283,17 @@ export class SettingsManager {
     hfTokenCipher?: string;
   }): void {
     const current = this.store.get("llm") ?? {};
-    this.store.set("llm", {
+    const next = {
       ...current,
       ...settings,
-    });
+    };
+    this.store.set("llm", next);
     logger.info("LLM settings updated", {
-      hasDefaultModelPath: Boolean(settings.defaultModelPath),
-      defaultModelId: settings.defaultModelId,
+      changedKeys: Object.keys(settings),
+      hasDefaultModelPath: Boolean(next.defaultModelPath),
+      defaultModelId: next.defaultModelId,
+      providerHint: next.llmProviderHint,
+      hasHfTokenCipher: Boolean(next.hfTokenCipher),
     });
   }
 
