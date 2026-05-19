@@ -487,6 +487,9 @@ export type RendererApi = {
     setHuggingFaceToken: (input: {
       token: string;
     }) => Promise<IPCResponse<{ saved: boolean }>>;
+    setLlmProviderHint: (input: {
+      providerHint: "llamacpp" | "llamaserver" | "none";
+    }) => Promise<IPCResponse<{ providerHint: string }>>;
     reset: () => Promise<IPCResponse<AppSettings>>;
   };
   recovery: {

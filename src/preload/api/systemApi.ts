@@ -133,6 +133,8 @@ export function createSystemApi({
           IPC_CHANNELS.SETTINGS_SET_HF_TOKEN,
           input,
         ),
+      setLlmProviderHint: (input) =>
+        safeInvoke(IPC_CHANNELS.SETTINGS_SET_LLM_PROVIDER_HINT, input),
       reset: () => safeInvoke(IPC_CHANNELS.SETTINGS_RESET),
     },
     recovery: {

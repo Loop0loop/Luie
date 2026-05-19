@@ -166,6 +166,7 @@ export const IPC_CHANNELS = {
   SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL: "settings:download-default-llm-model",
   SETTINGS_GET_LLM_DOWNLOAD_STATUS: "settings:get-llm-download-status",
   SETTINGS_SET_HF_TOKEN: "settings:set-hf-token",
+  SETTINGS_SET_LLM_PROVIDER_HINT: "settings:set-llm-provider-hint",
   SETTINGS_RESET: "settings:reset",
 
   // Recovery

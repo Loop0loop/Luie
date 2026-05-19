@@ -194,6 +194,17 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
         modelStorageService.setDefaultModel(input),
     },
     {
+      channel: IPC_CHANNELS.SETTINGS_SET_LLM_PROVIDER_HINT,
+      logTag: "SETTINGS_SET_LLM_PROVIDER_HINT",
+      failMessage: "Failed to set llm provider hint",
+      argsSchema: z.tuple([z.object({ providerHint: z.enum(["llamacpp", "llamaserver", "none"]) })]),
+      handler: async (input: { providerHint: "llamacpp" | "llamaserver" | "none" }) => {
+        const settingsManager = await loadSettingsManager();
+        settingsManager.setLlmSettings({ llmProviderHint: input.providerHint });
+        return { providerHint: input.providerHint };
+      },
+    },
+    {
       channel: IPC_CHANNELS.SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL,
       logTag: "SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL",
       failMessage: "Failed to download default llm model",
