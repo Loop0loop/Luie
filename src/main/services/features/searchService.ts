@@ -196,9 +196,11 @@ export class SearchService {
       `);
       const runtime = await this.resolveRuntimeCached(input.projectId);
       let denseRanks: Array<{ chunkId: string; rank: number }> = [];
-      const queryVectors = await runtime.embed([normalizedQuery]);
+      const queryVectors = db.isVectorSearchEnabled()
+        ? await runtime.embed([normalizedQuery])
+        : null;
       const queryVector = queryVectors?.[0] ?? null;
-      if (queryVector) {
+      if (queryVector && queryVector.length > 0) {
         denseRanks = await this.searchByVector(input.projectId, queryVector, Math.max(limit, 50));
       }
       const merged = this.mergeWithRRF(
@@ -293,6 +295,7 @@ export class SearchService {
         FROM "MemoryEmbedding"
         WHERE "projectId" = ${projectId}
           AND "dimension" = ${queryVec.length}
+          AND length("vec") = "dimension" * 4
         ORDER BY vec_distance_cosine("vec", ${queryVecBlob})
         LIMIT ${limit};
       `);

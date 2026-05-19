@@ -24,6 +24,15 @@ function vectorToBuffer(vector: Float32Array): Buffer {
   return Buffer.from(vector.buffer, vector.byteOffset, vector.byteLength);
 }
 
+function validateEmbeddingVector(vector: Float32Array): void {
+  if (!Number.isFinite(vector.length) || vector.length <= 0) {
+    throw new Error("INVALID_EMBEDDING_DIMENSION");
+  }
+  if (vector.byteLength !== vector.length * Float32Array.BYTES_PER_ELEMENT) {
+    throw new Error("EMBEDDING_VECTOR_BYTE_LENGTH_MISMATCH");
+  }
+}
+
 export class EmbeddingProjector {
   async processPendingEmbeddingJobs(input: {
     projectId: string;
@@ -112,6 +121,7 @@ export class EmbeddingProjector {
               const chunk = changedChunks[i];
               const vector = vectors[i];
               if (!vector) continue;
+              validateEmbeddingVector(vector);
               await client
                 .insert(memoryEmbedding)
                 .values({

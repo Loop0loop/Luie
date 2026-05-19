@@ -106,6 +106,8 @@ export interface MigrationHealth {
   chapterBodyCount: number;
   missingBodyCount: number;
   hashMismatchCount: number;
+  vectorSearchEnabled: boolean;
+  invalidEmbeddingCount: number;
 }
 
 export interface Character {

@@ -8,6 +8,7 @@ import {
   event,
   faction,
   memoryBuildJob,
+  memoryEmbedding,
   note,
   plot,
   scene,
@@ -32,8 +33,117 @@ const MAX_SEARCH_ATTEMPTS = 5;
 const SEARCH_RETRY_BASE_BACKOFF_MS = 2_000;
 const STALE_RUNNING_THRESHOLD_MS = 30_000;
 const LONG_PENDING_THRESHOLD_MS = 60_000;
+const EMBEDDING_VECTOR_ELEMENT_BYTES = Float32Array.BYTES_PER_ELEMENT;
+const HEALTH_SCAN_PAGE_SIZE = 100;
 
 class DbMaintenanceService {
+  async purgeOrphanDerivedRows(options?: {
+    dryRun?: boolean;
+  }): Promise<{
+    dryRun: boolean;
+    orphanSearchDirtyQueueCount: number;
+    orphanMemoryChunkCount: number;
+    orphanMemoryBuildJobCount: number;
+    orphanMemoryEmbeddingCount: number;
+    purgedCount: number;
+  }> {
+    const dryRun = options?.dryRun ?? false;
+    const client = db.getClient();
+    const [searchRows, chunkRows, jobRows, embeddingRows] = await Promise.all([
+      client.all<{ count: number }>(sql`
+        SELECT COUNT(*) as count
+        FROM "SearchDirtyQueue" q
+        WHERE NOT EXISTS (SELECT 1 FROM "Project" p WHERE p."id" = q."projectId");
+      `),
+      client.all<{ count: number }>(sql`
+        SELECT COUNT(*) as count
+        FROM "MemoryChunk" c
+        WHERE NOT EXISTS (SELECT 1 FROM "Project" p WHERE p."id" = c."projectId");
+      `),
+      client.all<{ count: number }>(sql`
+        SELECT COUNT(*) as count
+        FROM "MemoryBuildJob" j
+        WHERE NOT EXISTS (SELECT 1 FROM "Project" p WHERE p."id" = j."projectId");
+      `),
+      client.all<{ count: number }>(sql`
+        SELECT COUNT(*) as count
+        FROM "MemoryEmbedding" e
+        WHERE NOT EXISTS (SELECT 1 FROM "Project" p WHERE p."id" = e."projectId");
+      `),
+    ]);
+    const orphanSearchDirtyQueueCount = Number(searchRows[0]?.count ?? 0);
+    const orphanMemoryChunkCount = Number(chunkRows[0]?.count ?? 0);
+    const orphanMemoryBuildJobCount = Number(jobRows[0]?.count ?? 0);
+    const orphanMemoryEmbeddingCount = Number(embeddingRows[0]?.count ?? 0);
+    if (dryRun) {
+      return {
+        dryRun,
+        orphanSearchDirtyQueueCount,
+        orphanMemoryChunkCount,
+        orphanMemoryBuildJobCount,
+        orphanMemoryEmbeddingCount,
+        purgedCount: 0,
+      };
+    }
+    await client.run(sql`
+      DELETE FROM "MemoryEmbedding"
+      WHERE NOT EXISTS (SELECT 1 FROM "Project" p WHERE p."id" = "MemoryEmbedding"."projectId");
+    `);
+    await client.run(sql`
+      DELETE FROM "MemoryChunk"
+      WHERE NOT EXISTS (SELECT 1 FROM "Project" p WHERE p."id" = "MemoryChunk"."projectId");
+    `);
+    await client.run(sql`
+      DELETE FROM "MemoryBuildJob"
+      WHERE NOT EXISTS (SELECT 1 FROM "Project" p WHERE p."id" = "MemoryBuildJob"."projectId");
+    `);
+    await client.run(sql`
+      DELETE FROM "SearchDirtyQueue"
+      WHERE NOT EXISTS (SELECT 1 FROM "Project" p WHERE p."id" = "SearchDirtyQueue"."projectId");
+    `);
+    return {
+      dryRun,
+      orphanSearchDirtyQueueCount,
+      orphanMemoryChunkCount,
+      orphanMemoryBuildJobCount,
+      orphanMemoryEmbeddingCount,
+      purgedCount:
+        orphanSearchDirtyQueueCount +
+        orphanMemoryChunkCount +
+        orphanMemoryBuildJobCount +
+        orphanMemoryEmbeddingCount,
+    };
+  }
+
+  async purgeInvalidEmbeddings(options?: {
+    dryRun?: boolean;
+    limit?: number;
+  }): Promise<{ dryRun: boolean; invalidCount: number; purgedCount: number }> {
+    const dryRun = options?.dryRun ?? false;
+    const limit = Math.max(1, options?.limit ?? 2000);
+    const client = db.getClient();
+    const invalidRows = await client.all<{ id: string }>(sql`
+      SELECT "id"
+      FROM "MemoryEmbedding"
+      WHERE "dimension" <= 0
+        OR length("vec") != "dimension" * ${EMBEDDING_VECTOR_ELEMENT_BYTES}
+      LIMIT ${limit};
+    `);
+    const invalidCount = invalidRows.length;
+    if (invalidCount === 0 || dryRun) {
+      return { dryRun, invalidCount, purgedCount: 0 };
+    }
+    const ids = invalidRows.map((row) => row.id);
+    const result = await client
+      .delete(memoryEmbedding)
+      .where(inArray(memoryEmbedding.id, ids));
+    return {
+      dryRun,
+      invalidCount,
+      purgedCount: result.changes,
+    };
+  }
+
   private async upsertPendingSearchJob(input: {
     projectId: string;
     sourceType: string;
@@ -505,33 +615,60 @@ class DbMaintenanceService {
     chapterBodyCount: number;
     missingBodyCount: number;
     hashMismatchCount: number;
+    vectorSearchEnabled: boolean;
+    invalidEmbeddingCount: number;
   }> {
     const client = db.getClient();
-    const chapters = await client.select({ id: chapter.id, content: chapter.content }).from(chapter);
-    const bodies = await client.select().from(chapterBody);
-    const bodyMap = new Map(bodies.map((item) => [item.chapterId, item]));
-
-    let missingBodyCount = 0;
+    const chapterCountRows = await client.all<{ count: number }>(
+      sql`SELECT COUNT(*) as count FROM "Chapter";`,
+    );
+    const chapterBodyCountRows = await client.all<{ count: number }>(
+      sql`SELECT COUNT(*) as count FROM "ChapterBody";`,
+    );
+    const missingBodyCountRows = await client.all<{ count: number }>(sql`
+      SELECT COUNT(*) as count
+      FROM "Chapter" c
+      LEFT JOIN "ChapterBody" b ON b."chapterId" = c."id"
+      WHERE b."chapterId" IS NULL;
+    `);
     let hashMismatchCount = 0;
-
-    for (const row of chapters) {
-      const body = bodyMap.get(row.id);
-      if (!body) {
-        missingBodyCount += 1;
-        continue;
+    let cursor: string | null = null;
+    while (true) {
+      const batch = await client
+        .select({
+          chapterId: chapterBody.chapterId,
+          content: chapterBody.content,
+          contentHash: chapterBody.contentHash,
+        })
+        .from(chapterBody)
+        .where(cursor ? sql`${chapterBody.chapterId} > ${cursor}` : undefined)
+        .orderBy(asc(chapterBody.chapterId))
+        .limit(HEALTH_SCAN_PAGE_SIZE);
+      if (batch.length === 0) break;
+      for (const row of batch) {
+        const canonicalHash = hash(String(row.content ?? ""));
+        if (row.contentHash !== canonicalHash) {
+          hashMismatchCount += 1;
+        }
       }
-      const canonical = String(body.content ?? row.content ?? "");
-      const canonicalHash = hash(canonical);
-      if (body.contentHash !== canonicalHash) {
-        hashMismatchCount += 1;
-      }
+      cursor = batch[batch.length - 1]?.chapterId ?? null;
+      if (!cursor) break;
     }
 
+    const invalidEmbeddingRows = await client.all<{ count: number }>(sql`
+      SELECT COUNT(*) as count
+      FROM "MemoryEmbedding"
+      WHERE "dimension" <= 0
+         OR length("vec") != "dimension" * ${EMBEDDING_VECTOR_ELEMENT_BYTES};
+    `);
+
     return {
-      chapterCount: chapters.length,
-      chapterBodyCount: bodies.length,
-      missingBodyCount,
+      chapterCount: Number(chapterCountRows[0]?.count ?? 0),
+      chapterBodyCount: Number(chapterBodyCountRows[0]?.count ?? 0),
+      missingBodyCount: Number(missingBodyCountRows[0]?.count ?? 0),
       hashMismatchCount,
+      vectorSearchEnabled: db.isVectorSearchEnabled(),
+      invalidEmbeddingCount: Number(invalidEmbeddingRows[0]?.count ?? 0),
     };
   }
 }

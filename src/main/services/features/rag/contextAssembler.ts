@@ -119,56 +119,99 @@ async function buildLayer2RelatedEntities(projectId: string, question: string): 
   const escaped = escapeLike(question.trim());
   if (!escaped) return "(none)";
 
-  const [characters, factions, events, terms] = await Promise.all([
+  const prefix = `${escaped}%`;
+  const contains = `%${escaped}%`;
+
+  const [characterPrefix, factionPrefix, eventPrefix, termPrefix] = await Promise.all([
     db
       .getClient()
       .select({ name: character.name, description: character.description })
       .from(character)
-      .where(
-        and(
-          eq(character.projectId, projectId),
-          isNull(character.deletedAt),
-          or(like(character.name, `%${escaped}%`), like(character.description, `%${escaped}%`)),
-        ),
-      )
+      .where(and(eq(character.projectId, projectId), isNull(character.deletedAt), like(character.name, prefix)))
       .limit(20),
     db
       .getClient()
       .select({ name: faction.name, description: faction.description })
       .from(faction)
-      .where(
-        and(
-          eq(faction.projectId, projectId),
-          isNull(faction.deletedAt),
-          or(like(faction.name, `%${escaped}%`), like(faction.description, `%${escaped}%`)),
-        ),
-      )
+      .where(and(eq(faction.projectId, projectId), isNull(faction.deletedAt), like(faction.name, prefix)))
       .limit(20),
     db
       .getClient()
       .select({ name: event.name, description: event.description })
       .from(event)
-      .where(
-        and(
-          eq(event.projectId, projectId),
-          isNull(event.deletedAt),
-          or(like(event.name, `%${escaped}%`), like(event.description, `%${escaped}%`)),
-        ),
-      )
+      .where(and(eq(event.projectId, projectId), isNull(event.deletedAt), like(event.name, prefix)))
       .limit(20),
     db
       .getClient()
       .select({ term: term.term, definition: term.definition })
       .from(term)
-      .where(
-        and(
-          eq(term.projectId, projectId),
-          isNull(term.deletedAt),
-          or(like(term.term, `%${escaped}%`), like(term.definition, `%${escaped}%`)),
-        ),
-      )
+      .where(and(eq(term.projectId, projectId), isNull(term.deletedAt), like(term.term, prefix)))
       .limit(20),
   ]);
+
+  const [characterFallback, factionFallback, eventFallback, termFallback] = await Promise.all([
+    characterPrefix.length > 0
+      ? Promise.resolve([])
+      : db
+        .getClient()
+        .select({ name: character.name, description: character.description })
+        .from(character)
+        .where(
+          and(
+            eq(character.projectId, projectId),
+            isNull(character.deletedAt),
+            or(like(character.name, contains), like(character.description, contains)),
+          ),
+        )
+        .limit(20),
+    factionPrefix.length > 0
+      ? Promise.resolve([])
+      : db
+        .getClient()
+        .select({ name: faction.name, description: faction.description })
+        .from(faction)
+        .where(
+          and(
+            eq(faction.projectId, projectId),
+            isNull(faction.deletedAt),
+            or(like(faction.name, contains), like(faction.description, contains)),
+          ),
+        )
+        .limit(20),
+    eventPrefix.length > 0
+      ? Promise.resolve([])
+      : db
+        .getClient()
+        .select({ name: event.name, description: event.description })
+        .from(event)
+        .where(
+          and(
+            eq(event.projectId, projectId),
+            isNull(event.deletedAt),
+            or(like(event.name, contains), like(event.description, contains)),
+          ),
+        )
+        .limit(20),
+    termPrefix.length > 0
+      ? Promise.resolve([])
+      : db
+        .getClient()
+        .select({ term: term.term, definition: term.definition })
+        .from(term)
+        .where(
+          and(
+            eq(term.projectId, projectId),
+            isNull(term.deletedAt),
+            or(like(term.term, contains), like(term.definition, contains)),
+          ),
+        )
+        .limit(20),
+  ]);
+
+  const characters = characterPrefix.length > 0 ? characterPrefix : characterFallback;
+  const factions = factionPrefix.length > 0 ? factionPrefix : factionFallback;
+  const events = eventPrefix.length > 0 ? eventPrefix : eventFallback;
+  const terms = termPrefix.length > 0 ? termPrefix : termFallback;
 
   const content = [
     "[CHARACTERS]",

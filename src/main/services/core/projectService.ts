@@ -665,6 +665,16 @@ export class ProjectService {
     });
   }
 
+  private async purgeDerivedProjectRows(projectId: string): Promise<void> {
+    // Legacy databases may not have FK cascades on these derived tables.
+    // Explicit deletes keep behavior stable across schema generations.
+    const client = db.getClient();
+    await client.delete(schema.memoryEmbedding).where(eq(schema.memoryEmbedding.projectId, projectId));
+    await client.delete(schema.memoryChunk).where(eq(schema.memoryChunk.projectId, projectId));
+    await client.delete(schema.memoryBuildJob).where(eq(schema.memoryBuildJob.projectId, projectId));
+    await client.delete(schema.searchDirtyQueue).where(eq(schema.searchDirtyQueue.projectId, projectId));
+  }
+
   async deleteProject(input: string | ProjectDeleteInput) {
     const request = normalizeProjectDeleteInput(input);
     let queuedProjectDelete = false;
@@ -699,6 +709,8 @@ export class ProjectService {
         deletedAt: new Date().toISOString(),
       });
       queuedProjectDelete = true;
+
+      await this.purgeDerivedProjectRows(request.id);
 
       const deletedRows = await db.getClient()
         .delete(schema.project)
@@ -771,11 +783,11 @@ export class ProjectService {
         );
       }
 
+      await this.purgeDerivedProjectRows(id);
       const deletedRows = await db.getClient()
         .delete(schema.project)
         .where(eq(schema.project.id, id))
         .returning({ id: schema.project.id });
-
       if (!deletedRows.length) {
         throw new ServiceError(
           ErrorCode.PROJECT_NOT_FOUND,
