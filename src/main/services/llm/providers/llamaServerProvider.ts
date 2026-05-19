@@ -5,6 +5,9 @@ import { LlamaCppProvider } from "./llamaCppProvider.js";
 
 type LlamaServerProviderOptions = {
   modelPath: string;
+  embeddingModelPath?: string | null;
+  contextSize?: number;
+  gpuLayers?: number;
 };
 
 export class LlamaServerProvider implements ModelRuntimeClient {
@@ -26,7 +29,12 @@ export class LlamaServerProvider implements ModelRuntimeClient {
 
   private getOrCreateFallback(): LlamaCppProvider {
     if (!this.llamaCppFallback) {
-      this.llamaCppFallback = new LlamaCppProvider(this.options.modelPath);
+      this.llamaCppFallback = new LlamaCppProvider(
+        this.options.modelPath,
+        this.options.embeddingModelPath ?? null,
+        this.options.contextSize,
+        this.options.gpuLayers,
+      );
     }
     return this.llamaCppFallback;
   }
@@ -140,7 +148,8 @@ export class LlamaServerProvider implements ModelRuntimeClient {
     }
   }
 
-  async embed(_texts: string[]): Promise<Float32Array[] | null> {
-    return null;
+  async embed(texts: string[]): Promise<Float32Array[] | null> {
+    const fallback = this.getOrCreateFallback();
+    return await fallback.embed(texts);
   }
 }

@@ -44,6 +44,10 @@ function isMissingTableError(error: unknown): boolean {
   return /no such table/i.test(error.message);
 }
 
+function throwIfAborted(signal?: AbortSignal): void {
+  signal?.throwIfAborted();
+}
+
 function likeWithEscape(columnSql: AnyColumn | SQLWrapper, pattern: string) {
   return sql`${columnSql} LIKE ${pattern} ESCAPE '\\'`;
 }
@@ -315,14 +319,17 @@ export async function assembleRagContext(input: {
   projectId: string;
   question: string;
   chapterId?: string;
+  signal?: AbortSignal;
 }): Promise<RagContextPacket> {
-  const [layer0, layer1, layer2, layer3] = await Promise.all([
+  throwIfAborted(input.signal);
+  const [layer0, layer1, layer2, layer3, promptConfig] = await Promise.all([
     buildLayer0ProjectSummary(input.projectId),
     buildLayer1ChapterSummaries(input.projectId),
     buildLayer2RelatedEntities(input.projectId, input.question),
     buildLayer3Evidence(input.projectId, input.question),
+    loadRagPromptConfig(),
   ]);
-  const promptConfig = await loadRagPromptConfig();
+  throwIfAborted(input.signal);
 
   const prompt = [
     promptConfig.systemInstruction,

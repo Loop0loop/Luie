@@ -2,6 +2,7 @@ import path from "node:path";
 import { app, utilityProcess, webContents } from "electron";
 import type { UtilityProcess } from "electron";
 import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
+import { ErrorCode } from "../../../../shared/constants/errorCode.js";
 import type {
   RagQaErrorPayload,
   RagQaRequest,
@@ -12,8 +13,10 @@ import { createLogger } from "../../../../shared/logger/index.js";
 
 const logger = createLogger("UtilityProcessBridge");
 const START_TIMEOUT_MS = 5_000;
-const REQUEST_TIMEOUT_MS = 20_000;
-const STOP_TIMEOUT_MS = 2_000;
+const REQUEST_TIMEOUT_ASK_MS = 20_000;
+const REQUEST_TIMEOUT_STOP_MS = 2_000;
+const STOP_TIMEOUT_MS = 5_000;
+const STOP_GRACE_MS = 120;
 
 type UtilityOutboundMessage =
   | { type: "pong"; requestId?: string; pid: number }
@@ -48,8 +51,12 @@ export class UtilityProcessBridge {
   private pendingRequests = new Map<string, PendingRequest>();
   private ragRunToWebContentsId = new Map<string, number>();
   private startingPromise: Promise<boolean> | null = null;
+  private stoppingPromise: Promise<void> | null = null;
 
   async start(): Promise<boolean> {
+    if (this.stoppingPromise) {
+      await this.stoppingPromise;
+    }
     if (this.utilityChild) return true;
     if (this.startingPromise) return await this.startingPromise;
 
@@ -72,6 +79,7 @@ export class UtilityProcessBridge {
       child.on("exit", (code) => {
         logger.info("Utility process exited", { pid: child.pid, code });
         this.clearPendingRequests("Utility process exited");
+        this.emitCrashErrorsToActiveRuns("RAG utility process exited unexpectedly");
         this.ragRunToWebContentsId.clear();
         this.utilityChild = null;
       });
@@ -98,36 +106,58 @@ export class UtilityProcessBridge {
 
   stop(): void {
     if (!this.utilityChild) return;
+    if (this.stoppingPromise) return;
     try {
       const child = this.utilityChild;
+      const stopRequestId = this.nextRequestId();
+      child.postMessage({
+        type: "request",
+        requestId: stopRequestId,
+        method: "ragQa.stop",
+      } satisfies UtilityInboundMessage);
       this.clearPendingRequests("Utility process is stopping");
-      this.ragRunToWebContentsId.clear();
-      const requestId = this.nextRequestId();
-      const timeout = setTimeout(() => {
-        try {
-          child.kill();
-        } catch (error) {
-          logger.warn("Failed to kill utility process after timeout", { error });
-        }
-      }, STOP_TIMEOUT_MS);
-      const onMessage = (raw: unknown) => {
-        const message = unwrapMessage(raw) as UtilityOutboundMessage;
-        if (message?.type === "shutdown-ack" && message.requestId === requestId) {
+      this.stoppingPromise = new Promise<void>((resolve) => {
+        const requestId = this.nextRequestId();
+        const graceTimer = setTimeout(() => {
+          child.postMessage({ type: "shutdown", requestId } satisfies UtilityInboundMessage);
+        }, STOP_GRACE_MS);
+        const cleanup = () => {
+          clearTimeout(graceTimer);
           clearTimeout(timeout);
+          child.off("message", onMessage);
+          this.ragRunToWebContentsId.clear();
+          this.utilityChild = null;
+          this.stoppingPromise = null;
+          resolve();
+        };
+        const timeout = setTimeout(() => {
           child.off("message", onMessage);
           try {
             child.kill();
           } catch (error) {
-            logger.warn("Failed to kill utility process after shutdown ack", { error });
+            logger.warn("Failed to kill utility process after timeout", { error });
+          } finally {
+            cleanup();
           }
-        }
-      };
-      child.on("message", onMessage);
-      child.postMessage({ type: "shutdown", requestId } satisfies UtilityInboundMessage);
+        }, STOP_TIMEOUT_MS);
+        const onMessage = (raw: unknown) => {
+          const message = unwrapMessage(raw) as UtilityOutboundMessage;
+          if (message?.type === "shutdown-ack" && message.requestId === requestId) {
+            try {
+              child.kill();
+            } catch (error) {
+              logger.warn("Failed to kill utility process after shutdown ack", { error });
+            } finally {
+              cleanup();
+            }
+          }
+        };
+        child.on("message", onMessage);
+      });
     } catch (error) {
       logger.warn("Failed to stop utility process", { error });
-    } finally {
       this.utilityChild = null;
+      this.stoppingPromise = null;
     }
   }
 
@@ -185,7 +215,7 @@ export class UtilityProcessBridge {
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(requestId);
         reject(new Error(`Utility request timeout: ${method}`));
-      }, REQUEST_TIMEOUT_MS);
+      }, method === "ragQa.stop" ? REQUEST_TIMEOUT_STOP_MS : REQUEST_TIMEOUT_ASK_MS);
       this.pendingRequests.set(requestId, { resolve, reject, timeout });
       if (method === "ragQa.ask") {
         child.postMessage({
@@ -265,6 +295,18 @@ export class UtilityProcessBridge {
       pending.reject(new Error(message));
     }
     this.pendingRequests.clear();
+  }
+
+  private emitCrashErrorsToActiveRuns(message: string): void {
+    for (const [runId, webContentsId] of this.ragRunToWebContentsId.entries()) {
+      const target = webContents.fromId(webContentsId);
+      if (!target || target.isDestroyed()) continue;
+      target.send(IPC_CHANNELS.RAG_QA_ERROR, {
+        runId,
+        code: ErrorCode.RAG_QA_UTILITY_EXITED,
+        message,
+      } satisfies RagQaErrorPayload);
+    }
   }
 
   private nextRequestId(): string {

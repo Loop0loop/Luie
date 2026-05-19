@@ -166,5 +166,8 @@ export const getDefaultSettings = (): AppSettings => ({
     autoSync: true,
   } as SyncSettings,
   startup: {},
-  llm: {},
+  llm: {
+    ragTemperature: 0.2,
+    ragMaxTokens: 1200,
+  },
 });

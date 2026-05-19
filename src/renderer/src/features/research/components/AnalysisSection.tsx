@@ -6,6 +6,7 @@ import { Send, Square, ChevronDown, Bot, User, AlertCircle, BookOpen } from "luc
 import { useToast } from "@shared/ui/ToastContext";
 import { api } from "@shared/api";
 import type { RagQaErrorPayload, RagQaStreamPayload, LlmModelSettingsView } from "@shared/types";
+import { ErrorCode } from "@shared/constants/errorCode";
 import { requestChapterNavigation } from "@renderer/features/workspace/services/chapterNavigation";
 import { Button } from "@renderer/components/ui/button";
 
@@ -94,9 +95,16 @@ export default function AnalysisSection() {
       if (payload.runId && payload.runId !== ragRunId) return;
       setIsStreaming(false);
       setRagRunId(null);
+      const isAborted = payload.code === ErrorCode.RAG_QA_ABORTED;
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === ragRunId ? { ...m, isStreaming: false, error: payload.message ?? "Error" } : m,
+          m.id === ragRunId
+            ? {
+                ...m,
+                isStreaming: false,
+                error: isAborted ? "요청이 중단되었습니다." : (payload.message ?? "Error"),
+              }
+            : m,
         ),
       );
     }, ragRunId);

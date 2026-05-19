@@ -1063,6 +1063,8 @@ export interface AppSettings {
     defaultModelId?: string;
     llmProviderHint?: "llamacpp" | "llamaserver" | "none";
     hfTokenCipher?: string;
+    ragTemperature?: number;
+    ragMaxTokens?: number;
   };
 }
 
