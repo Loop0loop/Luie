@@ -95,8 +95,8 @@ export class LlamaCppProvider implements ModelRuntimeClient {
       const llama = await getLlama({ gpu: "auto" });
       // The package API is intentionally accessed via loose typing to avoid
       // compile-time coupling across minor API differences.
-      const model = await (llama as { loadModel: (input: { modelPath: string; gpuLayers?: number }) => Promise<unknown> })
-        .loadModel({ modelPath: this.context.modelPath, gpuLayers: this.context.gpuLayers });
+      const model = await (llama as { loadModel: (input: { modelPath: string; gpuLayers?: number; defaultContextFlashAttention?: boolean }) => Promise<unknown> })
+        .loadModel({ modelPath: this.context.modelPath, gpuLayers: this.context.gpuLayers, defaultContextFlashAttention: true });
       const context = await (model as { createContext: (input: { contextSize: number }) => Promise<unknown> })
         .createContext({ contextSize: this.context.contextSize });
       this.context.model = model;
@@ -132,8 +132,8 @@ export class LlamaCppProvider implements ModelRuntimeClient {
         const mod = await dynamicImport("node-llama-cpp");
         const getLlama = (mod as { getLlama: (options?: { gpu?: string }) => Promise<unknown> }).getLlama;
         const llama = await getLlama({ gpu: "auto" });
-        model = await (llama as { loadModel: (input: { modelPath: string; gpuLayers?: number }) => Promise<unknown> })
-          .loadModel({ modelPath: embeddingModelPath, gpuLayers: this.context.gpuLayers });
+        model = await (llama as { loadModel: (input: { modelPath: string; gpuLayers?: number; defaultContextFlashAttention?: boolean }) => Promise<unknown> })
+          .loadModel({ modelPath: embeddingModelPath, gpuLayers: this.context.gpuLayers, defaultContextFlashAttention: true });
       }
 
       const embeddingContext = await (model as {
