@@ -19,6 +19,7 @@ import type {
   RelationKind,
 } from "../../../../shared/types/index.js";
 import type * as schema from "../../../database/schema.js";
+import { buildCanonicalWorldEntityPointers } from "../../world/entityRelationPointers.js";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -146,17 +147,25 @@ export function toWorldEntityExportDto(
 export function toEntityRelationExportDto(
   row: typeof schema.entityRelation.$inferSelect,
 ): EntityRelation {
+  const sourceType = row.sourceType as WorldEntitySourceType;
+  const targetType = row.targetType as WorldEntitySourceType;
+  const pointers = buildCanonicalWorldEntityPointers({
+    sourceId: row.sourceId,
+    sourceType,
+    targetId: row.targetId,
+    targetType,
+  });
   return {
     id: row.id,
     projectId: row.projectId,
     sourceId: row.sourceId,
-    sourceType: row.sourceType as WorldEntitySourceType,
+    sourceType,
     targetId: row.targetId,
-    targetType: row.targetType as WorldEntitySourceType,
+    targetType,
     relation: row.relation as RelationKind,
     attributes: normalizeNullableString(row.attributes),
-    sourceWorldEntityId: row.sourceWorldEntityId ?? null,
-    targetWorldEntityId: row.targetWorldEntityId ?? null,
+    sourceWorldEntityId: pointers.sourceWorldEntityId,
+    targetWorldEntityId: pointers.targetWorldEntityId,
     createdAt: toDate(row.createdAt),
     updatedAt: toDate(row.updatedAt),
   };

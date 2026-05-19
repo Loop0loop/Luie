@@ -106,8 +106,10 @@ export interface MigrationHealth {
   chapterBodyCount: number;
   missingBodyCount: number;
   hashMismatchCount: number;
+  hashMismatchSampled: boolean;
   vectorSearchEnabled: boolean;
   invalidEmbeddingCount: number;
+  relationPointerMismatchCount: number;
 }
 
 export interface Character {

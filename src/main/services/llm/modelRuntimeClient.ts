@@ -1,6 +1,7 @@
 export type GenerateOptions = {
   maxTokens?: number;
   temperature?: number;
+  signal?: AbortSignal;
 };
 
 export interface ModelRuntimeClient {

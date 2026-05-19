@@ -57,6 +57,9 @@ export class LlamaServerProvider implements ModelRuntimeClient {
   }
 
   async *generateStream(prompt: string, options?: GenerateOptions): AsyncIterable<string> {
+    if (options?.signal?.aborted) {
+      throw new Error("Generation aborted");
+    }
     let baseUrl: string;
     try {
       baseUrl = await sidecarManager.start(this.options.modelPath);
@@ -80,6 +83,7 @@ export class LlamaServerProvider implements ModelRuntimeClient {
       response = await fetch(`${baseUrl}/v1/completions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: options?.signal,
         body: JSON.stringify({
           prompt,
           stream: true,
@@ -102,6 +106,9 @@ export class LlamaServerProvider implements ModelRuntimeClient {
     let buffer = "";
     try {
       while (true) {
+        if (options?.signal?.aborted) {
+          throw new Error("Generation aborted");
+        }
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });

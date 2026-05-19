@@ -23,6 +23,7 @@ import {
   MEMORY_JOB_TYPES,
   MEMORY_TARGET_TYPES,
 } from "./memory/memoryJobConstants.js";
+import { ENTITY_RELATION_WORLD_TYPES } from "../../database/entityRelationPointerSql.js";
 
 function hash(input: string): string {
   return crypto.createHash("sha256").update(input).digest("hex");
@@ -33,8 +34,6 @@ const MAX_SEARCH_ATTEMPTS = 5;
 const SEARCH_RETRY_BASE_BACKOFF_MS = 2_000;
 const STALE_RUNNING_THRESHOLD_MS = 30_000;
 const LONG_PENDING_THRESHOLD_MS = 60_000;
-const EMBEDDING_VECTOR_ELEMENT_BYTES = Float32Array.BYTES_PER_ELEMENT;
-const HEALTH_SCAN_PAGE_SIZE = 100;
 
 class DbMaintenanceService {
   async purgeOrphanDerivedRows(options?: {
@@ -126,7 +125,8 @@ class DbMaintenanceService {
       SELECT "id"
       FROM "MemoryEmbedding"
       WHERE "dimension" <= 0
-        OR length("vec") != "dimension" * ${EMBEDDING_VECTOR_ELEMENT_BYTES}
+        OR length("vec") <= 0
+        OR ("dimension" > 0 AND length("vec") % "dimension" != 0)
       LIMIT ${limit};
     `);
     const invalidCount = invalidRows.length;
@@ -615,8 +615,10 @@ class DbMaintenanceService {
     chapterBodyCount: number;
     missingBodyCount: number;
     hashMismatchCount: number;
+    hashMismatchSampled: boolean;
     vectorSearchEnabled: boolean;
     invalidEmbeddingCount: number;
+    relationPointerMismatchCount: number;
   }> {
     const client = db.getClient();
     const chapterCountRows = await client.all<{ count: number }>(
@@ -631,35 +633,49 @@ class DbMaintenanceService {
       LEFT JOIN "ChapterBody" b ON b."chapterId" = c."id"
       WHERE b."chapterId" IS NULL;
     `);
+    const HASH_SAMPLE_SIZE = 50;
+    const sample = await client
+      .select({
+        chapterId: chapterBody.chapterId,
+        content: chapterBody.content,
+        contentHash: chapterBody.contentHash,
+      })
+      .from(chapterBody)
+      .orderBy(sql`RANDOM()`)
+      .limit(HASH_SAMPLE_SIZE);
     let hashMismatchCount = 0;
-    let cursor: string | null = null;
-    while (true) {
-      const batch = await client
-        .select({
-          chapterId: chapterBody.chapterId,
-          content: chapterBody.content,
-          contentHash: chapterBody.contentHash,
-        })
-        .from(chapterBody)
-        .where(cursor ? sql`${chapterBody.chapterId} > ${cursor}` : undefined)
-        .orderBy(asc(chapterBody.chapterId))
-        .limit(HEALTH_SCAN_PAGE_SIZE);
-      if (batch.length === 0) break;
-      for (const row of batch) {
-        const canonicalHash = hash(String(row.content ?? ""));
-        if (row.contentHash !== canonicalHash) {
-          hashMismatchCount += 1;
-        }
+    for (const row of sample) {
+      const canonicalHash = hash(String(row.content ?? ""));
+      if (row.contentHash !== canonicalHash) {
+        hashMismatchCount += 1;
       }
-      cursor = batch[batch.length - 1]?.chapterId ?? null;
-      if (!cursor) break;
     }
+    const chapterBodyTotal = Number(chapterBodyCountRows[0]?.count ?? 0);
+    const hashMismatchSampled = chapterBodyTotal > HASH_SAMPLE_SIZE;
 
     const invalidEmbeddingRows = await client.all<{ count: number }>(sql`
       SELECT COUNT(*) as count
       FROM "MemoryEmbedding"
       WHERE "dimension" <= 0
-         OR length("vec") != "dimension" * ${EMBEDDING_VECTOR_ELEMENT_BYTES};
+         OR length("vec") <= 0
+         OR ("dimension" > 0 AND length("vec") % "dimension" != 0);
+    `);
+    const relationPointerMismatchRows = await client.all<{ count: number }>(sql`
+      SELECT COUNT(*) as count
+      FROM "EntityRelation" r
+      WHERE (
+        (r."sourceType" IN (${sql.join(ENTITY_RELATION_WORLD_TYPES.map((type) => sql`${type}`), sql`,`)})
+          AND COALESCE(r."sourceWorldEntityId", '') != r."sourceId")
+        OR
+        (r."sourceType" NOT IN (${sql.join(ENTITY_RELATION_WORLD_TYPES.map((type) => sql`${type}`), sql`,`)})
+          AND r."sourceWorldEntityId" IS NOT NULL)
+        OR
+        (r."targetType" IN (${sql.join(ENTITY_RELATION_WORLD_TYPES.map((type) => sql`${type}`), sql`,`)})
+          AND COALESCE(r."targetWorldEntityId", '') != r."targetId")
+        OR
+        (r."targetType" NOT IN (${sql.join(ENTITY_RELATION_WORLD_TYPES.map((type) => sql`${type}`), sql`,`)})
+          AND r."targetWorldEntityId" IS NOT NULL)
+      );
     `);
 
     return {
@@ -667,8 +683,12 @@ class DbMaintenanceService {
       chapterBodyCount: Number(chapterBodyCountRows[0]?.count ?? 0),
       missingBodyCount: Number(missingBodyCountRows[0]?.count ?? 0),
       hashMismatchCount,
+      hashMismatchSampled,
       vectorSearchEnabled: db.isVectorSearchEnabled(),
       invalidEmbeddingCount: Number(invalidEmbeddingRows[0]?.count ?? 0),
+      relationPointerMismatchCount: Number(
+        relationPointerMismatchRows[0]?.count ?? 0,
+      ),
     };
   }
 }

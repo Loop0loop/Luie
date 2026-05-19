@@ -34,10 +34,10 @@ export function PanelHeader({
   subtitle?: string;
 }) {
   return (
-    <div className="shrink-0 border-b border-border/40 px-4 py-3">
-      <h2 className="text-sm font-bold text-fg">{title}</h2>
+    <div className="shrink-0 border-b border-border/40 px-3 py-2.5">
+      <h2 className="text-[13px] font-semibold text-fg">{title}</h2>
       {subtitle && (
-        <div className="mt-0.5 text-[11px] uppercase tracking-wider text-muted">
+        <div className="mt-0.5 truncate text-[10px] uppercase tracking-wider text-subtle">
           {subtitle}
         </div>
       )}
@@ -80,7 +80,7 @@ export function PanelSection({
       <div
         role="button"
         tabIndex={0}
-        className="flex w-full cursor-pointer items-center px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted transition-colors hover:text-fg"
+        className="flex w-full cursor-pointer items-center rounded px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-subtle transition-colors hover:bg-surface hover:text-fg"
         onClick={() => setIsOpen((v) => !v)}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -136,7 +136,6 @@ export function PanelItem({
   icon?: ReactNode;
   active?: boolean;
   onClick?: () => void;
-  /** 우측 배지 (카운트, 태그 등) */
   badge?: ReactNode;
   className?: string;
 }) {
@@ -145,10 +144,10 @@ export function PanelItem({
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
       className={cn(
-        "flex cursor-pointer items-center px-4 py-1.5 pl-9 text-[13px] transition-all",
+        "flex cursor-pointer items-center gap-2 rounded-sm px-3 py-1 text-xs transition-colors",
         active
-          ? "border-l-[3px] border-accent bg-active font-medium text-fg"
-          : "border-l-2 border-transparent text-muted hover:bg-surface-hover hover:text-fg",
+          ? "border-l-2 border-accent bg-active font-medium text-fg"
+          : "border-l-2 border-transparent text-muted hover:bg-surface hover:text-fg",
         className,
       )}
       onClick={onClick}
@@ -159,11 +158,9 @@ export function PanelItem({
         }
       }}
     >
-      {icon && <span className="mr-2 shrink-0">{icon}</span>}
+      {icon && <span className="shrink-0">{icon}</span>}
       <span className="min-w-0 flex-1 truncate">{label}</span>
-      {badge && (
-        <span className="ml-auto shrink-0 pl-2">{badge}</span>
-      )}
+      {badge && <span className="ml-auto shrink-0 pl-2">{badge}</span>}
     </div>
   );
 }

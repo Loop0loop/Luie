@@ -327,6 +327,16 @@ export function ModelTab(props: ModelTabProps) {
                   defaultValue: "Mismatch: {{count}}",
                   count: migrationHealth.hashMismatchCount,
                 })}
+                {migrationHealth.hashMismatchSampled && " (sampled)"}
+              </div>
+            </div>
+            <div className="p-3 rounded-lg bg-element border border-border">
+              <div className="text-[10px] font-medium text-muted uppercase">Relation</div>
+              <div className="text-sm font-medium text-fg mt-1">
+                {t("settings.model.relationPointerMismatchCount", {
+                  defaultValue: "Pointer mismatch: {{count}}",
+                  count: migrationHealth.relationPointerMismatchCount,
+                })}
               </div>
             </div>
           </div>

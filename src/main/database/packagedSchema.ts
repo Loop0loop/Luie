@@ -1,4 +1,5 @@
 // TODO: Remove in Phase 7 — replaced by Drizzle migrations in drizzle/main/
+import { ENTITY_RELATION_POINTER_TRIGGER_SQL } from "./entityRelationPointerSql.js";
 // Packaged SQLite bootstrap schema mirrors the current local runtime surface.
 // It includes canonical project tables, replica tables for detached/offline
 // editing, and app-local attachment metadata. `Project.projectPath` remains as
@@ -634,4 +635,5 @@ CREATE INDEX IF NOT EXISTS "WorldEntity_projectId_name_idx" ON "WorldEntity"("pr
 CREATE INDEX IF NOT EXISTS "EntityRelation_projectId_sourceId_idx" ON "EntityRelation"("projectId", "sourceId");
 CREATE INDEX IF NOT EXISTS "EntityRelation_projectId_targetId_idx" ON "EntityRelation"("projectId", "targetId");
 CREATE INDEX IF NOT EXISTS "EntityRelation_projectId_relation_idx" ON "EntityRelation"("projectId", "relation");
+${ENTITY_RELATION_POINTER_TRIGGER_SQL}
 `;

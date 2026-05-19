@@ -27,6 +27,7 @@ export class LlamaCppProvider implements ModelRuntimeClient {
   private embeddingPromise: Promise<void> | null = null;
   private idleUnloadTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly idleUnloadMs: number;
+  private inFlightCount = 0;
 
   constructor(modelPath: string, embeddingModelPath?: string | null, contextSize?: number, gpuLayers?: number) {
     const configuredIdle = Number.parseInt(process.env.LUIE_LLM_IDLE_UNLOAD_MS ?? "", 10);
@@ -49,6 +50,10 @@ export class LlamaCppProvider implements ModelRuntimeClient {
       clearTimeout(this.idleUnloadTimer);
     }
     this.idleUnloadTimer = setTimeout(() => {
+      if (this.inFlightCount > 0) {
+        this.scheduleIdleUnload();
+        return;
+      }
       this.unload();
     }, this.idleUnloadMs);
     if (typeof this.idleUnloadTimer.unref === "function") {
@@ -158,33 +163,125 @@ export class LlamaCppProvider implements ModelRuntimeClient {
   }
 
   async generate(prompt: string, options?: GenerateOptions): Promise<string> {
-    await this.ensureLoaded();
-    // node-llama-cpp v3 API: context.getSequence() → LlamaCompletion.generateCompletion()
-    // (createSequence() does not exist in v3; replaced by getSequence() + LlamaCompletion)
-    const ctx = this.context.context as { getSequence: () => { dispose: () => void } };
-    const LlamaCompletionCls = this.context.LlamaCompletion as new (opts: {
-      contextSequence: unknown;
-    }) => {
-      generateCompletion: (
-        input: string,
-        opts?: { maxTokens?: number; temperature?: number },
-      ) => Promise<string>;
-    };
-    const sequence = ctx.getSequence();
-    const completion = new LlamaCompletionCls({ contextSequence: sequence });
+    this.inFlightCount += 1;
     try {
-      return await completion.generateCompletion(prompt, {
-        temperature: options?.temperature ?? 0.2,
-        maxTokens: options?.maxTokens ?? 256,
-      });
+      if (options?.signal?.aborted) {
+        throw new Error("Generation aborted");
+      }
+      await this.ensureLoaded();
+      // node-llama-cpp v3 API: context.getSequence() → LlamaCompletion.generateCompletion()
+      // (createSequence() does not exist in v3; replaced by getSequence() + LlamaCompletion)
+      const ctx = this.context.context as { getSequence: () => { dispose: () => void } };
+      const LlamaCompletionCls = this.context.LlamaCompletion as new (opts: {
+        contextSequence: unknown;
+      }) => {
+        generateCompletion: (
+          input: string,
+          opts?: { maxTokens?: number; temperature?: number },
+        ) => Promise<string>;
+      };
+      const sequence = ctx.getSequence();
+      const completion = new LlamaCompletionCls({ contextSequence: sequence });
+      try {
+        const output = await completion.generateCompletion(prompt, {
+          temperature: options?.temperature ?? 0.2,
+          maxTokens: options?.maxTokens ?? 256,
+        });
+        if (options?.signal?.aborted) {
+          throw new Error("Generation aborted");
+        }
+        return output;
+      } finally {
+        sequence.dispose();
+      }
     } finally {
-      sequence.dispose();
+      this.inFlightCount = Math.max(0, this.inFlightCount - 1);
       this.scheduleIdleUnload();
     }
   }
 
   async *generateStream(prompt: string, options?: GenerateOptions): AsyncIterable<string> {
-    yield await this.generate(prompt, options);
+    this.inFlightCount += 1;
+    try {
+      if (options?.signal?.aborted) {
+        throw new Error("Generation aborted");
+      }
+      await this.ensureLoaded();
+
+      const ctx = this.context.context as { getSequence: () => { dispose: () => void } };
+      const LlamaCompletionCls = this.context.LlamaCompletion as new (opts: {
+        contextSequence: unknown;
+      }) => {
+        generateCompletion: (
+          input: string,
+          opts?: {
+            maxTokens?: number;
+            temperature?: number;
+            signal?: AbortSignal;
+            stopOnAbortSignal?: boolean;
+            onTextChunk?: (chunk: string) => void;
+          },
+        ) => Promise<string>;
+      };
+      const sequence = ctx.getSequence();
+      const completion = new LlamaCompletionCls({ contextSequence: sequence });
+
+      const queue: string[] = [];
+      let finished = false;
+      let generationError: unknown = null;
+      let notify: (() => void) | null = null;
+      const wake = () => {
+        if (notify) {
+          const fn = notify;
+          notify = null;
+          fn();
+        }
+      };
+
+      const generationPromise = completion
+        .generateCompletion(prompt, {
+          temperature: options?.temperature ?? 0.2,
+          maxTokens: options?.maxTokens ?? 256,
+          signal: options?.signal,
+          stopOnAbortSignal: true,
+          onTextChunk: (chunk: string) => {
+            if (!chunk) return;
+            queue.push(chunk);
+            wake();
+          },
+        })
+        .catch((error) => {
+          generationError = error;
+        })
+        .finally(() => {
+          finished = true;
+          wake();
+        });
+
+      try {
+        while (!finished || queue.length > 0) {
+          if (queue.length === 0) {
+            await new Promise<void>((resolve) => {
+              notify = resolve;
+            });
+            continue;
+          }
+          const chunk = queue.shift();
+          if (chunk) {
+            yield chunk;
+          }
+        }
+        await generationPromise;
+        if (generationError) {
+          throw generationError;
+        }
+      } finally {
+        sequence.dispose();
+      }
+    } finally {
+      this.inFlightCount = Math.max(0, this.inFlightCount - 1);
+      this.scheduleIdleUnload();
+    }
   }
 
   async embed(texts: string[]): Promise<Float32Array[] | null> {

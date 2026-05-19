@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, like, or } from "drizzle-orm";
+import { and, asc, eq, isNull, or, sql } from "drizzle-orm";
 import { db } from "../../../database/index.js";
 import {
   chapter,
@@ -41,6 +41,10 @@ function formatLayer(name: string, body: string): string {
 function isMissingTableError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
   return /no such table/i.test(error.message);
+}
+
+function likeWithEscape(columnSql: unknown, pattern: string) {
+  return sql`${columnSql} LIKE ${pattern} ESCAPE '\\'`;
 }
 
 async function buildLayer0ProjectSummary(projectId: string): Promise<string> {
@@ -122,96 +126,92 @@ async function buildLayer2RelatedEntities(projectId: string, question: string): 
   const prefix = `${escaped}%`;
   const contains = `%${escaped}%`;
 
-  const [characterPrefix, factionPrefix, eventPrefix, termPrefix] = await Promise.all([
+  const [charactersResult, factionsResult, eventsResult, termsResult] = await Promise.allSettled([
     db
       .getClient()
       .select({ name: character.name, description: character.description })
       .from(character)
-      .where(and(eq(character.projectId, projectId), isNull(character.deletedAt), like(character.name, prefix)))
+      .where(
+        and(
+          eq(character.projectId, projectId),
+          isNull(character.deletedAt),
+          or(
+            likeWithEscape(character.name, prefix),
+            likeWithEscape(character.name, contains),
+            likeWithEscape(character.description, contains),
+          ),
+        ),
+      )
+      .orderBy(
+        sql`CASE WHEN ${character.name} LIKE ${prefix} ESCAPE '\' THEN 0 ELSE 1 END`,
+        asc(character.updatedAt),
+      )
       .limit(20),
     db
       .getClient()
       .select({ name: faction.name, description: faction.description })
       .from(faction)
-      .where(and(eq(faction.projectId, projectId), isNull(faction.deletedAt), like(faction.name, prefix)))
+      .where(
+        and(
+          eq(faction.projectId, projectId),
+          isNull(faction.deletedAt),
+          or(
+            likeWithEscape(faction.name, prefix),
+            likeWithEscape(faction.name, contains),
+            likeWithEscape(faction.description, contains),
+          ),
+        ),
+      )
+      .orderBy(
+        sql`CASE WHEN ${faction.name} LIKE ${prefix} ESCAPE '\' THEN 0 ELSE 1 END`,
+        asc(faction.updatedAt),
+      )
       .limit(20),
     db
       .getClient()
       .select({ name: event.name, description: event.description })
       .from(event)
-      .where(and(eq(event.projectId, projectId), isNull(event.deletedAt), like(event.name, prefix)))
+      .where(
+        and(
+          eq(event.projectId, projectId),
+          isNull(event.deletedAt),
+          or(
+            likeWithEscape(event.name, prefix),
+            likeWithEscape(event.name, contains),
+            likeWithEscape(event.description, contains),
+          ),
+        ),
+      )
+      .orderBy(
+        sql`CASE WHEN ${event.name} LIKE ${prefix} ESCAPE '\' THEN 0 ELSE 1 END`,
+        asc(event.updatedAt),
+      )
       .limit(20),
     db
       .getClient()
       .select({ term: term.term, definition: term.definition })
       .from(term)
-      .where(and(eq(term.projectId, projectId), isNull(term.deletedAt), like(term.term, prefix)))
+      .where(
+        and(
+          eq(term.projectId, projectId),
+          isNull(term.deletedAt),
+          or(
+            likeWithEscape(term.term, prefix),
+            likeWithEscape(term.term, contains),
+            likeWithEscape(term.definition, contains),
+          ),
+        ),
+      )
+      .orderBy(
+        sql`CASE WHEN ${term.term} LIKE ${prefix} ESCAPE '\' THEN 0 ELSE 1 END`,
+        asc(term.updatedAt),
+      )
       .limit(20),
   ]);
-
-  const [characterFallback, factionFallback, eventFallback, termFallback] = await Promise.all([
-    characterPrefix.length > 0
-      ? Promise.resolve([])
-      : db
-        .getClient()
-        .select({ name: character.name, description: character.description })
-        .from(character)
-        .where(
-          and(
-            eq(character.projectId, projectId),
-            isNull(character.deletedAt),
-            or(like(character.name, contains), like(character.description, contains)),
-          ),
-        )
-        .limit(20),
-    factionPrefix.length > 0
-      ? Promise.resolve([])
-      : db
-        .getClient()
-        .select({ name: faction.name, description: faction.description })
-        .from(faction)
-        .where(
-          and(
-            eq(faction.projectId, projectId),
-            isNull(faction.deletedAt),
-            or(like(faction.name, contains), like(faction.description, contains)),
-          ),
-        )
-        .limit(20),
-    eventPrefix.length > 0
-      ? Promise.resolve([])
-      : db
-        .getClient()
-        .select({ name: event.name, description: event.description })
-        .from(event)
-        .where(
-          and(
-            eq(event.projectId, projectId),
-            isNull(event.deletedAt),
-            or(like(event.name, contains), like(event.description, contains)),
-          ),
-        )
-        .limit(20),
-    termPrefix.length > 0
-      ? Promise.resolve([])
-      : db
-        .getClient()
-        .select({ term: term.term, definition: term.definition })
-        .from(term)
-        .where(
-          and(
-            eq(term.projectId, projectId),
-            isNull(term.deletedAt),
-            or(like(term.term, contains), like(term.definition, contains)),
-          ),
-        )
-        .limit(20),
-  ]);
-
-  const characters = characterPrefix.length > 0 ? characterPrefix : characterFallback;
-  const factions = factionPrefix.length > 0 ? factionPrefix : factionFallback;
-  const events = eventPrefix.length > 0 ? eventPrefix : eventFallback;
-  const terms = termPrefix.length > 0 ? termPrefix : termFallback;
+  const characters = charactersResult.status === "fulfilled" ? charactersResult.value : [];
+  const factions = factionsResult.status === "fulfilled" ? factionsResult.value : [];
+  const events = eventsResult.status === "fulfilled" ? eventsResult.value : [];
+  const terms = termsResult.status === "fulfilled" ? termsResult.value : [];
 
   const content = [
     "[CHARACTERS]",
@@ -244,12 +244,12 @@ async function buildLayer3Evidence(projectId: string, question: string): Promise
     const tokenPredicates = rawTokens
       .map((token) => escapeLike(token))
       .filter((token): token is string => token.length > 0)
-      .map((token) => like(memoryChunk.content, `%${token}%`));
+      .map((token) => likeWithEscape(memoryChunk.content, `%${token}%`));
     const lexicalPredicate =
       tokenPredicates.length > 0
         ? or(...tokenPredicates)
         : escaped
-          ? like(memoryChunk.content, `%${escaped}%`)
+          ? likeWithEscape(memoryChunk.content, `%${escaped}%`)
           : undefined;
     if (lexicalPredicate) {
       const lexicalRows = await db
