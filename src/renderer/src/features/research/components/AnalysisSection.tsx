@@ -108,24 +108,40 @@ export default function AnalysisSection() {
 
   const handleSelectModel = useCallback(async (modelPath: string) => {
     setConfigLoading(true);
-    const [res] = await Promise.all([
+    const [res, projectRes] = await Promise.all([
       api.settings.setLlmDefaultModel({ modelPath }),
       currentProject?.id
         ? api.settings.setProjectLlm({ projectId: currentProject.id, modelPath })
         : Promise.resolve(null),
     ]);
     setConfigLoading(false);
+    console.info("[AnalysisSection] set model", {
+      modelPath,
+      projectId: currentProject?.id ?? null,
+      setDefaultOk: res.success,
+      setProjectOk: projectRes ? projectRes.success : null,
+      setDefaultError: res.success ? null : res.error?.message,
+      setProjectError: projectRes && !projectRes.success ? projectRes.error?.message : null,
+    });
     if (res.success && res.data) setModelView(res.data);
   }, [currentProject?.id]);
 
   const handleSelectProvider = useCallback(async (hint: "llamacpp" | "llamaserver" | "none") => {
     setProviderHint(hint);
-    await Promise.all([
+    const [globalRes, projectRes] = await Promise.all([
       api.settings.setLlmProviderHint({ providerHint: hint }),
       currentProject?.id
         ? api.settings.setProjectLlm({ projectId: currentProject.id, providerHint: hint })
         : Promise.resolve(null),
     ]);
+    console.info("[AnalysisSection] set provider", {
+      providerHint: hint,
+      projectId: currentProject?.id ?? null,
+      setGlobalOk: globalRes.success,
+      setProjectOk: projectRes ? projectRes.success : null,
+      setGlobalError: globalRes.success ? null : globalRes.error?.message,
+      setProjectError: projectRes && !projectRes.success ? projectRes.error?.message : null,
+    });
   }, [currentProject?.id]);
 
   const handleSend = useCallback(async () => {

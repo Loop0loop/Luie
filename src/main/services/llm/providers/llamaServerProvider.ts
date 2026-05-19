@@ -1,5 +1,7 @@
 import type { GenerateOptions, ModelRuntimeClient } from "../modelRuntimeClient.js";
 import { sidecarManager } from "../sidecarManager.js";
+import { createLogger } from "../../../../shared/logger/index.js";
+import { LlamaCppProvider } from "./llamaCppProvider.js";
 
 type LlamaServerProviderOptions = {
   modelPath: string;
@@ -7,8 +9,27 @@ type LlamaServerProviderOptions = {
 
 export class LlamaServerProvider implements ModelRuntimeClient {
   readonly providerName = "llamaserver";
+  private readonly logger = createLogger("LlamaServerProvider");
+  private llamaCppFallback: LlamaCppProvider | null = null;
 
   constructor(private readonly options: LlamaServerProviderOptions) {}
+
+  private isSpawnEnoent(error: unknown): boolean {
+    if (!error || typeof error !== "object") return false;
+    const candidate = error as { code?: unknown; message?: unknown };
+    if (candidate.code === "ENOENT") return true;
+    if (typeof candidate.message === "string" && candidate.message.includes("ENOENT")) {
+      return true;
+    }
+    return false;
+  }
+
+  private getOrCreateFallback(): LlamaCppProvider {
+    if (!this.llamaCppFallback) {
+      this.llamaCppFallback = new LlamaCppProvider(this.options.modelPath);
+    }
+    return this.llamaCppFallback;
+  }
 
   async isAvailable(): Promise<boolean> {
     // Do NOT start the sidecar here — background workers call isAvailable() frequently.
@@ -36,7 +57,22 @@ export class LlamaServerProvider implements ModelRuntimeClient {
   }
 
   async *generateStream(prompt: string, options?: GenerateOptions): AsyncIterable<string> {
-    const baseUrl = await sidecarManager.start(this.options.modelPath);
+    let baseUrl: string;
+    try {
+      baseUrl = await sidecarManager.start(this.options.modelPath);
+    } catch (error) {
+      if (this.isSpawnEnoent(error)) {
+        this.logger.warn("llama-server binary not found; falling back to llamacpp", {
+          modelPath: this.options.modelPath,
+        });
+        const fallback = this.getOrCreateFallback();
+        for await (const delta of fallback.generateStream(prompt, options)) {
+          yield delta;
+        }
+        return;
+      }
+      throw error;
+    }
     sidecarManager.resetIdleTimer();
 
     let response: Response;

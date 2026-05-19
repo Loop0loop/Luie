@@ -216,15 +216,32 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       handler: async (input: { projectId: string; modelPath?: string | null; providerHint?: "llamacpp" | "llamaserver" | "none" | null }) => {
         const { db } = await import("../../database/index.js");
         const { projectSettings } = await import("../../database/schema.js");
-        const { eq } = await import("drizzle-orm");
         const store = db.getClient();
+        const nowDefaults = {
+          autoSave: true,
+          autoSaveInterval: 30,
+        };
         await store
-          .update(projectSettings)
-          .set({
+          .insert(projectSettings)
+          .values({
+            id: input.projectId,
+            projectId: input.projectId,
+            ...nowDefaults,
             ...(input.modelPath !== undefined ? { llmModelPath: input.modelPath } : {}),
             ...(input.providerHint !== undefined ? { llmProviderHint: input.providerHint } : {}),
           })
-          .where(eq(projectSettings.projectId, input.projectId));
+          .onConflictDoUpdate({
+            target: [projectSettings.projectId],
+            set: {
+              ...(input.modelPath !== undefined ? { llmModelPath: input.modelPath } : {}),
+              ...(input.providerHint !== undefined ? { llmProviderHint: input.providerHint } : {}),
+            },
+          });
+        logger.info("Project LLM settings upserted", {
+          projectId: input.projectId,
+          hasModelPath: input.modelPath !== undefined ? Boolean(input.modelPath) : undefined,
+          providerHint: input.providerHint,
+        });
         return { ok: true };
       },
     },

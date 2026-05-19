@@ -63,6 +63,7 @@ export class UtilityProcessBridge {
         env: {
           ...process.env,
           LUIE_APP_IS_PACKAGED: app.isPackaged ? "1" : "0",
+          LUIE_USER_DATA_PATH: app.getPath("userData"),
         },
       });
       child.on("spawn", () => {
