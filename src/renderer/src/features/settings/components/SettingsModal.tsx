@@ -232,6 +232,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                   onSaveOllamaConfig={settings.handleSaveOllamaConfig}
                   onListOllamaModels={settings.handleListOllamaModels}
                   onTestOllamaConnection={settings.handleTestOllamaConnection}
+                  initialBaseUrl={settings.ollamaBaseUrl}
+                  initialChatModel={settings.ollamaChatModel}
                 />
               )}
 

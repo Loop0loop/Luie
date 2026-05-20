@@ -57,6 +57,7 @@ export class SettingsManager {
     void this.migrateLegacySettingsIfNeeded(legacyCwd, legacyFile);
 
     this.migrateLegacyWindowSettings();
+    this.migrateLegacyLlmSettings();
 
     logger.info("Settings manager initialized", {
       path: this.store.path,
@@ -98,6 +99,23 @@ export class SettingsManager {
     } catch {
       return false;
     }
+  }
+
+  private migrateLegacyLlmSettings(): void {
+    const llm = this.store.get("llm") as Record<string, unknown> | undefined;
+    if (!llm) return;
+    // Already migrated — ollama key exists
+    if ("ollama" in llm) return;
+    // Old llamacpp-era format detected. Preserve ragTemperature/ragMaxTokens; drop the rest.
+    const ragTemperature = typeof llm.ragTemperature === "number" ? llm.ragTemperature : undefined;
+    const ragMaxTokens = typeof llm.ragMaxTokens === "number" ? llm.ragMaxTokens : undefined;
+    const migrated: AppSettings["llm"] = {
+      ollama: { baseUrl: "http://localhost:11434", chatModel: "" },
+      ...(ragTemperature !== undefined ? { ragTemperature } : {}),
+      ...(ragMaxTokens !== undefined ? { ragMaxTokens } : {}),
+    };
+    this.store.set("llm", migrated);
+    logger.info("Migrated legacy LLM settings to Ollama format", { ragTemperature, ragMaxTokens });
   }
 
   private migrateLegacyWindowSettings(): void {

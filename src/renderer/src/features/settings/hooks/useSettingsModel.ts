@@ -9,6 +9,8 @@ type ShowToast = (message: string, type: ToastType, duration?: number) => void;
 export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast) {
   const [isBusy, setIsBusy] = useState(false);
   const [migrationHealth, setMigrationHealth] = useState<MigrationHealth | null>(null);
+  const [ollamaBaseUrl, setOllamaBaseUrl] = useState("http://localhost:11434");
+  const [ollamaChatModel, setOllamaChatModel] = useState("");
 
   const refreshMigrationHealth = useCallback(async () => {
     const response = await api.maintenance.getMigrationHealth();
@@ -19,7 +21,15 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
 
   useEffect(() => {
     if (activeTab !== "model") return;
-    void refreshMigrationHealth();
+    void (async () => {
+      const res = await api.settings.getAll();
+      if (res.success && res.data?.llm?.ollama) {
+        const { baseUrl, chatModel } = res.data.llm.ollama;
+        if (baseUrl) setOllamaBaseUrl(baseUrl);
+        setOllamaChatModel(chatModel ?? "");
+      }
+      await refreshMigrationHealth();
+    })();
   }, [activeTab, refreshMigrationHealth]);
 
   const handleSaveOllamaConfig = useCallback(async (input: {
@@ -56,6 +66,8 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     isBusy,
     migrationHealth,
     refreshMigrationHealth,
+    ollamaBaseUrl,
+    ollamaChatModel,
     handleSaveOllamaConfig,
     handleListOllamaModels,
     handleTestOllamaConnection,
