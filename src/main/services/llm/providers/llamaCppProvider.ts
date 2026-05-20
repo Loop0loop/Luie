@@ -1,9 +1,10 @@
 import fs from "node:fs/promises";
 import type { GenerateOptions, ModelRuntimeClient } from "../modelRuntimeClient.js";
-
-// Larger than any real transformer layer count → effectively "offload all layers to GPU"
-const GPU_LAYERS_MAX = 999;
-const DEFAULT_IDLE_UNLOAD_MS = 10 * 60 * 1000;
+import {
+  LLM_DEFAULT_CONTEXT_SIZE,
+  LLM_DEFAULT_GPU_LAYERS,
+  LLM_DEFAULT_IDLE_UNLOAD_MS,
+} from "../../../constants/llm.js";
 
 type LlamaContext = {
   modelPath: string;
@@ -37,13 +38,12 @@ export class LlamaCppProvider implements ModelRuntimeClient {
     this.idleUnloadMs =
       Number.isFinite(configuredIdle) && configuredIdle > 0
         ? configuredIdle
-        : DEFAULT_IDLE_UNLOAD_MS;
+        : LLM_DEFAULT_IDLE_UNLOAD_MS;
     this.context = {
       modelPath,
       embeddingModelPath: embeddingModelPath ?? null,
-      contextSize: Math.max(2048, contextSize ?? 4_096),
-      // GPU_LAYERS_MAX > any real transformer layer count → offload all layers to GPU (Metal/CUDA/Vulkan)
-      gpuLayers: gpuLayers ?? GPU_LAYERS_MAX,
+      contextSize: Math.max(4096, contextSize ?? LLM_DEFAULT_CONTEXT_SIZE),
+      gpuLayers: gpuLayers ?? LLM_DEFAULT_GPU_LAYERS,
     };
   }
 

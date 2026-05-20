@@ -1,0 +1,3 @@
+export const DERIVED_JOB_MAX_ATTEMPTS = 3;
+export const DERIVED_JOB_RETRY_BASE_BACKOFF_MS = 3_000;
+

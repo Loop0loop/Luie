@@ -24,9 +24,8 @@ export {
   useCanvasPanelLayout,
   useCanvasLayoutPersist,
   useCanvasScope,
-  useCanvasProjection,
 } from "./hooks";
-export type { CanvasPanelLayout, UseCanvasProjectionResult } from "./hooks";
+export type { CanvasPanelLayout } from "./hooks";
 
 export type {
   CanvasMode,
@@ -46,14 +45,13 @@ export type {
   CanvasEdgeStyle,
   CanvasFlowGraph,
   RFEntityNodeData,
-  RFMemoNodeData,
-  RFTimelineNodeData,
   RFRelationEdgeData,
-  RFCanvasEdgeData,
 } from "./types";
 export {
   CANVAS_AVAILABLE_MODES,
   ENTITY_TYPE_TO_NODE_KIND,
+} from "./types";
+export {
   buildFlowGraph,
   buildProjection,
-} from "./types";
+} from "./utils";

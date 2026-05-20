@@ -13,15 +13,16 @@ import {
   CANVAS_AVAILABLE_MODES,
   type CanvasMode,
   type CanvasRange,
-  type CanvasScope,
 } from "@renderer/features/canvas/types";
 import {
+  CANVAS_ALL_MODES,
   CANVAS_MODE_I18N,
   CANVAS_ALL_RANGES,
   CANVAS_RANGE_I18N,
   CANVAS_ALL_LAYERS,
   CANVAS_LAYER_I18N,
 } from "@renderer/features/canvas/constants";
+import { getRangeFromScope, getScopeFromRange } from "@renderer/features/canvas/utils";
 import {
   PanelRoot,
   PanelHeader,
@@ -30,8 +31,7 @@ import {
   ToggleChip,
 } from "./shared";
 
-// ALL_MODES는 CANVAS_MODE_I18N의 키 순서를 따릅니다.
-const ALL_MODES = Object.keys(CANVAS_MODE_I18N) as CanvasMode[];
+
 
 const VIEW_ICON_MAP: Record<CanvasMode, React.ReactNode> = {
   "flow-map": <GitFork className="h-4 w-4" />,
@@ -40,15 +40,6 @@ const VIEW_ICON_MAP: Record<CanvasMode, React.ReactNode> = {
   "character-map": <Users className="h-4 w-4" />,
   "memory-map": <Brain className="h-4 w-4" />,
 };
-
-// 스코프 객체를 기반으로 범위를 맵핑하는 순수 헬퍼 함수
-function getRangeFromScope(scope: CanvasScope | null): CanvasRange {
-  if (!scope) return "current-chapter";
-  if (scope.kind === "single-chapter") return "current-chapter";
-  if (scope.kind === "three-chapters") return "three-chapters";
-  if (scope.kind === "current-part") return "current-part";
-  return "whole-project";
-}
 
 export default function CanvasControlPanel() {
   const { t } = useTranslation();
@@ -66,32 +57,8 @@ export default function CanvasControlPanel() {
   const currentRange = getRangeFromScope(scope);
 
   const handleRangeChange = (range: CanvasRange) => {
-    if (range === "current-chapter") {
-      const existingChapterId =
-        scope?.kind === "single-chapter"
-          ? scope.chapterId
-          : scope?.kind === "three-chapters"
-            ? scope.centerChapterId
-            : null;
-      setScope(existingChapterId ? { kind: "single-chapter", chapterId: existingChapterId } : null);
-      return;
-    }
-    if (range === "three-chapters") {
-      const existingChapterId =
-        scope?.kind === "single-chapter"
-          ? scope.chapterId
-          : scope?.kind === "three-chapters"
-            ? scope.centerChapterId
-            : null;
-      setScope(existingChapterId ? { kind: "three-chapters", centerChapterId: existingChapterId } : null);
-      return;
-    }
-    if (range === "current-part") {
-      const existingPartId = scope?.kind === "current-part" ? scope.partId : null;
-      setScope(existingPartId ? { kind: "current-part", partId: existingPartId } : null);
-      return;
-    }
-    setScope(null);
+    const nextScope = getScopeFromRange(range, scope);
+    setScope(nextScope);
   };
 
   return (
@@ -101,7 +68,7 @@ export default function CanvasControlPanel() {
         {/* ── Views ── */}
         <PanelSection title={t("canvas.panel.views")}>
           <div className="flex flex-col gap-0.5">
-            {ALL_MODES.map((m) => {
+            {CANVAS_ALL_MODES.map((m) => {
               const isAvailable = (CANVAS_AVAILABLE_MODES as readonly string[]).includes(m);
               const isActive = mode === m;
               return (

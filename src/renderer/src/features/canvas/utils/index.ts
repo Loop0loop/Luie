@@ -8,3 +8,4 @@ export { getNodeStyle, CANVAS_NODE_KIND_COLOUR, CANVAS_NODE_KIND_BG } from "./no
 export type { NodeStyle } from "./nodeStyles";
 export { getEdgeStyle } from "./edgeStyles";
 export type { EdgeDefaults, EdgeStyle } from "./edgeStyles";
+export { getRangeFromScope, getScopeFromRange } from "./scope";

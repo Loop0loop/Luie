@@ -95,11 +95,40 @@ export const koCanvas = {
     recent: "최근",
     conflicts: "충돌",
     unlinked: "미연결",
+    engineName: "AI 서사 분석 엔진",
+    liveTracking: "실시간 추적 중",
+    analyzedManuscript: "분석 완료 원고",
+    identifiedRelations: "식별된 관계선",
+    charCount: "{{count}}자",
+    nodeCount: "{{count}}개 노드",
+    chapterCount: "{{count}}챕터",
+    add: "추가",
   },
   search: {
     placeholder: "검색...",
     scope: "범위",
     results: "결과",
+    recentSearch: "최근 검색어",
+    tipsTitle: "검색 팁",
+    smartTipsHeading: "문맥 스마트 검색 활용하기",
+    recent: {
+      justNow: "방금 전",
+      hoursAgo: "{{count}}시간 전",
+    },
+    tips: {
+      tip1: {
+        keyword: "@인물명",
+        description: "을 붙여 인물의 등장 씬이나 대화록만 골라내어 찾을 수 있습니다.",
+      },
+      tip2: {
+        keyword: "#용어명",
+        description: "으로 세계관 설정 카드와 정의된 문서를 바로 열어봅니다.",
+      },
+      tip3: {
+        keyword: "\"말투\"",
+        description: "를 이용해 특정 대사의 정확한 표현 방식을 고정 검색합니다.",
+      },
+    },
   },
   node: {
     kind: {

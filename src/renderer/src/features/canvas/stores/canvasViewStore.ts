@@ -31,29 +31,18 @@ import {
   sanitizePersistedState,
   type CanvasViewPersistedState,
 } from "./canvasViewSchema";
+import {
+  CANVAS_ALL_LAYERS,
+  CANVAS_DEFAULT_LAYERS,
+} from "../constants";
 
 /* ─────────────────────────────────────────── constants */
 
 const STORAGE_KEY = "canvas_view_v2";
 const SCHEMA_VERSION = 2;
 
-const ALL_LAYERS: ReadonlyArray<CanvasLayer> = [
-  "scene",
-  "character",
-  "event",
-  "memo",
-  "ai-hint",
-];
-
-const DEFAULT_LAYERS: ReadonlyArray<CanvasLayer> = [
-  "scene",
-  "character",
-  "event",
-  "memo",
-];
-
 const isCanvasLayer = (value: unknown): value is CanvasLayer =>
-  typeof value === "string" && ALL_LAYERS.includes(value as CanvasLayer);
+  typeof value === "string" && (CANVAS_ALL_LAYERS as readonly string[]).includes(value);
 
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
@@ -112,7 +101,7 @@ export const useCanvasViewStore = create<CanvasViewState>()(
     (set) => ({
       mode: "flow-map",
       scope: null,
-      layers: [...DEFAULT_LAYERS],
+      layers: [...CANVAS_DEFAULT_LAYERS],
       focuses: [],
       viewport: { zoom: 1, pan: { x: 0, y: 0 } },
       lastPreset: null,
