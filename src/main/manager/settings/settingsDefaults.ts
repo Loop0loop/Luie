@@ -167,7 +167,11 @@ export const getDefaultSettings = (): AppSettings => ({
   } as SyncSettings,
   startup: {},
   llm: {
+    defaultEmbeddingModelPath: undefined,
+    defaultEmbeddingModelId: undefined,
     ragTemperature: 0.2,
     ragMaxTokens: 1200,
+    contextSize: 4096,
+    gpuLayers: 999,
   },
 });

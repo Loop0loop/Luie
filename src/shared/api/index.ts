@@ -3,6 +3,8 @@ import type {
   AppSettings,
   LlmModelSettingsView,
   LlmModelDownloadStatus,
+  HfModelSearchResult,
+  HfModelFile,
   Chapter,
   Scene,
   ChapterSaveResult,
@@ -476,7 +478,18 @@ export type RendererApi = {
       modelPath: string;
       modelId?: string;
     }) => Promise<IPCResponse<LlmModelSettingsView>>;
+    setLlmEmbeddingModel: (input: {
+      modelPath: string;
+      modelId?: string;
+    }) => Promise<IPCResponse<LlmModelSettingsView>>;
     downloadDefaultLlmModel: () => Promise<
+      IPCResponse<{
+        downloaded: boolean;
+        modelPath: string;
+        modelId: string;
+      }>
+    >;
+    downloadDefaultEmbeddingModel: () => Promise<
       IPCResponse<{
         downloaded: boolean;
         modelPath: string;
@@ -495,6 +508,15 @@ export type RendererApi = {
       modelPath?: string | null;
       providerHint?: "llamacpp" | "llamaserver" | "none" | null;
     }) => Promise<IPCResponse<{ ok: boolean }>>;
+    setLlmRuntimeSettings: (input: {
+      contextSize?: number;
+      gpuLayers?: number;
+      ragTemperature?: number;
+      ragMaxTokens?: number;
+    }) => Promise<IPCResponse<{ ok: boolean }>>;
+    searchHfModels: (input: { query: string }) => Promise<IPCResponse<HfModelSearchResult[]>>;
+    getHfModelFiles: (input: { repoId: string }) => Promise<IPCResponse<HfModelFile[]>>;
+    downloadHfModel: (input: { repoId: string; filename: string; modelId: string }) => Promise<IPCResponse<{ started: boolean }>>;
     reset: () => Promise<IPCResponse<AppSettings>>;
   };
   recovery: {

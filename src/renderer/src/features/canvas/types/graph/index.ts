@@ -11,10 +11,20 @@ export interface GraphFilterState {
   // TODO: Add focusId, scopeId etc.
 }
 
+export interface GraphRelationship {
+  targetName: string;
+  type: string;
+  details?: string;
+}
+
 export type GraphNodeData = {
   label: string;
   type: "character" | "event" | "world-entity" | "faction" | "chapter";
   isFocused?: boolean;
+  description?: string;
+  relatedChapters?: string[];
+  relationships?: GraphRelationship[];
+  sourceTexts?: string[];
 };
 
 export type GraphEdgeData = {

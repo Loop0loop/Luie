@@ -23,35 +23,41 @@ export function useCanvasScope(): CanvasScope | null {
     (state) => state.currentItem?.id ?? null,
   );
 
-  // scope를 ref로 읽어 effect deps에서 제외합니다.
-  const scopeRef = useRef(scope);
-  scopeRef.current = scope;
-
   // 자동 설정된 chapterId를 추적합니다.
   const autoSetChapterIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!activeChapterId) return;
 
-    const currentScope = scopeRef.current;
+    // 스토어의 현재 scope를 의존성 없이 실시간으로 직접 쿼리합니다.
+    const currentScope = useCanvasViewStore.getState().scope;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
     // scope가 없으면 현재 챕터로 자동 설정합니다.
     if (!currentScope) {
-      setScope({ kind: "single-chapter", chapterId: activeChapterId });
+      timeoutId = setTimeout(() => {
+        setScope({ kind: "single-chapter", chapterId: activeChapterId });
+      }, 0);
       autoSetChapterIdRef.current = activeChapterId;
-      return;
     }
-
     // 챕터가 바뀌었고 이전 scope가 자동 설정된 것이라면 따라갑니다.
-    if (
+    else if (
       autoSetChapterIdRef.current !== null &&
       autoSetChapterIdRef.current !== activeChapterId &&
       currentScope.kind === "single-chapter" &&
       currentScope.chapterId === autoSetChapterIdRef.current
     ) {
-      setScope({ kind: "single-chapter", chapterId: activeChapterId });
+      timeoutId = setTimeout(() => {
+        setScope({ kind: "single-chapter", chapterId: activeChapterId });
+      }, 0);
       autoSetChapterIdRef.current = activeChapterId;
     }
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [activeChapterId, setScope]);
 
   return scope;

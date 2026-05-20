@@ -25,7 +25,7 @@ import {
   CANVAS_RF_EDGE_TYPE_RELATION,
   CANVAS_RF_NODE_TYPE_ENTITY,
 } from "@shared/constants/canvasSizing";
-import { CanvasProjection } from "../../types";
+import type { CanvasProjection } from "../../types";
 import { CanvasFloatingToolbar } from "./CanvasFloatingToolbar";
 import { RelationEdge } from "./edges/RelationEdge";
 import { EntityNode } from "./nodes/EntityNode";

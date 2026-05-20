@@ -1061,10 +1061,14 @@ export interface AppSettings {
     modelsDir?: string;
     defaultModelPath?: string;
     defaultModelId?: string;
+    defaultEmbeddingModelPath?: string;
+    defaultEmbeddingModelId?: string;
     llmProviderHint?: "llamacpp" | "llamaserver" | "none";
     hfTokenCipher?: string;
     ragTemperature?: number;
     ragMaxTokens?: number;
+    contextSize?: number;
+    gpuLayers?: number;
   };
 }
 
@@ -1081,8 +1085,14 @@ export interface LlmModelSettingsView {
   modelsDir: string;
   defaultModelPath: string | null;
   defaultModelId: string | null;
+  defaultEmbeddingModelPath: string | null;
+  defaultEmbeddingModelId: string | null;
   models: LocalLlmModelInfo[];
   hasHuggingFaceToken: boolean;
+  contextSize?: number;
+  gpuLayers?: number;
+  ragTemperature?: number;
+  ragMaxTokens?: number;
 }
 
 export interface LlmModelDownloadStatus {
@@ -1094,6 +1104,18 @@ export interface LlmModelDownloadStatus {
   percent: number | null;
   startedAt?: string;
   error?: string;
+}
+
+export interface HfModelSearchResult {
+  modelId: string;
+  downloads: number;
+  likes: number;
+  lastModified: string;
+}
+
+export interface HfModelFile {
+  filename: string;
+  size: number | null;
 }
 
 export type ShortcutAction =

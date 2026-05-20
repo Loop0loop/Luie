@@ -17,7 +17,6 @@ import {
   Search,
   type LucideIcon,
 } from "lucide-react";
-import { CANVAS_ICON_RAIL_WIDTH_PX } from "@shared/constants/layoutSizing";
 import { cn } from "@shared/types/utils";
 import { useCanvasViewStore } from "../../stores";
 import { useCanvasView } from "../../hooks/useCanvasView";
@@ -40,8 +39,8 @@ export default function CanvasIconRail() {
   return (
     <nav
       aria-label={t("canvas.sidebar.activity")}
-      className="flex h-full shrink-0 flex-col items-center gap-0.5 border-r border-border/40 bg-sidebar px-1.5 py-2"
-      style={{ width: CANVAS_ICON_RAIL_WIDTH_PX }}
+      className="flex h-full shrink-0 flex-col items-center gap-1.5 border-r border-border/40 bg-sidebar/95 py-3"
+      style={{ width: 48 }}
       data-testid="canvas-icon-rail"
     >
       {CANVAS_RAIL_ITEMS.map(({ panel, iconName, i18nKey }) => {
@@ -64,10 +63,10 @@ export default function CanvasIconRail() {
               setActivePanel(panel);
             }}
             className={cn(
-              "relative flex h-8 w-8 items-center justify-center rounded-control transition-colors",
+              "relative flex h-9 w-9 items-center justify-center rounded-md transition-all active:scale-95",
               isActive
-                ? "bg-active text-fg"
-                : "text-subtle hover:bg-surface hover:text-fg",
+                ? "bg-active text-foreground"
+                : "text-muted-foreground hover:bg-muted/30 hover:text-foreground",
             )}
           >
             {isActive && (
@@ -76,7 +75,7 @@ export default function CanvasIconRail() {
                 className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-r-full bg-accent"
               />
             )}
-            <Icon className="h-[15px] w-[15px]" />
+            <Icon className="h-5 w-5" />
           </button>
         );
       })}

@@ -245,3 +245,14 @@ class RagQaWorker {
 }
 
 export const ragQaWorker = new RagQaWorker();
+
+export async function embedTexts(input: {
+  projectId: string;
+  texts: string[];
+}): Promise<number[][] | null> {
+  if (input.texts.length === 0) return [];
+  const runtime = await resolveModelRuntimeClient(input.projectId);
+  const vectors = await runtime.embed(input.texts);
+  if (!vectors) return null;
+  return vectors.map((vector) => Array.from(vector));
+}

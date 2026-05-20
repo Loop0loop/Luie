@@ -9,11 +9,11 @@ import { useTranslation } from "react-i18next";
 import { Lock, Check } from "lucide-react";
 import { cn } from "@shared/types/utils";
 import { useCanvasViewStore } from "@renderer/features/canvas/stores";
-import { useCanvasView } from "@renderer/features/canvas/hooks/useCanvasView";
 import {
   CANVAS_AVAILABLE_MODES,
   type CanvasMode,
   type CanvasRange,
+  type CanvasScope,
 } from "@renderer/features/canvas/types";
 import {
   CANVAS_MODE_I18N,
@@ -33,24 +33,29 @@ import {
 // ALL_MODES는 CANVAS_MODE_I18N의 키 순서를 따릅니다.
 const ALL_MODES = Object.keys(CANVAS_MODE_I18N) as CanvasMode[];
 
+// 스코프 객체를 기반으로 범위를 맵핑하는 순수 헬퍼 함수
+function getRangeFromScope(scope: CanvasScope | null): CanvasRange {
+  if (!scope) return "current-chapter";
+  if (scope.kind === "single-chapter") return "current-chapter";
+  if (scope.kind === "three-chapters") return "three-chapters";
+  if (scope.kind === "current-part") return "current-part";
+  return "whole-project";
+}
+
 export default function CanvasControlPanel() {
   const { t } = useTranslation();
 
-  // 안정적인 상태만 구독
-  const { mode, scope, layers } = useCanvasView();
+  // 필요한 값만 개별적으로 셀렉트하여 구독 최소화
+  const mode = useCanvasViewStore((s) => s.mode);
+  const scope = useCanvasViewStore((s) => s.scope);
+  const layers = useCanvasViewStore((s) => s.layers);
 
   // actions는 store에서 직접 가져옴 (shallow 비교 불필요)
   const setMode      = useCanvasViewStore((s) => s.setMode);
   const setScope     = useCanvasViewStore((s) => s.setScope);
   const toggleLayer  = useCanvasViewStore((s) => s.toggleLayer);
 
-  const currentRange: CanvasRange = (() => {
-    if (!scope) return "current-chapter";
-    if (scope.kind === "single-chapter") return "current-chapter";
-    if (scope.kind === "three-chapters") return "three-chapters";
-    if (scope.kind === "current-part") return "current-part";
-    return "whole-project";
-  })();
+  const currentRange = getRangeFromScope(scope);
 
   const handleRangeChange = (range: CanvasRange) => {
     if (range === "current-chapter") {
@@ -97,17 +102,17 @@ export default function CanvasControlPanel() {
                 disabled={!isAvailable}
                 onClick={() => isAvailable && setMode(m)}
                 className={cn(
-                  "flex w-full items-center gap-2 rounded-control px-control-x py-control-y text-sm transition-colors",
+                  "flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-[13px] transition-all",
                   isActive
-                    ? "bg-active font-medium text-fg"
+                    ? "bg-active font-medium text-fg border-l-[3px] border-accent pl-[9px]"
                     : isAvailable
-                      ? "cursor-pointer text-muted hover:bg-surface hover:text-fg"
-                      : "cursor-not-allowed text-subtle opacity-50",
+                      ? "cursor-pointer text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg"
+                      : "cursor-not-allowed text-subtle opacity-50 border-l-2 border-transparent",
                 )}
               >
-                <span className="flex-1 truncate text-left">{t(CANVAS_MODE_I18N[m])}</span>
-                {!isAvailable && <Lock className="icon-xs shrink-0 opacity-40" />}
-                {isActive && isAvailable && <Check className="icon-xs shrink-0 text-fg" />}
+                <span className="flex-1 truncate text-left leading-none py-[2px]">{t(CANVAS_MODE_I18N[m])}</span>
+                {!isAvailable && <Lock className="icon-xs shrink-0 opacity-40 self-center" />}
+                {isActive && isAvailable && <Check className="icon-xs shrink-0 text-fg self-center" />}
               </button>
             );
           })}

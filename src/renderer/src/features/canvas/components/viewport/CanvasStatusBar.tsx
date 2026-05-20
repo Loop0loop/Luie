@@ -38,17 +38,17 @@ export default function CanvasStatusBar({ projection }: CanvasStatusBarProps) {
 
   return (
     <div
-      className="flex shrink-0 items-center gap-3 border-t border-border/40 bg-surface px-3 text-[11px] text-muted"
+      className="flex shrink-0 items-center gap-3 border-t border-border/30 bg-sidebar/95 px-4 text-[10px] font-medium tracking-wide text-muted-foreground/75"
       style={{ height: CANVAS_STATUS_BAR_HEIGHT_PX }}
       data-testid="canvas-status-bar"
     >
-      <span className="font-medium text-fg/70">
+      <span className="font-semibold text-foreground/80 uppercase">
         {t(CANVAS_MODE_I18N[mode] ?? CANVAS_MODE_I18N["flow-map"])}
       </span>
 
       {activeChapterTitle && (
         <>
-          <span className="opacity-40">·</span>
+          <span className="opacity-30">·</span>
           <span className="max-w-[160px] truncate">{activeChapterTitle}</span>
         </>
       )}
@@ -57,7 +57,7 @@ export default function CanvasStatusBar({ projection }: CanvasStatusBarProps) {
 
       {projection && (
         <span className="tabular-nums opacity-60">
-          {nodeCount}N · {edgeCount}E
+          {nodeCount} Nodes · {edgeCount} Edges
         </span>
       )}
     </div>

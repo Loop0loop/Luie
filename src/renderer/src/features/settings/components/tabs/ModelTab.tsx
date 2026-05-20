@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import type { TFunction } from "i18next";
 import {
-  Search, Cpu, Download, Info, RefreshCw, Check, AlertCircle
+  Search, Cpu, Download, Info, RefreshCw, Check, AlertCircle, Settings2, ChevronRight, Loader2
 } from "lucide-react";
 
 import { Button } from "@renderer/components/ui/button";
@@ -9,6 +9,8 @@ import type {
   LlmModelDownloadStatus,
   LlmModelSettingsView,
   MigrationHealth,
+  HfModelSearchResult,
+  HfModelFile,
 } from "@shared/types";
 
 interface ModelTabProps {
@@ -24,6 +26,18 @@ interface ModelTabProps {
   hfToken: string;
   onChangeHfToken: (value: string) => void;
   onSaveHfToken: () => void;
+  onSaveRuntimeSettings: (input: {
+    contextSize?: number;
+    gpuLayers?: number;
+    ragTemperature?: number;
+    ragMaxTokens?: number;
+  }) => void;
+  hfSearchResults: HfModelSearchResult[];
+  hfModelFiles: HfModelFile[];
+  isHfSearching: boolean;
+  onHfSearch: (query: string) => void;
+  onGetHfModelFiles: (repoId: string) => void;
+  onDownloadHfModel: (repoId: string, filename: string, modelId: string) => void;
   downloadStatus: LlmModelDownloadStatus;
   migrationHealth: MigrationHealth | null;
   onRefreshMigrationHealth: () => void;
@@ -69,6 +83,13 @@ export function ModelTab(props: ModelTabProps) {
     hfToken,
     onChangeHfToken,
     onSaveHfToken,
+    onSaveRuntimeSettings,
+    hfSearchResults,
+    hfModelFiles,
+    isHfSearching,
+    onHfSearch,
+    onGetHfModelFiles,
+    onDownloadHfModel,
     downloadStatus,
     migrationHealth,
     onRefreshMigrationHealth,
@@ -77,6 +98,22 @@ export function ModelTab(props: ModelTabProps) {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
+
+  const [contextSize, setContextSize] = useState<number>(modelView.contextSize ?? 8192);
+  const [gpuLayers, setGpuLayers] = useState<number>(modelView.gpuLayers ?? 999);
+  const [ragTemperature, setRagTemperature] = useState<number>(modelView.ragTemperature ?? 0.2);
+  const [ragMaxTokens, setRagMaxTokens] = useState<number>(modelView.ragMaxTokens ?? 1200);
+
+  const [hfQuery, setHfQuery] = useState("");
+  const [selectedHfRepo, setSelectedHfRepo] = useState<string | null>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    if (!hfQuery.trim()) return;
+    searchTimerRef.current = setTimeout(() => onHfSearch(hfQuery), 500);
+    return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); };
+  }, [hfQuery, onHfSearch]);
 
   const filteredModels = useMemo(() => {
     if (!searchQuery) return modelView.models;
@@ -139,13 +176,23 @@ export function ModelTab(props: ModelTabProps) {
           />
         </div>
 
+        {downloadStatus.error && (
+          <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
+              <span className="text-sm text-destructive">
+                {t("settings.model.downloadError", { defaultValue: "다운로드 오류" })}: {downloadStatus.error}
+              </span>
+            </div>
+          </div>
+        )}
         {downloadStatus.active && (
           <div className="bg-accent/10 border border-accent rounded-xl p-4">
             <div className="flex justify-between items-end mb-2">
-              <span className="text-sm font-medium text-accent">
+              <span className="text-sm font-medium text-accent truncate max-w-[70%]">
                 {t("settings.model.downloading", { defaultValue: "다운로드 중" })}: {downloadStatus.fileName}
               </span>
-              <span className="text-xs font-medium text-accent">
+              <span className="text-xs font-medium text-accent shrink-0">
                 {downloadStatus.percent !== null ? `${downloadStatus.percent.toFixed(1)}%` : ""}
               </span>
             </div>
@@ -155,6 +202,11 @@ export function ModelTab(props: ModelTabProps) {
                 style={{ width: `${downloadStatus.percent ?? 0}%` }}
               />
             </div>
+            {downloadStatus.totalBytes !== null && (
+              <div className="mt-1.5 text-xs text-accent/70 text-right">
+                {formatBytes(downloadStatus.downloadedBytes)} / {formatBytes(downloadStatus.totalBytes)}
+              </div>
+            )}
           </div>
         )}
 
@@ -239,6 +291,83 @@ export function ModelTab(props: ModelTabProps) {
           </div>
         )}
       </section>
+
+      {/* HF Model Search — LM Studio style */}
+      <div className="mt-6 space-y-3">
+        <div className="flex items-center gap-2">
+          <Search className="w-4 h-4 text-muted" />
+          <h4 className="text-sm font-semibold text-fg">
+            {t("settings.model.hfSearch", { defaultValue: "HuggingFace 모델 검색" })}
+          </h4>
+          {isHfSearching && <Loader2 className="w-3 h-3 text-muted animate-spin" />}
+        </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
+          <input
+            type="text"
+            value={hfQuery}
+            onChange={(e) => setHfQuery(e.target.value)}
+            placeholder={t("settings.model.hfSearchPlaceholder", { defaultValue: "모델명 검색 (예: Qwen3, Llama, Gemma...)" })}
+            className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-lg bg-surface text-fg focus:outline-none focus:ring-1 focus:ring-accent"
+          />
+        </div>
+        {hfSearchResults.length > 0 && (
+          <div className="space-y-1 max-h-60 overflow-y-auto rounded-lg border border-border">
+            {hfSearchResults.map((model) => (
+              <button
+                key={model.modelId}
+                onClick={() => {
+                  setSelectedHfRepo(model.modelId);
+                  onGetHfModelFiles(model.modelId);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2.5 text-left text-sm transition-colors hover:bg-element ${selectedHfRepo === model.modelId ? "bg-accent/10 border-l-2 border-accent" : ""}`}
+              >
+                <div className="min-w-0">
+                  <div className="font-medium text-fg truncate">{model.modelId}</div>
+                  <div className="text-xs text-muted mt-0.5">
+                    ↓ {model.downloads.toLocaleString()} · ♥ {model.likes.toLocaleString()}
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted shrink-0 ml-2" />
+              </button>
+            ))}
+          </div>
+        )}
+        {selectedHfRepo && hfModelFiles.length > 0 && (
+          <div className="rounded-lg border border-border overflow-hidden">
+            <div className="px-3 py-2 bg-element border-b border-border">
+              <span className="text-xs font-medium text-muted uppercase tracking-wide">
+                {t("settings.model.availableFiles", { defaultValue: "GGUF 파일 선택" })} — {selectedHfRepo}
+              </span>
+            </div>
+            <div className="max-h-48 overflow-y-auto">
+              {hfModelFiles.map((file) => (
+                <div
+                  key={file.filename}
+                  className="flex items-center justify-between px-3 py-2.5 border-b border-border last:border-b-0 hover:bg-element transition-colors"
+                >
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-fg truncate">{file.filename}</div>
+                    {file.size !== null && (
+                      <div className="text-xs text-muted mt-0.5">{formatBytes(file.size)}</div>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 ml-3"
+                    disabled={isBusy || downloadStatus.active}
+                    onClick={() => onDownloadHfModel(selectedHfRepo, file.filename, `${selectedHfRepo.split("/")[1] ?? selectedHfRepo}-${file.filename}`)}
+                  >
+                    <Download className="w-3 h-3 mr-1" />
+                    {t("settings.model.download", { defaultValue: "다운로드" })}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {otherModels.length > 0 && (
         <>
@@ -429,6 +558,118 @@ export function ModelTab(props: ModelTabProps) {
             </Button>
           </div>
         </div>
+      </section>
+
+      <div className="h-px bg-border my-6" />
+
+      <section className="space-y-5">
+        <div className="flex items-center gap-2">
+          <Settings2 className="w-4 h-4 text-muted" />
+          <h3 className="text-base font-semibold text-fg">
+            {t("settings.model.runtimeSettings", { defaultValue: "Runtime Settings" })}
+          </h3>
+        </div>
+        <p className="text-xs text-muted -mt-3">
+          {t("settings.model.runtimeSettingsDesc", { defaultValue: "모델 재시작 후 적용됩니다." })}
+        </p>
+
+        {/* Context Size */}
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <label className="text-sm font-medium text-fg">
+              {t("settings.model.contextSize", { defaultValue: "Context Size (tokens)" })}
+            </label>
+            <span className="text-sm font-mono text-accent">{contextSize.toLocaleString()}</span>
+          </div>
+          <input
+            type="range"
+            min={2048}
+            max={32768}
+            step={1024}
+            value={contextSize}
+            onChange={(e) => setContextSize(Number(e.target.value))}
+            className="w-full accent-accent"
+          />
+          <div className="flex justify-between text-[10px] text-muted">
+            <span>2K</span><span>8K</span><span>16K</span><span>32K</span>
+          </div>
+        </div>
+
+        {/* GPU Layers */}
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <label className="text-sm font-medium text-fg">
+              {t("settings.model.gpuLayers", { defaultValue: "GPU Layers (Metal)" })}
+            </label>
+            <span className="text-sm font-mono text-accent">
+              {gpuLayers >= 999 ? t("settings.model.gpuLayersAll", { defaultValue: "All" }) : gpuLayers}
+            </span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={999}
+            step={1}
+            value={gpuLayers}
+            onChange={(e) => setGpuLayers(Number(e.target.value))}
+            className="w-full accent-accent"
+          />
+          <div className="flex justify-between text-[10px] text-muted">
+            <span>CPU only</span><span>All GPU</span>
+          </div>
+        </div>
+
+        {/* RAG Temperature */}
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <label className="text-sm font-medium text-fg">
+              {t("settings.model.ragTemperature", { defaultValue: "RAG Temperature" })}
+            </label>
+            <span className="text-sm font-mono text-accent">{ragTemperature.toFixed(2)}</span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={ragTemperature}
+            onChange={(e) => setRagTemperature(Number(e.target.value))}
+            className="w-full accent-accent"
+          />
+          <div className="flex justify-between text-[10px] text-muted">
+            <span>0 (결정적)</span><span>1 (창의적)</span>
+          </div>
+        </div>
+
+        {/* RAG Max Tokens */}
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <label className="text-sm font-medium text-fg">
+              {t("settings.model.ragMaxTokens", { defaultValue: "RAG Max Output Tokens" })}
+            </label>
+            <span className="text-sm font-mono text-accent">{ragMaxTokens}</span>
+          </div>
+          <input
+            type="range"
+            min={256}
+            max={4096}
+            step={64}
+            value={ragMaxTokens}
+            onChange={(e) => setRagMaxTokens(Number(e.target.value))}
+            className="w-full accent-accent"
+          />
+          <div className="flex justify-between text-[10px] text-muted">
+            <span>256</span><span>2048</span><span>4096</span>
+          </div>
+        </div>
+
+        <Button
+          onClick={() => onSaveRuntimeSettings({ contextSize, gpuLayers, ragTemperature, ragMaxTokens })}
+          disabled={isBusy}
+          className="w-full"
+        >
+          {t("settings.model.saveRuntimeSettings", { defaultValue: "런타임 설정 저장" })}
+        </Button>
       </section>
     </div>
   );

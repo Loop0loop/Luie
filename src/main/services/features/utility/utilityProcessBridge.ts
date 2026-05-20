@@ -15,6 +15,7 @@ const logger = createLogger("UtilityProcessBridge");
 const START_TIMEOUT_MS = 5_000;
 const REQUEST_TIMEOUT_ASK_MS = 20_000;
 const REQUEST_TIMEOUT_STOP_MS = 2_000;
+const REQUEST_TIMEOUT_EMBED_MS = 30_000;
 const STOP_TIMEOUT_MS = 5_000;
 const STOP_GRACE_MS = 120;
 
@@ -30,7 +31,8 @@ type UtilityInboundMessage =
   | { type: "ping"; requestId?: string }
   | { type: "shutdown"; requestId?: string }
   | { type: "request"; requestId: string; method: "ragQa.ask"; payload: RagQaRequest }
-  | { type: "request"; requestId: string; method: "ragQa.stop"; payload?: { runId?: string } };
+  | { type: "request"; requestId: string; method: "ragQa.stop"; payload?: { runId?: string } }
+  | { type: "request"; requestId: string; method: "embedding.embed"; payload: { projectId: string; texts: string[] } };
 
 type PendingRequest = {
   resolve: (value: unknown) => void;
@@ -191,6 +193,16 @@ export class UtilityProcessBridge {
     return (await this.request("ragQa.stop", { runId })) as { stopped: boolean };
   }
 
+  async embed(projectId: string, texts: string[]): Promise<number[][] | null> {
+    if (!this.utilityChild) {
+      const started = await this.start();
+      if (!started || !this.utilityChild) {
+        throw new Error("Utility process is not running");
+      }
+    }
+    return (await this.request("embedding.embed", { projectId, texts })) as number[][] | null;
+  }
+
   private async ping(): Promise<boolean> {
     const child = this.utilityChild;
     if (!child) return false;
@@ -216,24 +228,43 @@ export class UtilityProcessBridge {
   private async request(method: "ragQa.ask", payload: RagQaRequest): Promise<unknown>;
   private async request(method: "ragQa.stop", payload?: { runId?: string }): Promise<unknown>;
   private async request(
-    method: "ragQa.ask" | "ragQa.stop",
-    payload?: RagQaRequest | { runId?: string },
+    method: "embedding.embed",
+    payload: { projectId: string; texts: string[] },
+  ): Promise<unknown>;
+  private async request(
+    method: "ragQa.ask" | "ragQa.stop" | "embedding.embed",
+    payload?: RagQaRequest | { runId?: string } | { projectId: string; texts: string[] },
   ): Promise<unknown> {
     const child = this.utilityChild;
     if (!child) throw new Error("Utility process is not running");
     const requestId = this.nextRequestId();
     return await new Promise<unknown>((resolve, reject) => {
+      const timeoutMs =
+        method === "ragQa.stop"
+          ? REQUEST_TIMEOUT_STOP_MS
+          : method === "embedding.embed"
+            ? REQUEST_TIMEOUT_EMBED_MS
+            : REQUEST_TIMEOUT_ASK_MS;
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(requestId);
         reject(new Error(`Utility request timeout: ${method}`));
-      }, method === "ragQa.stop" ? REQUEST_TIMEOUT_STOP_MS : REQUEST_TIMEOUT_ASK_MS);
+      }, timeoutMs);
       this.pendingRequests.set(requestId, { resolve, reject, timeout });
       if (method === "ragQa.ask") {
         child.postMessage({
           type: "request",
           requestId,
-          method,
+          method: "ragQa.ask",
           payload: payload as RagQaRequest,
+        } satisfies UtilityInboundMessage);
+        return;
+      }
+      if (method === "embedding.embed") {
+        child.postMessage({
+          type: "request",
+          requestId,
+          method: "embedding.embed",
+          payload: payload as { projectId: string; texts: string[] },
         } satisfies UtilityInboundMessage);
         return;
       }
