@@ -39,10 +39,19 @@ export function ModelTab({
     }
   }, [onListOllamaModels]);
 
+  // Sync when parent async-loads stored config
   useEffect(() => {
-    void loadModels(initialBaseUrl);
+    setBaseUrl(initialBaseUrl);
+  }, [initialBaseUrl]);
+
+  useEffect(() => {
+    setChatModel(initialChatModel);
+  }, [initialChatModel]);
+
+  useEffect(() => {
+    if (initialBaseUrl) void loadModels(initialBaseUrl);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialBaseUrl]);
 
   const handleTestConnection = useCallback(async () => {
     setConnectionStatus("testing");
