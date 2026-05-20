@@ -46,3 +46,20 @@ export const CANVAS_RF_NODE_TYPE_TIMELINE = "timeline" as const;
 
 export const CANVAS_RF_EDGE_TYPE_RELATION = "relation" as const;
 export const CANVAS_RF_EDGE_TYPE_CANVAS = "canvas" as const;
+
+// ─── Workspace resizable layout config ────────────────────────────────────────
+
+export const CANVAS_ACTIVITY_LAYOUT_CONFIG = {
+  role: "sidebar" as const,
+  defaultRatio: 18,
+  minPx: 220,
+  maxPx: 380,
+};
+
+export const CANVAS_BINDER_LAYOUT_CONFIG = {
+  role: "inspector" as const,
+  defaultRatio: 19,
+  minPx: 220,
+  maxPx: 420,
+};
+

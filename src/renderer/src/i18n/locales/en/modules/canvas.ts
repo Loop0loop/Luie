@@ -95,11 +95,40 @@ export const enCanvas = {
     recent: "Recent",
     conflicts: "Conflicts",
     unlinked: "Unlinked",
+    engineName: "AI Narrative Analysis Engine",
+    liveTracking: "Live tracking",
+    analyzedManuscript: "Analyzed manuscript",
+    identifiedRelations: "Identified relations",
+    charCount: "{{count}} chars",
+    nodeCount: "{{count}} nodes",
+    chapterCount: "{{count}} chapters",
+    add: "Add",
   },
   search: {
     placeholder: "Search...",
     scope: "Scope",
     results: "Results",
+    recentSearch: "Recent Searches",
+    tipsTitle: "Search Tips",
+    smartTipsHeading: "Leverage Smart Contextual Search",
+    recent: {
+      justNow: "Just now",
+      hoursAgo: "{{count}}h ago",
+    },
+    tips: {
+      tip1: {
+        keyword: "@CharacterName",
+        description: " to filter and pull up occurrences or dialogues of specific characters.",
+      },
+      tip2: {
+        keyword: "#TermName",
+        description: " to quickly open world setting cards and related definition documents.",
+      },
+      tip3: {
+        keyword: "\"exact phrase\"",
+        description: " to pin-point exact speech patterns or quotes.",
+      },
+    },
   },
   node: {
     kind: {

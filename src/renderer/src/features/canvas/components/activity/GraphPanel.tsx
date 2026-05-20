@@ -3,6 +3,7 @@ import { Settings2, Crosshair, Network, Layers, Target, X, Check } from "lucide-
 import { useGraphStore } from "../../stores/graph/graphStore";
 import { MOCK_GRAPH_NODES } from "../../constants/graphMockData";
 import { CANVAS_GRAPH_I18N } from "../../constants/i18n";
+import { GRAPH_RELATIONSHIP_FILTERS } from "../../constants/panel";
 import { useState } from "react";
 import {
   PanelRoot,
@@ -19,10 +20,7 @@ export default function GraphPanel() {
 
   // 관계 필터 로컬 토글 상태 (목업)
   const [activeRelations, setActiveRelations] = useState<string[]>([
-    "등장",
-    "대화",
-    "갈등",
-    "소속",
+    ...GRAPH_RELATIONSHIP_FILTERS.slice(0, 4),
   ]);
 
   const toggleRelation = (rel: string) => {
@@ -121,7 +119,7 @@ export default function GraphPanel() {
         <PanelSection title={t(CANVAS_GRAPH_I18N.relationships)} defaultOpen>
           <div className="flex flex-col gap-2 px-3 pb-3 pt-1">
             <div className="grid grid-cols-2 gap-1.5">
-              {["등장", "대화", "갈등", "소속", "동맹", "떡밥"].map((rel) => (
+              {GRAPH_RELATIONSHIP_FILTERS.map((rel) => (
                 <ToggleChip
                   key={rel}
                   label={rel}

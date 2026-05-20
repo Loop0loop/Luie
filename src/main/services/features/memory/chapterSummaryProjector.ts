@@ -5,18 +5,20 @@ import { chapter, chapterBody, chapterSummary, memoryBuildJob } from "../../../d
 import { createLogger } from "../../../../shared/logger/index.js";
 import { resolveModelRuntimeClient } from "../../llm/modelRuntimeFactory.js";
 import { MEMORY_JOB_TYPES, MEMORY_TARGET_TYPES } from "./memoryJobConstants.js";
+import {
+  DERIVED_JOB_MAX_ATTEMPTS,
+  DERIVED_JOB_RETRY_BASE_BACKOFF_MS,
+} from "../../../constants/memory.js";
 
 const logger = createLogger("ChapterSummaryProjector");
-const MAX_ATTEMPTS = 3;
-const RETRY_BASE_BACKOFF_MS = 3_000;
 
 function canRetry(job: { status: string; attempts: number; updatedAt: string }): boolean {
   if (job.status === "pending") return true;
   if (job.status !== "failed") return false;
-  if (job.attempts >= MAX_ATTEMPTS) return false;
+  if (job.attempts >= DERIVED_JOB_MAX_ATTEMPTS) return false;
   const updatedAtMs = Date.parse(job.updatedAt);
   if (!Number.isFinite(updatedAtMs)) return true;
-  const backoffMs = RETRY_BASE_BACKOFF_MS * Math.max(1, job.attempts);
+  const backoffMs = DERIVED_JOB_RETRY_BASE_BACKOFF_MS * Math.max(1, job.attempts);
   return Date.now() - updatedAtMs >= backoffMs;
 }
 
@@ -112,7 +114,7 @@ export class ChapterSummaryProjector {
         await client
           .update(memoryBuildJob)
           .set({
-            status: attempts >= MAX_ATTEMPTS ? "failed" : "pending",
+            status: attempts >= DERIVED_JOB_MAX_ATTEMPTS ? "failed" : "pending",
             attempts,
             error: "SOURCE_NOT_FOUND",
             updatedAt: now,
@@ -198,7 +200,7 @@ export class ChapterSummaryProjector {
         await client
           .update(memoryBuildJob)
           .set({
-            status: attempts >= MAX_ATTEMPTS ? "failed" : "pending",
+            status: attempts >= DERIVED_JOB_MAX_ATTEMPTS ? "failed" : "pending",
             attempts,
             error: error instanceof Error ? error.message : "UNKNOWN_ERROR",
             updatedAt: now,

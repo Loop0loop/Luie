@@ -14,6 +14,12 @@ import type {
   CanvasScope,
   CanvasViewport,
 } from "../types/canvas.types";
+import {
+  CANVAS_ALL_MODES,
+  CANVAS_ALL_LAYERS,
+  CANVAS_DEFAULT_LAYERS,
+  DEFAULT_CANVAS_MODE,
+} from "../constants";
 
 /* ─────────────────────────────────────────── schemas */
 
@@ -33,9 +39,9 @@ const CanvasViewportSchema: z.ZodType<CanvasViewport> = z.object({
 }).default({ zoom: 1, pan: { x: 0, y: 0 } }) as z.ZodType<CanvasViewport>;
 
 export const CanvasViewPersistedSchema = z.object({
-  mode: z.enum(["flow-map", "scene-board", "timeline", "character-map", "memory-map"] as const satisfies readonly CanvasMode[]).default("flow-map"),
+  mode: z.enum(CANVAS_ALL_MODES as unknown as [string, ...string[]]).default(DEFAULT_CANVAS_MODE),
   scope: CanvasScopeSchema.nullable().default(null),
-  layers: z.array(z.enum(["scene", "character", "event", "memo", "ai-hint"] as const satisfies readonly CanvasLayer[])).default(["scene", "character", "event", "memo"]),
+  layers: z.array(z.enum(CANVAS_ALL_LAYERS as unknown as [string, ...string[]])).default(CANVAS_DEFAULT_LAYERS as unknown as string[]),
   focuses: z.array(z.string()).default([]),
   viewport: CanvasViewportSchema,
   lastPreset: z.string().nullable().default(null),

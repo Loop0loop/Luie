@@ -1,4 +1,5 @@
 import { normalizeSidebarWidthInput } from "./sidebarSizing";
+import { CANVAS_ACTIVITY_LAYOUT_CONFIG, CANVAS_BINDER_LAYOUT_CONFIG } from "./canvasSizing";
 
 /** Minimum size (%) for each split panel in the workspace panel group. */
 export const SPLIT_PANEL_MIN_SIZE_PERCENT = 15;
@@ -132,18 +133,8 @@ export const LAYOUT_SURFACE_CONFIG: Record<
   "editor.panel.canvas": { ...DEFAULT_INSPECTOR_CONFIG, defaultRatio: 26 },
   "scrivener.binder": { ...DEFAULT_BINDER_CONFIG },
   "scrivener.inspector": { ...DEFAULT_INSPECTOR_CONFIG },
-  "canvas.activity": {
-    role: "sidebar",
-    defaultRatio: 18,
-    minPx: 220,
-    maxPx: 380,
-  },
-  "canvas.binder": {
-    role: "inspector",
-    defaultRatio: 19,
-    minPx: 220,
-    maxPx: 420,
-  },
+  "canvas.activity": { ...CANVAS_ACTIVITY_LAYOUT_CONFIG },
+  "canvas.binder": { ...CANVAS_BINDER_LAYOUT_CONFIG },
 };
 
 const LEGACY_WIDTH_KEYS_BY_LAYOUT_SURFACE: Record<LayoutSurfaceId, string[]> = {

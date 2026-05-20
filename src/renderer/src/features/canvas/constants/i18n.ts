@@ -56,6 +56,13 @@ export const CANVAS_ALL_LAYERS: ReadonlyArray<CanvasLayer> = [
   "ai-hint",
 ] as const;
 
+export const CANVAS_DEFAULT_LAYERS: ReadonlyArray<CanvasLayer> = [
+  "scene",
+  "character",
+  "event",
+  "memo",
+] as const;
+
 export const CANVAS_LAYER_I18N: Record<CanvasLayer, string> = {
   "scene":     "canvas.layer.scene",
   "character": "canvas.layer.character",

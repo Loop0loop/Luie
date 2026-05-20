@@ -347,11 +347,6 @@ export async function assembleRagContext(input: {
 
   const systemPrompt = [
     promptConfig.systemInstruction,
-    "반드시 근거(E1..En) 기반으로만 답변하세요.",
-    "근거가 부족하면 '근거 부족'을 명시하세요.",
-    "사고 과정/중간 추론/자기 설명 출력 금지",
-    "같은 문장 반복 출력 금지",
-    "사용자가 명시적으로 요청한 경우에만 고정 포맷/목록 사용",
   ].join("\n");
 
   const userPrompt = [
