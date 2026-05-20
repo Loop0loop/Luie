@@ -4,6 +4,7 @@ import { db } from "../database/index.js";
 import { cacheDb } from "../database/cacheDb.js";
 
 const logger = createLogger("UtilityProcessMain");
+process.env.LUIE_IS_UTILITY_PROCESS = "1";
 let ragWorkerPromise: Promise<typeof import("./ragQaWorker.js")["ragQaWorker"]> | null = null;
 let readyPromise: Promise<void> | null = null;
 const METRICS_INTERVAL_MS = 30_000;

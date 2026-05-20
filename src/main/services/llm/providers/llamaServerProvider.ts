@@ -152,6 +152,111 @@ export class LlamaServerProvider implements ModelRuntimeClient {
     }
   }
 
+  async *generateChatStream(
+    input: { systemPrompt?: string; userPrompt: string },
+    options?: GenerateOptions,
+  ): AsyncIterable<string> {
+    if (options?.signal?.aborted) {
+      throw new Error("Generation aborted");
+    }
+    let baseUrl: string;
+    try {
+      baseUrl = await sidecarManager.start(this.options.modelPath);
+    } catch (error) {
+      if (this.isSpawnEnoent(error)) {
+        this.logger.warn("llama-server binary not found; falling back to llamacpp chat", {
+          modelPath: this.options.modelPath,
+        });
+        const fallback = this.getOrCreateFallback();
+        if (fallback.generateChatStream) {
+          for await (const delta of fallback.generateChatStream(input, options)) {
+            yield delta;
+          }
+          return;
+        }
+        for await (const delta of fallback.generateStream(`${input.systemPrompt ?? ""}\n\n${input.userPrompt}`.trim(), options)) {
+          yield delta;
+        }
+        return;
+      }
+      throw error;
+    }
+    sidecarManager.resetIdleTimer();
+
+    let response: Response;
+    try {
+      response = await fetch(`${baseUrl}/v1/chat/completions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: options?.signal,
+        body: JSON.stringify({
+          stream: true,
+          max_tokens: options?.maxTokens ?? 256,
+          temperature: options?.temperature ?? 0.2,
+          messages: [
+            ...(input.systemPrompt
+              ? [{ role: "system", content: input.systemPrompt }]
+              : []),
+            { role: "user", content: input.userPrompt },
+          ],
+        }),
+      });
+    } catch (err) {
+      void sidecarManager.stop().catch(() => {});
+      throw err;
+    }
+
+    if (!response.ok || !response.body) {
+      throw new Error(`Llama sidecar chat completion failed: HTTP ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    try {
+      while (true) {
+        if (options?.signal?.aborted) {
+          throw new Error("Generation aborted");
+        }
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const raw of lines) {
+          const line = raw.trim();
+          if (!line.startsWith("data:")) continue;
+          const payload = line.slice("data:".length).trim();
+          if (payload === "[DONE]") return;
+          if (!payload) continue;
+          try {
+            const parsed = JSON.parse(payload) as {
+              choices?: Array<{ delta?: { content?: string } }>;
+            };
+            const chunk = parsed.choices?.[0]?.delta?.content ?? "";
+            if (chunk.length > 0) yield chunk;
+          } catch {
+            // Ignore malformed SSE line.
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+      sidecarManager.resetIdleTimer();
+    }
+  }
+
+  async generateChat(
+    input: { systemPrompt?: string; userPrompt: string },
+    options?: GenerateOptions,
+  ): Promise<string> {
+    const chunks: string[] = [];
+    for await (const delta of this.generateChatStream(input, options)) {
+      chunks.push(delta);
+    }
+    return chunks.join("");
+  }
+
   async embed(texts: string[]): Promise<Float32Array[] | null> {
     if (texts.length === 0) return [];
     let baseUrl: string;

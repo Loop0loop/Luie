@@ -4,6 +4,7 @@ import { promises as fs, createReadStream } from "node:fs";
 import { createHash } from "node:crypto";
 import { createLogger } from "../../../shared/logger/index.js";
 import { settingsManager } from "../../manager/settingsManager.js";
+import { invalidateModelRuntimeCache } from "./modelRuntimeFactory.js";
 import type {
   LlmModelDownloadStatus,
   LlmModelSettingsView,
@@ -63,6 +64,20 @@ async function listGgufFiles(
   }
   models.sort((a, b) => (a.fileName < b.fileName ? -1 : 1));
   return models;
+}
+
+function resolveTotalBytes(response: Response, resumedBytes: number): number | null {
+  const contentRange = response.headers.get("content-range");
+  if (contentRange) {
+    const match = contentRange.match(/\/(\d+)$/);
+    if (match) {
+      const total = Number(match[1]);
+      return Number.isFinite(total) && total > 0 ? total : null;
+    }
+  }
+  const contentLength = Number(response.headers.get("content-length") ?? "0");
+  if (!Number.isFinite(contentLength) || contentLength <= 0) return null;
+  return response.status === 206 ? resumedBytes + contentLength : contentLength;
 }
 
 class ModelStorageService {
@@ -155,6 +170,7 @@ class ModelStorageService {
         input.modelId ?? path.basename(resolved, path.extname(resolved)),
       llmProviderHint: "llamacpp",
     });
+    invalidateModelRuntimeCache();
     return this.getView();
   }
 
@@ -169,6 +185,7 @@ class ModelStorageService {
       defaultEmbeddingModelId:
         input.modelId ?? path.basename(resolved, path.extname(resolved)),
     });
+    invalidateModelRuntimeCache();
     return this.getView();
   }
 
@@ -178,13 +195,7 @@ class ModelStorageService {
     modelId: string;
   }> {
     if (this.downloadStatus.active) {
-      const llm = settingsManager.getLlmSettings();
-      const modelsDir = llm.modelsDir ?? this.getDefaultModelsDir();
-      return {
-        downloaded: false,
-        modelPath: path.join(modelsDir, DEFAULT_MODEL.fileName),
-        modelId: DEFAULT_MODEL.modelId,
-      };
+      throw new Error("Download already in progress");
     }
     const llm = settingsManager.getLlmSettings();
     const modelsDir = llm.modelsDir ?? this.getDefaultModelsDir();
@@ -200,6 +211,7 @@ class ModelStorageService {
         defaultModelId: DEFAULT_MODEL.modelId,
         llmProviderHint: "llamacpp",
       });
+      invalidateModelRuntimeCache();
       return { downloaded: false, modelPath, modelId: DEFAULT_MODEL.modelId };
     } catch {
       // continue
@@ -216,8 +228,12 @@ class ModelStorageService {
       startedAt: new Date().toISOString(),
     };
     const hfToken = this.decryptToken(llm.hfTokenCipher);
+    const existingPartSize = await fs.stat(partPath).then((s) => s.size).catch(() => 0);
     const response = await fetch(url, {
-      headers: hfToken ? { Authorization: `Bearer ${hfToken}` } : undefined,
+      headers: {
+        ...(hfToken ? { Authorization: `Bearer ${hfToken}` } : {}),
+        ...(existingPartSize > 0 ? { Range: `bytes=${existingPartSize}-` } : {}),
+      },
     });
     if (!response.ok || !response.body) {
       this.downloadStatus = {
@@ -230,10 +246,14 @@ class ModelStorageService {
       );
     }
 
-    const total = Number(response.headers.get("content-length") ?? "0");
+    const shouldAppend = response.status === 206 && existingPartSize > 0;
+    if (!shouldAppend && existingPartSize > 0) {
+      await fs.unlink(partPath).catch(() => {});
+    }
+    const total = resolveTotalBytes(response, existingPartSize);
     const stream = response.body;
-    const writer = await fs.open(partPath, "w");
-    let downloaded = 0;
+    const writer = await fs.open(partPath, shouldAppend ? "a" : "w");
+    let downloaded = shouldAppend ? existingPartSize : 0;
     try {
       const reader = stream.getReader();
       while (true) {
@@ -245,16 +265,23 @@ class ModelStorageService {
         this.downloadStatus = {
           ...this.downloadStatus,
           downloadedBytes: downloaded,
-          totalBytes: total > 0 ? total : null,
-          percent: total > 0 ? Math.min(100, (downloaded / total) * 100) : null,
+          totalBytes: total,
+          percent: total ? Math.min(100, (downloaded / total) * 100) : null,
         };
       }
     } finally {
       await writer.close();
     }
+    if (total && downloaded < total) {
+      throw new Error(`Incomplete download: ${downloaded}/${total}`);
+    }
 
     await fs.rename(partPath, modelPath);
     const sha256 = await hashFileSha256(modelPath);
+    const expectedSha = process.env.LUIE_DEFAULT_MODEL_SHA256?.trim().toLowerCase();
+    if (expectedSha && sha256.toLowerCase() !== expectedSha) {
+      throw new Error("Default model sha256 mismatch");
+    }
     await fs.writeFile(
       `${modelPath}.sha256`,
       `${sha256}  ${DEFAULT_MODEL.fileName}\n`,
@@ -266,12 +293,13 @@ class ModelStorageService {
       defaultModelId: DEFAULT_MODEL.modelId,
       llmProviderHint: "llamacpp",
     });
+    invalidateModelRuntimeCache();
 
     this.downloadStatus = {
       ...this.downloadStatus,
       active: false,
       downloadedBytes: downloaded,
-      totalBytes: total > 0 ? total : null,
+      totalBytes: total,
       percent: 100,
     };
     logger.info("Default model download completed", {
@@ -288,13 +316,7 @@ class ModelStorageService {
     modelId: string;
   }> {
     if (this.downloadStatus.active) {
-      const llm = settingsManager.getLlmSettings();
-      const modelsDir = llm.modelsDir ?? this.getDefaultModelsDir();
-      return {
-        downloaded: false,
-        modelPath: path.join(modelsDir, DEFAULT_EMBEDDING_MODEL.fileName),
-        modelId: DEFAULT_EMBEDDING_MODEL.modelId,
-      };
+      throw new Error("Download already in progress");
     }
     const llm = settingsManager.getLlmSettings();
     const modelsDir = llm.modelsDir ?? this.getDefaultModelsDir();
@@ -309,6 +331,7 @@ class ModelStorageService {
         defaultEmbeddingModelPath: modelPath,
         defaultEmbeddingModelId: DEFAULT_EMBEDDING_MODEL.modelId,
       });
+      invalidateModelRuntimeCache();
       return { downloaded: false, modelPath, modelId: DEFAULT_EMBEDDING_MODEL.modelId };
     } catch {
       // continue
@@ -325,8 +348,12 @@ class ModelStorageService {
       startedAt: new Date().toISOString(),
     };
     const hfToken = this.decryptToken(llm.hfTokenCipher);
+    const existingPartSize = await fs.stat(partPath).then((s) => s.size).catch(() => 0);
     const response = await fetch(url, {
-      headers: hfToken ? { Authorization: `Bearer ${hfToken}` } : undefined,
+      headers: {
+        ...(hfToken ? { Authorization: `Bearer ${hfToken}` } : {}),
+        ...(existingPartSize > 0 ? { Range: `bytes=${existingPartSize}-` } : {}),
+      },
     });
     if (!response.ok || !response.body) {
       this.downloadStatus = {
@@ -339,10 +366,14 @@ class ModelStorageService {
       );
     }
 
-    const total = Number(response.headers.get("content-length") ?? "0");
+    const shouldAppend = response.status === 206 && existingPartSize > 0;
+    if (!shouldAppend && existingPartSize > 0) {
+      await fs.unlink(partPath).catch(() => {});
+    }
+    const total = resolveTotalBytes(response, existingPartSize);
     const stream = response.body;
-    const writer = await fs.open(partPath, "w");
-    let downloaded = 0;
+    const writer = await fs.open(partPath, shouldAppend ? "a" : "w");
+    let downloaded = shouldAppend ? existingPartSize : 0;
     try {
       const reader = stream.getReader();
       while (true) {
@@ -354,16 +385,23 @@ class ModelStorageService {
         this.downloadStatus = {
           ...this.downloadStatus,
           downloadedBytes: downloaded,
-          totalBytes: total > 0 ? total : null,
-          percent: total > 0 ? Math.min(100, (downloaded / total) * 100) : null,
+          totalBytes: total,
+          percent: total ? Math.min(100, (downloaded / total) * 100) : null,
         };
       }
     } finally {
       await writer.close();
     }
+    if (total && downloaded < total) {
+      throw new Error(`Incomplete download: ${downloaded}/${total}`);
+    }
 
     await fs.rename(partPath, modelPath);
     const sha256 = await hashFileSha256(modelPath);
+    const expectedSha = process.env.LUIE_DEFAULT_EMBED_MODEL_SHA256?.trim().toLowerCase();
+    if (expectedSha && sha256.toLowerCase() !== expectedSha) {
+      throw new Error("Default embedding model sha256 mismatch");
+    }
     await fs.writeFile(
       `${modelPath}.sha256`,
       `${sha256}  ${DEFAULT_EMBEDDING_MODEL.fileName}\n`,
@@ -374,12 +412,13 @@ class ModelStorageService {
       defaultEmbeddingModelPath: modelPath,
       defaultEmbeddingModelId: DEFAULT_EMBEDDING_MODEL.modelId,
     });
+    invalidateModelRuntimeCache();
 
     this.downloadStatus = {
       ...this.downloadStatus,
       active: false,
       downloadedBytes: downloaded,
-      totalBytes: total > 0 ? total : null,
+      totalBytes: total,
       percent: 100,
     };
     logger.info("Default embedding model download completed", {
@@ -434,17 +473,22 @@ class ModelStorageService {
     if (this.downloadStatus.active) {
       throw new Error("Download already in progress");
     }
+    const safeFilename = path.basename(filename);
+    if (safeFilename !== filename) {
+      throw new Error("Invalid filename");
+    }
     const llm = settingsManager.getLlmSettings();
     const modelsDir = llm.modelsDir ?? this.getDefaultModelsDir();
     await ensureDir(modelsDir);
-    const modelPath = path.join(modelsDir, filename);
+    const modelPath = path.join(modelsDir, safeFilename);
     const partPath = `${modelPath}.part`;
-    const url = `https://huggingface.co/${repoId}/resolve/main/${encodeURIComponent(filename)}`;
+    const url = `https://huggingface.co/${repoId}/resolve/main/${encodeURIComponent(safeFilename)}`;
     const hfToken = this.decryptToken(llm.hfTokenCipher);
 
     try {
       await fs.access(modelPath);
       settingsManager.setLlmSettings({ defaultModelPath: modelPath, defaultModelId: modelId, llmProviderHint: "llamacpp" });
+      invalidateModelRuntimeCache();
       return;
     } catch { /* not cached, download */ }
 
@@ -452,7 +496,7 @@ class ModelStorageService {
     this.downloadStatus = {
       active: true,
       modelId,
-      fileName: filename,
+      fileName: safeFilename,
       downloadedBytes: 0,
       totalBytes: null,
       percent: null,
@@ -461,16 +505,24 @@ class ModelStorageService {
 
     void (async () => {
       try {
+        const existingPartSize = await fs.stat(partPath).then((s) => s.size).catch(() => 0);
         const response = await fetch(url, {
-          headers: hfToken ? { Authorization: `Bearer ${hfToken}` } : undefined,
+          headers: {
+            ...(hfToken ? { Authorization: `Bearer ${hfToken}` } : {}),
+            ...(existingPartSize > 0 ? { Range: `bytes=${existingPartSize}-` } : {}),
+          },
         });
         if (!response.ok || !response.body) {
           this.downloadStatus = { ...this.downloadStatus, active: false, error: `HTTP ${response.status} ${response.statusText}` };
           return;
         }
-        const total = Number(response.headers.get("content-length") ?? "0");
-        const writer = await fs.open(partPath, "w");
-        let downloaded = 0;
+        const shouldAppend = response.status === 206 && existingPartSize > 0;
+        if (!shouldAppend && existingPartSize > 0) {
+          await fs.unlink(partPath).catch(() => {});
+        }
+        const total = resolveTotalBytes(response, existingPartSize);
+        const writer = await fs.open(partPath, shouldAppend ? "a" : "w");
+        let downloaded = shouldAppend ? existingPartSize : 0;
         try {
           const reader = response.body.getReader();
           while (true) {
@@ -482,16 +534,20 @@ class ModelStorageService {
             this.downloadStatus = {
               ...this.downloadStatus,
               downloadedBytes: downloaded,
-              totalBytes: total > 0 ? total : null,
-              percent: total > 0 ? Math.min(100, (downloaded / total) * 100) : null,
+              totalBytes: total,
+              percent: total ? Math.min(100, (downloaded / total) * 100) : null,
             };
           }
         } finally {
           await writer.close();
         }
+        if (total && downloaded < total) {
+          throw new Error(`Incomplete download: ${downloaded}/${total}`);
+        }
         await fs.rename(partPath, modelPath);
         settingsManager.setLlmSettings({ defaultModelPath: modelPath, defaultModelId: modelId, llmProviderHint: "llamacpp" });
-        this.downloadStatus = { ...this.downloadStatus, active: false, downloadedBytes: downloaded, totalBytes: total > 0 ? total : null, percent: 100 };
+        invalidateModelRuntimeCache();
+        this.downloadStatus = { ...this.downloadStatus, active: false, downloadedBytes: downloaded, totalBytes: total, percent: 100 };
         logger.info("HF model download completed", { modelPath });
       } catch (err) {
         this.downloadStatus = { ...this.downloadStatus, active: false, error: err instanceof Error ? err.message : String(err) };

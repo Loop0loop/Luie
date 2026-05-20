@@ -9,7 +9,9 @@ export function normalizeCoreAnswer(raw: string): string {
       !/^okay[,!]?/i.test(line) &&
       !/^let'?s\s+/i.test(line) &&
       !/^starting with/i.test(line) &&
-      !/^the user/i.test(line),
+      !/^the user/i.test(line) &&
+      !/^##\s*output rules/i.test(line) &&
+      !/^##\s*layer\s*\d+/i.test(line),
   );
   const deduped: string[] = [];
   for (const line of filtered) {
@@ -19,6 +21,5 @@ export function normalizeCoreAnswer(raw: string): string {
     }
     deduped.push(line);
   }
-  const merged = deduped.join("\n");
-  return merged.slice(0, 1800).trim();
+  return deduped.join("\n").trim();
 }

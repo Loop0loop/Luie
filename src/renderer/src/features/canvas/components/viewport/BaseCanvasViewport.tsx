@@ -128,6 +128,7 @@ export default function BaseCanvasViewport({
         panOnScrollMode={PanOnScrollMode.Free}
         zoomOnScroll={false}
         zoomOnPinch
+        zoomOnDoubleClick={false}
         proOptions={{ hideAttribution: true }}
         className="bg-canvas"
       >

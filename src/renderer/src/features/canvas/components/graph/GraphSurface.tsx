@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from "react";
-import ReactFlow, { Background, BackgroundVariant, type Node, useNodesState, useEdgesState } from "reactflow";
+import ReactFlow, { Background, BackgroundVariant, PanOnScrollMode, type Node, useNodesState, useEdgesState } from "reactflow";
 import PensiveNode from "./PensiveNode";
 import type { GraphNodeData } from "../../types/graph";
 import { useGraphStore } from "../../stores/graph/graphStore";
@@ -78,6 +78,11 @@ export default function GraphSurface() {
         onPaneClick={() => setFocusId(null)}
         nodeTypes={nodeTypes}
         fitView
+        panOnScroll
+        panOnScrollMode={PanOnScrollMode.Free}
+        zoomOnScroll={false}
+        zoomOnPinch
+        zoomOnDoubleClick={false}
         proOptions={{ hideAttribution: true }}
       >
         <Background

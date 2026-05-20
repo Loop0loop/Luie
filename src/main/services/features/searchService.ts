@@ -34,10 +34,12 @@ export class SearchService {
   private static readonly RRF_K = 60;
   private runtimeCache = new Map<string, { runtime: Awaited<ReturnType<typeof resolveModelRuntimeClient>>; expiresAt: number }>();
   private static readonly RUNTIME_CACHE_TTL_MS = 30_000;
+  private static readonly VECTOR_SEARCH_UTILITY_ONLY =
+    process.env.LUIE_VECTOR_SEARCH_UTILITY_ONLY !== "0";
 
   private buildFtsQuery(query: string): string {
     const tokens = query.trim().split(/\s+/).filter(Boolean);
-    if (tokens.length === 0) return '""';
+    if (tokens.length === 0) return "";
     return tokens.map((t) => `"${t.replaceAll('"', '""')}"`).join(" AND ");
   }
 
@@ -184,24 +186,33 @@ export class SearchService {
     try {
       const client = db.getClient();
       const ftsQuery = this.buildFtsQuery(normalizedQuery);
-      const ftsRows = client.all<{
-        chunkId: string;
-      }>(sql`
-        SELECT fts."chunkId" AS "chunkId"
-        FROM "MemoryChunkFts" fts
-        WHERE fts."projectId" = ${input.projectId}
-          AND "MemoryChunkFts" MATCH ${ftsQuery}
-        ORDER BY bm25("MemoryChunkFts"), fts."chunkId"
-        LIMIT ${Math.max(limit, 50)};
-      `);
-      const runtime = await this.resolveRuntimeCached(input.projectId);
+      const ftsRows = ftsQuery.length > 0
+        ? client.all<{
+            chunkId: string;
+          }>(sql`
+            SELECT fts."chunkId" AS "chunkId"
+            FROM "MemoryChunkFts" fts
+            WHERE fts."projectId" = ${input.projectId}
+              AND "MemoryChunkFts" MATCH ${ftsQuery}
+            ORDER BY bm25("MemoryChunkFts"), fts."chunkId"
+            LIMIT ${Math.max(limit, 50)};
+          `)
+        : [];
       let denseRanks: Array<{ chunkId: string; rank: number }> = [];
-      const queryVectors = db.isVectorSearchEnabled()
-        ? await runtime.embed([normalizedQuery])
-        : null;
-      const queryVector = queryVectors?.[0] ?? null;
-      if (queryVector && queryVector.length > 0) {
-        denseRanks = await this.searchByVector(input.projectId, queryVector, Math.max(limit, 50));
+      const shouldRunVectorSearch =
+        db.isVectorSearchEnabled() &&
+        (
+          SearchService.VECTOR_SEARCH_UTILITY_ONLY
+            ? process.env.LUIE_IS_UTILITY_PROCESS === "1"
+            : true
+        );
+      if (shouldRunVectorSearch) {
+        const runtime = await this.resolveRuntimeCached(input.projectId);
+        const queryVectors = await runtime.embed([normalizedQuery]);
+        const queryVector = queryVectors?.[0] ?? null;
+        if (queryVector && queryVector.length > 0) {
+          denseRanks = await this.searchByVector(input.projectId, queryVector, Math.max(limit, 50));
+        }
       }
       const merged = this.mergeWithRRF(
         ftsRows.map((row, index) => ({ chunkId: row.chunkId, rank: index + 1 })),
