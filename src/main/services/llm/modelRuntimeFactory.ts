@@ -29,9 +29,14 @@ type ModelPathCache = {
   fallbackModelPath: string | null;
 };
 
-const MODEL_PATH_CACHE_TTL_MS = 0;
+const MODEL_PATH_CACHE_TTL_MS = 10_000;
 let modelPathCache: ModelPathCache | null = null;
 let modelPathCacheInflight: Promise<ModelPathCache> | null = null;
+
+export function invalidateModelRuntimeCache(): void {
+  modelPathCache = null;
+  modelPathCacheInflight = null;
+}
 
 const normalizeProviderHint = (
   value: string | null | undefined,

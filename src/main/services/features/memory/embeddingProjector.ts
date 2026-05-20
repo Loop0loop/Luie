@@ -10,6 +10,7 @@ import { resolveRuntimeModelConfig } from "../../llm/modelRuntimeFactory.js";
 const logger = createLogger("EmbeddingProjector");
 const MAX_ATTEMPTS = 3;
 const RETRY_BASE_BACKOFF_MS = 3_000;
+const RUNNING_STALE_MS = 5 * 60_000;
 
 function canRetry(job: { status: string; attempts: number; updatedAt: string }): boolean {
   if (job.status === "pending") return true;
@@ -49,6 +50,23 @@ export class EmbeddingProjector {
     limit?: number;
   }): Promise<{ queued: number; processed: number }> {
     const client = db.getClient();
+    const staleRunningCutoffIso = new Date(Date.now() - RUNNING_STALE_MS).toISOString();
+    await client
+      .update(memoryBuildJob)
+      .set({
+        status: "pending",
+        error: "RECOVERED_STALE_RUNNING_JOB",
+        updatedAt: new Date().toISOString(),
+      })
+      .where(
+        and(
+          eq(memoryBuildJob.projectId, input.projectId),
+          eq(memoryBuildJob.jobType, MEMORY_JOB_TYPES.REBUILD_EMBEDDING),
+          eq(memoryBuildJob.status, "running"),
+          sql`${memoryBuildJob.updatedAt} <= ${staleRunningCutoffIso}`,
+        ),
+      );
+
     const limit = input.limit ?? 1;
     const candidates = await client
       .select()
@@ -133,37 +151,42 @@ export class EmbeddingProjector {
             changedChunks.map((chunk) => chunk.content),
           );
           const vectors = vectorsRaw?.map((row) => Float32Array.from(row)) ?? null;
-          if (vectors && vectors.length > 0) {
-            for (let i = 0; i < changedChunks.length; i += 1) {
-              const chunk = changedChunks[i];
-              const vector = vectors[i];
-              if (!vector) continue;
-              validateEmbeddingVector(vector);
-              await client
-                .insert(memoryEmbedding)
-                .values({
-                  id: crypto.randomUUID(),
-                  chunkId: chunk.chunkId,
+          if (!vectors || vectors.length === 0) {
+            throw new Error("EMBEDDING_RUNTIME_RETURNED_NO_VECTOR");
+          }
+          if (vectors.length !== changedChunks.length) {
+            throw new Error(
+              `EMBEDDING_VECTOR_COUNT_MISMATCH:${vectors.length}/${changedChunks.length}`,
+            );
+          }
+          for (let i = 0; i < changedChunks.length; i += 1) {
+            const chunk = changedChunks[i];
+            const vector = vectors[i];
+            validateEmbeddingVector(vector);
+            await client
+              .insert(memoryEmbedding)
+              .values({
+                id: crypto.randomUUID(),
+                chunkId: chunk.chunkId,
+                projectId: chunk.projectId,
+                contentHash: chunk.contentHash,
+                vec: vectorToBuffer(vector),
+                dimension: vector.length,
+                model: expectedModelSignature,
+                createdAt: now,
+                updatedAt: now,
+              })
+              .onConflictDoUpdate({
+                target: [memoryEmbedding.chunkId],
+                set: {
                   projectId: chunk.projectId,
                   contentHash: chunk.contentHash,
                   vec: vectorToBuffer(vector),
                   dimension: vector.length,
                   model: expectedModelSignature,
-                  createdAt: now,
                   updatedAt: now,
-                })
-                .onConflictDoUpdate({
-                  target: [memoryEmbedding.chunkId],
-                  set: {
-                    projectId: chunk.projectId,
-                    contentHash: chunk.contentHash,
-                    vec: vectorToBuffer(vector),
-                    dimension: vector.length,
-                    model: expectedModelSignature,
-                    updatedAt: now,
-                  },
-                });
-            }
+                },
+              });
           }
         }
 

@@ -12,6 +12,14 @@ export interface ModelRuntimeClient {
   isModelLoaded(): boolean;
   generate(prompt: string, options?: GenerateOptions): Promise<string>;
   generateStream(prompt: string, options?: GenerateOptions): AsyncIterable<string>;
+  generateChat?: (
+    input: { systemPrompt?: string; userPrompt: string },
+    options?: GenerateOptions,
+  ) => Promise<string>;
+  generateChatStream?: (
+    input: { systemPrompt?: string; userPrompt: string },
+    options?: GenerateOptions,
+  ) => AsyncIterable<string>;
   embed(texts: string[]): Promise<Float32Array[] | null>;
 }
 

@@ -18,6 +18,7 @@ const REQUEST_TIMEOUT_STOP_MS = 2_000;
 const REQUEST_TIMEOUT_EMBED_MS = 30_000;
 const STOP_TIMEOUT_MS = 5_000;
 const STOP_GRACE_MS = 120;
+const RAG_RUN_WATCHDOG_MS = 3 * 60_000;
 
 type UtilityOutboundMessage =
   | { type: "pong"; requestId?: string; pid: number }
@@ -56,6 +57,7 @@ export class UtilityProcessBridge {
   private requestSeq = 0;
   private pendingRequests = new Map<string, PendingRequest>();
   private ragRunToWebContentsId = new Map<string, number>();
+  private ragRunWatchdogs = new Map<string, ReturnType<typeof setTimeout>>();
   private pendingRagEvents = new Map<string, PendingRagEvent[]>();
   private pendingRagEventTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private startingPromise: Promise<boolean> | null = null;
@@ -88,6 +90,9 @@ export class UtilityProcessBridge {
         logger.info("Utility process exited", { pid: child.pid, code });
         this.clearPendingRequests("Utility process exited");
         this.emitCrashErrorsToActiveRuns("RAG utility process exited unexpectedly");
+        for (const runId of this.ragRunWatchdogs.keys()) {
+          this.clearRagRunWatchdog(runId);
+        }
         this.ragRunToWebContentsId.clear();
         this.clearPendingRagEvents();
         if (this.utilityChild === child) {
@@ -137,6 +142,9 @@ export class UtilityProcessBridge {
           clearTimeout(timeout);
           child.off("message", onMessage);
           this.ragRunToWebContentsId.clear();
+          for (const runId of this.ragRunWatchdogs.keys()) {
+            this.clearRagRunWatchdog(runId);
+          }
           this.clearPendingRagEvents();
           this.utilityChild = null;
           this.stoppingPromise = null;
@@ -184,12 +192,22 @@ export class UtilityProcessBridge {
     const runHandle = result as RagQaRunHandle;
     if (runHandle?.runId) {
       this.ragRunToWebContentsId.set(runHandle.runId, targetWebContentsId);
+      this.setRagRunWatchdog(runHandle.runId);
       this.flushPendingRagEvents(runHandle.runId);
     }
     return runHandle;
   }
 
   async stopRagQa(runId?: string): Promise<{ stopped: boolean }> {
+    if (runId) {
+      this.clearRagRunWatchdog(runId);
+      this.ragRunToWebContentsId.delete(runId);
+    } else {
+      for (const key of this.ragRunToWebContentsId.keys()) {
+        this.clearRagRunWatchdog(key);
+      }
+      this.ragRunToWebContentsId.clear();
+    }
     return (await this.request("ragQa.stop", { runId })) as { stopped: boolean };
   }
 
@@ -315,8 +333,10 @@ export class UtilityProcessBridge {
       this.ragRunToWebContentsId.delete(payload.runId);
       return;
     }
+    this.setRagRunWatchdog(payload.runId);
     target.send(IPC_CHANNELS.RAG_QA_STREAM, payload);
     if (payload.done) {
+      this.clearRagRunWatchdog(payload.runId);
       this.ragRunToWebContentsId.delete(payload.runId);
     }
   }
@@ -334,6 +354,7 @@ export class UtilityProcessBridge {
       return;
     }
     target.send(IPC_CHANNELS.RAG_QA_ERROR, payload);
+    this.clearRagRunWatchdog(payload.runId);
     this.ragRunToWebContentsId.delete(payload.runId);
   }
 
@@ -394,6 +415,41 @@ export class UtilityProcessBridge {
     }
     this.pendingRagEventTimers.clear();
     this.pendingRagEvents.clear();
+  }
+
+  private setRagRunWatchdog(runId: string): void {
+    this.clearRagRunWatchdog(runId);
+    const timer = setTimeout(() => {
+      const webContentsId = this.ragRunToWebContentsId.get(runId);
+      if (!webContentsId) return;
+      const target = webContents.fromId(webContentsId);
+      if (!target || target.isDestroyed()) {
+        this.ragRunToWebContentsId.delete(runId);
+        this.clearRagRunWatchdog(runId);
+        return;
+      }
+      target.send(IPC_CHANNELS.RAG_QA_ERROR, {
+        runId,
+        code: ErrorCode.RAG_QA_FAILED,
+        message: "RAG generation timeout",
+      } satisfies RagQaErrorPayload);
+      this.ragRunToWebContentsId.delete(runId);
+      this.clearRagRunWatchdog(runId);
+      void this.stopRagQa(runId).catch((error) => {
+        logger.warn("Failed to stop timed-out RAG run", { runId, error });
+      });
+    }, RAG_RUN_WATCHDOG_MS);
+    if (typeof timer.unref === "function") {
+      timer.unref();
+    }
+    this.ragRunWatchdogs.set(runId, timer);
+  }
+
+  private clearRagRunWatchdog(runId: string): void {
+    const timer = this.ragRunWatchdogs.get(runId);
+    if (!timer) return;
+    clearTimeout(timer);
+    this.ragRunWatchdogs.delete(runId);
   }
 
   private nextRequestId(): string {

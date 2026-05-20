@@ -16,6 +16,7 @@ import type { SettingsManager } from "../../manager/settingsManager.js";
 import type { LoggerLike } from "../core/types.js";
 import { applyApplicationMenu } from "../../lifecycle/menu.js";
 import { modelStorageService } from "../../services/llm/modelStorageService.js";
+import { invalidateModelRuntimeCache } from "../../services/llm/modelRuntimeFactory.js";
 
 const loadSettingsManager = (() => {
   let cached: Promise<{ settingsManager: SettingsManager }> | null = null;
@@ -209,6 +210,7 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       handler: async (input: { providerHint: "llamacpp" | "llamaserver" | "none" }) => {
         const settingsManager = await loadSettingsManager();
         settingsManager.setLlmSettings({ llmProviderHint: input.providerHint });
+        invalidateModelRuntimeCache();
         return { providerHint: input.providerHint };
       },
     },
@@ -250,6 +252,7 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
           hasModelPath: input.modelPath !== undefined ? Boolean(input.modelPath) : undefined,
           providerHint: input.providerHint,
         });
+        invalidateModelRuntimeCache();
         return { ok: true };
       },
     },
@@ -271,6 +274,7 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
           ...(input.ragTemperature !== undefined ? { ragTemperature: input.ragTemperature } : {}),
           ...(input.ragMaxTokens !== undefined ? { ragMaxTokens: input.ragMaxTokens } : {}),
         });
+        invalidateModelRuntimeCache();
         return { ok: true };
       },
     },

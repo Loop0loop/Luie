@@ -14,6 +14,7 @@ type LlamaContext = {
   context?: unknown;
   // LlamaCompletion class reference cached from dynamic import to avoid re-importing per call
   LlamaCompletion?: unknown;
+  LlamaChatSession?: unknown;
   embeddingModel?: unknown;
   embeddingContext?: unknown;
 };  
@@ -114,9 +115,10 @@ export class LlamaCppProvider implements ModelRuntimeClient {
     this.modelPromise = (async () => {
       const dynamicImport = new Function("id", "return import(id)") as (id: string) => Promise<unknown>;
       const mod = await dynamicImport("node-llama-cpp");
-      const { getLlama, LlamaCompletion } = mod as {
+      const { getLlama, LlamaCompletion, LlamaChatSession } = mod as {
         getLlama: (options?: { gpu?: string; useMmap?: boolean }) => Promise<unknown>;
         LlamaCompletion: unknown;
+        LlamaChatSession?: unknown;
       };
       // gpu: "auto" lets node-llama-cpp pick Metal (macOS), CUDA, or Vulkan automatically.
       const llama = await getLlama({ gpu: "auto", useMmap: true });
@@ -129,6 +131,7 @@ export class LlamaCppProvider implements ModelRuntimeClient {
       this.context.model = model;
       this.context.context = context;
       this.context.LlamaCompletion = LlamaCompletion;
+      this.context.LlamaChatSession = LlamaChatSession;
     })();
     try {
       await this.modelPromise;
@@ -241,6 +244,17 @@ export class LlamaCppProvider implements ModelRuntimeClient {
     }
   }
 
+  async generateChat(
+    input: { systemPrompt?: string; userPrompt: string },
+    options?: GenerateOptions,
+  ): Promise<string> {
+    const chunks: string[] = [];
+    for await (const delta of this.generateChatStream(input, options)) {
+      chunks.push(delta);
+    }
+    return chunks.join("");
+  }
+
   async *generateStream(prompt: string, options?: GenerateOptions): AsyncIterable<string> {
     this.inFlightGenerateCount += 1;
     try {
@@ -281,6 +295,110 @@ export class LlamaCppProvider implements ModelRuntimeClient {
 
       const generationPromise = completion
         .generateCompletion(prompt, {
+          temperature: options?.temperature ?? 0.2,
+          maxTokens: options?.maxTokens ?? 256,
+          signal: options?.signal,
+          stopOnAbortSignal: true,
+          onTextChunk: (chunk: string) => {
+            if (!chunk) return;
+            queue.push(chunk);
+            wake();
+          },
+        })
+        .catch((error) => {
+          generationError = error;
+        })
+        .finally(() => {
+          finished = true;
+          wake();
+        });
+
+      try {
+        while (!finished || queue.length > 0) {
+          if (queue.length === 0) {
+            await new Promise<void>((resolve) => {
+              if (finished || queue.length > 0) {
+                resolve();
+                return;
+              }
+              notify = resolve;
+            });
+            continue;
+          }
+          const chunk = queue.shift();
+          if (chunk) {
+            yield chunk;
+          }
+        }
+        await generationPromise;
+        if (generationError) {
+          throw generationError;
+        }
+      } finally {
+        await generationPromise.catch(() => {});
+        sequence.dispose();
+      }
+    } finally {
+      this.inFlightGenerateCount = Math.max(0, this.inFlightGenerateCount - 1);
+      this.scheduleModelIdleUnload();
+    }
+  }
+
+  async *generateChatStream(
+    input: { systemPrompt?: string; userPrompt: string },
+    options?: GenerateOptions,
+  ): AsyncIterable<string> {
+    this.inFlightGenerateCount += 1;
+    try {
+      if (options?.signal?.aborted) {
+        throw new Error("Generation aborted");
+      }
+      await this.ensureLoaded();
+
+      const ctx = this.context.context as { getSequence: () => { dispose: () => void } };
+      const ChatSessionCls = this.context.LlamaChatSession as
+        | (new (opts: { contextSequence: unknown; systemPrompt?: string }) => {
+            prompt: (
+              input: string,
+              opts?: {
+                maxTokens?: number;
+                temperature?: number;
+                signal?: AbortSignal;
+                stopOnAbortSignal?: boolean;
+                onTextChunk?: (chunk: string) => void;
+              },
+            ) => Promise<string>;
+          })
+        | undefined;
+      if (!ChatSessionCls) {
+        // Fallback when chat session class is unavailable in runtime package.
+        yield* this.generateStream(
+          `${input.systemPrompt ?? ""}\n\n${input.userPrompt}`.trim(),
+          options,
+        );
+        return;
+      }
+
+      const sequence = ctx.getSequence();
+      const session = new ChatSessionCls({
+        contextSequence: sequence,
+        ...(input.systemPrompt ? { systemPrompt: input.systemPrompt } : {}),
+      });
+
+      const queue: string[] = [];
+      let finished = false;
+      let generationError: unknown = null;
+      let notify: (() => void) | null = null;
+      const wake = () => {
+        if (notify) {
+          const fn = notify;
+          notify = null;
+          fn();
+        }
+      };
+
+      const generationPromise = session
+        .prompt(input.userPrompt, {
           temperature: options?.temperature ?? 0.2,
           maxTokens: options?.maxTokens ?? 256,
           signal: options?.signal,

@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Settings2, Crosshair, Network, Layers, Target, X } from "lucide-react";
+import { Settings2, Crosshair, Network, Layers, Target, X, Check } from "lucide-react";
 import { useGraphStore } from "../../stores/graph/graphStore";
 import { MOCK_GRAPH_NODES } from "../../constants/graphMockData";
 import { CANVAS_GRAPH_I18N } from "../../constants/i18n";
@@ -42,17 +42,22 @@ export default function GraphPanel() {
         {focusId && focusedNode && (
           <PanelSection title={t("canvas.graph.focus")} defaultOpen>
             <div className="px-3 pb-3 pt-1">
-              <div className="flex items-center justify-between rounded border border-accent/25 bg-accent/10 px-2.5 py-1.5 text-xs text-accent">
-                <div className="flex items-center gap-1.5 font-medium">
-                  <Target className="h-3.5 w-3.5" />
-                  <span>{focusedNode.data.label}</span>
+              <div className="flex items-center justify-between rounded-lg border border-accent/20 bg-accent/5 p-3 text-xs shadow-sm transition-all animate-in fade-in duration-200">
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent/10 text-accent">
+                    <Target className="h-4 w-4" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-semibold text-fg truncate">{focusedNode.data.label}</span>
+                    <span className="text-[10px] text-muted-foreground mt-0.5">활성 관계선 추적 중</span>
+                  </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setFocusId(null)}
-                  className="rounded p-0.5 hover:bg-accent/20 transition-colors"
+                  className="rounded p-1 text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors shrink-0"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
             </div>
@@ -67,24 +72,28 @@ export default function GraphPanel() {
               icon={<Crosshair className="h-4 w-4" />}
               active={mode === "episode"}
               onClick={() => setMode("episode")}
+              badge={mode === "episode" && <Check className="icon-xs text-accent" />}
             />
             <PanelItem
               label={t(CANVAS_GRAPH_I18N.characterGraph)}
               icon={<Network className="h-4 w-4" />}
               active={mode === "character"}
               onClick={() => setMode("character")}
+              badge={mode === "character" && <Check className="icon-xs text-accent" />}
             />
             <PanelItem
               label={t(CANVAS_GRAPH_I18N.eventGraph)}
               icon={<Layers className="h-4 w-4" />}
               active={mode === "event"}
               onClick={() => setMode("event")}
+              badge={mode === "event" && <Check className="icon-xs text-accent" />}
             />
             <PanelItem
               label={t(CANVAS_GRAPH_I18N.worldGraph)}
               icon={<Settings2 className="h-4 w-4" />}
               active={mode === "world"}
               onClick={() => setMode("world")}
+              badge={mode === "world" && <Check className="icon-xs text-accent" />}
             />
           </div>
         </PanelSection>
@@ -103,7 +112,7 @@ export default function GraphPanel() {
               step={1}
               value={depth}
               onChange={(e) => setDepth(Number(e.target.value) as 1 | 2 | 3)}
-              className="h-1 w-full cursor-pointer appearance-none rounded-lg bg-border accent-accent hover:accent-accent-hover transition-colors"
+              className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-border transition-all focus:outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:hover:bg-accent-hover [&::-webkit-slider-thumb]:active:scale-110 [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:shadow-md"
             />
           </div>
         </PanelSection>
@@ -111,7 +120,7 @@ export default function GraphPanel() {
         {/* Relationship Filters (Interactive ToggleChips) */}
         <PanelSection title={t(CANVAS_GRAPH_I18N.relationships)} defaultOpen>
           <div className="flex flex-col gap-2 px-3 pb-3 pt-1">
-            <div className="flex flex-wrap gap-1.5">
+            <div className="grid grid-cols-2 gap-1.5">
               {["등장", "대화", "갈등", "소속", "동맹", "떡밥"].map((rel) => (
                 <ToggleChip
                   key={rel}

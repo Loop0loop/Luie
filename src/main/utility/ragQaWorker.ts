@@ -46,6 +46,9 @@ class RagQaWorker {
   private static readonly DEFAULT_TEMPERATURE = 0.2;
   private static readonly DEFAULT_MAX_TOKENS = 1200;
   private static readonly GENERATION_CONFIG_TTL_MS = 10_000;
+  private static readonly FIRST_TOKEN_TIMEOUT_MS = 30_000;
+  private static readonly TOTAL_GENERATION_TIMEOUT_MS = 180_000;
+  private static readonly STREAM_HEARTBEAT_MS = 5_000;
 
   private clampTemperature(value: unknown): number {
     if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -170,7 +173,7 @@ class RagQaWorker {
   private async execute(run: ActiveRun): Promise<void> {
     try {
       const generationConfig = await this.loadGenerationConfig();
-      const { assembledPrompt, evidence } = await assembleRagContext({
+      const { systemPrompt, userPrompt, evidence } = await assembleRagContext({
         projectId: run.request.projectId,
         question: run.request.question,
         chapterId: run.request.chapterId,
@@ -188,22 +191,72 @@ class RagQaWorker {
 
       const runtime = await resolveModelRuntimeClient(run.request.projectId);
       const chunks: string[] = [];
-
-      for await (const delta of runtime.generateStream(assembledPrompt, {
-        temperature: generationConfig.temperature,
-        maxTokens: generationConfig.maxTokens,
-        signal: run.abortController.signal,
-      })) {
-        if (run.aborted) {
-          this.emitError({
-            runId: run.runId,
-            code: ErrorCode.RAG_QA_ABORTED,
-            message: "RAG QA aborted",
-          });
+      const startedAt = Date.now();
+      let lastTokenAt = Date.now();
+      let firstTokenReceived = false;
+      const heartbeat = setInterval(() => {
+        if (run.aborted) return;
+        this.emitStream({ runId: run.runId, done: false, delta: "" });
+      }, RagQaWorker.STREAM_HEARTBEAT_MS);
+      if (typeof heartbeat.unref === "function") {
+        heartbeat.unref();
+      }
+      const timeoutTimer = setInterval(() => {
+        const now = Date.now();
+        if (!firstTokenReceived && now - startedAt > RagQaWorker.FIRST_TOKEN_TIMEOUT_MS) {
+          run.aborted = true;
+          run.abortController.abort();
           return;
         }
-        chunks.push(delta);
-        this.emitStream({ runId: run.runId, delta, done: false });
+        if (now - startedAt > RagQaWorker.TOTAL_GENERATION_TIMEOUT_MS) {
+          run.aborted = true;
+          run.abortController.abort();
+          return;
+        }
+        if (firstTokenReceived && now - lastTokenAt > RagQaWorker.FIRST_TOKEN_TIMEOUT_MS) {
+          run.aborted = true;
+          run.abortController.abort();
+        }
+      }, 1000);
+      if (typeof timeoutTimer.unref === "function") {
+        timeoutTimer.unref();
+      }
+
+      const stream = runtime.generateChatStream
+        ? runtime.generateChatStream(
+            { systemPrompt, userPrompt },
+            {
+              temperature: generationConfig.temperature,
+              maxTokens: generationConfig.maxTokens,
+              signal: run.abortController.signal,
+            },
+          )
+        : runtime.generateStream(`${systemPrompt}\n\n${userPrompt}`.trim(), {
+            temperature: generationConfig.temperature,
+            maxTokens: generationConfig.maxTokens,
+            signal: run.abortController.signal,
+          });
+
+      try {
+        for await (const delta of stream) {
+          if (run.aborted) {
+            this.emitError({
+              runId: run.runId,
+              code: ErrorCode.RAG_QA_ABORTED,
+              message: "RAG QA aborted",
+            });
+            return;
+          }
+          if (delta.length > 0) {
+            firstTokenReceived = true;
+            lastTokenAt = Date.now();
+          }
+          chunks.push(delta);
+          this.emitStream({ runId: run.runId, delta, done: false });
+        }
+      } finally {
+        clearInterval(heartbeat);
+        clearInterval(timeoutTimer);
       }
 
       const result: RagQaResult = {

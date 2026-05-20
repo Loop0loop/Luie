@@ -133,7 +133,7 @@ export function PanelItem({
   badge,
   className,
 }: {
-  label: string;
+  label: React.ReactNode;
   icon?: ReactNode;
   active?: boolean;
   onClick?: () => void;
@@ -145,10 +145,10 @@ export function PanelItem({
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
       className={cn(
-        "flex cursor-pointer items-center gap-2 px-3 py-1.5 text-[13px] transition-all",
+        "flex cursor-pointer items-center gap-2 px-3 py-1.5 text-[13px] transition-all rounded-md",
         active
-          ? "bg-active font-medium text-fg border-l-[3px] border-accent pl-[9px]"
-          : "text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg",
+          ? "bg-accent/10 font-medium text-accent"
+          : "text-muted hover:bg-surface-hover hover:text-fg",
         className,
       )}
       onClick={onClick}
@@ -196,8 +196,8 @@ export function ToggleChip({
       className={cn(
         "flex cursor-pointer items-center justify-between gap-2 rounded-md px-3 py-1.5 text-[13px] transition-all",
         checked
-          ? "bg-active font-medium text-fg border-l-[3px] border-accent pl-[9px]"
-          : "text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg",
+          ? "bg-accent/10 font-medium text-accent"
+          : "text-muted hover:bg-surface-hover hover:text-fg",
       )}
     >
       <div className="flex items-center gap-2 min-w-0 flex-1">

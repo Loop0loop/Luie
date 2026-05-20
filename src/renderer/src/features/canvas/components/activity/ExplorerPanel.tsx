@@ -5,7 +5,7 @@
  * Data: chapterStore.items + projectStore.currentItem (existing stores, no new IPC).
  * Drag & drop reorder: reuses DraggableItem from @shared/ui (same as Sidebar.tsx).
  */
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { FileText, Plus } from "lucide-react";
 import { DraggableItem } from "@shared/ui/DraggableItem";
@@ -20,6 +20,23 @@ import {
   PanelItem,
   PanelEmpty,
 } from "./shared";
+
+// 최종 수정일 상대 시간 포맷 헬퍼 함수
+function getRelativeTimeString(dateInput: string | Date | undefined): string {
+  if (!dateInput) return "수정일 없음";
+  const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 1) return "방금 전";
+  if (diffMins < 60) return `${diffMins}분 전`;
+  if (diffHours < 24) return `${diffHours}시간 전`;
+  if (diffDays < 7) return `${diffDays}일 전`;
+  return date.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
+}
 
 export default function ExplorerPanel() {
   const { t } = useTranslation();
@@ -90,11 +107,22 @@ export default function ExplorerPanel() {
                   }}
                 >
                   <PanelItem
-                    label={`${chapter.order}. ${chapter.title ?? t("project.defaults.untitled")}`}
+                    label={
+                      <div className="flex flex-col gap-0.5 py-0.5 select-none text-left">
+                        <div className="font-medium text-fg truncate">
+                          {chapter.order}. {chapter.title ?? t("project.defaults.untitled")}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-normal">
+                          <span>{chapter.wordCount ? `${chapter.wordCount.toLocaleString()}자` : "0자"}</span>
+                          <span className="w-[2px] h-[2px] rounded-full bg-border" />
+                          <span>{getRelativeTimeString(chapter.updatedAt)}</span>
+                        </div>
+                      </div>
+                    }
                     icon={
                       <FileText
                         className={
-                          isActive ? "text-fg icon-sm" : "text-muted icon-sm"
+                          isActive ? "text-accent icon-sm self-start mt-[5px]" : "text-muted icon-sm self-start mt-[5px]"
                         }
                       />
                     }

@@ -65,7 +65,7 @@ export default function CanvasIconRail() {
             className={cn(
               "relative flex h-9 w-9 items-center justify-center rounded-md transition-all active:scale-95",
               isActive
-                ? "bg-active text-foreground"
+                ? "bg-accent/10 text-accent font-medium"
                 : "text-muted-foreground hover:bg-muted/30 hover:text-foreground",
             )}
           >
