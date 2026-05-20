@@ -1,10 +1,7 @@
 import type { IPCResponse } from "@shared/ipc/index.js";
 import type {
   AppSettings,
-  LlmModelSettingsView,
-  LlmModelDownloadStatus,
-  HfModelSearchResult,
-  HfModelFile,
+  OllamaConnectionResult,
   Chapter,
   Scene,
   ChapterSaveResult,
@@ -473,50 +470,13 @@ export type RendererApi = {
     }) => Promise<
       IPCResponse<{ width: number; height: number; x: number; y: number }>
     >;
-    getLlmModels: () => Promise<IPCResponse<LlmModelSettingsView>>;
-    setLlmDefaultModel: (input: {
-      modelPath: string;
-      modelId?: string;
-    }) => Promise<IPCResponse<LlmModelSettingsView>>;
-    setLlmEmbeddingModel: (input: {
-      modelPath: string;
-      modelId?: string;
-    }) => Promise<IPCResponse<LlmModelSettingsView>>;
-    downloadDefaultLlmModel: () => Promise<
-      IPCResponse<{
-        downloaded: boolean;
-        modelPath: string;
-        modelId: string;
-      }>
-    >;
-    downloadDefaultEmbeddingModel: () => Promise<
-      IPCResponse<{
-        downloaded: boolean;
-        modelPath: string;
-        modelId: string;
-      }>
-    >;
-    getLlmDownloadStatus: () => Promise<IPCResponse<LlmModelDownloadStatus>>;
-    setHuggingFaceToken: (input: {
-      token: string;
-    }) => Promise<IPCResponse<{ saved: boolean }>>;
-    setLlmProviderHint: (input: {
-      providerHint: "llamacpp" | "llamaserver" | "none";
-    }) => Promise<IPCResponse<{ providerHint: string }>>;
-    setProjectLlm: (input: {
-      projectId: string;
-      modelPath?: string | null;
-      providerHint?: "llamacpp" | "llamaserver" | "none" | null;
+    setOllamaConfig: (input: {
+      baseUrl: string;
+      chatModel: string;
+      embeddingModel?: string;
     }) => Promise<IPCResponse<{ ok: boolean }>>;
-    setLlmRuntimeSettings: (input: {
-      contextSize?: number;
-      gpuLayers?: number;
-      ragTemperature?: number;
-      ragMaxTokens?: number;
-    }) => Promise<IPCResponse<{ ok: boolean }>>;
-    searchHfModels: (input: { query: string }) => Promise<IPCResponse<HfModelSearchResult[]>>;
-    getHfModelFiles: (input: { repoId: string }) => Promise<IPCResponse<HfModelFile[]>>;
-    downloadHfModel: (input: { repoId: string; filename: string; modelId: string }) => Promise<IPCResponse<{ started: boolean }>>;
+    listOllamaModels: (baseUrl: string) => Promise<IPCResponse<string[]>>;
+    testOllamaConnection: (baseUrl: string) => Promise<IPCResponse<OllamaConnectionResult>>;
     reset: () => Promise<IPCResponse<AppSettings>>;
   };
   recovery: {

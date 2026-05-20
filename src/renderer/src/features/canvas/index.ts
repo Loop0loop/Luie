@@ -43,7 +43,6 @@ export type {
   CanvasProjectionStatus,
   CanvasNodeKind,
   CanvasEdgeStyle,
-  CanvasFlowGraph,
   RFEntityNodeData,
   RFRelationEdgeData,
 } from "./types";
@@ -54,4 +53,7 @@ export {
 export {
   buildFlowGraph,
   buildProjection,
+} from "./utils";
+export type {
+  CanvasFlowGraph,
 } from "./utils";

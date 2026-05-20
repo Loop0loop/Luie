@@ -29,7 +29,8 @@ import ReactFlow, {
 } from "reactflow";
 import { CANVAS_FIT_VIEW_PADDING, CANVAS_ZOOM_MAX, CANVAS_ZOOM_MIN } from "@shared/constants/canvasSizing";
 import { useCanvasViewStore } from "../../stores";
-import { buildFlowGraph, type CanvasProjection } from "../../types";
+import { type CanvasProjection } from "../../types";
+import { buildFlowGraph } from "../../utils";
 import { useCanvasSelection } from "../../hooks/useCanvasView";
 import { handleSelectionChange, handlePaneClick } from "../../utils/selectionHandlers";
 

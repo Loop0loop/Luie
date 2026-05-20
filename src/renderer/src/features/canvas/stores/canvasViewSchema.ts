@@ -9,8 +9,6 @@
 import { z } from "zod";
 import type {
   CanvasActivityPanel,
-  CanvasLayer,
-  CanvasMode,
   CanvasScope,
   CanvasViewport,
 } from "../types/canvas.types";

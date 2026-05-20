@@ -106,56 +106,12 @@ export function createSystemApi({
           IPC_CHANNELS.SETTINGS_SET_WINDOW_BOUNDS,
           bounds,
         ),
-      getLlmModels: () =>
-        safeInvokeCore(
-          "settings.getLlmModels",
-          IPC_CHANNELS.SETTINGS_GET_LLM_MODELS,
-        ),
-      setLlmDefaultModel: (input) =>
-        safeInvokeCore(
-          "settings.setLlmDefaultModel",
-          IPC_CHANNELS.SETTINGS_SET_LLM_DEFAULT_MODEL,
-          input,
-        ),
-      setLlmEmbeddingModel: (input) =>
-        safeInvokeCore(
-          "settings.setLlmEmbeddingModel",
-          IPC_CHANNELS.SETTINGS_SET_LLM_EMBEDDING_MODEL,
-          input,
-        ),
-      downloadDefaultLlmModel: () =>
-        safeInvokeCore(
-          "settings.downloadDefaultLlmModel",
-          IPC_CHANNELS.SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL,
-        ),
-      downloadDefaultEmbeddingModel: () =>
-        safeInvokeCore(
-          "settings.downloadDefaultEmbeddingModel",
-          IPC_CHANNELS.SETTINGS_DOWNLOAD_DEFAULT_EMBEDDING_MODEL,
-        ),
-      getLlmDownloadStatus: () =>
-        safeInvokeCore(
-          "settings.getLlmDownloadStatus",
-          IPC_CHANNELS.SETTINGS_GET_LLM_DOWNLOAD_STATUS,
-        ),
-      setHuggingFaceToken: (input) =>
-        safeInvokeCore(
-          "settings.setHuggingFaceToken",
-          IPC_CHANNELS.SETTINGS_SET_HF_TOKEN,
-          input,
-        ),
-      setLlmProviderHint: (input) =>
-        safeInvoke(IPC_CHANNELS.SETTINGS_SET_LLM_PROVIDER_HINT, input),
-      setProjectLlm: (input) =>
-        safeInvoke(IPC_CHANNELS.SETTINGS_SET_PROJECT_LLM, input),
-      setLlmRuntimeSettings: (input) =>
-        safeInvoke(IPC_CHANNELS.SETTINGS_SET_LLM_RUNTIME, input),
-      searchHfModels: (input) =>
-        safeInvoke(IPC_CHANNELS.SETTINGS_SEARCH_HF_MODELS, input),
-      getHfModelFiles: (input) =>
-        safeInvoke(IPC_CHANNELS.SETTINGS_GET_HF_MODEL_FILES, input),
-      downloadHfModel: (input) =>
-        safeInvoke(IPC_CHANNELS.SETTINGS_DOWNLOAD_HF_MODEL, input),
+      setOllamaConfig: (input) =>
+        safeInvoke(IPC_CHANNELS.SETTINGS_SET_OLLAMA_CONFIG, input),
+      listOllamaModels: (baseUrl) =>
+        safeInvoke(IPC_CHANNELS.SETTINGS_LIST_OLLAMA_MODELS, baseUrl),
+      testOllamaConnection: (baseUrl) =>
+        safeInvoke(IPC_CHANNELS.SETTINGS_TEST_OLLAMA_CONNECTION, baseUrl),
       reset: () => safeInvoke(IPC_CHANNELS.SETTINGS_RESET),
     },
     recovery: {

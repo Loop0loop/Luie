@@ -5,7 +5,7 @@ import { memoryBuildJob, memoryChunk, memoryEmbedding } from "../../../database/
 import { createLogger } from "../../../../shared/logger/index.js";
 import { utilityProcessBridge } from "../utility/utilityProcessBridge.js";
 import { MEMORY_JOB_TYPES, MEMORY_TARGET_TYPES } from "./memoryJobConstants.js";
-import { resolveRuntimeModelConfig } from "../../llm/modelRuntimeFactory.js";
+import { resolveModelRuntimeClient } from "../../llm/modelRuntimeFactory.js";
 import {
   DERIVED_JOB_MAX_ATTEMPTS,
   DERIVED_JOB_RETRY_BASE_BACKOFF_MS,
@@ -37,13 +37,8 @@ function validateEmbeddingVector(vector: Float32Array): void {
   }
 }
 
-function buildEmbeddingModelSignature(input: {
-  providerHint: "llamacpp" | "llamaserver" | "none" | null;
-  embeddingPath: string | null;
-}): string {
-  const provider = input.providerHint ?? "llamacpp";
-  const modelPath = input.embeddingPath ?? "shared-main-model";
-  return `${provider}:${modelPath}`;
+function buildEmbeddingModelSignature(provider: string): string {
+  return provider;
 }
 
 export class EmbeddingProjector {
@@ -87,11 +82,8 @@ export class EmbeddingProjector {
     const jobs = candidates.filter((job) => canRetry(job)).slice(0, limit);
     if (jobs.length === 0) return { queued: 0, processed: 0 };
 
-    const runtimeConfig = await resolveRuntimeModelConfig(input.projectId);
-    const expectedModelSignature = buildEmbeddingModelSignature({
-      providerHint: runtimeConfig.providerHint,
-      embeddingPath: runtimeConfig.effectiveEmbeddingModelPath,
-    });
+    const runtimeClient = await resolveModelRuntimeClient(input.projectId);
+    const expectedModelSignature = buildEmbeddingModelSignature(runtimeClient.providerName);
     let processed = 0;
 
     for (const job of jobs) {
@@ -152,9 +144,46 @@ export class EmbeddingProjector {
             input.projectId,
             changedChunks.map((chunk) => chunk.content),
           );
-          const vectors = vectorsRaw?.map((row) => Float32Array.from(row)) ?? null;
-          if (!vectors || vectors.length === 0) {
-            throw new Error("EMBEDDING_RUNTIME_RETURNED_NO_VECTOR");
+          if (!vectorsRaw) {
+            logger.info("Embedding skipped: provider does not support embeddings", {
+              projectId: input.projectId,
+              jobId: job.id,
+              targetId: job.targetId,
+              changedChunkCount: changedChunks.length,
+              provider: runtimeClient.providerName,
+            });
+            await client
+              .update(memoryBuildJob)
+              .set({
+                status: "completed",
+                attempts: job.attempts + 1,
+                error: null,
+                updatedAt: now,
+              })
+              .where(eq(memoryBuildJob.id, job.id));
+            processed += 1;
+            continue;
+          }
+          const vectors = vectorsRaw.map((row) => Float32Array.from(row));
+          if (vectors.length === 0) {
+            logger.warn("Embedding returned empty vectors; skipping this job", {
+              projectId: input.projectId,
+              jobId: job.id,
+              targetId: job.targetId,
+              changedChunkCount: changedChunks.length,
+              provider: runtimeClient.providerName,
+            });
+            await client
+              .update(memoryBuildJob)
+              .set({
+                status: "completed",
+                attempts: job.attempts + 1,
+                error: null,
+                updatedAt: now,
+              })
+              .where(eq(memoryBuildJob.id, job.id));
+            processed += 1;
+            continue;
           }
           if (vectors.length !== changedChunks.length) {
             throw new Error(

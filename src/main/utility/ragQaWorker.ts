@@ -172,12 +172,40 @@ class RagQaWorker {
 
   private async execute(run: ActiveRun): Promise<void> {
     try {
+      logger.info("RAG QA execute", {
+        runId: run.runId,
+        projectId: run.request.projectId,
+        hasChapterId: Boolean(run.request.chapterId),
+      });
+      const runtime = await resolveModelRuntimeClient(run.request.projectId);
+      logger.info("RAG runtime resolved", {
+        runId: run.runId,
+        projectId: run.request.projectId,
+        providerName: runtime.providerName,
+        isModelLoaded: runtime.isModelLoaded(),
+      });
+      if (runtime.providerName === "deterministic") {
+        this.emitError({
+          runId: run.runId,
+          code: ErrorCode.RAG_QA_FAILED,
+          message: "LLM 모델이 설정되지 않았습니다. 설정 > AI 모델에서 모델을 구성해주세요.",
+        });
+        return;
+      }
+
       const generationConfig = await this.loadGenerationConfig();
       const { systemPrompt, userPrompt, evidence } = await assembleRagContext({
         projectId: run.request.projectId,
         question: run.request.question,
         chapterId: run.request.chapterId,
         signal: run.abortController.signal,
+      });
+      logger.info("RAG context assembled", {
+        runId: run.runId,
+        projectId: run.request.projectId,
+        systemPromptChars: systemPrompt.length,
+        userPromptChars: userPrompt.length,
+        evidenceCount: evidence.length,
       });
 
       if (run.aborted) {
@@ -189,7 +217,6 @@ class RagQaWorker {
         return;
       }
 
-      const runtime = await resolveModelRuntimeClient(run.request.projectId);
       const chunks: string[] = [];
       const startedAt = Date.now();
       let lastTokenAt = Date.now();

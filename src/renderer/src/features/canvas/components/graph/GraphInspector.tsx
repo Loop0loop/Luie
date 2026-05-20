@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useGraphStore } from "../../stores/graph/graphStore";
 import { MOCK_GRAPH_NODES } from "../../constants/graphMockData";
 import { cn } from "@shared/types/utils";
+import type { GraphRelationship } from "../../types/graph";
 
 export default function GraphInspector() {
   const { t } = useTranslation();
@@ -97,7 +98,7 @@ export default function GraphInspector() {
                   {t("canvas.graph.relations")}
                 </span>
                 <ul className="flex flex-col gap-1.5">
-                  {data.relationships.map((rel, idx) => (
+                  {data.relationships.map((rel: GraphRelationship, idx: number) => (
                     <li
                       key={idx}
                       className="flex flex-col gap-1 rounded border border-border/15 bg-active/25 p-2 transition-all hover:bg-active/40"
@@ -126,7 +127,7 @@ export default function GraphInspector() {
                   {t("canvas.graph.sourceText")}
                 </span>
                 <div className="flex flex-col gap-2">
-                  {data.sourceTexts.map((text, idx) => (
+                  {data.sourceTexts.map((text: string, idx: number) => (
                     <div
                       key={idx}
                       className="text-[11px] italic text-muted-foreground/85 leading-relaxed bg-sidebar border border-border/20 p-2.5 rounded relative group"
