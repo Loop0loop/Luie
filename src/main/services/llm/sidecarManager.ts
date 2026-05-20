@@ -171,7 +171,7 @@ export class SidecarManager {
 
     this.state = { status: "running", baseUrl, proc };
     this.resetIdleTimer();
-    logger.info("Llama sidecar ready", { baseUrl });
+    logger.info("Llama sidecar ready", { baseUrl, pid: proc.pid });
     return baseUrl;
   }
 

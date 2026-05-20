@@ -24,11 +24,10 @@ export type RagContextPacket = {
 };
 const logger = createLogger("RagContextAssembler");
 
-// Default prompt budget is conservative to avoid context overflow on
-// runtimes with smaller context windows.
-const LAYER0_CHAR_LIMIT = 6_000;
-const LAYER1_CHAR_LIMIT = 24_000;
-const LAYER2_CHAR_LIMIT = 4_000;
+// Char limits tuned for 8192-token context (Korean: ~1 char ≈ 1 token).
+// Layer1 is computed dynamically from contextBudget in assembleRagContext.
+const LAYER0_CHAR_LIMIT = 2_000;
+const LAYER2_CHAR_LIMIT = 1_500;
 
 function trimByChars(input: string, limit: number): string {
   if (input.length <= limit) return input;
@@ -90,7 +89,7 @@ async function buildLayer0ProjectSummary(projectId: string): Promise<string> {
   return trimByChars(content, LAYER0_CHAR_LIMIT);
 }
 
-async function buildLayer1ChapterSummaries(projectId: string): Promise<string> {
+async function buildLayer1ChapterSummaries(projectId: string, charLimit: number): Promise<string> {
   let rows: Array<{
     chapterId: string;
     chapterNumber: number;
@@ -121,7 +120,7 @@ async function buildLayer1ChapterSummaries(projectId: string): Promise<string> {
     .map((row) => `- [#${row.chapterNumber}] (${row.chapterId}) ${row.chapterTitle ?? "Untitled"}\n${row.summary}`)
     .join("\n");
 
-  return trimByChars(content, LAYER1_CHAR_LIMIT);
+  return trimByChars(content, charLimit);
 }
 
 async function buildLayer2RelatedEntities(projectId: string, question: string): Promise<string> {
@@ -331,11 +330,14 @@ export async function assembleRagContext(input: {
   question: string;
   chapterId?: string;
   signal?: AbortSignal;
+  contextBudget?: number;
 }): Promise<RagContextPacket> {
   throwIfAborted(input.signal);
+  const budget = input.contextBudget ?? 8_192;
+  const layer1Limit = Math.max(1_500, budget - LAYER0_CHAR_LIMIT - LAYER2_CHAR_LIMIT - 2_000);
   const [layer0, layer1, layer2, layer3, promptConfig] = await Promise.all([
     buildLayer0ProjectSummary(input.projectId),
-    buildLayer1ChapterSummaries(input.projectId),
+    buildLayer1ChapterSummaries(input.projectId, layer1Limit),
     buildLayer2RelatedEntities(input.projectId, input.question),
     buildLayer3Evidence(input.projectId, input.question),
     loadRagPromptConfig(),

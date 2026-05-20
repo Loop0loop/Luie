@@ -117,10 +117,21 @@ export function createSystemApi({
           IPC_CHANNELS.SETTINGS_SET_LLM_DEFAULT_MODEL,
           input,
         ),
+      setLlmEmbeddingModel: (input) =>
+        safeInvokeCore(
+          "settings.setLlmEmbeddingModel",
+          IPC_CHANNELS.SETTINGS_SET_LLM_EMBEDDING_MODEL,
+          input,
+        ),
       downloadDefaultLlmModel: () =>
         safeInvokeCore(
           "settings.downloadDefaultLlmModel",
           IPC_CHANNELS.SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL,
+        ),
+      downloadDefaultEmbeddingModel: () =>
+        safeInvokeCore(
+          "settings.downloadDefaultEmbeddingModel",
+          IPC_CHANNELS.SETTINGS_DOWNLOAD_DEFAULT_EMBEDDING_MODEL,
         ),
       getLlmDownloadStatus: () =>
         safeInvokeCore(
@@ -137,6 +148,14 @@ export function createSystemApi({
         safeInvoke(IPC_CHANNELS.SETTINGS_SET_LLM_PROVIDER_HINT, input),
       setProjectLlm: (input) =>
         safeInvoke(IPC_CHANNELS.SETTINGS_SET_PROJECT_LLM, input),
+      setLlmRuntimeSettings: (input) =>
+        safeInvoke(IPC_CHANNELS.SETTINGS_SET_LLM_RUNTIME, input),
+      searchHfModels: (input) =>
+        safeInvoke(IPC_CHANNELS.SETTINGS_SEARCH_HF_MODELS, input),
+      getHfModelFiles: (input) =>
+        safeInvoke(IPC_CHANNELS.SETTINGS_GET_HF_MODEL_FILES, input),
+      downloadHfModel: (input) =>
+        safeInvoke(IPC_CHANNELS.SETTINGS_DOWNLOAD_HF_MODEL, input),
       reset: () => safeInvoke(IPC_CHANNELS.SETTINGS_RESET),
     },
     recovery: {

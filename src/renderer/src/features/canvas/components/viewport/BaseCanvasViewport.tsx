@@ -24,6 +24,8 @@ import ReactFlow, {
   type NodeChange,
   type EdgeChange,
   type OnSelectionChangeParams,
+  type NodeProps,
+  type EdgeProps,
 } from "reactflow";
 import { CANVAS_FIT_VIEW_PADDING, CANVAS_ZOOM_MAX, CANVAS_ZOOM_MIN } from "@shared/constants/canvasSizing";
 import { useCanvasViewStore } from "../../stores";
@@ -45,9 +47,9 @@ interface BaseCanvasViewportProps {
   /** Scope/mode-filtered projection from parent hook */
   projection: CanvasProjection;
   /** Node type map from wrapper (dynamic or static) */
-  nodeTypes: Record<string, React.ComponentType<any>>;
+  nodeTypes: Record<string, React.ComponentType<NodeProps>>;
   /** Edge type map from wrapper (dynamic or static) */
-  edgeTypes: Record<string, React.ComponentType<any>>;
+  edgeTypes: Record<string, React.ComponentType<EdgeProps>>;
   /** Optional nodes change handler (dynamic viewport only) */
   onNodesChange?: (changes: NodeChange[]) => void;
   /** Optional edges change handler (dynamic viewport only) */
@@ -132,9 +134,9 @@ export default function BaseCanvasViewport({
         <Background
           variant={BackgroundVariant.Dots}
           gap={20}
-          size={1.2}
-          color="var(--text-subtle)"
-          className="opacity-20"
+          size={1.5}
+          color="currentColor"
+          className="text-muted-foreground/25 dark:text-muted-foreground/35"
         />
         {extraChildren}
       </ReactFlow>

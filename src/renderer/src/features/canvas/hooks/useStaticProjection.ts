@@ -8,7 +8,6 @@
  * 이 훅을 통해 데이터를 받습니다.
  */
 import { useMemo } from "react";
-import { useShallow } from "zustand/react/shallow";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { buildProjection } from "../utils/canvasProjectionAdapter";
 import type { CanvasProjection } from "../types/canvasProjection.types";
@@ -17,11 +16,7 @@ import type { CanvasProjection } from "../types/canvasProjection.types";
 const WHOLE_PROJECT_SCOPE = { kind: "whole-project" as const, projectId: "" };
 
 export function useStaticProjection(): CanvasProjection {
-  const { graphData } = useWorldBuildingStore(
-    useShallow((state) => ({
-      graphData: state.graphData,
-    })),
-  );
+  const graphData = useWorldBuildingStore((state) => state.graphData);
 
   return useMemo(
     () => buildProjection(graphData, "flow-map", graphData ? WHOLE_PROJECT_SCOPE : null),

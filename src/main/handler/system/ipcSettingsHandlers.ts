@@ -194,6 +194,14 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
         modelStorageService.setDefaultModel(input),
     },
     {
+      channel: IPC_CHANNELS.SETTINGS_SET_LLM_EMBEDDING_MODEL,
+      logTag: "SETTINGS_SET_LLM_EMBEDDING_MODEL",
+      failMessage: "Failed to set llm embedding model",
+      argsSchema: z.tuple([settingsLlmDefaultModelSchema]),
+      handler: async (input: { modelPath: string; modelId?: string }) =>
+        modelStorageService.setDefaultEmbeddingModel(input),
+    },
+    {
       channel: IPC_CHANNELS.SETTINGS_SET_LLM_PROVIDER_HINT,
       logTag: "SETTINGS_SET_LLM_PROVIDER_HINT",
       failMessage: "Failed to set llm provider hint",
@@ -246,12 +254,46 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       },
     },
     {
+      channel: IPC_CHANNELS.SETTINGS_SET_LLM_RUNTIME,
+      logTag: "SETTINGS_SET_LLM_RUNTIME",
+      failMessage: "Failed to set llm runtime settings",
+      argsSchema: z.tuple([z.object({
+        contextSize: z.number().int().min(512).max(131072).optional(),
+        gpuLayers: z.number().int().min(0).max(9999).optional(),
+        ragTemperature: z.number().min(0).max(2).optional(),
+        ragMaxTokens: z.number().int().min(64).max(8192).optional(),
+      })]),
+      handler: async (input: { contextSize?: number; gpuLayers?: number; ragTemperature?: number; ragMaxTokens?: number }) => {
+        const settingsManager = await loadSettingsManager();
+        settingsManager.setLlmSettings({
+          ...(input.contextSize !== undefined ? { contextSize: input.contextSize } : {}),
+          ...(input.gpuLayers !== undefined ? { gpuLayers: input.gpuLayers } : {}),
+          ...(input.ragTemperature !== undefined ? { ragTemperature: input.ragTemperature } : {}),
+          ...(input.ragMaxTokens !== undefined ? { ragMaxTokens: input.ragMaxTokens } : {}),
+        });
+        return { ok: true };
+      },
+    },
+    {
       channel: IPC_CHANNELS.SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL,
       logTag: "SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL",
       failMessage: "Failed to download default llm model",
       handler: () => {
         void modelStorageService.downloadDefaultModel().catch((err) => {
           logger.error("Background model download failed", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        });
+        return { started: true };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_DOWNLOAD_DEFAULT_EMBEDDING_MODEL,
+      logTag: "SETTINGS_DOWNLOAD_DEFAULT_EMBEDDING_MODEL",
+      failMessage: "Failed to download default embedding model",
+      handler: () => {
+        void modelStorageService.downloadDefaultEmbeddingModel().catch((err) => {
+          logger.error("Background embedding model download failed", {
             error: err instanceof Error ? err.message : String(err),
           });
         });
@@ -270,6 +312,34 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       failMessage: "Failed to set huggingface token",
       argsSchema: z.tuple([settingsHfTokenSchema]),
       handler: async (input: { token: string }) => modelStorageService.setHuggingFaceToken(input.token),
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_SEARCH_HF_MODELS,
+      logTag: "SETTINGS_SEARCH_HF_MODELS",
+      failMessage: "Failed to search HuggingFace models",
+      argsSchema: z.tuple([z.object({ query: z.string().min(1).max(200) })]),
+      handler: async (input: { query: string }) => modelStorageService.searchHfModels(input.query),
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_GET_HF_MODEL_FILES,
+      logTag: "SETTINGS_GET_HF_MODEL_FILES",
+      failMessage: "Failed to get HuggingFace model files",
+      argsSchema: z.tuple([z.object({ repoId: z.string().min(1).max(300) })]),
+      handler: async (input: { repoId: string }) => modelStorageService.getHfModelFiles(input.repoId),
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_DOWNLOAD_HF_MODEL,
+      logTag: "SETTINGS_DOWNLOAD_HF_MODEL",
+      failMessage: "Failed to start HuggingFace model download",
+      argsSchema: z.tuple([z.object({
+        repoId: z.string().min(1).max(300),
+        filename: z.string().min(1).max(300),
+        modelId: z.string().min(1).max(300),
+      })]),
+      handler: async (input: { repoId: string; filename: string; modelId: string }) => {
+        await modelStorageService.downloadHfModel(input.repoId, input.filename, input.modelId);
+        return { started: true };
+      },
     },
     {
       channel: IPC_CHANNELS.SETTINGS_RESET,

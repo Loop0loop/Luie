@@ -153,7 +153,57 @@ export class LlamaServerProvider implements ModelRuntimeClient {
   }
 
   async embed(texts: string[]): Promise<Float32Array[] | null> {
-    const fallback = this.getOrCreateFallback();
-    return await fallback.embed(texts);
+    if (texts.length === 0) return [];
+    let baseUrl: string;
+    try {
+      baseUrl = await sidecarManager.start(this.options.modelPath);
+    } catch (error) {
+      if (this.isSpawnEnoent(error)) {
+        this.logger.warn("llama-server binary not found for embeddings; falling back to llamacpp", {
+          modelPath: this.options.modelPath,
+        });
+        const fallback = this.getOrCreateFallback();
+        return await fallback.embed(texts);
+      }
+      throw error;
+    }
+    sidecarManager.resetIdleTimer();
+    try {
+      const response = await fetch(`${baseUrl}/v1/embeddings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input: texts,
+          model: this.options.embeddingModelPath ?? this.options.modelPath,
+        }),
+      });
+      if (!response.ok) {
+        this.logger.warn("llama-server embeddings failed; using fallback", {
+          status: response.status,
+          statusText: response.statusText,
+        });
+        const fallback = this.getOrCreateFallback();
+        return await fallback.embed(texts);
+      }
+      const parsed = await response.json() as {
+        data?: Array<{ embedding?: number[] }>;
+      };
+      const rows = parsed.data ?? [];
+      if (rows.length === 0) return [];
+      const vectors: Float32Array[] = [];
+      for (const row of rows) {
+        if (!Array.isArray(row.embedding)) continue;
+        vectors.push(Float32Array.from(row.embedding));
+      }
+      return vectors;
+    } catch (error) {
+      this.logger.warn("llama-server embeddings request failed; using fallback", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      const fallback = this.getOrCreateFallback();
+      return await fallback.embed(texts);
+    } finally {
+      sidecarManager.resetIdleTimer();
+    }
   }
 }

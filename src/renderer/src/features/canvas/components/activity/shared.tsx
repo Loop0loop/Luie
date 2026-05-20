@@ -34,10 +34,10 @@ export function PanelHeader({
   subtitle?: string;
 }) {
   return (
-    <div className="shrink-0 border-b border-border bg-panel px-panel-pad py-control-y">
-      <h2 className="text-sm font-semibold text-fg">{title}</h2>
+    <div className="shrink-0 bg-transparent px-4 py-3.5 flex flex-col justify-center">
+      <h2 className="text-sm font-bold text-fg">{title}</h2>
       {subtitle && (
-        <div className="mt-1 truncate text-xs text-subtle">
+        <div className="mt-1.5 truncate text-[11px] font-medium text-muted">
           {subtitle}
         </div>
       )}
@@ -75,12 +75,12 @@ export function PanelSection({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="mb-3 px-control-x">
+    <div className="mb-3 px-2">
       {/* 헤더: <div role="button"> — actions 슬롯의 <button> 중첩을 허용하기 위해 */}
       <div
         role="button"
         tabIndex={0}
-        className="group flex w-full cursor-pointer items-center rounded-control px-control-x py-control-y text-xs font-semibold uppercase tracking-wide text-muted transition-colors hover:bg-surface-hover hover:text-fg"
+        className="group flex w-full cursor-pointer items-center rounded-md px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted transition-colors hover:text-fg"
         onClick={() => setIsOpen((v) => !v)}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -145,10 +145,10 @@ export function PanelItem({
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
       className={cn(
-        "flex cursor-pointer items-center gap-2 rounded-control px-control-x py-control-y text-sm transition-colors",
+        "flex cursor-pointer items-center gap-2 px-3 py-1.5 text-[13px] transition-all",
         active
-          ? "bg-active font-medium text-fg"
-          : "text-muted hover:bg-surface hover:text-fg",
+          ? "bg-active font-medium text-fg border-l-[3px] border-accent pl-[9px]"
+          : "text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg",
         className,
       )}
       onClick={onClick}
@@ -194,20 +194,22 @@ export function ToggleChip({
   return (
     <label
       className={cn(
-        "flex cursor-pointer items-center gap-2 rounded-control px-control-x py-control-y text-sm transition-all",
+        "flex cursor-pointer items-center justify-between gap-2 rounded-md px-3 py-1.5 text-[13px] transition-all",
         checked
-          ? "bg-active font-medium text-fg"
-          : "text-muted hover:bg-surface-hover hover:text-fg",
+          ? "bg-active font-medium text-fg border-l-[3px] border-accent pl-[9px]"
+          : "text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg",
       )}
     >
-      {colour && (
-        <span
-          className="h-2 w-2 shrink-0 rounded-full"
-          style={{ background: colour }}
-          aria-hidden
-        />
-      )}
-      <span className="flex-1 truncate">{label}</span>
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        {colour && (
+          <span
+            className="h-2 w-2 shrink-0 rounded-full"
+            style={{ background: colour }}
+            aria-hidden
+          />
+        )}
+        <span className="truncate leading-none py-[2px]">{label}</span>
+      </div>
       <input
         type="checkbox"
         checked={checked}
@@ -216,7 +218,7 @@ export function ToggleChip({
       />
       <span
         className={cn(
-          "h-3.5 w-3.5 shrink-0 rounded-sm border transition-colors flex items-center justify-center",
+          "h-3.5 w-3.5 shrink-0 rounded-sm border transition-colors flex items-center justify-center self-center",
           checked
             ? "border-accent bg-accent text-on-accent"
             : "border-border bg-element text-transparent",

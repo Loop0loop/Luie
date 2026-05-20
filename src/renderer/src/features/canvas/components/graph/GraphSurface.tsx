@@ -1,37 +1,71 @@
-import { useCallback } from "react";
-import ReactFlow, { Background, BackgroundVariant, type Node, type Edge, useNodesState, useEdgesState } from "reactflow";
+import { useEffect, useCallback } from "react";
+import ReactFlow, { Background, BackgroundVariant, type Node, useNodesState, useEdgesState } from "reactflow";
 import PensiveNode from "./PensiveNode";
 import type { GraphNodeData } from "../../types/graph";
 import { useGraphStore } from "../../stores/graph/graphStore";
+import { calculateForceLayout } from "../../utils/graphLayout";
 
 const nodeTypes = {
   pensive: PensiveNode,
 };
 
-// TODO: Replace demo data with real projection data (P7)
-const initialNodes: Node<GraphNodeData>[] = [
-  { id: "1", type: "pensive", position: { x: 250, y: 250 }, data: { label: "Main Character", type: "character", isFocused: true } },
-  { id: "2", type: "pensive", position: { x: 150, y: 150 }, data: { label: "Ally 1", type: "character" } },
-  { id: "3", type: "pensive", position: { x: 350, y: 180 }, data: { label: "Antagonist", type: "character" } },
-  { id: "4", type: "pensive", position: { x: 200, y: 350 }, data: { label: "Incident", type: "event" } },
-  { id: "5", type: "pensive", position: { x: 300, y: 380 }, data: { label: "Location A", type: "world-entity" } },
-];
-
-const initialEdges: Edge[] = [
-  { id: "e1-2", source: "1", target: "2", style: { stroke: "var(--border-strong)", strokeWidth: 1, opacity: 0.5 } },
-  { id: "e1-3", source: "1", target: "3", style: { stroke: "var(--border-strong)", strokeWidth: 1, opacity: 0.5 } },
-  { id: "e1-4", source: "1", target: "4", style: { stroke: "var(--border-strong)", strokeWidth: 1, opacity: 0.5 } },
-  { id: "e4-5", source: "4", target: "5", style: { stroke: "var(--border-strong)", strokeWidth: 1, opacity: 0.5 } },
-];
+import { MOCK_GRAPH_NODES, MOCK_GRAPH_EDGES } from "../../constants/graphMockData";
 
 export default function GraphSurface() {
-  const [nodes, , onNodesChange] = useNodesState(initialNodes);
-  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
-  const setFocusId = useGraphStore((s) => s.setFocusId);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const { focusId, setFocusId } = useGraphStore();
 
-  const onNodeClick = useCallback((_event: React.MouseEvent, node: Node<GraphNodeData>) => {
-    setFocusId(node.id);
-  }, [setFocusId]);
+  // 1. 컴포넌트 마운트 시 Force layout을 1회 구동하여 둥둥 떠다니는 안정적인 배치 수렴
+  useEffect(() => {
+    // 에지 관계의 세기에 기반한 테마 커스텀 스타일링 적용 (Obsidian Pensive 스타일)
+    const styledEdges = MOCK_GRAPH_EDGES.map((edge) => {
+      const strength = edge.data?.strength ?? 1;
+      return {
+        ...edge,
+        style: {
+          stroke: "var(--border-strong)",
+          strokeWidth: strength * 0.7, // 관계가 강할수록 굵은 두께 (최대 2.1px)
+          opacity: 0.2 + strength * 0.13, // 관계가 강할수록 높은 선명도
+        },
+      };
+    });
+
+    const laidOutNodes = calculateForceLayout(MOCK_GRAPH_NODES, styledEdges, 80, { x: 300, y: 250 });
+    
+    // 현재 포커스된 아이디 상태 동기화
+    const updatedNodes = laidOutNodes.map((node) => ({
+      ...node,
+      data: {
+        ...node.data,
+        isFocused: node.id === focusId,
+      },
+    }));
+
+    setNodes(updatedNodes);
+    setEdges(styledEdges);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setNodes, setEdges]);
+
+  // focusId 상태가 전역으로 변동될 때 노드의 focus 상태를 동기화
+  useEffect(() => {
+    setNodes((prevNodes) =>
+      prevNodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          isFocused: node.id === focusId,
+        },
+      }))
+    );
+  }, [focusId, setNodes]);
+
+  const onNodeClick = useCallback(
+    (_event: React.MouseEvent, node: Node<GraphNodeData>) => {
+      setFocusId(node.id);
+    },
+    [setFocusId]
+  );
 
   return (
     <div className="h-full w-full bg-canvas">
@@ -48,10 +82,10 @@ export default function GraphSurface() {
       >
         <Background
           variant={BackgroundVariant.Dots}
-          gap={20}
-          size={1.2}
-          color="var(--text-subtle)"
-          className="opacity-20"
+          gap={28}
+          size={1.0}
+          color="currentColor"
+          className="text-muted-foreground/15 dark:text-muted-foreground/20"
         />
       </ReactFlow>
     </div>

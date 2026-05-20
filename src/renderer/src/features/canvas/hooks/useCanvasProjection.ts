@@ -9,7 +9,6 @@
  *   "error"   — graphData load failed
  */
 import { useMemo } from "react";
-import { useShallow } from "zustand/react/shallow";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { useCanvasViewStore } from "../stores";
 import {
@@ -24,20 +23,12 @@ export interface UseCanvasProjectionResult {
 }
 
 export function useCanvasProjection(): UseCanvasProjectionResult {
-  const { mode, scope } = useCanvasViewStore(
-    useShallow((state) => ({
-      mode: state.mode,
-      scope: state.scope,
-    })),
-  );
+  const mode = useCanvasViewStore((state) => state.mode);
+  const scope = useCanvasViewStore((state) => state.scope);
 
-  const { graphData, isLoading, error } = useWorldBuildingStore(
-    useShallow((state) => ({
-      graphData: state.graphData,
-      isLoading: state.isLoading,
-      error: state.error,
-    })),
-  );
+  const graphData = useWorldBuildingStore((state) => state.graphData);
+  const isLoading = useWorldBuildingStore((state) => state.isLoading);
+  const error = useWorldBuildingStore((state) => state.error);
 
   const projection = useMemo(
     () => buildProjection(graphData, mode, scope),

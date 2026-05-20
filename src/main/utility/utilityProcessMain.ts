@@ -6,6 +6,20 @@ import { cacheDb } from "../database/cacheDb.js";
 const logger = createLogger("UtilityProcessMain");
 let ragWorkerPromise: Promise<typeof import("./ragQaWorker.js")["ragQaWorker"]> | null = null;
 let readyPromise: Promise<void> | null = null;
+const METRICS_INTERVAL_MS = 30_000;
+
+const toMb = (bytes: number): number => Number((bytes / (1024 * 1024)).toFixed(1));
+
+const logProcessMetrics = (): void => {
+  const usage = process.memoryUsage();
+  logger.info("Utility process memory snapshot", {
+    pid: process.pid,
+    rssMb: toMb(usage.rss),
+    heapUsedMb: toMb(usage.heapUsed),
+    externalMb: toMb(usage.external),
+    arrayBuffersMb: toMb(usage.arrayBuffers),
+  });
+};
 
 const ensureReady = async (): Promise<void> => {
   if (!readyPromise) {
@@ -42,6 +56,12 @@ type UtilityInboundMessage =
       requestId: string;
       method: "ragQa.stop";
       payload?: { runId?: string };
+    }
+  | {
+      type: "request";
+      requestId: string;
+      method: "embedding.embed";
+      payload: { projectId: string; texts: string[] };
     };
 
 type UtilityOutboundMessage =
@@ -82,6 +102,13 @@ const isValidInboundMessage = (value: unknown): value is UtilityInboundMessage =
   }
   if (value.method === "ragQa.stop") {
     return value.payload === undefined || isRecord(value.payload);
+  }
+  if (value.method === "embedding.embed") {
+    return (
+      isRecord(value.payload) &&
+      typeof value.payload.projectId === "string" &&
+      Array.isArray(value.payload.texts)
+    );
   }
   return false;
 };
@@ -147,6 +174,12 @@ const onMessage = (raw: unknown): void => {
           post({ type: "response", requestId: message.requestId, ok: true, result });
           return;
         }
+        if (message.method === "embedding.embed") {
+          const mod = await import("./ragQaWorker.js");
+          const result = await mod.embedTexts(message.payload);
+          post({ type: "response", requestId: message.requestId, ok: true, result });
+          return;
+        }
       } catch (error) {
         post({
           type: "response",
@@ -165,3 +198,4 @@ if (inboundPort) {
   process.on("message", onMessage);
 }
 logger.info("Utility process online", { pid: process.pid });
+setInterval(logProcessMetrics, METRICS_INTERVAL_MS).unref();

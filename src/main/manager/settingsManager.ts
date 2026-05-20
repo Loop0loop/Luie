@@ -262,20 +262,28 @@ export class SettingsManager {
     modelsDir?: string;
     defaultModelPath?: string;
     defaultModelId?: string;
+    defaultEmbeddingModelPath?: string;
+    defaultEmbeddingModelId?: string;
     llmProviderHint?: "llamacpp" | "llamaserver" | "none";
     hfTokenCipher?: string;
     ragTemperature?: number;
     ragMaxTokens?: number;
+    contextSize?: number;
+    gpuLayers?: number;
   } {
     const llm = this.store.get("llm") ?? {};
     return {
       modelsDir: llm.modelsDir,
       defaultModelPath: llm.defaultModelPath,
       defaultModelId: llm.defaultModelId,
+      defaultEmbeddingModelPath: (llm as { defaultEmbeddingModelPath?: string }).defaultEmbeddingModelPath,
+      defaultEmbeddingModelId: (llm as { defaultEmbeddingModelId?: string }).defaultEmbeddingModelId,
       llmProviderHint: (llm as { llmProviderHint?: "llamacpp" | "llamaserver" | "none" }).llmProviderHint,
       hfTokenCipher: (llm as { hfTokenCipher?: string }).hfTokenCipher,
       ragTemperature: (llm as { ragTemperature?: number }).ragTemperature,
       ragMaxTokens: (llm as { ragMaxTokens?: number }).ragMaxTokens,
+      contextSize: (llm as { contextSize?: number }).contextSize,
+      gpuLayers: (llm as { gpuLayers?: number }).gpuLayers,
     };
   }
 
@@ -283,10 +291,14 @@ export class SettingsManager {
     modelsDir?: string;
     defaultModelPath?: string;
     defaultModelId?: string;
+    defaultEmbeddingModelPath?: string;
+    defaultEmbeddingModelId?: string;
     llmProviderHint?: "llamacpp" | "llamaserver" | "none";
     hfTokenCipher?: string;
     ragTemperature?: number;
     ragMaxTokens?: number;
+    contextSize?: number;
+    gpuLayers?: number;
   }): void {
     const current = this.store.get("llm") ?? {};
     const next = {
@@ -298,11 +310,14 @@ export class SettingsManager {
       changedKeys: Object.keys(settings),
       hasDefaultModelPath: Boolean(next.defaultModelPath),
       defaultModelId: next.defaultModelId,
+      hasDefaultEmbeddingModelPath: Boolean(next.defaultEmbeddingModelPath),
+      defaultEmbeddingModelId: next.defaultEmbeddingModelId,
       providerHint: next.llmProviderHint,
       hasHfTokenCipher: Boolean(next.hfTokenCipher),
-      ragTemperature:
-        typeof next.ragTemperature === "number" ? next.ragTemperature : undefined,
+      ragTemperature: typeof next.ragTemperature === "number" ? next.ragTemperature : undefined,
       ragMaxTokens: typeof next.ragMaxTokens === "number" ? next.ragMaxTokens : undefined,
+      contextSize: typeof next.contextSize === "number" ? next.contextSize : undefined,
+      gpuLayers: typeof next.gpuLayers === "number" ? next.gpuLayers : undefined,
     });
   }
 

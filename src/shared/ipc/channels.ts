@@ -163,11 +163,17 @@ export const IPC_CHANNELS = {
   SETTINGS_GET_WINDOW_BOUNDS: "settings:get-window-bounds",
   SETTINGS_GET_LLM_MODELS: "settings:get-llm-models",
   SETTINGS_SET_LLM_DEFAULT_MODEL: "settings:set-llm-default-model",
+  SETTINGS_SET_LLM_EMBEDDING_MODEL: "settings:set-llm-embedding-model",
   SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL: "settings:download-default-llm-model",
+  SETTINGS_DOWNLOAD_DEFAULT_EMBEDDING_MODEL: "settings:download-default-embedding-model",
   SETTINGS_GET_LLM_DOWNLOAD_STATUS: "settings:get-llm-download-status",
   SETTINGS_SET_HF_TOKEN: "settings:set-hf-token",
   SETTINGS_SET_LLM_PROVIDER_HINT: "settings:set-llm-provider-hint",
   SETTINGS_SET_PROJECT_LLM: "settings:set-project-llm",
+  SETTINGS_SET_LLM_RUNTIME: "settings:set-llm-runtime",
+  SETTINGS_SEARCH_HF_MODELS: "settings:search-hf-models",
+  SETTINGS_GET_HF_MODEL_FILES: "settings:get-hf-model-files",
+  SETTINGS_DOWNLOAD_HF_MODEL: "settings:download-hf-model",
   SETTINGS_RESET: "settings:reset",
 
   // Recovery

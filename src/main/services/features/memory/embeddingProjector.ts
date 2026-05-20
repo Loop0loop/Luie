@@ -3,8 +3,9 @@ import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../../database/index.js";
 import { memoryBuildJob, memoryChunk, memoryEmbedding } from "../../../database/schema.js";
 import { createLogger } from "../../../../shared/logger/index.js";
-import { resolveModelRuntimeClient } from "../../llm/modelRuntimeFactory.js";
+import { utilityProcessBridge } from "../utility/utilityProcessBridge.js";
 import { MEMORY_JOB_TYPES, MEMORY_TARGET_TYPES } from "./memoryJobConstants.js";
+import { resolveRuntimeModelConfig } from "../../llm/modelRuntimeFactory.js";
 
 const logger = createLogger("EmbeddingProjector");
 const MAX_ATTEMPTS = 3;
@@ -33,6 +34,15 @@ function validateEmbeddingVector(vector: Float32Array): void {
   }
 }
 
+function buildEmbeddingModelSignature(input: {
+  providerHint: "llamacpp" | "llamaserver" | "none" | null;
+  embeddingPath: string | null;
+}): string {
+  const provider = input.providerHint ?? "llamacpp";
+  const modelPath = input.embeddingPath ?? "shared-main-model";
+  return `${provider}:${modelPath}`;
+}
+
 export class EmbeddingProjector {
   async processPendingEmbeddingJobs(input: {
     projectId: string;
@@ -57,14 +67,11 @@ export class EmbeddingProjector {
     const jobs = candidates.filter((job) => canRetry(job)).slice(0, limit);
     if (jobs.length === 0) return { queued: 0, processed: 0 };
 
-    const runtime = await resolveModelRuntimeClient(input.projectId);
-    // For llamacpp: skip if model not yet in RAM — cold load from background
-    // would silently consume gigabytes of RAM.
-    // For llamaserver/deterministic: always process (embed() returns null → job
-    // still completes without vectors, which is acceptable for non-embedding providers).
-    if (runtime.providerName === "llamacpp" && !runtime.isModelLoaded()) {
-      return { queued: jobs.length, processed: 0 };
-    }
+    const runtimeConfig = await resolveRuntimeModelConfig(input.projectId);
+    const expectedModelSignature = buildEmbeddingModelSignature({
+      providerHint: runtimeConfig.providerHint,
+      embeddingPath: runtimeConfig.effectiveEmbeddingModelPath,
+    });
     let processed = 0;
 
     for (const job of jobs) {
@@ -108,14 +115,24 @@ export class EmbeddingProjector {
           .select({
             chunkId: memoryEmbedding.chunkId,
             contentHash: memoryEmbedding.contentHash,
+            model: memoryEmbedding.model,
           })
           .from(memoryEmbedding)
           .where(inArray(memoryEmbedding.chunkId, chunkRows.map((c) => c.chunkId)));
         const existingHashMap = new Map(existingRows.map((row) => [row.chunkId, row.contentHash]));
+        const existingModelMap = new Map(existingRows.map((row) => [row.chunkId, row.model ?? ""]));
 
-        const changedChunks = chunkRows.filter((chunk) => existingHashMap.get(chunk.chunkId) !== chunk.contentHash);
+        const changedChunks = chunkRows.filter((chunk) => {
+          const hashChanged = existingHashMap.get(chunk.chunkId) !== chunk.contentHash;
+          const modelChanged = existingModelMap.get(chunk.chunkId) !== expectedModelSignature;
+          return hashChanged || modelChanged;
+        });
         if (changedChunks.length > 0) {
-          const vectors = await runtime.embed(changedChunks.map((chunk) => chunk.content));
+          const vectorsRaw = await utilityProcessBridge.embed(
+            input.projectId,
+            changedChunks.map((chunk) => chunk.content),
+          );
+          const vectors = vectorsRaw?.map((row) => Float32Array.from(row)) ?? null;
           if (vectors && vectors.length > 0) {
             for (let i = 0; i < changedChunks.length; i += 1) {
               const chunk = changedChunks[i];
@@ -131,7 +148,7 @@ export class EmbeddingProjector {
                   contentHash: chunk.contentHash,
                   vec: vectorToBuffer(vector),
                   dimension: vector.length,
-                  model: runtime.providerName,
+                  model: expectedModelSignature,
                   createdAt: now,
                   updatedAt: now,
                 })
@@ -142,7 +159,7 @@ export class EmbeddingProjector {
                     contentHash: chunk.contentHash,
                     vec: vectorToBuffer(vector),
                     dimension: vector.length,
-                    model: runtime.providerName,
+                    model: expectedModelSignature,
                     updatedAt: now,
                   },
                 });

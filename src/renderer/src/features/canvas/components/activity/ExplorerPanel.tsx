@@ -8,7 +8,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { FileText, Plus } from "lucide-react";
-import { useShallow } from "zustand/react/shallow";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
@@ -27,25 +26,17 @@ export default function ExplorerPanel() {
 
   const currentProject = useProjectStore((state) => state.currentItem);
 
-  const { items, currentChapter, setCurrent } = useChapterStore(
-    useShallow((state) => ({
-      items: state.items,
-      currentChapter: state.currentItem,
-      setCurrent: state.setCurrent,
-    })),
-  );
+  const items = useChapterStore((state) => state.items);
+  const currentChapter = useChapterStore((state) => state.currentItem);
+  const setCurrent = useChapterStore((state) => state.setCurrent);
 
   const chapters = useMemo(
     () => items.filter((c) => c.projectId === currentProject?.id),
     [items, currentProject?.id],
   );
 
-  const { scope, setScope } = useCanvasViewStore(
-    useShallow((state) => ({
-      scope: state.scope,
-      setScope: state.setScope,
-    })),
-  );
+  const scope = useCanvasViewStore((state) => state.scope);
+  const setScope = useCanvasViewStore((state) => state.setScope);
 
   const activeScopeChapterId =
     scope?.kind === "single-chapter" ? scope.chapterId : null;

@@ -25,9 +25,11 @@ export class LlamaCppProvider implements ModelRuntimeClient {
   private context: LlamaContext;
   private modelPromise: Promise<void> | null = null;
   private embeddingPromise: Promise<void> | null = null;
-  private idleUnloadTimer: ReturnType<typeof setTimeout> | null = null;
+  private modelIdleUnloadTimer: ReturnType<typeof setTimeout> | null = null;
+  private embeddingIdleUnloadTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly idleUnloadMs: number;
-  private inFlightCount = 0;
+  private inFlightGenerateCount = 0;
+  private inFlightEmbedCount = 0;
 
   constructor(modelPath: string, embeddingModelPath?: string | null, contextSize?: number, gpuLayers?: number) {
     const configuredIdle = Number.parseInt(process.env.LUIE_LLM_IDLE_UNLOAD_MS ?? "", 10);
@@ -44,39 +46,64 @@ export class LlamaCppProvider implements ModelRuntimeClient {
     };
   }
 
-  private scheduleIdleUnload(): void {
+  private scheduleModelIdleUnload(): void {
     if (this.idleUnloadMs <= 0) return;
-    if (this.idleUnloadTimer) {
-      clearTimeout(this.idleUnloadTimer);
+    if (this.modelIdleUnloadTimer) {
+      clearTimeout(this.modelIdleUnloadTimer);
     }
-    this.idleUnloadTimer = setTimeout(() => {
-      if (this.inFlightCount > 0) {
-        this.scheduleIdleUnload();
+    this.modelIdleUnloadTimer = setTimeout(() => {
+      if (this.inFlightGenerateCount > 0) {
+        this.scheduleModelIdleUnload();
         return;
       }
-      this.unload();
+      this.unloadModel();
     }, this.idleUnloadMs);
-    if (typeof this.idleUnloadTimer.unref === "function") {
-      this.idleUnloadTimer.unref();
+    if (typeof this.modelIdleUnloadTimer.unref === "function") {
+      this.modelIdleUnloadTimer.unref();
     }
   }
 
-  private unload(): void {
+  private scheduleEmbeddingIdleUnload(): void {
+    if (this.idleUnloadMs <= 0) return;
+    if (this.embeddingIdleUnloadTimer) {
+      clearTimeout(this.embeddingIdleUnloadTimer);
+    }
+    this.embeddingIdleUnloadTimer = setTimeout(() => {
+      if (this.inFlightEmbedCount > 0) {
+        this.scheduleEmbeddingIdleUnload();
+        return;
+      }
+      this.unloadEmbedding();
+    }, this.idleUnloadMs);
+    if (typeof this.embeddingIdleUnloadTimer.unref === "function") {
+      this.embeddingIdleUnloadTimer.unref();
+    }
+  }
+
+  private unloadModel(): void {
     this.modelPromise = null;
-    this.embeddingPromise = null;
     this.context.model = undefined;
     this.context.context = undefined;
     this.context.LlamaCompletion = undefined;
+    if (this.modelIdleUnloadTimer) {
+      clearTimeout(this.modelIdleUnloadTimer);
+      this.modelIdleUnloadTimer = null;
+    }
+  }
+
+  private unloadEmbedding(): void {
+    this.embeddingPromise = null;
     this.context.embeddingModel = undefined;
     this.context.embeddingContext = undefined;
-    if (this.idleUnloadTimer) {
-      clearTimeout(this.idleUnloadTimer);
-      this.idleUnloadTimer = null;
+    if (this.embeddingIdleUnloadTimer) {
+      clearTimeout(this.embeddingIdleUnloadTimer);
+      this.embeddingIdleUnloadTimer = null;
     }
   }
 
   dispose(): void {
-    this.unload();
+    this.unloadModel();
+    this.unloadEmbedding();
   }
 
   private async ensureLoaded(): Promise<void> {
@@ -88,11 +115,11 @@ export class LlamaCppProvider implements ModelRuntimeClient {
       const dynamicImport = new Function("id", "return import(id)") as (id: string) => Promise<unknown>;
       const mod = await dynamicImport("node-llama-cpp");
       const { getLlama, LlamaCompletion } = mod as {
-        getLlama: (options?: { gpu?: string }) => Promise<unknown>;
+        getLlama: (options?: { gpu?: string; useMmap?: boolean }) => Promise<unknown>;
         LlamaCompletion: unknown;
       };
       // gpu: "auto" lets node-llama-cpp pick Metal (macOS), CUDA, or Vulkan automatically.
-      const llama = await getLlama({ gpu: "auto" });
+      const llama = await getLlama({ gpu: "auto", useMmap: true });
       // The package API is intentionally accessed via loose typing to avoid
       // compile-time coupling across minor API differences.
       const model = await (llama as { loadModel: (input: { modelPath: string; gpuLayers?: number; defaultContextFlashAttention?: boolean }) => Promise<unknown> })
@@ -130,8 +157,8 @@ export class LlamaCppProvider implements ModelRuntimeClient {
       } else {
         const dynamicImport = new Function("id", "return import(id)") as (id: string) => Promise<unknown>;
         const mod = await dynamicImport("node-llama-cpp");
-        const getLlama = (mod as { getLlama: (options?: { gpu?: string }) => Promise<unknown> }).getLlama;
-        const llama = await getLlama({ gpu: "auto" });
+        const getLlama = (mod as { getLlama: (options?: { gpu?: string; useMmap?: boolean }) => Promise<unknown> }).getLlama;
+        const llama = await getLlama({ gpu: "auto", useMmap: true });
         model = await (llama as { loadModel: (input: { modelPath: string; gpuLayers?: number; defaultContextFlashAttention?: boolean }) => Promise<unknown> })
           .loadModel({ modelPath: embeddingModelPath, gpuLayers: this.context.gpuLayers, defaultContextFlashAttention: true });
       }
@@ -167,7 +194,7 @@ export class LlamaCppProvider implements ModelRuntimeClient {
   }
 
   async generate(prompt: string, options?: GenerateOptions): Promise<string> {
-    this.inFlightCount += 1;
+    this.inFlightGenerateCount += 1;
     try {
       if (options?.signal?.aborted) {
         throw new Error("Generation aborted");
@@ -209,13 +236,13 @@ export class LlamaCppProvider implements ModelRuntimeClient {
         sequence.dispose();
       }
     } finally {
-      this.inFlightCount = Math.max(0, this.inFlightCount - 1);
-      this.scheduleIdleUnload();
+      this.inFlightGenerateCount = Math.max(0, this.inFlightGenerateCount - 1);
+      this.scheduleModelIdleUnload();
     }
   }
 
   async *generateStream(prompt: string, options?: GenerateOptions): AsyncIterable<string> {
-    this.inFlightCount += 1;
+    this.inFlightGenerateCount += 1;
     try {
       if (options?.signal?.aborted) {
         throw new Error("Generation aborted");
@@ -298,13 +325,14 @@ export class LlamaCppProvider implements ModelRuntimeClient {
         sequence.dispose();
       }
     } finally {
-      this.inFlightCount = Math.max(0, this.inFlightCount - 1);
-      this.scheduleIdleUnload();
+      this.inFlightGenerateCount = Math.max(0, this.inFlightGenerateCount - 1);
+      this.scheduleModelIdleUnload();
     }
   }
 
   async embed(texts: string[]): Promise<Float32Array[] | null> {
     if (texts.length === 0) return [];
+    this.inFlightEmbedCount += 1;
     try {
       await this.ensureEmbeddingLoaded();
       const context = this.context.embeddingContext as {
@@ -319,10 +347,12 @@ export class LlamaCppProvider implements ModelRuntimeClient {
           vectors.push(result.vector);
         }
       }
-      this.scheduleIdleUnload();
       return vectors;
     } catch {
       return null;
+    } finally {
+      this.inFlightEmbedCount = Math.max(0, this.inFlightEmbedCount - 1);
+      this.scheduleEmbeddingIdleUnload();
     }
   }
 }

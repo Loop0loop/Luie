@@ -17,7 +17,10 @@ let llamaServerProviderSingle: { key: string; provider: LlamaServerProvider } | 
 
 type GlobalLlmSettings = {
   defaultModelPath: string | null;
+  defaultEmbeddingModelPath: string | null;
   llmProviderHint: "llamacpp" | "llamaserver" | "none" | null;
+  contextSize?: number;
+  gpuLayers?: number;
 };
 
 type ModelPathCache = {
@@ -26,19 +29,39 @@ type ModelPathCache = {
   fallbackModelPath: string | null;
 };
 
-const MODEL_PATH_CACHE_TTL_MS = 10_000;
+const MODEL_PATH_CACHE_TTL_MS = 0;
 let modelPathCache: ModelPathCache | null = null;
 let modelPathCacheInflight: Promise<ModelPathCache> | null = null;
+
+const normalizeProviderHint = (
+  value: string | null | undefined,
+): "llamacpp" | "llamaserver" | "none" | null => {
+  if (value === "llamacpp" || value === "llamaserver" || value === "none") {
+    return value;
+  }
+  return null;
+};
 
 async function loadGlobalLlmSettingsFromFile(): Promise<GlobalLlmSettings> {
   try {
     const userDataPath = resolveUserDataPath();
     const settingsPath = path.join(userDataPath, "settings.json");
     const raw = await readFile(settingsPath, "utf8");
-    const parsed = JSON.parse(raw) as { llm?: { defaultModelPath?: string; llmProviderHint?: "llamacpp" | "llamaserver" | "none" } };
+    const parsed = JSON.parse(raw) as {
+      llm?: {
+        defaultModelPath?: string;
+        defaultEmbeddingModelPath?: string;
+        llmProviderHint?: "llamacpp" | "llamaserver" | "none";
+        contextSize?: number;
+        gpuLayers?: number;
+      };
+    };
     return {
       defaultModelPath: parsed.llm?.defaultModelPath ?? null,
+      defaultEmbeddingModelPath: parsed.llm?.defaultEmbeddingModelPath ?? null,
       llmProviderHint: parsed.llm?.llmProviderHint ?? null,
+      contextSize: typeof parsed.llm?.contextSize === "number" ? parsed.llm.contextSize : undefined,
+      gpuLayers: typeof parsed.llm?.gpuLayers === "number" ? parsed.llm.gpuLayers : undefined,
     };
   } catch {
     logger.warn("Failed to load global LLM settings from settings.json", {
@@ -46,9 +69,98 @@ async function loadGlobalLlmSettingsFromFile(): Promise<GlobalLlmSettings> {
     });
     return {
       defaultModelPath: null,
+      defaultEmbeddingModelPath: null,
       llmProviderHint: null,
     };
   }
+}
+
+export type ResolvedRuntimeModelConfig = {
+  providerHint: "llamacpp" | "llamaserver" | "none" | null;
+  effectiveModelPath: string | null;
+  effectiveEmbeddingModelPath: string | null;
+  configuredContextSize?: number;
+  configuredGpuLayers?: number;
+  fallbackSource: "settings.json" | "models-dir" | "none";
+  hasProjectModelPath: boolean;
+};
+
+export async function resolveRuntimeModelConfig(
+  projectId: string,
+): Promise<ResolvedRuntimeModelConfig> {
+  const row = await db.getClient()
+    .select({
+      llmModelPath: projectSettings.llmModelPath,
+      llmEmbeddingModelPath: projectSettings.llmEmbeddingModelPath,
+      llmProviderHint: projectSettings.llmProviderHint,
+    })
+    .from(projectSettings)
+    .where(eq(projectSettings.projectId, projectId))
+    .limit(1);
+
+  const configuredPath = row[0]?.llmModelPath ?? process.env.LUIE_LLM_MODEL_PATH ?? null;
+  const now = Date.now();
+  if (!modelPathCache || modelPathCache.expiresAt <= now) {
+    if (!modelPathCacheInflight) {
+      modelPathCacheInflight = (async (): Promise<ModelPathCache> => {
+        const globalLlm = await loadGlobalLlmSettingsFromFile();
+        let fallbackModelPath = globalLlm.defaultModelPath;
+        if (!fallbackModelPath) {
+          fallbackModelPath = await resolveModelPathFromModelsDir();
+        }
+        if (fallbackModelPath) {
+          try {
+            await access(fallbackModelPath);
+          } catch {
+            fallbackModelPath = null;
+          }
+        }
+        const result: ModelPathCache = {
+          expiresAt: Date.now() + MODEL_PATH_CACHE_TTL_MS,
+          globalLlm,
+          fallbackModelPath,
+        };
+        modelPathCache = result;
+        return result;
+      })().finally(() => {
+        modelPathCacheInflight = null;
+      });
+    }
+    modelPathCache = await modelPathCacheInflight;
+  }
+
+  const globalLlm = modelPathCache.globalLlm;
+  const fallbackModelPath = modelPathCache.fallbackModelPath;
+  const providerHint =
+    normalizeProviderHint(row[0]?.llmProviderHint) ??
+    normalizeProviderHint(process.env.LUIE_LLM_PROVIDER_HINT) ??
+    globalLlm.llmProviderHint ??
+    null;
+  const envContextSize = Number.parseInt(process.env.LUIE_LLM_CONTEXT_SIZE ?? "", 10);
+  const configuredContextSize = Number.isFinite(envContextSize)
+    ? envContextSize
+    : globalLlm.contextSize;
+  const envGpuLayers = Number.parseInt(process.env.LUIE_LLM_GPU_LAYERS ?? "", 10);
+  const configuredGpuLayers = Number.isFinite(envGpuLayers)
+    ? envGpuLayers
+    : globalLlm.gpuLayers;
+
+  const embeddingConfiguredPath =
+    row[0]?.llmEmbeddingModelPath ??
+    process.env.LUIE_LLM_EMBEDDING_MODEL_PATH ??
+    globalLlm.defaultEmbeddingModelPath ??
+    null;
+  const effectiveModelPath = configuredPath ?? fallbackModelPath;
+
+  return {
+    providerHint,
+    effectiveModelPath,
+    effectiveEmbeddingModelPath: embeddingConfiguredPath,
+    configuredContextSize,
+    configuredGpuLayers,
+    fallbackSource: globalLlm.defaultModelPath ? "settings.json" : fallbackModelPath ? "models-dir" : "none",
+    hasProjectModelPath: Boolean(row[0]?.llmModelPath),
+  };
 }
 
 async function resolveModelPathFromModelsDir(): Promise<string | null> {
@@ -117,84 +229,37 @@ function getOrCreateLlamaServerProvider(
 export async function resolveModelRuntimeClient(
   projectId: string,
 ): Promise<ModelRuntimeClient> {
-  const row = await db.getClient()
-    .select({
-      llmModelPath: projectSettings.llmModelPath,
-      llmEmbeddingModelPath: projectSettings.llmEmbeddingModelPath,
-      llmProviderHint: projectSettings.llmProviderHint,
-    })
-    .from(projectSettings)
-    .where(eq(projectSettings.projectId, projectId))
-    .limit(1);
+  const runtimeConfig = await resolveRuntimeModelConfig(projectId);
 
-  const configuredPath = row[0]?.llmModelPath ?? process.env.LUIE_LLM_MODEL_PATH ?? null;
-  const embeddingConfiguredPath =
-    row[0]?.llmEmbeddingModelPath ?? process.env.LUIE_LLM_EMBEDDING_MODEL_PATH ?? null;
-  const now = Date.now();
-  if (!modelPathCache || modelPathCache.expiresAt <= now) {
-    if (!modelPathCacheInflight) {
-      modelPathCacheInflight = (async (): Promise<ModelPathCache> => {
-        const globalLlm = await loadGlobalLlmSettingsFromFile();
-        let fallbackModelPath = globalLlm.defaultModelPath;
-        if (!fallbackModelPath) {
-          fallbackModelPath = await resolveModelPathFromModelsDir();
-        }
-        if (fallbackModelPath) {
-          try {
-            await access(fallbackModelPath);
-          } catch {
-            fallbackModelPath = null;
-          }
-        }
-        const result: ModelPathCache = {
-          expiresAt: Date.now() + MODEL_PATH_CACHE_TTL_MS,
-          globalLlm,
-          fallbackModelPath,
-        };
-        modelPathCache = result;
-        return result;
-      })().finally(() => {
-        modelPathCacheInflight = null;
-      });
-    }
-    modelPathCache = await modelPathCacheInflight;
-  }
-  const globalLlm = modelPathCache.globalLlm;
-  const fallbackModelPath = modelPathCache.fallbackModelPath;
-  const providerHint =
-    row[0]?.llmProviderHint ??
-    process.env.LUIE_LLM_PROVIDER_HINT ??
-    globalLlm.llmProviderHint ??
-    null;
-  const envContextSize = Number.parseInt(process.env.LUIE_LLM_CONTEXT_SIZE ?? "", 10);
-  const configuredContextSize = Number.isFinite(envContextSize) ? envContextSize : undefined;
-  const envGpuLayers = Number.parseInt(process.env.LUIE_LLM_GPU_LAYERS ?? "", 10);
-  const configuredGpuLayers = Number.isFinite(envGpuLayers) ? envGpuLayers : undefined;
-
-  if (providerHint === "none") {
+  if (runtimeConfig.providerHint === "none") {
     return deterministicProvider;
   }
 
-  const effectiveModelPath = configuredPath ?? fallbackModelPath;
+  const effectiveModelPath = runtimeConfig.effectiveModelPath;
   logger.info("Resolving model runtime client", {
     projectId,
-    hasProjectModelPath: Boolean(row[0]?.llmModelPath),
-    hasFallbackModelPath: Boolean(fallbackModelPath),
-    fallbackSource: globalLlm.defaultModelPath ? "settings.json" : fallbackModelPath ? "models-dir" : "none",
-    providerHint,
-    hasEmbeddingModelPath: Boolean(embeddingConfiguredPath),
+    hasProjectModelPath: runtimeConfig.hasProjectModelPath,
+    hasFallbackModelPath: Boolean(runtimeConfig.effectiveModelPath),
+    fallbackSource: runtimeConfig.fallbackSource,
+    providerHint: runtimeConfig.providerHint,
+    hasEmbeddingModelPath: Boolean(runtimeConfig.effectiveEmbeddingModelPath),
     processType: process.type,
   });
-  if (effectiveModelPath && providerHint === "llamaserver") {
+  if (effectiveModelPath && runtimeConfig.providerHint === "llamaserver") {
     return getOrCreateLlamaServerProvider(
       effectiveModelPath,
-      embeddingConfiguredPath,
-      configuredContextSize,
-      configuredGpuLayers,
+      runtimeConfig.effectiveEmbeddingModelPath,
+      runtimeConfig.configuredContextSize,
+      runtimeConfig.configuredGpuLayers,
     );
   }
-  if (effectiveModelPath && (providerHint === "llamacpp" || providerHint === null)) {
-    return getOrCreateLlamaProvider(effectiveModelPath, embeddingConfiguredPath, configuredContextSize, configuredGpuLayers);
+  if (effectiveModelPath && (runtimeConfig.providerHint === "llamacpp" || runtimeConfig.providerHint === null)) {
+    return getOrCreateLlamaProvider(
+      effectiveModelPath,
+      runtimeConfig.effectiveEmbeddingModelPath,
+      runtimeConfig.configuredContextSize,
+      runtimeConfig.configuredGpuLayers,
+    );
   }
 
   logger.info("LLM provider path is not configured, using deterministic fallback", {
