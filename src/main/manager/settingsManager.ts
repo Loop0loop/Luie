@@ -259,46 +259,22 @@ export class SettingsManager {
   }
 
   getLlmSettings(): {
-    modelsDir?: string;
-    defaultModelPath?: string;
-    defaultModelId?: string;
-    defaultEmbeddingModelPath?: string;
-    defaultEmbeddingModelId?: string;
-    llmProviderHint?: "llamacpp" | "llamaserver" | "none";
-    hfTokenCipher?: string;
+    ollama?: { baseUrl?: string; chatModel?: string; embeddingModel?: string };
     ragTemperature?: number;
     ragMaxTokens?: number;
-    contextSize?: number;
-    gpuLayers?: number;
   } {
     const llm = this.store.get("llm") ?? {};
     return {
-      modelsDir: llm.modelsDir,
-      defaultModelPath: llm.defaultModelPath,
-      defaultModelId: llm.defaultModelId,
-      defaultEmbeddingModelPath: (llm as { defaultEmbeddingModelPath?: string }).defaultEmbeddingModelPath,
-      defaultEmbeddingModelId: (llm as { defaultEmbeddingModelId?: string }).defaultEmbeddingModelId,
-      llmProviderHint: (llm as { llmProviderHint?: "llamacpp" | "llamaserver" | "none" }).llmProviderHint,
-      hfTokenCipher: (llm as { hfTokenCipher?: string }).hfTokenCipher,
+      ollama: (llm as { ollama?: { baseUrl?: string; chatModel?: string; embeddingModel?: string } }).ollama,
       ragTemperature: (llm as { ragTemperature?: number }).ragTemperature,
       ragMaxTokens: (llm as { ragMaxTokens?: number }).ragMaxTokens,
-      contextSize: (llm as { contextSize?: number }).contextSize,
-      gpuLayers: (llm as { gpuLayers?: number }).gpuLayers,
     };
   }
 
   setLlmSettings(settings: {
-    modelsDir?: string;
-    defaultModelPath?: string;
-    defaultModelId?: string;
-    defaultEmbeddingModelPath?: string;
-    defaultEmbeddingModelId?: string;
-    llmProviderHint?: "llamacpp" | "llamaserver" | "none";
-    hfTokenCipher?: string;
+    ollama?: { baseUrl?: string; chatModel?: string; embeddingModel?: string };
     ragTemperature?: number;
     ragMaxTokens?: number;
-    contextSize?: number;
-    gpuLayers?: number;
   }): void {
     const current = this.store.get("llm") ?? {};
     const next = {
@@ -308,16 +284,10 @@ export class SettingsManager {
     this.store.set("llm", next);
     logger.info("LLM settings updated", {
       changedKeys: Object.keys(settings),
-      hasDefaultModelPath: Boolean(next.defaultModelPath),
-      defaultModelId: next.defaultModelId,
-      hasDefaultEmbeddingModelPath: Boolean(next.defaultEmbeddingModelPath),
-      defaultEmbeddingModelId: next.defaultEmbeddingModelId,
-      providerHint: next.llmProviderHint,
-      hasHfTokenCipher: Boolean(next.hfTokenCipher),
+      hasOllamaUrl: Boolean((next as typeof next & { ollama?: { baseUrl?: string } }).ollama?.baseUrl),
+      hasOllamaModel: Boolean((next as typeof next & { ollama?: { chatModel?: string } }).ollama?.chatModel),
       ragTemperature: typeof next.ragTemperature === "number" ? next.ragTemperature : undefined,
       ragMaxTokens: typeof next.ragMaxTokens === "number" ? next.ragMaxTokens : undefined,
-      contextSize: typeof next.contextSize === "number" ? next.contextSize : undefined,
-      gpuLayers: typeof next.gpuLayers === "number" ? next.gpuLayers : undefined,
     });
   }
 

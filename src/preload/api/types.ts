@@ -51,13 +51,7 @@ type CoreMethodMap = {
   "settings.setShortcuts": RendererApi["settings"]["setShortcuts"];
   "settings.getWindowBounds": RendererApi["settings"]["getWindowBounds"];
   "settings.setWindowBounds": RendererApi["settings"]["setWindowBounds"];
-  "settings.getLlmModels": RendererApi["settings"]["getLlmModels"];
-  "settings.setLlmDefaultModel": RendererApi["settings"]["setLlmDefaultModel"];
-  "settings.setLlmEmbeddingModel": RendererApi["settings"]["setLlmEmbeddingModel"];
-  "settings.downloadDefaultLlmModel": RendererApi["settings"]["downloadDefaultLlmModel"];
-  "settings.downloadDefaultEmbeddingModel": RendererApi["settings"]["downloadDefaultEmbeddingModel"];
-  "settings.getLlmDownloadStatus": RendererApi["settings"]["getLlmDownloadStatus"];
-  "settings.setHuggingFaceToken": RendererApi["settings"]["setHuggingFaceToken"];
+  "settings.setOllamaConfig": RendererApi["settings"]["setOllamaConfig"];
   "recovery.getStatus": RendererApi["recovery"]["getStatus"];
   "recovery.runDb": RendererApi["recovery"]["runDb"];
   "fs.readLuieEntry": RendererApi["fs"]["readLuieEntry"];

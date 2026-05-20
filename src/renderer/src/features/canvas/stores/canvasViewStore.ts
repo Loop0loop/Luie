@@ -179,7 +179,7 @@ export const useCanvasViewStore = create<CanvasViewState>()(
       merge: (persistedState, currentState) => ({
         ...currentState,
         ...sanitizePersistedState(persistedState),
-      }),
+      } as CanvasViewState),
       onRehydrateStorage: () => () => undefined,
       partialize: (state): CanvasViewPersistedState => ({
         mode: state.mode,

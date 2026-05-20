@@ -641,13 +641,21 @@ export const windowBoundsSchema = z.strictObject({
   y: z.number().int(),
 });
 
-export const settingsLlmDefaultModelSchema = z.strictObject({
-  modelPath: z.string().min(1),
-  modelId: z.string().min(1).optional(),
-});
-
-export const settingsHfTokenSchema = z.strictObject({
-  token: z.string().min(1),
+export const settingsOllamaConfigSchema = z.strictObject({
+  baseUrl: z
+    .string()
+    .min(1)
+    .max(1024)
+    .refine((value) => {
+      try {
+        const parsed = new URL(value);
+        return parsed.protocol === "http:" || parsed.protocol === "https:";
+      } catch {
+        return false;
+      }
+    }, "Ollama baseUrl must be a valid http(s) URL"),
+  chatModel: z.string().min(1).max(200),
+  embeddingModel: z.string().min(1).max(200).optional(),
 });
 
 const uiRightPanelTabSchema = z.enum([

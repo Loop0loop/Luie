@@ -228,35 +228,10 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
               {activeTab === "model" && (
                 <ModelTab
                   t={t}
-                  modelView={settings.modelView}
-                  isBusy={settings.isModelBusy}
-                  manualModelPath={settings.manualModelPath}
-                  onChangeManualPath={settings.setManualModelPath}
-                  onRefresh={() => void settings.refreshModelView()}
-                  onDownloadDefault={() => void settings.handleDownloadDefaultModel()}
-                  onSaveManualPath={() => void settings.handleSetManualModelPath()}
-                  onSelectModel={(modelPath, modelId) =>
-                    void settings.handleSetLocalModel(modelPath, modelId)
-                  }
-                  hfToken={settings.hfToken}
-                  onChangeHfToken={settings.setHfToken}
-                  onSaveHfToken={() => void settings.handleSaveHfToken()}
-                  onSaveRuntimeSettings={(input) =>
-                    void settings.handleSaveRuntimeSettings(input)
-                  }
-                  hfSearchResults={settings.hfSearchResults}
-                  hfModelFiles={settings.hfModelFiles}
-                  isHfSearching={settings.isHfSearching}
-                  onHfSearch={(q) => void settings.handleHfSearch(q)}
-                  onGetHfModelFiles={(repoId) => void settings.handleGetHfModelFiles(repoId)}
-                  onDownloadHfModel={(repoId, filename, modelId) =>
-                    void settings.handleDownloadHfModel(repoId, filename, modelId)
-                  }
-                  downloadStatus={settings.downloadStatus}
-                  migrationHealth={settings.migrationHealth}
-                  onRefreshMigrationHealth={() =>
-                    void settings.refreshMigrationHealth()
-                  }
+                  isBusy={settings.isBusy}
+                  onSaveOllamaConfig={settings.handleSaveOllamaConfig}
+                  onListOllamaModels={settings.handleListOllamaModels}
+                  onTestOllamaConnection={settings.handleTestOllamaConnection}
                 />
               )}
 

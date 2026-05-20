@@ -5,7 +5,7 @@
  * Data: chapterStore.items + projectStore.currentItem (existing stores, no new IPC).
  * Drag & drop reorder: reuses DraggableItem from @shared/ui (same as Sidebar.tsx).
  */
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { FileText, Plus } from "lucide-react";
 import { DraggableItem } from "@shared/ui/DraggableItem";

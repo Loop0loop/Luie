@@ -1058,65 +1058,20 @@ export interface AppSettings {
   sync?: SyncSettings;
   startup?: StartupSettings;
   llm?: {
-    modelsDir?: string;
-    defaultModelPath?: string;
-    defaultModelId?: string;
-    defaultEmbeddingModelPath?: string;
-    defaultEmbeddingModelId?: string;
-    llmProviderHint?: "llamacpp" | "llamaserver" | "none";
-    hfTokenCipher?: string;
+    ollama?: {
+      baseUrl?: string;
+      chatModel?: string;
+      embeddingModel?: string;
+    };
     ragTemperature?: number;
     ragMaxTokens?: number;
-    contextSize?: number;
-    gpuLayers?: number;
   };
 }
 
-export interface LocalLlmModelInfo {
-  id: string;
-  fileName: string;
-  path: string;
-  sizeBytes: number;
-  modifiedAt: string;
-  isDefault: boolean;
+export interface OllamaConnectionResult {
+  ok: boolean;
 }
 
-export interface LlmModelSettingsView {
-  modelsDir: string;
-  defaultModelPath: string | null;
-  defaultModelId: string | null;
-  defaultEmbeddingModelPath: string | null;
-  defaultEmbeddingModelId: string | null;
-  models: LocalLlmModelInfo[];
-  hasHuggingFaceToken: boolean;
-  contextSize?: number;
-  gpuLayers?: number;
-  ragTemperature?: number;
-  ragMaxTokens?: number;
-}
-
-export interface LlmModelDownloadStatus {
-  active: boolean;
-  modelId: string;
-  fileName: string;
-  downloadedBytes: number;
-  totalBytes: number | null;
-  percent: number | null;
-  startedAt?: string;
-  error?: string;
-}
-
-export interface HfModelSearchResult {
-  modelId: string;
-  downloads: number;
-  likes: number;
-  lastModified: string;
-}
-
-export interface HfModelFile {
-  filename: string;
-  size: number | null;
-}
 
 export type ShortcutAction =
   | "app.closeWindow"

@@ -3,9 +3,8 @@ import type { EditorSettings } from "../../../shared/types/index.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import {
   editorSettingsSchema,
-  settingsHfTokenSchema,
   settingsLanguageSchema,
-  settingsLlmDefaultModelSchema,
+  settingsOllamaConfigSchema,
   settingsMenuBarModeSchema,
   settingsShortcutsSchema,
   settingsAutoSaveSchema,
@@ -15,7 +14,6 @@ import { z } from "zod";
 import type { SettingsManager } from "../../manager/settingsManager.js";
 import type { LoggerLike } from "../core/types.js";
 import { applyApplicationMenu } from "../../lifecycle/menu.js";
-import { modelStorageService } from "../../services/llm/modelStorageService.js";
 import { invalidateModelRuntimeCache } from "../../services/llm/modelRuntimeFactory.js";
 
 const loadSettingsManager = (() => {
@@ -181,168 +179,51 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       },
     },
     {
-      channel: IPC_CHANNELS.SETTINGS_GET_LLM_MODELS,
-      logTag: "SETTINGS_GET_LLM_MODELS",
-      failMessage: "Failed to get llm model settings",
-      handler: async () => modelStorageService.getView(),
-    },
-    {
-      channel: IPC_CHANNELS.SETTINGS_SET_LLM_DEFAULT_MODEL,
-      logTag: "SETTINGS_SET_LLM_DEFAULT_MODEL",
-      failMessage: "Failed to set llm default model",
-      argsSchema: z.tuple([settingsLlmDefaultModelSchema]),
-      handler: async (input: { modelPath: string; modelId?: string }) =>
-        modelStorageService.setDefaultModel(input),
-    },
-    {
-      channel: IPC_CHANNELS.SETTINGS_SET_LLM_EMBEDDING_MODEL,
-      logTag: "SETTINGS_SET_LLM_EMBEDDING_MODEL",
-      failMessage: "Failed to set llm embedding model",
-      argsSchema: z.tuple([settingsLlmDefaultModelSchema]),
-      handler: async (input: { modelPath: string; modelId?: string }) =>
-        modelStorageService.setDefaultEmbeddingModel(input),
-    },
-    {
-      channel: IPC_CHANNELS.SETTINGS_SET_LLM_PROVIDER_HINT,
-      logTag: "SETTINGS_SET_LLM_PROVIDER_HINT",
-      failMessage: "Failed to set llm provider hint",
-      argsSchema: z.tuple([z.object({ providerHint: z.enum(["llamacpp", "llamaserver", "none"]) })]),
-      handler: async (input: { providerHint: "llamacpp" | "llamaserver" | "none" }) => {
-        const settingsManager = await loadSettingsManager();
-        settingsManager.setLlmSettings({ llmProviderHint: input.providerHint });
-        invalidateModelRuntimeCache();
-        return { providerHint: input.providerHint };
-      },
-    },
-    {
-      channel: IPC_CHANNELS.SETTINGS_SET_PROJECT_LLM,
-      logTag: "SETTINGS_SET_PROJECT_LLM",
-      failMessage: "Failed to set project llm settings",
-      argsSchema: z.tuple([z.object({
-        projectId: z.string(),
-        modelPath: z.string().nullable().optional(),
-        providerHint: z.enum(["llamacpp", "llamaserver", "none"]).nullable().optional(),
-      })]),
-      handler: async (input: { projectId: string; modelPath?: string | null; providerHint?: "llamacpp" | "llamaserver" | "none" | null }) => {
-        const { db } = await import("../../database/index.js");
-        const { projectSettings } = await import("../../database/schema.js");
-        const store = db.getClient();
-        const nowDefaults = {
-          autoSave: true,
-          autoSaveInterval: 30,
-        };
-        await store
-          .insert(projectSettings)
-          .values({
-            id: input.projectId,
-            projectId: input.projectId,
-            ...nowDefaults,
-            ...(input.modelPath !== undefined ? { llmModelPath: input.modelPath } : {}),
-            ...(input.providerHint !== undefined ? { llmProviderHint: input.providerHint } : {}),
-          })
-          .onConflictDoUpdate({
-            target: [projectSettings.projectId],
-            set: {
-              ...(input.modelPath !== undefined ? { llmModelPath: input.modelPath } : {}),
-              ...(input.providerHint !== undefined ? { llmProviderHint: input.providerHint } : {}),
-            },
-          });
-        logger.info("Project LLM settings upserted", {
-          projectId: input.projectId,
-          hasModelPath: input.modelPath !== undefined ? Boolean(input.modelPath) : undefined,
-          providerHint: input.providerHint,
-        });
-        invalidateModelRuntimeCache();
-        return { ok: true };
-      },
-    },
-    {
-      channel: IPC_CHANNELS.SETTINGS_SET_LLM_RUNTIME,
-      logTag: "SETTINGS_SET_LLM_RUNTIME",
-      failMessage: "Failed to set llm runtime settings",
-      argsSchema: z.tuple([z.object({
-        contextSize: z.number().int().min(512).max(131072).optional(),
-        gpuLayers: z.number().int().min(0).max(9999).optional(),
-        ragTemperature: z.number().min(0).max(2).optional(),
-        ragMaxTokens: z.number().int().min(64).max(8192).optional(),
-      })]),
-      handler: async (input: { contextSize?: number; gpuLayers?: number; ragTemperature?: number; ragMaxTokens?: number }) => {
+      channel: IPC_CHANNELS.SETTINGS_SET_OLLAMA_CONFIG,
+      logTag: "SETTINGS_SET_OLLAMA_CONFIG",
+      failMessage: "Failed to set Ollama config",
+      argsSchema: z.tuple([settingsOllamaConfigSchema]),
+      handler: async (input: { baseUrl: string; chatModel: string; embeddingModel?: string }) => {
         const settingsManager = await loadSettingsManager();
         settingsManager.setLlmSettings({
-          ...(input.contextSize !== undefined ? { contextSize: input.contextSize } : {}),
-          ...(input.gpuLayers !== undefined ? { gpuLayers: input.gpuLayers } : {}),
-          ...(input.ragTemperature !== undefined ? { ragTemperature: input.ragTemperature } : {}),
-          ...(input.ragMaxTokens !== undefined ? { ragMaxTokens: input.ragMaxTokens } : {}),
+          ollama: {
+            baseUrl: input.baseUrl,
+            chatModel: input.chatModel,
+            ...(input.embeddingModel ? { embeddingModel: input.embeddingModel } : {}),
+          },
         });
         invalidateModelRuntimeCache();
         return { ok: true };
       },
     },
     {
-      channel: IPC_CHANNELS.SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL,
-      logTag: "SETTINGS_DOWNLOAD_DEFAULT_LLM_MODEL",
-      failMessage: "Failed to download default llm model",
-      handler: () => {
-        void modelStorageService.downloadDefaultModel().catch((err) => {
-          logger.error("Background model download failed", {
-            error: err instanceof Error ? err.message : String(err),
-          });
+      channel: IPC_CHANNELS.SETTINGS_LIST_OLLAMA_MODELS,
+      logTag: "SETTINGS_LIST_OLLAMA_MODELS",
+      failMessage: "Failed to list Ollama models",
+      argsSchema: z.tuple([z.string().min(1)]),
+      handler: async (baseUrl: string) => {
+        const res = await fetch(`${baseUrl.replace(/\/$/, "")}/v1/models`, {
+          signal: AbortSignal.timeout(3000),
         });
-        return { started: true };
+        if (!res.ok) return [];
+        const data = await res.json() as { models?: Array<{ id: string }>; data?: Array<{ id: string }> };
+        return data.models?.map((m) => m.id) ?? data.data?.map((m) => m.id) ?? [];
       },
     },
     {
-      channel: IPC_CHANNELS.SETTINGS_DOWNLOAD_DEFAULT_EMBEDDING_MODEL,
-      logTag: "SETTINGS_DOWNLOAD_DEFAULT_EMBEDDING_MODEL",
-      failMessage: "Failed to download default embedding model",
-      handler: () => {
-        void modelStorageService.downloadDefaultEmbeddingModel().catch((err) => {
-          logger.error("Background embedding model download failed", {
-            error: err instanceof Error ? err.message : String(err),
+      channel: IPC_CHANNELS.SETTINGS_TEST_OLLAMA_CONNECTION,
+      logTag: "SETTINGS_TEST_OLLAMA_CONNECTION",
+      failMessage: "Failed to test Ollama connection",
+      argsSchema: z.tuple([z.string().min(1)]),
+      handler: async (baseUrl: string) => {
+        try {
+          const res = await fetch(`${baseUrl.replace(/\/$/, "")}/v1/models`, {
+            signal: AbortSignal.timeout(3000),
           });
-        });
-        return { started: true };
-      },
-    },
-    {
-      channel: IPC_CHANNELS.SETTINGS_GET_LLM_DOWNLOAD_STATUS,
-      logTag: "SETTINGS_GET_LLM_DOWNLOAD_STATUS",
-      failMessage: "Failed to get llm download status",
-      handler: async () => modelStorageService.getDownloadStatus(),
-    },
-    {
-      channel: IPC_CHANNELS.SETTINGS_SET_HF_TOKEN,
-      logTag: "SETTINGS_SET_HF_TOKEN",
-      failMessage: "Failed to set huggingface token",
-      argsSchema: z.tuple([settingsHfTokenSchema]),
-      handler: async (input: { token: string }) => modelStorageService.setHuggingFaceToken(input.token),
-    },
-    {
-      channel: IPC_CHANNELS.SETTINGS_SEARCH_HF_MODELS,
-      logTag: "SETTINGS_SEARCH_HF_MODELS",
-      failMessage: "Failed to search HuggingFace models",
-      argsSchema: z.tuple([z.object({ query: z.string().min(1).max(200) })]),
-      handler: async (input: { query: string }) => modelStorageService.searchHfModels(input.query),
-    },
-    {
-      channel: IPC_CHANNELS.SETTINGS_GET_HF_MODEL_FILES,
-      logTag: "SETTINGS_GET_HF_MODEL_FILES",
-      failMessage: "Failed to get HuggingFace model files",
-      argsSchema: z.tuple([z.object({ repoId: z.string().min(1).max(300) })]),
-      handler: async (input: { repoId: string }) => modelStorageService.getHfModelFiles(input.repoId),
-    },
-    {
-      channel: IPC_CHANNELS.SETTINGS_DOWNLOAD_HF_MODEL,
-      logTag: "SETTINGS_DOWNLOAD_HF_MODEL",
-      failMessage: "Failed to start HuggingFace model download",
-      argsSchema: z.tuple([z.object({
-        repoId: z.string().min(1).max(300),
-        filename: z.string().min(1).max(300),
-        modelId: z.string().min(1).max(300),
-      })]),
-      handler: async (input: { repoId: string; filename: string; modelId: string }) => {
-        await modelStorageService.downloadHfModel(input.repoId, input.filename, input.modelId);
-        return { started: true };
+          return { ok: res.ok };
+        } catch {
+          return { ok: false };
+        }
       },
     },
     {

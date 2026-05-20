@@ -2,10 +2,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useShallow } from "zustand/react/shallow";
-import { Send, Square, ChevronDown, Bot, User, AlertCircle, BookOpen } from "lucide-react";
+import { Send, Square, Bot, User, AlertCircle, BookOpen } from "lucide-react";
 import { useToast } from "@shared/ui/ToastContext";
 import { api } from "@shared/api";
-import type { RagQaErrorPayload, RagQaStreamPayload, LlmModelSettingsView } from "@shared/types";
+import type { RagQaErrorPayload, RagQaStreamPayload } from "@shared/types";
 import { ErrorCode } from "@shared/constants/errorCode";
 import { requestChapterNavigation } from "@renderer/features/workspace/services/chapterNavigation";
 import { Button } from "@renderer/components/ui/button";
@@ -19,22 +19,11 @@ type Message = {
   error?: string;
 };
 
-const PROVIDER_OPTIONS = [
-  { value: "llamaserver" as const, label: "llama-server (GPU)" },
-  { value: "llamacpp" as const, label: "llama.cpp (CPU)" },
-  { value: "none" as const, label: "Deterministic" },
-];
-
 export default function AnalysisSection() {
   const { currentItem: currentChapter } = useChapterStore(
     useShallow((state) => ({ currentItem: state.currentItem })),
   );
   const currentProject = useProjectStore((state) => state.currentItem);
-
-  // Model config state
-  const [modelView, setModelView] = useState<LlmModelSettingsView | null>(null);
-  const [providerHint, setProviderHint] = useState<"llamacpp" | "llamaserver" | "none">("llamaserver");
-  const [configLoading, setConfigLoading] = useState(false);
 
   // Chat state
   const [messages, setMessages] = useState<Message[]>([]);
@@ -45,13 +34,6 @@ export default function AnalysisSection() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { showToast } = useToast();
-
-  // Load model list on mount
-  useEffect(() => {
-    void api.settings.getLlmModels().then((res) => {
-      if (res.success && res.data) setModelView(res.data);
-    });
-  }, []);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -114,28 +96,6 @@ export default function AnalysisSection() {
       offError();
     };
   }, [ragRunId]);
-
-  const handleSelectModel = useCallback(async (modelPath: string) => {
-    setConfigLoading(true);
-    const [res] = await Promise.all([
-      api.settings.setLlmDefaultModel({ modelPath }),
-      currentProject?.id
-        ? api.settings.setProjectLlm({ projectId: currentProject.id, modelPath })
-        : Promise.resolve(null),
-    ]);
-    setConfigLoading(false);
-    if (res.success && res.data) setModelView(res.data);
-  }, [currentProject]);
-
-  const handleSelectProvider = useCallback(async (hint: "llamacpp" | "llamaserver" | "none") => {
-    setProviderHint(hint);
-    await Promise.all([
-      api.settings.setLlmProviderHint({ providerHint: hint }),
-      currentProject?.id
-        ? api.settings.setProjectLlm({ projectId: currentProject.id, providerHint: hint })
-        : Promise.resolve(null),
-    ]);
-  }, [currentProject]);
 
   const handleSend = useCallback(async () => {
     if (!currentProject?.id || !input.trim() || isStreaming) return;
@@ -208,49 +168,8 @@ export default function AnalysisSection() {
     [],
   );
 
-  const defaultModel = modelView?.models.find((m) => m.isDefault) ?? modelView?.models[0] ?? null;
-
   return (
     <div className="flex flex-col h-full bg-panel text-fg">
-      {/* Config bar */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border shrink-0">
-        {/* Model selector */}
-        <div className="relative flex-1 min-w-0">
-          <select
-            className="w-full text-xs bg-surface border border-border rounded-lg px-2 py-1.5 pr-6 appearance-none text-fg cursor-pointer truncate focus:outline-none focus:ring-1 focus:ring-accent"
-            value={defaultModel?.path ?? ""}
-            onChange={(e) => void handleSelectModel(e.target.value)}
-            disabled={configLoading || !modelView?.models.length}
-          >
-            {!modelView && <option value="">Loading models...</option>}
-            {modelView?.models.length === 0 && <option value="">No models found</option>}
-            {modelView?.models.map((m) => (
-              <option key={m.path} value={m.path}>
-                {m.fileName}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
-        </div>
-
-        {/* Provider selector */}
-        <div className="relative shrink-0">
-          <select
-            className="text-xs bg-surface border border-border rounded-lg px-2 py-1.5 pr-6 appearance-none text-fg cursor-pointer focus:outline-none focus:ring-1 focus:ring-accent"
-            value={providerHint}
-            onChange={(e) => void handleSelectProvider(e.target.value as typeof providerHint)}
-            disabled={configLoading}
-          >
-            {PROVIDER_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
-        </div>
-      </div>
-
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5 min-h-0">
         {messages.length === 0 && (
