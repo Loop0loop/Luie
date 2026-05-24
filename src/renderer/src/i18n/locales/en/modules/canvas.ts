@@ -156,6 +156,13 @@ export const enCanvas = {
     undo: "Undo",
     redo: "Redo",
     help: "Help",
+    newBlock: "New Block",
+    importDoc: "Import Doc",
+    insertImage: "Insert Image",
+    exit: "Return to Editor",
+    filterLayer: "Filter Layer",
+    aiSync: "AI Sync",
+    focusCenter: "Focus Center",
   },
   type: {
     label: "Canvas type",
