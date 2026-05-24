@@ -19,6 +19,8 @@ type Message = {
   error?: string;
 };
 
+type RuntimePreference = "auto" | "sidecar" | "ollama" | "openai" | "gemini";
+
 export default function AnalysisSection() {
   const { currentItem: currentChapter } = useChapterStore(
     useShallow((state) => ({ currentItem: state.currentItem })),
@@ -31,6 +33,7 @@ export default function AnalysisSection() {
   const [ragRunId, setRagRunId] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [runtimeInfo, setRuntimeInfo] = useState<LlmRuntimeInfo | null>(null);
+  const [runtimePreference, setRuntimePreference] = useState<RuntimePreference>("auto");
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -38,12 +41,33 @@ export default function AnalysisSection() {
 
   useEffect(() => {
     void (async () => {
+      const all = await api.settings.getAll();
+      if (all.success) {
+        const provider = all.data?.llm?.preferredProvider;
+        if (provider) {
+          setRuntimePreference(provider);
+        }
+      }
       const res = await api.settings.getLlmRuntime();
       if (res.success && res.data) {
         setRuntimeInfo(res.data);
       }
     })();
   }, []);
+
+  const applyRuntimePreference = useCallback(async (next: RuntimePreference) => {
+    setRuntimePreference(next);
+    const response = await api.settings.setLlmPreference({ provider: next });
+    if (!response.success) {
+      showToast(response.error?.message ?? "LLM preference 변경 실패", "error");
+      return;
+    }
+    const runtime = await api.settings.getLlmRuntime();
+    if (runtime.success && runtime.data) {
+      setRuntimeInfo(runtime.data);
+      showToast(`LLM 경로 변경: ${next} → ${runtime.data.provider}`, "info");
+    }
+  }, [showToast]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -255,6 +279,21 @@ export default function AnalysisSection() {
 
       {/* Input area */}
       <div className="shrink-0 border-t border-border p-3 bg-panel">
+        <div className="mb-2 flex items-center gap-2 px-1">
+          <label htmlFor="analysis-runtime-pref" className="text-[11px] text-muted">Route</label>
+          <select
+            id="analysis-runtime-pref"
+            value={runtimePreference}
+            onChange={(e) => void applyRuntimePreference(e.target.value as RuntimePreference)}
+            className="h-7 rounded border border-border bg-surface px-2 text-xs text-fg"
+          >
+            <option value="auto">auto</option>
+            <option value="sidecar">llama(sidecar)</option>
+            <option value="openai">openai(gpt)</option>
+            <option value="gemini">gemini</option>
+            <option value="ollama">ollama</option>
+          </select>
+        </div>
         {runtimeInfo && (
           <div className="text-[11px] text-muted mb-2 px-1">
             LLM: {runtimeInfo.provider} / {runtimeInfo.model}

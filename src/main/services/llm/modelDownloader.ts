@@ -60,7 +60,7 @@ async function sha256File(filePath: string): Promise<string> {
   const handle = await fsp.open(filePath, "r");
   try {
     for await (const chunk of handle.readableWebStream()) {
-      hash.update(Buffer.from(chunk as ArrayBuffer));
+      hash.update(Buffer.from(chunk as Uint8Array));
     }
   } finally {
     await handle.close();
@@ -157,6 +157,15 @@ export async function downloadGguf(input: {
   const destPath = path.join(input.destDir, input.filename);
   try {
     await fsp.access(destPath);
+    if (input.expectedSha256) {
+      const currentSha256 = await sha256File(destPath);
+      if (currentSha256 !== input.expectedSha256) {
+        await fsp.rm(destPath, { force: true }).catch(() => {});
+        throw new Error(
+          `Cached GGUF SHA256 mismatch: expected ${input.expectedSha256}, got ${currentSha256}`,
+        );
+      }
+    }
     input.onProgress?.({ phase: "done", pct: 100, receivedBytes: 0, totalBytes: 0 });
     return destPath;
   } catch {

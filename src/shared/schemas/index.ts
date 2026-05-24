@@ -659,6 +659,10 @@ export const settingsOllamaConfigSchema = z.strictObject({
   apiKey: z.string().min(1).max(2048).optional(),
 });
 
+export const settingsLlmPreferenceSchema = z.strictObject({
+  provider: z.enum(["auto", "sidecar", "ollama", "openai", "gemini"]),
+});
+
 export const settingsLocalLlmSchema = z.strictObject({
   enabled: z.boolean(),
   modelPath: z.string().min(1).max(4096).optional(),

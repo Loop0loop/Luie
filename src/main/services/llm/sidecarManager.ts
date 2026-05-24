@@ -82,7 +82,7 @@ export class SidecarManager {
 
     logger.info("Spawning llama-server", { binaryPath, port, modelPath });
     const proc = spawn(binaryPath, args, {
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: ["ignore", "ignore", "pipe"],
       detached: false,
     });
 

@@ -477,6 +477,9 @@ export type RendererApi = {
       embeddingModel?: string;
       apiKey?: string;
     }) => Promise<IPCResponse<{ ok: boolean }>>;
+    setLlmPreference: (input: {
+      provider: "auto" | "sidecar" | "ollama" | "openai" | "gemini";
+    }) => Promise<IPCResponse<{ ok: boolean }>>;
     getLlmRuntime: () => Promise<IPCResponse<LlmRuntimeInfo>>;
     listOllamaModels: (baseUrl: string) => Promise<IPCResponse<string[]>>;
     testOllamaConnection: (baseUrl: string) => Promise<IPCResponse<OllamaConnectionResult>>;

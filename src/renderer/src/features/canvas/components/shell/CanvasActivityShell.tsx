@@ -9,17 +9,16 @@
 
 import { useState, useCallback, memo } from "react";
 import { useTranslation } from "react-i18next";
-import { 
-  FilePlus, 
-  FolderPlus, 
-  ArrowUpDown, 
-  ChevronDown, 
-  ChevronRight, 
-  Folder, 
-  FolderOpen, 
-  FileText, 
-  Layout, 
-  PanelLeftClose,
+import {
+  FilePlus,
+  FolderPlus,
+  ArrowUpDown,
+  ChevronDown,
+  ChevronRight,
+  Folder,
+  FolderOpen,
+  FileText,
+  Layout,
   Search,
   Bookmark,
   Files,
@@ -30,7 +29,6 @@ import { Button } from "@renderer/components/ui/button";
 import { Badge } from "@renderer/components/ui/badge";
 import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { useToast } from "@shared/ui/ToastContext";
-import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { cn } from "@shared/types/utils";
 import { mockExplorerData } from "../../__fixtures__/mockExplorerData";
 import type { FileNode } from "../../types/canvas.types";
@@ -153,8 +151,7 @@ interface CanvasActivityShellProps {
 export default function CanvasActivityShell({ onClose }: CanvasActivityShellProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
-  const setRegionOpen = useUIStore((state) => state.setRegionOpen);
-  
+
   // 크로스 도메인 상태 오염(버그) 제거: 파일 탐색기 선택 상태는 local selectedNodeId로 안전하게 관리
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
@@ -185,8 +182,8 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
   // TAB_I18N_KEYS 매핑 객체 활용 방식으로 as never 제거
   const handleTabChange = useCallback((tabKey: "explorer" | "search" | "bookmark") => {
     showToast(
-      t("canvas.graph.demoNotImplemented", { 
-        actionName: t(TAB_I18N_KEYS[tabKey]) 
+      t("canvas.graph.demoNotImplemented", {
+        actionName: t(TAB_I18N_KEYS[tabKey])
       }),
       "info"
     );
@@ -200,8 +197,8 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
       sort: t("canvas.activity.sort"),
     };
     showToast(
-      t("canvas.graph.demoNotImplemented", { 
-        actionName: actionNames[actionKey] 
+      t("canvas.graph.demoNotImplemented", {
+        actionName: actionNames[actionKey]
       }),
       "info"
     );
@@ -221,7 +218,7 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
             <Files className="h-[18px] w-[18px] text-accent" />
             <span className="absolute -bottom-[9px] left-1/2 -translate-x-1/2 w-8 h-[2px] bg-accent" />
           </button>
-          
+
           {/* 검색 탭 */}
           <button
             onClick={() => handleTabChange("search")}
@@ -230,7 +227,7 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
           >
             <Search className="h-[18px] w-[18px]" />
           </button>
-          
+
           {/* 북마크 탭 */}
           <button
             onClick={() => handleTabChange("bookmark")}
@@ -243,15 +240,6 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
 
         {/* 오른쪽 제어 버튼 세트 */}
         <div className="flex items-center gap-1">
-          {/* 사이드바 접기 토글 */}
-          <button
-            onClick={() => setRegionOpen("leftSidebar", false)}
-            className="flex h-9 w-9 items-center justify-center rounded-md border-none bg-transparent p-2 text-muted-foreground hover:bg-active hover:text-foreground cursor-pointer transition-colors duration-150"
-            title={t("canvas.activity.closeSidebar")}
-          >
-            <PanelLeftClose className="icon-xl" />
-          </button>
-          
           {/* 단방향 데이터 흐름을 준수하는 onClose 위임 호출 */}
           <button
             onClick={() => onClose?.()}
@@ -287,7 +275,7 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
           >
             <FolderPlus />
           </Button>
-          
+
           {/* 정렬 방식 변경 */}
           <Button
             variant="ghost"

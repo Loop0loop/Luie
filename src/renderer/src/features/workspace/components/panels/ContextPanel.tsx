@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useDeferredValue, useTransition, useCallback, memo } from "react";
-import { ArrowLeft, PanelRightClose, MousePointerClick } from "lucide-react";
+import { ArrowLeft, MousePointerClick } from "lucide-react";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
 import { useTermStore } from "@renderer/features/research/stores/termStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
@@ -8,7 +8,6 @@ import SearchInput from "@shared/ui/SearchInput";
 import type { Character, Term } from "@shared/types";
 import { useTranslation } from "react-i18next";
 import { api } from "@shared/api";
-import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useCanvasViewStore } from "@renderer/features/canvas/stores";
 import CanvasNodeInspector from "@renderer/features/canvas/components/binder/CanvasNodeInspector";
 import { cn } from "@shared/types/utils";
@@ -90,23 +89,19 @@ function buildCharacterSummary(character: Character): string | null {
 interface CanvasSelectionWatcherProps {
   handleTabChange: (tab: Tab) => void;
   currentTab: Tab;
-  setRegionOpen: (region: "leftSidebar" | "rightPanel", open: boolean) => void;
 }
 
 const CanvasSelectionWatcher = memo(({
   handleTabChange,
   currentTab,
-  setRegionOpen,
 }: CanvasSelectionWatcherProps) => {
-  // 비-캔버스 모드일 때는 마운트되지 않는 이 헬퍼 컴포넌트 내부에서만 스토어를 구독하여 오버헤드 0% 실현 완료
   const selection = useCanvasViewStore((state) => state.selection);
 
   useEffect(() => {
     if (selection.kind === "node" && currentTab !== "elements") {
       handleTabChange("elements");
-      setRegionOpen("rightPanel", true);
     }
-  }, [selection.kind, setRegionOpen, handleTabChange, currentTab]);
+  }, [selection.kind, handleTabChange, currentTab]);
 
   return null;
 });
@@ -170,8 +165,6 @@ function ContextPanel({
     }
   }, [onTabChange]);
 
-  const setRegionOpen = useUIStore((state) => state.setRegionOpen);
-
   const currentProject = useProjectStore((state) => state.currentProject);
   const characters = useCharacterStore((state) => state.characters);
   const terms = useTermStore((state) => state.terms);
@@ -230,7 +223,6 @@ function ContextPanel({
         <CanvasSelectionWatcher
           handleTabChange={handleTabChange}
           currentTab={currentTab}
-          setRegionOpen={setRegionOpen}
         />
       )}
 
@@ -264,21 +256,12 @@ function ContextPanel({
         </div>
       )}
 
-      {/* 우측 바인더바 닫기 토글 헤더 */}
-      <div className="flex items-center justify-between px-4 pt-3 shrink-0">
+      <div className="flex items-center px-4 pt-3 shrink-0">
         <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-          {/* 어순 결함이 없는 단일 복합 키 사용으로 다국어 완성도 확립 */}
           {isCanvasMode
             ? t("canvas.binder.canvasHeader")
             : t("canvas.binder.synopsisHeader")}
         </span>
-        <button
-          onClick={() => setRegionOpen("rightPanel", false)}
-          className="p-1.5 rounded hover:bg-muted/40 text-muted-foreground transition-colors shrink-0 flex items-center justify-center"
-          title={t("canvas.binder.collapse")}
-        >
-          <PanelRightClose className="h-4 w-4" />
-        </button>
       </div>
 
       {showSearch && (

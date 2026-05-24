@@ -3,7 +3,7 @@
  * 
  * 기능:
  *   - Canvas Mode / Graph Mode에 따라 유동적인 3대 액션 배치
- *   - Figma 스타일의 세그먼트 모드 토글 ([ Canvas ] ❖ [ Graph ])
+ *   - Figma 스타일의 세그먼트 모드 토글 ([ Canvas ] [ Graph ])
  *   - 에디터 모드로 신속히 빠져나가는 "에디터 복귀" 버튼 지원
  */
 
@@ -14,7 +14,6 @@ import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { cn } from "@shared/types/utils";
 import { createLogger } from "@shared/logger";
 import { Button } from "@renderer/components/ui/button";
-import { Separator } from "@renderer/components/ui/separator";
 
 const logger = createLogger("BottomInteractiveToolbar");
 
@@ -39,10 +38,10 @@ export function BottomInteractiveToolbar() {
 
   return (
     <div
-      className="pointer-events-auto absolute bottom-5 left-1/2 z-30 -translate-x-1/2 select-none"
+      className="pointer-events-auto absolute bottom-6 left-1/2 z-30 -translate-x-1/2 select-none"
       data-testid="bottom-interactive-toolbar"
     >
-      <div className="flex h-11 items-center gap-2 rounded-lg border border-border/80 bg-background/85 px-3 py-1.5 shadow-md backdrop-blur-md">
+      <div className="flex h-11 items-center gap-2 rounded-full border border-[#3d3d3d] bg-[#2c2c2c]/95 px-3 py-1 shadow-2xl backdrop-blur-md">
         
         {/* 에디터 복귀 버튼 */}
         <Button
@@ -50,14 +49,14 @@ export function BottomInteractiveToolbar() {
           size="sm"
           onClick={handleExit}
           title={t("canvas.toolbar.exit")}
-          className="text-xs font-semibold text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+          className="text-xs font-semibold text-[#b3b3b3] hover:text-white hover:bg-[#3d3d3d] rounded-full transition-colors h-8 px-3 gap-1 border-none cursor-pointer bg-transparent"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-4 w-4 text-[#b3b3b3]" />
           <span>{t("canvas.toolbar.exit")}</span>
         </Button>
 
         {/* 구분선 */}
-        <Separator orientation="vertical" className="h-4 w-px bg-border/80" />
+        <div className="w-px h-5 bg-[#3d3d3d]" />
 
         {/* 모드별 동적 액션 목록 */}
         <div className="flex items-center gap-1">
@@ -69,9 +68,9 @@ export function BottomInteractiveToolbar() {
                 size="sm"
                 onClick={() => handleAction("new-block")}
                 title={t("canvas.toolbar.newBlock")}
-                className="text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground [&_svg]:text-accent"
+                className="text-xs font-medium text-[#b3b3b3] hover:text-white hover:bg-[#3d3d3d] rounded-full transition-colors h-8 px-3 gap-1.5 border-none cursor-pointer bg-transparent"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4 text-[#b3b3b3] group-hover:text-white" />
                 <span>{t("canvas.toolbar.newBlock")}</span>
               </Button>
 
@@ -80,9 +79,9 @@ export function BottomInteractiveToolbar() {
                 size="sm"
                 onClick={() => handleAction("import-doc")}
                 title={t("canvas.toolbar.importDoc")}
-                className="text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground [&_svg]:text-accent"
+                className="text-xs font-medium text-[#b3b3b3] hover:text-white hover:bg-[#3d3d3d] rounded-full transition-colors h-8 px-3 gap-1.5 border-none cursor-pointer bg-transparent"
               >
-                <FileText className="h-4 w-4" />
+                <FileText className="h-4 w-4 text-[#b3b3b3] group-hover:text-white" />
                 <span>{t("canvas.toolbar.importDoc")}</span>
               </Button>
 
@@ -91,9 +90,9 @@ export function BottomInteractiveToolbar() {
                 size="sm"
                 onClick={() => handleAction("insert-image")}
                 title={t("canvas.toolbar.insertImage")}
-                className="text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground [&_svg]:text-accent"
+                className="text-xs font-medium text-[#b3b3b3] hover:text-white hover:bg-[#3d3d3d] rounded-full transition-colors h-8 px-3 gap-1.5 border-none cursor-pointer bg-transparent"
               >
-                <Image className="h-4 w-4" />
+                <Image className="h-4 w-4 text-[#b3b3b3] group-hover:text-white" />
                 <span>{t("canvas.toolbar.insertImage")}</span>
               </Button>
             </>
@@ -105,9 +104,9 @@ export function BottomInteractiveToolbar() {
                 size="sm"
                 onClick={() => handleAction("filter-layer")}
                 title={t("canvas.toolbar.filterLayer")}
-                className="text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground [&_svg]:text-accent"
+                className="text-xs font-medium text-[#b3b3b3] hover:text-white hover:bg-[#3d3d3d] rounded-full transition-colors h-8 px-3 gap-1.5 border-none cursor-pointer bg-transparent"
               >
-                <Layers className="h-4 w-4" />
+                <Layers className="h-4 w-4 text-[#b3b3b3] group-hover:text-white" />
                 <span>{t("canvas.toolbar.filterLayer")}</span>
               </Button>
 
@@ -116,9 +115,9 @@ export function BottomInteractiveToolbar() {
                 size="sm"
                 onClick={() => handleAction("ai-sync")}
                 title={t("canvas.toolbar.aiSync")}
-                className="text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground [&_svg]:text-accent"
+                className="text-xs font-medium text-[#b3b3b3] hover:text-white hover:bg-[#3d3d3d] rounded-full transition-colors h-8 px-3 gap-1 border-none cursor-pointer bg-transparent"
               >
-                <RefreshCw className="h-3.5 w-3.5" />
+                <RefreshCw className="h-3.5 w-3.5 text-[#b3b3b3] group-hover:text-white" />
                 <span>{t("canvas.toolbar.aiSync")}</span>
               </Button>
 
@@ -127,9 +126,9 @@ export function BottomInteractiveToolbar() {
                 size="sm"
                 onClick={() => handleAction("focus-center")}
                 title={t("canvas.toolbar.focusCenter")}
-                className="text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground [&_svg]:text-accent"
+                className="text-xs font-medium text-[#b3b3b3] hover:text-white hover:bg-[#3d3d3d] rounded-full transition-colors h-8 px-3 gap-1.5 border-none cursor-pointer bg-transparent"
               >
-                <Focus className="h-4 w-4" />
+                <Focus className="h-4 w-4 text-[#b3b3b3] group-hover:text-white" />
                 <span>{t("canvas.toolbar.focusCenter")}</span>
               </Button>
             </>
@@ -137,33 +136,32 @@ export function BottomInteractiveToolbar() {
         </div>
 
         {/* 구분선 */}
-        <Separator orientation="vertical" className="h-4 w-px bg-border/80" />
+        <div className="w-px h-5 bg-[#3d3d3d]" />
 
         {/* Figma 스타일 세그먼트 토글 */}
-        <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-muted/40 border border-border/40 shrink-0">
+        <div className="flex items-center gap-1 p-1 rounded-full bg-[#1e1e1e] border border-[#3d3d3d] shrink-0 h-9">
           <Button
-            variant={!isGraphMode ? "secondary" : "ghost"}
+            variant="ghost"
             size="xs"
             onClick={() => setActivePanel("canvas")}
             className={cn(
-              "rounded-md text-[10px] font-semibold transition-all duration-150 h-7 px-2.5",
+              "rounded-full text-[11px] font-bold transition-all duration-200 h-7 px-3.5 border-none cursor-pointer",
               !isGraphMode
-                ? "bg-background text-foreground shadow-sm hover:bg-background"
-                : "text-muted-foreground hover:bg-transparent hover:text-foreground"
+                ? "bg-[#0c8ce9] text-white shadow-md shadow-[#0c8ce9]/20 hover:bg-[#0c8ce9] hover:text-white"
+                : "text-[#b3b3b3] hover:bg-[#2c2c2c] hover:text-white bg-transparent"
             )}
           >
             {t("canvas.activity.canvas")}
           </Button>
-          <span className="text-muted-foreground/30 text-[9px] select-none px-1" aria-hidden>❖</span>
           <Button
-            variant={isGraphMode ? "secondary" : "ghost"}
+            variant="ghost"
             size="xs"
             onClick={() => setActivePanel("graph")}
             className={cn(
-              "rounded-md text-[10px] font-semibold transition-all duration-150 h-7 px-2.5",
+              "rounded-full text-[11px] font-bold transition-all duration-200 h-7 px-3.5 border-none cursor-pointer",
               isGraphMode
-                ? "bg-background text-foreground shadow-sm hover:bg-background"
-                : "text-muted-foreground hover:bg-transparent hover:text-foreground"
+                ? "bg-[#0c8ce9] text-white shadow-md shadow-[#0c8ce9]/20 hover:bg-[#0c8ce9] hover:text-white"
+                : "text-[#b3b3b3] hover:bg-[#2c2c2c] hover:text-white bg-transparent"
             )}
           >
             {t("canvas.activity.graph")}

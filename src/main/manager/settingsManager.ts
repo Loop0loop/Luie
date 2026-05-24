@@ -277,12 +277,14 @@ export class SettingsManager {
   }
 
   getLlmSettings(): {
+    preferredProvider?: "auto" | "sidecar" | "ollama" | "openai" | "gemini";
     ollama?: { baseUrl?: string; chatModel?: string; embeddingModel?: string; apiKey?: string };
     ragTemperature?: number;
     ragMaxTokens?: number;
   } {
     const llm = this.store.get("llm") ?? {};
     return {
+      preferredProvider: (llm as { preferredProvider?: "auto" | "sidecar" | "ollama" | "openai" | "gemini" }).preferredProvider,
       ollama: (llm as { ollama?: { baseUrl?: string; chatModel?: string; embeddingModel?: string; apiKey?: string } }).ollama,
       ragTemperature: (llm as { ragTemperature?: number }).ragTemperature,
       ragMaxTokens: (llm as { ragMaxTokens?: number }).ragMaxTokens,
@@ -290,6 +292,7 @@ export class SettingsManager {
   }
 
   setLlmSettings(settings: {
+    preferredProvider?: "auto" | "sidecar" | "ollama" | "openai" | "gemini";
     ollama?: { baseUrl?: string; chatModel?: string; embeddingModel?: string; apiKey?: string };
     ragTemperature?: number;
     ragMaxTokens?: number;

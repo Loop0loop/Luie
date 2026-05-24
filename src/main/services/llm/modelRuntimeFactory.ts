@@ -53,6 +53,8 @@ type ResolvedRuntime =
   | { kind: "ollama"; config: OllamaConfig }
   | { kind: "deterministic" };
 
+type RuntimeKind = ResolvedRuntime["kind"];
+
 const loadSettingsManager = (() => {
   let cached: Promise<{ settingsManager: SettingsManager }> | null = null;
   return async () => {
@@ -141,10 +143,29 @@ function loadEnvOpenAiConfig(): EnvOpenAiConfig | null {
 }
 
 async function resolveRuntime(): Promise<ResolvedRuntime> {
+  let preferred: "auto" | "sidecar" | "ollama" | "openai" | "gemini" = "auto";
+  let localLlm:
+    | {
+      enabled: boolean;
+      modelPath?: string;
+      binaryPath?: string;
+      gpuLayers?: number;
+      contextSize?: number;
+    }
+    | undefined;
+
   try {
     const settingsManager = await loadSettingsManager();
-    const localLlm = settingsManager.getLocalLlmSettings();
-    if (localLlm?.enabled && localLlm.modelPath && localLlm.binaryPath) {
+    const llmSettings = settingsManager.getLlmSettings();
+    preferred = llmSettings.preferredProvider ?? "auto";
+    localLlm = settingsManager.getLocalLlmSettings();
+  } catch {
+    // Settings may be unavailable during tests or early startup. Continue with defaults.
+  }
+
+  const tryResolveKind = async (kind: RuntimeKind): Promise<ResolvedRuntime | null> => {
+    if (kind === "sidecar") {
+      if (!(localLlm?.enabled && localLlm.modelPath && localLlm.binaryPath)) return null;
       try {
         const baseUrl = await sidecarManager.ensureStarted(
           localLlm.binaryPath,
@@ -157,24 +178,35 @@ async function resolveRuntime(): Promise<ResolvedRuntime> {
         return { kind: "sidecar", config: { baseUrl } };
       } catch (error) {
         logger.warn("Sidecar start failed, falling through", { error });
+        return null;
       }
     }
-  } catch {
-    // Settings may be unavailable during tests or early startup. Continue to fallback providers.
+    if (kind === "gemini") {
+      const geminiConfig = loadEnvGeminiConfig();
+      return geminiConfig ? { kind: "gemini", config: geminiConfig } : null;
+    }
+    if (kind === "openai") {
+      const openAiConfig = loadEnvOpenAiConfig();
+      return openAiConfig ? { kind: "openai", config: openAiConfig } : null;
+    }
+    if (kind === "ollama") {
+      const ollamaConfig = await loadOllamaConfig();
+      return ollamaConfig ? { kind: "ollama", config: ollamaConfig } : null;
+    }
+    return null;
+  };
+
+  const defaultOrder: RuntimeKind[] = ["sidecar", "gemini", "openai", "ollama"];
+  const orderedKinds: RuntimeKind[] = preferred === "auto"
+    ? defaultOrder
+    : [preferred, ...defaultOrder.filter((kind) => kind !== preferred)];
+
+  for (const kind of orderedKinds) {
+    // eslint-disable-next-line no-await-in-loop -- Runtime providers are intentionally probed in priority order.
+    const resolved = await tryResolveKind(kind);
+    if (resolved) return resolved;
   }
 
-  const geminiConfig = loadEnvGeminiConfig();
-  if (geminiConfig) {
-    return { kind: "gemini", config: geminiConfig };
-  }
-  const openAiConfig = loadEnvOpenAiConfig();
-  if (openAiConfig) {
-    return { kind: "openai", config: openAiConfig };
-  }
-  const ollamaConfig = await loadOllamaConfig();
-  if (ollamaConfig) {
-    return { kind: "ollama", config: ollamaConfig };
-  }
   return { kind: "deterministic" };
 }
 

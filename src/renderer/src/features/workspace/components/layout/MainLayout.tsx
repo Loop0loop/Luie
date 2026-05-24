@@ -119,6 +119,7 @@ export default function MainLayout({
   );
   const {
     isClosing: isSidebarClosing,
+    isOpening: isSidebarOpening,
     shouldRender: shouldRenderSidebar,
   } = useResizablePanelPresence({
     enableAnimations,
@@ -128,6 +129,7 @@ export default function MainLayout({
   });
   const {
     isClosing: isContextClosing,
+    isOpening: isContextOpening,
     shouldRender: shouldRenderContext,
   } = useResizablePanelPresence({
     enableAnimations,
@@ -168,6 +170,7 @@ export default function MainLayout({
               collapsible
               collapsedSize={0}
               onResize={(panelSize) => {
+                if (isSidebarOpening || isSidebarClosing) return;
                 const isCollapsed =
                   panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
                 if (isCollapsed) {
@@ -189,7 +192,7 @@ export default function MainLayout({
             </Panel>
           )}
 
-          {shouldRenderSidebar && !isCanvasMode && (
+          {shouldRenderSidebar && (
             <PanelResizeHandle
               data-separator-feature="default.sidebar"
               className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative"
@@ -203,29 +206,25 @@ export default function MainLayout({
           >
             <EditorDropZones />
 
-            {/* 캔버스 모드용 플로팅 접기/펴기 복원 버튼 */}
+            {/* 캔버스 모드용 플로팅 접기/펴기 복원 버튼 — 항상 표시, 상태에 따라 아이콘 전환 */}
             {isCanvasMode && (
               <>
-                {!isSidebarOpen && (
-                  <button
-                    onClick={toggleLeftSidebar}
-                    className="absolute left-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-lg border border-border/80 bg-background/90 text-muted-foreground shadow-md backdrop-blur-sm transition-all hover:bg-accent hover:text-foreground active:scale-95 cursor-pointer"
-                    title={t("mainLayout.tooltip.sidebarExpand")}
-                    aria-label={t("mainLayout.tooltip.sidebarExpand")}
-                  >
-                    <PanelLeftOpen className="h-4 w-4" />
-                  </button>
-                )}
-                {!isContextOpen && (
-                  <button
-                    onClick={() => setRegionOpen("rightPanel", true)}
-                    className="absolute right-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-lg border border-border/80 bg-background/90 text-muted-foreground shadow-md backdrop-blur-sm transition-all hover:bg-accent hover:text-foreground active:scale-95 cursor-pointer"
-                    title={t("mainLayout.tooltip.contextExpand")}
-                    aria-label={t("mainLayout.tooltip.contextExpand")}
-                  >
-                    <PanelRightOpen className="h-4 w-4" />
-                  </button>
-                )}
+                <button
+                  onClick={toggleLeftSidebar}
+                  className="absolute left-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-lg border border-border/80 bg-background/90 text-muted-foreground shadow-md backdrop-blur-sm transition-all hover:bg-accent hover:text-foreground active:scale-95 cursor-pointer"
+                  title={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
+                  aria-label={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
+                >
+                  {isSidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+                </button>
+                <button
+                  onClick={() => setRegionOpen("rightPanel", !isContextOpen)}
+                  className="absolute right-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-lg border border-border/80 bg-background/90 text-muted-foreground shadow-md backdrop-blur-sm transition-all hover:bg-accent hover:text-foreground active:scale-95 cursor-pointer"
+                  title={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
+                  aria-label={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
+                >
+                  {isContextOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+                </button>
               </>
             )}
             {!isCanvasMode && (
@@ -296,7 +295,7 @@ export default function MainLayout({
             {!isCanvasMode && <StatusFooter onOpenExport={onOpenExport} />}
           </Panel>
 
-          {shouldRenderContext && !isCanvasMode && (
+          {shouldRenderContext && (
             <PanelResizeHandle
               data-separator-feature="default.panel"
               className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative"
@@ -311,6 +310,7 @@ export default function MainLayout({
               collapsible
               collapsedSize={0}
               onResize={(panelSize) => {
+                if (isContextOpening || isContextClosing) return;
                 const isCollapsed =
                   panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
                 if (isCollapsed) {

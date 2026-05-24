@@ -5,6 +5,7 @@ import {
   editorSettingsSchema,
   settingsLocalLlmSchema,
   settingsLanguageSchema,
+  settingsLlmPreferenceSchema,
   settingsOllamaConfigSchema,
   settingsMenuBarModeSchema,
   settingsShortcutsSchema,
@@ -216,6 +217,20 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       },
     },
     {
+      channel: IPC_CHANNELS.SETTINGS_SET_LLM_PREFERENCE,
+      logTag: "SETTINGS_SET_LLM_PREFERENCE",
+      failMessage: "Failed to set LLM preference",
+      argsSchema: z.tuple([settingsLlmPreferenceSchema]),
+      handler: async (input: { provider: "auto" | "sidecar" | "ollama" | "openai" | "gemini" }) => {
+        const settingsManager = await loadSettingsManager();
+        settingsManager.setLlmSettings({
+          preferredProvider: input.provider,
+        });
+        invalidateModelRuntimeCache();
+        return { ok: true };
+      },
+    },
+    {
       channel: IPC_CHANNELS.SETTINGS_GET_LLM_RUNTIME,
       logTag: "SETTINGS_GET_LLM_RUNTIME",
       failMessage: "Failed to resolve LLM runtime",
@@ -276,7 +291,7 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       logTag: "MODEL_DOWNLOAD_START",
       failMessage: "Failed to start model download",
       argsSchema: z.tuple([z.strictObject({ type: z.enum(["model", "binary"]) })]),
-      handler: async (_input: { type: "model" | "binary" }) => {
+      handler: async (input: { type: "model" | "binary" }) => {
         activeDownloadAbort?.abort();
         activeDownloadAbort = new AbortController();
         const { signal } = activeDownloadAbort;
@@ -300,23 +315,38 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
         void (async () => {
           try {
             const settingsManager = await loadSettingsManager();
-            const binaryPath = await downloadLlamaServerBinary({
-              zipUrl: binUrl,
-              expectedSha256,
-              destDir: sidecarManager.getBinDir(),
-              binaryNameInZip: LLAMA_SERVER_BINARY_IN_ZIP,
-              signal,
-              onProgress: (progress) => emitProgress("binary", progress.pct),
+            const current = settingsManager.getLocalLlmSettings();
+
+            let binaryPath = current?.binaryPath;
+            let modelPath = current?.modelPath;
+
+            if (input.type === "binary") {
+              binaryPath = await downloadLlamaServerBinary({
+                zipUrl: binUrl,
+                expectedSha256,
+                destDir: sidecarManager.getBinDir(),
+                binaryNameInZip: LLAMA_SERVER_BINARY_IN_ZIP,
+                signal,
+                onProgress: (progress) => emitProgress("binary", progress.pct),
+              });
+            } else {
+              modelPath = await downloadGguf({
+                repo: DEFAULT_MODEL.repo,
+                filename: DEFAULT_MODEL.filename,
+                expectedSha256: DEFAULT_MODEL.sha256,
+                destDir: sidecarManager.getModelsDir(),
+                signal,
+                onProgress: (progress) => emitProgress("model", progress.pct),
+              });
+            }
+
+            settingsManager.setLocalLlmSettings({
+              enabled: Boolean(binaryPath && modelPath),
+              binaryPath,
+              modelPath,
+              gpuLayers: current?.gpuLayers,
+              contextSize: current?.contextSize,
             });
-            const modelPath = await downloadGguf({
-              repo: DEFAULT_MODEL.repo,
-              filename: DEFAULT_MODEL.filename,
-              expectedSha256: DEFAULT_MODEL.sha256,
-              destDir: sidecarManager.getModelsDir(),
-              signal,
-              onProgress: (progress) => emitProgress("model", progress.pct),
-            });
-            settingsManager.setLocalLlmSettings({ enabled: true, binaryPath, modelPath });
             invalidateModelRuntimeCache();
             emitProgress("complete", 100);
           } catch (error) {
