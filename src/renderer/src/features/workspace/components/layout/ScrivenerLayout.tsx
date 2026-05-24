@@ -4,6 +4,8 @@ import {
   useCallback,
   useEffect,
   useRef,
+  useState,
+  lazy,
 } from "react";
 import { type Editor } from "@tiptap/react";
 import { useTranslation } from "react-i18next";
@@ -21,6 +23,10 @@ import WorldSection from "@renderer/features/research/components/WorldSection";
 import { CanvasPane } from "@renderer/features/canvas";
 import MemoMainView from "@renderer/features/research/components/memo/MemoMainView";
 import AnalysisSection from "@renderer/features/research/components/AnalysisSection";
+
+const ContextPanel = lazy(
+  () => import("@renderer/features/workspace/components/panels/ContextPanel")
+);
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { Menu, ChevronRight } from "lucide-react";
 import {
@@ -74,6 +80,7 @@ export default function ScrivenerLayout({
   additionalPanels,
 }: ScrivenerLayoutProps) {
   const { t } = useTranslation();
+  const [contextTab, setContextTab] = useState<"synopsis" | "characters" | "terms" | "elements">("synopsis");
   const {
     mainView,
     panels,
@@ -413,7 +420,15 @@ export default function ScrivenerLayout({
 
                 <div className="flex-1 overflow-hidden flex flex-col">
                   <Suspense fallback={<div className="p-4 text-xs">{t("scrivener.inspector.loading")}</div>}>
-                    <InspectorPanel key={activeChapterId} activeChapterId={activeChapterId} />
+                    {mainView.type === "canvas" ? (
+                      <ContextPanel
+                        activeTab={contextTab}
+                        onTabChange={(tab) => setContextTab(tab as never)}
+                        isCanvasMode={true}
+                      />
+                    ) : (
+                      <InspectorPanel key={activeChapterId} activeChapterId={activeChapterId} />
+                    )}
                   </Suspense>
                 </div>
               </Panel>

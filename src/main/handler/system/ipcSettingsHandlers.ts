@@ -3,6 +3,7 @@ import type { EditorSettings } from "../../../shared/types/index.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import {
   editorSettingsSchema,
+  settingsLocalLlmSchema,
   settingsLanguageSchema,
   settingsOllamaConfigSchema,
   settingsMenuBarModeSchema,
@@ -11,6 +12,7 @@ import {
   windowBoundsSchema,
 } from "../../../shared/schemas/index.js";
 import { z } from "zod";
+import { BrowserWindow } from "electron";
 import type { SettingsManager } from "../../manager/settingsManager.js";
 import type { LoggerLike } from "../core/types.js";
 import { applyApplicationMenu } from "../../lifecycle/menu.js";
@@ -18,6 +20,17 @@ import {
   invalidateModelRuntimeCache,
   resolveRuntimeModelInfo,
 } from "../../services/llm/modelRuntimeFactory.js";
+import { sidecarManager } from "../../services/llm/sidecarManager.js";
+import {
+  downloadGguf,
+  downloadLlamaServerBinary,
+} from "../../services/llm/modelDownloader.js";
+import {
+  DEFAULT_MODEL,
+  LLAMA_BINARY_SHA256S,
+  LLAMA_BINARY_URLS,
+  LLAMA_SERVER_BINARY_IN_ZIP,
+} from "../../services/llm/sidecarConstants.js";
 
 const loadSettingsManager = (() => {
   let cached: Promise<{ settingsManager: SettingsManager }> | null = null;
@@ -31,6 +44,8 @@ const loadSettingsManager = (() => {
     return module.settingsManager;
   };
 })();
+
+let activeDownloadAbort: AbortController | null = null;
 
 export function registerSettingsIPCHandlers(logger: LoggerLike): void {
   registerIpcHandlers(logger, [
@@ -205,6 +220,124 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       logTag: "SETTINGS_GET_LLM_RUNTIME",
       failMessage: "Failed to resolve LLM runtime",
       handler: async () => await resolveRuntimeModelInfo(),
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_GET_LOCAL_LLM,
+      logTag: "SETTINGS_GET_LOCAL_LLM",
+      failMessage: "Failed to get local LLM settings",
+      handler: async () => {
+        const settingsManager = await loadSettingsManager();
+        const settings = settingsManager.getLocalLlmSettings();
+        return {
+          ...settings,
+          sidecarRunning: sidecarManager.isRunning(),
+          sidecarBaseUrl: sidecarManager.getBaseUrl(),
+        };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_SET_LOCAL_LLM,
+      logTag: "SETTINGS_SET_LOCAL_LLM",
+      failMessage: "Failed to save local LLM settings",
+      argsSchema: z.tuple([settingsLocalLlmSchema]),
+      handler: async (input: {
+        enabled: boolean;
+        modelPath?: string;
+        binaryPath?: string;
+        gpuLayers?: number;
+        contextSize?: number;
+      }) => {
+        const settingsManager = await loadSettingsManager();
+        settingsManager.setLocalLlmSettings(input);
+        invalidateModelRuntimeCache();
+        return { ok: true };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.SIDECAR_STATUS,
+      logTag: "SIDECAR_STATUS",
+      failMessage: "Failed to get sidecar status",
+      handler: async () => ({
+        running: sidecarManager.isRunning(),
+        baseUrl: sidecarManager.getBaseUrl(),
+      }),
+    },
+    {
+      channel: IPC_CHANNELS.SIDECAR_STOP,
+      logTag: "SIDECAR_STOP",
+      failMessage: "Failed to stop sidecar",
+      handler: async () => {
+        await sidecarManager.stop();
+        return { ok: true };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.MODEL_DOWNLOAD_START,
+      logTag: "MODEL_DOWNLOAD_START",
+      failMessage: "Failed to start model download",
+      argsSchema: z.tuple([z.strictObject({ type: z.enum(["model", "binary"]) })]),
+      handler: async (_input: { type: "model" | "binary" }) => {
+        activeDownloadAbort?.abort();
+        activeDownloadAbort = new AbortController();
+        const { signal } = activeDownloadAbort;
+        const platform = `${process.platform}-${process.arch}`;
+        const binUrl = LLAMA_BINARY_URLS[platform];
+        const expectedSha256 = LLAMA_BINARY_SHA256S[platform];
+        if (!binUrl || !expectedSha256) throw new Error(`지원하지 않는 플랫폼: ${platform}`);
+
+        const emitProgress = (
+          stage: "binary" | "model" | "complete" | "error",
+          pct: number,
+          error?: string,
+        ) => {
+          for (const window of BrowserWindow.getAllWindows()) {
+            if (!window.isDestroyed()) {
+              window.webContents.send(IPC_CHANNELS.MODEL_DOWNLOAD_PROGRESS, { stage, pct, error });
+            }
+          }
+        };
+
+        void (async () => {
+          try {
+            const settingsManager = await loadSettingsManager();
+            const binaryPath = await downloadLlamaServerBinary({
+              zipUrl: binUrl,
+              expectedSha256,
+              destDir: sidecarManager.getBinDir(),
+              binaryNameInZip: LLAMA_SERVER_BINARY_IN_ZIP,
+              signal,
+              onProgress: (progress) => emitProgress("binary", progress.pct),
+            });
+            const modelPath = await downloadGguf({
+              repo: DEFAULT_MODEL.repo,
+              filename: DEFAULT_MODEL.filename,
+              destDir: sidecarManager.getModelsDir(),
+              signal,
+              onProgress: (progress) => emitProgress("model", progress.pct),
+            });
+            settingsManager.setLocalLlmSettings({ enabled: true, binaryPath, modelPath });
+            invalidateModelRuntimeCache();
+            emitProgress("complete", 100);
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            emitProgress("error", 0, message);
+          } finally {
+            activeDownloadAbort = null;
+          }
+        })();
+
+        return { ok: true };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.MODEL_DOWNLOAD_CANCEL,
+      logTag: "MODEL_DOWNLOAD_CANCEL",
+      failMessage: "Failed to cancel model download",
+      handler: async () => {
+        activeDownloadAbort?.abort();
+        activeDownloadAbort = null;
+        return { ok: true };
+      },
     },
     {
       channel: IPC_CHANNELS.SETTINGS_LIST_OLLAMA_MODELS,

@@ -114,6 +114,31 @@ export function createSystemApi({
         safeInvoke(IPC_CHANNELS.SETTINGS_LIST_OLLAMA_MODELS, baseUrl),
       testOllamaConnection: (baseUrl) =>
         safeInvoke(IPC_CHANNELS.SETTINGS_TEST_OLLAMA_CONNECTION, baseUrl),
+      getLocalLlmSettings: () =>
+        safeInvoke(IPC_CHANNELS.SETTINGS_GET_LOCAL_LLM),
+      setLocalLlmSettings: (input) =>
+        safeInvoke(IPC_CHANNELS.SETTINGS_SET_LOCAL_LLM, input),
+      getSidecarStatus: () =>
+        safeInvoke(IPC_CHANNELS.SIDECAR_STATUS),
+      stopSidecar: () =>
+        safeInvoke(IPC_CHANNELS.SIDECAR_STOP),
+      startModelDownload: (input) =>
+        safeInvoke(IPC_CHANNELS.MODEL_DOWNLOAD_START, input),
+      cancelModelDownload: () =>
+        safeInvoke(IPC_CHANNELS.MODEL_DOWNLOAD_CANCEL),
+      onModelDownloadProgress: (callback) => {
+        const listener = (_event: unknown, data: {
+          stage: "binary" | "model" | "complete" | "error";
+          pct: number;
+          error?: string;
+        }) => {
+          callback(data);
+        };
+        ipcRenderer.on(IPC_CHANNELS.MODEL_DOWNLOAD_PROGRESS, listener);
+        return () => {
+          ipcRenderer.removeListener(IPC_CHANNELS.MODEL_DOWNLOAD_PROGRESS, listener);
+        };
+      },
       reset: () => safeInvoke(IPC_CHANNELS.SETTINGS_RESET),
     },
     recovery: {

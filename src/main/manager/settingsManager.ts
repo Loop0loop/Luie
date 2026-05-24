@@ -309,6 +309,42 @@ export class SettingsManager {
     });
   }
 
+  getLocalLlmSettings(): {
+    enabled: boolean;
+    modelPath?: string;
+    binaryPath?: string;
+    gpuLayers?: number;
+    contextSize?: number;
+  } | undefined {
+    const llm = this.store.get("llm") ?? {};
+    return (llm as {
+      localLlm?: {
+        enabled: boolean;
+        modelPath?: string;
+        binaryPath?: string;
+        gpuLayers?: number;
+        contextSize?: number;
+      };
+    }).localLlm;
+  }
+
+  setLocalLlmSettings(settings: {
+    enabled: boolean;
+    modelPath?: string;
+    binaryPath?: string;
+    gpuLayers?: number;
+    contextSize?: number;
+  }): void {
+    const current = this.store.get("llm") ?? {};
+    const next = { ...current, localLlm: settings };
+    this.store.set("llm", next);
+    logger.info("Local LLM settings updated", {
+      enabled: settings.enabled,
+      hasModel: Boolean(settings.modelPath),
+      hasBinary: Boolean(settings.binaryPath),
+    });
+  }
+
   getSyncSettings(): SyncSettings {
     return normalizeSyncSettings(this.store.get("sync"));
   }

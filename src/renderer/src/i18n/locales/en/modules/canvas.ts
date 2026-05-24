@@ -12,6 +12,12 @@ export const enCanvas = {
     entities: "Entities",
     memory: "Memory",
     search: "Search",
+    bookmark: "Bookmark",
+    newFile: "Create new file",
+    newFolder: "Create new folder",
+    sort: "Sort order",
+    closeSidebar: "Collapse sidebar",
+    closeCanvas: "Close Canvas",
   },
   panel: {
     views: "Views",

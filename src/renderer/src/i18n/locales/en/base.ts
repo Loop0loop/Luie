@@ -84,6 +84,17 @@ export const enBase = {
         "Changes apply immediately. (Hide: fullscreen, Show: windowed)",
       applyFailed: "Failed to apply the menu bar mode. Please try again.",
     },
+    localLlm: {
+      title: "Local AI (Offline)",
+      desc: "Use AI without internet. Requires a one-time model download. (~1.9GB)",
+      modelReady: "Model ready",
+      noModel: "Qwen2.5 1.5B model not found. Download it below.",
+      download: "Download AI model (~1.9GB)",
+      downloading: "Downloading...",
+      downloadingBinary: "Downloading binary",
+      downloadingModel: "Downloading model",
+      enabled: "Use Local AI",
+    },
     appearance: {
       baseTheme: {
         title: "Base Theme",

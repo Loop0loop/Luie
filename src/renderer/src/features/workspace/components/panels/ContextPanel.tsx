@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useDeferredValue, useTransition, memo } from "react";
-import { ArrowLeft } from "lucide-react";
+import { useState, useEffect, useMemo, useDeferredValue, useTransition, useCallback, memo } from "react";
+import { ArrowLeft, PanelRightClose, MousePointerClick } from "lucide-react";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
 import { useTermStore } from "@renderer/features/research/stores/termStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
@@ -8,8 +8,12 @@ import SearchInput from "@shared/ui/SearchInput";
 import type { Character, Term } from "@shared/types";
 import { useTranslation } from "react-i18next";
 import { api } from "@shared/api";
+import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { useCanvasViewStore } from "@renderer/features/canvas/stores";
+import CanvasNodeInspector from "@renderer/features/canvas/components/binder/CanvasNodeInspector";
+import { cn } from "@shared/types/utils";
 
-type Tab = "synopsis" | "characters" | "terms";
+type Tab = "synopsis" | "characters" | "terms" | "elements";
 
 type ContextItem = Character | Term;
 
@@ -80,27 +84,76 @@ function buildCharacterSummary(character: Character): string | null {
   return parts.join(" · ");
 }
 
+/* ─────────────────────────────────────────── CanvasElementsTab Component */
+
+interface CanvasElementsTabProps {
+  t: (key: string) => string;
+}
+
+const CanvasElementsTab = memo(({ t }: CanvasElementsTabProps) => {
+  // Elements 탭 렌더링에 필요한 canvasViewStore 구독을 격리하여 비-캔버스 모드 시의 오버헤드를 0%로 통제
+  const selection = useCanvasViewStore((state) => state.selection);
+  
+  return (
+    <div className="h-full flex flex-col overflow-hidden">
+      {selection.kind === "node" ? (
+        <CanvasNodeInspector nodeId={selection.id} />
+      ) : (
+        <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center py-20 select-none">
+          <MousePointerClick className="h-7 w-7 text-muted opacity-30 mx-auto" aria-hidden />
+          <div className="space-y-1 mt-3">
+            <p className="text-xs font-semibold text-fg/60">
+              {t("canvas.inspector.emptyTitle")}
+            </p>
+            <p className="text-[11px] text-muted-foreground leading-normal">
+              {t("canvas.inspector.emptyDescription")}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+});
+
+CanvasElementsTab.displayName = "CanvasElementsTab";
+
+/* ─────────────────────────────────────────── ContextPanel Component */
+
 interface ContextPanelProps {
   activeTab?: Tab;
   onTabChange?: (tab: Tab) => void;
+  isCanvasMode?: boolean;
 }
 
 function ContextPanel({
   activeTab = "synopsis",
   onTabChange,
+  isCanvasMode = false,
 }: ContextPanelProps) {
   const { t } = useTranslation();
   const [internalTab, setInternalTab] = useState<Tab>("synopsis");
+  const [isPending, startTransition] = useTransition();
 
   const currentTab = onTabChange ? activeTab : internalTab;
-  const handleTabChange = (tab: Tab) => {
+  const handleTabChange = useCallback((tab: Tab) => {
     if (onTabChange) onTabChange(tab);
     else {
       startTransition(() => {
         setInternalTab(tab);
       });
     }
-  };
+  }, [onTabChange]);
+
+  const setRegionOpen = useUIStore((state) => state.setRegionOpen);
+  const selection = useCanvasViewStore((state) => state.selection);
+
+  useEffect(() => {
+    // currentTab !== "elements" 가드를 통해 불필요한 반복 강제 포커싱 루프를 완벽 차단
+    if (isCanvasMode && selection.kind === "node" && currentTab !== "elements") {
+      handleTabChange("elements");
+      setRegionOpen("rightPanel", true);
+    }
+  }, [selection.kind, isCanvasMode, setRegionOpen, handleTabChange, currentTab]);
 
   const currentProject = useProjectStore((state) => state.currentProject);
   const characters = useCharacterStore((state) => state.characters);
@@ -108,7 +161,6 @@ function ContextPanel({
 
   const [searchText, setSearchText] = useState("");
   const [selectedItem, setSelectedItem] = useState<ContextItem | null>(null);
-  const [isPending, startTransition] = useTransition();
   const deferredSearchText = useDeferredValue(searchText);
   const isStale = searchText !== deferredSearchText;
 
@@ -151,6 +203,9 @@ function ContextPanel({
     });
   };
 
+  // elements 탭에서는 검색이 불필요하므로 검색창 조건부 노출
+  const showSearch = !(isCanvasMode && currentTab === "elements");
+
   return (
     <div className="h-full flex flex-col relative overflow-hidden">
       {selectedItem && (
@@ -183,16 +238,40 @@ function ContextPanel({
         </div>
       )}
 
-      <div className="flex flex-col gap-3 px-4 pt-3">
-        <SearchInput
-          variant="context"
-          placeholder={t("context.placeholder.search")}
-          value={searchText}
-          onChange={setSearchText}
-        />
+      {/* 우측 바인더바 닫기 토글 헤더 */}
+      <div className="flex items-center justify-between px-4 pt-3 shrink-0">
+        <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+          {isCanvasMode ? (
+            <>
+              {t("canvas.workspace.title")} {t("canvas.binder.title")}
+            </>
+          ) : (
+            <>
+              {t("context.synopsisHeader")} {t("canvas.binder.title")}
+            </>
+          )}
+        </span>
+        <button
+          onClick={() => setRegionOpen("rightPanel", false)}
+          className="p-1.5 rounded hover:bg-muted/40 text-muted-foreground transition-colors shrink-0 flex items-center justify-center"
+          title={t("canvas.binder.collapse")}
+        >
+          <PanelRightClose className="h-4 w-4" />
+        </button>
       </div>
 
-      <div className="flex px-4 mt-3">
+      {showSearch && (
+        <div className="flex flex-col gap-3 px-4 pt-1.5">
+          <SearchInput
+            variant="context"
+            placeholder={t("context.placeholder.search")}
+            value={searchText}
+            onChange={setSearchText}
+          />
+        </div>
+      )}
+
+      <div className="flex px-4 mt-3 border-b border-border/30 overflow-x-auto gap-1">
         <TabButton
           label={t("context.tab.synopsis")}
           active={currentTab === "synopsis"}
@@ -200,7 +279,7 @@ function ContextPanel({
             handleTabChange("synopsis");
             setSelectedItem(null);
           }}
-          className="flex-1 py-3 text-[13px] font-medium cursor-pointer border-b-2 border-transparent transition-all text-center"
+          className="flex-1 py-2 text-[12px] font-medium cursor-pointer border-b-2 border-transparent transition-all text-center whitespace-nowrap"
           activeClassName="text-accent border-accent font-semibold"
           inactiveClassName="text-muted hover:text-fg"
         />
@@ -211,7 +290,7 @@ function ContextPanel({
             handleTabChange("characters");
             setSelectedItem(null);
           }}
-          className="flex-1 py-3 text-[13px] font-medium cursor-pointer border-b-2 border-transparent transition-all text-center"
+          className="flex-1 py-2 text-[12px] font-medium cursor-pointer border-b-2 border-transparent transition-all text-center whitespace-nowrap"
           activeClassName="text-accent border-accent font-semibold"
           inactiveClassName="text-muted hover:text-fg"
         />
@@ -222,15 +301,30 @@ function ContextPanel({
             handleTabChange("terms");
             setSelectedItem(null);
           }}
-          className="flex-1 py-3 text-[13px] font-medium cursor-pointer border-b-2 border-transparent transition-all text-center"
+          className="flex-1 py-2 text-[12px] font-medium cursor-pointer border-b-2 border-transparent transition-all text-center whitespace-nowrap"
           activeClassName="text-accent border-accent font-semibold"
           inactiveClassName="text-muted hover:text-fg"
         />
+        {isCanvasMode && (
+          <TabButton
+            label={t("canvas.binder.tab.elements")}
+            active={currentTab === "elements"}
+            onClick={() => {
+              handleTabChange("elements");
+              setSelectedItem(null);
+            }}
+            className="flex-1 py-2 text-[12px] font-medium cursor-pointer border-b-2 border-transparent transition-all text-center whitespace-nowrap"
+            activeClassName="text-accent border-accent font-semibold"
+            inactiveClassName="text-muted hover:text-fg"
+          />
+        )}
       </div>
 
       <div
-        className="flex-1 overflow-y-auto p-4 transition-opacity"
-        style={{ opacity: isStale || isPending ? 0.6 : 1 }}
+        className={cn(
+          "flex-1 overflow-y-auto p-4 transition-opacity duration-200",
+          (isStale || isPending) && "opacity-60"
+        )}
       >
         {currentTab === "synopsis" && (
           <div style={{ padding: "var(--context-panel-section-padding)" }}>
@@ -310,6 +404,9 @@ function ContextPanel({
               </div>
             ))}
           </>
+        )}
+        {currentTab === "elements" && isCanvasMode && (
+          <CanvasElementsTab t={t} />
         )}
       </div>
     </div>
