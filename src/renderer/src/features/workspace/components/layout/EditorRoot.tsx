@@ -61,10 +61,6 @@ const DocsSidebar = lazy(
 const ScrivenerSidebar = lazy(
   () => import("@renderer/features/manuscript/components/ScrivenerSidebar"),
 );
-const CanvasActivityShell = lazy(
-  () =>
-    import("@renderer/features/canvas/components/shell/CanvasActivityShell"),
-);
 const CanvasPane = lazy(
   () => import("@renderer/features/canvas/components/shell/CanvasPane"),
 );
@@ -480,11 +476,7 @@ export default function EditorRoot() {
                   onPrefetchSettings={prefetchSettings}
                   onSelectResearchItem={handleSelectResearchItem}
                   onSplitView={handleSplitView}
-                  canvasContent={
-                    mainViewType === "canvas" ? (
-                      <CanvasActivityShell />
-                    ) : undefined
-                  }
+                  canvasContent={undefined}
                 />
               </Suspense>
             }
