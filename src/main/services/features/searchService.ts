@@ -32,15 +32,33 @@ interface SearchResult {
 
 export class SearchService {
   private static readonly RRF_K = 60;
-  private runtimeCache = new Map<string, { runtime: Awaited<ReturnType<typeof resolveModelRuntimeClient>>; expiresAt: number }>();
-  private static readonly RUNTIME_CACHE_TTL_MS = 30_000;
   private static readonly VECTOR_SEARCH_UTILITY_ONLY =
     process.env.LUIE_VECTOR_SEARCH_UTILITY_ONLY !== "0";
 
+  private static readonly KOREAN_SUFFIXES = [
+    "은", "는", "이", "가", "을", "를", "에", "에서", "에게", "한테", "께",
+    "와", "과", "으로", "로", "도", "만", "까지", "부터", "처럼", "보다", "의",
+    "랑", "이라", "라", "야", "요", "다",
+  ] as const;
+
+  private normalizeSearchTokens(query: string): string[] {
+    const seeds = query.trim().split(/\s+/).filter(Boolean);
+    const expanded = new Set<string>();
+    for (const token of seeds) {
+      expanded.add(token);
+      for (const suffix of SearchService.KOREAN_SUFFIXES) {
+        if (token.endsWith(suffix) && token.length - suffix.length >= 2) {
+          expanded.add(token.slice(0, token.length - suffix.length));
+        }
+      }
+    }
+    return [...expanded].filter((token) => token.length > 0);
+  }
+
   private buildFtsQuery(query: string): string {
-    const tokens = query.trim().split(/\s+/).filter(Boolean);
+    const tokens = this.normalizeSearchTokens(query);
     if (tokens.length === 0) return "";
-    return tokens.map((t) => `"${t.replaceAll('"', '""')}"`).join(" AND ");
+    return tokens.map((t) => `"${t.replaceAll('"', '""')}"`).join(" OR ");
   }
 
   async search(input: SearchQuery): Promise<SearchResult[]> {
@@ -207,9 +225,9 @@ export class SearchService {
             : true
         );
       if (shouldRunVectorSearch) {
-        const runtime = await this.resolveRuntimeCached(input.projectId);
-        const queryVectors = await runtime.embed([normalizedQuery]);
-        const queryVector = queryVectors?.[0] ?? null;
+        const runtime = await resolveModelRuntimeClient(input.projectId);
+        const vecs = await runtime.embed([normalizedQuery]);
+        const queryVector = vecs?.[0] ?? null;
         if (queryVector && queryVector.length > 0) {
           denseRanks = await this.searchByVector(input.projectId, queryVector, Math.max(limit, 50));
         }
@@ -257,19 +275,6 @@ export class SearchService {
         error,
       );
     }
-  }
-
-  private async resolveRuntimeCached(projectId: string): Promise<Awaited<ReturnType<typeof resolveModelRuntimeClient>>> {
-    const cached = this.runtimeCache.get(projectId);
-    if (cached && cached.expiresAt > Date.now()) {
-      return cached.runtime;
-    }
-    const runtime = await resolveModelRuntimeClient(projectId);
-    this.runtimeCache.set(projectId, {
-      runtime,
-      expiresAt: Date.now() + SearchService.RUNTIME_CACHE_TTL_MS,
-    });
-    return runtime;
   }
 
   private mergeWithRRF(

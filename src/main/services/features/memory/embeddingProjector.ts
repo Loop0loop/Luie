@@ -5,7 +5,7 @@ import { memoryBuildJob, memoryChunk, memoryEmbedding } from "../../../database/
 import { createLogger } from "../../../../shared/logger/index.js";
 import { utilityProcessBridge } from "../utility/utilityProcessBridge.js";
 import { MEMORY_JOB_TYPES, MEMORY_TARGET_TYPES } from "./memoryJobConstants.js";
-import { resolveModelRuntimeClient } from "../../llm/modelRuntimeFactory.js";
+import { resolveRuntimeModelConfig } from "../../llm/modelRuntimeFactory.js";
 import {
   DERIVED_JOB_MAX_ATTEMPTS,
   DERIVED_JOB_RETRY_BASE_BACKOFF_MS,
@@ -37,8 +37,11 @@ function validateEmbeddingVector(vector: Float32Array): void {
   }
 }
 
-function buildEmbeddingModelSignature(provider: string): string {
-  return provider;
+function buildEmbeddingModelSignature(input: {
+  providerHint: "gemini" | "openai" | "externalapi" | "deterministic";
+  embeddingModel: string | null;
+}): string {
+  return `${input.providerHint}:${input.embeddingModel ?? "shared-main-model"}`;
 }
 
 export class EmbeddingProjector {
@@ -82,16 +85,28 @@ export class EmbeddingProjector {
     const jobs = candidates.filter((job) => canRetry(job)).slice(0, limit);
     if (jobs.length === 0) return { queued: 0, processed: 0 };
 
-    const runtimeClient = await resolveModelRuntimeClient(input.projectId);
-    const expectedModelSignature = buildEmbeddingModelSignature(runtimeClient.providerName);
+    const runtimeConfig = await resolveRuntimeModelConfig(input.projectId);
+    const expectedModelSignature = buildEmbeddingModelSignature({
+      providerHint: runtimeConfig.providerHint,
+      embeddingModel: runtimeConfig.embeddingModel,
+    });
     let processed = 0;
 
     for (const job of jobs) {
       const now = new Date().toISOString();
-      await client
+      const claimed = await client
         .update(memoryBuildJob)
         .set({ status: "running", updatedAt: now })
-        .where(eq(memoryBuildJob.id, job.id));
+        .where(
+          and(
+            eq(memoryBuildJob.id, job.id),
+            inArray(memoryBuildJob.status, ["pending", "failed"]),
+          ),
+        )
+        .returning({ id: memoryBuildJob.id });
+      if (claimed.length === 0) {
+        continue;
+      }
 
       try {
         const chunkRows = await client
@@ -150,12 +165,12 @@ export class EmbeddingProjector {
               jobId: job.id,
               targetId: job.targetId,
               changedChunkCount: changedChunks.length,
-              provider: runtimeClient.providerName,
+              provider: runtimeConfig.providerHint,
             });
             await client
               .update(memoryBuildJob)
               .set({
-                status: "completed",
+                status: "skipped",
                 attempts: job.attempts + 1,
                 error: null,
                 updatedAt: now,
@@ -171,12 +186,12 @@ export class EmbeddingProjector {
               jobId: job.id,
               targetId: job.targetId,
               changedChunkCount: changedChunks.length,
-              provider: runtimeClient.providerName,
+              provider: runtimeConfig.providerHint,
             });
             await client
               .update(memoryBuildJob)
               .set({
-                status: "completed",
+                status: "skipped",
                 attempts: job.attempts + 1,
                 error: null,
                 updatedAt: now,
@@ -260,6 +275,7 @@ export class EmbeddingProjector {
     runningCount: number;
     failedCount: number;
     completedCount: number;
+    skippedCount: number;
   }> {
     const rows = await db.getClient()
       .select({
@@ -281,6 +297,7 @@ export class EmbeddingProjector {
       runningCount: grouped.get("running") ?? 0,
       failedCount: grouped.get("failed") ?? 0,
       completedCount: grouped.get("completed") ?? 0,
+      skippedCount: grouped.get("skipped") ?? 0,
     };
   }
 }

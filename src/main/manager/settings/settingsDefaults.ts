@@ -171,6 +171,7 @@ export const getDefaultSettings = (): AppSettings => ({
       baseUrl: "http://localhost:11434",
       chatModel: "",
       embeddingModel: "",
+      apiKey: "",
     },
     ragTemperature: 0.2,
     ragMaxTokens: 1200,

@@ -93,20 +93,22 @@ export class ChapterSummaryProjector {
     );
     const runtime = await resolveModelRuntimeClient(input.projectId);
     const runtimeAvailable = await runtime.isAvailable();
-    // For llamacpp: skip if model not yet in RAM — cold load from background
-    // would silently consume gigabytes of RAM.
-    // For llamaserver/deterministic: always process (use fallback if unavailable).
-    if (runtime.providerName === "llamacpp" && !runtime.isModelLoaded()) {
-      return { queued: jobs.length, processed: 0 };
-    }
-
     let processed = 0;
     for (const job of jobs) {
       const now = new Date().toISOString();
-      await client
+      const claimed = await client
         .update(memoryBuildJob)
         .set({ status: "running", updatedAt: now })
-        .where(eq(memoryBuildJob.id, job.id));
+        .where(
+          and(
+            eq(memoryBuildJob.id, job.id),
+            inArray(memoryBuildJob.status, ["pending", "failed"]),
+          ),
+        )
+        .returning({ id: memoryBuildJob.id });
+      if (claimed.length === 0) {
+        continue;
+      }
 
       const source = sourceMap.get(job.targetId);
       if (!source) {

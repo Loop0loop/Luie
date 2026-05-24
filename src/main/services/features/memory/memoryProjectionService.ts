@@ -162,6 +162,23 @@ class MemoryProjectionService {
   }): Promise<void> {
     const client = db.getClient();
     const now = new Date().toISOString();
+    const existingJobs = await client
+      .select({ id: memoryBuildJob.id })
+      .from(memoryBuildJob)
+      .where(
+        and(
+          eq(memoryBuildJob.projectId, input.projectId),
+          eq(memoryBuildJob.targetType, MEMORY_TARGET_TYPES.CHAPTER),
+          eq(memoryBuildJob.targetId, input.chapterId),
+          eq(memoryBuildJob.jobType, MEMORY_JOB_TYPES.REBUILD_CHUNKS),
+          inArray(memoryBuildJob.status, ["pending", "running"]),
+        ),
+      )
+      .limit(1);
+    if (existingJobs.length > 0) {
+      return;
+    }
+
     await client.insert(memoryBuildJob).values({
       id: crypto.randomUUID(),
       projectId: input.projectId,
@@ -189,8 +206,10 @@ class MemoryProjectionService {
       eq(memoryBuildJob.projectId, input.projectId),
       eq(memoryBuildJob.jobType, MEMORY_JOB_TYPES.REBUILD_CHUNKS),
       inArray(memoryBuildJob.status, ["pending", "failed"]),
-      eq(memoryBuildJob.targetType, input.sourceType ?? MEMORY_TARGET_TYPES.CHAPTER),
     ];
+    if (input.sourceType) {
+      jobFilters.push(eq(memoryBuildJob.targetType, input.sourceType));
+    }
     if (input.sourceId) {
       jobFilters.push(eq(memoryBuildJob.targetId, input.sourceId));
     }
@@ -385,13 +404,22 @@ class MemoryProjectionService {
       // Keep each job atomic, but yield between jobs to avoid long sync stretches.
       await yieldToEventLoop();
       const now = new Date().toISOString();
-      await client
+      const claimed = await client
         .update(memoryBuildJob)
         .set({
           status: "running",
           updatedAt: now,
         })
-        .where(eq(memoryBuildJob.id, job.id));
+        .where(
+          and(
+            eq(memoryBuildJob.id, job.id),
+            inArray(memoryBuildJob.status, ["pending", "failed"]),
+          ),
+        )
+        .returning({ id: memoryBuildJob.id });
+      if (claimed.length === 0) {
+        return;
+      }
       const source = sourceMap.get(`${job.targetType}:${job.targetId}`);
       if (!source) {
         const attempts = job.attempts + 1;

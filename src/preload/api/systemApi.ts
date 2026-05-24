@@ -108,6 +108,8 @@ export function createSystemApi({
         ),
       setOllamaConfig: (input) =>
         safeInvoke(IPC_CHANNELS.SETTINGS_SET_OLLAMA_CONFIG, input),
+      getLlmRuntime: () =>
+        safeInvoke(IPC_CHANNELS.SETTINGS_GET_LLM_RUNTIME),
       listOllamaModels: (baseUrl) =>
         safeInvoke(IPC_CHANNELS.SETTINGS_LIST_OLLAMA_MODELS, baseUrl),
       testOllamaConnection: (baseUrl) =>

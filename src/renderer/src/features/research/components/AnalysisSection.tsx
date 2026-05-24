@@ -5,7 +5,7 @@ import { useShallow } from "zustand/react/shallow";
 import { Send, Square, Bot, User, AlertCircle, BookOpen } from "lucide-react";
 import { useToast } from "@shared/ui/ToastContext";
 import { api } from "@shared/api";
-import type { RagQaErrorPayload, RagQaStreamPayload } from "@shared/types";
+import type { LlmRuntimeInfo, RagQaErrorPayload, RagQaStreamPayload } from "@shared/types";
 import { ErrorCode } from "@shared/constants/errorCode";
 import { requestChapterNavigation } from "@renderer/features/workspace/services/chapterNavigation";
 import { Button } from "@renderer/components/ui/button";
@@ -30,10 +30,20 @@ export default function AnalysisSection() {
   const [input, setInput] = useState("");
   const [ragRunId, setRagRunId] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [runtimeInfo, setRuntimeInfo] = useState<LlmRuntimeInfo | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { showToast } = useToast();
+
+  useEffect(() => {
+    void (async () => {
+      const res = await api.settings.getLlmRuntime();
+      if (res.success && res.data) {
+        setRuntimeInfo(res.data);
+      }
+    })();
+  }, []);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -61,11 +71,11 @@ export default function AnalysisSection() {
             prev.map((m) =>
               m.id === ragRunId
                 ? {
-                    ...m,
-                    content: payload.result?.answer ?? m.content,
-                    evidence: payload.result?.evidence ?? [],
-                    isStreaming: false,
-                  }
+                  ...m,
+                  content: payload.result?.answer ?? m.content,
+                  evidence: payload.result?.evidence ?? [],
+                  isStreaming: false,
+                }
                 : m,
             ),
           );
@@ -82,10 +92,10 @@ export default function AnalysisSection() {
         prev.map((m) =>
           m.id === ragRunId
             ? {
-                ...m,
-                isStreaming: false,
-                error: isAborted ? "요청이 중단되었습니다." : (payload.message ?? "Error"),
-              }
+              ...m,
+              isStreaming: false,
+              error: isAborted ? "요청이 중단되었습니다." : (payload.message ?? "Error"),
+            }
             : m,
         ),
       );
@@ -195,11 +205,10 @@ export default function AnalysisSection() {
 
             <div className={`max-w-[85%] ${msg.role === "user" ? "order-first" : ""}`}>
               <div
-                className={`text-sm rounded-xl px-4 py-2.5 whitespace-pre-wrap leading-relaxed ${
-                  msg.role === "user"
+                className={`text-sm rounded-xl px-4 py-2.5 whitespace-pre-wrap leading-relaxed ${msg.role === "user"
                     ? "bg-accent/10 text-fg ml-auto border border-accent/20"
                     : "bg-surface text-fg border border-border"
-                }`}
+                  }`}
               >
                 {msg.error ? (
                   <span className="flex items-center gap-1.5 text-red-500 font-medium">
@@ -246,6 +255,12 @@ export default function AnalysisSection() {
 
       {/* Input area */}
       <div className="shrink-0 border-t border-border p-3 bg-panel">
+        {runtimeInfo && (
+          <div className="text-[11px] text-muted mb-2 px-1">
+            LLM: {runtimeInfo.provider} / {runtimeInfo.model}
+            {runtimeInfo.alternativeModel ? ` (alt: ${runtimeInfo.alternativeModel})` : ""}
+          </div>
+        )}
         {currentChapter && (
           <div className="text-xs text-muted mb-2 flex items-center gap-1.5 font-medium px-1">
             <BookOpen className="w-3.5 h-3.5" />

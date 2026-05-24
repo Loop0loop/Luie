@@ -14,7 +14,10 @@ import { z } from "zod";
 import type { SettingsManager } from "../../manager/settingsManager.js";
 import type { LoggerLike } from "../core/types.js";
 import { applyApplicationMenu } from "../../lifecycle/menu.js";
-import { invalidateModelRuntimeCache } from "../../services/llm/modelRuntimeFactory.js";
+import {
+  invalidateModelRuntimeCache,
+  resolveRuntimeModelInfo,
+} from "../../services/llm/modelRuntimeFactory.js";
 
 const loadSettingsManager = (() => {
   let cached: Promise<{ settingsManager: SettingsManager }> | null = null;
@@ -183,18 +186,25 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       logTag: "SETTINGS_SET_OLLAMA_CONFIG",
       failMessage: "Failed to set Ollama config",
       argsSchema: z.tuple([settingsOllamaConfigSchema]),
-      handler: async (input: { baseUrl: string; chatModel: string; embeddingModel?: string }) => {
+      handler: async (input: { baseUrl: string; chatModel: string; embeddingModel?: string; apiKey?: string }) => {
         const settingsManager = await loadSettingsManager();
         settingsManager.setLlmSettings({
           ollama: {
             baseUrl: input.baseUrl,
             chatModel: input.chatModel,
             ...(input.embeddingModel ? { embeddingModel: input.embeddingModel } : {}),
+            ...(input.apiKey ? { apiKey: input.apiKey } : {}),
           },
         });
         invalidateModelRuntimeCache();
         return { ok: true };
       },
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_GET_LLM_RUNTIME,
+      logTag: "SETTINGS_GET_LLM_RUNTIME",
+      failMessage: "Failed to resolve LLM runtime",
+      handler: async () => await resolveRuntimeModelInfo(),
     },
     {
       channel: IPC_CHANNELS.SETTINGS_LIST_OLLAMA_MODELS,

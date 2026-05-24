@@ -2,6 +2,7 @@ import type { IPCResponse } from "@shared/ipc/index.js";
 import type {
   AppSettings,
   OllamaConnectionResult,
+  LlmRuntimeInfo,
   Chapter,
   Scene,
   ChapterSaveResult,
@@ -474,7 +475,9 @@ export type RendererApi = {
       baseUrl: string;
       chatModel: string;
       embeddingModel?: string;
+      apiKey?: string;
     }) => Promise<IPCResponse<{ ok: boolean }>>;
+    getLlmRuntime: () => Promise<IPCResponse<LlmRuntimeInfo>>;
     listOllamaModels: (baseUrl: string) => Promise<IPCResponse<string[]>>;
     testOllamaConnection: (baseUrl: string) => Promise<IPCResponse<OllamaConnectionResult>>;
     reset: () => Promise<IPCResponse<AppSettings>>;

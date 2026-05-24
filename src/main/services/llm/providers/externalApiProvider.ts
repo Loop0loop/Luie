@@ -42,33 +42,14 @@ export class ExternalApiProvider implements ModelRuntimeClient {
 
   async generate(prompt: string, options?: GenerateOptions): Promise<string> {
     const chunks: string[] = [];
-    for await (const delta of this.generateStream(prompt, options)) {
+    for await (const delta of this.generateChatStream({ userPrompt: prompt }, options)) {
       chunks.push(delta);
     }
     return chunks.join("");
   }
 
   async *generateStream(prompt: string, options?: GenerateOptions): AsyncIterable<string> {
-    const response = await fetch(this.buildUrl("/completions"), {
-      method: "POST",
-      headers: this.headers,
-      signal: options?.signal,
-      body: JSON.stringify({
-        model: this.config.chatModel,
-        prompt,
-        stream: true,
-        temperature: options?.temperature ?? 0.2,
-        max_tokens: options?.maxTokens ?? 256,
-      }),
-    });
-    if (!response.ok || !response.body) {
-      const errorText = await response.text().catch(() => "");
-      response.body?.cancel().catch(() => {});
-      throw new Error(
-        `External API completion failed: HTTP ${response.status} ${errorText.slice(0, 200)}`,
-      );
-    }
-    yield* this.parseSseStream(response, "completion");
+    yield* this.generateChatStream({ userPrompt: prompt }, options);
   }
 
   async *generateChatStream(
@@ -83,7 +64,7 @@ export class ExternalApiProvider implements ModelRuntimeClient {
         model: this.config.chatModel,
         stream: true,
         temperature: options?.temperature ?? 0.2,
-        max_tokens: options?.maxTokens ?? 256,
+        max_tokens: options?.maxTokens ?? 1024,
         messages: [
           ...(input.systemPrompt
             ? [{ role: "system", content: input.systemPrompt }]
@@ -99,7 +80,7 @@ export class ExternalApiProvider implements ModelRuntimeClient {
         `External API chat completion failed: HTTP ${response.status} ${errorText.slice(0, 200)}`,
       );
     }
-    yield* this.parseSseStream(response, "chat");
+    yield* this.parseSseStream(response);
   }
 
   async generateChat(
@@ -113,10 +94,7 @@ export class ExternalApiProvider implements ModelRuntimeClient {
     return chunks.join("");
   }
 
-  private async *parseSseStream(
-    response: Response,
-    mode: "chat" | "completion",
-  ): AsyncIterable<string> {
+  private async *parseSseStream(response: Response): AsyncIterable<string> {
     const reader = response.body?.getReader();
     if (!reader) return;
     const decoder = new TextDecoder();
@@ -140,10 +118,7 @@ export class ExternalApiProvider implements ModelRuntimeClient {
                 delta?: { content?: string };
               }>;
             };
-            const chunk =
-              mode === "chat"
-                ? (parsed.choices?.[0]?.delta?.content ?? "")
-                : (parsed.choices?.[0]?.text ?? parsed.choices?.[0]?.delta?.content ?? "");
+            const chunk = parsed.choices?.[0]?.delta?.content ?? parsed.choices?.[0]?.text ?? "";
             if (chunk.length > 0) {
               yield chunk;
             }
