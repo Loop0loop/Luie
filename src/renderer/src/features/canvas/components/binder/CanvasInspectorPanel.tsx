@@ -22,7 +22,11 @@ export default function CanvasInspectorPanel() {
   const { t } = useTranslation();
   const selection = useCanvasViewStore((state) => state.selection);
   const [activeTab, setActiveTab] = useState<CanvasBinderTab>("elements");
-
+  
+  
+  // 캔버스 자체 Slide-out BinderBar 도입으로 전역 우측 패널 제어 로직을 격리합니다.
+  // 이 컴포넌트는 전역 에디터 사이드바에서만 렌더링됩니다.
+  
   return (
     <div className="flex h-full flex-col overflow-hidden bg-panel">
       <CanvasBinderTabBar activeTab={activeTab} onChange={setActiveTab} />

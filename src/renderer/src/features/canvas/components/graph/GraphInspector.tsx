@@ -4,9 +4,11 @@ import { useGraphStore } from "../../stores/graph/graphStore";
 import { MOCK_GRAPH_NODES } from "../../constants/graphMockData";
 import { cn } from "@shared/types/utils";
 import type { GraphRelationship } from "../../types/graph";
+import { useToast } from "@shared/ui/ToastContext";
 
 export default function GraphInspector() {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const { focusId, setFocusId } = useGraphStore();
 
   // focusId를 기반으로 노드 데이터 조회
@@ -31,8 +33,10 @@ export default function GraphInspector() {
   };
 
   const handleAction = (actionName: string) => {
-    // 임시 목업 액션 피드백 제공
-    alert(`[${actionName}] 기능은 기획 구현 데모 단계입니다. 추후 서비스 레이어와 바인딩될 예정입니다.`);
+    showToast(
+      t("canvas.status.demoNotImplemented", { actionName }),
+      "info"
+    );
   };
 
   return (

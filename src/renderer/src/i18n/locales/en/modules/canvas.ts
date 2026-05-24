@@ -201,5 +201,6 @@ export const enCanvas = {
     goToSource: "Go to Manuscript",
     emptyTitle: "Select a Node",
     emptyDescription: "Click on any node in the graph to view its detailed relationship analysis here.",
+    demoNotImplemented: "[{{actionName}}] feature is in the UI/UX demo phase. It will be bound to the service layer in a future update.",
   },
 } as const;

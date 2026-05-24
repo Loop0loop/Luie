@@ -14,8 +14,6 @@ import {
   CANVAS_RF_NODE_TYPE_ENTITY,
 } from "@shared/constants/canvasSizing";
 import { useStaticProjection } from "../../hooks/useStaticProjection";
-import { CanvasFloatingToolbar } from "./CanvasFloatingToolbar";
-import { BottomCreateToolbar } from "./BottomCreateToolbar";
 import { RelationEdge } from "./edges/RelationEdge";
 import { EntityNode } from "./nodes/EntityNode";
 import BaseCanvasViewport from "./BaseCanvasViewport";
@@ -43,8 +41,8 @@ export default function StaticCanvasViewport() {
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
       nodesDraggable={true}
-      extraChildren={<CanvasFloatingToolbar />}
-      bottomToolbar={<BottomCreateToolbar />}
+      extraChildren={null}
+      bottomToolbar={null}
       wrapperClassName="relative h-full w-full"
       dataTestId="canvas-static-viewport"
     />

@@ -187,5 +187,6 @@ export const jaCanvas = {
     goToSource: "原稿コンテキストへ移動",
     emptyTitle: "ノードを選択してください",
     emptyDescription: "グラフでノードをクリックすると、この領域に詳細な分析情報が表示されます。",
+    demoNotImplemented: "[{{actionName}}]機能はUI/UXデモ段階です。今後のアップデートでサービスレイヤーにバインドされる予定です。",
   },
 } as const;

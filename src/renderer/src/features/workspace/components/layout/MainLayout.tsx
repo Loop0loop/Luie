@@ -5,7 +5,6 @@ import {
   PanelRightOpen,
   PanelLeftClose,
   PanelLeftOpen,
-  ChevronLeft,
 } from "lucide-react";
 import {
   Panel,
@@ -53,7 +52,6 @@ export default function MainLayout({
   additionalPanelIds = [],
   onOpenExport,
   isCanvasMode = false,
-  onCloseCanvas,
 }: MainLayoutProps) {
   const { t } = useTranslation();
   const {
@@ -162,163 +160,161 @@ export default function MainLayout({
           elementRef={mainLayoutGroupRef}
           onLayoutChanged={onLayoutChanged}
         >
-        {/* Sidebar */}
-        {shouldRenderSidebar && !isCanvasMode && (
-          <Panel
-            id="sidebar-panel"
-            panelRef={sidebarPanelRef}
-            collapsible
-            collapsedSize={0}
-            onResize={(panelSize) => {
-              const isCollapsed =
-                panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
-              if (isCollapsed) {
-                setRegionOpen("leftSidebar", false);
-              }
-            }}
-            data-panel-animated="true"
-            defaultSize={sidebarDefaultSize}
-            minSize={mainSidebarSize.minSize}
-            maxSize={mainSidebarSize.maxSize}
-            className={`bg-sidebar border-r border-border overflow-hidden flex flex-col z-10 ${
-              enableAnimations
-                ? isSidebarClosing
-                  ? "animate-out slide-out-to-left fade-out duration-200"
-                  : "animate-in slide-in-from-left fade-in duration-200"
-                : ""
-            }`}
-          >
-            {sidebar}
-          </Panel>
-        )}
-
-        {shouldRenderSidebar && !isCanvasMode && (
-          <PanelResizeHandle
-            data-separator-feature="default.sidebar"
-            className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative"
-          />
-        )}
-
-        {/* Main Content */}
-        <Panel
-          id="main-content-panel"
-          className="flex-1 min-w-0 bg-app relative flex flex-col z-0"
-        >
-          <EditorDropZones />
-          {!isCanvasMode && (
-            <div className="flex items-center px-4 py-2 h-12 shrink-0">
-              <button
-                className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-colors duration-150 hover:bg-active hover:text-fg"
-                onClick={toggleLeftSidebar}
-                title={
-                  isSidebarOpen
-                    ? t("mainLayout.tooltip.sidebarCollapse")
-                    : t("mainLayout.tooltip.sidebarExpand")
+          {/* Sidebar */}
+          {shouldRenderSidebar && !isCanvasMode && (
+            <Panel
+              id="sidebar-panel"
+              panelRef={sidebarPanelRef}
+              collapsible
+              collapsedSize={0}
+              onResize={(panelSize) => {
+                const isCollapsed =
+                  panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
+                if (isCollapsed) {
+                  setRegionOpen("leftSidebar", false);
                 }
-              >
-                {isSidebarOpen ? (
-                  <PanelLeftClose className="icon-xl" />
-                ) : (
-                  <PanelLeftOpen className="icon-xl" />
-                )}
-              </button>
-
-              <div className="flex-1" />
-
-              <button
-                className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-colors duration-150 hover:bg-active hover:text-fg"
-                onClick={() => setRegionOpen("rightPanel", !isContextOpen)}
-                title={
-                  isContextOpen
-                    ? t("mainLayout.tooltip.contextCollapse")
-                    : t("mainLayout.tooltip.contextExpand")
-                }
-              >
-                {isContextOpen ? (
-                  <PanelRightClose className="icon-xl" />
-                ) : (
-                  <PanelRightOpen className="icon-xl" />
-                )}
-              </button>
-            </div>
+              }}
+              data-panel-animated="true"
+              defaultSize={sidebarDefaultSize}
+              minSize={mainSidebarSize.minSize}
+              maxSize={mainSidebarSize.maxSize}
+              className={`bg-sidebar border-r border-border overflow-hidden flex flex-col z-10 ${enableAnimations
+                  ? isSidebarClosing
+                    ? "animate-out slide-out-to-left fade-out duration-200"
+                    : "animate-in slide-in-from-left fade-in duration-200"
+                  : ""
+                }`}
+            >
+              {sidebar}
+            </Panel>
           )}
 
-          <div className="flex-1 overflow-y-auto flex flex-col">
-            <PanelGroup
-              id="main-layout-content-group"
-              orientation="horizontal"
-              className="flex w-full h-full flex-1 overflow-hidden relative"
-              onLayoutChanged={onContentLayoutChanged}
-            >
-              <Panel
-                id="main-primary-content"
-                defaultSize={toPercentSize(50)}
-                minSize={toPercentSize(20)}
-                className="min-w-0 bg-canvas relative flex flex-col"
-              >
-                {children}
-              </Panel>
-              {additionalPanels}
-              {additionalPanelIds.length === 0 && (
-                <Panel
-                  id="main-content-placeholder"
-                  defaultSize={0}
-                  minSize={0}
-                  maxSize={0}
-                  className="pointer-events-none overflow-hidden opacity-0"
-                />
-              )}
-            </PanelGroup>
-          </div>
-          {!isCanvasMode && <StatusFooter onOpenExport={onOpenExport} />}
-        </Panel>
+          {shouldRenderSidebar && !isCanvasMode && (
+            <PanelResizeHandle
+              data-separator-feature="default.sidebar"
+              className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative"
+            />
+          )}
 
-        {shouldRenderContext && (
-          <PanelResizeHandle
-            data-separator-feature="default.panel"
-            className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative"
-          />
-        )}
-
-        {/* Context Panel */}
-        {shouldRenderContext && (
+          {/* Main Content */}
           <Panel
-            id="context-panel"
-            panelRef={contextPanelRef}
-            collapsible
-            collapsedSize={0}
-            onResize={(panelSize) => {
-              const isCollapsed =
-                panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
-              if (isCollapsed) {
-                setRegionOpen("rightPanel", false);
-              }
-            }}
-            data-panel-animated="true"
-            defaultSize={contextDefaultSize}
-            minSize={mainContextSize.minSize}
-            maxSize={mainContextSize.maxSize}
-            className={`bg-panel border-l border-border overflow-hidden flex flex-col z-10 ${
-              enableAnimations
-                ? isContextClosing
-                  ? "animate-out slide-out-to-right fade-out duration-200"
-                  : "animate-in slide-in-from-right fade-in duration-200"
-                : ""
-            }`}
+            id="main-content-panel"
+            className="flex-1 min-w-0 bg-app relative flex flex-col z-0"
           >
-            {contextPanel}
-          </Panel>
-        )}
+            <EditorDropZones />
+            {!isCanvasMode && (
+              <div className="flex items-center px-4 py-2 h-12 shrink-0">
+                <button
+                  className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-colors duration-150 hover:bg-active hover:text-fg"
+                  onClick={toggleLeftSidebar}
+                  title={
+                    isSidebarOpen
+                      ? t("mainLayout.tooltip.sidebarCollapse")
+                      : t("mainLayout.tooltip.sidebarExpand")
+                  }
+                >
+                  {isSidebarOpen ? (
+                    <PanelLeftClose className="icon-xl" />
+                  ) : (
+                    <PanelLeftOpen className="icon-xl" />
+                  )}
+                </button>
 
-        {!shouldRenderSidebar && !shouldRenderContext && (
-          <Panel
-            id="main-layout-placeholder"
-            defaultSize={0}
-            minSize={0}
-            maxSize={0}
-            className="pointer-events-none overflow-hidden opacity-0"
-          />
-        )}
+                <div className="flex-1" />
+
+                <button
+                  className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-colors duration-150 hover:bg-active hover:text-fg"
+                  onClick={() => setRegionOpen("rightPanel", !isContextOpen)}
+                  title={
+                    isContextOpen
+                      ? t("mainLayout.tooltip.contextCollapse")
+                      : t("mainLayout.tooltip.contextExpand")
+                  }
+                >
+                  {isContextOpen ? (
+                    <PanelRightClose className="icon-xl" />
+                  ) : (
+                    <PanelRightOpen className="icon-xl" />
+                  )}
+                </button>
+              </div>
+            )}
+
+            <div className="flex-1 overflow-y-auto flex flex-col">
+              <PanelGroup
+                id="main-layout-content-group"
+                orientation="horizontal"
+                className="flex w-full h-full flex-1 overflow-hidden relative"
+                onLayoutChanged={onContentLayoutChanged}
+              >
+                <Panel
+                  id="main-primary-content"
+                  defaultSize={toPercentSize(50)}
+                  minSize={toPercentSize(20)}
+                  className="min-w-0 bg-canvas relative flex flex-col"
+                >
+                  {children}
+                </Panel>
+                {additionalPanels}
+                {additionalPanelIds.length === 0 && (
+                  <Panel
+                    id="main-content-placeholder"
+                    defaultSize={0}
+                    minSize={0}
+                    maxSize={0}
+                    className="pointer-events-none overflow-hidden opacity-0"
+                  />
+                )}
+              </PanelGroup>
+            </div>
+            {!isCanvasMode && <StatusFooter onOpenExport={onOpenExport} />}
+          </Panel>
+
+          {shouldRenderContext && (
+            <PanelResizeHandle
+              data-separator-feature="default.panel"
+              className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative"
+            />
+          )}
+
+          {/* Context Panel */}
+          {shouldRenderContext && (
+            <Panel
+              id="context-panel"
+              panelRef={contextPanelRef}
+              collapsible
+              collapsedSize={0}
+              onResize={(panelSize) => {
+                const isCollapsed =
+                  panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
+                if (isCollapsed) {
+                  setRegionOpen("rightPanel", false);
+                }
+              }}
+              data-panel-animated="true"
+              defaultSize={contextDefaultSize}
+              minSize={mainContextSize.minSize}
+              maxSize={mainContextSize.maxSize}
+              className={`bg-panel border-l border-border overflow-hidden flex flex-col z-10 ${enableAnimations
+                  ? isContextClosing
+                    ? "animate-out slide-out-to-right fade-out duration-200"
+                    : "animate-in slide-in-from-right fade-in duration-200"
+                  : ""
+                }`}
+            >
+              {contextPanel}
+            </Panel>
+          )}
+
+          {!shouldRenderSidebar && !shouldRenderContext && (
+            <Panel
+              id="main-layout-placeholder"
+              defaultSize={0}
+              minSize={0}
+              maxSize={0}
+              className="pointer-events-none overflow-hidden opacity-0"
+            />
+          )}
         </PanelGroup>
       </div>
     </div>

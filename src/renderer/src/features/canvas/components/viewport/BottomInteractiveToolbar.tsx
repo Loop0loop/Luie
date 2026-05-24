@@ -13,6 +13,8 @@ import { useCanvasViewStore } from "../../stores";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { cn } from "@shared/types/utils";
 import { createLogger } from "@shared/logger";
+import { Button } from "@renderer/components/ui/button";
+import { Separator } from "@renderer/components/ui/separator";
 
 const logger = createLogger("BottomInteractiveToolbar");
 
@@ -37,129 +39,139 @@ export function BottomInteractiveToolbar() {
 
   return (
     <div
-      className="pointer-events-auto absolute bottom-5 left-1/2 z-30 -translate-x-1/2"
+      className="pointer-events-auto absolute bottom-5 left-1/2 z-30 -translate-x-1/2 select-none"
       data-testid="bottom-interactive-toolbar"
     >
-      <div className="flex items-center gap-3 rounded-lg border border-border/80 bg-background/85 px-3 py-1.5 shadow-md backdrop-blur-md">
+      <div className="flex h-11 items-center gap-2 rounded-lg border border-border/80 bg-background/85 px-3 py-1.5 shadow-md backdrop-blur-md">
         
         {/* 에디터 복귀 버튼 */}
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={handleExit}
           title={t("canvas.toolbar.exit")}
-          className="flex h-8 items-center gap-1 rounded-md px-2 text-xs font-semibold text-muted-foreground transition-all hover:bg-surface-hover hover:text-foreground active:scale-95"
+          className="text-xs font-semibold text-muted-foreground hover:bg-muted/50 hover:text-foreground"
         >
           <ChevronLeft className="h-4 w-4" />
           <span>{t("canvas.toolbar.exit")}</span>
-        </button>
+        </Button>
 
         {/* 구분선 */}
-        <div className="h-4 w-px bg-border/80" aria-hidden />
+        <Separator orientation="vertical" className="h-4 w-px bg-border/80" />
 
         {/* 모드별 동적 액션 목록 */}
         <div className="flex items-center gap-1">
           {!isGraphMode ? (
             <>
               {/* Canvas Mode 3대 액션 */}
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => handleAction("new-block")}
                 title={t("canvas.toolbar.newBlock")}
-                className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground transition-all hover:bg-surface-hover hover:text-foreground active:scale-95"
+                className="text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground [&_svg]:text-accent"
               >
-                <Plus className="h-4 w-4 text-accent" />
+                <Plus className="h-4 w-4" />
                 <span>{t("canvas.toolbar.newBlock")}</span>
-              </button>
+              </Button>
 
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => handleAction("import-doc")}
                 title={t("canvas.toolbar.importDoc")}
-                className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground transition-all hover:bg-surface-hover hover:text-foreground active:scale-95"
+                className="text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground [&_svg]:text-accent"
               >
-                <FileText className="h-4 w-4 text-accent" />
+                <FileText className="h-4 w-4" />
                 <span>{t("canvas.toolbar.importDoc")}</span>
-              </button>
+              </Button>
 
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => handleAction("insert-image")}
                 title={t("canvas.toolbar.insertImage")}
-                className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground transition-all hover:bg-surface-hover hover:text-foreground active:scale-95"
+                className="text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground [&_svg]:text-accent"
               >
-                <Image className="h-4 w-4 text-accent" />
+                <Image className="h-4 w-4" />
                 <span>{t("canvas.toolbar.insertImage")}</span>
-              </button>
+              </Button>
             </>
           ) : (
             <>
               {/* Graph Mode 3대 액션 */}
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => handleAction("filter-layer")}
                 title={t("canvas.toolbar.filterLayer")}
-                className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground transition-all hover:bg-surface-hover hover:text-foreground active:scale-95"
+                className="text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground [&_svg]:text-accent"
               >
-                <Layers className="h-4 w-4 text-accent" />
+                <Layers className="h-4 w-4" />
                 <span>{t("canvas.toolbar.filterLayer")}</span>
-              </button>
+              </Button>
 
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => handleAction("ai-sync")}
                 title={t("canvas.toolbar.aiSync")}
-                className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground transition-all hover:bg-surface-hover hover:text-foreground active:scale-95"
+                className="text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground [&_svg]:text-accent"
               >
-                <RefreshCw className="h-3.5 w-3.5 text-accent" />
+                <RefreshCw className="h-3.5 w-3.5" />
                 <span>{t("canvas.toolbar.aiSync")}</span>
-              </button>
+              </Button>
 
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => handleAction("focus-center")}
                 title={t("canvas.toolbar.focusCenter")}
-                className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground transition-all hover:bg-surface-hover hover:text-foreground active:scale-95"
+                className="text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground [&_svg]:text-accent"
               >
-                <Focus className="h-4 w-4 text-accent" />
+                <Focus className="h-4 w-4" />
                 <span>{t("canvas.toolbar.focusCenter")}</span>
-              </button>
+              </Button>
             </>
           )}
         </div>
 
         {/* 구분선 */}
-        <div className="h-4 w-px bg-border/80" aria-hidden />
+        <Separator orientation="vertical" className="h-4 w-px bg-border/80" />
 
         {/* Figma 스타일 세그먼트 토글 */}
-        <div className="flex items-center gap-1 p-0.5 rounded-lg bg-surface-hover border border-border/40 shrink-0">
-          <button
-            type="button"
+        <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-muted/40 border border-border/40 shrink-0">
+          <Button
+            variant={!isGraphMode ? "secondary" : "ghost"}
+            size="xs"
             onClick={() => setActivePanel("canvas")}
             className={cn(
-              "px-3 py-1 rounded-md text-[11px] font-semibold transition-all duration-150",
+              "rounded-md text-[10px] font-semibold transition-all duration-150 h-7 px-2.5",
               !isGraphMode
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-background text-foreground shadow-sm hover:bg-background"
+                : "text-muted-foreground hover:bg-transparent hover:text-foreground"
             )}
           >
             {t("canvas.activity.canvas")}
-          </button>
-          <span className="text-muted/40 text-[9px] select-none" aria-hidden>❖</span>
-          <button
-            type="button"
+          </Button>
+          <span className="text-muted-foreground/30 text-[9px] select-none px-1" aria-hidden>❖</span>
+          <Button
+            variant={isGraphMode ? "secondary" : "ghost"}
+            size="xs"
             onClick={() => setActivePanel("graph")}
             className={cn(
-              "px-3 py-1 rounded-md text-[11px] font-semibold transition-all duration-150",
+              "rounded-md text-[10px] font-semibold transition-all duration-150 h-7 px-2.5",
               isGraphMode
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-background text-foreground shadow-sm hover:bg-background"
+                : "text-muted-foreground hover:bg-transparent hover:text-foreground"
             )}
           >
             {t("canvas.activity.graph")}
-          </button>
+          </Button>
         </div>
 
       </div>
     </div>
   );
 }
+

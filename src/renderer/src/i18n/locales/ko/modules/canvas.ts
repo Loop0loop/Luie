@@ -201,5 +201,6 @@ export const koCanvas = {
     goToSource: "원고 문맥으로 이동",
     emptyTitle: "노드를 선택하세요",
     emptyDescription: "그래프에서 노드를 클릭하면 이 영역에 상세 분석 정보가 표시됩니다.",
+    demoNotImplemented: "[{{actionName}}] 기능은 기획 구현 데모 단계입니다. 추후 서비스 레이어와 연동될 예정입니다.",
   },
 } as const;
