@@ -20,6 +20,7 @@ export const DEFAULT_MODEL = {
   repo: "Qwen/Qwen2.5-1.5B-Instruct-GGUF",
   filename: "qwen2.5-1.5b-instruct-q8_0.gguf",
   sizeBytes: 1_894_532_128,
+  sha256: "d7efb072e7724d25048a4fda0a3e10b04bdef5d06b1403a1c93bd9f1240a63c8",
   displayName: "Qwen2.5 1.5B (기본)",
 } as const;
 

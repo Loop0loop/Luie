@@ -7,6 +7,7 @@
 
 import { lazy, Suspense } from "react";
 import { useCanvasViewStore } from "../../stores";
+import { useCanvasDrawer } from "../../hooks/useCanvasDrawer";
 import { FeatureErrorBoundary } from "@renderer/shared/error-boundaries/FeatureErrorBoundary";
 import { BottomInteractiveToolbar } from "../viewport/BottomInteractiveToolbar";
 import CanvasStatusBar from "../viewport/CanvasStatusBar";
@@ -24,6 +25,9 @@ const loadingFallback = (
 );
 
 export default function CanvasPane() {
+  // 우측 Inspector & Binder 서랍 개폐 및 탭 포커스 사이드 이펙트 일원화 제어
+  useCanvasDrawer();
+
   const activePanel = useCanvasViewStore((state) => state.activePanel);
   const isGraphMode = activePanel === "graph";
 

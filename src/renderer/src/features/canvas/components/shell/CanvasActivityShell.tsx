@@ -31,10 +31,17 @@ import { Badge } from "@renderer/components/ui/badge";
 import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { useToast } from "@shared/ui/ToastContext";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
-import { useCanvasViewStore } from "@renderer/features/canvas/stores";
 import { cn } from "@shared/types/utils";
 import { mockExplorerData } from "../../__fixtures__/mockExplorerData";
 import type { FileNode } from "../../types/canvas.types";
+
+/* ─────────────────────────────────────────── TAB_I18N_KEYS */
+
+const TAB_I18N_KEYS = {
+  explorer: "canvas.activity.explorer",
+  search: "canvas.activity.search",
+  bookmark: "canvas.activity.bookmark",
+} as const;
 
 /* ─────────────────────────────────────────── TreeNode Component (Subcomponent) */
 
@@ -45,7 +52,6 @@ interface TreeNodeProps {
   selectedNodeId: string | null;
   toggleFolder: (id: string) => void;
   handleNodeClick: (node: FileNode) => void;
-  t: (key: string) => string;
 }
 
 const TreeNode = memo(({
@@ -55,8 +61,9 @@ const TreeNode = memo(({
   selectedNodeId,
   toggleFolder,
   handleNodeClick,
-  t,
 }: TreeNodeProps) => {
+  // prop 드릴링 제거: useTranslation() 직접 사용으로 타입 시스템과 성능 최적화
+  const { t } = useTranslation();
   const isFolder = node.type === "folder";
   const isExpanded = expandedFolders[node.id];
   const isSelected = selectedNodeId === node.id;
@@ -127,7 +134,6 @@ const TreeNode = memo(({
               selectedNodeId={selectedNodeId}
               toggleFolder={toggleFolder}
               handleNodeClick={handleNodeClick}
-              t={t}
             />
           ))}
         </div>
@@ -149,10 +155,8 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
   const { showToast } = useToast();
   const setRegionOpen = useUIStore((state) => state.setRegionOpen);
   
-  // 전역 canvasViewStore 선택 상태 바인딩을 통해 dead state를 실데이터 구조로 해결
-  const selection = useCanvasViewStore((state) => state.selection);
-  const selectNode = useCanvasViewStore((state) => state.selectNode);
-  const selectedNodeId = selection.kind === "node" ? selection.id : null;
+  // 크로스 도메인 상태 오염(버그) 제거: 파일 탐색기 선택 상태는 local selectedNodeId로 안전하게 관리
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({
     "folder-luie": true,
@@ -170,24 +174,23 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
     if (node.type === "folder") {
       toggleFolder(node.id);
     } else {
-      // 캔버스 모드의 전역 노드 선택 스토어와 실시간 동기화
-      selectNode(node.id);
+      setSelectedNodeId(node.id);
       showToast(
         t("canvas.graph.demoNotImplemented", { actionName: node.name }),
         "info"
       );
     }
-  }, [toggleFolder, selectNode, t, showToast]);
+  }, [toggleFolder, t, showToast]);
 
-  // 탭 제어 핸들러 분리
+  // TAB_I18N_KEYS 매핑 객체 활용 방식으로 as never 제거
   const handleTabChange = useCallback((tabKey: "explorer" | "search" | "bookmark") => {
     showToast(
       t("canvas.graph.demoNotImplemented", { 
-        actionName: t(`canvas.activity.${tabKey}` as never) 
+        actionName: t(TAB_I18N_KEYS[tabKey]) 
       }),
       "info"
     );
-  }, [t, showToast]);
+  }, [showToast, t]);
 
   // 툴바 액션 핸들러 분리
   const handleToolbarAction = useCallback((actionKey: "new-file" | "new-folder" | "sort") => {
@@ -331,7 +334,6 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
               selectedNodeId={selectedNodeId}
               toggleFolder={toggleFolder}
               handleNodeClick={handleNodeClick}
-              t={t}
             />
           ))}
         </div>

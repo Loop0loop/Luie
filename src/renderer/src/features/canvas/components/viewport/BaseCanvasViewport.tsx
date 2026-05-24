@@ -41,6 +41,7 @@ const DEFAULT_EDGE_OPTIONS = {
 } as const;
 
 const FIT_VIEW_OPTIONS = { padding: CANVAS_FIT_VIEW_PADDING } as const;
+const PRO_OPTIONS = { hideAttribution: true } as const;
 
 // ─── props ────────────────────────────────────────────────────────────────────
 
@@ -130,7 +131,7 @@ export default function BaseCanvasViewport({
         zoomOnScroll={false}
         zoomOnPinch
         zoomOnDoubleClick={false}
-        proOptions={{ hideAttribution: true }}
+        proOptions={PRO_OPTIONS}
         className="bg-canvas"
       >
         <Background

@@ -23,10 +23,6 @@ import WorldSection from "@renderer/features/research/components/WorldSection";
 import { CanvasPane } from "@renderer/features/canvas";
 import MemoMainView from "@renderer/features/research/components/memo/MemoMainView";
 import AnalysisSection from "@renderer/features/research/components/AnalysisSection";
-
-const ContextPanel = lazy(
-  () => import("@renderer/features/workspace/components/panels/ContextPanel")
-);
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { Menu, ChevronRight } from "lucide-react";
 import {
@@ -54,6 +50,12 @@ import {
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
 
+import type { Tab } from "@renderer/features/workspace/components/panels/ContextPanel";
+
+const ContextPanel = lazy(
+  () => import("@renderer/features/workspace/components/panels/ContextPanel")
+);
+
 interface ScrivenerLayoutProps {
   children?: ReactNode;
   sidebar?: ReactNode;
@@ -80,7 +82,7 @@ export default function ScrivenerLayout({
   additionalPanels,
 }: ScrivenerLayoutProps) {
   const { t } = useTranslation();
-  const [contextTab, setContextTab] = useState<"synopsis" | "characters" | "terms" | "elements">("synopsis");
+  const [contextTab, setContextTab] = useState<Tab>("synopsis");
   const {
     mainView,
     panels,
@@ -264,22 +266,20 @@ export default function ScrivenerLayout({
                 defaultSize={toPanelPercentSize(binderRatio)}
                 minSize={binderSize.minSize}
                 maxSize={binderSize.maxSize}
-                className={`bg-panel border-r border-border flex flex-col shrink-0 min-w-0 overflow-hidden ${
-                  enableAnimations
-                    ? isSidebarClosing
-                      ? "animate-out slide-out-to-left fade-out duration-200"
-                      : "animate-in slide-in-from-left fade-in duration-200"
-                    : ""
-                }`}
+                className={`bg-panel border-r border-border flex flex-col shrink-0 min-w-0 overflow-hidden ${enableAnimations
+                  ? isSidebarClosing
+                    ? "animate-out slide-out-to-left fade-out duration-200"
+                    : "animate-in slide-in-from-left fade-in duration-200"
+                  : ""
+                  }`}
               >
                 {sidebar}
               </Panel>
 
-              <PanelResizeHandle data-separator-feature="scrivener.binder" className={`w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative ${
-                enableAnimations && isSidebarClosing
-                  ? "opacity-0 transition-opacity duration-200"
-                  : ""
-              }`}>
+              <PanelResizeHandle data-separator-feature="scrivener.binder" className={`w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative ${enableAnimations && isSidebarClosing
+                ? "opacity-0 transition-opacity duration-200"
+                : ""
+                }`}>
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
             </>
@@ -298,7 +298,7 @@ export default function ScrivenerLayout({
                 {!shouldRenderSidebar && (
                   <button
                     onClick={() => setRegionOpen("leftSidebar", true)}
-                    className="p-1 rounded hover:bg-surface-hover text-muted-foreground transition-colors mr-2 shrink-0"
+                    className="p-1 rounded hover:bg-muted/40 text-muted-foreground transition-colors mr-2 shrink-0"
                     title={t("sidebar.toggle.open")}
                   >
                     <Menu className="w-4 h-4" />
@@ -312,7 +312,7 @@ export default function ScrivenerLayout({
                 {!shouldRenderInspector && (
                   <button
                     onClick={() => setRegionOpen("rightPanel", true)}
-                    className="p-1 rounded hover:bg-surface-hover text-muted-foreground transition-colors shrink-0"
+                    className="p-1 rounded hover:bg-muted/40 text-muted-foreground transition-colors shrink-0"
                     title={t("scrivener.inspector.open")}
                   >
                     <Menu className="w-4 h-4" />
@@ -381,11 +381,10 @@ export default function ScrivenerLayout({
           {/* Pane 3: Inspector (Right) */}
           {shouldRenderInspector && (
             <>
-              <PanelResizeHandle data-separator-feature="scrivener.inspector" className={`w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative ${
-                enableAnimations && isInspectorClosing
-                  ? "opacity-0 transition-opacity duration-200"
-                  : ""
-              }`}>
+              <PanelResizeHandle data-separator-feature="scrivener.inspector" className={`w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative ${enableAnimations && isInspectorClosing
+                ? "opacity-0 transition-opacity duration-200"
+                : ""
+                }`}>
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
 
@@ -398,20 +397,19 @@ export default function ScrivenerLayout({
                 defaultSize={toPanelPercentSize(inspectorRatio)}
                 minSize={inspectorSize.minSize}
                 maxSize={inspectorSize.maxSize}
-                className={`bg-panel flex flex-col shrink-0 min-w-0 overflow-hidden ${
-                  enableAnimations
-                    ? isInspectorClosing
-                      ? "animate-out slide-out-to-right fade-out duration-200"
-                      : "animate-in slide-in-from-right fade-in duration-200"
-                    : ""
-                }`}
+                className={`bg-panel flex flex-col shrink-0 min-w-0 overflow-hidden ${enableAnimations
+                  ? isInspectorClosing
+                    ? "animate-out slide-out-to-right fade-out duration-200"
+                    : "animate-in slide-in-from-right fade-in duration-200"
+                  : ""
+                  }`}
               >
                 {/* Floating Toggle wrapper */}
                 <div className="flex items-center justify-between border-b border-border bg-surface px-2 shadow-sm min-h-[32px] shrink-0">
                   <span className="text-xs font-semibold uppercase tracking-wide text-muted ml-2">{t("scrivener.inspector.title")}</span>
                   <button
                     onClick={() => setRegionOpen("rightPanel", false)}
-                    className="p-1.5 rounded hover:bg-surface-hover text-muted-foreground transition-colors"
+                    className="p-1.5 rounded hover:bg-muted/40 text-muted-foreground transition-colors"
                     title={t("scrivener.inspector.close")}
                   >
                     <ChevronRight className="w-4 h-4" />
@@ -423,7 +421,7 @@ export default function ScrivenerLayout({
                     {mainView.type === "canvas" ? (
                       <ContextPanel
                         activeTab={contextTab}
-                        onTabChange={(tab) => setContextTab(tab as never)}
+                        onTabChange={setContextTab}
                         isCanvasMode={true}
                       />
                     ) : (

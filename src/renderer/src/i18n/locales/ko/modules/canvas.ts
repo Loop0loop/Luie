@@ -77,6 +77,8 @@ export const koCanvas = {
     title: "바인더",
     expand: "바인더 펼치기",
     collapse: "바인더 접기",
+    synopsisHeader: "작품 개요 바인더",
+    canvasHeader: "캔버스 바인더",
     tab: {
       elements: "요소",
       ai: "AI",

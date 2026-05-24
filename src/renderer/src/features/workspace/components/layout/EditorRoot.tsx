@@ -512,7 +512,7 @@ export default function EditorRoot() {
 
       {isSettingsOpen && (
         <Suspense fallback={null}>
-          <SettingsModal onClose={() => setIsSettingsOpen(false)} />    
+          <SettingsModal onClose={() => setIsSettingsOpen(false)} />
         </Suspense>
       )}
       <SmartLinkTooltip isSettingsOpen={isSettingsOpen} />

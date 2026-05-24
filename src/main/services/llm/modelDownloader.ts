@@ -35,11 +35,13 @@ async function downloadToFile(
   try {
     fileHandle = await fsp.open(tmpPath, "w");
     for (;;) {
+      // eslint-disable-next-line no-await-in-loop -- Streaming download must consume chunks sequentially.
       const { done, value } = await reader.read();
       if (done) break;
       if (!value) continue;
       const chunk = Buffer.from(value);
       receivedBytes += chunk.length;
+      // eslint-disable-next-line no-await-in-loop -- Streamed file writes must preserve chunk order.
       await fileHandle.write(chunk);
       onProgress(receivedBytes, totalBytes);
     }
@@ -66,34 +68,60 @@ async function sha256File(filePath: string): Promise<string> {
   return hash.digest("hex");
 }
 
-async function extractOneFromZip(
+function resolveZipEntryOutputPath(entryName: string, destDir: string): string | null {
+  if (entryName.endsWith("/")) return null;
+  const normalized = path.posix.normalize(entryName);
+  if (normalized.startsWith("../") || path.posix.isAbsolute(normalized)) {
+    throw new Error(`Unsafe zip entry path: ${entryName}`);
+  }
+
+  const parts = normalized.split("/");
+  const binIndex = parts.lastIndexOf("bin");
+  if (binIndex >= 0 && binIndex < parts.length - 1) {
+    return path.join(destDir, parts[parts.length - 1] ?? "");
+  }
+  if (parts.length === 1) {
+    return path.join(destDir, parts[0] ?? "");
+  }
+  return null;
+}
+
+async function extractRuntimeFilesFromZip(
   zipPath: string,
   entryMatch: string,
-  destPath: string,
-): Promise<void> {
+  destDir: string,
+): Promise<string> {
+  let binaryPath: string | null = null;
   await new Promise<void>((resolve, reject) => {
     yauzl.open(zipPath, { lazyEntries: true }, (openErr, zipfile) => {
       if (openErr) {
         reject(openErr);
         return;
       }
-      let found = false;
 
       zipfile.readEntry();
       zipfile.on("entry", (entry: yauzl.Entry) => {
-        if (!found && (entry.fileName.endsWith(entryMatch) || entry.fileName === entryMatch)) {
-          found = true;
+        let outputPath: string | null = null;
+        try {
+          outputPath = resolveZipEntryOutputPath(entry.fileName, destDir);
+        } catch (error) {
+          reject(error);
+          return;
+        }
+        if (outputPath) {
           zipfile.openReadStream(entry, (streamErr, readStream) => {
             if (streamErr) {
               reject(streamErr);
               return;
             }
-            const writeStream = createWriteStream(destPath, { mode: 0o755 });
+            const basename = path.basename(outputPath);
+            const mode = basename === entryMatch || basename === `${entryMatch}.exe` ? 0o755 : 0o644;
+            if (mode === 0o755) binaryPath = outputPath;
+            const writeStream = createWriteStream(outputPath, { mode });
             readStream.on("error", reject);
             writeStream.on("error", reject);
             writeStream.on("finish", () => {
-              zipfile.close();
-              resolve();
+              zipfile.readEntry();
             });
             readStream.pipe(writeStream);
           });
@@ -102,16 +130,25 @@ async function extractOneFromZip(
         zipfile.readEntry();
       });
       zipfile.on("end", () => {
-        if (!found) reject(new Error(`Entry matching '${entryMatch}' not found in zip`));
+        if (!binaryPath) {
+          reject(new Error(`Entry matching '${entryMatch}' not found in zip`));
+          return;
+        }
+        resolve();
       });
       zipfile.on("error", reject);
     });
   });
+  if (!binaryPath) {
+    throw new Error(`Entry matching '${entryMatch}' not found in zip`);
+  }
+  return binaryPath;
 }
 
 export async function downloadGguf(input: {
   repo: string;
   filename: string;
+  expectedSha256?: string;
   destDir: string;
   signal?: AbortSignal;
   onProgress?: ProgressCallback;
@@ -132,6 +169,13 @@ export async function downloadGguf(input: {
     const pct = total > 0 ? Math.floor((received / total) * 100) : 0;
     input.onProgress?.({ phase: "downloading", pct, receivedBytes: received, totalBytes: total });
   });
+  if (input.expectedSha256) {
+    const actualSha256 = await sha256File(destPath);
+    if (actualSha256 !== input.expectedSha256) {
+      await fsp.rm(destPath, { force: true }).catch(() => {});
+      throw new Error(`SHA256 mismatch for GGUF: expected ${input.expectedSha256}, got ${actualSha256}`);
+    }
+  }
   input.onProgress?.({ phase: "done", pct: 100, receivedBytes: 0, totalBytes: 0 });
   return destPath;
 }
@@ -171,10 +215,10 @@ export async function downloadLlamaServerBinary(input: {
     }
 
     input.onProgress?.({ phase: "extracting", pct: 0, receivedBytes: 0, totalBytes: 0 });
-    await extractOneFromZip(zipPath, binaryName, destBinaryPath);
+    const extractedBinaryPath = await extractRuntimeFilesFromZip(zipPath, binaryName, input.destDir);
     await fsp.rm(zipPath, { force: true });
     input.onProgress?.({ phase: "done", pct: 100, receivedBytes: 0, totalBytes: 0 });
-    return destBinaryPath;
+    return extractedBinaryPath;
   } catch (error) {
     await fsp.rm(zipPath, { force: true }).catch(() => {});
     await fsp.rm(`${zipPath}.tmp`, { force: true }).catch(() => {});
