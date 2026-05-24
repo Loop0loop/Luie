@@ -163,7 +163,7 @@ export default function MainLayout({
           onLayoutChanged={onLayoutChanged}
         >
         {/* Sidebar */}
-        {shouldRenderSidebar && (
+        {shouldRenderSidebar && !isCanvasMode && (
           <Panel
             id="sidebar-panel"
             panelRef={sidebarPanelRef}
@@ -192,7 +192,7 @@ export default function MainLayout({
           </Panel>
         )}
 
-        {shouldRenderSidebar && (
+        {shouldRenderSidebar && !isCanvasMode && (
           <PanelResizeHandle
             data-separator-feature="default.sidebar"
             className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative"
@@ -205,52 +205,43 @@ export default function MainLayout({
           className="flex-1 min-w-0 bg-app relative flex flex-col z-0"
         >
           <EditorDropZones />
-          <div className="flex items-center px-4 py-2 h-12 shrink-0">
-            <button
-              className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-colors duration-150 hover:bg-active hover:text-fg"
-              onClick={toggleLeftSidebar}
-              title={
-                isSidebarOpen
-                  ? t("mainLayout.tooltip.sidebarCollapse")
-                  : t("mainLayout.tooltip.sidebarExpand")
-              }
-            >
-              {isSidebarOpen ? (
-                <PanelLeftClose className="icon-xl" />
-              ) : (
-                <PanelLeftOpen className="icon-xl" />
-              )}
-            </button>
-
-            <div className="flex-1" />
-
-            {isCanvasMode && onCloseCanvas && (
+          {!isCanvasMode && (
+            <div className="flex items-center px-4 py-2 h-12 shrink-0">
               <button
-                className="flex items-center gap-1 bg-transparent border border-border text-muted cursor-pointer px-3 py-1 rounded-md text-xs transition-colors hover:bg-active hover:text-fg mr-2"
-                onClick={onCloseCanvas}
-                title={t("toolbar.editor", "에디터")}
+                className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-colors duration-150 hover:bg-active hover:text-fg"
+                onClick={toggleLeftSidebar}
+                title={
+                  isSidebarOpen
+                    ? t("mainLayout.tooltip.sidebarCollapse")
+                    : t("mainLayout.tooltip.sidebarExpand")
+                }
               >
-                <ChevronLeft className="icon-xs" />
-                {t("toolbar.editor", "에디터")}
+                {isSidebarOpen ? (
+                  <PanelLeftClose className="icon-xl" />
+                ) : (
+                  <PanelLeftOpen className="icon-xl" />
+                )}
               </button>
-            )}
 
-            <button
-              className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-colors duration-150 hover:bg-active hover:text-fg"
-              onClick={() => setRegionOpen("rightPanel", !isContextOpen)}
-              title={
-                isContextOpen
-                  ? t("mainLayout.tooltip.contextCollapse")
-                  : t("mainLayout.tooltip.contextExpand")
-              }
-            >
-              {isContextOpen ? (
-                <PanelRightClose className="icon-xl" />
-              ) : (
-                <PanelRightOpen className="icon-xl" />
-              )}
-            </button>
-          </div>
+              <div className="flex-1" />
+
+              <button
+                className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-colors duration-150 hover:bg-active hover:text-fg"
+                onClick={() => setRegionOpen("rightPanel", !isContextOpen)}
+                title={
+                  isContextOpen
+                    ? t("mainLayout.tooltip.contextCollapse")
+                    : t("mainLayout.tooltip.contextExpand")
+                }
+              >
+                {isContextOpen ? (
+                  <PanelRightClose className="icon-xl" />
+                ) : (
+                  <PanelRightOpen className="icon-xl" />
+                )}
+              </button>
+            </div>
+          )}
 
           <div className="flex-1 overflow-y-auto flex flex-col">
             <PanelGroup

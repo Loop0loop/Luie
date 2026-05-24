@@ -13,9 +13,6 @@
  */
 
 export { default as CanvasPane } from "./components/shell/CanvasPane";
-export { default as CanvasActivityShell } from "./components/shell/CanvasActivityShell";
-export { default as CanvasIconRail } from "./components/shell/CanvasIconRail";
-export { default as SidePanelRouter } from "./components/shell/SidePanelRouter";
 
 export { useCanvasViewStore } from "./stores";
 export type { CanvasViewState } from "./stores";

@@ -156,6 +156,13 @@ export const koCanvas = {
     undo: "실행 취소",
     redo: "다시 실행",
     help: "도움말",
+    newBlock: "새 블록 만들기",
+    importDoc: "문서 들고 오기",
+    insertImage: "이미지 삽입",
+    exit: "에디터 복귀",
+    filterLayer: "레이어 필터",
+    aiSync: "AI 동기화",
+    focusCenter: "중앙 포커스",
   },
   type: {
     label: "캔버스 유형",

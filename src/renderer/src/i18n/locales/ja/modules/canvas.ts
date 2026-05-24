@@ -152,6 +152,13 @@ export const jaCanvas = {
     undo: "元に戻す",
     redo: "やり直す",
     help: "ヘルプ",
+    newBlock: "新規ブロック",
+    importDoc: "文書インポート",
+    insertImage: "画像挿入",
+    exit: "エディタに戻る",
+    filterLayer: "レイヤーフィルター",
+    aiSync: "AI同期",
+    focusCenter: "中央フォーカス",
   },
   graph: {
     scope: "分析範囲",
