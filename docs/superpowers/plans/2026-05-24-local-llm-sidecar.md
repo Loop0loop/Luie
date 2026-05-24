@@ -100,8 +100,11 @@
     - sibling runtime library 추출 테스트 통과
     - `extractRuntimeFilesFromZip()` 종료 후 `binaryPath` null 가드 추가로 `Promise<string>` 타입 보장
     - `DEFAULT_MODEL.sha256` 추가 및 `downloadGguf()` SHA256 검증(불일치 시 파일 삭제) 구현 완료
+    - GGUF 캐시 히트 시에도 SHA256 재검증 후 불일치 시 파일 삭제 + 재다운로드하도록 보강 완료
+    - `sha256File()` chunk 캐스팅을 `Uint8Array`로 정정 완료
     - `MODEL_DOWNLOAD_START` 경로에서 `downloadGguf(expectedSha256)`로 무결성 검증 연결 완료
     - `downloadToFile()`/`waitForHealth()`의 의도적 순차 루프에 `no-await-in-loop` 예외 주석 반영 완료
+    - `tests/main/services/modelDownloader.test.ts`에 "캐시 손상 시 재다운로드" 테스트 추가 및 통과
     - `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/modelDownloader.test.ts --run` 통과
     - `bun run typecheck`는 `src/renderer/src/features/workspace/components/layout/EditorRoot.tsx:493`의 기존 타입 오류로 실패. 이 오류는 local LLM 변경 파일 밖이다.
 
@@ -123,6 +126,7 @@
   - 진행 기록:
     - `src/main/services/llm/sidecarManager.ts` 추가 완료
     - `tests/main/services/sidecarManager.test.ts` 추가 완료
+    - spawn stdio를 `["ignore", "ignore", "pipe"]`로 변경해 stdout backpressure 교착 가능성 제거
     - spawn 인자 검증 테스트 통과
     - 중복 `ensureStarted()` 호출이 하나의 spawn으로 합류하는 테스트 통과
     - `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/sidecarManager.test.ts --run` 통과
@@ -164,6 +168,7 @@
     - `src/shared/ipc/channels.ts`에 sidecar/model download/local LLM 채널 추가 완료
     - `src/shared/schemas/index.ts`에 `settingsLocalLlmSchema` 추가 완료
     - `src/main/handler/system/ipcSettingsHandlers.ts`에 local LLM 설정, sidecar status/stop, 모델 다운로드 start/cancel 핸들러 추가 완료
+    - `MODEL_DOWNLOAD_START`의 `type: "model" | "binary"` 분기를 실제 로직에 반영(요청 타입만 다운로드) 완료
     - `src/shared/api/index.ts`에 renderer settings API 타입 추가 완료
     - `src/preload/api/systemApi.ts`에 `safeInvoke` 기반 API와 `removeListener` 기반 progress unsubscribe 추가 완료
     - `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/manager/settingsManager.localLlm.test.ts tests/main/services/modelDownloader.test.ts tests/main/services/sidecarManager.test.ts tests/main/services/modelRuntimeFactory.sidecar.test.ts --run` 통과

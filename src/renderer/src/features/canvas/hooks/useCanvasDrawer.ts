@@ -16,27 +16,19 @@ export function useCanvasDrawer() {
   const { selection } = useCanvasSelection();
   const clearSelection = useCanvasViewStore((s) => s.clearSelection);
 
-  const { rightPanelOpen, setRegionOpen, openRightPanelTab } = useUIStore(
+  const { rightPanelOpen, openRightPanelTab } = useUIStore(
     useShallow((state) => ({
       rightPanelOpen: state.regions.rightPanel.open,
-      setRegionOpen: state.setRegionOpen,
       openRightPanelTab: state.openRightPanelTab,
     })),
   );
 
-  // 우측 패널(Inspector 및 Binder) 개폐 타이밍을 단일 Side-effect로 통합 연동
+  // 노드 선택 시 우측 패널 오픈. deselect 시 닫지 않음 — 빈 상태 표시 유지.
   useEffect(() => {
-    if (selection.kind === "node") {
-      if (!rightPanelOpen) {
-        setRegionOpen("rightPanel", true);
-      }
+    if (selection.kind === "node" && !rightPanelOpen) {
       openRightPanelTab("canvas");
-    } else if (selection.kind === "none") {
-      if (rightPanelOpen) {
-        setRegionOpen("rightPanel", false);
-      }
     }
-  }, [selection.kind, rightPanelOpen, setRegionOpen, openRightPanelTab]);
+  }, [selection.kind, rightPanelOpen, openRightPanelTab]);
 
   const isOpen = selection.kind === "node";
   const selectedNodeId = selection.kind === "node" ? selection.id : null;

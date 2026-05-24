@@ -162,6 +162,7 @@ export const IPC_CHANNELS = {
   SETTINGS_SET_WINDOW_BOUNDS: "settings:set-window-bounds",
   SETTINGS_GET_WINDOW_BOUNDS: "settings:get-window-bounds",
   SETTINGS_SET_OLLAMA_CONFIG: "settings:set-ollama-config",
+  SETTINGS_SET_LLM_PREFERENCE: "settings:set-llm-preference",
   SETTINGS_GET_LLM_RUNTIME: "settings:get-llm-runtime",
   SETTINGS_LIST_OLLAMA_MODELS: "settings:list-ollama-models",
   SETTINGS_TEST_OLLAMA_CONNECTION: "settings:test-ollama-connection",

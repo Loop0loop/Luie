@@ -121,4 +121,28 @@ describe("modelDownloader", () => {
 
     await expect(readFile(modelPath, "utf8")).resolves.toBe("gguf-bytes-ok");
   });
+
+  it("re-downloads gguf when cached file sha256 does not match", async () => {
+    const destDir = await makeTempDir();
+    const filename = "qwen2.5-1.5b-instruct-q8_0.gguf";
+    const modelPath = path.join(destDir, filename);
+
+    await writeFile(modelPath, "tampered");
+
+    const bytes = Buffer.from("fresh-valid-gguf");
+    const expectedSha256 = createHash("sha256").update(bytes).digest("hex");
+    const fetchMock = vi.fn(async () => new Response(bytes));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const resolvedPath = await downloadGguf({
+      repo: "Qwen/Qwen2.5-1.5B-Instruct-GGUF",
+      filename,
+      expectedSha256,
+      destDir,
+    });
+
+    expect(resolvedPath).toBe(modelPath);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await expect(readFile(modelPath, "utf8")).resolves.toBe("fresh-valid-gguf");
+  });
 });

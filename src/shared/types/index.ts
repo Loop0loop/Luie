@@ -1059,6 +1059,7 @@ export interface AppSettings {
   sync?: SyncSettings;
   startup?: StartupSettings;
   llm?: {
+    preferredProvider?: "auto" | "sidecar" | "ollama" | "openai" | "gemini";
     ollama?: {
       baseUrl?: string;
       chatModel?: string;
