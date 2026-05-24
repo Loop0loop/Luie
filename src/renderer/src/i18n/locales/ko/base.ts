@@ -85,6 +85,17 @@ export const koBase = {
         "변경 사항은 즉시 적용됩니다. (가리기: 전체화면, 보이기: 일반창)",
       applyFailed: "메뉴바 표시 방식을 적용하지 못했습니다. 다시 시도해주세요.",
     },
+    localLlm: {
+      title: "로컬 AI (오프라인)",
+      desc: "인터넷 없이 AI를 사용합니다. 최초 1회 모델 다운로드가 필요합니다. (~1.9GB)",
+      modelReady: "모델 준비됨",
+      noModel: "Qwen2.5 1.5B 모델이 없습니다. 아래 버튼으로 다운로드하세요.",
+      download: "AI 모델 다운로드 (~1.9GB)",
+      downloading: "다운로드 중...",
+      downloadingBinary: "바이너리 다운로드 중",
+      downloadingModel: "모델 다운로드 중",
+      enabled: "로컬 AI 사용",
+    },
     appearance: {
       baseTheme: {
         title: "테마 모드 (Base Theme)",

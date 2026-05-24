@@ -5,17 +5,20 @@ import { ExternalApiProvider } from "./providers/externalApiProvider.js";
 import { GeminiProvider } from "./providers/geminiProvider.js";
 import type { SettingsManager } from "../../manager/settingsManager.js";
 import type { LlmRuntimeInfo } from "../../../shared/types/index.js";
+import { sidecarManager } from "./sidecarManager.js";
 
 const logger = createLogger("ModelRuntimeFactory");
 const deterministicProvider = new DeterministicProvider();
 let externalApiProviderSingle: { key: string; provider: ExternalApiProvider } | null = null;
 let openAiProviderSingle: { key: string; provider: ExternalApiProvider } | null = null;
 let geminiProviderSingle: { key: string; provider: GeminiProvider } | null = null;
+let sidecarProviderSingle: { key: string; provider: ExternalApiProvider } | null = null;
 
 export function invalidateModelRuntimeCache(): void {
   externalApiProviderSingle = null;
   openAiProviderSingle = null;
   geminiProviderSingle = null;
+  sidecarProviderSingle = null;
 }
 
 type OllamaConfig = {
@@ -44,6 +47,7 @@ type EnvOpenAiConfig = {
 };
 
 type ResolvedRuntime =
+  | { kind: "sidecar"; config: { baseUrl: string } }
   | { kind: "gemini"; config: EnvGeminiConfig }
   | { kind: "openai"; config: EnvOpenAiConfig }
   | { kind: "ollama"; config: OllamaConfig }
@@ -137,6 +141,28 @@ function loadEnvOpenAiConfig(): EnvOpenAiConfig | null {
 }
 
 async function resolveRuntime(): Promise<ResolvedRuntime> {
+  try {
+    const settingsManager = await loadSettingsManager();
+    const localLlm = settingsManager.getLocalLlmSettings();
+    if (localLlm?.enabled && localLlm.modelPath && localLlm.binaryPath) {
+      try {
+        const baseUrl = await sidecarManager.ensureStarted(
+          localLlm.binaryPath,
+          localLlm.modelPath,
+          {
+            gpuLayers: localLlm.gpuLayers,
+            contextSize: localLlm.contextSize,
+          },
+        );
+        return { kind: "sidecar", config: { baseUrl } };
+      } catch (error) {
+        logger.warn("Sidecar start failed, falling through", { error });
+      }
+    }
+  } catch {
+    // Settings may be unavailable during tests or early startup. Continue to fallback providers.
+  }
+
   const geminiConfig = loadEnvGeminiConfig();
   if (geminiConfig) {
     return { kind: "gemini", config: geminiConfig };
@@ -156,6 +182,18 @@ export async function resolveModelRuntimeClient(
   projectId: string,
 ): Promise<ModelRuntimeClient> {
   const resolved = await resolveRuntime();
+  if (resolved.kind === "sidecar") {
+    logger.info("Using local LLM sidecar", { projectId, baseUrl: resolved.config.baseUrl });
+    const key = resolved.config.baseUrl;
+    if (sidecarProviderSingle?.key === key) return sidecarProviderSingle.provider;
+    const provider = new ExternalApiProvider({
+      baseUrl: resolved.config.baseUrl,
+      chatModel: "local",
+      apiKey: "no-key",
+    });
+    sidecarProviderSingle = { key, provider };
+    return provider;
+  }
   if (resolved.kind === "gemini") {
     logger.info("Using Gemini provider", { projectId, model: resolved.config.model });
     return getOrCreateGeminiProvider(resolved.config);
@@ -180,6 +218,12 @@ export async function resolveRuntimeModelConfig(
   _projectId: string,
 ): Promise<RuntimeModelConfig> {
   const resolved = await resolveRuntime();
+  if (resolved.kind === "sidecar") {
+    return {
+      providerHint: "externalapi",
+      embeddingModel: null,
+    };
+  }
   if (resolved.kind === "gemini") {
     return {
       providerHint: "gemini",
@@ -206,6 +250,13 @@ export async function resolveRuntimeModelConfig(
 
 export async function resolveRuntimeModelInfo(): Promise<LlmRuntimeInfo> {
   const resolved = await resolveRuntime();
+  if (resolved.kind === "sidecar") {
+    return {
+      provider: "sidecar",
+      model: "llama-server",
+      alternativeModel: null,
+    };
+  }
   if (resolved.kind === "gemini") {
     return {
       provider: "gemini",

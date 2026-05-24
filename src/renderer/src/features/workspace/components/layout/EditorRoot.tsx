@@ -68,11 +68,8 @@ const CanvasActivityShell = lazy(
 const CanvasPane = lazy(
   () => import("@renderer/features/canvas/components/shell/CanvasPane"),
 );
-const CanvasInspectorPanel = lazy(
-  () => import("@renderer/features/canvas/components/binder/CanvasInspectorPanel"),
-);
-const ContextPanel = lazy(
-  () => import("@renderer/features/workspace/components/panels/ContextPanel"),
+const ContextPanel = lazy(() =>
+  import("@renderer/features/workspace/components/panels/ContextPanel")
 );
 const WorkspacePanels = lazy(() =>
   import("@renderer/features/workspace/components/panels/WorkspacePanels").then(
@@ -475,29 +472,25 @@ export default function EditorRoot() {
           <MainLayout
             sidebar={
               <Suspense fallback={null}>
-                <Sidebar
-                  onOpenSettings={() => setIsSettingsOpen(true)}
-                  onPrefetchSettings={prefetchSettings}
-                  onSelectResearchItem={handleSelectResearchItem}
-                  onSplitView={handleSplitView}
-                  canvasContent={
-                    mainViewType === "canvas" ? (
-                      <CanvasActivityShell />
-                    ) : undefined
-                  }
-                />
+                {mainViewType === "canvas" ? (
+                  <CanvasActivityShell onClose={handleCloseCanvas} />
+                ) : (
+                  <Sidebar
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                    onPrefetchSettings={prefetchSettings}
+                    onSelectResearchItem={handleSelectResearchItem}
+                    onSplitView={handleSplitView}
+                  />
+                )}
               </Suspense>
             }
             contextPanel={
               <Suspense fallback={null}>
-                {mainViewType === "canvas" ? (
-                  <CanvasInspectorPanel />
-                ) : (
-                  <ContextPanel
-                    activeTab={contextTab}
-                    onTabChange={setContextTab}
-                  />
-                )}
+                <ContextPanel
+                  activeTab={contextTab}
+                  onTabChange={setContextTab}
+                  isCanvasMode={mainViewType === "canvas"}
+                />
               </Suspense>
             }
             isCanvasMode={mainViewType === "canvas"}

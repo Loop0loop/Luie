@@ -33,18 +33,8 @@ export default function GraphSurface() {
 
     const laidOutNodes = calculateForceLayout(MOCK_GRAPH_NODES, styledEdges, 80, { x: 300, y: 250 });
     
-    // 현재 포커스된 아이디 상태 동기화
-    const updatedNodes = laidOutNodes.map((node) => ({
-      ...node,
-      data: {
-        ...node.data,
-        isFocused: node.id === focusId,
-      },
-    }));
-
-    setNodes(updatedNodes);
+    setNodes(laidOutNodes);
     setEdges(styledEdges);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setNodes, setEdges]);
 
   // focusId 상태가 전역으로 변동될 때 노드의 focus 상태를 동기화

@@ -109,7 +109,7 @@ export default function GraphInspector() {
                     >
                       <div className="flex items-center justify-between text-xs font-medium">
                         <span className="text-fg">{rel.targetName}</span>
-                        <span className="text-[10px] px-1.5 py-0.2 bg-sidebar border border-border/30 rounded text-muted-foreground">
+                        <span className="text-[10px] px-1.5 py-0.5 bg-sidebar border border-border/30 rounded text-muted-foreground">
                           {rel.type}
                         </span>
                       </div>

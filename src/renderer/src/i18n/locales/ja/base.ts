@@ -86,6 +86,17 @@ export const jaBase = {
       applyFailed:
         "メニューバー表示モードの適用に失敗しました。再試行してください。",
     },
+    localLlm: {
+      title: "ローカルAI（オフライン）",
+      desc: "インターネットなしでAIを使用します。初回のみモデルのダウンロードが必要です。（約1.9GB）",
+      modelReady: "モデル準備完了",
+      noModel: "Qwen2.5 1.5Bモデルが見つかりません。以下からダウンロードしてください。",
+      download: "AIモデルをダウンロード（約1.9GB）",
+      downloading: "ダウンロード中...",
+      downloadingBinary: "バイナリをダウンロード中",
+      downloadingModel: "モデルをダウンロード中",
+      enabled: "ローカルAIを使用",
+    },
     appearance: {
       baseTheme: {
         title: "ベーステーマ",

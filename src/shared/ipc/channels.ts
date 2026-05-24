@@ -165,6 +165,13 @@ export const IPC_CHANNELS = {
   SETTINGS_GET_LLM_RUNTIME: "settings:get-llm-runtime",
   SETTINGS_LIST_OLLAMA_MODELS: "settings:list-ollama-models",
   SETTINGS_TEST_OLLAMA_CONNECTION: "settings:test-ollama-connection",
+  SETTINGS_SET_LOCAL_LLM: "settings:set-local-llm",
+  SETTINGS_GET_LOCAL_LLM: "settings:get-local-llm",
+  SIDECAR_STOP: "sidecar:stop",
+  SIDECAR_STATUS: "sidecar:status",
+  MODEL_DOWNLOAD_START: "model:download-start",
+  MODEL_DOWNLOAD_CANCEL: "model:download-cancel",
+  MODEL_DOWNLOAD_PROGRESS: "model:download-progress",
   SETTINGS_RESET: "settings:reset",
 
   // Recovery

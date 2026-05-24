@@ -233,6 +233,12 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                   onListOllamaModels={settings.handleListOllamaModels}
                   onTestOllamaConnection={settings.handleTestOllamaConnection}
                   onRebuildMemory={settings.handleRebuildMemory}
+                  localLlmEnabled={settings.localLlmEnabled}
+                  localLlmModelPath={settings.localLlmModelPath}
+                  isDownloading={settings.isDownloading}
+                  downloadProgress={settings.downloadProgress}
+                  onDownloadLocalModel={settings.handleDownloadLocalModel}
+                  onToggleLocalLlm={settings.handleToggleLocalLlm}
                   initialBaseUrl={settings.ollamaBaseUrl}
                   initialChatModel={settings.ollamaChatModel}
                   initialEmbeddingModel={settings.ollamaEmbeddingModel}

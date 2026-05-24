@@ -1065,6 +1065,13 @@ export interface AppSettings {
       embeddingModel?: string;
       apiKey?: string;
     };
+    localLlm?: {
+      enabled: boolean;
+      modelPath?: string;
+      binaryPath?: string;
+      gpuLayers?: number;
+      contextSize?: number;
+    };
     ragTemperature?: number;
     ragMaxTokens?: number;
   };
@@ -1075,7 +1082,7 @@ export interface OllamaConnectionResult {
 }
 
 export interface LlmRuntimeInfo {
-  provider: "gemini" | "openai" | "ollama" | "deterministic";
+  provider: "gemini" | "openai" | "ollama" | "sidecar" | "deterministic";
   model: string;
   alternativeModel?: string | null;
 }

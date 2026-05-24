@@ -480,6 +480,31 @@ export type RendererApi = {
     getLlmRuntime: () => Promise<IPCResponse<LlmRuntimeInfo>>;
     listOllamaModels: (baseUrl: string) => Promise<IPCResponse<string[]>>;
     testOllamaConnection: (baseUrl: string) => Promise<IPCResponse<OllamaConnectionResult>>;
+    getLocalLlmSettings: () => Promise<IPCResponse<{
+      enabled?: boolean;
+      modelPath?: string;
+      binaryPath?: string;
+      gpuLayers?: number;
+      contextSize?: number;
+      sidecarRunning: boolean;
+      sidecarBaseUrl: string | null;
+    }>>;
+    setLocalLlmSettings: (input: {
+      enabled: boolean;
+      modelPath?: string;
+      binaryPath?: string;
+      gpuLayers?: number;
+      contextSize?: number;
+    }) => Promise<IPCResponse<{ ok: boolean }>>;
+    getSidecarStatus: () => Promise<IPCResponse<{ running: boolean; baseUrl: string | null }>>;
+    stopSidecar: () => Promise<IPCResponse<{ ok: boolean }>>;
+    startModelDownload: (input: { type: "model" | "binary" }) => Promise<IPCResponse<{ ok: boolean }>>;
+    cancelModelDownload: () => Promise<IPCResponse<{ ok: boolean }>>;
+    onModelDownloadProgress: (callback: (progress: {
+      stage: "binary" | "model" | "complete" | "error";
+      pct: number;
+      error?: string;
+    }) => void) => () => void;
     reset: () => Promise<IPCResponse<AppSettings>>;
   };
   recovery: {

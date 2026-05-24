@@ -15,6 +15,15 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
   const [ollamaChatModel, setOllamaChatModel] = useState("");
   const [ollamaEmbeddingModel, setOllamaEmbeddingModel] = useState("");
   const [ollamaApiKey, setOllamaApiKey] = useState("");
+  const [localLlmEnabled, setLocalLlmEnabled] = useState(false);
+  const [localLlmModelPath, setLocalLlmModelPath] = useState<string | undefined>();
+  const [localLlmBinaryPath, setLocalLlmBinaryPath] = useState<string | undefined>();
+  const [downloadProgress, setDownloadProgress] = useState<{
+    stage: "binary" | "model" | "complete" | "error";
+    pct: number;
+    error?: string;
+  } | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const refreshMigrationHealth = useCallback(async () => {
     const response = await api.maintenance.getMigrationHealth();
@@ -34,9 +43,33 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
         setOllamaEmbeddingModel(embeddingModel ?? "");
         setOllamaApiKey(apiKey ?? "");
       }
+      const localLlm = res.data?.llm?.localLlm;
+      if (localLlm) {
+        setLocalLlmEnabled(localLlm.enabled);
+        setLocalLlmModelPath(localLlm.modelPath);
+        setLocalLlmBinaryPath(localLlm.binaryPath);
+      }
       await refreshMigrationHealth();
     })();
   }, [activeTab, refreshMigrationHealth]);
+
+  useEffect(() => {
+    const unsubscribe = api.settings.onModelDownloadProgress((progress) => {
+      setDownloadProgress(progress);
+      if (progress.stage === "complete") {
+        setIsDownloading(false);
+        void api.settings.getLocalLlmSettings().then((response) => {
+          if (response.success && response.data) {
+            setLocalLlmEnabled(response.data.enabled ?? false);
+            setLocalLlmModelPath(response.data.modelPath);
+            setLocalLlmBinaryPath(response.data.binaryPath);
+          }
+        });
+      }
+      if (progress.stage === "error") setIsDownloading(false);
+    });
+    return unsubscribe;
+  }, []);
 
   const handleSaveOllamaConfig = useCallback(async (input: {
     baseUrl: string;
@@ -87,6 +120,29 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     }
   }, [currentProject, showToast]);
 
+  const handleDownloadLocalModel = useCallback(async (): Promise<void> => {
+    setIsDownloading(true);
+    setDownloadProgress(null);
+    const response = await api.settings.startModelDownload({ type: "model" });
+    if (!response.success) {
+      setIsDownloading(false);
+      showToast(response.error?.message ?? "로컬 AI 모델 다운로드를 시작하지 못했습니다.", "error");
+    }
+  }, [showToast]);
+
+  const handleToggleLocalLlm = useCallback(async (enabled: boolean): Promise<void> => {
+    setLocalLlmEnabled(enabled);
+    const response = await api.settings.setLocalLlmSettings({
+      enabled,
+      modelPath: localLlmModelPath,
+      binaryPath: localLlmBinaryPath,
+    });
+    if (!response.success) {
+      setLocalLlmEnabled(!enabled);
+      showToast(response.error?.message ?? "로컬 AI 설정 저장에 실패했습니다.", "error");
+    }
+  }, [localLlmBinaryPath, localLlmModelPath, showToast]);
+
   return {
     isBusy,
     migrationHealth,
@@ -95,9 +151,15 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     ollamaChatModel,
     ollamaEmbeddingModel,
     ollamaApiKey,
+    localLlmEnabled,
+    localLlmModelPath,
+    isDownloading,
+    downloadProgress,
     handleSaveOllamaConfig,
     handleListOllamaModels,
     handleTestOllamaConnection,
     handleRebuildMemory,
+    handleDownloadLocalModel,
+    handleToggleLocalLlm,
   };
 }

@@ -659,6 +659,14 @@ export const settingsOllamaConfigSchema = z.strictObject({
   apiKey: z.string().min(1).max(2048).optional(),
 });
 
+export const settingsLocalLlmSchema = z.strictObject({
+  enabled: z.boolean(),
+  modelPath: z.string().min(1).max(4096).optional(),
+  binaryPath: z.string().min(1).max(4096).optional(),
+  gpuLayers: z.number().int().optional(),
+  contextSize: z.number().int().positive().optional(),
+});
+
 const uiRightPanelTabSchema = z.enum([
   "character",
   "event",

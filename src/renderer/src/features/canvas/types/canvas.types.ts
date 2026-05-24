@@ -67,3 +67,12 @@ export type CanvasSelection =
   | { kind: "none" }
   | { kind: "node"; id: string }
   | { kind: "edge"; id: string };
+
+/** Sidebar Obsidian style file explorer node type */
+export interface FileNode {
+  id: string;
+  name: string;
+  type: "file" | "canvas" | "folder";
+  children?: FileNode[];
+}
+

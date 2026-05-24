@@ -202,6 +202,32 @@ export default function MainLayout({
             className="flex-1 min-w-0 bg-app relative flex flex-col z-0"
           >
             <EditorDropZones />
+
+            {/* 캔버스 모드용 플로팅 접기/펴기 복원 버튼 */}
+            {isCanvasMode && (
+              <>
+                {!isSidebarOpen && (
+                  <button
+                    onClick={toggleLeftSidebar}
+                    className="absolute left-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-lg border border-border/80 bg-background/90 text-muted-foreground shadow-md backdrop-blur-sm transition-all hover:bg-accent hover:text-foreground active:scale-95 cursor-pointer"
+                    title={t("mainLayout.tooltip.sidebarExpand")}
+                    aria-label={t("mainLayout.tooltip.sidebarExpand")}
+                  >
+                    <PanelLeftOpen className="h-4 w-4" />
+                  </button>
+                )}
+                {!isContextOpen && (
+                  <button
+                    onClick={() => setRegionOpen("rightPanel", true)}
+                    className="absolute right-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-lg border border-border/80 bg-background/90 text-muted-foreground shadow-md backdrop-blur-sm transition-all hover:bg-accent hover:text-foreground active:scale-95 cursor-pointer"
+                    title={t("mainLayout.tooltip.contextExpand")}
+                    aria-label={t("mainLayout.tooltip.contextExpand")}
+                  >
+                    <PanelRightOpen className="h-4 w-4" />
+                  </button>
+                )}
+              </>
+            )}
             {!isCanvasMode && (
               <div className="flex items-center px-4 py-2 h-12 shrink-0">
                 <button
@@ -270,7 +296,7 @@ export default function MainLayout({
             {!isCanvasMode && <StatusFooter onOpenExport={onOpenExport} />}
           </Panel>
 
-          {shouldRenderContext && (
+          {shouldRenderContext && !isCanvasMode && (
             <PanelResizeHandle
               data-separator-feature="default.panel"
               className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative"

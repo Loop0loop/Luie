@@ -23,6 +23,8 @@ const loadCacheDb = async () =>
   (await import("../database/cacheDb.js")).cacheDb;
 const loadDerivedJobWorker = async () =>
   (await import("../services/features/derivedJobWorker.js")).derivedJobWorker;
+const loadSidecarManager = async () =>
+  (await import("../services/llm/sidecarManager.js")).sidecarManager;
 
 const sendQuitPhase = (
   targetWindow: BrowserWindow | null,
@@ -252,6 +254,12 @@ export const registerShutdownHandlers = (logger: Logger): void => {
         await derivedJobWorker.stop();
       } catch (error) {
         logger.warn("Failed to stop derived job worker during quit", error);
+      }
+      try {
+        const sidecarManager = await loadSidecarManager();
+        await sidecarManager.stop();
+      } catch (error) {
+        logger.warn("Failed to stop local LLM sidecar during quit", error);
       }
       try {
         await snapshotService.pruneSnapshotsAllProjects();
