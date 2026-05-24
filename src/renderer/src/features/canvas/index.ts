@@ -21,7 +21,6 @@ export {
   useCanvasPanelLayout,
   useCanvasLayoutPersist,
   useCanvasScope,
-  useCanvasDrawer,
 } from "./hooks";
 export type { CanvasPanelLayout } from "./hooks";
 

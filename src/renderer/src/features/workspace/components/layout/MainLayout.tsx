@@ -161,7 +161,7 @@ export default function MainLayout({
           onLayoutChanged={onLayoutChanged}
         >
           {/* Sidebar */}
-          {shouldRenderSidebar && !isCanvasMode && (
+          {shouldRenderSidebar && (
             <Panel
               id="sidebar-panel"
               panelRef={sidebarPanelRef}
