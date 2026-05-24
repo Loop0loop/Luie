@@ -94,6 +94,14 @@
     - `tests/main/services/modelDownloader.test.ts` 추가 완료
     - SHA256 불일치 시 zip/tmp/부분 바이너리 정리 테스트 통과
     - 기존 바이너리가 있으면 fetch 없이 경로 반환 테스트 통과
+    - macOS arm64 zip은 `build/bin/llama-server`와 `build/bin/*.dylib` 구조임을 실제 zip 목록으로 확인
+    - 단일 바이너리만 추출하면 `libmtmd.dylib` 누락으로 실행 실패함을 확인
+    - `build/bin/*` 런타임 파일을 `destDir`로 함께 추출하도록 수정 완료
+    - sibling runtime library 추출 테스트 통과
+    - `extractRuntimeFilesFromZip()` 종료 후 `binaryPath` null 가드 추가로 `Promise<string>` 타입 보장
+    - `DEFAULT_MODEL.sha256` 추가 및 `downloadGguf()` SHA256 검증(불일치 시 파일 삭제) 구현 완료
+    - `MODEL_DOWNLOAD_START` 경로에서 `downloadGguf(expectedSha256)`로 무결성 검증 연결 완료
+    - `downloadToFile()`/`waitForHealth()`의 의도적 순차 루프에 `no-await-in-loop` 예외 주석 반영 완료
     - `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/modelDownloader.test.ts --run` 통과
     - `bun run typecheck`는 `src/renderer/src/features/workspace/components/layout/EditorRoot.tsx:493`의 기존 타입 오류로 실패. 이 오류는 local LLM 변경 파일 밖이다.
 
@@ -200,6 +208,11 @@
   - Activity Monitor 또는 `ps`로 `llama-server`가 Luie와 별도 PID인지 확인
   - 앱 종료 시 `llama-server`가 종료되는지 확인
   - sidecar 바이너리 경로를 잘못 설정했을 때 Ollama 또는 deterministic fallback이 동작하는지 확인
+  - 진행 기록:
+    - macOS arm64 `llama-b5620-bin-macos-arm64.zip` 다운로드, SHA256 검증, 추출 성공
+    - 처음에는 `llama-server` 단일 파일만 추출해 `libmtmd.dylib` 누락 실행 실패를 확인
+    - `build/bin/*` 전체 추출로 수정 후 `/tmp/.../llama-server --help` 실행 성공
+    - 1.9GB GGUF 모델 다운로드와 실제 RAG QA 실행은 아직 수행하지 않음
 
 ### 보류하거나 재검토할 사항
 

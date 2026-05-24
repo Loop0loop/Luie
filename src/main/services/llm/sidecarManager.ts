@@ -137,6 +137,7 @@ export class SidecarManager {
     while (Date.now() < deadline) {
       if (signal?.aborted) throw new Error("SidecarManager: start aborted");
       try {
+        // eslint-disable-next-line no-await-in-loop -- Health checks are intentionally sequential polls.
         const response = await fetch(`http://127.0.0.1:${port}/health`, {
           signal: AbortSignal.timeout(2_000),
         });
@@ -144,6 +145,7 @@ export class SidecarManager {
       } catch {
         // The server is still starting.
       }
+      // eslint-disable-next-line no-await-in-loop -- Poll interval must be applied between each health request.
       await new Promise((resolve) => setTimeout(resolve, HEALTH_POLL_INTERVAL_MS));
     }
     throw new Error("llama-server health check timed out");

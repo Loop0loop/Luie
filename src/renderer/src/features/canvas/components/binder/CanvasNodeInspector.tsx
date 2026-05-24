@@ -7,7 +7,7 @@
  *   - node.entityType === "Chapter" -> 전용 온디맨드 요약 및 등장인물/복선 리스트 연동
  */
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { X, Sparkles, RefreshCw, User, HelpCircle } from "lucide-react";
 import { useCanvasViewStore } from "@renderer/features/canvas/stores";
@@ -259,6 +259,16 @@ function ChapterNodeDetail({ nodeId, projectId, graphData }: ChapterNodeDetailPr
   const [summary, setSummary] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 컴포넌트 언마운트 시 setTimeout 클린업을 통한 메모리 누수 방지
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const loadSummary = useCallback(async () => {
     if (typeof window === "undefined" || !window.api || !window.api.memory) {
@@ -283,7 +293,7 @@ function ChapterNodeDetail({ nodeId, projectId, graphData }: ChapterNodeDetailPr
     void loadSummary();
   }, [loadSummary]);
 
-  const handleGenerateSummary = async () => {
+  const handleGenerateSummary = useCallback(async () => {
     if (typeof window === "undefined" || !window.api || !window.api.memoryAdmin) {
       return;
     }
@@ -297,7 +307,7 @@ function ChapterNodeDetail({ nodeId, projectId, graphData }: ChapterNodeDetailPr
       });
 
       // 3초 후 요약본 재로드를 시도하는 복원 메커니즘
-      setTimeout(async () => {
+      timeoutRef.current = setTimeout(async () => {
         await loadSummary();
         setGenerating(false);
       }, 3000);
@@ -305,7 +315,7 @@ function ChapterNodeDetail({ nodeId, projectId, graphData }: ChapterNodeDetailPr
       logger.error("Failed to trigger manual summary build", err);
       setGenerating(false);
     }
-  };
+  }, [nodeId, projectId, loadSummary]);
 
   // 챕터와 연결된 등장인물 분석
   const relations =
@@ -347,7 +357,7 @@ function ChapterNodeDetail({ nodeId, projectId, graphData }: ChapterNodeDetailPr
         ) : summary ? (
           <div className="text-xs leading-relaxed text-fg/70 space-y-1">
             {summary.split("\n").map((line, idx) => (
-              <p key={idx} className="flex gap-1.5">
+              <p key={`${line}-${idx}`} className="flex gap-1.5">
                 <span className="text-accent/60 shrink-0">•</span>
                 <span>{line}</span>
               </p>

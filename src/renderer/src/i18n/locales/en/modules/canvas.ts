@@ -77,6 +77,8 @@ export const enCanvas = {
     title: "Binder",
     expand: "Expand binder",
     collapse: "Collapse binder",
+    synopsisHeader: "Synopsis Binder",
+    canvasHeader: "Canvas Binder",
     tab: {
       elements: "Elements",
       ai: "AI",

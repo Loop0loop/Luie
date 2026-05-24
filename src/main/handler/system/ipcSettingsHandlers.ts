@@ -311,6 +311,7 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
             const modelPath = await downloadGguf({
               repo: DEFAULT_MODEL.repo,
               filename: DEFAULT_MODEL.filename,
+              expectedSha256: DEFAULT_MODEL.sha256,
               destDir: sidecarManager.getModelsDir(),
               signal,
               onProgress: (progress) => emitProgress("model", progress.pct),

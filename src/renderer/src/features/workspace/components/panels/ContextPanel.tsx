@@ -13,7 +13,8 @@ import { useCanvasViewStore } from "@renderer/features/canvas/stores";
 import CanvasNodeInspector from "@renderer/features/canvas/components/binder/CanvasNodeInspector";
 import { cn } from "@shared/types/utils";
 
-type Tab = "synopsis" | "characters" | "terms" | "elements";
+// ScrivenerLayout as never 제거를 위해 Tab 타입을 명시적으로 export 노출
+export type Tab = "synopsis" | "characters" | "terms" | "elements";
 
 type ContextItem = Character | Term;
 
@@ -84,14 +85,39 @@ function buildCharacterSummary(character: Character): string | null {
   return parts.join(" · ");
 }
 
-/* ─────────────────────────────────────────── CanvasElementsTab Component */
+/* ─────────────────────────────────────────── CanvasSelectionWatcher Component */
 
-interface CanvasElementsTabProps {
-  t: (key: string) => string;
+interface CanvasSelectionWatcherProps {
+  handleTabChange: (tab: Tab) => void;
+  currentTab: Tab;
+  setRegionOpen: (region: "leftSidebar" | "rightPanel", open: boolean) => void;
 }
 
-const CanvasElementsTab = memo(({ t }: CanvasElementsTabProps) => {
-  // Elements 탭 렌더링에 필요한 canvasViewStore 구독을 격리하여 비-캔버스 모드 시의 오버헤드를 0%로 통제
+const CanvasSelectionWatcher = memo(({
+  handleTabChange,
+  currentTab,
+  setRegionOpen,
+}: CanvasSelectionWatcherProps) => {
+  // 비-캔버스 모드일 때는 마운트되지 않는 이 헬퍼 컴포넌트 내부에서만 스토어를 구독하여 오버헤드 0% 실현 완료
+  const selection = useCanvasViewStore((state) => state.selection);
+
+  useEffect(() => {
+    if (selection.kind === "node" && currentTab !== "elements") {
+      handleTabChange("elements");
+      setRegionOpen("rightPanel", true);
+    }
+  }, [selection.kind, setRegionOpen, handleTabChange, currentTab]);
+
+  return null;
+});
+
+CanvasSelectionWatcher.displayName = "CanvasSelectionWatcher";
+
+/* ─────────────────────────────────────────── CanvasElementsTab Component */
+
+const CanvasElementsTab = memo(() => {
+  // prop 드릴링 제거: useTranslation 직접 사용
+  const { t } = useTranslation();
   const selection = useCanvasViewStore((state) => state.selection);
   
   return (
@@ -145,15 +171,6 @@ function ContextPanel({
   }, [onTabChange]);
 
   const setRegionOpen = useUIStore((state) => state.setRegionOpen);
-  const selection = useCanvasViewStore((state) => state.selection);
-
-  useEffect(() => {
-    // currentTab !== "elements" 가드를 통해 불필요한 반복 강제 포커싱 루프를 완벽 차단
-    if (isCanvasMode && selection.kind === "node" && currentTab !== "elements") {
-      handleTabChange("elements");
-      setRegionOpen("rightPanel", true);
-    }
-  }, [selection.kind, isCanvasMode, setRegionOpen, handleTabChange, currentTab]);
 
   const currentProject = useProjectStore((state) => state.currentProject);
   const characters = useCharacterStore((state) => state.characters);
@@ -208,6 +225,15 @@ function ContextPanel({
 
   return (
     <div className="h-full flex flex-col relative overflow-hidden">
+      {/* Canvas 모드일 때만 비동기 감시 컴포넌트 마운트하여 ContextPanel의 구독 오버헤드 0% 완수 */}
+      {isCanvasMode && (
+        <CanvasSelectionWatcher
+          handleTabChange={handleTabChange}
+          currentTab={currentTab}
+          setRegionOpen={setRegionOpen}
+        />
+      )}
+
       {selectedItem && (
         <div className="absolute inset-0 bg-panel z-10 flex flex-col animate-in slide-in-from-right-5 duration-200">
           <div className="flex items-center gap-3 p-4">
@@ -241,15 +267,10 @@ function ContextPanel({
       {/* 우측 바인더바 닫기 토글 헤더 */}
       <div className="flex items-center justify-between px-4 pt-3 shrink-0">
         <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-          {isCanvasMode ? (
-            <>
-              {t("canvas.workspace.title")} {t("canvas.binder.title")}
-            </>
-          ) : (
-            <>
-              {t("context.synopsisHeader")} {t("canvas.binder.title")}
-            </>
-          )}
+          {/* 어순 결함이 없는 단일 복합 키 사용으로 다국어 완성도 확립 */}
+          {isCanvasMode
+            ? t("canvas.binder.canvasHeader")
+            : t("canvas.binder.synopsisHeader")}
         </span>
         <button
           onClick={() => setRegionOpen("rightPanel", false)}
@@ -406,7 +427,7 @@ function ContextPanel({
           </>
         )}
         {currentTab === "elements" && isCanvasMode && (
-          <CanvasElementsTab t={t} />
+          <CanvasElementsTab />
         )}
       </div>
     </div>
