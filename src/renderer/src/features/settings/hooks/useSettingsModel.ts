@@ -3,14 +3,18 @@ import { api } from "@shared/api";
 import type { MigrationHealth } from "@shared/types";
 import type { SettingsTabId } from "@renderer/features/settings/components/tabs/types";
 import type { ToastType } from "@shared/ui/ToastContext";
+import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 
 type ShowToast = (message: string, type: ToastType, duration?: number) => void;
 
 export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast) {
   const [isBusy, setIsBusy] = useState(false);
   const [migrationHealth, setMigrationHealth] = useState<MigrationHealth | null>(null);
+  const currentProject = useProjectStore((state) => state.currentProject);
   const [ollamaBaseUrl, setOllamaBaseUrl] = useState("http://localhost:11434");
   const [ollamaChatModel, setOllamaChatModel] = useState("");
+  const [ollamaEmbeddingModel, setOllamaEmbeddingModel] = useState("");
+  const [ollamaApiKey, setOllamaApiKey] = useState("");
 
   const refreshMigrationHealth = useCallback(async () => {
     const response = await api.maintenance.getMigrationHealth();
@@ -24,9 +28,11 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     void (async () => {
       const res = await api.settings.getAll();
       if (res.success && res.data?.llm?.ollama) {
-        const { baseUrl, chatModel } = res.data.llm.ollama;
+        const { baseUrl, chatModel, embeddingModel, apiKey } = res.data.llm.ollama;
         if (baseUrl) setOllamaBaseUrl(baseUrl);
         setOllamaChatModel(chatModel ?? "");
+        setOllamaEmbeddingModel(embeddingModel ?? "");
+        setOllamaApiKey(apiKey ?? "");
       }
       await refreshMigrationHealth();
     })();
@@ -36,6 +42,7 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     baseUrl: string;
     chatModel: string;
     embeddingModel?: string;
+    apiKey?: string;
   }) => {
     setIsBusy(true);
     try {
@@ -62,14 +69,35 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     return response.success && response.data?.ok === true;
   }, []);
 
+  const handleRebuildMemory = useCallback(async (): Promise<void> => {
+    if (!currentProject) {
+      showToast("열린 프로젝트가 없습니다.", "error");
+      return;
+    }
+    setIsBusy(true);
+    try {
+      const response = await api.memoryAdmin.rebuildChunks({ projectId: currentProject.id });
+      if (!response.success) {
+        showToast(response.error?.message ?? "메모리 재구성에 실패했습니다.", "error");
+        return;
+      }
+      showToast(`메모리 재구성을 시작했습니다. (${response.data?.queued ?? 0}개 작업 등록)`, "success");
+    } finally {
+      setIsBusy(false);
+    }
+  }, [currentProject, showToast]);
+
   return {
     isBusy,
     migrationHealth,
     refreshMigrationHealth,
     ollamaBaseUrl,
     ollamaChatModel,
+    ollamaEmbeddingModel,
+    ollamaApiKey,
     handleSaveOllamaConfig,
     handleListOllamaModels,
     handleTestOllamaConnection,
+    handleRebuildMemory,
   };
 }

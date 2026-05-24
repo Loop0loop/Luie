@@ -2,10 +2,12 @@
  * Main process entry point
  */
 
-// Load environment variables FIRST before any other imports
-// Only load .env in development mode (when VITE_DEV_SERVER_URL is expected)
-if (process.env.NODE_ENV !== 'production') {
+// Load environment variables FIRST before any other imports.
+// In packaged/production, .env may not exist, so load failures are ignored.
+try {
   await import("dotenv/config");
+} catch {
+  // no-op: continue with process env provided by runtime
 }
 
 import { app } from "electron";

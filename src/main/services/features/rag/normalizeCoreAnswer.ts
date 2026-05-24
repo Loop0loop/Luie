@@ -1,7 +1,6 @@
 export function normalizeCoreAnswer(raw: string): string {
   const withoutThinking = raw.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
-  const withoutCodeFence = withoutThinking.replace(/```[\s\S]*?```/g, "").trim();
-  const lines = withoutCodeFence
+  const lines = withoutThinking
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter((line) => line.length > 0);

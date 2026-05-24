@@ -6,11 +6,14 @@ import { Button } from "@renderer/components/ui/button";
 interface ModelTabProps {
   t: TFunction;
   isBusy: boolean;
-  onSaveOllamaConfig: (input: { baseUrl: string; chatModel: string; embeddingModel?: string }) => Promise<boolean>;
+  onSaveOllamaConfig: (input: { baseUrl: string; chatModel: string; embeddingModel?: string; apiKey?: string }) => Promise<boolean>;
   onListOllamaModels: (baseUrl: string) => Promise<string[]>;
   onTestOllamaConnection: (baseUrl: string) => Promise<boolean>;
+  onRebuildMemory: () => Promise<void>;
   initialBaseUrl?: string;
   initialChatModel?: string;
+  initialEmbeddingModel?: string;
+  initialApiKey?: string;
 }
 
 export function ModelTab({
@@ -19,11 +22,16 @@ export function ModelTab({
   onSaveOllamaConfig,
   onListOllamaModels,
   onTestOllamaConnection,
+  onRebuildMemory,
   initialBaseUrl = "http://localhost:11434",
   initialChatModel = "",
+  initialEmbeddingModel = "",
+  initialApiKey = "",
 }: ModelTabProps) {
   const [baseUrl, setBaseUrl] = useState(initialBaseUrl);
   const [chatModel, setChatModel] = useState(initialChatModel);
+  const [embeddingModel, setEmbeddingModel] = useState(initialEmbeddingModel);
+  const [apiKey, setApiKey] = useState(initialApiKey);
   const [models, setModels] = useState<string[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<"idle" | "testing" | "ok" | "fail">("idle");
   const [modelsLoading, setModelsLoading] = useState(false);
@@ -49,6 +57,14 @@ export function ModelTab({
   }, [initialChatModel]);
 
   useEffect(() => {
+    setEmbeddingModel(initialEmbeddingModel);
+  }, [initialEmbeddingModel]);
+
+  useEffect(() => {
+    setApiKey(initialApiKey);
+  }, [initialApiKey]);
+
+  useEffect(() => {
     if (initialBaseUrl) void loadModels(initialBaseUrl);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialBaseUrl]);
@@ -63,8 +79,13 @@ export function ModelTab({
   }, [baseUrl, onTestOllamaConnection, loadModels]);
 
   const handleSave = useCallback(async () => {
-    await onSaveOllamaConfig({ baseUrl, chatModel });
-  }, [baseUrl, chatModel, onSaveOllamaConfig]);
+    await onSaveOllamaConfig({
+      baseUrl,
+      chatModel,
+      embeddingModel: embeddingModel.trim() || undefined,
+      apiKey: apiKey.trim() || undefined,
+    });
+  }, [baseUrl, chatModel, embeddingModel, apiKey, onSaveOllamaConfig]);
 
   return (
     <div className="space-y-6 p-1">
@@ -149,6 +170,29 @@ export function ModelTab({
         )}
       </div>
 
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-fg-secondary">임베딩 모델 (선택)</label>
+        <input
+          type="text"
+          value={embeddingModel}
+          onChange={(e) => setEmbeddingModel(e.target.value)}
+          placeholder="예: nomic-embed-text"
+          className="w-full text-sm bg-surface border border-border rounded-lg px-3 py-1.5 text-fg placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+        />
+        <p className="text-xs text-muted">벡터 검색에 사용됩니다. 비워두면 채팅 모델을 사용합니다.</p>
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-fg-secondary">API Key (선택)</label>
+        <input
+          type="password"
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+          placeholder="필요한 provider에서만 사용됩니다"
+          className="w-full text-sm bg-surface border border-border rounded-lg px-3 py-1.5 text-fg placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+        />
+      </div>
+
       {/* Save button */}
       <Button
         onClick={() => void handleSave()}
@@ -157,6 +201,21 @@ export function ModelTab({
       >
         저장
       </Button>
+
+      {/* Memory rebuild */}
+      <div className="rounded-lg bg-surface border border-border p-3 space-y-2">
+        <p className="text-xs font-medium text-fg-secondary">메모리 재구성</p>
+        <p className="text-xs text-muted">원고 내용이 RAG에 반영되지 않는 경우 실행하세요. 백그라운드로 처리됩니다.</p>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => void onRebuildMemory()}
+          disabled={isBusy}
+          className="w-full"
+        >
+          메모리 재구성 시작
+        </Button>
+      </div>
 
       {/* Install hint */}
       <div className="rounded-lg bg-surface border border-border p-3 space-y-1.5">

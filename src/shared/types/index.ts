@@ -670,6 +670,7 @@ export interface MemoryEmbeddingStatus {
   runningCount: number;
   failedCount: number;
   completedCount: number;
+  skippedCount?: number;
 }
 
 export interface RagQaRequest {
@@ -1062,6 +1063,7 @@ export interface AppSettings {
       baseUrl?: string;
       chatModel?: string;
       embeddingModel?: string;
+      apiKey?: string;
     };
     ragTemperature?: number;
     ragMaxTokens?: number;
@@ -1070,6 +1072,12 @@ export interface AppSettings {
 
 export interface OllamaConnectionResult {
   ok: boolean;
+}
+
+export interface LlmRuntimeInfo {
+  provider: "gemini" | "openai" | "ollama" | "deterministic";
+  model: string;
+  alternativeModel?: string | null;
 }
 
 

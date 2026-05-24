@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import type { AnyColumn, SQLWrapper } from "drizzle-orm";
 import { db } from "../../../database/index.js";
 import {
@@ -8,6 +8,7 @@ import {
   event,
   faction,
   memoryChunk,
+  memoryBuildJob,
   plot,
   synopsis,
   term,
@@ -29,6 +30,63 @@ const logger = createLogger("RagContextAssembler");
 // Layer1 is computed dynamically from contextBudget in assembleRagContext.
 const LAYER0_CHAR_LIMIT = 2_000;
 const LAYER2_CHAR_LIMIT = 1_500;
+const EVIDENCE_QUOTE_CHAR_LIMIT = 1_000;
+
+const KOREAN_SUFFIXES = [
+  "은", "는", "이", "가", "을", "를", "에", "에서", "에게", "한테", "께",
+  "와", "과", "으로", "로", "도", "만", "까지", "부터", "처럼", "보다", "의",
+  "랑", "이라", "라", "야", "요", "다",
+];
+
+function buildLexicalTokens(input: string, maxTokens: number): string[] {
+  const seeds = input
+    .replace(/[^0-9A-Za-z가-힣_\s]/g, " ")
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2)
+    .slice(0, maxTokens);
+
+  const expanded = new Set<string>();
+  for (const token of seeds) {
+    expanded.add(token);
+    for (const suffix of KOREAN_SUFFIXES) {
+      if (token.endsWith(suffix) && token.length - suffix.length >= 2) {
+        expanded.add(token.slice(0, token.length - suffix.length));
+      }
+    }
+  }
+
+  return [...expanded]
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2);
+}
+
+async function logEvidenceGapDiagnostics(projectId: string, question: string): Promise<void> {
+  try {
+    const [memoryCountRows, jobRows] = await Promise.all([
+      db.getClient().select({ count: sql<number>`count(*)` }).from(memoryChunk).where(eq(memoryChunk.projectId, projectId)),
+      db.getClient()
+        .select({ jobType: memoryBuildJob.jobType, status: memoryBuildJob.status, count: sql<number>`count(*)` })
+        .from(memoryBuildJob)
+        .where(
+          and(
+            eq(memoryBuildJob.projectId, projectId),
+            inArray(memoryBuildJob.jobType, ["rebuild_chunks", "rebuild_embedding", "rebuild_summary"]),
+            inArray(memoryBuildJob.status, ["pending", "running", "failed"]),
+          ),
+        )
+        .groupBy(memoryBuildJob.jobType, memoryBuildJob.status),
+    ]);
+    logger.warn("RAG evidence empty", {
+      projectId,
+      questionPreview: question.slice(0, 120),
+      memoryChunkCount: Number(memoryCountRows[0]?.count ?? 0),
+      pendingJobs: jobRows,
+    });
+  } catch (error) {
+    logger.warn("Failed to collect RAG evidence diagnostics", { projectId, error });
+  }
+}
 
 function trimByChars(input: string, limit: number): string {
   if (input.length <= limit) return input;
@@ -256,12 +314,7 @@ async function buildLayer3Evidence(projectId: string, question: string): Promise
   if (rows.length === 0) {
     const normalizedQuestion = question.trim();
     const escaped = escapeLike(normalizedQuestion);
-    const rawTokens = normalizedQuestion
-      .replace(/[^0-9A-Za-z가-힣_\s]/g, " ")
-      .split(/\s+/)
-      .map((token) => token.trim())
-      .filter((token) => token.length >= 2)
-      .slice(0, 8);
+  const rawTokens = buildLexicalTokens(normalizedQuestion, 8);
     const tokenPredicates = rawTokens
       .map((token) => escapeLike(token))
       .filter((token): token is string => token.length > 0)
@@ -289,7 +342,7 @@ async function buildLayer3Evidence(projectId: string, question: string): Promise
               lexicalPredicate,
             ),
           )
-          .orderBy(asc(memoryChunk.updatedAt))
+          .orderBy(desc(memoryChunk.updatedAt))
           .limit(10);
         rows = lexicalRows.map((row) => ({
           chunkId: row.chunkId,
@@ -311,8 +364,12 @@ async function buildLayer3Evidence(projectId: string, question: string): Promise
     chunkId: row.chunkId,
     chapterId: row.chapterId,
     offset: row.startOffset ?? 0,
-    quote: trimByChars(row.content, 320),
+    quote: trimByChars(row.content, EVIDENCE_QUOTE_CHAR_LIMIT),
   }));
+
+  if (evidence.length === 0) {
+    await logEvidenceGapDiagnostics(projectId, question);
+  }
 
   const section = evidence.length
     ? evidence

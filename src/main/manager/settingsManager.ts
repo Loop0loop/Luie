@@ -277,20 +277,20 @@ export class SettingsManager {
   }
 
   getLlmSettings(): {
-    ollama?: { baseUrl?: string; chatModel?: string; embeddingModel?: string };
+    ollama?: { baseUrl?: string; chatModel?: string; embeddingModel?: string; apiKey?: string };
     ragTemperature?: number;
     ragMaxTokens?: number;
   } {
     const llm = this.store.get("llm") ?? {};
     return {
-      ollama: (llm as { ollama?: { baseUrl?: string; chatModel?: string; embeddingModel?: string } }).ollama,
+      ollama: (llm as { ollama?: { baseUrl?: string; chatModel?: string; embeddingModel?: string; apiKey?: string } }).ollama,
       ragTemperature: (llm as { ragTemperature?: number }).ragTemperature,
       ragMaxTokens: (llm as { ragMaxTokens?: number }).ragMaxTokens,
     };
   }
 
   setLlmSettings(settings: {
-    ollama?: { baseUrl?: string; chatModel?: string; embeddingModel?: string };
+    ollama?: { baseUrl?: string; chatModel?: string; embeddingModel?: string; apiKey?: string };
     ragTemperature?: number;
     ragMaxTokens?: number;
   }): void {

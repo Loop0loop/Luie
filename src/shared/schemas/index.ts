@@ -656,6 +656,7 @@ export const settingsOllamaConfigSchema = z.strictObject({
     }, "Ollama baseUrl must be a valid http(s) URL"),
   chatModel: z.string().min(1).max(200),
   embeddingModel: z.string().min(1).max(200).optional(),
+  apiKey: z.string().min(1).max(2048).optional(),
 });
 
 const uiRightPanelTabSchema = z.enum([

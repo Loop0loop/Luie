@@ -1,5 +1,5 @@
 import path from "node:path";
-import { app, utilityProcess, webContents } from "electron";
+import { BrowserWindow, app, utilityProcess } from "electron";
 import type { UtilityProcess } from "electron";
 import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
 import { ErrorCode } from "../../../../shared/constants/errorCode.js";
@@ -56,7 +56,7 @@ export class UtilityProcessBridge {
   private utilityChild: UtilityProcess | null = null;
   private requestSeq = 0;
   private pendingRequests = new Map<string, PendingRequest>();
-  private ragRunToWebContentsId = new Map<string, number>();
+  private ragRunToWindowId = new Map<string, number>();
   private ragRunWatchdogs = new Map<string, ReturnType<typeof setTimeout>>();
   private pendingRagEvents = new Map<string, PendingRagEvent[]>();
   private pendingRagEventTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -79,6 +79,7 @@ export class UtilityProcessBridge {
       const child = utilityProcess.fork(entryPath, [], {
         env: {
           ...process.env,
+          LUIE_IS_UTILITY_PROCESS: "1",
           LUIE_APP_IS_PACKAGED: app.isPackaged ? "1" : "0",
           LUIE_USER_DATA_PATH: app.getPath("userData"),
         },
@@ -93,7 +94,7 @@ export class UtilityProcessBridge {
         for (const runId of this.ragRunWatchdogs.keys()) {
           this.clearRagRunWatchdog(runId);
         }
-        this.ragRunToWebContentsId.clear();
+        this.ragRunToWindowId.clear();
         this.clearPendingRagEvents();
         if (this.utilityChild === child) {
           this.utilityChild = null;
@@ -141,7 +142,7 @@ export class UtilityProcessBridge {
           clearTimeout(graceTimer);
           clearTimeout(timeout);
           child.off("message", onMessage);
-          this.ragRunToWebContentsId.clear();
+          this.ragRunToWindowId.clear();
           for (const runId of this.ragRunWatchdogs.keys()) {
             this.clearRagRunWatchdog(runId);
           }
@@ -181,7 +182,7 @@ export class UtilityProcessBridge {
     }
   }
 
-  async askRagQa(input: RagQaRequest, targetWebContentsId: number): Promise<RagQaRunHandle> {
+  async askRagQa(input: RagQaRequest, targetWindowId: number): Promise<RagQaRunHandle> {
     if (!this.utilityChild) {
       const started = await this.start();
       if (!started || !this.utilityChild) {
@@ -191,7 +192,7 @@ export class UtilityProcessBridge {
     const result = await this.request("ragQa.ask", input);
     const runHandle = result as RagQaRunHandle;
     if (runHandle?.runId) {
-      this.ragRunToWebContentsId.set(runHandle.runId, targetWebContentsId);
+      this.ragRunToWindowId.set(runHandle.runId, targetWindowId);
       this.setRagRunWatchdog(runHandle.runId);
       this.flushPendingRagEvents(runHandle.runId);
     }
@@ -201,12 +202,12 @@ export class UtilityProcessBridge {
   async stopRagQa(runId?: string): Promise<{ stopped: boolean }> {
     if (runId) {
       this.clearRagRunWatchdog(runId);
-      this.ragRunToWebContentsId.delete(runId);
+      this.ragRunToWindowId.delete(runId);
     } else {
-      for (const key of this.ragRunToWebContentsId.keys()) {
+      for (const key of this.ragRunToWindowId.keys()) {
         this.clearRagRunWatchdog(key);
       }
-      this.ragRunToWebContentsId.clear();
+      this.ragRunToWindowId.clear();
     }
     return (await this.request("ragQa.stop", { runId })) as { stopped: boolean };
   }
@@ -323,39 +324,39 @@ export class UtilityProcessBridge {
   }
 
   private forwardRagStream(payload: RagQaStreamPayload): void {
-    const targetId = this.ragRunToWebContentsId.get(payload.runId);
+    const targetId = this.ragRunToWindowId.get(payload.runId);
     if (!targetId) {
       this.enqueuePendingRagEvent(payload.runId, { kind: "stream", payload });
       return;
     }
-    const target = webContents.fromId(targetId);
-    if (!target || target.isDestroyed()) {
-      this.ragRunToWebContentsId.delete(payload.runId);
+    const targetWindow = BrowserWindow.fromId(targetId);
+    if (!targetWindow || targetWindow.isDestroyed()) {
+      this.ragRunToWindowId.delete(payload.runId);
       return;
     }
     this.setRagRunWatchdog(payload.runId);
-    target.send(IPC_CHANNELS.RAG_QA_STREAM, payload);
+    targetWindow.webContents.send(IPC_CHANNELS.RAG_QA_STREAM, payload);
     if (payload.done) {
       this.clearRagRunWatchdog(payload.runId);
-      this.ragRunToWebContentsId.delete(payload.runId);
+      this.ragRunToWindowId.delete(payload.runId);
     }
   }
 
   private forwardRagError(payload: RagQaErrorPayload): void {
     if (!payload.runId) return;
-    const targetId = this.ragRunToWebContentsId.get(payload.runId);
+    const targetId = this.ragRunToWindowId.get(payload.runId);
     if (!targetId) {
       this.enqueuePendingRagEvent(payload.runId, { kind: "error", payload });
       return;
     }
-    const target = webContents.fromId(targetId);
-    if (!target || target.isDestroyed()) {
-      this.ragRunToWebContentsId.delete(payload.runId);
+    const targetWindow = BrowserWindow.fromId(targetId);
+    if (!targetWindow || targetWindow.isDestroyed()) {
+      this.ragRunToWindowId.delete(payload.runId);
       return;
     }
-    target.send(IPC_CHANNELS.RAG_QA_ERROR, payload);
+    targetWindow.webContents.send(IPC_CHANNELS.RAG_QA_ERROR, payload);
     this.clearRagRunWatchdog(payload.runId);
-    this.ragRunToWebContentsId.delete(payload.runId);
+    this.ragRunToWindowId.delete(payload.runId);
   }
 
   private clearPendingRequests(message: string): void {
@@ -367,10 +368,10 @@ export class UtilityProcessBridge {
   }
 
   private emitCrashErrorsToActiveRuns(message: string): void {
-    for (const [runId, webContentsId] of this.ragRunToWebContentsId.entries()) {
-      const target = webContents.fromId(webContentsId);
-      if (!target || target.isDestroyed()) continue;
-      target.send(IPC_CHANNELS.RAG_QA_ERROR, {
+    for (const [runId, windowId] of this.ragRunToWindowId.entries()) {
+      const targetWindow = BrowserWindow.fromId(windowId);
+      if (!targetWindow || targetWindow.isDestroyed()) continue;
+      targetWindow.webContents.send(IPC_CHANNELS.RAG_QA_ERROR, {
         runId,
         code: ErrorCode.RAG_QA_UTILITY_EXITED,
         message,
@@ -420,20 +421,20 @@ export class UtilityProcessBridge {
   private setRagRunWatchdog(runId: string): void {
     this.clearRagRunWatchdog(runId);
     const timer = setTimeout(() => {
-      const webContentsId = this.ragRunToWebContentsId.get(runId);
-      if (!webContentsId) return;
-      const target = webContents.fromId(webContentsId);
-      if (!target || target.isDestroyed()) {
-        this.ragRunToWebContentsId.delete(runId);
+      const windowId = this.ragRunToWindowId.get(runId);
+      if (!windowId) return;
+      const targetWindow = BrowserWindow.fromId(windowId);
+      if (!targetWindow || targetWindow.isDestroyed()) {
+        this.ragRunToWindowId.delete(runId);
         this.clearRagRunWatchdog(runId);
         return;
       }
-      target.send(IPC_CHANNELS.RAG_QA_ERROR, {
+      targetWindow.webContents.send(IPC_CHANNELS.RAG_QA_ERROR, {
         runId,
         code: ErrorCode.RAG_QA_FAILED,
         message: "RAG generation timeout",
       } satisfies RagQaErrorPayload);
-      this.ragRunToWebContentsId.delete(runId);
+      this.ragRunToWindowId.delete(runId);
       this.clearRagRunWatchdog(runId);
       void this.stopRagQa(runId).catch((error) => {
         logger.warn("Failed to stop timed-out RAG run", { runId, error });

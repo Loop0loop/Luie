@@ -83,7 +83,7 @@ export async function registerAllIPCHandlers(): Promise<void> {
     logger,
     manuscriptAnalysisService,
     ragQaService: {
-      ask: (input, window) => utilityProcessBridge.askRagQa(input, window.webContents.id),
+      ask: (input, window) => utilityProcessBridge.askRagQa(input, window.id),
       stop: (runId?: string) => utilityProcessBridge.stopRagQa(runId),
     },
   });
