@@ -11,6 +11,7 @@ import { Plus, FileText, Image, Layers, RefreshCw, Focus, ChevronLeft } from "lu
 import { useTranslation } from "react-i18next";
 import { useCanvasViewStore } from "../../stores";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { cn } from "@shared/types/utils";
 import { createLogger } from "@shared/logger";
 import { Button } from "@renderer/components/ui/button";
@@ -24,6 +25,7 @@ export function BottomInteractiveToolbar() {
   const activePanel = useCanvasViewStore((state) => state.activePanel);
   const setActivePanel = useCanvasViewStore((state) => state.setActivePanel);
   const setMainView = useUIStore((state) => state.setMainView);
+  const enableAnimations = useEditorStore((state) => state.enableAnimations);
 
   const isGraphMode = activePanel === "graph";
 
@@ -36,30 +38,61 @@ export function BottomInteractiveToolbar() {
     logger.info("Toolbar action triggered", { actionKey });
   };
 
+  // 애니메이션 클래스 헬퍼
+  const transitionClass = enableAnimations ? "transition-all duration-300 ease-in-out" : "transition-none";
+
   return (
     <div
       className="pointer-events-auto absolute bottom-6 left-1/2 z-30 -translate-x-1/2 select-none"
       data-testid="bottom-interactive-toolbar"
     >
-      <div className="flex h-11 items-center gap-2 rounded-full border border-[#3d3d3d] bg-[#2c2c2c]/95 px-3 py-1 shadow-2xl backdrop-blur-md">
+      <div className={cn(
+        "flex h-11 items-center gap-2 rounded-full border shadow-2xl backdrop-blur-md px-3 py-1",
+        "bg-[#f5f5f5]/95 border-gray-300 text-gray-800 dark:bg-[#2c2c2c]/95 dark:border-[#3d3d3d] dark:text-white",
+        transitionClass
+      )}>
         
-        {/* 에디터 복귀 버튼 */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleExit}
-          title={t("canvas.toolbar.exit")}
-          className="text-xs font-semibold text-[#b3b3b3] hover:text-white hover:bg-[#3d3d3d] rounded-full transition-colors h-8 px-3 gap-1 border-none cursor-pointer bg-transparent"
-        >
-          <ChevronLeft className="h-4 w-4 text-[#b3b3b3]" />
-          <span>{t("canvas.toolbar.exit")}</span>
-        </Button>
+        {/* 1. Figma 스타일 세그먼트 토글 (가장 좌측 배치) */}
+        <div className={cn(
+          "flex items-center gap-1 p-0.5 rounded-full shrink-0 h-8",
+          "bg-[#e0e0e0] border border-gray-300 dark:bg-[#1e1e1e] dark:border-[#3d3d3d]",
+          transitionClass
+        )}>
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => setActivePanel("canvas")}
+            className={cn(
+              "rounded-full text-[11px] font-bold h-7 px-3.5 border-none cursor-pointer",
+              transitionClass,
+              !isGraphMode
+                ? "bg-[#0c8ce9] text-white shadow-md shadow-[#0c8ce9]/20 hover:bg-[#0c8ce9] hover:text-white"
+                : "text-[#666666] hover:bg-gray-200/50 hover:text-black dark:text-[#b3b3b3] dark:hover:bg-[#2c2c2c] dark:hover:text-white bg-transparent"
+            )}
+          >
+            {t("canvas.activity.canvas")}
+          </Button>
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => setActivePanel("graph")}
+            className={cn(
+              "rounded-full text-[11px] font-bold h-7 px-3.5 border-none cursor-pointer",
+              transitionClass,
+              isGraphMode
+                ? "bg-[#0c8ce9] text-white shadow-md shadow-[#0c8ce9]/20 hover:bg-[#0c8ce9] hover:text-white"
+                : "text-[#666666] hover:bg-gray-200/50 hover:text-black dark:text-[#b3b3b3] dark:hover:bg-[#2c2c2c] dark:hover:text-white bg-transparent"
+            )}
+          >
+            {t("canvas.activity.graph")}
+          </Button>
+        </div>
 
         {/* 구분선 */}
-        <div className="w-px h-5 bg-[#3d3d3d]" />
+        <div className="w-px h-5 bg-gray-300 dark:bg-[#3d3d3d]" />
 
-        {/* 모드별 동적 액션 목록 */}
-        <div className="flex items-center gap-1">
+        {/* 2. 모드별 동적 액션 목록 (중앙 배치 + 너비 308px 고정으로 Layout Shift 완전 방지) */}
+        <div className="flex items-center gap-1 w-[308px] shrink-0 justify-center">
           {!isGraphMode ? (
             <>
               {/* Canvas Mode 3대 액션 */}
@@ -68,10 +101,14 @@ export function BottomInteractiveToolbar() {
                 size="sm"
                 onClick={() => handleAction("new-block")}
                 title={t("canvas.toolbar.newBlock")}
-                className="text-xs font-medium text-[#b3b3b3] hover:text-white hover:bg-[#3d3d3d] rounded-full transition-colors h-8 px-3 gap-1.5 border-none cursor-pointer bg-transparent"
+                className={cn(
+                  "text-xs font-medium rounded-full h-8 px-1 w-[98px] shrink-0 justify-center gap-1 border-none cursor-pointer bg-transparent",
+                  "text-[#666666] hover:text-black hover:bg-gray-200 dark:text-[#b3b3b3] dark:hover:text-white dark:hover:bg-[#3d3d3d]",
+                  transitionClass
+                )}
               >
-                <Plus className="h-4 w-4 text-[#b3b3b3] group-hover:text-white" />
-                <span>{t("canvas.toolbar.newBlock")}</span>
+                <Plus className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t("canvas.toolbar.newBlock")}</span>
               </Button>
 
               <Button
@@ -79,10 +116,14 @@ export function BottomInteractiveToolbar() {
                 size="sm"
                 onClick={() => handleAction("import-doc")}
                 title={t("canvas.toolbar.importDoc")}
-                className="text-xs font-medium text-[#b3b3b3] hover:text-white hover:bg-[#3d3d3d] rounded-full transition-colors h-8 px-3 gap-1.5 border-none cursor-pointer bg-transparent"
+                className={cn(
+                  "text-xs font-medium rounded-full h-8 px-1 w-[98px] shrink-0 justify-center gap-1 border-none cursor-pointer bg-transparent",
+                  "text-[#666666] hover:text-black hover:bg-gray-200 dark:text-[#b3b3b3] dark:hover:text-white dark:hover:bg-[#3d3d3d]",
+                  transitionClass
+                )}
               >
-                <FileText className="h-4 w-4 text-[#b3b3b3] group-hover:text-white" />
-                <span>{t("canvas.toolbar.importDoc")}</span>
+                <FileText className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t("canvas.toolbar.importDoc")}</span>
               </Button>
 
               <Button
@@ -90,10 +131,14 @@ export function BottomInteractiveToolbar() {
                 size="sm"
                 onClick={() => handleAction("insert-image")}
                 title={t("canvas.toolbar.insertImage")}
-                className="text-xs font-medium text-[#b3b3b3] hover:text-white hover:bg-[#3d3d3d] rounded-full transition-colors h-8 px-3 gap-1.5 border-none cursor-pointer bg-transparent"
+                className={cn(
+                  "text-xs font-medium rounded-full h-8 px-1 w-[98px] shrink-0 justify-center gap-1 border-none cursor-pointer bg-transparent",
+                  "text-[#666666] hover:text-black hover:bg-gray-200 dark:text-[#b3b3b3] dark:hover:text-white dark:hover:bg-[#3d3d3d]",
+                  transitionClass
+                )}
               >
-                <Image className="h-4 w-4 text-[#b3b3b3] group-hover:text-white" />
-                <span>{t("canvas.toolbar.insertImage")}</span>
+                <Image className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t("canvas.toolbar.insertImage")}</span>
               </Button>
             </>
           ) : (
@@ -104,10 +149,14 @@ export function BottomInteractiveToolbar() {
                 size="sm"
                 onClick={() => handleAction("filter-layer")}
                 title={t("canvas.toolbar.filterLayer")}
-                className="text-xs font-medium text-[#b3b3b3] hover:text-white hover:bg-[#3d3d3d] rounded-full transition-colors h-8 px-3 gap-1.5 border-none cursor-pointer bg-transparent"
+                className={cn(
+                  "text-xs font-medium rounded-full h-8 px-1 w-[98px] shrink-0 justify-center gap-1 border-none cursor-pointer bg-transparent",
+                  "text-[#666666] hover:text-black hover:bg-gray-200 dark:text-[#b3b3b3] dark:hover:text-white dark:hover:bg-[#3d3d3d]",
+                  transitionClass
+                )}
               >
-                <Layers className="h-4 w-4 text-[#b3b3b3] group-hover:text-white" />
-                <span>{t("canvas.toolbar.filterLayer")}</span>
+                <Layers className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t("canvas.toolbar.filterLayer")}</span>
               </Button>
 
               <Button
@@ -115,10 +164,14 @@ export function BottomInteractiveToolbar() {
                 size="sm"
                 onClick={() => handleAction("ai-sync")}
                 title={t("canvas.toolbar.aiSync")}
-                className="text-xs font-medium text-[#b3b3b3] hover:text-white hover:bg-[#3d3d3d] rounded-full transition-colors h-8 px-3 gap-1 border-none cursor-pointer bg-transparent"
+                className={cn(
+                  "text-xs font-medium rounded-full h-8 px-1 w-[98px] shrink-0 justify-center gap-1 border-none cursor-pointer bg-transparent",
+                  "text-[#666666] hover:text-black hover:bg-gray-200 dark:text-[#b3b3b3] dark:hover:text-white dark:hover:bg-[#3d3d3d]",
+                  transitionClass
+                )}
               >
-                <RefreshCw className="h-3.5 w-3.5 text-[#b3b3b3] group-hover:text-white" />
-                <span>{t("canvas.toolbar.aiSync")}</span>
+                <RefreshCw className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{t("canvas.toolbar.aiSync")}</span>
               </Button>
 
               <Button
@@ -126,47 +179,37 @@ export function BottomInteractiveToolbar() {
                 size="sm"
                 onClick={() => handleAction("focus-center")}
                 title={t("canvas.toolbar.focusCenter")}
-                className="text-xs font-medium text-[#b3b3b3] hover:text-white hover:bg-[#3d3d3d] rounded-full transition-colors h-8 px-3 gap-1.5 border-none cursor-pointer bg-transparent"
+                className={cn(
+                  "text-xs font-medium rounded-full h-8 px-1 w-[98px] shrink-0 justify-center gap-1 border-none cursor-pointer bg-transparent",
+                  "text-[#666666] hover:text-black hover:bg-gray-200 dark:text-[#b3b3b3] dark:hover:text-white dark:hover:bg-[#3d3d3d]",
+                  transitionClass
+                )}
               >
-                <Focus className="h-4 w-4 text-[#b3b3b3] group-hover:text-white" />
-                <span>{t("canvas.toolbar.focusCenter")}</span>
+                <Focus className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t("canvas.toolbar.focusCenter")}</span>
               </Button>
             </>
           )}
         </div>
 
         {/* 구분선 */}
-        <div className="w-px h-5 bg-[#3d3d3d]" />
+        <div className="w-px h-5 bg-gray-300 dark:bg-[#3d3d3d]" />
 
-        {/* Figma 스타일 세그먼트 토글 */}
-        <div className="flex items-center gap-1 p-1 rounded-full bg-[#1e1e1e] border border-[#3d3d3d] shrink-0 h-9">
-          <Button
-            variant="ghost"
-            size="xs"
-            onClick={() => setActivePanel("canvas")}
-            className={cn(
-              "rounded-full text-[11px] font-bold transition-all duration-200 h-7 px-3.5 border-none cursor-pointer",
-              !isGraphMode
-                ? "bg-[#0c8ce9] text-white shadow-md shadow-[#0c8ce9]/20 hover:bg-[#0c8ce9] hover:text-white"
-                : "text-[#b3b3b3] hover:bg-[#2c2c2c] hover:text-white bg-transparent"
-            )}
-          >
-            {t("canvas.activity.canvas")}
-          </Button>
-          <Button
-            variant="ghost"
-            size="xs"
-            onClick={() => setActivePanel("graph")}
-            className={cn(
-              "rounded-full text-[11px] font-bold transition-all duration-200 h-7 px-3.5 border-none cursor-pointer",
-              isGraphMode
-                ? "bg-[#0c8ce9] text-white shadow-md shadow-[#0c8ce9]/20 hover:bg-[#0c8ce9] hover:text-white"
-                : "text-[#b3b3b3] hover:bg-[#2c2c2c] hover:text-white bg-transparent"
-            )}
-          >
-            {t("canvas.activity.graph")}
-          </Button>
-        </div>
+        {/* 3. 에디터 복귀 버튼 (우측 배치) */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleExit}
+          title={t("canvas.toolbar.exit")}
+          className={cn(
+            "text-xs font-semibold rounded-full h-8 px-3 gap-1 border-none cursor-pointer bg-transparent shrink-0",
+            "text-[#666666] hover:text-black hover:bg-gray-200 dark:text-[#b3b3b3] dark:hover:text-white dark:hover:bg-[#3d3d3d]",
+            transitionClass
+          )}
+        >
+          <ChevronLeft className="h-4 w-4" />
+          <span>{t("canvas.toolbar.exit")}</span>
+        </Button>
 
       </div>
     </div>
