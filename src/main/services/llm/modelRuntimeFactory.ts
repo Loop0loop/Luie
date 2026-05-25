@@ -5,7 +5,6 @@ import { ExternalApiProvider } from "./providers/externalApiProvider.js";
 import { GeminiProvider } from "./providers/geminiProvider.js";
 import type { SettingsManager } from "../../manager/settingsManager.js";
 import type { LlmRuntimeInfo } from "../../../shared/types/index.js";
-import { sidecarManager } from "./sidecarManager.js";
 
 const logger = createLogger("ModelRuntimeFactory");
 const deterministicProvider = new DeterministicProvider();
@@ -65,6 +64,28 @@ const loadSettingsManager = (() => {
     }
     const module = await cached;
     return module.settingsManager;
+  };
+})();
+
+const loadSidecarManager = (() => {
+  let cached: Promise<{ sidecarManager: { ensureStarted: (
+    binaryPath: string,
+    modelPath: string,
+    options?: { gpuLayers?: number; contextSize?: number; signal?: AbortSignal },
+  ) => Promise<string> } }> | null = null;
+  return async () => {
+    if (!cached) {
+      cached = import("./sidecarManager.js") as Promise<{
+        sidecarManager: {
+          ensureStarted: (
+            binaryPath: string,
+            modelPath: string,
+            options?: { gpuLayers?: number; contextSize?: number; signal?: AbortSignal },
+          ) => Promise<string>;
+        };
+      }>;
+    }
+    return cached;
   };
 })();
 
@@ -167,6 +188,7 @@ async function resolveRuntime(): Promise<ResolvedRuntime> {
     if (kind === "sidecar") {
       if (!(localLlm?.enabled && localLlm.modelPath && localLlm.binaryPath)) return null;
       try {
+        const { sidecarManager } = await loadSidecarManager();
         const baseUrl = await sidecarManager.ensureStarted(
           localLlm.binaryPath,
           localLlm.modelPath,
