@@ -82,7 +82,7 @@ export default function GraphSurface() {
     });
 
     // B. 노드 크기 및 별자리 발광 속성 동적 연산
-    const computedNodes = MOCK_GRAPH_NODES.map((node) => {
+    const computedNodes = MOCK_GRAPH_NODES.map((node): Node<GraphNodeData> => {
       const isCharacterMode = activeMode === "character";
       const isEarlyFilter = selectedChapterFilter === "early";
 
@@ -93,36 +93,18 @@ export default function GraphSurface() {
         node.id === GRAPH_CORE_EVENTS.REBELS;
       const opacity = isEarlyFilter && is15ChapterRelatedNode ? 0.3 : 1.0;
 
-      // 중심 주성 판별
-      let starGrade: "prime" | "major" | "minor" = "minor";
-
-      if (isCharacterMode) {
-        // 캐릭터 모드에서는 "진서(주인공)" 노드가 중심 거성
-        if (node.id === GRAPH_CORE_CHARACTERS.JINSEO) {
-          starGrade = "prime";
-        } else if (
-          node.id === GRAPH_CORE_CHARACTERS.SERIN || 
-          node.id === "palace" || 
-          node.id === GRAPH_CORE_EVENTS.AMBUSH
-        ) {
-          starGrade = "major"; // 직접적 조연 및 핵심 장소
-        } else {
-          starGrade = "minor";
-        }
-      } else {
-        // 사건 모드에서는 "마차 습격 사건" 노드가 중심 거성
-        if (node.id === GRAPH_CORE_EVENTS.AMBUSH) {
-          starGrade = "prime";
-        } else if (
-          node.id === GRAPH_CORE_EVENTS.REBELS || 
-          node.id === GRAPH_CORE_CHARACTERS.JINSEO || 
-          node.id === GRAPH_CORE_EVENTS.CHAPTER15
-        ) {
-          starGrade = "major"; // 인과 관계 핵심 노드
-        } else {
-          starGrade = "minor";
-        }
-      }
+      // 중심 주성 판별 (let 대입문을 삼항 연산자 const로 치환하여 assigned but not used 경고 100% 영구 해결)
+      const starGrade: "prime" | "major" | "minor" = isCharacterMode
+        ? node.id === GRAPH_CORE_CHARACTERS.JINSEO
+          ? "prime"
+          : (node.id === GRAPH_CORE_CHARACTERS.SERIN || node.id === "palace" || node.id === GRAPH_CORE_EVENTS.AMBUSH)
+            ? "major"
+            : "minor"
+        : node.id === GRAPH_CORE_EVENTS.AMBUSH
+          ? "prime"
+          : (node.id === GRAPH_CORE_EVENTS.REBELS || node.id === GRAPH_CORE_CHARACTERS.JINSEO || node.id === GRAPH_CORE_EVENTS.CHAPTER15)
+            ? "major"
+            : "minor";
 
       // 특정 캐릭터/사건 빠른 필터 포커싱 시, 대상 노드가 아닌 것들은 감쇠 처리
       let filterFocusedOpacity = 1.0;
