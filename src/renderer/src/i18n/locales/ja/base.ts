@@ -96,6 +96,19 @@ export const jaBase = {
       downloadingBinary: "バイナリをダウンロード中",
       downloadingModel: "モデルをダウンロード中",
       enabled: "ローカルAIを使用",
+      hfSearch: {
+        title: "Hugging Face GGUF検索",
+        description: "公開GGUFモデルを検索し、選択した量子化ファイルをインストールします。",
+        placeholder: "例: Qwen2.5-Instruct, Gemma, Llama",
+        searchBtn: "検索",
+        searching: "検索中...",
+        selectFile: "GGUFファイルを選択",
+        noResults: "検索結果がありません。",
+        noFiles: "GGUFファイルがありません。",
+        downloads: "ダウンロード",
+        likes: "いいね",
+        downloadSelected: "選択したモデルをダウンロード",
+      },
     },
     appearance: {
       baseTheme: {

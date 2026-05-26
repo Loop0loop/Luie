@@ -17,6 +17,99 @@ export type DownloadProgress = {
 
 export type ProgressCallback = (progress: DownloadProgress) => void;
 
+export type HfModelSearchResult = {
+  repoId: string;
+  downloads: number;
+  likes: number;
+  lastModified?: string;
+  tags?: string[];
+};
+
+export type HfModelFile = {
+  filename: string;
+  sizeBytes: number;
+};
+
+function toNumber(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function toStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value.filter((item): item is string => typeof item === "string");
+}
+
+function assertHttpOk(response: Response, action: string): void {
+  if (!response.ok) {
+    throw new Error(`${action} failed: HTTP ${response.status}`);
+  }
+}
+
+export async function searchHfModels(query: string): Promise<HfModelSearchResult[]> {
+  const normalized = query.trim();
+  if (!normalized) return [];
+  const params = new URLSearchParams({
+    search: normalized,
+    filter: "gguf",
+    sort: "downloads",
+    direction: "-1",
+    limit: "20",
+  });
+  const response = await fetch(`https://huggingface.co/api/models?${params.toString()}`, {
+    signal: AbortSignal.timeout(10_000),
+  });
+  assertHttpOk(response, "Hugging Face model search");
+  const data = await response.json() as Array<{
+    id?: unknown;
+    modelId?: unknown;
+    downloads?: unknown;
+    likes?: unknown;
+    lastModified?: unknown;
+    tags?: unknown;
+  }>;
+  if (!Array.isArray(data)) return [];
+  return data
+    .map((item) => {
+      const repoId = typeof item.id === "string"
+        ? item.id
+        : typeof item.modelId === "string"
+          ? item.modelId
+          : "";
+      if (!repoId) return null;
+      return {
+        repoId,
+        downloads: toNumber(item.downloads),
+        likes: toNumber(item.likes),
+        ...(typeof item.lastModified === "string" ? { lastModified: item.lastModified } : {}),
+        ...(toStringArray(item.tags) ? { tags: toStringArray(item.tags) } : {}),
+      } satisfies HfModelSearchResult;
+    })
+    .filter((item): item is HfModelSearchResult => item !== null);
+}
+
+export async function getHfModelFiles(repoId: string): Promise<HfModelFile[]> {
+  const normalized = repoId.trim();
+  if (!normalized) return [];
+  const response = await fetch(
+    `https://huggingface.co/api/models/${encodeURIComponent(normalized)}`,
+    { signal: AbortSignal.timeout(10_000) },
+  );
+  assertHttpOk(response, "Hugging Face model files fetch");
+  const data = await response.json() as {
+    siblings?: Array<{ rfilename?: unknown; size?: unknown }>;
+  };
+  return (data.siblings ?? [])
+    .map((item) => {
+      if (typeof item.rfilename !== "string") return null;
+      if (!item.rfilename.toLowerCase().endsWith(".gguf")) return null;
+      return {
+        filename: item.rfilename,
+        sizeBytes: toNumber(item.size),
+      } satisfies HfModelFile;
+    })
+    .filter((item): item is HfModelFile => item !== null);
+}
+
 async function downloadToFile(
   url: string,
   destPath: string,

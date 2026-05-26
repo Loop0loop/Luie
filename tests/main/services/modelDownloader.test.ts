@@ -4,7 +4,12 @@ import os from "node:os";
 import path from "node:path";
 import yazl from "yazl";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { downloadGguf, downloadLlamaServerBinary } from "../../../src/main/services/llm/modelDownloader.js";
+import {
+  downloadGguf,
+  downloadLlamaServerBinary,
+  getHfModelFiles,
+  searchHfModels,
+} from "../../../src/main/services/llm/modelDownloader.js";
 
 const tempDirs: string[] = [];
 
@@ -33,6 +38,68 @@ async function createZip(entries: Record<string, string>): Promise<Buffer> {
 }
 
 describe("modelDownloader", () => {
+  it("searches public Hugging Face GGUF models and normalizes results", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      expect(url).toContain("https://huggingface.co/api/models?");
+      const parsed = new URL(url);
+      expect(parsed.searchParams.get("search")).toBe("Qwen 2.5");
+      expect(parsed.searchParams.get("filter")).toBe("gguf");
+      return new Response(JSON.stringify([
+        {
+          id: "Qwen/Qwen2.5-1.5B-Instruct-GGUF",
+          downloads: 1234,
+          likes: 56,
+          lastModified: "2026-05-01T00:00:00.000Z",
+          tags: ["gguf", "text-generation"],
+        },
+        {
+          modelId: "broken/no-numbers",
+          downloads: "not-a-number",
+          likes: null,
+          tags: ["gguf"],
+        },
+      ]));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(searchHfModels("Qwen 2.5")).resolves.toEqual([
+      {
+        repoId: "Qwen/Qwen2.5-1.5B-Instruct-GGUF",
+        downloads: 1234,
+        likes: 56,
+        lastModified: "2026-05-01T00:00:00.000Z",
+        tags: ["gguf", "text-generation"],
+      },
+      {
+        repoId: "broken/no-numbers",
+        downloads: 0,
+        likes: 0,
+        tags: ["gguf"],
+      },
+    ]);
+  });
+
+  it("lists only GGUF files from a Hugging Face model repo", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      expect(url).toBe("https://huggingface.co/api/models/Qwen%2FRepo-GGUF");
+      return new Response(JSON.stringify({
+        siblings: [
+          { rfilename: "model-q4_k_m.gguf", size: 1024 },
+          { rfilename: "README.md", size: 32 },
+          { rfilename: "nested/model-q8_0.GGUF", size: 2048 },
+          { rfilename: "missing-size.gguf" },
+        ],
+      }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getHfModelFiles("Qwen/Repo-GGUF")).resolves.toEqual([
+      { filename: "model-q4_k_m.gguf", sizeBytes: 1024 },
+      { filename: "nested/model-q8_0.GGUF", sizeBytes: 2048 },
+      { filename: "missing-size.gguf", sizeBytes: 0 },
+    ]);
+  });
+
   it("removes the downloaded zip when its sha256 does not match", async () => {
     const destDir = await makeTempDir();
     const fetchMock = vi.fn(async () => new Response(new Uint8Array([1, 2, 3])));

@@ -1088,6 +1088,19 @@ export interface LlmRuntimeInfo {
   alternativeModel?: string | null;
 }
 
+export interface HfModelSearchResult {
+  repoId: string;
+  downloads: number;
+  likes: number;
+  lastModified?: string;
+  tags?: string[];
+}
+
+export interface HfModelFile {
+  filename: string;
+  sizeBytes: number;
+}
+
 
 export type ShortcutAction =
   | "app.closeWindow"

@@ -238,6 +238,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                   isDownloading={settings.isDownloading}
                   downloadProgress={settings.downloadProgress}
                   onDownloadLocalModel={settings.handleDownloadLocalModel}
+                  onSearchHfModels={settings.handleSearchHfModels}
+                  onGetHfModelFiles={settings.handleGetHfModelFiles}
                   onToggleLocalLlm={settings.handleToggleLocalLlm}
                   initialBaseUrl={settings.ollamaBaseUrl}
                   initialChatModel={settings.ollamaChatModel}

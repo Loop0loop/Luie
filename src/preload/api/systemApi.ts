@@ -128,6 +128,10 @@ export function createSystemApi({
         safeInvoke(IPC_CHANNELS.MODEL_DOWNLOAD_START, input),
       cancelModelDownload: () =>
         safeInvoke(IPC_CHANNELS.MODEL_DOWNLOAD_CANCEL),
+      searchHfModels: (query) =>
+        safeInvoke(IPC_CHANNELS.MODEL_SEARCH_HF, { query }),
+      getHfModelFiles: (repoId) =>
+        safeInvoke(IPC_CHANNELS.MODEL_GET_HF_FILES, { repoId }),
       onModelDownloadProgress: (callback) => {
         const listener = (_event: unknown, data: {
           stage: "binary" | "model" | "complete" | "error";

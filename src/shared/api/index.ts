@@ -3,6 +3,8 @@ import type {
   AppSettings,
   OllamaConnectionResult,
   LlmRuntimeInfo,
+  HfModelFile,
+  HfModelSearchResult,
   Chapter,
   Scene,
   ChapterSaveResult,
@@ -501,8 +503,14 @@ export type RendererApi = {
     }) => Promise<IPCResponse<{ ok: boolean }>>;
     getSidecarStatus: () => Promise<IPCResponse<{ running: boolean; baseUrl: string | null }>>;
     stopSidecar: () => Promise<IPCResponse<{ ok: boolean }>>;
-    startModelDownload: (input: { type: "model" | "binary" }) => Promise<IPCResponse<{ ok: boolean }>>;
+    startModelDownload: (input: {
+      type: "model" | "binary";
+      repo?: string;
+      filename?: string;
+    }) => Promise<IPCResponse<{ ok: boolean }>>;
     cancelModelDownload: () => Promise<IPCResponse<{ ok: boolean }>>;
+    searchHfModels: (query: string) => Promise<IPCResponse<HfModelSearchResult[]>>;
+    getHfModelFiles: (repoId: string) => Promise<IPCResponse<HfModelFile[]>>;
     onModelDownloadProgress: (callback: (progress: {
       stage: "binary" | "model" | "complete" | "error";
       pct: number;

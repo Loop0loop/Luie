@@ -25,6 +25,8 @@ import { sidecarManager } from "../../services/llm/sidecarManager.js";
 import {
   downloadGguf,
   downloadLlamaServerBinary,
+  getHfModelFiles,
+  searchHfModels,
 } from "../../services/llm/modelDownloader.js";
 import {
   DEFAULT_MODEL,
@@ -290,8 +292,15 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       channel: IPC_CHANNELS.MODEL_DOWNLOAD_START,
       logTag: "MODEL_DOWNLOAD_START",
       failMessage: "Failed to start model download",
-      argsSchema: z.tuple([z.strictObject({ type: z.enum(["model", "binary"]) })]),
-      handler: async (input: { type: "model" | "binary" }) => {
+      argsSchema: z.tuple([z.strictObject({
+        type: z.enum(["model", "binary"]),
+        repo: z.string().min(1).max(512).optional(),
+        filename: z.string().min(1).max(1024).optional(),
+      }).refine(
+        (value) => Boolean(value.repo) === Boolean(value.filename),
+        "repo and filename must be provided together",
+      )]),
+      handler: async (input: { type: "model" | "binary"; repo?: string; filename?: string }) => {
         activeDownloadAbort?.abort();
         activeDownloadAbort = new AbortController();
         const { signal } = activeDownloadAbort;
@@ -331,9 +340,9 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
               });
             } else {
               modelPath = await downloadGguf({
-                repo: DEFAULT_MODEL.repo,
-                filename: DEFAULT_MODEL.filename,
-                expectedSha256: DEFAULT_MODEL.sha256,
+                repo: input.repo ?? DEFAULT_MODEL.repo,
+                filename: input.filename ?? DEFAULT_MODEL.filename,
+                expectedSha256: input.repo || input.filename ? undefined : DEFAULT_MODEL.sha256,
                 destDir: sidecarManager.getModelsDir(),
                 signal,
                 onProgress: (progress) => emitProgress("model", progress.pct),
@@ -359,6 +368,20 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
 
         return { ok: true };
       },
+    },
+    {
+      channel: IPC_CHANNELS.MODEL_SEARCH_HF,
+      logTag: "MODEL_SEARCH_HF",
+      failMessage: "HF model search failed",
+      argsSchema: z.tuple([z.strictObject({ query: z.string().min(1).max(200) })]),
+      handler: async (input: { query: string }) => await searchHfModels(input.query),
+    },
+    {
+      channel: IPC_CHANNELS.MODEL_GET_HF_FILES,
+      logTag: "MODEL_GET_HF_FILES",
+      failMessage: "HF model files fetch failed",
+      argsSchema: z.tuple([z.strictObject({ repoId: z.string().min(1).max(512) })]),
+      handler: async (input: { repoId: string }) => await getHfModelFiles(input.repoId),
     },
     {
       channel: IPC_CHANNELS.MODEL_DOWNLOAD_CANCEL,
