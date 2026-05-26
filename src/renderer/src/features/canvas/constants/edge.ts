@@ -37,18 +37,18 @@ export const CANVAS_CANVAS_EDGE_DEFAULTS = CANVAS_FREE_EDGE_DEFAULTS;
 // ─── World Graph Constellation Edge Style Configuration ───────────────────
 export const GRAPH_CONSTELLATION_EDGE_DEFAULTS = {
   character: {
-    stroke: "var(--border-strong, rgba(255, 255, 255, 0.15))",
-    widthMultiplier: 0.5,
-    opacityBase: 0.25,
-    opacityMultiplier: 0.12,
-    dasharray: "4 4",
+    stroke: "rgba(165, 180, 252, 0.45)", // 은은하고 매혹적인 별자리(Constellation) 바이올렛 블루
+    widthMultiplier: 0.8, // 줌 아웃 시 시인성 확보를 위해 미세 증폭
+    opacityBase: 0.35,
+    opacityMultiplier: 0.15,
+    dasharray: "4 6", // 뚜렷하지만 유려한 점선 형태의 성간선
     markerSize: undefined,
   },
   event: {
-    stroke: "var(--border-strong, rgba(255, 255, 255, 0.25))",
-    widthMultiplier: 0.6,
-    opacityBase: 0.3,
-    opacityMultiplier: 0.12,
-    markerSize: 9,
+    stroke: "rgba(248, 113, 113, 0.75)", // 수사 드라마의 직관적인 빨간 실(Thread Red) 라이트닝 레드 테마
+    widthMultiplier: 1.1,
+    opacityBase: 0.50,
+    opacityMultiplier: 0.20,
+    markerSize: 10,
   },
 } as const;
