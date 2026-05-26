@@ -31,4 +31,16 @@ export const CANVAS_NODE_SELECTED_SHADOW_CLASS =
  * 예: `${colour}${HEX_ALPHA_20}` → 20% 투명도
  */
 export const HEX_ALPHA_20 = "33" as const; // 0x33 / 0xFF ≈ 20%
-export const HEX_ALPHA_25 = "40" as const; // 0x40 / 0xFF ≈ 25%
+export const HEX_ALPHA_25 = "40" as const; // 0x40 / 0xFF ≈ 25px
+
+// ─── World Graph Constellation Core Node IDs ───────────────────────────────
+export const GRAPH_CORE_CHARACTERS = {
+  JINSEO: "jinseo",
+  SERIN: "serin",
+} as const;
+
+export const GRAPH_CORE_EVENTS = {
+  AMBUSH: "ambush",
+  REBELS: "rebels",
+  CHAPTER15: "chapter15",
+} as const;

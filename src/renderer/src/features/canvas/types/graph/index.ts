@@ -17,4 +17,6 @@ export interface GraphNodeData {
   relationships?: GraphRelationship[];
   sourceTexts?: string[];
   isFocused?: boolean;
+  starGrade?: "prime" | "major" | "minor";
+  opacity?: number;
 }
