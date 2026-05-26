@@ -33,3 +33,22 @@ export const CANVAS_FREE_EDGE_DEFAULTS = {
 export const CANVAS_EDGE_DEFAULTS = CANVAS_RELATION_EDGE_DEFAULTS;
 // @deprecated → CANVAS_FREE_EDGE_DEFAULTS
 export const CANVAS_CANVAS_EDGE_DEFAULTS = CANVAS_FREE_EDGE_DEFAULTS;
+
+// ─── World Graph Constellation Edge Style Configuration ───────────────────
+export const GRAPH_CONSTELLATION_EDGE_DEFAULTS = {
+  character: {
+    stroke: "var(--border-strong, rgba(255, 255, 255, 0.15))",
+    widthMultiplier: 0.5,
+    opacityBase: 0.25,
+    opacityMultiplier: 0.12,
+    dasharray: "4 4",
+    markerSize: undefined,
+  },
+  event: {
+    stroke: "var(--border-strong, rgba(255, 255, 255, 0.25))",
+    widthMultiplier: 0.6,
+    opacityBase: 0.3,
+    opacityMultiplier: 0.12,
+    markerSize: 9,
+  },
+} as const;

@@ -16,38 +16,56 @@ export function calculateForceLayout(
 ): Node<GraphNodeData>[] {
   if (nodes.length === 0) return [];
 
-  // 1. 복사본 생성 및 무작위 초기값 지정 (위치가 정의되지 않았을 경우)
-  const layoutNodes = nodes.map((node) => ({
-    ...node,
-    position: {
-      x: node.position?.x ?? (center.x + (Math.random() - 0.5) * 120),
-      y: node.position?.y ?? (center.y + (Math.random() - 0.5) * 120),
-    },
-  }));
+  // 1. 복사본 생성 및 노드 성간 등급에 따른 초기 궤도 배치 (거성은 중앙 고정, 조연은 은하 궤도 분산)
+  const layoutNodes = nodes.map((node) => {
+    const isPrime = node.data?.starGrade === "prime";
+    const isMajor = node.data?.starGrade === "major";
+    
+    // prime은 중앙에 완벽 고정 배치, major는 중간 궤도(140px 반경), minor는 외곽 궤도(260px 반경)에 균등 분산 시작
+    const angle = Math.random() * Math.PI * 2;
+    const radius = isPrime ? 0 : isMajor ? 140 : 260;
+    
+    return {
+      ...node,
+      position: {
+        x: node.position?.x ?? (center.x + Math.cos(angle) * radius + (Math.random() - 0.5) * 40),
+        y: node.position?.y ?? (center.y + Math.sin(angle) * radius + (Math.random() - 0.5) * 40),
+      },
+    };
+  });
 
-  const k = 130; // 노드 간 적정 거리 기준 파라미터
+  const k = 220; // 성간 은하 반경 척력 척도
   let cooling = 1.0;
 
   for (let iter = 0; iter < iterations; iter++) {
     const disp = layoutNodes.map(() => ({ x: 0, y: 0 }));
 
-    // A. 반발력 (Repulsion) 계산: 모든 노드 쌍 사이에 작용하는 밀어내는 힘
+    // A. 반발력 (Repulsion) 계산: 별들의 등급에 따른 가변 척력 (거성은 강력하게 주변을 밀쳐냄)
     for (let i = 0; i < layoutNodes.length; i++) {
+      const nodeI = layoutNodes[i];
+      const isPrimeI = nodeI.data?.starGrade === "prime";
+
       for (let j = 0; j < layoutNodes.length; j++) {
         if (i === j) continue;
-        const dx = layoutNodes[i].position.x - layoutNodes[j].position.x;
-        const dy = layoutNodes[i].position.y - layoutNodes[j].position.y;
+        const nodeJ = layoutNodes[j];
+        
+        const dx = nodeI.position.x - nodeJ.position.x;
+        const dy = nodeI.position.y - nodeJ.position.y;
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 
-        // 거리가 너무 가까울 때 폭발적인 척력이 발생하는 것 방지 (최소 5px 보호)
-        const safeDist = Math.max(dist, 5);
-        const force = (k * k) / safeDist;
+        // 노드 성간 반경 충돌 제어 (주변 별들은 20px 이상의 거리를 강제 유지)
+        const safeDist = Math.max(dist, 20);
+        
+        // 거성(prime)과 일반 노드 사이에는 훨씬 강한 척력을 발휘해 사방으로 밀쳐냄
+        const repFactor = isPrimeI ? 2.5 : 1.5;
+        const force = (k * k * repFactor) / safeDist;
+        
         disp[i].x += (dx / dist) * force;
         disp[i].y += (dy / dist) * force;
       }
     }
 
-    // B. 인력 (Attraction) 계산: 연결된 노드 쌍 사이에 작용하는 끌어당기는 힘
+    // B. 인력 (Attraction) 계산: 별자리 성간선(에지) 장력 (인력이 너무 가까이 뭉치지 않도록 유연하게 제어)
     for (const edge of edges) {
       const sourceIdx = layoutNodes.findIndex((n) => n.id === edge.source);
       const targetIdx = layoutNodes.findIndex((n) => n.id === edge.target);
@@ -57,8 +75,8 @@ export function calculateForceLayout(
       const dy = layoutNodes[sourceIdx].position.y - layoutNodes[targetIdx].position.y;
       const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 
-      // 인력은 거리가 멀어질수록 강하게 끌어당김
-      const force = (dist * dist) / k;
+      // 궤도 연결선 장력은 거리에 비례하되, 너무 뭉치지 않도록 강도를 3.5배 이상 느슨하게 감쇠
+      const force = (dist * dist) / (k * 3.5);
       const fx = (dx / dist) * force;
       const fy = (dy / dist) * force;
 
@@ -68,13 +86,26 @@ export function calculateForceLayout(
       disp[targetIdx].y += fy;
     }
 
-    // C. 중심 중력 (Gravity) 계산: 화면 밖으로 이탈하지 않도록 화면 중심으로 부드럽게 복귀시킴
-    const gravity = 0.06;
+    // C. 중심 중력 (Gravity) 및 우주 복귀력:
+    // 거성(prime)은 완벽한 항성으로서 중앙에 강력히 홀딩, 
+    // 행성 노드들은 우주 밖으로 흘러가지 않을 정도의 0.008 수준의 초미세 중력만 부여
     for (let i = 0; i < layoutNodes.length; i++) {
-      const dx = center.x - layoutNodes[i].position.x;
-      const dy = center.y - layoutNodes[i].position.y;
-      disp[i].x += dx * gravity;
-      disp[i].y += dy * gravity;
+      const node = layoutNodes[i];
+      const isPrime = node.data?.starGrade === "prime";
+      
+      if (isPrime) {
+        // 코어 거성은 물리적 변위를 강하게 통제해 항상 중앙에 고정
+        const dx = center.x - node.position.x;
+        const dy = center.y - node.position.y;
+        disp[i].x += dx * 0.35;
+        disp[i].y += dy * 0.35;
+      } else {
+        // 주변 노드들은 은하 중력만 부드럽게 받음
+        const dx = center.x - node.position.x;
+        const dy = center.y - node.position.y;
+        disp[i].x += dx * 0.008;
+        disp[i].y += dy * 0.008;
+      }
     }
 
     // D. 위치 업데이트 및 무브먼트 리밋 적용 (cooling)
@@ -83,15 +114,14 @@ export function calculateForceLayout(
       const dy = disp[i].y;
       const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 
-      // 최대 움직임 임계값을 설정하여 프레임 튀김(Jitter) 방지
-      const maxMotion = 35 * cooling;
+      const maxMotion = 40 * cooling;
       const motion = Math.min(dist, maxMotion);
 
       layoutNodes[i].position.x += (dx / dist) * motion;
       layoutNodes[i].position.y += (dy / dist) * motion;
     }
 
-    cooling *= 0.94; // 감쇠율 조정하여 70회 내외로 빠르게 안정화되게 함
+    cooling *= 0.94;
   }
 
   return layoutNodes;

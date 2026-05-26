@@ -1,10 +1,10 @@
 /**
- * CanvasActivityShell — Obsidian 스타일의 파일 탐색기 트리 사이드바.
+ * CanvasActivityShell — Obsidian 스타일의 파일 탐색기 트리 사이드바 & 관계 시나리오 분석기 사이드바.
  * 
  * 기능:
- *   - Lucide 아이콘 및 폰트 구조 중심의 정밀한 파일 브라우저 제공.
- *   - 계층형 폴더/파일 토글(Open/Close) 및 하이라이트 인터랙션.
- *   - 활성화된 캔버스 항목에 i18n 결합된 Badge ("CANVAS") 매핑.
+ *   - Canvas Mode: Obsidian 스타일의 파일 탐색기 트리 사이드바 렌더링.
+ *   - Graph Mode: 관계 시나리오 필터 분석기 사이드바(GraphFilterSidebar) 렌더링.
+ *   - 테마 일관성을 위해 shadcn/ui 표준 토큰 및 tailwind 변수만을 사용합니다.
  */
 
 import { useState, useCallback, memo } from "react";
@@ -23,7 +23,11 @@ import {
   Bookmark,
   Files,
   ChevronsUpDown,
-  X
+  X,
+  Users,
+  Workflow,
+  HelpCircle,
+  Calendar
 } from "lucide-react";
 import { Button } from "@renderer/components/ui/button";
 import { Badge } from "@renderer/components/ui/badge";
@@ -32,6 +36,8 @@ import { useToast } from "@shared/ui/ToastContext";
 import { cn } from "@shared/types/utils";
 import { mockExplorerData } from "../../__fixtures__/mockExplorerData";
 import type { FileNode } from "../../types/canvas.types";
+import { useCanvasViewStore } from "../../stores/canvasViewStore";
+import { useGraphStore } from "../../stores/graph/graphStore";
 
 /* ─────────────────────────────────────────── TAB_I18N_KEYS */
 
@@ -40,6 +46,28 @@ const TAB_I18N_KEYS = {
   search: "canvas.activity.search",
   bookmark: "canvas.activity.bookmark",
 } as const;
+
+const TOOLBAR_ACTION_KEYS = {
+  "new-file": "canvas.activity.newFile",
+  "new-folder": "canvas.activity.newFolder",
+  sort: "canvas.activity.sort",
+} as const;
+
+const getAllFolderIds = (nodes: FileNode[]): string[] => {
+  const ids: string[] = [];
+  const traverse = (list: FileNode[]) => {
+    for (const node of list) {
+      if (node.type === "folder") {
+        ids.push(node.id);
+        if (node.children) {
+          traverse(node.children);
+        }
+      }
+    }
+  };
+  traverse(nodes);
+  return ids;
+};
 
 /* ─────────────────────────────────────────── TreeNode Component (Subcomponent) */
 
@@ -60,7 +88,6 @@ const TreeNode = memo(({
   toggleFolder,
   handleNodeClick,
 }: TreeNodeProps) => {
-  // prop 드릴링 제거: useTranslation() 직접 사용으로 타입 시스템과 성능 최적화
   const { t } = useTranslation();
   const isFolder = node.type === "folder";
   const isExpanded = expandedFolders[node.id];
@@ -142,6 +169,160 @@ const TreeNode = memo(({
 
 TreeNode.displayName = "TreeNode";
 
+/* ─────────────────────────────────────────── GraphFilterSidebar Component (Graph 전용 사이드바) */
+
+const GraphFilterSidebar = memo(() => {
+  const { t } = useTranslation();
+  // Zustand Graph Store 구독 (하드코딩 컬러 완전 소멸 및 표준 테마 결합)
+  const activeMode = useGraphStore((state) => state.activeMode);
+  const setActiveMode = useGraphStore((state) => state.setActiveMode);
+  const selectedChapterFilter = useGraphStore((state) => state.selectedChapterFilter);
+  const setSelectedChapterFilter = useGraphStore((state) => state.setSelectedChapterFilter);
+  const selectedFocusNode = useGraphStore((state) => state.selectedFocusNode);
+  const setSelectedFocusNode = useGraphStore((state) => state.setSelectedFocusNode);
+
+  return (
+    <div className="flex h-full w-full flex-col bg-sidebar text-sidebar-foreground border-r border-border/30 overflow-hidden select-none">
+      {/* 헤더 */}
+      <div className="flex h-12 items-center justify-between border-b border-border/20 px-4 shrink-0">
+        <div className="flex items-center gap-2">
+          <Workflow className="h-4 w-4 text-accent animate-pulse" />
+          <span className="text-xs font-bold tracking-tight uppercase">
+            {t("canvas.graph.scenarioAnalysis")}
+          </span>
+        </div>
+        <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+      </div>
+
+      {/* 바디 스크롤 영역 */}
+      <ScrollArea className="flex-1 p-4">
+        <div className="flex flex-col gap-6">
+          
+          {/* 모드 선택 세그먼트 (캐릭터 vs 사건/복선) */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+              {t("canvas.graph.analysisMode")}
+            </label>
+            <div className="flex items-center gap-1 p-1 rounded-full bg-muted border border-border h-9 shrink-0">
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => {
+                  setActiveMode("character");
+                  setSelectedFocusNode("all");
+                }}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-1.5 rounded-full text-[10px] font-bold h-7 cursor-pointer border-none",
+                  activeMode === "character"
+                    ? "bg-background text-foreground shadow-sm hover:bg-background"
+                    : "text-muted-foreground hover:bg-background/40 hover:text-foreground bg-transparent"
+                )}
+              >
+                <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>{t("canvas.graph.characterMap")}</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => {
+                  setActiveMode("event");
+                  setSelectedFocusNode("all");
+                }}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-1.5 rounded-full text-[10px] font-bold h-7 cursor-pointer border-none",
+                  activeMode === "event"
+                    ? "bg-background text-foreground shadow-sm hover:bg-background"
+                    : "text-muted-foreground hover:bg-background/40 hover:text-foreground bg-transparent"
+                )}
+              >
+                <Workflow className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>{t("canvas.graph.eventFlow")}</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* 에피소드/챕터 다중 필터 */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground flex items-center gap-1">
+              <Calendar className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              {t("canvas.graph.chapterRange")}
+            </label>
+            <div className="flex items-center gap-1 p-1 rounded-full bg-muted border border-border h-9 shrink-0">
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => setSelectedChapterFilter("all")}
+                className={cn(
+                  "flex-1 flex items-center justify-center rounded-full text-[9px] font-bold h-7 cursor-pointer border-none",
+                  selectedChapterFilter === "all"
+                    ? "bg-background text-foreground shadow-sm hover:bg-background"
+                    : "text-muted-foreground hover:bg-background/40 hover:text-foreground bg-transparent"
+                )}
+              >
+                {t("canvas.graph.allChapters")}
+              </Button>
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => setSelectedChapterFilter("early")}
+                className={cn(
+                  "flex-1 flex items-center justify-center rounded-full text-[9px] font-bold h-7 cursor-pointer border-none",
+                  selectedChapterFilter === "early"
+                    ? "bg-background text-foreground shadow-sm hover:bg-background"
+                    : "text-muted-foreground hover:bg-background/40 hover:text-foreground bg-transparent"
+                )}
+              >
+                {t("canvas.graph.earlyChapters")}
+              </Button>
+            </div>
+          </div>
+
+          {/* 대상 노드 집중 포커싱 필터 */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+              {activeMode === "character" ? t("canvas.graph.characterFocus") : t("canvas.graph.eventFocus")}
+            </label>
+            <select
+              value={selectedFocusNode}
+              onChange={(e) => setSelectedFocusNode(e.target.value)}
+              className="w-full rounded-lg border border-border px-3 py-2 text-[11px] font-semibold cursor-pointer outline-none bg-background text-foreground hover:bg-muted/40 transition-colors"
+            >
+              <option value="all">{t("canvas.graph.viewAllNetwork")}</option>
+              {activeMode === "character" ? (
+                <>
+                  <option value="jinseo">{t("canvas.graph.nodes.jinseo")}</option>
+                  <option value="serin">{t("canvas.graph.nodes.serin")}</option>
+                </>
+              ) : (
+                <>
+                  <option value="ambush">{t("canvas.graph.nodes.ambush")}</option>
+                  <option value="rebels">{t("canvas.graph.nodes.rebels")}</option>
+                </>
+              )}
+            </select>
+          </div>
+
+          {/* 작가 시나리오 분석 팁 */}
+          <div className="rounded-xl p-3.5 bg-muted/40 border border-border/60 flex gap-2.5 shrink-0">
+            <HelpCircle className="h-5 w-5 text-accent shrink-0 mt-0.5" />
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[10px] font-bold">{t("canvas.graph.authorGuide")}</span>
+              <p className="text-[9.5px] leading-relaxed text-muted-foreground font-medium">
+                {activeMode === "character"
+                  ? t("canvas.graph.characterGuideTip")
+                  : t("canvas.graph.eventGuideTip")}
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </ScrollArea>
+    </div>
+  );
+});
+
+GraphFilterSidebar.displayName = "GraphFilterSidebar";
+
 /* ─────────────────────────────────────────── Main Component */
 
 interface CanvasActivityShellProps {
@@ -152,7 +333,9 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
   const { t } = useTranslation();
   const { showToast } = useToast();
 
-  // 크로스 도메인 상태 오염(버그) 제거: 파일 탐색기 선택 상태는 local selectedNodeId로 안전하게 관리
+  const activePanel = useCanvasViewStore((state) => state.activePanel);
+  const isGraphMode = activePanel === "graph";
+
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({
@@ -179,7 +362,6 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
     }
   }, [toggleFolder, t, showToast]);
 
-  // TAB_I18N_KEYS 매핑 객체 활용 방식으로 as never 제거
   const handleTabChange = useCallback((tabKey: "explorer" | "search" | "bookmark") => {
     showToast(
       t("canvas.graph.demoNotImplemented", {
@@ -189,20 +371,19 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
     );
   }, [showToast, t]);
 
-  // 툴바 액션 핸들러 분리
   const handleToolbarAction = useCallback((actionKey: "new-file" | "new-folder" | "sort") => {
-    const actionNames: Record<string, string> = {
-      "new-file": t("canvas.activity.newFile"),
-      "new-folder": t("canvas.activity.newFolder"),
-      sort: t("canvas.activity.sort"),
-    };
     showToast(
       t("canvas.graph.demoNotImplemented", {
-        actionName: actionNames[actionKey]
+        actionName: t(TOOLBAR_ACTION_KEYS[actionKey])
       }),
       "info"
     );
   }, [t, showToast]);
+
+  // 분기 처리: 그래프 모드일 때는 관계 시나리오 필터 사이드바 노출
+  if (isGraphMode) {
+    return <GraphFilterSidebar />;
+  }
 
   return (
     <div className="flex h-full w-full flex-col bg-sidebar text-foreground border-r border-border/30 overflow-hidden">
@@ -240,7 +421,6 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
 
         {/* 오른쪽 제어 버튼 세트 */}
         <div className="flex items-center gap-1">
-          {/* 단방향 데이터 흐름을 준수하는 onClose 위임 호출 */}
           <button
             onClick={() => onClose?.()}
             className="flex h-9 w-9 items-center justify-center rounded-md border-none bg-transparent p-2 text-muted-foreground hover:bg-active hover:text-foreground cursor-pointer transition-colors duration-150"
@@ -295,12 +475,10 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
           onClick={() => setExpandedFolders((prev) => {
             const hasExpanded = Object.values(prev).some(Boolean);
             if (hasExpanded) {
-              return {} as Record<string, boolean>;
+              return {};
             } else {
-              return {
-                "folder-luie": true,
-                "folder-feature": true,
-              } as Record<string, boolean>;
+              const allIds = getAllFolderIds(mockExplorerData);
+              return allIds.reduce((acc, id) => ({ ...acc, [id]: true }), {});
             }
           })}
           title="모두 펼치기 / 접기"
