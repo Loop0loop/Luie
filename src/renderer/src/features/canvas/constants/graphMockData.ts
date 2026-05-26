@@ -122,11 +122,11 @@ export const MOCK_GRAPH_NODES: Node<GraphNodeData>[] = [
 ];
 
 export const MOCK_GRAPH_EDGES: Edge[] = [
-  { id: "e-jinseo-serin", source: "jinseo", target: "serin", data: { strength: 3 } },
-  { id: "e-jinseo-palace", source: "jinseo", target: "palace", data: { strength: 1 } },
-  { id: "e-jinseo-ambush", source: "jinseo", target: "ambush", data: { strength: 2 } },
-  { id: "e-serin-guild", source: "serin", target: "guild", data: { strength: 3 } },
-  { id: "e-palace-rebels", source: "palace", target: "rebels", data: { strength: 2 } },
-  { id: "e-ambush-rebels", source: "ambush", target: "rebels", data: { strength: 3 } },
-  { id: "e-chapter15-ambush", source: "chapter15", target: "ambush", data: { strength: 1 } },
+  { id: "e-jinseo-serin", source: "jinseo", target: "serin", data: { strength: 3, label: "동료 (마법 계약)", labelEn: "Ally (Magic Contract)" } },
+  { id: "e-jinseo-palace", source: "jinseo", target: "palace", data: { strength: 1, label: "임관 대기", labelEn: "Pending Appointment" } },
+  { id: "e-jinseo-ambush", source: "jinseo", target: "ambush", data: { strength: 2, label: "직접 관여", labelEn: "Directly Involved" } },
+  { id: "e-serin-guild", source: "serin", target: "guild", data: { strength: 3, label: "소속 (정예)", labelEn: "Member (Elite)" } },
+  { id: "e-palace-rebels", source: "palace", target: "rebels", data: { strength: 2, label: "대적 (권력 붕괴)", labelEn: "Hostile (Subversion)" } },
+  { id: "e-ambush-rebels", source: "ambush", target: "rebels", data: { strength: 3, label: "배후 세력", labelEn: "Mastermind" } },
+  { id: "e-chapter15-ambush", source: "chapter15", target: "ambush", data: { strength: 1, label: "사건 무대", labelEn: "Incident Location" } },
 ];

@@ -68,8 +68,30 @@ export default function GraphSurface() {
         edgeStyle.strokeDasharray = cfg.dasharray;
       }
 
+      // 엣지 라벨 스타일 정의 (다크 럭셔리 & 피그마 감성)
+      const labelStyle: React.CSSProperties = {
+        fill: "rgba(255, 255, 255, 0.85)", // 세련된 오프화이트 텍스트
+        fontSize: 9,
+        fontWeight: 700,
+        fontFamily: "var(--font-sans, Inter, system-ui, sans-serif)",
+        letterSpacing: "-0.01em",
+      };
+
+      const labelBgStyle: React.CSSProperties = {
+        fill: "rgba(12, 10, 9, 0.95)", // 심오한 다크 백그라운드
+        fillOpacity: 0.95,
+        stroke: isCharacterMode ? "rgba(165, 180, 252, 0.35)" : "rgba(248, 113, 113, 0.45)", // 테두리 선
+        strokeWidth: 1.2,
+        rx: 6, // 둥근 라운딩 처리
+        ry: 6,
+      };
+
       return {
         ...edge,
+        label: edge.data?.label,
+        labelStyle,
+        labelBgStyle,
+        labelBgPadding: [8, 4] as [number, number],
         animated: !isCharacterMode && strength >= 2,
         markerEnd: isCharacterMode ? undefined : {
           type: MarkerType.ArrowClosed,
@@ -149,8 +171,9 @@ export default function GraphSurface() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredNodes, filteredEdges, setNodes, setEdges]);
 
-  // focusId 상태가 전역으로 변동될 때 노드의 focus 상태를 동기화
+  // focusId 상태가 전역으로 변동될 때 노드 및 에지의 focus/강조 상태를 동기화
   useEffect(() => {
+    // 1. 노드 포커스 갱신
     setNodes((prevNodes) =>
       prevNodes.map((node) => ({
         ...node,
@@ -160,7 +183,78 @@ export default function GraphSurface() {
         },
       }))
     );
-  }, [focusId, setNodes]);
+
+    // 2. 에지 포커스 및 네온 라이팅 효과 동기화
+    setEdges((prevEdges) =>
+      prevEdges.map((edge) => {
+        if (!focusId) {
+          // 포커스가 해제된 경우: 원래 스타일 복원
+          return {
+            ...edge,
+            animated: edge.data?.animatedBackup ?? edge.animated,
+            style: {
+              ...edge.style,
+              opacity: edge.data?.opacityBackup ?? edge.style?.opacity,
+              strokeWidth: edge.data?.strokeWidthBackup ?? edge.style?.strokeWidth,
+              stroke: edge.data?.strokeBackup ?? edge.style?.stroke,
+            },
+            labelStyle: {
+              ...edge.labelStyle,
+              opacity: 1.0,
+            },
+            labelBgStyle: {
+              ...edge.labelBgStyle,
+              opacity: 1.0,
+              stroke: edge.data?.labelBgStrokeBackup ?? edge.labelBgStyle?.stroke,
+            }
+          };
+        }
+
+        // 특정 노드가 포커스된 경우
+        const isRelated = edge.source === focusId || edge.target === focusId;
+        
+        // 백업 상태 저장 (최초 1회)
+        const opacityBackup = edge.data?.opacityBackup ?? edge.style?.opacity ?? 0.6;
+        const strokeWidthBackup = edge.data?.strokeWidthBackup ?? edge.style?.strokeWidth ?? 1.5;
+        const strokeBackup = edge.data?.strokeBackup ?? edge.style?.stroke ?? "currentColor";
+        const animatedBackup = edge.data?.animatedBackup ?? edge.animated ?? false;
+        const labelBgStrokeBackup = edge.data?.labelBgStrokeBackup ?? edge.labelBgStyle?.stroke;
+
+        const isCharacterMode = activeMode === "character";
+        const relationColor = isCharacterMode ? "rgba(165, 180, 252, 0.95)" : "rgba(248, 113, 113, 0.95)";
+
+        return {
+          ...edge,
+          data: {
+            ...edge.data,
+            opacityBackup,
+            strokeWidthBackup,
+            strokeBackup,
+            animatedBackup,
+            labelBgStrokeBackup,
+          },
+          // 관련 에지는 반드시 애니메이션 활성화 (에너지 흐름 선사)
+          animated: isRelated ? true : false,
+          style: {
+            ...edge.style,
+            // 관련 에지는 선명하게, 관련 없는 에지는 어둠속으로 페이드아웃 (0.05)
+            opacity: isRelated ? 0.95 : 0.05,
+            strokeWidth: isRelated ? (Number(strokeWidthBackup) + 1.2) : strokeWidthBackup,
+            stroke: isRelated ? relationColor : strokeBackup,
+          },
+          labelStyle: {
+            ...edge.labelStyle,
+            opacity: isRelated ? 1.0 : 0.05,
+          },
+          labelBgStyle: {
+            ...edge.labelBgStyle,
+            opacity: isRelated ? 1.0 : 0.05,
+            stroke: isRelated ? relationColor : labelBgStrokeBackup,
+          }
+        };
+      })
+    );
+  }, [focusId, activeMode, setNodes, setEdges]);
 
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node<GraphNodeData>) => {
