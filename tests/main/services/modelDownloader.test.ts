@@ -58,6 +58,18 @@ describe("modelDownloader", () => {
           likes: null,
           tags: ["gguf"],
         },
+        {
+          id: "private/hidden",
+          private: true,
+          downloads: 9999,
+          likes: 999,
+        },
+        {
+          id: "gated/hidden",
+          gated: "manual",
+          downloads: 9999,
+          likes: 999,
+        },
       ]));
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -79,9 +91,21 @@ describe("modelDownloader", () => {
     ]);
   });
 
+  it("returns no files for token-gated Hugging Face model repos", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("Unauthorized", { status: 401 })));
+
+    await expect(getHfModelFiles("gated/private-model")).resolves.toEqual([]);
+  });
+
+  it("returns no files when Hugging Face rejects malformed or inaccessible repo request", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("Bad Request", { status: 400 })));
+
+    await expect(getHfModelFiles("owner/model name")).resolves.toEqual([]);
+  });
+
   it("lists only GGUF files from a Hugging Face model repo", async () => {
     const fetchMock = vi.fn(async (url: string) => {
-      expect(url).toBe("https://huggingface.co/api/models/Qwen%2FRepo-GGUF");
+      expect(url).toBe("https://huggingface.co/api/models/Qwen/Repo-GGUF");
       return new Response(JSON.stringify({
         siblings: [
           { rfilename: "model-q4_k_m.gguf", size: 1024 },

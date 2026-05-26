@@ -229,9 +229,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 <ModelTab
                   t={t}
                   isBusy={settings.isBusy}
-                  onSaveOllamaConfig={settings.handleSaveOllamaConfig}
-                  onListOllamaModels={settings.handleListOllamaModels}
-                  onTestOllamaConnection={settings.handleTestOllamaConnection}
                   onRebuildMemory={settings.handleRebuildMemory}
                   localLlmEnabled={settings.localLlmEnabled}
                   localLlmModelPath={settings.localLlmModelPath}
@@ -241,10 +238,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                   onSearchHfModels={settings.handleSearchHfModels}
                   onGetHfModelFiles={settings.handleGetHfModelFiles}
                   onToggleLocalLlm={settings.handleToggleLocalLlm}
-                  initialBaseUrl={settings.ollamaBaseUrl}
-                  initialChatModel={settings.ollamaChatModel}
-                  initialEmbeddingModel={settings.ollamaEmbeddingModel}
-                  initialApiKey={settings.ollamaApiKey}
                 />
               )}
 

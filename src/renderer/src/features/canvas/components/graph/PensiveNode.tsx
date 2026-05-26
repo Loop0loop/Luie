@@ -3,6 +3,7 @@ import { Handle, Position, type NodeProps, useViewport } from "reactflow";
 import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
 import type { GraphNodeData } from "../../types/graph";
+import { useGraphStore } from "../../stores/graph/graphStore";
 
 // 등급별 가변 크기 계산 (Figma 포스 디렉티드 스펙)
 const SIZE_CLASSES = {
@@ -11,14 +12,15 @@ const SIZE_CLASSES = {
   minor: "h-2.5 w-2.5", // 주변 노드 (10px)
 } as const;
 
-function PensiveNode({ data, selected }: NodeProps<GraphNodeData>) {
+function PensiveNode({ id, data, selected }: NodeProps<GraphNodeData>) {
   const { t } = useTranslation();
   const { zoom } = useViewport();
+  const setHoverId = useGraphStore((state) => state.setHoverId);
   const isChapter = data.type === "chapter";
   const isFocused = selected || data.isFocused;
 
-  // 줌아웃에 따른 역스케일링 배율 산출 (0.75배에서 최대 2.5배까지 유려하게 클램핑)
-  const inverseScale = Math.min(Math.max(1 / zoom, 0.75), 2.5);
+  // 줌아웃에 따른 역스케일링 배율 산출 (0.75배에서 최대 4.5배까지 원거리 가독성 극대화)
+  const inverseScale = Math.min(Math.max(1 / zoom, 0.75), 4.5);
 
   // 등급별 링 및 발광 섀도우 효과 (웹소설 수사 단서판 & 성운 광배 융합 이펙트)
   const starGradeClass = isChapter
@@ -38,6 +40,8 @@ function PensiveNode({ data, selected }: NodeProps<GraphNodeData>) {
   return (
     <div
       style={{ opacity: data.opacity ?? 1.0 }}
+      onMouseEnter={() => setHoverId(id)}
+      onMouseLeave={() => setHoverId(null)}
       className={cn(
         "group relative flex items-center justify-center transition-all duration-300 cursor-pointer",
         isChapter ? "rounded-sm" : "rounded-full",

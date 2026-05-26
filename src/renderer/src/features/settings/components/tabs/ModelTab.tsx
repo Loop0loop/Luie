@@ -1,15 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useState } from "react";
 import type { TFunction } from "i18next";
-import { CheckCircle, XCircle, RefreshCw, Loader2, Search, Download } from "lucide-react";
+import { CheckCircle, Download, HardDrive, Loader2, Search } from "lucide-react";
 import { Button } from "@renderer/components/ui/button";
 import type { HfModelFile, HfModelSearchResult } from "@shared/types";
 
 interface ModelTabProps {
   t: TFunction;
   isBusy: boolean;
-  onSaveOllamaConfig: (input: { baseUrl: string; chatModel: string; embeddingModel?: string; apiKey?: string }) => Promise<boolean>;
-  onListOllamaModels: (baseUrl: string) => Promise<string[]>;
-  onTestOllamaConnection: (baseUrl: string) => Promise<boolean>;
   onRebuildMemory: () => Promise<void>;
   localLlmEnabled: boolean;
   localLlmModelPath?: string;
@@ -19,18 +16,11 @@ interface ModelTabProps {
   onSearchHfModels: (query: string) => Promise<HfModelSearchResult[]>;
   onGetHfModelFiles: (repoId: string) => Promise<HfModelFile[]>;
   onToggleLocalLlm: (enabled: boolean) => Promise<void>;
-  initialBaseUrl?: string;
-  initialChatModel?: string;
-  initialEmbeddingModel?: string;
-  initialApiKey?: string;
 }
 
 export function ModelTab({
   t,
   isBusy,
-  onSaveOllamaConfig,
-  onListOllamaModels,
-  onTestOllamaConnection,
   onRebuildMemory,
   localLlmEnabled,
   localLlmModelPath,
@@ -40,18 +30,7 @@ export function ModelTab({
   onSearchHfModels,
   onGetHfModelFiles,
   onToggleLocalLlm,
-  initialBaseUrl = "http://localhost:11434",
-  initialChatModel = "",
-  initialEmbeddingModel = "",
-  initialApiKey = "",
 }: ModelTabProps) {
-  const [baseUrl, setBaseUrl] = useState(initialBaseUrl);
-  const [chatModel, setChatModel] = useState(initialChatModel);
-  const [embeddingModel, setEmbeddingModel] = useState(initialEmbeddingModel);
-  const [apiKey, setApiKey] = useState(initialApiKey);
-  const [models, setModels] = useState<string[]>([]);
-  const [connectionStatus, setConnectionStatus] = useState<"idle" | "testing" | "ok" | "fail">("idle");
-  const [modelsLoading, setModelsLoading] = useState(false);
   const [hfQuery, setHfQuery] = useState("");
   const [hfResults, setHfResults] = useState<HfModelSearchResult[]>([]);
   const [hfFiles, setHfFiles] = useState<HfModelFile[]>([]);
@@ -60,57 +39,6 @@ export function ModelTab({
   const [hfSearching, setHfSearching] = useState(false);
   const [hfFilesLoading, setHfFilesLoading] = useState(false);
   const [hasHfSearched, setHasHfSearched] = useState(false);
-
-  const loadModels = useCallback(async (url: string) => {
-    if (!url) return;
-    setModelsLoading(true);
-    try {
-      const list = await onListOllamaModels(url);
-      setModels(list);
-    } finally {
-      setModelsLoading(false);
-    }
-  }, [onListOllamaModels]);
-
-  // Sync when parent async-loads stored config
-  useEffect(() => {
-    setBaseUrl(initialBaseUrl);
-  }, [initialBaseUrl]);
-
-  useEffect(() => {
-    setChatModel(initialChatModel);
-  }, [initialChatModel]);
-
-  useEffect(() => {
-    setEmbeddingModel(initialEmbeddingModel);
-  }, [initialEmbeddingModel]);
-
-  useEffect(() => {
-    setApiKey(initialApiKey);
-  }, [initialApiKey]);
-
-  useEffect(() => {
-    if (initialBaseUrl) void loadModels(initialBaseUrl);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialBaseUrl]);
-
-  const handleTestConnection = useCallback(async () => {
-    setConnectionStatus("testing");
-    const ok = await onTestOllamaConnection(baseUrl);
-    setConnectionStatus(ok ? "ok" : "fail");
-    if (ok) {
-      await loadModels(baseUrl);
-    }
-  }, [baseUrl, onTestOllamaConnection, loadModels]);
-
-  const handleSave = useCallback(async () => {
-    await onSaveOllamaConfig({
-      baseUrl,
-      chatModel,
-      embeddingModel: embeddingModel.trim() || undefined,
-      apiKey: apiKey.trim() || undefined,
-    });
-  }, [baseUrl, chatModel, embeddingModel, apiKey, onSaveOllamaConfig]);
 
   const formatBytes = useCallback((bytes: number): string => {
     if (!Number.isFinite(bytes) || bytes <= 0) return "-";
@@ -122,6 +50,30 @@ export function ModelTab({
       unitIndex += 1;
     }
     return `${value >= 10 || unitIndex === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[unitIndex]}`;
+  }, []);
+
+  const getModelTitle = useCallback((repoId: string): string => {
+    const segments = repoId.split("/");
+    return segments[segments.length - 1] ?? repoId;
+  }, []);
+
+  const getModelOwner = useCallback((repoId: string): string => {
+    return repoId.split("/")[0] ?? "";
+  }, []);
+
+  const getFileProfile = useCallback((filename: string): string => {
+    const lower = filename.toLowerCase();
+    if (lower.includes("q8")) return t("settings.localLlm.modelLibrary.profileQuality");
+    if (lower.includes("q5")) return t("settings.localLlm.modelLibrary.profileBalanced");
+    if (lower.includes("q4")) return t("settings.localLlm.modelLibrary.profileFast");
+    return t("settings.localLlm.modelLibrary.profileStandard");
+  }, [t]);
+
+  const getInstalledModelName = useCallback((modelPath?: string): string => {
+    if (!modelPath) return "";
+    const normalized = modelPath.replace(/\\/g, "/");
+    const parts = normalized.split("/");
+    return parts[parts.length - 1] ?? modelPath;
   }, []);
 
   const handleHfSearch = useCallback(async () => {
@@ -165,123 +117,15 @@ export function ModelTab({
   return (
     <div className="space-y-6 p-1">
       <div className="space-y-1">
-        <h3 className="text-sm font-semibold text-fg">AI 모델 설정</h3>
-        <p className="text-xs text-muted">Ollama를 통해 로컬 LLM을 사용합니다.</p>
+        <h3 className="text-sm font-semibold text-fg">{t("settings.localLlm.title")}</h3>
+        <p className="text-xs text-muted">{t("settings.localLlm.desc")}</p>
       </div>
 
-      {/* Ollama URL */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-fg-secondary">Ollama 서버 URL</label>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={baseUrl}
-            onChange={(e) => {
-              setBaseUrl(e.target.value);
-              setConnectionStatus("idle");
-            }}
-            placeholder="http://localhost:11434"
-            className="flex-1 text-sm bg-surface border border-border rounded-lg px-3 py-1.5 text-fg placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
-          />
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => void handleTestConnection()}
-            disabled={!baseUrl || connectionStatus === "testing"}
-          >
-            {connectionStatus === "testing" ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <RefreshCw className="w-3.5 h-3.5" />
-            )}
-            <span className="ml-1.5">연결 테스트</span>
-          </Button>
-        </div>
-
-        {connectionStatus === "ok" && (
-          <div className="flex items-center gap-1.5 text-xs text-green-500">
-            <CheckCircle className="w-3.5 h-3.5" />
-            <span>연결됨</span>
-          </div>
-        )}
-        {connectionStatus === "fail" && (
-          <div className="flex items-center gap-1.5 text-xs text-red-500">
-            <XCircle className="w-3.5 h-3.5" />
-            <span>연결 실패 — Ollama가 실행 중인지 확인하세요.</span>
-          </div>
-        )}
-      </div>
-
-      {/* Model selector */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-fg-secondary">모델 선택</label>
-        {modelsLoading ? (
-          <div className="flex items-center gap-2 text-xs text-muted py-1.5">
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            <span>모델 목록 로드 중...</span>
-          </div>
-        ) : models.length > 0 ? (
-          <select
-            value={chatModel}
-            onChange={(e) => setChatModel(e.target.value)}
-            className="w-full text-sm bg-surface border border-border rounded-lg px-3 py-1.5 appearance-none text-fg focus:outline-none focus:ring-1 focus:ring-accent"
-          >
-            <option value="">모델을 선택하세요</option>
-            {models.map((m) => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
-        ) : (
-          <div className="space-y-1">
-            <input
-              type="text"
-              value={chatModel}
-              onChange={(e) => setChatModel(e.target.value)}
-              placeholder="예: qwen3:4b"
-              className="w-full text-sm bg-surface border border-border rounded-lg px-3 py-1.5 text-fg placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
-            />
-            <p className="text-xs text-muted">서버에 연결 후 목록이 자동으로 표시됩니다.</p>
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-fg-secondary">임베딩 모델 (선택)</label>
-        <input
-          type="text"
-          value={embeddingModel}
-          onChange={(e) => setEmbeddingModel(e.target.value)}
-          placeholder="예: nomic-embed-text"
-          className="w-full text-sm bg-surface border border-border rounded-lg px-3 py-1.5 text-fg placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
-        />
-        <p className="text-xs text-muted">벡터 검색에 사용됩니다. 비워두면 채팅 모델을 사용합니다.</p>
-      </div>
-
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-fg-secondary">API Key (선택)</label>
-        <input
-          type="password"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          placeholder="필요한 provider에서만 사용됩니다"
-          className="w-full text-sm bg-surface border border-border rounded-lg px-3 py-1.5 text-fg placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
-        />
-      </div>
-
-      {/* Save button */}
-      <Button
-        onClick={() => void handleSave()}
-        disabled={isBusy || !baseUrl || !chatModel}
-        className="w-full"
-      >
-        저장
-      </Button>
-
-      <div className="rounded-lg bg-surface border border-border p-3 space-y-3">
+      <div className="rounded-control bg-surface border border-border p-3 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
-            <p className="text-xs font-medium text-fg-secondary">{t("settings.localLlm.title")}</p>
-            <p className="text-xs text-muted">{t("settings.localLlm.desc")}</p>
+            <p className="text-xs font-medium text-fg-secondary">{t("settings.localLlm.enabled")}</p>
+            <p className="text-xs text-muted">{t("settings.localLlm.toggleHelp")}</p>
           </div>
           <button
             type="button"
@@ -303,65 +147,74 @@ export function ModelTab({
         </div>
 
         {localLlmModelPath ? (
-          <div className="flex items-center gap-1.5 text-xs text-green-500">
-            <CheckCircle className="w-3.5 h-3.5" />
-            <span>{t("settings.localLlm.modelReady")}</span>
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5 text-xs text-success">
+              <CheckCircle className="w-3.5 h-3.5" />
+              <span>{t("settings.localLlm.modelReady")}</span>
+            </div>
+            <p className="text-xs text-muted">
+              {t("settings.localLlm.currentModel")}: {getInstalledModelName(localLlmModelPath)}
+            </p>
           </div>
         ) : (
-          <div className="space-y-2">
-            <p className="text-xs text-muted">{t("settings.localLlm.noModel")}</p>
+          <p className="text-xs text-muted">{t("settings.localLlm.noModel")}</p>
+        )}
 
-            {isDownloading && downloadProgress && (
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs text-muted">
-                  <span>
-                    {downloadProgress.stage === "binary"
-                      ? t("settings.localLlm.downloadingBinary")
-                      : t("settings.localLlm.downloadingModel")}
-                  </span>
-                  <span>{downloadProgress.pct}%</span>
-                </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-bg">
-                  <div
-                    className="h-full bg-accent transition-all duration-300"
-                    style={{ width: `${downloadProgress.pct}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {downloadProgress?.error && (
-              <p className="text-xs text-red-500">{downloadProgress.error}</p>
-            )}
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => void onDownloadLocalModel()}
-              disabled={isDownloading || isBusy}
-              className="w-full"
-            >
-              {isDownloading ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span className="ml-1.5">{t("settings.localLlm.downloading")}</span>
-                </>
-              ) : (
-                t("settings.localLlm.download")
-              )}
-            </Button>
+        {isDownloading && downloadProgress && (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-xs text-muted">
+              <span>
+                {downloadProgress.stage === "binary"
+                  ? t("settings.localLlm.downloadingBinary")
+                  : t("settings.localLlm.downloadingModel")}
+              </span>
+              <span>{downloadProgress.pct}%</span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-bg">
+              <div
+                className="h-full bg-accent transition-all duration-300"
+                style={{ width: `${downloadProgress.pct}%` }}
+              />
+            </div>
           </div>
         )}
 
+        {downloadProgress?.error && (
+          <p className="text-xs text-danger">{downloadProgress.error}</p>
+        )}
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void onDownloadLocalModel()}
+          disabled={isDownloading || isBusy}
+          className="w-full"
+        >
+          {isDownloading ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span className="ml-1.5">{t("settings.localLlm.downloading")}</span>
+            </>
+          ) : (
+            t("settings.localLlm.download")
+          )}
+        </Button>
+
         <div className="border-t border-border pt-3 space-y-3">
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-fg-secondary">
-              {t("settings.localLlm.hfSearch.title")}
-            </p>
-            <p className="text-xs text-muted">
-              {t("settings.localLlm.hfSearch.description")}
-            </p>
+          <div className="flex items-start gap-2">
+            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-control border border-border bg-bg text-muted">
+              <HardDrive className="h-3.5 w-3.5" />
+            </div>
+            <div className="min-w-0 space-y-1">
+              <p className="text-xs font-medium text-fg-secondary">
+                {t("settings.localLlm.modelLibrary.title")}
+              </p>
+              <p className="text-xs text-muted">
+                {t("settings.localLlm.modelLibrary.description")}
+              </p>
+            </div>
           </div>
+
           <div className="flex gap-2">
             <input
               type="text"
@@ -370,8 +223,8 @@ export function ModelTab({
               onKeyDown={(e) => {
                 if (e.key === "Enter") void handleHfSearch();
               }}
-              placeholder={t("settings.localLlm.hfSearch.placeholder")}
-              className="min-w-0 flex-1 text-sm bg-surface border border-border rounded-lg px-3 py-1.5 text-fg placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+              placeholder={t("settings.localLlm.modelLibrary.placeholder")}
+              className="min-w-0 flex-1 rounded-control border border-border bg-panel px-control-x py-control-y text-sm text-fg placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
             />
             <Button
               type="button"
@@ -387,30 +240,33 @@ export function ModelTab({
               )}
               <span className="ml-1.5">
                 {hfSearching
-                  ? t("settings.localLlm.hfSearch.searching")
-                  : t("settings.localLlm.hfSearch.searchBtn")}
+                  ? t("settings.localLlm.modelLibrary.searching")
+                  : t("settings.localLlm.modelLibrary.searchBtn")}
               </span>
             </Button>
           </div>
 
           {hfResults.length > 0 && (
-            <div className="max-h-40 overflow-y-auto rounded-lg border border-border">
+            <div className="max-h-48 overflow-y-auto rounded-control border border-border bg-panel">
               {hfResults.map((result) => (
                 <button
                   key={result.repoId}
                   type="button"
                   onClick={() => void handleSelectRepo(result.repoId)}
-                  className={`flex w-full items-start justify-between gap-3 border-b border-border px-3 py-2 text-left last:border-b-0 hover:bg-bg ${
-                    selectedRepo === result.repoId ? "bg-bg" : ""
+                  className={`flex w-full items-start justify-between gap-3 border-b border-border px-3 py-2.5 text-left last:border-b-0 hover:bg-surface-hover ${
+                    selectedRepo === result.repoId ? "bg-active" : ""
                   }`}
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-xs font-medium text-fg">
-                      {result.repoId}
+                      {getModelTitle(result.repoId)}
                     </span>
-                    <span className="text-[11px] text-muted">
-                      {t("settings.localLlm.hfSearch.downloads")}: {result.downloads.toLocaleString()} · {t("settings.localLlm.hfSearch.likes")}: {result.likes.toLocaleString()}
+                    <span className="block truncate text-[11px] text-muted">
+                      {getModelOwner(result.repoId)}
                     </span>
+                  </span>
+                  <span className="shrink-0 rounded-control border border-border bg-surface px-2 py-0.5 text-[11px] text-muted">
+                    {t("settings.localLlm.modelLibrary.popular")}: {result.downloads.toLocaleString()}
                   </span>
                 </button>
               ))}
@@ -418,30 +274,33 @@ export function ModelTab({
           )}
 
           {!hfSearching && hasHfSearched && hfResults.length === 0 && (
-            <p className="text-xs text-muted">{t("settings.localLlm.hfSearch.noResults")}</p>
+            <p className="text-xs text-muted">{t("settings.localLlm.modelLibrary.noResults")}</p>
           )}
 
           {selectedRepo && (
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <p className="truncate text-xs font-medium text-fg-secondary">
-                  {t("settings.localLlm.hfSearch.selectFile")}
+                  {t("settings.localLlm.modelLibrary.selectFile")}
                 </p>
                 {hfFilesLoading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted" />}
               </div>
               {hfFiles.length > 0 ? (
-                <div className="max-h-44 overflow-y-auto rounded-lg border border-border">
+                <div className="max-h-44 overflow-y-auto rounded-control border border-border bg-panel">
                   {hfFiles.map((file) => (
                     <button
                       key={file.filename}
                       type="button"
                       onClick={() => setSelectedFile(file)}
-                      className={`flex w-full items-center justify-between gap-3 border-b border-border px-3 py-2 text-left last:border-b-0 hover:bg-bg ${
-                        selectedFile?.filename === file.filename ? "bg-bg" : ""
+                      className={`flex w-full items-center justify-between gap-3 border-b border-border px-3 py-2 text-left last:border-b-0 hover:bg-surface-hover ${
+                        selectedFile?.filename === file.filename ? "bg-active" : ""
                       }`}
                     >
-                      <span className="min-w-0 truncate text-xs text-fg">{file.filename}</span>
-                      <span className="shrink-0 text-[11px] text-muted">
+                      <span className="min-w-0">
+                        <span className="block truncate text-xs text-fg">{file.filename}</span>
+                        <span className="text-[11px] text-muted">{getFileProfile(file.filename)}</span>
+                      </span>
+                      <span className="shrink-0 rounded-control border border-border bg-surface px-2 py-0.5 text-[11px] text-muted">
                         {formatBytes(file.sizeBytes)}
                       </span>
                     </button>
@@ -449,7 +308,7 @@ export function ModelTab({
                 </div>
               ) : (
                 !hfFilesLoading && (
-                  <p className="text-xs text-muted">{t("settings.localLlm.hfSearch.noFiles")}</p>
+                  <p className="text-xs text-muted">{t("settings.localLlm.modelLibrary.noFiles")}</p>
                 )
               )}
               <Button
@@ -461,15 +320,14 @@ export function ModelTab({
                 className="w-full"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span className="ml-1.5">{t("settings.localLlm.hfSearch.downloadSelected")}</span>
+                <span className="ml-1.5">{t("settings.localLlm.modelLibrary.downloadSelected")}</span>
               </Button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Memory rebuild */}
-      <div className="rounded-lg bg-surface border border-border p-3 space-y-2">
+      <div className="rounded-control bg-surface border border-border p-3 space-y-2">
         <p className="text-xs font-medium text-fg-secondary">메모리 재구성</p>
         <p className="text-xs text-muted">원고 내용이 RAG에 반영되지 않는 경우 실행하세요. 백그라운드로 처리됩니다.</p>
         <Button
@@ -481,25 +339,6 @@ export function ModelTab({
         >
           메모리 재구성 시작
         </Button>
-      </div>
-
-      {/* Install hint */}
-      <div className="rounded-lg bg-surface border border-border p-3 space-y-1.5">
-        <p className="text-xs font-medium text-fg-secondary">Ollama 미설치?</p>
-        <p className="text-xs text-muted">
-          <a
-            href="https://ollama.com"
-            target="_blank"
-            rel="noreferrer"
-            className="text-accent underline"
-          >
-            ollama.com
-          </a>
-          에서 설치 후 아래 명령어 실행:
-        </p>
-        <code className="block text-xs bg-bg rounded px-2 py-1 text-fg-secondary">
-          ollama pull qwen3:4b
-        </code>
       </div>
     </div>
   );
