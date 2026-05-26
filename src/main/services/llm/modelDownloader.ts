@@ -30,6 +30,14 @@ export type HfModelFile = {
   sizeBytes: number;
 };
 
+function encodeHfRepoId(repoId: string): string {
+  return repoId
+    .split("/")
+    .filter((segment) => segment.length > 0)
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+}
+
 function toNumber(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
@@ -43,6 +51,13 @@ function assertHttpOk(response: Response, action: string): void {
   if (!response.ok) {
     throw new Error(`${action} failed: HTTP ${response.status}`);
   }
+}
+
+function isPublicModel(item: { private?: unknown; gated?: unknown }): boolean {
+  if (item.private === true) return false;
+  if (item.gated === true) return false;
+  if (typeof item.gated === "string" && item.gated !== "false") return false;
+  return true;
 }
 
 export async function searchHfModels(query: string): Promise<HfModelSearchResult[]> {
@@ -66,10 +81,13 @@ export async function searchHfModels(query: string): Promise<HfModelSearchResult
     likes?: unknown;
     lastModified?: unknown;
     tags?: unknown;
+    private?: unknown;
+    gated?: unknown;
   }>;
   if (!Array.isArray(data)) return [];
   return data
     .map((item) => {
+      if (!isPublicModel(item)) return null;
       const repoId = typeof item.id === "string"
         ? item.id
         : typeof item.modelId === "string"
@@ -91,9 +109,16 @@ export async function getHfModelFiles(repoId: string): Promise<HfModelFile[]> {
   const normalized = repoId.trim();
   if (!normalized) return [];
   const response = await fetch(
-    `https://huggingface.co/api/models/${encodeURIComponent(normalized)}`,
+    `https://huggingface.co/api/models/${encodeHfRepoId(normalized)}`,
     { signal: AbortSignal.timeout(10_000) },
   );
+  if (response.status === 400 || response.status === 401 || response.status === 403 || response.status === 404) {
+    logger.info("Hugging Face model files are not publicly accessible", {
+      repoId: normalized,
+      status: response.status,
+    });
+    return [];
+  }
   assertHttpOk(response, "Hugging Face model files fetch");
   const data = await response.json() as {
     siblings?: Array<{ rfilename?: unknown; size?: unknown }>;

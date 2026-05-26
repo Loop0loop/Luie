@@ -11,10 +11,6 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
   const [isBusy, setIsBusy] = useState(false);
   const [migrationHealth, setMigrationHealth] = useState<MigrationHealth | null>(null);
   const currentProject = useProjectStore((state) => state.currentProject);
-  const [ollamaBaseUrl, setOllamaBaseUrl] = useState("http://localhost:11434");
-  const [ollamaChatModel, setOllamaChatModel] = useState("");
-  const [ollamaEmbeddingModel, setOllamaEmbeddingModel] = useState("");
-  const [ollamaApiKey, setOllamaApiKey] = useState("");
   const [localLlmEnabled, setLocalLlmEnabled] = useState(false);
   const [localLlmModelPath, setLocalLlmModelPath] = useState<string | undefined>();
   const [localLlmBinaryPath, setLocalLlmBinaryPath] = useState<string | undefined>();
@@ -36,13 +32,6 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     if (activeTab !== "model") return;
     void (async () => {
       const res = await api.settings.getAll();
-      if (res.success && res.data?.llm?.ollama) {
-        const { baseUrl, chatModel, embeddingModel, apiKey } = res.data.llm.ollama;
-        if (baseUrl) setOllamaBaseUrl(baseUrl);
-        setOllamaChatModel(chatModel ?? "");
-        setOllamaEmbeddingModel(embeddingModel ?? "");
-        setOllamaApiKey(apiKey ?? "");
-      }
       const localLlm = res.data?.llm?.localLlm;
       if (localLlm) {
         setLocalLlmEnabled(localLlm.enabled);
@@ -69,37 +58,6 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
       if (progress.stage === "error") setIsDownloading(false);
     });
     return unsubscribe;
-  }, []);
-
-  const handleSaveOllamaConfig = useCallback(async (input: {
-    baseUrl: string;
-    chatModel: string;
-    embeddingModel?: string;
-    apiKey?: string;
-  }) => {
-    setIsBusy(true);
-    try {
-      const response = await api.settings.setOllamaConfig(input);
-      if (!response.success) {
-        showToast(response.error?.message ?? "Ollama 설정 저장에 실패했습니다.", "error");
-        return false;
-      }
-      showToast("Ollama 설정을 저장했습니다.", "success");
-      return true;
-    } finally {
-      setIsBusy(false);
-    }
-  }, [showToast]);
-
-  const handleListOllamaModels = useCallback(async (baseUrl: string): Promise<string[]> => {
-    const response = await api.settings.listOllamaModels(baseUrl);
-    if (response.success && response.data) return response.data;
-    return [];
-  }, []);
-
-  const handleTestOllamaConnection = useCallback(async (baseUrl: string): Promise<boolean> => {
-    const response = await api.settings.testOllamaConnection(baseUrl);
-    return response.success && response.data?.ok === true;
   }, []);
 
   const handleRebuildMemory = useCallback(async (): Promise<void> => {
@@ -160,6 +118,13 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     if (!response.success) {
       setLocalLlmEnabled(!enabled);
       showToast(response.error?.message ?? "로컬 AI 설정 저장에 실패했습니다.", "error");
+      return;
+    }
+    const preferenceResponse = await api.settings.setLlmPreference({
+      provider: enabled ? "sidecar" : "auto",
+    });
+    if (!preferenceResponse.success) {
+      showToast(preferenceResponse.error?.message ?? "LLM 경로 전환에 실패했습니다.", "error");
     }
   }, [localLlmBinaryPath, localLlmModelPath, showToast]);
 
@@ -167,17 +132,10 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     isBusy,
     migrationHealth,
     refreshMigrationHealth,
-    ollamaBaseUrl,
-    ollamaChatModel,
-    ollamaEmbeddingModel,
-    ollamaApiKey,
     localLlmEnabled,
     localLlmModelPath,
     isDownloading,
     downloadProgress,
-    handleSaveOllamaConfig,
-    handleListOllamaModels,
-    handleTestOllamaConnection,
     handleRebuildMemory,
     handleDownloadLocalModel,
     handleSearchHfModels,
