@@ -94,6 +94,19 @@ export const enBase = {
       downloadingBinary: "Downloading binary",
       downloadingModel: "Downloading model",
       enabled: "Use Local AI",
+      hfSearch: {
+        title: "Hugging Face GGUF Search",
+        description: "Search public GGUF models and install a selected quantized file.",
+        placeholder: "e.g. Qwen2.5-Instruct, Gemma, Llama",
+        searchBtn: "Search",
+        searching: "Searching...",
+        selectFile: "Select GGUF file",
+        noResults: "No results found.",
+        noFiles: "No GGUF files found.",
+        downloads: "Downloads",
+        likes: "Likes",
+        downloadSelected: "Download selected model",
+      },
     },
     appearance: {
       baseTheme: {

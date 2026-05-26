@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@shared/api";
-import type { MigrationHealth } from "@shared/types";
+import type { HfModelFile, HfModelSearchResult, MigrationHealth } from "@shared/types";
 import type { SettingsTabId } from "@renderer/features/settings/components/tabs/types";
 import type { ToastType } from "@shared/ui/ToastContext";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
@@ -120,14 +120,34 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     }
   }, [currentProject, showToast]);
 
-  const handleDownloadLocalModel = useCallback(async (): Promise<void> => {
+  const handleDownloadLocalModel = useCallback(async (opts?: {
+    repo: string;
+    filename: string;
+  }): Promise<void> => {
     setIsDownloading(true);
     setDownloadProgress(null);
-    const response = await api.settings.startModelDownload({ type: "model" });
+    const response = await api.settings.startModelDownload({
+      type: "model",
+      ...(opts ? { repo: opts.repo, filename: opts.filename } : {}),
+    });
     if (!response.success) {
       setIsDownloading(false);
       showToast(response.error?.message ?? "로컬 AI 모델 다운로드를 시작하지 못했습니다.", "error");
     }
+  }, [showToast]);
+
+  const handleSearchHfModels = useCallback(async (query: string): Promise<HfModelSearchResult[]> => {
+    const response = await api.settings.searchHfModels(query);
+    if (response.success && response.data) return response.data;
+    showToast(response.error?.message ?? "HuggingFace 모델 검색에 실패했습니다.", "error");
+    return [];
+  }, [showToast]);
+
+  const handleGetHfModelFiles = useCallback(async (repoId: string): Promise<HfModelFile[]> => {
+    const response = await api.settings.getHfModelFiles(repoId);
+    if (response.success && response.data) return response.data;
+    showToast(response.error?.message ?? "GGUF 파일 목록을 불러오지 못했습니다.", "error");
+    return [];
   }, [showToast]);
 
   const handleToggleLocalLlm = useCallback(async (enabled: boolean): Promise<void> => {
@@ -160,6 +180,8 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     handleTestOllamaConnection,
     handleRebuildMemory,
     handleDownloadLocalModel,
+    handleSearchHfModels,
+    handleGetHfModelFiles,
     handleToggleLocalLlm,
   };
 }

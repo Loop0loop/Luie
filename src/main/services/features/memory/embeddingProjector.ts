@@ -4,7 +4,7 @@ import { db } from "../../../database/index.js";
 import { memoryBuildJob, memoryChunk, memoryEmbedding } from "../../../database/schema.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import { utilityProcessBridge } from "../utility/utilityProcessBridge.js";
-import { MEMORY_JOB_TYPES, MEMORY_TARGET_TYPES } from "./memoryJobConstants.js";
+import { MEMORY_JOB_TYPES } from "./memoryJobConstants.js";
 import { resolveRuntimeModelConfig } from "../../llm/modelRuntimeFactory.js";
 import {
   DERIVED_JOB_MAX_ATTEMPTS,
@@ -76,7 +76,6 @@ export class EmbeddingProjector {
           eq(memoryBuildJob.projectId, input.projectId),
           eq(memoryBuildJob.jobType, MEMORY_JOB_TYPES.REBUILD_EMBEDDING),
           inArray(memoryBuildJob.status, ["pending", "failed"]),
-          eq(memoryBuildJob.targetType, MEMORY_TARGET_TYPES.CHAPTER),
         ),
       )
       .orderBy(asc(memoryBuildJob.priority), asc(memoryBuildJob.createdAt))
@@ -121,7 +120,7 @@ export class EmbeddingProjector {
           .where(
             and(
               eq(memoryChunk.projectId, input.projectId),
-              eq(memoryChunk.sourceType, MEMORY_TARGET_TYPES.CHAPTER),
+              eq(memoryChunk.sourceType, job.targetType),
               eq(memoryChunk.sourceId, job.targetId),
             ),
           )

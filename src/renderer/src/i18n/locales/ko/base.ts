@@ -95,6 +95,19 @@ export const koBase = {
       downloadingBinary: "바이너리 다운로드 중",
       downloadingModel: "모델 다운로드 중",
       enabled: "로컬 AI 사용",
+      hfSearch: {
+        title: "Hugging Face GGUF 검색",
+        description: "공개 GGUF 모델을 검색해 원하는 양자화 파일을 설치합니다.",
+        placeholder: "예: Qwen2.5-Instruct, Gemma, Llama",
+        searchBtn: "검색",
+        searching: "검색 중...",
+        selectFile: "GGUF 파일 선택",
+        noResults: "검색 결과가 없습니다.",
+        noFiles: "GGUF 파일이 없습니다.",
+        downloads: "다운로드",
+        likes: "좋아요",
+        downloadSelected: "선택한 모델 다운로드",
+      },
     },
     appearance: {
       baseTheme: {

@@ -173,6 +173,8 @@ export const IPC_CHANNELS = {
   MODEL_DOWNLOAD_START: "model:download-start",
   MODEL_DOWNLOAD_CANCEL: "model:download-cancel",
   MODEL_DOWNLOAD_PROGRESS: "model:download-progress",
+  MODEL_SEARCH_HF: "model:search-hf",
+  MODEL_GET_HF_FILES: "model:get-hf-files",
   SETTINGS_RESET: "settings:reset",
 
   // Recovery
