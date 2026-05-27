@@ -130,14 +130,25 @@ export function useResizablePanelPresence({
   ]);
 
   useLayoutEffect(() => {
-    if (!isOpen || !shouldRender) return;
+    if (!isOpen || !shouldRender) return undefined;
     const isCollapsed = safelyUsePanel(panelRef, (panel) => panel.isCollapsed());
     // Skip if panel not yet registered or is already expanded
-    if (isCollapsed !== true) return;
+    if (isCollapsed !== true) return undefined;
     suppressLayoutPersistenceFor(durationMs + 160);
-    safelyUsePanel(panelRef, (currentPanel) => currentPanel.resize(openSize));
+
+    let frameId: number | null = null;
+    frameId = window.requestAnimationFrame(() => {
+      safelyUsePanel(panelRef, (currentPanel) => currentPanel.resize(openSize));
+    });
+
     setIsClosing(false);
     setIsOpening(false);
+
+    return () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+    };
   }, [durationMs, isOpen, openSize, panelRef, shouldRender]);
 
   return { isClosing, isOpening, shouldRender: isOpen || shouldRender };

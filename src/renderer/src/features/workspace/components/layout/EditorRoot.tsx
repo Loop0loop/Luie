@@ -488,7 +488,11 @@ export default function EditorRoot() {
               <Suspense fallback={null}>
                 <ContextPanel
                   activeTab={contextTab}
-                  onTabChange={setContextTab}
+                  onTabChange={(tab) => {
+                    if (tab !== "elements") {
+                      setContextTab(tab);
+                    }
+                  }}
                   isCanvasMode={mainViewType === "canvas"}
                 />
               </Suspense>

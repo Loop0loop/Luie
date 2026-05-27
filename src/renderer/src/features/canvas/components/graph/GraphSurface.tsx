@@ -9,7 +9,7 @@ import ReactFlow, {
   useEdgesState
 } from "reactflow";
 import { useTranslation } from "react-i18next";
-import { HelpCircle, ChevronDown, Layers, X } from "lucide-react";
+import { HelpCircle, X } from "lucide-react";
 import PensiveNode from "./PensiveNode";
 import type { GraphNodeData } from "../../types/graph";
 import { useGraphStore } from "../../stores/graph/graphStore";
@@ -44,20 +44,24 @@ export default function GraphSurface() {
   const { t } = useTranslation();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [isLegendOpen, setIsLegendOpen] = useState(true);
   const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
 
   // Zustand 전체 스토어 구독 결함 해결: 개별 Selector 분리 구독으로 불필요 리렌더링 0% 통제
   const focusId = useGraphStore((state) => state.focusId);
   const setFocusId = useGraphStore((state) => state.setFocusId);
-
+  const hoverId = useGraphStore((state) => state.hoverId);
+  const isRightPanelOpen = useUIStore((state) => state.regions?.rightPanel?.open ?? false);
 
   // 1. Luie 관계 시나리오 필터 상태 구독 (Zustand 스토어 연동)
   const activeMode = useGraphStore((state) => state.activeMode);
   const selectedChapterFilter = useGraphStore((state) => state.selectedChapterFilter);
   const selectedFocusNode = useGraphStore((state) => state.selectedFocusNode);
 
-
+  // hoverId에 대응하는 노드 데이터를 실시간 추적하여 호버 플로팅 카드에 공급
+  const hoverNode = useMemo(() => {
+    if (!hoverId) return null;
+    return MOCK_GRAPH_NODES.find((node) => node.id === hoverId) ?? null;
+  }, [hoverId]);
 
   // 2. 모드 및 필터 조건에 부합하는 동적 그래프 데이터 파이프라인 (Constellation Monotone Rule)
   const { filteredNodes, filteredEdges } = useMemo(() => {
@@ -91,7 +95,7 @@ export default function GraphSurface() {
 
       // 엣지 라벨 스타일 정의 (다크 럭셔리 & 피그마 감성)
       const labelStyle: React.CSSProperties = {
-        fill: "rgba(255, 255, 255, 0.85)", // 세련된 오프화이트 텍스트
+        fill: "var(--text-secondary)", // 테마 변수로 교체
         fontSize: 9,
         fontWeight: 700,
         fontFamily: "var(--font-sans, Inter, system-ui, sans-serif)",
@@ -99,9 +103,9 @@ export default function GraphSurface() {
       };
 
       const labelBgStyle: React.CSSProperties = {
-        fill: "rgba(12, 10, 9, 0.95)", // 심오한 다크 백그라운드
+        fill: "var(--bg-panel)", // 하드코딩 블랙 탈피, 테마 변수 적용
         fillOpacity: 0.95,
-        stroke: isCharacterMode ? "rgba(165, 180, 252, 0.35)" : "rgba(248, 113, 113, 0.45)", // 테두리 선
+        stroke: "var(--border-default)", // 테마 테두리
         strokeWidth: 1.2,
         rx: 6, // 둥근 라운딩 처리
         ry: 6,
@@ -295,31 +299,6 @@ export default function GraphSurface() {
 
   return (
     <div className="h-full w-full bg-canvas relative overflow-hidden select-none">
-      {/* 1. Onboarding Header (좌측 상단 타이틀 & 캡션) */}
-      <div className="absolute top-6 left-6 z-30 max-w-[500px] flex flex-col gap-1.5 transition-all duration-300">
-        <div className="flex items-center gap-2.5">
-          <div className="h-7 w-7 rounded-lg bg-foreground/10 border border-foreground/15 flex items-center justify-center text-foreground shadow-[0_0_15px_rgba(255,255,255,0.05)] pointer-events-none">
-            <Layers className="h-4 w-4" />
-          </div>
-          <h1 className="text-[16px] font-black tracking-tight text-foreground uppercase flex items-center pointer-events-none">
-            {t("canvas.graph.title", "월드 네비게이터")}
-            <span className="ml-2 text-[9px] tracking-widest font-normal text-muted-foreground bg-muted-foreground/10 border border-muted-foreground/20 px-2 py-0.5 rounded-full uppercase shrink-0">
-              World Navigator
-            </span>
-          </h1>
-          <button 
-            onClick={() => setIsGuideModalOpen(true)}
-            className="h-5 w-5 rounded-full bg-foreground/10 border border-foreground/15 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/25 transition-all cursor-pointer border-none shadow-[0_0_10px_rgba(255,255,255,0.02)]"
-            title={t("canvas.graph.legend.open", "사용 설명서 열기")}
-          >
-            <HelpCircle className="h-3 w-3" />
-          </button>
-        </div>
-        <p className="text-[11px] font-medium leading-relaxed text-muted-foreground break-keep pl-9.5 select-text pointer-events-none">
-          {t("canvas.graph.subtitle", "소설 속 인물들의 인적 관계망과 챕터별 핵심 사건의 인과관계를 밤하늘의 별자리와 수사 칠판 테마로 입체 시각화하는 작가 전용 내비게이터입니다.")}
-        </p>
-      </div>
-
       {/* React Flow Canvas */}
       <ReactFlow
         nodes={nodes}
@@ -351,157 +330,176 @@ export default function GraphSurface() {
           variant={BackgroundVariant.Dots}
           gap={20}
           size={1.5}
-          color="currentColor"
-          className="text-muted-foreground/25 dark:text-muted-foreground/35"
+          color="var(--border-default)"
+          className="opacity-70"
         />
       </ReactFlow>
 
-      {/* 2. Interactive Legend Panel (좌측 하단 접이식 범례) */}
-      <div 
-        className={cn(
-          "absolute bottom-6 left-6 z-30 transition-all duration-300 flex flex-col rounded-xl border border-border/40 bg-background/80 backdrop-blur-md shadow-2xl shadow-black/40 overflow-hidden",
-          isLegendOpen ? "w-[240px] h-[216px]" : "w-[240px] h-[40px] cursor-pointer hover:bg-background/95"
-        )}
-        onClick={() => !isLegendOpen && setIsLegendOpen(true)}
-      >
-        {isLegendOpen ? (
-          <>
-            <div className="flex items-center justify-between px-3.5 py-2 border-b border-border/20 bg-muted/20">
-              <div className="flex items-center gap-2">
-                <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-[11px] font-black tracking-tight text-foreground">
-                  {t("canvas.graph.legend.title", "그래프 범례")}
+      {/* 2. ? 범례 보기 플로팅 버튼 */}
+      <div className="absolute bottom-6 left-6 z-30">
+        <button
+          type="button"
+          onClick={() => setIsGuideModalOpen(true)}
+          className="h-9 w-9 rounded-full bg-panel/90 hover:bg-panel border border-border/40 hover:border-border/80 flex items-center justify-center text-muted hover:text-fg shadow-xl backdrop-blur-md transition-all cursor-pointer"
+          title={t("canvas.graph.legend.open", "그래프 범례 보기")}
+        >
+          <HelpCircle className="h-4.5 w-4.5" />
+        </button>
+      </div>
+
+      {/* 3. 인물 관계 수사망 플로팅 모달 (호버 상태 - 초호화 피그마 Aesthetics) */}
+      {hoverNode && (
+        <div 
+          className={cn(
+            "absolute top-16 z-30 w-[300px] rounded-2xl border border-border/30 bg-panel/85 backdrop-blur-xl p-4 shadow-[0_12px_40px_rgba(0,0,0,0.25)] animate-in fade-in duration-300 text-fg flex flex-col gap-3.5 select-none overflow-hidden after:absolute after:top-0 after:left-0 after:right-0 after:h-[1px] after:bg-gradient-to-r after:from-accent/40 after:to-transparent after:rounded-t-2xl transition-all duration-300",
+            isRightPanelOpen ? "right-[340px]" : "right-6"
+          )}
+        >
+          {/* 타이틀 영역 */}
+          <div className="flex items-center justify-between border-b border-border/20 pb-2.5 relative z-10">
+            <h4 className="text-[13px] font-black tracking-tight text-foreground">{hoverNode.data.label}</h4>
+            {hoverNode.data.type && (
+              <span className="text-[9px] uppercase tracking-wider font-extrabold text-accent bg-accent/10 border border-accent/20 px-2 py-0.5 rounded">
+                {t(`canvas.node.kind.${hoverNode.data.type}` as never, hoverNode.data.type)}
+              </span>
+            )}
+          </div>
+
+          {/* 설명/묘사 */}
+          {hoverNode.data.description && (
+            <p className="text-[11px] leading-relaxed text-muted break-keep bg-element/40 p-3 rounded-xl border border-border/15 select-text relative z-10 font-normal">
+              {hoverNode.data.description}
+            </p>
+          )}
+
+          {/* 얽힌 인물 관계 */}
+          {hoverNode.data.relationships && hoverNode.data.relationships.length > 0 && (
+            <div className="flex flex-col gap-2 pt-0.5 relative z-10">
+              <div className="flex items-center gap-1 border-b border-border/15 pb-1.5">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-muted">
+                  {t("canvas.graph.details.relationships", "얽힌 인물 관계")}
                 </span>
               </div>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsLegendOpen(false);
-                }}
-                className="h-5 w-5 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground transition-colors"
-              >
-                <ChevronDown className="h-3.5 w-3.5" />
-              </button>
+              <div className="flex flex-col gap-2">
+                {hoverNode.data.relationships.slice(0, 3).map((rel, index) => (
+                  <div 
+                    key={index} 
+                    className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-element/20 border border-border/15 hover:border-border/30 hover:bg-element/30 transition-all duration-200 text-[10px]"
+                  >
+                    <div className="flex items-center justify-between font-extrabold">
+                      <span className="text-foreground">{hoverNode.data.label}</span>
+                      <span className="text-[8.5px] bg-panel px-1.5 py-0.5 rounded text-muted-foreground border border-border/20 shrink-0 font-bold">
+                        {rel.type}
+                      </span>
+                      <span className="text-foreground">{rel.targetName}</span>
+                    </div>
+                    {rel.details && (
+                      <span className="text-[9px] text-muted-foreground pl-1.5 border-l border-border/30 leading-normal break-keep font-medium">
+                        {rel.details}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
-            
-            <div className={cn(
-              "p-3.5 flex flex-col gap-3 transition-all duration-300 origin-top",
-              isLegendOpen ? "opacity-100 scale-y-100" : "opacity-0 scale-y-90 pointer-events-none h-0 overflow-hidden"
-            )}>
+          )}
+
+          {/* 연관 등장 챕터 */}
+          {hoverNode.data.relatedChapters && hoverNode.data.relatedChapters.length > 0 && (
+            <div className="flex flex-col gap-2 pt-0.5 relative z-10">
+              <div className="flex items-center gap-1 border-b border-border/15 pb-1.5">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-muted">
+                  {t("canvas.graph.details.chapters", "연관 등장 챕터")}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {hoverNode.data.relatedChapters.map((chapter, index) => (
+                  <span 
+                    key={index}
+                    className="text-[9px] font-bold text-foreground bg-element/60 border border-border/15 px-2.5 py-1 rounded-full hover:bg-element hover:scale-105 transition-all cursor-default"
+                  >
+                    {chapter}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 4. 그래프 범례 승격 팝업 모달 */}
+      {isGuideModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-panel border border-border/40 w-[400px] rounded-2xl shadow-2xl p-5 flex flex-col gap-4 text-fg relative animate-in zoom-in-95 duration-200 select-none">
+            {/* 닫기 버튼 */}
+            <button 
+              type="button"
+              onClick={() => setIsGuideModalOpen(false)}
+              className="absolute top-4.5 right-4.5 h-6 w-6 rounded-lg hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-all cursor-pointer border-none bg-transparent"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            {/* 헤더 */}
+            <div className="flex flex-col gap-0.5 pointer-events-none">
+              <h2 className="text-[14px] font-black tracking-tight text-foreground uppercase flex items-center gap-2">
+                <HelpCircle className="h-4.5 w-4.5 text-accent" />
+                {t("canvas.graph.legend.title", "그래프 범례")}
+              </h2>
+              <p className="text-[9px] text-muted-foreground font-semibold uppercase tracking-wider">
+                Graph Legend Map
+              </p>
+            </div>
+
+            {/* 범례 리스트 */}
+            <div className="flex flex-col gap-4 mt-1 border-t border-border/20 pt-3">
               {/* 노드 범례 */}
               <div className="flex flex-col gap-2">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">{t("canvas.graph.legend.nodes", "노드 (개체)")}</span>
-                <div className="grid grid-cols-1 gap-1.5 pl-0.5">
-                  <div className="flex items-center gap-2 text-[10px] text-foreground font-semibold">
-                    <span className="h-3 w-3 rounded-full bg-foreground border border-border/50 shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
+                <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                  {t("canvas.graph.legend.nodes", "노드 (개체)")}
+                </span>
+                <div className="grid grid-cols-1 gap-2 pl-0.5">
+                  <div className="flex items-center gap-2.5 text-[11px] text-foreground font-semibold bg-surface/40 p-2 rounded-lg border border-border/10">
+                    <span className="h-3.5 w-3.5 rounded-full bg-foreground border border-border/50 shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
                     <span>{t("canvas.graph.legend.node.prime", "핵심 주연 캐릭터")}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] text-foreground font-semibold">
-                    <span className="h-2 w-2 rounded-full bg-muted-foreground/80 border border-border/50" />
+                  <div className="flex items-center gap-2.5 text-[11px] text-foreground font-semibold bg-surface/40 p-2 rounded-lg border border-border/10">
+                    <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/80 border border-border/50" />
                     <span>{t("canvas.graph.legend.node.major", "조연 / 연관 세력")}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] text-foreground font-semibold">
-                    <span className="h-2 w-2 rounded-sm bg-muted-foreground/60 border border-border/50" />
+                  <div className="flex items-center gap-2.5 text-[11px] text-foreground font-semibold bg-surface/40 p-2 rounded-lg border border-border/10">
+                    <span className="h-2.5 w-2.5 rounded-sm bg-muted-foreground/60 border border-border/50" />
                     <span>{t("canvas.graph.legend.node.chapter", "집필 회차 (챕터)")}</span>
                   </div>
                 </div>
               </div>
               
               {/* 에지 범례 */}
-              <div className="flex flex-col gap-2 border-t border-border/20 pt-2.5">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">{t("canvas.graph.legend.edges", "에지 (관계)")}</span>
-                <div className="flex flex-col gap-1.5 pl-0.5">
-                  <div className="flex items-center gap-2 text-[10px] text-foreground font-semibold">
-                    <span className="w-6 border-b border-dashed border-indigo-300/60" />
+              <div className="flex flex-col gap-2 border-t border-border/20 pt-3">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                  {t("canvas.graph.legend.edges", "에지 (관계)")}
+                </span>
+                <div className="grid grid-cols-1 gap-2 pl-0.5">
+                  <div className="flex items-center gap-2.5 text-[11px] text-foreground font-semibold bg-surface/40 p-2 rounded-lg border border-border/10">
+                    <span className="w-6 border-b border-dashed border-indigo-400" />
                     <span>{t("canvas.graph.legend.edge.character", "성간 인물 관계선")}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] text-foreground font-semibold">
-                    <span className="w-6 border-b-2 border-red-400/60" />
+                  <div className="flex items-center gap-2.5 text-[11px] text-foreground font-semibold bg-surface/40 p-2 rounded-lg border border-border/10">
+                    <span className="w-6 border-b-2 border-red-400" />
                     <span>{t("canvas.graph.legend.edge.event", "인과 관계 수사선 (붉은 실)")}</span>
                   </div>
                 </div>
               </div>
             </div>
-          </>
-        ) : (
-          <span title={t("canvas.graph.legend.open", "범례 열기")} className="inline-flex cursor-pointer items-center justify-center w-full h-full">
-            <HelpCircle className="h-4.5 w-4.5 text-muted-foreground" />
-          </span>
-        )}
-      </div>
 
-      {/* 3. Nebula Constellation Guide Modal (대형 반투명 다크 글래스모피즘 가이드 팝업 모달) */}
-      {isGuideModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-background/95 border border-border/40 w-[500px] rounded-2xl shadow-2xl p-6 flex flex-col gap-5 select-text text-fg relative animate-in zoom-in-95 duration-200">
-            {/* 닫기 단추 */}
-            <button 
-              onClick={() => setIsGuideModalOpen(false)}
-              className="absolute top-5.5 right-5.5 h-6.5 w-6.5 rounded-lg hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-all cursor-pointer border-none bg-transparent"
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            {/* 가이드 헤더 */}
-            <div className="flex flex-col gap-1 pr-8 pointer-events-none">
-              <h2 className="text-[15px] font-black tracking-tight text-foreground uppercase flex items-center gap-2">
-                <Layers className="h-4.5 w-4.5 text-accent" />
-                {t("canvas.graph.guideTitle", "월드 네비게이터 사용법")}
-              </h2>
-              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
-                World Navigator Guide Map
-              </p>
-            </div>
-
-            {/* 설명 카드 영역 (수사판 단서지 디자인) */}
-            <div className="flex flex-col gap-3.5 mt-1">
-              {/* 항목 1 */}
-              <div className="flex gap-3.5 p-3.5 rounded-xl border border-border/20 bg-muted/10 pointer-events-none">
-                <span className="h-5.5 w-5.5 shrink-0 rounded-full bg-foreground/10 border border-foreground/15 flex items-center justify-center text-[10px] font-black text-foreground shadow-sm">
-                  1
-                </span>
-                <div className="flex flex-col gap-1">
-                  <h4 className="text-[11px] font-extrabold text-foreground">{t("canvas.graph.guide.step1Title", "별자리 인물 관계도 (Character Constellation)")}</h4>
-                  <p className="text-[10px] text-muted-foreground leading-relaxed break-keep">
-                    {t("canvas.graph.guide.step1Desc", "주인공 '진서' 노드를 거성으로 삼아 인물들 간의 성간 연계를 밤하늘의 별자리 형태로 표현합니다. 각 노드의 등급에 따라 Halos 광배 효과가 다채롭게 빛납니다.")}
-                  </p>
-                </div>
-              </div>
-
-              {/* 항목 2 */}
-              <div className="flex gap-3.5 p-3.5 rounded-xl border border-border/20 bg-muted/10 pointer-events-none">
-                <span className="h-5.5 w-5.5 shrink-0 rounded-full bg-foreground/10 border border-foreground/15 flex items-center justify-center text-[10px] font-black text-foreground shadow-sm">
-                  2
-                </span>
-                <div className="flex flex-col gap-1">
-                  <h4 className="text-[11px] font-extrabold text-foreground">{t("canvas.graph.guide.step2Title", "인과관계 수사선 (Investigation Red Thread)")}</h4>
-                  <p className="text-[10px] text-muted-foreground leading-relaxed break-keep">
-                    {t("canvas.graph.guide.step2Desc", "마차 습격 사건과 같은 핵심 복선을 기준으로 전후 원인과 파급 사건들을 '붉은 실' 형태의 수사선으로 그리며, 실시간 화살표 흐름 애니메이션으로 개연성 충돌을 사전에 적발합니다.")}
-                  </p>
-                </div>
-              </div>
-
-              {/* 항목 3 */}
-              <div className="flex gap-3.5 p-3.5 rounded-xl border border-border/20 bg-muted/10 pointer-events-none">
-                <span className="h-5.5 w-5.5 shrink-0 rounded-full bg-foreground/10 border border-foreground/15 flex items-center justify-center text-[10px] font-black text-foreground shadow-sm">
-                  3
-                </span>
-                <div className="flex flex-col gap-1">
-                  <h4 className="text-[11px] font-extrabold text-foreground">{t("canvas.graph.guide.step3Title", "스마트 바인더 상세 연동 (Binder Details Integration)")}</h4>
-                  <p className="text-[10px] text-muted-foreground leading-relaxed break-keep">
-                    {t("canvas.graph.guide.step3Desc", "캔버스의 특정 노드를 클릭하면 복잡한 툴팁이 닫히며 우측 바인더 패널 내에 전용 '인물 설정 분석지'가 쓱 미끄러져 열립니다. 원고 본문 명대사 스크랩과 연관 챕터를 방해 없이 가독성 높게 추적 가능합니다.")}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* 가이드 하단 단추 */}
-            <div className="flex justify-end gap-2.5 mt-1 border-t border-border/20 pt-4">
+            {/* 확인 버튼 */}
+            <div className="flex justify-end gap-2.5 mt-1 border-t border-border/20 pt-3">
               <button 
+                type="button"
                 onClick={() => setIsGuideModalOpen(false)}
-                className="text-[10.5px] font-black tracking-tight text-on-accent bg-accent hover:bg-accent/90 px-4 py-2 rounded-lg cursor-pointer transition-all border-none"
+                className="text-[10.5px] font-bold tracking-tight text-on-accent bg-accent hover:bg-accent/90 px-4 py-2 rounded-lg cursor-pointer transition-all border-none"
               >
-                {t("canvas.graph.guide.close", "탐색 시작")}
+                {t("canvas.graph.guide.close", "확인")}
               </button>
             </div>
           </div>
