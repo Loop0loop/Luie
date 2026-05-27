@@ -30,6 +30,33 @@ export type HfModelFile = {
   sizeBytes: number;
 };
 
+export class HfAccessError extends Error {
+  readonly status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "HfAccessError";
+    this.status = status;
+  }
+}
+
+const HF_REPO_ID_PATTERN = /^[\w.-]+\/[\w.-]+$/;
+
+function normalizeHfRepoId(input: string): string {
+  let value = input.trim();
+  if (!value) return "";
+
+  value = value.replace(/^https?:\/\/huggingface\.co\//i, "");
+  value = value.replace(/^models\//i, "");
+  value = value.replace(/[?#].*$/, "");
+  value = value.replace(/\/(tree|resolve|blob|commit|discussions|settings)\/.*$/i, "");
+  value = value.replace(/\/files.*$/i, "");
+  value = value.replace(/^\/+|\/+$/g, "");
+
+  const [owner, repo] = value.split("/");
+  if (!owner || !repo) return value;
+  return `${owner}/${repo}`;
+}
+
 function encodeHfRepoId(repoId: string): string {
   return repoId
     .split("/")
@@ -106,16 +133,39 @@ export async function searchHfModels(query: string): Promise<HfModelSearchResult
 }
 
 export async function getHfModelFiles(repoId: string): Promise<HfModelFile[]> {
-  const normalized = repoId.trim();
+  const normalized = normalizeHfRepoId(repoId);
   if (!normalized) return [];
+  if (!HF_REPO_ID_PATTERN.test(normalized)) {
+    throw new Error(`Invalid Hugging Face repoId: ${repoId}`);
+  }
+
+  logger.info("Fetching Hugging Face model files", {
+    repoIdInput: repoId,
+    repoIdNormalized: normalized,
+  });
+
   const response = await fetch(
     `https://huggingface.co/api/models/${encodeHfRepoId(normalized)}`,
     { signal: AbortSignal.timeout(10_000) },
   );
-  if (response.status === 400 || response.status === 401 || response.status === 403 || response.status === 404) {
-    logger.info("Hugging Face model files are not publicly accessible", {
+  if (response.status === 401 || response.status === 403) {
+    const body = await response.text().catch(() => "");
+    logger.info("Hugging Face model access requires authentication or permission", {
       repoId: normalized,
       status: response.status,
+      body: body.slice(0, 500),
+    });
+    throw new HfAccessError(
+      `Hugging Face access denied (${response.status}) for ${normalized}`,
+      response.status,
+    );
+  }
+  if (response.status === 400 || response.status === 404) {
+    const body = await response.text().catch(() => "");
+    logger.info("Hugging Face model files are unavailable", {
+      repoId: normalized,
+      status: response.status,
+      body: body.slice(0, 500),
     });
     return [];
   }

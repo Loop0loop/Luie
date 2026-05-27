@@ -184,26 +184,26 @@ const GraphFilterSidebar = memo(() => {
   return (
     <div className="flex h-full w-full flex-col bg-sidebar text-sidebar-foreground border-r border-border/30 overflow-hidden select-none">
       {/* 헤더 */}
-      <div className="flex h-12 items-center justify-between border-b border-border/20 px-4 shrink-0">
+      <div className="flex h-12 items-center justify-between border-b border-border/20 px-4 shrink-0 bg-sidebar/55">
         <div className="flex items-center gap-2">
           <Workflow className="h-4 w-4 text-accent animate-pulse" />
-          <span className="text-xs font-bold tracking-tight uppercase">
-            {t("canvas.graph.scenarioAnalysis")}
+          <span className="text-xs font-black tracking-tight uppercase">
+            {t("canvas.graph.scenarioAnalysis", "시나리오 맥락 분석기")}
           </span>
         </div>
-        <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+        <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
       </div>
 
       {/* 바디 스크롤 영역 */}
-      <ScrollArea className="flex-1 p-4">
-        <div className="flex flex-col gap-6">
+      <ScrollArea className="flex-1 p-4 bg-sidebar/35">
+        <div className="flex flex-col gap-5.5">
           
           {/* 모드 선택 세그먼트 (캐릭터 vs 사건/복선) */}
           <div className="flex flex-col gap-2">
-            <label className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-              {t("canvas.graph.analysisMode")}
+            <label className="text-[9.5px] uppercase font-bold tracking-widest text-muted-foreground/80 pl-0.5">
+              {t("canvas.graph.analysisMode", "관점 전환 필터")}
             </label>
-            <div className="flex items-center gap-1 p-1 rounded-full bg-muted border border-border h-9 shrink-0">
+            <div className="flex items-center gap-1 p-1 rounded-full bg-muted border border-border/50 h-9 shrink-0 shadow-inner">
               <Button
                 variant="ghost"
                 size="xs"
@@ -212,14 +212,14 @@ const GraphFilterSidebar = memo(() => {
                   setSelectedFocusNode("all");
                 }}
                 className={cn(
-                  "flex-1 flex items-center justify-center gap-1.5 rounded-full text-[10px] font-bold h-7 cursor-pointer border-none",
+                  "flex-1 flex items-center justify-center gap-1.5 rounded-full text-[10px] font-bold h-7 cursor-pointer border-none transition-all duration-200",
                   activeMode === "character"
                     ? "bg-background text-foreground shadow-sm hover:bg-background"
-                    : "text-muted-foreground hover:bg-background/40 hover:text-foreground bg-transparent"
+                    : "text-muted-foreground hover:bg-background/45 hover:text-foreground bg-transparent"
                 )}
               >
-                <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>{t("canvas.graph.characterMap")}</span>
+                <Users className="h-3.5 w-3.5" />
+                <span>{t("canvas.graph.characterMap", "인물 관계망")}</span>
               </Button>
               <Button
                 variant="ghost"
@@ -229,88 +229,93 @@ const GraphFilterSidebar = memo(() => {
                   setSelectedFocusNode("all");
                 }}
                 className={cn(
-                  "flex-1 flex items-center justify-center gap-1.5 rounded-full text-[10px] font-bold h-7 cursor-pointer border-none",
+                  "flex-1 flex items-center justify-center gap-1.5 rounded-full text-[10px] font-bold h-7 cursor-pointer border-none transition-all duration-200",
                   activeMode === "event"
                     ? "bg-background text-foreground shadow-sm hover:bg-background"
-                    : "text-muted-foreground hover:bg-background/40 hover:text-foreground bg-transparent"
+                    : "text-muted-foreground hover:bg-background/45 hover:text-foreground bg-transparent"
                 )}
               >
-                <Workflow className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>{t("canvas.graph.eventFlow")}</span>
+                <Workflow className="h-3.5 w-3.5" />
+                <span>{t("canvas.graph.eventFlow", "사건 타임라인")}</span>
               </Button>
             </div>
           </div>
 
           {/* 에피소드/챕터 다중 필터 */}
           <div className="flex flex-col gap-2">
-            <label className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground flex items-center gap-1">
-              <Calendar className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              {t("canvas.graph.chapterRange")}
+            <label className="text-[9.5px] uppercase font-bold tracking-widest text-muted-foreground/80 pl-0.5 flex items-center gap-1">
+              <Calendar className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+              {t("canvas.graph.chapterRange", "에피소드 집필 범위")}
             </label>
-            <div className="flex items-center gap-1 p-1 rounded-full bg-muted border border-border h-9 shrink-0">
+            <div className="flex items-center gap-1 p-1 rounded-full bg-muted border border-border/50 h-9 shrink-0 shadow-inner">
               <Button
                 variant="ghost"
                 size="xs"
                 onClick={() => setSelectedChapterFilter("all")}
                 className={cn(
-                  "flex-1 flex items-center justify-center rounded-full text-[9px] font-bold h-7 cursor-pointer border-none",
+                  "flex-1 flex items-center justify-center rounded-full text-[9px] font-bold h-7 cursor-pointer border-none transition-all duration-200",
                   selectedChapterFilter === "all"
                     ? "bg-background text-foreground shadow-sm hover:bg-background"
-                    : "text-muted-foreground hover:bg-background/40 hover:text-foreground bg-transparent"
+                    : "text-muted-foreground hover:bg-background/45 hover:text-foreground bg-transparent"
                 )}
               >
-                {t("canvas.graph.allChapters")}
+                {t("canvas.graph.allChapters", "전체 회차 조회")}
               </Button>
               <Button
                 variant="ghost"
                 size="xs"
                 onClick={() => setSelectedChapterFilter("early")}
                 className={cn(
-                  "flex-1 flex items-center justify-center rounded-full text-[9px] font-bold h-7 cursor-pointer border-none",
+                  "flex-1 flex items-center justify-center rounded-full text-[9px] font-bold h-7 cursor-pointer border-none transition-all duration-200",
                   selectedChapterFilter === "early"
                     ? "bg-background text-foreground shadow-sm hover:bg-background"
-                    : "text-muted-foreground hover:bg-background/40 hover:text-foreground bg-transparent"
+                    : "text-muted-foreground hover:bg-background/45 hover:text-foreground bg-transparent"
                 )}
               >
-                {t("canvas.graph.earlyChapters")}
+                {t("canvas.graph.earlyChapters", "초반 시나리오")}
               </Button>
             </div>
           </div>
 
           {/* 대상 노드 집중 포커싱 필터 */}
           <div className="flex flex-col gap-2">
-            <label className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-              {activeMode === "character" ? t("canvas.graph.characterFocus") : t("canvas.graph.eventFocus")}
+            <label className="text-[9.5px] uppercase font-bold tracking-widest text-muted-foreground/80 pl-0.5">
+              {activeMode === "character" ? t("canvas.graph.characterFocus", "인물 집중 추적") : t("canvas.graph.eventFocus", "특정 사건 추적")}
             </label>
-            <select
-              value={selectedFocusNode}
-              onChange={(e) => setSelectedFocusNode(e.target.value)}
-              className="w-full rounded-lg border border-border px-3 py-2 text-[11px] font-semibold cursor-pointer outline-none bg-background text-foreground hover:bg-muted/40 transition-colors"
-            >
-              <option value="all">{t("canvas.graph.viewAllNetwork")}</option>
-              {activeMode === "character" ? (
-                <>
-                  <option value="jinseo">{t("canvas.graph.nodes.jinseo")}</option>
-                  <option value="serin">{t("canvas.graph.nodes.serin")}</option>
-                </>
-              ) : (
-                <>
-                  <option value="ambush">{t("canvas.graph.nodes.ambush")}</option>
-                  <option value="rebels">{t("canvas.graph.nodes.rebels")}</option>
-                </>
-              )}
-            </select>
+            <div className="relative">
+              <select
+                value={selectedFocusNode}
+                onChange={(e) => setSelectedFocusNode(e.target.value)}
+                className="w-full rounded-lg border border-border/80 px-3.5 py-2 text-[11px] font-bold cursor-pointer outline-none bg-background text-foreground hover:bg-muted/40 transition-all appearance-none pr-8 shadow-sm"
+              >
+                <option value="all">{t("canvas.graph.viewAllNetwork", "전체 관계도 탐색")}</option>
+                {activeMode === "character" ? (
+                  <>
+                    <option value="jinseo">{t("canvas.graph.nodes.jinseo", "진서 (주인공)")}</option>
+                    <option value="serin">{t("canvas.graph.nodes.serin", "세린 (첩보원)")}</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="ambush">{t("canvas.graph.nodes.ambush", "마차 습격 사건")}</option>
+                    <option value="rebels">{t("canvas.graph.nodes.rebels", "반란군 세력")}</option>
+                  </>
+                )}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground/70">
+                <ChevronDown className="h-3.5 w-3.5" />
+              </div>
+            </div>
           </div>
 
           {/* 작가 시나리오 분석 팁 */}
-          <div className="rounded-xl p-3.5 bg-muted/40 border border-border/60 flex gap-2.5 shrink-0">
-            <HelpCircle className="h-5 w-5 text-accent shrink-0 mt-0.5" />
+          <div className="rounded-xl p-3.5 bg-accent/5 dark:bg-accent/10 border border-accent/15 flex gap-2.5 shrink-0 shadow-sm">
+            <HelpCircle className="h-4.5 w-4.5 text-accent shrink-0 mt-0.5" />
             <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] font-bold">{t("canvas.graph.authorGuide")}</span>
-              <p className="text-[9.5px] leading-relaxed text-muted-foreground font-medium">
+              <span className="text-[10px] font-bold text-foreground">{t("canvas.graph.authorGuide", "작가 집필 내비게이션 팁")}</span>
+              <p className="text-[9.5px] leading-relaxed text-muted-foreground font-medium break-keep">
                 {activeMode === "character"
-                  ? t("canvas.graph.characterGuideTip")
-                  : t("canvas.graph.eventGuideTip")}
+                  ? t("canvas.graph.characterGuideTip", "별자리 주위를 맴도는 위성들은 특정 인물과의 얽힌 친밀도를 나타냅니다. 노드를 클릭하면 큼직한 설정 단서 분석 메모가 바인더 패널에 활성화됩니다.")
+                  : t("canvas.graph.eventGuideTip", "붉은 실선은 원인과 결과의 긴박한 흐름을 의미합니다. 화살표는 사건의 선후 관계를 나타내며, 포커싱 시 해당 루트가 맥동합니다.")}
               </p>
             </div>
           </div>
