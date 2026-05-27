@@ -39,6 +39,7 @@ export function ModelTab({
   const [hfSearching, setHfSearching] = useState(false);
   const [hfFilesLoading, setHfFilesLoading] = useState(false);
   const [hasHfSearched, setHasHfSearched] = useState(false);
+  const [hfError, setHfError] = useState<string | null>(null);
 
   const formatBytes = useCallback((bytes: number): string => {
     if (!Number.isFinite(bytes) || bytes <= 0) return "-";
@@ -85,26 +86,33 @@ export function ModelTab({
     setSelectedRepo(null);
     setSelectedFile(null);
     setHasHfSearched(false);
+    setHfError(null);
     try {
       const results = await onSearchHfModels(query);
       setHfResults(results);
       setHasHfSearched(true);
+    } catch (error) {
+      setHasHfSearched(true);
+      setHfError(error instanceof Error ? error.message : t("settings.localLlm.modelLibrary.searchError"));
     } finally {
       setHfSearching(false);
     }
-  }, [hfQuery, onSearchHfModels]);
+  }, [hfQuery, onSearchHfModels, t]);
 
   const handleSelectRepo = useCallback(async (repoId: string) => {
     setSelectedRepo(repoId);
     setSelectedFile(null);
     setHfFiles([]);
     setHfFilesLoading(true);
+    setHfError(null);
     try {
       setHfFiles(await onGetHfModelFiles(repoId));
+    } catch (error) {
+      setHfError(error instanceof Error ? error.message : t("settings.localLlm.modelLibrary.fileFetchError"));
     } finally {
       setHfFilesLoading(false);
     }
-  }, [onGetHfModelFiles]);
+  }, [onGetHfModelFiles, t]);
 
   const handleDownloadSelected = useCallback(async () => {
     if (!selectedRepo || !selectedFile) return;
@@ -133,9 +141,7 @@ export function ModelTab({
             className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
               localLlmEnabled ? "bg-accent" : "bg-border"
             } ${!localLlmModelPath ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
-            onClick={() => {
-              if (localLlmModelPath) void onToggleLocalLlm(!localLlmEnabled);
-            }}
+            onClick={() => void onToggleLocalLlm(!localLlmEnabled)}
             disabled={!localLlmModelPath}
           >
             <span
@@ -276,6 +282,7 @@ export function ModelTab({
           {!hfSearching && hasHfSearched && hfResults.length === 0 && (
             <p className="text-xs text-muted">{t("settings.localLlm.modelLibrary.noResults")}</p>
           )}
+          {hfError && <p className="text-xs text-danger">{hfError}</p>}
 
           {selectedRepo && (
             <div className="space-y-2">
@@ -328,8 +335,8 @@ export function ModelTab({
       </div>
 
       <div className="rounded-control bg-surface border border-border p-3 space-y-2">
-        <p className="text-xs font-medium text-fg-secondary">메모리 재구성</p>
-        <p className="text-xs text-muted">원고 내용이 RAG에 반영되지 않는 경우 실행하세요. 백그라운드로 처리됩니다.</p>
+        <p className="text-xs font-medium text-fg-secondary">{t("settings.localLlm.rebuildMemory.title")}</p>
+        <p className="text-xs text-muted">{t("settings.localLlm.rebuildMemory.description")}</p>
         <Button
           size="sm"
           variant="outline"
@@ -337,7 +344,7 @@ export function ModelTab({
           disabled={isBusy}
           className="w-full"
         >
-          메모리 재구성 시작
+          {t("settings.localLlm.rebuildMemory.start")}
         </Button>
       </div>
     </div>

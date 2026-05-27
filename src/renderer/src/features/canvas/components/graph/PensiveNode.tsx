@@ -12,6 +12,10 @@ const SIZE_CLASSES = {
   minor: "h-2.5 w-2.5", // 주변 노드 (10px)
 } as const;
 
+// 줌 역스케일링 배율의 안전 한계치 상수화
+const INVERSE_SCALE_MIN = 0.75 as const;
+const INVERSE_SCALE_MAX = 4.5 as const;
+
 function PensiveNode({ id, data, selected }: NodeProps<GraphNodeData>) {
   const { t } = useTranslation();
   const { zoom } = useViewport();
@@ -19,8 +23,8 @@ function PensiveNode({ id, data, selected }: NodeProps<GraphNodeData>) {
   const isChapter = data.type === "chapter";
   const isFocused = selected || data.isFocused;
 
-  // 줌아웃에 따른 역스케일링 배율 산출 (0.75배에서 최대 4.5배까지 원거리 가독성 극대화)
-  const inverseScale = Math.min(Math.max(1 / zoom, 0.75), 4.5);
+  // 줌아웃에 따른 역스케일링 배율 산출 (상수 기반의 안전 경계 연산)
+  const inverseScale = Math.min(Math.max(1 / zoom, INVERSE_SCALE_MIN), INVERSE_SCALE_MAX);
 
   // 등급별 링 및 발광 섀도우 효과 (웹소설 수사 단서판 & 성운 광배 융합 이펙트)
   const starGradeClass = isChapter
@@ -59,10 +63,7 @@ function PensiveNode({ id, data, selected }: NodeProps<GraphNodeData>) {
           left: "50%",
         }}
         className={cn(
-          "absolute top-full mt-3.5 whitespace-nowrap transition-all duration-300 pointer-events-none px-4 py-2.5 rounded-lg bg-surface/95 border border-border/60 shadow-2xl text-fg z-50 flex flex-col gap-1 min-w-[200px] max-w-[280px]",
-          isFocused 
-            ? "opacity-100 translate-y-0" 
-            : "opacity-0 -translate-y-2 scale-95 group-hover:opacity-100 group-hover:translate-y-0"
+          "absolute top-full mt-3.5 whitespace-nowrap transition-all duration-300 pointer-events-none px-4 py-2.5 rounded-lg bg-surface/95 border border-border/60 shadow-2xl text-fg z-50 flex flex-col gap-1 min-w-[200px] max-w-[280px] opacity-0 -translate-y-2 scale-95 group-hover:opacity-100 group-hover:translate-y-0"
         )}
       >
         <div className="flex items-center justify-between gap-3 border-b border-border/30 pb-1.5">

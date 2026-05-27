@@ -94,13 +94,36 @@ describe("modelDownloader", () => {
   it("returns no files for token-gated Hugging Face model repos", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("Unauthorized", { status: 401 })));
 
-    await expect(getHfModelFiles("gated/private-model")).resolves.toEqual([]);
+    await expect(getHfModelFiles("gated/private-model")).rejects.toThrow("Hugging Face access denied");
   });
 
-  it("returns no files when Hugging Face rejects malformed or inaccessible repo request", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response("Bad Request", { status: 400 })));
+  it("returns access error for forbidden Hugging Face model repos", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("Forbidden", { status: 403 })));
 
-    await expect(getHfModelFiles("owner/model name")).resolves.toEqual([]);
+    await expect(getHfModelFiles("gated/private-model")).rejects.toThrow("Hugging Face access denied");
+  });
+
+  it("fails fast when repo id format is invalid", async () => {
+    await expect(getHfModelFiles("owner/model name")).rejects.toThrow("Invalid Hugging Face repoId");
+  });
+
+  it("normalizes huggingface repo URL input before requesting files", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      expect(url).toBe("https://huggingface.co/api/models/Qwen/Qwen2.5-1.5B-Instruct-GGUF");
+      return new Response(JSON.stringify({
+        siblings: [{ rfilename: "model.gguf", size: 10 }],
+      }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      getHfModelFiles("https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/tree/main?x=1"),
+    ).resolves.toEqual([{ filename: "model.gguf", sizeBytes: 10 }]);
+  });
+
+  it("throws for invalid huggingface repo id", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+    await expect(getHfModelFiles("not-a-valid-repo")).rejects.toThrow("Invalid Hugging Face repoId");
   });
 
   it("lists only GGUF files from a Hugging Face model repo", async () => {

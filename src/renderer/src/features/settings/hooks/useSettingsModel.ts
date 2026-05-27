@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "@shared/api";
 import type { HfModelFile, HfModelSearchResult, MigrationHealth } from "@shared/types";
 import type { SettingsTabId } from "@renderer/features/settings/components/tabs/types";
@@ -8,6 +9,7 @@ import { useProjectStore } from "@renderer/features/project/stores/projectStore"
 type ShowToast = (message: string, type: ToastType, duration?: number) => void;
 
 export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast) {
+  const { t } = useTranslation();
   const [isBusy, setIsBusy] = useState(false);
   const [migrationHealth, setMigrationHealth] = useState<MigrationHealth | null>(null);
   const currentProject = useProjectStore((state) => state.currentProject);
@@ -62,21 +64,24 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
 
   const handleRebuildMemory = useCallback(async (): Promise<void> => {
     if (!currentProject) {
-      showToast("열린 프로젝트가 없습니다.", "error");
+      showToast(t("settings.localLlm.rebuildMemory.noProject"), "error");
       return;
     }
     setIsBusy(true);
     try {
       const response = await api.memoryAdmin.rebuildChunks({ projectId: currentProject.id });
       if (!response.success) {
-        showToast(response.error?.message ?? "메모리 재구성에 실패했습니다.", "error");
+        showToast(response.error?.message ?? t("settings.localLlm.rebuildMemory.failed"), "error");
         return;
       }
-      showToast(`메모리 재구성을 시작했습니다. (${response.data?.queued ?? 0}개 작업 등록)`, "success");
+      showToast(
+        t("settings.localLlm.rebuildMemory.started", { count: response.data?.queued ?? 0 }),
+        "success",
+      );
     } finally {
       setIsBusy(false);
     }
-  }, [currentProject, showToast]);
+  }, [currentProject, showToast, t]);
 
   const handleDownloadLocalModel = useCallback(async (opts?: {
     repo: string;
@@ -84,29 +89,32 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
   }): Promise<void> => {
     setIsDownloading(true);
     setDownloadProgress(null);
-    const response = await api.settings.startModelDownload({
-      type: "model",
-      ...(opts ? { repo: opts.repo, filename: opts.filename } : {}),
-    });
-    if (!response.success) {
+    try {
+      const response = await api.settings.startModelDownload({
+        type: "model",
+        ...(opts ? { repo: opts.repo, filename: opts.filename } : {}),
+      });
+      if (response.success) return;
       setIsDownloading(false);
-      showToast(response.error?.message ?? "로컬 AI 모델 다운로드를 시작하지 못했습니다.", "error");
+      showToast(response.error?.message ?? t("settings.localLlm.modelLibrary.downloadStartFailed"), "error");
+    } catch (error) {
+      setIsDownloading(false);
+      const message = error instanceof Error ? error.message : t("settings.localLlm.modelLibrary.downloadStartFailed");
+      showToast(message, "error");
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   const handleSearchHfModels = useCallback(async (query: string): Promise<HfModelSearchResult[]> => {
     const response = await api.settings.searchHfModels(query);
     if (response.success && response.data) return response.data;
-    showToast(response.error?.message ?? "HuggingFace 모델 검색에 실패했습니다.", "error");
-    return [];
-  }, [showToast]);
+    throw new Error(response.error?.message ?? t("settings.localLlm.modelLibrary.searchError"));
+  }, [t]);
 
   const handleGetHfModelFiles = useCallback(async (repoId: string): Promise<HfModelFile[]> => {
     const response = await api.settings.getHfModelFiles(repoId);
     if (response.success && response.data) return response.data;
-    showToast(response.error?.message ?? "GGUF 파일 목록을 불러오지 못했습니다.", "error");
-    return [];
-  }, [showToast]);
+    throw new Error(response.error?.message ?? t("settings.localLlm.modelLibrary.fileFetchError"));
+  }, [t]);
 
   const handleToggleLocalLlm = useCallback(async (enabled: boolean): Promise<void> => {
     setLocalLlmEnabled(enabled);
@@ -117,16 +125,16 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     });
     if (!response.success) {
       setLocalLlmEnabled(!enabled);
-      showToast(response.error?.message ?? "로컬 AI 설정 저장에 실패했습니다.", "error");
+      showToast(response.error?.message ?? t("settings.localLlm.toggleSaveFailed"), "error");
       return;
     }
     const preferenceResponse = await api.settings.setLlmPreference({
       provider: enabled ? "sidecar" : "auto",
     });
     if (!preferenceResponse.success) {
-      showToast(preferenceResponse.error?.message ?? "LLM 경로 전환에 실패했습니다.", "error");
+      showToast(preferenceResponse.error?.message ?? t("settings.localLlm.preferenceSwitchFailed"), "error");
     }
-  }, [localLlmBinaryPath, localLlmModelPath, showToast]);
+  }, [localLlmBinaryPath, localLlmModelPath, showToast, t]);
 
   return {
     isBusy,
