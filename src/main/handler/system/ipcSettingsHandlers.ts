@@ -28,6 +28,7 @@ import {
   getHfModelFiles,
   searchHfModels,
 } from "../../services/llm/modelDownloader.js";
+import { llmfitService } from "../../services/llm/llmfitService.js";
 import {
   DEFAULT_MODEL,
   LLAMA_BINARY_SHA256S,
@@ -382,6 +383,33 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       failMessage: "HF model files fetch failed",
       argsSchema: z.tuple([z.strictObject({ repoId: z.string().min(1).max(512) })]),
       handler: async (input: { repoId: string }) => await getHfModelFiles(input.repoId),
+    },
+    {
+      channel: IPC_CHANNELS.LLMFIT_GET_RECOMMENDATIONS,
+      logTag: "LLMFIT_GET_RECOMMENDATIONS",
+      failMessage: "Failed to get llmfit recommendations",
+      argsSchema: z.tuple([
+        z
+          .strictObject({
+            limit: z.number().int().min(1).max(50).optional(),
+            useCase: z
+              .enum([
+                "general",
+                "coding",
+                "reasoning",
+                "chat",
+                "multimodal",
+                "embedding",
+              ])
+              .optional(),
+            minFit: z.enum(["perfect", "good", "marginal", "too_tight"]).optional(),
+          })
+          .optional(),
+      ]),
+      // llmfitService 는 실패 시에도 throw 하지 않고 { available:false } 를 반환한다(P6).
+      handler: async (
+        options?: { limit?: number; useCase?: string; minFit?: string },
+      ) => await llmfitService.recommend(options ?? {}),
     },
     {
       channel: IPC_CHANNELS.MODEL_DOWNLOAD_CANCEL,

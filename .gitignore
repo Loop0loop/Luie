@@ -91,3 +91,6 @@ native/haptics/build/Release/
 # test
 tests/.tmp
 test-results
+
+# Bundled embedding model (staged at build time, not committed)
+resources/models/

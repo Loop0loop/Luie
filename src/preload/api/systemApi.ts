@@ -132,6 +132,8 @@ export function createSystemApi({
         safeInvoke(IPC_CHANNELS.MODEL_SEARCH_HF, { query }),
       getHfModelFiles: (repoId) =>
         safeInvoke(IPC_CHANNELS.MODEL_GET_HF_FILES, { repoId }),
+      getLlmfitRecommendations: (options) =>
+        safeInvoke(IPC_CHANNELS.LLMFIT_GET_RECOMMENDATIONS, options),
       onModelDownloadProgress: (callback) => {
         const listener = (_event: unknown, data: {
           stage: "binary" | "model" | "complete" | "error";

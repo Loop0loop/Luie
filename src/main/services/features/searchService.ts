@@ -15,7 +15,7 @@ import type {
 } from "../../../shared/types/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import { escapeLike } from "../../utils/queryHelpers.js";
-import { resolveModelRuntimeClient } from "../llm/modelRuntimeFactory.js";
+import { resolveEmbeddingRuntimeClient } from "../llm/modelRuntimeFactory.js";
 
 const loadChapterSearchCacheService = async () =>
   (await import("./chapterSearchCacheService.js")).chapterSearchCacheService;
@@ -258,7 +258,7 @@ export class SearchService {
             : true
         );
       if (shouldRunVectorSearch) {
-        const runtime = await resolveModelRuntimeClient(input.projectId);
+        const runtime = await resolveEmbeddingRuntimeClient(input.projectId);
         const vecs = await runtime.embed([normalizedQuery]);
         const queryVector = vecs?.[0] ?? null;
         if (queryVector && queryVector.length > 0) {

@@ -281,6 +281,8 @@ export class SettingsManager {
     ollama?: { baseUrl?: string; chatModel?: string; embeddingModel?: string; apiKey?: string };
     ragTemperature?: number;
     ragMaxTokens?: number;
+    defaultEmbeddingModelPath?: string;
+    defaultEmbeddingModelId?: string;
   } {
     const llm = this.store.get("llm") ?? {};
     return {
@@ -288,6 +290,8 @@ export class SettingsManager {
       ollama: (llm as { ollama?: { baseUrl?: string; chatModel?: string; embeddingModel?: string; apiKey?: string } }).ollama,
       ragTemperature: (llm as { ragTemperature?: number }).ragTemperature,
       ragMaxTokens: (llm as { ragMaxTokens?: number }).ragMaxTokens,
+      defaultEmbeddingModelPath: (llm as { defaultEmbeddingModelPath?: string }).defaultEmbeddingModelPath,
+      defaultEmbeddingModelId: (llm as { defaultEmbeddingModelId?: string }).defaultEmbeddingModelId,
     };
   }
 
@@ -296,6 +300,8 @@ export class SettingsManager {
     ollama?: { baseUrl?: string; chatModel?: string; embeddingModel?: string; apiKey?: string };
     ragTemperature?: number;
     ragMaxTokens?: number;
+    defaultEmbeddingModelPath?: string;
+    defaultEmbeddingModelId?: string;
   }): void {
     const current = this.store.get("llm") ?? {};
     const next = {
@@ -309,6 +315,9 @@ export class SettingsManager {
       hasOllamaModel: Boolean((next as typeof next & { ollama?: { chatModel?: string } }).ollama?.chatModel),
       ragTemperature: typeof next.ragTemperature === "number" ? next.ragTemperature : undefined,
       ragMaxTokens: typeof next.ragMaxTokens === "number" ? next.ragMaxTokens : undefined,
+      hasEmbeddingModelPath: Boolean(
+        (next as typeof next & { defaultEmbeddingModelPath?: string }).defaultEmbeddingModelPath,
+      ),
     });
   }
 

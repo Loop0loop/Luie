@@ -5,6 +5,8 @@ import { ExternalApiProvider } from "./providers/externalApiProvider.js";
 import { GeminiProvider } from "./providers/geminiProvider.js";
 import type { SettingsManager } from "../../manager/settingsManager.js";
 import type { LlmRuntimeInfo } from "../../../shared/types/index.js";
+import type * as EmbeddingModelServiceModule from "./embeddingModelService.js";
+import type * as EmbeddingSidecarManagerModule from "./embeddingSidecarManager.js";
 
 const logger = createLogger("ModelRuntimeFactory");
 const deterministicProvider = new DeterministicProvider();
@@ -18,6 +20,7 @@ export function invalidateModelRuntimeCache(): void {
   openAiProviderSingle = null;
   geminiProviderSingle = null;
   sidecarProviderSingle = null;
+  embeddingProviderSingle = null;
 }
 
 type OllamaConfig = {
@@ -66,6 +69,35 @@ const loadSettingsManager = (() => {
     return module.settingsManager;
   };
 })();
+
+const loadEmbeddingModelService = (() => {
+  let cached: Promise<typeof EmbeddingModelServiceModule> | null = null;
+  return async () => {
+    if (!cached) cached = import("./embeddingModelService.js");
+    return cached;
+  };
+})();
+
+const loadEmbeddingSidecarManager = (() => {
+  let cached: Promise<typeof EmbeddingSidecarManagerModule> | null = null;
+  return async () => {
+    if (!cached) cached = import("./embeddingSidecarManager.js");
+    return cached;
+  };
+})();
+
+let embeddingProviderSingle: { key: string; provider: ExternalApiProvider } | null = null;
+
+/** 로컬 임베딩 모델이 확보되어 있으면 그 modelId 를, 없으면 null 을 반환한다. */
+async function resolveLocalEmbeddingModelId(): Promise<string | null> {
+  try {
+    const { embeddingModelService } = await loadEmbeddingModelService();
+    const status = embeddingModelService.getStatus();
+    return status.installed ? status.modelId : null;
+  } catch {
+    return null;
+  }
+}
 
 const loadSidecarManager = (() => {
   let cached: Promise<{ sidecarManager: { ensureStarted: (
@@ -273,9 +305,12 @@ export async function resolveRuntimeModelConfig(
 ): Promise<RuntimeModelConfig> {
   const resolved = await resolveRuntime();
   if (resolved.kind === "sidecar") {
+    // 로컬 임베딩 모델(bge-m3)이 확보되어 있으면 그 식별자를 signature 로 사용한다.
+    // 이로써 embeddingProjector 가 임베딩 잡을 skip 하지 않고, 모델 변경 시 재임베딩한다.
+    const embeddingModel = await resolveLocalEmbeddingModelId();
     return {
       providerHint: "externalapi",
-      embeddingModel: null,
+      embeddingModel,
     };
   }
   if (resolved.kind === "gemini") {
@@ -337,4 +372,77 @@ export async function resolveRuntimeModelInfo(): Promise<LlmRuntimeInfo> {
     model: "fallback",
     alternativeModel: null,
   };
+}
+
+/**
+ * 임베딩 전용 런타임 클라이언트를 해석한다.
+ *
+ * 우선순위:
+ *   1) 클라우드/외부 provider 가 임베딩 모델과 함께 활성이면 그 생성 런타임을 재사용
+ *      (ExternalApiProvider/Gemini 는 embed 를 자체 지원).
+ *   2) 로컬(sidecar 또는 모델 동봉) 이면 임베딩 전용 llama-server 를 띄워
+ *      bge-m3 로 `/v1/embeddings` 를 제공하는 ExternalApiProvider 반환.
+ *   3) 어느 것도 불가하면 deterministic(embed=null) → 임베딩 skip, FTS 폴백(R1.2).
+ *
+ * 격리(P1): 임베딩 sidecar 기동 실패는 throw 하지 않고 deterministic 으로 폴백한다.
+ */
+export async function resolveEmbeddingRuntimeClient(
+  projectId: string,
+): Promise<ModelRuntimeClient> {
+  const resolved = await resolveRuntime();
+
+  // 1) 클라우드/외부 provider 가 임베딩을 지원하면 생성 런타임 재사용.
+  if (resolved.kind === "gemini" && resolved.config.embeddingModel) {
+    return getOrCreateGeminiProvider(resolved.config);
+  }
+  if (resolved.kind === "openai" && resolved.config.embeddingModel) {
+    return getOrCreateOpenAiProvider(resolved.config);
+  }
+  if (resolved.kind === "ollama" && resolved.config.embeddingModel) {
+    return getOrCreateExternalApiProvider(resolved.config);
+  }
+
+  // 2) 로컬 임베딩: 전용 임베딩 sidecar + bge-m3.
+  try {
+    const settingsManager = await loadSettingsManager();
+    const localLlm = settingsManager.getLocalLlmSettings();
+    const binaryPath = localLlm?.binaryPath;
+    if (!binaryPath) {
+      return deterministicProvider;
+    }
+
+    const { embeddingModelService } = await loadEmbeddingModelService();
+    const status = embeddingModelService.getStatus();
+    if (!status.installed || !status.path) {
+      // 임베딩 모델 미설치 → 임베딩 skip.
+      return deterministicProvider;
+    }
+
+    const { embeddingSidecarManager } = await loadEmbeddingSidecarManager();
+    const baseUrl = await embeddingSidecarManager.ensureStarted(binaryPath, status.path);
+    if (!baseUrl) {
+      // 기동 실패/쿨다운 → FTS 폴백.
+      return deterministicProvider;
+    }
+
+    const key = `${baseUrl}::${status.modelId}`;
+    if (embeddingProviderSingle?.key === key) {
+      return embeddingProviderSingle.provider;
+    }
+    const provider = new ExternalApiProvider({
+      baseUrl: `${baseUrl}/v1`,
+      chatModel: "local",
+      embeddingModel: status.modelId,
+      apiKey: "no-key",
+    });
+    embeddingProviderSingle = { key, provider };
+    logger.info("Using local embedding sidecar", { projectId, baseUrl, modelId: status.modelId });
+    return provider;
+  } catch (error) {
+    logger.warn("Failed to resolve local embedding runtime; falling back to FTS-only", {
+      projectId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return deterministicProvider;
+  }
 }
