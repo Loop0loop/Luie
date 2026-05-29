@@ -76,6 +76,28 @@ RAG(Memory Engine)의 의미 검색 토대를 완성하기 위해 전용 로컬 
 2. THE 임베딩과 생성 모델 SHALL 독립적인 idle unload 타이머를 갖는다.
 3. THE 임베딩 모델 SHALL 소형(권장 약 0.3~0.6GB)으로 선정한다.
 
+### Requirement 6: llmfit 런타임 설치 (GitHub releases)
+
+**User Story:** 사용자로서, 내 OS/아키텍처에 맞는 llmfit가 안전하게 설치되어 추천을 받을 수 있길 원한다.
+
+#### Acceptance Criteria
+1. THE 시스템 SHALL GitHub releases 의 최신(latest) 릴리스에서 현재 OS/아키텍처에 맞는 llmfit 자산을 선택한다.
+2. THE 시스템 SHALL 다운로드한 아카이브(tar.gz/zip)를 추출하고 바이너리에 실행 권한(예: chmod 755)을 부여한다.
+3. THE 시스템 SHALL 릴리스가 제공하는 SHA256(.sha256 자산 또는 asset digest)으로 무결성을 검증하고, 불일치 시 설치를 중단·정리한다.
+4. THE llmfit 바이너리 SHALL userData 하위의 전용 경로에 설치되어 앱 권한 내에서 실행된다.
+5. WHEN llmfit 설치가 실패하면 THE 시스템 SHALL graceful degrade 하며(추천 비활성) 앱 부팅을 막지 않는다.
+
+### Requirement 7: 최초 부트스트랩 + 온보딩 흐름
+
+**User Story:** 새 사용자로서, 첫 실행 시 Luie 가 무엇인지 이해하고 Local LLM/임베딩을 설치한 뒤 본 화면으로 진입하고 싶다.
+
+#### Acceptance Criteria
+1. WHEN 앱이 최초 실행(미완료 wizard)될 때 THE 시스템 SHALL 부트스트랩 단계에서 llmfit 설치를 시도한다.
+2. THE 온보딩 SHALL 순서대로 (a) Luie 소개, (b) Local LLM/임베딩 모델 설치, (c) 완료 후 Main Window 진입을 제공한다.
+3. THE 온보딩 SHALL 기존 startup wizard 인프라(`STARTUP_GET_READINESS`/`STARTUP_COMPLETE_WIZARD`, startup wizard window)를 재사용한다.
+4. WHEN 사용자가 모델 설치를 건너뛰면 THE 시스템 SHALL FTS-only 로 동작하며 나중에 설정에서 설치할 수 있게 한다(비차단).
+5. WHEN 온보딩이 완료되면 THE 시스템 SHALL Main Window 로 전환하고 완료 상태를 영속화한다.
+
 ## Out of Scope (후속 Phase)
 - 인물관계/사건/복선 구조적 추출(P2-C).
 - Graph 모드 실데이터 연결(Phase 3).
