@@ -176,6 +176,8 @@ export const IPC_CHANNELS = {
   MODEL_SEARCH_HF: "model:search-hf",
   MODEL_GET_HF_FILES: "model:get-hf-files",
   LLMFIT_GET_RECOMMENDATIONS: "llmfit:get-recommendations",
+  LLMFIT_INSTALL: "llmfit:install",
+  LLMFIT_STATUS: "llmfit:status",
   SETTINGS_RESET: "settings:reset",
 
   // Recovery

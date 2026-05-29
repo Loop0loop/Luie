@@ -17,12 +17,14 @@
 import { execFile } from "node:child_process";
 import * as path from "node:path";
 import * as fs from "node:fs";
+import { app } from "electron";
 import { z } from "zod";
 import { createLogger } from "../../../shared/logger/index.js";
 import type {
   LlmfitRecommendation,
   LlmfitResult,
 } from "../../../shared/types/index.js";
+import { llmfitBinaryName } from "./llmfitConstants.js";
 
 const logger = createLogger("LlmfitService");
 
@@ -117,12 +119,14 @@ class LlmfitService {
     const envPath = process.env.LUIE_LLMFIT_PATH?.trim();
     if (envPath && fs.existsSync(envPath)) return envPath;
 
-    const exeName = process.platform === "win32" ? "llmfit.exe" : "llmfit";
-    const bundled =
-      typeof process.resourcesPath === "string" && process.resourcesPath.length > 0
-        ? path.join(process.resourcesPath, "bin", exeName)
-        : null;
-    if (bundled && fs.existsSync(bundled)) return bundled;
+    const exeName = llmfitBinaryName();
+    // 런타임 설치 위치(<userData>/bin/llmfit[.exe]) — llmfitInstaller 와 동일 경로.
+    try {
+      const installed = path.join(app.getPath("userData"), "bin", exeName);
+      if (fs.existsSync(installed)) return installed;
+    } catch {
+      // app 미가용(테스트 등) — 무시하고 PATH 폴백.
+    }
 
     // PATH 상의 llmfit 은 execFile 이 직접 해석하도록 이름만 반환.
     return exeName;

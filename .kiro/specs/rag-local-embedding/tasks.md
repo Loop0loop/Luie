@@ -52,16 +52,16 @@
 - [x] 4.3 IPC 채널 등록 (`LLMFIT_GET_RECOMMENDATIONS`)
   - channels.ts + preload + handler + shared 타입 동시 등록, zod argsSchema
   - _Requirements: 3.1, 3.2_
-- [ ] 4.4 `llmfitInstaller.ts` — GitHub releases 런타임 설치
+- [x] 4.4 `llmfitInstaller.ts` — GitHub releases 런타임 설치
   - `/releases/latest` 자산 조회, 플랫폼 매핑, tar.gz/zip 추출 → `<userData>/bin/llmfit[.exe]`
   - SHA256 검증(.sha256 또는 asset digest), POSIX chmod 0o755, 멱등(버전/해시 일치 skip)
   - 실패 시 throw 금지 `{installed:false,reason}` (P6/P7/R6)
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
-- [ ] 4.5 llmfitInstaller 단위 테스트 (자산 선택/플랫폼 매핑/sha 파싱)
+- [x] 4.5 llmfitInstaller 단위 테스트 (자산 선택/플랫폼 매핑/sha 파싱)
   - 플랫폼→자산 매핑, .sha256 파싱, digest 파싱, 미지원 플랫폼 처리
   - _Requirements: 6.1, 6.3_
-- [ ] 4.6 llmfit 설치 IPC (`LLMFIT_INSTALL`, `LLMFIT_STATUS`)
-  - channels + preload + handler, 진행률/상태 노출
+- [x] 4.6 llmfit 설치 IPC (`LLMFIT_INSTALL`, `LLMFIT_STATUS`)
+  - channels + preload + handler + shared 타입, 상태 노출
   - _Requirements: 6.1, 6.4_
 
 - [ ] 5. 모델 다운로드/상태 IPC (UX 백엔드)
