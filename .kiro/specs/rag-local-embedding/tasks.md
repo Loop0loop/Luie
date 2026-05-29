@@ -41,9 +41,9 @@
   - 임베딩 null/예외 시 `searchChunks`가 FTS(+LIKE)만으로 결과 반환·무throw (P2)
   - _Requirements: 2.3_
 
-- [ ] 4. llmfit 통합 (하드웨어 맞춤 추천)
+- [ ] 4. llmfit 통합 (하드웨어 맞춤 추천 + 런타임 설치)
 - [x] 4.1 `llmfitService.ts` (1-shot CLI 실행 + JSON 파싱)
-  - 바이너리 해석(번들→userData→PATH), `recommend --json --limit 10` 실행, 타임아웃/격리
+  - 바이너리 해석(env→userData/bin→PATH), `recommend --json --limit 10` 실행, 타임아웃/격리
   - zod 스키마 검증, 상위 ~10 정규화, 바이너리 없음/실패 시 `{available:false}` (P6/R3.4/3.5)
   - _Requirements: 3.1, 3.2, 3.4, 3.5_
 - [x] 4.2 llmfit JSON 파서 단위 테스트
@@ -52,6 +52,17 @@
 - [x] 4.3 IPC 채널 등록 (`LLMFIT_GET_RECOMMENDATIONS`)
   - channels.ts + preload + handler + shared 타입 동시 등록, zod argsSchema
   - _Requirements: 3.1, 3.2_
+- [ ] 4.4 `llmfitInstaller.ts` — GitHub releases 런타임 설치
+  - `/releases/latest` 자산 조회, 플랫폼 매핑, tar.gz/zip 추출 → `<userData>/bin/llmfit[.exe]`
+  - SHA256 검증(.sha256 또는 asset digest), POSIX chmod 0o755, 멱등(버전/해시 일치 skip)
+  - 실패 시 throw 금지 `{installed:false,reason}` (P6/P7/R6)
+  - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
+- [ ] 4.5 llmfitInstaller 단위 테스트 (자산 선택/플랫폼 매핑/sha 파싱)
+  - 플랫폼→자산 매핑, .sha256 파싱, digest 파싱, 미지원 플랫폼 처리
+  - _Requirements: 6.1, 6.3_
+- [ ] 4.6 llmfit 설치 IPC (`LLMFIT_INSTALL`, `LLMFIT_STATUS`)
+  - channels + preload + handler, 진행률/상태 노출
+  - _Requirements: 6.1, 6.4_
 
 - [ ] 5. 모델 다운로드/상태 IPC (UX 백엔드)
 - [x] 5.0 앱 동봉 배선 (사용자 결정: 설치 시 동봉)
@@ -73,6 +84,17 @@
   - 설치됨/다운로드중/없음, "의미 검색 준비됨/준비중/비활성" 인디케이터
   - _Requirements: 4.2, 4.4_
 
+- [ ] 8. 부트스트랩 + 온보딩 (llmfit 설치 → 소개 → 모델 설치 → Main)
+- [ ] 8.1 부트스트랩에서 llmfit 설치 트리거 (비차단)
+  - 앱 최초 실행 부트스트랩 단계에서 `llmfitInstaller.ensureInstalled()` 호출, 실패해도 진행
+  - _Requirements: 6.5, 7.1_
+- [ ] 8.2 온보딩 wizard 단계 UI (Luie 소개 → Local LLM/임베딩 설치 → 완료)
+  - 기존 startup wizard window/route 재사용, 6.x 컴포넌트 재사용, 건너뛰기 허용
+  - _Requirements: 7.2, 7.3, 7.4_
+- [ ] 8.3 온보딩 완료 → Main Window 전환 + 완료 상태 영속화
+  - `STARTUP_COMPLETE_WIZARD` 연동, completedAt 기록 후 Main 진입
+  - _Requirements: 7.5_
+
 - [ ] 7. 통합 검증
 - [ ] 7.1 격리/폴백 수동 검증 시나리오 문서화 + 자동화 가능분 테스트
   - AI 프로세스 강제 종료 → 앱 생존 + FTS 폴백(P1/P2)
@@ -87,39 +109,39 @@
 {
   "waves": [
     { "wave": 1, "tasks": ["1.1", "4.1"] },
-    { "wave": 2, "tasks": ["1.2", "1.3", "4.2", "4.3"] },
-    { "wave": 3, "tasks": ["2.1", "2.2"] },
-    { "wave": 4, "tasks": ["2.3", "3.1", "5.1"] },
-    { "wave": 5, "tasks": ["3.2", "5.2"] },
-    { "wave": 6, "tasks": ["6.1", "6.2"] },
+    { "wave": 2, "tasks": ["1.2", "1.3", "4.2", "4.3", "5.0"] },
+    { "wave": 3, "tasks": ["2.1", "2.2", "4.4"] },
+    { "wave": 4, "tasks": ["2.3", "3.1", "4.5", "4.6", "5.1"] },
+    { "wave": 5, "tasks": ["3.2", "5.2", "6.1", "6.2"] },
+    { "wave": 6, "tasks": ["8.1", "8.2", "8.3"] },
     { "wave": 7, "tasks": ["7.1", "7.2"] }
   ]
 }
 ```
 
 ```text
-1.1 ──▶ 1.2 ──▶ 1.3
-                 │
-                 ▼
-2.1 ──▶ 2.2 ──▶ 2.3 ──▶ 3.1 ──▶ 3.2
-                 │
-                 ▼
-4.1 ──▶ 4.2
- │
- └────▶ 4.3
-5.1 ──▶ 5.2        (1.3, 2.x 이후)
-6.1, 6.2           (4.3, 5.1 이후)
-7.1, 7.2           (전 작업 이후, 마지막)
+1.1 ─▶ 1.2 ─▶ 1.3 ─▶ 2.1 ─▶ 2.2 ─▶ 2.3 ─▶ 3.1 ─▶ 3.2
+                                    │
+                                    └─▶ 5.1 ─▶ 5.2
+4.1 ─▶ 4.2 / 4.3 ─▶ 4.4 ─▶ 4.5 / 4.6
+6.1, 6.2            (4.6, 5.1 이후)
+8.1 (4.4 이후) ─▶ 8.2 (6.x 이후) ─▶ 8.3
+7.1, 7.2            (전 작업 이후, 마지막)
 ```
 
 - 1.x는 모델 정의/설정 토대 → 2.x(임베딩 sidecar)의 선행.
-- 2.x 완료 후 3.x(견고화)와 5.x(전환 UX 백엔드) 진행 가능.
-- 4.x(llmfit)는 2.x와 독립적이라 병렬 가능, 단 4.3 IPC는 4.1 이후.
-- 6.x UI는 4.3/5.1 IPC 완료 후. 7.x는 최종 검증.
+- 4.1~4.3(llmfit 추천)은 완료. 4.4(설치기)는 부트스트랩(8.1)의 선행.
+- 6.x UI는 4.6/5.1 IPC 완료 후. 8.x 온보딩은 6.x 컴포넌트 재사용.
+- 7.x는 최종 검증.
 
 ## Notes
 
-- 기존 인프라 재사용: `modelDownloader.downloadGguf`, `utilityProcessBridge.embed`, `embeddingProjector`의 signature 기반 재임베딩, `MEMORY_GET_EMBEDDING_STATUS`.
+- 기존 인프라 재사용: `modelDownloader.downloadGguf`, `utilityProcessBridge.embed`, `embeddingProjector`의 signature 기반 재임베딩, `MEMORY_GET_EMBEDDING_STATUS`, startup wizard window/`startupReadinessService`.
 - 프로세스 격리(R2) 토대는 이미 존재(`utilityProcess.fork` + crash 전파). 임베딩 sidecar에도 동일 원칙 적용.
-- Task 1.1의 bge-m3 GGUF 확정은 외부 의존(HF repo/sha)이므로 착수 시 실제 값 확인 필요.
+- 임베딩 모델(bge-m3 Q4_K_M, dim 1024)은 **앱 설치 시 동봉**(Task 5.0 완료): `resources/models` extraResources + `stage-embedding-model.mjs` prebuild.
+- llmfit 바이너리는 **동봉하지 않고 GitHub releases 최신에서 런타임 설치**(사용자 결정):
+  - 자산 패턴: `llmfit-v{ver}-{arch}-{os}.{tar.gz|zip}` + 동반 `.sha256`. GitHub asset 메타에 `digest: "sha256:..."`도 존재.
+  - 플랫폼 매핑: darwin-arm64=aarch64-apple-darwin, darwin-x64=x86_64-apple-darwin, win32-x64=x86_64-pc-windows-msvc(zip), linux-x64=x86_64-unknown-linux-gnu, linux-arm64=aarch64-unknown-linux-gnu.
+  - `/repos/AlexsJones/llmfit/releases/latest`로 버전 동적 해석(하드코딩 금지). 최초 bootstrap에서 설치(8.1).
 - llama-server `--embeddings` 단일 인스턴스가 chat과 충돌할 수 있어 임베딩 전용 인스턴스로 분리(설계 C2).
+- 온보딩 순서: 부트스트랩(llmfit 설치) → Luie 소개 → Local LLM/임베딩 설치 → Main Window.
