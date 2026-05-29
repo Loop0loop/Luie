@@ -1,27 +1,34 @@
 {
   "phases": [
     {
-      "name": "Phase 1: UI Layout and i18n Fixes",
+      "name": "Phase 1: Canvas main(IPC) 연결",
       "tasks": [
-        "Remove header from WorldSidebar",
-        "Adjust WorldSidebar width and separate Library section",
-        "Fix i18n string bugs in WorldSidebar"
+        "useCanvasGraphData 훅 신설 — canvas 진입 시 worldBuildingStore.loadGraph 트리거 (worldGraph.get + worldStorage replica 병합)",
+        "CanvasPane에 로더 연결 + projection을 뷰포트/상태바 공용으로 승격",
+        "StaticCanvasViewport projection 주입 prop 지원(독립 사용 호환)",
+        "BaseCanvasViewport 노드 드래그 위치 영속화(updateGraphNodePosition) — world 요소 양방향 동기화 완성",
+        "CanvasStatusBar 실제 projection 노드/엣지 카운트 연결"
       ],
-      "status": "In Progress"
+      "status": "Done",
+      "notes": [
+        "main의 getWorldGraph는 이미 Character/Faction/Event/Term/WorldEntity/Scene/Note/Synopsis/Plot/Scrap 전 엔티티를 집계 → IPC/preload/store 배선은 완비되어 있었고, 끊긴 고리는 'canvas 진입 시 loadGraph 미호출'이었음.",
+        "canvas sidebar 파일/폴더 관리 + bottom toolbar 블럭추가/원고들고오기/이미지삽입은 후속 UI/UX 작업(사용자가 추가 작업 필요하다고 명시)."
+      ]
     },
     {
-      "name": "Phase 2: Canvas Feature Enhancement",
+      "name": "Phase 2: RAG(Memory Engine) 구조 및 상태 확인",
       "tasks": [
-        "Implement double-click to create entity on Canvas",
-        "Implement edge creation context or default relation"
+        "RAG 파이프라인 구조 파악(청크/임베딩/검색/QA)",
+        "현재 인물 관계·사건·복선 추출 정확도 수준 진단",
+        "Phase 2-1: 정확도(오답률) 향상 방안 심층 조사"
       ],
       "status": "Pending"
     },
     {
-      "name": "Phase 3: View Modes & Data Sync",
+      "name": "Phase 3: Graph 연결",
       "tasks": [
-        "Prepare base structures for 4 view modes",
-        "Check data mapping in Inspector"
+        "GraphSurface mock 데이터 → RAG 기반 실데이터 관계도로 교체",
+        "인물 관계 / 챕터별 관계 / 사건·복선 흐름 시각화"
       ],
       "status": "Pending"
     }

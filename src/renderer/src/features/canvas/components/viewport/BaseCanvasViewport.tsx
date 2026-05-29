@@ -9,18 +9,27 @@
  *   - onNodesChange / onEdgesChange: optional (dynamic viewport has these)
  *   - projection: passed from wrapper (useCanvasProjection vs useStaticProjection)
  *   - nodesDraggable: configurable (false for dynamic, true for static)
+ *   - persistPositions: persist node drag positions back to worldBuildingStore (main 동기화)
  *   - extraChildren: optional children rendered inside ReactFlow
  *   - bottomToolbar: optional toolbar rendered outside ReactFlow
  *   - wrapperClassName: outer div className customization
  *   - dataTestId: outer div data-testid customization
+ *
+ * 데이터 흐름(main 동기화):
+ *   projection → buildFlowGraph → 내부 RF 노드 상태(useNodesState).
+ *   노드 드래그 종료 시 onNodeDragStop → worldBuildingStore.updateGraphNodePosition →
+ *   (world-entity는 IPC updatePosition + replica, 그 외는 canvas replica 문서)로 영속화.
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
   MarkerType,
   PanOnScrollMode,
+  useNodesState,
+  useEdgesState,
+  type Node,
   type NodeChange,
   type EdgeChange,
   type OnSelectionChangeParams,
@@ -29,6 +38,7 @@ import ReactFlow, {
 } from "reactflow";
 import { CANVAS_FIT_VIEW_PADDING, CANVAS_ZOOM_MAX, CANVAS_ZOOM_MIN } from "@shared/constants/canvasSizing";
 import { useCanvasViewStore } from "../../stores";
+import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { type CanvasProjection } from "../../types";
 import { buildFlowGraph } from "../../utils";
 import { useCanvasSelection } from "../../hooks/useCanvasView";
@@ -58,6 +68,8 @@ interface BaseCanvasViewportProps {
   onEdgesChange?: (changes: EdgeChange[]) => void;
   /** Whether nodes are draggable (static=true, dynamic=false) */
   nodesDraggable?: boolean;
+  /** 드래그 종료 시 노드 위치를 worldBuildingStore에 영속화할지 (기본 true) */
+  persistPositions?: boolean;
   /** Extra children inside ReactFlow (e.g., CanvasFloatingToolbar) */
   extraChildren?: React.ReactNode;
   /** Toolbar outside ReactFlow (e.g., BottomCreateToolbar) */
@@ -77,6 +89,7 @@ export default function BaseCanvasViewport({
   onNodesChange,
   onEdgesChange,
   nodesDraggable = true,
+  persistPositions = true,
   extraChildren,
   bottomToolbar,
   wrapperClassName = "h-full w-full",
@@ -85,12 +98,64 @@ export default function BaseCanvasViewport({
   const { selection } = useCanvasSelection();
   const selectNode = useCanvasViewStore((s) => s.selectNode);
   const clearSelection = useCanvasViewStore((s) => s.clearSelection);
+  const updateGraphNodePosition = useWorldBuildingStore(
+    (s) => s.updateGraphNodePosition,
+  );
 
   const selectedNodeId = selection.kind === "node" ? selection.id : null;
 
-  const { nodes, edges } = useMemo(
+  const flowGraph = useMemo(
     () => buildFlowGraph(projection, selectedNodeId),
     [projection, selectedNodeId],
+  );
+
+  // ReactFlow 내부 드래그를 지원하기 위해 controlled 상태로 보관한다.
+  const [nodes, setNodes, onNodesChangeInternal] = useNodesState(
+    flowGraph.nodes,
+  );
+  const [edges, setEdges, onEdgesChangeInternal] = useEdgesState(
+    flowGraph.edges,
+  );
+
+  // projection / 선택 변화로 그래프가 갱신되면 내부 상태를 재동기화한다.
+  // 단, 드래그 중 사용자가 옮긴 위치는 보존하기 위해 기존 위치를 우선 계승한다.
+  useEffect(() => {
+    setNodes((prevNodes) => {
+      const prevById = new Map(prevNodes.map((n) => [n.id, n.position]));
+      return flowGraph.nodes.map((node) => {
+        const prevPos = prevById.get(node.id);
+        return prevPos ? { ...node, position: prevPos } : node;
+      });
+    });
+    setEdges(flowGraph.edges);
+  }, [flowGraph, setNodes, setEdges]);
+
+  const handleNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      onNodesChangeInternal(changes);
+      onNodesChange?.(changes);
+    },
+    [onNodesChangeInternal, onNodesChange],
+  );
+
+  const handleEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      onEdgesChangeInternal(changes);
+      onEdgesChange?.(changes);
+    },
+    [onEdgesChangeInternal, onEdgesChange],
+  );
+
+  const onNodeDragStop = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      if (!persistPositions) return;
+      void updateGraphNodePosition({
+        id: node.id,
+        positionX: Math.round(node.position.x),
+        positionY: Math.round(node.position.y),
+      });
+    },
+    [persistPositions, updateGraphNodePosition],
   );
 
   const onSelectionChange = useCallback(
@@ -118,8 +183,9 @@ export default function BaseCanvasViewport({
         fitViewOptions={FIT_VIEW_OPTIONS}
         onSelectionChange={onSelectionChange}
         onPaneClick={onPaneClick}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
+        onNodesChange={handleNodesChange}
+        onEdgesChange={handleEdgesChange}
+        onNodeDragStop={onNodeDragStop}
         nodesDraggable={nodesDraggable}
         nodesConnectable={false}
         elementsSelectable

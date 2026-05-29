@@ -14,6 +14,7 @@ import {
   CANVAS_RF_NODE_TYPE_ENTITY,
 } from "@shared/constants/canvasSizing";
 import { useStaticProjection } from "../../hooks/useStaticProjection";
+import type { CanvasProjection } from "../../types/canvasProjection.types";
 import { RelationEdge } from "./edges/RelationEdge";
 import { EntityNode } from "./nodes/EntityNode";
 import BaseCanvasViewport from "./BaseCanvasViewport";
@@ -28,10 +29,23 @@ const EDGE_TYPES = {
   [CANVAS_RF_EDGE_TYPE_RELATION]: RelationEdge,
 } as const;
 
+// ─── props ────────────────────────────────────────────────────────────────────
+
+interface StaticCanvasViewportProps {
+  /**
+   * 부모(CanvasPane)에서 이미 계산한 projection을 주입한다.
+   * 생략하면 자체적으로 useStaticProjection을 구독한다(독립 사용 호환).
+   */
+  projection?: CanvasProjection;
+}
+
 // ─── component ────────────────────────────────────────────────────────────────
 
-export default function StaticCanvasViewport() {
-  const projection = useStaticProjection();
+export default function StaticCanvasViewport({
+  projection: injectedProjection,
+}: StaticCanvasViewportProps = {}) {
+  const fallbackProjection = useStaticProjection();
+  const projection = injectedProjection ?? fallbackProjection;
   const nodeTypes = useMemo(() => NODE_TYPES, []);
   const edgeTypes = useMemo(() => EDGE_TYPES, []);
 
