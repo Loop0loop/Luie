@@ -29,6 +29,7 @@ import {
   searchHfModels,
 } from "../../services/llm/modelDownloader.js";
 import { llmfitService } from "../../services/llm/llmfitService.js";
+import { llmfitInstaller } from "../../services/llm/llmfitInstaller.js";
 import {
   DEFAULT_MODEL,
   LLAMA_BINARY_SHA256S,
@@ -410,6 +411,21 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       handler: async (
         options?: { limit?: number; useCase?: string; minFit?: string },
       ) => await llmfitService.recommend(options ?? {}),
+    },
+    {
+      channel: IPC_CHANNELS.LLMFIT_INSTALL,
+      logTag: "LLMFIT_INSTALL",
+      failMessage: "Failed to install llmfit",
+      argsSchema: z.tuple([]),
+      // 설치기는 실패해도 throw 하지 않고 { installed:false, reason } 을 반환한다(P6/P7).
+      handler: async () => await llmfitInstaller.ensureInstalled(),
+    },
+    {
+      channel: IPC_CHANNELS.LLMFIT_STATUS,
+      logTag: "LLMFIT_STATUS",
+      failMessage: "Failed to get llmfit status",
+      argsSchema: z.tuple([]),
+      handler: async () => await llmfitInstaller.getStatus(),
     },
     {
       channel: IPC_CHANNELS.MODEL_DOWNLOAD_CANCEL,

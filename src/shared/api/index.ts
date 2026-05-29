@@ -6,6 +6,7 @@ import type {
   HfModelFile,
   HfModelSearchResult,
   LlmfitResult,
+  LlmfitInstallStatus,
   Chapter,
   Scene,
   ChapterSaveResult,
@@ -517,6 +518,8 @@ export type RendererApi = {
       useCase?: "general" | "coding" | "reasoning" | "chat" | "multimodal" | "embedding";
       minFit?: "perfect" | "good" | "marginal" | "too_tight";
     }) => Promise<IPCResponse<LlmfitResult>>;
+    installLlmfit: () => Promise<IPCResponse<LlmfitInstallStatus>>;
+    getLlmfitStatus: () => Promise<IPCResponse<LlmfitInstallStatus>>;
     onModelDownloadProgress: (callback: (progress: {
       stage: "binary" | "model" | "complete" | "error";
       pct: number;

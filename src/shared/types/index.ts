@@ -1119,6 +1119,14 @@ export type LlmfitResult =
   | { available: true; recommendations: LlmfitRecommendation[] }
   | { available: false; reason: string };
 
+/** llmfit 바이너리 설치 상태(렌더러 안전 타입). */
+export interface LlmfitInstallStatus {
+  installed: boolean;
+  path: string | null;
+  version: string | null;
+  reason?: string;
+}
+
 
 export type ShortcutAction =
   | "app.closeWindow"
