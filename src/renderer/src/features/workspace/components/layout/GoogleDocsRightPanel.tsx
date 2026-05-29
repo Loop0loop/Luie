@@ -17,6 +17,7 @@ import {
 import { beginLayoutRestoring } from "@renderer/features/workspace/hooks/useProjectLayoutPersistence";
 import { getDocsRightPanelId } from "../../utils/docsLayoutModel";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
+import { suppressLayoutPersistenceFor } from "@renderer/features/workspace/hooks/useLayoutPersist";
 
 const ResearchPanel = lazy(
   () => import("@renderer/features/research/components/ResearchPanel"),
@@ -205,6 +206,7 @@ export function GoogleDocsRightPanel({
     const isCollapsed =
       panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
     if (isCollapsed) {
+      suppressLayoutPersistenceFor(500);
       closeRightPanel();
     }
   };

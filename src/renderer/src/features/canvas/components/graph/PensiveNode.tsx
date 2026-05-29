@@ -26,19 +26,34 @@ function PensiveNode({ id, data, selected }: NodeProps<GraphNodeData>) {
   // 줌아웃에 따른 역스케일링 배율 산출 (상수 기반의 안전 경계 연산)
   const inverseScale = Math.min(Math.max(1 / zoom, INVERSE_SCALE_MIN), INVERSE_SCALE_MAX);
 
+  // 등급별 기하 형태 분기 (인물은 원형, 사건은 다이아몬드, 단체는 사각형, 챕터는 초소형 큐브)
+  const shapeClass = isChapter
+    ? "rounded-sm"
+    : data.type === "character"
+      ? "rounded-full"
+      : data.type === "event"
+        ? "rotate-45 rounded-md"
+        : "rounded-xl";
+
+  // 포커스 발광 섀도우를 인물(블루-퍼플) vs 사건(네온 레드) 테마 색으로 역동적 아우라 연출
+  const isEvent = data.type === "event";
+  const glowShadow = isEvent
+    ? "shadow-[0_0_22px_rgba(248,113,113,0.7),0_0_10px_rgba(248,113,113,0.4)] ring-red-400/40"
+    : "shadow-[0_0_22px_rgba(165,180,252,0.7),0_0_10px_rgba(165,180,252,0.4)] ring-indigo-400/40";
+
   // 등급별 링 및 발광 섀도우 효과 (웹소설 수사 단서판 & 성운 광배 융합 이펙트 - 테마 변수 기반)
   const starGradeClass = isChapter
     ? isFocused
       ? "bg-foreground ring-4 ring-foreground/30 shadow-[0_0_18px_var(--accent-bg)] scale-110"
       : "bg-muted-foreground/60 border border-border/40 shadow-[0_0_8px_var(--border-default)] hover:scale-125 hover:bg-foreground"
     : data.starGrade === "prime"
-      ? "bg-foreground ring-4 ring-foreground/45 shadow-[0_0_24px_var(--border-active),0_0_12px_var(--accent-bg)]" // 태양성 글로우 & 테마 변수 조합
+      ? `bg-foreground ring-4 ${glowShadow}`
       : data.starGrade === "major"
         ? isFocused
-          ? "bg-foreground ring-4 ring-foreground/25 shadow-[0_0_16px_var(--border-active)] scale-110"
+          ? `bg-foreground ring-4 ${glowShadow} scale-110`
           : "bg-muted-foreground/80 border border-border/50 shadow-[0_0_10px_var(--border-default)] hover:scale-125 hover:bg-foreground"
         : isFocused
-          ? "bg-foreground ring-4 ring-foreground/20 shadow-[0_0_12px_var(--border-active)] scale-110"
+          ? `bg-foreground ring-4 ${glowShadow} scale-110`
           : "bg-muted/40 border border-border/30 shadow-[0_0_6px_var(--border-default)] hover:scale-125 hover:bg-foreground";
 
   return (
@@ -48,9 +63,10 @@ function PensiveNode({ id, data, selected }: NodeProps<GraphNodeData>) {
       onMouseLeave={() => setHoverId(null)}
       className={cn(
         "group relative flex items-center justify-center transition-all duration-300 cursor-pointer",
-        isChapter ? "rounded-sm" : "rounded-full",
+        shapeClass,
         SIZE_CLASSES[data.starGrade ?? "minor"],
-        starGradeClass
+        starGradeClass,
+        data.isInteractive === false && "pointer-events-none"
       )}
     >
       <Handle type="target" position={Position.Top} className="opacity-0" />

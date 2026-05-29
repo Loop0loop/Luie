@@ -19,4 +19,5 @@ export interface GraphNodeData {
   isFocused?: boolean;
   starGrade?: "prime" | "major" | "minor";
   opacity?: number;
+  isInteractive?: boolean;
 }
