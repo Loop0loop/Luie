@@ -1101,6 +1101,24 @@ export interface HfModelFile {
   sizeBytes: number;
 }
 
+/** 하드웨어 맞춤 모델 추천(llmfit) — 렌더러 안전 타입. */
+export interface LlmfitRecommendation {
+  name: string;
+  provider: string;
+  paramsB: number | null;
+  fitLevel: "perfect" | "good" | "marginal" | "too_tight" | "unknown";
+  fitLabel: string;
+  runMode: string;
+  estimatedTps: number | null;
+  memoryRequiredGb: number | null;
+  bestQuant: string | null;
+  score: number | null;
+}
+
+export type LlmfitResult =
+  | { available: true; recommendations: LlmfitRecommendation[] }
+  | { available: false; reason: string };
+
 
 export type ShortcutAction =
   | "app.closeWindow"

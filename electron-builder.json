@@ -39,6 +39,11 @@
       "from": "drizzle",
       "to": "drizzle",
       "filter": ["**/*"]
+    },
+    {
+      "from": "resources/models",
+      "to": "models",
+      "filter": ["**/*.gguf"]
     }
   ],
   "publish": [

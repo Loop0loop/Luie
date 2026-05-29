@@ -9,7 +9,10 @@ import type {
   RagQaStreamPayload,
 } from "../../shared/types/index.js";
 import { createLogger } from "../../shared/logger/index.js";
-import { resolveModelRuntimeClient } from "../services/llm/modelRuntimeFactory.js";
+import {
+  resolveModelRuntimeClient,
+  resolveEmbeddingRuntimeClient,
+} from "../services/llm/modelRuntimeFactory.js";
 import { assembleRagContext } from "../services/features/rag/contextAssembler.js";
 import { normalizeCoreAnswer } from "../services/features/rag/normalizeCoreAnswer.js";
 import { resolveUserDataPath } from "../utils/userDataPath.js";
@@ -331,7 +334,9 @@ export async function embedTexts(input: {
   texts: string[];
 }): Promise<number[][] | null> {
   if (input.texts.length === 0) return [];
-  const runtime = await resolveModelRuntimeClient(input.projectId);
+  // 임베딩 전용 런타임(전용 임베딩 sidecar/클라우드 임베딩)을 사용한다.
+  // 생성 모델과 분리되어 메모리를 핀하지 않으며, 미가용 시 null → FTS 폴백.
+  const runtime = await resolveEmbeddingRuntimeClient(input.projectId);
   const vectors = await runtime.embed(input.texts);
   if (!vectors) return null;
   return vectors.map((vector) => Array.from(vector));

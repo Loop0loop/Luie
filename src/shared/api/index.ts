@@ -5,6 +5,7 @@ import type {
   LlmRuntimeInfo,
   HfModelFile,
   HfModelSearchResult,
+  LlmfitResult,
   Chapter,
   Scene,
   ChapterSaveResult,
@@ -511,6 +512,11 @@ export type RendererApi = {
     cancelModelDownload: () => Promise<IPCResponse<{ ok: boolean }>>;
     searchHfModels: (query: string) => Promise<IPCResponse<HfModelSearchResult[]>>;
     getHfModelFiles: (repoId: string) => Promise<IPCResponse<HfModelFile[]>>;
+    getLlmfitRecommendations: (options?: {
+      limit?: number;
+      useCase?: "general" | "coding" | "reasoning" | "chat" | "multimodal" | "embedding";
+      minFit?: "perfect" | "good" | "marginal" | "too_tight";
+    }) => Promise<IPCResponse<LlmfitResult>>;
     onModelDownloadProgress: (callback: (progress: {
       stage: "binary" | "model" | "complete" | "error";
       pct: number;
