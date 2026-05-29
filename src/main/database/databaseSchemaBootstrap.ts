@@ -16,6 +16,7 @@ import {
   ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_TRIGGER_SQL,
 } from "./entityRelationPointerSql.js";
 import { resolveMigrationPathContext } from "./migrationPathResolver.js";
+import { ensureMemoryChunkFtsTrigram } from "./memoryChunkFtsMigration.js";
 
 const DRIZZLE_MIGRATIONS_TABLE = "__drizzle_migrations";
 
@@ -230,6 +231,17 @@ export function ensurePackagedSqliteSchema(
     }
     if (patchedIndexes > 0) {
       logger.info("Applied index patches to existing database", { patchedIndexes });
+    }
+
+    // MemoryChunkFts 토크나이저를 trigram 으로 보장(레거시 unicode61 → 재색인).
+    // 한국어 부분 일치 검색 품질의 토대. CREATE ... IF NOT EXISTS 인덱스 패치는
+    // 기존 테이블의 토크나이저를 바꾸지 못하므로 별도 마이그레이션이 필요하다.
+    try {
+      ensureMemoryChunkFtsTrigram(database, logger);
+    } catch (error) {
+      logger.warn("Failed to ensure MemoryChunkFts trigram tokenizer", {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
 
     backfillChapterBody(database, logger);

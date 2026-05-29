@@ -41,6 +41,9 @@ export class SearchService {
     "랑", "이라", "라", "야", "요", "다",
   ] as const;
 
+  /** trigram FTS5 는 3-그램 인덱스라 토큰 길이가 3자 미만이면 매칭되지 않는다. */
+  private static readonly TRIGRAM_MIN_TOKEN_LENGTH = 3;
+
   private normalizeSearchTokens(query: string): string[] {
     const seeds = query.trim().split(/\s+/).filter(Boolean);
     const expanded = new Set<string>();
@@ -55,10 +58,32 @@ export class SearchService {
     return [...expanded].filter((token) => token.length > 0);
   }
 
+  /**
+   * trigram FTS MATCH 쿼리 빌드.
+   *
+   * trigram 은 부분 문자열을 직접 인덱싱하므로 조사 제거 토큰을 OR 로 묶으면
+   * 재현율이 높아진다. 단, 3자 미만 토큰은 trigram 인덱스에 없으므로 제외하고
+   * (그런 토큰은 LIKE 폴백이 처리), 따옴표로 감싸 구문 매칭한다.
+   */
   private buildFtsQuery(query: string): string {
-    const tokens = this.normalizeSearchTokens(query);
+    const tokens = this.normalizeSearchTokens(query).filter(
+      (token) => token.length >= SearchService.TRIGRAM_MIN_TOKEN_LENGTH,
+    );
     if (tokens.length === 0) return "";
     return tokens.map((t) => `"${t.replaceAll('"', '""')}"`).join(" OR ");
+  }
+
+  /**
+   * trigram FTS 로 잡히지 않는 짧은 토큰(2자 이하: 인물명·약어 등)을 위한
+   * LIKE 기반 어휘 매칭. 한국어 핵심 단어가 2글자인 경우가 많아 필수 보완책이다.
+   * 3자 이상 토큰만으로 FTS 가 충분하면 빈 배열을 반환한다.
+   */
+  private collectShortTokens(query: string): string[] {
+    return this.normalizeSearchTokens(query).filter(
+      (token) =>
+        token.length >= 2 &&
+        token.length < SearchService.TRIGRAM_MIN_TOKEN_LENGTH,
+    );
   }
 
   async search(input: SearchQuery): Promise<SearchResult[]> {
@@ -216,6 +241,14 @@ export class SearchService {
             LIMIT ${Math.max(limit, 50)};
           `)
         : [];
+
+      // trigram 으로 잡히지 않는 2자 이하 토큰(인물명 등)을 LIKE 로 보완.
+      const lexicalRanks = await this.searchByShortTokens(
+        input.projectId,
+        normalizedQuery,
+        Math.max(limit, 50),
+      );
+
       let denseRanks: Array<{ chunkId: string; rank: number }> = [];
       const shouldRunVectorSearch =
         db.isVectorSearchEnabled() &&
@@ -233,8 +266,11 @@ export class SearchService {
         }
       }
       const merged = this.mergeWithRRF(
-        ftsRows.map((row, index) => ({ chunkId: row.chunkId, rank: index + 1 })),
-        denseRanks,
+        [
+          ftsRows.map((row, index) => ({ chunkId: row.chunkId, rank: index + 1 })),
+          lexicalRanks,
+          denseRanks,
+        ],
         limit,
       );
       if (merged.length === 0) {
@@ -278,21 +314,55 @@ export class SearchService {
   }
 
   private mergeWithRRF(
-    ftsResults: Array<{ chunkId: string; rank: number }>,
-    denseResults: Array<{ chunkId: string; rank: number }>,
+    rankSources: Array<Array<{ chunkId: string; rank: number }>>,
     topK: number,
   ): Array<{ chunkId: string; score: number }> {
     const scores = new Map<string, number>();
-    for (const { chunkId, rank } of ftsResults) {
-      scores.set(chunkId, (scores.get(chunkId) ?? 0) + 1 / (SearchService.RRF_K + rank));
-    }
-    for (const { chunkId, rank } of denseResults) {
-      scores.set(chunkId, (scores.get(chunkId) ?? 0) + 1 / (SearchService.RRF_K + rank));
+    for (const source of rankSources) {
+      for (const { chunkId, rank } of source) {
+        scores.set(chunkId, (scores.get(chunkId) ?? 0) + 1 / (SearchService.RRF_K + rank));
+      }
     }
     return [...scores.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, topK)
       .map(([chunkId, score]) => ({ chunkId, score }));
+  }
+
+  /**
+   * 2자 이하 짧은 토큰을 LIKE 로 매칭해 chunkId 랭킹을 만든다.
+   * trigram FTS 의 3-그램 최소 길이 제약을 보완하는 폴백 경로.
+   * 짧은 토큰이 없으면 빈 배열(추가 비용 0).
+   */
+  private async searchByShortTokens(
+    projectId: string,
+    query: string,
+    limit: number,
+  ): Promise<Array<{ chunkId: string; rank: number }>> {
+    const shortTokens = this.collectShortTokens(query);
+    if (shortTokens.length === 0) return [];
+
+    const predicates = shortTokens.map((token) => {
+      const escaped = escapeLike(token);
+      return sql`${memoryChunk.content} LIKE ${`%${escaped}%`} ESCAPE '\\'`;
+    });
+
+    try {
+      const rows = await db
+        .getClient()
+        .select({ chunkId: memoryChunk.id })
+        .from(memoryChunk)
+        .where(and(eq(memoryChunk.projectId, projectId), or(...predicates)))
+        .orderBy(desc(memoryChunk.updatedAt))
+        .limit(limit);
+      return rows.map((row, index) => ({ chunkId: row.chunkId, rank: index + 1 }));
+    } catch (error) {
+      logger.warn("Short-token LIKE fallback failed; skipping", {
+        projectId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return [];
+    }
   }
 
   private async searchByVector(
