@@ -212,7 +212,7 @@ USING fts5(
     "projectId" UNINDEXED,
     "chapterId" UNINDEXED,
     "content",
-    tokenize = 'unicode61'
+    tokenize = 'trigram'
 );`,
   },
   {
