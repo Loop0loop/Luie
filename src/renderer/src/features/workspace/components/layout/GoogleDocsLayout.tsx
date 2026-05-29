@@ -19,6 +19,7 @@ import { useGoogleDocsLayoutState } from "./useGoogleDocsLayoutState";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
+import { suppressLayoutPersistenceFor } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import { SidebarHoverStrip } from "@renderer/features/workspace/components/SidebarHoverStrip";
 
 export default function GoogleDocsLayout({
@@ -82,6 +83,7 @@ export default function GoogleDocsLayout({
     const isCollapsed =
       panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
     if (isCollapsed) {
+      suppressLayoutPersistenceFor(500);
       setDocsSidebarOpen(false);
     }
   };

@@ -28,6 +28,7 @@ import {
 import { toPercentSize } from "@shared/constants/sidebarSizing";
 import {
   getPanelLayoutValue,
+  suppressLayoutPersistenceFor,
   useLayoutPersist,
 } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
@@ -140,14 +141,18 @@ export default function MainLayout({
 
   useEffect(() => {
     if (shouldRenderSidebar) return;
+    const safeRatio =
+      sidebarRatio < 5 ? getLayoutSurfaceDefaultRatio("default.sidebar") : sidebarRatio;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSidebarDefaultSize(toPanelPercentSize(sidebarRatio));
+    setSidebarDefaultSize(toPanelPercentSize(safeRatio));
   }, [shouldRenderSidebar, sidebarRatio]);
 
   useEffect(() => {
     if (shouldRenderContext) return;
+    const safeRatio =
+      contextRatio < 5 ? getLayoutSurfaceDefaultRatio("default.panel") : contextRatio;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setContextDefaultSize(toPanelPercentSize(contextRatio));
+    setContextDefaultSize(toPanelPercentSize(safeRatio));
   }, [shouldRenderContext, contextRatio]);
 
   return (
@@ -174,6 +179,7 @@ export default function MainLayout({
                 const isCollapsed =
                   panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
                 if (isCollapsed) {
+                  suppressLayoutPersistenceFor(500);
                   setRegionOpen("leftSidebar", false);
                 }
               }}
@@ -314,6 +320,7 @@ export default function MainLayout({
                 const isCollapsed =
                   panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
                 if (isCollapsed) {
+                  suppressLayoutPersistenceFor(500);
                   setRegionOpen("rightPanel", false);
                 }
               }}

@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo, useState } from "react";
+import { useEffect, useCallback, useMemo, useState, useRef } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -34,7 +34,6 @@ const LAYOUT_ITERATIONS_EVENT = 85 as const;
 const EDGE_FALLBACK_OPACITY = 0.6 as const;
 const EDGE_FALLBACK_STROKE_WIDTH = 1.5 as const;
 const EDGE_FOCUS_OPACITY = 0.95 as const;
-const EDGE_UNFOCUS_OPACITY = 0.05 as const;
 
 const nodeTypes = {
   pensive: PensiveNode,
@@ -45,6 +44,11 @@ export default function GraphSurface() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
+
+  const nodesRef = useRef(nodes);
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
 
   // Zustand 전체 스토어 구독 결함 해결: 개별 Selector 분리 구독으로 불필요 리렌더링 0% 통제
   const focusId = useGraphStore((state) => state.focusId);
@@ -113,6 +117,7 @@ export default function GraphSurface() {
 
       return {
         ...edge,
+        type: "straight", // 직선 에지로 꼬임 0% 통제
         label: edge.data?.label,
         labelStyle,
         labelBgStyle,
@@ -167,12 +172,27 @@ export default function GraphSurface() {
         }
       }
 
+      // 캔버스 내 직접 클릭 포커스 격리 (Focus Isolation): 비관련 노드는 0% 투명화 소멸
+      let canvasFocusedOpacity = 1.0;
+      let isInteractivePointerEvents = true;
+      if (focusId) {
+        if (node.id !== focusId) {
+          const isNeighbor = MOCK_GRAPH_EDGES.some(
+            (e) => (e.source === focusId && e.target === node.id) ||
+                   (e.target === focusId && e.source === node.id)
+          );
+          canvasFocusedOpacity = isNeighbor ? 0.95 : 0.0;
+          isInteractivePointerEvents = isNeighbor;
+        }
+      }
+
       return {
         ...node,
         data: {
           ...node.data,
           starGrade,
-          opacity: opacity * filterFocusedOpacity,
+          opacity: opacity * filterFocusedOpacity * canvasFocusedOpacity,
+          isInteractive: isInteractivePointerEvents,
           isFocused: false,
         },
       };
@@ -182,14 +202,26 @@ export default function GraphSurface() {
       filteredNodes: computedNodes,
       filteredEdges: computedEdges,
     };
-  }, [activeMode, selectedChapterFilter, selectedFocusNode]);
+  }, [activeMode, selectedChapterFilter, selectedFocusNode, focusId]);
 
   // 3. 필터 변경 또는 마운트 시 Force Layout 기동 (모드별 중심점 및 물리력 분기 대응)
   useEffect(() => {
     const layoutCenter = activeMode === "character" ? LAYOUT_CENTER_CHARACTER : LAYOUT_CENTER_EVENT;
     const iterations = activeMode === "character" ? LAYOUT_ITERATIONS_CHARACTER : LAYOUT_ITERATIONS_EVENT;
 
-    const laidOutNodes = calculateForceLayout(filteredNodes, filteredEdges, iterations, layoutCenter);
+    // 이전 노드 위치 좌표를 그대로 물려받아 위치 튕김 현상을 완전히 0%로 소멸
+    const nodesWithPrevPositions = filteredNodes.map((node) => {
+      const prevNode = nodesRef.current.find((n) => n.id === node.id);
+      if (prevNode?.position) {
+        return {
+          ...node,
+          position: { ...prevNode.position },
+        };
+      }
+      return node;
+    });
+
+    const laidOutNodes = calculateForceLayout(nodesWithPrevPositions, filteredEdges, iterations, layoutCenter);
     
     setNodes(laidOutNodes);
     setEdges(filteredEdges);
@@ -265,18 +297,19 @@ export default function GraphSurface() {
           animated: isRelated ? true : false,
           style: {
             ...edge.style,
-            // 관련 에지는 선명하게, 관련 없는 에지는 어둠속으로 페이드아웃
-            opacity: isRelated ? EDGE_FOCUS_OPACITY : EDGE_UNFOCUS_OPACITY,
+            // 관련 에지는 선명하게, 관련 없는 에지는 시야에서 전면 투명 소거
+            opacity: isRelated ? EDGE_FOCUS_OPACITY : 0,
             strokeWidth: isRelated ? (baseWidth + 1.2) : baseWidth,
             stroke: isRelated ? relationColor : strokeBackup,
+            pointerEvents: isRelated ? "auto" : "none", // 비관련 에지 이벤트 완전 차단
           },
           labelStyle: {
             ...edge.labelStyle,
-            opacity: isRelated ? 1.0 : EDGE_UNFOCUS_OPACITY,
+            opacity: isRelated ? 1.0 : 0,
           },
           labelBgStyle: {
             ...edge.labelBgStyle,
-            opacity: isRelated ? 1.0 : EDGE_UNFOCUS_OPACITY,
+            opacity: isRelated ? 1.0 : 0,
             stroke: isRelated ? relationColor : labelBgStrokeBackup,
           }
         };
@@ -297,6 +330,15 @@ export default function GraphSurface() {
     setFocusId(null);
   }, [setFocusId]);
 
+  const onNodeDragStop = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      setNodes((prevNodes) =>
+        prevNodes.map((n) => (n.id === node.id ? { ...n, position: { ...node.position } } : n))
+      );
+    },
+    [setNodes]
+  );
+
   return (
     <div className="h-full w-full bg-canvas relative overflow-hidden select-none">
       {/* React Flow Canvas */}
@@ -307,6 +349,7 @@ export default function GraphSurface() {
         onEdgesChange={onEdgesChange}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
+        onNodeDragStop={onNodeDragStop}
         nodeTypes={nodeTypes}
         minZoom={CANVAS_ZOOM_MIN}
         maxZoom={CANVAS_ZOOM_MAX}
