@@ -178,6 +178,9 @@ export const IPC_CHANNELS = {
   LLMFIT_GET_RECOMMENDATIONS: "llmfit:get-recommendations",
   LLMFIT_INSTALL: "llmfit:install",
   LLMFIT_STATUS: "llmfit:status",
+  EMBEDDING_MODEL_STATUS: "embedding-model:status",
+  EMBEDDING_MODEL_DOWNLOAD: "embedding-model:download",
+  EMBEDDING_MODEL_DOWNLOAD_PROGRESS: "embedding-model:download-progress",
   SETTINGS_RESET: "settings:reset",
 
   // Recovery

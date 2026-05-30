@@ -1127,6 +1127,15 @@ export interface LlmfitInstallStatus {
   reason?: string;
 }
 
+/** 로컬 임베딩 모델(bge-m3) 설치 상태(렌더러 안전 타입). */
+export interface EmbeddingModelStatusView {
+  modelId: string;
+  displayName: string;
+  installed: boolean;
+  source: "bundled" | "downloaded" | "none";
+  dimension: number;
+}
+
 
 export type ShortcutAction =
   | "app.closeWindow"

@@ -30,6 +30,7 @@ import {
 } from "../../services/llm/modelDownloader.js";
 import { llmfitService } from "../../services/llm/llmfitService.js";
 import { llmfitInstaller } from "../../services/llm/llmfitInstaller.js";
+import { embeddingModelService } from "../../services/llm/embeddingModelService.js";
 import {
   DEFAULT_MODEL,
   LLAMA_BINARY_SHA256S,
@@ -426,6 +427,63 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
       failMessage: "Failed to get llmfit status",
       argsSchema: z.tuple([]),
       handler: async () => await llmfitInstaller.getStatus(),
+    },
+    {
+      channel: IPC_CHANNELS.EMBEDDING_MODEL_STATUS,
+      logTag: "EMBEDDING_MODEL_STATUS",
+      failMessage: "Failed to get embedding model status",
+      argsSchema: z.tuple([]),
+      handler: async () => {
+        const status = embeddingModelService.getStatus();
+        // 렌더러에는 절대 경로를 노출하지 않는 안전 뷰만 전달.
+        return {
+          modelId: status.modelId,
+          displayName: status.displayName,
+          installed: status.installed,
+          source: status.source,
+          dimension: status.dimension,
+        };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.EMBEDDING_MODEL_DOWNLOAD,
+      logTag: "EMBEDDING_MODEL_DOWNLOAD",
+      failMessage: "Failed to download embedding model",
+      argsSchema: z.tuple([]),
+      handler: async () => {
+        const emitProgress = (
+          stage: "downloading" | "complete" | "error",
+          pct: number,
+          error?: string,
+        ) => {
+          for (const window of BrowserWindow.getAllWindows()) {
+            if (!window.isDestroyed()) {
+              window.webContents.send(
+                IPC_CHANNELS.EMBEDDING_MODEL_DOWNLOAD_PROGRESS,
+                { stage, pct, error },
+              );
+            }
+          }
+        };
+
+        // 동봉되어 있으면 즉시 완료, 아니면 백그라운드 다운로드(비차단).
+        void (async () => {
+          try {
+            await embeddingModelService.ensureModel((progress) => {
+              if (progress.phase === "downloading") {
+                emitProgress("downloading", progress.pct);
+              }
+            });
+            emitProgress("complete", 100);
+            invalidateModelRuntimeCache();
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            emitProgress("error", 0, message);
+          }
+        })();
+
+        return { ok: true };
+      },
     },
     {
       channel: IPC_CHANNELS.MODEL_DOWNLOAD_CANCEL,
