@@ -9,10 +9,10 @@ import { useSettingsShortcuts } from "./useSettingsShortcuts";
 import { useSettingsSync } from "./useSettingsSync";
 import { useSettingsModel } from "./useSettingsModel";
 
-export function useSettingsManager() {
+export function useSettingsManager(initialTab?: SettingsTabId) {
   const { t, i18n } = useTranslation();
   const { showToast } = useToast();
-  const [activeTab, setActiveTab] = useState<SettingsTabId>("appearance");
+  const [activeTab, setActiveTab] = useState<SettingsTabId>(initialTab ?? "appearance");
 
   const editorPreferences = useSettingsEditorPreferences();
   const menuBarSettings = useSettingsMenuBar(t, showToast);

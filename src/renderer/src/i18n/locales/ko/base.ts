@@ -156,6 +156,23 @@ export const koBase = {
         failed: "메모리 재구성에 실패했습니다.",
         started: "메모리 재구성을 시작했습니다. ({{count}}개 작업 등록)",
       },
+      apiKeys: {
+        title: "클라우드 AI 모델 설정 (API Key)",
+        desc: "OpenAI 및 Gemini API Key를 입력하여 클라우드 모델을 연동합니다. 패키징 빌드 환경에서는 Supabase 프록시를 통해 연동됩니다.",
+        openaiKey: "OpenAI API Key",
+        geminiKey: "Gemini API Key",
+        placeholder: "API Key를 입력하세요",
+        save: "저장",
+        saving: "저장 중...",
+        saved: "API Key가 안전하게 저장되었습니다.",
+        saveFailed: "API Key 저장에 실패했습니다.",
+        missingAlert: {
+          title: "AI 설정 누락 안내",
+          message: "선택하신 AI 모델을 구동하기 위한 API Key 또는 필수 설정이 누락되었습니다. 설정 페이지의 모델 탭으로 이동하여 설정을 완료하시겠습니까?",
+          confirm: "설정으로 이동",
+          cancel: "취소",
+        },
+      },
     },
     appearance: {
       baseTheme: {

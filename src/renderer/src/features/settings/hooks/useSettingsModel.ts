@@ -25,6 +25,8 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
   const [localLlmEnabled, setLocalLlmEnabled] = useState(false);
   const [localLlmModelPath, setLocalLlmModelPath] = useState<string | undefined>();
   const [localLlmBinaryPath, setLocalLlmBinaryPath] = useState<string | undefined>();
+  const [openaiApiKey, setOpenaiApiKey] = useState("");
+  const [geminiApiKey, setGeminiApiKey] = useState("");
   const [downloadProgress, setDownloadProgress] = useState<{
     stage: "binary" | "model" | "complete" | "error";
     pct: number;
@@ -54,11 +56,19 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     if (activeTab !== "model") return;
     void (async () => {
       const res = await api.settings.getAll();
-      const localLlm = res.data?.llm?.localLlm;
-      if (localLlm) {
-        setLocalLlmEnabled(localLlm.enabled);
-        setLocalLlmModelPath(localLlm.modelPath);
-        setLocalLlmBinaryPath(localLlm.binaryPath);
+      const llm = res.data?.llm;
+      if (llm) {
+        if (llm.localLlm) {
+          setLocalLlmEnabled(llm.localLlm.enabled);
+          setLocalLlmModelPath(llm.localLlm.modelPath);
+          setLocalLlmBinaryPath(llm.localLlm.binaryPath);
+        }
+        if (typeof llm.openaiApiKey === "string") {
+          setOpenaiApiKey(llm.openaiApiKey);
+        }
+        if (typeof llm.geminiApiKey === "string") {
+          setGeminiApiKey(llm.geminiApiKey);
+        }
       }
       await refreshMigrationHealth();
 
@@ -206,6 +216,30 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     }
   }, [showToast, t]);
 
+  const handleSaveLlmKeys = useCallback(async (openAiKey: string, geminiKey: string): Promise<boolean> => {
+    setIsBusy(true);
+    try {
+      const response = await api.settings.setLlmKeys({
+        openaiApiKey: openAiKey,
+        geminiApiKey: geminiKey,
+      });
+      if (response.success) {
+        setOpenaiApiKey(openAiKey);
+        setGeminiApiKey(geminiKey);
+        showToast(t("settings.localLlm.apiKeys.saved"), "success");
+        return true;
+      }
+      showToast(response.error?.message ?? t("settings.localLlm.apiKeys.saveFailed"), "error");
+      return false;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("settings.localLlm.apiKeys.saveFailed");
+      showToast(message, "error");
+      return false;
+    } finally {
+      setIsBusy(false);
+    }
+  }, [showToast, t]);
+
   // 의미 검색 게이트: 임베딩 모델 미설치=비활성, 임베딩 잡 진행 중=준비중, 그 외=준비됨.
   const pendingEmbeddings =
     (memoryEmbeddingStatus?.pendingCount ?? 0) + (memoryEmbeddingStatus?.runningCount ?? 0);
@@ -221,6 +255,8 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     refreshMigrationHealth,
     localLlmEnabled,
     localLlmModelPath,
+    openaiApiKey,
+    geminiApiKey,
     isDownloading,
     downloadProgress,
     handleRebuildMemory,
@@ -228,6 +264,7 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     handleSearchHfModels,
     handleGetHfModelFiles,
     handleToggleLocalLlm,
+    handleSaveLlmKeys,
     llmfitResult,
     llmfitLoading,
     embeddingStatus,

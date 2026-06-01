@@ -2,6 +2,7 @@ import { lazy, Suspense, useMemo } from "react";
 import { X } from "lucide-react";
 import { SETTINGS_TABS } from "@renderer/features/settings/components/SettingsModalConfig";
 import { useSettingsManager } from "@renderer/features/settings/hooks/useSettingsManager";
+import type { SettingsTabId } from "@renderer/features/settings/components/tabs/types";
 
 const AppearanceTab = lazy(() =>
   import("@renderer/features/settings/components/tabs/AppearanceTab").then(
@@ -55,14 +56,15 @@ const ModelTab = lazy(() =>
 
 interface SettingsModalProps {
   onClose: () => void;
+  initialTab?: SettingsTabId;
 }
 
 const settingsTabFallback = (
   <div className="min-h-[320px] animate-pulse rounded-xl bg-surface/60" />
 );
 
-export default function SettingsModal({ onClose }: SettingsModalProps) {
-  const settings = useSettingsManager();
+export default function SettingsModal({ onClose, initialTab }: SettingsModalProps) {
+  const settings = useSettingsManager(initialTab);
   const {
     t,
     i18n,
@@ -232,6 +234,9 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                   onRebuildMemory={settings.handleRebuildMemory}
                   localLlmEnabled={settings.localLlmEnabled}
                   localLlmModelPath={settings.localLlmModelPath}
+                  openaiApiKey={settings.openaiApiKey}
+                  geminiApiKey={settings.geminiApiKey}
+                  onSaveLlmKeys={settings.handleSaveLlmKeys}
                   isDownloading={settings.isDownloading}
                   downloadProgress={settings.downloadProgress}
                   onDownloadLocalModel={settings.handleDownloadLocalModel}

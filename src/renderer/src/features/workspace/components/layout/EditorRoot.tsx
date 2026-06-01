@@ -35,6 +35,7 @@ import { FeatureErrorBoundary } from "@renderer/shared/error-boundaries/FeatureE
 const SettingsModal = lazy(
   () => import("@renderer/features/settings/components/SettingsModal"),
 );
+import type { SettingsTabId } from "@renderer/features/settings/components/tabs/types";
 const MainLayout = lazy(
   () => import("@renderer/features/workspace/components/layout/MainLayout"),
 );
@@ -99,6 +100,7 @@ export default function EditorRoot() {
   const { t } = useTranslation();
   const dialog = useDialog();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTabId | undefined>(undefined);
 
   const uiMode = useEditorStore((state) => state.uiMode);
   const setUiMode = useEditorStore((state) => state.setUiMode);
@@ -324,7 +326,10 @@ export default function EditorRoot() {
   }, []);
 
   useEffect(() => {
-    const handleOpenSettings = () => {
+    const handleOpenSettings = (e: Event) => {
+      const customEvent = e as CustomEvent<{ tab?: SettingsTabId }>;
+      const tab = customEvent.detail?.tab;
+      setSettingsInitialTab(tab);
       setIsSettingsOpen(true);
     };
     window.addEventListener("luie:open-settings", handleOpenSettings);
@@ -516,7 +521,13 @@ export default function EditorRoot() {
 
       {isSettingsOpen && (
         <Suspense fallback={null}>
-          <SettingsModal onClose={() => setIsSettingsOpen(false)} />
+          <SettingsModal
+            initialTab={settingsInitialTab}
+            onClose={() => {
+              setIsSettingsOpen(false);
+              setSettingsInitialTab(undefined);
+            }}
+          />
         </Suspense>
       )}
       <SmartLinkTooltip isSettingsOpen={isSettingsOpen} />

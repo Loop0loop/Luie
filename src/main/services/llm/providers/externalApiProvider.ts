@@ -1,4 +1,9 @@
+/* eslint-disable no-await-in-loop */
 import type { GenerateOptions, ModelRuntimeClient } from "../modelRuntimeClient.js";
+import { isAppPackaged } from "../../../utils/appEnv.js";
+import { getSupabaseConfig } from "../../features/sync/supabaseEnv.js";
+import { ensureSyncAccessToken } from "../..//../services/features/sync/syncAccessToken.js";
+import { settingsManager } from "../..../../../../manager/settingsManager.js";
 
 type ExternalApiConfig = {
   baseUrl: string;
@@ -10,7 +15,56 @@ type ExternalApiConfig = {
 export class ExternalApiProvider implements ModelRuntimeClient {
   readonly providerName = "externalapi";
 
-  constructor(private readonly config: ExternalApiConfig) {}
+  constructor(private readonly config: ExternalApiConfig) { }
+
+  private async generateViaSupabase(
+    input: { systemPrompt?: string; userPrompt: string },
+    options?: GenerateOptions,
+  ): Promise<string> {
+    const supabaseConfig = getSupabaseConfig();
+    if (!supabaseConfig) {
+      throw new Error("SUPABASE_NOT_CONFIGURED: 번들 빌드 환경에서는 동기화 계정 연결이 필요합니다. 설정 > 동기화 탭에서 계정을 연결해 주세요.");
+    }
+    const syncSettings = settingsManager.getSyncSettings();
+    const token = await ensureSyncAccessToken({
+      syncSettings,
+      isAuthFatalMessage: () => false,
+    });
+
+    const res = await fetch(`${supabaseConfig.url}/functions/v1/openai-proxy`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      signal: options?.signal,
+      body: JSON.stringify({
+        endpoint: "chat.completions",
+        model: this.config.chatModel,
+        stream: false,
+        temperature: options?.temperature ?? 0.2,
+        max_tokens: options?.maxTokens ?? 1024,
+        messages: [
+          ...(input.systemPrompt
+            ? [{ role: "system", content: input.systemPrompt }]
+            : []),
+          { role: "user", content: input.userPrompt },
+        ],
+      }),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => "");
+      throw new Error(`OpenAI generate via Supabase Edge Function failed: HTTP ${res.status} ${errorText.slice(0, 200)}`);
+    }
+
+    const data = await res.json() as {
+      choices?: Array<{
+        message?: { content?: string };
+      }>;
+    };
+    return data.choices?.[0]?.message?.content ?? "";
+  }
 
   private get headers(): Record<string, string> {
     return {
@@ -24,6 +78,9 @@ export class ExternalApiProvider implements ModelRuntimeClient {
   }
 
   async isAvailable(): Promise<boolean> {
+    if (isAppPackaged() && this.config.baseUrl.includes("openai.com")) {
+      return true; // 번들 환경의 OpenAI라면 항상 프록시 가용하다고 봄
+    }
     try {
       const response = await fetch(this.buildUrl("/models"), {
         method: "GET",
@@ -56,6 +113,11 @@ export class ExternalApiProvider implements ModelRuntimeClient {
     input: { systemPrompt?: string; userPrompt: string },
     options?: GenerateOptions,
   ): AsyncIterable<string> {
+    if (isAppPackaged() && this.config.baseUrl.includes("openai.com")) {
+      const text = await this.generateViaSupabase(input, options);
+      yield text;
+      return;
+    }
     const response = await fetch(this.buildUrl("/chat/completions"), {
       method: "POST",
       headers: this.headers,
@@ -75,7 +137,7 @@ export class ExternalApiProvider implements ModelRuntimeClient {
     });
     if (!response.ok || !response.body) {
       const errorText = await response.text().catch(() => "");
-      response.body?.cancel().catch(() => {});
+      response.body?.cancel().catch(() => { });
       throw new Error(
         `External API chat completion failed: HTTP ${response.status} ${errorText.slice(0, 200)}`,
       );

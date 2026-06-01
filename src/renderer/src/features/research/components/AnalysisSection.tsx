@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useShallow } from "zustand/react/shallow";
@@ -22,6 +23,7 @@ type Message = {
 type RuntimePreference = "auto" | "sidecar" | "ollama" | "openai" | "gemini";
 
 export default function AnalysisSection() {
+  const { t } = useTranslation();
   const { currentItem: currentChapter } = useChapterStore(
     useShallow((state) => ({ currentItem: state.currentItem })),
   );
@@ -56,6 +58,41 @@ export default function AnalysisSection() {
   }, []);
 
   const applyRuntimePreference = useCallback(async (next: RuntimePreference) => {
+    const allSettings = await api.settings.getAll();
+    const llmSettings = allSettings.data?.llm;
+    const localLlm = llmSettings?.localLlm;
+
+    let isAvailable = true;
+
+    if (next === "openai") {
+      const hasKey = Boolean(llmSettings?.openaiApiKey);
+      if (!hasKey) {
+        isAvailable = false;
+      }
+    } else if (next === "gemini") {
+      const hasKey = Boolean(llmSettings?.geminiApiKey);
+      if (!hasKey) {
+        isAvailable = false;
+      }
+    } else if (next === "sidecar") {
+      const hasModel = Boolean(localLlm?.modelPath);
+      if (!hasModel) {
+        isAvailable = false;
+      }
+    }
+
+    if (!isAvailable) {
+      const confirmed = window.confirm(
+        t("settings.localLlm.apiKeys.missingAlert.message")
+      );
+      if (confirmed) {
+        window.dispatchEvent(
+          new CustomEvent("luie:open-settings", { detail: { tab: "model" } })
+        );
+      }
+      return;
+    }
+
     setRuntimePreference(next);
     const response = await api.settings.setLlmPreference({ provider: next });
     if (!response.success) {
@@ -67,7 +104,7 @@ export default function AnalysisSection() {
       setRuntimeInfo(runtime.data);
       showToast(`LLM 경로 변경: ${next} → ${runtime.data.provider}`, "info");
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   // Scroll to bottom on new messages
   useEffect(() => {

@@ -168,6 +168,7 @@ export const IPC_CHANNELS = {
   SETTINGS_TEST_OLLAMA_CONNECTION: "settings:test-ollama-connection",
   SETTINGS_SET_LOCAL_LLM: "settings:set-local-llm",
   SETTINGS_GET_LOCAL_LLM: "settings:get-local-llm",
+  SETTINGS_SET_LLM_KEYS: "settings:set-llm-keys",
   SIDECAR_STOP: "sidecar:stop",
   SIDECAR_STATUS: "sidecar:status",
   MODEL_DOWNLOAD_START: "model:download-start",

@@ -1060,6 +1060,8 @@ export interface AppSettings {
   startup?: StartupSettings;
   llm?: {
     preferredProvider?: "auto" | "sidecar" | "ollama" | "openai" | "gemini";
+    openaiApiKey?: string;
+    geminiApiKey?: string;
     ollama?: {
       baseUrl?: string;
       chatModel?: string;

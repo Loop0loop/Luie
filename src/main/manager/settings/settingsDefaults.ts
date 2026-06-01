@@ -1,4 +1,4 @@
-import { nativeTheme } from "electron";
+import { createRequire } from "node:module";
 import type {
   AppSettings,
   RuntimeSupabaseConfig,
@@ -6,6 +6,20 @@ import type {
   SyncSettings,
   WindowMenuBarMode,
 } from "../../../shared/types/index.js";
+
+const requireFn = createRequire(import.meta.url);
+
+function getSystemTheme(): "dark" | "light" {
+  if (process.env.LUIE_IS_UTILITY_PROCESS === "1") {
+    return "dark";
+  }
+  try {
+    const { nativeTheme } = requireFn("electron");
+    return nativeTheme?.shouldUseDarkColors ? "dark" : "light";
+  } catch {
+    return "dark";
+  }
+}
 import {
   APP_DIR_NAME,
   DEFAULT_AUTO_SAVE_ENABLED,
@@ -144,7 +158,7 @@ export const getDefaultSettings = (): AppSettings => ({
     paragraphSpacing: DEFAULT_EDITOR_PARAGRAPH_SPACING,
     maxWidth: DEFAULT_EDITOR_MAX_WIDTH,
     spellcheckEnabled: true,
-    theme: nativeTheme.shouldUseDarkColors ? "dark" : "light",
+    theme: getSystemTheme(),
     themeTemp: DEFAULT_EDITOR_THEME_TEMP,
     themeContrast: DEFAULT_EDITOR_THEME_CONTRAST,
     themeAccent: DEFAULT_EDITOR_THEME_ACCENT,
@@ -167,6 +181,9 @@ export const getDefaultSettings = (): AppSettings => ({
   } as SyncSettings,
   startup: {},
   llm: {
+    preferredProvider: "auto",
+    openaiApiKey: "",
+    geminiApiKey: "",
     ollama: {
       baseUrl: "http://localhost:11434",
       chatModel: "",
