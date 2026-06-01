@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 
-const require = createRequire(import.meta.url);
+const requireFn = createRequire(import.meta.url);
 
 /**
  * Main process 및 utilityProcess 양쪽에서 안전하게 Electron app.isPackaged 여부를 가져옵니다.
@@ -11,7 +11,7 @@ export function isAppPackaged(): boolean {
     return process.env.LUIE_APP_IS_PACKAGED === "1";
   }
   try {
-    const electron = require("electron") as { app?: { isPackaged?: boolean } };
+    const electron = requireFn("electron") as { app?: { isPackaged?: boolean } };
     return electron.app?.isPackaged ?? false;
   } catch {
     return false;

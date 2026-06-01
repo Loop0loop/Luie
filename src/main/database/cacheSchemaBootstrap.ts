@@ -16,7 +16,7 @@ import {
 } from "./cachePackagedSchema.js";
 import { resolveMigrationPathContext } from "./migrationPathResolver.js";
 
-const require = createRequire(import.meta.url);
+const requireFn = createRequire(import.meta.url);
 
 type LoggerLike = {
   info: (message: string, meta?: Record<string, unknown>) => void;
@@ -41,7 +41,7 @@ const DRIZZLE_MIGRATIONS_TABLE = "__drizzle_migrations";
 
 function openSqliteDatabase(dbPath: string): SqliteDatabaseLike {
   try {
-    const BetterSqlite3 = require("better-sqlite3") as new (
+    const BetterSqlite3 = requireFn("better-sqlite3") as new (
       path: string,
     ) => {
       exec: (sql: string) => void;
@@ -62,7 +62,7 @@ function openSqliteDatabase(dbPath: string): SqliteDatabaseLike {
       supportsPreparedRun: true,
     };
   } catch {
-    const { DatabaseSync } = require("node:sqlite") as {
+    const { DatabaseSync } = requireFn("node:sqlite") as {
       DatabaseSync: new (path: string) => {
         exec: (sql: string) => void;
         prepare: (sql: string) => {
@@ -87,7 +87,7 @@ function openBetterSqlite3ForDrizzle(dbPath: string): {
   available: boolean;
 } {
   try {
-    const BetterSqlite3Ctor = require("better-sqlite3") as new (
+    const BetterSqlite3Ctor = requireFn("better-sqlite3") as new (
       p: string,
     ) => unknown;
     return { database: new BetterSqlite3Ctor(dbPath), available: true };

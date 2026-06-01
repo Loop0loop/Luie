@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 
-const require = createRequire(import.meta.url);
+const requireFn = createRequire(import.meta.url);
 
 const resolveIsPackaged = (): boolean => {
   if (process.env.LUIE_APP_IS_PACKAGED === "1") return true;
@@ -9,7 +9,7 @@ const resolveIsPackaged = (): boolean => {
     return process.env.NODE_ENV === "production";
   }
   try {
-    const electron = require("electron") as { app?: { isPackaged?: boolean } };
+    const electron = requireFn("electron") as { app?: { isPackaged?: boolean } };
     return Boolean(electron.app?.isPackaged);
   } catch {
     return process.env.NODE_ENV === "production";

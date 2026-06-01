@@ -26,6 +26,7 @@ const sharedDefine = {
   __APP_NAME__: JSON.stringify(appName),
 };
 const mainExternal = [
+  "electron",
   /^drizzle-orm(?:\/.*)?$/,
   /^better-sqlite3(?:\/.*)?$/,
 ];
@@ -116,6 +117,7 @@ export default defineConfig({
       minify: isDebugProfileBuild ? false : true,
       rollupOptions: {
         input: resolve("src/preload/index.ts"),
+        external: ["electron"],
         output: {
           format: "cjs",
           entryFileNames: "[name].cjs",
