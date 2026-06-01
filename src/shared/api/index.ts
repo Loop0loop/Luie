@@ -7,6 +7,7 @@ import type {
   HfModelSearchResult,
   LlmfitResult,
   LlmfitInstallStatus,
+  EmbeddingModelStatusView,
   Chapter,
   Scene,
   ChapterSaveResult,
@@ -522,6 +523,13 @@ export type RendererApi = {
     getLlmfitStatus: () => Promise<IPCResponse<LlmfitInstallStatus>>;
     onModelDownloadProgress: (callback: (progress: {
       stage: "binary" | "model" | "complete" | "error";
+      pct: number;
+      error?: string;
+    }) => void) => () => void;
+    getEmbeddingModelStatus: () => Promise<IPCResponse<EmbeddingModelStatusView>>;
+    downloadEmbeddingModel: () => Promise<IPCResponse<{ ok: boolean }>>;
+    onEmbeddingModelDownloadProgress: (callback: (progress: {
+      stage: "downloading" | "complete" | "error";
       pct: number;
       error?: string;
     }) => void) => () => void;

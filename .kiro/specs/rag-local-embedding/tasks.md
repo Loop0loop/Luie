@@ -8,7 +8,7 @@
 
 ## Tasks
 
-- [ ] 1. 임베딩 모델 카탈로그 + 다운로드 배선
+- [x] 1. 임베딩 모델 카탈로그 + 다운로드 배선
 - [x] 1.1 임베딩 모델 정의 추가 (`embeddingModelConstants.ts`)
   - bge-m3 GGUF repo/filename/sha256/dimension/displayName 확정 및 상수화
   - node-llama-server `--embeddings` 호환 모델인지 사전 확인 메모
@@ -20,7 +20,7 @@
   - `getLlmSettings`/`setLlmSettings`에 `defaultEmbeddingModelPath`/`defaultEmbeddingModelId` 추가
   - _Requirements: 4.1, 4.2_
 
-- [ ] 2. 임베딩 전용 sidecar (메모리 분리 + 격리)
+- [x] 2. 임베딩 전용 sidecar (메모리 분리 + 격리)
 - [x] 2.1 `embeddingSidecarManager.ts` 작성
   - 독립 포트/프로세스/idle 타이머, `--embeddings --pooling mean` 기동
   - 스폰 실패/크래시 시 throw 금지(상태만 stopped) — P1/R2.1
@@ -33,15 +33,15 @@
   - `embedTexts`/`searchByVector` → `resolveEmbeddingRuntimeClient`, 미가용 시 null
   - _Requirements: 1.2, 2.3_
 
-- [ ] 3. 자동 재시작 + 폴백 견고화 (R2)
+- [x] 3. 자동 재시작 + 폴백 견고화 (R2)
 - [x] 3.1 임베딩 sidecar lazy 재기동 + 백오프
   - `ensureStarted` 재기동, 연속 실패 백오프(1s→5s→30s)+최대횟수 쿨다운(embeddingSidecarManager)
   - _Requirements: 2.4_
-- [ ] 3.2 검색 폴백 불변식 테스트
+- [x] 3.2 검색 폴백 불변식 테스트
   - 임베딩 null/예외 시 `searchChunks`가 FTS(+LIKE)만으로 결과 반환·무throw (P2)
   - _Requirements: 2.3_
 
-- [ ] 4. llmfit 통합 (하드웨어 맞춤 추천 + 런타임 설치)
+- [x] 4. llmfit 통합 (하드웨어 맞춤 추천 + 런타임 설치)
 - [x] 4.1 `llmfitService.ts` (1-shot CLI 실행 + JSON 파싱)
   - 바이너리 해석(env→userData/bin→PATH), `recommend --json --limit 10` 실행, 타임아웃/격리
   - zod 스키마 검증, 상위 ~10 정규화, 바이너리 없음/실패 시 `{available:false}` (P6/R3.4/3.5)
@@ -64,43 +64,45 @@
   - channels + preload + handler + shared 타입, 상태 노출
   - _Requirements: 6.1, 6.4_
 
-- [ ] 5. 모델 다운로드/상태 IPC (UX 백엔드)
+- [x] 5. 모델 다운로드/상태 IPC (UX 백엔드)
 - [x] 5.0 앱 동봉 배선 (사용자 결정: 설치 시 동봉)
   - electron-builder `resources/models` → `models` extraResources, `stage-embedding-model.mjs` prebuild, .gitignore
   - 상수↔스크립트↔빌더 정합성 테스트(embeddingModelConstants.test)
   - _Requirements: 4.1_
-- [ ] 5.1 `EMBEDDING_MODEL_DOWNLOAD` / `EMBEDDING_MODEL_STATUS` 채널
+- [x] 5.1 `EMBEDDING_MODEL_DOWNLOAD` / `EMBEDDING_MODEL_STATUS` 채널
   - modelDownloader 진행률 스트리밍 재사용, 상태(없음/다운로드중/설치됨)
   - _Requirements: 4.1, 4.2, 4.4_
-- [ ] 5.2 모델 전환 시 sidecar 안전 재시작
+- [x] 5.2 모델 전환 시 sidecar 안전 재시작
   - 전환 시 진행 중 작업 중단→재시작→재개, 무한 루프 방지
   - _Requirements: 4.3_
 
-- [ ] 6. 렌더러 설정 UI
-- [ ] 6.1 하드웨어 추천 모델 섹션(카드 ~10)
+- [x] 6. 렌더러 설정 UI
+- [x] 6.1 하드웨어 추천 모델 섹션(카드 ~10)
   - 적합도 배지(완벽/좋음/빠듯)·예상 속도·필요 메모리, 일반 사용자 친화 표현
   - _Requirements: 3.3, 4.1_
-- [ ] 6.2 생성/임베딩 모델 상태 카드 + 의미 검색 게이트
+- [x] 6.2 생성/임베딩 모델 상태 카드 + 의미 검색 게이트
   - 설치됨/다운로드중/없음, "의미 검색 준비됨/준비중/비활성" 인디케이터
   - _Requirements: 4.2, 4.4_
 
-- [ ] 8. 부트스트랩 + 온보딩 (llmfit 설치 → 소개 → 모델 설치 → Main)
-- [ ] 8.1 부트스트랩에서 llmfit 설치 트리거 (비차단)
+- [x] 8. 부트스트랩 + 온보딩 (llmfit 설치 → 소개 → 모델 설치 → Main)
+- [x] 8.1 부트스트랩에서 llmfit 설치 트리거 (비차단)
   - 앱 최초 실행 부트스트랩 단계에서 `llmfitInstaller.ensureInstalled()` 호출, 실패해도 진행
   - _Requirements: 6.5, 7.1_
-- [ ] 8.2 온보딩 wizard 단계 UI (Luie 소개 → Local LLM/임베딩 설치 → 완료)
+- [x] 8.2 온보딩 wizard 단계 UI (Luie 소개 → Local LLM/임베딩 설치 → 완료)
   - 기존 startup wizard window/route 재사용, 6.x 컴포넌트 재사용, 건너뛰기 허용
   - _Requirements: 7.2, 7.3, 7.4_
-- [ ] 8.3 온보딩 완료 → Main Window 전환 + 완료 상태 영속화
+- [x] 8.3 온보딩 완료 → Main Window 전환 + 완료 상태 영속화
   - `STARTUP_COMPLETE_WIZARD` 연동, completedAt 기록 후 Main 진입
   - _Requirements: 7.5_
 
-- [ ] 7. 통합 검증
-- [ ] 7.1 격리/폴백 수동 검증 시나리오 문서화 + 자동화 가능분 테스트
+- [x] 7. 통합 검증
+- [x] 7.1 격리/폴백 수동 검증 시나리오 문서화 + 자동화 가능분 테스트
   - AI 프로세스 강제 종료 → 앱 생존 + FTS 폴백(P1/P2)
   - 임베딩 모델 설치 → 청크 임베딩 → 의미 검색 결과 반환(P4)
   - _Requirements: 1.1, 1.2, 2.1, 2.3_
-- [ ] 7.2 typecheck + lint + 관련 테스트 그린
+- [x] 7.2 typecheck + lint + 관련 테스트 그린
+  - typecheck/lint 클린, 임베딩 폴백·IPC 계약 테스트 그린. 챕터 FTS 캐시 테스트 2건은
+    이 스펙 범위 밖 선재 결함(searchService `search` 경로, 변경 없음·단독 실행도 실패).
   - _Requirements: 전체_
 
 ## Task Dependency Graph

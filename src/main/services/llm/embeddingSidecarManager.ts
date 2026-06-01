@@ -27,8 +27,14 @@ const MAX_RESTART_ATTEMPTS = RESTART_BACKOFFS_MS.length;
 
 type SidecarState =
   | { status: "stopped" }
-  | { status: "starting"; modelPath: string }
-  | { status: "running"; modelPath: string; port: number; proc: ChildProcess };
+  | { status: "starting"; modelPath: string; binaryPath: string }
+  | {
+      status: "running";
+      modelPath: string;
+      binaryPath: string;
+      port: number;
+      proc: ChildProcess;
+    };
 
 export class EmbeddingSidecarManager {
   private state: SidecarState = { status: "stopped" };
@@ -55,7 +61,11 @@ export class EmbeddingSidecarManager {
     modelPath: string,
     options?: { signal?: AbortSignal },
   ): Promise<string | null> {
-    if (this.state.status === "running" && this.state.modelPath === modelPath) {
+    if (
+      this.state.status === "running" &&
+      this.state.modelPath === modelPath &&
+      this.state.binaryPath === binaryPath
+    ) {
       this.resetIdleTimer();
       return `http://127.0.0.1:${this.state.port}`;
     }
@@ -81,7 +91,7 @@ export class EmbeddingSidecarManager {
       await this.stop();
     }
 
-    this.state = { status: "starting", modelPath };
+    this.state = { status: "starting", modelPath, binaryPath };
     try {
       const port = await this.findFreePort();
       const args = [
@@ -120,7 +130,7 @@ export class EmbeddingSidecarManager {
         });
       });
 
-      this.state = { status: "running", modelPath, port, proc };
+      this.state = { status: "running", modelPath, binaryPath, port, proc };
       await this.waitForHealth(port, options?.signal);
 
       // 성공 — 실패 카운터 리셋.

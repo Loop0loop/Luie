@@ -1,7 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@shared/api";
-import type { HfModelFile, HfModelSearchResult, MigrationHealth } from "@shared/types";
+import type {
+  EmbeddingModelStatusView,
+  HfModelFile,
+  HfModelSearchResult,
+  LlmfitResult,
+  MemoryEmbeddingStatus,
+  MigrationHealth,
+} from "@shared/types";
+
+type SemanticSearchState = "ready" | "preparing" | "disabled";
 import type { SettingsTabId } from "@renderer/features/settings/components/tabs/types";
 import type { ToastType } from "@shared/ui/ToastContext";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
@@ -22,6 +31,17 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     error?: string;
   } | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [llmfitResult, setLlmfitResult] = useState<LlmfitResult | null>(null);
+  const [llmfitLoading, setLlmfitLoading] = useState(false);
+  const [embeddingStatus, setEmbeddingStatus] = useState<EmbeddingModelStatusView | null>(null);
+  const [embeddingProgress, setEmbeddingProgress] = useState<{
+    stage: "downloading" | "complete" | "error";
+    pct: number;
+    error?: string;
+  } | null>(null);
+  const [embeddingDownloading, setEmbeddingDownloading] = useState(false);
+  const [memoryEmbeddingStatus, setMemoryEmbeddingStatus] =
+    useState<MemoryEmbeddingStatus | null>(null);
 
   const refreshMigrationHealth = useCallback(async () => {
     const response = await api.maintenance.getMigrationHealth();
@@ -41,8 +61,43 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
         setLocalLlmBinaryPath(localLlm.binaryPath);
       }
       await refreshMigrationHealth();
+
+      const embeddingRes = await api.settings.getEmbeddingModelStatus();
+      if (embeddingRes.success && embeddingRes.data) {
+        setEmbeddingStatus(embeddingRes.data);
+      }
+      if (currentProject) {
+        const memoryRes = await api.memoryAdmin.getEmbeddingStatus(currentProject.id);
+        if (memoryRes.success && memoryRes.data) {
+          setMemoryEmbeddingStatus(memoryRes.data);
+        }
+      }
+
+      // 하드웨어 추천(llmfit)은 외부 바이너리 호출이라 느릴 수 있어 비차단으로 로드.
+      setLlmfitLoading(true);
+      const llmfitRes = await api.settings.getLlmfitRecommendations({ limit: 10 });
+      if (llmfitRes.success && llmfitRes.data) {
+        setLlmfitResult(llmfitRes.data);
+      }
+      setLlmfitLoading(false);
     })();
-  }, [activeTab, refreshMigrationHealth]);
+  }, [activeTab, currentProject, refreshMigrationHealth]);
+
+  useEffect(() => {
+    const unsubscribe = api.settings.onEmbeddingModelDownloadProgress((progress) => {
+      setEmbeddingProgress(progress);
+      if (progress.stage === "complete") {
+        setEmbeddingDownloading(false);
+        void api.settings.getEmbeddingModelStatus().then((response) => {
+          if (response.success && response.data) {
+            setEmbeddingStatus(response.data);
+          }
+        });
+      }
+      if (progress.stage === "error") setEmbeddingDownloading(false);
+    });
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     const unsubscribe = api.settings.onModelDownloadProgress((progress) => {
@@ -136,6 +191,30 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     }
   }, [localLlmBinaryPath, localLlmModelPath, showToast, t]);
 
+  const handleDownloadEmbeddingModel = useCallback(async (): Promise<void> => {
+    setEmbeddingDownloading(true);
+    setEmbeddingProgress(null);
+    try {
+      const response = await api.settings.downloadEmbeddingModel();
+      if (response.success) return;
+      setEmbeddingDownloading(false);
+      showToast(response.error?.message ?? t("settings.localLlm.embedding.downloadFailed"), "error");
+    } catch (error) {
+      setEmbeddingDownloading(false);
+      const message = error instanceof Error ? error.message : t("settings.localLlm.embedding.downloadFailed");
+      showToast(message, "error");
+    }
+  }, [showToast, t]);
+
+  // 의미 검색 게이트: 임베딩 모델 미설치=비활성, 임베딩 잡 진행 중=준비중, 그 외=준비됨.
+  const pendingEmbeddings =
+    (memoryEmbeddingStatus?.pendingCount ?? 0) + (memoryEmbeddingStatus?.runningCount ?? 0);
+  const semanticSearchState: SemanticSearchState = !embeddingStatus?.installed
+    ? "disabled"
+    : pendingEmbeddings > 0
+      ? "preparing"
+      : "ready";
+
   return {
     isBusy,
     migrationHealth,
@@ -149,5 +228,12 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     handleSearchHfModels,
     handleGetHfModelFiles,
     handleToggleLocalLlm,
+    llmfitResult,
+    llmfitLoading,
+    embeddingStatus,
+    embeddingProgress,
+    embeddingDownloading,
+    handleDownloadEmbeddingModel,
+    semanticSearchState,
   };
 }
