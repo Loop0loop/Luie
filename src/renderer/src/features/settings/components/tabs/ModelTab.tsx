@@ -1,8 +1,15 @@
 import { useCallback, useState } from "react";
 import type { TFunction } from "i18next";
-import { CheckCircle, Download, HardDrive, Loader2, Search } from "lucide-react";
+import { CheckCircle, Cpu, Download, HardDrive, Loader2, Search, Sparkles } from "lucide-react";
 import { Button } from "@renderer/components/ui/button";
-import type { HfModelFile, HfModelSearchResult } from "@shared/types";
+import type {
+  EmbeddingModelStatusView,
+  HfModelFile,
+  HfModelSearchResult,
+  LlmfitResult,
+} from "@shared/types";
+
+type SemanticSearchState = "ready" | "preparing" | "disabled";
 
 interface ModelTabProps {
   t: TFunction;
@@ -16,6 +23,13 @@ interface ModelTabProps {
   onSearchHfModels: (query: string) => Promise<HfModelSearchResult[]>;
   onGetHfModelFiles: (repoId: string) => Promise<HfModelFile[]>;
   onToggleLocalLlm: (enabled: boolean) => Promise<void>;
+  llmfitResult: LlmfitResult | null;
+  llmfitLoading: boolean;
+  embeddingStatus: EmbeddingModelStatusView | null;
+  embeddingProgress: { stage: "downloading" | "complete" | "error"; pct: number; error?: string } | null;
+  embeddingDownloading: boolean;
+  onDownloadEmbeddingModel: () => Promise<void>;
+  semanticSearchState: SemanticSearchState;
 }
 
 export function ModelTab({
@@ -30,6 +44,13 @@ export function ModelTab({
   onSearchHfModels,
   onGetHfModelFiles,
   onToggleLocalLlm,
+  llmfitResult,
+  llmfitLoading,
+  embeddingStatus,
+  embeddingProgress,
+  embeddingDownloading,
+  onDownloadEmbeddingModel,
+  semanticSearchState,
 }: ModelTabProps) {
   const [hfQuery, setHfQuery] = useState("");
   const [hfResults, setHfResults] = useState<HfModelSearchResult[]>([]);
@@ -121,6 +142,30 @@ export function ModelTab({
       filename: selectedFile.filename,
     });
   }, [onDownloadLocalModel, selectedFile, selectedRepo]);
+
+  const fitBadgeClass = (
+    level: "perfect" | "good" | "marginal" | "too_tight" | "unknown",
+  ): string => {
+    switch (level) {
+      case "perfect":
+        return "bg-success/15 text-success border border-success/30";
+      case "good":
+        return "bg-accent/15 text-accent border border-accent/30";
+      case "marginal":
+        return "bg-warning/15 text-warning border border-warning/30";
+      case "too_tight":
+        return "bg-danger/15 text-danger border border-danger/30";
+      default:
+        return "bg-surface text-muted border border-border";
+    }
+  };
+
+  const semanticDotClass =
+    semanticSearchState === "ready"
+      ? "bg-success"
+      : semanticSearchState === "preparing"
+        ? "bg-warning animate-pulse"
+        : "bg-border";
 
   return (
     <div className="space-y-6 p-1">
@@ -332,6 +377,131 @@ export function ModelTab({
             </div>
           )}
         </div>
+      </div>
+
+      {/* 의미 검색 상태 + 임베딩 모델 (6.2) */}
+      <div className="rounded-control bg-surface border border-border p-3 space-y-3">
+        <div className="flex items-start gap-2">
+          <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-control border border-border bg-bg text-muted">
+            <Sparkles className="h-3.5 w-3.5" />
+          </div>
+          <div className="min-w-0 space-y-1">
+            <p className="text-xs font-medium text-fg-secondary">
+              {t("settings.localLlm.embedding.title")}
+            </p>
+            <p className="text-xs text-muted">
+              {t("settings.localLlm.embedding.description")}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 text-xs">
+          <span className={`h-2 w-2 rounded-full ${semanticDotClass}`} />
+          <span className="text-fg-secondary">
+            {t(`settings.localLlm.embedding.semantic.${semanticSearchState}`)}
+          </span>
+        </div>
+
+        {embeddingStatus?.installed ? (
+          <div className="flex items-center gap-1.5 text-xs text-success">
+            <CheckCircle className="w-3.5 h-3.5" />
+            <span>
+              {t("settings.localLlm.embedding.installed", { name: embeddingStatus.displayName })}
+            </span>
+          </div>
+        ) : (
+          <p className="text-xs text-muted">{t("settings.localLlm.embedding.notInstalled")}</p>
+        )}
+
+        {embeddingDownloading && embeddingProgress?.stage === "downloading" && (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-xs text-muted">
+              <span>{t("settings.localLlm.embedding.downloading")}</span>
+              <span>{embeddingProgress.pct}%</span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-bg">
+              <div
+                className="h-full bg-accent transition-all duration-300"
+                style={{ width: `${embeddingProgress.pct}%` }}
+              />
+            </div>
+          </div>
+        )}
+        {embeddingProgress?.error && (
+          <p className="text-xs text-danger">{embeddingProgress.error}</p>
+        )}
+
+        {!embeddingStatus?.installed && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void onDownloadEmbeddingModel()}
+            disabled={embeddingDownloading || isBusy}
+            className="w-full"
+          >
+            {embeddingDownloading ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span className="ml-1.5">{t("settings.localLlm.embedding.downloading")}</span>
+              </>
+            ) : (
+              t("settings.localLlm.embedding.download")
+            )}
+          </Button>
+        )}
+      </div>
+
+      {/* 하드웨어 맞춤 추천 모델 (6.1) */}
+      <div className="rounded-control bg-surface border border-border p-3 space-y-3">
+        <div className="flex items-start gap-2">
+          <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-control border border-border bg-bg text-muted">
+            <Cpu className="h-3.5 w-3.5" />
+          </div>
+          <div className="min-w-0 space-y-1">
+            <p className="text-xs font-medium text-fg-secondary">
+              {t("settings.localLlm.llmfit.title")}
+            </p>
+            <p className="text-xs text-muted">{t("settings.localLlm.llmfit.description")}</p>
+          </div>
+        </div>
+
+        {llmfitLoading ? (
+          <div className="flex items-center gap-1.5 text-xs text-muted">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <span>{t("settings.localLlm.llmfit.loading")}</span>
+          </div>
+        ) : llmfitResult?.available ? (
+          llmfitResult.recommendations.length > 0 ? (
+            <div className="max-h-64 divide-y divide-border overflow-y-auto rounded-control border border-border bg-panel">
+              {llmfitResult.recommendations.map((rec) => (
+                <div key={rec.name} className="space-y-1 px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-xs font-medium text-fg">{rec.name}</span>
+                    <span
+                      className={`shrink-0 rounded-control px-2 py-0.5 text-[11px] ${fitBadgeClass(rec.fitLevel)}`}
+                    >
+                      {t(`settings.localLlm.llmfit.fit.${rec.fitLevel}`)}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted">
+                    {rec.paramsB !== null && <span>{rec.paramsB}B</span>}
+                    {rec.estimatedTps !== null && (
+                      <span>{t("settings.localLlm.llmfit.speed", { tps: rec.estimatedTps })}</span>
+                    )}
+                    {rec.memoryRequiredGb !== null && (
+                      <span>{t("settings.localLlm.llmfit.memory", { gb: rec.memoryRequiredGb })}</span>
+                    )}
+                    {rec.bestQuant && <span>{rec.bestQuant}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted">{t("settings.localLlm.llmfit.noResults")}</p>
+          )
+        ) : (
+          <p className="text-xs text-muted">{t("settings.localLlm.llmfit.unavailable")}</p>
+        )}
       </div>
 
       <div className="rounded-control bg-surface border border-border p-3 space-y-2">

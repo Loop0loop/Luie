@@ -238,6 +238,13 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                   onSearchHfModels={settings.handleSearchHfModels}
                   onGetHfModelFiles={settings.handleGetHfModelFiles}
                   onToggleLocalLlm={settings.handleToggleLocalLlm}
+                  llmfitResult={settings.llmfitResult}
+                  llmfitLoading={settings.llmfitLoading}
+                  embeddingStatus={settings.embeddingStatus}
+                  embeddingProgress={settings.embeddingProgress}
+                  embeddingDownloading={settings.embeddingDownloading}
+                  onDownloadEmbeddingModel={settings.handleDownloadEmbeddingModel}
+                  semanticSearchState={settings.semanticSearchState}
                 />
               )}
 

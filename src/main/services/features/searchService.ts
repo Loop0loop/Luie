@@ -258,11 +258,20 @@ export class SearchService {
             : true
         );
       if (shouldRunVectorSearch) {
-        const runtime = await resolveEmbeddingRuntimeClient(input.projectId);
-        const vecs = await runtime.embed([normalizedQuery]);
-        const queryVector = vecs?.[0] ?? null;
-        if (queryVector && queryVector.length > 0) {
-          denseRanks = await this.searchByVector(input.projectId, queryVector, Math.max(limit, 50));
+        // 임베딩 미가용(런타임 해석 실패/embed null/예외)이어도 FTS(+LIKE) 폴백을
+        // 보장한다(P2). 이 블록은 절대 throw 를 바깥으로 전파하지 않는다.
+        try {
+          const runtime = await resolveEmbeddingRuntimeClient(input.projectId);
+          const vecs = await runtime.embed([normalizedQuery]);
+          const queryVector = vecs?.[0] ?? null;
+          if (queryVector && queryVector.length > 0) {
+            denseRanks = await this.searchByVector(input.projectId, queryVector, Math.max(limit, 50));
+          }
+        } catch (error) {
+          logger.warn("Embedding unavailable; fallback to FTS only", {
+            projectId: input.projectId,
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
       }
       const merged = this.mergeWithRRF(

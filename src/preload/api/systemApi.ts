@@ -151,6 +151,26 @@ export function createSystemApi({
           ipcRenderer.removeListener(IPC_CHANNELS.MODEL_DOWNLOAD_PROGRESS, listener);
         };
       },
+      getEmbeddingModelStatus: () =>
+        safeInvoke(IPC_CHANNELS.EMBEDDING_MODEL_STATUS),
+      downloadEmbeddingModel: () =>
+        safeInvoke(IPC_CHANNELS.EMBEDDING_MODEL_DOWNLOAD),
+      onEmbeddingModelDownloadProgress: (callback) => {
+        const listener = (_event: unknown, data: {
+          stage: "downloading" | "complete" | "error";
+          pct: number;
+          error?: string;
+        }) => {
+          callback(data);
+        };
+        ipcRenderer.on(IPC_CHANNELS.EMBEDDING_MODEL_DOWNLOAD_PROGRESS, listener);
+        return () => {
+          ipcRenderer.removeListener(
+            IPC_CHANNELS.EMBEDDING_MODEL_DOWNLOAD_PROGRESS,
+            listener,
+          );
+        };
+      },
       reset: () => safeInvoke(IPC_CHANNELS.SETTINGS_RESET),
     },
     recovery: {

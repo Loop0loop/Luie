@@ -19,6 +19,22 @@ const getErrorMessage = (error: unknown): string => {
   return "Failed to initialize database";
 };
 
+/**
+ * llmfit 바이너리를 백그라운드로 설치 시도한다(R6.5/R7.1).
+ * 비차단: 설치기는 실패해도 throw 하지 않으며, 어떤 결과든 부팅을 막지 않는다.
+ */
+const triggerLlmfitInstall = async (): Promise<void> => {
+  try {
+    const { llmfitInstaller } = await import("../services/llm/llmfitInstaller.js");
+    const status = await llmfitInstaller.ensureInstalled();
+    logger.info("llmfit install attempted during bootstrap", {
+      installed: status.installed,
+    });
+  } catch (error) {
+    logger.warn("llmfit install trigger failed (non-blocking)", error);
+  }
+};
+
 const broadcastBootstrapStatus = (): void => {
   for (const win of BrowserWindow.getAllWindows()) {
     if (win.isDestroyed()) continue;
@@ -59,6 +75,8 @@ export const ensureBootstrapReady = async (): Promise<AppBootstrapStatus> => {
         isReady: true,
       });
       logger.info("Bootstrap completed");
+      // 부팅 완료 후 비차단으로 llmfit 설치를 트리거(부팅 흐름과 분리, R7.1).
+      void triggerLlmfitInstall();
       return bootstrapStatus;
     })
     .catch((error) => {
