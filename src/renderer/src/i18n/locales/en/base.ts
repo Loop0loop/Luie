@@ -155,6 +155,23 @@ export const enBase = {
         failed: "Failed to rebuild memory.",
         started: "Memory rebuild started. ({{count}} jobs queued)",
       },
+      apiKeys: {
+        title: "Cloud AI Model Settings (API Key)",
+        desc: "Enter OpenAI and Gemini API Keys to connect cloud models. Under packaged environments, requests are proxied via Supabase.",
+        openaiKey: "OpenAI API Key",
+        geminiKey: "Gemini API Key",
+        placeholder: "Enter your API Key",
+        save: "Save",
+        saving: "Saving...",
+        saved: "API Keys have been saved securely.",
+        saveFailed: "Failed to save API Keys.",
+        missingAlert: {
+          title: "Missing AI Configuration",
+          message: "The API Key or configuration required to run the selected AI model is missing. Would you like to go to the Model tab in Settings to complete the configuration?",
+          confirm: "Go to Settings",
+          cancel: "Cancel",
+        },
+      },
     },
     appearance: {
       baseTheme: {

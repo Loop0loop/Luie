@@ -1,6 +1,28 @@
 import { createHash, randomBytes } from "node:crypto";
-import { safeStorage, shell } from "electron";
+import { createRequire } from "node:module";
 import { createLogger } from "../../../../shared/logger/index.js";
+
+const requireFn = createRequire(import.meta.url);
+
+function getElectronSyncAuth(): {
+  safeStorage?: {
+    isEncryptionAvailable(): boolean;
+    encryptString(plain: string): Buffer;
+    decryptString(cipher: Buffer): string;
+  };
+  shell?: {
+    openExternal(url: string): Promise<void>;
+  };
+} {
+  if (process.env.LUIE_IS_UTILITY_PROCESS === "1") {
+    return {};
+  }
+  try {
+    return requireFn("electron");
+  } catch {
+    return {};
+  }
+}
 import type { SyncProvider, SyncSettings } from "../../../../shared/types/index.js";
 import { settingsManager } from "../../../manager/settingsManager.js";
 import {
@@ -75,8 +97,9 @@ const resolveOAuthRedirectUri = (): string => {
 };
 
 const encryptSecret = (plain: string, scope: SecretScope = "token"): string => {
-  if (safeStorage.isEncryptionAvailable()) {
-    const cipher = safeStorage.encryptString(plain).toString("base64");
+  const electron = getElectronSyncAuth();
+  if (electron.safeStorage?.isEncryptionAvailable()) {
+    const cipher = electron.safeStorage.encryptString(plain).toString("base64");
     return `${TOKEN_CODEC_SAFE_PREFIX}${cipher}`;
   }
   if (scope === "token") {
@@ -91,9 +114,10 @@ const decodeLegacySecret = (
   scope: SecretScope = "token",
 ): DecodedSecret => {
   const payload = Buffer.from(legacyCipher, "base64");
-  if (safeStorage.isEncryptionAvailable()) {
+  const electron = getElectronSyncAuth();
+  if (electron.safeStorage?.isEncryptionAvailable()) {
     try {
-      const plain = safeStorage.decryptString(payload);
+      const plain = electron.safeStorage.decryptString(payload);
       return {
         plain,
         migratedCipher: encryptSecret(plain, scope),
@@ -118,15 +142,16 @@ const decodeLegacySecret = (
 };
 
 const decodeSecret = (cipher: string, scope: SecretScope = "token"): DecodedSecret => {
+  const electron = getElectronSyncAuth();
   if (cipher.startsWith(TOKEN_CODEC_SAFE_PREFIX)) {
-    if (!safeStorage.isEncryptionAvailable()) {
+    if (!electron.safeStorage?.isEncryptionAvailable()) {
       throw new Error(SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE);
     }
     const raw = cipher.slice(TOKEN_CODEC_SAFE_PREFIX.length);
     const payload = Buffer.from(raw, "base64");
     try {
       return {
-        plain: safeStorage.decryptString(payload),
+        plain: electron.safeStorage.decryptString(payload),
       };
     } catch (error) {
       throw new Error(
@@ -139,14 +164,14 @@ const decodeSecret = (cipher: string, scope: SecretScope = "token"): DecodedSecr
   }
 
   if (cipher.startsWith(TOKEN_CODEC_PLAIN_PREFIX)) {
-    if (scope === "token" && !safeStorage.isEncryptionAvailable()) {
+    if (scope === "token" && !electron.safeStorage?.isEncryptionAvailable()) {
       throw new Error(SYNC_TOKEN_SECURE_STORAGE_UNAVAILABLE);
     }
     const raw = cipher.slice(TOKEN_CODEC_PLAIN_PREFIX.length);
     const payload = Buffer.from(raw, "base64");
     const plain = payload.toString("utf-8");
     const migratedCipher =
-      safeStorage.isEncryptionAvailable() ? encryptSecret(plain, scope) : undefined;
+      electron.safeStorage?.isEncryptionAvailable() ? encryptSecret(plain, scope) : undefined;
     return {
       plain,
       migratedCipher,
@@ -283,7 +308,11 @@ class SyncAuthService {
       authorizeUrl: authorizeUrl.toString(),
     });
 
-    await shell.openExternal(authorizeUrl.toString());
+    const electron = getElectronSyncAuth();
+    if (!electron.shell) {
+      throw new Error("Shell is unavailable in this environment");
+    }
+    await electron.shell.openExternal(authorizeUrl.toString());
   }
 
   async completeOAuthCallback(callbackUrl: string): Promise<SyncSession> {

@@ -157,6 +157,23 @@ export const jaBase = {
         failed: "メモリー再構成に失敗しました。",
         started: "メモリー再構成を開始しました。（{{count}}件のジョブを登録）",
       },
+      apiKeys: {
+        title: "クラウドAIモデル設定 (API Key)",
+        desc: "OpenAIおよびGeminiのAPI Keyを入力して、クラウドモデルと連携します。パッケージビルド環境では、Supabaseプロキシを経由して連携します。",
+        openaiKey: "OpenAI API Key",
+        geminiKey: "Gemini API Key",
+        placeholder: "API Keyを入力してください",
+        save: "保存",
+        saving: "保存中...",
+        saved: "API Keyが安全に保存されました。",
+        saveFailed: "API Keyの保存に失敗しました。",
+        missingAlert: {
+          title: "AI設定不足の案内",
+          message: "選択されたAIモデルを駆動するためのAPI Keyまたは必要な設定が不足しています。設定ページのモデルタブに移動して設定を完了しますか？",
+          confirm: "設定へ移動",
+          cancel: "キャンセル",
+        },
+      },
     },
     appearance: {
       baseTheme: {

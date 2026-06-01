@@ -3,6 +3,7 @@ import type { ModelRuntimeClient } from "./modelRuntimeClient.js";
 import { DeterministicProvider } from "./providers/deterministicProvider.js";
 import { ExternalApiProvider } from "./providers/externalApiProvider.js";
 import { GeminiProvider } from "./providers/geminiProvider.js";
+import { settingsManager } from "../../manager/settingsManager.js";
 import type { SettingsManager } from "../../manager/settingsManager.js";
 import type { LlmRuntimeInfo } from "../../../shared/types/index.js";
 import type * as EmbeddingModelServiceModule from "./embeddingModelService.js";
@@ -179,6 +180,7 @@ function loadEnvGeminiConfig(): EnvGeminiConfig | null {
     process.env.GEMINI_API_KEY?.trim() ||
     process.env.GOOGLE_GCP_API?.trim() ||
     process.env.GOOGLE_API_KEY?.trim() ||
+    settingsManager.getLlmSettings().geminiApiKey?.trim() ||
     "";
   const model = process.env.GEMINI_MODEL?.trim() ?? "gemini-2.5-flash-lite";
   if (!apiKey || !model) return null;
@@ -188,7 +190,10 @@ function loadEnvGeminiConfig(): EnvGeminiConfig | null {
 }
 
 function loadEnvOpenAiConfig(): EnvOpenAiConfig | null {
-  const apiKey = process.env.OPENAI_API_KEY?.trim() ?? "";
+  const apiKey =
+    process.env.OPENAI_API_KEY?.trim() ||
+    settingsManager.getLlmSettings().openaiApiKey?.trim() ||
+    "";
   const model = process.env.OPENAI_MODEL?.trim() ?? "gpt-5.4-nano";
   if (!apiKey || !model) return null;
   const embeddingModel = process.env.OPENAI_EMBEDDING_MODEL?.trim() || undefined;

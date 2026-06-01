@@ -1085,3 +1085,8 @@ export const graphPluginUninstallArgsSchema = z.tuple([
 export const graphPluginApplyTemplateArgsSchema = z.tuple([
   graphPluginApplyTemplateSchema,
 ]);
+
+export const settingsLlmKeysSchema = z.strictObject({
+  openaiApiKey: z.string().max(2048),
+  geminiApiKey: z.string().max(2048),
+});

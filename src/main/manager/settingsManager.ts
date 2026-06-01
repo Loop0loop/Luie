@@ -3,7 +3,7 @@
  */
 
 import Store from "electron-store";
-import { app } from "electron";
+import { resolveUserDataPath } from "../utils/userDataPath.js";
 import { createLogger } from "../../shared/logger/index.js";
 import { access } from "node:fs/promises";
 import type {
@@ -38,7 +38,7 @@ export class SettingsManager {
   private store: Store<AppSettings>;
 
   private constructor() {
-    const settingsPath = app.getPath("userData");
+    const settingsPath = resolveUserDataPath();
 
     // 기존(레거시) 경로: userData/luie/settings/settings.json
     // app.getPath('userData')가 이미 '.../luie'인 경우 이중으로 들어가 혼동을 유발했음
@@ -278,6 +278,8 @@ export class SettingsManager {
 
   getLlmSettings(): {
     preferredProvider?: "auto" | "sidecar" | "ollama" | "openai" | "gemini";
+    openaiApiKey?: string;
+    geminiApiKey?: string;
     ollama?: { baseUrl?: string; chatModel?: string; embeddingModel?: string; apiKey?: string };
     ragTemperature?: number;
     ragMaxTokens?: number;
@@ -287,6 +289,8 @@ export class SettingsManager {
     const llm = this.store.get("llm") ?? {};
     return {
       preferredProvider: (llm as { preferredProvider?: "auto" | "sidecar" | "ollama" | "openai" | "gemini" }).preferredProvider,
+      openaiApiKey: (llm as { openaiApiKey?: string }).openaiApiKey,
+      geminiApiKey: (llm as { geminiApiKey?: string }).geminiApiKey,
       ollama: (llm as { ollama?: { baseUrl?: string; chatModel?: string; embeddingModel?: string; apiKey?: string } }).ollama,
       ragTemperature: (llm as { ragTemperature?: number }).ragTemperature,
       ragMaxTokens: (llm as { ragMaxTokens?: number }).ragMaxTokens,
@@ -297,6 +301,8 @@ export class SettingsManager {
 
   setLlmSettings(settings: {
     preferredProvider?: "auto" | "sidecar" | "ollama" | "openai" | "gemini";
+    openaiApiKey?: string;
+    geminiApiKey?: string;
     ollama?: { baseUrl?: string; chatModel?: string; embeddingModel?: string; apiKey?: string };
     ragTemperature?: number;
     ragMaxTokens?: number;

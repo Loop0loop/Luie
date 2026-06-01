@@ -11,6 +11,7 @@ import {
   settingsShortcutsSchema,
   settingsAutoSaveSchema,
   windowBoundsSchema,
+  settingsLlmKeysSchema,
 } from "../../../shared/schemas/index.js";
 import { z } from "zod";
 import { BrowserWindow } from "electron";
@@ -230,6 +231,21 @@ export function registerSettingsIPCHandlers(logger: LoggerLike): void {
         const settingsManager = await loadSettingsManager();
         settingsManager.setLlmSettings({
           preferredProvider: input.provider,
+        });
+        invalidateModelRuntimeCache();
+        return { ok: true };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_SET_LLM_KEYS,
+      logTag: "SETTINGS_SET_LLM_KEYS",
+      failMessage: "Failed to set LLM keys",
+      argsSchema: z.tuple([settingsLlmKeysSchema]),
+      handler: async (input: { openaiApiKey: string; geminiApiKey: string }) => {
+        const settingsManager = await loadSettingsManager();
+        settingsManager.setLlmSettings({
+          openaiApiKey: input.openaiApiKey,
+          geminiApiKey: input.geminiApiKey,
         });
         invalidateModelRuntimeCache();
         return { ok: true };
