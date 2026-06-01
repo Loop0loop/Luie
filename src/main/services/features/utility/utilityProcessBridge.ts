@@ -33,7 +33,14 @@ type UtilityInboundMessage =
   | { type: "shutdown"; requestId?: string }
   | { type: "request"; requestId: string; method: "ragQa.ask"; payload: RagQaRequest }
   | { type: "request"; requestId: string; method: "ragQa.stop"; payload?: { runId?: string } }
-  | { type: "request"; requestId: string; method: "embedding.embed"; payload: { projectId: string; texts: string[] } };
+  | { type: "request"; requestId: string; method: "embedding.embed"; payload: { projectId: string; texts: string[] } }
+  | {
+      type: "request";
+      requestId: string;
+      method: "sidecar.start";
+      payload: { binaryPath: string; modelPath: string; options?: { gpuLayers?: number; contextSize?: number } };
+    }
+  | { type: "request"; requestId: string; method: "sidecar.stop"; payload?: never };
 
 type PendingRequest = {
   resolve: (value: unknown) => void;
@@ -222,6 +229,26 @@ export class UtilityProcessBridge {
     return (await this.request("embedding.embed", { projectId, texts })) as number[][] | null;
   }
 
+  async startSidecar(
+    binaryPath: string,
+    modelPath: string,
+    options?: { gpuLayers?: number; contextSize?: number },
+  ): Promise<string> {
+    if (!this.utilityChild) {
+      const started = await this.start();
+      if (!started || !this.utilityChild) {
+        throw new Error("Utility process is not running");
+      }
+    }
+    const result = await this.request("sidecar.start", { binaryPath, modelPath, options });
+    return (result as { baseUrl: string }).baseUrl;
+  }
+
+  async stopSidecar(): Promise<void> {
+    if (!this.utilityChild) return;
+    await this.request("sidecar.stop");
+  }
+
   private async ping(): Promise<boolean> {
     const child = this.utilityChild;
     if (!child) return false;
@@ -251,15 +278,20 @@ export class UtilityProcessBridge {
     payload: { projectId: string; texts: string[] },
   ): Promise<unknown>;
   private async request(
-    method: "ragQa.ask" | "ragQa.stop" | "embedding.embed",
-    payload?: RagQaRequest | { runId?: string } | { projectId: string; texts: string[] },
+    method: "sidecar.start",
+    payload: { binaryPath: string; modelPath: string; options?: { gpuLayers?: number; contextSize?: number } },
+  ): Promise<unknown>;
+  private async request(method: "sidecar.stop"): Promise<unknown>;
+  private async request(
+    method: "ragQa.ask" | "ragQa.stop" | "embedding.embed" | "sidecar.start" | "sidecar.stop",
+    payload?: unknown,
   ): Promise<unknown> {
     const child = this.utilityChild;
     if (!child) throw new Error("Utility process is not running");
     const requestId = this.nextRequestId();
     return await new Promise<unknown>((resolve, reject) => {
       const timeoutMs =
-        method === "ragQa.stop"
+        method === "ragQa.stop" || method === "sidecar.stop"
           ? REQUEST_TIMEOUT_STOP_MS
           : method === "embedding.embed"
             ? REQUEST_TIMEOUT_EMBED_MS
@@ -284,6 +316,23 @@ export class UtilityProcessBridge {
           requestId,
           method: "embedding.embed",
           payload: payload as { projectId: string; texts: string[] },
+        } satisfies UtilityInboundMessage);
+        return;
+      }
+      if (method === "sidecar.start") {
+        child.postMessage({
+          type: "request",
+          requestId,
+          method: "sidecar.start",
+          payload: payload as { binaryPath: string; modelPath: string; options?: { gpuLayers?: number; contextSize?: number } },
+        } satisfies UtilityInboundMessage);
+        return;
+      }
+      if (method === "sidecar.stop") {
+        child.postMessage({
+          type: "request",
+          requestId,
+          method: "sidecar.stop",
         } satisfies UtilityInboundMessage);
         return;
       }

@@ -1,60 +1,60 @@
-import { EventEmitter } from "node:events";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const spawnMock = vi.hoisted(() => vi.fn());
-const createServerMock = vi.hoisted(() => vi.fn());
+const startSidecarMock = vi.hoisted(() => vi.fn());
+const stopSidecarMock = vi.hoisted(() => vi.fn());
+const rmMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 
-vi.mock("node:child_process", async () => {
-  const actual = await vi.importActual<typeof import("node:child_process")>("node:child_process");
+vi.mock("../../../src/main/services/features/utility/utilityProcessBridge.js", () => {
   return {
-    ...actual,
-    spawn: spawnMock,
-  };
-});
-
-vi.mock("node:net", async () => {
-  const actual = await vi.importActual<typeof import("node:net")>("node:net");
-  return {
-    ...actual,
-    default: {
-      ...actual.default,
-      createServer: createServerMock,
+    utilityProcessBridge: {
+      startSidecar: startSidecarMock,
+      stopSidecar: stopSidecarMock,
     },
-    createServer: createServerMock,
   };
 });
 
-class FakeChildProcess extends EventEmitter {
-  stderr = new EventEmitter();
-  kill = vi.fn((signal?: string) => {
-    if (signal === "SIGTERM") {
-      queueMicrotask(() => this.emit("exit", 0));
-    }
-    return true;
-  });
-}
+vi.mock("node:fs/promises", async () => {
+  const actual = await vi.importActual("node:fs/promises") as Record<string, unknown>;
+  return {
+    ...actual,
+    rm: rmMock,
+  };
+});
+
+const setLocalLlmSettingsMock = vi.fn();
+const getLocalLlmSettingsMock = vi.fn().mockReturnValue({
+  enabled: true,
+  binaryPath: "/tmp/bin/llama-server",
+});
+
+vi.mock("../../../src/main/manager/settingsManager.js", () => {
+  return {
+    settingsManager: {
+      getLocalLlmSettings: getLocalLlmSettingsMock,
+      setLocalLlmSettings: setLocalLlmSettingsMock,
+    },
+  };
+});
+
+vi.mock("../../manager/settingsManager.js", () => {
+  return {
+    settingsManager: {
+      getLocalLlmSettings: getLocalLlmSettingsMock,
+      setLocalLlmSettings: setLocalLlmSettingsMock,
+    },
+  };
+});
 
 import { SidecarManager } from "../../../src/main/services/llm/sidecarManager.js";
 
 describe("SidecarManager", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.stubGlobal("fetch", vi.fn(async () => new Response("ok", { status: 200 })));
-    createServerMock.mockImplementation(() => ({
-      listen: (_port: number, _host: string, callback: () => void) => {
-        callback();
-      },
-      address: () => ({ port: 32123 }),
-      close: (callback: () => void) => {
-        callback();
-      },
-      on: vi.fn(),
-    }));
+    startSidecarMock.mockResolvedValue("http://127.0.0.1:32123");
+    stopSidecarMock.mockResolvedValue(undefined);
   });
 
-  it("spawns llama-server with localhost HTTP args", async () => {
-    const proc = new FakeChildProcess();
-    spawnMock.mockReturnValue(proc);
+  it("spawns llama-server via utilityProcessBridge proxy", async () => {
     const manager = new SidecarManager();
 
     const baseUrl = await manager.ensureStarted("/tmp/bin/llama-server", "/tmp/model.gguf", {
@@ -62,27 +62,18 @@ describe("SidecarManager", () => {
       contextSize: 4096,
     });
 
-    expect(baseUrl).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
-    expect(spawnMock).toHaveBeenCalledTimes(1);
-    expect(spawnMock.mock.calls[0]?.[0]).toBe("/tmp/bin/llama-server");
-    expect(spawnMock.mock.calls[0]?.[1]).toEqual(expect.arrayContaining([
-      "--model",
-      "/tmp/model.gguf",
-      "--host",
-      "127.0.0.1",
-      "--ctx-size",
-      "4096",
-      "--n-gpu-layers",
-      "-1",
-    ]));
+    expect(baseUrl).toBe("http://127.0.0.1:32123");
+    expect(startSidecarMock).toHaveBeenCalledTimes(1);
+    expect(startSidecarMock).toHaveBeenCalledWith("/tmp/bin/llama-server", "/tmp/model.gguf", expect.objectContaining({
+      gpuLayers: -1,
+      contextSize: 4096,
+    }));
 
     await manager.stop();
-    expect(proc.kill).toHaveBeenCalledWith("SIGTERM");
+    expect(stopSidecarMock).toHaveBeenCalledTimes(1);
   });
 
-  it("joins concurrent starts into a single spawned process", async () => {
-    const proc = new FakeChildProcess();
-    spawnMock.mockReturnValue(proc);
+  it("joins concurrent starts into a single proxy call", async () => {
     const manager = new SidecarManager();
 
     const [first, second] = await Promise.all([
@@ -91,7 +82,26 @@ describe("SidecarManager", () => {
     ]);
 
     expect(first).toBe(second);
-    expect(spawnMock).toHaveBeenCalledTimes(1);
+    expect(first).toBe("http://127.0.0.1:32123");
+    expect(startSidecarMock).toHaveBeenCalledTimes(1);
     await manager.stop();
+  });
+
+  it("handles spawn failure gracefully by clearing configuration and deleting binaries", async () => {
+    const spawnError = new Error("spawn ENOENT");
+    (spawnError as unknown as { code: string }).code = "ENOENT";
+    startSidecarMock.mockRejectedValue(spawnError);
+
+    const manager = new SidecarManager();
+    vi.spyOn(manager, "getBinDir").mockReturnValue("/tmp/corrupted-bin");
+
+    await expect(manager.ensureStarted("/tmp/bin/llama-server", "/tmp/model.gguf")).rejects.toThrow("spawn ENOENT");
+
+    expect(setLocalLlmSettingsMock).toHaveBeenCalledWith(expect.objectContaining({
+      enabled: false,
+      binaryPath: undefined,
+    }));
+    
+    expect(rmMock).toHaveBeenCalledWith("/tmp/corrupted-bin", { recursive: true, force: true });
   });
 });
