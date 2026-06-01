@@ -13,6 +13,11 @@ node_modules/
 .bkit/runtime
 .bkit/state
 .bkit/snapshots
+.agents/bkit-marketplace
+.agents/caveman
+.agents/context-mode
+.agents/skill-codex
+.agents/superpowers-marketplace
 
 # Logs
 logs
