@@ -132,7 +132,6 @@ renderer API 접근
 - `src/renderer/src/i18n/locales/ko/base.ts`
 - `src/renderer/src/i18n/locales/ja/base.ts`
 - `src/renderer/src/i18n/locales/en/base.ts`
-- `src/renderer/src/features/canvas/components/shell/CanvasActivityShell.tsx`
 - `src/renderer/src/features/canvas/components/graph/GraphSurface.tsx`
 - `src/renderer/src/styles/global.css`
 - `src/renderer/src/features/project/hooks/useFileImport.ts`
@@ -219,6 +218,16 @@ renderer API 접근
 | `modelTabSections/types.ts` | ModelTab prop/progress/semantic state types | 41 |
 | `modelTabSections/index.ts` | model tab section 배럴 export | 12 |
 
+사실: `src/renderer/src/features/canvas/components/shell/CanvasActivityShell.tsx`는 canvas activity shell tab/toolbar/explorer orchestration과 graph mode 분기만 유지하도록 축소되어 204 LOC입니다. explorer tree node, graph filter sidebar, tab/toolbar key, folder traversal helper는 `canvas/components/shell/canvasActivityShellParts/index.ts` 배럴을 통해 제공합니다.
+
+| Canvas activity shell part | 책임 | LOC |
+| --- | --- | ---: |
+| `canvasActivityShellParts/GraphFilterSidebar.tsx` | graph mode scenario analysis sidebar and filters | 217 |
+| `canvasActivityShellParts/TreeNode.tsx` | Obsidian-style explorer tree recursive node | 107 |
+| `canvasActivityShellParts/constants.ts` | tab/toolbar i18n key maps | 11 |
+| `canvasActivityShellParts/explorerTree.ts` | folder id traversal for expand/collapse all | 17 |
+| `canvasActivityShellParts/index.ts` | canvas activity shell helper 배럴 export | 4 |
+
 ## 위험 지점
 
 의견:
@@ -230,6 +239,7 @@ renderer API 접근
 - `worldBuildingStore.actions.ts`와 `worldBuildingActions/**`는 graph load, replica merge, persistence queue, mutation version, CRUD mutation 계약이 맞물립니다.
 - `worldPackageStorage.ts`와 `worldPackageStorageHelpers/**`는 replica storage, canonical `.luie` package, legacy localStorage migration 계약이 맞물립니다.
 - `ModelTab.tsx`와 `modelTabSections/**`는 local LLM, embedding, llmfit, API key 설정 UI 계약이 한 화면에서 맞물립니다.
+- `CanvasActivityShell.tsx`와 `canvasActivityShellParts/**`는 canvas explorer shell, graph mode sidebar, demo toast action 계약이 맞물립니다.
 - `CanvasNodeInspector.tsx`의 직접 `window.api` memory 호출은 API 경계 예외입니다.
 
 ## 보존 불가침 경계
