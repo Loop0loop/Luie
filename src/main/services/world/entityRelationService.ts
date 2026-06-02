@@ -2,109 +2,32 @@
  * EntityRelation service — 세계관 6종 관계 CRUD + 그래프 조회
  */
 
-import { eq, asc, inArray, isNull, and } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
-import {
-    CANVAS_AUX_NODE_SUBTYPES,
-    MEMORY_DOMAIN_SOURCE_TYPES,
-} from "../../../shared/constants/memoryDomain.js";
-import {
-    isRelationAllowed,
-    isWorldEntityBackedType,
-} from "../../../shared/constants/worldRelationRules.js";
+import { isRelationAllowed } from "../../../shared/constants/worldRelationRules.js";
 import type {
     EntityRelationCreateInput,
     EntityRelationUpdateInput,
-    EntityRelation,
     WorldGraphData,
-    WorldGraphNode,
     WorldEntitySourceType,
-    WorldEntityType,
-    WorldEntityAttributes,
-    RelationKind,
 } from "../../../shared/types/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import { projectService } from "../core/projectService.js";
 import { db } from "../../database/index.js";
+import { entityRelation } from "../../database/schema.js";
+import { buildWorldGraph } from "./entityRelationGraph.js";
 import {
-    entityRelation,
-    character,
-    faction,
-    event,
-    term,
-    worldEntity,
-    project,
-    scene,
-    note,
-    synopsis,
-    plot,
-    scrapMemo,
-} from "../../database/schema.js";
+    cleanupOrphanRelationsAcrossProjects,
+    reconcileWorldEntityPointersAcrossProjects,
+} from "./entityRelationMaintenance.js";
+import {
+    type EntityRelationRawRow,
+    toEntityRelation,
+} from "./entityRelationMapper.js";
 import { buildCanonicalWorldEntityPointers } from "./entityRelationPointers.js";
 
 const logger = createLogger("EntityRelationService");
-
-type RawRow = {
-    id: string;
-    name?: string;
-    term?: string;
-    definition?: string | null;
-    category?: string | null;
-    description?: string | null;
-    firstAppearance?: string | null;
-    attributes?: string | null;
-    type?: string;
-    positionX?: number;
-    positionY?: number;
-    projectId?: string;
-    sourceId?: string;
-    sourceType?: string;
-    targetId?: string;
-    targetType?: string;
-    relation?: string;
-    sourceWorldEntityId?: string | null;
-    targetWorldEntityId?: string | null;
-    createdAt?: string | Date;
-    updatedAt?: string | Date;
-    [key: string]: unknown;
-};
-
-function parseAttributes(raw: string | null | undefined): WorldEntityAttributes | null {
-    if (!raw) return null;
-    try {
-        return JSON.parse(raw) as WorldEntityAttributes;
-    } catch {
-        return null;
-    }
-}
-
-function toEntityRelation(row: RawRow): EntityRelation {
-    const sourceType = (row.sourceType ?? "Character") as WorldEntitySourceType;
-    const targetType = (row.targetType ?? "Character") as WorldEntitySourceType;
-    const sourceId = String(row.sourceId ?? "");
-    const targetId = String(row.targetId ?? "");
-    const pointers = buildCanonicalWorldEntityPointers({
-        sourceId,
-        sourceType,
-        targetId,
-        targetType,
-    });
-    return {
-        id: row.id,
-        projectId: String(row.projectId ?? ""),
-        sourceId,
-        sourceType,
-        targetId,
-        targetType,
-        relation: (row.relation ?? "belongs_to") as RelationKind,
-        attributes: parseAttributes(row.attributes),
-        sourceWorldEntityId: pointers.sourceWorldEntityId,
-        targetWorldEntityId: pointers.targetWorldEntityId,
-        createdAt: (row.createdAt as string | Date) ?? new Date(),
-        updatedAt: (row.updatedAt as string | Date) ?? new Date(),
-    };
-}
 
 export class EntityRelationService {
     private async getClient() {
@@ -159,7 +82,7 @@ export class EntityRelationService {
             logger.info("Entity relation created", { relationId: result.id });
             await projectService.touchProject(input.projectId);
             await projectService.persistPackageAfterMutation(input.projectId, "entity-relation:create");
-            return toEntityRelation(result as RawRow);
+            return toEntityRelation(result as EntityRelationRawRow);
         } catch (error) {
             logger.error("Failed to create entity relation", error);
             if (error instanceof ServiceError) throw error;
@@ -251,7 +174,7 @@ export class EntityRelationService {
             logger.info("Entity relation updated", { relationId: updated.id });
             await projectService.touchProject(String(current.projectId));
             await projectService.persistPackageAfterMutation(String(current.projectId), "entity-relation:update");
-            return toEntityRelation(updated as RawRow);
+            return toEntityRelation(updated as EntityRelationRawRow);
         } catch (error) {
             logger.error("Failed to update entity relation", error);
             if (error instanceof ServiceError) throw error;
@@ -298,182 +221,7 @@ export class EntityRelationService {
     async getWorldGraph(projectId: string): Promise<WorldGraphData> {
         try {
             const client = await this.getClient();
-            const [characters, factions, events, terms, worldEntities, scenes, notes, synopses, plots, scraps, edges] = await Promise.all([
-                client.select().from(character).where(and(eq(character.projectId, projectId), isNull(character.deletedAt))),
-                client.select().from(faction).where(and(eq(faction.projectId, projectId), isNull(faction.deletedAt))),
-                client.select().from(event).where(and(eq(event.projectId, projectId), isNull(event.deletedAt))),
-                client.select().from(term).where(and(eq(term.projectId, projectId), isNull(term.deletedAt))),
-                client.select().from(worldEntity).where(and(eq(worldEntity.projectId, projectId), isNull(worldEntity.deletedAt))),
-                client.select().from(scene).where(and(eq(scene.projectId, projectId), isNull(scene.deletedAt))),
-                client.select().from(note).where(and(eq(note.projectId, projectId), isNull(note.deletedAt))),
-                client.select().from(synopsis).where(and(eq(synopsis.projectId, projectId), isNull(synopsis.deletedAt))),
-                client.select().from(plot).where(and(eq(plot.projectId, projectId), isNull(plot.deletedAt))),
-                client.select().from(scrapMemo).where(and(eq(scrapMemo.projectId, projectId), isNull(scrapMemo.deletedAt))),
-                client.select().from(entityRelation).where(eq(entityRelation.projectId, projectId)),
-            ]);
-
-            const nodes: WorldGraphNode[] = [
-                ...characters.map((c): WorldGraphNode => ({
-                    id: c.id,
-                    entityType: "Character" as WorldEntitySourceType,
-                    name: c.name,
-                    description: c.description,
-                    firstAppearance: c.firstAppearance,
-                    attributes: parseAttributes(c.attributes),
-                    positionX: 0,
-                    positionY: 0,
-                })),
-                ...factions.map((f): WorldGraphNode => ({
-                    id: f.id,
-                    entityType: "Faction" as WorldEntitySourceType,
-                    name: f.name,
-                    description: f.description,
-                    firstAppearance: f.firstAppearance,
-                    attributes: parseAttributes(f.attributes),
-                    positionX: 0,
-                    positionY: 0,
-                })),
-                ...events.map((e): WorldGraphNode => ({
-                    id: e.id,
-                    entityType: "Event" as WorldEntitySourceType,
-                    name: e.name,
-                    description: e.description,
-                    firstAppearance: e.firstAppearance,
-                    attributes: parseAttributes(e.attributes),
-                    positionX: 0,
-                    positionY: 0,
-                })),
-                ...terms.map((t): WorldGraphNode => ({
-                    id: t.id,
-                    entityType: "Term" as WorldEntitySourceType,
-                    name: t.term,
-                    description: t.definition ?? null,
-                    firstAppearance: t.firstAppearance,
-                    attributes: t.category ? { tags: [t.category] } : null,
-                    positionX: 0,
-                    positionY: 0,
-                })),
-                ...worldEntities.map((w): WorldGraphNode => ({
-                    id: w.id,
-                    entityType: (w.type ?? "Place") as WorldEntitySourceType,
-                    subType: (w.type ?? "Place") as WorldEntityType,
-                    name: w.name,
-                    description: w.description,
-                    firstAppearance: w.firstAppearance,
-                    attributes: parseAttributes(w.attributes),
-                    positionX: w.positionX ?? 0,
-                    positionY: w.positionY ?? 0,
-                })),
-                ...scenes.map((item): WorldGraphNode => ({
-                    id: item.id,
-                    entityType: "WorldEntity",
-                    subType: CANVAS_AUX_NODE_SUBTYPES.SCENE,
-                    name: `Scene · ${item.title}`,
-                    description: item.body?.slice(0, 240) ?? null,
-                    firstAppearance: null,
-                    attributes: {
-                        sourceType: MEMORY_DOMAIN_SOURCE_TYPES.SCENE,
-                        sourceId: item.id,
-                        chapterId: item.chapterId,
-                    },
-                    positionX: 0,
-                    positionY: 0,
-                })),
-                ...notes.map((item): WorldGraphNode => ({
-                    id: item.id,
-                    entityType: "WorldEntity",
-                    subType: CANVAS_AUX_NODE_SUBTYPES.NOTE,
-                    name: `Note · ${item.title}`,
-                    description: item.body?.slice(0, 240) ?? null,
-                    firstAppearance: null,
-                    attributes: {
-                        sourceType: MEMORY_DOMAIN_SOURCE_TYPES.NOTE,
-                        sourceId: item.id,
-                        chapterId: item.chapterId ?? null,
-                    },
-                    positionX: 0,
-                    positionY: 0,
-                })),
-                ...synopses.map((item): WorldGraphNode => ({
-                    id: item.id,
-                    entityType: "WorldEntity",
-                    subType: CANVAS_AUX_NODE_SUBTYPES.SYNOPSIS,
-                    name: `Synopsis · ${item.title}`,
-                    description: item.body?.slice(0, 240) ?? null,
-                    firstAppearance: null,
-                    attributes: {
-                        sourceType: MEMORY_DOMAIN_SOURCE_TYPES.SYNOPSIS,
-                        sourceId: item.id,
-                        chapterId: item.chapterId ?? null,
-                    },
-                    positionX: 0,
-                    positionY: 0,
-                })),
-                ...plots.map((item): WorldGraphNode => ({
-                    id: item.id,
-                    entityType: "WorldEntity",
-                    subType: CANVAS_AUX_NODE_SUBTYPES.PLOT,
-                    name: `Plot · ${item.title}`,
-                    description: item.body?.slice(0, 240) ?? null,
-                    firstAppearance: null,
-                    attributes: {
-                        sourceType: MEMORY_DOMAIN_SOURCE_TYPES.PLOT,
-                        sourceId: item.id,
-                    },
-                    positionX: 0,
-                    positionY: 0,
-                })),
-                ...scraps.map((item): WorldGraphNode => ({
-                    id: item.id,
-                    entityType: "WorldEntity",
-                    subType: CANVAS_AUX_NODE_SUBTYPES.SCRAP,
-                    name: `Scrap · ${item.title}`,
-                    description: item.content?.slice(0, 240) ?? null,
-                    firstAppearance: null,
-                    attributes: {
-                        sourceType: MEMORY_DOMAIN_SOURCE_TYPES.SCRAP_MEMO,
-                        sourceId: item.id,
-                        tags: (() => {
-                            try {
-                                return JSON.parse(item.tags ?? "[]") as string[];
-                            } catch {
-                                return [];
-                            }
-                        })(),
-                    },
-                    positionX: 0,
-                    positionY: 0,
-                })),
-            ];
-
-            const typedEdges: EntityRelation[] = edges.map((e): EntityRelation => ({
-                ...(() => {
-                    const pointers = buildCanonicalWorldEntityPointers({
-                        sourceId: e.sourceId ?? "",
-                        sourceType: (e.sourceType ?? "Character") as WorldEntitySourceType,
-                        targetId: e.targetId ?? "",
-                        targetType: (e.targetType ?? "Character") as WorldEntitySourceType,
-                    });
-                    return pointers;
-                })(),
-                id: e.id,
-                projectId: e.projectId ?? projectId,
-                sourceId: e.sourceId ?? "",
-                sourceType: (e.sourceType ?? "Character") as WorldEntitySourceType,
-                targetId: e.targetId ?? "",
-                targetType: (e.targetType ?? "Character") as WorldEntitySourceType,
-                relation: (e.relation ?? "belongs_to") as RelationKind,
-                attributes: e.attributes ? (parseAttributes(e.attributes) as Record<string, unknown>) : null,
-                createdAt: (e.createdAt as string | Date) ?? new Date(),
-                updatedAt: (e.updatedAt as string | Date) ?? new Date(),
-            }));
-
-            const nodeIds = new Set(nodes.map((node) => node.id));
-            const filteredEdges = typedEdges.filter(
-                (edge) => nodeIds.has(edge.sourceId) && nodeIds.has(edge.targetId),
-            );
-
-            return { nodes, edges: filteredEdges };
+            return await buildWorldGraph(client, projectId);
         } catch (error) {
             logger.error("Failed to get world graph", error);
             throw new ServiceError(
@@ -493,74 +241,21 @@ export class EntityRelationService {
     }> {
         const dryRun = options?.dryRun ?? false;
         const client = await this.getClient();
-        const projects = await client.select({ id: project.id }).from(project);
-
-        let scannedRelations = 0;
-        let orphanRelations = 0;
-        let removedRelations = 0;
-
-            for (const proj of projects) {
-            const projectId = String(proj.id);
-            const [characters, factions, events, terms, worldEntities, scenes, notes, synopses, plots, scraps, relations] = await Promise.all([
-                client.select({ id: character.id }).from(character).where(and(eq(character.projectId, projectId), isNull(character.deletedAt))),
-                client.select({ id: faction.id }).from(faction).where(and(eq(faction.projectId, projectId), isNull(faction.deletedAt))),
-                client.select({ id: event.id }).from(event).where(and(eq(event.projectId, projectId), isNull(event.deletedAt))),
-                client.select({ id: term.id }).from(term).where(and(eq(term.projectId, projectId), isNull(term.deletedAt))),
-                client.select({ id: worldEntity.id }).from(worldEntity).where(and(eq(worldEntity.projectId, projectId), isNull(worldEntity.deletedAt))),
-                client.select({ id: scene.id }).from(scene).where(and(eq(scene.projectId, projectId), isNull(scene.deletedAt))),
-                client.select({ id: note.id }).from(note).where(and(eq(note.projectId, projectId), isNull(note.deletedAt))),
-                client.select({ id: synopsis.id }).from(synopsis).where(and(eq(synopsis.projectId, projectId), isNull(synopsis.deletedAt))),
-                client.select({ id: plot.id }).from(plot).where(and(eq(plot.projectId, projectId), isNull(plot.deletedAt))),
-                client.select({ id: scrapMemo.id }).from(scrapMemo).where(and(eq(scrapMemo.projectId, projectId), isNull(scrapMemo.deletedAt))),
-                client.select({ id: entityRelation.id, sourceId: entityRelation.sourceId, targetId: entityRelation.targetId }).from(entityRelation).where(eq(entityRelation.projectId, projectId)),
-            ]);
-
-            const nodeIds = new Set<string>([
-                ...characters.map((item: { id: string }) => String(item.id)),
-                ...factions.map((item: { id: string }) => String(item.id)),
-                ...events.map((item: { id: string }) => String(item.id)),
-                ...terms.map((item: { id: string }) => String(item.id)),
-                ...worldEntities.map((item: { id: string }) => String(item.id)),
-                ...scenes.map((item: { id: string }) => String(item.id)),
-                ...notes.map((item: { id: string }) => String(item.id)),
-                ...synopses.map((item: { id: string }) => String(item.id)),
-                ...plots.map((item: { id: string }) => String(item.id)),
-                ...scraps.map((item: { id: string }) => String(item.id)),
-            ]);
-
-            const orphanIds = relations
-                .filter((relation: { sourceId: string; targetId: string }) => !nodeIds.has(String(relation.sourceId)) || !nodeIds.has(String(relation.targetId)))
-                .map((relation: { id: string }) => String(relation.id));
-
-            scannedRelations += relations.length;
-            orphanRelations += orphanIds.length;
-
-            if (orphanIds.length === 0 || dryRun) {
-                continue;
-            }
-
-            const result = await client.delete(entityRelation).where(and(eq(entityRelation.projectId, projectId), inArray(entityRelation.id, orphanIds)));
-            removedRelations += result.changes;
-            if (result.changes > 0) {
+        const result = await cleanupOrphanRelationsAcrossProjects({
+            client,
+            dryRun,
+            onProjectMutation: async (projectId, reason) => {
                 await projectService.touchProject(projectId);
-                await projectService.persistPackageAfterMutation(projectId, "entity-relation:cleanup-orphans");
-            }
-        }
+                await projectService.persistPackageAfterMutation(projectId, reason);
+            },
+        });
 
         logger.info("Entity relation orphan cleanup completed", {
             dryRun,
-            scannedProjects: projects.length,
-            scannedRelations,
-            orphanRelations,
-            removedRelations,
+            ...result,
         });
 
-        return {
-            scannedProjects: projects.length,
-            scannedRelations,
-            orphanRelations,
-            removedRelations,
-        };
+        return result;
     }
 
     async reconcileWorldEntityPointersAcrossProjects(options?: { dryRun?: boolean }): Promise<{
@@ -571,64 +266,16 @@ export class EntityRelationService {
     }> {
         const dryRun = options?.dryRun ?? false;
         const client = await this.getClient();
-        const relations = await client.select({
-            id: entityRelation.id,
-            sourceId: entityRelation.sourceId,
-            sourceType: entityRelation.sourceType,
-            targetId: entityRelation.targetId,
-            targetType: entityRelation.targetType,
-            sourceWorldEntityId: entityRelation.sourceWorldEntityId,
-            targetWorldEntityId: entityRelation.targetWorldEntityId,
-        }).from(entityRelation);
-
-        let mismatchedRelations = 0;
-        let fixedRelations = 0;
-
-        for (const relation of relations) {
-            const expectedSourceWorldEntityId = isWorldEntityBackedType(
-                relation.sourceType as WorldEntitySourceType,
-            )
-                ? String(relation.sourceId)
-                : null;
-            const expectedTargetWorldEntityId = isWorldEntityBackedType(
-                relation.targetType as WorldEntitySourceType,
-            )
-                ? String(relation.targetId)
-                : null;
-
-            const sourceMismatch =
-                (relation.sourceWorldEntityId ?? null) !== expectedSourceWorldEntityId;
-            const targetMismatch =
-                (relation.targetWorldEntityId ?? null) !== expectedTargetWorldEntityId;
-
-            if (!sourceMismatch && !targetMismatch) continue;
-            mismatchedRelations += 1;
-            if (dryRun) continue;
-
-            const result = await client
-                .update(entityRelation)
-                .set({
-                    sourceWorldEntityId: expectedSourceWorldEntityId,
-                    targetWorldEntityId: expectedTargetWorldEntityId,
-                    updatedAt: new Date().toISOString(),
-                })
-                .where(eq(entityRelation.id, relation.id));
-            fixedRelations += result.changes;
-        }
-
-        logger.info("Entity relation world-entity pointer reconciliation completed", {
+        const result = await reconcileWorldEntityPointersAcrossProjects({
+            client,
             dryRun,
-            scannedRelations: relations.length,
-            mismatchedRelations,
-            fixedRelations,
         });
 
-        return {
-            dryRun,
-            scannedRelations: relations.length,
-            mismatchedRelations,
-            fixedRelations,
-        };
+        logger.info("Entity relation world-entity pointer reconciliation completed", {
+            ...result,
+        });
+
+        return result;
     }
 }
 

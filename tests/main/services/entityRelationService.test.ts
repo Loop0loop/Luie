@@ -18,15 +18,15 @@ const mocked = vi.hoisted(() => {
   const chainableSelect = {
     from: vi.fn(() => ({
       where: vi.fn(() => ({
-        limit: vi.fn(() => Promise.resolve([])),
-        orderBy: vi.fn(() => Promise.resolve([])),
+        limit: vi.fn(() => mocked.relationSelect()),
+        orderBy: vi.fn(() => mocked.relationFindMany()),
       })),
-      orderBy: vi.fn(() => Promise.resolve([])),
+      orderBy: vi.fn(() => mocked.relationFindMany()),
     })),
   };
   const chainableUpdate = {
     set: vi.fn(() => ({
-      where: vi.fn(() => ({ returning: relationDeleteReturning })),
+      where: vi.fn(() => ({ returning: relationUpdateReturning })),
     })),
   };
   const chainableDelete = {
@@ -61,6 +61,7 @@ const mocked = vi.hoisted(() => {
 vi.mock("../../../src/main/database/index.js", () => ({
   db: {
     initialize: vi.fn(async () => undefined),
+    getClient: () => mocked.drizzleClient,
     getDrizzleClient: () => mocked.drizzleClient,
   },
 }));
@@ -79,7 +80,10 @@ describe("EntityRelationService freshness", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocked.relationInsertReturning.mockResolvedValue([{ id: "relation-1", projectId: "project-1" }]);
+    mocked.relationSelect.mockResolvedValue([]);
+    mocked.relationUpdateReturning.mockResolvedValue([{ id: "relation-1", projectId: "project-1" }]);
     mocked.relationDeleteReturning.mockResolvedValue([{ id: "relation-1", projectId: "project-1" }]);
+    mocked.relationFindMany.mockResolvedValue([]);
     mocked.projectFindMany.mockResolvedValue([{ id: "project-1" }]);
     mocked.projectSelect.mockResolvedValue([{ id: "project-1" }]);
   });
@@ -107,5 +111,56 @@ describe("EntityRelationService freshness", () => {
       "project-1",
       "entity-relation:delete",
     );
+  });
+
+  it("touches project freshness after relation update", async () => {
+    mocked.relationSelect.mockResolvedValue([
+      {
+        id: "relation-1",
+        projectId: "project-1",
+        sourceId: "character-1",
+        sourceType: "Character",
+        targetId: "event-1",
+        targetType: "Event",
+        relation: "belongs_to",
+      },
+    ]);
+    const service = new EntityRelationService();
+
+    await service.updateRelation({
+      id: "relation-1",
+      relation: "causes",
+    });
+
+    expect(mocked.projectTouch).toHaveBeenCalledWith("project-1");
+    expect(mocked.projectPersist).toHaveBeenCalledWith(
+      "project-1",
+      "entity-relation:update",
+    );
+  });
+
+  it("maps relation rows with canonical world entity pointers", async () => {
+    mocked.relationFindMany.mockResolvedValue([
+      {
+        id: "relation-1",
+        projectId: "project-1",
+        sourceId: "world-1",
+        sourceType: "Place",
+        targetId: "character-1",
+        targetType: "Character",
+        relation: "located_in",
+        attributes: "{\"importance\":3}",
+      },
+    ]);
+    const service = new EntityRelationService();
+
+    const result = await service.getAllRelations("project-1");
+
+    expect(result[0]).toMatchObject({
+      id: "relation-1",
+      sourceWorldEntityId: "world-1",
+      targetWorldEntityId: null,
+      attributes: { importance: 3 },
+    });
   });
 });
