@@ -53,7 +53,7 @@ current file
 
 ## Phase 1A: Main Domain Folder Index
 
-상태: 진행 중.
+상태: 완료.
 
 완료:
 
@@ -160,7 +160,7 @@ pnpm run check:preload-contract-regression
 
 ## Phase 2: Main High-Risk Service Split
 
-상태: 진행 중.
+상태: 완료.
 
 완료:
 
@@ -368,7 +368,7 @@ SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/handler/ipcSettingsHandlers.security
 
 ## Phase 3: Renderer Shell Split
 
-상태: 진행 중.
+상태: 완료.
 
 완료:
 
