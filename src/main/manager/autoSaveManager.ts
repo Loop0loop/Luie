@@ -11,38 +11,30 @@ import {
   EMERGENCY_SNAPSHOT_INTERVAL_MS,
   SNAPSHOT_INTERVAL_MS,
 } from "../../shared/constants/index.js";
-import { AutoSaveMirrorStore } from "./autoSave/autoSaveMirrorStore.js";
-import type {
-  AutoSaveConfig,
-  AutoSaveRuntimeCounters,
-  AutoSaveRuntimeStats,
-  PendingSave,
-} from "./autoSave/autoSaveTypes.js";
 import {
-  createAutoSaveRuntimeCounters,
-  getAutoSaveRuntimeStats,
-} from "./autoSave/autoSaveRuntimeStats.js";
-import { verifyChapterProject } from "./autoSave/autoSaveChapterVerification.js";
-import { queueLatestMirrorWrite } from "./autoSave/autoSaveMirrorQueue.js";
-import { maybeEnqueueSnapshotJob } from "./autoSave/autoSaveSnapshotGate.js";
-import {
+  AutoSaveMirrorStore,
   clearProjectState,
   cleanupOldPendingSaves,
-  forgetChapterState,
-  startAutoSaveCleanupInterval,
-} from "./autoSave/autoSaveChapterCleanup.js";
-import { writeValidationBlockedSafetySnapshot } from "./autoSave/autoSaveSafetySnapshot.js";
-import { createAutoSaveInterval } from "./autoSave/autoSaveInterval.js";
-import { performAutoSave } from "./autoSave/autoSavePerformSave.js";
-import {
+  createAutoSaveInterval,
+  createAutoSaveRuntimeCounters,
   createScheduledSnapshot,
   flushAllPendingSaves,
   flushCriticalPendingSaves,
-} from "./autoSave/autoSaveFlushOps.js";
-import {
+  getAutoSaveRuntimeStats,
+  forgetChapterState,
   maybeCreateEmergencySnapshot,
+  maybeEnqueueSnapshotJob,
+  performAutoSave,
+  queueLatestMirrorWrite,
+  startAutoSaveCleanupInterval,
+  verifyChapterProject,
+  writeValidationBlockedSafetySnapshot,
+  type AutoSaveConfig,
+  type AutoSaveRuntimeCounters,
+  type AutoSaveRuntimeStats,
+  type PendingSave,
   type SnapshotJob,
-} from "./autoSave/autoSaveSnapshotJobs.js";
+} from "./autoSave/index.js";
 
 const logger = createLogger("AutoSaveManager");
 

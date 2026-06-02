@@ -37,6 +37,29 @@
 - `manager/*`는 runtime singleton 상태를 관리합니다.
 - RAG QA, embedding, llama-server sidecar는 utility process와 `UtilityProcessBridge`로 분리됩니다.
 
+## Phase 1 Domain Folder Index
+
+사실: 2026-06-02 기준 Phase 1 지정 도메인의 폴더 영역과 `index.ts` export 상태입니다.
+
+| Domain | Index | 상태 |
+| --- | --- | --- |
+| `src/main/database` | `src/main/database/index.ts` | DB singleton 진입점 유지 |
+| `src/main/handler/system` | `src/main/handler/system/index.ts` | system handler 등록 진입점 유지 |
+| `src/main/handler/world` | `src/main/handler/world/index.ts` | world handler 등록 진입점 유지 |
+| `src/main/manager/autoSave` | `src/main/manager/autoSave/index.ts` | autoSave helper 배럴 추가 |
+| `src/main/services/llm` | `src/main/services/llm/index.ts` | LLM service/helper 배럴 추가 |
+| `src/main/utils` | `src/main/utils/index.ts` | main utility 배럴 추가 |
+| `src/main/services/features/sync` | `src/main/services/features/sync/index.ts` | sync public service 배럴 추가 |
+
+사실: Phase 2에서 분리된 snapshot/settings/sync 내부 helper는 도메인 하위 폴더의 `index.ts`를 통해 제공합니다.
+
+| Area | Index |
+| --- | --- |
+| snapshot artifact helpers | `src/main/services/features/snapshot/artifacts/index.ts` |
+| settings IPC helpers | `src/main/handler/system/settings/index.ts` |
+| sync bundle collector helpers | `src/main/services/features/sync/bundleCollector/index.ts` |
+| sync repository helpers | `src/main/services/features/sync/repository/index.ts` |
+
 ## Main IPC Flow
 
 ```text
@@ -99,11 +122,9 @@ index.ts
 | --- | ---: |
 | `src/main/database/packagedSchema.ts` | 639 |
 | `src/main/database/schema.ts` | 623 |
-| `src/main/services/features/memory/memoryProjectionService.ts` | 530 |
-| `src/main/services/core/project/projectExportEngine.ts` | 524 |
 | `src/main/manager/settingsManager.ts` | 519 |
-| `src/main/services/features/sync/syncMapper.ts` | 518 |
 | `src/main/services/features/analysis/analysisStreamRunner.ts` | 518 |
+| `src/main/services/features/sync/syncMapper.ts` | 518 |
 | `src/main/services/features/sync/syncLocalApply.ts` | 517 |
 | `src/main/services/core/project/projectImportOpen.ts` | 516 |
 | `src/main/services/features/utility/utilityProcessBridge.ts` | 511 |
@@ -148,6 +169,24 @@ index.ts
 | `repository/mappers.ts` | remote DB row를 SyncBundle record로 변환 | 263 |
 | `repository/payload.ts` | SyncBundle record를 remote upsert row로 변환 | 139 |
 | `repository/rowUtils.ts` | row normalizer와 primitive coercion | 56 |
+
+사실: `src/main/services/features/memory/memoryProjectionService.ts`는 memory chunk job orchestration만 유지하도록 축소되어 231 LOC입니다. 분리된 helper는 `memory/projection/index.ts` 배럴을 통해 제공하며 기존 public export인 `memoryProjectionService`와 `chunkText`는 유지합니다.
+
+| Memory projection helper | 책임 | LOC |
+| --- | --- | ---: |
+| `projection/chunking.ts` | content hash, token estimate, paragraph-aware chunk split | 121 |
+| `projection/sourceRows.ts` | memory build job target별 source row 조회 | 201 |
+| `projection/jobPolicy.ts` | retry 가능 여부와 event loop yield 정책 | 22 |
+| `projection/index.ts` | projection helper 배럴 export | 14 |
+
+사실: `src/main/services/core/project/projectExportEngine.ts`는 `.luie` package export orchestration만 유지하도록 축소되어 170 LOC입니다. 분리된 helper는 `project/exportEngine/index.ts` 배럴을 통해 제공하며 기존 public export인 `exportProjectPackageWithOptions`는 유지합니다.
+
+| Project export helper | 책임 | LOC |
+| --- | --- | ---: |
+| `exportEngine/projectRecord.ts` | export용 project/chapter/world entity/snapshot DB record 조립 | 94 |
+| `exportEngine/worldPayload.ts` | replica/package world payload 읽기와 schema fallback | 252 |
+| `exportEngine/types.ts` | export engine logger/world payload 타입 | 33 |
+| `exportEngine/index.ts` | export engine helper 배럴 export | 11 |
 
 ## 위험 지점
 

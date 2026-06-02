@@ -51,6 +51,28 @@ current file
 
 - `docs/architecture/**`만 추가/수정
 
+## Phase 1A: Main Domain Folder Index
+
+상태: 진행 중.
+
+완료:
+
+- `src/main/database/index.ts`는 기존 DB singleton 진입점으로 유지합니다.
+- `src/main/handler/system/index.ts`는 system handler 등록 진입점으로 유지합니다.
+- `src/main/handler/world/index.ts`는 world handler 등록 진입점으로 유지합니다.
+- `src/main/manager/autoSave/index.ts`를 추가해 autoSave helper export를 제공합니다.
+- `src/main/services/llm/index.ts`를 추가해 LLM service/helper export를 제공합니다.
+- `src/main/utils/index.ts`를 추가해 main utility export를 제공합니다.
+- `src/main/services/features/sync/index.ts`를 추가해 sync public service export를 제공합니다.
+- 이후 Phase 2/3 분리 작업은 도메인 하위 폴더와 `index.ts` 배럴 export 방식을 기본으로 유지합니다.
+
+검증:
+
+```bash
+bun run typecheck
+bun run check:core-complexity
+```
+
 ## Phase 1: Shared Contract Split
 
 상태: 부분 완료.
@@ -152,6 +174,8 @@ pnpm run check:preload-contract-regression
 - `src/main/handler/system/ipcSettingsHandlers.ts`는 15 LOC입니다.
 - `src/main/services/features/sync/syncBundleCollector.ts`는 154 LOC입니다.
 - `src/main/services/features/sync/syncRepository.ts`는 75 LOC입니다.
+- `src/main/services/features/memory/memoryProjectionService.ts`는 231 LOC입니다.
+- `src/main/services/core/project/projectExportEngine.ts`는 170 LOC입니다.
 - `snapshotArtifacts.ts`의 기존 public export인 `readFullSnapshotArtifact`, `listSnapshotRestoreCandidates`, `cleanupOrphanSnapshotArtifacts`, `writeFullSnapshotArtifact`는 유지했습니다.
 - snapshot artifact의 path 탐색, restore preview 계산, DB payload 조립, payload 타입은 `snapshot/artifacts/index.ts` 배럴 폴더로 분리했습니다.
 - `ipcSettingsHandlers.ts`의 기존 public export인 `registerSettingsIPCHandlers`는 유지했습니다.
@@ -160,10 +184,16 @@ pnpm run check:preload-contract-regression
 - sync bundle row append, world document hydrate/scrap memo 처리, collector-local 타입/normalizer는 `sync/bundleCollector/index.ts` 배럴 폴더로 분리했습니다.
 - `syncRepository.ts`의 기존 public export인 `syncRepository` singleton과 `fetchBundle`, `upsertBundle`, `isConfigured` method shape는 유지했습니다.
 - Supabase REST fetch/upsert, remote row mapper, upsert payload builder, row normalizer는 `sync/repository/index.ts` 배럴 폴더로 분리했습니다.
+- `memoryProjectionService.ts`의 기존 public export인 `memoryProjectionService` singleton과 `chunkText`는 유지했습니다.
+- memory chunking, source row 조회, retry/yield policy는 `memory/projection/index.ts` 배럴 폴더로 분리했습니다.
+- `projectExportEngine.ts`의 기존 public export인 `exportProjectPackageWithOptions`는 유지했습니다.
+- export용 DB record 조회, replica/package world payload 읽기, export-local 타입은 `project/exportEngine/index.ts` 배럴 폴더로 분리했습니다.
 - 2026-06-02 기준 `bun run typecheck`, `bun run check:core-complexity`, `bun run check:ipc-handler-schemas`, `bun run check:ipc-contract-map` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/handler/ipcSettingsHandlers.security.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncService.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncRepository.test.ts tests/main/services/syncService.test.ts` 통과.
+- 2026-06-02 기준 `bun vitest tests/main/services/memoryProjectionService.test.ts` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/projectExportEngine.test.ts` 통과.
 
 검증 제약:
 
@@ -176,8 +206,6 @@ pnpm run check:preload-contract-regression
 ```text
 src/main/database/packagedSchema.ts
 src/main/database/schema.ts
-src/main/services/features/memory/memoryProjectionService.ts
-src/main/services/core/project/projectExportEngine.ts
 src/main/manager/settingsManager.ts
 src/main/services/features/sync/syncMapper.ts
 src/main/services/features/analysis/analysisStreamRunner.ts
@@ -243,6 +271,18 @@ syncRepository.ts
   -> repository/mappers
   -> repository/payload
   -> repository/rowUtils
+
+memoryProjectionService.ts
+  -> projection/index
+  -> projection/chunking
+  -> projection/sourceRows
+  -> projection/jobPolicy
+
+projectExportEngine.ts
+  -> exportEngine/index
+  -> exportEngine/projectRecord
+  -> exportEngine/worldPayload
+  -> exportEngine/types
 ```
 
 검증:

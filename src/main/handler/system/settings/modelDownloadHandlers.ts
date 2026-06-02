@@ -3,19 +3,17 @@ import { z } from "zod";
 import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
 import type { IpcHandlerConfig } from "../../core/ipcRegistrar.js";
 import {
-  downloadGguf,
-  downloadLlamaServerBinary,
-  getHfModelFiles,
-  searchHfModels,
-} from "../../../services/llm/modelDownloader.js";
-import { invalidateModelRuntimeCache } from "../../../services/llm/modelRuntimeFactory.js";
-import { sidecarManager } from "../../../services/llm/sidecarManager.js";
-import {
   DEFAULT_MODEL,
   LLAMA_BINARY_SHA256S,
   LLAMA_BINARY_URLS,
   LLAMA_SERVER_BINARY_IN_ZIP,
-} from "../../../services/llm/sidecarConstants.js";
+  downloadGguf,
+  downloadLlamaServerBinary,
+  getHfModelFiles,
+  invalidateModelRuntimeCache,
+  searchHfModels,
+  sidecarManager,
+} from "../../../services/llm/index.js";
 import { loadSettingsManager } from "./managerLoader.js";
 
 let activeDownloadAbort: AbortController | null = null;

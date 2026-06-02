@@ -24,7 +24,4 @@ export * from "./features/memory/memoryProjectionService.js";
 export * from "./features/memory/chapterSummaryProjector.js";
 export * from "./features/memory/embeddingProjector.js";
 export * from "./features/derivedJobWorker.js";
-export * from "./features/sync/syncAuthService.js";
-export * from "./features/sync/syncMapper.js";
-export * from "./features/sync/syncRepository.js";
-export * from "./features/sync/syncService.js";
+export * from "./features/sync/index.js";

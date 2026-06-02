@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-06-02T11:41:20.942Z",
+  "generatedAt": "2026-06-02T12:23:31.798Z",
   "summary": {
     "definedChannels": 205,
     "errors": 0,
@@ -1203,7 +1203,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/settings/llmfitEmbeddingHandlers.ts",
-            "line": 90
+            "line": 92
           }
         ],
         "main_emit": [],
@@ -1230,7 +1230,7 @@
         "main_emit": [
           {
             "file": "src/main/handler/system/settings/llmfitEmbeddingHandlers.ts",
-            "line": 19
+            "line": 21
           }
         ],
         "renderer_listen": [
@@ -1265,7 +1265,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/settings/llmfitEmbeddingHandlers.ts",
-            "line": 73
+            "line": 75
           }
         ],
         "main_emit": [],
@@ -2102,7 +2102,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/settings/llmfitEmbeddingHandlers.ts",
-            "line": 31
+            "line": 33
           }
         ],
         "main_emit": [],
@@ -2133,7 +2133,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/settings/llmfitEmbeddingHandlers.ts",
-            "line": 58
+            "line": 60
           }
         ],
         "main_emit": [],
@@ -2164,7 +2164,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/settings/llmfitEmbeddingHandlers.ts",
-            "line": 66
+            "line": 68
           }
         ],
         "main_emit": [],
@@ -2505,7 +2505,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/settings/modelDownloadHandlers.ts",
-            "line": 136
+            "line": 134
           }
         ],
         "main_emit": [],
@@ -2532,7 +2532,7 @@
         "main_emit": [
           {
             "file": "src/main/handler/system/settings/modelDownloadHandlers.ts",
-            "line": 43
+            "line": 41
           }
         ],
         "renderer_listen": [
@@ -2567,7 +2567,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/settings/modelDownloadHandlers.ts",
-            "line": 107
+            "line": 105
           }
         ],
         "main_emit": [],
@@ -2598,7 +2598,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/settings/modelDownloadHandlers.ts",
-            "line": 154
+            "line": 152
           }
         ],
         "main_emit": [],
@@ -2629,7 +2629,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/settings/modelDownloadHandlers.ts",
-            "line": 146
+            "line": 144
           }
         ],
         "main_emit": [],

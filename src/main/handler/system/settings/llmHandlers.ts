@@ -10,8 +10,8 @@ import type { IpcHandlerConfig } from "../../core/ipcRegistrar.js";
 import {
   invalidateModelRuntimeCache,
   resolveRuntimeModelInfo,
-} from "../../../services/llm/modelRuntimeFactory.js";
-import { sidecarManager } from "../../../services/llm/sidecarManager.js";
+  sidecarManager,
+} from "../../../services/llm/index.js";
 import { loadSettingsManager } from "./managerLoader.js";
 
 export function createSettingsLlmHandlers(): IpcHandlerConfig[] {

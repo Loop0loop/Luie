@@ -2,10 +2,12 @@ import { BrowserWindow } from "electron";
 import { z } from "zod";
 import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
 import type { IpcHandlerConfig } from "../../core/ipcRegistrar.js";
-import { invalidateModelRuntimeCache } from "../../../services/llm/modelRuntimeFactory.js";
-import { llmfitService } from "../../../services/llm/llmfitService.js";
-import { llmfitInstaller } from "../../../services/llm/llmfitInstaller.js";
-import { embeddingModelService } from "../../../services/llm/embeddingModelService.js";
+import {
+  embeddingModelService,
+  invalidateModelRuntimeCache,
+  llmfitInstaller,
+  llmfitService,
+} from "../../../services/llm/index.js";
 
 type EmbeddingDownloadStage = "downloading" | "complete" | "error";
 

@@ -22,7 +22,76 @@ vi.mock("../../../src/main/database/index.js", () => ({
   db: {
     initialize: vi.fn(async () => undefined),
     disconnect: vi.fn(async () => undefined),
-    getDrizzleClient: () => {
+    getClient: () => {
+      const projectRecordPromise = mocked.projectFindUnique();
+      const getTableName = (table: unknown): string => {
+        if (typeof table === "string") return table;
+        const tableRecord = table as Record<string | symbol, unknown>;
+        const nameSymbol = Object.getOwnPropertySymbols(tableRecord).find(
+          (symbol) => String(symbol) === "Symbol(drizzle:Name)",
+        );
+        return nameSymbol ? String(tableRecord[nameSymbol]) : "";
+      };
+      const getRowsForTable = (
+        tableName: string,
+        projectRecord: Record<string, unknown>,
+      ): unknown[] => {
+        const projectId = String(projectRecord.id ?? "");
+        const filterActiveRows = (rows: unknown[]): unknown[] =>
+          rows.filter((row) => {
+            const record = row as { projectId?: string; deletedAt?: string | null };
+            if (record.projectId && record.projectId !== projectId) return false;
+            return !record.deletedAt;
+          });
+        switch (tableName) {
+          case "Chapter":
+            return filterActiveRows(
+              Array.isArray(projectRecord.chapters) ? projectRecord.chapters : [],
+            ).sort(
+              (left, right) =>
+                ((left as { order?: number }).order ?? 0) -
+                ((right as { order?: number }).order ?? 0),
+            );
+          case "Character":
+            return filterActiveRows(
+              Array.isArray(projectRecord.characters) ? projectRecord.characters : [],
+            );
+          case "Term":
+            return filterActiveRows(
+              Array.isArray(projectRecord.terms) ? projectRecord.terms : [],
+            );
+          case "Faction":
+            return filterActiveRows(
+              Array.isArray(projectRecord.factions) ? projectRecord.factions : [],
+            );
+          case "Event":
+            return filterActiveRows(
+              Array.isArray(projectRecord.events) ? projectRecord.events : [],
+            );
+          case "WorldEntity":
+            return filterActiveRows(
+              Array.isArray(projectRecord.worldEntities)
+                ? projectRecord.worldEntities
+                : [],
+            );
+          case "EntityRelation":
+            return filterActiveRows(
+              Array.isArray(projectRecord.entityRelations)
+                ? projectRecord.entityRelations
+                : [],
+            );
+          case "Snapshot":
+            return filterActiveRows(
+              Array.isArray(projectRecord.snapshots) ? projectRecord.snapshots : [],
+            ).sort(
+              (left, right) =>
+                Date.parse((right as { createdAt?: string }).createdAt ?? "") -
+                Date.parse((left as { createdAt?: string }).createdAt ?? ""),
+            );
+          default:
+            return [];
+        }
+      };
       const makeTerminal = (result: unknown) =>
         Object.assign(Promise.resolve(result), {
           select: vi.fn(() => makeTerminal([])),
@@ -40,37 +109,30 @@ vi.mock("../../../src/main/database/index.js", () => ({
           limit: vi.fn(() => dataPromise),
         });
       return {
+        delete: vi.fn(() => ({
+          where: vi.fn(async () => undefined),
+        })),
         select: vi.fn(() => ({
           from: vi.fn((table: unknown) => {
-            const tableName =
-              typeof table === "string"
-                ? table
-                : ((table as Record<string, unknown>)?.name as string) ?? "";
+            const tableName = getTableName(table);
             if (tableName === "Project") {
               return {
                 where: vi.fn(() => {
-                  const dataPromise = mocked
-                    .projectFindUnique()
-                    .then((resolved: unknown) => [resolved]);
-                  return makeAsyncTerminal(dataPromise);
-                }),
-              };
-            }
-            if (tableName === "Chapter") {
-              return {
-                where: vi.fn(() => {
-                  const dataPromise = mocked
-                    .projectFindUnique()
-                    .then(
-                      (resolved: Record<string, unknown>) =>
-                        resolved.chapters ?? [],
-                    );
+                  const dataPromise = projectRecordPromise.then(
+                    (resolved: unknown) => [resolved],
+                  );
                   return makeAsyncTerminal(dataPromise);
                 }),
               };
             }
             return {
-              where: vi.fn(() => makeTerminal([])),
+              where: vi.fn(() => {
+                const dataPromise = projectRecordPromise.then(
+                  (resolved: Record<string, unknown>) =>
+                    getRowsForTable(tableName, resolved),
+                );
+                return makeAsyncTerminal(dataPromise);
+              }),
             };
           }),
         })),
