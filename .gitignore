@@ -1,7 +1,9 @@
 # Dependencies
 node_modules/
 .pnpm-store/
-
+dist/mac-arm64
+dist/mac-universal-arm64-temp
+dist/mac-universal-x64-temp
 
 
 # Build outputs
@@ -69,7 +71,7 @@ drizzle/.tmp
 .env.*.local
 .env.example
 
-# Keep example file for reference   
+# Keep example file for reference
 # .env.example is tracked
 
 
@@ -99,3 +101,5 @@ test-results
 
 # Bundled embedding model (staged at build time, not committed)
 resources/models/
+dist/
+dist/
