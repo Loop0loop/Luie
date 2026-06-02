@@ -9,7 +9,7 @@ import ReactFlow, {
   useEdgesState
 } from "reactflow";
 import { useTranslation } from "react-i18next";
-import { HelpCircle, X } from "lucide-react";
+import { HelpCircle } from "lucide-react";
 import PensiveNode from "./PensiveNode";
 import type { GraphNodeData } from "../../types/graph";
 import { useGraphStore } from "../../stores/graph/graphStore";
@@ -18,22 +18,20 @@ import { calculateForceLayout } from "../../utils/graphLayout";
 import { MOCK_GRAPH_NODES, MOCK_GRAPH_EDGES } from "../../constants/graphMockData";
 import { GRAPH_CORE_CHARACTERS, GRAPH_CORE_EVENTS } from "../../constants/node";
 import { GRAPH_CONSTELLATION_EDGE_DEFAULTS } from "../../constants/edge";
-import { CANVAS_FIT_VIEW_PADDING, CANVAS_ZOOM_MAX, CANVAS_ZOOM_MIN } from "@shared/constants/canvasSizing";
-import { cn } from "@shared/types/utils";
-
-// React Flow 인라인 객체 오버헤드 0%를 위한 모듈 레벨 상수화 및 ES1st 룰 완비
-const PRO_OPTIONS = { hideAttribution: true } as const;
-const FIT_VIEW_OPTIONS = { padding: CANVAS_FIT_VIEW_PADDING } as const;
-
-// 하드코딩 매직 넘버 방지를 위한 모듈 수준 레이아웃 및 엣지 스타일 상수 정의
-const LAYOUT_CENTER_CHARACTER = { x: 280, y: 250 } as const;
-const LAYOUT_CENTER_EVENT = { x: 340, y: 280 } as const;
-const LAYOUT_ITERATIONS_CHARACTER = 75 as const;
-const LAYOUT_ITERATIONS_EVENT = 85 as const;
-
-const EDGE_FALLBACK_OPACITY = 0.6 as const;
-const EDGE_FALLBACK_STROKE_WIDTH = 1.5 as const;
-const EDGE_FOCUS_OPACITY = 0.95 as const;
+import { CANVAS_ZOOM_MAX, CANVAS_ZOOM_MIN } from "@shared/constants/canvasSizing";
+import {
+  EDGE_FALLBACK_OPACITY,
+  EDGE_FALLBACK_STROKE_WIDTH,
+  EDGE_FOCUS_OPACITY,
+  FIT_VIEW_OPTIONS,
+  GraphHoverCard,
+  GraphLegendModal,
+  LAYOUT_CENTER_CHARACTER,
+  LAYOUT_CENTER_EVENT,
+  LAYOUT_ITERATIONS_CHARACTER,
+  LAYOUT_ITERATIONS_EVENT,
+  PRO_OPTIONS,
+} from "./graphSurfaceParts";
 
 const nodeTypes = {
   pensive: PensiveNode,
@@ -390,164 +388,17 @@ export default function GraphSurface() {
         </button>
       </div>
 
-      {/* 3. 인물 관계 수사망 플로팅 모달 (호버 상태 - 초호화 피그마 Aesthetics) */}
-      {hoverNode && (
-        <div 
-          className={cn(
-            "absolute top-16 z-30 w-[300px] rounded-2xl border border-border/30 bg-panel/85 backdrop-blur-xl p-4 shadow-[0_12px_40px_rgba(0,0,0,0.25)] animate-in fade-in duration-300 text-fg flex flex-col gap-3.5 select-none overflow-hidden after:absolute after:top-0 after:left-0 after:right-0 after:h-[1px] after:bg-gradient-to-r after:from-accent/40 after:to-transparent after:rounded-t-2xl transition-all duration-300",
-            isRightPanelOpen ? "right-[340px]" : "right-6"
-          )}
-        >
-          {/* 타이틀 영역 */}
-          <div className="flex items-center justify-between border-b border-border/20 pb-2.5 relative z-10">
-            <h4 className="text-[13px] font-black tracking-tight text-foreground">{hoverNode.data.label}</h4>
-            {hoverNode.data.type && (
-              <span className="text-[9px] uppercase tracking-wider font-extrabold text-accent bg-accent/10 border border-accent/20 px-2 py-0.5 rounded">
-                {t(`canvas.node.kind.${hoverNode.data.type}` as never, hoverNode.data.type)}
-              </span>
-            )}
-          </div>
+      <GraphHoverCard
+        hoverNode={hoverNode}
+        isRightPanelOpen={isRightPanelOpen}
+        t={t}
+      />
 
-          {/* 설명/묘사 */}
-          {hoverNode.data.description && (
-            <p className="text-[11px] leading-relaxed text-muted break-keep bg-element/40 p-3 rounded-xl border border-border/15 select-text relative z-10 font-normal">
-              {hoverNode.data.description}
-            </p>
-          )}
-
-          {/* 얽힌 인물 관계 */}
-          {hoverNode.data.relationships && hoverNode.data.relationships.length > 0 && (
-            <div className="flex flex-col gap-2 pt-0.5 relative z-10">
-              <div className="flex items-center gap-1 border-b border-border/15 pb-1.5">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-muted">
-                  {t("canvas.graph.details.relationships", "얽힌 인물 관계")}
-                </span>
-              </div>
-              <div className="flex flex-col gap-2">
-                {hoverNode.data.relationships.slice(0, 3).map((rel, index) => (
-                  <div 
-                    key={index} 
-                    className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-element/20 border border-border/15 hover:border-border/30 hover:bg-element/30 transition-all duration-200 text-[10px]"
-                  >
-                    <div className="flex items-center justify-between font-extrabold">
-                      <span className="text-foreground">{hoverNode.data.label}</span>
-                      <span className="text-[8.5px] bg-panel px-1.5 py-0.5 rounded text-muted-foreground border border-border/20 shrink-0 font-bold">
-                        {rel.type}
-                      </span>
-                      <span className="text-foreground">{rel.targetName}</span>
-                    </div>
-                    {rel.details && (
-                      <span className="text-[9px] text-muted-foreground pl-1.5 border-l border-border/30 leading-normal break-keep font-medium">
-                        {rel.details}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 연관 등장 챕터 */}
-          {hoverNode.data.relatedChapters && hoverNode.data.relatedChapters.length > 0 && (
-            <div className="flex flex-col gap-2 pt-0.5 relative z-10">
-              <div className="flex items-center gap-1 border-b border-border/15 pb-1.5">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-muted">
-                  {t("canvas.graph.details.chapters", "연관 등장 챕터")}
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {hoverNode.data.relatedChapters.map((chapter, index) => (
-                  <span 
-                    key={index}
-                    className="text-[9px] font-bold text-foreground bg-element/60 border border-border/15 px-2.5 py-1 rounded-full hover:bg-element hover:scale-105 transition-all cursor-default"
-                  >
-                    {chapter}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 4. 그래프 범례 승격 팝업 모달 */}
-      {isGuideModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-panel border border-border/40 w-[400px] rounded-2xl shadow-2xl p-5 flex flex-col gap-4 text-fg relative animate-in zoom-in-95 duration-200 select-none">
-            {/* 닫기 버튼 */}
-            <button 
-              type="button"
-              onClick={() => setIsGuideModalOpen(false)}
-              className="absolute top-4.5 right-4.5 h-6 w-6 rounded-lg hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-all cursor-pointer border-none bg-transparent"
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            {/* 헤더 */}
-            <div className="flex flex-col gap-0.5 pointer-events-none">
-              <h2 className="text-[14px] font-black tracking-tight text-foreground uppercase flex items-center gap-2">
-                <HelpCircle className="h-4.5 w-4.5 text-accent" />
-                {t("canvas.graph.legend.title", "그래프 범례")}
-              </h2>
-              <p className="text-[9px] text-muted-foreground font-semibold uppercase tracking-wider">
-                Graph Legend Map
-              </p>
-            </div>
-
-            {/* 범례 리스트 */}
-            <div className="flex flex-col gap-4 mt-1 border-t border-border/20 pt-3">
-              {/* 노드 범례 */}
-              <div className="flex flex-col gap-2">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                  {t("canvas.graph.legend.nodes", "노드 (개체)")}
-                </span>
-                <div className="grid grid-cols-1 gap-2 pl-0.5">
-                  <div className="flex items-center gap-2.5 text-[11px] text-foreground font-semibold bg-surface/40 p-2 rounded-lg border border-border/10">
-                    <span className="h-3.5 w-3.5 rounded-full bg-foreground border border-border/50 shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
-                    <span>{t("canvas.graph.legend.node.prime", "핵심 주연 캐릭터")}</span>
-                  </div>
-                  <div className="flex items-center gap-2.5 text-[11px] text-foreground font-semibold bg-surface/40 p-2 rounded-lg border border-border/10">
-                    <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/80 border border-border/50" />
-                    <span>{t("canvas.graph.legend.node.major", "조연 / 연관 세력")}</span>
-                  </div>
-                  <div className="flex items-center gap-2.5 text-[11px] text-foreground font-semibold bg-surface/40 p-2 rounded-lg border border-border/10">
-                    <span className="h-2.5 w-2.5 rounded-sm bg-muted-foreground/60 border border-border/50" />
-                    <span>{t("canvas.graph.legend.node.chapter", "집필 회차 (챕터)")}</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* 에지 범례 */}
-              <div className="flex flex-col gap-2 border-t border-border/20 pt-3">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                  {t("canvas.graph.legend.edges", "에지 (관계)")}
-                </span>
-                <div className="grid grid-cols-1 gap-2 pl-0.5">
-                  <div className="flex items-center gap-2.5 text-[11px] text-foreground font-semibold bg-surface/40 p-2 rounded-lg border border-border/10">
-                    <span className="w-6 border-b border-dashed border-indigo-400" />
-                    <span>{t("canvas.graph.legend.edge.character", "성간 인물 관계선")}</span>
-                  </div>
-                  <div className="flex items-center gap-2.5 text-[11px] text-foreground font-semibold bg-surface/40 p-2 rounded-lg border border-border/10">
-                    <span className="w-6 border-b-2 border-red-400" />
-                    <span>{t("canvas.graph.legend.edge.event", "인과 관계 수사선 (붉은 실)")}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 확인 버튼 */}
-            <div className="flex justify-end gap-2.5 mt-1 border-t border-border/20 pt-3">
-              <button 
-                type="button"
-                onClick={() => setIsGuideModalOpen(false)}
-                className="text-[10.5px] font-bold tracking-tight text-on-accent bg-accent hover:bg-accent/90 px-4 py-2 rounded-lg cursor-pointer transition-all border-none"
-              >
-                {t("canvas.graph.guide.close", "확인")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <GraphLegendModal
+        isOpen={isGuideModalOpen}
+        onClose={() => setIsGuideModalOpen(false)}
+        t={t}
+      />
     </div>
   );
 }

@@ -132,7 +132,6 @@ renderer API 접근
 - `src/renderer/src/i18n/locales/ko/base.ts`
 - `src/renderer/src/i18n/locales/ja/base.ts`
 - `src/renderer/src/i18n/locales/en/base.ts`
-- `src/renderer/src/features/canvas/components/graph/GraphSurface.tsx`
 - `src/renderer/src/styles/global.css`
 - `src/renderer/src/features/project/hooks/useFileImport.ts`
 - `src/renderer/src/i18n/locales/*/workspace.ts`
@@ -228,6 +227,15 @@ renderer API 접근
 | `canvasActivityShellParts/explorerTree.ts` | folder id traversal for expand/collapse all | 17 |
 | `canvasActivityShellParts/index.ts` | canvas activity shell helper 배럴 export | 4 |
 
+사실: `src/renderer/src/features/canvas/components/graph/GraphSurface.tsx`는 React Flow canvas orchestration, graph data pipeline, focus sync, node interaction만 유지하도록 축소되어 404 LOC입니다. overlay hover card, legend modal, layout/focus constants는 `canvas/components/graph/graphSurfaceParts/index.ts` 배럴을 통해 제공합니다.
+
+| Graph surface part | 책임 | LOC |
+| --- | --- | ---: |
+| `graphSurfaceParts/GraphHoverCard.tsx` | hovered node relationship/chapter detail overlay | 94 |
+| `graphSurfaceParts/GraphLegendModal.tsx` | graph legend modal content and close action | 88 |
+| `graphSurfaceParts/constants.ts` | React Flow options, layout constants, edge focus defaults | 13 |
+| `graphSurfaceParts/index.ts` | graph surface helper 배럴 export | 13 |
+
 ## 위험 지점
 
 의견:
@@ -240,6 +248,7 @@ renderer API 접근
 - `worldPackageStorage.ts`와 `worldPackageStorageHelpers/**`는 replica storage, canonical `.luie` package, legacy localStorage migration 계약이 맞물립니다.
 - `ModelTab.tsx`와 `modelTabSections/**`는 local LLM, embedding, llmfit, API key 설정 UI 계약이 한 화면에서 맞물립니다.
 - `CanvasActivityShell.tsx`와 `canvasActivityShellParts/**`는 canvas explorer shell, graph mode sidebar, demo toast action 계약이 맞물립니다.
+- `GraphSurface.tsx`와 `graphSurfaceParts/**`는 React Flow graph data pipeline, focus sync, overlay rendering 계약이 맞물립니다.
 - `CanvasNodeInspector.tsx`의 직접 `window.api` memory 호출은 API 경계 예외입니다.
 
 ## 보존 불가침 경계

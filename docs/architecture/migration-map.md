@@ -428,17 +428,19 @@ SKIP_DB_TEST_SETUP=1 pnpm vitest tests/dom/rendererRerenderRegression.test.tsx
 - `src/renderer/src/features/research/services/worldPackageStorage.ts`는 440 LOC입니다.
 - `src/renderer/src/features/settings/components/tabs/ModelTab.tsx`는 96 LOC입니다.
 - `src/renderer/src/features/canvas/components/shell/CanvasActivityShell.tsx`는 204 LOC입니다.
+- `src/renderer/src/features/canvas/components/graph/GraphSurface.tsx`는 404 LOC입니다.
 - `worldPackageStorage.ts`의 기존 public export인 `worldPackageStorage`, `DEFAULT_WORLD_SYNOPSIS`, `DEFAULT_WORLD_PLOT`, `DEFAULT_WORLD_DRAWING`, `DEFAULT_WORLD_MINDMAP`, `DEFAULT_WORLD_SCRAP_MEMOS`는 유지했습니다.
 - legacy localStorage bridge, `.luie` read/write queue, replica storage adapter, payload normalizer, scrap memo validation/recovery logging은 `research/services/worldPackageStorageHelpers/index.ts` 배럴 폴더로 분리했습니다.
 - `ModelTab.tsx`의 기존 public export인 `ModelTab`과 `SemanticSearchState` type export는 유지했습니다.
 - local LLM toggle/download, HuggingFace model library, embedding model, llmfit recommendations, memory rebuild, API key input card는 `settings/components/tabs/modelTabSections/index.ts` 배럴 폴더로 분리했습니다.
 - `CanvasActivityShell.tsx`의 기존 default export와 `CanvasActivityShell` props shape는 유지했습니다.
 - explorer tree node, graph filter sidebar, tab/toolbar i18n key map, expand/collapse folder traversal helper는 `canvas/components/shell/canvasActivityShellParts/index.ts` 배럴 폴더로 분리했습니다.
+- `GraphSurface.tsx`의 기존 default export는 유지했습니다.
+- graph hover detail card, legend modal, React Flow/layout/focus constants는 `canvas/components/graph/graphSurfaceParts/index.ts` 배럴 폴더로 분리했습니다.
 
 대상 후보:
 
 ```text
-src/renderer/src/features/canvas/components/graph/GraphSurface.tsx
 src/renderer/src/features/project/hooks/useFileImport.ts
 ```
 
