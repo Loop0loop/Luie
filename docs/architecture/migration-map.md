@@ -377,6 +377,7 @@ SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/handler/ipcSettingsHandlers.security
 - `src/renderer/src/app/App.tsx`는 472 LOC입니다.
 - `src/renderer/src/features/workspace/components/layout/EditorRoot.tsx`는 491 LOC입니다.
 - `src/renderer/src/features/workspace/stores/projectLayoutStore.ts`는 147 LOC입니다.
+- `src/renderer/src/features/research/stores/worldBuildingStore.actions.ts`는 453 LOC입니다.
 - `EditorToolbar.tsx`의 기존 default export와 호출부 import 경로는 유지했습니다.
 - toolbar primitive, dropdown/color/typography popover, more menu, ghost editor/state helper, constants/types는 `editor/components/toolbar/index.ts` 배럴 폴더로 분리했습니다.
 - `App.tsx`의 기존 default export와 app entry import 경로는 유지했습니다.
@@ -385,22 +386,23 @@ SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/handler/ipcSettingsHandlers.security
 - layout/sidebar/panel/banner lazy component registry와 layout suspense fallback은 `workspace/components/layout/rootShell/index.ts` 배럴 폴더로 분리했습니다.
 - `projectLayoutStore.ts`의 기존 public export인 `useProjectLayoutStore`, `sanitizeWorkspacePanels`, `sanitizePersistedDocsRightTab`, `ProjectLayoutState` 계열 타입은 유지했습니다.
 - persisted layout 타입, 기본값, sanitize, migration, merge, logging helper는 `workspace/stores/projectLayout/index.ts` 배럴 폴더로 분리했습니다.
+- `worldBuildingStore.actions.ts`의 기존 public export인 `createWorldBuildingActions`는 유지했습니다.
+- graph load queue, load timeout, graph mutation version, persistence queue, graph document write helper는 `research/stores/worldBuildingActions/index.ts` 배럴 폴더로 분리했습니다.
 
 대상 후보:
 
 ```text
-src/renderer/src/features/research/stores/worldBuildingStore.actions.ts
+없음
 ```
 
 2026-06-02 기준 후보 LOC:
 
 | File | LOC |
 | --- | ---: |
-| `src/renderer/src/features/research/stores/worldBuildingStore.actions.ts` | 639 |
+| 없음 | - |
 
 목표:
 
-- `worldBuildingStore.actions.ts`는 graph load, persistence queue, CRUD sync를 분리
 - 직접 `window.api` 예외는 domain adapter로 감싸되 기존 fallback 유지
 
 검증:

@@ -133,7 +133,6 @@ renderer API 접근
 - `src/renderer/src/i18n/locales/ja/base.ts`
 - `src/renderer/src/i18n/locales/en/base.ts`
 - `src/renderer/src/features/research/services/worldPackageStorage.ts`
-- `src/renderer/src/features/research/stores/worldBuildingStore.actions.ts`
 - `src/renderer/src/features/settings/components/tabs/ModelTab.tsx`
 - `src/renderer/src/features/canvas/components/shell/CanvasActivityShell.tsx`
 - `src/renderer/src/features/canvas/components/graph/GraphSurface.tsx`
@@ -187,6 +186,15 @@ renderer API 접근
 | `projectLayout/persistLogging.ts` | localStorage recovery/validation logging | 64 |
 | `projectLayout/index.ts` | project layout helper 배럴 export | 21 |
 
+사실: `src/renderer/src/features/research/stores/worldBuildingStore.actions.ts`는 graph CRUD/action orchestration만 유지하도록 축소되어 453 LOC입니다. graph load queue와 graph document persistence queue는 `research/stores/worldBuildingActions/index.ts` 배럴을 통해 제공합니다.
+
+| World building action helper | 책임 | LOC |
+| --- | --- | ---: |
+| `worldBuildingActions/loadGraph.ts` | world graph base/replica load, timeout, stale request guard | 95 |
+| `worldBuildingActions/runtime.ts` | graph mutation version, persist queue, world graph document write | 93 |
+| `worldBuildingActions/types.ts` | action factory setter/getter/action pick 타입 | 27 |
+| `worldBuildingActions/index.ts` | world building action helper 배럴 export | 3 |
+
 ## 위험 지점
 
 의견:
@@ -195,7 +203,7 @@ renderer API 접근
 - `EditorRoot.tsx`는 editor/sidebar/canvas/panels/settings/shortcuts/split view를 묶는 shell입니다.
 - `projectLayoutStore.ts`와 `projectLayout/**`는 persisted layout migration/sanitize/merge 계약이 있어 변경 위험이 큽니다.
 - `uiStore.state.ts`는 legacy flat fields와 `regions` 동기화가 있어 변경 위험이 큽니다.
-- `worldBuildingStore.actions.ts`는 graph load, replica merge, persistence queue, mutation version, CRUD mutation을 함께 처리합니다.
+- `worldBuildingStore.actions.ts`와 `worldBuildingActions/**`는 graph load, replica merge, persistence queue, mutation version, CRUD mutation 계약이 맞물립니다.
 - `CanvasNodeInspector.tsx`의 직접 `window.api` memory 호출은 API 경계 예외입니다.
 
 ## 보존 불가침 경계

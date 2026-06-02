@@ -11,8 +11,6 @@ import type {
   WorldTimelineTrack,
 } from "@shared/types";
 import {
-  buildWorldGraphDocument,
-  mergeWorldGraphLayout,
   normalizeCanvasBlocks,
   normalizeCanvasEdges,
   normalizeTimelines,
@@ -43,44 +41,15 @@ import type {
   UpdateGraphNodeInput,
   WorldBuildingState,
 } from "./worldBuildingStore.types";
+import {
+  createLoadGraphAction,
+  persistGraphDocument,
+  type StoreGetter,
+  type StoreSetter,
+  type WorldBuildingActions,
+} from "./worldBuildingActions";
 
-type StoreSetter<T> = (
-  partial: T | Partial<T> | ((state: T) => T | Partial<T>),
-) => void;
-type StoreGetter<T> = () => T;
-const GRAPH_LOAD_TIMEOUT_MS = 8000;
-const GRAPH_REPLICA_TIMEOUT_MS = 4000;
-const graphPersistQueue = new Map<string, Promise<void>>();
-const graphLoadQueue = new Map<string, number>();
-const graphMutationVersion = new Map<string, number>();
 const graphNodeCreateLocks = new Set<string>();
-
-const readGraphMutationVersion = (projectId: string): number =>
-  graphMutationVersion.get(projectId) ?? 0;
-
-const markGraphMutation = (projectId: string): void => {
-  graphMutationVersion.set(projectId, readGraphMutationVersion(projectId) + 1);
-};
-
-type WorldBuildingActions = Pick<
-  WorldBuildingState,
-  | "loadGraph"
-  | "createGraphNode"
-  | "updateGraphNode"
-  | "updateGraphNodePosition"
-  | "updateGraphNodePositionsBatch"
-  | "updateWorldEntityPosition"
-  | "deleteGraphNode"
-  | "createWorldEntity"
-  | "updateWorldEntity"
-  | "deleteWorldEntity"
-  | "createRelation"
-  | "updateRelation"
-  | "deleteRelation"
-  | "setGraphCanvasBlocks"
-  | "setGraphCanvasEdges"
-  | "setTimelines"
->;
 
 function updateGraphNodeSelection(input: UpdateGraphNodeInput) {
   return (state: WorldBuildingState) => {
@@ -89,167 +58,12 @@ function updateGraphNodeSelection(input: UpdateGraphNodeInput) {
   };
 }
 
-const withTimeout = async <T>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  label: string,
-): Promise<T> =>
-  new Promise<T>((resolve, reject) => {
-    const timer = window.setTimeout(() => {
-      reject(new Error(`${label} timed out after ${timeoutMs}ms`));
-    }, timeoutMs);
-
-    promise.then(
-      (value) => {
-        window.clearTimeout(timer);
-        resolve(value);
-      },
-      (error) => {
-        window.clearTimeout(timer);
-        reject(error);
-      },
-    );
-  });
-
-const persistGraphDocument = async (
-  projectId: string,
-  graphData: WorldGraphData | null,
-): Promise<void> => {
-  if (!graphData) return;
-
-  markGraphMutation(projectId);
-
-  const previousWrite = graphPersistQueue.get(projectId) ?? Promise.resolve();
-  const nextWrite = previousWrite
-    .catch(() => undefined)
-    .then(async () => {
-      const response = await api.worldStorage.setDocument({
-        projectId,
-        docType: "graph",
-        payload: buildWorldGraphDocument(graphData),
-      });
-
-      if (!response.success) {
-        await api.logger.error("Failed to save world graph document", {
-          projectId,
-          error: response.error,
-        });
-
-        const message =
-          typeof response.error?.message === "string"
-            ? response.error.message
-            : "Failed to persist world graph document";
-        throw new Error(message);
-      }
-
-      const packageExportResult = response.data as
-        | { packageExportError?: string }
-        | null
-        | undefined;
-      if (packageExportResult?.packageExportError) {
-        await api.logger.error("Failed to export world graph into .luie", {
-          projectId,
-          error: packageExportResult.packageExportError,
-        });
-        throw new Error(packageExportResult.packageExportError);
-      }
-    });
-
-  graphPersistQueue.set(projectId, nextWrite);
-
-  try {
-    await nextWrite;
-  } finally {
-    if (graphPersistQueue.get(projectId) === nextWrite) {
-      graphPersistQueue.delete(projectId);
-    }
-  }
-};
-
 export function createWorldBuildingActions(
   set: StoreSetter<WorldBuildingState>,
   get: StoreGetter<WorldBuildingState>,
 ): WorldBuildingActions {
   return {
-    loadGraph: async (projectId) => {
-      const loadRequest = (graphLoadQueue.get(projectId) ?? 0) + 1;
-      graphLoadQueue.set(projectId, loadRequest);
-      const mutationVersionAtLoadStart = readGraphMutationVersion(projectId);
-
-      set((state) => ({
-        isLoading: true,
-        error: null,
-        activeProjectId: projectId,
-        // Keep the current graph visible during same-project reloads so
-        // in-flight mutations can rebase against a real snapshot.
-        graphData:
-          state.activeProjectId === projectId ? state.graphData : null,
-      }));
-      try {
-        const graphResponse = await withTimeout(
-          api.worldGraph.get(projectId),
-          GRAPH_LOAD_TIMEOUT_MS,
-          "worldGraph.get",
-        );
-
-        const graphReplicaResponse = await withTimeout(
-          api.worldStorage.getDocument({ projectId, docType: "graph" }),
-          GRAPH_REPLICA_TIMEOUT_MS,
-          "worldStorage.getDocument",
-        ).catch(async (error) => {
-          await api.logger.warn(
-            "Falling back to base graph without replica document",
-            {
-              projectId,
-              error: String(error),
-            },
-          );
-          return null;
-        });
-
-        if (!graphResponse.success || !graphResponse.data) {
-          throw new Error(graphResponse.error?.message ?? "Graph load failed");
-        }
-
-        const replicaPayload =
-          graphReplicaResponse?.success && graphReplicaResponse.data?.found
-            ? graphReplicaResponse.data.payload
-            : null;
-        const mergedGraph = mergeWorldGraphLayout(
-          graphResponse.data,
-          replicaPayload,
-        );
-
-        const latestLoadRequest = graphLoadQueue.get(projectId) ?? 0;
-        if (latestLoadRequest !== loadRequest) {
-          return;
-        }
-
-        const latestMutationVersion = readGraphMutationVersion(projectId);
-        if (latestMutationVersion !== mutationVersionAtLoadStart) {
-          set({ isLoading: false });
-          return;
-        }
-
-        if (get().activeProjectId !== projectId) {
-          return;
-        }
-
-        set({
-          graphData: mergedGraph,
-          isLoading: false,
-        });
-      } catch (error) {
-        const latestLoadRequest = graphLoadQueue.get(projectId) ?? 0;
-        if (latestLoadRequest !== loadRequest) {
-          return;
-        }
-        if (get().activeProjectId !== projectId) {
-          return;
-        }
-        set({ error: String(error), isLoading: false });
-      }
-    },
+    loadGraph: createLoadGraphAction(set, get),
 
     createGraphNode: async (input) => {
       const projectId = input.projectId || get().activeProjectId;
