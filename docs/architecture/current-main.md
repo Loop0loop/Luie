@@ -99,7 +99,6 @@ index.ts
 | --- | ---: |
 | `src/main/database/packagedSchema.ts` | 639 |
 | `src/main/database/schema.ts` | 623 |
-| `src/main/services/features/sync/syncBundleCollector.ts` | 550 |
 | `src/main/services/features/memory/memoryProjectionService.ts` | 530 |
 | `src/main/services/features/sync/syncRepository.ts` | 529 |
 | `src/main/services/core/project/projectExportEngine.ts` | 524 |
@@ -129,6 +128,14 @@ index.ts
 | `ipcModelDownloadHandlers.ts` | model download/cancel/HF search/files IPC | 164 |
 | `ipcLlmfitEmbeddingHandlers.ts` | llmfit와 embedding model IPC | 115 |
 | `ipcSettingsManagerLoader.ts` | settingsManager lazy import cache | 14 |
+
+사실: `src/main/services/features/sync/syncBundleCollector.ts`는 local sync bundle orchestration과 기존 public export만 유지하도록 축소되어 154 LOC입니다.
+
+| Sync bundle helper | 책임 | LOC |
+| --- | --- | ---: |
+| `syncBundleRecordAppenders.ts` | project/chapter/world entity/tombstone row append | 192 |
+| `syncBundleWorldDocuments.ts` | world document replica/package hydrate, scrap memo append | 208 |
+| `syncBundleCollectorTypes.ts` | collector-local logger/doc type/normalizer helpers | 29 |
 
 ## 위험 지점
 
