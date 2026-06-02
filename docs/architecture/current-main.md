@@ -116,11 +116,11 @@ index.ts
 
 ## 500 LOC 초과 Main 파일
 
-사실: 2026-06-02 기준 `src/main/**/*.ts`의 500 LOC 초과 파일입니다.
+사실: 2026-06-02 기준 `src/main/**/*.ts`의 500 LOC 초과 파일은 없습니다.
 
 | File | LOC |
 | --- | ---: |
-| `src/main/database/schema.ts` | 623 |
+| 없음 | - |
 
 사실: `src/main/database/packagedSchema.ts`는 packaged SQLite bootstrap SQL과 trigger assembly만 유지하도록 축소되어 354 LOC입니다. 분리된 schema metadata는 `database/packagedSchema/index.ts` 배럴을 통해 제공하며 기존 public export인 `PACKAGED_SCHEMA_REQUIRED_TABLES`, `PACKAGED_SCHEMA_REQUIRED_COLUMNS`, `PACKAGED_SCHEMA_COLUMN_PATCHES`, `PACKAGED_SCHEMA_INDEX_PATCHES`, `PACKAGED_SCHEMA_BOOTSTRAP_SQL`는 유지합니다.
 
@@ -128,6 +128,18 @@ index.ts
 | --- | --- | ---: |
 | `packagedSchema/metadata.ts` | required table/column 목록과 기존 DB column/index patch metadata | 298 |
 | `packagedSchema/index.ts` | packaged schema metadata 배럴 export | 6 |
+
+사실: `src/main/database/schema.ts`는 기존 Drizzle schema public export 호환 진입점과 row 타입 export만 유지하도록 축소되어 9 LOC입니다. 실제 table 정의는 `database/schema/index.ts` 배럴을 통해 도메인별 helper로 제공합니다.
+
+| Drizzle schema helper | 책임 | LOC |
+| --- | --- | ---: |
+| `schema/foundation.ts` | Project, attachment, local state, settings table 정의 | 79 |
+| `schema/manuscript.ts` | Chapter, Scene, body/revision, note/synopsis/plot table 정의 | 169 |
+| `schema/search.ts` | SearchDirtyQueue table 정의 | 28 |
+| `schema/memory.ts` | MemoryChunk, build job, summary, embedding table 정의 | 119 |
+| `schema/world.ts` | character/event/faction/document/scrap/term/world entity/relation table 정의 | 205 |
+| `schema/snapshot.ts` | Snapshot table 정의 | 33 |
+| `schema/index.ts` | Drizzle schema helper 배럴 export | 6 |
 
 사실: `src/main/services/features/snapshot/snapshotArtifacts.ts`는 snapshot artifact 읽기/후보 목록/고아 cleanup/write orchestration만 유지하도록 축소되어 297 LOC입니다. 분리된 helper는 `snapshot/artifacts/index.ts` 배럴을 통해 제공하며 public export 경로는 유지합니다.
 
@@ -244,5 +256,5 @@ index.ts
 의견:
 
 - `projectService.ts`, `chapterService.ts`, `autoSaveManager.ts`는 public method가 많고 DB/FS/export/snapshot/derived-job 연계가 섞여 있어 책임 과다 위험이 큽니다.
-- `database/schema.ts`, `database/packagedSchema.ts`는 LOC보다 package/DB 계약 변경 파급이 더 큽니다.
+- `database/schema/**`, `database/packagedSchema/**`는 LOC보다 package/DB 계약 변경 파급이 더 큽니다.
 - `utilityProcessBridge.ts`는 message protocol, timeout, stream routing, sidecar lifecycle이 맞물려 있어 부분 변경 위험이 큽니다.
