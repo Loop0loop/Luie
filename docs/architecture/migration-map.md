@@ -413,6 +413,39 @@ SKIP_DB_TEST_SETUP=1 pnpm vitest tests/dom/appOperationalScenarios.test.tsx
 SKIP_DB_TEST_SETUP=1 pnpm vitest tests/dom/rendererRerenderRegression.test.tsx
 ```
 
+## Phase 3A: Renderer Large File Stabilization
+
+상태: 진행 중.
+
+목표:
+
+- Phase 4의 실제 target folder adoption 전에 renderer의 남은 대형 UI/service 파일을 안정화합니다.
+- 기존 `features/**` public import 경로와 component/hook/store API는 유지합니다.
+- renderer에서 `.luie` package, replica storage, localStorage fallback, direct `window.api` 예외를 더 명확한 helper/adapter 경계로 분리합니다.
+
+완료:
+
+- `src/renderer/src/features/research/services/worldPackageStorage.ts`는 440 LOC입니다.
+- `worldPackageStorage.ts`의 기존 public export인 `worldPackageStorage`, `DEFAULT_WORLD_SYNOPSIS`, `DEFAULT_WORLD_PLOT`, `DEFAULT_WORLD_DRAWING`, `DEFAULT_WORLD_MINDMAP`, `DEFAULT_WORLD_SCRAP_MEMOS`는 유지했습니다.
+- legacy localStorage bridge, `.luie` read/write queue, replica storage adapter, payload normalizer, scrap memo validation/recovery logging은 `research/services/worldPackageStorageHelpers/index.ts` 배럴 폴더로 분리했습니다.
+
+대상 후보:
+
+```text
+src/renderer/src/features/settings/components/tabs/ModelTab.tsx
+src/renderer/src/features/canvas/components/shell/CanvasActivityShell.tsx
+src/renderer/src/features/canvas/components/graph/GraphSurface.tsx
+src/renderer/src/features/project/hooks/useFileImport.ts
+```
+
+후순위 또는 예외 후보:
+
+```text
+src/renderer/src/i18n/locales/*/base.ts
+src/renderer/src/i18n/locales/*/workspace.ts
+src/renderer/src/styles/global.css
+```
+
 ## Phase 4: Target Folder Adoption
 
 주의: 이 단계는 가장 늦게 진행합니다.

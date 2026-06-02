@@ -114,7 +114,7 @@ renderer API 접근
 - `src/renderer/src/features/research/components/faction/FactionDetailView.tsx`
 - `src/renderer/src/features/research/components/MemoSection.tsx`
 - `src/renderer/src/features/research/components/wiki/WikiDetailView.tsx`
-- `src/renderer/src/features/research/services/worldPackageStorage.ts`
+- `src/renderer/src/features/research/services/worldPackageStorageHelpers/localStorage.ts`
 - `src/renderer/src/features/workspace/hooks/useCollapsedSidebarStore.ts`
 - `src/renderer/src/features/workspace/stores/projectLayout/persistLogging.ts`
 - `src/renderer/src/features/workspace/stores/projectLayoutStore.ts`
@@ -132,7 +132,6 @@ renderer API 접근
 - `src/renderer/src/i18n/locales/ko/base.ts`
 - `src/renderer/src/i18n/locales/ja/base.ts`
 - `src/renderer/src/i18n/locales/en/base.ts`
-- `src/renderer/src/features/research/services/worldPackageStorage.ts`
 - `src/renderer/src/features/settings/components/tabs/ModelTab.tsx`
 - `src/renderer/src/features/canvas/components/shell/CanvasActivityShell.tsx`
 - `src/renderer/src/features/canvas/components/graph/GraphSurface.tsx`
@@ -195,6 +194,18 @@ renderer API 접근
 | `worldBuildingActions/types.ts` | action factory setter/getter/action pick 타입 | 27 |
 | `worldBuildingActions/index.ts` | world building action helper 배럴 export | 3 |
 
+사실: `src/renderer/src/features/research/services/worldPackageStorage.ts`는 world package load/save orchestration과 기존 public export 호환 진입점만 유지하도록 축소되어 440 LOC입니다. legacy localStorage bridge, `.luie` read/write queue, replica storage adapter, payload normalizer, scrap memo validation/recovery logging은 `research/services/worldPackageStorageHelpers/index.ts` 배럴을 통해 제공합니다.
+
+| World package storage helper | 책임 | LOC |
+| --- | --- | ---: |
+| `worldPackageStorageHelpers/defaults.ts` | world synopsis/plot/drawing/mindmap/scrap 기본 payload | 40 |
+| `worldPackageStorageHelpers/localStorage.ts` | legacy localStorage key/read/remove bridge | 38 |
+| `worldPackageStorageHelpers/luieStorage.ts` | `.luie` world entry read/write queue와 canonical save error mapping | 126 |
+| `worldPackageStorageHelpers/normalizers.ts` | synopsis/plot/drawing/mindmap payload normalization | 140 |
+| `worldPackageStorageHelpers/replicaStorage.ts` | world replica document/scrap memo load/save adapter | 98 |
+| `worldPackageStorageHelpers/scrapMemos.ts` | scrap memo schema validation, migration/recovery operational logging | 126 |
+| `worldPackageStorageHelpers/index.ts` | world package storage helper 배럴 export | 6 |
+
 ## 위험 지점
 
 의견:
@@ -204,6 +215,7 @@ renderer API 접근
 - `projectLayoutStore.ts`와 `projectLayout/**`는 persisted layout migration/sanitize/merge 계약이 있어 변경 위험이 큽니다.
 - `uiStore.state.ts`는 legacy flat fields와 `regions` 동기화가 있어 변경 위험이 큽니다.
 - `worldBuildingStore.actions.ts`와 `worldBuildingActions/**`는 graph load, replica merge, persistence queue, mutation version, CRUD mutation 계약이 맞물립니다.
+- `worldPackageStorage.ts`와 `worldPackageStorageHelpers/**`는 replica storage, canonical `.luie` package, legacy localStorage migration 계약이 맞물립니다.
 - `CanvasNodeInspector.tsx`의 직접 `window.api` memory 호출은 API 경계 예외입니다.
 
 ## 보존 불가침 경계

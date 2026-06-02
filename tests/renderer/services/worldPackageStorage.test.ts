@@ -165,6 +165,39 @@ describe("worldPackageStorage", () => {
     expect(writeProjectFile).not.toHaveBeenCalled();
   });
 
+  it("does not write canonical package data for non-.luie project paths", async () => {
+    const writeProjectFile = vi.fn().mockResolvedValue({ success: true });
+    const warn = vi.fn().mockResolvedValue({ success: true });
+    const worldStorage = createWorldStorageApi();
+
+    setWindowApi({
+      fs: {
+        readLuieEntry: vi.fn().mockResolvedValue({ success: true, data: null }),
+        writeProjectFile,
+      },
+      logger: { warn },
+      worldStorage,
+    });
+
+    const { worldPackageStorage } =
+      await import("../../../src/renderer/src/features/research/services/worldPackageStorage.js");
+
+    await worldPackageStorage.saveSynopsis("project-1", "/tmp/project-1", {
+      synopsis: "hello",
+      status: "draft",
+    });
+
+    expect(worldStorage.setDocument).toHaveBeenCalledWith({
+      projectId: "project-1",
+      docType: "synopsis",
+      payload: expect.objectContaining({
+        synopsis: "hello",
+        status: "draft",
+      }),
+    });
+    expect(writeProjectFile).not.toHaveBeenCalled();
+  });
+
   it("serializes concurrent writes for the same .luie package", async () => {
     const writeResolvers: Array<(value: unknown) => void> = [];
     const writeProjectFile = vi.fn().mockImplementation(

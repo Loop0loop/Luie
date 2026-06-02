@@ -10,7 +10,7 @@ const ALLOWED_LOCAL_STORAGE_FILES = new Set([
   "src/renderer/src/features/research/components/faction/FactionDetailView.tsx",
   "src/renderer/src/features/research/components/MemoSection.tsx",
   "src/renderer/src/features/research/components/wiki/WikiDetailView.tsx",
-  "src/renderer/src/features/research/services/worldPackageStorage.ts",
+  "src/renderer/src/features/research/services/worldPackageStorageHelpers/localStorage.ts",
   "src/renderer/src/features/workspace/hooks/useCollapsedSidebarStore.ts",
   "src/renderer/src/features/workspace/stores/projectLayout/persistLogging.ts",
   "src/renderer/src/features/workspace/stores/projectLayoutStore.ts",
