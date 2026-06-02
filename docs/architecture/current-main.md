@@ -124,7 +124,6 @@ index.ts
 | `src/main/database/schema.ts` | 623 |
 | `src/main/manager/settingsManager.ts` | 519 |
 | `src/main/services/features/analysis/analysisStreamRunner.ts` | 518 |
-| `src/main/services/features/sync/syncMapper.ts` | 518 |
 | `src/main/services/features/sync/syncLocalApply.ts` | 517 |
 | `src/main/services/core/project/projectImportOpen.ts` | 516 |
 | `src/main/services/features/utility/utilityProcessBridge.ts` | 511 |
@@ -187,6 +186,17 @@ index.ts
 | `exportEngine/worldPayload.ts` | replica/package world payload 읽기와 schema fallback | 252 |
 | `exportEngine/types.ts` | export engine logger/world payload 타입 | 33 |
 | `exportEngine/index.ts` | export engine helper 배럴 export | 11 |
+
+사실: `src/main/services/features/sync/syncMapper.ts`는 기존 public export를 유지하는 compatibility export로 축소되어 19 LOC입니다. 실제 SyncBundle 타입/merge orchestration은 `sync/mapper/index.ts` 배럴에서 제공합니다.
+
+| Sync mapper helper | 책임 | LOC |
+| --- | --- | ---: |
+| `mapper/types.ts` | SyncBundle record 타입과 merge option 타입 | 129 |
+| `mapper/index.ts` | mergeSyncBundles orchestration과 public export | 138 |
+| `mapper/textConflicts.ts` | chapter/memo 텍스트 충돌 복사와 conflict summary | 121 |
+| `mapper/tombstones.ts` | project/entity tombstone 적용 | 102 |
+| `mapper/entityMerge.ts` | timestamp/latest 선택과 일반 entity/world doc merge | 69 |
+| `mapper/bundle.ts` | empty SyncBundle factory | 14 |
 
 ## 위험 지점
 

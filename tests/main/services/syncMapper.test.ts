@@ -249,4 +249,100 @@ describe("syncMapper project tombstones", () => {
     expect(merged.chapters).toHaveLength(1);
     expect(merged.chapters[0]?.content).toBe("local text");
   });
+
+  it("creates memo conflict copy only when both sides changed after baseline", () => {
+    const local = createEmptySyncBundle();
+    local.memos.push({
+      id: "memo-1",
+      userId: "user-1",
+      projectId: "project-1",
+      title: "Memo",
+      content: "local memo",
+      tags: ["local"],
+      updatedAt: "2026-02-22T00:15:00.000Z",
+    });
+
+    const remote = createEmptySyncBundle();
+    remote.memos.push({
+      id: "memo-1",
+      userId: "user-1",
+      projectId: "project-1",
+      title: "Memo",
+      content: "remote memo",
+      tags: ["remote"],
+      updatedAt: "2026-02-22T00:16:00.000Z",
+    });
+
+    const { merged, conflicts } = mergeSyncBundles(local, remote, {
+      baselinesByProjectId: {
+        "project-1": {
+          chapter: {},
+          memo: {
+            "memo-1": "2026-02-22T00:10:00.000Z",
+          },
+          capturedAt: "2026-02-22T00:10:00.000Z",
+        },
+      },
+    });
+
+    expect(conflicts.memos).toBe(1);
+    expect(conflicts.total).toBe(1);
+    expect(merged.memos.filter((memo) => memo.title.includes("(Conflict Copy)"))).toHaveLength(1);
+    expect(merged.memos).toHaveLength(2);
+    expect(conflicts.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "memo",
+          id: "memo-1",
+          projectId: "project-1",
+        }),
+      ]),
+    );
+  });
+
+  it("applies explicit memo conflict resolution and skips conflict copy creation", () => {
+    const local = createEmptySyncBundle();
+    local.memos.push({
+      id: "memo-1",
+      userId: "user-1",
+      projectId: "project-1",
+      title: "Memo Local",
+      content: "local memo",
+      tags: ["local"],
+      updatedAt: "2026-02-22T00:15:00.000Z",
+    });
+
+    const remote = createEmptySyncBundle();
+    remote.memos.push({
+      id: "memo-1",
+      userId: "user-1",
+      projectId: "project-1",
+      title: "Memo Remote",
+      content: "remote memo",
+      tags: ["remote"],
+      updatedAt: "2026-02-22T00:16:00.000Z",
+    });
+
+    const { merged, conflicts } = mergeSyncBundles(local, remote, {
+      baselinesByProjectId: {
+        "project-1": {
+          chapter: {},
+          memo: {
+            "memo-1": "2026-02-22T00:10:00.000Z",
+          },
+          capturedAt: "2026-02-22T00:10:00.000Z",
+        },
+      },
+      conflictResolutions: {
+        "memo:memo-1": "remote",
+      },
+    });
+
+    expect(conflicts.memos).toBe(0);
+    expect(conflicts.total).toBe(0);
+    expect(conflicts.items).toBeUndefined();
+    expect(merged.memos.filter((memo) => memo.title.includes("(Conflict Copy)"))).toHaveLength(0);
+    expect(merged.memos).toHaveLength(1);
+    expect(merged.memos[0]?.content).toBe("remote memo");
+  });
 });
