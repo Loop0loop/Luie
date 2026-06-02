@@ -1,92 +1,33 @@
 import { app } from "electron";
-import { promises as fs, type Dirent } from "fs";
+import { promises as fs } from "fs";
 import path from "path";
-import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import { db } from "../../../database/index.js";
-import {
-  chapter as chapterTable,
-  character as characterTable,
-  project as projectTable,
-  projectSettings as projectSettingsTable,
-  snapshot as snapshotTable,
-  term as termTable,
-} from "../../../database/schema.js";
+import { snapshot as snapshotTable } from "../../../database/schema.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import {
   APP_VERSION,
-  ErrorCode,
-  LUIE_PACKAGE_EXTENSION,
-  LUIE_SNAPSHOTS_DIR,
   SNAPSHOT_BACKUP_DIR,
 } from "../../../../shared/constants/index.js";
 import type { SnapshotCreateInput } from "../../../../shared/types/index.js";
-import { ServiceError } from "../../../utils/serviceError.js";
 import { writeFileAtomic, readMaybeGzip } from "../../../utils/atomicWrite.js";
 import { promisify } from "node:util";
 import { gzip as gzipCallback } from "node:zlib";
-import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
 import {
-  getProjectAttachmentPath,
-  listProjectAttachmentEntries,
-} from "../../core/project/projectAttachmentStore.js";
+  collectSnapFilesRecursive,
+  extractSnapshotIdFromArtifactPath,
+  getArtifactPriority,
+  resolveArtifactRoots,
+  resolveLocalSnapshotDir,
+  resolveProjectBaseDir,
+} from "./snapshotArtifactPaths.js";
+import { loadProjectSnapshotRecord } from "./snapshotArtifactProjectLoader.js";
+import { resolveRestorePreview } from "./snapshotArtifactPreview.js";
+import type { FullSnapshotData } from "./snapshotArtifactTypes.js";
 import type { SnapshotRestoreCandidate } from "../../../../shared/types/index.js";
 
 const logger = createLogger("SnapshotArtifacts");
 const gzip = promisify(gzipCallback);
-const SNAPSHOT_ARTIFACT_ID_PATTERN = /-([0-9a-fA-F-]{36})\.snap$/;
-const RESTORE_EXCERPT_MAX_LENGTH = 160;
-
-type FullSnapshotData = {
-  meta: {
-    version: string;
-    timestamp: string;
-    snapshotId: string;
-    projectId: string;
-  };
-  data: {
-    project: {
-      id: string;
-      title: string;
-      description?: string | null;
-      projectPath?: string | null;
-      createdAt: string;
-      updatedAt: string;
-    };
-    settings?: unknown;
-    chapters: Array<{
-      id: string;
-      title: string;
-      content: string;
-      synopsis?: string | null;
-      order: number;
-      wordCount?: number | null;
-      createdAt: string;
-      updatedAt: string;
-    }>;
-    characters: Array<{
-      id: string;
-      name: string;
-      description?: string | null;
-      firstAppearance?: string | null;
-      attributes?: unknown;
-      createdAt: string;
-      updatedAt: string;
-    }>;
-    terms: Array<{
-      id: string;
-      term: string;
-      definition?: string | null;
-      category?: string | null;
-      firstAppearance?: string | null;
-      createdAt: string;
-      updatedAt: string;
-    }>;
-    focus?: {
-      chapterId?: string | null;
-      content?: string | null;
-    };
-  };
-};
 
 export async function readFullSnapshotArtifact(
   filePath: string,
@@ -95,155 +36,6 @@ export async function readFullSnapshotArtifact(
   const payload = JSON.parse(raw);
   return payload as FullSnapshotData;
 }
-
-const toExcerpt = (value: string | null | undefined): string | undefined => {
-  if (typeof value !== "string") return undefined;
-  const normalized = value.replace(/\s+/g, " ").trim();
-  if (normalized.length === 0) return undefined;
-  if (normalized.length <= RESTORE_EXCERPT_MAX_LENGTH) {
-    return normalized;
-  }
-  return `${normalized.slice(0, RESTORE_EXCERPT_MAX_LENGTH).trimEnd()}...`;
-};
-
-type ProjectSnapshotRecord = {
-  id: string;
-  title: string;
-  description?: string | null;
-  projectPath?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  settings?: unknown;
-  chapters: Array<{
-    id: string;
-    title: string;
-    content: string;
-    synopsis?: string | null;
-    order: number;
-    wordCount?: number | null;
-    createdAt: Date;
-    updatedAt: Date;
-  }>;
-  characters: Array<{
-    id: string;
-    name: string;
-    description?: string | null;
-    firstAppearance?: string | null;
-    attributes?: unknown;
-    createdAt: Date;
-    updatedAt: Date;
-  }>;
-  terms: Array<{
-    id: string;
-    term: string;
-    definition?: string | null;
-    category?: string | null;
-    firstAppearance?: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-  }>;
-};
-
-function resolveProjectBaseDir(projectPath: string) {
-  const normalized = ensureSafeAbsolutePath(projectPath, "projectPath");
-  const normalizedLower = normalized.toLowerCase();
-  const extLower = LUIE_PACKAGE_EXTENSION.toLowerCase();
-  return normalizedLower.endsWith(extLower)
-    ? path.dirname(normalized)
-    : normalized;
-}
-
-function resolveLocalSnapshotDir(baseDir: string, projectName: string) {
-  return path.join(baseDir, ".luie", LUIE_SNAPSHOTS_DIR, projectName);
-}
-
-const extractSnapshotIdFromArtifactPath = (
-  artifactPath: string,
-): string | null => {
-  const match = path.basename(artifactPath).match(SNAPSHOT_ARTIFACT_ID_PATTERN);
-  return match?.[1] ?? null;
-};
-
-const collectSnapFilesRecursive = async (
-  rootDir: string,
-  results: string[],
-): Promise<void> => {
-  let entries: Dirent[];
-  try {
-    entries = await fs.readdir(rootDir, { withFileTypes: true });
-  } catch (error) {
-    const fsError = error as NodeJS.ErrnoException;
-    if (fsError?.code === "ENOENT") return;
-    logger.warn("Failed to read snapshot artifact directory", {
-      rootDir,
-      error,
-    });
-    return;
-  }
-
-  for (const entry of entries) {
-    const fullPath = path.join(rootDir, entry.name);
-    if (entry.isDirectory()) {
-      await collectSnapFilesRecursive(fullPath, results);
-      continue;
-    }
-    if (!entry.isFile() || !entry.name.endsWith(".snap")) continue;
-    results.push(fullPath);
-  }
-};
-
-const resolveArtifactRoots = async (): Promise<string[]> => {
-  const roots = new Set<string>([
-    path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR),
-  ]);
-  const projects = await listProjectAttachmentEntries();
-
-  for (const project of projects) {
-    if (!project.projectPath) continue;
-    const projectDirName = String(project.id);
-    try {
-      const projectBaseDir = resolveProjectBaseDir(project.projectPath);
-      roots.add(resolveLocalSnapshotDir(projectBaseDir, projectDirName));
-      roots.add(path.join(projectBaseDir, `backup${projectDirName}`));
-    } catch (error) {
-      logger.warn("Skipping snapshot artifact roots for invalid projectPath", {
-        projectId: project.id,
-        projectPath: project.projectPath,
-        error,
-      });
-    }
-  }
-
-  return Array.from(roots);
-};
-
-const resolveRestorePreview = (payload: FullSnapshotData) => {
-  const focusChapterId = payload.data.focus?.chapterId ?? null;
-  const orderedChapters = [...payload.data.chapters].sort(
-    (left, right) =>
-      new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
-  );
-  const chapter =
-    orderedChapters.find((entry) => entry.id === focusChapterId) ??
-    orderedChapters[0];
-  const excerpt = toExcerpt(payload.data.focus?.content ?? chapter?.content);
-
-  return {
-    chapterTitle: chapter?.title,
-    excerpt,
-  };
-};
-
-const getArtifactPriority = (artifactPath: string): number => {
-  const appBackupRoot = path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR);
-  if (artifactPath.startsWith(appBackupRoot)) {
-    return 3;
-  }
-  if (artifactPath.includes(`${path.sep}.luie${path.sep}`)) {
-    return 1;
-  }
-  return 2;
-};
 
 export async function listSnapshotRestoreCandidates(): Promise<
   SnapshotRestoreCandidate[]
@@ -378,68 +170,9 @@ export async function writeFullSnapshotArtifact(
     chapterId: input.chapterId,
   });
 
-  const store = db.getClient();
-
-  const [projRows, settingsRows, chaptersRows, charactersRows, termsRows, projectPath] =
-    await Promise.all([
-      store.select().from(projectTable).where(eq(projectTable.id, input.projectId)).limit(1),
-      store.select().from(projectSettingsTable).where(eq(projectSettingsTable.projectId, input.projectId)).limit(1),
-      store.select().from(chapterTable).where(and(eq(chapterTable.projectId, input.projectId), isNull(chapterTable.deletedAt))).orderBy(asc(chapterTable.order)),
-      store.select().from(characterTable).where(and(eq(characterTable.projectId, input.projectId), isNull(characterTable.deletedAt))),
-      store.select().from(termTable).where(and(eq(termTable.projectId, input.projectId), isNull(termTable.deletedAt))),
-      getProjectAttachmentPath(input.projectId),
-    ]);
-
-  const projectRow = projRows[0] ?? null;
-  const settingsRow = settingsRows[0] ?? null;
-
-  const assembledProject: ProjectSnapshotRecord | null = projectRow
-    ? {
-        id: projectRow.id,
-        title: projectRow.title,
-        description: projectRow.description,
-        projectPath: projectRow.projectPath,
-        createdAt: new Date(projectRow.createdAt),
-        updatedAt: new Date(projectRow.updatedAt),
-        settings: settingsRow ?? undefined,
-        chapters: chaptersRows.map((ch) => ({
-          id: ch.id,
-          title: ch.title,
-          content: ch.content,
-          synopsis: ch.synopsis,
-          order: ch.order,
-          wordCount: ch.wordCount,
-          createdAt: new Date(ch.createdAt),
-          updatedAt: new Date(ch.updatedAt),
-        })),
-        characters: charactersRows.map((ch) => ({
-          id: ch.id,
-          name: ch.name,
-          description: ch.description,
-          firstAppearance: ch.firstAppearance,
-          attributes: ch.attributes ? JSON.parse(ch.attributes) : undefined,
-          createdAt: new Date(ch.createdAt),
-          updatedAt: new Date(ch.updatedAt),
-        })),
-        terms: termsRows.map((t) => ({
-          id: t.id,
-          term: t.term,
-          definition: t.definition,
-          category: t.category,
-          firstAppearance: t.firstAppearance,
-          createdAt: new Date(t.createdAt),
-          updatedAt: new Date(t.updatedAt),
-        })),
-      }
-    : null;
-
-  const project = assembledProject;
-
-  if (!project) {
-    throw new ServiceError(ErrorCode.PROJECT_NOT_FOUND, "Project not found", {
-      projectId: input.projectId,
-    });
-  }
+  const { project, projectPath } = await loadProjectSnapshotRecord(
+    input.projectId,
+  );
 
   if (!projectPath) {
     logger.warn(

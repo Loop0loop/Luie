@@ -93,36 +93,47 @@ index.ts
 
 ## 500 LOC 초과 Main 파일
 
-사실:
+사실: 2026-06-02 기준 `src/main/**/*.ts`의 500 LOC 초과 파일입니다.
 
-- `src/main/services/core/projectService.ts`
-- `src/main/services/core/chapterService.ts`
-- `src/main/manager/autoSaveManager.ts`
-- `src/main/services/features/dbMaintenanceService.ts`
-- `src/main/database/packagedSchema.ts`
-- `src/main/services/world/entityRelationService.ts`
-- `src/main/database/schema.ts`
-- `src/main/services/features/snapshot/snapshotArtifacts.ts`
-- `src/main/handler/system/ipcSettingsHandlers.ts`
-- `src/main/services/features/sync/syncBundleCollector.ts`
-- `src/main/services/features/memory/memoryProjectionService.ts`
-- `src/main/services/features/sync/syncRepository.ts`
-- `src/main/services/core/project/projectExportEngine.ts`
-- `src/main/manager/settingsManager.ts`
-- `src/main/services/features/sync/syncMapper.ts`
-- `src/main/services/features/analysis/analysisStreamRunner.ts`
-- `src/main/services/features/sync/syncLocalApply.ts`
-- `src/main/services/core/project/projectImportOpen.ts`
-- `src/main/services/features/utility/utilityProcessBridge.ts`
-- `src/main/services/features/snapshot/snapshotService.ts`
-- `src/main/services/features/searchService.ts`
+| File | LOC |
+| --- | ---: |
+| `src/main/database/packagedSchema.ts` | 639 |
+| `src/main/database/schema.ts` | 623 |
+| `src/main/services/features/sync/syncBundleCollector.ts` | 550 |
+| `src/main/services/features/memory/memoryProjectionService.ts` | 530 |
+| `src/main/services/features/sync/syncRepository.ts` | 529 |
+| `src/main/services/core/project/projectExportEngine.ts` | 524 |
+| `src/main/manager/settingsManager.ts` | 519 |
+| `src/main/services/features/sync/syncMapper.ts` | 518 |
+| `src/main/services/features/analysis/analysisStreamRunner.ts` | 518 |
+| `src/main/services/features/sync/syncLocalApply.ts` | 517 |
+| `src/main/services/core/project/projectImportOpen.ts` | 516 |
+| `src/main/services/features/utility/utilityProcessBridge.ts` | 511 |
+| `src/main/services/features/searchService.ts` | 504 |
+
+사실: `src/main/services/features/snapshot/snapshotArtifacts.ts`는 snapshot artifact 읽기/후보 목록/고아 cleanup/write orchestration만 유지하도록 축소되어 297 LOC입니다. 분리된 helper는 모두 같은 snapshot feature 폴더에 있으며 public export 경로는 유지합니다.
+
+| Snapshot helper | 책임 | LOC |
+| --- | --- | ---: |
+| `snapshotArtifactTypes.ts` | full snapshot payload와 DB record 타입 | 89 |
+| `snapshotArtifactPaths.ts` | artifact root/path/priority/snap file scan | 98 |
+| `snapshotArtifactPreview.ts` | restore candidate 제목/excerpt 계산 | 30 |
+| `snapshotArtifactProjectLoader.ts` | DB에서 full snapshot record 조립 | 106 |
+
+사실: `src/main/handler/system/ipcSettingsHandlers.ts`는 settings IPC 등록 진입점만 유지하도록 축소되어 15 LOC입니다. 분리된 helper는 모두 같은 system handler 폴더에 있으며 IPC channel과 등록 계약은 유지합니다.
+
+| Settings IPC helper | 책임 | LOC |
+| --- | --- | ---: |
+| `ipcSettingsCoreHandlers.ts` | editor/language/menu/shortcut/window/reset 기본 설정 IPC | 183 |
+| `ipcSettingsLlmHandlers.ts` | LLM preference/key/local LLM/sidecar/Ollama IPC | 171 |
+| `ipcModelDownloadHandlers.ts` | model download/cancel/HF search/files IPC | 164 |
+| `ipcLlmfitEmbeddingHandlers.ts` | llmfit와 embedding model IPC | 115 |
+| `ipcSettingsManagerLoader.ts` | settingsManager lazy import cache | 14 |
 
 ## 위험 지점
 
 의견:
 
 - `projectService.ts`, `chapterService.ts`, `autoSaveManager.ts`는 public method가 많고 DB/FS/export/snapshot/derived-job 연계가 섞여 있어 책임 과다 위험이 큽니다.
-- `ipcSettingsHandlers.ts`는 settings, LLM runtime, sidecar, model download, HF search가 한 파일에 몰려 있습니다.
 - `database/schema.ts`, `database/packagedSchema.ts`는 LOC보다 package/DB 계약 변경 파급이 더 큽니다.
 - `utilityProcessBridge.ts`는 message protocol, timeout, stream routing, sidecar lifecycle이 맞물려 있어 부분 변경 위험이 큽니다.
-

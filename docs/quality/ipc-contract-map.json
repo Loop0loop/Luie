@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-06-02T08:03:13.386Z",
+  "generatedAt": "2026-06-02T11:15:53.330Z",
   "summary": {
     "definedChannels": 205,
     "errors": 0,
@@ -1202,8 +1202,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 465
+            "file": "src/main/handler/system/ipcLlmfitEmbeddingHandlers.ts",
+            "line": 90
           }
         ],
         "main_emit": [],
@@ -1229,8 +1229,8 @@
         "main_handle": [],
         "main_emit": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 477
+            "file": "src/main/handler/system/ipcLlmfitEmbeddingHandlers.ts",
+            "line": 19
           }
         ],
         "renderer_listen": [
@@ -1264,8 +1264,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 448
+            "file": "src/main/handler/system/ipcLlmfitEmbeddingHandlers.ts",
+            "line": 73
           }
         ],
         "main_emit": [],
@@ -2101,8 +2101,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 406
+            "file": "src/main/handler/system/ipcLlmfitEmbeddingHandlers.ts",
+            "line": 31
           }
         ],
         "main_emit": [],
@@ -2132,8 +2132,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 433
+            "file": "src/main/handler/system/ipcLlmfitEmbeddingHandlers.ts",
+            "line": 58
           }
         ],
         "main_emit": [],
@@ -2163,8 +2163,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 441
+            "file": "src/main/handler/system/ipcLlmfitEmbeddingHandlers.ts",
+            "line": 66
           }
         ],
         "main_emit": [],
@@ -2504,8 +2504,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 505
+            "file": "src/main/handler/system/ipcModelDownloadHandlers.ts",
+            "line": 136
           }
         ],
         "main_emit": [],
@@ -2531,8 +2531,8 @@
         "main_handle": [],
         "main_emit": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 338
+            "file": "src/main/handler/system/ipcModelDownloadHandlers.ts",
+            "line": 43
           }
         ],
         "renderer_listen": [
@@ -2566,8 +2566,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 311
+            "file": "src/main/handler/system/ipcModelDownloadHandlers.ts",
+            "line": 107
           }
         ],
         "main_emit": [],
@@ -2597,8 +2597,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 399
+            "file": "src/main/handler/system/ipcModelDownloadHandlers.ts",
+            "line": 154
           }
         ],
         "main_emit": [],
@@ -2628,8 +2628,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 392
+            "file": "src/main/handler/system/ipcModelDownloadHandlers.ts",
+            "line": 146
           }
         ],
         "main_emit": [],
@@ -4031,8 +4031,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 60
+            "file": "src/main/handler/system/ipcSettingsCoreHandlers.ts",
+            "line": 19
           }
         ],
         "main_emit": [],
@@ -4062,8 +4062,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 91
+            "file": "src/main/handler/system/ipcSettingsCoreHandlers.ts",
+            "line": 50
           }
         ],
         "main_emit": [],
@@ -4093,8 +4093,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 69
+            "file": "src/main/handler/system/ipcSettingsCoreHandlers.ts",
+            "line": 28
           }
         ],
         "main_emit": [],
@@ -4124,8 +4124,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 103
+            "file": "src/main/handler/system/ipcSettingsCoreHandlers.ts",
+            "line": 81
           }
         ],
         "main_emit": [],
@@ -4155,8 +4155,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 255
+            "file": "src/main/handler/system/ipcSettingsLlmHandlers.ts",
+            "line": 80
           }
         ],
         "main_emit": [],
@@ -4186,8 +4186,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 261
+            "file": "src/main/handler/system/ipcSettingsLlmHandlers.ts",
+            "line": 86
           }
         ],
         "main_emit": [],
@@ -4217,8 +4217,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 123
+            "file": "src/main/handler/system/ipcSettingsCoreHandlers.ts",
+            "line": 101
           }
         ],
         "main_emit": [],
@@ -4248,8 +4248,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 147
+            "file": "src/main/handler/system/ipcSettingsCoreHandlers.ts",
+            "line": 125
           }
         ],
         "main_emit": [],
@@ -4279,8 +4279,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 198
+            "file": "src/main/handler/system/ipcSettingsCoreHandlers.ts",
+            "line": 162
           }
         ],
         "main_emit": [],
@@ -4310,8 +4310,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 515
+            "file": "src/main/handler/system/ipcSettingsLlmHandlers.ts",
+            "line": 136
           }
         ],
         "main_emit": [],
@@ -4341,8 +4341,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 545
+            "file": "src/main/handler/system/ipcSettingsCoreHandlers.ts",
+            "line": 171
           }
         ],
         "main_emit": [],
@@ -4372,8 +4372,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 168
+            "file": "src/main/handler/system/ipcSettingsCoreHandlers.ts",
+            "line": 62
           }
         ],
         "main_emit": [],
@@ -4403,8 +4403,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 78
+            "file": "src/main/handler/system/ipcSettingsCoreHandlers.ts",
+            "line": 37
           }
         ],
         "main_emit": [],
@@ -4434,8 +4434,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 112
+            "file": "src/main/handler/system/ipcSettingsCoreHandlers.ts",
+            "line": 90
           }
         ],
         "main_emit": [],
@@ -4465,8 +4465,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 240
+            "file": "src/main/handler/system/ipcSettingsLlmHandlers.ts",
+            "line": 62
           }
         ],
         "main_emit": [],
@@ -4496,8 +4496,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 226
+            "file": "src/main/handler/system/ipcSettingsLlmHandlers.ts",
+            "line": 46
           }
         ],
         "main_emit": [],
@@ -4527,8 +4527,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 275
+            "file": "src/main/handler/system/ipcSettingsLlmHandlers.ts",
+            "line": 100
           }
         ],
         "main_emit": [],
@@ -4558,8 +4558,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 132
+            "file": "src/main/handler/system/ipcSettingsCoreHandlers.ts",
+            "line": 110
           }
         ],
         "main_emit": [],
@@ -4589,8 +4589,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 207
+            "file": "src/main/handler/system/ipcSettingsLlmHandlers.ts",
+            "line": 20
           }
         ],
         "main_emit": [],
@@ -4620,8 +4620,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 156
+            "file": "src/main/handler/system/ipcSettingsCoreHandlers.ts",
+            "line": 134
           }
         ],
         "main_emit": [],
@@ -4651,8 +4651,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 187
+            "file": "src/main/handler/system/ipcSettingsCoreHandlers.ts",
+            "line": 146
           }
         ],
         "main_emit": [],
@@ -4682,8 +4682,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 529
+            "file": "src/main/handler/system/ipcSettingsLlmHandlers.ts",
+            "line": 155
           }
         ],
         "main_emit": [],
@@ -4713,8 +4713,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 293
+            "file": "src/main/handler/system/ipcSettingsLlmHandlers.ts",
+            "line": 118
           }
         ],
         "main_emit": [],
@@ -4744,8 +4744,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/system/ipcSettingsHandlers.ts",
-            "line": 302
+            "file": "src/main/handler/system/ipcSettingsLlmHandlers.ts",
+            "line": 127
           }
         ],
         "main_emit": [],

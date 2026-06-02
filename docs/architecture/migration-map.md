@@ -139,14 +139,46 @@ pnpm run check:preload-contract-regression
 
 ## Phase 2: Main High-Risk Service Split
 
+상태: 진행 중.
+
+완료:
+
+- `src/main/services/core/projectService.ts`는 476 LOC입니다.
+- `src/main/services/core/chapterService.ts`는 361 LOC입니다.
+- `src/main/manager/autoSaveManager.ts`는 492 LOC입니다.
+- `src/main/services/features/dbMaintenanceService.ts`는 473 LOC입니다.
+- `src/main/services/features/snapshot/snapshotService.ts`는 411 LOC입니다.
+- `src/main/services/features/snapshot/snapshotArtifacts.ts`는 297 LOC입니다.
+- `src/main/handler/system/ipcSettingsHandlers.ts`는 15 LOC입니다.
+- `snapshotArtifacts.ts`의 기존 public export인 `readFullSnapshotArtifact`, `listSnapshotRestoreCandidates`, `cleanupOrphanSnapshotArtifacts`, `writeFullSnapshotArtifact`는 유지했습니다.
+- snapshot artifact의 path 탐색, restore preview 계산, DB payload 조립, payload 타입은 같은 feature 폴더의 helper 파일로 분리했습니다.
+- `ipcSettingsHandlers.ts`의 기존 public export인 `registerSettingsIPCHandlers`는 유지했습니다.
+- settings IPC의 기본 설정, LLM 설정, 모델 다운로드, llmfit/embedding handler는 같은 system handler 폴더의 helper 파일로 분리했습니다.
+- 2026-06-02 기준 `bun run typecheck`, `bun run check:core-complexity`, `bun run check:ipc-handler-schemas`, `bun run check:ipc-contract-map` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/handler/ipcSettingsHandlers.security.test.ts` 통과.
+
+검증 제약:
+
+- `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/snapshotArtifacts.pathValidation.test.ts tests/main/services/snapshotService.packageBehavior.unit.test.ts`는 현재 mock DB client가 Drizzle `select`/`insert` API를 제공하지 않아 실패합니다.
+- 실패 지점은 `store.select is not a function`, `db.getClient(...).insert is not a function`입니다.
+- 이건 확인된 사실입니다. native DB 포함 테스트 재실행 전에 테스트 mock 또는 `better-sqlite3`/Drizzle test setup 정리가 필요합니다.
+
 대상 후보:
 
 ```text
-src/main/services/core/projectService.ts
-src/main/services/core/chapterService.ts
-src/main/manager/autoSaveManager.ts
-src/main/services/features/dbMaintenanceService.ts
-src/main/services/world/entityRelationService.ts
+src/main/database/packagedSchema.ts
+src/main/database/schema.ts
+src/main/services/features/sync/syncBundleCollector.ts
+src/main/services/features/memory/memoryProjectionService.ts
+src/main/services/features/sync/syncRepository.ts
+src/main/services/core/project/projectExportEngine.ts
+src/main/manager/settingsManager.ts
+src/main/services/features/sync/syncMapper.ts
+src/main/services/features/analysis/analysisStreamRunner.ts
+src/main/services/features/sync/syncLocalApply.ts
+src/main/services/core/project/projectImportOpen.ts
+src/main/services/features/utility/utilityProcessBridge.ts
+src/main/services/features/searchService.ts
 ```
 
 목표:
@@ -177,6 +209,19 @@ autoSaveManager.ts
   -> autoSaveFlushOps
   -> autoSaveMirrorStore
   -> autoSaveSnapshotJobs
+
+snapshotArtifacts.ts
+  -> snapshotArtifactTypes
+  -> snapshotArtifactPaths
+  -> snapshotArtifactPreview
+  -> snapshotArtifactProjectLoader
+
+ipcSettingsHandlers.ts
+  -> ipcSettingsCoreHandlers
+  -> ipcSettingsLlmHandlers
+  -> ipcModelDownloadHandlers
+  -> ipcLlmfitEmbeddingHandlers
+  -> ipcSettingsManagerLoader
 ```
 
 검증:
@@ -187,9 +232,13 @@ pnpm run check:core-complexity
 SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/projectService.test.ts
 SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/chapterService.test.ts
 SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/autoSaveManager.runtimeStats.test.ts
+SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/snapshotArtifacts.pathValidation.test.ts
+SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/handler/ipcSettingsHandlers.security.test.ts
 ```
 
 ## Phase 3: Renderer Shell Split
+
+상태: 미시작.
 
 대상 후보:
 
@@ -200,6 +249,16 @@ src/renderer/src/features/workspace/stores/projectLayoutStore.ts
 src/renderer/src/features/research/stores/worldBuildingStore.actions.ts
 src/renderer/src/features/editor/components/EditorToolbar.tsx
 ```
+
+2026-06-02 기준 후보 LOC:
+
+| File | LOC |
+| --- | ---: |
+| `src/renderer/src/features/editor/components/EditorToolbar.tsx` | 818 |
+| `src/renderer/src/features/workspace/stores/projectLayoutStore.ts` | 655 |
+| `src/renderer/src/features/research/stores/worldBuildingStore.actions.ts` | 639 |
+| `src/renderer/src/app/App.tsx` | 612 |
+| `src/renderer/src/features/workspace/components/layout/EditorRoot.tsx` | 536 |
 
 목표:
 
