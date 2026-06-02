@@ -33,6 +33,9 @@ describe("SettingsManager localLlm settings", () => {
       contextSize: 4096,
     });
     expect(settingsManager.getLlmSettings()).toEqual({
+      preferredProvider: "auto",
+      openaiApiKey: "",
+      geminiApiKey: "",
       ollama: {
         baseUrl: "http://localhost:11434",
         chatModel: "qwen3:4b",
@@ -40,6 +43,8 @@ describe("SettingsManager localLlm settings", () => {
       },
       ragTemperature: 0.25,
       ragMaxTokens: 1400,
+      defaultEmbeddingModelPath: undefined,
+      defaultEmbeddingModelId: undefined,
     });
   });
 });

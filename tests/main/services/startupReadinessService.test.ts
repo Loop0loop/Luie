@@ -35,9 +35,27 @@ vi.mock("electron", () => ({
   },
 }));
 
+vi.mock("better-sqlite3", () => ({
+  default: class MockDatabase {
+    pragma() {
+      return [{ integrity_check: "ok" }];
+    }
+
+    close() {}
+  },
+}));
+
 vi.mock("../../../src/main/database/index.js", () => ({
   db: {
     initialize: () => mocked.initializeDb(),
+    getDatabasePath: () => "/tmp/luie-test-main.sqlite",
+    getConnectionPragmas: () => ({
+      journalMode: "wal",
+      foreignKeys: 1,
+      busyTimeout: 5000,
+      synchronous: 2,
+      walAutocheckpoint: 1000,
+    }),
     getClient: () => ({
       $executeRawUnsafe: () => mocked.executeRaw(),
     }),
@@ -54,6 +72,13 @@ vi.mock("../../../src/main/database/cacheDb.js", () => ({
     initialize: () => mocked.initializeDb(),
     getClient: () => ({
       $executeRawUnsafe: () => mocked.executeRaw(),
+    }),
+    getConnectionPragmas: () => ({
+      journalMode: "wal",
+      foreignKeys: 1,
+      busyTimeout: 5000,
+      synchronous: 2,
+      walAutocheckpoint: 1000,
     }),
     getDrizzleClient: () => ({}),
   },
@@ -143,6 +168,7 @@ describe("startupReadinessService", () => {
     expect(readinessBefore.mustRunWizard).toBe(true);
 
     const completed = await startupReadinessService.completeWizard();
+    expect(completed.reasons).toEqual([]);
     expect(completed.mustRunWizard).toBe(false);
     expect(mocked.startup.completedAt).toBeTypeOf("string");
     expect(globalThis.fetch).toHaveBeenCalledWith(

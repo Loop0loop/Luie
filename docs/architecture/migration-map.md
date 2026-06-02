@@ -177,6 +177,7 @@ pnpm run check:preload-contract-regression
 - `src/main/services/features/memory/memoryProjectionService.ts`는 231 LOC입니다.
 - `src/main/services/core/project/projectExportEngine.ts`는 170 LOC입니다.
 - `src/main/services/features/sync/syncMapper.ts`는 19 LOC입니다.
+- `src/main/manager/settingsManager.ts`는 450 LOC입니다.
 - `snapshotArtifacts.ts`의 기존 public export인 `readFullSnapshotArtifact`, `listSnapshotRestoreCandidates`, `cleanupOrphanSnapshotArtifacts`, `writeFullSnapshotArtifact`는 유지했습니다.
 - snapshot artifact의 path 탐색, restore preview 계산, DB payload 조립, payload 타입은 `snapshot/artifacts/index.ts` 배럴 폴더로 분리했습니다.
 - `ipcSettingsHandlers.ts`의 기존 public export인 `registerSettingsIPCHandlers`는 유지했습니다.
@@ -191,6 +192,8 @@ pnpm run check:preload-contract-regression
 - export용 DB record 조회, replica/package world payload 읽기, export-local 타입은 `project/exportEngine/index.ts` 배럴 폴더로 분리했습니다.
 - `syncMapper.ts`의 기존 public export인 `createEmptySyncBundle`, `mergeSyncBundles`, `SyncBundle` 계열 타입은 유지했습니다.
 - SyncBundle record 타입, 일반 entity merge, text conflict copy, tombstone 적용, merge orchestration은 `sync/mapper/index.ts` 배럴 폴더로 분리했습니다.
+- `settingsManager.ts`의 기존 public export인 `SettingsManager`와 `settingsManager` singleton은 유지했습니다.
+- legacy settings path 계산, legacy file migration, legacy window/LLM migration은 `manager/settings/settingsMigration.ts`로 분리했습니다.
 - 2026-06-02 기준 `bun run typecheck`, `bun run check:core-complexity`, `bun run check:ipc-handler-schemas`, `bun run check:ipc-contract-map` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/handler/ipcSettingsHandlers.security.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncService.test.ts` 통과.
@@ -198,6 +201,7 @@ pnpm run check:preload-contract-regression
 - 2026-06-02 기준 `bun vitest tests/main/services/memoryProjectionService.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/projectExportEngine.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncMapper.test.ts tests/main/services/syncRepository.test.ts tests/main/services/syncService.test.ts tests/main/services/syncLocalApply.test.ts tests/main/services/syncPackagePersistence.test.ts` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/manager/settingsManager.localLlm.test.ts tests/main/services/startupReadinessService.test.ts tests/main/handler/ipcSettingsHandlers.security.test.ts` 통과.
 
 검증 제약:
 
@@ -210,7 +214,6 @@ pnpm run check:preload-contract-regression
 ```text
 src/main/database/packagedSchema.ts
 src/main/database/schema.ts
-src/main/manager/settingsManager.ts
 src/main/services/features/analysis/analysisStreamRunner.ts
 src/main/services/features/sync/syncLocalApply.ts
 src/main/services/core/project/projectImportOpen.ts
@@ -294,6 +297,9 @@ syncMapper.ts
   -> mapper/entityMerge
   -> mapper/textConflicts
   -> mapper/tombstones
+
+settingsManager.ts
+  -> settings/settingsMigration
 ```
 
 검증:

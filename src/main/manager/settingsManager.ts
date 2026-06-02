@@ -5,7 +5,6 @@
 import Store from "electron-store";
 import { resolveUserDataPath } from "../utils/userDataPath.js";
 import { createLogger } from "../../shared/logger/index.js";
-import { access } from "node:fs/promises";
 import type {
   AppSettings,
   EditorSettings,
@@ -22,13 +21,15 @@ import type {
 import {
   DEFAULT_MENU_BAR_MODE,
   DEFAULT_SHORTCUTS,
-  SETTINGS_STORE_APP_DIR_NAME,
   SETTINGS_STORE_BASENAME,
-  SETTINGS_STORE_FILE_NAME,
   getDefaultSettings,
   normalizeRuntimeSupabaseConfig,
   sanitizeSyncSettingsForRenderer,
 } from "./settings/settingsDefaults.js";
+import {
+  migrateSettingsStore,
+  resolveLegacySettingsPaths,
+} from "./settings/settingsMigration.js";
 import { normalizeSyncSettings } from "./settings/syncSettingsNormalizer.js";
 
 const logger = createLogger("SettingsManager");
@@ -40,10 +41,7 @@ export class SettingsManager {
   private constructor() {
     const settingsPath = resolveUserDataPath();
 
-    // 기존(레거시) 경로: userData/luie/settings/settings.json
-    // app.getPath('userData')가 이미 '.../luie'인 경우 이중으로 들어가 혼동을 유발했음
-    const legacyCwd = `${settingsPath}/${SETTINGS_STORE_APP_DIR_NAME}/${SETTINGS_STORE_BASENAME}`;
-    const legacyFile = `${legacyCwd}/${SETTINGS_STORE_FILE_NAME}`;
+    const { legacyCwd, legacyFile } = resolveLegacySettingsPaths(settingsPath);
 
     this.store = new Store<AppSettings>({
       name: SETTINGS_STORE_BASENAME,
@@ -54,83 +52,16 @@ export class SettingsManager {
       fileExtension: "json",
     });
 
-    void this.migrateLegacySettingsIfNeeded(legacyCwd, legacyFile);
-
-    this.migrateLegacyWindowSettings();
-    this.migrateLegacyLlmSettings();
+    void migrateSettingsStore({
+      store: this.store,
+      legacyCwd,
+      legacyFile,
+      logger,
+    });
 
     logger.info("Settings manager initialized", {
       path: this.store.path,
     });
-  }
-
-  private async migrateLegacySettingsIfNeeded(
-    legacyCwd: string,
-    legacyFile: string,
-  ): Promise<void> {
-    const hasLegacy = await this.pathExists(legacyFile);
-    const hasCurrent = await this.pathExists(this.store.path);
-
-    if (!hasLegacy || hasCurrent) {
-      return;
-    }
-
-    try {
-      const legacyStore = new Store<AppSettings>({
-        name: SETTINGS_STORE_BASENAME,
-        defaults: getDefaultSettings(),
-        cwd: legacyCwd,
-        fileExtension: "json",
-      });
-      this.store.set(legacyStore.store);
-      logger.info("Settings migrated from legacy path", {
-        from: legacyStore.path,
-        to: this.store.path,
-      });
-    } catch (error) {
-      logger.error("Failed to migrate legacy settings", error);
-    }
-  }
-
-  private async pathExists(targetPath: string): Promise<boolean> {
-    try {
-      await access(targetPath);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  private migrateLegacyLlmSettings(): void {
-    const llm = this.store.get("llm") as Record<string, unknown> | undefined;
-    if (!llm) return;
-    // Already migrated — ollama key exists
-    if ("ollama" in llm) return;
-    // Old llamacpp-era format detected. Preserve ragTemperature/ragMaxTokens; drop the rest.
-    const ragTemperature = typeof llm.ragTemperature === "number" ? llm.ragTemperature : undefined;
-    const ragMaxTokens = typeof llm.ragMaxTokens === "number" ? llm.ragMaxTokens : undefined;
-    const migrated: AppSettings["llm"] = {
-      ollama: { baseUrl: "http://localhost:11434", chatModel: "" },
-      ...(ragTemperature !== undefined ? { ragTemperature } : {}),
-      ...(ragMaxTokens !== undefined ? { ragMaxTokens } : {}),
-    };
-    this.store.set("llm", migrated);
-    logger.info("Migrated legacy LLM settings to Ollama format", { ragTemperature, ragMaxTokens });
-  }
-
-  private migrateLegacyWindowSettings(): void {
-    const current = this.store.store as AppSettings & {
-      titleBarMode?: "hidden" | "visible";
-    };
-
-    if (!current.menuBarMode) {
-      this.store.set("menuBarMode", DEFAULT_MENU_BAR_MODE);
-    }
-
-    if ("titleBarMode" in current) {
-      const { titleBarMode: _legacyTitleBarMode, ...next } = current;
-      this.store.set(next);
-    }
   }
 
   static getInstance(): SettingsManager {

@@ -122,7 +122,6 @@ index.ts
 | --- | ---: |
 | `src/main/database/packagedSchema.ts` | 639 |
 | `src/main/database/schema.ts` | 623 |
-| `src/main/manager/settingsManager.ts` | 519 |
 | `src/main/services/features/analysis/analysisStreamRunner.ts` | 518 |
 | `src/main/services/features/sync/syncLocalApply.ts` | 517 |
 | `src/main/services/core/project/projectImportOpen.ts` | 516 |
@@ -197,6 +196,12 @@ index.ts
 | `mapper/tombstones.ts` | project/entity tombstone 적용 | 102 |
 | `mapper/entityMerge.ts` | timestamp/latest 선택과 일반 entity/world doc merge | 69 |
 | `mapper/bundle.ts` | empty SyncBundle factory | 14 |
+
+사실: `src/main/manager/settingsManager.ts`는 settings store API만 유지하도록 축소되어 450 LOC입니다. 레거시 설정 파일/윈도우/LLM migration은 `manager/settings/settingsMigration.ts`로 분리했습니다.
+
+| Settings manager helper | 책임 | LOC |
+| --- | --- | ---: |
+| `settings/settingsMigration.ts` | legacy settings path 계산, legacy file/window/LLM migration | 125 |
 
 ## 위험 지점
 
