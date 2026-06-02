@@ -16,6 +16,13 @@ import type {
 import { ServiceError } from "../../utils/serviceError.js";
 import { escapeLike } from "../../utils/queryHelpers.js";
 import { resolveEmbeddingRuntimeClient } from "../llm/modelRuntimeFactory.js";
+import {
+  buildFtsQuery,
+  mergeWithRRF,
+  searchByShortTokens,
+  searchByVector,
+  shouldRunVectorSearch,
+} from "./search/index.js";
 
 const loadChapterSearchCacheService = async () =>
   (await import("./chapterSearchCacheService.js")).chapterSearchCacheService;
@@ -31,61 +38,6 @@ interface SearchResult {
 }
 
 export class SearchService {
-  private static readonly RRF_K = 60;
-  private static readonly VECTOR_SEARCH_UTILITY_ONLY =
-    process.env.LUIE_VECTOR_SEARCH_UTILITY_ONLY !== "0";
-
-  private static readonly KOREAN_SUFFIXES = [
-    "은", "는", "이", "가", "을", "를", "에", "에서", "에게", "한테", "께",
-    "와", "과", "으로", "로", "도", "만", "까지", "부터", "처럼", "보다", "의",
-    "랑", "이라", "라", "야", "요", "다",
-  ] as const;
-
-  /** trigram FTS5 는 3-그램 인덱스라 토큰 길이가 3자 미만이면 매칭되지 않는다. */
-  private static readonly TRIGRAM_MIN_TOKEN_LENGTH = 3;
-
-  private normalizeSearchTokens(query: string): string[] {
-    const seeds = query.trim().split(/\s+/).filter(Boolean);
-    const expanded = new Set<string>();
-    for (const token of seeds) {
-      expanded.add(token);
-      for (const suffix of SearchService.KOREAN_SUFFIXES) {
-        if (token.endsWith(suffix) && token.length - suffix.length >= 2) {
-          expanded.add(token.slice(0, token.length - suffix.length));
-        }
-      }
-    }
-    return [...expanded].filter((token) => token.length > 0);
-  }
-
-  /**
-   * trigram FTS MATCH 쿼리 빌드.
-   *
-   * trigram 은 부분 문자열을 직접 인덱싱하므로 조사 제거 토큰을 OR 로 묶으면
-   * 재현율이 높아진다. 단, 3자 미만 토큰은 trigram 인덱스에 없으므로 제외하고
-   * (그런 토큰은 LIKE 폴백이 처리), 따옴표로 감싸 구문 매칭한다.
-   */
-  private buildFtsQuery(query: string): string {
-    const tokens = this.normalizeSearchTokens(query).filter(
-      (token) => token.length >= SearchService.TRIGRAM_MIN_TOKEN_LENGTH,
-    );
-    if (tokens.length === 0) return "";
-    return tokens.map((t) => `"${t.replaceAll('"', '""')}"`).join(" OR ");
-  }
-
-  /**
-   * trigram FTS 로 잡히지 않는 짧은 토큰(2자 이하: 인물명·약어 등)을 위한
-   * LIKE 기반 어휘 매칭. 한국어 핵심 단어가 2글자인 경우가 많아 필수 보완책이다.
-   * 3자 이상 토큰만으로 FTS 가 충분하면 빈 배열을 반환한다.
-   */
-  private collectShortTokens(query: string): string[] {
-    return this.normalizeSearchTokens(query).filter(
-      (token) =>
-        token.length >= 2 &&
-        token.length < SearchService.TRIGRAM_MIN_TOKEN_LENGTH,
-    );
-  }
-
   async search(input: SearchQuery): Promise<SearchResult[]> {
     try {
       const results: SearchResult[] = [];
@@ -228,7 +180,7 @@ export class SearchService {
 
     try {
       const client = db.getClient();
-      const ftsQuery = this.buildFtsQuery(normalizedQuery);
+      const ftsQuery = buildFtsQuery(normalizedQuery);
       const ftsRows = ftsQuery.length > 0
         ? client.all<{
             chunkId: string;
@@ -243,21 +195,15 @@ export class SearchService {
         : [];
 
       // trigram 으로 잡히지 않는 2자 이하 토큰(인물명 등)을 LIKE 로 보완.
-      const lexicalRanks = await this.searchByShortTokens(
+      const lexicalRanks = await searchByShortTokens(
         input.projectId,
         normalizedQuery,
         Math.max(limit, 50),
+        logger,
       );
 
       let denseRanks: Array<{ chunkId: string; rank: number }> = [];
-      const shouldRunVectorSearch =
-        db.isVectorSearchEnabled() &&
-        (
-          SearchService.VECTOR_SEARCH_UTILITY_ONLY
-            ? process.env.LUIE_IS_UTILITY_PROCESS === "1"
-            : true
-        );
-      if (shouldRunVectorSearch) {
+      if (shouldRunVectorSearch()) {
         // 임베딩 미가용(런타임 해석 실패/embed null/예외)이어도 FTS(+LIKE) 폴백을
         // 보장한다(P2). 이 블록은 절대 throw 를 바깥으로 전파하지 않는다.
         try {
@@ -265,7 +211,12 @@ export class SearchService {
           const vecs = await runtime.embed([normalizedQuery]);
           const queryVector = vecs?.[0] ?? null;
           if (queryVector && queryVector.length > 0) {
-            denseRanks = await this.searchByVector(input.projectId, queryVector, Math.max(limit, 50));
+            denseRanks = searchByVector(
+              input.projectId,
+              queryVector,
+              Math.max(limit, 50),
+              logger,
+            );
           }
         } catch (error) {
           logger.warn("Embedding unavailable; fallback to FTS only", {
@@ -274,7 +225,7 @@ export class SearchService {
           });
         }
       }
-      const merged = this.mergeWithRRF(
+      const merged = mergeWithRRF(
         [
           ftsRows.map((row, index) => ({ chunkId: row.chunkId, rank: index + 1 })),
           lexicalRanks,
@@ -319,88 +270,6 @@ export class SearchService {
         { input },
         error,
       );
-    }
-  }
-
-  private mergeWithRRF(
-    rankSources: Array<Array<{ chunkId: string; rank: number }>>,
-    topK: number,
-  ): Array<{ chunkId: string; score: number }> {
-    const scores = new Map<string, number>();
-    for (const source of rankSources) {
-      for (const { chunkId, rank } of source) {
-        scores.set(chunkId, (scores.get(chunkId) ?? 0) + 1 / (SearchService.RRF_K + rank));
-      }
-    }
-    return [...scores.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, topK)
-      .map(([chunkId, score]) => ({ chunkId, score }));
-  }
-
-  /**
-   * 2자 이하 짧은 토큰을 LIKE 로 매칭해 chunkId 랭킹을 만든다.
-   * trigram FTS 의 3-그램 최소 길이 제약을 보완하는 폴백 경로.
-   * 짧은 토큰이 없으면 빈 배열(추가 비용 0).
-   */
-  private async searchByShortTokens(
-    projectId: string,
-    query: string,
-    limit: number,
-  ): Promise<Array<{ chunkId: string; rank: number }>> {
-    const shortTokens = this.collectShortTokens(query);
-    if (shortTokens.length === 0) return [];
-
-    const predicates = shortTokens.map((token) => {
-      const escaped = escapeLike(token);
-      return sql`${memoryChunk.content} LIKE ${`%${escaped}%`} ESCAPE '\\'`;
-    });
-
-    try {
-      const rows = await db
-        .getClient()
-        .select({ chunkId: memoryChunk.id })
-        .from(memoryChunk)
-        .where(and(eq(memoryChunk.projectId, projectId), or(...predicates)))
-        .orderBy(desc(memoryChunk.updatedAt))
-        .limit(limit);
-      return rows.map((row, index) => ({ chunkId: row.chunkId, rank: index + 1 }));
-    } catch (error) {
-      logger.warn("Short-token LIKE fallback failed; skipping", {
-        projectId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return [];
-    }
-  }
-
-  private async searchByVector(
-    projectId: string,
-    queryVec: Float32Array,
-    limit: number,
-  ): Promise<Array<{ chunkId: string; rank: number }>> {
-    try {
-      const queryVecBlob = Buffer.from(
-        queryVec.buffer,
-        queryVec.byteOffset,
-        queryVec.byteLength,
-      );
-      const rows = db.getClient().all<{ chunkId: string }>(sql`
-        SELECT "chunkId"
-        FROM "MemoryEmbedding"
-        WHERE "projectId" = ${projectId}
-          AND "dimension" = ${queryVec.length}
-          AND length("vec") = "dimension" * 4
-        ORDER BY vec_distance_cosine("vec", ${queryVecBlob})
-        LIMIT ${limit};
-      `);
-      return rows.map((row, index) => ({ chunkId: row.chunkId, rank: index + 1 }));
-    } catch (error) {
-      logger.warn("Vector search failed; fallback to FTS only", {
-        projectId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return [];
     }
   }
 

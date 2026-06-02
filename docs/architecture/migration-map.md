@@ -178,6 +178,7 @@ pnpm run check:preload-contract-regression
 - `src/main/services/core/project/projectExportEngine.ts`는 170 LOC입니다.
 - `src/main/services/features/sync/syncMapper.ts`는 19 LOC입니다.
 - `src/main/manager/settingsManager.ts`는 450 LOC입니다.
+- `src/main/services/features/searchService.ts`는 373 LOC입니다.
 - `snapshotArtifacts.ts`의 기존 public export인 `readFullSnapshotArtifact`, `listSnapshotRestoreCandidates`, `cleanupOrphanSnapshotArtifacts`, `writeFullSnapshotArtifact`는 유지했습니다.
 - snapshot artifact의 path 탐색, restore preview 계산, DB payload 조립, payload 타입은 `snapshot/artifacts/index.ts` 배럴 폴더로 분리했습니다.
 - `ipcSettingsHandlers.ts`의 기존 public export인 `registerSettingsIPCHandlers`는 유지했습니다.
@@ -194,6 +195,9 @@ pnpm run check:preload-contract-regression
 - SyncBundle record 타입, 일반 entity merge, text conflict copy, tombstone 적용, merge orchestration은 `sync/mapper/index.ts` 배럴 폴더로 분리했습니다.
 - `settingsManager.ts`의 기존 public export인 `SettingsManager`와 `settingsManager` singleton은 유지했습니다.
 - legacy settings path 계산, legacy file migration, legacy window/LLM migration은 `manager/settings/settingsMigration.ts`로 분리했습니다.
+- `searchService.ts`의 기존 public export인 `SearchService`와 `searchService` singleton은 유지했습니다.
+- `search`, `searchCharacters`, `searchTerms`, `searchChapters`, `searchChunks`, `getChunkBacklink`, `getQuickAccess` method shape는 유지했습니다.
+- memory chunk token expansion, FTS query build, short-token LIKE fallback, vector rank, RRF merge는 `features/search/index.ts` 배럴 폴더로 분리했습니다.
 - 2026-06-02 기준 `bun run typecheck`, `bun run check:core-complexity`, `bun run check:ipc-handler-schemas`, `bun run check:ipc-contract-map` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/handler/ipcSettingsHandlers.security.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncService.test.ts` 통과.
@@ -202,12 +206,17 @@ pnpm run check:preload-contract-regression
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/projectExportEngine.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncMapper.test.ts tests/main/services/syncRepository.test.ts tests/main/services/syncService.test.ts tests/main/services/syncLocalApply.test.ts tests/main/services/syncPackagePersistence.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/manager/settingsManager.localLlm.test.ts tests/main/services/startupReadinessService.test.ts tests/main/handler/ipcSettingsHandlers.security.test.ts` 통과.
+- 2026-06-02 기준 `bun vitest tests/main/services/searchServiceFallback.test.ts tests/main/services/memoryProjectionService.test.ts` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/handler/ipcInputValidation.test.ts` 통과.
 
 검증 제약:
 
 - `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/snapshotArtifacts.pathValidation.test.ts tests/main/services/snapshotService.packageBehavior.unit.test.ts`는 현재 mock DB client가 Drizzle `select`/`insert` API를 제공하지 않아 실패합니다.
 - 실패 지점은 `store.select is not a function`, `db.getClient(...).insert is not a function`입니다.
 - 이건 확인된 사실입니다. native DB 포함 테스트 재실행 전에 테스트 mock 또는 `better-sqlite3`/Drizzle test setup 정리가 필요합니다.
+- `bun vitest tests/main/services/searchService.test.ts`는 현재 cache DB 테스트 계약 불일치로 실패합니다.
+- 실패 지점은 `tests/main/services/searchService.test.ts:65`의 `Cannot read properties of undefined (reading 'deleteMany')`, `tests/main/services/searchService.test.ts:109`의 FTS count 기대값 1 대비 실제 0입니다.
+- 이건 확인된 사실입니다. 실패 지점은 memory chunk search helper가 아니라 chapter search cache/FTS 테스트 setup 경계입니다.
 
 대상 후보:
 
@@ -218,7 +227,6 @@ src/main/services/features/analysis/analysisStreamRunner.ts
 src/main/services/features/sync/syncLocalApply.ts
 src/main/services/core/project/projectImportOpen.ts
 src/main/services/features/utility/utilityProcessBridge.ts
-src/main/services/features/searchService.ts
 ```
 
 목표:
@@ -300,6 +308,10 @@ syncMapper.ts
 
 settingsManager.ts
   -> settings/settingsMigration
+
+searchService.ts
+  -> search/index
+  -> search/chunkSearch
 ```
 
 검증:

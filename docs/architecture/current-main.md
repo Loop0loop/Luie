@@ -126,7 +126,6 @@ index.ts
 | `src/main/services/features/sync/syncLocalApply.ts` | 517 |
 | `src/main/services/core/project/projectImportOpen.ts` | 516 |
 | `src/main/services/features/utility/utilityProcessBridge.ts` | 511 |
-| `src/main/services/features/searchService.ts` | 504 |
 
 사실: `src/main/services/features/snapshot/snapshotArtifacts.ts`는 snapshot artifact 읽기/후보 목록/고아 cleanup/write orchestration만 유지하도록 축소되어 297 LOC입니다. 분리된 helper는 `snapshot/artifacts/index.ts` 배럴을 통해 제공하며 public export 경로는 유지합니다.
 
@@ -202,6 +201,13 @@ index.ts
 | Settings manager helper | 책임 | LOC |
 | --- | --- | ---: |
 | `settings/settingsMigration.ts` | legacy settings path 계산, legacy file/window/LLM migration | 125 |
+
+사실: `src/main/services/features/searchService.ts`는 통합 검색 service API와 DB result mapping만 유지하도록 축소되어 373 LOC입니다. Memory chunk token/FTS fallback/vector/RRF helper는 `features/search/index.ts` 배럴 폴더로 분리했습니다.
+
+| Search helper | 책임 | LOC |
+| --- | --- | ---: |
+| `search/chunkSearch.ts` | memory chunk FTS query, short-token LIKE fallback, vector rank, RRF merge | 137 |
+| `search/index.ts` | search helper 배럴 export | 7 |
 
 ## 위험 지점
 
