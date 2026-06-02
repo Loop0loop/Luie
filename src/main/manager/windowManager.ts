@@ -25,17 +25,23 @@ import {
 } from "./window/windowChrome.js"
 import {
   getRendererEnvironment,
-  loadRendererRoute,
-  type RendererRouteTarget,
 } from "./window/windowRouting.js"
+import {
+  createExportBrowserWindow,
+  createStartupWizardBrowserWindow,
+  createWorldGraphBrowserWindow,
+} from "./window/windowSecondaryWindows.js"
 
 const logger = createLogger("WindowManager")
 
+const resolveAppPath = (): string =>
+  typeof app.getAppPath === "function" ? app.getAppPath() : process.cwd()
+
 const resolvePreloadEntryPath = (): string =>
-  join(app.getAppPath(), "out", "preload", "index.cjs")
+  join(resolveAppPath(), "out", "preload", "index.cjs")
 
 const resolveRendererIndexPath = (): string =>
-  join(app.getAppPath(), "out", "renderer", "index.html")
+  join(resolveAppPath(), "out", "renderer", "index.html")
 
 class WindowManager {
   private mainWindow: BrowserWindow | null = null
@@ -108,24 +114,6 @@ class WindowManager {
       return
     }
     eventTarget.on(eventName, listener)
-  }
-
-  private async loadSecondaryWindowRoute(input: {
-    label: string
-    openDevToolsInDev?: boolean
-    route: RendererRouteTarget
-    window: BrowserWindow
-  }): Promise<void> {
-    const environment = await loadRendererRoute({
-      label: input.label,
-      logger,
-      route: input.route,
-      window: input.window,
-    })
-
-    if (input.openDevToolsInDev && environment.useDevServer) {
-      input.window.webContents.openDevTools({ mode: "detach" })
-    }
   }
 
   private attachLoadFailureLogging(
@@ -235,36 +223,15 @@ class WindowManager {
       return this.startupWizardWindow
     }
 
-    this.startupWizardWindow = this.createBrowserWindow({
-      width: 980,
-      height: 720,
-      minWidth: 860,
-      minHeight: 620,
-      show: true,
-      title: `${APP_NAME} Setup`,
-      backgroundColor: "#0b1020",
-      ...withWindowIcon(resolveWindowIconPath()),
-      ...getTitleBarOptions(),
-      ...(process.platform !== "darwin" ? { autoHideMenuBar: true } : {}),
-    })
-
-    this.applyMenuBarMode(this.startupWizardWindow)
-
-    void this.loadSecondaryWindowRoute({
-      label: "startup wizard",
-      route: { hash: "startup-wizard" },
-      window: this.startupWizardWindow,
-    }).catch((error) => {
-      logger.error("Failed to load startup wizard", { error })
-    })
-
-    this.attachWindowClosedLogger(
-      this.startupWizardWindow,
-      () => {
+    this.startupWizardWindow = createStartupWizardBrowserWindow({
+      createBrowserWindow: (windowOptions) =>
+        this.createBrowserWindow(windowOptions),
+      getMenuBarMode: () => this.getMenuBarMode(),
+      logger,
+      onClosed: () => {
         this.startupWizardWindow = null
       },
-      "Startup wizard window",
-    )
+    })
 
     return this.startupWizardWindow
   }
@@ -314,39 +281,15 @@ class WindowManager {
     }
     this.exportWindow = null
 
-    this.exportWindow = this.createBrowserWindow({
-      width: 1200,
-      height: 900,
-      minWidth: 1000,
-      minHeight: 700,
-      title: "내보내기 및 인쇄 미리보기",
-      backgroundColor: WINDOW_BACKGROUND_COLOR,
-      ...withWindowIcon(resolveWindowIconPath()),
-      ...getTitleBarOptions(),
-      ...(process.platform !== "darwin"
-        ? { autoHideMenuBar: !shouldShowMenuBar(this.getMenuBarMode()) }
-        : {}),
-    })
-
-    this.applyMenuBarMode(this.exportWindow)
-
-    const route = { hash: "export", search: `?chapterId=${chapterId}` }
-    void this.loadSecondaryWindowRoute({
-      label: "export window",
-      openDevToolsInDev: true,
-      route,
-      window: this.exportWindow,
-    }).catch((error) => {
-      logger.error("Failed to load export window", { route, error })
-    })
-
-    this.attachWindowClosedLogger(
-      this.exportWindow,
-      () => {
+    this.exportWindow = createExportBrowserWindow(chapterId, {
+      createBrowserWindow: (windowOptions) =>
+        this.createBrowserWindow(windowOptions),
+      getMenuBarMode: () => this.getMenuBarMode(),
+      logger,
+      onClosed: () => {
         this.exportWindow = null
       },
-      "Export window",
-    )
+    })
 
     return this.exportWindow
   }
@@ -358,38 +301,15 @@ class WindowManager {
     }
     this.worldGraphWindow = null
 
-    this.worldGraphWindow = this.createBrowserWindow({
-      width: 1200,
-      height: 800,
-      minWidth: 1000,
-      minHeight: 600,
-      title: "세계관 그래프",
-      backgroundColor: WINDOW_BACKGROUND_COLOR,
-      ...withWindowIcon(resolveWindowIconPath()),
-      ...getTitleBarOptions(),
-      ...(process.platform !== "darwin"
-        ? { autoHideMenuBar: !shouldShowMenuBar(this.getMenuBarMode()) }
-        : {}),
-    })
-
-    this.applyMenuBarMode(this.worldGraphWindow)
-
-    void this.loadSecondaryWindowRoute({
-      label: "world graph window",
-      openDevToolsInDev: true,
-      route: { hash: "world-graph" },
-      window: this.worldGraphWindow,
-    }).catch((error) => {
-      logger.error("Failed to load world graph window", { error })
-    })
-
-    this.attachWindowClosedLogger(
-      this.worldGraphWindow,
-      () => {
+    this.worldGraphWindow = createWorldGraphBrowserWindow({
+      createBrowserWindow: (windowOptions) =>
+        this.createBrowserWindow(windowOptions),
+      getMenuBarMode: () => this.getMenuBarMode(),
+      logger,
+      onClosed: () => {
         this.worldGraphWindow = null
       },
-      "World graph window",
-    )
+    })
 
     return this.worldGraphWindow
   }

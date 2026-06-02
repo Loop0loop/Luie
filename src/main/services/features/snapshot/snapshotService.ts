@@ -3,7 +3,7 @@
  */
 
 import { createHash, randomUUID } from "node:crypto";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "../../../database/index.js";
 import { chapter, chapterBody, project, snapshot } from "../../../database/schema.js";
 import { createLogger } from "../../../../shared/logger/index.js";
@@ -21,6 +21,10 @@ import {
 } from "./snapshotArtifacts.js";
 import { writeEmergencySnapshotFile } from "./snapshotEmergencyFile.js";
 import { importSnapshotFromFile } from "./snapshotImportFromFile.js";
+import {
+  deleteOldSnapshotRecords,
+  pruneSnapshotRecords,
+} from "./snapshotRetention.js";
 
 const logger = createLogger("SnapshotService");
 const ORPHAN_CLEANUP_IDLE_DELAY_MS = 30_000;
@@ -350,121 +354,23 @@ export class SnapshotService {
     projectId: string,
     keepCount: number = DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT,
   ) {
-    try {
-      const allSnapshots = await db.getClient().select().from(snapshot).where(eq(snapshot.projectId, projectId)).orderBy(desc(snapshot.createdAt));
-
-      if (allSnapshots.length <= keepCount) {
-        return { success: true, deletedCount: 0 };
-      }
-
-      const toDelete = allSnapshots.slice(keepCount);
-      const now = new Date().toISOString();
-      db.getClient().transaction((tx) => {
-        tx.delete(snapshot).where(and(eq(snapshot.projectId, projectId), inArray(snapshot.id, toDelete.map((s) => s.id)))).run();
-        tx.update(project).set({ updatedAt: now }).where(eq(project.id, projectId)).run();
-      });
-      for (const s of toDelete) {
-        this.queueOrphanArtifactCleanup(s.id);
-      }
-
-      logger.info("Old snapshots deleted successfully", {
-        projectId,
-        deletedCount: toDelete.length,
-      });
-
-      await this.ensureImmediatePackageExport({
-        projectId,
-        reason: "snapshot:delete-old",
-      });
-
-      return { success: true, deletedCount: toDelete.length };
-    } catch (error) {
-      logger.error("Failed to delete old snapshots", error);
-      throw new ServiceError(
-        ErrorCode.DB_QUERY_FAILED,
-        "Failed to delete old snapshots",
-        { projectId, keepCount },
-        error,
-      );
-    }
+    return await deleteOldSnapshotRecords(projectId, keepCount, {
+      queueOrphanArtifactCleanup: (snapshotId) =>
+        this.queueOrphanArtifactCleanup(snapshotId),
+      ensureImmediatePackageExport: (input) =>
+        this.ensureImmediatePackageExport(input),
+      logger,
+    });
   }
 
   async pruneSnapshots(projectId: string) {
-    const now = Date.now();
-    const ONE_HOUR = 60 * 60 * 1000;
-    const ONE_DAY = 24 * ONE_HOUR;
-    const SEVEN_DAYS = 7 * ONE_DAY;
-
-    try {
-      const snapshots = await db.getClient().select({ id: snapshot.id, createdAt: snapshot.createdAt }).from(snapshot).where(and(eq(snapshot.projectId, projectId), eq(snapshot.type, "AUTO"))).orderBy(desc(snapshot.createdAt));
-
-      if (snapshots.length === 0) {
-        return { success: true, deletedCount: 0 };
-      }
-
-      const toDelete: string[] = [];
-      const hourBuckets = new Set<string>();
-      const dayBuckets = new Set<string>();
-
-      for (const snap of snapshots) {
-        const createdAt = new Date(snap.createdAt);
-        const age = now - createdAt.getTime();
-
-        if (age < ONE_DAY) {
-          continue;
-        }
-
-        if (age < SEVEN_DAYS) {
-          const hourKey = createdAt.toISOString().slice(0, 13);
-          if (hourBuckets.has(hourKey)) {
-            toDelete.push(snap.id);
-          } else {
-            hourBuckets.add(hourKey);
-          }
-          continue;
-        }
-
-        const dayKey = createdAt.toISOString().slice(0, 10);
-        if (dayBuckets.has(dayKey)) {
-          toDelete.push(snap.id);
-        } else {
-          dayBuckets.add(dayKey);
-        }
-      }
-
-      if (toDelete.length === 0) {
-        return { success: true, deletedCount: 0 };
-      }
-
-      const updateNow = new Date().toISOString();
-      db.getClient().transaction((tx) => {
-        tx.delete(snapshot).where(and(eq(snapshot.projectId, projectId), inArray(snapshot.id, toDelete))).run();
-        tx.update(project).set({ updatedAt: updateNow }).where(eq(project.id, projectId)).run();
-      });
-      for (const sid of toDelete) {
-        this.queueOrphanArtifactCleanup(sid);
-      }
-
-      logger.info("Snapshots pruned", {
-        projectId,
-        deletedCount: toDelete.length,
-      });
-
-      await this.ensureImmediatePackageExport({
-        projectId,
-        reason: "snapshot:prune",
-      });
-
-      return { success: true, deletedCount: toDelete.length };
-    } catch (error) {
-      logger.error("Failed to prune snapshots", error);
-      throw new ServiceError(
-        ErrorCode.DB_QUERY_FAILED,
-        "Failed to prune snapshots",
-        { projectId },
-        error,
-      );
-    }
+    return await pruneSnapshotRecords(projectId, {
+      queueOrphanArtifactCleanup: (snapshotId) =>
+        this.queueOrphanArtifactCleanup(snapshotId),
+      ensureImmediatePackageExport: (input) =>
+        this.ensureImmediatePackageExport(input),
+      logger,
+    });
   }
 
   async pruneSnapshotsAllProjects() {
