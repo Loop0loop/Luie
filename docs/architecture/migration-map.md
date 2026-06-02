@@ -58,20 +58,23 @@ current file
 완료:
 
 - `src/shared/types/index.ts`를 호환 barrel로 축소했습니다.
+- `src/shared/schemas/index.ts`를 호환 barrel로 축소했습니다.
+- `src/shared/api/index.ts`를 호환 barrel로 축소했습니다.
 - 기존 `@shared/types` 공개 타입 이름은 보존했습니다.
-- 모든 `src/shared/types/*.ts` 파일은 500 LOC 이하입니다.
+- 기존 `@shared/schemas` 공개 schema 이름은 보존했습니다.
+- 기존 `@shared/api` 공개 export는 보존했습니다.
+- 모든 `src/shared/types/*.ts`, `src/shared/schemas/*.ts`, `src/shared/api/*.ts` 파일은 500 LOC 이하입니다.
 - 2026-06-02 기준 `pnpm run typecheck` 통과.
 
 미완료:
 
-- `src/shared/schemas/index.ts` 분리
-- `src/shared/api/index.ts` 분리
+- shared 계약 분리 후 IPC guard script 재검증
 
 추천 이유:
 
 - shared는 main/preload/renderer 계약의 중앙 경계입니다.
-- `schemas/index.ts`, `api/index.ts`는 아직 500 LOC를 크게 초과합니다.
-- `types/index.ts`는 1차 분리로 호환 barrel이 됐고, 다음 shared split의 기준 사례입니다.
+- `types/index.ts`, `schemas/index.ts`, `api/index.ts`는 1차 분리로 호환 barrel이 됐습니다.
+- 다음 shared split은 guard script 결과를 기준으로 잔여 계약 drift를 확인합니다.
 - 기존 barrel export를 유지하면 기능 보존 가능성이 상대적으로 높습니다.
 
 대상:

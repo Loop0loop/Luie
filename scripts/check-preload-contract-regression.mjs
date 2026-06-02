@@ -55,7 +55,11 @@ const escapeRegExp = (value) =>
 const countMatches = (source, pattern) => (source.match(pattern) ?? []).length;
 
 const sortPaths = (items) =>
-  [...items].sort((left, right) => left.localeCompare(right));
+  [...items].sort((left, right) => {
+    const leftKey = typeof left === "string" ? left : left.name;
+    const rightKey = typeof right === "string" ? right : right.name;
+    return leftKey.localeCompare(rightKey);
+  });
 
 const collectPreloadFilesSync = (rootPath) => {
   const entries = readdirSync(rootPath, { withFileTypes: true });

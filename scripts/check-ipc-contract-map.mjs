@@ -116,13 +116,14 @@ export const collectIpcUsage = (files, rootDir = PROJECT_ROOT) => {
     const relativeFile = path.relative(rootDir, absoluteFile);
     const normalized = relativeFile.replace(/\\/g, "/");
 
-    if (normalized === "src/preload/index.ts") {
+    if (normalized.startsWith("src/preload/")) {
       pushMatches({
         usageByKey,
         content,
         relativeFile: normalized,
         category: "renderer_invoke",
-        regex: /\bsafeInvoke(?:Core)?\([^)]*IPC_CHANNELS\.([A-Z0-9_]+)/g,
+        regex:
+          /\bsafeInvoke(?:Core)?(?:<[^>]+>)?\([^)]*IPC_CHANNELS\.([A-Z0-9_]+)/g,
       });
       pushMatches({
         usageByKey,
