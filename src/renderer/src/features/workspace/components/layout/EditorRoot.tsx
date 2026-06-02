@@ -1,6 +1,5 @@
 import {
   useState,
-  lazy,
   Suspense,
   useCallback,
   useMemo,
@@ -31,70 +30,26 @@ import { openQuickExportEntry } from "@renderer/features/workspace/services/expo
 import { GlobalDragContext } from "@shared/ui/GlobalDragContext";
 import { useEditorRootShortcuts } from "@renderer/features/workspace/components/useEditorRootShortcuts";
 import { FeatureErrorBoundary } from "@renderer/shared/error-boundaries/FeatureErrorBoundary";
-
-const SettingsModal = lazy(
-  () => import("@renderer/features/settings/components/SettingsModal"),
-);
 import type { SettingsTabId } from "@renderer/features/settings/components/tabs/types";
-const MainLayout = lazy(
-  () => import("@renderer/features/workspace/components/layout/MainLayout"),
-);
-const GoogleDocsLayout = lazy(
-  () =>
-    import("@renderer/features/workspace/components/layout/GoogleDocsLayout"),
-);
-const FocusLayout = lazy(
-  () => import("@renderer/features/workspace/components/layout/FocusLayout"),
-);
-const EditorLayout = lazy(
-  () => import("@renderer/features/workspace/components/layout/EditorLayout"),
-);
-const ScrivenerLayout = lazy(
-  () =>
-    import("@renderer/features/workspace/components/layout/ScrivenerLayout"),
-);
-const Sidebar = lazy(
-  () => import("@renderer/features/manuscript/components/Sidebar"),
-);
-const DocsSidebar = lazy(
-  () => import("@renderer/features/manuscript/components/DocsSidebar"),
-);
-const ScrivenerSidebar = lazy(
-  () => import("@renderer/features/manuscript/components/ScrivenerSidebar"),
-);
-const CanvasActivityShell = lazy(
-  () =>
-    import("@renderer/features/canvas/components/shell/CanvasActivityShell"),
-);
-const CanvasPane = lazy(
-  () => import("@renderer/features/canvas/components/shell/CanvasPane"),
-);
-const ContextPanel = lazy(() =>
-  import("@renderer/features/workspace/components/panels/ContextPanel")
-);
-const WorkspacePanels = lazy(() =>
-  import("@renderer/features/workspace/components/panels/WorkspacePanels").then(
-    (module) => ({
-      default: module.WorkspacePanels,
-    }),
-  ),
-);
-const DataRecoveryBanner = lazy(
-  () =>
-    import("@renderer/features/workspace/components/banner/DataRecoveryBanner"),
-);
-const UpdaterNotification = lazy(
-  () => import("@renderer/features/workspace/components/UpdaterNotification"),
-);
-const OfflineBanner = lazy(() =>
-  import("@renderer/features/workspace/components/banner/OfflineBanner").then(
-    (module) => ({
-      default: module.OfflineBanner,
-    }),
-  ),
-);
-
-const layoutFallback = <div className="h-full w-full bg-app" />;
+import {
+  CanvasActivityShell,
+  CanvasPane,
+  ContextPanel,
+  DataRecoveryBanner,
+  DocsSidebar,
+  EditorLayout,
+  FocusLayout,
+  GoogleDocsLayout,
+  layoutFallback,
+  MainLayout,
+  OfflineBanner,
+  ScrivenerLayout,
+  ScrivenerSidebar,
+  SettingsModal,
+  Sidebar,
+  UpdaterNotification,
+  WorkspacePanels,
+} from "./rootShell";
 
 export default function EditorRoot() {
   const { t } = useTranslation();

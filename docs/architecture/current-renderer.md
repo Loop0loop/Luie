@@ -118,7 +118,6 @@ renderer API 접근
 - `src/renderer/src/features/settings/components/tabs/ModelTab.tsx`
 - `src/renderer/src/features/canvas/components/shell/CanvasActivityShell.tsx`
 - `src/renderer/src/features/canvas/components/graph/GraphSurface.tsx`
-- `src/renderer/src/features/workspace/components/layout/EditorRoot.tsx`
 - `src/renderer/src/styles/global.css`
 - `src/renderer/src/features/project/hooks/useFileImport.ts`
 - `src/renderer/src/i18n/locales/*/workspace.ts`
@@ -148,12 +147,20 @@ renderer API 접근
 | `shell/useUiModeIntegrityDevCheck.ts` | dev-only UI mode integrity logger | 60 |
 | `shell/index.ts` | app shell helper 배럴 export | 7 |
 
+사실: `src/renderer/src/features/workspace/components/layout/EditorRoot.tsx`는 workspace layout shell orchestration만 유지하도록 축소되어 491 LOC입니다. lazy component registry와 layout fallback은 `layout/rootShell/index.ts` 배럴을 통해 제공합니다.
+
+| EditorRoot shell helper | 책임 | LOC |
+| --- | --- | ---: |
+| `rootShell/lazyComponents.tsx` | layout/sidebar/panel/banner lazy component registry | 62 |
+| `rootShell/fallback.tsx` | layout suspense fallback element | 1 |
+| `rootShell/index.ts` | EditorRoot shell helper 배럴 export | 19 |
+
 ## 위험 지점
 
 의견:
 
 - `App.tsx`는 routing, bootstrap, project open/restore, attachment approval/toast를 함께 담당합니다.
-- `EditorRoot.tsx`는 editor/sidebar/canvas/panels/settings/shortcuts/split view를 묶는 blast-radius 큰 shell입니다.
+- `EditorRoot.tsx`는 editor/sidebar/canvas/panels/settings/shortcuts/split view를 묶는 shell입니다.
 - `uiStore.state.ts`는 legacy flat fields와 `regions` 동기화가 있어 변경 위험이 큽니다.
 - `worldBuildingStore.actions.ts`는 graph load, replica merge, persistence queue, mutation version, CRUD mutation을 함께 처리합니다.
 - `CanvasNodeInspector.tsx`의 직접 `window.api` memory 호출은 API 경계 예외입니다.
