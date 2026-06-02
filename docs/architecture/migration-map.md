@@ -179,6 +179,7 @@ pnpm run check:preload-contract-regression
 - `src/main/services/features/sync/syncMapper.ts`는 19 LOC입니다.
 - `src/main/manager/settingsManager.ts`는 450 LOC입니다.
 - `src/main/services/features/searchService.ts`는 373 LOC입니다.
+- `src/main/services/features/sync/syncLocalApply.ts`는 310 LOC입니다.
 - `snapshotArtifacts.ts`의 기존 public export인 `readFullSnapshotArtifact`, `listSnapshotRestoreCandidates`, `cleanupOrphanSnapshotArtifacts`, `writeFullSnapshotArtifact`는 유지했습니다.
 - snapshot artifact의 path 탐색, restore preview 계산, DB payload 조립, payload 타입은 `snapshot/artifacts/index.ts` 배럴 폴더로 분리했습니다.
 - `ipcSettingsHandlers.ts`의 기존 public export인 `registerSettingsIPCHandlers`는 유지했습니다.
@@ -198,6 +199,8 @@ pnpm run check:preload-contract-regression
 - `searchService.ts`의 기존 public export인 `SearchService`와 `searchService` singleton은 유지했습니다.
 - `search`, `searchCharacters`, `searchTerms`, `searchChapters`, `searchChunks`, `getChunkBacklink`, `getQuickAccess` method shape는 유지했습니다.
 - memory chunk token expansion, FTS query build, short-token LIKE fallback, vector rank, RRF merge는 `features/search/index.ts` 배럴 폴더로 분리했습니다.
+- `syncLocalApply.ts`의 기존 public export인 `collectDeletedProjectIds`, `applyProjectDeletes`, `upsertProjects`, `upsertChapter`, `upsertCharacters`, `upsertEvents`, `upsertFactions`, `upsertTerms`, `applyChapterTombstones`, `applyReplicaWorldState`는 유지했습니다.
+- replica world document map 구성, world payload normalization, scrap memo materialization은 `sync/localApply/index.ts` 배럴 폴더로 분리했습니다.
 - 2026-06-02 기준 `bun run typecheck`, `bun run check:core-complexity`, `bun run check:ipc-handler-schemas`, `bun run check:ipc-contract-map` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/handler/ipcSettingsHandlers.security.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncService.test.ts` 통과.
@@ -208,6 +211,7 @@ pnpm run check:preload-contract-regression
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/manager/settingsManager.localLlm.test.ts tests/main/services/startupReadinessService.test.ts tests/main/handler/ipcSettingsHandlers.security.test.ts` 통과.
 - 2026-06-02 기준 `bun vitest tests/main/services/searchServiceFallback.test.ts tests/main/services/memoryProjectionService.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/handler/ipcInputValidation.test.ts` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncLocalApply.test.ts tests/main/services/syncService.test.ts` 통과.
 
 검증 제약:
 
@@ -224,7 +228,6 @@ pnpm run check:preload-contract-regression
 src/main/database/packagedSchema.ts
 src/main/database/schema.ts
 src/main/services/features/analysis/analysisStreamRunner.ts
-src/main/services/features/sync/syncLocalApply.ts
 src/main/services/core/project/projectImportOpen.ts
 src/main/services/features/utility/utilityProcessBridge.ts
 ```
@@ -312,6 +315,10 @@ settingsManager.ts
 searchService.ts
   -> search/index
   -> search/chunkSearch
+
+syncLocalApply.ts
+  -> localApply/index
+  -> localApply/worldState
 ```
 
 검증:

@@ -72,4 +72,118 @@ describe("syncLocalApply.applyReplicaWorldState", () => {
       updatedAt: expect.any(String),
     });
   });
+
+  it("applies the latest world document tombstone", () => {
+    const run = vi.fn();
+    const where = vi.fn(() => ({ run }));
+    const tx = {
+      delete: vi.fn(() => ({ where })),
+      insert: vi.fn(() => ({
+        values: vi.fn(() => ({
+          onConflictDoUpdate: vi.fn(() => ({ run })),
+          run,
+        })),
+      })),
+      update: vi.fn(() => ({
+        set: vi.fn(() => ({ where })),
+      })),
+    } as never;
+
+    const bundle = createEmptySyncBundle();
+    bundle.projects.push({
+      id: "project-1",
+      userId: "user-1",
+      title: "Novel",
+      description: null,
+      createdAt: "2026-03-01T00:00:00.000Z",
+      updatedAt: "2026-03-02T00:00:00.000Z",
+    });
+    bundle.worldDocuments.push(
+      {
+        id: "project-1:synopsis:old",
+        userId: "user-1",
+        projectId: "project-1",
+        docType: "synopsis",
+        payload: { synopsis: "old" },
+        updatedAt: "2026-03-03T00:00:00.000Z",
+      },
+      {
+        id: "project-1:synopsis:deleted",
+        userId: "user-1",
+        projectId: "project-1",
+        docType: "synopsis",
+        payload: null,
+        updatedAt: "2026-03-04T00:00:00.000Z",
+        deletedAt: "2026-03-04T00:00:00.000Z",
+      },
+    );
+
+    applyReplicaWorldState(tx, bundle, new Set());
+
+    expect(tx.delete).toHaveBeenCalledWith(worldDocument);
+    expect(tx.insert).not.toHaveBeenCalledWith(worldDocument);
+    expect(tx.update).toHaveBeenCalledWith(project);
+  });
+
+  it("materializes scrap memos from replica memo rows", () => {
+    const worldDocumentValues: unknown[] = [];
+    const scrapMemoValues: unknown[] = [];
+
+    const run = vi.fn();
+    const where = vi.fn(() => ({ run }));
+    const onConflictDoUpdate = vi.fn(() => ({ run }));
+    const tx = {
+      delete: vi.fn(() => ({ where })),
+      insert: vi.fn((table: unknown) => ({
+        values: vi.fn((values: unknown) => {
+          if (table === worldDocument) worldDocumentValues.push(values);
+          if (table === scrapMemo) scrapMemoValues.push(values);
+          return { onConflictDoUpdate, run };
+        }),
+      })),
+      update: vi.fn(() => ({
+        set: vi.fn(() => ({ where })),
+      })),
+    } as never;
+
+    const bundle = createEmptySyncBundle();
+    bundle.projects.push({
+      id: "project-1",
+      userId: "user-1",
+      title: "Novel",
+      description: null,
+      createdAt: "2026-03-01T00:00:00.000Z",
+      updatedAt: "2026-03-02T00:00:00.000Z",
+    });
+    bundle.memos.push({
+      id: "memo-1",
+      userId: "user-1",
+      projectId: "project-1",
+      title: "Clue",
+      content: "Hidden door",
+      tags: ["plot"],
+      createdAt: "2026-03-03T00:00:00.000Z",
+      updatedAt: "2026-03-04T00:00:00.000Z",
+    });
+
+    applyReplicaWorldState(tx, bundle, new Set());
+
+    expect(worldDocumentValues).toHaveLength(1);
+    expect(worldDocumentValues[0]).toMatchObject({
+      id: "project-1:scrap",
+      projectId: "project-1",
+      docType: "scrap",
+    });
+    expect(scrapMemoValues).toHaveLength(1);
+    expect(scrapMemoValues[0]).toMatchObject([
+      {
+        id: "memo-1",
+        projectId: "project-1",
+        title: "Clue",
+        content: "Hidden door",
+        tags: JSON.stringify(["plot"]),
+        sortOrder: 0,
+      },
+    ]);
+  });
 });

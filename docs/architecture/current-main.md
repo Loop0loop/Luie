@@ -123,7 +123,6 @@ index.ts
 | `src/main/database/packagedSchema.ts` | 639 |
 | `src/main/database/schema.ts` | 623 |
 | `src/main/services/features/analysis/analysisStreamRunner.ts` | 518 |
-| `src/main/services/features/sync/syncLocalApply.ts` | 517 |
 | `src/main/services/core/project/projectImportOpen.ts` | 516 |
 | `src/main/services/features/utility/utilityProcessBridge.ts` | 511 |
 
@@ -208,6 +207,13 @@ index.ts
 | --- | --- | ---: |
 | `search/chunkSearch.ts` | memory chunk FTS query, short-token LIKE fallback, vector rank, RRF merge | 137 |
 | `search/index.ts` | search helper 배럴 export | 7 |
+
+사실: `src/main/services/features/sync/syncLocalApply.ts`는 project/entity local DB apply helper만 유지하도록 축소되어 310 LOC입니다. Replica world document materialization은 `sync/localApply/index.ts` 배럴 폴더로 분리했습니다.
+
+| Sync local apply helper | 책임 | LOC |
+| --- | --- | ---: |
+| `localApply/worldState.ts` | replica world document map, payload normalization, scrap memo materialization | 214 |
+| `localApply/index.ts` | local apply helper 배럴 export | 1 |
 
 ## 위험 지점
 
