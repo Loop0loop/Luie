@@ -94,15 +94,13 @@ shared/ipc/response.ts
 
 사실:
 
-- `src/shared/types/index.ts`
-- `src/shared/schemas/index.ts`
-- `src/shared/api/index.ts`
+- 2026-06-02 기준 `src/shared/types/*.ts`, `src/shared/schemas/*.ts`, `src/shared/api/*.ts`의 500 LOC 초과 파일은 없습니다.
 
 ## 위험 지점
 
 의견:
 
-- `types/index.ts`, `schemas/index.ts`, `api/index.ts`는 domain별 분리 후보입니다.
+- `types/index.ts`, `schemas/index.ts`, `api/index.ts`는 기존 import 호환을 위한 barrel 경계입니다.
 - `@shared/api`를 main/preload에서 value import하면 renderer runtime proxy가 섞일 수 있습니다.
 - `localStorage`, React hook, renderer store factory를 Electron-safe shared로 오해하면 main/preload bundle 경계가 깨질 수 있습니다.
 
@@ -137,4 +135,3 @@ src/shared/api/
   windowApi.contract.ts
   index.ts       # 기존 export 유지
 ```
-

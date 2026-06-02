@@ -75,7 +75,7 @@ bun run check:core-complexity
 
 ## Phase 1: Shared Contract Split
 
-상태: 부분 완료.
+상태: 완료.
 
 완료:
 
@@ -87,10 +87,9 @@ bun run check:core-complexity
 - 기존 `@shared/api` 공개 export는 보존했습니다.
 - 모든 `src/shared/types/*.ts`, `src/shared/schemas/*.ts`, `src/shared/api/*.ts` 파일은 500 LOC 이하입니다.
 - 2026-06-02 기준 `pnpm run typecheck` 통과.
-
-미완료:
-
-- shared 계약 분리 후 IPC guard script 재검증
+- 2026-06-02 기준 `bun run check:ipc-contract-map` 통과.
+- 2026-06-02 기준 `bun run check:ipc-handler-schemas` 통과.
+- 2026-06-02 기준 `bun run check:preload-contract-regression` 통과.
 
 추천 이유:
 
