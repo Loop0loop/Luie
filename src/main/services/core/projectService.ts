@@ -8,9 +8,7 @@ import * as schema from "../../database/schema.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import {
   ErrorCode,
-  DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
   PACKAGE_EXPORT_DEBOUNCE_MS,
-  LUIE_PACKAGE_META_FILENAME,
 } from "../../../shared/constants/index.js";
 import type {
   ProjectCreateInput,
@@ -18,12 +16,7 @@ import type {
   ProjectUpdateInput,
 } from "../../../shared/types/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
-import { settingsManager } from "../../manager/settingsManager.js";
 import { ProjectExportQueue } from "./project/projectExportQueue.js";
-import {
-  deleteProjectPackageFileIfRequested,
-  normalizeProjectDeleteInput,
-} from "./project/projectDeletionPolicy.js";
 import { withProjectPathStatus } from "./project/projectListStatus.js";
 import {
   getProjectAttachmentPath,
@@ -38,13 +31,19 @@ import {
   markProjectOpened as markProjectOpenedLocalState,
   sortProjectsByRecentLocalState,
 } from "./project/projectLocalStateStore.js";
-import {
-  findProjectPathConflict,
-  normalizeLuiePackagePath,
-  normalizeProjectPath,
-  renameSnapshotDirectoryForProjectTitleChange,
-} from "./project/projectPathPolicy.js";
 import { collectDuplicateProjectPathGroups } from "./project/projectPathReconciliation.js";
+import {
+  attachProjectPackageFile,
+  materializeProjectPackageFile,
+} from "./project/projectPackageAttachment.js";
+import {
+  deleteProjectRecord,
+  removeProjectListRecord,
+} from "./project/projectRemoval.js";
+import {
+  createProjectRecord,
+  updateProjectRecord,
+} from "./project/projectMutation.js";
 
 const logger = createLogger("ProjectService");
 
@@ -70,18 +69,6 @@ const loadProjectExportEngine = async () =>
 
 const loadProjectImportOpen = async () =>
   (await import("./project/projectImportOpen.js")).openLuieProjectPackage;
-
-const loadProjectLuieSchemas = async () =>
-  import("./project/projectLuieSchemas.js");
-
-const loadAppearanceCacheService = async () =>
-  (await import("../world/appearanceCacheService.js")).appearanceCacheService;
-
-const loadChapterSearchCacheService = async () =>
-  (await import("../features/chapterSearchCacheService.js"))
-    .chapterSearchCacheService;
-
-const loadLuieContainer = async () => import("../io/luieContainer.js");
 
 export class ProjectService {
   private exportQueue = new ProjectExportQueue(
@@ -159,65 +146,11 @@ export class ProjectService {
   }
 
   async createProject(input: ProjectCreateInput) {
-    try {
-      logger.info("Creating project", input);
-      const projectPath = normalizeProjectPath(input.projectPath);
-      if (projectPath) {
-        const conflict = await findProjectPathConflict(projectPath);
-        if (conflict) {
-          throw new ServiceError(
-            ErrorCode.VALIDATION_FAILED,
-            "Project path is already registered",
-            { projectPath, conflictProjectId: conflict.id },
-          );
-        }
-      }
-
-      const store = db.getClient();
-      const now = new Date().toISOString();
-      const projectRows = await store.insert(schema.project).values({
-        id: crypto.randomUUID(),
-        title: input.title,
-        description: input.description ?? null,
-        createdAt: now,
-        updatedAt: now,
-      }).returning();
-
-      const created = projectRows[0];
-
-      await store.insert(schema.projectSettings).values({
-        id: created.id,
-        projectId: created.id,
-        autoSave: true,
-        autoSaveInterval: DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
-      });
-
-      const projectId = String(created.id);
-      if (projectPath !== undefined) {
-        await setProjectAttachmentPath(projectId, projectPath);
-      }
-      logger.info("Project created successfully", { projectId });
-      this.schedulePackageExport(projectId, "project:create");
-      return {
-        ...created,
-        projectPath: projectPath ?? null,
-      };
-    } catch (error) {
-      logger.error("Failed to create project", {
-        input,
-        error,
-        errorMessage: error instanceof Error ? error.message : String(error),
-      });
-      if (error instanceof ServiceError) {
-        throw error;
-      }
-      throw new ServiceError(
-        ErrorCode.PROJECT_CREATE_FAILED,
-        "Failed to create project",
-        { input },
-        error,
-      );
-    }
+    return await createProjectRecord(input, {
+      schedulePackageExport: (projectId, reason) =>
+        this.schedulePackageExport(projectId, reason),
+      logger,
+    });
   }
 
   async openLuieProject(packagePath: string) {
@@ -256,229 +189,24 @@ export class ProjectService {
     return project;
   }
 
-  private async readLuieMetaForAttachment(packagePath: string) {
-    const [{ readLuieContainerEntry }, { LuieMetaSchema }] = await Promise.all([
-      loadLuieContainer(),
-      loadProjectLuieSchemas(),
-    ]);
-    let raw: string | null;
-    try {
-      raw = await readLuieContainerEntry(
-        packagePath,
-        LUIE_PACKAGE_META_FILENAME,
-        logger,
-      );
-    } catch (error) {
-      if (error instanceof ServiceError) {
-        throw error;
-      }
-      throw new ServiceError(
-        ErrorCode.FS_READ_FAILED,
-        "Failed to read .luie package meta",
-        { packagePath },
-        error,
-      );
-    }
-
-    if (!raw) {
-      throw new ServiceError(
-        ErrorCode.VALIDATION_FAILED,
-        "Selected .luie package is missing meta",
-        { packagePath },
-      );
-    }
-
-    let parsedJson: unknown;
-    try {
-      parsedJson = JSON.parse(raw);
-    } catch (error) {
-      throw new ServiceError(
-        ErrorCode.VALIDATION_FAILED,
-        "Selected .luie package has invalid meta JSON",
-        { packagePath },
-        error,
-      );
-    }
-
-    const parsed = LuieMetaSchema.safeParse(parsedJson);
-    if (!parsed.success) {
-      throw new ServiceError(
-        ErrorCode.VALIDATION_FAILED,
-        "Selected .luie package has invalid meta format",
-        {
-          packagePath,
-          issues: parsed.error.issues,
-        },
-      );
-    }
-
-    return parsed.data;
-  }
-
   async attachProjectPackage(projectId: string, packagePath: string) {
-    try {
-      const normalizedPath = normalizeLuiePackagePath(
-        packagePath,
-        "packagePath",
-      );
-      const [existingRows, conflict, meta] = await Promise.all([
-        db.getClient()
-          .select({ id: schema.project.id })
-          .from(schema.project)
-          .where(eq(schema.project.id, projectId))
-          .limit(1),
-        findProjectPathConflict(normalizedPath, projectId),
-        this.readLuieMetaForAttachment(normalizedPath),
-      ]);
-
-      const existing = existingRows.length > 0 ? existingRows[0] : null;
-
-      if (!existing?.id) {
-        throw new ServiceError(
-          ErrorCode.PROJECT_NOT_FOUND,
-          "Project not found",
-          { id: projectId },
-        );
-      }
-
-      if (conflict) {
-        throw new ServiceError(
-          ErrorCode.VALIDATION_FAILED,
-          "Project path is already registered",
-          {
-            projectId,
-            projectPath: normalizedPath,
-            conflictProjectId: conflict.id,
-          },
-        );
-      }
-
-      const metaProjectId =
-        typeof meta.projectId === "string" ? meta.projectId : undefined;
-      if (metaProjectId && metaProjectId !== projectId) {
-        throw new ServiceError(
-          ErrorCode.VALIDATION_FAILED,
-          "Selected .luie package belongs to a different project",
-          {
-            projectId,
-            packagePath: normalizedPath,
-            packageProjectId: metaProjectId,
-          },
-        );
-      }
-
-      const exported = await this.exportProjectPackageWithOptions(projectId, {
-        targetPath: normalizedPath,
-        worldSourcePath: normalizedPath,
-      });
-      if (!exported) {
-        throw new ServiceError(
-          ErrorCode.FS_WRITE_FAILED,
-          "Failed to attach .luie package",
-          {
-            projectId,
-            packagePath: normalizedPath,
-          },
-        );
-      }
-
-      await setProjectAttachmentPath(projectId, normalizedPath);
-      logger.info("Project attached to existing .luie package", {
-        projectId,
-        packagePath: normalizedPath,
-      });
-      return await this.getProjectWithAttachmentStatus(projectId);
-    } catch (error) {
-      logger.error("Failed to attach .luie package", {
-        projectId,
-        packagePath,
-        error,
-      });
-      if (error instanceof ServiceError) {
-        throw error;
-      }
-      throw new ServiceError(
-        ErrorCode.PROJECT_UPDATE_FAILED,
-        "Failed to attach .luie package",
-        { projectId, packagePath },
-        error,
-      );
-    }
+    return await attachProjectPackageFile(projectId, packagePath, {
+      exportProjectPackageWithOptions: (targetProjectId, options) =>
+        this.exportProjectPackageWithOptions(targetProjectId, options),
+      getProjectWithAttachmentStatus: (targetProjectId) =>
+        this.getProjectWithAttachmentStatus(targetProjectId),
+      logger,
+    });
   }
 
   async materializeProjectPackage(projectId: string, targetPath: string) {
-    try {
-      const normalizedPath = normalizeLuiePackagePath(targetPath, "targetPath");
-      const [existingRows, conflict, currentAttachmentPath] = await Promise.all([
-        db.getClient()
-          .select({ id: schema.project.id })
-          .from(schema.project)
-          .where(eq(schema.project.id, projectId))
-          .limit(1),
-        findProjectPathConflict(normalizedPath, projectId),
-        getProjectAttachmentPath(projectId),
-      ]);
-
-      const existing = existingRows.length > 0 ? existingRows[0] : null;
-
-      if (!existing?.id) {
-        throw new ServiceError(
-          ErrorCode.PROJECT_NOT_FOUND,
-          "Project not found",
-          { id: projectId },
-        );
-      }
-
-      if (conflict) {
-        throw new ServiceError(
-          ErrorCode.VALIDATION_FAILED,
-          "Project path is already registered",
-          {
-            projectId,
-            projectPath: normalizedPath,
-            conflictProjectId: conflict.id,
-          },
-        );
-      }
-
-      const exported = await this.exportProjectPackageWithOptions(projectId, {
-        targetPath: normalizedPath,
-        worldSourcePath: currentAttachmentPath ?? null,
-      });
-      if (!exported) {
-        throw new ServiceError(
-          ErrorCode.FS_WRITE_FAILED,
-          "Failed to materialize .luie package",
-          {
-            projectId,
-            targetPath: normalizedPath,
-          },
-        );
-      }
-
-      await setProjectAttachmentPath(projectId, normalizedPath);
-      logger.info("Project materialized into .luie package", {
-        projectId,
-        targetPath: normalizedPath,
-        containerKind: "sqlite-v2",
-      });
-      return await this.getProjectWithAttachmentStatus(projectId);
-    } catch (error) {
-      logger.error("Failed to materialize .luie package", {
-        projectId,
-        targetPath,
-        error,
-      });
-      if (error instanceof ServiceError) {
-        throw error;
-      }
-      throw new ServiceError(
-        ErrorCode.PROJECT_UPDATE_FAILED,
-        "Failed to materialize .luie package",
-        { projectId, targetPath },
-        error,
-      );
-    }
+    return await materializeProjectPackageFile(projectId, targetPath, {
+      exportProjectPackageWithOptions: (targetProjectId, options) =>
+        this.exportProjectPackageWithOptions(targetProjectId, options),
+      getProjectWithAttachmentStatus: (targetProjectId) =>
+        this.getProjectWithAttachmentStatus(targetProjectId),
+      logger,
+    });
   }
 
   async getProject(id: string) {
@@ -567,267 +295,19 @@ export class ProjectService {
   }
 
   async updateProject(input: ProjectUpdateInput) {
-    try {
-      const normalizedProjectPath =
-        input.projectPath === undefined
-          ? undefined
-          : (normalizeProjectPath(input.projectPath) ?? null);
-      if (normalizedProjectPath) {
-        const conflict = await findProjectPathConflict(
-          normalizedProjectPath,
-          input.id,
-        );
-        if (conflict) {
-          throw new ServiceError(
-            ErrorCode.VALIDATION_FAILED,
-            "Project path is already registered",
-            {
-              projectPath: normalizedProjectPath,
-              conflictProjectId: conflict.id,
-              projectId: input.id,
-            },
-          );
-        }
-      }
-
-      const [currentRows, currentProjectPath] = await Promise.all([
-        db.getClient()
-          .select({ title: schema.project.title })
-          .from(schema.project)
-          .where(eq(schema.project.id, input.id))
-          .limit(1),
-        getProjectAttachmentPath(input.id),
-      ]);
-
-      const current = currentRows.length > 0 ? currentRows[0] : null;
-
-      const now = new Date().toISOString();
-      const projectRows = await db.getClient()
-        .update(schema.project)
-        .set({
-          title: input.title,
-          description: input.description,
-          updatedAt: now,
-        })
-        .where(eq(schema.project.id, input.id))
-        .returning();
-
-      const project = projectRows[0];
-
-      const nextProjectPath =
-        normalizedProjectPath === undefined
-          ? currentProjectPath
-          : normalizedProjectPath;
-      if (normalizedProjectPath !== undefined) {
-        await setProjectAttachmentPath(input.id, normalizedProjectPath);
-      }
-
-      const prevTitle = typeof current?.title === "string" ? current.title : "";
-      const nextTitle = typeof project.title === "string" ? project.title : "";
-      await renameSnapshotDirectoryForProjectTitleChange({
-        projectId: String(project.id),
-        projectPath: nextProjectPath ?? null,
-        previousTitle: prevTitle,
-        nextTitle,
-        logger,
-      });
-
-      const projectId = String(project.id);
-      logger.info("Project updated successfully", { projectId });
-      this.schedulePackageExport(projectId, "project:update");
-      return {
-        ...project,
-        projectPath: nextProjectPath ?? null,
-      };
-    } catch (error) {
-      logger.error("Failed to update project", error);
-      if (error instanceof ServiceError) {
-        throw error;
-      }
-      throw new ServiceError(
-        ErrorCode.PROJECT_UPDATE_FAILED,
-        "Failed to update project",
-        { input },
-        error,
-      );
-    }
-  }
-
-  private clearSyncBaselineForProject(projectId: string): void {
-    const syncSettings = settingsManager.getSyncSettings();
-    const existingBaselines = syncSettings.entityBaselinesByProjectId;
-    if (!existingBaselines || !(projectId in existingBaselines)) return;
-    const nextBaselines = { ...existingBaselines };
-    delete nextBaselines[projectId];
-    settingsManager.setSyncSettings({
-      entityBaselinesByProjectId:
-        Object.keys(nextBaselines).length > 0 ? nextBaselines : undefined,
+    return await updateProjectRecord(input, {
+      schedulePackageExport: (projectId, reason) =>
+        this.schedulePackageExport(projectId, reason),
+      logger,
     });
   }
 
-  private async purgeDerivedProjectRows(projectId: string): Promise<void> {
-    // Legacy databases may not have FK cascades on these derived tables.
-    // Explicit deletes keep behavior stable across schema generations.
-    const client = db.getClient();
-    await client.delete(schema.memoryEmbedding).where(eq(schema.memoryEmbedding.projectId, projectId));
-    await client.delete(schema.memoryChunk).where(eq(schema.memoryChunk.projectId, projectId));
-    await client.delete(schema.memoryBuildJob).where(eq(schema.memoryBuildJob.projectId, projectId));
-    await client.delete(schema.searchDirtyQueue).where(eq(schema.searchDirtyQueue.projectId, projectId));
-  }
-
   async deleteProject(input: string | ProjectDeleteInput) {
-    const request = normalizeProjectDeleteInput(input);
-    let queuedProjectDelete = false;
-
-    try {
-      const [existingRows, projectPath] = await Promise.all([
-        db.getClient()
-          .select({ id: schema.project.id })
-          .from(schema.project)
-          .where(eq(schema.project.id, request.id))
-          .limit(1),
-        getProjectAttachmentPath(request.id),
-      ]);
-
-      const existing = existingRows.length > 0 ? existingRows[0] : null;
-
-      if (!existing?.id) {
-        throw new ServiceError(
-          ErrorCode.PROJECT_NOT_FOUND,
-          "Project not found",
-          { id: request.id },
-        );
-      }
-
-      await deleteProjectPackageFileIfRequested({
-        deleteFile: request.deleteFile,
-        projectPath,
-      });
-
-      settingsManager.addPendingProjectDelete({
-        projectId: request.id,
-        deletedAt: new Date().toISOString(),
-      });
-      queuedProjectDelete = true;
-
-      await this.purgeDerivedProjectRows(request.id);
-
-      const deletedRows = await db.getClient()
-        .delete(schema.project)
-        .where(eq(schema.project.id, request.id))
-        .returning({ id: schema.project.id });
-
-      if (!deletedRows.length) {
-        throw new ServiceError(
-          ErrorCode.PROJECT_NOT_FOUND,
-          "Project not found",
-          { id: request.id },
-        );
-      }
-      try {
-        const [appearanceCacheService, chapterSearchCacheService] =
-          await Promise.all([
-            loadAppearanceCacheService(),
-            loadChapterSearchCacheService(),
-          ]);
-        await Promise.all([
-          appearanceCacheService.clearProject(request.id),
-          chapterSearchCacheService.clearProject(request.id),
-        ]);
-      } catch (cacheError) {
-        logger.warn("Failed to clear project cache during delete", {
-          projectId: request.id,
-          cacheError,
-        });
-      }
-
-      this.clearSyncBaselineForProject(request.id);
-
-      logger.info("Project deleted successfully", {
-        projectId: request.id,
-        deleteFile: request.deleteFile,
-      });
-      return { success: true };
-    } catch (error) {
-      if (queuedProjectDelete) {
-        settingsManager.removePendingProjectDeletes([request.id]);
-      }
-      logger.error("Failed to delete project", error);
-      if (error instanceof ServiceError) {
-        throw error;
-      }
-      throw new ServiceError(
-        ErrorCode.PROJECT_DELETE_FAILED,
-        "Failed to delete project",
-        { id: request.id, deleteFile: request.deleteFile },
-        error,
-      );
-    }
+    return await deleteProjectRecord(input, logger);
   }
 
   async removeProjectFromList(id: string) {
-    try {
-      const existingRows = await db.getClient()
-        .select({ id: schema.project.id })
-        .from(schema.project)
-        .where(eq(schema.project.id, id))
-        .limit(1);
-
-      const existing = existingRows.length > 0 ? existingRows[0] : null;
-
-      if (!existing?.id) {
-        throw new ServiceError(
-          ErrorCode.PROJECT_NOT_FOUND,
-          "Project not found",
-          { id },
-        );
-      }
-
-      await this.purgeDerivedProjectRows(id);
-      const deletedRows = await db.getClient()
-        .delete(schema.project)
-        .where(eq(schema.project.id, id))
-        .returning({ id: schema.project.id });
-      if (!deletedRows.length) {
-        throw new ServiceError(
-          ErrorCode.PROJECT_NOT_FOUND,
-          "Project not found",
-          { id },
-        );
-      }
-      try {
-        const [appearanceCacheService, chapterSearchCacheService] =
-          await Promise.all([
-            loadAppearanceCacheService(),
-            loadChapterSearchCacheService(),
-          ]);
-        await Promise.all([
-          appearanceCacheService.clearProject(id),
-          chapterSearchCacheService.clearProject(id),
-        ]);
-      } catch (cacheError) {
-        logger.warn("Failed to clear project cache during remove", {
-          projectId: id,
-          cacheError,
-        });
-      }
-
-      this.clearSyncBaselineForProject(id);
-
-      logger.info("Project removed from list", { projectId: id });
-      return { success: true };
-    } catch (error) {
-      logger.error("Failed to remove project from list", error);
-      if (error instanceof ServiceError) {
-        throw error;
-      }
-      throw new ServiceError(
-        ErrorCode.PROJECT_DELETE_FAILED,
-        "Failed to remove project from list",
-        { id },
-        error,
-      );
-    }
+    return await removeProjectListRecord(id, logger);
   }
 
   async markProjectOpened(id: string) {
