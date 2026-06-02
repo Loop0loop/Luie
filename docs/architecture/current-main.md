@@ -122,7 +122,6 @@ index.ts
 | --- | ---: |
 | `src/main/database/packagedSchema.ts` | 639 |
 | `src/main/database/schema.ts` | 623 |
-| `src/main/services/core/project/projectImportOpen.ts` | 516 |
 | `src/main/services/features/utility/utilityProcessBridge.ts` | 511 |
 
 사실: `src/main/services/features/snapshot/snapshotArtifacts.ts`는 snapshot artifact 읽기/후보 목록/고아 cleanup/write orchestration만 유지하도록 축소되어 297 LOC입니다. 분리된 helper는 `snapshot/artifacts/index.ts` 배럴을 통해 제공하며 public export 경로는 유지합니다.
@@ -220,6 +219,13 @@ index.ts
 | --- | --- | ---: |
 | `streamRunner/jsonStreamParser.ts` | noisy/fenced JSON object/array extraction and parse warning handling | 134 |
 | `streamRunner/index.ts` | analysis stream helper 배럴 export | 1 |
+
+사실: `src/main/services/core/project/projectImportOpen.ts`는 .luie open/recovery/import orchestration만 유지하도록 축소되어 287 LOC입니다. .luie 내부 world/snapshot collections 읽기와 schema validation은 `project/importOpen/index.ts` 배럴 폴더로 분리했습니다.
+
+| Project import/open helper | 책임 | LOC |
+| --- | --- | ---: |
+| `importOpen/collections.ts` | .luie world/snapshot entry read, JSON parse, schema validation, import collection normalization | 240 |
+| `importOpen/index.ts` | project import/open helper 배럴 export | 1 |
 
 ## 위험 지점
 

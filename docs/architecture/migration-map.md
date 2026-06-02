@@ -181,6 +181,7 @@ pnpm run check:preload-contract-regression
 - `src/main/services/features/searchService.ts`는 373 LOC입니다.
 - `src/main/services/features/sync/syncLocalApply.ts`는 310 LOC입니다.
 - `src/main/services/features/analysis/analysisStreamRunner.ts`는 415 LOC입니다.
+- `src/main/services/core/project/projectImportOpen.ts`는 287 LOC입니다.
 - `snapshotArtifacts.ts`의 기존 public export인 `readFullSnapshotArtifact`, `listSnapshotRestoreCandidates`, `cleanupOrphanSnapshotArtifacts`, `writeFullSnapshotArtifact`는 유지했습니다.
 - snapshot artifact의 path 탐색, restore preview 계산, DB payload 조립, payload 타입은 `snapshot/artifacts/index.ts` 배럴 폴더로 분리했습니다.
 - `ipcSettingsHandlers.ts`의 기존 public export인 `registerSettingsIPCHandlers`는 유지했습니다.
@@ -204,6 +205,8 @@ pnpm run check:preload-contract-regression
 - replica world document map 구성, world payload normalization, scrap memo materialization은 `sync/localApply/index.ts` 배럴 폴더로 분리했습니다.
 - `analysisStreamRunner.ts`의 기존 public export인 `AnalysisStreamOutcome`, `isAnalysisAbortError`, `toAnalysisErrorPayload`, `runGeminiAnalysisStream`은 유지했습니다.
 - Gemini 응답의 noisy/fenced JSON object/array extraction과 parse warning handling은 `analysis/streamRunner/index.ts` 배럴 폴더로 분리했습니다.
+- `projectImportOpen.ts`의 기존 public export인 `openLuieProjectPackage`는 유지했습니다.
+- .luie 내부 world/snapshot collections entry read, JSON parse, schema validation, import collection normalization은 `project/importOpen/index.ts` 배럴 폴더로 분리했습니다.
 - 2026-06-02 기준 `bun run typecheck`, `bun run check:core-complexity`, `bun run check:ipc-handler-schemas`, `bun run check:ipc-contract-map` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/handler/ipcSettingsHandlers.security.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncService.test.ts` 통과.
@@ -216,6 +219,7 @@ pnpm run check:preload-contract-regression
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/handler/ipcInputValidation.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncLocalApply.test.ts tests/main/services/syncService.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/analysisStreamRunner.test.ts tests/main/services/analysisStreamParser.test.ts tests/main/services/analysisFallback.test.ts` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/projectImportCollections.test.ts` 통과.
 
 검증 제약:
 
@@ -228,13 +232,15 @@ pnpm run check:preload-contract-regression
 - `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/manuscriptAnalysisService.test.ts`는 현재 DB mock이 Drizzle `select().from()` API를 제공하지 않아 실패합니다.
 - 실패 지점은 `src/main/services/features/analysis/manuscriptAnalysisService.ts:210`의 `db.getClient(...).select is not a function`입니다.
 - 이건 확인된 사실입니다. 실패 지점은 analysis stream parser가 아니라 `ManuscriptAnalysisService.loadAnalysisSource()` 테스트 mock 경계입니다.
+- `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/projectImportOpen.test.ts tests/main/services/projectImportTransaction.test.ts tests/main/services/projectService.packageAttachment.test.ts`는 현재 DB mock이 `db.getClient()` API를 제공하지 않아 실패합니다.
+- 실패 지점은 `projectImportOpen.ts:193`, `projectImportTransaction.ts:251`, `projectPackageAttachment.ts:40`의 `db.getClient is not a function`입니다.
+- 이건 확인된 사실입니다. 실패 지점은 project import collections helper가 아니라 project import/open 및 package attachment 테스트 mock 경계입니다.
 
 대상 후보:
 
 ```text
 src/main/database/packagedSchema.ts
 src/main/database/schema.ts
-src/main/services/core/project/projectImportOpen.ts
 src/main/services/features/utility/utilityProcessBridge.ts
 ```
 
@@ -329,6 +335,10 @@ syncLocalApply.ts
 analysisStreamRunner.ts
   -> streamRunner/index
   -> streamRunner/jsonStreamParser
+
+projectImportOpen.ts
+  -> importOpen/index
+  -> importOpen/collections
 ```
 
 검증:
