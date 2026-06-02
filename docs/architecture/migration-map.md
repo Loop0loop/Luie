@@ -53,10 +53,25 @@ current file
 
 ## Phase 1: Shared Contract Split
 
+상태: 부분 완료.
+
+완료:
+
+- `src/shared/types/index.ts`를 호환 barrel로 축소했습니다.
+- 기존 `@shared/types` 공개 타입 이름은 보존했습니다.
+- 모든 `src/shared/types/*.ts` 파일은 500 LOC 이하입니다.
+- 2026-06-02 기준 `pnpm run typecheck` 통과.
+
+미완료:
+
+- `src/shared/schemas/index.ts` 분리
+- `src/shared/api/index.ts` 분리
+
 추천 이유:
 
 - shared는 main/preload/renderer 계약의 중앙 경계입니다.
-- `types/index.ts`, `schemas/index.ts`, `api/index.ts`가 500 LOC를 크게 초과합니다.
+- `schemas/index.ts`, `api/index.ts`는 아직 500 LOC를 크게 초과합니다.
+- `types/index.ts`는 1차 분리로 호환 barrel이 됐고, 다음 shared split의 기준 사례입니다.
 - 기존 barrel export를 유지하면 기능 보존 가능성이 상대적으로 높습니다.
 
 대상:
@@ -74,11 +89,11 @@ src/shared/types/
   project.ts
   manuscript.ts
   world.ts
-  sync.ts
+  search.ts
   settings.ts
+  snapshot.ts
   export.ts
   analysis.ts
-  plugin.ts
   index.ts
 
 src/shared/schemas/
