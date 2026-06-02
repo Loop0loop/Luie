@@ -151,15 +151,19 @@ pnpm run check:preload-contract-regression
 - `src/main/services/features/snapshot/snapshotArtifacts.ts`는 297 LOC입니다.
 - `src/main/handler/system/ipcSettingsHandlers.ts`는 15 LOC입니다.
 - `src/main/services/features/sync/syncBundleCollector.ts`는 154 LOC입니다.
+- `src/main/services/features/sync/syncRepository.ts`는 75 LOC입니다.
 - `snapshotArtifacts.ts`의 기존 public export인 `readFullSnapshotArtifact`, `listSnapshotRestoreCandidates`, `cleanupOrphanSnapshotArtifacts`, `writeFullSnapshotArtifact`는 유지했습니다.
-- snapshot artifact의 path 탐색, restore preview 계산, DB payload 조립, payload 타입은 같은 feature 폴더의 helper 파일로 분리했습니다.
+- snapshot artifact의 path 탐색, restore preview 계산, DB payload 조립, payload 타입은 `snapshot/artifacts/index.ts` 배럴 폴더로 분리했습니다.
 - `ipcSettingsHandlers.ts`의 기존 public export인 `registerSettingsIPCHandlers`는 유지했습니다.
-- settings IPC의 기본 설정, LLM 설정, 모델 다운로드, llmfit/embedding handler는 같은 system handler 폴더의 helper 파일로 분리했습니다.
+- settings IPC의 기본 설정, LLM 설정, 모델 다운로드, llmfit/embedding handler는 `handler/system/settings/index.ts` 배럴 폴더로 분리했습니다.
 - `syncBundleCollector.ts`의 기존 public export인 `buildLocalSyncBundle`, `hydrateMissingWorldDocsFromPackage`는 유지했습니다.
-- sync bundle row append, world document hydrate/scrap memo 처리, collector-local 타입/normalizer는 같은 sync feature 폴더의 helper 파일로 분리했습니다.
+- sync bundle row append, world document hydrate/scrap memo 처리, collector-local 타입/normalizer는 `sync/bundleCollector/index.ts` 배럴 폴더로 분리했습니다.
+- `syncRepository.ts`의 기존 public export인 `syncRepository` singleton과 `fetchBundle`, `upsertBundle`, `isConfigured` method shape는 유지했습니다.
+- Supabase REST fetch/upsert, remote row mapper, upsert payload builder, row normalizer는 `sync/repository/index.ts` 배럴 폴더로 분리했습니다.
 - 2026-06-02 기준 `bun run typecheck`, `bun run check:core-complexity`, `bun run check:ipc-handler-schemas`, `bun run check:ipc-contract-map` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/handler/ipcSettingsHandlers.security.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncService.test.ts` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncRepository.test.ts tests/main/services/syncService.test.ts` 통과.
 
 검증 제약:
 
@@ -173,7 +177,6 @@ pnpm run check:preload-contract-regression
 src/main/database/packagedSchema.ts
 src/main/database/schema.ts
 src/main/services/features/memory/memoryProjectionService.ts
-src/main/services/features/sync/syncRepository.ts
 src/main/services/core/project/projectExportEngine.ts
 src/main/manager/settingsManager.ts
 src/main/services/features/sync/syncMapper.ts
@@ -214,22 +217,32 @@ autoSaveManager.ts
   -> autoSaveSnapshotJobs
 
 snapshotArtifacts.ts
-  -> snapshotArtifactTypes
-  -> snapshotArtifactPaths
-  -> snapshotArtifactPreview
-  -> snapshotArtifactProjectLoader
+  -> artifacts/index
+  -> artifacts/types
+  -> artifacts/paths
+  -> artifacts/preview
+  -> artifacts/projectLoader
 
 ipcSettingsHandlers.ts
-  -> ipcSettingsCoreHandlers
-  -> ipcSettingsLlmHandlers
-  -> ipcModelDownloadHandlers
-  -> ipcLlmfitEmbeddingHandlers
-  -> ipcSettingsManagerLoader
+  -> settings/index
+  -> settings/coreHandlers
+  -> settings/llmHandlers
+  -> settings/modelDownloadHandlers
+  -> settings/llmfitEmbeddingHandlers
+  -> settings/managerLoader
 
 syncBundleCollector.ts
-  -> syncBundleRecordAppenders
-  -> syncBundleWorldDocuments
-  -> syncBundleCollectorTypes
+  -> bundleCollector/index
+  -> bundleCollector/recordAppenders
+  -> bundleCollector/worldDocuments
+  -> bundleCollector/types
+
+syncRepository.ts
+  -> repository/index
+  -> repository/http
+  -> repository/mappers
+  -> repository/payload
+  -> repository/rowUtils
 ```
 
 검증:

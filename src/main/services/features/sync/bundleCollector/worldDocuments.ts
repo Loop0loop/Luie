@@ -7,21 +7,21 @@ import {
   LUIE_WORLD_PLOT_FILE,
   LUIE_WORLD_SCRAP_MEMOS_FILE,
   LUIE_WORLD_SYNOPSIS_FILE,
-} from "../../../../shared/constants/index.js";
+} from "../../../../../shared/constants/index.js";
 import {
   normalizeWorldScrapPayload,
   parseWorldJsonSafely,
   toWorldUpdatedAt,
-} from "../../../../shared/world/worldDocumentCodec.js";
-import { readLuieContainerEntry } from "../../io/luieContainer.js";
-import type { SyncBundle } from "./syncMapper.js";
+} from "../../../../../shared/world/worldDocumentCodec.js";
+import { readLuieContainerEntry } from "../../../io/luieContainer.js";
+import type { SyncBundle } from "../syncMapper.js";
 import {
   toIsoString,
   toNullableString,
   toStringArray,
   type LoggerLike,
   type WorldDocumentType,
-} from "./syncBundleCollectorTypes.js";
+} from "./types.js";
 
 const WORLD_DOCUMENT_FILE_BY_TYPE: Record<WorldDocumentType, string> = {
   synopsis: LUIE_WORLD_SYNOPSIS_FILE,

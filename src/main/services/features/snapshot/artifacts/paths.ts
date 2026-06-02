@@ -5,10 +5,10 @@ import {
   LUIE_PACKAGE_EXTENSION,
   LUIE_SNAPSHOTS_DIR,
   SNAPSHOT_BACKUP_DIR,
-} from "../../../../shared/constants/index.js";
-import { createLogger } from "../../../../shared/logger/index.js";
-import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
-import { listProjectAttachmentEntries } from "../../core/project/projectAttachmentStore.js";
+} from "../../../../../shared/constants/index.js";
+import { createLogger } from "../../../../../shared/logger/index.js";
+import { ensureSafeAbsolutePath } from "../../../../utils/pathValidation.js";
+import { listProjectAttachmentEntries } from "../../../core/project/projectAttachmentStore.js";
 
 const logger = createLogger("SnapshotArtifactPaths");
 const SNAPSHOT_ARTIFACT_ID_PATTERN = /-([0-9a-fA-F-]{36})\.snap$/;

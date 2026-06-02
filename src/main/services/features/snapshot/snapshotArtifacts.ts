@@ -20,10 +20,10 @@ import {
   resolveArtifactRoots,
   resolveLocalSnapshotDir,
   resolveProjectBaseDir,
-} from "./snapshotArtifactPaths.js";
-import { loadProjectSnapshotRecord } from "./snapshotArtifactProjectLoader.js";
-import { resolveRestorePreview } from "./snapshotArtifactPreview.js";
-import type { FullSnapshotData } from "./snapshotArtifactTypes.js";
+  loadProjectSnapshotRecord,
+  resolveRestorePreview,
+  type FullSnapshotData,
+} from "./artifacts/index.js";
 import type { SnapshotRestoreCandidate } from "../../../../shared/types/index.js";
 
 const logger = createLogger("SnapshotArtifacts");

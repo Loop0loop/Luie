@@ -1,10 +1,10 @@
-import type { SyncPendingProjectDelete } from "../../../../shared/types/index.js";
-import type { SyncBundle } from "./syncMapper.js";
+import type { SyncPendingProjectDelete } from "../../../../../shared/types/index.js";
+import type { SyncBundle } from "../syncMapper.js";
 import {
   toIsoString,
   toNullableString,
   toNumber,
-} from "./syncBundleCollectorTypes.js";
+} from "./types.js";
 
 export const appendProjectRecord = (
   bundle: SyncBundle,

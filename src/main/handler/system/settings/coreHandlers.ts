@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
-import type { EditorSettings } from "../../../shared/types/index.js";
+import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
+import type { EditorSettings } from "../../../../shared/types/index.js";
 import {
   editorSettingsSchema,
   settingsAutoSaveSchema,
@@ -8,10 +8,10 @@ import {
   settingsMenuBarModeSchema,
   settingsShortcutsSchema,
   windowBoundsSchema,
-} from "../../../shared/schemas/index.js";
-import type { IpcHandlerConfig } from "../core/ipcRegistrar.js";
-import { applyApplicationMenu } from "../../lifecycle/menu.js";
-import { loadSettingsManager } from "./ipcSettingsManagerLoader.js";
+} from "../../../../shared/schemas/index.js";
+import type { IpcHandlerConfig } from "../../core/ipcRegistrar.js";
+import { applyApplicationMenu } from "../../../lifecycle/menu.js";
+import { loadSettingsManager } from "./managerLoader.js";
 
 export function createSettingsCoreHandlers(): IpcHandlerConfig[] {
   return [
@@ -41,7 +41,7 @@ export function createSettingsCoreHandlers(): IpcHandlerConfig[] {
       handler: async (settings: EditorSettings) => {
         const settingsManager = await loadSettingsManager();
         settingsManager.setEditorSettings(settings);
-        const { windowManager } = await import("../../manager/windowManager.js");
+        const { windowManager } = await import("../../../manager/windowManager.js");
         windowManager.applySpellCheckSettingToAllWindows();
         return settingsManager.getEditorSettings();
       },
@@ -116,7 +116,7 @@ export function createSettingsCoreHandlers(): IpcHandlerConfig[] {
         settingsManager.setMenuBarMode(settings.mode);
         applyApplicationMenu(settings.mode);
 
-        const { windowManager } = await import("../../manager/windowManager.js");
+        const { windowManager } = await import("../../../manager/windowManager.js");
         windowManager.applyMenuBarModeToAllWindows();
         return { mode: settingsManager.getMenuBarMode() };
       },
@@ -174,7 +174,7 @@ export function createSettingsCoreHandlers(): IpcHandlerConfig[] {
       handler: async () => {
         const settingsManager = await loadSettingsManager();
         settingsManager.resetToDefaults();
-        const { windowManager } = await import("../../manager/windowManager.js");
+        const { windowManager } = await import("../../../manager/windowManager.js");
         windowManager.applySpellCheckSettingToAllWindows();
         return settingsManager.getAllForRenderer();
       },

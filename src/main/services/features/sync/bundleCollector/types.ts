@@ -1,5 +1,5 @@
-import type { SyncBundle } from "./syncMapper.js";
-import type { LoggerLike as LuieWriterLogger } from "../../io/luiePackageTypes.js";
+import type { SyncBundle } from "../syncMapper.js";
+import type { LoggerLike as LuieWriterLogger } from "../../../io/luiePackageTypes.js";
 
 export type LoggerLike = LuieWriterLogger & {
   warn: (message: string, details?: unknown) => void;

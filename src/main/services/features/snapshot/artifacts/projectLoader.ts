@@ -1,16 +1,16 @@
 import { and, asc, eq, isNull } from "drizzle-orm";
-import { db } from "../../../database/index.js";
+import { db } from "../../../../database/index.js";
 import {
   chapter as chapterTable,
   character as characterTable,
   project as projectTable,
   projectSettings as projectSettingsTable,
   term as termTable,
-} from "../../../database/schema.js";
-import { ErrorCode } from "../../../../shared/constants/index.js";
-import { ServiceError } from "../../../utils/serviceError.js";
-import { getProjectAttachmentPath } from "../../core/project/projectAttachmentStore.js";
-import type { ProjectSnapshotRecord } from "./snapshotArtifactTypes.js";
+} from "../../../../database/schema.js";
+import { ErrorCode } from "../../../../../shared/constants/index.js";
+import { ServiceError } from "../../../../utils/serviceError.js";
+import { getProjectAttachmentPath } from "../../../core/project/projectAttachmentStore.js";
+import type { ProjectSnapshotRecord } from "./types.js";
 
 export async function loadProjectSnapshotRecord(
   projectId: string,

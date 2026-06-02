@@ -1,18 +1,18 @@
 import { z } from "zod";
-import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
+import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
 import {
   settingsLlmKeysSchema,
   settingsLlmPreferenceSchema,
   settingsLocalLlmSchema,
   settingsOllamaConfigSchema,
-} from "../../../shared/schemas/index.js";
-import type { IpcHandlerConfig } from "../core/ipcRegistrar.js";
+} from "../../../../shared/schemas/index.js";
+import type { IpcHandlerConfig } from "../../core/ipcRegistrar.js";
 import {
   invalidateModelRuntimeCache,
   resolveRuntimeModelInfo,
-} from "../../services/llm/modelRuntimeFactory.js";
-import { sidecarManager } from "../../services/llm/sidecarManager.js";
-import { loadSettingsManager } from "./ipcSettingsManagerLoader.js";
+} from "../../../services/llm/modelRuntimeFactory.js";
+import { sidecarManager } from "../../../services/llm/sidecarManager.js";
+import { loadSettingsManager } from "./managerLoader.js";
 
 export function createSettingsLlmHandlers(): IpcHandlerConfig[] {
   return [

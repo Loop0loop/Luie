@@ -1,4 +1,4 @@
-import type { FullSnapshotData } from "./snapshotArtifactTypes.js";
+import type { FullSnapshotData } from "./types.js";
 
 const RESTORE_EXCERPT_MAX_LENGTH = 160;
 

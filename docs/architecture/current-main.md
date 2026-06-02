@@ -100,7 +100,6 @@ index.ts
 | `src/main/database/packagedSchema.ts` | 639 |
 | `src/main/database/schema.ts` | 623 |
 | `src/main/services/features/memory/memoryProjectionService.ts` | 530 |
-| `src/main/services/features/sync/syncRepository.ts` | 529 |
 | `src/main/services/core/project/projectExportEngine.ts` | 524 |
 | `src/main/manager/settingsManager.ts` | 519 |
 | `src/main/services/features/sync/syncMapper.ts` | 518 |
@@ -110,32 +109,45 @@ index.ts
 | `src/main/services/features/utility/utilityProcessBridge.ts` | 511 |
 | `src/main/services/features/searchService.ts` | 504 |
 
-사실: `src/main/services/features/snapshot/snapshotArtifacts.ts`는 snapshot artifact 읽기/후보 목록/고아 cleanup/write orchestration만 유지하도록 축소되어 297 LOC입니다. 분리된 helper는 모두 같은 snapshot feature 폴더에 있으며 public export 경로는 유지합니다.
+사실: `src/main/services/features/snapshot/snapshotArtifacts.ts`는 snapshot artifact 읽기/후보 목록/고아 cleanup/write orchestration만 유지하도록 축소되어 297 LOC입니다. 분리된 helper는 `snapshot/artifacts/index.ts` 배럴을 통해 제공하며 public export 경로는 유지합니다.
 
 | Snapshot helper | 책임 | LOC |
 | --- | --- | ---: |
-| `snapshotArtifactTypes.ts` | full snapshot payload와 DB record 타입 | 89 |
-| `snapshotArtifactPaths.ts` | artifact root/path/priority/snap file scan | 98 |
-| `snapshotArtifactPreview.ts` | restore candidate 제목/excerpt 계산 | 30 |
-| `snapshotArtifactProjectLoader.ts` | DB에서 full snapshot record 조립 | 106 |
+| `artifacts/types.ts` | full snapshot payload와 DB record 타입 | 89 |
+| `artifacts/paths.ts` | artifact root/path/priority/snap file scan | 98 |
+| `artifacts/preview.ts` | restore candidate 제목/excerpt 계산 | 30 |
+| `artifacts/projectLoader.ts` | DB에서 full snapshot record 조립 | 106 |
+| `artifacts/index.ts` | artifact helper 배럴 export | 11 |
 
-사실: `src/main/handler/system/ipcSettingsHandlers.ts`는 settings IPC 등록 진입점만 유지하도록 축소되어 15 LOC입니다. 분리된 helper는 모두 같은 system handler 폴더에 있으며 IPC channel과 등록 계약은 유지합니다.
+사실: `src/main/handler/system/ipcSettingsHandlers.ts`는 settings IPC 등록 진입점만 유지하도록 축소되어 15 LOC입니다. 분리된 helper는 `handler/system/settings/index.ts` 배럴을 통해 제공하며 IPC channel과 등록 계약은 유지합니다.
 
 | Settings IPC helper | 책임 | LOC |
 | --- | --- | ---: |
-| `ipcSettingsCoreHandlers.ts` | editor/language/menu/shortcut/window/reset 기본 설정 IPC | 183 |
-| `ipcSettingsLlmHandlers.ts` | LLM preference/key/local LLM/sidecar/Ollama IPC | 171 |
-| `ipcModelDownloadHandlers.ts` | model download/cancel/HF search/files IPC | 164 |
-| `ipcLlmfitEmbeddingHandlers.ts` | llmfit와 embedding model IPC | 115 |
-| `ipcSettingsManagerLoader.ts` | settingsManager lazy import cache | 14 |
+| `settings/coreHandlers.ts` | editor/language/menu/shortcut/window/reset 기본 설정 IPC | 183 |
+| `settings/llmHandlers.ts` | LLM preference/key/local LLM/sidecar/Ollama IPC | 171 |
+| `settings/modelDownloadHandlers.ts` | model download/cancel/HF search/files IPC | 164 |
+| `settings/llmfitEmbeddingHandlers.ts` | llmfit와 embedding model IPC | 115 |
+| `settings/managerLoader.ts` | settingsManager lazy import cache | 14 |
+| `settings/index.ts` | settings IPC helper 배럴 export | 5 |
 
-사실: `src/main/services/features/sync/syncBundleCollector.ts`는 local sync bundle orchestration과 기존 public export만 유지하도록 축소되어 154 LOC입니다.
+사실: `src/main/services/features/sync/syncBundleCollector.ts`는 기존 public export를 유지하는 compatibility export입니다. 실제 local sync bundle orchestration은 `sync/bundleCollector/index.ts` 배럴에서 제공합니다.
 
 | Sync bundle helper | 책임 | LOC |
 | --- | --- | ---: |
-| `syncBundleRecordAppenders.ts` | project/chapter/world entity/tombstone row append | 192 |
-| `syncBundleWorldDocuments.ts` | world document replica/package hydrate, scrap memo append | 208 |
-| `syncBundleCollectorTypes.ts` | collector-local logger/doc type/normalizer helpers | 29 |
+| `bundleCollector/index.ts` | local sync bundle orchestration과 public helper export | 154 |
+| `bundleCollector/recordAppenders.ts` | project/chapter/world entity/tombstone row append | 192 |
+| `bundleCollector/worldDocuments.ts` | world document replica/package hydrate, scrap memo append | 208 |
+| `bundleCollector/types.ts` | collector-local logger/doc type/normalizer helpers | 29 |
+
+사실: `src/main/services/features/sync/syncRepository.ts`는 기존 public export를 유지하는 compatibility export입니다. 실제 Supabase sync repository orchestration은 `sync/repository/index.ts` 배럴에서 제공합니다.
+
+| Sync repository helper | 책임 | LOC |
+| --- | --- | ---: |
+| `repository/index.ts` | Supabase sync repository singleton orchestration | 75 |
+| `repository/http.ts` | Supabase REST fetch/upsert와 retry | 84 |
+| `repository/mappers.ts` | remote DB row를 SyncBundle record로 변환 | 263 |
+| `repository/payload.ts` | SyncBundle record를 remote upsert row로 변환 | 139 |
+| `repository/rowUtils.ts` | row normalizer와 primitive coercion | 56 |
 
 ## 위험 지점
 
