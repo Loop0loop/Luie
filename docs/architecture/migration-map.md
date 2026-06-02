@@ -182,6 +182,7 @@ pnpm run check:preload-contract-regression
 - `src/main/services/features/sync/syncLocalApply.ts`는 310 LOC입니다.
 - `src/main/services/features/analysis/analysisStreamRunner.ts`는 415 LOC입니다.
 - `src/main/services/core/project/projectImportOpen.ts`는 287 LOC입니다.
+- `src/main/services/features/utility/utilityProcessBridge.ts`는 474 LOC입니다.
 - `snapshotArtifacts.ts`의 기존 public export인 `readFullSnapshotArtifact`, `listSnapshotRestoreCandidates`, `cleanupOrphanSnapshotArtifacts`, `writeFullSnapshotArtifact`는 유지했습니다.
 - snapshot artifact의 path 탐색, restore preview 계산, DB payload 조립, payload 타입은 `snapshot/artifacts/index.ts` 배럴 폴더로 분리했습니다.
 - `ipcSettingsHandlers.ts`의 기존 public export인 `registerSettingsIPCHandlers`는 유지했습니다.
@@ -207,6 +208,8 @@ pnpm run check:preload-contract-regression
 - Gemini 응답의 noisy/fenced JSON object/array extraction과 parse warning handling은 `analysis/streamRunner/index.ts` 배럴 폴더로 분리했습니다.
 - `projectImportOpen.ts`의 기존 public export인 `openLuieProjectPackage`는 유지했습니다.
 - .luie 내부 world/snapshot collections entry read, JSON parse, schema validation, import collection normalization은 `project/importOpen/index.ts` 배럴 폴더로 분리했습니다.
+- `utilityProcessBridge.ts`의 기존 public export인 `UtilityProcessBridge`와 `utilityProcessBridge` singleton은 유지했습니다.
+- Utility process protocol type, timeout constants, Electron utility message unwrap helper는 `features/utility/utilityProcessBridge/index.ts` 배럴 폴더로 분리했습니다.
 - 2026-06-02 기준 `bun run typecheck`, `bun run check:core-complexity`, `bun run check:ipc-handler-schemas`, `bun run check:ipc-contract-map` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/handler/ipcSettingsHandlers.security.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncService.test.ts` 통과.
@@ -220,6 +223,7 @@ pnpm run check:preload-contract-regression
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncLocalApply.test.ts tests/main/services/syncService.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/analysisStreamRunner.test.ts tests/main/services/analysisStreamParser.test.ts tests/main/services/analysisFallback.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/projectImportCollections.test.ts` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/utilityProcessBridgeProtocol.test.ts tests/main/services/sidecarManager.test.ts tests/main/services/embeddingProjector.test.ts tests/main/services/modelRuntimeFactory.sidecar.test.ts` 통과.
 
 검증 제약:
 
@@ -241,7 +245,6 @@ pnpm run check:preload-contract-regression
 ```text
 src/main/database/packagedSchema.ts
 src/main/database/schema.ts
-src/main/services/features/utility/utilityProcessBridge.ts
 ```
 
 목표:
@@ -339,6 +342,10 @@ analysisStreamRunner.ts
 projectImportOpen.ts
   -> importOpen/index
   -> importOpen/collections
+
+utilityProcessBridge.ts
+  -> utilityProcessBridge/index
+  -> utilityProcessBridge/protocol
 ```
 
 검증:

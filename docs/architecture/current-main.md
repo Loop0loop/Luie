@@ -122,7 +122,6 @@ index.ts
 | --- | ---: |
 | `src/main/database/packagedSchema.ts` | 639 |
 | `src/main/database/schema.ts` | 623 |
-| `src/main/services/features/utility/utilityProcessBridge.ts` | 511 |
 
 사실: `src/main/services/features/snapshot/snapshotArtifacts.ts`는 snapshot artifact 읽기/후보 목록/고아 cleanup/write orchestration만 유지하도록 축소되어 297 LOC입니다. 분리된 helper는 `snapshot/artifacts/index.ts` 배럴을 통해 제공하며 public export 경로는 유지합니다.
 
@@ -226,6 +225,13 @@ index.ts
 | --- | --- | ---: |
 | `importOpen/collections.ts` | .luie world/snapshot entry read, JSON parse, schema validation, import collection normalization | 240 |
 | `importOpen/index.ts` | project import/open helper 배럴 export | 1 |
+
+사실: `src/main/services/features/utility/utilityProcessBridge.ts`는 utility process lifecycle, request routing, RAG event forwarding만 유지하도록 축소되어 474 LOC입니다. Bridge protocol type/timeout/unwrap helper는 `utility/utilityProcessBridge/index.ts` 배럴 폴더로 분리했습니다.
+
+| Utility bridge helper | 책임 | LOC |
+| --- | --- | ---: |
+| `utilityProcessBridge/protocol.ts` | utility process inbound/outbound protocol types, timeout constants, message unwrap | 52 |
+| `utilityProcessBridge/index.ts` | utility bridge helper 배럴 export | 14 |
 
 ## 위험 지점
 
