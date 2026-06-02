@@ -376,17 +376,19 @@ SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/handler/ipcSettingsHandlers.security
 - `src/renderer/src/features/editor/components/EditorToolbar.tsx`는 300 LOC입니다.
 - `src/renderer/src/app/App.tsx`는 472 LOC입니다.
 - `src/renderer/src/features/workspace/components/layout/EditorRoot.tsx`는 491 LOC입니다.
+- `src/renderer/src/features/workspace/stores/projectLayoutStore.ts`는 147 LOC입니다.
 - `EditorToolbar.tsx`의 기존 default export와 호출부 import 경로는 유지했습니다.
 - toolbar primitive, dropdown/color/typography popover, more menu, ghost editor/state helper, constants/types는 `editor/components/toolbar/index.ts` 배럴 폴더로 분리했습니다.
 - `App.tsx`의 기존 default export와 app entry import 경로는 유지했습니다.
 - bootstrap gate, quit overlay, hash window mode, bootstrap status parser, theme DOM sync, dev UI mode integrity check는 `app/shell/index.ts` 배럴 폴더로 분리했습니다.
 - `EditorRoot.tsx`의 기존 default export와 compatibility import 경로는 유지했습니다.
 - layout/sidebar/panel/banner lazy component registry와 layout suspense fallback은 `workspace/components/layout/rootShell/index.ts` 배럴 폴더로 분리했습니다.
+- `projectLayoutStore.ts`의 기존 public export인 `useProjectLayoutStore`, `sanitizeWorkspacePanels`, `sanitizePersistedDocsRightTab`, `ProjectLayoutState` 계열 타입은 유지했습니다.
+- persisted layout 타입, 기본값, sanitize, migration, merge, logging helper는 `workspace/stores/projectLayout/index.ts` 배럴 폴더로 분리했습니다.
 
 대상 후보:
 
 ```text
-src/renderer/src/features/workspace/stores/projectLayoutStore.ts
 src/renderer/src/features/research/stores/worldBuildingStore.actions.ts
 ```
 
@@ -394,7 +396,6 @@ src/renderer/src/features/research/stores/worldBuildingStore.actions.ts
 
 | File | LOC |
 | --- | ---: |
-| `src/renderer/src/features/workspace/stores/projectLayoutStore.ts` | 655 |
 | `src/renderer/src/features/research/stores/worldBuildingStore.actions.ts` | 639 |
 
 목표:

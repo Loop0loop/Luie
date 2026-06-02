@@ -97,13 +97,33 @@ renderer API 접근
 
 - `src/renderer/src/app/main.tsx`: startup logger
 - `src/renderer/src/features/workspace/stores/uiStore.persist.ts`: logger
-- `src/renderer/src/features/workspace/stores/projectLayoutStore.ts`: logger
+- `src/renderer/src/features/workspace/stores/projectLayout/persistLogging.ts`: project layout persist recovery logger
 - `src/renderer/src/features/canvas/components/binder/CanvasNodeInspector.tsx`: memory/memoryAdmin
 
 의견:
 
 - 직접 `window.api` 사용은 원칙적으로 줄이고 `@shared/api` 또는 domain adapter를 통해야 합니다.
 - 단, 기존 예외는 즉시 제거하지 않고 문서화 후 호환 방식으로 이전해야 합니다.
+
+## localStorage 예외
+
+사실: `tests/scripts/localStorageBoundary.test.ts`가 현재 명시적으로 허용한 renderer localStorage 경로입니다.
+
+- `src/renderer/src/app/fontLoader.ts`
+- `src/renderer/src/features/research/components/event/EventDetailView.tsx`
+- `src/renderer/src/features/research/components/faction/FactionDetailView.tsx`
+- `src/renderer/src/features/research/components/MemoSection.tsx`
+- `src/renderer/src/features/research/components/wiki/WikiDetailView.tsx`
+- `src/renderer/src/features/research/services/worldPackageStorage.ts`
+- `src/renderer/src/features/workspace/hooks/useCollapsedSidebarStore.ts`
+- `src/renderer/src/features/workspace/stores/projectLayout/persistLogging.ts`
+- `src/renderer/src/features/workspace/stores/projectLayoutStore.ts`
+- `src/renderer/src/features/workspace/stores/uiStore.persist.ts`
+- `src/renderer/src/i18n/index.ts`
+
+의견:
+
+- project/content canonical persistence는 `.luie` package 경계를 우선하고, localStorage는 UI preference 또는 recovery fallback으로 제한해야 합니다.
 
 ## 500 LOC 초과 Renderer 파일
 
@@ -113,7 +133,6 @@ renderer API 접근
 - `src/renderer/src/i18n/locales/ja/base.ts`
 - `src/renderer/src/i18n/locales/en/base.ts`
 - `src/renderer/src/features/research/services/worldPackageStorage.ts`
-- `src/renderer/src/features/workspace/stores/projectLayoutStore.ts`
 - `src/renderer/src/features/research/stores/worldBuildingStore.actions.ts`
 - `src/renderer/src/features/settings/components/tabs/ModelTab.tsx`
 - `src/renderer/src/features/canvas/components/shell/CanvasActivityShell.tsx`
@@ -155,12 +174,26 @@ renderer API 접근
 | `rootShell/fallback.tsx` | layout suspense fallback element | 1 |
 | `rootShell/index.ts` | EditorRoot shell helper 배럴 export | 19 |
 
+사실: `src/renderer/src/features/workspace/stores/projectLayoutStore.ts`는 Zustand persist store wiring과 기존 public export 호환 진입점만 유지하도록 축소되어 147 LOC입니다. persisted layout 타입/기본값/sanitize/migration/merge/logging helper는 `workspace/stores/projectLayout/index.ts` 배럴을 통해 제공합니다.
+
+| Project layout helper | 책임 | LOC |
+| --- | --- | ---: |
+| `projectLayout/types.ts` | persisted docs tab, layout state, patch, store 타입 | 80 |
+| `projectLayout/constants.ts` | persistable tab/section/panel size 상수 | 39 |
+| `projectLayout/defaults.ts` | default project layout state factory | 36 |
+| `projectLayout/sanitize.ts` | persisted layout/tab/panel normalization | 214 |
+| `projectLayout/merge.ts` | project layout patch merge policy | 88 |
+| `projectLayout/migration.ts` | persisted schema version migration | 61 |
+| `projectLayout/persistLogging.ts` | localStorage recovery/validation logging | 64 |
+| `projectLayout/index.ts` | project layout helper 배럴 export | 21 |
+
 ## 위험 지점
 
 의견:
 
 - `App.tsx`는 routing, bootstrap, project open/restore, attachment approval/toast를 함께 담당합니다.
 - `EditorRoot.tsx`는 editor/sidebar/canvas/panels/settings/shortcuts/split view를 묶는 shell입니다.
+- `projectLayoutStore.ts`와 `projectLayout/**`는 persisted layout migration/sanitize/merge 계약이 있어 변경 위험이 큽니다.
 - `uiStore.state.ts`는 legacy flat fields와 `regions` 동기화가 있어 변경 위험이 큽니다.
 - `worldBuildingStore.actions.ts`는 graph load, replica merge, persistence queue, mutation version, CRUD mutation을 함께 처리합니다.
 - `CanvasNodeInspector.tsx`의 직접 `window.api` memory 호출은 API 경계 예외입니다.
