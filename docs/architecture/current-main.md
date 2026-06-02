@@ -122,7 +122,6 @@ index.ts
 | --- | ---: |
 | `src/main/database/packagedSchema.ts` | 639 |
 | `src/main/database/schema.ts` | 623 |
-| `src/main/services/features/analysis/analysisStreamRunner.ts` | 518 |
 | `src/main/services/core/project/projectImportOpen.ts` | 516 |
 | `src/main/services/features/utility/utilityProcessBridge.ts` | 511 |
 
@@ -214,6 +213,13 @@ index.ts
 | --- | --- | ---: |
 | `localApply/worldState.ts` | replica world document map, payload normalization, scrap memo materialization | 214 |
 | `localApply/index.ts` | local apply helper 배럴 export | 1 |
+
+사실: `src/main/services/features/analysis/analysisStreamRunner.ts`는 Gemini analysis stream orchestration과 fallback/error handling만 유지하도록 축소되어 415 LOC입니다. Loose JSON stream parsing은 `analysis/streamRunner/index.ts` 배럴 폴더로 분리했습니다.
+
+| Analysis stream helper | 책임 | LOC |
+| --- | --- | ---: |
+| `streamRunner/jsonStreamParser.ts` | noisy/fenced JSON object/array extraction and parse warning handling | 134 |
+| `streamRunner/index.ts` | analysis stream helper 배럴 export | 1 |
 
 ## 위험 지점
 

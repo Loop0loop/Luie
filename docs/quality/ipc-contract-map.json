@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-06-02T12:23:31.798Z",
+  "generatedAt": "2026-06-02T13:08:01.426Z",
   "summary": {
     "definedChannels": 205,
     "errors": 0,
@@ -48,7 +48,7 @@
         "main_emit": [
           {
             "file": "src/main/services/features/analysis/analysisStreamRunner.ts",
-            "line": 509
+            "line": 406
           },
           {
             "file": "src/main/services/features/analysis/manuscriptAnalysisService.ts",
@@ -145,7 +145,7 @@
         "main_emit": [
           {
             "file": "src/main/services/features/analysis/analysisStreamRunner.ts",
-            "line": 47
+            "line": 48
           }
         ],
         "renderer_listen": [

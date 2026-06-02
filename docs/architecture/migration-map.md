@@ -180,6 +180,7 @@ pnpm run check:preload-contract-regression
 - `src/main/manager/settingsManager.ts`는 450 LOC입니다.
 - `src/main/services/features/searchService.ts`는 373 LOC입니다.
 - `src/main/services/features/sync/syncLocalApply.ts`는 310 LOC입니다.
+- `src/main/services/features/analysis/analysisStreamRunner.ts`는 415 LOC입니다.
 - `snapshotArtifacts.ts`의 기존 public export인 `readFullSnapshotArtifact`, `listSnapshotRestoreCandidates`, `cleanupOrphanSnapshotArtifacts`, `writeFullSnapshotArtifact`는 유지했습니다.
 - snapshot artifact의 path 탐색, restore preview 계산, DB payload 조립, payload 타입은 `snapshot/artifacts/index.ts` 배럴 폴더로 분리했습니다.
 - `ipcSettingsHandlers.ts`의 기존 public export인 `registerSettingsIPCHandlers`는 유지했습니다.
@@ -201,6 +202,8 @@ pnpm run check:preload-contract-regression
 - memory chunk token expansion, FTS query build, short-token LIKE fallback, vector rank, RRF merge는 `features/search/index.ts` 배럴 폴더로 분리했습니다.
 - `syncLocalApply.ts`의 기존 public export인 `collectDeletedProjectIds`, `applyProjectDeletes`, `upsertProjects`, `upsertChapter`, `upsertCharacters`, `upsertEvents`, `upsertFactions`, `upsertTerms`, `applyChapterTombstones`, `applyReplicaWorldState`는 유지했습니다.
 - replica world document map 구성, world payload normalization, scrap memo materialization은 `sync/localApply/index.ts` 배럴 폴더로 분리했습니다.
+- `analysisStreamRunner.ts`의 기존 public export인 `AnalysisStreamOutcome`, `isAnalysisAbortError`, `toAnalysisErrorPayload`, `runGeminiAnalysisStream`은 유지했습니다.
+- Gemini 응답의 noisy/fenced JSON object/array extraction과 parse warning handling은 `analysis/streamRunner/index.ts` 배럴 폴더로 분리했습니다.
 - 2026-06-02 기준 `bun run typecheck`, `bun run check:core-complexity`, `bun run check:ipc-handler-schemas`, `bun run check:ipc-contract-map` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/handler/ipcSettingsHandlers.security.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncService.test.ts` 통과.
@@ -212,6 +215,7 @@ pnpm run check:preload-contract-regression
 - 2026-06-02 기준 `bun vitest tests/main/services/searchServiceFallback.test.ts tests/main/services/memoryProjectionService.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/handler/ipcInputValidation.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncLocalApply.test.ts tests/main/services/syncService.test.ts` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/analysisStreamRunner.test.ts tests/main/services/analysisStreamParser.test.ts tests/main/services/analysisFallback.test.ts` 통과.
 
 검증 제약:
 
@@ -221,13 +225,15 @@ pnpm run check:preload-contract-regression
 - `bun vitest tests/main/services/searchService.test.ts`는 현재 cache DB 테스트 계약 불일치로 실패합니다.
 - 실패 지점은 `tests/main/services/searchService.test.ts:65`의 `Cannot read properties of undefined (reading 'deleteMany')`, `tests/main/services/searchService.test.ts:109`의 FTS count 기대값 1 대비 실제 0입니다.
 - 이건 확인된 사실입니다. 실패 지점은 memory chunk search helper가 아니라 chapter search cache/FTS 테스트 setup 경계입니다.
+- `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/manuscriptAnalysisService.test.ts`는 현재 DB mock이 Drizzle `select().from()` API를 제공하지 않아 실패합니다.
+- 실패 지점은 `src/main/services/features/analysis/manuscriptAnalysisService.ts:210`의 `db.getClient(...).select is not a function`입니다.
+- 이건 확인된 사실입니다. 실패 지점은 analysis stream parser가 아니라 `ManuscriptAnalysisService.loadAnalysisSource()` 테스트 mock 경계입니다.
 
 대상 후보:
 
 ```text
 src/main/database/packagedSchema.ts
 src/main/database/schema.ts
-src/main/services/features/analysis/analysisStreamRunner.ts
 src/main/services/core/project/projectImportOpen.ts
 src/main/services/features/utility/utilityProcessBridge.ts
 ```
@@ -319,6 +325,10 @@ searchService.ts
 syncLocalApply.ts
   -> localApply/index
   -> localApply/worldState
+
+analysisStreamRunner.ts
+  -> streamRunner/index
+  -> streamRunner/jsonStreamParser
 ```
 
 검증:
