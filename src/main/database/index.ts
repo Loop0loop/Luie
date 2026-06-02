@@ -102,8 +102,7 @@ class DatabaseService {
 
   private async tryLoadSqliteVecExtension(sqlite: BetterSqliteDatabase.Database): Promise<void> {
     try {
-      const dynamicImport = new Function("id", "return import(id)") as (id: string) => Promise<unknown>;
-      const mod = await dynamicImport("sqlite-vec");
+      const mod = await import("sqlite-vec");
       const getLoadablePath = (mod as { getLoadablePath?: () => string }).getLoadablePath;
       const loadablePath = getLoadablePath?.();
       if (loadablePath) {

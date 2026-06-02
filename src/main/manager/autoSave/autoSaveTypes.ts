@@ -30,3 +30,22 @@ export interface AutoSaveRuntimeStats {
   scheduledCount: number;
   snapshotQueueLength: number;
 }
+
+export interface AutoSaveRuntimeCounters {
+  triggered: number;
+  skippedDisabled: number;
+  skippedMissingChapter: number;
+  duplicateTriggers: number;
+  scheduled: number;
+  rescheduled: number;
+  saveStarted: number;
+  saveSucceeded: number;
+  saveFailed: number;
+  validationBlocked: number;
+  queueDelayTotalMs: number;
+  queueDelaySamples: number;
+  saveDurationTotalMs: number;
+  saveDurationSamples: number;
+  lastQueueDelayMs: number;
+  lastSaveDurationMs: number;
+}

@@ -1,30 +1,39 @@
 /** Auto-save orchestration: debounce, mirror safety, snapshot scheduling, and shutdown flush. */
 
 import { EventEmitter } from "events";
-import { promises as fs } from "fs";
-import { eq } from "drizzle-orm";
 import { createLogger } from "../../shared/logger/index.js";
-import { ErrorCode } from "../../shared/constants/index.js";
-import { isServiceError } from "../utils/serviceError.js";
-import { chapter } from "../database/schema.js";
 import {
   DEFAULT_AUTO_SAVE_DEBOUNCE_MS,
   DEFAULT_AUTO_SAVE_INTERVAL_MS,
   AUTO_SAVE_CLEANUP_INTERVAL_MS,
   AUTO_SAVE_STALE_THRESHOLD_MS,
-  SNAPSHOT_INTERVAL_MS,
-  SNAPSHOT_MIN_CONTENT_LENGTH,
-  SNAPSHOT_MIN_CHANGE_RATIO,
-  SNAPSHOT_MIN_CHANGE_ABSOLUTE,
   EMERGENCY_SNAPSHOT_MAX_LENGTH,
   EMERGENCY_SNAPSHOT_INTERVAL_MS,
+  SNAPSHOT_INTERVAL_MS,
 } from "../../shared/constants/index.js";
 import { AutoSaveMirrorStore } from "./autoSave/autoSaveMirrorStore.js";
 import type {
   AutoSaveConfig,
+  AutoSaveRuntimeCounters,
   AutoSaveRuntimeStats,
   PendingSave,
 } from "./autoSave/autoSaveTypes.js";
+import {
+  createAutoSaveRuntimeCounters,
+  getAutoSaveRuntimeStats,
+} from "./autoSave/autoSaveRuntimeStats.js";
+import { verifyChapterProject } from "./autoSave/autoSaveChapterVerification.js";
+import { queueLatestMirrorWrite } from "./autoSave/autoSaveMirrorQueue.js";
+import { maybeEnqueueSnapshotJob } from "./autoSave/autoSaveSnapshotGate.js";
+import {
+  clearProjectState,
+  cleanupOldPendingSaves,
+  forgetChapterState,
+  startAutoSaveCleanupInterval,
+} from "./autoSave/autoSaveChapterCleanup.js";
+import { writeValidationBlockedSafetySnapshot } from "./autoSave/autoSaveSafetySnapshot.js";
+import { createAutoSaveInterval } from "./autoSave/autoSaveInterval.js";
+import { performAutoSave } from "./autoSave/autoSavePerformSave.js";
 import {
   createScheduledSnapshot,
   flushAllPendingSaves,
@@ -32,7 +41,6 @@ import {
 } from "./autoSave/autoSaveFlushOps.js";
 import {
   maybeCreateEmergencySnapshot,
-  processSnapshotJobs,
   type SnapshotJob,
 } from "./autoSave/autoSaveSnapshotJobs.js";
 
@@ -50,7 +58,6 @@ const loadDb = async () => (await import("../database/index.js")).db;
 export class AutoSaveManager extends EventEmitter {
   private static instance: AutoSaveManager;
 
-  // Save state
   private saveTimers = new Map<string, NodeJS.Timeout>();
   private intervalTimers = new Map<string, NodeJS.Timeout>();
   private configs = new Map<string, AutoSaveConfig>();
@@ -62,26 +69,8 @@ export class AutoSaveManager extends EventEmitter {
   private mirrorPendingPayload = new Map<string, PendingSave>();
   private warmupPromise: Promise<void> | null = null;
 
-  private stats = {
-    triggered: 0,
-    skippedDisabled: 0,
-    skippedMissingChapter: 0,
-    duplicateTriggers: 0,
-    scheduled: 0,
-    rescheduled: 0,
-    saveStarted: 0,
-    saveSucceeded: 0,
-    saveFailed: 0,
-    validationBlocked: 0,
-    queueDelayTotalMs: 0,
-    queueDelaySamples: 0,
-    saveDurationTotalMs: 0,
-    saveDurationSamples: 0,
-    lastQueueDelayMs: 0,
-    lastSaveDurationMs: 0,
-  };
+  private stats: AutoSaveRuntimeCounters = createAutoSaveRuntimeCounters();
 
-  // Snapshot state
   private snapshotTimers = new Map<string, NodeJS.Timeout>();
   private lastSnapshotAt = new Map<string, number>();
   private lastSnapshotHash = new Map<string, number>();
@@ -112,86 +101,46 @@ export class AutoSaveManager extends EventEmitter {
     return AutoSaveManager.instance;
   }
 
-  // ─── Public API ──────────────────────────────────────────────────────────
-
-  /** Check if there are unsaved changes pending IPC or DB write. */
   hasPendingSaves(): boolean {
     return this.pendingSaves.size > 0;
   }
 
-  /** Get count of pending saves - used for quit dialog. */
   getPendingSaveCount(): number {
     return this.pendingSaves.size;
   }
 
-  /** Get list of pending chapter IDs for diagnostics. */
   getPendingChapterIds(): string[] {
     return Array.from(this.pendingSaves.keys());
   }
 
   getRuntimeStats(): AutoSaveRuntimeStats {
-    const averageQueueDelayMs =
-      this.stats.queueDelaySamples > 0
-        ? this.stats.queueDelayTotalMs / this.stats.queueDelaySamples
-        : 0;
-    const averageSaveDurationMs =
-      this.stats.saveDurationSamples > 0
-        ? this.stats.saveDurationTotalMs / this.stats.saveDurationSamples
-        : 0;
-
-    return {
-      triggered: this.stats.triggered,
-      skippedDisabled: this.stats.skippedDisabled,
-      skippedMissingChapter: this.stats.skippedMissingChapter,
-      duplicateTriggers: this.stats.duplicateTriggers,
-      scheduled: this.stats.scheduled,
-      rescheduled: this.stats.rescheduled,
-      saveStarted: this.stats.saveStarted,
-      saveSucceeded: this.stats.saveSucceeded,
-      saveFailed: this.stats.saveFailed,
-      validationBlocked: this.stats.validationBlocked,
-      lastQueueDelayMs: this.stats.lastQueueDelayMs,
-      averageQueueDelayMs,
-      lastSaveDurationMs: this.stats.lastSaveDurationMs,
-      averageSaveDurationMs,
+    return getAutoSaveRuntimeStats({
+      counters: this.stats,
       pendingCount: this.pendingSaves.size,
       scheduledCount: this.saveTimers.size,
       snapshotQueueLength: this.snapshotQueue.length,
-    };
+    });
   }
 
   async forgetChapter(projectId: string, chapterId: string): Promise<void> {
-    const timer = this.saveTimers.get(chapterId);
-    if (timer) {
-      clearTimeout(timer);
-      this.saveTimers.delete(chapterId);
-    }
-
-    this.pendingSaves.delete(chapterId);
-    this.lastSaveAt.delete(chapterId);
-    this.firstQueuedAt.delete(chapterId);
-    this.verifiedChapterProjectId.delete(chapterId);
-    this.mirrorPendingPayload.delete(`${projectId}:${chapterId}`);
-
-    const snapshotKey = `${projectId}:${chapterId}`;
-    this.lastSnapshotAt.delete(snapshotKey);
-    this.lastSnapshotHash.delete(snapshotKey);
-    this.lastSnapshotLength.delete(snapshotKey);
-    this.lastEmergencySnapshotAt.delete(snapshotKey);
-    this.snapshotQueue = this.snapshotQueue.filter(
-      (job) => !(job.projectId === projectId && job.chapterId === chapterId),
-    );
-
-    try {
-      const baseDir = this.mirrorStore.getMirrorBaseDir(projectId, chapterId);
-      await fs.rm(baseDir, { recursive: true, force: true });
-    } catch (error) {
-      logger.warn("Failed to purge chapter mirrors", {
-        projectId,
-        chapterId,
-        error,
-      });
-    }
+    this.snapshotQueue = await forgetChapterState({
+      projectId,
+      chapterId,
+      saveTimers: this.saveTimers,
+      pendingSaves: this.pendingSaves,
+      lastSaveAt: this.lastSaveAt,
+      firstQueuedAt: this.firstQueuedAt,
+      verifiedChapterProjectId: this.verifiedChapterProjectId,
+      mirrorPendingPayload: this.mirrorPendingPayload,
+      lastSnapshotAt: this.lastSnapshotAt,
+      lastSnapshotHash: this.lastSnapshotHash,
+      lastSnapshotLength: this.lastSnapshotLength,
+      lastEmergencySnapshotAt: this.lastEmergencySnapshotAt,
+      snapshotQueue: this.snapshotQueue,
+      getMirrorBaseDir: (targetProjectId, targetChapterId) =>
+        this.mirrorStore.getMirrorBaseDir(targetProjectId, targetChapterId),
+      logger,
+    });
   }
 
   setConfig(projectId: string, config: AutoSaveConfig) {
@@ -215,8 +164,6 @@ export class AutoSaveManager extends EventEmitter {
     );
   }
 
-  // ─── Trigger Save (entry point from IPC) ─────────────────────────────────
-
   async triggerSave(chapterId: string, content: string, projectId: string) {
     this.stats.triggered += 1;
     const config = this.getConfig(projectId);
@@ -228,19 +175,12 @@ export class AutoSaveManager extends EventEmitter {
 
     const knownProjectId = this.verifiedChapterProjectId.get(chapterId);
     if (knownProjectId !== projectId) {
-      const db = await loadDb();
-      const store = db.getClient();
-      const chapters = await store
-        .select({ projectId: chapter.projectId, deletedAt: chapter.deletedAt })
-        .from(chapter)
-        .where(eq(chapter.id, chapterId))
-        .limit(1);
-      const chapterData = chapters[0] ?? null;
-      if (
-        !chapterData ||
-        String(chapterData.projectId) !== projectId ||
-        Boolean(chapterData.deletedAt)
-      ) {
+      const isValidChapter = await verifyChapterProject({
+        chapterId,
+        projectId,
+        loadDb,
+      });
+      if (!isValidChapter) {
         this.stats.skippedMissingChapter += 1;
         logger.info("Skipping auto-save for missing/deleted chapter", {
           chapterId,
@@ -251,7 +191,6 @@ export class AutoSaveManager extends EventEmitter {
       this.verifiedChapterProjectId.set(chapterId, projectId);
     }
 
-    // Track pending content
     const existingPending = this.pendingSaves.get(chapterId);
     if (existingPending && existingPending.content === content) {
       this.stats.duplicateTriggers += 1;
@@ -262,7 +201,6 @@ export class AutoSaveManager extends EventEmitter {
     this.pendingSaves.set(chapterId, { chapterId, content, projectId, timestamp: Date.now() });
     this.lastSaveAt.set(chapterId, Date.now());
 
-    // Keep mirror up-to-date without blocking autosave acceptance.
     this.queueMirrorWrite({
       projectId,
       chapterId,
@@ -270,7 +208,6 @@ export class AutoSaveManager extends EventEmitter {
       timestamp: Date.now(),
     });
 
-    // Emergency micro snapshot for very short content
     void maybeCreateEmergencySnapshot({
       projectId,
       chapterId,
@@ -291,7 +228,6 @@ export class AutoSaveManager extends EventEmitter {
       logger,
     });
 
-    // Debounce the actual DB save
     const existingTimer = this.saveTimers.get(chapterId);
     if (existingTimer) {
       clearTimeout(existingTimer);
@@ -309,174 +245,80 @@ export class AutoSaveManager extends EventEmitter {
     this.stats.scheduled += 1;
   }
 
-  // ─── Core Save Logic ─────────────────────────────────────────────────────
-
   private async performSave(chapterId: string) {
-    const pending = this.pendingSaves.get(chapterId);
-    if (!pending) return;
-
-    const saveStartedAt = Date.now();
-    this.stats.saveStarted += 1;
-    const queuedAt = this.firstQueuedAt.get(chapterId);
-    if (queuedAt) {
-      const queueDelayMs = Math.max(0, saveStartedAt - queuedAt);
-      this.stats.lastQueueDelayMs = queueDelayMs;
-      this.stats.queueDelayTotalMs += queueDelayMs;
-      this.stats.queueDelaySamples += 1;
-    }
-
-    try {
-      const chapterService = await loadChapterService();
-      await chapterService.updateChapter({
-        id: pending.chapterId,
-        content: pending.content,
-      });
-
-      this.pendingSaves.delete(chapterId);
-      this.saveTimers.delete(chapterId);
-      this.lastSaveAt.delete(chapterId);
-      this.firstQueuedAt.delete(chapterId);
-      this.emit("saved", { chapterId });
-
-      // Post-save: update mirror and maybe enqueue snapshot
-      this.queueMirrorWrite(pending);
-      this.maybeEnqueueSnapshot(
-        pending.projectId,
-        pending.chapterId,
-        pending.content,
-      );
-
-      logger.info("Auto-save completed", { chapterId });
-      this.stats.saveSucceeded += 1;
-      const durationMs = Math.max(0, Date.now() - saveStartedAt);
-      this.stats.lastSaveDurationMs = durationMs;
-      this.stats.saveDurationTotalMs += durationMs;
-      this.stats.saveDurationSamples += 1;
-    } catch (error) {
-      // Validation-blocked save: still create safety snapshot
-      if (isServiceError(error) && error.code === ErrorCode.VALIDATION_FAILED) {
-        this.stats.validationBlocked += 1;
-        logger.warn(
-          "Auto-save blocked by validation; writing safety snapshot",
-          {
-            chapterId,
-            error,
-          },
-        );
-
-        try {
-          const snapshotService = await loadSnapshotService();
-          await this.mirrorStore.writeLatestMirror(
-            pending.projectId,
-            pending.chapterId,
-            pending.content,
-          );
-          await this.mirrorStore.writeTimestampedMirror(
-            pending.projectId,
-            pending.chapterId,
-            pending.content,
-          );
-          await snapshotService.createSnapshot({
-            projectId: pending.projectId,
-            chapterId: pending.chapterId,
-            content: pending.content,
-            description: `Safety snapshot (블로킹된 저장) ${new Date().toLocaleString()}`,
-          });
-        } catch (mirrorError) {
-          logger.error(
-            "Failed to write safety snapshot after validation block",
-            mirrorError,
-          );
-        }
-
-        this.pendingSaves.delete(chapterId);
-        this.saveTimers.delete(chapterId);
-        this.lastSaveAt.delete(chapterId);
-        this.firstQueuedAt.delete(chapterId);
-        this.emit("save-blocked", { chapterId, error });
-        this.stats.saveFailed += 1;
-        const durationMs = Math.max(0, Date.now() - saveStartedAt);
-        this.stats.lastSaveDurationMs = durationMs;
-        this.stats.saveDurationTotalMs += durationMs;
-        this.stats.saveDurationSamples += 1;
-        return;
-      }
-
-      this.stats.saveFailed += 1;
-      const durationMs = Math.max(0, Date.now() - saveStartedAt);
-      this.stats.lastSaveDurationMs = durationMs;
-      this.stats.saveDurationTotalMs += durationMs;
-      this.stats.saveDurationSamples += 1;
-      logger.error("Auto-save failed", error);
-      if (this.listenerCount("error") > 0) {
-        this.emit("error", { chapterId, error });
-      }
-    }
+    await performAutoSave({
+      chapterId,
+      pendingSaves: this.pendingSaves,
+      saveTimers: this.saveTimers,
+      lastSaveAt: this.lastSaveAt,
+      firstQueuedAt: this.firstQueuedAt,
+      stats: this.stats,
+      loadChapterService,
+      queueMirrorWrite: (pending) => this.queueMirrorWrite(pending),
+      maybeEnqueueSnapshot: (projectId, targetChapterId, content) =>
+        this.maybeEnqueueSnapshot(projectId, targetChapterId, content),
+      writeValidationBlockedSafetySnapshot: (pending) =>
+        writeValidationBlockedSafetySnapshot({
+          pending,
+          loadSnapshotService,
+          writeLatestMirror: (projectId, targetChapterId, targetContent) =>
+            this.mirrorStore.writeLatestMirror(
+              projectId,
+              targetChapterId,
+              targetContent,
+            ),
+          writeTimestampedMirror: (
+            projectId,
+            targetChapterId,
+            targetContent,
+          ) =>
+            this.mirrorStore.writeTimestampedMirror(
+              projectId,
+              targetChapterId,
+              targetContent,
+            ),
+          logger,
+        }),
+      emitSaved: (targetChapterId) =>
+        this.emit("saved", { chapterId: targetChapterId }),
+      emitSaveBlocked: (targetChapterId, error) =>
+        this.emit("save-blocked", { chapterId: targetChapterId, error }),
+      emitError: (targetChapterId, error) =>
+        this.emit("error", { chapterId: targetChapterId, error }),
+      canEmitError: () => this.listenerCount("error") > 0,
+      logger,
+    });
   }
-
-  // ─── Snapshot Scheduling (Time Machine style) ────────────────────────────
 
   private maybeEnqueueSnapshot(
     projectId: string,
     chapterId: string,
     content: string,
   ) {
-    const key = `${projectId}:${chapterId}`;
-    const now = Date.now();
-    const lastAt = this.lastSnapshotAt.get(key) ?? 0;
-
-    // Time-based gating
-    if (now - lastAt < SNAPSHOT_INTERVAL_MS) return;
-
-    // Content length minimum
-    if (content.length < SNAPSHOT_MIN_CONTENT_LENGTH) return;
-
-    // Content hash dedup
-    const hash = this.hashContent(content);
-    const lastHash = this.lastSnapshotHash.get(key);
-    if (lastHash === hash) return;
-
-    // Change threshold check
-    const lastLength = this.lastSnapshotLength.get(key) ?? 0;
-    if (lastLength > 0) {
-      const diff = Math.abs(content.length - lastLength);
-      const ratio = diff / lastLength;
-      if (
-        ratio < SNAPSHOT_MIN_CHANGE_RATIO &&
-        diff < SNAPSHOT_MIN_CHANGE_ABSOLUTE
-      )
-        return;
-    }
-
-    // Accept snapshot
-    this.lastSnapshotAt.set(key, now);
-    this.lastSnapshotHash.set(key, hash);
-    this.lastSnapshotLength.set(key, content.length);
-
-    this.snapshotQueue.push({ projectId, chapterId, content });
-    if (!this.snapshotProcessing) {
-      this.snapshotProcessing = true;
-      setImmediate(async () => {
-        try {
-          await processSnapshotJobs({
-            jobs: this.snapshotQueue,
-            writeTimestampedMirror: (
-              targetProjectId,
-              targetChapterId,
-              targetContent,
-            ) =>
-              this.mirrorStore.writeTimestampedMirror(
-                targetProjectId,
-                targetChapterId,
-                targetContent,
-              ),
-            logger,
-          });
-        } finally {
-          this.snapshotProcessing = false;
-        }
-      });
-    }
+    maybeEnqueueSnapshotJob({
+      projectId,
+      chapterId,
+      content,
+      lastSnapshotAt: this.lastSnapshotAt,
+      lastSnapshotHash: this.lastSnapshotHash,
+      lastSnapshotLength: this.lastSnapshotLength,
+      snapshotQueue: this.snapshotQueue,
+      isSnapshotProcessing: () => this.snapshotProcessing,
+      setSnapshotProcessing: (processing) => {
+        this.snapshotProcessing = processing;
+      },
+      writeTimestampedMirror: (
+        targetProjectId,
+        targetChapterId,
+        targetContent,
+      ) =>
+        this.mirrorStore.writeTimestampedMirror(
+          targetProjectId,
+          targetChapterId,
+          targetContent,
+        ),
+      logger,
+    });
   }
 
   private enqueueProjectTask(
@@ -494,13 +336,9 @@ export class AutoSaveManager extends EventEmitter {
     return marker;
   }
 
-  // ─── Mirror Recovery (startup / shutdown) ─────────────────────────────────
-
   async flushMirrorsToSnapshots(reason: string) {
     return this.mirrorStore.flushMirrorsToSnapshots(reason);
   }
-
-  // ─── Auto Save Scheduling ────────────────────────────────────────────────
 
   startAutoSave(projectId: string) {
     const config = this.getConfig(projectId);
@@ -511,35 +349,15 @@ export class AutoSaveManager extends EventEmitter {
       clearInterval(existingTimer);
     }
 
-    const timer = setInterval(() => {
-      void this.enqueueProjectTask(projectId, async () => {
-        const activeConfig = this.getConfig(projectId);
-        const now = Date.now();
-        const pendingSaves = Array.from(this.pendingSaves.entries()).filter(
-          ([chapterId, pending]) => {
-            if (pending.projectId !== projectId) {
-              return false;
-            }
-
-            const lastTouchedAt = this.lastSaveAt.get(chapterId) ?? 0;
-            const hasRecentTypingSignal =
-              now - lastTouchedAt < activeConfig.debounceMs;
-
-            return !hasRecentTypingSignal;
-          },
-        );
-        await pendingSaves.reduce<Promise<void>>(
-          (chain, [chapterId]) =>
-            chain.then(async () => {
-              await this.performSave(chapterId);
-            }),
-          Promise.resolve(),
-        );
-      });
-    }, config.interval);
-    if (typeof timer.unref === "function") {
-      timer.unref();
-    }
+    const timer = createAutoSaveInterval({
+      projectId,
+      config,
+      pendingSaves: this.pendingSaves,
+      lastSaveAt: this.lastSaveAt,
+      enqueueProjectTask: (targetProjectId, task) =>
+        this.enqueueProjectTask(targetProjectId, task),
+      performSave: (targetChapterId) => this.performSave(targetChapterId),
+    });
 
     this.intervalTimers.set(projectId, timer);
     logger.info("Auto-save started", { projectId, interval: config.interval });
@@ -591,11 +409,6 @@ export class AutoSaveManager extends EventEmitter {
     await createScheduledSnapshot(projectId, logger, chapterId);
   }
 
-  // ─── Flush (quit / critical) ──────────────────────────────────────────────
-
-  /**
-   * Flush ALL pending saves to DB. Used during normal quit.
-   */
   async flushAll() {
     await flushAllPendingSaves(
       this.pendingSaves,
@@ -604,11 +417,6 @@ export class AutoSaveManager extends EventEmitter {
     );
   }
 
-  /**
-   * Emergency flush: write mirrors + snapshots for all pending content.
-   * Called when time is critical (app crashing, OS killing process).
-   * Returns counts for diagnostics.
-   */
   async flushCritical(): Promise<{ mirrored: number; snapshots: number }> {
     if (this.criticalFlushPromise) {
       return this.criticalFlushPromise;
@@ -628,52 +436,32 @@ export class AutoSaveManager extends EventEmitter {
     }
   }
 
-  // ─── Utilities ────────────────────────────────────────────────────────────
-
-  private hashContent(content: string): number {
-    let hash = 0;
-    for (let i = 0; i < content.length; i += 1) {
-      hash = (hash * 31 + content.charCodeAt(i)) >>> 0;
-    }
-    return hash;
-  }
-
   private startCleanupInterval() {
-    const cleanupTimer = setInterval(() => {
-      this.cleanupOldEntries();
-    }, AUTO_SAVE_CLEANUP_INTERVAL_MS);
-    if (typeof cleanupTimer.unref === "function") {
-      cleanupTimer.unref();
-    }
+    startAutoSaveCleanupInterval({
+      intervalMs: AUTO_SAVE_CLEANUP_INTERVAL_MS,
+      cleanup: () => this.cleanupOldEntries(),
+    });
   }
 
   private cleanupOldEntries() {
-    const now = Date.now();
-    for (const [chapterId, pending] of Array.from(
-      this.pendingSaves.entries(),
-    )) {
-      if (now - pending.timestamp > AUTO_SAVE_STALE_THRESHOLD_MS) {
-        const timer = this.saveTimers.get(chapterId);
-        if (timer) {
-          clearTimeout(timer);
-        }
-        this.saveTimers.delete(chapterId);
-        this.pendingSaves.delete(chapterId);
-        this.lastSaveAt.delete(chapterId);
-        this.firstQueuedAt.delete(chapterId);
-        logger.info("Cleaned up stale pending save", { chapterId });
-      }
-    }
+    cleanupOldPendingSaves({
+      now: Date.now(),
+      staleThresholdMs: AUTO_SAVE_STALE_THRESHOLD_MS,
+      saveTimers: this.saveTimers,
+      pendingSaves: this.pendingSaves,
+      lastSaveAt: this.lastSaveAt,
+      firstQueuedAt: this.firstQueuedAt,
+      logger,
+    });
   }
 
   clearProject(projectId: string) {
-    this.stopAutoSave(projectId);
-    this.configs.delete(projectId);
-    for (const [chapterId, knownProjectId] of this.verifiedChapterProjectId) {
-      if (knownProjectId === projectId) {
-        this.verifiedChapterProjectId.delete(chapterId);
-      }
-    }
+    clearProjectState({
+      projectId,
+      configs: this.configs,
+      verifiedChapterProjectId: this.verifiedChapterProjectId,
+      stopAutoSave: (targetProjectId) => this.stopAutoSave(targetProjectId),
+    });
   }
 
   private prewarmDependencies(): void {
@@ -690,39 +478,14 @@ export class AutoSaveManager extends EventEmitter {
   }
 
   private queueMirrorWrite(pending: PendingSave): void {
-    const key = `${pending.projectId}:${pending.chapterId}`;
-    this.mirrorPendingPayload.set(key, pending);
-    if (this.mirrorWriteQueue.has(key)) {
-      return;
-    }
-
-    const worker = (async () => {
-      while (true) {
-        const next = this.mirrorPendingPayload.get(key);
-        if (!next) break;
-        this.mirrorPendingPayload.delete(key);
-        await this.mirrorStore.writeLatestMirror(
-          next.projectId,
-          next.chapterId,
-          next.content,
-        );
-      }
-    })()
-      .catch((error) => {
-        logger.warn("Mirror write queue processing failed", {
-          key,
-          error,
-        });
-      })
-      .finally(() => {
-        this.mirrorWriteQueue.delete(key);
-        const pendingNext = this.mirrorPendingPayload.get(key);
-        if (pendingNext) {
-          this.queueMirrorWrite(pendingNext);
-        }
-      });
-
-    this.mirrorWriteQueue.set(key, worker);
+    queueLatestMirrorWrite({
+      pending,
+      mirrorPendingPayload: this.mirrorPendingPayload,
+      mirrorWriteQueue: this.mirrorWriteQueue,
+      writeLatestMirror: (projectId, chapterId, content) =>
+        this.mirrorStore.writeLatestMirror(projectId, chapterId, content),
+      logger,
+    });
   }
 }
 

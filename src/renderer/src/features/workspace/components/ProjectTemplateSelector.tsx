@@ -157,7 +157,10 @@ export default function ProjectTemplateSelector({
     if (!isRestoreDialogOpen) {
       return;
     }
-    void loadRestoreCandidates();
+    const timer = window.setTimeout(() => {
+      void loadRestoreCandidates();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [isRestoreDialogOpen, loadRestoreCandidates]);
 
   const handleRestoreCandidate = useCallback(
