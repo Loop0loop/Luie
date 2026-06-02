@@ -369,7 +369,13 @@ SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/handler/ipcSettingsHandlers.security
 
 ## Phase 3: Renderer Shell Split
 
-상태: 미시작.
+상태: 진행 중.
+
+완료:
+
+- `src/renderer/src/features/editor/components/EditorToolbar.tsx`는 300 LOC입니다.
+- `EditorToolbar.tsx`의 기존 default export와 호출부 import 경로는 유지했습니다.
+- toolbar primitive, dropdown/color/typography popover, more menu, ghost editor/state helper, constants/types는 `editor/components/toolbar/index.ts` 배럴 폴더로 분리했습니다.
 
 대상 후보:
 
@@ -378,14 +384,12 @@ src/renderer/src/app/App.tsx
 src/renderer/src/features/workspace/components/layout/EditorRoot.tsx
 src/renderer/src/features/workspace/stores/projectLayoutStore.ts
 src/renderer/src/features/research/stores/worldBuildingStore.actions.ts
-src/renderer/src/features/editor/components/EditorToolbar.tsx
 ```
 
 2026-06-02 기준 후보 LOC:
 
 | File | LOC |
 | --- | ---: |
-| `src/renderer/src/features/editor/components/EditorToolbar.tsx` | 818 |
 | `src/renderer/src/features/workspace/stores/projectLayoutStore.ts` | 655 |
 | `src/renderer/src/features/research/stores/worldBuildingStore.actions.ts` | 639 |
 | `src/renderer/src/app/App.tsx` | 612 |
@@ -395,7 +399,6 @@ src/renderer/src/features/editor/components/EditorToolbar.tsx
 
 - `App.tsx`는 window mode/bootstrap/project gate coordinator로 축소
 - `EditorRoot.tsx`는 layout shell 유지, branch별 component/hook 분리
-- `EditorToolbar.tsx`는 button/menu/color/typography groups로 분리
 - `worldBuildingStore.actions.ts`는 graph load, persistence queue, CRUD sync를 분리
 - 직접 `window.api` 예외는 domain adapter로 감싸되 기존 fallback 유지
 

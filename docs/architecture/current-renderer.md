@@ -113,7 +113,6 @@ renderer API 접근
 - `src/renderer/src/i18n/locales/ja/base.ts`
 - `src/renderer/src/i18n/locales/en/base.ts`
 - `src/renderer/src/features/research/services/worldPackageStorage.ts`
-- `src/renderer/src/features/editor/components/EditorToolbar.tsx`
 - `src/renderer/src/features/workspace/stores/projectLayoutStore.ts`
 - `src/renderer/src/features/research/stores/worldBuildingStore.actions.ts`
 - `src/renderer/src/features/settings/components/tabs/ModelTab.tsx`
@@ -124,6 +123,19 @@ renderer API 접근
 - `src/renderer/src/styles/global.css`
 - `src/renderer/src/features/project/hooks/useFileImport.ts`
 - `src/renderer/src/i18n/locales/*/workspace.ts`
+
+사실: `src/renderer/src/features/editor/components/EditorToolbar.tsx`는 editor toolbar shell과 TipTap command wiring만 유지하도록 축소되어 300 LOC입니다. 분리된 helper는 `editor/components/toolbar/index.ts` 배럴을 통해 제공합니다.
+
+| Editor toolbar helper | 책임 | LOC |
+| --- | --- | ---: |
+| `toolbar/MoreMenu.tsx` | export/alignment/select-all/clear-formatting more menu | 130 |
+| `toolbar/menus.tsx` | compact dropdown, color picker, typography slider popover | 272 |
+| `toolbar/primitives.tsx` | toolbar button/divider primitives | 38 |
+| `toolbar/useClickOutside.ts` | popover outside click hook | 20 |
+| `toolbar/editorState.ts` | paragraph style detection and ghost editor factory | 42 |
+| `toolbar/constants.ts` | font size/text color/highlight color options | 30 |
+| `toolbar/types.ts` | toolbar props and paragraph style types | 17 |
+| `toolbar/index.ts` | toolbar helper 배럴 export | 6 |
 
 ## 위험 지점
 
@@ -144,4 +156,3 @@ renderer API 접근
 - IPC 계약은 `src/shared/api`, `src/shared/ipc`, preload, main handler가 함께 맞아야 합니다.
 - `uiStore.regions`와 legacy fields는 호환성 경계입니다.
 - graph/editor/canvas hot path는 stable callback, memoization, staged persistence를 보존해야 합니다.
-
