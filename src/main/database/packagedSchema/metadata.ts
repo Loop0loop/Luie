@@ -1,0 +1,298 @@
+export const PACKAGED_SCHEMA_REQUIRED_TABLES = [
+  "Project",
+  "ProjectAttachment",
+  "ProjectLocalState",
+  "ProjectSettings",
+  "Chapter",
+  "Scene",
+  "ChapterBody",
+  "ChapterRevision",
+  "SearchDirtyQueue",
+  "MemoryChunk",
+  "MemoryBuildJob",
+  "MemoryEmbedding",
+  "ChapterSummary",
+  "Note",
+  "Synopsis",
+  "Plot",
+  "Character",
+  "Event",
+  "Faction",
+  "WorldDocument",
+  "ScrapMemo",
+  "Term",
+  "Snapshot",
+  "WorldEntity",
+  "EntityRelation",
+] as const;
+
+type ColumnPatch = {
+  table: string;
+  column: string;
+  sql: string;
+};
+
+type IndexPatch = {
+  name: string;
+  table: string;
+  sql: string;
+};
+
+export const PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
+  {
+    table: "Term",
+    column: "order",
+    sql: 'ALTER TABLE "Term" ADD COLUMN "order" INTEGER NOT NULL DEFAULT 0;',
+  },
+  {
+    table: "Snapshot",
+    column: "contentLength",
+    sql: 'ALTER TABLE "Snapshot" ADD COLUMN "contentLength" INTEGER NOT NULL DEFAULT 0;',
+  },
+  {
+    table: "Snapshot",
+    column: "description",
+    sql: 'ALTER TABLE "Snapshot" ADD COLUMN "description" TEXT;',
+  },
+  {
+    table: "Project",
+    column: "projectPath",
+    sql: 'ALTER TABLE "Project" ADD COLUMN "projectPath" TEXT;',
+  },
+  {
+    table: "Chapter",
+    column: "synopsis",
+    sql: 'ALTER TABLE "Chapter" ADD COLUMN "synopsis" TEXT;',
+  },
+  {
+    table: "MemoryChunk",
+    column: "sceneId",
+    sql: 'ALTER TABLE "MemoryChunk" ADD COLUMN "sceneId" TEXT;',
+  },
+  {
+    table: "Chapter",
+    column: "wordCount",
+    sql: 'ALTER TABLE "Chapter" ADD COLUMN "wordCount" INTEGER NOT NULL DEFAULT 0;',
+  },
+  {
+    table: "Chapter",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Chapter" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "Character",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Character" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "Character",
+    column: "firstAppearance",
+    sql: 'ALTER TABLE "Character" ADD COLUMN "firstAppearance" TEXT;',
+  },
+  {
+    table: "Character",
+    column: "attributes",
+    sql: 'ALTER TABLE "Character" ADD COLUMN "attributes" TEXT;',
+  },
+  {
+    table: "Event",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Event" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "Faction",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Faction" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "Term",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Term" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "WorldEntity",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "WorldEntity" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "Scene",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Scene" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "Note",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Note" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "Synopsis",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Synopsis" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "Plot",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "Plot" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "ScrapMemo",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "ScrapMemo" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
+    table: "ProjectSettings",
+    column: "llmModelPath",
+    sql: 'ALTER TABLE "ProjectSettings" ADD COLUMN "llmModelPath" TEXT;',
+  },
+  {
+    table: "ProjectSettings",
+    column: "llmEmbeddingModelPath",
+    sql: 'ALTER TABLE "ProjectSettings" ADD COLUMN "llmEmbeddingModelPath" TEXT;',
+  },
+  {
+    table: "ProjectSettings",
+    column: "llmEmbeddingDimension",
+    sql: 'ALTER TABLE "ProjectSettings" ADD COLUMN "llmEmbeddingDimension" INTEGER NOT NULL DEFAULT 1024;',
+  },
+  {
+    table: "ProjectSettings",
+    column: "llmProviderHint",
+    sql: 'ALTER TABLE "ProjectSettings" ADD COLUMN "llmProviderHint" TEXT;',
+  },
+  {
+    table: "ChapterSummary",
+    column: "contentHash",
+    sql: "ALTER TABLE \"ChapterSummary\" ADD COLUMN \"contentHash\" TEXT NOT NULL DEFAULT '';",
+  },
+];
+
+export const PACKAGED_SCHEMA_INDEX_PATCHES: ReadonlyArray<IndexPatch> = [
+  {
+    name: "Character_projectId_createdAt_idx",
+    table: "Character",
+    sql: 'CREATE INDEX IF NOT EXISTS "Character_projectId_createdAt_idx" ON "Character"("projectId", "createdAt");',
+  },
+  {
+    name: "Event_projectId_createdAt_idx",
+    table: "Event",
+    sql: 'CREATE INDEX IF NOT EXISTS "Event_projectId_createdAt_idx" ON "Event"("projectId", "createdAt");',
+  },
+  {
+    name: "Faction_projectId_createdAt_idx",
+    table: "Faction",
+    sql: 'CREATE INDEX IF NOT EXISTS "Faction_projectId_createdAt_idx" ON "Faction"("projectId", "createdAt");',
+  },
+  {
+    name: "Term_projectId_createdAt_idx",
+    table: "Term",
+    sql: 'CREATE INDEX IF NOT EXISTS "Term_projectId_createdAt_idx" ON "Term"("projectId", "createdAt");',
+  },
+  {
+    name: "WorldEntity_projectId_createdAt_idx",
+    table: "WorldEntity",
+    sql: 'CREATE INDEX IF NOT EXISTS "WorldEntity_projectId_createdAt_idx" ON "WorldEntity"("projectId", "createdAt");',
+  },
+  {
+    name: "ScrapMemo_projectId_sortOrder_updatedAt_idx",
+    table: "ScrapMemo",
+    sql: 'CREATE INDEX IF NOT EXISTS "ScrapMemo_projectId_sortOrder_updatedAt_idx" ON "ScrapMemo"("projectId", "sortOrder", "updatedAt");',
+  },
+  {
+    name: "MemoryChunkFts",
+    table: "MemoryChunk",
+    sql: `CREATE VIRTUAL TABLE IF NOT EXISTS "MemoryChunkFts"
+USING fts5(
+    "chunkId" UNINDEXED,
+    "projectId" UNINDEXED,
+    "chapterId" UNINDEXED,
+    "content",
+    tokenize = 'trigram'
+);`,
+  },
+  {
+    name: "MemoryChunk_projectId_sceneId_idx",
+    table: "MemoryChunk",
+    sql: 'CREATE INDEX IF NOT EXISTS "MemoryChunk_projectId_sceneId_idx" ON "MemoryChunk"("projectId", "sceneId");',
+  },
+];
+
+export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyArray<string>>> = {
+  // `projectPath` stays as a legacy compatibility column for now, but it is not
+  // a required canonical project field for bootstrap integrity checks.
+  Project: ["id", "title"],
+  ProjectAttachment: ["projectId", "projectPath"],
+  ProjectLocalState: ["projectId", "lastOpenedAt"],
+  ProjectSettings: [
+    "id",
+    "projectId",
+    "autoSave",
+    "autoSaveInterval",
+    "llmModelPath",
+    "llmEmbeddingModelPath",
+    "llmEmbeddingDimension",
+    "llmProviderHint",
+  ],
+  Chapter: ["id", "projectId", "order", "wordCount", "deletedAt"],
+  Scene: ["id", "projectId", "chapterId", "title", "body", "order", "deletedAt"],
+  ChapterBody: ["chapterId", "content", "contentHash", "updatedAt"],
+  ChapterRevision: ["id", "chapterId", "contentHash", "content", "reason"],
+  SearchDirtyQueue: [
+    "id",
+    "projectId",
+    "sourceType",
+    "sourceId",
+    "reason",
+    "status",
+    "attempts",
+  ],
+  MemoryChunk: [
+    "id",
+    "projectId",
+    "sourceType",
+    "sourceId",
+    "chunkIndex",
+    "content",
+    "contentHash",
+    "sceneId",
+  ],
+  MemoryBuildJob: [
+    "id",
+    "projectId",
+    "targetType",
+    "targetId",
+    "jobType",
+    "status",
+    "priority",
+  ],
+  MemoryEmbedding: [
+    "id",
+    "chunkId",
+    "projectId",
+    "contentHash",
+    "vec",
+    "dimension",
+  ],
+  ChapterSummary: [
+    "id",
+    "projectId",
+    "chapterId",
+    "chapterNumber",
+    "summary",
+    "contentHash",
+    "isFallback",
+    "model",
+    "generatedAt",
+  ],
+  Note: ["id", "projectId", "title", "body", "deletedAt"],
+  Synopsis: ["id", "projectId", "title", "body", "deletedAt"],
+  Plot: ["id", "projectId", "title", "body", "deletedAt"],
+  Character: ["id", "projectId", "firstAppearance", "attributes", "deletedAt"],
+  Event: ["id", "projectId", "name", "deletedAt"],
+  Faction: ["id", "projectId", "name", "deletedAt"],
+  WorldDocument: ["id", "projectId", "docType", "payload"],
+  ScrapMemo: ["id", "projectId", "title", "content", "tags", "sortOrder", "updatedAt", "deletedAt"],
+  Term: ["id", "projectId", "term", "order", "deletedAt"],
+  Snapshot: ["id", "projectId", "content", "contentLength", "type"],
+  WorldEntity: ["id", "projectId", "type", "name", "positionX", "positionY", "deletedAt"],
+  EntityRelation: ["id", "projectId", "sourceId", "targetId", "relation"],
+};

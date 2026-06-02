@@ -120,8 +120,14 @@ index.ts
 
 | File | LOC |
 | --- | ---: |
-| `src/main/database/packagedSchema.ts` | 639 |
 | `src/main/database/schema.ts` | 623 |
+
+사실: `src/main/database/packagedSchema.ts`는 packaged SQLite bootstrap SQL과 trigger assembly만 유지하도록 축소되어 354 LOC입니다. 분리된 schema metadata는 `database/packagedSchema/index.ts` 배럴을 통해 제공하며 기존 public export인 `PACKAGED_SCHEMA_REQUIRED_TABLES`, `PACKAGED_SCHEMA_REQUIRED_COLUMNS`, `PACKAGED_SCHEMA_COLUMN_PATCHES`, `PACKAGED_SCHEMA_INDEX_PATCHES`, `PACKAGED_SCHEMA_BOOTSTRAP_SQL`는 유지합니다.
+
+| Packaged schema helper | 책임 | LOC |
+| --- | --- | ---: |
+| `packagedSchema/metadata.ts` | required table/column 목록과 기존 DB column/index patch metadata | 298 |
+| `packagedSchema/index.ts` | packaged schema metadata 배럴 export | 6 |
 
 사실: `src/main/services/features/snapshot/snapshotArtifacts.ts`는 snapshot artifact 읽기/후보 목록/고아 cleanup/write orchestration만 유지하도록 축소되어 297 LOC입니다. 분리된 helper는 `snapshot/artifacts/index.ts` 배럴을 통해 제공하며 public export 경로는 유지합니다.
 
