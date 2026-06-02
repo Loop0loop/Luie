@@ -4,8 +4,6 @@ import {
   Suspense,
   useCallback,
   useEffect,
-  useLayoutEffect,
-  useRef,
 } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -17,7 +15,6 @@ import { useDataRecoveryStore } from "@renderer/features/workspace/stores/useDat
 import { useProjectTemplate } from "@renderer/features/project/hooks/useProjectTemplate";
 import { useShortcutStore } from "@renderer/features/workspace/stores/shortcutStore";
 import { useToast } from "@shared/ui/ToastContext";
-import { appBootstrapStatusSchema } from "@shared/schemas/index.js";
 import type {
   AppBootstrapStatus,
   AppQuitPhasePayload,
@@ -29,15 +26,17 @@ import {
   isLuieAttachmentPath,
 } from "@shared/projectAttachment";
 import {
-  captureUiModeIntegritySnapshot,
-  getUiModeIntegrityViolations,
-  type UiModeIntegrityUiState,
-  type UiModeIntegritySnapshot,
-} from "@renderer/features/workspace/services/uiModeIntegrity";
-import {
   LUIE_PACKAGE_EXTENSION_NO_DOT,
   LUIE_PACKAGE_FILTER_NAME,
 } from "@shared/constants/paths";
+import {
+  BootstrapGate,
+  parseBootstrapStatus,
+  QuitOverlay,
+  useThemeAttributes,
+  useUiModeIntegrityDevCheck,
+  useWindowMode,
+} from "./shell";
 
 const ExportWindow = lazy(
   () => import("@renderer/features/export/components/ExportWindow"),
@@ -59,29 +58,6 @@ const StartupWizard = lazy(
   () => import("@renderer/features/startup/components/StartupWizard"),
 );
 
-const parseBootstrapStatus = (value: unknown): AppBootstrapStatus | null => {
-  const parsed = appBootstrapStatusSchema.safeParse(value);
-  return parsed.success ? parsed.data : null;
-};
-
-type WindowMode =
-  | "app"
-  | "export"
-  | "oauth-result"
-  | "world-graph"
-  | "startup-wizard";
-
-const getWindowMode = (): WindowMode => {
-  if (typeof window === "undefined") return "app";
-  if (window.location.hash === "#export") return "export";
-  if (window.location.hash === "#world-graph") return "world-graph";
-  if (window.location.hash === "#startup-wizard") return "startup-wizard";
-  if (window.location.hash.startsWith("#auth-result")) return "oauth-result";
-  return "app";
-};
-
-const getDefaultWindowMode = (): WindowMode => "app";
-
 export default function App() {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -89,19 +65,8 @@ export default function App() {
     isReady: false,
   });
   const [isBootstrapLoading, setIsBootstrapLoading] = useState(true);
-  const uiModeIntegrityRef = useRef<UiModeIntegritySnapshot | null>(null);
-  const [windowMode, setWindowMode] =
-    useState<WindowMode>(getDefaultWindowMode);
+  const windowMode = useWindowMode();
   const [quitPhase, setQuitPhase] = useState<AppQuitPhasePayload | null>(null);
-
-  useEffect(() => {
-    setWindowMode(getWindowMode());
-    const checkHash = () => {
-      setWindowMode(getWindowMode());
-    };
-    window.addEventListener("hashchange", checkHash);
-    return () => window.removeEventListener("hashchange", checkHash);
-  }, []);
 
   const view = useUIStore((state) => state.view);
   const loadShortcuts = useShortcutStore((state) => state.loadShortcuts);
@@ -141,7 +106,7 @@ export default function App() {
   }, [t]);
 
   useEffect(() => {
-    void refreshBootstrapStatus();
+    void Promise.resolve().then(refreshBootstrapStatus);
     const unsubscribe = api.app.onBootstrapStatus((status) => {
       const parsed = parseBootstrapStatus(status);
       if (!parsed) return;
@@ -201,77 +166,21 @@ export default function App() {
     return unsubscribe;
   }, []);
 
-  useLayoutEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    if (themeTemp)
-      document.documentElement.setAttribute("data-temp", themeTemp);
-    if (themeContrast)
-      document.documentElement.setAttribute("data-contrast", themeContrast);
-    if (themeAccent)
-      document.documentElement.setAttribute("data-accent", themeAccent);
-    document.documentElement.setAttribute("data-texture", String(themeTexture));
-    document.documentElement.setAttribute(
-      "data-animations",
-      enableAnimations ? "on" : "off",
-    );
-  }, [
-    theme,
-    themeTemp,
-    themeContrast,
-    themeAccent,
-    themeTexture,
+  useThemeAttributes({
     enableAnimations,
-  ]);
+    theme,
+    themeAccent,
+    themeContrast,
+    themeTemp,
+    themeTexture,
+  });
 
   useEffect(() => {
     if (!bootstrapStatus.isReady) return;
     void loadShortcuts();
   }, [bootstrapStatus.isReady, loadShortcuts]);
 
-  useEffect(() => {
-    if (!import.meta.env.DEV) return;
-
-    const uiState = useUIStore.getState();
-    if (
-      !uiState ||
-      !uiState.regions ||
-      !uiState.regions.leftSidebar ||
-      !uiState.regions.rightPanel ||
-      !uiState.regions.rightRail
-    ) {
-      return;
-    }
-    const integrityUiState: UiModeIntegrityUiState = {
-      view: uiState.view,
-      contextTab: uiState.contextTab,
-      worldTab: uiState.worldTab,
-      isSplitView: false,
-      splitRatio: 0.5,
-      splitSide: "right",
-      leftSidebarOpen: uiState.regions.leftSidebar.open,
-      rightPanelOpen: uiState.regions.rightPanel.open,
-      isManuscriptMenuOpen: uiState.isManuscriptMenuOpen,
-      rightPanelActiveTab: uiState.regions.rightPanel.activeTab,
-      rightRailOpen: uiState.regions.rightRail.open,
-    };
-    const snapshot = captureUiModeIntegritySnapshot({
-      editor: useEditorStore.getState(),
-      ui: integrityUiState,
-    });
-    const previous = uiModeIntegrityRef.current;
-    if (previous) {
-      const violations = getUiModeIntegrityViolations(previous, snapshot);
-      if (violations.length > 0) {
-        void api.logger.warn("uiMode integrity violation detected", {
-          from: previous.uiMode,
-          to: snapshot.uiMode,
-          violations,
-        });
-      }
-    }
-
-    uiModeIntegrityRef.current = snapshot;
-  });
+  useUiModeIntegrityDevCheck();
 
   const setView = useUIStore((state) => state.setView);
 
@@ -445,27 +354,12 @@ export default function App() {
     [loadProjects, openProjectWithApprovedAttachment, showToast, t],
   );
 
-  const shouldBlockUiForQuit =
-    quitPhase !== null &&
-    quitPhase.phase !== "idle" &&
-    quitPhase.phase !== "aborted" &&
-    quitPhase.phase !== "completed";
-
-  const quitOverlayMessage = quitPhase?.message ?? t("bootstrap.initializing");
+  const quitOverlay = <QuitOverlay quitPhase={quitPhase} />;
   const appScreenFallback = (
     <div className="flex h-screen items-center justify-center bg-app text-fg">
       {t("loading")}
     </div>
   );
-
-  const quitOverlay = shouldBlockUiForQuit ? (
-    <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center px-6">
-      <div className="w-full max-w-xl rounded-2xl border border-border bg-panel p-6 shadow-lg">
-        <p className="text-base font-semibold text-fg">{t("bootstrap.quit")}</p>
-        <p className="mt-2 text-sm text-muted">{quitOverlayMessage}</p>
-      </div>
-    </div>
-  ) : null;
 
   if (windowMode === "export") {
     return (
@@ -531,52 +425,18 @@ export default function App() {
   }
 
   if (!bootstrapStatus.isReady) {
-    const showError = Boolean(bootstrapStatus.error) && !isBootstrapLoading;
-
     return (
       <>
-        <div className="min-h-screen bg-app text-fg flex items-center justify-center px-6">
-          <div className="w-full max-w-3xl rounded-2xl border border-border bg-panel p-8 shadow-lg">
-            <div className="space-y-4">
-              <div className="h-6 w-52 rounded-md bg-surface animate-pulse" />
-              <div className="h-4 w-full rounded-md bg-surface animate-pulse" />
-              <div className="h-4 w-[82%] rounded-md bg-surface animate-pulse" />
-              <div className="h-4 w-[68%] rounded-md bg-surface animate-pulse" />
-            </div>
-
-            {!showError && (
-              <p className="mt-6 text-sm text-muted">
-                {t("bootstrap.initializing")}
-              </p>
-            )}
-
-            {showError && (
-              <div className="mt-6 space-y-4">
-                <p className="text-sm text-danger-fg">
-                  {bootstrapStatus.error}
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => {
-                      void refreshBootstrapStatus();
-                    }}
-                    className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 transition-colors"
-                  >
-                    {t("bootstrap.retry")}
-                  </button>
-                  <button
-                    onClick={() => {
-                      void api.app.quit();
-                    }}
-                    className="px-4 py-2 rounded-lg border border-border text-sm font-medium text-fg hover:bg-surface-hover transition-colors"
-                  >
-                    {t("bootstrap.quit")}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <BootstrapGate
+          bootstrapStatus={bootstrapStatus}
+          isBootstrapLoading={isBootstrapLoading}
+          onQuit={() => {
+            void api.app.quit();
+          }}
+          onRetry={() => {
+            void refreshBootstrapStatus();
+          }}
+        />
         {quitOverlay}
       </>
     );
