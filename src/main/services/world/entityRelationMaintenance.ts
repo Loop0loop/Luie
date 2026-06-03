@@ -40,6 +40,7 @@ export async function cleanupOrphanRelationsAcrossProjects(input: {
   let orphanRelations = 0;
   let removedRelations = 0;
 
+  /* eslint-disable no-await-in-loop -- relation maintenance mutates one project at a time so package persistence remains scoped and ordered. */
   for (const proj of projects) {
     const projectId = String(proj.id);
     const [
@@ -138,6 +139,7 @@ export async function cleanupOrphanRelationsAcrossProjects(input: {
       await onProjectMutation(projectId, "entity-relation:cleanup-orphans");
     }
   }
+  /* eslint-enable no-await-in-loop */
 
   return {
     scannedProjects: projects.length,
@@ -172,6 +174,7 @@ export async function reconcileWorldEntityPointersAcrossProjects(input: {
   let mismatchedRelations = 0;
   let fixedRelations = 0;
 
+  /* eslint-disable no-await-in-loop -- pointer reconciliation updates rows sequentially to avoid write bursts during startup maintenance. */
   for (const relation of relations) {
     const expectedSourceWorldEntityId = isWorldEntityBackedType(
       relation.sourceType as WorldEntitySourceType,
@@ -203,6 +206,7 @@ export async function reconcileWorldEntityPointersAcrossProjects(input: {
       .where(eq(entityRelation.id, relation.id));
     fixedRelations += result.changes;
   }
+  /* eslint-enable no-await-in-loop */
 
   return {
     dryRun,

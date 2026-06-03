@@ -201,7 +201,7 @@ function Editor({
 
   // Handle JUMP_TO_MENTION from World Graph
   useEffect(() => {
-    if (!editor) return;
+    if (!editor) return undefined;
     const handleJump = (payload: { entityId: string }) => {
       const charStore = useCharacterStore.getState();
       const termStore = useTermStore.getState();
@@ -257,9 +257,17 @@ function Editor({
     if (!editor) return;
     const current = editor.getHTML();
     if (current !== initialContent) {
+      let cancelled = false;
       editor.commands.setContent(initialContent);
-      setContent(initialContent);
+      queueMicrotask(() => {
+        if (cancelled) return;
+        setContent(initialContent);
+      });
+      return () => {
+        cancelled = true;
+      };
     }
+    return undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor, chapterId]);
 

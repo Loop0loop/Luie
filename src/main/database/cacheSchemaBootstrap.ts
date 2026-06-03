@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { type Database as BetterSqliteDatabase } from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import {
@@ -206,7 +207,7 @@ function runDrizzleMigrate(
   }
 
   try {
-    const drizzleDb = drizzle(drizzleResult.database as any);
+    const drizzleDb = drizzle(drizzleResult.database as BetterSqliteDatabase);
     migrate(drizzleDb, { migrationsFolder });
   } finally {
     (drizzleResult.database as { close: () => void }).close();

@@ -94,6 +94,7 @@ export class ChapterSummaryProjector {
     const runtime = await resolveModelRuntimeClient(input.projectId);
     const runtimeAvailable = await runtime.isAvailable();
     let processed = 0;
+    /* eslint-disable no-await-in-loop -- summary jobs are claimed and finalized sequentially to preserve retry/status ordering. */
     for (const job of jobs) {
       const now = new Date().toISOString();
       const claimed = await client
@@ -210,6 +211,7 @@ export class ChapterSummaryProjector {
           .where(eq(memoryBuildJob.id, job.id));
       }
     }
+    /* eslint-enable no-await-in-loop */
     logger.info("Processed chapter summary jobs", {
       projectId: input.projectId,
       queued: jobs.length,

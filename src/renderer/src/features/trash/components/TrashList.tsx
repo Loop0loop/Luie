@@ -67,7 +67,14 @@ export function TrashList({
   }, [projectId]);
 
   useEffect(() => {
-    void loadTrash();
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      void loadTrash();
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [loadTrash, refreshKey]);
 
   const handleRestore = useCallback(

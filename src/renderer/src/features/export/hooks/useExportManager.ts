@@ -34,10 +34,16 @@ export function useExportManager() {
     }, []);
 
     useEffect(() => {
+        let cancelled = false;
         const requestId = ++loadRequestIdRef.current;
         if (!chapterId) {
-            setLoadError(t("exportWindow.error.missingChapterId"));
-            return;
+            queueMicrotask(() => {
+                if (cancelled) return;
+                setLoadError(t("exportWindow.error.missingChapterId"));
+            });
+            return () => {
+                cancelled = true;
+            };
         }
 
         api.chapter.get(chapterId).then((response) => {
@@ -60,6 +66,9 @@ export function useExportManager() {
             }
             setLoadError(error instanceof Error ? error.message : t("exportWindow.error.unknown"));
         });
+        return () => {
+            cancelled = true;
+        };
     }, [chapterId, t]);
 
     const [format, setFormat] = useState<"word" | "hwp">("hwp");

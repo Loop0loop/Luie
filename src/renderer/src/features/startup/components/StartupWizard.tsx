@@ -117,7 +117,14 @@ export default function StartupWizard() {
 
   useEffect(() => {
     if (attempt === 0) return;
-    void finalize();
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      void finalize();
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [attempt, finalize]);
 
   const isSpinning = step === "finalizing";

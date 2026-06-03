@@ -62,6 +62,7 @@ export function useEditorAutosave({
     ((currentTitle: string, currentContent: string) => void) | null
   >(null);
 
+  /* eslint-disable react-hooks/preserve-manual-memoization -- keep the stable ref-backed save callback used by retry timers */
   const performSave = useCallback(
     async (currentTitle: string, currentContent: string) => {
       if (!onSave) return;
@@ -144,6 +145,7 @@ export function useEditorAutosave({
     },
     [onSave, showToast, t],
   );
+  /* eslint-enable react-hooks/preserve-manual-memoization */
 
   useEffect(() => {
     performSaveRef.current = performSave;

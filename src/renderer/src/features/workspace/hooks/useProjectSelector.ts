@@ -68,7 +68,9 @@ export function useProjectSelector(projects: Project[]): ProjectSelectorState & 
     const [localProjects, setLocalProjects] = useState<Project[]>(projects);
 
     useEffect(() => {
-        setLocalProjects(projects);
+        queueMicrotask(() => {
+            setLocalProjects(projects);
+        });
     }, [projects]);
 
     const { menuOpenId, menuPosition, menuRef, closeMenu, toggleMenuByElement } =

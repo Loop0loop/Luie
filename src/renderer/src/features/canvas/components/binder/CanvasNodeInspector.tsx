@@ -290,7 +290,14 @@ function ChapterNodeDetail({ nodeId, projectId, graphData }: ChapterNodeDetailPr
   }, [nodeId]);
 
   useEffect(() => {
-    void loadSummary();
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      void loadSummary();
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [loadSummary]);
 
   const handleGenerateSummary = useCallback(async () => {

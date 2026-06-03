@@ -19,11 +19,56 @@ export function useSettingsEditorPreferences() {
   const [localWordSpacing, setLocalWordSpacing] = useState(wordSpacing);
   const [localParagraphSpacing, setLocalParagraphSpacing] = useState(paragraphSpacing);
 
-  useEffect(() => { setLocalFontSize(fontSize); }, [fontSize]);
-  useEffect(() => { setLocalLineHeight(lineHeight); }, [lineHeight]);
-  useEffect(() => { setLocalLetterSpacing(letterSpacing); }, [letterSpacing]);
-  useEffect(() => { setLocalWordSpacing(wordSpacing); }, [wordSpacing]);
-  useEffect(() => { setLocalParagraphSpacing(paragraphSpacing); }, [paragraphSpacing]);
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setLocalFontSize(fontSize);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [fontSize]);
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setLocalLineHeight(lineHeight);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [lineHeight]);
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setLocalLetterSpacing(letterSpacing);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [letterSpacing]);
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setLocalWordSpacing(wordSpacing);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [wordSpacing]);
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setLocalParagraphSpacing(paragraphSpacing);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [paragraphSpacing]);
 
   return {
     fontSize,

@@ -508,7 +508,7 @@ pnpm run build
 pnpm exec eslint src/main/index.ts src/main/lifecycle/bootstrap.ts src/main/lifecycle/appReady.ts src/main/lifecycle/deepLink.ts src/main/lifecycle/shutdown.ts src/main/handler/index.ts src/main/app/lifecycle/*.ts src/main/app/startup/index.ts src/main/app/windows/index.ts src/main/domains/**/*.ts src/main/infra/database/*.ts src/main/infra/utility-process/index.ts src/main/ipc/**/*.ts src/renderer/src/app/App.tsx src/renderer/src/domains/**/*.ts src/renderer/src/domains/**/*.tsx --ext .ts,.tsx
 ```
 
-확실하지 않습니다: 전체 `pnpm run lint`는 기존 unrelated lint 위반 때문에 실패합니다. Phase 4 변경 파일 대상 lint는 통과했습니다.
+후속 정리: 2026-06-03 기준 전체 `pnpm run lint` 통과 상태로 정리했습니다.
 
 ## Next Cleanup Units
 
@@ -564,4 +564,35 @@ pnpm run build
 - `pnpm run check:target-file-drift` 실행됨. `docs/quality/current-task-packet.json` 없음 경고로 drift enforcement는 skip
 - `pnpm run build` 통과
 
-확실하지 않습니다: 전체 `pnpm run lint`와 changed-file lint는 기존 unrelated lint 위반 때문에 실패합니다. 확인된 기존 위반은 `chapterSummaryProjector.ts`, `embeddingProjector.ts`, `entityRelationMaintenance.ts`의 `no-await-in-loop`와 `useProjectSelector.ts`의 React hook lint입니다.
+후속 품질 정리:
+
+- 2026-06-03 기준 기존 lint 부채를 정리했습니다.
+- `chapterSummaryProjector.ts`, `embeddingProjector.ts`, `entityRelationMaintenance.ts`의 순차 projection 루프는 의도된 순차 처리로 명시했습니다.
+- React effect 내부의 즉시 상태 동기화는 stale microtask 취소를 포함한 microtask 경계로 정리했습니다.
+- `cacheSchemaBootstrap.ts`의 Drizzle bootstrap 캐스팅은 `any` 대신 better-sqlite3 `Database` 타입으로 좁혔습니다.
+
+검증:
+
+```bash
+pnpm run lint
+pnpm run typecheck
+pnpm run check:ipc-contract-map
+pnpm run check:ipc-handler-schemas
+pnpm run check:preload-contract-regression
+pnpm run check:renderer-store-usage
+pnpm run check:core-complexity
+pnpm run check:target-file-drift
+pnpm run build
+```
+
+결과:
+
+- `pnpm run lint` 통과
+- `pnpm run typecheck` 통과
+- `pnpm run check:ipc-contract-map` 통과
+- `pnpm run check:ipc-handler-schemas` 통과
+- `pnpm run check:preload-contract-regression` 통과
+- `pnpm run check:renderer-store-usage` 통과
+- `pnpm run check:core-complexity` 통과
+- `pnpm run check:target-file-drift` 실행됨. `docs/quality/current-task-packet.json` 없음 경고로 drift enforcement는 skip
+- `pnpm run build` 통과

@@ -91,6 +91,7 @@ export class EmbeddingProjector {
     });
     let processed = 0;
 
+    /* eslint-disable no-await-in-loop -- embedding jobs and chunk upserts are serialized to keep claim/update state consistent. */
     for (const job of jobs) {
       const now = new Date().toISOString();
       const claimed = await client
@@ -258,6 +259,7 @@ export class EmbeddingProjector {
           .where(eq(memoryBuildJob.id, job.id));
       }
     }
+    /* eslint-enable no-await-in-loop */
 
     logger.info("Processed embedding jobs", {
       projectId: input.projectId,

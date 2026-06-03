@@ -109,7 +109,14 @@ export function SnapshotList({ chapterId, onOpenSnapshot }: SnapshotListProps) {
   }, [chapterId, t, buildSnapshotItems]);
 
   useEffect(() => {
-    void loadSnapshots();
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      void loadSnapshots();
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [loadSnapshots, chapterId]);
 
   const displayItems = useMemo(
