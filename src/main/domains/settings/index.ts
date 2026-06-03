@@ -1,2 +1,2 @@
-export { settingsManager } from "../../manager/settingsManager.js";
-export type { SettingsManager } from "../../manager/settingsManager.js";
+export { settingsManager } from "../../manager/settings/index.js";
+export type { SettingsManager } from "../../manager/settings/index.js";

@@ -5,15 +5,15 @@
 import { app, BrowserWindow, type BrowserWindowConstructorOptions } from "electron"
 import { join } from "path"
 import windowStateKeeper from "electron-window-state"
-import { createLogger } from "../../shared/logger/index.js"
+import { createLogger } from "../../../shared/logger/index.js"
 import {
   APP_NAME,
   WINDOW_DEFAULT_HEIGHT,
   WINDOW_DEFAULT_WIDTH,
   WINDOW_MIN_HEIGHT,
   WINDOW_MIN_WIDTH,
-} from "../../shared/constants/index.js"
-import { settingsManager } from "./settingsManager.js"
+} from "../../../shared/constants/index.js"
+import { settingsManager } from "../settings/index.js"
 import {
   applyWindowMenuBarMode,
   createSecureWebPreferences,
@@ -22,15 +22,15 @@ import {
   shouldShowMenuBar,
   WINDOW_BACKGROUND_COLOR,
   withWindowIcon,
-} from "./window/windowChrome.js"
+} from "./windowChrome.js"
 import {
   getRendererEnvironment,
-} from "./window/windowRouting.js"
+} from "./windowRouting.js"
 import {
   createExportBrowserWindow,
   createStartupWizardBrowserWindow,
   createWorldGraphBrowserWindow,
-} from "./window/windowSecondaryWindows.js"
+} from "./windowSecondaryWindows.js"
 
 const logger = createLogger("WindowManager")
 

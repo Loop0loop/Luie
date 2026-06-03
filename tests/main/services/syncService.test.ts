@@ -323,7 +323,7 @@ vi.mock("../../../src/main/services/core/projectService.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/manager/settingsManager.js", () => ({
+vi.mock("../../../src/main/manager/settings/index.js", () => ({
   settingsManager: {
     getSyncSettings: () => ({ ...mocked.syncSettings }),
     getRuntimeSupabaseConfig: () => undefined,

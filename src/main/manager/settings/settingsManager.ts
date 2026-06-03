@@ -3,8 +3,8 @@
  */
 
 import Store from "electron-store";
-import { resolveUserDataPath } from "../utils/userDataPath.js";
-import { createLogger } from "../../shared/logger/index.js";
+import { resolveUserDataPath } from "../../utils/userDataPath.js";
+import { createLogger } from "../../../shared/logger/index.js";
 import type {
   AppSettings,
   EditorSettings,
@@ -17,7 +17,7 @@ import type {
   WindowBounds,
   WindowMenuBarMode,
   WindowState,
-} from "../../shared/types/index.js";
+} from "../../../shared/types/index.js";
 import {
   DEFAULT_MENU_BAR_MODE,
   DEFAULT_SHORTCUTS,
@@ -25,12 +25,12 @@ import {
   getDefaultSettings,
   normalizeRuntimeSupabaseConfig,
   sanitizeSyncSettingsForRenderer,
-} from "./settings/settingsDefaults.js";
+} from "./settingsDefaults.js";
 import {
   migrateSettingsStore,
   resolveLegacySettingsPaths,
-} from "./settings/settingsMigration.js";
-import { normalizeSyncSettings } from "./settings/syncSettingsNormalizer.js";
+} from "./settingsMigration.js";
+import { normalizeSyncSettings } from "./syncSettingsNormalizer.js";
 
 const logger = createLogger("SettingsManager");
 

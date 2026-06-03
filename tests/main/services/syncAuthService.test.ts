@@ -41,7 +41,7 @@ vi.mock("electron", async () => {
   };
 });
 
-vi.mock("../../../src/main/manager/settingsManager.js", () => ({
+vi.mock("../../../src/main/manager/settings/index.js", () => ({
   settingsManager: {
     getSyncSettings: () => ({ ...mocked.state }),
     getRuntimeSupabaseConfig: () => undefined,

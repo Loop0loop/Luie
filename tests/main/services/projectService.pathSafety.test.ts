@@ -38,7 +38,7 @@ vi.mock("../../../src/main/database/index.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/manager/settingsManager.js", () => ({
+vi.mock("../../../src/main/manager/settings/index.js", () => ({
   settingsManager: mocked.settingsManager,
 }));
 

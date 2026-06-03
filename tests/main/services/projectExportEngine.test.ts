@@ -152,7 +152,7 @@ vi.mock("../../../src/main/services/io/luieContainer.js", () => ({
   writeLuieContainer: (...args: unknown[]) => mocked.writeLuieContainer(...args),
 }));
 
-vi.mock("../../../src/main/manager/settingsManager.js", () => ({
+vi.mock("../../../src/main/manager/settings/index.js", () => ({
   settingsManager: {
     getAll: () => ({
       snapshotExportLimit: 5,

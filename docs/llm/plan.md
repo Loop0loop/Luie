@@ -158,14 +158,14 @@ async *generateStream() {
 ```
 
 수정 옵션 B — worker에서 provider 타입 체크 후 에러 코드 반환:
-[`ragQaWorker.ts:192`](../src/main/utility/ragQaWorker.ts#L192) `execute`에서
+[`ragQaWorker.ts:192`](../src/main/utility/rag/ragQaWorker.ts#L192) `execute`에서
 `runtime.providerName === "deterministic"` 이면 `RAG_QA_FAILED` emit + 안내 메시지.
 
 ---
 
 ### [X] P3 — RAG QA 로그 강화 (디버깅용)
 
-**파일**: `src/main/utility/ragQaWorker.ts`
+**파일**: `src/main/utility/rag/ragQaWorker.ts`
 
 `execute` 시작에 로그 추가:
 ```typescript

@@ -1,7 +1,7 @@
-import { createLogger } from "../../shared/logger/index.js";
-import type { RagQaRequest } from "../../shared/types/index.js";
-import { db } from "../infra/database/index.js";
-import { cacheDb } from "../infra/database/cache.js";
+import { createLogger } from "../../../shared/logger/index.js";
+import type { RagQaRequest } from "../../../shared/types/index.js";
+import { db } from "../../infra/database/index.js";
+import { cacheDb } from "../../infra/database/cache.js";
 import { spawn, type ChildProcess } from "node:child_process";
 import net from "node:net";
 
@@ -40,7 +40,7 @@ const ensureReady = async (): Promise<void> => {
 
 const getRagQaWorker = async () => {
   if (!ragWorkerPromise) {
-    ragWorkerPromise = import("./ragQaWorker.js").then((mod) => mod.ragQaWorker) as Promise<unknown>;
+    ragWorkerPromise = import("../rag/ragQaWorker.js").then((mod) => mod.ragQaWorker) as Promise<unknown>;
   }
   return (await ragWorkerPromise) as {
     ask: (payload: RagQaRequest) => Promise<unknown>;
@@ -208,7 +208,7 @@ const onMessage = (raw: unknown): void => {
           return;
         }
         if (message.method === "embedding.embed") {
-          const mod = await import("./ragQaWorker.js");
+          const mod = await import("../rag/ragQaWorker.js");
           const result = await mod.embedTexts(message.payload);
           post({ type: "response", requestId: message.requestId, ok: true, result });
           return;

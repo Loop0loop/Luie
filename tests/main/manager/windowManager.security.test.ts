@@ -128,7 +128,7 @@ vi.mock("electron-window-state", () => ({
   }),
 }));
 
-vi.mock("../../../src/main/manager/settingsManager.js", () => ({
+vi.mock("../../../src/main/manager/settings/index.js", () => ({
   settingsManager: {
     getMenuBarMode: () => "visible",
     getEditorSettings: () => ({
@@ -148,7 +148,7 @@ describe("WindowManager security webPreferences", () => {
   });
 
   it("creates the main window with sandboxed preload bridge", async () => {
-    const { windowManager } = await import("../../../src/main/manager/windowManager.js");
+    const { windowManager } = await import("../../../src/main/manager/window/index.js");
     windowManager.createMainWindow();
 
     expect(createdWindowOptions).toHaveLength(1);
@@ -162,7 +162,7 @@ describe("WindowManager security webPreferences", () => {
   });
 
   it("creates the export window with the same sandboxed preload bridge", async () => {
-    const { windowManager } = await import("../../../src/main/manager/windowManager.js");
+    const { windowManager } = await import("../../../src/main/manager/window/index.js");
     windowManager.createExportWindow("chapter-1");
 
     expect(createdWindowOptions).toHaveLength(1);

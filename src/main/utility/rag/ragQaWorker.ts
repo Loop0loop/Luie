@@ -1,4 +1,4 @@
-import { ErrorCode } from "../../shared/constants/errorCode.js";
+import { ErrorCode } from "../../../shared/constants/errorCode.js";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import type {
@@ -7,17 +7,17 @@ import type {
   RagQaResult,
   RagQaRunHandle,
   RagQaStreamPayload,
-} from "../../shared/types/index.js";
-import { createLogger } from "../../shared/logger/index.js";
+} from "../../../shared/types/index.js";
+import { createLogger } from "../../../shared/logger/index.js";
 import {
   resolveModelRuntimeClient,
   resolveEmbeddingRuntimeClient,
-} from "../domains/analysis/index.js";
+} from "../../domains/analysis/index.js";
 import {
   assembleRagContext,
   normalizeCoreAnswer,
-} from "../domains/analysis/index.js";
-import { resolveUserDataPath } from "../utils/userDataPath.js";
+} from "../../domains/analysis/index.js";
+import { resolveUserDataPath } from "../../utils/userDataPath.js";
 
 const logger = createLogger("UtilityRagQaWorker");
 

@@ -22,7 +22,7 @@ current file
 | Current | Target | Migration rule |
 | --- | --- | --- |
 | `src/main/lifecycle/**` | `src/main/app/lifecycle/**` | 문서상 목표. 실제 이동은 후순위 |
-| `src/main/manager/windowManager.ts` | `src/main/app/windows/**` | public singleton 유지 |
+| `src/main/manager/window/**` | `src/main/app/windows/**` | public singleton 유지 |
 | `src/main/handler/**` | `src/main/ipc/**` | handler registration contract 유지 |
 | `src/main/services/core/**` | `src/main/domains/project`, `manuscript` | service public method 유지 |
 | `src/main/services/world/**` | `src/main/domains/world/**` | world entity/relation 계약 유지 |
@@ -166,7 +166,7 @@ pnpm run check:preload-contract-regression
 
 - `src/main/services/core/projectService.ts`는 476 LOC입니다.
 - `src/main/services/core/chapterService.ts`는 361 LOC입니다.
-- `src/main/manager/autoSaveManager.ts`는 492 LOC입니다.
+- `src/main/manager/autoSave/autoSaveManager.ts`는 484 LOC입니다.
 - `src/main/services/features/dbMaintenanceService.ts`는 473 LOC입니다.
 - `src/main/services/features/snapshot/snapshotService.ts`는 411 LOC입니다.
 - `src/main/services/features/snapshot/snapshotArtifacts.ts`는 297 LOC입니다.
@@ -176,7 +176,7 @@ pnpm run check:preload-contract-regression
 - `src/main/services/features/memory/memoryProjectionService.ts`는 231 LOC입니다.
 - `src/main/services/core/project/projectExportEngine.ts`는 170 LOC입니다.
 - `src/main/services/features/sync/syncMapper.ts`는 19 LOC입니다.
-- `src/main/manager/settingsManager.ts`는 450 LOC입니다.
+- `src/main/manager/settings/settingsManager.ts`는 450 LOC입니다.
 - `src/main/services/features/searchService.ts`는 373 LOC입니다.
 - `src/main/services/features/sync/syncLocalApply.ts`는 310 LOC입니다.
 - `src/main/services/features/analysis/analysisStreamRunner.ts`는 415 LOC입니다.
@@ -218,6 +218,8 @@ pnpm run check:preload-contract-regression
 - Drizzle table 정의는 `database/schema/index.ts` 배럴 폴더 아래 foundation/manuscript/search/memory/world/snapshot helper로 분리했습니다.
 - 2026-06-03 후속 정리에서 `src/main/database` 루트 TypeScript 파일은 `index.ts`만 남기고 main/cache/runtime/schema 폴더 entry로 구현 파일을 분리했습니다.
 - 기존 `schema.ts` compatibility entry는 `database/schema/index.ts`로 흡수했고, cache/main/runtime public export는 각각 `database/cache/index.ts`, `database/main/index.ts`, `database/runtime/index.ts`로 제공합니다.
+- 2026-06-03 후속 정리에서 `src/main/manager` 루트 TypeScript 파일은 `index.ts`만 남기고 window/settings/autoSave 구현을 하위 폴더 entry로 분리했습니다.
+- 2026-06-03 후속 정리에서 `src/main/utility` 루트 TypeScript 파일은 `index.ts`만 남기고 utility process 구현과 RAG QA worker를 `utility/process`, `utility/rag`로 분리했습니다.
 - 2026-06-02 기준 `bun run typecheck`, `bun run check:core-complexity`, `bun run check:ipc-handler-schemas`, `bun run check:ipc-contract-map` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/handler/ipcSettingsHandlers.security.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncService.test.ts` 통과.
@@ -480,7 +482,7 @@ src/renderer/src/styles/global.css
 
 - `src/main/app/**`, `src/main/ipc/**`, `src/main/domains/**`, `src/main/infra/**`에 target entry를 추가합니다.
 - `src/renderer/src/domains/**`에 renderer domain compatibility entry를 추가합니다.
-- 기존 `src/main/lifecycle/**`, `src/main/handler/**`, `src/main/services/**`, `src/main/database/**`, `src/main/utility/**` public import 경로는 유지합니다.
+- 기존 `src/main/lifecycle/**`, `src/main/handler/**`, `src/main/services/**`, `src/main/database/**` public import 경로는 유지합니다. `src/main/manager/**`, `src/main/utility/**`는 후속 root cleanup에서 폴더 entry 기준으로 정리했습니다.
 - 기존 `src/renderer/src/features/**` public import 경로는 유지합니다.
 - main bootstrap/lifecycle/handler의 안전한 내부 import 일부가 새 target entry를 사용합니다.
 - renderer app shell의 안전한 내부 import 일부가 새 domain entry를 사용합니다.

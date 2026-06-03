@@ -1,7 +1,7 @@
 /** Auto-save orchestration: debounce, mirror safety, snapshot scheduling, and shutdown flush. */
 
 import { EventEmitter } from "events";
-import { createLogger } from "../../shared/logger/index.js";
+import { createLogger } from "../../../shared/logger/index.js";
 import {
   DEFAULT_AUTO_SAVE_DEBOUNCE_MS,
   DEFAULT_AUTO_SAVE_INTERVAL_MS,
@@ -10,7 +10,7 @@ import {
   EMERGENCY_SNAPSHOT_MAX_LENGTH,
   EMERGENCY_SNAPSHOT_INTERVAL_MS,
   SNAPSHOT_INTERVAL_MS,
-} from "../../shared/constants/index.js";
+} from "../../../shared/constants/index.js";
 import {
   AutoSaveMirrorStore,
   clearProjectState,
@@ -34,18 +34,18 @@ import {
   type AutoSaveRuntimeStats,
   type PendingSave,
   type SnapshotJob,
-} from "./autoSave/index.js";
+} from "./helpers.js";
 
 const logger = createLogger("AutoSaveManager");
 
 const loadChapterService = async () =>
-  (await import("../domains/manuscript/index.js")).chapterService;
+  (await import("../../domains/manuscript/index.js")).chapterService;
 
 const loadSnapshotService = async () =>
-  (await import("../domains/recovery/index.js"))
+  (await import("../../domains/recovery/index.js"))
     .snapshotService;
 
-const loadDb = async () => (await import("../infra/database/index.js")).db;
+const loadDb = async () => (await import("../../infra/database/index.js")).db;
 
 export class AutoSaveManager extends EventEmitter {
   private static instance: AutoSaveManager;

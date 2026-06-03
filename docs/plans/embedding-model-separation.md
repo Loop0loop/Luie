@@ -47,7 +47,7 @@ LLM 구동 시 Electron utility helper 프로세스가 6GB+ RAM을 점유하고 
 - 검증: 다운로드 → 파일 존재 + sha 일치 + 설정에 경로 기록.
 
 ### Task 2 — settings: 임베딩 모델 경로 배선
-파일: `src/main/manager/settingsManager.ts`
+파일: `src/main/manager/settings/settingsManager.ts`
 - `getLlmSettings()` / `setLlmSettings()`에 `defaultEmbeddingModelPath`, `defaultEmbeddingModelId` 필드 추가.
 - 검증: set 후 get 라운드트립, settings.json 기록.
 

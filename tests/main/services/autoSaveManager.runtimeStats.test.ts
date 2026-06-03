@@ -56,7 +56,7 @@ describe("AutoSaveManager runtime stats", () => {
 
   it("records scheduling and save completion counters", async () => {
     const { autoSaveManager } =
-      await import("../../../src/main/manager/autoSaveManager.js");
+      await import("../../../src/main/manager/autoSave/index.js");
     const before = autoSaveManager.getRuntimeStats();
 
     autoSaveManager.setConfig("project-1", {
@@ -84,7 +84,7 @@ describe("AutoSaveManager runtime stats", () => {
 
   it("records duplicate trigger and reschedule for same chapter/content", async () => {
     const { autoSaveManager } =
-      await import("../../../src/main/manager/autoSaveManager.js");
+      await import("../../../src/main/manager/autoSave/index.js");
     const before = autoSaveManager.getRuntimeStats();
 
     autoSaveManager.setConfig("project-2", {

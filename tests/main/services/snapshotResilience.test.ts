@@ -10,7 +10,7 @@ import { db } from "../../../src/main/database/index.js";
 import { projectService } from "../../../src/main/services/core/projectService.js";
 import { chapterService } from "../../../src/main/services/core/chapterService.js";
 import { snapshotService } from "../../../src/main/services/features/snapshot/snapshotService.js";
-import { autoSaveManager } from "../../../src/main/manager/autoSaveManager.js";
+import { autoSaveManager } from "../../../src/main/manager/autoSave/index.js";
 import * as snapshotArtifacts from "../../../src/main/services/features/snapshot/snapshotArtifacts.js";
 import { probeLuieContainer } from "../../../src/main/services/io/luieContainer.js";
 import {

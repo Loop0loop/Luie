@@ -27,7 +27,7 @@ const getLocalLlmSettingsMock = vi.fn().mockReturnValue({
   binaryPath: "/tmp/bin/llama-server",
 });
 
-vi.mock("../../../src/main/manager/settingsManager.js", () => {
+vi.mock("../../../src/main/manager/settings/index.js", () => {
   return {
     settingsManager: {
       getLocalLlmSettings: getLocalLlmSettingsMock,
@@ -36,7 +36,7 @@ vi.mock("../../../src/main/manager/settingsManager.js", () => {
   };
 });
 
-vi.mock("../../manager/settingsManager.js", () => {
+vi.mock("../../manager/settings/index.js", () => {
   return {
     settingsManager: {
       getLocalLlmSettings: getLocalLlmSettingsMock,

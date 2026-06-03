@@ -6,7 +6,7 @@ const mocked = vi.hoisted(() => ({
   ensureStarted: vi.fn(),
 }));
 
-vi.mock("../../../src/main/manager/settingsManager.js", () => ({
+vi.mock("../../../src/main/manager/settings/index.js", () => ({
   settingsManager: {
     getLlmSettings: mocked.getLlmSettings,
     getLocalLlmSettings: mocked.getLocalLlmSettings,

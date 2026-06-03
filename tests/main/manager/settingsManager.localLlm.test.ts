@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { settingsManager } from "../../../src/main/manager/settingsManager.js";
+import { settingsManager } from "../../../src/main/manager/settings/index.js";
 
 describe("SettingsManager localLlm settings", () => {
   beforeEach(() => {

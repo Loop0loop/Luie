@@ -6,7 +6,7 @@ import { memoryProjectionService } from "./memory/memoryProjectionService.js";
 
 const logger = createLogger("DerivedJobWorker");
 const loadAutoSaveManager = async () =>
-  (await import("../../manager/autoSaveManager.js")).autoSaveManager;
+  (await import("../../manager/autoSave/index.js")).autoSaveManager;
 const isStressMode =
   process.env.LUIE_E2E_STRESS_MODE === "1" ||
   process.env.LUIE_DERIVED_STRESS_MODE === "1";

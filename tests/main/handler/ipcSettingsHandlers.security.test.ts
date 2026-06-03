@@ -92,7 +92,7 @@ vi.mock("electron", () => ({
   },
 }));
 
-vi.mock("../../../src/main/manager/settingsManager.js", () => ({
+vi.mock("../../../src/main/manager/settings/index.js", () => ({
   settingsManager: mocked.settingsManager,
 }));
 
@@ -100,7 +100,7 @@ vi.mock("../../../src/main/lifecycle/menu.js", () => ({
   applyApplicationMenu: vi.fn(),
 }));
 
-vi.mock("../../../src/main/manager/windowManager.js", () => ({
+vi.mock("../../../src/main/manager/window/index.js", () => ({
   windowManager: {
     applySpellCheckSettingToAllWindows: vi.fn(),
   },

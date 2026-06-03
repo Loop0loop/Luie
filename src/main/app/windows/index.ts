@@ -1,1 +1,1 @@
-export { windowManager } from "../../manager/windowManager.js";
+export { windowManager } from "../../manager/window/index.js";

@@ -29,7 +29,7 @@ const {
 } = schema;
 
 const loadAutoSaveManager = async () =>
-  (await import("../../manager/autoSaveManager.js")).autoSaveManager;
+  (await import("../../manager/autoSave/index.js")).autoSaveManager;
 
 const loadAppearanceCacheService = async () =>
   (await import("../world/appearanceCacheService.js")).appearanceCacheService;

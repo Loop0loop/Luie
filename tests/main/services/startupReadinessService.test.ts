@@ -84,7 +84,7 @@ vi.mock("../../../src/main/database/cache/index.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/manager/settingsManager.js", () => ({
+vi.mock("../../../src/main/manager/settings/index.js", () => ({
   settingsManager: {
     getStartupSettings: () => ({ completedAt: mocked.startup.completedAt }),
     setStartupCompletedAt: (value: string) => {

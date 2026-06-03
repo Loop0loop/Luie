@@ -19,9 +19,13 @@
 - `src/main/database/main/databaseService.ts`
 - `src/main/database/cache/cacheDb.ts`
 - `src/main/database/runtime/index.ts`
-- `src/main/manager/windowManager.ts`
-- `src/main/manager/settingsManager.ts`
-- `src/main/manager/autoSaveManager.ts`
+- `src/main/manager/index.ts`
+- `src/main/manager/window/windowManager.ts`
+- `src/main/manager/settings/settingsManager.ts`
+- `src/main/manager/autoSave/autoSaveManager.ts`
+- `src/main/utility/index.ts`
+- `src/main/utility/process/utilityProcessMain.ts`
+- `src/main/utility/rag/ragQaWorker.ts`
 - `src/main/services/**`
 
 ## 현재 역할
@@ -49,6 +53,9 @@
 | `src/main/handler/system` | `src/main/handler/system/index.ts` | system handler 등록 진입점 유지 |
 | `src/main/handler/world` | `src/main/handler/world/index.ts` | world handler 등록 진입점 유지 |
 | `src/main/manager/autoSave` | `src/main/manager/autoSave/index.ts` | autoSave helper 배럴 추가 |
+| `src/main/manager/settings` | `src/main/manager/settings/index.ts` | settings singleton/helper 배럴 추가 |
+| `src/main/manager/window` | `src/main/manager/window/index.ts` | window singleton/helper 배럴 추가 |
+| `src/main/utility` | `src/main/utility/index.ts` | utility process build entry 유지 |
 | `src/main/services/llm` | `src/main/services/llm/index.ts` | LLM service/helper 배럴 추가 |
 | `src/main/utils` | `src/main/utils/index.ts` | main utility 배럴 추가 |
 | `src/main/services/features/sync` | `src/main/services/features/sync/index.ts` | sync public service 배럴 추가 |
@@ -125,6 +132,10 @@ index.ts
 | 없음 | - |
 
 사실: `src/main/database` 루트 TypeScript 파일은 `index.ts`만 남기고, database 구현은 `main/`, `cache/`, `runtime/`, `schema/` 하위 폴더 entry로 분리했습니다.
+
+사실: `src/main/manager` 루트 TypeScript 파일은 `index.ts`만 남기고, window/settings/autoSave singleton 구현은 각 하위 폴더 entry로 분리했습니다.
+
+사실: `src/main/utility` 루트 TypeScript 파일은 `index.ts`만 남기고, utility process entry 구현과 RAG QA worker는 `process/`, `rag/` 하위 폴더로 분리했습니다.
 
 | Database area | 책임 | Entry |
 | --- | --- | --- |
@@ -222,11 +233,22 @@ index.ts
 | `mapper/entityMerge.ts` | timestamp/latest 선택과 일반 entity/world doc merge | 69 |
 | `mapper/bundle.ts` | empty SyncBundle factory | 14 |
 
-사실: `src/main/manager/settingsManager.ts`는 settings store API만 유지하도록 축소되어 450 LOC입니다. 레거시 설정 파일/윈도우/LLM migration은 `manager/settings/settingsMigration.ts`로 분리했습니다.
+사실: `src/main/manager/settings/settingsManager.ts`는 settings store API만 유지하도록 축소되어 450 LOC입니다. 레거시 설정 파일/윈도우/LLM migration은 `manager/settings/settingsMigration.ts`로 분리했습니다.
 
 | Settings manager helper | 책임 | LOC |
 | --- | --- | ---: |
+| `settings/index.ts` | settings singleton/helper 배럴 export | 4 |
 | `settings/settingsMigration.ts` | legacy settings path 계산, legacy file/window/LLM migration | 125 |
+
+사실: manager와 utility의 루트 source entry는 public export/build entry만 조립합니다.
+
+| Area | Entry | 구현 |
+| --- | --- | --- |
+| manager root | `src/main/manager/index.ts` | `manager/window/index.ts`, `manager/settings/index.ts`, `manager/autoSave/index.ts` re-export |
+| window manager | `src/main/manager/window/index.ts` | `window/windowManager.ts`, window helper |
+| auto-save manager | `src/main/manager/autoSave/index.ts` | `autoSave/autoSaveManager.ts`, `autoSave/helpers.ts` |
+| utility process | `src/main/utility/index.ts` | `utility/process/utilityProcessMain.ts` side-effect entry |
+| RAG QA worker | - | `utility/rag/ragQaWorker.ts` |
 
 사실: `src/main/services/features/searchService.ts`는 통합 검색 service API와 DB result mapping만 유지하도록 축소되어 373 LOC입니다. Memory chunk token/FTS fallback/vector/RRF helper는 `features/search/index.ts` 배럴 폴더로 분리했습니다.
 

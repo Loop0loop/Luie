@@ -98,7 +98,7 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve("src/main/index.ts"),
-          utilityProcessMain: resolve("src/main/utility/utilityProcessMain.ts"),
+          utilityProcessMain: resolve("src/main/utility/index.ts"),
         },
         external: mainExternal,
         output: {
