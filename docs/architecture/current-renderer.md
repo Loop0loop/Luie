@@ -133,7 +133,6 @@ renderer API 접근
 - `src/renderer/src/i18n/locales/ja/base.ts`
 - `src/renderer/src/i18n/locales/en/base.ts`
 - `src/renderer/src/styles/global.css`
-- `src/renderer/src/features/project/hooks/useFileImport.ts`
 - `src/renderer/src/i18n/locales/*/workspace.ts`
 
 사실: `src/renderer/src/features/editor/components/EditorToolbar.tsx`는 editor toolbar shell과 TipTap command wiring만 유지하도록 축소되어 300 LOC입니다. 분리된 helper는 `editor/components/toolbar/index.ts` 배럴을 통해 제공합니다.
@@ -236,6 +235,13 @@ renderer API 접근
 | `graphSurfaceParts/constants.ts` | React Flow options, layout constants, edge focus defaults | 13 |
 | `graphSurfaceParts/index.ts` | graph surface helper 배럴 export | 13 |
 
+사실: `src/renderer/src/features/project/hooks/useFileImport.ts`는 `.luie` import orchestration, retry, rollback, store coordination만 유지하도록 축소되어 407 LOC입니다. world character/term collection schema validation과 import input normalization은 `project/hooks/fileImport/index.ts` 배럴을 통해 제공합니다.
+
+| File import helper | 책임 | LOC |
+| --- | --- | ---: |
+| `fileImport/worldCollections.ts` | `.luie` world character/term collection read, schema validation, import input normalization | 130 |
+| `fileImport/index.ts` | file import helper 배럴 export | 6 |
+
 ## 위험 지점
 
 의견:
@@ -249,6 +255,7 @@ renderer API 접근
 - `ModelTab.tsx`와 `modelTabSections/**`는 local LLM, embedding, llmfit, API key 설정 UI 계약이 한 화면에서 맞물립니다.
 - `CanvasActivityShell.tsx`와 `canvasActivityShellParts/**`는 canvas explorer shell, graph mode sidebar, demo toast action 계약이 맞물립니다.
 - `GraphSurface.tsx`와 `graphSurfaceParts/**`는 React Flow graph data pipeline, focus sync, overlay rendering 계약이 맞물립니다.
+- `useFileImport.ts`와 `fileImport/**`는 `.luie` package import, rollback, retry, world collection normalization 계약이 맞물립니다.
 - `CanvasNodeInspector.tsx`의 직접 `window.api` memory 호출은 API 경계 예외입니다.
 
 ## 보존 불가침 경계

@@ -15,9 +15,6 @@ import {
   LUIE_PACKAGE_FORMAT,
   LUIE_PACKAGE_META_FILENAME,
   LUIE_MANUSCRIPT_DIR,
-  LUIE_WORLD_DIR,
-  LUIE_WORLD_CHARACTERS_FILE,
-  LUIE_WORLD_TERMS_FILE,
   MARKDOWN_EXTENSION,
 } from "@shared/constants";
 import {
@@ -27,6 +24,10 @@ import {
   type LuieImportRetryState,
 } from "./fileImportRetryPolicy";
 import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
+import {
+  readCharacterImportInputs,
+  readTermImportInputs,
+} from "./fileImport";
 
 const LuieMetaSchema = z
   .object({
@@ -43,18 +44,6 @@ const LuieMetaSchema = z
         }),
       )
       .optional(),
-  })
-  .passthrough();
-
-const WorldCharactersSchema = z
-  .object({
-    characters: z.array(z.record(z.string(), z.unknown())).optional(),
-  })
-  .passthrough();
-
-const WorldTermsSchema = z
-  .object({
-    terms: z.array(z.record(z.string(), z.unknown())).optional(),
   })
   .passthrough();
 
@@ -254,104 +243,16 @@ export function useFileImport(currentProject: Project | null) {
           });
         }
 
-        const characterInputs: Array<{
-          projectId: string;
-          name: string;
-          description?: string;
-          firstAppearance?: string;
-          attributes?: Record<string, unknown>;
-        }> = [];
-        if (characters.length === 0) {
-          const charactersResult = await api.fs.readLuieEntry(
-            path,
-            `${LUIE_WORLD_DIR}/${LUIE_WORLD_CHARACTERS_FILE}`,
-          );
-          if (!charactersResult.success) {
-            throw new Error(
-              `LUIE_IMPORT_CHARACTERS_READ_FAILED:${charactersResult.error?.code ?? "UNKNOWN_ERROR"}`,
-            );
-          }
-          if (charactersResult.data) {
-            const parsedCharacters = WorldCharactersSchema.safeParse(
-              JSON.parse(charactersResult.data),
-            );
-            if (!parsedCharacters.success) {
-              throw new Error("LUIE_IMPORT_CHARACTERS_INVALID_FORMAT");
-            }
-            const list = parsedCharacters.data.characters ?? [];
-            for (const character of list) {
-              const name =
-                typeof character.name === "string"
-                  ? character.name
-                  : i18n.t("project.defaults.untitled");
-              characterInputs.push({
-                projectId,
-                name,
-                description:
-                  typeof character.description === "string"
-                    ? character.description
-                    : undefined,
-                firstAppearance:
-                  typeof character.firstAppearance === "string"
-                    ? character.firstAppearance
-                    : undefined,
-                attributes:
-                  typeof character.attributes === "object" &&
-                  character.attributes !== null
-                    ? (character.attributes as Record<string, unknown>)
-                    : undefined,
-              });
-            }
-          }
-        }
-
-        const termInputs: Array<{
-          projectId: string;
-          term: string;
-          definition?: string;
-          category?: string;
-          firstAppearance?: string;
-        }> = [];
-        if (terms.length === 0) {
-          const termsResult = await api.fs.readLuieEntry(
-            path,
-            `${LUIE_WORLD_DIR}/${LUIE_WORLD_TERMS_FILE}`,
-          );
-          if (!termsResult.success) {
-            throw new Error(
-              `LUIE_IMPORT_TERMS_READ_FAILED:${termsResult.error?.code ?? "UNKNOWN_ERROR"}`,
-            );
-          }
-          if (termsResult.data) {
-            const parsedTerms = WorldTermsSchema.safeParse(
-              JSON.parse(termsResult.data),
-            );
-            if (!parsedTerms.success) {
-              throw new Error("LUIE_IMPORT_TERMS_INVALID_FORMAT");
-            }
-            const list = parsedTerms.data.terms ?? [];
-            for (const term of list) {
-              const termText =
-                typeof term.term === "string"
-                  ? term.term
-                  : i18n.t("project.defaults.untitled");
-              termInputs.push({
-                projectId,
-                term: termText,
-                definition:
-                  typeof term.definition === "string"
-                    ? term.definition
-                    : undefined,
-                category:
-                  typeof term.category === "string" ? term.category : undefined,
-                firstAppearance:
-                  typeof term.firstAppearance === "string"
-                    ? term.firstAppearance
-                    : undefined,
-              });
-            }
-          }
-        }
+        const characterInputs = await readCharacterImportInputs(
+          path,
+          projectId,
+          characters.length > 0,
+        );
+        const termInputs = await readTermImportInputs(
+          path,
+          projectId,
+          terms.length > 0,
+        );
 
         if (activeProjectIdRef.current !== projectId) {
           return;
