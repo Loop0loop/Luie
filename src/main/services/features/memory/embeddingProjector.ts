@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
-import { db } from "../../../database/index.js";
-import { memoryBuildJob, memoryChunk, memoryEmbedding } from "../../../database/schema.js";
+import { db } from "../../../infra/database/index.js";
+import { memoryBuildJob, memoryChunk, memoryEmbedding } from "../../../infra/database/index.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import { utilityProcessBridge } from "../utility/utilityProcessBridge.js";
 import { MEMORY_JOB_TYPES } from "./memoryJobConstants.js";

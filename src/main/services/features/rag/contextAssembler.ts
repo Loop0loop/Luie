@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import type { AnyColumn, SQLWrapper } from "drizzle-orm";
-import { db } from "../../../database/index.js";
+import { db } from "../../../infra/database/index.js";
 import {
   chapter,
   chapterSummary,
@@ -12,7 +12,7 @@ import {
   plot,
   synopsis,
   term,
-} from "../../../database/schema.js";
+} from "../../../infra/database/index.js";
 import { searchService } from "../searchService.js";
 import type { RagQaEvidence } from "../../../../shared/types/index.js";
 import { escapeLike } from "../../../utils/queryHelpers.js";

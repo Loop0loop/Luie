@@ -17,7 +17,7 @@ import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useShallow } from "zustand/react/shallow";
 import { useTranslation } from "react-i18next";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
-import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { useEditorStore } from "@renderer/domains/editor";
 import StatusFooter from "@shared/ui/StatusFooter";
 import {
   getLayoutSurfaceConfig,

@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
-import { db } from "../../../database/index.js";
-import * as schema from "../../../database/schema.js";
+import { db } from "../../../infra/database/index.js";
+import * as schema from "../../../infra/database/index.js";
 import { ErrorCode } from "../../../../shared/constants/index.js";
 import type { ProjectDeleteInput } from "../../../../shared/types/index.js";
-import { settingsManager } from "../../../manager/settingsManager.js";
+import { settingsManager } from "../../../domains/settings/index.js";
 import { ServiceError } from "../../../utils/serviceError.js";
 import {
   deleteProjectPackageFileIfRequested,

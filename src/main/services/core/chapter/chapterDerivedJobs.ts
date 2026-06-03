@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { sql } from "drizzle-orm";
-import { db } from "../../../database/index.js";
+import { db } from "../../../infra/database/index.js";
 import {
   MEMORY_JOB_PRIORITY,
   MEMORY_JOB_TYPES,

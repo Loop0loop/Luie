@@ -1,10 +1,10 @@
 import crypto from "node:crypto";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
-import { db } from "../../../database/index.js";
+import { db } from "../../../infra/database/index.js";
 import {
   memoryBuildJob,
   memoryChunk,
-} from "../../../database/schema.js";
+} from "../../../infra/database/index.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import { MEMORY_JOB_TYPES, MEMORY_TARGET_TYPES } from "./memoryJobConstants.js";
 import {

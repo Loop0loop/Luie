@@ -1,8 +1,8 @@
 import { and, asc, count, desc, eq, inArray, isNull, like, sql } from "drizzle-orm";
-import { db } from "../../database/index.js";
-import { cacheDb } from "../../database/cacheDb.js";
-import { chapterSearchDocument } from "../../database/cacheSchema.js";
-import { chapter, chapterBody } from "../../database/schema.js";
+import { db } from "../../infra/database/index.js";
+import { cacheDb } from "../../infra/database/cache.js";
+import { chapterSearchDocument } from "../../infra/database/cache.js";
+import { chapter, chapterBody } from "../../infra/database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
 
 const getCacheClient = () => cacheDb.getClient();

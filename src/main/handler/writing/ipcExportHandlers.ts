@@ -5,7 +5,7 @@
 
 import { dialog } from "electron";
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
-import { exportService, type ExportOptions, type ExportResult } from "../../services/features/exportService.js";
+import { exportService, type ExportOptions, type ExportResult } from "../../domains/export/index.js";
 import sanitize from "sanitize-filename";
 import { exportCreateArgsSchema } from "../../../shared/schemas/index.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";

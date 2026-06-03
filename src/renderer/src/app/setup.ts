@@ -8,7 +8,7 @@ import {
 } from "@shared/constants/configs";
 import { editorSettingsSchema } from "@shared/schemas/index.js";
 import { api } from "@shared/api";
-import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { useEditorStore } from "@renderer/domains/editor";
 
 /**
  * Register a global unhandledrejection listener so that Promise rejections

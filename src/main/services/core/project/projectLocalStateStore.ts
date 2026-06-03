@@ -1,7 +1,7 @@
 import { eq, inArray } from "drizzle-orm";
-import { db } from "../../../database/index.js";
-import * as schema from "../../../database/schema.js";
-import type { MainDrizzleClient } from "../../../database/databaseTypes.js";
+import { db } from "../../../infra/database/index.js";
+import * as schema from "../../../infra/database/index.js";
+import type { MainDrizzleClient } from "../../../infra/database/index.js";
 
 const { projectLocalState } = schema;
 

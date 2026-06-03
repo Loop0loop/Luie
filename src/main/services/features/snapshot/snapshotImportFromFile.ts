@@ -3,8 +3,8 @@ import path from "path";
 import { randomUUID } from "node:crypto";
 import { app } from "electron";
 import { eq } from "drizzle-orm";
-import { db } from "../../../database/index.js";
-import * as schema from "../../../database/schema.js";
+import { db } from "../../../infra/database/index.js";
+import * as schema from "../../../infra/database/index.js";
 import {
   DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
   LUIE_PACKAGE_CONTAINER_DIR,

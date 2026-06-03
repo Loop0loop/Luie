@@ -17,7 +17,7 @@ import { GoogleDocsRightPanel } from "./GoogleDocsRightPanel";
 import type { GoogleDocsLayoutProps } from "./googleDocsLayout.types";
 import { useGoogleDocsLayoutState } from "./useGoogleDocsLayoutState";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
-import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { useEditorStore } from "@renderer/domains/editor";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
 import { suppressLayoutPersistenceFor } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import { SidebarHoverStrip } from "@renderer/features/workspace/components/SidebarHoverStrip";

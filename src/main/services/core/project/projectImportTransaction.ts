@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { db } from "../../../database/index.js";
-import * as schema from "../../../database/schema.js";
+import { db } from "../../../infra/database/index.js";
+import * as schema from "../../../infra/database/index.js";
 import { DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS } from "../../../../shared/constants/index.js";
 import { WORLD_SCRAP_MEMOS_SCHEMA_VERSION } from "../../../../shared/constants/persistence.js";
 import { normalizeWorldScrapPayload } from "../../../../shared/world/worldDocumentCodec.js";

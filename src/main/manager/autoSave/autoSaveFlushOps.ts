@@ -1,10 +1,10 @@
 import { DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT } from "../../../shared/constants/index.js";
 
 const loadChapterService = async () =>
-  (await import("../../services/core/chapterService.js")).chapterService;
+  (await import("../../domains/manuscript/index.js")).chapterService;
 
 const loadSnapshotService = async () =>
-  (await import("../../services/features/snapshot/snapshotService.js"))
+  (await import("../../domains/recovery/index.js"))
     .snapshotService;
 
 type LoggerLike = {

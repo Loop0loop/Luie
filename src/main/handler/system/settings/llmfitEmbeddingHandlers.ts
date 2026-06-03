@@ -7,7 +7,7 @@ import {
   invalidateModelRuntimeCache,
   llmfitInstaller,
   llmfitService,
-} from "../../../services/llm/index.js";
+} from "../../../domains/settings/llm.js";
 
 type EmbeddingDownloadStage = "downloading" | "complete" | "error";
 

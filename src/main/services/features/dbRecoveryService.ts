@@ -10,7 +10,7 @@ import type {
   DbRecoveryResult,
   DbRecoveryStatus,
 } from "../../../shared/types/index.js";
-import { db } from "../../database/index.js";
+import { db } from "../../infra/database/index.js";
 
 const logger = createLogger("DbRecoveryService");
 const getRecoveryBackupRootDir = () =>

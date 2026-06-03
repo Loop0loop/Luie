@@ -2,8 +2,8 @@ import { app } from "electron";
 import * as fs from "fs/promises";
 import path from "path";
 import { eq } from "drizzle-orm";
-import { db } from "../../../database/index.js";
-import { project } from "../../../database/schema.js";
+import { db } from "../../../infra/database/index.js";
+import { project } from "../../../infra/database/index.js";
 import {
   ErrorCode,
   SNAPSHOT_BACKUP_DIR,

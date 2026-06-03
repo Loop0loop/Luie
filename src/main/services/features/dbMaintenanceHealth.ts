@@ -1,8 +1,8 @@
 import crypto from "node:crypto";
 import { sql } from "drizzle-orm";
-import type { MainDrizzleClient } from "../../database/databaseTypes.js";
-import { chapterBody } from "../../database/schema.js";
-import { ENTITY_RELATION_WORLD_TYPES } from "../../database/entityRelationPointerSql.js";
+import type { MainDrizzleClient } from "../../infra/database/index.js";
+import { chapterBody } from "../../infra/database/index.js";
+import { ENTITY_RELATION_WORLD_TYPES } from "../../infra/database/index.js";
 
 function hash(input: string): string {
   return crypto.createHash("sha256").update(input).digest("hex");

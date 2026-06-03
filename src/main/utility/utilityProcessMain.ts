@@ -1,7 +1,7 @@
 import { createLogger } from "../../shared/logger/index.js";
 import type { RagQaRequest } from "../../shared/types/index.js";
-import { db } from "../database/index.js";
-import { cacheDb } from "../database/cacheDb.js";
+import { db } from "../infra/database/index.js";
+import { cacheDb } from "../infra/database/cache.js";
 import { spawn, type ChildProcess } from "node:child_process";
 import net from "node:net";
 

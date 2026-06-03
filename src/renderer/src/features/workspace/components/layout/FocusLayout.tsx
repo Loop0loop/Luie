@@ -2,7 +2,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { cn } from "@shared/types/utils";
-import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { useEditorStore } from "@renderer/domains/editor";
 
 interface FocusLayoutProps {
   children: ReactNode;

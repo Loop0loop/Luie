@@ -1,7 +1,7 @@
 import { SNAPSHOT_KEEP_COUNT } from "../../../shared/constants/index.js";
 
 const loadSnapshotService = async () =>
-  (await import("../../services/features/snapshot/snapshotService.js"))
+  (await import("../../domains/recovery/index.js"))
     .snapshotService;
 
 export type SnapshotJob = {

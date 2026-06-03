@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
-import { cacheDb } from "../../database/cacheDb.js";
-import { characterAppearance, termAppearance } from "../../database/cacheSchema.js";
+import { cacheDb } from "../../infra/database/cache.js";
+import { characterAppearance, termAppearance } from "../../infra/database/cache.js";
 
 const getCacheClient = () => cacheDb.getClient();
 

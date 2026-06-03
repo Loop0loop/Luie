@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, isNull } from "drizzle-orm";
-import { db } from "../../../../database/index.js";
-import * as schema from "../../../../database/schema.js";
+import { db } from "../../../../infra/database/index.js";
+import * as schema from "../../../../infra/database/index.js";
 import type { ProjectExportRecord } from "../../../../../shared/types/index.js";
 import {
   toChapterExportDto,

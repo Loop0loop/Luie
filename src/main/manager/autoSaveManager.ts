@@ -39,13 +39,13 @@ import {
 const logger = createLogger("AutoSaveManager");
 
 const loadChapterService = async () =>
-  (await import("../services/core/chapterService.js")).chapterService;
+  (await import("../domains/manuscript/index.js")).chapterService;
 
 const loadSnapshotService = async () =>
-  (await import("../services/features/snapshot/snapshotService.js"))
+  (await import("../domains/recovery/index.js"))
     .snapshotService;
 
-const loadDb = async () => (await import("../database/index.js")).db;
+const loadDb = async () => (await import("../infra/database/index.js")).db;
 
 export class AutoSaveManager extends EventEmitter {
   private static instance: AutoSaveManager;

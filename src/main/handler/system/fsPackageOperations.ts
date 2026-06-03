@@ -18,12 +18,10 @@ import { assertAllowedFsPath, approvePathForSession } from "./fsPathApproval.js"
 import {
   normalizeLuieMetaForWrite,
   parseObjectJson,
-} from "../../services/io/luiePackageIntegrity.js";
-import {
   probeLuieContainer,
   writeLuieContainer,
-} from "../../services/io/luieContainer.js";
-import { writeLuieSqliteEntry } from "../../services/io/luieSqliteContainer.js";
+  writeLuieSqliteEntry,
+} from "../../infra/filesystem/index.js";
 
 const assertLuiePackagePath = (packagePath: string, fieldName: string): void => {
   if (!packagePath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {

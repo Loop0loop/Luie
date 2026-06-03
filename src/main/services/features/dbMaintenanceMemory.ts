@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
-import type { MainDrizzleClient } from "../../database/databaseTypes.js";
+import type { MainDrizzleClient } from "../../infra/database/index.js";
 import {
   character,
   chapter,
@@ -12,7 +12,7 @@ import {
   scene,
   scrapMemo,
   synopsis,
-} from "../../database/schema.js";
+} from "../../infra/database/index.js";
 import {
   MEMORY_JOB_PRIORITY,
   MEMORY_JOB_TYPES,

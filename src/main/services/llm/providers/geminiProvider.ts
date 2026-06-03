@@ -3,7 +3,7 @@ import type { GenerateOptions, ModelRuntimeClient } from "../modelRuntimeClient.
 import { isAppPackaged } from "../../../utils/appEnv.js";
 import { getSupabaseConfig } from "../../features/sync/supabaseEnv.js";
 import { ensureSyncAccessToken } from "../../features/sync/syncAccessToken.js";
-import { settingsManager } from "../../../manager/settingsManager.js";
+import { settingsManager } from "../../../domains/settings/index.js";
 
 type GeminiConfig = {
   apiKey: string;

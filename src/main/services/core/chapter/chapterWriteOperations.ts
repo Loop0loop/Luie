@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
-import { db } from "../../../database/index.js";
-import { chapter, chapterRevision } from "../../../database/schema.js";
+import { db } from "../../../infra/database/index.js";
+import { chapter, chapterRevision } from "../../../infra/database/index.js";
 import { ErrorCode } from "../../../../shared/constants/index.js";
 import type {
   ChapterCreateInput,

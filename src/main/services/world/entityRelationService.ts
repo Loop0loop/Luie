@@ -14,8 +14,8 @@ import type {
 } from "../../../shared/types/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import { projectService } from "../core/projectService.js";
-import { db } from "../../database/index.js";
-import { entityRelation } from "../../database/schema.js";
+import { db } from "../../infra/database/index.js";
+import { entityRelation } from "../../infra/database/index.js";
 import { buildWorldGraph } from "./entityRelationGraph.js";
 import {
     cleanupOrphanRelationsAcrossProjects,

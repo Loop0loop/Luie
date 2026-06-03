@@ -2,8 +2,8 @@ import { eq } from "drizzle-orm";
 import { promises as fs } from "fs";
 import { randomUUID } from "node:crypto";
 import type { z } from "zod";
-import { db } from "../../../database/index.js";
-import * as schema from "../../../database/schema.js";
+import { db } from "../../../infra/database/index.js";
+import * as schema from "../../../infra/database/index.js";
 import {
   ErrorCode,
   LUIE_PACKAGE_EXTENSION,

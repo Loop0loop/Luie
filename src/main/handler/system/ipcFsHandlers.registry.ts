@@ -11,7 +11,7 @@ import {
   MARKDOWN_EXTENSION,
 } from "../../../shared/constants/index.js";
 import { SNAPSHOT_BACKUP_DIR } from "../../../shared/constants/paths.js";
-import { readLuieContainerEntry } from "../../services/io/luieContainer.js";
+import { readLuieContainerEntry } from "../../infra/filesystem/index.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
 import {

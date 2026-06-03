@@ -3,8 +3,8 @@
  */
 
 import { and, desc, eq, isNull, like, or, sql } from "drizzle-orm";
-import { db } from "../../database/index.js";
-import { character, memoryChunk, term } from "../../database/schema.js";
+import { db } from "../../infra/database/index.js";
+import { character, memoryChunk, term } from "../../infra/database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import type {

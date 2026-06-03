@@ -3,8 +3,8 @@
  */
 
 import { eq, isNull, like, or, asc, and, inArray } from "drizzle-orm";
-import { db } from "../../database/index.js";
-import { character, entityRelation } from "../../database/schema.js";
+import { db } from "../../infra/database/index.js";
+import { character, entityRelation } from "../../infra/database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import type {

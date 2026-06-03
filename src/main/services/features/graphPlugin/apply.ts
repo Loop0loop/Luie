@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
-import { db } from "../../../database/index.js";
-import { entityRelation, worldEntity } from "../../../database/schema.js";
+import { db } from "../../../infra/database/index.js";
+import { entityRelation, worldEntity } from "../../../infra/database/index.js";
 import type { WorldEntitySourceType } from "../../../../shared/types/index.js";
 import type { GraphDocumentPayload } from "./shared.js";
 import { buildCanonicalWorldEntityPointers } from "../../world/entityRelationPointers.js";

@@ -11,7 +11,7 @@ import {
   invalidateModelRuntimeCache,
   resolveRuntimeModelInfo,
   sidecarManager,
-} from "../../../services/llm/index.js";
+} from "../../../domains/settings/llm.js";
 import { loadSettingsManager } from "./managerLoader.js";
 
 export function createSettingsLlmHandlers(): IpcHandlerConfig[] {

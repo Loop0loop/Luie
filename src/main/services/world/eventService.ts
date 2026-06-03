@@ -1,6 +1,6 @@
 import { eq, isNull, asc, and, or } from "drizzle-orm";
-import { db } from "../../database/index.js";
-import { event, entityRelation } from "../../database/schema.js";
+import { db } from "../../infra/database/index.js";
+import { event, entityRelation } from "../../infra/database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import type {

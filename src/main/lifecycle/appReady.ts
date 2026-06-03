@@ -1,14 +1,15 @@
 import { app, BrowserWindow, session, dialog } from "electron";
 // type imports
 import type { WebContents } from "electron";
-import { settingsManager, windowManager } from "../manager/index.js";
-import { projectService } from "../services/core/projectService.js";
-import { snapshotService } from "../services/features/snapshot/snapshotService.js";
+import { windowManager } from "../app/windows/index.js";
+import { projectService } from "../domains/project/index.js";
+import { snapshotService } from "../domains/recovery/index.js";
+import { settingsManager } from "../domains/settings/index.js";
 import { isDevEnv } from "../utils/environment.js";
 import type { createLogger } from "../../shared/logger/index.js";
 import { applyApplicationMenu } from "./menu.js";
 import { ensureBootstrapReady } from "./bootstrap.js";
-import { startupReadinessService } from "../services/features/startupReadinessService.js";
+import { startupReadinessService } from "../app/startup/index.js";
 
 type Logger = ReturnType<typeof createLogger>;
 
@@ -24,9 +25,9 @@ const isStartupMaintenanceDisabled =
   process.env.LUIE_E2E_STRESS_MODE === "1";
 
 const loadAutoSaveManager = async () =>
-  (await import("../manager/autoSaveManager.js")).autoSaveManager; // 시작 로딩 줄이기 위하여 lazy inport
+  (await import("../domains/manuscript/index.js")).autoSaveManager; // 시작 로딩 줄이기 위하여 lazy inport
 const loadDerivedJobWorker = async () =>
-  (await import("../services/features/derivedJobWorker.js")).derivedJobWorker;
+  (await import("../domains/manuscript/index.js")).derivedJobWorker;
 
 // CSP : isPacked? 
 const buildProdCspPolicy = () =>
@@ -137,7 +138,7 @@ const runDeferredStartupMaintenance = async (logger: Logger): Promise<void> => {
 
   try {
     const { entityRelationService } =
-      await import("../services/world/entityRelationService.js");
+      await import("../domains/world/index.js");
     await entityRelationService.cleanupOrphanRelationsAcrossProjects({
       dryRun: true,
     });

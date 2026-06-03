@@ -14,7 +14,7 @@ import { app } from "electron";
 import path from "node:path";
 import { createLogger, configureLogger, LogLevel } from "../shared/logger/index.js";
 import { LOG_DIR_NAME, LOG_FILE_NAME } from "../shared/constants/index.js";
-import { registerSingleInstance } from "./lifecycle/singleInstance.js"; // 중복 실행 방지 모듈
+import { registerSingleInstance } from "./app/lifecycle/singleInstance.js"; // 중복 실행 방지 모듈
 const isDefaultApp = process.defaultApp === true;
 const startupStartedAtMs = Date.now();
 
@@ -31,7 +31,7 @@ const configureMainLogger = () => {
 const registerLuieProtocol = async (
   logger: ReturnType<typeof createLogger>,
 ): Promise<void> => {
-  const { settingsManager } = await import("./manager/settingsManager.js");
+  const { settingsManager } = await import("./domains/settings/index.js");
   const protocol = "luie";
   let registered = false;
   const appEntry = app.getAppPath(); //현재 Electron의 실행중인 실제 엔트리 경로를 가져온다.
@@ -98,12 +98,12 @@ if (!registerSingleInstance(bootstrapLogger)) {
     { utilityProcessBridge },
   ] = await Promise.all([
     import("./prismaEnv.js"),
-    import("./lifecycle/appReady.js"),
-    import("./lifecycle/crashReporting.js"),
-    import("./lifecycle/deepLink.js"),
-    import("./lifecycle/shutdown.js"),
-    import("./services/features/sync/syncService.js"),
-    import("./services/features/utility/utilityProcessBridge.js"),
+    import("./app/lifecycle/appReady.js"),
+    import("./app/lifecycle/crashReporting.js"),
+    import("./app/lifecycle/deepLink.js"),
+    import("./app/lifecycle/shutdown.js"),
+    import("./domains/sync/index.js"),
+    import("./infra/utility-process/index.js"),
   ]);
 
   registerCrashReporting(logger);

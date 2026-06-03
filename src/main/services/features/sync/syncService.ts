@@ -6,7 +6,7 @@ import type {
   SyncSettings,
   SyncStatus,
 } from "../../../../shared/types/index.js";
-import { settingsManager } from "../../../manager/settingsManager.js";
+import { settingsManager } from "../../../domains/settings/index.js";
 import type { SyncBundle } from "./syncMapper.js";
 import { withErrorProjectStates } from "./syncStatusMachine.js";
 import {

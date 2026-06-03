@@ -5,7 +5,7 @@ import {
 } from "../../shared/logger/index.js";
 import { IPC_CHANNELS } from "../../shared/ipc/channels.js";
 import type { AppBootstrapStatus } from "../../shared/types/index.js";
-import { db } from "../database/index.js";
+import { db } from "../infra/database/index.js";
 
 const logger = createLogger("BootstrapLifecycle");
 
@@ -25,7 +25,7 @@ const getErrorMessage = (error: unknown): string => {
  */
 const triggerLlmfitInstall = async (): Promise<void> => {
   try {
-    const { llmfitInstaller } = await import("../services/llm/llmfitInstaller.js");
+    const { llmfitInstaller } = await import("../domains/settings/llm.js");
     const status = await llmfitInstaller.ensureInstalled();
     logger.info("llmfit install attempted during bootstrap", {
       installed: status.installed,

@@ -2,8 +2,7 @@ import { useCallback, type ReactNode } from "react";
 import type { Editor as TiptapEditor } from "@tiptap/react";
 import { Group as PanelGroup, Panel, type Layout } from "react-resizable-panels";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
-import EditorToolbar from "@renderer/features/editor/components/EditorToolbar";
-import { EditorRuler } from "@renderer/features/editor/components/EditorRuler";
+import { EditorRuler, EditorToolbar } from "@renderer/domains/editor";
 import StatusFooter from "@shared/ui/StatusFooter";
 import {
   EDITOR_A4_PAGE_HEIGHT_PX,

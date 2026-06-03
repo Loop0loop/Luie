@@ -94,8 +94,8 @@ export class AutoSaveMirrorStore {
     reason: string,
   ): Promise<{ created: number; cleaned: number }> {
     const [{ db }, { snapshotService }] = await Promise.all([
-      import("../../database/index.js"),
-      import("../../services/features/snapshot/snapshotService.js"),
+      import("../../infra/database/index.js"),
+      import("../../domains/recovery/index.js"),
     ]);
     const mirrorFiles = await this.listLatestMirrorFiles();
     let created = 0;
@@ -106,7 +106,7 @@ export class AutoSaveMirrorStore {
         const payload = await this.readMirrorPayload(filePath);
         if (!payload) continue;
 
-        const { chapter: chapterTable } = await import("../../database/schema.js");
+        const { chapter: chapterTable } = await import("../../infra/database/index.js");
         const rows = await db.getClient().select({
           id: chapterTable.id,
           projectId: chapterTable.projectId,

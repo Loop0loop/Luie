@@ -6,7 +6,7 @@ import {
   generateCharacterStats,
   type CharacterAIInput,
   type CharacterStatsInput,
-} from "../../services/features/characterAI/characterAIService.js";
+} from "../../domains/world/index.js";
 import { z } from "zod";
 import type { LoggerLike } from "../core/types.js";
 

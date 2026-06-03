@@ -12,9 +12,8 @@ import {
   Loader2,
   GitBranch,
 } from "lucide-react";
-import FocusHoverSidebar from "@renderer/features/manuscript/components/FocusHoverSidebar";
-import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
-import { useProjectStore } from "@renderer/features/project/stores/projectStore";
+import { FocusHoverSidebar, useChapterStore } from "@renderer/domains/manuscript";
+import { useProjectStore } from "@renderer/domains/project";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { api } from "@shared/api";
 import type { Chapter, Snapshot } from "@shared/types";

@@ -9,7 +9,7 @@ import type {
 import { ServiceError } from "../../utils/serviceError.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import { getWorldDbClient } from "./characterService.js";
-import { character, faction, event, term, worldEntity, chapter } from "../../database/schema.js";
+import { character, faction, event, term, worldEntity, chapter } from "../../infra/database/index.js";
 
 const loadAppearanceCacheService = async () =>
   (await import("./appearanceCacheService.js")).appearanceCacheService;

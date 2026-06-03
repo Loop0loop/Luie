@@ -3,8 +3,8 @@ import type { ModelRuntimeClient } from "./modelRuntimeClient.js";
 import { DeterministicProvider } from "./providers/deterministicProvider.js";
 import { ExternalApiProvider } from "./providers/externalApiProvider.js";
 import { GeminiProvider } from "./providers/geminiProvider.js";
-import { settingsManager } from "../../manager/settingsManager.js";
-import type { SettingsManager } from "../../manager/settingsManager.js";
+import { settingsManager } from "../../domains/settings/index.js";
+import type { SettingsManager } from "../../domains/settings/index.js";
 import type { LlmRuntimeInfo } from "../../../shared/types/index.js";
 import type * as EmbeddingModelServiceModule from "./embeddingModelService.js";
 import type * as EmbeddingSidecarManagerModule from "./embeddingSidecarManager.js";
@@ -62,7 +62,7 @@ const loadSettingsManager = (() => {
   let cached: Promise<{ settingsManager: SettingsManager }> | null = null;
   return async () => {
     if (!cached) {
-      cached = import("../../manager/settingsManager.js") as Promise<{
+      cached = import("../../domains/settings/index.js") as Promise<{
         settingsManager: SettingsManager;
       }>;
     }

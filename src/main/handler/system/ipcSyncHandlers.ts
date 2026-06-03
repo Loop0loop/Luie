@@ -2,8 +2,8 @@ import { app } from "electron";
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
-import type * as SettingsManagerModule from "../../manager/settingsManager.js";
-import type * as SupabaseEnvModule from "../../services/features/sync/supabaseEnv.js";
+import type * as SettingsManagerModule from "../../domains/settings/index.js";
+import type * as SupabaseEnvModule from "../../domains/sync/index.js";
 import { ErrorCode } from "../../../shared/constants/errorCode.js";
 import {
   syncRuntimeConfigSetArgsSchema,
@@ -12,14 +12,14 @@ import {
   syncSetAutoArgsSchema,
 } from "../../../shared/schemas/index.js";
 import type { RuntimeSupabaseConfig } from "../../../shared/types/index.js";
-import { syncService } from "../../services/features/sync/syncService.js";
+import { syncService } from "../../domains/sync/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
 
 const loadSettingsManager = (() => {
   let cached: Promise<typeof SettingsManagerModule> | null = null;
   return async () => {
     if (!cached) {
-      cached = import("../../manager/settingsManager.js");
+      cached = import("../../domains/settings/index.js");
     }
     return cached;
   };
@@ -29,7 +29,7 @@ const loadSupabaseEnvModule = (() => {
   let cached: Promise<typeof SupabaseEnvModule> | null = null;
   return async () => {
     if (!cached) {
-      cached = import("../../services/features/sync/supabaseEnv.js");
+      cached = import("../../domains/sync/index.js");
     }
     return cached;
   };

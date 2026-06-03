@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
-import { db } from "../../../database/index.js";
-import { project } from "../../../database/schema.js";
+import { db } from "../../../infra/database/index.js";
+import { project } from "../../../infra/database/index.js";
 import {
   ErrorCode,
   LUIE_PACKAGE_META_FILENAME,

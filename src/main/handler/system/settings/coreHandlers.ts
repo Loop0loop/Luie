@@ -41,7 +41,7 @@ export function createSettingsCoreHandlers(): IpcHandlerConfig[] {
       handler: async (settings: EditorSettings) => {
         const settingsManager = await loadSettingsManager();
         settingsManager.setEditorSettings(settings);
-        const { windowManager } = await import("../../../manager/windowManager.js");
+        const { windowManager } = await import("../../../app/windows/index.js");
         windowManager.applySpellCheckSettingToAllWindows();
         return settingsManager.getEditorSettings();
       },
@@ -116,7 +116,7 @@ export function createSettingsCoreHandlers(): IpcHandlerConfig[] {
         settingsManager.setMenuBarMode(settings.mode);
         applyApplicationMenu(settings.mode);
 
-        const { windowManager } = await import("../../../manager/windowManager.js");
+        const { windowManager } = await import("../../../app/windows/index.js");
         windowManager.applyMenuBarModeToAllWindows();
         return { mode: settingsManager.getMenuBarMode() };
       },
@@ -174,7 +174,7 @@ export function createSettingsCoreHandlers(): IpcHandlerConfig[] {
       handler: async () => {
         const settingsManager = await loadSettingsManager();
         settingsManager.resetToDefaults();
-        const { windowManager } = await import("../../../manager/windowManager.js");
+        const { windowManager } = await import("../../../app/windows/index.js");
         windowManager.applySpellCheckSettingToAllWindows();
         return settingsManager.getAllForRenderer();
       },

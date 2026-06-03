@@ -15,7 +15,7 @@ import { cn } from "@shared/types/utils";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import type { DocsLayoutPanelTab } from "@shared/constants/layoutSizing";
 import type { DragItemType } from "@shared/ui/GlobalDragContext";
-import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { useEditorStore } from "@renderer/domains/editor";
 
 type RailTabConfig = {
   dataType: DragItemType;

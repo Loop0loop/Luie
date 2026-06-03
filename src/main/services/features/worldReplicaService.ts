@@ -8,8 +8,8 @@ import type {
   WorldReplicaScrapMemosResult,
   WorldScrapMemosData,
 } from "../../../shared/types/index.js";
-import { db } from "../../database/index.js";
-import { project, scrapMemo, worldDocument } from "../../database/schema.js";
+import { db } from "../../infra/database/index.js";
+import { project, scrapMemo, worldDocument } from "../../infra/database/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import { projectService } from "../core/projectService.js";
 

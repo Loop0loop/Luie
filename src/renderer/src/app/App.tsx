@@ -7,12 +7,12 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useProjectStore } from "@renderer/features/project/stores/projectStore";
+import { useProjectStore } from "@renderer/domains/project";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
-import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
-import { useProjectInit } from "@renderer/features/project/hooks/useProjectInit";
+import { useEditorStore } from "@renderer/domains/editor";
+import { useProjectInit } from "@renderer/domains/project";
 import { useDataRecoveryStore } from "@renderer/features/workspace/stores/useDataRecoveryStore";
-import { useProjectTemplate } from "@renderer/features/project/hooks/useProjectTemplate";
+import { useProjectTemplate } from "@renderer/domains/project";
 import { useShortcutStore } from "@renderer/features/workspace/stores/shortcutStore";
 import { useToast } from "@shared/ui/ToastContext";
 import type {
@@ -39,7 +39,7 @@ import {
 } from "./shell";
 
 const ExportWindow = lazy(
-  () => import("@renderer/features/export/components/ExportWindow"),
+  () => import("@renderer/domains/export/ExportWindow"),
 );
 const ProjectTemplateSelector = lazy(
   () =>
@@ -52,7 +52,7 @@ const OAuthResultPage = lazy(
   () => import("@renderer/features/auth/components/OAuthResultPage"),
 );
 const WorldSection = lazy(
-  () => import("@renderer/features/research/components/WorldSection"),
+  () => import("@renderer/domains/world/WorldSection"),
 );
 const StartupWizard = lazy(
   () => import("@renderer/features/startup/components/StartupWizard"),

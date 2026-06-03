@@ -415,7 +415,7 @@ SKIP_DB_TEST_SETUP=1 pnpm vitest tests/dom/rendererRerenderRegression.test.tsx
 
 ## Phase 3A: Renderer Large File Stabilization
 
-상태: 진행 중.
+상태: 완료.
 
 목표:
 
@@ -457,7 +457,9 @@ src/renderer/src/styles/global.css
 
 ## Phase 4: Target Folder Adoption
 
-주의: 이 단계는 가장 늦게 진행합니다.
+상태: 완료.
+
+주의: 이 단계는 compatibility wrapper를 먼저 채택합니다. 실제 구현 파일 대이동과 기존 import path cleanup은 별도 단계로 분리합니다.
 
 목표:
 
@@ -472,27 +474,94 @@ src/renderer/src/styles/global.css
 - preload API shape 변경
 - IPC channel rename
 
-## First Recommended Implementation Unit
+완료 기준:
+
+- `src/main/app/**`, `src/main/ipc/**`, `src/main/domains/**`, `src/main/infra/**`에 target entry를 추가합니다.
+- `src/renderer/src/domains/**`에 renderer domain compatibility entry를 추가합니다.
+- 기존 `src/main/lifecycle/**`, `src/main/handler/**`, `src/main/services/**`, `src/main/database/**`, `src/main/utility/**` public import 경로는 유지합니다.
+- 기존 `src/renderer/src/features/**` public import 경로는 유지합니다.
+- main bootstrap/lifecycle/handler의 안전한 내부 import 일부가 새 target entry를 사용합니다.
+- renderer app shell의 안전한 내부 import 일부가 새 domain entry를 사용합니다.
+- import path cleanup과 파일 삭제는 Phase 4 이후 별도 작업으로만 진행합니다.
+
+완료:
+
+- `src/main/app/lifecycle/**` compatibility entry를 추가하고 main bootstrap의 lifecycle import 일부를 새 경로로 전환했습니다.
+- `src/main/app/windows/index.ts`와 `src/main/app/startup/index.ts` compatibility entry를 추가하고 lifecycle 내부 import 일부를 새 경로로 전환했습니다.
+- `src/main/domains/{analysis,export,manuscript,project,recovery,settings,sync,world}/index.ts` compatibility entry를 추가했습니다.
+- `src/main/infra/database/**`와 `src/main/infra/utility-process/index.ts` compatibility entry를 추가했습니다.
+- `src/main/ipc/**` compatibility entry를 추가했습니다.
+- `src/renderer/src/domains/{canvas,editor,export,manuscript,project,settings,sync,world}/**` compatibility entry를 추가했습니다.
+- `src/main/handler/index.ts`, `src/main/lifecycle/**`, `src/main/index.ts`, `src/renderer/src/app/App.tsx`의 안전한 import 일부가 target entry를 사용합니다.
+- 기존 `src/main/services/**`, `src/main/handler/**`, `src/main/database/**`, `src/main/lifecycle/**`, `src/renderer/src/features/**` 경로는 제거하지 않았습니다.
+
+검증:
+
+```bash
+pnpm run typecheck
+pnpm run check:ipc-contract-map
+pnpm run check:ipc-handler-schemas
+pnpm run check:preload-contract-regression
+pnpm run check:core-complexity
+pnpm run check:target-file-drift
+pnpm run build
+pnpm exec eslint src/main/index.ts src/main/lifecycle/bootstrap.ts src/main/lifecycle/appReady.ts src/main/lifecycle/deepLink.ts src/main/lifecycle/shutdown.ts src/main/handler/index.ts src/main/app/lifecycle/*.ts src/main/app/startup/index.ts src/main/app/windows/index.ts src/main/domains/**/*.ts src/main/infra/database/*.ts src/main/infra/utility-process/index.ts src/main/ipc/**/*.ts src/renderer/src/app/App.tsx src/renderer/src/domains/**/*.ts src/renderer/src/domains/**/*.tsx --ext .ts,.tsx
+```
+
+확실하지 않습니다: 전체 `pnpm run lint`는 기존 unrelated lint 위반 때문에 실패합니다. Phase 4 변경 파일 대상 lint는 통과했습니다.
+
+## Next Cleanup Units
+
+상태: 완료.
 
 의견:
 
-첫 구현 단위는 `src/shared/types/index.ts` 또는 `src/shared/schemas/index.ts`의 domain split입니다.
+Phase 4 이후에는 compatibility entry를 유지한 채 import cleanup을 별도 작은 작업으로 진행합니다.
 
-이유:
-
-- 현재 목표 아키텍처의 중앙 계약 정리에 직접 연결됩니다.
-- 기존 barrel export를 유지할 수 있습니다.
-- main/renderer business logic을 직접 변경하지 않습니다.
-- 실패 시 typecheck에서 빠르게 드러날 가능성이 큽니다.
-
-권장 시작:
+권장 순서:
 
 ```text
-1. shared/types inventory 작성
-2. world/project/sync/settings/export grouping 결정
-3. 새 파일 추가
-4. index.ts에서 re-export
-5. typecheck
+1. main handler 하위 파일에서 `src/main/ipc/**` import 점진 채택
+2. main service 내부 DB import에서 `src/main/infra/database/**` 점진 채택
+3. renderer workspace shell에서 `src/renderer/src/domains/**` import 점진 채택
+4. import graph와 cycle을 확인한 뒤 기존 경로 cleanup 후보를 별도 문서화
 ```
 
-확실하지 않습니다: 실제 import graph와 type-only/value import 차이는 구현 직전 다시 확인해야 합니다.
+완료:
+
+- main handler 하위 파일의 sync/startup/recovery/analysis/export/window/settings/characterAI import를 `src/main/domains/**`, `src/main/app/**`, `src/main/infra/**` entry로 전환했습니다.
+- main service/manager/utility/lifecycle의 DB/cache/schema import를 `src/main/infra/database/**` entry로 전환했습니다.
+- 파일 패키지 IO handler import를 `src/main/infra/filesystem/index.ts` entry로 전환했습니다.
+- LLM settings handler와 RAG utility worker import 일부를 `src/main/domains/settings` 또는 `src/main/domains/analysis` entry로 전환했습니다.
+- renderer app/shared/workspace shell의 project/editor/world/export/settings/canvas/manuscript import를 `src/renderer/src/domains/**` entry로 전환했습니다.
+
+남긴 예외:
+
+- `src/main/services/core/chapterService.ts`와 `src/main/services/features/derivedJobWorker.ts`의 `autoSaveManager` lazy import는 순환 의존 위험이 있어 기존 경로를 유지합니다.
+- `src/main/handler/system/fsPathApproval.ts`처럼 handler 내부 policy helper를 직접 참조하는 import는 아직 target `infra/filesystem`으로 옮기지 않았습니다. 실제 파일 이동이 필요하므로 별도 후속 작업 후보입니다.
+
+검증:
+
+```bash
+pnpm run typecheck
+pnpm run check:ipc-contract-map
+pnpm run check:ipc-handler-schemas
+pnpm run check:preload-contract-regression
+pnpm run check:renderer-store-usage
+pnpm run check:core-complexity
+pnpm run check:target-file-drift
+pnpm run build
+```
+
+결과:
+
+- `pnpm run typecheck` 통과
+- `pnpm run check:ipc-contract-map` 통과
+- `pnpm run check:ipc-handler-schemas` 통과
+- `pnpm run check:preload-contract-regression` 통과
+- `pnpm run check:renderer-store-usage` 통과
+- `pnpm run check:core-complexity` 통과
+- `pnpm run check:target-file-drift` 실행됨. `docs/quality/current-task-packet.json` 없음 경고로 drift enforcement는 skip
+- `pnpm run build` 통과
+
+확실하지 않습니다: 전체 `pnpm run lint`와 changed-file lint는 기존 unrelated lint 위반 때문에 실패합니다. 확인된 기존 위반은 `chapterSummaryProjector.ts`, `embeddingProjector.ts`, `entityRelationMaintenance.ts`의 `no-await-in-loop`와 `useProjectSelector.ts`의 React hook lint입니다.

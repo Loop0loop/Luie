@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS } from "../../../../shared/constants/index.js";
 import type { SyncBundle } from "./syncMapper.js";
 import type { SyncChapterRecord } from "./syncMapper.js";
-import type { DbLike } from "../../../database/databaseTypes.js";
+import type { DbLike } from "../../../infra/database/index.js";
 import {
   chapter,
   character,
@@ -11,7 +11,7 @@ import {
   project,
   projectSettings,
   term,
-} from "../../../database/schema.js";
+} from "../../../infra/database/index.js";
 export { applyReplicaWorldState } from "./localApply/index.js";
 
 export const collectDeletedProjectIds = (bundle: SyncBundle): Set<string> => {

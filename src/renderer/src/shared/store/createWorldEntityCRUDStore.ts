@@ -5,9 +5,8 @@ import {
   withProjectScopedGetAll,
   type APIClient,
 } from "./createCRUDStore";
-import { useProjectStore } from "@renderer/features/project/stores/projectStore";
-import { refreshWorldGraph } from "@renderer/features/research/utils/worldGraphRefresh";
-import { runWithProjectLock } from "@renderer/features/research/utils/projectMutationLock";
+import { useProjectStore } from "@renderer/domains/project";
+import { refreshWorldGraph, runWithProjectLock } from "@renderer/domains/world";
 
 interface BaseItem {
   id: string;

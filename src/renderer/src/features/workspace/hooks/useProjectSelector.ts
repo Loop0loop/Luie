@@ -1,7 +1,7 @@
 import { useState, useId, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@shared/api";
-import { useProjectStore } from "@renderer/features/project/stores/projectStore";
+import { useProjectStore } from "@renderer/domains/project";
 import { useFloatingMenu } from "@renderer/shared/hooks/useFloatingMenu";
 import { useToast } from "@shared/ui/ToastContext";
 import type { Project, SyncStatus } from "@shared/types";

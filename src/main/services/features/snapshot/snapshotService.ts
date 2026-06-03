@@ -4,8 +4,8 @@
 
 import { createHash, randomUUID } from "node:crypto";
 import { desc, eq } from "drizzle-orm";
-import { db } from "../../../database/index.js";
-import { chapter, chapterBody, project, snapshot } from "../../../database/schema.js";
+import { db } from "../../../infra/database/index.js";
+import { chapter, chapterBody, project, snapshot } from "../../../infra/database/index.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import {
   ErrorCode,

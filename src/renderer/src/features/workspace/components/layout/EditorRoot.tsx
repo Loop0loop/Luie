@@ -7,18 +7,15 @@ import {
 } from "react";
 import { type Editor as TiptapEditor } from "@tiptap/react";
 import { useTranslation } from "react-i18next";
-import Editor from "@renderer/features/editor/components/Editor";
-import { SmartLinkTooltip } from "@renderer/features/editor/components/SmartLinkTooltip";
+import { Editor, SmartLinkTooltip, useEditorStatsStore, useEditorStore } from "@renderer/domains/editor";
 
-import { useProjectStore } from "@renderer/features/project/stores/projectStore";
+import { useProjectStore } from "@renderer/domains/project";
 import {
   useUIStore,
   type DocsRightTab,
 } from "@renderer/features/workspace/stores/uiStore";
 import { useShallow } from "zustand/react/shallow";
-import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
-import { useEditorStatsStore } from "@renderer/features/editor/stores/editorStatsStore";
-import { useChapterManagement } from "@renderer/features/manuscript/hooks/useChapterManagement";
+import { useChapterManagement } from "@renderer/domains/manuscript";
 import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import { useWorkspaceDropHandlers } from "@renderer/features/workspace/hooks/useWorkspaceDropHandlers";
 import { useProjectLayoutPersistence } from "@renderer/features/workspace/hooks/useProjectLayoutPersistence";
@@ -30,7 +27,7 @@ import { openQuickExportEntry } from "@renderer/features/workspace/services/expo
 import { GlobalDragContext } from "@shared/ui/GlobalDragContext";
 import { useEditorRootShortcuts } from "@renderer/features/workspace/components/useEditorRootShortcuts";
 import { FeatureErrorBoundary } from "@renderer/shared/error-boundaries/FeatureErrorBoundary";
-import type { SettingsTabId } from "@renderer/features/settings/components/tabs/types";
+import type { SettingsTabId } from "@renderer/domains/settings";
 import {
   CanvasActivityShell,
   CanvasPane,
@@ -277,7 +274,7 @@ export default function EditorRoot() {
   });
 
   const prefetchSettings = useCallback(() => {
-    void import("@renderer/features/settings/components/SettingsModal");
+    void import("@renderer/domains/settings");
   }, []);
 
   useEffect(() => {

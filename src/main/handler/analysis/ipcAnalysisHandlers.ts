@@ -3,11 +3,11 @@ import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { ErrorCode } from "../../../shared/constants/errorCode.js";
 import type { AnalysisRequest } from "../../../shared/types/analysis.js";
 import { analysisStartArgsSchema } from "../../../shared/schemas/index.js";
-import { analysisSecurity } from "../../services/features/analysis/analysisSecurity.js";
+import { analysisSecurity } from "../../domains/analysis/index.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
 import { ServiceError } from "../../utils/serviceError.js";
-import { windowManager } from "../../manager/windowManager.js";
+import { windowManager } from "../../app/windows/index.js";
 
 type ManuscriptAnalysisServiceLike = {
   startAnalysis: (

@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
-import { db } from "../../../database/index.js";
-import { chapter, chapterBody, chapterSummary, memoryBuildJob } from "../../../database/schema.js";
+import { db } from "../../../infra/database/index.js";
+import { chapter, chapterBody, chapterSummary, memoryBuildJob } from "../../../infra/database/index.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import { resolveModelRuntimeClient } from "../../llm/modelRuntimeFactory.js";
 import { MEMORY_JOB_TYPES, MEMORY_TARGET_TYPES } from "./memoryJobConstants.js";

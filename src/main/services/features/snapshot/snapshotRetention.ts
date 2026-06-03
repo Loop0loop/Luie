@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { db } from "../../../database/index.js";
-import { project, snapshot } from "../../../database/schema.js";
+import { db } from "../../../infra/database/index.js";
+import { project, snapshot } from "../../../infra/database/index.js";
 import {
   ErrorCode,
   DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT,

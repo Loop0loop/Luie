@@ -1,9 +1,9 @@
 import { asc, desc, inArray } from "drizzle-orm";
 import type { SyncPendingProjectDelete } from "../../../../shared/types/index.js";
 import type { LuiePackageExportData } from "../../io/luiePackageTypes.js";
-import { db } from "../../../database/index.js";
-import * as schema from "../../../database/schema.js";
-import type { ProjectRow, ChapterRow } from "../../../database/schema.js";
+import { db } from "../../../infra/database/index.js";
+import * as schema from "../../../infra/database/index.js";
+import type { ProjectRow, ChapterRow } from "../../../infra/database/index.js";
 import {
   buildLocalSyncBundle,
   hydrateMissingWorldDocsFromPackage,

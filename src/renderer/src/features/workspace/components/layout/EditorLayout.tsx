@@ -8,10 +8,9 @@ import {
 import { type Editor } from "@tiptap/react";
 import { Panel, Group as PanelGroup, type Layout } from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
-import FocusHoverSidebar from "@renderer/features/manuscript/components/FocusHoverSidebar";
-import Ribbon from "@renderer/features/editor/components/Ribbon";
+import { Ribbon, useEditorStore } from "@renderer/domains/editor";
+import { FocusHoverSidebar } from "@renderer/domains/manuscript";
 import WindowBar from "@renderer/features/workspace/components/WindowBar";
-import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { BinderBarCompactHover } from "@renderer/features/workspace/components/BinderBarCompactHover";

@@ -9,8 +9,8 @@ import {
 } from "../../../../shared/constants/index.js";
 import type { LuiePackageExportData } from "../../io/luiePackageTypes.js";
 import { writeLuieContainer } from "../../io/luieContainer.js";
-import { db } from "../../../database/index.js";
-import { project as projectTable, snapshot as snapshotTable } from "../../../database/schema.js";
+import { db } from "../../../infra/database/index.js";
+import { project as projectTable, snapshot as snapshotTable } from "../../../infra/database/index.js";
 import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
 import { projectService } from "../../core/projectService.js";
 import { getProjectAttachmentPath } from "../../core/project/projectAttachmentStore.js";

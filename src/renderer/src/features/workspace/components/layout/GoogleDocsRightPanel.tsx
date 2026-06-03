@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { History } from "lucide-react";
-import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { Editor, useEditorStore } from "@renderer/domains/editor";
 import { useTranslation } from "react-i18next";
 import {
   Panel,
@@ -8,7 +8,6 @@ import {
   type PanelImperativeHandle,
   type PanelSize,
 } from "react-resizable-panels";
-import Editor from "@renderer/features/editor/components/Editor";
 import {
   type ResponsivePanelSize,
   toPanelPercentSize,
@@ -20,10 +19,14 @@ import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/us
 import { suppressLayoutPersistenceFor } from "@renderer/features/workspace/hooks/useLayoutPersist";
 
 const ResearchPanel = lazy(
-  () => import("@renderer/features/research/components/ResearchPanel"),
+  () => import("@renderer/domains/world").then((module) => ({
+    default: module.ResearchPanel,
+  })),
 );
 const WorldPanel = lazy(
-  () => import("@renderer/features/research/components/WorldPanel"),
+  () => import("@renderer/domains/world").then((module) => ({
+    default: module.WorldPanel,
+  })),
 );
 const SnapshotList = lazy(() =>
   import("@renderer/features/snapshot/components/SnapshotList").then(
@@ -38,7 +41,9 @@ const TrashList = lazy(() =>
   })),
 );
 const ExportPreviewPanel = lazy(
-  () => import("@renderer/features/export/components/ExportPreviewPanel"),
+  () => import("@renderer/domains/export").then((module) => ({
+    default: module.ExportPreviewPanel,
+  })),
 );
 
 type GoogleDocsRightPanelProps = {

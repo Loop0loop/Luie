@@ -1,17 +1,18 @@
 import { useState, useEffect, useMemo, useDeferredValue, useTransition, useCallback, memo, useRef } from "react";
 import { ArrowLeft, MousePointerClick } from "lucide-react";
-import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
-import { useTermStore } from "@renderer/features/research/stores/termStore";
-import { useProjectStore } from "@renderer/features/project/stores/projectStore";
+import {
+  CanvasNodeInspector,
+  GraphNodeInspector,
+  useCanvasViewStore,
+  useGraphStore,
+} from "@renderer/domains/canvas";
+import { useProjectStore } from "@renderer/domains/project";
+import { useCharacterStore, useTermStore } from "@renderer/domains/world";
 import TabButton from "@shared/ui/TabButton";
 import SearchInput from "@shared/ui/SearchInput";
 import type { Character, Term } from "@shared/types";
 import { useTranslation } from "react-i18next";
 import { api } from "@shared/api";
-import { useCanvasViewStore } from "@renderer/features/canvas/stores";
-import CanvasNodeInspector from "@renderer/features/canvas/components/binder/CanvasNodeInspector";
-import GraphNodeInspector from "@renderer/features/canvas/components/binder/GraphNodeInspector";
-import { useGraphStore } from "@renderer/features/canvas/stores/graph/graphStore";
 import { cn } from "@shared/types/utils";
 
 // ScrivenerLayout as never 제거를 위해 Tab 타입을 명시적으로 export 노출

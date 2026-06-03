@@ -1,5 +1,5 @@
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
-import type { MainDrizzleClient } from "../../../../database/databaseTypes.js";
+import type { MainDrizzleClient } from "../../../../infra/database/index.js";
 import {
   chapter,
   chapterBody,
@@ -11,8 +11,8 @@ import {
   scene,
   scrapMemo,
   synopsis,
-} from "../../../../database/schema.js";
-import type { memoryBuildJob } from "../../../../database/schema.js";
+} from "../../../../infra/database/index.js";
+import type { memoryBuildJob } from "../../../../infra/database/index.js";
 import { MEMORY_TARGET_TYPES } from "../memoryJobConstants.js";
 
 type MemoryBuildJobRow = typeof memoryBuildJob.$inferSelect;

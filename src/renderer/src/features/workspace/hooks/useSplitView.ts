@@ -9,7 +9,7 @@ import {
   type ResearchTab,
   type RightPanelContent,
 } from "@renderer/features/workspace/stores/uiStore";
-import { useProjectStore } from "@renderer/features/project/stores/projectStore";
+import { useProjectStore } from "@renderer/domains/project";
 import { useProjectLayoutStore } from "@renderer/features/workspace/stores/projectLayoutStore";
 import type { Snapshot } from "@shared/types";
 import {

@@ -1,5 +1,5 @@
 import { app } from "electron";
-import { windowManager } from "../../manager/index.js";
+import { windowManager } from "../../app/windows/index.js";
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
@@ -9,7 +9,7 @@ import {
   ensureBootstrapReady,
   getBootstrapStatus,
 } from "../../lifecycle/bootstrap.js";
-import { appUpdateService } from "../../services/features/appUpdate/appUpdateService.js";
+import { appUpdateService } from "../../app/startup/index.js";
 import {
   windowOpenExportArgsSchema,
   windowSetFullscreenArgsSchema,

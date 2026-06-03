@@ -1,9 +1,9 @@
 import { app, ipcMain, dialog } from "electron";
 import type { BrowserWindow } from "electron";
-import { windowManager } from "../manager/index.js";
-import { db } from "../database/index.js";
-import { projectService } from "../services/core/projectService.js";
-import { snapshotService } from "../services/features/snapshot/snapshotService.js";
+import { windowManager } from "../app/windows/index.js";
+import { db } from "../infra/database/index.js";
+import { projectService } from "../domains/project/index.js";
+import { snapshotService } from "../domains/recovery/index.js";
 import { IPC_CHANNELS } from "../../shared/ipc/channels.js";
 import {
   QUIT_EXPORT_HARD_TIMEOUT_MS,
@@ -17,14 +17,14 @@ import type { AppQuitPhase } from "../../shared/types/index.js";
 type Logger = ReturnType<typeof createLogger>;
 
 const loadAutoSaveManager = async () =>
-  (await import("../manager/autoSaveManager.js")).autoSaveManager;
+  (await import("../domains/manuscript/index.js")).autoSaveManager;
 
 const loadCacheDb = async () =>
-  (await import("../database/cacheDb.js")).cacheDb;
+  (await import("../infra/database/cache.js")).cacheDb;
 const loadDerivedJobWorker = async () =>
-  (await import("../services/features/derivedJobWorker.js")).derivedJobWorker;
+  (await import("../domains/manuscript/index.js")).derivedJobWorker;
 const loadSidecarManager = async () =>
-  (await import("../services/llm/sidecarManager.js")).sidecarManager;
+  (await import("../domains/settings/llm.js")).sidecarManager;
 
 const sendQuitPhase = (
   targetWindow: BrowserWindow | null,

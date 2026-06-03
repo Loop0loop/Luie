@@ -10,19 +10,18 @@ import {
 import { type Editor } from "@tiptap/react";
 import { useTranslation } from "react-i18next";
 import WindowBar from "@renderer/features/workspace/components/WindowBar";
-import Ribbon from "@renderer/features/editor/components/Ribbon";
-import InspectorPanel from "@renderer/features/editor/components/InspectorPanel";
+import { InspectorPanel, Ribbon, useEditorStatsStore, useEditorStore } from "@renderer/domains/editor";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useShallow } from "zustand/react/shallow";
-import { useEditorStatsStore } from "@renderer/features/editor/stores/editorStatsStore";
-import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
-import WikiDetailView from "@renderer/features/research/components/wiki/WikiDetailView";
-import EventDetailView from "@renderer/features/research/components/event/EventDetailView";
-import FactionDetailView from "@renderer/features/research/components/faction/FactionDetailView";
-import WorldSection from "@renderer/features/research/components/WorldSection";
-import { CanvasPane } from "@renderer/features/canvas";
-import MemoMainView from "@renderer/features/research/components/memo/MemoMainView";
-import AnalysisSection from "@renderer/features/research/components/AnalysisSection";
+import { CanvasPane } from "@renderer/domains/canvas";
+import {
+  AnalysisSection,
+  EventDetailView,
+  FactionDetailView,
+  MemoMainView,
+  WikiDetailView,
+  WorldSection,
+} from "@renderer/domains/world";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { Menu, ChevronRight } from "lucide-react";
 import {

@@ -1,7 +1,7 @@
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
-import { startupReadinessService } from "../../services/features/startupReadinessService.js";
+import { startupReadinessService } from "../../app/startup/index.js";
 
 export function registerStartupIPCHandlers(logger: LoggerLike): void {
   registerIpcHandlers(logger, [

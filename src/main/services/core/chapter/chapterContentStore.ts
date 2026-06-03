@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { eq } from "drizzle-orm";
-import { db } from "../../../database/index.js";
-import { chapter, chapterBody } from "../../../database/schema.js";
+import { db } from "../../../infra/database/index.js";
+import { chapter, chapterBody } from "../../../infra/database/index.js";
 
 export const hashChapterContent = (content: string): string =>
   crypto.createHash("sha256").update(content).digest("hex");

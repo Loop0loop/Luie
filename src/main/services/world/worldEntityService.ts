@@ -13,7 +13,7 @@ import type {
 import { ServiceError } from "../../utils/serviceError.js";
 import { projectService } from "../core/projectService.js";
 import { getWorldDbClient } from "./characterService.js";
-import { worldEntity, entityRelation } from "../../database/schema.js";
+import { worldEntity, entityRelation } from "../../infra/database/index.js";
 
 const logger = createLogger("WorldEntityService");
 

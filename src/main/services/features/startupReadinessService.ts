@@ -11,8 +11,8 @@ import type {
   StartupCheckKey,
   StartupReadiness,
 } from "../../../shared/types/index.js";
-import { db } from "../../database/index.js";
-import { settingsManager } from "../../manager/settingsManager.js";
+import { db } from "../../infra/database/index.js";
+import { settingsManager } from "../../domains/settings/index.js";
 import { dbRecoveryService } from "./dbRecoveryService.js";
 import {
   getSupabaseConfig,
@@ -25,7 +25,7 @@ const logger = createLogger("StartupReadinessService");
 const STARTUP_WIZARD_EVENT = "startup:wizard-completed";
 
 const loadCacheDb = async () =>
-  (await import("../../database/cacheDb.js")).cacheDb;
+  (await import("../../infra/database/cache.js")).cacheDb;
 
 const nowIso = (): string => new Date().toISOString();
 

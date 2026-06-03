@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
-import type { MainDrizzleClient } from "../../database/databaseTypes.js";
-import { chapter } from "../../database/schema.js";
+import type { MainDrizzleClient } from "../../infra/database/index.js";
+import { chapter } from "../../infra/database/index.js";
 
 type LoadDb = () => Promise<{
   getClient: () => MainDrizzleClient;

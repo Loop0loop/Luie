@@ -1,9 +1,8 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import FocusHoverSidebar from "@renderer/features/manuscript/components/FocusHoverSidebar";
-import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
-import { useTermStore } from "@renderer/features/research/stores/termStore";
-import { useProjectStore } from "@renderer/features/project/stores/projectStore";
+import { FocusHoverSidebar } from "@renderer/domains/manuscript";
+import { useProjectStore } from "@renderer/domains/project";
+import { useCharacterStore, useTermStore } from "@renderer/domains/world";
 import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@shared/constants/configs";
 import { SIDEBAR_WIDTH_CONFIG } from "@shared/constants/sidebarSizing";
 

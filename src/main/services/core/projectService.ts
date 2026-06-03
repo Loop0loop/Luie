@@ -3,8 +3,8 @@
  */
 
 import { eq, and, isNull, asc } from "drizzle-orm";
-import { db } from "../../database/index.js";
-import * as schema from "../../database/schema.js";
+import { db } from "../../infra/database/index.js";
+import * as schema from "../../infra/database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import {
   ErrorCode,

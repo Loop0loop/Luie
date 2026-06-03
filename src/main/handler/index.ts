@@ -1,29 +1,33 @@
 import { createLogger } from "../../shared/logger/index.js";
 import {
-  chapterService,
-  characterService,
-  sceneService,
-  noteService,
-  synopsisService,
-  plotService,
-  scrapMemoService,
-  eventService,
-  factionService,
-  projectService,
-  searchService,
-  snapshotService,
-  termService,
+  chapterSummaryProjector,
+  dbMaintenanceService,
+  embeddingProjector,
   manuscriptAnalysisService,
-  worldEntityService,
+  searchService,
+} from "../domains/analysis/index.js";
+import { chapterService } from "../domains/manuscript/index.js";
+import {
+  projectService,
+  graphPluginService,
+} from "../domains/project/index.js";
+import { snapshotService } from "../domains/recovery/index.js";
+import {
+  characterService,
   entityRelationService,
+  factionService,
+  eventService,
+  noteService,
+  plotService,
+  sceneService,
+  scrapMemoService,
+  synopsisService,
+  termService,
+  worldEntityService,
   worldMentionService,
   worldReplicaService,
-  graphPluginService,
-  dbMaintenanceService,
-  chapterSummaryProjector,
-  embeddingProjector,
-} from "../services/index.js";
-import { utilityProcessBridge } from "../services/features/utility/utilityProcessBridge.js";
+} from "../domains/world/index.js";
+import { utilityProcessBridge } from "../infra/utility-process/index.js";
 import { registerProjectHandlers } from "./project/index.js";
 import { registerSearchHandlers } from "./search/index.js";
 import { registerSystemHandlers } from "./system/index.js";
@@ -34,7 +38,7 @@ import { registerAnalysisHandlers } from "./analysis/index.js";
 const logger = createLogger("IPCHandler");
 
 const loadAutoSaveManager = async () =>
-  (await import("../manager/autoSaveManager.js")).autoSaveManager;
+  (await import("../domains/manuscript/index.js")).autoSaveManager;
 
 export async function registerAllIPCHandlers(): Promise<void> {
   registerProjectHandlers({

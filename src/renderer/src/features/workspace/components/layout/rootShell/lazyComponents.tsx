@@ -1,7 +1,9 @@
 import { lazy } from "react";
 
 export const SettingsModal = lazy(
-  () => import("@renderer/features/settings/components/SettingsModal"),
+  () => import("@renderer/domains/settings").then((module) => ({
+    default: module.SettingsModal,
+  })),
 );
 export const MainLayout = lazy(
   () => import("@renderer/features/workspace/components/layout/MainLayout"),
@@ -21,20 +23,30 @@ export const ScrivenerLayout = lazy(
     import("@renderer/features/workspace/components/layout/ScrivenerLayout"),
 );
 export const Sidebar = lazy(
-  () => import("@renderer/features/manuscript/components/Sidebar"),
+  () => import("@renderer/domains/manuscript").then((module) => ({
+    default: module.Sidebar,
+  })),
 );
 export const DocsSidebar = lazy(
-  () => import("@renderer/features/manuscript/components/DocsSidebar"),
+  () => import("@renderer/domains/manuscript").then((module) => ({
+    default: module.DocsSidebar,
+  })),
 );
 export const ScrivenerSidebar = lazy(
-  () => import("@renderer/features/manuscript/components/ScrivenerSidebar"),
+  () => import("@renderer/domains/manuscript").then((module) => ({
+    default: module.ScrivenerSidebar,
+  })),
 );
 export const CanvasActivityShell = lazy(
   () =>
-    import("@renderer/features/canvas/components/shell/CanvasActivityShell"),
+    import("@renderer/domains/canvas").then((module) => ({
+      default: module.CanvasActivityShell,
+    })),
 );
 export const CanvasPane = lazy(
-  () => import("@renderer/features/canvas/components/shell/CanvasPane"),
+  () => import("@renderer/domains/canvas").then((module) => ({
+    default: module.CanvasPane,
+  })),
 );
 export const ContextPanel = lazy(() =>
   import("@renderer/features/workspace/components/panels/ContextPanel")

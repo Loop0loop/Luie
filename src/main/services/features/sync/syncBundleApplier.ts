@@ -1,5 +1,5 @@
 import type { LuiePackageExportData } from "../../io/luiePackageTypes.js";
-import { db } from "../../../database/index.js";
+import { db } from "../../../infra/database/index.js";
 import {
   applyChapterTombstones,
   applyReplicaWorldState,

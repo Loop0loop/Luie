@@ -2,8 +2,8 @@ import { BrowserWindow } from "electron";
 import { IPC_CHANNELS } from "../../shared/ipc/channels.js";
 import { createLogger } from "../../shared/logger/index.js";
 import type { SyncAuthResult, SyncAuthResultReason } from "../../shared/types/index.js";
-import { windowManager } from "../manager/index.js";
-import { syncService } from "../services/features/sync/syncService.js";
+import { windowManager } from "../app/windows/index.js";
+import { syncService } from "../domains/sync/index.js";
 
 const logger = createLogger("DeepLink");
 

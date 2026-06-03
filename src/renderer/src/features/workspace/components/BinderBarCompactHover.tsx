@@ -9,17 +9,17 @@ import {
   Suspense,
 } from "react";
 import { useTranslation } from "react-i18next";
-import FocusHoverSidebar from "@renderer/features/manuscript/components/FocusHoverSidebar";
 import {
-  buildBinderTabItems,
   BINDER_VALID_TABS,
+  BinderSidebarPanelBody,
+  buildBinderTabItems,
+  FocusHoverSidebar,
   type BinderTab,
-} from "@renderer/features/manuscript/components/binderSidebar.shared";
-import { BinderSidebarPanelBody } from "@renderer/features/manuscript/components/BinderSidebarPanelBody";
+  useChapterStore,
+} from "@renderer/domains/manuscript";
 import { X } from "lucide-react";
-import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { useEditorStore } from "@renderer/domains/editor";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
-import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { api } from "@shared/api";
 import { cn } from "@shared/types/utils";
 import type { Snapshot } from "@shared/types";

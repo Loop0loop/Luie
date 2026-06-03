@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { isWorldEntityBackedType } from "../../../shared/constants/worldRelationRules.js";
 import type { WorldEntitySourceType } from "../../../shared/types/index.js";
-import type { MainDrizzleClient } from "../../database/databaseTypes.js";
+import type { MainDrizzleClient } from "../../infra/database/index.js";
 import {
   character,
   entityRelation,
@@ -15,7 +15,7 @@ import {
   synopsis,
   term,
   worldEntity,
-} from "../../database/schema.js";
+} from "../../infra/database/index.js";
 
 type ProjectMutationCallback = (
   projectId: string,

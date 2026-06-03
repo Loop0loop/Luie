@@ -11,7 +11,7 @@ import type {
   WorldGraphData,
   WorldGraphNode,
 } from "../../../shared/types/index.js";
-import type { MainDrizzleClient } from "../../database/databaseTypes.js";
+import type { MainDrizzleClient } from "../../infra/database/index.js";
 import {
   character,
   entityRelation,
@@ -24,7 +24,7 @@ import {
   synopsis,
   term,
   worldEntity,
-} from "../../database/schema.js";
+} from "../../infra/database/index.js";
 import { buildCanonicalWorldEntityPointers } from "./entityRelationPointers.js";
 import { parseAttributes } from "./entityRelationMapper.js";
 

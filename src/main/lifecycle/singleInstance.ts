@@ -34,7 +34,7 @@ export const registerSingleInstance = (logger: Logger): boolean => {
       void handleDeepLinkUrl(callbackUrl);
     }
 
-    const { windowManager } = await import("../manager/windowManager.js");
+    const { windowManager } = await import("../app/windows/index.js");
     const mainWindow = windowManager.getMainWindow();
     if (mainWindow && !mainWindow.isDestroyed()) {
       if (mainWindow.isMinimized()) mainWindow.restore();

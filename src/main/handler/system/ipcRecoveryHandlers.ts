@@ -1,6 +1,6 @@
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import type { LoggerLike } from "../core/types.js";
-import { dbRecoveryService } from "../../services/features/dbRecoveryService.js";
+import { dbRecoveryService } from "../../domains/recovery/index.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import { recoveryRunDbArgsSchema } from "../../../shared/schemas/index.js";
 

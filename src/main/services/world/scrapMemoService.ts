@@ -1,6 +1,6 @@
 import { and, asc, eq, isNull } from "drizzle-orm";
-import { db } from "../../database/index.js";
-import { scrapMemo } from "../../database/schema.js";
+import { db } from "../../infra/database/index.js";
+import { scrapMemo } from "../../infra/database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import type { ScrapMemoCreateInput, ScrapMemoUpdateInput } from "../../../shared/types/index.js";

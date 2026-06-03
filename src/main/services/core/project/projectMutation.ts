@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
-import { db } from "../../../database/index.js";
-import * as schema from "../../../database/schema.js";
+import { db } from "../../../infra/database/index.js";
+import * as schema from "../../../infra/database/index.js";
 import {
   ErrorCode,
   DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,

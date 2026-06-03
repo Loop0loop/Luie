@@ -2,8 +2,8 @@ import { app } from "electron";
 import { promises as fs } from "fs";
 import path from "path";
 import { inArray } from "drizzle-orm";
-import { db } from "../../../database/index.js";
-import { snapshot as snapshotTable } from "../../../database/schema.js";
+import { db } from "../../../infra/database/index.js";
+import { snapshot as snapshotTable } from "../../../infra/database/index.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import {
   APP_VERSION,

@@ -13,7 +13,7 @@ import {
   invalidateModelRuntimeCache,
   searchHfModels,
   sidecarManager,
-} from "../../../services/llm/index.js";
+} from "../../../domains/settings/llm.js";
 import { loadSettingsManager } from "./managerLoader.js";
 
 let activeDownloadAbort: AbortController | null = null;

@@ -1,11 +1,11 @@
 import { and, eq } from "drizzle-orm";
 import { createLogger } from "../../../../../shared/logger/index.js";
-import type { DbLike } from "../../../../database/databaseTypes.js";
+import type { DbLike } from "../../../../infra/database/index.js";
 import {
   project,
   scrapMemo,
   worldDocument,
-} from "../../../../database/schema.js";
+} from "../../../../infra/database/index.js";
 import type { SyncBundle } from "../syncMapper.js";
 import {
   normalizeDrawingPayload,

@@ -1,8 +1,8 @@
 import { eq, and, isNull } from "drizzle-orm";
 import { createLogger } from "../../../shared/logger/index.js";
 import { SEARCH_CONTEXT_RADIUS } from "../../../shared/constants/index.js";
-import { db } from "../../database/index.js";
-import * as schema from "../../database/schema.js";
+import { db } from "../../infra/database/index.js";
+import * as schema from "../../infra/database/index.js";
 import { keywordExtractor } from "../../core/keywordExtractor.js";
 import { projectService } from "./projectService.js";
 

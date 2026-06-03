@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
 import { api } from "@shared/api";
-import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { useEditorStore } from "@renderer/domains/editor";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import {
   captureUiModeIntegritySnapshot,

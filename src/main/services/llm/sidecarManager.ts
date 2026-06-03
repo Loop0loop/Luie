@@ -55,7 +55,7 @@ export class SidecarManager {
       logger.warn("Handling llama-server spawn failure...", { errCode, isTargetError });
       
       if (isTargetError) {
-        const settingsManager = (await import("../../manager/settingsManager.js")).settingsManager;
+        const settingsManager = (await import("../../domains/settings/index.js")).settingsManager;
         const currentSettings = settingsManager.getLocalLlmSettings();
         if (currentSettings) {
           settingsManager.setLocalLlmSettings({

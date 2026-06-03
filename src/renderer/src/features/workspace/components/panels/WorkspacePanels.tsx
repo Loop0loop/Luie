@@ -1,7 +1,7 @@
 import React, { Fragment, Suspense } from "react";
 import { Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
-import Editor from "@renderer/features/editor/components/Editor";
+import { Editor } from "@renderer/domains/editor";
 import type { ResizablePanelData } from "@renderer/features/workspace/stores/uiStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import type { Chapter } from "@shared/types";
@@ -10,13 +10,17 @@ import { SPLIT_PANEL_MIN_SIZE_PERCENT } from "@shared/constants/layoutSizing";
 
 // Lazy Loaded Panels
 const ResearchPanel = React.lazy(
-    () => import("@renderer/features/research/components/ResearchPanel"),
+    () => import("@renderer/domains/world").then((module) => ({
+        default: module.ResearchPanel,
+    })),
 );
 const SnapshotViewer = React.lazy(
     () => import("@renderer/features/snapshot/components/SnapshotViewer"),
 );
 const ExportPreviewPanel = React.lazy(
-    () => import("@renderer/features/export/components/ExportPreviewPanel"),
+    () => import("@renderer/domains/export").then((module) => ({
+        default: module.ExportPreviewPanel,
+    })),
 );
 
 interface WorkspacePanelsProps {

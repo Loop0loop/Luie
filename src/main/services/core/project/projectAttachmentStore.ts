@@ -1,8 +1,8 @@
 import path from "node:path";
 import { eq, inArray } from "drizzle-orm";
-import { db } from "../../../database/index.js";
-import * as schema from "../../../database/schema.js";
-import type { MainDrizzleClient, DbLike } from "../../../database/databaseTypes.js";
+import { db } from "../../../infra/database/index.js";
+import * as schema from "../../../infra/database/index.js";
+import type { MainDrizzleClient, DbLike } from "../../../infra/database/index.js";
 import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
 import { ServiceError } from "../../../utils/serviceError.js";
 import { ErrorCode } from "../../../../shared/constants/errorCode.js";
