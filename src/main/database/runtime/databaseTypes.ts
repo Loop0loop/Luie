@@ -1,7 +1,7 @@
 import type Database from "better-sqlite3";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
-import type * as cacheSchema from "./cacheSchema.js";
-import type * as schema from "./schema.js";
+import type * as cacheSchema from "../cache/cacheSchema.js";
+import type * as schema from "../schema/index.js";
 
 export interface PreparedDatabaseContext {
   dbPath: string;

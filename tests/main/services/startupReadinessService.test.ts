@@ -67,7 +67,7 @@ vi.mock("../../../src/main/database/index.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/database/cacheDb.js", () => ({
+vi.mock("../../../src/main/database/cache/index.js", () => ({
   cacheDb: {
     initialize: () => mocked.initializeDb(),
     getClient: () => ({

@@ -15,7 +15,7 @@ import {
   CACHE_PACKAGED_SCHEMA_REQUIRED_COLUMNS,
   CACHE_PACKAGED_SCHEMA_REQUIRED_TABLES,
 } from "./cachePackagedSchema.js";
-import { resolveMigrationPathContext } from "./migrationPathResolver.js";
+import { resolveMigrationPathContext } from "../runtime/index.js";
 
 const requireFn = createRequire(import.meta.url);
 

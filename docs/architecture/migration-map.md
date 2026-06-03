@@ -182,8 +182,8 @@ pnpm run check:preload-contract-regression
 - `src/main/services/features/analysis/analysisStreamRunner.ts`는 415 LOC입니다.
 - `src/main/services/core/project/projectImportOpen.ts`는 287 LOC입니다.
 - `src/main/services/features/utility/utilityProcessBridge.ts`는 474 LOC입니다.
-- `src/main/database/packagedSchema.ts`는 354 LOC입니다.
-- `src/main/database/schema.ts`는 9 LOC입니다.
+- `src/main/database/main/packagedSchema.ts`는 354 LOC입니다.
+- `src/main/database/schema/index.ts`는 14 LOC입니다.
 - `snapshotArtifacts.ts`의 기존 public export인 `readFullSnapshotArtifact`, `listSnapshotRestoreCandidates`, `cleanupOrphanSnapshotArtifacts`, `writeFullSnapshotArtifact`는 유지했습니다.
 - snapshot artifact의 path 탐색, restore preview 계산, DB payload 조립, payload 타입은 `snapshot/artifacts/index.ts` 배럴 폴더로 분리했습니다.
 - `ipcSettingsHandlers.ts`의 기존 public export인 `registerSettingsIPCHandlers`는 유지했습니다.
@@ -216,6 +216,8 @@ pnpm run check:preload-contract-regression
 - packaged bootstrap SQL은 Drizzle migration parity와 맞도록 누락된 world/memory/scrap index와 `ChapterSummary` 기본값 표기를 보정했습니다.
 - `schema.ts`의 기존 public table export와 `ProjectRow`, `NewProjectRow`, `ChapterRow`, `NewChapterRow` type export는 유지했습니다.
 - Drizzle table 정의는 `database/schema/index.ts` 배럴 폴더 아래 foundation/manuscript/search/memory/world/snapshot helper로 분리했습니다.
+- 2026-06-03 후속 정리에서 `src/main/database` 루트 TypeScript 파일은 `index.ts`만 남기고 main/cache/runtime/schema 폴더 entry로 구현 파일을 분리했습니다.
+- 기존 `schema.ts` compatibility entry는 `database/schema/index.ts`로 흡수했고, cache/main/runtime public export는 각각 `database/cache/index.ts`, `database/main/index.ts`, `database/runtime/index.ts`로 제공합니다.
 - 2026-06-02 기준 `bun run typecheck`, `bun run check:core-complexity`, `bun run check:ipc-handler-schemas`, `bun run check:ipc-contract-map` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/handler/ipcSettingsHandlers.security.test.ts` 통과.
 - 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncService.test.ts` 통과.

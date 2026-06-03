@@ -4,7 +4,7 @@ import { ChapterService } from "../../../src/main/services/core/chapterService.j
 import { ProjectService } from "../../../src/main/services/core/projectService.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import { projectService } from "../../../src/main/services/core/projectService.js";
-import { cacheDb } from "../../../src/main/database/cacheDb.js";
+import { cacheDb } from "../../../src/main/database/cache/index.js";
 import { chapterSearchCacheService } from "../../../src/main/services/features/chapterSearchCacheService.js";
 
 const searchService = new SearchService();

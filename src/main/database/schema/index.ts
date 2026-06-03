@@ -4,3 +4,11 @@ export * from "./search.js";
 export * from "./memory.js";
 export * from "./world.js";
 export * from "./snapshot.js";
+
+import type { project } from "./foundation.js";
+import type { chapter } from "./manuscript.js";
+
+export type ProjectRow = typeof project.$inferSelect;
+export type NewProjectRow = typeof project.$inferInsert;
+export type ChapterRow = typeof chapter.$inferSelect;
+export type NewChapterRow = typeof chapter.$inferInsert;

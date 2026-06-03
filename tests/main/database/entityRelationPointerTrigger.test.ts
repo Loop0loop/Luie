@@ -7,8 +7,8 @@ import {
   ENTITY_RELATION_POINTER_NORMALIZE_INSERT_TRIGGER_SQL,
   ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_SQL,
   ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_TRIGGER_SQL,
-} from "../../../src/main/database/entityRelationPointerSql.js";
-import { ensurePackagedSqliteSchema } from "../../../src/main/database/databaseSchemaBootstrap.js";
+} from "../../../src/main/database/main/entityRelationPointerSql.js";
+import { ensurePackagedSqliteSchema } from "../../../src/main/database/main/databaseSchemaBootstrap.js";
 
 const logger = { info: () => {}, warn: () => {} };
 

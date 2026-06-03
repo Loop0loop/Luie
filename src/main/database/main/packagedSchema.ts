@@ -9,7 +9,7 @@ export {
   PACKAGED_SCHEMA_INDEX_PATCHES,
   PACKAGED_SCHEMA_REQUIRED_COLUMNS,
   PACKAGED_SCHEMA_REQUIRED_TABLES,
-} from "./packagedSchema/index.js";
+} from "../packagedSchema/index.js";
 
 export const PACKAGED_SCHEMA_BOOTSTRAP_SQL = `
 CREATE TABLE IF NOT EXISTS "Project" (

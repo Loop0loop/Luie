@@ -1,7 +1,7 @@
 import { count } from "drizzle-orm";
-import { createLogger } from "../../shared/logger/index.js";
-import type { MainDrizzleClient } from "./databaseTypes.js";
-import { chapter, project, projectSettings } from "./schema.js";
+import { createLogger } from "../../../shared/logger/index.js";
+import type { MainDrizzleClient } from "../runtime/index.js";
+import { chapter, project, projectSettings } from "../schema/index.js";
 
 const logger = createLogger("DatabaseSeed");
 

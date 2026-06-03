@@ -3,7 +3,7 @@ import {
   project,
   scrapMemo,
   worldDocument,
-} from "../../../src/main/database/schema.js";
+} from "../../../src/main/database/schema/index.js";
 import { applyReplicaWorldState } from "../../../src/main/services/features/sync/syncLocalApply.js";
 import { createEmptySyncBundle } from "../../../src/main/services/features/sync/syncMapper.js";
 

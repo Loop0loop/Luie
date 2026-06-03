@@ -3,7 +3,7 @@ import { ProjectService } from "../../../src/main/services/core/projectService.j
 import { ChapterService } from "../../../src/main/services/core/chapterService.js";
 import { dbMaintenanceService } from "../../../src/main/services/features/dbMaintenanceService.js";
 import { db } from "../../../src/main/database/index.js";
-import { memoryBuildJob, searchDirtyQueue } from "../../../src/main/database/schema.js";
+import { memoryBuildJob, searchDirtyQueue } from "../../../src/main/database/schema/index.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import { projectService } from "../../../src/main/services/core/projectService.js";
 

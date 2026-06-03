@@ -15,7 +15,7 @@ import {
   ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_SQL,
   ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_TRIGGER_SQL,
 } from "./entityRelationPointerSql.js";
-import { resolveMigrationPathContext } from "./migrationPathResolver.js";
+import { resolveMigrationPathContext } from "../runtime/index.js";
 import { ensureMemoryChunkFtsTrigram } from "./memoryChunkFtsMigration.js";
 
 const DRIZZLE_MIGRATIONS_TABLE = "__drizzle_migrations";

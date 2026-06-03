@@ -15,7 +15,7 @@ import * as fs from "node:fs";
 import {
   ensureMemoryChunkFtsTrigram,
   MEMORY_CHUNK_FTS_CREATE_SQL,
-} from "../../../src/main/database/memoryChunkFtsMigration.js";
+} from "../../../src/main/database/main/memoryChunkFtsMigration.js";
 
 const require = createRequire(import.meta.url);
 

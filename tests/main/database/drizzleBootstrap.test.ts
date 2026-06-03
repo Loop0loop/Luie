@@ -2,7 +2,7 @@ import * as fsPromises from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { ensurePackagedSqliteSchema } from "../../../src/main/database/databaseSchemaBootstrap.js";
+import { ensurePackagedSqliteSchema } from "../../../src/main/database/main/databaseSchemaBootstrap.js";
 
 const logger = {
   info: () => {},

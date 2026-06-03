@@ -6,13 +6,13 @@ import { afterAll, describe, expect, it } from "vitest";
 import {
   PACKAGED_SCHEMA_BOOTSTRAP_SQL,
   PACKAGED_SCHEMA_REQUIRED_TABLES,
-} from "../../../src/main/database/packagedSchema.js";
+} from "../../../src/main/database/main/packagedSchema.js";
 import {
   CACHE_PACKAGED_SCHEMA_BOOTSTRAP_SQL,
   CACHE_PACKAGED_SCHEMA_REQUIRED_TABLES,
-} from "../../../src/main/database/cachePackagedSchema.js";
-import * as mainSchema from "../../../src/main/database/schema.js";
-import * as cacheSchemaModule from "../../../src/main/database/cacheSchema.js";
+} from "../../../src/main/database/cache/cachePackagedSchema.js";
+import * as mainSchema from "../../../src/main/database/schema/index.js";
+import * as cacheSchemaModule from "../../../src/main/database/cache/cacheSchema.js";
 
 type ColumnInfo = {
   name: string;

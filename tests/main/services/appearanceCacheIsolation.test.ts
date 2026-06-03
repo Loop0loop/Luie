@@ -5,7 +5,7 @@ import {
   projectService,
 } from "../../../src/main/services/core/projectService.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
-import { cacheDb } from "../../../src/main/database/cacheDb.js";
+import { cacheDb } from "../../../src/main/database/cache/index.js";
 import { CharacterService } from "../../../src/main/services/world/characterService.js";
 import { TermService } from "../../../src/main/services/world/termService.js";
 import { worldMentionService } from "../../../src/main/services/world/worldMentionService.js";

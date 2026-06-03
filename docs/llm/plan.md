@@ -109,7 +109,7 @@ externalApi: {
 
 #### [X] Task P0-4: providerHint 시리얼라이즈/역직렬화 확인
 
-`src/main/database/schema.ts`의 `projectSettings.llmProviderHint` 컬럼에
+`src/main/database/schema/index.ts`의 `projectSettings.llmProviderHint` 컬럼에
 `"externalapi"` 값 허용 확인. CHECK constraint 있으면 마이그레이션 필요.
 현재 스키마는 `TEXT` 컬럼이며 CHECK constraint가 없어 `"externalapi"` 저장 가능. 추가 마이그레이션 불필요.
 

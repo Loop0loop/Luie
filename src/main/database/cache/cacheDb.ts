@@ -2,20 +2,20 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import BetterSqliteDatabase from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { CACHE_DB_NAME } from "../../shared/constants/index.js";
-import { createLogger } from "../../shared/logger/index.js";
-import { isProdEnv, isTestEnv } from "../utils/environment.js";
-import { resolveUserDataPath } from "../utils/userDataPath.js";
-import { ensureSafeAbsolutePath } from "../utils/pathValidation.js";
+import { CACHE_DB_NAME } from "../../../shared/constants/index.js";
+import { createLogger } from "../../../shared/logger/index.js";
+import { isProdEnv, isTestEnv } from "../../utils/environment.js";
+import { resolveUserDataPath } from "../../utils/userDataPath.js";
+import { ensureSafeAbsolutePath } from "../../utils/pathValidation.js";
 import * as cacheSchema from "./cacheSchema.js";
 import type {
   CacheDrizzleClient,
   DrizzleDatabaseHandle,
-} from "./databaseTypes.js";
+} from "../runtime/index.js";
 import {
   pathExists,
   resolveSqliteDatasourceFromEnv,
-} from "./databaseRuntime.js";
+} from "../runtime/index.js";
 import {
   ensurePackagedCacheSqliteSchema,
 } from "./cacheSchemaBootstrap.js";

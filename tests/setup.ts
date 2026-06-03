@@ -11,9 +11,9 @@ import * as path from "node:path";
 import * as fs from "node:fs";
 import { sql } from "drizzle-orm";
 import type { db as DbService } from "../src/main/database/index.js";
-import type { cacheDb as CacheDbService } from "../src/main/database/cacheDb.js";
-import * as schema from "../src/main/database/schema.js";
-import * as cacheSchema from "../src/main/database/cacheSchema.js";
+import type { cacheDb as CacheDbService } from "../src/main/database/cache/index.js";
+import * as schema from "../src/main/database/schema/index.js";
+import * as cacheSchema from "../src/main/database/cache/cacheSchema.js";
 
 const testWorkerId = process.env.VITEST_POOL_ID ?? process.env.VITEST_WORKER_ID ?? String(process.pid);
 const testDbDir = path.join(process.cwd(), "drizzle", ".tmp", `vitest-${testWorkerId}`);
@@ -45,7 +45,7 @@ beforeAll(async () => {
   fs.mkdirSync(testDbDir, { recursive: true });
   const [dbMod, cacheDbMod] = await Promise.all([
     import("../src/main/database/index.js"),
-    import("../src/main/database/cacheDb.js"),
+    import("../src/main/database/cache/index.js"),
   ]);
   dbService = dbMod.db;
   cacheDbService = cacheDbMod.cacheDb;

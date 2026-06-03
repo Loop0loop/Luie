@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   dropPackagedCacheOptionalFtsArtifacts,
   ensurePackagedCacheSqliteSchema,
-} from "../../../src/main/database/cacheSchemaBootstrap.js";
+} from "../../../src/main/database/cache/cacheSchemaBootstrap.js";
 
 const logger = {
   info: () => {},

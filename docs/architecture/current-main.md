@@ -16,7 +16,9 @@
 - `src/main/handler/core/ipcHandler.ts`
 - `src/main/handler/core/ipcRegistrar.ts`
 - `src/main/database/index.ts`
-- `src/main/database/cacheDb.ts`
+- `src/main/database/main/databaseService.ts`
+- `src/main/database/cache/cacheDb.ts`
+- `src/main/database/runtime/index.ts`
 - `src/main/manager/windowManager.ts`
 - `src/main/manager/settingsManager.ts`
 - `src/main/manager/autoSaveManager.ts`
@@ -32,7 +34,7 @@
 - `WindowManager`는 `BrowserWindow` 생성, preload path, route loading, secure webPreferences, main/startup/export/world-graph window lifecycle을 관리합니다.
 - `handler/index.ts`는 project/world/writing/search/system/analysis IPC handler 등록 허브입니다.
 - `handler/core/ipcHandler.ts`는 `ipcMain.handle` 공통 래퍼입니다.
-- main/cache SQLite는 `database/index.ts`, `database/cacheDb.ts` singleton이 소유합니다.
+- main/cache SQLite는 `database/index.ts` public entry를 통해 제공되며 실제 singleton 구현은 `database/main/databaseService.ts`, `database/cache/cacheDb.ts`가 소유합니다.
 - `services/*`는 얇은 repository가 아니라 business rule, DB query, derived jobs, `.luie` export scheduling을 포함하는 두꺼운 service layer입니다.
 - `manager/*`는 runtime singleton 상태를 관리합니다.
 - RAG QA, embedding, llama-server sidecar는 utility process와 `UtilityProcessBridge`로 분리됩니다.
@@ -122,14 +124,24 @@ index.ts
 | --- | ---: |
 | 없음 | - |
 
-사실: `src/main/database/packagedSchema.ts`는 packaged SQLite bootstrap SQL과 trigger assembly만 유지하도록 축소되어 354 LOC입니다. 분리된 schema metadata는 `database/packagedSchema/index.ts` 배럴을 통해 제공하며 기존 public export인 `PACKAGED_SCHEMA_REQUIRED_TABLES`, `PACKAGED_SCHEMA_REQUIRED_COLUMNS`, `PACKAGED_SCHEMA_COLUMN_PATCHES`, `PACKAGED_SCHEMA_INDEX_PATCHES`, `PACKAGED_SCHEMA_BOOTSTRAP_SQL`는 유지합니다.
+사실: `src/main/database` 루트 TypeScript 파일은 `index.ts`만 남기고, database 구현은 `main/`, `cache/`, `runtime/`, `schema/` 하위 폴더 entry로 분리했습니다.
+
+| Database area | 책임 | Entry |
+| --- | --- | --- |
+| root entry | main/cache/runtime/schema public export 조립 | `database/index.ts` |
+| main DB | main SQLite singleton, packaged bootstrap, seed, pointer trigger, memory FTS migration | `database/main/index.ts` |
+| cache DB | cache SQLite singleton, cache schema/bootstrap, cache packaged schema | `database/cache/index.ts` |
+| runtime | DB handle/type, env datasource/path resolver, migration path resolver | `database/runtime/index.ts` |
+| schema | Drizzle main schema tables와 row 타입 | `database/schema/index.ts` |
+
+사실: `src/main/database/main/packagedSchema.ts`는 packaged SQLite bootstrap SQL과 trigger assembly만 유지하도록 축소되어 354 LOC입니다. 분리된 schema metadata는 `database/packagedSchema/index.ts` 배럴을 통해 제공하며 기존 public export인 `PACKAGED_SCHEMA_REQUIRED_TABLES`, `PACKAGED_SCHEMA_REQUIRED_COLUMNS`, `PACKAGED_SCHEMA_COLUMN_PATCHES`, `PACKAGED_SCHEMA_INDEX_PATCHES`, `PACKAGED_SCHEMA_BOOTSTRAP_SQL`는 유지합니다.
 
 | Packaged schema helper | 책임 | LOC |
 | --- | --- | ---: |
 | `packagedSchema/metadata.ts` | required table/column 목록과 기존 DB column/index patch metadata | 298 |
 | `packagedSchema/index.ts` | packaged schema metadata 배럴 export | 6 |
 
-사실: `src/main/database/schema.ts`는 기존 Drizzle schema public export 호환 진입점과 row 타입 export만 유지하도록 축소되어 9 LOC입니다. 실제 table 정의는 `database/schema/index.ts` 배럴을 통해 도메인별 helper로 제공합니다.
+사실: `src/main/database/schema/index.ts`는 기존 Drizzle schema public export와 row 타입 export를 함께 제공합니다. 실제 table 정의는 같은 폴더 아래 도메인별 helper로 제공합니다.
 
 | Drizzle schema helper | 책임 | LOC |
 | --- | --- | ---: |
@@ -139,7 +151,7 @@ index.ts
 | `schema/memory.ts` | MemoryChunk, build job, summary, embedding table 정의 | 119 |
 | `schema/world.ts` | character/event/faction/document/scrap/term/world entity/relation table 정의 | 205 |
 | `schema/snapshot.ts` | Snapshot table 정의 | 33 |
-| `schema/index.ts` | Drizzle schema helper 배럴 export | 6 |
+| `schema/index.ts` | Drizzle schema helper 배럴 export와 row 타입 export | 14 |
 
 사실: `src/main/services/features/snapshot/snapshotArtifacts.ts`는 snapshot artifact 읽기/후보 목록/고아 cleanup/write orchestration만 유지하도록 축소되어 297 LOC입니다. 분리된 helper는 `snapshot/artifacts/index.ts` 배럴을 통해 제공하며 public export 경로는 유지합니다.
 
