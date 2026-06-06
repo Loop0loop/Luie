@@ -1,3 +1,5 @@
+import type { RuntimeRoutePlan } from "./llmRuntime";
+
 export interface SearchIndexStatus {
   projectId: string;
   projectionCount: number;
@@ -93,6 +95,10 @@ export interface RagQaRequest {
   projectId: string;
   question: string;
   chapterId?: string;
+}
+
+export interface UtilityRagQaRequest extends RagQaRequest {
+  runtimePlan?: RuntimeRoutePlan;
 }
 
 export interface RagQaEvidence {

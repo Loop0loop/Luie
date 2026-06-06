@@ -1,5 +1,23 @@
 # Ollama 마이그레이션 플랜
 
+## 현재 상태
+
+사실: 이 문서는 로컬 LLM 실행 코드를 제거하고 Ollama HTTP API만 남기는 방향으로 작성된 과거 계획입니다.
+
+사실: 현재 기준 아키텍처는 [Utility Process and LLM Runtime Architecture](../architecture/utility-process-llm-runtime.md)를 우선합니다.
+
+충돌:
+
+- 이 문서는 `sidecarManager.ts` 삭제와 Ollama-only 단순화를 목표로 합니다.
+- 현재 목표 아키텍처는 sidecar를 유지하되, sidecar를 provider가 아니라 utility process 내부 local isolated backend로 재정의합니다.
+- 이 문서는 `node-llama-cpp`/구 llamacpp 제거 맥락에서는 참고할 수 있지만, 현재 LLM runtime pipeline 구현 지침으로 사용하면 안 됩니다.
+
+결정:
+
+- Ollama는 계속 remote HTTP provider 후보로 남깁니다.
+- local sidecar는 제거하지 않습니다.
+- sidecar 구현체가 현재 `llama-server`일 수는 있지만 UI/route/provider 명명에서는 `llama`가 아니라 `sidecar`로 다룹니다.
+
 ## 목표
 로컬 LLM 실행 코드 전부 제거 → Ollama HTTP API만 사용  
 UX: URL + 모델 선택 두 줄. 끝.

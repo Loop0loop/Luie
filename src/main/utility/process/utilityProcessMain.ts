@@ -1,9 +1,11 @@
 import { createLogger } from "../../../shared/logger/index.js";
-import type { RagQaRequest } from "../../../shared/types/index.js";
+import type { UtilityRagQaRequest, UtilitySidecarStatusEvent } from "../../../shared/types/index.js";
 import { db } from "../../infra/database/index.js";
 import { cacheDb } from "../../infra/database/cache.js";
-import { spawn, type ChildProcess } from "node:child_process";
-import net from "node:net";
+import {
+  utilityEmbeddingSidecarSupervisor,
+  utilitySidecarSupervisor,
+} from "../llm/sidecarSupervisor.js";
 
 const logger = createLogger("UtilityProcessMain");
 process.env.LUIE_IS_UTILITY_PROCESS = "1";
@@ -43,7 +45,7 @@ const getRagQaWorker = async () => {
     ragWorkerPromise = import("../rag/ragQaWorker.js").then((mod) => mod.ragQaWorker) as Promise<unknown>;
   }
   return (await ragWorkerPromise) as {
-    ask: (payload: RagQaRequest) => Promise<unknown>;
+    ask: (payload: UtilityRagQaRequest) => Promise<unknown>;
     stop: (runId?: string) => { stopped: boolean };
   };
 };
@@ -55,7 +57,7 @@ type UtilityInboundMessage =
       type: "request";
       requestId: string;
       method: "ragQa.ask";
-      payload: RagQaRequest;
+      payload: UtilityRagQaRequest;
     }
   | {
       type: "request";
@@ -67,13 +69,19 @@ type UtilityInboundMessage =
       type: "request";
       requestId: string;
       method: "embedding.embed";
-      payload: { projectId: string; texts: string[] };
+      payload: { projectId: string; texts: string[]; runtimePlan?: UtilityRagQaRequest["runtimePlan"] };
     }
   | {
       type: "request";
       requestId: string;
       method: "sidecar.start";
       payload: { binaryPath: string; modelPath: string; options?: { gpuLayers?: number; contextSize?: number } };
+    }
+  | {
+      type: "request";
+      requestId: string;
+      method: "sidecar.status";
+      payload?: never;
     }
   | {
       type: "request";
@@ -86,7 +94,8 @@ type UtilityOutboundMessage =
   | { type: "pong"; requestId?: string; pid: number }
   | { type: "shutdown-ack"; requestId?: string }
   | { type: "response"; requestId: string; ok: true; result: unknown }
-  | { type: "response"; requestId: string; ok: false; error: string };
+  | { type: "response"; requestId: string; ok: false; error: string }
+  | { type: "event"; event: "sidecar.status"; payload: UtilitySidecarStatusEvent };
 
 type MessagePortLike = {
   postMessage: (message: UtilityOutboundMessage) => void;
@@ -135,6 +144,9 @@ const isValidInboundMessage = (value: unknown): value is UtilityInboundMessage =
       typeof value.payload.modelPath === "string"
     );
   }
+  if (value.method === "sidecar.status") {
+    return true;
+  }
   if (value.method === "sidecar.stop") {
     return true;
   }
@@ -150,6 +162,13 @@ const post = (message: UtilityOutboundMessage): void => {
     processWithSend.send(message);
   }
 };
+
+utilitySidecarSupervisor.onStatusChange((status) => {
+  post({ type: "event", event: "sidecar.status", payload: { purpose: "chat", status } });
+});
+utilityEmbeddingSidecarSupervisor.onStatusChange((status) => {
+  post({ type: "event", event: "sidecar.status", payload: { purpose: "embedding", status } });
+});
 
 const onMessage = (raw: unknown): void => {
   const unwrapped = unwrapInbound(raw);
@@ -181,10 +200,15 @@ const onMessage = (raw: unknown): void => {
         logger.warn("Failed to stop RAG worker before shutdown", { error });
       }
       try {
-        await utilitySidecarManager.stop();
+        await utilitySidecarSupervisor.stop();
       } catch (error) {
         logger.warn("Failed to stop sidecar before shutdown", { error });
       } finally {
+        try {
+          await utilityEmbeddingSidecarSupervisor.stop();
+        } catch (error) {
+          logger.warn("Failed to stop embedding sidecar before shutdown", { error });
+        }
         post({ type: "shutdown-ack", requestId: message.requestId });
         setTimeout(() => process.exit(0), 150);
       }
@@ -214,7 +238,7 @@ const onMessage = (raw: unknown): void => {
           return;
         }
         if (message.method === "sidecar.start") {
-          const result = await utilitySidecarManager.ensureStarted(
+          const result = await utilitySidecarSupervisor.ensureStarted(
             message.payload.binaryPath,
             message.payload.modelPath,
             message.payload.options,
@@ -223,8 +247,17 @@ const onMessage = (raw: unknown): void => {
           return;
         }
         if (message.method === "sidecar.stop") {
-          await utilitySidecarManager.stop();
+          await utilitySidecarSupervisor.stop();
           post({ type: "response", requestId: message.requestId, ok: true, result: undefined });
+          return;
+        }
+        if (message.method === "sidecar.status") {
+          post({
+            type: "response",
+            requestId: message.requestId,
+            ok: true,
+            result: utilitySidecarSupervisor.status(),
+          });
           return;
         }
       } catch (error) {
@@ -238,179 +271,6 @@ const onMessage = (raw: unknown): void => {
     })();
   }
 };
-
-const sidecarLogger = createLogger("UtilitySidecarManager");
-const HEALTH_POLL_INTERVAL_MS = 500;
-const HEALTH_POLL_TIMEOUT_MS = 30_000;
-const IDLE_SHUTDOWN_MS = 3 * 60_000;
-
-type SidecarState =
-  | { status: "stopped" }
-  | { status: "starting"; modelPath: string }
-  | { status: "running"; modelPath: string; port: number; proc: ChildProcess };
-
-class UtilitySidecarManager {
-  private state: SidecarState = { status: "stopped" };
-  private idleTimer: ReturnType<typeof setTimeout> | null = null;
-  private startingPromise: Promise<{ baseUrl: string }> | null = null;
-
-  isRunning(): boolean {
-    return this.state.status === "running";
-  }
-
-  getBaseUrl(): string | null {
-    if (this.state.status !== "running") return null;
-    return `http://127.0.0.1:${this.state.port}`;
-  }
-
-  async ensureStarted(
-    binaryPath: string,
-    modelPath: string,
-    options?: { gpuLayers?: number; contextSize?: number }
-  ): Promise<{ baseUrl: string }> {
-    if (this.state.status === "running" && this.state.modelPath === modelPath) {
-      this.resetIdleTimer();
-      return { baseUrl: `http://127.0.0.1:${this.state.port}` };
-    }
-    if (this.startingPromise) return this.startingPromise;
-
-    this.startingPromise = this.doStart(binaryPath, modelPath, options).finally(() => {
-      this.startingPromise = null;
-    });
-    return this.startingPromise;
-  }
-
-  private async doStart(
-    binaryPath: string,
-    modelPath: string,
-    options?: { gpuLayers?: number; contextSize?: number }
-  ): Promise<{ baseUrl: string }> {
-    if (this.state.status === "running") {
-      await this.stop();
-    }
-
-    this.state = { status: "starting", modelPath };
-    const port = await this.findFreePort();
-    const contextSize = options?.contextSize ?? 4096;
-    const gpuLayers = options?.gpuLayers ?? -1;
-
-    const args = [
-      "--model", modelPath,
-      "--port", String(port),
-      "--host", "127.0.0.1",
-      "--ctx-size", String(contextSize),
-      "--n-gpu-layers", String(gpuLayers),
-      "--threads", "4",
-      "--parallel", "1",
-      "--flash-attn",
-      "--cache-type-k", "q8_0",
-      "--cache-type-v", "q8_0",
-      "--log-disable",
-    ];
-
-    sidecarLogger.info("Spawning llama-server inside utilityProcess", { binaryPath, port, modelPath });
-    const proc = spawn(binaryPath, args, {
-      stdio: ["pipe", "ignore", "pipe"],
-      detached: false,
-    });
-
-    proc.on("error", (error) => {
-      sidecarLogger.error("llama-server spawn error in utilityProcess", { error });
-      this.state = { status: "stopped" };
-      this.clearIdleTimer();
-    });
-    proc.on("exit", (code) => {
-      sidecarLogger.info("llama-server exited in utilityProcess", { code });
-      this.state = { status: "stopped" };
-      this.clearIdleTimer();
-    });
-    proc.stderr?.on("data", (data: Buffer) => {
-      sidecarLogger.debug("llama-server stderr in utilityProcess", { msg: data.toString().slice(0, 200) });
-    });
-
-    this.state = { status: "running", modelPath, port, proc };
-    try {
-      await this.waitForHealth(port);
-    } catch (error) {
-      await this.stop();
-      throw error;
-    }
-
-    this.resetIdleTimer();
-    sidecarLogger.info("llama-server ready in utilityProcess", { port });
-    return { baseUrl: `http://127.0.0.1:${port}` };
-  }
-
-  async stop(): Promise<void> {
-    this.clearIdleTimer();
-    if (this.state.status !== "running") return;
-    const { proc } = this.state;
-    this.state = { status: "stopped" };
-    proc.kill("SIGTERM");
-    await new Promise<void>((resolve) => {
-      const timer = setTimeout(() => {
-        proc.kill("SIGKILL");
-        resolve();
-      }, 3_000);
-      proc.on("exit", () => {
-        clearTimeout(timer);
-        resolve();
-      });
-    });
-    sidecarLogger.info("llama-server stopped in utilityProcess");
-  }
-
-  private async waitForHealth(port: number): Promise<void> {
-    const deadline = Date.now() + HEALTH_POLL_TIMEOUT_MS;
-    while (Date.now() < deadline) {
-      try {
-        // eslint-disable-next-line no-await-in-loop -- sequential health polls
-        const response = await fetch(`http://127.0.0.1:${port}/health`, {
-          signal: AbortSignal.timeout(2_000),
-        });
-        if (response.ok) return;
-      } catch {
-        // starting
-      }
-      // eslint-disable-next-line no-await-in-loop
-      await new Promise((resolve) => setTimeout(resolve, HEALTH_POLL_INTERVAL_MS));
-    }
-    throw new Error("llama-server health check timed out");
-  }
-
-  private async findFreePort(): Promise<number> {
-    return new Promise((resolve, reject) => {
-      const server = net.createServer();
-      server.listen(0, "127.0.0.1", () => {
-        const address = server.address();
-        server.close(() => {
-          if (address && typeof address === "object") {
-            resolve(address.port);
-            return;
-          }
-          reject(new Error("Failed to find free port"));
-        });
-      });
-      server.on("error", reject);
-    });
-  }
-
-  private resetIdleTimer(): void {
-    this.clearIdleTimer();
-    this.idleTimer = setTimeout(() => {
-      sidecarLogger.info("llama-server idle timeout, stopping in utilityProcess");
-      void this.stop();
-    }, IDLE_SHUTDOWN_MS);
-  }
-
-  private clearIdleTimer(): void {
-    if (!this.idleTimer) return;
-    clearTimeout(this.idleTimer);
-    this.idleTimer = null;
-  }
-}
-
-export const utilitySidecarManager = new UtilitySidecarManager();
 
 if (inboundPort) {
   inboundPort.on("message", onMessage);

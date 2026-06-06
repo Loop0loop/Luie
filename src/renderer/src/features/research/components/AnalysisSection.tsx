@@ -6,7 +6,12 @@ import { useShallow } from "zustand/react/shallow";
 import { Send, Square, Bot, User, AlertCircle, BookOpen } from "lucide-react";
 import { useToast } from "@shared/ui/ToastContext";
 import { api } from "@shared/api";
-import type { LlmRuntimeInfo, RagQaErrorPayload, RagQaStreamPayload } from "@shared/types";
+import type {
+  LlmRuntimeInfo,
+  RagQaErrorPayload,
+  RagQaStreamPayload,
+  UtilitySidecarStatus,
+} from "@shared/types";
 import { ErrorCode } from "@shared/constants/errorCode";
 import { requestChapterNavigation } from "@renderer/features/workspace/services/chapterNavigation";
 import { Button } from "@renderer/components/ui/button";
@@ -22,6 +27,34 @@ type Message = {
 
 type RuntimePreference = "auto" | "sidecar" | "ollama" | "openai" | "gemini";
 
+const runtimeLabel = (value: string | null | undefined): string => {
+  if (!value) return "none";
+  if (value === "sidecar") return "Sidecar";
+  if (value === "openai") return "OpenAI";
+  if (value === "gemini") return "Gemini";
+  if (value === "ollama") return "Ollama";
+  if (value === "deterministic") return "Deterministic";
+  if (value === "unavailable") return "Unavailable";
+  return value;
+};
+
+const runtimeSummary = (runtime: LlmRuntimeInfo): string => {
+  const requested = runtimeLabel(runtime.requestedProvider ?? runtime.provider);
+  const resolved = runtimeLabel(runtime.resolvedProvider ?? runtime.provider);
+  const backend = runtime.backend ? ` / ${runtime.backend}` : "";
+  const fallback = runtime.fallbackUsed ? " / fallback" : "";
+  return `Requested: ${requested} / Resolved: ${resolved}${backend}${fallback}`;
+};
+
+const sidecarStatusSummary = (status: UtilitySidecarStatus): string => {
+  if (status.status === "running") return `Sidecar: running / ${status.baseUrl}`;
+  if (status.status === "starting") return "Sidecar: starting";
+  if (status.status === "stopping") return "Sidecar: stopping";
+  if (status.status === "crashed") return `Sidecar: crashed / ${status.lastError}`;
+  if (status.status === "cooldown") return `Sidecar: cooldown / ${status.lastError}`;
+  return status.lastError ? `Sidecar: stopped / ${status.lastError}` : "Sidecar: stopped";
+};
+
 export default function AnalysisSection() {
   const { t } = useTranslation();
   const { currentItem: currentChapter } = useChapterStore(
@@ -36,6 +69,7 @@ export default function AnalysisSection() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [runtimeInfo, setRuntimeInfo] = useState<LlmRuntimeInfo | null>(null);
   const [runtimePreference, setRuntimePreference] = useState<RuntimePreference>("auto");
+  const [sidecarStatus, setSidecarStatus] = useState<UtilitySidecarStatus | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -54,7 +88,18 @@ export default function AnalysisSection() {
       if (res.success && res.data) {
         setRuntimeInfo(res.data);
       }
+      const sidecar = await api.settings.getSidecarStatus();
+      if (sidecar.success && sidecar.data) {
+        setSidecarStatus(sidecar.data);
+      }
     })();
+  }, []);
+
+  useEffect(() => {
+    return api.settings.onSidecarStatusChanged((event) => {
+      if (event.purpose !== "chat") return;
+      setSidecarStatus(event.status);
+    });
   }, []);
 
   const applyRuntimePreference = useCallback(async (next: RuntimePreference) => {
@@ -102,7 +147,11 @@ export default function AnalysisSection() {
     const runtime = await api.settings.getLlmRuntime();
     if (runtime.success && runtime.data) {
       setRuntimeInfo(runtime.data);
-      showToast(`LLM 경로 변경: ${next} → ${runtime.data.provider}`, "info");
+      showToast(`LLM 경로 변경: ${next} → ${runtime.data.resolvedProvider ?? runtime.data.provider}`, "info");
+    }
+    const sidecar = await api.settings.getSidecarStatus();
+    if (sidecar.success && sidecar.data) {
+      setSidecarStatus(sidecar.data);
     }
   }, [showToast, t]);
 
@@ -325,16 +374,32 @@ export default function AnalysisSection() {
             className="h-7 rounded border border-border bg-surface px-2 text-xs text-fg"
           >
             <option value="auto">auto</option>
-            <option value="sidecar">llama(sidecar)</option>
-            <option value="openai">openai(gpt)</option>
-            <option value="gemini">gemini</option>
-            <option value="ollama">ollama</option>
+            <option value="sidecar">Sidecar</option>
+            <option value="openai">OpenAI</option>
+            <option value="gemini">Gemini</option>
+            <option value="ollama">Ollama</option>
           </select>
         </div>
         {runtimeInfo && (
-          <div className="text-[11px] text-muted mb-2 px-1">
-            LLM: {runtimeInfo.provider} / {runtimeInfo.model}
-            {runtimeInfo.alternativeModel ? ` (alt: ${runtimeInfo.alternativeModel})` : ""}
+          <div className="text-[11px] text-muted mb-2 px-1 space-y-1">
+            <div>
+              {runtimeSummary(runtimeInfo)}
+              {runtimeInfo.model ? ` / ${runtimeInfo.model}` : ""}
+              {runtimeInfo.alternativeModel ? ` (alt: ${runtimeInfo.alternativeModel})` : ""}
+            </div>
+            {runtimeInfo.skipped && runtimeInfo.skipped.length > 0 && (
+              <div className="truncate">
+                Skipped:{" "}
+                {runtimeInfo.skipped
+                  .map((skip) => `${runtimeLabel(skip.provider)} ${skip.code}`)
+                  .join(", ")}
+              </div>
+            )}
+            {sidecarStatus && (
+              <div className="truncate">
+                {sidecarStatusSummary(sidecarStatus)}
+              </div>
+            )}
           </div>
         )}
         {currentChapter && (

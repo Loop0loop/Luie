@@ -3,16 +3,16 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import type {
   RagQaErrorPayload,
-  RagQaRequest,
   RagQaResult,
   RagQaRunHandle,
   RagQaStreamPayload,
+  UtilityRagQaRequest,
 } from "../../../shared/types/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import {
-  resolveModelRuntimeClient,
-  resolveEmbeddingRuntimeClient,
-} from "../../services/llm/modelRuntimeFactory.js";
+  resolveUtilityEmbeddingRuntimeClient,
+  resolveUtilityModelRuntimeClient,
+} from "../llm/runtimeMaterializer.js";
 import {
   assembleRagContext,
 } from "../../services/features/rag/contextAssembler.js";
@@ -23,7 +23,7 @@ const logger = createLogger("UtilityRagQaWorker");
 
 type ActiveRun = {
   runId: string;
-  request: RagQaRequest;
+  request: UtilityRagQaRequest;
   aborted: boolean;
   abortController: AbortController;
 };
@@ -143,7 +143,7 @@ class RagQaWorker {
     return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   }
 
-  async ask(input: RagQaRequest): Promise<RagQaRunHandle> {
+  async ask(input: UtilityRagQaRequest): Promise<RagQaRunHandle> {
     const runId = this.buildRunId();
     const run: ActiveRun = {
       runId,
@@ -182,7 +182,10 @@ class RagQaWorker {
         projectId: run.request.projectId,
         hasChapterId: Boolean(run.request.chapterId),
       });
-      const runtime = await resolveModelRuntimeClient(run.request.projectId);
+      const runtime = await resolveUtilityModelRuntimeClient(
+        run.request.projectId,
+        run.request.runtimePlan,
+      );
       logger.info("RAG runtime resolved", {
         runId: run.runId,
         projectId: run.request.projectId,
@@ -226,6 +229,10 @@ class RagQaWorker {
       const startedAt = Date.now();
       let lastTokenAt = Date.now();
       let firstTokenReceived = false;
+      const firstTokenTimeoutMs =
+        runtime.generationMode === "buffered"
+          ? RagQaWorker.TOTAL_GENERATION_TIMEOUT_MS
+          : RagQaWorker.FIRST_TOKEN_TIMEOUT_MS;
       const heartbeat = setInterval(() => {
         if (run.aborted) return;
         this.emitStream({ runId: run.runId, done: false, delta: "" });
@@ -235,7 +242,7 @@ class RagQaWorker {
       }
       const timeoutTimer = setInterval(() => {
         const now = Date.now();
-        if (!firstTokenReceived && now - startedAt > RagQaWorker.FIRST_TOKEN_TIMEOUT_MS) {
+        if (!firstTokenReceived && now - startedAt > firstTokenTimeoutMs) {
           run.aborted = true;
           run.abortController.abort();
           return;
@@ -334,11 +341,12 @@ export const ragQaWorker = new RagQaWorker();
 export async function embedTexts(input: {
   projectId: string;
   texts: string[];
+  runtimePlan?: UtilityRagQaRequest["runtimePlan"];
 }): Promise<number[][] | null> {
   if (input.texts.length === 0) return [];
   // 임베딩 전용 런타임(전용 임베딩 sidecar/클라우드 임베딩)을 사용한다.
   // 생성 모델과 분리되어 메모리를 핀하지 않으며, 미가용 시 null → FTS 폴백.
-  const runtime = await resolveEmbeddingRuntimeClient(input.projectId);
+  const runtime = await resolveUtilityEmbeddingRuntimeClient(input.projectId, input.runtimePlan);
   const vectors = await runtime.embed(input.texts);
   if (!vectors) return null;
   return vectors.map((vector) => Array.from(vector));

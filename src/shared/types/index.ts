@@ -128,7 +128,20 @@ export type {
   SearchIndexStatus,
   SearchQuery,
   SearchResult,
+  UtilityRagQaRequest,
 } from "./search";
+
+export type {
+  RuntimeFallbackPolicy,
+  RuntimeRouteCandidate,
+  RuntimeRoutePlan,
+  RuntimeRouteProvider,
+  RuntimeRouteSkip,
+  RuntimeRouteSupabaseProxy,
+  UtilitySidecarPurpose,
+  UtilitySidecarStatus,
+  UtilitySidecarStatusEvent,
+} from "./llmRuntime";
 
 export type {
   AppBootstrapStatus,

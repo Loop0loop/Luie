@@ -15,7 +15,7 @@ import type {
 } from "../../../shared/types/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
 import { escapeLike } from "../../utils/queryHelpers.js";
-import { resolveEmbeddingRuntimeClient } from "../llm/modelRuntimeFactory.js";
+import { utilityProcessBridge } from "./utility/utilityProcessBridge.js";
 import {
   buildFtsQuery,
   mergeWithRRF,
@@ -207,9 +207,8 @@ export class SearchService {
         // 임베딩 미가용(런타임 해석 실패/embed null/예외)이어도 FTS(+LIKE) 폴백을
         // 보장한다(P2). 이 블록은 절대 throw 를 바깥으로 전파하지 않는다.
         try {
-          const runtime = await resolveEmbeddingRuntimeClient(input.projectId);
-          const vecs = await runtime.embed([normalizedQuery]);
-          const queryVector = vecs?.[0] ?? null;
+          const vecs = await utilityProcessBridge.embed(input.projectId, [normalizedQuery]);
+          const queryVector = vecs?.[0] ? new Float32Array(vecs[0]) : null;
           if (queryVector && queryVector.length > 0) {
             denseRanks = searchByVector(
               input.projectId,

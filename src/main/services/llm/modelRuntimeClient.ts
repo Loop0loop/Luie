@@ -4,8 +4,18 @@ export type GenerateOptions = {
   signal?: AbortSignal;
 };
 
+export type GenerationMode = "streaming" | "buffered";
+
+export type RuntimeSupabaseProxyConfig = {
+  functionUrl: string;
+  accessToken: string;
+};
+
+export type RuntimeSupabaseProxyResolver = () => Promise<RuntimeSupabaseProxyConfig>;
+
 export interface ModelRuntimeClient {
   readonly providerName: string;
+  readonly generationMode?: GenerationMode;
   /** True if the model file exists and the runtime can be used. Does NOT load the model. */
   isAvailable(): Promise<boolean>;
   /** True if the model is already loaded in memory. Background jobs should skip when false. */

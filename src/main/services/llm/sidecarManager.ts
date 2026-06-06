@@ -1,6 +1,7 @@
 import path from "node:path";
 import { app } from "electron";
 import { createLogger } from "../../../shared/logger/index.js";
+import type { UtilitySidecarStatus } from "../../../shared/types/index.js";
 import { utilityProcessBridge } from "../features/utility/utilityProcessBridge.js";
 
 const logger = createLogger("SidecarManager");
@@ -29,6 +30,10 @@ export class SidecarManager {
   getBaseUrl(): string | null {
     if (this.state.status !== "running") return null;
     return this.state.baseUrl;
+  }
+
+  async getStatus(): Promise<UtilitySidecarStatus> {
+    return await utilityProcessBridge.getSidecarStatus();
   }
 
   async ensureStarted(binaryPath: string, modelPath: string, options?: {

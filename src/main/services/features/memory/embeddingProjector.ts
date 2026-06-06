@@ -130,6 +130,7 @@ export class EmbeddingProjector {
       chunkRowsByJobId.set(job.id, []);
     }
 
+    /* eslint-disable no-await-in-loop -- chunk reads are sequenced per claimed job to keep job/chunk attribution explicit. */
     for (const job of claimedJobs) {
       const chunkRows = await client
         .select({
@@ -150,6 +151,7 @@ export class EmbeddingProjector {
         .orderBy(asc(memoryChunk.chunkIndex));
       chunkRowsByJobId.set(job.id, chunkRows);
     }
+    /* eslint-enable no-await-in-loop */
 
     const jobsWithoutChunks = claimedJobs.filter(
       (job) => (chunkRowsByJobId.get(job.id)?.length ?? 0) === 0,
@@ -245,6 +247,7 @@ export class EmbeddingProjector {
             `EMBEDDING_VECTOR_COUNT_MISMATCH:${vectors.length}/${changedChunks.length}`,
           );
         }
+        /* eslint-disable no-await-in-loop -- embedding upserts are sequenced to preserve chunk/vector pairing. */
         for (let i = 0; i < changedChunks.length; i += 1) {
           const chunk = changedChunks[i];
           const vector = vectors[i];
@@ -274,6 +277,7 @@ export class EmbeddingProjector {
               },
             });
         }
+        /* eslint-enable no-await-in-loop */
       }
 
       const completedJobIds = readyJobs.map((job) => job.id);
@@ -288,6 +292,7 @@ export class EmbeddingProjector {
         .where(inArray(memoryBuildJob.id, completedJobIds));
       processed = completedJobIds.length;
     } catch (error) {
+      /* eslint-disable no-await-in-loop -- failed job status updates are sequenced for deterministic retry accounting. */
       for (const job of readyJobs) {
         const attempts = job.attempts + 1;
         await client
@@ -300,6 +305,7 @@ export class EmbeddingProjector {
           })
           .where(eq(memoryBuildJob.id, job.id));
       }
+      /* eslint-enable no-await-in-loop */
     }
 
     logger.info("Processed embedding jobs", {

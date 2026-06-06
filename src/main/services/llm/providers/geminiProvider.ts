@@ -1,15 +1,16 @@
 /* eslint-disable no-await-in-loop */
-import type { GenerateOptions, ModelRuntimeClient } from "../modelRuntimeClient.js";
-import { isAppPackaged } from "../../../utils/appEnv.js";
-import { getSupabaseConfig } from "../../features/sync/supabaseEnv.js";
-import { ensureSyncAccessToken } from "../../features/sync/syncAccessToken.js";
-import { settingsManager } from "../../../domains/settings/index.js";
+import type {
+  GenerateOptions,
+  ModelRuntimeClient,
+  RuntimeSupabaseProxyResolver,
+} from "../modelRuntimeClient.js";
 
 type GeminiConfig = {
   apiKey: string;
   model: string;
   alternativeModel?: string;
   embeddingModel?: string;
+  supabaseProxy?: RuntimeSupabaseProxyResolver;
 };
 
 type GeminiRequestBody = {
@@ -47,30 +48,28 @@ type GeminiEmbedResponse = {
 
 export class GeminiProvider implements ModelRuntimeClient {
   readonly providerName = "gemini";
+  readonly generationMode: ModelRuntimeClient["generationMode"];
 
-  constructor(private readonly config: GeminiConfig) { }
+  constructor(private readonly config: GeminiConfig) {
+    this.generationMode = config.supabaseProxy ? "buffered" : "streaming";
+  }
 
   private async generateViaSupabase(
     input: { systemPrompt?: string; userPrompt: string },
     options?: GenerateOptions,
   ): Promise<string> {
-    const supabaseConfig = getSupabaseConfig();
-    if (!supabaseConfig) {
-      throw new Error("SUPABASE_NOT_CONFIGURED: 번들 빌드 환경에서는 동기화 계정 연결이 필요합니다. 설정 > 동기화 탭에서 계정을 연결해 주세요.");
+    if (!this.config.supabaseProxy) {
+      throw new Error("SUPABASE_PROXY_NOT_CONFIGURED: Gemini proxy resolver is missing");
     }
-    const syncSettings = settingsManager.getSyncSettings();
-    const token = await ensureSyncAccessToken({
-      syncSettings,
-      isAuthFatalMessage: () => false,
-    });
+    const proxy = await this.config.supabaseProxy();
 
     const promptText = `${input.systemPrompt ? `${input.systemPrompt}\n\n` : ""}${input.userPrompt}`.trim();
 
-    const res = await fetch(`${supabaseConfig.url}/functions/v1/gemini-proxy`, {
+    const res = await fetch(proxy.functionUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${proxy.accessToken}`,
       },
       signal: options?.signal,
       body: JSON.stringify({
@@ -106,7 +105,7 @@ export class GeminiProvider implements ModelRuntimeClient {
   }
 
   async isAvailable(): Promise<boolean> {
-    if (isAppPackaged()) {
+    if (this.config.supabaseProxy) {
       return true; // 번들 환경에서는 항상 가용하다고 보고 프록시로 넘김
     }
     try {
@@ -164,7 +163,7 @@ export class GeminiProvider implements ModelRuntimeClient {
     input: { systemPrompt?: string; userPrompt: string },
     options?: GenerateOptions,
   ): Promise<string> {
-    if (isAppPackaged()) {
+    if (this.config.supabaseProxy) {
       return await this.generateViaSupabase(input, options);
     }
     const modelOrder = [this.config.model, this.config.alternativeModel].filter(
@@ -205,7 +204,7 @@ export class GeminiProvider implements ModelRuntimeClient {
     input: { systemPrompt?: string; userPrompt: string },
     options?: GenerateOptions,
   ): AsyncIterable<string> {
-    if (isAppPackaged()) {
+    if (this.config.supabaseProxy) {
       const text = await this.generateViaSupabase(input, options);
       yield text;
       return;

@@ -369,9 +369,19 @@ export interface OllamaConnectionResult {
 }
 
 export interface LlmRuntimeInfo {
-  provider: "gemini" | "openai" | "ollama" | "sidecar" | "deterministic";
+  provider: "gemini" | "openai" | "ollama" | "sidecar" | "deterministic" | "unavailable";
   model: string;
   alternativeModel?: string | null;
+  requestedProvider?: "auto" | "sidecar" | "ollama" | "openai" | "gemini";
+  resolvedProvider?: "gemini" | "openai" | "ollama" | "sidecar" | "deterministic" | "unavailable";
+  backend?: "local-sidecar" | "remote-http" | "test" | null;
+  fallbackUsed?: boolean;
+  ready?: boolean;
+  skipped?: Array<{
+    provider: "gemini" | "openai" | "ollama" | "sidecar" | "deterministic";
+    code: string;
+    message: string;
+  }>;
 }
 
 export interface HfModelSearchResult {

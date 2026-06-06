@@ -1,6 +1,5 @@
 export { DEFAULT_EMBEDDING_MODEL } from "./embeddingModelConstants.js";
 export { embeddingModelService } from "./embeddingModelService.js";
-export { embeddingSidecarManager } from "./embeddingSidecarManager.js";
 export {
   LLMFIT_ASSET_TARGETS,
   LLMFIT_GITHUB_REPO,

@@ -80,7 +80,10 @@ export type SettingsRendererApi = {
       gpuLayers?: number;
       contextSize?: number;
     }) => Promise<IPCResponse<{ ok: boolean }>>;
-    getSidecarStatus: () => Promise<IPCResponse<{ running: boolean; baseUrl: string | null }>>;
+    getSidecarStatus: () => Promise<IPCResponse<SharedTypes.UtilitySidecarStatus>>;
+    onSidecarStatusChanged: (
+      callback: (event: SharedTypes.UtilitySidecarStatusEvent) => void,
+    ) => () => void;
     stopSidecar: () => Promise<IPCResponse<{ ok: boolean }>>;
     startModelDownload: (input: {
       type: "model" | "binary";

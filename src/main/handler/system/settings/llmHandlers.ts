@@ -118,10 +118,7 @@ export function createSettingsLlmHandlers(): IpcHandlerConfig[] {
       channel: IPC_CHANNELS.SIDECAR_STATUS,
       logTag: "SIDECAR_STATUS",
       failMessage: "Failed to get sidecar status",
-      handler: async () => ({
-        running: sidecarManager.isRunning(),
-        baseUrl: sidecarManager.getBaseUrl(),
-      }),
+      handler: async () => await sidecarManager.getStatus(),
     },
     {
       channel: IPC_CHANNELS.SIDECAR_STOP,

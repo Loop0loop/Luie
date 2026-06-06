@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-06-02T13:21:47.425Z",
+  "generatedAt": "2026-06-06T09:38:31.679Z",
   "summary": {
-    "definedChannels": 205,
+    "definedChannels": 206,
     "errors": 0,
     "warnings": 0
   },
@@ -15,7 +15,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 248
+            "line": 258
           }
         ],
         "main_handle": [
@@ -58,7 +58,7 @@
         "renderer_listen": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 262
+            "line": 272
           }
         ],
         "renderer_send": [],
@@ -81,7 +81,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 246
+            "line": 256
           }
         ],
         "main_handle": [
@@ -112,7 +112,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 247
+            "line": 257
           }
         ],
         "main_handle": [
@@ -151,7 +151,7 @@
         "renderer_listen": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 253
+            "line": 263
           }
         ],
         "renderer_send": [],
@@ -174,7 +174,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 28
+            "line": 29
           }
         ],
         "main_handle": [
@@ -244,7 +244,7 @@
         "renderer_listen": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 40
+            "line": 41
           }
         ],
         "renderer_send": [],
@@ -267,7 +267,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 23
+            "line": 24
           }
         ],
         "main_handle": [
@@ -298,7 +298,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 27
+            "line": 28
           }
         ],
         "main_handle": [
@@ -360,7 +360,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 32
+            "line": 33
           }
         ],
         "main_handle": [
@@ -391,7 +391,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 25
+            "line": 26
           }
         ],
         "main_handle": [
@@ -422,7 +422,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 22
+            "line": 23
           }
         ],
         "main_handle": [
@@ -453,7 +453,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 54
+            "line": 55
           }
         ],
         "main_handle": [
@@ -515,7 +515,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 30
+            "line": 31
           }
         ],
         "main_handle": [
@@ -554,7 +554,7 @@
         "renderer_listen": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 49
+            "line": 50
           }
         ],
         "renderer_send": [],
@@ -1197,7 +1197,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 159
+            "line": 169
           }
         ],
         "main_handle": [
@@ -1236,7 +1236,7 @@
         "renderer_listen": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 168
+            "line": 178
           }
         ],
         "renderer_send": [],
@@ -1259,7 +1259,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 157
+            "line": 167
           }
         ],
         "main_handle": [
@@ -2096,7 +2096,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 138
+            "line": 148
           }
         ],
         "main_handle": [
@@ -2127,7 +2127,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 140
+            "line": 150
           }
         ],
         "main_handle": [
@@ -2158,7 +2158,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 142
+            "line": 152
           }
         ],
         "main_handle": [
@@ -2251,7 +2251,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 56
+            "line": 57
           }
         ],
         "main_handle": [
@@ -2499,7 +2499,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 132
+            "line": 142
           }
         ],
         "main_handle": [
@@ -2538,7 +2538,7 @@
         "renderer_listen": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 151
+            "line": 161
           }
         ],
         "renderer_send": [],
@@ -2561,7 +2561,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 130
+            "line": 140
           }
         ],
         "main_handle": [
@@ -2592,7 +2592,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 136
+            "line": 146
           }
         ],
         "main_handle": [
@@ -2623,7 +2623,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 134
+            "line": 144
           }
         ],
         "main_handle": [
@@ -3493,15 +3493,15 @@
         "main_emit": [
           {
             "file": "src/main/services/features/utility/utilityProcessBridge.ts",
-            "line": 369
+            "line": 452
           },
           {
             "file": "src/main/services/features/utility/utilityProcessBridge.ts",
-            "line": 386
+            "line": 469
           },
           {
             "file": "src/main/services/features/utility/utilityProcessBridge.ts",
-            "line": 444
+            "line": 527
           }
         ],
         "renderer_listen": [
@@ -3563,7 +3563,7 @@
         "main_emit": [
           {
             "file": "src/main/services/features/utility/utilityProcessBridge.ts",
-            "line": 350
+            "line": 433
           }
         ],
         "renderer_listen": [
@@ -3592,7 +3592,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 182
+            "line": 192
           }
         ],
         "main_handle": [
@@ -3623,7 +3623,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 180
+            "line": 190
           }
         ],
         "main_handle": [
@@ -4026,7 +4026,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 60
+            "line": 61
           }
         ],
         "main_handle": [
@@ -4057,7 +4057,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 65
+            "line": 66
           }
         ],
         "main_handle": [
@@ -4088,7 +4088,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 62
+            "line": 63
           }
         ],
         "main_handle": [
@@ -4119,7 +4119,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 69
+            "line": 70
           }
         ],
         "main_handle": [
@@ -4150,7 +4150,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 116
+            "line": 117
           }
         ],
         "main_handle": [
@@ -4181,7 +4181,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 122
+            "line": 123
           }
         ],
         "main_handle": [
@@ -4212,7 +4212,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 77
+            "line": 78
           }
         ],
         "main_handle": [
@@ -4243,7 +4243,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 88
+            "line": 89
           }
         ],
         "main_handle": [
@@ -4274,7 +4274,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 99
+            "line": 100
           }
         ],
         "main_handle": [
@@ -4305,13 +4305,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 118
+            "line": 119
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/system/settings/llmHandlers.ts",
-            "line": 136
+            "line": 133
           }
         ],
         "main_emit": [],
@@ -4336,7 +4336,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 176
+            "line": 186
           }
         ],
         "main_handle": [
@@ -4367,7 +4367,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 67
+            "line": 68
           }
         ],
         "main_handle": [
@@ -4398,7 +4398,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 64
+            "line": 65
           }
         ],
         "main_handle": [
@@ -4429,7 +4429,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 71
+            "line": 72
           }
         ],
         "main_handle": [
@@ -4460,7 +4460,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 114
+            "line": 115
           }
         ],
         "main_handle": [
@@ -4491,7 +4491,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 112
+            "line": 113
           }
         ],
         "main_handle": [
@@ -4522,7 +4522,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 124
+            "line": 125
           }
         ],
         "main_handle": [
@@ -4553,7 +4553,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 82
+            "line": 83
           }
         ],
         "main_handle": [
@@ -4584,7 +4584,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 110
+            "line": 111
           }
         ],
         "main_handle": [
@@ -4615,7 +4615,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 93
+            "line": 94
           }
         ],
         "main_handle": [
@@ -4646,7 +4646,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 104
+            "line": 105
           }
         ],
         "main_handle": [
@@ -4677,13 +4677,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 120
+            "line": 121
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/system/settings/llmHandlers.ts",
-            "line": 155
+            "line": 152
           }
         ],
         "main_emit": [],
@@ -4708,7 +4708,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 126
+            "line": 127
           }
         ],
         "main_handle": [
@@ -4732,6 +4732,37 @@
       }
     },
     {
+      "key": "SIDECAR_STATUS_CHANGED",
+      "channel": "sidecar:status-changed",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [],
+        "main_handle": [],
+        "main_emit": [
+          {
+            "file": "src/main/services/features/utility/utilityProcessBridge.ts",
+            "line": 417
+          }
+        ],
+        "renderer_listen": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 132
+          }
+        ],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 0,
+        "main_handle": 0,
+        "main_emit": 1,
+        "renderer_listen": 1,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
       "key": "SIDECAR_STOP",
       "channel": "sidecar:stop",
       "allowlisted": false,
@@ -4739,13 +4770,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 128
+            "line": 138
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/system/settings/llmHandlers.ts",
-            "line": 127
+            "line": 124
           }
         ],
         "main_emit": [],
@@ -5018,7 +5049,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 239
+            "line": 249
           }
         ],
         "main_handle": [
@@ -5049,7 +5080,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 237
+            "line": 247
           }
         ],
         "main_handle": [
@@ -5088,7 +5119,7 @@
         "renderer_listen": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 229
+            "line": 239
           }
         ],
         "renderer_send": [],
@@ -5111,7 +5142,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 187
+            "line": 197
           }
         ],
         "main_handle": [
@@ -5142,7 +5173,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 189
+            "line": 199
           }
         ],
         "main_handle": [
@@ -5173,7 +5204,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 194
+            "line": 204
           }
         ],
         "main_handle": [
@@ -5204,7 +5235,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 185
+            "line": 195
           }
         ],
         "main_handle": [
@@ -5235,7 +5266,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 211
+            "line": 221
           }
         ],
         "main_handle": [
@@ -5266,7 +5297,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 190
+            "line": 200
           }
         ],
         "main_handle": [
@@ -5297,7 +5328,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 192
+            "line": 202
           }
         ],
         "main_handle": [
@@ -5328,7 +5359,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 199
+            "line": 209
           }
         ],
         "main_handle": [
@@ -5367,7 +5398,7 @@
         "renderer_listen": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 220
+            "line": 230
           }
         ],
         "renderer_send": [],
@@ -5390,7 +5421,7 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/systemApi.ts",
-            "line": 205
+            "line": 215
           }
         ],
         "main_handle": [

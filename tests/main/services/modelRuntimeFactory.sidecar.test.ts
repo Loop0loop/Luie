@@ -66,6 +66,12 @@ describe("modelRuntimeFactory sidecar", () => {
       provider: "sidecar",
       model: "llama-server",
       alternativeModel: null,
+      requestedProvider: "auto",
+      resolvedProvider: "sidecar",
+      backend: "local-sidecar",
+      fallbackUsed: false,
+      ready: true,
+      skipped: [],
     });
   });
 
@@ -89,6 +95,62 @@ describe("modelRuntimeFactory sidecar", () => {
       provider: "ollama",
       model: "qwen3:4b",
       alternativeModel: null,
+      requestedProvider: "auto",
+      resolvedProvider: "ollama",
+      backend: "remote-http",
+      fallbackUsed: true,
+      ready: true,
+      skipped: [
+        {
+          provider: "sidecar",
+          code: "SIDECAR_SPAWN_FAILED",
+          message: "spawn failed",
+        },
+        {
+          provider: "openai",
+          code: "PROVIDER_NOT_CONFIGURED",
+          message: "OpenAI is not configured",
+        },
+        {
+          provider: "gemini",
+          code: "PROVIDER_NOT_CONFIGURED",
+          message: "Gemini is not configured",
+        },
+      ],
+    });
+  });
+
+  it("does not fall back to Gemini when sidecar is explicitly selected", async () => {
+    process.env.GEMINI_API_KEY = "gemini-key";
+    mocked.getLocalLlmSettings.mockReturnValue({
+      enabled: true,
+      modelPath: "/tmp/model.gguf",
+      binaryPath: "/tmp/bin/llama-server",
+    });
+    mocked.getLlmSettings.mockReturnValue({
+      preferredProvider: "sidecar",
+      geminiApiKey: "settings-gemini-key",
+    });
+    mocked.ensureStarted.mockRejectedValue(new Error("spawn failed"));
+
+    const info = await resolveRuntimeModelInfo();
+
+    expect(info).toEqual({
+      provider: "unavailable",
+      model: "",
+      alternativeModel: null,
+      requestedProvider: "sidecar",
+      resolvedProvider: "unavailable",
+      backend: null,
+      fallbackUsed: false,
+      ready: false,
+      skipped: [
+        {
+          provider: "sidecar",
+          code: "SIDECAR_SPAWN_FAILED",
+          message: "spawn failed",
+        },
+      ],
     });
   });
 });

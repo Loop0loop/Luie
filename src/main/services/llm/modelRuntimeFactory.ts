@@ -7,7 +7,17 @@ import { settingsManager } from "../../manager/settings/index.js";
 import type { SettingsManager } from "../../manager/settings/index.js";
 import type { LlmRuntimeInfo } from "../../../shared/types/index.js";
 import type * as EmbeddingModelServiceModule from "./embeddingModelService.js";
-import type * as EmbeddingSidecarManagerModule from "./embeddingSidecarManager.js";
+import { buildRuntimeRoutePlan } from "./runtimeRoutePlanner.js";
+import type {
+  RuntimeRouteCandidate,
+  RuntimeRoutePlan,
+  RuntimeRouteProvider,
+  RuntimeRouteSupabaseProxy,
+} from "../../../shared/types/index.js";
+import {
+  createGeminiSupabaseProxyResolver,
+  createOpenAiSupabaseProxyResolver,
+} from "./runtimeProxyConfig.js";
 
 const logger = createLogger("ModelRuntimeFactory");
 const deterministicProvider = new DeterministicProvider();
@@ -21,7 +31,6 @@ export function invalidateModelRuntimeCache(): void {
   openAiProviderSingle = null;
   geminiProviderSingle = null;
   sidecarProviderSingle = null;
-  embeddingProviderSingle = null;
 }
 
 type OllamaConfig = {
@@ -54,9 +63,33 @@ type ResolvedRuntime =
   | { kind: "gemini"; config: EnvGeminiConfig }
   | { kind: "openai"; config: EnvOpenAiConfig }
   | { kind: "ollama"; config: OllamaConfig }
-  | { kind: "deterministic" };
+  | { kind: "deterministic" }
+  | { kind: "unavailable" };
 
-type RuntimeKind = ResolvedRuntime["kind"];
+type RuntimeKind = RuntimeRouteProvider;
+type RequestedProvider = "auto" | RuntimeKind;
+type RuntimeProvider = Exclude<ResolvedRuntime["kind"], "unavailable">;
+type RuntimeBackend = "local-sidecar" | "remote-http" | "test" | null;
+type RuntimeSkip = {
+  provider: RuntimeProvider;
+  code: string;
+  message: string;
+};
+type RuntimeResolution = {
+  requestedProvider: RequestedProvider;
+  resolved: ResolvedRuntime;
+  backend: RuntimeBackend;
+  fallbackUsed: boolean;
+  skipped: RuntimeSkip[];
+};
+
+export type RuntimeRoutePlanningResult = {
+  preferred: RequestedProvider;
+  plan: RuntimeRoutePlan;
+};
+
+const proxyErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
 
 const loadSettingsManager = (() => {
   let cached: Promise<{ settingsManager: SettingsManager }> | null = null;
@@ -78,16 +111,6 @@ const loadEmbeddingModelService = (() => {
     return cached;
   };
 })();
-
-const loadEmbeddingSidecarManager = (() => {
-  let cached: Promise<typeof EmbeddingSidecarManagerModule> | null = null;
-  return async () => {
-    if (!cached) cached = import("./embeddingSidecarManager.js");
-    return cached;
-  };
-})();
-
-let embeddingProviderSingle: { key: string; provider: ExternalApiProvider } | null = null;
 
 /** 로컬 임베딩 모델이 확보되어 있으면 그 modelId 를, 없으면 null 을 반환한다. */
 async function resolveLocalEmbeddingModelId(): Promise<string | null> {
@@ -160,6 +183,7 @@ function getOrCreateOpenAiProvider(config: EnvOpenAiConfig): ExternalApiProvider
     apiKey: config.apiKey,
     chatModel: config.model,
     embeddingModel: config.embeddingModel,
+    supabaseProxy: createOpenAiSupabaseProxyResolver(),
   });
   openAiProviderSingle = { key, provider };
   return provider;
@@ -170,7 +194,10 @@ function getOrCreateGeminiProvider(config: EnvGeminiConfig): GeminiProvider {
   if (geminiProviderSingle?.key === key) {
     return geminiProviderSingle.provider;
   }
-  const provider = new GeminiProvider(config);
+  const provider = new GeminiProvider({
+    ...config,
+    supabaseProxy: createGeminiSupabaseProxyResolver(),
+  });
   geminiProviderSingle = { key, provider };
   return provider;
 }
@@ -200,8 +227,97 @@ function loadEnvOpenAiConfig(): EnvOpenAiConfig | null {
   return { apiKey, model, embeddingModel };
 }
 
-async function resolveRuntime(): Promise<ResolvedRuntime> {
-  let preferred: "auto" | "sidecar" | "ollama" | "openai" | "gemini" = "auto";
+function buildSkip(provider: RuntimeProvider, code: string, message: string): RuntimeSkip {
+  return { provider, code, message };
+}
+
+function classifySidecarError(error: unknown): RuntimeSkip {
+  const message = error instanceof Error ? error.message : String(error);
+  const code = /health.*timed out|timeout/i.test(message)
+    ? "SIDECAR_HEALTH_TIMEOUT"
+    : "SIDECAR_SPAWN_FAILED";
+  return buildSkip("sidecar", code, message);
+}
+
+function backendFor(kind: ResolvedRuntime["kind"]): RuntimeBackend {
+  if (kind === "sidecar") return "local-sidecar";
+  if (kind === "gemini" || kind === "openai" || kind === "ollama") return "remote-http";
+  if (kind === "deterministic") return "test";
+  return null;
+}
+
+function openAiPlanInput(config: EnvOpenAiConfig | null) {
+  return config
+    ? {
+        configured: true as const,
+        apiKey: config.apiKey,
+        model: config.model,
+        embeddingModel: config.embeddingModel,
+      }
+    : { configured: false as const };
+}
+
+function geminiPlanInput(config: EnvGeminiConfig | null) {
+  return config
+    ? {
+        configured: true as const,
+        apiKey: config.apiKey,
+        model: config.model,
+        alternativeModel: config.alternativeModel,
+        embeddingModel: config.embeddingModel,
+      }
+    : { configured: false as const };
+}
+
+function ollamaPlanInput(config: OllamaConfig | null) {
+  return config
+    ? {
+        configured: true as const,
+        baseUrl: config.baseUrl,
+        chatModel: config.chatModel,
+        embeddingModel: config.embeddingModel,
+        apiKey: config.apiKey,
+      }
+    : { configured: false as const };
+}
+
+const resolveProxyCapability = async (
+  resolver: (() => Promise<RuntimeRouteSupabaseProxy>) | undefined,
+): Promise<
+  | { supabaseProxy: RuntimeRouteSupabaseProxy; supabaseProxyError?: never }
+  | { supabaseProxy?: never; supabaseProxyError: string }
+  | undefined
+> => {
+  if (!resolver) return undefined;
+  try {
+    return { supabaseProxy: await resolver() };
+  } catch (error) {
+    return { supabaseProxyError: proxyErrorMessage(error) };
+  }
+};
+
+async function attachSupabaseProxyCapabilities(plan: RuntimeRoutePlan): Promise<RuntimeRoutePlan> {
+  const openAiProxy = await resolveProxyCapability(createOpenAiSupabaseProxyResolver());
+  const geminiProxy = await resolveProxyCapability(createGeminiSupabaseProxyResolver());
+
+  if (!openAiProxy && !geminiProxy) return plan;
+
+  return {
+    ...plan,
+    candidates: plan.candidates.map((candidate): RuntimeRouteCandidate => {
+      if (candidate.kind === "openai" && openAiProxy) {
+        return { ...candidate, ...openAiProxy };
+      }
+      if (candidate.kind === "gemini" && geminiProxy) {
+        return { ...candidate, ...geminiProxy };
+      }
+      return candidate;
+    }),
+  };
+}
+
+export async function resolveRuntimeRoutePlan(): Promise<RuntimeRoutePlanningResult> {
+  let preferred: RequestedProvider = "auto";
   let localLlm:
     | {
       enabled: boolean;
@@ -221,58 +337,133 @@ async function resolveRuntime(): Promise<ResolvedRuntime> {
     // Settings may be unavailable during tests or early startup. Continue with defaults.
   }
 
+  const geminiConfig = loadEnvGeminiConfig();
+  const openAiConfig = loadEnvOpenAiConfig();
+  const ollamaConfig = await loadOllamaConfig();
+  const basePlan = buildRuntimeRoutePlan({
+    requestedProvider: preferred,
+    localLlm,
+    openai: openAiPlanInput(openAiConfig),
+    gemini: geminiPlanInput(geminiConfig),
+    ollama: ollamaPlanInput(ollamaConfig),
+  });
+  const plan = await attachSupabaseProxyCapabilities(basePlan);
+
+  return { preferred, plan };
+}
+
+async function resolveRuntime(): Promise<RuntimeResolution> {
+  const { preferred, plan } = await resolveRuntimeRoutePlan();
+  const skipped: RuntimeSkip[] = [];
+
   const tryResolveKind = async (kind: RuntimeKind): Promise<ResolvedRuntime | null> => {
     if (kind === "sidecar") {
-      if (!(localLlm?.enabled && localLlm.modelPath && localLlm.binaryPath)) return null;
+      const sidecarCandidate = plan.candidates.find((candidate) => candidate.kind === "sidecar");
+      if (!sidecarCandidate) {
+        skipped.push(buildSkip("sidecar", "SIDECAR_NOT_CONFIGURED", "Local sidecar is not configured"));
+        return null;
+      }
       try {
         const { sidecarManager } = await loadSidecarManager();
         const baseUrl = await sidecarManager.ensureStarted(
-          localLlm.binaryPath,
-          localLlm.modelPath,
-          {
-            gpuLayers: localLlm.gpuLayers,
-            contextSize: localLlm.contextSize,
-          },
+          sidecarCandidate.binaryPath,
+          sidecarCandidate.modelPath,
+          sidecarCandidate.options,
         );
         return { kind: "sidecar", config: { baseUrl } };
       } catch (error) {
+        skipped.push(classifySidecarError(error));
         logger.warn("Sidecar start failed, falling through", { error });
         return null;
       }
     }
     if (kind === "gemini") {
-      const geminiConfig = loadEnvGeminiConfig();
-      return geminiConfig ? { kind: "gemini", config: geminiConfig } : null;
+      const candidate = plan.candidates.find((item): item is Extract<RuntimeRouteCandidate, { kind: "gemini" }> => item.kind === "gemini");
+      if (candidate) {
+        return {
+          kind: "gemini",
+          config: {
+            apiKey: candidate.apiKey,
+            model: candidate.model,
+            alternativeModel: candidate.alternativeModel,
+            embeddingModel: candidate.embeddingModel,
+          },
+        };
+      }
+      skipped.push(buildSkip("gemini", "PROVIDER_NOT_CONFIGURED", "Gemini is not configured"));
+      return null;
     }
     if (kind === "openai") {
-      const openAiConfig = loadEnvOpenAiConfig();
-      return openAiConfig ? { kind: "openai", config: openAiConfig } : null;
+      const candidate = plan.candidates.find((item): item is Extract<RuntimeRouteCandidate, { kind: "openai" }> => item.kind === "openai");
+      if (candidate) {
+        return {
+          kind: "openai",
+          config: {
+            apiKey: candidate.apiKey,
+            model: candidate.model,
+            embeddingModel: candidate.embeddingModel,
+          },
+        };
+      }
+      skipped.push(buildSkip("openai", "PROVIDER_NOT_CONFIGURED", "OpenAI is not configured"));
+      return null;
     }
     if (kind === "ollama") {
-      const ollamaConfig = await loadOllamaConfig();
-      return ollamaConfig ? { kind: "ollama", config: ollamaConfig } : null;
+      const candidate = plan.candidates.find((item): item is Extract<RuntimeRouteCandidate, { kind: "ollama" }> => item.kind === "ollama");
+      if (candidate) {
+        return {
+          kind: "ollama",
+          config: {
+            baseUrl: candidate.baseUrl,
+            chatModel: candidate.model,
+            embeddingModel: candidate.embeddingModel,
+            apiKey: candidate.apiKey,
+          },
+        };
+      }
+      skipped.push(buildSkip("ollama", "PROVIDER_NOT_CONFIGURED", "Ollama is not configured"));
+      return null;
     }
     return null;
   };
 
-  const defaultOrder: RuntimeKind[] = ["sidecar", "gemini", "openai", "ollama"];
-  const orderedKinds: RuntimeKind[] = preferred === "auto"
-    ? defaultOrder
-    : [preferred, ...defaultOrder.filter((kind) => kind !== preferred)];
-
-  for (const kind of orderedKinds) {
+  for (const kind of plan.order) {
     // eslint-disable-next-line no-await-in-loop -- Runtime providers are intentionally probed in priority order.
     const resolved = await tryResolveKind(kind);
-    if (resolved) return resolved;
+    if (resolved) {
+      return {
+        requestedProvider: preferred,
+        resolved,
+        backend: backendFor(resolved.kind),
+        fallbackUsed: preferred === "auto" && skipped.length > 0,
+        skipped,
+      };
+    }
+    if (plan.fallbackPolicy === "fail-closed") {
+      return {
+        requestedProvider: preferred,
+        resolved: { kind: "unavailable" },
+        backend: null,
+        fallbackUsed: false,
+        skipped,
+      };
+    }
   }
 
-  return { kind: "deterministic" };
+  return {
+    requestedProvider: preferred,
+    resolved: { kind: "deterministic" },
+    backend: "test",
+    fallbackUsed: skipped.length > 0,
+    skipped,
+  };
 }
 
 export async function resolveModelRuntimeClient(
   projectId: string,
 ): Promise<ModelRuntimeClient> {
-  const resolved = await resolveRuntime();
+  const resolution = await resolveRuntime();
+  const { resolved } = resolution;
   if (resolved.kind === "sidecar") {
     logger.info("Using local LLM sidecar", { projectId, baseUrl: resolved.config.baseUrl });
     const key = resolved.config.baseUrl;
@@ -301,6 +492,10 @@ export async function resolveModelRuntimeClient(
     });
     return getOrCreateExternalApiProvider(resolved.config);
   }
+  if (resolved.kind === "unavailable") {
+    const primary = resolution.skipped[0];
+    throw new Error(primary?.message ?? "LLM runtime unavailable");
+  }
   logger.info("Ollama not configured, using deterministic fallback", { projectId });
   return deterministicProvider;
 }
@@ -308,7 +503,7 @@ export async function resolveModelRuntimeClient(
 export async function resolveRuntimeModelConfig(
   _projectId: string,
 ): Promise<RuntimeModelConfig> {
-  const resolved = await resolveRuntime();
+  const { resolved } = await resolveRuntime();
   if (resolved.kind === "sidecar") {
     // 로컬 임베딩 모델(bge-m3)이 확보되어 있으면 그 식별자를 signature 로 사용한다.
     // 이로써 embeddingProjector 가 임베딩 잡을 skip 하지 않고, 모델 변경 시 재임베딩한다.
@@ -343,12 +538,22 @@ export async function resolveRuntimeModelConfig(
 }
 
 export async function resolveRuntimeModelInfo(): Promise<LlmRuntimeInfo> {
-  const resolved = await resolveRuntime();
+  const resolution = await resolveRuntime();
+  const { resolved } = resolution;
+  const base = {
+    requestedProvider: resolution.requestedProvider,
+    resolvedProvider: resolved.kind,
+    backend: resolution.backend,
+    fallbackUsed: resolution.fallbackUsed,
+    ready: resolved.kind !== "unavailable",
+    skipped: resolution.skipped,
+  } satisfies Partial<LlmRuntimeInfo>;
   if (resolved.kind === "sidecar") {
     return {
       provider: "sidecar",
       model: "llama-server",
       alternativeModel: null,
+      ...base,
     };
   }
   if (resolved.kind === "gemini") {
@@ -356,6 +561,7 @@ export async function resolveRuntimeModelInfo(): Promise<LlmRuntimeInfo> {
       provider: "gemini",
       model: resolved.config.model,
       alternativeModel: resolved.config.alternativeModel ?? null,
+      ...base,
     };
   }
   if (resolved.kind === "openai") {
@@ -363,6 +569,7 @@ export async function resolveRuntimeModelInfo(): Promise<LlmRuntimeInfo> {
       provider: "openai",
       model: resolved.config.model,
       alternativeModel: null,
+      ...base,
     };
   }
   if (resolved.kind === "ollama") {
@@ -370,84 +577,21 @@ export async function resolveRuntimeModelInfo(): Promise<LlmRuntimeInfo> {
       provider: "ollama",
       model: resolved.config.chatModel,
       alternativeModel: null,
+      ...base,
+    };
+  }
+  if (resolved.kind === "unavailable") {
+    return {
+      provider: "unavailable",
+      model: "",
+      alternativeModel: null,
+      ...base,
     };
   }
   return {
     provider: "deterministic",
     model: "fallback",
     alternativeModel: null,
+    ...base,
   };
-}
-
-/**
- * 임베딩 전용 런타임 클라이언트를 해석한다.
- *
- * 우선순위:
- *   1) 클라우드/외부 provider 가 임베딩 모델과 함께 활성이면 그 생성 런타임을 재사용
- *      (ExternalApiProvider/Gemini 는 embed 를 자체 지원).
- *   2) 로컬(sidecar 또는 모델 동봉) 이면 임베딩 전용 llama-server 를 띄워
- *      bge-m3 로 `/v1/embeddings` 를 제공하는 ExternalApiProvider 반환.
- *   3) 어느 것도 불가하면 deterministic(embed=null) → 임베딩 skip, FTS 폴백(R1.2).
- *
- * 격리(P1): 임베딩 sidecar 기동 실패는 throw 하지 않고 deterministic 으로 폴백한다.
- */
-export async function resolveEmbeddingRuntimeClient(
-  projectId: string,
-): Promise<ModelRuntimeClient> {
-  const resolved = await resolveRuntime();
-
-  // 1) 클라우드/외부 provider 가 임베딩을 지원하면 생성 런타임 재사용.
-  if (resolved.kind === "gemini" && resolved.config.embeddingModel) {
-    return getOrCreateGeminiProvider(resolved.config);
-  }
-  if (resolved.kind === "openai" && resolved.config.embeddingModel) {
-    return getOrCreateOpenAiProvider(resolved.config);
-  }
-  if (resolved.kind === "ollama" && resolved.config.embeddingModel) {
-    return getOrCreateExternalApiProvider(resolved.config);
-  }
-
-  // 2) 로컬 임베딩: 전용 임베딩 sidecar + bge-m3.
-  try {
-    const settingsManager = await loadSettingsManager();
-    const localLlm = settingsManager.getLocalLlmSettings();
-    const binaryPath = localLlm?.binaryPath;
-    if (!binaryPath) {
-      return deterministicProvider;
-    }
-
-    const { embeddingModelService } = await loadEmbeddingModelService();
-    const status = embeddingModelService.getStatus();
-    if (!status.installed || !status.path) {
-      // 임베딩 모델 미설치 → 임베딩 skip.
-      return deterministicProvider;
-    }
-
-    const { embeddingSidecarManager } = await loadEmbeddingSidecarManager();
-    const baseUrl = await embeddingSidecarManager.ensureStarted(binaryPath, status.path);
-    if (!baseUrl) {
-      // 기동 실패/쿨다운 → FTS 폴백.
-      return deterministicProvider;
-    }
-
-    const key = `${baseUrl}::${status.modelId}`;
-    if (embeddingProviderSingle?.key === key) {
-      return embeddingProviderSingle.provider;
-    }
-    const provider = new ExternalApiProvider({
-      baseUrl: `${baseUrl}/v1`,
-      chatModel: "local",
-      embeddingModel: status.modelId,
-      apiKey: "no-key",
-    });
-    embeddingProviderSingle = { key, provider };
-    logger.info("Using local embedding sidecar", { projectId, baseUrl, modelId: status.modelId });
-    return provider;
-  } catch (error) {
-    logger.warn("Failed to resolve local embedding runtime; falling back to FTS-only", {
-      projectId,
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return deterministicProvider;
-  }
 }

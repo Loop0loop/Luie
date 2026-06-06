@@ -3,12 +3,23 @@ import { BrowserWindow, app, utilityProcess } from "electron";
 import type { UtilityProcess } from "electron";
 import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
 import { ErrorCode } from "../../../../shared/constants/errorCode.js";
-import type { RagQaErrorPayload, RagQaRequest, RagQaRunHandle, RagQaStreamPayload } from "../../../../shared/types/index.js";
+import type {
+  RagQaErrorPayload,
+  RagQaRequest,
+  RagQaRunHandle,
+  RagQaStreamPayload,
+  UtilityRagQaRequest,
+  UtilitySidecarPurpose,
+  UtilitySidecarStatusEvent,
+} from "../../../../shared/types/index.js";
 import { createLogger } from "../../../../shared/logger/index.js";
+import { resolveRuntimeRoutePlan } from "../../llm/modelRuntimeFactory.js";
 import {
   RAG_RUN_WATCHDOG_MS,
   REQUEST_TIMEOUT_ASK_MS,
   REQUEST_TIMEOUT_EMBED_MS,
+  REQUEST_TIMEOUT_SIDECAR_START_MS,
+  REQUEST_TIMEOUT_STATUS_MS,
   REQUEST_TIMEOUT_STOP_MS,
   START_TIMEOUT_MS,
   STOP_GRACE_MS,
@@ -18,6 +29,7 @@ import {
   type PendingRequest,
   type UtilityInboundMessage,
   type UtilityOutboundMessage,
+  type UtilitySidecarStatusResult,
 } from "./utilityProcessBridge/index.js";
 
 const logger = createLogger("UtilityProcessBridge");
@@ -32,6 +44,7 @@ export class UtilityProcessBridge {
   private pendingRagEventTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private startingPromise: Promise<boolean> | null = null;
   private stoppingPromise: Promise<void> | null = null;
+  private lastSidecarStatuses = new Map<UtilitySidecarPurpose, UtilitySidecarStatusResult>();
 
   async start(): Promise<boolean> {
     if (this.stoppingPromise) {
@@ -66,6 +79,7 @@ export class UtilityProcessBridge {
         }
         this.ragRunToWindowId.clear();
         this.clearPendingRagEvents();
+        this.lastSidecarStatuses.clear();
         if (this.utilityChild === child) {
           this.utilityChild = null;
         }
@@ -117,6 +131,7 @@ export class UtilityProcessBridge {
             this.clearRagRunWatchdog(runId);
           }
           this.clearPendingRagEvents();
+          this.lastSidecarStatuses.clear();
           this.utilityChild = null;
           this.stoppingPromise = null;
           resolve();
@@ -159,7 +174,9 @@ export class UtilityProcessBridge {
         throw new Error("Utility process is not running");
       }
     }
-    const result = await this.request("ragQa.ask", input);
+    const { plan } = await resolveRuntimeRoutePlan();
+    const payload: UtilityRagQaRequest = { ...input, runtimePlan: plan };
+    const result = await this.request("ragQa.ask", payload);
     const runHandle = result as RagQaRunHandle;
     if (runHandle?.runId) {
       this.ragRunToWindowId.set(runHandle.runId, targetWindowId);
@@ -189,7 +206,10 @@ export class UtilityProcessBridge {
         throw new Error("Utility process is not running");
       }
     }
-    return (await this.request("embedding.embed", { projectId, texts })) as number[][] | null;
+    const { plan } = await resolveRuntimeRoutePlan();
+    return (await this.request("embedding.embed", { projectId, texts, runtimePlan: plan })) as
+      | number[][]
+      | null;
   }
 
   async startSidecar(
@@ -210,6 +230,15 @@ export class UtilityProcessBridge {
   async stopSidecar(): Promise<void> {
     if (!this.utilityChild) return;
     await this.request("sidecar.stop");
+  }
+
+  async getSidecarStatus(): Promise<UtilitySidecarStatusResult> {
+    if (!this.utilityChild) {
+      return { status: "stopped" };
+    }
+    const status = (await this.request("sidecar.status")) as UtilitySidecarStatusResult;
+    this.lastSidecarStatuses.set("chat", status);
+    return status;
   }
 
   private async ping(): Promise<boolean> {
@@ -234,19 +263,26 @@ export class UtilityProcessBridge {
     });
   }
 
-  private async request(method: "ragQa.ask", payload: RagQaRequest): Promise<unknown>;
+  private async request(method: "ragQa.ask", payload: UtilityRagQaRequest): Promise<unknown>;
   private async request(method: "ragQa.stop", payload?: { runId?: string }): Promise<unknown>;
   private async request(
     method: "embedding.embed",
-    payload: { projectId: string; texts: string[] },
+    payload: { projectId: string; texts: string[]; runtimePlan?: UtilityRagQaRequest["runtimePlan"] },
   ): Promise<unknown>;
   private async request(
     method: "sidecar.start",
     payload: { binaryPath: string; modelPath: string; options?: { gpuLayers?: number; contextSize?: number } },
   ): Promise<unknown>;
+  private async request(method: "sidecar.status"): Promise<unknown>;
   private async request(method: "sidecar.stop"): Promise<unknown>;
   private async request(
-    method: "ragQa.ask" | "ragQa.stop" | "embedding.embed" | "sidecar.start" | "sidecar.stop",
+    method:
+      | "ragQa.ask"
+      | "ragQa.stop"
+      | "embedding.embed"
+      | "sidecar.start"
+      | "sidecar.status"
+      | "sidecar.stop",
     payload?: unknown,
   ): Promise<unknown> {
     const child = this.utilityChild;
@@ -256,9 +292,13 @@ export class UtilityProcessBridge {
       const timeoutMs =
         method === "ragQa.stop" || method === "sidecar.stop"
           ? REQUEST_TIMEOUT_STOP_MS
-          : method === "embedding.embed"
-            ? REQUEST_TIMEOUT_EMBED_MS
-            : REQUEST_TIMEOUT_ASK_MS;
+          : method === "sidecar.status"
+            ? REQUEST_TIMEOUT_STATUS_MS
+            : method === "sidecar.start"
+              ? REQUEST_TIMEOUT_SIDECAR_START_MS
+              : method === "embedding.embed"
+                ? REQUEST_TIMEOUT_EMBED_MS
+                : REQUEST_TIMEOUT_ASK_MS;
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(requestId);
         reject(new Error(`Utility request timeout: ${method}`));
@@ -269,7 +309,7 @@ export class UtilityProcessBridge {
           type: "request",
           requestId,
           method: "ragQa.ask",
-          payload: payload as RagQaRequest,
+          payload: payload as UtilityRagQaRequest,
         } satisfies UtilityInboundMessage);
         return;
       }
@@ -278,7 +318,11 @@ export class UtilityProcessBridge {
           type: "request",
           requestId,
           method: "embedding.embed",
-          payload: payload as { projectId: string; texts: string[] },
+          payload: payload as {
+            projectId: string;
+            texts: string[];
+            runtimePlan?: UtilityRagQaRequest["runtimePlan"];
+          },
         } satisfies UtilityInboundMessage);
         return;
       }
@@ -296,6 +340,14 @@ export class UtilityProcessBridge {
           type: "request",
           requestId,
           method: "sidecar.stop",
+        } satisfies UtilityInboundMessage);
+        return;
+      }
+      if (method === "sidecar.status") {
+        child.postMessage({
+          type: "request",
+          requestId,
+          method: "sidecar.status",
         } satisfies UtilityInboundMessage);
         return;
       }
@@ -332,6 +384,37 @@ export class UtilityProcessBridge {
     }
     if (message.type === "event" && message.event === "ragQa.error") {
       this.forwardRagError(message.payload);
+      return;
+    }
+    if (message.type === "event" && message.event === "sidecar.status") {
+      this.handleSidecarStatusEvent(message.payload);
+    }
+  }
+
+  private handleSidecarStatusEvent(payload: UtilitySidecarStatusEvent): void {
+    this.lastSidecarStatuses.set(payload.purpose, payload.status);
+    this.broadcastSidecarStatus(payload);
+    if (payload.status.status === "crashed" || payload.status.status === "cooldown") {
+      logger.warn("Utility sidecar status changed to unavailable", {
+        purpose: payload.purpose,
+        status: payload.status.status,
+        error: payload.status.lastError,
+      });
+      if (payload.purpose === "chat") {
+        this.emitCrashErrorsToActiveRuns(payload.status.lastError);
+      }
+      return;
+    }
+    logger.info("Utility sidecar status changed", {
+      purpose: payload.purpose,
+      status: payload.status.status,
+    });
+  }
+
+  private broadcastSidecarStatus(payload: UtilitySidecarStatusEvent): void {
+    for (const window of BrowserWindow.getAllWindows()) {
+      if (window.isDestroyed()) continue;
+      window.webContents.send(IPC_CHANNELS.SIDECAR_STATUS_CHANGED, payload);
     }
   }
 

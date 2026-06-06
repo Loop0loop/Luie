@@ -1,4 +1,15 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+
+const mocked = vi.hoisted(() => ({
+  embed: vi.fn(),
+}));
+
+vi.mock("../../../src/main/services/features/utility/utilityProcessBridge.js", () => ({
+  utilityProcessBridge: {
+    embed: mocked.embed,
+  },
+}));
+
 import { ProjectService } from "../../../src/main/services/core/projectService.js";
 import { ChapterService } from "../../../src/main/services/core/chapterService.js";
 import { memoryProjectionService } from "../../../src/main/services/features/memory/memoryProjectionService.js";
@@ -6,8 +17,6 @@ import { searchService } from "../../../src/main/services/features/searchService
 import { projectService } from "../../../src/main/services/core/projectService.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import { db } from "../../../src/main/database/index.js";
-import * as modelRuntimeFactory from "../../../src/main/services/llm/modelRuntimeFactory.js";
-import type { ModelRuntimeClient } from "../../../src/main/services/llm/modelRuntimeClient.js";
 
 /**
  * Property 2 (폴백 가용성): 임베딩이 미가용(embed null/예외)이어도 searchChunks 는
@@ -30,6 +39,7 @@ describe("SearchService — embedding fallback invariant (P2)", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    mocked.embed.mockReset();
     delete process.env.LUIE_IS_UTILITY_PROCESS;
   });
 
@@ -70,9 +80,7 @@ describe("SearchService — embedding fallback invariant (P2)", () => {
   it("returns FTS results without throwing when embed() throws", async () => {
     const projectId = await seedChunks();
     forceVectorSearchPath();
-    vi.spyOn(modelRuntimeFactory, "resolveEmbeddingRuntimeClient").mockResolvedValue({
-      embed: vi.fn().mockRejectedValue(new Error("embedding sidecar down")),
-    } as unknown as ModelRuntimeClient);
+    mocked.embed.mockRejectedValue(new Error("embedding sidecar down"));
 
     const chunks = await searchService.searchChunks({
       projectId,
@@ -86,9 +94,7 @@ describe("SearchService — embedding fallback invariant (P2)", () => {
   it("returns FTS results without throwing when embed() returns null", async () => {
     const projectId = await seedChunks();
     forceVectorSearchPath();
-    vi.spyOn(modelRuntimeFactory, "resolveEmbeddingRuntimeClient").mockResolvedValue({
-      embed: vi.fn().mockResolvedValue(null),
-    } as unknown as ModelRuntimeClient);
+    mocked.embed.mockResolvedValue(null);
 
     const chunks = await searchService.searchChunks({
       projectId,

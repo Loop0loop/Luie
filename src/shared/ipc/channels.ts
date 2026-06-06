@@ -171,6 +171,7 @@ export const IPC_CHANNELS = {
   SETTINGS_SET_LLM_KEYS: "settings:set-llm-keys",
   SIDECAR_STOP: "sidecar:stop",
   SIDECAR_STATUS: "sidecar:status",
+  SIDECAR_STATUS_CHANGED: "sidecar:status-changed",
   MODEL_DOWNLOAD_START: "model:download-start",
   MODEL_DOWNLOAD_CANCEL: "model:download-cancel",
   MODEL_DOWNLOAD_PROGRESS: "model:download-progress",

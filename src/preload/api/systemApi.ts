@@ -5,6 +5,7 @@ import type {
   AppUpdateState,
   SyncAuthResult,
   SyncStatus,
+  UtilitySidecarStatusEvent,
 } from "../../shared/types/index.js";
 import type { PreloadApiModuleContext } from "./types.js";
 
@@ -124,6 +125,15 @@ export function createSystemApi({
         safeInvoke(IPC_CHANNELS.SETTINGS_SET_LOCAL_LLM, input),
       getSidecarStatus: () =>
         safeInvoke(IPC_CHANNELS.SIDECAR_STATUS),
+      onSidecarStatusChanged: (callback) => {
+        const listener = (_event: unknown, payload: UtilitySidecarStatusEvent) => {
+          callback(payload);
+        };
+        ipcRenderer.on(IPC_CHANNELS.SIDECAR_STATUS_CHANGED, listener);
+        return () => {
+          ipcRenderer.removeListener(IPC_CHANNELS.SIDECAR_STATUS_CHANGED, listener);
+        };
+      },
       stopSidecar: () =>
         safeInvoke(IPC_CHANNELS.SIDECAR_STOP),
       startModelDownload: (input) =>
