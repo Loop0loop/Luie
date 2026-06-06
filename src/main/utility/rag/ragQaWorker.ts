@@ -228,6 +228,13 @@ class RagQaWorker {
         question: run.request.question,
         chapterId: run.request.chapterId,
         signal: run.abortController.signal,
+        embedTexts: async (projectId, texts) => {
+          const embeddingRuntime = await resolveUtilityEmbeddingRuntimeClient(
+            projectId,
+            run.request.runtimePlan,
+          );
+          return embeddingRuntime.embed(texts);
+        },
       });
       logger.info("RAG context assembled", {
         runId: run.runId,

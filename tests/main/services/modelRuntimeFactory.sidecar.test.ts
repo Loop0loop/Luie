@@ -3,13 +3,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocked = vi.hoisted(() => ({
   getLlmSettings: vi.fn(),
   getLocalLlmSettings: vi.fn(),
+  getSyncSettings: vi.fn(),
   ensureStarted: vi.fn(),
+  getSupabaseConfig: vi.fn(),
+  ensureSyncAccessToken: vi.fn(),
 }));
 
 vi.mock("../../../src/main/manager/settings/index.js", () => ({
   settingsManager: {
     getLlmSettings: mocked.getLlmSettings,
     getLocalLlmSettings: mocked.getLocalLlmSettings,
+    getSyncSettings: mocked.getSyncSettings,
   },
 }));
 
@@ -17,6 +21,14 @@ vi.mock("../../../src/main/services/llm/sidecarManager.js", () => ({
   sidecarManager: {
     ensureStarted: mocked.ensureStarted,
   },
+}));
+
+vi.mock("../../../src/main/services/features/sync/supabaseEnv.js", () => ({
+  getSupabaseConfig: mocked.getSupabaseConfig,
+}));
+
+vi.mock("../../../src/main/services/features/sync/syncAccessToken.js", () => ({
+  ensureSyncAccessToken: mocked.ensureSyncAccessToken,
 }));
 
 import {
@@ -32,9 +44,17 @@ describe("modelRuntimeFactory sidecar", () => {
     delete process.env.GOOGLE_GCP_API;
     delete process.env.GOOGLE_API_KEY;
     delete process.env.OPENAI_API_KEY;
+    delete process.env.LUIE_APP_IS_PACKAGED;
     mocked.getLlmSettings.mockReturnValue({});
     mocked.getLocalLlmSettings.mockReturnValue(undefined);
+    mocked.getSyncSettings.mockReturnValue({});
     mocked.ensureStarted.mockResolvedValue("http://127.0.0.1:32123");
+    mocked.getSupabaseConfig.mockReturnValue({
+      url: "https://example.supabase.co",
+      anonKey: "anon-key",
+      projectId: "example",
+    });
+    mocked.ensureSyncAccessToken.mockResolvedValue("sync-token");
   });
 
   it("reports sidecar as the first configured provider without starting it", async () => {
@@ -137,5 +157,56 @@ describe("modelRuntimeFactory sidecar", () => {
         },
       ],
     });
+  });
+
+  it("uses bundled Edge Function candidates in packaged builds without local API keys", async () => {
+    process.env.LUIE_APP_IS_PACKAGED = "1";
+    mocked.getLlmSettings.mockReturnValue({});
+    mocked.getLocalLlmSettings.mockReturnValue(undefined);
+
+    const { plan } = await import("../../../src/main/services/llm/modelRuntimeFactory.js")
+      .then((module) => module.resolveRuntimeRoutePlan());
+
+    const openai = plan.candidates.find((candidate) => candidate.kind === "openai");
+    const gemini = plan.candidates.find((candidate) => candidate.kind === "gemini");
+
+    expect(openai).toMatchObject({
+      kind: "openai",
+      apiKey: "__bundled-edge-function__",
+      supabaseProxy: {
+        functionUrl: "https://example.supabase.co/functions/v1/openai-proxy",
+        accessToken: "sync-token",
+      },
+    });
+    expect(gemini).toMatchObject({
+      kind: "gemini",
+      apiKey: "__bundled-edge-function__",
+      supabaseProxy: {
+        functionUrl: "https://example.supabase.co/functions/v1/gemini-proxy",
+        accessToken: "sync-token",
+      },
+    });
+    expect(mocked.ensureSyncAccessToken).toHaveBeenCalled();
+  });
+
+  it("uses .env cloud API keys directly in non-packaged builds", async () => {
+    process.env.LUIE_APP_IS_PACKAGED = "0";
+    process.env.OPENAI_API_KEY = "openai-env-key";
+    process.env.GEMINI_API_KEY = "gemini-env-key";
+    mocked.getLlmSettings.mockReturnValue({});
+    mocked.getLocalLlmSettings.mockReturnValue(undefined);
+
+    const { plan } = await import("../../../src/main/services/llm/modelRuntimeFactory.js")
+      .then((module) => module.resolveRuntimeRoutePlan());
+
+    expect(plan.candidates.find((candidate) => candidate.kind === "openai")).toMatchObject({
+      kind: "openai",
+      apiKey: "openai-env-key",
+    });
+    expect(plan.candidates.find((candidate) => candidate.kind === "gemini")).toMatchObject({
+      kind: "gemini",
+      apiKey: "gemini-env-key",
+    });
+    expect(mocked.ensureSyncAccessToken).not.toHaveBeenCalled();
   });
 });

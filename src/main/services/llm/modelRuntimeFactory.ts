@@ -13,6 +13,7 @@ import {
   createGeminiSupabaseProxyResolver,
   createOpenAiSupabaseProxyResolver,
 } from "./runtimeProxyConfig.js";
+import { isAppPackaged } from "../../utils/appEnv.js";
 
 export function invalidateModelRuntimeCache(): void {
   // Runtime clients are materialized in the utility process. This compatibility
@@ -43,6 +44,8 @@ type EnvOpenAiConfig = {
   model: string;
   embeddingModel?: string;
 };
+
+const BUNDLED_PROXY_API_KEY_PLACEHOLDER = "__bundled-edge-function__";
 
 type PlannedRuntime =
   | { kind: "sidecar"; candidate: Extract<RuntimeRouteCandidate, { kind: "sidecar" }> }
@@ -128,28 +131,45 @@ async function loadOllamaConfig(): Promise<OllamaConfig | null> {
 }
 
 function loadEnvGeminiConfig(): EnvGeminiConfig | null {
-  const apiKey =
+  const packaged = isAppPackaged();
+  const apiKeyFromEnv =
     process.env.GEMINI_API_KEY?.trim() ||
     process.env.GOOGLE_GCP_API?.trim() ||
     process.env.GOOGLE_API_KEY?.trim() ||
     settingsManager.getLlmSettings().geminiApiKey?.trim() ||
     "";
   const model = process.env.GEMINI_MODEL?.trim() ?? "gemini-2.5-flash-lite";
-  if (!apiKey || !model) return null;
+  if (!model) return null;
   const alternativeModel = process.env.ALTERNATIVE_GEMINI_MODEL?.trim() || undefined;
+  if (packaged) {
+    return {
+      apiKey: BUNDLED_PROXY_API_KEY_PLACEHOLDER,
+      model,
+      alternativeModel,
+    };
+  }
+  if (!apiKeyFromEnv) return null;
   const embeddingModel = process.env.GEMINI_EMBEDDING_MODEL?.trim() || "text-embedding-004";
-  return { apiKey, model, alternativeModel, embeddingModel };
+  return { apiKey: apiKeyFromEnv, model, alternativeModel, embeddingModel };
 }
 
 function loadEnvOpenAiConfig(): EnvOpenAiConfig | null {
-  const apiKey =
+  const packaged = isAppPackaged();
+  const apiKeyFromEnv =
     process.env.OPENAI_API_KEY?.trim() ||
     settingsManager.getLlmSettings().openaiApiKey?.trim() ||
     "";
   const model = process.env.OPENAI_MODEL?.trim() ?? "gpt-5.4-nano";
-  if (!apiKey || !model) return null;
+  if (!model) return null;
+  if (packaged) {
+    return {
+      apiKey: BUNDLED_PROXY_API_KEY_PLACEHOLDER,
+      model,
+    };
+  }
+  if (!apiKeyFromEnv) return null;
   const embeddingModel = process.env.OPENAI_EMBEDDING_MODEL?.trim() || undefined;
-  return { apiKey, model, embeddingModel };
+  return { apiKey: apiKeyFromEnv, model, embeddingModel };
 }
 
 function buildSkip(provider: RuntimeProvider, code: string, message: string): RuntimeSkip {

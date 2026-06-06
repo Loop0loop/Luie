@@ -3,7 +3,7 @@ import net from "node:net";
 import path from "node:path";
 import { createLogger } from "../../../shared/logger/index.js";
 import type { UtilitySidecarPurpose, UtilitySidecarStatus } from "../../../shared/types/index.js";
-import { EMBEDDING_SERVER_DEFAULTS } from "../../services/llm/embeddingModelConstants.js";
+import { UTILITY_EMBEDDING_SERVER_DEFAULTS } from "./embeddingModelConstants.js";
 
 const sidecarLogger = createLogger("UtilitySidecarSupervisor");
 const HEALTH_POLL_INTERVAL_MS = 500;
@@ -335,13 +335,13 @@ export class UtilitySidecarSupervisor {
         "127.0.0.1",
         "--embeddings",
         "--pooling",
-        EMBEDDING_SERVER_DEFAULTS.pooling,
+        UTILITY_EMBEDDING_SERVER_DEFAULTS.pooling,
         "--ctx-size",
-        String(options?.contextSize ?? EMBEDDING_SERVER_DEFAULTS.contextSize),
+        String(options?.contextSize ?? UTILITY_EMBEDDING_SERVER_DEFAULTS.contextSize),
         "--n-gpu-layers",
-        String(options?.gpuLayers ?? EMBEDDING_SERVER_DEFAULTS.gpuLayers),
+        String(options?.gpuLayers ?? UTILITY_EMBEDDING_SERVER_DEFAULTS.gpuLayers),
         "--threads",
-        String(EMBEDDING_SERVER_DEFAULTS.threads),
+        String(UTILITY_EMBEDDING_SERVER_DEFAULTS.threads),
         "--log-disable",
       ];
     }

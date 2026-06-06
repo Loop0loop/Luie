@@ -76,6 +76,35 @@ describe("provider client dependency boundary", () => {
     expect(materializerSource).not.toContain("settingsManager");
     expect(materializerSource).not.toContain("ensureSyncAccessToken");
     expect(materializerSource).not.toContain("getSupabaseConfig");
+    expect(materializerSource).not.toContain("../../services/llm/embeddingModelConstants");
     expect(materializerSource).toContain("proxyResolverForCandidate");
+  });
+
+  it("keeps utility sidecar supervisor free of main LLM service constants", () => {
+    const supervisorSource = providerSource("src/main/utility/llm/sidecarSupervisor.ts");
+
+    expect(supervisorSource).not.toContain("../../services/llm/embeddingModelConstants");
+    expect(supervisorSource).toContain("./embeddingModelConstants");
+  });
+
+  it("keeps utility RAG database imports off the main infra barrel", () => {
+    const utilityMainSource = providerSource("src/main/utility/process/utilityProcessMain.ts");
+    const contextAssemblerSource = providerSource("src/main/services/features/rag/contextAssembler.ts");
+    const chunkSearchSource = providerSource("src/main/services/features/search/chunkSearch.ts");
+
+    for (const source of [utilityMainSource, contextAssemblerSource, chunkSearchSource]) {
+      expect(source).not.toContain("infra/database/index");
+      expect(source).not.toContain("infra/database/cache");
+    }
+  });
+
+  it("keeps utility RAG context assembly off main utilityProcessBridge imports", () => {
+    const contextAssemblerSource = providerSource("src/main/services/features/rag/contextAssembler.ts");
+    const workerSource = providerSource("src/main/utility/rag/ragQaWorker.ts");
+
+    expect(contextAssemblerSource).not.toContain("../searchService.js");
+    expect(contextAssemblerSource).not.toContain("utilityProcessBridge");
+    expect(workerSource).toContain("embedTexts:");
+    expect(workerSource).toContain("resolveUtilityEmbeddingRuntimeClient");
   });
 });

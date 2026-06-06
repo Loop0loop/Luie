@@ -36,19 +36,55 @@ const parseProjectRef = (...candidates) => {
 const projectRef = parseProjectRef(
   process.env.SUPABASE_PROJECT_REF,
   process.env.SUPADATABASE_PRJ_ID,
+  process.env.VITE_SUPABASE_URL,
   process.env.SUPABASE_URL,
 );
 const openAiApiKey = process.env.OPENAI_API_KEY?.trim() ?? "";
+const geminiApiKey =
+  process.env.GEMINI_API_KEY?.trim() ??
+  process.env.GOOGLE_GCP_API?.trim() ??
+  process.env.GOOGLE_API_KEY?.trim() ??
+  "";
+
+const writeSecretEnvFile = (tmpDir) => {
+  const lines = [];
+  if (openAiApiKey) {
+    lines.push(`OPENAI_API_KEY=${openAiApiKey}`);
+  }
+  if (geminiApiKey) {
+    lines.push(`GEMINI_API_KEY=${geminiApiKey}`);
+  }
+  if (lines.length === 0) {
+    return null;
+  }
+  const envFilePath = join(tmpDir, "llm-proxy.env");
+  writeFileSync(envFilePath, `${lines.join("\n")}\n`, {
+    mode: 0o600,
+  });
+  return envFilePath;
+};
+
+const buildSupabaseCliEnv = () => {
+  const env = { ...process.env };
+  const accessToken = env.SUPABASE_ACCESS_TOKEN?.trim();
+  if (accessToken && !accessToken.startsWith("sbp_")) {
+    delete env.SUPABASE_ACCESS_TOKEN;
+    console.warn(
+      "[supabase-openai] Ignoring SUPABASE_ACCESS_TOKEN because it is not an sbp_ token. Run `pnpm exec supabase login` or set a valid sbp_ access token if remote auth is required.",
+    );
+  }
+  return env;
+};
 
 const runSupabase = (args) => {
   const packageManagerCommand =
     process.platform === "win32" ? "pnpm.cmd" : "pnpm";
   const result = spawnSync(
     packageManagerCommand,
-    ["exec", "supabase", ...args],
+    ["exec", "supabase", "--workdir", "supabase", ...args],
     {
       stdio: "inherit",
-      env: process.env,
+      env: buildSupabaseCliEnv(),
     },
   );
   if (result.error) {
@@ -77,18 +113,18 @@ switch (action) {
   }
   case "set-secret": {
     requireProjectRef();
-    if (!openAiApiKey) {
+    if (!openAiApiKey && !geminiApiKey) {
       console.error(
-        "[supabase-openai] OPENAI_API_KEY is required. Set it locally, then rerun this command.",
+        "[supabase-openai] OPENAI_API_KEY or GEMINI_API_KEY is required. Set one locally, then rerun this command.",
       );
       process.exit(1);
     }
     const tmpDir = mkdtempSync(join(tmpdir(), "luie-supabase-secret-"));
-    const envFilePath = join(tmpDir, "openai.env");
-    writeFileSync(envFilePath, `OPENAI_API_KEY=${openAiApiKey}\n`, {
-      mode: 0o600,
-    });
+    const envFilePath = writeSecretEnvFile(tmpDir);
     try {
+      if (!envFilePath) {
+        process.exit(1);
+      }
       process.exit(
         runSupabase([
           "secrets",
@@ -105,22 +141,39 @@ switch (action) {
   }
   case "deploy": {
     requireProjectRef();
+    const openAiStatus = runSupabase([
+      "functions",
+      "deploy",
+      "openai-proxy",
+      "--project-ref",
+      projectRef,
+    ]);
+    if (openAiStatus !== 0) {
+      process.exit(openAiStatus);
+    }
     process.exit(
       runSupabase([
         "functions",
         "deploy",
-        "openai-proxy",
+        "gemini-proxy",
         "--project-ref",
         projectRef,
       ]),
     );
   }
   case "serve": {
-    process.exit(runSupabase(["functions", "serve", "openai-proxy"]));
+    const functionName = process.argv[3]?.trim() || "openai-proxy";
+    if (!["openai-proxy", "gemini-proxy", "luieEnv"].includes(functionName)) {
+      console.error(
+        "[supabase-openai] serve target must be one of: openai-proxy, gemini-proxy, luieEnv",
+      );
+      process.exit(1);
+    }
+    process.exit(runSupabase(["functions", "serve", functionName]));
   }
   default: {
     console.error(
-      "Usage: node scripts/supabase-openai.mjs <link|set-secret|deploy|serve>",
+      "Usage: node scripts/supabase-openai.mjs <link|set-secret|deploy|serve [openai-proxy|gemini-proxy|luieEnv]>",
     );
     process.exit(1);
   }

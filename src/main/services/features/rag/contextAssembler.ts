@@ -1,6 +1,13 @@
 import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import type { AnyColumn, SQLWrapper } from "drizzle-orm";
-import { db } from "../../../infra/database/index.js";
+import { db } from "../../../database/main/databaseService.js";
+import {
+  buildFtsQuery,
+  mergeWithRRF,
+  searchByShortTokens,
+  searchByVector,
+  shouldRunVectorSearch,
+} from "../search/index.js";
 import {
   chapter,
   chapterSummary,
@@ -12,9 +19,8 @@ import {
   plot,
   synopsis,
   term,
-} from "../../../infra/database/index.js";
-import { searchService } from "../searchService.js";
-import type { RagQaEvidence } from "../../../../shared/types/index.js";
+} from "../../../database/schema/index.js";
+import type { MemoryChunkSearchResult, RagQaEvidence } from "../../../../shared/types/index.js";
 import { escapeLike } from "../../../utils/queryHelpers.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import { loadRagPromptConfig } from "./ragPromptConfig.js";
@@ -24,6 +30,12 @@ export type RagContextPacket = {
   userPrompt: string;
   evidence: RagQaEvidence[];
 };
+
+type RagEmbeddingProvider = (
+  projectId: string,
+  texts: string[],
+) => Promise<ReadonlyArray<ArrayLike<number>> | null>;
+
 const logger = createLogger("RagContextAssembler");
 
 // Char limits tuned for 8192-token context (Korean: ~1 char ≈ 1 token).
@@ -306,15 +318,24 @@ async function buildLayer2RelatedEntities(projectId: string, question: string): 
   return trimByChars(content, LAYER2_CHAR_LIMIT);
 }
 
-async function buildLayer3Evidence(projectId: string, question: string): Promise<{
+async function buildLayer3Evidence(
+  projectId: string,
+  question: string,
+  embedTexts?: RagEmbeddingProvider,
+): Promise<{
   section: string;
   evidence: RagQaEvidence[];
 }> {
-  let rows = await searchService.searchChunks({ projectId, query: question, limit: 10 });
+  let rows = await searchMemoryChunksForRag({
+    projectId,
+    query: question,
+    limit: 10,
+    embedTexts,
+  });
   if (rows.length === 0) {
     const normalizedQuestion = question.trim();
     const escaped = escapeLike(normalizedQuestion);
-  const rawTokens = buildLexicalTokens(normalizedQuestion, 8);
+    const rawTokens = buildLexicalTokens(normalizedQuestion, 8);
     const tokenPredicates = rawTokens
       .map((token) => escapeLike(token))
       .filter((token): token is string => token.length > 0)
@@ -383,12 +404,102 @@ async function buildLayer3Evidence(projectId: string, question: string): Promise
   return { section, evidence };
 }
 
+async function searchMemoryChunksForRag(input: {
+  projectId: string;
+  query: string;
+  limit: number;
+  embedTexts?: RagEmbeddingProvider;
+}): Promise<MemoryChunkSearchResult[]> {
+  const normalizedQuery = input.query.trim();
+  if (normalizedQuery.length === 0) return [];
+
+  const limit = Math.max(1, Math.min(input.limit, 100));
+  const client = db.getClient();
+  const ftsQuery = buildFtsQuery(normalizedQuery);
+  const ftsRows = ftsQuery.length > 0
+    ? client.all<{ chunkId: string }>(sql`
+      SELECT fts."chunkId" AS "chunkId"
+      FROM "MemoryChunkFts" fts
+      WHERE fts."projectId" = ${input.projectId}
+        AND "MemoryChunkFts" MATCH ${ftsQuery}
+      ORDER BY bm25("MemoryChunkFts"), fts."chunkId"
+      LIMIT ${Math.max(limit, 50)};
+    `)
+    : [];
+
+  const lexicalRanks = await searchByShortTokens(
+    input.projectId,
+    normalizedQuery,
+    Math.max(limit, 50),
+    logger,
+  );
+
+  let denseRanks: Array<{ chunkId: string; rank: number }> = [];
+  if (input.embedTexts && shouldRunVectorSearch()) {
+    try {
+      const vecs = await input.embedTexts(input.projectId, [normalizedQuery]);
+      const queryVector = vecs?.[0] ? new Float32Array(vecs[0]) : null;
+      if (queryVector && queryVector.length > 0) {
+        denseRanks = searchByVector(
+          input.projectId,
+          queryVector,
+          Math.max(limit, 50),
+          logger,
+        );
+      }
+    } catch (error) {
+      logger.warn("RAG embedding unavailable; fallback to FTS only", {
+        projectId: input.projectId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  const merged = mergeWithRRF(
+    [
+      ftsRows.map((row, index) => ({ chunkId: row.chunkId, rank: index + 1 })),
+      lexicalRanks,
+      denseRanks,
+    ],
+    limit,
+  );
+  if (merged.length === 0) return [];
+
+  const chunkIds = merged.map((row) => row.chunkId);
+  const chunkRows = await client
+    .select({
+      chunkId: memoryChunk.id,
+      chapterId: memoryChunk.chapterId,
+      content: memoryChunk.content,
+      startOffset: memoryChunk.startOffset,
+      endOffset: memoryChunk.endOffset,
+    })
+    .from(memoryChunk)
+    .where(sql`${memoryChunk.id} IN (${sql.join(chunkIds.map((id) => sql`${id}`), sql`,`)})`);
+  const chunkMap = new Map(chunkRows.map((row) => [row.chunkId, row]));
+  return merged
+    .map((row) => {
+      const chunk = chunkMap.get(row.chunkId);
+      if (!chunk) return null;
+      return {
+        chunkId: chunk.chunkId,
+        chapterId: chunk.chapterId ?? null,
+        content: chunk.content,
+        startOffset: chunk.startOffset ?? null,
+        endOffset: chunk.endOffset ?? null,
+        score: row.score,
+      };
+    })
+    .filter((row): row is MemoryChunkSearchResult => row !== null);
+}
+
 export async function assembleRagContext(input: {
   projectId: string;
   question: string;
   chapterId?: string;
   signal?: AbortSignal;
   contextBudget?: number;
+  embedTexts?: RagEmbeddingProvider;
 }): Promise<RagContextPacket> {
   throwIfAborted(input.signal);
   const budget = input.contextBudget ?? 8_192;
@@ -397,7 +508,7 @@ export async function assembleRagContext(input: {
     buildLayer0ProjectSummary(input.projectId),
     buildLayer1ChapterSummaries(input.projectId, layer1Limit),
     buildLayer2RelatedEntities(input.projectId, input.question),
-    buildLayer3Evidence(input.projectId, input.question),
+    buildLayer3Evidence(input.projectId, input.question, input.embedTexts),
     loadRagPromptConfig(),
   ]);
   throwIfAborted(input.signal);

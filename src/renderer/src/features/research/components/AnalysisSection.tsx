@@ -153,47 +153,6 @@ export default function AnalysisSection() {
   }, []);
 
   const applyRuntimePreference = useCallback(async (next: RuntimePreference) => {
-    const allSettings = await api.settings.getAll();
-    const llmSettings = allSettings.data?.llm;
-    const localLlm = llmSettings?.localLlm;
-
-    let isAvailable = true;
-
-    if (next === "openai") {
-      const hasKey = Boolean(llmSettings?.openaiApiKey);
-      if (!hasKey) {
-        isAvailable = false;
-      }
-    } else if (next === "gemini") {
-      const hasKey = Boolean(llmSettings?.geminiApiKey);
-      if (!hasKey) {
-        isAvailable = false;
-      }
-    } else if (next === "sidecar") {
-      const hasSidecar = Boolean(localLlm?.enabled && localLlm.modelPath && localLlm.binaryPath);
-      if (!hasSidecar) {
-        isAvailable = false;
-      }
-    } else if (next === "ollama") {
-      const hasOllama = Boolean(llmSettings?.ollama?.baseUrl && llmSettings.ollama.chatModel);
-      if (!hasOllama) {
-        isAvailable = false;
-      }
-    }
-
-    if (!isAvailable) {
-      const confirmed = window.confirm(
-        t("settings.localLlm.apiKeys.missingAlert.message")
-      );
-      if (confirmed) {
-        window.dispatchEvent(
-          new CustomEvent("luie:open-settings", { detail: { tab: "model" } })
-        );
-      }
-      return;
-    }
-
-    setRuntimePreference(next);
     const response = await api.settings.setLlmPreference({ provider: next });
     if (!response.success) {
       showToast(response.error?.message ?? "LLM preference 변경 실패", "error");
@@ -202,6 +161,17 @@ export default function AnalysisSection() {
     const runtime = await api.settings.getLlmRuntime();
     if (runtime.success && runtime.data) {
       setRuntimeInfo(runtime.data);
+      if (runtime.data.resolvedProvider === "unavailable") {
+        const reason = runtime.data.skipped?.[0]?.message ?? "선택한 LLM 경로를 사용할 수 없습니다.";
+        const confirmed = window.confirm(`${reason}\n\n설정 페이지의 모델 탭을 여시겠습니까?`);
+        if (confirmed) {
+          window.dispatchEvent(
+            new CustomEvent("luie:open-settings", { detail: { tab: "model" } })
+          );
+        }
+        return;
+      }
+      setRuntimePreference(next);
       showToast(`LLM 경로 변경: ${next} → ${runtime.data.resolvedProvider ?? runtime.data.provider}`, "info");
     }
     const sidecar = await api.settings.getSidecarStatus();

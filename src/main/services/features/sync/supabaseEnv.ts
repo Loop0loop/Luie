@@ -41,10 +41,16 @@ const resolveFromBundledDefaults = (): ResolvedSupabaseConfig | null => {
 
 const resolveFromEnv = (): ResolvedSupabaseConfig | null => {
   const envConfig = normalizeRuntimeSupabaseConfigInput({
-    url: trimEnv("SUPABASE_URL") ?? trimEnv("SUPADB_URL") ?? undefined,
+    url:
+      trimEnv("VITE_SUPABASE_URL") ??
+      trimEnv("SUPABASE_URL") ??
+      trimEnv("SUPADB_URL") ??
+      undefined,
     anonKey:
+      trimEnv("VITE_SUPABASE_PUBLISHABLE_KEY") ??
       trimEnv("SUPABASE_ANON_KEY") ??
       trimEnv("SUPABASE_PUBLISHABLE_KEY") ??
+      trimEnv("SB_PUBLISHABLE_KEY") ??
       trimEnv("SUPADATABASE_API") ??
       undefined,
   });

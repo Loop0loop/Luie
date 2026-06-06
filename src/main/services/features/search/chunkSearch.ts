@@ -1,6 +1,6 @@
 import { and, desc, eq, or, sql } from "drizzle-orm";
-import { db } from "../../../infra/database/index.js";
-import { memoryChunk } from "../../../infra/database/index.js";
+import { db } from "../../../database/main/databaseService.js";
+import { memoryChunk } from "../../../database/schema/index.js";
 import { escapeLike } from "../../../utils/queryHelpers.js";
 
 type LoggerLike = {

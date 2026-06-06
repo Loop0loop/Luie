@@ -59,6 +59,14 @@ Deno.serve(async (req: Request) => {
     service: "luieEnv",
     status: "healthy",
     userId: user.id,
+    edgeSecrets: {
+      openai: Boolean(Deno.env.get("OPENAI_API_KEY")),
+      gemini: Boolean(
+        Deno.env.get("GEMINI_API_KEY") ??
+          Deno.env.get("GOOGLE_GCP_API") ??
+          Deno.env.get("GOOGLE_API_KEY"),
+      ),
+    },
     timestamp: new Date().toISOString(),
   });
 });

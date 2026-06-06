@@ -352,11 +352,22 @@ class StartupReadinessService {
         );
       }
 
-      let edgePayload: { ok?: boolean; userId?: string } | null = null;
+      let edgePayload: {
+        ok?: boolean;
+        userId?: string;
+        edgeSecrets?: {
+          openai?: boolean;
+          gemini?: boolean;
+        };
+      } | null = null;
       try {
         edgePayload = (await edgeResponse.json()) as {
           ok?: boolean;
           userId?: string;
+          edgeSecrets?: {
+            openai?: boolean;
+            gemini?: boolean;
+          };
         };
       } catch {
         edgePayload = null;
@@ -371,10 +382,15 @@ class StartupReadinessService {
         );
       }
 
+      const edgeSecrets = edgePayload.edgeSecrets;
+      const secretStatus = edgeSecrets
+        ? `edgeSecrets(openai=${edgeSecrets.openai ? "set" : "missing"}, gemini=${edgeSecrets.gemini ? "set" : "missing"})`
+        : "edgeSecrets(unknown)";
+
       return buildCheck(
         "supabaseSession",
         true,
-        edgePayload.userId ?? syncSettings.email ?? syncSettings.userId,
+        `${edgePayload.userId ?? syncSettings.email ?? syncSettings.userId}; ${secretStatus}`,
         false,
       );
     } catch (error) {

@@ -1,7 +1,7 @@
 import { createLogger } from "../../../shared/logger/index.js";
 import type { UtilityRagQaRequest, UtilitySidecarStatusEvent } from "../../../shared/types/index.js";
-import { db } from "../../infra/database/index.js";
-import { cacheDb } from "../../infra/database/cache.js";
+import { db } from "../../database/main/databaseService.js";
+import { cacheDb } from "../../database/cache/cacheDb.js";
 import {
   utilityEmbeddingSidecarSupervisor,
   utilitySidecarSupervisor,

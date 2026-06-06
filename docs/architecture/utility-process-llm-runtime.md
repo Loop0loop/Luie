@@ -527,6 +527,7 @@ modelPath: redacted/base name only
 - 테스트 추가: boundary analyzer가 direct forbidden imports를 잡는지 확인.
 - 현재 남아 있는 간접 import graph violation을 이 문서에 명시합니다.
 - docs/llm의 Ollama-only 계획과 local sidecar 계획 충돌을 명시적으로 정리합니다.
+- utility code는 main `src/main/services/llm/embeddingModelConstants.ts`를 직접 import하지 않습니다. bundler가 main LLM service chunk를 따라가면 utility process에서 `electron.app` named export 오류가 날 수 있습니다.
 - 다음 Phase 진입 조건: utility RAG worker가 main `modelRuntimeFactory`를 직접 import하지 않도록 분리 계획을 구현합니다.
 
 ### Phase 1: Runtime Status First
@@ -559,6 +560,10 @@ modelPath: redacted/base name only
 - remote 후보는 utility가 materialize할 수 있도록 `apiKey`, `model`, `baseUrl`, `embeddingModel`을 plan candidate에 포함합니다.
 - `modelRuntimeFactory`는 route order와 fail-closed/try-next 정책을 planner에서 받아 사용합니다.
 - `modelRuntimeFactory.resolveRuntimeModelInfo()`와 `resolveRuntimeModelConfig()`는 route plan만 보고 결정합니다. 이 조회 경로는 `sidecarManager.ensureStarted()`를 호출하지 않습니다.
+- non-packaged build는 `.env`/settings의 OpenAI/Gemini API key를 직접 provider candidate로 사용합니다.
+- packaged build는 앱 내 API key를 요구하지 않고 OpenAI/Gemini Edge Function proxy candidate를 생성합니다. 이때 route candidate의 `apiKey`는 provider constructor 호환용 placeholder이고, generation은 `supabaseProxy`로만 나갑니다.
+- Supabase 재연결은 기존 sync config resolver를 재사용합니다. `.env`에서는 `VITE_SUPABASE_URL`과 `VITE_SUPABASE_PUBLISHABLE_KEY`를 우선 사용하며, 기존 `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_PUBLISHABLE_KEY`, `SB_PUBLISHABLE_KEY`도 호환합니다.
+- Edge Function vendor secret은 앱/utility process로 가져오지 않습니다. `openai-proxy`는 `OPENAI_API_KEY`, `gemini-proxy`는 `GEMINI_API_KEY`/`GOOGLE_GCP_API`/`GOOGLE_API_KEY`를 Edge runtime secret에서만 읽습니다. `luieEnv` bootstrap health는 secret 값을 반환하지 않고 설정 여부만 boolean으로 반환합니다.
 - `UtilityProcessBridge.askRagQa()`와 `UtilityProcessBridge.embed()`는 renderer 입력을 그대로 utility에 넘기지 않고, main에서 만든 inline route plan을 붙여 보냅니다.
 - `UtilityProcessBridge.generateText()`도 main에서 만든 inline route plan을 utility에 붙여 보냅니다.
 - main `modelRuntimeFactory`의 client materialization 함수는 제거됐고, route/status/config planning surface만 남았습니다.
@@ -582,6 +587,7 @@ modelPath: redacted/base name only
 - explicit sidecar embedding materialization failure도 deterministic fallback으로 숨기지 않고 fail-closed로 throw합니다.
 - auto route는 plan order에 따라 candidate를 시도하고, materialize 가능한 remote candidate로 fallback합니다.
 - utility materializer는 provider client 구현을 재사용하지만, provider client는 settings/sync dependency를 직접 import하지 않습니다.
+- utility materializer와 sidecar supervisor는 utility-local embedding constants를 사용합니다. main LLM service constants를 import하지 않습니다.
 
 향후 개선:
 

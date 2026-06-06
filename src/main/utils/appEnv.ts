@@ -7,8 +7,10 @@ const requireFn = createRequire(import.meta.url);
  * utilityProcess 내부에서는 app 객체가 직접 로드되지 않으므로, 부모로부터 상속받은 환경 변수 분기를 사용합니다.
  */
 export function isAppPackaged(): boolean {
+  if (process.env.LUIE_APP_IS_PACKAGED === "1") return true;
+  if (process.env.LUIE_APP_IS_PACKAGED === "0") return false;
   if (process.env.LUIE_IS_UTILITY_PROCESS === "1") {
-    return process.env.LUIE_APP_IS_PACKAGED === "1";
+    return false;
   }
   try {
     const electron = requireFn("electron") as { app?: { isPackaged?: boolean } };

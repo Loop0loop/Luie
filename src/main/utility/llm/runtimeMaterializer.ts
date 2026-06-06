@@ -11,13 +11,13 @@ import type {
   RuntimeSupabaseProxyResolver,
 } from "../../services/llm/modelRuntimeClient.js";
 import { DeterministicProvider } from "../../services/llm/providers/deterministicProvider.js";
-import {
-  BUNDLED_MODELS_DIR,
-  DEFAULT_EMBEDDING_MODEL,
-  EMBEDDING_SERVER_DEFAULTS,
-} from "../../services/llm/embeddingModelConstants.js";
 import { ExternalApiProvider } from "../../services/llm/providers/externalApiProvider.js";
 import { GeminiProvider } from "../../services/llm/providers/geminiProvider.js";
+import {
+  UTILITY_BUNDLED_MODELS_DIR,
+  UTILITY_DEFAULT_EMBEDDING_MODEL,
+  UTILITY_EMBEDDING_SERVER_DEFAULTS,
+} from "./embeddingModelConstants.js";
 import {
   utilityEmbeddingSidecarSupervisor,
   utilitySidecarSupervisor,
@@ -138,12 +138,12 @@ function getOrCreateGeminiProvider(
 }
 
 export function resolveUtilityEmbeddingModelPath(): string | null {
-  const filename = DEFAULT_EMBEDDING_MODEL.filename;
+  const filename = UTILITY_DEFAULT_EMBEDDING_MODEL.filename;
   const candidates = [
     typeof process.resourcesPath === "string" && process.resourcesPath.length > 0
-      ? path.join(process.resourcesPath, BUNDLED_MODELS_DIR, filename)
+      ? path.join(process.resourcesPath, UTILITY_BUNDLED_MODELS_DIR, filename)
       : null,
-    path.join(process.cwd(), "resources", BUNDLED_MODELS_DIR, filename),
+    path.join(process.cwd(), "resources", UTILITY_BUNDLED_MODELS_DIR, filename),
     process.env.LUIE_USER_DATA_PATH
       ? path.join(process.env.LUIE_USER_DATA_PATH, "llm-models", filename)
       : null,
@@ -266,8 +266,8 @@ export async function resolveUtilityEmbeddingRuntimeClient(
             candidate.binaryPath,
             embeddingModelPath,
             {
-              gpuLayers: EMBEDDING_SERVER_DEFAULTS.gpuLayers,
-              contextSize: EMBEDDING_SERVER_DEFAULTS.contextSize,
+              gpuLayers: UTILITY_EMBEDDING_SERVER_DEFAULTS.gpuLayers,
+              contextSize: UTILITY_EMBEDDING_SERVER_DEFAULTS.contextSize,
             },
           );
           logger.info("Utility materialized embedding runtime", {
@@ -276,9 +276,9 @@ export async function resolveUtilityEmbeddingRuntimeClient(
             backend: "local-sidecar",
             implementation: "llama-server",
             baseUrl,
-            modelId: DEFAULT_EMBEDDING_MODEL.modelId,
+            modelId: UTILITY_DEFAULT_EMBEDDING_MODEL.modelId,
           });
-          return getOrCreateLocalEmbeddingProvider(baseUrl, DEFAULT_EMBEDDING_MODEL.modelId);
+          return getOrCreateLocalEmbeddingProvider(baseUrl, UTILITY_DEFAULT_EMBEDDING_MODEL.modelId);
         } catch (error) {
           logger.warn("Utility embedding runtime materialization failed; trying next route", {
             projectId,
