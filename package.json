@@ -7,7 +7,7 @@
   "author": "Luie Team",
   "license": "MIT",
   "private": true,
-  "packageManager": "pnpm@11.5.0",
+  "packageManager": "pnpm@11.5.1",
   "scripts": {
     "predev": "pnpm rebuild:electron",
     "dev": "electron-vite",
@@ -63,6 +63,8 @@
     "bench:writing-loop:repeat": "node scripts/run-writing-loop-repeat.mjs",
     "bench:writing-loop:fullprod": "pnpm exec playwright test --project=stress tests/e2e/writingLoop.fullprod.spec.ts",
     "bench:writing-loop:fullprod:repeat": "node scripts/run-writing-loop-fullprod-repeat.mjs",
+    "resilience:luie:report": "node scripts/luie-resilience-report.mjs",
+    "resilience:luie": "node scripts/luie-resilience-report.mjs --run-all",
     "check:writing-loop-regression": "node scripts/check-writing-loop-regression.mjs",
     "check:writing-loop-profiles-regression": "node scripts/check-writing-loop-profiles-regression.mjs",
     "check:derived-db-bench": "node scripts/benchmark-derived-db.mjs --assert --json-out tests/.tmp/derived-db-bench.json",

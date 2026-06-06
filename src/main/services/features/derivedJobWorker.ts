@@ -1,7 +1,10 @@
 import { createLogger } from "../../../shared/logger/index.js";
+import { and, eq, inArray, sql } from "drizzle-orm";
+import { db, memoryBuildJob } from "../../infra/database/index.js";
 import { dbMaintenanceService } from "./dbMaintenanceService.js";
 import { embeddingProjector } from "./memory/embeddingProjector.js";
 import { chapterSummaryProjector } from "./memory/chapterSummaryProjector.js";
+import { MEMORY_JOB_TYPES } from "./memory/memoryJobConstants.js";
 import { memoryProjectionService } from "./memory/memoryProjectionService.js";
 
 const logger = createLogger("DerivedJobWorker");
@@ -19,27 +22,27 @@ const toPositiveInt = (value: string | undefined, fallback: number): number => {
 
 const TICK_INTERVAL_MS = toPositiveInt(
   process.env.LUIE_DERIVED_TICK_MS,
-  isStressMode ? 500 : 2000,
+  isStressMode ? 500 : 500,
 );
 const SEARCH_BATCH_SIZE = toPositiveInt(
   process.env.LUIE_DERIVED_SEARCH_BATCH,
-  isStressMode ? 50 : 5,
+  isStressMode ? 50 : 50,
 );
 const MEMORY_BATCH_SIZE = toPositiveInt(
   process.env.LUIE_DERIVED_MEMORY_BATCH,
-  isStressMode ? 50 : 2,
+  isStressMode ? 50 : 50,
 );
 const MEMORY_PROJECTS_PER_TICK = toPositiveInt(
   process.env.LUIE_DERIVED_MEMORY_PROJECTS_PER_TICK,
-  isStressMode ? 4 : 1,
+  isStressMode ? 4 : 2,
 );
 const SUMMARY_BATCH_SIZE = toPositiveInt(
   process.env.LUIE_DERIVED_SUMMARY_BATCH,
-  isStressMode ? 2 : 1,
+  isStressMode ? 20 : 10,
 );
 const EMBEDDING_BATCH_SIZE = toPositiveInt(
   process.env.LUIE_DERIVED_EMBEDDING_BATCH,
-  isStressMode ? 5 : 2,
+  isStressMode ? 25 : 5,
 );
 const TICK_WARN_THRESHOLD_MS = toPositiveInt(
   process.env.LUIE_DERIVED_TICK_WARN_MS,
@@ -53,6 +56,24 @@ const TICK_WARN_THRESHOLD_WITH_EMBEDDING_MS = toPositiveInt(
   process.env.LUIE_DERIVED_TICK_WARN_EMBEDDING_MS,
   8000,
 );
+
+const countPendingMemoryJobs = async (
+  projectId: string,
+  jobType: string,
+): Promise<number> => {
+  const rows = await db
+    .getClient()
+    .select({ count: sql<number>`count(*)` })
+    .from(memoryBuildJob)
+    .where(
+      and(
+        eq(memoryBuildJob.projectId, projectId),
+        eq(memoryBuildJob.jobType, jobType),
+        inArray(memoryBuildJob.status, ["pending", "failed", "running"]),
+      ),
+    );
+  return Number(rows[0]?.count ?? 0);
+};
 
 class DerivedJobWorker {
   private timer: NodeJS.Timeout | null = null;
@@ -142,18 +163,30 @@ class DerivedJobWorker {
         });
         memoryQueued += result.queued;
         memoryProcessed += result.processed;
-        const summaryResult = await chapterSummaryProjector.processPendingSummaryJobs({
+        const chunkBacklog = await countPendingMemoryJobs(
           projectId,
-          limit: SUMMARY_BATCH_SIZE,
-        });
-        summaryQueued += summaryResult.queued;
-        summaryProcessed += summaryResult.processed;
-        const embeddingResult = await embeddingProjector.processPendingEmbeddingJobs({
-          projectId,
-          limit: EMBEDDING_BATCH_SIZE,
-        });
-        embeddingQueued += embeddingResult.queued;
-        embeddingProcessed += embeddingResult.processed;
+          MEMORY_JOB_TYPES.REBUILD_CHUNKS,
+        );
+        if (chunkBacklog === 0) {
+          const summaryResult = await chapterSummaryProjector.processPendingSummaryJobs({
+            projectId,
+            limit: SUMMARY_BATCH_SIZE,
+          });
+          summaryQueued += summaryResult.queued;
+          summaryProcessed += summaryResult.processed;
+          const summaryBacklog = await countPendingMemoryJobs(
+            projectId,
+            MEMORY_JOB_TYPES.REBUILD_SUMMARY,
+          );
+          if (summaryBacklog === 0) {
+            const embeddingResult = await embeddingProjector.processPendingEmbeddingJobs({
+              projectId,
+              limit: EMBEDDING_BATCH_SIZE,
+            });
+            embeddingQueued += embeddingResult.queued;
+            embeddingProcessed += embeddingResult.processed;
+          }
+        }
       }, Promise.resolve());
 
       if (search.queued > 0 || memoryQueued > 0 || summaryQueued > 0 || embeddingQueued > 0) {

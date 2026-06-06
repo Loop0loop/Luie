@@ -15,6 +15,7 @@
 - [current-shared.md](./current-shared.md): shared 계약 경계 구조
 - [current-renderer.md](./current-renderer.md): renderer/SPA 구조
 - [target-architecture.md](./target-architecture.md): 목표 Electron 아키텍처
+- [utility-process-llm-runtime.md](./utility-process-llm-runtime.md): utility process와 LLM runtime/sidecar 목표 경계
 - [migration-map.md](./migration-map.md): 현재 구조에서 목표 구조로 가는 매핑
 - [migration-guardrails.md](./migration-guardrails.md): 무손실 이전 금지/허용 규칙
 

@@ -90,10 +90,11 @@ export class EmbeddingProjector {
       embeddingModel: runtimeConfig.embeddingModel,
     });
     let processed = 0;
+    const claimedJobs: typeof jobs = [];
+    const now = new Date().toISOString();
 
-    /* eslint-disable no-await-in-loop -- embedding jobs and chunk upserts are serialized to keep claim/update state consistent. */
+    /* eslint-disable no-await-in-loop -- jobs are claimed sequentially to preserve retry/status ordering. */
     for (const job of jobs) {
-      const now = new Date().toISOString();
       const claimed = await client
         .update(memoryBuildJob)
         .set({ status: "running", updatedAt: now })
@@ -107,146 +108,187 @@ export class EmbeddingProjector {
       if (claimed.length === 0) {
         continue;
       }
+      claimedJobs.push(job);
+    }
+    /* eslint-enable no-await-in-loop */
 
-      try {
-        const chunkRows = await client
-          .select({
-            chunkId: memoryChunk.id,
-            projectId: memoryChunk.projectId,
-            chapterId: memoryChunk.chapterId,
-            content: memoryChunk.content,
-            contentHash: memoryChunk.contentHash,
-          })
-          .from(memoryChunk)
-          .where(
-            and(
-              eq(memoryChunk.projectId, input.projectId),
-              eq(memoryChunk.sourceType, job.targetType),
-              eq(memoryChunk.sourceId, job.targetId),
-            ),
-          )
-          .orderBy(asc(memoryChunk.chunkIndex));
+    if (claimedJobs.length === 0) {
+      return { queued: jobs.length, processed: 0 };
+    }
 
-        if (chunkRows.length === 0) {
+    const chunkRowsByJobId = new Map<
+      string,
+      Array<{
+        chunkId: string;
+        projectId: string;
+        chapterId: string | null;
+        content: string;
+        contentHash: string;
+      }>
+    >();
+    for (const job of claimedJobs) {
+      chunkRowsByJobId.set(job.id, []);
+    }
+
+    for (const job of claimedJobs) {
+      const chunkRows = await client
+        .select({
+          chunkId: memoryChunk.id,
+          projectId: memoryChunk.projectId,
+          chapterId: memoryChunk.chapterId,
+          content: memoryChunk.content,
+          contentHash: memoryChunk.contentHash,
+        })
+        .from(memoryChunk)
+        .where(
+          and(
+            eq(memoryChunk.projectId, input.projectId),
+            eq(memoryChunk.sourceType, job.targetType),
+            eq(memoryChunk.sourceId, job.targetId),
+          ),
+        )
+        .orderBy(asc(memoryChunk.chunkIndex));
+      chunkRowsByJobId.set(job.id, chunkRows);
+    }
+
+    const jobsWithoutChunks = claimedJobs.filter(
+      (job) => (chunkRowsByJobId.get(job.id)?.length ?? 0) === 0,
+    );
+    if (jobsWithoutChunks.length > 0) {
+      await client
+        .update(memoryBuildJob)
+        .set({
+          status: "pending",
+          updatedAt: now,
+        })
+        .where(inArray(memoryBuildJob.id, jobsWithoutChunks.map((job) => job.id)));
+    }
+
+    const readyJobs = claimedJobs.filter(
+      (job) => (chunkRowsByJobId.get(job.id)?.length ?? 0) > 0,
+    );
+    if (readyJobs.length === 0) {
+      return { queued: jobs.length, processed: 0 };
+    }
+
+    const allChunkRows = readyJobs.flatMap((job) => chunkRowsByJobId.get(job.id) ?? []);
+    const existingRows = await client
+      .select({
+        chunkId: memoryEmbedding.chunkId,
+        contentHash: memoryEmbedding.contentHash,
+        model: memoryEmbedding.model,
+      })
+      .from(memoryEmbedding)
+      .where(inArray(memoryEmbedding.chunkId, allChunkRows.map((c) => c.chunkId)));
+    const existingHashMap = new Map(existingRows.map((row) => [row.chunkId, row.contentHash]));
+    const existingModelMap = new Map(existingRows.map((row) => [row.chunkId, row.model ?? ""]));
+
+    const changedChunksByJobId = new Map<string, typeof allChunkRows>();
+    for (const job of readyJobs) {
+      const changedChunks = (chunkRowsByJobId.get(job.id) ?? []).filter((chunk) => {
+        const hashChanged = existingHashMap.get(chunk.chunkId) !== chunk.contentHash;
+        const modelChanged = existingModelMap.get(chunk.chunkId) !== expectedModelSignature;
+        return hashChanged || modelChanged;
+      });
+      changedChunksByJobId.set(job.id, changedChunks);
+    }
+
+    const changedChunks = readyJobs.flatMap(
+      (job) => changedChunksByJobId.get(job.id) ?? [],
+    );
+
+    try {
+      if (changedChunks.length > 0) {
+        const vectorsRaw = await utilityProcessBridge.embed(
+          input.projectId,
+          changedChunks.map((chunk) => chunk.content),
+        );
+        if (!vectorsRaw) {
+          logger.info("Embedding skipped: provider does not support embeddings", {
+            projectId: input.projectId,
+            jobCount: readyJobs.length,
+            changedChunkCount: changedChunks.length,
+            provider: runtimeConfig.providerHint,
+          });
           await client
             .update(memoryBuildJob)
             .set({
-              status: "pending",
+              status: "skipped",
+              attempts: sql`${memoryBuildJob.attempts} + 1`,
+              error: null,
               updatedAt: now,
             })
-            .where(eq(memoryBuildJob.id, job.id));
-          continue;
+            .where(inArray(memoryBuildJob.id, readyJobs.map((job) => job.id)));
+          return { queued: jobs.length, processed: readyJobs.length };
         }
-
-        const existingRows = await client
-          .select({
-            chunkId: memoryEmbedding.chunkId,
-            contentHash: memoryEmbedding.contentHash,
-            model: memoryEmbedding.model,
-          })
-          .from(memoryEmbedding)
-          .where(inArray(memoryEmbedding.chunkId, chunkRows.map((c) => c.chunkId)));
-        const existingHashMap = new Map(existingRows.map((row) => [row.chunkId, row.contentHash]));
-        const existingModelMap = new Map(existingRows.map((row) => [row.chunkId, row.model ?? ""]));
-
-        const changedChunks = chunkRows.filter((chunk) => {
-          const hashChanged = existingHashMap.get(chunk.chunkId) !== chunk.contentHash;
-          const modelChanged = existingModelMap.get(chunk.chunkId) !== expectedModelSignature;
-          return hashChanged || modelChanged;
-        });
-        if (changedChunks.length > 0) {
-          const vectorsRaw = await utilityProcessBridge.embed(
-            input.projectId,
-            changedChunks.map((chunk) => chunk.content),
+        const vectors = vectorsRaw.map((row) => Float32Array.from(row));
+        if (vectors.length === 0) {
+          logger.warn("Embedding returned empty vectors; skipping this batch", {
+            projectId: input.projectId,
+            jobCount: readyJobs.length,
+            changedChunkCount: changedChunks.length,
+            provider: runtimeConfig.providerHint,
+          });
+          await client
+            .update(memoryBuildJob)
+            .set({
+              status: "skipped",
+              attempts: sql`${memoryBuildJob.attempts} + 1`,
+              error: null,
+              updatedAt: now,
+            })
+            .where(inArray(memoryBuildJob.id, readyJobs.map((job) => job.id)));
+          return { queued: jobs.length, processed: readyJobs.length };
+        }
+        if (vectors.length !== changedChunks.length) {
+          throw new Error(
+            `EMBEDDING_VECTOR_COUNT_MISMATCH:${vectors.length}/${changedChunks.length}`,
           );
-          if (!vectorsRaw) {
-            logger.info("Embedding skipped: provider does not support embeddings", {
-              projectId: input.projectId,
-              jobId: job.id,
-              targetId: job.targetId,
-              changedChunkCount: changedChunks.length,
-              provider: runtimeConfig.providerHint,
-            });
-            await client
-              .update(memoryBuildJob)
-              .set({
-                status: "skipped",
-                attempts: job.attempts + 1,
-                error: null,
-                updatedAt: now,
-              })
-              .where(eq(memoryBuildJob.id, job.id));
-            processed += 1;
-            continue;
-          }
-          const vectors = vectorsRaw.map((row) => Float32Array.from(row));
-          if (vectors.length === 0) {
-            logger.warn("Embedding returned empty vectors; skipping this job", {
-              projectId: input.projectId,
-              jobId: job.id,
-              targetId: job.targetId,
-              changedChunkCount: changedChunks.length,
-              provider: runtimeConfig.providerHint,
-            });
-            await client
-              .update(memoryBuildJob)
-              .set({
-                status: "skipped",
-                attempts: job.attempts + 1,
-                error: null,
-                updatedAt: now,
-              })
-              .where(eq(memoryBuildJob.id, job.id));
-            processed += 1;
-            continue;
-          }
-          if (vectors.length !== changedChunks.length) {
-            throw new Error(
-              `EMBEDDING_VECTOR_COUNT_MISMATCH:${vectors.length}/${changedChunks.length}`,
-            );
-          }
-          for (let i = 0; i < changedChunks.length; i += 1) {
-            const chunk = changedChunks[i];
-            const vector = vectors[i];
-            validateEmbeddingVector(vector);
-            await client
-              .insert(memoryEmbedding)
-              .values({
-                id: crypto.randomUUID(),
-                chunkId: chunk.chunkId,
+        }
+        for (let i = 0; i < changedChunks.length; i += 1) {
+          const chunk = changedChunks[i];
+          const vector = vectors[i];
+          validateEmbeddingVector(vector);
+          await client
+            .insert(memoryEmbedding)
+            .values({
+              id: crypto.randomUUID(),
+              chunkId: chunk.chunkId,
+              projectId: chunk.projectId,
+              contentHash: chunk.contentHash,
+              vec: vectorToBuffer(vector),
+              dimension: vector.length,
+              model: expectedModelSignature,
+              createdAt: now,
+              updatedAt: now,
+            })
+            .onConflictDoUpdate({
+              target: [memoryEmbedding.chunkId],
+              set: {
                 projectId: chunk.projectId,
                 contentHash: chunk.contentHash,
                 vec: vectorToBuffer(vector),
                 dimension: vector.length,
                 model: expectedModelSignature,
-                createdAt: now,
                 updatedAt: now,
-              })
-              .onConflictDoUpdate({
-                target: [memoryEmbedding.chunkId],
-                set: {
-                  projectId: chunk.projectId,
-                  contentHash: chunk.contentHash,
-                  vec: vectorToBuffer(vector),
-                  dimension: vector.length,
-                  model: expectedModelSignature,
-                  updatedAt: now,
-                },
-              });
-          }
+              },
+            });
         }
+      }
 
-        await client
-          .update(memoryBuildJob)
-          .set({
-            status: "completed",
-            attempts: job.attempts + 1,
-            error: null,
-            updatedAt: now,
-          })
-          .where(eq(memoryBuildJob.id, job.id));
-        processed += 1;
-      } catch (error) {
+      const completedJobIds = readyJobs.map((job) => job.id);
+      await client
+        .update(memoryBuildJob)
+        .set({
+          status: "completed",
+          attempts: sql`${memoryBuildJob.attempts} + 1`,
+          error: null,
+          updatedAt: now,
+        })
+        .where(inArray(memoryBuildJob.id, completedJobIds));
+      processed = completedJobIds.length;
+    } catch (error) {
+      for (const job of readyJobs) {
         const attempts = job.attempts + 1;
         await client
           .update(memoryBuildJob)
@@ -259,7 +301,6 @@ export class EmbeddingProjector {
           .where(eq(memoryBuildJob.id, job.id));
       }
     }
-    /* eslint-enable no-await-in-loop */
 
     logger.info("Processed embedding jobs", {
       projectId: input.projectId,

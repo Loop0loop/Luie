@@ -11,6 +11,8 @@ import {
 } from "../../../constants/memory.js";
 
 const logger = createLogger("ChapterSummaryProjector");
+const ENABLE_LLM_DERIVED_SUMMARY =
+  process.env.LUIE_ENABLE_LLM_DERIVED_SUMMARY === "1";
 
 function canRetry(job: { status: string; attempts: number; updatedAt: string }): boolean {
   if (job.status === "pending") return true;
@@ -147,7 +149,11 @@ export class ChapterSummaryProjector {
         let modelName: string | null = null;
         let isFallback = false;
 
-        if (runtimeAvailable && runtime.providerName !== "deterministic") {
+        if (
+          ENABLE_LLM_DERIVED_SUMMARY &&
+          runtimeAvailable &&
+          runtime.providerName !== "deterministic"
+        ) {
           summary = trimTo200Chars(await runtime.generate(buildSummaryPrompt(content), {
             maxTokens: 256,
             temperature: 0.2,

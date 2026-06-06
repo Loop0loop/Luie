@@ -2,7 +2,7 @@
 // PROVES: snapshot workflows through real DB, filesystem mirrors, and attached .luie persistence
 // DOES_NOT_PROVE: isolated service branches without timing/state coupling
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import path from "node:path";
 import { promises as fs } from "node:fs";
 import { app } from "electron";
@@ -32,23 +32,68 @@ const createProject = async (title = "Test Project") => {
     description: "",
     projectPath,
   });
+  createdProjectIds.add(String(project.id));
   return { project, projectPath };
+};
+
+const createdProjectIds = new Set<string>();
+const trackedChapters: Array<{ projectId: string; chapterId: string }> = [];
+
+const trackChapter = <T extends { id: string; projectId?: string | null }>(
+  projectId: string,
+  chapter: T,
+): T => {
+  trackedChapters.push({ projectId, chapterId: chapter.id });
+  return chapter;
+};
+
+const waitForPath = async (targetPath: string, timeoutMs = 1000) => {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      await fs.stat(targetPath);
+      return;
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+  }
+  await fs.stat(targetPath);
 };
 
 describe("Snapshot resilience", () => {
   beforeEach(() => {
     vi.useRealTimers();
+    createdProjectIds.clear();
+    trackedChapters.length = 0;
+  });
+
+  afterEach(async () => {
+    vi.useRealTimers();
+    await autoSaveManager.flushAll();
+    for (const chapter of trackedChapters) {
+      await autoSaveManager.forgetChapter(chapter.projectId, chapter.chapterId);
+    }
+    for (const projectId of createdProjectIds) {
+      autoSaveManager.clearProject(projectId);
+    }
+    createdProjectIds.clear();
+    trackedChapters.length = 0;
+    vi.restoreAllMocks();
   });
 
   it("creates autosave mirrors for 200..1000 chars and blocks empty overwrite", async () => {
+    vi.spyOn(autoSaveManager, "createSnapshot").mockResolvedValue(undefined);
     const { project } = await createProject("Mirror Project");
 
     const chapters = await Promise.all(
       [200, 400, 600, 800, 1000].map(async (len) => {
-      const chapter = await chapterService.createChapter({
-        projectId: project.id,
-        title: `Chapter ${len}`,
-      });
+      const chapter = trackChapter(
+        project.id,
+        await chapterService.createChapter({
+          projectId: project.id,
+          title: `Chapter ${len}`,
+        }),
+      );
       await chapterService.updateChapter({
         id: chapter.id,
         content: makeMixedNarrativeText(len, len),
@@ -63,7 +108,6 @@ describe("Snapshot resilience", () => {
       debounceMs: 1,
     });
 
-    vi.useFakeTimers();
     await Promise.all(
       chapters.map((ch) =>
         autoSaveManager.triggerSave(
@@ -73,20 +117,19 @@ describe("Snapshot resilience", () => {
         ),
       ),
     );
-    await vi.runAllTimersAsync();
-    vi.useRealTimers();
 
+    const latestPaths = chapters.map((ch) =>
+      path.join(
+        app.getPath("userData"),
+        SNAPSHOT_MIRROR_DIR,
+        project.id,
+        ch.id,
+        "latest.snap",
+      ),
+    );
+    await Promise.all(latestPaths.map((latestPath) => waitForPath(latestPath)));
     const stats = await Promise.all(
-      chapters.map(async (ch) => {
-        const latestPath = path.join(
-          app.getPath("userData"),
-          SNAPSHOT_MIRROR_DIR,
-          project.id,
-          ch.id,
-          "latest.snap",
-        );
-        return fs.stat(latestPath);
-      }),
+      latestPaths.map((latestPath) => fs.stat(latestPath)),
     );
     for (const stat of stats) {
       expect(stat.isFile()).toBe(true);
@@ -104,10 +147,13 @@ describe("Snapshot resilience", () => {
 
   it("flushCritical writes mirrors and snapshots on forced quit", async () => {
     const { project } = await createProject("Forced Quit Project");
-    const chapter = await chapterService.createChapter({
-      projectId: project.id,
-      title: "Crash Chapter",
-    });
+    const chapter = trackChapter(
+      project.id,
+      await chapterService.createChapter({
+        projectId: project.id,
+        title: "Crash Chapter",
+      }),
+    );
 
     autoSaveManager.setConfig(project.id, {
       enabled: true,
@@ -145,10 +191,13 @@ describe("Snapshot resilience", () => {
       const { project, projectPath } = await createProject(
         `Large Snapshot ${length}`,
       );
-      const chapter = await chapterService.createChapter({
-        projectId: project.id,
-        title: `Large Chapter ${length}`,
-      });
+      const chapter = trackChapter(
+        project.id,
+        await chapterService.createChapter({
+          projectId: project.id,
+          title: `Large Chapter ${length}`,
+        }),
+      );
       const content = makeMixedNarrativeText(length, 1);
 
       const created = await snapshotService.createSnapshot({
@@ -158,6 +207,7 @@ describe("Snapshot resilience", () => {
         description: `Large snapshot ${length}`,
       });
 
+      await projectService.exportProjectPackageNow(project.id, "snapshot-resilience:test");
       const probe = await probeLuieContainer(projectPath);
       expect(probe).toMatchObject({
         exists: true,
@@ -183,23 +233,8 @@ describe("Snapshot resilience", () => {
   );
 
   it("enables WAL mode", async () => {
-    const client = db.getClient() as {
-      $queryRawUnsafe?: (
-        query: string,
-      ) => Promise<Array<{ journal_mode?: string }>>;
-      $executeRawUnsafe?: (query: string) => Promise<unknown>;
-    };
-
-    if (client.$queryRawUnsafe) {
-      const result = await client.$queryRawUnsafe("PRAGMA journal_mode;");
-      const mode = result?.[0]?.journal_mode;
-      expect(String(mode).toLowerCase()).toBe("wal");
-      return;
-    }
-
-    if (client.$executeRawUnsafe) {
-      const result = await client.$executeRawUnsafe("PRAGMA journal_mode;");
-      expect(result).toBeTruthy();
+    if (typeof db.getConnectionPragmas === "function") {
+      expect(db.getConnectionPragmas().journalMode.toLowerCase()).toBe("wal");
       return;
     }
 
@@ -208,10 +243,13 @@ describe("Snapshot resilience", () => {
 
   it("creates periodic project snapshots every 10 minutes", async () => {
     const { project } = await createProject("Scheduled Project");
-    const chapter = await chapterService.createChapter({
-      projectId: project.id,
-      title: "Scheduled Chapter",
-    });
+    const chapter = trackChapter(
+      project.id,
+      await chapterService.createChapter({
+        projectId: project.id,
+        title: "Scheduled Chapter",
+      }),
+    );
     await autoSaveManager.triggerSave(
       chapter.id,
       makeMixedNarrativeText(900, 2),
@@ -238,10 +276,13 @@ describe("Snapshot resilience", () => {
 
   it("handles snapshot writes while chapter updates are racing", async () => {
     const { project } = await createProject("Race Project");
-    const chapter = await chapterService.createChapter({
-      projectId: project.id,
-      title: "Race Chapter",
-    });
+    const chapter = trackChapter(
+      project.id,
+      await chapterService.createChapter({
+        projectId: project.id,
+        title: "Race Chapter",
+      }),
+    );
 
     const updatePromises = Array.from({ length: 10 }).map((_, idx) =>
       chapterService.updateChapter({
@@ -259,11 +300,10 @@ describe("Snapshot resilience", () => {
 
     await Promise.all([...updatePromises, snapshotPromise]);
 
-    const safeProjectName = "Race Project";
     const backupDir = path.join(
       app.getPath("userData"),
       SNAPSHOT_BACKUP_DIR,
-      safeProjectName,
+      String(project.id),
     );
     const files = (await fs.readdir(backupDir)).filter((name) =>
       name.endsWith(".snap"),
@@ -277,10 +317,13 @@ describe("Snapshot resilience", () => {
 
   it("lists restore candidates with project and saved-time metadata", async () => {
     const { project } = await createProject("Restore Candidate Project");
-    const chapter = await chapterService.createChapter({
-      projectId: project.id,
-      title: "Restore Chapter",
-    });
+    const chapter = trackChapter(
+      project.id,
+      await chapterService.createChapter({
+        projectId: project.id,
+        title: "Restore Chapter",
+      }),
+    );
     const content =
       "이 문단은 복원 후보 목록에서 어떤 저장분인지 확인하기 위한 테스트 문장입니다.";
 
@@ -310,10 +353,13 @@ describe("Snapshot resilience", () => {
 
   it("recreates snapshot folders after deletion", async () => {
     const { project, projectPath } = await createProject("Sabotage Project");
-    const chapter = await chapterService.createChapter({
-      projectId: project.id,
-      title: "Sabotage Chapter",
-    });
+    const chapter = trackChapter(
+      project.id,
+      await chapterService.createChapter({
+        projectId: project.id,
+        title: "Sabotage Chapter",
+      }),
+    );
 
     const baseDir = path.dirname(projectPath);
     const snapshotsDir = path.join(baseDir, ".luie", LUIE_SNAPSHOTS_DIR);
@@ -332,10 +378,13 @@ describe("Snapshot resilience", () => {
 
   it("rejects corrupted snapshot restore", async () => {
     const { project } = await createProject("Corrupt Project");
-    const chapter = await chapterService.createChapter({
-      projectId: project.id,
-      title: "Corrupt Chapter",
-    });
+    const chapter = trackChapter(
+      project.id,
+      await chapterService.createChapter({
+        projectId: project.id,
+        title: "Corrupt Chapter",
+      }),
+    );
 
     await snapshotService.createSnapshot({
       projectId: project.id,
@@ -347,7 +396,7 @@ describe("Snapshot resilience", () => {
     const backupDir = path.join(
       app.getPath("userData"),
       SNAPSHOT_BACKUP_DIR,
-      "Corrupt Project",
+      String(project.id),
     );
     const files = (await fs.readdir(backupDir)).filter((name) =>
       name.endsWith(".snap"),
@@ -365,10 +414,13 @@ describe("Snapshot resilience", () => {
 
   it("survives disk-full/permission errors during snapshot write", async () => {
     const { project } = await createProject("Disk Project");
-    const chapter = await chapterService.createChapter({
-      projectId: project.id,
-      title: "Disk Chapter",
-    });
+    const chapter = trackChapter(
+      project.id,
+      await chapterService.createChapter({
+        projectId: project.id,
+        title: "Disk Chapter",
+      }),
+    );
 
     const writeSpy = vi
       .spyOn(snapshotArtifacts, "writeFullSnapshotArtifact")
@@ -390,10 +442,13 @@ describe("Snapshot resilience", () => {
 
   it("handles double instance snapshot writes", async () => {
     const { project } = await createProject("Double Project");
-    const chapter = await chapterService.createChapter({
-      projectId: project.id,
-      title: "Double Chapter",
-    });
+    const chapter = trackChapter(
+      project.id,
+      await chapterService.createChapter({
+        projectId: project.id,
+        title: "Double Chapter",
+      }),
+    );
 
     await Promise.all([
       snapshotService.createSnapshot({

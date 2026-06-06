@@ -12,11 +12,11 @@ import { createLogger } from "../../../shared/logger/index.js";
 import {
   resolveModelRuntimeClient,
   resolveEmbeddingRuntimeClient,
-} from "../../domains/analysis/index.js";
+} from "../../services/llm/modelRuntimeFactory.js";
 import {
   assembleRagContext,
-  normalizeCoreAnswer,
-} from "../../domains/analysis/index.js";
+} from "../../services/features/rag/contextAssembler.js";
+import { normalizeCoreAnswer } from "../../services/features/rag/normalizeCoreAnswer.js";
 import { resolveUserDataPath } from "../../utils/userDataPath.js";
 
 const logger = createLogger("UtilityRagQaWorker");

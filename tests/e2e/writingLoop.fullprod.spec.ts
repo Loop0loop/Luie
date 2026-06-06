@@ -124,20 +124,40 @@ test("measures write-loop stability on full production mode @stress", async () =
   const waitStart = performance.now();
   let lastSearchStatus: Record<string, unknown> | null = null;
   let lastMemoryStatus: Record<string, unknown> | null = null;
+  let lastSummaryStatus: Record<string, unknown> | null = null;
+  let lastEmbeddingStatus: Record<string, unknown> | null = null;
   while (performance.now() - waitStart < maxWaitMs) {
     const status = await call(
       async () =>
         await page.evaluate(async (inputProjectId) => {
           const api = (window as Window & { api?: Window["api"] }).api;
           if (!api) return { success: false, error: { message: "window.api missing" } };
-          const [search, memory] = await Promise.all([
+          const [search, memory, summary, embedding] = await Promise.all([
             api.searchAdmin.getIndexStatus(inputProjectId),
             api.memoryAdmin.getJobStatus(inputProjectId),
+            api.memoryAdmin.getSummaryStatus(inputProjectId),
+            api.memoryAdmin.getEmbeddingStatus(inputProjectId),
           ]);
-          if (!search.success || !memory.success) {
-            return { success: false, error: { search: search.error, memory: memory.error } };
+          if (!search.success || !memory.success || !summary.success || !embedding.success) {
+            return {
+              success: false,
+              error: {
+                search: search.error,
+                memory: memory.error,
+                summary: summary.error,
+                embedding: embedding.error,
+              },
+            };
           }
-          return { success: true, data: { search: search.data, memory: memory.data } };
+          return {
+            success: true,
+            data: {
+              search: search.data,
+              memory: memory.data,
+              summary: summary.data,
+              embedding: embedding.data,
+            },
+          };
         }, projectId),
       "status.poll",
     );
@@ -145,9 +165,13 @@ test("measures write-loop stability on full production mode @stress", async () =
     const data = status.response.data as {
       search: { pendingCount?: number; runningCount?: number; failedCount?: number };
       memory: { pendingCount?: number; runningCount?: number; failedCount?: number };
+      summary: { pendingCount?: number; runningCount?: number; failedCount?: number };
+      embedding: { pendingCount?: number; runningCount?: number; failedCount?: number };
     };
     lastSearchStatus = data.search;
     lastMemoryStatus = data.memory;
+    lastSummaryStatus = data.summary;
+    lastEmbeddingStatus = data.embedding;
 
     const searchDone = (data.search.pendingCount ?? 0) === 0 && (data.search.runningCount ?? 0) === 0;
     const memoryDone = (data.memory.pendingCount ?? 0) === 0 && (data.memory.runningCount ?? 0) === 0;
@@ -171,6 +195,8 @@ test("measures write-loop stability on full production mode @stress", async () =
     derivedStatus: {
       search: lastSearchStatus,
       memory: lastMemoryStatus,
+      summary: lastSummaryStatus,
+      embedding: lastEmbeddingStatus,
       queueDrainMs,
     },
     projectId,

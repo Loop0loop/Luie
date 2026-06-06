@@ -77,7 +77,341 @@
 	"menuBarMode": "visible",
 	"sync": {
 		"connected": false,
-		"autoSync": true
+		"autoSync": true,
+		"pendingProjectDeletes": [
+			{
+				"projectId": "59096263-6dc3-4e1a-b29b-86aec1816e68",
+				"deletedAt": "2026-06-04T07:09:46.805Z"
+			},
+			{
+				"projectId": "6942fe0a-5f5c-446d-b6c4-86382c2cdcc8",
+				"deletedAt": "2026-06-04T07:09:46.961Z"
+			},
+			{
+				"projectId": "039ec8cc-6594-4c05-940c-ad631ed60ede",
+				"deletedAt": "2026-06-04T07:09:47.034Z"
+			},
+			{
+				"projectId": "35f7a82f-1e6b-4633-ad45-3445693f7fd5",
+				"deletedAt": "2026-06-04T07:09:47.053Z"
+			},
+			{
+				"projectId": "432a748d-63e4-4b2f-8bc3-6291f546140a",
+				"deletedAt": "2026-06-04T07:09:47.196Z"
+			},
+			{
+				"projectId": "3a5edeba-f634-41f9-879f-c3b59c520ffb",
+				"deletedAt": "2026-06-04T07:09:47.311Z"
+			},
+			{
+				"projectId": "afd44121-b7bb-4955-b0c2-45d9d609d331",
+				"deletedAt": "2026-06-04T07:09:47.461Z"
+			},
+			{
+				"projectId": "cc358a73-77b0-4300-b2cf-36eed62cad3c",
+				"deletedAt": "2026-06-04T07:09:47.469Z"
+			},
+			{
+				"projectId": "56083958-1ce0-4881-8b4a-378b776b9340",
+				"deletedAt": "2026-06-04T07:09:47.482Z"
+			},
+			{
+				"projectId": "2389254d-579f-4e16-af19-24bab6c0006f",
+				"deletedAt": "2026-06-04T07:11:58.538Z"
+			},
+			{
+				"projectId": "5fbbd181-59c2-4a88-a3a2-901271b65b90",
+				"deletedAt": "2026-06-04T07:13:07.261Z"
+			},
+			{
+				"projectId": "c0ec2881-6633-4c7f-ba1e-dd0c10b9a2ac",
+				"deletedAt": "2026-06-04T07:21:51.973Z"
+			},
+			{
+				"projectId": "15342fdd-632b-4c7a-abc3-14b822de0404",
+				"deletedAt": "2026-06-04T07:21:52.138Z"
+			},
+			{
+				"projectId": "679bb3b7-8556-422e-86f6-64d62a5a1f09",
+				"deletedAt": "2026-06-04T07:21:52.523Z"
+			},
+			{
+				"projectId": "3728a404-1215-478e-9ed5-3a45bd94991d",
+				"deletedAt": "2026-06-04T07:21:52.543Z"
+			},
+			{
+				"projectId": "41346d8e-7725-4693-b2f7-e41f950933d2",
+				"deletedAt": "2026-06-04T07:24:17.105Z"
+			},
+			{
+				"projectId": "f1d820fe-498c-44af-bae7-5268f5805429",
+				"deletedAt": "2026-06-04T07:24:17.230Z"
+			},
+			{
+				"projectId": "43b7b34d-2915-449a-a1e4-ad0d32cb1551",
+				"deletedAt": "2026-06-04T07:24:17.283Z"
+			},
+			{
+				"projectId": "9e676dd6-0ae7-4111-a084-6e38050049a8",
+				"deletedAt": "2026-06-04T07:24:17.587Z"
+			},
+			{
+				"projectId": "9e07f11d-00c0-458e-8204-be3724290ed4",
+				"deletedAt": "2026-06-04T07:24:17.600Z"
+			},
+			{
+				"projectId": "02f49ef1-d3fe-40d1-9e66-d0b960eed17e",
+				"deletedAt": "2026-06-04T07:24:17.606Z"
+			},
+			{
+				"projectId": "102aeec7-c970-48b8-bfd8-040f47cd2337",
+				"deletedAt": "2026-06-04T07:24:17.637Z"
+			},
+			{
+				"projectId": "b5d3f67c-3406-4e6d-96ee-27411657b656",
+				"deletedAt": "2026-06-04T07:24:17.643Z"
+			},
+			{
+				"projectId": "88871fbc-8b26-435a-8fb9-d67c19768d62",
+				"deletedAt": "2026-06-04T07:24:17.648Z"
+			},
+			{
+				"projectId": "a1a713b0-eb8b-4057-ae4c-7c7139468381",
+				"deletedAt": "2026-06-04T07:24:30.944Z"
+			},
+			{
+				"projectId": "b7592118-b840-44e7-8f08-b223e8fb5839",
+				"deletedAt": "2026-06-04T07:24:31.025Z"
+			},
+			{
+				"projectId": "c9469a14-a2e3-43d5-bfa7-dde4e90df061",
+				"deletedAt": "2026-06-04T07:24:31.076Z"
+			},
+			{
+				"projectId": "d5d805ca-1496-496b-9905-75355454cff0",
+				"deletedAt": "2026-06-04T07:24:31.121Z"
+			},
+			{
+				"projectId": "ae43db5d-1c12-467b-ad91-d0139ac35f7f",
+				"deletedAt": "2026-06-04T07:24:31.182Z"
+			},
+			{
+				"projectId": "63632488-2a70-443d-b3d4-56d367a9c6fe",
+				"deletedAt": "2026-06-04T07:24:31.254Z"
+			},
+			{
+				"projectId": "62536965-ed9a-4e18-862c-de12e94027ee",
+				"deletedAt": "2026-06-04T07:24:31.361Z"
+			},
+			{
+				"projectId": "74a8c546-9894-40bf-b447-c69af112b228",
+				"deletedAt": "2026-06-04T07:24:31.369Z"
+			},
+			{
+				"projectId": "78b28eb2-0320-43d4-8ebd-f2c6f1ece529",
+				"deletedAt": "2026-06-04T07:24:31.377Z"
+			},
+			{
+				"projectId": "856c1e21-6f46-41ab-88ff-add71a8ee243",
+				"deletedAt": "2026-06-04T07:24:31.384Z"
+			},
+			{
+				"projectId": "e7cb8f7d-e46b-4cc9-a34d-2d7d1be981f1",
+				"deletedAt": "2026-06-04T07:24:31.389Z"
+			},
+			{
+				"projectId": "2a6ddfb3-ded6-4ecc-a0bb-735db8285ed9",
+				"deletedAt": "2026-06-04T07:24:31.398Z"
+			},
+			{
+				"projectId": "9042622d-710a-4320-96bc-b251cc352f3c",
+				"deletedAt": "2026-06-04T07:24:31.402Z"
+			},
+			{
+				"projectId": "476f59a2-a0f7-4e64-9975-7b56a9a5c336",
+				"deletedAt": "2026-06-04T07:24:31.405Z"
+			},
+			{
+				"projectId": "989a2286-4d9b-4f1c-ad7c-93d6ce2b1000",
+				"deletedAt": "2026-06-04T07:27:48.554Z"
+			},
+			{
+				"projectId": "f62c9f98-06d5-4b93-9dd2-9e4a8df46be6",
+				"deletedAt": "2026-06-04T07:27:50.272Z"
+			},
+			{
+				"projectId": "071d49cb-d592-44ee-b88c-74fcd8694213",
+				"deletedAt": "2026-06-04T07:27:50.338Z"
+			},
+			{
+				"projectId": "ef628bbf-bed2-4381-82c1-063d829e669a",
+				"deletedAt": "2026-06-04T07:27:50.382Z"
+			},
+			{
+				"projectId": "2b37b2ec-0c58-4e2d-acc2-05528f451618",
+				"deletedAt": "2026-06-04T07:27:50.424Z"
+			},
+			{
+				"projectId": "2cc970ea-cca2-46b3-9923-044880c295a8",
+				"deletedAt": "2026-06-04T07:27:50.473Z"
+			},
+			{
+				"projectId": "2ebdcc25-902a-4664-91f0-368f1a9f66f7",
+				"deletedAt": "2026-06-04T07:27:50.540Z"
+			},
+			{
+				"projectId": "94646dcb-bb8d-4b31-a54d-6f4911487149",
+				"deletedAt": "2026-06-04T07:27:50.634Z"
+			},
+			{
+				"projectId": "62ede867-28dc-4816-9b27-ec9eab653cb3",
+				"deletedAt": "2026-06-04T07:27:50.642Z"
+			},
+			{
+				"projectId": "e4c0581c-a5f1-4343-9d01-17f63052bde1",
+				"deletedAt": "2026-06-04T07:27:50.650Z"
+			},
+			{
+				"projectId": "a64c6a34-6c2d-4ec9-9995-f631bfbb9c86",
+				"deletedAt": "2026-06-04T07:27:50.656Z"
+			},
+			{
+				"projectId": "812e9d02-8de5-4ced-ade4-001cb486ad79",
+				"deletedAt": "2026-06-04T07:27:50.661Z"
+			},
+			{
+				"projectId": "16961f00-cfc3-418b-83c0-5c7c46d00a19",
+				"deletedAt": "2026-06-04T07:27:50.670Z"
+			},
+			{
+				"projectId": "6ca46bdf-d5f5-43a9-9519-616b3b1fd62c",
+				"deletedAt": "2026-06-04T07:27:50.673Z"
+			},
+			{
+				"projectId": "459af69d-313f-4ba3-a745-b2ee92660825",
+				"deletedAt": "2026-06-04T07:27:50.678Z"
+			},
+			{
+				"projectId": "37448e62-f413-474a-91cb-5f444ff58ff7",
+				"deletedAt": "2026-06-04T07:38:00.150Z"
+			},
+			{
+				"projectId": "5082514e-95a2-428a-a182-5fd0fdbde2fb",
+				"deletedAt": "2026-06-04T07:38:01.771Z"
+			},
+			{
+				"projectId": "66e66414-59f1-495e-9af2-055fb3446eb0",
+				"deletedAt": "2026-06-04T07:38:01.835Z"
+			},
+			{
+				"projectId": "a53794b9-1652-4103-b029-0528d64d9ec5",
+				"deletedAt": "2026-06-04T07:38:01.881Z"
+			},
+			{
+				"projectId": "51aa3db6-4231-47a3-8347-d6e96383d009",
+				"deletedAt": "2026-06-04T07:38:01.923Z"
+			},
+			{
+				"projectId": "d4875123-efba-43ea-b012-452a5ce58891",
+				"deletedAt": "2026-06-04T07:38:01.972Z"
+			},
+			{
+				"projectId": "ee145d57-f442-4f35-a316-0a829848ac35",
+				"deletedAt": "2026-06-04T07:38:02.030Z"
+			},
+			{
+				"projectId": "0d261114-d4f8-4bca-9ea7-1903f17e5fc6",
+				"deletedAt": "2026-06-04T07:38:02.122Z"
+			},
+			{
+				"projectId": "489326b1-1f4f-419a-ae42-34fb93441e54",
+				"deletedAt": "2026-06-04T07:38:02.130Z"
+			},
+			{
+				"projectId": "f66d09a9-46b1-4a76-8097-4e33b8828774",
+				"deletedAt": "2026-06-04T07:38:02.138Z"
+			},
+			{
+				"projectId": "924ca5fe-7b07-42b2-9ed5-15e82306d481",
+				"deletedAt": "2026-06-04T07:38:02.145Z"
+			},
+			{
+				"projectId": "e8564ecd-e759-4a8c-bc98-c3b8b27f2da5",
+				"deletedAt": "2026-06-04T07:38:02.152Z"
+			},
+			{
+				"projectId": "64833d56-2819-461a-b4e1-dfd2e5ee3f97",
+				"deletedAt": "2026-06-04T07:38:02.159Z"
+			},
+			{
+				"projectId": "6c1a0e7c-f649-4d24-84d1-954436b70f36",
+				"deletedAt": "2026-06-04T07:38:02.163Z"
+			},
+			{
+				"projectId": "7157b8bd-b502-43bb-8933-1b6a327dcce2",
+				"deletedAt": "2026-06-04T07:38:02.167Z"
+			},
+			{
+				"projectId": "5ab4c882-f72e-447e-a2fb-76ce21f605ee",
+				"deletedAt": "2026-06-04T08:21:32.324Z"
+			},
+			{
+				"projectId": "393b0e55-734d-4e3b-a7b5-4ad85bcbb3e3",
+				"deletedAt": "2026-06-04T08:21:34.106Z"
+			},
+			{
+				"projectId": "cd960585-2403-44f8-b42e-2478b4ce2761",
+				"deletedAt": "2026-06-04T08:21:34.172Z"
+			},
+			{
+				"projectId": "7c96a667-fa84-40e8-9748-1d0018bab348",
+				"deletedAt": "2026-06-04T08:21:34.216Z"
+			},
+			{
+				"projectId": "8a803f2d-b80a-4565-b1e3-3eec38202ad6",
+				"deletedAt": "2026-06-04T08:21:34.259Z"
+			},
+			{
+				"projectId": "5ef5907e-32bb-4ff8-858d-ab181be7ddfb",
+				"deletedAt": "2026-06-04T08:21:34.307Z"
+			},
+			{
+				"projectId": "05969ec2-3562-4355-af57-fd1ddb30e8a6",
+				"deletedAt": "2026-06-04T08:21:34.367Z"
+			},
+			{
+				"projectId": "05293a37-dc8b-4405-9745-23658d6f4dc5",
+				"deletedAt": "2026-06-04T08:21:34.460Z"
+			},
+			{
+				"projectId": "ef0c50fc-8c38-4e19-a896-c739797cfcd5",
+				"deletedAt": "2026-06-04T08:21:34.468Z"
+			},
+			{
+				"projectId": "e1ea031f-5b11-496d-ae23-a3bce93a0432",
+				"deletedAt": "2026-06-04T08:21:34.473Z"
+			},
+			{
+				"projectId": "723b1e33-6bfc-4bad-96ad-ae0d07659a05",
+				"deletedAt": "2026-06-04T08:21:34.479Z"
+			},
+			{
+				"projectId": "7d6e4d85-2eda-426c-9a39-57f921140d6c",
+				"deletedAt": "2026-06-04T08:21:34.485Z"
+			},
+			{
+				"projectId": "502ea9dd-17c0-4228-ba3f-7e34d74191c1",
+				"deletedAt": "2026-06-04T08:21:34.493Z"
+			},
+			{
+				"projectId": "8b2547ac-4e50-458d-a1cc-23b53444cb07",
+				"deletedAt": "2026-06-04T08:21:34.498Z"
+			},
+			{
+				"projectId": "a90c0e43-23af-4a08-842b-f42b98791927",
+				"deletedAt": "2026-06-04T08:21:34.501Z"
+			}
+		]
 	},
 	"startup": {},
 	"llm": {
