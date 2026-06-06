@@ -3,7 +3,7 @@ import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../../infra/database/index.js";
 import { chapter, chapterBody, chapterSummary, memoryBuildJob } from "../../../infra/database/index.js";
 import { createLogger } from "../../../../shared/logger/index.js";
-import { resolveModelRuntimeClient } from "../../llm/modelRuntimeFactory.js";
+import { utilityProcessBridge } from "../utility/utilityProcessBridge.js";
 import { MEMORY_JOB_TYPES, MEMORY_TARGET_TYPES } from "./memoryJobConstants.js";
 import {
   DERIVED_JOB_MAX_ATTEMPTS,
@@ -11,8 +11,10 @@ import {
 } from "../../../constants/memory.js";
 
 const logger = createLogger("ChapterSummaryProjector");
-const ENABLE_LLM_DERIVED_SUMMARY =
-  process.env.LUIE_ENABLE_LLM_DERIVED_SUMMARY === "1";
+
+function isLlmDerivedSummaryEnabled(): boolean {
+  return process.env.LUIE_ENABLE_LLM_DERIVED_SUMMARY === "1";
+}
 
 function canRetry(job: { status: string; attempts: number; updatedAt: string }): boolean {
   if (job.status === "pending") return true;
@@ -93,8 +95,6 @@ export class ChapterSummaryProjector {
     const existingSummaryHashMap = new Map(
       existingSummaries.map((row) => [row.chapterId, row.contentHash ?? ""]),
     );
-    const runtime = await resolveModelRuntimeClient(input.projectId);
-    const runtimeAvailable = await runtime.isAvailable();
     let processed = 0;
     /* eslint-disable no-await-in-loop -- summary jobs are claimed and finalized sequentially to preserve retry/status ordering. */
     for (const job of jobs) {
@@ -149,21 +149,26 @@ export class ChapterSummaryProjector {
         let modelName: string | null = null;
         let isFallback = false;
 
-        if (
-          ENABLE_LLM_DERIVED_SUMMARY &&
-          runtimeAvailable &&
-          runtime.providerName !== "deterministic"
-        ) {
-          summary = trimTo200Chars(await runtime.generate(buildSummaryPrompt(content), {
-            maxTokens: 256,
-            temperature: 0.2,
-          }));
-          modelName = runtime.providerName;
-          isFallback = false;
-        } else {
-          summary = trimTo200Chars(content.slice(0, 500));
-          isFallback = true;
-          modelName = null;
+        summary = trimTo200Chars(content.slice(0, 500));
+        isFallback = true;
+        modelName = null;
+
+        if (isLlmDerivedSummaryEnabled()) {
+          try {
+            const generated = await utilityProcessBridge.generateText(input.projectId, buildSummaryPrompt(content), {
+              maxTokens: 256,
+              temperature: 0.2,
+            });
+            summary = trimTo200Chars(generated.text);
+            modelName = generated.providerName;
+            isFallback = false;
+          } catch (error) {
+            logger.warn("LLM-derived chapter summary failed; using fallback summary", {
+              projectId: input.projectId,
+              chapterId: source.chapterId,
+              error,
+            });
+          }
         }
 
         await client

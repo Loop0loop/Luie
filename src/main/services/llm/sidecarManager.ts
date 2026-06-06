@@ -5,6 +5,14 @@ import type { UtilitySidecarStatus } from "../../../shared/types/index.js";
 import { utilityProcessBridge } from "../features/utility/utilityProcessBridge.js";
 
 const logger = createLogger("SidecarManager");
+const pathLabel = (value: string): string => path.basename(value);
+const redactPaths = (value: string): string =>
+  value
+    .replace(/\/Users\/[^\n\r]+?(?=\s(?:ENOENT|EACCES|EPERM|from|to|at|with|$))/g, "<path>")
+    .replace(/(?:\/Users\/[^/\s]+|\/private\/var\/folders|\/var\/folders|\/tmp|\/[A-Za-z0-9._-]+)+(?:\/[^\s:'"]+)*/g, "<path>")
+    .replace(/[A-Za-z]:\\[^\s:'"]+/g, "<path>");
+const errorMessage = (error: unknown): string =>
+  redactPaths(error instanceof Error ? error.message : String(error));
 
 type SidecarState =
   | { status: "stopped" }
@@ -73,13 +81,13 @@ export class SidecarManager {
         const binDir = this.getBinDir();
         const fsp = await import("node:fs/promises");
         await fsp.rm(binDir, { recursive: true, force: true }).catch((rmErr) => {
-          logger.error("Failed to remove corrupted bin directory", { error: rmErr });
+          logger.error("Failed to remove corrupted bin directory", { error: errorMessage(rmErr) });
         });
         
         logger.info("Local LLM settings initialized and corrupted binaries removed due to spawn error.");
       }
     } catch (err) {
-      logger.error("Failed to handle spawn failure recovery", { error: err });
+      logger.error("Failed to handle spawn failure recovery", { error: errorMessage(err) });
     }
   }
 
@@ -93,7 +101,13 @@ export class SidecarManager {
     }
 
     this.state = { status: "starting", modelPath };
-    logger.info("Requesting utilityProcess to spawn llama-server", { binaryPath, modelPath });
+    logger.info("Requesting utilityProcess to spawn sidecar runtime", {
+      route: "sidecar",
+      backend: "local-sidecar",
+      implementation: "llama-server",
+      binary: pathLabel(binaryPath),
+      model: pathLabel(modelPath),
+    });
 
     try {
       if (options?.signal?.aborted) {
@@ -105,7 +119,12 @@ export class SidecarManager {
       logger.info("llama-server sidecar spawned and active via utilityProcess", { baseUrl });
       return baseUrl;
     } catch (error) {
-      logger.error("llama-server sidecar start via utilityProcess failed", { error });
+      logger.error("llama-server sidecar start via utilityProcess failed", {
+        route: "sidecar",
+        backend: "local-sidecar",
+        implementation: "llama-server",
+        error: errorMessage(error),
+      });
       this.state = { status: "stopped" };
       await this.handleSpawnFailure(error);
       throw error;

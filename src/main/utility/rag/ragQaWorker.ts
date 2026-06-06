@@ -43,6 +43,26 @@ const processWithSend = process as typeof process & {
 
 const outboundPort: MessagePortLike | null = processWithParentPort.parentPort ?? null;
 
+const runtimeLogFieldsFromProvider = (providerName: string): {
+  route: string;
+  backend: "local-sidecar" | "remote-http" | "test";
+  implementation: string;
+} => {
+  if (providerName === "sidecar") {
+    return { route: "sidecar", backend: "local-sidecar", implementation: "llama-server" };
+  }
+  if (providerName === "gemini") {
+    return { route: "gemini", backend: "remote-http", implementation: "gemini-api" };
+  }
+  if (providerName === "ollama") {
+    return { route: "ollama", backend: "remote-http", implementation: "ollama-openai-compatible-api" };
+  }
+  if (providerName === "deterministic") {
+    return { route: "deterministic", backend: "test", implementation: "deterministic-provider" };
+  }
+  return { route: "openai", backend: "remote-http", implementation: "openai-compatible-api" };
+};
+
 class RagQaWorker {
   private activeRuns = new Map<string, ActiveRun>();
   private generationConfigCache:
@@ -190,6 +210,7 @@ class RagQaWorker {
         runId: run.runId,
         projectId: run.request.projectId,
         providerName: runtime.providerName,
+        ...runtimeLogFieldsFromProvider(runtime.providerName),
         isModelLoaded: runtime.isModelLoaded(),
       });
       if (runtime.providerName === "deterministic") {

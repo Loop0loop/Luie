@@ -10,7 +10,10 @@ describe("main embedding runtime boundary", () => {
     );
 
     expect(source).not.toContain("resolveEmbeddingRuntimeClient");
+    expect(source).not.toContain("resolveModelRuntimeClient");
     expect(source).not.toContain("embeddingSidecarManager");
+    expect(source).not.toContain("sidecarManager");
+    expect(source).not.toContain("ensureStarted(");
   });
 
   it("does not expose the removed main embedding sidecar manager", () => {
@@ -21,5 +24,40 @@ describe("main embedding runtime boundary", () => {
 
     expect(barrelSource).not.toContain("embeddingSidecarManager");
     expect(analysisDomainSource).not.toContain("resolveEmbeddingRuntimeClient");
+    expect(analysisDomainSource).not.toContain("resolveModelRuntimeClient");
+  });
+
+  it("keeps background summary generation behind the utility process bridge", () => {
+    const projectorSource = readFileSync(
+      resolve(process.cwd(), "src/main/services/features/memory/chapterSummaryProjector.ts"),
+      "utf8",
+    );
+
+    expect(projectorSource).not.toContain("modelRuntimeFactory");
+    expect(projectorSource).not.toContain("resolveModelRuntimeClient");
+    expect(projectorSource).toContain("utilityProcessBridge.generateText");
+  });
+
+  it("keeps utility LLM logs aligned with route backend implementation terminology", () => {
+    const materializerSource = readFileSync(
+      resolve(process.cwd(), "src/main/utility/llm/runtimeMaterializer.ts"),
+      "utf8",
+    );
+    const ragWorkerSource = readFileSync(
+      resolve(process.cwd(), "src/main/utility/rag/ragQaWorker.ts"),
+      "utf8",
+    );
+    const sidecarSource = readFileSync(
+      resolve(process.cwd(), "src/main/utility/llm/sidecarSupervisor.ts"),
+      "utf8",
+    );
+
+    for (const source of [materializerSource, ragWorkerSource, sidecarSource]) {
+      expect(source).toContain("route");
+      expect(source).toContain("backend");
+      expect(source).toContain("implementation");
+    }
+    expect(sidecarSource).toContain("pathLabel(binaryPath)");
+    expect(sidecarSource).toContain("pathLabel(modelPath)");
   });
 });

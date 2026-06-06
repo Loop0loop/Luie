@@ -18,6 +18,7 @@ import {
   RAG_RUN_WATCHDOG_MS,
   REQUEST_TIMEOUT_ASK_MS,
   REQUEST_TIMEOUT_EMBED_MS,
+  REQUEST_TIMEOUT_GENERATE_MS,
   REQUEST_TIMEOUT_SIDECAR_START_MS,
   REQUEST_TIMEOUT_STATUS_MS,
   REQUEST_TIMEOUT_STOP_MS,
@@ -212,6 +213,27 @@ export class UtilityProcessBridge {
       | null;
   }
 
+  async generateText(
+    projectId: string,
+    prompt: string,
+    options?: { maxTokens?: number; temperature?: number },
+  ): Promise<{ text: string; providerName: string }> {
+    if (!this.utilityChild) {
+      const started = await this.start();
+      if (!started || !this.utilityChild) {
+        throw new Error("Utility process is not running");
+      }
+    }
+    const { plan } = await resolveRuntimeRoutePlan();
+    return (await this.request("llm.generateText", {
+      projectId,
+      prompt,
+      maxTokens: options?.maxTokens,
+      temperature: options?.temperature,
+      runtimePlan: plan,
+    })) as { text: string; providerName: string };
+  }
+
   async startSidecar(
     binaryPath: string,
     modelPath: string,
@@ -270,6 +292,16 @@ export class UtilityProcessBridge {
     payload: { projectId: string; texts: string[]; runtimePlan?: UtilityRagQaRequest["runtimePlan"] },
   ): Promise<unknown>;
   private async request(
+    method: "llm.generateText",
+    payload: {
+      projectId: string;
+      prompt: string;
+      maxTokens?: number;
+      temperature?: number;
+      runtimePlan?: UtilityRagQaRequest["runtimePlan"];
+    },
+  ): Promise<unknown>;
+  private async request(
     method: "sidecar.start",
     payload: { binaryPath: string; modelPath: string; options?: { gpuLayers?: number; contextSize?: number } },
   ): Promise<unknown>;
@@ -280,6 +312,7 @@ export class UtilityProcessBridge {
       | "ragQa.ask"
       | "ragQa.stop"
       | "embedding.embed"
+      | "llm.generateText"
       | "sidecar.start"
       | "sidecar.status"
       | "sidecar.stop",
@@ -292,13 +325,15 @@ export class UtilityProcessBridge {
       const timeoutMs =
         method === "ragQa.stop" || method === "sidecar.stop"
           ? REQUEST_TIMEOUT_STOP_MS
-          : method === "sidecar.status"
-            ? REQUEST_TIMEOUT_STATUS_MS
-            : method === "sidecar.start"
-              ? REQUEST_TIMEOUT_SIDECAR_START_MS
-              : method === "embedding.embed"
-                ? REQUEST_TIMEOUT_EMBED_MS
-                : REQUEST_TIMEOUT_ASK_MS;
+            : method === "sidecar.status"
+              ? REQUEST_TIMEOUT_STATUS_MS
+              : method === "sidecar.start"
+                ? REQUEST_TIMEOUT_SIDECAR_START_MS
+                : method === "embedding.embed"
+                  ? REQUEST_TIMEOUT_EMBED_MS
+                  : method === "llm.generateText"
+                    ? REQUEST_TIMEOUT_GENERATE_MS
+                    : REQUEST_TIMEOUT_ASK_MS;
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(requestId);
         reject(new Error(`Utility request timeout: ${method}`));
@@ -321,6 +356,21 @@ export class UtilityProcessBridge {
           payload: payload as {
             projectId: string;
             texts: string[];
+            runtimePlan?: UtilityRagQaRequest["runtimePlan"];
+          },
+        } satisfies UtilityInboundMessage);
+        return;
+      }
+      if (method === "llm.generateText") {
+        child.postMessage({
+          type: "request",
+          requestId,
+          method: "llm.generateText",
+          payload: payload as {
+            projectId: string;
+            prompt: string;
+            maxTokens?: number;
+            temperature?: number;
             runtimePlan?: UtilityRagQaRequest["runtimePlan"];
           },
         } satisfies UtilityInboundMessage);

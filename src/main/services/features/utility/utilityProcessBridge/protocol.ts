@@ -10,6 +10,7 @@ export const START_TIMEOUT_MS = 5_000;
 export const REQUEST_TIMEOUT_ASK_MS = 20_000;
 export const REQUEST_TIMEOUT_STOP_MS = 2_000;
 export const REQUEST_TIMEOUT_EMBED_MS = 30_000;
+export const REQUEST_TIMEOUT_GENERATE_MS = 180_000;
 export const REQUEST_TIMEOUT_SIDECAR_START_MS = 45_000;
 export const REQUEST_TIMEOUT_STATUS_MS = 2_000;
 export const STOP_TIMEOUT_MS = 5_000;
@@ -35,6 +36,18 @@ export type UtilityInboundMessage =
       requestId: string;
       method: "embedding.embed";
       payload: { projectId: string; texts: string[]; runtimePlan?: UtilityRagQaRequest["runtimePlan"] };
+    }
+  | {
+      type: "request";
+      requestId: string;
+      method: "llm.generateText";
+      payload: {
+        projectId: string;
+        prompt: string;
+        maxTokens?: number;
+        temperature?: number;
+        runtimePlan?: UtilityRagQaRequest["runtimePlan"];
+      };
     }
   | {
       type: "request";

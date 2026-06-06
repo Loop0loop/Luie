@@ -38,22 +38,72 @@ const runtimeLabel = (value: string | null | undefined): string => {
   return value;
 };
 
-const runtimeSummary = (runtime: LlmRuntimeInfo): string => {
-  const requested = runtimeLabel(runtime.requestedProvider ?? runtime.provider);
-  const resolved = runtimeLabel(runtime.resolvedProvider ?? runtime.provider);
-  const backend = runtime.backend ? ` / ${runtime.backend}` : "";
-  const fallback = runtime.fallbackUsed ? " / fallback" : "";
-  return `Requested: ${requested} / Resolved: ${resolved}${backend}${fallback}`;
+const sidecarStatusTone = (status: UtilitySidecarStatus["status"]): string => {
+  if (status === "running") return "text-success";
+  if (status === "crashed" || status === "cooldown") return "text-danger";
+  if (status === "starting" || status === "stopping") return "text-warning";
+  return "text-muted";
 };
 
 const sidecarStatusSummary = (status: UtilitySidecarStatus): string => {
   if (status.status === "running") return `Sidecar: running / ${status.baseUrl}`;
   if (status.status === "starting") return "Sidecar: starting";
   if (status.status === "stopping") return "Sidecar: stopping";
-  if (status.status === "crashed") return `Sidecar: crashed / ${status.lastError}`;
-  if (status.status === "cooldown") return `Sidecar: cooldown / ${status.lastError}`;
-  return status.lastError ? `Sidecar: stopped / ${status.lastError}` : "Sidecar: stopped";
+  if (status.status === "crashed") return "Sidecar: crashed";
+  if (status.status === "cooldown") return "Sidecar: cooldown";
+  return status.lastError ? "Sidecar: stopped with error" : "Sidecar: stopped";
 };
+
+function RuntimeStatusPanel({
+  runtimeInfo,
+  sidecarStatus,
+}: {
+  runtimeInfo: LlmRuntimeInfo | null;
+  sidecarStatus: UtilitySidecarStatus | null;
+}) {
+  if (!runtimeInfo) return null;
+  const skipped = runtimeInfo.skipped ?? [];
+  return (
+    <div className="mb-2 rounded-md border border-border bg-surface/60 px-2.5 py-2 text-[11px] text-muted">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+        <div className="min-w-0">
+          <span className="text-fg-secondary">Requested:</span>{" "}
+          <span>{runtimeLabel(runtimeInfo.requestedProvider ?? runtimeInfo.provider)}</span>
+        </div>
+        <div className="min-w-0">
+          <span className="text-fg-secondary">Resolved:</span>{" "}
+          <span>{runtimeLabel(runtimeInfo.resolvedProvider ?? runtimeInfo.provider)}</span>
+        </div>
+        {runtimeInfo.backend && (
+          <div className="min-w-0">
+            <span className="text-fg-secondary">Backend:</span>{" "}
+            <span>{runtimeInfo.backend}</span>
+          </div>
+        )}
+        {runtimeInfo.model && (
+          <div className="min-w-0 truncate">
+            <span className="text-fg-secondary">Model:</span>{" "}
+            <span>{runtimeInfo.model}</span>
+          </div>
+        )}
+        {runtimeInfo.fallbackUsed && (
+          <div className="col-span-2 text-warning">Fallback route is active</div>
+        )}
+      </div>
+      {skipped.length > 0 && (
+        <div className="mt-1 truncate">
+          <span className="text-fg-secondary">Skipped:</span>{" "}
+          {skipped.map((skip) => `${runtimeLabel(skip.provider)} ${skip.code}`).join(", ")}
+        </div>
+      )}
+      {sidecarStatus && (
+        <div className={`mt-1 truncate ${sidecarStatusTone(sidecarStatus.status)}`}>
+          {sidecarStatusSummary(sidecarStatus)}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AnalysisSection() {
   const { t } = useTranslation();
@@ -120,8 +170,13 @@ export default function AnalysisSection() {
         isAvailable = false;
       }
     } else if (next === "sidecar") {
-      const hasModel = Boolean(localLlm?.modelPath);
-      if (!hasModel) {
+      const hasSidecar = Boolean(localLlm?.enabled && localLlm.modelPath && localLlm.binaryPath);
+      if (!hasSidecar) {
+        isAvailable = false;
+      }
+    } else if (next === "ollama") {
+      const hasOllama = Boolean(llmSettings?.ollama?.baseUrl && llmSettings.ollama.chatModel);
+      if (!hasOllama) {
         isAvailable = false;
       }
     }
@@ -374,34 +429,19 @@ export default function AnalysisSection() {
             className="h-7 rounded border border-border bg-surface px-2 text-xs text-fg"
           >
             <option value="auto">auto</option>
-            <option value="sidecar">Sidecar</option>
-            <option value="openai">OpenAI</option>
-            <option value="gemini">Gemini</option>
-            <option value="ollama">Ollama</option>
+            <optgroup label="Local">
+              <option value="sidecar">Sidecar</option>
+            </optgroup>
+            <optgroup label="Cloud">
+              <option value="openai">OpenAI</option>
+              <option value="gemini">Gemini</option>
+            </optgroup>
+            <optgroup label="Advanced">
+              <option value="ollama">Ollama</option>
+            </optgroup>
           </select>
         </div>
-        {runtimeInfo && (
-          <div className="text-[11px] text-muted mb-2 px-1 space-y-1">
-            <div>
-              {runtimeSummary(runtimeInfo)}
-              {runtimeInfo.model ? ` / ${runtimeInfo.model}` : ""}
-              {runtimeInfo.alternativeModel ? ` (alt: ${runtimeInfo.alternativeModel})` : ""}
-            </div>
-            {runtimeInfo.skipped && runtimeInfo.skipped.length > 0 && (
-              <div className="truncate">
-                Skipped:{" "}
-                {runtimeInfo.skipped
-                  .map((skip) => `${runtimeLabel(skip.provider)} ${skip.code}`)
-                  .join(", ")}
-              </div>
-            )}
-            {sidecarStatus && (
-              <div className="truncate">
-                {sidecarStatusSummary(sidecarStatus)}
-              </div>
-            )}
-          </div>
-        )}
+        <RuntimeStatusPanel runtimeInfo={runtimeInfo} sidecarStatus={sidecarStatus} />
         {currentChapter && (
           <div className="text-xs text-muted mb-2 flex items-center gap-1.5 font-medium px-1">
             <BookOpen className="w-3.5 h-3.5" />

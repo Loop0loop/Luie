@@ -127,4 +127,31 @@ describe("utilityRuntimeMaterializer", () => {
       { gpuLayers: 0, contextSize: 8192 },
     );
   });
+
+  it("fails closed when explicit sidecar embedding materialization fails", async () => {
+    const userDataPath = join("/tmp", `luie-embedding-fail-${Date.now()}`);
+    const modelDir = join(userDataPath, "llm-models");
+    mkdirSync(modelDir, { recursive: true });
+    writeFileSync(join(modelDir, DEFAULT_EMBEDDING_MODEL.filename), "test-model");
+    process.env.LUIE_USER_DATA_PATH = userDataPath;
+    mocked.ensureEmbeddingStarted.mockRejectedValue(new Error("spawn failed"));
+    const plan: RuntimeRoutePlan = {
+      requestedProvider: "sidecar",
+      fallbackPolicy: "fail-closed",
+      order: ["sidecar"],
+      candidates: [
+        {
+          kind: "sidecar",
+          backend: "local-sidecar",
+          modelPath: "/tmp/chat-model.gguf",
+          binaryPath: "/tmp/bin/llama-server",
+          options: {},
+        },
+      ],
+      skipped: [],
+    };
+
+    await expect(resolveUtilityEmbeddingRuntimeClient("project-1", plan)).rejects.toThrow("spawn failed");
+    expect(mocked.ensureEmbeddingStarted).toHaveBeenCalledTimes(1);
+  });
 });

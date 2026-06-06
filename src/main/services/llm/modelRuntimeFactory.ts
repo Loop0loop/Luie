@@ -1,8 +1,3 @@
-import { createLogger } from "../../../shared/logger/index.js";
-import type { ModelRuntimeClient } from "./modelRuntimeClient.js";
-import { DeterministicProvider } from "./providers/deterministicProvider.js";
-import { ExternalApiProvider } from "./providers/externalApiProvider.js";
-import { GeminiProvider } from "./providers/geminiProvider.js";
 import { settingsManager } from "../../manager/settings/index.js";
 import type { SettingsManager } from "../../manager/settings/index.js";
 import type { LlmRuntimeInfo } from "../../../shared/types/index.js";
@@ -19,18 +14,9 @@ import {
   createOpenAiSupabaseProxyResolver,
 } from "./runtimeProxyConfig.js";
 
-const logger = createLogger("ModelRuntimeFactory");
-const deterministicProvider = new DeterministicProvider();
-let externalApiProviderSingle: { key: string; provider: ExternalApiProvider } | null = null;
-let openAiProviderSingle: { key: string; provider: ExternalApiProvider } | null = null;
-let geminiProviderSingle: { key: string; provider: GeminiProvider } | null = null;
-let sidecarProviderSingle: { key: string; provider: ExternalApiProvider } | null = null;
-
 export function invalidateModelRuntimeCache(): void {
-  externalApiProviderSingle = null;
-  openAiProviderSingle = null;
-  geminiProviderSingle = null;
-  sidecarProviderSingle = null;
+  // Runtime clients are materialized in the utility process. This compatibility
+  // hook remains for settings-change call sites that invalidate route decisions.
 }
 
 type OllamaConfig = {
@@ -58,8 +44,8 @@ type EnvOpenAiConfig = {
   embeddingModel?: string;
 };
 
-type ResolvedRuntime =
-  | { kind: "sidecar"; config: { baseUrl: string } }
+type PlannedRuntime =
+  | { kind: "sidecar"; candidate: Extract<RuntimeRouteCandidate, { kind: "sidecar" }> }
   | { kind: "gemini"; config: EnvGeminiConfig }
   | { kind: "openai"; config: EnvOpenAiConfig }
   | { kind: "ollama"; config: OllamaConfig }
@@ -68,7 +54,7 @@ type ResolvedRuntime =
 
 type RuntimeKind = RuntimeRouteProvider;
 type RequestedProvider = "auto" | RuntimeKind;
-type RuntimeProvider = Exclude<ResolvedRuntime["kind"], "unavailable">;
+type RuntimeProvider = Exclude<PlannedRuntime["kind"], "unavailable">;
 type RuntimeBackend = "local-sidecar" | "remote-http" | "test" | null;
 type RuntimeSkip = {
   provider: RuntimeProvider;
@@ -77,7 +63,7 @@ type RuntimeSkip = {
 };
 type RuntimeResolution = {
   requestedProvider: RequestedProvider;
-  resolved: ResolvedRuntime;
+  resolved: PlannedRuntime;
   backend: RuntimeBackend;
   fallbackUsed: boolean;
   skipped: RuntimeSkip[];
@@ -123,28 +109,6 @@ async function resolveLocalEmbeddingModelId(): Promise<string | null> {
   }
 }
 
-const loadSidecarManager = (() => {
-  let cached: Promise<{ sidecarManager: { ensureStarted: (
-    binaryPath: string,
-    modelPath: string,
-    options?: { gpuLayers?: number; contextSize?: number; signal?: AbortSignal },
-  ) => Promise<string> } }> | null = null;
-  return async () => {
-    if (!cached) {
-      cached = import("./sidecarManager.js") as Promise<{
-        sidecarManager: {
-          ensureStarted: (
-            binaryPath: string,
-            modelPath: string,
-            options?: { gpuLayers?: number; contextSize?: number; signal?: AbortSignal },
-          ) => Promise<string>;
-        };
-      }>;
-    }
-    return cached;
-  };
-})();
-
 async function loadOllamaConfig(): Promise<OllamaConfig | null> {
   try {
     const settingsManager = await loadSettingsManager();
@@ -161,45 +125,6 @@ async function loadOllamaConfig(): Promise<OllamaConfig | null> {
   } catch {
     return null;
   }
-}
-
-function getOrCreateExternalApiProvider(config: OllamaConfig): ExternalApiProvider {
-  const key = `${config.baseUrl}::${config.chatModel}::${config.embeddingModel ?? ""}::${config.apiKey ?? ""}`;
-  if (externalApiProviderSingle?.key === key) {
-    return externalApiProviderSingle.provider;
-  }
-  const provider = new ExternalApiProvider(config);
-  externalApiProviderSingle = { key, provider };
-  return provider;
-}
-
-function getOrCreateOpenAiProvider(config: EnvOpenAiConfig): ExternalApiProvider {
-  const key = `${config.model}::${config.embeddingModel ?? ""}::${config.apiKey}`;
-  if (openAiProviderSingle?.key === key) {
-    return openAiProviderSingle.provider;
-  }
-  const provider = new ExternalApiProvider({
-    baseUrl: "https://api.openai.com/v1",
-    apiKey: config.apiKey,
-    chatModel: config.model,
-    embeddingModel: config.embeddingModel,
-    supabaseProxy: createOpenAiSupabaseProxyResolver(),
-  });
-  openAiProviderSingle = { key, provider };
-  return provider;
-}
-
-function getOrCreateGeminiProvider(config: EnvGeminiConfig): GeminiProvider {
-  const key = `${config.model}::${config.alternativeModel ?? ""}::${config.embeddingModel ?? ""}::${config.apiKey}`;
-  if (geminiProviderSingle?.key === key) {
-    return geminiProviderSingle.provider;
-  }
-  const provider = new GeminiProvider({
-    ...config,
-    supabaseProxy: createGeminiSupabaseProxyResolver(),
-  });
-  geminiProviderSingle = { key, provider };
-  return provider;
 }
 
 function loadEnvGeminiConfig(): EnvGeminiConfig | null {
@@ -231,15 +156,7 @@ function buildSkip(provider: RuntimeProvider, code: string, message: string): Ru
   return { provider, code, message };
 }
 
-function classifySidecarError(error: unknown): RuntimeSkip {
-  const message = error instanceof Error ? error.message : String(error);
-  const code = /health.*timed out|timeout/i.test(message)
-    ? "SIDECAR_HEALTH_TIMEOUT"
-    : "SIDECAR_SPAWN_FAILED";
-  return buildSkip("sidecar", code, message);
-}
-
-function backendFor(kind: ResolvedRuntime["kind"]): RuntimeBackend {
+function backendFor(kind: PlannedRuntime["kind"]): RuntimeBackend {
   if (kind === "sidecar") return "local-sidecar";
   if (kind === "gemini" || kind === "openai" || kind === "ollama") return "remote-http";
   if (kind === "deterministic") return "test";
@@ -352,30 +269,21 @@ export async function resolveRuntimeRoutePlan(): Promise<RuntimeRoutePlanningRes
   return { preferred, plan };
 }
 
-async function resolveRuntime(): Promise<RuntimeResolution> {
+async function resolveRuntimePlanDecision(): Promise<RuntimeResolution> {
   const { preferred, plan } = await resolveRuntimeRoutePlan();
   const skipped: RuntimeSkip[] = [];
 
-  const tryResolveKind = async (kind: RuntimeKind): Promise<ResolvedRuntime | null> => {
+  const tryResolveKind = (kind: RuntimeKind): PlannedRuntime | null => {
     if (kind === "sidecar") {
-      const sidecarCandidate = plan.candidates.find((candidate) => candidate.kind === "sidecar");
+      const sidecarCandidate = plan.candidates.find(
+        (candidate): candidate is Extract<RuntimeRouteCandidate, { kind: "sidecar" }> =>
+          candidate.kind === "sidecar",
+      );
       if (!sidecarCandidate) {
         skipped.push(buildSkip("sidecar", "SIDECAR_NOT_CONFIGURED", "Local sidecar is not configured"));
         return null;
       }
-      try {
-        const { sidecarManager } = await loadSidecarManager();
-        const baseUrl = await sidecarManager.ensureStarted(
-          sidecarCandidate.binaryPath,
-          sidecarCandidate.modelPath,
-          sidecarCandidate.options,
-        );
-        return { kind: "sidecar", config: { baseUrl } };
-      } catch (error) {
-        skipped.push(classifySidecarError(error));
-        logger.warn("Sidecar start failed, falling through", { error });
-        return null;
-      }
+      return { kind: "sidecar", candidate: sidecarCandidate };
     }
     if (kind === "gemini") {
       const candidate = plan.candidates.find((item): item is Extract<RuntimeRouteCandidate, { kind: "gemini" }> => item.kind === "gemini");
@@ -428,8 +336,7 @@ async function resolveRuntime(): Promise<RuntimeResolution> {
   };
 
   for (const kind of plan.order) {
-    // eslint-disable-next-line no-await-in-loop -- Runtime providers are intentionally probed in priority order.
-    const resolved = await tryResolveKind(kind);
+    const resolved = tryResolveKind(kind);
     if (resolved) {
       return {
         requestedProvider: preferred,
@@ -459,51 +366,10 @@ async function resolveRuntime(): Promise<RuntimeResolution> {
   };
 }
 
-export async function resolveModelRuntimeClient(
-  projectId: string,
-): Promise<ModelRuntimeClient> {
-  const resolution = await resolveRuntime();
-  const { resolved } = resolution;
-  if (resolved.kind === "sidecar") {
-    logger.info("Using local LLM sidecar", { projectId, baseUrl: resolved.config.baseUrl });
-    const key = resolved.config.baseUrl;
-    if (sidecarProviderSingle?.key === key) return sidecarProviderSingle.provider;
-    const provider = new ExternalApiProvider({
-      baseUrl: resolved.config.baseUrl,
-      chatModel: "local",
-      apiKey: "no-key",
-    });
-    sidecarProviderSingle = { key, provider };
-    return provider;
-  }
-  if (resolved.kind === "gemini") {
-    logger.info("Using Gemini provider", { projectId, model: resolved.config.model });
-    return getOrCreateGeminiProvider(resolved.config);
-  }
-  if (resolved.kind === "openai") {
-    logger.info("Using OpenAI provider", { projectId, model: resolved.config.model });
-    return getOrCreateOpenAiProvider(resolved.config);
-  }
-  if (resolved.kind === "ollama") {
-    logger.info("Using Ollama provider", {
-      projectId,
-      baseUrl: resolved.config.baseUrl,
-      chatModel: resolved.config.chatModel,
-    });
-    return getOrCreateExternalApiProvider(resolved.config);
-  }
-  if (resolved.kind === "unavailable") {
-    const primary = resolution.skipped[0];
-    throw new Error(primary?.message ?? "LLM runtime unavailable");
-  }
-  logger.info("Ollama not configured, using deterministic fallback", { projectId });
-  return deterministicProvider;
-}
-
 export async function resolveRuntimeModelConfig(
   _projectId: string,
 ): Promise<RuntimeModelConfig> {
-  const { resolved } = await resolveRuntime();
+  const { resolved } = await resolveRuntimePlanDecision();
   if (resolved.kind === "sidecar") {
     // 로컬 임베딩 모델(bge-m3)이 확보되어 있으면 그 식별자를 signature 로 사용한다.
     // 이로써 embeddingProjector 가 임베딩 잡을 skip 하지 않고, 모델 변경 시 재임베딩한다.
@@ -538,7 +404,7 @@ export async function resolveRuntimeModelConfig(
 }
 
 export async function resolveRuntimeModelInfo(): Promise<LlmRuntimeInfo> {
-  const resolution = await resolveRuntime();
+  const resolution = await resolveRuntimePlanDecision();
   const { resolved } = resolution;
   const base = {
     requestedProvider: resolution.requestedProvider,

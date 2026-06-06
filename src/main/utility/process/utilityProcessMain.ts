@@ -74,6 +74,18 @@ type UtilityInboundMessage =
   | {
       type: "request";
       requestId: string;
+      method: "llm.generateText";
+      payload: {
+        projectId: string;
+        prompt: string;
+        maxTokens?: number;
+        temperature?: number;
+        runtimePlan?: UtilityRagQaRequest["runtimePlan"];
+      };
+    }
+  | {
+      type: "request";
+      requestId: string;
       method: "sidecar.start";
       payload: { binaryPath: string; modelPath: string; options?: { gpuLayers?: number; contextSize?: number } };
     }
@@ -135,6 +147,13 @@ const isValidInboundMessage = (value: unknown): value is UtilityInboundMessage =
       isRecord(value.payload) &&
       typeof value.payload.projectId === "string" &&
       Array.isArray(value.payload.texts)
+    );
+  }
+  if (value.method === "llm.generateText") {
+    return (
+      isRecord(value.payload) &&
+      typeof value.payload.projectId === "string" &&
+      typeof value.payload.prompt === "string"
     );
   }
   if (value.method === "sidecar.start") {
@@ -234,6 +253,12 @@ const onMessage = (raw: unknown): void => {
         if (message.method === "embedding.embed") {
           const mod = await import("../rag/ragQaWorker.js");
           const result = await mod.embedTexts(message.payload);
+          post({ type: "response", requestId: message.requestId, ok: true, result });
+          return;
+        }
+        if (message.method === "llm.generateText") {
+          const mod = await import("../llm/textGeneration.js");
+          const result = await mod.generateUtilityText(message.payload);
           post({ type: "response", requestId: message.requestId, ok: true, result });
           return;
         }

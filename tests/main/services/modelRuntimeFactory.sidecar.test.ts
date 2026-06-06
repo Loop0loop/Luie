@@ -21,7 +21,6 @@ vi.mock("../../../src/main/services/llm/sidecarManager.js", () => ({
 
 import {
   invalidateModelRuntimeCache,
-  resolveModelRuntimeClient,
   resolveRuntimeModelInfo,
 } from "../../../src/main/services/llm/modelRuntimeFactory.js";
 
@@ -38,7 +37,7 @@ describe("modelRuntimeFactory sidecar", () => {
     mocked.ensureStarted.mockResolvedValue("http://127.0.0.1:32123");
   });
 
-  it("uses sidecar before other configured providers when localLlm is enabled", async () => {
+  it("reports sidecar as the first configured provider without starting it", async () => {
     mocked.getLocalLlmSettings.mockReturnValue({
       enabled: true,
       modelPath: "/tmp/model.gguf",
@@ -53,15 +52,9 @@ describe("modelRuntimeFactory sidecar", () => {
       },
     });
 
-    const runtime = await resolveModelRuntimeClient("project-1");
     const info = await resolveRuntimeModelInfo();
 
-    expect(mocked.ensureStarted).toHaveBeenCalledWith(
-      "/tmp/bin/llama-server",
-      "/tmp/model.gguf",
-      { gpuLayers: -1, contextSize: 4096 },
-    );
-    expect(runtime.providerName).toBe("externalapi");
+    expect(mocked.ensureStarted).not.toHaveBeenCalled();
     expect(info).toEqual({
       provider: "sidecar",
       model: "llama-server",
@@ -75,22 +68,18 @@ describe("modelRuntimeFactory sidecar", () => {
     });
   });
 
-  it("falls back to Ollama when sidecar start fails", async () => {
-    mocked.getLocalLlmSettings.mockReturnValue({
-      enabled: true,
-      modelPath: "/tmp/model.gguf",
-      binaryPath: "/tmp/bin/llama-server",
-    });
+  it("falls back to Ollama in auto mode when sidecar is not configured", async () => {
+    mocked.getLocalLlmSettings.mockReturnValue(undefined);
     mocked.getLlmSettings.mockReturnValue({
       ollama: {
         baseUrl: "http://localhost:11434",
         chatModel: "qwen3:4b",
       },
     });
-    mocked.ensureStarted.mockRejectedValue(new Error("spawn failed"));
 
     const info = await resolveRuntimeModelInfo();
 
+    expect(mocked.ensureStarted).not.toHaveBeenCalled();
     expect(info).toEqual({
       provider: "ollama",
       model: "qwen3:4b",
@@ -103,8 +92,8 @@ describe("modelRuntimeFactory sidecar", () => {
       skipped: [
         {
           provider: "sidecar",
-          code: "SIDECAR_SPAWN_FAILED",
-          message: "spawn failed",
+          code: "SIDECAR_NOT_CONFIGURED",
+          message: "Local sidecar is not configured",
         },
         {
           provider: "openai",
@@ -120,21 +109,17 @@ describe("modelRuntimeFactory sidecar", () => {
     });
   });
 
-  it("does not fall back to Gemini when sidecar is explicitly selected", async () => {
+  it("does not fall back to Gemini when explicit sidecar is not configured", async () => {
     process.env.GEMINI_API_KEY = "gemini-key";
-    mocked.getLocalLlmSettings.mockReturnValue({
-      enabled: true,
-      modelPath: "/tmp/model.gguf",
-      binaryPath: "/tmp/bin/llama-server",
-    });
+    mocked.getLocalLlmSettings.mockReturnValue(undefined);
     mocked.getLlmSettings.mockReturnValue({
       preferredProvider: "sidecar",
       geminiApiKey: "settings-gemini-key",
     });
-    mocked.ensureStarted.mockRejectedValue(new Error("spawn failed"));
 
     const info = await resolveRuntimeModelInfo();
 
+    expect(mocked.ensureStarted).not.toHaveBeenCalled();
     expect(info).toEqual({
       provider: "unavailable",
       model: "",
@@ -147,8 +132,8 @@ describe("modelRuntimeFactory sidecar", () => {
       skipped: [
         {
           provider: "sidecar",
-          code: "SIDECAR_SPAWN_FAILED",
-          message: "spawn failed",
+          code: "SIDECAR_NOT_CONFIGURED",
+          message: "Local sidecar is not configured",
         },
       ],
     });

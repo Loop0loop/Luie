@@ -9,6 +9,5 @@ export { normalizeCoreAnswer } from "../../services/features/rag/normalizeCoreAn
 export { searchService } from "../../services/features/searchService.js";
 export {
   invalidateModelRuntimeCache,
-  resolveModelRuntimeClient,
   resolveRuntimeModelInfo,
 } from "../../services/llm/modelRuntimeFactory.js";

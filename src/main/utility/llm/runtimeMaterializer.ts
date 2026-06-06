@@ -25,6 +25,13 @@ import {
 
 const logger = createLogger("UtilityRuntimeMaterializer");
 const deterministicProvider = new DeterministicProvider();
+const redactPaths = (value: string): string =>
+  value
+    .replace(/\/Users\/[^\n\r]+?(?=\s(?:ENOENT|EACCES|EPERM|from|to|at|with|$))/g, "<path>")
+    .replace(/(?:\/Users\/[^/\s]+|\/private\/var\/folders|\/var\/folders|\/tmp|\/[A-Za-z0-9._-]+)+(?:\/[^\s:'"]+)*/g, "<path>")
+    .replace(/[A-Za-z]:\\[^\s:'"]+/g, "<path>");
+const errorMessage = (error: unknown): string =>
+  redactPaths(error instanceof Error ? error.message : String(error));
 
 let sidecarProviderSingle: { key: string; provider: ExternalApiProvider } | null = null;
 let openAiProviderSingle: { key: string; provider: ExternalApiProvider } | null = null;
@@ -39,6 +46,23 @@ const candidateFor = <Kind extends RuntimeRouteCandidate["kind"]>(
   (plan.candidates.find((candidate) => candidate.kind === kind) as
     | Extract<RuntimeRouteCandidate, { kind: Kind }>
     | undefined) ?? null;
+
+function runtimeLogFields(kind: RuntimeRouteCandidate["kind"]): {
+  route: RuntimeRouteCandidate["kind"];
+  backend: RuntimeRouteCandidate["backend"];
+  implementation: string;
+} {
+  if (kind === "sidecar") {
+    return { route: kind, backend: "local-sidecar", implementation: "llama-server" };
+  }
+  if (kind === "gemini") {
+    return { route: kind, backend: "remote-http", implementation: "gemini-api" };
+  }
+  if (kind === "ollama") {
+    return { route: kind, backend: "remote-http", implementation: "ollama-openai-compatible-api" };
+  }
+  return { route: kind, backend: "remote-http", implementation: "openai-compatible-api" };
+}
 
 function proxyResolverForCandidate(candidate: {
   supabaseProxy?: RuntimeRouteSupabaseProxy;
@@ -169,12 +193,17 @@ export async function resolveUtilityModelRuntimeClient(
           candidate.modelPath,
           candidate.options,
         );
-        logger.info("Utility materialized sidecar runtime", { projectId, baseUrl });
+        logger.info("Utility materialized LLM runtime", {
+          projectId,
+          ...runtimeLogFields("sidecar"),
+          baseUrl,
+        });
         return getOrCreateSidecarProvider(baseUrl);
       } catch (error) {
-        logger.warn("Utility sidecar materialization failed", {
+        logger.warn("Utility LLM runtime materialization failed", {
           projectId,
-          error: error instanceof Error ? error.message : String(error),
+          ...runtimeLogFields("sidecar"),
+          error: errorMessage(error),
         });
         if (plan.fallbackPolicy === "fail-closed") throw error;
         continue;
@@ -203,7 +232,12 @@ export async function resolveUtilityModelRuntimeClient(
     const firstSkip = plan.skipped[0];
     throw new Error(firstSkip?.message ?? "LLM runtime unavailable");
   }
-  logger.info("Utility runtime unavailable, using deterministic fallback", { projectId });
+  logger.info("Utility LLM runtime unavailable, using deterministic fallback", {
+    projectId,
+    route: "deterministic",
+    backend: "test",
+    implementation: "deterministic-provider",
+  });
   return deterministicProvider;
 }
 
@@ -212,7 +246,12 @@ export async function resolveUtilityEmbeddingRuntimeClient(
   plan: RuntimeRoutePlan | undefined,
 ): Promise<ModelRuntimeClient> {
   if (!plan) {
-    logger.warn("Embedding route plan missing, using deterministic fallback", { projectId });
+    logger.warn("Embedding route plan missing, using deterministic fallback", {
+      projectId,
+      route: "deterministic",
+      backend: "test",
+      implementation: "deterministic-provider",
+    });
     return deterministicProvider;
   }
 
@@ -231,18 +270,24 @@ export async function resolveUtilityEmbeddingRuntimeClient(
               contextSize: EMBEDDING_SERVER_DEFAULTS.contextSize,
             },
           );
-          logger.info("Utility materialized local embedding sidecar", {
+          logger.info("Utility materialized embedding runtime", {
             projectId,
+            route: "sidecar",
+            backend: "local-sidecar",
+            implementation: "llama-server",
             baseUrl,
             modelId: DEFAULT_EMBEDDING_MODEL.modelId,
           });
           return getOrCreateLocalEmbeddingProvider(baseUrl, DEFAULT_EMBEDDING_MODEL.modelId);
         } catch (error) {
-          logger.warn("Utility local embedding sidecar unavailable; trying next embedding route", {
+          logger.warn("Utility embedding runtime materialization failed; trying next route", {
             projectId,
-            error: error instanceof Error ? error.message : String(error),
+            route: "sidecar",
+            backend: "local-sidecar",
+            implementation: "llama-server",
+            error: errorMessage(error),
           });
-          if (plan.fallbackPolicy === "fail-closed") return deterministicProvider;
+          if (plan.fallbackPolicy === "fail-closed") throw error;
         }
       }
       continue;
@@ -263,6 +308,11 @@ export async function resolveUtilityEmbeddingRuntimeClient(
     }
   }
 
-  logger.info("Utility embedding runtime unavailable, using FTS-only fallback", { projectId });
+  logger.info("Utility embedding runtime unavailable, using FTS-only fallback", {
+    projectId,
+    route: "deterministic",
+    backend: "test",
+    implementation: "fts-only-fallback",
+  });
   return deterministicProvider;
 }

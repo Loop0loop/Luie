@@ -48,4 +48,22 @@ describe("UtilitySidecarSupervisor status", () => {
       diagnostic: "failed to load <path> from <path>",
     });
   });
+
+  it("redacts paths from status lastError", () => {
+    const supervisor = new UtilitySidecarSupervisor();
+    const internals = supervisor as unknown as {
+      markCooldown: (modelPath: string | undefined, lastError: string) => void;
+    };
+
+    internals.markCooldown(
+      "/Users/user/Secret Project/models/model.gguf",
+      "SIDECAR_SPAWN_FAILED: spawn /Users/user/Secret Project/bin/llama-server ENOENT",
+    );
+
+    expect(supervisor.status()).toMatchObject({
+      status: "cooldown",
+      modelPath: "/Users/user/Secret Project/models/model.gguf",
+      lastError: "SIDECAR_SPAWN_FAILED: spawn <path> ENOENT",
+    });
+  });
 });

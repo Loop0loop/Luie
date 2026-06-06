@@ -1,5 +1,6 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import net from "node:net";
+import path from "node:path";
 import { createLogger } from "../../../shared/logger/index.js";
 import type { UtilitySidecarPurpose, UtilitySidecarStatus } from "../../../shared/types/index.js";
 import { EMBEDDING_SERVER_DEFAULTS } from "../../services/llm/embeddingModelConstants.js";
@@ -12,6 +13,13 @@ const COOLDOWN_BASE_MS = 5_000;
 const COOLDOWN_MAX_MS = 60_000;
 const STDERR_BUFFER_LIMIT = 2_000;
 const STATUS_DIAGNOSTIC_LIMIT = 500;
+
+const pathLabel = (value: string) => path.basename(value);
+const redactPaths = (value: string): string =>
+  value
+    .replace(/\/Users\/[^\n\r]+?(?=\s(?:ENOENT|EACCES|EPERM|from|to|at|with|$))/g, "<path>")
+    .replace(/(?:\/Users\/[^/\s]+|\/private\/var\/folders|\/var\/folders|\/tmp|\/[A-Za-z0-9._-]+)+(?:\/[^\s:'"]+)*/g, "<path>")
+    .replace(/[A-Za-z]:\\[^\s:'"]+/g, "<path>");
 
 type SidecarState =
   | { status: "stopped"; lastError?: string }
@@ -150,10 +158,14 @@ export class UtilitySidecarSupervisor {
     const port = await this.findFreePort();
     const args = this.buildSpawnArgs(modelPath, port, options);
 
-    sidecarLogger.info("Spawning llama-server inside utilityProcess", {
-      binaryPath,
+    sidecarLogger.info("Spawning sidecar runtime inside utilityProcess", {
+      route: "sidecar",
+      backend: "local-sidecar",
+      implementation: "llama-server",
+      purpose: this.purpose,
+      binary: pathLabel(binaryPath),
       port,
-      modelPath,
+      model: pathLabel(modelPath),
     });
     const proc = spawn(binaryPath, args, {
       stdio: ["pipe", "ignore", "pipe"],
@@ -162,11 +174,24 @@ export class UtilitySidecarSupervisor {
 
     proc.on("error", (error) => {
       const message = error instanceof Error ? error.message : String(error);
-      sidecarLogger.error("llama-server spawn error in utilityProcess", { error: message });
-      this.markCooldown(modelPath, `SIDECAR_SPAWN_FAILED: ${message}`);
+      const safeMessage = redactPaths(message);
+      sidecarLogger.error("Sidecar runtime spawn error in utilityProcess", {
+        route: "sidecar",
+        backend: "local-sidecar",
+        implementation: "llama-server",
+        purpose: this.purpose,
+        error: safeMessage,
+      });
+      this.markCooldown(modelPath, `SIDECAR_SPAWN_FAILED: ${safeMessage}`);
     });
     proc.on("exit", (code) => {
-      sidecarLogger.info("llama-server exited in utilityProcess", { code });
+      sidecarLogger.info("Sidecar runtime exited in utilityProcess", {
+        route: "sidecar",
+        backend: "local-sidecar",
+        implementation: "llama-server",
+        purpose: this.purpose,
+        code,
+      });
       if (this.state.status === "running" || this.state.status === "starting") {
         const lastError = `SIDECAR_EXITED: llama-server exited with code ${code ?? "unknown"}`;
         this.consecutiveFailures += 1;
@@ -183,8 +208,12 @@ export class UtilitySidecarSupervisor {
     });
     proc.stderr?.on("data", (data: Buffer) => {
       this.appendStderr(data.toString());
-      sidecarLogger.debug("llama-server stderr in utilityProcess", {
-        msg: data.toString().slice(0, 200),
+      sidecarLogger.debug("Sidecar runtime stderr in utilityProcess", {
+        route: "sidecar",
+        backend: "local-sidecar",
+        implementation: "llama-server",
+        purpose: this.purpose,
+        msg: redactPaths(data.toString()).slice(0, 200),
       });
     });
 
@@ -200,7 +229,13 @@ export class UtilitySidecarSupervisor {
 
     this.resetIdleTimer();
     this.consecutiveFailures = 0;
-    sidecarLogger.info("llama-server ready in utilityProcess", { port });
+    sidecarLogger.info("Sidecar runtime ready in utilityProcess", {
+      route: "sidecar",
+      backend: "local-sidecar",
+      implementation: "llama-server",
+      purpose: this.purpose,
+      port,
+    });
     this.emitStatusChange();
     return { baseUrl: `http://127.0.0.1:${port}` };
   }
@@ -258,7 +293,7 @@ export class UtilitySidecarSupervisor {
       status: "cooldown",
       modelPath,
       cooldownUntil: Date.now() + cooldownMs,
-      lastError,
+      lastError: redactPaths(lastError),
       failureCount: this.consecutiveFailures,
     };
     this.emitStatusChange();
@@ -282,11 +317,7 @@ export class UtilitySidecarSupervisor {
 
   private safeDiagnosticTail(): string | undefined {
     if (!this.stderrBuffer.trim()) return undefined;
-    return this.stderrBuffer
-      .replace(/\/Users\/[^\n\r]+?(?=\s(?:from|to|at|with|$))/g, "<path>")
-      .replace(/(?:\/Users\/[^/\s]+|\/private\/var\/folders|\/var\/folders|\/tmp|\/[A-Za-z0-9._-]+)+(?:\/[^\s:'"]+)*/g, "<path>")
-      .replace(/[A-Za-z]:\\[^\s:'"]+/g, "<path>")
-      .slice(-STATUS_DIAGNOSTIC_LIMIT);
+    return redactPaths(this.stderrBuffer).slice(-STATUS_DIAGNOSTIC_LIMIT);
   }
 
   private buildSpawnArgs(

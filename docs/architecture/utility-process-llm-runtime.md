@@ -93,7 +93,7 @@ Phase 0 baseline 문제:
 - local generation/embedding sidecar spawn은 utility supervisor로 수렴했습니다.
 - main `embeddingSidecarManager.ts`는 삭제됐고, barrel/domain export도 제거했습니다.
 - provider HTTP client는 settings/sync dependency를 직접 import하지 않습니다.
-- 여전히 남은 설계 debt는 Phase별 "남은 작업"에 유지합니다.
+- 남은 내용은 Phase별 guard/future hardening 항목에 분리했습니다.
 
 현재 진행 상태:
 
@@ -107,7 +107,7 @@ Phase 0 baseline 문제:
 - `scripts/check-utility-process-boundary.mjs`는 `src/main/utility/**`의 main `UtilityProcessBridge`, main `sidecarManager`, Electron main-only API 직접 import를 금지합니다.
 - 확실하지 않습니다: 이 guard만으로 import graph의 간접 의존을 전부 막지는 못합니다.
 - 사실: Phase 3에서 `src/main/utility/rag/ragQaWorker.ts -> src/main/services/llm/modelRuntimeFactory.ts -> src/main/services/llm/sidecarManager.ts -> utilityProcessBridge` 간접 경로는 제거했습니다.
-- 사실: utility materializer는 아직 `ExternalApiProvider`/`GeminiProvider`를 재사용하며, 이 provider client들은 settings/sync dependency를 일부 포함합니다. 이는 Phase 6에서 제거해야 하는 잔여 architecture debt입니다.
+- 사실: utility materializer는 `ExternalApiProvider`/`GeminiProvider`를 재사용하지만, provider client의 settings/sync direct import는 제거됐습니다. `tests/main/services/providerClientBoundary.test.ts`가 이 boundary를 고정합니다.
 
 추정:
 
@@ -135,6 +135,14 @@ main supervision != utility-side model supervision
 | materialization | route config를 실제 사용 가능한 client/baseUrl/process로 만드는 단계 |
 | sidecar | local model-serving OS process. 현재 구현체는 `llama-server`지만 이름은 sidecar |
 | utility worker | RAG/embedding/LLM task를 main 밖에서 실행하는 Node utility process |
+
+제품 정책:
+
+- 기본 로컬 런타임은 `sidecar`입니다.
+- `sidecar`의 현재 구현체는 앱이 관리하는 `llama-server` OS process입니다.
+- `ollama`는 일반 사용자 기본 경로가 아니라 외부 Ollama 설치/실행/모델 pull을 이미 관리하는 사용자를 위한 advanced provider입니다.
+- UI는 `Sidecar`를 Local 그룹에, `Ollama`를 Advanced 그룹에 표시해야 합니다.
+- `auto` route에서 Ollama는 마지막 fallback 후보로만 남깁니다. Ollama 설치를 제품 기본 전제로 삼지 않습니다.
 
 ## Target Process Boundary
 
@@ -527,15 +535,14 @@ modelPath: redacted/base name only
   진행: `LlmRuntimeInfo`에 `requestedProvider`, `resolvedProvider`, `backend`, `fallbackUsed`, `ready`, `skipped`를 optional field로 추가했습니다.
 - `resolveRuntimeModelInfo()`는 compatibility wrapper로 유지합니다.  
   진행: 기존 `provider`, `model`, `alternativeModel` shape를 유지하면서 새 status field를 함께 반환합니다.
-- explicit sidecar failure는 fallback하지 않는 테스트를 먼저 추가합니다.  
-  진행: `tests/main/services/modelRuntimeFactory.sidecar.test.ts`에 explicit sidecar 실패 시 Gemini fallback 금지 테스트를 추가했습니다.
+- explicit sidecar route는 status/config 조회에서 cloud로 fallback하지 않는 테스트를 먼저 추가합니다.  
+  진행: `tests/main/services/modelRuntimeFactory.sidecar.test.ts`에 explicit sidecar가 설정되지 않았을 때 Gemini fallback 금지 테스트를 추가했습니다.
 - auto fallback은 skipped reason을 기록하는 테스트를 추가합니다.  
-  진행: sidecar 실패 후 Ollama fallback 시 sidecar/OpenAI/Gemini skip reason을 검증합니다.
+  진행: status/config 조회에서는 not-configured skip만 계산하고, materialization failure skip은 utility 실행 단계에서만 발생합니다.
 
-남은 작업:
+향후 개선:
 
-- `resolveRuntimeModelInfo()` 외 IPC/renderer UI에서 새 status field를 사람이 읽을 수 있게 표시해야 합니다.
-- `resolveModelRuntimeClient()`는 explicit unavailable 상태에서 throw합니다. RAG/UI error code mapping은 다음 phase에서 구조화해야 합니다.
+- RAG/UI error code mapping은 utility protocol error와 renderer message를 더 구조화할 여지가 있습니다.
 
 ### Phase 2: Route Planning Split
 
@@ -551,12 +558,13 @@ modelPath: redacted/base name only
 - `RuntimeRoutePlan` serializable type을 `src/shared/types/llmRuntime.ts`로 이동했습니다.
 - remote 후보는 utility가 materialize할 수 있도록 `apiKey`, `model`, `baseUrl`, `embeddingModel`을 plan candidate에 포함합니다.
 - `modelRuntimeFactory`는 route order와 fail-closed/try-next 정책을 planner에서 받아 사용합니다.
+- `modelRuntimeFactory.resolveRuntimeModelInfo()`와 `resolveRuntimeModelConfig()`는 route plan만 보고 결정합니다. 이 조회 경로는 `sidecarManager.ensureStarted()`를 호출하지 않습니다.
 - `UtilityProcessBridge.askRagQa()`와 `UtilityProcessBridge.embed()`는 renderer 입력을 그대로 utility에 넘기지 않고, main에서 만든 inline route plan을 붙여 보냅니다.
+- `UtilityProcessBridge.generateText()`도 main에서 만든 inline route plan을 utility에 붙여 보냅니다.
+- main `modelRuntimeFactory`의 client materialization 함수는 제거됐고, route/status/config planning surface만 남았습니다.
 
-남은 작업:
+유지해야 할 guard:
 
-- `modelRuntimeFactory`는 아직 main/utility 공용 materializer 역할을 함께 수행합니다.
-- `modelRuntimeFactory`는 main-side compatibility path로 남아 있습니다. 장기적으로 main에서 long-running generation/embedding materialization을 금지하려면 호출지를 더 줄여야 합니다.
 - route plan에 secret이 포함되므로 parent/utility protocol log에서 plan payload를 그대로 출력하면 안 됩니다.
 
 ### Phase 3: Utility Materializer
@@ -570,13 +578,14 @@ modelPath: redacted/base name only
 
 - `src/main/utility/llm/runtimeMaterializer.ts`를 추가했습니다.
 - `src/main/utility/rag/ragQaWorker.ts`는 더 이상 main `modelRuntimeFactory`를 import하지 않습니다.
-- explicit sidecar materialization failure는 utility materializer에서도 fail-closed로 throw합니다.
+- explicit sidecar text-generation materialization failure는 utility materializer에서 fail-closed로 throw합니다.
+- explicit sidecar embedding materialization failure도 deterministic fallback으로 숨기지 않고 fail-closed로 throw합니다.
 - auto route는 plan order에 따라 candidate를 시도하고, materialize 가능한 remote candidate로 fallback합니다.
+- utility materializer는 provider client 구현을 재사용하지만, provider client는 settings/sync dependency를 직접 import하지 않습니다.
 
-남은 작업:
+향후 개선:
 
-- utility materializer는 provider client 구현을 아직 main service path에서 재사용합니다.
-- materializer error를 `RuntimeStatus`/structured error code로 parent에 보고하는 protocol은 아직 없습니다.
+- materializer error를 `RuntimeStatus`/structured error code로 parent에 더 세분화해 보고할 수 있습니다.
 
 ### Phase 4: Sidecar Supervisor Extraction
 
@@ -597,6 +606,7 @@ modelPath: redacted/base name only
 - crash loop backoff를 추가했습니다. 반복 실패는 `5s -> 10s -> 20s ... max 60s` cooldown으로 제한하고, status payload에 `failureCount`를 포함합니다.
 - `SIDECAR_STATUS_CHANGED` renderer event를 추가했습니다. utility-to-main sidecar status event는 main bridge에서 renderer로 broadcast됩니다.
 - stderr bounded buffer는 status payload의 `diagnostic`으로 제한 노출합니다. 절대경로/사용자 경로는 `<path>`로 redaction하고 최대 500자 tail만 제공합니다.
+- `lastError`와 utility stderr debug log도 같은 redaction을 통과합니다.
 
 ### Phase 5: Embedding Unification
 
@@ -616,9 +626,12 @@ modelPath: redacted/base name only
 - `modelRuntimeFactory.resolveEmbeddingRuntimeClient()` 함수 자체를 제거했습니다. embedding materialization은 utility `RuntimeMaterializer` 경로로만 유지합니다.
 - `tests/main/services/mainEmbeddingBoundary.test.ts`로 main factory/barrel/domain이 local embedding sidecar manager를 다시 노출하지 않는지 고정했습니다.
 
-남은 작업:
+진행:
 
-- main `resolveModelRuntimeClient()`는 compatibility path로 남아 있습니다. long-running generation materialization을 완전히 utility-only로 만들려면 `chapterSummaryProjector` 등 main background caller의 경계 재설계가 필요합니다.
+- `chapterSummaryProjector`의 LLM-derived summary generation을 `utilityProcessBridge.generateText()`로 전환했습니다.
+- `llm.generateText` utility protocol을 추가했습니다. main은 route plan만 만들고, utility process가 runtime materialization과 text generation을 수행합니다.
+- main `modelRuntimeFactory.resolveModelRuntimeClient()` 함수와 domain re-export를 제거했습니다.
+- `tests/main/services/mainEmbeddingBoundary.test.ts`로 background summary generation이 main `modelRuntimeFactory`를 다시 import하지 않도록 고정했습니다.
 
 ### Phase 6: Provider Cleanup
 
@@ -634,7 +647,7 @@ modelPath: redacted/base name only
 - Supabase proxy provider는 `generationMode="buffered"`로 표시하고, RAG worker는 buffered runtime에 first-token watchdog 대신 total generation timeout을 적용합니다.
 - Supabase proxy capability는 main route planning 시 candidate에 직렬화해 붙입니다. utility materializer는 `runtimeProxyConfig`, settings, sync token dependency를 import하지 않고 candidate capability만 resolver로 감쌉니다.
 
-남은 작업:
+유지해야 할 guard:
 
 - proxy capability가 route plan payload에 포함되므로 plan payload logging 금지 guard를 계속 유지해야 합니다.
 
@@ -647,15 +660,20 @@ modelPath: redacted/base name only
 진행:
 
 - `AnalysisSection` route select에서 `llama(sidecar)` 표현을 `Sidecar`로 변경했습니다.
+- `AnalysisSection` route select에서 `Sidecar`는 Local, OpenAI/Gemini는 Cloud, Ollama는 Advanced 그룹으로 분리했습니다.
+- `AnalysisSection`은 explicit `sidecar` 선택 시 modelPath/binaryPath가 모두 있어야 하고, explicit `ollama` 선택 시 baseUrl/chatModel이 있어야 설정 안내로 이동합니다.
 - Runtime UI는 `requestedProvider`, `resolvedProvider`, `backend`, `fallbackUsed`, `skipped`를 표시합니다.
+- Runtime UI는 `RuntimeStatusPanel`로 분리해 requested/resolved/backend/model/fallback/skipped/sidecar status를 한 곳에서 표시합니다.
 - Runtime UI는 `settings.getSidecarStatus()`로 utility supervisor의 `stopped | starting | running | stopping | crashed | cooldown` 상태를 표시합니다.
 - Runtime UI는 `settings.onSidecarStatusChanged()` push event로 sidecar 상태 변화를 갱신합니다.
+- Runtime UI는 sidecar `lastError` 원문을 직접 표시하지 않고 상태 요약만 표시합니다.
+- LLM/utility 로그는 `route`, `backend`, `implementation` 필드를 사용합니다. sidecar 로그는 사용자 경로 대신 파일명 수준의 label만 기록합니다.
 - `tests/renderer/analysisRuntimeStatus.test.ts`로 runtime status UI 문구와 필드 사용을 고정했습니다.
 
-남은 작업:
+향후 개선:
 
-- renderer의 runtime status 표시는 아직 compact text입니다. 전용 상태 컴포넌트/tooltip으로 분리하면 유지보수성이 더 좋아집니다.
-- logs 전반의 route/backend/implementation 명칭 정리는 아직 전체 스캔/수정이 필요합니다.
+- `RuntimeStatusPanel`을 별도 파일로 분리하면 `AnalysisSection` 크기를 더 줄일 수 있습니다.
+- logs 전반의 route/backend/implementation 명칭 정리는 LLM 경계 외 전체 서비스까지 확장할 수 있습니다.
 
 ## Verification Checklist
 
@@ -678,9 +696,9 @@ SKIP_DB_TEST_SETUP=1 bun vitest \
 현재 테스트로 고정한 항목:
 
 ```text
-explicit sidecar failure does not fallback to gemini
+explicit sidecar materialization failure does not fallback to gemini
 explicit openai failure does not fallback to gemini
-auto route sidecar failure records skipped reason
+runtime status/config lookup does not start sidecar
 runtime status reports requested/resolved/fallbackUsed/skipped
 utility RAG worker does not import main UtilityProcessBridge
 utility RAG worker does not import main sidecarManager
@@ -689,18 +707,22 @@ sidecar.status does not start sidecar
 sidecar.status event contract is present
 local embedding path goes through utility process
 main embedding sidecar manager is not exposed
+main background summary generation goes through utility process
+background summary generation falls back when utility LLM generation fails
 packaged proxy non-streaming response is not aborted by first-token timeout
 renderer can display sidecar status directly when a UI surface is added
 crash loop backoff escalates after repeated sidecar failures
 utility-to-main sidecar status event is forwarded as renderer push event
 utility materializer does not import main sync proxy dependencies
 stderr bounded buffer is exposed safely without leaking full paths
+sidecar lastError is redacted before status exposure
+explicit sidecar embedding failure fails closed
 ```
 
-추가로 필요한 테스트:
+수동 검증 필요:
 
 ```text
-main-side generation compatibility path is either removed or explicitly kept as non-RAG background policy
+packaged app run must confirm Activity Monitor process ownership for chat, embedding, and summary generation
 ```
 
 수동 검증:
@@ -731,7 +753,8 @@ main-side generation compatibility path is either removed or explicitly kept as 
 
 - Phase 1/2 이후 `modelRuntimeFactory`의 explicit provider와 auto fallback은 분리되어 있습니다.
 - Phase 3 이후 utility RAG worker는 main 공용 LLM resolver를 직접 사용하지 않습니다.
-- 아직 남은 약한 경계는 main-side generation compatibility path입니다.
+- 현재 문서 기준으로 확인된 main-side LLM runtime materialization debt는 코드상 제거됐습니다.
+- 아직 증거가 부족합니다: packaged app에서 chat, embedding, summary generation의 실제 OS process ownership은 수동 검증이 필요합니다.
 
 의견:
 

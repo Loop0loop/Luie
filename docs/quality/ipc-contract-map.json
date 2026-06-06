@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-06-06T09:38:31.679Z",
+  "generatedAt": "2026-06-06T09:57:05.004Z",
   "summary": {
     "definedChannels": 206,
     "errors": 0,
@@ -3493,15 +3493,15 @@
         "main_emit": [
           {
             "file": "src/main/services/features/utility/utilityProcessBridge.ts",
-            "line": 452
+            "line": 502
           },
           {
             "file": "src/main/services/features/utility/utilityProcessBridge.ts",
-            "line": 469
+            "line": 519
           },
           {
             "file": "src/main/services/features/utility/utilityProcessBridge.ts",
-            "line": 527
+            "line": 577
           }
         ],
         "renderer_listen": [
@@ -3563,7 +3563,7 @@
         "main_emit": [
           {
             "file": "src/main/services/features/utility/utilityProcessBridge.ts",
-            "line": 433
+            "line": 483
           }
         ],
         "renderer_listen": [
@@ -4741,7 +4741,7 @@
         "main_emit": [
           {
             "file": "src/main/services/features/utility/utilityProcessBridge.ts",
-            "line": 417
+            "line": 467
           }
         ],
         "renderer_listen": [
