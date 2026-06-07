@@ -487,6 +487,23 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Return retrieval trace in dev payload.
 - Keep deterministic route tests for common question patterns.
 
+### Phase 6 Implementation Status
+
+사실:
+- Added `NarrativeMemoryQueryService` as a separate memory reasoning boundary instead of embedding memory routing inside `contextAssembler`.
+- Added deterministic intent routing for evidence trace, entity profile, entity state at chapter, relationship at chapter, event causality, contradiction check, unresolved thread check, and global summary.
+- The service returns retrieval trace, selected sources, candidate temporal facts, memory evidence spans, and `insufficient_evidence` as a successful state.
+- Temporal fact lookup uses the Phase 5 validity helper so future-observed facts and out-of-window facts are excluded for bounded chapter questions.
+- `contextAssembler` now consumes the narrative memory query output as `Layer 2.5 — Narrative Memory Query`; raw Layer 3 evidence remains the final verification layer.
+- Memory query evidence is shown in the prompt layer but is not merged into Phase 0 RAG grounding evidence; grounding remains tied to Layer 3 raw retrieval.
+- Added unit coverage for route-specific source selection and insufficient-evidence formatting.
+
+아직 미구현:
+- No renderer-visible dev trace payload yet; trace is prompt-side and logger-side only.
+- No IPC/API endpoint for direct memory query inspection yet.
+- No entity name parser or LLM-assisted intent classifier yet.
+- No fact extraction runner, so this service can only read temporal facts after later phases or seeded data create them.
+
 ## Phase 7: Evidence-Backed UI Integration
 
 **Goal:** Replace mock relationship visualization and connect AI analysis to memory safely.

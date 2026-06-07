@@ -28,6 +28,10 @@ import type { MemoryChunkSearchResult, RagQaEvidence } from "../../../../shared/
 import { escapeLike } from "../../../utils/queryHelpers.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import { loadRagPromptConfig } from "./ragPromptConfig.js";
+import {
+  formatNarrativeMemoryQueryResult,
+  narrativeMemoryQueryService,
+} from "../memory/query/narrativeMemoryQueryService.js";
 
 export type RagContextPacket = {
   systemPrompt: string;
@@ -517,10 +521,15 @@ export async function assembleRagContext(input: {
   throwIfAborted(input.signal);
   const budget = input.contextBudget ?? 8_192;
   const layer1Limit = Math.max(1_000, budget - LAYER0_CHAR_LIMIT - LAYER2_CHAR_LIMIT - 2_000);
-  const [layer0, layer1, layer2, layer3, promptConfig] = await Promise.all([
+  const [layer0, layer1, layer2, narrativeMemory, layer3, promptConfig] = await Promise.all([
     buildLayer0ProjectSummary(input.projectId),
     buildLayer1ChapterSummaries(input.projectId, layer1Limit),
     buildLayer2WorldContext(input.projectId),
+    narrativeMemoryQueryService.query({
+      projectId: input.projectId,
+      question: input.question,
+      chapterId: input.chapterId,
+    }),
     buildLayer3Evidence(input.projectId, input.question, input.embedTexts),
     loadRagPromptConfig(),
   ]);
@@ -534,6 +543,7 @@ export async function assembleRagContext(input: {
     formatLayer("Layer 0 — Project Summary", layer0),
     formatLayer("Layer 1 — Chapter Summaries", layer1),
     formatLayer("Layer 2 — World Context", layer2),
+    formatLayer("Layer 2.5 — Narrative Memory Query", formatNarrativeMemoryQueryResult(narrativeMemory)),
     formatLayer("Layer 3 — Retrieved Evidence", layer3.section),
     `## Focus Chapter\n${input.chapterId ?? "(not specified)"}`,
     `## User Question\n${input.question}`,
