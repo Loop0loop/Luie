@@ -248,6 +248,54 @@ CREATE TABLE IF NOT EXISTS "MemoryEvalResult" (
     CONSTRAINT "MemoryEvalResult_caseId_fkey" FOREIGN KEY ("caseId") REFERENCES "MemoryEvalCase" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "MemoryEvalResult_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+CREATE TABLE IF NOT EXISTS "MemoryEntity" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "entityType" TEXT NOT NULL,
+    "canonicalName" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'suggested',
+    "confidence" INTEGER NOT NULL DEFAULT 0,
+    "createdBy" TEXT NOT NULL DEFAULT 'system',
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    "deletedAt" TEXT,
+    CONSTRAINT "MemoryEntity_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "MemoryEntityAlias" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "entityId" TEXT NOT NULL,
+    "entityType" TEXT NOT NULL,
+    "alias" TEXT NOT NULL,
+    "normalizedAlias" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'suggested',
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    CONSTRAINT "MemoryEntityAlias_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryEntityAlias_entityId_fkey" FOREIGN KEY ("entityId") REFERENCES "MemoryEntity" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "MemoryEntityMention" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "entityId" TEXT NOT NULL,
+    "aliasId" TEXT,
+    "chapterId" TEXT,
+    "chunkId" TEXT,
+    "contentHash" TEXT NOT NULL DEFAULT '',
+    "sourceContentHash" TEXT NOT NULL DEFAULT '',
+    "startOffset" INTEGER,
+    "endOffset" INTEGER,
+    "quote" TEXT NOT NULL,
+    "extractorVersion" TEXT NOT NULL DEFAULT 'manual',
+    "confidence" INTEGER NOT NULL DEFAULT 0,
+    "status" TEXT NOT NULL DEFAULT 'suggested',
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    CONSTRAINT "MemoryEntityMention_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryEntityMention_entityId_fkey" FOREIGN KEY ("entityId") REFERENCES "MemoryEntity" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryEntityMention_aliasId_fkey" FOREIGN KEY ("aliasId") REFERENCES "MemoryEntityAlias" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "MemoryEntityMention_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
 CREATE TABLE IF NOT EXISTS "Note" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,
@@ -427,6 +475,13 @@ CREATE INDEX IF NOT EXISTS "MemoryEvalRun_projectId_status_idx" ON "MemoryEvalRu
 CREATE INDEX IF NOT EXISTS "MemoryEvalResult_runId_idx" ON "MemoryEvalResult"("runId");
 CREATE INDEX IF NOT EXISTS "MemoryEvalResult_caseId_idx" ON "MemoryEvalResult"("caseId");
 CREATE INDEX IF NOT EXISTS "MemoryEvalResult_projectId_p0_idx" ON "MemoryEvalResult"("projectId", "p0FailureCount");
+CREATE INDEX IF NOT EXISTS "MemoryEntity_projectId_type_idx" ON "MemoryEntity"("projectId", "entityType");
+CREATE INDEX IF NOT EXISTS "MemoryEntity_projectId_status_idx" ON "MemoryEntity"("projectId", "status");
+CREATE UNIQUE INDEX IF NOT EXISTS "MemoryEntity_projectId_type_name_key" ON "MemoryEntity"("projectId", "entityType", "canonicalName");
+CREATE INDEX IF NOT EXISTS "MemoryEntityAlias_entityId_idx" ON "MemoryEntityAlias"("entityId");
+CREATE UNIQUE INDEX IF NOT EXISTS "MemoryEntityAlias_projectId_alias_key" ON "MemoryEntityAlias"("projectId", "entityType", "normalizedAlias");
+CREATE INDEX IF NOT EXISTS "MemoryEntityMention_entityId_idx" ON "MemoryEntityMention"("entityId");
+CREATE INDEX IF NOT EXISTS "MemoryEntityMention_projectId_chapterId_idx" ON "MemoryEntityMention"("projectId", "chapterId");
 CREATE INDEX IF NOT EXISTS "Note_projectId_updatedAt_idx" ON "Note"("projectId", "updatedAt");
 CREATE INDEX IF NOT EXISTS "Synopsis_projectId_updatedAt_idx" ON "Synopsis"("projectId", "updatedAt");
 CREATE INDEX IF NOT EXISTS "Plot_projectId_updatedAt_idx" ON "Plot"("projectId", "updatedAt");

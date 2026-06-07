@@ -3,6 +3,7 @@ export * from "./manuscript.js";
 export * from "./search.js";
 export * from "./memory.js";
 export * from "./memoryEval.js";
+export * from "./memoryIdentity.js";
 export * from "./world.js";
 export * from "./snapshot.js";
 

@@ -303,6 +303,20 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Use bridge pointers between world entity and memory entity.
 - Default to suggestion, not auto-merge.
 
+**Phase 3 implementation status (2026-06-08):**
+
+사실:
+- Added dedicated `MemoryEntity`, `MemoryEntityAlias`, and `MemoryEntityMention` tables.
+- Added deterministic alias normalization helpers.
+- `MemoryEntityMention.chunkId` is stored as a snapshot id, not an FK to mutable chunk projection rows.
+- `MemoryEntityMention` stores quote, offsets, `contentHash`, and `sourceContentHash` snapshots for later evidence validation.
+
+아직 미구현:
+- `MemoryEntityMergeAudit` is not implemented yet.
+- No LLM/entity extraction runner yet.
+- No user merge/split/approval UI yet.
+- No bridge pointer from world entities to memory entities yet.
+
 ## Phase 4: Episode Memory MVP
 
 **Goal:** Extract and store chapter/scene-level narrative events with evidence.

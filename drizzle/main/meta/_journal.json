@@ -22,6 +22,13 @@
       "when": 1780857400000,
       "tag": "0002_memory_chunk_index_text",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1780858200000,
+      "tag": "0003_memory_entity_identity",
+      "breakpoints": true
     }
   ]
 }
