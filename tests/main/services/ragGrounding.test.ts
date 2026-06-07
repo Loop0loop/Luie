@@ -15,16 +15,23 @@ const evidence = (overrides?: Partial<RagQaEvidence>): RagQaEvidence => ({
 
 describe("RAG grounding status", () => {
   it("marks answers without evidence as insufficient instead of confirmed", () => {
-    expect(buildRagGrounding([])).toEqual({
+    expect(buildRagGrounding({ evidence: [] })).toEqual({
       status: "insufficient_evidence",
       note: "검색된 원문 근거가 없어 확정 답변으로 취급하지 않습니다.",
     });
   });
 
   it("marks answers with evidence as inferred until claim-level verification exists", () => {
-    expect(buildRagGrounding([evidence()])).toEqual({
+    expect(buildRagGrounding({ evidence: [evidence()] })).toEqual({
       status: "inferred",
       note: "검색된 원문 근거가 있지만, 문장별 검증 전이므로 추정 답변입니다.",
+    });
+  });
+
+  it("marks answers with conflicting narrative memory as conflicting", () => {
+    expect(buildRagGrounding({ evidence: [evidence()], narrativeMemoryStatus: "conflicting" })).toEqual({
+      status: "conflicting",
+      note: "요청한 질문에서 설정 충돌 후보가 감지되었습니다.",
     });
   });
 

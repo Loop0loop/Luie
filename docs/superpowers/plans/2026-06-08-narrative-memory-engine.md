@@ -260,6 +260,7 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Memory canonical import/export now treats `MemoryEpisode` and `MemoryEpisodeEvidence` as canonical exportable anchors.
 - `MemoryFactEvidence` import remaps depend on both `MemoryFact` and `MemoryEpisodeEvidence`, preventing FK-dangling fact evidence after restore.
 - `MemoryFactInvalidation` remains canonical-imported and status-agnostic by design to preserve conflict graph continuity.
+- Canonical payload builder now deduplicates IDs before `IN`-clause fetches for episode evidence and episode rows, limiting SQL parameter churn on large projects.
 
 아직 미구현:
 - Parent-window expansion API is not implemented yet.
@@ -501,9 +502,11 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - `contextAssembler` now consumes the narrative memory query output as `Layer 2.5 — Narrative Memory Query`; raw Layer 3 evidence remains the final verification layer.
 - Memory query evidence is shown in the prompt layer but is not merged into Phase 0 RAG grounding evidence; grounding remains tied to Layer 3 raw retrieval.
 - Added unit coverage for route-specific source selection and insufficient-evidence formatting.
+- Added renderer-facing `RagQaResult.narrativeMemory` summary (intent/status/trace/fact/evidence counts) so analysis stream can show retrieval route metadata.
+- `buildRagGrounding` now returns `충돌` when narrative memory route status is `conflicting`.
+- Analysis panel now renders a compact narrative-memory trace block for assistant answers.
 
 아직 미구현:
-- No renderer-visible dev trace payload yet; trace is prompt-side and logger-side only.
 - No IPC/API endpoint for direct memory query inspection yet.
 - No entity name parser or LLM-assisted intent classifier yet.
 - No fact extraction runner, so this service can only read temporal facts after later phases or seeded data create them.

@@ -24,7 +24,11 @@ import {
   worldDocument,
   worldEntity,
 } from "../../../database/schema/index.js";
-import type { MemoryChunkSearchResult, RagQaEvidence } from "../../../../shared/types/index.js";
+import type {
+  MemoryChunkSearchResult,
+  NarrativeMemoryQueryResult,
+  RagQaEvidence,
+} from "../../../../shared/types/index.js";
 import { escapeLike } from "../../../utils/queryHelpers.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import { loadRagPromptConfig } from "./ragPromptConfig.js";
@@ -37,6 +41,7 @@ export type RagContextPacket = {
   systemPrompt: string;
   userPrompt: string;
   evidence: RagQaEvidence[];
+  narrativeMemory: NarrativeMemoryQueryResult;
 };
 
 type RagEmbeddingProvider = (
@@ -560,5 +565,6 @@ export async function assembleRagContext(input: {
     systemPrompt,
     userPrompt,
     evidence: layer3.evidence,
+    narrativeMemory,
   };
 }

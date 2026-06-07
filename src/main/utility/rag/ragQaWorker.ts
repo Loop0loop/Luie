@@ -224,7 +224,12 @@ class RagQaWorker {
       }
 
       const generationConfig = await this.loadGenerationConfig();
-      const { systemPrompt, userPrompt, evidence } = await assembleRagContext({
+      const {
+        systemPrompt,
+        userPrompt,
+        evidence,
+        narrativeMemory,
+      } = await assembleRagContext({
         projectId: run.request.projectId,
         question: run.request.question,
         chapterId: run.request.chapterId,
@@ -333,6 +338,13 @@ class RagQaWorker {
         question: run.request.question,
         answer: normalizeCoreAnswer(chunks.join("")),
         evidence,
+        narrativeMemory: {
+          intent: narrativeMemory.intent,
+          status: narrativeMemory.status,
+          trace: narrativeMemory.trace,
+          factCount: narrativeMemory.facts.length,
+          evidenceCount: narrativeMemory.evidence.length,
+        },
         createdAt: new Date().toISOString(),
       });
 

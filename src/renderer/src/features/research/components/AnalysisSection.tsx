@@ -23,6 +23,17 @@ type Message = {
   content: string;
   evidence?: RagQaEvidence[];
   grounding?: RagQaGrounding;
+  narrativeMemory?: {
+    intent: "evidence-trace" | "entity-profile" | "entity-state-at-chapter" | "relationship-at-chapter" | "event-causality" | "contradiction-check" | "unresolved-thread-check" | "global-summary";
+    status: "found" | "insufficient_evidence" | "conflicting";
+    trace: Array<{
+      source: "memory_chunk_evidence" | "memory_entity" | "memory_entity_mention" | "memory_relation_state" | "memory_character_state" | "memory_knowledge_state" | "memory_fact" | "memory_fact_evidence" | "memory_fact_invalidation" | "memory_episode" | "memory_state_change_candidate" | "chapter_summary" | "world_document";
+      decision: "selected" | "skipped";
+      reason: string;
+    }>;
+    factCount: number;
+    evidenceCount: number;
+  };
   isStreaming?: boolean;
   error?: string;
 };
@@ -227,6 +238,7 @@ export default function AnalysisSection() {
                   content: payload.result?.answer ?? m.content,
                   evidence: payload.result?.evidence ?? [],
                   grounding: payload.result?.grounding,
+                  narrativeMemory: payload.result?.narrativeMemory,
                   isStreaming: false,
                 }
                 : m,
@@ -404,6 +416,24 @@ export default function AnalysisSection() {
                     </button>
                   ))}
                 </div>
+              )}
+
+              {msg.narrativeMemory && msg.narrativeMemory.trace.length > 0 && (
+                <details className="mt-2 pl-1 text-[11px] text-muted">
+                  <summary>
+                    Narrative Memory · {msg.narrativeMemory.intent} · {msg.narrativeMemory.status}
+                  </summary>
+                  <div className="mt-1 space-y-1">
+                    <div>
+                      fact {msg.narrativeMemory.factCount}, evidence span {msg.narrativeMemory.evidenceCount}
+                    </div>
+                    {msg.narrativeMemory.trace.slice(0, 3).map((step, index) => (
+                      <div key={`${step.source}-${step.decision}-${index}`}>
+                        {step.source}: {step.reason}
+                      </div>
+                    ))}
+                  </div>
+                </details>
               )}
             </div>
 

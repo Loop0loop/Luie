@@ -127,6 +127,13 @@ export interface RagQaResult {
   answer: string;
   evidence: RagQaEvidence[];
   grounding: RagQaGrounding;
+  narrativeMemory?: {
+    intent: NarrativeMemoryQueryIntent;
+    status: "found" | "insufficient_evidence" | "conflicting";
+    trace: NarrativeMemoryTraceStep[];
+    factCount: number;
+    evidenceCount: number;
+  };
   createdAt: string;
 }
 
