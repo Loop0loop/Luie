@@ -1,5 +1,5 @@
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
-import type { SearchQuery } from "../../../shared/types/index.js";
+import type { NarrativeMemoryQueryInput, SearchQuery } from "../../../shared/types/index.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import {
   chapterIdSchema,
@@ -7,6 +7,7 @@ import {
   memoryChunkSearchSchema,
   memoryEmbeddingStatusSchema,
   memorySummaryStatusSchema,
+  narrativeMemoryQuerySchema,
   projectIdSchema,
   rebuildMemoryChunksSchema,
   searchQuerySchema,
@@ -22,6 +23,10 @@ type SearchServiceLike = {
     limit?: number;
   }) => Promise<unknown>;
   getChunkBacklink: (chunkId: string) => Promise<unknown>;
+};
+
+type NarrativeMemoryQueryServiceLike = {
+  query: (input: NarrativeMemoryQueryInput) => Promise<unknown>;
 };
 
 type ChapterSummaryProjectorLike = {
@@ -52,6 +57,7 @@ export function registerSearchIPCHandlers(
   dbMaintenanceService: DbMaintenanceServiceLike,
   chapterSummaryProjector: ChapterSummaryProjectorLike,
   embeddingProjector: EmbeddingProjectorLike,
+  narrativeMemoryQueryService: NarrativeMemoryQueryServiceLike,
 ): void {
   registerIpcHandlers(logger, [
     {
@@ -100,6 +106,14 @@ export function registerSearchIPCHandlers(
       argsSchema: z.tuple([memoryChunkSearchSchema]),
       handler: (input: { projectId: string; query: string; limit?: number }) =>
         searchService.searchChunks(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_QUERY_NARRATIVE,
+      logTag: "MEMORY_QUERY_NARRATIVE",
+      failMessage: "Failed to query narrative memory",
+      argsSchema: z.tuple([narrativeMemoryQuerySchema]),
+      handler: (input: NarrativeMemoryQueryInput) =>
+        narrativeMemoryQueryService.query(input),
     },
     {
       channel: IPC_CHANNELS.MEMORY_GET_CHUNK_BACKLINK,

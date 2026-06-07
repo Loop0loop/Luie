@@ -28,6 +28,7 @@ import {
   worldReplicaService,
 } from "../domains/world/index.js";
 import { utilityProcessBridge } from "../infra/utility-process/index.js";
+import { narrativeMemoryQueryService } from "../services/features/memory/query/narrativeMemoryQueryService.js";
 import { registerProjectHandlers } from "./project/index.js";
 import { registerSearchHandlers } from "./search/index.js";
 import { registerSystemHandlers } from "./system/index.js";
@@ -76,6 +77,7 @@ export async function registerAllIPCHandlers(): Promise<void> {
     dbMaintenanceService,
     chapterSummaryProjector,
     embeddingProjector,
+    narrativeMemoryQueryService,
   });
 
   registerSystemHandlers({

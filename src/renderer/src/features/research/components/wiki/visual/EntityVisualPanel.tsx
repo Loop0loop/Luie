@@ -6,7 +6,7 @@
  *   B. IdentityCard      — declarative one-line summary
  *   C. RelatedEntities   — grouped grid of connected items
  *
- * Data is provided by `useEntityVisualData` (currently mock; will be RAG-backed).
+ * Data is provided by `useEntityVisualData` through narrative memory query.
  */
 
 import { RelationGraph } from "./RelationGraph";
@@ -19,10 +19,11 @@ type EntityVisualPanelProps = {
   kind: EntityKind;
   id: string;
   name: string;
+  chapterId?: string;
 };
 
-export function EntityVisualPanel({ kind, id, name }: EntityVisualPanelProps) {
-  const bundle = useEntityVisualData(kind, id);
+export function EntityVisualPanel({ kind, id, name, chapterId }: EntityVisualPanelProps) {
+  const bundle = useEntityVisualData(kind, id, name, chapterId);
 
   return (
     <div className="flex flex-col gap-4 max-w-[760px]">

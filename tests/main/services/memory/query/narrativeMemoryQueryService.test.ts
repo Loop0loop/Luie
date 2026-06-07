@@ -91,4 +91,35 @@ describe("narrative memory query service", () => {
     expect(section).toContain("status=insufficient_evidence");
     expect(section).toContain("No sufficient narrative memory evidence");
   });
+
+  it("formats fact-level evidence count and related entity metadata", () => {
+    const section = formatNarrativeMemoryQueryResult({
+      intent: "relationship-at-chapter",
+      status: "found",
+      trace: [],
+      facts: [
+        {
+          id: "fact-1",
+          subjectEntityId: "entity-a",
+          predicate: "belongs_to",
+          objectEntityId: "entity-b",
+          objectValue: null,
+          valueType: "entity",
+          validFromChapterOrder: 1,
+          validToChapterOrder: null,
+          observedAtChapterOrder: 2,
+          confidence: 90,
+          status: "confirmed",
+          evidenceCount: 2,
+          relatedEntityId: "entity-b",
+          relatedEntityName: "청룡문",
+          relatedEntityType: "faction",
+        },
+      ],
+      evidence: [],
+    });
+
+    expect(section).toContain("related=청룡문");
+    expect(section).toContain("evidence=2");
+  });
 });

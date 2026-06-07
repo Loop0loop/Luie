@@ -537,6 +537,23 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Always pass a chapter/time boundary to memory query.
 - Display source/status badges.
 
+### Phase 7 Implementation Status
+
+사실:
+- Added a renderer-safe `memory.queryNarrative` IPC/API contract for direct narrative memory inspection.
+- Registered the main-process handler through the existing memory/search IPC boundary and validated input with `narrativeMemoryQuerySchema`.
+- The entity visual hook no longer imports or returns production mock relationship data directly.
+- Entity visual data now queries `NarrativeMemoryQueryService` through preload API with explicit `entityName`/`entityType` resolution rather than assuming world entity ids equal memory entity ids.
+- Visual relation cards display predicate, status, and fact-level evidence availability in the existing relation card shape.
+- Empty or failed memory results render as an explicit no-evidence bundle instead of fabricated relationships.
+- Added IPC contract coverage for `memory.queryNarrative`, including blank-question rejection.
+
+아직 미구현:
+- Entity id/name resolution is still coarse; visual related names may be raw entity ids until an entity-profile read model is added.
+- Relationship graph time toggle is not implemented yet.
+- Conflict queue UI is not implemented yet.
+- AI analysis mode toggle for prior confirmed memory is not implemented yet.
+
 ## Phase 8: Hierarchical Narrative Summaries
 
 **Goal:** Add RAPTOR/GraphRAG-like hierarchy after temporal facts exist.

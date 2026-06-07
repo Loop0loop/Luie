@@ -13,6 +13,15 @@ export const memoryChunkSearchSchema = z.object({
   limit: z.number().int().positive().max(100).optional(),
 });
 
+export const narrativeMemoryQuerySchema = z.object({
+  projectId: projectIdSchema,
+  question: z.string().trim().min(1, "Question is required").max(20_000, "Question is too large"),
+  chapterId: chapterIdSchema.optional(),
+  entityId: z.string().trim().min(1).optional(),
+  entityName: z.string().trim().min(1).optional(),
+  entityType: z.string().trim().min(1).optional(),
+});
+
 export const memoryChunkIdSchema = z.string().uuid("Invalid chunk ID");
 export const memoryChapterSummaryIdSchema = chapterIdSchema;
 

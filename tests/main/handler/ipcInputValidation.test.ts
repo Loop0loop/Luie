@@ -15,11 +15,15 @@ const mocked = vi.hoisted(() => {
     setAutoSync: vi.fn(),
     resolveConflict: vi.fn(),
   };
+  const narrativeMemoryQueryService = {
+    query: vi.fn(),
+  };
   let appIsPackaged = true;
 
   return {
     handlerMap,
     syncService,
+    narrativeMemoryQueryService,
     get appIsPackaged() {
       return appIsPackaged;
     },
@@ -75,9 +79,105 @@ describe("IPC input validation", () => {
     mocked.syncService.runNow.mockReset();
     mocked.syncService.setAutoSync.mockReset();
     mocked.syncService.resolveConflict.mockReset();
+    mocked.narrativeMemoryQueryService.query.mockReset();
     mocked.logger.warn.mockReset();
     mocked.appIsPackaged = true;
     delete process.env.LUIE_ALLOW_RUNTIME_SUPABASE_CONFIG_WRITE;
+  });
+
+  it("routes valid MEMORY_QUERY_NARRATIVE payloads to the memory query service", async () => {
+    mocked.narrativeMemoryQueryService.query.mockResolvedValue({
+      intent: "relationship-at-chapter",
+      status: "insufficient_evidence",
+      trace: [],
+      facts: [],
+      evidence: [],
+    });
+
+    const { registerSearchIPCHandlers } =
+      await import("../../../src/main/handler/search/ipcSearchHandlers.js");
+    registerSearchIPCHandlers(
+      mocked.logger,
+      {
+        search: vi.fn(),
+        searchChunks: vi.fn(),
+        getChunkBacklink: vi.fn(),
+      },
+      {
+        getSearchIndexStatus: vi.fn(),
+        rebuildSearchIndex: vi.fn(),
+        rebuildMemoryChunks: vi.fn(),
+        getMemoryJobStatus: vi.fn(),
+        runIntegrityCheck: vi.fn(),
+        getMigrationHealth: vi.fn(),
+      },
+      {
+        getChapterSummary: vi.fn(),
+        getSummaryStatus: vi.fn(),
+      },
+      {
+        getEmbeddingStatus: vi.fn(),
+      },
+      mocked.narrativeMemoryQueryService,
+    );
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_QUERY_NARRATIVE);
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      question: "관계 알려줘",
+      entityName: "청룡문",
+      entityType: "faction",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.narrativeMemoryQueryService.query).toHaveBeenCalledWith(input);
+  });
+
+  it("returns INVALID_INPUT for blank MEMORY_QUERY_NARRATIVE question", async () => {
+    const { registerSearchIPCHandlers } =
+      await import("../../../src/main/handler/search/ipcSearchHandlers.js");
+    registerSearchIPCHandlers(
+      mocked.logger,
+      {
+        search: vi.fn(),
+        searchChunks: vi.fn(),
+        getChunkBacklink: vi.fn(),
+      },
+      {
+        getSearchIndexStatus: vi.fn(),
+        rebuildSearchIndex: vi.fn(),
+        rebuildMemoryChunks: vi.fn(),
+        getMemoryJobStatus: vi.fn(),
+        runIntegrityCheck: vi.fn(),
+        getMigrationHealth: vi.fn(),
+      },
+      {
+        getChapterSummary: vi.fn(),
+        getSummaryStatus: vi.fn(),
+      },
+      {
+        getEmbeddingStatus: vi.fn(),
+      },
+      mocked.narrativeMemoryQueryService,
+    );
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_QUERY_NARRATIVE);
+    expect(handler).toBeDefined();
+
+    const response = (await handler?.({}, {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      question: "   ",
+    })) as {
+      success: boolean;
+      error?: { code: string };
+    };
+
+    expect(response.success).toBe(false);
+    expect(response.error?.code).toBe(ErrorCode.INVALID_INPUT);
+    expect(mocked.narrativeMemoryQueryService.query).not.toHaveBeenCalled();
   });
 
   it("returns INVALID_INPUT for malformed WINDOW_SET_FULLSCREEN payload", async () => {

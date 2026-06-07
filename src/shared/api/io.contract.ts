@@ -89,6 +89,9 @@ export type IoRendererApi = {
     getEmbeddingStatus: (projectId: string) => Promise<IPCResponse<SharedTypes.MemoryEmbeddingStatus>>;
   };
   memory: {
+    queryNarrative: (
+      input: SharedTypes.NarrativeMemoryQueryInput,
+    ) => Promise<IPCResponse<SharedTypes.NarrativeMemoryQueryResult>>;
     searchChunks: (
       input: SharedTypes.MemoryChunkSearchQuery,
     ) => Promise<IPCResponse<SharedTypes.MemoryChunkSearchResult[]>>;

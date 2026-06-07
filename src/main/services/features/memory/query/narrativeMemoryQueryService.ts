@@ -1,72 +1,29 @@
-import { and, desc, eq, gte, inArray, isNull, lte, or } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "../../../../database/main/databaseService.js";
 import {
   chapter,
   memoryEpisodeEvidence,
+  memoryEntity,
+  memoryEntityAlias,
   memoryFact,
   memoryFactEvidence,
 } from "../../../../database/schema/index.js";
-import type { RagQaEvidence } from "../../../../../shared/types/search.js";
+import type {
+  NarrativeMemoryFactResult,
+  NarrativeMemoryQueryInput,
+  NarrativeMemoryQueryIntent,
+  NarrativeMemoryQueryResult,
+  NarrativeMemorySource,
+  RagQaEvidence,
+} from "../../../../../shared/types/search.js";
 import { createLogger } from "../../../../../shared/logger/index.js";
+import { normalizeMemoryEntityName } from "../entity/memoryEntityResolution.js";
 import { filterFactsValidAtChapter } from "../temporal/memoryTemporalFact.js";
-
-export type NarrativeMemoryQueryIntent =
-  | "evidence-trace"
-  | "entity-profile"
-  | "entity-state-at-chapter"
-  | "relationship-at-chapter"
-  | "event-causality"
-  | "contradiction-check"
-  | "unresolved-thread-check"
-  | "global-summary";
-
-export type NarrativeMemorySource =
-  | "memory_chunk_evidence"
-  | "memory_entity"
-  | "memory_entity_mention"
-  | "memory_relation_state"
-  | "memory_character_state"
-  | "memory_knowledge_state"
-  | "memory_fact"
-  | "memory_fact_evidence"
-  | "memory_fact_invalidation"
-  | "memory_episode"
-  | "memory_state_change_candidate"
-  | "chapter_summary"
-  | "world_document";
 
 export type NarrativeMemoryQueryPlan = {
   intent: NarrativeMemoryQueryIntent;
   sources: NarrativeMemorySource[];
   reason: string;
-};
-
-export type NarrativeMemoryTraceStep = {
-  source: NarrativeMemorySource;
-  decision: "selected" | "skipped";
-  reason: string;
-};
-
-export type NarrativeMemoryFactResult = {
-  id: string;
-  subjectEntityId: string;
-  predicate: string;
-  objectEntityId: string | null;
-  objectValue: string | null;
-  valueType: string;
-  validFromChapterOrder: number;
-  validToChapterOrder: number | null;
-  observedAtChapterOrder: number;
-  confidence: number;
-  status: string;
-};
-
-export type NarrativeMemoryQueryResult = {
-  intent: NarrativeMemoryQueryIntent;
-  status: "found" | "insufficient_evidence" | "conflicting";
-  trace: NarrativeMemoryTraceStep[];
-  facts: NarrativeMemoryFactResult[];
-  evidence: RagQaEvidence[];
 };
 
 const logger = createLogger("NarrativeMemoryQueryService");
@@ -206,6 +163,9 @@ async function fetchTemporalFacts(input: {
   intent: NarrativeMemoryQueryIntent;
   sources: NarrativeMemorySource[];
   chapterOrder: number | null;
+  entityId?: string;
+  entityName?: string;
+  entityType?: string;
 }): Promise<NarrativeMemoryFactResult[]> {
   const shouldReadTemporalFacts = input.sources.some((source) =>
     [
@@ -227,6 +187,14 @@ async function fetchTemporalFacts(input: {
       lte(memoryFact.validFromChapterOrder, input.chapterOrder),
       or(isNull(memoryFact.validToChapterOrder), gte(memoryFact.validToChapterOrder, input.chapterOrder)),
     );
+  const filterEntityIds = await resolveMemoryEntityIds(input);
+  if (filterEntityIds && filterEntityIds.length === 0) return [];
+  const entityBoundary = filterEntityIds && filterEntityIds.length > 0
+    ? or(
+      inArray(memoryFact.subjectEntityId, filterEntityIds),
+      inArray(memoryFact.objectEntityId, filterEntityIds),
+    )
+    : undefined;
 
   const rows = await db
     .getClient()
@@ -250,6 +218,7 @@ async function fetchTemporalFacts(input: {
         eq(memoryFact.projectId, input.projectId),
         inArray(memoryFact.predicate, predicates),
         temporalBoundary,
+        entityBoundary,
       ),
     )
     .orderBy(desc(memoryFact.observedAtChapterOrder), desc(memoryFact.confidence))
@@ -259,7 +228,17 @@ async function fetchTemporalFacts(input: {
     ? rows.filter((row) => ["suggested", "confirmed", "conflicting"].includes(row.status))
     : filterFactsValidAtChapter(rows, input.chapterOrder);
 
-  return bounded.slice(0, 20).map((row) => ({
+  const selected = bounded.slice(0, 20);
+  const evidenceCounts = await countFactEvidence({
+    projectId: input.projectId,
+    factIds: selected.map((row) => row.id),
+  });
+  const entityInfo = await loadEntityInfo({
+    projectId: input.projectId,
+    entityIds: selected.flatMap((row) => [row.subjectEntityId, row.objectEntityId].filter((id): id is string => id !== null)),
+  });
+
+  return selected.map((row) => ({
     id: row.id,
     subjectEntityId: row.subjectEntityId,
     predicate: row.predicate,
@@ -271,7 +250,121 @@ async function fetchTemporalFacts(input: {
     observedAtChapterOrder: row.observedAtChapterOrder,
     confidence: row.confidence,
     status: row.status,
+    evidenceCount: evidenceCounts.get(row.id) ?? 0,
+    ...resolveRelatedEntity({
+      fact: row,
+      filterEntityIds: filterEntityIds ?? [],
+      entityInfo,
+    }),
   }));
+}
+
+async function resolveMemoryEntityIds(input: {
+  projectId: string;
+  entityId?: string;
+  entityName?: string;
+  entityType?: string;
+}): Promise<string[] | null> {
+  if (input.entityName) {
+    const normalizedName = normalizeMemoryEntityName(input.entityName);
+    const normalizedType = input.entityType ? normalizeMemoryEntityName(input.entityType) : null;
+    const canonicalRows = await db
+      .getClient()
+      .select({ id: memoryEntity.id })
+      .from(memoryEntity)
+      .where(
+        and(
+          eq(memoryEntity.projectId, input.projectId),
+          normalizedType ? eq(memoryEntity.entityType, normalizedType) : undefined,
+          sql`lower(${memoryEntity.canonicalName}) = ${normalizedName}`,
+        ),
+      )
+      .limit(20);
+    const aliasRows = await db
+      .getClient()
+      .select({ entityId: memoryEntityAlias.entityId })
+      .from(memoryEntityAlias)
+      .where(
+        and(
+          eq(memoryEntityAlias.projectId, input.projectId),
+          normalizedType ? eq(memoryEntityAlias.entityType, normalizedType) : undefined,
+          eq(memoryEntityAlias.normalizedAlias, normalizedName),
+        ),
+      )
+      .limit(20);
+    return [...new Set([
+      ...canonicalRows.map((row) => row.id),
+      ...aliasRows.map((row) => row.entityId),
+    ])];
+  }
+
+  return input.entityId ? [input.entityId] : null;
+}
+
+async function loadEntityInfo(input: {
+  projectId: string;
+  entityIds: string[];
+}): Promise<Map<string, { name: string; type: string }>> {
+  const entityIds = [...new Set(input.entityIds)];
+  if (entityIds.length === 0) return new Map();
+  const rows = await db
+    .getClient()
+    .select({
+      id: memoryEntity.id,
+      name: memoryEntity.canonicalName,
+      type: memoryEntity.entityType,
+    })
+    .from(memoryEntity)
+    .where(and(eq(memoryEntity.projectId, input.projectId), inArray(memoryEntity.id, entityIds)));
+  return new Map(rows.map((row) => [row.id, { name: row.name, type: row.type }]));
+}
+
+function resolveRelatedEntity(input: {
+  fact: {
+    subjectEntityId: string;
+    objectEntityId: string | null;
+    objectValue: string | null;
+  };
+  filterEntityIds: string[];
+  entityInfo: Map<string, { name: string; type: string }>;
+}): Pick<NarrativeMemoryFactResult, "relatedEntityId" | "relatedEntityName" | "relatedEntityType"> {
+  const currentIds = new Set(input.filterEntityIds);
+  const relatedId = currentIds.has(input.fact.subjectEntityId)
+    ? input.fact.objectEntityId
+    : input.fact.subjectEntityId;
+  const relatedInfo = relatedId ? input.entityInfo.get(relatedId) : null;
+  return {
+    relatedEntityId: relatedId,
+    relatedEntityName: relatedInfo?.name ?? input.fact.objectValue,
+    relatedEntityType: relatedInfo?.type ?? null,
+  };
+}
+
+async function countFactEvidence(input: {
+  projectId: string;
+  factIds: string[];
+}): Promise<Map<string, number>> {
+  if (input.factIds.length === 0) return new Map();
+  const rows = await db
+    .getClient()
+    .select({
+      factId: memoryFactEvidence.factId,
+    })
+    .from(memoryFactEvidence)
+    .innerJoin(memoryEpisodeEvidence, eq(memoryEpisodeEvidence.id, memoryFactEvidence.evidenceId))
+    .where(
+      and(
+        eq(memoryFactEvidence.projectId, input.projectId),
+        eq(memoryEpisodeEvidence.projectId, input.projectId),
+        inArray(memoryFactEvidence.factId, input.factIds),
+      ),
+    );
+
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    counts.set(row.factId, (counts.get(row.factId) ?? 0) + 1);
+  }
+  return counts;
 }
 
 async function fetchFactEvidence(input: {
@@ -322,8 +415,10 @@ export function formatNarrativeMemoryQueryResult(result: NarrativeMemoryQueryRes
         return [
           `- fact=${fact.id}`,
           `${fact.subjectEntityId} ${fact.predicate} ${object}`,
+          `related=${fact.relatedEntityName ?? fact.relatedEntityId ?? "unknown"}`,
           `status=${fact.status}`,
           `confidence=${fact.confidence}`,
+          `evidence=${fact.evidenceCount}`,
           `valid=${fact.validFromChapterOrder}-${fact.validToChapterOrder ?? "open"}`,
           `observed=${fact.observedAtChapterOrder}`,
         ].join(" | ");
@@ -349,11 +444,7 @@ export function formatNarrativeMemoryQueryResult(result: NarrativeMemoryQueryRes
 }
 
 export class NarrativeMemoryQueryService {
-  async query(input: {
-    projectId: string;
-    question: string;
-    chapterId?: string;
-  }): Promise<NarrativeMemoryQueryResult> {
+  async query(input: NarrativeMemoryQueryInput): Promise<NarrativeMemoryQueryResult> {
     const plan = buildNarrativeMemoryQueryPlan(input.question);
     const trace = plan.sources.map((source) => ({
       source,
@@ -374,6 +465,9 @@ export class NarrativeMemoryQueryService {
       intent: plan.intent,
       sources: plan.sources,
       chapterOrder,
+      entityId: input.entityId,
+      entityName: input.entityName,
+      entityType: input.entityType,
     });
     const evidence = plan.sources.includes("memory_fact_evidence")
       ? await fetchFactEvidence({

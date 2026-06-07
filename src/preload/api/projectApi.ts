@@ -248,6 +248,8 @@ export function createProjectApi({
         safeInvoke(IPC_CHANNELS.MEMORY_GET_EMBEDDING_STATUS, { projectId }),
     },
     memory: {
+      queryNarrative: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_QUERY_NARRATIVE, input),
       searchChunks: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_SEARCH_CHUNKS, input),
       getChunkBacklink: (chunkId) =>
