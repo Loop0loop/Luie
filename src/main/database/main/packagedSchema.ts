@@ -159,6 +159,91 @@ CREATE TABLE IF NOT EXISTS "ChapterSummary" (
     "updatedAt" DATETIME NOT NULL,
     CONSTRAINT "ChapterSummary_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+CREATE TABLE IF NOT EXISTS "MemoryEvalCase" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "question" TEXT NOT NULL,
+    "caseType" TEXT NOT NULL DEFAULT 'qa',
+    "expectedAnswer" TEXT,
+    "temporalScopeStartChapterId" TEXT,
+    "temporalScopeEndChapterId" TEXT,
+    "severity" TEXT NOT NULL DEFAULT 'p1',
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    CONSTRAINT "MemoryEvalCase_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "MemoryEvalEvidence" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "caseId" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "chapterId" TEXT,
+    "expectedChunkId" TEXT,
+    "startOffset" INTEGER,
+    "endOffset" INTEGER,
+    "quote" TEXT NOT NULL,
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    CONSTRAINT "MemoryEvalEvidence_caseId_fkey" FOREIGN KEY ("caseId") REFERENCES "MemoryEvalCase" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryEvalEvidence_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryEvalEvidence_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "MemoryEvalEntity" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "caseId" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "entityType" TEXT NOT NULL,
+    "expectedAttributes" TEXT,
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    CONSTRAINT "MemoryEvalEntity_caseId_fkey" FOREIGN KEY ("caseId") REFERENCES "MemoryEvalCase" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryEvalEntity_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "MemoryEvalRelation" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "caseId" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "sourceName" TEXT NOT NULL,
+    "targetName" TEXT NOT NULL,
+    "relation" TEXT NOT NULL,
+    "temporalScope" TEXT,
+    "expectedAttributes" TEXT,
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    CONSTRAINT "MemoryEvalRelation_caseId_fkey" FOREIGN KEY ("caseId") REFERENCES "MemoryEvalCase" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryEvalRelation_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "MemoryEvalRun" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "label" TEXT NOT NULL,
+    "engineVersion" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'running',
+    "startedAt" TEXT NOT NULL,
+    "completedAt" TEXT,
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    CONSTRAINT "MemoryEvalRun_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "MemoryEvalResult" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "runId" TEXT NOT NULL,
+    "caseId" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "groundingStatus" TEXT NOT NULL,
+    "evidenceHitCount" INTEGER NOT NULL DEFAULT 0,
+    "evidenceMissCount" INTEGER NOT NULL DEFAULT 0,
+    "contextRecallAtK" REAL NOT NULL DEFAULT 0,
+    "p0FailureCount" INTEGER NOT NULL DEFAULT 0,
+    "p0Failures" TEXT NOT NULL DEFAULT '[]',
+    "answer" TEXT,
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    CONSTRAINT "MemoryEvalResult_runId_fkey" FOREIGN KEY ("runId") REFERENCES "MemoryEvalRun" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryEvalResult_caseId_fkey" FOREIGN KEY ("caseId") REFERENCES "MemoryEvalCase" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryEvalResult_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
 CREATE TABLE IF NOT EXISTS "Note" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,
@@ -325,6 +410,19 @@ CREATE UNIQUE INDEX IF NOT EXISTS "MemoryEmbedding_chunkId_key" ON "MemoryEmbedd
 CREATE INDEX IF NOT EXISTS "MemoryEmbedding_projectId_idx" ON "MemoryEmbedding"("projectId");
 CREATE UNIQUE INDEX IF NOT EXISTS "ChapterSummary_chapterId_key" ON "ChapterSummary"("chapterId");
 CREATE INDEX IF NOT EXISTS "ChapterSummary_projectId_idx" ON "ChapterSummary"("projectId");
+CREATE INDEX IF NOT EXISTS "MemoryEvalCase_projectId_caseType_idx" ON "MemoryEvalCase"("projectId", "caseType");
+CREATE INDEX IF NOT EXISTS "MemoryEvalCase_projectId_severity_idx" ON "MemoryEvalCase"("projectId", "severity");
+CREATE INDEX IF NOT EXISTS "MemoryEvalEvidence_caseId_idx" ON "MemoryEvalEvidence"("caseId");
+CREATE INDEX IF NOT EXISTS "MemoryEvalEvidence_projectId_chapterId_idx" ON "MemoryEvalEvidence"("projectId", "chapterId");
+CREATE INDEX IF NOT EXISTS "MemoryEvalEntity_caseId_idx" ON "MemoryEvalEntity"("caseId");
+CREATE INDEX IF NOT EXISTS "MemoryEvalEntity_projectId_name_idx" ON "MemoryEvalEntity"("projectId", "name");
+CREATE INDEX IF NOT EXISTS "MemoryEvalRelation_caseId_idx" ON "MemoryEvalRelation"("caseId");
+CREATE INDEX IF NOT EXISTS "MemoryEvalRelation_projectId_relation_idx" ON "MemoryEvalRelation"("projectId", "relation");
+CREATE INDEX IF NOT EXISTS "MemoryEvalRun_projectId_startedAt_idx" ON "MemoryEvalRun"("projectId", "startedAt");
+CREATE INDEX IF NOT EXISTS "MemoryEvalRun_projectId_status_idx" ON "MemoryEvalRun"("projectId", "status");
+CREATE INDEX IF NOT EXISTS "MemoryEvalResult_runId_idx" ON "MemoryEvalResult"("runId");
+CREATE INDEX IF NOT EXISTS "MemoryEvalResult_caseId_idx" ON "MemoryEvalResult"("caseId");
+CREATE INDEX IF NOT EXISTS "MemoryEvalResult_projectId_p0_idx" ON "MemoryEvalResult"("projectId", "p0FailureCount");
 CREATE INDEX IF NOT EXISTS "Note_projectId_updatedAt_idx" ON "Note"("projectId", "updatedAt");
 CREATE INDEX IF NOT EXISTS "Synopsis_projectId_updatedAt_idx" ON "Synopsis"("projectId", "updatedAt");
 CREATE INDEX IF NOT EXISTS "Plot_projectId_updatedAt_idx" ON "Plot"("projectId", "updatedAt");

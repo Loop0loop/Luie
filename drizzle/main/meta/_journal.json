@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1780311894734,
+      "tag": "0000_aromatic_taskmaster",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1780855620000,
+      "tag": "0001_memory_eval_harness",
+      "breakpoints": true
+    }
+  ]
+}

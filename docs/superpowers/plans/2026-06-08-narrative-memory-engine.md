@@ -201,6 +201,19 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Start with retrieval/evidence/entity/temporal checks that can be mechanically inspected.
 - Use LLM judge only as secondary signal.
 
+**Phase 1 implementation status (2026-06-08):**
+
+사실:
+- Added dedicated `MemoryEval*` Drizzle tables for cases, gold evidence, expected entities, expected relations, runs, and results.
+- Added a pure scoring/suite runner for top-k gold evidence recall and unsupported confirmed-answer P0 detection.
+- Added schema parity coverage through existing DB parity tests.
+
+아직 미구현:
+- No UI report surface yet.
+- No script/IPC runner that executes live project eval cases end-to-end yet.
+- Entity, relation, and temporal accuracy columns exist for fixtures, but mechanical scoring for those dimensions is deferred.
+- The only implemented P0 detector is `unsupported_confirmed_answer`; future-fact, deleted/draft fact, and reversed-relation detectors remain explicit future work.
+
 ## Phase 2: Evidence Memory Read Model
 
 **Goal:** Strengthen raw evidence retrieval before graph extraction.

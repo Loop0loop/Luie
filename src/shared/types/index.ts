@@ -134,6 +134,19 @@ export type {
 } from "./search";
 
 export type {
+  MemoryEvalCaseDefinition,
+  MemoryEvalCaseType,
+  MemoryEvalGoldEvidence,
+  MemoryEvalP0Failure,
+  MemoryEvalScoreInput,
+  MemoryEvalScoreResult,
+  MemoryEvalSeverity,
+  MemoryEvalSuiteCaseInput,
+  MemoryEvalSuiteInput,
+  MemoryEvalSuiteResult,
+} from "./memoryEval";
+
+export type {
   RuntimeFallbackPolicy,
   RuntimeRouteCandidate,
   RuntimeRoutePlan,
