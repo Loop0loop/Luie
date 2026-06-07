@@ -1,8 +1,70 @@
-import { describe, expect, it } from "vitest";
 import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
+
+const fetchTemporalFactsMock = vi.fn();
+const fetchFactEvidenceMock = vi.fn();
+const fetchConflictFactPairsMock = vi.fn();
+const fetchNarrativeSummaryFactsMock = vi.fn();
+const fetchChapterSummaryFactsMock = vi.fn();
+const resolveChapterOrderMock = vi.fn();
+const resolveChapterOrderByChapterIdMock = vi.fn();
+const resolveMemoryEntityIdsMock = vi.fn();
+const loadEntityProfilesMock = vi.fn();
+
+vi.mock("../../../../../src/main/services/features/memory/query/internal/temporal.js", () => ({
+  fetchTemporalFacts: fetchTemporalFactsMock,
+}));
+
+vi.mock("../../../../../src/main/services/features/memory/query/internal/evidence.js", () => ({
+  fetchFactEvidence: fetchFactEvidenceMock,
+}));
+
+vi.mock("../../../../../src/main/services/features/memory/query/internal/conflicts.js", () => ({
+  fetchConflictFactPairs: fetchConflictFactPairsMock,
+}));
+
+vi.mock("../../../../../src/main/services/features/memory/query/internal/summaries.js", () => ({
+  fetchNarrativeSummaryFacts: fetchNarrativeSummaryFactsMock,
+  fetchChapterSummaryFacts: fetchChapterSummaryFactsMock,
+}));
+
+vi.mock("../../../../../src/main/services/features/memory/query/internal/chapter.js", () => ({
+  resolveChapterOrder: resolveChapterOrderMock,
+  resolveChapterOrderByChapterId: resolveChapterOrderByChapterIdMock,
+}));
+
+vi.mock("../../../../../src/main/services/features/memory/query/internal/entity.js", () => ({
+  resolveMemoryEntityIds: resolveMemoryEntityIdsMock,
+  loadEntityProfiles: loadEntityProfilesMock,
+  loadEntityInfo: vi.fn(),
+  resolveRelatedEntity: vi.fn(),
+}));
+
+const modulePath =
+  "../../../../../src/main/services/features/memory/query/narrativeMemoryQueryService.js";
+const queryModule = await import(modulePath);
+
+const {
   buildNarrativeMemoryQueryPlan,
   formatNarrativeMemoryQueryResult,
-} from "../../../../../src/main/services/features/memory/query/narrativeMemoryQueryService.js";
+  narrativeMemoryQueryService,
+} = queryModule;
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  resolveChapterOrderMock.mockResolvedValue(10);
+  resolveChapterOrderByChapterIdMock.mockResolvedValue(10);
+  fetchTemporalFactsMock.mockResolvedValue([]);
+  fetchFactEvidenceMock.mockResolvedValue([]);
+  fetchConflictFactPairsMock.mockResolvedValue([]);
+  fetchNarrativeSummaryFactsMock.mockResolvedValue([]);
+  fetchChapterSummaryFactsMock.mockResolvedValue([]);
+});
 
 describe("narrative memory query service", () => {
   it("routes relationship-at-chapter questions to temporal relation sources", () => {
@@ -63,6 +125,39 @@ describe("narrative memory query service", () => {
 
     expect(plan.intent).toBe("entity-profile");
     expect(plan.sources).toEqual(["memory_entity", "memory_entity_mention", "memory_fact_evidence"]);
+  });
+
+  it("returns entity profile rows for entity-profile query", async () => {
+    resolveMemoryEntityIdsMock.mockResolvedValue(["entity-black"]);
+    loadEntityProfilesMock.mockResolvedValue([
+      {
+        id: "entity-black",
+        canonicalName: "검은 기사",
+        entityType: "character",
+        status: "confirmed",
+        aliases: ["그림자기사", "어둠의 검"],
+        aliasCount: 2,
+        mentionCount: 12,
+        firstMentionChapterOrder: 1,
+        lastMentionChapterOrder: 4,
+      },
+    ]);
+
+    const result = await narrativeMemoryQueryService.query({
+      projectId: "project-1",
+      question: "검은 기사는 누구야? 별칭도 알려줘",
+      entityName: "검은 기사",
+      entityType: "character",
+    });
+
+    expect(result.intent).toBe("entity-profile");
+    expect(result.status).toBe("found");
+    expect(result.profiles).toHaveLength(1);
+    expect(result.profiles?.[0]).toMatchObject({
+      id: "entity-black",
+      canonicalName: "검은 기사",
+      aliases: ["그림자기사", "어둠의 검"],
+    });
   });
 
   it("falls back to evidence trace for ambiguous questions", () => {

@@ -13,9 +13,7 @@ import {
   resolveUtilityEmbeddingRuntimeClient,
   resolveUtilityModelRuntimeClient,
 } from "../llm/runtimeMaterializer.js";
-import {
-  assembleRagContext,
-} from "../../services/features/rag/contextAssembler.js";
+import { assembleRagContext } from "../../services/features/rag/contextAssembler.js";
 import { buildGroundedRagQaResult } from "../../services/features/rag/grounding.js";
 import { normalizeCoreAnswer } from "../../services/features/rag/normalizeCoreAnswer.js";
 import { resolveUserDataPath } from "../../utils/userDataPath.js";
@@ -37,38 +35,65 @@ type MessagePortLike = {
   postMessage: (message: UtilityEventEnvelope) => void;
 };
 
-const processWithParentPort = process as typeof process & { parentPort?: MessagePortLike };
+const processWithParentPort = process as typeof process & {
+  parentPort?: MessagePortLike;
+};
 const processWithSend = process as typeof process & {
   send?: (message: UtilityEventEnvelope) => void;
 };
 
-const outboundPort: MessagePortLike | null = processWithParentPort.parentPort ?? null;
+const outboundPort: MessagePortLike | null =
+  processWithParentPort.parentPort ?? null;
 
-const runtimeLogFieldsFromProvider = (providerName: string): {
+const runtimeLogFieldsFromProvider = (
+  providerName: string,
+): {
   route: string;
   backend: "local-sidecar" | "remote-http" | "test";
   implementation: string;
 } => {
   if (providerName === "sidecar") {
-    return { route: "sidecar", backend: "local-sidecar", implementation: "llama-server" };
+    return {
+      route: "sidecar",
+      backend: "local-sidecar",
+      implementation: "llama-server",
+    };
   }
   if (providerName === "gemini") {
-    return { route: "gemini", backend: "remote-http", implementation: "gemini-api" };
+    return {
+      route: "gemini",
+      backend: "remote-http",
+      implementation: "gemini-api",
+    };
   }
   if (providerName === "ollama") {
-    return { route: "ollama", backend: "remote-http", implementation: "ollama-openai-compatible-api" };
+    return {
+      route: "ollama",
+      backend: "remote-http",
+      implementation: "ollama-openai-compatible-api",
+    };
   }
   if (providerName === "deterministic") {
-    return { route: "deterministic", backend: "test", implementation: "deterministic-provider" };
+    return {
+      route: "deterministic",
+      backend: "test",
+      implementation: "deterministic-provider",
+    };
   }
-  return { route: "openai", backend: "remote-http", implementation: "openai-compatible-api" };
+  return {
+    route: "openai",
+    backend: "remote-http",
+    implementation: "openai-compatible-api",
+  };
 };
 
 class RagQaWorker {
   private activeRuns = new Map<string, ActiveRun>();
-  private generationConfigCache:
-    | { expiresAt: number; temperature: number; maxTokens: number }
-    | null = null;
+  private generationConfigCache: {
+    expiresAt: number;
+    temperature: number;
+    maxTokens: number;
+  } | null = null;
   private static readonly DEFAULT_TEMPERATURE = 0.2;
   private static readonly DEFAULT_MAX_TOKENS = 1200;
   private static readonly GENERATION_CONFIG_TTL_MS = 10_000;
@@ -95,14 +120,22 @@ class RagQaWorker {
     maxTokens: number;
   }> {
     const now = Date.now();
-    if (this.generationConfigCache && this.generationConfigCache.expiresAt > now) {
+    if (
+      this.generationConfigCache &&
+      this.generationConfigCache.expiresAt > now
+    ) {
       return {
         temperature: this.generationConfigCache.temperature,
         maxTokens: this.generationConfigCache.maxTokens,
       };
     }
-    const envTemperature = Number.parseFloat(process.env.LUIE_RAG_TEMPERATURE ?? "");
-    const envMaxTokens = Number.parseInt(process.env.LUIE_RAG_MAX_TOKENS ?? "", 10);
+    const envTemperature = Number.parseFloat(
+      process.env.LUIE_RAG_TEMPERATURE ?? "",
+    );
+    const envMaxTokens = Number.parseInt(
+      process.env.LUIE_RAG_MAX_TOKENS ?? "",
+      10,
+    );
     let temperature = this.clampTemperature(envTemperature);
     let maxTokens = this.clampMaxTokens(envMaxTokens);
     try {
@@ -132,7 +165,10 @@ class RagQaWorker {
     if (!error || typeof error !== "object") return false;
     const candidate = error as { name?: unknown; message?: unknown };
     if (candidate.name === "AbortError") return true;
-    if (typeof candidate.message === "string" && /aborted/i.test(candidate.message)) {
+    if (
+      typeof candidate.message === "string" &&
+      /aborted/i.test(candidate.message)
+    ) {
       return true;
     }
     return false;
@@ -218,30 +254,28 @@ class RagQaWorker {
         this.emitError({
           runId: run.runId,
           code: ErrorCode.RAG_QA_FAILED,
-          message: "LLM 모델이 설정되지 않았습니다. 설정 > AI 모델에서 모델을 구성해주세요.",
+          message:
+            "LLM 모델이 설정되지 않았습니다. 설정 > AI 모델에서 모델을 구성해주세요.",
         });
         return;
       }
 
       const generationConfig = await this.loadGenerationConfig();
-      const {
-        systemPrompt,
-        userPrompt,
-        evidence,
-        narrativeMemory,
-      } = await assembleRagContext({
-        projectId: run.request.projectId,
-        question: run.request.question,
-        chapterId: run.request.chapterId,
-        signal: run.abortController.signal,
-        embedTexts: async (projectId, texts) => {
-          const embeddingRuntime = await resolveUtilityEmbeddingRuntimeClient(
-            projectId,
-            run.request.runtimePlan,
-          );
-          return embeddingRuntime.embed(texts);
-        },
-      });
+      const { systemPrompt, userPrompt, evidence, narrativeMemory } =
+        await assembleRagContext({
+          projectId: run.request.projectId,
+          question: run.request.question,
+          chapterId: run.request.chapterId,
+          includePriorMemory: run.request.includePriorMemory,
+          signal: run.abortController.signal,
+          embedTexts: async (projectId, texts) => {
+            const embeddingRuntime = await resolveUtilityEmbeddingRuntimeClient(
+              projectId,
+              run.request.runtimePlan,
+            );
+            return embeddingRuntime.embed(texts);
+          },
+        });
       logger.info("RAG context assembled", {
         runId: run.runId,
         projectId: run.request.projectId,
@@ -286,7 +320,10 @@ class RagQaWorker {
           run.abortController.abort();
           return;
         }
-        if (firstTokenReceived && now - lastTokenAt > RagQaWorker.FIRST_TOKEN_TIMEOUT_MS) {
+        if (
+          firstTokenReceived &&
+          now - lastTokenAt > RagQaWorker.FIRST_TOKEN_TIMEOUT_MS
+        ) {
           run.aborted = true;
           run.abortController.abort();
         }
@@ -387,7 +424,10 @@ export async function embedTexts(input: {
   if (input.texts.length === 0) return [];
   // 임베딩 전용 런타임(전용 임베딩 sidecar/클라우드 임베딩)을 사용한다.
   // 생성 모델과 분리되어 메모리를 핀하지 않으며, 미가용 시 null → FTS 폴백.
-  const runtime = await resolveUtilityEmbeddingRuntimeClient(input.projectId, input.runtimePlan);
+  const runtime = await resolveUtilityEmbeddingRuntimeClient(
+    input.projectId,
+    input.runtimePlan,
+  );
   const vectors = await runtime.embed(input.texts);
   if (!vectors) return null;
   return vectors.map((vector) => Array.from(vector));

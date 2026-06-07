@@ -43,6 +43,14 @@ describe("utilityProcessBridge protocol helpers", () => {
       path.join(repoRoot, "src/main/services/features/utility/utilityProcessBridge/protocol.ts"),
       "utf8",
     );
+    const coreSource = fs.readFileSync(
+      path.join(repoRoot, "src/main/services/features/utility/utilityProcessBridge/internal/core.ts"),
+      "utf8",
+    );
+    const eventHandlersSource = fs.readFileSync(
+      path.join(repoRoot, "src/main/services/features/utility/utilityProcessBridge/internal/eventHandlers.ts"),
+      "utf8",
+    );
     const utilityMainSource = fs.readFileSync(
       path.join(repoRoot, "src/main/utility/process/utilityProcessMain.ts"),
       "utf8",
@@ -55,7 +63,8 @@ describe("utilityProcessBridge protocol helpers", () => {
     expect(protocolSource).toContain('event: "sidecar.status"');
     expect(utilityMainSource).toContain("utilitySidecarSupervisor.onStatusChange");
     expect(utilityMainSource).toContain("utilityEmbeddingSidecarSupervisor.onStatusChange");
-    expect(bridgeSource).toContain("handleSidecarStatusEvent");
-    expect(bridgeSource).toContain("SIDECAR_STATUS_CHANGED");
+    expect(bridgeSource).toContain("./utilityProcessBridge/internal/core.js");
+    expect(coreSource).toContain("handleSidecarStatusEvent");
+    expect(eventHandlersSource).toContain("SIDECAR_STATUS_CHANGED");
   });
 });
