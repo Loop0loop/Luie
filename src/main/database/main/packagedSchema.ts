@@ -370,7 +370,7 @@ CREATE TABLE IF NOT EXISTS "MemoryStateChangeCandidate" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,
     "episodeId" TEXT NOT NULL,
-    "evidenceId" TEXT,
+    "evidenceId" TEXT NOT NULL,
     "subjectEntityId" TEXT,
     "stateType" TEXT NOT NULL,
     "beforeValue" TEXT,
@@ -383,7 +383,7 @@ CREATE TABLE IF NOT EXISTS "MemoryStateChangeCandidate" (
     "rejectionReason" TEXT,
     CONSTRAINT "MemoryStateChangeCandidate_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "MemoryStateChangeCandidate_episodeId_fkey" FOREIGN KEY ("episodeId") REFERENCES "MemoryEpisode" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "MemoryStateChangeCandidate_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "MemoryEpisodeEvidence" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "MemoryStateChangeCandidate_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "MemoryEpisodeEvidence" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "MemoryStateChangeCandidate_subjectEntityId_fkey" FOREIGN KEY ("subjectEntityId") REFERENCES "MemoryEntity" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "Note" (

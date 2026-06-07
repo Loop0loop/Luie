@@ -364,6 +364,7 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Episode evidence stores quote, offsets, `contentHash`, and `sourceContentHash` snapshots.
 - Added helper coverage that episode candidates require at least one evidence span.
 - Added a transactional storage boundary that inserts episode and evidence rows together.
+- `MemoryStateChangeCandidate.evidenceId` is mandatory so state-change claims stay tied to a concrete episode evidence span.
 
 아직 미구현:
 - No LLM episode extraction runner yet.

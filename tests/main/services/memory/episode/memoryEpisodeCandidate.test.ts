@@ -108,4 +108,33 @@ describe("memory episode candidate helpers", () => {
       }),
     ).toThrow("MEMORY_EPISODE_EVIDENCE_REQUIRES_HASH");
   });
+
+  it("rejects any blank evidence quote", () => {
+    expect(() =>
+      createMemoryEpisodeCandidateRows({
+        nowIso: "2026-06-08T00:00:00.000Z",
+        projectId: "project-1",
+        sourceType: "chapter",
+        sourceId: "chapter-7",
+        chapterId: "chapter-7",
+        sceneId: null,
+        sourceContentHash: "source-hash",
+        extractorVersion: "episode-v1",
+        episodeType: "character_learns_secret",
+        title: "아린이 비밀을 알게 됨",
+        summary: "아린은 백야회의 추적 이유를 알게 된다.",
+        evidence: [
+          {
+            chapterId: "chapter-7",
+            chunkId: "chunk-1",
+            contentHash: "chunk-hash",
+            sourceContentHash: "source-hash",
+            quote: " ",
+            startOffset: 120,
+            endOffset: 151,
+          },
+        ],
+      }),
+    ).toThrow("MEMORY_EPISODE_REQUIRES_EVIDENCE");
+  });
 });

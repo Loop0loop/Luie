@@ -33,8 +33,8 @@ export function validateMemoryEpisodeCandidate(input: MemoryEpisodeCandidateInpu
   if (input.evidence.length === 0) {
     throw new Error("MEMORY_EPISODE_REQUIRES_EVIDENCE");
   }
-  const hasValidEvidence = input.evidence.some((item) => item.quote.trim().length > 0);
-  if (!hasValidEvidence) {
+  const hasBlankQuote = input.evidence.some((item) => item.quote.trim().length === 0);
+  if (hasBlankQuote) {
     throw new Error("MEMORY_EPISODE_REQUIRES_EVIDENCE");
   }
   const hasMissingHash = input.evidence.some(

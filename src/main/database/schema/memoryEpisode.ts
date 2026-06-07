@@ -162,7 +162,7 @@ export const memoryStateChangeCandidate = sqliteTable(
     id: text("id").primaryKey().notNull(),
     projectId: text("projectId").notNull(),
     episodeId: text("episodeId").notNull(),
-    evidenceId: text("evidenceId"),
+    evidenceId: text("evidenceId").notNull(),
     subjectEntityId: text("subjectEntityId"),
     stateType: text("stateType").notNull(),
     beforeValue: text("beforeValue"),
@@ -191,7 +191,7 @@ export const memoryStateChangeCandidate = sqliteTable(
       name: "MemoryStateChangeCandidate_evidenceId_fkey",
       columns: [table.evidenceId],
       foreignColumns: [memoryEpisodeEvidence.id],
-    }).onDelete("set null").onUpdate("cascade"),
+    }).onDelete("cascade").onUpdate("cascade"),
     foreignKey({
       name: "MemoryStateChangeCandidate_subjectEntityId_fkey",
       columns: [table.subjectEntityId],
