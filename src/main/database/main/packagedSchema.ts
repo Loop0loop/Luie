@@ -296,6 +296,96 @@ CREATE TABLE IF NOT EXISTS "MemoryEntityMention" (
     CONSTRAINT "MemoryEntityMention_aliasId_fkey" FOREIGN KEY ("aliasId") REFERENCES "MemoryEntityAlias" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "MemoryEntityMention_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
+CREATE TABLE IF NOT EXISTS "MemoryEpisodeExtractionJob" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "sourceType" TEXT NOT NULL,
+    "sourceId" TEXT NOT NULL,
+    "sourceContentHash" TEXT NOT NULL,
+    "extractorVersion" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "priority" INTEGER NOT NULL DEFAULT 50,
+    "attempts" INTEGER NOT NULL DEFAULT 0,
+    "error" TEXT,
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    CONSTRAINT "MemoryEpisodeExtractionJob_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "MemoryEpisode" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "sourceType" TEXT NOT NULL,
+    "sourceId" TEXT NOT NULL,
+    "chapterId" TEXT,
+    "sceneId" TEXT,
+    "sourceContentHash" TEXT NOT NULL,
+    "extractorVersion" TEXT NOT NULL,
+    "episodeType" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "summary" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'suggested',
+    "confidence" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    "rejectedAt" TEXT,
+    "rejectionReason" TEXT,
+    CONSTRAINT "MemoryEpisode_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryEpisode_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "MemoryEpisode_sceneId_fkey" FOREIGN KEY ("sceneId") REFERENCES "Scene" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "MemoryEpisodeParticipant" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "episodeId" TEXT NOT NULL,
+    "entityId" TEXT,
+    "surfaceName" TEXT NOT NULL,
+    "role" TEXT NOT NULL DEFAULT 'mentioned',
+    "status" TEXT NOT NULL DEFAULT 'suggested',
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    "rejectedAt" TEXT,
+    "rejectionReason" TEXT,
+    CONSTRAINT "MemoryEpisodeParticipant_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryEpisodeParticipant_episodeId_fkey" FOREIGN KEY ("episodeId") REFERENCES "MemoryEpisode" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryEpisodeParticipant_entityId_fkey" FOREIGN KEY ("entityId") REFERENCES "MemoryEntity" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "MemoryEpisodeEvidence" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "episodeId" TEXT NOT NULL,
+    "chapterId" TEXT,
+    "chunkId" TEXT,
+    "contentHash" TEXT NOT NULL,
+    "sourceContentHash" TEXT NOT NULL,
+    "startOffset" INTEGER,
+    "endOffset" INTEGER,
+    "quote" TEXT NOT NULL,
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    CONSTRAINT "MemoryEpisodeEvidence_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryEpisodeEvidence_episodeId_fkey" FOREIGN KEY ("episodeId") REFERENCES "MemoryEpisode" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryEpisodeEvidence_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "MemoryStateChangeCandidate" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "episodeId" TEXT NOT NULL,
+    "evidenceId" TEXT,
+    "subjectEntityId" TEXT,
+    "stateType" TEXT NOT NULL,
+    "beforeValue" TEXT,
+    "afterValue" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'suggested',
+    "confidence" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    "rejectedAt" TEXT,
+    "rejectionReason" TEXT,
+    CONSTRAINT "MemoryStateChangeCandidate_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryStateChangeCandidate_episodeId_fkey" FOREIGN KEY ("episodeId") REFERENCES "MemoryEpisode" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryStateChangeCandidate_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "MemoryEpisodeEvidence" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "MemoryStateChangeCandidate_subjectEntityId_fkey" FOREIGN KEY ("subjectEntityId") REFERENCES "MemoryEntity" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
 CREATE TABLE IF NOT EXISTS "Note" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,
@@ -482,6 +572,16 @@ CREATE INDEX IF NOT EXISTS "MemoryEntityAlias_entityId_idx" ON "MemoryEntityAlia
 CREATE UNIQUE INDEX IF NOT EXISTS "MemoryEntityAlias_projectId_alias_key" ON "MemoryEntityAlias"("projectId", "entityType", "normalizedAlias");
 CREATE INDEX IF NOT EXISTS "MemoryEntityMention_entityId_idx" ON "MemoryEntityMention"("entityId");
 CREATE INDEX IF NOT EXISTS "MemoryEntityMention_projectId_chapterId_idx" ON "MemoryEntityMention"("projectId", "chapterId");
+CREATE INDEX IF NOT EXISTS "MemoryEpisodeExtractionJob_projectId_status_priority_idx" ON "MemoryEpisodeExtractionJob"("projectId", "status", "priority");
+CREATE UNIQUE INDEX IF NOT EXISTS "MemoryEpisodeExtractionJob_source_version_key" ON "MemoryEpisodeExtractionJob"("projectId", "sourceType", "sourceId", "sourceContentHash", "extractorVersion");
+CREATE INDEX IF NOT EXISTS "MemoryEpisode_projectId_source_idx" ON "MemoryEpisode"("projectId", "sourceType", "sourceId");
+CREATE INDEX IF NOT EXISTS "MemoryEpisode_projectId_status_idx" ON "MemoryEpisode"("projectId", "status");
+CREATE INDEX IF NOT EXISTS "MemoryEpisode_projectId_chapterId_idx" ON "MemoryEpisode"("projectId", "chapterId");
+CREATE INDEX IF NOT EXISTS "MemoryEpisodeParticipant_episodeId_idx" ON "MemoryEpisodeParticipant"("episodeId");
+CREATE INDEX IF NOT EXISTS "MemoryEpisodeEvidence_episodeId_idx" ON "MemoryEpisodeEvidence"("episodeId");
+CREATE INDEX IF NOT EXISTS "MemoryEpisodeEvidence_projectId_chapterId_idx" ON "MemoryEpisodeEvidence"("projectId", "chapterId");
+CREATE INDEX IF NOT EXISTS "MemoryStateChangeCandidate_episodeId_idx" ON "MemoryStateChangeCandidate"("episodeId");
+CREATE INDEX IF NOT EXISTS "MemoryStateChangeCandidate_projectId_status_idx" ON "MemoryStateChangeCandidate"("projectId", "status");
 CREATE INDEX IF NOT EXISTS "Note_projectId_updatedAt_idx" ON "Note"("projectId", "updatedAt");
 CREATE INDEX IF NOT EXISTS "Synopsis_projectId_updatedAt_idx" ON "Synopsis"("projectId", "updatedAt");
 CREATE INDEX IF NOT EXISTS "Plot_projectId_updatedAt_idx" ON "Plot"("projectId", "updatedAt");

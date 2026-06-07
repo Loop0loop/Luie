@@ -355,6 +355,21 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Batch incrementally; do not full-rebuild on every edit.
 - Keep “candidate” and “confirmed” separate.
 
+**Phase 4 implementation status (2026-06-08):**
+
+사실:
+- Added dedicated episode extraction queue table: `MemoryEpisodeExtractionJob`.
+- Added `MemoryEpisode`, `MemoryEpisodeParticipant`, `MemoryEpisodeEvidence`, and `MemoryStateChangeCandidate`.
+- Episode/state rows default to `suggested`; rejection fields are present.
+- Episode evidence stores quote, offsets, `contentHash`, and `sourceContentHash` snapshots.
+- Added helper coverage that episode candidates require at least one evidence span.
+- Added a transactional storage boundary that inserts episode and evidence rows together.
+
+아직 미구현:
+- No LLM episode extraction runner yet.
+- No IPC/UI for episode review or rejection yet.
+- No automatic background processing of `MemoryEpisodeExtractionJob` yet.
+
 ## Phase 5: Temporal Relation and State Graph
 
 **Goal:** Store relationship and state facts with validity windows and invalidation.

@@ -29,6 +29,13 @@
       "when": 1780858200000,
       "tag": "0003_memory_entity_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1780859000000,
+      "tag": "0004_memory_episode_mvp",
+      "breakpoints": true
     }
   ]
 }
