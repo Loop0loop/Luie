@@ -8,8 +8,14 @@ import {
 import { searchService } from "../../../src/main/services/features/searchService.js";
 import { projectService } from "../../../src/main/services/core/projectService.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
-import { ServiceError } from "../../../src/main/utils/serviceError.js";
+import type { ServiceError } from "../../../src/main/utils/serviceError.js";
 import { ErrorCode } from "../../../src/shared/constants/errorCode.js";
+import { db, memoryChunk } from "../../../src/main/infra/database/index.js";
+import { eq } from "drizzle-orm";
+import {
+  buildMemoryChunkIndexText,
+  buildMemoryContextLabel,
+} from "../../../src/main/services/features/memory/projection/index.js";
 
 describe("memoryProjectionService", () => {
   const localProjectService = new ProjectService();
@@ -53,6 +59,23 @@ describe("memoryProjectionService", () => {
     expect(chunks).toHaveLength(0);
   });
 
+  it("builds index text from context label without changing raw content", () => {
+    const rawContent = "사절단은 조용히 문서를 접고 창밖의 비를 바라보았다.";
+    const contextLabel = buildMemoryContextLabel({
+      sourceType: "chapter",
+      title: "은하궁 회담",
+    });
+    const indexText = buildMemoryChunkIndexText({
+      contextLabel,
+      content: rawContent,
+    });
+
+    expect(contextLabel).toBe("chapter: 은하궁 회담");
+    expect(indexText).toContain("은하궁 회담");
+    expect(indexText).toContain(rawContent);
+    expect(rawContent).not.toContain("은하궁 회담");
+  });
+
   it("rebuilds memory chunks and supports chunk search/backlink", async () => {
     const project = await localProjectService.createProject({
       title: "Memory Chunk Search",
@@ -93,6 +116,54 @@ describe("memoryProjectionService", () => {
     expect(backlink.chunkId).toBe(chunks[0].chunkId);
     expect(backlink.chapterId).toBe(String(chapter.id));
     expect(backlink.offset).toBeGreaterThanOrEqual(0);
+  });
+
+  it("indexes contextual labels without contaminating returned raw chunk content", async () => {
+    const project = await localProjectService.createProject({
+      title: "Memory Context Label",
+      description: "unit",
+      projectPath: "/tmp/memory-context-label.luie",
+    });
+    const chapter = await chapterService.createChapter({
+      projectId: String(project.id),
+      title: "은하궁 회담",
+    });
+
+    await chapterService.updateChapter({
+      id: String(chapter.id),
+      content: "사절단은 조용히 문서를 접고 창밖의 비를 바라보았다.",
+    });
+
+    await memoryProjectionService.processPendingChunkJobs({
+      projectId: String(project.id),
+      sourceType: "chapter",
+      sourceId: String(chapter.id),
+      limit: 20,
+    });
+
+    const chunks = await searchService.searchChunks({
+      projectId: String(project.id),
+      query: "은하궁",
+      limit: 10,
+    });
+
+    expect(chunks.length).toBeGreaterThan(0);
+    expect(chunks[0].content).toBe("사절단은 조용히 문서를 접고 창밖의 비를 바라보았다.");
+    expect(chunks[0].content).not.toContain("은하궁 회담");
+
+    const rows = await db.getClient()
+      .select({
+        content: memoryChunk.content,
+        indexText: memoryChunk.indexText,
+        contextLabel: memoryChunk.contextLabel,
+      })
+      .from(memoryChunk)
+      .where(eq(memoryChunk.id, chunks[0].chunkId))
+      .limit(1);
+
+    expect(rows[0]?.contextLabel).toBe("chapter: 은하궁 회담");
+    expect(rows[0]?.indexText).toContain("은하궁 회담");
+    expect(rows[0]?.content).not.toContain("은하궁 회담");
   });
 
   it("returns MEMORY_CHUNK_NOT_FOUND for unknown chunk backlink", async () => {

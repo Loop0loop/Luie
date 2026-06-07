@@ -1,4 +1,6 @@
 export {
+  buildMemoryChunkIndexText,
+  buildMemoryContextLabel,
   chunkText,
   estimateTokenCountFromChars,
   sha256,

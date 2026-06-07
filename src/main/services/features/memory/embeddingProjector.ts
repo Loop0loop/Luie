@@ -137,8 +137,8 @@ export class EmbeddingProjector {
           chunkId: memoryChunk.id,
           projectId: memoryChunk.projectId,
           chapterId: memoryChunk.chapterId,
-          content: memoryChunk.content,
-          contentHash: memoryChunk.contentHash,
+          content: sql<string>`COALESCE(NULLIF(${memoryChunk.indexText}, ''), ${memoryChunk.content})`,
+          contentHash: sql<string>`COALESCE(NULLIF(${memoryChunk.indexTextHash}, ''), ${memoryChunk.contentHash})`,
         })
         .from(memoryChunk)
         .where(

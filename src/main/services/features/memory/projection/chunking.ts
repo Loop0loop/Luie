@@ -13,6 +13,23 @@ export function estimateTokenCountFromChars(content: string): number {
   return content.length;
 }
 
+export function buildMemoryContextLabel(input: {
+  sourceType: string;
+  title?: string | null;
+}): string | null {
+  const title = input.title?.trim();
+  if (!title) return null;
+  return `${input.sourceType}: ${title}`;
+}
+
+export function buildMemoryChunkIndexText(input: {
+  contextLabel: string | null;
+  content: string;
+}): string {
+  if (!input.contextLabel) return input.content;
+  return `[${input.contextLabel}]\n${input.content}`;
+}
+
 export function chunkText(
   input: string,
   chunkTarget = DEFAULT_CHUNK_TARGET,

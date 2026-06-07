@@ -28,6 +28,7 @@ type LoggerLike = {
 };
 
 export const MEMORY_CHUNK_FTS_TOKENIZER = "trigram" as const;
+const MEMORY_CHUNK_INDEX_SQL = 'COALESCE(NULLIF("indexText", \'\'), "content")';
 
 /** trigram 토크나이저로 MemoryChunkFts 를 생성하는 표준 DDL. */
 export const MEMORY_CHUNK_FTS_CREATE_SQL = `CREATE VIRTUAL TABLE IF NOT EXISTS "MemoryChunkFts"
@@ -40,6 +41,7 @@ USING fts5(
 );`;
 
 type SqliteMasterRow = { sql?: string | null };
+type CountRow = { count?: number | bigint };
 
 /** 현재 MemoryChunkFts 의 생성 SQL 을 조회한다(없으면 null). */
 function readFtsCreateSql(
@@ -56,6 +58,66 @@ function readFtsCreateSql(
 /** 생성 SQL 에 trigram 토크나이저가 적용되어 있는지 판별한다. */
 function usesTrigramTokenizer(createSql: string): boolean {
   return /tokenize\s*=\s*['"]?trigram/i.test(createSql);
+}
+
+function hasMemoryChunkIndexTextColumns(database: InstanceType<typeof Database>): boolean {
+  const rows = database
+    .prepare('PRAGMA table_info("MemoryChunk");')
+    .all() as Array<{ name?: string }>;
+  const columns = new Set(rows.map((row) => row.name));
+  return columns.has("indexText") && columns.has("indexTextHash") && columns.has("sourceContentHash");
+}
+
+export function backfillMemoryChunkIndexText(
+  database: InstanceType<typeof Database>,
+  logger: LoggerLike,
+): number {
+  if (!hasMemoryChunkIndexTextColumns(database)) return 0;
+
+  const result = database
+    .prepare(
+      `UPDATE "MemoryChunk"
+       SET
+         "indexText" = "content",
+         "indexTextHash" = "contentHash",
+         "sourceContentHash" = ''
+       WHERE "indexText" = '';`,
+    )
+    .run();
+  const changed = Number(result.changes ?? 0);
+  if (changed > 0) {
+    logger.info("Backfilled MemoryChunk index text", { changedChunks: changed });
+  }
+  return changed;
+}
+
+function hasStaleFtsRows(database: InstanceType<typeof Database>): boolean {
+  if (!hasMemoryChunkIndexTextColumns(database)) return false;
+  const row = database
+    .prepare(
+      `SELECT COUNT(*) AS count
+       FROM "MemoryChunk" chunk
+       WHERE chunk."indexText" <> ''
+         AND NOT EXISTS (
+           SELECT 1
+           FROM "MemoryChunkFts" fts
+           WHERE fts."chunkId" = chunk."id"
+             AND fts."content" = chunk."indexText"
+         );`,
+    )
+    .get() as CountRow | undefined;
+  return Number(row?.count ?? 0) > 0;
+}
+
+function reindexMemoryChunkFts(database: InstanceType<typeof Database>): number {
+  database.exec('DELETE FROM "MemoryChunkFts";');
+  const result = database
+    .prepare(
+      `INSERT INTO "MemoryChunkFts" ("chunkId","projectId","chapterId","content")
+       SELECT "id","projectId","chapterId",${MEMORY_CHUNK_INDEX_SQL} FROM "MemoryChunk";`,
+    )
+    .run();
+  return Number(result.changes ?? 0);
 }
 
 /**
@@ -94,7 +156,13 @@ export function ensureMemoryChunkFtsTrigram(
   }
 
   if (usesTrigramTokenizer(existingSql)) {
-    // 이미 최신 토크나이저.
+    if (hasStaleFtsRows(database)) {
+      const reindexed = reindexMemoryChunkFts(database);
+      logger.info("Reindexed stale MemoryChunkFts rows", {
+        reindexedChunks: reindexed,
+      });
+      return reindexed;
+    }
     return 0;
   }
 
@@ -102,13 +170,7 @@ export function ensureMemoryChunkFtsTrigram(
   const migrate = database.transaction((): number => {
     database.exec('DROP TABLE IF EXISTS "MemoryChunkFts";');
     database.exec(MEMORY_CHUNK_FTS_CREATE_SQL);
-    const result = database
-      .prepare(
-        `INSERT INTO "MemoryChunkFts" ("chunkId","projectId","chapterId","content")
-         SELECT "id","projectId","chapterId","content" FROM "MemoryChunk";`,
-      )
-      .run();
-    return Number(result.changes ?? 0);
+    return reindexMemoryChunkFts(database);
   });
 
   const reindexed = migrate();

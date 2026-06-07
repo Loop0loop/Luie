@@ -9,6 +9,8 @@ import { createLogger } from "../../../../shared/logger/index.js";
 import { MEMORY_JOB_TYPES, MEMORY_TARGET_TYPES } from "./memoryJobConstants.js";
 import {
   canRetryMemoryBuildJob,
+  buildMemoryChunkIndexText,
+  buildMemoryContextLabel,
   chunkText,
   collectMemorySourceRows,
   estimateTokenCountFromChars,
@@ -139,6 +141,11 @@ class MemoryProjectionService {
 
       try {
         const sourceContent = String(source.bodyContent ?? source.content ?? "");
+        const sourceContentHash = sha256(sourceContent);
+        const contextLabel = buildMemoryContextLabel({
+          sourceType: job.targetType,
+          title: source.title,
+        });
         const chunks = chunkText(sourceContent);
 
         client.transaction((tx) => {
@@ -162,6 +169,10 @@ class MemoryProjectionService {
           for (let index = 0; index < chunks.length; index += 1) {
             const chunkItem = chunks[index];
             const chunkId = crypto.randomUUID();
+            const indexText = buildMemoryChunkIndexText({
+              contextLabel,
+              content: chunkItem.content,
+            });
             tx.insert(memoryChunk).values({
               id: chunkId,
               projectId: source.projectId,
@@ -172,6 +183,10 @@ class MemoryProjectionService {
               chunkIndex: index,
               content: chunkItem.content,
               contentHash: sha256(chunkItem.content),
+              indexText,
+              indexTextHash: sha256(indexText),
+              contextLabel,
+              sourceContentHash,
               startOffset: chunkItem.startOffset,
               endOffset: chunkItem.endOffset,
               tokenCount: estimateTokenCountFromChars(chunkItem.content),
@@ -180,7 +195,7 @@ class MemoryProjectionService {
             }).run();
             tx.run(
               sql`INSERT INTO "MemoryChunkFts" ("chunkId","projectId","chapterId","content")
-                  VALUES (${chunkId}, ${source.projectId}, ${source.chapterId ?? null}, ${chunkItem.content});`,
+                  VALUES (${chunkId}, ${source.projectId}, ${source.chapterId ?? null}, ${indexText});`,
             );
           }
 

@@ -249,6 +249,19 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Store `rawContent`/source offsets separately from `indexText`.
 - Make source hash part of evidence validation.
 
+**Phase 2 implementation status (2026-06-08):**
+
+사실:
+- `MemoryChunk.content` remains the raw quote text returned to users.
+- Added `MemoryChunk.indexText`, `indexTextHash`, `contextLabel`, and `sourceContentHash`.
+- Chunk FTS, short-token fallback, and embedding projection now use `indexText`.
+- Added coverage that a chapter title can be searched through contextual index text while returned chunk content remains raw.
+
+아직 미구현:
+- Parent-window expansion API is not implemented yet.
+- Scene/paragraph hierarchical retrieval is not implemented yet.
+- Existing chunks need normal rebuild jobs before `indexText` is populated with contextual labels.
+
 ## Phase 3: Canonical Entity and Mention Layer
 
 **Goal:** Stop entity duplication and alias confusion before relation graph extraction.

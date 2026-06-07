@@ -22,6 +22,7 @@ export type MemorySourceRow = {
   projectId: string;
   chapterId: string | null;
   sceneId: string | null;
+  title: string | null;
   content: string | null;
   bodyContent: string | null;
   sourceType: string;
@@ -66,6 +67,7 @@ export async function collectMemorySourceRows(
         projectId: chapter.projectId,
         chapterId: chapter.id,
         sceneId: sql<string | null>`NULL`,
+        title: chapter.title,
         content: chapter.content,
         bodyContent: chapterBody.content,
         sourceType: sql<string>`${MEMORY_TARGET_TYPES.CHAPTER}`,
@@ -81,6 +83,7 @@ export async function collectMemorySourceRows(
         projectId: scene.projectId,
         chapterId: scene.chapterId,
         sceneId: scene.id,
+        title: scene.title,
         content: scene.body,
         bodyContent: sql<string | null>`NULL`,
         sourceType: sql<string>`${MEMORY_TARGET_TYPES.SCENE}`,
@@ -95,6 +98,7 @@ export async function collectMemorySourceRows(
         projectId: note.projectId,
         chapterId: note.chapterId,
         sceneId: sql<string | null>`NULL`,
+        title: note.title,
         content: sql<string>`COALESCE(${note.title}, '') || char(10) || COALESCE(${note.body}, '')`,
         bodyContent: sql<string | null>`NULL`,
         sourceType: sql<string>`${MEMORY_TARGET_TYPES.NOTE}`,
@@ -109,6 +113,7 @@ export async function collectMemorySourceRows(
         projectId: synopsis.projectId,
         chapterId: synopsis.chapterId,
         sceneId: sql<string | null>`NULL`,
+        title: synopsis.title,
         content: sql<string>`COALESCE(${synopsis.title}, '') || char(10) || COALESCE(${synopsis.body}, '')`,
         bodyContent: sql<string | null>`NULL`,
         sourceType: sql<string>`${MEMORY_TARGET_TYPES.SYNOPSIS}`,
@@ -123,6 +128,7 @@ export async function collectMemorySourceRows(
         projectId: plot.projectId,
         chapterId: sql<string | null>`NULL`,
         sceneId: sql<string | null>`NULL`,
+        title: plot.title,
         content: sql<string>`COALESCE(${plot.title}, '') || char(10) || COALESCE(${plot.body}, '')`,
         bodyContent: sql<string | null>`NULL`,
         sourceType: sql<string>`${MEMORY_TARGET_TYPES.PLOT}`,
@@ -137,6 +143,7 @@ export async function collectMemorySourceRows(
         projectId: event.projectId,
         chapterId: sql<string | null>`NULL`,
         sceneId: sql<string | null>`NULL`,
+        title: event.name,
         content: sql<string>`COALESCE(${event.name}, '') || char(10) || COALESCE(${event.description}, '')`,
         bodyContent: sql<string | null>`NULL`,
         sourceType: sql<string>`${MEMORY_TARGET_TYPES.EVENT}`,
@@ -151,6 +158,7 @@ export async function collectMemorySourceRows(
         projectId: character.projectId,
         chapterId: sql<string | null>`NULL`,
         sceneId: sql<string | null>`NULL`,
+        title: character.name,
         content: sql<string>`COALESCE(${character.name}, '') || char(10) || COALESCE(${character.description}, '')`,
         bodyContent: sql<string | null>`NULL`,
         sourceType: sql<string>`${MEMORY_TARGET_TYPES.CHARACTER}`,
@@ -165,6 +173,7 @@ export async function collectMemorySourceRows(
         projectId: faction.projectId,
         chapterId: sql<string | null>`NULL`,
         sceneId: sql<string | null>`NULL`,
+        title: faction.name,
         content: sql<string>`COALESCE(${faction.name}, '') || char(10) || COALESCE(${faction.description}, '')`,
         bodyContent: sql<string | null>`NULL`,
         sourceType: sql<string>`${MEMORY_TARGET_TYPES.FACTION}`,
@@ -179,6 +188,7 @@ export async function collectMemorySourceRows(
         projectId: scrapMemo.projectId,
         chapterId: sql<string | null>`NULL`,
         sceneId: sql<string | null>`NULL`,
+        title: scrapMemo.title,
         content: sql<string>`COALESCE(${scrapMemo.title}, '') || char(10) || COALESCE(${scrapMemo.content}, '')`,
         bodyContent: sql<string | null>`NULL`,
         sourceType: sql<string>`${MEMORY_TARGET_TYPES.SCRAP_MEMO}`,

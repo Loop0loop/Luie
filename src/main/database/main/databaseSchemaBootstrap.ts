@@ -16,7 +16,10 @@ import {
   ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_TRIGGER_SQL,
 } from "./entityRelationPointerSql.js";
 import { resolveMigrationPathContext } from "../runtime/index.js";
-import { ensureMemoryChunkFtsTrigram } from "./memoryChunkFtsMigration.js";
+import {
+  backfillMemoryChunkIndexText,
+  ensureMemoryChunkFtsTrigram,
+} from "./memoryChunkFtsMigration.js";
 
 const DRIZZLE_MIGRATIONS_TABLE = "__drizzle_migrations";
 
@@ -231,6 +234,14 @@ export function ensurePackagedSqliteSchema(
     }
     if (patchedIndexes > 0) {
       logger.info("Applied index patches to existing database", { patchedIndexes });
+    }
+
+    try {
+      backfillMemoryChunkIndexText(database, logger);
+    } catch (error) {
+      logger.warn("Failed to backfill MemoryChunk index text", {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
 
     // MemoryChunkFts 토크나이저를 trigram 으로 보장(레거시 unicode61 → 재색인).

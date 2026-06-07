@@ -13,6 +13,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import * as fs from "node:fs";
 import {
+  backfillMemoryChunkIndexText,
   ensureMemoryChunkFtsTrigram,
   MEMORY_CHUNK_FTS_CREATE_SQL,
 } from "../../../src/main/database/main/memoryChunkFtsMigration.js";
@@ -91,6 +92,10 @@ function createChunkTable(db: DatabaseSyncInstance): void {
     "chunkIndex" INTEGER NOT NULL DEFAULT 0,
     "content" TEXT NOT NULL,
     "contentHash" TEXT NOT NULL DEFAULT '',
+    "indexText" TEXT NOT NULL DEFAULT '',
+    "indexTextHash" TEXT NOT NULL DEFAULT '',
+    "contextLabel" TEXT,
+    "sourceContentHash" TEXT NOT NULL DEFAULT '',
     "updatedAt" TEXT NOT NULL DEFAULT ''
   );`);
 }
@@ -123,6 +128,86 @@ describeWithSqlite("ensureMemoryChunkFtsTrigram", () => {
       } catch {
         /* noop */
       }
+    }
+  });
+
+  it("re-indexes legacy FTS from indexText when contextual index text exists", () => {
+    const db = new DatabaseSync!(tempDbPath());
+    try {
+      createChunkTable(db);
+      insertChunk(db, "c1", "p1", "사절단은 조용히 문서를 접었다");
+      db.prepare(
+        `UPDATE "MemoryChunk" SET "indexText" = ?, "indexTextHash" = ? WHERE "id" = ?`,
+      ).run("[chapter: 은하궁 회담]\n사절단은 조용히 문서를 접었다", "hash", "c1");
+      db.exec(
+        `CREATE VIRTUAL TABLE "MemoryChunkFts" USING fts5("chunkId" UNINDEXED, "projectId" UNINDEXED, "chapterId" UNINDEXED, "content", tokenize='unicode61');`,
+      );
+
+      const reindexed = ensureMemoryChunkFtsTrigram(wrapAsBetterSqlite(db), logger);
+      expect(reindexed).toBe(1);
+
+      const rows = db
+        .prepare(
+          `SELECT "chunkId" FROM "MemoryChunkFts" WHERE "MemoryChunkFts" MATCH ?`,
+        )
+        .all("은하궁") as Array<{ chunkId: string }>;
+      expect(rows.map((r) => r.chunkId)).toEqual(["c1"]);
+    } finally {
+      db.close();
+    }
+  });
+
+  it("backfills existing chunks without pretending chunk hash is source hash", () => {
+    const db = new DatabaseSync!(tempDbPath());
+    try {
+      createChunkTable(db);
+      insertChunk(db, "c1", "p1", "사절단은 조용히 문서를 접었다");
+      const changed = backfillMemoryChunkIndexText(wrapAsBetterSqlite(db), logger);
+      expect(changed).toBe(1);
+
+      const row = db
+        .prepare(
+          `SELECT "indexText", "indexTextHash", "sourceContentHash", "contentHash"
+           FROM "MemoryChunk" WHERE "id" = ?`,
+        )
+        .get("c1") as {
+          indexText: string;
+          indexTextHash: string;
+          sourceContentHash: string;
+          contentHash: string;
+        };
+      expect(row.indexText).toBe("사절단은 조용히 문서를 접었다");
+      expect(row.indexTextHash).toBe(row.contentHash);
+      expect(row.sourceContentHash).toBe("");
+    } finally {
+      db.close();
+    }
+  });
+
+  it("re-indexes stale trigram FTS rows when indexText differs from FTS content", () => {
+    const db = new DatabaseSync!(tempDbPath());
+    try {
+      createChunkTable(db);
+      insertChunk(db, "c1", "p1", "사절단은 조용히 문서를 접었다");
+      db.prepare(
+        `UPDATE "MemoryChunk" SET "indexText" = ?, "indexTextHash" = ? WHERE "id" = ?`,
+      ).run("[chapter: 은하궁 회담]\n사절단은 조용히 문서를 접었다", "hash", "c1");
+      db.exec(MEMORY_CHUNK_FTS_CREATE_SQL);
+      db.exec(
+        `INSERT INTO "MemoryChunkFts" ("chunkId","projectId","chapterId","content") SELECT "id","projectId","chapterId","content" FROM "MemoryChunk";`,
+      );
+
+      const reindexed = ensureMemoryChunkFtsTrigram(wrapAsBetterSqlite(db), logger);
+      expect(reindexed).toBe(1);
+
+      const rows = db
+        .prepare(
+          `SELECT "chunkId" FROM "MemoryChunkFts" WHERE "MemoryChunkFts" MATCH ?`,
+        )
+        .all("은하궁") as Array<{ chunkId: string }>;
+      expect(rows.map((r) => r.chunkId)).toEqual(["c1"]);
+    } finally {
+      db.close();
     }
   });
 

@@ -110,6 +110,62 @@ describe("Drizzle bootstrap migration", () => {
     }
   });
 
+  it("backfills MemoryChunk index text on existing baseline databases", async () => {
+    const dbPath = await createTempDbPath();
+    const Database = (await import("better-sqlite3")).default;
+    const preseedDb = new Database(dbPath);
+    preseedDb.exec(`
+      CREATE TABLE "Project" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "title" TEXT NOT NULL,
+        "description" TEXT,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL
+      );
+      CREATE TABLE "MemoryChunk" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "projectId" TEXT NOT NULL,
+        "sourceType" TEXT NOT NULL,
+        "sourceId" TEXT NOT NULL,
+        "chapterId" TEXT,
+        "sceneId" TEXT,
+        "chunkIndex" INTEGER NOT NULL,
+        "content" TEXT NOT NULL,
+        "contentHash" TEXT NOT NULL,
+        "updatedAt" TEXT NOT NULL
+      );
+      INSERT INTO "Project" ("id","title","createdAt","updatedAt")
+      VALUES ('p1','Legacy','now','now');
+      INSERT INTO "MemoryChunk" (
+        "id","projectId","sourceType","sourceId","chapterId","chunkIndex","content","contentHash","updatedAt"
+      ) VALUES ('c1','p1','chapter','ch1','ch1',0,'은하궁 회담은 조용히 끝났다','chunk-hash','now');
+    `);
+    preseedDb.close();
+
+    ensurePackagedSqliteSchema(dbPath, logger);
+
+    const database = new Database(dbPath);
+    try {
+      const row = database
+        .prepare(
+          `SELECT "content", "contentHash", "indexText", "indexTextHash", "sourceContentHash"
+           FROM "MemoryChunk" WHERE "id" = 'c1'`,
+        )
+        .get() as {
+          content: string;
+          contentHash: string;
+          indexText: string;
+          indexTextHash: string;
+          sourceContentHash: string;
+        };
+      expect(row.indexText).toBe(row.content);
+      expect(row.indexTextHash).toBe(row.contentHash);
+      expect(row.sourceContentHash).toBe("");
+    } finally {
+      database.close();
+    }
+  });
+
   it("does not duplicate migration records on re-run", async () => {
     const dbPath = await createTempDbPath();
     ensurePackagedSqliteSchema(dbPath, logger);

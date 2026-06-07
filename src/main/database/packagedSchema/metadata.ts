@@ -76,6 +76,26 @@ export const PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
     sql: 'ALTER TABLE "MemoryChunk" ADD COLUMN "sceneId" TEXT;',
   },
   {
+    table: "MemoryChunk",
+    column: "indexText",
+    sql: 'ALTER TABLE "MemoryChunk" ADD COLUMN "indexText" TEXT NOT NULL DEFAULT \'\';',
+  },
+  {
+    table: "MemoryChunk",
+    column: "indexTextHash",
+    sql: 'ALTER TABLE "MemoryChunk" ADD COLUMN "indexTextHash" TEXT NOT NULL DEFAULT \'\';',
+  },
+  {
+    table: "MemoryChunk",
+    column: "contextLabel",
+    sql: 'ALTER TABLE "MemoryChunk" ADD COLUMN "contextLabel" TEXT;',
+  },
+  {
+    table: "MemoryChunk",
+    column: "sourceContentHash",
+    sql: 'ALTER TABLE "MemoryChunk" ADD COLUMN "sourceContentHash" TEXT NOT NULL DEFAULT \'\';',
+  },
+  {
     table: "Chapter",
     column: "wordCount",
     sql: 'ALTER TABLE "Chapter" ADD COLUMN "wordCount" INTEGER NOT NULL DEFAULT 0;',
@@ -259,6 +279,10 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
     "chunkIndex",
     "content",
     "contentHash",
+    "indexText",
+    "indexTextHash",
+    "contextLabel",
+    "sourceContentHash",
     "sceneId",
   ],
   MemoryBuildJob: [

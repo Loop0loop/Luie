@@ -84,7 +84,7 @@ export const searchByShortTokens = async (
 
   const predicates = shortTokens.map((token) => {
     const escaped = escapeLike(token);
-    return sql`${memoryChunk.content} LIKE ${`%${escaped}%`} ESCAPE '\\'`;
+    return sql`${memoryChunk.indexText} LIKE ${`%${escaped}%`} ESCAPE '\\'`;
   });
 
   try {

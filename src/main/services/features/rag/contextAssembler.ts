@@ -352,12 +352,12 @@ async function buildLayer3Evidence(
     const tokenPredicates = rawTokens
       .map((token) => escapeLike(token))
       .filter((token): token is string => token.length > 0)
-      .map((token) => likeWithEscape(memoryChunk.content, `%${token}%`));
+      .map((token) => likeWithEscape(memoryChunk.indexText, `%${token}%`));
     const lexicalPredicate =
       tokenPredicates.length > 0
         ? or(...tokenPredicates)
         : escaped
-          ? likeWithEscape(memoryChunk.content, `%${escaped}%`)
+          ? likeWithEscape(memoryChunk.indexText, `%${escaped}%`)
           : undefined;
     if (lexicalPredicate) {
       try {
