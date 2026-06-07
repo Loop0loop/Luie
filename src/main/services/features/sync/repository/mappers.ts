@@ -1,4 +1,8 @@
 import { createLogger } from "../../../../../shared/logger/index.js";
+import {
+  MEMORY_CANONICAL_EXPORTABLE_TABLES,
+  isMemoryRowExportable,
+} from "../../../../../shared/constants/index.js";
 import type {
   SyncBundle,
   SyncChapterRecord,
@@ -6,6 +10,7 @@ import type {
   SyncEventRecord,
   SyncFactionRecord,
   SyncMemoRecord,
+  SyncMemoryCanonicalRecord,
   SyncProjectRecord,
   SyncTermRecord,
   SyncTombstoneRecord,
@@ -23,6 +28,7 @@ import {
 } from "./rowUtils.js";
 
 const logger = createLogger("SyncRepository");
+const memoryCanonicalTables = new Set<string>(MEMORY_CANONICAL_EXPORTABLE_TABLES);
 
 const mapProjectRow = (row: DbRow): SyncProjectRecord | null => {
   const id = toNullableString(row.id);
@@ -198,6 +204,55 @@ const mapMemoRow = (row: DbRow): SyncMemoRecord | null => {
   };
 };
 
+const mapMemoryCanonicalRow = (row: DbRow): SyncMemoryCanonicalRecord | null => {
+  const id = toNullableString(row.id);
+  const userId = toNullableString(row.user_id);
+  const projectId = toNullableString(row.project_id);
+  const tableName = toNullableString(row.table_name);
+  if (!id || !userId || !projectId || !tableName) return null;
+  if (!memoryCanonicalTables.has(tableName)) return null;
+
+  const normalizedRow = normalizeJsonValue(row.row);
+  if (!isPlainObject(normalizedRow)) {
+    logger.warn("Invalid canonical memory row from sync source; skipping row", {
+      id,
+      tableName,
+      rowType: normalizedRow === null ? "null" : typeof normalizedRow,
+    });
+    return null;
+  }
+  const rowId = toNullableString(normalizedRow.id);
+  const rowProjectId = toNullableString(normalizedRow.projectId);
+  const rowStatus = toNullableString(normalizedRow.status);
+  if (!rowId || rowProjectId !== projectId) {
+    logger.warn("Invalid canonical memory row identity from sync source; skipping row", {
+      id,
+      tableName,
+      rowProjectId,
+      projectId,
+    });
+    return null;
+  }
+  if (!isMemoryRowExportable({ tableName, status: rowStatus })) {
+    logger.warn("Non-exportable canonical memory row from sync source; skipping row", {
+      id,
+      tableName,
+      status: rowStatus,
+    });
+    return null;
+  }
+
+  return {
+    id,
+    userId,
+    projectId,
+    tableName,
+    row: normalizedRow,
+    updatedAt: toIsoString(row.updated_at),
+    deletedAt: toNullableString(row.deleted_at),
+  };
+};
+
 const mapTombstoneRow = (row: DbRow): SyncTombstoneRecord | null => {
   const id = toNullableString(row.id);
   const userId = toNullableString(row.user_id);
@@ -228,6 +283,7 @@ export function mapRemoteRowsToBundle(
     terms: DbRow[];
     worldDocuments: DbRow[];
     memos: DbRow[];
+    memoryCanonicalRows?: DbRow[];
     tombstones: DbRow[];
   },
 ): SyncBundle {
@@ -255,6 +311,9 @@ export function mapRemoteRowsToBundle(
   bundle.memos = rows.memos
     .map(mapMemoRow)
     .filter((row): row is SyncMemoRecord => row !== null);
+  bundle.memoryCanonicalRows = (rows.memoryCanonicalRows ?? [])
+    .map(mapMemoryCanonicalRow)
+    .filter((row): row is SyncMemoryCanonicalRecord => row !== null);
   bundle.tombstones = rows.tombstones
     .map(mapTombstoneRow)
     .filter((row): row is SyncTombstoneRecord => row !== null);

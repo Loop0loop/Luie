@@ -7,6 +7,7 @@ import {
   LUIE_PACKAGE_VERSION,
   MARKDOWN_EXTENSION,
   MEMORY_CANONICAL_EXPORTABLE_TABLES,
+  isMemoryRowExportable,
 } from "../../../../shared/constants/index.js";
 import type { LuiePackageExportData } from "../../io/luiePackageTypes.js";
 import type { MemoryCanonicalPackagePayload } from "../memory/persistence/memoryCanonicalPackage.js";
@@ -57,6 +58,16 @@ const buildMemoryPayloadFromBundle = (
   for (const item of bundle.memoryCanonicalRows ?? []) {
     if (item.projectId !== projectId || item.deletedAt) continue;
     if (!allowedTables.has(item.tableName)) continue;
+    if (
+      typeof item.row.id !== "string" ||
+      item.row.projectId !== projectId ||
+      !isMemoryRowExportable({
+        tableName: item.tableName,
+        status: typeof item.row.status === "string" ? item.row.status : null,
+      })
+    ) {
+      continue;
+    }
     const tableRows = tables[item.tableName as keyof typeof tables] ?? [];
     tableRows.push(item.row);
     tables[item.tableName as keyof typeof tables] = tableRows;

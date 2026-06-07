@@ -1,6 +1,11 @@
 import { createEmptySyncBundle, type SyncBundle } from "../syncMapper.js";
 import { getSupabaseConfig } from "../supabaseEnv.js";
-import { fetchTableRaw, upsertTable } from "./http.js";
+import {
+  fetchOptionalTableRaw,
+  fetchTableRaw,
+  upsertOptionalTable,
+  upsertTable,
+} from "./http.js";
 import { mapRemoteRowsToBundle } from "./mappers.js";
 import { buildRemoteUpsertRows } from "./payload.js";
 
@@ -21,6 +26,7 @@ class SyncRepository {
       terms,
       worldDocuments,
       memos,
+      memoryCanonicalRows,
       tombstones,
     ] = await Promise.all([
       fetchTableRaw("projects", accessToken, userId),
@@ -31,6 +37,7 @@ class SyncRepository {
       fetchTableRaw("terms", accessToken, userId),
       fetchTableRaw("world_documents", accessToken, userId),
       fetchTableRaw("memos", accessToken, userId),
+      fetchOptionalTableRaw("memory_canonical_rows", accessToken, userId),
       fetchTableRaw("tombstones", accessToken, userId),
     ]);
 
@@ -43,6 +50,7 @@ class SyncRepository {
       terms,
       worldDocuments,
       memos,
+      memoryCanonicalRows,
       tombstones,
     });
   }
@@ -63,6 +71,12 @@ class SyncRepository {
       "id,user_id",
     );
     await upsertTable("memos", accessToken, rows.memos, "id,user_id");
+    await upsertOptionalTable(
+      "memory_canonical_rows",
+      accessToken,
+      rows.memoryCanonicalRows,
+      "id,user_id",
+    );
     await upsertTable(
       "tombstones",
       accessToken,

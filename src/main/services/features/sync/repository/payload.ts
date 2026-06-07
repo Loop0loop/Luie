@@ -13,6 +13,7 @@ export type RemoteUpsertRows = {
   terms: Array<Record<string, unknown>>;
   worldDocuments: Array<Record<string, unknown>>;
   memos: Array<Record<string, unknown>>;
+  memoryCanonicalRows: Array<Record<string, unknown>>;
   tombstones: Array<Record<string, unknown>>;
 };
 
@@ -120,6 +121,17 @@ export function buildRemoteUpsertRows(bundle: SyncBundle): RemoteUpsertRows {
         title: record.title,
         content: record.content,
         tags: record.tags,
+        updated_at: record.updatedAt,
+        deleted_at: record.deletedAt ?? null,
+      }),
+    ),
+    memoryCanonicalRows: (bundle.memoryCanonicalRows ?? []).map((record) =>
+      normalizeToRow({
+        id: record.id,
+        user_id: record.userId,
+        project_id: record.projectId,
+        table_name: record.tableName,
+        row: normalizeJsonValue(record.row),
         updated_at: record.updatedAt,
         deleted_at: record.deletedAt ?? null,
       }),

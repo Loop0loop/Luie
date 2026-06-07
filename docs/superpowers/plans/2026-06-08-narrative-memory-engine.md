@@ -647,9 +647,9 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Imported canonical memory rows are re-scoped to the resolved local project id to avoid package/project id drift.
 - Imported canonical memory row ids are remapped with project/table scope and internal entity/fact/eval foreign keys are rewritten to avoid global primary-key collisions.
 - Canonical memory import rejects payloads that mix source project ids or disagree with package `meta.projectId`.
+- Supabase remote sync now has a first-class `memory_canonical_rows` table with owner RLS, repository fetch/upsert mapping, and sync bundle round-trip tests.
 
 아직 미구현:
-- Supabase/remote sync repository upsert/fetch does not yet persist canonical memory rows as first-class remote rows.
 - `MemoryFactEvidence` DB restore is not applied yet because it requires canonical/importable `MemoryEpisodeEvidence` anchors, which remain regenerable in the current policy.
 - No conflict-resolution path for user-approved memory package payloads yet.
 - No UI flow yet that marks memory facts as user-approved canonical data.
