@@ -121,6 +121,8 @@ export type {
   MigrationHealth,
   RagQaErrorPayload,
   RagQaEvidence,
+  RagQaGrounding,
+  RagQaGroundingStatus,
   RagQaRequest,
   RagQaResult,
   RagQaRunHandle,

@@ -7,6 +7,8 @@ import { useToast } from "@shared/ui/ToastContext";
 import { api } from "@shared/api";
 import type {
   LlmRuntimeInfo,
+  RagQaEvidence,
+  RagQaGrounding,
   RagQaErrorPayload,
   RagQaStreamPayload,
   UtilitySidecarStatus,
@@ -19,7 +21,8 @@ type Message = {
   id: string;
   role: "user" | "assistant";
   content: string;
-  evidence?: Array<{ chunkId: string; chapterId: string | null; offset: number; quote: string }>;
+  evidence?: RagQaEvidence[];
+  grounding?: RagQaGrounding;
   isStreaming?: boolean;
   error?: string;
 };
@@ -35,6 +38,22 @@ const runtimeLabel = (value: string | null | undefined): string => {
   if (value === "deterministic") return "Deterministic";
   if (value === "unavailable") return "Unavailable";
   return value;
+};
+
+type GroundingStatus = NonNullable<Message["grounding"]>["status"];
+
+const groundingLabel = (status: GroundingStatus): string => {
+  if (status === "confirmed") return "확정";
+  if (status === "inferred") return "추정";
+  if (status === "conflicting") return "충돌";
+  return "근거 부족";
+};
+
+const groundingTone = (status: GroundingStatus): string => {
+  if (status === "confirmed") return "border-success/30 bg-success/10 text-success";
+  if (status === "inferred") return "border-warning/30 bg-warning/10 text-warning";
+  if (status === "conflicting") return "border-danger/30 bg-danger/10 text-danger";
+  return "border-border bg-surface text-muted";
 };
 
 const sidecarStatusTone = (status: UtilitySidecarStatus["status"]): string => {
@@ -207,6 +226,7 @@ export default function AnalysisSection() {
                   ...m,
                   content: payload.result?.answer ?? m.content,
                   evidence: payload.result?.evidence ?? [],
+                  grounding: payload.result?.grounding,
                   isStreaming: false,
                 }
                 : m,
@@ -359,6 +379,18 @@ export default function AnalysisSection() {
               </div>
 
               {/* Evidence */}
+              {msg.grounding && (
+                <div className="mt-2 flex max-w-full items-start gap-2 pl-1 text-xs">
+                  <span
+                    className={`shrink-0 rounded border px-1.5 py-0.5 font-medium ${groundingTone(msg.grounding.status)}`}
+                    title={msg.grounding.note}
+                  >
+                    {groundingLabel(msg.grounding.status)}
+                  </span>
+                  <span className="min-w-0 text-muted">{msg.grounding.note}</span>
+                </div>
+              )}
+
               {msg.evidence && msg.evidence.length > 0 && (
                 <div className="mt-2 space-y-1.5 pl-1">
                   {msg.evidence.map((ev) => (

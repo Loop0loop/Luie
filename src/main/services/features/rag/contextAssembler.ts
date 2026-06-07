@@ -537,7 +537,13 @@ export async function assembleRagContext(input: {
     formatLayer("Layer 3 — Retrieved Evidence", layer3.section),
     `## Focus Chapter\n${input.chapterId ?? "(not specified)"}`,
     `## User Question\n${input.question}`,
-    "## Output Rules\n- 한국어\n- 자연스러운 대화형 답변\n",
+    [
+      "## Output Rules",
+      "- 한국어",
+      "- 자연스러운 대화형 답변",
+      "- 검색된 근거로 직접 확인할 수 없는 내용은 확정하지 말고 \"근거 부족\" 또는 \"추정\"이라고 명시",
+      "- Layer 3이 `(no evidence found)`이면 원문 근거가 없다고 먼저 말하고 확정 답변을 피할 것",
+    ].join("\n"),
   ].join("\n\n");
 
   return {

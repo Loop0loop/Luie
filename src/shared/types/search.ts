@@ -108,12 +108,25 @@ export interface RagQaEvidence {
   quote: string;
 }
 
+export type RagQaGroundingStatus =
+  /** Reserved for a later claim-level verifier; Phase 0 never emits this. */
+  | "confirmed"
+  | "inferred"
+  | "insufficient_evidence"
+  | "conflicting";
+
+export interface RagQaGrounding {
+  status: RagQaGroundingStatus;
+  note: string;
+}
+
 export interface RagQaResult {
   runId: string;
   projectId: string;
   question: string;
   answer: string;
   evidence: RagQaEvidence[];
+  grounding: RagQaGrounding;
   createdAt: string;
 }
 

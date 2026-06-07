@@ -16,6 +16,7 @@ import {
 import {
   assembleRagContext,
 } from "../../services/features/rag/contextAssembler.js";
+import { buildGroundedRagQaResult } from "../../services/features/rag/grounding.js";
 import { normalizeCoreAnswer } from "../../services/features/rag/normalizeCoreAnswer.js";
 import { resolveUserDataPath } from "../../utils/userDataPath.js";
 
@@ -326,14 +327,14 @@ class RagQaWorker {
         clearInterval(timeoutTimer);
       }
 
-      const result: RagQaResult = {
+      const result: RagQaResult = buildGroundedRagQaResult({
         runId: run.runId,
         projectId: run.request.projectId,
         question: run.request.question,
         answer: normalizeCoreAnswer(chunks.join("")),
         evidence,
         createdAt: new Date().toISOString(),
-      };
+      });
 
       this.emitStream({ runId: run.runId, done: true, result });
       logger.info("RAG QA completed", {
