@@ -77,6 +77,17 @@ async function runModelDownload(input: {
         emitModelDownloadProgress("binary", progress.pct),
     });
   } else {
+    if (!binaryPath) {
+      binaryPath = await downloadLlamaServerBinary({
+        zipUrl: binUrl,
+        expectedSha256,
+        destDir: sidecarManager.getBinDir(),
+        binaryNameInZip: LLAMA_SERVER_BINARY_IN_ZIP,
+        signal: input.signal,
+        onProgress: (progress) =>
+          emitModelDownloadProgress("binary", progress.pct),
+      });
+    }
     modelPath = await downloadGguf({
       repo: input.repo ?? DEFAULT_MODEL.repo,
       filename: input.filename ?? DEFAULT_MODEL.filename,

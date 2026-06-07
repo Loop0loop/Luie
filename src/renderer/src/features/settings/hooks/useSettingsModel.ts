@@ -255,6 +255,7 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     refreshMigrationHealth,
     localLlmEnabled,
     localLlmModelPath,
+    localLlmBinaryPath,
     openaiApiKey,
     geminiApiKey,
     isDownloading,

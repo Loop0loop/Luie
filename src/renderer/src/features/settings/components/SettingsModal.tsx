@@ -234,6 +234,7 @@ export default function SettingsModal({ onClose, initialTab }: SettingsModalProp
                   onRebuildMemory={settings.handleRebuildMemory}
                   localLlmEnabled={settings.localLlmEnabled}
                   localLlmModelPath={settings.localLlmModelPath}
+                  localLlmBinaryPath={settings.localLlmBinaryPath}
                   openaiApiKey={settings.openaiApiKey}
                   geminiApiKey={settings.geminiApiKey}
                   onSaveLlmKeys={settings.handleSaveLlmKeys}

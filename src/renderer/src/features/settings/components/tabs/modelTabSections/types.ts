@@ -22,6 +22,7 @@ export interface ModelTabProps {
   onRebuildMemory: () => Promise<void>;
   localLlmEnabled: boolean;
   localLlmModelPath?: string;
+  localLlmBinaryPath?: string;
   openaiApiKey: string;
   geminiApiKey: string;
   onSaveLlmKeys: (openaiApiKey: string, geminiApiKey: string) => Promise<boolean>;

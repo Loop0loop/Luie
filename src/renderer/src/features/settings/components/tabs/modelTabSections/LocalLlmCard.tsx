@@ -9,6 +9,7 @@ interface LocalLlmCardProps {
   isBusy: boolean;
   localLlmEnabled: boolean;
   localLlmModelPath?: string;
+  localLlmBinaryPath?: string;
   isDownloading: boolean;
   downloadProgress: DownloadProgress;
   onDownloadLocalModel: ModelTabProps["onDownloadLocalModel"];
@@ -20,11 +21,14 @@ export function LocalLlmCard({
   isBusy,
   localLlmEnabled,
   localLlmModelPath,
+  localLlmBinaryPath,
   isDownloading,
   downloadProgress,
   onDownloadLocalModel,
   onToggleLocalLlm,
 }: LocalLlmCardProps) {
+  const isConfigured = Boolean(localLlmModelPath && localLlmBinaryPath);
+
   return (
     <div className="rounded-control bg-surface border border-border p-3 space-y-3">
       <div className="flex items-start justify-between gap-3">
@@ -37,9 +41,9 @@ export function LocalLlmCard({
           aria-label={t("settings.localLlm.enabled")}
           className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
             localLlmEnabled ? "bg-accent" : "bg-border"
-          } ${!localLlmModelPath ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+          } ${!isConfigured ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
           onClick={() => void onToggleLocalLlm(!localLlmEnabled)}
-          disabled={!localLlmModelPath}
+          disabled={!isConfigured}
         >
           <span
             className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
@@ -49,7 +53,7 @@ export function LocalLlmCard({
         </button>
       </div>
 
-      {localLlmModelPath ? (
+      {isConfigured ? (
         <div className="space-y-1.5">
           <div className="flex items-center gap-1.5 text-xs text-success">
             <CheckCircle className="w-3.5 h-3.5" />

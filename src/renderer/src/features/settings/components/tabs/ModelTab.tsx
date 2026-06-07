@@ -17,6 +17,7 @@ export function ModelTab({
   onRebuildMemory,
   localLlmEnabled,
   localLlmModelPath,
+  localLlmBinaryPath,
   openaiApiKey,
   geminiApiKey,
   onSaveLlmKeys,
@@ -46,6 +47,7 @@ export function ModelTab({
         isBusy={isBusy}
         localLlmEnabled={localLlmEnabled}
         localLlmModelPath={localLlmModelPath}
+        localLlmBinaryPath={localLlmBinaryPath}
         isDownloading={isDownloading}
         downloadProgress={downloadProgress}
         onDownloadLocalModel={onDownloadLocalModel}

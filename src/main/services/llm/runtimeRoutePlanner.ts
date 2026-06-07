@@ -62,6 +62,24 @@ const notConfigured = (provider: RuntimeRouteProvider): RuntimeRouteSkip => {
   };
 };
 
+const sidecarNotConfigured = (
+  localLlm: RuntimeRoutePlannerInput["localLlm"],
+): RuntimeRouteSkip => {
+  if (!localLlm) return notConfigured("sidecar");
+  const reasons = [
+    !localLlm.enabled ? "disabled" : null,
+    !localLlm.modelPath ? "model missing" : null,
+    !localLlm.binaryPath ? "llama-server binary missing" : null,
+  ].filter((reason): reason is string => reason !== null);
+  return {
+    provider: "sidecar",
+    code: "SIDECAR_NOT_CONFIGURED",
+    message: reasons.length > 0
+      ? `Local sidecar is not configured (${reasons.join(", ")})`
+      : "Local sidecar is not configured",
+  };
+};
+
 export function buildRuntimeRoutePlan(input: RuntimeRoutePlannerInput): RuntimeRoutePlan {
   const requestedProvider = input.requestedProvider;
   const order = requestedProvider === "auto" ? AUTO_ORDER : [requestedProvider];
@@ -83,7 +101,7 @@ export function buildRuntimeRoutePlan(input: RuntimeRoutePlannerInput): RuntimeR
           },
         });
       } else {
-        skipped.push(notConfigured("sidecar"));
+        skipped.push(sidecarNotConfigured(localLlm));
       }
       continue;
     }

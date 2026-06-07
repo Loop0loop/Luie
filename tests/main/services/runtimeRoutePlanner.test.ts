@@ -70,7 +70,7 @@ describe("runtimeRoutePlanner", () => {
       {
         provider: "sidecar",
         code: "SIDECAR_NOT_CONFIGURED",
-        message: "Local sidecar is not configured",
+        message: "Local sidecar is not configured (disabled, model missing, llama-server binary missing)",
       },
     ]);
   });

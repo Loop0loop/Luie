@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const action = process.argv[2]?.trim();
+const supabaseDir = join(process.cwd(), "supabase");
 
 const parseProjectRef = (...candidates) => {
   for (const candidate of candidates) {
@@ -67,10 +68,31 @@ const writeSecretEnvFile = (tmpDir) => {
 const buildSupabaseCliEnv = () => {
   const env = { ...process.env };
   const accessToken = env.SUPABASE_ACCESS_TOKEN?.trim();
-  if (accessToken && !accessToken.startsWith("sbp_")) {
+  const authToken = env.SUPABASE_AUTH_TOKEN?.trim();
+  const viteAccessToken = env.VITE_SUPABASE_ACCESS_TOKEN?.trim();
+  const validAccessToken = accessToken?.startsWith("sbp_") ? accessToken : "";
+  const validAuthToken = authToken?.startsWith("sbp_") ? authToken : "";
+  const validViteAccessToken = viteAccessToken?.startsWith("sbp_") ? viteAccessToken : "";
+
+  if (validAccessToken) {
+    env.SUPABASE_ACCESS_TOKEN = validAccessToken;
+  } else if (validAuthToken) {
+    env.SUPABASE_ACCESS_TOKEN = validAuthToken;
+  } else if (validViteAccessToken) {
+    env.SUPABASE_ACCESS_TOKEN = validViteAccessToken;
+  } else {
     delete env.SUPABASE_ACCESS_TOKEN;
+  }
+  delete env.SUPABASE_AUTH_TOKEN;
+  delete env.VITE_SUPABASE_ACCESS_TOKEN;
+
+  if (
+    (accessToken && !accessToken.startsWith("sbp_")) ||
+    (authToken && !authToken.startsWith("sbp_")) ||
+    (viteAccessToken && !viteAccessToken.startsWith("sbp_"))
+  ) {
     console.warn(
-      "[supabase-openai] Ignoring SUPABASE_ACCESS_TOKEN because it is not an sbp_ token. Run `pnpm exec supabase login` or set a valid sbp_ access token if remote auth is required.",
+      "[supabase-openai] Ignoring invalid Supabase access token env. Run `pnpm exec supabase login` or set a valid sbp_ token if remote auth is required.",
     );
   }
   return env;
@@ -81,10 +103,11 @@ const runSupabase = (args) => {
     process.platform === "win32" ? "pnpm.cmd" : "pnpm";
   const result = spawnSync(
     packageManagerCommand,
-    ["exec", "supabase", "--workdir", "supabase", ...args],
+    ["exec", "supabase", "--workdir", supabaseDir, ...args],
     {
       stdio: "inherit",
       env: buildSupabaseCliEnv(),
+      cwd: process.cwd(),
     },
   );
   if (result.error) {

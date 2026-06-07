@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useTranslation } from "react-i18next";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useShallow } from "zustand/react/shallow";
@@ -106,7 +105,6 @@ function RuntimeStatusPanel({
 }
 
 export default function AnalysisSection() {
-  const { t } = useTranslation();
   const { currentItem: currentChapter } = useChapterStore(
     useShallow((state) => ({ currentItem: state.currentItem })),
   );
@@ -178,7 +176,7 @@ export default function AnalysisSection() {
     if (sidecar.success && sidecar.data) {
       setSidecarStatus(sidecar.data);
     }
-  }, [showToast, t]);
+  }, [showToast]);
 
   // Scroll to bottom on new messages
   useEffect(() => {

@@ -1,3 +1,5 @@
+import { access } from "node:fs/promises";
+import { BrowserWindow } from "electron";
 import { z } from "zod";
 import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
 import {
@@ -8,11 +10,64 @@ import {
 } from "../../../../shared/schemas/index.js";
 import type { IpcHandlerConfig } from "../../core/ipcRegistrar.js";
 import {
+  LLAMA_BINARY_SHA256S,
+  LLAMA_BINARY_URLS,
+  LLAMA_SERVER_BINARY_IN_ZIP,
+  downloadLlamaServerBinary,
   invalidateModelRuntimeCache,
   resolveRuntimeModelInfo,
   sidecarManager,
 } from "../../../domains/settings/llm.js";
 import { loadSettingsManager } from "./managerLoader.js";
+
+const emitBinaryProvisionProgress = (pct: number, error?: string) => {
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (!window.isDestroyed()) {
+      window.webContents.send(IPC_CHANNELS.MODEL_DOWNLOAD_PROGRESS, {
+        stage: error ? "error" : "binary",
+        pct,
+        error,
+      });
+    }
+  }
+};
+
+const pathExists = async (targetPath: string | undefined): Promise<boolean> => {
+  if (!targetPath) return false;
+  try {
+    await access(targetPath);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const ensureSidecarBinaryForExistingModel = async (): Promise<void> => {
+  const settingsManager = await loadSettingsManager();
+  const current = settingsManager.getLocalLlmSettings();
+  if (!current?.modelPath) return;
+  if (await pathExists(current.binaryPath)) return;
+
+  const platform = `${process.platform}-${process.arch}`;
+  const binUrl = LLAMA_BINARY_URLS[platform];
+  const expectedSha256 = LLAMA_BINARY_SHA256S[platform];
+  if (!binUrl || !expectedSha256) {
+    throw new Error(`지원하지 않는 플랫폼: ${platform}`);
+  }
+
+  const binaryPath = await downloadLlamaServerBinary({
+    zipUrl: binUrl,
+    expectedSha256,
+    destDir: sidecarManager.getBinDir(),
+    binaryNameInZip: LLAMA_SERVER_BINARY_IN_ZIP,
+    onProgress: (progress) => emitBinaryProvisionProgress(progress.pct),
+  });
+  settingsManager.setLocalLlmSettings({
+    ...current,
+    enabled: true,
+    binaryPath,
+  });
+};
 
 export function createSettingsLlmHandlers(): IpcHandlerConfig[] {
   return [
@@ -50,6 +105,17 @@ export function createSettingsLlmHandlers(): IpcHandlerConfig[] {
       handler: async (input: {
         provider: "auto" | "sidecar" | "ollama" | "openai" | "gemini";
       }) => {
+        if (input.provider === "sidecar") {
+          try {
+            await ensureSidecarBinaryForExistingModel();
+          } catch (error) {
+            emitBinaryProvisionProgress(
+              0,
+              error instanceof Error ? error.message : String(error),
+            );
+            throw error;
+          }
+        }
         const settingsManager = await loadSettingsManager();
         settingsManager.setLlmSettings({
           preferredProvider: input.provider,

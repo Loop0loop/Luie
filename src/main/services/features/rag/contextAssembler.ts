@@ -12,13 +12,17 @@ import {
   chapter,
   chapterSummary,
   character,
+  entityRelation,
   event,
   faction,
   memoryChunk,
   memoryBuildJob,
   plot,
+  scrapMemo,
   synopsis,
   term,
+  worldDocument,
+  worldEntity,
 } from "../../../database/schema/index.js";
 import type { MemoryChunkSearchResult, RagQaEvidence } from "../../../../shared/types/index.js";
 import { escapeLike } from "../../../utils/queryHelpers.js";
@@ -41,7 +45,7 @@ const logger = createLogger("RagContextAssembler");
 // Char limits tuned for 8192-token context (Korean: ~1 char ≈ 1 token).
 // Layer1 is computed dynamically from contextBudget in assembleRagContext.
 const LAYER0_CHAR_LIMIT = 2_000;
-const LAYER2_CHAR_LIMIT = 1_500;
+const LAYER2_CHAR_LIMIT = 4_000;
 const EVIDENCE_QUOTE_CHAR_LIMIT = 1_000;
 
 const KOREAN_SUFFIXES = [
@@ -194,98 +198,83 @@ async function buildLayer1ChapterSummaries(projectId: string, charLimit: number)
   return trimByChars(content, charLimit);
 }
 
-async function buildLayer2RelatedEntities(projectId: string, question: string): Promise<string> {
-  const normalizedQuestion = question.trim();
-  const rawTokens = normalizedQuestion
-    .replace(/[^0-9A-Za-z가-힣_\s]/g, " ")
-    .split(/\s+/)
-    .map((token) => token.trim())
-    .filter((token) => token.length >= 2)
-    .slice(0, 6);
-  const escapedTokens = rawTokens
-    .map((token) => escapeLike(token))
-    .filter((token) => token.length > 0);
-  if (escapedTokens.length === 0) return "(none)";
-  const firstToken = escapedTokens[0];
-  const prefix = `${firstToken}%`;
-
-  const [charactersResult, factionsResult, eventsResult, termsResult] = await Promise.allSettled([
+async function buildLayer2WorldContext(projectId: string): Promise<string> {
+  const [
+    charactersResult,
+    factionsResult,
+    eventsResult,
+    termsResult,
+    worldEntitiesResult,
+    relationsResult,
+    scrapMemosResult,
+    worldDocumentsResult,
+  ] = await Promise.allSettled([
     db
       .getClient()
       .select({ name: character.name, description: character.description })
       .from(character)
-      .where(
-        and(
-          eq(character.projectId, projectId),
-          isNull(character.deletedAt),
-          or(...escapedTokens.flatMap((token) => [
-            likeWithEscape(character.name, `%${token}%`),
-            likeWithEscape(character.description, `%${token}%`),
-          ])),
-        ),
-      )
-      .orderBy(
-        sql`CASE WHEN ${character.name} LIKE ${prefix} ESCAPE '\\' THEN 0 ELSE 1 END`,
-        asc(character.updatedAt),
-      )
-      .limit(20),
+      .where(and(eq(character.projectId, projectId), isNull(character.deletedAt)))
+      .orderBy(asc(character.updatedAt))
+      .limit(80),
     db
       .getClient()
       .select({ name: faction.name, description: faction.description })
       .from(faction)
-      .where(
-        and(
-          eq(faction.projectId, projectId),
-          isNull(faction.deletedAt),
-          or(...escapedTokens.flatMap((token) => [
-            likeWithEscape(faction.name, `%${token}%`),
-            likeWithEscape(faction.description, `%${token}%`),
-          ])),
-        ),
-      )
-      .orderBy(
-        sql`CASE WHEN ${faction.name} LIKE ${prefix} ESCAPE '\\' THEN 0 ELSE 1 END`,
-        asc(faction.updatedAt),
-      )
-      .limit(20),
+      .where(and(eq(faction.projectId, projectId), isNull(faction.deletedAt)))
+      .orderBy(asc(faction.updatedAt))
+      .limit(80),
     db
       .getClient()
       .select({ name: event.name, description: event.description })
       .from(event)
-      .where(
-        and(
-          eq(event.projectId, projectId),
-          isNull(event.deletedAt),
-          or(...escapedTokens.flatMap((token) => [
-            likeWithEscape(event.name, `%${token}%`),
-            likeWithEscape(event.description, `%${token}%`),
-          ])),
-        ),
-      )
-      .orderBy(
-        sql`CASE WHEN ${event.name} LIKE ${prefix} ESCAPE '\\' THEN 0 ELSE 1 END`,
-        asc(event.updatedAt),
-      )
-      .limit(20),
+      .where(and(eq(event.projectId, projectId), isNull(event.deletedAt)))
+      .orderBy(asc(event.updatedAt))
+      .limit(80),
     db
       .getClient()
-      .select({ term: term.term, definition: term.definition })
+      .select({ term: term.term, definition: term.definition, category: term.category })
       .from(term)
-      .where(
-        and(
-          eq(term.projectId, projectId),
-          isNull(term.deletedAt),
-          or(...escapedTokens.flatMap((token) => [
-            likeWithEscape(term.term, `%${token}%`),
-            likeWithEscape(term.definition, `%${token}%`),
-          ])),
-        ),
-      )
-      .orderBy(
-        sql`CASE WHEN ${term.term} LIKE ${prefix} ESCAPE '\\' THEN 0 ELSE 1 END`,
-        asc(term.updatedAt),
-      )
-      .limit(20),
+      .where(and(eq(term.projectId, projectId), isNull(term.deletedAt)))
+      .orderBy(asc(term.order), asc(term.updatedAt))
+      .limit(120),
+    db
+      .getClient()
+      .select({
+        type: worldEntity.type,
+        name: worldEntity.name,
+        description: worldEntity.description,
+      })
+      .from(worldEntity)
+      .where(and(eq(worldEntity.projectId, projectId), isNull(worldEntity.deletedAt)))
+      .orderBy(asc(worldEntity.type), asc(worldEntity.updatedAt))
+      .limit(120),
+    db
+      .getClient()
+      .select({
+        sourceType: entityRelation.sourceType,
+        sourceId: entityRelation.sourceId,
+        relation: entityRelation.relation,
+        targetType: entityRelation.targetType,
+        targetId: entityRelation.targetId,
+      })
+      .from(entityRelation)
+      .where(eq(entityRelation.projectId, projectId))
+      .orderBy(asc(entityRelation.updatedAt))
+      .limit(160),
+    db
+      .getClient()
+      .select({ title: scrapMemo.title, content: scrapMemo.content })
+      .from(scrapMemo)
+      .where(and(eq(scrapMemo.projectId, projectId), isNull(scrapMemo.deletedAt)))
+      .orderBy(asc(scrapMemo.sortOrder), asc(scrapMemo.updatedAt))
+      .limit(80),
+    db
+      .getClient()
+      .select({ docType: worldDocument.docType, payload: worldDocument.payload })
+      .from(worldDocument)
+      .where(eq(worldDocument.projectId, projectId))
+      .orderBy(asc(worldDocument.updatedAt))
+      .limit(40),
   ]);
   if (charactersResult.status === "rejected") {
     logger.warn("Layer2 character query failed", { projectId, error: charactersResult.reason });
@@ -299,10 +288,26 @@ async function buildLayer2RelatedEntities(projectId: string, question: string): 
   if (termsResult.status === "rejected") {
     logger.warn("Layer2 term query failed", { projectId, error: termsResult.reason });
   }
+  if (worldEntitiesResult.status === "rejected") {
+    logger.warn("Layer2 world entity query failed", { projectId, error: worldEntitiesResult.reason });
+  }
+  if (relationsResult.status === "rejected") {
+    logger.warn("Layer2 relation query failed", { projectId, error: relationsResult.reason });
+  }
+  if (scrapMemosResult.status === "rejected") {
+    logger.warn("Layer2 scrap memo query failed", { projectId, error: scrapMemosResult.reason });
+  }
+  if (worldDocumentsResult.status === "rejected") {
+    logger.warn("Layer2 world document query failed", { projectId, error: worldDocumentsResult.reason });
+  }
   const characters = charactersResult.status === "fulfilled" ? charactersResult.value : [];
   const factions = factionsResult.status === "fulfilled" ? factionsResult.value : [];
   const events = eventsResult.status === "fulfilled" ? eventsResult.value : [];
   const terms = termsResult.status === "fulfilled" ? termsResult.value : [];
+  const worldEntities = worldEntitiesResult.status === "fulfilled" ? worldEntitiesResult.value : [];
+  const relations = relationsResult.status === "fulfilled" ? relationsResult.value : [];
+  const scrapMemos = scrapMemosResult.status === "fulfilled" ? scrapMemosResult.value : [];
+  const worldDocuments = worldDocumentsResult.status === "fulfilled" ? worldDocumentsResult.value : [];
 
   const content = [
     "[CHARACTERS]",
@@ -312,7 +317,15 @@ async function buildLayer2RelatedEntities(projectId: string, question: string): 
     "[EVENTS]",
     ...events.map((row) => `- ${row.name}: ${row.description ?? ""}`),
     "[TERMS]",
-    ...terms.map((row) => `- ${row.term}: ${row.definition ?? ""}`),
+    ...terms.map((row) => `- ${row.term}${row.category ? ` (${row.category})` : ""}: ${row.definition ?? ""}`),
+    "[WORLD ENTITIES]",
+    ...worldEntities.map((row) => `- ${row.type}/${row.name}: ${row.description ?? ""}`),
+    "[RELATIONS]",
+    ...relations.map((row) => `- ${row.sourceType}:${row.sourceId} -${row.relation}-> ${row.targetType}:${row.targetId}`),
+    "[SCRAP MEMOS]",
+    ...scrapMemos.map((row) => `- ${row.title}: ${row.content}`),
+    "[WORLD DOCUMENTS]",
+    ...worldDocuments.map((row) => `- ${row.docType}: ${trimByChars(row.payload, 600)}`),
   ].join("\n");
 
   return trimByChars(content, LAYER2_CHAR_LIMIT);
@@ -503,11 +516,11 @@ export async function assembleRagContext(input: {
 }): Promise<RagContextPacket> {
   throwIfAborted(input.signal);
   const budget = input.contextBudget ?? 8_192;
-  const layer1Limit = Math.max(1_500, budget - LAYER0_CHAR_LIMIT - LAYER2_CHAR_LIMIT - 2_000);
+  const layer1Limit = Math.max(1_000, budget - LAYER0_CHAR_LIMIT - LAYER2_CHAR_LIMIT - 2_000);
   const [layer0, layer1, layer2, layer3, promptConfig] = await Promise.all([
     buildLayer0ProjectSummary(input.projectId),
     buildLayer1ChapterSummaries(input.projectId, layer1Limit),
-    buildLayer2RelatedEntities(input.projectId, input.question),
+    buildLayer2WorldContext(input.projectId),
     buildLayer3Evidence(input.projectId, input.question, input.embedTexts),
     loadRagPromptConfig(),
   ]);
@@ -520,7 +533,7 @@ export async function assembleRagContext(input: {
   const userPrompt = [
     formatLayer("Layer 0 — Project Summary", layer0),
     formatLayer("Layer 1 — Chapter Summaries", layer1),
-    formatLayer("Layer 2 — Related Entities", layer2),
+    formatLayer("Layer 2 — World Context", layer2),
     formatLayer("Layer 3 — Retrieved Evidence", layer3.section),
     `## Focus Chapter\n${input.chapterId ?? "(not specified)"}`,
     `## User Question\n${input.question}`,
