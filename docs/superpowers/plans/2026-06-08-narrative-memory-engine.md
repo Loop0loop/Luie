@@ -585,6 +585,23 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 **Mitigation:**
 - Keep this after evidence/entity/episode/temporal graph MVP.
 
+### Phase 8 Implementation Status
+
+사실:
+- Added `MemoryNarrativeSummary` for scene/chapter/arc/volume/project/community-level summary rows.
+- Added `MemoryNarrativeSummarySource` so summaries must link back to source episodes, temporal facts, chunks, or chapter summaries.
+- Summary source links use project-scoped foreign keys to reject cross-project evidence contamination.
+- Summary source rows enforce exactly one source pointer that matches `sourceType`.
+- Summary rows carry status, confidence, extractor version, source content hash, generated timestamp, and rejection fields.
+- Summary storage is separate from `MemoryFact`; summaries can support global retrieval but do not overwrite temporal fact state.
+- Added migration, packaged bootstrap SQL, and packaged integrity metadata for the new summary tables.
+
+아직 미구현:
+- No hierarchy generation runner yet.
+- No summary drift evaluator yet.
+- No global-summary retrieval implementation that reads `MemoryNarrativeSummary` yet.
+- No UI for arc/volume/project/community summaries yet.
+
 ## Phase 9: Package Persistence and Sync Policy
 
 **Goal:** Define what memory data is canonical, cached, exportable, and regenerable.

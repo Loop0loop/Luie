@@ -29,6 +29,7 @@ export const memoryChunk = sqliteTable(
     index("MemoryChunk_projectId_source_idx").on(table.projectId, table.sourceType, table.sourceId),
     index("MemoryChunk_projectId_chapterId_idx").on(table.projectId, table.chapterId),
     index("MemoryChunk_projectId_sceneId_idx").on(table.projectId, table.sceneId),
+    uniqueIndex("MemoryChunk_id_projectId_key").on(table.id, table.projectId),
     uniqueIndex("MemoryChunk_source_chunkIndex_key").on(
       table.sourceType,
       table.sourceId,
@@ -89,6 +90,7 @@ export const chapterSummary = sqliteTable(
   },
   (table) => [
     uniqueIndex("ChapterSummary_chapterId_key").on(table.chapterId),
+    uniqueIndex("ChapterSummary_id_projectId_key").on(table.id, table.projectId),
     index("ChapterSummary_projectId_idx").on(table.projectId),
     foreignKey({
       name: "ChapterSummary_chapterId_fkey",

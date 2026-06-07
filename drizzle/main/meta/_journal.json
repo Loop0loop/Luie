@@ -43,6 +43,13 @@
       "when": 1780859800000,
       "tag": "0005_memory_temporal_fact",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1780860600000,
+      "tag": "0006_memory_narrative_summary",
+      "breakpoints": true
     }
   ]
 }

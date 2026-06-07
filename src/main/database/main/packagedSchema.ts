@@ -482,6 +482,51 @@ CREATE TABLE IF NOT EXISTS "MemoryKnowledgeState" (
     CONSTRAINT "MemoryKnowledgeState_knowerEntityId_fkey" FOREIGN KEY ("knowerEntityId", "projectId") REFERENCES "MemoryEntity" ("id", "projectId") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "MemoryKnowledgeState_secretEntityId_fkey" FOREIGN KEY ("secretEntityId", "projectId") REFERENCES "MemoryEntity" ("id", "projectId") ON DELETE RESTRICT ON UPDATE CASCADE
 );
+CREATE TABLE IF NOT EXISTS "MemoryNarrativeSummary" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "summaryType" TEXT NOT NULL,
+    "scopeType" TEXT NOT NULL,
+    "scopeId" TEXT,
+    "title" TEXT NOT NULL,
+    "summary" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'suggested',
+    "confidence" INTEGER NOT NULL DEFAULT 0,
+    "extractorVersion" TEXT NOT NULL,
+    "sourceContentHash" TEXT NOT NULL,
+    "generatedAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    "rejectedAt" TEXT,
+    "rejectionReason" TEXT,
+    CONSTRAINT "MemoryNarrativeSummary_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "MemoryNarrativeSummarySource" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "summaryId" TEXT NOT NULL,
+    "sourceType" TEXT NOT NULL,
+    "episodeId" TEXT,
+    "factId" TEXT,
+    "chunkId" TEXT,
+    "chapterSummaryId" TEXT,
+    "quote" TEXT,
+    "contentHash" TEXT NOT NULL,
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    CONSTRAINT "MemoryNarrativeSummarySource_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryNarrativeSummarySource_summaryId_fkey" FOREIGN KEY ("summaryId", "projectId") REFERENCES "MemoryNarrativeSummary" ("id", "projectId") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryNarrativeSummarySource_episodeId_fkey" FOREIGN KEY ("episodeId", "projectId") REFERENCES "MemoryEpisode" ("id", "projectId") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryNarrativeSummarySource_factId_fkey" FOREIGN KEY ("factId", "projectId") REFERENCES "MemoryFact" ("id", "projectId") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryNarrativeSummarySource_chunkId_fkey" FOREIGN KEY ("chunkId", "projectId") REFERENCES "MemoryChunk" ("id", "projectId") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryNarrativeSummarySource_chapterSummaryId_fkey" FOREIGN KEY ("chapterSummaryId", "projectId") REFERENCES "ChapterSummary" ("id", "projectId") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryNarrativeSummarySource_single_source_check" CHECK (
+        ("sourceType" = 'episode' AND "episodeId" IS NOT NULL AND "factId" IS NULL AND "chunkId" IS NULL AND "chapterSummaryId" IS NULL) OR
+        ("sourceType" = 'fact' AND "episodeId" IS NULL AND "factId" IS NOT NULL AND "chunkId" IS NULL AND "chapterSummaryId" IS NULL) OR
+        ("sourceType" = 'chunk' AND "episodeId" IS NULL AND "factId" IS NULL AND "chunkId" IS NOT NULL AND "chapterSummaryId" IS NULL) OR
+        ("sourceType" = 'chapter_summary' AND "episodeId" IS NULL AND "factId" IS NULL AND "chunkId" IS NULL AND "chapterSummaryId" IS NOT NULL)
+    )
+);
 CREATE TABLE IF NOT EXISTS "Note" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,
@@ -639,6 +684,7 @@ CREATE INDEX IF NOT EXISTS "ChapterRevision_chapterId_createdAt_idx" ON "Chapter
 CREATE INDEX IF NOT EXISTS "SearchDirtyQueue_projectId_status_idx" ON "SearchDirtyQueue"("projectId", "status");
 CREATE INDEX IF NOT EXISTS "SearchDirtyQueue_source_idx" ON "SearchDirtyQueue"("sourceType", "sourceId");
 CREATE UNIQUE INDEX IF NOT EXISTS "MemoryChunk_source_chunkIndex_key" ON "MemoryChunk"("sourceType", "sourceId", "chunkIndex");
+CREATE UNIQUE INDEX IF NOT EXISTS "MemoryChunk_id_projectId_key" ON "MemoryChunk"("id", "projectId");
 CREATE INDEX IF NOT EXISTS "MemoryChunk_projectId_source_idx" ON "MemoryChunk"("projectId", "sourceType", "sourceId");
 CREATE INDEX IF NOT EXISTS "MemoryChunk_projectId_chapterId_idx" ON "MemoryChunk"("projectId", "chapterId");
 CREATE INDEX IF NOT EXISTS "MemoryChunk_projectId_sceneId_idx" ON "MemoryChunk"("projectId", "sceneId");
@@ -647,6 +693,7 @@ CREATE INDEX IF NOT EXISTS "MemoryBuildJob_target_idx" ON "MemoryBuildJob"("targ
 CREATE UNIQUE INDEX IF NOT EXISTS "MemoryEmbedding_chunkId_key" ON "MemoryEmbedding"("chunkId");
 CREATE INDEX IF NOT EXISTS "MemoryEmbedding_projectId_idx" ON "MemoryEmbedding"("projectId");
 CREATE UNIQUE INDEX IF NOT EXISTS "ChapterSummary_chapterId_key" ON "ChapterSummary"("chapterId");
+CREATE UNIQUE INDEX IF NOT EXISTS "ChapterSummary_id_projectId_key" ON "ChapterSummary"("id", "projectId");
 CREATE INDEX IF NOT EXISTS "ChapterSummary_projectId_idx" ON "ChapterSummary"("projectId");
 CREATE INDEX IF NOT EXISTS "MemoryEvalCase_projectId_caseType_idx" ON "MemoryEvalCase"("projectId", "caseType");
 CREATE INDEX IF NOT EXISTS "MemoryEvalCase_projectId_severity_idx" ON "MemoryEvalCase"("projectId", "severity");
@@ -674,6 +721,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS "MemoryEpisodeExtractionJob_source_version_key
 CREATE INDEX IF NOT EXISTS "MemoryEpisode_projectId_source_idx" ON "MemoryEpisode"("projectId", "sourceType", "sourceId");
 CREATE INDEX IF NOT EXISTS "MemoryEpisode_projectId_status_idx" ON "MemoryEpisode"("projectId", "status");
 CREATE INDEX IF NOT EXISTS "MemoryEpisode_projectId_chapterId_idx" ON "MemoryEpisode"("projectId", "chapterId");
+CREATE UNIQUE INDEX IF NOT EXISTS "MemoryEpisode_id_projectId_key" ON "MemoryEpisode"("id", "projectId");
 CREATE INDEX IF NOT EXISTS "MemoryEpisodeParticipant_episodeId_idx" ON "MemoryEpisodeParticipant"("episodeId");
 CREATE INDEX IF NOT EXISTS "MemoryEpisodeEvidence_episodeId_idx" ON "MemoryEpisodeEvidence"("episodeId");
 CREATE INDEX IF NOT EXISTS "MemoryEpisodeEvidence_projectId_chapterId_idx" ON "MemoryEpisodeEvidence"("projectId", "chapterId");
@@ -689,6 +737,12 @@ CREATE INDEX IF NOT EXISTS "MemoryFactInvalidation_invalidatedFactId_idx" ON "Me
 CREATE INDEX IF NOT EXISTS "MemoryRelationState_projectId_relation_idx" ON "MemoryRelationState"("projectId", "relation");
 CREATE INDEX IF NOT EXISTS "MemoryCharacterState_projectId_stateType_idx" ON "MemoryCharacterState"("projectId", "stateType");
 CREATE INDEX IF NOT EXISTS "MemoryKnowledgeState_projectId_knower_idx" ON "MemoryKnowledgeState"("projectId", "knowerEntityId");
+CREATE INDEX IF NOT EXISTS "MemoryNarrativeSummary_projectId_type_idx" ON "MemoryNarrativeSummary"("projectId", "summaryType");
+CREATE INDEX IF NOT EXISTS "MemoryNarrativeSummary_projectId_scope_idx" ON "MemoryNarrativeSummary"("projectId", "scopeType", "scopeId");
+CREATE INDEX IF NOT EXISTS "MemoryNarrativeSummary_projectId_status_idx" ON "MemoryNarrativeSummary"("projectId", "status");
+CREATE UNIQUE INDEX IF NOT EXISTS "MemoryNarrativeSummary_id_projectId_key" ON "MemoryNarrativeSummary"("id", "projectId");
+CREATE INDEX IF NOT EXISTS "MemoryNarrativeSummarySource_summaryId_idx" ON "MemoryNarrativeSummarySource"("summaryId");
+CREATE INDEX IF NOT EXISTS "MemoryNarrativeSummarySource_projectId_sourceType_idx" ON "MemoryNarrativeSummarySource"("projectId", "sourceType");
 CREATE INDEX IF NOT EXISTS "Note_projectId_updatedAt_idx" ON "Note"("projectId", "updatedAt");
 CREATE INDEX IF NOT EXISTS "Synopsis_projectId_updatedAt_idx" ON "Synopsis"("projectId", "updatedAt");
 CREATE INDEX IF NOT EXISTS "Plot_projectId_updatedAt_idx" ON "Plot"("projectId", "updatedAt");
