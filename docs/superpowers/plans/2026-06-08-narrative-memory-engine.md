@@ -257,6 +257,10 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Chunk FTS, short-token fallback, and embedding projection now use `indexText`.
 - Added coverage that a chapter title can be searched through contextual index text while returned chunk content remains raw.
 
+- Memory canonical import/export now treats `MemoryEpisode` and `MemoryEpisodeEvidence` as canonical exportable anchors.
+- `MemoryFactEvidence` import remaps depend on both `MemoryFact` and `MemoryEpisodeEvidence`, preventing FK-dangling fact evidence after restore.
+- `MemoryFactInvalidation` remains canonical-imported and status-agnostic by design to preserve conflict graph continuity.
+
 아직 미구현:
 - Parent-window expansion API is not implemented yet.
 - Scene/paragraph hierarchical retrieval is not implemented yet.

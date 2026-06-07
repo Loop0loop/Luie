@@ -81,6 +81,9 @@ describe("memory persistence policy", () => {
     expect(isMemoryRowExportable({ tableName: "MemoryFact" })).toBe(false);
     expect(isMemoryRowExportable({ tableName: "MemoryEntityAlias" })).toBe(false);
     expect(isMemoryRowExportable({ tableName: "MemoryFactEvidence" })).toBe(true);
+    expect(isMemoryRowExportable({ tableName: "MemoryEpisodeEvidence" })).toBe(true);
+    expect(isMemoryRowExportable({ tableName: "MemoryFactInvalidation" })).toBe(true);
+    expect(isMemoryRowExportable({ tableName: "MemoryEpisode", status: "suggested" })).toBe(true);
     expect(isMemoryRowExportable({ tableName: "MemoryChunk", status: "confirmed" })).toBe(false);
   });
 

@@ -19,6 +19,8 @@ export type MemoryCanonicalPackagePayload = {
 const {
   memoryEntity,
   memoryEntityAlias,
+  memoryEpisode,
+  memoryEpisodeEvidence,
   memoryFact,
   memoryFactEvidence,
   memoryFactInvalidation,
@@ -150,6 +152,30 @@ export const buildMemoryCanonicalPackagePayload = async (
               ),
             ),
     ]);
+  const evidenceIds = factEvidence.map((row) => row.evidenceId);
+  const episodeEvidence = evidenceIds.length === 0
+    ? []
+    : await store
+        .select()
+        .from(memoryEpisodeEvidence)
+        .where(
+          and(
+            eq(memoryEpisodeEvidence.projectId, projectId),
+            inArray(memoryEpisodeEvidence.id, evidenceIds),
+          ),
+        );
+  const episodeIds = episodeEvidence.map((row) => row.episodeId);
+  const episodes = episodeIds.length === 0
+    ? []
+    : await store
+        .select()
+        .from(memoryEpisode)
+        .where(
+          and(
+            eq(memoryEpisode.projectId, projectId),
+            inArray(memoryEpisode.id, episodeIds),
+          ),
+        );
 
   return {
     schemaVersion: 1,
@@ -157,6 +183,8 @@ export const buildMemoryCanonicalPackagePayload = async (
     tables: {
       MemoryEntity: toPlainRows(exportableEntities),
       MemoryEntityAlias: toPlainRows(exportableAliases),
+      MemoryEpisode: toPlainRows(episodes),
+      MemoryEpisodeEvidence: toPlainRows(episodeEvidence),
       MemoryFact: toPlainRows(exportableFacts),
       MemoryFactEvidence: toPlainRows(factEvidence),
       MemoryFactInvalidation: toPlainRows(factInvalidations),
@@ -180,6 +208,8 @@ export const applyMemoryCanonicalPackagePayload = (
   const tables = input.payload?.tables ?? {};
   const now = input.importedAt.toISOString();
   const entityIdMap = new Map<string, string>();
+  const episodeIdMap = new Map<string, string>();
+  const episodeEvidenceIdMap = new Map<string, string>();
   const factIdMap = new Map<string, string>();
   const evalCaseIdMap = new Map<string, string>();
 
@@ -225,6 +255,88 @@ export const applyMemoryCanonicalPackagePayload = (
       alias,
       normalizedAlias,
       status,
+      createdAt: toStringValue(row.createdAt) ?? now,
+      updatedAt: toStringValue(row.updatedAt) ?? now,
+    };
+  });
+
+  const episodes = mapRows(tables.MemoryEpisode, (row) => {
+    const sourceId = toStringValue(row.id);
+    const sourceType = toStringValue(row.sourceType);
+    const sourceIdValue = toStringValue(row.sourceId);
+    const sourceContentHash = toStringValue(row.sourceContentHash);
+    const extractorVersion = toStringValue(row.extractorVersion);
+    const episodeType = toStringValue(row.episodeType);
+    const title = toStringValue(row.title);
+    const summary = toStringValue(row.summary);
+    const status = toStringValue(row.status) ?? "suggested";
+    if (
+      !sourceId ||
+      !sourceType ||
+      !sourceIdValue ||
+      !sourceContentHash ||
+      !extractorVersion ||
+      !episodeType ||
+      !title ||
+      !summary
+    ) {
+      return null;
+    }
+    const chapterId = toNullableStringValue(row.chapterId);
+    if (chapterId && input.validChapterIds && !input.validChapterIds.has(chapterId)) {
+      return null;
+    }
+    const id = buildScopedMemoryId(input.projectId, "MemoryEpisode", sourceId);
+    episodeIdMap.set(sourceId, id);
+    return {
+      id,
+      projectId: input.projectId,
+      sourceType,
+      sourceId: sourceIdValue,
+      chapterId,
+      sceneId: toNullableStringValue(row.sceneId),
+      sourceContentHash,
+      extractorVersion,
+      episodeType,
+      title,
+      summary,
+      status,
+      confidence: toNumberValue(row.confidence) ?? 0,
+      createdAt: toStringValue(row.createdAt) ?? now,
+      updatedAt: toStringValue(row.updatedAt) ?? now,
+      rejectedAt: toNullableStringValue(row.rejectedAt),
+      rejectionReason: toNullableStringValue(row.rejectionReason),
+    };
+  });
+
+  const episodeEvidence = mapRows(tables.MemoryEpisodeEvidence, (row) => {
+    const sourceId = toStringValue(row.id);
+    const sourceEpisodeId = toStringValue(row.episodeId);
+    const contentHash = toStringValue(row.contentHash);
+    const sourceContentHash = toStringValue(row.sourceContentHash);
+    const quote = toStringValue(row.quote);
+    if (!sourceId || !sourceEpisodeId || !contentHash || !sourceContentHash || !quote) {
+      return null;
+    }
+    const episodeId = episodeIdMap.get(sourceEpisodeId);
+    if (!episodeId) return null;
+    const chapterId = toNullableStringValue(row.chapterId);
+    if (chapterId && input.validChapterIds && !input.validChapterIds.has(chapterId)) {
+      return null;
+    }
+    const id = buildScopedMemoryId(input.projectId, "MemoryEpisodeEvidence", sourceId);
+    episodeEvidenceIdMap.set(sourceId, id);
+    return {
+      id,
+      projectId: input.projectId,
+      episodeId,
+      chapterId,
+      chunkId: toNullableStringValue(row.chunkId),
+      contentHash,
+      sourceContentHash,
+      startOffset: toNumberValue(row.startOffset),
+      endOffset: toNumberValue(row.endOffset),
+      quote,
       createdAt: toStringValue(row.createdAt) ?? now,
       updatedAt: toStringValue(row.updatedAt) ?? now,
     };
@@ -337,6 +449,25 @@ export const applyMemoryCanonicalPackagePayload = (
       factIds.has(row.invalidatingFactId),
   );
 
+  const factEvidence = mapRows(tables.MemoryFactEvidence, (row) => {
+    const sourceId = toStringValue(row.id);
+    const sourceFactId = toStringValue(row.factId);
+    const sourceEvidenceId = toStringValue(row.evidenceId);
+    if (!sourceId || !sourceFactId || !sourceEvidenceId) return null;
+    const factId = factIdMap.get(sourceFactId);
+    const evidenceId = episodeEvidenceIdMap.get(sourceEvidenceId);
+    if (!factId || !evidenceId || !factIds.has(factId)) return null;
+    const id = buildScopedMemoryId(input.projectId, "MemoryFactEvidence", sourceId);
+    return {
+      id,
+      projectId: input.projectId,
+      factId,
+      evidenceId,
+      createdAt: toStringValue(row.createdAt) ?? now,
+      updatedAt: toStringValue(row.updatedAt) ?? now,
+    };
+  });
+
   const evalCases = mapRows(tables.MemoryEvalCase, (row) => {
     const sourceId = toStringValue(row.id);
     const name = toStringValue(row.name);
@@ -435,8 +566,11 @@ export const applyMemoryCanonicalPackagePayload = (
 
   if (entities.length > 0) tx.insert(memoryEntity).values(entities).run();
   if (aliases.length > 0) tx.insert(memoryEntityAlias).values(aliases).run();
+  if (episodes.length > 0) tx.insert(memoryEpisode).values(episodes).run();
+  if (episodeEvidence.length > 0) tx.insert(memoryEpisodeEvidence).values(episodeEvidence).run();
   if (evalCases.length > 0) tx.insert(memoryEvalCase).values(evalCases).run();
   if (facts.length > 0) tx.insert(memoryFact).values(facts).run();
+  if (factEvidence.length > 0) tx.insert(memoryFactEvidence).values(factEvidence).run();
   if (factInvalidations.length > 0) {
     tx.insert(memoryFactInvalidation).values(factInvalidations).run();
   }

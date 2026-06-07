@@ -9,6 +9,8 @@ export type MemoryPersistenceClass =
 export const MEMORY_CANONICAL_EXPORTABLE_TABLES = [
   "MemoryEntity",
   "MemoryEntityAlias",
+  "MemoryEpisode",
+  "MemoryEpisodeEvidence",
   "MemoryFact",
   "MemoryFactEvidence",
   "MemoryFactInvalidation",
@@ -26,9 +28,7 @@ export const MEMORY_REGENERABLE_PROJECTION_TABLES = [
   "ChapterSummary",
   "MemoryEntityMention",
   "MemoryEpisodeExtractionJob",
-  "MemoryEpisode",
   "MemoryEpisodeParticipant",
-  "MemoryEpisodeEvidence",
   "MemoryStateChangeCandidate",
   "MemoryRelationState",
   "MemoryCharacterState",
@@ -57,6 +57,13 @@ export const MEMORY_STATUS_REQUIRED_EXPORT_TABLES = [
 export type MemoryStatusRequiredExportTable =
   typeof MEMORY_STATUS_REQUIRED_EXPORT_TABLES[number];
 
+export const MEMORY_STATUS_IGNORED_EXPORT_TABLES = [
+  "MemoryEpisode",
+  "MemoryEpisodeEvidence",
+  "MemoryFactEvidence",
+  "MemoryFactInvalidation",
+] as const;
+
 export function isMemoryCanonicalExportableStatus(status: string): status is MemoryCanonicalExportableStatus {
   return (MEMORY_CANONICAL_EXPORTABLE_STATUSES as readonly string[]).includes(status);
 }
@@ -81,6 +88,9 @@ export function isMemoryRowExportable(input: {
   if ((MEMORY_STATUS_REQUIRED_EXPORT_TABLES as readonly string[]).includes(input.tableName)) {
     if (input.status === undefined || input.status === null) return false;
     return isMemoryCanonicalExportableStatus(input.status);
+  }
+  if ((MEMORY_STATUS_IGNORED_EXPORT_TABLES as readonly string[]).includes(input.tableName)) {
+    return true;
   }
   if (input.status === undefined || input.status === null) return true;
   return isMemoryCanonicalExportableStatus(input.status);
