@@ -38,7 +38,14 @@ current file
 
 ## Phase 0: Documentation Only
 
-상태: 진행 중.
+상태: 완료.
+
+완료:
+
+- 아키텍처 문서(`docs/architecture/current-main.md`, `current-renderer.md`, `current-shared.md`, `migration-map.md`, `migration-guardrails.md`)의 현재 구조 및 500 LOC 예외 산출 근거를 정합화했습니다.
+- `src/main` 500 LOC 초과 정리(패키지 bootstrap 분해, RAG layer 분해)를 반영해 `main` 영역의 초과 항목을 제거했습니다.
+- `src/main`이외 소스(`src/renderer`)의 규칙성도 반영해, 정적 번들(`src/renderer/src/styles/global.css`)만 제외 항목으로 명시했습니다.
+- `docs/architecture/migration-guardrails.md`의 500 LOC 아카이브 목록을 현 시점 기준(2026-06-08)으로 갱신했습니다.
 
 목표:
 
@@ -69,8 +76,8 @@ current file
 검증:
 
 ```bash
-bun run typecheck
-bun run check:core-complexity
+pnpm run typecheck
+pnpm run check:core-complexity
 ```
 
 ## Phase 1: Shared Contract Split
@@ -87,9 +94,9 @@ bun run check:core-complexity
 - 기존 `@shared/api` 공개 export는 보존했습니다.
 - 모든 `src/shared/types/*.ts`, `src/shared/schemas/*.ts`, `src/shared/api/*.ts` 파일은 500 LOC 이하입니다.
 - 2026-06-02 기준 `pnpm run typecheck` 통과.
-- 2026-06-02 기준 `bun run check:ipc-contract-map` 통과.
-- 2026-06-02 기준 `bun run check:ipc-handler-schemas` 통과.
-- 2026-06-02 기준 `bun run check:preload-contract-regression` 통과.
+- 2026-06-02 기준 `pnpm run check:ipc-contract-map` 통과.
+- 2026-06-02 기준 `pnpm run check:ipc-handler-schemas` 통과.
+- 2026-06-02 기준 `pnpm run check:preload-contract-regression` 통과.
 
 추천 이유:
 
@@ -181,8 +188,12 @@ pnpm run check:preload-contract-regression
 - `src/main/services/features/sync/syncLocalApply.ts`는 310 LOC입니다.
 - `src/main/services/features/analysis/analysisStreamRunner.ts`는 415 LOC입니다.
 - `src/main/services/core/project/projectImportOpen.ts`는 287 LOC입니다.
-- `src/main/services/features/utility/utilityProcessBridge.ts`는 474 LOC입니다.
-- `src/main/database/main/packagedSchema.ts`는 354 LOC입니다.
+- `src/main/services/features/utility/utilityProcessBridge.ts`는 1 LOC 호환 entry입니다.
+- `src/main/services/features/utility/utilityProcessBridge/internal/core.ts`는 488 LOC입니다.
+- `src/main/services/features/memory/query/narrativeMemoryQueryService.ts`는 167 LOC입니다.
+- `src/main/database/main/packagedSchema.ts`는 24 LOC로 재구성되어 bootstrap SQL 조합 진입점만 유지합니다.
+- `src/main/database/main/packagedSchema/projectSchema.sql.ts`는 238 LOC, `memorySchema.sql.ts`는 281 LOC, `worldAndIndexesSchema.sql.ts`는 243 LOC로 분리되어 있습니다.
+- `src/main/database/packagedSchema/metadataTables.ts`는 49 LOC, `metadataColumnPatches.ts`는 148 LOC, `metadataIndexPatches.ts`는 150 LOC, `metadataRequiredColumns.ts`는 321 LOC로 분리되어 있습니다.
 - `src/main/database/schema/index.ts`는 14 LOC입니다.
 - `snapshotArtifacts.ts`의 기존 public export인 `readFullSnapshotArtifact`, `listSnapshotRestoreCandidates`, `cleanupOrphanSnapshotArtifacts`, `writeFullSnapshotArtifact`는 유지했습니다.
 - snapshot artifact의 path 탐색, restore preview 계산, DB payload 조립, payload 타입은 `snapshot/artifacts/index.ts` 배럴 폴더로 분리했습니다.
@@ -211,6 +222,8 @@ pnpm run check:preload-contract-regression
 - .luie 내부 world/snapshot collections entry read, JSON parse, schema validation, import collection normalization은 `project/importOpen/index.ts` 배럴 폴더로 분리했습니다.
 - `utilityProcessBridge.ts`의 기존 public export인 `UtilityProcessBridge`와 `utilityProcessBridge` singleton은 유지했습니다.
 - Utility process protocol type, timeout constants, Electron utility message unwrap helper는 `features/utility/utilityProcessBridge/index.ts` 배럴 폴더로 분리했습니다.
+- `narrativeMemoryQueryService.ts`는 `query/internal/{plan,chapter,entity,temporal,summaries,conflicts,evidence,formatter}.ts`로 분리되어 완료 상태입니다.
+- `contextAssembler.layers.ts`의 기존 layer 함수 export는 `contextAssembler.layer0.ts`, `contextAssembler.layer2.ts`, `contextAssembler.layer3.ts`로 분리했습니다.
 - `packagedSchema.ts`의 기존 public export인 `PACKAGED_SCHEMA_BOOTSTRAP_SQL`, `PACKAGED_SCHEMA_REQUIRED_TABLES`, `PACKAGED_SCHEMA_REQUIRED_COLUMNS`, `PACKAGED_SCHEMA_COLUMN_PATCHES`, `PACKAGED_SCHEMA_INDEX_PATCHES`는 유지했습니다.
 - packaged schema required table/column metadata와 기존 DB column/index patch metadata는 `database/packagedSchema/index.ts` 배럴 폴더로 분리했습니다.
 - packaged bootstrap SQL은 Drizzle migration parity와 맞도록 누락된 world/memory/scrap index와 `ChapterSummary` 기본값 표기를 보정했습니다.
@@ -220,34 +233,34 @@ pnpm run check:preload-contract-regression
 - 기존 `schema.ts` compatibility entry는 `database/schema/index.ts`로 흡수했고, cache/main/runtime public export는 각각 `database/cache/index.ts`, `database/main/index.ts`, `database/runtime/index.ts`로 제공합니다.
 - 2026-06-03 후속 정리에서 `src/main/manager` 루트 TypeScript 파일은 `index.ts`만 남기고 window/settings/autoSave 구현을 하위 폴더 entry로 분리했습니다.
 - 2026-06-03 후속 정리에서 `src/main/utility` 루트 TypeScript 파일은 `index.ts`만 남기고 utility process 구현과 RAG QA worker를 `utility/process`, `utility/rag`로 분리했습니다.
-- 2026-06-02 기준 `bun run typecheck`, `bun run check:core-complexity`, `bun run check:ipc-handler-schemas`, `bun run check:ipc-contract-map` 통과.
-- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/handler/ipcSettingsHandlers.security.test.ts` 통과.
-- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncService.test.ts` 통과.
-- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncRepository.test.ts tests/main/services/syncService.test.ts` 통과.
-- 2026-06-02 기준 `bun vitest tests/main/services/memoryProjectionService.test.ts` 통과.
-- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/projectExportEngine.test.ts` 통과.
-- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncMapper.test.ts tests/main/services/syncRepository.test.ts tests/main/services/syncService.test.ts tests/main/services/syncLocalApply.test.ts tests/main/services/syncPackagePersistence.test.ts` 통과.
-- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/manager/settingsManager.localLlm.test.ts tests/main/services/startupReadinessService.test.ts tests/main/handler/ipcSettingsHandlers.security.test.ts` 통과.
-- 2026-06-02 기준 `bun vitest tests/main/services/searchServiceFallback.test.ts tests/main/services/memoryProjectionService.test.ts` 통과.
-- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/handler/ipcInputValidation.test.ts` 통과.
-- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/syncLocalApply.test.ts tests/main/services/syncService.test.ts` 통과.
-- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/analysisStreamRunner.test.ts tests/main/services/analysisStreamParser.test.ts tests/main/services/analysisFallback.test.ts` 통과.
-- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/projectImportCollections.test.ts` 통과.
-- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/utilityProcessBridgeProtocol.test.ts tests/main/services/sidecarManager.test.ts tests/main/services/embeddingProjector.test.ts tests/main/services/modelRuntimeFactory.sidecar.test.ts` 통과.
-- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/database/schemaParity.test.ts tests/main/database/memoryChunkFtsMigration.test.ts tests/scripts/cacheIsolationBoundary.test.ts` 통과.
+- 2026-06-02 기준 `pnpm run typecheck`, `pnpm run check:core-complexity`, `pnpm run check:ipc-handler-schemas`, `pnpm run check:ipc-contract-map` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/handler/ipcSettingsHandlers.security.test.ts` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/syncService.test.ts` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/syncRepository.test.ts tests/main/services/syncService.test.ts` 통과.
+- 2026-06-02 기준 `pnpm vitest tests/main/services/memoryProjectionService.test.ts` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/projectExportEngine.test.ts` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/syncMapper.test.ts tests/main/services/syncRepository.test.ts tests/main/services/syncService.test.ts tests/main/services/syncLocalApply.test.ts tests/main/services/syncPackagePersistence.test.ts` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/manager/settingsManager.localLlm.test.ts tests/main/services/startupReadinessService.test.ts tests/main/handler/ipcSettingsHandlers.security.test.ts` 통과.
+- 2026-06-02 기준 `pnpm vitest tests/main/services/searchServiceFallback.test.ts tests/main/services/memoryProjectionService.test.ts` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/handler/ipcInputValidation.test.ts` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/syncLocalApply.test.ts tests/main/services/syncService.test.ts` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/analysisStreamRunner.test.ts tests/main/services/analysisStreamParser.test.ts tests/main/services/analysisFallback.test.ts` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/projectImportCollections.test.ts` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/utilityProcessBridgeProtocol.test.ts tests/main/services/sidecarManager.test.ts tests/main/services/embeddingProjector.test.ts tests/main/services/modelRuntimeFactory.sidecar.test.ts` 통과.
+- 2026-06-02 기준 `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/database/schemaParity.test.ts tests/main/database/memoryChunkFtsMigration.test.ts tests/scripts/cacheIsolationBoundary.test.ts` 통과.
 
 검증 제약:
 
-- `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/snapshotArtifacts.pathValidation.test.ts tests/main/services/snapshotService.packageBehavior.unit.test.ts`는 현재 mock DB client가 Drizzle `select`/`insert` API를 제공하지 않아 실패합니다.
+- `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/snapshotArtifacts.pathValidation.test.ts tests/main/services/snapshotService.packageBehavior.unit.test.ts`는 현재 mock DB client가 Drizzle `select`/`insert` API를 제공하지 않아 실패합니다.
 - 실패 지점은 `store.select is not a function`, `db.getClient(...).insert is not a function`입니다.
 - 이건 확인된 사실입니다. native DB 포함 테스트 재실행 전에 테스트 mock 또는 `better-sqlite3`/Drizzle test setup 정리가 필요합니다.
-- `bun vitest tests/main/services/searchService.test.ts`는 현재 cache DB 테스트 계약 불일치로 실패합니다.
+- `pnpm vitest tests/main/services/searchService.test.ts`는 현재 cache DB 테스트 계약 불일치로 실패합니다.
 - 실패 지점은 `tests/main/services/searchService.test.ts:65`의 `Cannot read properties of undefined (reading 'deleteMany')`, `tests/main/services/searchService.test.ts:109`의 FTS count 기대값 1 대비 실제 0입니다.
 - 이건 확인된 사실입니다. 실패 지점은 memory chunk search helper가 아니라 chapter search cache/FTS 테스트 setup 경계입니다.
-- `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/manuscriptAnalysisService.test.ts`는 현재 DB mock이 Drizzle `select().from()` API를 제공하지 않아 실패합니다.
+- `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/manuscriptAnalysisService.test.ts`는 현재 DB mock이 Drizzle `select().from()` API를 제공하지 않아 실패합니다.
 - 실패 지점은 `src/main/services/features/analysis/manuscriptAnalysisService.ts:210`의 `db.getClient(...).select is not a function`입니다.
 - 이건 확인된 사실입니다. 실패 지점은 analysis stream parser가 아니라 `ManuscriptAnalysisService.loadAnalysisSource()` 테스트 mock 경계입니다.
-- `SKIP_DB_TEST_SETUP=1 bun vitest tests/main/services/projectImportOpen.test.ts tests/main/services/projectImportTransaction.test.ts tests/main/services/projectService.packageAttachment.test.ts`는 현재 DB mock이 `db.getClient()` API를 제공하지 않아 실패합니다.
+- `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/projectImportOpen.test.ts tests/main/services/projectImportTransaction.test.ts tests/main/services/projectService.packageAttachment.test.ts`는 현재 DB mock이 `db.getClient()` API를 제공하지 않아 실패합니다.
 - 실패 지점은 `projectImportOpen.ts:193`, `projectImportTransaction.ts:251`, `projectPackageAttachment.ts:40`의 `db.getClient is not a function`입니다.
 - 이건 확인된 사실입니다. 실패 지점은 project import collections helper가 아니라 project import/open 및 package attachment 테스트 mock 경계입니다.
 
@@ -368,6 +381,25 @@ SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/chapterService.test.ts
 SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/autoSaveManager.runtimeStats.test.ts
 SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/snapshotArtifacts.pathValidation.test.ts
 SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/handler/ipcSettingsHandlers.security.test.ts
+```
+
+## Phase 2B: Main RAG Layer Split
+
+상태: 완료.
+
+완료:
+
+- `src/main/services/features/rag/internal/contextAssembler.layers.ts`를 shim으로 축소하고,
+  실제 구현은 `contextAssembler.layer0.ts`, `contextAssembler.layer2.ts`, `contextAssembler.layer3.ts`로 분리했습니다.
+- layer0, layer1, layer2, layer3 assembly 책임이 분리되어
+  각각의 구현 파일이 300 LOC 이하로 유지됩니다.
+- 기존 `contextAssembler.ts`의 public import 경로는 변경하지 않았습니다.
+
+검증:
+
+```bash
+pnpm run typecheck
+pnpm run lint
 ```
 
 ## Phase 3: Renderer Shell Split
