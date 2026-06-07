@@ -41,7 +41,7 @@ export function createProjectApi({
     const template = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx";
     let seed = Date.now();
     return template.replace(/[xy]/g, (char) => {
-      const random = (seed + Math.random() * 16) % 16 | 0;
+      const random = ((seed + Math.random() * 16) % 16) | 0;
       seed = Math.floor(seed / 16);
       const value = char === "x" ? random : (random & 0x3) | 0x8;
       return value.toString(16);
@@ -52,14 +52,23 @@ export function createProjectApi({
     project: {
       create: (input) => safeInvoke(IPC_CHANNELS.PROJECT_CREATE, input),
       get: (id) => safeInvokeCore("project.get", IPC_CHANNELS.PROJECT_GET, id),
-      getAll: () => safeInvokeCore("project.getAll", IPC_CHANNELS.PROJECT_GET_ALL),
+      getAll: () =>
+        safeInvokeCore("project.getAll", IPC_CHANNELS.PROJECT_GET_ALL),
       update: (input) => safeInvoke(IPC_CHANNELS.PROJECT_UPDATE, input),
       delete: (input) => safeInvoke(IPC_CHANNELS.PROJECT_DELETE, input),
       removeLocal: (id) => safeInvoke(IPC_CHANNELS.PROJECT_REMOVE_LOCAL, id),
       openLuie: (packagePath) =>
-        safeInvokeCore("project.openLuie", IPC_CHANNELS.PROJECT_OPEN_LUIE, packagePath),
+        safeInvokeCore(
+          "project.openLuie",
+          IPC_CHANNELS.PROJECT_OPEN_LUIE,
+          packagePath,
+        ),
       markOpened: (id) =>
-        safeInvokeCore("project.markOpened", IPC_CHANNELS.PROJECT_MARK_OPENED, id),
+        safeInvokeCore(
+          "project.markOpened",
+          IPC_CHANNELS.PROJECT_MARK_OPENED,
+          id,
+        ),
       attachLuie: (projectId, packagePath) =>
         safeInvokeCore(
           "project.attachLuie",
@@ -81,14 +90,19 @@ export function createProjectApi({
           ...input,
           clientMutationId:
             typeof input.clientMutationId === "string" &&
-              input.clientMutationId.length > 0
+            input.clientMutationId.length > 0
               ? input.clientMutationId
               : createClientMutationId(),
         }),
       get: (id) => safeInvokeCore("chapter.get", IPC_CHANNELS.CHAPTER_GET, id),
       getAll: (projectId) =>
-        safeInvokeCore("chapter.getAll", IPC_CHANNELS.CHAPTER_GET_ALL, projectId),
-      getDeleted: (projectId) => safeInvoke(IPC_CHANNELS.CHAPTER_GET_DELETED, projectId),
+        safeInvokeCore(
+          "chapter.getAll",
+          IPC_CHANNELS.CHAPTER_GET_ALL,
+          projectId,
+        ),
+      getDeleted: (projectId) =>
+        safeInvoke(IPC_CHANNELS.CHAPTER_GET_DELETED, projectId),
       update: (input) =>
         safeInvokeCore("chapter.update", IPC_CHANNELS.CHAPTER_UPDATE, input),
       delete: (id) => safeInvoke(IPC_CHANNELS.CHAPTER_DELETE, id),
@@ -114,7 +128,8 @@ export function createProjectApi({
     synopsis: {
       create: (input) => safeInvoke(IPC_CHANNELS.SYNOPSIS_CREATE, input),
       get: (id) => safeInvoke(IPC_CHANNELS.SYNOPSIS_GET, id),
-      getAll: (projectId) => safeInvoke(IPC_CHANNELS.SYNOPSIS_GET_ALL, projectId),
+      getAll: (projectId) =>
+        safeInvoke(IPC_CHANNELS.SYNOPSIS_GET_ALL, projectId),
       update: (input) => safeInvoke(IPC_CHANNELS.SYNOPSIS_UPDATE, input),
       delete: (id) => safeInvoke(IPC_CHANNELS.SYNOPSIS_DELETE, id),
     },
@@ -127,19 +142,24 @@ export function createProjectApi({
     },
     scrapMemo: {
       create: (input) => safeInvoke(IPC_CHANNELS.SCRAP_MEMO_CREATE, input),
-      getAll: (projectId) => safeInvoke(IPC_CHANNELS.SCRAP_MEMO_GET_ALL, projectId),
+      getAll: (projectId) =>
+        safeInvoke(IPC_CHANNELS.SCRAP_MEMO_GET_ALL, projectId),
       update: (input) => safeInvoke(IPC_CHANNELS.SCRAP_MEMO_UPDATE, input),
       delete: (id) => safeInvoke(IPC_CHANNELS.SCRAP_MEMO_DELETE, id),
     },
     character: {
       create: (input) => safeInvoke(IPC_CHANNELS.CHARACTER_CREATE, input),
       get: (id) => safeInvoke(IPC_CHANNELS.CHARACTER_GET, id),
-      getAll: (projectId) => safeInvoke(IPC_CHANNELS.CHARACTER_GET_ALL, projectId),
+      getAll: (projectId) =>
+        safeInvoke(IPC_CHANNELS.CHARACTER_GET_ALL, projectId),
       update: (input) => safeInvoke(IPC_CHANNELS.CHARACTER_UPDATE, input),
       delete: (id) => safeInvoke(IPC_CHANNELS.CHARACTER_DELETE, id),
-      generateImage: (input) => safeInvoke(IPC_CHANNELS.CHARACTER_GENERATE_IMAGE, input),
-      generateQuote: (input) => safeInvoke(IPC_CHANNELS.CHARACTER_GENERATE_QUOTE, input),
-      generateStats: (input) => safeInvoke(IPC_CHANNELS.CHARACTER_GENERATE_STATS, input),
+      generateImage: (input) =>
+        safeInvoke(IPC_CHANNELS.CHARACTER_GENERATE_IMAGE, input),
+      generateQuote: (input) =>
+        safeInvoke(IPC_CHANNELS.CHARACTER_GENERATE_QUOTE, input),
+      generateStats: (input) =>
+        safeInvoke(IPC_CHANNELS.CHARACTER_GENERATE_STATS, input),
     },
     event: {
       create: (input) => safeInvoke(IPC_CHANNELS.EVENT_CREATE, input),
@@ -151,7 +171,8 @@ export function createProjectApi({
     faction: {
       create: (input) => safeInvoke(IPC_CHANNELS.FACTION_CREATE, input),
       get: (id) => safeInvoke(IPC_CHANNELS.FACTION_GET, id),
-      getAll: (projectId) => safeInvoke(IPC_CHANNELS.FACTION_GET_ALL, projectId),
+      getAll: (projectId) =>
+        safeInvoke(IPC_CHANNELS.FACTION_GET_ALL, projectId),
       update: (input) => safeInvoke(IPC_CHANNELS.FACTION_UPDATE, input),
       delete: (id) => safeInvoke(IPC_CHANNELS.FACTION_DELETE, id),
     },
@@ -175,8 +196,10 @@ export function createProjectApi({
           "snapshot.listRestoreCandidates",
           IPC_CHANNELS.SNAPSHOT_LIST_RESTORE_CANDIDATES,
         ),
-      getAll: (projectId) => safeInvoke(IPC_CHANNELS.SNAPSHOT_GET_ALL, projectId),
-      getByChapter: (chapterId) => safeInvoke(IPC_CHANNELS.SNAPSHOT_GET_BY_CHAPTER, chapterId),
+      getAll: (projectId) =>
+        safeInvoke(IPC_CHANNELS.SNAPSHOT_GET_ALL, projectId),
+      getByChapter: (chapterId) =>
+        safeInvoke(IPC_CHANNELS.SNAPSHOT_GET_BY_CHAPTER, chapterId),
       importFromFile: (filePath) =>
         safeInvokeCore(
           "snapshot.importFromFile",
@@ -201,7 +224,8 @@ export function createProjectApi({
       selectDirectory: () => safeInvoke(IPC_CHANNELS.FS_SELECT_DIRECTORY),
       selectFile: (options) =>
         safeInvokeCore("fs.selectFile", IPC_CHANNELS.FS_SELECT_FILE, options),
-      selectSnapshotBackup: () => safeInvoke(IPC_CHANNELS.FS_SELECT_SNAPSHOT_BACKUP),
+      selectSnapshotBackup: () =>
+        safeInvoke(IPC_CHANNELS.FS_SELECT_SNAPSHOT_BACKUP),
       selectSaveLocation: (options) =>
         safeInvokeCore(
           "fs.selectSaveLocation",
@@ -250,6 +274,8 @@ export function createProjectApi({
     memory: {
       queryNarrative: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_QUERY_NARRATIVE, input),
+      getConflictQueue: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_GET_CONFLICT_QUEUE, input),
       searchChunks: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_SEARCH_CHUNKS, input),
       getChunkBacklink: (chunkId) =>
@@ -258,8 +284,7 @@ export function createProjectApi({
         safeInvoke(IPC_CHANNELS.MEMORY_GET_CHAPTER_SUMMARY, chapterId),
     },
     maintenance: {
-      runIntegrityCheck: () =>
-        safeInvoke(IPC_CHANNELS.DB_RUN_INTEGRITY_CHECK),
+      runIntegrityCheck: () => safeInvoke(IPC_CHANNELS.DB_RUN_INTEGRITY_CHECK),
       getMigrationHealth: () =>
         safeInvoke(IPC_CHANNELS.DB_GET_MIGRATION_HEALTH),
     },

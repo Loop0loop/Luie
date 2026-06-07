@@ -1,10 +1,15 @@
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
-import type { NarrativeMemoryQueryInput, SearchQuery } from "../../../shared/types/index.js";
+import type {
+  MemoryConflictQueueInput,
+  NarrativeMemoryQueryInput,
+  SearchQuery,
+} from "../../../shared/types/index.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import {
   chapterIdSchema,
   memoryChunkIdSchema,
   memoryChunkSearchSchema,
+  memoryConflictQueueQuerySchema,
   memoryEmbeddingStatusSchema,
   memorySummaryStatusSchema,
   narrativeMemoryQuerySchema,
@@ -27,6 +32,7 @@ type SearchServiceLike = {
 
 type NarrativeMemoryQueryServiceLike = {
   query: (input: NarrativeMemoryQueryInput) => Promise<unknown>;
+  getConflictQueue: (input: MemoryConflictQueueInput) => Promise<unknown>;
 };
 
 type ChapterSummaryProjectorLike = {
@@ -88,8 +94,11 @@ export function registerSearchIPCHandlers(
       logTag: "MEMORY_REBUILD_CHUNKS",
       failMessage: "Failed to rebuild memory chunks",
       argsSchema: z.tuple([rebuildMemoryChunksSchema]),
-      handler: (input: { projectId: string; sourceType?: string; sourceId?: string }) =>
-        dbMaintenanceService.rebuildMemoryChunks(input),
+      handler: (input: {
+        projectId: string;
+        sourceType?: string;
+        sourceId?: string;
+      }) => dbMaintenanceService.rebuildMemoryChunks(input),
     },
     {
       channel: IPC_CHANNELS.MEMORY_JOB_STATUS,
@@ -114,6 +123,14 @@ export function registerSearchIPCHandlers(
       argsSchema: z.tuple([narrativeMemoryQuerySchema]),
       handler: (input: NarrativeMemoryQueryInput) =>
         narrativeMemoryQueryService.query(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_GET_CONFLICT_QUEUE,
+      logTag: "MEMORY_GET_CONFLICT_QUEUE",
+      failMessage: "Failed to get conflict queue",
+      argsSchema: z.tuple([memoryConflictQueueQuerySchema]),
+      handler: (input: MemoryConflictQueueInput) =>
+        narrativeMemoryQueryService.getConflictQueue(input),
     },
     {
       channel: IPC_CHANNELS.MEMORY_GET_CHUNK_BACKLINK,

@@ -75,8 +75,12 @@ export type IoRendererApi = {
     type?: "all" | "character" | "term";
   }) => Promise<IPCResponse<SharedTypes.SearchResult[]>>;
   searchAdmin: {
-    getIndexStatus: (projectId: string) => Promise<IPCResponse<SharedTypes.SearchIndexStatus>>;
-    rebuildIndex: (projectId: string) => Promise<IPCResponse<{ success: boolean }>>;
+    getIndexStatus: (
+      projectId: string,
+    ) => Promise<IPCResponse<SharedTypes.SearchIndexStatus>>;
+    rebuildIndex: (
+      projectId: string,
+    ) => Promise<IPCResponse<{ success: boolean }>>;
   };
   memoryAdmin: {
     rebuildChunks: (input: {
@@ -84,14 +88,23 @@ export type IoRendererApi = {
       sourceType?: string;
       sourceId?: string;
     }) => Promise<IPCResponse<{ queued: number; processed: number }>>;
-    getJobStatus: (projectId: string) => Promise<IPCResponse<SharedTypes.MemoryJobStatus>>;
-    getSummaryStatus: (projectId: string) => Promise<IPCResponse<SharedTypes.ChapterSummaryStatus>>;
-    getEmbeddingStatus: (projectId: string) => Promise<IPCResponse<SharedTypes.MemoryEmbeddingStatus>>;
+    getJobStatus: (
+      projectId: string,
+    ) => Promise<IPCResponse<SharedTypes.MemoryJobStatus>>;
+    getSummaryStatus: (
+      projectId: string,
+    ) => Promise<IPCResponse<SharedTypes.ChapterSummaryStatus>>;
+    getEmbeddingStatus: (
+      projectId: string,
+    ) => Promise<IPCResponse<SharedTypes.MemoryEmbeddingStatus>>;
   };
   memory: {
     queryNarrative: (
       input: SharedTypes.NarrativeMemoryQueryInput,
     ) => Promise<IPCResponse<SharedTypes.NarrativeMemoryQueryResult>>;
+    getConflictQueue: (
+      input: SharedTypes.MemoryConflictQueueInput,
+    ) => Promise<IPCResponse<SharedTypes.MemoryConflictQueueResult>>;
     searchChunks: (
       input: SharedTypes.MemoryChunkSearchQuery,
     ) => Promise<IPCResponse<SharedTypes.MemoryChunkSearchResult[]>>;
@@ -103,11 +116,15 @@ export type IoRendererApi = {
     ) => Promise<IPCResponse<SharedTypes.ChapterSummaryResult | null>>;
   };
   maintenance: {
-    runIntegrityCheck: () => Promise<IPCResponse<{ ok: boolean; rows: string[] }>>;
+    runIntegrityCheck: () => Promise<
+      IPCResponse<{ ok: boolean; rows: string[] }>
+    >;
     getMigrationHealth: () => Promise<IPCResponse<SharedTypes.MigrationHealth>>;
   };
   rag: {
-    ask: (input: SharedTypes.RagQaRequest) => Promise<IPCResponse<SharedTypes.RagQaRunHandle>>;
+    ask: (
+      input: SharedTypes.RagQaRequest,
+    ) => Promise<IPCResponse<SharedTypes.RagQaRunHandle>>;
     stop: (runId?: string) => Promise<IPCResponse<{ stopped: boolean }>>;
     onStream: (
       callback: (payload: SharedTypes.RagQaStreamPayload) => void,

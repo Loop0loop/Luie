@@ -114,17 +114,20 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 **Goal:** Prevent current RAG from presenting ungrounded memory as confirmed truth.
 
 **User-visible result:**
+
 - RAG answers display evidence.
 - Answers can say `확정`, `추정`, `근거 부족`, `충돌`.
 - No evidence-backed answer is treated as canonical memory.
 
 **Main changes:**
+
 - Add answer confidence/status at the RAG result contract level.
 - Keep claim-level verification out of Phase 0; answer-level grounding is the first safety gate.
 - Update prompts so unsupported claims must be labeled.
 - Add diagnostics for evidence gaps and context overfill.
 
 **Files likely touched:**
+
 - `src/shared/types/search.ts`
 - `src/main/services/features/rag/contextAssembler.ts`
 - `src/main/utility/rag/ragQaWorker.ts`
@@ -132,15 +135,18 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - tests under `tests/main/services/**`
 
 **Success criteria:**
+
 - RAG answer with no retrieved evidence cannot be labeled confirmed.
 - Evidence gap is visible in result payload and UI.
 - Regression test proves unsupported answer path does not silently pass as normal.
 
 **Critical risks:**
+
 - Too much UI/status work before data model work.
 - Existing RAG UX may become more conservative and feel weaker.
 
 **Mitigation:**
+
 - Treat conservative output as correct behavior. A memory engine must say “근거 부족” when it does not know.
 
 ## Phase 1: Evaluation Harness MVP
@@ -148,10 +154,12 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 **Goal:** Make memory quality measurable before adding new graph extraction.
 
 **User-visible result:**
+
 - Developer/internal memory quality report.
 - Basic “기억 신뢰도” signal can later be surfaced to user.
 
 **Core eval dimensions:**
+
 - context recall
 - context precision
 - faithfulness
@@ -161,6 +169,7 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - contamination rate
 
 **Schema direction:**
+
 - `MemoryEvalCase`
 - `MemoryEvalEvidence`
 - `MemoryEvalEntity`
@@ -169,6 +178,7 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - `MemoryEvalResult`
 
 **MVP dataset:**
+
 - 10-20 sample chapters
 - 100 questions
 - 150-300 evidence spans
@@ -178,6 +188,7 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - 20 contamination/conflict cases
 
 **Files likely touched:**
+
 - `src/main/database/schema/**`
 - `drizzle/main/**`
 - `src/main/services/features/memory/**`
@@ -185,6 +196,7 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - `scripts/**` for local eval runner
 
 **Success criteria:**
+
 - `SKIP_DB_TEST_SETUP=1 pnpm vitest ...` can run targeted eval tests.
 - Eval runner reports top-k evidence hit for fixed cases.
 - P0 failure categories are explicit:
@@ -194,21 +206,25 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
   - unsupported confirmed claim
 
 **Critical risks:**
+
 - Eval scope becomes too large.
 - LLM judge becomes false authority.
 
 **Mitigation:**
+
 - Start with retrieval/evidence/entity/temporal checks that can be mechanically inspected.
 - Use LLM judge only as secondary signal.
 
 **Phase 1 implementation status (2026-06-08):**
 
 사실:
+
 - Added dedicated `MemoryEval*` Drizzle tables for cases, gold evidence, expected entities, expected relations, runs, and results.
 - Added a pure scoring/suite runner for top-k gold evidence recall and unsupported confirmed-answer P0 detection.
 - Added schema parity coverage through existing DB parity tests.
 
 아직 미구현:
+
 - No UI report surface yet.
 - No script/IPC runner that executes live project eval cases end-to-end yet.
 - Entity, relation, and temporal accuracy columns exist for fixtures, but mechanical scoring for those dimensions is deferred.
@@ -219,10 +235,12 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 **Goal:** Strengthen raw evidence retrieval before graph extraction.
 
 **User-visible result:**
+
 - “이 답의 근거 보기” is reliable at chapter/scene/offset level.
 - Results show where a fact came from, not just similar text.
 
 **Core changes:**
+
 - Add contextual chunk metadata.
 - Keep parent-child retrieval: small child chunk for search, larger parent window for answer context.
 - Preserve original offsets and source hash.
@@ -230,6 +248,7 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Add contextual prefix for indexing, but keep raw quote separate.
 
 **Files likely touched:**
+
 - `src/main/services/features/memory/projection/chunking.ts`
 - `src/main/services/features/memory/memoryProjectionService.ts`
 - `src/main/services/features/search/chunkSearch.ts`
@@ -237,21 +256,25 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - `src/shared/types/search.ts`
 
 **Success criteria:**
+
 - Korean proper nouns and short aliases still work via FTS/LIKE.
 - Vector search remains optional and graceful.
 - Retrieved evidence can expand to surrounding window without losing original quote span.
 
 **Critical risks:**
+
 - Contextual prefix contaminates quoted source.
 - Chunk offsets break after package import/export.
 
 **Mitigation:**
+
 - Store `rawContent`/source offsets separately from `indexText`.
 - Make source hash part of evidence validation.
 
 **Phase 2 implementation status (2026-06-08):**
 
 사실:
+
 - `MemoryChunk.content` remains the raw quote text returned to users.
 - Added `MemoryChunk.indexText`, `indexTextHash`, `contextLabel`, and `sourceContentHash`.
 - Chunk FTS, short-token fallback, and embedding projection now use `indexText`.
@@ -263,6 +286,7 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Canonical payload builder now deduplicates IDs before `IN`-clause fetches for episode evidence and episode rows, limiting SQL parameter churn on large projects.
 
 아직 미구현:
+
 - Parent-window expansion API is not implemented yet.
 - Scene/paragraph hierarchical retrieval is not implemented yet.
 - Existing chunks need normal rebuild jobs before `indexText` is populated with contextual labels.
@@ -272,22 +296,26 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 **Goal:** Stop entity duplication and alias confusion before relation graph extraction.
 
 **User-visible result:**
+
 - Character/entity cards show aliases, mentions, first/last appearance, and evidence.
 - User can approve, split, merge, reject suggested identities.
 
 **Schema direction:**
+
 - `MemoryEntity`
 - `MemoryEntityAlias`
 - `MemoryEntityMention`
 - `MemoryEntityMergeAudit`
 
 **Rules:**
+
 - Do not merge purely by fuzzy string match.
 - Keep unresolved mentions.
 - Keep surface form; do not discard original wording.
 - User-approved identity outranks LLM suggestion.
 
 **Files likely touched:**
+
 - `src/main/database/schema/**`
 - `src/main/services/features/memory/**`
 - `src/main/handler/world/**` or new `src/main/handler/memory/**`
@@ -296,27 +324,32 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - renderer research/wiki entity UI
 
 **Success criteria:**
+
 - Alias resolution eval cases exist.
 - Merge/split is reversible.
 - Canonical profile cannot contain confirmed data without evidence.
 
 **Critical risks:**
+
 - UI world entities and engine entities diverge confusingly.
 - Entity resolution becomes endless manual work.
 
 **Mitigation:**
+
 - Use bridge pointers between world entity and memory entity.
 - Default to suggestion, not auto-merge.
 
 **Phase 3 implementation status (2026-06-08):**
 
 사실:
+
 - Added dedicated `MemoryEntity`, `MemoryEntityAlias`, and `MemoryEntityMention` tables.
 - Added deterministic alias normalization helpers.
 - `MemoryEntityMention.chunkId` is stored as a snapshot id, not an FK to mutable chunk projection rows.
 - `MemoryEntityMention` stores quote, offsets, `contentHash`, and `sourceContentHash` snapshots for later evidence validation.
 
 아직 미구현:
+
 - `MemoryEntityMergeAudit` is not implemented yet.
 - No LLM/entity extraction runner yet.
 - No user merge/split/approval UI yet.
@@ -327,16 +360,19 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 **Goal:** Extract and store chapter/scene-level narrative events with evidence.
 
 **User-visible result:**
+
 - Per chapter/scene “이 에피소드가 바꾼 설정” list.
 - Events show participants, changed relationships, new knowledge, unresolved threads.
 
 **Schema direction:**
+
 - `MemoryEpisode`
 - `MemoryEpisodeParticipant`
 - `MemoryEpisodeEvidence`
 - `MemoryStateChangeCandidate`
 
 **Extraction scope:**
+
 - Start with chapters/scenes only.
 - First target:
   - character appears
@@ -347,15 +383,18 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
   - promise/foreshadowing opened or resolved
 
 **Success criteria:**
+
 - Episode extraction can be rerun incrementally by content hash.
 - Evidence span is mandatory.
 - User can mark an episode extraction as wrong/rejected.
 
 **Critical risks:**
+
 - LLM extracts too many weak events.
 - Background job queue starves existing chunk/summary/embedding jobs.
 
 **Mitigation:**
+
 - Separate extraction job type/version/dependency.
 - Batch incrementally; do not full-rebuild on every edit.
 - Keep “candidate” and “confirmed” separate.
@@ -363,6 +402,7 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 **Phase 4 implementation status (2026-06-08):**
 
 사실:
+
 - Added dedicated episode extraction queue table: `MemoryEpisodeExtractionJob`.
 - Added `MemoryEpisode`, `MemoryEpisodeParticipant`, `MemoryEpisodeEvidence`, and `MemoryStateChangeCandidate`.
 - Episode/state rows default to `suggested`; rejection fields are present.
@@ -372,6 +412,7 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - `MemoryStateChangeCandidate.evidenceId` is mandatory so state-change claims stay tied to a concrete episode evidence span.
 
 아직 미구현:
+
 - No LLM episode extraction runner yet.
 - No IPC/UI for episode review or rejection yet.
 - No automatic background processing of `MemoryEpisodeExtractionJob` yet.
@@ -381,6 +422,7 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 **Goal:** Store relationship and state facts with validity windows and invalidation.
 
 **User-visible result:**
+
 - “N화 기준 관계”
 - “현재 최신화 기준 관계”
 - relationship timeline
@@ -388,9 +430,11 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - contradiction candidates
 
 **Do not reuse:**
+
 - Do not turn `EntityRelation` into the temporal engine graph store.
 
 **Schema direction:**
+
 - `MemoryFact`
 - `MemoryFactEvidence`
 - `MemoryFactInvalidation`
@@ -399,6 +443,7 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - `MemoryKnowledgeState`
 
 **Required fields for fact-like rows:**
+
 - projectId
 - subject entity id
 - predicate
@@ -414,16 +459,19 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - invalidatedBy fact id
 
 **Success criteria:**
+
 - Can answer “A와 B는 10화 기준 어떤 관계인가?”
 - Can answer “A는 8화 기준 C의 정체를 아는가?”
 - Future information is not used for past-time answers.
 - Conflicting facts are surfaced, not silently merged.
 
 **Critical risks:**
+
 - SQL complexity grows quickly.
 - Relation ontology becomes too broad.
 
 **Mitigation:**
+
 - Start with narrow predicates:
   - allied_with
   - hostile_to
@@ -439,6 +487,7 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 ### Phase 5 Implementation Status
 
 사실:
+
 - Added temporal fact/state tables: `MemoryFact`, `MemoryFactEvidence`, `MemoryFactInvalidation`, `MemoryRelationState`, `MemoryCharacterState`, and `MemoryKnowledgeState`.
 - `MemoryFact` stores subject, predicate, object entity/value, value type, validity window, observed chapter order, confidence, status, extractor version, source content hash, and invalidating fact pointer.
 - Fact evidence is linked to `MemoryEpisodeEvidence`, keeping temporal claims tied to concrete quoted episode evidence.
@@ -449,6 +498,7 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Added temporal validity helpers that exclude future-observed facts, facts outside their validity window, rejected/deprecated facts, and invalidated facts.
 
 아직 미구현:
+
 - No LLM fact extraction runner yet.
 - No temporal query service that answers relation/knowledge questions from these tables yet.
 - No UI review flow for confirming/rejecting/conflict-resolving facts yet.
@@ -459,13 +509,16 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 **Goal:** Replace one-size RAG context assembly with intent-specific memory retrieval.
 
 **User-visible result:**
+
 - Same question UI, more stable answers.
 - “관계”, “현재 상태”, “근거 찾기”, “충돌 검사” behave differently without user managing retrieval.
 
 **New service:**
+
 - `NarrativeMemoryQueryService`
 
 **Query intents:**
+
 - evidence-trace
 - entity-profile
 - entity-state-at-chapter
@@ -476,25 +529,30 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - global-summary
 
 **Rules:**
+
 - `contextAssembler` can consume memory query output, but must not own memory reasoning.
 - Graph facts retrieve candidate state; final answer still cites source evidence.
 - Summary can route, but raw evidence verifies.
 
 **Success criteria:**
+
 - Query route is logged.
 - Unit tests verify route-specific source selection.
 - “No sufficient evidence” is a valid successful answer.
 
 **Critical risks:**
+
 - Router becomes opaque and impossible to debug.
 
 **Mitigation:**
+
 - Return retrieval trace in dev payload.
 - Keep deterministic route tests for common question patterns.
 
 ### Phase 6 Implementation Status
 
 사실:
+
 - Added `NarrativeMemoryQueryService` as a separate memory reasoning boundary instead of embedding memory routing inside `contextAssembler`.
 - Added deterministic intent routing for evidence trace, entity profile, entity state at chapter, relationship at chapter, event causality, contradiction check, unresolved thread check, and global summary.
 - The service returns retrieval trace, selected sources, candidate temporal facts, memory evidence spans, and `insufficient_evidence` as a successful state.
@@ -507,6 +565,7 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Analysis panel now renders a compact narrative-memory trace block for assistant answers.
 
 아직 미구현:
+
 - No IPC/API endpoint for direct memory query inspection yet.
 - No entity name parser or LLM-assisted intent classifier yet.
 - No fact extraction runner, so this service can only read temporal facts after later phases or seeded data create them.
@@ -516,12 +575,14 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 **Goal:** Replace mock relationship visualization and connect AI analysis to memory safely.
 
 **User-visible result:**
+
 - Entity visual cards show real relationships and evidence.
 - Relationship graph can toggle by chapter/time.
 - AI analysis can include prior state when explicitly enabled.
 - Conflict queue becomes visible.
 
 **Files likely touched:**
+
 - `src/renderer/src/features/research/components/wiki/visual/useEntityVisualData.ts`
 - `src/renderer/src/features/research/components/wiki/visual/**`
 - `src/main/handler/**`
@@ -530,6 +591,7 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - `src/main/services/features/analysis/**`
 
 **Success criteria:**
+
 - No mock relationship data remains in production path.
 - Every displayed relation has evidence or `추정`/`검토 필요` status.
 - AI analysis can run in two modes:
@@ -537,16 +599,19 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
   - chapter + prior confirmed memory
 
 **Critical risks:**
+
 - UI over-trusts inferred memory.
 - AI analysis leaks future facts into past/chapter-local analysis.
 
 **Mitigation:**
+
 - Always pass a chapter/time boundary to memory query.
 - Display source/status badges.
 
 ### Phase 7 Implementation Status
 
 사실:
+
 - Added a renderer-safe `memory.queryNarrative` IPC/API contract for direct narrative memory inspection.
 - Registered the main-process handler through the existing memory/search IPC boundary and validated input with `narrativeMemoryQuerySchema`.
 - The entity visual hook no longer imports or returns production mock relationship data directly.
@@ -554,22 +619,26 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Visual relation cards display predicate, status, and fact-level evidence availability in the existing relation card shape.
 - Empty or failed memory results render as an explicit no-evidence bundle instead of fabricated relationships.
 - Added IPC contract coverage for `memory.queryNarrative`, including blank-question rejection.
+- Added analysis memory scope toggle (`현재 챕터만`, `현재+과거`) and wired it to RAG narrative memory temporal boundary filtering.
+- Added entity visual relationship panel memory-scope toggle (`현재 챕터만`, `현재+과거`) and pass-through filtering through narrative query.
+- Hardened entity-based temporal fact resolution by returning no fact hits when explicit name input cannot be resolved, preventing unscoped fact contamination.
+- Added conflict queue API (`memory:get-conflict-queue`) and conflict UI panel in research analysis.
 
 아직 미구현:
-- Entity id/name resolution is still coarse; visual related names may be raw entity ids until an entity-profile read model is added.
-- Relationship graph time toggle is not implemented yet.
-- Conflict queue UI is not implemented yet.
-- AI analysis mode toggle for prior confirmed memory is not implemented yet.
+
+- Entity-profile read model is still missing for canonical alias/동일인물 통합 UI; currently relation labels rely on extracted fact names and raw ids are replaced with `이름 미확인` 상태 처리.
 
 ## Phase 8: Hierarchical Narrative Summaries
 
 **Goal:** Add RAPTOR/GraphRAG-like hierarchy after temporal facts exist.
 
 **User-visible result:**
+
 - Arc/volume/global memory.
 - Long-range plot, theme, unresolved thread, faction movement questions improve.
 
 **Hierarchy:**
+
 - scene summary
 - chapter summary
 - arc summary
@@ -578,23 +647,28 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - community summary over entity/relation graph
 
 **Rules:**
+
 - Summary rows must link to source episodes/facts/chunks.
 - Summary cannot override temporal fact.
 - Summary drift is evaluated.
 
 **Success criteria:**
+
 - Global questions retrieve summary plus underlying evidence.
 - Summary contamination is measurable.
 
 **Critical risks:**
+
 - Adding hierarchy too early amplifies wrong facts.
 
 **Mitigation:**
+
 - Keep this after evidence/entity/episode/temporal graph MVP.
 
 ### Phase 8 Implementation Status
 
 사실:
+
 - Added `MemoryNarrativeSummary` for scene/chapter/arc/volume/project/community-level summary rows.
 - Added `MemoryNarrativeSummarySource` so summaries must link back to source episodes, temporal facts, chunks, or chapter summaries.
 - Summary source links use project-scoped foreign keys to reject cross-project evidence contamination.
@@ -602,11 +676,12 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Summary rows carry status, confidence, extractor version, source content hash, generated timestamp, and rejection fields.
 - Summary storage is separate from `MemoryFact`; summaries can support global retrieval but do not overwrite temporal fact state.
 - Added migration, packaged bootstrap SQL, and packaged integrity metadata for the new summary tables.
+- Added narrative query path for `global-summary` intent so chapter summaries are returned in retrieval (chapter-bound filtering + chapter-level scoping).
 
 아직 미구현:
+
 - No hierarchy generation runner yet.
 - No summary drift evaluator yet.
-- No global-summary retrieval implementation that reads `MemoryNarrativeSummary` yet.
 - No UI for arc/volume/project/community summaries yet.
 
 ## Phase 9: Package Persistence and Sync Policy
@@ -614,6 +689,7 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 **Goal:** Define what memory data is canonical, cached, exportable, and regenerable.
 
 **Policy:**
+
 - Regenerable:
   - chunks
   - embeddings
@@ -627,20 +703,24 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
   - eval cases created by user
 
 **Success criteria:**
+
 - Import/export does not lose user-approved memory.
 - Rebuild can regenerate projections from source text.
 - Sync does not treat stale generated data as canon.
 
 **Critical risks:**
+
 - Derived memory bloats `.luie` package.
 - User corrections are lost if treated as cache.
 
 **Mitigation:**
+
 - Separate canonical memory from derived projection tables at schema and package layers.
 
 ### Phase 9 Implementation Status
 
 사실:
+
 - Added a code-level memory persistence policy that separates canonical exportable memory from regenerable projections.
 - Canonical/exportable policy currently includes user-reviewable memory identity, alias, facts, fact evidence links, invalidations, and eval case gold data.
 - Regenerable projection policy includes chunks, embeddings, build jobs, summaries, episodes, mentions, state projections, generated narrative summaries, and eval run/results.
@@ -657,6 +737,7 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Supabase remote sync now has a first-class `memory_canonical_rows` table with owner RLS, repository fetch/upsert mapping, and sync bundle round-trip tests.
 
 아직 미구현:
+
 - `MemoryFactEvidence` DB restore is not applied yet because it requires canonical/importable `MemoryEpisodeEvidence` anchors, which remain regenerable in the current policy.
 - No conflict-resolution path for user-approved memory package payloads yet.
 - No UI flow yet that marks memory facts as user-approved canonical data.
@@ -668,6 +749,7 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 **Verdict:** Risky unless engine graph is separated from world graph.
 
 Must change:
+
 - Do not reuse `EntityRelation` as temporal evidence graph.
 - Do not put all extraction into existing `MemoryBuildJob` without version/dependency isolation.
 - Require offset/contentHash/extractorVersion/confidence for every fact.
@@ -679,6 +761,7 @@ Must change:
 **Verdict:** Luie should implement temporal memory before full GraphRAG.
 
 Must follow:
+
 - Chunk is evidence, not memory.
 - Event/state transition is the core unit.
 - GraphRAG helps global sensemaking but not precise point-in-time state alone.
@@ -690,6 +773,7 @@ Must follow:
 **Verdict:** The first product win must be grounded memory QA plus relationship/state cards.
 
 Must show early:
+
 - evidence-backed answers
 - confidence/status badges
 - N-chapter 기준 답변
@@ -702,6 +786,7 @@ Must show early:
 **MVP name:** 근거 있는 작품 기억 QA + 관계/상태 카드
 
 **MVP scope:**
+
 - Evidence Memory MVP
 - Eval Harness MVP
 - Canonical Entity suggestion MVP
@@ -710,6 +795,7 @@ Must show early:
 - Entity visual card backed by real evidence
 
 **MVP non-goals:**
+
 - full general-purpose graph
 - all entity types
 - full automatic canon generation
@@ -718,6 +804,7 @@ Must show early:
 - fully automatic contradiction resolution
 
 **MVP pass condition:**
+
 - 100 eval questions produce zero P0 failures.
 - Every confirmed answer has source evidence.
 - User correction prevents repeated same error.

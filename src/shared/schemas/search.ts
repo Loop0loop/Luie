@@ -15,11 +15,27 @@ export const memoryChunkSearchSchema = z.object({
 
 export const narrativeMemoryQuerySchema = z.object({
   projectId: projectIdSchema,
-  question: z.string().trim().min(1, "Question is required").max(20_000, "Question is too large"),
+  question: z
+    .string()
+    .trim()
+    .min(1, "Question is required")
+    .max(20_000, "Question is too large"),
   chapterId: chapterIdSchema.optional(),
   entityId: z.string().trim().min(1).optional(),
   entityName: z.string().trim().min(1).optional(),
+  entityNames: z.array(z.string().trim().min(1)).optional(),
   entityType: z.string().trim().min(1).optional(),
+  includePriorMemory: z.boolean().optional(),
+});
+
+export const memoryConflictQueueQuerySchema = z.object({
+  projectId: projectIdSchema,
+  chapterId: chapterIdSchema.optional(),
+  includePriorMemory: z.boolean().optional(),
+  entityId: z.string().trim().min(1).optional(),
+  entityName: z.string().trim().min(1).optional(),
+  entityType: z.string().trim().min(1).optional(),
+  limit: z.number().int().positive().max(200).optional(),
 });
 
 export const memoryChunkIdSchema = z.string().uuid("Invalid chunk ID");
@@ -41,8 +57,12 @@ export const memoryEmbeddingStatusSchema = z.object({
 
 export const ragQaRequestSchema = z.object({
   projectId: projectIdSchema,
-  question: z.string().min(1, "Question is required").max(20_000, "Question is too large"),
+  question: z
+    .string()
+    .min(1, "Question is required")
+    .max(20_000, "Question is too large"),
   chapterId: chapterIdSchema.optional(),
+  includePriorMemory: z.boolean().optional(),
 });
 
 export const ragQaStopSchema = z.object({

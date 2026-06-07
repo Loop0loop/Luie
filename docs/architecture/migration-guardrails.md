@@ -95,7 +95,9 @@ src/shared/
 | --- | ---: | --- |
 | `src/renderer/src/styles/global.css` | 530 | 예외(정적 자원 번들) |
 
-사실: `tests`에서 500 LOC 초과인 파일은 `tests/dom/appOperationalScenarios.test.tsx`(569), `tests/main/services/syncService.test.ts`(1166), `tests/main/handler/ipcInputValidation.test.ts`(547), `tests/main/services/luieContainer.extreme.test.ts`(543), `tests/renderer/components/worldGraph/canvasTab.behavior.test.tsx`(549), `tests/main/database/schemaParity.test.ts`(535)입니다. 테스트는 현재 아키텍처 구조 대상에서 제외했으므로 예외로 관리합니다.
+사실: `tests`에서 500 LOC 초과인 파일은 `tests/dom/appOperationalScenarios.test.tsx`(569), `tests/main/services/syncService.test.ts`(1166), `tests/main/services/luieContainer.extreme.test.ts`(543), `tests/renderer/components/worldGraph/canvasTab.behavior.test.tsx`(549), `tests/main/database/schemaParity.test.ts`(535)입니다.
+
+의견: `tests/main/handler/ipcInputValidation.test.ts`는 공통 세팅 분리로 테스트 본체를 `ipcInputValidation.shared.ts`, `ipcInputValidation.memory.test.ts`, `ipcInputValidation.system.test.ts`로 쪼개 500 LOC 한도 위험에서 해소했습니다.
 
 ## 현재 500 LOC 초과 아카이브
 

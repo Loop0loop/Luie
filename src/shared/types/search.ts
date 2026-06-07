@@ -95,6 +95,7 @@ export interface RagQaRequest {
   projectId: string;
   question: string;
   chapterId?: string;
+  includePriorMemory?: boolean;
 }
 
 export interface UtilityRagQaRequest extends RagQaRequest {
@@ -110,10 +111,7 @@ export interface RagQaEvidence {
 
 export type RagQaGroundingStatus =
   /** Reserved for a later claim-level verifier; Phase 0 never emits this. */
-  | "confirmed"
-  | "inferred"
-  | "insufficient_evidence"
-  | "conflicting";
+  "confirmed" | "inferred" | "insufficient_evidence" | "conflicting";
 
 export interface RagQaGrounding {
   status: RagQaGroundingStatus;
@@ -172,6 +170,18 @@ export interface NarrativeMemoryTraceStep {
   reason: string;
 }
 
+export interface MemoryEntityProfile {
+  id: string;
+  canonicalName: string;
+  entityType: string;
+  status: string;
+  aliases: string[];
+  aliasCount: number;
+  mentionCount: number;
+  firstMentionChapterOrder: number | null;
+  lastMentionChapterOrder: number | null;
+}
+
 export interface NarrativeMemoryFactResult {
   id: string;
   subjectEntityId: string;
@@ -190,6 +200,44 @@ export interface NarrativeMemoryFactResult {
   relatedEntityType: string | null;
 }
 
+export interface MemoryConflictFactSummary {
+  id: string;
+  subjectEntityId: string;
+  subjectEntityName: string | null;
+  predicate: string;
+  objectEntityId: string | null;
+  objectEntityName: string | null;
+  objectValue: string | null;
+  valueType: string;
+  validFromChapterOrder: number;
+  validToChapterOrder: number | null;
+  observedAtChapterOrder: number;
+  confidence: number;
+  status: string;
+  evidenceCount: number;
+}
+
+export interface MemoryConflictQueueInput {
+  projectId: string;
+  chapterId?: string;
+  includePriorMemory?: boolean;
+  entityId?: string;
+  entityName?: string;
+  entityType?: string;
+  limit?: number;
+}
+
+export interface MemoryConflictQueueItem {
+  conflictId: string;
+  reason: string;
+  invalidatedFact: MemoryConflictFactSummary;
+  invalidatingFact: MemoryConflictFactSummary;
+}
+
+export interface MemoryConflictQueueResult {
+  items: MemoryConflictQueueItem[];
+}
+
 export interface NarrativeMemoryQueryInput {
   projectId: string;
   question: string;
@@ -197,6 +245,8 @@ export interface NarrativeMemoryQueryInput {
   entityId?: string;
   entityName?: string;
   entityType?: string;
+  includePriorMemory?: boolean;
+  entityNames?: string[];
 }
 
 export interface NarrativeMemoryQueryResult {
@@ -204,6 +254,7 @@ export interface NarrativeMemoryQueryResult {
   status: "found" | "insufficient_evidence" | "conflicting";
   trace: NarrativeMemoryTraceStep[];
   facts: NarrativeMemoryFactResult[];
+  profiles?: MemoryEntityProfile[];
   evidence: RagQaEvidence[];
 }
 

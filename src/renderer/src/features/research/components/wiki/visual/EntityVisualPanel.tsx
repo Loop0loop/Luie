@@ -14,6 +14,7 @@ import { IdentityCard } from "./IdentityCard";
 import { RelatedEntities } from "./RelatedEntities";
 import { useEntityVisualData } from "./useEntityVisualData";
 import type { EntityKind } from "./types";
+import { useState } from "react";
 
 type EntityVisualPanelProps = {
   kind: EntityKind;
@@ -22,13 +23,56 @@ type EntityVisualPanelProps = {
   chapterId?: string;
 };
 
-export function EntityVisualPanel({ kind, id, name, chapterId }: EntityVisualPanelProps) {
-  const bundle = useEntityVisualData(kind, id, name, chapterId);
+export function EntityVisualPanel({
+  kind,
+  id,
+  name,
+  chapterId,
+}: EntityVisualPanelProps) {
+  const [memoryScope, setMemoryScope] = useState<"current-only" | "with-prior">(
+    "current-only",
+  );
+  const includePriorMemory = memoryScope === "with-prior";
+  const scopeControlId = `entity-visual-memory-scope-${id}`;
+
+  const bundle = useEntityVisualData(
+    kind,
+    id,
+    name,
+    chapterId,
+    includePriorMemory,
+  );
 
   return (
     <div className="flex flex-col gap-4 max-w-[760px]">
-      <RelationGraph centerName={name} centerKind={kind} related={bundle.related} />
-      <IdentityCard kind={kind} name={name} identityLine={bundle.identityLine} />
+      <div className="flex justify-end">
+        <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2 py-1">
+          <label htmlFor={scopeControlId} className="text-[11px] text-muted">
+            Memory
+          </label>
+          <select
+            id={scopeControlId}
+            value={memoryScope}
+            onChange={(e) =>
+              setMemoryScope(e.target.value as "current-only" | "with-prior")
+            }
+            className="h-6 rounded border border-border bg-surface px-2 text-xs text-fg"
+          >
+            <option value="current-only">현재 챕터만</option>
+            <option value="with-prior">현재+과거</option>
+          </select>
+        </div>
+      </div>
+      <RelationGraph
+        centerName={name}
+        centerKind={kind}
+        related={bundle.related}
+      />
+      <IdentityCard
+        kind={kind}
+        name={name}
+        identityLine={bundle.identityLine}
+      />
       <RelatedEntities related={bundle.related} />
     </div>
   );

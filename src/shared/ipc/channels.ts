@@ -114,6 +114,7 @@ export const IPC_CHANNELS = {
   MEMORY_JOB_STATUS: "memory:job-status",
   MEMORY_SEARCH_CHUNKS: "memory:search-chunks",
   MEMORY_QUERY_NARRATIVE: "memory:query-narrative",
+  MEMORY_GET_CONFLICT_QUEUE: "memory:get-conflict-queue",
   MEMORY_GET_CHUNK_BACKLINK: "memory:get-chunk-backlink",
   MEMORY_GET_CHAPTER_SUMMARY: "memory:get-chapter-summary",
   MEMORY_GET_SUMMARY_STATUS: "memory:get-summary-status",
