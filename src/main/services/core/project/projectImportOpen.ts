@@ -109,6 +109,41 @@ const resolveImportIdentity = (
   return { resolvedProjectId, legacyProjectId };
 };
 
+const assertCanonicalMemoryProjectScope = (
+  memory: { tables?: Record<string, Array<Record<string, unknown>>> } | undefined,
+  expectedProjectId: string | undefined,
+  packagePath: string,
+): void => {
+  if (!memory?.tables) return;
+
+  const projectIds = new Set<string>();
+  for (const rows of Object.values(memory.tables)) {
+    for (const row of rows) {
+      if (typeof row.projectId === "string" && row.projectId.length > 0) {
+        projectIds.add(row.projectId);
+      }
+    }
+  }
+  if (projectIds.size === 0) return;
+
+  if (projectIds.size > 1) {
+    throw new ServiceError(
+      ErrorCode.VALIDATION_FAILED,
+      "Canonical memory payload contains multiple source projects",
+      { packagePath, projectIds: Array.from(projectIds) },
+    );
+  }
+
+  const [memoryProjectId] = Array.from(projectIds);
+  if (expectedProjectId && memoryProjectId !== expectedProjectId) {
+    throw new ServiceError(
+      ErrorCode.VALIDATION_FAILED,
+      "Canonical memory payload project does not match package meta",
+      { packagePath, expectedProjectId, memoryProjectId },
+    );
+  }
+};
+
 const buildRecoveryTimestamp = (date = new Date()): string => {
   const pad = (value: number) => String(value).padStart(2, "0");
   return (
@@ -221,6 +256,11 @@ export const openLuieProjectPackage = async (input: {
 
   const chaptersMeta = meta.chapters ?? [];
   const collections = await readLuieImportCollections(resolvedPath, input.logger);
+  assertCanonicalMemoryProjectScope(
+    collections.memory,
+    typeof meta.projectId === "string" ? meta.projectId : undefined,
+    resolvedPath,
+  );
   const chaptersForCreate = await buildChapterCreateRows({
     packagePath: resolvedPath,
     resolvedProjectId,
@@ -257,6 +297,16 @@ export const openLuieProjectPackage = async (input: {
     worldMindmap: collections.mindmap,
     worldScrapMemos: collections.memos,
     worldGraph: collections.graph,
+    memoryCanonical: collections.memory
+      ? {
+          schemaVersion: 1,
+          exportedAt:
+            typeof collections.memory.exportedAt === "string"
+              ? collections.memory.exportedAt
+              : new Date(0).toISOString(),
+          tables: collections.memory.tables ?? {},
+        }
+      : null,
     resolvedPath,
     chaptersForCreate,
     charactersForCreate: graphRows.charactersForCreate,

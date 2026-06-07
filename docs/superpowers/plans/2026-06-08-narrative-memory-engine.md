@@ -643,11 +643,15 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - `.luie` package export now writes canonical memory rows to `memory/canonical.json`.
 - `.luie` package import collection reading now validates allowed `memory/canonical.json` table names, required row identity/project scope, and exportable statuses before exposing the payload.
 - Local sync bundle/package payload construction now carries `memoryCanonicalRows` into the `.luie` package payload and excludes deleted canonical memory rows.
+- `.luie` package import now applies canonical memory identities, aliases, temporal facts, fact invalidations, and eval gold rows back into the local DB inside the project import transaction.
+- Imported canonical memory rows are re-scoped to the resolved local project id to avoid package/project id drift.
+- Imported canonical memory row ids are remapped with project/table scope and internal entity/fact/eval foreign keys are rewritten to avoid global primary-key collisions.
+- Canonical memory import rejects payloads that mix source project ids or disagree with package `meta.projectId`.
 
 아직 미구현:
 - Supabase/remote sync repository upsert/fetch does not yet persist canonical memory rows as first-class remote rows.
-- Project package import does not yet apply canonical memory rows back into the local DB.
-- No conflict-resolution/import path for user-approved memory package payloads yet.
+- `MemoryFactEvidence` DB restore is not applied yet because it requires canonical/importable `MemoryEpisodeEvidence` anchors, which remain regenerable in the current policy.
+- No conflict-resolution path for user-approved memory package payloads yet.
 - No UI flow yet that marks memory facts as user-approved canonical data.
 
 ## Sub-Agent Critical Review Summary

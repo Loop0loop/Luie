@@ -18,16 +18,28 @@ const mocked = vi.hoisted(() => {
       values: vi.fn((vals: unknown) => {
         insertFn(vals);
         return {
-          onConflictDoUpdate: vi.fn(async () => undefined),
-          returning: vi.fn(async () => returningData),
+          run: vi.fn(() => undefined),
+          onConflictDoUpdate: vi.fn(() => ({
+            run: vi.fn(() => undefined),
+          })),
+          returning: vi.fn(() => returningData),
         };
       }),
     })),
     delete: vi.fn(() => ({
-      where: vi.fn(async () => {
+      where: vi.fn(() => {
         deleteFn();
-        return {};
+        return {
+          run: vi.fn(() => undefined),
+        };
       }),
+    })),
+    select: vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({
+          get: vi.fn(() => returningData[0]),
+        })),
+      })),
     })),
   };
 
@@ -36,13 +48,15 @@ const mocked = vi.hoisted(() => {
     deleteFn,
     setProjectAttachmentPath,
     tx,
-    transaction: vi.fn(async (callback: (tx: unknown) => unknown) => await callback(mocked.tx)),
+    transaction: vi.fn((callback: (tx: unknown) => unknown) => callback(mocked.tx)),
   };
 });
 
 vi.mock("../../../src/main/database/index.js", () => ({
   db: {
-    getDrizzleClient: () => ({
+    initialize: vi.fn(async () => undefined),
+    disconnect: vi.fn(async () => undefined),
+    getClient: () => ({
       transaction: mocked.transaction,
     }),
   },
@@ -122,10 +136,35 @@ describe("projectImportTransaction", () => {
       worldEntitiesForCreate: [],
       relationsForCreate: [],
       snapshotsForCreate: [],
+      memoryCanonical: {
+        schemaVersion: 1,
+        exportedAt: "2026-03-12T03:00:00.000Z",
+        tables: {
+          MemoryEntity: [
+            {
+              id: "memory-entity-1",
+              projectId: "original-project",
+              entityType: "character",
+              canonicalName: "Alice",
+              status: "confirmed",
+              updatedAt: "2026-03-12T03:00:00.000Z",
+            },
+          ],
+        },
+      },
     });
 
     expect(mocked.transaction).toHaveBeenCalledTimes(1);
     expect(mocked.insertFn).toHaveBeenCalled();
+    expect(mocked.insertFn).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "project-1:MemoryEntity:memory-entity-1",
+          projectId: "project-1",
+          status: "confirmed",
+        }),
+      ]),
+    );
     expect(result.id).toBe("project-1");
     expect(result.projectPath).toBe("/tmp/project-1.luie");
   });

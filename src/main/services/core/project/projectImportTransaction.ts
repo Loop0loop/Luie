@@ -16,6 +16,10 @@ import type {
   TermCreateRow,
   WorldEntityCreateRow,
 } from "./projectImportCodec.js";
+import {
+  applyMemoryCanonicalPackagePayload,
+  type MemoryCanonicalPackagePayload,
+} from "../../features/memory/persistence/memoryCanonicalPackage.js";
 
 
 const { project, projectSettings, chapter, character, term, faction, event, worldEntity, entityRelation, snapshot: snapshotTable, worldDocument: worldDocumentTable, scrapMemo, projectAttachment } = schema;
@@ -42,6 +46,7 @@ type ProjectImportTransactionInput = {
   worldMindmap?: ImportedWorldDocumentPayload;
   worldScrapMemos?: ImportedWorldDocumentPayload;
   worldGraph?: ImportedWorldDocumentPayload;
+  memoryCanonical?: MemoryCanonicalPackagePayload | null;
   resolvedPath: string;
   chaptersForCreate: ChapterCreateRow[];
   charactersForCreate: CharacterCreateRow[];
@@ -205,6 +210,7 @@ export const applyProjectImportTransaction = async (
     worldMindmap,
     worldScrapMemos,
     worldGraph,
+    memoryCanonical,
     resolvedPath,
     chaptersForCreate,
     charactersForCreate,
@@ -340,6 +346,12 @@ export const applyProjectImportTransaction = async (
     if (importedScrapState.memoRows.length > 0) {
       tx.insert(scrapMemo).values(importedScrapState.memoRows).run();
     }
+    applyMemoryCanonicalPackagePayload(tx, {
+      projectId: resolvedProjectId,
+      importedAt,
+      validChapterIds: new Set(chaptersForCreate.map((chapterRow) => chapterRow.id)),
+      payload: memoryCanonical,
+    });
     const normalizedProjectPath = resolvedPath || null;
     if (normalizedProjectPath) {
       const now2 = new Date().toISOString();

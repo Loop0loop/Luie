@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ErrorCode } from "../../../src/shared/constants/index.js";
 
 const mocked = vi.hoisted(() => {
   const access = vi.fn();
@@ -46,7 +47,9 @@ vi.mock("../../../src/main/services/io/luieContainer.js", () => ({
 
 vi.mock("../../../src/main/database/index.js", () => ({
   db: {
-    getDrizzleClient: () => ({
+    initialize: vi.fn(async () => undefined),
+    disconnect: vi.fn(async () => undefined),
+    getClient: () => ({
       select: vi.fn(() => ({
         from: vi.fn(() => ({
           where: vi.fn(() => ({
@@ -185,6 +188,23 @@ describe("projectImportOpen", () => {
             edges: [],
             updatedAt: "2026-03-12T02:30:00.000Z",
           });
+        case "memory/canonical.json":
+          return JSON.stringify({
+            schemaVersion: 1,
+            exportedAt: "2026-03-12T02:45:00.000Z",
+            tables: {
+              MemoryEntity: [
+                {
+                  id: "memory-entity-1",
+                  projectId: "project-1",
+                  entityType: "character",
+                  canonicalName: "Alice",
+                  status: "confirmed",
+                  updatedAt: "2026-03-12T02:45:00.000Z",
+                },
+              ],
+            },
+          });
         case "manuscript/chapter-1.md":
           return "# Chapter 1";
         default:
@@ -244,6 +264,17 @@ describe("projectImportOpen", () => {
           nodes: [],
           edges: [],
         }),
+        memoryCanonical: expect.objectContaining({
+          schemaVersion: 1,
+          tables: expect.objectContaining({
+            MemoryEntity: expect.arrayContaining([
+              expect.objectContaining({
+                id: "memory-entity-1",
+                status: "confirmed",
+              }),
+            ]),
+          }),
+        }),
       }),
     );
   });
@@ -281,5 +312,55 @@ describe("projectImportOpen", () => {
         packagePath: "/tmp/project-1.luie",
       }),
     );
+  });
+
+  it("rejects canonical memory from a different package project", async () => {
+    mocked.readLuieContainerEntry.mockImplementation(async (_packagePath: string, entryPath: string) => {
+      if (entryPath === "meta.json") {
+        return JSON.stringify({
+          format: "luie",
+          version: 1,
+          projectId: "project-1",
+          title: "Project 1",
+          updatedAt: "2026-03-12T03:00:00.000Z",
+          chapters: [],
+        });
+      }
+      if (entryPath === "memory/canonical.json") {
+        return JSON.stringify({
+          schemaVersion: 1,
+          tables: {
+            MemoryEntity: [
+              {
+                id: "memory-entity-1",
+                projectId: "other-project",
+                entityType: "character",
+                canonicalName: "Alice",
+                status: "confirmed",
+                updatedAt: "2026-03-12T02:45:00.000Z",
+              },
+            ],
+          },
+        });
+      }
+      return null;
+    });
+
+    const logger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    };
+
+    await expect(
+      openLuieProjectPackage({
+        packagePath: "/tmp/project-1.luie",
+        logger,
+        exportRecoveredPackage: vi.fn(),
+        getProjectById: vi.fn(),
+      }),
+    ).rejects.toMatchObject({
+      code: ErrorCode.VALIDATION_FAILED,
+    });
   });
 });
