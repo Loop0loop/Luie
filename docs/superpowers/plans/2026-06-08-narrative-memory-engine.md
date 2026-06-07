@@ -631,6 +631,22 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 **Mitigation:**
 - Separate canonical memory from derived projection tables at schema and package layers.
 
+### Phase 9 Implementation Status
+
+사실:
+- Added a code-level memory persistence policy that separates canonical exportable memory from regenerable projections.
+- Canonical/exportable policy currently includes user-reviewable memory identity, alias, facts, fact evidence links, invalidations, and eval case gold data.
+- Regenerable projection policy includes chunks, embeddings, build jobs, summaries, episodes, mentions, state projections, generated narrative summaries, and eval run/results.
+- Canonical export status policy excludes `suggested` and generated `conflicting` rows by default; reviewed exportable states are `confirmed`, `rejected`, and `deprecated`.
+- Status-bearing canonical memory rows require an exportable status; missing status is not treated as exportable.
+- Added tests that lock full known memory table classification, no canonical/regenerable overlap, and row-level export eligibility.
+
+아직 미구현:
+- Project package export/import does not yet serialize canonical memory rows.
+- Sync bundle collector/repository does not yet sync canonical memory rows.
+- No migration/import path for user-approved memory package payloads yet.
+- No UI flow yet that marks memory facts as user-approved canonical data.
+
 ## Sub-Agent Critical Review Summary
 
 ### Architecture Reviewer
