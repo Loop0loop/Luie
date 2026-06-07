@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  MEMORY_CANONICAL_EXPORTABLE_TABLES,
+  MEMORY_STATUS_REQUIRED_EXPORT_TABLES,
+  isMemoryCanonicalExportableStatus,
+} from "../../../../shared/constants/index.js";
 
 export const LuieMetaSchema = z
   .object({
@@ -145,3 +150,57 @@ export const LuieSnapshotsSchema = z
     snapshots: z.array(LuieSnapshotSchema).optional(),
   })
   .passthrough();
+
+const memoryCanonicalTables = new Set<string>(MEMORY_CANONICAL_EXPORTABLE_TABLES);
+const memoryStatusRequiredTables = new Set<string>(MEMORY_STATUS_REQUIRED_EXPORT_TABLES);
+
+export const LuieMemoryCanonicalSchema = z
+  .object({
+    schemaVersion: z.number().optional(),
+    exportedAt: z.string().optional(),
+    tables: z.record(
+      z.string(),
+      z.array(z.record(z.string(), z.unknown())),
+    ).optional(),
+  })
+  .passthrough()
+  .superRefine((value, context) => {
+    for (const [tableName, rows] of Object.entries(value.tables ?? {})) {
+      if (!memoryCanonicalTables.has(tableName)) {
+        context.addIssue({
+          code: "custom",
+          path: ["tables", tableName],
+          message: "Unsupported canonical memory table.",
+        });
+        continue;
+      }
+
+      rows.forEach((row, index) => {
+        if (typeof row.id !== "string" || row.id.length === 0) {
+          context.addIssue({
+            code: "custom",
+            path: ["tables", tableName, index, "id"],
+            message: "Canonical memory row id is required.",
+          });
+        }
+        if (typeof row.projectId !== "string" || row.projectId.length === 0) {
+          context.addIssue({
+            code: "custom",
+            path: ["tables", tableName, index, "projectId"],
+            message: "Canonical memory row projectId is required.",
+          });
+        }
+        if (!memoryStatusRequiredTables.has(tableName)) return;
+        if (
+          typeof row.status !== "string" ||
+          !isMemoryCanonicalExportableStatus(row.status)
+        ) {
+          context.addIssue({
+            code: "custom",
+            path: ["tables", tableName, index, "status"],
+            message: "Canonical memory row status is not exportable.",
+          });
+        }
+      });
+    }
+  });

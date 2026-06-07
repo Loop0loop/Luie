@@ -30,6 +30,7 @@ import {
   type LoggerLike,
   type ParsedWorldPayload,
 } from "./exportEngine/index.js";
+import { buildMemoryCanonicalPackagePayload } from "../../features/memory/persistence/memoryCanonicalPackage.js";
 
 const resolveExportPath = (
   projectId: string,
@@ -87,6 +88,7 @@ export const exportProjectPackageWithOptions = async (input: {
   const snapshotExportLimit =
     settingsManager.getAll().snapshotExportLimit ?? SNAPSHOT_FILE_KEEP_COUNT;
   const snapshots = buildExportSnapshotData(project.snapshots, snapshotExportLimit);
+  const memory = await buildMemoryCanonicalPackagePayload(input.projectId);
   const replicaWorld = await readWorldPayloadFromReplica(input.projectId, input.logger);
   const missingPackageDocTypes = ([
     "synopsis",
@@ -162,6 +164,7 @@ export const exportProjectPackageWithOptions = async (input: {
       mindmap,
       memos,
       graph,
+      memory,
       snapshots,
     },
     logger: input.logger,

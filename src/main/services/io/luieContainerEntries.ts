@@ -1,6 +1,8 @@
 import path from "node:path";
 import {
   LUIE_MANUSCRIPT_DIR,
+  LUIE_MEMORY_CANONICAL_FILE,
+  LUIE_MEMORY_DIR,
   LUIE_PACKAGE_EXTENSION,
   LUIE_SNAPSHOTS_DIR,
   LUIE_WORLD_CHARACTERS_FILE,
@@ -82,6 +84,14 @@ export const buildLuieContainerTextEntries = (
     {
       name: `${LUIE_WORLD_DIR}/${LUIE_WORLD_GRAPH_FILE}`,
       content: JSON.stringify(payload.graph ?? { nodes: [], edges: [] }, null, 2),
+    },
+    {
+      name: `${LUIE_MEMORY_DIR}/${LUIE_MEMORY_CANONICAL_FILE}`,
+      content: JSON.stringify(
+        payload.memory ?? { schemaVersion: 1, tables: {} },
+        null,
+        2,
+      ),
     },
     {
       name: `${LUIE_SNAPSHOTS_DIR}/index.json`,

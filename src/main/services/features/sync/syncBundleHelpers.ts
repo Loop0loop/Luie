@@ -8,6 +8,7 @@ import {
   buildLocalSyncBundle,
   hydrateMissingWorldDocsFromPackage,
 } from "./syncBundleCollector.js";
+import { buildMemoryCanonicalPackagePayload } from "../memory/persistence/memoryCanonicalPackage.js";
 import { buildSyncProjectPackagePayload } from "./syncBundleApplier.js";
 import type { SyncBundle } from "./syncMapper.js";
 import { hydrateProjectsWithAttachmentPaths } from "../../core/project/projectAttachmentStore.js";
@@ -27,6 +28,36 @@ type ProjectWithRelations = ProjectRow & {
   scrapMemos: typeof scrapMemo.$inferSelect[];
   terms: typeof term.$inferSelect[];
   worldDocuments: typeof worldDocument.$inferSelect[];
+};
+
+const appendMemoryCanonicalRows = async (
+  bundle: SyncBundle,
+  projectIds: string[],
+  userId: string,
+  deletedProjectIds: Set<string>,
+): Promise<void> => {
+  for (const projectId of projectIds) {
+    if (deletedProjectIds.has(projectId)) continue;
+    const memory = await buildMemoryCanonicalPackagePayload(projectId);
+    for (const [tableName, rows] of Object.entries(memory.tables)) {
+      for (const row of rows ?? []) {
+        const id = typeof row.id === "string" ? row.id : null;
+        if (!id) continue;
+        const updatedAt =
+          typeof row.updatedAt === "string" ? row.updatedAt : memory.exportedAt;
+        bundle.memoryCanonicalRows?.push({
+          id: `${projectId}:${tableName}:${id}`,
+          userId,
+          projectId,
+          tableName,
+          row,
+          updatedAt,
+          deletedAt:
+            typeof row.deletedAt === "string" ? row.deletedAt : null,
+        });
+      }
+    }
+  }
 };
 
 export const buildLocalBundleFromDatabase = async (input: {
@@ -129,12 +160,19 @@ export const buildLocalBundleFromDatabase = async (input: {
 
   const hydratedProjectRows = await hydrateProjectsWithAttachmentPaths(projectsWithRelations);
 
-  return await buildLocalSyncBundle({
+  const bundle = await buildLocalSyncBundle({
     userId: input.userId,
     pendingProjectDeletes: input.pendingProjectDeletes,
     projectRows: hydratedProjectRows as Array<Record<string, unknown>>,
     logger: input.logger,
   });
+  await appendMemoryCanonicalRows(
+    bundle,
+    projectIds,
+    input.userId,
+    new Set(input.pendingProjectDeletes.map((item) => item.projectId)),
+  );
+  return bundle;
 };
 
 export const buildProjectPackagePayloadForSync = async (input: {
@@ -176,4 +214,5 @@ export const countBundleRows = (bundle: SyncBundle): number =>
   bundle.worldDocuments.length +
   bundle.memos.length +
   bundle.snapshots.length +
+  (bundle.memoryCanonicalRows?.length ?? 0) +
   bundle.tombstones.length;

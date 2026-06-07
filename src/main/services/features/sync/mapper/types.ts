@@ -92,6 +92,11 @@ export type SyncSnapshotRecord = SyncEntityBase & {
   contentInline?: string | null;
 };
 
+export type SyncMemoryCanonicalRecord = SyncEntityBase & {
+  tableName: string;
+  row: Record<string, unknown>;
+};
+
 export type SyncTombstoneRecord = {
   id: string;
   userId: string;
@@ -112,6 +117,7 @@ export type SyncBundle = {
   worldDocuments: SyncWorldDocumentRecord[];
   memos: SyncMemoRecord[];
   snapshots: SyncSnapshotRecord[];
+  memoryCanonicalRows?: SyncMemoryCanonicalRecord[];
   tombstones: SyncTombstoneRecord[];
 };
 

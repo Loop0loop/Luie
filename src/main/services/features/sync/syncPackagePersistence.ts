@@ -6,8 +6,10 @@ import {
   LUIE_PACKAGE_FORMAT,
   LUIE_PACKAGE_VERSION,
   MARKDOWN_EXTENSION,
+  MEMORY_CANONICAL_EXPORTABLE_TABLES,
 } from "../../../../shared/constants/index.js";
 import type { LuiePackageExportData } from "../../io/luiePackageTypes.js";
+import type { MemoryCanonicalPackagePayload } from "../memory/persistence/memoryCanonicalPackage.js";
 import { writeLuieContainer } from "../../io/luieContainer.js";
 import { db } from "../../../infra/database/index.js";
 import { project as projectTable, snapshot as snapshotTable } from "../../../infra/database/index.js";
@@ -45,6 +47,26 @@ const toNullableString = (value: unknown): string | null =>
 
 const sortByUpdatedAtDesc = <T extends { updatedAt: string }>(rows: T[]): T[] =>
   [...rows].sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt));
+
+const buildMemoryPayloadFromBundle = (
+  bundle: SyncBundle,
+  projectId: string,
+): MemoryCanonicalPackagePayload => {
+  const tables: MemoryCanonicalPackagePayload["tables"] = {};
+  const allowedTables = new Set<string>(MEMORY_CANONICAL_EXPORTABLE_TABLES);
+  for (const item of bundle.memoryCanonicalRows ?? []) {
+    if (item.projectId !== projectId || item.deletedAt) continue;
+    if (!allowedTables.has(item.tableName)) continue;
+    const tableRows = tables[item.tableName as keyof typeof tables] ?? [];
+    tableRows.push(item.row);
+    tables[item.tableName as keyof typeof tables] = tableRows;
+  }
+  return {
+    schemaVersion: 1,
+    exportedAt: new Date().toISOString(),
+    tables,
+  };
+};
 
 export const buildProjectPackagePayload = async (input: {
   bundle: SyncBundle;
@@ -193,6 +215,7 @@ export const buildProjectPackagePayload = async (input: {
     mindmap: normalizedMindmapPayload,
     graph: normalizedGraphPayload,
     memos: normalizedScrapPayload,
+    memory: buildMemoryPayloadFromBundle(bundle, projectId),
     snapshots: snapshotList,
   };
 };

@@ -50,6 +50,40 @@ describe("syncPackagePersistence", () => {
       ],
       memos: [],
       snapshots: [],
+      memoryCanonicalRows: [
+        {
+          id: "MemoryEntity:entity-1",
+          userId: "user-1",
+          projectId: "project-1",
+          tableName: "MemoryEntity",
+          row: {
+            id: "entity-1",
+            projectId: "project-1",
+            entityType: "character",
+            canonicalName: "Alice",
+            status: "confirmed",
+            updatedAt: "2026-03-02T00:00:00.000Z",
+          },
+          updatedAt: "2026-03-02T00:00:00.000Z",
+        },
+        {
+          id: "MemoryEntity:entity-deleted",
+          userId: "user-1",
+          projectId: "project-1",
+          tableName: "MemoryEntity",
+          row: {
+            id: "entity-deleted",
+            projectId: "project-1",
+            entityType: "character",
+            canonicalName: "Deleted",
+            status: "confirmed",
+            updatedAt: "2026-03-02T00:00:00.000Z",
+            deletedAt: "2026-03-03T00:00:00.000Z",
+          },
+          updatedAt: "2026-03-03T00:00:00.000Z",
+          deletedAt: "2026-03-03T00:00:00.000Z",
+        },
+      ],
       tombstones: [],
     };
 
@@ -88,6 +122,17 @@ describe("syncPackagePersistence", () => {
     expect(result?.synopsis).toMatchObject({
       synopsis: "kept",
       status: "draft",
+    });
+    expect(result?.memory).toMatchObject({
+      schemaVersion: 1,
+      tables: {
+        MemoryEntity: [
+          expect.objectContaining({
+            id: "entity-1",
+            status: "confirmed",
+          }),
+        ],
+      },
     });
   });
 });

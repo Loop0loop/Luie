@@ -10,6 +10,7 @@ export type {
   SyncEventRecord,
   SyncFactionRecord,
   SyncMemoRecord,
+  SyncMemoryCanonicalRecord,
   SyncProjectRecord,
   SyncSnapshotRecord,
   SyncTermRecord,

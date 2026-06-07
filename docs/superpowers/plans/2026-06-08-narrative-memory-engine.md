@@ -640,11 +640,14 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Canonical export status policy excludes `suggested` and generated `conflicting` rows by default; reviewed exportable states are `confirmed`, `rejected`, and `deprecated`.
 - Status-bearing canonical memory rows require an exportable status; missing status is not treated as exportable.
 - Added tests that lock full known memory table classification, no canonical/regenerable overlap, and row-level export eligibility.
+- `.luie` package export now writes canonical memory rows to `memory/canonical.json`.
+- `.luie` package import collection reading now validates allowed `memory/canonical.json` table names, required row identity/project scope, and exportable statuses before exposing the payload.
+- Local sync bundle/package payload construction now carries `memoryCanonicalRows` into the `.luie` package payload and excludes deleted canonical memory rows.
 
 아직 미구현:
-- Project package export/import does not yet serialize canonical memory rows.
-- Sync bundle collector/repository does not yet sync canonical memory rows.
-- No migration/import path for user-approved memory package payloads yet.
+- Supabase/remote sync repository upsert/fetch does not yet persist canonical memory rows as first-class remote rows.
+- Project package import does not yet apply canonical memory rows back into the local DB.
+- No conflict-resolution/import path for user-approved memory package payloads yet.
 - No UI flow yet that marks memory facts as user-approved canonical data.
 
 ## Sub-Agent Critical Review Summary

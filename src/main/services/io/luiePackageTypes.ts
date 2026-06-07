@@ -9,6 +9,7 @@ export type LuiePackageExportData = {
   mindmap?: unknown;
   memos?: unknown;
   graph?: unknown;
+  memory?: unknown;
   snapshots: Array<{
     id: string;
     chapterId?: string | null;

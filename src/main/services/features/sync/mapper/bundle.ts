@@ -10,5 +10,6 @@ export const createEmptySyncBundle = (): SyncBundle => ({
   worldDocuments: [],
   memos: [],
   snapshots: [],
+  memoryCanonicalRows: [],
   tombstones: [],
 });

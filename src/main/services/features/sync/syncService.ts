@@ -409,6 +409,7 @@ export class SyncService {
       bundle.worldDocuments.length +
       bundle.memos.length +
       bundle.snapshots.length +
+      (bundle.memoryCanonicalRows?.length ?? 0) +
       bundle.tombstones.length
     );
   }

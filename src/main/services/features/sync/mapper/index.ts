@@ -21,6 +21,7 @@ export type {
   SyncEventRecord,
   SyncFactionRecord,
   SyncMemoRecord,
+  SyncMemoryCanonicalRecord,
   SyncProjectRecord,
   SyncSnapshotRecord,
   SyncTermRecord,
@@ -124,6 +125,10 @@ export const mergeSyncBundles = (
     worldDocuments: mergeWorldDocs(local.worldDocuments, remote.worldDocuments),
     memos: memoMerged.merged,
     snapshots: mergeEntityList(local.snapshots, remote.snapshots),
+    memoryCanonicalRows: mergeEntityList(
+      local.memoryCanonicalRows ?? [],
+      remote.memoryCanonicalRows ?? [],
+    ),
     tombstones: mergeEntityList(local.tombstones, remote.tombstones),
   };
 

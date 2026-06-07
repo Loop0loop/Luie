@@ -98,5 +98,8 @@ export const applyTombstonesToBundle = (bundle: SyncBundle): SyncBundle => {
         (snapshot) => !isProjectDeleted(snapshot.projectId),
       ),
     ),
+    memoryCanonicalRows: (bundle.memoryCanonicalRows ?? []).filter(
+      (row) => !isProjectDeleted(row.projectId),
+    ),
   };
 };

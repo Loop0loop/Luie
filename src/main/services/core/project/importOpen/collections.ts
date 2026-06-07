@@ -1,6 +1,8 @@
 import type { z } from "zod";
 import {
   ErrorCode,
+  LUIE_MEMORY_CANONICAL_FILE,
+  LUIE_MEMORY_DIR,
   LUIE_SNAPSHOTS_DIR,
   LUIE_WORLD_CHARACTERS_FILE,
   LUIE_WORLD_DRAWING_FILE,
@@ -17,6 +19,7 @@ import type { LoggerLike as LuieWriterLogger } from "../../../io/luiePackageType
 import { readLuieContainerEntry } from "../../../io/luieContainer.js";
 import {
   LuieCharactersSchema,
+  LuieMemoryCanonicalSchema,
   LuieSnapshotsSchema,
   LuieTermsSchema,
   LuieWorldDrawingSchema,
@@ -39,6 +42,7 @@ export type LuieImportCollections = {
   mindmap?: z.infer<typeof LuieWorldMindmapSchema>;
   memos?: z.infer<typeof LuieWorldScrapMemosSchema>;
   graph?: z.infer<typeof LuieWorldGraphSchema>;
+  memory?: z.infer<typeof LuieMemoryCanonicalSchema>;
 };
 
 const parseLuieDocumentOrThrow = <T>(
@@ -98,6 +102,7 @@ export const readLuieImportCollections = async (
   const mindmapEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_MINDMAP_FILE}`;
   const memosEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_SCRAP_MEMOS_FILE}`;
   const graphEntryPath = `${LUIE_WORLD_DIR}/${LUIE_WORLD_GRAPH_FILE}`;
+  const memoryEntryPath = `${LUIE_MEMORY_DIR}/${LUIE_MEMORY_CANONICAL_FILE}`;
 
   const [
     charactersRaw,
@@ -109,6 +114,7 @@ export const readLuieImportCollections = async (
     worldMindmapRaw,
     worldScrapMemosRaw,
     worldGraphRaw,
+    memoryRaw,
   ] = await Promise.all([
     readLuieContainerEntry(resolvedPath, charactersEntryPath, logger),
     readLuieContainerEntry(resolvedPath, termsEntryPath, logger),
@@ -119,6 +125,7 @@ export const readLuieImportCollections = async (
     readLuieContainerEntry(resolvedPath, mindmapEntryPath, logger),
     readLuieContainerEntry(resolvedPath, memosEntryPath, logger),
     readLuieContainerEntry(resolvedPath, graphEntryPath, logger),
+    readLuieContainerEntry(resolvedPath, memoryEntryPath, logger),
   ]);
 
   const parsedCharacters = parseLuieDocumentOrThrow(charactersRaw, LuieCharactersSchema, {
@@ -182,6 +189,15 @@ export const readLuieImportCollections = async (
     entryPath: graphEntryPath,
     label: "world graph",
   });
+  const parsedMemory = parseLuieDocumentOrThrow(
+    memoryRaw,
+    LuieMemoryCanonicalSchema,
+    {
+      packagePath: resolvedPath,
+      entryPath: memoryEntryPath,
+      label: "canonical memory",
+    },
+  );
 
   return {
     characters: parsedCharacters?.characters ?? [],
@@ -234,6 +250,13 @@ export const readLuieImportCollections = async (
           nodes: parsedGraph.nodes ?? [],
           edges: parsedGraph.edges ?? [],
           updatedAt: parsedGraph.updatedAt,
+        }
+      : undefined,
+    memory: parsedMemory
+      ? {
+          schemaVersion: parsedMemory.schemaVersion ?? 1,
+          exportedAt: parsedMemory.exportedAt,
+          tables: parsedMemory.tables ?? {},
         }
       : undefined,
   };
