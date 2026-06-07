@@ -47,6 +47,8 @@ const mapRows = <T>(
   mapper: (row: Record<string, unknown>) => T | null,
 ): T[] => (rows ?? []).map(mapper).filter((row): row is T => row !== null);
 
+const uniqueIds = (ids: string[]): string[] => Array.from(new Set(ids));
+
 const buildScopedMemoryId = (projectId: string, tableName: MemoryCanonicalTableName, id: string): string => {
   const prefix = `${projectId}:${tableName}:`;
   return id.startsWith(prefix) ? id : `${prefix}${id}`;
@@ -90,8 +92,8 @@ export const buildMemoryCanonicalPackagePayload = async (
   const exportableFacts = facts.filter((row) =>
     isMemoryRowExportable({ tableName: "MemoryFact", status: row.status }),
   );
-  const factIds = exportableFacts.map((row) => row.id);
-  const evalCaseIds = evalCases.map((row) => row.id);
+  const factIds = uniqueIds(exportableFacts.map((row) => row.id));
+  const evalCaseIds = uniqueIds(evalCases.map((row) => row.id));
 
   const [factEvidence, factInvalidations, evalEvidence, evalEntities, evalRelations] =
     await Promise.all([
@@ -152,7 +154,7 @@ export const buildMemoryCanonicalPackagePayload = async (
               ),
             ),
     ]);
-  const evidenceIds = factEvidence.map((row) => row.evidenceId);
+  const evidenceIds = uniqueIds(factEvidence.map((row) => row.evidenceId));
   const episodeEvidence = evidenceIds.length === 0
     ? []
     : await store
@@ -164,7 +166,7 @@ export const buildMemoryCanonicalPackagePayload = async (
             inArray(memoryEpisodeEvidence.id, evidenceIds),
           ),
         );
-  const episodeIds = episodeEvidence.map((row) => row.episodeId);
+  const episodeIds = uniqueIds(episodeEvidence.map((row) => row.episodeId));
   const episodes = episodeIds.length === 0
     ? []
     : await store
