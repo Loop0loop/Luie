@@ -431,6 +431,24 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
   - located_at
   - alive_status
 
+### Phase 5 Implementation Status
+
+사실:
+- Added temporal fact/state tables: `MemoryFact`, `MemoryFactEvidence`, `MemoryFactInvalidation`, `MemoryRelationState`, `MemoryCharacterState`, and `MemoryKnowledgeState`.
+- `MemoryFact` stores subject, predicate, object entity/value, value type, validity window, observed chapter order, confidence, status, extractor version, source content hash, and invalidating fact pointer.
+- Fact evidence is linked to `MemoryEpisodeEvidence`, keeping temporal claims tied to concrete quoted episode evidence.
+- Fact evidence, invalidation, relation state, character state, and knowledge state use project-scoped foreign keys so cross-project memory contamination is rejected at the database boundary.
+- Relation, character, and knowledge state projections reference `MemoryEntity` directly so orphaned entity states are not accepted.
+- Invalidated facts are not allowed to silently become valid again when an invalidating fact is deleted; the invalidated fact is deleted with the invalidating fact.
+- Added packaged schema bootstrap and integrity metadata for the new tables and indexes.
+- Added temporal validity helpers that exclude future-observed facts, facts outside their validity window, rejected/deprecated facts, and invalidated facts.
+
+아직 미구현:
+- No LLM fact extraction runner yet.
+- No temporal query service that answers relation/knowledge questions from these tables yet.
+- No UI review flow for confirming/rejecting/conflict-resolving facts yet.
+- Conflict surfacing is schema-ready, but not yet implemented as a query/API behavior.
+
 ## Phase 6: Narrative Memory Query Service
 
 **Goal:** Replace one-size RAG context assembly with intent-specific memory retrieval.

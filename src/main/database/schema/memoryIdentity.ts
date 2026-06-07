@@ -20,6 +20,7 @@ export const memoryEntity = sqliteTable(
   (table) => [
     index("MemoryEntity_projectId_type_idx").on(table.projectId, table.entityType),
     index("MemoryEntity_projectId_status_idx").on(table.projectId, table.status),
+    uniqueIndex("MemoryEntity_id_projectId_key").on(table.id, table.projectId),
     uniqueIndex("MemoryEntity_projectId_type_name_key").on(
       table.projectId,
       table.entityType,

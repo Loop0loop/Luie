@@ -5,6 +5,7 @@ export * from "./memory.js";
 export * from "./memoryEpisode.js";
 export * from "./memoryEval.js";
 export * from "./memoryIdentity.js";
+export * from "./memoryTemporal.js";
 export * from "./world.js";
 export * from "./snapshot.js";
 

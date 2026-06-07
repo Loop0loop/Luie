@@ -138,6 +138,7 @@ export const memoryEpisodeEvidence = sqliteTable(
   (table) => [
     index("MemoryEpisodeEvidence_episodeId_idx").on(table.episodeId),
     index("MemoryEpisodeEvidence_projectId_chapterId_idx").on(table.projectId, table.chapterId),
+    uniqueIndex("MemoryEpisodeEvidence_id_projectId_key").on(table.id, table.projectId),
     foreignKey({
       name: "MemoryEpisodeEvidence_projectId_fkey",
       columns: [table.projectId],
