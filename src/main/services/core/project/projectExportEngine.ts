@@ -4,7 +4,7 @@ import {
 } from "../../../../shared/constants/index.js";
 import { mergeWorldGraphLayout } from "../../../../shared/world/worldGraphDocument.js";
 import { writeLuieContainer } from "../../io/luieContainer.js";
-import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
+import { ensureSafeAbsolutePath } from "../../../utils/fs/index.js";
 import { settingsManager } from "../../../domains/settings/index.js";
 import { normalizeLuiePackagePath } from "./projectPathPolicy.js";
 import { getProjectAttachmentPath } from "./projectAttachmentStore.js";

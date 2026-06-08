@@ -10,7 +10,7 @@ import {
   SNAPSHOT_BACKUP_DIR,
 } from "../../../../shared/constants/index.js";
 import type { SnapshotCreateInput } from "../../../../shared/types/index.js";
-import { writeFileAtomic, readMaybeGzip } from "../../../utils/atomicWrite.js";
+import { writeFileAtomic, readMaybeGzip } from "../../../utils/fs/index.js";
 import { promisify } from "node:util";
 import { gzip as gzipCallback } from "node:zlib";
 import {

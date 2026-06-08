@@ -1,9 +1,12 @@
 import { BrowserWindow } from "electron";
-import { IPC_CHANNELS } from "../../shared/ipc/channels.js";
-import { createLogger } from "../../shared/logger/index.js";
-import type { SyncAuthResult, SyncAuthResultReason } from "../../shared/types/index.js";
-import { windowManager } from "../app/windows/index.js";
-import { syncService } from "../domains/sync/index.js";
+import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
+import { createLogger } from "../../../shared/logger/index.js";
+import type {
+  SyncAuthResult,
+  SyncAuthResultReason,
+} from "../../../shared/types/index.js";
+import { windowManager } from "../../app/windows/index.js";
+import { syncService } from "../../domains/sync/index.js";
 
 const logger = createLogger("DeepLink");
 
@@ -38,9 +41,15 @@ const broadcastAuthResult = (result: SyncAuthResult): void => {
   }
 };
 
-type OAuthCallbackFailureReason = "NO_PENDING" | "EXPIRED" | "STATE_MISMATCH" | "UNKNOWN";
+type OAuthCallbackFailureReason =
+  | "NO_PENDING"
+  | "EXPIRED"
+  | "STATE_MISMATCH"
+  | "UNKNOWN";
 
-const classifyCallbackFailure = (error: unknown): OAuthCallbackFailureReason => {
+const classifyCallbackFailure = (
+  error: unknown,
+): OAuthCallbackFailureReason => {
   const message = error instanceof Error ? error.message : String(error);
   if (message.includes("SYNC_AUTH_NO_PENDING_SESSION")) return "NO_PENDING";
   if (message.includes("SYNC_AUTH_REQUEST_EXPIRED")) return "EXPIRED";
@@ -49,9 +58,13 @@ const classifyCallbackFailure = (error: unknown): OAuthCallbackFailureReason => 
 };
 
 const isStaleCallbackFailure = (reason: OAuthCallbackFailureReason): boolean =>
-  reason === "NO_PENDING" || reason === "EXPIRED" || reason === "STATE_MISMATCH";
+  reason === "NO_PENDING" ||
+  reason === "EXPIRED" ||
+  reason === "STATE_MISMATCH";
 
-const toSyncAuthReason = (reason: OAuthCallbackFailureReason): SyncAuthResultReason => {
+const toSyncAuthReason = (
+  reason: OAuthCallbackFailureReason,
+): SyncAuthResultReason => {
   if (reason === "NO_PENDING") return "NO_PENDING";
   if (reason === "EXPIRED") return "EXPIRED";
   if (reason === "STATE_MISMATCH") return "STATE_MISMATCH";
@@ -100,11 +113,14 @@ export const handleDeepLinkUrl = async (url: string): Promise<boolean> => {
         detail: message,
         timestamp: new Date().toISOString(),
       });
-      logger.warn("OAuth callback arrived after connection was already established", {
-        url,
-        reason,
-        error,
-      });
+      logger.warn(
+        "OAuth callback arrived after connection was already established",
+        {
+          url,
+          reason,
+          error,
+        },
+      );
       return true;
     }
 
@@ -115,13 +131,16 @@ export const handleDeepLinkUrl = async (url: string): Promise<boolean> => {
       detail: message,
       timestamp: new Date().toISOString(),
     });
-    logger.error(status.connected
-      ? "Failed to process OAuth callback even though sync is connected"
-      : "Failed to process OAuth callback", {
-      url,
-      reason,
-      error,
-    });
+    logger.error(
+      status.connected
+        ? "Failed to process OAuth callback even though sync is connected"
+        : "Failed to process OAuth callback",
+      {
+        url,
+        reason,
+        error,
+      },
+    );
     return false;
   }
 };

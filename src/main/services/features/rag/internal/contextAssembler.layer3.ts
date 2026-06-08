@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
 import type { AnyColumn, SQLWrapper } from "drizzle-orm";
 import { db } from "../../../../database/main/databaseService.js";
-import { escapeLike } from "../../../../utils/queryHelpers.js";
+import { escapeLike } from "../../../../utils/query/index.js";
 import { memoryBuildJob, memoryChunk } from "../../../../database/schema/index.js";
 import type {
   RagQaEvidence,

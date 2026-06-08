@@ -7,7 +7,7 @@ import type {
   ChapterCreateInput,
   ChapterUpdateInput,
 } from "../../../../shared/types/index.js";
-import { ServiceError } from "../../../utils/serviceError.js";
+import { ServiceError } from "../../../utils/error/index.js";
 import { projectService } from "../projectService.js";
 import { applyChapterContentUpdate } from "./chapterContentValidation.js";
 import {

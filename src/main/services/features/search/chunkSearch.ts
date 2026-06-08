@@ -1,7 +1,7 @@
 import { and, desc, eq, or, sql } from "drizzle-orm";
 import { db } from "../../../database/main/databaseService.js";
 import { memoryChunk } from "../../../database/schema/index.js";
-import { escapeLike } from "../../../utils/queryHelpers.js";
+import { escapeLike } from "../../../utils/query/index.js";
 
 type LoggerLike = {
   warn: (message: string, details?: unknown) => void;

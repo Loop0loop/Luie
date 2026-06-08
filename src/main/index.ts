@@ -12,16 +12,24 @@ try {
 
 import { app } from "electron";
 import path from "node:path";
-import { createLogger, configureLogger, LogLevel } from "../shared/logger/index.js";
+import {
+  createLogger,
+  configureLogger,
+  LogLevel,
+} from "../shared/logger/index.js";
 import { LOG_DIR_NAME, LOG_FILE_NAME } from "../shared/constants/index.js";
-import { registerSingleInstance } from "./app/lifecycle/singleInstance.js"; // 중복 실행 방지 모듈
+import { registerSingleInstance } from "./lifecycle/index.js"; // 중복 실행 방지 모듈
 const isDefaultApp = process.defaultApp === true;
 const startupStartedAtMs = Date.now();
 
 const configureMainLogger = () => {
   configureLogger({
     logToFile: true,
-    logFilePath: path.join(app.getPath("userData"), LOG_DIR_NAME, LOG_FILE_NAME),
+    logFilePath: path.join(
+      app.getPath("userData"),
+      LOG_DIR_NAME,
+      LOG_FILE_NAME,
+    ),
     minLevel: LogLevel.INFO,
   });
   return createLogger("Main");
@@ -37,18 +45,21 @@ const registerLuieProtocol = async (
   const appEntry = app.getAppPath(); //현재 Electron의 실행중인 실제 엔트리 경로를 가져온다.
   if (isDefaultApp) {
     if (appEntry) {
-      registered = app.setAsDefaultProtocolClient(protocol, process.execPath, [appEntry]);
+      registered = app.setAsDefaultProtocolClient(protocol, process.execPath, [
+        appEntry,
+      ]);
     }
   } else {
     registered = app.setAsDefaultProtocolClient(protocol);
   }
 
   if (!registered) {
-    const reason = "SYNC_PROTOCOL_REGISTRATION_FAILED:luie:setAsDefaultProtocolClient returned false";
+    const reason =
+      "SYNC_PROTOCOL_REGISTRATION_FAILED:luie:setAsDefaultProtocolClient returned false";
     const syncSettings = settingsManager.getSyncSettings();
     if (!syncSettings.connected) {
       settingsManager.setSyncSettings({ lastError: reason });
-    }// 프로토콜 등록 실패
+    } // 프로토콜 등록 실패
     logger.warn("Failed to register custom protocol for OAuth callback", {
       protocol,
       defaultApp: isDefaultApp,
@@ -56,7 +67,7 @@ const registerLuieProtocol = async (
     });
     return;
   }
-// 프로토콜 등록 및 실패 시 설정에 대한 오류 기록
+  // 프로토콜 등록 및 실패 시 설정에 대한 오류 기록
   const syncSettings = settingsManager.getSyncSettings();
   if (
     syncSettings.lastError?.startsWith("SYNC_PROTOCOL_REGISTRATION_FAILED:")
@@ -98,10 +109,10 @@ if (!registerSingleInstance(bootstrapLogger)) {
     { utilityProcessBridge },
   ] = await Promise.all([
     import("./prismaEnv.js"),
-    import("./app/lifecycle/appReady.js"),
-    import("./app/lifecycle/crashReporting.js"),
-    import("./app/lifecycle/deepLink.js"),
-    import("./app/lifecycle/shutdown.js"),
+    import("./lifecycle/index.js"),
+    import("./lifecycle/index.js"),
+    import("./lifecycle/index.js"),
+    import("./lifecycle/index.js"),
     import("./domains/sync/index.js"),
     import("./infra/utility-process/index.js"),
   ]);

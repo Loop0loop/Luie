@@ -1,15 +1,15 @@
 import { app, BrowserWindow, session, dialog } from "electron";
 // type imports
 import type { WebContents } from "electron";
-import { windowManager } from "../app/windows/index.js";
-import { projectService } from "../domains/project/index.js";
-import { snapshotService } from "../domains/recovery/index.js";
-import { settingsManager } from "../domains/settings/index.js";
-import { isDevEnv } from "../utils/environment.js";
-import type { createLogger } from "../../shared/logger/index.js";
-import { applyApplicationMenu } from "./menu.js";
-import { ensureBootstrapReady } from "./bootstrap.js";
-import { startupReadinessService } from "../app/startup/index.js";
+import { windowManager } from "../../app/windows/index.js";
+import { projectService } from "../../domains/project/index.js";
+import { snapshotService } from "../../domains/recovery/index.js";
+import { settingsManager } from "../../domains/settings/index.js";
+import { isDevEnv } from "../../utils/env/index.js";
+import type { createLogger } from "../../../shared/logger/index.js";
+import { applyApplicationMenu } from "../menu/index.js";
+import { ensureBootstrapReady } from "../bootstrap/index.js";
+import { startupReadinessService } from "../../app/startup/index.js";
 
 type Logger = ReturnType<typeof createLogger>;
 
@@ -25,11 +25,11 @@ const isStartupMaintenanceDisabled =
   process.env.LUIE_E2E_STRESS_MODE === "1";
 
 const loadAutoSaveManager = async () =>
-  (await import("../domains/manuscript/index.js")).autoSaveManager; // 시작 로딩 줄이기 위하여 lazy inport
+  (await import("../../domains/manuscript/index.js")).autoSaveManager; // 시작 로딩 줄이기 위하여 lazy inport
 const loadDerivedJobWorker = async () =>
-  (await import("../domains/manuscript/index.js")).derivedJobWorker;
+  (await import("../../domains/manuscript/index.js")).derivedJobWorker;
 
-// CSP : isPacked? 
+// CSP : isPacked?
 const buildProdCspPolicy = () =>
   [
     "default-src 'self'", // 기본적으로 자기 자신만 허용
@@ -40,7 +40,7 @@ const buildProdCspPolicy = () =>
     "connect-src 'self'", // 자기 자신의 연결만 허용
   ].join("; ");
 
-  // CSP : dev
+// CSP : dev
 const buildDevCspPolicy = () =>
   [
     "default-src 'self' http://localhost:5173 ws://localhost:5173",
@@ -52,7 +52,7 @@ const buildDevCspPolicy = () =>
     "worker-src 'self' blob:",
   ].join("; ");
 
-  // 어떠한 CSP 정책을 쓸지 결정
+// 어떠한 CSP 정책을 쓸지 결정
 const resolveCspPolicy = (isDev: boolean): string | null => {
   if (!isDev) {
     return buildProdCspPolicy();
@@ -88,7 +88,6 @@ const handleRendererCrash = async (
   } catch (error) {
     logger.error("Failed to save during crash recovery", error);
   }
-
 
   // 다이로그로 사용자에게 재시작 선택
   const mainWindow = windowManager.getMainWindow();
@@ -138,7 +137,7 @@ const runDeferredStartupMaintenance = async (logger: Logger): Promise<void> => {
 
   try {
     const { entityRelationService } =
-      await import("../domains/world/index.js");
+      await import("../../domains/world/index.js");
     await entityRelationService.cleanupOrphanRelationsAcrossProjects({
       dryRun: true,
     });
@@ -150,9 +149,8 @@ const runDeferredStartupMaintenance = async (logger: Logger): Promise<void> => {
   }
 
   try {
-    const { dbMaintenanceService } = await import(
-      "../services/features/dbMaintenanceService.js"
-    );
+    const { dbMaintenanceService } =
+      await import("../../services/features/dbMaintenanceService.js");
     await dbMaintenanceService.purgeOrphanDerivedRows({
       dryRun: true,
     });
@@ -201,12 +199,10 @@ export const registerAppReady = (
     const isDev = isDevEnv();
     const cspPolicy = resolveCspPolicy(isDev);
 
-
     let rendererReadyForCurrentMainWindow = false; // 현재 MainWindow Renderer Ready 판정여부 -> Renderer Ready : True
     let firstRendererStartupHookTriggered = false; // onFirstRendererReady()의 실행여부 -> sync 초기화 한번만 실행하려고
     let startupMaintenanceScheduled = false; // 뒤에서 돌릴 mainInstance 작업이 예약됬는지 판명 -> scheduleStartUpMaintenance 한번만 예약
-    let fallbackTimer: NodeJS.Timeout | null = null; // Renderer Ready fallback 타이머 
-
+    let fallbackTimer: NodeJS.Timeout | null = null; // Renderer Ready fallback 타이머
 
     /**
      * @description Main Renderer 준비완료 처리 함수
@@ -225,7 +221,6 @@ export const registerAppReady = (
         });
       }
 
-
       /**
        * onFirstRendererReady() Callback 실행
        */
@@ -242,8 +237,8 @@ export const registerAppReady = (
       }
     };
 
-    
-    const scheduleStartupMaintenance = (reason: string): void => { // 앱을 보여준 후 무거운 후처리 작업을 조금 뒤 에약
+    const scheduleStartupMaintenance = (reason: string): void => {
+      // 앱을 보여준 후 무거운 후처리 작업을 조금 뒤 에약
       if (isStartupMaintenanceDisabled) {
         logger.info("Deferred startup maintenance skipped", {
           reason: "runtime-flag",
@@ -262,15 +257,14 @@ export const registerAppReady = (
       }, STARTUP_MAINTENANCE_DELAY_MS);
     };
 
-
     const startMainWindowFlow = (reason: string): void => {
       /**
        * @description 이미 MainWindow가 있으면 재사용
        * - 이미 살아있는 MainWindow가 있으면 새로 만들지않음
        * - 안 보이면 보여주기만 하고 끝
        */
-      const existingMainWindow = windowManager.getMainWindow(); 
-      if (existingMainWindow && !existingMainWindow.isDestroyed()) { 
+      const existingMainWindow = windowManager.getMainWindow();
+      if (existingMainWindow && !existingMainWindow.isDestroyed()) {
         if (!existingMainWindow.isVisible()) {
           windowManager.showMainWindow();
         }
@@ -314,7 +308,7 @@ export const registerAppReady = (
         clearTimeout(fallbackTimer);
       }
 
-      /** 
+      /**
        * fallback 타이머 시작
        * - Renderer Event가 안오거나
        * - 너무 오래 걸리거나
@@ -437,7 +431,7 @@ export const registerAppReady = (
     });
 
     const ipcRegistrationStartedAt = Date.now();
-    const { registerIPCHandlers } = await import("../handler/index.js");
+    const { registerIPCHandlers } = await import("../../handler/index.js");
     await registerIPCHandlers();
     logger.info("Startup checkpoint: IPC handlers ready", {
       elapsedMs: Date.now() - ipcRegistrationStartedAt,

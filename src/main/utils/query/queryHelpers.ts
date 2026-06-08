@@ -1,4 +1,4 @@
-import type { ServiceError } from "./serviceError.js";
+import type { ServiceError } from "../error/index.js";
 
 /**
  * Returns the first element of an array, or null if empty.

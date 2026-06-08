@@ -7,7 +7,7 @@ import {
   SNAPSHOT_BACKUP_DIR,
 } from "../../../../../shared/constants/index.js";
 import { createLogger } from "../../../../../shared/logger/index.js";
-import { ensureSafeAbsolutePath } from "../../../../utils/pathValidation.js";
+import { ensureSafeAbsolutePath } from "../../../../utils/fs/index.js";
 import { listProjectAttachmentEntries } from "../../../core/project/projectAttachmentStore.js";
 
 const logger = createLogger("SnapshotArtifactPaths");

@@ -74,7 +74,7 @@ describe("deepLink OAuth callback routing", () => {
     mocked.status.connected = true;
     mocked.handleOAuthCallback.mockRejectedValue(new Error("SYNC_AUTH_NO_PENDING_SESSION"));
 
-    const { handleDeepLinkUrl } = await import("../../../src/main/lifecycle/deepLink.js");
+    const { handleDeepLinkUrl } = await import("../../../src/main/lifecycle/deep-link/index.js");
     const handled = await handleDeepLinkUrl("luie://auth/callback?error=invalid_request");
 
     expect(handled).toBe(true);
@@ -91,7 +91,7 @@ describe("deepLink OAuth callback routing", () => {
     mocked.status.connected = true;
     mocked.handleOAuthCallback.mockRejectedValue(new Error("OAUTH_FLOW_BROKEN"));
 
-    const { handleDeepLinkUrl } = await import("../../../src/main/lifecycle/deepLink.js");
+    const { handleDeepLinkUrl } = await import("../../../src/main/lifecycle/deep-link/index.js");
     const handled = await handleDeepLinkUrl("luie://auth/callback?error=invalid_request");
 
     expect(handled).toBe(false);
@@ -110,7 +110,7 @@ describe("deepLink OAuth callback routing", () => {
       new Error("SYNC_AUTH_CALLBACK_ERROR:bad_oauth_state:OAuth state parameter is invalid"),
     );
 
-    const { handleDeepLinkUrl } = await import("../../../src/main/lifecycle/deepLink.js");
+    const { handleDeepLinkUrl } = await import("../../../src/main/lifecycle/deep-link/index.js");
     const handled = await handleDeepLinkUrl(
       "luie://auth/callback?error=invalid_request&error_code=bad_oauth_state",
     );

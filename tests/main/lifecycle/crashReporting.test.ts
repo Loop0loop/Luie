@@ -49,7 +49,7 @@ describe("crashReporting", () => {
       );
 
     const { registerCrashReporting } = await import(
-      "../../../src/main/lifecycle/crashReporting.js"
+      "../../../src/main/lifecycle/crash/index.js"
     );
     const logger = {
       warn: vi.fn(),
@@ -79,7 +79,7 @@ describe("crashReporting", () => {
     );
 
     const { registerCrashReporting } = await import(
-      "../../../src/main/lifecycle/crashReporting.js"
+      "../../../src/main/lifecycle/crash/index.js"
     );
     const logger = {
       warn: vi.fn(),

@@ -15,7 +15,7 @@ import type {
   ProjectDeleteInput,
   ProjectUpdateInput,
 } from "../../../shared/types/index.js";
-import { ServiceError } from "../../utils/serviceError.js";
+import { ServiceError } from "../../utils/error/index.js";
 import { ProjectExportQueue } from "./project/projectExportQueue.js";
 import { withProjectPathStatus } from "./project/projectListStatus.js";
 import {

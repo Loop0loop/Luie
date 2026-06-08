@@ -1,1 +1,1 @@
-export * from "../../lifecycle/crashReporting.js";
+export * from "../../lifecycle/crash/index.js";

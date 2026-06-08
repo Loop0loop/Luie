@@ -10,7 +10,7 @@ import {
   buildValidationFailureData,
   withLogContext,
 } from "../../../shared/logger/index.js";
-import { isServiceError } from "../../utils/serviceError.js";
+import { isServiceError } from "../../utils/error/index.js";
 import type { LoggerLike } from "./types.js";
 
 type MaybePromise<T> = T | Promise<T>;

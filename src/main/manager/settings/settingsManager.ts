@@ -3,7 +3,7 @@
  */
 
 import Store from "electron-store";
-import { resolveUserDataPath } from "../../utils/userDataPath.js";
+import { resolveUserDataPath } from "../../utils/env/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import type {
   AppSettings,

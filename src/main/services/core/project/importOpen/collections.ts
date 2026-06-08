@@ -14,7 +14,7 @@ import {
   LUIE_WORLD_SYNOPSIS_FILE,
   LUIE_WORLD_TERMS_FILE,
 } from "../../../../../shared/constants/index.js";
-import { ServiceError } from "../../../../utils/serviceError.js";
+import { ServiceError } from "../../../../utils/error/index.js";
 import type { LoggerLike as LuieWriterLogger } from "../../../io/luiePackageTypes.js";
 import { readLuieContainerEntry } from "../../../io/luieContainer.js";
 import {

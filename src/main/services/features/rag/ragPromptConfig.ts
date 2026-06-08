@@ -1,7 +1,7 @@
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { createLogger } from "../../../../shared/logger/index.js";
-import { resolveUserDataPath } from "../../../utils/userDataPath.js";
+import { resolveUserDataPath } from "../../../utils/env/index.js";
 
 const logger = createLogger("RagPromptConfig");
 

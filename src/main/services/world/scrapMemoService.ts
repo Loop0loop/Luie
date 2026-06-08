@@ -4,7 +4,7 @@ import { scrapMemo } from "../../infra/database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import type { ScrapMemoCreateInput, ScrapMemoUpdateInput } from "../../../shared/types/index.js";
-import { ServiceError } from "../../utils/serviceError.js";
+import { ServiceError } from "../../utils/error/index.js";
 import { projectService } from "../core/projectService.js";
 import { dbMaintenanceService } from "../features/dbMaintenanceService.js";
 import { MEMORY_TARGET_TYPES } from "../features/memory/memoryJobConstants.js";

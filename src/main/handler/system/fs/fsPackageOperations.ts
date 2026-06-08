@@ -11,8 +11,8 @@ import {
   ensureLuieExtension,
   isSafeZipPath,
   normalizeZipPath,
-} from "../../../utils/luiePackage.js";
-import { ServiceError } from "../../../utils/serviceError.js";
+} from "../../../utils/package/index.js";
+import { ServiceError } from "../../../utils/error/index.js";
 import type { LoggerLike } from "../../core/types.js";
 import {
   assertAllowedFsPath,

@@ -1,1 +1,1 @@
-export * from "../../lifecycle/shutdown.js";
+export * from "../../lifecycle/shutdown/index.js";

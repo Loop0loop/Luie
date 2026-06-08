@@ -6,7 +6,7 @@ import { analysisStartArgsSchema } from "../../../shared/schemas/index.js";
 import { analysisSecurity } from "../../domains/analysis/index.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
-import { ServiceError } from "../../utils/serviceError.js";
+import { ServiceError } from "../../utils/error/index.js";
 import { windowManager } from "../../app/windows/index.js";
 
 type ManuscriptAnalysisServiceLike = {

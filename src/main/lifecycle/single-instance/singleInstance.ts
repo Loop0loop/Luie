@@ -1,5 +1,5 @@
 import { app } from "electron";
-import type { createLogger } from "../../shared/logger/index.js";
+import type { createLogger } from "../../../shared/logger/index.js";
 
 type Logger = ReturnType<typeof createLogger>;
 const OAUTH_AUTH_PREFIX = "luie://auth/";
@@ -30,11 +30,11 @@ export const registerSingleInstance = (logger: Logger): boolean => {
       hasCallbackUrl: Boolean(callbackUrl),
     });
     if (callbackUrl) {
-      const { handleDeepLinkUrl } = await import("./deepLink.js");
+      const { handleDeepLinkUrl } = await import("../deep-link/index.js");
       void handleDeepLinkUrl(callbackUrl);
     }
 
-    const { windowManager } = await import("../app/windows/index.js");
+    const { windowManager } = await import("../../app/windows/index.js");
     const mainWindow = windowManager.getMainWindow();
     if (mainWindow && !mainWindow.isDestroyed()) {
       if (mainWindow.isMinimized()) mainWindow.restore();

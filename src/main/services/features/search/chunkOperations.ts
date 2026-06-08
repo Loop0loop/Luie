@@ -10,7 +10,7 @@ import type {
 } from "../../../../shared/types/index.js";
 import { db } from "../../../database/main/databaseService.js";
 import { memoryChunk } from "../../../database/schema/index.js";
-import { ServiceError } from "../../../utils/serviceError.js";
+import { ServiceError } from "../../../utils/error/index.js";
 import {
   buildFtsQuery,
   mergeWithRRF,

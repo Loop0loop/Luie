@@ -2,7 +2,7 @@ import { app } from "electron";
 import { promises as fs } from "fs";
 import path from "path";
 import { eq } from "drizzle-orm";
-import { writeGzipAtomic, readMaybeGzip } from "../../utils/atomicWrite.js";
+import { writeGzipAtomic, readMaybeGzip } from "../../utils/fs/index.js";
 import {
   SNAPSHOT_MIRROR_DIR,
   SNAPSHOT_FILE_KEEP_COUNT,

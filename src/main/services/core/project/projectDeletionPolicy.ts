@@ -2,8 +2,8 @@ import { promises as fs } from "fs";
 import { LUIE_PACKAGE_EXTENSION } from "../../../../shared/constants/index.js";
 import { ErrorCode } from "../../../../shared/constants/errorCode.js";
 import type { ProjectDeleteInput } from "../../../../shared/types/index.js";
-import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
-import { ServiceError } from "../../../utils/serviceError.js";
+import { ensureSafeAbsolutePath } from "../../../utils/fs/index.js";
+import { ServiceError } from "../../../utils/error/index.js";
 import { assertAllowedFsPath } from "../../../handler/system/fs/index.js";
 
 export type NormalizedProjectDeleteRequest = {

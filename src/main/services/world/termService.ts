@@ -14,8 +14,8 @@ import type {
 } from "../../../shared/types/index.js";
 import { rebuildProjectKeywordAppearances } from "../core/chapterKeywords.js";
 import { projectService } from "../core/projectService.js";
-import { ServiceError } from "../../utils/serviceError.js";
-import { escapeLike } from "../../utils/queryHelpers.js";
+import { ServiceError } from "../../utils/error/index.js";
+import { escapeLike } from "../../utils/query/index.js";
 
 const loadAppearanceCacheService = async () =>
   (await import("./appearanceCacheService.js")).appearanceCacheService;

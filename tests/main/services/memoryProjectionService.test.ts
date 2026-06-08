@@ -8,7 +8,7 @@ import {
 import { searchService } from "../../../src/main/services/features/searchService.js";
 import { projectService } from "../../../src/main/services/core/projectService.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
-import type { ServiceError } from "../../../src/main/utils/serviceError.js";
+import type { ServiceError } from "../../../src/main/utils/error/index.js";
 import { ErrorCode } from "../../../src/shared/constants/errorCode.js";
 import { db, memoryChunk, memoryEpisodeExtractionJob } from "../../../src/main/infra/database/index.js";
 import { eq } from "drizzle-orm";

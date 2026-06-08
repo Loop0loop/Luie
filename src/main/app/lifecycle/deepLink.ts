@@ -1,1 +1,1 @@
-export * from "../../lifecycle/deepLink.js";
+export * from "../../lifecycle/deep-link/index.js";

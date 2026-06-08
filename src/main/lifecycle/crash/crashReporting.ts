@@ -2,7 +2,7 @@ import { app } from "electron";
 import { randomUUID } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import type { createLogger } from "../../shared/logger/index.js";
+import type { createLogger } from "../../../shared/logger/index.js";
 
 type Logger = ReturnType<typeof createLogger>;
 
@@ -14,7 +14,10 @@ let isRegistered = false;
 const redactSecrets = (value: string): string => {
   return value
     .replace(/\b(Bearer\s+)[A-Za-z0-9._-]+\b/gi, "$1[REDACTED_TOKEN]")
-    .replace(/\b(eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.)[A-Za-z0-9_-]+\b/g, "$1[REDACTED_JWT]")
+    .replace(
+      /\b(eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.)[A-Za-z0-9_-]+\b/g,
+      "$1[REDACTED_JWT]",
+    )
     .replace(
       /\b(AIza[0-9A-Za-z_-]{16,}|sk-[A-Za-z0-9_-]{16,}|pk_[A-Za-z0-9_-]{16,})\b/g,
       "[REDACTED_SECRET]",
@@ -62,7 +65,8 @@ const sanitizeUnknown = (input: unknown, depth = 0): unknown => {
   return String(input);
 };
 
-const reportPath = (): string => path.join(app.getPath("userData"), CRASH_REPORT_DIR);
+const reportPath = (): string =>
+  path.join(app.getPath("userData"), CRASH_REPORT_DIR);
 
 const pruneOldReports = async (dir: string, logger: Logger): Promise<void> => {
   const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -83,7 +87,10 @@ const pruneOldReports = async (dir: string, logger: Logger): Promise<void> => {
       try {
         await fs.rm(entry.fullPath, { force: true });
       } catch (error) {
-        logger.warn("Failed to remove stale crash report", { error, path: entry.fullPath });
+        logger.warn("Failed to remove stale crash report", {
+          error,
+          path: entry.fullPath,
+        });
       }
     }),
   );
@@ -171,11 +178,13 @@ export const registerCrashReporting = (logger: Logger): void => {
   });
 
   app.on("render-process-gone", (_event, webContents, details) => {
-    persist("render-process-gone", extractRenderGoneDetails(webContents, details));
+    persist(
+      "render-process-gone",
+      extractRenderGoneDetails(webContents, details),
+    );
   });
 
   app.on("child-process-gone", (_event, details) => {
     persist("child-process-gone", extractChildGoneDetails(details));
   });
 };
-

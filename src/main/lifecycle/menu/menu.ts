@@ -1,6 +1,6 @@
 import { Menu } from "electron";
 import type { MenuItemConstructorOptions } from "electron";
-import type { WindowMenuBarMode } from "../../shared/types/index.js";
+import type { WindowMenuBarMode } from "../../../shared/types/index.js";
 
 const createMenuTemplate = (): MenuItemConstructorOptions[] => {
   const fileMenu: MenuItemConstructorOptions = {
@@ -19,7 +19,13 @@ const createMenuTemplate = (): MenuItemConstructorOptions[] => {
         { role: "viewMenu" },
         { role: "windowMenu" },
       ]
-    : [fileMenu, { role: "editMenu" }, { role: "viewMenu" }, { role: "windowMenu" }, { role: "help" }];
+    : [
+        fileMenu,
+        { role: "editMenu" },
+        { role: "viewMenu" },
+        { role: "windowMenu" },
+        { role: "help" },
+      ];
 };
 
 export const applyApplicationMenu = (mode: WindowMenuBarMode): void => {

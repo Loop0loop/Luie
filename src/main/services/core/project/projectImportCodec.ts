@@ -5,7 +5,7 @@ import type {
   WorldEntitySourceType,
   WorldEntityType,
 } from "../../../../shared/types/index.js";
-import { ServiceError } from "../../../utils/serviceError.js";
+import { ServiceError } from "../../../utils/error/index.js";
 
 export type ChapterCreateRow = {
   id: string;

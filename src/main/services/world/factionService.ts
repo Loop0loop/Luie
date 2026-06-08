@@ -8,7 +8,7 @@ import type {
     FactionUpdateInput,
 } from "../../../shared/types/index.js";
 import { projectService } from "../core/projectService.js";
-import { ServiceError } from "../../utils/serviceError.js";
+import { ServiceError } from "../../utils/error/index.js";
 
 const logger = createLogger("FactionService");
 

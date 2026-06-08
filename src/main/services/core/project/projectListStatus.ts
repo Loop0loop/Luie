@@ -2,7 +2,7 @@ import { promises as fs } from "fs";
 import { LUIE_PACKAGE_EXTENSION } from "../../../../shared/constants/index.js";
 import type { ProjectAttachmentStatus } from "../../../../shared/types/index.js";
 import { probeLuieContainer } from "../../io/luieContainer.js";
-import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
+import { ensureSafeAbsolutePath } from "../../../utils/fs/index.js";
 
 type ProjectListItem = {
   projectPath: string | null;

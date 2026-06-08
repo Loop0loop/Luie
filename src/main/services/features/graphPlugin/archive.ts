@@ -7,7 +7,7 @@ import { graphPluginManifestSchema } from "../../../../shared/schemas/index.js";
 import type { GraphPluginManifest } from "../../../../shared/types/index.js";
 import { ErrorCode } from "../../../../shared/constants/index.js";
 import { LuieWorldGraphSchema } from "../../core/project/projectLuieSchemas.js";
-import { isSafeZipPath, normalizeZipPath } from "../../../utils/luiePackage.js";
+import { isSafeZipPath, normalizeZipPath } from "../../../utils/package/index.js";
 import {
   createServiceError,
   isExecutableEntry,

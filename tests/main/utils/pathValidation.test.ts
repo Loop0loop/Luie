@@ -1,6 +1,6 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { ensureSafeAbsolutePath } from "../../../src/main/utils/pathValidation.js";
+import { ensureSafeAbsolutePath } from "../../../src/main/utils/fs/index.js";
 import { ErrorCode } from "../../../src/shared/constants/errorCode.js";
 
 const expectThrowsWithCode = (fn: () => unknown, code: string) => {

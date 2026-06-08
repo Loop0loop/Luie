@@ -13,7 +13,7 @@ import {
   createGeminiSupabaseProxyResolver,
   createOpenAiSupabaseProxyResolver,
 } from "./runtimeProxyConfig.js";
-import { isAppPackaged } from "../../utils/appEnv.js";
+import { isAppPackaged } from "../../utils/env/index.js";
 
 export function invalidateModelRuntimeCache(): void {
   // Runtime clients are materialized in the utility process. This compatibility

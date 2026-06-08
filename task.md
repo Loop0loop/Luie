@@ -372,3 +372,40 @@
 - `pnpm run check:source-loc` passed.
 - `pnpm run check:ipc-contract-map` passed and regenerated `docs/quality/ipc-contract-map.json` to the new handler file paths.
 - `src/main/handler/system` root contains only `index.ts`.
+
+### Follow-up: Main Utils and Lifecycle Domain Grouping
+
+**Status:** Completed
+
+**Changes made:**
+
+- Moved flat files under `src/main/utils` into subdomains:
+  - `env/`
+  - `error/`
+  - `fs/`
+  - `package/`
+  - `query/`
+  - `validation/`
+- Kept `src/main/utils/index.ts` as the only utils root file and public export hub.
+- Moved flat files under `src/main/lifecycle` into subdomains:
+  - `app-ready/`
+  - `bootstrap/`
+  - `crash/`
+  - `deep-link/`
+  - `menu/`
+  - `shutdown/`
+  - `single-instance/`
+- Added `src/main/lifecycle/index.ts` as the lifecycle public export hub.
+- Updated `src/main/app/lifecycle/*` compatibility entries to point at the new lifecycle domain entries.
+- Updated imports and tests to use domain entries such as `utils/error/index.js`, `utils/package/index.js`, and `lifecycle/deep-link/index.js`.
+- Updated `docs/architecture/current-main.md` to document utils and lifecycle domain layouts.
+
+**Verification:**
+
+- `pnpm run typecheck` passed.
+- `pnpm vitest tests/main/lifecycle/deepLink.test.ts tests/main/lifecycle/crashReporting.test.ts tests/main/utils/pathValidation.test.ts tests/main/utils/luiePackage.test.ts` passed.
+- `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/projectImportOpen.test.ts tests/main/services/projectService.packageAttachment.test.ts` passed.
+- `pnpm run check:source-loc` passed.
+- `pnpm run check:ipc-contract-map` passed and regenerated `docs/quality/ipc-contract-map.json` to the new lifecycle file paths.
+- `src/main/utils` root contains only `index.ts`.
+- `src/main/lifecycle` root contains only `index.ts`.

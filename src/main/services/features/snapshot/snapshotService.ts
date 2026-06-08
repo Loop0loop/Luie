@@ -13,7 +13,7 @@ import {
 } from "../../../../shared/constants/index.js";
 import type { SnapshotCreateInput } from "../../../../shared/types/index.js";
 import { projectService } from "../../core/projectService.js";
-import { ServiceError } from "../../../utils/serviceError.js";
+import { ServiceError } from "../../../utils/error/index.js";
 import {
   cleanupOrphanSnapshotArtifacts,
   listSnapshotRestoreCandidates,

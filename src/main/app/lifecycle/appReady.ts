@@ -1,1 +1,1 @@
-export * from "../../lifecycle/appReady.js";
+export * from "../../lifecycle/app-ready/index.js";

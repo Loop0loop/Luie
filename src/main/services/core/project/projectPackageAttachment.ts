@@ -5,7 +5,7 @@ import {
   ErrorCode,
   LUIE_PACKAGE_META_FILENAME,
 } from "../../../../shared/constants/index.js";
-import { ServiceError } from "../../../utils/serviceError.js";
+import { ServiceError } from "../../../utils/error/index.js";
 import {
   getProjectAttachmentPath,
   setProjectAttachmentPath,

@@ -13,7 +13,9 @@ export function isAppPackaged(): boolean {
     return false;
   }
   try {
-    const electron = requireFn("electron") as { app?: { isPackaged?: boolean } };
+    const electron = requireFn("electron") as {
+      app?: { isPackaged?: boolean };
+    };
     return electron.app?.isPackaged ?? false;
   } catch {
     return false;

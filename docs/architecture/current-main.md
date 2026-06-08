@@ -7,11 +7,8 @@
 주요 근거 파일:
 
 - `src/main/index.ts`
-- `src/main/lifecycle/appReady.ts`
-- `src/main/lifecycle/bootstrap.ts`
-- `src/main/lifecycle/shutdown.ts`
-- `src/main/lifecycle/deepLink.ts`
-- `src/main/lifecycle/crashReporting.ts`
+- `src/main/lifecycle/index.ts`
+- `src/main/lifecycle/*/index.ts`
 - `src/main/handler/index.ts`
 - `src/main/handler/core/ipcHandler.ts`
 - `src/main/handler/core/ipcRegistrar.ts`
@@ -59,6 +56,31 @@
 | `src/main/services/llm`           | `src/main/services/llm/index.ts`           | LLM service/helper 배럴 추가        |
 | `src/main/utils`                  | `src/main/utils/index.ts`                  | main utility 배럴 추가              |
 | `src/main/services/features/sync` | `src/main/services/features/sync/index.ts` | sync public service 배럴 추가       |
+
+사실: `src/main/lifecycle`은 lifecycle 루트에 구현 파일을 두지 않고 lifecycle 단계별 entry를 통해 조립합니다.
+
+| Lifecycle domain  | Entry                                | 책임                            |
+| ----------------- | ------------------------------------ | ------------------------------- |
+| `app-ready`       | `lifecycle/app-ready/index.ts`       | app ready/bootstrap window flow |
+| `bootstrap`       | `lifecycle/bootstrap/index.ts`       | database bootstrap status       |
+| `crash`           | `lifecycle/crash/index.ts`           | crash report registration       |
+| `deep-link`       | `lifecycle/deep-link/index.ts`       | OAuth/deep link handling        |
+| `menu`            | `lifecycle/menu/index.ts`            | application menu policy         |
+| `shutdown`        | `lifecycle/shutdown/index.ts`        | quit/flush/disconnect flow      |
+| `single-instance` | `lifecycle/single-instance/index.ts` | single instance lock            |
+| root              | `lifecycle/index.ts`                 | lifecycle public export         |
+
+사실: `src/main/utils`는 utils 루트에 구현 파일을 두지 않고 유틸 성격별 entry를 통해 제공합니다.
+
+| Utils domain | Entry                       | 책임                             |
+| ------------ | --------------------------- | -------------------------------- |
+| `env`        | `utils/env/index.ts`        | environment/package/userData     |
+| `error`      | `utils/error/index.ts`      | ServiceError                     |
+| `fs`         | `utils/fs/index.ts`         | atomic write/path validation     |
+| `package`    | `utils/package/index.ts`    | .luie package path/entry helpers |
+| `query`      | `utils/query/index.ts`      | query helper utilities           |
+| `validation` | `utils/validation/index.ts` | schema validation helper         |
+| root         | `utils/index.ts`            | main utils public export         |
 
 사실: Phase 2에서 분리된 snapshot/settings/sync 내부 helper는 도메인 하위 폴더의 `index.ts`를 통해 제공합니다.
 

@@ -36,7 +36,7 @@ vi.mock("fs", () => ({
   },
 }));
 
-vi.mock("../../../src/main/utils/luiePackage.js", () => ({
+vi.mock("../../../src/main/utils/package/index.js", () => ({
   ensureLuieExtension: (value: string) => value,
 }));
 

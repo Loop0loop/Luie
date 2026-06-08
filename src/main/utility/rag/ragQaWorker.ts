@@ -16,7 +16,7 @@ import {
 import { assembleRagContext } from "../../services/features/rag/contextAssembler.js";
 import { buildGroundedRagQaResult } from "../../services/features/rag/grounding.js";
 import { normalizeCoreAnswer } from "../../services/features/rag/normalizeCoreAnswer.js";
-import { resolveUserDataPath } from "../../utils/userDataPath.js";
+import { resolveUserDataPath } from "../../utils/env/index.js";
 
 const logger = createLogger("UtilityRagQaWorker");
 

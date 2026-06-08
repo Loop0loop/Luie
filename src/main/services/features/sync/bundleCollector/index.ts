@@ -1,6 +1,6 @@
 import { LUIE_PACKAGE_EXTENSION } from "../../../../../shared/constants/index.js";
 import type { SyncPendingProjectDelete } from "../../../../../shared/types/index.js";
-import { ensureSafeAbsolutePath } from "../../../../utils/pathValidation.js";
+import { ensureSafeAbsolutePath } from "../../../../utils/fs/index.js";
 import { createEmptySyncBundle, type SyncBundle } from "../syncMapper.js";
 import {
   appendChapterRecords,

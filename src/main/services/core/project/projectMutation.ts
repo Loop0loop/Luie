@@ -9,7 +9,7 @@ import type {
   ProjectCreateInput,
   ProjectUpdateInput,
 } from "../../../../shared/types/index.js";
-import { ServiceError } from "../../../utils/serviceError.js";
+import { ServiceError } from "../../../utils/error/index.js";
 import {
   findProjectPathConflict,
   normalizeProjectPath,

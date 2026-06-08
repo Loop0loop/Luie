@@ -4,7 +4,7 @@ import {
   LUIE_PACKAGE_VERSION,
 } from "../../../shared/constants/index.js";
 import { ErrorCode } from "../../../shared/constants/errorCode.js";
-import { ServiceError } from "../../utils/serviceError.js";
+import { ServiceError } from "../../utils/error/index.js";
 
 const isCompatibleLuieVersion = (value: unknown): boolean => {
   if (typeof value === "number") return value === LUIE_PACKAGE_VERSION;

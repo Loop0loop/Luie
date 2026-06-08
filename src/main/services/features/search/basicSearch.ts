@@ -4,8 +4,8 @@ import { createLogger } from "../../../../shared/logger/index.js";
 import type { SearchQuery } from "../../../../shared/types/index.js";
 import { character, term } from "../../../database/schema/index.js";
 import { db } from "../../../database/main/databaseService.js";
-import { escapeLike } from "../../../utils/queryHelpers.js";
-import { ServiceError } from "../../../utils/serviceError.js";
+import { escapeLike } from "../../../utils/query/index.js";
+import { ServiceError } from "../../../utils/error/index.js";
 
 const loadChapterSearchCacheService = async () =>
   (await import("../chapterSearchCacheService.js")).chapterSearchCacheService;

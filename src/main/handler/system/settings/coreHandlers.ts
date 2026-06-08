@@ -10,7 +10,7 @@ import {
   windowBoundsSchema,
 } from "../../../../shared/schemas/index.js";
 import type { IpcHandlerConfig } from "../../core/ipcRegistrar.js";
-import { applyApplicationMenu } from "../../../lifecycle/menu.js";
+import { applyApplicationMenu } from "../../../lifecycle/menu/index.js";
 import { loadSettingsManager } from "./managerLoader.js";
 
 export function createSettingsCoreHandlers(): IpcHandlerConfig[] {

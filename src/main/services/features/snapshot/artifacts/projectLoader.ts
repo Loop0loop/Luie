@@ -8,7 +8,7 @@ import {
   term as termTable,
 } from "../../../../infra/database/index.js";
 import { ErrorCode } from "../../../../../shared/constants/index.js";
-import { ServiceError } from "../../../../utils/serviceError.js";
+import { ServiceError } from "../../../../utils/error/index.js";
 import { getProjectAttachmentPath } from "../../../core/project/projectAttachmentStore.js";
 import type { ProjectSnapshotRecord } from "./types.js";
 

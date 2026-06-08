@@ -5,7 +5,7 @@ import type { RagQaRequest } from "../../../shared/types/index.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
 import { windowManager } from "../../app/windows/index.js";
-import { ServiceError } from "../../utils/serviceError.js";
+import { ServiceError } from "../../utils/error/index.js";
 import { ErrorCode } from "../../../shared/constants/errorCode.js";
 import { z } from "zod";
 

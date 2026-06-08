@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-06-08T15:03:05.605Z",
+  "generatedAt": "2026-06-08T15:23:20.573Z",
   "summary": {
     "definedChannels": 227,
     "errors": 0,
@@ -206,7 +206,7 @@
         "main_handle": [],
         "main_emit": [
           {
-            "file": "src/main/lifecycle/shutdown.ts",
+            "file": "src/main/lifecycle/shutdown/shutdown.ts",
             "line": 101
           }
         ],
@@ -237,7 +237,7 @@
         "main_handle": [],
         "main_emit": [
           {
-            "file": "src/main/lifecycle/bootstrap.ts",
+            "file": "src/main/lifecycle/bootstrap/bootstrap.ts",
             "line": 42
           }
         ],
@@ -338,7 +338,7 @@
         ],
         "main_listen": [
           {
-            "file": "src/main/lifecycle/shutdown.ts",
+            "file": "src/main/lifecycle/shutdown/shutdown.ts",
             "line": 89
           }
         ]
@@ -485,7 +485,7 @@
         "main_handle": [],
         "main_emit": [
           {
-            "file": "src/main/lifecycle/shutdown.ts",
+            "file": "src/main/lifecycle/shutdown/shutdown.ts",
             "line": 36
           }
         ],
@@ -5767,8 +5767,8 @@
         "main_handle": [],
         "main_emit": [
           {
-            "file": "src/main/lifecycle/deepLink.ts",
-            "line": 34
+            "file": "src/main/lifecycle/deep-link/deepLink.ts",
+            "line": 37
           }
         ],
         "renderer_listen": [

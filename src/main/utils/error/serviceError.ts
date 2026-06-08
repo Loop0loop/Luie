@@ -1,4 +1,4 @@
-import type { ErrorCodeType } from "../../shared/constants/index.js";
+import type { ErrorCodeType } from "../../../shared/constants/index.js";
 
 export class ServiceError extends Error {
   code: ErrorCodeType;

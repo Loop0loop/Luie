@@ -1,5 +1,5 @@
 import { ErrorCode } from "../../../shared/constants/index.js";
-import { isServiceError } from "../../utils/serviceError.js";
+import { isServiceError } from "../../utils/error/index.js";
 import type {
   AutoSaveRuntimeCounters,
   PendingSave,

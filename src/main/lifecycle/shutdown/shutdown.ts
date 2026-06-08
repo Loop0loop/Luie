@@ -1,30 +1,30 @@
 import { app, ipcMain, dialog } from "electron";
 import type { BrowserWindow } from "electron";
-import { windowManager } from "../app/windows/index.js";
-import { db } from "../infra/database/index.js";
-import { projectService } from "../domains/project/index.js";
-import { snapshotService } from "../domains/recovery/index.js";
-import { IPC_CHANNELS } from "../../shared/ipc/channels.js";
+import { windowManager } from "../../app/windows/index.js";
+import { db } from "../../infra/database/index.js";
+import { projectService } from "../../domains/project/index.js";
+import { snapshotService } from "../../domains/recovery/index.js";
+import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import {
   QUIT_EXPORT_HARD_TIMEOUT_MS,
   QUIT_EXPORT_SOFT_TIMEOUT_MS,
   QUIT_RENDERER_FLUSH_TIMEOUT_MS,
   QUIT_SAVE_TIMEOUT_MS,
-} from "../../shared/constants/index.js";
-import type { createLogger } from "../../shared/logger/index.js";
-import type { AppQuitPhase } from "../../shared/types/index.js";
+} from "../../../shared/constants/index.js";
+import type { createLogger } from "../../../shared/logger/index.js";
+import type { AppQuitPhase } from "../../../shared/types/index.js";
 
 type Logger = ReturnType<typeof createLogger>;
 
 const loadAutoSaveManager = async () =>
-  (await import("../domains/manuscript/index.js")).autoSaveManager;
+  (await import("../../domains/manuscript/index.js")).autoSaveManager;
 
 const loadCacheDb = async () =>
-  (await import("../infra/database/cache.js")).cacheDb;
+  (await import("../../infra/database/cache.js")).cacheDb;
 const loadDerivedJobWorker = async () =>
-  (await import("../domains/manuscript/index.js")).derivedJobWorker;
+  (await import("../../domains/manuscript/index.js")).derivedJobWorker;
 const loadSidecarManager = async () =>
-  (await import("../domains/settings/llm.js")).sidecarManager;
+  (await import("../../domains/settings/llm.js")).sidecarManager;
 
 const sendQuitPhase = (
   targetWindow: BrowserWindow | null,
@@ -289,7 +289,10 @@ export const registerShutdownHandlers = (logger: Logger): void => {
             checkpointResult,
           });
         } catch (checkpointError) {
-          logger.warn("Cache DB WAL checkpoint failed during quit", checkpointError);
+          logger.warn(
+            "Cache DB WAL checkpoint failed during quit",
+            checkpointError,
+          );
         }
         await cacheDb.disconnect();
       } catch (error) {

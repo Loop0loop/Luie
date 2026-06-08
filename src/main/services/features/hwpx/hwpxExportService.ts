@@ -9,7 +9,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import JSZip from "jszip";
-import { ServiceError } from "../../../utils/serviceError.js";
+import { ServiceError } from "../../../utils/error/index.js";
 import { ErrorCode } from "../../../../shared/constants/errorCode.js";
 import type { ExportOptions, ExportResult } from "../exportService.js";
 import {

@@ -4,7 +4,7 @@ import * as schema from "../../../infra/database/index.js";
 import { ErrorCode } from "../../../../shared/constants/index.js";
 import type { ProjectDeleteInput } from "../../../../shared/types/index.js";
 import { settingsManager } from "../../../domains/settings/index.js";
-import { ServiceError } from "../../../utils/serviceError.js";
+import { ServiceError } from "../../../utils/error/index.js";
 import {
   deleteProjectPackageFileIfRequested,
   normalizeProjectDeleteInput,

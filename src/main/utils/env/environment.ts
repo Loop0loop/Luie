@@ -9,7 +9,9 @@ const resolveIsPackaged = (): boolean => {
     return process.env.NODE_ENV === "production";
   }
   try {
-    const electron = requireFn("electron") as { app?: { isPackaged?: boolean } };
+    const electron = requireFn("electron") as {
+      app?: { isPackaged?: boolean };
+    };
     return Boolean(electron.app?.isPackaged);
   } catch {
     return process.env.NODE_ENV === "production";

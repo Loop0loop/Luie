@@ -5,7 +5,7 @@ import {
   ErrorCode,
   DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT,
 } from "../../../../shared/constants/index.js";
-import { ServiceError } from "../../../utils/serviceError.js";
+import { ServiceError } from "../../../utils/error/index.js";
 
 type LoggerLike = {
   info: (message: string, context?: unknown) => void;

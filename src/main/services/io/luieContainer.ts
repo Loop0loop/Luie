@@ -1,9 +1,9 @@
 import * as fsp from "node:fs/promises";
 import { ErrorCode } from "../../../shared/constants/index.js";
-import { ServiceError } from "../../utils/serviceError.js";
+import { ServiceError } from "../../utils/error/index.js";
 import {
   ensureLuieExtension,
-} from "../../utils/luiePackage.js";
+} from "../../utils/package/index.js";
 import {
   readLuieSqliteEntry,
   writeLuieSqliteContainer,

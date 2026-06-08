@@ -2,8 +2,8 @@ import { promises as fs } from "fs";
 import path from "path";
 import { LUIE_SNAPSHOTS_DIR } from "../../../../shared/constants/index.js";
 import { sanitizeName } from "../../../../shared/utils/sanitize.js";
-import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
-import { ensureLuieExtension } from "../../../utils/luiePackage.js";
+import { ensureSafeAbsolutePath } from "../../../utils/fs/index.js";
+import { ensureLuieExtension } from "../../../utils/package/index.js";
 import { listProjectAttachmentEntries } from "./projectAttachmentStore.js";
 
 type LoggerLike = {

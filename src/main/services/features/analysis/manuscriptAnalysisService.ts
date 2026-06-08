@@ -14,7 +14,7 @@ import {
   LUIE_MANUSCRIPT_DIR,
   MARKDOWN_EXTENSION,
 } from "../../../../shared/constants/index.js";
-import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
+import { ensureSafeAbsolutePath } from "../../../utils/fs/index.js";
 import { getProjectAttachmentPath } from "../../core/project/projectAttachmentStore.js";
 import { readLuieContainerEntry } from "../../io/luieContainer.js";
 import {

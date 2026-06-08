@@ -1,5 +1,5 @@
 import { settingsManager } from "../../domains/settings/index.js";
-import { isAppPackaged } from "../../utils/appEnv.js";
+import { isAppPackaged } from "../../utils/env/index.js";
 import { getSupabaseConfig } from "../features/sync/supabaseEnv.js";
 import { ensureSyncAccessToken } from "../features/sync/syncAccessToken.js";
 import type { RuntimeSupabaseProxyResolver } from "./modelRuntimeClient.js";

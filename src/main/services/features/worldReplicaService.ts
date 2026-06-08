@@ -10,7 +10,7 @@ import type {
 } from "../../../shared/types/index.js";
 import { db } from "../../infra/database/index.js";
 import { project, scrapMemo, worldDocument } from "../../infra/database/index.js";
-import { ServiceError } from "../../utils/serviceError.js";
+import { ServiceError } from "../../utils/error/index.js";
 import { projectService } from "../core/projectService.js";
 
 const logger = createLogger("WorldReplicaService");

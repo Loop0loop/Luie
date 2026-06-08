@@ -2,7 +2,7 @@ import os from "node:os";
 import path from "node:path";
 import { promises as fs } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { readLuieEntry } from "../../../src/main/utils/luiePackage.js";
+import { readLuieEntry } from "../../../src/main/utils/package/index.js";
 
 const createTempDir = async (name: string): Promise<string> =>
   await fs.mkdtemp(path.join(os.tmpdir(), `${name}-`));

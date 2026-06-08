@@ -13,7 +13,7 @@ import {
 } from "../../../../shared/schemas/index.js";
 import type { RuntimeSupabaseConfig } from "../../../../shared/types/index.js";
 import { syncService } from "../../../domains/sync/index.js";
-import { ServiceError } from "../../../utils/serviceError.js";
+import { ServiceError } from "../../../utils/error/index.js";
 
 const loadSettingsManager = (() => {
   let cached: Promise<typeof SettingsManagerModule> | null = null;

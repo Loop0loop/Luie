@@ -1,5 +1,5 @@
 import { createLogger } from "../../../../shared/logger/index.js";
-import { isTestEnv } from "../../../utils/environment.js";
+import { isTestEnv } from "../../../utils/env/index.js";
 
 export const chapterLogger = createLogger("ChapterService");
 

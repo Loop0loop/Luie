@@ -2,10 +2,10 @@ import { BrowserWindow } from "electron";
 import {
   createLogger,
   createPerformanceTimer,
-} from "../../shared/logger/index.js";
-import { IPC_CHANNELS } from "../../shared/ipc/channels.js";
-import type { AppBootstrapStatus } from "../../shared/types/index.js";
-import { db } from "../infra/database/index.js";
+} from "../../../shared/logger/index.js";
+import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
+import type { AppBootstrapStatus } from "../../../shared/types/index.js";
+import { db } from "../../infra/database/index.js";
 
 const logger = createLogger("BootstrapLifecycle");
 
@@ -25,7 +25,7 @@ const getErrorMessage = (error: unknown): string => {
  */
 const triggerLlmfitInstall = async (): Promise<void> => {
   try {
-    const { llmfitInstaller } = await import("../domains/settings/llm.js");
+    const { llmfitInstaller } = await import("../../domains/settings/llm.js");
     const status = await llmfitInstaller.ensureInstalled();
     logger.info("llmfit install attempted during bootstrap", {
       installed: status.installed,
@@ -39,7 +39,10 @@ const broadcastBootstrapStatus = (): void => {
   for (const win of BrowserWindow.getAllWindows()) {
     if (win.isDestroyed()) continue;
     try {
-      win.webContents.send(IPC_CHANNELS.APP_BOOTSTRAP_STATUS_CHANGED, bootstrapStatus);
+      win.webContents.send(
+        IPC_CHANNELS.APP_BOOTSTRAP_STATUS_CHANGED,
+        bootstrapStatus,
+      );
     } catch (error) {
       logger.warn("Failed to broadcast bootstrap status", error);
     }

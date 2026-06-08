@@ -10,7 +10,7 @@ import type {
     WorldEntityUpdateInput,
     WorldEntityUpdatePositionInput,
 } from "../../../shared/types/index.js";
-import { ServiceError } from "../../utils/serviceError.js";
+import { ServiceError } from "../../utils/error/index.js";
 import { projectService } from "../core/projectService.js";
 import { getWorldDbClient } from "./characterService.js";
 import { worldEntity, entityRelation } from "../../infra/database/index.js";

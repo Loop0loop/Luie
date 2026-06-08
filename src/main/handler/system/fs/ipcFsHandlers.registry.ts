@@ -24,7 +24,7 @@ import {
   fsWriteFileArgsSchema,
   fsWriteProjectFileArgsSchema,
 } from "../../../../shared/schemas/index.js";
-import { ServiceError } from "../../../utils/serviceError.js";
+import { ServiceError } from "../../../utils/error/index.js";
 import {
   approvePathForSession,
   assertAllowedFsPath,

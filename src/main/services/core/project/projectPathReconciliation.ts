@@ -1,5 +1,5 @@
 import path from "path";
-import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
+import { ensureSafeAbsolutePath } from "../../../utils/fs/index.js";
 
 const toProjectPathKey = (projectPath: string): string => {
   const resolved = path.resolve(projectPath);

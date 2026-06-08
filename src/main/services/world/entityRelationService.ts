@@ -12,7 +12,7 @@ import type {
     WorldGraphData,
     WorldEntitySourceType,
 } from "../../../shared/types/index.js";
-import { ServiceError } from "../../utils/serviceError.js";
+import { ServiceError } from "../../utils/error/index.js";
 import { projectService } from "../core/projectService.js";
 import { db } from "../../infra/database/index.js";
 import { entityRelation } from "../../infra/database/index.js";

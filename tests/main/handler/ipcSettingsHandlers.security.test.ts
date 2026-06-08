@@ -96,7 +96,7 @@ vi.mock("../../../src/main/manager/settings/index.js", () => ({
   settingsManager: mocked.settingsManager,
 }));
 
-vi.mock("../../../src/main/lifecycle/menu.js", () => ({
+vi.mock("../../../src/main/lifecycle/menu/index.js", () => ({
   applyApplicationMenu: vi.fn(),
 }));
 

@@ -2,9 +2,9 @@ import * as fsp from "fs/promises";
 import * as path from "path";
 import { LUIE_PACKAGE_EXTENSION } from "../../../../shared/constants/index.js";
 import { ErrorCode } from "../../../../shared/constants/errorCode.js";
-import { ensureLuieExtension } from "../../../utils/luiePackage.js";
-import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
-import { ServiceError } from "../../../utils/serviceError.js";
+import { ensureLuieExtension } from "../../../utils/package/index.js";
+import { ensureSafeAbsolutePath } from "../../../utils/fs/index.js";
+import { ServiceError } from "../../../utils/error/index.js";
 
 const APPROVED_ROOT_TTL_MS = 12 * 60 * 60 * 1000;
 const MAX_APPROVED_ROOTS = 128;

@@ -3,12 +3,12 @@ import { windowManager } from "../../../app/windows/index.js";
 import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
 import { registerIpcHandlers } from "../../core/ipcRegistrar.js";
 import type { LoggerLike } from "../../core/types.js";
-import { ServiceError } from "../../../utils/serviceError.js";
+import { ServiceError } from "../../../utils/error/index.js";
 import { ErrorCode } from "../../../../shared/constants/errorCode.js";
 import {
   ensureBootstrapReady,
   getBootstrapStatus,
-} from "../../../lifecycle/bootstrap.js";
+} from "../../../lifecycle/bootstrap/index.js";
 import { appUpdateService } from "../../../app/startup/index.js";
 import {
   windowOpenExportArgsSchema,

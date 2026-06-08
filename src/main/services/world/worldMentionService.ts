@@ -6,7 +6,7 @@ import type {
   WorldGraphMentionsQuery,
   WorldEntitySourceType,
 } from "../../../shared/types/index.js";
-import { ServiceError } from "../../utils/serviceError.js";
+import { ServiceError } from "../../utils/error/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
 import { getWorldDbClient } from "./characterService.js";
 import { character, faction, event, term, worldEntity, chapter } from "../../infra/database/index.js";

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ServiceError } from "../../../src/main/utils/serviceError.js";
+import { ServiceError } from "../../../src/main/utils/error/index.js";
 import { ErrorCode } from "../../../src/shared/constants/errorCode.js";
 
 const mocked = vi.hoisted(() => ({

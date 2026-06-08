@@ -1,1 +1,1 @@
-export * from "../../lifecycle/bootstrap.js";
+export * from "../../lifecycle/bootstrap/index.js";

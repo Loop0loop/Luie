@@ -10,7 +10,7 @@ import sanitize from "sanitize-filename";
 import { exportCreateArgsSchema } from "../../../shared/schemas/index.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
-import { ServiceError } from "../../utils/serviceError.js";
+import { ServiceError } from "../../utils/error/index.js";
 import { ErrorCode } from "../../../shared/constants/errorCode.js";
 
 /**

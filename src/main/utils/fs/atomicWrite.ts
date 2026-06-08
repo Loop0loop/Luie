@@ -10,7 +10,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { promisify } from "node:util";
 import { gzip as gzipCallback, gunzip as gunzipCallback } from "node:zlib";
-import { createLogger } from "../../shared/logger/index.js";
+import { createLogger } from "../../../shared/logger/index.js";
 
 const logger = createLogger("AtomicWrite");
 const gzip = promisify(gzipCallback);
@@ -20,9 +20,15 @@ const gunzip = promisify(gunzipCallback);
  * Write raw buffer to file atomically.
  * temp → fsync → rename → dir fsync
  */
-export async function writeFileAtomic(targetPath: string, buffer: Buffer): Promise<void> {
+export async function writeFileAtomic(
+  targetPath: string,
+  buffer: Buffer,
+): Promise<void> {
   const dir = path.dirname(targetPath);
-  const tempPath = path.join(dir, `${path.basename(targetPath)}.tmp-${Date.now()}`);
+  const tempPath = path.join(
+    dir,
+    `${path.basename(targetPath)}.tmp-${Date.now()}`,
+  );
 
   await fs.writeFile(tempPath, buffer);
 
@@ -53,7 +59,10 @@ export async function writeFileAtomic(targetPath: string, buffer: Buffer): Promi
 /**
  * Write UTF-8 string to file atomically with gzip compression.
  */
-export async function writeGzipAtomic(targetPath: string, payload: string): Promise<void> {
+export async function writeGzipAtomic(
+  targetPath: string,
+  payload: string,
+): Promise<void> {
   const buffer = await gzip(Buffer.from(payload, "utf8"));
   await writeFileAtomic(targetPath, buffer);
 }
@@ -64,7 +73,8 @@ export async function writeGzipAtomic(targetPath: string, payload: string): Prom
  */
 export async function readMaybeGzip(filePath: string): Promise<string> {
   const buffer = await fs.readFile(filePath);
-  const isGzipped = buffer.length >= 2 && buffer[0] === 0x1f && buffer[1] === 0x8b;
+  const isGzipped =
+    buffer.length >= 2 && buffer[0] === 0x1f && buffer[1] === 0x8b;
   const jsonBuffer = isGzipped ? await gunzip(buffer) : buffer;
   return jsonBuffer.toString("utf8");
 }

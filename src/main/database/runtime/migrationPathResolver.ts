@@ -1,6 +1,6 @@
 import * as path from "node:path";
-import { resolveUserDataPath } from "../../utils/userDataPath.js";
-import { isProdEnv, isTestEnv } from "../../utils/environment.js";
+import { resolveUserDataPath } from "../../utils/env/index.js";
+import { isProdEnv, isTestEnv } from "../../utils/env/index.js";
 
 export const DRIZZLE_MIGRATIONS_ROOT_DIR = "drizzle";
 

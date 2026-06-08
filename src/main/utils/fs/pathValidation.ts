@@ -1,6 +1,6 @@
 import path from "node:path";
-import { ErrorCode } from "../../shared/constants/errorCode.js";
-import { ServiceError } from "./serviceError.js";
+import { ErrorCode } from "../../../shared/constants/errorCode.js";
+import { ServiceError } from "../error/index.js";
 
 const MAX_PATH_LENGTH = 4096;
 const RESTRICTED_ROOTS =
@@ -57,7 +57,10 @@ function assertBasePathInput(input: string, fieldName: string): string {
   return trimmed;
 }
 
-export function ensureSafeAbsolutePath(input: string, fieldName = "path"): string {
+export function ensureSafeAbsolutePath(
+  input: string,
+  fieldName = "path",
+): string {
   const normalized = assertBasePathInput(input, fieldName);
   if (!path.isAbsolute(normalized)) {
     throw new ServiceError(
@@ -73,7 +76,11 @@ export function ensureSafeAbsolutePath(input: string, fieldName = "path"): strin
       throw new ServiceError(
         ErrorCode.FS_PERMISSION_DENIED,
         `${fieldName} points to a restricted system path`,
-        { fieldName, input: resolved, restrictedRoot: path.resolve(restrictedRoot) },
+        {
+          fieldName,
+          input: resolved,
+          restrictedRoot: path.resolve(restrictedRoot),
+        },
       );
     }
   }

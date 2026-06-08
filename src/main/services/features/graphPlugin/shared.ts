@@ -13,7 +13,7 @@ import type {
 } from "../../../../shared/types/index.js";
 import type { LuieWorldGraphSchema } from "../../core/project/projectLuieSchemas.js";
 import type { worldReplicaService } from "../worldReplicaService.js";
-import { ServiceError } from "../../../utils/serviceError.js";
+import { ServiceError } from "../../../utils/error/index.js";
 
 export const GRAPH_PLUGIN_API_VERSION = "1.0.0";
 export const MAX_PLUGIN_ARCHIVE_BYTES = 64 * 1024 * 1024;

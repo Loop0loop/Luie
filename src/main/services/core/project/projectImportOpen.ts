@@ -9,8 +9,8 @@ import {
   LUIE_PACKAGE_EXTENSION,
   LUIE_PACKAGE_META_FILENAME,
 } from "../../../../shared/constants/index.js";
-import { ServiceError } from "../../../utils/serviceError.js";
-import { ensureLuieExtension } from "../../../utils/luiePackage.js";
+import { ServiceError } from "../../../utils/error/index.js";
+import { ensureLuieExtension } from "../../../utils/package/index.js";
 import type { LoggerLike as LuieWriterLogger } from "../../io/luiePackageTypes.js";
 import { readLuieContainerEntry } from "../../io/luieContainer.js";
 import { normalizeLuiePackagePath } from "./projectPathPolicy.js";

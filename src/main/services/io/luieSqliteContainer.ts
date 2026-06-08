@@ -9,8 +9,8 @@ import {
   LUIE_PACKAGE_VERSION,
 } from "../../../shared/constants/index.js";
 import { ErrorCode } from "../../../shared/constants/errorCode.js";
-import { normalizeZipPath, isSafeZipPath } from "../../utils/luiePackage.js";
-import { ServiceError } from "../../utils/serviceError.js";
+import { normalizeZipPath, isSafeZipPath } from "../../utils/package/index.js";
+import { ServiceError } from "../../utils/error/index.js";
 import {
   atomicReplace,
   ensureParentDir,

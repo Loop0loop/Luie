@@ -8,7 +8,9 @@ export const resolveUserDataPath = (): string => {
   if (fromEnv && fromEnv.length > 0) return fromEnv;
 
   try {
-    const electron = requireFn("electron") as { app?: { getPath?: (name: string) => string } };
+    const electron = requireFn("electron") as {
+      app?: { getPath?: (name: string) => string };
+    };
     const fromApp = electron.app?.getPath?.("userData");
     if (fromApp && fromApp.length > 0) return fromApp;
   } catch {

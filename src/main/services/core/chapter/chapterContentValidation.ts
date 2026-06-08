@@ -10,8 +10,8 @@ import {
 } from "../../../../shared/constants/index.js";
 import type { ChapterUpdateInput } from "../../../../shared/types/index.js";
 import { sanitizeName } from "../../../../shared/utils/sanitize.js";
-import { ServiceError } from "../../../utils/serviceError.js";
-import { isTestEnv } from "../../../utils/environment.js";
+import { ServiceError } from "../../../utils/error/index.js";
+import { isTestEnv } from "../../../utils/env/index.js";
 import { autoExtractService } from "../../features/autoExtract/autoExtractService.js";
 import { trackKeywordAppearances } from "../chapterKeywords.js";
 import {

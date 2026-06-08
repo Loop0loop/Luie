@@ -11,7 +11,7 @@ import type {
   ChapterUpdateInput,
 } from "../../../shared/types/index.js";
 import { projectService } from "./projectService.js";
-import { ServiceError } from "../../utils/serviceError.js";
+import { ServiceError } from "../../utils/error/index.js";
 import { trackKeywordAppearances } from "./chapterKeywords.js";
 import {
   readChapterContent,

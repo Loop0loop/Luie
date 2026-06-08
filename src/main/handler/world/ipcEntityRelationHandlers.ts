@@ -14,7 +14,7 @@ import {
 } from "../../../shared/schemas/index.js";
 import { z } from "zod";
 import type { LoggerLike } from "../core/types.js";
-import { ensureBootstrapReady } from "../../lifecycle/bootstrap.js";
+import { ensureBootstrapReady } from "../../lifecycle/bootstrap/index.js";
 
 type EntityRelationServiceLike = {
     createRelation: (input: EntityRelationCreateInput) => Promise<unknown>;
