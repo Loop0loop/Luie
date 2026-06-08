@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { MainDrizzleClient } from "../../infra/database/index.js";
 import {
   character,
@@ -24,6 +24,7 @@ async function upsertPendingMemoryBuildJob(input: {
   projectId: string;
   targetType: string;
   targetId: string;
+  jobType: string;
   priority: number;
   now: string;
 }): Promise<void> {
@@ -32,8 +33,8 @@ async function upsertPendingMemoryBuildJob(input: {
         WHERE "projectId" = ${input.projectId}
           AND "targetType" = ${input.targetType}
           AND "targetId" = ${input.targetId}
-          AND "jobType" = ${MEMORY_JOB_TYPES.REBUILD_CHUNKS}
-          AND "status" = 'pending'
+          AND "jobType" = ${input.jobType}
+          AND "status" IN ('pending', 'running')
         ORDER BY "updatedAt" DESC
         LIMIT 1;`,
   );
@@ -48,9 +49,20 @@ async function upsertPendingMemoryBuildJob(input: {
   }
   await input.client.run(
     sql`INSERT INTO "MemoryBuildJob" ("id","projectId","targetType","targetId","jobType","status","priority","attempts","createdAt","updatedAt")
-        VALUES (${crypto.randomUUID()}, ${input.projectId}, ${input.targetType}, ${input.targetId}, ${MEMORY_JOB_TYPES.REBUILD_CHUNKS}, 'pending', ${input.priority}, 0, ${input.now}, ${input.now});`,
+        VALUES (${crypto.randomUUID()}, ${input.projectId}, ${input.targetType}, ${input.targetId}, ${input.jobType}, 'pending', ${input.priority}, 0, ${input.now}, ${input.now});`,
   );
 }
+
+const MEMORY_REBUILD_JOB_TYPES = [
+  {
+    jobType: MEMORY_JOB_TYPES.REBUILD_CHUNKS,
+    priority: MEMORY_JOB_PRIORITY.CHUNKS,
+  },
+  {
+    jobType: MEMORY_JOB_TYPES.REBUILD_EMBEDDING,
+    priority: MEMORY_JOB_PRIORITY.EMBEDDING,
+  },
+] as const;
 
 export async function rebuildMemoryChunks(input: {
   client: MainDrizzleClient;
@@ -60,14 +72,17 @@ export async function rebuildMemoryChunks(input: {
 }): Promise<{ queued: number; processed: number }> {
   const now = new Date().toISOString();
   if (input.sourceType && input.sourceId) {
-    await upsertPendingMemoryBuildJob({
-      client: input.client,
-      projectId: input.projectId,
-      targetType: input.sourceType,
-      targetId: input.sourceId,
-      priority: MEMORY_JOB_PRIORITY.CHUNKS,
-      now,
-    });
+    for (const job of MEMORY_REBUILD_JOB_TYPES) {
+      await upsertPendingMemoryBuildJob({
+        client: input.client,
+        projectId: input.projectId,
+        targetType: input.sourceType,
+        targetId: input.sourceId,
+        jobType: job.jobType,
+        priority: job.priority,
+        now,
+      });
+    }
     return { queued: 1, processed: 0 };
   }
 
@@ -133,21 +148,24 @@ export async function rebuildMemoryChunks(input: {
     .select({
       targetType: memoryBuildJob.targetType,
       targetId: memoryBuildJob.targetId,
+      jobType: memoryBuildJob.jobType,
     })
     .from(memoryBuildJob)
     .where(
       and(
         eq(memoryBuildJob.projectId, input.projectId),
-        eq(memoryBuildJob.jobType, MEMORY_JOB_TYPES.REBUILD_CHUNKS),
-        eq(memoryBuildJob.status, "pending"),
+        inArray(memoryBuildJob.jobType, MEMORY_REBUILD_JOB_TYPES.map((job) => job.jobType)),
+        inArray(memoryBuildJob.status, ["pending", "running"]),
       ),
     );
 
   const existingKeys = new Set(
-    existingPending.map((row) => `${row.targetType}:${row.targetId}`),
+    existingPending.map((row) => `${row.targetType}:${row.targetId}:${row.jobType}`),
   );
-  const toInsert = targets.filter(
-    (target) => !existingKeys.has(`${target.targetType}:${target.targetId}`),
+  const toInsert = targets.flatMap((target) =>
+    MEMORY_REBUILD_JOB_TYPES
+      .filter((job) => !existingKeys.has(`${target.targetType}:${target.targetId}:${job.jobType}`))
+      .map((job) => ({ ...target, ...job })),
   );
 
   if (toInsert.length > 0) {
@@ -157,9 +175,9 @@ export async function rebuildMemoryChunks(input: {
         projectId: input.projectId,
         targetType: target.targetType,
         targetId: target.targetId,
-        jobType: MEMORY_JOB_TYPES.REBUILD_CHUNKS,
+        jobType: target.jobType,
         status: "pending",
-        priority: MEMORY_JOB_PRIORITY.CHUNKS,
+        priority: target.priority,
         attempts: 0,
         createdAt: now,
         updatedAt: now,

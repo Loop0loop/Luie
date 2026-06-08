@@ -6,6 +6,7 @@ import { db } from "../../../src/main/database/index.js";
 import { memoryBuildJob, searchDirtyQueue } from "../../../src/main/database/schema/index.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import { projectService } from "../../../src/main/services/core/projectService.js";
+import { MEMORY_JOB_TYPES } from "../../../src/main/services/features/memory/memoryJobConstants.js";
 
 describe("dbMaintenanceService", () => {
   const localProjectService = new ProjectService();
@@ -62,7 +63,7 @@ describe("dbMaintenanceService", () => {
     expect(rows.some((row) => row.status === "completed")).toBe(true);
   });
 
-  it("enqueues memory rebuild jobs without synchronous processing", async () => {
+  it("enqueues chunk and embedding rebuild jobs without synchronous processing", async () => {
     const project = await localProjectService.createProject({
       title: "DB Maintenance Memory",
       description: "unit",
@@ -85,5 +86,19 @@ describe("dbMaintenanceService", () => {
 
     const jobs = await db.getClient().select().from(memoryBuildJob);
     expect(jobs.some((job) => job.status === "pending")).toBe(true);
+    expect(
+      jobs.some(
+        (job) =>
+          job.targetId === String(chapter.id) &&
+          job.jobType === MEMORY_JOB_TYPES.REBUILD_CHUNKS,
+      ),
+    ).toBe(true);
+    expect(
+      jobs.some(
+        (job) =>
+          job.targetId === String(chapter.id) &&
+          job.jobType === MEMORY_JOB_TYPES.REBUILD_EMBEDDING,
+      ),
+    ).toBe(true);
   });
 });

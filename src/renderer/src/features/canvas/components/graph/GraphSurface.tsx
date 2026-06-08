@@ -4,6 +4,7 @@ import ReactFlow, {
   BackgroundVariant,
   PanOnScrollMode,
   MarkerType,
+  type Edge,
   type Node,
   useNodesState,
   useEdgesState
@@ -11,14 +12,14 @@ import ReactFlow, {
 import { useTranslation } from "react-i18next";
 import { HelpCircle } from "lucide-react";
 import PensiveNode from "./PensiveNode";
-import type { GraphNodeData } from "../../types/graph";
+import type { GraphNodeData, GraphNodeType } from "../../types/graph";
 import { useGraphStore } from "../../stores/graph/graphStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { calculateForceLayout } from "../../utils/graphLayout";
-import { MOCK_GRAPH_NODES, MOCK_GRAPH_EDGES } from "../../constants/graphMockData";
-import { GRAPH_CORE_CHARACTERS, GRAPH_CORE_EVENTS } from "../../constants/node";
 import { GRAPH_CONSTELLATION_EDGE_DEFAULTS } from "../../constants/edge";
 import { CANVAS_ZOOM_MAX, CANVAS_ZOOM_MIN } from "@shared/constants/canvasSizing";
+import type { WorldGraphData } from "@shared/types";
 import {
   EDGE_FALLBACK_OPACITY,
   EDGE_FALLBACK_STROKE_WIDTH,
@@ -35,6 +36,60 @@ import {
 
 const nodeTypes = {
   pensive: PensiveNode,
+};
+
+const toGraphNodeType = (entityType: string): GraphNodeType => {
+  if (entityType === "Character") return "character";
+  if (entityType === "Faction") return "faction";
+  if (entityType === "Event" || entityType === "Scene") return "event";
+  if (entityType === "Chapter") return "chapter";
+  return "world-entity";
+};
+
+const buildGraphSurfaceData = (
+  graphData: WorldGraphData | null,
+): { sourceNodes: Node<GraphNodeData>[]; sourceEdges: Edge[] } => {
+  if (!graphData) return { sourceNodes: [], sourceEdges: [] };
+
+  const nodeNameById = new Map(graphData.nodes.map((node) => [node.id, node.name]));
+  const relationshipsByNodeId = new Map<string, NonNullable<GraphNodeData["relationships"]>>();
+  for (const edge of graphData.edges) {
+    const sourceRelationships = relationshipsByNodeId.get(edge.sourceId) ?? [];
+    sourceRelationships.push({
+      targetName: nodeNameById.get(edge.targetId) ?? edge.targetId,
+      type: edge.relation,
+      details: edge.relation,
+    });
+    relationshipsByNodeId.set(edge.sourceId, sourceRelationships);
+  }
+
+  return {
+    sourceNodes: graphData.nodes.map((node): Node<GraphNodeData> => ({
+      id: node.id,
+      type: "pensive",
+      position: {
+        x: Number.isFinite(node.positionX) ? node.positionX : 0,
+        y: Number.isFinite(node.positionY) ? node.positionY : 0,
+      },
+      data: {
+        label: node.name,
+        type: toGraphNodeType(node.entityType),
+        description: node.description ?? "",
+        relatedChapters: [],
+        relationships: relationshipsByNodeId.get(node.id) ?? [],
+        sourceTexts: [],
+      },
+    })),
+    sourceEdges: graphData.edges.map((edge): Edge => ({
+      id: edge.id,
+      source: edge.sourceId,
+      target: edge.targetId,
+      data: {
+        label: edge.relation,
+        strength: 1,
+      },
+    })),
+  };
 };
 
 export default function GraphSurface() {
@@ -56,30 +111,25 @@ export default function GraphSurface() {
 
   // 1. Luie 관계 시나리오 필터 상태 구독 (Zustand 스토어 연동)
   const activeMode = useGraphStore((state) => state.activeMode);
-  const selectedChapterFilter = useGraphStore((state) => state.selectedChapterFilter);
   const selectedFocusNode = useGraphStore((state) => state.selectedFocusNode);
+  const graphData = useWorldBuildingStore((state) => state.graphData);
+  const { sourceNodes, sourceEdges } = useMemo(
+    () => buildGraphSurfaceData(graphData),
+    [graphData],
+  );
 
   // hoverId에 대응하는 노드 데이터를 실시간 추적하여 호버 플로팅 카드에 공급
   const hoverNode = useMemo(() => {
     if (!hoverId) return null;
-    return MOCK_GRAPH_NODES.find((node) => node.id === hoverId) ?? null;
-  }, [hoverId]);
+    return nodes.find((node) => node.id === hoverId) ?? null;
+  }, [hoverId, nodes]);
 
   // 2. 모드 및 필터 조건에 부합하는 동적 그래프 데이터 파이프라인 (Constellation Monotone Rule)
   const { filteredNodes, filteredEdges } = useMemo(() => {
     // A. 에지 필터링 및 스타일 빌드
-    const computedEdges = MOCK_GRAPH_EDGES.map((edge) => {
+    const computedEdges = sourceEdges.map((edge) => {
       const strength = edge.data?.strength ?? 1;
       const isCharacterMode = activeMode === "character";
-
-      // 챕터 필터가 '초반부(12~13화)' 일 경우, 15화 관련 에지("chapter15", "ambush", "rebels" 연관) 감쇠 처리
-      const isEarlyFilter = selectedChapterFilter === "early";
-      const is15ChapterRelated = 
-        edge.source === GRAPH_CORE_EVENTS.CHAPTER15 || 
-        edge.target === GRAPH_CORE_EVENTS.CHAPTER15 || 
-        edge.source === GRAPH_CORE_EVENTS.AMBUSH || 
-        edge.target === GRAPH_CORE_EVENTS.AMBUSH;
-      const filterOpacityMultiplier = isEarlyFilter && is15ChapterRelated ? 0.15 : 1.0;
 
       const cfg = isCharacterMode 
         ? GRAPH_CONSTELLATION_EDGE_DEFAULTS.character 
@@ -88,7 +138,7 @@ export default function GraphSurface() {
       const edgeStyle: React.CSSProperties = {
         stroke: cfg.stroke,
         strokeWidth: strength * cfg.widthMultiplier,
-        opacity: (cfg.opacityBase + strength * cfg.opacityMultiplier) * filterOpacityMultiplier,
+        opacity: cfg.opacityBase + strength * cfg.opacityMultiplier,
       };
 
       if ("dasharray" in cfg) {
@@ -132,36 +182,19 @@ export default function GraphSurface() {
     });
 
     // B. 노드 크기 및 별자리 발광 속성 동적 연산
-    const computedNodes = MOCK_GRAPH_NODES.map((node): Node<GraphNodeData> => {
-      const isCharacterMode = activeMode === "character";
-      const isEarlyFilter = selectedChapterFilter === "early";
-
-      // 챕터 필터에 따른 감쇠 연산
-      const is15ChapterRelatedNode = 
-        node.id === GRAPH_CORE_EVENTS.CHAPTER15 || 
-        node.id === GRAPH_CORE_EVENTS.AMBUSH || 
-        node.id === GRAPH_CORE_EVENTS.REBELS;
-      const opacity = isEarlyFilter && is15ChapterRelatedNode ? 0.3 : 1.0;
-
-      // 중심 주성 판별 (let 대입문을 삼항 연산자 const로 치환하여 assigned but not used 경고 100% 영구 해결)
-      const starGrade: "prime" | "major" | "minor" = isCharacterMode
-        ? node.id === GRAPH_CORE_CHARACTERS.JINSEO
-          ? "prime"
-          : (node.id === GRAPH_CORE_CHARACTERS.SERIN || node.id === "palace" || node.id === GRAPH_CORE_EVENTS.AMBUSH)
-            ? "major"
-            : "minor"
-        : node.id === GRAPH_CORE_EVENTS.AMBUSH
-          ? "prime"
-          : (node.id === GRAPH_CORE_EVENTS.REBELS || node.id === GRAPH_CORE_CHARACTERS.JINSEO || node.id === GRAPH_CORE_EVENTS.CHAPTER15)
-            ? "major"
-            : "minor";
+    const computedNodes = sourceNodes.map((node): Node<GraphNodeData> => {
+      const degree = computedEdges.filter(
+        (edge) => edge.source === node.id || edge.target === node.id,
+      ).length;
+      const starGrade: "prime" | "major" | "minor" =
+        degree >= 3 ? "prime" : degree >= 1 ? "major" : "minor";
 
       // 특정 캐릭터/사건 빠른 필터 포커싱 시, 대상 노드가 아닌 것들은 감쇠 처리
       let filterFocusedOpacity = 1.0;
       if (selectedFocusNode !== "all") {
         if (node.id !== selectedFocusNode) {
           // 직접적으로 에지 연결되지 않은 노드는 거의 투명화
-          const isConnected = MOCK_GRAPH_EDGES.some(
+          const isConnected = computedEdges.some(
             (e) => (e.source === selectedFocusNode && e.target === node.id) ||
                    (e.target === selectedFocusNode && e.source === node.id) ||
                    node.id === selectedFocusNode
@@ -175,7 +208,7 @@ export default function GraphSurface() {
       let isInteractivePointerEvents = true;
       if (focusId) {
         if (node.id !== focusId) {
-          const isNeighbor = MOCK_GRAPH_EDGES.some(
+          const isNeighbor = computedEdges.some(
             (e) => (e.source === focusId && e.target === node.id) ||
                    (e.target === focusId && e.source === node.id)
           );
@@ -189,7 +222,7 @@ export default function GraphSurface() {
         data: {
           ...node.data,
           starGrade,
-          opacity: opacity * filterFocusedOpacity * canvasFocusedOpacity,
+          opacity: filterFocusedOpacity * canvasFocusedOpacity,
           isInteractive: isInteractivePointerEvents,
           isFocused: false,
         },
@@ -200,7 +233,7 @@ export default function GraphSurface() {
       filteredNodes: computedNodes,
       filteredEdges: computedEdges,
     };
-  }, [activeMode, selectedChapterFilter, selectedFocusNode, focusId]);
+  }, [activeMode, selectedFocusNode, focusId, sourceNodes, sourceEdges]);
 
   // 3. 필터 변경 또는 마운트 시 Force Layout 기동 (모드별 중심점 및 물리력 분기 대응)
   useEffect(() => {

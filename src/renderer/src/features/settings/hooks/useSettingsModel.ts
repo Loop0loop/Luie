@@ -242,10 +242,15 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
 
   // 의미 검색 게이트: 임베딩 모델 미설치=비활성, 임베딩 잡 진행 중=준비중, 그 외=준비됨.
   const pendingEmbeddings =
-    (memoryEmbeddingStatus?.pendingCount ?? 0) + (memoryEmbeddingStatus?.runningCount ?? 0);
+    (memoryEmbeddingStatus?.pendingCount ?? 0) +
+    (memoryEmbeddingStatus?.runningCount ?? 0) +
+    (memoryEmbeddingStatus?.failedCount ?? 0) +
+    (memoryEmbeddingStatus?.skippedCount ?? 0) +
+    (memoryEmbeddingStatus?.unembeddedChunkCount ?? 0) +
+    (memoryEmbeddingStatus?.staleEmbeddingCount ?? 0);
   const semanticSearchState: SemanticSearchState = !embeddingStatus?.installed
     ? "disabled"
-    : pendingEmbeddings > 0
+    : pendingEmbeddings > 0 || memoryEmbeddingStatus?.ready === false
       ? "preparing"
       : "ready";
 

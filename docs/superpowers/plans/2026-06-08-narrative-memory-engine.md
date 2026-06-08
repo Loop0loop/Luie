@@ -410,12 +410,14 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Added helper coverage that episode candidates require at least one evidence span.
 - Added a transactional storage boundary that inserts episode and evidence rows together.
 - `MemoryStateChangeCandidate.evidenceId` is mandatory so state-change claims stay tied to a concrete episode evidence span.
+- Chunk projection now enqueues `MemoryEpisodeExtractionJob` rows after source chunks are rebuilt, keyed by source content hash and extractor version.
+- Added an episode extraction processor boundary that claims pending jobs, passes source chunks to an injected extractor, stores suggested episode/evidence candidates, and marks jobs completed or retryable.
 
 아직 미구현:
 
 - No LLM episode extraction runner yet.
 - No IPC/UI for episode review or rejection yet.
-- No automatic background processing of `MemoryEpisodeExtractionJob` yet.
+- No derived worker integration for `MemoryEpisodeExtractionJob` yet because the real LLM episode extractor is not implemented.
 
 ## Phase 5: Temporal Relation and State Graph
 

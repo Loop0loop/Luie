@@ -324,7 +324,18 @@ export class EmbeddingProjector {
     failedCount: number;
     completedCount: number;
     skippedCount: number;
+    chunkCount: number;
+    embeddingCount: number;
+    unembeddedChunkCount: number;
+    staleEmbeddingCount: number;
+    currentModel: string;
+    ready: boolean;
   }> {
+    const runtimeConfig = await resolveRuntimeModelConfig(projectId);
+    const expectedModelSignature = buildEmbeddingModelSignature({
+      providerHint: runtimeConfig.providerHint,
+      embeddingModel: runtimeConfig.embeddingModel,
+    });
     const rows = await db.getClient()
       .select({
         status: memoryBuildJob.status,
@@ -339,13 +350,50 @@ export class EmbeddingProjector {
       )
       .groupBy(memoryBuildJob.status);
     const grouped = new Map(rows.map((row) => [row.status, Number(row.count ?? 0)]));
+    const [chunkStats] = await db.getClient()
+      .select({ count: sql<number>`count(*)` })
+      .from(memoryChunk)
+      .where(eq(memoryChunk.projectId, projectId));
+    const [embeddingStats] = await db.getClient()
+      .select({ count: sql<number>`count(*)` })
+      .from(memoryEmbedding)
+      .where(eq(memoryEmbedding.projectId, projectId));
+    const [staleStats] = await db.getClient()
+      .select({ count: sql<number>`count(*)` })
+      .from(memoryEmbedding)
+      .where(
+        and(
+          eq(memoryEmbedding.projectId, projectId),
+          sql`COALESCE(${memoryEmbedding.model}, '') <> ${expectedModelSignature}`,
+        ),
+      );
+    const chunkCount = Number(chunkStats?.count ?? 0);
+    const embeddingCount = Number(embeddingStats?.count ?? 0);
+    const staleEmbeddingCount = Number(staleStats?.count ?? 0);
+    const unembeddedChunkCount = Math.max(0, chunkCount - embeddingCount);
+    const pendingCount = grouped.get("pending") ?? 0;
+    const runningCount = grouped.get("running") ?? 0;
+    const failedCount = grouped.get("failed") ?? 0;
+    const skippedCount = grouped.get("skipped") ?? 0;
     return {
       projectId,
-      pendingCount: grouped.get("pending") ?? 0,
-      runningCount: grouped.get("running") ?? 0,
-      failedCount: grouped.get("failed") ?? 0,
+      pendingCount,
+      runningCount,
+      failedCount,
       completedCount: grouped.get("completed") ?? 0,
-      skippedCount: grouped.get("skipped") ?? 0,
+      skippedCount,
+      chunkCount,
+      embeddingCount,
+      unembeddedChunkCount,
+      staleEmbeddingCount,
+      currentModel: expectedModelSignature,
+      ready:
+        pendingCount === 0 &&
+        runningCount === 0 &&
+        failedCount === 0 &&
+        skippedCount === 0 &&
+        unembeddedChunkCount === 0 &&
+        staleEmbeddingCount === 0,
     };
   }
 }

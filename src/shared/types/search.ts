@@ -89,6 +89,12 @@ export interface MemoryEmbeddingStatus {
   failedCount: number;
   completedCount: number;
   skippedCount?: number;
+  chunkCount?: number;
+  embeddingCount?: number;
+  unembeddedChunkCount?: number;
+  staleEmbeddingCount?: number;
+  currentModel?: string | null;
+  ready?: boolean;
 }
 
 export interface RagQaRequest {

@@ -10,7 +10,7 @@ import { projectService } from "../../../src/main/services/core/projectService.j
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import type { ServiceError } from "../../../src/main/utils/serviceError.js";
 import { ErrorCode } from "../../../src/shared/constants/errorCode.js";
-import { db, memoryChunk } from "../../../src/main/infra/database/index.js";
+import { db, memoryChunk, memoryEpisodeExtractionJob } from "../../../src/main/infra/database/index.js";
 import { eq } from "drizzle-orm";
 import {
   buildMemoryChunkIndexText,
@@ -164,6 +164,45 @@ describe("memoryProjectionService", () => {
     expect(rows[0]?.contextLabel).toBe("chapter: 은하궁 회담");
     expect(rows[0]?.indexText).toContain("은하궁 회담");
     expect(rows[0]?.content).not.toContain("은하궁 회담");
+  });
+
+  it("queues episode extraction after rebuilding source chunks", async () => {
+    const project = await localProjectService.createProject({
+      title: "Memory Episode Queue",
+      description: "unit",
+      projectPath: "/tmp/memory-episode-queue.luie",
+    });
+    const chapter = await chapterService.createChapter({
+      projectId: String(project.id),
+      title: "비밀의 편지",
+    });
+
+    await chapterService.updateChapter({
+      id: String(chapter.id),
+      content: "아린은 봉인된 편지를 읽고 백야회의 목적을 깨달았다.",
+    });
+
+    await memoryProjectionService.processPendingChunkJobs({
+      projectId: String(project.id),
+      sourceType: "chapter",
+      sourceId: String(chapter.id),
+      limit: 20,
+    });
+
+    const jobs = await db
+      .getClient()
+      .select()
+      .from(memoryEpisodeExtractionJob)
+      .where(eq(memoryEpisodeExtractionJob.projectId, String(project.id)));
+
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]).toMatchObject({
+      sourceType: "chapter",
+      sourceId: String(chapter.id),
+      sourceContentHash: expect.any(String),
+      extractorVersion: "episode-v1",
+      status: "pending",
+    });
   });
 
   it("returns MEMORY_CHUNK_NOT_FOUND for unknown chunk backlink", async () => {

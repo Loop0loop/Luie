@@ -22,6 +22,9 @@ import {
 const logger = createLogger("MemoryProjectionService");
 export { chunkText };
 
+const EPISODE_EXTRACTOR_VERSION = "episode-v1";
+const EPISODE_EXTRACTION_PRIORITY = 120;
+
 class MemoryProjectionService {
   async enqueueChapterChunkRebuild(input: {
     projectId: string;
@@ -196,6 +199,26 @@ class MemoryProjectionService {
             tx.run(
               sql`INSERT INTO "MemoryChunkFts" ("chunkId","projectId","chapterId","content")
                   VALUES (${chunkId}, ${source.projectId}, ${source.chapterId ?? null}, ${indexText});`,
+            );
+          }
+
+          if (chunks.length > 0) {
+            tx.run(
+              sql`INSERT OR IGNORE INTO "MemoryEpisodeExtractionJob"
+                  ("id","projectId","sourceType","sourceId","sourceContentHash","extractorVersion","status","priority","attempts","createdAt","updatedAt")
+                  VALUES (
+                    ${crypto.randomUUID()},
+                    ${source.projectId},
+                    ${job.targetType},
+                    ${job.targetId},
+                    ${sourceContentHash},
+                    ${EPISODE_EXTRACTOR_VERSION},
+                    'pending',
+                    ${EPISODE_EXTRACTION_PRIORITY},
+                    0,
+                    ${now},
+                    ${now}
+                  );`,
             );
           }
 

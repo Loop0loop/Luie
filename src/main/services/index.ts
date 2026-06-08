@@ -23,5 +23,6 @@ export * from "./features/dbMaintenanceService.js";
 export * from "./features/memory/memoryProjectionService.js";
 export * from "./features/memory/chapterSummaryProjector.js";
 export * from "./features/memory/embeddingProjector.js";
+export * from "./features/memory/episode/memoryEpisodeExtractionProcessor.js";
 export * from "./features/derivedJobWorker.js";
 export * from "./features/sync/index.js";
