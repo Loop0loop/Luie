@@ -4,26 +4,32 @@ import {
   DEFAULT_PROJECT_DIR_NAME,
   DEFAULT_PROJECT_FILE_BASENAME,
   LUIE_PACKAGE_EXTENSION,
-} from "../../../shared/constants/index.js";
-import { ErrorCode } from "../../../shared/constants/errorCode.js";
-import { sanitizeName } from "../../../shared/utils/sanitize.js";
+} from "../../../../shared/constants/index.js";
+import { ErrorCode } from "../../../../shared/constants/errorCode.js";
+import { sanitizeName } from "../../../../shared/utils/sanitize.js";
 import {
   ensureLuieExtension,
   isSafeZipPath,
   normalizeZipPath,
-} from "../../utils/luiePackage.js";
-import { ServiceError } from "../../utils/serviceError.js";
-import type { LoggerLike } from "../core/types.js";
-import { assertAllowedFsPath, approvePathForSession } from "./fsPathApproval.js";
+} from "../../../utils/luiePackage.js";
+import { ServiceError } from "../../../utils/serviceError.js";
+import type { LoggerLike } from "../../core/types.js";
+import {
+  assertAllowedFsPath,
+  approvePathForSession,
+} from "./fsPathApproval.js";
 import {
   normalizeLuieMetaForWrite,
   parseObjectJson,
   probeLuieContainer,
   writeLuieContainer,
   writeLuieSqliteEntry,
-} from "../../infra/filesystem/index.js";
+} from "../../../infra/filesystem/index.js";
 
-const assertLuiePackagePath = (packagePath: string, fieldName: string): void => {
+const assertLuiePackagePath = (
+  packagePath: string,
+  fieldName: string,
+): void => {
   if (!packagePath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
     throw new ServiceError(
       ErrorCode.INVALID_INPUT,
@@ -141,7 +147,11 @@ export const writeProjectPackageEntry = async (
   logger: LoggerLike,
 ): Promise<{ path: string }> => {
   const normalized = normalizeZipPath(relativePath);
-  if (!normalized || !isSafeZipPath(relativePath) || !isSafeZipPath(normalized)) {
+  if (
+    !normalized ||
+    !isSafeZipPath(relativePath) ||
+    !isSafeZipPath(normalized)
+  ) {
     throw new ServiceError(
       ErrorCode.INVALID_INPUT,
       "Invalid .luie package entry path",

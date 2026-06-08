@@ -47,14 +47,18 @@ export function createLlmfitEmbeddingHandlers(): IpcHandlerConfig[] {
                 "embedding",
               ])
               .optional(),
-            minFit: z.enum(["perfect", "good", "marginal", "too_tight"]).optional(),
+            minFit: z
+              .enum(["perfect", "good", "marginal", "too_tight"])
+              .optional(),
           })
           .optional(),
       ]),
       // llmfitService 는 실패 시에도 throw 하지 않고 { available:false } 를 반환한다(P6).
-      handler: async (
-        options?: { limit?: number; useCase?: string; minFit?: string },
-      ) => await llmfitService.recommend(options ?? {}),
+      handler: async (options?: {
+        limit?: number;
+        useCase?: string;
+        minFit?: string;
+      }) => await llmfitService.recommend(options ?? {}),
     },
     {
       channel: IPC_CHANNELS.LLMFIT_INSTALL,
@@ -105,7 +109,8 @@ export function createLlmfitEmbeddingHandlers(): IpcHandlerConfig[] {
             emitEmbeddingDownloadProgress("complete", 100);
             invalidateModelRuntimeCache();
           } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
+            const message =
+              error instanceof Error ? error.message : String(error);
             emitEmbeddingDownloadProgress("error", 0, message);
           }
         })();

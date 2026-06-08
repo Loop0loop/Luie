@@ -1,25 +1,25 @@
 import { app } from "electron";
-import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
-import { registerIpcHandlers } from "../core/ipcRegistrar.js";
-import type { LoggerLike } from "../core/types.js";
-import type * as SettingsManagerModule from "../../domains/settings/index.js";
-import type * as SupabaseEnvModule from "../../domains/sync/index.js";
-import { ErrorCode } from "../../../shared/constants/errorCode.js";
+import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
+import { registerIpcHandlers } from "../../core/ipcRegistrar.js";
+import type { LoggerLike } from "../../core/types.js";
+import type * as SettingsManagerModule from "../../../domains/settings/index.js";
+import type * as SupabaseEnvModule from "../../../domains/sync/index.js";
+import { ErrorCode } from "../../../../shared/constants/errorCode.js";
 import {
   syncRuntimeConfigSetArgsSchema,
   syncRuntimeConfigValidateArgsSchema,
   syncResolveConflictArgsSchema,
   syncSetAutoArgsSchema,
-} from "../../../shared/schemas/index.js";
-import type { RuntimeSupabaseConfig } from "../../../shared/types/index.js";
-import { syncService } from "../../domains/sync/index.js";
-import { ServiceError } from "../../utils/serviceError.js";
+} from "../../../../shared/schemas/index.js";
+import type { RuntimeSupabaseConfig } from "../../../../shared/types/index.js";
+import { syncService } from "../../../domains/sync/index.js";
+import { ServiceError } from "../../../utils/serviceError.js";
 
 const loadSettingsManager = (() => {
   let cached: Promise<typeof SettingsManagerModule> | null = null;
   return async () => {
     if (!cached) {
-      cached = import("../../domains/settings/index.js");
+      cached = import("../../../domains/settings/index.js");
     }
     return cached;
   };
@@ -29,14 +29,15 @@ const loadSupabaseEnvModule = (() => {
   let cached: Promise<typeof SupabaseEnvModule> | null = null;
   return async () => {
     if (!cached) {
-      cached = import("../../domains/sync/index.js");
+      cached = import("../../../domains/sync/index.js");
     }
     return cached;
   };
 })();
 
 const isRuntimeConfigWriteAllowed = (): boolean =>
-  !app.isPackaged || process.env.LUIE_ALLOW_RUNTIME_SUPABASE_CONFIG_WRITE === "1";
+  !app.isPackaged ||
+  process.env.LUIE_ALLOW_RUNTIME_SUPABASE_CONFIG_WRITE === "1";
 
 export function registerSyncIPCHandlers(logger: LoggerLike): void {
   registerIpcHandlers(logger, [

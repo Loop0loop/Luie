@@ -67,9 +67,8 @@ describe("ipcFsHandlers sqlite-only .luie behavior", () => {
   let tempRoot = "";
 
   const registerFsHandlers = async () => {
-    const { registerFsIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcFsHandlers.js"
-    );
+    const { registerFsIPCHandlers } =
+      await import("../../../src/main/handler/system/fs/index.js");
     registerFsIPCHandlers(mocked.logger);
   };
 
@@ -109,7 +108,9 @@ describe("ipcFsHandlers sqlite-only .luie behavior", () => {
 
   it("writes FS_SAVE_PROJECT output as sqlite-backed .luie and preserves the chapter body", async () => {
     const workspaceDir = await prepareWorkspace("luie-fs-save-project-");
-    const saveProjectHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_SAVE_PROJECT);
+    const saveProjectHandler = mocked.handlerMap.get(
+      IPC_CHANNELS.FS_SAVE_PROJECT,
+    );
     expect(saveProjectHandler).toBeDefined();
 
     const content = makeMixedNarrativeText(5_000, 0);
@@ -134,7 +135,11 @@ describe("ipcFsHandlers sqlite-only .luie behavior", () => {
       layout: "file",
     });
 
-    const metaRaw = await readLuieContainerEntry(savedPath ?? "", "meta.json", mocked.logger);
+    const metaRaw = await readLuieContainerEntry(
+      savedPath ?? "",
+      "meta.json",
+      mocked.logger,
+    );
     const chapterRaw = await readLuieContainerEntry(
       savedPath ?? "",
       "manuscript/legacy-import.md",
@@ -165,13 +170,9 @@ describe("ipcFsHandlers sqlite-only .luie behavior", () => {
     expect(createLuieHandler).toBeDefined();
 
     const packagePath = path.join(workspaceDir, "normalized-meta.luie");
-    const createResponse = (await createLuieHandler?.(
-      {},
-      packagePath,
-      {
-        title: "Normalized Meta",
-      },
-    )) as { success: boolean };
+    const createResponse = (await createLuieHandler?.({}, packagePath, {
+      title: "Normalized Meta",
+    })) as { success: boolean };
 
     expect(createResponse.success).toBe(true);
 
@@ -184,7 +185,10 @@ describe("ipcFsHandlers sqlite-only .luie behavior", () => {
       mocked.logger,
     )) as string | null;
     expect(metaResponse).not.toBeNull();
-    const parsedMeta = JSON.parse(metaResponse ?? "{}") as Record<string, unknown>;
+    const parsedMeta = JSON.parse(metaResponse ?? "{}") as Record<
+      string,
+      unknown
+    >;
     expect(parsedMeta.format).toBe(LUIE_PACKAGE_FORMAT);
     expect(parsedMeta.container).toBe(LUIE_PACKAGE_CONTAINER_DIR);
     expect(parsedMeta.version).toBe(LUIE_PACKAGE_VERSION);
@@ -198,7 +202,9 @@ describe("ipcFsHandlers sqlite-only .luie behavior", () => {
     { field: "container", meta: { container: "tar", title: "Invalid" } },
     { field: "version", meta: { version: 999, title: "Invalid" } },
   ])("rejects invalid meta $field during create", async ({ meta }) => {
-    const workspaceDir = await prepareWorkspace(`luie-fs-invalid-${String(meta)}`);
+    const workspaceDir = await prepareWorkspace(
+      `luie-fs-invalid-${String(meta)}`,
+    );
     const createLuieHandler = mocked.handlerMap.get(
       IPC_CHANNELS.FS_CREATE_LUIE_PACKAGE,
     );
@@ -223,14 +229,10 @@ describe("ipcFsHandlers sqlite-only .luie behavior", () => {
     expect(createLuieHandler).toBeDefined();
 
     const packagePath = path.join(workspaceDir, "replace-entry.luie");
-    const createResponse = (await createLuieHandler?.(
-      {},
-      packagePath,
-      {
-        projectId: "project-1",
-        title: "Replace Entry",
-      },
-    )) as { success: boolean };
+    const createResponse = (await createLuieHandler?.({}, packagePath, {
+      projectId: "project-1",
+      title: "Replace Entry",
+    })) as { success: boolean };
     expect(createResponse.success).toBe(true);
 
     const writeProjectFileHandler = mocked.handlerMap.get(
@@ -269,14 +271,10 @@ describe("ipcFsHandlers sqlite-only .luie behavior", () => {
       expect(createLuieHandler).toBeDefined();
 
       const packagePath = path.join(workspaceDir, "unsafe-entry.luie");
-      const createResponse = (await createLuieHandler?.(
-        {},
-        packagePath,
-        {
-          projectId: "project-unsafe-entry",
-          title: "Unsafe Entry",
-        },
-      )) as { success: boolean };
+      const createResponse = (await createLuieHandler?.({}, packagePath, {
+        projectId: "project-unsafe-entry",
+        title: "Unsafe Entry",
+      })) as { success: boolean };
       expect(createResponse.success).toBe(true);
 
       const writeProjectFileHandler = mocked.handlerMap.get(
@@ -301,7 +299,10 @@ describe("ipcFsHandlers sqlite-only .luie behavior", () => {
     const outsideRoot = path.join(tempRoot, "outside-approved-workspace");
     await fsp.mkdir(outsideRoot, { recursive: true });
     const packagePath = path.join(outsideRoot, "outside-session.luie");
-    await fsp.writeFile(packagePath, Buffer.from("SQLite format 3\u0000", "utf8"));
+    await fsp.writeFile(
+      packagePath,
+      Buffer.from("SQLite format 3\u0000", "utf8"),
+    );
 
     const writeProjectFileHandler = mocked.handlerMap.get(
       IPC_CHANNELS.FS_WRITE_PROJECT_FILE,
@@ -348,7 +349,11 @@ describe("ipcFsHandlers sqlite-only .luie behavior", () => {
     expect(writeFileHandler).toBeDefined();
 
     const packagePath = path.join(workspaceDir, "blocked-direct-write.luie");
-    const response = (await writeFileHandler?.({}, packagePath, "should-fail")) as {
+    const response = (await writeFileHandler?.(
+      {},
+      packagePath,
+      "should-fail",
+    )) as {
       success: boolean;
       error?: { code?: string };
     };
@@ -366,13 +371,9 @@ describe("ipcFsHandlers sqlite-only .luie behavior", () => {
     expect(createLuieHandler).toBeDefined();
 
     const packagePath = path.join(workspaceDir, "existing-package.luie");
-    const validResponse = (await createLuieHandler?.(
-      {},
-      packagePath,
-      {
-        title: "Before Failure",
-      },
-    )) as { success: boolean };
+    const validResponse = (await createLuieHandler?.({}, packagePath, {
+      title: "Before Failure",
+    })) as { success: boolean };
     expect(validResponse.success).toBe(true);
 
     const beforeMeta = await readLuieContainerEntry(
@@ -382,11 +383,9 @@ describe("ipcFsHandlers sqlite-only .luie behavior", () => {
     );
     expect(beforeMeta).not.toBeNull();
 
-    const createResponse = (await createLuieHandler?.(
-      {},
-      packagePath,
-      { invalid: 1n },
-    )) as { success: boolean };
+    const createResponse = (await createLuieHandler?.({}, packagePath, {
+      invalid: 1n,
+    })) as { success: boolean };
     expect(createResponse.success).toBe(false);
 
     const afterMeta = await readLuieContainerEntry(
@@ -449,21 +448,27 @@ describe("ipcFsHandlers sqlite-only .luie behavior", () => {
   });
 
   it("grants read-only permission when selecting non-.luie file", async () => {
-    const workspaceDir = await prepareWorkspace("luie-fs-select-file-read-only-");
+    const workspaceDir = await prepareWorkspace(
+      "luie-fs-select-file-read-only-",
+    );
     const textFilePath = path.join(workspaceDir, "notes.txt");
     await fsp.writeFile(textFilePath, "initial", "utf-8");
     mocked.openDialogPath = textFilePath;
 
-    const { registerFsIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcFsHandlers.js"
-    );
+    const { registerFsIPCHandlers } =
+      await import("../../../src/main/handler/system/fs/index.js");
     registerFsIPCHandlers(mocked.logger);
 
-    const selectFileHandler = mocked.handlerMap.get(IPC_CHANNELS.FS_SELECT_FILE);
+    const selectFileHandler = mocked.handlerMap.get(
+      IPC_CHANNELS.FS_SELECT_FILE,
+    );
     expect(selectFileHandler).toBeDefined();
-    const selectResponse = (await selectFileHandler?.({}, {
-      filters: [{ name: "Text", extensions: ["txt"] }],
-    })) as { success: boolean; data?: string | null };
+    const selectResponse = (await selectFileHandler?.(
+      {},
+      {
+        filters: [{ name: "Text", extensions: ["txt"] }],
+      },
+    )) as { success: boolean; data?: string | null };
     expect(selectResponse.success).toBe(true);
     expect(selectResponse.data).toBe(textFilePath);
   });

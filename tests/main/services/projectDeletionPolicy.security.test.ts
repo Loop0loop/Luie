@@ -7,7 +7,7 @@ import path from "node:path";
 import * as fsp from "node:fs/promises";
 import { afterEach, describe, expect, it } from "vitest";
 import { ErrorCode } from "../../../src/shared/constants/errorCode.js";
-import { approvePathForSession } from "../../../src/main/handler/system/fsPathApproval.js";
+import { approvePathForSession } from "../../../src/main/handler/system/fs/index.js";
 import { deleteProjectPackageFileIfRequested } from "../../../src/main/services/core/project/projectDeletionPolicy.js";
 
 describe("project package deletion policy security", () => {

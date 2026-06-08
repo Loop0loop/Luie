@@ -1,10 +1,10 @@
 import * as fsp from "fs/promises";
 import * as path from "path";
-import { LUIE_PACKAGE_EXTENSION } from "../../../shared/constants/index.js";
-import { ErrorCode } from "../../../shared/constants/errorCode.js";
-import { ensureLuieExtension } from "../../utils/luiePackage.js";
-import { ensureSafeAbsolutePath } from "../../utils/pathValidation.js";
-import { ServiceError } from "../../utils/serviceError.js";
+import { LUIE_PACKAGE_EXTENSION } from "../../../../shared/constants/index.js";
+import { ErrorCode } from "../../../../shared/constants/errorCode.js";
+import { ensureLuieExtension } from "../../../utils/luiePackage.js";
+import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
+import { ServiceError } from "../../../utils/serviceError.js";
 
 const APPROVED_ROOT_TTL_MS = 12 * 60 * 60 * 1000;
 const MAX_APPROVED_ROOTS = 128;
@@ -51,7 +51,10 @@ const enforceApprovedRootLimit = (): void => {
   }
 };
 
-const upsertApprovedRoot = (rootPath: string, permissions: FsPathPermission[]): void => {
+const upsertApprovedRoot = (
+  rootPath: string,
+  permissions: FsPathPermission[],
+): void => {
   const normalizedRootPath = path.resolve(rootPath);
   const existing = approvedRoots.get(normalizedRootPath);
   const now = Date.now();
@@ -123,7 +126,9 @@ export const approvePathForSession = async (
   upsertApprovedRoot(canonicalRoot, permissions);
 };
 
-export const resolveApprovedProjectPath = async (projectPath: string): Promise<string> => {
+export const resolveApprovedProjectPath = async (
+  projectPath: string,
+): Promise<string> => {
   const safeProjectPath = ensureSafeAbsolutePath(projectPath, "projectPath");
   if (safeProjectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
     return ensureLuieExtension(safeProjectPath);
@@ -169,4 +174,3 @@ export const assertAllowedFsPath = async (
     },
   );
 };
-

@@ -2,18 +2,18 @@ import { app, dialog } from "electron";
 import type { OpenDialogReturnValue, SaveDialogReturnValue } from "electron";
 import * as fsp from "fs/promises";
 import * as path from "path";
-import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
-import { ErrorCode } from "../../../shared/constants/errorCode.js";
+import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
+import { ErrorCode } from "../../../../shared/constants/errorCode.js";
 import {
   LUIE_PACKAGE_EXTENSION,
   LUIE_PACKAGE_EXTENSION_NO_DOT,
   LUIE_PACKAGE_FILTER_NAME,
   MARKDOWN_EXTENSION,
-} from "../../../shared/constants/index.js";
-import { SNAPSHOT_BACKUP_DIR } from "../../../shared/constants/paths.js";
-import { readLuieContainerEntry } from "../../infra/filesystem/index.js";
-import { registerIpcHandlers } from "../core/ipcRegistrar.js";
-import type { LoggerLike } from "../core/types.js";
+} from "../../../../shared/constants/index.js";
+import { SNAPSHOT_BACKUP_DIR } from "../../../../shared/constants/paths.js";
+import { readLuieContainerEntry } from "../../../infra/filesystem/index.js";
+import { registerIpcHandlers } from "../../core/ipcRegistrar.js";
+import type { LoggerLike } from "../../core/types.js";
 import {
   fsApproveProjectPathArgsSchema,
   fsCreateLuiePackageArgsSchema,
@@ -23,8 +23,8 @@ import {
   fsSelectDialogArgsSchema,
   fsWriteFileArgsSchema,
   fsWriteProjectFileArgsSchema,
-} from "../../../shared/schemas/index.js";
-import { ServiceError } from "../../utils/serviceError.js";
+} from "../../../../shared/schemas/index.js";
+import { ServiceError } from "../../../utils/serviceError.js";
 import {
   approvePathForSession,
   assertAllowedFsPath,
@@ -38,12 +38,12 @@ import {
 } from "./fsPackageOperations.js";
 
 const MAX_READ_FILE_BYTES = 16 * 1024 * 1024;
-const ALLOWED_TEXT_WRITE_EXTENSIONS = new Set([
-  MARKDOWN_EXTENSION,
-  ".txt",
-]);
+const ALLOWED_TEXT_WRITE_EXTENSIONS = new Set([MARKDOWN_EXTENSION, ".txt"]);
 
-const assertLuiePackagePath = (packagePath: string, fieldName: string): void => {
+const assertLuiePackagePath = (
+  packagePath: string,
+  fieldName: string,
+): void => {
   if (!packagePath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
     throw new ServiceError(
       ErrorCode.INVALID_INPUT,
@@ -66,7 +66,11 @@ const assertSupportedWriteFileExtension = (filePath: string): void => {
     throw new ServiceError(
       ErrorCode.INVALID_INPUT,
       "Unsupported file extension for fs.writeFile",
-      { filePath, extension, allowed: Array.from(ALLOWED_TEXT_WRITE_EXTENSIONS) },
+      {
+        filePath,
+        extension,
+        allowed: Array.from(ALLOWED_TEXT_WRITE_EXTENSIONS),
+      },
     );
   }
 };
@@ -94,7 +98,9 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       argsSchema: fsApproveProjectPathArgsSchema,
       handler: async (projectPath: string) => {
         const normalizedPath = await resolveApprovedProjectPath(projectPath);
-        const isLuiePath = normalizedPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION);
+        const isLuiePath = normalizedPath
+          .toLowerCase()
+          .endsWith(LUIE_PACKAGE_EXTENSION);
         await approvePathForSession(
           normalizedPath,
           isLuiePath ? ["read", "package"] : ["read"],
@@ -116,7 +122,11 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
         });
         const selectedPath = resolveOpenDialogPath(result);
         if (!selectedPath) return null;
-        await approvePathForSession(selectedPath, ["read", "write", "package"], "directory");
+        await approvePathForSession(
+          selectedPath,
+          ["read", "write", "package"],
+          "directory",
+        );
         return selectedPath;
       },
     },
@@ -125,23 +135,26 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       logTag: "FS_SELECT_SAVE_LOCATION",
       failMessage: "Failed to select save location",
       argsSchema: fsSelectDialogArgsSchema,
-      handler: async (
-        options?: {
-          filters?: { name: string; extensions: string[] }[];
-          defaultPath?: string;
-          title?: string;
-        },
-      ) => {
+      handler: async (options?: {
+        filters?: { name: string; extensions: string[] }[];
+        defaultPath?: string;
+        title?: string;
+      }) => {
         const result = await dialog.showSaveDialog({
           title: options?.title,
           defaultPath: options?.defaultPath,
           filters: options?.filters ?? [
-            { name: LUIE_PACKAGE_FILTER_NAME, extensions: [LUIE_PACKAGE_EXTENSION_NO_DOT] },
+            {
+              name: LUIE_PACKAGE_FILTER_NAME,
+              extensions: [LUIE_PACKAGE_EXTENSION_NO_DOT],
+            },
           ],
         });
         const selectedPath = resolveSaveDialogPath(result);
         if (!selectedPath) return null;
-        const isLuiePath = selectedPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION);
+        const isLuiePath = selectedPath
+          .toLowerCase()
+          .endsWith(LUIE_PACKAGE_EXTENSION);
         const permissions: FsPathPermission[] = isLuiePath
           ? ["read", "write", "package"]
           : ["read", "write"];
@@ -154,13 +167,11 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       logTag: "FS_SELECT_FILE",
       failMessage: "Failed to select file",
       argsSchema: fsSelectDialogArgsSchema,
-      handler: async (
-        options?: {
-          filters?: { name: string; extensions: string[] }[];
-          defaultPath?: string;
-          title?: string;
-        },
-      ) => {
+      handler: async (options?: {
+        filters?: { name: string; extensions: string[] }[];
+        defaultPath?: string;
+        title?: string;
+      }) => {
         const result = await dialog.showOpenDialog({
           title: options?.title,
           defaultPath: options?.defaultPath,
@@ -169,7 +180,9 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
         });
         const selectedPath = resolveOpenDialogPath(result);
         if (!selectedPath) return null;
-        const isLuiePath = selectedPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION);
+        const isLuiePath = selectedPath
+          .toLowerCase()
+          .endsWith(LUIE_PACKAGE_EXTENSION);
         const permissions: FsPathPermission[] = isLuiePath
           ? ["read", "package"]
           : ["read"];
@@ -182,7 +195,10 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       logTag: "FS_SELECT_SNAPSHOT_BACKUP",
       failMessage: "Failed to select restore backup",
       handler: async () => {
-        const backupDir = path.join(app.getPath("userData"), SNAPSHOT_BACKUP_DIR);
+        const backupDir = path.join(
+          app.getPath("userData"),
+          SNAPSHOT_BACKUP_DIR,
+        );
         const result = await dialog.showOpenDialog({
           title: "복원할 백업 선택",
           defaultPath: backupDir,
@@ -200,8 +216,11 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       logTag: "FS_SAVE_PROJECT",
       failMessage: "Failed to save project",
       argsSchema: fsSaveProjectArgsSchema,
-      handler: async (projectName: string, projectPath: string, content: string) =>
-        saveProjectAsLuiePackage(projectName, projectPath, content, logger),
+      handler: async (
+        projectName: string,
+        projectPath: string,
+        content: string,
+      ) => saveProjectAsLuiePackage(projectName, projectPath, content, logger),
     },
     {
       channel: IPC_CHANNELS.FS_READ_FILE,
@@ -245,11 +264,7 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
           permission: "package",
         });
         assertLuiePackagePath(safePackagePath, "packagePath");
-        return readLuieContainerEntry(
-          safePackagePath,
-          entryPath,
-          logger,
-        );
+        return readLuieContainerEntry(safePackagePath, entryPath, logger);
       },
     },
     {
@@ -283,8 +298,11 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
       logTag: "FS_WRITE_PROJECT_FILE",
       failMessage: "Failed to write project file",
       argsSchema: fsWriteProjectFileArgsSchema,
-      handler: async (projectRoot: string, relativePath: string, content: string) =>
-        writeProjectPackageEntry(projectRoot, relativePath, content, logger),
+      handler: async (
+        projectRoot: string,
+        relativePath: string,
+        content: string,
+      ) => writeProjectPackageEntry(projectRoot, relativePath, content, logger),
     },
   ]);
 }

@@ -58,10 +58,11 @@ vi.mock("electron", () => ({
   },
 }));
 
-vi.mock("../../../src/main/manager/index.js", () => ({
+vi.mock("../../../src/main/app/windows/index.js", () => ({
   windowManager: {
     getMainWindow: () => null,
-    createExportWindow: (...args: unknown[]) => mocked.createExportWindow(...args),
+    createExportWindow: (...args: unknown[]) =>
+      mocked.createExportWindow(...args),
   },
 }));
 
@@ -83,9 +84,8 @@ describe("ipcWindowHandlers", () => {
   });
 
   it("returns boolean true when export window opens successfully", async () => {
-    const { registerWindowIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcWindowHandlers.js"
-    );
+    const { registerWindowIPCHandlers } =
+      await import("../../../src/main/handler/system/window/index.js");
     registerWindowIPCHandlers(mocked.logger);
 
     const handler = mocked.handlerMap.get(IPC_CHANNELS.WINDOW_OPEN_EXPORT);
@@ -108,9 +108,8 @@ describe("ipcWindowHandlers", () => {
   });
 
   it("returns INVALID_INPUT response for malformed chapter id", async () => {
-    const { registerWindowIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcWindowHandlers.js"
-    );
+    const { registerWindowIPCHandlers } =
+      await import("../../../src/main/handler/system/window/index.js");
     registerWindowIPCHandlers(mocked.logger);
 
     const handler = mocked.handlerMap.get(IPC_CHANNELS.WINDOW_OPEN_EXPORT);
@@ -128,9 +127,8 @@ describe("ipcWindowHandlers", () => {
   });
 
   it("returns app version via APP_GET_VERSION", async () => {
-    const { registerWindowIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcWindowHandlers.js"
-    );
+    const { registerWindowIPCHandlers } =
+      await import("../../../src/main/handler/system/window/index.js");
     registerWindowIPCHandlers(mocked.logger);
 
     const handler = mocked.handlerMap.get(IPC_CHANNELS.APP_GET_VERSION);
@@ -147,9 +145,8 @@ describe("ipcWindowHandlers", () => {
   });
 
   it("returns safe disabled status for APP_CHECK_UPDATE in dev", async () => {
-    const { registerWindowIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcWindowHandlers.js"
-    );
+    const { registerWindowIPCHandlers } =
+      await import("../../../src/main/handler/system/window/index.js");
     registerWindowIPCHandlers(mocked.logger);
 
     const handler = mocked.handlerMap.get(IPC_CHANNELS.APP_CHECK_UPDATE);
@@ -158,7 +155,12 @@ describe("ipcWindowHandlers", () => {
     const response = await handler?.({});
     const typed = response as {
       success: boolean;
-      data?: { status?: string; supported?: boolean; available?: boolean; currentVersion?: string };
+      data?: {
+        status?: string;
+        supported?: boolean;
+        available?: boolean;
+        currentVersion?: string;
+      };
     };
 
     expect(typed.success).toBe(true);
@@ -171,9 +173,8 @@ describe("ipcWindowHandlers", () => {
   it("returns unconfigured status for packaged build without feed url", async () => {
     mocked.appIsPackaged = true;
     process.env.LUIE_UPDATE_FEED_URL = "   ";
-    const { registerWindowIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcWindowHandlers.js"
-    );
+    const { registerWindowIPCHandlers } =
+      await import("../../../src/main/handler/system/window/index.js");
     registerWindowIPCHandlers(mocked.logger);
 
     const handler = mocked.handlerMap.get(IPC_CHANNELS.APP_CHECK_UPDATE);
@@ -182,7 +183,12 @@ describe("ipcWindowHandlers", () => {
     const response = await handler?.({});
     const typed = response as {
       success: boolean;
-      data?: { status?: string; supported?: boolean; available?: boolean; message?: string };
+      data?: {
+        status?: string;
+        supported?: boolean;
+        available?: boolean;
+        message?: string;
+      };
     };
 
     expect(typed.success).toBe(true);
@@ -194,22 +200,23 @@ describe("ipcWindowHandlers", () => {
 
   it("returns available status when packaged feed has newer version", async () => {
     mocked.appIsPackaged = true;
-    process.env.LUIE_UPDATE_FEED_URL = "https://updates.example.com/latest.json";
+    process.env.LUIE_UPDATE_FEED_URL =
+      "https://updates.example.com/latest.json";
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({
         ok: true,
         status: 200,
         headers: {
-          get: (name: string) => (name.toLowerCase() === "content-type" ? "application/json" : null),
+          get: (name: string) =>
+            name.toLowerCase() === "content-type" ? "application/json" : null,
         },
         text: async () => JSON.stringify({ version: "1.3.0" }),
       })),
     );
 
-    const { registerWindowIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcWindowHandlers.js"
-    );
+    const { registerWindowIPCHandlers } =
+      await import("../../../src/main/handler/system/window/index.js");
     registerWindowIPCHandlers(mocked.logger);
 
     const handler = mocked.handlerMap.get(IPC_CHANNELS.APP_CHECK_UPDATE);
@@ -235,22 +242,23 @@ describe("ipcWindowHandlers", () => {
 
   it("returns up-to-date status when packaged feed has same version", async () => {
     mocked.appIsPackaged = true;
-    process.env.LUIE_UPDATE_FEED_URL = "https://updates.example.com/latest.json";
+    process.env.LUIE_UPDATE_FEED_URL =
+      "https://updates.example.com/latest.json";
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({
         ok: true,
         status: 200,
         headers: {
-          get: (name: string) => (name.toLowerCase() === "content-type" ? "application/json" : null),
+          get: (name: string) =>
+            name.toLowerCase() === "content-type" ? "application/json" : null,
         },
         text: async () => JSON.stringify({ tag_name: "v1.2.3-test" }),
       })),
     );
 
-    const { registerWindowIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcWindowHandlers.js"
-    );
+    const { registerWindowIPCHandlers } =
+      await import("../../../src/main/handler/system/window/index.js");
     registerWindowIPCHandlers(mocked.logger);
 
     const handler = mocked.handlerMap.get(IPC_CHANNELS.APP_CHECK_UPDATE);
@@ -272,9 +280,8 @@ describe("ipcWindowHandlers", () => {
     mocked.appIsPackaged = true;
     process.env.LUIE_UPDATE_FEED_URL = "http://updates.example.com/latest.json";
 
-    const { registerWindowIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcWindowHandlers.js"
-    );
+    const { registerWindowIPCHandlers } =
+      await import("../../../src/main/handler/system/window/index.js");
     registerWindowIPCHandlers(mocked.logger);
 
     const handler = mocked.handlerMap.get(IPC_CHANNELS.APP_CHECK_UPDATE);
@@ -293,7 +300,8 @@ describe("ipcWindowHandlers", () => {
 
   it("returns error when packaged feed request fails", async () => {
     mocked.appIsPackaged = true;
-    process.env.LUIE_UPDATE_FEED_URL = "https://updates.example.com/latest.json";
+    process.env.LUIE_UPDATE_FEED_URL =
+      "https://updates.example.com/latest.json";
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => {
@@ -301,9 +309,8 @@ describe("ipcWindowHandlers", () => {
       }),
     );
 
-    const { registerWindowIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcWindowHandlers.js"
-    );
+    const { registerWindowIPCHandlers } =
+      await import("../../../src/main/handler/system/window/index.js");
     registerWindowIPCHandlers(mocked.logger);
 
     const handler = mocked.handlerMap.get(IPC_CHANNELS.APP_CHECK_UPDATE);
@@ -321,9 +328,8 @@ describe("ipcWindowHandlers", () => {
   });
 
   it("returns update state via APP_GET_UPDATE_STATE", async () => {
-    const { registerWindowIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcWindowHandlers.js"
-    );
+    const { registerWindowIPCHandlers } =
+      await import("../../../src/main/handler/system/window/index.js");
     registerWindowIPCHandlers(mocked.logger);
 
     const handler = mocked.handlerMap.get(IPC_CHANNELS.APP_GET_UPDATE_STATE);
@@ -341,9 +347,8 @@ describe("ipcWindowHandlers", () => {
   });
 
   it("returns disabled response for APP_DOWNLOAD_UPDATE in dev", async () => {
-    const { registerWindowIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcWindowHandlers.js"
-    );
+    const { registerWindowIPCHandlers } =
+      await import("../../../src/main/handler/system/window/index.js");
     registerWindowIPCHandlers(mocked.logger);
 
     const handler = mocked.handlerMap.get(IPC_CHANNELS.APP_DOWNLOAD_UPDATE);
@@ -361,9 +366,8 @@ describe("ipcWindowHandlers", () => {
   });
 
   it("returns disabled response for APP_APPLY_UPDATE in dev", async () => {
-    const { registerWindowIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcWindowHandlers.js"
-    );
+    const { registerWindowIPCHandlers } =
+      await import("../../../src/main/handler/system/window/index.js");
     registerWindowIPCHandlers(mocked.logger);
 
     const handler = mocked.handlerMap.get(IPC_CHANNELS.APP_APPLY_UPDATE);
@@ -382,9 +386,8 @@ describe("ipcWindowHandlers", () => {
   });
 
   it("returns not available response for APP_ROLLBACK_UPDATE without rollback data", async () => {
-    const { registerWindowIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcWindowHandlers.js"
-    );
+    const { registerWindowIPCHandlers } =
+      await import("../../../src/main/handler/system/window/index.js");
     registerWindowIPCHandlers(mocked.logger);
 
     const handler = mocked.handlerMap.get(IPC_CHANNELS.APP_ROLLBACK_UPDATE);

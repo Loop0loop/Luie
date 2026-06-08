@@ -115,9 +115,8 @@ describe("ipcSettingsHandlers security", () => {
   });
 
   it("returns renderer-safe settings for SETTINGS_GET_ALL", async () => {
-    const { registerSettingsIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcSettingsHandlers.js"
-    );
+    const { registerSettingsIPCHandlers } =
+      await import("../../../src/main/handler/system/settings/index.js");
     registerSettingsIPCHandlers(mocked.logger);
 
     const handler = mocked.handlerMap.get(IPC_CHANNELS.SETTINGS_GET_ALL);
@@ -143,9 +142,8 @@ describe("ipcSettingsHandlers security", () => {
   });
 
   it("returns renderer-safe settings after SETTINGS_RESET", async () => {
-    const { registerSettingsIPCHandlers } = await import(
-      "../../../src/main/handler/system/ipcSettingsHandlers.js"
-    );
+    const { registerSettingsIPCHandlers } =
+      await import("../../../src/main/handler/system/settings/index.js");
     registerSettingsIPCHandlers(mocked.logger);
 
     const handler = mocked.handlerMap.get(IPC_CHANNELS.SETTINGS_RESET);

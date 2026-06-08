@@ -129,10 +129,12 @@ renderer API 접근
 
 사실:
 
-- `src/renderer/src/styles/global.css` (정적 리소스 번들)
+- `src/renderer/src/styles/global.css` (정적 리소스 번들 예외)
 
-사실: `i18n` locale 파일은 base/workspace를 키 단위 모듈로 분해하여 현재 단일 파일 LOC가 500 라인을 초과하지 않습니다.  
-`src/renderer/src/i18n/locales/*/base.ts`, `.../workspace.ts`는 공통 번들 조립 파일로 유지되며, 실제 문자열 본문은 하위 모듈로 분리했습니다.
+사실: `src/renderer/src/features/research/components/AnalysisSection.tsx`는 Phase 2에서 237 LOC로 분리되어 현재 500 LOC 초과 대상이 아닙니다.
+
+사실: `i18n` locale 파일은 base/workspace를 키 단위가 아니라 큰 locale 도메인 단위로 분해했습니다.  
+`src/renderer/src/i18n/locales/*/base.ts`, `.../workspace.ts`는 공통 번들 조립 파일로 유지되며, 실제 문자열 본문은 `base/core`, `base/settings`, `base/settingsAdvanced`, `base/research`, `base/editor`, `workspace/writing`, `workspace/world` 단위로 분리했습니다.
 
 사실: `src/renderer/src/features/editor/components/EditorToolbar.tsx`는 editor toolbar shell과 TipTap command wiring만 유지하도록 축소되어 300 LOC입니다. 분리된 helper는 `editor/components/toolbar/index.ts` 배럴을 통해 제공합니다.
 

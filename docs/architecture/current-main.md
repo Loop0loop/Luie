@@ -47,27 +47,41 @@
 
 사실: 2026-06-02 기준 Phase 1 지정 도메인의 폴더 영역과 `index.ts` export 상태입니다.
 
-| Domain | Index | 상태 |
-| --- | --- | --- |
-| `src/main/database` | `src/main/database/index.ts` | DB singleton 진입점 유지 |
-| `src/main/handler/system` | `src/main/handler/system/index.ts` | system handler 등록 진입점 유지 |
-| `src/main/handler/world` | `src/main/handler/world/index.ts` | world handler 등록 진입점 유지 |
-| `src/main/manager/autoSave` | `src/main/manager/autoSave/index.ts` | autoSave helper 배럴 추가 |
-| `src/main/manager/settings` | `src/main/manager/settings/index.ts` | settings singleton/helper 배럴 추가 |
-| `src/main/manager/window` | `src/main/manager/window/index.ts` | window singleton/helper 배럴 추가 |
-| `src/main/utility` | `src/main/utility/index.ts` | utility process build entry 유지 |
-| `src/main/services/llm` | `src/main/services/llm/index.ts` | LLM service/helper 배럴 추가 |
-| `src/main/utils` | `src/main/utils/index.ts` | main utility 배럴 추가 |
-| `src/main/services/features/sync` | `src/main/services/features/sync/index.ts` | sync public service 배럴 추가 |
+| Domain                            | Index                                      | 상태                                |
+| --------------------------------- | ------------------------------------------ | ----------------------------------- |
+| `src/main/database`               | `src/main/database/index.ts`               | DB singleton 진입점 유지            |
+| `src/main/handler/system`         | `src/main/handler/system/index.ts`         | system handler 등록 진입점 유지     |
+| `src/main/handler/world`          | `src/main/handler/world/index.ts`          | world handler 등록 진입점 유지      |
+| `src/main/manager/autoSave`       | `src/main/manager/autoSave/index.ts`       | autoSave helper 배럴 추가           |
+| `src/main/manager/settings`       | `src/main/manager/settings/index.ts`       | settings singleton/helper 배럴 추가 |
+| `src/main/manager/window`         | `src/main/manager/window/index.ts`         | window singleton/helper 배럴 추가   |
+| `src/main/utility`                | `src/main/utility/index.ts`                | utility process build entry 유지    |
+| `src/main/services/llm`           | `src/main/services/llm/index.ts`           | LLM service/helper 배럴 추가        |
+| `src/main/utils`                  | `src/main/utils/index.ts`                  | main utility 배럴 추가              |
+| `src/main/services/features/sync` | `src/main/services/features/sync/index.ts` | sync public service 배럴 추가       |
 
 사실: Phase 2에서 분리된 snapshot/settings/sync 내부 helper는 도메인 하위 폴더의 `index.ts`를 통해 제공합니다.
 
-| Area | Index |
-| --- | --- |
-| snapshot artifact helpers | `src/main/services/features/snapshot/artifacts/index.ts` |
-| settings IPC helpers | `src/main/handler/system/settings/index.ts` |
+| Area                          | Index                                                      |
+| ----------------------------- | ---------------------------------------------------------- |
+| snapshot artifact helpers     | `src/main/services/features/snapshot/artifacts/index.ts`   |
+| settings IPC helpers          | `src/main/handler/system/settings/index.ts`                |
 | sync bundle collector helpers | `src/main/services/features/sync/bundleCollector/index.ts` |
-| sync repository helpers | `src/main/services/features/sync/repository/index.ts` |
+| sync repository helpers       | `src/main/services/features/sync/repository/index.ts`      |
+
+사실: `src/main/handler/system`은 system 루트에 구현 파일을 두지 않고 하위 도메인 entry를 통해 조립합니다.
+
+| System handler domain | Entry                              | 책임                        |
+| --------------------- | ---------------------------------- | --------------------------- |
+| `fs`                  | `handler/system/fs/index.ts`       | filesystem/package IPC      |
+| `logger`              | `handler/system/logger/index.ts`   | renderer logger IPC         |
+| `plugin`              | `handler/system/plugin/index.ts`   | graph plugin IPC            |
+| `recovery`            | `handler/system/recovery/index.ts` | recovery IPC                |
+| `settings`            | `handler/system/settings/index.ts` | settings/model/LLM IPC      |
+| `startup`             | `handler/system/startup/index.ts`  | startup readiness IPC       |
+| `sync`                | `handler/system/sync/index.ts`     | sync/runtime config IPC     |
+| `window`              | `handler/system/window/index.ts`   | app/window/update IPC       |
+| root                  | `handler/system/index.ts`          | system handler registration |
 
 ## Main IPC Flow
 
@@ -125,22 +139,26 @@ index.ts
 
 ## 500 LOC 초과 Main 파일
 
-사실: 패키지 스키마 분해 후 `src/main` 500 LOC 초과 항목은 거의 모두 해소되었고,
-현재 진입점/도메인 모듈 구조가 기준을 충족하도록 정렬되어 있습니다.
+사실: Phase 4 이후 현재 `src/main`에는 500 LOC 초과 코드 파일이 없습니다.
 
-| File | LOC | 비고 |
-| --- | ---: | --- |
-| `src/main/database/main/packagedSchema.ts` | 24 | bootstrap SQL 조합 진입점 |
-| `src/main/database/main/packagedSchema/projectSchema.sql.ts` | 238 | bootstrap SQL 프로젝트/초기 마이그레이션 파트 |
-| `src/main/database/main/packagedSchema/memorySchema.sql.ts` | 281 | bootstrap SQL 메모리 도메인 파트 |
-| `src/main/database/main/packagedSchema/worldAndIndexesSchema.sql.ts` | 243 | bootstrap SQL 월드/인덱스 파트 |
-| `src/main/database/packagedSchema/metadataTables.ts` | 49 | required table 목록 |
-| `src/main/database/packagedSchema/metadataColumnPatches.ts` | 148 | column patch 목록 |
-| `src/main/database/packagedSchema/metadataIndexPatches.ts` | 150 | index patch 목록 |
-| `src/main/database/packagedSchema/metadataRequiredColumns.ts` | 321 | required column map |
+| File                                                                    | LOC | 비고                                                      |
+| ----------------------------------------------------------------------- | --: | --------------------------------------------------------- |
+| `src/main/services/features/memory/entity/memoryEntityReviewService.ts` | 232 | Phase 4에서 `entityMergeOperations.ts`로 merge/split 분리 |
+| `src/main/services/features/memory/entity/entityMergeOperations.ts`     | 283 | entity merge/split transaction helper                     |
+| `src/main/services/features/searchService.ts`                           |  54 | Phase 4에서 public service facade로 축소                  |
+| `src/main/services/features/search/basicSearch.ts`                      | 206 | character/term/chapter search and quick access            |
+| `src/main/services/features/search/chunkOperations.ts`                  | 322 | memory chunk search/backlink/window operations            |
+| `src/main/database/main/packagedSchema.ts`                              |  24 | bootstrap SQL 조합 진입점                                 |
+| `src/main/database/main/packagedSchema/projectSchema.sql.ts`            | 238 | bootstrap SQL 프로젝트/초기 마이그레이션 파트             |
+| `src/main/database/main/packagedSchema/memorySchema.sql.ts`             | 281 | bootstrap SQL 메모리 도메인 파트                          |
+| `src/main/database/main/packagedSchema/worldAndIndexesSchema.sql.ts`    | 243 | bootstrap SQL 월드/인덱스 파트                            |
+| `src/main/database/packagedSchema/metadataTables.ts`                    |  49 | required table 목록                                       |
+| `src/main/database/packagedSchema/metadataColumnPatches.ts`             | 148 | column patch 목록                                         |
+| `src/main/database/packagedSchema/metadataIndexPatches.ts`              | 150 | index patch 목록                                          |
+| `src/main/database/packagedSchema/metadataRequiredColumns.ts`           | 321 | required column map                                       |
 
-사실: `src/main/services/features/rag/internal/contextAssembler.layer0.ts`(88), `contextAssembler.layer2.ts`(249), `contextAssembler.layer3.ts`(219)는 책임 분리 후 재구성되어 각 파일이 500 LOC 이하입니다.
-사실: `src/main/services/features/memory/query/narrativeMemoryQueryService.ts`는 지금 167 LOC로 축소되었고, `query/internal/{plan,chapter,entity,temporal,summaries,conflicts,evidence,formatter}.ts`로 책임 분리되어 있습니다.
+사실: `src/main/services/features/rag/internal/contextAssembler.layer0.ts`, `contextAssembler.layer2.ts`, `contextAssembler.layer3.ts`는 책임 분리 후 재구성되어 각 파일이 500 LOC 이하입니다.
+사실: `src/main/services/features/memory/query/narrativeMemoryQueryService.ts`는 500 LOC 이하이며, `query/internal/{plan,chapter,entity,temporal,summaries,conflicts,evidence,formatter}.ts`로 책임 분리되어 있습니다.
 
 사실: `src/main/database` 루트 TypeScript 파일은 `index.ts`만 남기고, database 구현은 `main/`, `cache/`, `runtime/`, `schema/` 하위 폴더 entry로 분리했습니다.
 
@@ -148,157 +166,158 @@ index.ts
 
 사실: `src/main/utility` 루트 TypeScript 파일은 `index.ts`만 남기고, utility process entry 구현과 RAG QA worker는 `process/`, `rag/` 하위 폴더로 분리했습니다.
 
-| Database area | 책임 | Entry |
-| --- | --- | --- |
-| root entry | main/cache/runtime/schema public export 조립 | `database/index.ts` |
-| main DB | main SQLite singleton, packaged bootstrap, seed, pointer trigger, memory FTS migration | `database/main/index.ts` |
-| cache DB | cache SQLite singleton, cache schema/bootstrap, cache packaged schema | `database/cache/index.ts` |
-| runtime | DB handle/type, env datasource/path resolver, migration path resolver | `database/runtime/index.ts` |
-| schema | Drizzle main schema tables와 row 타입 | `database/schema/index.ts` |
+| Database area | 책임                                                                                   | Entry                       |
+| ------------- | -------------------------------------------------------------------------------------- | --------------------------- |
+| root entry    | main/cache/runtime/schema public export 조립                                           | `database/index.ts`         |
+| main DB       | main SQLite singleton, packaged bootstrap, seed, pointer trigger, memory FTS migration | `database/main/index.ts`    |
+| cache DB      | cache SQLite singleton, cache schema/bootstrap, cache packaged schema                  | `database/cache/index.ts`   |
+| runtime       | DB handle/type, env datasource/path resolver, migration path resolver                  | `database/runtime/index.ts` |
+| schema        | Drizzle main schema tables와 row 타입                                                  | `database/schema/index.ts`  |
 
 사실: `src/main/database/main/packagedSchema.ts`는 bootstrap SQL 조합 진입점입니다. 실제 SQL/metadata는 분리 모듈에서 로드되며 기존 public export인 `PACKAGED_SCHEMA_REQUIRED_TABLES`, `PACKAGED_SCHEMA_REQUIRED_COLUMNS`, `PACKAGED_SCHEMA_COLUMN_PATCHES`, `PACKAGED_SCHEMA_INDEX_PATCHES`, `PACKAGED_SCHEMA_BOOTSTRAP_SQL`는 유지합니다.
 
-| Packaged schema helper | 책임 | LOC |
-| --- | --- | ---: |
-| `packagedSchema/index.ts` | metadata 배럴 export | 6 |
-| `packagedSchema/metadataTables.ts` | required table 목록 | 49 |
-| `packagedSchema/metadataColumnPatches.ts` | column patch 목록 | 148 |
-| `packagedSchema/metadataIndexPatches.ts` | index patch 목록 | 150 |
+| Packaged schema helper                      | 책임                 | LOC |
+| ------------------------------------------- | -------------------- | --: |
+| `packagedSchema/index.ts`                   | metadata 배럴 export |   6 |
+| `packagedSchema/metadataTables.ts`          | required table 목록  |  49 |
+| `packagedSchema/metadataColumnPatches.ts`   | column patch 목록    | 148 |
+| `packagedSchema/metadataIndexPatches.ts`    | index patch 목록     | 150 |
 | `packagedSchema/metadataRequiredColumns.ts` | required columns map | 321 |
-| `packagedSchema/metadataTypes.ts` | metadata type alias | 10 |
+| `packagedSchema/metadataTypes.ts`           | metadata type alias  |  10 |
 
 사실: `src/main/database/schema/index.ts`는 기존 Drizzle schema public export와 row 타입 export를 함께 제공합니다. 실제 table 정의는 같은 폴더 아래 도메인별 helper로 제공합니다.
 
-| Drizzle schema helper | 책임 | LOC |
-| --- | --- | ---: |
-| `schema/foundation.ts` | Project, attachment, local state, settings table 정의 | 79 |
-| `schema/manuscript.ts` | Chapter, Scene, body/revision, note/synopsis/plot table 정의 | 169 |
-| `schema/search.ts` | SearchDirtyQueue table 정의 | 28 |
-| `schema/memory.ts` | MemoryChunk, build job, summary, embedding table 정의 | 119 |
-| `schema/world.ts` | character/event/faction/document/scrap/term/world entity/relation table 정의 | 205 |
-| `schema/snapshot.ts` | Snapshot table 정의 | 33 |
-| `schema/index.ts` | Drizzle schema helper 배럴 export와 row 타입 export | 14 |
+| Drizzle schema helper  | 책임                                                                         | LOC |
+| ---------------------- | ---------------------------------------------------------------------------- | --: |
+| `schema/foundation.ts` | Project, attachment, local state, settings table 정의                        |  79 |
+| `schema/manuscript.ts` | Chapter, Scene, body/revision, note/synopsis/plot table 정의                 | 169 |
+| `schema/search.ts`     | SearchDirtyQueue table 정의                                                  |  28 |
+| `schema/memory.ts`     | MemoryChunk, build job, summary, embedding table 정의                        | 119 |
+| `schema/world.ts`      | character/event/faction/document/scrap/term/world entity/relation table 정의 | 205 |
+| `schema/snapshot.ts`   | Snapshot table 정의                                                          |  33 |
+| `schema/index.ts`      | Drizzle schema helper 배럴 export와 row 타입 export                          |  14 |
 
 사실: `src/main/services/features/snapshot/snapshotArtifacts.ts`는 snapshot artifact 읽기/후보 목록/고아 cleanup/write orchestration만 유지하도록 축소되어 297 LOC입니다. 분리된 helper는 `snapshot/artifacts/index.ts` 배럴을 통해 제공하며 public export 경로는 유지합니다.
 
-| Snapshot helper | 책임 | LOC |
-| --- | --- | ---: |
-| `artifacts/types.ts` | full snapshot payload와 DB record 타입 | 89 |
-| `artifacts/paths.ts` | artifact root/path/priority/snap file scan | 98 |
-| `artifacts/preview.ts` | restore candidate 제목/excerpt 계산 | 30 |
-| `artifacts/projectLoader.ts` | DB에서 full snapshot record 조립 | 106 |
-| `artifacts/index.ts` | artifact helper 배럴 export | 11 |
+| Snapshot helper              | 책임                                       | LOC |
+| ---------------------------- | ------------------------------------------ | --: |
+| `artifacts/types.ts`         | full snapshot payload와 DB record 타입     |  89 |
+| `artifacts/paths.ts`         | artifact root/path/priority/snap file scan |  98 |
+| `artifacts/preview.ts`       | restore candidate 제목/excerpt 계산        |  30 |
+| `artifacts/projectLoader.ts` | DB에서 full snapshot record 조립           | 106 |
+| `artifacts/index.ts`         | artifact helper 배럴 export                |  11 |
 
-사실: `src/main/handler/system/ipcSettingsHandlers.ts`는 settings IPC 등록 진입점만 유지하도록 축소되어 17 LOC입니다. 분리된 helper는 `handler/system/settings/index.ts` 배럴을 통해 제공하며 IPC channel과 등록 계약은 유지합니다.
+사실: `src/main/handler/system/settings/registerSettingsIPCHandlers.ts`는 settings IPC 등록 진입점만 유지하도록 축소되어 17 LOC입니다. 분리된 helper는 `handler/system/settings/index.ts` 배럴을 통해 제공하며 IPC channel과 등록 계약은 유지합니다.
 
-| Settings IPC helper | 책임 | LOC |
-| --- | --- | ---: |
-| `settings/coreHandlers.ts` | editor/language/menu/shortcut/window/reset 기본 설정 IPC | 183 |
-| `settings/llmHandlers.ts` | LLM preference/key/local LLM/sidecar/Ollama IPC | 234 |
-| `settings/modelDownloadHandlers.ts` | model download/cancel/HF search/files IPC | 173 |
-| `settings/llmfitEmbeddingHandlers.ts` | llmfit와 embedding model IPC | 117 |
-| `settings/managerLoader.ts` | settingsManager lazy import cache | 14 |
-| `settings/index.ts` | settings IPC helper 배럴 export | 5 |
+| Settings IPC helper                       | 책임                                                     | LOC |
+| ----------------------------------------- | -------------------------------------------------------- | --: |
+| `settings/coreHandlers.ts`                | editor/language/menu/shortcut/window/reset 기본 설정 IPC | 183 |
+| `settings/llmHandlers.ts`                 | LLM preference/key/local LLM/sidecar/Ollama IPC          | 234 |
+| `settings/modelDownloadHandlers.ts`       | model download/cancel/HF search/files IPC                | 173 |
+| `settings/llmfitEmbeddingHandlers.ts`     | llmfit와 embedding model IPC                             | 122 |
+| `settings/managerLoader.ts`               | settingsManager lazy import cache                        |  14 |
+| `settings/registerSettingsIPCHandlers.ts` | settings IPC 등록 진입점                                 |  17 |
+| `settings/index.ts`                       | settings IPC helper 배럴 export                          |   6 |
 
 사실: `src/main/services/features/sync/syncBundleCollector.ts`는 기존 public export를 유지하는 compatibility export입니다. 실제 local sync bundle orchestration은 `sync/bundleCollector/index.ts` 배럴에서 제공합니다.
 
-| Sync bundle helper | 책임 | LOC |
-| --- | --- | ---: |
-| `bundleCollector/index.ts` | local sync bundle orchestration과 public helper export | 154 |
-| `bundleCollector/recordAppenders.ts` | project/chapter/world entity/tombstone row append | 192 |
-| `bundleCollector/worldDocuments.ts` | world document replica/package hydrate, scrap memo append | 208 |
-| `bundleCollector/types.ts` | collector-local logger/doc type/normalizer helpers | 29 |
+| Sync bundle helper                   | 책임                                                      | LOC |
+| ------------------------------------ | --------------------------------------------------------- | --: |
+| `bundleCollector/index.ts`           | local sync bundle orchestration과 public helper export    | 154 |
+| `bundleCollector/recordAppenders.ts` | project/chapter/world entity/tombstone row append         | 192 |
+| `bundleCollector/worldDocuments.ts`  | world document replica/package hydrate, scrap memo append | 208 |
+| `bundleCollector/types.ts`           | collector-local logger/doc type/normalizer helpers        |  29 |
 
 사실: `src/main/services/features/sync/syncRepository.ts`는 기존 public export를 유지하는 compatibility export입니다. 실제 Supabase sync repository orchestration은 `sync/repository/index.ts` 배럴에서 제공합니다.
 
-| Sync repository helper | 책임 | LOC |
-| --- | --- | ---: |
-| `repository/index.ts` | Supabase sync repository singleton orchestration | 89 |
-| `repository/http.ts` | Supabase REST fetch/upsert와 retry | 141 |
-| `repository/mappers.ts` | remote DB row를 SyncBundle record로 변환 | 322 |
-| `repository/payload.ts` | SyncBundle record를 remote upsert row로 변환 | 151 |
-| `repository/rowUtils.ts` | row normalizer와 primitive coercion | 56 |
+| Sync repository helper   | 책임                                             | LOC |
+| ------------------------ | ------------------------------------------------ | --: |
+| `repository/index.ts`    | Supabase sync repository singleton orchestration |  89 |
+| `repository/http.ts`     | Supabase REST fetch/upsert와 retry               | 141 |
+| `repository/mappers.ts`  | remote DB row를 SyncBundle record로 변환         | 322 |
+| `repository/payload.ts`  | SyncBundle record를 remote upsert row로 변환     | 151 |
+| `repository/rowUtils.ts` | row normalizer와 primitive coercion              |  56 |
 
 사실: `src/main/services/features/memory/memoryProjectionService.ts`는 memory chunk job orchestration만 유지하도록 축소되어 246 LOC입니다. 분리된 helper는 `memory/projection/index.ts` 배럴을 통해 제공하며 기존 public export인 `memoryProjectionService`와 `chunkText`는 유지합니다.
 
-| Memory projection helper | 책임 | LOC |
-| --- | --- | ---: |
-| `projection/chunking.ts` | content hash, token estimate, paragraph-aware chunk split | 121 |
-| `projection/sourceRows.ts` | memory build job target별 source row 조회 | 211 |
-| `projection/jobPolicy.ts` | retry 가능 여부와 event loop yield 정책 | 22 |
-| `projection/index.ts` | projection helper 배럴 export | 14 |
+| Memory projection helper   | 책임                                                      | LOC |
+| -------------------------- | --------------------------------------------------------- | --: |
+| `projection/chunking.ts`   | content hash, token estimate, paragraph-aware chunk split | 121 |
+| `projection/sourceRows.ts` | memory build job target별 source row 조회                 | 211 |
+| `projection/jobPolicy.ts`  | retry 가능 여부와 event loop yield 정책                   |  22 |
+| `projection/index.ts`      | projection helper 배럴 export                             |  14 |
 
 사실: `src/main/services/core/project/projectExportEngine.ts`는 `.luie` package export orchestration만 유지하도록 축소되어 173 LOC입니다. 분리된 helper는 `project/exportEngine/index.ts` 배럴을 통해 제공하며 기존 public export인 `exportProjectPackageWithOptions`는 유지합니다.
 
-| Project export helper | 책임 | LOC |
-| --- | --- | ---: |
-| `exportEngine/projectRecord.ts` | export용 project/chapter/world entity/snapshot DB record 조립 | 94 |
-| `exportEngine/worldPayload.ts` | replica/package world payload 읽기와 schema fallback | 252 |
-| `exportEngine/types.ts` | export engine logger/world payload 타입 | 33 |
-| `exportEngine/index.ts` | export engine helper 배럴 export | 11 |
+| Project export helper           | 책임                                                          | LOC |
+| ------------------------------- | ------------------------------------------------------------- | --: |
+| `exportEngine/projectRecord.ts` | export용 project/chapter/world entity/snapshot DB record 조립 |  94 |
+| `exportEngine/worldPayload.ts`  | replica/package world payload 읽기와 schema fallback          | 252 |
+| `exportEngine/types.ts`         | export engine logger/world payload 타입                       |  33 |
+| `exportEngine/index.ts`         | export engine helper 배럴 export                              |  11 |
 
 사실: `src/main/services/features/sync/syncMapper.ts`는 기존 public export를 유지하는 compatibility export로 축소되어 20 LOC입니다. 실제 SyncBundle 타입/merge orchestration은 `sync/mapper/index.ts` 배럴에서 제공합니다.
 
-| Sync mapper helper | 책임 | LOC |
-| --- | --- | ---: |
-| `mapper/types.ts` | SyncBundle record 타입과 merge option 타입 | 129 |
-| `mapper/index.ts` | mergeSyncBundles orchestration과 public export | 143 |
-| `mapper/textConflicts.ts` | chapter/memo 텍스트 충돌 복사와 conflict summary | 121 |
-| `mapper/tombstones.ts` | project/entity tombstone 적용 | 105 |
-| `mapper/entityMerge.ts` | timestamp/latest 선택과 일반 entity/world doc merge | 69 |
-| `mapper/bundle.ts` | empty SyncBundle factory | 14 |
+| Sync mapper helper        | 책임                                                | LOC |
+| ------------------------- | --------------------------------------------------- | --: |
+| `mapper/types.ts`         | SyncBundle record 타입과 merge option 타입          | 129 |
+| `mapper/index.ts`         | mergeSyncBundles orchestration과 public export      | 143 |
+| `mapper/textConflicts.ts` | chapter/memo 텍스트 충돌 복사와 conflict summary    | 121 |
+| `mapper/tombstones.ts`    | project/entity tombstone 적용                       | 105 |
+| `mapper/entityMerge.ts`   | timestamp/latest 선택과 일반 entity/world doc merge |  69 |
+| `mapper/bundle.ts`        | empty SyncBundle factory                            |  14 |
 
 사실: `src/main/manager/settings/settingsManager.ts`는 settings store API만 유지하도록 축소되어 450 LOC입니다. 레거시 설정 파일/윈도우/LLM migration은 `manager/settings/settingsMigration.ts`로 분리했습니다.
 
-| Settings manager helper | 책임 | LOC |
-| --- | --- | ---: |
-| `settings/index.ts` | settings singleton/helper 배럴 export | 4 |
+| Settings manager helper         | 책임                                                        | LOC |
+| ------------------------------- | ----------------------------------------------------------- | --: |
+| `settings/index.ts`             | settings singleton/helper 배럴 export                       |   4 |
 | `settings/settingsMigration.ts` | legacy settings path 계산, legacy file/window/LLM migration | 125 |
 
 사실: manager와 utility의 루트 source entry는 public export/build entry만 조립합니다.
 
-| Area | Entry | 구현 |
-| --- | --- | --- |
-| manager root | `src/main/manager/index.ts` | `manager/window/index.ts`, `manager/settings/index.ts`, `manager/autoSave/index.ts` re-export |
-| window manager | `src/main/manager/window/index.ts` | `window/windowManager.ts`, window helper |
-| auto-save manager | `src/main/manager/autoSave/index.ts` | `autoSave/autoSaveManager.ts`, `autoSave/helpers.ts` |
-| utility process | `src/main/utility/index.ts` | `utility/process/utilityProcessMain.ts` side-effect entry |
-| RAG QA worker | - | `utility/rag/ragQaWorker.ts` |
+| Area              | Entry                                | 구현                                                                                          |
+| ----------------- | ------------------------------------ | --------------------------------------------------------------------------------------------- |
+| manager root      | `src/main/manager/index.ts`          | `manager/window/index.ts`, `manager/settings/index.ts`, `manager/autoSave/index.ts` re-export |
+| window manager    | `src/main/manager/window/index.ts`   | `window/windowManager.ts`, window helper                                                      |
+| auto-save manager | `src/main/manager/autoSave/index.ts` | `autoSave/autoSaveManager.ts`, `autoSave/helpers.ts`                                          |
+| utility process   | `src/main/utility/index.ts`          | `utility/process/utilityProcessMain.ts` side-effect entry                                     |
+| RAG QA worker     | -                                    | `utility/rag/ragQaWorker.ts`                                                                  |
 
-사실: `src/main/services/features/searchService.ts`는 통합 검색 service API와 DB result mapping만 유지하도록 축소되어 372 LOC입니다. Memory chunk token/FTS fallback/vector/RRF helper는 `features/search/index.ts` 배럴 폴더로 분리했습니다.
+사실: `src/main/services/features/searchService.ts`는 통합 검색 service API와 DB result mapping, 일부 memory search orchestration을 함께 담고 있어 현재 500 LOC를 초과합니다. Phase 4에서 public service API를 유지한 채 추가 분리 대상입니다.
 
-| Search helper | 책임 | LOC |
-| --- | --- | ---: |
+| Search helper           | 책임                                                                      | LOC |
+| ----------------------- | ------------------------------------------------------------------------- | --: |
 | `search/chunkSearch.ts` | memory chunk FTS query, short-token LIKE fallback, vector rank, RRF merge | 137 |
-| `search/index.ts` | search helper 배럴 export | 7 |
+| `search/index.ts`       | search helper 배럴 export                                                 |   7 |
 
 사실: `src/main/services/features/sync/syncLocalApply.ts`는 project/entity local DB apply helper만 유지하도록 축소되어 310 LOC입니다. Replica world document materialization은 `sync/localApply/index.ts` 배럴 폴더로 분리했습니다.
 
-| Sync local apply helper | 책임 | LOC |
-| --- | --- | ---: |
+| Sync local apply helper    | 책임                                                                          | LOC |
+| -------------------------- | ----------------------------------------------------------------------------- | --: |
 | `localApply/worldState.ts` | replica world document map, payload normalization, scrap memo materialization | 214 |
-| `localApply/index.ts` | local apply helper 배럴 export | 1 |
+| `localApply/index.ts`      | local apply helper 배럴 export                                                |   1 |
 
 사실: `src/main/services/features/analysis/analysisStreamRunner.ts`는 Gemini analysis stream orchestration과 fallback/error handling만 유지하도록 축소되어 415 LOC입니다. Loose JSON stream parsing은 `analysis/streamRunner/index.ts` 배럴 폴더로 분리했습니다.
 
-| Analysis stream helper | 책임 | LOC |
-| --- | --- | ---: |
+| Analysis stream helper             | 책임                                                                 | LOC |
+| ---------------------------------- | -------------------------------------------------------------------- | --: |
 | `streamRunner/jsonStreamParser.ts` | noisy/fenced JSON object/array extraction and parse warning handling | 134 |
-| `streamRunner/index.ts` | analysis stream helper 배럴 export | 1 |
+| `streamRunner/index.ts`            | analysis stream helper 배럴 export                                   |   1 |
 
 사실: `src/main/services/core/project/projectImportOpen.ts`는 .luie open/recovery/import orchestration만 유지하도록 축소되어 337 LOC입니다. .luie 내부 world/snapshot collections 읽기와 schema validation은 `src/main/services/core/project/importOpen/index.ts` 배럴 폴더로 분리했습니다.
 
-| Project import/open helper | 책임 | LOC |
-| --- | --- | ---: |
+| Project import/open helper  | 책임                                                                                            | LOC |
+| --------------------------- | ----------------------------------------------------------------------------------------------- | --: |
 | `importOpen/collections.ts` | .luie world/snapshot entry read, JSON parse, schema validation, import collection normalization | 263 |
-| `importOpen/index.ts` | project import/open helper 배럴 export | 1 |
+| `importOpen/index.ts`       | project import/open helper 배럴 export                                                          |   1 |
 
 사실: `src/main/services/features/utility/utilityProcessBridge.ts`는 utility process lifecycle, request routing, RAG event forwarding만 유지하도록 축소되어 1 LOC입니다. Bridge protocol type/timeout/unwrap helper는 `utility/utilityProcessBridge/index.ts` 배럴 폴더로 분리했습니다.
 
-| Utility bridge helper | 책임 | LOC |
-| --- | --- | ---: |
-| `utilityProcessBridge/protocol.ts` | utility process inbound/outbound protocol types, timeout constants, message unwrap | 78 |
-| `utilityProcessBridge/index.ts` | utility bridge helper 배럴 export | 18 |
+| Utility bridge helper              | 책임                                                                               | LOC |
+| ---------------------------------- | ---------------------------------------------------------------------------------- | --: |
+| `utilityProcessBridge/protocol.ts` | utility process inbound/outbound protocol types, timeout constants, message unwrap |  78 |
+| `utilityProcessBridge/index.ts`    | utility bridge helper 배럴 export                                                  |  18 |
 
 ## 위험 지점
 

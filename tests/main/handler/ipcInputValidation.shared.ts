@@ -196,13 +196,13 @@ export const registerSearchInputHandlers = async (
 
 export const registerWindowInputHandlers = async () => {
   const { registerWindowIPCHandlers } =
-    await import("../../../src/main/handler/system/ipcWindowHandlers.js");
+    await import("../../../src/main/handler/system/window/index.js");
   registerWindowIPCHandlers(mocked.logger);
 };
 
 export const registerSyncInputHandlers = async () => {
   const { registerSyncIPCHandlers } =
-    await import("../../../src/main/handler/system/ipcSyncHandlers.js");
+    await import("../../../src/main/handler/system/sync/index.js");
   registerSyncIPCHandlers(mocked.logger);
 };
 

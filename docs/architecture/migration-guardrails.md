@@ -83,16 +83,16 @@ src/shared/
 - 파일당 500 LOC 내외를 장기 품질 기준으로 둡니다.
 - `src/main/services/features/memory/query/narrativeMemoryQueryService.ts`는 `query/internal/*`로 분리되어 현재 167 LOC입니다.
 - `src/renderer/src/styles/global.css`처럼 정적 자원/번들 파일도 정책 예외로 관리합니다.
-- i18n locale 파일은 단일 파일 대신 키 단위 모듈로 분해 후 유지되어, 구조 정합성 점검에서 기본 예외 대상이 아닌 상태로 관리합니다.
+- i18n locale 파일은 키 단위가 아니라 큰 locale 도메인 단위로 분해해 관리합니다.
 - 500 LOC 초과 파일은 우선 삭제가 아니라 책임 분리 후보로 표시합니다.
 
 사실(2026-06-08 기준):
 
-현재 소스-영역( `src/main`, `src/renderer` )만 스캔했을 때 500 LOC 초과 결과는 아래와 같습니다.  
+현재 소스-영역( `src/main`, `src/renderer`, `src/shared` )을 스캔했을 때 500 LOC 초과 결과는 아래와 같습니다.  
 (`tests` 영역은 테스트 규칙/운영 범위가 달라 본 규칙의 기본 스코프에서 분리합니다.)
 
-| 경로 | LOC | 상태 |
-| --- | ---: | --- |
+| 경로                                 | LOC | 상태                 |
+| ------------------------------------ | --: | -------------------- |
 | `src/renderer/src/styles/global.css` | 530 | 예외(정적 자원 번들) |
 
 사실: `tests`에서 500 LOC 초과인 파일은 `tests/dom/appOperationalScenarios.test.tsx`(569), `tests/main/services/syncService.test.ts`(1166), `tests/main/services/luieContainer.extreme.test.ts`(543), `tests/renderer/components/worldGraph/canvasTab.behavior.test.tsx`(549), `tests/main/database/schemaParity.test.ts`(535)입니다.
@@ -103,7 +103,11 @@ src/shared/
 
 사실:
 
-- `src` 디렉터리에서 500 LOC 초과인 코드 파일은 현재 없습니다.
+- `src` 디렉터리에서 500 LOC 초과인 코드 파일은 현재 0개입니다.
+- `src/renderer/src/features/research/components/AnalysisSection.tsx`는 Phase 2에서 237 LOC로 분리되어 해소되었습니다.
+- `src/shared/types/search.ts`는 Phase 3에서 6 LOC 재수출 진입점으로 축소되어 해소되었습니다.
+- `src/main/services/features/searchService.ts`는 Phase 4에서 54 LOC public facade로 축소되어 해소되었습니다.
+- `src/main/services/features/memory/entity/memoryEntityReviewService.ts`는 Phase 4에서 232 LOC로 축소되어 해소되었습니다.
 - 스타일 번들(`src/renderer/src/styles/global.css`)은 아키텍처 대상 외 예외로 남아 있습니다.
 - 테스트 파일에서만 500 LOC 초과가 남아 있고(프로젝트 룰상 별도 범주로 관리), 이번 단계에서 우선순위 대상은 아닙니다.
 
@@ -134,6 +138,7 @@ pnpm run check:ipc-handler-schemas
 pnpm run check:preload-contract-regression
 pnpm run check:renderer-store-usage
 pnpm run check:core-complexity
+pnpm run check:source-loc
 ```
 
 특정 도메인 변경 시에는 관련 targeted test를 추가로 실행합니다.

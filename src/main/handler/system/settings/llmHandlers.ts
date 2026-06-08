@@ -209,9 +209,11 @@ export function createSettingsLlmHandlers(): IpcHandlerConfig[] {
           models?: Array<{ id: string }>;
           data?: Array<{ id: string }>;
         };
-        return data.models?.map((model) => model.id) ??
+        return (
+          data.models?.map((model) => model.id) ??
           data.data?.map((model) => model.id) ??
-          [];
+          []
+        );
       },
     },
     {

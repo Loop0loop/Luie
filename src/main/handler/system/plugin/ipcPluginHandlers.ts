@@ -1,11 +1,11 @@
-import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
+import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
 import {
   graphPluginApplyTemplateArgsSchema,
   graphPluginInstallArgsSchema,
   graphPluginUninstallArgsSchema,
-} from "../../../shared/schemas/index.js";
-import { registerIpcHandlers } from "../core/ipcRegistrar.js";
-import type { LoggerLike } from "../core/types.js";
+} from "../../../../shared/schemas/index.js";
+import { registerIpcHandlers } from "../../core/ipcRegistrar.js";
+import type { LoggerLike } from "../../core/types.js";
 
 type GraphPluginServiceLike = {
   listCatalog: () => Promise<unknown>;

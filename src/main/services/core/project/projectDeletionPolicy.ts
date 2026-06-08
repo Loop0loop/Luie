@@ -4,7 +4,7 @@ import { ErrorCode } from "../../../../shared/constants/errorCode.js";
 import type { ProjectDeleteInput } from "../../../../shared/types/index.js";
 import { ensureSafeAbsolutePath } from "../../../utils/pathValidation.js";
 import { ServiceError } from "../../../utils/serviceError.js";
-import { assertAllowedFsPath } from "../../../handler/system/fsPathApproval.js";
+import { assertAllowedFsPath } from "../../../handler/system/fs/index.js";
 
 export type NormalizedProjectDeleteRequest = {
   id: string;
@@ -25,7 +25,10 @@ export const deleteProjectPackageFileIfRequested = async (input: {
   if (!input.deleteFile || !input.projectPath) return;
   if (!input.projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) return;
 
-  const safeProjectPath = ensureSafeAbsolutePath(input.projectPath, "projectPath");
+  const safeProjectPath = ensureSafeAbsolutePath(
+    input.projectPath,
+    "projectPath",
+  );
   const allowedProjectPath = await assertAllowedFsPath(safeProjectPath, {
     fieldName: "projectPath",
     mode: "write",

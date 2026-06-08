@@ -1,11 +1,11 @@
-import { registerFsIPCHandlers } from "./ipcFsHandlers.js";
-import { registerLoggerIPCHandlers } from "./ipcLoggerHandlers.js";
-import { registerPluginIPCHandlers } from "./ipcPluginHandlers.js";
-import { registerRecoveryIPCHandlers } from "./ipcRecoveryHandlers.js";
-import { registerSettingsIPCHandlers } from "./ipcSettingsHandlers.js";
-import { registerStartupIPCHandlers } from "./ipcStartupHandlers.js";
-import { registerSyncIPCHandlers } from "./ipcSyncHandlers.js";
-import { registerWindowIPCHandlers } from "./ipcWindowHandlers.js";
+import { registerFsIPCHandlers } from "./fs/index.js";
+import { registerLoggerIPCHandlers } from "./logger/index.js";
+import { registerPluginIPCHandlers } from "./plugin/index.js";
+import { registerRecoveryIPCHandlers } from "./recovery/index.js";
+import { registerSettingsIPCHandlers } from "./settings/index.js";
+import { registerStartupIPCHandlers } from "./startup/index.js";
+import { registerSyncIPCHandlers } from "./sync/index.js";
+import { registerWindowIPCHandlers } from "./window/index.js";
 import type { AppLogger } from "../core/types.js";
 export function registerSystemHandlers(options: {
   logger: AppLogger;

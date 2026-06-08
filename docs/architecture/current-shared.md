@@ -94,7 +94,9 @@ shared/ipc/response.ts
 
 사실:
 
-- 2026-06-02 기준 `src/shared/types/*.ts`, `src/shared/schemas/*.ts`, `src/shared/api/*.ts`의 500 LOC 초과 파일은 없습니다.
+- `src/shared/types/search.ts`는 Phase 3에서 기존 import/export shape를 유지하는 재수출 진입점으로 축소되었습니다.
+- search DTO 본문은 `src/shared/types/search/` 아래의 큰 계약 축(`chunks`, `core`, `narrative`, `rag`, `review`, `status`)으로 분리되어 모두 500 LOC 이하입니다.
+- `src/shared/schemas/*.ts`, `src/shared/api/*.ts`의 500 LOC 초과 파일은 없습니다.
 
 ## 위험 지점
 
@@ -119,6 +121,7 @@ src/shared/types/
   settings.ts
   export.ts
   plugin.ts
+  search/
   index.ts       # 기존 export 유지
 
 src/shared/schemas/

@@ -1,19 +1,19 @@
 import { app } from "electron";
-import { windowManager } from "../../app/windows/index.js";
-import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
-import { registerIpcHandlers } from "../core/ipcRegistrar.js";
-import type { LoggerLike } from "../core/types.js";
-import { ServiceError } from "../../utils/serviceError.js";
-import { ErrorCode } from "../../../shared/constants/errorCode.js";
+import { windowManager } from "../../../app/windows/index.js";
+import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
+import { registerIpcHandlers } from "../../core/ipcRegistrar.js";
+import type { LoggerLike } from "../../core/types.js";
+import { ServiceError } from "../../../utils/serviceError.js";
+import { ErrorCode } from "../../../../shared/constants/errorCode.js";
 import {
   ensureBootstrapReady,
   getBootstrapStatus,
-} from "../../lifecycle/bootstrap.js";
-import { appUpdateService } from "../../app/startup/index.js";
+} from "../../../lifecycle/bootstrap.js";
+import { appUpdateService } from "../../../app/startup/index.js";
 import {
   windowOpenExportArgsSchema,
   windowSetFullscreenArgsSchema,
-} from "../../../shared/schemas/index.js";
+} from "../../../../shared/schemas/index.js";
 
 export function registerWindowIPCHandlers(logger: LoggerLike): void {
   registerIpcHandlers(logger, [
@@ -144,7 +144,10 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
         logger.info("WINDOW_OPEN_EXPORT received", { chapterId });
 
         if (!chapterId) {
-          logger.error("Invalid chapterId for export", { chapterId, type: typeof chapterId });
+          logger.error("Invalid chapterId for export", {
+            chapterId,
+            type: typeof chapterId,
+          });
           throw new ServiceError(
             ErrorCode.REQUIRED_FIELD_MISSING,
             "Chapter ID is required to open export window",

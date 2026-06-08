@@ -1,11 +1,11 @@
-import { registerIpcHandlers } from "../core/ipcRegistrar.js";
-import type { LoggerLike } from "../core/types.js";
+import { registerIpcHandlers } from "../../core/ipcRegistrar.js";
+import type { LoggerLike } from "../../core/types.js";
 import {
   createLlmfitEmbeddingHandlers,
   createModelDownloadHandlers,
   createSettingsCoreHandlers,
   createSettingsLlmHandlers,
-} from "./settings/index.js";
+} from "./index.js";
 
 export function registerSettingsIPCHandlers(logger: LoggerLike): void {
   registerIpcHandlers(logger, [

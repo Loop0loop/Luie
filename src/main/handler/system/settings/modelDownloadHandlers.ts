@@ -91,12 +91,12 @@ async function runModelDownload(input: {
     modelPath = await downloadGguf({
       repo: input.repo ?? DEFAULT_MODEL.repo,
       filename: input.filename ?? DEFAULT_MODEL.filename,
-      expectedSha256: input.repo || input.filename
-        ? undefined
-        : DEFAULT_MODEL.sha256,
+      expectedSha256:
+        input.repo || input.filename ? undefined : DEFAULT_MODEL.sha256,
       destDir: sidecarManager.getModelsDir(),
       signal: input.signal,
-      onProgress: (progress) => emitModelDownloadProgress("model", progress.pct),
+      onProgress: (progress) =>
+        emitModelDownloadProgress("model", progress.pct),
     });
   }
 
@@ -131,7 +131,8 @@ export function createModelDownloadHandlers(): IpcHandlerConfig[] {
             await runModelDownload({ ...input, signal });
             emitModelDownloadProgress("complete", 100);
           } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
+            const message =
+              error instanceof Error ? error.message : String(error);
             emitModelDownloadProgress("error", 0, message);
           } finally {
             activeDownloadAbort = null;
@@ -155,7 +156,9 @@ export function createModelDownloadHandlers(): IpcHandlerConfig[] {
       channel: IPC_CHANNELS.MODEL_SEARCH_HF,
       logTag: "MODEL_SEARCH_HF",
       failMessage: "HF model search failed",
-      argsSchema: z.tuple([z.strictObject({ query: z.string().min(1).max(200) })]),
+      argsSchema: z.tuple([
+        z.strictObject({ query: z.string().min(1).max(200) }),
+      ]),
       handler: async (input: { query: string }) =>
         await searchHfModels(input.query),
     },
