@@ -1,10 +1,10 @@
-#!/usr/bin/env bun
+#!/usr/bin/env tsx
 
 import "dotenv/config";
 import os from "node:os";
 import path from "node:path";
 import { existsSync } from "node:fs";
-import Database from "better-sqlite3";
+import { DatabaseSync } from "node:sqlite";
 import { DB_NAME } from "../src/shared/constants/index.js";
 import type { RuntimeRoutePlan } from "../src/shared/types/llmRuntime.js";
 import { resolveSqliteDatasourceFromEnv } from "../src/main/database/runtime/index.js";
@@ -280,7 +280,7 @@ function loadLiveChunkGroups(input: {
     throw new Error(`LIVE_DB_NOT_FOUND:${input.dbPath}`);
   }
 
-  const database = new Database(input.dbPath, { readonly: true });
+  const database = new DatabaseSync(input.dbPath, { readOnly: true });
   try {
     const rows = database
       .prepare(

@@ -9,6 +9,7 @@ export function registerSearchHandlers(options: {
   embeddingProjector: Parameters<typeof registerSearchIPCHandlers>[4];
   narrativeMemoryQueryService: Parameters<typeof registerSearchIPCHandlers>[5];
   narrativeSummaryStatusService: Parameters<typeof registerSearchIPCHandlers>[6];
+  packagePersistence?: Parameters<typeof registerSearchIPCHandlers>[7];
 }): void {
   registerSearchIPCHandlers(
     options.logger,
@@ -18,5 +19,6 @@ export function registerSearchHandlers(options: {
     options.embeddingProjector,
     options.narrativeMemoryQueryService,
     options.narrativeSummaryStatusService,
+    options.packagePersistence,
   );
 }

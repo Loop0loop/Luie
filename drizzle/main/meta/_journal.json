@@ -64,6 +64,13 @@
       "when": 1780899758894,
       "tag": "0008_nasty_valeria_richards",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1780900600000,
+      "tag": "0009_memory_chunk_paragraph_window",
+      "breakpoints": true
     }
   ]
 }

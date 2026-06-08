@@ -5,7 +5,6 @@ import {
   memoryEpisodeExtractionJob,
 } from "../../../../infra/database/index.js";
 import { createMemoryEpisodeCandidate } from "./memoryEpisodeCandidate.js";
-import { llmEpisodeExtractor } from "./memoryEpisodeLlmExtractor.js";
 
 const EPISODE_EXTRACTION_MAX_ATTEMPTS = 3;
 
@@ -197,6 +196,7 @@ export async function processPendingLlmEpisodeExtractionJobs(input: {
   if (!isLlmEpisodeExtractionEnabled()) {
     return { queued: 0, processed: 0 };
   }
+  const { llmEpisodeExtractor } = await import("./memoryEpisodeLlmExtractor.js");
   return await processPendingEpisodeExtractionJobs({
     ...input,
     extractor: llmEpisodeExtractor,

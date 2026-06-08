@@ -23,6 +23,9 @@ const mocked = vi.hoisted(() => {
     rejectFact: vi.fn(),
     resolveFactConflict: vi.fn(),
     listSuggestedEntityAliases: vi.fn(),
+    listSuggestedEntities: vi.fn(),
+    confirmEntity: vi.fn(),
+    rejectEntity: vi.fn(),
     confirmEntityAlias: vi.fn(),
     rejectEntityAlias: vi.fn(),
     splitEntityAlias: vi.fn(),
@@ -34,6 +37,9 @@ const mocked = vi.hoisted(() => {
   const narrativeSummaryStatusService = {
     getStatus: vi.fn(),
   };
+  const packagePersistence = {
+    persistPackageAfterMutation: vi.fn(),
+  };
   let appIsPackaged = true;
 
   return {
@@ -41,6 +47,7 @@ const mocked = vi.hoisted(() => {
     syncService,
     narrativeMemoryQueryService,
     narrativeSummaryStatusService,
+    packagePersistence,
     get appIsPackaged() {
       return appIsPackaged;
     },
@@ -60,6 +67,7 @@ const sharedSearchServices = () => ({
   search: vi.fn(),
   searchChunks: vi.fn(),
   getChunkBacklink: vi.fn(),
+  getChunkWindow: vi.fn(),
 });
 
 const sharedSearchIndexServices = () => ({
@@ -128,6 +136,9 @@ export const resetInputValidationMocks = () => {
   mocked.narrativeMemoryQueryService.rejectFact.mockReset();
   mocked.narrativeMemoryQueryService.resolveFactConflict.mockReset();
   mocked.narrativeMemoryQueryService.listSuggestedEntityAliases.mockReset();
+  mocked.narrativeMemoryQueryService.listSuggestedEntities.mockReset();
+  mocked.narrativeMemoryQueryService.confirmEntity.mockReset();
+  mocked.narrativeMemoryQueryService.rejectEntity.mockReset();
   mocked.narrativeMemoryQueryService.confirmEntityAlias.mockReset();
   mocked.narrativeMemoryQueryService.rejectEntityAlias.mockReset();
   mocked.narrativeMemoryQueryService.splitEntityAlias.mockReset();
@@ -136,6 +147,7 @@ export const resetInputValidationMocks = () => {
   mocked.narrativeMemoryQueryService.runIntentCalibration.mockReset();
   mocked.narrativeMemoryQueryService.runEpisodeCalibration.mockReset();
   mocked.narrativeSummaryStatusService.getStatus.mockReset();
+  mocked.packagePersistence.persistPackageAfterMutation.mockReset();
   mocked.logger.info.mockReset();
   mocked.logger.warn.mockReset();
   mocked.logger.debug.mockReset();
@@ -155,6 +167,9 @@ export const registerSearchInputHandlers = async (
     rejectFact?: unknown;
     resolveFactConflict?: unknown;
     listSuggestedEntityAliases?: unknown;
+    listSuggestedEntities?: unknown;
+    confirmEntity?: unknown;
+    rejectEntity?: unknown;
     confirmEntityAlias?: unknown;
     rejectEntityAlias?: unknown;
     splitEntityAlias?: unknown;
@@ -163,6 +178,7 @@ export const registerSearchInputHandlers = async (
     runIntentCalibration?: unknown;
     runEpisodeCalibration?: unknown;
   },
+  packagePersistence = mocked.packagePersistence,
 ) => {
   const { registerSearchIPCHandlers } =
     await import("../../../src/main/handler/search/ipcSearchHandlers.js");
@@ -174,6 +190,7 @@ export const registerSearchInputHandlers = async (
     sharedEmbeddingStatusServices(),
     narrativeMemoryQueryService,
     mocked.narrativeSummaryStatusService,
+    packagePersistence,
   );
 };
 

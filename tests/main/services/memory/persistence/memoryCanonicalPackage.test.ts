@@ -1,5 +1,20 @@
+import crypto from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import { applyMemoryCanonicalPackagePayload } from "../../../../../src/main/services/features/memory/persistence/memoryCanonicalPackage.js";
+import {
+  chapter,
+  db,
+  memoryEntity,
+  memoryEntityAlias,
+  memoryEpisode,
+  memoryEpisodeEvidence,
+  memoryFact,
+  memoryFactEvidence,
+  project,
+} from "../../../../../src/main/infra/database/index.js";
+import {
+  applyMemoryCanonicalPackagePayload,
+  buildMemoryCanonicalPackagePayload,
+} from "../../../../../src/main/services/features/memory/persistence/memoryCanonicalPackage.js";
 
 const createTx = () => {
   const inserted: unknown[] = [];
@@ -19,6 +34,177 @@ const createTx = () => {
 };
 
 describe("applyMemoryCanonicalPackagePayload", () => {
+  it("exports confirmed entity and fact rows with evidence anchors while excluding suggested candidates", async () => {
+    const projectId = crypto.randomUUID();
+    const chapterId = crypto.randomUUID();
+    const confirmedEntityId = crypto.randomUUID();
+    const suggestedEntityId = crypto.randomUUID();
+    const aliasId = crypto.randomUUID();
+    const episodeId = crypto.randomUUID();
+    const evidenceId = crypto.randomUUID();
+    const confirmedFactId = crypto.randomUUID();
+    const suggestedFactId = crypto.randomUUID();
+    const nowIso = "2026-06-08T00:00:00.000Z";
+
+    await db.getClient().insert(project).values({
+      id: projectId,
+      title: "Canonical Export",
+      description: null,
+      projectPath: null,
+      updatedAt: nowIso,
+    });
+    await db.getClient().insert(chapter).values({
+      id: chapterId,
+      projectId,
+      title: "1화",
+      content: "아린은 백야회에 들어갔다.",
+      order: 1,
+      updatedAt: nowIso,
+    });
+    await db.getClient().insert(memoryEntity).values([
+      {
+        id: confirmedEntityId,
+        projectId,
+        entityType: "character",
+        canonicalName: "아린",
+        status: "confirmed",
+        confidence: 90,
+        createdBy: "user",
+        updatedAt: nowIso,
+      },
+      {
+        id: suggestedEntityId,
+        projectId,
+        entityType: "character",
+        canonicalName: "검은 기사",
+        status: "suggested",
+        confidence: 70,
+        createdBy: "system",
+        updatedAt: nowIso,
+      },
+    ]);
+    await db.getClient().insert(memoryEntityAlias).values({
+      id: aliasId,
+      projectId,
+      entityId: confirmedEntityId,
+      entityType: "character",
+      alias: "주인공",
+      normalizedAlias: "주인공",
+      status: "confirmed",
+      updatedAt: nowIso,
+    });
+    await db.getClient().insert(memoryEpisode).values({
+      id: episodeId,
+      projectId,
+      sourceType: "chapter",
+      sourceId: chapterId,
+      chapterId,
+      sceneId: null,
+      sourceContentHash: "source-hash",
+      extractorVersion: "episode-v1",
+      episodeType: "event",
+      title: "아린의 가입",
+      summary: "아린이 백야회에 들어간다.",
+      status: "suggested",
+      confidence: 80,
+      updatedAt: nowIso,
+    });
+    await db.getClient().insert(memoryEpisodeEvidence).values({
+      id: evidenceId,
+      projectId,
+      episodeId,
+      chapterId,
+      chunkId: null,
+      contentHash: "content-hash",
+      sourceContentHash: "source-hash",
+      startOffset: 0,
+      endOffset: 12,
+      quote: "아린은 백야회에 들어갔다.",
+      updatedAt: nowIso,
+    });
+    await db.getClient().insert(memoryFact).values([
+      {
+        id: confirmedFactId,
+        projectId,
+        subjectEntityId: confirmedEntityId,
+        predicate: "belongs_to",
+        objectEntityId: null,
+        objectValue: "백야회",
+        valueType: "string",
+        validFromChapterId: chapterId,
+        validFromChapterOrder: 1,
+        validToChapterId: null,
+        validToChapterOrder: null,
+        observedAtChapterId: chapterId,
+        observedAtChapterOrder: 1,
+        confidence: 90,
+        status: "confirmed",
+        extractorVersion: "fact-v1",
+        sourceContentHash: "source-hash",
+        invalidatedByFactId: null,
+        updatedAt: nowIso,
+      },
+      {
+        id: suggestedFactId,
+        projectId,
+        subjectEntityId: confirmedEntityId,
+        predicate: "rank",
+        objectEntityId: null,
+        objectValue: "간부",
+        valueType: "string",
+        validFromChapterId: chapterId,
+        validFromChapterOrder: 1,
+        validToChapterId: null,
+        validToChapterOrder: null,
+        observedAtChapterId: chapterId,
+        observedAtChapterOrder: 1,
+        confidence: 60,
+        status: "suggested",
+        extractorVersion: "fact-v1",
+        sourceContentHash: "source-hash",
+        invalidatedByFactId: null,
+        updatedAt: nowIso,
+      },
+    ]);
+    await db.getClient().insert(memoryFactEvidence).values({
+      id: crypto.randomUUID(),
+      projectId,
+      factId: confirmedFactId,
+      evidenceId,
+      updatedAt: nowIso,
+    });
+
+    const payload = await buildMemoryCanonicalPackagePayload(projectId);
+
+    expect(payload.tables.MemoryEntity).toEqual([
+      expect.objectContaining({
+        id: confirmedEntityId,
+        status: "confirmed",
+      }),
+    ]);
+    expect(payload.tables.MemoryEntityAlias).toEqual([
+      expect.objectContaining({
+        id: aliasId,
+        status: "confirmed",
+      }),
+    ]);
+    expect(payload.tables.MemoryEpisode).toEqual([
+      expect.objectContaining({ id: episodeId }),
+    ]);
+    expect(payload.tables.MemoryEpisodeEvidence).toEqual([
+      expect.objectContaining({ id: evidenceId, episodeId }),
+    ]);
+    expect(payload.tables.MemoryFact).toEqual([
+      expect.objectContaining({
+        id: confirmedFactId,
+        status: "confirmed",
+      }),
+    ]);
+    expect(payload.tables.MemoryFactEvidence).toHaveLength(1);
+    expect(payload.tables.MemoryFact?.map((row) => row.id)).not.toContain(suggestedFactId);
+    expect(payload.tables.MemoryEntity?.map((row) => row.id)).not.toContain(suggestedEntityId);
+  });
+
   it("re-scopes imported canonical memory rows to the resolved project", () => {
     const { tx, inserted } = createTx();
 

@@ -15,6 +15,9 @@ describe("memory production calibration runner", () => {
     expect(source).toContain("runNarrativeMemoryIntentClassifierCalibration");
     expect(source).toContain("runLiveProjectEpisodeCalibration");
     expect(source).toContain("MemoryChunk");
+    expect(source).toContain("node:sqlite");
+    expect(source).not.toContain("bun:sqlite");
+    expect(source).not.toContain("better-sqlite3");
     expect(source).toContain("LUIE_RUNTIME_DATABASE_URL");
     expect(source).toContain("Application Support");
     expect(source).toContain("app-dev.db");
@@ -23,5 +26,15 @@ describe("memory production calibration runner", () => {
     expect(source).toContain("phase4");
     expect(source).toContain("phase4-live");
     expect(source).toContain("phase6");
+  });
+
+  it("is exposed through the pnpm script surface", () => {
+    const packageJson = JSON.parse(
+      readFileSync(resolve(process.cwd(), "package.json"), "utf8"),
+    ) as { scripts?: Record<string, string> };
+
+    expect(packageJson.scripts?.["memory:calibrate"]).toBe(
+      "tsx scripts/run-memory-production-calibration.ts",
+    );
   });
 });

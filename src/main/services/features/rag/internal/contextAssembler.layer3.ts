@@ -144,6 +144,7 @@ export async function buildLayer3Evidence(
     query: question,
     limit: 10,
     embedTexts,
+    parentWindow: { before: 1, after: 1 },
   });
 
   if (rows.length === 0) {
@@ -206,11 +207,18 @@ export async function buildLayer3Evidence(
     await logEvidenceGapDiagnostics(projectId, question);
   }
 
-  const section = evidence.length
-    ? evidence
+  const section = rows.length
+    ? rows
         .map((item, index) => {
           const n = index + 1;
-          return `[E${n}] chunk=${item.chunkId} chapter=${item.chapterId ?? "null"} offset=${item.offset}\n${item.quote}`;
+          const content = item.parentWindow?.content ?? item.content;
+          const windowStart = item.parentWindow?.startOffset ?? item.startOffset ?? 0;
+          const windowEnd = item.parentWindow?.endOffset ?? item.endOffset ?? null;
+          const windowSuffix =
+            item.parentWindow && item.parentWindow.chunkIds.length > 1
+              ? ` window=${item.parentWindow.chunkIds.join(",")} windowOffset=${windowStart}-${windowEnd ?? "null"}`
+              : "";
+          return `[E${n}] chunk=${item.chunkId} chapter=${item.chapterId ?? "null"} offset=${item.startOffset ?? 0}${windowSuffix}\n${trimByChars(content, EVIDENCE_QUOTE_CHAR_LIMIT)}`;
         })
         .join("\n\n")
     : "(no evidence found)";

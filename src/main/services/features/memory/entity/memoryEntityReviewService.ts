@@ -1,8 +1,9 @@
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, or, sql } from "drizzle-orm";
 import crypto from "node:crypto";
 import { db } from "../../../../database/main/databaseService.js";
 import {
   memoryCharacterState,
+  chapter,
   memoryEntity,
   memoryEntityAlias,
   memoryEntityMergeAudit,
@@ -21,8 +22,13 @@ import type {
   MemoryEntityAliasReviewQueueResult,
   MemoryEntityAliasSplitInput,
   MemoryEntityAliasSplitResult,
+  MemoryEntityConfirmInput,
   MemoryEntityMergeInput,
   MemoryEntityMergeResult,
+  MemoryEntityRejectInput,
+  MemoryEntityReviewMutationResult,
+  MemoryEntityReviewQueueInput,
+  MemoryEntityReviewQueueResult,
 } from "../../../../../shared/types/search.js";
 
 const DEFAULT_REVIEW_LIMIT = 50;
@@ -63,6 +69,110 @@ export async function listSuggestedMemoryEntityAliases(
     .limit(clampLimit(input.limit));
 
   return { items: rows };
+}
+
+export async function listSuggestedMemoryEntities(
+  input: MemoryEntityReviewQueueInput,
+): Promise<MemoryEntityReviewQueueResult> {
+  const rows = await db
+    .getClient()
+    .select({
+      id: memoryEntity.id,
+      projectId: memoryEntity.projectId,
+      entityType: memoryEntity.entityType,
+      canonicalName: memoryEntity.canonicalName,
+      status: memoryEntity.status,
+      confidence: memoryEntity.confidence,
+      createdBy: memoryEntity.createdBy,
+      createdAt: memoryEntity.createdAt,
+      updatedAt: memoryEntity.updatedAt,
+      mentionCount: sql<number>`count(${memoryEntityMention.id})`,
+      firstMentionChapterOrder: sql<number | null>`min(${chapter.order})`,
+      lastMentionChapterOrder: sql<number | null>`max(${chapter.order})`,
+    })
+    .from(memoryEntity)
+    .leftJoin(
+      memoryEntityMention,
+      and(
+        eq(memoryEntityMention.projectId, memoryEntity.projectId),
+        eq(memoryEntityMention.entityId, memoryEntity.id),
+      ),
+    )
+    .leftJoin(chapter, eq(chapter.id, memoryEntityMention.chapterId))
+    .where(
+      and(
+        eq(memoryEntity.projectId, input.projectId),
+        eq(memoryEntity.status, "suggested"),
+      ),
+    )
+    .groupBy(memoryEntity.id)
+    .orderBy(desc(memoryEntity.updatedAt))
+    .limit(clampLimit(input.limit));
+
+  return {
+    items: rows.map((row) => ({
+      ...row,
+      mentionCount: Number(row.mentionCount ?? 0),
+      firstMentionChapterOrder:
+        row.firstMentionChapterOrder === null
+          ? null
+          : Number(row.firstMentionChapterOrder),
+      lastMentionChapterOrder:
+        row.lastMentionChapterOrder === null
+          ? null
+          : Number(row.lastMentionChapterOrder),
+    })),
+  };
+}
+
+export async function confirmMemoryEntity(
+  input: MemoryEntityConfirmInput & { nowIso?: string },
+): Promise<MemoryEntityReviewMutationResult> {
+  const updated = await db
+    .getClient()
+    .update(memoryEntity)
+    .set({
+      status: "confirmed",
+      updatedAt: input.nowIso ?? new Date().toISOString(),
+    })
+    .where(
+      and(
+        eq(memoryEntity.projectId, input.projectId),
+        eq(memoryEntity.id, input.entityId),
+        eq(memoryEntity.status, "suggested"),
+      ),
+    );
+
+  return {
+    updated: updated.changes > 0,
+    status: updated.changes > 0 ? "confirmed" : undefined,
+    canonicalExportable: updated.changes > 0,
+  };
+}
+
+export async function rejectMemoryEntity(
+  input: MemoryEntityRejectInput & { nowIso?: string },
+): Promise<MemoryEntityReviewMutationResult> {
+  const updated = await db
+    .getClient()
+    .update(memoryEntity)
+    .set({
+      status: "rejected",
+      updatedAt: input.nowIso ?? new Date().toISOString(),
+    })
+    .where(
+      and(
+        eq(memoryEntity.projectId, input.projectId),
+        eq(memoryEntity.id, input.entityId),
+        eq(memoryEntity.status, "suggested"),
+      ),
+    );
+
+  return {
+    updated: updated.changes > 0,
+    status: updated.changes > 0 ? "rejected" : undefined,
+    canonicalExportable: updated.changes > 0,
+  };
 }
 
 export async function confirmMemoryEntityAlias(

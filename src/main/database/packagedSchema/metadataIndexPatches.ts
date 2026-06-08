@@ -53,6 +53,11 @@ USING fts5(
     sql: 'CREATE UNIQUE INDEX IF NOT EXISTS "MemoryChunk_id_projectId_key" ON "MemoryChunk"("id", "projectId");',
   },
   {
+    name: "MemoryChunk_projectId_source_paragraph_idx",
+    table: "MemoryChunk",
+    sql: 'CREATE INDEX IF NOT EXISTS "MemoryChunk_projectId_source_paragraph_idx" ON "MemoryChunk"("projectId", "sourceType", "sourceId", "paragraphStartIndex", "paragraphEndIndex");',
+  },
+  {
     name: "ChapterSummary_id_projectId_key",
     table: "ChapterSummary",
     sql: 'CREATE UNIQUE INDEX IF NOT EXISTS "ChapterSummary_id_projectId_key" ON "ChapterSummary"("id", "projectId");',

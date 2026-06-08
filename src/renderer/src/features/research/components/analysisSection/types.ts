@@ -1,6 +1,7 @@
 import type {
   LlmRuntimeInfo,
   MemoryConflictQueueItem,
+  MemoryEntityReviewItem,
   MemoryEntityAliasReviewItem,
   MemoryEpisodeReviewItem,
   MemoryEpisodeCalibrationResult,
@@ -67,6 +68,7 @@ export type AnalysisRagErrorPayload = RagQaErrorPayload;
 export type AnalysisRuntimeInfo = LlmRuntimeInfo | null;
 export type AnalysisSidecarStatus = UtilitySidecarStatus | null;
 export type AnalysisConflictItem = MemoryConflictQueueItem;
+export type AnalysisEntityReviewItem = MemoryEntityReviewItem;
 export type AnalysisEntityAliasReviewItem = MemoryEntityAliasReviewItem;
 export type AnalysisEpisodeReviewItem = MemoryEpisodeReviewItem;
 export type AnalysisFactReviewItem = MemoryTemporalFactReviewItem;

@@ -135,6 +135,15 @@ export type IoRendererApi = {
     getEntityAliasReviewQueue: (
       input: SharedTypes.MemoryEntityAliasReviewQueueInput,
     ) => Promise<IPCResponse<SharedTypes.MemoryEntityAliasReviewQueueResult>>;
+    getEntityReviewQueue: (
+      input: SharedTypes.MemoryEntityReviewQueueInput,
+    ) => Promise<IPCResponse<SharedTypes.MemoryEntityReviewQueueResult>>;
+    confirmEntity: (
+      input: SharedTypes.MemoryEntityConfirmInput,
+    ) => Promise<IPCResponse<SharedTypes.MemoryEntityReviewMutationResult>>;
+    rejectEntity: (
+      input: SharedTypes.MemoryEntityRejectInput,
+    ) => Promise<IPCResponse<SharedTypes.MemoryEntityReviewMutationResult>>;
     confirmEntityAlias: (
       input: SharedTypes.MemoryEntityAliasConfirmInput,
     ) => Promise<IPCResponse<SharedTypes.MemoryEntityAliasReviewMutationResult>>;
@@ -153,6 +162,9 @@ export type IoRendererApi = {
     getChunkBacklink: (
       chunkId: string,
     ) => Promise<IPCResponse<SharedTypes.MemoryChunkBacklink>>;
+    getChunkWindow: (
+      input: SharedTypes.MemoryChunkWindowQuery,
+    ) => Promise<IPCResponse<SharedTypes.MemoryChunkWindowResult>>;
     getChapterSummary: (
       chapterId: string,
     ) => Promise<IPCResponse<SharedTypes.ChapterSummaryResult | null>>;

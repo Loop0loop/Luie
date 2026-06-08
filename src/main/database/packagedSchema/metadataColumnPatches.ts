@@ -51,6 +51,16 @@ export const PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
     sql: 'ALTER TABLE "MemoryChunk" ADD COLUMN "sourceContentHash" TEXT NOT NULL DEFAULT \'\';',
   },
   {
+    table: "MemoryChunk",
+    column: "paragraphStartIndex",
+    sql: 'ALTER TABLE "MemoryChunk" ADD COLUMN "paragraphStartIndex" INTEGER NOT NULL DEFAULT 0;',
+  },
+  {
+    table: "MemoryChunk",
+    column: "paragraphEndIndex",
+    sql: 'ALTER TABLE "MemoryChunk" ADD COLUMN "paragraphEndIndex" INTEGER NOT NULL DEFAULT 0;',
+  },
+  {
     table: "Chapter",
     column: "wordCount",
     sql: 'ALTER TABLE "Chapter" ADD COLUMN "wordCount" INTEGER NOT NULL DEFAULT 0;',

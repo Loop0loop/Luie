@@ -39,6 +39,8 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
     "indexTextHash",
     "contextLabel",
     "sourceContentHash",
+    "paragraphStartIndex",
+    "paragraphEndIndex",
     "sceneId",
   ],
   MemoryBuildJob: [

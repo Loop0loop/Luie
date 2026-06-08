@@ -105,6 +105,8 @@ CREATE TABLE IF NOT EXISTS "MemoryChunk" (
     "sourceContentHash" TEXT NOT NULL DEFAULT '',
     "startOffset" INTEGER,
     "endOffset" INTEGER,
+    "paragraphStartIndex" INTEGER NOT NULL DEFAULT 0,
+    "paragraphEndIndex" INTEGER NOT NULL DEFAULT 0,
     "tokenCount" INTEGER NOT NULL DEFAULT 0,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,

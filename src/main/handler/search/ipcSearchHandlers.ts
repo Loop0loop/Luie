@@ -4,6 +4,10 @@ import type {
   MemoryEpisodeCalibrationRequest,
   MemoryEpisodeRejectInput,
   MemoryEpisodeReviewQueueInput,
+  MemoryChunkWindowQuery,
+  MemoryEntityConfirmInput,
+  MemoryEntityRejectInput,
+  MemoryEntityReviewQueueInput,
   MemoryEntityAliasConfirmInput,
   MemoryEntityAliasRejectInput,
   MemoryEntityAliasReviewQueueInput,
@@ -23,6 +27,7 @@ import {
   chapterIdSchema,
   memoryChunkIdSchema,
   memoryChunkSearchSchema,
+  memoryChunkWindowSchema,
   memoryConflictQueueQuerySchema,
   memoryEmbeddingStatusSchema,
   memoryEpisodeRejectSchema,
@@ -31,6 +36,9 @@ import {
   memoryEntityAliasRejectSchema,
   memoryEntityAliasReviewQueueSchema,
   memoryEntityAliasSplitSchema,
+  memoryEntityConfirmSchema,
+  memoryEntityRejectSchema,
+  memoryEntityReviewQueueSchema,
   memoryEntityMergeSchema,
   memoryEvalRunSchema,
   memoryEpisodeCalibrationRunSchema,
@@ -57,6 +65,7 @@ type SearchServiceLike = {
     limit?: number;
   }) => Promise<unknown>;
   getChunkBacklink: (chunkId: string) => Promise<unknown>;
+  getChunkWindow: (input: MemoryChunkWindowQuery) => Promise<unknown>;
 };
 
 type NarrativeMemoryQueryServiceLike = {
@@ -69,6 +78,9 @@ type NarrativeMemoryQueryServiceLike = {
   rejectFact: (input: MemoryTemporalFactRejectInput) => Promise<unknown>;
   resolveFactConflict: (input: MemoryTemporalFactConflictResolveInput) => Promise<unknown>;
   listSuggestedEntityAliases: (input: MemoryEntityAliasReviewQueueInput) => Promise<unknown>;
+  listSuggestedEntities: (input: MemoryEntityReviewQueueInput) => Promise<unknown>;
+  confirmEntity: (input: MemoryEntityConfirmInput) => Promise<unknown>;
+  rejectEntity: (input: MemoryEntityRejectInput) => Promise<unknown>;
   confirmEntityAlias: (input: MemoryEntityAliasConfirmInput) => Promise<unknown>;
   rejectEntityAlias: (input: MemoryEntityAliasRejectInput) => Promise<unknown>;
   splitEntityAlias: (input: MemoryEntityAliasSplitInput) => Promise<unknown>;
@@ -95,6 +107,14 @@ type NarrativeSummaryStatusServiceLike = {
   getStatus: (input: { projectId: string }) => Promise<unknown>;
 };
 
+type PackagePersistenceLike = {
+  persistPackageAfterMutation: (projectId: string, reason: string) => Promise<void>;
+};
+
+type MemoryReviewMutationResult = {
+  updated?: unknown;
+};
+
 type DbMaintenanceServiceLike = {
   getSearchIndexStatus: (projectId: string) => Promise<unknown>;
   rebuildSearchIndex: (projectId: string) => Promise<unknown>;
@@ -116,7 +136,20 @@ export function registerSearchIPCHandlers(
   embeddingProjector: EmbeddingProjectorLike,
   narrativeMemoryQueryService: NarrativeMemoryQueryServiceLike,
   narrativeSummaryStatusService?: NarrativeSummaryStatusServiceLike,
+  packagePersistence?: PackagePersistenceLike,
 ): void {
+  const persistAfterUpdatedReviewMutation = async (
+    projectId: string,
+    reason: string,
+    operation: () => Promise<unknown>,
+  ): Promise<unknown> => {
+    const result = (await operation()) as MemoryReviewMutationResult;
+    if (result?.updated === true) {
+      await packagePersistence?.persistPackageAfterMutation(projectId, reason);
+    }
+    return result;
+  };
+
   registerIpcHandlers(logger, [
     {
       channel: IPC_CHANNELS.SEARCH,
@@ -198,7 +231,9 @@ export function registerSearchIPCHandlers(
       failMessage: "Failed to reject episode",
       argsSchema: z.tuple([memoryEpisodeRejectSchema]),
       handler: (input: MemoryEpisodeRejectInput) =>
-        narrativeMemoryQueryService.rejectEpisode(input),
+        persistAfterUpdatedReviewMutation(input.projectId, "memory:episode-reject", () =>
+          narrativeMemoryQueryService.rejectEpisode(input),
+        ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_FACT_REVIEW_QUEUE,
@@ -214,7 +249,9 @@ export function registerSearchIPCHandlers(
       failMessage: "Failed to confirm fact",
       argsSchema: z.tuple([memoryTemporalFactConfirmSchema]),
       handler: (input: MemoryTemporalFactConfirmInput) =>
-        narrativeMemoryQueryService.confirmFact(input),
+        persistAfterUpdatedReviewMutation(input.projectId, "memory:fact-confirm", () =>
+          narrativeMemoryQueryService.confirmFact(input),
+        ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_FACT_REJECT,
@@ -222,7 +259,9 @@ export function registerSearchIPCHandlers(
       failMessage: "Failed to reject fact",
       argsSchema: z.tuple([memoryTemporalFactRejectSchema]),
       handler: (input: MemoryTemporalFactRejectInput) =>
-        narrativeMemoryQueryService.rejectFact(input),
+        persistAfterUpdatedReviewMutation(input.projectId, "memory:fact-reject", () =>
+          narrativeMemoryQueryService.rejectFact(input),
+        ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_CONFLICT_RESOLVE,
@@ -230,7 +269,9 @@ export function registerSearchIPCHandlers(
       failMessage: "Failed to resolve fact conflict",
       argsSchema: z.tuple([memoryTemporalFactConflictResolveSchema]),
       handler: (input: MemoryTemporalFactConflictResolveInput) =>
-        narrativeMemoryQueryService.resolveFactConflict(input),
+        persistAfterUpdatedReviewMutation(input.projectId, "memory:fact-conflict-resolve", () =>
+          narrativeMemoryQueryService.resolveFactConflict(input),
+        ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_ENTITY_ALIAS_REVIEW_QUEUE,
@@ -241,12 +282,42 @@ export function registerSearchIPCHandlers(
         narrativeMemoryQueryService.listSuggestedEntityAliases(input),
     },
     {
+      channel: IPC_CHANNELS.MEMORY_ENTITY_REVIEW_QUEUE,
+      logTag: "MEMORY_ENTITY_REVIEW_QUEUE",
+      failMessage: "Failed to get entity review queue",
+      argsSchema: z.tuple([memoryEntityReviewQueueSchema]),
+      handler: (input: MemoryEntityReviewQueueInput) =>
+        narrativeMemoryQueryService.listSuggestedEntities(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_ENTITY_CONFIRM,
+      logTag: "MEMORY_ENTITY_CONFIRM",
+      failMessage: "Failed to confirm entity",
+      argsSchema: z.tuple([memoryEntityConfirmSchema]),
+      handler: (input: MemoryEntityConfirmInput) =>
+        persistAfterUpdatedReviewMutation(input.projectId, "memory:entity-confirm", () =>
+          narrativeMemoryQueryService.confirmEntity(input),
+        ),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_ENTITY_REJECT,
+      logTag: "MEMORY_ENTITY_REJECT",
+      failMessage: "Failed to reject entity",
+      argsSchema: z.tuple([memoryEntityRejectSchema]),
+      handler: (input: MemoryEntityRejectInput) =>
+        persistAfterUpdatedReviewMutation(input.projectId, "memory:entity-reject", () =>
+          narrativeMemoryQueryService.rejectEntity(input),
+        ),
+    },
+    {
       channel: IPC_CHANNELS.MEMORY_ENTITY_ALIAS_CONFIRM,
       logTag: "MEMORY_ENTITY_ALIAS_CONFIRM",
       failMessage: "Failed to confirm entity alias",
       argsSchema: z.tuple([memoryEntityAliasConfirmSchema]),
       handler: (input: MemoryEntityAliasConfirmInput) =>
-        narrativeMemoryQueryService.confirmEntityAlias(input),
+        persistAfterUpdatedReviewMutation(input.projectId, "memory:entity-alias-confirm", () =>
+          narrativeMemoryQueryService.confirmEntityAlias(input),
+        ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_ENTITY_ALIAS_REJECT,
@@ -254,7 +325,9 @@ export function registerSearchIPCHandlers(
       failMessage: "Failed to reject entity alias",
       argsSchema: z.tuple([memoryEntityAliasRejectSchema]),
       handler: (input: MemoryEntityAliasRejectInput) =>
-        narrativeMemoryQueryService.rejectEntityAlias(input),
+        persistAfterUpdatedReviewMutation(input.projectId, "memory:entity-alias-reject", () =>
+          narrativeMemoryQueryService.rejectEntityAlias(input),
+        ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_ENTITY_ALIAS_SPLIT,
@@ -262,7 +335,9 @@ export function registerSearchIPCHandlers(
       failMessage: "Failed to split entity alias",
       argsSchema: z.tuple([memoryEntityAliasSplitSchema]),
       handler: (input: MemoryEntityAliasSplitInput) =>
-        narrativeMemoryQueryService.splitEntityAlias(input),
+        persistAfterUpdatedReviewMutation(input.projectId, "memory:entity-alias-split", () =>
+          narrativeMemoryQueryService.splitEntityAlias(input),
+        ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_ENTITY_MERGE,
@@ -270,7 +345,9 @@ export function registerSearchIPCHandlers(
       failMessage: "Failed to merge memory entity",
       argsSchema: z.tuple([memoryEntityMergeSchema]),
       handler: (input: MemoryEntityMergeInput) =>
-        narrativeMemoryQueryService.mergeEntity(input),
+        persistAfterUpdatedReviewMutation(input.projectId, "memory:entity-merge", () =>
+          narrativeMemoryQueryService.mergeEntity(input),
+        ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_RUN_EVAL_SUITE,
@@ -302,6 +379,14 @@ export function registerSearchIPCHandlers(
       failMessage: "Failed to get memory chunk backlink",
       argsSchema: z.tuple([memoryChunkIdSchema]),
       handler: (chunkId: string) => searchService.getChunkBacklink(chunkId),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_GET_CHUNK_WINDOW,
+      logTag: "MEMORY_GET_CHUNK_WINDOW",
+      failMessage: "Failed to get memory chunk window",
+      argsSchema: z.tuple([memoryChunkWindowSchema]),
+      handler: (input: MemoryChunkWindowQuery) =>
+        searchService.getChunkWindow(input),
     },
     {
       channel: IPC_CHANNELS.MEMORY_GET_CHAPTER_SUMMARY,

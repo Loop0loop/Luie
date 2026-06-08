@@ -11,8 +11,13 @@ import type {
   MemoryEntityAliasReviewQueueResult,
   MemoryEntityAliasSplitInput,
   MemoryEntityAliasSplitResult,
+  MemoryEntityConfirmInput,
   MemoryEntityMergeInput,
   MemoryEntityMergeResult,
+  MemoryEntityRejectInput,
+  MemoryEntityReviewMutationResult,
+  MemoryEntityReviewQueueInput,
+  MemoryEntityReviewQueueResult,
   MemoryEpisodeRejectInput,
   MemoryEpisodeRejectResult,
   MemoryEpisodeReviewQueueInput,
@@ -35,9 +40,12 @@ import type {
 } from "../../../../../shared/types/memoryEval.js";
 import { createLogger } from "../../../../../shared/logger/index.js";
 import {
+  confirmMemoryEntity,
   confirmMemoryEntityAlias,
+  listSuggestedMemoryEntities,
   listSuggestedMemoryEntityAliases,
   mergeMemoryEntities,
+  rejectMemoryEntity,
   rejectMemoryEntityAlias,
   splitMemoryEntityAlias,
 } from "../entity/memoryEntityReviewService.js";
@@ -360,6 +368,24 @@ export class NarrativeMemoryQueryService {
     input: MemoryEntityAliasReviewQueueInput,
   ): Promise<MemoryEntityAliasReviewQueueResult> {
     return await listSuggestedMemoryEntityAliases(input);
+  }
+
+  async listSuggestedEntities(
+    input: MemoryEntityReviewQueueInput,
+  ): Promise<MemoryEntityReviewQueueResult> {
+    return await listSuggestedMemoryEntities(input);
+  }
+
+  async confirmEntity(
+    input: MemoryEntityConfirmInput,
+  ): Promise<MemoryEntityReviewMutationResult> {
+    return await confirmMemoryEntity(input);
+  }
+
+  async rejectEntity(
+    input: MemoryEntityRejectInput,
+  ): Promise<MemoryEntityReviewMutationResult> {
+    return await rejectMemoryEntity(input);
   }
 
   async confirmEntityAlias(

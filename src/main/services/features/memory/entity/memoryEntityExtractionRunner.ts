@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import {
   db,
   memoryChunk,
@@ -69,6 +69,7 @@ export async function processMemoryEntityExtraction(input: {
     })
     .from(memoryChunk)
     .where(eq(memoryChunk.projectId, input.projectId))
+    .orderBy(asc(memoryChunk.sourceType), asc(memoryChunk.sourceId), asc(memoryChunk.chunkIndex))
     .limit(input.limit ?? 50);
 
   const candidates = await input.extractor({

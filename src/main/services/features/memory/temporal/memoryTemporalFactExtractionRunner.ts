@@ -11,7 +11,6 @@ import {
   createMemoryTemporalFactCandidate,
   type MemoryTemporalFactCandidateCreateInput,
 } from "./memoryTemporalFactCandidateService.js";
-import { llmTemporalFactExtractor } from "./memoryTemporalFactLlmExtractor.js";
 
 export type MemoryTemporalFactExtractionEvidence = {
   evidenceId: string;
@@ -152,6 +151,7 @@ export async function processPendingLlmTemporalFactExtraction(input: {
   if (!isLlmTemporalFactExtractionEnabled()) {
     return { extracted: 0 };
   }
+  const { llmTemporalFactExtractor } = await import("./memoryTemporalFactLlmExtractor.js");
   return await processPendingTemporalFactExtraction({
     ...input,
     extractor: llmTemporalFactExtractor,

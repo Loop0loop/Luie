@@ -192,6 +192,8 @@ class MemoryProjectionService {
               sourceContentHash,
               startOffset: chunkItem.startOffset,
               endOffset: chunkItem.endOffset,
+              paragraphStartIndex: chunkItem.paragraphStartIndex,
+              paragraphEndIndex: chunkItem.paragraphEndIndex,
               tokenCount: estimateTokenCountFromChars(chunkItem.content),
               createdAt: now,
               updatedAt: now,

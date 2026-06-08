@@ -225,6 +225,10 @@ describe("IPC input validation: narrative memory", () => {
 
     expect(response.success).toBe(true);
     expect(mocked.narrativeMemoryQueryService.confirmFact).toHaveBeenCalledWith(input);
+    expect(mocked.packagePersistence.persistPackageAfterMutation).toHaveBeenCalledWith(
+      input.projectId,
+      "memory:fact-confirm",
+    );
   });
 
   it("routes valid MEMORY_FACT_REJECT payloads to the memory review service", async () => {
@@ -294,6 +298,104 @@ describe("IPC input validation: narrative memory", () => {
     expect(
       mocked.narrativeMemoryQueryService.listSuggestedEntityAliases,
     ).toHaveBeenCalledWith(input);
+  });
+
+  it("routes valid MEMORY_ENTITY_REVIEW_QUEUE payloads to the memory review service", async () => {
+    mocked.narrativeMemoryQueryService.listSuggestedEntities.mockResolvedValue({
+      items: [],
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_ENTITY_REVIEW_QUEUE);
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      limit: 20,
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.narrativeMemoryQueryService.listSuggestedEntities).toHaveBeenCalledWith(
+      input,
+    );
+  });
+
+  it("routes valid MEMORY_ENTITY_CONFIRM payloads to the memory review service", async () => {
+    mocked.narrativeMemoryQueryService.confirmEntity.mockResolvedValue({
+      updated: true,
+      status: "confirmed",
+      canonicalExportable: true,
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_ENTITY_CONFIRM);
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      entityId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.narrativeMemoryQueryService.confirmEntity).toHaveBeenCalledWith(
+      input,
+    );
+    expect(mocked.packagePersistence.persistPackageAfterMutation).toHaveBeenCalledWith(
+      input.projectId,
+      "memory:entity-confirm",
+    );
+  });
+
+  it("does not persist .luie when entity confirmation did not update a row", async () => {
+    mocked.narrativeMemoryQueryService.confirmEntity.mockResolvedValue({
+      updated: false,
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_ENTITY_CONFIRM);
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      entityId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.packagePersistence.persistPackageAfterMutation).not.toHaveBeenCalled();
+  });
+
+  it("routes valid MEMORY_ENTITY_REJECT payloads to the memory review service", async () => {
+    mocked.narrativeMemoryQueryService.rejectEntity.mockResolvedValue({
+      updated: true,
+      status: "rejected",
+      canonicalExportable: true,
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_ENTITY_REJECT);
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      entityId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.narrativeMemoryQueryService.rejectEntity).toHaveBeenCalledWith(
+      input,
+    );
+    expect(mocked.packagePersistence.persistPackageAfterMutation).toHaveBeenCalledWith(
+      input.projectId,
+      "memory:entity-reject",
+    );
   });
 
   it("routes valid MEMORY_ENTITY_ALIAS_CONFIRM payloads to the memory review service", async () => {

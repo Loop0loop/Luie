@@ -9,7 +9,6 @@ import {
   memoryNarrativeSummarySource,
   project,
 } from "../../../../infra/database/index.js";
-import { utilityProcessBridge } from "../../utility/utilityProcessBridge.js";
 
 export type NarrativeHierarchyChapterSummary = {
   id: string;
@@ -138,6 +137,7 @@ async function llmSummarizer(
   projectId: string,
   input: HierarchySummarizerInput,
 ): Promise<HierarchySummaryDraft> {
+  const { utilityProcessBridge } = await import("../../utility/utilityProcessBridge.js");
   const generated = await utilityProcessBridge.generateText(
     projectId,
     buildHierarchyPrompt(input),

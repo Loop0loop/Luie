@@ -21,6 +21,8 @@ export const memoryChunk = sqliteTable(
     sourceContentHash: text("sourceContentHash").notNull().default(""),
     startOffset: integer("startOffset"),
     endOffset: integer("endOffset"),
+    paragraphStartIndex: integer("paragraphStartIndex").notNull().default(0),
+    paragraphEndIndex: integer("paragraphEndIndex").notNull().default(0),
     tokenCount: integer("tokenCount").notNull().default(0),
     createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updatedAt").notNull(),
@@ -29,6 +31,13 @@ export const memoryChunk = sqliteTable(
     index("MemoryChunk_projectId_source_idx").on(table.projectId, table.sourceType, table.sourceId),
     index("MemoryChunk_projectId_chapterId_idx").on(table.projectId, table.chapterId),
     index("MemoryChunk_projectId_sceneId_idx").on(table.projectId, table.sceneId),
+    index("MemoryChunk_projectId_source_paragraph_idx").on(
+      table.projectId,
+      table.sourceType,
+      table.sourceId,
+      table.paragraphStartIndex,
+      table.paragraphEndIndex,
+    ),
     uniqueIndex("MemoryChunk_id_projectId_key").on(table.id, table.projectId),
     uniqueIndex("MemoryChunk_source_chunkIndex_key").on(
       table.sourceType,

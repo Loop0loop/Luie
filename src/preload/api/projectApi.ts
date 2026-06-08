@@ -296,6 +296,12 @@ export function createProjectApi({
         safeInvoke(IPC_CHANNELS.MEMORY_CONFLICT_RESOLVE, input),
       getEntityAliasReviewQueue: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_REVIEW_QUEUE, input),
+      getEntityReviewQueue: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_REVIEW_QUEUE, input),
+      confirmEntity: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_CONFIRM, input),
+      rejectEntity: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_REJECT, input),
       confirmEntityAlias: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_CONFIRM, input),
       rejectEntityAlias: (input) =>
@@ -308,6 +314,8 @@ export function createProjectApi({
         safeInvoke(IPC_CHANNELS.MEMORY_SEARCH_CHUNKS, input),
       getChunkBacklink: (chunkId) =>
         safeInvoke(IPC_CHANNELS.MEMORY_GET_CHUNK_BACKLINK, chunkId),
+      getChunkWindow: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_GET_CHUNK_WINDOW, input),
       getChapterSummary: (chapterId) =>
         safeInvoke(IPC_CHANNELS.MEMORY_GET_CHAPTER_SUMMARY, chapterId),
       getNarrativeSummaryStatus: (projectId) =>

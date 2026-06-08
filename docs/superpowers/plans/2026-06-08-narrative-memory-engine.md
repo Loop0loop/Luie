@@ -225,6 +225,8 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Added a live project eval runner boundary that loads `MemoryEvalCase`/gold evidence/relation fixtures, runs an injected answerer, scores results, and persists `MemoryEvalRun`/`MemoryEvalResult` rows.
 - Added a renderer-safe memory eval IPC/API endpoint and analysis-panel eval report surface for running and viewing project memory eval results.
 - Added schema parity coverage through existing DB parity tests.
+- Added `pnpm run memory:materialize-eval-cases` to materialize gold eval cases from episode evidence without treating generated memory as confirmed canon.
+- Ran live eval-case materialization for project `454cce80-02b4-4d43-a162-4116898e4b4e` on 2026-06-08. Current live DB eval state: `MemoryEvalCase: 1`, `MemoryEvalEvidence: 1`.
 
 아직 미구현:
 
@@ -279,6 +281,16 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Added `MemoryChunk.indexText`, `indexTextHash`, `contextLabel`, and `sourceContentHash`.
 - Chunk FTS, short-token fallback, and embedding projection now use `indexText`.
 - Added coverage that a chapter title can be searched through contextual index text while returned chunk content remains raw.
+- Added renderer-safe parent-window expansion through `memory.getChunkWindow`, preserving the raw hit chunk while returning neighboring chunks from the same source with source/chapter/scene/offset/hash metadata.
+- RAG Layer 3 now expands search hits to a small parent window for answer context while keeping the evidence quote tied to the original raw hit chunk.
+- Added `pnpm run memory:rebuild-chunks` to queue/process normal `MemoryChunk` rebuild jobs through the main Drizzle services.
+- Rebuilt live dev DB chunks for project `454cce80-02b4-4d43-a162-4116898e4b4e` on 2026-06-08. Current live DB chunk health: `MemoryChunk: 35`, `missingIndexText: 0`, `missingContextLabel: 0`, `missingSourceHash: 0`.
+- Added `MemoryChunk.paragraphStartIndex` and `paragraphEndIndex` with Drizzle migration, packaged bootstrap/patch coverage, and a source paragraph lookup index.
+- `chunkText` now records paragraph ranges for both newline-delimited prose and the app's HTML paragraph storage format (`<p>...</p>`), so `.luie`-style content can be windowed by paragraph instead of only by byte offsets.
+- `memory.getChunkWindow` now accepts `unit: "paragraph"` and expands by neighboring paragraph ranges while retaining the existing chunk-window behavior as the default.
+- Rebuilt live dev DB chunks again after paragraph metadata support. Current live DB chunk state: `MemoryChunk: 69`, `paragraphStartIndex.min: 0`, `paragraphEndIndex.max: 513`, `missingIndexText: 0`, `missingContextLabel: 0`, `missingSourceHash: 0`.
+- Added `pnpm run memory:repair-evidence-links` to relink stale `MemoryEpisodeEvidence.chunkId` and `MemoryEntityMention.chunkId` rows after chunk rebuilds using source hash, offsets, and quote containment.
+- Ran evidence link repair on the live dev DB after the paragraph rebuild. Current live stale-link health: `staleEpisodeEvidence: 0`, `staleEntityMentions: 0`, `staleFactEvidence: 0`.
 
 - Memory canonical import/export now treats `MemoryEpisode` and `MemoryEpisodeEvidence` as canonical exportable anchors.
 - `MemoryFactEvidence` import remaps depend on both `MemoryFact` and `MemoryEpisodeEvidence`, preventing FK-dangling fact evidence after restore.
@@ -287,9 +299,7 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 
 아직 미구현:
 
-- Parent-window expansion API is not implemented yet.
-- Scene/paragraph hierarchical retrieval is not implemented yet.
-- Existing chunks need normal rebuild jobs before `indexText` is populated with contextual labels.
+- 확인된 Phase 2 미구현 항목 없음.
 
 ## Phase 3: Canonical Entity and Mention Layer
 
@@ -351,6 +361,8 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Added entity alias review, confirmation, rejection, merge, and split service/API/IPC/UI flows.
 - Added an injectable entity extraction runner boundary that reads memory chunks and stores suggested canonical entities, aliases, and evidence-backed mentions from LLM/deterministic extractor output.
 - Added a nullable `WorldEntity.memoryEntityId` bridge pointer with Drizzle migration, packaged bootstrap/metadata coverage, API validation support, and package export/import preservation.
+- Added `pnpm run memory:process-entities` for headless entity extraction through the real Drizzle-backed runner with an explicit remote runtime route.
+- Processed live dev DB chunks for project `454cce80-02b4-4d43-a162-4116898e4b4e` through the OpenAI remote route (`externalapi`, `gpt-4o-mini`) on 2026-06-08. Current live DB entity state: `MemoryEntity: 10`, `MemoryEntityMention: 10`, `MemoryEntityAlias: 0`.
 
 아직 미구현:
 
@@ -414,16 +426,21 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Chunk projection now enqueues `MemoryEpisodeExtractionJob` rows after source chunks are rebuilt, keyed by source content hash and extractor version.
 - Added an episode extraction processor boundary that claims pending jobs, passes source chunks to an injected extractor, stores suggested episode/evidence candidates, and marks jobs completed or retryable.
 - Added an LLM episode extractor boundary that prompts for evidence-backed episode JSON, parses structured output, and rejects evidence that references unknown chunks.
+- Added `pnpm run memory:process-episodes` for headless processing of pending episode extraction jobs through the real processor with an explicit remote runtime route.
 - Derived worker now includes pending `MemoryEpisodeExtractionJob` projects and runs LLM episode extraction behind `LUIE_ENABLE_LLM_EPISODE_EXTRACTION=1`.
 - Added episode review/rejection service and renderer-safe IPC/API contracts for listing suggested episodes and rejecting incorrect suggestions.
 - Added an analysis-panel episode review queue UI with rejection action for suggested episode candidates.
 - Added an offline episode extractor calibration harness that checks expected episode type/title/evidence chunk coverage without requiring a live LLM call.
 - Added default episode calibration cases and renderer-safe `memoryAdmin.runEpisodeCalibration` IPC/API support so the real LLM episode extractor route can be run from the analysis panel and reported with pass/fail details.
-- Added `scripts/run-memory-production-calibration.ts` for headless production-route calibration. Verified Phase 4 episode calibration against the real OpenAI remote route (`externalapi`, `gpt-4o-mini`) on 2026-06-08: 2/2 cases passed.
+- Added `scripts/run-memory-production-calibration.ts` for headless production-route calibration, exposed through `pnpm run memory:calibrate`.
+- Verified Phase 4 episode calibration against the real OpenAI remote route (`externalapi`, `gpt-4o-mini`) on 2026-06-08: 2/2 synthetic/default cases passed.
+- Fixed the live calibration runner to follow the Drizzle runtime DB path (`LUIE_RUNTIME_DATABASE_URL`, user-data `luie.db`, or `drizzle/app-dev.db`) instead of stale Prisma `DATABASE_URL` values.
+- Ran Phase 4 live calibration through `pnpm run memory:calibrate -- --phase phase4-live --project-id 454cce80-02b4-4d43-a162-4116898e4b4e --provider openai --openai-model gpt-4o-mini --limit 2` on 2026-06-08. It resolved `/Users/user/Luie/drizzle/app-dev.db`, used the real OpenAI remote route (`externalapi`, `gpt-4o-mini`), and passed on actual live project chunks: `sourceCount: 2`, `candidateCount: 1`, `evidenceCount: 3`, `unknownEvidenceCount: 0`, `failures: []`.
+- Processed the 8 live dev DB `MemoryEpisodeExtractionJob` rows through the OpenAI remote route (`externalapi`, `gpt-4o-mini`) on 2026-06-08. Current live DB episode state: `MemoryEpisodeExtractionJob.completed: 8`, `MemoryEpisode: 1`, `MemoryEpisodeEvidence: 2`, `MemoryStateChangeCandidate: 0`.
 
 아직 미구현:
 
-- No production calibration/eval run against live project data yet.
+- 확인된 Phase 4 미구현 항목 없음.
 
 ## Phase 5: Temporal Relation and State Graph
 
@@ -512,6 +529,9 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Added temporal fact review/rejection/confirmation service and renderer-safe IPC/API contracts for suggested fact candidates.
 - Added an analysis-panel fact review queue UI with confirm/reject actions.
 - Added a dedicated conflict-resolution action that confirms the selected fact and rejects the opposing conflicting fact in one transaction.
+- Added `pnpm run memory:process-temporal-facts` for headless temporal fact extraction through the real Drizzle-backed runner with an explicit remote runtime route.
+- Fixed headless temporal extraction to require complete relation/character/knowledge projection shapes and normalize `"null"` string values returned by the LLM into real `null` values before schema validation.
+- Processed live dev DB episode evidence for project `454cce80-02b4-4d43-a162-4116898e4b4e` through the OpenAI remote route (`externalapi`, `gpt-4o-mini`) on 2026-06-08. Current live DB temporal state: `MemoryFact: 1`, `MemoryFactEvidence: 2`, `MemoryKnowledgeState: 1`, `MemoryRelationState: 0`, `MemoryCharacterState: 0`.
 
 아직 미구현:
 
@@ -643,6 +663,11 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Entity visual identity cards now preserve and display canonical memory profile metadata from `NarrativeMemoryQueryService`, including status, alias chips, mention count, and first/last mention chapter range.
 - Added entity alias review queue service/API/IPC/UI for suggested canonical alias candidates.
 - Alias confirmation marks the alias and its canonical memory entity as `confirmed`; alias rejection marks the alias as `rejected` without changing the canonical entity status.
+- Added direct entity review queue service/API/IPC/UI for suggested canonical entities that have no alias candidates. Entity confirmation marks the entity as `confirmed` and canonical-exportable; entity rejection marks it as `rejected`.
+- Memory review mutations now trigger attached `.luie` persistence when they actually update a row: episode rejection, fact confirm/reject/conflict resolution, entity confirm/reject, alias confirm/reject/split, and entity merge.
+- Added `pnpm run memory:review-backlog` to produce a headless JSON review report for suggested entities and facts with mention/evidence quotes. It supports `--out <file>` so generated JSON is not polluted by runtime logs.
+- Added `pnpm run memory:review-template` to generate a decision JSON template from the current review backlog. It supports `--out <file>`, and generated actions are intentionally `TODO`, so applying the file without manual edits cannot mutate memory.
+- Added `pnpm run memory:apply-review-decisions -- --file <decisions.json>` for applying user-authored review decisions in batch. The decision file accepts `entities: [{ id, action: "confirm" | "reject" }]` and `facts: [{ id, action, reason? }]`; fact rejection requires a non-empty reason. Updated rows trigger a single attached `.luie` persistence pass.
 - Added entity merge service/API/IPC/UI for consolidating a suggested duplicate memory entity into a target canonical entity.
 - Entity merge reassigns aliases, mentions, participants, state-change candidates, temporal facts, and state projections from the source entity to the target entity, then marks the source entity as `deprecated`.
 - Added entity alias split service/API/IPC/UI for separating an incorrect alias into a new confirmed canonical memory entity.
@@ -715,6 +740,9 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Added automatic community hierarchy scheduling based on connected components of confirmed, non-invalidated relation facts after chapter-summary backlog is clear in the derived worker.
 - Added renderer-safe narrative summary status API/IPC and an analysis-panel hierarchy summary status surface that shows total summaries, type counts, source counts, and project-summary drift state.
 - The analysis-panel hierarchy summary surface now includes summary detail previews for project, arc, volume, and community summaries.
+- Added `pnpm run memory:process-narrative-summaries` for headless Phase 8 materialization: it creates non-fallback chapter summaries through an explicit remote runtime route, then generates the project-level narrative summary.
+- Fixed `memoryNarrativeSummaryRunner` so the Electron utility bridge is lazy-loaded only for the optional in-app LLM path; headless summary scripts can import the runner under Node.
+- Ran Phase 8 live materialization for project `454cce80-02b4-4d43-a162-4116898e4b4e` through the OpenAI remote route (`externalapi`, `gpt-4o-mini`) on 2026-06-08. Current live DB summary state: `ChapterSummary.nonFallback: 3`, `MemoryNarrativeSummary: 1`, `MemoryNarrativeSummarySource: 3`.
 
 아직 미구현:
 
@@ -774,6 +802,28 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - `MemoryFactEvidence` package export/import now restores through canonical/importable `MemoryEpisode` and `MemoryEpisodeEvidence` anchors and drops dangling evidence links when linked fact or episode evidence is filtered out.
 - Sync conflict resolution now includes user-approved canonical memory package payload rows through `memoryCanonical` conflict items and local/remote resolution keys.
 - Temporal fact confirmation now returns an explicit canonical export marker, and the analysis fact review UI labels confirmation as user approval into canonical memory.
+- Added `pnpm run memory:audit-canonical-export` to compare runtime memory rows, row-level exportability, and actual `.luie` payload rows.
+- The canonical export audit now reads the current attachment path through `ProjectAttachment` storage instead of only the legacy `Project.projectPath` column.
+- Added `pnpm run memory:export-canonical-package` to force an attached `.luie` export and verify the written `memory/canonical.json` payload.
+- Added `pnpm run memory:verify-canonical-package-sync` to compare the current DB-built canonical payload against the attached `.luie` `memory/canonical.json` by table and row id.
+- Added `pnpm run memory:phase-status` to produce a live DB status report for Phase 1/2/3/4/5/6/7/8/9, including canonical package sync, suggested review backlog, and a conservative ready-phase percentage.
+- Ran live Phase 9 export for project `454cce80-02b4-4d43-a162-4116898e4b4e` on 2026-06-08. Current attached package path: `/Users/user/Documents/New.luie`. The SQLite v2 `.luie` container now contains `memory/canonical.json` with `2` payload rows and `1554` bytes.
+- Ran live canonical package sync verification on 2026-06-08. Result: `inSync: true`, `totalDbRows: 2`, `totalPackageRows: 2`, with matching `MemoryEvalCase: 1` and `MemoryEvalEvidence: 1`.
+- Ran live phase status on 2026-06-08 with `pnpm run memory:phase-status -- --project-id 454cce80-02b4-4d43-a162-4116898e4b4e --out /tmp/luie-memory-phase-status.json`. Before review decisions, conservative progress was `5/9 ready phases = 56%`: Phase 1 eval `ready`, Phase 2 evidence `ready`, Phase 3 identity `needs-review`, Phase 4 episodes `ready`, Phase 5 temporal `needs-review`, Phase 6 query `needs-review`, Phase 7 UI `needs-review`, Phase 8 summary `ready`, Phase 9 package sync `ready`.
+- Current live canonical audit after export: `totalRuntimeRows: 18`, `totalExportableRows: 7`, `totalNonExportableRows: 11`, `totalPayloadRows: 2`. The payload rows are `MemoryEvalCase: 1` and `MemoryEvalEvidence: 1`.
+- Current generated entity/fact candidates remain intentionally non-exported: `MemoryEntity: 10 suggested -> payloadRows: 0`, `MemoryFact: 1 suggested -> payloadRows: 0`.
+- Applied the reviewed backlog decisions on 2026-06-08 through `pnpm run memory:apply-review-decisions -- --file /tmp/luie-memory-review-decisions.reviewed.json`. Result: `attempted: 11`, `updated: 11`, `failed: 0`, `persisted: true`. Entity review outcome: `confirmed: 6`, `rejected: 4`; temporal fact outcome: `confirmed: 1`.
+- Re-ran live review backlog after applying decisions. Result: `suggestedEntities: 0`, `suggestedFacts: 0`.
+- Re-ran live phase status after applying decisions. Current conservative progress is `9/9 ready phases = 100%`: Phase 1 eval `ready`, Phase 2 evidence `ready`, Phase 3 identity `ready`, Phase 4 episodes `ready`, Phase 5 temporal `ready`, Phase 6 query `ready`, Phase 7 UI `ready`, Phase 8 summary `ready`, Phase 9 package sync `ready`.
+- Re-ran live canonical package sync after applying decisions. Result: `inSync: true`, `totalDbRows: 18`, `totalPackageRows: 18`. `.luie` payload now includes `MemoryEntity: 10`, `MemoryEpisode: 1`, `MemoryEpisodeEvidence: 2`, `MemoryFact: 1`, `MemoryFactEvidence: 2`, `MemoryEvalCase: 1`, and `MemoryEvalEvidence: 1`.
+- Re-ran live canonical export audit after applying decisions. Result: `totalRuntimeRows: 18`, `totalExportableRows: 18`, `totalNonExportableRows: 0`, `totalPayloadRows: 18`.
+- Added package payload coverage proving confirmed `MemoryEntity`, `MemoryEntityAlias`, `MemoryFact`, `MemoryFactEvidence`, and their episode/evidence anchors are exported together, while suggested entity/fact candidates are excluded.
+- Added IPC validation coverage proving memory review approval triggers package persistence only when the mutation updated a row.
+- Added batch decision-apply coverage proving user-authored decisions can confirm/reject candidates and persist `.luie` once, while invalid fact rejections are reported without mutation.
+- Safe headless review flow: run `memory:review-backlog -- --out <report.json>`, generate `memory:review-template -- --out <decisions.json>`, edit every `TODO` action to `confirm` or `reject`, run `memory:apply-review-decisions -- --file <file> --dry-run`, then run without `--dry-run`.
+- Dry-run validation now initializes the runtime DB and reports invalid `TODO` actions, missing fact rejection reasons, missing candidate ids, and candidates that are no longer `suggested`, without DB mutation or `.luie` persistence.
+- Current live review backlog before user approval: `MemoryEntity.suggested: 10`, `MemoryFact.suggested: 1`.
+- Ran `pnpm run memory:review-backlog -- --project-id 454cce80-02b4-4d43-a162-4116898e4b4e --limit 20 --evidence-limit 2` on 2026-06-08. It returned 10 entity candidates and 1 fact candidate with evidence/mention quotes for manual review.
 
 아직 미구현:
 

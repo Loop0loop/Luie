@@ -57,6 +57,14 @@ export interface MemoryChunkSearchResult {
   startOffset: number | null;
   endOffset: number | null;
   score: number;
+  parentWindow?: {
+    chunkIds: string[];
+    content: string;
+    startOffset: number | null;
+    endOffset: number | null;
+    paragraphStartIndex: number | null;
+    paragraphEndIndex: number | null;
+  };
 }
 
 export interface MemoryChunkBacklink {
@@ -64,6 +72,43 @@ export interface MemoryChunkBacklink {
   chapterId: string | null;
   offset: number;
   endOffset: number | null;
+}
+
+export interface MemoryChunkWindowQuery {
+  projectId: string;
+  chunkId: string;
+  unit?: "chunk" | "paragraph";
+  before?: number;
+  after?: number;
+}
+
+export interface MemoryChunkWindowItem {
+  chunkId: string;
+  chunkIndex: number;
+  chapterId: string | null;
+  sceneId: string | null;
+  content: string;
+  startOffset: number | null;
+  endOffset: number | null;
+  paragraphStartIndex: number | null;
+  paragraphEndIndex: number | null;
+}
+
+export interface MemoryChunkWindowResult {
+  projectId: string;
+  anchorChunkId: string;
+  sourceType: string;
+  sourceId: string;
+  chapterId: string | null;
+  sceneId: string | null;
+  contextLabel: string | null;
+  sourceContentHash: string;
+  startOffset: number | null;
+  endOffset: number | null;
+  paragraphStartIndex: number | null;
+  paragraphEndIndex: number | null;
+  content: string;
+  chunks: MemoryChunkWindowItem[];
 }
 
 export interface ChapterSummaryResult {
@@ -417,6 +462,46 @@ export interface MemoryEntityAliasReviewQueueInput {
 
 export interface MemoryEntityAliasReviewQueueResult {
   items: MemoryEntityAliasReviewItem[];
+}
+
+export interface MemoryEntityReviewItem {
+  id: string;
+  projectId: string;
+  entityType: string;
+  canonicalName: string;
+  status: string;
+  confidence: number;
+  createdBy: string;
+  mentionCount: number;
+  firstMentionChapterOrder: number | null;
+  lastMentionChapterOrder: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MemoryEntityReviewQueueInput {
+  projectId: string;
+  limit?: number;
+}
+
+export interface MemoryEntityReviewQueueResult {
+  items: MemoryEntityReviewItem[];
+}
+
+export interface MemoryEntityConfirmInput {
+  projectId: string;
+  entityId: string;
+}
+
+export interface MemoryEntityRejectInput {
+  projectId: string;
+  entityId: string;
+}
+
+export interface MemoryEntityReviewMutationResult {
+  updated: boolean;
+  status?: "confirmed" | "rejected";
+  canonicalExportable?: boolean;
 }
 
 export interface MemoryEntityAliasConfirmInput {

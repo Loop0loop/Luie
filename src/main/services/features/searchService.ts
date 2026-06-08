@@ -2,7 +2,7 @@
  * Search service - 통합 검색 (고유명사 우선)
  */
 
-import { and, desc, eq, isNull, like, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, like, or, sql } from "drizzle-orm";
 import { db } from "../../infra/database/index.js";
 import { character, memoryChunk, term } from "../../infra/database/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
@@ -11,6 +11,8 @@ import type {
   MemoryChunkBacklink,
   MemoryChunkSearchQuery,
   MemoryChunkSearchResult,
+  MemoryChunkWindowQuery,
+  MemoryChunkWindowResult,
   SearchQuery,
 } from "../../../shared/types/index.js";
 import { ServiceError } from "../../utils/serviceError.js";
@@ -305,6 +307,146 @@ export class SearchService {
         ErrorCode.SEARCH_QUERY_FAILED,
         "Memory chunk backlink lookup failed",
         { chunkId },
+        error,
+      );
+    }
+  }
+
+  async getChunkWindow(input: MemoryChunkWindowQuery): Promise<MemoryChunkWindowResult> {
+    const before = Math.max(0, Math.min(input.before ?? 1, 10));
+    const after = Math.max(0, Math.min(input.after ?? 1, 10));
+
+    try {
+      const client = db.getClient();
+      const anchors = await client
+        .select({
+          id: memoryChunk.id,
+          projectId: memoryChunk.projectId,
+          sourceType: memoryChunk.sourceType,
+          sourceId: memoryChunk.sourceId,
+          chapterId: memoryChunk.chapterId,
+          sceneId: memoryChunk.sceneId,
+          chunkIndex: memoryChunk.chunkIndex,
+          contextLabel: memoryChunk.contextLabel,
+          sourceContentHash: memoryChunk.sourceContentHash,
+          paragraphStartIndex: memoryChunk.paragraphStartIndex,
+          paragraphEndIndex: memoryChunk.paragraphEndIndex,
+        })
+        .from(memoryChunk)
+        .where(
+          and(
+            eq(memoryChunk.projectId, input.projectId),
+            eq(memoryChunk.id, input.chunkId),
+          ),
+        )
+        .limit(1);
+
+      if (anchors.length === 0) {
+        throw new ServiceError(
+          ErrorCode.MEMORY_CHUNK_NOT_FOUND,
+          "Memory chunk not found",
+          { chunkId: input.chunkId, projectId: input.projectId },
+        );
+      }
+
+      const anchor = anchors[0];
+      const useParagraphWindow = input.unit === "paragraph";
+      const minIndex = anchor.chunkIndex - before;
+      const maxIndex = anchor.chunkIndex + after;
+      const minParagraphIndex = anchor.paragraphStartIndex - before;
+      const maxParagraphIndex = anchor.paragraphEndIndex + after;
+      const rows = await client
+        .select({
+          chunkId: memoryChunk.id,
+          chunkIndex: memoryChunk.chunkIndex,
+          chapterId: memoryChunk.chapterId,
+          sceneId: memoryChunk.sceneId,
+          content: memoryChunk.content,
+          startOffset: memoryChunk.startOffset,
+          endOffset: memoryChunk.endOffset,
+          paragraphStartIndex: memoryChunk.paragraphStartIndex,
+          paragraphEndIndex: memoryChunk.paragraphEndIndex,
+        })
+        .from(memoryChunk)
+        .where(
+          and(
+            eq(memoryChunk.projectId, anchor.projectId),
+            eq(memoryChunk.sourceType, anchor.sourceType),
+            eq(memoryChunk.sourceId, anchor.sourceId),
+            useParagraphWindow
+              ? sql`${memoryChunk.paragraphEndIndex} >= ${minParagraphIndex}
+                    AND ${memoryChunk.paragraphStartIndex} <= ${maxParagraphIndex}`
+              : sql`${memoryChunk.chunkIndex} BETWEEN ${minIndex} AND ${maxIndex}`,
+          ),
+        )
+        .orderBy(asc(memoryChunk.chunkIndex));
+
+      const startOffset = rows.reduce<number | null>(
+        (lowest, row) =>
+          row.startOffset === null
+            ? lowest
+            : lowest === null
+              ? row.startOffset
+              : Math.min(lowest, row.startOffset),
+        null,
+      );
+      const endOffset = rows.reduce<number | null>(
+        (highest, row) =>
+          row.endOffset === null
+            ? highest
+            : highest === null
+              ? row.endOffset
+              : Math.max(highest, row.endOffset),
+        null,
+      );
+      const paragraphStartIndex = rows.reduce<number | null>(
+        (lowest, row) =>
+          lowest === null
+            ? row.paragraphStartIndex
+            : Math.min(lowest, row.paragraphStartIndex),
+        null,
+      );
+      const paragraphEndIndex = rows.reduce<number | null>(
+        (highest, row) =>
+          highest === null
+            ? row.paragraphEndIndex
+            : Math.max(highest, row.paragraphEndIndex),
+        null,
+      );
+
+      return {
+        projectId: anchor.projectId,
+        anchorChunkId: anchor.id,
+        sourceType: anchor.sourceType,
+        sourceId: anchor.sourceId,
+        chapterId: anchor.chapterId ?? null,
+        sceneId: anchor.sceneId ?? null,
+        contextLabel: anchor.contextLabel ?? null,
+        sourceContentHash: anchor.sourceContentHash,
+        startOffset,
+        endOffset,
+        paragraphStartIndex,
+        paragraphEndIndex,
+        content: rows.map((row) => row.content).join("\n\n"),
+        chunks: rows.map((row) => ({
+          chunkId: row.chunkId,
+          chunkIndex: row.chunkIndex,
+          chapterId: row.chapterId ?? null,
+          sceneId: row.sceneId ?? null,
+          content: row.content,
+          startOffset: row.startOffset ?? null,
+          endOffset: row.endOffset ?? null,
+          paragraphStartIndex: row.paragraphStartIndex,
+          paragraphEndIndex: row.paragraphEndIndex,
+        })),
+      };
+    } catch (error) {
+      if (error instanceof ServiceError) throw error;
+      logger.error("Memory chunk window lookup failed", { input, error });
+      throw new ServiceError(
+        ErrorCode.SEARCH_QUERY_FAILED,
+        "Memory chunk window lookup failed",
+        { input },
         error,
       );
     }

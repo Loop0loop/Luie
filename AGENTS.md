@@ -10,7 +10,7 @@ Always Korean Prompt
 
 ## OVERVIEW
 
-Electron desktop app for long-form writing workflows. Stack: Electron 40 + React 19 + TypeScript 5 + Drizzle/SQLite + bun toolchain.
+Electron desktop app for long-form writing workflows. Stack: Electron 40 + React 19 + TypeScript 5 + Drizzle/SQLite + pnpm toolchain.
 
 ## STRUCTURE
 
@@ -34,7 +34,7 @@ Luie/
 | IPC contract additions          | `src/shared/ipc/channels.ts`, `src/main/handler/**`, `src/preload/api/**`                | Add channel/type/schema together; keep main/preload/renderer aligned    |
 | Renderer feature changes        | `src/renderer/src/features/**`                                                           | Feature-first folders; world graph lives under `research`               |
 | Shared constants/types          | `src/shared/constants/**`, `src/shared/types/**`                                         | Cross-process safe only                                                 |
-| Build or packaging issues       | `electron.vite.config.ts`, `electron-builder.json`, `scripts/**`, `.github/workflows/**` | bun scripts orchestrate build + package                                |
+| Build or packaging issues       | `electron.vite.config.ts`, `electron-builder.json`, `scripts/**`, `.github/workflows/**` | pnpm scripts orchestrate build + package                                |
 | Test behavior / env differences | `vitest.config.ts`, `tests/**`, `package.json` scripts                                   | `SKIP_DB_TEST_SETUP=1` appears in targeted suites                       |
 
 ## CODE MAP
@@ -50,7 +50,7 @@ Luie/
 
 ## CONVENTIONS (PROJECT-SPECIFIC)
 
-- Package manager is **bun** 
+- Package manager is **pnpm** 
 - TypeScript strictness is tightened with `noUnusedLocals`, `noUnusedParameters`, `noImplicitReturns`, `noFallthroughCasesInSwitch`.
 - Aliases: `@renderer/* -> src/renderer/src/*`, `@shared/* -> src/shared/*`.
 - Build flow usually requires pre steps (`predev`, `postinstall` include Electron rebuild work).
@@ -72,14 +72,14 @@ Luie/
 ## COMMANDS
 
 ```bash
-bun dev
-bun run typecheck
-bun run build
-bun run lint
-bun run qa:core
-SKIP_DB_TEST_SETUP=1 bun vitest tests/renderer/hooks/canvasBlockNameGeneration.test.ts
-bun run build:mac:arm64
-bun run build:win:x64
+pnpm dev
+pnpm run typecheck
+pnpm run build
+pnpm run lint
+pnpm run qa:core
+SKIP_DB_TEST_SETUP=1 pnpm vitest tests/renderer/hooks/canvasBlockNameGeneration.test.ts
+pnpm run build:mac:arm64
+pnpm run build:win:x64
 ```
 
 ## NOTES

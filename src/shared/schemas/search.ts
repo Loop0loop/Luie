@@ -92,6 +92,21 @@ export const memoryEntityAliasReviewQueueSchema = z.object({
   limit: z.number().int().positive().max(200).optional(),
 });
 
+export const memoryEntityReviewQueueSchema = z.object({
+  projectId: projectIdSchema,
+  limit: z.number().int().positive().max(200).optional(),
+});
+
+export const memoryEntityConfirmSchema = z.object({
+  projectId: projectIdSchema,
+  entityId: z.string().uuid("Invalid entity ID"),
+});
+
+export const memoryEntityRejectSchema = z.object({
+  projectId: projectIdSchema,
+  entityId: z.string().uuid("Invalid entity ID"),
+});
+
 export const memoryEntityAliasConfirmSchema = z.object({
   projectId: projectIdSchema,
   aliasId: z.string().uuid("Invalid alias ID"),
@@ -115,6 +130,13 @@ export const memoryEntityAliasSplitSchema = z.object({
 });
 
 export const memoryChunkIdSchema = z.string().uuid("Invalid chunk ID");
+export const memoryChunkWindowSchema = z.object({
+  projectId: projectIdSchema,
+  chunkId: memoryChunkIdSchema,
+  unit: z.enum(["chunk", "paragraph"]).optional(),
+  before: z.number().int().min(0).max(10).optional(),
+  after: z.number().int().min(0).max(10).optional(),
+});
 export const memoryChapterSummaryIdSchema = chapterIdSchema;
 
 export const rebuildMemoryChunksSchema = z.object({

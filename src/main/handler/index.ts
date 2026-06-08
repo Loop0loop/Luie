@@ -82,6 +82,7 @@ export async function registerAllIPCHandlers(): Promise<void> {
     narrativeSummaryStatusService: {
       getStatus: getNarrativeSummaryStatus,
     },
+    packagePersistence: projectService,
   });
 
   registerSystemHandlers({

@@ -12,6 +12,7 @@ import { Button } from "@renderer/components/ui/button";
 import {
   type AnalysisConflictItem,
   type AnalysisEntityAliasReviewItem,
+  type AnalysisEntityReviewItem,
   type AnalysisEpisodeReviewItem,
   type AnalysisEpisodeCalibrationReport,
   type AnalysisFactReviewItem,
@@ -28,6 +29,7 @@ import {
 } from "./analysisSection/types";
 import { ConflictQueuePanel } from "./analysisSection/ConflictQueuePanel";
 import { EntityAliasReviewPanel } from "./analysisSection/EntityAliasReviewPanel";
+import { EntityReviewPanel } from "./analysisSection/EntityReviewPanel";
 import { EpisodeReviewPanel } from "./analysisSection/EpisodeReviewPanel";
 import { FactReviewPanel } from "./analysisSection/FactReviewPanel";
 import { MessageList } from "./analysisSection/MessageList";
@@ -82,6 +84,11 @@ export default function AnalysisSection() {
   const [factReviewLoading, setFactReviewLoading] = useState(false);
   const [factReviewError, setFactReviewError] = useState<string | null>(null);
   const [mutatingFactId, setMutatingFactId] = useState<string | null>(null);
+  const [showEntityReview, setShowEntityReview] = useState(false);
+  const [entityReviewItems, setEntityReviewItems] = useState<AnalysisEntityReviewItem[]>([]);
+  const [entityReviewLoading, setEntityReviewLoading] = useState(false);
+  const [entityReviewError, setEntityReviewError] = useState<string | null>(null);
+  const [mutatingEntityId, setMutatingEntityId] = useState<string | null>(null);
   const [showEntityAliasReview, setShowEntityAliasReview] = useState(false);
   const [entityAliasReviewItems, setEntityAliasReviewItems] = useState<
     AnalysisEntityAliasReviewItem[]
@@ -321,6 +328,40 @@ export default function AnalysisSection() {
       cancelled = true;
     };
   }, [currentProject?.id, showEntityAliasReview]);
+
+  useEffect(() => {
+    if (!showEntityReview || !currentProject?.id) {
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      setEntityReviewLoading(true);
+      setEntityReviewError(null);
+
+      try {
+        const response = await api.memory.getEntityReviewQueue({
+          projectId: currentProject.id,
+          limit: 20,
+        });
+        if (cancelled) return;
+        if (!response.success || !response.data) {
+          setEntityReviewError(response.error?.message ?? "엔티티 검토 큐 조회 실패");
+          setEntityReviewItems([]);
+          return;
+        }
+        setEntityReviewItems(response.data.items);
+      } finally {
+        if (!cancelled) {
+          setEntityReviewLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentProject?.id, showEntityReview]);
 
   useEffect(() => {
     if (!showNarrativeSummaryStatus || !currentProject?.id) {
@@ -629,6 +670,68 @@ export default function AnalysisSection() {
     [currentProject?.id, dialog, showToast],
   );
 
+  const handleConfirmEntity = useCallback(
+    async (item: AnalysisEntityReviewItem) => {
+      if (!currentProject?.id) {
+        return;
+      }
+
+      setMutatingEntityId(item.id);
+      try {
+        const response = await api.memory.confirmEntity({
+          projectId: currentProject.id,
+          entityId: item.id,
+        });
+        if (!response.success || !response.data?.updated) {
+          showToast(response.error?.message ?? "엔티티 확정 실패", "error");
+          return;
+        }
+        setEntityReviewItems((prev) =>
+          prev.filter((entity) => entity.id !== item.id),
+        );
+        showToast("엔티티 후보를 canonical memory로 승인했습니다.", "info");
+      } finally {
+        setMutatingEntityId(null);
+      }
+    },
+    [currentProject?.id, showToast],
+  );
+
+  const handleRejectEntity = useCallback(
+    async (item: AnalysisEntityReviewItem) => {
+      if (!currentProject?.id) {
+        return;
+      }
+
+      const confirmed = await dialog.confirm({
+        title: "엔티티 거절",
+        message: `${item.canonicalName} 후보를 거절합니다.`,
+      });
+      if (!confirmed) {
+        return;
+      }
+
+      setMutatingEntityId(item.id);
+      try {
+        const response = await api.memory.rejectEntity({
+          projectId: currentProject.id,
+          entityId: item.id,
+        });
+        if (!response.success || !response.data?.updated) {
+          showToast(response.error?.message ?? "엔티티 거절 실패", "error");
+          return;
+        }
+        setEntityReviewItems((prev) =>
+          prev.filter((entity) => entity.id !== item.id),
+        );
+        showToast("엔티티 후보를 거절했습니다.", "info");
+      } finally {
+        setMutatingEntityId(null);
+      }
+    },
+    [currentProject?.id, dialog, showToast],
+  );
+
   const handleConfirmEntityAlias = useCallback(
     async (item: AnalysisEntityAliasReviewItem) => {
       if (!currentProject?.id) {
@@ -868,6 +971,16 @@ export default function AnalysisSection() {
           onToggle={() => setShowFactReview((prev) => !prev)}
           onConfirm={(item) => void handleConfirmFact(item)}
           onReject={(item) => void handleRejectFact(item)}
+        />
+        <EntityReviewPanel
+          visible={showEntityReview}
+          loading={entityReviewLoading}
+          error={entityReviewError}
+          items={entityReviewItems}
+          mutatingEntityId={mutatingEntityId}
+          onToggle={() => setShowEntityReview((prev) => !prev)}
+          onConfirm={(item) => void handleConfirmEntity(item)}
+          onReject={(item) => void handleRejectEntity(item)}
         />
         <EntityAliasReviewPanel
           visible={showEntityAliasReview}

@@ -12,9 +12,12 @@ import {
   project,
 } from "../../../../../src/main/infra/database/index.js";
 import {
+  confirmMemoryEntity,
   confirmMemoryEntityAlias,
+  listSuggestedMemoryEntities,
   listSuggestedMemoryEntityAliases,
   mergeMemoryEntities,
+  rejectMemoryEntity,
   rejectMemoryEntityAlias,
   splitMemoryEntityAlias,
 } from "../../../../../src/main/services/features/memory/entity/memoryEntityReviewService.js";
@@ -99,6 +102,63 @@ describe("memoryEntityReviewService", () => {
 
     expect(aliasRow.status).toBe("confirmed");
     expect(entityRow.status).toBe("confirmed");
+  });
+
+  it("lists suggested entities and confirms one as canonical exportable memory", async () => {
+    const seed = await seedAlias();
+
+    const list = await listSuggestedMemoryEntities({
+      projectId: seed.projectId,
+      limit: 20,
+    });
+    expect(list.items).toEqual([
+      expect.objectContaining({
+        id: seed.entityId,
+        canonicalName: "아린",
+        status: "suggested",
+        mentionCount: 0,
+      }),
+    ]);
+
+    const result = await confirmMemoryEntity({
+      projectId: seed.projectId,
+      entityId: seed.entityId,
+      nowIso: seed.nowIso,
+    });
+
+    expect(result).toEqual({
+      updated: true,
+      status: "confirmed",
+      canonicalExportable: true,
+    });
+    const [entityRow] = await db
+      .getClient()
+      .select()
+      .from(memoryEntity)
+      .where(eq(memoryEntity.id, seed.entityId));
+    expect(entityRow.status).toBe("confirmed");
+  });
+
+  it("rejects a suggested entity as reviewed canonical memory", async () => {
+    const seed = await seedAlias();
+
+    const result = await rejectMemoryEntity({
+      projectId: seed.projectId,
+      entityId: seed.entityId,
+      nowIso: seed.nowIso,
+    });
+
+    expect(result).toEqual({
+      updated: true,
+      status: "rejected",
+      canonicalExportable: true,
+    });
+    const [entityRow] = await db
+      .getClient()
+      .select()
+      .from(memoryEntity)
+      .where(eq(memoryEntity.id, seed.entityId));
+    expect(entityRow.status).toBe("rejected");
   });
 
   it("rejects a suggested alias without changing the canonical entity", async () => {
