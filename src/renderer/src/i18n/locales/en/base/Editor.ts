@@ -1,4 +1,5 @@
 export const enBaseEditor = {
+  editor: {
     layoutTitle: "Luie Editor",
     selectTabPrompt: "← Select a tab",
     placeholder: {
@@ -21,4 +22,5 @@ export const enBaseEditor = {
       exportNoChapter: "Select a chapter before exporting.",
       exportOpenFailed: "Unable to open the export window.",
     },
-  };
+  },
+} as const;

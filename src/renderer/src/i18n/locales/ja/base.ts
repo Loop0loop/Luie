@@ -1,49 +1,15 @@
-import {
-  jaBaseHome,
-  jaBaseShare,
-  jaBaseLoading,
-  jaBaseBack,
-  jaBaseDelete,
-  jaBaseUndo,
-  jaBaseClear,
-  jaBaseExit,
-  jaBaseMenu,
-  jaBaseSettings,
-  jaBaseUi,
-  jaBaseBootstrap,
-  jaBaseErrorBoundary,
-  jaBaseProject,
-  jaBaseSidebar,
-  jaBaseResearch,
-  jaBaseContext,
-  jaBaseMemo,
-  jaBaseEditor,
-  jaBaseStartupWizard,
-  jaBaseToolbar,
-  jaBaseCanvas
-} from "./base/index";
+import { jaBaseCore } from "./base/core";
+import { jaBaseSettings } from "./base/settings";
+import { jaBaseSettingsAdvanced } from "./base/settingsAdvanced";
+import { jaBaseResearch } from "./base/research";
+import { jaBaseEditor } from "./base/editor";
 
 export const jaBase = {
-  home: jaBaseHome,
-  share: jaBaseShare,
-  loading: jaBaseLoading,
-  back: jaBaseBack,
-  delete: jaBaseDelete,
-  undo: jaBaseUndo,
-  clear: jaBaseClear,
-  exit: jaBaseExit,
-  menu: jaBaseMenu,
-  settings: jaBaseSettings,
-  ui: jaBaseUi,
-  bootstrap: jaBaseBootstrap,
-  errorBoundary: jaBaseErrorBoundary,
-  project: jaBaseProject,
-  sidebar: jaBaseSidebar,
-  research: jaBaseResearch,
-  context: jaBaseContext,
-  memo: jaBaseMemo,
-  editor: jaBaseEditor,
-  startupWizard: jaBaseStartupWizard,
-  toolbar: jaBaseToolbar,
-  canvas: jaBaseCanvas,
+  ...jaBaseCore,
+  settings: {
+    ...jaBaseSettings.settings,
+    ...jaBaseSettingsAdvanced.settings,
+  },
+  ...jaBaseResearch,
+  ...jaBaseEditor,
 } as const;

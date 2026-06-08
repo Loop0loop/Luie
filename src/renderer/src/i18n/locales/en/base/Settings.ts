@@ -1,45 +1,151 @@
-import {
-  enBaseSettingsTitle,
-  enBaseSettingsSidebar,
-  enBaseSettingsSection,
-  enBaseSettingsCustomFont,
-  enBaseSettingsUiMode,
-  enBaseSettingsMenuBar,
-  enBaseSettingsLocalLlm,
-  enBaseSettingsAppearance,
-  enBaseSettingsView,
-  enBaseSettingsFont,
-  enBaseSettingsOptionalFont,
-  enBaseSettingsSpellcheck,
-  enBaseSettingsTheme,
-  enBaseSettingsSampleText,
-  enBaseSettingsLanguage,
-  enBaseSettingsPlaceholder,
-  enBaseSettingsShortcuts,
-  enBaseSettingsRecovery,
-  enBaseSettingsSync,
-  enBaseSettingsProjectTemplate
-} from "./Settings/index";
-
 export const enBaseSettings = {
-  title: enBaseSettingsTitle,
-  sidebar: enBaseSettingsSidebar,
-  section: enBaseSettingsSection,
-  customFont: enBaseSettingsCustomFont,
-  uiMode: enBaseSettingsUiMode,
-  menuBar: enBaseSettingsMenuBar,
-  localLlm: enBaseSettingsLocalLlm,
-  appearance: enBaseSettingsAppearance,
-  view: enBaseSettingsView,
-  font: enBaseSettingsFont,
-  optionalFont: enBaseSettingsOptionalFont,
-  spellcheck: enBaseSettingsSpellcheck,
-  theme: enBaseSettingsTheme,
-  sampleText: enBaseSettingsSampleText,
-  language: enBaseSettingsLanguage,
-  placeholder: enBaseSettingsPlaceholder,
-  shortcuts: enBaseSettingsShortcuts,
-  recovery: enBaseSettingsRecovery,
-  sync: enBaseSettingsSync,
-  projectTemplate: enBaseSettingsProjectTemplate,
+  settings: {
+    title: "Display Settings",
+    sidebar: {
+      section: {
+        manuscript: "Manuscript",
+        research: "Research",
+        snapshot: "Snapshots",
+        trash: "Trash",
+      },
+      item: {
+        characters: "Characters",
+        world: "World",
+        scrap: "Scrap",
+        analysis: "Analysis",
+      },
+      addChapter: "Add chapter",
+      snapshotEmpty: "No chapter selected or no snapshots found.",
+      trashEmpty: "Trash is empty.",
+      tooltip: {
+        refresh: "Refresh",
+      },
+      editor: "Fonts (Editor)",
+      appearance: "Theme (Appearance)",
+      features: "Features",
+      shortcuts: "Shortcuts",
+      recovery: "File Recovery",
+      sync: "Sync",
+      model: "Model",
+      language: "Language",
+    },
+    section: {
+      font: "Font",
+      optionalFont: "Optional Bundled Font",
+      customFont: "Custom Font",
+      spellcheck: "Spell Check",
+      fontSize: "Font Size",
+      lineHeight: "Line Height",
+      theme: "Theme",
+      uiMode: "UI Mode (Laboratory)",
+      language: "Language",
+      menuBar: "Menu Bar",
+    },
+    customFont: {
+      description:
+        "Enter the font-family name of a font installed on your system.",
+      placeholder: 'e.g., "Noto Sans KR", "Pretendard"',
+      apply: "Apply",
+      active: "Active",
+    },
+    uiMode: {
+      description: "Change the editor toolbar and layout to a familiar style.",
+      default: "Default",
+      docs: "Google Docs Style",
+      editor: "Editor Mode",
+      scrivener: "Scrivener Style",
+    },
+    menuBar: {
+      description:
+        "On macOS, hide mode switches the window into immersive fullscreen.",
+      hide: "Hide menu bar",
+      show: "Show menu bar",
+      applyHint:
+        "Changes apply immediately. (Hide: fullscreen, Show: windowed)",
+      applyFailed: "Failed to apply the menu bar mode. Please try again.",
+    },
+    appearance: {
+      baseTheme: {
+        title: "Base Theme",
+        description: "Choose the baseline brightness and tone.",
+      },
+      accent: {
+        title: "Accent Color",
+        description: "Choose colors for key actions and highlights.",
+      },
+      texture: {
+        title: "Texture",
+        description: "Apply subtle paper-like grain in the background.",
+        on: "On",
+        off: "Off",
+      },
+      contrast: {
+        title: "Contrast",
+        description: "Adjust visual sharpness of the interface.",
+        soft: "Soft",
+        high: "High",
+      },
+      atmosphere: {
+        title: "Atmosphere",
+        description: "Pick a color temperature that matches your writing flow.",
+        cool: {
+          title: "Cool",
+          description: "Focus / analysis / rational tone",
+        },
+        neutral: {
+          title: "Neutral",
+          description: "Default / clean",
+        },
+        warm: {
+          title: "Warm",
+          description: "Narrative / emotion / comfort",
+        },
+      },
+    },
+    view: {
+      pc: "PC",
+      mobile: "Mobile",
+    },
+    font: {
+      systemUi: "System UI",
+      serif: "Serif",
+      mono: "Mono",
+      helper: {
+        primary:
+          "System fonts are used by default. Inter is available as an optional bundled font.",
+        optional:
+          "Only installed fonts can be applied. Otherwise, fallback fonts are used.",
+      },
+    },
+    optionalFont: {
+      inter: "Inter Variable",
+      action: {
+        installing: "Loading",
+        install: "Use Inter",
+        apply: "Apply",
+        active: "Active",
+      },
+    },
+    spellcheck: {
+      description:
+        "Turn Electron's built-in spellcheck underlines and suggestions on or off.",
+      on: "On",
+      off: "Off",
+    },
+    theme: {
+      light: "Light",
+      sepia: "Sepia",
+      dark: "Dark",
+    },
+    sampleText: "Ag",
+    language: {
+      helper: "Change the language across the app.",
+      options: {
+        ko: "Korean",
+        en: "English",
+        ja: "Japanese",
+      },
+    },
+    placeholder: "This feature is coming soon.",
+  },
 } as const;

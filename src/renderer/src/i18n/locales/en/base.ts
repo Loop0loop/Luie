@@ -1,49 +1,15 @@
-import {
-  enBaseHome,
-  enBaseShare,
-  enBaseLoading,
-  enBaseBack,
-  enBaseDelete,
-  enBaseUndo,
-  enBaseClear,
-  enBaseExit,
-  enBaseMenu,
-  enBaseSettings,
-  enBaseUi,
-  enBaseBootstrap,
-  enBaseErrorBoundary,
-  enBaseProject,
-  enBaseSidebar,
-  enBaseResearch,
-  enBaseContext,
-  enBaseMemo,
-  enBaseEditor,
-  enBaseStartupWizard,
-  enBaseToolbar,
-  enBaseCanvas
-} from "./base/index";
+import { enBaseCore } from "./base/core";
+import { enBaseSettings } from "./base/settings";
+import { enBaseSettingsAdvanced } from "./base/settingsAdvanced";
+import { enBaseResearch } from "./base/research";
+import { enBaseEditor } from "./base/editor";
 
 export const enBase = {
-  home: enBaseHome,
-  share: enBaseShare,
-  loading: enBaseLoading,
-  back: enBaseBack,
-  delete: enBaseDelete,
-  undo: enBaseUndo,
-  clear: enBaseClear,
-  exit: enBaseExit,
-  menu: enBaseMenu,
-  settings: enBaseSettings,
-  ui: enBaseUi,
-  bootstrap: enBaseBootstrap,
-  errorBoundary: enBaseErrorBoundary,
-  project: enBaseProject,
-  sidebar: enBaseSidebar,
-  research: enBaseResearch,
-  context: enBaseContext,
-  memo: enBaseMemo,
-  editor: enBaseEditor,
-  startupWizard: enBaseStartupWizard,
-  toolbar: enBaseToolbar,
-  canvas: enBaseCanvas,
+  ...enBaseCore,
+  settings: {
+    ...enBaseSettings.settings,
+    ...enBaseSettingsAdvanced.settings,
+  },
+  ...enBaseResearch,
+  ...enBaseEditor,
 } as const;

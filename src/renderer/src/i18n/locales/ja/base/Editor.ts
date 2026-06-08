@@ -1,4 +1,5 @@
 export const jaBaseEditor = {
+  editor: {
     layoutTitle: "Luie Editor",
     selectTabPrompt: "← タブを選択してください",
     placeholder: {
@@ -21,4 +22,5 @@ export const jaBaseEditor = {
       exportNoChapter: "書き出す前に章を選択してください。",
       exportOpenFailed: "書き出しウィンドウを開けません。",
     },
-  };
+  },
+} as const;

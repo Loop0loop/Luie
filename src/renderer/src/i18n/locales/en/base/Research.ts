@@ -1,4 +1,5 @@
 export const enBaseResearch = {
+  research: {
     title: {
       characters: "Characters",
       events: "Events",
@@ -204,4 +205,5 @@ export const enBaseResearch = {
       worldSaveFailed: "Failed to save world data to the .luie file.",
       memoSaveFailed: "Failed to save memos to the .luie file.",
     },
-  };
+  },
+} as const;

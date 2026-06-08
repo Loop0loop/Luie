@@ -1,53 +1,15 @@
-import {
-  koBaseHome,
-  koBaseShare,
-  koBaseLoading,
-  koBaseBack,
-  koBaseDelete,
-  koBaseUndo,
-  koBaseClear,
-  koBaseExit,
-  koBaseMenu,
-  koBaseSettings,
-  koBaseUi,
-  koBaseBootstrap,
-  koBaseErrorBoundary,
-  koBaseProject,
-  koBaseSidebar,
-  koBaseResearch,
-  koBaseContext,
-  koBaseMemo,
-  koBaseEditor,
-  koBaseStartupWizard,
-  koBaseToolbar,
-  koBaseCanvas,
-  koBaseInspector,
-  koBaseScrivener
-} from "./base/index";
+import { koBaseCore } from "./base/core";
+import { koBaseSettings } from "./base/settings";
+import { koBaseSettingsAdvanced } from "./base/settingsAdvanced";
+import { koBaseResearch } from "./base/research";
+import { koBaseEditor } from "./base/editor";
 
 export const koBase = {
-  home: koBaseHome,
-  share: koBaseShare,
-  loading: koBaseLoading,
-  back: koBaseBack,
-  delete: koBaseDelete,
-  undo: koBaseUndo,
-  clear: koBaseClear,
-  exit: koBaseExit,
-  menu: koBaseMenu,
-  settings: koBaseSettings,
-  ui: koBaseUi,
-  bootstrap: koBaseBootstrap,
-  errorBoundary: koBaseErrorBoundary,
-  project: koBaseProject,
-  sidebar: koBaseSidebar,
-  research: koBaseResearch,
-  context: koBaseContext,
-  memo: koBaseMemo,
-  editor: koBaseEditor,
-  startupWizard: koBaseStartupWizard,
-  toolbar: koBaseToolbar,
-  canvas: koBaseCanvas,
-  inspector: koBaseInspector,
-  scrivener: koBaseScrivener,
+  ...koBaseCore,
+  settings: {
+    ...koBaseSettings.settings,
+    ...koBaseSettingsAdvanced.settings,
+  },
+  ...koBaseResearch,
+  ...koBaseEditor,
 } as const;

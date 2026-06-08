@@ -1,4 +1,5 @@
 export const koBaseResearch = {
+  research: {
     title: {
       characters: "등장인물",
       events: "사건",
@@ -203,4 +204,5 @@ export const koBaseResearch = {
       worldSaveFailed: "세계관 데이터를 .luie 파일에 저장하지 못했습니다.",
       memoSaveFailed: "메모를 .luie 파일에 저장하지 못했습니다.",
     },
-  };
+  },
+} as const;

@@ -1,4 +1,5 @@
 export const jaBaseResearch = {
+  research: {
     title: {
       characters: "登場人物",
       events: "出来事",
@@ -206,4 +207,5 @@ export const jaBaseResearch = {
       worldSaveFailed: "世界観データを .luie ファイルに保存できませんでした。",
       memoSaveFailed: "メモを .luie ファイルに保存できませんでした。",
     },
-  };
+  },
+} as const;
