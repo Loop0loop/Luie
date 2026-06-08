@@ -5,8 +5,7 @@ export type LoggerLike = LuieWriterLogger & {
   warn: (message: string, details?: unknown) => void;
 };
 
-export type WorldDocumentType =
-  SyncBundle["worldDocuments"][number]["docType"];
+export type WorldDocumentType = SyncBundle["worldDocuments"][number]["docType"];
 
 export const toIsoString = (
   value: unknown,

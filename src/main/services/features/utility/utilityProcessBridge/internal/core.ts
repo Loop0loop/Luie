@@ -67,41 +67,41 @@ export class UtilityProcessBridge {
 
     const run = async (): Promise<boolean> => {
       try {
-      const child = utilityProcess.fork(entryPath, [], {
-        env: {
-          ...process.env,
-          LUIE_IS_UTILITY_PROCESS: "1",
-          LUIE_APP_IS_PACKAGED: app.isPackaged ? "1" : "0",
-          LUIE_USER_DATA_PATH: app.getPath("userData"),
-        },
-      });
-      child.on("spawn", () => {
-        logger.info("Utility process spawned", { pid: child.pid, entryPath });
-      });
-      child.on("exit", (code) => {
-        logger.info("Utility process exited", { pid: child.pid, code });
-        this.clearPendingRequests("Utility process exited");
-        this.emitCrashErrorsToActiveRuns("RAG utility process exited unexpectedly");
-        for (const runId of this.ragRunWatchdogs.keys()) {
-          this.clearRagRunWatchdog(runId);
+        const child = utilityProcess.fork(entryPath, [], {
+          env: {
+            ...process.env,
+            LUIE_IS_UTILITY_PROCESS: "1",
+            LUIE_APP_IS_PACKAGED: app.isPackaged ? "1" : "0",
+            LUIE_USER_DATA_PATH: app.getPath("userData"),
+          },
+        });
+        child.on("spawn", () => {
+          logger.info("Utility process spawned", { pid: child.pid, entryPath });
+        });
+        child.on("exit", (code) => {
+          logger.info("Utility process exited", { pid: child.pid, code });
+          this.clearPendingRequests("Utility process exited");
+          this.emitCrashErrorsToActiveRuns("RAG utility process exited unexpectedly");
+          for (const runId of this.ragRunWatchdogs.keys()) {
+            this.clearRagRunWatchdog(runId);
+          }
+          this.ragRunToWindowId.clear();
+          this.clearPendingRagEvents();
+          this.lastSidecarStatuses.clear();
+          if (this.utilityChild === child) {
+            this.utilityChild = null;
+          }
+        });
+        child.on("message", (message) => this.onMessage(unwrapMessage(message) as UtilityOutboundMessage));
+        this.utilityChild = child;
+        const healthy = await this.ping();
+        if (!healthy) {
+          logger.warn("Utility process did not pass health check", { pid: child.pid });
+          this.stop();
+          return false;
         }
-        this.ragRunToWindowId.clear();
-        this.clearPendingRagEvents();
-        this.lastSidecarStatuses.clear();
-        if (this.utilityChild === child) {
-          this.utilityChild = null;
-        }
-      });
-      child.on("message", (message) => this.onMessage(unwrapMessage(message) as UtilityOutboundMessage));
-      this.utilityChild = child;
-      const healthy = await this.ping();
-      if (!healthy) {
-        logger.warn("Utility process did not pass health check", { pid: child.pid });
-        this.stop();
-        return false;
-      }
-      logger.info("Utility process health check passed", { pid: child.pid });
-      return true;
+        logger.info("Utility process health check passed", { pid: child.pid });
+        return true;
       } catch (error) {
         logger.error("Failed to start utility process", { entryPath, error });
         return false;
@@ -215,9 +215,7 @@ export class UtilityProcessBridge {
       }
     }
     const { plan } = await resolveRuntimeRoutePlan();
-    return (await this.request("embedding.embed", { projectId, texts, runtimePlan: plan })) as
-      | number[][]
-      | null;
+    return (await this.request("embedding.embed", { projectId, texts, runtimePlan: plan })) as number[][] | null;
   }
 
   async generateText(
@@ -332,15 +330,15 @@ export class UtilityProcessBridge {
       const timeoutMs =
         method === "ragQa.stop" || method === "sidecar.stop"
           ? REQUEST_TIMEOUT_STOP_MS
-            : method === "sidecar.status"
-              ? REQUEST_TIMEOUT_STATUS_MS
-              : method === "sidecar.start"
-                ? REQUEST_TIMEOUT_SIDECAR_START_MS
-                : method === "embedding.embed"
-                  ? REQUEST_TIMEOUT_EMBED_MS
-                  : method === "llm.generateText"
-                    ? REQUEST_TIMEOUT_GENERATE_MS
-                    : REQUEST_TIMEOUT_ASK_MS;
+          : method === "sidecar.status"
+            ? REQUEST_TIMEOUT_STATUS_MS
+            : method === "sidecar.start"
+              ? REQUEST_TIMEOUT_SIDECAR_START_MS
+              : method === "embedding.embed"
+                ? REQUEST_TIMEOUT_EMBED_MS
+                : method === "llm.generateText"
+                  ? REQUEST_TIMEOUT_GENERATE_MS
+                  : REQUEST_TIMEOUT_ASK_MS;
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(requestId);
         reject(new Error(`Utility request timeout: ${method}`));

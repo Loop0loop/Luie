@@ -101,26 +101,23 @@ describe("SyncAuthService", () => {
   });
 
   it("restores persisted pending PKCE across restart and completes callback", async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            access_token: "access-token",
-            refresh_token: "refresh-token",
-            expires_in: 3600,
-            user: {
-              id: "00000000-0000-0000-0000-000000000001",
-              email: "user@example.com",
-            },
-          }),
-          { status: 200 },
-        ),
-      );
-
-    const { syncAuthService: firstInstance } = await import(
-      "../../../src/main/services/features/sync/syncAuthService.js"
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          access_token: "access-token",
+          refresh_token: "refresh-token",
+          expires_in: 3600,
+          user: {
+            id: "00000000-0000-0000-0000-000000000001",
+            email: "user@example.com",
+          },
+        }),
+        { status: 200 },
+      ),
     );
+
+    const { syncAuthService: firstInstance } =
+      await import("../../../src/main/services/features/sync/syncAuthService.js");
     await firstInstance.startGoogleAuth();
 
     expect(mocked.shellOpenExternal).toHaveBeenCalledTimes(1);
@@ -130,16 +127,19 @@ describe("SyncAuthService", () => {
     expect(stateFromAuthorize).toBeNull();
     expect(mocked.state.pendingAuthState).toBeUndefined();
     expect(redirectTo).toBe("luie://auth/callback");
-    expect(mocked.state.pendingAuthVerifierCipher?.startsWith("v2:plain:")).toBe(true);
+    expect(
+      mocked.state.pendingAuthVerifierCipher?.startsWith("v2:plain:"),
+    ).toBe(true);
     expect(mocked.state.pendingAuthRedirectUri).toBe("luie://auth/callback");
 
     mocked.safeStorageState.available = true;
     vi.resetModules();
-    const { syncAuthService: restarted } = await import(
-      "../../../src/main/services/features/sync/syncAuthService.js"
-    );
+    const { syncAuthService: restarted } =
+      await import("../../../src/main/services/features/sync/syncAuthService.js");
 
-    const session = await restarted.completeOAuthCallback("luie://auth/callback?code=test-code");
+    const session = await restarted.completeOAuthCallback(
+      "luie://auth/callback?code=test-code",
+    );
 
     expect(session.userId).toBe("00000000-0000-0000-0000-000000000001");
     expect(mocked.state.pendingAuthState).toBeUndefined();
@@ -148,12 +148,13 @@ describe("SyncAuthService", () => {
   });
 
   it("fails when callback code is missing and clears pending auth", async () => {
-    const { syncAuthService } = await import("../../../src/main/services/features/sync/syncAuthService.js");
+    const { syncAuthService } =
+      await import("../../../src/main/services/features/sync/syncAuthService.js");
     await syncAuthService.startGoogleAuth();
 
-    await expect(syncAuthService.completeOAuthCallback("luie://auth/callback")).rejects.toThrow(
-      "SYNC_AUTH_CODE_MISSING",
-    );
+    await expect(
+      syncAuthService.completeOAuthCallback("luie://auth/callback"),
+    ).rejects.toThrow("SYNC_AUTH_CODE_MISSING");
 
     expect(mocked.state.pendingAuthState).toBeUndefined();
     expect(mocked.state.pendingAuthVerifierCipher).toBeUndefined();
@@ -161,75 +162,84 @@ describe("SyncAuthService", () => {
 
   it("accepts callback without app state (verifier-only flow)", async () => {
     mocked.safeStorageState.available = true;
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            access_token: "access-token",
-            refresh_token: "refresh-token",
-            user: {
-              id: "00000000-0000-0000-0000-000000000002",
-            },
-          }),
-          { status: 200 },
-        ),
-      );
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          access_token: "access-token",
+          refresh_token: "refresh-token",
+          user: {
+            id: "00000000-0000-0000-0000-000000000002",
+          },
+        }),
+        { status: 200 },
+      ),
+    );
 
-    const { syncAuthService } = await import("../../../src/main/services/features/sync/syncAuthService.js");
+    const { syncAuthService } =
+      await import("../../../src/main/services/features/sync/syncAuthService.js");
     await syncAuthService.startGoogleAuth();
-    const session = await syncAuthService.completeOAuthCallback("luie://auth/callback?code=test-code");
+    const session = await syncAuthService.completeOAuthCallback(
+      "luie://auth/callback?code=test-code",
+    );
 
     expect(session.userId).toBe("00000000-0000-0000-0000-000000000002");
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("keeps legacy state mismatch validation when pending state exists", async () => {
-    const { syncAuthService } = await import("../../../src/main/services/features/sync/syncAuthService.js");
+    const { syncAuthService } =
+      await import("../../../src/main/services/features/sync/syncAuthService.js");
     await syncAuthService.startGoogleAuth();
 
     mocked.state.pendingAuthState = "legacy-state-token";
 
     await expect(
-      syncAuthService.completeOAuthCallback("luie://auth/callback?code=test-code&state=wrong"),
+      syncAuthService.completeOAuthCallback(
+        "luie://auth/callback?code=test-code&state=wrong",
+      ),
     ).rejects.toThrow("SYNC_AUTH_STATE_MISMATCH");
   });
 
   it("accepts OAuth callback params from hash fragment", async () => {
     mocked.safeStorageState.available = true;
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            access_token: "access-token",
-            refresh_token: "refresh-token",
-            user: {
-              id: "00000000-0000-0000-0000-000000000003",
-            },
-          }),
-          { status: 200 },
-        ),
-      );
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          access_token: "access-token",
+          refresh_token: "refresh-token",
+          user: {
+            id: "00000000-0000-0000-0000-000000000003",
+          },
+        }),
+        { status: 200 },
+      ),
+    );
 
-    const { syncAuthService } = await import("../../../src/main/services/features/sync/syncAuthService.js");
+    const { syncAuthService } =
+      await import("../../../src/main/services/features/sync/syncAuthService.js");
     await syncAuthService.startGoogleAuth();
 
-    const session = await syncAuthService.completeOAuthCallback("luie://auth/callback#code=test-code");
+    const session = await syncAuthService.completeOAuthCallback(
+      "luie://auth/callback#code=test-code",
+    );
     expect(session.userId).toBe("00000000-0000-0000-0000-000000000003");
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("blocks duplicate OAuth start while a recent flow is pending", async () => {
-    const { syncAuthService } = await import("../../../src/main/services/features/sync/syncAuthService.js");
+    const { syncAuthService } =
+      await import("../../../src/main/services/features/sync/syncAuthService.js");
     await syncAuthService.startGoogleAuth();
 
-    await expect(syncAuthService.startGoogleAuth()).rejects.toThrow("SYNC_AUTH_FLOW_IN_PROGRESS");
+    await expect(syncAuthService.startGoogleAuth()).rejects.toThrow(
+      "SYNC_AUTH_FLOW_IN_PROGRESS",
+    );
     expect(mocked.shellOpenExternal).toHaveBeenCalledTimes(1);
   });
 
   it("includes provider error code when callback contains OAuth error", async () => {
-    const { syncAuthService } = await import("../../../src/main/services/features/sync/syncAuthService.js");
+    const { syncAuthService } =
+      await import("../../../src/main/services/features/sync/syncAuthService.js");
     await syncAuthService.startGoogleAuth();
 
     await expect(
@@ -244,8 +254,11 @@ describe("SyncAuthService", () => {
 
   it("returns migrated cipher when reading legacy base64 token", async () => {
     mocked.safeStorageState.available = true;
-    const { syncAuthService } = await import("../../../src/main/services/features/sync/syncAuthService.js");
-    const legacyCipher = Buffer.from("legacy-token", "utf-8").toString("base64");
+    const { syncAuthService } =
+      await import("../../../src/main/services/features/sync/syncAuthService.js");
+    const legacyCipher = Buffer.from("legacy-token", "utf-8").toString(
+      "base64",
+    );
     const result = syncAuthService.getAccessToken({
       connected: true,
       autoSync: true,
@@ -257,7 +270,8 @@ describe("SyncAuthService", () => {
   });
 
   it("rejects plain token cipher when secure storage is unavailable", async () => {
-    const { syncAuthService } = await import("../../../src/main/services/features/sync/syncAuthService.js");
+    const { syncAuthService } =
+      await import("../../../src/main/services/features/sync/syncAuthService.js");
     const plainCipher = `v2:plain:${Buffer.from("token-in-plain", "utf-8").toString("base64")}`;
     const result = syncAuthService.getAccessToken({
       connected: true,
@@ -277,7 +291,8 @@ describe("SyncAuthService", () => {
     delete process.env.SUPADB_URL;
     delete process.env.SUPABASE_PUBLISHABLE_KEY;
 
-    const { syncAuthService } = await import("../../../src/main/services/features/sync/syncAuthService.js");
+    const { syncAuthService } =
+      await import("../../../src/main/services/features/sync/syncAuthService.js");
     expect(syncAuthService.isConfigured()).toBe(true);
   });
 });

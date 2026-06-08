@@ -104,7 +104,8 @@ export async function repairMemoryEvidenceChunkLinks(input: {
   return {
     episodeEvidenceScanned: episodeEvidenceRows.length,
     episodeEvidenceRepaired,
-    episodeEvidenceUnresolved: episodeEvidenceRows.length - episodeEvidenceRepaired,
+    episodeEvidenceUnresolved:
+      episodeEvidenceRows.length - episodeEvidenceRepaired,
     entityMentionScanned: entityMentionRows.length,
     entityMentionRepaired,
     entityMentionUnresolved: entityMentionRows.length - entityMentionRepaired,

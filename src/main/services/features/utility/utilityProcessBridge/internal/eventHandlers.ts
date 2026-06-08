@@ -74,7 +74,10 @@ export const handleSidecarStatusEvent = (
 ): void => {
   bridge.lastSidecarStatuses.set(payload.purpose, payload.status);
   broadcastSidecarStatus(payload);
-  if (payload.status.status === "crashed" || payload.status.status === "cooldown") {
+  if (
+    payload.status.status === "crashed" ||
+    payload.status.status === "cooldown"
+  ) {
     logger.warn("Utility sidecar status changed to unavailable", {
       purpose: payload.purpose,
       status: payload.status.status,
@@ -120,7 +123,10 @@ export const forwardRagStream = (
   }
 };
 
-export const forwardRagError = (bridge: UtilityProcessBridgeEventHost, payload: RagQaErrorPayload): void => {
+export const forwardRagError = (
+  bridge: UtilityProcessBridgeEventHost,
+  payload: RagQaErrorPayload,
+): void => {
   if (!payload.runId) return;
   const targetId = bridge.ragRunToWindowId.get(payload.runId);
   if (!targetId) {
@@ -201,7 +207,9 @@ export const flushPendingRagEventsInternal = (
   }
 };
 
-export const clearPendingRagEventsInternal = (bridge: UtilityProcessBridgeEventHost): void => {
+export const clearPendingRagEventsInternal = (
+  bridge: UtilityProcessBridgeEventHost,
+): void => {
   for (const timer of bridge.pendingRagEventTimers.values()) {
     clearTimeout(timer);
   }

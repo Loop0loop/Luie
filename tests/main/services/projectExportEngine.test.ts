@@ -39,14 +39,20 @@ vi.mock("../../../src/main/database/index.js", () => ({
         const projectId = String(projectRecord.id ?? "");
         const filterActiveRows = (rows: unknown[]): unknown[] =>
           rows.filter((row) => {
-            const record = row as { projectId?: string; deletedAt?: string | null };
-            if (record.projectId && record.projectId !== projectId) return false;
+            const record = row as {
+              projectId?: string;
+              deletedAt?: string | null;
+            };
+            if (record.projectId && record.projectId !== projectId)
+              return false;
             return !record.deletedAt;
           });
         switch (tableName) {
           case "Chapter":
             return filterActiveRows(
-              Array.isArray(projectRecord.chapters) ? projectRecord.chapters : [],
+              Array.isArray(projectRecord.chapters)
+                ? projectRecord.chapters
+                : [],
             ).sort(
               (left, right) =>
                 ((left as { order?: number }).order ?? 0) -
@@ -54,7 +60,9 @@ vi.mock("../../../src/main/database/index.js", () => ({
             );
           case "Character":
             return filterActiveRows(
-              Array.isArray(projectRecord.characters) ? projectRecord.characters : [],
+              Array.isArray(projectRecord.characters)
+                ? projectRecord.characters
+                : [],
             );
           case "Term":
             return filterActiveRows(
@@ -62,7 +70,9 @@ vi.mock("../../../src/main/database/index.js", () => ({
             );
           case "Faction":
             return filterActiveRows(
-              Array.isArray(projectRecord.factions) ? projectRecord.factions : [],
+              Array.isArray(projectRecord.factions)
+                ? projectRecord.factions
+                : [],
             );
           case "Event":
             return filterActiveRows(
@@ -82,7 +92,9 @@ vi.mock("../../../src/main/database/index.js", () => ({
             );
           case "Snapshot":
             return filterActiveRows(
-              Array.isArray(projectRecord.snapshots) ? projectRecord.snapshots : [],
+              Array.isArray(projectRecord.snapshots)
+                ? projectRecord.snapshots
+                : [],
             ).sort(
               (left, right) =>
                 Date.parse((right as { createdAt?: string }).createdAt ?? "") -
@@ -141,15 +153,19 @@ vi.mock("../../../src/main/database/index.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/core/project/projectAttachmentStore.js", () => ({
-  getProjectAttachmentPath: (...args: unknown[]) =>
-    mocked.getProjectAttachmentPath(...args),
-}));
+vi.mock(
+  "../../../src/main/services/core/project/projectAttachmentStore.js",
+  () => ({
+    getProjectAttachmentPath: (...args: unknown[]) =>
+      mocked.getProjectAttachmentPath(...args),
+  }),
+);
 
 vi.mock("../../../src/main/services/io/luieContainer.js", () => ({
   readLuieContainerEntry: (...args: unknown[]) =>
     mocked.readLuieContainerEntry(...args),
-  writeLuieContainer: (...args: unknown[]) => mocked.writeLuieContainer(...args),
+  writeLuieContainer: (...args: unknown[]) =>
+    mocked.writeLuieContainer(...args),
 }));
 
 vi.mock("../../../src/main/manager/settings/index.js", () => ({
@@ -160,7 +176,7 @@ vi.mock("../../../src/main/manager/settings/index.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/features/worldReplicaService.js", () => ({
+vi.mock("../../../src/main/services/features/worldReplica/index.js", () => ({
   worldReplicaService: {
     getDocument: (...args: unknown[]) => mocked.getDocument(...args),
     getScrapMemos: (...args: unknown[]) => mocked.getScrapMemos(...args),
@@ -190,48 +206,52 @@ describe("projectExportEngine", () => {
     });
     mocked.getProjectAttachmentPath.mockResolvedValue("/tmp/project-1.luie");
     mocked.writeLuieContainer.mockResolvedValue(undefined);
-    mocked.getDocument.mockImplementation(async ({ docType }: { docType: string }) => {
-      if (docType === "synopsis") {
-        return {
-          found: true,
-          payload: {
-            synopsis: "replica synopsis",
-            status: "working",
-            updatedAt: "2026-03-12T01:00:00.000Z",
-          },
-        };
-      }
+    mocked.getDocument.mockImplementation(
+      async ({ docType }: { docType: string }) => {
+        if (docType === "synopsis") {
+          return {
+            found: true,
+            payload: {
+              synopsis: "replica synopsis",
+              status: "working",
+              updatedAt: "2026-03-12T01:00:00.000Z",
+            },
+          };
+        }
 
-      return {
-        found: false,
-        payload: null,
-      };
-    });
+        return {
+          found: false,
+          payload: null,
+        };
+      },
+    );
     mocked.getScrapMemos.mockResolvedValue({
       found: false,
       data: null,
     });
-    mocked.readLuieContainerEntry.mockImplementation(async (_projectPath: string, entryPath: string) => {
-      if (entryPath === "world/plot-board.json") {
-        return JSON.stringify({
-          columns: [{ id: "plot-col", title: "Arc", cards: [] }],
-        });
-      }
-      if (entryPath === "world/scrap-memos.json") {
-        return JSON.stringify({
-          memos: [
-            {
-              id: "memo-1",
-              title: "Memo",
-              content: "Body",
-              tags: ["tag"],
-              updatedAt: "2026-03-12T02:00:00.000Z",
-            },
-          ],
-        });
-      }
-      return null;
-    });
+    mocked.readLuieContainerEntry.mockImplementation(
+      async (_projectPath: string, entryPath: string) => {
+        if (entryPath === "world/plot-board.json") {
+          return JSON.stringify({
+            columns: [{ id: "plot-col", title: "Arc", cards: [] }],
+          });
+        }
+        if (entryPath === "world/scrap-memos.json") {
+          return JSON.stringify({
+            memos: [
+              {
+                id: "memo-1",
+                title: "Memo",
+                content: "Body",
+                tags: ["tag"],
+                updatedAt: "2026-03-12T02:00:00.000Z",
+              },
+            ],
+          });
+        }
+        return null;
+      },
+    );
   });
 
   it("exports from replica first and only falls back to package for missing world docs", async () => {
@@ -372,41 +392,43 @@ describe("projectExportEngine", () => {
       entityRelations: [],
       snapshots: [],
     });
-    mocked.getDocument.mockImplementation(async ({ docType }: { docType: string }) => {
-      if (docType === "synopsis") {
-        return {
-          found: true,
-          payload: {
-            synopsis: "replica synopsis",
-            status: "working",
-            updatedAt: "2026-03-12T01:00:00.000Z",
-          },
-        };
-      }
-      if (docType === "graph") {
-        return {
-          found: true,
-          payload: {
-            nodes: [
-              {
-                id: "character-1",
-                entityType: "Character",
-                name: "Alice",
-                positionX: 640,
-                positionY: 320,
-              },
-            ],
-            edges: [],
-            updatedAt: "2026-03-12T03:00:00.000Z",
-          },
-        };
-      }
+    mocked.getDocument.mockImplementation(
+      async ({ docType }: { docType: string }) => {
+        if (docType === "synopsis") {
+          return {
+            found: true,
+            payload: {
+              synopsis: "replica synopsis",
+              status: "working",
+              updatedAt: "2026-03-12T01:00:00.000Z",
+            },
+          };
+        }
+        if (docType === "graph") {
+          return {
+            found: true,
+            payload: {
+              nodes: [
+                {
+                  id: "character-1",
+                  entityType: "Character",
+                  name: "Alice",
+                  positionX: 640,
+                  positionY: 320,
+                },
+              ],
+              edges: [],
+              updatedAt: "2026-03-12T03:00:00.000Z",
+            },
+          };
+        }
 
-      return {
-        found: false,
-        payload: null,
-      };
-    });
+        return {
+          found: false,
+          payload: null,
+        };
+      },
+    );
 
     const logger = {
       info: vi.fn(),

@@ -17,15 +17,23 @@ export const ensureSyncAccessToken = async (input: {
     ? Date.parse(input.syncSettings.expiresAt) <= Date.now() + 60_000
     : true;
   const accessTokenResult = syncAuthService.getAccessToken(input.syncSettings);
-  if (accessTokenResult.errorCode && input.isAuthFatalMessage(accessTokenResult.errorCode)) {
+  if (
+    accessTokenResult.errorCode &&
+    input.isAuthFatalMessage(accessTokenResult.errorCode)
+  ) {
     throw new Error(accessTokenResult.errorCode);
   }
   maybePersistMigratedToken(accessTokenResult.migratedCipher);
   let token = accessTokenResult.token;
 
   if (expiresSoon || !token) {
-    const refreshTokenResult = syncAuthService.getRefreshToken(input.syncSettings);
-    if (refreshTokenResult.errorCode && input.isAuthFatalMessage(refreshTokenResult.errorCode)) {
+    const refreshTokenResult = syncAuthService.getRefreshToken(
+      input.syncSettings,
+    );
+    if (
+      refreshTokenResult.errorCode &&
+      input.isAuthFatalMessage(refreshTokenResult.errorCode)
+    ) {
       throw new Error(refreshTokenResult.errorCode);
     }
     if (refreshTokenResult.migratedCipher) {
@@ -47,7 +55,10 @@ export const ensureSyncAccessToken = async (input: {
       refreshTokenCipher: refreshed.refreshTokenCipher,
     });
     const refreshedToken = syncAuthService.getAccessToken(nextSettings);
-    if (refreshedToken.errorCode && input.isAuthFatalMessage(refreshedToken.errorCode)) {
+    if (
+      refreshedToken.errorCode &&
+      input.isAuthFatalMessage(refreshedToken.errorCode)
+    ) {
       throw new Error(refreshedToken.errorCode);
     }
     maybePersistMigratedToken(refreshedToken.migratedCipher);

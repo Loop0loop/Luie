@@ -12,9 +12,34 @@ const VECTOR_SEARCH_UTILITY_ONLY =
   process.env.LUIE_VECTOR_SEARCH_UTILITY_ONLY !== "0";
 
 const KOREAN_SUFFIXES = [
-  "은", "는", "이", "가", "을", "를", "에", "에서", "에게", "한테", "께",
-  "와", "과", "으로", "로", "도", "만", "까지", "부터", "처럼", "보다", "의",
-  "랑", "이라", "라", "야", "요", "다",
+  "은",
+  "는",
+  "이",
+  "가",
+  "을",
+  "를",
+  "에",
+  "에서",
+  "에게",
+  "한테",
+  "께",
+  "와",
+  "과",
+  "으로",
+  "로",
+  "도",
+  "만",
+  "까지",
+  "부터",
+  "처럼",
+  "보다",
+  "의",
+  "랑",
+  "이라",
+  "라",
+  "야",
+  "요",
+  "다",
 ] as const;
 
 /** trigram FTS5 는 3-그램 인덱스라 토큰 길이가 3자 미만이면 매칭되지 않는다. */
@@ -44,18 +69,14 @@ export const buildFtsQuery = (query: string): string => {
 
 const collectShortTokens = (query: string): string[] =>
   normalizeSearchTokens(query).filter(
-    (token) =>
-      token.length >= 2 &&
-      token.length < TRIGRAM_MIN_TOKEN_LENGTH,
+    (token) => token.length >= 2 && token.length < TRIGRAM_MIN_TOKEN_LENGTH,
   );
 
 export const shouldRunVectorSearch = (): boolean =>
   db.isVectorSearchEnabled() &&
-  (
-    VECTOR_SEARCH_UTILITY_ONLY
-      ? process.env.LUIE_IS_UTILITY_PROCESS === "1"
-      : true
-  );
+  (VECTOR_SEARCH_UTILITY_ONLY
+    ? process.env.LUIE_IS_UTILITY_PROCESS === "1"
+    : true);
 
 export const mergeWithRRF = (
   rankSources: Array<Array<{ chunkId: string; rank: number }>>,
@@ -95,7 +116,10 @@ export const searchByShortTokens = async (
       .where(and(eq(memoryChunk.projectId, projectId), or(...predicates)))
       .orderBy(desc(memoryChunk.updatedAt))
       .limit(limit);
-    return rows.map((row, index) => ({ chunkId: row.chunkId, rank: index + 1 }));
+    return rows.map((row, index) => ({
+      chunkId: row.chunkId,
+      rank: index + 1,
+    }));
   } catch (error) {
     logger.warn("Short-token LIKE fallback failed; skipping", {
       projectId,
@@ -126,7 +150,10 @@ export const searchByVector = (
       ORDER BY vec_distance_cosine("vec", ${queryVecBlob})
       LIMIT ${limit};
     `);
-    return rows.map((row, index) => ({ chunkId: row.chunkId, rank: index + 1 }));
+    return rows.map((row, index) => ({
+      chunkId: row.chunkId,
+      rank: index + 1,
+    }));
   } catch (error) {
     logger.warn("Vector search failed; fallback to FTS only", {
       projectId,

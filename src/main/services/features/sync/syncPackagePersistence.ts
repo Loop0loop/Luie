@@ -13,7 +13,10 @@ import type { LuiePackageExportData } from "../../io/luiePackageTypes.js";
 import type { MemoryCanonicalPackagePayload } from "../memory/persistence/memoryCanonicalPackage.js";
 import { writeLuieContainer } from "../../io/luieContainer.js";
 import { db } from "../../../infra/database/index.js";
-import { project as projectTable, snapshot as snapshotTable } from "../../../infra/database/index.js";
+import {
+  project as projectTable,
+  snapshot as snapshotTable,
+} from "../../../infra/database/index.js";
 import { ensureSafeAbsolutePath } from "../../../utils/fs/index.js";
 import { projectService } from "../../core/projectService.js";
 import { getProjectAttachmentPath } from "../../core/project/projectAttachmentStore.js";
@@ -47,7 +50,9 @@ const toNullableString = (value: unknown): string | null =>
   typeof value === "string" ? value : null;
 
 const sortByUpdatedAtDesc = <T extends { updatedAt: string }>(rows: T[]): T[] =>
-  [...rows].sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt));
+  [...rows].sort(
+    (left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt),
+  );
 
 const buildMemoryPayloadFromBundle = (
   bundle: SyncBundle,
@@ -260,7 +265,11 @@ export const persistBundleToLuiePackages = async (input: {
   for (const project of bundle.projects) {
     const store = db.getClient();
     const [projRows, snapshotRows] = await Promise.all([
-      store.select().from(projectTable).where(eq(projectTable.id, project.id)).limit(1),
+      store
+        .select()
+        .from(projectTable)
+        .where(eq(projectTable.id, project.id))
+        .limit(1),
       store
         .select({
           id: snapshotTable.id,

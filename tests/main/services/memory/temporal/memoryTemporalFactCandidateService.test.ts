@@ -40,28 +40,31 @@ describe("createMemoryTemporalFactCandidate", () => {
       order: 10,
       updatedAt: nowIso,
     });
-    await db.getClient().insert(memoryEntity).values([
-      {
-        id: arinId,
-        projectId,
-        entityType: "character",
-        canonicalName: "아린",
-        status: "confirmed",
-        confidence: 100,
-        createdBy: "system",
-        updatedAt: nowIso,
-      },
-      {
-        id: baekyaId,
-        projectId,
-        entityType: "faction",
-        canonicalName: "백야회",
-        status: "confirmed",
-        confidence: 100,
-        createdBy: "system",
-        updatedAt: nowIso,
-      },
-    ]);
+    await db
+      .getClient()
+      .insert(memoryEntity)
+      .values([
+        {
+          id: arinId,
+          projectId,
+          entityType: "character",
+          canonicalName: "아린",
+          status: "confirmed",
+          confidence: 100,
+          createdBy: "system",
+          updatedAt: nowIso,
+        },
+        {
+          id: baekyaId,
+          projectId,
+          entityType: "faction",
+          canonicalName: "백야회",
+          status: "confirmed",
+          confidence: 100,
+          createdBy: "system",
+          updatedAt: nowIso,
+        },
+      ]);
     await db.getClient().insert(memoryEpisode).values({
       id: episodeId,
       projectId,

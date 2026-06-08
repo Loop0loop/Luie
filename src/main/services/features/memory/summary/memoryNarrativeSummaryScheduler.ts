@@ -50,7 +50,11 @@ export async function scheduleProjectNarrativeHierarchyScopes(input: {
   arcSize?: number;
   volumeSize?: number;
   summarizer?: NarrativeHierarchySummarizer;
-}): Promise<{ inspectedScopes: number; generated: number; summaryIds: string[] }> {
+}): Promise<{
+  inspectedScopes: number;
+  generated: number;
+  summaryIds: string[];
+}> {
   const arcSize = Math.max(1, Math.floor(input.arcSize ?? 20));
   const volumeSize = Math.max(1, Math.floor(input.volumeSize ?? 100));
   const rows = await db
@@ -149,7 +153,11 @@ export async function scheduleProjectNarrativeCommunities(input: {
   projectId: string;
   nowIso?: string;
   summarizer?: NarrativeCommunitySummarizer;
-}): Promise<{ inspectedCommunities: number; generated: number; summaryIds: string[] }> {
+}): Promise<{
+  inspectedCommunities: number;
+  generated: number;
+  summaryIds: string[];
+}> {
   const factRows = await db
     .getClient()
     .select({
@@ -168,8 +176,9 @@ export async function scheduleProjectNarrativeCommunities(input: {
     );
   const components = findConnectedComponents(
     factRows
-      .filter((row): row is { subjectEntityId: string; objectEntityId: string } =>
-        Boolean(row.objectEntityId),
+      .filter(
+        (row): row is { subjectEntityId: string; objectEntityId: string } =>
+          Boolean(row.objectEntityId),
       )
       .map((row) => [row.subjectEntityId, row.objectEntityId]),
   );
@@ -193,8 +202,9 @@ export async function scheduleProjectNarrativeCommunities(input: {
   }
 
   return {
-    inspectedCommunities: components.filter((component) => component.length >= 2)
-      .length,
+    inspectedCommunities: components.filter(
+      (component) => component.length >= 2,
+    ).length,
     generated,
     summaryIds,
   };

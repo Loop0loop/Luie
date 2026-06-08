@@ -6,12 +6,12 @@ import type {
   GraphPluginInstallResult,
   GraphPluginTemplateRef,
   InstalledGraphPlugin,
-} from "../../../shared/types/index.js";
+} from "../../../../shared/types/index.js";
 import {
   assertCatalogCompatibility,
   sanitizeCatalogItem,
   type GraphPluginServiceDependencies,
-} from "./graphPlugin/shared.js";
+} from "./shared.js";
 import {
   createGraphPluginPaths,
   prepareTempDirectory,
@@ -19,22 +19,22 @@ import {
   readInstalledIndexValidated,
   removeLegacyVersions,
   writeInstalledIndex,
-} from "./graphPlugin/repository.js";
+} from "./repository.js";
 import {
   downloadPluginArchive,
   extractPluginArchive,
   readGraphDocument,
   readPluginManifest,
   resolveExtractedPackageRoot,
-} from "./graphPlugin/archive.js";
+} from "./archive.js";
 import {
   assertManifestMatchesCatalog,
   validateTemplateDocuments,
-} from "./graphPlugin/validation.js";
-import { replaceProjectWorldEntityGraph } from "./graphPlugin/apply.js";
-import { worldReplicaService } from "./worldReplicaService.js";
-import { createServiceError } from "./graphPlugin/shared.js";
-import { ErrorCode } from "../../../shared/constants/index.js";
+} from "./validation.js";
+import { replaceProjectWorldEntityGraph } from "./apply.js";
+import { worldReplicaService } from "../worldReplica/index.js";
+import { createServiceError } from "./shared.js";
+import { ErrorCode } from "../../../../shared/constants/index.js";
 
 export class GraphPluginService {
   private readonly fetchImpl: typeof fetch;
@@ -43,7 +43,10 @@ export class GraphPluginService {
 
   private readonly now: () => Date;
 
-  private readonly replicaService: Pick<typeof worldReplicaService, "setDocument">;
+  private readonly replicaService: Pick<
+    typeof worldReplicaService,
+    "setDocument"
+  >;
 
   private readonly applyGraphTemplate: (
     projectId: string,
@@ -100,7 +103,9 @@ export class GraphPluginService {
       this.paths.getInstalledIndexPath(),
       this.paths.getInstalledVersionDir,
     );
-    const current = installed.entries.find((candidate) => candidate.pluginId === pluginId);
+    const current = installed.entries.find(
+      (candidate) => candidate.pluginId === pluginId,
+    );
     if (current && current.version === item.version) {
       return {
         pluginId,
@@ -130,7 +135,10 @@ export class GraphPluginService {
       await validateTemplateDocuments(packageRoot, manifest);
 
       const installedAt = this.now().toISOString();
-      const finalDir = this.paths.getInstalledVersionDir(pluginId, item.version);
+      const finalDir = this.paths.getInstalledVersionDir(
+        pluginId,
+        item.version,
+      );
       await fsp.mkdir(path.dirname(finalDir), { recursive: true });
       await fsp.rm(finalDir, { recursive: true, force: true });
       await fsp.rename(packageRoot, finalDir);
@@ -172,7 +180,9 @@ export class GraphPluginService {
         alreadyInstalled: false,
       };
     } finally {
-      await fsp.rm(tempRoot, { recursive: true, force: true }).catch(() => undefined);
+      await fsp
+        .rm(tempRoot, { recursive: true, force: true })
+        .catch(() => undefined);
     }
   }
 
@@ -181,7 +191,9 @@ export class GraphPluginService {
       this.paths.getInstalledIndexPath(),
       this.paths.getInstalledVersionDir,
     );
-    const entry = installed.entries.find((candidate) => candidate.pluginId === pluginId);
+    const entry = installed.entries.find(
+      (candidate) => candidate.pluginId === pluginId,
+    );
     if (!entry) return;
 
     await fsp.rm(this.paths.getInstalledPluginDir(pluginId), {
@@ -220,7 +232,9 @@ export class GraphPluginService {
 
   async applyTemplate(input: GraphPluginApplyTemplateInput): Promise<void> {
     const installed = await this.listInstalled();
-    const plugin = installed.find((candidate) => candidate.pluginId === input.pluginId);
+    const plugin = installed.find(
+      (candidate) => candidate.pluginId === input.pluginId,
+    );
     if (!plugin) {
       throw createServiceError(
         ErrorCode.PROJECT_NOT_FOUND,
@@ -232,7 +246,9 @@ export class GraphPluginService {
     const manifest = await readPluginManifest(
       this.paths.getInstalledVersionDir(plugin.pluginId, plugin.version),
     );
-    const template = manifest.templates.find((candidate) => candidate.id === input.templateId);
+    const template = manifest.templates.find(
+      (candidate) => candidate.id === input.templateId,
+    );
     if (!template) {
       throw createServiceError(
         ErrorCode.PROJECT_NOT_FOUND,

@@ -1,29 +1,29 @@
-import { createLogger } from "../../../shared/logger/index.js";
+import { createLogger } from "../../../../shared/logger/index.js";
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { db, memoryBuildJob } from "../../infra/database/index.js";
-import { dbMaintenanceService } from "./dbMaintenanceService.js";
-import { embeddingProjector } from "./memory/embeddingProjector.js";
-import { chapterSummaryProjector } from "./memory/chapterSummaryProjector.js";
-import { MEMORY_JOB_TYPES } from "./memory/memoryJobConstants.js";
-import { memoryProjectionService } from "./memory/memoryProjectionService.js";
+import { db, memoryBuildJob } from "../../../infra/database/index.js";
+import { dbMaintenanceService } from "../dbMaintenance/index.js";
+import { embeddingProjector } from "../memory/embeddingProjector.js";
+import { chapterSummaryProjector } from "../memory/chapterSummaryProjector.js";
+import { MEMORY_JOB_TYPES } from "../memory/memoryJobConstants.js";
+import { memoryProjectionService } from "../memory/memoryProjectionService.js";
 import {
   listProjectsWithPendingEpisodeExtractionJobs,
   processPendingLlmEpisodeExtractionJobs,
-} from "./memory/episode/memoryEpisodeExtractionProcessor.js";
+} from "../memory/episode/memoryEpisodeExtractionProcessor.js";
 import {
   listProjectsWithPendingTemporalFactEvidence,
   processPendingLlmTemporalFactExtraction,
-} from "./memory/temporal/memoryTemporalFactExtractionRunner.js";
-import { generateProjectNarrativeSummaryHierarchy } from "./memory/summary/memoryNarrativeSummaryRunner.js";
-import { refreshStaleProjectNarrativeSummaries } from "./memory/summary/memoryNarrativeSummaryDrift.js";
+} from "../memory/temporal/memoryTemporalFactExtractionRunner.js";
+import { generateProjectNarrativeSummaryHierarchy } from "../memory/summary/memoryNarrativeSummaryRunner.js";
+import { refreshStaleProjectNarrativeSummaries } from "../memory/summary/memoryNarrativeSummaryDrift.js";
 import {
   scheduleProjectNarrativeCommunities,
   scheduleProjectNarrativeHierarchyScopes,
-} from "./memory/summary/memoryNarrativeSummaryScheduler.js";
+} from "../memory/summary/memoryNarrativeSummaryScheduler.js";
 
 const logger = createLogger("DerivedJobWorker");
 const loadAutoSaveManager = async () =>
-  (await import("../../manager/autoSave/index.js")).autoSaveManager;
+  (await import("../../../manager/autoSave/index.js")).autoSaveManager;
 const isStressMode =
   process.env.LUIE_E2E_STRESS_MODE === "1" ||
   process.env.LUIE_DERIVED_STRESS_MODE === "1";
@@ -167,15 +167,18 @@ class DerivedJobWorker {
         limit: SEARCH_BATCH_SIZE,
       });
 
-      const projectsToProcess = await dbMaintenanceService.listProjectsWithPendingMemoryJobs(
-        MEMORY_PROJECTS_PER_TICK,
-      );
-      const episodeProjectsToProcess = await listProjectsWithPendingEpisodeExtractionJobs(
-        MEMORY_PROJECTS_PER_TICK,
-      );
-      const temporalFactProjectsToProcess = await listProjectsWithPendingTemporalFactEvidence(
-        MEMORY_PROJECTS_PER_TICK,
-      );
+      const projectsToProcess =
+        await dbMaintenanceService.listProjectsWithPendingMemoryJobs(
+          MEMORY_PROJECTS_PER_TICK,
+        );
+      const episodeProjectsToProcess =
+        await listProjectsWithPendingEpisodeExtractionJobs(
+          MEMORY_PROJECTS_PER_TICK,
+        );
+      const temporalFactProjectsToProcess =
+        await listProjectsWithPendingTemporalFactEvidence(
+          MEMORY_PROJECTS_PER_TICK,
+        );
       const projectIdsToProcess = Array.from(
         new Set([
           ...projectsToProcess,
@@ -194,68 +197,76 @@ class DerivedJobWorker {
       let episodeQueued = 0;
       let episodeProcessed = 0;
       let temporalFactProcessed = 0;
-      await projectIdsToProcess.reduce<Promise<void>>(async (prev, projectId) => {
-        await prev;
-        const result = await memoryProjectionService.processPendingChunkJobs({
-          projectId,
-          limit: MEMORY_BATCH_SIZE,
-        });
-        memoryQueued += result.queued;
-        memoryProcessed += result.processed;
-        const chunkBacklog = await countPendingMemoryJobs(
-          projectId,
-          MEMORY_JOB_TYPES.REBUILD_CHUNKS,
-        );
-        if (chunkBacklog === 0) {
-          const episodeResult = await processPendingLlmEpisodeExtractionJobs({
+      await projectIdsToProcess.reduce<Promise<void>>(
+        async (prev, projectId) => {
+          await prev;
+          const result = await memoryProjectionService.processPendingChunkJobs({
             projectId,
-            limit: EPISODE_BATCH_SIZE,
+            limit: MEMORY_BATCH_SIZE,
           });
-          episodeQueued += episodeResult.queued;
-          episodeProcessed += episodeResult.processed;
-
-          const temporalFactResult = await processPendingLlmTemporalFactExtraction({
+          memoryQueued += result.queued;
+          memoryProcessed += result.processed;
+          const chunkBacklog = await countPendingMemoryJobs(
             projectId,
-            limit: TEMPORAL_FACT_BATCH_SIZE,
-          });
-          temporalFactProcessed += temporalFactResult.extracted;
-
-          const summaryResult = await chapterSummaryProjector.processPendingSummaryJobs({
-            projectId,
-            limit: SUMMARY_BATCH_SIZE,
-          });
-          summaryQueued += summaryResult.queued;
-          summaryProcessed += summaryResult.processed;
-          const summaryBacklog = await countPendingMemoryJobs(
-            projectId,
-            MEMORY_JOB_TYPES.REBUILD_SUMMARY,
+            MEMORY_JOB_TYPES.REBUILD_CHUNKS,
           );
-          if (summaryBacklog === 0) {
-            const narrativeSummaryRefresh =
-              await refreshStaleProjectNarrativeSummaries({ projectId });
-            if (narrativeSummaryRefresh.inspected === 0) {
-              const narrativeSummaryResult =
-                await generateProjectNarrativeSummaryHierarchy({ projectId });
-              narrativeSummaryGenerated += narrativeSummaryResult.generated;
-            } else {
-              narrativeSummaryGenerated += narrativeSummaryRefresh.refreshed;
-            }
-            const scopedNarrativeSummaryResult =
-              await scheduleProjectNarrativeHierarchyScopes({ projectId });
-            narrativeSummaryGenerated += scopedNarrativeSummaryResult.generated;
-            const communityNarrativeSummaryResult =
-              await scheduleProjectNarrativeCommunities({ projectId });
-            narrativeSummaryGenerated += communityNarrativeSummaryResult.generated;
-
-            const embeddingResult = await embeddingProjector.processPendingEmbeddingJobs({
+          if (chunkBacklog === 0) {
+            const episodeResult = await processPendingLlmEpisodeExtractionJobs({
               projectId,
-              limit: EMBEDDING_BATCH_SIZE,
+              limit: EPISODE_BATCH_SIZE,
             });
-            embeddingQueued += embeddingResult.queued;
-            embeddingProcessed += embeddingResult.processed;
+            episodeQueued += episodeResult.queued;
+            episodeProcessed += episodeResult.processed;
+
+            const temporalFactResult =
+              await processPendingLlmTemporalFactExtraction({
+                projectId,
+                limit: TEMPORAL_FACT_BATCH_SIZE,
+              });
+            temporalFactProcessed += temporalFactResult.extracted;
+
+            const summaryResult =
+              await chapterSummaryProjector.processPendingSummaryJobs({
+                projectId,
+                limit: SUMMARY_BATCH_SIZE,
+              });
+            summaryQueued += summaryResult.queued;
+            summaryProcessed += summaryResult.processed;
+            const summaryBacklog = await countPendingMemoryJobs(
+              projectId,
+              MEMORY_JOB_TYPES.REBUILD_SUMMARY,
+            );
+            if (summaryBacklog === 0) {
+              const narrativeSummaryRefresh =
+                await refreshStaleProjectNarrativeSummaries({ projectId });
+              if (narrativeSummaryRefresh.inspected === 0) {
+                const narrativeSummaryResult =
+                  await generateProjectNarrativeSummaryHierarchy({ projectId });
+                narrativeSummaryGenerated += narrativeSummaryResult.generated;
+              } else {
+                narrativeSummaryGenerated += narrativeSummaryRefresh.refreshed;
+              }
+              const scopedNarrativeSummaryResult =
+                await scheduleProjectNarrativeHierarchyScopes({ projectId });
+              narrativeSummaryGenerated +=
+                scopedNarrativeSummaryResult.generated;
+              const communityNarrativeSummaryResult =
+                await scheduleProjectNarrativeCommunities({ projectId });
+              narrativeSummaryGenerated +=
+                communityNarrativeSummaryResult.generated;
+
+              const embeddingResult =
+                await embeddingProjector.processPendingEmbeddingJobs({
+                  projectId,
+                  limit: EMBEDDING_BATCH_SIZE,
+                });
+              embeddingQueued += embeddingResult.queued;
+              embeddingProcessed += embeddingResult.processed;
+            }
           }
-        }
-      }, Promise.resolve());
+        },
+        Promise.resolve(),
+      );
 
       if (
         search.queued > 0 ||

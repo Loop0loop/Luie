@@ -1,4 +1,4 @@
-export { dbRecoveryService } from "../../services/features/dbRecoveryService.js";
+export { dbRecoveryService } from "../../services/features/recovery/index.js";
 export { snapshotService } from "../../services/features/snapshot/snapshotService.js";
 export {
   cleanupOrphanSnapshotArtifacts,

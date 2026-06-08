@@ -30,12 +30,18 @@ function stripJsonFence(text: string): string {
   return fenced?.[1]?.trim() ?? trimmed;
 }
 
-function parseEpisodeExtractorResponse(text: string): MemoryEpisodeExtractorCandidate[] {
-  const parsed = EpisodeExtractorResponseSchema.parse(JSON.parse(stripJsonFence(text)));
+function parseEpisodeExtractorResponse(
+  text: string,
+): MemoryEpisodeExtractorCandidate[] {
+  const parsed = EpisodeExtractorResponseSchema.parse(
+    JSON.parse(stripJsonFence(text)),
+  );
   return parsed.episodes;
 }
 
-function buildEpisodeExtractionPrompt(chunks: MemoryEpisodeExtractionChunk[]): string {
+function buildEpisodeExtractionPrompt(
+  chunks: MemoryEpisodeExtractionChunk[],
+): string {
   const chunkLines = chunks.map((chunk) =>
     [
       `chunkId: ${chunk.chunkId}`,
@@ -67,7 +73,9 @@ function assertKnownEvidenceChunks(
   for (const candidate of candidates) {
     for (const evidence of candidate.evidence) {
       if (!chunkIds.has(evidence.chunkId)) {
-        throw new Error(`MEMORY_EPISODE_LLM_UNKNOWN_EVIDENCE_CHUNK:${evidence.chunkId}`);
+        throw new Error(
+          `MEMORY_EPISODE_LLM_UNKNOWN_EVIDENCE_CHUNK:${evidence.chunkId}`,
+        );
       }
     }
   }

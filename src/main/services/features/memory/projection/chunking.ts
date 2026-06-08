@@ -35,7 +35,8 @@ function collectParagraphBoundaries(input: string): Array<{
   end: number;
   index: number;
 }> {
-  const htmlParagraphs: Array<{ start: number; end: number; index: number }> = [];
+  const htmlParagraphs: Array<{ start: number; end: number; index: number }> =
+    [];
   const paragraphElement = /<p\b[^>]*>[\s\S]*?<\/p>/gi;
   for (const match of input.matchAll(paragraphElement)) {
     const start = match.index ?? 0;
@@ -46,14 +47,22 @@ function collectParagraphBoundaries(input: string): Array<{
     return htmlParagraphs;
   }
 
-  const paragraphBoundaries: Array<{ start: number; end: number; index: number }> = [];
+  const paragraphBoundaries: Array<{
+    start: number;
+    end: number;
+    index: number;
+  }> = [];
   let paragraphStart = 0;
   const separator = /\n{2,}/g;
   let paragraphIndex = 0;
   for (const match of input.matchAll(separator)) {
     const sepStart = match.index ?? 0;
     const sepEnd = sepStart + match[0].length;
-    paragraphBoundaries.push({ start: paragraphStart, end: sepEnd, index: paragraphIndex });
+    paragraphBoundaries.push({
+      start: paragraphStart,
+      end: sepEnd,
+      index: paragraphIndex,
+    });
     paragraphStart = sepEnd;
     paragraphIndex += 1;
   }

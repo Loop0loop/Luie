@@ -39,7 +39,9 @@ describe("UtilitySidecarSupervisor status", () => {
       appendStderr: (chunk: string) => void;
       state: { status: "stopped"; lastError?: string };
     };
-    internals.appendStderr("failed to load /Users/user/Secret Project/models/model.gguf from /tmp/raw.bin");
+    internals.appendStderr(
+      "failed to load /Users/user/Secret Project/models/model.gguf from /tmp/raw.bin",
+    );
     internals.state = { status: "stopped", lastError: "failed" };
 
     expect(supervisor.status()).toEqual({

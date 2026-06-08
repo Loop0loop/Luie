@@ -18,9 +18,8 @@ describe("modelRuntimeFactory utility process boundary", () => {
     vi.resetModules();
     mockUtilityElectron();
 
-    const { resolveRuntimeModelConfig } = await import(
-      "../../../src/main/services/llm/modelRuntimeFactory.js"
-    );
+    const { resolveRuntimeModelConfig } =
+      await import("../../../src/main/services/llm/modelRuntimeFactory.js");
 
     await expect(resolveRuntimeModelConfig("project-1")).resolves.toEqual({
       providerHint: "deterministic",

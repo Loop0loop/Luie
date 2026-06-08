@@ -1,5 +1,9 @@
 import { and, desc, eq, sql } from "drizzle-orm";
-import { db, memoryEpisode, memoryEpisodeEvidence } from "../../../../infra/database/index.js";
+import {
+  db,
+  memoryEpisode,
+  memoryEpisodeEvidence,
+} from "../../../../infra/database/index.js";
 import type {
   MemoryEpisodeRejectInput,
   MemoryEpisodeRejectResult,
@@ -30,8 +34,16 @@ export async function listSuggestedMemoryEpisodes(
       evidenceCount: sql<number>`count(${memoryEpisodeEvidence.id})`,
     })
     .from(memoryEpisode)
-    .leftJoin(memoryEpisodeEvidence, eq(memoryEpisodeEvidence.episodeId, memoryEpisode.id))
-    .where(and(eq(memoryEpisode.projectId, input.projectId), eq(memoryEpisode.status, "suggested")))
+    .leftJoin(
+      memoryEpisodeEvidence,
+      eq(memoryEpisodeEvidence.episodeId, memoryEpisode.id),
+    )
+    .where(
+      and(
+        eq(memoryEpisode.projectId, input.projectId),
+        eq(memoryEpisode.status, "suggested"),
+      ),
+    )
     .groupBy(memoryEpisode.id)
     .orderBy(desc(memoryEpisode.updatedAt))
     .limit(limit);

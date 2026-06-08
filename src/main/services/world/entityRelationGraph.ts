@@ -56,7 +56,9 @@ export async function buildWorldGraph(
     client
       .select()
       .from(character)
-      .where(and(eq(character.projectId, projectId), isNull(character.deletedAt))),
+      .where(
+        and(eq(character.projectId, projectId), isNull(character.deletedAt)),
+      ),
     client
       .select()
       .from(faction)
@@ -72,7 +74,12 @@ export async function buildWorldGraph(
     client
       .select()
       .from(worldEntity)
-      .where(and(eq(worldEntity.projectId, projectId), isNull(worldEntity.deletedAt))),
+      .where(
+        and(
+          eq(worldEntity.projectId, projectId),
+          isNull(worldEntity.deletedAt),
+        ),
+      ),
     client
       .select()
       .from(scene)
@@ -84,7 +91,9 @@ export async function buildWorldGraph(
     client
       .select()
       .from(synopsis)
-      .where(and(eq(synopsis.projectId, projectId), isNull(synopsis.deletedAt))),
+      .where(
+        and(eq(synopsis.projectId, projectId), isNull(synopsis.deletedAt)),
+      ),
     client
       .select()
       .from(plot)
@@ -92,7 +101,9 @@ export async function buildWorldGraph(
     client
       .select()
       .from(scrapMemo)
-      .where(and(eq(scrapMemo.projectId, projectId), isNull(scrapMemo.deletedAt))),
+      .where(
+        and(eq(scrapMemo.projectId, projectId), isNull(scrapMemo.deletedAt)),
+      ),
     client
       .select()
       .from(entityRelation)
@@ -100,153 +111,175 @@ export async function buildWorldGraph(
   ]);
 
   const nodes: WorldGraphNode[] = [
-    ...characters.map((item): WorldGraphNode => ({
-      id: item.id,
-      entityType: "Character",
-      name: item.name,
-      description: item.description,
-      firstAppearance: item.firstAppearance,
-      attributes: parseAttributes(item.attributes),
-      positionX: 0,
-      positionY: 0,
-    })),
-    ...factions.map((item): WorldGraphNode => ({
-      id: item.id,
-      entityType: "Faction",
-      name: item.name,
-      description: item.description,
-      firstAppearance: item.firstAppearance,
-      attributes: parseAttributes(item.attributes),
-      positionX: 0,
-      positionY: 0,
-    })),
-    ...events.map((item): WorldGraphNode => ({
-      id: item.id,
-      entityType: "Event",
-      name: item.name,
-      description: item.description,
-      firstAppearance: item.firstAppearance,
-      attributes: parseAttributes(item.attributes),
-      positionX: 0,
-      positionY: 0,
-    })),
-    ...terms.map((item): WorldGraphNode => ({
-      id: item.id,
-      entityType: "Term",
-      name: item.term,
-      description: item.definition ?? null,
-      firstAppearance: item.firstAppearance,
-      attributes: item.category ? { tags: [item.category] } : null,
-      positionX: 0,
-      positionY: 0,
-    })),
-    ...worldEntities.map((item): WorldGraphNode => ({
-      id: item.id,
-      entityType: (item.type ?? "Place") as WorldEntitySourceType,
-      subType: (item.type ?? "Place") as WorldEntityType,
-      name: item.name,
-      description: item.description,
-      firstAppearance: item.firstAppearance,
-      attributes: parseAttributes(item.attributes),
-      positionX: item.positionX ?? 0,
-      positionY: item.positionY ?? 0,
-    })),
-    ...scenes.map((item): WorldGraphNode => ({
-      id: item.id,
-      entityType: "WorldEntity",
-      subType: CANVAS_AUX_NODE_SUBTYPES.SCENE,
-      name: `Scene · ${item.title}`,
-      description: item.body?.slice(0, 240) ?? null,
-      firstAppearance: null,
-      attributes: {
-        sourceType: MEMORY_DOMAIN_SOURCE_TYPES.SCENE,
-        sourceId: item.id,
-        chapterId: item.chapterId,
-      },
-      positionX: 0,
-      positionY: 0,
-    })),
-    ...notes.map((item): WorldGraphNode => ({
-      id: item.id,
-      entityType: "WorldEntity",
-      subType: CANVAS_AUX_NODE_SUBTYPES.NOTE,
-      name: `Note · ${item.title}`,
-      description: item.body?.slice(0, 240) ?? null,
-      firstAppearance: null,
-      attributes: {
-        sourceType: MEMORY_DOMAIN_SOURCE_TYPES.NOTE,
-        sourceId: item.id,
-        chapterId: item.chapterId ?? null,
-      },
-      positionX: 0,
-      positionY: 0,
-    })),
-    ...synopses.map((item): WorldGraphNode => ({
-      id: item.id,
-      entityType: "WorldEntity",
-      subType: CANVAS_AUX_NODE_SUBTYPES.SYNOPSIS,
-      name: `Synopsis · ${item.title}`,
-      description: item.body?.slice(0, 240) ?? null,
-      firstAppearance: null,
-      attributes: {
-        sourceType: MEMORY_DOMAIN_SOURCE_TYPES.SYNOPSIS,
-        sourceId: item.id,
-        chapterId: item.chapterId ?? null,
-      },
-      positionX: 0,
-      positionY: 0,
-    })),
-    ...plots.map((item): WorldGraphNode => ({
-      id: item.id,
-      entityType: "WorldEntity",
-      subType: CANVAS_AUX_NODE_SUBTYPES.PLOT,
-      name: `Plot · ${item.title}`,
-      description: item.body?.slice(0, 240) ?? null,
-      firstAppearance: null,
-      attributes: {
-        sourceType: MEMORY_DOMAIN_SOURCE_TYPES.PLOT,
-        sourceId: item.id,
-      },
-      positionX: 0,
-      positionY: 0,
-    })),
-    ...scraps.map((item): WorldGraphNode => ({
-      id: item.id,
-      entityType: "WorldEntity",
-      subType: CANVAS_AUX_NODE_SUBTYPES.SCRAP,
-      name: `Scrap · ${item.title}`,
-      description: item.content?.slice(0, 240) ?? null,
-      firstAppearance: null,
-      attributes: {
-        sourceType: MEMORY_DOMAIN_SOURCE_TYPES.SCRAP_MEMO,
-        sourceId: item.id,
-        tags: parseTags(item.tags),
-      },
-      positionX: 0,
-      positionY: 0,
-    })),
+    ...characters.map(
+      (item): WorldGraphNode => ({
+        id: item.id,
+        entityType: "Character",
+        name: item.name,
+        description: item.description,
+        firstAppearance: item.firstAppearance,
+        attributes: parseAttributes(item.attributes),
+        positionX: 0,
+        positionY: 0,
+      }),
+    ),
+    ...factions.map(
+      (item): WorldGraphNode => ({
+        id: item.id,
+        entityType: "Faction",
+        name: item.name,
+        description: item.description,
+        firstAppearance: item.firstAppearance,
+        attributes: parseAttributes(item.attributes),
+        positionX: 0,
+        positionY: 0,
+      }),
+    ),
+    ...events.map(
+      (item): WorldGraphNode => ({
+        id: item.id,
+        entityType: "Event",
+        name: item.name,
+        description: item.description,
+        firstAppearance: item.firstAppearance,
+        attributes: parseAttributes(item.attributes),
+        positionX: 0,
+        positionY: 0,
+      }),
+    ),
+    ...terms.map(
+      (item): WorldGraphNode => ({
+        id: item.id,
+        entityType: "Term",
+        name: item.term,
+        description: item.definition ?? null,
+        firstAppearance: item.firstAppearance,
+        attributes: item.category ? { tags: [item.category] } : null,
+        positionX: 0,
+        positionY: 0,
+      }),
+    ),
+    ...worldEntities.map(
+      (item): WorldGraphNode => ({
+        id: item.id,
+        entityType: (item.type ?? "Place") as WorldEntitySourceType,
+        subType: (item.type ?? "Place") as WorldEntityType,
+        name: item.name,
+        description: item.description,
+        firstAppearance: item.firstAppearance,
+        attributes: parseAttributes(item.attributes),
+        positionX: item.positionX ?? 0,
+        positionY: item.positionY ?? 0,
+      }),
+    ),
+    ...scenes.map(
+      (item): WorldGraphNode => ({
+        id: item.id,
+        entityType: "WorldEntity",
+        subType: CANVAS_AUX_NODE_SUBTYPES.SCENE,
+        name: `Scene · ${item.title}`,
+        description: item.body?.slice(0, 240) ?? null,
+        firstAppearance: null,
+        attributes: {
+          sourceType: MEMORY_DOMAIN_SOURCE_TYPES.SCENE,
+          sourceId: item.id,
+          chapterId: item.chapterId,
+        },
+        positionX: 0,
+        positionY: 0,
+      }),
+    ),
+    ...notes.map(
+      (item): WorldGraphNode => ({
+        id: item.id,
+        entityType: "WorldEntity",
+        subType: CANVAS_AUX_NODE_SUBTYPES.NOTE,
+        name: `Note · ${item.title}`,
+        description: item.body?.slice(0, 240) ?? null,
+        firstAppearance: null,
+        attributes: {
+          sourceType: MEMORY_DOMAIN_SOURCE_TYPES.NOTE,
+          sourceId: item.id,
+          chapterId: item.chapterId ?? null,
+        },
+        positionX: 0,
+        positionY: 0,
+      }),
+    ),
+    ...synopses.map(
+      (item): WorldGraphNode => ({
+        id: item.id,
+        entityType: "WorldEntity",
+        subType: CANVAS_AUX_NODE_SUBTYPES.SYNOPSIS,
+        name: `Synopsis · ${item.title}`,
+        description: item.body?.slice(0, 240) ?? null,
+        firstAppearance: null,
+        attributes: {
+          sourceType: MEMORY_DOMAIN_SOURCE_TYPES.SYNOPSIS,
+          sourceId: item.id,
+          chapterId: item.chapterId ?? null,
+        },
+        positionX: 0,
+        positionY: 0,
+      }),
+    ),
+    ...plots.map(
+      (item): WorldGraphNode => ({
+        id: item.id,
+        entityType: "WorldEntity",
+        subType: CANVAS_AUX_NODE_SUBTYPES.PLOT,
+        name: `Plot · ${item.title}`,
+        description: item.body?.slice(0, 240) ?? null,
+        firstAppearance: null,
+        attributes: {
+          sourceType: MEMORY_DOMAIN_SOURCE_TYPES.PLOT,
+          sourceId: item.id,
+        },
+        positionX: 0,
+        positionY: 0,
+      }),
+    ),
+    ...scraps.map(
+      (item): WorldGraphNode => ({
+        id: item.id,
+        entityType: "WorldEntity",
+        subType: CANVAS_AUX_NODE_SUBTYPES.SCRAP,
+        name: `Scrap · ${item.title}`,
+        description: item.content?.slice(0, 240) ?? null,
+        firstAppearance: null,
+        attributes: {
+          sourceType: MEMORY_DOMAIN_SOURCE_TYPES.SCRAP_MEMO,
+          sourceId: item.id,
+          tags: parseTags(item.tags),
+        },
+        positionX: 0,
+        positionY: 0,
+      }),
+    ),
   ];
 
-  const typedEdges: EntityRelation[] = edges.map((item): EntityRelation => ({
-    ...buildCanonicalWorldEntityPointers({
+  const typedEdges: EntityRelation[] = edges.map(
+    (item): EntityRelation => ({
+      ...buildCanonicalWorldEntityPointers({
+        sourceId: item.sourceId ?? "",
+        sourceType: (item.sourceType ?? "Character") as WorldEntitySourceType,
+        targetId: item.targetId ?? "",
+        targetType: (item.targetType ?? "Character") as WorldEntitySourceType,
+      }),
+      id: item.id,
+      projectId: item.projectId ?? projectId,
       sourceId: item.sourceId ?? "",
       sourceType: (item.sourceType ?? "Character") as WorldEntitySourceType,
       targetId: item.targetId ?? "",
       targetType: (item.targetType ?? "Character") as WorldEntitySourceType,
+      relation: (item.relation ?? "belongs_to") as RelationKind,
+      attributes: item.attributes
+        ? (parseAttributes(item.attributes) as Record<string, unknown>)
+        : null,
+      createdAt: (item.createdAt as string | Date) ?? new Date(),
+      updatedAt: (item.updatedAt as string | Date) ?? new Date(),
     }),
-    id: item.id,
-    projectId: item.projectId ?? projectId,
-    sourceId: item.sourceId ?? "",
-    sourceType: (item.sourceType ?? "Character") as WorldEntitySourceType,
-    targetId: item.targetId ?? "",
-    targetType: (item.targetType ?? "Character") as WorldEntitySourceType,
-    relation: (item.relation ?? "belongs_to") as RelationKind,
-    attributes: item.attributes
-      ? (parseAttributes(item.attributes) as Record<string, unknown>)
-      : null,
-    createdAt: (item.createdAt as string | Date) ?? new Date(),
-    updatedAt: (item.updatedAt as string | Date) ?? new Date(),
-  }));
+  );
 
   const nodeIds = new Set(nodes.map((node) => node.id));
   const filteredEdges = typedEdges.filter(

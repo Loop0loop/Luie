@@ -24,7 +24,8 @@ export const normalizeSupabaseUrl = (value: string): string => {
   }
 };
 
-export const isHttpUrl = (value: string): boolean => /^https?:\/\//i.test(value);
+export const isHttpUrl = (value: string): boolean =>
+  /^https?:\/\//i.test(value);
 
 const toValidHttpUrl = (value: string): string | null => {
   try {

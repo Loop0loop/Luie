@@ -87,31 +87,19 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
   try {
     client.transaction((tx) => {
       applyProjectDeletes(tx, deletedProjectIds);
-      upsertProjects(
-        tx,
-        input.bundle.projects,
-        deletedProjectIds,
-      );
+      upsertProjects(tx, input.bundle.projects, deletedProjectIds);
 
       for (const chapter of input.bundle.chapters) {
         if (deletedProjectIds.has(chapter.projectId)) continue;
         upsertChapter(tx, chapter);
       }
 
-      upsertCharacters(
-        tx,
-        input.bundle.characters,
-        deletedProjectIds,
-      );
+      upsertCharacters(tx, input.bundle.characters, deletedProjectIds);
       upsertEvents(tx, input.bundle.events, deletedProjectIds);
       upsertFactions(tx, input.bundle.factions, deletedProjectIds);
       upsertTerms(tx, input.bundle.terms, deletedProjectIds);
       applyReplicaWorldState(tx, input.bundle, deletedProjectIds);
-      applyChapterTombstones(
-        tx,
-        input.bundle.tombstones,
-        deletedProjectIds,
-      );
+      applyChapterTombstones(tx, input.bundle.tombstones, deletedProjectIds);
     });
   } catch (error) {
     const persistedProjectIds = persistedPackages.map((item) => item.projectId);

@@ -1,9 +1,19 @@
-import { and, asc, count, desc, eq, inArray, isNull, like, sql } from "drizzle-orm";
-import { db } from "../../infra/database/index.js";
-import { cacheDb } from "../../infra/database/cache.js";
-import { chapterSearchDocument } from "../../infra/database/cache.js";
-import { chapter, chapterBody } from "../../infra/database/index.js";
-import { createLogger } from "../../../shared/logger/index.js";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  like,
+  sql,
+} from "drizzle-orm";
+import { db } from "../../../infra/database/index.js";
+import { cacheDb } from "../../../infra/database/cache.js";
+import { chapterSearchDocument } from "../../../infra/database/cache.js";
+import { chapter, chapterBody } from "../../../infra/database/index.js";
+import { createLogger } from "../../../../shared/logger/index.js";
 
 const getCacheClient = () => cacheDb.getClient();
 const getMainClient = () => db.getClient();
@@ -78,8 +88,12 @@ class ChapterSearchCacheService {
   }): Promise<void> {
     try {
       const client = getCacheClient();
-      client.run(sql`DELETE FROM "ChapterSearchDocumentFts" WHERE "chapterId" = ${input.chapterId};`);
-      client.run(sql`INSERT INTO "ChapterSearchDocumentFts" ("chapterId", "projectId", "title", "synopsis", "searchText") VALUES (${input.chapterId}, ${input.projectId}, ${input.title}, ${input.synopsis ?? ""}, ${input.searchText});`);
+      client.run(
+        sql`DELETE FROM "ChapterSearchDocumentFts" WHERE "chapterId" = ${input.chapterId};`,
+      );
+      client.run(
+        sql`INSERT INTO "ChapterSearchDocumentFts" ("chapterId", "projectId", "title", "synopsis", "searchText") VALUES (${input.chapterId}, ${input.projectId}, ${input.title}, ${input.synopsis ?? ""}, ${input.searchText});`,
+      );
     } catch (error) {
       this.logFtsUnavailable(
         "Chapter search FTS sync unavailable; keeping projection fallback",
@@ -91,7 +105,9 @@ class ChapterSearchCacheService {
   private async clearFtsByChapter(chapterId: string): Promise<void> {
     try {
       const client = getCacheClient();
-      client.run(sql`DELETE FROM "ChapterSearchDocumentFts" WHERE "chapterId" = ${chapterId};`);
+      client.run(
+        sql`DELETE FROM "ChapterSearchDocumentFts" WHERE "chapterId" = ${chapterId};`,
+      );
     } catch (error) {
       this.logFtsUnavailable(
         "Chapter search FTS clear unavailable; keeping projection fallback",
@@ -103,7 +119,9 @@ class ChapterSearchCacheService {
   private async clearFtsByProject(projectId: string): Promise<void> {
     try {
       const client = getCacheClient();
-      client.run(sql`DELETE FROM "ChapterSearchDocumentFts" WHERE "projectId" = ${projectId};`);
+      client.run(
+        sql`DELETE FROM "ChapterSearchDocumentFts" WHERE "projectId" = ${projectId};`,
+      );
     } catch (error) {
       this.logFtsUnavailable(
         "Chapter search FTS project clear unavailable; keeping projection fallback",
@@ -115,7 +133,9 @@ class ChapterSearchCacheService {
   private async countProjectFtsRows(projectId: string): Promise<number | null> {
     try {
       const client = getCacheClient();
-      const rows = client.all<{ count: unknown }>(sql`SELECT COUNT(*) as count FROM "ChapterSearchDocumentFts" WHERE "projectId" = ${projectId};`);
+      const rows = client.all<{ count: unknown }>(
+        sql`SELECT COUNT(*) as count FROM "ChapterSearchDocumentFts" WHERE "projectId" = ${projectId};`,
+      );
       return toSafeNumber(rows[0]?.count);
     } catch (error) {
       this.logFtsUnavailable(
@@ -134,7 +154,9 @@ class ChapterSearchCacheService {
     try {
       const client = getCacheClient();
       const ftsQuery = buildFtsQuery(query);
-      const rows = client.all<{ chapterId: string }>(sql`SELECT "chapterId" FROM "ChapterSearchDocumentFts" WHERE "projectId" = ${projectId} AND "ChapterSearchDocumentFts" MATCH ${ftsQuery} ORDER BY bm25("ChapterSearchDocumentFts"), "chapterId" LIMIT ${limit};`);
+      const rows = client.all<{ chapterId: string }>(
+        sql`SELECT "chapterId" FROM "ChapterSearchDocumentFts" WHERE "projectId" = ${projectId} AND "ChapterSearchDocumentFts" MATCH ${ftsQuery} ORDER BY bm25("ChapterSearchDocumentFts"), "chapterId" LIMIT ${limit};`,
+      );
 
       if (rows.length === 0) {
         return [];
@@ -146,7 +168,10 @@ class ChapterSearchCacheService {
         .from(chapterSearchDocument)
         .where(inArray(chapterSearchDocument.chapterId, chapterIds));
       const documentMap = new Map(
-        documents.map((doc) => [doc.chapterId, mapChapterSearchDocumentRow(doc)]),
+        documents.map((doc) => [
+          doc.chapterId,
+          mapChapterSearchDocumentRow(doc),
+        ]),
       );
 
       return chapterIds
@@ -176,7 +201,10 @@ class ChapterSearchCacheService {
           like(chapterSearchDocument.searchText, `%${query}%`),
         ),
       )
-      .orderBy(asc(chapterSearchDocument.chapterOrder), desc(chapterSearchDocument.updatedAt))
+      .orderBy(
+        asc(chapterSearchDocument.chapterOrder),
+        desc(chapterSearchDocument.updatedAt),
+      )
       .limit(limit);
     return rows.map(mapChapterSearchDocumentRow);
   }
@@ -287,7 +315,9 @@ class ChapterSearchCacheService {
   async clearChapter(chapterId: string): Promise<void> {
     const client = getCacheClient();
     await Promise.all([
-      client.delete(chapterSearchDocument).where(eq(chapterSearchDocument.chapterId, chapterId)),
+      client
+        .delete(chapterSearchDocument)
+        .where(eq(chapterSearchDocument.chapterId, chapterId)),
       this.clearFtsByChapter(chapterId),
     ]);
   }
@@ -295,7 +325,9 @@ class ChapterSearchCacheService {
   async clearProject(projectId: string): Promise<void> {
     const client = getCacheClient();
     await Promise.all([
-      client.delete(chapterSearchDocument).where(eq(chapterSearchDocument.projectId, projectId)),
+      client
+        .delete(chapterSearchDocument)
+        .where(eq(chapterSearchDocument.projectId, projectId)),
       this.clearFtsByProject(projectId),
     ]);
   }
@@ -315,7 +347,9 @@ class ChapterSearchCacheService {
       mainClient
         .select({ count: count() })
         .from(chapter)
-        .where(and(eq(chapter.projectId, projectId), isNull(chapter.deletedAt))),
+        .where(
+          and(eq(chapter.projectId, projectId), isNull(chapter.deletedAt)),
+        ),
       this.countProjectFtsRows(projectId),
     ]);
     const cacheCount = cacheCountResult[0]?.count ?? 0;

@@ -16,14 +16,18 @@ const localProjectService = new ProjectService();
 
 beforeAll(() => {
   vi.spyOn(autoExtractService, "scheduleAnalysis").mockImplementation(() => {});
-  vi.spyOn(projectService, "schedulePackageExport").mockImplementation(() => {});
+  vi.spyOn(projectService, "schedulePackageExport").mockImplementation(
+    () => {},
+  );
   vi.spyOn(projectService, "attemptImmediatePackageExport").mockResolvedValue({
     exported: false,
   });
   vi.spyOn(projectService, "persistPackageAfterMutation").mockResolvedValue(
     undefined,
   );
-  vi.spyOn(localProjectService, "schedulePackageExport").mockImplementation(() => {});
+  vi.spyOn(localProjectService, "schedulePackageExport").mockImplementation(
+    () => {},
+  );
 });
 
 describe("SnapshotService", () => {
@@ -40,7 +44,10 @@ describe("SnapshotService", () => {
     });
 
     const originalContent = generateText(50000);
-    await chapterService.updateChapter({ id: chapter.id as string, content: originalContent });
+    await chapterService.updateChapter({
+      id: chapter.id as string,
+      content: originalContent,
+    });
 
     const snapshot = await snapshotService.createSnapshot({
       projectId: project.id as string,

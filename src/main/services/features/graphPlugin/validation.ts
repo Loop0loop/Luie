@@ -26,11 +26,12 @@ export const resolvePluginNodeEntityType = (
   return parsed.success ? parsed.data : null;
 };
 
-export const resolvePluginRelationType = (
-  entityType: WorldEntitySourceType,
-) => resolvePluginNodeEntityType(entityType, entityType);
+export const resolvePluginRelationType = (entityType: WorldEntitySourceType) =>
+  resolvePluginNodeEntityType(entityType, entityType);
 
-export const validateWorldEntityGraph = (graphPayload: GraphDocumentPayload) => {
+export const validateWorldEntityGraph = (
+  graphPayload: GraphDocumentPayload,
+) => {
   const nodeIds = new Set<string>();
   const nodes = graphPayload.nodes ?? [];
   const edges = graphPayload.edges ?? [];
@@ -86,7 +87,11 @@ export const validateWorldEntityGraph = (graphPayload: GraphDocumentPayload) => 
       throw createServiceError(
         ErrorCode.VALIDATION_FAILED,
         "Graph template edges must target custom world entity types in V1",
-        { edgeId: edge.id, sourceType: edge.sourceType, targetType: edge.targetType },
+        {
+          edgeId: edge.id,
+          sourceType: edge.sourceType,
+          targetType: edge.targetType,
+        },
       );
     }
 

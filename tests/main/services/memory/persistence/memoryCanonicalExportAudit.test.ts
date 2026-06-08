@@ -36,28 +36,31 @@ describe("getMemoryCanonicalExportAudit", () => {
       order: 1,
       updatedAt: nowIso,
     });
-    await db.getClient().insert(memoryEntity).values([
-      {
-        id: entityId,
-        projectId,
-        entityType: "character",
-        canonicalName: "아린",
-        status: "suggested",
-        confidence: 90,
-        createdBy: "system",
-        updatedAt: nowIso,
-      },
-      {
-        id: crypto.randomUUID(),
-        projectId,
-        entityType: "character",
-        canonicalName: "백야회",
-        status: "confirmed",
-        confidence: 80,
-        createdBy: "user",
-        updatedAt: nowIso,
-      },
-    ]);
+    await db
+      .getClient()
+      .insert(memoryEntity)
+      .values([
+        {
+          id: entityId,
+          projectId,
+          entityType: "character",
+          canonicalName: "아린",
+          status: "suggested",
+          confidence: 90,
+          createdBy: "system",
+          updatedAt: nowIso,
+        },
+        {
+          id: crypto.randomUUID(),
+          projectId,
+          entityType: "character",
+          canonicalName: "백야회",
+          status: "confirmed",
+          confidence: 80,
+          createdBy: "user",
+          updatedAt: nowIso,
+        },
+      ]);
     await db.getClient().insert(memoryFact).values({
       id: crypto.randomUUID(),
       projectId,

@@ -277,7 +277,7 @@ const extractManifestFromFeedPayload = (
       typeof source.size === "number" && Number.isFinite(source.size) && source.size > 0
         ? source.size
         : undefined;
-    const normalizedSha = rawSha ? normalizeSha256(rawSha) ?? undefined : undefined;
+    const normalizedSha = rawSha ? (normalizeSha256(rawSha) ?? undefined) : undefined;
 
     return {
       version: normalizedVersion,
@@ -308,7 +308,7 @@ const extractManifestFromFeedPayload = (
             : typeof item.checksum === "string"
               ? item.checksum
               : undefined;
-      const normalizedSha = digest ? normalizeSha256(digest) ?? undefined : undefined;
+      const normalizedSha = digest ? (normalizeSha256(digest) ?? undefined) : undefined;
       const size =
         typeof item.size === "number" && Number.isFinite(item.size) && item.size > 0
           ? item.size

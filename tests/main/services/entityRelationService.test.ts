@@ -10,7 +10,9 @@ const mocked = vi.hoisted(() => {
   const projectFindMany = vi.fn();
   const projectSelect = vi.fn();
   const projectTouch = vi.fn(async (_projectId: string) => undefined);
-  const projectPersist = vi.fn(async (_projectId: string, _reason: string) => undefined);
+  const projectPersist = vi.fn(
+    async (_projectId: string, _reason: string) => undefined,
+  );
 
   const chainableInsert = {
     values: vi.fn(() => ({ returning: relationInsertReturning })),
@@ -79,10 +81,16 @@ import { EntityRelationService } from "../../../src/main/services/world/entityRe
 describe("EntityRelationService freshness", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocked.relationInsertReturning.mockResolvedValue([{ id: "relation-1", projectId: "project-1" }]);
+    mocked.relationInsertReturning.mockResolvedValue([
+      { id: "relation-1", projectId: "project-1" },
+    ]);
     mocked.relationSelect.mockResolvedValue([]);
-    mocked.relationUpdateReturning.mockResolvedValue([{ id: "relation-1", projectId: "project-1" }]);
-    mocked.relationDeleteReturning.mockResolvedValue([{ id: "relation-1", projectId: "project-1" }]);
+    mocked.relationUpdateReturning.mockResolvedValue([
+      { id: "relation-1", projectId: "project-1" },
+    ]);
+    mocked.relationDeleteReturning.mockResolvedValue([
+      { id: "relation-1", projectId: "project-1" },
+    ]);
     mocked.relationFindMany.mockResolvedValue([]);
     mocked.projectFindMany.mockResolvedValue([{ id: "project-1" }]);
     mocked.projectSelect.mockResolvedValue([{ id: "project-1" }]);
@@ -149,7 +157,7 @@ describe("EntityRelationService freshness", () => {
         targetId: "character-1",
         targetType: "Character",
         relation: "located_in",
-        attributes: "{\"importance\":3}",
+        attributes: '{"importance":3}',
       },
     ]);
     const service = new EntityRelationService();

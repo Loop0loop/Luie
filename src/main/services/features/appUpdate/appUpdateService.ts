@@ -118,7 +118,8 @@ export class AppUpdateService {
       };
     }
 
-    const feedUrl = process.env.LUIE_UPDATE_FEED_URL?.trim() ?? DEFAULT_UPDATE_FEED_URL;
+    const feedUrl =
+      process.env.LUIE_UPDATE_FEED_URL?.trim() ?? DEFAULT_UPDATE_FEED_URL;
     if (!feedUrl) {
       this.cachedManifest = null;
       this.setState({
@@ -205,7 +206,9 @@ export class AppUpdateService {
     }
   }
 
-  private async readArtifactFromMeta(metaPath: string): Promise<AppUpdateArtifact | null> {
+  private async readArtifactFromMeta(
+    metaPath: string,
+  ): Promise<AppUpdateArtifact | null> {
     if (!(await pathExists(metaPath))) return null;
     try {
       const raw = await fsp.readFile(metaPath, "utf-8");
@@ -220,8 +223,12 @@ export class AppUpdateService {
 
   async getState(): Promise<AppUpdateState> {
     const rollbackAvailable = await pathExists(this.getRollbackMetaPath());
-    const pendingArtifact = await this.readArtifactFromMeta(this.getPendingMetaPath());
-    const currentArtifact = await this.readArtifactFromMeta(this.getCurrentMetaPath());
+    const pendingArtifact = await this.readArtifactFromMeta(
+      this.getPendingMetaPath(),
+    );
+    const currentArtifact = await this.readArtifactFromMeta(
+      this.getCurrentMetaPath(),
+    );
     const artifact = pendingArtifact ?? currentArtifact ?? this.state.artifact;
 
     this.setState({
@@ -251,7 +258,15 @@ export class AppUpdateService {
 
   private async tryLaunchInstaller(filePath: string): Promise<boolean> {
     const lower = filePath.toLowerCase();
-    const launchableExtensions = [".exe", ".msi", ".dmg", ".pkg", ".appimage", ".deb", ".rpm"];
+    const launchableExtensions = [
+      ".exe",
+      ".msi",
+      ".dmg",
+      ".pkg",
+      ".appimage",
+      ".deb",
+      ".rpm",
+    ];
     if (!launchableExtensions.some((ext) => lower.endsWith(ext))) {
       return false;
     }
@@ -314,7 +329,9 @@ export class AppUpdateService {
       };
     }
 
-    const pendingArtifact = await this.readArtifactFromMeta(this.getPendingMetaPath());
+    const pendingArtifact = await this.readArtifactFromMeta(
+      this.getPendingMetaPath(),
+    );
     if (!pendingArtifact) {
       return {
         success: false,
@@ -374,7 +391,9 @@ export class AppUpdateService {
       };
     }
 
-    const launchedInstaller = await this.tryLaunchInstaller(pendingArtifact.filePath);
+    const launchedInstaller = await this.tryLaunchInstaller(
+      pendingArtifact.filePath,
+    );
     if (launchedInstaller) {
       return {
         success: true,
@@ -427,7 +446,10 @@ export class AppUpdateService {
     }
 
     const currentMetaPath = this.getCurrentMetaPath();
-    const staleMetaPath = path.join(this.getUpdateDir(), `stale-${Date.now()}.json`);
+    const staleMetaPath = path.join(
+      this.getUpdateDir(),
+      `stale-${Date.now()}.json`,
+    );
     if (await pathExists(currentMetaPath)) {
       await fsp.rename(currentMetaPath, staleMetaPath);
     }

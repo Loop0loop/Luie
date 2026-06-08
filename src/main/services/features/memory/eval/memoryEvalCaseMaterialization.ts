@@ -41,7 +41,10 @@ export async function materializeMemoryEvalCasesFromEpisodeEvidence(input: {
       quote: memoryEpisodeEvidence.quote,
     })
     .from(memoryEpisodeEvidence)
-    .innerJoin(memoryEpisode, eq(memoryEpisode.id, memoryEpisodeEvidence.episodeId))
+    .innerJoin(
+      memoryEpisode,
+      eq(memoryEpisode.id, memoryEpisodeEvidence.episodeId),
+    )
     .where(eq(memoryEpisodeEvidence.projectId, input.projectId))
     .limit(limit);
 
@@ -53,7 +56,12 @@ export async function materializeMemoryEvalCasesFromEpisodeEvidence(input: {
     const existing = await client
       .select({ id: memoryEvalCase.id })
       .from(memoryEvalCase)
-      .where(and(eq(memoryEvalCase.projectId, input.projectId), eq(memoryEvalCase.name, name)))
+      .where(
+        and(
+          eq(memoryEvalCase.projectId, input.projectId),
+          eq(memoryEvalCase.name, name),
+        ),
+      )
       .limit(1);
     if (existing.length > 0) {
       skipped += 1;
@@ -73,29 +81,33 @@ async function insertEvalCaseFromEpisodeEvidence(
 ): Promise<void> {
   const caseId = crypto.randomUUID();
   db.getClient().transaction((tx) => {
-    tx.insert(memoryEvalCase).values({
-      id: caseId,
-      projectId: row.projectId,
-      name,
-      question: `${row.episodeTitle}의 근거를 찾아라.`,
-      caseType: "qa",
-      expectedAnswer: row.episodeSummary,
-      temporalScopeStartChapterId: row.chapterId,
-      temporalScopeEndChapterId: row.chapterId,
-      severity: "p1",
-      updatedAt: nowIso,
-    }).run();
-    tx.insert(memoryEvalEvidence).values({
-      id: crypto.randomUUID(),
-      caseId,
-      projectId: row.projectId,
-      chapterId: row.chapterId,
-      expectedChunkId: row.chunkId,
-      startOffset: row.startOffset,
-      endOffset: row.endOffset,
-      quote: row.quote,
-      updatedAt: nowIso,
-    }).run();
+    tx.insert(memoryEvalCase)
+      .values({
+        id: caseId,
+        projectId: row.projectId,
+        name,
+        question: `${row.episodeTitle}의 근거를 찾아라.`,
+        caseType: "qa",
+        expectedAnswer: row.episodeSummary,
+        temporalScopeStartChapterId: row.chapterId,
+        temporalScopeEndChapterId: row.chapterId,
+        severity: "p1",
+        updatedAt: nowIso,
+      })
+      .run();
+    tx.insert(memoryEvalEvidence)
+      .values({
+        id: crypto.randomUUID(),
+        caseId,
+        projectId: row.projectId,
+        chapterId: row.chapterId,
+        expectedChunkId: row.chunkId,
+        startOffset: row.startOffset,
+        endOffset: row.endOffset,
+        quote: row.quote,
+        updatedAt: nowIso,
+      })
+      .run();
   });
 }
 

@@ -11,7 +11,8 @@ export const createGraphPluginPaths = (pluginRootDir: string) => ({
   getPluginRoot: () => pluginRootDir,
   getRegistryPath: () => path.join(pluginRootDir, "registry", "catalog.json"),
   getInstalledRoot: () => path.join(pluginRootDir, "installed"),
-  getInstalledIndexPath: () => path.join(pluginRootDir, "installed", "index.json"),
+  getInstalledIndexPath: () =>
+    path.join(pluginRootDir, "installed", "index.json"),
   getInstalledPluginDir: (pluginId: string) =>
     path.join(pluginRootDir, "installed", pluginId),
   getInstalledVersionDir: (pluginId: string, version: string) =>
@@ -19,7 +20,10 @@ export const createGraphPluginPaths = (pluginRootDir: string) => ({
   getTempRoot: () => path.join(pluginRootDir, ".tmp"),
 });
 
-export const readJsonFile = async <T>(filePath: string, fallback?: T): Promise<T> => {
+export const readJsonFile = async <T>(
+  filePath: string,
+  fallback?: T,
+): Promise<T> => {
   try {
     const raw = await fsp.readFile(filePath, "utf-8");
     return JSON.parse(raw) as T;
@@ -32,7 +36,9 @@ export const readJsonFile = async <T>(filePath: string, fallback?: T): Promise<T
   }
 };
 
-export const readCatalog = async (registryPath: string): Promise<LocalCatalogItem[]> => {
+export const readCatalog = async (
+  registryPath: string,
+): Promise<LocalCatalogItem[]> => {
   const raw = await readJsonFile(registryPath, []);
   const parsed = z.array(localCatalogItemSchema).safeParse(raw);
   if (!parsed.success) {

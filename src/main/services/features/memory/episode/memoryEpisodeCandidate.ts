@@ -1,5 +1,9 @@
 import crypto from "node:crypto";
-import { db, memoryEpisode, memoryEpisodeEvidence } from "../../../../infra/database/index.js";
+import {
+  db,
+  memoryEpisode,
+  memoryEpisodeEvidence,
+} from "../../../../infra/database/index.js";
 
 export type MemoryEpisodeCandidateEvidenceInput = {
   chapterId: string | null;
@@ -29,16 +33,22 @@ export type MemoryEpisodeCandidateCreateInput = MemoryEpisodeCandidateInput & {
   episodeType: string;
 };
 
-export function validateMemoryEpisodeCandidate(input: MemoryEpisodeCandidateInput): void {
+export function validateMemoryEpisodeCandidate(
+  input: MemoryEpisodeCandidateInput,
+): void {
   if (input.evidence.length === 0) {
     throw new Error("MEMORY_EPISODE_REQUIRES_EVIDENCE");
   }
-  const hasBlankQuote = input.evidence.some((item) => item.quote.trim().length === 0);
+  const hasBlankQuote = input.evidence.some(
+    (item) => item.quote.trim().length === 0,
+  );
   if (hasBlankQuote) {
     throw new Error("MEMORY_EPISODE_REQUIRES_EVIDENCE");
   }
   const hasMissingHash = input.evidence.some(
-    (item) => item.contentHash.trim().length === 0 || item.sourceContentHash.trim().length === 0,
+    (item) =>
+      item.contentHash.trim().length === 0 ||
+      item.sourceContentHash.trim().length === 0,
   );
   if (hasMissingHash) {
     throw new Error("MEMORY_EPISODE_EVIDENCE_REQUIRES_HASH");
@@ -61,7 +71,9 @@ export function buildMemoryEpisodeExtractionKey(input: {
   ].join(":");
 }
 
-export function createMemoryEpisodeCandidateRows(input: MemoryEpisodeCandidateCreateInput): {
+export function createMemoryEpisodeCandidateRows(
+  input: MemoryEpisodeCandidateCreateInput,
+): {
   episode: {
     id: string;
     projectId: string;
@@ -127,7 +139,9 @@ export function createMemoryEpisodeCandidateRows(input: MemoryEpisodeCandidateCr
   };
 }
 
-export async function createMemoryEpisodeCandidate(input: MemoryEpisodeCandidateCreateInput): Promise<ReturnType<typeof createMemoryEpisodeCandidateRows>> {
+export async function createMemoryEpisodeCandidate(
+  input: MemoryEpisodeCandidateCreateInput,
+): Promise<ReturnType<typeof createMemoryEpisodeCandidateRows>> {
   const rows = createMemoryEpisodeCandidateRows(input);
   db.getClient().transaction((tx) => {
     tx.insert(memoryEpisode).values(rows.episode).run();

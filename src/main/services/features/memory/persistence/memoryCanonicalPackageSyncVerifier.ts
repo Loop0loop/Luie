@@ -8,7 +8,7 @@ import { LuieMemoryCanonicalSchema } from "../../../core/project/projectLuieSche
 import { readLuieContainerEntry } from "../../../io/luieContainer.js";
 import { buildMemoryCanonicalPackagePayload } from "./memoryCanonicalPackage.js";
 
-type TableName = typeof MEMORY_CANONICAL_EXPORTABLE_TABLES[number];
+type TableName = (typeof MEMORY_CANONICAL_EXPORTABLE_TABLES)[number];
 
 export type MemoryCanonicalPackageSyncTable = {
   dbRows: number;

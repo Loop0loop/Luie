@@ -40,28 +40,31 @@ describe("memoryTemporalFactReviewService", () => {
       order: 10,
       updatedAt: nowIso,
     });
-    await db.getClient().insert(memoryEntity).values([
-      {
-        id: subjectId,
-        projectId,
-        entityType: "character",
-        canonicalName: "아린",
-        status: "confirmed",
-        confidence: 100,
-        createdBy: "system",
-        updatedAt: nowIso,
-      },
-      {
-        id: objectId,
-        projectId,
-        entityType: "faction",
-        canonicalName: "백야회",
-        status: "confirmed",
-        confidence: 100,
-        createdBy: "system",
-        updatedAt: nowIso,
-      },
-    ]);
+    await db
+      .getClient()
+      .insert(memoryEntity)
+      .values([
+        {
+          id: subjectId,
+          projectId,
+          entityType: "character",
+          canonicalName: "아린",
+          status: "confirmed",
+          confidence: 100,
+          createdBy: "system",
+          updatedAt: nowIso,
+        },
+        {
+          id: objectId,
+          projectId,
+          entityType: "faction",
+          canonicalName: "백야회",
+          status: "confirmed",
+          confidence: 100,
+          createdBy: "system",
+          updatedAt: nowIso,
+        },
+      ]);
     await db.getClient().insert(memoryFact).values({
       id: factId,
       projectId,

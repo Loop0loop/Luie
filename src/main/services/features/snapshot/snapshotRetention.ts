@@ -27,7 +27,8 @@ export const deleteOldSnapshotRecords = async (
   hooks: RetentionHooks,
 ) => {
   try {
-    const allSnapshots = await db.getClient()
+    const allSnapshots = await db
+      .getClient()
       .select()
       .from(snapshot)
       .where(eq(snapshot.projectId, projectId))
@@ -41,10 +42,15 @@ export const deleteOldSnapshotRecords = async (
     const now = new Date().toISOString();
     db.getClient().transaction((tx) => {
       tx.delete(snapshot)
-        .where(and(
-          eq(snapshot.projectId, projectId),
-          inArray(snapshot.id, toDelete.map((s) => s.id)),
-        ))
+        .where(
+          and(
+            eq(snapshot.projectId, projectId),
+            inArray(
+              snapshot.id,
+              toDelete.map((s) => s.id),
+            ),
+          ),
+        )
         .run();
       tx.update(project)
         .set({ updatedAt: now })
@@ -87,7 +93,8 @@ export const pruneSnapshotRecords = async (
   const sevenDaysMs = 7 * oneDayMs;
 
   try {
-    const snapshots = await db.getClient()
+    const snapshots = await db
+      .getClient()
       .select({ id: snapshot.id, createdAt: snapshot.createdAt })
       .from(snapshot)
       .where(and(eq(snapshot.projectId, projectId), eq(snapshot.type, "AUTO")))
@@ -131,7 +138,12 @@ export const pruneSnapshotRecords = async (
     const updateNow = new Date().toISOString();
     db.getClient().transaction((tx) => {
       tx.delete(snapshot)
-        .where(and(eq(snapshot.projectId, projectId), inArray(snapshot.id, toDelete)))
+        .where(
+          and(
+            eq(snapshot.projectId, projectId),
+            inArray(snapshot.id, toDelete),
+          ),
+        )
         .run();
       tx.update(project)
         .set({ updatedAt: updateNow })

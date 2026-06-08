@@ -43,9 +43,8 @@ describe("luiePackageWriter rollback behavior", () => {
 
   it("restores the original file when atomic replace fails after backup rename", async () => {
     await vi.resetModules();
-    const { atomicReplace } = await import(
-      "../../../src/main/services/io/luiePackageWriter.js"
-    );
+    const { atomicReplace } =
+      await import("../../../src/main/services/io/luiePackageWriter.js");
 
     tempRoot = await fsp.mkdtemp(
       path.join(os.tmpdir(), "luie-writer-rollback-"),
@@ -70,16 +69,18 @@ describe("luiePackageWriter rollback behavior", () => {
         throw error;
       }
       if (renameCalls === 3) {
-        const error = new Error("forced atomic replace failure") as NodeJS.ErrnoException;
+        const error = new Error(
+          "forced atomic replace failure",
+        ) as NodeJS.ErrnoException;
         error.code = "EIO";
         throw error;
       }
       return await actualRename.fn!(from, to);
     });
 
-    await expect(
-      atomicReplace(tempPath, targetPath, logger),
-    ).rejects.toThrow("forced atomic replace failure");
+    await expect(atomicReplace(tempPath, targetPath, logger)).rejects.toThrow(
+      "forced atomic replace failure",
+    );
 
     expect(await fsp.readFile(targetPath, "utf8")).toBe(originalContent);
     const entries = await fsp.readdir(tempRoot);
@@ -88,9 +89,8 @@ describe("luiePackageWriter rollback behavior", () => {
 
   it("removes tmp debris when container writing fails before atomic replace", async () => {
     await vi.resetModules();
-    const { writeLuieContainer } = await import(
-      "../../../src/main/services/io/luieContainer.js"
-    );
+    const { writeLuieContainer } =
+      await import("../../../src/main/services/io/luieContainer.js");
 
     tempRoot = await fsp.mkdtemp(
       path.join(os.tmpdir(), "luie-writer-cleanup-"),

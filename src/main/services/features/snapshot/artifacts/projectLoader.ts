@@ -12,9 +12,7 @@ import { ServiceError } from "../../../../utils/error/index.js";
 import { getProjectAttachmentPath } from "../../../core/project/projectAttachmentStore.js";
 import type { ProjectSnapshotRecord } from "./types.js";
 
-export async function loadProjectSnapshotRecord(
-  projectId: string,
-): Promise<{
+export async function loadProjectSnapshotRecord(projectId: string): Promise<{
   project: ProjectSnapshotRecord;
   projectPath: string | null;
 }> {
@@ -28,7 +26,11 @@ export async function loadProjectSnapshotRecord(
     termsRows,
     projectPath,
   ] = await Promise.all([
-    store.select().from(projectTable).where(eq(projectTable.id, projectId)).limit(1),
+    store
+      .select()
+      .from(projectTable)
+      .where(eq(projectTable.id, projectId))
+      .limit(1),
     store
       .select()
       .from(projectSettingsTable)
@@ -37,18 +39,28 @@ export async function loadProjectSnapshotRecord(
     store
       .select()
       .from(chapterTable)
-      .where(and(eq(chapterTable.projectId, projectId), isNull(chapterTable.deletedAt)))
+      .where(
+        and(
+          eq(chapterTable.projectId, projectId),
+          isNull(chapterTable.deletedAt),
+        ),
+      )
       .orderBy(asc(chapterTable.order)),
     store
       .select()
       .from(characterTable)
       .where(
-        and(eq(characterTable.projectId, projectId), isNull(characterTable.deletedAt)),
+        and(
+          eq(characterTable.projectId, projectId),
+          isNull(characterTable.deletedAt),
+        ),
       ),
     store
       .select()
       .from(termTable)
-      .where(and(eq(termTable.projectId, projectId), isNull(termTable.deletedAt))),
+      .where(
+        and(eq(termTable.projectId, projectId), isNull(termTable.deletedAt)),
+      ),
     getProjectAttachmentPath(projectId),
   ]);
 

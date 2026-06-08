@@ -31,6 +31,8 @@ describe("supabaseConfigValidation", () => {
       anonKey: "sb_publishable_1234567890123456",
     });
     expect(validation.valid).toBe(true);
-    expect(validation.normalized?.url).toBe("https://qzgyjlbpnxxpspoyibpt.supabase.co");
+    expect(validation.normalized?.url).toBe(
+      "https://qzgyjlbpnxxpspoyibpt.supabase.co",
+    );
   });
 });

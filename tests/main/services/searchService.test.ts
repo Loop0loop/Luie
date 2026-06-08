@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeAll } from "vitest";
-import { SearchService } from "../../../src/main/services/features/searchService.js";
+import { SearchService } from "../../../src/main/services/features/search/index.js";
 import { ChapterService } from "../../../src/main/services/core/chapterService.js";
 import { ProjectService } from "../../../src/main/services/core/projectService.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import { projectService } from "../../../src/main/services/core/projectService.js";
 import { cacheDb } from "../../../src/main/database/cache/index.js";
-import { chapterSearchCacheService } from "../../../src/main/services/features/chapterSearchCacheService.js";
+import { chapterSearchCacheService } from "../../../src/main/services/features/search/index.js";
 
 const searchService = new SearchService();
 const chapterService = new ChapterService();
@@ -13,11 +13,15 @@ const localProjectService = new ProjectService();
 
 beforeAll(() => {
   vi.spyOn(autoExtractService, "scheduleAnalysis").mockImplementation(() => {});
-  vi.spyOn(projectService, "schedulePackageExport").mockImplementation(() => {});
+  vi.spyOn(projectService, "schedulePackageExport").mockImplementation(
+    () => {},
+  );
   vi.spyOn(projectService, "attemptImmediatePackageExport").mockResolvedValue({
     exported: false,
   });
-  vi.spyOn(localProjectService, "schedulePackageExport").mockImplementation(() => {});
+  vi.spyOn(localProjectService, "schedulePackageExport").mockImplementation(
+    () => {},
+  );
 });
 
 describe("SearchService", () => {
@@ -42,7 +46,9 @@ describe("SearchService", () => {
       type: "all",
     });
 
-    expect(results.some((r) => r.type === "chapter" && r.id === chapter.id)).toBe(true);
+    expect(
+      results.some((r) => r.type === "chapter" && r.id === chapter.id),
+    ).toBe(true);
   });
 
   it("rebuilds chapter search cache after cache wipe", async () => {
@@ -72,11 +78,15 @@ describe("SearchService", () => {
       type: "all",
     });
 
-    const restoredCount = await cacheDb.getClient().chapterSearchDocument.count({
-      where: { projectId: project.id as string },
-    });
+    const restoredCount = await cacheDb
+      .getClient()
+      .chapterSearchDocument.count({
+        where: { projectId: project.id as string },
+      });
 
-    expect(results.some((r) => r.type === "chapter" && r.id === chapter.id)).toBe(true);
+    expect(
+      results.some((r) => r.type === "chapter" && r.id === chapter.id),
+    ).toBe(true);
     expect(restoredCount).toBe(1);
   });
 
@@ -107,6 +117,8 @@ describe("SearchService", () => {
     });
 
     expect(ftsCount).toBe(1);
-    expect(results.some((r) => r.type === "chapter" && r.id === chapter.id)).toBe(true);
+    expect(
+      results.some((r) => r.type === "chapter" && r.id === chapter.id),
+    ).toBe(true);
   });
 });

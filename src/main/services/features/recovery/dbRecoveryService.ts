@@ -2,15 +2,15 @@ import { promises as fs } from "fs";
 import path from "path";
 import { app } from "electron";
 import Database from "better-sqlite3";
-import { createLogger } from "../../../shared/logger/index.js";
-import { SNAPSHOT_BACKUP_DIR } from "../../../shared/constants/paths.js";
+import { createLogger } from "../../../../shared/logger/index.js";
+import { SNAPSHOT_BACKUP_DIR } from "../../../../shared/constants/paths.js";
 import type {
   DbRecoveryCheckpoint,
   DbRecoveryFileStatus,
   DbRecoveryResult,
   DbRecoveryStatus,
-} from "../../../shared/types/index.js";
-import { db } from "../../infra/database/index.js";
+} from "../../../../shared/types/index.js";
+import { db } from "../../../infra/database/index.js";
 
 const logger = createLogger("DbRecoveryService");
 const getRecoveryBackupRootDir = () =>

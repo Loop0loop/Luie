@@ -24,18 +24,36 @@ export type UtilityOutboundMessage =
   | { type: "response"; requestId: string; ok: false; error: string }
   | { type: "event"; event: "ragQa.stream"; payload: RagQaStreamPayload }
   | { type: "event"; event: "ragQa.error"; payload: RagQaErrorPayload }
-  | { type: "event"; event: "sidecar.status"; payload: UtilitySidecarStatusEvent };
+  | {
+      type: "event";
+      event: "sidecar.status";
+      payload: UtilitySidecarStatusEvent;
+    };
 
 export type UtilityInboundMessage =
   | { type: "ping"; requestId?: string }
   | { type: "shutdown"; requestId?: string }
-  | { type: "request"; requestId: string; method: "ragQa.ask"; payload: UtilityRagQaRequest }
-  | { type: "request"; requestId: string; method: "ragQa.stop"; payload?: { runId?: string } }
+  | {
+      type: "request";
+      requestId: string;
+      method: "ragQa.ask";
+      payload: UtilityRagQaRequest;
+    }
+  | {
+      type: "request";
+      requestId: string;
+      method: "ragQa.stop";
+      payload?: { runId?: string };
+    }
   | {
       type: "request";
       requestId: string;
       method: "embedding.embed";
-      payload: { projectId: string; texts: string[]; runtimePlan?: UtilityRagQaRequest["runtimePlan"] };
+      payload: {
+        projectId: string;
+        texts: string[];
+        runtimePlan?: UtilityRagQaRequest["runtimePlan"];
+      };
     }
   | {
       type: "request";
@@ -53,10 +71,24 @@ export type UtilityInboundMessage =
       type: "request";
       requestId: string;
       method: "sidecar.start";
-      payload: { binaryPath: string; modelPath: string; options?: { gpuLayers?: number; contextSize?: number } };
+      payload: {
+        binaryPath: string;
+        modelPath: string;
+        options?: { gpuLayers?: number; contextSize?: number };
+      };
     }
-  | { type: "request"; requestId: string; method: "sidecar.status"; payload?: never }
-  | { type: "request"; requestId: string; method: "sidecar.stop"; payload?: never };
+  | {
+      type: "request";
+      requestId: string;
+      method: "sidecar.status";
+      payload?: never;
+    }
+  | {
+      type: "request";
+      requestId: string;
+      method: "sidecar.stop";
+      payload?: never;
+    };
 
 export type UtilitySidecarStatusResult = UtilitySidecarStatus;
 
@@ -71,7 +103,11 @@ export type PendingRagEvent =
   | { kind: "error"; payload: RagQaErrorPayload };
 
 export const unwrapMessage = (raw: unknown): unknown => {
-  if (raw && typeof raw === "object" && "data" in (raw as Record<string, unknown>)) {
+  if (
+    raw &&
+    typeof raw === "object" &&
+    "data" in (raw as Record<string, unknown>)
+  ) {
     return (raw as { data?: unknown }).data;
   }
   return raw;

@@ -7,29 +7,34 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { promises as fs } from "fs";
 import path from "path";
 import JSZip from "jszip";
-import { ExportService, type ExportOptions } from "../../../src/main/services/features/exportService";
+import {
+  ExportService,
+  type ExportOptions,
+} from "../../../src/main/services/features/export/index";
 
 describe("ExportService", () => {
   let exportService: ExportService;
   const testOutputDir = path.join(__dirname, "../../test-output");
-  
+
   beforeEach(async () => {
     exportService = new ExportService();
     // Create test output directory
     await fs.mkdir(testOutputDir, { recursive: true });
   });
-  
+
   afterEach(async () => {
     // Clean up test files
     try {
-      const files = await fs.readdir(testOutputDir);    
-      await Promise.all(files.map((file) => fs.unlink(path.join(testOutputDir, file))));
+      const files = await fs.readdir(testOutputDir);
+      await Promise.all(
+        files.map((file) => fs.unlink(path.join(testOutputDir, file))),
+      );
       await fs.rmdir(testOutputDir);
     } catch {
       // Ignore cleanup errors
     }
   });
-  
+
   describe("DOCX Export", () => {
     it("should export simple text to DOCX", async () => {
       const options: ExportOptions = {
@@ -40,18 +45,18 @@ describe("ExportService", () => {
         format: "DOCX",
         outputPath: path.join(testOutputDir, "test-simple.docx"),
       };
-      
+
       const result = await exportService.export(options);
-      
+
       expect(result.success).toBe(true);
       expect(result.filePath).toBe(options.outputPath);
-      
+
       // Check file exists
       const stats = await fs.stat(options.outputPath!);
       expect(stats.isFile()).toBe(true);
       expect(stats.size).toBeGreaterThan(0);
     });
-    
+
     it("should export with headings to DOCX", async () => {
       const options: ExportOptions = {
         projectId: "test-project-id",
@@ -66,9 +71,9 @@ describe("ExportService", () => {
         format: "DOCX",
         outputPath: path.join(testOutputDir, "test-headings.docx"),
       };
-      
+
       const result = await exportService.export(options);
-      
+
       expect(result.success).toBe(true);
       expect(result.filePath).toBeTruthy();
     });
@@ -94,7 +99,7 @@ describe("ExportService", () => {
       expect(result.success).toBe(true);
       expect(result.filePath).toBeTruthy();
     });
-    
+
     it("should apply custom margins", async () => {
       const options: ExportOptions = {
         projectId: "test-project-id",
@@ -108,12 +113,12 @@ describe("ExportService", () => {
         marginRight: 25,
         outputPath: path.join(testOutputDir, "test-margins.docx"),
       };
-      
+
       const result = await exportService.export(options);
-      
+
       expect(result.success).toBe(true);
     });
-    
+
     it("should handle A4 paper size", async () => {
       const options: ExportOptions = {
         projectId: "test-project-id",
@@ -124,12 +129,12 @@ describe("ExportService", () => {
         paperSize: "A4",
         outputPath: path.join(testOutputDir, "test-a4.docx"),
       };
-      
+
       const result = await exportService.export(options);
-      
+
       expect(result.success).toBe(true);
     });
-    
+
     it("should handle Letter paper size", async () => {
       const options: ExportOptions = {
         projectId: "test-project-id",
@@ -140,12 +145,12 @@ describe("ExportService", () => {
         paperSize: "Letter",
         outputPath: path.join(testOutputDir, "test-letter.docx"),
       };
-      
+
       const result = await exportService.export(options);
-      
+
       expect(result.success).toBe(true);
     });
-    
+
     it("should fail without output path", async () => {
       const options: ExportOptions = {
         projectId: "test-project-id",
@@ -154,13 +159,13 @@ describe("ExportService", () => {
         content: "<p>Test content.</p>",
         format: "DOCX",
       };
-      
+
       const result = await exportService.export(options);
-      
+
       expect(result.success).toBe(false);
       expect(result.error).toBeTruthy();
     });
-    
+
     it("should automatically add .docx extension", async () => {
       const options: ExportOptions = {
         projectId: "test-project-id",
@@ -170,14 +175,14 @@ describe("ExportService", () => {
         format: "DOCX",
         outputPath: path.join(testOutputDir, "test-extension"),
       };
-      
+
       const result = await exportService.export(options);
-      
+
       expect(result.success).toBe(true);
       expect(result.filePath).toContain(".docx");
     });
   });
-  
+
   describe("HWPX Export", () => {
     it("should export simple text to HWPX", async () => {
       const options: ExportOptions = {
@@ -188,18 +193,18 @@ describe("ExportService", () => {
         format: "HWPX",
         outputPath: path.join(testOutputDir, "test-simple.hwpx"),
       };
-      
+
       const result = await exportService.export(options);
-      
+
       expect(result.success).toBe(true);
       expect(result.filePath).toBe(options.outputPath);
-      
+
       // Check file exists
       const stats = await fs.stat(options.outputPath!);
       expect(stats.isFile()).toBe(true);
       expect(stats.size).toBeGreaterThan(0);
     });
-    
+
     it("should export with multiple paragraphs to HWPX", async () => {
       const options: ExportOptions = {
         projectId: "test-project-id",
@@ -213,12 +218,12 @@ describe("ExportService", () => {
         format: "HWPX",
         outputPath: path.join(testOutputDir, "test-multi-para.hwpx"),
       };
-      
+
       const result = await exportService.export(options);
-      
+
       expect(result.success).toBe(true);
     });
-    
+
     it("should handle Korean text in HWPX", async () => {
       const options: ExportOptions = {
         projectId: "test-project-id",
@@ -231,9 +236,9 @@ describe("ExportService", () => {
         format: "HWPX",
         outputPath: path.join(testOutputDir, "test-korean.hwpx"),
       };
-      
+
       const result = await exportService.export(options);
-      
+
       expect(result.success).toBe(true);
     });
 
@@ -259,7 +264,9 @@ describe("ExportService", () => {
 
       const buffer = await fs.readFile(outputPath);
       const zip = await JSZip.loadAsync(buffer);
-      const sectionXml = await zip.file("Contents/section0.xml")?.async("string");
+      const sectionXml = await zip
+        .file("Contents/section0.xml")
+        ?.async("string");
 
       expect(sectionXml).toBeTruthy();
       expect(sectionXml).toContain('width="59528"');
@@ -270,7 +277,7 @@ describe("ExportService", () => {
       expect(sectionXml).toContain('bottom="4252"');
       expect(sectionXml).toContain('horzsize="45356"');
     });
-    
+
     it("should automatically add .hwpx extension", async () => {
       const options: ExportOptions = {
         projectId: "test-project-id",
@@ -280,14 +287,14 @@ describe("ExportService", () => {
         format: "HWPX",
         outputPath: path.join(testOutputDir, "test-extension-hwpx"),
       };
-      
+
       const result = await exportService.export(options);
-      
+
       expect(result.success).toBe(true);
       expect(result.filePath).toContain(".hwpx");
     });
   });
-  
+
   describe("Error Handling", () => {
     it("should fail with empty content", async () => {
       const options: ExportOptions = {
@@ -298,12 +305,12 @@ describe("ExportService", () => {
         format: "DOCX",
         outputPath: path.join(testOutputDir, "test-empty.docx"),
       };
-      
+
       const result = await exportService.export(options);
-      
+
       expect(result.success).toBe(false);
     });
-    
+
     it("should fail with invalid format", async () => {
       const options = {
         projectId: "test-project-id",
@@ -313,9 +320,9 @@ describe("ExportService", () => {
         format: "INVALID",
         outputPath: path.join(testOutputDir, "test-invalid.txt"),
       };
-      
+
       const result = await exportService.export(options as ExportOptions);
-      
+
       expect(result.success).toBe(false);
       expect(result.error).toBeTruthy();
     });

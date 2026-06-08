@@ -211,28 +211,31 @@ describe("memoryEntityReviewService", () => {
       order: 1,
       updatedAt: nowIso,
     });
-    await db.getClient().insert(memoryEntity).values([
-      {
-        id: targetEntityId,
-        projectId,
-        entityType: "character",
-        canonicalName: "아린",
-        status: "confirmed",
-        confidence: 90,
-        createdBy: "system",
-        updatedAt: nowIso,
-      },
-      {
-        id: sourceEntityId,
-        projectId,
-        entityType: "character",
-        canonicalName: "검은 기사",
-        status: "suggested",
-        confidence: 70,
-        createdBy: "system",
-        updatedAt: nowIso,
-      },
-    ]);
+    await db
+      .getClient()
+      .insert(memoryEntity)
+      .values([
+        {
+          id: targetEntityId,
+          projectId,
+          entityType: "character",
+          canonicalName: "아린",
+          status: "confirmed",
+          confidence: 90,
+          createdBy: "system",
+          updatedAt: nowIso,
+        },
+        {
+          id: sourceEntityId,
+          projectId,
+          entityType: "character",
+          canonicalName: "검은 기사",
+          status: "suggested",
+          confidence: 70,
+          createdBy: "system",
+          updatedAt: nowIso,
+        },
+      ]);
     await db.getClient().insert(memoryEntityAlias).values({
       id: aliasId,
       projectId,

@@ -37,9 +37,11 @@ describe("repairMemoryEvidenceChunkLinks", () => {
       chapterId: null,
       sceneId: null,
       chunkIndex: 0,
-      content: "앞부분. 아린은 봉인된 편지를 읽고 백야회의 목적을 깨달았다. 뒷부분.",
+      content:
+        "앞부분. 아린은 봉인된 편지를 읽고 백야회의 목적을 깨달았다. 뒷부분.",
       contentHash: "current-chunk-hash",
-      indexText: "앞부분. 아린은 봉인된 편지를 읽고 백야회의 목적을 깨달았다. 뒷부분.",
+      indexText:
+        "앞부분. 아린은 봉인된 편지를 읽고 백야회의 목적을 깨달았다. 뒷부분.",
       indexTextHash: "current-index-hash",
       contextLabel: "chapter: repair",
       sourceContentHash: "source-hash",

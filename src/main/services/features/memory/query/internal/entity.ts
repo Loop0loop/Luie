@@ -141,7 +141,9 @@ export async function loadEntityProfiles(input: {
       and(
         eq(memoryEntity.projectId, input.projectId),
         inArray(memoryEntity.id, entityIds),
-        normalizedType ? eq(memoryEntity.entityType, normalizedType) : undefined,
+        normalizedType
+          ? eq(memoryEntity.entityType, normalizedType)
+          : undefined,
       ),
     )
     .orderBy(memoryEntity.canonicalName);
@@ -204,7 +206,11 @@ export async function loadEntityProfiles(input: {
 
   const mentionsByEntity = new Map<
     string,
-    { mentionCount: number | null; firstMentionChapterOrder: number | null; lastMentionChapterOrder: number | null }
+    {
+      mentionCount: number | null;
+      firstMentionChapterOrder: number | null;
+      lastMentionChapterOrder: number | null;
+    }
   >();
   for (const row of mentionRows) {
     mentionsByEntity.set(row.entityId, {
@@ -214,8 +220,9 @@ export async function loadEntityProfiles(input: {
     });
   }
 
-  const canonicalMatch =
-    new Set(rows.map((row) => row.canonicalName.trim().toLowerCase()));
+  const canonicalMatch = new Set(
+    rows.map((row) => row.canonicalName.trim().toLowerCase()),
+  );
   const extraAliasRows = aliasRows.filter(
     (aliasRow) =>
       !canonicalMatch.has(aliasRow.alias.trim().toLowerCase()) &&

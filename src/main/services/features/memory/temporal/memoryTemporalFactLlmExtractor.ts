@@ -123,7 +123,9 @@ function assertKnownIds(
   for (const candidate of candidates) {
     for (const evidenceId of candidate.evidenceIds) {
       if (!evidenceIds.has(evidenceId)) {
-        throw new Error(`MEMORY_TEMPORAL_FACT_LLM_UNKNOWN_EVIDENCE:${evidenceId}`);
+        throw new Error(
+          `MEMORY_TEMPORAL_FACT_LLM_UNKNOWN_EVIDENCE:${evidenceId}`,
+        );
       }
     }
 

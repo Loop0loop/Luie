@@ -1,10 +1,4 @@
-import {
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const fetchTemporalFactsMock = vi.fn();
 const fetchFactEvidenceMock = vi.fn();
@@ -18,39 +12,62 @@ const loadEntityProfilesMock = vi.fn();
 const classifyNarrativeMemoryQueryPlanWithLlmMock = vi.fn();
 const isLlmNarrativeMemoryIntentClassifierEnabledMock = vi.fn();
 
-vi.mock("../../../../../src/main/services/features/memory/query/internal/temporal.js", () => ({
-  fetchTemporalFacts: fetchTemporalFactsMock,
-}));
+vi.mock(
+  "../../../../../src/main/services/features/memory/query/internal/temporal.js",
+  () => ({
+    fetchTemporalFacts: fetchTemporalFactsMock,
+  }),
+);
 
-vi.mock("../../../../../src/main/services/features/memory/query/internal/evidence.js", () => ({
-  fetchFactEvidence: fetchFactEvidenceMock,
-}));
+vi.mock(
+  "../../../../../src/main/services/features/memory/query/internal/evidence.js",
+  () => ({
+    fetchFactEvidence: fetchFactEvidenceMock,
+  }),
+);
 
-vi.mock("../../../../../src/main/services/features/memory/query/internal/conflicts.js", () => ({
-  fetchConflictFactPairs: fetchConflictFactPairsMock,
-}));
+vi.mock(
+  "../../../../../src/main/services/features/memory/query/internal/conflicts.js",
+  () => ({
+    fetchConflictFactPairs: fetchConflictFactPairsMock,
+  }),
+);
 
-vi.mock("../../../../../src/main/services/features/memory/query/internal/summaries.js", () => ({
-  fetchNarrativeSummaryFacts: fetchNarrativeSummaryFactsMock,
-  fetchChapterSummaryFacts: fetchChapterSummaryFactsMock,
-}));
+vi.mock(
+  "../../../../../src/main/services/features/memory/query/internal/summaries.js",
+  () => ({
+    fetchNarrativeSummaryFacts: fetchNarrativeSummaryFactsMock,
+    fetchChapterSummaryFacts: fetchChapterSummaryFactsMock,
+  }),
+);
 
-vi.mock("../../../../../src/main/services/features/memory/query/internal/chapter.js", () => ({
-  resolveChapterOrder: resolveChapterOrderMock,
-  resolveChapterOrderByChapterId: resolveChapterOrderByChapterIdMock,
-}));
+vi.mock(
+  "../../../../../src/main/services/features/memory/query/internal/chapter.js",
+  () => ({
+    resolveChapterOrder: resolveChapterOrderMock,
+    resolveChapterOrderByChapterId: resolveChapterOrderByChapterIdMock,
+  }),
+);
 
-vi.mock("../../../../../src/main/services/features/memory/query/internal/entity.js", () => ({
-  resolveMemoryEntityIds: resolveMemoryEntityIdsMock,
-  loadEntityProfiles: loadEntityProfilesMock,
-  loadEntityInfo: vi.fn(),
-  resolveRelatedEntity: vi.fn(),
-}));
+vi.mock(
+  "../../../../../src/main/services/features/memory/query/internal/entity.js",
+  () => ({
+    resolveMemoryEntityIds: resolveMemoryEntityIdsMock,
+    loadEntityProfiles: loadEntityProfilesMock,
+    loadEntityInfo: vi.fn(),
+    resolveRelatedEntity: vi.fn(),
+  }),
+);
 
-vi.mock("../../../../../src/main/services/features/memory/query/internal/llmIntentClassifier.js", () => ({
-  classifyNarrativeMemoryQueryPlanWithLlm: classifyNarrativeMemoryQueryPlanWithLlmMock,
-  isLlmNarrativeMemoryIntentClassifierEnabled: isLlmNarrativeMemoryIntentClassifierEnabledMock,
-}));
+vi.mock(
+  "../../../../../src/main/services/features/memory/query/internal/llmIntentClassifier.js",
+  () => ({
+    classifyNarrativeMemoryQueryPlanWithLlm:
+      classifyNarrativeMemoryQueryPlanWithLlmMock,
+    isLlmNarrativeMemoryIntentClassifierEnabled:
+      isLlmNarrativeMemoryIntentClassifierEnabledMock,
+  }),
+);
 
 const modulePath =
   "../../../../../src/main/services/features/memory/query/narrativeMemoryQueryService.js";
@@ -77,14 +94,21 @@ beforeEach(() => {
 
 describe("narrative memory query service", () => {
   it("routes relationship-at-chapter questions to temporal relation sources", () => {
-    const plan = buildNarrativeMemoryQueryPlan("10화 기준 A와 B는 어떤 관계인가?");
+    const plan = buildNarrativeMemoryQueryPlan(
+      "10화 기준 A와 B는 어떤 관계인가?",
+    );
 
     expect(plan.intent).toBe("relationship-at-chapter");
-    expect(plan.sources).toEqual(["memory_relation_state", "memory_fact_evidence"]);
+    expect(plan.sources).toEqual([
+      "memory_relation_state",
+      "memory_fact_evidence",
+    ]);
   });
 
   it("routes knowledge/state-at-chapter questions to state sources", () => {
-    const plan = buildNarrativeMemoryQueryPlan("8화 기준 A는 C의 정체를 아는가?");
+    const plan = buildNarrativeMemoryQueryPlan(
+      "8화 기준 A는 C의 정체를 아는가?",
+    );
 
     expect(plan.intent).toBe("entity-state-at-chapter");
     expect(plan.sources).toEqual([
@@ -95,17 +119,19 @@ describe("narrative memory query service", () => {
   });
 
   it("extracts entity names from Korean state and identity questions", () => {
-    expect(extractEntityNamesFromQuestion("8화 기준 아린은 백야회의 정체를 아는가?")).toEqual([
-      "아린",
-      "백야회",
-    ]);
-    expect(extractEntityNamesFromQuestion("검은 기사는 누구야? 별칭도 알려줘")).toEqual([
-      "검은 기사",
-    ]);
+    expect(
+      extractEntityNamesFromQuestion("8화 기준 아린은 백야회의 정체를 아는가?"),
+    ).toEqual(["아린", "백야회"]);
+    expect(
+      extractEntityNamesFromQuestion("검은 기사는 누구야? 별칭도 알려줘"),
+    ).toEqual(["검은 기사"]);
   });
 
   it("uses extracted entity names when resolving memory entities", async () => {
-    resolveMemoryEntityIdsMock.mockResolvedValue(["entity-arin", "entity-baekya"]);
+    resolveMemoryEntityIdsMock.mockResolvedValue([
+      "entity-arin",
+      "entity-baekya",
+    ]);
 
     await narrativeMemoryQueryService.query({
       projectId: "project-1",
@@ -156,7 +182,9 @@ describe("narrative memory query service", () => {
   });
 
   it("routes evidence trace questions to raw memory chunk evidence", () => {
-    const plan = buildNarrativeMemoryQueryPlan("A가 처음 말한 근거 원문을 찾아줘");
+    const plan = buildNarrativeMemoryQueryPlan(
+      "A가 처음 말한 근거 원문을 찾아줘",
+    );
 
     expect(plan.intent).toBe("evidence-trace");
     expect(plan.sources).toEqual(["memory_chunk_evidence"]);
@@ -166,7 +194,10 @@ describe("narrative memory query service", () => {
     const plan = buildNarrativeMemoryQueryPlan("A가 B를 떠난 원인은 왜인가?");
 
     expect(plan.intent).toBe("event-causality");
-    expect(plan.sources).toEqual(["memory_episode", "memory_state_change_candidate"]);
+    expect(plan.sources).toEqual([
+      "memory_episode",
+      "memory_state_change_candidate",
+    ]);
   });
 
   it("routes unresolved thread questions to episode and fact sources", () => {
@@ -184,10 +215,16 @@ describe("narrative memory query service", () => {
   });
 
   it("routes entity profile questions to entity sources", () => {
-    const plan = buildNarrativeMemoryQueryPlan("검은 기사는 누구야? 별칭도 알려줘");
+    const plan = buildNarrativeMemoryQueryPlan(
+      "검은 기사는 누구야? 별칭도 알려줘",
+    );
 
     expect(plan.intent).toBe("entity-profile");
-    expect(plan.sources).toEqual(["memory_entity", "memory_entity_mention", "memory_fact_evidence"]);
+    expect(plan.sources).toEqual([
+      "memory_entity",
+      "memory_entity_mention",
+      "memory_fact_evidence",
+    ]);
   });
 
   it("returns entity profile rows for entity-profile query", async () => {

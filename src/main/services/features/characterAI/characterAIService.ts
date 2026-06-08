@@ -41,10 +41,10 @@ function httpError(prefix: string, status: number): Error {
 
 function buildImagePrompt(input: CharacterAIInput): string {
   const parts: string[] = [];
-  if (input.tagline)          parts.push(input.tagline);
+  if (input.tagline) parts.push(input.tagline);
   if (input.keywords?.length) parts.push(input.keywords.join(", "));
-  if (input.appearance)       parts.push(input.appearance.slice(0, 300));
-  if (input.personality)      parts.push(input.personality.slice(0, 200));
+  if (input.appearance) parts.push(input.appearance.slice(0, 300));
+  if (input.personality) parts.push(input.personality.slice(0, 200));
   parts.push(
     "anime style character portrait, detailed illustration, dramatic lighting, high quality",
   );
@@ -54,11 +54,12 @@ function buildImagePrompt(input: CharacterAIInput): string {
 function buildQuoteContext(input: CharacterAIInput): string {
   const lines: string[] = [];
   lines.push(`이름: ${input.name}`);
-  if (input.tagline)          lines.push(`소개: ${input.tagline}`);
-  if (input.roles?.length)    lines.push(`역할: ${input.roles.join(", ")}`);
-  if (input.keywords?.length) lines.push(`키워드: ${input.keywords.join(", ")}`);
-  if (input.personality)      lines.push(`성격: ${input.personality.slice(0, 300)}`);
-  if (input.background)       lines.push(`배경: ${input.background.slice(0, 200)}`);
+  if (input.tagline) lines.push(`소개: ${input.tagline}`);
+  if (input.roles?.length) lines.push(`역할: ${input.roles.join(", ")}`);
+  if (input.keywords?.length)
+    lines.push(`키워드: ${input.keywords.join(", ")}`);
+  if (input.personality) lines.push(`성격: ${input.personality.slice(0, 300)}`);
+  if (input.background) lines.push(`배경: ${input.background.slice(0, 200)}`);
   return lines.join("\n");
 }
 
@@ -68,15 +69,19 @@ function buildQuoteContext(input: CharacterAIInput): string {
  */
 function buildStatsContext(input: CharacterAIInput): string {
   const lines: string[] = [`캐릭터명: ${input.name}`];
-  if (input.tagline)          lines.push(`한 줄 소개: ${input.tagline}`);
-  if (input.roles?.length)    lines.push(`역할: ${input.roles.join(", ")}`);
-  if (input.keywords?.length) lines.push(`키워드: ${input.keywords.join(", ")}`);
-  if (input.overview)         lines.push(`\n[개요]\n${input.overview.slice(0, 400)}`);
-  if (input.personality)      lines.push(`\n[성격/동기]\n${input.personality.slice(0, 500)}`);
-  if (input.background)       lines.push(`\n[배경/역사]\n${input.background.slice(0, 500)}`);
-  if (input.appearance)       lines.push(`\n[외모/인상]\n${input.appearance.slice(0, 300)}`);
-  if (input.relations)        lines.push(`\n[관계]\n${input.relations.slice(0, 300)}`);
-  if (input.notes)            lines.push(`\n[메모]\n${input.notes.slice(0, 200)}`);
+  if (input.tagline) lines.push(`한 줄 소개: ${input.tagline}`);
+  if (input.roles?.length) lines.push(`역할: ${input.roles.join(", ")}`);
+  if (input.keywords?.length)
+    lines.push(`키워드: ${input.keywords.join(", ")}`);
+  if (input.overview) lines.push(`\n[개요]\n${input.overview.slice(0, 400)}`);
+  if (input.personality)
+    lines.push(`\n[성격/동기]\n${input.personality.slice(0, 500)}`);
+  if (input.background)
+    lines.push(`\n[배경/역사]\n${input.background.slice(0, 500)}`);
+  if (input.appearance)
+    lines.push(`\n[외모/인상]\n${input.appearance.slice(0, 300)}`);
+  if (input.relations) lines.push(`\n[관계]\n${input.relations.slice(0, 300)}`);
+  if (input.notes) lines.push(`\n[메모]\n${input.notes.slice(0, 200)}`);
   return lines.join("\n");
 }
 
@@ -195,7 +200,10 @@ export const generateCharacterStats = async (
   const axisLabels = axes.map((a) => a.label).join(", ");
   const context = buildStatsContext(characterInput);
 
-  logger.info("Generating character stats", { name: input.name, axes: axisLabels });
+  logger.info("Generating character stats", {
+    name: input.name,
+    axes: axisLabels,
+  });
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -217,11 +225,7 @@ export const generateCharacterStats = async (
         },
         {
           role: "user",
-          content: [
-            `평가 항목: ${axisLabels}`,
-            "",
-            context,
-          ].join("\n"),
+          content: [`평가 항목: ${axisLabels}`, "", context].join("\n"),
         },
       ],
       max_tokens: 300,
@@ -244,13 +248,17 @@ export const generateCharacterStats = async (
   if (!content) throw new Error("STATS_GENERATION_EMPTY_RESPONSE");
 
   const parsed = JSON.parse(content) as { axes?: RadarAxis[] };
-  if (!Array.isArray(parsed.axes)) throw new Error("STATS_GENERATION_INVALID_FORMAT");
+  if (!Array.isArray(parsed.axes))
+    throw new Error("STATS_GENERATION_INVALID_FORMAT");
 
   // Merge: preserve original axis order/labels, clamp values to 0–10
   const result = axes.map((axis) => {
     const scored = parsed.axes!.find((s) => s.label === axis.label);
     if (!scored) return axis;
-    return { ...axis, value: Math.min(10, Math.max(0, Math.round(scored.value))) };
+    return {
+      ...axis,
+      value: Math.min(10, Math.max(0, Math.round(scored.value))),
+    };
   });
 
   logger.info("Character stats generated", { name: input.name });

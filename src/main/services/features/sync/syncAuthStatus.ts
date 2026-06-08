@@ -19,13 +19,19 @@ export const resolveStartupAuthFailure = (
   isAuthFatalMessage: (message: string) => boolean,
 ): string | null => {
   const accessTokenResult = syncAuthService.getAccessToken(syncSettings);
-  if (accessTokenResult.errorCode && isAuthFatalMessage(accessTokenResult.errorCode)) {
+  if (
+    accessTokenResult.errorCode &&
+    isAuthFatalMessage(accessTokenResult.errorCode)
+  ) {
     return accessTokenResult.errorCode;
   }
   persistMigratedTokenCipher("access", accessTokenResult.migratedCipher);
 
   const refreshTokenResult = syncAuthService.getRefreshToken(syncSettings);
-  if (refreshTokenResult.errorCode && isAuthFatalMessage(refreshTokenResult.errorCode)) {
+  if (
+    refreshTokenResult.errorCode &&
+    isAuthFatalMessage(refreshTokenResult.errorCode)
+  ) {
     return refreshTokenResult.errorCode;
   }
   persistMigratedTokenCipher("refresh", refreshTokenResult.migratedCipher);

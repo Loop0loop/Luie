@@ -29,9 +29,8 @@ vi.mock(
 
 describe("getMemoryPhaseStatusReport", () => {
   it("reports phase readiness and review remaining counts from live DB rows", async () => {
-    const { getMemoryPhaseStatusReport } = await import(
-      "../../../../../src/main/services/features/memory/status/memoryPhaseStatusReport.js"
-    );
+    const { getMemoryPhaseStatusReport } =
+      await import("../../../../../src/main/services/features/memory/status/memoryPhaseStatusReport.js");
     const projectId = crypto.randomUUID();
     const chapterId = crypto.randomUUID();
     const chunkId = crypto.randomUUID();

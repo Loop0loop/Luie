@@ -104,7 +104,10 @@ function candidateMatchesExpected(
   if (candidate.episodeType !== expected.episodeType) {
     return false;
   }
-  if (expected.titleIncludes && !candidate.title.includes(expected.titleIncludes)) {
+  if (
+    expected.titleIncludes &&
+    !candidate.title.includes(expected.titleIncludes)
+  ) {
     return false;
   }
   return true;
@@ -139,7 +142,10 @@ export async function runMemoryEpisodeExtractorCalibration(
             candidates.length === 0
               ? "none"
               : candidates
-                  .map((candidate) => `${candidate.episodeType}:${candidate.title}`)
+                  .map(
+                    (candidate) =>
+                      `${candidate.episodeType}:${candidate.title}`,
+                  )
                   .join(","),
         });
         continue;

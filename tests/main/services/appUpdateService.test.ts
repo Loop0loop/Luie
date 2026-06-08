@@ -78,7 +78,8 @@ describe("appUpdateService", () => {
   it("checks update and downloads verified artifact", async () => {
     const payload = Buffer.from("update-binary-v1");
     const sha256 = createHash("sha256").update(payload).digest("hex");
-    process.env.LUIE_UPDATE_FEED_URL = "https://updates.example.com/latest.json";
+    process.env.LUIE_UPDATE_FEED_URL =
+      "https://updates.example.com/latest.json";
 
     vi.stubGlobal(
       "fetch",
@@ -90,7 +91,9 @@ describe("appUpdateService", () => {
             status: 200,
             headers: {
               get: (name: string) =>
-                name.toLowerCase() === "content-type" ? "application/json" : null,
+                name.toLowerCase() === "content-type"
+                  ? "application/json"
+                  : null,
             },
             text: async () =>
               JSON.stringify({
@@ -107,7 +110,9 @@ describe("appUpdateService", () => {
             status: 200,
             headers: {
               get: (name: string) =>
-                name.toLowerCase() === "content-length" ? String(payload.length) : null,
+                name.toLowerCase() === "content-length"
+                  ? String(payload.length)
+                  : null,
             },
             body: new ReadableStream<Uint8Array>({
               start(controller) {
@@ -121,9 +126,8 @@ describe("appUpdateService", () => {
       }),
     );
 
-    const { appUpdateService } = await import(
-      "../../../src/main/services/features/appUpdate/appUpdateService.js"
-    );
+    const { appUpdateService } =
+      await import("../../../src/main/services/features/appUpdate/appUpdateService.js");
     const check = await appUpdateService.checkForUpdate();
     expect(check.available).toBe(true);
     expect(check.latestVersion).toBe("1.1.0");
@@ -134,8 +138,15 @@ describe("appUpdateService", () => {
     expect(downloaded.artifact?.sha256).toBe(sha256);
 
     const updateDir = path.join(mocked.userDataPath, "updates");
-    const pendingRaw = await fs.readFile(path.join(updateDir, "pending.json"), "utf-8");
-    const pending = JSON.parse(pendingRaw) as { filePath: string; sha256: string; size: number };
+    const pendingRaw = await fs.readFile(
+      path.join(updateDir, "pending.json"),
+      "utf-8",
+    );
+    const pending = JSON.parse(pendingRaw) as {
+      filePath: string;
+      sha256: string;
+      size: number;
+    };
     expect(pending.sha256).toBe(sha256);
     expect(pending.size).toBe(payload.length);
     const fileData = await fs.readFile(pending.filePath);
@@ -168,9 +179,8 @@ describe("appUpdateService", () => {
       "utf-8",
     );
 
-    const { appUpdateService } = await import(
-      "../../../src/main/services/features/appUpdate/appUpdateService.js"
-    );
+    const { appUpdateService } =
+      await import("../../../src/main/services/features/appUpdate/appUpdateService.js");
     const result = await appUpdateService.applyUpdate();
 
     expect(result.success).toBe(true);
@@ -180,7 +190,10 @@ describe("appUpdateService", () => {
     expect(mocked.appExit).not.toHaveBeenCalled();
     expect(mocked.shellOpenPath).not.toHaveBeenCalled();
 
-    const currentRaw = await fs.readFile(path.join(updateDir, "current.json"), "utf-8");
+    const currentRaw = await fs.readFile(
+      path.join(updateDir, "current.json"),
+      "utf-8",
+    );
     const current = JSON.parse(currentRaw) as { version: string };
     expect(current.version).toBe("1.2.0");
   });
@@ -212,9 +225,8 @@ describe("appUpdateService", () => {
       "utf-8",
     );
 
-    const { appUpdateService } = await import(
-      "../../../src/main/services/features/appUpdate/appUpdateService.js"
-    );
+    const { appUpdateService } =
+      await import("../../../src/main/services/features/appUpdate/appUpdateService.js");
     const result = await appUpdateService.applyUpdate();
 
     expect(result.success).toBe(false);
@@ -247,9 +259,8 @@ describe("appUpdateService", () => {
       "utf-8",
     );
 
-    const { appUpdateService } = await import(
-      "../../../src/main/services/features/appUpdate/appUpdateService.js"
-    );
+    const { appUpdateService } =
+      await import("../../../src/main/services/features/appUpdate/appUpdateService.js");
     const result = await appUpdateService.applyUpdate();
 
     expect(result.success).toBe(true);
@@ -298,15 +309,17 @@ describe("appUpdateService", () => {
       "utf-8",
     );
 
-    const { appUpdateService } = await import(
-      "../../../src/main/services/features/appUpdate/appUpdateService.js"
-    );
+    const { appUpdateService } =
+      await import("../../../src/main/services/features/appUpdate/appUpdateService.js");
     const result = await appUpdateService.rollbackUpdate();
 
     expect(result.success).toBe(true);
     expect(result.restoredVersion).toBe("1.1.0");
 
-    const currentRaw = await fs.readFile(path.join(updateDir, "current.json"), "utf-8");
+    const currentRaw = await fs.readFile(
+      path.join(updateDir, "current.json"),
+      "utf-8",
+    );
     const current = JSON.parse(currentRaw) as { version: string };
     expect(current.version).toBe("1.1.0");
   });

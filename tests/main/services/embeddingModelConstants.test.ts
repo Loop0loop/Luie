@@ -24,7 +24,11 @@ describe("embeddingModelConstants", () => {
   });
 
   it("matches the build staging script metadata", () => {
-    const scriptPath = path.join(repoRoot, "scripts", "stage-embedding-model.mjs");
+    const scriptPath = path.join(
+      repoRoot,
+      "scripts",
+      "stage-embedding-model.mjs",
+    );
     const script = fs.readFileSync(scriptPath, "utf-8");
 
     expect(script).toContain(DEFAULT_EMBEDDING_MODEL.repo);

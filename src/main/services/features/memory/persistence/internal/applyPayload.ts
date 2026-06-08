@@ -81,7 +81,11 @@ export const applyMemoryCanonicalPackagePayload = (
     }
     const entityId = entityIdMap.get(sourceEntityId);
     if (!entityId) return null;
-    const id = buildScopedMemoryId(input.projectId, "MemoryEntityAlias", sourceId);
+    const id = buildScopedMemoryId(
+      input.projectId,
+      "MemoryEntityAlias",
+      sourceId,
+    );
     return {
       id,
       projectId: input.projectId,
@@ -118,7 +122,11 @@ export const applyMemoryCanonicalPackagePayload = (
       return null;
     }
     const chapterId = toNullableStringValue(row.chapterId);
-    if (chapterId && input.validChapterIds && !input.validChapterIds.has(chapterId)) {
+    if (
+      chapterId &&
+      input.validChapterIds &&
+      !input.validChapterIds.has(chapterId)
+    ) {
       return null;
     }
     const id = buildScopedMemoryId(input.projectId, "MemoryEpisode", sourceId);
@@ -150,16 +158,30 @@ export const applyMemoryCanonicalPackagePayload = (
     const contentHash = toStringValue(row.contentHash);
     const sourceContentHash = toStringValue(row.sourceContentHash);
     const quote = toStringValue(row.quote);
-    if (!sourceId || !sourceEpisodeId || !contentHash || !sourceContentHash || !quote) {
+    if (
+      !sourceId ||
+      !sourceEpisodeId ||
+      !contentHash ||
+      !sourceContentHash ||
+      !quote
+    ) {
       return null;
     }
     const episodeId = episodeIdMap.get(sourceEpisodeId);
     if (!episodeId) return null;
     const chapterId = toNullableStringValue(row.chapterId);
-    if (chapterId && input.validChapterIds && !input.validChapterIds.has(chapterId)) {
+    if (
+      chapterId &&
+      input.validChapterIds &&
+      !input.validChapterIds.has(chapterId)
+    ) {
       return null;
     }
-    const id = buildScopedMemoryId(input.projectId, "MemoryEpisodeEvidence", sourceId);
+    const id = buildScopedMemoryId(
+      input.projectId,
+      "MemoryEpisodeEvidence",
+      sourceId,
+    );
     episodeEvidenceIdMap.set(sourceId, id);
     return {
       id,
@@ -207,9 +229,10 @@ export const applyMemoryCanonicalPackagePayload = (
     }
     const subjectEntityId = entityIdMap.get(sourceSubjectEntityId);
     const objectEntityId = sourceObjectEntityId
-      ? entityIdMap.get(sourceObjectEntityId) ?? null
+      ? (entityIdMap.get(sourceObjectEntityId) ?? null)
       : null;
-    if (!subjectEntityId || (sourceObjectEntityId && !objectEntityId)) return null;
+    if (!subjectEntityId || (sourceObjectEntityId && !objectEntityId))
+      return null;
     const id = buildScopedMemoryId(input.projectId, "MemoryFact", sourceId);
     factIdMap.set(sourceId, id);
     return {
@@ -240,7 +263,10 @@ export const applyMemoryCanonicalPackagePayload = (
     if (input.validChapterIds) {
       if (!input.validChapterIds.has(row.validFromChapterId)) return false;
       if (!input.validChapterIds.has(row.observedAtChapterId)) return false;
-      if (row.validToChapterId && !input.validChapterIds.has(row.validToChapterId)) {
+      if (
+        row.validToChapterId &&
+        !input.validChapterIds.has(row.validToChapterId)
+      ) {
         return false;
       }
     }
@@ -253,7 +279,9 @@ export const applyMemoryCanonicalPackagePayload = (
     invalidatedByFactId: row.invalidatedByFactId
       ? (() => {
           const targetFactId = factIdMap.get(row.invalidatedByFactId);
-          return targetFactId && factIds.has(targetFactId) ? targetFactId : null;
+          return targetFactId && factIds.has(targetFactId)
+            ? targetFactId
+            : null;
         })()
       : null,
   }));
@@ -263,13 +291,22 @@ export const applyMemoryCanonicalPackagePayload = (
     const sourceInvalidatedFactId = toStringValue(row.invalidatedFactId);
     const sourceInvalidatingFactId = toStringValue(row.invalidatingFactId);
     const reason = toStringValue(row.reason);
-    if (!sourceId || !sourceInvalidatedFactId || !sourceInvalidatingFactId || !reason) {
+    if (
+      !sourceId ||
+      !sourceInvalidatedFactId ||
+      !sourceInvalidatingFactId ||
+      !reason
+    ) {
       return null;
     }
     const invalidatedFactId = factIdMap.get(sourceInvalidatedFactId);
     const invalidatingFactId = factIdMap.get(sourceInvalidatingFactId);
     if (!invalidatedFactId || !invalidatingFactId) return null;
-    const id = buildScopedMemoryId(input.projectId, "MemoryFactInvalidation", sourceId);
+    const id = buildScopedMemoryId(
+      input.projectId,
+      "MemoryFactInvalidation",
+      sourceId,
+    );
     return {
       id,
       projectId: input.projectId,
@@ -281,8 +318,7 @@ export const applyMemoryCanonicalPackagePayload = (
     };
   }).filter(
     (row) =>
-      factIds.has(row.invalidatedFactId) &&
-      factIds.has(row.invalidatingFactId),
+      factIds.has(row.invalidatedFactId) && factIds.has(row.invalidatingFactId),
   );
 
   const factEvidence = mapRows(tables.MemoryFactEvidence, (row) => {
@@ -293,7 +329,11 @@ export const applyMemoryCanonicalPackagePayload = (
     const factId = factIdMap.get(sourceFactId);
     const evidenceId = episodeEvidenceIdMap.get(sourceEvidenceId);
     if (!factId || !evidenceId || !factIds.has(factId)) return null;
-    const id = buildScopedMemoryId(input.projectId, "MemoryFactEvidence", sourceId);
+    const id = buildScopedMemoryId(
+      input.projectId,
+      "MemoryFactEvidence",
+      sourceId,
+    );
     return {
       id,
       projectId: input.projectId,
@@ -318,8 +358,12 @@ export const applyMemoryCanonicalPackagePayload = (
       question,
       caseType: toStringValue(row.caseType) ?? "qa",
       expectedAnswer: toNullableStringValue(row.expectedAnswer),
-      temporalScopeStartChapterId: toNullableStringValue(row.temporalScopeStartChapterId),
-      temporalScopeEndChapterId: toNullableStringValue(row.temporalScopeEndChapterId),
+      temporalScopeStartChapterId: toNullableStringValue(
+        row.temporalScopeStartChapterId,
+      ),
+      temporalScopeEndChapterId: toNullableStringValue(
+        row.temporalScopeEndChapterId,
+      ),
       severity: toStringValue(row.severity) ?? "p1",
       createdAt: toStringValue(row.createdAt) ?? now,
       updatedAt: toStringValue(row.updatedAt) ?? now,
@@ -334,7 +378,11 @@ export const applyMemoryCanonicalPackagePayload = (
     if (!sourceId || !sourceCaseId || !quote) return null;
     const caseId = evalCaseIdMap.get(sourceCaseId);
     if (!caseId) return null;
-    const id = buildScopedMemoryId(input.projectId, "MemoryEvalEvidence", sourceId);
+    const id = buildScopedMemoryId(
+      input.projectId,
+      "MemoryEvalEvidence",
+      sourceId,
+    );
     return {
       id,
       caseId,
@@ -363,7 +411,11 @@ export const applyMemoryCanonicalPackagePayload = (
     if (!sourceId || !sourceCaseId || !name || !entityType) return null;
     const caseId = evalCaseIdMap.get(sourceCaseId);
     if (!caseId) return null;
-    const id = buildScopedMemoryId(input.projectId, "MemoryEvalEntity", sourceId);
+    const id = buildScopedMemoryId(
+      input.projectId,
+      "MemoryEvalEntity",
+      sourceId,
+    );
     return {
       id,
       caseId,
@@ -382,10 +434,15 @@ export const applyMemoryCanonicalPackagePayload = (
     const sourceName = toStringValue(row.sourceName);
     const targetName = toStringValue(row.targetName);
     const relation = toStringValue(row.relation);
-    if (!sourceId || !sourceCaseId || !sourceName || !targetName || !relation) return null;
+    if (!sourceId || !sourceCaseId || !sourceName || !targetName || !relation)
+      return null;
     const caseId = evalCaseIdMap.get(sourceCaseId);
     if (!caseId) return null;
-    const id = buildScopedMemoryId(input.projectId, "MemoryEvalRelation", sourceId);
+    const id = buildScopedMemoryId(
+      input.projectId,
+      "MemoryEvalRelation",
+      sourceId,
+    );
     return {
       id,
       caseId,
@@ -403,14 +460,19 @@ export const applyMemoryCanonicalPackagePayload = (
   if (entities.length > 0) tx.insert(memoryEntity).values(entities).run();
   if (aliases.length > 0) tx.insert(memoryEntityAlias).values(aliases).run();
   if (episodes.length > 0) tx.insert(memoryEpisode).values(episodes).run();
-  if (episodeEvidence.length > 0) tx.insert(memoryEpisodeEvidence).values(episodeEvidence).run();
+  if (episodeEvidence.length > 0)
+    tx.insert(memoryEpisodeEvidence).values(episodeEvidence).run();
   if (evalCases.length > 0) tx.insert(memoryEvalCase).values(evalCases).run();
   if (facts.length > 0) tx.insert(memoryFact).values(facts).run();
-  if (factEvidence.length > 0) tx.insert(memoryFactEvidence).values(factEvidence).run();
+  if (factEvidence.length > 0)
+    tx.insert(memoryFactEvidence).values(factEvidence).run();
   if (factInvalidations.length > 0) {
     tx.insert(memoryFactInvalidation).values(factInvalidations).run();
   }
-  if (evalEvidence.length > 0) tx.insert(memoryEvalEvidence).values(evalEvidence).run();
-  if (evalEntities.length > 0) tx.insert(memoryEvalEntity).values(evalEntities).run();
-  if (evalRelations.length > 0) tx.insert(memoryEvalRelation).values(evalRelations).run();
+  if (evalEvidence.length > 0)
+    tx.insert(memoryEvalEvidence).values(evalEvidence).run();
+  if (evalEntities.length > 0)
+    tx.insert(memoryEvalEntity).values(evalEntities).run();
+  if (evalRelations.length > 0)
+    tx.insert(memoryEvalRelation).values(evalRelations).run();
 };

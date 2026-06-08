@@ -10,11 +10,14 @@ const dbState = vi.hoisted(() => ({
   completedStatus: null as string | null,
 }));
 
-vi.mock("../../../src/main/services/features/utility/utilityProcessBridge.js", () => ({
-  utilityProcessBridge: {
-    embed: embedMock,
-  },
-}));
+vi.mock(
+  "../../../src/main/services/features/utility/utilityProcessBridge.js",
+  () => ({
+    utilityProcessBridge: {
+      embed: embedMock,
+    },
+  }),
+);
 
 vi.mock("../../../src/main/services/llm/modelRuntimeFactory.js", () => ({
   resolveRuntimeModelConfig: resolveRuntimeModelConfigMock,
@@ -113,9 +116,8 @@ describe("EmbeddingProjector", () => {
       embeddingModel: "nomic-embed-text",
     });
 
-    const { embeddingProjector } = await import(
-      "../../../src/main/services/features/memory/embeddingProjector.js"
-    );
+    const { embeddingProjector } =
+      await import("../../../src/main/services/features/memory/embeddingProjector.js");
 
     const result = await embeddingProjector.processPendingEmbeddingJobs({
       projectId: "project-1",

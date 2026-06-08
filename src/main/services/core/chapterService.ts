@@ -13,20 +13,14 @@ import type {
 import { projectService } from "./projectService.js";
 import { ServiceError } from "../../utils/error/index.js";
 import { trackKeywordAppearances } from "./chapterKeywords.js";
-import {
-  readChapterContent,
-} from "./chapter/chapterContentStore.js";
+import { readChapterContent } from "./chapter/chapterContentStore.js";
 import {
   createChapterRecord,
   updateChapterRecord,
 } from "./chapter/chapterWriteOperations.js";
-import {
-  chapterLogger as logger,
-} from "./chapter/chapterRuntime.js";
+import { chapterLogger as logger } from "./chapter/chapterRuntime.js";
 
-const {
-  chapter,
-} = schema;
+const { chapter } = schema;
 
 const loadAutoSaveManager = async () =>
   (await import("../../manager/autoSave/index.js")).autoSaveManager;
@@ -35,8 +29,7 @@ const loadAppearanceCacheService = async () =>
   (await import("../world/appearanceCacheService.js")).appearanceCacheService;
 
 const loadChapterSearchCacheService = async () =>
-  (await import("../features/chapterSearchCacheService.js"))
-    .chapterSearchCacheService;
+  (await import("../features/search/index.js")).chapterSearchCacheService;
 
 export class ChapterService {
   private writeSerialQueue: Promise<void> = Promise.resolve();
@@ -98,7 +91,8 @@ export class ChapterService {
 
   async getAllChapters(projectId: string) {
     try {
-      const chapters = await db.getClient()
+      const chapters = await db
+        .getClient()
         .select({
           id: chapter.id,
           projectId: chapter.projectId,
@@ -166,10 +160,7 @@ export class ChapterService {
 
       if (chapterData?.projectId) {
         const autoSaveManager = await loadAutoSaveManager();
-        await autoSaveManager.forgetChapter(
-          String(chapterData.projectId),
-          id,
-        );
+        await autoSaveManager.forgetChapter(String(chapterData.projectId), id);
       }
       const [appearanceCacheService, chapterSearchCacheService] =
         await Promise.all([
@@ -181,7 +172,10 @@ export class ChapterService {
 
       logger.info("Chapter soft-deleted successfully", { chapterId: id });
       if (chapterData?.projectId) {
-        await projectService.persistPackageAfterMutation(String(chapterData.projectId), "chapter:delete");
+        await projectService.persistPackageAfterMutation(
+          String(chapterData.projectId),
+          "chapter:delete",
+        );
       }
       return deleted[0];
     } catch (error) {
@@ -197,10 +191,16 @@ export class ChapterService {
 
   async getDeletedChapters(projectId: string) {
     try {
-      return await db.getClient()
+      return await db
+        .getClient()
         .select()
         .from(chapter)
-        .where(and(eq(chapter.projectId, projectId), sql`${chapter.deletedAt} IS NOT NULL`))
+        .where(
+          and(
+            eq(chapter.projectId, projectId),
+            sql`${chapter.deletedAt} IS NOT NULL`,
+          ),
+        )
         .orderBy(desc(chapter.deletedAt));
     } catch (error) {
       logger.error("Failed to get deleted chapters", error);
@@ -263,7 +263,10 @@ export class ChapterService {
       });
 
       logger.info("Chapter restored successfully", { chapterId: id });
-      await projectService.persistPackageAfterMutation(String(current.projectId), "chapter:restore");
+      await projectService.persistPackageAfterMutation(
+        String(current.projectId),
+        "chapter:restore",
+      );
       return restored[0];
     } catch (error) {
       logger.error("Failed to restore chapter", error);
@@ -290,9 +293,7 @@ export class ChapterService {
 
       const chapterData = chapterRows.length > 0 ? chapterRows[0] : null;
 
-      await store
-        .delete(chapter)
-        .where(eq(chapter.id, id));
+      await store.delete(chapter).where(eq(chapter.id, id));
 
       const [appearanceCacheService, chapterSearchCacheService] =
         await Promise.all([
@@ -304,15 +305,15 @@ export class ChapterService {
 
       if (chapterData?.projectId) {
         const autoSaveManager = await loadAutoSaveManager();
-        await autoSaveManager.forgetChapter(
-          String(chapterData.projectId),
-          id,
-        );
+        await autoSaveManager.forgetChapter(String(chapterData.projectId), id);
       }
 
       logger.info("Chapter purged successfully", { chapterId: id });
       if (chapterData?.projectId) {
-        await projectService.persistPackageAfterMutation(String(chapterData.projectId), "chapter:purge");
+        await projectService.persistPackageAfterMutation(
+          String(chapterData.projectId),
+          "chapter:purge",
+        );
       }
       return { success: true };
     } catch (error) {
@@ -333,8 +334,7 @@ export class ChapterService {
         const now = new Date().toISOString();
         for (let index = 0; index < chapterIds.length; index++) {
           const id = chapterIds[index];
-          tx
-            .update(chapter)
+          tx.update(chapter)
             .set({ order: index + 1, updatedAt: now })
             .where(eq(chapter.id, id))
             .run();
@@ -344,7 +344,10 @@ export class ChapterService {
       logger.info("Chapters reordered successfully", { projectId });
       const chapterSearchCacheService = await loadChapterSearchCacheService();
       await chapterSearchCacheService.rebuildProject(projectId);
-      await projectService.persistPackageAfterMutation(projectId, "chapter:reorder");
+      await projectService.persistPackageAfterMutation(
+        projectId,
+        "chapter:reorder",
+      );
       return { success: true };
     } catch (error) {
       logger.error("Failed to reorder chapters", error);

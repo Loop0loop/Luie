@@ -11,10 +11,7 @@ import {
   appendProjectRecord,
   appendTermRecords,
 } from "./recordAppenders.js";
-import type {
-  LoggerLike,
-  WorldDocumentType,
-} from "./types.js";
+import type { LoggerLike, WorldDocumentType } from "./types.js";
 import {
   addWorldDocumentRecord,
   appendReplicaScrapMemoRecords,
@@ -60,12 +57,7 @@ const collectProjectBundleData = async (
     projectId,
     toRecordArray(projectRow.factions),
   );
-  appendTermRecords(
-    bundle,
-    userId,
-    projectId,
-    toRecordArray(projectRow.terms),
-  );
+  appendTermRecords(bundle, userId, projectId, toRecordArray(projectRow.terms));
 
   const worldDocsByType = collectReplicaWorldDocuments(
     projectRow,

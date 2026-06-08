@@ -18,7 +18,7 @@ vi.mock("../../../src/main/database/index.js", () => ({
 }));
 
 const loadGraphPluginServiceModule = () =>
-  import("../../../src/main/services/features/graphPluginService.js");
+  import("../../../src/main/services/features/graphPlugin/index.js");
 
 const baseManifest = {
   id: "foundation-graph",
@@ -105,7 +105,11 @@ const writeUnsafePluginArchive = async (
 
 const writeCatalog = async (
   pluginRoot: string,
-  override: Partial<{ sha256: string; size: number; devAssetPath: string }> = {},
+  override: Partial<{
+    sha256: string;
+    size: number;
+    devAssetPath: string;
+  }> = {},
 ) => {
   const defaultEntries = {
     "plugin.json": JSON.stringify(baseManifest, null, 2),
@@ -230,7 +234,11 @@ describe("GraphPluginService", () => {
     });
     await fs.mkdir(path.join(tempDir, "registry"), { recursive: true });
     await fs.mkdir(path.join(tempDir, "installed"), { recursive: true });
-    await fs.writeFile(path.join(tempDir, "installed", "index.json"), "[]", "utf-8");
+    await fs.writeFile(
+      path.join(tempDir, "installed", "index.json"),
+      "[]",
+      "utf-8",
+    );
     await fs.writeFile(
       path.join(tempDir, "registry", "catalog.json"),
       JSON.stringify(
@@ -242,7 +250,8 @@ describe("GraphPluginService", () => {
             summary: "Starter graph templates",
             releaseTag: "foundation-graph-v1.0.0",
             assetUrl: "https://example.com/foundation-graph.zip",
-            devAssetPath: "packages/foundation-graph/dist/foundation-graph-1.0.0.zip",
+            devAssetPath:
+              "packages/foundation-graph/dist/foundation-graph-1.0.0.zip",
             sha256: archive.sha256,
             size: archive.size,
             minAppVersion: "0.1.0",
@@ -272,7 +281,11 @@ describe("GraphPluginService", () => {
     });
     await fs.mkdir(path.join(tempDir, "registry"), { recursive: true });
     await fs.mkdir(path.join(tempDir, "installed"), { recursive: true });
-    await fs.writeFile(path.join(tempDir, "installed", "index.json"), "[]", "utf-8");
+    await fs.writeFile(
+      path.join(tempDir, "installed", "index.json"),
+      "[]",
+      "utf-8",
+    );
     await fs.writeFile(
       path.join(tempDir, "registry", "catalog.json"),
       JSON.stringify(
@@ -284,7 +297,8 @@ describe("GraphPluginService", () => {
             summary: "Starter graph templates",
             releaseTag: "foundation-graph-v1.0.0",
             assetUrl: "https://example.com/foundation-graph.zip",
-            devAssetPath: "packages/foundation-graph/dist/foundation-graph-1.0.0.zip",
+            devAssetPath:
+              "packages/foundation-graph/dist/foundation-graph-1.0.0.zip",
             sha256: archive.sha256,
             size: archive.size,
             minAppVersion: "0.1.0",

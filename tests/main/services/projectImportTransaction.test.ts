@@ -5,13 +5,15 @@ const mocked = vi.hoisted(() => {
   const deleteFn = vi.fn();
   const setProjectAttachmentPath = vi.fn();
 
-  const returningData = [{
-    id: "project-1",
-    title: "Imported Project",
-    description: "Imported synopsis",
-    createdAt: "2026-03-12T00:00:00.000Z",
-    updatedAt: "2026-03-12T03:00:00.000Z",
-  }];
+  const returningData = [
+    {
+      id: "project-1",
+      title: "Imported Project",
+      description: "Imported synopsis",
+      createdAt: "2026-03-12T00:00:00.000Z",
+      updatedAt: "2026-03-12T03:00:00.000Z",
+    },
+  ];
 
   const tx = {
     insert: vi.fn(() => ({
@@ -48,7 +50,9 @@ const mocked = vi.hoisted(() => {
     deleteFn,
     setProjectAttachmentPath,
     tx,
-    transaction: vi.fn((callback: (tx: unknown) => unknown) => callback(mocked.tx)),
+    transaction: vi.fn((callback: (tx: unknown) => unknown) =>
+      callback(mocked.tx),
+    ),
   };
 });
 
@@ -62,10 +66,13 @@ vi.mock("../../../src/main/database/index.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/core/project/projectAttachmentStore.js", () => ({
-  setProjectAttachmentPath: (...args: unknown[]) =>
-    mocked.setProjectAttachmentPath(...args),
-}));
+vi.mock(
+  "../../../src/main/services/core/project/projectAttachmentStore.js",
+  () => ({
+    setProjectAttachmentPath: (...args: unknown[]) =>
+      mocked.setProjectAttachmentPath(...args),
+  }),
+);
 
 import { applyProjectImportTransaction } from "../../../src/main/services/core/project/projectImportTransaction.js";
 
@@ -74,13 +81,15 @@ describe("projectImportTransaction", () => {
     vi.clearAllMocks();
     mocked.insertFn.mockReturnValue({
       onConflictDoUpdate: vi.fn(async () => undefined),
-      returning: vi.fn(async () => [{
-        id: "project-1",
-        title: "Imported Project",
-        description: "Imported synopsis",
-        createdAt: "2026-03-12T00:00:00.000Z",
-        updatedAt: "2026-03-12T03:00:00.000Z",
-      }]),
+      returning: vi.fn(async () => [
+        {
+          id: "project-1",
+          title: "Imported Project",
+          description: "Imported synopsis",
+          createdAt: "2026-03-12T00:00:00.000Z",
+          updatedAt: "2026-03-12T03:00:00.000Z",
+        },
+      ]),
     });
   });
 

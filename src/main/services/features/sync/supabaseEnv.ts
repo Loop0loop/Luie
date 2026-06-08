@@ -21,7 +21,8 @@ export type ResolvedSupabaseConfig = SupabaseConfig & {
   source: SupabaseConfigSource;
 };
 
-const trimEnv = (key: string): string | null => trimAndUnquote(process.env[key]);
+const trimEnv = (key: string): string | null =>
+  trimAndUnquote(process.env[key]);
 
 const BUNDLED_DEFAULT_SUPABASE_URL = "https://qzgyjlbpnxxpspoyibpt.supabase.co";
 const BUNDLED_DEFAULT_SUPABASE_ANON_KEY =

@@ -51,9 +51,12 @@ vi.mock("../../../src/main/services/io/luieContainer.js", () => ({
   readLuieContainerEntry: mocked.readLuieContainerEntry,
 }));
 
-vi.mock("../../../src/main/services/core/project/projectAttachmentStore.js", () => ({
-  getProjectAttachmentPath: mocked.getProjectAttachmentPath,
-}));
+vi.mock(
+  "../../../src/main/services/core/project/projectAttachmentStore.js",
+  () => ({
+    getProjectAttachmentPath: mocked.getProjectAttachmentPath,
+  }),
+);
 
 vi.mock("../../../src/main/core/manuscriptAnalyzer.js", () => ({
   manuscriptAnalyzer: {
@@ -61,16 +64,19 @@ vi.mock("../../../src/main/core/manuscriptAnalyzer.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/features/analysis/analysisStreamRunner.js", () => ({
-  isAnalysisAbortError: (error: unknown) =>
-    error instanceof Error && error.name === "AbortError",
-  runGeminiAnalysisStream: mocked.runGeminiAnalysisStream,
-  toAnalysisErrorPayload: (error: unknown) => ({
-    code: "UNKNOWN",
-    message: error instanceof Error ? error.message : String(error),
-    details: error instanceof Error ? error.message : String(error),
+vi.mock(
+  "../../../src/main/services/features/analysis/analysisStreamRunner.js",
+  () => ({
+    isAnalysisAbortError: (error: unknown) =>
+      error instanceof Error && error.name === "AbortError",
+    runGeminiAnalysisStream: mocked.runGeminiAnalysisStream,
+    toAnalysisErrorPayload: (error: unknown) => ({
+      code: "UNKNOWN",
+      message: error instanceof Error ? error.message : String(error),
+      details: error instanceof Error ? error.message : String(error),
+    }),
   }),
-}));
+);
 
 import { ManuscriptAnalysisService } from "../../../src/main/services/features/analysis/manuscriptAnalysisService.js";
 
@@ -96,14 +102,16 @@ describe("ManuscriptAnalysisService", () => {
       title: "Chapter 1",
       content: "# chapter content",
     });
-    mocked.readLuieContainerEntry.mockImplementation(async (_projectPath: string, entryPath: string) => {
-      if (entryPath === "meta.json") {
-        return JSON.stringify({
-          chapters: [{ id: "chapter-1", title: "Chapter 1" }],
-        });
-      }
-      return "# chapter content";
-    });
+    mocked.readLuieContainerEntry.mockImplementation(
+      async (_projectPath: string, entryPath: string) => {
+        if (entryPath === "meta.json") {
+          return JSON.stringify({
+            chapters: [{ id: "chapter-1", title: "Chapter 1" }],
+          });
+        }
+        return "# chapter content";
+      },
+    );
     mocked.buildAnalysisContext.mockReturnValue({
       characters: [],
       terms: [],

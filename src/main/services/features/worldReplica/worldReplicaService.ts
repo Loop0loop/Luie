@@ -1,17 +1,21 @@
 import { eq, and, asc, desc } from "drizzle-orm";
-import { WORLD_SCRAP_MEMOS_SCHEMA_VERSION } from "../../../shared/constants/persistence.js";
-import { ErrorCode } from "../../../shared/constants/index.js";
-import { createLogger } from "../../../shared/logger/index.js";
+import { WORLD_SCRAP_MEMOS_SCHEMA_VERSION } from "../../../../shared/constants/persistence.js";
+import { ErrorCode } from "../../../../shared/constants/index.js";
+import { createLogger } from "../../../../shared/logger/index.js";
 import type {
   ReplicaWorldDocumentType,
   WorldReplicaDocumentResult,
   WorldReplicaScrapMemosResult,
   WorldScrapMemosData,
-} from "../../../shared/types/index.js";
-import { db } from "../../infra/database/index.js";
-import { project, scrapMemo, worldDocument } from "../../infra/database/index.js";
-import { ServiceError } from "../../utils/error/index.js";
-import { projectService } from "../core/projectService.js";
+} from "../../../../shared/types/index.js";
+import { db } from "../../../infra/database/index.js";
+import {
+  project,
+  scrapMemo,
+  worldDocument,
+} from "../../../infra/database/index.js";
+import { ServiceError } from "../../../utils/error/index.js";
+import { projectService } from "../../core/projectService.js";
 
 const logger = createLogger("WorldReplicaService");
 
@@ -57,7 +61,17 @@ export class WorldReplicaService {
   }): Promise<WorldReplicaDocumentResult> {
     try {
       await this.ensureDbReady();
-      const results = await db.getClient().select().from(worldDocument).where(and(eq(worldDocument.projectId, input.projectId), eq(worldDocument.docType, input.docType))).limit(1);
+      const results = await db
+        .getClient()
+        .select()
+        .from(worldDocument)
+        .where(
+          and(
+            eq(worldDocument.projectId, input.projectId),
+            eq(worldDocument.docType, input.docType),
+          ),
+        )
+        .limit(1);
       const row = results[0];
 
       if (!row) {
@@ -100,19 +114,44 @@ export class WorldReplicaService {
     try {
       await this.ensureDbReady();
       db.getClient().transaction((tx) => {
-        const existing = tx.select().from(worldDocument).where(and(eq(worldDocument.projectId, input.projectId), eq(worldDocument.docType, input.docType))).get();
+        const existing = tx
+          .select()
+          .from(worldDocument)
+          .where(
+            and(
+              eq(worldDocument.projectId, input.projectId),
+              eq(worldDocument.docType, input.docType),
+            ),
+          )
+          .get();
         if (existing) {
-          tx.update(worldDocument).set({ payload: toJsonString(input.payload), updatedAt: new Date().toISOString() }).where(and(eq(worldDocument.projectId, input.projectId), eq(worldDocument.docType, input.docType))).run();
+          tx.update(worldDocument)
+            .set({
+              payload: toJsonString(input.payload),
+              updatedAt: new Date().toISOString(),
+            })
+            .where(
+              and(
+                eq(worldDocument.projectId, input.projectId),
+                eq(worldDocument.docType, input.docType),
+              ),
+            )
+            .run();
         } else {
-          tx.insert(worldDocument).values({
-            id: crypto.randomUUID(),
-            projectId: input.projectId,
-            docType: input.docType,
-            payload: toJsonString(input.payload),
-            updatedAt: new Date().toISOString(),
-          }).run();
+          tx.insert(worldDocument)
+            .values({
+              id: crypto.randomUUID(),
+              projectId: input.projectId,
+              docType: input.docType,
+              payload: toJsonString(input.payload),
+              updatedAt: new Date().toISOString(),
+            })
+            .run();
         }
-        tx.update(project).set({ updatedAt: new Date().toISOString() }).where(eq(project.id, input.projectId)).run();
+        tx.update(project)
+          .set({ updatedAt: new Date().toISOString() })
+          .where(eq(project.id, input.projectId))
+          .run();
       });
 
       if (input.docType === "graph") {
@@ -120,7 +159,10 @@ export class WorldReplicaService {
           input.projectId,
           "world-document:graph",
         );
-        if (exportResult.error || (!exportResult.exported && !exportResult.skipped)) {
+        if (
+          exportResult.error ||
+          (!exportResult.exported && !exportResult.skipped)
+        ) {
           const message =
             exportResult.error instanceof Error
               ? exportResult.error.message
@@ -156,8 +198,23 @@ export class WorldReplicaService {
     try {
       await this.ensureDbReady();
       const [documentRowResults, memoRows] = await Promise.all([
-        db.getClient().select().from(worldDocument).where(and(eq(worldDocument.projectId, projectId), eq(worldDocument.docType, "scrap"))).limit(1),
-        db.getClient().select().from(scrapMemo).where(eq(scrapMemo.projectId, projectId)).orderBy(asc(scrapMemo.sortOrder), desc(scrapMemo.updatedAt)),
+        db
+          .getClient()
+          .select()
+          .from(worldDocument)
+          .where(
+            and(
+              eq(worldDocument.projectId, projectId),
+              eq(worldDocument.docType, "scrap"),
+            ),
+          )
+          .limit(1),
+        db
+          .getClient()
+          .select()
+          .from(scrapMemo)
+          .where(eq(scrapMemo.projectId, projectId))
+          .orderBy(asc(scrapMemo.sortOrder), desc(scrapMemo.updatedAt)),
       ]);
       const documentRow = documentRowResults[0];
 
@@ -243,35 +300,66 @@ export class WorldReplicaService {
       };
 
       db.getClient().transaction((tx) => {
-        const existing = tx.select().from(worldDocument).where(and(eq(worldDocument.projectId, input.projectId), eq(worldDocument.docType, "scrap"))).get();
+        const existing = tx
+          .select()
+          .from(worldDocument)
+          .where(
+            and(
+              eq(worldDocument.projectId, input.projectId),
+              eq(worldDocument.docType, "scrap"),
+            ),
+          )
+          .get();
         if (existing) {
-          tx.update(worldDocument).set({ payload: toJsonString(payload), updatedAt: new Date().toISOString() }).where(and(eq(worldDocument.projectId, input.projectId), eq(worldDocument.docType, "scrap"))).run();
+          tx.update(worldDocument)
+            .set({
+              payload: toJsonString(payload),
+              updatedAt: new Date().toISOString(),
+            })
+            .where(
+              and(
+                eq(worldDocument.projectId, input.projectId),
+                eq(worldDocument.docType, "scrap"),
+              ),
+            )
+            .run();
         } else {
-          tx.insert(worldDocument).values({
-            id: crypto.randomUUID(),
-            projectId: input.projectId,
-            docType: "scrap",
-            payload: toJsonString(payload),
-            updatedAt: new Date().toISOString(),
-          }).run();
+          tx.insert(worldDocument)
+            .values({
+              id: crypto.randomUUID(),
+              projectId: input.projectId,
+              docType: "scrap",
+              payload: toJsonString(payload),
+              updatedAt: new Date().toISOString(),
+            })
+            .run();
         }
 
-        tx.delete(scrapMemo).where(eq(scrapMemo.projectId, input.projectId)).run();
+        tx.delete(scrapMemo)
+          .where(eq(scrapMemo.projectId, input.projectId))
+          .run();
 
         if (payload.memos.length > 0) {
           const fallbackNow = new Date();
-          tx.insert(scrapMemo).values(payload.memos.map((memo, index) => ({
-            id: memo.id,
-            projectId: input.projectId,
-            title: memo.title,
-            content: memo.content,
-            tags: JSON.stringify(memo.tags),
-            sortOrder: index,
-            createdAt: fallbackNow.toISOString(),
-            updatedAt: memo.updatedAt ?? fallbackNow.toISOString(),
-          }))).run();
+          tx.insert(scrapMemo)
+            .values(
+              payload.memos.map((memo, index) => ({
+                id: memo.id,
+                projectId: input.projectId,
+                title: memo.title,
+                content: memo.content,
+                tags: JSON.stringify(memo.tags),
+                sortOrder: index,
+                createdAt: fallbackNow.toISOString(),
+                updatedAt: memo.updatedAt ?? fallbackNow.toISOString(),
+              })),
+            )
+            .run();
         }
-        tx.update(project).set({ updatedAt: new Date().toISOString() }).where(eq(project.id, input.projectId)).run();
+        tx.update(project)
+          .set({ updatedAt: new Date().toISOString() })
+          .where(eq(project.id, input.projectId))
+          .run();
       });
     } catch (error) {
       logger.error("Failed to save replica scrap memos", {

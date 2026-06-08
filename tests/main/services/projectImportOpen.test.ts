@@ -61,30 +61,45 @@ vi.mock("../../../src/main/database/index.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/core/project/projectAttachmentStore.js", () => ({
-  findProjectByAttachmentPath: (...args: unknown[]) =>
-    mocked.findProjectByAttachmentPath(...args),
-  setProjectAttachmentPath: (...args: unknown[]) =>
-    mocked.setProjectAttachmentPath(...args),
-}));
+vi.mock(
+  "../../../src/main/services/core/project/projectAttachmentStore.js",
+  () => ({
+    findProjectByAttachmentPath: (...args: unknown[]) =>
+      mocked.findProjectByAttachmentPath(...args),
+    setProjectAttachmentPath: (...args: unknown[]) =>
+      mocked.setProjectAttachmentPath(...args),
+  }),
+);
 
-vi.mock("../../../src/main/services/core/project/projectImportTransaction.js", () => ({
-  applyProjectImportTransaction: (...args: unknown[]) =>
-    mocked.applyProjectImportTransaction(...args),
-}));
+vi.mock(
+  "../../../src/main/services/core/project/projectImportTransaction.js",
+  () => ({
+    applyProjectImportTransaction: (...args: unknown[]) =>
+      mocked.applyProjectImportTransaction(...args),
+  }),
+);
 
-vi.mock("../../../src/main/services/core/project/projectImportCodec.js", () => ({
-  buildChapterCreateRows: (...args: unknown[]) => mocked.buildChapterCreateRows(...args),
-  buildCharacterCreateRows: (...args: unknown[]) =>
-    mocked.buildCharacterCreateRows(...args),
-  buildTermCreateRows: (...args: unknown[]) => mocked.buildTermCreateRows(...args),
-  buildSnapshotCreateRows: (...args: unknown[]) =>
-    mocked.buildSnapshotCreateRows(...args),
-}));
+vi.mock(
+  "../../../src/main/services/core/project/projectImportCodec.js",
+  () => ({
+    buildChapterCreateRows: (...args: unknown[]) =>
+      mocked.buildChapterCreateRows(...args),
+    buildCharacterCreateRows: (...args: unknown[]) =>
+      mocked.buildCharacterCreateRows(...args),
+    buildTermCreateRows: (...args: unknown[]) =>
+      mocked.buildTermCreateRows(...args),
+    buildSnapshotCreateRows: (...args: unknown[]) =>
+      mocked.buildSnapshotCreateRows(...args),
+  }),
+);
 
-vi.mock("../../../src/main/services/core/project/projectImportGraph.js", () => ({
-  buildGraphCreateRows: (...args: unknown[]) => mocked.buildGraphCreateRows(...args),
-}));
+vi.mock(
+  "../../../src/main/services/core/project/projectImportGraph.js",
+  () => ({
+    buildGraphCreateRows: (...args: unknown[]) =>
+      mocked.buildGraphCreateRows(...args),
+  }),
+);
 
 import { openLuieProjectPackage } from "../../../src/main/services/core/project/projectImportOpen.js";
 
@@ -122,95 +137,97 @@ describe("projectImportOpen", () => {
       title: "Project 1",
       projectPath: "/tmp/project-1.luie",
     });
-    mocked.readLuieContainerEntry.mockImplementation(async (_packagePath: string, entryPath: string) => {
-      switch (entryPath) {
-        case "meta.json":
-          return JSON.stringify({
-            format: "luie",
-            version: 1,
-            projectId: "project-1",
-            title: "Project 1",
-            description: "From meta",
-            updatedAt: "2026-03-12T03:00:00.000Z",
-            chapters: [
-              {
-                id: "chapter-1",
-                title: "Chapter 1",
-                order: 1,
-                file: "manuscript/chapter-1.md",
-              },
-            ],
-          });
-        case "world/characters.json":
-          return JSON.stringify({ characters: [] });
-        case "world/terms.json":
-          return JSON.stringify({ terms: [] });
-        case "snapshots/index.json":
-          return JSON.stringify({ snapshots: [] });
-        case "world/synopsis.json":
-          return JSON.stringify({
-            synopsis: "Imported synopsis",
-            status: "working",
-            updatedAt: "2026-03-12T01:00:00.000Z",
-          });
-        case "world/plot-board.json":
-          return JSON.stringify({
-            columns: [{ id: "plot-col", title: "Arc", cards: [] }],
-            updatedAt: "2026-03-12T01:30:00.000Z",
-          });
-        case "world/map-drawing.json":
-          return JSON.stringify({
-            paths: [{ id: "path-1", type: "path", color: "#000000" }],
-            updatedAt: "2026-03-12T01:45:00.000Z",
-          });
-        case "world/mindmap.json":
-          return JSON.stringify({
-            nodes: [],
-            edges: [],
-            updatedAt: "2026-03-12T02:00:00.000Z",
-          });
-        case "world/scrap-memos.json":
-          return JSON.stringify({
-            memos: [
-              {
-                id: "memo-1",
-                title: "Memo",
-                content: "Body",
-                tags: ["tag"],
-                updatedAt: "2026-03-12T02:15:00.000Z",
-              },
-            ],
-            updatedAt: "2026-03-12T02:15:00.000Z",
-          });
-        case "world/graph.json":
-          return JSON.stringify({
-            nodes: [],
-            edges: [],
-            updatedAt: "2026-03-12T02:30:00.000Z",
-          });
-        case "memory/canonical.json":
-          return JSON.stringify({
-            schemaVersion: 1,
-            exportedAt: "2026-03-12T02:45:00.000Z",
-            tables: {
-              MemoryEntity: [
+    mocked.readLuieContainerEntry.mockImplementation(
+      async (_packagePath: string, entryPath: string) => {
+        switch (entryPath) {
+          case "meta.json":
+            return JSON.stringify({
+              format: "luie",
+              version: 1,
+              projectId: "project-1",
+              title: "Project 1",
+              description: "From meta",
+              updatedAt: "2026-03-12T03:00:00.000Z",
+              chapters: [
                 {
-                  id: "memory-entity-1",
-                  projectId: "project-1",
-                  entityType: "character",
-                  canonicalName: "Alice",
-                  status: "confirmed",
-                  updatedAt: "2026-03-12T02:45:00.000Z",
+                  id: "chapter-1",
+                  title: "Chapter 1",
+                  order: 1,
+                  file: "manuscript/chapter-1.md",
                 },
               ],
-            },
-          });
-        case "manuscript/chapter-1.md":
-          return "# Chapter 1";
-        default:
-          return null;
-      }
-    });
+            });
+          case "world/characters.json":
+            return JSON.stringify({ characters: [] });
+          case "world/terms.json":
+            return JSON.stringify({ terms: [] });
+          case "snapshots/index.json":
+            return JSON.stringify({ snapshots: [] });
+          case "world/synopsis.json":
+            return JSON.stringify({
+              synopsis: "Imported synopsis",
+              status: "working",
+              updatedAt: "2026-03-12T01:00:00.000Z",
+            });
+          case "world/plot-board.json":
+            return JSON.stringify({
+              columns: [{ id: "plot-col", title: "Arc", cards: [] }],
+              updatedAt: "2026-03-12T01:30:00.000Z",
+            });
+          case "world/map-drawing.json":
+            return JSON.stringify({
+              paths: [{ id: "path-1", type: "path", color: "#000000" }],
+              updatedAt: "2026-03-12T01:45:00.000Z",
+            });
+          case "world/mindmap.json":
+            return JSON.stringify({
+              nodes: [],
+              edges: [],
+              updatedAt: "2026-03-12T02:00:00.000Z",
+            });
+          case "world/scrap-memos.json":
+            return JSON.stringify({
+              memos: [
+                {
+                  id: "memo-1",
+                  title: "Memo",
+                  content: "Body",
+                  tags: ["tag"],
+                  updatedAt: "2026-03-12T02:15:00.000Z",
+                },
+              ],
+              updatedAt: "2026-03-12T02:15:00.000Z",
+            });
+          case "world/graph.json":
+            return JSON.stringify({
+              nodes: [],
+              edges: [],
+              updatedAt: "2026-03-12T02:30:00.000Z",
+            });
+          case "memory/canonical.json":
+            return JSON.stringify({
+              schemaVersion: 1,
+              exportedAt: "2026-03-12T02:45:00.000Z",
+              tables: {
+                MemoryEntity: [
+                  {
+                    id: "memory-entity-1",
+                    projectId: "project-1",
+                    entityType: "character",
+                    canonicalName: "Alice",
+                    status: "confirmed",
+                    updatedAt: "2026-03-12T02:45:00.000Z",
+                  },
+                ],
+              },
+            });
+          case "manuscript/chapter-1.md":
+            return "# Chapter 1";
+          default:
+            return null;
+        }
+      },
+    );
   });
 
   it("hydrates imported world documents into the same transaction surface used by replica state", async () => {
@@ -243,12 +260,20 @@ describe("projectImportOpen", () => {
         }),
         worldPlot: expect.objectContaining({
           columns: expect.arrayContaining([
-            expect.objectContaining({ id: "plot-col", title: "Arc", cards: [] }),
+            expect.objectContaining({
+              id: "plot-col",
+              title: "Arc",
+              cards: [],
+            }),
           ]),
         }),
         worldDrawing: expect.objectContaining({
           paths: expect.arrayContaining([
-            expect.objectContaining({ id: "path-1", type: "path", color: "#000000" }),
+            expect.objectContaining({
+              id: "path-1",
+              type: "path",
+              color: "#000000",
+            }),
           ]),
         }),
         worldMindmap: expect.objectContaining({
@@ -257,7 +282,11 @@ describe("projectImportOpen", () => {
         }),
         worldScrapMemos: expect.objectContaining({
           memos: expect.arrayContaining([
-            expect.objectContaining({ id: "memo-1", title: "Memo", content: "Body" }),
+            expect.objectContaining({
+              id: "memo-1",
+              title: "Memo",
+              content: "Body",
+            }),
           ]),
         }),
         worldGraph: expect.objectContaining({
@@ -280,10 +309,12 @@ describe("projectImportOpen", () => {
   });
 
   it("skips stale package imports when the local database is newer", async () => {
-    mocked.findUniqueResult = [{
-      id: "project-1",
-      updatedAt: "2026-03-12T04:00:00.000Z",
-    }];
+    mocked.findUniqueResult = [
+      {
+        id: "project-1",
+        updatedAt: "2026-03-12T04:00:00.000Z",
+      },
+    ];
 
     const logger = {
       info: vi.fn(),
@@ -315,36 +346,38 @@ describe("projectImportOpen", () => {
   });
 
   it("rejects canonical memory from a different package project", async () => {
-    mocked.readLuieContainerEntry.mockImplementation(async (_packagePath: string, entryPath: string) => {
-      if (entryPath === "meta.json") {
-        return JSON.stringify({
-          format: "luie",
-          version: 1,
-          projectId: "project-1",
-          title: "Project 1",
-          updatedAt: "2026-03-12T03:00:00.000Z",
-          chapters: [],
-        });
-      }
-      if (entryPath === "memory/canonical.json") {
-        return JSON.stringify({
-          schemaVersion: 1,
-          tables: {
-            MemoryEntity: [
-              {
-                id: "memory-entity-1",
-                projectId: "other-project",
-                entityType: "character",
-                canonicalName: "Alice",
-                status: "confirmed",
-                updatedAt: "2026-03-12T02:45:00.000Z",
-              },
-            ],
-          },
-        });
-      }
-      return null;
-    });
+    mocked.readLuieContainerEntry.mockImplementation(
+      async (_packagePath: string, entryPath: string) => {
+        if (entryPath === "meta.json") {
+          return JSON.stringify({
+            format: "luie",
+            version: 1,
+            projectId: "project-1",
+            title: "Project 1",
+            updatedAt: "2026-03-12T03:00:00.000Z",
+            chapters: [],
+          });
+        }
+        if (entryPath === "memory/canonical.json") {
+          return JSON.stringify({
+            schemaVersion: 1,
+            tables: {
+              MemoryEntity: [
+                {
+                  id: "memory-entity-1",
+                  projectId: "other-project",
+                  entityType: "character",
+                  canonicalName: "Alice",
+                  status: "confirmed",
+                  updatedAt: "2026-03-12T02:45:00.000Z",
+                },
+              ],
+            },
+          });
+        }
+        return null;
+      },
+    );
 
     const logger = {
       info: vi.fn(),

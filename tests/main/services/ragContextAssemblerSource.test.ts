@@ -4,7 +4,10 @@ import { describe, expect, it } from "vitest";
 
 const source = () =>
   readFileSync(
-    resolve(process.cwd(), "src/main/services/features/rag/contextAssembler.ts"),
+    resolve(
+      process.cwd(),
+      "src/main/services/features/rag/contextAssembler.ts",
+    ),
     "utf8",
   );
 

@@ -27,8 +27,7 @@ import {
 } from "./chapterRuntime.js";
 
 const loadChapterSearchCacheService = async () =>
-  (await import("../../features/chapterSearchCacheService.js"))
-    .chapterSearchCacheService;
+  (await import("../../features/search/index.js")).chapterSearchCacheService;
 
 type RunInWriteSerialQueue = <T>(task: () => Promise<T>) => Promise<T>;
 
@@ -52,7 +51,9 @@ export const createChapterRecord = async (input: {
     const maxOrderRows = await store
       .select({ order: chapter.order })
       .from(chapter)
-      .where(and(eq(chapter.projectId, data.projectId), isNull(chapter.deletedAt)))
+      .where(
+        and(eq(chapter.projectId, data.projectId), isNull(chapter.deletedAt)),
+      )
       .orderBy(desc(chapter.order))
       .limit(1);
 
@@ -76,19 +77,24 @@ export const createChapterRecord = async (input: {
     const created = await input.runInWriteSerialQueue(async () => {
       await store.run(sql`BEGIN IMMEDIATE;`);
       try {
-        const inserted = await store.insert(chapter).values({
-          id: chapterId,
-          projectId: data.projectId,
-          title: data.title,
-          synopsis: data.synopsis ?? null,
-          order: nextOrder,
-          content: "",
-          createdAt: now,
-          updatedAt: now,
-        }).returning();
+        const inserted = await store
+          .insert(chapter)
+          .values({
+            id: chapterId,
+            projectId: data.projectId,
+            title: data.title,
+            synopsis: data.synopsis ?? null,
+            order: nextOrder,
+            content: "",
+            createdAt: now,
+            updatedAt: now,
+          })
+          .returning();
         const createdRow = inserted[0];
         if (!createdRow) {
-          throw new Error("Chapter create transaction completed without inserted row");
+          throw new Error(
+            "Chapter create transaction completed without inserted row",
+          );
         }
         await upsertChapterBody({
           chapterId: String(createdRow.id),
@@ -121,7 +127,8 @@ export const createChapterRecord = async (input: {
     if (!SKIP_NONCRITICAL_DERIVED_ON_STRESS) {
       fireAndForget(
         (async () => {
-          const chapterSearchCacheService = await loadChapterSearchCacheService();
+          const chapterSearchCacheService =
+            await loadChapterSearchCacheService();
           await chapterSearchCacheService.upsertChapter({
             chapterId: String(created.id),
             projectId: String(created.projectId),
@@ -136,7 +143,10 @@ export const createChapterRecord = async (input: {
       );
     }
     const cacheDeferredAt = perfNow();
-    await projectService.persistPackageAfterMutation(data.projectId, "chapter:create");
+    await projectService.persistPackageAfterMutation(
+      data.projectId,
+      "chapter:create",
+    );
     const persistedAt = perfNow();
     logTrace("chapter.create", String(created.id), {
       totalMs: persistedAt - startedAt,
@@ -208,7 +218,10 @@ export const updateChapterRecord = async (input: {
       Object.keys(updateData).length === 2 &&
       Object.prototype.hasOwnProperty.call(updateData, "content") &&
       Object.prototype.hasOwnProperty.call(updateData, "wordCount");
-    if (hasOnlyContentUpdate && persistedContent === String(data.content ?? "")) {
+    if (
+      hasOnlyContentUpdate &&
+      persistedContent === String(data.content ?? "")
+    ) {
       const existing = await store
         .select()
         .from(chapter)
@@ -223,7 +236,10 @@ export const updateChapterRecord = async (input: {
       try {
         const updated = await store
           .update(chapter)
-          .set({ ...(updateData as Partial<typeof chapter.$inferInsert>), updatedAt: now })
+          .set({
+            ...(updateData as Partial<typeof chapter.$inferInsert>),
+            updatedAt: now,
+          })
           .where(eq(chapter.id, data.id))
           .returning();
 
@@ -279,11 +295,12 @@ export const updateChapterRecord = async (input: {
       });
     }
     const updateContent =
-      data.content ?? await readChapterContent(String(updatedChapter.id));
+      data.content ?? (await readChapterContent(String(updatedChapter.id)));
     if (!SKIP_NONCRITICAL_DERIVED_ON_STRESS) {
       fireAndForget(
         (async () => {
-          const chapterSearchCacheService = await loadChapterSearchCacheService();
+          const chapterSearchCacheService =
+            await loadChapterSearchCacheService();
           await chapterSearchCacheService.upsertChapter({
             chapterId: String(updatedChapter.id),
             projectId: String(updatedChapter.projectId),

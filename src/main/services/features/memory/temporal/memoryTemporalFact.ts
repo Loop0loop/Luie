@@ -24,7 +24,11 @@ export function isMemoryFactValidAtChapter(
   if (fact.invalidatedByFactId !== null) return false;
   if (fact.observedAtChapterOrder > chapterOrder) return false;
   if (fact.validFromChapterOrder > chapterOrder) return false;
-  if (fact.validToChapterOrder !== null && fact.validToChapterOrder < chapterOrder) return false;
+  if (
+    fact.validToChapterOrder !== null &&
+    fact.validToChapterOrder < chapterOrder
+  )
+    return false;
   return true;
 }
 

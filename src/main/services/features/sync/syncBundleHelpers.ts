@@ -13,7 +13,16 @@ import { buildSyncProjectPackagePayload } from "./syncBundleApplier.js";
 import type { SyncBundle } from "./syncMapper.js";
 import { hydrateProjectsWithAttachmentPaths } from "../../core/project/projectAttachmentStore.js";
 
-const { project, chapter, character, event, faction, scrapMemo, term, worldDocument } = schema;
+const {
+  project,
+  chapter,
+  character,
+  event,
+  faction,
+  scrapMemo,
+  term,
+  worldDocument,
+} = schema;
 
 type LoggerLike = {
   warn: (message: string, details?: unknown) => void;
@@ -22,12 +31,12 @@ type LoggerLike = {
 
 type ProjectWithRelations = ProjectRow & {
   chapters: ChapterRow[];
-  characters: typeof character.$inferSelect[];
-  events: typeof event.$inferSelect[];
-  factions: typeof faction.$inferSelect[];
-  scrapMemos: typeof scrapMemo.$inferSelect[];
-  terms: typeof term.$inferSelect[];
-  worldDocuments: typeof worldDocument.$inferSelect[];
+  characters: (typeof character.$inferSelect)[];
+  events: (typeof event.$inferSelect)[];
+  factions: (typeof faction.$inferSelect)[];
+  scrapMemos: (typeof scrapMemo.$inferSelect)[];
+  terms: (typeof term.$inferSelect)[];
+  worldDocuments: (typeof worldDocument.$inferSelect)[];
 };
 
 const appendMemoryCanonicalRows = async (
@@ -52,8 +61,7 @@ const appendMemoryCanonicalRows = async (
           tableName,
           row,
           updatedAt,
-          deletedAt:
-            typeof row.deletedAt === "string" ? row.deletedAt : null,
+          deletedAt: typeof row.deletedAt === "string" ? row.deletedAt : null,
         });
       }
     }
@@ -79,24 +87,34 @@ export const buildLocalBundleFromDatabase = async (input: {
     });
   }
 
-  const [chapters, characters, events, factions, scrapMemos, terms, worldDocuments] =
-    await Promise.all([
-      store.select().from(chapter).where(inArray(chapter.projectId, projectIds)),
-      store.select().from(character).where(inArray(character.projectId, projectIds)),
-      store.select().from(event).where(inArray(event.projectId, projectIds)),
-      store.select().from(faction).where(inArray(faction.projectId, projectIds)),
-      store
-        .select()
-        .from(scrapMemo)
-        .where(inArray(scrapMemo.projectId, projectIds))
-        .orderBy(asc(scrapMemo.sortOrder), desc(scrapMemo.updatedAt)),
-      store.select().from(term).where(inArray(term.projectId, projectIds)),
-      store
-        .select()
-        .from(worldDocument)
-        .where(inArray(worldDocument.projectId, projectIds))
-        .orderBy(desc(worldDocument.updatedAt)),
-    ]);
+  const [
+    chapters,
+    characters,
+    events,
+    factions,
+    scrapMemos,
+    terms,
+    worldDocuments,
+  ] = await Promise.all([
+    store.select().from(chapter).where(inArray(chapter.projectId, projectIds)),
+    store
+      .select()
+      .from(character)
+      .where(inArray(character.projectId, projectIds)),
+    store.select().from(event).where(inArray(event.projectId, projectIds)),
+    store.select().from(faction).where(inArray(faction.projectId, projectIds)),
+    store
+      .select()
+      .from(scrapMemo)
+      .where(inArray(scrapMemo.projectId, projectIds))
+      .orderBy(asc(scrapMemo.sortOrder), desc(scrapMemo.updatedAt)),
+    store.select().from(term).where(inArray(term.projectId, projectIds)),
+    store
+      .select()
+      .from(worldDocument)
+      .where(inArray(worldDocument.projectId, projectIds))
+      .orderBy(desc(worldDocument.updatedAt)),
+  ]);
 
   const chaptersByProject = new Map<string, ChapterRow[]>();
   for (const ch of chapters) {
@@ -105,42 +123,51 @@ export const buildLocalBundleFromDatabase = async (input: {
     chaptersByProject.set(ch.projectId, list);
   }
 
-  const charactersByProject = new Map<string, typeof character.$inferSelect[]>();
+  const charactersByProject = new Map<
+    string,
+    (typeof character.$inferSelect)[]
+  >();
   for (const c of characters) {
     const list = charactersByProject.get(c.projectId) ?? [];
     list.push(c);
     charactersByProject.set(c.projectId, list);
   }
 
-  const eventsByProject = new Map<string, typeof event.$inferSelect[]>();
+  const eventsByProject = new Map<string, (typeof event.$inferSelect)[]>();
   for (const e of events) {
     const list = eventsByProject.get(e.projectId) ?? [];
     list.push(e);
     eventsByProject.set(e.projectId, list);
   }
 
-  const factionsByProject = new Map<string, typeof faction.$inferSelect[]>();
+  const factionsByProject = new Map<string, (typeof faction.$inferSelect)[]>();
   for (const f of factions) {
     const list = factionsByProject.get(f.projectId) ?? [];
     list.push(f);
     factionsByProject.set(f.projectId, list);
   }
 
-  const scrapMemosByProject = new Map<string, typeof scrapMemo.$inferSelect[]>();
+  const scrapMemosByProject = new Map<
+    string,
+    (typeof scrapMemo.$inferSelect)[]
+  >();
   for (const s of scrapMemos) {
     const list = scrapMemosByProject.get(s.projectId) ?? [];
     list.push(s);
     scrapMemosByProject.set(s.projectId, list);
   }
 
-  const termsByProject = new Map<string, typeof term.$inferSelect[]>();
+  const termsByProject = new Map<string, (typeof term.$inferSelect)[]>();
   for (const t of terms) {
     const list = termsByProject.get(t.projectId) ?? [];
     list.push(t);
     termsByProject.set(t.projectId, list);
   }
 
-  const worldDocsByProject = new Map<string, typeof worldDocument.$inferSelect[]>();
+  const worldDocsByProject = new Map<
+    string,
+    (typeof worldDocument.$inferSelect)[]
+  >();
   for (const w of worldDocuments) {
     const list = worldDocsByProject.get(w.projectId) ?? [];
     list.push(w);
@@ -158,7 +185,9 @@ export const buildLocalBundleFromDatabase = async (input: {
     worldDocuments: worldDocsByProject.get(p.id) ?? [],
   }));
 
-  const hydratedProjectRows = await hydrateProjectsWithAttachmentPaths(projectsWithRelations);
+  const hydratedProjectRows = await hydrateProjectsWithAttachmentPaths(
+    projectsWithRelations,
+  );
 
   const bundle = await buildLocalSyncBundle({
     userId: input.userId,
@@ -193,7 +222,11 @@ export const buildProjectPackagePayloadForSync = async (input: {
     projectId: input.projectId,
     projectPath: input.projectPath,
     localSnapshots: input.localSnapshots,
-    hydrateMissingWorldDocsFromPackage: async (worldDocs, targetProjectPath, skippedDocTypes) =>
+    hydrateMissingWorldDocsFromPackage: async (
+      worldDocs,
+      targetProjectPath,
+      skippedDocTypes,
+    ) =>
       await hydrateMissingWorldDocsFromPackage(
         worldDocs,
         targetProjectPath,

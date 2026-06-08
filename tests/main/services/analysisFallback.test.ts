@@ -45,26 +45,23 @@ describe("Gemini fallback paths", () => {
   });
 
   it("falls back to local Gemini API when edge auth is unavailable", async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            candidates: [
-              {
-                content: {
-                  parts: [{ text: "local fallback response" }],
-                },
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          candidates: [
+            {
+              content: {
+                parts: [{ text: "local fallback response" }],
               },
-            ],
-          }),
-          { status: 200 },
-        ),
-      );
-
-    const { invokeGeminiProxy } = await import(
-      "../../../src/main/services/features/analysis/geminiApiKeyResolver.js"
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
     );
+
+    const { invokeGeminiProxy } =
+      await import("../../../src/main/services/features/analysis/geminiApiKeyResolver.js");
 
     const text = await invokeGeminiProxy({
       model: "gemini-2.5-flash-lite",
@@ -74,7 +71,9 @@ describe("Gemini fallback paths", () => {
 
     expect(text).toBe("local fallback response");
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(String(fetchMock.mock.calls[0]?.[0])).toContain("generativelanguage.googleapis.com");
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain(
+      "generativelanguage.googleapis.com",
+    );
   });
 
   it("throws when both edge and local paths are unavailable", async () => {
@@ -83,9 +82,8 @@ describe("Gemini fallback paths", () => {
     delete process.env.GOOGLE_GCP_API;
     delete process.env.GOOGLE_API_KEY;
 
-    const { invokeGeminiProxy } = await import(
-      "../../../src/main/services/features/analysis/geminiApiKeyResolver.js"
-    );
+    const { invokeGeminiProxy } =
+      await import("../../../src/main/services/features/analysis/geminiApiKeyResolver.js");
 
     await expect(
       invokeGeminiProxy({
@@ -99,9 +97,8 @@ describe("Gemini fallback paths", () => {
 
 describe("Deterministic local fallback", () => {
   it("builds complete analysis fallback items", async () => {
-    const { buildDeterministicAnalysisItems } = await import(
-      "../../../src/main/services/features/analysis/localFallbackAnalyzer.js"
-    );
+    const { buildDeterministicAnalysisItems } =
+      await import("../../../src/main/services/features/analysis/localFallbackAnalyzer.js");
 
     const items = buildDeterministicAnalysisItems({
       characters: [],
@@ -125,9 +122,8 @@ describe("Deterministic local fallback", () => {
   });
 
   it("builds deterministic entity classification", async () => {
-    const { buildDeterministicGeminiResult } = await import(
-      "../../../src/main/services/features/analysis/localFallbackAnalyzer.js"
-    );
+    const { buildDeterministicGeminiResult } =
+      await import("../../../src/main/services/features/analysis/localFallbackAnalyzer.js");
 
     const result = buildDeterministicGeminiResult("검은달 조직", [
       "검은달 조직은 비밀결사다.",

@@ -180,7 +180,8 @@ describe("ProjectService", () => {
       localProjectService.openLuieProject(projectPath),
     ).rejects.toBeDefined();
 
-    const protectedCharacter = await db.getClient()
+    const protectedCharacter = await db
+      .getClient()
       .select({ id: schema.character.id })
       .from(schema.character)
       .where(eq(schema.character.id, protectedCharacterId))
@@ -314,22 +315,27 @@ describe("ProjectService", () => {
       projectPath: validPath,
     });
 
-    await db.getClient()
+    await db
+      .getClient()
       .update(schema.project)
       .set({ projectPath: null })
       .where(eq(schema.project.id, created.id as string));
     const now1 = new Date().toISOString();
-    await db.getClient().insert(schema.projectAttachment).values({
-      projectId: created.id as string,
-      projectPath: "relative/unsafe.luie",
-      updatedAt: now1,
-    }).onConflictDoUpdate({
-      target: schema.projectAttachment.projectId,
-      set: {
+    await db
+      .getClient()
+      .insert(schema.projectAttachment)
+      .values({
+        projectId: created.id as string,
         projectPath: "relative/unsafe.luie",
         updatedAt: now1,
-      },
-    });
+      })
+      .onConflictDoUpdate({
+        target: schema.projectAttachment.projectId,
+        set: {
+          projectPath: "relative/unsafe.luie",
+          updatedAt: now1,
+        },
+      });
 
     await expect(
       localProjectService.exportProjectPackage(created.id as string),
@@ -349,22 +355,27 @@ describe("ProjectService", () => {
       projectPath: validPath,
     });
 
-    await db.getClient()
+    await db
+      .getClient()
       .update(schema.project)
       .set({ projectPath: null })
       .where(eq(schema.project.id, created.id as string));
     const now2 = new Date().toISOString();
-    await db.getClient().insert(schema.projectAttachment).values({
-      projectId: created.id as string,
-      projectPath: "relative/unsafe.luie",
-      updatedAt: now2,
-    }).onConflictDoUpdate({
-      target: schema.projectAttachment.projectId,
-      set: {
+    await db
+      .getClient()
+      .insert(schema.projectAttachment)
+      .values({
+        projectId: created.id as string,
         projectPath: "relative/unsafe.luie",
         updatedAt: now2,
-      },
-    });
+      })
+      .onConflictDoUpdate({
+        target: schema.projectAttachment.projectId,
+        set: {
+          projectPath: "relative/unsafe.luie",
+          updatedAt: now2,
+        },
+      });
 
     const all = await localProjectService.getAllProjects();
     const target = all.find((project) => project.id === created.id);
@@ -408,25 +419,31 @@ describe("ProjectService", () => {
       projectPath: path.join(app.getPath("userData"), "duplicate-path-c.luie"),
     });
 
-    await db.getClient()
+    await db
+      .getClient()
       .delete(schema.projectAttachment)
       .where(eq(schema.projectAttachment.projectId, String(first.id)));
-    await db.getClient()
+    await db
+      .getClient()
       .delete(schema.projectAttachment)
       .where(eq(schema.projectAttachment.projectId, String(second.id)));
-    await db.getClient()
+    await db
+      .getClient()
       .delete(schema.projectAttachment)
       .where(eq(schema.projectAttachment.projectId, String(third.id)));
     const now3 = new Date().toISOString();
-    await db.getClient()
+    await db
+      .getClient()
       .update(schema.project)
       .set({ projectPath: sharedPath, updatedAt: now3 })
       .where(eq(schema.project.id, String(first.id)));
-    await db.getClient()
+    await db
+      .getClient()
       .update(schema.project)
       .set({ projectPath: sharedPath, updatedAt: now3 })
       .where(eq(schema.project.id, String(second.id)));
-    await db.getClient()
+    await db
+      .getClient()
       .update(schema.project)
       .set({ projectPath: sharedPath, updatedAt: now3 })
       .where(eq(schema.project.id, String(third.id)));
@@ -436,10 +453,11 @@ describe("ProjectService", () => {
     expect(reconciliation.duplicateGroups).toBe(1);
     expect(reconciliation.clearedRecords).toBe(2);
 
-    const survivors = (await localProjectService.getAllProjects()).filter((project) =>
-      [String(first.id), String(second.id), String(third.id)].includes(
-        String(project.id),
-      ),
+    const survivors = (await localProjectService.getAllProjects()).filter(
+      (project) =>
+        [String(first.id), String(second.id), String(third.id)].includes(
+          String(project.id),
+        ),
     );
 
     expect(

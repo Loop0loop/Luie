@@ -45,9 +45,18 @@ const expectNoWalSidecars = async (packagePath: string): Promise<void> => {
 
 const buildPackagePayload = (size: number, variant: number) => {
   const chapterOne = makeMixedNarrativeText(size, variant);
-  const chapterTwo = makeMixedNarrativeText(Math.max(1, Math.floor(size / 2)), variant + 1);
-  const synopsis = makeMixedNarrativeText(Math.max(256, Math.floor(size / 24)), variant + 2);
-  const snapshotContent = makeMixedNarrativeText(Math.max(160, Math.floor(size / 18)), variant + 3);
+  const chapterTwo = makeMixedNarrativeText(
+    Math.max(1, Math.floor(size / 2)),
+    variant + 1,
+  );
+  const synopsis = makeMixedNarrativeText(
+    Math.max(256, Math.floor(size / 24)),
+    variant + 2,
+  );
+  const snapshotContent = makeMixedNarrativeText(
+    Math.max(160, Math.floor(size / 18)),
+    variant + 3,
+  );
 
   return {
     meta: {
@@ -143,7 +152,9 @@ describe("luieContainer extreme scenarios", () => {
   it.each([5_000, 100_000, 1_000_000, 2_000_000, 5_000_000])(
     "keeps %i-character mixed-language payloads stable across reopen",
     async (size) => {
-      tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-extreme-"));
+      tempRoot = await fsp.mkdtemp(
+        path.join(os.tmpdir(), "luie-container-extreme-"),
+      );
       const packagePath = path.join(tempRoot, `normal-${size}.luie`);
       const payload = buildPackagePayload(size, size % 7);
 
@@ -204,7 +215,9 @@ describe("luieContainer extreme scenarios", () => {
     { label: "empty", content: "" },
     { label: "single-char", content: "한" },
   ])("persists boundary content for $label", async ({ label, content }) => {
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-boundary-"));
+    tempRoot = await fsp.mkdtemp(
+      path.join(os.tmpdir(), "luie-container-boundary-"),
+    );
     const packagePath = path.join(tempRoot, `${label}.luie`);
 
     await writeLuieContainer({
@@ -243,7 +256,9 @@ describe("luieContainer extreme scenarios", () => {
   });
 
   it("accepts exact max-byte entries and rejects one-byte oversized reads", async () => {
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-limit-"));
+    tempRoot = await fsp.mkdtemp(
+      path.join(os.tmpdir(), "luie-container-limit-"),
+    );
     const packagePath = path.join(tempRoot, "limit.luie");
     const exactContent = makeExactMixedByteText(exactLimitBytes);
     const oversizedContent = `${exactContent}a`;
@@ -283,7 +298,9 @@ describe("luieContainer extreme scenarios", () => {
   });
 
   it("supports 1,000 manuscript entries without path collisions", async () => {
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-many-"));
+    tempRoot = await fsp.mkdtemp(
+      path.join(os.tmpdir(), "luie-container-many-"),
+    );
     const packagePath = path.join(tempRoot, "many-entries.luie");
     const chapters = makeManyChapters(1_000, 0, 128);
 
@@ -356,7 +373,9 @@ describe("luieContainer extreme scenarios", () => {
   });
 
   it("supports long and deep relative entry paths", async () => {
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-path-"));
+    tempRoot = await fsp.mkdtemp(
+      path.join(os.tmpdir(), "luie-container-path-"),
+    );
     const packagePath = path.join(tempRoot, "path-extreme.luie");
     const longPath = makeLongPath(220, "long-entry.json");
     const deepPath = makeDeepPath(12, "deep-entry.json");
@@ -391,7 +410,9 @@ describe("luieContainer extreme scenarios", () => {
   it.each(["../evil.txt", "..\\evil.txt"])(
     "rejects unsafe relative path %s",
     async (unsafePath) => {
-      tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-unsafe-"));
+      tempRoot = await fsp.mkdtemp(
+        path.join(os.tmpdir(), "luie-container-unsafe-"),
+      );
       const packagePath = path.join(tempRoot, "unsafe.luie");
 
       await writeLuieContainer({
@@ -414,7 +435,9 @@ describe("luieContainer extreme scenarios", () => {
   );
 
   it("rejects invalid JSON when overwriting meta.json directly", async () => {
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-json-"));
+    tempRoot = await fsp.mkdtemp(
+      path.join(os.tmpdir(), "luie-container-json-"),
+    );
     const packagePath = path.join(tempRoot, "invalid-json.luie");
 
     await writeLuieContainer({
@@ -436,7 +459,9 @@ describe("luieContainer extreme scenarios", () => {
   });
 
   it("rejects version mismatches and missing container info rows", async () => {
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-info-"));
+    tempRoot = await fsp.mkdtemp(
+      path.join(os.tmpdir(), "luie-container-info-"),
+    );
     const versionMismatchPath = path.join(tempRoot, "version-mismatch.luie");
     const missingInfoPath = path.join(tempRoot, "missing-info.luie");
 
@@ -480,7 +505,9 @@ describe("luieContainer extreme scenarios", () => {
   });
 
   it("rejects corrupted sqlite headers on read", async () => {
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-corrupt-"));
+    tempRoot = await fsp.mkdtemp(
+      path.join(os.tmpdir(), "luie-container-corrupt-"),
+    );
     const packagePath = path.join(tempRoot, "corrupt.luie");
     await fsp.writeFile(
       packagePath,
@@ -498,9 +525,14 @@ describe("luieContainer extreme scenarios", () => {
   });
 
   it("rejects oversized sqlite packages before opening the database", async () => {
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-oversized-"));
+    tempRoot = await fsp.mkdtemp(
+      path.join(os.tmpdir(), "luie-container-oversized-"),
+    );
     const packagePath = path.join(tempRoot, "oversized.luie");
-    await fsp.writeFile(packagePath, Buffer.from("SQLite format 3\u0000", "utf8"));
+    await fsp.writeFile(
+      packagePath,
+      Buffer.from("SQLite format 3\u0000", "utf8"),
+    );
     await fsp.truncate(packagePath, MAX_LUIE_PACKAGE_SIZE_BYTES + 1);
 
     const probe = await probeLuieContainer(packagePath);
@@ -513,7 +545,9 @@ describe("luieContainer extreme scenarios", () => {
   });
 
   it("survives 100 repeated save-read cycles without WAL sidecars", async () => {
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-repeat-"));
+    tempRoot = await fsp.mkdtemp(
+      path.join(os.tmpdir(), "luie-container-repeat-"),
+    );
     const packagePath = path.join(tempRoot, "repeat.luie");
 
     await writeLuieContainer({
@@ -523,7 +557,7 @@ describe("luieContainer extreme scenarios", () => {
     });
 
     for (let index = 0; index < 100; index += 1) {
-      const body = makeMixedNarrativeText(1_200 + ((index % 7) * 19), index);
+      const body = makeMixedNarrativeText(1_200 + (index % 7) * 19, index);
       await writeLuieSqliteEntry({
         targetPath: packagePath,
         entryPath: "manuscript/ch1.md",

@@ -28,7 +28,9 @@ import {
 } from "./rowUtils.js";
 
 const logger = createLogger("SyncRepository");
-const memoryCanonicalTables = new Set<string>(MEMORY_CANONICAL_EXPORTABLE_TABLES);
+const memoryCanonicalTables = new Set<string>(
+  MEMORY_CANONICAL_EXPORTABLE_TABLES,
+);
 
 const mapProjectRow = (row: DbRow): SyncProjectRecord | null => {
   const id = toNullableString(row.id);
@@ -169,10 +171,14 @@ const mapWorldDocumentRow = (row: DbRow): SyncWorldDocumentRecord | null => {
   const normalizedPayload = normalizeJsonValue(row.payload);
   const payload = isPlainObject(normalizedPayload) ? normalizedPayload : {};
   if (!isPlainObject(normalizedPayload)) {
-    logger.warn("Invalid world document payload from sync source; using empty payload", {
-      docType,
-      payloadType: normalizedPayload === null ? "null" : typeof normalizedPayload,
-    });
+    logger.warn(
+      "Invalid world document payload from sync source; using empty payload",
+      {
+        docType,
+        payloadType:
+          normalizedPayload === null ? "null" : typeof normalizedPayload,
+      },
+    );
   }
 
   return {
@@ -204,7 +210,9 @@ const mapMemoRow = (row: DbRow): SyncMemoRecord | null => {
   };
 };
 
-const mapMemoryCanonicalRow = (row: DbRow): SyncMemoryCanonicalRecord | null => {
+const mapMemoryCanonicalRow = (
+  row: DbRow,
+): SyncMemoryCanonicalRecord | null => {
   const id = toNullableString(row.id);
   const userId = toNullableString(row.user_id);
   const projectId = toNullableString(row.project_id);
@@ -225,20 +233,26 @@ const mapMemoryCanonicalRow = (row: DbRow): SyncMemoryCanonicalRecord | null => 
   const rowProjectId = toNullableString(normalizedRow.projectId);
   const rowStatus = toNullableString(normalizedRow.status);
   if (!rowId || rowProjectId !== projectId) {
-    logger.warn("Invalid canonical memory row identity from sync source; skipping row", {
-      id,
-      tableName,
-      rowProjectId,
-      projectId,
-    });
+    logger.warn(
+      "Invalid canonical memory row identity from sync source; skipping row",
+      {
+        id,
+        tableName,
+        rowProjectId,
+        projectId,
+      },
+    );
     return null;
   }
   if (!isMemoryRowExportable({ tableName, status: rowStatus })) {
-    logger.warn("Non-exportable canonical memory row from sync source; skipping row", {
-      id,
-      tableName,
-      status: rowStatus,
-    });
+    logger.warn(
+      "Non-exportable canonical memory row from sync source; skipping row",
+      {
+        id,
+        tableName,
+        status: rowStatus,
+      },
+    );
     return null;
   }
 

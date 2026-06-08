@@ -3,8 +3,16 @@ import { Type } from "@google/genai";
 
 export const GeminiResultSchema = z.object({
   name: z.string(),
-  entityType: z.enum(["character", "location", "organization", "item", "concept"]),
-  importance: z.enum(["main", "supporting", "minor", "unknown"]).default("unknown"),
+  entityType: z.enum([
+    "character",
+    "location",
+    "organization",
+    "item",
+    "concept",
+  ]),
+  importance: z
+    .enum(["main", "supporting", "minor", "unknown"])
+    .default("unknown"),
   summary: z.string(),
   confidence: z.number().min(0).max(1).default(0.5),
   reasoning: z.string().optional(),

@@ -79,7 +79,9 @@ describe("selectLlmfitAsset", () => {
     const assets = makeAssets();
     const result = selectLlmfitAsset(assets, "darwin-arm64");
     expect(result).not.toBeNull();
-    expect(result!.archive.name).toBe(`llmfit-${VERSION}-aarch64-apple-darwin.tar.gz`);
+    expect(result!.archive.name).toBe(
+      `llmfit-${VERSION}-aarch64-apple-darwin.tar.gz`,
+    );
     expect(result!.sha256Asset?.name).toBe(
       `llmfit-${VERSION}-aarch64-apple-darwin.tar.gz.sha256`,
     );
@@ -87,19 +89,27 @@ describe("selectLlmfitAsset", () => {
 
   it("selects the windows x64 zip archive", () => {
     const result = selectLlmfitAsset(makeAssets(), "win32-x64");
-    expect(result!.archive.name).toBe(`llmfit-${VERSION}-x86_64-pc-windows-msvc.zip`);
+    expect(result!.archive.name).toBe(
+      `llmfit-${VERSION}-x86_64-pc-windows-msvc.zip`,
+    );
     expect(result!.archive.name.endsWith(".zip")).toBe(true);
   });
 
   it("does not pick the .sha256 file as the archive", () => {
     const result = selectLlmfitAsset(makeAssets(), "linux-x64");
     expect(result!.archive.name.endsWith(".sha256")).toBe(false);
-    expect(result!.archive.name).toBe(`llmfit-${VERSION}-x86_64-unknown-linux-gnu.tar.gz`);
+    expect(result!.archive.name).toBe(
+      `llmfit-${VERSION}-x86_64-unknown-linux-gnu.tar.gz`,
+    );
   });
 
   it("returns null when no matching asset exists", () => {
     const assets: GithubReleaseAsset[] = [
-      { name: "llmfit-v0.9.29-x86_64-apple-darwin.tar.gz", browser_download_url: "x", digest: null },
+      {
+        name: "llmfit-v0.9.29-x86_64-apple-darwin.tar.gz",
+        browser_download_url: "x",
+        digest: null,
+      },
     ];
     // request arm64 mac → no aarch64-apple-darwin asset present
     expect(selectLlmfitAsset(assets, "darwin-arm64")).toBeNull();
@@ -121,7 +131,8 @@ describe("selectLlmfitAsset", () => {
 
 describe("parseSha256Content", () => {
   it("parses '<hex>  <filename>' format", () => {
-    const hex = "6d39681b26c61279ac1f82db35a04a05009e94c415b51c858ff571489a82fc06";
+    const hex =
+      "6d39681b26c61279ac1f82db35a04a05009e94c415b51c858ff571489a82fc06";
     expect(parseSha256Content(`${hex}  llmfit.tar.gz`)).toBe(hex);
   });
 

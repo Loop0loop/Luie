@@ -77,7 +77,8 @@ export async function materializeChapterSummariesForNarrativeMemory(input: {
         projectId: input.projectId,
         chapterId: row.chapterId,
         chapterNumber: row.chapterNumber,
-        summary: summary.length <= 240 ? summary : `${summary.slice(0, 240)}...`,
+        summary:
+          summary.length <= 240 ? summary : `${summary.slice(0, 240)}...`,
         contentHash,
         isFallback: false,
         model: draft.model,
@@ -89,7 +90,8 @@ export async function materializeChapterSummariesForNarrativeMemory(input: {
         set: {
           projectId: input.projectId,
           chapterNumber: row.chapterNumber,
-          summary: summary.length <= 240 ? summary : `${summary.slice(0, 240)}...`,
+          summary:
+            summary.length <= 240 ? summary : `${summary.slice(0, 240)}...`,
           contentHash,
           isFallback: false,
           model: draft.model,

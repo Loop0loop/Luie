@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { RuntimeSupabaseConfig, SyncSettings } from "../../../src/shared/types/index.js";
+import type {
+  RuntimeSupabaseConfig,
+  SyncSettings,
+} from "../../../src/shared/types/index.js";
 
 const mocked = vi.hoisted(() => {
   const startup = { completedAt: undefined as string | undefined };
@@ -8,7 +11,9 @@ const mocked = vi.hoisted(() => {
     autoSync: true,
   };
   const supabaseConfig = { current: null as RuntimeSupabaseConfig | null };
-  const supabaseSource = { current: null as "env" | "runtime" | "legacy" | null };
+  const supabaseSource = {
+    current: null as "env" | "runtime" | "legacy" | null,
+  };
 
   return {
     startup,
@@ -125,13 +130,20 @@ describe("startupReadinessService", () => {
     mocked.executeRaw.mockResolvedValue(undefined);
     mocked.getAccessToken.mockReturnValue({ token: null });
     mocked.getRefreshToken.mockReturnValue({ token: null });
-    vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
-      new Response(JSON.stringify({ ok: true, userId: "00000000-0000-0000-0000-000000000001" }), {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }),
+    vi.spyOn(globalThis, "fetch").mockImplementation(
+      async () =>
+        new Response(
+          JSON.stringify({
+            ok: true,
+            userId: "00000000-0000-0000-0000-000000000001",
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        ),
     );
   });
 
@@ -140,9 +152,8 @@ describe("startupReadinessService", () => {
   });
 
   it("forces wizard when runtime config and sync session are missing", async () => {
-    const { startupReadinessService } = await import(
-      "../../../src/main/services/features/startupReadinessService.js"
-    );
+    const { startupReadinessService } =
+      await import("../../../src/main/services/features/startup/index.js");
     const readiness = await startupReadinessService.getReadiness();
     expect(readiness.mustRunWizard).toBe(true);
     expect(readiness.reasons).toContain("supabaseRuntimeConfig");
@@ -160,9 +171,8 @@ describe("startupReadinessService", () => {
     mocked.syncSettings.email = "user@example.com";
     mocked.getAccessToken.mockReturnValue({ token: "access-token" });
 
-    const { startupReadinessService } = await import(
-      "../../../src/main/services/features/startupReadinessService.js"
-    );
+    const { startupReadinessService } =
+      await import("../../../src/main/services/features/startup/index.js");
 
     const readinessBefore = await startupReadinessService.getReadiness();
     expect(readinessBefore.mustRunWizard).toBe(true);

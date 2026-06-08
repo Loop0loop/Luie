@@ -25,67 +25,88 @@ describe("readLuieImportCollections", () => {
   });
 
   it("reads optional world collections from .luie entries", async () => {
-    mocked.entries.set("world/characters.json", JSON.stringify({
-      characters: [
-        {
-          id: "char-1",
-          name: "Alice",
-          description: "Hero",
-          updatedAt: "2026-03-01T00:00:00.000Z",
-        },
-      ],
-    }));
-    mocked.entries.set("world/terms.json", JSON.stringify({
-      terms: [
-        {
-          id: "term-1",
-          term: "Arcology",
-          definition: "Mega city",
-          updatedAt: "2026-03-01T00:00:00.000Z",
-        },
-      ],
-    }));
-    mocked.entries.set("snapshots/index.json", JSON.stringify({
-      snapshots: [
-        {
-          id: "snapshot-1",
-          chapterId: "chapter-1",
-          content: "draft",
-          createdAt: "2026-03-01T00:00:00.000Z",
-        },
-      ],
-    }));
-    mocked.entries.set("world/synopsis.json", JSON.stringify({
-      synopsis: "story",
-      updatedAt: "2026-03-02T00:00:00.000Z",
-    }));
-    mocked.entries.set("world/scrap-memos.json", JSON.stringify({
-      memos: [
-        {
-          id: "memo-1",
-          title: "memo",
-          content: "note",
-          tags: ["plot"],
-          updatedAt: "2026-03-02T00:00:00.000Z",
-        },
-      ],
-      updatedAt: "2026-03-02T00:00:00.000Z",
-    }));
-    mocked.entries.set("memory/canonical.json", JSON.stringify({
-      schemaVersion: 1,
-      exportedAt: "2026-03-02T00:00:00.000Z",
-      tables: {
-        MemoryEntity: [
+    mocked.entries.set(
+      "world/characters.json",
+      JSON.stringify({
+        characters: [
           {
-            id: "entity-1",
-            projectId: "project-1",
-            status: "confirmed",
+            id: "char-1",
+            name: "Alice",
+            description: "Hero",
+            updatedAt: "2026-03-01T00:00:00.000Z",
           },
         ],
-      },
-    }));
+      }),
+    );
+    mocked.entries.set(
+      "world/terms.json",
+      JSON.stringify({
+        terms: [
+          {
+            id: "term-1",
+            term: "Arcology",
+            definition: "Mega city",
+            updatedAt: "2026-03-01T00:00:00.000Z",
+          },
+        ],
+      }),
+    );
+    mocked.entries.set(
+      "snapshots/index.json",
+      JSON.stringify({
+        snapshots: [
+          {
+            id: "snapshot-1",
+            chapterId: "chapter-1",
+            content: "draft",
+            createdAt: "2026-03-01T00:00:00.000Z",
+          },
+        ],
+      }),
+    );
+    mocked.entries.set(
+      "world/synopsis.json",
+      JSON.stringify({
+        synopsis: "story",
+        updatedAt: "2026-03-02T00:00:00.000Z",
+      }),
+    );
+    mocked.entries.set(
+      "world/scrap-memos.json",
+      JSON.stringify({
+        memos: [
+          {
+            id: "memo-1",
+            title: "memo",
+            content: "note",
+            tags: ["plot"],
+            updatedAt: "2026-03-02T00:00:00.000Z",
+          },
+        ],
+        updatedAt: "2026-03-02T00:00:00.000Z",
+      }),
+    );
+    mocked.entries.set(
+      "memory/canonical.json",
+      JSON.stringify({
+        schemaVersion: 1,
+        exportedAt: "2026-03-02T00:00:00.000Z",
+        tables: {
+          MemoryEntity: [
+            {
+              id: "entity-1",
+              projectId: "project-1",
+              status: "confirmed",
+            },
+          ],
+        },
+      }),
+    );
 
-    const collections = await readLuieImportCollections("/tmp/project.luie", logger);
+    const collections = await readLuieImportCollections(
+      "/tmp/project.luie",
+      logger,
+    );
 
     expect(collections.characters).toHaveLength(1);
     expect(collections.terms).toHaveLength(1);
@@ -106,7 +127,10 @@ describe("readLuieImportCollections", () => {
   });
 
   it("returns empty collections when optional entries are missing", async () => {
-    const collections = await readLuieImportCollections("/tmp/project.luie", logger);
+    const collections = await readLuieImportCollections(
+      "/tmp/project.luie",
+      logger,
+    );
 
     expect(collections).toMatchObject({
       characters: [],
@@ -123,9 +147,12 @@ describe("readLuieImportCollections", () => {
   });
 
   it("throws a validation error for malformed collection shape", async () => {
-    mocked.entries.set("world/terms.json", JSON.stringify({
-      terms: "not-an-array",
-    }));
+    mocked.entries.set(
+      "world/terms.json",
+      JSON.stringify({
+        terms: "not-an-array",
+      }),
+    );
 
     await expect(
       readLuieImportCollections("/tmp/project.luie", logger),
@@ -135,24 +162,27 @@ describe("readLuieImportCollections", () => {
   });
 
   it("rejects unsupported or unreviewed canonical memory payloads", async () => {
-    mocked.entries.set("memory/canonical.json", JSON.stringify({
-      schemaVersion: 1,
-      tables: {
-        MemoryChunk: [
-          {
-            id: "chunk-1",
-            projectId: "project-1",
-          },
-        ],
-        MemoryFact: [
-          {
-            id: "fact-1",
-            projectId: "project-1",
-            status: "suggested",
-          },
-        ],
-      },
-    }));
+    mocked.entries.set(
+      "memory/canonical.json",
+      JSON.stringify({
+        schemaVersion: 1,
+        tables: {
+          MemoryChunk: [
+            {
+              id: "chunk-1",
+              projectId: "project-1",
+            },
+          ],
+          MemoryFact: [
+            {
+              id: "fact-1",
+              projectId: "project-1",
+              status: "suggested",
+            },
+          ],
+        },
+      }),
+    );
 
     await expect(
       readLuieImportCollections("/tmp/project.luie", logger),

@@ -106,7 +106,7 @@ src/shared/
 - `src` 디렉터리에서 500 LOC 초과인 코드 파일은 현재 0개입니다.
 - `src/renderer/src/features/research/components/AnalysisSection.tsx`는 Phase 2에서 237 LOC로 분리되어 해소되었습니다.
 - `src/shared/types/search.ts`는 Phase 3에서 6 LOC 재수출 진입점으로 축소되어 해소되었습니다.
-- `src/main/services/features/searchService.ts`는 Phase 4에서 54 LOC public facade로 축소되어 해소되었습니다.
+- `src/main/services/features/search/searchService.ts`는 Phase 4에서 54 LOC public facade로 축소되어 해소되었습니다.
 - `src/main/services/features/memory/entity/memoryEntityReviewService.ts`는 Phase 4에서 232 LOC로 축소되어 해소되었습니다.
 - 스타일 번들(`src/renderer/src/styles/global.css`)은 아키텍처 대상 외 예외로 남아 있습니다.
 - 테스트 파일에서만 500 LOC 초과가 남아 있고(프로젝트 룰상 별도 범주로 관리), 이번 단계에서 우선순위 대상은 아닙니다.

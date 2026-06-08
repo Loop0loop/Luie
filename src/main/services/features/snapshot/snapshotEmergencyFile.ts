@@ -36,7 +36,10 @@ export const writeEmergencySnapshotFile = async (
         description: input.description ?? null,
         type: input.type ?? "AUTO",
         createdAt: new Date().toISOString(),
-        error: error instanceof Error ? { message: error.message, name: error.name } : undefined,
+        error:
+          error instanceof Error
+            ? { message: error.message, name: error.name }
+            : undefined,
       },
       null,
       2,
@@ -68,4 +71,3 @@ export const writeEmergencySnapshotFile = async (
     logger.error("Failed to write emergency snapshot file", writeError);
   }
 };
-

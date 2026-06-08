@@ -26,7 +26,10 @@ let configCache: { expiresAt: number; value: RagPromptConfig } | null = null;
 function normalizeConfig(raw: unknown): RagPromptConfig {
   if (!raw || typeof raw !== "object") return DEFAULT_CONFIG;
   const maybe = raw as { systemInstruction?: unknown };
-  if (typeof maybe.systemInstruction !== "string" || maybe.systemInstruction.trim().length === 0) {
+  if (
+    typeof maybe.systemInstruction !== "string" ||
+    maybe.systemInstruction.trim().length === 0
+  ) {
     return DEFAULT_CONFIG;
   }
   return {

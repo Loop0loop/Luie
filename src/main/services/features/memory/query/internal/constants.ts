@@ -23,7 +23,14 @@ export const STATE_KEYWORDS = [
   "secret",
 ];
 
-export const CAUSALITY_KEYWORDS = ["왜", "원인", "때문", "결과", "caus", "reason"];
+export const CAUSALITY_KEYWORDS = [
+  "왜",
+  "원인",
+  "때문",
+  "결과",
+  "caus",
+  "reason",
+];
 
 export const CONTRADICTION_KEYWORDS = [
   "충돌",
@@ -42,13 +49,30 @@ export const EVIDENCE_KEYWORDS = [
   "source",
 ];
 
-export const THREAD_KEYWORDS = ["떡밥", "미회수", "열린", "unresolved", "thread"];
+export const THREAD_KEYWORDS = [
+  "떡밥",
+  "미회수",
+  "열린",
+  "unresolved",
+  "thread",
+];
 
 export const SUMMARY_KEYWORDS = ["요약", "전체", "흐름", "summary", "overview"];
 
-export const PROFILE_KEYWORDS = ["프로필", "누구", "별칭", "등장", "profile", "alias"];
+export const PROFILE_KEYWORDS = [
+  "프로필",
+  "누구",
+  "별칭",
+  "등장",
+  "profile",
+  "alias",
+];
 
-export const ACTIVE_FACT_STATUSES = new Set(["suggested", "confirmed", "conflicting"]);
+export const ACTIVE_FACT_STATUSES = new Set([
+  "suggested",
+  "confirmed",
+  "conflicting",
+]);
 
 export const CONFLICT_QUEUE_LIMIT_DEFAULT = 50;
 

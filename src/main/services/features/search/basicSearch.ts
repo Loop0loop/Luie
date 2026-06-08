@@ -8,7 +8,7 @@ import { escapeLike } from "../../../utils/query/index.js";
 import { ServiceError } from "../../../utils/error/index.js";
 
 const loadChapterSearchCacheService = async () =>
-  (await import("../chapterSearchCacheService.js")).chapterSearchCacheService;
+  (await import("./chapterSearchCacheService.js")).chapterSearchCacheService;
 
 const logger = createLogger("SearchService");
 

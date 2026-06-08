@@ -1,8 +1,5 @@
 import type { SyncBundle } from "../syncMapper.js";
-import {
-  normalizeJsonValue,
-  normalizeToRow,
-} from "./rowUtils.js";
+import { normalizeJsonValue, normalizeToRow } from "./rowUtils.js";
 
 export type RemoteUpsertRows = {
   projects: Array<Record<string, unknown>>;

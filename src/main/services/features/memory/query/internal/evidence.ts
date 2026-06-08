@@ -4,7 +4,10 @@ import {
   memoryEpisodeEvidence,
   memoryFactEvidence,
 } from "../../../../../database/schema/index.js";
-import type { NarrativeMemoryFactResult, RagQaEvidence } from "../../../../../../shared/types/search.js";
+import type {
+  NarrativeMemoryFactResult,
+  RagQaEvidence,
+} from "../../../../../../shared/types/search.js";
 
 export async function countFactEvidence(input: {
   projectId: string;

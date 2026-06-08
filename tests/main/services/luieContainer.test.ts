@@ -74,7 +74,11 @@ describe("luieContainer", () => {
     });
 
     const probe = await probeLuieContainer(packagePath);
-    const metaRaw = await readLuieContainerEntry(packagePath, "meta.json", logger);
+    const metaRaw = await readLuieContainerEntry(
+      packagePath,
+      "meta.json",
+      logger,
+    );
     const chapterRaw = await readLuieContainerEntry(
       packagePath,
       "manuscript/chapter-1.md",
@@ -136,7 +140,9 @@ describe("luieContainer", () => {
   });
 
   it("reads sqlite-v2 .luie entries through the same container seam", async () => {
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-sqlite-"));
+    tempRoot = await fsp.mkdtemp(
+      path.join(os.tmpdir(), "luie-container-sqlite-"),
+    );
     const packagePath = path.join(tempRoot, "future-project.luie");
 
     await writeLuieContainer({
@@ -173,7 +179,11 @@ describe("luieContainer", () => {
     });
 
     const probe = await probeLuieContainer(packagePath);
-    const metaRaw = await readLuieContainerEntry(packagePath, "meta.json", logger);
+    const metaRaw = await readLuieContainerEntry(
+      packagePath,
+      "meta.json",
+      logger,
+    );
     const chapterRaw = await readLuieContainerEntry(
       packagePath,
       "manuscript/chapter-1.md",
@@ -200,12 +210,23 @@ describe("luieContainer", () => {
   it.each([5_000, 100_000, 1_000_000, 2_000_000, 5_000_000])(
     "writes and rereads %i-character sqlite-backed payloads without WAL sidecars",
     async (size) => {
-      tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-large-"));
+      tempRoot = await fsp.mkdtemp(
+        path.join(os.tmpdir(), "luie-container-large-"),
+      );
       const packagePath = path.join(tempRoot, `large-${size}.luie`);
       const chapterOne = makeMixedNarrativeText(size, 0);
-      const chapterTwo = makeMixedNarrativeText(Math.max(1, Math.floor(size / 3)), 1);
-      const synopsis = makeMixedNarrativeText(Math.max(256, Math.floor(size / 24)), 2);
-      const snapshotBody = makeMixedNarrativeText(Math.max(160, Math.floor(size / 18)), 3);
+      const chapterTwo = makeMixedNarrativeText(
+        Math.max(1, Math.floor(size / 3)),
+        1,
+      );
+      const synopsis = makeMixedNarrativeText(
+        Math.max(256, Math.floor(size / 24)),
+        2,
+      );
+      const snapshotBody = makeMixedNarrativeText(
+        Math.max(160, Math.floor(size / 18)),
+        3,
+      );
 
       await writeLuieContainer({
         targetPath: packagePath,
@@ -349,7 +370,9 @@ describe("luieContainer", () => {
   );
 
   it("preserves sqlite-v2 kind on subsequent writes when the target already exists", async () => {
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-sqlite-keep-"));
+    tempRoot = await fsp.mkdtemp(
+      path.join(os.tmpdir(), "luie-container-sqlite-keep-"),
+    );
     const packagePath = path.join(tempRoot, "preserve-kind.luie");
 
     await writeLuieContainer({
@@ -400,7 +423,11 @@ describe("luieContainer", () => {
     });
 
     const probe = await probeLuieContainer(packagePath);
-    const metaRaw = await readLuieContainerEntry(packagePath, "meta.json", logger);
+    const metaRaw = await readLuieContainerEntry(
+      packagePath,
+      "meta.json",
+      logger,
+    );
     const chapterRaw = await readLuieContainerEntry(
       packagePath,
       "manuscript/chapter-2.md",
@@ -413,7 +440,9 @@ describe("luieContainer", () => {
   });
 
   it("refreshes meta.json updatedAt when writing a single sqlite .luie entry", async () => {
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-container-meta-"));
+    tempRoot = await fsp.mkdtemp(
+      path.join(os.tmpdir(), "luie-container-meta-"),
+    );
     const packagePath = path.join(tempRoot, "meta-refresh.luie");
 
     await writeLuieContainer({
@@ -453,7 +482,11 @@ describe("luieContainer", () => {
       logger,
     });
 
-    const metaRaw = await readLuieContainerEntry(packagePath, "meta.json", logger);
+    const metaRaw = await readLuieContainerEntry(
+      packagePath,
+      "meta.json",
+      logger,
+    );
     const meta = JSON.parse(metaRaw ?? "{}") as { updatedAt?: string };
 
     expect(meta.updatedAt).toBeDefined();

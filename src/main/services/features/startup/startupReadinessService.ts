@@ -4,28 +4,28 @@ import { access, mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { app, safeStorage } from "electron";
 import Database from "better-sqlite3";
-import { APP_DIR_NAME } from "../../../shared/constants/index.js";
-import { createLogger } from "../../../shared/logger/index.js";
+import { APP_DIR_NAME } from "../../../../shared/constants/index.js";
+import { createLogger } from "../../../../shared/logger/index.js";
 import type {
   StartupCheck,
   StartupCheckKey,
   StartupReadiness,
-} from "../../../shared/types/index.js";
-import { db } from "../../infra/database/index.js";
-import { settingsManager } from "../../domains/settings/index.js";
-import { dbRecoveryService } from "./dbRecoveryService.js";
+} from "../../../../shared/types/index.js";
+import { db } from "../../../infra/database/index.js";
+import { settingsManager } from "../../../domains/settings/index.js";
+import { dbRecoveryService } from "../recovery/index.js";
 import {
   getSupabaseConfig,
   getSupabaseConfigSource,
-} from "./sync/supabaseEnv.js";
-import { syncAuthService } from "./sync/syncAuthService.js";
+} from "../sync/supabaseEnv.js";
+import { syncAuthService } from "../sync/syncAuthService.js";
 
 const logger = createLogger("StartupReadinessService");
 
 const STARTUP_WIZARD_EVENT = "startup:wizard-completed";
 
 const loadCacheDb = async () =>
-  (await import("../../infra/database/cache.js")).cacheDb;
+  (await import("../../../infra/database/cache.js")).cacheDb;
 
 const nowIso = (): string => new Date().toISOString();
 
@@ -171,14 +171,16 @@ class StartupReadinessService {
           (row) => row.integrity_check.trim().toLowerCase() !== "ok",
         );
         if (failures.length > 0) {
-          throw new Error(
-            `DB_INTEGRITY_FAILED:${failures[0].integrity_check}`,
-          );
+          throw new Error(`DB_INTEGRITY_FAILED:${failures[0].integrity_check}`);
         }
       } finally {
         sqlite?.close();
       }
-      return buildCheck("sqliteIntegrity", true, "SQLite integrity check passed");
+      return buildCheck(
+        "sqliteIntegrity",
+        true,
+        "SQLite integrity check passed",
+      );
     } catch (error) {
       logger.warn("SQLite integrity check failed, attempting recovery", {
         error,

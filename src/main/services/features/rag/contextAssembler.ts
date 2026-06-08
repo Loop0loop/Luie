@@ -1,12 +1,21 @@
-import { formatLayer, LAYER0_CHAR_LIMIT } from "./internal/contextAssembler.constants.js";
-import type { RagQaEvidence, NarrativeMemoryQueryResult } from "../../../../shared/types/index.js";
+import {
+  formatLayer,
+  LAYER0_CHAR_LIMIT,
+} from "./internal/contextAssembler.constants.js";
+import type {
+  RagQaEvidence,
+  NarrativeMemoryQueryResult,
+} from "../../../../shared/types/index.js";
 import {
   buildLayer0ProjectSummary,
   buildLayer1ChapterSummaries,
   buildLayer2WorldContext,
   buildLayer3Evidence,
 } from "./internal/contextAssembler.layers.js";
-import { formatNarrativeMemoryQueryResult, narrativeMemoryQueryService } from "../memory/query/narrativeMemoryQueryService.js";
+import {
+  formatNarrativeMemoryQueryResult,
+  narrativeMemoryQueryService,
+} from "../memory/query/narrativeMemoryQueryService.js";
 import type { RagEmbeddingProvider } from "./internal/contextAssembler.types.js";
 import { loadRagPromptConfig } from "./ragPromptConfig.js";
 

@@ -8,5 +8,7 @@ export type MemoryCanonicalTableName =
 export type MemoryCanonicalPackagePayload = {
   schemaVersion: 1;
   exportedAt: string;
-  tables: Partial<Record<MemoryCanonicalTableName, Array<Record<string, unknown>>>>;
+  tables: Partial<
+    Record<MemoryCanonicalTableName, Array<Record<string, unknown>>>
+  >;
 };

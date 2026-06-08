@@ -86,7 +86,9 @@ export const buildProjectSyncMapForSuccess = (
   return Object.keys(next).length > 0 ? next : undefined;
 };
 
-const collectDeletedProjectIdsForBaselines = (merged: SyncBundle): Set<string> => {
+const collectDeletedProjectIdsForBaselines = (
+  merged: SyncBundle,
+): Set<string> => {
   const deletedProjectIds = new Set<string>();
   for (const project of merged.projects) {
     if (project.deletedAt) deletedProjectIds.add(project.id);
@@ -181,8 +183,20 @@ export const buildEntityBaselineMapForSuccess = (
     deletedProjectIds,
     syncedAt,
   );
-  applyChapterBaselines(next, merged, deletedProjectIds, activeProjectIds, syncedAt);
-  applyMemoBaselines(next, merged, deletedProjectIds, activeProjectIds, syncedAt);
+  applyChapterBaselines(
+    next,
+    merged,
+    deletedProjectIds,
+    activeProjectIds,
+    syncedAt,
+  );
+  applyMemoBaselines(
+    next,
+    merged,
+    deletedProjectIds,
+    activeProjectIds,
+    syncedAt,
+  );
 
   return Object.keys(next).length > 0 ? next : undefined;
 };

@@ -1,15 +1,15 @@
 import { and, desc, eq, gte, inArray, isNull, lte, or } from "drizzle-orm";
 import { db } from "../../../../../database/main/databaseService.js";
-import {
-  memoryFact,
-} from "../../../../../database/schema/index.js";
+import { memoryFact } from "../../../../../database/schema/index.js";
 import type { NarrativeMemoryFactResult } from "../../../../../../shared/types/search.js";
 import { filterFactsValidAtChapter } from "../../temporal/memoryTemporalFact.js";
 import { ACTIVE_FACT_STATUSES } from "./constants.js";
-import { loadEntityInfo, resolveMemoryEntityIds, resolveRelatedEntity } from "./entity.js";
 import {
-  countFactEvidence,
-} from "./evidence.js";
+  loadEntityInfo,
+  resolveMemoryEntityIds,
+  resolveRelatedEntity,
+} from "./entity.js";
+import { countFactEvidence } from "./evidence.js";
 import type { NarrativeMemoryQueryIntent } from "../../../../../../shared/types/search.js";
 import type { NarrativeMemorySource } from "../../../../../../shared/types/search.js";
 

@@ -3,10 +3,22 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { createLogger } from "../../../../shared/logger/index.js";
 import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
 import { db } from "../../../infra/database/index.js";
-import { chapter, character, project, term } from "../../../infra/database/index.js";
+import {
+  chapter,
+  character,
+  project,
+  term,
+} from "../../../infra/database/index.js";
 import { manuscriptAnalyzer } from "../../../core/manuscriptAnalyzer.js";
-import type { AnalysisItem, AnalysisContext } from "../../../../shared/types/analysis.js";
-import type { Character, Chapter, Term } from "../../../../shared/types/index.js";
+import type {
+  AnalysisItem,
+  AnalysisContext,
+} from "../../../../shared/types/analysis.js";
+import type {
+  Character,
+  Chapter,
+  Term,
+} from "../../../../shared/types/index.js";
 import type { BrowserWindow } from "electron";
 import {
   LUIE_PACKAGE_EXTENSION,
@@ -82,7 +94,10 @@ export class ManuscriptAnalysisService {
   }
 
   private isRunActive(runId: string): boolean {
-    return this.activeRun?.runId === runId && !this.activeRun.controller.signal.aborted;
+    return (
+      this.activeRun?.runId === runId &&
+      !this.activeRun.controller.signal.aborted
+    );
   }
 
   private getWindowForRun(runId: string): BrowserWindow | null {
@@ -144,9 +159,16 @@ export class ManuscriptAnalysisService {
     }
 
     try {
-      const safeProjectPath = ensureSafeAbsolutePath(projectPath, "projectPath");
+      const safeProjectPath = ensureSafeAbsolutePath(
+        projectPath,
+        "projectPath",
+      );
       const [metaRaw, chapterContent] = await Promise.all([
-        readLuieContainerEntry(safeProjectPath, LUIE_PACKAGE_META_FILENAME, logger),
+        readLuieContainerEntry(
+          safeProjectPath,
+          LUIE_PACKAGE_META_FILENAME,
+          logger,
+        ),
         readLuieContainerEntry(
           safeProjectPath,
           `${LUIE_MANUSCRIPT_DIR}/${chapterId}${MARKDOWN_EXTENSION}`,
@@ -158,16 +180,14 @@ export class ManuscriptAnalysisService {
         return null;
       }
 
-      const meta = parseLuieJsonSafe<LuieMeta | undefined>(
-        metaRaw,
-        undefined,
-        {
-          projectPath: safeProjectPath,
-          entryPath: LUIE_PACKAGE_META_FILENAME,
-          label: "meta",
-        },
+      const meta = parseLuieJsonSafe<LuieMeta | undefined>(metaRaw, undefined, {
+        projectPath: safeProjectPath,
+        entryPath: LUIE_PACKAGE_META_FILENAME,
+        label: "meta",
+      });
+      const chapterMeta = meta?.chapters?.find(
+        (entry) => entry.id === chapterId,
       );
-      const chapterMeta = meta?.chapters?.find((entry) => entry.id === chapterId);
 
       return {
         id: chapterId,
@@ -175,11 +195,14 @@ export class ManuscriptAnalysisService {
         content: chapterContent,
       };
     } catch (error) {
-      logger.warn("Failed to load .luie chapter for analysis; falling back to DB", {
-        chapterId,
-        projectPath,
-        error,
-      });
+      logger.warn(
+        "Failed to load .luie chapter for analysis; falling back to DB",
+        {
+          chapterId,
+          projectPath,
+          error,
+        },
+      );
       return null;
     }
   }
@@ -188,7 +211,22 @@ export class ManuscriptAnalysisService {
     chapterId: string,
     projectId: string,
   ): Promise<Pick<Chapter, "id" | "title" | "content"> | null> {
-    const results = await db.getClient().select({ id: chapter.id, title: chapter.title, content: chapter.content }).from(chapter).where(and(eq(chapter.id, chapterId), eq(chapter.projectId, projectId), isNull(chapter.deletedAt))).limit(1);
+    const results = await db
+      .getClient()
+      .select({
+        id: chapter.id,
+        title: chapter.title,
+        content: chapter.content,
+      })
+      .from(chapter)
+      .where(
+        and(
+          eq(chapter.id, chapterId),
+          eq(chapter.projectId, projectId),
+          isNull(chapter.deletedAt),
+        ),
+      )
+      .limit(1);
     const ch = results[0];
 
     if (!ch) {
@@ -207,10 +245,31 @@ export class ManuscriptAnalysisService {
     projectId: string,
   ): Promise<AnalysisSourcePayload> {
     const [projectRow, projectPath, characters, terms] = await Promise.all([
-      db.getClient().select({ id: project.id }).from(project).where(eq(project.id, projectId)).limit(1),
+      db
+        .getClient()
+        .select({ id: project.id })
+        .from(project)
+        .where(eq(project.id, projectId))
+        .limit(1),
       getProjectAttachmentPath(projectId),
-      db.getClient().select({ name: character.name, description: character.description }).from(character).where(and(eq(character.projectId, projectId), isNull(character.deletedAt))).orderBy(asc(character.createdAt)),
-      db.getClient().select({ term: term.term, definition: term.definition, category: term.category }).from(term).where(and(eq(term.projectId, projectId), isNull(term.deletedAt))).orderBy(asc(term.order)),
+      db
+        .getClient()
+        .select({ name: character.name, description: character.description })
+        .from(character)
+        .where(
+          and(eq(character.projectId, projectId), isNull(character.deletedAt)),
+        )
+        .orderBy(asc(character.createdAt)),
+      db
+        .getClient()
+        .select({
+          term: term.term,
+          definition: term.definition,
+          category: term.category,
+        })
+        .from(term)
+        .where(and(eq(term.projectId, projectId), isNull(term.deletedAt)))
+        .orderBy(asc(term.order)),
     ]);
 
     if (!projectRow) {
@@ -232,7 +291,10 @@ export class ManuscriptAnalysisService {
       };
     }
 
-    const databaseChapter = await this.loadChapterFromDatabase(chapterId, projectId);
+    const databaseChapter = await this.loadChapterFromDatabase(
+      chapterId,
+      projectId,
+    );
     if (!databaseChapter) {
       throw new Error(`Chapter content not found: ${chapterId}`);
     }
@@ -258,7 +320,10 @@ export class ManuscriptAnalysisService {
     signal: AbortSignal,
   ): Promise<void> {
     try {
-      const analysisSource = await this.loadAnalysisSource(chapterId, projectId);
+      const analysisSource = await this.loadAnalysisSource(
+        chapterId,
+        projectId,
+      );
       if (signal.aborted || !this.isRunActive(runId)) {
         return;
       }
@@ -269,8 +334,16 @@ export class ManuscriptAnalysisService {
         analysisSource.terms,
       );
 
-      const outcome = await this.streamAnalysisWithGemini(context, chapterId, runId, signal);
-      if ((outcome === "completed" || outcome === "fallback") && this.isRunActive(runId)) {
+      const outcome = await this.streamAnalysisWithGemini(
+        context,
+        chapterId,
+        runId,
+        signal,
+      );
+      if (
+        (outcome === "completed" || outcome === "fallback") &&
+        this.isRunActive(runId)
+      ) {
         logger.info("Analysis completed", {
           chapterId,
           projectId,
@@ -280,7 +353,11 @@ export class ManuscriptAnalysisService {
         });
       }
     } catch (error) {
-      if (signal.aborted || !this.isRunActive(runId) || isAnalysisAbortError(error)) {
+      if (
+        signal.aborted ||
+        !this.isRunActive(runId) ||
+        isAnalysisAbortError(error)
+      ) {
         logger.info("Analysis aborted", { chapterId, projectId, runId });
         return;
       }
@@ -361,9 +438,10 @@ export class ManuscriptAnalysisService {
     runId: string,
     signal: AbortSignal,
   ): Promise<AnalysisStreamOutcome> {
-    const modelCandidates = [GEMINI_MODEL, process.env.ALTERNATIVE_GEMINI_MODEL].filter(
-      (model): model is string => Boolean(model),
-    );
+    const modelCandidates = [
+      GEMINI_MODEL,
+      process.env.ALTERNATIVE_GEMINI_MODEL,
+    ].filter((model): model is string => Boolean(model));
     return await runGeminiAnalysisStream({
       context,
       chapterId,

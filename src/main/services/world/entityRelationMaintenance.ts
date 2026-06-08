@@ -59,11 +59,15 @@ export async function cleanupOrphanRelationsAcrossProjects(input: {
       client
         .select({ id: character.id })
         .from(character)
-        .where(and(eq(character.projectId, projectId), isNull(character.deletedAt))),
+        .where(
+          and(eq(character.projectId, projectId), isNull(character.deletedAt)),
+        ),
       client
         .select({ id: faction.id })
         .from(faction)
-        .where(and(eq(faction.projectId, projectId), isNull(faction.deletedAt))),
+        .where(
+          and(eq(faction.projectId, projectId), isNull(faction.deletedAt)),
+        ),
       client
         .select({ id: event.id })
         .from(event)
@@ -75,7 +79,12 @@ export async function cleanupOrphanRelationsAcrossProjects(input: {
       client
         .select({ id: worldEntity.id })
         .from(worldEntity)
-        .where(and(eq(worldEntity.projectId, projectId), isNull(worldEntity.deletedAt))),
+        .where(
+          and(
+            eq(worldEntity.projectId, projectId),
+            isNull(worldEntity.deletedAt),
+          ),
+        ),
       client
         .select({ id: scene.id })
         .from(scene)
@@ -87,7 +96,9 @@ export async function cleanupOrphanRelationsAcrossProjects(input: {
       client
         .select({ id: synopsis.id })
         .from(synopsis)
-        .where(and(eq(synopsis.projectId, projectId), isNull(synopsis.deletedAt))),
+        .where(
+          and(eq(synopsis.projectId, projectId), isNull(synopsis.deletedAt)),
+        ),
       client
         .select({ id: plot.id })
         .from(plot)
@@ -95,7 +106,9 @@ export async function cleanupOrphanRelationsAcrossProjects(input: {
       client
         .select({ id: scrapMemo.id })
         .from(scrapMemo)
-        .where(and(eq(scrapMemo.projectId, projectId), isNull(scrapMemo.deletedAt))),
+        .where(
+          and(eq(scrapMemo.projectId, projectId), isNull(scrapMemo.deletedAt)),
+        ),
       client
         .select({
           id: entityRelation.id,
@@ -133,7 +146,12 @@ export async function cleanupOrphanRelationsAcrossProjects(input: {
 
     const result = await client
       .delete(entityRelation)
-      .where(and(eq(entityRelation.projectId, projectId), inArray(entityRelation.id, orphanIds)));
+      .where(
+        and(
+          eq(entityRelation.projectId, projectId),
+          inArray(entityRelation.id, orphanIds),
+        ),
+      );
     removedRelations += result.changes;
     if (result.changes > 0) {
       await onProjectMutation(projectId, "entity-relation:cleanup-orphans");

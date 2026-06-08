@@ -141,10 +141,13 @@ export const collectReplicaWorldDocuments = (
 
     const parsed = parseWorldJsonSafely(rawPayload);
     if (parsed === null) {
-      logger.warn("Skipping invalid replica world document payload during sync collect", {
-        projectId,
-        docType,
-      });
+      logger.warn(
+        "Skipping invalid replica world document payload during sync collect",
+        {
+          projectId,
+          docType,
+        },
+      );
       continue;
     }
 

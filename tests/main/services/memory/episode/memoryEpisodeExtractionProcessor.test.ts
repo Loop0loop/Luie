@@ -151,7 +151,9 @@ describe("processPendingEpisodeExtractionJobs", () => {
       updatedAt: nowIso,
     });
 
-    await expect(listProjectsWithPendingEpisodeExtractionJobs(5)).resolves.toContain(projectId);
+    await expect(
+      listProjectsWithPendingEpisodeExtractionJobs(5),
+    ).resolves.toContain(projectId);
   });
 
   it("does not process LLM episode extraction jobs when the env gate is disabled", async () => {

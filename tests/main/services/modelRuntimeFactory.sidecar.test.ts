@@ -164,11 +164,17 @@ describe("modelRuntimeFactory sidecar", () => {
     mocked.getLlmSettings.mockReturnValue({});
     mocked.getLocalLlmSettings.mockReturnValue(undefined);
 
-    const { plan } = await import("../../../src/main/services/llm/modelRuntimeFactory.js")
-      .then((module) => module.resolveRuntimeRoutePlan());
+    const { plan } =
+      await import("../../../src/main/services/llm/modelRuntimeFactory.js").then(
+        (module) => module.resolveRuntimeRoutePlan(),
+      );
 
-    const openai = plan.candidates.find((candidate) => candidate.kind === "openai");
-    const gemini = plan.candidates.find((candidate) => candidate.kind === "gemini");
+    const openai = plan.candidates.find(
+      (candidate) => candidate.kind === "openai",
+    );
+    const gemini = plan.candidates.find(
+      (candidate) => candidate.kind === "gemini",
+    );
 
     expect(openai).toMatchObject({
       kind: "openai",
@@ -196,14 +202,20 @@ describe("modelRuntimeFactory sidecar", () => {
     mocked.getLlmSettings.mockReturnValue({});
     mocked.getLocalLlmSettings.mockReturnValue(undefined);
 
-    const { plan } = await import("../../../src/main/services/llm/modelRuntimeFactory.js")
-      .then((module) => module.resolveRuntimeRoutePlan());
+    const { plan } =
+      await import("../../../src/main/services/llm/modelRuntimeFactory.js").then(
+        (module) => module.resolveRuntimeRoutePlan(),
+      );
 
-    expect(plan.candidates.find((candidate) => candidate.kind === "openai")).toMatchObject({
+    expect(
+      plan.candidates.find((candidate) => candidate.kind === "openai"),
+    ).toMatchObject({
       kind: "openai",
       apiKey: "openai-env-key",
     });
-    expect(plan.candidates.find((candidate) => candidate.kind === "gemini")).toMatchObject({
+    expect(
+      plan.candidates.find((candidate) => candidate.kind === "gemini"),
+    ).toMatchObject({
       kind: "gemini",
       apiKey: "gemini-env-key",
     });

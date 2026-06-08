@@ -5,12 +5,16 @@ import {
   chunkText,
   memoryProjectionService,
 } from "../../../src/main/services/features/memory/memoryProjectionService.js";
-import { searchService } from "../../../src/main/services/features/searchService.js";
+import { searchService } from "../../../src/main/services/features/search/index.js";
 import { projectService } from "../../../src/main/services/core/projectService.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import type { ServiceError } from "../../../src/main/utils/error/index.js";
 import { ErrorCode } from "../../../src/shared/constants/errorCode.js";
-import { db, memoryChunk, memoryEpisodeExtractionJob } from "../../../src/main/infra/database/index.js";
+import {
+  db,
+  memoryChunk,
+  memoryEpisodeExtractionJob,
+} from "../../../src/main/infra/database/index.js";
 import { eq } from "drizzle-orm";
 import {
   buildMemoryChunkIndexText,
@@ -22,15 +26,23 @@ describe("memoryProjectionService", () => {
   const chapterService = new ChapterService();
 
   beforeAll(() => {
-    vi.spyOn(autoExtractService, "scheduleAnalysis").mockImplementation(() => {});
-    vi.spyOn(projectService, "schedulePackageExport").mockImplementation(() => {});
-    vi.spyOn(projectService, "attemptImmediatePackageExport").mockResolvedValue({
-      exported: false,
-    });
-    vi
-      .spyOn(projectService, "persistPackageAfterMutation")
-      .mockResolvedValue(undefined);
-    vi.spyOn(localProjectService, "schedulePackageExport").mockImplementation(() => {});
+    vi.spyOn(autoExtractService, "scheduleAnalysis").mockImplementation(
+      () => {},
+    );
+    vi.spyOn(projectService, "schedulePackageExport").mockImplementation(
+      () => {},
+    );
+    vi.spyOn(projectService, "attemptImmediatePackageExport").mockResolvedValue(
+      {
+        exported: false,
+      },
+    );
+    vi.spyOn(projectService, "persistPackageAfterMutation").mockResolvedValue(
+      undefined,
+    );
+    vi.spyOn(localProjectService, "schedulePackageExport").mockImplementation(
+      () => {},
+    );
   });
 
   it("chunks text with paragraph boundaries and overlap", () => {
@@ -46,7 +58,9 @@ describe("memoryProjectionService", () => {
     for (let i = 0; i < chunks.length; i += 1) {
       const chunk = chunks[i];
       expect(chunk.endOffset).toBeGreaterThan(chunk.startOffset);
-      expect(content.slice(chunk.startOffset, chunk.endOffset)).toBe(chunk.content);
+      expect(content.slice(chunk.startOffset, chunk.endOffset)).toBe(
+        chunk.content,
+      );
       if (i > 0) {
         expect(chunk.startOffset).toBeLessThanOrEqual(chunks[i - 1].endOffset);
       }
@@ -70,7 +84,9 @@ describe("memoryProjectionService", () => {
       paragraphEndIndex: 2,
     });
     for (const chunk of chunks) {
-      expect(chunk.paragraphStartIndex).toBeLessThanOrEqual(chunk.paragraphEndIndex);
+      expect(chunk.paragraphStartIndex).toBeLessThanOrEqual(
+        chunk.paragraphEndIndex,
+      );
     }
   });
 
@@ -207,8 +223,12 @@ describe("memoryProjectionService", () => {
     expect(window.chunks.length).toBeGreaterThan(1);
     expect(window.content).toContain(chunks[0].content);
     expect(window.content).toMatch(/앞장면단서|뒤장면결말/);
-    expect(window.startOffset ?? 0).toBeLessThanOrEqual(chunks[0].startOffset ?? 0);
-    expect(window.endOffset ?? 0).toBeGreaterThanOrEqual(chunks[0].endOffset ?? 0);
+    expect(window.startOffset ?? 0).toBeLessThanOrEqual(
+      chunks[0].startOffset ?? 0,
+    );
+    expect(window.endOffset ?? 0).toBeGreaterThanOrEqual(
+      chunks[0].endOffset ?? 0,
+    );
   });
 
   it("expands a hit by neighboring paragraph ranges", async () => {
@@ -261,9 +281,13 @@ describe("memoryProjectionService", () => {
     expect(window.content).toContain("둘째문단 목표키워드");
     expect(window.content).toContain("셋째문단 후속근거");
     expect(window.content).not.toContain("넷째문단 제외범위");
-    expect(window.chunks.every((chunk) =>
-      chunk.paragraphStartIndex !== null && chunk.paragraphEndIndex !== null,
-    )).toBe(true);
+    expect(
+      window.chunks.every(
+        (chunk) =>
+          chunk.paragraphStartIndex !== null &&
+          chunk.paragraphEndIndex !== null,
+      ),
+    ).toBe(true);
   });
 
   it("indexes contextual labels without contaminating returned raw chunk content", async () => {
@@ -296,10 +320,13 @@ describe("memoryProjectionService", () => {
     });
 
     expect(chunks.length).toBeGreaterThan(0);
-    expect(chunks[0].content).toBe("사절단은 조용히 문서를 접고 창밖의 비를 바라보았다.");
+    expect(chunks[0].content).toBe(
+      "사절단은 조용히 문서를 접고 창밖의 비를 바라보았다.",
+    );
     expect(chunks[0].content).not.toContain("은하궁 회담");
 
-    const rows = await db.getClient()
+    const rows = await db
+      .getClient()
       .select({
         content: memoryChunk.content,
         indexText: memoryChunk.indexText,

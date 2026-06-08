@@ -3,16 +3,14 @@ import path from "node:path";
 import type yauzl from "yauzl";
 import { z } from "zod";
 import { APP_VERSION, ErrorCode } from "../../../../shared/constants/index.js";
-import {
-  graphPluginCatalogItemSchema,
-} from "../../../../shared/schemas/index.js";
+import { graphPluginCatalogItemSchema } from "../../../../shared/schemas/index.js";
 import type { installedGraphPluginIndexSchema } from "../../../../shared/schemas/index.js";
 import type {
   GraphPluginCatalogItem,
   GraphPluginManifest,
 } from "../../../../shared/types/index.js";
 import type { LuieWorldGraphSchema } from "../../core/project/projectLuieSchemas.js";
-import type { worldReplicaService } from "../worldReplicaService.js";
+import type { worldReplicaService } from "../worldReplica/index.js";
 import { ServiceError } from "../../../utils/error/index.js";
 
 export const GRAPH_PLUGIN_API_VERSION = "1.0.0";
@@ -54,8 +52,12 @@ export type GraphPluginServiceDependencies = {
 };
 
 export const compareVersionPart = (left: string, right: string): number => {
-  const leftParts = left.split(".").map((part) => Number.parseInt(part, 10) || 0);
-  const rightParts = right.split(".").map((part) => Number.parseInt(part, 10) || 0);
+  const leftParts = left
+    .split(".")
+    .map((part) => Number.parseInt(part, 10) || 0);
+  const rightParts = right
+    .split(".")
+    .map((part) => Number.parseInt(part, 10) || 0);
   const maxLength = Math.max(leftParts.length, rightParts.length);
   for (let index = 0; index < maxLength; index += 1) {
     const diff = (leftParts[index] ?? 0) - (rightParts[index] ?? 0);
@@ -87,7 +89,9 @@ export const isSymlinkEntry = (entry: yauzl.Entry) => {
 export const isExecutableEntry = (entry: yauzl.Entry) => {
   const mode = (entry.externalFileAttributes >>> 16) & 0xffff;
   if ((mode & 0o111) !== 0) return true;
-  return BLOCKED_PLUGIN_EXTENSIONS.has(path.extname(entry.fileName).toLowerCase());
+  return BLOCKED_PLUGIN_EXTENSIONS.has(
+    path.extname(entry.fileName).toLowerCase(),
+  );
 };
 
 export const sanitizeCatalogItem = (

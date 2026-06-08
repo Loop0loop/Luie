@@ -114,22 +114,25 @@ export async function runLiveMemoryEvalSuite(
     });
 
     for (const result of suiteResult.results) {
-      await db.getClient().insert(memoryEvalResult).values({
-        id: crypto.randomUUID(),
-        runId,
-        caseId: result.caseId,
-        projectId: input.projectId,
-        groundingStatus:
-          suiteCases.find((item) => item.evalCase.id === result.caseId)
-            ?.groundingStatus ?? "insufficient_evidence",
-        evidenceHitCount: result.evidenceHitCount,
-        evidenceMissCount: result.evidenceMissCount,
-        contextRecallAtK: result.contextRecallAtK,
-        p0FailureCount: result.p0FailureCount,
-        p0Failures: JSON.stringify(result.p0Failures),
-        answer: answersByCase.get(result.caseId) ?? null,
-        updatedAt: nowIso,
-      });
+      await db
+        .getClient()
+        .insert(memoryEvalResult)
+        .values({
+          id: crypto.randomUUID(),
+          runId,
+          caseId: result.caseId,
+          projectId: input.projectId,
+          groundingStatus:
+            suiteCases.find((item) => item.evalCase.id === result.caseId)
+              ?.groundingStatus ?? "insufficient_evidence",
+          evidenceHitCount: result.evidenceHitCount,
+          evidenceMissCount: result.evidenceMissCount,
+          contextRecallAtK: result.contextRecallAtK,
+          p0FailureCount: result.p0FailureCount,
+          p0Failures: JSON.stringify(result.p0Failures),
+          answer: answersByCase.get(result.caseId) ?? null,
+          updatedAt: nowIso,
+        });
     }
 
     await db

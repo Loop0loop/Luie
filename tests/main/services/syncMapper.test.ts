@@ -111,7 +111,11 @@ describe("syncMapper project tombstones", () => {
 
     const { merged, conflicts } = mergeSyncBundles(local, remote);
     expect(conflicts.chapters).toBe(0);
-    expect(merged.chapters.filter((chapter) => chapter.title.includes("(Conflict Copy)"))).toHaveLength(0);
+    expect(
+      merged.chapters.filter((chapter) =>
+        chapter.title.includes("(Conflict Copy)"),
+      ),
+    ).toHaveLength(0);
     expect(merged.chapters).toHaveLength(1);
   });
 
@@ -144,7 +148,11 @@ describe("syncMapper project tombstones", () => {
 
     const { merged, conflicts } = mergeSyncBundles(local, remote);
     expect(conflicts.chapters).toBe(0);
-    expect(merged.chapters.filter((chapter) => chapter.title.includes("(Conflict Copy)"))).toHaveLength(0);
+    expect(
+      merged.chapters.filter((chapter) =>
+        chapter.title.includes("(Conflict Copy)"),
+      ),
+    ).toHaveLength(0);
     expect(merged.chapters).toHaveLength(1);
   });
 
@@ -187,7 +195,11 @@ describe("syncMapper project tombstones", () => {
       },
     });
     expect(conflicts.chapters).toBe(1);
-    expect(merged.chapters.filter((chapter) => chapter.title.includes("(Conflict Copy)"))).toHaveLength(1);
+    expect(
+      merged.chapters.filter((chapter) =>
+        chapter.title.includes("(Conflict Copy)"),
+      ),
+    ).toHaveLength(1);
     expect(merged.chapters).toHaveLength(2);
     expect(conflicts.items).toEqual(
       expect.arrayContaining([
@@ -245,7 +257,11 @@ describe("syncMapper project tombstones", () => {
     expect(conflicts.chapters).toBe(0);
     expect(conflicts.total).toBe(0);
     expect(conflicts.items).toBeUndefined();
-    expect(merged.chapters.filter((chapter) => chapter.title.includes("(Conflict Copy)"))).toHaveLength(0);
+    expect(
+      merged.chapters.filter((chapter) =>
+        chapter.title.includes("(Conflict Copy)"),
+      ),
+    ).toHaveLength(0);
     expect(merged.chapters).toHaveLength(1);
     expect(merged.chapters[0]?.content).toBe("local text");
   });
@@ -287,7 +303,9 @@ describe("syncMapper project tombstones", () => {
 
     expect(conflicts.memos).toBe(1);
     expect(conflicts.total).toBe(1);
-    expect(merged.memos.filter((memo) => memo.title.includes("(Conflict Copy)"))).toHaveLength(1);
+    expect(
+      merged.memos.filter((memo) => memo.title.includes("(Conflict Copy)")),
+    ).toHaveLength(1);
     expect(merged.memos).toHaveLength(2);
     expect(conflicts.items).toEqual(
       expect.arrayContaining([
@@ -341,7 +359,9 @@ describe("syncMapper project tombstones", () => {
     expect(conflicts.memos).toBe(0);
     expect(conflicts.total).toBe(0);
     expect(conflicts.items).toBeUndefined();
-    expect(merged.memos.filter((memo) => memo.title.includes("(Conflict Copy)"))).toHaveLength(0);
+    expect(
+      merged.memos.filter((memo) => memo.title.includes("(Conflict Copy)")),
+    ).toHaveLength(0);
     expect(merged.memos).toHaveLength(1);
     expect(merged.memos[0]?.content).toBe("remote memo");
   });

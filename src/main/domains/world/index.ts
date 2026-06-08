@@ -17,4 +17,4 @@ export { synopsisService } from "../../services/world/synopsisService.js";
 export { termService } from "../../services/world/termService.js";
 export { worldEntityService } from "../../services/world/worldEntityService.js";
 export { worldMentionService } from "../../services/world/worldMentionService.js";
-export { worldReplicaService } from "../../services/features/worldReplicaService.js";
+export { worldReplicaService } from "../../services/features/worldReplica/index.js";

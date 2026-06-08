@@ -37,8 +37,7 @@ export const HWPX_SETTINGS_XML = `<?xml version="1.0" encoding="UTF-8" standalon
   <ha:CaretPosition listIDRef="0" paraIDRef="0" pos="0"/>
 </ha:HWPApplicationSetting>`;
 
-export const HWPX_HEADER_XML =
-`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+export const HWPX_HEADER_XML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <hh:head xmlns:ha="http://www.hancom.co.kr/hwpml/2011/app" 
          xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph" 
          xmlns:hp10="http://www.hancom.co.kr/hwpml/2016/paragraph" 
@@ -353,7 +352,9 @@ export const HWPX_HEADER_XML =
   <hh:trackchageConfig flags="56"/>
 </hh:head>`;
 
-export const buildHwpxContentHpfXml = (date: string): string => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+export const buildHwpxContentHpfXml = (
+  date: string,
+): string => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <opf:package xmlns:ha="http://www.hancom.co.kr/hwpml/2011/app" 
              xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph" 
              xmlns:hp10="http://www.hancom.co.kr/hwpml/2016/paragraph" 

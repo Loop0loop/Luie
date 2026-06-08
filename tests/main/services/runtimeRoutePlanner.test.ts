@@ -14,11 +14,17 @@ describe("runtimeRoutePlanner", () => {
       },
       openai: { configured: true, apiKey: "openai-key", model: "gpt-test" },
       gemini: { configured: true, apiKey: "gemini-key", model: "gemini-test" },
-      ollama: { configured: true, baseUrl: "http://localhost:11434", chatModel: "qwen3:4b" },
+      ollama: {
+        configured: true,
+        baseUrl: "http://localhost:11434",
+        chatModel: "qwen3:4b",
+      },
     });
 
     expect(plan.fallbackPolicy).toBe("fail-closed");
-    expect(plan.candidates.map((candidate) => candidate.kind)).toEqual(["sidecar"]);
+    expect(plan.candidates.map((candidate) => candidate.kind)).toEqual([
+      "sidecar",
+    ]);
     expect(plan.candidates[0]).toMatchObject({
       kind: "sidecar",
       backend: "local-sidecar",
@@ -37,7 +43,11 @@ describe("runtimeRoutePlanner", () => {
       },
       openai: { configured: true, apiKey: "openai-key", model: "gpt-test" },
       gemini: { configured: true, apiKey: "gemini-key", model: "gemini-test" },
-      ollama: { configured: true, baseUrl: "http://localhost:11434", chatModel: "qwen3:4b" },
+      ollama: {
+        configured: true,
+        baseUrl: "http://localhost:11434",
+        chatModel: "qwen3:4b",
+      },
     });
 
     expect(plan.fallbackPolicy).toBe("try-next");
@@ -70,7 +80,8 @@ describe("runtimeRoutePlanner", () => {
       {
         provider: "sidecar",
         code: "SIDECAR_NOT_CONFIGURED",
-        message: "Local sidecar is not configured (disabled, model missing, llama-server binary missing)",
+        message:
+          "Local sidecar is not configured (disabled, model missing, llama-server binary missing)",
       },
     ]);
   });

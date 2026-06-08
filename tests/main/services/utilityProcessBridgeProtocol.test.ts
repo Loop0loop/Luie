@@ -33,22 +33,33 @@ describe("utilityProcessBridge protocol helpers", () => {
     expect(REQUEST_TIMEOUT_GENERATE_MS).toBe(180_000);
     expect(REQUEST_TIMEOUT_SIDECAR_START_MS).toBe(45_000);
     expect(REQUEST_TIMEOUT_STATUS_MS).toBe(2_000);
-    expect(REQUEST_TIMEOUT_SIDECAR_START_MS).toBeGreaterThan(REQUEST_TIMEOUT_EMBED_MS);
+    expect(REQUEST_TIMEOUT_SIDECAR_START_MS).toBeGreaterThan(
+      REQUEST_TIMEOUT_EMBED_MS,
+    );
     expect(STOP_TIMEOUT_MS).toBe(5_000);
     expect(STOP_GRACE_MS).toBe(120);
   });
 
   it("keeps sidecar status as a pushed utility event", () => {
     const protocolSource = fs.readFileSync(
-      path.join(repoRoot, "src/main/services/features/utility/utilityProcessBridge/protocol.ts"),
+      path.join(
+        repoRoot,
+        "src/main/services/features/utility/utilityProcessBridge/protocol.ts",
+      ),
       "utf8",
     );
     const coreSource = fs.readFileSync(
-      path.join(repoRoot, "src/main/services/features/utility/utilityProcessBridge/internal/core.ts"),
+      path.join(
+        repoRoot,
+        "src/main/services/features/utility/utilityProcessBridge/internal/core.ts",
+      ),
       "utf8",
     );
     const eventHandlersSource = fs.readFileSync(
-      path.join(repoRoot, "src/main/services/features/utility/utilityProcessBridge/internal/eventHandlers.ts"),
+      path.join(
+        repoRoot,
+        "src/main/services/features/utility/utilityProcessBridge/internal/eventHandlers.ts",
+      ),
       "utf8",
     );
     const utilityMainSource = fs.readFileSync(
@@ -56,13 +67,20 @@ describe("utilityProcessBridge protocol helpers", () => {
       "utf8",
     );
     const bridgeSource = fs.readFileSync(
-      path.join(repoRoot, "src/main/services/features/utility/utilityProcessBridge.ts"),
+      path.join(
+        repoRoot,
+        "src/main/services/features/utility/utilityProcessBridge.ts",
+      ),
       "utf8",
     );
 
     expect(protocolSource).toContain('event: "sidecar.status"');
-    expect(utilityMainSource).toContain("utilitySidecarSupervisor.onStatusChange");
-    expect(utilityMainSource).toContain("utilityEmbeddingSidecarSupervisor.onStatusChange");
+    expect(utilityMainSource).toContain(
+      "utilitySidecarSupervisor.onStatusChange",
+    );
+    expect(utilityMainSource).toContain(
+      "utilityEmbeddingSidecarSupervisor.onStatusChange",
+    );
     expect(bridgeSource).toContain("./utilityProcessBridge/internal/core.js");
     expect(coreSource).toContain("handleSidecarStatusEvent");
     expect(eventHandlersSource).toContain("SIDECAR_STATUS_CHANGED");

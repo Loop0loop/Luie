@@ -17,3 +17,10 @@ export {
   getChunkWindow,
   searchChunks,
 } from "./chunkOperations.js";
+
+export {
+  type CachedChapterSearchDocument,
+  chapterSearchCacheService,
+} from "./chapterSearchCacheService.js";
+
+export { SearchService, searchService } from "./searchService.js";

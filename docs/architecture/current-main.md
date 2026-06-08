@@ -82,6 +82,20 @@
 | `validation` | `utils/validation/index.ts` | schema validation helper         |
 | root         | `utils/index.ts`            | main utils public export         |
 
+사실: `src/main/services/features`는 feature service 루트에 구현 파일을 두지 않고 도메인별 entry를 통해 제공합니다.
+
+| Feature service domain | Entry                                 | 책임                               |
+| ---------------------- | ------------------------------------- | ---------------------------------- |
+| `dbMaintenance`        | `features/dbMaintenance/index.ts`     | DB/search/memory maintenance       |
+| `derivedJobs`          | `features/derivedJobs/index.ts`       | derived search/memory job worker   |
+| `export`               | `features/export/index.ts`            | DOCX/HWPX export facade            |
+| `graphPlugin`          | `features/graphPlugin/index.ts`       | graph plugin catalog/install/apply |
+| `recovery`             | `features/recovery/index.ts`          | SQLite recovery service            |
+| `search`               | `features/search/index.ts`            | search facade/cache/chunk helpers  |
+| `startup`              | `features/startup/index.ts`           | startup readiness service          |
+| `worldReplica`         | `features/worldReplica/index.ts`      | replica world document persistence |
+| root                   | `src/main/services/features/index.ts` | feature service public export      |
+
 사실: Phase 2에서 분리된 snapshot/settings/sync 내부 helper는 도메인 하위 폴더의 `index.ts`를 통해 제공합니다.
 
 | Area                          | Index                                                      |
@@ -167,7 +181,7 @@ index.ts
 | ----------------------------------------------------------------------- | --: | --------------------------------------------------------- |
 | `src/main/services/features/memory/entity/memoryEntityReviewService.ts` | 232 | Phase 4에서 `entityMergeOperations.ts`로 merge/split 분리 |
 | `src/main/services/features/memory/entity/entityMergeOperations.ts`     | 283 | entity merge/split transaction helper                     |
-| `src/main/services/features/searchService.ts`                           |  54 | Phase 4에서 public service facade로 축소                  |
+| `src/main/services/features/search/searchService.ts`                    |  56 | Phase 4에서 public service facade로 축소                  |
 | `src/main/services/features/search/basicSearch.ts`                      | 206 | character/term/chapter search and quick access            |
 | `src/main/services/features/search/chunkOperations.ts`                  | 322 | memory chunk search/backlink/window operations            |
 | `src/main/database/main/packagedSchema.ts`                              |  24 | bootstrap SQL 조합 진입점                                 |
@@ -306,12 +320,12 @@ index.ts
 | utility process   | `src/main/utility/index.ts`          | `utility/process/utilityProcessMain.ts` side-effect entry                                     |
 | RAG QA worker     | -                                    | `utility/rag/ragQaWorker.ts`                                                                  |
 
-사실: `src/main/services/features/searchService.ts`는 통합 검색 service API와 DB result mapping, 일부 memory search orchestration을 함께 담고 있어 현재 500 LOC를 초과합니다. Phase 4에서 public service API를 유지한 채 추가 분리 대상입니다.
+사실: `src/main/services/features/search/searchService.ts`는 public service facade로 유지하고, DB result mapping과 chapter cache 검색은 `search/basicSearch.ts`, memory chunk 검색은 `search/chunkOperations.ts`로 분리했습니다. `src/main/services/features` 루트에는 구현 파일을 두지 않습니다.
 
 | Search helper           | 책임                                                                      | LOC |
 | ----------------------- | ------------------------------------------------------------------------- | --: |
 | `search/chunkSearch.ts` | memory chunk FTS query, short-token LIKE fallback, vector rank, RRF merge | 137 |
-| `search/index.ts`       | search helper 배럴 export                                                 |   7 |
+| `search/index.ts`       | search helper/service 배럴 export                                         |  25 |
 
 사실: `src/main/services/features/sync/syncLocalApply.ts`는 project/entity local DB apply helper만 유지하도록 축소되어 310 LOC입니다. Replica world document materialization은 `sync/localApply/index.ts` 배럴 폴더로 분리했습니다.
 

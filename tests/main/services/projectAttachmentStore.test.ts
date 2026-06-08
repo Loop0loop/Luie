@@ -90,7 +90,11 @@ describe("projectAttachmentStore", () => {
 
     expect(projects).toEqual([
       { id: "project-1", title: "One", projectPath: "/tmp/project-1.luie" },
-      { id: "project-2", title: "Two", projectPath: "/tmp/project-2-legacy.luie" },
+      {
+        id: "project-2",
+        title: "Two",
+        projectPath: "/tmp/project-2-legacy.luie",
+      },
       { id: "project-3", title: "Three", projectPath: null },
     ]);
   });
@@ -194,9 +198,7 @@ describe("projectAttachmentStore", () => {
       id: "project-1",
     });
 
-    await expect(
-      migrateLegacyProjectAttachments(),
-    ).resolves.toMatchObject({
+    await expect(migrateLegacyProjectAttachments()).resolves.toMatchObject({
       migratedRecords: 1,
       clearedLegacyRecords: 1,
       skippedInvalidRecords: 1,

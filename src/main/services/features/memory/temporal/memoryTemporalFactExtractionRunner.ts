@@ -75,9 +75,15 @@ export async function processPendingTemporalFactExtraction(input: {
       sourceContentHash: memoryEpisodeEvidence.sourceContentHash,
     })
     .from(memoryEpisodeEvidence)
-    .innerJoin(memoryEpisode, eq(memoryEpisode.id, memoryEpisodeEvidence.episodeId))
+    .innerJoin(
+      memoryEpisode,
+      eq(memoryEpisode.id, memoryEpisodeEvidence.episodeId),
+    )
     .innerJoin(chapter, eq(chapter.id, memoryEpisodeEvidence.chapterId))
-    .leftJoin(memoryFactEvidence, eq(memoryFactEvidence.evidenceId, memoryEpisodeEvidence.id))
+    .leftJoin(
+      memoryFactEvidence,
+      eq(memoryFactEvidence.evidenceId, memoryEpisodeEvidence.id),
+    )
     .where(
       and(
         eq(memoryEpisodeEvidence.projectId, input.projectId),
@@ -151,7 +157,8 @@ export async function processPendingLlmTemporalFactExtraction(input: {
   if (!isLlmTemporalFactExtractionEnabled()) {
     return { extracted: 0 };
   }
-  const { llmTemporalFactExtractor } = await import("./memoryTemporalFactLlmExtractor.js");
+  const { llmTemporalFactExtractor } =
+    await import("./memoryTemporalFactLlmExtractor.js");
   return await processPendingTemporalFactExtraction({
     ...input,
     extractor: llmTemporalFactExtractor,

@@ -1,8 +1,17 @@
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "../../../../database/main/databaseService.js";
-import { chapter, chapterSummary, plot, synopsis } from "../../../../database/schema/index.js";
+import {
+  chapter,
+  chapterSummary,
+  plot,
+  synopsis,
+} from "../../../../database/schema/index.js";
 import { createLogger } from "../../../../../shared/logger/index.js";
-import { LAYER0_CHAR_LIMIT, isMissingTableError, trimByChars } from "./contextAssembler.constants.js";
+import {
+  LAYER0_CHAR_LIMIT,
+  isMissingTableError,
+  trimByChars,
+} from "./contextAssembler.constants.js";
 
 const logger = createLogger("RagContextAssembler");
 
@@ -18,7 +27,9 @@ export async function buildLayer0ProjectSummary(
         .getClient()
         .select({ title: synopsis.title, body: synopsis.body })
         .from(synopsis)
-        .where(and(eq(synopsis.projectId, projectId), isNull(synopsis.deletedAt)))
+        .where(
+          and(eq(synopsis.projectId, projectId), isNull(synopsis.deletedAt)),
+        )
         .orderBy(asc(synopsis.updatedAt))
         .limit(40),
       db
@@ -69,7 +80,10 @@ export async function buildLayer1ChapterSummaries(
       .from(chapterSummary)
       .leftJoin(chapter, eq(chapter.id, chapterSummary.chapterId))
       .where(eq(chapterSummary.projectId, projectId))
-      .orderBy(asc(chapterSummary.chapterNumber), asc(chapterSummary.updatedAt));
+      .orderBy(
+        asc(chapterSummary.chapterNumber),
+        asc(chapterSummary.updatedAt),
+      );
   } catch (error) {
     if (!isMissingTableError(error)) {
       throw error;

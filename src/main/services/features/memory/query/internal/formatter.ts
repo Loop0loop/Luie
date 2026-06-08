@@ -1,6 +1,8 @@
 import type { NarrativeMemoryQueryResult } from "../../../../../../shared/types/search.js";
 
-function summarizeProfiles(result: NarrativeMemoryQueryResult["profiles"]): string {
+function summarizeProfiles(
+  result: NarrativeMemoryQueryResult["profiles"],
+): string {
   if (!result || result.length === 0) {
     return "(no entity profile rows)";
   }
@@ -8,7 +10,9 @@ function summarizeProfiles(result: NarrativeMemoryQueryResult["profiles"]): stri
   return result
     .map((profile) => {
       const aliasText =
-        profile.aliases.length > 0 ? `${profile.aliases.join(", ")}` : "(no alias)";
+        profile.aliases.length > 0
+          ? `${profile.aliases.join(", ")}`
+          : "(no alias)";
       return [
         `- ${profile.id}: ${profile.canonicalName} [${profile.entityType}]`,
         `  status=${profile.status}`,
@@ -42,7 +46,7 @@ export function formatNarrativeMemoryQueryResult(
             ].join(" | ");
           })
           .join("\n")
-    : "- No sufficient narrative memory evidence. Treat this as a valid insufficient-evidence result.";
+      : "- No sufficient narrative memory evidence. Treat this as a valid insufficient-evidence result.";
   const profiles =
     result.profiles && result.profiles.length > 0
       ? summarizeProfiles(result.profiles)

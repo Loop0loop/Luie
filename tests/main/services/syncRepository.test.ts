@@ -35,14 +35,17 @@ describe("SyncRepository scope narrowing", () => {
         }),
     );
 
-    const { syncRepository } = await import("../../../src/main/services/features/sync/syncRepository.js");
+    const { syncRepository } =
+      await import("../../../src/main/services/features/sync/syncRepository.js");
     const bundle = await syncRepository.fetchBundle(
       "access-token",
       "00000000-0000-0000-0000-000000000001",
     );
 
     const requested = mocked.fetch.mock.calls.map((call) => String(call[0]));
-    expect(requested.some((url) => url.includes("/rest/v1/snapshots"))).toBe(false);
+    expect(requested.some((url) => url.includes("/rest/v1/snapshots"))).toBe(
+      false,
+    );
     expect(bundle.snapshots).toEqual([]);
   });
 
@@ -53,10 +56,10 @@ describe("SyncRepository scope narrowing", () => {
       }),
     );
 
-    const { createEmptySyncBundle } = await import(
-      "../../../src/main/services/features/sync/syncMapper.js"
-    );
-    const { syncRepository } = await import("../../../src/main/services/features/sync/syncRepository.js");
+    const { createEmptySyncBundle } =
+      await import("../../../src/main/services/features/sync/syncMapper.js");
+    const { syncRepository } =
+      await import("../../../src/main/services/features/sync/syncRepository.js");
 
     const bundle: SyncBundle = createEmptySyncBundle();
     bundle.projects.push({
@@ -131,14 +134,20 @@ describe("SyncRepository scope narrowing", () => {
 
     await syncRepository.upsertBundle("access-token", bundle);
 
-    const requestedUrls = mocked.fetch.mock.calls.map((call) => String(call[0]));
-    expect(requestedUrls.some((url) => url.includes("/rest/v1/snapshots"))).toBe(false);
+    const requestedUrls = mocked.fetch.mock.calls.map((call) =>
+      String(call[0]),
+    );
+    expect(
+      requestedUrls.some((url) => url.includes("/rest/v1/snapshots")),
+    ).toBe(false);
 
     const projectsCall = mocked.fetch.mock.calls.find((call) =>
       String(call[0]).includes("/rest/v1/projects?"),
     );
     expect(projectsCall).toBeDefined();
-    const body = String((projectsCall?.[1] as RequestInit | undefined)?.body ?? "");
+    const body = String(
+      (projectsCall?.[1] as RequestInit | undefined)?.body ?? "",
+    );
     expect(body.includes("project_path")).toBe(false);
 
     const memoryCall = mocked.fetch.mock.calls.find((call) =>
@@ -171,7 +180,7 @@ describe("SyncRepository scope narrowing", () => {
               user_id: "00000000-0000-0000-0000-000000000001",
               project_id: "project-1",
               doc_type: "synopsis",
-              payload: "{\"synopsis\":\"remote\",\"status\":\"working\"}",
+              payload: '{"synopsis":"remote","status":"working"}',
               updated_at: "2026-02-28T00:00:00.000Z",
             },
             {
@@ -254,13 +263,16 @@ describe("SyncRepository scope narrowing", () => {
       });
     });
 
-    const { syncRepository } = await import("../../../src/main/services/features/sync/syncRepository.js");
+    const { syncRepository } =
+      await import("../../../src/main/services/features/sync/syncRepository.js");
     const bundle = await syncRepository.fetchBundle(
       "access-token",
       "00000000-0000-0000-0000-000000000001",
     );
 
-    const synopsisDoc = bundle.worldDocuments.find((doc) => doc.docType === "synopsis");
+    const synopsisDoc = bundle.worldDocuments.find(
+      (doc) => doc.docType === "synopsis",
+    );
     const plotDoc = bundle.worldDocuments.find((doc) => doc.docType === "plot");
 
     expect(synopsisDoc?.payload).toMatchObject({
@@ -305,7 +317,8 @@ describe("SyncRepository scope narrowing", () => {
       });
     });
 
-    const { syncRepository } = await import("../../../src/main/services/features/sync/syncRepository.js");
+    const { syncRepository } =
+      await import("../../../src/main/services/features/sync/syncRepository.js");
     const bundle = await syncRepository.fetchBundle(
       "access-token",
       "00000000-0000-0000-0000-000000000001",
@@ -334,10 +347,10 @@ describe("SyncRepository scope narrowing", () => {
       return new Response("", { status: 201 });
     });
 
-    const { createEmptySyncBundle } = await import(
-      "../../../src/main/services/features/sync/syncMapper.js"
-    );
-    const { syncRepository } = await import("../../../src/main/services/features/sync/syncRepository.js");
+    const { createEmptySyncBundle } =
+      await import("../../../src/main/services/features/sync/syncMapper.js");
+    const { syncRepository } =
+      await import("../../../src/main/services/features/sync/syncRepository.js");
     const bundle: SyncBundle = createEmptySyncBundle();
     bundle.memoryCanonicalRows?.push({
       id: "project-1:MemoryEntity:entity-1",

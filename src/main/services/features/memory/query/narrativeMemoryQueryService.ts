@@ -64,18 +64,33 @@ import {
   rejectMemoryTemporalFact,
   resolveMemoryTemporalFactConflict,
 } from "../temporal/memoryTemporalFactReviewService.js";
-import { fetchConflictFactPairs, toNarrativeMemoryFactSummary } from "./internal/conflicts.js";
+import {
+  fetchConflictFactPairs,
+  toNarrativeMemoryFactSummary,
+} from "./internal/conflicts.js";
 import { fetchFactEvidence } from "./internal/evidence.js";
 import { formatNarrativeMemoryQueryResult } from "./internal/formatter.js";
 import {
   classifyNarrativeMemoryQueryPlanWithLlm,
   isLlmNarrativeMemoryIntentClassifierEnabled,
 } from "./internal/llmIntentClassifier.js";
-import { extractEntityNamesFromQuestion, buildNarrativeMemoryQueryPlan } from "./internal/plan.js";
-import { fetchNarrativeSummaryFacts, fetchChapterSummaryFacts } from "./internal/summaries.js";
-import { resolveChapterOrder, resolveChapterOrderByChapterId } from "./internal/chapter.js";
+import {
+  extractEntityNamesFromQuestion,
+  buildNarrativeMemoryQueryPlan,
+} from "./internal/plan.js";
+import {
+  fetchNarrativeSummaryFacts,
+  fetchChapterSummaryFacts,
+} from "./internal/summaries.js";
+import {
+  resolveChapterOrder,
+  resolveChapterOrderByChapterId,
+} from "./internal/chapter.js";
 import { fetchTemporalFacts } from "./internal/temporal.js";
-import { loadEntityProfiles, resolveMemoryEntityIds } from "./internal/entity.js";
+import {
+  loadEntityProfiles,
+  resolveMemoryEntityIds,
+} from "./internal/entity.js";
 import { runLiveMemoryEvalSuite } from "../eval/memoryEvalRunner.js";
 import {
   createDefaultNarrativeMemoryIntentCalibrationCases,
@@ -120,17 +135,22 @@ export {
 };
 
 export class NarrativeMemoryQueryService {
-  async query(input: NarrativeMemoryQueryInput): Promise<NarrativeMemoryQueryResult> {
+  async query(
+    input: NarrativeMemoryQueryInput,
+  ): Promise<NarrativeMemoryQueryResult> {
     const deterministicPlan = buildNarrativeMemoryQueryPlan(input.question);
     const plan = isLlmNarrativeMemoryIntentClassifierEnabled()
       ? await classifyNarrativeMemoryQueryPlanWithLlm({
           projectId: input.projectId,
           question: input.question,
         }).catch((error: unknown) => {
-          logger.warn("LLM memory intent classifier failed; falling back to deterministic route", {
-            projectId: input.projectId,
-            error: error instanceof Error ? error.message : String(error),
-          });
+          logger.warn(
+            "LLM memory intent classifier failed; falling back to deterministic route",
+            {
+              projectId: input.projectId,
+              error: error instanceof Error ? error.message : String(error),
+            },
+          );
           return deterministicPlan;
         })
       : deterministicPlan;
@@ -230,10 +250,9 @@ export class NarrativeMemoryQueryService {
 
     return {
       intent: plan.intent,
-      status:
-        hasConflict
-          ? "conflicting"
-          : profiles.length > 0 || evidence.length > 0
+      status: hasConflict
+        ? "conflicting"
+        : profiles.length > 0 || evidence.length > 0
           ? "found"
           : "insufficient_evidence",
       trace,

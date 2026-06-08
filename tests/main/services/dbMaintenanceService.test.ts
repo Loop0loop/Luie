@@ -1,9 +1,12 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { ProjectService } from "../../../src/main/services/core/projectService.js";
 import { ChapterService } from "../../../src/main/services/core/chapterService.js";
-import { dbMaintenanceService } from "../../../src/main/services/features/dbMaintenanceService.js";
+import { dbMaintenanceService } from "../../../src/main/services/features/dbMaintenance/index.js";
 import { db } from "../../../src/main/database/index.js";
-import { memoryBuildJob, searchDirtyQueue } from "../../../src/main/database/schema/index.js";
+import {
+  memoryBuildJob,
+  searchDirtyQueue,
+} from "../../../src/main/database/schema/index.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import { projectService } from "../../../src/main/services/core/projectService.js";
 import { MEMORY_JOB_TYPES } from "../../../src/main/services/features/memory/memoryJobConstants.js";
@@ -13,15 +16,23 @@ describe("dbMaintenanceService", () => {
   const chapterService = new ChapterService();
 
   beforeAll(() => {
-    vi.spyOn(autoExtractService, "scheduleAnalysis").mockImplementation(() => {});
-    vi.spyOn(projectService, "schedulePackageExport").mockImplementation(() => {});
-    vi.spyOn(projectService, "attemptImmediatePackageExport").mockResolvedValue({
-      exported: false,
-    });
-    vi
-      .spyOn(projectService, "persistPackageAfterMutation")
-      .mockResolvedValue(undefined);
-    vi.spyOn(localProjectService, "schedulePackageExport").mockImplementation(() => {});
+    vi.spyOn(autoExtractService, "scheduleAnalysis").mockImplementation(
+      () => {},
+    );
+    vi.spyOn(projectService, "schedulePackageExport").mockImplementation(
+      () => {},
+    );
+    vi.spyOn(projectService, "attemptImmediatePackageExport").mockResolvedValue(
+      {
+        exported: false,
+      },
+    );
+    vi.spyOn(projectService, "persistPackageAfterMutation").mockResolvedValue(
+      undefined,
+    );
+    vi.spyOn(localProjectService, "schedulePackageExport").mockImplementation(
+      () => {},
+    );
   });
 
   it("enqueues rebuildSearchIndex and reports status counts", async () => {
@@ -31,10 +42,14 @@ describe("dbMaintenanceService", () => {
       projectPath: "/tmp/db-maint-search.luie",
     });
 
-    const rebuild = await dbMaintenanceService.rebuildSearchIndex(String(project.id));
+    const rebuild = await dbMaintenanceService.rebuildSearchIndex(
+      String(project.id),
+    );
     expect(rebuild.success).toBe(true);
 
-    const status = await dbMaintenanceService.getSearchIndexStatus(String(project.id));
+    const status = await dbMaintenanceService.getSearchIndexStatus(
+      String(project.id),
+    );
     expect(status.pendingCount).toBeGreaterThanOrEqual(1);
   });
 
@@ -54,12 +69,12 @@ describe("dbMaintenanceService", () => {
       content: "검색 인덱스 큐 처리 테스트 텍스트",
     });
 
-    const result = await dbMaintenanceService.processPendingSearchJobs({ limit: 10 });
+    const result = await dbMaintenanceService.processPendingSearchJobs({
+      limit: 10,
+    });
     expect(result.queued).toBeGreaterThanOrEqual(1);
 
-    const rows = await db.getClient()
-      .select()
-      .from(searchDirtyQueue);
+    const rows = await db.getClient().select().from(searchDirtyQueue);
     expect(rows.some((row) => row.status === "completed")).toBe(true);
   });
 

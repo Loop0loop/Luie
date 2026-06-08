@@ -2,7 +2,10 @@ import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
 import type { AnyColumn, SQLWrapper } from "drizzle-orm";
 import { db } from "../../../../database/main/databaseService.js";
 import { escapeLike } from "../../../../utils/query/index.js";
-import { memoryBuildJob, memoryChunk } from "../../../../database/schema/index.js";
+import {
+  memoryBuildJob,
+  memoryChunk,
+} from "../../../../database/schema/index.js";
 import type {
   RagQaEvidence,
   MemoryChunkSearchResult,
@@ -212,8 +215,10 @@ export async function buildLayer3Evidence(
         .map((item, index) => {
           const n = index + 1;
           const content = item.parentWindow?.content ?? item.content;
-          const windowStart = item.parentWindow?.startOffset ?? item.startOffset ?? 0;
-          const windowEnd = item.parentWindow?.endOffset ?? item.endOffset ?? null;
+          const windowStart =
+            item.parentWindow?.startOffset ?? item.startOffset ?? 0;
+          const windowEnd =
+            item.parentWindow?.endOffset ?? item.endOffset ?? null;
           const windowSuffix =
             item.parentWindow && item.parentWindow.chunkIds.length > 1
               ? ` window=${item.parentWindow.chunkIds.join(",")} windowOffset=${windowStart}-${windowEnd ?? "null"}`

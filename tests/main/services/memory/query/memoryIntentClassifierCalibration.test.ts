@@ -75,8 +75,7 @@ describe("runNarrativeMemoryIntentClassifierCalibration", () => {
       {
         caseId: "bad-intent",
         reason: "EXPECTED_INTENT_MISMATCH",
-        detail:
-          "expected=entity-profile actual=relationship-at-chapter",
+        detail: "expected=entity-profile actual=relationship-at-chapter",
       },
       {
         caseId: "bad-intent",

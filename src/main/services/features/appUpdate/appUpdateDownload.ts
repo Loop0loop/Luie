@@ -64,7 +64,10 @@ export const runAppUpdateDownload = async ({
   const finalPath = path.join(updateDir, artifactName);
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), UPDATE_FETCH_TIMEOUT_MS * 4);
+  const timer = setTimeout(
+    () => controller.abort(),
+    UPDATE_FETCH_TIMEOUT_MS * 4,
+  );
   let fileHandle: Awaited<ReturnType<typeof fsp.open>> | null = null;
   const response = await fetch(manifest.url, {
     method: "GET",
@@ -112,7 +115,9 @@ export const runAppUpdateDownload = async ({
     clearTimeout(timer);
 
     if (manifest.size && manifest.size !== total) {
-      throw new Error(`UPDATE_DOWNLOAD_SIZE_MISMATCH:${manifest.size}:${total}`);
+      throw new Error(
+        `UPDATE_DOWNLOAD_SIZE_MISMATCH:${manifest.size}:${total}`,
+      );
     }
     const actualSha = hash.digest("hex");
     if (manifest.sha256 && actualSha !== manifest.sha256) {
@@ -130,12 +135,21 @@ export const runAppUpdateDownload = async ({
     };
 
     const previousPending = await readArtifactFromMeta(getPendingMetaPath());
-    if (previousPending?.filePath && previousPending.filePath !== artifact.filePath) {
-      await fsp.rm(previousPending.filePath, { force: true }).catch(() => undefined);
+    if (
+      previousPending?.filePath &&
+      previousPending.filePath !== artifact.filePath
+    ) {
+      await fsp
+        .rm(previousPending.filePath, { force: true })
+        .catch(() => undefined);
     }
     const pendingMetaPath = getPendingMetaPath();
     const pendingMetaTempPath = `${pendingMetaPath}.tmp`;
-    await fsp.writeFile(pendingMetaTempPath, JSON.stringify(artifact, null, 2), "utf-8");
+    await fsp.writeFile(
+      pendingMetaTempPath,
+      JSON.stringify(artifact, null, 2),
+      "utf-8",
+    );
     await fsp.rename(pendingMetaTempPath, pendingMetaPath);
 
     setState({

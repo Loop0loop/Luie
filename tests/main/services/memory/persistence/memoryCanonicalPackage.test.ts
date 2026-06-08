@@ -61,28 +61,31 @@ describe("applyMemoryCanonicalPackagePayload", () => {
       order: 1,
       updatedAt: nowIso,
     });
-    await db.getClient().insert(memoryEntity).values([
-      {
-        id: confirmedEntityId,
-        projectId,
-        entityType: "character",
-        canonicalName: "아린",
-        status: "confirmed",
-        confidence: 90,
-        createdBy: "user",
-        updatedAt: nowIso,
-      },
-      {
-        id: suggestedEntityId,
-        projectId,
-        entityType: "character",
-        canonicalName: "검은 기사",
-        status: "suggested",
-        confidence: 70,
-        createdBy: "system",
-        updatedAt: nowIso,
-      },
-    ]);
+    await db
+      .getClient()
+      .insert(memoryEntity)
+      .values([
+        {
+          id: confirmedEntityId,
+          projectId,
+          entityType: "character",
+          canonicalName: "아린",
+          status: "confirmed",
+          confidence: 90,
+          createdBy: "user",
+          updatedAt: nowIso,
+        },
+        {
+          id: suggestedEntityId,
+          projectId,
+          entityType: "character",
+          canonicalName: "검은 기사",
+          status: "suggested",
+          confidence: 70,
+          createdBy: "system",
+          updatedAt: nowIso,
+        },
+      ]);
     await db.getClient().insert(memoryEntityAlias).values({
       id: aliasId,
       projectId,
@@ -122,50 +125,53 @@ describe("applyMemoryCanonicalPackagePayload", () => {
       quote: "아린은 백야회에 들어갔다.",
       updatedAt: nowIso,
     });
-    await db.getClient().insert(memoryFact).values([
-      {
-        id: confirmedFactId,
-        projectId,
-        subjectEntityId: confirmedEntityId,
-        predicate: "belongs_to",
-        objectEntityId: null,
-        objectValue: "백야회",
-        valueType: "string",
-        validFromChapterId: chapterId,
-        validFromChapterOrder: 1,
-        validToChapterId: null,
-        validToChapterOrder: null,
-        observedAtChapterId: chapterId,
-        observedAtChapterOrder: 1,
-        confidence: 90,
-        status: "confirmed",
-        extractorVersion: "fact-v1",
-        sourceContentHash: "source-hash",
-        invalidatedByFactId: null,
-        updatedAt: nowIso,
-      },
-      {
-        id: suggestedFactId,
-        projectId,
-        subjectEntityId: confirmedEntityId,
-        predicate: "rank",
-        objectEntityId: null,
-        objectValue: "간부",
-        valueType: "string",
-        validFromChapterId: chapterId,
-        validFromChapterOrder: 1,
-        validToChapterId: null,
-        validToChapterOrder: null,
-        observedAtChapterId: chapterId,
-        observedAtChapterOrder: 1,
-        confidence: 60,
-        status: "suggested",
-        extractorVersion: "fact-v1",
-        sourceContentHash: "source-hash",
-        invalidatedByFactId: null,
-        updatedAt: nowIso,
-      },
-    ]);
+    await db
+      .getClient()
+      .insert(memoryFact)
+      .values([
+        {
+          id: confirmedFactId,
+          projectId,
+          subjectEntityId: confirmedEntityId,
+          predicate: "belongs_to",
+          objectEntityId: null,
+          objectValue: "백야회",
+          valueType: "string",
+          validFromChapterId: chapterId,
+          validFromChapterOrder: 1,
+          validToChapterId: null,
+          validToChapterOrder: null,
+          observedAtChapterId: chapterId,
+          observedAtChapterOrder: 1,
+          confidence: 90,
+          status: "confirmed",
+          extractorVersion: "fact-v1",
+          sourceContentHash: "source-hash",
+          invalidatedByFactId: null,
+          updatedAt: nowIso,
+        },
+        {
+          id: suggestedFactId,
+          projectId,
+          subjectEntityId: confirmedEntityId,
+          predicate: "rank",
+          objectEntityId: null,
+          objectValue: "간부",
+          valueType: "string",
+          validFromChapterId: chapterId,
+          validFromChapterOrder: 1,
+          validToChapterId: null,
+          validToChapterOrder: null,
+          observedAtChapterId: chapterId,
+          observedAtChapterOrder: 1,
+          confidence: 60,
+          status: "suggested",
+          extractorVersion: "fact-v1",
+          sourceContentHash: "source-hash",
+          invalidatedByFactId: null,
+          updatedAt: nowIso,
+        },
+      ]);
     await db.getClient().insert(memoryFactEvidence).values({
       id: crypto.randomUUID(),
       projectId,
@@ -201,8 +207,12 @@ describe("applyMemoryCanonicalPackagePayload", () => {
       }),
     ]);
     expect(payload.tables.MemoryFactEvidence).toHaveLength(1);
-    expect(payload.tables.MemoryFact?.map((row) => row.id)).not.toContain(suggestedFactId);
-    expect(payload.tables.MemoryEntity?.map((row) => row.id)).not.toContain(suggestedEntityId);
+    expect(payload.tables.MemoryFact?.map((row) => row.id)).not.toContain(
+      suggestedFactId,
+    );
+    expect(payload.tables.MemoryEntity?.map((row) => row.id)).not.toContain(
+      suggestedEntityId,
+    );
   });
 
   it("re-scopes imported canonical memory rows to the resolved project", () => {

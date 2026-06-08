@@ -19,7 +19,9 @@ type ResolveChapterOrderMapInput = {
   chapterIds: string[];
 };
 
-export async function resolveChapterOrder(input: ResolveChapterInput): Promise<number | null> {
+export async function resolveChapterOrder(
+  input: ResolveChapterInput,
+): Promise<number | null> {
   const parsed = parseChapterOrder(input.question);
   if (parsed !== null) return parsed;
   if (!input.chapterId) return null;

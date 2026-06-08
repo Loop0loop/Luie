@@ -31,50 +31,56 @@ describe("memoryNarrativeSummaryDrift", () => {
       projectPath: null,
       updatedAt: nowIso,
     });
-    await db.getClient().insert(chapter).values([
-      {
-        id: chapterOneId,
-        projectId,
-        title: "1화",
-        content: "",
-        order: 1,
-        updatedAt: nowIso,
-      },
-      {
-        id: chapterTwoId,
-        projectId,
-        title: "2화",
-        content: "",
-        order: 2,
-        updatedAt: nowIso,
-      },
-    ]);
-    await db.getClient().insert(chapterSummary).values([
-      {
-        id: chapterSummaryOneId,
-        projectId,
-        chapterId: chapterOneId,
-        chapterNumber: 1,
-        summary: "첫 장면 요약",
-        contentHash: "drift-hash-1",
-        isFallback: false,
-        model: "test-model",
-        generatedAt: nowIso,
-        updatedAt: nowIso,
-      },
-      {
-        id: chapterSummaryTwoId,
-        projectId,
-        chapterId: chapterTwoId,
-        chapterNumber: 2,
-        summary: "두 번째 장면 요약",
-        contentHash: "drift-hash-2",
-        isFallback: false,
-        model: "test-model",
-        generatedAt: nowIso,
-        updatedAt: nowIso,
-      },
-    ]);
+    await db
+      .getClient()
+      .insert(chapter)
+      .values([
+        {
+          id: chapterOneId,
+          projectId,
+          title: "1화",
+          content: "",
+          order: 1,
+          updatedAt: nowIso,
+        },
+        {
+          id: chapterTwoId,
+          projectId,
+          title: "2화",
+          content: "",
+          order: 2,
+          updatedAt: nowIso,
+        },
+      ]);
+    await db
+      .getClient()
+      .insert(chapterSummary)
+      .values([
+        {
+          id: chapterSummaryOneId,
+          projectId,
+          chapterId: chapterOneId,
+          chapterNumber: 1,
+          summary: "첫 장면 요약",
+          contentHash: "drift-hash-1",
+          isFallback: false,
+          model: "test-model",
+          generatedAt: nowIso,
+          updatedAt: nowIso,
+        },
+        {
+          id: chapterSummaryTwoId,
+          projectId,
+          chapterId: chapterTwoId,
+          chapterNumber: 2,
+          summary: "두 번째 장면 요약",
+          contentHash: "drift-hash-2",
+          isFallback: false,
+          model: "test-model",
+          generatedAt: nowIso,
+          updatedAt: nowIso,
+        },
+      ]);
 
     const generated = await generateProjectNarrativeSummaryHierarchy({
       projectId,
@@ -135,50 +141,56 @@ describe("memoryNarrativeSummaryDrift", () => {
       projectPath: null,
       updatedAt: nowIso,
     });
-    await db.getClient().insert(chapter).values([
-      {
-        id: chapterOneId,
-        projectId,
-        title: "1화",
-        content: "",
-        order: 1,
-        updatedAt: nowIso,
-      },
-      {
-        id: chapterTwoId,
-        projectId,
-        title: "2화",
-        content: "",
-        order: 2,
-        updatedAt: nowIso,
-      },
-    ]);
-    await db.getClient().insert(chapterSummary).values([
-      {
-        id: chapterSummaryOneId,
-        projectId,
-        chapterId: chapterOneId,
-        chapterNumber: 1,
-        summary: "초기 1화 요약",
-        contentHash: "refresh-hash-1",
-        isFallback: false,
-        model: "test-model",
-        generatedAt: nowIso,
-        updatedAt: nowIso,
-      },
-      {
-        id: chapterSummaryTwoId,
-        projectId,
-        chapterId: chapterTwoId,
-        chapterNumber: 2,
-        summary: "초기 2화 요약",
-        contentHash: "refresh-hash-2",
-        isFallback: false,
-        model: "test-model",
-        generatedAt: nowIso,
-        updatedAt: nowIso,
-      },
-    ]);
+    await db
+      .getClient()
+      .insert(chapter)
+      .values([
+        {
+          id: chapterOneId,
+          projectId,
+          title: "1화",
+          content: "",
+          order: 1,
+          updatedAt: nowIso,
+        },
+        {
+          id: chapterTwoId,
+          projectId,
+          title: "2화",
+          content: "",
+          order: 2,
+          updatedAt: nowIso,
+        },
+      ]);
+    await db
+      .getClient()
+      .insert(chapterSummary)
+      .values([
+        {
+          id: chapterSummaryOneId,
+          projectId,
+          chapterId: chapterOneId,
+          chapterNumber: 1,
+          summary: "초기 1화 요약",
+          contentHash: "refresh-hash-1",
+          isFallback: false,
+          model: "test-model",
+          generatedAt: nowIso,
+          updatedAt: nowIso,
+        },
+        {
+          id: chapterSummaryTwoId,
+          projectId,
+          chapterId: chapterTwoId,
+          chapterNumber: 2,
+          summary: "초기 2화 요약",
+          contentHash: "refresh-hash-2",
+          isFallback: false,
+          model: "test-model",
+          generatedAt: nowIso,
+          updatedAt: nowIso,
+        },
+      ]);
 
     const generated = await generateProjectNarrativeSummaryHierarchy({
       projectId,

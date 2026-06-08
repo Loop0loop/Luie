@@ -76,7 +76,10 @@ export async function processPendingEpisodeExtractionJobs(input: {
         inArray(memoryEpisodeExtractionJob.status, ["pending", "failed"]),
       ),
     )
-    .orderBy(asc(memoryEpisodeExtractionJob.priority), asc(memoryEpisodeExtractionJob.createdAt))
+    .orderBy(
+      asc(memoryEpisodeExtractionJob.priority),
+      asc(memoryEpisodeExtractionJob.createdAt),
+    )
     .limit(limit);
 
   if (candidates.length === 0) return { queued: 0, processed: 0 };
@@ -146,13 +149,16 @@ export async function processPendingEpisodeExtractionJobs(input: {
           evidence: candidate.evidence.map((evidence) => {
             const chunk = chunksById.get(evidence.chunkId);
             if (!chunk) {
-              throw new Error(`MEMORY_EPISODE_EVIDENCE_CHUNK_NOT_FOUND:${evidence.chunkId}`);
+              throw new Error(
+                `MEMORY_EPISODE_EVIDENCE_CHUNK_NOT_FOUND:${evidence.chunkId}`,
+              );
             }
             return {
               chapterId: chunk.chapterId,
               chunkId: chunk.chunkId,
               contentHash: chunk.contentHash,
-              sourceContentHash: chunk.sourceContentHash || job.sourceContentHash,
+              sourceContentHash:
+                chunk.sourceContentHash || job.sourceContentHash,
               quote: evidence.quote,
               startOffset: evidence.startOffset,
               endOffset: evidence.endOffset,
@@ -176,7 +182,8 @@ export async function processPendingEpisodeExtractionJobs(input: {
       await client
         .update(memoryEpisodeExtractionJob)
         .set({
-          status: attempts >= EPISODE_EXTRACTION_MAX_ATTEMPTS ? "failed" : "pending",
+          status:
+            attempts >= EPISODE_EXTRACTION_MAX_ATTEMPTS ? "failed" : "pending",
           attempts,
           error: error instanceof Error ? error.message : "UNKNOWN_ERROR",
           updatedAt: nowIso,
@@ -196,7 +203,8 @@ export async function processPendingLlmEpisodeExtractionJobs(input: {
   if (!isLlmEpisodeExtractionEnabled()) {
     return { queued: 0, processed: 0 };
   }
-  const { llmEpisodeExtractor } = await import("./memoryEpisodeLlmExtractor.js");
+  const { llmEpisodeExtractor } =
+    await import("./memoryEpisodeLlmExtractor.js");
   return await processPendingEpisodeExtractionJobs({
     ...input,
     extractor: llmEpisodeExtractor,

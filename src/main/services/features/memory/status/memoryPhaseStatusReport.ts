@@ -58,7 +58,11 @@ export type MemoryPhaseStatusReport = {
   };
 };
 
-type StatusCountTable = typeof memoryEntity | typeof memoryEpisode | typeof memoryFact | typeof memoryNarrativeSummary;
+type StatusCountTable =
+  | typeof memoryEntity
+  | typeof memoryEpisode
+  | typeof memoryFact
+  | typeof memoryNarrativeSummary;
 
 const countRows = async (
   table:
@@ -71,7 +75,8 @@ const countRows = async (
     | typeof memoryEvalEvidence,
   projectId: string,
 ): Promise<number> => {
-  const rows = await db.getClient()
+  const rows = await db
+    .getClient()
     .select({ value: count() })
     .from(table)
     .where(eq(table.projectId, projectId));
@@ -82,7 +87,8 @@ const countByStatus = async (
   table: StatusCountTable,
   projectId: string,
 ): Promise<Record<string, number>> => {
-  const rows = await db.getClient()
+  const rows = await db
+    .getClient()
     .select({ status: table.status, value: count() })
     .from(table)
     .where(eq(table.projectId, projectId))
@@ -152,7 +158,12 @@ export async function getMemoryPhaseStatusReport(input: {
     {
       phase: "phase3-identity",
       label: "Entity identity memory",
-      status: entityRows === 0 ? "missing" : suggestedEntities > 0 ? "needs-review" : "ready",
+      status:
+        entityRows === 0
+          ? "missing"
+          : suggestedEntities > 0
+            ? "needs-review"
+            : "ready",
       evidence: { entities: entityRows, entityMentions, suggestedEntities },
     },
     {
@@ -164,7 +175,12 @@ export async function getMemoryPhaseStatusReport(input: {
     {
       phase: "phase5-temporal",
       label: "Temporal fact memory",
-      status: factRows === 0 ? "missing" : suggestedFacts > 0 ? "needs-review" : "ready",
+      status:
+        factRows === 0
+          ? "missing"
+          : suggestedFacts > 0
+            ? "needs-review"
+            : "ready",
       evidence: { facts: factRows, factEvidence, suggestedFacts },
     },
     {
@@ -204,7 +220,8 @@ export async function getMemoryPhaseStatusReport(input: {
     {
       phase: "phase8-summary",
       label: "Narrative summaries",
-      status: chapterSummaries > 0 && narrativeSummaryRows > 0 ? "ready" : "missing",
+      status:
+        chapterSummaries > 0 && narrativeSummaryRows > 0 ? "ready" : "missing",
       evidence: { chapterSummaries, narrativeSummaries: narrativeSummaryRows },
     },
     {

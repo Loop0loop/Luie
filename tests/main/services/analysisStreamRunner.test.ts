@@ -5,13 +5,19 @@ const mocked = vi.hoisted(() => ({
   buildDeterministicAnalysisItems: vi.fn(),
 }));
 
-vi.mock("../../../src/main/services/features/analysis/geminiApiKeyResolver.js", () => ({
-  invokeGeminiProxy: mocked.invokeGeminiProxy,
-}));
+vi.mock(
+  "../../../src/main/services/features/analysis/geminiApiKeyResolver.js",
+  () => ({
+    invokeGeminiProxy: mocked.invokeGeminiProxy,
+  }),
+);
 
-vi.mock("../../../src/main/services/features/analysis/localFallbackAnalyzer.js", () => ({
-  buildDeterministicAnalysisItems: mocked.buildDeterministicAnalysisItems,
-}));
+vi.mock(
+  "../../../src/main/services/features/analysis/localFallbackAnalyzer.js",
+  () => ({
+    buildDeterministicAnalysisItems: mocked.buildDeterministicAnalysisItems,
+  }),
+);
 
 import { runGeminiAnalysisStream } from "../../../src/main/services/features/analysis/analysisStreamRunner.js";
 

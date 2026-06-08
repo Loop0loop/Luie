@@ -37,20 +37,23 @@ describe("memoryNarrativeSummaryScheduler", () => {
       updatedAt: nowIso,
     }));
     await db.getClient().insert(chapter).values(chapterRows);
-    await db.getClient().insert(chapterSummary).values(
-      chapterRows.map((chapterRow, index) => ({
-        id: crypto.randomUUID(),
-        projectId,
-        chapterId: chapterRow.id,
-        chapterNumber: index + 1,
-        summary: `${index + 1}화 요약`,
-        contentHash: `scheduler-hash-${index + 1}`,
-        isFallback: false,
-        model: "test-model",
-        generatedAt: nowIso,
-        updatedAt: nowIso,
-      })),
-    );
+    await db
+      .getClient()
+      .insert(chapterSummary)
+      .values(
+        chapterRows.map((chapterRow, index) => ({
+          id: crypto.randomUUID(),
+          projectId,
+          chapterId: chapterRow.id,
+          chapterNumber: index + 1,
+          summary: `${index + 1}화 요약`,
+          contentHash: `scheduler-hash-${index + 1}`,
+          isFallback: false,
+          model: "test-model",
+          generatedAt: nowIso,
+          updatedAt: nowIso,
+        })),
+      );
 
     const result = await scheduleProjectNarrativeHierarchyScopes({
       projectId,
@@ -133,38 +136,41 @@ describe("memoryNarrativeSummaryScheduler", () => {
       order: 1,
       updatedAt: nowIso,
     });
-    await db.getClient().insert(memoryEntity).values([
-      {
-        id: arinId,
-        projectId,
-        entityType: "character",
-        canonicalName: "아린",
-        status: "confirmed",
-        confidence: 90,
-        createdBy: "test",
-        updatedAt: nowIso,
-      },
-      {
-        id: baekyaId,
-        projectId,
-        entityType: "organization",
-        canonicalName: "백야회",
-        status: "confirmed",
-        confidence: 88,
-        createdBy: "test",
-        updatedAt: nowIso,
-      },
-      {
-        id: isolatedId,
-        projectId,
-        entityType: "character",
-        canonicalName: "고립 인물",
-        status: "confirmed",
-        confidence: 70,
-        createdBy: "test",
-        updatedAt: nowIso,
-      },
-    ]);
+    await db
+      .getClient()
+      .insert(memoryEntity)
+      .values([
+        {
+          id: arinId,
+          projectId,
+          entityType: "character",
+          canonicalName: "아린",
+          status: "confirmed",
+          confidence: 90,
+          createdBy: "test",
+          updatedAt: nowIso,
+        },
+        {
+          id: baekyaId,
+          projectId,
+          entityType: "organization",
+          canonicalName: "백야회",
+          status: "confirmed",
+          confidence: 88,
+          createdBy: "test",
+          updatedAt: nowIso,
+        },
+        {
+          id: isolatedId,
+          projectId,
+          entityType: "character",
+          canonicalName: "고립 인물",
+          status: "confirmed",
+          confidence: 70,
+          createdBy: "test",
+          updatedAt: nowIso,
+        },
+      ]);
     await db.getClient().insert(memoryFact).values({
       id: factId,
       projectId,

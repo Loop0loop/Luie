@@ -4,16 +4,19 @@ const mocked = vi.hoisted(() => ({
   embed: vi.fn(),
 }));
 
-vi.mock("../../../src/main/services/features/utility/utilityProcessBridge.js", () => ({
-  utilityProcessBridge: {
-    embed: mocked.embed,
-  },
-}));
+vi.mock(
+  "../../../src/main/services/features/utility/utilityProcessBridge.js",
+  () => ({
+    utilityProcessBridge: {
+      embed: mocked.embed,
+    },
+  }),
+);
 
 import { ProjectService } from "../../../src/main/services/core/projectService.js";
 import { ChapterService } from "../../../src/main/services/core/chapterService.js";
 import { memoryProjectionService } from "../../../src/main/services/features/memory/memoryProjectionService.js";
-import { searchService } from "../../../src/main/services/features/searchService.js";
+import { searchService } from "../../../src/main/services/features/search/index.js";
 import { projectService } from "../../../src/main/services/core/projectService.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import { db } from "../../../src/main/database/index.js";
@@ -28,13 +31,23 @@ describe("SearchService — embedding fallback invariant (P2)", () => {
   const chapterService = new ChapterService();
 
   beforeAll(() => {
-    vi.spyOn(autoExtractService, "scheduleAnalysis").mockImplementation(() => {});
-    vi.spyOn(projectService, "schedulePackageExport").mockImplementation(() => {});
-    vi.spyOn(projectService, "attemptImmediatePackageExport").mockResolvedValue({
-      exported: false,
-    });
-    vi.spyOn(projectService, "persistPackageAfterMutation").mockResolvedValue(undefined);
-    vi.spyOn(localProjectService, "schedulePackageExport").mockImplementation(() => {});
+    vi.spyOn(autoExtractService, "scheduleAnalysis").mockImplementation(
+      () => {},
+    );
+    vi.spyOn(projectService, "schedulePackageExport").mockImplementation(
+      () => {},
+    );
+    vi.spyOn(projectService, "attemptImmediatePackageExport").mockResolvedValue(
+      {
+        exported: false,
+      },
+    );
+    vi.spyOn(projectService, "persistPackageAfterMutation").mockResolvedValue(
+      undefined,
+    );
+    vi.spyOn(localProjectService, "schedulePackageExport").mockImplementation(
+      () => {},
+    );
   });
 
   afterEach(() => {

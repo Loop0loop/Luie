@@ -7,7 +7,10 @@ import { graphPluginManifestSchema } from "../../../../shared/schemas/index.js";
 import type { GraphPluginManifest } from "../../../../shared/types/index.js";
 import { ErrorCode } from "../../../../shared/constants/index.js";
 import { LuieWorldGraphSchema } from "../../core/project/projectLuieSchemas.js";
-import { isSafeZipPath, normalizeZipPath } from "../../../utils/package/index.js";
+import {
+  isSafeZipPath,
+  normalizeZipPath,
+} from "../../../utils/package/index.js";
 import {
   createServiceError,
   isExecutableEntry,
@@ -36,7 +39,11 @@ export const downloadPluginArchive = async (
       throw createServiceError(
         ErrorCode.VALIDATION_FAILED,
         "Graph plugin archive size mismatch",
-        { pluginId: item.pluginId, expected: item.size, actual: buffer.byteLength },
+        {
+          pluginId: item.pluginId,
+          expected: item.size,
+          actual: buffer.byteLength,
+        },
       );
     }
 
@@ -75,20 +82,26 @@ export const downloadPluginArchive = async (
     return buffer;
   }
 
-  const response = await fetchImpl(item.assetUrl, { method: "GET" }).catch((error) => {
-    throw createServiceError(
-      ErrorCode.FS_READ_FAILED,
-      "Failed to download graph plugin archive",
-      { pluginId: item.pluginId, assetUrl: item.assetUrl },
-      error,
-    );
-  });
+  const response = await fetchImpl(item.assetUrl, { method: "GET" }).catch(
+    (error) => {
+      throw createServiceError(
+        ErrorCode.FS_READ_FAILED,
+        "Failed to download graph plugin archive",
+        { pluginId: item.pluginId, assetUrl: item.assetUrl },
+        error,
+      );
+    },
+  );
 
   if (!response.ok) {
     throw createServiceError(
       ErrorCode.FS_READ_FAILED,
       `Graph plugin download failed with status ${response.status}`,
-      { pluginId: item.pluginId, assetUrl: item.assetUrl, status: response.status },
+      {
+        pluginId: item.pluginId,
+        assetUrl: item.assetUrl,
+        status: response.status,
+      },
     );
   }
 
@@ -173,7 +186,8 @@ export const extractPluginArchive = async (
         }
 
         if (entry.fileName.endsWith("/")) {
-          fsp.mkdir(targetPath, { recursive: true })
+          fsp
+            .mkdir(targetPath, { recursive: true })
             .then(() => zipFile.readEntry())
             .catch(onFailure);
           return;
@@ -210,7 +224,8 @@ export const extractPluginArchive = async (
           });
           stream.on("error", onFailure);
           stream.on("end", () => {
-            fsp.mkdir(path.dirname(targetPath), { recursive: true })
+            fsp
+              .mkdir(path.dirname(targetPath), { recursive: true })
               .then(() => fsp.writeFile(targetPath, Buffer.concat(chunks)))
               .then(() => zipFile.readEntry())
               .catch(onFailure);
@@ -260,7 +275,9 @@ export const resolveExtractedPackageRoot = async (extractRoot: string) => {
 export const readPluginManifest = async (
   packageRoot: string,
 ): Promise<GraphPluginManifest> => {
-  const raw = JSON.parse(await fsp.readFile(path.join(packageRoot, "plugin.json"), "utf-8"));
+  const raw = JSON.parse(
+    await fsp.readFile(path.join(packageRoot, "plugin.json"), "utf-8"),
+  );
   const parsed = graphPluginManifestSchema.safeParse(raw);
   if (!parsed.success) {
     throw createServiceError(

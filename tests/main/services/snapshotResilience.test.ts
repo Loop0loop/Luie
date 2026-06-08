@@ -87,20 +87,20 @@ describe("Snapshot resilience", () => {
 
     const chapters = await Promise.all(
       [200, 400, 600, 800, 1000].map(async (len) => {
-      const chapter = trackChapter(
-        project.id,
-        await chapterService.createChapter({
-          projectId: project.id,
-          title: `Chapter ${len}`,
-        }),
-      );
-      await chapterService.updateChapter({
-        id: chapter.id,
-        content: makeMixedNarrativeText(len, len),
-      });
-      return { id: chapter.id, len };
-    }),
-  );
+        const chapter = trackChapter(
+          project.id,
+          await chapterService.createChapter({
+            projectId: project.id,
+            title: `Chapter ${len}`,
+          }),
+        );
+        await chapterService.updateChapter({
+          id: chapter.id,
+          content: makeMixedNarrativeText(len, len),
+        });
+        return { id: chapter.id, len };
+      }),
+    );
 
     autoSaveManager.setConfig(project.id, {
       enabled: true,
@@ -207,7 +207,10 @@ describe("Snapshot resilience", () => {
         description: `Large snapshot ${length}`,
       });
 
-      await projectService.exportProjectPackageNow(project.id, "snapshot-resilience:test");
+      await projectService.exportProjectPackageNow(
+        project.id,
+        "snapshot-resilience:test",
+      );
       const probe = await probeLuieContainer(projectPath);
       expect(probe).toMatchObject({
         exists: true,

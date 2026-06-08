@@ -69,7 +69,11 @@ export async function processMemoryEntityExtraction(input: {
     })
     .from(memoryChunk)
     .where(eq(memoryChunk.projectId, input.projectId))
-    .orderBy(asc(memoryChunk.sourceType), asc(memoryChunk.sourceId), asc(memoryChunk.chunkIndex))
+    .orderBy(
+      asc(memoryChunk.sourceType),
+      asc(memoryChunk.sourceId),
+      asc(memoryChunk.chunkIndex),
+    )
     .limit(input.limit ?? 50);
 
   const candidates = await input.extractor({
@@ -114,23 +118,26 @@ export async function processMemoryEntityExtraction(input: {
     for (const mention of candidate.mentions) {
       const chunk = chunksById.get(mention.chunkId);
       if (!chunk) continue;
-      await db.getClient().insert(memoryEntityMention).values({
-        id: crypto.randomUUID(),
-        projectId: input.projectId,
-        entityId,
-        aliasId: null,
-        chapterId: chunk.chapterId,
-        chunkId: chunk.id,
-        contentHash: chunk.contentHash,
-        sourceContentHash: chunk.sourceContentHash,
-        startOffset: mention.startOffset,
-        endOffset: mention.endOffset,
-        quote: mention.quote,
-        extractorVersion: input.extractorVersion,
-        confidence: mention.confidence ?? candidate.confidence ?? 0,
-        status: "suggested",
-        updatedAt: nowIso,
-      });
+      await db
+        .getClient()
+        .insert(memoryEntityMention)
+        .values({
+          id: crypto.randomUUID(),
+          projectId: input.projectId,
+          entityId,
+          aliasId: null,
+          chapterId: chunk.chapterId,
+          chunkId: chunk.id,
+          contentHash: chunk.contentHash,
+          sourceContentHash: chunk.sourceContentHash,
+          startOffset: mention.startOffset,
+          endOffset: mention.endOffset,
+          quote: mention.quote,
+          extractorVersion: input.extractorVersion,
+          confidence: mention.confidence ?? candidate.confidence ?? 0,
+          status: "suggested",
+          updatedAt: nowIso,
+        });
       mentionCount += 1;
     }
   }

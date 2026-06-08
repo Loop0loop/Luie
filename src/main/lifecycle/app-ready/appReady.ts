@@ -150,7 +150,7 @@ const runDeferredStartupMaintenance = async (logger: Logger): Promise<void> => {
 
   try {
     const { dbMaintenanceService } =
-      await import("../../services/features/dbMaintenanceService.js");
+      await import("../../services/features/dbMaintenance/index.js");
     await dbMaintenanceService.purgeOrphanDerivedRows({
       dryRun: true,
     });

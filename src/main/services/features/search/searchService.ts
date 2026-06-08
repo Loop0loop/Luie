@@ -6,16 +6,18 @@ import type {
   MemoryChunkSearchQuery,
   MemoryChunkWindowQuery,
   SearchQuery,
-} from "../../../shared/types/index.js";
+} from "../../../../shared/types/index.js";
+import {
+  getQuickAccess,
+  searchProject,
+  type SearchResult,
+} from "./basicSearch.js";
 import {
   getChunkBacklink,
   getChunkWindow,
-  getQuickAccess,
   searchChunks,
-  searchProject,
-  type SearchResult,
-} from "./search/index.js";
-import { utilityProcessBridge } from "./utility/utilityProcessBridge.js";
+} from "./chunkOperations.js";
+import { utilityProcessBridge } from "../utility/utilityProcessBridge.js";
 
 export class SearchService {
   async search(input: SearchQuery): Promise<SearchResult[]> {

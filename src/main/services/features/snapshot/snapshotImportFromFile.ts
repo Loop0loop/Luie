@@ -41,7 +41,10 @@ type ImportTransactionResult = {
 };
 
 const resolveImportProjectPath = async (title: string): Promise<string> => {
-  const safeTitle = sanitizeName(title || "Recovered Snapshot", "Recovered Snapshot");
+  const safeTitle = sanitizeName(
+    title || "Recovered Snapshot",
+    "Recovered Snapshot",
+  );
   const documentsDir = app.getPath("documents");
   let projectPath = path.join(
     documentsDir,
@@ -62,8 +65,12 @@ const resolveImportProjectPath = async (title: string): Promise<string> => {
   return projectPath;
 };
 
-const resolveAutoSaveSettings = (settings: SnapshotArtifact["data"]["settings"]) => {
-  const typed = settings as { autoSave?: boolean; autoSaveInterval?: number } | undefined;
+const resolveAutoSaveSettings = (
+  settings: SnapshotArtifact["data"]["settings"],
+) => {
+  const typed = settings as
+    | { autoSave?: boolean; autoSaveInterval?: number }
+    | undefined;
   return {
     autoSave: typeof typed?.autoSave === "boolean" ? typed.autoSave : true,
     autoSaveInterval:
@@ -77,70 +84,85 @@ const createImportedProject = async (
   snapshot: SnapshotArtifact,
   projectPath: string,
 ): Promise<ImportTransactionResult> => {
-  const { autoSave, autoSaveInterval } = resolveAutoSaveSettings(snapshot.data.settings);
+  const { autoSave, autoSaveInterval } = resolveAutoSaveSettings(
+    snapshot.data.settings,
+  );
   const projectData = snapshot.data.project;
   const now = new Date().toISOString();
 
   const store = db.getClient();
   const result = store.transaction((tx) => {
     const projectId = randomUUID();
-    tx.insert(project).values({
-      id: projectId,
-      title: projectData.title || "Recovered Snapshot",
-      description: projectData.description ?? undefined,
-      projectPath,
-      createdAt: now,
-      updatedAt: now,
-    }).run();
+    tx.insert(project)
+      .values({
+        id: projectId,
+        title: projectData.title || "Recovered Snapshot",
+        description: projectData.description ?? undefined,
+        projectPath,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .run();
 
-    const proj = tx.select().from(project).where(eq(project.id, projectId)).get();
+    const proj = tx
+      .select()
+      .from(project)
+      .where(eq(project.id, projectId))
+      .get();
 
-    tx.insert(projectSettings).values({
-      id: projectId,
-      projectId,
-      autoSave,
-      autoSaveInterval,
-    }).run();
+    tx.insert(projectSettings)
+      .values({
+        id: projectId,
+        projectId,
+        autoSave,
+        autoSaveInterval,
+      })
+      .run();
 
     const chapterIdMap = new Map<string, string>();
     const characterIdMap = new Map<string, string>();
     const termIdMap = new Map<string, string>();
 
-    const chaptersForCreate = snapshot.data.chapters.map((chapterItem, index) => {
-      const nextId = randomUUID();
-      chapterIdMap.set(chapterItem.id, nextId);
-      return {
-        id: nextId,
-        projectId,
-        title: chapterItem.title,
-        content: chapterItem.content ?? "",
-        synopsis: chapterItem.synopsis ?? null,
-        order: typeof chapterItem.order === "number" ? chapterItem.order : index,
-        wordCount: chapterItem.wordCount ?? 0,
-        createdAt: now,
-        updatedAt: now,
-      };
-    });
+    const chaptersForCreate = snapshot.data.chapters.map(
+      (chapterItem, index) => {
+        const nextId = randomUUID();
+        chapterIdMap.set(chapterItem.id, nextId);
+        return {
+          id: nextId,
+          projectId,
+          title: chapterItem.title,
+          content: chapterItem.content ?? "",
+          synopsis: chapterItem.synopsis ?? null,
+          order:
+            typeof chapterItem.order === "number" ? chapterItem.order : index,
+          wordCount: chapterItem.wordCount ?? 0,
+          createdAt: now,
+          updatedAt: now,
+        };
+      },
+    );
 
-    const charactersForCreate = snapshot.data.characters.map((characterItem) => {
-      const nextId = randomUUID();
-      characterIdMap.set(characterItem.id, nextId);
-      return {
-        id: nextId,
-        projectId,
-        name: characterItem.name,
-        description: characterItem.description ?? null,
-        firstAppearance: characterItem.firstAppearance ?? null,
-        attributes:
-          typeof characterItem.attributes === "string"
-            ? characterItem.attributes
-            : characterItem.attributes
-              ? JSON.stringify(characterItem.attributes)
-              : null,
-        createdAt: now,
-        updatedAt: now,
-      };
-    });
+    const charactersForCreate = snapshot.data.characters.map(
+      (characterItem) => {
+        const nextId = randomUUID();
+        characterIdMap.set(characterItem.id, nextId);
+        return {
+          id: nextId,
+          projectId,
+          name: characterItem.name,
+          description: characterItem.description ?? null,
+          firstAppearance: characterItem.firstAppearance ?? null,
+          attributes:
+            typeof characterItem.attributes === "string"
+              ? characterItem.attributes
+              : characterItem.attributes
+                ? JSON.stringify(characterItem.attributes)
+                : null,
+          createdAt: now,
+          updatedAt: now,
+        };
+      },
+    );
 
     const termsForCreate = snapshot.data.terms.map((termItem) => {
       const nextId = randomUUID();
@@ -212,11 +234,14 @@ const rollbackImportedProject = async (
   try {
     await db.getClient().delete(project).where(eq(project.id, projectId));
   } catch (rollbackError) {
-    logger.error("Failed to rollback project after snapshot .luie import failure", {
-      projectId,
-      filePath,
-      error: rollbackError,
-    });
+    logger.error(
+      "Failed to rollback project after snapshot .luie import failure",
+      {
+        projectId,
+        filePath,
+        error: rollbackError,
+      },
+    );
   }
 };
 
@@ -225,7 +250,9 @@ export const importSnapshotFromFile = async (
   logger: LoggerLike,
 ): Promise<ImportedProject> => {
   const snapshot = await readFullSnapshotArtifact(filePath);
-  const projectPath = await resolveImportProjectPath(snapshot.data.project.title);
+  const projectPath = await resolveImportProjectPath(
+    snapshot.data.project.title,
+  );
   const imported = await createImportedProject(snapshot, projectPath);
   const { created, chapterIdMap, characterIdMap, termIdMap } = imported;
   const meta = buildPackageMeta(created);

@@ -10,7 +10,7 @@ import {
   LUIE_WORLD_SYNOPSIS_FILE,
 } from "../../../../../shared/constants/index.js";
 import { readLuieContainerEntry } from "../../../io/luieContainer.js";
-import { worldReplicaService } from "../../../features/worldReplicaService.js";
+import { worldReplicaService } from "../../../features/worldReplica/index.js";
 import {
   LuieWorldDrawingSchema,
   LuieWorldGraphSchema,
@@ -69,7 +69,10 @@ export const readWorldPayloadFromPackage = async (
   logger: LoggerLike,
   docTypes?: Array<keyof ParsedWorldPayload>,
 ): Promise<ParsedWorldPayload> => {
-  if (!projectPath || !projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)) {
+  if (
+    !projectPath ||
+    !projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)
+  ) {
     return createEmptyParsedWorldPayload();
   }
 
@@ -100,19 +103,27 @@ export const readWorldPayloadFromPackage = async (
         });
         return schema.safeParse(null);
       }
-      return safeParseWorldPayloadForExport(parsedJson, schema, {
-        source: "package",
-        packagePath: projectPath,
-        entryPath,
-        label,
-      }, logger);
+      return safeParseWorldPayloadForExport(
+        parsedJson,
+        schema,
+        {
+          source: "package",
+          packagePath: projectPath,
+          entryPath,
+          label,
+        },
+        logger,
+      );
     } catch (error) {
-      logger.warn("Failed to read .luie world document; using default during export", {
-        projectPath,
-        entryPath,
-        label,
-        error,
-      });
+      logger.warn(
+        "Failed to read .luie world document; using default during export",
+        {
+          projectPath,
+          entryPath,
+          label,
+          error,
+        },
+      );
       return schema.safeParse(null);
     }
   };
@@ -129,10 +140,18 @@ export const readWorldPayloadFromPackage = async (
       ? readWorldDocument(LUIE_WORLD_PLOT_FILE, LuieWorldPlotSchema, "plot")
       : Promise.resolve(LuieWorldPlotSchema.safeParse(null)),
     selectedDocTypes.has("drawing")
-      ? readWorldDocument(LUIE_WORLD_DRAWING_FILE, LuieWorldDrawingSchema, "drawing")
+      ? readWorldDocument(
+          LUIE_WORLD_DRAWING_FILE,
+          LuieWorldDrawingSchema,
+          "drawing",
+        )
       : Promise.resolve(LuieWorldDrawingSchema.safeParse(null)),
     selectedDocTypes.has("mindmap")
-      ? readWorldDocument(LUIE_WORLD_MINDMAP_FILE, LuieWorldMindmapSchema, "mindmap")
+      ? readWorldDocument(
+          LUIE_WORLD_MINDMAP_FILE,
+          LuieWorldMindmapSchema,
+          "mindmap",
+        )
       : Promise.resolve(LuieWorldMindmapSchema.safeParse(null)),
     selectedDocTypes.has("memos")
       ? readWorldDocument(

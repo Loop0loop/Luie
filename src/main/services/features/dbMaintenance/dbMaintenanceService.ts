@@ -1,14 +1,14 @@
 import crypto from "node:crypto";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
-import { db } from "../../infra/database/index.js";
+import { db } from "../../../infra/database/index.js";
 import {
   memoryBuildJob,
   memoryEmbedding,
   searchDirtyQueue,
-} from "../../infra/database/index.js";
-import { chapterSearchCacheService } from "./chapterSearchCacheService.js";
-import { createLogger } from "../../../shared/logger/index.js";
-import { MEMORY_TARGET_TYPES } from "./memory/memoryJobConstants.js";
+} from "../../../infra/database/index.js";
+import { chapterSearchCacheService } from "../search/index.js";
+import { createLogger } from "../../../../shared/logger/index.js";
+import { MEMORY_TARGET_TYPES } from "../memory/memoryJobConstants.js";
 import { getMigrationHealth } from "./dbMaintenanceHealth.js";
 import { rebuildMemoryChunks } from "./dbMaintenanceMemory.js";
 
@@ -19,9 +19,7 @@ const STALE_RUNNING_THRESHOLD_MS = 30_000;
 const LONG_PENDING_THRESHOLD_MS = 60_000;
 
 class DbMaintenanceService {
-  async purgeOrphanDerivedRows(options?: {
-    dryRun?: boolean;
-  }): Promise<{
+  async purgeOrphanDerivedRows(options?: { dryRun?: boolean }): Promise<{
     dryRun: boolean;
     orphanSearchDirtyQueueCount: number;
     orphanMemoryChunkCount: number;
@@ -169,7 +167,10 @@ class DbMaintenanceService {
     const staleSearchIds = runningSearch
       .filter((row) => {
         const updatedAtMs = Date.parse(row.updatedAt);
-        return Number.isFinite(updatedAtMs) && now - updatedAtMs >= STALE_RUNNING_THRESHOLD_MS;
+        return (
+          Number.isFinite(updatedAtMs) &&
+          now - updatedAtMs >= STALE_RUNNING_THRESHOLD_MS
+        );
       })
       .map((row) => row.id);
     if (staleSearchIds.length > 0) {
@@ -185,7 +186,10 @@ class DbMaintenanceService {
     const staleMemoryIds = runningMemory
       .filter((row) => {
         const updatedAtMs = Date.parse(row.updatedAt);
-        return Number.isFinite(updatedAtMs) && now - updatedAtMs >= STALE_RUNNING_THRESHOLD_MS;
+        return (
+          Number.isFinite(updatedAtMs) &&
+          now - updatedAtMs >= STALE_RUNNING_THRESHOLD_MS
+        );
       })
       .map((row) => row.id);
     if (staleMemoryIds.length > 0) {
@@ -225,7 +229,8 @@ class DbMaintenanceService {
 
   async getSearchIndexStatus(projectId: string) {
     const base = await chapterSearchCacheService.getIndexStatus(projectId);
-    const rows = await db.getClient()
+    const rows = await db
+      .getClient()
       .select({
         status: searchDirtyQueue.status,
         count: sql<number>`count(*)`,
@@ -233,11 +238,14 @@ class DbMaintenanceService {
       .from(searchDirtyQueue)
       .where(eq(searchDirtyQueue.projectId, projectId))
       .groupBy(searchDirtyQueue.status);
-    const grouped = new Map(rows.map((row) => [row.status, Number(row.count ?? 0)]));
+    const grouped = new Map(
+      rows.map((row) => [row.status, Number(row.count ?? 0)]),
+    );
     const pendingCount = grouped.get("pending") ?? 0;
     const runningCount = grouped.get("running") ?? 0;
     const failedCount = grouped.get("failed") ?? 0;
-    const lastProcessedRows = await db.getClient()
+    const lastProcessedRows = await db
+      .getClient()
       .select({ updatedAt: searchDirtyQueue.updatedAt })
       .from(searchDirtyQueue)
       .where(
@@ -281,9 +289,11 @@ class DbMaintenanceService {
     return Date.now() - updatedAtMs >= backoffMs;
   }
 
-  async processPendingSearchJobs(input: {
-    limit?: number;
-  } = {}): Promise<{ queued: number; processed: number; failed: number }> {
+  async processPendingSearchJobs(
+    input: {
+      limit?: number;
+    } = {},
+  ): Promise<{ queued: number; processed: number; failed: number }> {
     const client = db.getClient();
     const limit = input.limit ?? 20;
     const candidates = await client
@@ -292,7 +302,9 @@ class DbMaintenanceService {
       .where(inArray(searchDirtyQueue.status, ["pending", "failed"]))
       .orderBy(asc(searchDirtyQueue.updatedAt))
       .limit(Math.max(limit * 3, 30));
-    const rows = candidates.filter((row) => this.canRetrySearchRow(row)).slice(0, limit);
+    const rows = candidates
+      .filter((row) => this.canRetrySearchRow(row))
+      .slice(0, limit);
     if (rows.length === 0) {
       return { queued: 0, processed: 0, failed: 0 };
     }
@@ -334,13 +346,15 @@ class DbMaintenanceService {
           await Promise.all(
             projectRows.map(async (row) => {
               const attempts = row.attempts + 1;
-              const nextStatus = attempts >= MAX_SEARCH_ATTEMPTS ? "failed" : "pending";
+              const nextStatus =
+                attempts >= MAX_SEARCH_ATTEMPTS ? "failed" : "pending";
               await client
                 .update(searchDirtyQueue)
                 .set({
                   status: nextStatus,
                   attempts,
-                  error: error instanceof Error ? error.message : "UNKNOWN_ERROR",
+                  error:
+                    error instanceof Error ? error.message : "UNKNOWN_ERROR",
                   updatedAt: now,
                 })
                 .where(eq(searchDirtyQueue.id, row.id));
@@ -377,7 +391,9 @@ class DbMaintenanceService {
       .from(memoryBuildJob)
       .where(eq(memoryBuildJob.projectId, projectId))
       .groupBy(memoryBuildJob.status);
-    const grouped = new Map(rows.map((row) => [row.status, Number(row.count ?? 0)]));
+    const grouped = new Map(
+      rows.map((row) => [row.status, Number(row.count ?? 0)]),
+    );
     const lastRows = await client
       .select({ updatedAt: memoryBuildJob.updatedAt })
       .from(memoryBuildJob)
@@ -415,7 +431,9 @@ class DbMaintenanceService {
     searchLongPendingCount: number;
     memoryLongPendingCount: number;
   }> {
-    const cutoffIso = new Date(Date.now() - LONG_PENDING_THRESHOLD_MS).toISOString();
+    const cutoffIso = new Date(
+      Date.now() - LONG_PENDING_THRESHOLD_MS,
+    ).toISOString();
     const client = db.getClient();
     const [searchRows, memoryRows] = await Promise.all([
       client
@@ -444,11 +462,13 @@ class DbMaintenanceService {
   }
 
   async runIntegrityCheck(): Promise<{ ok: boolean; rows: string[] }> {
-    const rows = db.getClient().all<{ integrity_check: string }>(
-      sql`PRAGMA integrity_check;`,
-    );
+    const rows = db
+      .getClient()
+      .all<{ integrity_check: string }>(sql`PRAGMA integrity_check;`);
     const values = rows.map((row) => row.integrity_check);
-    const ok = values.every((value) => String(value).trim().toLowerCase() === "ok");
+    const ok = values.every(
+      (value) => String(value).trim().toLowerCase() === "ok",
+    );
     return { ok, rows: values };
   }
 

@@ -29,7 +29,12 @@ describe("RAG grounding status", () => {
   });
 
   it("marks answers with conflicting narrative memory as conflicting", () => {
-    expect(buildRagGrounding({ evidence: [evidence()], narrativeMemoryStatus: "conflicting" })).toEqual({
+    expect(
+      buildRagGrounding({
+        evidence: [evidence()],
+        narrativeMemoryStatus: "conflicting",
+      }),
+    ).toEqual({
       status: "conflicting",
       note: "요청한 질문에서 설정 충돌 후보가 감지되었습니다.",
     });

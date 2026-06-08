@@ -28,16 +28,20 @@ export class TermService {
       logger.info("Creating term", input);
 
       const now = new Date().toISOString();
-      const [result] = await db.getClient().insert(term).values({
-        id: crypto.randomUUID(),
-        projectId: input.projectId,
-        term: input.term,
-        definition: input.definition ?? null,
-        category: input.category ?? null,
-        order: input.order ?? 0,
-        firstAppearance: input.firstAppearance ?? null,
-        updatedAt: now,
-      }).returning();
+      const [result] = await db
+        .getClient()
+        .insert(term)
+        .values({
+          id: crypto.randomUUID(),
+          projectId: input.projectId,
+          term: input.term,
+          definition: input.definition ?? null,
+          category: input.category ?? null,
+          order: input.order ?? 0,
+          firstAppearance: input.firstAppearance ?? null,
+          updatedAt: now,
+        })
+        .returning();
 
       if (!result) {
         throw new ServiceError(
@@ -53,7 +57,10 @@ export class TermService {
         includeTerms: true,
       });
       await projectService.touchProject(input.projectId);
-      await projectService.persistPackageAfterMutation(input.projectId, "term:create");
+      await projectService.persistPackageAfterMutation(
+        input.projectId,
+        "term:create",
+      );
       return result;
     } catch (error) {
       logger.error("Failed to create term", error);
@@ -69,7 +76,12 @@ export class TermService {
 
   async getTerm(id: string) {
     try {
-      const results = await db.getClient().select().from(term).where(eq(term.id, id)).limit(1);
+      const results = await db
+        .getClient()
+        .select()
+        .from(term)
+        .where(eq(term.id, id))
+        .limit(1);
 
       if (results.length === 0) {
         throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
@@ -99,7 +111,12 @@ export class TermService {
 
   async getAllTerms(projectId: string) {
     try {
-      const results = await db.getClient().select().from(term).where(and(eq(term.projectId, projectId), isNull(term.deletedAt))).orderBy(asc(term.term));
+      const results = await db
+        .getClient()
+        .select()
+        .from(term)
+        .where(and(eq(term.projectId, projectId), isNull(term.deletedAt)))
+        .orderBy(asc(term.term));
 
       return results;
     } catch (error) {
@@ -125,7 +142,16 @@ export class TermService {
       if (input.firstAppearance !== undefined)
         updateData.firstAppearance = input.firstAppearance;
 
-      const currentResults = await db.getClient().select({ id: term.id, projectId: term.projectId, deletedAt: term.deletedAt }).from(term).where(eq(term.id, input.id)).limit(1);
+      const currentResults = await db
+        .getClient()
+        .select({
+          id: term.id,
+          projectId: term.projectId,
+          deletedAt: term.deletedAt,
+        })
+        .from(term)
+        .where(eq(term.id, input.id))
+        .limit(1);
       const current = currentResults[0];
       if (!current || current.deletedAt) {
         throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
@@ -133,7 +159,12 @@ export class TermService {
         });
       }
 
-      const [updated] = await db.getClient().update(term).set(updateData).where(eq(term.id, input.id)).returning();
+      const [updated] = await db
+        .getClient()
+        .update(term)
+        .set(updateData)
+        .where(eq(term.id, input.id))
+        .returning();
 
       if (!updated) {
         throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
@@ -149,7 +180,10 @@ export class TermService {
         });
       }
       await projectService.touchProject(String(updated.projectId));
-      await projectService.persistPackageAfterMutation(String(updated.projectId), "term:update");
+      await projectService.persistPackageAfterMutation(
+        String(updated.projectId),
+        "term:update",
+      );
       return updated;
     } catch (error) {
       logger.error("Failed to update term", error);
@@ -165,7 +199,12 @@ export class TermService {
 
   async deleteTerm(id: string) {
     try {
-      const currentResults = await db.getClient().select({ projectId: term.projectId, deletedAt: term.deletedAt }).from(term).where(eq(term.id, id)).limit(1);
+      const currentResults = await db
+        .getClient()
+        .select({ projectId: term.projectId, deletedAt: term.deletedAt })
+        .from(term)
+        .where(eq(term.id, id))
+        .limit(1);
       const current = currentResults[0];
 
       const projectId = current?.projectId ?? null;
@@ -173,9 +212,20 @@ export class TermService {
 
       db.getClient().transaction((tx) => {
         if (projectId) {
-          tx.delete(entityRelation).where(or(eq(entityRelation.sourceId, id), eq(entityRelation.targetId, id))).run();
+          tx.delete(entityRelation)
+            .where(
+              or(
+                eq(entityRelation.sourceId, id),
+                eq(entityRelation.targetId, id),
+              ),
+            )
+            .run();
         }
-        const result = tx.update(term).set({ deletedAt: now, updatedAt: now }).where(eq(term.id, id)).run();
+        const result = tx
+          .update(term)
+          .set({ deletedAt: now, updatedAt: now })
+          .where(eq(term.id, id))
+          .run();
         if (!result) {
           throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
             id,
@@ -188,7 +238,10 @@ export class TermService {
       logger.info("Term deleted successfully", { termId: id });
       if (projectId) {
         await projectService.touchProject(projectId);
-        await projectService.persistPackageAfterMutation(projectId, "term:delete");
+        await projectService.persistPackageAfterMutation(
+          projectId,
+          "term:delete",
+        );
       }
       return { success: true };
     } catch (error) {
@@ -233,7 +286,11 @@ export class TermService {
       const termIds = Array.from(
         new Set(appearances.map((appearance) => appearance.termId)),
       );
-      const terms = await db.getClient().select().from(term).where(and(inArray(term.id, termIds), isNull(term.deletedAt)));
+      const terms = await db
+        .getClient()
+        .select()
+        .from(term)
+        .where(and(inArray(term.id, termIds), isNull(term.deletedAt)));
       const termById = new Map(terms.map((t) => [t.id, t]));
 
       return appearances.map((appearance) => ({
@@ -253,7 +310,12 @@ export class TermService {
 
   async updateFirstAppearance(termId: string, chapterId: string) {
     try {
-      const results = await db.getClient().select().from(term).where(eq(term.id, termId)).limit(1);
+      const results = await db
+        .getClient()
+        .select()
+        .from(term)
+        .where(eq(term.id, termId))
+        .limit(1);
       const t = results[0];
 
       if (!t || t.deletedAt) {
@@ -263,11 +325,18 @@ export class TermService {
       }
 
       if (!t.firstAppearance) {
-        await db.getClient().update(term).set({ firstAppearance: chapterId }).where(eq(term.id, termId));
+        await db
+          .getClient()
+          .update(term)
+          .set({ firstAppearance: chapterId })
+          .where(eq(term.id, termId));
 
         logger.info("First appearance updated", { termId, chapterId });
         await projectService.touchProject(String(t.projectId));
-        await projectService.persistPackageAfterMutation(String(t.projectId), "term:update-first-appearance");
+        await projectService.persistPackageAfterMutation(
+          String(t.projectId),
+          "term:update-first-appearance",
+        );
       }
     } catch (error) {
       logger.error("Failed to update first appearance", error);
@@ -284,7 +353,21 @@ export class TermService {
   async searchTerms(projectId: string, query: string) {
     try {
       const searchPattern = `%${escapeLike(query)}%`;
-      const results = await db.getClient().select().from(term).where(and(eq(term.projectId, projectId), or(like(term.term, searchPattern), like(term.definition, searchPattern)), isNull(term.deletedAt))).orderBy(asc(term.term));
+      const results = await db
+        .getClient()
+        .select()
+        .from(term)
+        .where(
+          and(
+            eq(term.projectId, projectId),
+            or(
+              like(term.term, searchPattern),
+              like(term.definition, searchPattern),
+            ),
+            isNull(term.deletedAt),
+          ),
+        )
+        .orderBy(asc(term.term));
 
       return results;
     } catch (error) {
@@ -300,7 +383,18 @@ export class TermService {
 
   async getTermsByCategory(projectId: string, category: string) {
     try {
-      const results = await db.getClient().select().from(term).where(and(eq(term.projectId, projectId), eq(term.category, category), isNull(term.deletedAt))).orderBy(asc(term.term));
+      const results = await db
+        .getClient()
+        .select()
+        .from(term)
+        .where(
+          and(
+            eq(term.projectId, projectId),
+            eq(term.category, category),
+            isNull(term.deletedAt),
+          ),
+        )
+        .orderBy(asc(term.term));
 
       return results;
     } catch (error) {

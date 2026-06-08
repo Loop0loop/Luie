@@ -208,10 +208,14 @@ export async function generateScopedNarrativeSummaryHierarchy(input: {
     eq(chapterSummary.isFallback, false),
   ];
   if (input.fromChapterNumber !== undefined) {
-    chapterPredicates.push(gte(chapterSummary.chapterNumber, input.fromChapterNumber));
+    chapterPredicates.push(
+      gte(chapterSummary.chapterNumber, input.fromChapterNumber),
+    );
   }
   if (input.toChapterNumber !== undefined) {
-    chapterPredicates.push(lte(chapterSummary.chapterNumber, input.toChapterNumber));
+    chapterPredicates.push(
+      lte(chapterSummary.chapterNumber, input.toChapterNumber),
+    );
   }
 
   const chapterSummaries = await client
@@ -266,12 +270,10 @@ export async function generateScopedNarrativeSummaryHierarchy(input: {
 
   await client.transaction((tx) => {
     if (existing) {
-      tx
-        .delete(memoryNarrativeSummarySource)
+      tx.delete(memoryNarrativeSummarySource)
         .where(eq(memoryNarrativeSummarySource.summaryId, summaryId))
         .run();
-      tx
-        .update(memoryNarrativeSummary)
+      tx.update(memoryNarrativeSummary)
         .set({
           title: draft.title,
           summary: draft.summary,
@@ -287,8 +289,7 @@ export async function generateScopedNarrativeSummaryHierarchy(input: {
         .where(eq(memoryNarrativeSummary.id, summaryId))
         .run();
     } else {
-      tx
-        .insert(memoryNarrativeSummary)
+      tx.insert(memoryNarrativeSummary)
         .values({
           id: summaryId,
           projectId: input.projectId,
@@ -307,8 +308,7 @@ export async function generateScopedNarrativeSummaryHierarchy(input: {
         .run();
     }
 
-    tx
-      .insert(memoryNarrativeSummarySource)
+    tx.insert(memoryNarrativeSummarySource)
       .values(
         chapterSummaries.map((summary) => ({
           id: crypto.randomUUID(),
@@ -337,7 +337,9 @@ export async function generateCommunityNarrativeSummaryHierarchy(input: {
   nowIso?: string;
   summarizer?: NarrativeCommunitySummarizer;
 }): Promise<{ generated: number; summaryId: string | null }> {
-  const entityIds = Array.from(new Set(input.entityIds.filter((id) => id.trim())));
+  const entityIds = Array.from(
+    new Set(input.entityIds.filter((id) => id.trim())),
+  );
   if (entityIds.length === 0) return { generated: 0, summaryId: null };
 
   const nowIso = input.nowIso ?? new Date().toISOString();
@@ -392,9 +394,10 @@ export async function generateCommunityNarrativeSummaryHierarchy(input: {
 
   const facts: NarrativeHierarchyCommunityFact[] = factRows.map((fact) => ({
     ...fact,
-    subjectName: entityNameById.get(fact.subjectEntityId) ?? fact.subjectEntityId,
+    subjectName:
+      entityNameById.get(fact.subjectEntityId) ?? fact.subjectEntityId,
     objectName: fact.objectEntityId
-      ? entityNameById.get(fact.objectEntityId) ?? fact.objectEntityId
+      ? (entityNameById.get(fact.objectEntityId) ?? fact.objectEntityId)
       : null,
   }));
   if (facts.length === 0) return { generated: 0, summaryId: null };
@@ -431,12 +434,10 @@ export async function generateCommunityNarrativeSummaryHierarchy(input: {
 
   await client.transaction((tx) => {
     if (existing) {
-      tx
-        .delete(memoryNarrativeSummarySource)
+      tx.delete(memoryNarrativeSummarySource)
         .where(eq(memoryNarrativeSummarySource.summaryId, summaryId))
         .run();
-      tx
-        .update(memoryNarrativeSummary)
+      tx.update(memoryNarrativeSummary)
         .set({
           title: draft.title,
           summary: draft.summary,
@@ -452,8 +453,7 @@ export async function generateCommunityNarrativeSummaryHierarchy(input: {
         .where(eq(memoryNarrativeSummary.id, summaryId))
         .run();
     } else {
-      tx
-        .insert(memoryNarrativeSummary)
+      tx.insert(memoryNarrativeSummary)
         .values({
           id: summaryId,
           projectId: input.projectId,
@@ -472,8 +472,7 @@ export async function generateCommunityNarrativeSummaryHierarchy(input: {
         .run();
     }
 
-    tx
-      .insert(memoryNarrativeSummarySource)
+    tx.insert(memoryNarrativeSummarySource)
       .values(
         facts.map((fact) => ({
           id: crypto.randomUUID(),

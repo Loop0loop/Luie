@@ -1,7 +1,4 @@
-export {
-  createEmptySyncBundle,
-  mergeSyncBundles,
-} from "./mapper/index.js";
+export { createEmptySyncBundle, mergeSyncBundles } from "./mapper/index.js";
 export type {
   MergeSyncBundlesOptions,
   SyncBundle,

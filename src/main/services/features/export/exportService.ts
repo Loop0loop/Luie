@@ -4,11 +4,18 @@
  */
 
 import { promises as fs } from "fs";
-import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel } from "docx";
-import { ServiceError } from "../../utils/error/index.js";
-import { ErrorCode } from "../../../shared/constants/errorCode.js";
-import { hwpxExportService } from "./hwpx/hwpxExportService.js";
-import { prepareExportContent } from "../../../shared/utils/exportContentNormalization.js";
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  AlignmentType,
+  HeadingLevel,
+} from "docx";
+import { ServiceError } from "../../../utils/error/index.js";
+import { ErrorCode } from "../../../../shared/constants/errorCode.js";
+import { hwpxExportService } from "../hwpx/hwpxExportService.js";
+import { prepareExportContent } from "../../../../shared/utils/exportContentNormalization.js";
 
 // ============================================================================
 // Types
@@ -20,7 +27,7 @@ export interface ExportOptions {
   title: string;
   content: string; // HTML content from TipTap editor
   format: "DOCX" | "HWPX";
-  
+
   // Page settings
   paperSize?: "A4" | "Letter" | "B5";
   marginTop?: number; // mm
@@ -28,17 +35,16 @@ export interface ExportOptions {
   marginLeft?: number; // mm
   marginRight?: number; // mm
 
-  
   // Typography
   fontFamily?: string;
   fontSize?: number; // pt
   lineHeight?: string; // "100%", "160%", "180%", "200%"
   normalizeLineSpacing?: boolean;
-  
+
   // Page numbers
   showPageNumbers?: boolean;
   startPageNumber?: number;
-  
+
   // Output
   outputPath?: string; // If not provided, will prompt user
 
@@ -130,7 +136,10 @@ function stripHtmlTags(text: string): string {
  * HTML을 파싱하여 Paragraph 배열로 변환
  * 간단한 파서 (향후 개선 필요)
  */
-function htmlToParagraphs(html: string, options: Required<ExportOptions>): Paragraph[] {
+function htmlToParagraphs(
+  html: string,
+  options: Required<ExportOptions>,
+): Paragraph[] {
   const paragraphs: Paragraph[] = [];
 
   const pushParagraph = (text: string, orderedPrefix?: string) => {
@@ -152,9 +161,10 @@ function htmlToParagraphs(html: string, options: Required<ExportOptions>): Parag
           after: 0,
           line: parseLineHeight(options.lineHeight),
         },
-        indent: orderedPrefix === undefined
-          ? { firstLine: mmToTwips(3.5) }
-          : { left: mmToTwips(6), hanging: mmToTwips(3) },
+        indent:
+          orderedPrefix === undefined
+            ? { firstLine: mmToTwips(3.5) }
+            : { left: mmToTwips(6), hanging: mmToTwips(3) },
       }),
     );
   };
@@ -260,8 +270,6 @@ function buildTitleParagraph(options: Required<ExportOptions>): Paragraph {
   });
 }
 
-
-
 // ============================================================================
 // Export Service Class
 // ============================================================================
@@ -276,23 +284,32 @@ export class ExportService {
       const mergedOptions: Required<ExportOptions> = {
         ...DEFAULT_SETTINGS,
         ...options,
-        marginRight: options.marginRight ?? options.marginLeft ?? DEFAULT_SETTINGS.marginLeft,
+        marginRight:
+          options.marginRight ??
+          options.marginLeft ??
+          DEFAULT_SETTINGS.marginLeft,
         outputPath: options.outputPath ?? "",
         referenceHwpxPath: options.referenceHwpxPath ?? "",
       };
-      
+
       // Validate
       if (!mergedOptions.title || !mergedOptions.content) {
-        throw new ServiceError(ErrorCode.VALIDATION_FAILED, "Title and content are required");
+        throw new ServiceError(
+          ErrorCode.VALIDATION_FAILED,
+          "Title and content are required",
+        );
       }
-      
+
       // Export based on format
       if (mergedOptions.format === "DOCX") {
         return await this.exportDocx(mergedOptions);
       } else if (mergedOptions.format === "HWPX") {
         return await this.exportHwpx(mergedOptions);
       } else {
-        throw new ServiceError(ErrorCode.VALIDATION_FAILED, `Unsupported format: ${mergedOptions.format}`);
+        throw new ServiceError(
+          ErrorCode.VALIDATION_FAILED,
+          `Unsupported format: ${mergedOptions.format}`,
+        );
       }
     } catch (error) {
       return {
@@ -301,11 +318,13 @@ export class ExportService {
       };
     }
   }
-  
+
   /**
    * DOCX 내보내기
    */
-  private async exportDocx(options: Required<ExportOptions>): Promise<ExportResult> {
+  private async exportDocx(
+    options: Required<ExportOptions>,
+  ): Promise<ExportResult> {
     try {
       const paperSize = PAPER_SIZES[options.paperSize];
       const preparedContent = options.normalizeLineSpacing
@@ -318,7 +337,7 @@ export class ExportService {
       const paragraphs = options.normalizeLineSpacing
         ? [buildTitleParagraph(options), ...htmlToParagraphs(bodyHtml, options)]
         : htmlToParagraphs(bodyHtml, options);
-      
+
       // Create document
       const doc = new Document({
         sections: [
@@ -341,25 +360,28 @@ export class ExportService {
           },
         ],
       });
-      
+
       // Generate buffer
       const buffer = await Packer.toBuffer(doc);
-      
+
       // Determine output path
       let outputPath = options.outputPath;
       if (!outputPath) {
         // This will be handled by IPC handler (file dialog)
-        throw new ServiceError(ErrorCode.VALIDATION_FAILED, "Output path is required");
+        throw new ServiceError(
+          ErrorCode.VALIDATION_FAILED,
+          "Output path is required",
+        );
       }
-      
+
       // Ensure proper extension
       if (!outputPath.endsWith(".docx")) {
         outputPath = outputPath.replace(/\.[^.]*$/, "") + ".docx";
       }
-      
+
       // Write file
       await fs.writeFile(outputPath, buffer);
-      
+
       return {
         success: true,
         filePath: outputPath,
@@ -367,16 +389,18 @@ export class ExportService {
     } catch (error) {
       throw new ServiceError(
         ErrorCode.FS_WRITE_FAILED,
-        `DOCX export failed: ${error instanceof Error ? error.message : "Unknown error"}`
+        `DOCX export failed: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
-  
+
   /**
    * HWPX 내보내기 (BETA)
    * 별도의 HWPX 전용 서비스 사용
    */
-  private async exportHwpx(options: Required<ExportOptions>): Promise<ExportResult> {
+  private async exportHwpx(
+    options: Required<ExportOptions>,
+  ): Promise<ExportResult> {
     const preparedContent = options.normalizeLineSpacing
       ? prepareExportContent({
           html: options.content,

@@ -52,7 +52,10 @@ export type MemoryReviewDecisionApplyResult = {
 
 type ApplyOptions = {
   nowIso?: string;
-  persistPackageAfterMutation?: (projectId: string, reason: string) => Promise<void>;
+  persistPackageAfterMutation?: (
+    projectId: string,
+    reason: string,
+  ) => Promise<void>;
 };
 
 const rejectReasonForFact = (decision: MemoryReviewFactDecision): string => {
@@ -178,8 +181,13 @@ export async function validateMemoryReviewDecisionsAgainstDb(
     if (status !== "suggested") {
       return {
         ...item,
-        status: status === "confirmed" || status === "rejected" ? status : item.status,
-        error: item.error ?? `${item.kind} review candidate is not suggested: ${status}`,
+        status:
+          status === "confirmed" || status === "rejected"
+            ? status
+            : item.status,
+        error:
+          item.error ??
+          `${item.kind} review candidate is not suggested: ${status}`,
       };
     }
     return item;
@@ -268,7 +276,10 @@ export async function applyMemoryReviewDecisions(
   const updated = results.filter((result) => result.updated).length;
   let persisted = false;
   if (updated > 0 && options.persistPackageAfterMutation) {
-    await options.persistPackageAfterMutation(input.projectId, "memory:review-decision-apply");
+    await options.persistPackageAfterMutation(
+      input.projectId,
+      "memory:review-decision-apply",
+    );
     persisted = true;
   }
 

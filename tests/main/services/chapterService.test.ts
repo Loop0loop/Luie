@@ -16,11 +16,15 @@ const localProjectService = new ProjectService();
 
 beforeAll(() => {
   vi.spyOn(autoExtractService, "scheduleAnalysis").mockImplementation(() => {});
-  vi.spyOn(projectService, "schedulePackageExport").mockImplementation(() => {});
+  vi.spyOn(projectService, "schedulePackageExport").mockImplementation(
+    () => {},
+  );
   vi.spyOn(projectService, "attemptImmediatePackageExport").mockResolvedValue({
     exported: false,
   });
-  vi.spyOn(localProjectService, "schedulePackageExport").mockImplementation(() => {});
+  vi.spyOn(localProjectService, "schedulePackageExport").mockImplementation(
+    () => {},
+  );
 });
 
 describe("ChapterService", () => {

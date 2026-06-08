@@ -10,9 +10,9 @@ describe("parseLooseJsonStream", () => {
       responseText: [
         "preface text",
         "```json",
-        "{\"type\":\"intro\",\"content\":\"hello\"}",
+        '{"type":"intro","content":"hello"}',
         "```",
-        "[{\"type\":\"reaction\",\"content\":\"wow\"},{\"type\":\"outro\",\"content\":\"bye\"}]",
+        '[{"type":"reaction","content":"wow"},{"type":"outro","content":"bye"}]',
       ].join("\n"),
       phase: "primary",
       logger,
@@ -33,7 +33,8 @@ describe("parseLooseJsonStream", () => {
     const emitted: unknown[] = [];
 
     parseLooseJsonStream({
-      responseText: "{\"type\":\"intro\",\"content\":\"literal } brace and \\\"quote\\\" \\\\ slash\"}{\"type\":\"outro\",\"content\":\"done\"}",
+      responseText:
+        '{"type":"intro","content":"literal } brace and \\"quote\\" \\\\ slash"}{"type":"outro","content":"done"}',
       phase: "primary",
       logger: { warn: vi.fn() },
       throwIfCancelled: vi.fn(),
@@ -42,7 +43,7 @@ describe("parseLooseJsonStream", () => {
     });
 
     expect(emitted).toEqual([
-      { type: "intro", content: "literal } brace and \"quote\" \\ slash" },
+      { type: "intro", content: 'literal } brace and "quote" \\ slash' },
       { type: "outro", content: "done" },
     ]);
   });
@@ -51,7 +52,7 @@ describe("parseLooseJsonStream", () => {
     const logger = { warn: vi.fn() };
 
     parseLooseJsonStream({
-      responseText: "{\"type\":\"intro\",\"content\":\"ok\"}{malformed",
+      responseText: '{"type":"intro","content":"ok"}{malformed',
       phase: "followup",
       logger,
       throwIfCancelled: vi.fn(),

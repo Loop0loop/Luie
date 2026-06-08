@@ -2,11 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 
 const generateTextMock = vi.hoisted(() => vi.fn());
 
-vi.mock("../../../../../src/main/services/features/utility/utilityProcessBridge.js", () => ({
-  utilityProcessBridge: {
-    generateText: generateTextMock,
-  },
-}));
+vi.mock(
+  "../../../../../src/main/services/features/utility/utilityProcessBridge.js",
+  () => ({
+    utilityProcessBridge: {
+      generateText: generateTextMock,
+    },
+  }),
+);
 
 describe("classifyNarrativeMemoryQueryPlanWithLlm", () => {
   it("returns a validated route plan from LLM JSON", async () => {
@@ -20,9 +23,8 @@ describe("classifyNarrativeMemoryQueryPlanWithLlm", () => {
       }),
     });
 
-    const { classifyNarrativeMemoryQueryPlanWithLlm } = await import(
-      "../../../../../src/main/services/features/memory/query/internal/llmIntentClassifier.js"
-    );
+    const { classifyNarrativeMemoryQueryPlanWithLlm } =
+      await import("../../../../../src/main/services/features/memory/query/internal/llmIntentClassifier.js");
     const result = await classifyNarrativeMemoryQueryPlanWithLlm({
       projectId: "project-1",
       question: "10화 기준 아린과 백야회는 어떤 관계인가?",
@@ -57,9 +59,8 @@ describe("classifyNarrativeMemoryQueryPlanWithLlm", () => {
       }),
     });
 
-    const { classifyNarrativeMemoryQueryPlanWithLlm } = await import(
-      "../../../../../src/main/services/features/memory/query/internal/llmIntentClassifier.js"
-    );
+    const { classifyNarrativeMemoryQueryPlanWithLlm } =
+      await import("../../../../../src/main/services/features/memory/query/internal/llmIntentClassifier.js");
 
     await expect(
       classifyNarrativeMemoryQueryPlanWithLlm({

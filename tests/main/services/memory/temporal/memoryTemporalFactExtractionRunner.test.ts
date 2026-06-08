@@ -42,28 +42,31 @@ describe("processPendingTemporalFactExtraction", () => {
       order: 10,
       updatedAt: nowIso,
     });
-    await db.getClient().insert(memoryEntity).values([
-      {
-        id: arinId,
-        projectId,
-        entityType: "character",
-        canonicalName: "아린",
-        status: "confirmed",
-        confidence: 100,
-        createdBy: "system",
-        updatedAt: nowIso,
-      },
-      {
-        id: baekyaId,
-        projectId,
-        entityType: "faction",
-        canonicalName: "백야회",
-        status: "confirmed",
-        confidence: 100,
-        createdBy: "system",
-        updatedAt: nowIso,
-      },
-    ]);
+    await db
+      .getClient()
+      .insert(memoryEntity)
+      .values([
+        {
+          id: arinId,
+          projectId,
+          entityType: "character",
+          canonicalName: "아린",
+          status: "confirmed",
+          confidence: 100,
+          createdBy: "system",
+          updatedAt: nowIso,
+        },
+        {
+          id: baekyaId,
+          projectId,
+          entityType: "faction",
+          canonicalName: "백야회",
+          status: "confirmed",
+          confidence: 100,
+          createdBy: "system",
+          updatedAt: nowIso,
+        },
+      ]);
     await db.getClient().insert(memoryEpisode).values({
       id: episodeId,
       projectId,
@@ -96,10 +99,9 @@ describe("processPendingTemporalFactExtraction", () => {
 
     const extractor: MemoryTemporalFactExtractor = async (input) => {
       expect(input.evidence).toHaveLength(1);
-      expect(input.entities.map((entity) => entity.canonicalName).sort()).toEqual([
-        "아린",
-        "백야회",
-      ].sort());
+      expect(
+        input.entities.map((entity) => entity.canonicalName).sort(),
+      ).toEqual(["아린", "백야회"].sort());
       return [
         {
           subjectEntityId: arinId,

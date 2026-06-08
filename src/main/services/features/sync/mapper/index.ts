@@ -1,5 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { chooseLatest, mergeEntityList, mergeWorldDocs, toTimestamp } from "./entityMerge.js";
+import {
+  chooseLatest,
+  mergeEntityList,
+  mergeWorldDocs,
+  toTimestamp,
+} from "./entityMerge.js";
 import {
   createConflictSummary,
   getEntityBaselineTimestamp,
@@ -152,9 +157,7 @@ const stringifyMemoryRow = (row: Record<string, unknown>): string =>
 
 const buildMemoryConflictTitle = (row: SyncMemoryCanonicalRecord): string => {
   const canonicalId =
-    typeof row.row.id === "string" && row.row.id.trim()
-      ? row.row.id
-      : row.id;
+    typeof row.row.id === "string" && row.row.id.trim() ? row.row.id : row.id;
   return `${row.tableName}:${canonicalId}`;
 };
 

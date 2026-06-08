@@ -18,11 +18,11 @@ type LoggerLike = {
 };
 
 const loadAppearanceCacheService = async () =>
-  (await import("../../world/appearanceCacheService.js")).appearanceCacheService;
+  (await import("../../world/appearanceCacheService.js"))
+    .appearanceCacheService;
 
 const loadChapterSearchCacheService = async () =>
-  (await import("../../features/chapterSearchCacheService.js"))
-    .chapterSearchCacheService;
+  (await import("../../features/search/index.js")).chapterSearchCacheService;
 
 const clearSyncBaselineForProject = (projectId: string): void => {
   const syncSettings = settingsManager.getSyncSettings();
@@ -38,10 +38,18 @@ const clearSyncBaselineForProject = (projectId: string): void => {
 
 const purgeDerivedProjectRows = async (projectId: string): Promise<void> => {
   const client = db.getClient();
-  await client.delete(schema.memoryEmbedding).where(eq(schema.memoryEmbedding.projectId, projectId));
-  await client.delete(schema.memoryChunk).where(eq(schema.memoryChunk.projectId, projectId));
-  await client.delete(schema.memoryBuildJob).where(eq(schema.memoryBuildJob.projectId, projectId));
-  await client.delete(schema.searchDirtyQueue).where(eq(schema.searchDirtyQueue.projectId, projectId));
+  await client
+    .delete(schema.memoryEmbedding)
+    .where(eq(schema.memoryEmbedding.projectId, projectId));
+  await client
+    .delete(schema.memoryChunk)
+    .where(eq(schema.memoryChunk.projectId, projectId));
+  await client
+    .delete(schema.memoryBuildJob)
+    .where(eq(schema.memoryBuildJob.projectId, projectId));
+  await client
+    .delete(schema.searchDirtyQueue)
+    .where(eq(schema.searchDirtyQueue.projectId, projectId));
 };
 
 const clearProjectCaches = async (
@@ -68,7 +76,8 @@ const clearProjectCaches = async (
 };
 
 const ensureProjectExists = async (id: string): Promise<void> => {
-  const existingRows = await db.getClient()
+  const existingRows = await db
+    .getClient()
     .select({ id: schema.project.id })
     .from(schema.project)
     .where(eq(schema.project.id, id))
@@ -76,11 +85,9 @@ const ensureProjectExists = async (id: string): Promise<void> => {
   const existing = existingRows.length > 0 ? existingRows[0] : null;
 
   if (!existing?.id) {
-    throw new ServiceError(
-      ErrorCode.PROJECT_NOT_FOUND,
-      "Project not found",
-      { id },
-    );
+    throw new ServiceError(ErrorCode.PROJECT_NOT_FOUND, "Project not found", {
+      id,
+    });
   }
 };
 
@@ -106,17 +113,16 @@ export const deleteProjectRecord = async (
     queuedProjectDelete = true;
 
     await purgeDerivedProjectRows(request.id);
-    const deletedRows = await db.getClient()
+    const deletedRows = await db
+      .getClient()
       .delete(schema.project)
       .where(eq(schema.project.id, request.id))
       .returning({ id: schema.project.id });
 
     if (!deletedRows.length) {
-      throw new ServiceError(
-        ErrorCode.PROJECT_NOT_FOUND,
-        "Project not found",
-        { id: request.id },
-      );
+      throw new ServiceError(ErrorCode.PROJECT_NOT_FOUND, "Project not found", {
+        id: request.id,
+      });
     }
 
     await clearProjectCaches(request.id, "delete", logger);
@@ -149,17 +155,16 @@ export const removeProjectListRecord = async (
   try {
     await ensureProjectExists(id);
     await purgeDerivedProjectRows(id);
-    const deletedRows = await db.getClient()
+    const deletedRows = await db
+      .getClient()
       .delete(schema.project)
       .where(eq(schema.project.id, id))
       .returning({ id: schema.project.id });
 
     if (!deletedRows.length) {
-      throw new ServiceError(
-        ErrorCode.PROJECT_NOT_FOUND,
-        "Project not found",
-        { id },
-      );
+      throw new ServiceError(ErrorCode.PROJECT_NOT_FOUND, "Project not found", {
+        id,
+      });
     }
 
     await clearProjectCaches(id, "remove", logger);

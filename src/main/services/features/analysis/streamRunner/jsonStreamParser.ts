@@ -38,8 +38,12 @@ export const parseLooseJsonStream = ({
 
     if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
       const nextJson = Math.min(
-        trimmed.indexOf("{") === -1 ? Number.POSITIVE_INFINITY : trimmed.indexOf("{"),
-        trimmed.indexOf("[") === -1 ? Number.POSITIVE_INFINITY : trimmed.indexOf("["),
+        trimmed.indexOf("{") === -1
+          ? Number.POSITIVE_INFINITY
+          : trimmed.indexOf("{"),
+        trimmed.indexOf("[") === -1
+          ? Number.POSITIVE_INFINITY
+          : trimmed.indexOf("["),
       );
       if (nextJson === Number.POSITIVE_INFINITY) {
         buffer = "";
@@ -106,7 +110,11 @@ export const parseLooseJsonStream = ({
       if (shouldRethrowError(error)) {
         throw error;
       }
-      logger.warn("Failed to parse JSON", { error, jsonStr: jsonStr.slice(0, 200), phase });
+      logger.warn("Failed to parse JSON", {
+        error,
+        jsonStr: jsonStr.slice(0, 200),
+        phase,
+      });
     }
   }
 

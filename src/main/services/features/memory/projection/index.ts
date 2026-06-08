@@ -10,7 +10,4 @@ export {
   MAX_JOB_ATTEMPTS,
   yieldToEventLoop,
 } from "./jobPolicy.js";
-export {
-  collectMemorySourceRows,
-  type MemorySourceRow,
-} from "./sourceRows.js";
+export { collectMemorySourceRows, type MemorySourceRow } from "./sourceRows.js";

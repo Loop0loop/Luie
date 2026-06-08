@@ -77,12 +77,7 @@ class SyncRepository {
       rows.memoryCanonicalRows,
       "id,user_id",
     );
-    await upsertTable(
-      "tombstones",
-      accessToken,
-      rows.tombstones,
-      "id,user_id",
-    );
+    await upsertTable("tombstones", accessToken, rows.tombstones, "id,user_id");
   }
 }
 

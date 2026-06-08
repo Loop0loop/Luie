@@ -4,7 +4,8 @@ export const MEMORY_JOB_TYPES = {
   REBUILD_EMBEDDING: "rebuild_embedding",
 } as const;
 
-export type MemoryJobType = (typeof MEMORY_JOB_TYPES)[keyof typeof MEMORY_JOB_TYPES];
+export type MemoryJobType =
+  (typeof MEMORY_JOB_TYPES)[keyof typeof MEMORY_JOB_TYPES];
 
 export const MEMORY_TARGET_TYPES = {
   CHAPTER: "chapter",

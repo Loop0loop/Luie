@@ -5,7 +5,12 @@
 import { createHash, randomUUID } from "node:crypto";
 import { desc, eq } from "drizzle-orm";
 import { db } from "../../../infra/database/index.js";
-import { chapter, chapterBody, project, snapshot } from "../../../infra/database/index.js";
+import {
+  chapter,
+  chapterBody,
+  project,
+  snapshot,
+} from "../../../infra/database/index.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import {
   ErrorCode,
@@ -43,7 +48,10 @@ export class SnapshotService {
       | "snapshot:delete-old"
       | "snapshot:prune";
   }): Promise<void> {
-    await projectService.persistPackageAfterMutation(input.projectId, input.reason);
+    await projectService.persistPackageAfterMutation(
+      input.projectId,
+      input.reason,
+    );
   }
 
   private scheduleOrphanArtifactCleanup(): void {
@@ -117,17 +125,24 @@ export class SnapshotService {
       await writeFullSnapshotArtifact(snapshotId, input);
 
       const now = new Date().toISOString();
-      const [created] = await db.getClient().insert(snapshot).values({
-        id: snapshotId,
-        projectId: input.projectId,
-        chapterId: input.chapterId,
-        content: input.content,
-        contentLength,
-        type: snapshotType,
-        description: input.description,
-      }).returning();
+      const [created] = await db
+        .getClient()
+        .insert(snapshot)
+        .values({
+          id: snapshotId,
+          projectId: input.projectId,
+          chapterId: input.chapterId,
+          content: input.content,
+          contentLength,
+          type: snapshotType,
+          description: input.description,
+        })
+        .returning();
       db.getClient().transaction((tx) => {
-        tx.update(project).set({ updatedAt: now }).where(eq(project.id, input.projectId)).run();
+        tx.update(project)
+          .set({ updatedAt: now })
+          .where(eq(project.id, input.projectId))
+          .run();
       });
 
       logger.info("Snapshot created successfully", { snapshotId: created.id });
@@ -157,7 +172,12 @@ export class SnapshotService {
 
   async getSnapshot(id: string) {
     try {
-      const rows = await db.getClient().select().from(snapshot).where(eq(snapshot.id, id)).limit(1);
+      const rows = await db
+        .getClient()
+        .select()
+        .from(snapshot)
+        .where(eq(snapshot.id, id))
+        .limit(1);
       const found = rows[0] ?? null;
 
       if (!found) {
@@ -182,7 +202,12 @@ export class SnapshotService {
 
   async getSnapshotsByProject(projectId: string) {
     try {
-      const snapshots = await db.getClient().select().from(snapshot).where(eq(snapshot.projectId, projectId)).orderBy(desc(snapshot.createdAt));
+      const snapshots = await db
+        .getClient()
+        .select()
+        .from(snapshot)
+        .where(eq(snapshot.projectId, projectId))
+        .orderBy(desc(snapshot.createdAt));
 
       return snapshots;
     } catch (error) {
@@ -198,7 +223,12 @@ export class SnapshotService {
 
   async getSnapshotsByChapter(chapterId: string) {
     try {
-      const snapshots = await db.getClient().select().from(snapshot).where(eq(snapshot.chapterId, chapterId)).orderBy(desc(snapshot.createdAt));
+      const snapshots = await db
+        .getClient()
+        .select()
+        .from(snapshot)
+        .where(eq(snapshot.chapterId, chapterId))
+        .orderBy(desc(snapshot.createdAt));
 
       return snapshots;
     } catch (error) {
@@ -228,14 +258,22 @@ export class SnapshotService {
 
   async deleteSnapshot(id: string) {
     try {
-      const rows = await db.getClient().select({ projectId: snapshot.projectId }).from(snapshot).where(eq(snapshot.id, id)).limit(1);
+      const rows = await db
+        .getClient()
+        .select({ projectId: snapshot.projectId })
+        .from(snapshot)
+        .where(eq(snapshot.id, id))
+        .limit(1);
       const found = rows[0] ?? null;
 
       const now = new Date().toISOString();
       db.getClient().transaction((tx) => {
         tx.delete(snapshot).where(eq(snapshot.id, id)).run();
         if (found?.projectId) {
-          tx.update(project).set({ updatedAt: now }).where(eq(project.id, found.projectId)).run();
+          tx.update(project)
+            .set({ updatedAt: now })
+            .where(eq(project.id, found.projectId))
+            .run();
         }
       });
       this.queueOrphanArtifactCleanup(id);
@@ -261,7 +299,12 @@ export class SnapshotService {
 
   async restoreSnapshot(snapshotId: string) {
     try {
-      const rows = await db.getClient().select().from(snapshot).where(eq(snapshot.id, snapshotId)).limit(1);
+      const rows = await db
+        .getClient()
+        .select()
+        .from(snapshot)
+        .where(eq(snapshot.id, snapshotId))
+        .limit(1);
       const found = rows[0] ?? null;
 
       if (!found) {
@@ -284,21 +327,35 @@ export class SnapshotService {
       const nextContent =
         typeof found.content === "string" ? found.content : "";
 
-      const contentHash = createHash("sha256").update(nextContent).digest("hex");
+      const contentHash = createHash("sha256")
+        .update(nextContent)
+        .digest("hex");
       const now = new Date().toISOString();
       db.getClient().transaction((tx) => {
-        tx.update(chapter).set({
-          content: nextContent,
-          wordCount: nextContent.length,
-          updatedAt: now,
-        }).where(eq(chapter.id, chapterId)).run();
+        tx.update(chapter)
+          .set({
+            content: nextContent,
+            wordCount: nextContent.length,
+            updatedAt: now,
+          })
+          .where(eq(chapter.id, chapterId))
+          .run();
         tx.insert(chapterBody)
-          .values({ chapterId, content: nextContent, contentHash, updatedAt: now })
+          .values({
+            chapterId,
+            content: nextContent,
+            contentHash,
+            updatedAt: now,
+          })
           .onConflictDoUpdate({
             target: [chapterBody.chapterId],
             set: { content: nextContent, contentHash, updatedAt: now },
-          }).run();
-        tx.update(project).set({ updatedAt: now }).where(eq(project.id, found.projectId)).run();
+          })
+          .run();
+        tx.update(project)
+          .set({ updatedAt: now })
+          .where(eq(project.id, found.projectId))
+          .run();
       });
 
       logger.info("Snapshot restored successfully", {
@@ -374,12 +431,13 @@ export class SnapshotService {
   }
 
   async pruneSnapshotsAllProjects() {
-    const projects = await db.getClient().select({ id: project.id }).from(project);
+    const projects = await db
+      .getClient()
+      .select({ id: project.id })
+      .from(project);
 
     const results = await Promise.all(
-      projects.map((p) =>
-        this.pruneSnapshots(p.id),
-      ),
+      projects.map((p) => this.pruneSnapshots(p.id)),
     );
 
     const deletedCount = results.reduce(
@@ -392,7 +450,13 @@ export class SnapshotService {
 
   async getLatestSnapshot(chapterId: string) {
     try {
-      const rows = await db.getClient().select().from(snapshot).where(eq(snapshot.chapterId, chapterId)).orderBy(desc(snapshot.createdAt)).limit(1);
+      const rows = await db
+        .getClient()
+        .select()
+        .from(snapshot)
+        .where(eq(snapshot.chapterId, chapterId))
+        .orderBy(desc(snapshot.createdAt))
+        .limit(1);
       const found = rows[0] ?? null;
 
       return found;

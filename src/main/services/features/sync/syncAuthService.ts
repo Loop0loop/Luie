@@ -25,10 +25,7 @@ function getElectronSyncAuth(): {
 }
 import type { SyncProvider, SyncSettings } from "../../../../shared/types/index.js";
 import { settingsManager } from "../../../domains/settings/index.js";
-import {
-  getSupabaseConfig,
-  getSupabaseConfigOrThrow,
-} from "./supabaseEnv.js";
+import { getSupabaseConfig, getSupabaseConfigOrThrow } from "./supabaseEnv.js";
 
 const logger = createLogger("SyncAuthService");
 
@@ -170,8 +167,9 @@ const decodeSecret = (cipher: string, scope: SecretScope = "token"): DecodedSecr
     const raw = cipher.slice(TOKEN_CODEC_PLAIN_PREFIX.length);
     const payload = Buffer.from(raw, "base64");
     const plain = payload.toString("utf-8");
-    const migratedCipher =
-      electron.safeStorage?.isEncryptionAvailable() ? encryptSecret(plain, scope) : undefined;
+    const migratedCipher = electron.safeStorage?.isEncryptionAvailable()
+      ? encryptSecret(plain, scope)
+      : undefined;
     return {
       plain,
       migratedCipher,

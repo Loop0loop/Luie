@@ -17,10 +17,23 @@ describe("main embedding runtime boundary", () => {
   });
 
   it("does not expose the removed main embedding sidecar manager", () => {
-    expect(existsSync(resolve(process.cwd(), "src/main/services/llm/embeddingSidecarManager.ts"))).toBe(false);
+    expect(
+      existsSync(
+        resolve(
+          process.cwd(),
+          "src/main/services/llm/embeddingSidecarManager.ts",
+        ),
+      ),
+    ).toBe(false);
 
-    const barrelSource = readFileSync(resolve(process.cwd(), "src/main/services/llm/index.ts"), "utf8");
-    const analysisDomainSource = readFileSync(resolve(process.cwd(), "src/main/domains/analysis/index.ts"), "utf8");
+    const barrelSource = readFileSync(
+      resolve(process.cwd(), "src/main/services/llm/index.ts"),
+      "utf8",
+    );
+    const analysisDomainSource = readFileSync(
+      resolve(process.cwd(), "src/main/domains/analysis/index.ts"),
+      "utf8",
+    );
 
     expect(barrelSource).not.toContain("embeddingSidecarManager");
     expect(analysisDomainSource).not.toContain("resolveEmbeddingRuntimeClient");
@@ -29,7 +42,10 @@ describe("main embedding runtime boundary", () => {
 
   it("keeps background summary generation behind the utility process bridge", () => {
     const projectorSource = readFileSync(
-      resolve(process.cwd(), "src/main/services/features/memory/chapterSummaryProjector.ts"),
+      resolve(
+        process.cwd(),
+        "src/main/services/features/memory/chapterSummaryProjector.ts",
+      ),
       "utf8",
     );
 
@@ -40,11 +56,16 @@ describe("main embedding runtime boundary", () => {
 
   it("keeps LLM episode extraction wired through a gated derived worker path", () => {
     const workerSource = readFileSync(
-      resolve(process.cwd(), "src/main/services/features/derivedJobWorker.ts"),
+      resolve(
+        process.cwd(),
+        "src/main/services/features/derivedJobs/derivedJobWorker.ts",
+      ),
       "utf8",
     );
 
-    expect(workerSource).toContain("listProjectsWithPendingEpisodeExtractionJobs");
+    expect(workerSource).toContain(
+      "listProjectsWithPendingEpisodeExtractionJobs",
+    );
     expect(workerSource).toContain("processPendingLlmEpisodeExtractionJobs");
     expect(workerSource).toContain("episodeQueued");
     expect(workerSource).toContain("episodeProcessed");
@@ -52,11 +73,16 @@ describe("main embedding runtime boundary", () => {
 
   it("keeps LLM temporal fact extraction wired through a gated derived worker path", () => {
     const workerSource = readFileSync(
-      resolve(process.cwd(), "src/main/services/features/derivedJobWorker.ts"),
+      resolve(
+        process.cwd(),
+        "src/main/services/features/derivedJobs/derivedJobWorker.ts",
+      ),
       "utf8",
     );
 
-    expect(workerSource).toContain("listProjectsWithPendingTemporalFactEvidence");
+    expect(workerSource).toContain(
+      "listProjectsWithPendingTemporalFactEvidence",
+    );
     expect(workerSource).toContain("processPendingLlmTemporalFactExtraction");
     expect(workerSource).toContain("temporalFactProcessed");
   });

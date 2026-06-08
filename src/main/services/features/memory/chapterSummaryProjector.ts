@@ -1,7 +1,12 @@
 import crypto from "node:crypto";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../../infra/database/index.js";
-import { chapter, chapterBody, chapterSummary, memoryBuildJob } from "../../../infra/database/index.js";
+import {
+  chapter,
+  chapterBody,
+  chapterSummary,
+  memoryBuildJob,
+} from "../../../infra/database/index.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import { utilityProcessBridge } from "../utility/utilityProcessBridge.js";
 import { MEMORY_JOB_TYPES, MEMORY_TARGET_TYPES } from "./memoryJobConstants.js";
@@ -16,19 +21,26 @@ function isLlmDerivedSummaryEnabled(): boolean {
   return process.env.LUIE_ENABLE_LLM_DERIVED_SUMMARY === "1";
 }
 
-function canRetry(job: { status: string; attempts: number; updatedAt: string }): boolean {
+function canRetry(job: {
+  status: string;
+  attempts: number;
+  updatedAt: string;
+}): boolean {
   if (job.status === "pending") return true;
   if (job.status !== "failed") return false;
   if (job.attempts >= DERIVED_JOB_MAX_ATTEMPTS) return false;
   const updatedAtMs = Date.parse(job.updatedAt);
   if (!Number.isFinite(updatedAtMs)) return true;
-  const backoffMs = DERIVED_JOB_RETRY_BASE_BACKOFF_MS * Math.max(1, job.attempts);
+  const backoffMs =
+    DERIVED_JOB_RETRY_BASE_BACKOFF_MS * Math.max(1, job.attempts);
   return Date.now() - updatedAtMs >= backoffMs;
 }
 
 function trimTo200Chars(text: string): string {
   const normalized = text.replace(/\s+/g, " ").trim();
-  return normalized.length <= 200 ? normalized : `${normalized.slice(0, 200)}...`;
+  return normalized.length <= 200
+    ? normalized
+    : `${normalized.slice(0, 200)}...`;
 }
 
 function buildSummaryPrompt(content: string): string {
@@ -129,9 +141,13 @@ export class ChapterSummaryProjector {
       }
 
       try {
-        const content = String(source.bodyContent ?? source.chapterContent ?? "");
+        const content = String(
+          source.bodyContent ?? source.chapterContent ?? "",
+        );
         const contentHash = computeContentHash(content);
-        const existingContentHash = existingSummaryHashMap.get(source.chapterId);
+        const existingContentHash = existingSummaryHashMap.get(
+          source.chapterId,
+        );
         if (existingContentHash && existingContentHash === contentHash) {
           await client
             .update(memoryBuildJob)
@@ -155,19 +171,26 @@ export class ChapterSummaryProjector {
 
         if (isLlmDerivedSummaryEnabled()) {
           try {
-            const generated = await utilityProcessBridge.generateText(input.projectId, buildSummaryPrompt(content), {
-              maxTokens: 256,
-              temperature: 0.2,
-            });
+            const generated = await utilityProcessBridge.generateText(
+              input.projectId,
+              buildSummaryPrompt(content),
+              {
+                maxTokens: 256,
+                temperature: 0.2,
+              },
+            );
             summary = trimTo200Chars(generated.text);
             modelName = generated.providerName;
             isFallback = false;
           } catch (error) {
-            logger.warn("LLM-derived chapter summary failed; using fallback summary", {
-              projectId: input.projectId,
-              chapterId: source.chapterId,
-              error,
-            });
+            logger.warn(
+              "LLM-derived chapter summary failed; using fallback summary",
+              {
+                projectId: input.projectId,
+                chapterId: source.chapterId,
+                error,
+              },
+            );
           }
         }
 
@@ -238,7 +261,8 @@ export class ChapterSummaryProjector {
     model: string | null;
     generatedAt: string;
   } | null> {
-    const rows = await db.getClient()
+    const rows = await db
+      .getClient()
       .select({
         chapterId: chapterSummary.chapterId,
         summary: chapterSummary.summary,
@@ -260,7 +284,8 @@ export class ChapterSummaryProjector {
     failedCount: number;
     completedCount: number;
   }> {
-    const rows = await db.getClient()
+    const rows = await db
+      .getClient()
       .select({
         status: memoryBuildJob.status,
         count: sql<number>`count(*)`,
@@ -273,7 +298,9 @@ export class ChapterSummaryProjector {
         ),
       )
       .groupBy(memoryBuildJob.status);
-    const grouped = new Map(rows.map((row) => [row.status, Number(row.count ?? 0)]));
+    const grouped = new Map(
+      rows.map((row) => [row.status, Number(row.count ?? 0)]),
+    );
     return {
       projectId,
       pendingCount: grouped.get("pending") ?? 0,

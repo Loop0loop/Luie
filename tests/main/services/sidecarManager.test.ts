@@ -4,17 +4,23 @@ const startSidecarMock = vi.hoisted(() => vi.fn());
 const stopSidecarMock = vi.hoisted(() => vi.fn());
 const rmMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 
-vi.mock("../../../src/main/services/features/utility/utilityProcessBridge.js", () => {
-  return {
-    utilityProcessBridge: {
-      startSidecar: startSidecarMock,
-      stopSidecar: stopSidecarMock,
-    },
-  };
-});
+vi.mock(
+  "../../../src/main/services/features/utility/utilityProcessBridge.js",
+  () => {
+    return {
+      utilityProcessBridge: {
+        startSidecar: startSidecarMock,
+        stopSidecar: stopSidecarMock,
+      },
+    };
+  },
+);
 
 vi.mock("node:fs/promises", async () => {
-  const actual = await vi.importActual("node:fs/promises") as Record<string, unknown>;
+  const actual = (await vi.importActual("node:fs/promises")) as Record<
+    string,
+    unknown
+  >;
   return {
     ...actual,
     rm: rmMock,
@@ -57,17 +63,25 @@ describe("SidecarManager", () => {
   it("spawns llama-server via utilityProcessBridge proxy", async () => {
     const manager = new SidecarManager();
 
-    const baseUrl = await manager.ensureStarted("/tmp/bin/llama-server", "/tmp/model.gguf", {
-      gpuLayers: -1,
-      contextSize: 4096,
-    });
+    const baseUrl = await manager.ensureStarted(
+      "/tmp/bin/llama-server",
+      "/tmp/model.gguf",
+      {
+        gpuLayers: -1,
+        contextSize: 4096,
+      },
+    );
 
     expect(baseUrl).toBe("http://127.0.0.1:32123");
     expect(startSidecarMock).toHaveBeenCalledTimes(1);
-    expect(startSidecarMock).toHaveBeenCalledWith("/tmp/bin/llama-server", "/tmp/model.gguf", expect.objectContaining({
-      gpuLayers: -1,
-      contextSize: 4096,
-    }));
+    expect(startSidecarMock).toHaveBeenCalledWith(
+      "/tmp/bin/llama-server",
+      "/tmp/model.gguf",
+      expect.objectContaining({
+        gpuLayers: -1,
+        contextSize: 4096,
+      }),
+    );
 
     await manager.stop();
     expect(stopSidecarMock).toHaveBeenCalledTimes(1);
@@ -95,13 +109,20 @@ describe("SidecarManager", () => {
     const manager = new SidecarManager();
     vi.spyOn(manager, "getBinDir").mockReturnValue("/tmp/corrupted-bin");
 
-    await expect(manager.ensureStarted("/tmp/bin/llama-server", "/tmp/model.gguf")).rejects.toThrow("spawn ENOENT");
+    await expect(
+      manager.ensureStarted("/tmp/bin/llama-server", "/tmp/model.gguf"),
+    ).rejects.toThrow("spawn ENOENT");
 
-    expect(setLocalLlmSettingsMock).toHaveBeenCalledWith(expect.objectContaining({
-      enabled: false,
-      binaryPath: undefined,
-    }));
-    
-    expect(rmMock).toHaveBeenCalledWith("/tmp/corrupted-bin", { recursive: true, force: true });
+    expect(setLocalLlmSettingsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        enabled: false,
+        binaryPath: undefined,
+      }),
+    );
+
+    expect(rmMock).toHaveBeenCalledWith("/tmp/corrupted-bin", {
+      recursive: true,
+      force: true,
+    });
   });
 });

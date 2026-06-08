@@ -21,7 +21,7 @@ import {
 import { getProjectAttachmentPath } from "../../../core/project/projectAttachmentStore.js";
 import { buildMemoryCanonicalPackagePayload } from "./memoryCanonicalPackage.js";
 
-type AuditTableName = typeof MEMORY_CANONICAL_EXPORTABLE_TABLES[number];
+type AuditTableName = (typeof MEMORY_CANONICAL_EXPORTABLE_TABLES)[number];
 
 export type MemoryCanonicalExportTableAudit = {
   runtimeRows: number;
@@ -82,12 +82,17 @@ export async function getMemoryCanonicalExportAudit(input: {
     let exportableRows = 0;
     for (const row of rows) {
       const status =
-        "status" in row && typeof row.status === "string" ? row.status : "no_status";
+        "status" in row && typeof row.status === "string"
+          ? row.status
+          : "no_status";
       byStatus[status] = (byStatus[status] ?? 0) + 1;
       if (
         isMemoryRowExportable({
           tableName,
-          status: "status" in row && typeof row.status === "string" ? row.status : undefined,
+          status:
+            "status" in row && typeof row.status === "string"
+              ? row.status
+              : undefined,
         })
       ) {
         exportableRows += 1;

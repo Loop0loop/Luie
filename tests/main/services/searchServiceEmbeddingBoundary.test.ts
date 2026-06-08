@@ -5,7 +5,10 @@ import { describe, expect, it } from "vitest";
 describe("searchService embedding process boundary", () => {
   it("uses utilityProcessBridge for query embeddings instead of main runtime materialization", () => {
     const source = readFileSync(
-      resolve(process.cwd(), "src/main/services/features/searchService.ts"),
+      resolve(
+        process.cwd(),
+        "src/main/services/features/search/searchService.ts",
+      ),
       "utf8",
     );
 

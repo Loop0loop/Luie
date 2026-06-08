@@ -90,7 +90,9 @@ describe("llmfitService.parseOutput", () => {
   it("returns null for JSON that does not match the schema", () => {
     expect(svc.parseOutput(JSON.stringify({ foo: "bar" }), 10)).toBeNull();
     // models 항목에 name(string) 누락
-    expect(svc.parseOutput(JSON.stringify({ models: [{ provider: "x" }] }), 10)).toBeNull();
+    expect(
+      svc.parseOutput(JSON.stringify({ models: [{ provider: "x" }] }), 10),
+    ).toBeNull();
   });
 
   it("ignores unknown fields (forward-compatible)", () => {

@@ -30,17 +30,21 @@ export class CharacterService {
       logger.info("Creating character", input);
 
       const now = new Date().toISOString();
-      const [result] = await db.getClient().insert(character).values({
-        id: crypto.randomUUID(),
-        projectId: input.projectId,
-        name: input.name,
-        description: input.description ?? null,
-        firstAppearance: input.firstAppearance ?? null,
-        attributes: input.attributes
-          ? JSON.stringify(input.attributes)
-          : null,
-        updatedAt: now,
-      }).returning();
+      const [result] = await db
+        .getClient()
+        .insert(character)
+        .values({
+          id: crypto.randomUUID(),
+          projectId: input.projectId,
+          name: input.name,
+          description: input.description ?? null,
+          firstAppearance: input.firstAppearance ?? null,
+          attributes: input.attributes
+            ? JSON.stringify(input.attributes)
+            : null,
+          updatedAt: now,
+        })
+        .returning();
 
       if (!result) {
         throw new ServiceError(
@@ -58,7 +62,10 @@ export class CharacterService {
         includeTerms: false,
       });
       await projectService.touchProject(input.projectId);
-      await projectService.persistPackageAfterMutation(input.projectId, "character:create");
+      await projectService.persistPackageAfterMutation(
+        input.projectId,
+        "character:create",
+      );
       return result;
     } catch (error) {
       logger.error("Failed to create character", error);
@@ -74,7 +81,12 @@ export class CharacterService {
 
   async getCharacter(id: string) {
     try {
-      const results = await db.getClient().select().from(character).where(eq(character.id, id)).limit(1);
+      const results = await db
+        .getClient()
+        .select()
+        .from(character)
+        .where(eq(character.id, id))
+        .limit(1);
 
       if (results.length === 0) {
         throw new ServiceError(
@@ -108,7 +120,14 @@ export class CharacterService {
 
   async getAllCharacters(projectId: string) {
     try {
-      const results = await db.getClient().select().from(character).where(and(eq(character.projectId, projectId), isNull(character.deletedAt))).orderBy(asc(character.createdAt));
+      const results = await db
+        .getClient()
+        .select()
+        .from(character)
+        .where(
+          and(eq(character.projectId, projectId), isNull(character.deletedAt)),
+        )
+        .orderBy(asc(character.createdAt));
 
       return results;
     } catch (error) {
@@ -135,7 +154,16 @@ export class CharacterService {
         updateData.attributes = JSON.stringify(input.attributes);
       }
 
-      const currentResults = await db.getClient().select({ id: character.id, projectId: character.projectId, deletedAt: character.deletedAt }).from(character).where(eq(character.id, input.id)).limit(1);
+      const currentResults = await db
+        .getClient()
+        .select({
+          id: character.id,
+          projectId: character.projectId,
+          deletedAt: character.deletedAt,
+        })
+        .from(character)
+        .where(eq(character.id, input.id))
+        .limit(1);
       const current = currentResults[0];
       if (!current || current.deletedAt) {
         throw new ServiceError(
@@ -145,7 +173,12 @@ export class CharacterService {
         );
       }
 
-      const [updated] = await db.getClient().update(character).set(updateData).where(eq(character.id, input.id)).returning();
+      const [updated] = await db
+        .getClient()
+        .update(character)
+        .set(updateData)
+        .where(eq(character.id, input.id))
+        .returning();
 
       if (!updated) {
         throw new ServiceError(
@@ -165,7 +198,10 @@ export class CharacterService {
         });
       }
       await projectService.touchProject(String(updated.projectId));
-      await projectService.persistPackageAfterMutation(String(updated.projectId), "character:update");
+      await projectService.persistPackageAfterMutation(
+        String(updated.projectId),
+        "character:update",
+      );
       return updated;
     } catch (error) {
       logger.error("Failed to update character", error);
@@ -181,7 +217,15 @@ export class CharacterService {
 
   async deleteCharacter(id: string) {
     try {
-      const currentResults = await db.getClient().select({ projectId: character.projectId, deletedAt: character.deletedAt }).from(character).where(eq(character.id, id)).limit(1);
+      const currentResults = await db
+        .getClient()
+        .select({
+          projectId: character.projectId,
+          deletedAt: character.deletedAt,
+        })
+        .from(character)
+        .where(eq(character.id, id))
+        .limit(1);
       const current = currentResults[0];
 
       const projectId = current?.projectId ?? null;
@@ -189,9 +233,20 @@ export class CharacterService {
 
       db.getClient().transaction((tx) => {
         if (projectId) {
-          tx.delete(entityRelation).where(or(eq(entityRelation.sourceId, id), eq(entityRelation.targetId, id))).run();
+          tx.delete(entityRelation)
+            .where(
+              or(
+                eq(entityRelation.sourceId, id),
+                eq(entityRelation.targetId, id),
+              ),
+            )
+            .run();
         }
-        const result = tx.update(character).set({ deletedAt: now, updatedAt: now }).where(eq(character.id, id)).run();
+        const result = tx
+          .update(character)
+          .set({ deletedAt: now, updatedAt: now })
+          .where(eq(character.id, id))
+          .run();
         if (!result) {
           throw new ServiceError(
             ErrorCode.CHARACTER_NOT_FOUND,
@@ -206,7 +261,10 @@ export class CharacterService {
       logger.info("Character deleted successfully", { characterId: id });
       if (projectId) {
         await projectService.touchProject(projectId);
-        await projectService.persistPackageAfterMutation(projectId, "character:delete");
+        await projectService.persistPackageAfterMutation(
+          projectId,
+          "character:delete",
+        );
       }
       return { success: true };
     } catch (error) {
@@ -253,10 +311,14 @@ export class CharacterService {
       const characterIds = Array.from(
         new Set(appearances.map((appearance) => appearance.characterId)),
       );
-      const characters = await db.getClient().select().from(character).where(and(inArray(character.id, characterIds), isNull(character.deletedAt)));
-      const characterById = new Map(
-        characters.map((c) => [c.id, c]),
-      );
+      const characters = await db
+        .getClient()
+        .select()
+        .from(character)
+        .where(
+          and(inArray(character.id, characterIds), isNull(character.deletedAt)),
+        );
+      const characterById = new Map(characters.map((c) => [c.id, c]));
 
       return appearances.map((appearance) => ({
         ...appearance,
@@ -275,7 +337,12 @@ export class CharacterService {
 
   async updateFirstAppearance(characterId: string, chapterId: string) {
     try {
-      const results = await db.getClient().select().from(character).where(eq(character.id, characterId)).limit(1);
+      const results = await db
+        .getClient()
+        .select()
+        .from(character)
+        .where(eq(character.id, characterId))
+        .limit(1);
       const char = results[0];
 
       if (!char || char.deletedAt) {
@@ -287,11 +354,18 @@ export class CharacterService {
       }
 
       if (!char.firstAppearance) {
-        await db.getClient().update(character).set({ firstAppearance: chapterId }).where(eq(character.id, characterId));
+        await db
+          .getClient()
+          .update(character)
+          .set({ firstAppearance: chapterId })
+          .where(eq(character.id, characterId));
 
         logger.info("First appearance updated", { characterId, chapterId });
         await projectService.touchProject(String(char.projectId));
-        await projectService.persistPackageAfterMutation(String(char.projectId), "character:update-first-appearance");
+        await projectService.persistPackageAfterMutation(
+          String(char.projectId),
+          "character:update-first-appearance",
+        );
       }
     } catch (error) {
       logger.error("Failed to update first appearance", error);
@@ -308,7 +382,21 @@ export class CharacterService {
   async searchCharacters(projectId: string, query: string) {
     try {
       const searchPattern = `%${escapeLike(query)}%`;
-      const results = await db.getClient().select().from(character).where(and(eq(character.projectId, projectId), or(like(character.name, searchPattern), like(character.description, searchPattern)), isNull(character.deletedAt))).orderBy(asc(character.name));
+      const results = await db
+        .getClient()
+        .select()
+        .from(character)
+        .where(
+          and(
+            eq(character.projectId, projectId),
+            or(
+              like(character.name, searchPattern),
+              like(character.description, searchPattern),
+            ),
+            isNull(character.deletedAt),
+          ),
+        )
+        .orderBy(asc(character.name));
 
       return results;
     } catch (error) {

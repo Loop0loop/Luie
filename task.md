@@ -409,3 +409,40 @@
 - `pnpm run check:ipc-contract-map` passed and regenerated `docs/quality/ipc-contract-map.json` to the new lifecycle file paths.
 - `src/main/utils` root contains only `index.ts`.
 - `src/main/lifecycle` root contains only `index.ts`.
+
+### Follow-up: Main Feature Service Domain Grouping
+
+**Status:** Completed
+
+**Changes made:**
+
+- Moved flat implementation files under `src/main/services/features` into service domains:
+  - `dbMaintenance/`
+  - `derivedJobs/`
+  - `export/`
+  - `graphPlugin/`
+  - `recovery/`
+  - `search/`
+  - `startup/`
+  - `worldReplica/`
+- Added `src/main/services/features/index.ts` as the feature service public export hub.
+- Kept `src/main/services/features` root with only `index.ts`.
+- Updated main service exports, domain exports, lifecycle/app startup entries, core/world service imports, and tests to use domain entries.
+- Preserved public class exports where tests and callers instantiate services directly, including `DbRecoveryService`.
+- Updated `worldReplicaService` unit test mocks from the stale Prisma shape to the current Drizzle-style service API.
+- Updated `docs/architecture/current-main.md` and `docs/architecture/migration-map.md` to document the feature service domain layout and new paths.
+
+**Verification:**
+
+- `pnpm run typecheck` passed.
+- `pnpm run check:source-loc` passed.
+- `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/exportService.test.ts` passed.
+- `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/graphPluginService.test.ts tests/main/services/startupReadinessService.test.ts` passed.
+- `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/dbRecoveryService.test.ts` passed.
+- `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/worldReplicaService.test.ts` passed.
+- `src/main/services/features` root contains only `index.ts`.
+
+**Blocked verification:**
+
+- `pnpm vitest tests/main/services/dbMaintenanceService.test.ts` is blocked by local `better-sqlite3` native ABI mismatch (`NODE_MODULE_VERSION 146` binary loaded from a Node runtime requiring `NODE_MODULE_VERSION 127`).
+- `pnpm vitest tests/main/services/searchServiceFallback.test.ts` is blocked by the same local `better-sqlite3` native ABI mismatch.

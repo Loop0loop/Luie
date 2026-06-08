@@ -1,6 +1,9 @@
 import { eq } from "drizzle-orm";
 import { cacheDb } from "../../infra/database/cache.js";
-import { characterAppearance, termAppearance } from "../../infra/database/cache.js";
+import {
+  characterAppearance,
+  termAppearance,
+} from "../../infra/database/cache.js";
 
 const getCacheClient = () => cacheDb.getClient();
 
@@ -142,7 +145,9 @@ class AppearanceCacheService {
   async clearChapter(chapterId: string): Promise<void> {
     const db = getCacheClient();
     await Promise.all([
-      db.delete(characterAppearance).where(eq(characterAppearance.chapterId, chapterId)),
+      db
+        .delete(characterAppearance)
+        .where(eq(characterAppearance.chapterId, chapterId)),
       db.delete(termAppearance).where(eq(termAppearance.chapterId, chapterId)),
     ]);
   }
@@ -164,7 +169,9 @@ class AppearanceCacheService {
   async clearProject(projectId: string): Promise<void> {
     const db = getCacheClient();
     await Promise.all([
-      db.delete(characterAppearance).where(eq(characterAppearance.projectId, projectId)),
+      db
+        .delete(characterAppearance)
+        .where(eq(characterAppearance.projectId, projectId)),
       db.delete(termAppearance).where(eq(termAppearance.projectId, projectId)),
     ]);
   }
@@ -192,9 +199,7 @@ class AppearanceCacheService {
 
   async clearTermEntity(termId: string): Promise<void> {
     const db = getCacheClient();
-    await db
-      .delete(termAppearance)
-      .where(eq(termAppearance.termId, termId));
+    await db.delete(termAppearance).where(eq(termAppearance.termId, termId));
   }
 }
 

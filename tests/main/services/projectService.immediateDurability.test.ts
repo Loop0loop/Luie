@@ -4,9 +4,12 @@
 
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("../../../src/main/services/core/project/projectAttachmentStore.js", () => ({
-  getProjectAttachmentPath: vi.fn(async () => "/tmp/project-1.luie"),
-}));
+vi.mock(
+  "../../../src/main/services/core/project/projectAttachmentStore.js",
+  () => ({
+    getProjectAttachmentPath: vi.fn(async () => "/tmp/project-1.luie"),
+  }),
+);
 
 import { ProjectService } from "../../../src/main/services/core/projectService.js";
 

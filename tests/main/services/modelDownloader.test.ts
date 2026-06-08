@@ -21,7 +21,9 @@ async function makeTempDir(): Promise<string> {
 
 afterEach(async () => {
   vi.restoreAllMocks();
-  await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
+  await Promise.all(
+    tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })),
+  );
 });
 
 async function createZip(entries: Record<string, string>): Promise<Buffer> {
@@ -44,33 +46,35 @@ describe("modelDownloader", () => {
       const parsed = new URL(url);
       expect(parsed.searchParams.get("search")).toBe("Qwen 2.5");
       expect(parsed.searchParams.get("filter")).toBe("gguf");
-      return new Response(JSON.stringify([
-        {
-          id: "Qwen/Qwen2.5-1.5B-Instruct-GGUF",
-          downloads: 1234,
-          likes: 56,
-          lastModified: "2026-05-01T00:00:00.000Z",
-          tags: ["gguf", "text-generation"],
-        },
-        {
-          modelId: "broken/no-numbers",
-          downloads: "not-a-number",
-          likes: null,
-          tags: ["gguf"],
-        },
-        {
-          id: "private/hidden",
-          private: true,
-          downloads: 9999,
-          likes: 999,
-        },
-        {
-          id: "gated/hidden",
-          gated: "manual",
-          downloads: 9999,
-          likes: 999,
-        },
-      ]));
+      return new Response(
+        JSON.stringify([
+          {
+            id: "Qwen/Qwen2.5-1.5B-Instruct-GGUF",
+            downloads: 1234,
+            likes: 56,
+            lastModified: "2026-05-01T00:00:00.000Z",
+            tags: ["gguf", "text-generation"],
+          },
+          {
+            modelId: "broken/no-numbers",
+            downloads: "not-a-number",
+            likes: null,
+            tags: ["gguf"],
+          },
+          {
+            id: "private/hidden",
+            private: true,
+            downloads: 9999,
+            likes: 999,
+          },
+          {
+            id: "gated/hidden",
+            gated: "manual",
+            downloads: 9999,
+            likes: 999,
+          },
+        ]),
+      );
     });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -92,51 +96,73 @@ describe("modelDownloader", () => {
   });
 
   it("returns no files for token-gated Hugging Face model repos", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response("Unauthorized", { status: 401 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("Unauthorized", { status: 401 })),
+    );
 
-    await expect(getHfModelFiles("gated/private-model")).rejects.toThrow("Hugging Face access denied");
+    await expect(getHfModelFiles("gated/private-model")).rejects.toThrow(
+      "Hugging Face access denied",
+    );
   });
 
   it("returns access error for forbidden Hugging Face model repos", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response("Forbidden", { status: 403 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("Forbidden", { status: 403 })),
+    );
 
-    await expect(getHfModelFiles("gated/private-model")).rejects.toThrow("Hugging Face access denied");
+    await expect(getHfModelFiles("gated/private-model")).rejects.toThrow(
+      "Hugging Face access denied",
+    );
   });
 
   it("fails fast when repo id format is invalid", async () => {
-    await expect(getHfModelFiles("owner/model name")).rejects.toThrow("Invalid Hugging Face repoId");
+    await expect(getHfModelFiles("owner/model name")).rejects.toThrow(
+      "Invalid Hugging Face repoId",
+    );
   });
 
   it("normalizes huggingface repo URL input before requesting files", async () => {
     const fetchMock = vi.fn(async (url: string) => {
-      expect(url).toBe("https://huggingface.co/api/models/Qwen/Qwen2.5-1.5B-Instruct-GGUF");
-      return new Response(JSON.stringify({
-        siblings: [{ rfilename: "model.gguf", size: 10 }],
-      }));
+      expect(url).toBe(
+        "https://huggingface.co/api/models/Qwen/Qwen2.5-1.5B-Instruct-GGUF",
+      );
+      return new Response(
+        JSON.stringify({
+          siblings: [{ rfilename: "model.gguf", size: 10 }],
+        }),
+      );
     });
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(
-      getHfModelFiles("https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/tree/main?x=1"),
+      getHfModelFiles(
+        "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/tree/main?x=1",
+      ),
     ).resolves.toEqual([{ filename: "model.gguf", sizeBytes: 10 }]);
   });
 
   it("throws for invalid huggingface repo id", async () => {
     vi.stubGlobal("fetch", vi.fn());
-    await expect(getHfModelFiles("not-a-valid-repo")).rejects.toThrow("Invalid Hugging Face repoId");
+    await expect(getHfModelFiles("not-a-valid-repo")).rejects.toThrow(
+      "Invalid Hugging Face repoId",
+    );
   });
 
   it("lists only GGUF files from a Hugging Face model repo", async () => {
     const fetchMock = vi.fn(async (url: string) => {
       expect(url).toBe("https://huggingface.co/api/models/Qwen/Repo-GGUF");
-      return new Response(JSON.stringify({
-        siblings: [
-          { rfilename: "model-q4_k_m.gguf", size: 1024 },
-          { rfilename: "README.md", size: 32 },
-          { rfilename: "nested/model-q8_0.GGUF", size: 2048 },
-          { rfilename: "missing-size.gguf" },
-        ],
-      }));
+      return new Response(
+        JSON.stringify({
+          siblings: [
+            { rfilename: "model-q4_k_m.gguf", size: 1024 },
+            { rfilename: "README.md", size: 32 },
+            { rfilename: "nested/model-q8_0.GGUF", size: 2048 },
+            { rfilename: "missing-size.gguf" },
+          ],
+        }),
+      );
     });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -149,25 +175,35 @@ describe("modelDownloader", () => {
 
   it("removes the downloaded zip when its sha256 does not match", async () => {
     const destDir = await makeTempDir();
-    const fetchMock = vi.fn(async () => new Response(new Uint8Array([1, 2, 3])));
+    const fetchMock = vi.fn(
+      async () => new Response(new Uint8Array([1, 2, 3])),
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(
       downloadLlamaServerBinary({
         zipUrl: "https://example.test/llama.zip",
-        expectedSha256: "0000000000000000000000000000000000000000000000000000000000000000",
+        expectedSha256:
+          "0000000000000000000000000000000000000000000000000000000000000000",
         destDir,
         binaryNameInZip: "llama-server",
       }),
     ).rejects.toThrow(/SHA256 mismatch/);
 
-    await expect(readFile(path.join(destDir, "llama-server.zip"))).rejects.toThrow();
-    await expect(readFile(path.join(destDir, "llama-server.zip.tmp"))).rejects.toThrow();
+    await expect(
+      readFile(path.join(destDir, "llama-server.zip")),
+    ).rejects.toThrow();
+    await expect(
+      readFile(path.join(destDir, "llama-server.zip.tmp")),
+    ).rejects.toThrow();
   });
 
   it("returns an existing binary path without downloading", async () => {
     const destDir = await makeTempDir();
-    const binaryPath = path.join(destDir, process.platform === "win32" ? "llama-server.exe" : "llama-server");
+    const binaryPath = path.join(
+      destDir,
+      process.platform === "win32" ? "llama-server.exe" : "llama-server",
+    );
     await writeFile(binaryPath, "existing");
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
@@ -191,7 +227,10 @@ describe("modelDownloader", () => {
       "build/bin/libmtmd.dylib": "dylib",
     });
     const expectedSha256 = createHash("sha256").update(zipBytes).digest("hex");
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(zipBytes)));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(zipBytes)),
+    );
 
     const binaryPath = await downloadLlamaServerBinary({
       zipUrl: "https://example.test/llama.zip",
@@ -201,30 +240,41 @@ describe("modelDownloader", () => {
     });
 
     await expect(readFile(binaryPath, "utf8")).resolves.toBe("server");
-    await expect(readFile(path.join(destDir, "libmtmd.dylib"), "utf8")).resolves.toBe("dylib");
+    await expect(
+      readFile(path.join(destDir, "libmtmd.dylib"), "utf8"),
+    ).resolves.toBe("dylib");
   });
 
   it("removes a downloaded gguf when sha256 does not match", async () => {
     const destDir = await makeTempDir();
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(Buffer.from("gguf-bytes"))));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(Buffer.from("gguf-bytes"))),
+    );
 
     await expect(
       downloadGguf({
         repo: "Qwen/Qwen2.5-1.5B-Instruct-GGUF",
         filename: "qwen2.5-1.5b-instruct-q8_0.gguf",
-        expectedSha256: "0000000000000000000000000000000000000000000000000000000000000000",
+        expectedSha256:
+          "0000000000000000000000000000000000000000000000000000000000000000",
         destDir,
       }),
     ).rejects.toThrow(/SHA256 mismatch for GGUF/);
 
-    await expect(readFile(path.join(destDir, "qwen2.5-1.5b-instruct-q8_0.gguf"))).rejects.toThrow();
+    await expect(
+      readFile(path.join(destDir, "qwen2.5-1.5b-instruct-q8_0.gguf")),
+    ).rejects.toThrow();
   });
 
   it("accepts gguf when sha256 matches", async () => {
     const destDir = await makeTempDir();
     const bytes = Buffer.from("gguf-bytes-ok");
     const expectedSha256 = createHash("sha256").update(bytes).digest("hex");
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(bytes)));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(bytes)),
+    );
 
     const modelPath = await downloadGguf({
       repo: "Qwen/Qwen2.5-1.5B-Instruct-GGUF",

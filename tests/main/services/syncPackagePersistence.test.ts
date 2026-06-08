@@ -119,7 +119,10 @@ describe("syncPackagePersistence", () => {
 
     const hydrateMissingWorldDocsFromPackage = vi.fn(
       async (
-        worldDocs: Map<SyncBundle["worldDocuments"][number]["docType"], unknown>,
+        worldDocs: Map<
+          SyncBundle["worldDocuments"][number]["docType"],
+          unknown
+        >,
         _projectPath: string,
         skippedDocTypes?: Set<SyncBundle["worldDocuments"][number]["docType"]>,
       ) => {

@@ -226,12 +226,16 @@ export async function getMemoryReviewBacklogReport(input: {
     generatedAt: new Date().toISOString(),
     entityCandidates: entities.map((entity) => ({
       ...entity,
-      mentionCount: entityMentions.filter((mention) => mention.entityId === entity.id).length,
+      mentionCount: entityMentions.filter(
+        (mention) => mention.entityId === entity.id,
+      ).length,
       mentions: mentionsByEntity.get(entity.id) ?? [],
     })),
     factCandidates: facts.map((fact) => ({
       ...fact,
-      evidenceCount: factEvidence.filter((evidence) => evidence.factId === fact.id).length,
+      evidenceCount: factEvidence.filter(
+        (evidence) => evidence.factId === fact.id,
+      ).length,
       evidence: evidenceByFact.get(fact.id) ?? [],
     })),
     counts: {

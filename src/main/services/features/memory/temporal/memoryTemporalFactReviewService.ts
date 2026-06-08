@@ -59,7 +59,12 @@ export async function listSuggestedMemoryTemporalFacts(
       ),
     )
     .leftJoin(memoryFactEvidence, eq(memoryFactEvidence.factId, memoryFact.id))
-    .where(and(eq(memoryFact.projectId, input.projectId), eq(memoryFact.status, "suggested")))
+    .where(
+      and(
+        eq(memoryFact.projectId, input.projectId),
+        eq(memoryFact.status, "suggested"),
+      ),
+    )
     .groupBy(memoryFact.id)
     .orderBy(desc(memoryFact.updatedAt))
     .limit(limit);

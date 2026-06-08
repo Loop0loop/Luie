@@ -1,7 +1,11 @@
 import crypto from "node:crypto";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../../infra/database/index.js";
-import { memoryBuildJob, memoryChunk, memoryEmbedding } from "../../../infra/database/index.js";
+import {
+  memoryBuildJob,
+  memoryChunk,
+  memoryEmbedding,
+} from "../../../infra/database/index.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import { utilityProcessBridge } from "../utility/utilityProcessBridge.js";
 import { MEMORY_JOB_TYPES } from "./memoryJobConstants.js";
@@ -14,13 +18,18 @@ import {
 const logger = createLogger("EmbeddingProjector");
 const RUNNING_STALE_MS = 5 * 60_000;
 
-function canRetry(job: { status: string; attempts: number; updatedAt: string }): boolean {
+function canRetry(job: {
+  status: string;
+  attempts: number;
+  updatedAt: string;
+}): boolean {
   if (job.status === "pending") return true;
   if (job.status !== "failed") return false;
   if (job.attempts >= DERIVED_JOB_MAX_ATTEMPTS) return false;
   const updatedAtMs = Date.parse(job.updatedAt);
   if (!Number.isFinite(updatedAtMs)) return true;
-  const backoffMs = DERIVED_JOB_RETRY_BASE_BACKOFF_MS * Math.max(1, job.attempts);
+  const backoffMs =
+    DERIVED_JOB_RETRY_BASE_BACKOFF_MS * Math.max(1, job.attempts);
   return Date.now() - updatedAtMs >= backoffMs;
 }
 
@@ -50,7 +59,9 @@ export class EmbeddingProjector {
     limit?: number;
   }): Promise<{ queued: number; processed: number }> {
     const client = db.getClient();
-    const staleRunningCutoffIso = new Date(Date.now() - RUNNING_STALE_MS).toISOString();
+    const staleRunningCutoffIso = new Date(
+      Date.now() - RUNNING_STALE_MS,
+    ).toISOString();
     await client
       .update(memoryBuildJob)
       .set({
@@ -163,7 +174,12 @@ export class EmbeddingProjector {
           status: "pending",
           updatedAt: now,
         })
-        .where(inArray(memoryBuildJob.id, jobsWithoutChunks.map((job) => job.id)));
+        .where(
+          inArray(
+            memoryBuildJob.id,
+            jobsWithoutChunks.map((job) => job.id),
+          ),
+        );
     }
 
     const readyJobs = claimedJobs.filter(
@@ -173,7 +189,9 @@ export class EmbeddingProjector {
       return { queued: jobs.length, processed: 0 };
     }
 
-    const allChunkRows = readyJobs.flatMap((job) => chunkRowsByJobId.get(job.id) ?? []);
+    const allChunkRows = readyJobs.flatMap(
+      (job) => chunkRowsByJobId.get(job.id) ?? [],
+    );
     const existingRows = await client
       .select({
         chunkId: memoryEmbedding.chunkId,
@@ -181,17 +199,30 @@ export class EmbeddingProjector {
         model: memoryEmbedding.model,
       })
       .from(memoryEmbedding)
-      .where(inArray(memoryEmbedding.chunkId, allChunkRows.map((c) => c.chunkId)));
-    const existingHashMap = new Map(existingRows.map((row) => [row.chunkId, row.contentHash]));
-    const existingModelMap = new Map(existingRows.map((row) => [row.chunkId, row.model ?? ""]));
+      .where(
+        inArray(
+          memoryEmbedding.chunkId,
+          allChunkRows.map((c) => c.chunkId),
+        ),
+      );
+    const existingHashMap = new Map(
+      existingRows.map((row) => [row.chunkId, row.contentHash]),
+    );
+    const existingModelMap = new Map(
+      existingRows.map((row) => [row.chunkId, row.model ?? ""]),
+    );
 
     const changedChunksByJobId = new Map<string, typeof allChunkRows>();
     for (const job of readyJobs) {
-      const changedChunks = (chunkRowsByJobId.get(job.id) ?? []).filter((chunk) => {
-        const hashChanged = existingHashMap.get(chunk.chunkId) !== chunk.contentHash;
-        const modelChanged = existingModelMap.get(chunk.chunkId) !== expectedModelSignature;
-        return hashChanged || modelChanged;
-      });
+      const changedChunks = (chunkRowsByJobId.get(job.id) ?? []).filter(
+        (chunk) => {
+          const hashChanged =
+            existingHashMap.get(chunk.chunkId) !== chunk.contentHash;
+          const modelChanged =
+            existingModelMap.get(chunk.chunkId) !== expectedModelSignature;
+          return hashChanged || modelChanged;
+        },
+      );
       changedChunksByJobId.set(job.id, changedChunks);
     }
 
@@ -206,12 +237,15 @@ export class EmbeddingProjector {
           changedChunks.map((chunk) => chunk.content),
         );
         if (!vectorsRaw) {
-          logger.info("Embedding skipped: provider does not support embeddings", {
-            projectId: input.projectId,
-            jobCount: readyJobs.length,
-            changedChunkCount: changedChunks.length,
-            provider: runtimeConfig.providerHint,
-          });
+          logger.info(
+            "Embedding skipped: provider does not support embeddings",
+            {
+              projectId: input.projectId,
+              jobCount: readyJobs.length,
+              changedChunkCount: changedChunks.length,
+              provider: runtimeConfig.providerHint,
+            },
+          );
           await client
             .update(memoryBuildJob)
             .set({
@@ -220,7 +254,12 @@ export class EmbeddingProjector {
               error: null,
               updatedAt: now,
             })
-            .where(inArray(memoryBuildJob.id, readyJobs.map((job) => job.id)));
+            .where(
+              inArray(
+                memoryBuildJob.id,
+                readyJobs.map((job) => job.id),
+              ),
+            );
           return { queued: jobs.length, processed: readyJobs.length };
         }
         const vectors = vectorsRaw.map((row) => Float32Array.from(row));
@@ -239,7 +278,12 @@ export class EmbeddingProjector {
               error: null,
               updatedAt: now,
             })
-            .where(inArray(memoryBuildJob.id, readyJobs.map((job) => job.id)));
+            .where(
+              inArray(
+                memoryBuildJob.id,
+                readyJobs.map((job) => job.id),
+              ),
+            );
           return { queued: jobs.length, processed: readyJobs.length };
         }
         if (vectors.length !== changedChunks.length) {
@@ -336,7 +380,8 @@ export class EmbeddingProjector {
       providerHint: runtimeConfig.providerHint,
       embeddingModel: runtimeConfig.embeddingModel,
     });
-    const rows = await db.getClient()
+    const rows = await db
+      .getClient()
       .select({
         status: memoryBuildJob.status,
         count: sql<number>`count(*)`,
@@ -349,16 +394,21 @@ export class EmbeddingProjector {
         ),
       )
       .groupBy(memoryBuildJob.status);
-    const grouped = new Map(rows.map((row) => [row.status, Number(row.count ?? 0)]));
-    const [chunkStats] = await db.getClient()
+    const grouped = new Map(
+      rows.map((row) => [row.status, Number(row.count ?? 0)]),
+    );
+    const [chunkStats] = await db
+      .getClient()
       .select({ count: sql<number>`count(*)` })
       .from(memoryChunk)
       .where(eq(memoryChunk.projectId, projectId));
-    const [embeddingStats] = await db.getClient()
+    const [embeddingStats] = await db
+      .getClient()
       .select({ count: sql<number>`count(*)` })
       .from(memoryEmbedding)
       .where(eq(memoryEmbedding.projectId, projectId));
-    const [staleStats] = await db.getClient()
+    const [staleStats] = await db
+      .getClient()
       .select({ count: sql<number>`count(*)` })
       .from(memoryEmbedding)
       .where(

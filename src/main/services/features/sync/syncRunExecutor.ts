@@ -5,10 +5,7 @@ import type {
   SyncSettings,
   SyncStatus,
 } from "../../../../shared/types/index.js";
-import {
-  mergeSyncBundles,
-  type SyncBundle,
-} from "./syncMapper.js";
+import { mergeSyncBundles, type SyncBundle } from "./syncMapper.js";
 import { syncRepository } from "./syncRepository.js";
 import {
   buildEntityBaselineMapForSuccess,
@@ -36,13 +33,18 @@ type RunExecutorDeps = {
   applyMergedBundleToLocal: (bundle: SyncBundle) => Promise<void>;
   countBundleRows: (bundle: SyncBundle) => number;
   updateStatus: (next: Partial<SyncStatus>) => void;
-  applyAuthFailureState: (message: string, lastRun?: SyncStatus["lastRun"]) => void;
+  applyAuthFailureState: (
+    message: string,
+    lastRun?: SyncStatus["lastRun"],
+  ) => void;
   isAuthFatalMessage: (message: string) => boolean;
   toSyncErrorMessage: (error: unknown) => string;
   logRunFailed: (error: unknown, reason: string) => void;
 };
 
-export const executeSyncRun = async (deps: RunExecutorDeps): Promise<SyncRunResult> => {
+export const executeSyncRun = async (
+  deps: RunExecutorDeps,
+): Promise<SyncRunResult> => {
   deps.updateStatus({
     mode: "syncing",
     inFlight: true,
@@ -76,13 +78,15 @@ export const executeSyncRun = async (deps: RunExecutorDeps): Promise<SyncRunResu
         (conflicts.items ?? []).map((item) => `${item.type}:${item.id}`),
       );
       const nextResolutionMap = Object.fromEntries(
-        Object.entries(syncSettings.pendingConflictResolutions ?? {}).filter((entry) =>
-          unresolvedKeys.has(entry[0]),
+        Object.entries(syncSettings.pendingConflictResolutions ?? {}).filter(
+          (entry) => unresolvedKeys.has(entry[0]),
         ),
       );
       settingsManager.setSyncSettings({
         pendingConflictResolutions:
-          Object.keys(nextResolutionMap).length > 0 ? nextResolutionMap : undefined,
+          Object.keys(nextResolutionMap).length > 0
+            ? nextResolutionMap
+            : undefined,
         lastError: undefined,
       });
       const lastRunAt = new Date().toISOString();
@@ -95,7 +99,10 @@ export const executeSyncRun = async (deps: RunExecutorDeps): Promise<SyncRunResu
         message: "SYNC_CONFLICT_DETECTED",
       } as const;
       deps.updateStatus({
-        ...deps.toSyncStatusFromSettings(settingsManager.getSyncSettings(), deps.getStatus()),
+        ...deps.toSyncStatusFromSettings(
+          settingsManager.getSyncSettings(),
+          deps.getStatus(),
+        ),
         mode: "idle",
         health: "connected",
         degradedReason: undefined,
@@ -201,7 +208,10 @@ export const executeSyncRun = async (deps: RunExecutorDeps): Promise<SyncRunResu
         degradedReason: undefined,
         inFlight: false,
         queued: false,
-        projectStateById: withErrorProjectStates(deps.getStatus().projectStateById, message),
+        projectStateById: withErrorProjectStates(
+          deps.getStatus().projectStateById,
+          message,
+        ),
         lastRun: failureRun,
       });
     }

@@ -56,10 +56,13 @@ vi.mock("../../../src/main/manager/settings/index.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/core/project/projectDeletionPolicy.js", () => ({
-  deleteProjectPackageFileIfRequested: vi.fn(),
-  normalizeProjectDeleteInput: vi.fn(),
-}));
+vi.mock(
+  "../../../src/main/services/core/project/projectDeletionPolicy.js",
+  () => ({
+    deleteProjectPackageFileIfRequested: vi.fn(),
+    normalizeProjectDeleteInput: vi.fn(),
+  }),
+);
 
 vi.mock("../../../src/main/services/core/project/projectListStatus.js", () => ({
   withProjectPathStatus: vi.fn(async (projects) => projects),
@@ -72,13 +75,19 @@ vi.mock("../../../src/main/services/core/project/projectPathPolicy.js", () => ({
     mocked.renameSnapshotDirectoryForProjectTitleChange,
 }));
 
-vi.mock("../../../src/main/services/core/project/projectPathReconciliation.js", () => ({
-  collectDuplicateProjectPathGroups: vi.fn(() => []),
-}));
+vi.mock(
+  "../../../src/main/services/core/project/projectPathReconciliation.js",
+  () => ({
+    collectDuplicateProjectPathGroups: vi.fn(() => []),
+  }),
+);
 
-vi.mock("../../../src/main/services/core/project/projectExportEngine.js", () => ({
-  exportProjectPackageWithOptions: vi.fn(async () => true),
-}));
+vi.mock(
+  "../../../src/main/services/core/project/projectExportEngine.js",
+  () => ({
+    exportProjectPackageWithOptions: vi.fn(async () => true),
+  }),
+);
 
 vi.mock("../../../src/main/services/core/project/projectImportOpen.js", () => ({
   openLuieProjectPackage: vi.fn(),
@@ -106,7 +115,9 @@ describe("ProjectService validation errors", () => {
       title: "project",
       projectPath: "/tmp/project.luie",
     });
-    mocked.renameSnapshotDirectoryForProjectTitleChange.mockResolvedValue(undefined);
+    mocked.renameSnapshotDirectoryForProjectTitleChange.mockResolvedValue(
+      undefined,
+    );
   });
 
   it("preserves VALIDATION_FAILED on create", async () => {

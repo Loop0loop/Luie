@@ -19,7 +19,9 @@ class AnalysisSecurity {
    */
   registerSecurityListeners(window: BrowserWindow): void {
     if (window.isDestroyed()) {
-      logger.warn("Security listener registration skipped for destroyed window");
+      logger.warn(
+        "Security listener registration skipped for destroyed window",
+      );
       return;
     }
 
@@ -50,7 +52,7 @@ class AnalysisSecurity {
   clearSensitiveData(): void {
     try {
       manuscriptAnalysisService.clearAnalysisData();
-      
+
       // 강제 GC 요청 (Node.js --expose-gc 필요)
       if (global.gc) {
         global.gc();

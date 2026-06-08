@@ -11,7 +11,7 @@ import path from "path";
 import JSZip from "jszip";
 import { ServiceError } from "../../../utils/error/index.js";
 import { ErrorCode } from "../../../../shared/constants/errorCode.js";
-import type { ExportOptions, ExportResult } from "../exportService.js";
+import type { ExportOptions, ExportResult } from "../export/index.js";
 import {
   convertHtmlToParagraphs,
   escapeXml,
@@ -48,7 +48,9 @@ export class HwpxExportService {
     try {
       const paperSize = PAPER_SIZES_HWPUNIT[options.paperSize];
       const outputPath = this.ensureHwpxExtension(options.outputPath);
-      const templatePath = await this.resolveTemplatePath(options.referenceHwpxPath);
+      const templatePath = await this.resolveTemplatePath(
+        options.referenceHwpxPath,
+      );
 
       let buffer: Buffer;
       let message: string;
@@ -78,7 +80,10 @@ export class HwpxExportService {
 
   private ensureHwpxExtension(outputPath?: string): string {
     if (!outputPath) {
-      throw new ServiceError(ErrorCode.VALIDATION_FAILED, "Output path is required");
+      throw new ServiceError(
+        ErrorCode.VALIDATION_FAILED,
+        "Output path is required",
+      );
     }
 
     if (!outputPath.endsWith(".hwpx")) {
@@ -88,7 +93,9 @@ export class HwpxExportService {
     return outputPath;
   }
 
-  private async resolveTemplatePath(referenceHwpxPath?: string): Promise<string | null> {
+  private async resolveTemplatePath(
+    referenceHwpxPath?: string,
+  ): Promise<string | null> {
     if (referenceHwpxPath && referenceHwpxPath.trim().length > 0) {
       try {
         await fs.access(referenceHwpxPath);
@@ -123,7 +130,9 @@ export class HwpxExportService {
 
     const headerXml = await zip.file("Contents/header.xml")?.async("string");
     const sectionXml = await zip.file("Contents/section0.xml")?.async("string");
-    const contentHpfXml = await zip.file("Contents/content.hpf")?.async("string");
+    const contentHpfXml = await zip
+      .file("Contents/content.hpf")
+      ?.async("string");
 
     if (!headerXml || !sectionXml || !contentHpfXml) {
       throw new ServiceError(
@@ -133,8 +142,14 @@ export class HwpxExportService {
     }
 
     zip.file("Contents/header.xml", this.updateHeaderXml(headerXml, options));
-    zip.file("Contents/section0.xml", this.updateSectionXml(sectionXml, options, paperSize));
-    zip.file("Contents/content.hpf", this.updateContentHpf(contentHpfXml, options));
+    zip.file(
+      "Contents/section0.xml",
+      this.updateSectionXml(sectionXml, options, paperSize),
+    );
+    zip.file(
+      "Contents/content.hpf",
+      this.updateContentHpf(contentHpfXml, options),
+    );
 
     return zip.generateAsync({
       type: "nodebuffer",
@@ -143,21 +158,33 @@ export class HwpxExportService {
     });
   }
 
-  private updateHeaderXml(xml: string, options: Required<ExportOptions>): string {
+  private updateHeaderXml(
+    xml: string,
+    options: Required<ExportOptions>,
+  ): string {
     const title = escapeXml(options.title);
     const date = new Date().toISOString();
 
     return xml
-      .replace(/<hh:title>[\s\S]*?<\/hh:title>/, `<hh:title>${title}</hh:title>`)
+      .replace(
+        /<hh:title>[\s\S]*?<\/hh:title>/,
+        `<hh:title>${title}</hh:title>`,
+      )
       .replace(/<hh:date>[\s\S]*?<\/hh:date>/, `<hh:date>${date}</hh:date>`);
   }
 
-  private updateContentHpf(xml: string, options: Required<ExportOptions>): string {
+  private updateContentHpf(
+    xml: string,
+    options: Required<ExportOptions>,
+  ): string {
     const title = escapeXml(options.title);
     const date = new Date().toISOString();
 
     return xml
-      .replace(/<dc:title>[\s\S]*?<\/dc:title>/, `<dc:title>${title}</dc:title>`)
+      .replace(
+        /<dc:title>[\s\S]*?<\/dc:title>/,
+        `<dc:title>${title}</dc:title>`,
+      )
       .replace(/<dc:date>[\s\S]*?<\/dc:date>/, `<dc:date>${date}</dc:date>`);
   }
 
@@ -175,13 +202,21 @@ export class HwpxExportService {
       marginLeft,
       marginRight,
     );
-    const paragraphs = convertHtmlToParagraphs(options.content, options.title, undefined, {
-      contentWidth,
-    });
+    const paragraphs = convertHtmlToParagraphs(
+      options.content,
+      options.title,
+      undefined,
+      {
+        contentWidth,
+      },
+    );
 
     let updated = xml;
 
-    updated = updated.replace(/<hc:width>\d+<\/hc:width>/, `<hc:width>${paperSize.width}</hc:width>`);
+    updated = updated.replace(
+      /<hc:width>\d+<\/hc:width>/,
+      `<hc:width>${paperSize.width}</hc:width>`,
+    );
     updated = updated.replace(
       /<hc:height>\d+<\/hc:height>/,
       `<hc:height>${paperSize.height}</hc:height>`,
@@ -199,7 +234,10 @@ export class HwpxExportService {
     }
 
     if (/<\/hs:secPr>/.test(updated)) {
-      updated = updated.replace(/(<\/hs:secPr>)([\s\S]*?)(<\/hs:sec>)/, `$1\n${paragraphs}\n$3`);
+      updated = updated.replace(
+        /(<\/hs:secPr>)([\s\S]*?)(<\/hs:sec>)/,
+        `$1\n${paragraphs}\n$3`,
+      );
     }
 
     return updated;
@@ -213,16 +251,34 @@ export class HwpxExportService {
 
     zip.file("mimetype", "application/hwp+zip", { compression: "STORE" });
     zip.file("version.xml", this.generateVersion(), { compression: "DEFLATE" });
-    zip.file("META-INF/manifest.xml", this.generateManifestXml(), { compression: "DEFLATE" });
-    zip.file("META-INF/container.xml", this.generateContainerXml(), { compression: "DEFLATE" });
-    zip.file("META-INF/container.rdf", this.generateContainerRdf(), { compression: "DEFLATE" });
-    zip.file("settings.xml", this.generateSettings(), { compression: "DEFLATE" });
-    zip.file("Preview/PrvText.txt", this.generatePreviewText(options), { compression: "DEFLATE" });
-    zip.file("Contents/header.xml", this.generateHeader(options), { compression: "DEFLATE" });
-    zip.file("Contents/section0.xml", this.generateSection(options, paperSize), {
+    zip.file("META-INF/manifest.xml", this.generateManifestXml(), {
       compression: "DEFLATE",
     });
-    zip.file("Contents/content.hpf", this.generateContentHpf(options), { compression: "DEFLATE" });
+    zip.file("META-INF/container.xml", this.generateContainerXml(), {
+      compression: "DEFLATE",
+    });
+    zip.file("META-INF/container.rdf", this.generateContainerRdf(), {
+      compression: "DEFLATE",
+    });
+    zip.file("settings.xml", this.generateSettings(), {
+      compression: "DEFLATE",
+    });
+    zip.file("Preview/PrvText.txt", this.generatePreviewText(options), {
+      compression: "DEFLATE",
+    });
+    zip.file("Contents/header.xml", this.generateHeader(options), {
+      compression: "DEFLATE",
+    });
+    zip.file(
+      "Contents/section0.xml",
+      this.generateSection(options, paperSize),
+      {
+        compression: "DEFLATE",
+      },
+    );
+    zip.file("Contents/content.hpf", this.generateContentHpf(options), {
+      compression: "DEFLATE",
+    });
 
     return zip.generateAsync({
       type: "nodebuffer",
@@ -234,7 +290,10 @@ export class HwpxExportService {
   }
 
   private compressXml(xml: string): string {
-    return xml.replace(/>\s+</g, "><").replace(/\?>\s+</g, "?><").trim();
+    return xml
+      .replace(/>\s+</g, "><")
+      .replace(/\?>\s+</g, "?><")
+      .trim();
   }
 
   private generateManifestXml(): string {
@@ -291,9 +350,14 @@ export class HwpxExportService {
       </hp:pageBorderFill>
     </hp:secPr>`;
 
-    const paragraphs = convertHtmlToParagraphs(options.content, options.title, secPrXml, {
-      contentWidth,
-    });
+    const paragraphs = convertHtmlToParagraphs(
+      options.content,
+      options.title,
+      secPrXml,
+      {
+        contentWidth,
+      },
+    );
 
     const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <hs:sec xmlns:hs="http://www.hancom.co.kr/hwpml/2011/section" 

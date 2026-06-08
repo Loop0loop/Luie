@@ -105,9 +105,10 @@ export async function searchMemoryChunksForRag(
 
   const merged = mergeWithRRF(
     [
-      ftsRows.map(
-        (row: FtsRow, index: number) => ({ chunkId: row.chunkId, rank: index + 1 }),
-      ),
+      ftsRows.map((row: FtsRow, index: number) => ({
+        chunkId: row.chunkId,
+        rank: index + 1,
+      })),
       lexicalRanks,
       denseRanks,
     ],
@@ -156,12 +157,14 @@ export async function searchMemoryChunksForRag(
   const ranges = mapped.flatMap((row) => {
     const chunk = chunkMap.get(row.chunkId);
     if (!chunk) return [];
-    return [{
-      sourceType: chunk.sourceType,
-      sourceId: chunk.sourceId,
-      minIndex: chunk.chunkIndex - input.parentWindow!.before,
-      maxIndex: chunk.chunkIndex + input.parentWindow!.after,
-    }];
+    return [
+      {
+        sourceType: chunk.sourceType,
+        sourceId: chunk.sourceId,
+        minIndex: chunk.chunkIndex - input.parentWindow!.before,
+        maxIndex: chunk.chunkIndex + input.parentWindow!.after,
+      },
+    ];
   });
   const predicates = ranges.map((range) =>
     and(
@@ -171,27 +174,28 @@ export async function searchMemoryChunksForRag(
       sql`${memoryChunk.chunkIndex} BETWEEN ${range.minIndex} AND ${range.maxIndex}`,
     ),
   );
-  const windowRows: WindowChunkRow[] = predicates.length === 0
-    ? []
-    : await client
-        .select({
-          chunkId: memoryChunk.id,
-          sourceType: memoryChunk.sourceType,
-          sourceId: memoryChunk.sourceId,
-          chunkIndex: memoryChunk.chunkIndex,
-          content: memoryChunk.content,
-          startOffset: memoryChunk.startOffset,
-          endOffset: memoryChunk.endOffset,
-          paragraphStartIndex: memoryChunk.paragraphStartIndex,
-          paragraphEndIndex: memoryChunk.paragraphEndIndex,
-        })
-        .from(memoryChunk)
-        .where(predicates.length === 1 ? predicates[0] : or(...predicates))
-        .orderBy(
-          asc(memoryChunk.sourceType),
-          asc(memoryChunk.sourceId),
-          asc(memoryChunk.chunkIndex),
-        );
+  const windowRows: WindowChunkRow[] =
+    predicates.length === 0
+      ? []
+      : await client
+          .select({
+            chunkId: memoryChunk.id,
+            sourceType: memoryChunk.sourceType,
+            sourceId: memoryChunk.sourceId,
+            chunkIndex: memoryChunk.chunkIndex,
+            content: memoryChunk.content,
+            startOffset: memoryChunk.startOffset,
+            endOffset: memoryChunk.endOffset,
+            paragraphStartIndex: memoryChunk.paragraphStartIndex,
+            paragraphEndIndex: memoryChunk.paragraphEndIndex,
+          })
+          .from(memoryChunk)
+          .where(predicates.length === 1 ? predicates[0] : or(...predicates))
+          .orderBy(
+            asc(memoryChunk.sourceType),
+            asc(memoryChunk.sourceId),
+            asc(memoryChunk.chunkIndex),
+          );
   const windowRowsBySource = new Map<string, WindowChunkRow[]>();
   for (const row of windowRows) {
     const key = `${row.sourceType}:${row.sourceId}`;
@@ -205,10 +209,12 @@ export async function searchMemoryChunksForRag(
     if (!chunk) return row;
     const minIndex = chunk.chunkIndex - input.parentWindow!.before;
     const maxIndex = chunk.chunkIndex + input.parentWindow!.after;
-    const rows = (windowRowsBySource.get(`${chunk.sourceType}:${chunk.sourceId}`) ?? [])
-      .filter((windowRow) =>
+    const rows = (
+      windowRowsBySource.get(`${chunk.sourceType}:${chunk.sourceId}`) ?? []
+    ).filter(
+      (windowRow) =>
         windowRow.chunkIndex >= minIndex && windowRow.chunkIndex <= maxIndex,
-      );
+    );
     return {
       ...row,
       parentWindow: {

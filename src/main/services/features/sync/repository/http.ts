@@ -1,7 +1,4 @@
-import {
-  getSupabaseConfig,
-  getSupabaseConfigOrThrow,
-} from "../supabaseEnv.js";
+import { getSupabaseConfig, getSupabaseConfigOrThrow } from "../supabaseEnv.js";
 import type { DbRow } from "./rowUtils.js";
 
 const MAX_RETRIES = 3;
@@ -38,18 +35,17 @@ async function fetchWithRetry(
 const isMissingTableError = (error: unknown, table: string): boolean => {
   const message = error instanceof Error ? error.message : String(error);
   return (
-    message.includes("HTTP 404") ||
-    message.includes("HTTP 400") ||
-    message.includes("PGRST205") ||
-    message.includes("PGRST202") ||
-    message.includes(`'${table}'`) ||
-    message.includes(`"${table}"`) ||
-    message.includes(`${table}`)
-  ) && (
-    message.toLowerCase().includes("does not exist") ||
-    message.toLowerCase().includes("not found") ||
-    message.includes("PGRST205") ||
-    message.includes("PGRST202")
+    (message.includes("HTTP 404") ||
+      message.includes("HTTP 400") ||
+      message.includes("PGRST205") ||
+      message.includes("PGRST202") ||
+      message.includes(`'${table}'`) ||
+      message.includes(`"${table}"`) ||
+      message.includes(`${table}`)) &&
+    (message.toLowerCase().includes("does not exist") ||
+      message.toLowerCase().includes("not found") ||
+      message.includes("PGRST205") ||
+      message.includes("PGRST202"))
   );
 };
 

@@ -6,17 +6,24 @@ const mocked = vi.hoisted(() => ({
   buildMemoryCanonicalPackagePayload: vi.fn(),
 }));
 
-vi.mock("../../../../../src/main/services/core/project/projectAttachmentStore.js", () => ({
-  getProjectAttachmentPath: mocked.getProjectAttachmentPath,
-}));
+vi.mock(
+  "../../../../../src/main/services/core/project/projectAttachmentStore.js",
+  () => ({
+    getProjectAttachmentPath: mocked.getProjectAttachmentPath,
+  }),
+);
 
 vi.mock("../../../../../src/main/services/io/luieContainer.js", () => ({
   readLuieContainerEntry: mocked.readLuieContainerEntry,
 }));
 
-vi.mock("../../../../../src/main/services/features/memory/persistence/memoryCanonicalPackage.js", () => ({
-  buildMemoryCanonicalPackagePayload: mocked.buildMemoryCanonicalPackagePayload,
-}));
+vi.mock(
+  "../../../../../src/main/services/features/memory/persistence/memoryCanonicalPackage.js",
+  () => ({
+    buildMemoryCanonicalPackagePayload:
+      mocked.buildMemoryCanonicalPackagePayload,
+  }),
+);
 
 describe("verifyMemoryCanonicalPackageSync", () => {
   beforeEach(() => {
@@ -26,9 +33,8 @@ describe("verifyMemoryCanonicalPackageSync", () => {
   });
 
   it("reports in-sync when DB canonical rows match the attached .luie payload", async () => {
-    const { verifyMemoryCanonicalPackageSync } = await import(
-      "../../../../../src/main/services/features/memory/persistence/memoryCanonicalPackageSyncVerifier.js"
-    );
+    const { verifyMemoryCanonicalPackageSync } =
+      await import("../../../../../src/main/services/features/memory/persistence/memoryCanonicalPackageSyncVerifier.js");
     mocked.getProjectAttachmentPath.mockResolvedValue("/tmp/project.luie");
     mocked.buildMemoryCanonicalPackagePayload.mockResolvedValue({
       schemaVersion: 1,
@@ -77,9 +83,8 @@ describe("verifyMemoryCanonicalPackageSync", () => {
   });
 
   it("reports missing and extra package ids when payloads diverge", async () => {
-    const { verifyMemoryCanonicalPackageSync } = await import(
-      "../../../../../src/main/services/features/memory/persistence/memoryCanonicalPackageSyncVerifier.js"
-    );
+    const { verifyMemoryCanonicalPackageSync } =
+      await import("../../../../../src/main/services/features/memory/persistence/memoryCanonicalPackageSyncVerifier.js");
     mocked.getProjectAttachmentPath.mockResolvedValue("/tmp/project.luie");
     mocked.buildMemoryCanonicalPackagePayload.mockResolvedValue({
       schemaVersion: 1,

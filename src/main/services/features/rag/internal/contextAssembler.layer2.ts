@@ -56,7 +56,9 @@ type Layer2WorldDocumentRow = {
 
 const logger = createLogger("RagContextAssembler");
 
-export async function buildLayer2WorldContext(projectId: string): Promise<string> {
+export async function buildLayer2WorldContext(
+  projectId: string,
+): Promise<string> {
   const [
     charactersResult,
     factionsResult,
@@ -71,7 +73,9 @@ export async function buildLayer2WorldContext(projectId: string): Promise<string
       .getClient()
       .select({ name: character.name, description: character.description })
       .from(character)
-      .where(and(eq(character.projectId, projectId), isNull(character.deletedAt)))
+      .where(
+        and(eq(character.projectId, projectId), isNull(character.deletedAt)),
+      )
       .orderBy(asc(character.updatedAt))
       .limit(80),
     db
@@ -107,7 +111,12 @@ export async function buildLayer2WorldContext(projectId: string): Promise<string
         description: worldEntity.description,
       })
       .from(worldEntity)
-      .where(and(eq(worldEntity.projectId, projectId), isNull(worldEntity.deletedAt)))
+      .where(
+        and(
+          eq(worldEntity.projectId, projectId),
+          isNull(worldEntity.deletedAt),
+        ),
+      )
       .orderBy(asc(worldEntity.type), asc(worldEntity.updatedAt))
       .limit(120),
     db
@@ -127,12 +136,17 @@ export async function buildLayer2WorldContext(projectId: string): Promise<string
       .getClient()
       .select({ title: scrapMemo.title, content: scrapMemo.content })
       .from(scrapMemo)
-      .where(and(eq(scrapMemo.projectId, projectId), isNull(scrapMemo.deletedAt)))
+      .where(
+        and(eq(scrapMemo.projectId, projectId), isNull(scrapMemo.deletedAt)),
+      )
       .orderBy(asc(scrapMemo.sortOrder), asc(scrapMemo.updatedAt))
       .limit(80),
     db
       .getClient()
-      .select({ docType: worldDocument.docType, payload: worldDocument.payload })
+      .select({
+        docType: worldDocument.docType,
+        payload: worldDocument.payload,
+      })
       .from(worldDocument)
       .where(eq(worldDocument.projectId, projectId))
       .orderBy(asc(worldDocument.updatedAt))
@@ -146,7 +160,10 @@ export async function buildLayer2WorldContext(projectId: string): Promise<string
     });
   }
   if (factionsResult.status === "rejected") {
-    logger.warn("Layer2 faction query failed", { projectId, error: factionsResult.reason });
+    logger.warn("Layer2 faction query failed", {
+      projectId,
+      error: factionsResult.reason,
+    });
   }
   if (eventsResult.status === "rejected") {
     logger.warn("Layer2 event query failed", {
@@ -193,12 +210,14 @@ export async function buildLayer2WorldContext(projectId: string): Promise<string
     factionsResult.status === "fulfilled"
       ? (factionsResult.value as Layer2FactionRow[])
       : [];
-  const events = eventsResult.status === "fulfilled"
-    ? (eventsResult.value as Layer2EventRow[])
-    : [];
-  const terms = termsResult.status === "fulfilled"
-    ? (termsResult.value as Layer2TermRow[])
-    : [];
+  const events =
+    eventsResult.status === "fulfilled"
+      ? (eventsResult.value as Layer2EventRow[])
+      : [];
+  const terms =
+    termsResult.status === "fulfilled"
+      ? (termsResult.value as Layer2TermRow[])
+      : [];
   const worldEntities =
     worldEntitiesResult.status === "fulfilled"
       ? (worldEntitiesResult.value as Layer2WorldEntityRow[])
@@ -229,8 +248,8 @@ export async function buildLayer2WorldContext(projectId: string): Promise<string
         `- ${row.term}${row.category ? ` (${row.category})` : ""}: ${row.definition ?? ""}`,
     ),
     "[WORLD ENTITIES]",
-    ...worldEntities.map((row) =>
-      `- ${row.type}/${row.name}: ${row.description ?? ""}`,
+    ...worldEntities.map(
+      (row) => `- ${row.type}/${row.name}: ${row.description ?? ""}`,
     ),
     "[RELATIONS]",
     ...relations.map(

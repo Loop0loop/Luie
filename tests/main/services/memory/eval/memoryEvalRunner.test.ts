@@ -92,7 +92,9 @@ describe("runLiveMemoryEvalSuite", () => {
 
     expect(result.caseCount).toBe(1);
     expect(result.totalP0FailureCount).toBe(1);
-    expect(result.results[0]?.p0Failures).toEqual(["relation_direction_reversed"]);
+    expect(result.results[0]?.p0Failures).toEqual([
+      "relation_direction_reversed",
+    ]);
 
     const [runRow] = await db
       .getClient()
@@ -119,6 +121,8 @@ describe("runLiveMemoryEvalSuite", () => {
       p0FailureCount: 1,
       answer: "백야회가 아린과 적대한다.",
     });
-    expect(JSON.parse(resultRow.p0Failures)).toEqual(["relation_direction_reversed"]);
+    expect(JSON.parse(resultRow.p0Failures)).toEqual([
+      "relation_direction_reversed",
+    ]);
   });
 });

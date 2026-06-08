@@ -1,10 +1,7 @@
 import crypto from "node:crypto";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../../infra/database/index.js";
-import {
-  memoryBuildJob,
-  memoryChunk,
-} from "../../../infra/database/index.js";
+import { memoryBuildJob, memoryChunk } from "../../../infra/database/index.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import { MEMORY_JOB_TYPES, MEMORY_TARGET_TYPES } from "./memoryJobConstants.js";
 import {
@@ -143,7 +140,9 @@ class MemoryProjectionService {
       }
 
       try {
-        const sourceContent = String(source.bodyContent ?? source.content ?? "");
+        const sourceContent = String(
+          source.bodyContent ?? source.content ?? "",
+        );
         const sourceContentHash = sha256(sourceContent);
         const contextLabel = buildMemoryContextLabel({
           sourceType: job.targetType,
@@ -159,8 +158,7 @@ class MemoryProjectionService {
                   WHERE "sourceType" = ${job.targetType} AND "sourceId" = ${job.targetId}
                 );`,
           );
-          tx
-            .delete(memoryChunk)
+          tx.delete(memoryChunk)
             .where(
               and(
                 eq(memoryChunk.sourceType, job.targetType),
@@ -176,28 +174,30 @@ class MemoryProjectionService {
               contextLabel,
               content: chunkItem.content,
             });
-            tx.insert(memoryChunk).values({
-              id: chunkId,
-              projectId: source.projectId,
-              sourceType: job.targetType,
-              sourceId: job.targetId,
-              chapterId: source.chapterId ?? null,
-              sceneId: source.sceneId ?? null,
-              chunkIndex: index,
-              content: chunkItem.content,
-              contentHash: sha256(chunkItem.content),
-              indexText,
-              indexTextHash: sha256(indexText),
-              contextLabel,
-              sourceContentHash,
-              startOffset: chunkItem.startOffset,
-              endOffset: chunkItem.endOffset,
-              paragraphStartIndex: chunkItem.paragraphStartIndex,
-              paragraphEndIndex: chunkItem.paragraphEndIndex,
-              tokenCount: estimateTokenCountFromChars(chunkItem.content),
-              createdAt: now,
-              updatedAt: now,
-            }).run();
+            tx.insert(memoryChunk)
+              .values({
+                id: chunkId,
+                projectId: source.projectId,
+                sourceType: job.targetType,
+                sourceId: job.targetId,
+                chapterId: source.chapterId ?? null,
+                sceneId: source.sceneId ?? null,
+                chunkIndex: index,
+                content: chunkItem.content,
+                contentHash: sha256(chunkItem.content),
+                indexText,
+                indexTextHash: sha256(indexText),
+                contextLabel,
+                sourceContentHash,
+                startOffset: chunkItem.startOffset,
+                endOffset: chunkItem.endOffset,
+                paragraphStartIndex: chunkItem.paragraphStartIndex,
+                paragraphEndIndex: chunkItem.paragraphEndIndex,
+                tokenCount: estimateTokenCountFromChars(chunkItem.content),
+                createdAt: now,
+                updatedAt: now,
+              })
+              .run();
             tx.run(
               sql`INSERT INTO "MemoryChunkFts" ("chunkId","projectId","chapterId","content")
                   VALUES (${chunkId}, ${source.projectId}, ${source.chapterId ?? null}, ${indexText});`,
@@ -224,8 +224,7 @@ class MemoryProjectionService {
             );
           }
 
-          tx
-            .update(memoryBuildJob)
+          tx.update(memoryBuildJob)
             .set({
               status: "completed",
               attempts: job.attempts + 1,

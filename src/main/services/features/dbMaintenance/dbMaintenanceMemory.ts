@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
-import type { MainDrizzleClient } from "../../infra/database/index.js";
+import type { MainDrizzleClient } from "../../../infra/database/index.js";
 import {
   character,
   chapter,
@@ -12,12 +12,12 @@ import {
   scene,
   scrapMemo,
   synopsis,
-} from "../../infra/database/index.js";
+} from "../../../infra/database/index.js";
 import {
   MEMORY_JOB_PRIORITY,
   MEMORY_JOB_TYPES,
   MEMORY_TARGET_TYPES,
-} from "./memory/memoryJobConstants.js";
+} from "../memory/memoryJobConstants.js";
 
 async function upsertPendingMemoryBuildJob(input: {
   client: MainDrizzleClient;
@@ -104,7 +104,9 @@ export async function rebuildMemoryChunks(input: {
   const synopses = await input.client
     .select({ id: synopsis.id })
     .from(synopsis)
-    .where(and(eq(synopsis.projectId, input.projectId), isNull(synopsis.deletedAt)))
+    .where(
+      and(eq(synopsis.projectId, input.projectId), isNull(synopsis.deletedAt)),
+    )
     .orderBy(asc(synopsis.updatedAt));
   const plots = await input.client
     .select({ id: plot.id })
@@ -119,29 +121,68 @@ export async function rebuildMemoryChunks(input: {
   const factions = await input.client
     .select({ id: faction.id })
     .from(faction)
-    .where(and(eq(faction.projectId, input.projectId), isNull(faction.deletedAt)))
+    .where(
+      and(eq(faction.projectId, input.projectId), isNull(faction.deletedAt)),
+    )
     .orderBy(asc(faction.updatedAt));
   const scraps = await input.client
     .select({ id: scrapMemo.id })
     .from(scrapMemo)
-    .where(and(eq(scrapMemo.projectId, input.projectId), isNull(scrapMemo.deletedAt)))
+    .where(
+      and(
+        eq(scrapMemo.projectId, input.projectId),
+        isNull(scrapMemo.deletedAt),
+      ),
+    )
     .orderBy(asc(scrapMemo.updatedAt));
   const characters = await input.client
     .select({ id: character.id })
     .from(character)
-    .where(and(eq(character.projectId, input.projectId), isNull(character.deletedAt)))
+    .where(
+      and(
+        eq(character.projectId, input.projectId),
+        isNull(character.deletedAt),
+      ),
+    )
     .orderBy(asc(character.updatedAt));
 
   const targets: Array<{ targetType: string; targetId: string }> = [
-    ...chapters.map((row) => ({ targetType: MEMORY_TARGET_TYPES.CHAPTER, targetId: row.id })),
-    ...scenes.map((row) => ({ targetType: MEMORY_TARGET_TYPES.SCENE, targetId: row.id })),
-    ...notes.map((row) => ({ targetType: MEMORY_TARGET_TYPES.NOTE, targetId: row.id })),
-    ...synopses.map((row) => ({ targetType: MEMORY_TARGET_TYPES.SYNOPSIS, targetId: row.id })),
-    ...plots.map((row) => ({ targetType: MEMORY_TARGET_TYPES.PLOT, targetId: row.id })),
-    ...events.map((row) => ({ targetType: MEMORY_TARGET_TYPES.EVENT, targetId: row.id })),
-    ...factions.map((row) => ({ targetType: MEMORY_TARGET_TYPES.FACTION, targetId: row.id })),
-    ...characters.map((row) => ({ targetType: MEMORY_TARGET_TYPES.CHARACTER, targetId: row.id })),
-    ...scraps.map((row) => ({ targetType: MEMORY_TARGET_TYPES.SCRAP_MEMO, targetId: row.id })),
+    ...chapters.map((row) => ({
+      targetType: MEMORY_TARGET_TYPES.CHAPTER,
+      targetId: row.id,
+    })),
+    ...scenes.map((row) => ({
+      targetType: MEMORY_TARGET_TYPES.SCENE,
+      targetId: row.id,
+    })),
+    ...notes.map((row) => ({
+      targetType: MEMORY_TARGET_TYPES.NOTE,
+      targetId: row.id,
+    })),
+    ...synopses.map((row) => ({
+      targetType: MEMORY_TARGET_TYPES.SYNOPSIS,
+      targetId: row.id,
+    })),
+    ...plots.map((row) => ({
+      targetType: MEMORY_TARGET_TYPES.PLOT,
+      targetId: row.id,
+    })),
+    ...events.map((row) => ({
+      targetType: MEMORY_TARGET_TYPES.EVENT,
+      targetId: row.id,
+    })),
+    ...factions.map((row) => ({
+      targetType: MEMORY_TARGET_TYPES.FACTION,
+      targetId: row.id,
+    })),
+    ...characters.map((row) => ({
+      targetType: MEMORY_TARGET_TYPES.CHARACTER,
+      targetId: row.id,
+    })),
+    ...scraps.map((row) => ({
+      targetType: MEMORY_TARGET_TYPES.SCRAP_MEMO,
+      targetId: row.id,
+    })),
   ];
 
   const existingPending = await input.client
@@ -154,18 +195,26 @@ export async function rebuildMemoryChunks(input: {
     .where(
       and(
         eq(memoryBuildJob.projectId, input.projectId),
-        inArray(memoryBuildJob.jobType, MEMORY_REBUILD_JOB_TYPES.map((job) => job.jobType)),
+        inArray(
+          memoryBuildJob.jobType,
+          MEMORY_REBUILD_JOB_TYPES.map((job) => job.jobType),
+        ),
         inArray(memoryBuildJob.status, ["pending", "running"]),
       ),
     );
 
   const existingKeys = new Set(
-    existingPending.map((row) => `${row.targetType}:${row.targetId}:${row.jobType}`),
+    existingPending.map(
+      (row) => `${row.targetType}:${row.targetId}:${row.jobType}`,
+    ),
   );
   const toInsert = targets.flatMap((target) =>
-    MEMORY_REBUILD_JOB_TYPES
-      .filter((job) => !existingKeys.has(`${target.targetType}:${target.targetId}:${job.jobType}`))
-      .map((job) => ({ ...target, ...job })),
+    MEMORY_REBUILD_JOB_TYPES.filter(
+      (job) =>
+        !existingKeys.has(
+          `${target.targetType}:${target.targetId}:${job.jobType}`,
+        ),
+    ).map((job) => ({ ...target, ...job })),
   );
 
   if (toInsert.length > 0) {

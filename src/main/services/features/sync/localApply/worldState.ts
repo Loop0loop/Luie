@@ -19,7 +19,9 @@ import {
 const logger = createLogger("SyncLocalApply");
 
 const sortByUpdatedAtDesc = <T extends { updatedAt: string }>(rows: T[]): T[] =>
-  [...rows].sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt));
+  [...rows].sort(
+    (left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt),
+  );
 
 const buildWorldDocumentMap = (
   worldDocuments: SyncBundle["worldDocuments"],
@@ -106,10 +108,8 @@ export const applyReplicaWorldState = (
   );
 
   for (const proj of activeProjects) {
-    const { active: worldDocMap, deleted: deletedDocTypes } = buildWorldDocumentMap(
-      bundle.worldDocuments,
-      proj.id,
-    );
+    const { active: worldDocMap, deleted: deletedDocTypes } =
+      buildWorldDocumentMap(bundle.worldDocuments, proj.id);
     const memos = bundle.memos
       .filter((memo) => memo.projectId === proj.id && !memo.deletedAt)
       .map((memo) => ({
@@ -122,7 +122,12 @@ export const applyReplicaWorldState = (
 
     for (const docType of deletedDocTypes) {
       tx.delete(worldDocument)
-        .where(and(eq(worldDocument.projectId, proj.id), eq(worldDocument.docType, docType)))
+        .where(
+          and(
+            eq(worldDocument.projectId, proj.id),
+            eq(worldDocument.docType, docType),
+          ),
+        )
         .run();
     }
 
@@ -184,7 +189,12 @@ export const applyReplicaWorldState = (
         .run();
     } else if (deletedDocTypes.has("scrap")) {
       tx.delete(worldDocument)
-        .where(and(eq(worldDocument.projectId, proj.id), eq(worldDocument.docType, "scrap")))
+        .where(
+          and(
+            eq(worldDocument.projectId, proj.id),
+            eq(worldDocument.docType, "scrap"),
+          ),
+        )
         .run();
     }
 

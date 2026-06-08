@@ -198,6 +198,9 @@ describe("scoreMemoryEvalCase", () => {
     expect(result.caseCount).toBe(2);
     expect(result.averageContextRecallAtK).toBe(0.5);
     expect(result.totalP0FailureCount).toBe(1);
-    expect(result.results.map((item) => item.caseId)).toEqual(["case-1", "case-2"]);
+    expect(result.results.map((item) => item.caseId)).toEqual([
+      "case-1",
+      "case-2",
+    ]);
   });
 });

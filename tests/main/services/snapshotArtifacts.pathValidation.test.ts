@@ -76,7 +76,9 @@ describe("snapshotArtifacts projectPath hardening", () => {
     mocked.dbClient.projectAttachment.findUnique.mockReset();
     mocked.dbClient.snapshot.findMany.mockReset();
 
-    tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-snapshot-artifacts-"));
+    tempRoot = await fsp.mkdtemp(
+      path.join(os.tmpdir(), "luie-snapshot-artifacts-"),
+    );
     mocked.userDataPath = path.join(tempRoot, "userdata");
     await fsp.mkdir(mocked.userDataPath, { recursive: true });
   });
@@ -108,9 +110,8 @@ describe("snapshotArtifacts projectPath hardening", () => {
     });
     mocked.dbClient.projectAttachment.findUnique.mockResolvedValue(null);
 
-    const { writeFullSnapshotArtifact } = await import(
-      "../../../src/main/services/features/snapshot/snapshotArtifacts.js"
-    );
+    const { writeFullSnapshotArtifact } =
+      await import("../../../src/main/services/features/snapshot/snapshotArtifacts.js");
 
     await writeFullSnapshotArtifact("11111111-1111-1111-1111-111111111111", {
       projectId: "project-1",
@@ -120,8 +121,14 @@ describe("snapshotArtifacts projectPath hardening", () => {
       type: "MANUAL",
     });
 
-    const backupDir = path.join(mocked.userDataPath, SNAPSHOT_BACKUP_DIR, "UnsafeProject");
-    const backupFiles = (await fsp.readdir(backupDir)).filter((name) => name.endsWith(".snap"));
+    const backupDir = path.join(
+      mocked.userDataPath,
+      SNAPSHOT_BACKUP_DIR,
+      "UnsafeProject",
+    );
+    const backupFiles = (await fsp.readdir(backupDir)).filter((name) =>
+      name.endsWith(".snap"),
+    );
     expect(backupFiles.length).toBe(1);
 
     const relativeLocalDir = path.join(tempRoot, "relative-project", ".luie");
@@ -149,7 +156,11 @@ describe("snapshotArtifacts projectPath hardening", () => {
     );
     await fsp.writeFile(relativeOrphanPath, "orphan-relative", "utf-8");
 
-    const appBackupDir = path.join(mocked.userDataPath, SNAPSHOT_BACKUP_DIR, "AppBackup");
+    const appBackupDir = path.join(
+      mocked.userDataPath,
+      SNAPSHOT_BACKUP_DIR,
+      "AppBackup",
+    );
     await fsp.mkdir(appBackupDir, { recursive: true });
     const appBackupOrphanPath = path.join(
       appBackupDir,
@@ -167,9 +178,8 @@ describe("snapshotArtifacts projectPath hardening", () => {
     mocked.dbClient.projectAttachment.findMany.mockResolvedValue([]);
     mocked.dbClient.snapshot.findMany.mockResolvedValue([]);
 
-    const { cleanupOrphanSnapshotArtifacts } = await import(
-      "../../../src/main/services/features/snapshot/snapshotArtifacts.js"
-    );
+    const { cleanupOrphanSnapshotArtifacts } =
+      await import("../../../src/main/services/features/snapshot/snapshotArtifacts.js");
 
     const result = await cleanupOrphanSnapshotArtifacts();
     expect(result.scanned).toBe(1);

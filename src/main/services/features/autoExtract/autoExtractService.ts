@@ -67,21 +67,46 @@ class AutoExtractService {
     return dirty;
   }
 
-  private async analyzeChapter(chapterId: string, projectId: string, content: string) {
+  private async analyzeChapter(
+    chapterId: string,
+    projectId: string,
+    content: string,
+  ) {
     const dirtyParagraphs = this.getDirtyParagraphs(chapterId, content);
     if (dirtyParagraphs.length === 0) {
       return;
     }
 
     const [characters, terms] = await Promise.all([
-      db.getClient().select({ id: character.id, name: character.name, description: character.description }).from(character).where(and(eq(character.projectId, projectId), isNull(character.deletedAt))),
-      db.getClient().select({ id: term.id, term: term.term, definition: term.definition, category: term.category }).from(term).where(and(eq(term.projectId, projectId), isNull(term.deletedAt))),
+      db
+        .getClient()
+        .select({
+          id: character.id,
+          name: character.name,
+          description: character.description,
+        })
+        .from(character)
+        .where(
+          and(eq(character.projectId, projectId), isNull(character.deletedAt)),
+        ),
+      db
+        .getClient()
+        .select({
+          id: term.id,
+          term: term.term,
+          definition: term.definition,
+          category: term.category,
+        })
+        .from(term)
+        .where(and(eq(term.projectId, projectId), isNull(term.deletedAt))),
     ]);
 
     keywordExtractor.setKnownCharacters(characters.map((c) => c.name));
     keywordExtractor.setKnownTerms(terms.map((t) => t.term));
 
-    const candidates = dirtyParagraphs.flatMap((p) => keywordExtractor.extractNouns(p));
+    const candidates = dirtyParagraphs.flatMap((p) =>
+      keywordExtractor.extractNouns(p),
+    );
 
     const filtered = keywordExtractor
       .filterByFrequency(candidates, 2)
@@ -94,7 +119,9 @@ class AutoExtractService {
     }
 
     for (const name of uniqueCandidates) {
-      const contexts = dirtyParagraphs.filter((p) => p.includes(name)).slice(0, 3);
+      const contexts = dirtyParagraphs
+        .filter((p) => p.includes(name))
+        .slice(0, 3);
 
       const result = await this.classifyWithGemini(name, contexts);
       if (!result) {
@@ -133,7 +160,9 @@ class AutoExtractService {
     name: string,
     contexts: string[],
   ): Promise<GeminiResult | null> {
-    const contextText = contexts.map((c, i) => `문맥 ${i + 1}: ${c}`).join("\n");
+    const contextText = contexts
+      .map((c, i) => `문맥 ${i + 1}: ${c}`)
+      .join("\n");
 
     const prompt = `당신은 웹소설/판타지 소설 전문 편집자입니다. 주어진 문맥에서 고유명사의 유형을 정확히 분류하고 요약하세요.
 
@@ -178,9 +207,12 @@ JSON 형식으로만 답하세요:`;
 
       return parsed.data;
     } catch (error) {
-      logger.warn("Gemini classification failed; using local deterministic fallback", {
-        error,
-      });
+      logger.warn(
+        "Gemini classification failed; using local deterministic fallback",
+        {
+          error,
+        },
+      );
       return buildDeterministicGeminiResult(name, contexts);
     }
   }

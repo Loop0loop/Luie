@@ -10,7 +10,10 @@ import { readLuieContainerEntry } from "../../../src/main/services/io/luieContai
 
 describe("`.luie` recovery after local DB loss", () => {
   it("reimports project content and snapshots from `.luie` after the sqlite replica is deleted", async () => {
-    const projectPath = path.join(app.getPath("userData"), "db-loss-recovery.luie");
+    const projectPath = path.join(
+      app.getPath("userData"),
+      "db-loss-recovery.luie",
+    );
     await fs.rm(projectPath, { recursive: true, force: true });
 
     const project = await projectService.createProject({
@@ -59,11 +62,13 @@ describe("`.luie` recovery after local DB loss", () => {
     const reopened = await projectService.openLuieProject(projectPath);
     const restoredProjectId = reopened.project.id;
 
-    const restoredChapters = await chapterService.getAllChapters(restoredProjectId);
+    const restoredChapters =
+      await chapterService.getAllChapters(restoredProjectId);
     expect(restoredChapters).toHaveLength(1);
     expect(restoredChapters[0]?.content).toBe(chapterContent);
 
-    const restoredSnapshots = await snapshotService.getSnapshotsByProject(restoredProjectId);
+    const restoredSnapshots =
+      await snapshotService.getSnapshotsByProject(restoredProjectId);
     expect(restoredSnapshots).toHaveLength(1);
     expect(restoredSnapshots[0]?.content).toBe(chapterContent);
 

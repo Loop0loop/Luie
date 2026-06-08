@@ -6,7 +6,11 @@ import {
   memoryNarrativeSummarySource,
 } from "../../../../../database/schema/index.js";
 import type { NarrativeMemoryFactResult } from "../../../../../../shared/types/search.js";
-import { CONFIRMED_SUMMARY_STATUS, NARRATIVE_SUMMARY_COUNT_LIMIT, NARRATIVE_SUMMARY_TEXT_LIMIT } from "./constants.js";
+import {
+  CONFIRMED_SUMMARY_STATUS,
+  NARRATIVE_SUMMARY_COUNT_LIMIT,
+  NARRATIVE_SUMMARY_TEXT_LIMIT,
+} from "./constants.js";
 import { resolveChapterOrderMap } from "./chapter.js";
 
 function summarizeScopeTypePriority(scopeType: string): number {
@@ -184,8 +188,14 @@ function mapSummaryRowsToFacts(
       if (aPriority !== bPriority) {
         return bPriority - aPriority;
       }
-      const aOrder = a.scopeType === "chapter" ? (chapterOrderById.get(a.scopeId ?? "") ?? 0) : 0;
-      const bOrder = b.scopeType === "chapter" ? (chapterOrderById.get(b.scopeId ?? "") ?? 0) : 0;
+      const aOrder =
+        a.scopeType === "chapter"
+          ? (chapterOrderById.get(a.scopeId ?? "") ?? 0)
+          : 0;
+      const bOrder =
+        b.scopeType === "chapter"
+          ? (chapterOrderById.get(b.scopeId ?? "") ?? 0)
+          : 0;
       if (aOrder !== bOrder) {
         return bOrder - aOrder;
       }
@@ -196,7 +206,7 @@ function mapSummaryRowsToFacts(
   return prioritizedRows.map((row) => {
     const chapterOrder =
       row.scopeType === "chapter" && row.scopeId !== null
-        ? chapterOrderById.get(row.scopeId) ?? null
+        ? (chapterOrderById.get(row.scopeId) ?? null)
         : null;
     const observedAt =
       row.scopeType === "chapter" && chapterOrder !== null
@@ -273,7 +283,7 @@ export async function fetchNarrativeSummaryFacts(input: {
   return facts.map((row) => ({
     ...row,
     evidenceCount:
-      evidenceCountBySummaryId.get(row.id) ?? (row.evidenceCount ?? 0),
+      evidenceCountBySummaryId.get(row.id) ?? row.evidenceCount ?? 0,
   }));
 }
 

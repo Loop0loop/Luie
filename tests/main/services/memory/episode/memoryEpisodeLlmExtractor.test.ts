@@ -3,11 +3,14 @@ import type { MemoryEpisodeExtractionChunk } from "../../../../../src/main/servi
 
 const generateTextMock = vi.hoisted(() => vi.fn());
 
-vi.mock("../../../../../src/main/services/features/utility/utilityProcessBridge.js", () => ({
-  utilityProcessBridge: {
-    generateText: generateTextMock,
-  },
-}));
+vi.mock(
+  "../../../../../src/main/services/features/utility/utilityProcessBridge.js",
+  () => ({
+    utilityProcessBridge: {
+      generateText: generateTextMock,
+    },
+  }),
+);
 
 describe("createLlmEpisodeExtractor", () => {
   const chunks: MemoryEpisodeExtractionChunk[] = [
@@ -46,9 +49,8 @@ describe("createLlmEpisodeExtractor", () => {
       }),
     });
 
-    const { createLlmEpisodeExtractor } = await import(
-      "../../../../../src/main/services/features/memory/episode/memoryEpisodeLlmExtractor.js"
-    );
+    const { createLlmEpisodeExtractor } =
+      await import("../../../../../src/main/services/features/memory/episode/memoryEpisodeLlmExtractor.js");
     const extractor = createLlmEpisodeExtractor();
     const result = await extractor({
       projectId: "project-1",
@@ -103,9 +105,8 @@ describe("createLlmEpisodeExtractor", () => {
       }),
     });
 
-    const { createLlmEpisodeExtractor } = await import(
-      "../../../../../src/main/services/features/memory/episode/memoryEpisodeLlmExtractor.js"
-    );
+    const { createLlmEpisodeExtractor } =
+      await import("../../../../../src/main/services/features/memory/episode/memoryEpisodeLlmExtractor.js");
     const extractor = createLlmEpisodeExtractor();
 
     await expect(

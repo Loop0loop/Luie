@@ -30,10 +30,18 @@ vi.mock("../../../src/main/database/index.js", () => ({
       select: vi.fn().mockReturnThis(),
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
-      limit: vi.fn(async () => [{ title: "Old Project", projectPath: "/tmp/old-project.luie" }]),
+      limit: vi.fn(async () => [
+        { title: "Old Project", projectPath: "/tmp/old-project.luie" },
+      ]),
       update: vi.fn().mockReturnThis(),
       set: vi.fn().mockReturnThis(),
-      returning: vi.fn(async () => [{ id: "project-1", title: "New Project", projectPath: "relative/unsafe-path.luie" }]),
+      returning: vi.fn(async () => [
+        {
+          id: "project-1",
+          title: "New Project",
+          projectPath: "relative/unsafe-path.luie",
+        },
+      ]),
     })),
   },
 }));
@@ -62,9 +70,12 @@ describe("ProjectService path safety", () => {
     const mkdirSpy = vi.spyOn(fs, "mkdir");
     const renameSpy = vi.spyOn(fs, "rename");
 
-    const { ProjectService } = await import("../../../src/main/services/core/projectService.js");
+    const { ProjectService } =
+      await import("../../../src/main/services/core/projectService.js");
     const service = new ProjectService();
-    const scheduleSpy = vi.spyOn(service, "schedulePackageExport").mockImplementation(() => {});
+    const scheduleSpy = vi
+      .spyOn(service, "schedulePackageExport")
+      .mockImplementation(() => {});
 
     const updated = await service.updateProject({
       id: "project-1",

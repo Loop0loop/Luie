@@ -110,7 +110,7 @@ describe("DbRecoveryService", () => {
     mocked.db.getDatabasePath.mockReturnValue(dbPath);
 
     const { DbRecoveryService } =
-      await import("../../../src/main/services/features/dbRecoveryService.js");
+      await import("../../../src/main/services/features/recovery/index.js");
     const service = new DbRecoveryService();
 
     const result = await service.recoverFromWal();
@@ -132,7 +132,7 @@ describe("DbRecoveryService", () => {
     mocked.db.getDatabasePath.mockReturnValue(dbPath);
 
     const { DbRecoveryService } =
-      await import("../../../src/main/services/features/dbRecoveryService.js");
+      await import("../../../src/main/services/features/recovery/index.js");
     const service = new DbRecoveryService();
 
     const result = await service.recoverFromWal({ dryRun: true });
@@ -158,7 +158,7 @@ describe("DbRecoveryService", () => {
     mocked.db.getDatabasePath.mockReturnValue(dbPath);
 
     const { DbRecoveryService } =
-      await import("../../../src/main/services/features/dbRecoveryService.js");
+      await import("../../../src/main/services/features/recovery/index.js");
     const service = new DbRecoveryService();
 
     const result = await service.getRecoveryStatus();
@@ -185,7 +185,7 @@ describe("DbRecoveryService", () => {
     mocked.db.getDatabasePath.mockReturnValue(dbPath);
 
     const { DbRecoveryService } =
-      await import("../../../src/main/services/features/dbRecoveryService.js");
+      await import("../../../src/main/services/features/recovery/index.js");
     const service = new DbRecoveryService();
 
     const result = await service.getRecoveryStatus();
@@ -216,7 +216,7 @@ describe("DbRecoveryService", () => {
     });
 
     const { DbRecoveryService } =
-      await import("../../../src/main/services/features/dbRecoveryService.js");
+      await import("../../../src/main/services/features/recovery/index.js");
     const service = new DbRecoveryService();
 
     const result = await service.recoverFromWal();
@@ -251,7 +251,7 @@ describe("DbRecoveryService", () => {
     });
 
     const { DbRecoveryService } =
-      await import("../../../src/main/services/features/dbRecoveryService.js");
+      await import("../../../src/main/services/features/recovery/index.js");
     const service = new DbRecoveryService();
 
     const result = await service.recoverFromWal();
@@ -289,7 +289,7 @@ describe("DbRecoveryService", () => {
     });
 
     const { DbRecoveryService } =
-      await import("../../../src/main/services/features/dbRecoveryService.js");
+      await import("../../../src/main/services/features/recovery/index.js");
     const service = new DbRecoveryService();
 
     const result = await service.recoverFromWal();

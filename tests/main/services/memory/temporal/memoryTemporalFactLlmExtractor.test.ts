@@ -6,11 +6,14 @@ import type {
 
 const generateTextMock = vi.hoisted(() => vi.fn());
 
-vi.mock("../../../../../src/main/services/features/utility/utilityProcessBridge.js", () => ({
-  utilityProcessBridge: {
-    generateText: generateTextMock,
-  },
-}));
+vi.mock(
+  "../../../../../src/main/services/features/utility/utilityProcessBridge.js",
+  () => ({
+    utilityProcessBridge: {
+      generateText: generateTextMock,
+    },
+  }),
+);
 
 describe("createLlmTemporalFactExtractor", () => {
   const evidence: MemoryTemporalFactExtractionEvidence[] = [
@@ -77,9 +80,8 @@ describe("createLlmTemporalFactExtractor", () => {
       }),
     });
 
-    const { createLlmTemporalFactExtractor } = await import(
-      "../../../../../src/main/services/features/memory/temporal/memoryTemporalFactLlmExtractor.js"
-    );
+    const { createLlmTemporalFactExtractor } =
+      await import("../../../../../src/main/services/features/memory/temporal/memoryTemporalFactLlmExtractor.js");
     const extractor = createLlmTemporalFactExtractor();
     const result = await extractor({
       projectId: "project-1",
@@ -138,9 +140,8 @@ describe("createLlmTemporalFactExtractor", () => {
       }),
     });
 
-    const { createLlmTemporalFactExtractor } = await import(
-      "../../../../../src/main/services/features/memory/temporal/memoryTemporalFactLlmExtractor.js"
-    );
+    const { createLlmTemporalFactExtractor } =
+      await import("../../../../../src/main/services/features/memory/temporal/memoryTemporalFactLlmExtractor.js");
     await expect(
       createLlmTemporalFactExtractor()({
         projectId: "project-1",

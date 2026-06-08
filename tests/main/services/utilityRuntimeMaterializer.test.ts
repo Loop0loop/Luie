@@ -55,7 +55,9 @@ describe("utilityRuntimeMaterializer", () => {
       skipped: [],
     };
 
-    await expect(resolveUtilityModelRuntimeClient("project-1", plan)).rejects.toThrow("spawn failed");
+    await expect(
+      resolveUtilityModelRuntimeClient("project-1", plan),
+    ).rejects.toThrow("spawn failed");
     expect(mocked.ensureStarted).toHaveBeenCalledTimes(1);
   });
 
@@ -101,7 +103,9 @@ describe("utilityRuntimeMaterializer", () => {
     const embeddingModelPath = join(modelDir, DEFAULT_EMBEDDING_MODEL.filename);
     writeFileSync(embeddingModelPath, "test-model");
     process.env.LUIE_USER_DATA_PATH = userDataPath;
-    mocked.ensureEmbeddingStarted.mockResolvedValue({ baseUrl: "http://127.0.0.1:41234" });
+    mocked.ensureEmbeddingStarted.mockResolvedValue({
+      baseUrl: "http://127.0.0.1:41234",
+    });
     const plan: RuntimeRoutePlan = {
       requestedProvider: "auto",
       fallbackPolicy: "try-next",
@@ -118,7 +122,10 @@ describe("utilityRuntimeMaterializer", () => {
       skipped: [],
     };
 
-    const runtime = await resolveUtilityEmbeddingRuntimeClient("project-1", plan);
+    const runtime = await resolveUtilityEmbeddingRuntimeClient(
+      "project-1",
+      plan,
+    );
 
     expect(runtime.providerName).toBe("externalapi");
     expect(mocked.ensureEmbeddingStarted).toHaveBeenCalledWith(
@@ -132,7 +139,10 @@ describe("utilityRuntimeMaterializer", () => {
     const userDataPath = join("/tmp", `luie-embedding-fail-${Date.now()}`);
     const modelDir = join(userDataPath, "llm-models");
     mkdirSync(modelDir, { recursive: true });
-    writeFileSync(join(modelDir, DEFAULT_EMBEDDING_MODEL.filename), "test-model");
+    writeFileSync(
+      join(modelDir, DEFAULT_EMBEDDING_MODEL.filename),
+      "test-model",
+    );
     process.env.LUIE_USER_DATA_PATH = userDataPath;
     mocked.ensureEmbeddingStarted.mockRejectedValue(new Error("spawn failed"));
     const plan: RuntimeRoutePlan = {
@@ -151,7 +161,9 @@ describe("utilityRuntimeMaterializer", () => {
       skipped: [],
     };
 
-    await expect(resolveUtilityEmbeddingRuntimeClient("project-1", plan)).rejects.toThrow("spawn failed");
+    await expect(
+      resolveUtilityEmbeddingRuntimeClient("project-1", plan),
+    ).rejects.toThrow("spawn failed");
     expect(mocked.ensureEmbeddingStarted).toHaveBeenCalledTimes(1);
   });
 });

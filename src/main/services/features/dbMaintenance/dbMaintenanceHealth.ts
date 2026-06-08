@@ -1,8 +1,8 @@
 import crypto from "node:crypto";
 import { sql } from "drizzle-orm";
-import type { MainDrizzleClient } from "../../infra/database/index.js";
-import { chapterBody } from "../../infra/database/index.js";
-import { ENTITY_RELATION_WORLD_TYPES } from "../../infra/database/index.js";
+import type { MainDrizzleClient } from "../../../infra/database/index.js";
+import { chapterBody } from "../../../infra/database/index.js";
+import { ENTITY_RELATION_WORLD_TYPES } from "../../../infra/database/index.js";
 
 function hash(input: string): string {
   return crypto.createHash("sha256").update(input).digest("hex");
@@ -61,20 +61,34 @@ export async function getMigrationHealth(input: {
        OR length("vec") <= 0
        OR ("dimension" > 0 AND length("vec") % "dimension" != 0);
   `);
-  const relationPointerMismatchRows = await input.client.all<{ count: number }>(sql`
+  const relationPointerMismatchRows = await input.client.all<{
+    count: number;
+  }>(sql`
     SELECT COUNT(*) as count
     FROM "EntityRelation" r
     WHERE (
-      (r."sourceType" IN (${sql.join(ENTITY_RELATION_WORLD_TYPES.map((type) => sql`${type}`), sql`,`)})
+      (r."sourceType" IN (${sql.join(
+        ENTITY_RELATION_WORLD_TYPES.map((type) => sql`${type}`),
+        sql`,`,
+      )})
         AND COALESCE(r."sourceWorldEntityId", '') != r."sourceId")
       OR
-      (r."sourceType" NOT IN (${sql.join(ENTITY_RELATION_WORLD_TYPES.map((type) => sql`${type}`), sql`,`)})
+      (r."sourceType" NOT IN (${sql.join(
+        ENTITY_RELATION_WORLD_TYPES.map((type) => sql`${type}`),
+        sql`,`,
+      )})
         AND r."sourceWorldEntityId" IS NOT NULL)
       OR
-      (r."targetType" IN (${sql.join(ENTITY_RELATION_WORLD_TYPES.map((type) => sql`${type}`), sql`,`)})
+      (r."targetType" IN (${sql.join(
+        ENTITY_RELATION_WORLD_TYPES.map((type) => sql`${type}`),
+        sql`,`,
+      )})
         AND COALESCE(r."targetWorldEntityId", '') != r."targetId")
       OR
-      (r."targetType" NOT IN (${sql.join(ENTITY_RELATION_WORLD_TYPES.map((type) => sql`${type}`), sql`,`)})
+      (r."targetType" NOT IN (${sql.join(
+        ENTITY_RELATION_WORLD_TYPES.map((type) => sql`${type}`),
+        sql`,`,
+      )})
         AND r."targetWorldEntityId" IS NOT NULL)
     );
   `);

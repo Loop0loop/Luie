@@ -29,7 +29,9 @@ export function buildRagGrounding(input: {
   };
 }
 
-export function buildGroundedRagQaResult(input: Omit<RagQaResult, "grounding">): RagQaResult {
+export function buildGroundedRagQaResult(
+  input: Omit<RagQaResult, "grounding">,
+): RagQaResult {
   return {
     ...input,
     grounding: buildRagGrounding({

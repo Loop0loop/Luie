@@ -32,7 +32,8 @@ export const applyProjectDeletes = (
   deletedProjectIds: Set<string>,
 ): void => {
   for (const projectId of deletedProjectIds) {
-    const existing = tx.select({ id: project.id })
+    const existing = tx
+      .select({ id: project.id })
       .from(project)
       .where(eq(project.id, projectId))
       .limit(1)
@@ -49,7 +50,8 @@ export const upsertProjects = (
 ): void => {
   for (const proj of projects) {
     if (proj.deletedAt || deletedProjectIds.has(proj.id)) continue;
-    const existing = tx.select({ id: project.id })
+    const existing = tx
+      .select({ id: project.id })
       .from(project)
       .where(eq(project.id, proj.id))
       .limit(1)
@@ -67,28 +69,30 @@ export const upsertProjects = (
       continue;
     }
 
-    tx.insert(project).values({
-      id: proj.id,
-      title: proj.title,
-      description: proj.description,
-      createdAt: new Date(proj.createdAt).toISOString(),
-      updatedAt: new Date(proj.updatedAt).toISOString(),
-    }).run();
+    tx.insert(project)
+      .values({
+        id: proj.id,
+        title: proj.title,
+        description: proj.description,
+        createdAt: new Date(proj.createdAt).toISOString(),
+        updatedAt: new Date(proj.updatedAt).toISOString(),
+      })
+      .run();
 
-    tx.insert(projectSettings).values({
-      id: proj.id,
-      projectId: proj.id,
-      autoSave: true,
-      autoSaveInterval: DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
-    }).run();
+    tx.insert(projectSettings)
+      .values({
+        id: proj.id,
+        projectId: proj.id,
+        autoSave: true,
+        autoSaveInterval: DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS,
+      })
+      .run();
   }
 };
 
-export const upsertChapter = (
-  tx: DbLike,
-  ch: SyncChapterRecord,
-): void => {
-  const existing = tx.select({ id: chapter.id })
+export const upsertChapter = (tx: DbLike, ch: SyncChapterRecord): void => {
+  const existing = tx
+    .select({ id: chapter.id })
     .from(chapter)
     .where(eq(chapter.id, ch.id))
     .limit(1)
@@ -106,16 +110,15 @@ export const upsertChapter = (
   };
 
   if (existing?.id) {
-    tx.update(chapter)
-      .set(data)
-      .where(eq(chapter.id, ch.id))
-      .run();
+    tx.update(chapter).set(data).where(eq(chapter.id, ch.id)).run();
   } else {
-    tx.insert(chapter).values({
-      id: ch.id,
-      ...data,
-      createdAt: new Date(ch.createdAt).toISOString(),
-    }).run();
+    tx.insert(chapter)
+      .values({
+        id: ch.id,
+        ...data,
+        createdAt: new Date(ch.createdAt).toISOString(),
+      })
+      .run();
   }
 };
 
@@ -126,14 +129,16 @@ export const upsertCharacters = (
 ): void => {
   for (const char of characters) {
     if (deletedProjectIds.has(char.projectId)) continue;
-    const existing = tx.select({ id: character.id })
+    const existing = tx
+      .select({ id: character.id })
       .from(character)
       .where(eq(character.id, char.id))
       .limit(1)
       .get();
 
     if (char.deletedAt) {
-      if (existing?.id) tx.delete(character).where(eq(character.id, char.id)).run();
+      if (existing?.id)
+        tx.delete(character).where(eq(character.id, char.id)).run();
       continue;
     }
 
@@ -152,11 +157,13 @@ export const upsertCharacters = (
     if (existing?.id) {
       tx.update(character).set(data).where(eq(character.id, char.id)).run();
     } else {
-      tx.insert(character).values({
-        id: char.id,
-        ...data,
-        createdAt: new Date(char.createdAt).toISOString(),
-      }).run();
+      tx.insert(character)
+        .values({
+          id: char.id,
+          ...data,
+          createdAt: new Date(char.createdAt).toISOString(),
+        })
+        .run();
     }
   }
 };
@@ -168,7 +175,8 @@ export const upsertEvents = (
 ): void => {
   for (const ev of events) {
     if (deletedProjectIds.has(ev.projectId)) continue;
-    const existing = tx.select({ id: event.id })
+    const existing = tx
+      .select({ id: event.id })
       .from(event)
       .where(eq(event.id, ev.id))
       .limit(1)
@@ -194,11 +202,13 @@ export const upsertEvents = (
     if (existing?.id) {
       tx.update(event).set(data).where(eq(event.id, ev.id)).run();
     } else {
-      tx.insert(event).values({
-        id: ev.id,
-        ...data,
-        createdAt: new Date(ev.createdAt).toISOString(),
-      }).run();
+      tx.insert(event)
+        .values({
+          id: ev.id,
+          ...data,
+          createdAt: new Date(ev.createdAt).toISOString(),
+        })
+        .run();
     }
   }
 };
@@ -210,7 +220,8 @@ export const upsertFactions = (
 ): void => {
   for (const fac of factions) {
     if (deletedProjectIds.has(fac.projectId)) continue;
-    const existing = tx.select({ id: faction.id })
+    const existing = tx
+      .select({ id: faction.id })
       .from(faction)
       .where(eq(faction.id, fac.id))
       .limit(1)
@@ -236,11 +247,13 @@ export const upsertFactions = (
     if (existing?.id) {
       tx.update(faction).set(data).where(eq(faction.id, fac.id)).run();
     } else {
-      tx.insert(faction).values({
-        id: fac.id,
-        ...data,
-        createdAt: new Date(fac.createdAt).toISOString(),
-      }).run();
+      tx.insert(faction)
+        .values({
+          id: fac.id,
+          ...data,
+          createdAt: new Date(fac.createdAt).toISOString(),
+        })
+        .run();
     }
   }
 };
@@ -252,7 +265,8 @@ export const upsertTerms = (
 ): void => {
   for (const t of terms) {
     if (deletedProjectIds.has(t.projectId)) continue;
-    const existing = tx.select({ id: term.id })
+    const existing = tx
+      .select({ id: term.id })
       .from(term)
       .where(eq(term.id, t.id))
       .limit(1)
@@ -276,11 +290,13 @@ export const upsertTerms = (
     if (existing?.id) {
       tx.update(term).set(data).where(eq(term.id, t.id)).run();
     } else {
-      tx.insert(term).values({
-        id: t.id,
-        ...data,
-        createdAt: new Date(t.createdAt).toISOString(),
-      }).run();
+      tx.insert(term)
+        .values({
+          id: t.id,
+          ...data,
+          createdAt: new Date(t.createdAt).toISOString(),
+        })
+        .run();
     }
   }
 };
@@ -293,7 +309,8 @@ export const applyChapterTombstones = (
   for (const tombstone of tombstones) {
     if (tombstone.entityType !== "chapter") continue;
     if (deletedProjectIds.has(tombstone.projectId)) continue;
-    const existing = tx.select({ id: chapter.id, projectId: chapter.projectId })
+    const existing = tx
+      .select({ id: chapter.id, projectId: chapter.projectId })
       .from(chapter)
       .where(eq(chapter.id, tombstone.entityId))
       .limit(1)

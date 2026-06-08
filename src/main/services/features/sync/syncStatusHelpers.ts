@@ -70,7 +70,7 @@ export const toSyncStatusFromSettings = (
     : "disconnected",
   degradedReason:
     syncSettings.connected && baseStatus.health === "degraded"
-      ? baseStatus.degradedReason ?? syncSettings.lastError
+      ? (baseStatus.degradedReason ?? syncSettings.lastError)
       : undefined,
 });
 
@@ -82,10 +82,10 @@ export const normalizePendingProjectDeletes = (
     .filter((entry): entry is SyncPendingProjectDelete =>
       Boolean(
         entry &&
-          typeof entry.projectId === "string" &&
-          entry.projectId.length > 0 &&
-          typeof entry.deletedAt === "string" &&
-          entry.deletedAt.length > 0,
+        typeof entry.projectId === "string" &&
+        entry.projectId.length > 0 &&
+        typeof entry.deletedAt === "string" &&
+        entry.deletedAt.length > 0,
       ),
     )
     .map((entry) => ({
