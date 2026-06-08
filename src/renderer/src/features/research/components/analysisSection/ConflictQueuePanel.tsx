@@ -8,6 +8,8 @@ type ConflictQueuePanelProps = {
   items: AnalysisConflictItem[];
   onToggle: () => void;
   renderFact: (fact: AnalysisConflictItem["invalidatedFact"]) => string;
+  resolvingConflictId: string | null;
+  onResolve: (item: AnalysisConflictItem, winnerFactId: string) => void;
 };
 
 export function ConflictQueuePanel({
@@ -17,6 +19,8 @@ export function ConflictQueuePanel({
   items,
   onToggle,
   renderFact,
+  resolvingConflictId,
+  onResolve,
 }: ConflictQueuePanelProps) {
   return (
     <div className="rounded-lg border border-border bg-surface px-3 py-2 text-xs">
@@ -51,6 +55,24 @@ export function ConflictQueuePanel({
                 <div className="text-muted">
                   무효화한 사실: {renderFact(item.invalidatingFact)}
                 </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => onResolve(item, item.invalidatedFact.id)}
+                    disabled={resolvingConflictId === item.conflictId}
+                    className="rounded border border-border px-2 py-1 text-[11px] text-muted hover:text-success disabled:opacity-50"
+                  >
+                    이전 사실 채택
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onResolve(item, item.invalidatingFact.id)}
+                    disabled={resolvingConflictId === item.conflictId}
+                    className="rounded border border-border px-2 py-1 text-[11px] text-muted hover:text-success disabled:opacity-50"
+                  >
+                    신규 사실 채택
+                  </button>
+                </div>
               </div>
             ))
           )}
@@ -59,4 +81,3 @@ export function ConflictQueuePanel({
     </div>
   );
 }
-

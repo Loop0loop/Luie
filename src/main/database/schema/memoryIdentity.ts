@@ -112,3 +112,49 @@ export const memoryEntityMention = sqliteTable(
     }).onDelete("set null").onUpdate("cascade"),
   ],
 );
+
+export const memoryEntityMergeAudit = sqliteTable(
+  "MemoryEntityMergeAudit",
+  {
+    id: text("id").primaryKey().notNull(),
+    projectId: text("projectId").notNull(),
+    sourceEntityId: text("sourceEntityId").notNull(),
+    targetEntityId: text("targetEntityId").notNull(),
+    aliasId: text("aliasId"),
+    action: text("action").notNull(),
+    reason: text("reason"),
+    createdBy: text("createdBy").notNull().default("user"),
+    createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updatedAt").notNull(),
+  },
+  (table) => [
+    index("MemoryEntityMergeAudit_projectId_source_idx").on(
+      table.projectId,
+      table.sourceEntityId,
+    ),
+    index("MemoryEntityMergeAudit_projectId_target_idx").on(
+      table.projectId,
+      table.targetEntityId,
+    ),
+    foreignKey({
+      name: "MemoryEntityMergeAudit_projectId_fkey",
+      columns: [table.projectId],
+      foreignColumns: [project.id],
+    }).onDelete("cascade").onUpdate("cascade"),
+    foreignKey({
+      name: "MemoryEntityMergeAudit_sourceEntityId_fkey",
+      columns: [table.sourceEntityId],
+      foreignColumns: [memoryEntity.id],
+    }).onDelete("cascade").onUpdate("cascade"),
+    foreignKey({
+      name: "MemoryEntityMergeAudit_targetEntityId_fkey",
+      columns: [table.targetEntityId],
+      foreignColumns: [memoryEntity.id],
+    }).onDelete("cascade").onUpdate("cascade"),
+    foreignKey({
+      name: "MemoryEntityMergeAudit_aliasId_fkey",
+      columns: [table.aliasId],
+      foreignColumns: [memoryEntityAlias.id],
+    }).onDelete("set null").onUpdate("cascade"),
+  ],
+);

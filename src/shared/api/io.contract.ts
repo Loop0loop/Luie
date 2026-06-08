@@ -97,6 +97,15 @@ export type IoRendererApi = {
     getEmbeddingStatus: (
       projectId: string,
     ) => Promise<IPCResponse<SharedTypes.MemoryEmbeddingStatus>>;
+    runEvalSuite: (
+      input: SharedTypes.MemoryEvalRunRequest,
+    ) => Promise<IPCResponse<SharedTypes.MemoryEvalLiveRunnerResult>>;
+    runIntentCalibration: (
+      input: SharedTypes.NarrativeMemoryIntentCalibrationRequest,
+    ) => Promise<IPCResponse<SharedTypes.NarrativeMemoryIntentCalibrationResult>>;
+    runEpisodeCalibration: (
+      input: SharedTypes.MemoryEpisodeCalibrationRequest,
+    ) => Promise<IPCResponse<SharedTypes.MemoryEpisodeCalibrationResult>>;
   };
   memory: {
     queryNarrative: (
@@ -105,6 +114,39 @@ export type IoRendererApi = {
     getConflictQueue: (
       input: SharedTypes.MemoryConflictQueueInput,
     ) => Promise<IPCResponse<SharedTypes.MemoryConflictQueueResult>>;
+    getEpisodeReviewQueue: (
+      input: SharedTypes.MemoryEpisodeReviewQueueInput,
+    ) => Promise<IPCResponse<SharedTypes.MemoryEpisodeReviewQueueResult>>;
+    rejectEpisode: (
+      input: SharedTypes.MemoryEpisodeRejectInput,
+    ) => Promise<IPCResponse<SharedTypes.MemoryEpisodeRejectResult>>;
+    getFactReviewQueue: (
+      input: SharedTypes.MemoryTemporalFactReviewQueueInput,
+    ) => Promise<IPCResponse<SharedTypes.MemoryTemporalFactReviewQueueResult>>;
+    confirmFact: (
+      input: SharedTypes.MemoryTemporalFactConfirmInput,
+    ) => Promise<IPCResponse<SharedTypes.MemoryTemporalFactReviewMutationResult>>;
+    rejectFact: (
+      input: SharedTypes.MemoryTemporalFactRejectInput,
+    ) => Promise<IPCResponse<SharedTypes.MemoryTemporalFactReviewMutationResult>>;
+    resolveFactConflict: (
+      input: SharedTypes.MemoryTemporalFactConflictResolveInput,
+    ) => Promise<IPCResponse<SharedTypes.MemoryTemporalFactReviewMutationResult>>;
+    getEntityAliasReviewQueue: (
+      input: SharedTypes.MemoryEntityAliasReviewQueueInput,
+    ) => Promise<IPCResponse<SharedTypes.MemoryEntityAliasReviewQueueResult>>;
+    confirmEntityAlias: (
+      input: SharedTypes.MemoryEntityAliasConfirmInput,
+    ) => Promise<IPCResponse<SharedTypes.MemoryEntityAliasReviewMutationResult>>;
+    rejectEntityAlias: (
+      input: SharedTypes.MemoryEntityAliasRejectInput,
+    ) => Promise<IPCResponse<SharedTypes.MemoryEntityAliasReviewMutationResult>>;
+    splitEntityAlias: (
+      input: SharedTypes.MemoryEntityAliasSplitInput,
+    ) => Promise<IPCResponse<SharedTypes.MemoryEntityAliasSplitResult>>;
+    mergeEntity: (
+      input: SharedTypes.MemoryEntityMergeInput,
+    ) => Promise<IPCResponse<SharedTypes.MemoryEntityMergeResult>>;
     searchChunks: (
       input: SharedTypes.MemoryChunkSearchQuery,
     ) => Promise<IPCResponse<SharedTypes.MemoryChunkSearchResult[]>>;
@@ -114,6 +156,9 @@ export type IoRendererApi = {
     getChapterSummary: (
       chapterId: string,
     ) => Promise<IPCResponse<SharedTypes.ChapterSummaryResult | null>>;
+    getNarrativeSummaryStatus: (
+      projectId: string,
+    ) => Promise<IPCResponse<SharedTypes.NarrativeSummaryStatus>>;
   };
   maintenance: {
     runIntegrityCheck: () => Promise<

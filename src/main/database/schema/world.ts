@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { foreignKey, index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { project } from "./foundation.js";
+import { memoryEntity } from "./memoryIdentity.js";
 
 const createWorldEntryColumns = () => ({
   id: text("id").primaryKey().notNull(),
@@ -145,6 +146,7 @@ export const worldEntity = sqliteTable(
     description: text("description"),
     firstAppearance: text("firstAppearance"),
     attributes: text("attributes"),
+    memoryEntityId: text("memoryEntityId"),
     positionX: real("positionX").notNull().default(0),
     positionY: real("positionY").notNull().default(0),
     createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
@@ -163,6 +165,11 @@ export const worldEntity = sqliteTable(
       columns: [table.projectId],
       foreignColumns: [project.id],
     }).onDelete("cascade").onUpdate("cascade"),
+    foreignKey({
+      name: "WorldEntity_memoryEntityId_fkey",
+      columns: [table.memoryEntityId, table.projectId],
+      foreignColumns: [memoryEntity.id, memoryEntity.projectId],
+    }).onDelete("set null").onUpdate("cascade"),
   ],
 );
 

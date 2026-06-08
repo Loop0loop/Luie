@@ -12,6 +12,84 @@ describe("IPC input validation: narrative memory", () => {
     resetInputValidationMocks();
   });
 
+  it("routes valid MEMORY_RUN_EVAL_SUITE payloads to the memory eval runner", async () => {
+    mocked.narrativeMemoryQueryService.runEvalSuite.mockResolvedValue({
+      runId: "run-1",
+      caseCount: 0,
+      averageContextRecallAtK: 0,
+      totalP0FailureCount: 0,
+      results: [],
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_RUN_EVAL_SUITE);
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      label: "manual-eval",
+      topK: 5,
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.narrativeMemoryQueryService.runEvalSuite).toHaveBeenCalledWith(
+      input,
+    );
+  });
+
+  it("routes valid MEMORY_RUN_INTENT_CALIBRATION payloads to the memory calibration runner", async () => {
+    mocked.narrativeMemoryQueryService.runIntentCalibration.mockResolvedValue({
+      caseCount: 8,
+      passCount: 8,
+      failures: [],
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(
+      IPC_CHANNELS.MEMORY_RUN_INTENT_CALIBRATION,
+    );
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      useLlm: true,
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(
+      mocked.narrativeMemoryQueryService.runIntentCalibration,
+    ).toHaveBeenCalledWith(input);
+  });
+
+  it("routes valid MEMORY_RUN_EPISODE_CALIBRATION payloads to the episode calibration runner", async () => {
+    mocked.narrativeMemoryQueryService.runEpisodeCalibration.mockResolvedValue({
+      caseCount: 1,
+      passCount: 1,
+      failures: [],
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(
+      IPC_CHANNELS.MEMORY_RUN_EPISODE_CALIBRATION,
+    );
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(
+      mocked.narrativeMemoryQueryService.runEpisodeCalibration,
+    ).toHaveBeenCalledWith(input);
+  });
+
   it("routes valid MEMORY_QUERY_NARRATIVE payloads to the memory query service", async () => {
     mocked.narrativeMemoryQueryService.query.mockResolvedValue({
       intent: "relationship-at-chapter",
@@ -60,6 +138,278 @@ describe("IPC input validation: narrative memory", () => {
 
     expect(response.success).toBe(true);
     expect(mocked.narrativeMemoryQueryService.getConflictQueue).toHaveBeenCalledWith(
+      input,
+    );
+  });
+
+  it("routes valid MEMORY_EPISODE_REVIEW_QUEUE payloads to the memory review service", async () => {
+    mocked.narrativeMemoryQueryService.listSuggestedEpisodes.mockResolvedValue({
+      items: [],
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_EPISODE_REVIEW_QUEUE);
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      limit: 20,
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.narrativeMemoryQueryService.listSuggestedEpisodes).toHaveBeenCalledWith(
+      input,
+    );
+  });
+
+  it("routes valid MEMORY_EPISODE_REJECT payloads to the memory review service", async () => {
+    mocked.narrativeMemoryQueryService.rejectEpisode.mockResolvedValue({
+      updated: true,
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_EPISODE_REJECT);
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      episodeId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      reason: "근거 부족",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.narrativeMemoryQueryService.rejectEpisode).toHaveBeenCalledWith(input);
+  });
+
+  it("routes valid MEMORY_FACT_REVIEW_QUEUE payloads to the memory review service", async () => {
+    mocked.narrativeMemoryQueryService.listSuggestedFacts.mockResolvedValue({
+      items: [],
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_FACT_REVIEW_QUEUE);
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      limit: 20,
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.narrativeMemoryQueryService.listSuggestedFacts).toHaveBeenCalledWith(
+      input,
+    );
+  });
+
+  it("routes valid MEMORY_FACT_CONFIRM payloads to the memory review service", async () => {
+    mocked.narrativeMemoryQueryService.confirmFact.mockResolvedValue({
+      updated: true,
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_FACT_CONFIRM);
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      factId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.narrativeMemoryQueryService.confirmFact).toHaveBeenCalledWith(input);
+  });
+
+  it("routes valid MEMORY_FACT_REJECT payloads to the memory review service", async () => {
+    mocked.narrativeMemoryQueryService.rejectFact.mockResolvedValue({
+      updated: true,
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_FACT_REJECT);
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      factId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      reason: "근거 부족",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.narrativeMemoryQueryService.rejectFact).toHaveBeenCalledWith(input);
+  });
+
+  it("routes valid MEMORY_CONFLICT_RESOLVE payloads to the memory review service", async () => {
+    mocked.narrativeMemoryQueryService.resolveFactConflict.mockResolvedValue({
+      updated: true,
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_CONFLICT_RESOLVE);
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      conflictId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      winnerFactId: "a47ac10b-58cc-4372-a567-0e02b2c3d479",
+      reason: "검토 후 확정",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.narrativeMemoryQueryService.resolveFactConflict).toHaveBeenCalledWith(
+      input,
+    );
+  });
+
+  it("routes valid MEMORY_ENTITY_ALIAS_REVIEW_QUEUE payloads to the memory review service", async () => {
+    mocked.narrativeMemoryQueryService.listSuggestedEntityAliases.mockResolvedValue({
+      items: [],
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(
+      IPC_CHANNELS.MEMORY_ENTITY_ALIAS_REVIEW_QUEUE,
+    );
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      limit: 20,
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(
+      mocked.narrativeMemoryQueryService.listSuggestedEntityAliases,
+    ).toHaveBeenCalledWith(input);
+  });
+
+  it("routes valid MEMORY_ENTITY_ALIAS_CONFIRM payloads to the memory review service", async () => {
+    mocked.narrativeMemoryQueryService.confirmEntityAlias.mockResolvedValue({
+      updated: true,
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_CONFIRM);
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      aliasId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.narrativeMemoryQueryService.confirmEntityAlias).toHaveBeenCalledWith(
+      input,
+    );
+  });
+
+  it("routes valid MEMORY_ENTITY_ALIAS_REJECT payloads to the memory review service", async () => {
+    mocked.narrativeMemoryQueryService.rejectEntityAlias.mockResolvedValue({
+      updated: true,
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_REJECT);
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      aliasId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.narrativeMemoryQueryService.rejectEntityAlias).toHaveBeenCalledWith(
+      input,
+    );
+  });
+
+  it("routes valid MEMORY_ENTITY_MERGE payloads to the memory review service", async () => {
+    mocked.narrativeMemoryQueryService.mergeEntity.mockResolvedValue({
+      updated: true,
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_ENTITY_MERGE);
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      targetEntityId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      sourceEntityId: "a47ac10b-58cc-4372-a567-0e02b2c3d479",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.narrativeMemoryQueryService.mergeEntity).toHaveBeenCalledWith(
+      input,
+    );
+  });
+
+  it("routes valid MEMORY_ENTITY_ALIAS_SPLIT payloads to the memory review service", async () => {
+    mocked.narrativeMemoryQueryService.splitEntityAlias.mockResolvedValue({
+      updated: true,
+      entityId: "b47ac10b-58cc-4372-a567-0e02b2c3d479",
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_SPLIT);
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      aliasId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      canonicalName: "검은 기사",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.narrativeMemoryQueryService.splitEntityAlias).toHaveBeenCalledWith(
+      input,
+    );
+  });
+
+  it("routes valid MEMORY_GET_NARRATIVE_SUMMARY_STATUS payloads to the summary status service", async () => {
+    mocked.narrativeSummaryStatusService.getStatus.mockResolvedValue({
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      totalCount: 0,
+      staleCount: 0,
+      byType: {},
+      summaries: [],
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(
+      IPC_CHANNELS.MEMORY_GET_NARRATIVE_SUMMARY_STATUS,
+    );
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.narrativeSummaryStatusService.getStatus).toHaveBeenCalledWith(
       input,
     );
   });

@@ -38,6 +38,82 @@ export const memoryConflictQueueQuerySchema = z.object({
   limit: z.number().int().positive().max(200).optional(),
 });
 
+export const memoryEvalRunSchema = z.object({
+  projectId: projectIdSchema,
+  label: z.string().trim().min(1, "Eval label is required").max(200),
+  topK: z.number().int().positive().max(100).optional(),
+});
+
+export const memoryIntentCalibrationRunSchema = z.object({
+  projectId: projectIdSchema,
+  useLlm: z.boolean().optional(),
+});
+
+export const memoryEpisodeCalibrationRunSchema = z.object({
+  projectId: projectIdSchema,
+});
+
+export const memoryEpisodeReviewQueueSchema = z.object({
+  projectId: projectIdSchema,
+  limit: z.number().int().positive().max(200).optional(),
+});
+
+export const memoryEpisodeRejectSchema = z.object({
+  projectId: projectIdSchema,
+  episodeId: z.string().uuid("Invalid episode ID"),
+  reason: z.string().trim().min(1, "Rejection reason is required").max(1000),
+});
+
+export const memoryTemporalFactReviewQueueSchema = z.object({
+  projectId: projectIdSchema,
+  limit: z.number().int().positive().max(200).optional(),
+});
+
+export const memoryTemporalFactConfirmSchema = z.object({
+  projectId: projectIdSchema,
+  factId: z.string().uuid("Invalid fact ID"),
+});
+
+export const memoryTemporalFactRejectSchema = z.object({
+  projectId: projectIdSchema,
+  factId: z.string().uuid("Invalid fact ID"),
+  reason: z.string().trim().min(1, "Rejection reason is required").max(1000),
+});
+
+export const memoryTemporalFactConflictResolveSchema = z.object({
+  projectId: projectIdSchema,
+  conflictId: z.string().uuid("Invalid conflict ID"),
+  winnerFactId: z.string().uuid("Invalid fact ID"),
+  reason: z.string().trim().min(1).max(1000).optional(),
+});
+
+export const memoryEntityAliasReviewQueueSchema = z.object({
+  projectId: projectIdSchema,
+  limit: z.number().int().positive().max(200).optional(),
+});
+
+export const memoryEntityAliasConfirmSchema = z.object({
+  projectId: projectIdSchema,
+  aliasId: z.string().uuid("Invalid alias ID"),
+});
+
+export const memoryEntityAliasRejectSchema = z.object({
+  projectId: projectIdSchema,
+  aliasId: z.string().uuid("Invalid alias ID"),
+});
+
+export const memoryEntityMergeSchema = z.object({
+  projectId: projectIdSchema,
+  targetEntityId: z.string().uuid("Invalid target entity ID"),
+  sourceEntityId: z.string().uuid("Invalid source entity ID"),
+});
+
+export const memoryEntityAliasSplitSchema = z.object({
+  projectId: projectIdSchema,
+  aliasId: z.string().uuid("Invalid alias ID"),
+  canonicalName: z.string().trim().min(1, "Canonical name is required").max(200),
+});
+
 export const memoryChunkIdSchema = z.string().uuid("Invalid chunk ID");
 export const memoryChapterSummaryIdSchema = chapterIdSchema;
 
@@ -48,6 +124,10 @@ export const rebuildMemoryChunksSchema = z.object({
 });
 
 export const memorySummaryStatusSchema = z.object({
+  projectId: projectIdSchema,
+});
+
+export const memoryNarrativeSummaryStatusSchema = z.object({
   projectId: projectIdSchema,
 });
 

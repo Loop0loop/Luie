@@ -137,6 +137,7 @@ export function toWorldEntityExportDto(
     description: normalizeNullableString(row.description),
     firstAppearance: normalizeNullableString(row.firstAppearance),
     attributes: normalizeNullableString(row.attributes),
+    memoryEntityId: normalizeNullableString(row.memoryEntityId),
     positionX: row.positionX,
     positionY: row.positionY,
     createdAt: toDate(row.createdAt),

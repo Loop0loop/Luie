@@ -21,6 +21,7 @@ const DEFAULT_SYNC_STATUS: SyncStatus = {
   conflicts: {
     chapters: 0,
     memos: 0,
+    memoryCanonical: 0,
     total: 0,
     items: [],
   },
@@ -238,7 +239,7 @@ export function useSettingsSync(activeTab: SettingsTabId, t: TFunction, showToas
 
   const handleResolveConflict = useCallback(
     async (input: {
-      type: "chapter" | "memo";
+      type: "chapter" | "memo" | "memoryCanonical";
       id: string;
       resolution: "local" | "remote";
     }) => {

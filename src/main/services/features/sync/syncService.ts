@@ -220,6 +220,7 @@ export class SyncService {
       conflicts: {
         chapters: 0,
         memos: 0,
+        memoryCanonical: 0,
         total: 0,
         items: [],
       },

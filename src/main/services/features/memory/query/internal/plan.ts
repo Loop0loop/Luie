@@ -41,10 +41,17 @@ export function extractEntityNamesFromQuestion(question: string): string[] {
     }
     names.push(normalized);
   };
+  const stripLeadingClause = (value: string) =>
+    value.trim().replace(/^.*(?:은|는|이|가)\s+/, "");
 
   const normalizedQuestion = question
     .replace(/[“”]/g, '"')
     .replace(/[‘’]/g, "'");
+  const semanticQuestion = normalizedQuestion
+    .replace(/\d+\s*(?:화|장|chapter|챕터)\s*기준\s*/gi, "")
+    .replace(/\d+\s*(?:화|장|chapter|챕터)\s*/gi, "")
+    .replace(/\b기준\s*/g, "")
+    .trim();
 
   const quotePatterns = [/"([^"]{2,})"/g, /'([^']{2,})'/g];
 
@@ -59,11 +66,25 @@ export function extractEntityNamesFromQuestion(question: string): string[] {
 
   const pairPattern =
     /([가-힣A-Za-z0-9_]{2,})\s*(?:와|과)\s*([가-힣A-Za-z0-9_]{2,})/g;
-  for (const match of [...normalizedQuestion.matchAll(pairPattern)]) {
+  for (const match of [...semanticQuestion.matchAll(pairPattern)]) {
     const first = match[1]?.trim();
     const second = match[2]?.trim();
     if (first) addName(first);
     if (second) addName(second);
+  }
+
+  const subjectPattern =
+    /(^|[,])\s*([가-힣A-Za-z][가-힣A-Za-z0-9_ ]{1,20}?)(?:은|는|이|가)\s/g;
+  for (const match of [...semanticQuestion.matchAll(subjectPattern)]) {
+    const subject = match[2]?.trim();
+    if (subject) addName(subject);
+  }
+
+  const possessivePattern =
+    /([가-힣A-Za-z][가-힣A-Za-z0-9_ ]{1,20}?)(?:의)\s*(?:정체|비밀|목적|관계|상태)/g;
+  for (const match of [...semanticQuestion.matchAll(possessivePattern)]) {
+    const owner = match[1]?.trim();
+    if (owner) addName(stripLeadingClause(owner));
   }
 
   return names.slice(0, 4);

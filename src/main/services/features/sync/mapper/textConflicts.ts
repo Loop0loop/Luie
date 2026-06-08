@@ -109,12 +109,14 @@ export const mergeWithTextConflictCopies = <
 export const createConflictSummary = (
   chapterConflicts: number,
   memoConflicts: number,
+  memoryCanonicalConflicts: number,
   items: SyncConflictItem[],
 ): SyncConflictSummary => {
-  const total = chapterConflicts + memoConflicts;
+  const total = chapterConflicts + memoConflicts + memoryCanonicalConflicts;
   return {
     chapters: chapterConflicts,
     memos: memoConflicts,
+    memoryCanonical: memoryCanonicalConflicts,
     total,
     items: items.length > 0 ? items : undefined,
   };

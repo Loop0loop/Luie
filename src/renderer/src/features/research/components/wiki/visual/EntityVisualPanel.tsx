@@ -72,6 +72,7 @@ export function EntityVisualPanel({
         kind={kind}
         name={name}
         identityLine={bundle.identityLine}
+        profile={bundle.profile}
       />
       <RelatedEntities related={bundle.related} />
     </div>

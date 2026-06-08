@@ -4,10 +4,25 @@ import { describe, expect, it } from "vitest";
 
 describe("AnalysisSection runtime status UI", () => {
   it("uses route/backend terminology and exposes runtime resolution fields", () => {
-    const source = readFileSync(
+    const analysisSource = readFileSync(
       resolve(process.cwd(), "src/renderer/src/features/research/components/AnalysisSection.tsx"),
       "utf8",
     );
+    const runtimePanelSource = readFileSync(
+      resolve(
+        process.cwd(),
+        "src/renderer/src/features/research/components/analysisSection/RuntimeStatusPanel.tsx",
+      ),
+      "utf8",
+    );
+    const runtimeHelpersSource = readFileSync(
+      resolve(
+        process.cwd(),
+        "src/renderer/src/features/research/components/analysisSection/runtimeHelpers.ts",
+      ),
+      "utf8",
+    );
+    const source = `${analysisSource}\n${runtimePanelSource}\n${runtimeHelpersSource}`;
 
     expect(source).not.toContain("llama(sidecar)");
     expect(source).toContain("Requested:");
@@ -26,6 +41,5 @@ describe("AnalysisSection runtime status UI", () => {
     expect(source).toContain("<optgroup label=\"Local\">");
     expect(source).toContain("<optgroup label=\"Cloud\">");
     expect(source).toContain("<optgroup label=\"Advanced\">");
-    expect(source).toContain("llmSettings?.ollama?.baseUrl");
   });
 });

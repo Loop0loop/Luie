@@ -47,6 +47,24 @@ CREATE TABLE IF NOT EXISTS "MemoryEntityMention" (
     CONSTRAINT "MemoryEntityMention_aliasId_fkey" FOREIGN KEY ("aliasId") REFERENCES "MemoryEntityAlias" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "MemoryEntityMention_chapterId_fkey" FOREIGN KEY ("chapterId") REFERENCES "Chapter" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
+CREATE TABLE IF NOT EXISTS "MemoryEntityMergeAudit" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "sourceEntityId" TEXT NOT NULL,
+    "targetEntityId" TEXT NOT NULL,
+    "aliasId" TEXT,
+    "action" TEXT NOT NULL,
+    "reason" TEXT,
+    "createdBy" TEXT NOT NULL DEFAULT 'user',
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    CONSTRAINT "MemoryEntityMergeAudit_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryEntityMergeAudit_sourceEntityId_fkey" FOREIGN KEY ("sourceEntityId") REFERENCES "MemoryEntity" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryEntityMergeAudit_targetEntityId_fkey" FOREIGN KEY ("targetEntityId") REFERENCES "MemoryEntity" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryEntityMergeAudit_aliasId_fkey" FOREIGN KEY ("aliasId") REFERENCES "MemoryEntityAlias" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE INDEX IF NOT EXISTS "MemoryEntityMergeAudit_projectId_source_idx" ON "MemoryEntityMergeAudit"("projectId", "sourceEntityId");
+CREATE INDEX IF NOT EXISTS "MemoryEntityMergeAudit_projectId_target_idx" ON "MemoryEntityMergeAudit"("projectId", "targetEntityId");
 CREATE TABLE IF NOT EXISTS "MemoryEpisodeExtractionJob" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,

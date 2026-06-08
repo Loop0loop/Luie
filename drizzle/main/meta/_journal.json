@@ -50,6 +50,20 @@
       "when": 1780860600000,
       "tag": "0006_memory_narrative_summary",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1780861400000,
+      "tag": "0007_memory_entity_merge_audit",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1780899758894,
+      "tag": "0008_nasty_valeria_richards",
+      "breakpoints": true
     }
   ]
 }

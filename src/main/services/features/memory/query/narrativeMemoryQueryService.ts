@@ -2,19 +2,77 @@ import type {
   MemoryConflictQueueInput,
   MemoryConflictQueueItem,
   MemoryConflictQueueResult,
+  MemoryEpisodeCalibrationRequest,
+  MemoryEpisodeCalibrationResult,
+  MemoryEntityAliasConfirmInput,
+  MemoryEntityAliasRejectInput,
+  MemoryEntityAliasReviewMutationResult,
+  MemoryEntityAliasReviewQueueInput,
+  MemoryEntityAliasReviewQueueResult,
+  MemoryEntityAliasSplitInput,
+  MemoryEntityAliasSplitResult,
+  MemoryEntityMergeInput,
+  MemoryEntityMergeResult,
+  MemoryEpisodeRejectInput,
+  MemoryEpisodeRejectResult,
+  MemoryEpisodeReviewQueueInput,
+  MemoryEpisodeReviewQueueResult,
+  MemoryTemporalFactConfirmInput,
+  MemoryTemporalFactConflictResolveInput,
+  MemoryTemporalFactRejectInput,
+  MemoryTemporalFactReviewMutationResult,
+  MemoryTemporalFactReviewQueueInput,
+  MemoryTemporalFactReviewQueueResult,
+  NarrativeMemoryIntentCalibrationRequest,
+  NarrativeMemoryIntentCalibrationResult,
   NarrativeMemoryFactResult,
   NarrativeMemoryQueryInput,
   NarrativeMemoryQueryResult,
 } from "../../../../../shared/types/search.js";
+import type {
+  MemoryEvalLiveRunnerResult,
+  MemoryEvalRunRequest,
+} from "../../../../../shared/types/memoryEval.js";
 import { createLogger } from "../../../../../shared/logger/index.js";
+import {
+  confirmMemoryEntityAlias,
+  listSuggestedMemoryEntityAliases,
+  mergeMemoryEntities,
+  rejectMemoryEntityAlias,
+  splitMemoryEntityAlias,
+} from "../entity/memoryEntityReviewService.js";
+import {
+  listSuggestedMemoryEpisodes,
+  rejectMemoryEpisode,
+} from "../episode/memoryEpisodeReviewService.js";
+import {
+  createDefaultMemoryEpisodeCalibrationCases,
+  runMemoryEpisodeExtractorCalibration,
+} from "../episode/memoryEpisodeExtractorCalibration.js";
+import { llmEpisodeExtractor } from "../episode/memoryEpisodeLlmExtractor.js";
+import {
+  confirmMemoryTemporalFact,
+  listSuggestedMemoryTemporalFacts,
+  rejectMemoryTemporalFact,
+  resolveMemoryTemporalFactConflict,
+} from "../temporal/memoryTemporalFactReviewService.js";
 import { fetchConflictFactPairs, toNarrativeMemoryFactSummary } from "./internal/conflicts.js";
 import { fetchFactEvidence } from "./internal/evidence.js";
 import { formatNarrativeMemoryQueryResult } from "./internal/formatter.js";
+import {
+  classifyNarrativeMemoryQueryPlanWithLlm,
+  isLlmNarrativeMemoryIntentClassifierEnabled,
+} from "./internal/llmIntentClassifier.js";
 import { extractEntityNamesFromQuestion, buildNarrativeMemoryQueryPlan } from "./internal/plan.js";
 import { fetchNarrativeSummaryFacts, fetchChapterSummaryFacts } from "./internal/summaries.js";
 import { resolveChapterOrder, resolveChapterOrderByChapterId } from "./internal/chapter.js";
 import { fetchTemporalFacts } from "./internal/temporal.js";
 import { loadEntityProfiles, resolveMemoryEntityIds } from "./internal/entity.js";
+import { runLiveMemoryEvalSuite } from "../eval/memoryEvalRunner.js";
+import {
+  createDefaultNarrativeMemoryIntentCalibrationCases,
+  runNarrativeMemoryIntentClassifierCalibration,
+} from "./internal/memoryIntentClassifierCalibration.js";
 
 const logger = createLogger("NarrativeMemoryQueryService");
 
@@ -47,11 +105,27 @@ export function conflictFactsToNarrativeFacts(
   ]);
 }
 
-export { buildNarrativeMemoryQueryPlan, formatNarrativeMemoryQueryResult };
+export {
+  buildNarrativeMemoryQueryPlan,
+  extractEntityNamesFromQuestion,
+  formatNarrativeMemoryQueryResult,
+};
 
 export class NarrativeMemoryQueryService {
   async query(input: NarrativeMemoryQueryInput): Promise<NarrativeMemoryQueryResult> {
-    const plan = buildNarrativeMemoryQueryPlan(input.question);
+    const deterministicPlan = buildNarrativeMemoryQueryPlan(input.question);
+    const plan = isLlmNarrativeMemoryIntentClassifierEnabled()
+      ? await classifyNarrativeMemoryQueryPlanWithLlm({
+          projectId: input.projectId,
+          question: input.question,
+        }).catch((error: unknown) => {
+          logger.warn("LLM memory intent classifier failed; falling back to deterministic route", {
+            projectId: input.projectId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          return deterministicPlan;
+        })
+      : deterministicPlan;
     const trace = plan.sources.map((source) => ({
       source,
       decision: "selected" as const,
@@ -67,18 +141,18 @@ export class NarrativeMemoryQueryService {
 
     const chapterOrder = await resolveChapterOrder(input);
     const includePriorMemory = input.includePriorMemory === true;
-    const resolvedEntityIds = await resolveMemoryEntityIds({
-      projectId: input.projectId,
-      entityId: input.entityId,
-      entityName: input.entityName,
-      entityNames: input.entityNames,
-      entityType: input.entityType,
-    });
     const entityNames = input.entityNames?.length
       ? [...input.entityNames]
       : input.entityName
         ? [input.entityName]
         : extractEntityNamesFromQuestion(input.question);
+    const resolvedEntityIds = await resolveMemoryEntityIds({
+      projectId: input.projectId,
+      entityId: input.entityId,
+      entityName: input.entityName,
+      entityNames,
+      entityType: input.entityType,
+    });
 
     const facts = await fetchTemporalFacts({
       projectId: input.projectId,
@@ -161,6 +235,70 @@ export class NarrativeMemoryQueryService {
     };
   }
 
+  async runEvalSuite(
+    input: MemoryEvalRunRequest,
+  ): Promise<MemoryEvalLiveRunnerResult> {
+    return await runLiveMemoryEvalSuite({
+      projectId: input.projectId,
+      label: input.label,
+      engineVersion: "narrative-memory-query-service",
+      topK: input.topK ?? 5,
+      answerer: async (evalCase) => {
+        const result = await this.query({
+          projectId: evalCase.projectId,
+          question: evalCase.question,
+          includePriorMemory: true,
+        });
+        const groundingStatus =
+          result.status === "found"
+            ? "inferred"
+            : result.status === "conflicting"
+              ? "conflicting"
+              : "insufficient_evidence";
+
+        return {
+          answer: formatNarrativeMemoryQueryResult(result),
+          groundingStatus,
+          evidence: result.evidence,
+          observedFacts: result.facts.map((fact) => ({
+            id: fact.id,
+            status: fact.status,
+            observedAtChapterOrder: fact.observedAtChapterOrder,
+            usedAs: groundingStatus,
+          })),
+          observedRelations: result.facts
+            .filter((fact) => fact.relatedEntityName)
+            .map((fact) => ({
+              sourceName: fact.subjectEntityId,
+              targetName: fact.relatedEntityName ?? "",
+              relation: fact.predicate,
+            })),
+        };
+      },
+    });
+  }
+
+  async runIntentCalibration(
+    input: NarrativeMemoryIntentCalibrationRequest,
+  ): Promise<NarrativeMemoryIntentCalibrationResult> {
+    return await runNarrativeMemoryIntentClassifierCalibration({
+      projectId: input.projectId,
+      cases: createDefaultNarrativeMemoryIntentCalibrationCases(),
+      classifier: input.useLlm
+        ? classifyNarrativeMemoryQueryPlanWithLlm
+        : async ({ question }) => buildNarrativeMemoryQueryPlan(question),
+    });
+  }
+
+  async runEpisodeCalibration(
+    input: MemoryEpisodeCalibrationRequest,
+  ): Promise<MemoryEpisodeCalibrationResult> {
+    return await runMemoryEpisodeExtractorCalibration({
+      extractor: llmEpisodeExtractor,
+      cases: createDefaultMemoryEpisodeCalibrationCases(input.projectId),
+    });
+  }
+
   async getConflictQueue(
     input: MemoryConflictQueueInput,
   ): Promise<MemoryConflictQueueResult> {
@@ -180,6 +318,72 @@ export class NarrativeMemoryQueryService {
     });
 
     return { items };
+  }
+
+  async listSuggestedEpisodes(
+    input: MemoryEpisodeReviewQueueInput,
+  ): Promise<MemoryEpisodeReviewQueueResult> {
+    return await listSuggestedMemoryEpisodes(input);
+  }
+
+  async rejectEpisode(
+    input: MemoryEpisodeRejectInput,
+  ): Promise<MemoryEpisodeRejectResult> {
+    return await rejectMemoryEpisode(input);
+  }
+
+  async listSuggestedFacts(
+    input: MemoryTemporalFactReviewQueueInput,
+  ): Promise<MemoryTemporalFactReviewQueueResult> {
+    return await listSuggestedMemoryTemporalFacts(input);
+  }
+
+  async confirmFact(
+    input: MemoryTemporalFactConfirmInput,
+  ): Promise<MemoryTemporalFactReviewMutationResult> {
+    return await confirmMemoryTemporalFact(input);
+  }
+
+  async rejectFact(
+    input: MemoryTemporalFactRejectInput,
+  ): Promise<MemoryTemporalFactReviewMutationResult> {
+    return await rejectMemoryTemporalFact(input);
+  }
+
+  async resolveFactConflict(
+    input: MemoryTemporalFactConflictResolveInput,
+  ): Promise<MemoryTemporalFactReviewMutationResult> {
+    return await resolveMemoryTemporalFactConflict(input);
+  }
+
+  async listSuggestedEntityAliases(
+    input: MemoryEntityAliasReviewQueueInput,
+  ): Promise<MemoryEntityAliasReviewQueueResult> {
+    return await listSuggestedMemoryEntityAliases(input);
+  }
+
+  async confirmEntityAlias(
+    input: MemoryEntityAliasConfirmInput,
+  ): Promise<MemoryEntityAliasReviewMutationResult> {
+    return await confirmMemoryEntityAlias(input);
+  }
+
+  async rejectEntityAlias(
+    input: MemoryEntityAliasRejectInput,
+  ): Promise<MemoryEntityAliasReviewMutationResult> {
+    return await rejectMemoryEntityAlias(input);
+  }
+
+  async splitEntityAlias(
+    input: MemoryEntityAliasSplitInput,
+  ): Promise<MemoryEntityAliasSplitResult> {
+    return await splitMemoryEntityAlias(input);
+  }
+
+  async mergeEntity(
+    input: MemoryEntityMergeInput,
+  ): Promise<MemoryEntityMergeResult> {
+    return await mergeMemoryEntities(input);
   }
 }
 

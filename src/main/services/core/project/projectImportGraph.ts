@@ -39,6 +39,7 @@ type GraphNodeInput = {
   description?: string | null;
   firstAppearance?: string | null;
   attributes?: Record<string, unknown> | null;
+  memoryEntityId?: string | null;
   positionX?: number;
   positionY?: number;
 };
@@ -224,6 +225,8 @@ const addWorldEntityNode = (
     description: typeof node.description === "string" ? node.description : null,
     firstAppearance: typeof node.firstAppearance === "string" ? node.firstAppearance : null,
     attributes: serializeAttributes(node.attributes),
+    memoryEntityId:
+      typeof node.memoryEntityId === "string" ? node.memoryEntityId : null,
     positionX: typeof node.positionX === "number" ? node.positionX : 0,
     positionY: typeof node.positionY === "number" ? node.positionY : 0,
   });

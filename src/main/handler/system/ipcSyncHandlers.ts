@@ -78,7 +78,7 @@ export function registerSyncIPCHandlers(logger: LoggerLike): void {
       failMessage: "Failed to resolve sync conflict",
       argsSchema: syncResolveConflictArgsSchema,
       handler: async (resolution: {
-        type: "chapter" | "memo";
+        type: "chapter" | "memo" | "memoryCanonical";
         id: string;
         resolution: "local" | "remote";
       }) => syncService.resolveConflict(resolution),

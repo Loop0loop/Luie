@@ -135,6 +135,18 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
     "createdAt",
     "updatedAt",
   ],
+  MemoryEntityMergeAudit: [
+    "id",
+    "projectId",
+    "sourceEntityId",
+    "targetEntityId",
+    "aliasId",
+    "action",
+    "reason",
+    "createdBy",
+    "createdAt",
+    "updatedAt",
+  ],
   MemoryEpisodeExtractionJob: [
     "id",
     "projectId",
@@ -316,6 +328,6 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
   ScrapMemo: ["id", "projectId", "title", "content", "tags", "sortOrder", "updatedAt", "deletedAt"],
   Term: ["id", "projectId", "term", "order", "deletedAt"],
   Snapshot: ["id", "projectId", "content", "contentLength", "type"],
-  WorldEntity: ["id", "projectId", "type", "name", "positionX", "positionY", "deletedAt"],
+  WorldEntity: ["id", "projectId", "type", "name", "positionX", "positionY", "memoryEntityId", "deletedAt"],
   EntityRelation: ["id", "projectId", "sourceId", "targetId", "relation"],
 };

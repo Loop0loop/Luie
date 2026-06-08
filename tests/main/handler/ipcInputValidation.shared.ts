@@ -16,6 +16,23 @@ const mocked = vi.hoisted(() => {
   const narrativeMemoryQueryService = {
     query: vi.fn(),
     getConflictQueue: vi.fn(),
+    listSuggestedEpisodes: vi.fn(),
+    rejectEpisode: vi.fn(),
+    listSuggestedFacts: vi.fn(),
+    confirmFact: vi.fn(),
+    rejectFact: vi.fn(),
+    resolveFactConflict: vi.fn(),
+    listSuggestedEntityAliases: vi.fn(),
+    confirmEntityAlias: vi.fn(),
+    rejectEntityAlias: vi.fn(),
+    splitEntityAlias: vi.fn(),
+    mergeEntity: vi.fn(),
+    runEvalSuite: vi.fn(),
+    runIntentCalibration: vi.fn(),
+    runEpisodeCalibration: vi.fn(),
+  };
+  const narrativeSummaryStatusService = {
+    getStatus: vi.fn(),
   };
   let appIsPackaged = true;
 
@@ -23,6 +40,7 @@ const mocked = vi.hoisted(() => {
     handlerMap,
     syncService,
     narrativeMemoryQueryService,
+    narrativeSummaryStatusService,
     get appIsPackaged() {
       return appIsPackaged;
     },
@@ -103,6 +121,21 @@ export const resetInputValidationMocks = () => {
   mocked.syncService.resolveConflict.mockReset();
   mocked.narrativeMemoryQueryService.query.mockReset();
   mocked.narrativeMemoryQueryService.getConflictQueue.mockReset();
+  mocked.narrativeMemoryQueryService.listSuggestedEpisodes.mockReset();
+  mocked.narrativeMemoryQueryService.rejectEpisode.mockReset();
+  mocked.narrativeMemoryQueryService.listSuggestedFacts.mockReset();
+  mocked.narrativeMemoryQueryService.confirmFact.mockReset();
+  mocked.narrativeMemoryQueryService.rejectFact.mockReset();
+  mocked.narrativeMemoryQueryService.resolveFactConflict.mockReset();
+  mocked.narrativeMemoryQueryService.listSuggestedEntityAliases.mockReset();
+  mocked.narrativeMemoryQueryService.confirmEntityAlias.mockReset();
+  mocked.narrativeMemoryQueryService.rejectEntityAlias.mockReset();
+  mocked.narrativeMemoryQueryService.splitEntityAlias.mockReset();
+  mocked.narrativeMemoryQueryService.mergeEntity.mockReset();
+  mocked.narrativeMemoryQueryService.runEvalSuite.mockReset();
+  mocked.narrativeMemoryQueryService.runIntentCalibration.mockReset();
+  mocked.narrativeMemoryQueryService.runEpisodeCalibration.mockReset();
+  mocked.narrativeSummaryStatusService.getStatus.mockReset();
   mocked.logger.info.mockReset();
   mocked.logger.warn.mockReset();
   mocked.logger.debug.mockReset();
@@ -115,6 +148,20 @@ export const registerSearchInputHandlers = async (
   narrativeMemoryQueryService: {
     query: unknown;
     getConflictQueue: unknown;
+    listSuggestedEpisodes?: unknown;
+    rejectEpisode?: unknown;
+    listSuggestedFacts?: unknown;
+    confirmFact?: unknown;
+    rejectFact?: unknown;
+    resolveFactConflict?: unknown;
+    listSuggestedEntityAliases?: unknown;
+    confirmEntityAlias?: unknown;
+    rejectEntityAlias?: unknown;
+    splitEntityAlias?: unknown;
+    mergeEntity?: unknown;
+    runEvalSuite?: unknown;
+    runIntentCalibration?: unknown;
+    runEpisodeCalibration?: unknown;
   },
 ) => {
   const { registerSearchIPCHandlers } =
@@ -126,6 +173,7 @@ export const registerSearchInputHandlers = async (
     sharedChapterSummaryServices(),
     sharedEmbeddingStatusServices(),
     narrativeMemoryQueryService,
+    mocked.narrativeSummaryStatusService,
   );
 };
 
@@ -167,4 +215,3 @@ export const registerAutoSaveInputHandlers = async (autoSaveManager: {
 };
 
 export { mocked };
-

@@ -148,7 +148,7 @@ export interface SyncPendingProjectDelete {
 }
 
 export interface SyncConflictItem {
-  type: "chapter" | "memo";
+  type: "chapter" | "memo" | "memoryCanonical";
   id: string;
   projectId: string;
   title: string;
@@ -161,6 +161,7 @@ export interface SyncConflictItem {
 export interface SyncConflictSummary {
   chapters: number;
   memos: number;
+  memoryCanonical: number;
   total: number;
   items?: SyncConflictItem[];
 }

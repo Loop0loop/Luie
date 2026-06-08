@@ -221,14 +221,14 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 
 - Added dedicated `MemoryEval*` Drizzle tables for cases, gold evidence, expected entities, expected relations, runs, and results.
 - Added a pure scoring/suite runner for top-k gold evidence recall and unsupported confirmed-answer P0 detection.
+- Eval scoring now also flags deleted/draft facts used as confirmed memory, future facts used in past-time answers, and reversed relation direction.
+- Added a live project eval runner boundary that loads `MemoryEvalCase`/gold evidence/relation fixtures, runs an injected answerer, scores results, and persists `MemoryEvalRun`/`MemoryEvalResult` rows.
+- Added a renderer-safe memory eval IPC/API endpoint and analysis-panel eval report surface for running and viewing project memory eval results.
 - Added schema parity coverage through existing DB parity tests.
 
 아직 미구현:
 
-- No UI report surface yet.
-- No script/IPC runner that executes live project eval cases end-to-end yet.
-- Entity, relation, and temporal accuracy columns exist for fixtures, but mechanical scoring for those dimensions is deferred.
-- The only implemented P0 detector is `unsupported_confirmed_answer`; future-fact, deleted/draft fact, and reversed-relation detectors remain explicit future work.
+- 확인된 Phase 1 미구현 항목 없음.
 
 ## Phase 2: Evidence Memory Read Model
 
@@ -347,13 +347,14 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Added deterministic alias normalization helpers.
 - `MemoryEntityMention.chunkId` is stored as a snapshot id, not an FK to mutable chunk projection rows.
 - `MemoryEntityMention` stores quote, offsets, `contentHash`, and `sourceContentHash` snapshots for later evidence validation.
+- Added `MemoryEntityMergeAudit` schema/migration/packaged bootstrap coverage for merge/split history.
+- Added entity alias review, confirmation, rejection, merge, and split service/API/IPC/UI flows.
+- Added an injectable entity extraction runner boundary that reads memory chunks and stores suggested canonical entities, aliases, and evidence-backed mentions from LLM/deterministic extractor output.
+- Added a nullable `WorldEntity.memoryEntityId` bridge pointer with Drizzle migration, packaged bootstrap/metadata coverage, API validation support, and package export/import preservation.
 
 아직 미구현:
 
-- `MemoryEntityMergeAudit` is not implemented yet.
-- No LLM/entity extraction runner yet.
-- No user merge/split/approval UI yet.
-- No bridge pointer from world entities to memory entities yet.
+- 확인된 Phase 3 미구현 항목 없음.
 
 ## Phase 4: Episode Memory MVP
 
@@ -412,12 +413,17 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - `MemoryStateChangeCandidate.evidenceId` is mandatory so state-change claims stay tied to a concrete episode evidence span.
 - Chunk projection now enqueues `MemoryEpisodeExtractionJob` rows after source chunks are rebuilt, keyed by source content hash and extractor version.
 - Added an episode extraction processor boundary that claims pending jobs, passes source chunks to an injected extractor, stores suggested episode/evidence candidates, and marks jobs completed or retryable.
+- Added an LLM episode extractor boundary that prompts for evidence-backed episode JSON, parses structured output, and rejects evidence that references unknown chunks.
+- Derived worker now includes pending `MemoryEpisodeExtractionJob` projects and runs LLM episode extraction behind `LUIE_ENABLE_LLM_EPISODE_EXTRACTION=1`.
+- Added episode review/rejection service and renderer-safe IPC/API contracts for listing suggested episodes and rejecting incorrect suggestions.
+- Added an analysis-panel episode review queue UI with rejection action for suggested episode candidates.
+- Added an offline episode extractor calibration harness that checks expected episode type/title/evidence chunk coverage without requiring a live LLM call.
+- Added default episode calibration cases and renderer-safe `memoryAdmin.runEpisodeCalibration` IPC/API support so the real LLM episode extractor route can be run from the analysis panel and reported with pass/fail details.
+- Added `scripts/run-memory-production-calibration.ts` for headless production-route calibration. Verified Phase 4 episode calibration against the real OpenAI remote route (`externalapi`, `gpt-4o-mini`) on 2026-06-08: 2/2 cases passed.
 
 아직 미구현:
 
-- No LLM episode extraction runner yet.
-- No IPC/UI for episode review or rejection yet.
-- No derived worker integration for `MemoryEpisodeExtractionJob` yet because the real LLM episode extractor is not implemented.
+- No production calibration/eval run against live project data yet.
 
 ## Phase 5: Temporal Relation and State Graph
 
@@ -498,13 +504,18 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Invalidated facts are not allowed to silently become valid again when an invalidating fact is deleted; the invalidated fact is deleted with the invalidating fact.
 - Added packaged schema bootstrap and integrity metadata for the new tables and indexes.
 - Added temporal validity helpers that exclude future-observed facts, facts outside their validity window, rejected/deprecated facts, and invalidated facts.
+- Narrative memory query now reads temporal facts through the validity helper for relation/state-at-chapter style questions.
+- Conflict candidates are surfaced through the memory conflict queue query/API/UI path instead of being silently merged.
+- Added a temporal fact candidate storage boundary that writes `MemoryFact`, `MemoryFactEvidence`, and relation/character/knowledge projection rows transactionally.
+- Added an LLM temporal fact extractor boundary that prompts for evidence-backed relation/state/knowledge JSON and rejects unknown evidence/entity references.
+- Derived worker now runs LLM temporal fact extraction behind `LUIE_ENABLE_LLM_TEMPORAL_FACT_EXTRACTION=1` after chunk/episode processing clears enough source evidence.
+- Added temporal fact review/rejection/confirmation service and renderer-safe IPC/API contracts for suggested fact candidates.
+- Added an analysis-panel fact review queue UI with confirm/reject actions.
+- Added a dedicated conflict-resolution action that confirms the selected fact and rejects the opposing conflicting fact in one transaction.
 
 아직 미구현:
 
-- No LLM fact extraction runner yet.
-- No temporal query service that answers relation/knowledge questions from these tables yet.
-- No UI review flow for confirming/rejecting/conflict-resolving facts yet.
-- Conflict surfacing is schema-ready, but not yet implemented as a query/API behavior.
+- 확인된 Phase 5 미구현 항목 없음.
 
 ## Phase 6: Narrative Memory Query Service
 
@@ -565,12 +576,16 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Added renderer-facing `RagQaResult.narrativeMemory` summary (intent/status/trace/fact/evidence counts) so analysis stream can show retrieval route metadata.
 - `buildRagGrounding` now returns `충돌` when narrative memory route status is `conflicting`.
 - Analysis panel now renders a compact narrative-memory trace block for assistant answers.
+- Added renderer-safe `memory.queryNarrative` and conflict queue IPC/API endpoints for direct memory query inspection and contradiction review.
+- Added Korean entity name extraction for chapter-bounded state/identity/profile questions, and the query service passes extracted names into memory entity resolution.
+- Added an env-gated LLM-assisted intent classifier boundary for narrative memory routing with validated intent/source output and deterministic fallback on classifier failure.
+- Added an intent-classifier calibration harness with default cases covering every narrative memory intent, plus renderer-safe `memoryAdmin.runIntentCalibration` IPC/API support and analysis-panel controls so deterministic and explicit LLM classifier runs can be evaluated through the app boundary.
+- Strengthened the LLM intent classifier prompt with an explicit required source matrix for every supported intent.
+- Verified Phase 6 intent-classifier production calibration with `scripts/run-memory-production-calibration.ts` against the real OpenAI remote route (`externalapi`, `gpt-4o-mini`) on 2026-06-08: 8/8 cases passed.
 
 아직 미구현:
 
-- No IPC/API endpoint for direct memory query inspection yet.
-- No entity name parser or LLM-assisted intent classifier yet.
-- No fact extraction runner, so this service can only read temporal facts after later phases or seeded data create them.
+- 확인된 Phase 6 미구현 항목 없음.
 
 ## Phase 7: Evidence-Backed UI Integration
 
@@ -625,10 +640,21 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Added entity visual relationship panel memory-scope toggle (`현재 챕터만`, `현재+과거`) and pass-through filtering through narrative query.
 - Hardened entity-based temporal fact resolution by returning no fact hits when explicit name input cannot be resolved, preventing unscoped fact contamination.
 - Added conflict queue API (`memory:get-conflict-queue`) and conflict UI panel in research analysis.
+- Entity visual identity cards now preserve and display canonical memory profile metadata from `NarrativeMemoryQueryService`, including status, alias chips, mention count, and first/last mention chapter range.
+- Added entity alias review queue service/API/IPC/UI for suggested canonical alias candidates.
+- Alias confirmation marks the alias and its canonical memory entity as `confirmed`; alias rejection marks the alias as `rejected` without changing the canonical entity status.
+- Added entity merge service/API/IPC/UI for consolidating a suggested duplicate memory entity into a target canonical entity.
+- Entity merge reassigns aliases, mentions, participants, state-change candidates, temporal facts, and state projections from the source entity to the target entity, then marks the source entity as `deprecated`.
+- Added entity alias split service/API/IPC/UI for separating an incorrect alias into a new confirmed canonical memory entity.
+- Entity alias split moves the alias and alias-linked mentions to the new entity while preserving the original canonical entity.
+- Relation label fallback now keeps the related memory entity id when canonical profile lookup cannot resolve a display name, preventing unresolved relations from disappearing or degrading to empty labels.
+- Added `MemoryEntityMergeAudit` schema/migration/packaged bootstrap coverage for merge/split history.
+- Entity merge and alias split now write audit rows with source entity, target entity, optional alias id, action, actor, and timestamps.
+- Relation label fallback now preserves unresolved related entity ids in data without exposing raw ids as display names.
 
 아직 미구현:
 
-- Entity-profile read model is still missing for canonical alias/동일인물 통합 UI; currently relation labels rely on extracted fact names and raw ids are replaced with `이름 미확인` 상태 처리.
+- 확인된 Phase 7 미구현 항목 없음.
 
 ## Phase 8: Hierarchical Narrative Summaries
 
@@ -679,12 +705,20 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Summary storage is separate from `MemoryFact`; summaries can support global retrieval but do not overwrite temporal fact state.
 - Added migration, packaged bootstrap SQL, and packaged integrity metadata for the new summary tables.
 - Added narrative query path for `global-summary` intent so chapter summaries are returned in retrieval (chapter-bound filtering + chapter-level scoping).
+- Added a project-level hierarchy runner that builds confirmed `project_overview` narrative summaries from non-fallback chapter summaries and links every source row back to `ChapterSummary`.
+- Derived job worker now runs the project-level hierarchy runner after chapter-summary backlog is clear, before embedding projection.
+- Added a project-level summary drift evaluator that recomputes linked chapter-summary source hashes and marks narrative summaries stale when source hashes or source counts diverge.
+- Added an automated stale project-summary refresh policy: derived jobs create a project overview when none exists and refresh stale project overviews when linked chapter-summary hashes drift.
+- Added a scoped hierarchy runner for bounded arc and volume summaries using explicit chapter ranges, preserving `summaryType`, `scopeType`, `scopeId`, and source links.
+- Added a community-level hierarchy runner that summarizes confirmed, non-invalidated temporal facts for an explicit entity community and links sources through `MemoryNarrativeSummarySource.sourceType=fact`.
+- Added automatic arc/volume hierarchy scheduling based on chapter-number ranges after chapter-summary backlog is clear in the derived worker.
+- Added automatic community hierarchy scheduling based on connected components of confirmed, non-invalidated relation facts after chapter-summary backlog is clear in the derived worker.
+- Added renderer-safe narrative summary status API/IPC and an analysis-panel hierarchy summary status surface that shows total summaries, type counts, source counts, and project-summary drift state.
+- The analysis-panel hierarchy summary surface now includes summary detail previews for project, arc, volume, and community summaries.
 
 아직 미구현:
 
-- No hierarchy generation runner yet.
-- No summary drift evaluator yet.
-- No UI for arc/volume/project/community summaries yet.
+- 확인된 Phase 8 미구현 항목 없음.
 
 ## Phase 9: Package Persistence and Sync Policy
 
@@ -737,12 +771,13 @@ This is useful, but lower priority than evidence/entity/episode/temporal memory.
 - Imported canonical memory row ids are remapped with project/table scope and internal entity/fact/eval foreign keys are rewritten to avoid global primary-key collisions.
 - Canonical memory import rejects payloads that mix source project ids or disagree with package `meta.projectId`.
 - Supabase remote sync now has a first-class `memory_canonical_rows` table with owner RLS, repository fetch/upsert mapping, and sync bundle round-trip tests.
+- `MemoryFactEvidence` package export/import now restores through canonical/importable `MemoryEpisode` and `MemoryEpisodeEvidence` anchors and drops dangling evidence links when linked fact or episode evidence is filtered out.
+- Sync conflict resolution now includes user-approved canonical memory package payload rows through `memoryCanonical` conflict items and local/remote resolution keys.
+- Temporal fact confirmation now returns an explicit canonical export marker, and the analysis fact review UI labels confirmation as user approval into canonical memory.
 
 아직 미구현:
 
-- `MemoryFactEvidence` DB restore is not applied yet because it requires canonical/importable `MemoryEpisodeEvidence` anchors, which remain regenerable in the current policy.
-- No conflict-resolution path for user-approved memory package payloads yet.
-- No UI flow yet that marks memory facts as user-approved canonical data.
+- 확인된 Phase 9 미구현 항목 없음.
 
 ## Sub-Agent Critical Review Summary
 

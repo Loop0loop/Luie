@@ -80,6 +80,97 @@ describe("scoreMemoryEvalCase", () => {
     expect(result.p0Failures).toEqual(["unsupported_confirmed_answer"]);
   });
 
+  it("flags deleted or draft facts used as confirmed memory", () => {
+    const result = scoreMemoryEvalCase({
+      evalCase: baseCase,
+      retrievedEvidence: [
+        {
+          chunkId: "chunk-3-a",
+          chapterId: "chapter-3",
+          offset: 130,
+          quote: "아린은 백야회의 추적을 피해 골목으로 숨어들었다.",
+        },
+      ],
+      groundingStatus: "confirmed",
+      observedFacts: [
+        {
+          id: "fact-draft",
+          status: "draft",
+          usedAs: "confirmed",
+        },
+        {
+          id: "fact-deleted",
+          status: "deleted",
+          usedAs: "confirmed",
+        },
+      ],
+      topK: 3,
+    });
+
+    expect(result.p0Failures).toContain("deleted_or_draft_fact_confirmed");
+  });
+
+  it("flags future facts used for past-time answers", () => {
+    const result = scoreMemoryEvalCase({
+      evalCase: baseCase,
+      retrievedEvidence: [
+        {
+          chunkId: "chunk-3-a",
+          chapterId: "chapter-3",
+          offset: 130,
+          quote: "아린은 백야회의 추적을 피해 골목으로 숨어들었다.",
+        },
+      ],
+      groundingStatus: "confirmed",
+      queryChapterOrder: 3,
+      observedFacts: [
+        {
+          id: "fact-future",
+          status: "confirmed",
+          observedAtChapterOrder: 9,
+          usedAs: "confirmed",
+        },
+      ],
+      topK: 3,
+    });
+
+    expect(result.p0Failures).toContain("future_fact_used_in_past_answer");
+  });
+
+  it("flags reversed relation direction", () => {
+    const result = scoreMemoryEvalCase({
+      evalCase: {
+        ...baseCase,
+        expectedRelations: [
+          {
+            sourceName: "아린",
+            targetName: "백야회",
+            relation: "hostile_to",
+          },
+        ],
+      },
+      retrievedEvidence: [
+        {
+          chunkId: "chunk-3-a",
+          chapterId: "chapter-3",
+          offset: 130,
+          quote: "아린은 백야회의 추적을 피해 골목으로 숨어들었다.",
+        },
+      ],
+      groundingStatus: "confirmed",
+      observedRelations: [
+        {
+          sourceName: "백야회",
+          targetName: "아린",
+          relation: "hostile_to",
+        },
+      ],
+      topK: 3,
+    });
+
+    expect(result.p0Failures).toContain("relation_direction_reversed");
+  });
+
   it("runs a fixed suite and reports aggregate recall and P0 failures", () => {
     const result = runMemoryEvalSuite({
       topK: 3,

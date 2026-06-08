@@ -38,6 +38,29 @@ describe("main embedding runtime boundary", () => {
     expect(projectorSource).toContain("utilityProcessBridge.generateText");
   });
 
+  it("keeps LLM episode extraction wired through a gated derived worker path", () => {
+    const workerSource = readFileSync(
+      resolve(process.cwd(), "src/main/services/features/derivedJobWorker.ts"),
+      "utf8",
+    );
+
+    expect(workerSource).toContain("listProjectsWithPendingEpisodeExtractionJobs");
+    expect(workerSource).toContain("processPendingLlmEpisodeExtractionJobs");
+    expect(workerSource).toContain("episodeQueued");
+    expect(workerSource).toContain("episodeProcessed");
+  });
+
+  it("keeps LLM temporal fact extraction wired through a gated derived worker path", () => {
+    const workerSource = readFileSync(
+      resolve(process.cwd(), "src/main/services/features/derivedJobWorker.ts"),
+      "utf8",
+    );
+
+    expect(workerSource).toContain("listProjectsWithPendingTemporalFactEvidence");
+    expect(workerSource).toContain("processPendingLlmTemporalFactExtraction");
+    expect(workerSource).toContain("temporalFactProcessed");
+  });
+
   it("keeps utility LLM logs aligned with route backend implementation terminology", () => {
     const materializerSource = readFileSync(
       resolve(process.cwd(), "src/main/utility/llm/runtimeMaterializer.ts"),

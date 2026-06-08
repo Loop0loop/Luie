@@ -265,7 +265,7 @@ export function resolveRelatedEntity(input: {
   const relatedInfo = relatedId ? input.entityInfo.get(relatedId) : null;
   return {
     relatedEntityId: relatedId,
-    relatedEntityName: relatedInfo?.name ?? input.fact.objectValue,
+    relatedEntityName: relatedInfo?.name ?? input.fact.objectValue ?? null,
     relatedEntityType: relatedInfo?.type ?? null,
   };
 }

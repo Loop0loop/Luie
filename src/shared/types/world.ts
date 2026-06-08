@@ -257,6 +257,7 @@ export interface WorldEntity {
   description?: string | null;
   firstAppearance?: string | null;
   attributes?: WorldEntityAttributes | string | null;
+  memoryEntityId?: string | null;
   positionX: number;
   positionY: number;
   createdAt: string | Date;
@@ -283,6 +284,7 @@ export interface WorldEntityCreateInput {
   description?: string;
   firstAppearance?: string;
   attributes?: WorldEntityAttributes;
+  memoryEntityId?: string | null;
   positionX?: number;
   positionY?: number;
 }
@@ -293,6 +295,7 @@ export interface WorldEntityUpdateInput {
   description?: string;
   firstAppearance?: string;
   attributes?: WorldEntityAttributes;
+  memoryEntityId?: string | null;
 }
 export interface WorldEntityUpdatePositionInput {
   id: string;

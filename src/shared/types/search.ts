@@ -82,6 +82,30 @@ export interface ChapterSummaryStatus {
   completedCount: number;
 }
 
+export interface NarrativeSummaryStatusItem {
+  id: string;
+  title: string;
+  summary: string;
+  summaryType: string;
+  scopeType: string;
+  scopeId: string | null;
+  status: string;
+  confidence: number;
+  sourceContentHash: string;
+  generatedAt: string;
+  updatedAt: string;
+  sourceCount: number;
+  isStale: boolean;
+}
+
+export interface NarrativeSummaryStatus {
+  projectId: string;
+  totalCount: number;
+  staleCount: number;
+  byType: Record<string, number>;
+  summaries: NarrativeSummaryStatusItem[];
+}
+
 export interface MemoryEmbeddingStatus {
   projectId: string;
   pendingCount: number;
@@ -176,6 +200,45 @@ export interface NarrativeMemoryTraceStep {
   reason: string;
 }
 
+export interface NarrativeMemoryIntentCalibrationRequest {
+  projectId: string;
+  useLlm?: boolean;
+}
+
+export interface NarrativeMemoryIntentCalibrationFailure {
+  caseId: string;
+  reason:
+    | "EXPECTED_INTENT_MISMATCH"
+    | "EXPECTED_SOURCE_MISSING"
+    | "CLASSIFIER_ERROR";
+  detail?: string;
+}
+
+export interface NarrativeMemoryIntentCalibrationResult {
+  caseCount: number;
+  passCount: number;
+  failures: NarrativeMemoryIntentCalibrationFailure[];
+}
+
+export interface MemoryEpisodeCalibrationRequest {
+  projectId: string;
+}
+
+export interface MemoryEpisodeCalibrationFailure {
+  caseId: string;
+  reason:
+    | "EXPECTED_EPISODE_NOT_FOUND"
+    | "EXPECTED_EVIDENCE_CHUNK_NOT_FOUND"
+    | "EXTRACTOR_ERROR";
+  detail?: string;
+}
+
+export interface MemoryEpisodeCalibrationResult {
+  caseCount: number;
+  passCount: number;
+  failures: MemoryEpisodeCalibrationFailure[];
+}
+
 export interface MemoryEntityProfile {
   id: string;
   canonicalName: string;
@@ -242,6 +305,153 @@ export interface MemoryConflictQueueItem {
 
 export interface MemoryConflictQueueResult {
   items: MemoryConflictQueueItem[];
+}
+
+export interface MemoryEpisodeReviewItem {
+  id: string;
+  projectId: string;
+  sourceType: string;
+  sourceId: string;
+  chapterId: string | null;
+  sceneId: string | null;
+  episodeType: string;
+  title: string;
+  summary: string;
+  status: string;
+  confidence: number;
+  evidenceCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MemoryEpisodeReviewQueueInput {
+  projectId: string;
+  limit?: number;
+}
+
+export interface MemoryEpisodeReviewQueueResult {
+  items: MemoryEpisodeReviewItem[];
+}
+
+export interface MemoryEpisodeRejectInput {
+  projectId: string;
+  episodeId: string;
+  reason: string;
+}
+
+export interface MemoryEpisodeRejectResult {
+  updated: boolean;
+}
+
+export interface MemoryTemporalFactReviewItem {
+  id: string;
+  projectId: string;
+  subjectEntityId: string;
+  subjectEntityName: string | null;
+  predicate: string;
+  objectEntityId: string | null;
+  objectEntityName: string | null;
+  objectValue: string | null;
+  valueType: string;
+  validFromChapterOrder: number;
+  validToChapterOrder: number | null;
+  observedAtChapterOrder: number;
+  confidence: number;
+  status: string;
+  evidenceCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MemoryTemporalFactReviewQueueInput {
+  projectId: string;
+  limit?: number;
+}
+
+export interface MemoryTemporalFactReviewQueueResult {
+  items: MemoryTemporalFactReviewItem[];
+}
+
+export interface MemoryTemporalFactConfirmInput {
+  projectId: string;
+  factId: string;
+}
+
+export interface MemoryTemporalFactRejectInput {
+  projectId: string;
+  factId: string;
+  reason: string;
+}
+
+export interface MemoryTemporalFactConflictResolveInput {
+  projectId: string;
+  conflictId: string;
+  winnerFactId: string;
+  reason?: string;
+}
+
+export interface MemoryTemporalFactReviewMutationResult {
+  updated: boolean;
+  status?: "confirmed" | "rejected";
+  canonicalExportable?: boolean;
+}
+
+export interface MemoryEntityAliasReviewItem {
+  id: string;
+  projectId: string;
+  entityId: string;
+  entityType: string;
+  canonicalName: string;
+  entityStatus: string;
+  alias: string;
+  normalizedAlias: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MemoryEntityAliasReviewQueueInput {
+  projectId: string;
+  limit?: number;
+}
+
+export interface MemoryEntityAliasReviewQueueResult {
+  items: MemoryEntityAliasReviewItem[];
+}
+
+export interface MemoryEntityAliasConfirmInput {
+  projectId: string;
+  aliasId: string;
+}
+
+export interface MemoryEntityAliasRejectInput {
+  projectId: string;
+  aliasId: string;
+}
+
+export interface MemoryEntityAliasReviewMutationResult {
+  updated: boolean;
+}
+
+export interface MemoryEntityMergeInput {
+  projectId: string;
+  targetEntityId: string;
+  sourceEntityId: string;
+}
+
+export interface MemoryEntityMergeResult {
+  updated: boolean;
+}
+
+export interface MemoryEntityAliasSplitInput {
+  projectId: string;
+  aliasId: string;
+  canonicalName: string;
+}
+
+export interface MemoryEntityAliasSplitResult {
+  updated: boolean;
+  entityId: string | null;
 }
 
 export interface NarrativeMemoryQueryInput {

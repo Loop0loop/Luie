@@ -31,6 +31,7 @@ export class WorldEntityService {
                 description: input.description ?? null,
                 firstAppearance: input.firstAppearance ?? null,
                 attributes: input.attributes ? JSON.stringify(input.attributes) : null,
+                memoryEntityId: input.memoryEntityId ?? null,
                 positionX: input.positionX ?? 0,
                 positionY: input.positionY ?? 0,
                 updatedAt: now,
@@ -109,6 +110,9 @@ export class WorldEntityService {
             if (input.firstAppearance !== undefined) updateData.firstAppearance = input.firstAppearance;
             if (input.attributes !== undefined) {
                 updateData.attributes = JSON.stringify(input.attributes);
+            }
+            if (input.memoryEntityId !== undefined) {
+                updateData.memoryEntityId = input.memoryEntityId;
             }
 
             const [updated] = await getWorldDbClient().update(worldEntity).set(updateData).where(eq(worldEntity.id, input.id)).returning();

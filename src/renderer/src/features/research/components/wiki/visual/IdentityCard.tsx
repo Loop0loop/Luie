@@ -8,15 +8,26 @@
 import { useTranslation } from "react-i18next";
 import { Sparkles } from "lucide-react";
 import { ENTITY_KIND_ICON, ENTITY_KIND_LABEL_KEY, ENTITY_KIND_TINT } from "./constants";
-import type { EntityKind } from "./types";
+import type { EntityKind, EntityVisualProfileSummary } from "./types";
 
 type IdentityCardProps = {
   kind: EntityKind;
   name: string;
   identityLine: string;
+  profile?: EntityVisualProfileSummary;
 };
 
-export function IdentityCard({ kind, name, identityLine }: IdentityCardProps) {
+function formatMentionRange(profile: EntityVisualProfileSummary): string {
+  if (
+    profile.firstMentionChapterOrder === null ||
+    profile.lastMentionChapterOrder === null
+  ) {
+    return "출현 범위 없음";
+  }
+  return `${profile.firstMentionChapterOrder}~${profile.lastMentionChapterOrder}화`;
+}
+
+export function IdentityCard({ kind, name, identityLine, profile }: IdentityCardProps) {
   const { t } = useTranslation();
   const Icon = ENTITY_KIND_ICON[kind];
   const tint = ENTITY_KIND_TINT[kind];
@@ -47,6 +58,33 @@ export function IdentityCard({ kind, name, identityLine }: IdentityCardProps) {
             {identityLine}
             <span className="text-muted/70">{t("entityVisual.identity.endingParticle")}</span>
           </h3>
+          {profile ? (
+            <div className="mt-4 flex flex-col gap-3">
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-md border border-border/70 bg-panel px-2 py-1 text-[11px] text-muted">
+                  {profile.status}
+                </span>
+                <span className="rounded-md border border-border/70 bg-panel px-2 py-1 text-[11px] text-muted">
+                  출현 {profile.mentionCount}회
+                </span>
+                <span className="rounded-md border border-border/70 bg-panel px-2 py-1 text-[11px] text-muted">
+                  {formatMentionRange(profile)}
+                </span>
+              </div>
+              {profile.aliases.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {profile.aliases.map((alias) => (
+                    <span
+                      key={alias}
+                      className="rounded-md bg-surface-hover px-2 py-1 text-[11px] text-fg"
+                    >
+                      {alias}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

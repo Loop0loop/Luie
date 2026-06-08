@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@shared/api";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
+import type { NarrativeMemoryQueryResult } from "@shared/types/search";
 import type { EntityKind, EntityVisualBundle } from "./types";
 
 const EMPTY_BUNDLE: EntityVisualBundle = {
@@ -51,6 +52,56 @@ function pickRelatedName(fact: { relatedEntityName: string | null; objectValue: 
   return fact.objectValue ?? null;
 }
 
+export function buildEntityVisualBundleFromNarrativeMemory(
+  data: NarrativeMemoryQueryResult,
+): EntityVisualBundle {
+  const profile = data.profiles?.[0];
+
+  const relatedEntries = data.facts
+    .map((fact) => {
+      const relatedName = pickRelatedName(fact);
+      if (!relatedName) return null;
+      return {
+        kind: toEntityKind(fact.relatedEntityType),
+        name: relatedName,
+        role: [
+          fact.predicate,
+          fact.status,
+          fact.evidenceCount > 0 ? "근거 있음" : "검토 필요",
+        ].join(" · "),
+      };
+    })
+    .filter((item): item is { kind: EntityKind; name: string; role: string } => Boolean(item))
+    .slice(0, 8);
+  const relatedByName = new Map<string, { kind: EntityKind; name: string; role: string }>();
+  for (const item of relatedEntries) {
+    const key = `${item.kind}:${item.name}`;
+    if (!relatedByName.has(key)) {
+      relatedByName.set(key, item);
+    }
+  }
+
+  return {
+    identityLine: profile
+      ? formatProfileIdentityLine(profile)
+      : data.facts.length > 0
+        ? `${data.intent} · ${data.status}`
+        : EMPTY_BUNDLE.identityLine,
+    profile: profile
+      ? {
+          canonicalName: profile.canonicalName,
+          status: profile.status,
+          aliases: profile.aliases,
+          aliasCount: profile.aliasCount,
+          mentionCount: profile.mentionCount,
+          firstMentionChapterOrder: profile.firstMentionChapterOrder,
+          lastMentionChapterOrder: profile.lastMentionChapterOrder,
+        }
+      : undefined,
+    related: [...relatedByName.values()],
+  };
+}
+
 export function useEntityVisualData(
   kind: EntityKind,
   id: string,
@@ -86,40 +137,7 @@ export function useEntityVisualData(
           return;
         }
 
-        const profile = data.profiles?.[0];
-
-        const relatedEntries = data.facts
-          .map((fact) => {
-            const relatedName = pickRelatedName(fact);
-            if (!relatedName) return null;
-            return {
-              kind: toEntityKind(fact.relatedEntityType),
-              name: relatedName,
-              role: [
-                fact.predicate,
-                fact.status,
-                fact.evidenceCount > 0 ? "근거 있음" : "검토 필요",
-              ].join(" · "),
-            };
-          })
-          .filter((item): item is { kind: EntityKind; name: string; role: string } => Boolean(item))
-          .slice(0, 8);
-        const relatedByName = new Map<string, { kind: EntityKind; name: string; role: string }>();
-        for (const item of relatedEntries) {
-          const key = `${item.kind}:${item.name}`;
-          if (!relatedByName.has(key)) {
-            relatedByName.set(key, item);
-          }
-        }
-
-        setBundle({
-          identityLine: profile
-            ? formatProfileIdentityLine(profile)
-            : data.facts.length > 0
-              ? `${data.intent} · ${data.status}`
-              : EMPTY_BUNDLE.identityLine,
-          related: [...relatedByName.values()],
-        });
+        setBundle(buildEntityVisualBundleFromNarrativeMemory(data));
       })
       .catch(() => {
         if (!cancelled) setBundle(EMPTY_BUNDLE);

@@ -2,6 +2,7 @@ import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "re
 import { useShallow } from "zustand/react/shallow";
 import { Send, Square } from "lucide-react";
 import { useToast } from "@shared/ui/ToastContext";
+import { useDialog } from "@shared/ui/useDialog";
 import { api } from "@shared/api";
 import { ErrorCode } from "@shared/constants/errorCode";
 import { requestChapterNavigation } from "@renderer/features/workspace/services/chapterNavigation";
@@ -10,6 +11,13 @@ import { useProjectStore } from "@renderer/features/project/stores/projectStore"
 import { Button } from "@renderer/components/ui/button";
 import {
   type AnalysisConflictItem,
+  type AnalysisEntityAliasReviewItem,
+  type AnalysisEpisodeReviewItem,
+  type AnalysisEpisodeCalibrationReport,
+  type AnalysisFactReviewItem,
+  type AnalysisIntentCalibrationReport,
+  type AnalysisMemoryEvalReport,
+  type AnalysisNarrativeSummaryStatus,
   type AnalysisRagErrorPayload,
   type AnalysisRagStreamPayload,
   type AnalysisRuntimeInfo,
@@ -19,7 +27,12 @@ import {
   type RuntimePreference,
 } from "./analysisSection/types";
 import { ConflictQueuePanel } from "./analysisSection/ConflictQueuePanel";
+import { EntityAliasReviewPanel } from "./analysisSection/EntityAliasReviewPanel";
+import { EpisodeReviewPanel } from "./analysisSection/EpisodeReviewPanel";
+import { FactReviewPanel } from "./analysisSection/FactReviewPanel";
 import { MessageList } from "./analysisSection/MessageList";
+import { MemoryEvalReportPanel } from "./analysisSection/MemoryEvalReportPanel";
+import { NarrativeSummaryStatusPanel } from "./analysisSection/NarrativeSummaryStatusPanel";
 import { RuntimeStatusPanel } from "./analysisSection/RuntimeStatusPanel";
 
 type ChatChunkItem = {
@@ -58,9 +71,41 @@ export default function AnalysisSection() {
   const [conflictItems, setConflictItems] = useState<AnalysisConflictItem[]>([]);
   const [conflictLoading, setConflictLoading] = useState(false);
   const [conflictError, setConflictError] = useState<string | null>(null);
+  const [resolvingConflictId, setResolvingConflictId] = useState<string | null>(null);
+  const [showEpisodeReview, setShowEpisodeReview] = useState(false);
+  const [episodeReviewItems, setEpisodeReviewItems] = useState<AnalysisEpisodeReviewItem[]>([]);
+  const [episodeReviewLoading, setEpisodeReviewLoading] = useState(false);
+  const [episodeReviewError, setEpisodeReviewError] = useState<string | null>(null);
+  const [rejectingEpisodeId, setRejectingEpisodeId] = useState<string | null>(null);
+  const [showFactReview, setShowFactReview] = useState(false);
+  const [factReviewItems, setFactReviewItems] = useState<AnalysisFactReviewItem[]>([]);
+  const [factReviewLoading, setFactReviewLoading] = useState(false);
+  const [factReviewError, setFactReviewError] = useState<string | null>(null);
+  const [mutatingFactId, setMutatingFactId] = useState<string | null>(null);
+  const [showEntityAliasReview, setShowEntityAliasReview] = useState(false);
+  const [entityAliasReviewItems, setEntityAliasReviewItems] = useState<
+    AnalysisEntityAliasReviewItem[]
+  >([]);
+  const [entityAliasReviewLoading, setEntityAliasReviewLoading] = useState(false);
+  const [entityAliasReviewError, setEntityAliasReviewError] = useState<string | null>(null);
+  const [mutatingAliasId, setMutatingAliasId] = useState<string | null>(null);
+  const [showNarrativeSummaryStatus, setShowNarrativeSummaryStatus] = useState(false);
+  const [narrativeSummaryStatus, setNarrativeSummaryStatus] =
+    useState<AnalysisNarrativeSummaryStatus | null>(null);
+  const [narrativeSummaryStatusLoading, setNarrativeSummaryStatusLoading] = useState(false);
+  const [narrativeSummaryStatusError, setNarrativeSummaryStatusError] = useState<string | null>(null);
+  const [showMemoryEvalReport, setShowMemoryEvalReport] = useState(false);
+  const [memoryEvalReport, setMemoryEvalReport] = useState<AnalysisMemoryEvalReport | null>(null);
+  const [intentCalibrationReport, setIntentCalibrationReport] =
+    useState<AnalysisIntentCalibrationReport | null>(null);
+  const [episodeCalibrationReport, setEpisodeCalibrationReport] =
+    useState<AnalysisEpisodeCalibrationReport | null>(null);
+  const [memoryEvalLoading, setMemoryEvalLoading] = useState(false);
+  const [memoryEvalError, setMemoryEvalError] = useState<string | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
+  const dialog = useDialog();
 
   useEffect(() => {
     void (async () => {
@@ -114,7 +159,11 @@ export default function AnalysisSection() {
         const reason =
           runtime.data.skipped?.[0]?.message ??
           "선택한 LLM 경로를 사용할 수 없습니다.";
-        if (window.confirm(`${reason}\n\n설정 페이지의 모델 탭을 여시겠습니까?`)) {
+        const confirmed = await dialog.confirm({
+          title: "LLM 경로 사용 불가",
+          message: `${reason}\n\n설정 페이지의 모델 탭을 여시겠습니까?`,
+        });
+        if (confirmed) {
           window.dispatchEvent(
             new CustomEvent("luie:open-settings", { detail: { tab: "model" } }),
           );
@@ -128,7 +177,7 @@ export default function AnalysisSection() {
         "info",
       );
     },
-    [showToast],
+    [dialog, showToast],
   );
 
   useEffect(() => {
@@ -170,6 +219,141 @@ export default function AnalysisSection() {
       cancelled = true;
     };
   }, [currentChapter?.id, currentProject?.id, memoryScope, showConflictQueue]);
+
+  useEffect(() => {
+    if (!showEpisodeReview || !currentProject?.id) {
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      setEpisodeReviewLoading(true);
+      setEpisodeReviewError(null);
+
+      try {
+        const response = await api.memory.getEpisodeReviewQueue({
+          projectId: currentProject.id,
+          limit: 20,
+        });
+        if (cancelled) return;
+        if (!response.success || !response.data) {
+          setEpisodeReviewError(response.error?.message ?? "에피소드 검토 큐 조회 실패");
+          setEpisodeReviewItems([]);
+          return;
+        }
+        setEpisodeReviewItems(response.data.items);
+      } finally {
+        if (!cancelled) {
+          setEpisodeReviewLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentProject?.id, showEpisodeReview]);
+
+  useEffect(() => {
+    if (!showFactReview || !currentProject?.id) {
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      setFactReviewLoading(true);
+      setFactReviewError(null);
+
+      try {
+        const response = await api.memory.getFactReviewQueue({
+          projectId: currentProject.id,
+          limit: 20,
+        });
+        if (cancelled) return;
+        if (!response.success || !response.data) {
+          setFactReviewError(response.error?.message ?? "사실 검토 큐 조회 실패");
+          setFactReviewItems([]);
+          return;
+        }
+        setFactReviewItems(response.data.items);
+      } finally {
+        if (!cancelled) {
+          setFactReviewLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentProject?.id, showFactReview]);
+
+  useEffect(() => {
+    if (!showEntityAliasReview || !currentProject?.id) {
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      setEntityAliasReviewLoading(true);
+      setEntityAliasReviewError(null);
+
+      try {
+        const response = await api.memory.getEntityAliasReviewQueue({
+          projectId: currentProject.id,
+          limit: 20,
+        });
+        if (cancelled) return;
+        if (!response.success || !response.data) {
+          setEntityAliasReviewError(response.error?.message ?? "별칭 검토 큐 조회 실패");
+          setEntityAliasReviewItems([]);
+          return;
+        }
+        setEntityAliasReviewItems(response.data.items);
+      } finally {
+        if (!cancelled) {
+          setEntityAliasReviewLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentProject?.id, showEntityAliasReview]);
+
+  useEffect(() => {
+    if (!showNarrativeSummaryStatus || !currentProject?.id) {
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      setNarrativeSummaryStatusLoading(true);
+      setNarrativeSummaryStatusError(null);
+
+      try {
+        const response = await api.memory.getNarrativeSummaryStatus(currentProject.id);
+        if (cancelled) return;
+        if (!response.success || !response.data) {
+          setNarrativeSummaryStatusError(
+            response.error?.message ?? "서사 요약 상태 조회 실패",
+          );
+          setNarrativeSummaryStatus(null);
+          return;
+        }
+        setNarrativeSummaryStatus(response.data);
+      } finally {
+        if (!cancelled) {
+          setNarrativeSummaryStatusLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentProject?.id, showNarrativeSummaryStatus]);
 
   useEffect(() => {
     if (!ragRunId) {
@@ -311,6 +495,346 @@ export default function AnalysisSection() {
     });
   }, []);
 
+  const handleResolveConflict = useCallback(
+    async (item: AnalysisConflictItem, winnerFactId: string) => {
+      if (!currentProject?.id) {
+        return;
+      }
+
+      const confirmed = await dialog.confirm({
+        title: "충돌 해결",
+        message: "선택한 사실을 확정하고 반대 사실을 거절 처리합니다.",
+      });
+      if (!confirmed) {
+        return;
+      }
+
+      setResolvingConflictId(item.conflictId);
+      try {
+        const response = await api.memory.resolveFactConflict({
+          projectId: currentProject.id,
+          conflictId: item.conflictId,
+          winnerFactId,
+          reason: "사용자 충돌 해결",
+        });
+        if (!response.success || !response.data?.updated) {
+          showToast(response.error?.message ?? "충돌 해결 실패", "error");
+          return;
+        }
+        setConflictItems((prev) =>
+          prev.filter((conflict) => conflict.conflictId !== item.conflictId),
+        );
+        showToast("충돌을 해결했습니다.", "info");
+      } finally {
+        setResolvingConflictId(null);
+      }
+    },
+    [currentProject?.id, dialog, showToast],
+  );
+
+  const handleRejectEpisode = useCallback(
+    async (item: AnalysisEpisodeReviewItem) => {
+      if (!currentProject?.id) {
+        return;
+      }
+
+      const reason = await dialog.prompt({
+        title: "거절 사유",
+        defaultValue: "근거 부족",
+        placeholder: "거절 사유",
+      });
+      if (!reason?.trim()) {
+        return;
+      }
+
+      setRejectingEpisodeId(item.id);
+      try {
+        const response = await api.memory.rejectEpisode({
+          projectId: currentProject.id,
+          episodeId: item.id,
+          reason: reason.trim(),
+        });
+        if (!response.success || !response.data?.updated) {
+          showToast(response.error?.message ?? "에피소드 거절 실패", "error");
+          return;
+        }
+        setEpisodeReviewItems((prev) =>
+          prev.filter((episode) => episode.id !== item.id),
+        );
+        showToast("에피소드 후보를 거절했습니다.", "info");
+      } finally {
+        setRejectingEpisodeId(null);
+      }
+    },
+    [currentProject?.id, dialog, showToast],
+  );
+
+  const handleConfirmFact = useCallback(
+    async (item: AnalysisFactReviewItem) => {
+      if (!currentProject?.id) {
+        return;
+      }
+
+      setMutatingFactId(item.id);
+      try {
+        const response = await api.memory.confirmFact({
+          projectId: currentProject.id,
+          factId: item.id,
+        });
+        if (!response.success || !response.data?.updated) {
+          showToast(response.error?.message ?? "사실 확정 실패", "error");
+          return;
+        }
+        setFactReviewItems((prev) => prev.filter((fact) => fact.id !== item.id));
+        showToast("사실 후보를 canonical memory로 승인했습니다.", "info");
+      } finally {
+        setMutatingFactId(null);
+      }
+    },
+    [currentProject?.id, showToast],
+  );
+
+  const handleRejectFact = useCallback(
+    async (item: AnalysisFactReviewItem) => {
+      if (!currentProject?.id) {
+        return;
+      }
+
+      const reason = await dialog.prompt({
+        title: "거절 사유",
+        defaultValue: "근거 부족",
+        placeholder: "거절 사유",
+      });
+      if (!reason?.trim()) {
+        return;
+      }
+
+      setMutatingFactId(item.id);
+      try {
+        const response = await api.memory.rejectFact({
+          projectId: currentProject.id,
+          factId: item.id,
+          reason: reason.trim(),
+        });
+        if (!response.success || !response.data?.updated) {
+          showToast(response.error?.message ?? "사실 거절 실패", "error");
+          return;
+        }
+        setFactReviewItems((prev) => prev.filter((fact) => fact.id !== item.id));
+        showToast("사실 후보를 거절했습니다.", "info");
+      } finally {
+        setMutatingFactId(null);
+      }
+    },
+    [currentProject?.id, dialog, showToast],
+  );
+
+  const handleConfirmEntityAlias = useCallback(
+    async (item: AnalysisEntityAliasReviewItem) => {
+      if (!currentProject?.id) {
+        return;
+      }
+
+      setMutatingAliasId(item.id);
+      try {
+        const response = await api.memory.confirmEntityAlias({
+          projectId: currentProject.id,
+          aliasId: item.id,
+        });
+        if (!response.success || !response.data?.updated) {
+          showToast(response.error?.message ?? "별칭 확정 실패", "error");
+          return;
+        }
+        setEntityAliasReviewItems((prev) =>
+          prev.filter((alias) => alias.id !== item.id),
+        );
+        showToast("별칭 후보를 확정했습니다.", "info");
+      } finally {
+        setMutatingAliasId(null);
+      }
+    },
+    [currentProject?.id, showToast],
+  );
+
+  const handleRejectEntityAlias = useCallback(
+    async (item: AnalysisEntityAliasReviewItem) => {
+      if (!currentProject?.id) {
+        return;
+      }
+
+      const confirmed = await dialog.confirm({
+        title: "별칭 거절",
+        message: `${item.canonicalName} = ${item.alias} 후보를 거절합니다.`,
+      });
+      if (!confirmed) {
+        return;
+      }
+
+      setMutatingAliasId(item.id);
+      try {
+        const response = await api.memory.rejectEntityAlias({
+          projectId: currentProject.id,
+          aliasId: item.id,
+        });
+        if (!response.success || !response.data?.updated) {
+          showToast(response.error?.message ?? "별칭 거절 실패", "error");
+          return;
+        }
+        setEntityAliasReviewItems((prev) =>
+          prev.filter((alias) => alias.id !== item.id),
+        );
+        showToast("별칭 후보를 거절했습니다.", "info");
+      } finally {
+        setMutatingAliasId(null);
+      }
+    },
+    [currentProject?.id, dialog, showToast],
+  );
+
+  const handleMergeEntityAlias = useCallback(
+    async (item: AnalysisEntityAliasReviewItem, targetEntityId: string) => {
+      if (!currentProject?.id || !targetEntityId) {
+        return;
+      }
+
+      const confirmed = await dialog.confirm({
+        title: "엔티티 통합",
+        message: `${item.canonicalName} 후보를 선택한 targetEntityId로 통합합니다.`,
+      });
+      if (!confirmed) {
+        return;
+      }
+
+      setMutatingAliasId(item.id);
+      try {
+        const response = await api.memory.mergeEntity({
+          projectId: currentProject.id,
+          targetEntityId,
+          sourceEntityId: item.entityId,
+        });
+        if (!response.success || !response.data?.updated) {
+          showToast(response.error?.message ?? "엔티티 통합 실패", "error");
+          return;
+        }
+        setEntityAliasReviewItems((prev) =>
+          prev.filter((alias) => alias.id !== item.id),
+        );
+        showToast("엔티티를 통합했습니다.", "info");
+      } finally {
+        setMutatingAliasId(null);
+      }
+    },
+    [currentProject?.id, dialog, showToast],
+  );
+
+  const handleSplitEntityAlias = useCallback(
+    async (item: AnalysisEntityAliasReviewItem, canonicalName: string) => {
+      if (!currentProject?.id || !canonicalName) {
+        return;
+      }
+
+      const confirmed = await dialog.confirm({
+        title: "엔티티 분리",
+        message: `${item.alias} 후보를 새 canonical entity로 분리합니다.`,
+      });
+      if (!confirmed) {
+        return;
+      }
+
+      setMutatingAliasId(item.id);
+      try {
+        const response = await api.memory.splitEntityAlias({
+          projectId: currentProject.id,
+          aliasId: item.id,
+          canonicalName,
+        });
+        if (!response.success || !response.data?.updated) {
+          showToast(response.error?.message ?? "엔티티 분리 실패", "error");
+          return;
+        }
+        setEntityAliasReviewItems((prev) =>
+          prev.filter((alias) => alias.id !== item.id),
+        );
+        showToast("엔티티를 분리했습니다.", "info");
+      } finally {
+        setMutatingAliasId(null);
+      }
+    },
+    [currentProject?.id, dialog, showToast],
+  );
+
+  const handleRunMemoryEval = useCallback(async () => {
+    if (!currentProject?.id) {
+      return;
+    }
+
+    setMemoryEvalLoading(true);
+    setMemoryEvalError(null);
+    try {
+      const response = await api.memoryAdmin.runEvalSuite({
+        projectId: currentProject.id,
+        label: "analysis-panel",
+        topK: 5,
+      });
+      if (!response.success || !response.data) {
+        setMemoryEvalError(response.error?.message ?? "메모리 평가 실패");
+        return;
+      }
+      setMemoryEvalReport(response.data);
+      setShowMemoryEvalReport(true);
+      showToast("메모리 평가를 완료했습니다.", "info");
+    } finally {
+      setMemoryEvalLoading(false);
+    }
+  }, [currentProject?.id, showToast]);
+
+  const handleRunIntentCalibration = useCallback(async () => {
+    if (!currentProject?.id) {
+      return;
+    }
+
+    setMemoryEvalLoading(true);
+    setMemoryEvalError(null);
+    try {
+      const response = await api.memoryAdmin.runIntentCalibration({
+        projectId: currentProject.id,
+        useLlm: true,
+      });
+      if (!response.success || !response.data) {
+        setMemoryEvalError(response.error?.message ?? "LLM intent calibration 실패");
+        return;
+      }
+      setIntentCalibrationReport(response.data);
+      setShowMemoryEvalReport(true);
+      showToast("LLM intent calibration을 완료했습니다.", "info");
+    } finally {
+      setMemoryEvalLoading(false);
+    }
+  }, [currentProject?.id, showToast]);
+
+  const handleRunEpisodeCalibration = useCallback(async () => {
+    if (!currentProject?.id) {
+      return;
+    }
+
+    setMemoryEvalLoading(true);
+    setMemoryEvalError(null);
+    try {
+      const response = await api.memoryAdmin.runEpisodeCalibration({
+        projectId: currentProject.id,
+      });
+      if (!response.success || !response.data) {
+        setMemoryEvalError(response.error?.message ?? "LLM episode calibration 실패");
+        return;
+      }
+      setEpisodeCalibrationReport(response.data);
+      setShowMemoryEvalReport(true);
+      showToast("LLM episode calibration을 완료했습니다.", "info");
+    } finally {
+      setMemoryEvalLoading(false);
+    }
+  }, [currentProject?.id, showToast]);
+
   return (
     <div className="flex flex-col h-full bg-panel text-fg">
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5 min-h-0">
@@ -321,6 +845,64 @@ export default function AnalysisSection() {
           items={conflictItems}
           onToggle={() => setShowConflictQueue((prev) => !prev)}
           renderFact={formatConflictFact}
+          resolvingConflictId={resolvingConflictId}
+          onResolve={(item, winnerFactId) =>
+            void handleResolveConflict(item, winnerFactId)
+          }
+        />
+        <EpisodeReviewPanel
+          visible={showEpisodeReview}
+          loading={episodeReviewLoading}
+          error={episodeReviewError}
+          items={episodeReviewItems}
+          rejectingEpisodeId={rejectingEpisodeId}
+          onToggle={() => setShowEpisodeReview((prev) => !prev)}
+          onReject={(item) => void handleRejectEpisode(item)}
+        />
+        <FactReviewPanel
+          visible={showFactReview}
+          loading={factReviewLoading}
+          error={factReviewError}
+          items={factReviewItems}
+          mutatingFactId={mutatingFactId}
+          onToggle={() => setShowFactReview((prev) => !prev)}
+          onConfirm={(item) => void handleConfirmFact(item)}
+          onReject={(item) => void handleRejectFact(item)}
+        />
+        <EntityAliasReviewPanel
+          visible={showEntityAliasReview}
+          loading={entityAliasReviewLoading}
+          error={entityAliasReviewError}
+          items={entityAliasReviewItems}
+          mutatingAliasId={mutatingAliasId}
+          onToggle={() => setShowEntityAliasReview((prev) => !prev)}
+          onConfirm={(item) => void handleConfirmEntityAlias(item)}
+          onReject={(item) => void handleRejectEntityAlias(item)}
+          onMerge={(item, targetEntityId) =>
+            void handleMergeEntityAlias(item, targetEntityId)
+          }
+          onSplit={(item, canonicalName) =>
+            void handleSplitEntityAlias(item, canonicalName)
+          }
+        />
+        <NarrativeSummaryStatusPanel
+          visible={showNarrativeSummaryStatus}
+          loading={narrativeSummaryStatusLoading}
+          error={narrativeSummaryStatusError}
+          status={narrativeSummaryStatus}
+          onToggle={() => setShowNarrativeSummaryStatus((prev) => !prev)}
+        />
+        <MemoryEvalReportPanel
+          visible={showMemoryEvalReport}
+          loading={memoryEvalLoading}
+          error={memoryEvalError}
+          report={memoryEvalReport}
+          intentCalibrationReport={intentCalibrationReport}
+          episodeCalibrationReport={episodeCalibrationReport}
+          onToggle={() => setShowMemoryEvalReport((prev) => !prev)}
+          onRun={() => void handleRunMemoryEval()}
+          onRunIntentCalibration={() => void handleRunIntentCalibration()}
+          onRunEpisodeCalibration={() => void handleRunEpisodeCalibration()}
         />
 
         {messages.length === 0 && (

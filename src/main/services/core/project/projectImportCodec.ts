@@ -71,6 +71,7 @@ export type WorldEntityCreateRow = {
   description: string | null;
   firstAppearance: string | null;
   attributes: string | null;
+  memoryEntityId: string | null;
   positionX: number;
   positionY: number;
 };

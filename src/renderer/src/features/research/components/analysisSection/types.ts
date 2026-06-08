@@ -1,6 +1,13 @@
 import type {
   LlmRuntimeInfo,
   MemoryConflictQueueItem,
+  MemoryEntityAliasReviewItem,
+  MemoryEpisodeReviewItem,
+  MemoryEpisodeCalibrationResult,
+  MemoryEvalLiveRunnerResult,
+  NarrativeMemoryIntentCalibrationResult,
+  NarrativeSummaryStatus,
+  MemoryTemporalFactReviewItem,
   RagQaErrorPayload,
   RagQaEvidence,
   RagQaGrounding,
@@ -60,4 +67,10 @@ export type AnalysisRagErrorPayload = RagQaErrorPayload;
 export type AnalysisRuntimeInfo = LlmRuntimeInfo | null;
 export type AnalysisSidecarStatus = UtilitySidecarStatus | null;
 export type AnalysisConflictItem = MemoryConflictQueueItem;
-
+export type AnalysisEntityAliasReviewItem = MemoryEntityAliasReviewItem;
+export type AnalysisEpisodeReviewItem = MemoryEpisodeReviewItem;
+export type AnalysisFactReviewItem = MemoryTemporalFactReviewItem;
+export type AnalysisNarrativeSummaryStatus = NarrativeSummaryStatus;
+export type AnalysisMemoryEvalReport = MemoryEvalLiveRunnerResult;
+export type AnalysisIntentCalibrationReport = NarrativeMemoryIntentCalibrationResult;
+export type AnalysisEpisodeCalibrationReport = MemoryEpisodeCalibrationResult;

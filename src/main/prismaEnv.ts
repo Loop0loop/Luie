@@ -5,7 +5,7 @@ import { DB_NAME } from "../shared/constants/index.js";
 import { isTestEnv } from "./utils/environment.js";
 
 const resolveDevDbPath = () =>
-  path.join(process.cwd(), "drizzle", "dev.db");
+  path.join(process.cwd(), "drizzle", "app-dev.db");
 
 const resolveTestDbPath = () =>
   path.join(process.cwd(), "drizzle", ".tmp", "test.db");

@@ -142,7 +142,7 @@ export type SettingsRendererApi = {
     onStatusChanged: (callback: (status: SharedTypes.SyncStatus) => void) => () => void;
     onAuthResult: (callback: (result: SharedTypes.SyncAuthResult) => void) => () => void;
     resolveConflict: (resolution: {
-      type: "chapter" | "memo";
+      type: "chapter" | "memo" | "memoryCanonical";
       id: string;
       resolution: "local" | "remote";
     }) => Promise<IPCResponse<void>>;

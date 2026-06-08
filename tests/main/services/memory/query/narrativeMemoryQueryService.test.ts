@@ -15,6 +15,8 @@ const resolveChapterOrderMock = vi.fn();
 const resolveChapterOrderByChapterIdMock = vi.fn();
 const resolveMemoryEntityIdsMock = vi.fn();
 const loadEntityProfilesMock = vi.fn();
+const classifyNarrativeMemoryQueryPlanWithLlmMock = vi.fn();
+const isLlmNarrativeMemoryIntentClassifierEnabledMock = vi.fn();
 
 vi.mock("../../../../../src/main/services/features/memory/query/internal/temporal.js", () => ({
   fetchTemporalFacts: fetchTemporalFactsMock,
@@ -45,12 +47,18 @@ vi.mock("../../../../../src/main/services/features/memory/query/internal/entity.
   resolveRelatedEntity: vi.fn(),
 }));
 
+vi.mock("../../../../../src/main/services/features/memory/query/internal/llmIntentClassifier.js", () => ({
+  classifyNarrativeMemoryQueryPlanWithLlm: classifyNarrativeMemoryQueryPlanWithLlmMock,
+  isLlmNarrativeMemoryIntentClassifierEnabled: isLlmNarrativeMemoryIntentClassifierEnabledMock,
+}));
+
 const modulePath =
   "../../../../../src/main/services/features/memory/query/narrativeMemoryQueryService.js";
 const queryModule = await import(modulePath);
 
 const {
   buildNarrativeMemoryQueryPlan,
+  extractEntityNamesFromQuestion,
   formatNarrativeMemoryQueryResult,
   narrativeMemoryQueryService,
 } = queryModule;
@@ -64,6 +72,7 @@ beforeEach(() => {
   fetchConflictFactPairsMock.mockResolvedValue([]);
   fetchNarrativeSummaryFactsMock.mockResolvedValue([]);
   fetchChapterSummaryFactsMock.mockResolvedValue([]);
+  isLlmNarrativeMemoryIntentClassifierEnabledMock.mockReturnValue(false);
 });
 
 describe("narrative memory query service", () => {
@@ -83,6 +92,60 @@ describe("narrative memory query service", () => {
       "memory_knowledge_state",
       "memory_fact_evidence",
     ]);
+  });
+
+  it("extracts entity names from Korean state and identity questions", () => {
+    expect(extractEntityNamesFromQuestion("8화 기준 아린은 백야회의 정체를 아는가?")).toEqual([
+      "아린",
+      "백야회",
+    ]);
+    expect(extractEntityNamesFromQuestion("검은 기사는 누구야? 별칭도 알려줘")).toEqual([
+      "검은 기사",
+    ]);
+  });
+
+  it("uses extracted entity names when resolving memory entities", async () => {
+    resolveMemoryEntityIdsMock.mockResolvedValue(["entity-arin", "entity-baekya"]);
+
+    await narrativeMemoryQueryService.query({
+      projectId: "project-1",
+      question: "8화 기준 아린은 백야회의 정체를 아는가?",
+    });
+
+    expect(resolveMemoryEntityIdsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entityNames: ["아린", "백야회"],
+      }),
+    );
+  });
+
+  it("uses the LLM intent classifier when the classifier flag is enabled", async () => {
+    isLlmNarrativeMemoryIntentClassifierEnabledMock.mockReturnValue(true);
+    classifyNarrativeMemoryQueryPlanWithLlmMock.mockResolvedValue({
+      intent: "contradiction-check",
+      sources: ["memory_fact_invalidation", "memory_fact"],
+      reason: "LLM classified the question as a contradiction check",
+    });
+
+    const result = await narrativeMemoryQueryService.query({
+      projectId: "project-1",
+      question: "이 설정 이상한 부분 있어?",
+    });
+
+    expect(classifyNarrativeMemoryQueryPlanWithLlmMock).toHaveBeenCalledWith({
+      projectId: "project-1",
+      question: "이 설정 이상한 부분 있어?",
+    });
+    expect(fetchConflictFactPairsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectId: "project-1",
+      }),
+    );
+    expect(result.intent).toBe("contradiction-check");
+    expect(result.trace[0]).toMatchObject({
+      source: "memory_fact_invalidation",
+      reason: "LLM classified the question as a contradiction check",
+    });
   });
 
   it("routes contradiction checks away from generic chunk retrieval", () => {

@@ -1,6 +1,20 @@
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import type {
   MemoryConflictQueueInput,
+  MemoryEpisodeCalibrationRequest,
+  MemoryEpisodeRejectInput,
+  MemoryEpisodeReviewQueueInput,
+  MemoryEntityAliasConfirmInput,
+  MemoryEntityAliasRejectInput,
+  MemoryEntityAliasReviewQueueInput,
+  MemoryEntityAliasSplitInput,
+  MemoryEntityMergeInput,
+  MemoryEvalRunRequest,
+  NarrativeMemoryIntentCalibrationRequest,
+  MemoryTemporalFactConfirmInput,
+  MemoryTemporalFactConflictResolveInput,
+  MemoryTemporalFactRejectInput,
+  MemoryTemporalFactReviewQueueInput,
   NarrativeMemoryQueryInput,
   SearchQuery,
 } from "../../../shared/types/index.js";
@@ -11,6 +25,21 @@ import {
   memoryChunkSearchSchema,
   memoryConflictQueueQuerySchema,
   memoryEmbeddingStatusSchema,
+  memoryEpisodeRejectSchema,
+  memoryEpisodeReviewQueueSchema,
+  memoryEntityAliasConfirmSchema,
+  memoryEntityAliasRejectSchema,
+  memoryEntityAliasReviewQueueSchema,
+  memoryEntityAliasSplitSchema,
+  memoryEntityMergeSchema,
+  memoryEvalRunSchema,
+  memoryEpisodeCalibrationRunSchema,
+  memoryIntentCalibrationRunSchema,
+  memoryTemporalFactConfirmSchema,
+  memoryTemporalFactConflictResolveSchema,
+  memoryTemporalFactRejectSchema,
+  memoryTemporalFactReviewQueueSchema,
+  memoryNarrativeSummaryStatusSchema,
   memorySummaryStatusSchema,
   narrativeMemoryQuerySchema,
   projectIdSchema,
@@ -33,6 +62,24 @@ type SearchServiceLike = {
 type NarrativeMemoryQueryServiceLike = {
   query: (input: NarrativeMemoryQueryInput) => Promise<unknown>;
   getConflictQueue: (input: MemoryConflictQueueInput) => Promise<unknown>;
+  listSuggestedEpisodes: (input: MemoryEpisodeReviewQueueInput) => Promise<unknown>;
+  rejectEpisode: (input: MemoryEpisodeRejectInput) => Promise<unknown>;
+  listSuggestedFacts: (input: MemoryTemporalFactReviewQueueInput) => Promise<unknown>;
+  confirmFact: (input: MemoryTemporalFactConfirmInput) => Promise<unknown>;
+  rejectFact: (input: MemoryTemporalFactRejectInput) => Promise<unknown>;
+  resolveFactConflict: (input: MemoryTemporalFactConflictResolveInput) => Promise<unknown>;
+  listSuggestedEntityAliases: (input: MemoryEntityAliasReviewQueueInput) => Promise<unknown>;
+  confirmEntityAlias: (input: MemoryEntityAliasConfirmInput) => Promise<unknown>;
+  rejectEntityAlias: (input: MemoryEntityAliasRejectInput) => Promise<unknown>;
+  splitEntityAlias: (input: MemoryEntityAliasSplitInput) => Promise<unknown>;
+  mergeEntity: (input: MemoryEntityMergeInput) => Promise<unknown>;
+  runEvalSuite: (input: MemoryEvalRunRequest) => Promise<unknown>;
+  runIntentCalibration: (
+    input: NarrativeMemoryIntentCalibrationRequest,
+  ) => Promise<unknown>;
+  runEpisodeCalibration: (
+    input: MemoryEpisodeCalibrationRequest,
+  ) => Promise<unknown>;
 };
 
 type ChapterSummaryProjectorLike = {
@@ -42,6 +89,10 @@ type ChapterSummaryProjectorLike = {
 
 type EmbeddingProjectorLike = {
   getEmbeddingStatus: (projectId: string) => Promise<unknown>;
+};
+
+type NarrativeSummaryStatusServiceLike = {
+  getStatus: (input: { projectId: string }) => Promise<unknown>;
 };
 
 type DbMaintenanceServiceLike = {
@@ -64,6 +115,7 @@ export function registerSearchIPCHandlers(
   chapterSummaryProjector: ChapterSummaryProjectorLike,
   embeddingProjector: EmbeddingProjectorLike,
   narrativeMemoryQueryService: NarrativeMemoryQueryServiceLike,
+  narrativeSummaryStatusService?: NarrativeSummaryStatusServiceLike,
 ): void {
   registerIpcHandlers(logger, [
     {
@@ -133,6 +185,118 @@ export function registerSearchIPCHandlers(
         narrativeMemoryQueryService.getConflictQueue(input),
     },
     {
+      channel: IPC_CHANNELS.MEMORY_EPISODE_REVIEW_QUEUE,
+      logTag: "MEMORY_EPISODE_REVIEW_QUEUE",
+      failMessage: "Failed to get episode review queue",
+      argsSchema: z.tuple([memoryEpisodeReviewQueueSchema]),
+      handler: (input: MemoryEpisodeReviewQueueInput) =>
+        narrativeMemoryQueryService.listSuggestedEpisodes(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_EPISODE_REJECT,
+      logTag: "MEMORY_EPISODE_REJECT",
+      failMessage: "Failed to reject episode",
+      argsSchema: z.tuple([memoryEpisodeRejectSchema]),
+      handler: (input: MemoryEpisodeRejectInput) =>
+        narrativeMemoryQueryService.rejectEpisode(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_FACT_REVIEW_QUEUE,
+      logTag: "MEMORY_FACT_REVIEW_QUEUE",
+      failMessage: "Failed to get fact review queue",
+      argsSchema: z.tuple([memoryTemporalFactReviewQueueSchema]),
+      handler: (input: MemoryTemporalFactReviewQueueInput) =>
+        narrativeMemoryQueryService.listSuggestedFacts(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_FACT_CONFIRM,
+      logTag: "MEMORY_FACT_CONFIRM",
+      failMessage: "Failed to confirm fact",
+      argsSchema: z.tuple([memoryTemporalFactConfirmSchema]),
+      handler: (input: MemoryTemporalFactConfirmInput) =>
+        narrativeMemoryQueryService.confirmFact(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_FACT_REJECT,
+      logTag: "MEMORY_FACT_REJECT",
+      failMessage: "Failed to reject fact",
+      argsSchema: z.tuple([memoryTemporalFactRejectSchema]),
+      handler: (input: MemoryTemporalFactRejectInput) =>
+        narrativeMemoryQueryService.rejectFact(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_CONFLICT_RESOLVE,
+      logTag: "MEMORY_CONFLICT_RESOLVE",
+      failMessage: "Failed to resolve fact conflict",
+      argsSchema: z.tuple([memoryTemporalFactConflictResolveSchema]),
+      handler: (input: MemoryTemporalFactConflictResolveInput) =>
+        narrativeMemoryQueryService.resolveFactConflict(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_ENTITY_ALIAS_REVIEW_QUEUE,
+      logTag: "MEMORY_ENTITY_ALIAS_REVIEW_QUEUE",
+      failMessage: "Failed to get entity alias review queue",
+      argsSchema: z.tuple([memoryEntityAliasReviewQueueSchema]),
+      handler: (input: MemoryEntityAliasReviewQueueInput) =>
+        narrativeMemoryQueryService.listSuggestedEntityAliases(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_ENTITY_ALIAS_CONFIRM,
+      logTag: "MEMORY_ENTITY_ALIAS_CONFIRM",
+      failMessage: "Failed to confirm entity alias",
+      argsSchema: z.tuple([memoryEntityAliasConfirmSchema]),
+      handler: (input: MemoryEntityAliasConfirmInput) =>
+        narrativeMemoryQueryService.confirmEntityAlias(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_ENTITY_ALIAS_REJECT,
+      logTag: "MEMORY_ENTITY_ALIAS_REJECT",
+      failMessage: "Failed to reject entity alias",
+      argsSchema: z.tuple([memoryEntityAliasRejectSchema]),
+      handler: (input: MemoryEntityAliasRejectInput) =>
+        narrativeMemoryQueryService.rejectEntityAlias(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_ENTITY_ALIAS_SPLIT,
+      logTag: "MEMORY_ENTITY_ALIAS_SPLIT",
+      failMessage: "Failed to split entity alias",
+      argsSchema: z.tuple([memoryEntityAliasSplitSchema]),
+      handler: (input: MemoryEntityAliasSplitInput) =>
+        narrativeMemoryQueryService.splitEntityAlias(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_ENTITY_MERGE,
+      logTag: "MEMORY_ENTITY_MERGE",
+      failMessage: "Failed to merge memory entity",
+      argsSchema: z.tuple([memoryEntityMergeSchema]),
+      handler: (input: MemoryEntityMergeInput) =>
+        narrativeMemoryQueryService.mergeEntity(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_RUN_EVAL_SUITE,
+      logTag: "MEMORY_RUN_EVAL_SUITE",
+      failMessage: "Failed to run memory eval suite",
+      argsSchema: z.tuple([memoryEvalRunSchema]),
+      handler: (input: MemoryEvalRunRequest) =>
+        narrativeMemoryQueryService.runEvalSuite(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_RUN_INTENT_CALIBRATION,
+      logTag: "MEMORY_RUN_INTENT_CALIBRATION",
+      failMessage: "Failed to run memory intent calibration",
+      argsSchema: z.tuple([memoryIntentCalibrationRunSchema]),
+      handler: (input: NarrativeMemoryIntentCalibrationRequest) =>
+        narrativeMemoryQueryService.runIntentCalibration(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_RUN_EPISODE_CALIBRATION,
+      logTag: "MEMORY_RUN_EPISODE_CALIBRATION",
+      failMessage: "Failed to run memory episode calibration",
+      argsSchema: z.tuple([memoryEpisodeCalibrationRunSchema]),
+      handler: (input: MemoryEpisodeCalibrationRequest) =>
+        narrativeMemoryQueryService.runEpisodeCalibration(input),
+    },
+    {
       channel: IPC_CHANNELS.MEMORY_GET_CHUNK_BACKLINK,
       logTag: "MEMORY_GET_CHUNK_BACKLINK",
       failMessage: "Failed to get memory chunk backlink",
@@ -154,6 +318,21 @@ export function registerSearchIPCHandlers(
       argsSchema: z.tuple([memorySummaryStatusSchema]),
       handler: (input: { projectId: string }) =>
         chapterSummaryProjector.getSummaryStatus(input.projectId),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_GET_NARRATIVE_SUMMARY_STATUS,
+      logTag: "MEMORY_GET_NARRATIVE_SUMMARY_STATUS",
+      failMessage: "Failed to get narrative summary status",
+      argsSchema: z.tuple([memoryNarrativeSummaryStatusSchema]),
+      handler: (input: { projectId: string }) =>
+        narrativeSummaryStatusService?.getStatus(input) ??
+        Promise.resolve({
+          projectId: input.projectId,
+          totalCount: 0,
+          staleCount: 0,
+          byType: {},
+          summaries: [],
+        }),
     },
     {
       channel: IPC_CHANNELS.MEMORY_GET_EMBEDDING_STATUS,

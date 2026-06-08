@@ -73,6 +73,16 @@ USING fts5(
     sql: 'CREATE UNIQUE INDEX IF NOT EXISTS "MemoryEpisodeEvidence_id_projectId_key" ON "MemoryEpisodeEvidence"("id", "projectId");',
   },
   {
+    name: "MemoryEntityMergeAudit_projectId_source_idx",
+    table: "MemoryEntityMergeAudit",
+    sql: 'CREATE INDEX IF NOT EXISTS "MemoryEntityMergeAudit_projectId_source_idx" ON "MemoryEntityMergeAudit"("projectId", "sourceEntityId");',
+  },
+  {
+    name: "MemoryEntityMergeAudit_projectId_target_idx",
+    table: "MemoryEntityMergeAudit",
+    sql: 'CREATE INDEX IF NOT EXISTS "MemoryEntityMergeAudit_projectId_target_idx" ON "MemoryEntityMergeAudit"("projectId", "targetEntityId");',
+  },
+  {
     name: "MemoryFact_projectId_subject_predicate_idx",
     table: "MemoryFact",
     sql: 'CREATE INDEX IF NOT EXISTS "MemoryFact_projectId_subject_predicate_idx" ON "MemoryFact"("projectId", "subjectEntityId", "predicate");',

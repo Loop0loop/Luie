@@ -22,6 +22,7 @@ import {
   executeSql,
   getAllUserTables,
   getDatabaseSchema,
+  getTableInfo,
   getDrizzleTables,
   extractDrizzleColumns,
   extractDrizzleForeignKeys,

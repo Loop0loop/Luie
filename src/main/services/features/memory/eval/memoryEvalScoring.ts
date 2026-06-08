@@ -26,10 +26,52 @@ function countEvidenceHits(goldEvidence: MemoryEvalGoldEvidence[], retrievedEvid
 }
 
 function collectP0Failures(input: MemoryEvalScoreInput, evidenceHitCount: number): MemoryEvalP0Failure[] {
+  const failures = new Set<MemoryEvalP0Failure>();
   if (input.groundingStatus === "confirmed" && evidenceHitCount === 0) {
-    return ["unsupported_confirmed_answer"];
+    failures.add("unsupported_confirmed_answer");
   }
-  return [];
+
+  for (const fact of input.observedFacts ?? []) {
+    const factUsedAsConfirmed = fact.usedAs === "confirmed" || input.groundingStatus === "confirmed";
+    if (factUsedAsConfirmed && (fact.status === "deleted" || fact.status === "draft")) {
+      failures.add("deleted_or_draft_fact_confirmed");
+    }
+    if (
+      factUsedAsConfirmed &&
+      input.queryChapterOrder !== undefined &&
+      input.queryChapterOrder !== null &&
+      fact.observedAtChapterOrder !== undefined &&
+      fact.observedAtChapterOrder !== null &&
+      fact.observedAtChapterOrder > input.queryChapterOrder
+    ) {
+      failures.add("future_fact_used_in_past_answer");
+    }
+  }
+
+  for (const expected of input.evalCase.expectedRelations ?? []) {
+    const expectedRelation = normalizeRelation(expected.relation);
+    const expectedSource = normalizeName(expected.sourceName);
+    const expectedTarget = normalizeName(expected.targetName);
+    const hasReversed = (input.observedRelations ?? []).some(
+      (observed) =>
+        normalizeRelation(observed.relation) === expectedRelation &&
+        normalizeName(observed.sourceName) === expectedTarget &&
+        normalizeName(observed.targetName) === expectedSource,
+    );
+    if (hasReversed) {
+      failures.add("relation_direction_reversed");
+    }
+  }
+
+  return Array.from(failures);
+}
+
+function normalizeName(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function normalizeRelation(value: string): string {
+  return value.trim().toLowerCase();
 }
 
 export function scoreMemoryEvalCase(input: MemoryEvalScoreInput): MemoryEvalScoreResult {

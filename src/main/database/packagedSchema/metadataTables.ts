@@ -21,6 +21,7 @@ export const PACKAGED_SCHEMA_REQUIRED_TABLES = [
   "MemoryEntity",
   "MemoryEntityAlias",
   "MemoryEntityMention",
+  "MemoryEntityMergeAudit",
   "MemoryEpisodeExtractionJob",
   "MemoryEpisode",
   "MemoryEpisodeParticipant",

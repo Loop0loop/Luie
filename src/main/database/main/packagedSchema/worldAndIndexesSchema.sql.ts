@@ -123,12 +123,14 @@ CREATE TABLE IF NOT EXISTS "WorldEntity" (
     "description" TEXT,
     "firstAppearance" TEXT,
     "attributes" TEXT,
+    "memoryEntityId" TEXT,
     "positionX" REAL NOT NULL DEFAULT 0,
     "positionY" REAL NOT NULL DEFAULT 0,
     "deletedAt" DATETIME,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "WorldEntity_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT "WorldEntity_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "WorldEntity_memoryEntityId_fkey" FOREIGN KEY ("memoryEntityId", "projectId") REFERENCES "MemoryEntity" ("id", "projectId") ON DELETE SET NULL ON UPDATE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "EntityRelation" (
     "id" TEXT NOT NULL PRIMARY KEY,

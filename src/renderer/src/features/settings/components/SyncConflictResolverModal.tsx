@@ -4,12 +4,18 @@ import { AlertTriangle, X, Check, RefreshCcw } from "lucide-react";
 import type { SyncStatus } from "@shared/types";
 import { createPortal } from "react-dom";
 
+type SyncConflictResolutionType = SyncStatus["conflicts"]["items"] extends Array<infer Item>
+  ? Item extends { type: infer Type }
+    ? Type
+    : never
+  : "chapter" | "memo" | "memoryCanonical";
+
 interface SyncConflictResolverModalProps {
   conflicts: SyncStatus["conflicts"];
   onClose: () => void;
   onRefresh: () => void;
   onResolve: (input: {
-    type: "chapter" | "memo";
+    type: SyncConflictResolutionType;
     id: string;
     resolution: "local" | "remote";
   }) => Promise<void>;
@@ -61,7 +67,7 @@ export function SyncConflictResolverModal({
 
   const handleResolve = async (
     item: {
-      type: "chapter" | "memo";
+      type: SyncConflictResolutionType;
       id: string;
     },
     resolution: "local" | "remote",
@@ -136,7 +142,9 @@ export function SyncConflictResolverModal({
                     <div className="px-4 py-2 border-b border-border text-sm font-semibold text-fg">
                       {item.type === "chapter"
                         ? t("settings.sync.conflicts.chapterLabel", "Chapter")
-                        : t("settings.sync.conflicts.memoLabel", "Memo")}{" "}
+                        : item.type === "memo"
+                          ? t("settings.sync.conflicts.memoLabel", "Memo")
+                          : t("settings.sync.conflicts.memoryLabel", "Memory")}{" "}
                       #{index + 1} - {item.title || item.id}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3">

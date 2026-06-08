@@ -5,6 +5,7 @@ import {
   memoryEpisodeExtractionJob,
 } from "../../../../infra/database/index.js";
 import { createMemoryEpisodeCandidate } from "./memoryEpisodeCandidate.js";
+import { llmEpisodeExtractor } from "./memoryEpisodeLlmExtractor.js";
 
 const EPISODE_EXTRACTION_MAX_ATTEMPTS = 3;
 
@@ -39,6 +40,24 @@ export type MemoryEpisodeExtractor = (input: {
   extractorVersion: string;
   chunks: MemoryEpisodeExtractionChunk[];
 }) => Promise<MemoryEpisodeExtractorCandidate[]>;
+
+export function isLlmEpisodeExtractionEnabled(): boolean {
+  return process.env.LUIE_ENABLE_LLM_EPISODE_EXTRACTION === "1";
+}
+
+export async function listProjectsWithPendingEpisodeExtractionJobs(
+  limit = 20,
+): Promise<string[]> {
+  const rows = await db.getClient().all<{ projectId: string }>(
+    sql`SELECT "projectId"
+        FROM "MemoryEpisodeExtractionJob"
+        WHERE "status" IN ('pending', 'failed')
+        GROUP BY "projectId"
+        ORDER BY MAX("updatedAt") DESC
+        LIMIT ${Math.max(1, limit)};`,
+  );
+  return rows.map((row) => row.projectId);
+}
 
 export async function processPendingEpisodeExtractionJobs(input: {
   projectId: string;
@@ -168,4 +187,18 @@ export async function processPendingEpisodeExtractionJobs(input: {
   }
 
   return { queued: candidates.length, processed };
+}
+
+export async function processPendingLlmEpisodeExtractionJobs(input: {
+  projectId: string;
+  nowIso?: string;
+  limit?: number;
+}): Promise<{ queued: number; processed: number }> {
+  if (!isLlmEpisodeExtractionEnabled()) {
+    return { queued: 0, processed: 0 };
+  }
+  return await processPendingEpisodeExtractionJobs({
+    ...input,
+    extractor: llmEpisodeExtractor,
+  });
 }

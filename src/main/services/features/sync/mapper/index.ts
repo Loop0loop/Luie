@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mergeEntityList, mergeWorldDocs, toTimestamp } from "./entityMerge.js";
+import { chooseLatest, mergeEntityList, mergeWorldDocs, toTimestamp } from "./entityMerge.js";
 import {
   createConflictSummary,
   getEntityBaselineTimestamp,
@@ -10,6 +10,7 @@ import type {
   MergeSyncBundlesOptions,
   SyncBundle,
   SyncConflictSummary,
+  SyncMemoryCanonicalRecord,
 } from "./types.js";
 
 export { createEmptySyncBundle } from "./bundle.js";
@@ -114,6 +115,12 @@ export const mergeSyncBundles = (
     ...chapterMerged.conflictItems,
     ...memoMerged.conflictItems,
   ];
+  const memoryCanonicalMerged = mergeMemoryCanonicalRowsWithConflicts(
+    local.memoryCanonicalRows ?? [],
+    remote.memoryCanonicalRows ?? [],
+    options?.conflictResolutions,
+  );
+  conflictItems.push(...(memoryCanonicalMerged.conflictItems ?? []));
 
   const merged: SyncBundle = {
     projects: mergeEntityList(local.projects, remote.projects),
@@ -125,10 +132,7 @@ export const mergeSyncBundles = (
     worldDocuments: mergeWorldDocs(local.worldDocuments, remote.worldDocuments),
     memos: memoMerged.merged,
     snapshots: mergeEntityList(local.snapshots, remote.snapshots),
-    memoryCanonicalRows: mergeEntityList(
-      local.memoryCanonicalRows ?? [],
-      remote.memoryCanonicalRows ?? [],
-    ),
+    memoryCanonicalRows: memoryCanonicalMerged.merged,
     tombstones: mergeEntityList(local.tombstones, remote.tombstones),
   };
 
@@ -137,7 +141,80 @@ export const mergeSyncBundles = (
     conflicts: createConflictSummary(
       chapterMerged.conflicts,
       memoMerged.conflicts,
+      memoryCanonicalMerged.conflicts,
       conflictItems,
     ),
+  };
+};
+
+const stringifyMemoryRow = (row: Record<string, unknown>): string =>
+  JSON.stringify(row, Object.keys(row).sort());
+
+const buildMemoryConflictTitle = (row: SyncMemoryCanonicalRecord): string => {
+  const canonicalId =
+    typeof row.row.id === "string" && row.row.id.trim()
+      ? row.row.id
+      : row.id;
+  return `${row.tableName}:${canonicalId}`;
+};
+
+const mergeMemoryCanonicalRowsWithConflicts = (
+  local: SyncMemoryCanonicalRecord[],
+  remote: SyncMemoryCanonicalRecord[],
+  conflictResolutions?: Record<string, "local" | "remote">,
+): {
+  merged: SyncMemoryCanonicalRecord[];
+  conflicts: number;
+  conflictItems: SyncConflictSummary["items"];
+} => {
+  const merged = new Map<string, SyncMemoryCanonicalRecord>();
+  const conflictItems: NonNullable<SyncConflictSummary["items"]> = [];
+  let conflicts = 0;
+
+  for (const item of local) {
+    merged.set(item.id, item);
+  }
+
+  for (const remoteItem of remote) {
+    const localItem = merged.get(remoteItem.id);
+    if (!localItem) {
+      merged.set(remoteItem.id, remoteItem);
+      continue;
+    }
+
+    const localRow = stringifyMemoryRow(localItem.row);
+    const remoteRow = stringifyMemoryRow(remoteItem.row);
+    const resolutionKey = `memoryCanonical:${localItem.id}`;
+    const forcedResolution = conflictResolutions?.[resolutionKey];
+    if (forcedResolution === "local") {
+      merged.set(remoteItem.id, localItem);
+      continue;
+    }
+    if (forcedResolution === "remote") {
+      merged.set(remoteItem.id, remoteItem);
+      continue;
+    }
+
+    const [winner] = chooseLatest(localItem, remoteItem);
+    if (localRow !== remoteRow) {
+      conflicts += 1;
+      conflictItems.push({
+        type: "memoryCanonical",
+        id: localItem.id,
+        projectId: localItem.projectId,
+        title: buildMemoryConflictTitle(localItem),
+        localUpdatedAt: localItem.updatedAt,
+        remoteUpdatedAt: remoteItem.updatedAt,
+        localPreview: localRow.slice(0, 400),
+        remotePreview: remoteRow.slice(0, 400),
+      });
+    }
+    merged.set(remoteItem.id, winner);
+  }
+
+  return {
+    merged: Array.from(merged.values()),
+    conflicts,
+    conflictItems,
   };
 };

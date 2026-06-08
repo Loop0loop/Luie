@@ -345,4 +345,68 @@ describe("syncMapper project tombstones", () => {
     expect(merged.memos).toHaveLength(1);
     expect(merged.memos[0]?.content).toBe("remote memo");
   });
+
+  it("surfaces canonical memory conflicts and keeps them manually resolvable", () => {
+    const local = createEmptySyncBundle();
+    local.memoryCanonicalRows = [
+      {
+        id: "memory-row-1",
+        userId: "user-1",
+        projectId: "project-1",
+        tableName: "MemoryFact",
+        row: {
+          id: "fact-1",
+          status: "confirmed",
+          predicate: "location",
+          objectValue: "local room",
+        },
+        updatedAt: "2026-02-22T00:15:00.000Z",
+      },
+    ];
+
+    const remote = createEmptySyncBundle();
+    remote.memoryCanonicalRows = [
+      {
+        id: "memory-row-1",
+        userId: "user-1",
+        projectId: "project-1",
+        tableName: "MemoryFact",
+        row: {
+          id: "fact-1",
+          status: "confirmed",
+          predicate: "location",
+          objectValue: "remote hall",
+        },
+        updatedAt: "2026-02-22T00:16:00.000Z",
+      },
+    ];
+
+    const unresolved = mergeSyncBundles(local, remote);
+    expect(unresolved.conflicts.memoryCanonical).toBe(1);
+    expect(unresolved.conflicts.total).toBe(1);
+    expect(unresolved.conflicts.items).toEqual([
+      expect.objectContaining({
+        type: "memoryCanonical",
+        id: "memory-row-1",
+        projectId: "project-1",
+        title: "MemoryFact:fact-1",
+        localPreview: expect.stringContaining("local room"),
+        remotePreview: expect.stringContaining("remote hall"),
+      }),
+    ]);
+    expect(unresolved.merged.memoryCanonicalRows?.[0]?.row).toMatchObject({
+      objectValue: "remote hall",
+    });
+
+    const resolved = mergeSyncBundles(local, remote, {
+      conflictResolutions: {
+        "memoryCanonical:memory-row-1": "local",
+      },
+    });
+    expect(resolved.conflicts.memoryCanonical).toBe(0);
+    expect(resolved.conflicts.total).toBe(0);
+    expect(resolved.merged.memoryCanonicalRows?.[0]?.row).toMatchObject({
+      objectValue: "local room",
+    });
+  });
 });

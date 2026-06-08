@@ -3,11 +3,12 @@ import { z } from "zod";
 export const syncConflictSummarySchema = z.object({
   chapters: z.number().int().nonnegative(),
   memos: z.number().int().nonnegative(),
+  memoryCanonical: z.number().int().nonnegative().default(0),
   total: z.number().int().nonnegative(),
   items: z
     .array(
       z.object({
-        type: z.enum(["chapter", "memo"]),
+        type: z.enum(["chapter", "memo", "memoryCanonical"]),
         id: z.string().min(1),
         projectId: z.string().min(1),
         title: z.string(),

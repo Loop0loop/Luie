@@ -16,6 +16,7 @@ export const INITIAL_STATUS: SyncStatus = {
   conflicts: {
     chapters: 0,
     memos: 0,
+    memoryCanonical: 0,
     total: 0,
     items: [],
   },
@@ -31,7 +32,7 @@ const AUTH_FATAL_ERROR_PATTERNS = [
 ];
 
 export type SyncConflictResolutionInput = {
-  type: "chapter" | "memo";
+  type: "chapter" | "memo" | "memoryCanonical";
   id: string;
   resolution: "local" | "remote";
 };

@@ -13,7 +13,7 @@ interface SyncTabProps {
   onSyncNow: () => void;
   onToggleAutoSync: (enabled: boolean) => void;
   onResolveConflict: (input: {
-    type: "chapter" | "memo";
+    type: "chapter" | "memo" | "memoryCanonical";
     id: string;
     resolution: "local" | "remote";
   }) => Promise<void>;
@@ -165,6 +165,7 @@ export const SyncTab = memo(function SyncTab({
               total: status.conflicts.total,
               chapters: status.conflicts.chapters,
               memos: status.conflicts.memos,
+              memoryCanonical: status.conflicts.memoryCanonical,
             })}
           </div>
           {status.conflicts.total > 0 && (

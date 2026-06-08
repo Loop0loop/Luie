@@ -58,6 +58,7 @@ export function useProjectSelector(projects: Project[]): ProjectSelectorState & 
         conflicts: {
             chapters: 0,
             memos: 0,
+            memoryCanonical: 0,
             total: 0,
         },
     });

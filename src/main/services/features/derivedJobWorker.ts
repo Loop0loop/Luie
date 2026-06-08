@@ -6,6 +6,20 @@ import { embeddingProjector } from "./memory/embeddingProjector.js";
 import { chapterSummaryProjector } from "./memory/chapterSummaryProjector.js";
 import { MEMORY_JOB_TYPES } from "./memory/memoryJobConstants.js";
 import { memoryProjectionService } from "./memory/memoryProjectionService.js";
+import {
+  listProjectsWithPendingEpisodeExtractionJobs,
+  processPendingLlmEpisodeExtractionJobs,
+} from "./memory/episode/memoryEpisodeExtractionProcessor.js";
+import {
+  listProjectsWithPendingTemporalFactEvidence,
+  processPendingLlmTemporalFactExtraction,
+} from "./memory/temporal/memoryTemporalFactExtractionRunner.js";
+import { generateProjectNarrativeSummaryHierarchy } from "./memory/summary/memoryNarrativeSummaryRunner.js";
+import { refreshStaleProjectNarrativeSummaries } from "./memory/summary/memoryNarrativeSummaryDrift.js";
+import {
+  scheduleProjectNarrativeCommunities,
+  scheduleProjectNarrativeHierarchyScopes,
+} from "./memory/summary/memoryNarrativeSummaryScheduler.js";
 
 const logger = createLogger("DerivedJobWorker");
 const loadAutoSaveManager = async () =>
@@ -43,6 +57,14 @@ const SUMMARY_BATCH_SIZE = toPositiveInt(
 const EMBEDDING_BATCH_SIZE = toPositiveInt(
   process.env.LUIE_DERIVED_EMBEDDING_BATCH,
   isStressMode ? 25 : 5,
+);
+const EPISODE_BATCH_SIZE = toPositiveInt(
+  process.env.LUIE_DERIVED_EPISODE_BATCH,
+  isStressMode ? 10 : 2,
+);
+const TEMPORAL_FACT_BATCH_SIZE = toPositiveInt(
+  process.env.LUIE_DERIVED_TEMPORAL_FACT_BATCH,
+  isStressMode ? 10 : 2,
 );
 const TICK_WARN_THRESHOLD_MS = toPositiveInt(
   process.env.LUIE_DERIVED_TICK_WARN_MS,
@@ -148,14 +170,31 @@ class DerivedJobWorker {
       const projectsToProcess = await dbMaintenanceService.listProjectsWithPendingMemoryJobs(
         MEMORY_PROJECTS_PER_TICK,
       );
+      const episodeProjectsToProcess = await listProjectsWithPendingEpisodeExtractionJobs(
+        MEMORY_PROJECTS_PER_TICK,
+      );
+      const temporalFactProjectsToProcess = await listProjectsWithPendingTemporalFactEvidence(
+        MEMORY_PROJECTS_PER_TICK,
+      );
+      const projectIdsToProcess = Array.from(
+        new Set([
+          ...projectsToProcess,
+          ...episodeProjectsToProcess,
+          ...temporalFactProjectsToProcess,
+        ]),
+      ).slice(0, MEMORY_PROJECTS_PER_TICK);
 
       let memoryQueued = 0;
       let memoryProcessed = 0;
       let summaryQueued = 0;
       let summaryProcessed = 0;
+      let narrativeSummaryGenerated = 0;
       let embeddingQueued = 0;
       let embeddingProcessed = 0;
-      await projectsToProcess.reduce<Promise<void>>(async (prev, projectId) => {
+      let episodeQueued = 0;
+      let episodeProcessed = 0;
+      let temporalFactProcessed = 0;
+      await projectIdsToProcess.reduce<Promise<void>>(async (prev, projectId) => {
         await prev;
         const result = await memoryProjectionService.processPendingChunkJobs({
           projectId,
@@ -168,6 +207,19 @@ class DerivedJobWorker {
           MEMORY_JOB_TYPES.REBUILD_CHUNKS,
         );
         if (chunkBacklog === 0) {
+          const episodeResult = await processPendingLlmEpisodeExtractionJobs({
+            projectId,
+            limit: EPISODE_BATCH_SIZE,
+          });
+          episodeQueued += episodeResult.queued;
+          episodeProcessed += episodeResult.processed;
+
+          const temporalFactResult = await processPendingLlmTemporalFactExtraction({
+            projectId,
+            limit: TEMPORAL_FACT_BATCH_SIZE,
+          });
+          temporalFactProcessed += temporalFactResult.extracted;
+
           const summaryResult = await chapterSummaryProjector.processPendingSummaryJobs({
             projectId,
             limit: SUMMARY_BATCH_SIZE,
@@ -179,6 +231,22 @@ class DerivedJobWorker {
             MEMORY_JOB_TYPES.REBUILD_SUMMARY,
           );
           if (summaryBacklog === 0) {
+            const narrativeSummaryRefresh =
+              await refreshStaleProjectNarrativeSummaries({ projectId });
+            if (narrativeSummaryRefresh.inspected === 0) {
+              const narrativeSummaryResult =
+                await generateProjectNarrativeSummaryHierarchy({ projectId });
+              narrativeSummaryGenerated += narrativeSummaryResult.generated;
+            } else {
+              narrativeSummaryGenerated += narrativeSummaryRefresh.refreshed;
+            }
+            const scopedNarrativeSummaryResult =
+              await scheduleProjectNarrativeHierarchyScopes({ projectId });
+            narrativeSummaryGenerated += scopedNarrativeSummaryResult.generated;
+            const communityNarrativeSummaryResult =
+              await scheduleProjectNarrativeCommunities({ projectId });
+            narrativeSummaryGenerated += communityNarrativeSummaryResult.generated;
+
             const embeddingResult = await embeddingProjector.processPendingEmbeddingJobs({
               projectId,
               limit: EMBEDDING_BATCH_SIZE,
@@ -189,7 +257,15 @@ class DerivedJobWorker {
         }
       }, Promise.resolve());
 
-      if (search.queued > 0 || memoryQueued > 0 || summaryQueued > 0 || embeddingQueued > 0) {
+      if (
+        search.queued > 0 ||
+        memoryQueued > 0 ||
+        episodeQueued > 0 ||
+        temporalFactProcessed > 0 ||
+        summaryQueued > 0 ||
+        narrativeSummaryGenerated > 0 ||
+        embeddingQueued > 0
+      ) {
         logger.info("Derived job worker tick processed", {
           elapsedMs: Date.now() - startedAt,
           searchQueued: search.queued,
@@ -197,11 +273,15 @@ class DerivedJobWorker {
           searchFailed: search.failed,
           memoryQueued,
           memoryProcessed,
+          episodeQueued,
+          episodeProcessed,
+          temporalFactProcessed,
           summaryQueued,
           summaryProcessed,
+          narrativeSummaryGenerated,
           embeddingQueued,
           embeddingProcessed,
-          projectCount: projectsToProcess.length,
+          projectCount: projectIdsToProcess.length,
         });
       }
       if (search.failed > 0) {
@@ -224,9 +304,14 @@ class DerivedJobWorker {
       const thresholdMs =
         embeddingQueued > 0 || embeddingProcessed > 0
           ? TICK_WARN_THRESHOLD_WITH_EMBEDDING_MS
-          : summaryQueued > 0 || summaryProcessed > 0
+          : summaryQueued > 0 ||
+              summaryProcessed > 0 ||
+              narrativeSummaryGenerated > 0 ||
+              episodeQueued > 0 ||
+              episodeProcessed > 0 ||
+              temporalFactProcessed > 0
             ? TICK_WARN_THRESHOLD_WITH_SUMMARY_MS
-          : TICK_WARN_THRESHOLD_MS;
+            : TICK_WARN_THRESHOLD_MS;
       if (
         elapsedMs >= thresholdMs &&
         Date.now() - this.lastTickSlowWarnAt >= 10_000
@@ -239,6 +324,8 @@ class DerivedJobWorker {
           memoryBatchSize: MEMORY_BATCH_SIZE,
           summaryBatchSize: SUMMARY_BATCH_SIZE,
           embeddingBatchSize: EMBEDDING_BATCH_SIZE,
+          episodeBatchSize: EPISODE_BATCH_SIZE,
+          temporalFactBatchSize: TEMPORAL_FACT_BATCH_SIZE,
           memoryProjectsPerTick: MEMORY_PROJECTS_PER_TICK,
         });
       }

@@ -29,6 +29,7 @@ import {
 } from "../domains/world/index.js";
 import { utilityProcessBridge } from "../infra/utility-process/index.js";
 import { narrativeMemoryQueryService } from "../services/features/memory/query/narrativeMemoryQueryService.js";
+import { getNarrativeSummaryStatus } from "../services/features/memory/summary/memoryNarrativeSummaryStatus.js";
 import { registerProjectHandlers } from "./project/index.js";
 import { registerSearchHandlers } from "./search/index.js";
 import { registerSystemHandlers } from "./system/index.js";
@@ -78,6 +79,9 @@ export async function registerAllIPCHandlers(): Promise<void> {
     chapterSummaryProjector,
     embeddingProjector,
     narrativeMemoryQueryService,
+    narrativeSummaryStatusService: {
+      getStatus: getNarrativeSummaryStatus,
+    },
   });
 
   registerSystemHandlers({

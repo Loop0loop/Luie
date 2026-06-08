@@ -170,6 +170,7 @@ export const worldEntityCreateSchema = z.object({
   description: z.string().optional(),
   firstAppearance: z.string().optional(),
   attributes: z.record(z.string(), z.unknown()).optional(),
+  memoryEntityId: z.string().uuid("Invalid memory entity ID").nullable().optional(),
   positionX: z.number().optional(),
   positionY: z.number().optional(),
 });
@@ -181,6 +182,7 @@ export const worldEntityUpdateSchema = z.object({
   description: z.string().optional(),
   firstAppearance: z.string().optional(),
   attributes: z.record(z.string(), z.unknown()).optional(),
+  memoryEntityId: z.string().uuid("Invalid memory entity ID").nullable().optional(),
 });
 
 export const worldEntityUpdatePositionSchema = z.object({

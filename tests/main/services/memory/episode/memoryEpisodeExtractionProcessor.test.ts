@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import {
   db,
@@ -10,11 +10,17 @@ import {
   project,
 } from "../../../../../src/main/infra/database/index.js";
 import {
+  listProjectsWithPendingEpisodeExtractionJobs,
   processPendingEpisodeExtractionJobs,
+  processPendingLlmEpisodeExtractionJobs,
   type MemoryEpisodeExtractor,
 } from "../../../../../src/main/services/features/memory/episode/memoryEpisodeExtractionProcessor.js";
 
 describe("processPendingEpisodeExtractionJobs", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("claims pending jobs, stores extracted episode candidates, and marks jobs completed", async () => {
     const projectId = crypto.randomUUID();
     const jobId = crypto.randomUUID();
@@ -119,5 +125,43 @@ describe("processPendingEpisodeExtractionJobs", () => {
       sourceContentHash: "source-hash-1",
       quote: "아린은 봉인된 편지를 읽고 백야회의 목적을 깨달았다.",
     });
+  });
+
+  it("lists projects that only have pending episode extraction jobs", async () => {
+    const projectId = crypto.randomUUID();
+    const nowIso = "2026-06-08T00:00:00.000Z";
+
+    await db.getClient().insert(project).values({
+      id: projectId,
+      title: "Episode Pending Project",
+      description: null,
+      projectPath: null,
+      updatedAt: nowIso,
+    });
+    await db.getClient().insert(memoryEpisodeExtractionJob).values({
+      id: crypto.randomUUID(),
+      projectId,
+      sourceType: "chapter",
+      sourceId: "chapter-1",
+      sourceContentHash: "source-hash-1",
+      extractorVersion: "episode-v1",
+      status: "pending",
+      priority: 50,
+      attempts: 0,
+      updatedAt: nowIso,
+    });
+
+    await expect(listProjectsWithPendingEpisodeExtractionJobs(5)).resolves.toContain(projectId);
+  });
+
+  it("does not process LLM episode extraction jobs when the env gate is disabled", async () => {
+    vi.stubEnv("LUIE_ENABLE_LLM_EPISODE_EXTRACTION", "0");
+
+    await expect(
+      processPendingLlmEpisodeExtractionJobs({
+        projectId: "project-1",
+        limit: 1,
+      }),
+    ).resolves.toEqual({ queued: 0, processed: 0 });
   });
 });

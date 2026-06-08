@@ -270,18 +270,50 @@ export function createProjectApi({
         safeInvoke(IPC_CHANNELS.MEMORY_GET_SUMMARY_STATUS, { projectId }),
       getEmbeddingStatus: (projectId) =>
         safeInvoke(IPC_CHANNELS.MEMORY_GET_EMBEDDING_STATUS, { projectId }),
+      runEvalSuite: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_RUN_EVAL_SUITE, input),
+      runIntentCalibration: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_RUN_INTENT_CALIBRATION, input),
+      runEpisodeCalibration: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_RUN_EPISODE_CALIBRATION, input),
     },
     memory: {
       queryNarrative: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_QUERY_NARRATIVE, input),
       getConflictQueue: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_GET_CONFLICT_QUEUE, input),
+      getEpisodeReviewQueue: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_EPISODE_REVIEW_QUEUE, input),
+      rejectEpisode: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_EPISODE_REJECT, input),
+      getFactReviewQueue: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_FACT_REVIEW_QUEUE, input),
+      confirmFact: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_FACT_CONFIRM, input),
+      rejectFact: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_FACT_REJECT, input),
+      resolveFactConflict: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_CONFLICT_RESOLVE, input),
+      getEntityAliasReviewQueue: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_REVIEW_QUEUE, input),
+      confirmEntityAlias: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_CONFIRM, input),
+      rejectEntityAlias: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_REJECT, input),
+      splitEntityAlias: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_SPLIT, input),
+      mergeEntity: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_MERGE, input),
       searchChunks: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_SEARCH_CHUNKS, input),
       getChunkBacklink: (chunkId) =>
         safeInvoke(IPC_CHANNELS.MEMORY_GET_CHUNK_BACKLINK, chunkId),
       getChapterSummary: (chapterId) =>
         safeInvoke(IPC_CHANNELS.MEMORY_GET_CHAPTER_SUMMARY, chapterId),
+      getNarrativeSummaryStatus: (projectId) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_GET_NARRATIVE_SUMMARY_STATUS, {
+          projectId,
+        }),
     },
     maintenance: {
       runIntegrityCheck: () => safeInvoke(IPC_CHANNELS.DB_RUN_INTEGRITY_CHECK),
