@@ -7,6 +7,7 @@ interface AnalysisStore {
   items: AnalysisItem[];
   isAnalyzing: boolean;
   error: string | null;
+  viewMode: 'fixView' | 'floatingView';
 
   // Actions
   startAnalysis: (chapterId: string, projectId: string) => Promise<void>;
@@ -14,6 +15,7 @@ interface AnalysisStore {
   clearAnalysis: () => Promise<void>;
   addStreamItem: (chunk: AnalysisStreamChunk) => void;
   setError: (error: string | null) => void;
+  setViewMode: (mode: 'fixView' | 'floatingView') => void;
 
   // Cleanup
   reset: () => void;
@@ -23,6 +25,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, _get) => ({
   items: [],
   isAnalyzing: false,
   error: null,
+  viewMode: 'fixView',
 
   /**
    * 분석 시작
@@ -112,6 +115,13 @@ export const useAnalysisStore = create<AnalysisStore>((set, _get) => ({
    */
   setError: (error: string | null) => {
     set({ error, isAnalyzing: false });
+  },
+
+  /**
+   * 뷰 모드 설정
+   */
+  setViewMode: (mode: 'fixView' | 'floatingView') => {
+    set({ viewMode: mode });
   },
 
   /**

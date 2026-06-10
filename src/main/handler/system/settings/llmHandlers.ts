@@ -173,6 +173,8 @@ export function createSettingsLlmHandlers(): IpcHandlerConfig[] {
         binaryPath?: string;
         gpuLayers?: number;
         contextSize?: number;
+        cacheRamMiB?: number;
+        cacheReuse?: number;
       }) => {
         const settingsManager = await loadSettingsManager();
         settingsManager.setLocalLlmSettings(input);

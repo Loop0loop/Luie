@@ -21,6 +21,7 @@ import { consumePendingEditorFocusQuery } from "@renderer/features/workspace/ser
 import { useEditorExtensions } from "@renderer/features/editor/components/hooks/useEditorExtensions";
 import { useSmartLinkClickHandler } from "@renderer/features/editor/components/hooks/useSmartLinkClickHandler";
 import { useTypewriterScroll } from "@renderer/features/editor/components/hooks/useTypewriterScroll";
+import { isUsableEditor } from "@renderer/features/editor/components/toolbar";
 import StatusFooter from "@shared/ui/StatusFooter";
 import { EditorSyncBus } from "@renderer/features/workspace/utils/EditorSyncBus";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
@@ -195,8 +196,13 @@ function Editor({
 
   useEffect(() => {
     if (onEditorReady) {
-      onEditorReady(editor);
+      onEditorReady(isUsableEditor(editor) ? editor : null);
     }
+    return () => {
+      if (onEditorReady) {
+        onEditorReady(null);
+      }
+    };
   }, [editor, onEditorReady]);
 
   // Handle JUMP_TO_MENTION from World Graph

@@ -25,6 +25,8 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
   const [localLlmEnabled, setLocalLlmEnabled] = useState(false);
   const [localLlmModelPath, setLocalLlmModelPath] = useState<string | undefined>();
   const [localLlmBinaryPath, setLocalLlmBinaryPath] = useState<string | undefined>();
+  const [localLlmCacheRamMiB, setLocalLlmCacheRamMiB] = useState<number | undefined>();
+  const [localLlmCacheReuse, setLocalLlmCacheReuse] = useState<number | undefined>();
   const [openaiApiKey, setOpenaiApiKey] = useState("");
   const [geminiApiKey, setGeminiApiKey] = useState("");
   const [downloadProgress, setDownloadProgress] = useState<{
@@ -62,6 +64,8 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
           setLocalLlmEnabled(llm.localLlm.enabled);
           setLocalLlmModelPath(llm.localLlm.modelPath);
           setLocalLlmBinaryPath(llm.localLlm.binaryPath);
+          setLocalLlmCacheRamMiB(llm.localLlm.cacheRamMiB);
+          setLocalLlmCacheReuse(llm.localLlm.cacheReuse);
         }
         if (typeof llm.openaiApiKey === "string") {
           setOpenaiApiKey(llm.openaiApiKey);
@@ -119,6 +123,8 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
             setLocalLlmEnabled(response.data.enabled ?? false);
             setLocalLlmModelPath(response.data.modelPath);
             setLocalLlmBinaryPath(response.data.binaryPath);
+            setLocalLlmCacheRamMiB(response.data.cacheRamMiB);
+            setLocalLlmCacheReuse(response.data.cacheReuse);
           }
         });
       }
@@ -187,6 +193,8 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
       enabled,
       modelPath: localLlmModelPath,
       binaryPath: localLlmBinaryPath,
+      cacheRamMiB: localLlmCacheRamMiB,
+      cacheReuse: localLlmCacheReuse,
     });
     if (!response.success) {
       setLocalLlmEnabled(!enabled);
@@ -199,7 +207,14 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     if (!preferenceResponse.success) {
       showToast(preferenceResponse.error?.message ?? t("settings.localLlm.preferenceSwitchFailed"), "error");
     }
-  }, [localLlmBinaryPath, localLlmModelPath, showToast, t]);
+  }, [
+    localLlmBinaryPath,
+    localLlmCacheRamMiB,
+    localLlmCacheReuse,
+    localLlmModelPath,
+    showToast,
+    t,
+  ]);
 
   const handleDownloadEmbeddingModel = useCallback(async (): Promise<void> => {
     setEmbeddingDownloading(true);

@@ -106,6 +106,8 @@ async function runModelDownload(input: {
     modelPath,
     gpuLayers: current?.gpuLayers,
     contextSize: current?.contextSize,
+    cacheRamMiB: current?.cacheRamMiB,
+    cacheReuse: current?.cacheReuse,
   });
   invalidateModelRuntimeCache();
 }

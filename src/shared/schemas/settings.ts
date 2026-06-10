@@ -103,6 +103,8 @@ export const settingsLocalLlmSchema = z.strictObject({
   binaryPath: z.string().min(1).max(4096).optional(),
   gpuLayers: z.number().int().optional(),
   contextSize: z.number().int().positive().optional(),
+  cacheRamMiB: z.number().int().positive().optional(),
+  cacheReuse: z.number().int().nonnegative().optional(),
 });
 export const settingsLlmKeysSchema = z.strictObject({
   openaiApiKey: z.string().max(2048),

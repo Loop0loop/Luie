@@ -87,7 +87,16 @@ type UtilityInboundMessage =
       type: "request";
       requestId: string;
       method: "sidecar.start";
-      payload: { binaryPath: string; modelPath: string; options?: { gpuLayers?: number; contextSize?: number } };
+      payload: {
+        binaryPath: string;
+        modelPath: string;
+        options?: {
+          gpuLayers?: number;
+          contextSize?: number;
+          cacheRamMiB?: number;
+          cacheReuse?: number;
+        };
+      };
     }
   | {
       type: "request";

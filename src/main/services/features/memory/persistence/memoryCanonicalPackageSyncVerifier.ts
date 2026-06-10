@@ -28,9 +28,28 @@ export type MemoryCanonicalPackageSyncVerification = {
   tables: Record<TableName, MemoryCanonicalPackageSyncTable>;
 };
 
-const rowIds = (rows: Array<Record<string, unknown>> | undefined): string[] =>
+const normalizeCanonicalRowId = (
+  projectId: string,
+  tableName: TableName,
+  id: string,
+): string => {
+  const scopedPrefix = `${projectId}:${tableName}:`;
+  return id.startsWith(scopedPrefix) ? id.slice(scopedPrefix.length) : id;
+};
+
+const rowIds = (
+  rows: Array<Record<string, unknown>> | undefined,
+  input: {
+    projectId: string;
+    tableName: TableName;
+  },
+): string[] =>
   (rows ?? [])
-    .map((row) => (typeof row.id === "string" ? row.id : ""))
+    .map((row) =>
+      typeof row.id === "string"
+        ? normalizeCanonicalRowId(input.projectId, input.tableName, row.id)
+        : "",
+    )
     .filter((id) => id.length > 0)
     .sort();
 
@@ -61,8 +80,9 @@ export async function verifyMemoryCanonicalPackageSync(input: {
   let inSync = rawPackagePayload !== null;
 
   for (const tableName of MEMORY_CANONICAL_EXPORTABLE_TABLES) {
-    const dbIds = rowIds(dbPayload.tables[tableName]);
-    const packageIds = rowIds(packagePayload.tables?.[tableName]);
+    const rowIdInput = { projectId: input.projectId, tableName };
+    const dbIds = rowIds(dbPayload.tables[tableName], rowIdInput);
+    const packageIds = rowIds(packagePayload.tables?.[tableName], rowIdInput);
     const missingInPackage = diff(dbIds, packageIds);
     const extraInPackage = diff(packageIds, dbIds);
     tables[tableName] = {

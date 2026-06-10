@@ -12,8 +12,14 @@ describe("memory chunk rebuild runner", () => {
       readFileSync(resolve(process.cwd(), "package.json"), "utf8"),
     ) as { scripts?: Record<string, string> };
 
-    expect(source).toContain("dbMaintenanceService.rebuildMemoryChunks");
+    expect(source).toContain("rebuildMemoryChunks");
     expect(source).toContain("memoryProjectionService.processPendingChunkJobs");
+    expect(source).toContain(
+      "../src/main/services/features/dbMaintenance/dbMaintenanceMemory.js",
+    );
+    expect(source).not.toContain(
+      "../src/main/services/features/dbMaintenanceService.js",
+    );
     expect(source).toContain("missingContextLabel");
     expect(source).toContain("missingSourceHash");
     expect(packageJson.scripts?.["memory:rebuild-chunks"]).toBe(

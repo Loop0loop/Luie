@@ -1,8 +1,8 @@
 import { jaBaseCore } from "./base/core";
-import { jaBaseSettings } from "./base/settings";
+import { jaBaseSettings } from "./base/Settings";
 import { jaBaseSettingsAdvanced } from "./base/settingsAdvanced";
-import { jaBaseResearch } from "./base/research";
-import { jaBaseEditor } from "./base/editor";
+import { jaBaseResearch } from "./base/Research";
+import { jaBaseEditor } from "./base/Editor";
 
 export const jaBase = {
   ...jaBaseCore,

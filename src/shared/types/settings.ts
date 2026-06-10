@@ -359,6 +359,8 @@ export interface AppSettings {
       binaryPath?: string;
       gpuLayers?: number;
       contextSize?: number;
+      cacheRamMiB?: number;
+      cacheReuse?: number;
     };
     ragTemperature?: number;
     ragMaxTokens?: number;

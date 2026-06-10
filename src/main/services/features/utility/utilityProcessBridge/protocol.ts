@@ -74,7 +74,12 @@ export type UtilityInboundMessage =
       payload: {
         binaryPath: string;
         modelPath: string;
-        options?: { gpuLayers?: number; contextSize?: number };
+        options?: {
+          gpuLayers?: number;
+          contextSize?: number;
+          cacheRamMiB?: number;
+          cacheReuse?: number;
+        };
       };
     }
   | {

@@ -1,5 +1,4 @@
 import type { MemoryScope } from "./types";
-import { useMemoryReviewMutations } from "./useMemoryReviewMutations";
 import { useMemoryReviewQueues } from "./useMemoryReviewQueues";
 
 type UseMemoryReviewPanelsInput = {
@@ -11,13 +10,10 @@ type UseMemoryReviewPanelsInput = {
 export function useMemoryReviewPanels({
   projectId,
   chapterId,
-  memoryScope,
 }: UseMemoryReviewPanelsInput) {
-  const queues = useMemoryReviewQueues({ projectId, chapterId, memoryScope });
-  const mutations = useMemoryReviewMutations({ projectId, queues });
+  const queues = useMemoryReviewQueues({ projectId, chapterId });
 
   return {
     ...queues,
-    ...mutations,
   };
 }

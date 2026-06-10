@@ -70,6 +70,8 @@ export type SettingsRendererApi = {
       binaryPath?: string;
       gpuLayers?: number;
       contextSize?: number;
+      cacheRamMiB?: number;
+      cacheReuse?: number;
       sidecarRunning: boolean;
       sidecarBaseUrl: string | null;
     }>>;
@@ -79,6 +81,8 @@ export type SettingsRendererApi = {
       binaryPath?: string;
       gpuLayers?: number;
       contextSize?: number;
+      cacheRamMiB?: number;
+      cacheReuse?: number;
     }) => Promise<IPCResponse<{ ok: boolean }>>;
     getSidecarStatus: () => Promise<IPCResponse<SharedTypes.UtilitySidecarStatus>>;
     onSidecarStatusChanged: (

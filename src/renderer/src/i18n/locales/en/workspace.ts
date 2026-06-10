@@ -1,5 +1,5 @@
 import { enWorkspaceWriting } from "./workspace/writing";
-import { enWorkspaceWorld } from "./workspace/world";
+import { enWorkspaceWorld } from "./workspace/World";
 
 export const enWorkspace = {
   ...enWorkspaceWriting,

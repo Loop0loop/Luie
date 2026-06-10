@@ -242,7 +242,12 @@ export class UtilityProcessBridge {
   async startSidecar(
     binaryPath: string,
     modelPath: string,
-    options?: { gpuLayers?: number; contextSize?: number },
+    options?: {
+      gpuLayers?: number;
+      contextSize?: number;
+      cacheRamMiB?: number;
+      cacheReuse?: number;
+    },
   ): Promise<string> {
     if (!this.utilityChild) {
       const started = await this.start();
@@ -308,7 +313,16 @@ export class UtilityProcessBridge {
   ): Promise<unknown>;
   private async request(
     method: "sidecar.start",
-    payload: { binaryPath: string; modelPath: string; options?: { gpuLayers?: number; contextSize?: number } },
+    payload: {
+      binaryPath: string;
+      modelPath: string;
+      options?: {
+        gpuLayers?: number;
+        contextSize?: number;
+        cacheRamMiB?: number;
+        cacheReuse?: number;
+      };
+    },
   ): Promise<unknown>;
   private async request(method: "sidecar.status"): Promise<unknown>;
   private async request(method: "sidecar.stop"): Promise<unknown>;
@@ -386,7 +400,16 @@ export class UtilityProcessBridge {
           type: "request",
           requestId,
           method: "sidecar.start",
-          payload: payload as { binaryPath: string; modelPath: string; options?: { gpuLayers?: number; contextSize?: number } },
+          payload: payload as {
+            binaryPath: string;
+            modelPath: string;
+            options?: {
+              gpuLayers?: number;
+              contextSize?: number;
+              cacheRamMiB?: number;
+              cacheReuse?: number;
+            };
+          },
         } satisfies UtilityInboundMessage);
         return;
       }

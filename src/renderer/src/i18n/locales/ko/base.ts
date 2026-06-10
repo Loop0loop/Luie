@@ -1,8 +1,8 @@
 import { koBaseCore } from "./base/core";
-import { koBaseSettings } from "./base/settings";
+import { koBaseSettings } from "./base/Settings";
 import { koBaseSettingsAdvanced } from "./base/settingsAdvanced";
-import { koBaseResearch } from "./base/research";
-import { koBaseEditor } from "./base/editor";
+import { koBaseResearch } from "./base/Research";
+import { koBaseEditor } from "./base/Editor";
 
 export const koBase = {
   ...koBaseCore,

@@ -123,4 +123,48 @@ describe("verifyMemoryCanonicalPackageSync", () => {
       extraInPackage: ["case-package"],
     });
   });
+
+  it("treats import-scoped DB ids as matching their package source ids", async () => {
+    const { verifyMemoryCanonicalPackageSync } =
+      await import("../../../../../src/main/services/features/memory/persistence/memoryCanonicalPackageSyncVerifier.js");
+    mocked.getProjectAttachmentPath.mockResolvedValue("/tmp/project.luie");
+    mocked.buildMemoryCanonicalPackagePayload.mockResolvedValue({
+      schemaVersion: 1,
+      exportedAt: "2026-06-08T00:00:00.000Z",
+      tables: {
+        MemoryEntity: [
+          {
+            id: "project-1:MemoryEntity:entity-1",
+            projectId: "project-1",
+            status: "confirmed",
+          },
+        ],
+      },
+    });
+    mocked.readLuieContainerEntry.mockResolvedValue(
+      JSON.stringify({
+        schemaVersion: 1,
+        exportedAt: "2026-06-08T00:01:00.000Z",
+        tables: {
+          MemoryEntity: [
+            {
+              id: "entity-1",
+              projectId: "source-project",
+              status: "confirmed",
+            },
+          ],
+        },
+      }),
+    );
+
+    const result = await verifyMemoryCanonicalPackageSync({
+      projectId: "project-1",
+    });
+
+    expect(result.inSync).toBe(true);
+    expect(result.tables.MemoryEntity).toMatchObject({
+      missingInPackage: [],
+      extraInPackage: [],
+    });
+  });
 });

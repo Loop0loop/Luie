@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from "node:child_process";
+import { mkdirSync } from "node:fs";
 import net from "node:net";
 import path from "node:path";
 import { createLogger } from "../../../shared/logger/index.js";
@@ -13,6 +14,8 @@ const COOLDOWN_BASE_MS = 5_000;
 const COOLDOWN_MAX_MS = 60_000;
 const STDERR_BUFFER_LIMIT = 2_000;
 const STATUS_DIAGNOSTIC_LIMIT = 500;
+const DEFAULT_CHAT_CACHE_RAM_MIB = 2048;
+const DEFAULT_CHAT_CACHE_REUSE = 256;
 
 const pathLabel = (value: string) => path.basename(value);
 const redactPaths = (value: string): string =>
@@ -32,6 +35,8 @@ type SidecarState =
 export type SidecarStartOptions = {
   gpuLayers?: number;
   contextSize?: number;
+  cacheRamMiB?: number;
+  cacheReuse?: number;
 };
 
 type SidecarStatusListener = (status: UtilitySidecarStatus) => void;
@@ -273,6 +278,8 @@ export class UtilitySidecarSupervisor {
       modelPath,
       options?.gpuLayers ?? "",
       options?.contextSize ?? "",
+      options?.cacheRamMiB ?? "",
+      options?.cacheReuse ?? "",
     ].join("::");
   }
 
@@ -348,6 +355,14 @@ export class UtilitySidecarSupervisor {
 
     const contextSize = options?.contextSize ?? 4096;
     const gpuLayers = options?.gpuLayers ?? -1;
+    const cacheRamMiB = options?.cacheRamMiB ?? DEFAULT_CHAT_CACHE_RAM_MIB;
+    const cacheReuse = options?.cacheReuse ?? DEFAULT_CHAT_CACHE_REUSE;
+    const slotSavePath = path.join(
+      process.env.LUIE_USER_DATA_PATH ?? process.cwd(),
+      "llm-cache",
+      this.purpose,
+    );
+    mkdirSync(slotSavePath, { recursive: true });
     return [
       "--model",
       modelPath,
@@ -368,6 +383,12 @@ export class UtilitySidecarSupervisor {
       "q8_0",
       "--cache-type-v",
       "q8_0",
+      "--cache-ram",
+      String(cacheRamMiB),
+      "--cache-reuse",
+      String(cacheReuse),
+      "--slot-save-path",
+      slotSavePath,
       "--log-disable",
     ];
   }

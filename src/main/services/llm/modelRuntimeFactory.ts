@@ -262,6 +262,8 @@ export async function resolveRuntimeRoutePlan(): Promise<RuntimeRoutePlanningRes
       binaryPath?: string;
       gpuLayers?: number;
       contextSize?: number;
+      cacheRamMiB?: number;
+      cacheReuse?: number;
     }
     | undefined;
 

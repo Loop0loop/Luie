@@ -2,6 +2,9 @@ import type { Editor } from "@tiptap/react";
 
 import type { ParagraphStyle } from "./types";
 
+export const isUsableEditor = (editor: Editor | null | undefined): editor is Editor =>
+  Boolean(editor && !editor.isDestroyed);
+
 export const getParagraphStyle = (editor: Editor): ParagraphStyle => {
   if (editor.isActive("heading", { level: 1 })) return "heading1";
   if (editor.isActive("heading", { level: 2 })) return "heading2";

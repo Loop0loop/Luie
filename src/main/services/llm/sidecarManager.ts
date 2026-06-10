@@ -47,6 +47,8 @@ export class SidecarManager {
   async ensureStarted(binaryPath: string, modelPath: string, options?: {
     gpuLayers?: number;
     contextSize?: number;
+    cacheRamMiB?: number;
+    cacheReuse?: number;
     signal?: AbortSignal;
   }): Promise<string> {
     if (this.state.status === "running" && this.state.modelPath === modelPath) {
@@ -94,6 +96,8 @@ export class SidecarManager {
   private async doStart(binaryPath: string, modelPath: string, options?: {
     gpuLayers?: number;
     contextSize?: number;
+    cacheRamMiB?: number;
+    cacheReuse?: number;
     signal?: AbortSignal;
   }): Promise<string> {
     if (this.state.status === "running") {

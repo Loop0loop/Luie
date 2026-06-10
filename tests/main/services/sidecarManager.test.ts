@@ -69,6 +69,8 @@ describe("SidecarManager", () => {
       {
         gpuLayers: -1,
         contextSize: 4096,
+        cacheRamMiB: 1024,
+        cacheReuse: 256,
       },
     );
 
@@ -80,6 +82,8 @@ describe("SidecarManager", () => {
       expect.objectContaining({
         gpuLayers: -1,
         contextSize: 4096,
+        cacheRamMiB: 1024,
+        cacheReuse: 256,
       }),
     );
 

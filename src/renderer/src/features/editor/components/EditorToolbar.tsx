@@ -26,6 +26,7 @@ import {
   FONT_SIZE_OPTIONS,
   getParagraphStyle,
   HIGHLIGHT_COLORS,
+  isUsableEditor,
   MoreMenu,
   TEXT_COLORS,
   ToolbarButton,
@@ -58,7 +59,11 @@ export default function EditorToolbar({
   const setFontSize = useEditorStore((state) => state.setFontSize);
   const updateSettings = useEditorStore((state) => state.updateSettings);
   const ghostEditor = useMemo(() => createToolbarGhostEditor(), []);
-  const toolbarEditor = editor ?? (canvasToggleOnly ? ghostEditor : null);
+  const toolbarEditor = isUsableEditor(editor)
+    ? editor
+    : canvasToggleOnly
+      ? ghostEditor
+      : null;
   const hideNonToggleControls = canvasToggleOnly;
 
   if (!toolbarEditor) return null;

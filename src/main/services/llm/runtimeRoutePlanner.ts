@@ -14,6 +14,8 @@ type RuntimeRoutePlannerInput = {
         binaryPath?: string;
         gpuLayers?: number;
         contextSize?: number;
+        cacheRamMiB?: number;
+        cacheReuse?: number;
       }
     | undefined;
   openai:
@@ -98,6 +100,8 @@ export function buildRuntimeRoutePlan(input: RuntimeRoutePlannerInput): RuntimeR
           options: {
             gpuLayers: localLlm.gpuLayers,
             contextSize: localLlm.contextSize,
+            cacheRamMiB: localLlm.cacheRamMiB,
+            cacheReuse: localLlm.cacheReuse,
           },
         });
       } else {

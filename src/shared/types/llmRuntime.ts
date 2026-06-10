@@ -18,7 +18,12 @@ export type RuntimeRouteCandidate =
       backend: "local-sidecar";
       modelPath: string;
       binaryPath: string;
-      options: { gpuLayers?: number; contextSize?: number };
+      options: {
+        gpuLayers?: number;
+        contextSize?: number;
+        cacheRamMiB?: number;
+        cacheReuse?: number;
+      };
     }
   | {
       kind: "openai";

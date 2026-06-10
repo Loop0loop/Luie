@@ -23,6 +23,8 @@ describe("SettingsManager localLlm settings", () => {
       binaryPath: "/tmp/bin/llama-server",
       gpuLayers: -1,
       contextSize: 4096,
+      cacheRamMiB: 1024,
+      cacheReuse: 256,
     });
 
     expect(settingsManager.getLocalLlmSettings()).toEqual({
@@ -31,6 +33,8 @@ describe("SettingsManager localLlm settings", () => {
       binaryPath: "/tmp/bin/llama-server",
       gpuLayers: -1,
       contextSize: 4096,
+      cacheRamMiB: 1024,
+      cacheReuse: 256,
     });
     expect(settingsManager.getLlmSettings()).toEqual({
       preferredProvider: "auto",

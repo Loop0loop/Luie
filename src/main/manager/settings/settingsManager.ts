@@ -264,6 +264,8 @@ export class SettingsManager {
     binaryPath?: string;
     gpuLayers?: number;
     contextSize?: number;
+    cacheRamMiB?: number;
+    cacheReuse?: number;
   } | undefined {
     const llm = this.store.get("llm") ?? {};
     return (llm as {
@@ -273,6 +275,8 @@ export class SettingsManager {
         binaryPath?: string;
         gpuLayers?: number;
         contextSize?: number;
+        cacheRamMiB?: number;
+        cacheReuse?: number;
       };
     }).localLlm;
   }
@@ -283,6 +287,8 @@ export class SettingsManager {
     binaryPath?: string;
     gpuLayers?: number;
     contextSize?: number;
+    cacheRamMiB?: number;
+    cacheReuse?: number;
   }): void {
     const current = this.store.get("llm") ?? {};
     const next = { ...current, localLlm: settings };

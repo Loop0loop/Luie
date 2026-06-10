@@ -2,7 +2,7 @@
 
 import { sql } from "drizzle-orm";
 import { db } from "../src/main/database/main/databaseService.js";
-import { dbMaintenanceService } from "../src/main/services/features/dbMaintenanceService.js";
+import { rebuildMemoryChunks } from "../src/main/services/features/dbMaintenance/dbMaintenanceMemory.js";
 import { memoryProjectionService } from "../src/main/services/features/memory/memoryProjectionService.js";
 
 type CliOptions = {
@@ -87,13 +87,15 @@ async function main(): Promise<void> {
   await db.initialize();
   try {
     const before = await readChunkHealth(options.projectId);
-    const queued = await dbMaintenanceService.rebuildMemoryChunks({
+    const queued = await rebuildMemoryChunks({
+      client: db.getClient(),
       projectId: options.projectId,
     });
     let processed = 0;
     const passes: Array<{ pass: number; queued: number; processed: number }> = [];
 
     for (let pass = 1; pass <= options.maxPasses; pass += 1) {
+      // eslint-disable-next-line no-await-in-loop -- chunk jobs are intentionally processed in bounded passes.
       const result = await memoryProjectionService.processPendingChunkJobs({
         projectId: options.projectId,
         limit: options.limit,
@@ -104,6 +106,7 @@ async function main(): Promise<void> {
     }
 
     const after = await readChunkHealth(options.projectId);
+    // eslint-disable-next-line no-console -- CLI script output.
     console.log(JSON.stringify({ projectId: options.projectId, queued, processed, passes, before, after }, null, 2));
   } finally {
     await db.disconnect();
@@ -111,6 +114,7 @@ async function main(): Promise<void> {
 }
 
 await main().catch((error) => {
+  // eslint-disable-next-line no-console -- CLI script error output.
   console.error(
     JSON.stringify(
       { error: error instanceof Error ? error.message : String(error) },

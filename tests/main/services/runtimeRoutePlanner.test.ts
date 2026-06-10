@@ -11,6 +11,8 @@ describe("runtimeRoutePlanner", () => {
         binaryPath: "/tmp/bin/llama-server",
         gpuLayers: -1,
         contextSize: 4096,
+        cacheRamMiB: 1024,
+        cacheReuse: 256,
       },
       openai: { configured: true, apiKey: "openai-key", model: "gpt-test" },
       gemini: { configured: true, apiKey: "gemini-key", model: "gemini-test" },
@@ -30,6 +32,12 @@ describe("runtimeRoutePlanner", () => {
       backend: "local-sidecar",
       modelPath: "/tmp/model.gguf",
       binaryPath: "/tmp/bin/llama-server",
+      options: {
+        gpuLayers: -1,
+        contextSize: 4096,
+        cacheRamMiB: 1024,
+        cacheReuse: 256,
+      },
     });
   });
 

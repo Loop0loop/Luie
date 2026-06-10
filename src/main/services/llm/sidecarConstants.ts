@@ -39,4 +39,6 @@ export const LLAMA_SERVER_DEFAULTS = {
   flashAttention: true,
   cacheTypeK: "q8_0",
   cacheTypeV: "q8_0",
+  cacheRamMiB: 2048,
+  cacheReuse: 256,
 } as const;
