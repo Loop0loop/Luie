@@ -64,8 +64,15 @@ export type MemoryBenchmarkRagPathMeasurement = {
   path: "searchMemoryChunksForRag";
   iterations: number;
   resultCount: number;
+  coldStartMs: number;
+  warmIterations: number;
+  warmP50Ms: number;
+  warmP95Ms: number;
+  warmP99Ms: number;
+  warmMaxMs: number;
   p50Ms: number;
   p95Ms: number;
+  p99Ms: number;
   maxMs: number;
 };
 
@@ -76,6 +83,7 @@ export type MemoryBenchmarkRagStageMeasurement = {
   skippedCount: number;
   p50Ms: number;
   p95Ms: number;
+  p99Ms: number;
   maxMs: number;
 };
 
@@ -83,8 +91,15 @@ export type MemoryBenchmarkLayer3PathMeasurement = {
   path: "buildLayer3Evidence";
   iterations: number;
   evidenceCount: number;
+  coldStartMs: number;
+  warmIterations: number;
+  warmP50Ms: number;
+  warmP95Ms: number;
+  warmP99Ms: number;
+  warmMaxMs: number;
   p50Ms: number;
   p95Ms: number;
+  p99Ms: number;
   maxMs: number;
 };
 
@@ -172,13 +187,35 @@ function percentile(sortedValues: number[], percentileValue: number): number {
 function summarizeDurations(durations: number[]): {
   p50Ms: number;
   p95Ms: number;
+  p99Ms: number;
   maxMs: number;
 } {
   const sorted = [...durations].sort((a, b) => a - b);
   return {
     p50Ms: roundDuration(percentile(sorted, 50)),
     p95Ms: roundDuration(percentile(sorted, 95)),
+    p99Ms: roundDuration(percentile(sorted, 99)),
     maxMs: roundDuration(sorted.at(-1) ?? 0),
+  };
+}
+
+function summarizeColdWarmDurations(durations: number[]): {
+  coldStartMs: number;
+  warmIterations: number;
+  warmP50Ms: number;
+  warmP95Ms: number;
+  warmP99Ms: number;
+  warmMaxMs: number;
+} {
+  const warmDurations = durations.slice(1);
+  const warmSummary = summarizeDurations(warmDurations);
+  return {
+    coldStartMs: roundDuration(durations[0] ?? 0),
+    warmIterations: warmDurations.length,
+    warmP50Ms: warmSummary.p50Ms,
+    warmP95Ms: warmSummary.p95Ms,
+    warmP99Ms: warmSummary.p99Ms,
+    warmMaxMs: warmSummary.maxMs,
   };
 }
 
@@ -424,6 +461,7 @@ async function measureRagSearchPath(input: {
       path: "searchMemoryChunksForRag",
       iterations: input.iterations,
       resultCount,
+      ...summarizeColdWarmDurations(durations),
       ...summarizeDurations(durations),
     },
     stages: summarizeRagStageDiagnostics(stageDiagnostics),
@@ -478,6 +516,7 @@ async function measureLayer3EvidencePath(input: {
     path: "buildLayer3Evidence",
     iterations: input.iterations,
     evidenceCount,
+    ...summarizeColdWarmDurations(durations),
     ...summarizeDurations(durations),
   };
 }

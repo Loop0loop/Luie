@@ -1,3 +1,4 @@
+import { i18n } from "@renderer/i18n";
 import type { LlmRuntimeInfo, UtilitySidecarStatus } from "@shared/types";
 import type { RagQaSafetyLabel } from "@shared/types";
 
@@ -13,10 +14,10 @@ export const runtimeLabel = (value: string | null | undefined): string => {
 };
 
 export const groundingLabel = (status: "confirmed" | "inferred" | "conflicting" | "insufficient_evidence" | "unknown"): string => {
-  if (status === "confirmed") return "확정";
-  if (status === "inferred") return "추정";
-  if (status === "conflicting") return "충돌";
-  return "근거 부족";
+  if (status === "confirmed") return i18n.t("analysis.runtime.labels.confirmed");
+  if (status === "inferred") return i18n.t("analysis.runtime.labels.inferred");
+  if (status === "conflicting") return i18n.t("analysis.runtime.labels.conflicting");
+  return i18n.t("analysis.runtime.labels.insufficient_evidence");
 };
 
 export const groundingTone = (status: "confirmed" | "inferred" | "conflicting" | "insufficient_evidence" | "unknown"): string => {
@@ -30,14 +31,14 @@ export const groundingTone = (status: "confirmed" | "inferred" | "conflicting" |
 };
 
 export const safetyLabel = (label: RagQaSafetyLabel | "unknown"): string => {
-  if (label === "confirmed") return "확정";
-  if (label === "inferred") return "추정";
-  if (label === "insufficient_evidence") return "근거 부족";
-  if (label === "conflicting") return "충돌";
-  if (label === "temporal_blocked") return "회차 기준 불가";
-  if (label === "non_canonical_source") return "정사 아님";
-  if (label === "blocked_p0") return "차단";
-  return "알 수 없음";
+  if (label === "confirmed") return i18n.t("analysis.runtime.labels.confirmed");
+  if (label === "inferred") return i18n.t("analysis.runtime.labels.inferred");
+  if (label === "insufficient_evidence") return i18n.t("analysis.runtime.labels.insufficient_evidence");
+  if (label === "conflicting") return i18n.t("analysis.runtime.labels.conflicting");
+  if (label === "temporal_blocked") return i18n.t("analysis.runtime.labels.temporal_blocked");
+  if (label === "non_canonical_source") return i18n.t("analysis.runtime.labels.non_canonical_source");
+  if (label === "blocked_p0") return i18n.t("analysis.runtime.labels.blocked_p0");
+  return i18n.t("analysis.runtime.labels.unknown");
 };
 
 export const safetyTone = (label: RagQaSafetyLabel | "unknown"): string => {

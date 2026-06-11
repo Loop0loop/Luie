@@ -3,6 +3,7 @@ import { koBaseSettings } from "./base/Settings";
 import { koBaseSettingsAdvanced } from "./base/settingsAdvanced";
 import { koBaseResearch } from "./base/Research";
 import { koBaseEditor } from "./base/Editor";
+import { koBaseAnalysis } from "./base/Analysis";
 
 export const koBase = {
   ...koBaseCore,
@@ -12,4 +13,5 @@ export const koBase = {
   },
   ...koBaseResearch,
   ...koBaseEditor,
+  ...koBaseAnalysis,
 } as const;

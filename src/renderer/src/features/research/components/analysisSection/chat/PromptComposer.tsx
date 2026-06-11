@@ -1,4 +1,5 @@
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowUp, Check, Minimize2, Minus, Plus, Square } from "lucide-react";
 import type { LlmRuntimeInfo, UtilitySidecarStatus } from "@shared/types";
 import type {
@@ -19,27 +20,27 @@ const LLM_PREFERENCES = [
 const SEARCH_OPTIMIZATION_MODES: Array<{
   mode: SearchOptimizationMode;
   label: string;
-  description: string;
+  descriptionKey: string;
 }> = [
   {
     mode: "low-end",
     label: "Low-end",
-    description: "빠른 검색 · 근거 폭 좁음",
+    descriptionKey: "analysis.composer.searchModes.lowEnd",
   },
   {
     mode: "standard",
     label: "Standard",
-    description: "균형",
+    descriptionKey: "analysis.composer.searchModes.standard",
   },
   {
     mode: "high-end",
     label: "High-end",
-    description: "넓은 후보",
+    descriptionKey: "analysis.composer.searchModes.highEnd",
   },
   {
     mode: "quality",
     label: "Quality",
-    description: "품질 우선",
+    descriptionKey: "analysis.composer.searchModes.quality",
   },
 ];
 
@@ -110,6 +111,7 @@ export function PromptComposer({
   onMinimize,
   onDock,
 }: PromptComposerProps) {
+  const { t } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -138,7 +140,7 @@ export function PromptComposer({
               ? "bg-white/15 text-fg"
               : "text-neutral-400 hover:bg-white/10 hover:text-fg"
           }`}
-          title="옵션"
+          title={t("analysis.composer.options")}
         >
           <Plus className="w-5 h-5 shrink-0" />
         </button>
@@ -153,7 +155,7 @@ export function PromptComposer({
               }}
               className={menuRowClass}
             >
-              <span className="font-medium">서사 요약</span>
+              <span className="font-medium">{t("analysis.composer.narrativeSummary")}</span>
               {summaryActive && <Check className="w-3.5 h-3.5 text-fg/80" />}
             </button>
 
@@ -193,7 +195,7 @@ export function PromptComposer({
                 <span className="min-w-0">
                   <span className="block font-medium">{item.label}</span>
                   <span className="block text-[10px] text-neutral-500">
-                    {item.description}
+                    {t(item.descriptionKey)}
                   </span>
                 </span>
                 {searchOptimizationMode === item.mode && (
@@ -212,7 +214,7 @@ export function PromptComposer({
               }}
               className={menuRowClass}
             >
-              <span className="font-medium">현재 챕터만</span>
+              <span className="font-medium">{t("analysis.composer.currentChapterOnly")}</span>
               {memoryScope === "current-only" && (
                 <Check className="w-3.5 h-3.5 text-fg/80" />
               )}
@@ -225,7 +227,7 @@ export function PromptComposer({
               }}
               className={menuRowClass}
             >
-              <span className="font-medium">현재 + 과거</span>
+              <span className="font-medium">{t("analysis.composer.currentAndPrior")}</span>
               {memoryScope === "with-prior" && (
                 <Check className="w-3.5 h-3.5 text-fg/80" />
               )}
@@ -237,7 +239,7 @@ export function PromptComposer({
       {/* 입력 */}
       <textarea
         className="flex-1 text-[13px] bg-transparent border-none resize-none text-fg/90 placeholder:text-neutral-500/80 focus:outline-none min-h-[24px] max-h-[120px] py-1.5 px-1 align-middle"
-        placeholder="무엇이든 부탁하세요"
+        placeholder={t("analysis.composer.placeholder")}
         value={input}
         onChange={(event) => setInput(event.target.value)}
         onKeyDown={onKeyDown}
@@ -256,7 +258,7 @@ export function PromptComposer({
             data-testid="minimize-to-fab"
             onClick={onMinimize}
             className="p-1.5 rounded-full text-neutral-500 hover:text-fg hover:bg-white/10 transition-all duration-150 active:scale-90 shrink-0"
-            title="최소화"
+            title={t("analysis.composer.minimize")}
           >
             <Minus className="w-3.5 h-3.5" />
           </button>
@@ -265,7 +267,7 @@ export function PromptComposer({
             data-testid="view-mode-toggle"
             onClick={onDock}
             className="p-1.5 rounded-full text-neutral-500 hover:text-fg hover:bg-white/10 transition-all duration-150 active:scale-90 shrink-0"
-            title="고정 뷰로 전환"
+            title={t("analysis.viewMode.switchToDock")}
           >
             <Minimize2 className="w-3.5 h-3.5" />
           </button>

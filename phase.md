@@ -66,7 +66,7 @@ Phase 4-3 manual-10000 latency report 완료 후 MemoryEvalCase: 365
 Phase 4-3 eval recall guard 완료 후 MemoryEvalCase: 365
 Phase 4-4 low-end benchmark mode 계약 1차 완료 후 MemoryEvalCase: 365
 Phase 4-4 low-end eval recall guard 1차 완료 후 MemoryEvalCase: 365
-Phase 4-4 low-end/standard/quality eval recall 비교 1차 완료 후 MemoryEvalCase: 365
+Phase 4-4 low-end/standard/high-end/quality eval recall 비교 1차 완료 후 MemoryEvalCase: 365
 Phase 4-4 analysis panel search mode toggle 1차 완료 후 MemoryEvalCase: 365
 Phase 4-4 actual RAG path latency 계측 1차 완료 후 MemoryEvalCase: 365
 Phase 4-4 RAG search stage breakdown 계측 1차 완료 후 MemoryEvalCase: 365
@@ -753,7 +753,7 @@ package export/import: progress 표시 필수
 - 설정 변경은 main settings IPC를 통해 저장되고, search policy가 읽는 `LUIE_SEARCH_OPTIMIZATION_MODE` runtime env에도 반영된다.
 - low-end 메뉴에는 "빠른 검색 · 근거 폭 좁음" 설명을 표시한다.
 - `ci-1000` profile 기준 low-end mode 리포트와 threshold assertion을 생성했다.
-- 365 eval 기준 low-end/standard/quality recall guard를 실행했다.
+- 365 eval 기준 low-end/standard/high-end/quality recall guard를 실행했다.
 - low-end candidate cap 40에서는 averageContextRecallAtK 0.9698630136986301로 0.98 기준을 통과하지 못했다.
 - low-end는 vector search를 lexical hit 때 건너뛰는 대신 candidate cap을 50으로 보정했고, 보정 후 365 eval 기준 guard를 통과했다.
 - 확인된 `ci-1000` low-end 수치:
@@ -774,26 +774,24 @@ threshold: pass
 RAG path 계측 추가 후 확인된 `ci-1000` low-end 수치:
 
 ```text
-firstChunkSearch: 0.213ms
-repeatedChunkSearch: 1.041ms
-searchMemoryChunksForRag: p50 2.534ms, p95 4.294ms, max 4.294ms, resultCount 20
-buildLayer3Evidence: p50 1.808ms, p95 2.587ms, max 2.587ms, evidenceCount 10
-RSS: 172.594 MiB
-heapUsed: 19.503 MiB
+firstChunkSearch: 0.192ms
+repeatedChunkSearch: 0.968ms
+searchMemoryChunksForRag: p50 2.391ms, p95 4.268ms, max 4.268ms, resultCount 20
+buildLayer3Evidence: p50 1.787ms, p95 2.458ms, max 2.458ms, evidenceCount 10
 threshold: pass
 ```
 
 확인된 `ci-1000` low-end RAG stage breakdown:
 
 ```text
-fts          | p50 0.001ms | p95 0.010ms | max 0.010ms | candidates 0  | skipped 5
-exactPhrase  | p50 0.000ms | p95 0.002ms | max 0.002ms | candidates 0  | skipped 5
+fts          | p50 0.001ms | p95 0.009ms | max 0.009ms | candidates 0  | skipped 5
+exactPhrase  | p50 0.000ms | p95 0.005ms | max 0.005ms | candidates 0  | skipped 5
 quoteToken   | p50 0.000ms | p95 0.001ms | max 0.001ms | candidates 0  | skipped 5
-shortToken   | p50 1.452ms | p95 1.565ms | max 1.565ms | candidates 50 | skipped 0
+shortToken   | p50 1.424ms | p95 1.497ms | max 1.497ms | candidates 50 | skipped 0
 vector       | p50 0.000ms | p95 0.001ms | max 0.001ms | candidates 0  | skipped 5
-rrf          | p50 0.015ms | p95 0.082ms | max 0.082ms | candidates 20 | skipped 0
-hydrate      | p50 0.195ms | p95 0.943ms | max 0.943ms | candidates 20 | skipped 0
-parentWindow | p50 0.605ms | p95 0.732ms | max 0.732ms | candidates 47 | skipped 0
+rrf          | p50 0.012ms | p95 0.086ms | max 0.086ms | candidates 20 | skipped 0
+hydrate      | p50 0.174ms | p95 0.236ms | max 0.236ms | candidates 20 | skipped 0
+parentWindow | p50 0.571ms | p95 0.846ms | max 0.846ms | candidates 47 | skipped 0
 ```
 
 확인된 `365 eval` mode별 수치:
@@ -801,6 +799,7 @@ parentWindow | p50 0.605ms | p95 0.732ms | max 0.732ms | candidates 47 | skipped
 ```text
 low-end  | recall 0.9972602739726028 | P0 0 | candidateCap 50 | context 6144  | vector skip-when-lexical-hits
 standard | recall 0.9972602739726028 | P0 0 | candidateCap 50 | context 8192  | vector enabled
+high-end | recall 0.9972602739726028 | P0 0 | candidateCap 50 | context 12288 | vector enabled
 quality  | recall 0.9972602739726028 | P0 0 | candidateCap 50 | context 16384 | vector enabled
 ```
 
@@ -812,7 +811,7 @@ quality  | recall 0.9972602739726028 | P0 0 | candidateCap 50 | context 16384 | 
 - 현재 low-end query `"검은 기사"`는 short-token path가 주요 비용이고 FTS/exact phrase/quote-token/vector는 skip됐다.
 - `optimizationModeComparison`의 `baselineOverlapRatio`는 quality mode 후보 목록과의 overlap이다.
 - 365 eval low-end guard는 headless Layer 3 evidence retrieval 기준이다.
-- topK 5 eval에서는 세 mode 모두 candidate cap이 50으로 맞춰지므로, 주된 차이는 context budget과 vector search mode다.
+- topK 5 eval에서는 네 mode 모두 candidate cap이 50으로 맞춰지므로, 주된 차이는 context budget과 vector search mode다.
 - 실제 LLM 장문 답변 품질, judge 비용, UI 표시 품질은 아직 별도 검증이 필요하다.
 
 남은 작업:
@@ -829,7 +828,7 @@ quality  | recall 0.9972602739726028 | P0 0 | candidateCap 50 | context 16384 | 
 
 - 저사양 모드 토글: analysis panel composer 메뉴 1차 완료
 - mode별 latency 비교: CLI benchmark 계약 + actual RAG path/stage p50/p95 1차 완료
-- mode별 recall 비교: 365 eval 기준 low-end/standard/quality 비교 1차 완료, high-end는 아직 남음
+- mode별 recall 비교: 365 eval 기준 low-end/standard/high-end/quality 비교 1차 완료
 - mode별 UI 설명: low-end trade-off copy 1차 완료
 
 #### Phase 4-4a. 저사양 검색 정책/벤치마크 계약
@@ -849,11 +848,10 @@ quality  | recall 0.9972602739726028 | P0 0 | candidateCap 50 | context 16384 | 
 
 - 실제 RAG 검색/evidence path 전체 비용 계측은 1차 완료했다.
 - FTS/exact phrase/quote-token/short-token/vector/RRF/hydrate/parent window stage별 비용 분리 측정은 1차 완료했다.
-- low-end/standard/quality eval 비교는 headless Layer 3 evidence retrieval 기준 1차 완료했다.
+- low-end/standard/high-end/quality eval 비교는 headless Layer 3 evidence retrieval 기준 1차 완료했다.
 
 아직 검증 안 된 범위:
 
-- high-end eval 비교는 아직 별도 실행하지 않았다.
 - mode별 eval 비교를 p50/p95/p99 latency와 함께 저장하는 작업은 남아 있다.
 - vector enabled 환경의 실제 vector stage 비용은 아직 대표값으로 검증하지 않았다.
 - 현재 `"검은 기사"` 단일 query는 저사양 성능 대표값으로 부족하므로 query category별 cold/warm/p95/p99가 필요하다.
@@ -875,7 +873,7 @@ quality  | recall 0.9972602739726028 | P0 0 | candidateCap 50 | context 16384 | 
 
 완료 기준:
 
-- 365 eval 기준 low-end/standard/quality recall 비교: 1차 완료
+- 365 eval 기준 low-end/standard/high-end/quality recall 비교: 1차 완료
 - 미래 정보 누수, 초안/폐기 오염, 충돌 후보 질문을 mode별로 비교한다.
 - 단일 평균이 아니라 p50/p95/max latency를 함께 저장한다: RAG path 1차 완료
 - p99와 cold/warm 분리 측정은 남아 있다.
@@ -1170,6 +1168,44 @@ RAG + Memory Engine이 다음 조건을 만족하면 "웹소설 작가용 설정
   - Phase 4-4b. 저사양 앱 토글/UI 설명
   - Phase 4-4c. mode별 writer-flow 검증
 - 실제 검색/RAG 경로 계측, p50/p95/p99, cold/warm, cache hit/miss, mode별 eval recall guard를 남은 작업에 추가했다.
+
+### 2026-06-11. Phase 4-4 재리뷰 반영
+
+리뷰 결론:
+
+- 조건부 통과
+
+확인된 사실:
+
+- phase 방향은 현재 프로젝트 구조와 대체로 일관적이다.
+- `sourceType`을 출처 위치 의미로 유지하고 `provenanceKind`/`canonStatus`를 분리하는 제한은 적절하다.
+- 작가 flow taxonomy는 회차 기준, 미래 정보 누수, 초안/폐기 설정, 관계 방향, 떡밥, 감정선, 세계관 충돌을 포함한다.
+- Phase 4-4a/4-4b/4-4c 분리는 이전보다 명확하다.
+- 실제 RAG 경로와 Layer 3 evidence 경로 계측을 추가해 lexical-only benchmark 한계를 일부 줄였다.
+
+리뷰에서 지적된 핵심 문제:
+
+1. Phase 4-3/4-4의 `완료`, `남은 작업`, `1차 완료` 표현이 섞여 있었다.
+2. `optimizationModeComparison`은 low-end/standard/quality만 비교하고 high-end를 빠뜨렸다.
+3. 365 eval guard가 실제 LLM 장문 답변 품질까지 검증한 것으로 읽힐 수 있었다.
+4. vector stage는 현재 low-end benchmark query에서 skip되므로 vector enabled 비용 대표값이 아니다.
+5. `parentWindow` stage 후보 수는 candidate cap과 의미가 달라 같은 cap assertion을 적용하면 테스트 의미가 모호했다.
+
+반영한 수정:
+
+- Phase 4-3/4-4 상태 표기를 `완료된 범위`, `아직 검증 안 된 범위`, `다음 실행 단위`에 가깝게 정리했다.
+- `optimizationModeComparison`에 high-end를 포함했다.
+- 365 eval 비교를 low-end/standard/high-end/quality 4개 mode로 갱신했다.
+- eval 결과가 headless Layer 3 evidence retrieval 기준이며 실제 LLM 장문 답변 품질을 보장하지 않는다고 반복 명시했다.
+- `parentWindow` stage는 candidate cap assertion 대상에서 제외했다.
+
+남은 검토 사항:
+
+- p99와 cold/warm 분리 측정
+- query category별 latency/recall 비교
+- vector enabled 환경의 실제 vector stage 비용
+- 실제 cache hit/miss, entry count, heap delta, eviction 계측
+- mode 변경이 다음 검색부터 적용되는지, 현재 실행 중인 run에도 적용되는지 UI 문구 결정
 
 ## 진행 기록
 
@@ -1568,10 +1604,10 @@ pnpm exec eslint <Phase 4-3 touched files>
 - benchmark/eval output은 실제 적용된 `optimizationPolicy`를 저장한다.
 - 앱 설정에 `llm.searchOptimizationMode`를 추가했고, main/preload/shared/renderer 계약을 같은 enum으로 연결했다.
 - analysis panel composer에서 Search Mode를 바꿀 수 있고, low-end 설명은 "빠른 검색 · 근거 폭 좁음"으로 표시한다.
-- low-end candidate cap 40은 365 eval에서 recall 0.9698630136986301로 실패했고, candidate cap 50은 low-end/standard/quality 모두 recall 0.9972602739726028, P0 0으로 통과했다.
-- `ci-1000` low-end benchmark에서 `searchMemoryChunksForRag`는 p50 2.534ms, p95 4.294ms, max 4.294ms였다.
-- 같은 run에서 `buildLayer3Evidence`는 p50 1.808ms, p95 2.587ms, max 2.587ms였다.
-- stage breakdown 기준 주요 비용은 `shortToken` p50 1.452ms, `parentWindow` p50 0.605ms, `hydrate` p50 0.195ms였다.
+- low-end candidate cap 40은 365 eval에서 recall 0.9698630136986301로 실패했고, candidate cap 50은 low-end/standard/high-end/quality 모두 recall 0.9972602739726028, P0 0으로 통과했다.
+- `ci-1000` low-end benchmark에서 `searchMemoryChunksForRag`는 p50 2.391ms, p95 4.268ms, max 4.268ms였다.
+- 같은 run에서 `buildLayer3Evidence`는 p50 1.787ms, p95 2.458ms, max 2.458ms였다.
+- stage breakdown 기준 주요 비용은 `shortToken` p50 1.424ms, `parentWindow` p50 0.571ms, `hydrate` p50 0.174ms였다.
 
 검증:
 
@@ -1580,6 +1616,7 @@ pnpm vitest tests/main/services/memory/benchmark/memoryBenchmarkLatencyRunner.te
 pnpm exec tsx scripts/run-memory-benchmark-latency.ts --profile ci-1000 --seed 42 --materialize --project-id benchmark-latency-cli-ci-1000-low-end --query "검은 기사" --optimization-mode low-end --out tests/.tmp/memory-benchmark-latency-ci-1000-low-end.json --assert-thresholds
 pnpm run memory:run-eval-suite -- --project-id 454cce80-02b4-4d43-a162-4116898e4b4e --label phase-4-4-low-end-rag --top-k 5 --optimization-mode low-end --out tests/.tmp/memory-eval-low-end-optimization-guard.json --assert-optimized-recall --min-recall 0.98 --max-p0-failures 0
 pnpm run memory:run-eval-suite -- --project-id 454cce80-02b4-4d43-a162-4116898e4b4e --label phase-4-4-standard-rag --top-k 5 --optimization-mode standard --out tests/.tmp/memory-eval-standard-optimization-guard.json --assert-optimized-recall --min-recall 0.98 --max-p0-failures 0
+pnpm run memory:run-eval-suite -- --project-id 454cce80-02b4-4d43-a162-4116898e4b4e --label phase-4-4-high-end-rag --top-k 5 --optimization-mode high-end --out tests/.tmp/memory-eval-high-end-optimization-guard.json --assert-optimized-recall --min-recall 0.98 --max-p0-failures 0
 pnpm run memory:run-eval-suite -- --project-id 454cce80-02b4-4d43-a162-4116898e4b4e --label phase-4-4-quality-rag --top-k 5 --optimization-mode quality --out tests/.tmp/memory-eval-quality-optimization-guard.json --assert-optimized-recall --min-recall 0.98 --max-p0-failures 0
 pnpm run typecheck
 pnpm exec eslint <Phase 4-4 touched files>

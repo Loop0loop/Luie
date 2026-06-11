@@ -1,3 +1,4 @@
+import { i18n } from "@renderer/i18n";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@shared/api";
 import { useDialog } from "@shared/ui/useDialog";
@@ -58,7 +59,7 @@ export function useAnalysisRuntime() {
       const response = await api.settings.setLlmPreference({ provider: next });
       if (!response.success) {
         showToast(
-          response.error?.message ?? "LLM preference 변경 실패",
+          response.error?.message ?? i18n.t("analysis.runtime.preferenceError"),
           "error",
         );
         return;
@@ -78,10 +79,10 @@ export function useAnalysisRuntime() {
       if (runtime.data.resolvedProvider === "unavailable") {
         const reason =
           runtime.data.skipped?.[0]?.message ??
-          "선택한 LLM 경로를 사용할 수 없습니다.";
+          i18n.t("analysis.runtime.runtimeUnavailable");
         const confirmed = await dialog.confirm({
-          title: "LLM 경로 사용 불가",
-          message: `${reason}\n\n설정 페이지의 모델 탭을 여시겠습니까?`,
+          title: i18n.t("analysis.runtime.unavailableTitle"),
+          message: i18n.t("analysis.runtime.unavailableMessage", { reason }),
         });
         if (confirmed) {
           window.dispatchEvent(
@@ -95,9 +96,10 @@ export function useAnalysisRuntime() {
 
       setRuntimePreference(next);
       showToast(
-        `LLM 경로 변경: ${next} → ${
-          runtime.data.resolvedProvider ?? runtime.data.provider
-        }`,
+        i18n.t("analysis.runtime.preferenceChanged", {
+          next,
+          resolved: runtime.data.resolvedProvider ?? runtime.data.provider,
+        }),
         "info",
       );
     },
@@ -111,7 +113,7 @@ export function useAnalysisRuntime() {
       });
       if (!response.success) {
         showToast(
-          response.error?.message ?? "검색 모드 변경 실패",
+          response.error?.message ?? i18n.t("analysis.runtime.searchModeError"),
           "error",
         );
         return;
@@ -119,7 +121,10 @@ export function useAnalysisRuntime() {
 
       const applied = response.data?.mode ?? next;
       setSearchOptimizationMode(applied);
-      showToast(`검색 모드 변경: ${applied}`, "info");
+      showToast(
+        i18n.t("analysis.runtime.searchModeSuccess", { mode: applied }),
+        "info",
+      );
     },
     [showToast],
   );

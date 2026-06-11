@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import { Maximize2 } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
@@ -207,6 +208,7 @@ function FloatingWrapper({ children, compact = false }: FloatingWrapperProps) {
 }
 
 export default function AnalysisSection() {
+  const { t } = useTranslation();
   const { currentItem: currentChapter } = useChapterStore(
     useShallow((state) => ({ currentItem: state.currentItem })),
   );
@@ -279,13 +281,13 @@ export default function AnalysisSection() {
       {viewMode === "fixView" && (
         <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800 bg-neutral-900/20 select-none">
           <span className="text-xs font-semibold text-fg/70 tracking-wide">
-            원고 분석
+            {t("analysis.title")}
           </span>
           <button
             data-testid="view-mode-toggle"
             onClick={() => setViewMode("floatingView")}
             className="p-1.5 rounded-lg hover:bg-neutral-850 text-neutral-400 hover:text-fg transition-all duration-150 active:scale-95"
-            title="플로팅 뷰로 전환"
+            title={t("analysis.viewMode.switchToFloating")}
           >
             <Maximize2 className="w-4 h-4" />
           </button>

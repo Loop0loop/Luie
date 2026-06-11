@@ -1,4 +1,5 @@
 import { CheckCircle, ChevronDown, ChevronRight, XCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { AnalysisEpisodeReviewItem } from "../../shared/types";
 
 type EpisodeReviewPanelProps = {
@@ -25,6 +26,7 @@ export function EpisodeReviewPanel({
   onConfirm,
   onReject,
 }: EpisodeReviewPanelProps) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-lg border border-border bg-surface px-3 py-2 text-xs">
       <button
@@ -32,17 +34,17 @@ export function EpisodeReviewPanel({
         onClick={onToggle}
         className="w-full flex items-center justify-between gap-2 text-left text-fg"
       >
-        <span className="font-medium">검토할 에피소드</span>
+        <span className="font-medium">{t("analysis.review.queue.episode.title")}</span>
         {visible ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
       </button>
       {visible && (
         <div className="mt-2 space-y-2">
           {loading ? (
-            <div className="text-muted">조회 중...</div>
+            <div className="text-muted">{t("analysis.review.queue.episode.loading")}</div>
           ) : error ? (
             <div className="text-danger">⚠️ {error}</div>
           ) : items.length === 0 ? (
-            <div className="text-muted">검토할 suggested 에피소드가 없습니다.</div>
+            <div className="text-muted">{t("analysis.review.queue.episode.empty")}</div>
           ) : (
             items.map((item) => (
               <div
@@ -60,8 +62,8 @@ export function EpisodeReviewPanel({
                       onClick={() => onConfirm(item)}
                       disabled={mutatingEpisodeId === item.id}
                       className="inline-flex h-7 w-7 items-center justify-center rounded border border-border text-muted hover:text-success disabled:opacity-50"
-                      title="확정"
-                      aria-label={`${item.title} 확정`}
+                      title={t("analysis.review.queue.episode.confirm")}
+                      aria-label={`${item.title} ${t("analysis.review.queue.episode.confirm")}`}
                     >
                       <CheckCircle className="h-4 w-4" />
                     </button>
@@ -70,8 +72,8 @@ export function EpisodeReviewPanel({
                       onClick={() => onReject(item)}
                       disabled={mutatingEpisodeId === item.id}
                       className="inline-flex h-7 w-7 items-center justify-center rounded border border-border text-muted hover:text-danger disabled:opacity-50"
-                      title="거절"
-                      aria-label={`${item.title} 거절`}
+                      title={t("analysis.review.queue.episode.reject")}
+                      aria-label={`${item.title} ${t("analysis.review.queue.episode.reject")}`}
                     >
                       <XCircle className="h-4 w-4" />
                     </button>
@@ -79,8 +81,8 @@ export function EpisodeReviewPanel({
                 </div>
                 <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted">
                   <span>{item.episodeType}</span>
-                  <span>근거 {item.evidenceCount}</span>
-                  <span>신뢰도 {formatConfidence(item.confidence)}</span>
+                  <span>{t("analysis.review.queue.episode.evidenceCount", { count: item.evidenceCount })}</span>
+                  <span>{t("analysis.review.queue.episode.confidence", { percent: formatConfidence(item.confidence) })}</span>
                   <span>{item.status}</span>
                 </div>
               </div>

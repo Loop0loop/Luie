@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "@shared/api";
 import type {
   AnalysisConflictItem,
@@ -21,6 +22,7 @@ export function useMemoryReviewQueues({
   chapterId,
   memoryScope,
 }: UseMemoryReviewQueuesInput) {
+  const { t } = useTranslation();
   const [showNarrativeSummaryStatus, setShowNarrativeSummaryStatus] =
     useState(false);
   const [narrativeSummaryStatus, setNarrativeSummaryStatus] =
@@ -90,7 +92,7 @@ export function useMemoryReviewQueues({
         if (cancelled) return;
         if (!response.success || !response.data) {
           setNarrativeSummaryStatusError(
-            response.error?.message ?? "서사 요약 상태 조회 실패",
+            response.error?.message ?? t("analysis.review.summary.fetchError"),
           );
           setNarrativeSummaryStatus(null);
           return;
@@ -121,7 +123,7 @@ export function useMemoryReviewQueues({
       });
       if (!response.success || !response.data) {
         setConflictQueueError(
-          response.error?.message ?? "충돌 큐 조회 실패",
+          response.error?.message ?? t("analysis.review.queue.conflict.fetchError"),
         );
         setConflictQueueItems([]);
         return;
@@ -154,7 +156,7 @@ export function useMemoryReviewQueues({
         });
         if (!response.success || !response.data?.updated) {
           setConflictQueueError(
-            response.error?.message ?? "충돌 해결 실패",
+            response.error?.message ?? t("analysis.review.queue.conflict.resolveError"),
           );
           return;
         }
@@ -166,11 +168,15 @@ export function useMemoryReviewQueues({
     [loadConflictQueue, projectId],
   );
 
-  const requestRejectReason = useCallback((label: string): string | null => {
-    const reason = window.prompt(`${label} 거절 이유를 입력하세요`);
-    const trimmed = reason?.trim() ?? "";
-    return trimmed.length > 0 ? trimmed : null;
-  }, []);
+  const requestRejectReason = useCallback(
+    (type: "fact" | "episode" | "entity" | "alias"): string | null => {
+      const promptMessage = t(`analysis.review.queue.${type}.rejectReasonPrompt`);
+      const reason = window.prompt(promptMessage);
+      const trimmed = reason?.trim() ?? "";
+      return trimmed.length > 0 ? trimmed : null;
+    },
+    [t],
+  );
 
   const loadFactReviewQueue = useCallback(async () => {
     if (!projectId) {
@@ -182,7 +188,7 @@ export function useMemoryReviewQueues({
     try {
       const response = await api.memory.getFactReviewQueue({ projectId });
       if (!response.success || !response.data) {
-        setFactReviewError(response.error?.message ?? "사실 검토 큐 조회 실패");
+        setFactReviewError(response.error?.message ?? t("analysis.review.queue.fact.fetchError"));
         setFactReviewItems([]);
         return;
       }
@@ -203,7 +209,7 @@ export function useMemoryReviewQueues({
       const response = await api.memory.getEpisodeReviewQueue({ projectId });
       if (!response.success || !response.data) {
         setEpisodeReviewError(
-          response.error?.message ?? "에피소드 검토 큐 조회 실패",
+          response.error?.message ?? t("analysis.review.queue.episode.fetchError"),
         );
         setEpisodeReviewItems([]);
         return;
@@ -225,7 +231,7 @@ export function useMemoryReviewQueues({
       const response = await api.memory.getEntityReviewQueue({ projectId });
       if (!response.success || !response.data) {
         setEntityReviewError(
-          response.error?.message ?? "엔티티 검토 큐 조회 실패",
+          response.error?.message ?? t("analysis.review.queue.entity.fetchError"),
         );
         setEntityReviewItems([]);
         return;
@@ -247,7 +253,7 @@ export function useMemoryReviewQueues({
       const response = await api.memory.getEntityAliasReviewQueue({ projectId });
       if (!response.success || !response.data) {
         setEntityAliasReviewError(
-          response.error?.message ?? "별칭 검토 큐 조회 실패",
+          response.error?.message ?? t("analysis.review.queue.alias.fetchError"),
         );
         setEntityAliasReviewItems([]);
         return;
@@ -301,7 +307,7 @@ export function useMemoryReviewQueues({
           factId: item.id,
         });
         if (!response.success || !response.data?.updated) {
-          setFactReviewError(response.error?.message ?? "사실 승인 실패");
+          setFactReviewError(response.error?.message ?? t("analysis.review.queue.fact.confirmError"));
           return;
         }
         await loadFactReviewQueue();
@@ -315,7 +321,7 @@ export function useMemoryReviewQueues({
   const handleRejectFact = useCallback(
     async (item: AnalysisFactReviewItem) => {
       if (!projectId) return;
-      const reason = requestRejectReason("사실");
+      const reason = requestRejectReason("fact");
       if (!reason) return;
       setMutatingFactId(item.id);
       setFactReviewError(null);
@@ -326,7 +332,7 @@ export function useMemoryReviewQueues({
           reason,
         });
         if (!response.success || !response.data?.updated) {
-          setFactReviewError(response.error?.message ?? "사실 거절 실패");
+          setFactReviewError(response.error?.message ?? t("analysis.review.queue.fact.rejectError"));
           return;
         }
         await loadFactReviewQueue();
@@ -349,7 +355,7 @@ export function useMemoryReviewQueues({
         });
         if (!response.success || !response.data?.updated) {
           setEpisodeReviewError(
-            response.error?.message ?? "에피소드 승인 실패",
+            response.error?.message ?? t("analysis.review.queue.episode.confirmError"),
           );
           return;
         }
@@ -364,7 +370,7 @@ export function useMemoryReviewQueues({
   const handleRejectEpisode = useCallback(
     async (item: AnalysisEpisodeReviewItem) => {
       if (!projectId) return;
-      const reason = requestRejectReason("에피소드");
+      const reason = requestRejectReason("episode");
       if (!reason) return;
       setMutatingEpisodeId(item.id);
       setEpisodeReviewError(null);
@@ -376,7 +382,7 @@ export function useMemoryReviewQueues({
         });
         if (!response.success || !response.data?.updated) {
           setEpisodeReviewError(
-            response.error?.message ?? "에피소드 거절 실패",
+            response.error?.message ?? t("analysis.review.queue.episode.rejectError"),
           );
           return;
         }
@@ -399,7 +405,7 @@ export function useMemoryReviewQueues({
           entityId: item.id,
         });
         if (!response.success || !response.data?.updated) {
-          setEntityReviewError(response.error?.message ?? "엔티티 승인 실패");
+          setEntityReviewError(response.error?.message ?? t("analysis.review.queue.entity.confirmError"));
           return;
         }
         await loadEntityReviewQueue();
@@ -413,7 +419,7 @@ export function useMemoryReviewQueues({
   const handleRejectEntity = useCallback(
     async (item: AnalysisEntityReviewItem) => {
       if (!projectId) return;
-      const reason = requestRejectReason("엔티티");
+      const reason = requestRejectReason("entity");
       if (!reason) return;
       setMutatingEntityId(item.id);
       setEntityReviewError(null);
@@ -424,7 +430,7 @@ export function useMemoryReviewQueues({
           reason,
         });
         if (!response.success || !response.data?.updated) {
-          setEntityReviewError(response.error?.message ?? "엔티티 거절 실패");
+          setEntityReviewError(response.error?.message ?? t("analysis.review.queue.entity.rejectError"));
           return;
         }
         await loadEntityReviewQueue();
@@ -447,7 +453,7 @@ export function useMemoryReviewQueues({
         });
         if (!response.success || !response.data?.updated) {
           setEntityAliasReviewError(
-            response.error?.message ?? "별칭 승인 실패",
+            response.error?.message ?? t("analysis.review.queue.alias.confirmError"),
           );
           return;
         }
@@ -462,7 +468,7 @@ export function useMemoryReviewQueues({
   const handleRejectEntityAlias = useCallback(
     async (item: AnalysisEntityAliasReviewItem) => {
       if (!projectId) return;
-      const reason = requestRejectReason("별칭");
+      const reason = requestRejectReason("alias");
       if (!reason) return;
       setMutatingAliasId(item.id);
       setEntityAliasReviewError(null);
@@ -474,7 +480,7 @@ export function useMemoryReviewQueues({
         });
         if (!response.success || !response.data?.updated) {
           setEntityAliasReviewError(
-            response.error?.message ?? "별칭 거절 실패",
+            response.error?.message ?? t("analysis.review.queue.alias.rejectError"),
           );
           return;
         }
@@ -499,7 +505,7 @@ export function useMemoryReviewQueues({
         });
         if (!response.success || !response.data?.updated) {
           setEntityAliasReviewError(
-            response.error?.message ?? "엔티티 통합 실패",
+            response.error?.message ?? t("analysis.review.queue.alias.mergeError"),
           );
           return;
         }
@@ -524,7 +530,7 @@ export function useMemoryReviewQueues({
         });
         if (!response.success || !response.data?.updated) {
           setEntityAliasReviewError(
-            response.error?.message ?? "별칭 분리 실패",
+            response.error?.message ?? t("analysis.review.queue.alias.splitError"),
           );
           return;
         }

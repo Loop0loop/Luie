@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { AnalysisNarrativeSummaryStatus } from "../../shared/types";
 
 type NarrativeSummaryStatusPanelProps = {
@@ -21,6 +22,7 @@ export function NarrativeSummaryStatusPanel({
   status,
   onToggle,
 }: NarrativeSummaryStatusPanelProps) {
+  const { t } = useTranslation();
   const summaries = status?.summaries.slice(0, 8) ?? [];
   const byTypeEntries = Object.entries(status?.byType ?? {});
 
@@ -33,7 +35,7 @@ export function NarrativeSummaryStatusPanel({
       >
         <span className="font-semibold flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-          서사 요약
+          {t("analysis.review.summary.title")}
         </span>
         {visible ? (
           <ChevronDown className="w-4 h-4 text-muted group-hover:text-fg transition-colors" />
@@ -46,17 +48,17 @@ export function NarrativeSummaryStatusPanel({
           {loading ? (
             <div className="text-muted/80 flex items-center gap-2 py-1">
               <span className="w-2.5 h-2.5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-              조회 중...
+              {t("analysis.review.summary.loading")}
             </div>
           ) : error ? (
             <div className="text-danger flex items-center gap-1.5 py-1">⚠️ {error}</div>
           ) : !status || status.totalCount === 0 ? (
-            <div className="text-muted/80 py-1">생성된 hierarchy summary가 없습니다.</div>
+            <div className="text-muted/80 py-1">{t("analysis.review.summary.empty")}</div>
           ) : (
             <>
               <div className="flex flex-wrap gap-x-2 gap-y-1.5 text-neutral-400 font-medium select-none">
-                <span className="bg-neutral-800 text-neutral-300 px-2.5 py-0.5 rounded-full text-[9px]">전체 {status.totalCount}</span>
-                <span className="bg-neutral-850 text-neutral-400 px-2.5 py-0.5 rounded-full text-[9px] border border-white/5">stale {status.staleCount}</span>
+                <span className="bg-neutral-800 text-neutral-300 px-2.5 py-0.5 rounded-full text-[9px]">{t("analysis.review.summary.allCount", { count: status.totalCount })}</span>
+                <span className="bg-neutral-850 text-neutral-400 px-2.5 py-0.5 rounded-full text-[9px] border border-white/5">{t("analysis.review.summary.staleCount", { count: status.staleCount })}</span>
                 {byTypeEntries.map(([type, count]) => (
                   <span key={type} className="bg-neutral-800 text-neutral-300 px-2.5 py-0.5 rounded-full text-[9px]">
                     {formatSummaryType(type)} {count}
@@ -90,8 +92,8 @@ export function NarrativeSummaryStatusPanel({
                       </span>
                     </div>
                     <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[9px] text-neutral-500 font-medium">
-                      <span>근거 {summary.sourceCount}</span>
-                      <span>신뢰도 {summary.confidence}%</span>
+                      <span>{t("analysis.review.summary.evidenceCount", { count: summary.sourceCount })}</span>
+                      <span>{t("analysis.review.summary.confidence", { count: summary.confidence })}</span>
                       <span>{summary.status}</span>
                     </div>
                     <div className="mt-2 text-[10px] leading-relaxed text-fg/70 border-t border-white/5 pt-2 font-normal">

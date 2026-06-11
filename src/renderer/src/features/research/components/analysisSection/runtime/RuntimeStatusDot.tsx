@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { LlmRuntimeInfo, UtilitySidecarStatus } from "@shared/types";
 import { RuntimeStatusPanel } from "./RuntimeStatusPanel";
 import { sidecarStatusTone } from "./runtimeHelpers";
@@ -25,6 +26,7 @@ export function RuntimeStatusDot({
   runtimeInfo,
   sidecarStatus,
 }: RuntimeStatusDotProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -49,8 +51,8 @@ export function RuntimeStatusDot({
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         className="flex items-center justify-center w-6 h-6 rounded-full hover:bg-neutral-800/60 transition-colors"
-        title="런타임 상태"
-        aria-label="런타임 상태"
+        title={t("analysis.runtime.statusTitle")}
+        aria-label={t("analysis.runtime.statusTitle")}
       >
         <span
           className={`w-1.5 h-1.5 rounded-full bg-current ${tone} ${

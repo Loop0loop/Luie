@@ -109,8 +109,25 @@ describe("memoryBenchmarkLatencyRunner", () => {
     expect(report.measurements.ragSearchPath.p95Ms).toBeGreaterThanOrEqual(
       report.measurements.ragSearchPath.p50Ms,
     );
-    expect(report.measurements.ragSearchPath.maxMs).toBeGreaterThanOrEqual(
+    expect(report.measurements.ragSearchPath.p99Ms).toBeGreaterThanOrEqual(
       report.measurements.ragSearchPath.p95Ms,
+    );
+    expect(report.measurements.ragSearchPath.maxMs).toBeGreaterThanOrEqual(
+      report.measurements.ragSearchPath.p99Ms,
+    );
+    expect(report.measurements.ragSearchPath.coldStartMs).toBeGreaterThanOrEqual(
+      0,
+    );
+    expect(report.measurements.ragSearchPath.warmIterations).toBe(2);
+    expect(report.measurements.ragSearchPath.warmP50Ms).toBeGreaterThanOrEqual(0);
+    expect(report.measurements.ragSearchPath.warmP95Ms).toBeGreaterThanOrEqual(
+      report.measurements.ragSearchPath.warmP50Ms,
+    );
+    expect(report.measurements.ragSearchPath.warmP99Ms).toBeGreaterThanOrEqual(
+      report.measurements.ragSearchPath.warmP95Ms,
+    );
+    expect(report.measurements.ragSearchPath.warmMaxMs).toBeGreaterThanOrEqual(
+      report.measurements.ragSearchPath.warmP99Ms,
     );
     expect(
       report.measurements.ragSearchStageBreakdown.map((row) => row.stage),
@@ -130,7 +147,8 @@ describe("memoryBenchmarkLatencyRunner", () => {
           row.iterations === 3 &&
           row.p50Ms >= 0 &&
           row.p95Ms >= row.p50Ms &&
-          row.maxMs >= row.p95Ms &&
+          row.p99Ms >= row.p95Ms &&
+          row.maxMs >= row.p99Ms &&
           row.maxCandidateCount >= 0 &&
           (row.stage === "parentWindow" ||
             row.maxCandidateCount <= report.optimizationPolicy.candidateCap),
@@ -148,6 +166,19 @@ describe("memoryBenchmarkLatencyRunner", () => {
     );
     expect(report.measurements.layer3EvidencePath.p95Ms).toBeGreaterThanOrEqual(
       report.measurements.layer3EvidencePath.p50Ms,
+    );
+    expect(report.measurements.layer3EvidencePath.p99Ms).toBeGreaterThanOrEqual(
+      report.measurements.layer3EvidencePath.p95Ms,
+    );
+    expect(report.measurements.layer3EvidencePath.maxMs).toBeGreaterThanOrEqual(
+      report.measurements.layer3EvidencePath.p99Ms,
+    );
+    expect(
+      report.measurements.layer3EvidencePath.coldStartMs,
+    ).toBeGreaterThanOrEqual(0);
+    expect(report.measurements.layer3EvidencePath.warmIterations).toBe(2);
+    expect(report.measurements.layer3EvidencePath.warmP50Ms).toBeGreaterThanOrEqual(
+      0,
     );
     expect(
       report.measurements.cacheTtlMemoryComparison.map((row) => row.ttlMs),

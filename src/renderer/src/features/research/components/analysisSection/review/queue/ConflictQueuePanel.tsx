@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { AnalysisConflictItem } from "../../shared/types";
 
 type ConflictQueuePanelProps = {
@@ -15,12 +16,13 @@ type ConflictQueuePanelProps = {
 function renderEvidenceQuotes(
   title: string,
   quotes: AnalysisConflictItem["invalidatedFact"]["evidenceQuotes"],
+  t: (key: string, options?: any) => string,
 ) {
   if (quotes.length === 0) return null;
 
   return (
     <div className="mt-1 space-y-1">
-      <div className="text-[11px] font-medium text-muted">{title} 근거</div>
+      <div className="text-[11px] font-medium text-muted">{t("analysis.review.queue.conflict.evidenceQuote", { title })}</div>
       {quotes.map((quote) => (
         <blockquote
           key={quote}
@@ -43,6 +45,7 @@ export function ConflictQueuePanel({
   resolvingConflictId,
   onResolve,
 }: ConflictQueuePanelProps) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-lg border border-border bg-surface px-3 py-2 text-xs">
       <button
@@ -50,17 +53,17 @@ export function ConflictQueuePanel({
         onClick={onToggle}
         className="w-full flex items-center justify-between gap-2 text-left text-fg"
       >
-        <span className="font-medium">충돌 큐</span>
+        <span className="font-medium">{t("analysis.review.queue.conflict.title")}</span>
         {visible ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
       </button>
       {visible && (
         <div className="mt-2 space-y-2">
           {loading ? (
-            <div className="text-muted">조회 중...</div>
+            <div className="text-muted">{t("analysis.review.queue.conflict.loading")}</div>
           ) : error ? (
             <div className="text-danger">⚠️ {error}</div>
           ) : items.length === 0 ? (
-            <div className="text-muted">현재 기준에서 충돌 후보가 없습니다.</div>
+            <div className="text-muted">{t("analysis.review.queue.conflict.empty")}</div>
           ) : (
             items.map((item) => (
               <div
@@ -71,13 +74,13 @@ export function ConflictQueuePanel({
                   [{item.reason}]
                 </div>
                 <div className="text-muted">
-                  무효화: {renderFact(item.invalidatedFact)}
+                  {t("analysis.review.queue.conflict.invalidated", { fact: renderFact(item.invalidatedFact) })}
                 </div>
-                {renderEvidenceQuotes("이전 사실", item.invalidatedFact.evidenceQuotes)}
+                {renderEvidenceQuotes(t("analysis.review.queue.conflict.priorEvidence"), item.invalidatedFact.evidenceQuotes, t)}
                 <div className="text-muted">
-                  무효화한 사실: {renderFact(item.invalidatingFact)}
+                  {t("analysis.review.queue.conflict.invalidating", { fact: renderFact(item.invalidatingFact) })}
                 </div>
-                {renderEvidenceQuotes("신규 사실", item.invalidatingFact.evidenceQuotes)}
+                {renderEvidenceQuotes(t("analysis.review.queue.conflict.newEvidence"), item.invalidatingFact.evidenceQuotes, t)}
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   <button
                     type="button"
@@ -85,7 +88,7 @@ export function ConflictQueuePanel({
                     disabled={resolvingConflictId === item.conflictId}
                     className="rounded border border-border px-2 py-1 text-[11px] text-muted hover:text-success disabled:opacity-50"
                   >
-                    이전 사실 채택
+                    {t("analysis.review.queue.conflict.acceptPrior")}
                   </button>
                   <button
                     type="button"
@@ -93,7 +96,7 @@ export function ConflictQueuePanel({
                     disabled={resolvingConflictId === item.conflictId}
                     className="rounded border border-border px-2 py-1 text-[11px] text-muted hover:text-success disabled:opacity-50"
                   >
-                    신규 사실 채택
+                    {t("analysis.review.queue.conflict.acceptNew")}
                   </button>
                 </div>
               </div>

@@ -1,4 +1,5 @@
 import { BarChart3, ChevronDown, ChevronRight, Play } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type {
   AnalysisEpisodeCalibrationReport,
   AnalysisIntentCalibrationReport,
@@ -32,6 +33,7 @@ export function MemoryEvalReportPanel({
   onRunIntentCalibration,
   onRunEpisodeCalibration,
 }: MemoryEvalReportPanelProps) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-lg border border-border bg-surface px-3 py-2 text-xs">
       <div className="flex items-center justify-between gap-2">
@@ -42,15 +44,15 @@ export function MemoryEvalReportPanel({
         >
           {visible ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           <BarChart3 className="h-4 w-4 text-muted" />
-          <span className="font-medium">메모리 평가</span>
+          <span className="font-medium">{t("analysis.review.evaluation.title")}</span>
         </button>
         <button
           type="button"
           onClick={onRun}
           disabled={loading}
           className="inline-flex h-7 w-7 items-center justify-center rounded border border-border text-muted hover:text-fg disabled:opacity-50"
-          title="메모리 평가 실행"
-          aria-label="메모리 평가 실행"
+          title={t("analysis.review.evaluation.runEval")}
+          aria-label={t("analysis.review.evaluation.runEval")}
         >
           <Play className="h-4 w-4" />
         </button>
@@ -59,8 +61,8 @@ export function MemoryEvalReportPanel({
           onClick={onRunIntentCalibration}
           disabled={loading}
           className="inline-flex h-7 items-center justify-center rounded border border-border px-2 text-[11px] text-muted hover:text-fg disabled:opacity-50"
-          title="LLM intent calibration 실행"
-          aria-label="LLM intent calibration 실행"
+          title={t("analysis.review.evaluation.intentCalibration")}
+          aria-label={t("analysis.review.evaluation.intentCalibration")}
         >
           LLM
         </button>
@@ -69,8 +71,8 @@ export function MemoryEvalReportPanel({
           onClick={onRunEpisodeCalibration}
           disabled={loading}
           className="inline-flex h-7 items-center justify-center rounded border border-border px-2 text-[11px] text-muted hover:text-fg disabled:opacity-50"
-          title="LLM episode calibration 실행"
-          aria-label="LLM episode calibration 실행"
+          title={t("analysis.review.evaluation.episodeCalibration")}
+          aria-label={t("analysis.review.evaluation.episodeCalibration")}
         >
           EP
         </button>
@@ -78,7 +80,7 @@ export function MemoryEvalReportPanel({
       {visible && (
         <div className="mt-2 space-y-2">
           {loading ? (
-            <div className="text-muted">평가 중...</div>
+            <div className="text-muted">{t("analysis.review.evaluation.loading")}</div>
           ) : error ? (
             <div className="text-danger">{error}</div>
           ) : report ? (
@@ -112,7 +114,7 @@ export function MemoryEvalReportPanel({
               </div>
             </>
           ) : (
-            <div className="text-muted">평가 결과가 없습니다.</div>
+            <div className="text-muted">{t("analysis.review.evaluation.empty")}</div>
           )}
           {intentCalibrationReport && (
             <div className="rounded border border-border/70 px-2 py-1">

@@ -1,3 +1,4 @@
+import { i18n } from "@renderer/i18n";
 import { useCallback, useState } from "react";
 import { api } from "@shared/api";
 import { useToast } from "@shared/ui/ToastContext";
@@ -34,12 +35,12 @@ export function useMemoryEvalPanel({ projectId }: UseMemoryEvalPanelInput) {
         topK: 5,
       });
       if (!response.success || !response.data) {
-        setMemoryEvalError(response.error?.message ?? "메모리 평가 실패");
+        setMemoryEvalError(response.error?.message ?? i18n.t("analysis.review.evaluation.evalError"));
         return;
       }
       setMemoryEvalReport(response.data);
       setShowMemoryEvalReport(true);
-      showToast("메모리 평가를 완료했습니다.", "info");
+      showToast(i18n.t("analysis.review.evaluation.evalComplete"), "info");
     } finally {
       setMemoryEvalLoading(false);
     }
@@ -56,13 +57,13 @@ export function useMemoryEvalPanel({ projectId }: UseMemoryEvalPanelInput) {
       });
       if (!response.success || !response.data) {
         setMemoryEvalError(
-          response.error?.message ?? "LLM intent calibration 실패",
+          response.error?.message ?? i18n.t("analysis.review.evaluation.intentError"),
         );
         return;
       }
       setIntentCalibrationReport(response.data);
       setShowMemoryEvalReport(true);
-      showToast("LLM intent calibration을 완료했습니다.", "info");
+      showToast(i18n.t("analysis.review.evaluation.intentComplete"), "info");
     } finally {
       setMemoryEvalLoading(false);
     }
@@ -78,13 +79,13 @@ export function useMemoryEvalPanel({ projectId }: UseMemoryEvalPanelInput) {
       });
       if (!response.success || !response.data) {
         setMemoryEvalError(
-          response.error?.message ?? "LLM episode calibration 실패",
+          response.error?.message ?? i18n.t("analysis.review.evaluation.episodeError"),
         );
         return;
       }
       setEpisodeCalibrationReport(response.data);
       setShowMemoryEvalReport(true);
-      showToast("LLM episode calibration을 완료했습니다.", "info");
+      showToast(i18n.t("analysis.review.evaluation.episodeComplete"), "info");
     } finally {
       setMemoryEvalLoading(false);
     }

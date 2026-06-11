@@ -1,4 +1,5 @@
 import { AlertCircle, Bot, BookOpen, User } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { Message } from "../shared/types";
 import { safetyLabel, safetyTone } from "../runtime/runtimeHelpers";
 
@@ -12,6 +13,7 @@ type MessageListProps = {
 };
 
 export function MessageList({ messages, onJumpEvidence }: MessageListProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
       {messages.map((msg) => (
@@ -73,7 +75,7 @@ export function MessageList({ messages, onJumpEvidence }: MessageListProps) {
                     title={ev.quote}
                   >
                     <BookOpen className="w-3 h-3 shrink-0" />
-                    <span>출처 #{index + 1}</span>
+                    <span>{t("analysis.chat.evidenceCount", { index: index + 1 })}</span>
                   </button>
                 ))}
               </div>

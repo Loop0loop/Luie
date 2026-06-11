@@ -3,6 +3,7 @@ import { enBaseSettings } from "./base/Settings";
 import { enBaseSettingsAdvanced } from "./base/settingsAdvanced";
 import { enBaseResearch } from "./base/Research";
 import { enBaseEditor } from "./base/Editor";
+import { enBaseAnalysis } from "./base/Analysis";
 
 export const enBase = {
   ...enBaseCore,
@@ -12,4 +13,5 @@ export const enBase = {
   },
   ...enBaseResearch,
   ...enBaseEditor,
+  ...enBaseAnalysis,
 } as const;

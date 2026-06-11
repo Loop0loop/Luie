@@ -1,5 +1,6 @@
 import { CheckCircle, ChevronDown, ChevronRight, XCircle } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { AnalysisEntityAliasReviewItem } from "../../shared/types";
 
 type EntityAliasReviewPanelProps = {
@@ -30,6 +31,7 @@ export function EntityAliasReviewPanel({
   onMerge,
   onSplit,
 }: EntityAliasReviewPanelProps) {
+  const { t } = useTranslation();
   const [targetEntityIds, setTargetEntityIds] = useState<Record<string, string>>({});
   const [canonicalNames, setCanonicalNames] = useState<Record<string, string>>({});
 
@@ -40,17 +42,17 @@ export function EntityAliasReviewPanel({
         onClick={onToggle}
         className="w-full flex items-center justify-between gap-2 text-left text-fg"
       >
-        <span className="font-medium">검토할 별칭</span>
+        <span className="font-medium">{t("analysis.review.queue.alias.title")}</span>
         {visible ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
       </button>
       {visible && (
         <div className="mt-2 space-y-2">
           {loading ? (
-            <div className="text-muted">조회 중...</div>
+            <div className="text-muted">{t("analysis.review.queue.alias.loading")}</div>
           ) : error ? (
             <div className="text-danger">⚠️ {error}</div>
           ) : items.length === 0 ? (
-            <div className="text-muted">검토할 suggested 별칭이 없습니다.</div>
+            <div className="text-muted">{t("analysis.review.queue.alias.empty")}</div>
           ) : (
             items.map((item) => (
               <div
@@ -59,7 +61,7 @@ export function EntityAliasReviewPanel({
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="font-medium text-fg/90">{formatAlias(item)}</div>
+                     <div className="font-medium text-fg/90">{formatAlias(item)}</div>
                     <div className="mt-1 text-muted">
                       {item.entityType} · entity {item.entityStatus}
                     </div>
@@ -70,8 +72,8 @@ export function EntityAliasReviewPanel({
                       onClick={() => onConfirm(item)}
                       disabled={mutatingAliasId === item.id}
                       className="inline-flex h-7 w-7 items-center justify-center rounded border border-border text-muted hover:text-success disabled:opacity-50"
-                      title="확정"
-                      aria-label={`${formatAlias(item)} 확정`}
+                      title={t("analysis.review.queue.alias.confirm")}
+                      aria-label={`${formatAlias(item)} ${t("analysis.review.queue.alias.confirm")}`}
                     >
                       <CheckCircle className="h-4 w-4" />
                     </button>
@@ -80,8 +82,8 @@ export function EntityAliasReviewPanel({
                       onClick={() => onReject(item)}
                       disabled={mutatingAliasId === item.id}
                       className="inline-flex h-7 w-7 items-center justify-center rounded border border-border text-muted hover:text-danger disabled:opacity-50"
-                      title="거절"
-                      aria-label={`${formatAlias(item)} 거절`}
+                      title={t("analysis.review.queue.alias.reject")}
+                      aria-label={`${formatAlias(item)} ${t("analysis.review.queue.alias.reject")}`}
                     >
                       <XCircle className="h-4 w-4" />
                     </button>
@@ -111,7 +113,7 @@ export function EntityAliasReviewPanel({
                     disabled={mutatingAliasId === item.id || !(targetEntityIds[item.id] ?? "").trim()}
                     className="shrink-0 rounded border border-border px-2 py-1 text-[11px] text-muted hover:text-fg disabled:opacity-50"
                   >
-                    통합
+                    {t("analysis.review.queue.alias.merge")}
                   </button>
                 </div>
                 <div className="mt-1.5 flex items-center gap-1.5">
@@ -134,7 +136,7 @@ export function EntityAliasReviewPanel({
                     disabled={mutatingAliasId === item.id || !(canonicalNames[item.id] ?? item.alias).trim()}
                     className="shrink-0 rounded border border-border px-2 py-1 text-[11px] text-muted hover:text-fg disabled:opacity-50"
                   >
-                    분리
+                    {t("analysis.review.queue.alias.split")}
                   </button>
                 </div>
               </div>

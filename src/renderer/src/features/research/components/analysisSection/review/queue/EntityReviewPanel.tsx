@@ -1,4 +1,5 @@
 import { CheckCircle, ChevronDown, ChevronRight, XCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { AnalysisEntityReviewItem } from "../../shared/types";
 
 type EntityReviewPanelProps = {
@@ -12,14 +13,21 @@ type EntityReviewPanelProps = {
   onReject: (item: AnalysisEntityReviewItem) => void;
 };
 
-const mentionRange = (item: AnalysisEntityReviewItem): string => {
+const mentionRange = (item: AnalysisEntityReviewItem, t: any): string => {
   if (item.firstMentionChapterOrder === null || item.lastMentionChapterOrder === null) {
-    return "mentions 0";
+    return t("analysis.review.queue.entity.mentionRangeNone");
   }
   if (item.firstMentionChapterOrder === item.lastMentionChapterOrder) {
-    return `mentions ${item.mentionCount} · ${item.firstMentionChapterOrder}화`;
+    return t("analysis.review.queue.entity.mentionRangeSingle", {
+      count: item.mentionCount,
+      chapter: item.firstMentionChapterOrder,
+    });
   }
-  return `mentions ${item.mentionCount} · ${item.firstMentionChapterOrder}-${item.lastMentionChapterOrder}화`;
+  return t("analysis.review.queue.entity.mentionRangeRange", {
+    count: item.mentionCount,
+    start: item.firstMentionChapterOrder,
+    end: item.lastMentionChapterOrder,
+  });
 };
 
 export function EntityReviewPanel({
@@ -32,6 +40,7 @@ export function EntityReviewPanel({
   onConfirm,
   onReject,
 }: EntityReviewPanelProps) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-lg border border-border bg-surface px-3 py-2 text-xs">
       <button
@@ -39,17 +48,17 @@ export function EntityReviewPanel({
         onClick={onToggle}
         className="w-full flex items-center justify-between gap-2 text-left text-fg"
       >
-        <span className="font-medium">검토할 엔티티</span>
+        <span className="font-medium">{t("analysis.review.queue.entity.title")}</span>
         {visible ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
       </button>
       {visible && (
         <div className="mt-2 space-y-2">
           {loading ? (
-            <div className="text-muted">조회 중...</div>
+            <div className="text-muted">{t("analysis.review.queue.entity.loading")}</div>
           ) : error ? (
             <div className="text-danger">⚠️ {error}</div>
           ) : items.length === 0 ? (
-            <div className="text-muted">검토할 suggested 엔티티가 없습니다.</div>
+            <div className="text-muted">{t("analysis.review.queue.entity.empty")}</div>
           ) : (
             items.map((item) => (
               <div key={item.id} className="rounded border border-border bg-panel/60 p-2">
@@ -57,7 +66,7 @@ export function EntityReviewPanel({
                   <div className="min-w-0">
                     <div className="font-medium text-fg/90">{item.canonicalName}</div>
                     <div className="mt-1 text-muted">
-                      {item.entityType} · confidence {item.confidence} · {mentionRange(item)}
+                      {item.entityType} · confidence {item.confidence} · {mentionRange(item, t)}
                     </div>
                   </div>
                   <div className="shrink-0 flex gap-1">
@@ -66,8 +75,8 @@ export function EntityReviewPanel({
                       onClick={() => onConfirm(item)}
                       disabled={mutatingEntityId === item.id}
                       className="inline-flex h-7 w-7 items-center justify-center rounded border border-border text-muted hover:text-success disabled:opacity-50"
-                      title="확정"
-                      aria-label={`${item.canonicalName} 확정`}
+                      title={t("analysis.review.queue.entity.confirm")}
+                      aria-label={`${item.canonicalName} ${t("analysis.review.queue.entity.confirm")}`}
                     >
                       <CheckCircle className="h-4 w-4" />
                     </button>
@@ -76,8 +85,8 @@ export function EntityReviewPanel({
                       onClick={() => onReject(item)}
                       disabled={mutatingEntityId === item.id}
                       className="inline-flex h-7 w-7 items-center justify-center rounded border border-border text-muted hover:text-danger disabled:opacity-50"
-                      title="거절"
-                      aria-label={`${item.canonicalName} 거절`}
+                      title={t("analysis.review.queue.entity.reject")}
+                      aria-label={`${item.canonicalName} ${t("analysis.review.queue.entity.reject")}`}
                     >
                       <XCircle className="h-4 w-4" />
                     </button>
