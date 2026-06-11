@@ -120,6 +120,7 @@ export type {
   MemoryChunkWindowQuery,
   MemoryChunkWindowResult,
   MemoryEmbeddingStatus,
+  MemoryBuildJobProgress,
   MemoryEntityConfirmInput,
   MemoryEntityRejectInput,
   MemoryEntityReviewItem,

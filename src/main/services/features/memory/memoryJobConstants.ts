@@ -27,3 +27,10 @@ export const MEMORY_JOB_PRIORITY = {
   SUMMARY: 90,
   EMBEDDING: 100,
 } as const;
+
+export const MEMORY_BUILD_JOB_DEDUPE_STATUSES = [
+  "pending",
+  "running",
+  "failed",
+  "paused",
+] as const;

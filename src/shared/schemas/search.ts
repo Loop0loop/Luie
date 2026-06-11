@@ -164,6 +164,10 @@ export const memoryEmbeddingStatusSchema = z.object({
   projectId: projectIdSchema,
 });
 
+export const memoryBuildJobControlSchema = z.object({
+  projectId: projectIdSchema,
+});
+
 export const ragQaRequestSchema = z.object({
   projectId: projectIdSchema,
   question: z

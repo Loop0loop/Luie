@@ -180,9 +180,58 @@ describe("memoryBenchmarkLatencyRunner", () => {
     expect(report.measurements.layer3EvidencePath.warmP50Ms).toBeGreaterThanOrEqual(
       0,
     );
+    expect(report.measurements.vectorSearchProbe).toMatchObject({
+      mode: "quality",
+    });
+    expect(
+      report.measurements.vectorSearchProbe.embeddingRowsMaterialized,
+    ).toBeGreaterThan(0);
+    expect(report.measurements.vectorSearchProbe.path.iterations).toBe(3);
+    expect(report.measurements.vectorSearchProbe.path.p99Ms).toBeGreaterThanOrEqual(
+      report.measurements.vectorSearchProbe.path.p95Ms,
+    );
+    expect(report.measurements.vectorSearchProbe.vectorStage).toMatchObject({
+      stage: "vector",
+      iterations: 3,
+      skippedCount: 0,
+    });
+    expect(
+      report.measurements.vectorSearchProbe.vectorStage?.p99Ms ?? 0,
+    ).toBeGreaterThanOrEqual(
+      report.measurements.vectorSearchProbe.vectorStage?.p95Ms ?? 0,
+    );
+    expect(report.measurements.writerFlowQuerySet.map((row) => row.category)).toEqual([
+      "alias-lookup",
+      "temporal-marker",
+      "rewrite-marker",
+      "state-change",
+    ]);
+    expect(
+      report.measurements.writerFlowQuerySet.every(
+        (row) =>
+          row.query.length > 0 &&
+          row.ragSearchPath.iterations === 3 &&
+          row.ragSearchPath.p99Ms >= row.ragSearchPath.p95Ms &&
+          row.layer3EvidencePath.iterations === 3 &&
+          row.layer3EvidencePath.p99Ms >= row.layer3EvidencePath.p95Ms,
+      ),
+    ).toBe(true);
     expect(
       report.measurements.cacheTtlMemoryComparison.map((row) => row.ttlMs),
     ).toEqual([60_000, 180_000, 300_000]);
+    expect(report.measurements.rerankCacheProbe).toMatchObject({
+      ttlMs: report.optimizationPolicy.rerankCacheTtlMs,
+      queries: 3,
+      misses: 1,
+      entries: 1,
+    });
+    expect(report.measurements.rerankCacheProbe.hits).toBe(2);
+    expect(report.measurements.rerankCacheProbe.heapDeltaMb).toBeGreaterThanOrEqual(
+      0,
+    );
+    expect(
+      report.measurements.rerankCacheProbe.cachedChunkIds,
+    ).toBeGreaterThanOrEqual(report.measurements.rerankCacheProbe.entries);
     expect(
       report.measurements.cacheTtlMemoryComparison.every(
         (row) =>

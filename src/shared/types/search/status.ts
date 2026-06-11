@@ -17,6 +17,30 @@ export interface MemoryJobStatus {
   lastProcessedAt: string | null;
 }
 
+export interface MemoryBuildJobProgress {
+  projectId: string;
+  total: number;
+  activeCount: number;
+  doneCount: number;
+  byStatus: Record<string, number>;
+  attention: {
+    retryableFailedCount: number;
+    retryBackoffCount: number;
+    exhaustedFailedCount: number;
+    staleCancellationRequestedCount: number;
+    latestError: string | null;
+  };
+  byJobType: Record<
+    string,
+    {
+      total: number;
+      activeCount: number;
+      doneCount: number;
+      byStatus: Record<string, number>;
+    }
+  >;
+}
+
 export interface MigrationHealth {
   chapterCount: number;
   chapterBodyCount: number;

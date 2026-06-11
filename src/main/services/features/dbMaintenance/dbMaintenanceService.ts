@@ -195,7 +195,11 @@ class DbMaintenanceService {
     if (staleMemoryIds.length > 0) {
       await client
         .update(memoryBuildJob)
-        .set({ status: "pending", updatedAt: new Date().toISOString() })
+        .set({
+          status: "pending",
+          error: "RECOVERED_STALE_RUNNING_JOB",
+          updatedAt: new Date().toISOString(),
+        })
         .where(inArray(memoryBuildJob.id, staleMemoryIds));
     }
   }

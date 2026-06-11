@@ -3,17 +3,13 @@ import {
   useCallback,
   useEffect,
   useRef,
-  useState,
 } from "react";
-import { api } from "@shared/api";
-import { useToast } from "@shared/ui/ToastContext";
-import { normalizeChatError } from "./chatErrors";
+import { useShallow } from "zustand/react/shallow";
+import { useAnalysisStore } from "@renderer/features/research/stores/analysisStore";
 import { requestChapterNavigation } from "@renderer/features/workspace/services/chapterNavigation";
+import { api } from "@shared/api";
 import type {
-  AnalysisRagErrorPayload,
-  AnalysisRagStreamPayload,
   MemoryScope,
-  Message,
 } from "../shared/types";
 
 type ChatChunkItem = {
@@ -33,144 +29,38 @@ export function useRagChat({
   chapterId,
   memoryScope,
 }: UseRagChatInput) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [ragRunId, setRagRunId] = useState<string | null>(null);
-  const [isStreaming, setIsStreaming] = useState(false);
+  const {
+    messages,
+    input,
+    setInput,
+    isStreaming,
+    handleSend,
+    handleStop,
+  } = useAnalysisStore(
+    useShallow((state) => ({
+      messages: state.messages,
+      input: state.input,
+      setInput: state.setInput,
+      isStreaming: state.isStreaming,
+      handleSend: state.handleSend,
+      handleStop: state.handleStop,
+    }))
+  );
+
   const bottomRef = useRef<HTMLDivElement>(null);
-  const { showToast } = useToast();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  useEffect(() => {
-    if (!ragRunId) {
-      return;
+  const onSend = useCallback(async () => {
+    if (!projectId) return;
+    try {
+      await handleSend(projectId, chapterId, memoryScope);
+    } catch {
+      // Error is handled in store
     }
-
-    const offStream = api.rag.onStream((payload: AnalysisRagStreamPayload) => {
-      if (payload.runId !== ragRunId) return;
-
-      if (payload.delta) {
-        setMessages((prev) =>
-          prev.map((message) =>
-            message.id === ragRunId
-              ? { ...message, content: message.content + payload.delta }
-              : message,
-          ),
-        );
-      }
-
-      if (!payload.done) {
-        return;
-      }
-
-      setIsStreaming(false);
-      setRagRunId(null);
-
-      if (payload.result) {
-        setMessages((prev) =>
-          prev.map((message) =>
-            message.id === ragRunId
-              ? {
-                  ...message,
-                  content: payload.result?.answer ?? message.content,
-                  evidence: payload.result?.evidence ?? [],
-                  grounding: payload.result?.grounding,
-                  safety: payload.result?.safety,
-                  narrativeMemory: payload.result?.narrativeMemory,
-                  isStreaming: false,
-                }
-              : message,
-          ),
-        );
-      }
-    }, ragRunId);
-
-    const offError = api.rag.onError((payload: AnalysisRagErrorPayload) => {
-      if (payload.runId && payload.runId !== ragRunId) return;
-      setIsStreaming(false);
-      setRagRunId(null);
-      setMessages((prev) =>
-        prev.map((message) =>
-          message.id === ragRunId
-            ? {
-                ...message,
-                isStreaming: false,
-                error: normalizeChatError(payload.code),
-              }
-            : message,
-        ),
-      );
-    }, ragRunId);
-
-    return () => {
-      offStream();
-      offError();
-    };
-  }, [ragRunId]);
-
-  const handleSend = useCallback(async (overrideText?: string) => {
-    const source = (overrideText ?? input).trim();
-    if (!projectId || !source || isStreaming) return;
-
-    const question = source;
-    const userMessageId = `user-${Date.now()}`;
-    const assistantMsgId = `${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2, 9)}`;
-
-    setMessages((prev) => [
-      ...prev,
-      { id: userMessageId, role: "user", content: question },
-      { id: assistantMsgId, role: "assistant", content: "", isStreaming: true },
-    ]);
-    setInput("");
-    setIsStreaming(true);
-
-    const res = await api.rag.ask({
-      projectId,
-      question,
-      chapterId,
-      includePriorMemory: memoryScope === "with-prior",
-    });
-
-    if (!res.success || !res.data?.runId) {
-      setIsStreaming(false);
-      const errMsg = normalizeChatError(res.error?.code);
-      setMessages((prev) =>
-        prev.map((message) =>
-          message.id === assistantMsgId
-            ? { ...message, isStreaming: false, error: errMsg }
-            : message,
-        ),
-      );
-      showToast(errMsg, "error");
-      return;
-    }
-
-    setRagRunId(res.data.runId);
-    setMessages((prev) =>
-      prev.map((message) =>
-        message.id === assistantMsgId
-          ? { ...message, id: res.data!.runId }
-          : message,
-      ),
-    );
-  }, [projectId, chapterId, input, isStreaming, memoryScope, showToast]);
-
-  const handleStop = useCallback(async () => {
-    if (!ragRunId) return;
-    await api.rag.stop(ragRunId);
-    setIsStreaming(false);
-    setRagRunId(null);
-    setMessages((prev) =>
-      prev.map((message) =>
-        message.isStreaming ? { ...message, isStreaming: false } : message,
-      ),
-    );
-  }, [ragRunId]);
+  }, [projectId, chapterId, memoryScope, handleSend]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -178,9 +68,9 @@ export function useRagChat({
         return;
       }
       event.preventDefault();
-      void handleSend();
+      void onSend();
     },
-    [handleSend],
+    [onSend],
   );
 
   const handleJumpEvidence = useCallback(async (item: ChatChunkItem) => {
@@ -200,7 +90,7 @@ export function useRagChat({
     setInput,
     isStreaming,
     bottomRef,
-    handleSend,
+    handleSend: onSend,
     handleStop,
     handleKeyDown,
     handleJumpEvidence,

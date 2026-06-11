@@ -29,6 +29,7 @@ import {
   memoryChunkIdSchema,
   memoryChunkSearchSchema,
   memoryChunkWindowSchema,
+  memoryBuildJobControlSchema,
   memoryConflictQueueQuerySchema,
   memoryEmbeddingStatusSchema,
   memoryEpisodeConfirmSchema,
@@ -56,6 +57,12 @@ import {
   rebuildMemoryChunksSchema,
   searchQuerySchema,
 } from "../../../shared/schemas/index.js";
+import {
+  cancelMemoryBuildJobs,
+  getMemoryBuildJobProgress,
+  pauseMemoryBuildJobs,
+  resumeMemoryBuildJobs,
+} from "../../services/features/memory/jobControl.js";
 import { z } from "zod";
 import type { LoggerLike } from "../core/types.js";
 
@@ -439,6 +446,34 @@ export function registerSearchIPCHandlers(
       argsSchema: z.tuple([memoryEmbeddingStatusSchema]),
       handler: (input: { projectId: string }) =>
         embeddingProjector.getEmbeddingStatus(input.projectId),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_PAUSE_BUILD_JOBS,
+      logTag: "MEMORY_PAUSE_BUILD_JOBS",
+      failMessage: "Failed to pause memory build jobs",
+      argsSchema: z.tuple([memoryBuildJobControlSchema]),
+      handler: (input: { projectId: string }) => pauseMemoryBuildJobs(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_RESUME_BUILD_JOBS,
+      logTag: "MEMORY_RESUME_BUILD_JOBS",
+      failMessage: "Failed to resume memory build jobs",
+      argsSchema: z.tuple([memoryBuildJobControlSchema]),
+      handler: (input: { projectId: string }) => resumeMemoryBuildJobs(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_CANCEL_BUILD_JOBS,
+      logTag: "MEMORY_CANCEL_BUILD_JOBS",
+      failMessage: "Failed to cancel memory build jobs",
+      argsSchema: z.tuple([memoryBuildJobControlSchema]),
+      handler: (input: { projectId: string }) => cancelMemoryBuildJobs(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_GET_BUILD_JOB_PROGRESS,
+      logTag: "MEMORY_GET_BUILD_JOB_PROGRESS",
+      failMessage: "Failed to get memory build job progress",
+      argsSchema: z.tuple([memoryBuildJobControlSchema]),
+      handler: (input: { projectId: string }) => getMemoryBuildJobProgress(input),
     },
     {
       channel: IPC_CHANNELS.DB_RUN_INTEGRITY_CHECK,

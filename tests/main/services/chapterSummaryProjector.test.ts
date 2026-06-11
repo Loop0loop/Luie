@@ -1,10 +1,20 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { and, eq } from "drizzle-orm";
 import { ProjectService } from "../../../src/main/services/core/projectService.js";
 import { ChapterService } from "../../../src/main/services/core/chapterService.js";
 import { chapterSummaryProjector } from "../../../src/main/services/features/memory/chapterSummaryProjector.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import { projectService } from "../../../src/main/services/core/projectService.js";
 import { utilityProcessBridge } from "../../../src/main/services/features/utility/utilityProcessBridge.js";
+import {
+  db,
+  memoryBuildJob,
+} from "../../../src/main/infra/database/index.js";
+import { cancelMemoryBuildJobs } from "../../../src/main/services/features/memory/jobControl.js";
+import {
+  MEMORY_JOB_TYPES,
+  MEMORY_TARGET_TYPES,
+} from "../../../src/main/services/features/memory/memoryJobConstants.js";
 
 describe("chapterSummaryProjector", () => {
   const localProjectService = new ProjectService();
@@ -134,5 +144,65 @@ describe("chapterSummaryProjector", () => {
     );
     expect(status.failedCount).toBe(0);
     expect(status.completedCount).toBeGreaterThan(0);
+  });
+
+  it("finalizes a running summary job as canceled when cancellation is requested during LLM generation", async () => {
+    vi.stubEnv("LUIE_ENABLE_LLM_DERIVED_SUMMARY", "1");
+
+    const project = await localProjectService.createProject({
+      title: "Chapter Summary Cancellation",
+      description: "unit",
+      projectPath: "/tmp/chapter-summary-cancellation.luie",
+    });
+
+    const chapter = await chapterService.createChapter({
+      projectId: String(project.id),
+      title: "요약 취소 테스트",
+    });
+
+    await chapterService.updateChapter({
+      id: String(chapter.id),
+      content:
+        "리아는 동부 전선에서 돌아온 뒤 오래된 맹약이 아직 유효한지 확인하려 한다.",
+    });
+
+    vi.spyOn(utilityProcessBridge, "generateText").mockImplementation(
+      async () => {
+        await cancelMemoryBuildJobs({ projectId: String(project.id) });
+        return {
+          text: "취소 요청 이후 생성된 요약",
+          providerName: "test-provider",
+        };
+      },
+    );
+
+    const processed = await chapterSummaryProjector.processPendingSummaryJobs({
+      projectId: String(project.id),
+      limit: 5,
+    });
+
+    expect(processed.processed).toBe(0);
+
+    const [job] = await db
+      .getClient()
+      .select()
+      .from(memoryBuildJob)
+      .where(
+        and(
+          eq(memoryBuildJob.projectId, String(project.id)),
+          eq(memoryBuildJob.targetType, MEMORY_TARGET_TYPES.CHAPTER),
+          eq(memoryBuildJob.targetId, String(chapter.id)),
+          eq(memoryBuildJob.jobType, MEMORY_JOB_TYPES.REBUILD_SUMMARY),
+        ),
+      );
+    expect(job).toMatchObject({
+      status: "canceled",
+      error: "CANCELED_BY_USER",
+    });
+
+    const summary = await chapterSummaryProjector.getChapterSummary(
+      String(chapter.id),
+    );
+    expect(summary).toBeNull();
   });
 });

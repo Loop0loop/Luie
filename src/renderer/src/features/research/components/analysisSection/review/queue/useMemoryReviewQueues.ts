@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { api } from "@shared/api";
+import { useShallow } from "zustand/react/shallow";
+import { useAnalysisStore } from "@renderer/features/research/stores/analysisStore";
 import type {
   AnalysisConflictItem,
   AnalysisEntityAliasReviewItem,
   AnalysisEntityReviewItem,
   AnalysisEpisodeReviewItem,
   AnalysisFactReviewItem,
-  AnalysisNarrativeSummaryStatus,
   MemoryScope,
 } from "../../shared/types";
 
@@ -23,150 +23,156 @@ export function useMemoryReviewQueues({
   memoryScope,
 }: UseMemoryReviewQueuesInput) {
   const { t } = useTranslation();
-  const [showNarrativeSummaryStatus, setShowNarrativeSummaryStatus] =
-    useState(false);
-  const [narrativeSummaryStatus, setNarrativeSummaryStatus] =
-    useState<AnalysisNarrativeSummaryStatus | null>(null);
-  const [narrativeSummaryStatusLoading, setNarrativeSummaryStatusLoading] =
-    useState(false);
-  const [narrativeSummaryStatusError, setNarrativeSummaryStatusError] =
-    useState<string | null>(null);
-  const [showConflictQueue, setShowConflictQueue] = useState(false);
-  const [conflictQueueItems, setConflictQueueItems] = useState<
-    AnalysisConflictItem[]
-  >([]);
-  const [conflictQueueLoading, setConflictQueueLoading] = useState(false);
-  const [conflictQueueError, setConflictQueueError] = useState<string | null>(
-    null,
+
+  const {
+    showNarrativeSummaryStatus,
+    setShowNarrativeSummaryStatus,
+    narrativeSummaryStatus,
+    narrativeSummaryStatusLoading,
+    narrativeSummaryStatusError,
+    loadNarrativeSummaryStatus,
+
+    showConflictQueue,
+    setShowConflictQueue,
+    conflictQueueItems,
+    conflictQueueLoading,
+    conflictQueueError,
+    resolvingConflictId,
+    loadConflictQueue,
+    handleResolveConflict,
+
+    showFactReviewQueue,
+    setShowFactReviewQueue,
+    factReviewItems,
+    factReviewLoading,
+    factReviewError,
+    mutatingFactId,
+    loadFactReviewQueue,
+    handleConfirmFact,
+    handleRejectFact,
+
+    showEpisodeReviewQueue,
+    setShowEpisodeReviewQueue,
+    episodeReviewItems,
+    episodeReviewLoading,
+    episodeReviewError,
+    mutatingEpisodeId,
+    loadEpisodeReviewQueue,
+    handleConfirmEpisode,
+    handleRejectEpisode,
+
+    showEntityReviewQueue,
+    setShowEntityReviewQueue,
+    entityReviewItems,
+    entityReviewLoading,
+    entityReviewError,
+    mutatingEntityId,
+    loadEntityReviewQueue,
+    handleConfirmEntity,
+    handleRejectEntity,
+
+    showEntityAliasReviewQueue,
+    setShowEntityAliasReviewQueue,
+    entityAliasReviewItems,
+    entityAliasReviewLoading,
+    entityAliasReviewError,
+    mutatingAliasId,
+    loadEntityAliasReviewQueue,
+    handleConfirmEntityAlias,
+    handleRejectEntityAlias,
+    handleMergeEntityAlias,
+    handleSplitEntityAlias,
+  } = useAnalysisStore(
+    useShallow((state) => ({
+      showNarrativeSummaryStatus: state.showNarrativeSummaryStatus,
+      setShowNarrativeSummaryStatus: state.setShowNarrativeSummaryStatus,
+      narrativeSummaryStatus: state.narrativeSummaryStatus,
+      narrativeSummaryStatusLoading: state.narrativeSummaryStatusLoading,
+      narrativeSummaryStatusError: state.narrativeSummaryStatusError,
+      loadNarrativeSummaryStatus: state.loadNarrativeSummaryStatus,
+
+      showConflictQueue: state.showConflictQueue,
+      setShowConflictQueue: state.setShowConflictQueue,
+      conflictQueueItems: state.conflictQueueItems,
+      conflictQueueLoading: state.conflictQueueLoading,
+      conflictQueueError: state.conflictQueueError,
+      resolvingConflictId: state.resolvingConflictId,
+      loadConflictQueue: state.loadConflictQueue,
+      handleResolveConflict: state.handleResolveConflict,
+
+      showFactReviewQueue: state.showFactReviewQueue,
+      setShowFactReviewQueue: state.setShowFactReviewQueue,
+      factReviewItems: state.factReviewItems,
+      factReviewLoading: state.factReviewLoading,
+      factReviewError: state.factReviewError,
+      mutatingFactId: state.mutatingFactId,
+      loadFactReviewQueue: state.loadFactReviewQueue,
+      handleConfirmFact: state.handleConfirmFact,
+      handleRejectFact: state.handleRejectFact,
+
+      showEpisodeReviewQueue: state.showEpisodeReviewQueue,
+      setShowEpisodeReviewQueue: state.setShowEpisodeReviewQueue,
+      episodeReviewItems: state.episodeReviewItems,
+      episodeReviewLoading: state.episodeReviewLoading,
+      episodeReviewError: state.episodeReviewError,
+      mutatingEpisodeId: state.mutatingEpisodeId,
+      loadEpisodeReviewQueue: state.loadEpisodeReviewQueue,
+      handleConfirmEpisode: state.handleConfirmEpisode,
+      handleRejectEpisode: state.handleRejectEpisode,
+
+      showEntityReviewQueue: state.showEntityReviewQueue,
+      setShowEntityReviewQueue: state.setShowEntityReviewQueue,
+      entityReviewItems: state.entityReviewItems,
+      entityReviewLoading: state.entityReviewLoading,
+      entityReviewError: state.entityReviewError,
+      mutatingEntityId: state.mutatingEntityId,
+      loadEntityReviewQueue: state.loadEntityReviewQueue,
+      handleConfirmEntity: state.handleConfirmEntity,
+      handleRejectEntity: state.handleRejectEntity,
+
+      showEntityAliasReviewQueue: state.showEntityAliasReviewQueue,
+      setShowEntityAliasReviewQueue: state.setShowEntityAliasReviewQueue,
+      entityAliasReviewItems: state.entityAliasReviewItems,
+      entityAliasReviewLoading: state.entityAliasReviewLoading,
+      entityAliasReviewError: state.entityAliasReviewError,
+      mutatingAliasId: state.mutatingAliasId,
+      loadEntityAliasReviewQueue: state.loadEntityAliasReviewQueue,
+      handleConfirmEntityAlias: state.handleConfirmEntityAlias,
+      handleRejectEntityAlias: state.handleRejectEntityAlias,
+      handleMergeEntityAlias: state.handleMergeEntityAlias,
+      handleSplitEntityAlias: state.handleSplitEntityAlias,
+    }))
   );
-  const [resolvingConflictId, setResolvingConflictId] = useState<string | null>(
-    null,
-  );
-  const [showFactReviewQueue, setShowFactReviewQueue] = useState(false);
-  const [factReviewItems, setFactReviewItems] = useState<
-    AnalysisFactReviewItem[]
-  >([]);
-  const [factReviewLoading, setFactReviewLoading] = useState(false);
-  const [factReviewError, setFactReviewError] = useState<string | null>(null);
-  const [mutatingFactId, setMutatingFactId] = useState<string | null>(null);
-  const [showEpisodeReviewQueue, setShowEpisodeReviewQueue] = useState(false);
-  const [episodeReviewItems, setEpisodeReviewItems] = useState<
-    AnalysisEpisodeReviewItem[]
-  >([]);
-  const [episodeReviewLoading, setEpisodeReviewLoading] = useState(false);
-  const [episodeReviewError, setEpisodeReviewError] = useState<string | null>(
-    null,
-  );
-  const [mutatingEpisodeId, setMutatingEpisodeId] = useState<string | null>(
-    null,
-  );
-  const [showEntityReviewQueue, setShowEntityReviewQueue] = useState(false);
-  const [entityReviewItems, setEntityReviewItems] = useState<
-    AnalysisEntityReviewItem[]
-  >([]);
-  const [entityReviewLoading, setEntityReviewLoading] = useState(false);
-  const [entityReviewError, setEntityReviewError] = useState<string | null>(
-    null,
-  );
-  const [mutatingEntityId, setMutatingEntityId] = useState<string | null>(null);
-  const [showEntityAliasReviewQueue, setShowEntityAliasReviewQueue] =
-    useState(false);
-  const [entityAliasReviewItems, setEntityAliasReviewItems] = useState<
-    AnalysisEntityAliasReviewItem[]
-  >([]);
-  const [entityAliasReviewLoading, setEntityAliasReviewLoading] =
-    useState(false);
-  const [entityAliasReviewError, setEntityAliasReviewError] = useState<
-    string | null
-  >(null);
-  const [mutatingAliasId, setMutatingAliasId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!showNarrativeSummaryStatus || !projectId) return;
-    let cancelled = false;
-    void (async () => {
-      setNarrativeSummaryStatusLoading(true);
-      setNarrativeSummaryStatusError(null);
-      try {
-        const response = await api.memory.getNarrativeSummaryStatus(projectId);
-        if (cancelled) return;
-        if (!response.success || !response.data) {
-          setNarrativeSummaryStatusError(
-            response.error?.message ?? t("analysis.review.summary.fetchError"),
-          );
-          setNarrativeSummaryStatus(null);
-          return;
-        }
-        setNarrativeSummaryStatus(response.data);
-      } finally {
-        if (!cancelled) setNarrativeSummaryStatusLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [projectId, showNarrativeSummaryStatus]);
-
-  const loadConflictQueue = useCallback(async () => {
-    if (!projectId) {
-      setConflictQueueItems([]);
-      return;
-    }
-
-    setConflictQueueLoading(true);
-    setConflictQueueError(null);
-    try {
-      const response = await api.memory.getConflictQueue({
-        projectId,
-        chapterId,
-        includePriorMemory: memoryScope === "with-prior",
-      });
-      if (!response.success || !response.data) {
-        setConflictQueueError(
-          response.error?.message ?? t("analysis.review.queue.conflict.fetchError"),
-        );
-        setConflictQueueItems([]);
-        return;
-      }
-      setConflictQueueItems(response.data.items);
-    } finally {
-      setConflictQueueLoading(false);
-    }
-  }, [chapterId, memoryScope, projectId]);
+    void loadNarrativeSummaryStatus(projectId);
+  }, [projectId, showNarrativeSummaryStatus, loadNarrativeSummaryStatus]);
 
   useEffect(() => {
-    if (!showConflictQueue) return;
-    const timeoutId = window.setTimeout(() => {
-      void loadConflictQueue();
-    }, 0);
-    return () => window.clearTimeout(timeoutId);
-  }, [loadConflictQueue, showConflictQueue]);
+    if (!showConflictQueue || !projectId) return;
+    void loadConflictQueue(projectId, chapterId, memoryScope);
+  }, [projectId, chapterId, memoryScope, showConflictQueue, loadConflictQueue]);
 
-  const handleResolveConflict = useCallback(
-    async (item: AnalysisConflictItem, winnerFactId: string) => {
-      if (!projectId) return;
+  useEffect(() => {
+    if (!showFactReviewQueue || !projectId) return;
+    void loadFactReviewQueue(projectId);
+  }, [projectId, showFactReviewQueue, loadFactReviewQueue]);
 
-      setResolvingConflictId(item.conflictId);
-      setConflictQueueError(null);
-      try {
-        const response = await api.memory.resolveFactConflict({
-          projectId,
-          conflictId: item.conflictId,
-          winnerFactId,
-        });
-        if (!response.success || !response.data?.updated) {
-          setConflictQueueError(
-            response.error?.message ?? t("analysis.review.queue.conflict.resolveError"),
-          );
-          return;
-        }
-        await loadConflictQueue();
-      } finally {
-        setResolvingConflictId(null);
-      }
-    },
-    [loadConflictQueue, projectId],
-  );
+  useEffect(() => {
+    if (!showEpisodeReviewQueue || !projectId) return;
+    void loadEpisodeReviewQueue(projectId);
+  }, [projectId, showEpisodeReviewQueue, loadEpisodeReviewQueue]);
+
+  useEffect(() => {
+    if (!showEntityReviewQueue || !projectId) return;
+    void loadEntityReviewQueue(projectId);
+  }, [projectId, showEntityReviewQueue, loadEntityReviewQueue]);
+
+  useEffect(() => {
+    if (!showEntityAliasReviewQueue || !projectId) return;
+    void loadEntityAliasReviewQueue(projectId);
+  }, [projectId, showEntityAliasReviewQueue, loadEntityAliasReviewQueue]);
 
   const requestRejectReason = useCallback(
     (type: "fact" | "episode" | "entity" | "alias"): string | null => {
@@ -178,368 +184,101 @@ export function useMemoryReviewQueues({
     [t],
   );
 
-  const loadFactReviewQueue = useCallback(async () => {
-    if (!projectId) {
-      setFactReviewItems([]);
-      return;
-    }
-    setFactReviewLoading(true);
-    setFactReviewError(null);
-    try {
-      const response = await api.memory.getFactReviewQueue({ projectId });
-      if (!response.success || !response.data) {
-        setFactReviewError(response.error?.message ?? t("analysis.review.queue.fact.fetchError"));
-        setFactReviewItems([]);
-        return;
-      }
-      setFactReviewItems(response.data.items);
-    } finally {
-      setFactReviewLoading(false);
-    }
-  }, [projectId]);
-
-  const loadEpisodeReviewQueue = useCallback(async () => {
-    if (!projectId) {
-      setEpisodeReviewItems([]);
-      return;
-    }
-    setEpisodeReviewLoading(true);
-    setEpisodeReviewError(null);
-    try {
-      const response = await api.memory.getEpisodeReviewQueue({ projectId });
-      if (!response.success || !response.data) {
-        setEpisodeReviewError(
-          response.error?.message ?? t("analysis.review.queue.episode.fetchError"),
-        );
-        setEpisodeReviewItems([]);
-        return;
-      }
-      setEpisodeReviewItems(response.data.items);
-    } finally {
-      setEpisodeReviewLoading(false);
-    }
-  }, [projectId]);
-
-  const loadEntityReviewQueue = useCallback(async () => {
-    if (!projectId) {
-      setEntityReviewItems([]);
-      return;
-    }
-    setEntityReviewLoading(true);
-    setEntityReviewError(null);
-    try {
-      const response = await api.memory.getEntityReviewQueue({ projectId });
-      if (!response.success || !response.data) {
-        setEntityReviewError(
-          response.error?.message ?? t("analysis.review.queue.entity.fetchError"),
-        );
-        setEntityReviewItems([]);
-        return;
-      }
-      setEntityReviewItems(response.data.items);
-    } finally {
-      setEntityReviewLoading(false);
-    }
-  }, [projectId]);
-
-  const loadEntityAliasReviewQueue = useCallback(async () => {
-    if (!projectId) {
-      setEntityAliasReviewItems([]);
-      return;
-    }
-    setEntityAliasReviewLoading(true);
-    setEntityAliasReviewError(null);
-    try {
-      const response = await api.memory.getEntityAliasReviewQueue({ projectId });
-      if (!response.success || !response.data) {
-        setEntityAliasReviewError(
-          response.error?.message ?? t("analysis.review.queue.alias.fetchError"),
-        );
-        setEntityAliasReviewItems([]);
-        return;
-      }
-      setEntityAliasReviewItems(response.data.items);
-    } finally {
-      setEntityAliasReviewLoading(false);
-    }
-  }, [projectId]);
-
-  useEffect(() => {
-    if (!showFactReviewQueue) return;
-    const timeoutId = window.setTimeout(() => {
-      void loadFactReviewQueue();
-    }, 0);
-    return () => window.clearTimeout(timeoutId);
-  }, [loadFactReviewQueue, showFactReviewQueue]);
-
-  useEffect(() => {
-    if (!showEpisodeReviewQueue) return;
-    const timeoutId = window.setTimeout(() => {
-      void loadEpisodeReviewQueue();
-    }, 0);
-    return () => window.clearTimeout(timeoutId);
-  }, [loadEpisodeReviewQueue, showEpisodeReviewQueue]);
-
-  useEffect(() => {
-    if (!showEntityReviewQueue) return;
-    const timeoutId = window.setTimeout(() => {
-      void loadEntityReviewQueue();
-    }, 0);
-    return () => window.clearTimeout(timeoutId);
-  }, [loadEntityReviewQueue, showEntityReviewQueue]);
-
-  useEffect(() => {
-    if (!showEntityAliasReviewQueue) return;
-    const timeoutId = window.setTimeout(() => {
-      void loadEntityAliasReviewQueue();
-    }, 0);
-    return () => window.clearTimeout(timeoutId);
-  }, [loadEntityAliasReviewQueue, showEntityAliasReviewQueue]);
-
-  const handleConfirmFact = useCallback(
-    async (item: AnalysisFactReviewItem) => {
+  const onResolveConflict = useCallback(
+    async (item: AnalysisConflictItem, winnerFactId: string) => {
       if (!projectId) return;
-      setMutatingFactId(item.id);
-      setFactReviewError(null);
-      try {
-        const response = await api.memory.confirmFact({
-          projectId,
-          factId: item.id,
-        });
-        if (!response.success || !response.data?.updated) {
-          setFactReviewError(response.error?.message ?? t("analysis.review.queue.fact.confirmError"));
-          return;
-        }
-        await loadFactReviewQueue();
-      } finally {
-        setMutatingFactId(null);
-      }
+      await handleResolveConflict(projectId, item, winnerFactId);
+      await loadConflictQueue(projectId, chapterId, memoryScope);
     },
-    [loadFactReviewQueue, projectId],
+    [projectId, chapterId, memoryScope, handleResolveConflict, loadConflictQueue],
   );
 
-  const handleRejectFact = useCallback(
+  const onConfirmFact = useCallback(
+    async (item: AnalysisFactReviewItem) => {
+      if (!projectId) return;
+      await handleConfirmFact(projectId, item);
+    },
+    [projectId, handleConfirmFact],
+  );
+
+  const onRejectFact = useCallback(
     async (item: AnalysisFactReviewItem) => {
       if (!projectId) return;
       const reason = requestRejectReason("fact");
       if (!reason) return;
-      setMutatingFactId(item.id);
-      setFactReviewError(null);
-      try {
-        const response = await api.memory.rejectFact({
-          projectId,
-          factId: item.id,
-          reason,
-        });
-        if (!response.success || !response.data?.updated) {
-          setFactReviewError(response.error?.message ?? t("analysis.review.queue.fact.rejectError"));
-          return;
-        }
-        await loadFactReviewQueue();
-      } finally {
-        setMutatingFactId(null);
-      }
+      await handleRejectFact(projectId, item, reason);
     },
-    [loadFactReviewQueue, projectId, requestRejectReason],
+    [projectId, handleRejectFact, requestRejectReason],
   );
 
-  const handleConfirmEpisode = useCallback(
+  const onConfirmEpisode = useCallback(
     async (item: AnalysisEpisodeReviewItem) => {
       if (!projectId) return;
-      setMutatingEpisodeId(item.id);
-      setEpisodeReviewError(null);
-      try {
-        const response = await api.memory.confirmEpisode({
-          projectId,
-          episodeId: item.id,
-        });
-        if (!response.success || !response.data?.updated) {
-          setEpisodeReviewError(
-            response.error?.message ?? t("analysis.review.queue.episode.confirmError"),
-          );
-          return;
-        }
-        await loadEpisodeReviewQueue();
-      } finally {
-        setMutatingEpisodeId(null);
-      }
+      await handleConfirmEpisode(projectId, item);
     },
-    [loadEpisodeReviewQueue, projectId],
+    [projectId, handleConfirmEpisode],
   );
 
-  const handleRejectEpisode = useCallback(
+  const onRejectEpisode = useCallback(
     async (item: AnalysisEpisodeReviewItem) => {
       if (!projectId) return;
       const reason = requestRejectReason("episode");
       if (!reason) return;
-      setMutatingEpisodeId(item.id);
-      setEpisodeReviewError(null);
-      try {
-        const response = await api.memory.rejectEpisode({
-          projectId,
-          episodeId: item.id,
-          reason,
-        });
-        if (!response.success || !response.data?.updated) {
-          setEpisodeReviewError(
-            response.error?.message ?? t("analysis.review.queue.episode.rejectError"),
-          );
-          return;
-        }
-        await loadEpisodeReviewQueue();
-      } finally {
-        setMutatingEpisodeId(null);
-      }
+      await handleRejectEpisode(projectId, item, reason);
     },
-    [loadEpisodeReviewQueue, projectId, requestRejectReason],
+    [projectId, handleRejectEpisode, requestRejectReason],
   );
 
-  const handleConfirmEntity = useCallback(
+  const onConfirmEntity = useCallback(
     async (item: AnalysisEntityReviewItem) => {
       if (!projectId) return;
-      setMutatingEntityId(item.id);
-      setEntityReviewError(null);
-      try {
-        const response = await api.memory.confirmEntity({
-          projectId,
-          entityId: item.id,
-        });
-        if (!response.success || !response.data?.updated) {
-          setEntityReviewError(response.error?.message ?? t("analysis.review.queue.entity.confirmError"));
-          return;
-        }
-        await loadEntityReviewQueue();
-      } finally {
-        setMutatingEntityId(null);
-      }
+      await handleConfirmEntity(projectId, item);
     },
-    [loadEntityReviewQueue, projectId],
+    [projectId, handleConfirmEntity],
   );
 
-  const handleRejectEntity = useCallback(
+  const onRejectEntity = useCallback(
     async (item: AnalysisEntityReviewItem) => {
       if (!projectId) return;
       const reason = requestRejectReason("entity");
       if (!reason) return;
-      setMutatingEntityId(item.id);
-      setEntityReviewError(null);
-      try {
-        const response = await api.memory.rejectEntity({
-          projectId,
-          entityId: item.id,
-          reason,
-        });
-        if (!response.success || !response.data?.updated) {
-          setEntityReviewError(response.error?.message ?? t("analysis.review.queue.entity.rejectError"));
-          return;
-        }
-        await loadEntityReviewQueue();
-      } finally {
-        setMutatingEntityId(null);
-      }
+      await handleRejectEntity(projectId, item, reason);
     },
-    [loadEntityReviewQueue, projectId, requestRejectReason],
+    [projectId, handleRejectEntity, requestRejectReason],
   );
 
-  const handleConfirmEntityAlias = useCallback(
+  const onConfirmEntityAlias = useCallback(
     async (item: AnalysisEntityAliasReviewItem) => {
       if (!projectId) return;
-      setMutatingAliasId(item.id);
-      setEntityAliasReviewError(null);
-      try {
-        const response = await api.memory.confirmEntityAlias({
-          projectId,
-          aliasId: item.id,
-        });
-        if (!response.success || !response.data?.updated) {
-          setEntityAliasReviewError(
-            response.error?.message ?? t("analysis.review.queue.alias.confirmError"),
-          );
-          return;
-        }
-        await loadEntityAliasReviewQueue();
-      } finally {
-        setMutatingAliasId(null);
-      }
+      await handleConfirmEntityAlias(projectId, item);
     },
-    [loadEntityAliasReviewQueue, projectId],
+    [projectId, handleConfirmEntityAlias],
   );
 
-  const handleRejectEntityAlias = useCallback(
+  const onRejectEntityAlias = useCallback(
     async (item: AnalysisEntityAliasReviewItem) => {
       if (!projectId) return;
       const reason = requestRejectReason("alias");
       if (!reason) return;
-      setMutatingAliasId(item.id);
-      setEntityAliasReviewError(null);
-      try {
-        const response = await api.memory.rejectEntityAlias({
-          projectId,
-          aliasId: item.id,
-          reason,
-        });
-        if (!response.success || !response.data?.updated) {
-          setEntityAliasReviewError(
-            response.error?.message ?? t("analysis.review.queue.alias.rejectError"),
-          );
-          return;
-        }
-        await loadEntityAliasReviewQueue();
-      } finally {
-        setMutatingAliasId(null);
-      }
+      await handleRejectEntityAlias(projectId, item, reason);
     },
-    [loadEntityAliasReviewQueue, projectId, requestRejectReason],
+    [projectId, handleRejectEntityAlias, requestRejectReason],
   );
 
-  const handleMergeEntityAlias = useCallback(
+  const onMergeEntityAlias = useCallback(
     async (item: AnalysisEntityAliasReviewItem, targetEntityId: string) => {
-      if (!projectId || !targetEntityId) return;
-      setMutatingAliasId(item.id);
-      setEntityAliasReviewError(null);
-      try {
-        const response = await api.memory.mergeEntity({
-          projectId,
-          sourceEntityId: item.entityId,
-          targetEntityId,
-        });
-        if (!response.success || !response.data?.updated) {
-          setEntityAliasReviewError(
-            response.error?.message ?? t("analysis.review.queue.alias.mergeError"),
-          );
-          return;
-        }
-        await Promise.all([loadEntityAliasReviewQueue(), loadEntityReviewQueue()]);
-      } finally {
-        setMutatingAliasId(null);
-      }
+      if (!projectId) return;
+      await handleMergeEntityAlias(projectId, item, targetEntityId);
     },
-    [loadEntityAliasReviewQueue, loadEntityReviewQueue, projectId],
+    [projectId, handleMergeEntityAlias],
   );
 
-  const handleSplitEntityAlias = useCallback(
+  const onSplitEntityAlias = useCallback(
     async (item: AnalysisEntityAliasReviewItem, canonicalName: string) => {
-      if (!projectId || !canonicalName) return;
-      setMutatingAliasId(item.id);
-      setEntityAliasReviewError(null);
-      try {
-        const response = await api.memory.splitEntityAlias({
-          projectId,
-          aliasId: item.id,
-          canonicalName,
-        });
-        if (!response.success || !response.data?.updated) {
-          setEntityAliasReviewError(
-            response.error?.message ?? t("analysis.review.queue.alias.splitError"),
-          );
-          return;
-        }
-        await Promise.all([loadEntityAliasReviewQueue(), loadEntityReviewQueue()]);
-      } finally {
-        setMutatingAliasId(null);
-      }
+      if (!projectId) return;
+      await handleSplitEntityAlias(projectId, item, canonicalName);
     },
-    [loadEntityAliasReviewQueue, loadEntityReviewQueue, projectId],
+    [projectId, handleSplitEntityAlias],
   );
 
   return {
@@ -554,40 +293,40 @@ export function useMemoryReviewQueues({
     conflictQueueLoading,
     conflictQueueError,
     resolvingConflictId,
-    handleResolveConflict,
+    handleResolveConflict: onResolveConflict,
     showFactReviewQueue,
     setShowFactReviewQueue,
     factReviewItems,
     factReviewLoading,
     factReviewError,
     mutatingFactId,
-    handleConfirmFact,
-    handleRejectFact,
+    handleConfirmFact: onConfirmFact,
+    handleRejectFact: onRejectFact,
     showEpisodeReviewQueue,
     setShowEpisodeReviewQueue,
     episodeReviewItems,
     episodeReviewLoading,
     episodeReviewError,
     mutatingEpisodeId,
-    handleConfirmEpisode,
-    handleRejectEpisode,
+    handleConfirmEpisode: onConfirmEpisode,
+    handleRejectEpisode: onRejectEpisode,
     showEntityReviewQueue,
     setShowEntityReviewQueue,
     entityReviewItems,
     entityReviewLoading,
     entityReviewError,
     mutatingEntityId,
-    handleConfirmEntity,
-    handleRejectEntity,
+    handleConfirmEntity: onConfirmEntity,
+    handleRejectEntity: onRejectEntity,
     showEntityAliasReviewQueue,
     setShowEntityAliasReviewQueue,
     entityAliasReviewItems,
     entityAliasReviewLoading,
     entityAliasReviewError,
     mutatingAliasId,
-    handleConfirmEntityAlias,
-    handleRejectEntityAlias,
-    handleMergeEntityAlias,
-    handleSplitEntityAlias,
+    handleConfirmEntityAlias: onConfirmEntityAlias,
+    handleRejectEntityAlias: onRejectEntityAlias,
+    handleMergeEntityAlias: onMergeEntityAlias,
+    handleSplitEntityAlias: onSplitEntityAlias,
   };
 }

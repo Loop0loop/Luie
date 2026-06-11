@@ -9,6 +9,11 @@ import {
 import { createLogger } from "../../../../shared/logger/index.js";
 import { utilityProcessBridge } from "../utility/utilityProcessBridge.js";
 import { MEMORY_JOB_TYPES } from "./memoryJobConstants.js";
+import {
+  claimMemoryBuildJob,
+  finalizeMemoryBuildJobCancellation,
+  isMemoryBuildJobCancellationRequested,
+} from "./jobControl.js";
 import { resolveRuntimeModelConfig } from "../../llm/modelRuntimeFactory.js";
 import {
   DERIVED_JOB_MAX_ATTEMPTS,
@@ -106,17 +111,8 @@ export class EmbeddingProjector {
 
     /* eslint-disable no-await-in-loop -- jobs are claimed sequentially to preserve retry/status ordering. */
     for (const job of jobs) {
-      const claimed = await client
-        .update(memoryBuildJob)
-        .set({ status: "running", updatedAt: now })
-        .where(
-          and(
-            eq(memoryBuildJob.id, job.id),
-            inArray(memoryBuildJob.status, ["pending", "failed"]),
-          ),
-        )
-        .returning({ id: memoryBuildJob.id });
-      if (claimed.length === 0) {
+      const claimed = await claimMemoryBuildJob({ jobId: job.id, nowIso: now });
+      if (!claimed.claimed) {
         continue;
       }
       claimedJobs.push(job);
@@ -182,9 +178,25 @@ export class EmbeddingProjector {
         );
     }
 
-    const readyJobs = claimedJobs.filter(
+    let readyJobs = claimedJobs.filter(
       (job) => (chunkRowsByJobId.get(job.id)?.length ?? 0) > 0,
     );
+    if (readyJobs.length === 0) {
+      return { queued: jobs.length, processed: 0 };
+    }
+
+    /* eslint-disable no-await-in-loop -- cancellation checkpoints are evaluated per claimed job to avoid completed-status overwrite. */
+    const readyJobsBeforeEmbedding = [];
+    for (const job of readyJobs) {
+      if (await isMemoryBuildJobCancellationRequested({ jobId: job.id })) {
+        await finalizeMemoryBuildJobCancellation({ jobId: job.id, nowIso: now });
+        continue;
+      }
+      readyJobsBeforeEmbedding.push(job);
+    }
+    /* eslint-enable no-await-in-loop */
+
+    readyJobs = readyJobsBeforeEmbedding;
     if (readyJobs.length === 0) {
       return { queued: jobs.length, processed: 0 };
     }
@@ -236,6 +248,37 @@ export class EmbeddingProjector {
           input.projectId,
           changedChunks.map((chunk) => chunk.content),
         );
+        /* eslint-disable no-await-in-loop -- cancellation can be requested while the embedding provider is running. */
+        const interruptedJobs = [];
+        let cancellationRequestedAfterEmbedding = false;
+        for (const job of readyJobs) {
+          if (await isMemoryBuildJobCancellationRequested({ jobId: job.id })) {
+            await finalizeMemoryBuildJobCancellation({ jobId: job.id, nowIso: now });
+            cancellationRequestedAfterEmbedding = true;
+            continue;
+          }
+          interruptedJobs.push(job);
+        }
+        /* eslint-enable no-await-in-loop */
+
+        if (cancellationRequestedAfterEmbedding) {
+          if (interruptedJobs.length > 0) {
+            await client
+              .update(memoryBuildJob)
+              .set({
+                status: "pending",
+                error: "EMBEDDING_BATCH_INTERRUPTED_BY_CANCELLATION",
+                updatedAt: now,
+              })
+              .where(
+                inArray(
+                  memoryBuildJob.id,
+                  interruptedJobs.map((job) => job.id),
+                ),
+              );
+          }
+          return { queued: jobs.length, processed: 0 };
+        }
         if (!vectorsRaw) {
           logger.info(
             "Embedding skipped: provider does not support embeddings",

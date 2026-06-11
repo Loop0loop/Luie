@@ -5,6 +5,7 @@
  * Extracted from RelationEdge to centralize stroke/opacity/transition logic.
  */
 
+import type { CSSProperties } from "react";
 import { CANVAS_RELATION_EDGE_DEFAULTS } from "../constants/edge";
 
 export interface EdgeDefaults {
@@ -15,12 +16,10 @@ export interface EdgeDefaults {
   transitionDuration: number;
 }
 
-export interface EdgeStyle {
-  stroke: string;
-  strokeWidth: number;
-  opacity: number;
-  transition: string;
-}
+export type EdgeStyle = Pick<
+  CSSProperties,
+  "stroke" | "strokeWidth" | "opacity" | "transition"
+>;
 
 /**
  * Compute edge style object for a RelationEdge.

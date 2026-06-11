@@ -4,6 +4,7 @@ import type {
   HfModelFile,
   HfModelSearchResult,
   LlmfitResult,
+  MemoryBuildJobProgress,
 } from "@shared/types";
 
 export type SemanticSearchState = "ready" | "preparing" | "disabled";
@@ -20,6 +21,10 @@ export interface ModelTabProps {
   t: TFunction;
   isBusy: boolean;
   onRebuildMemory: () => Promise<void>;
+  onPauseMemoryBuildJobs: () => Promise<void>;
+  onResumeMemoryBuildJobs: () => Promise<void>;
+  onCancelMemoryBuildJobs: () => Promise<void>;
+  memoryBuildProgress: MemoryBuildJobProgress | null;
   localLlmEnabled: boolean;
   localLlmModelPath?: string;
   localLlmBinaryPath?: string;

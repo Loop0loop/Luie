@@ -40,6 +40,12 @@ const mocked = vi.hoisted(() => {
   const packagePersistence = {
     persistPackageAfterMutation: vi.fn(),
   };
+  const memoryJobControl = {
+    pauseMemoryBuildJobs: vi.fn(),
+    resumeMemoryBuildJobs: vi.fn(),
+    cancelMemoryBuildJobs: vi.fn(),
+    getMemoryBuildJobProgress: vi.fn(),
+  };
   let appIsPackaged = true;
 
   return {
@@ -48,6 +54,7 @@ const mocked = vi.hoisted(() => {
     narrativeMemoryQueryService,
     narrativeSummaryStatusService,
     packagePersistence,
+    memoryJobControl,
     get appIsPackaged() {
       return appIsPackaged;
     },
@@ -119,6 +126,13 @@ vi.mock("../../../src/main/services/features/sync/syncService.js", () => ({
   syncService: mocked.syncService,
 }));
 
+vi.mock("../../../src/main/services/features/memory/jobControl.js", () => ({
+  pauseMemoryBuildJobs: mocked.memoryJobControl.pauseMemoryBuildJobs,
+  resumeMemoryBuildJobs: mocked.memoryJobControl.resumeMemoryBuildJobs,
+  cancelMemoryBuildJobs: mocked.memoryJobControl.cancelMemoryBuildJobs,
+  getMemoryBuildJobProgress: mocked.memoryJobControl.getMemoryBuildJobProgress,
+}));
+
 export const resetInputValidationMocks = () => {
   mocked.handlerMap.clear();
   mocked.syncService.getStatus.mockReset();
@@ -148,6 +162,10 @@ export const resetInputValidationMocks = () => {
   mocked.narrativeMemoryQueryService.runEpisodeCalibration.mockReset();
   mocked.narrativeSummaryStatusService.getStatus.mockReset();
   mocked.packagePersistence.persistPackageAfterMutation.mockReset();
+  mocked.memoryJobControl.pauseMemoryBuildJobs.mockReset();
+  mocked.memoryJobControl.resumeMemoryBuildJobs.mockReset();
+  mocked.memoryJobControl.cancelMemoryBuildJobs.mockReset();
+  mocked.memoryJobControl.getMemoryBuildJobProgress.mockReset();
   mocked.logger.info.mockReset();
   mocked.logger.warn.mockReset();
   mocked.logger.debug.mockReset();

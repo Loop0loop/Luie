@@ -139,6 +139,10 @@ export const IPC_CHANNELS = {
   MEMORY_GET_SUMMARY_STATUS: "memory:get-summary-status",
   MEMORY_GET_NARRATIVE_SUMMARY_STATUS: "memory:get-narrative-summary-status",
   MEMORY_GET_EMBEDDING_STATUS: "memory:get-embedding-status",
+  MEMORY_PAUSE_BUILD_JOBS: "memory:pause-build-jobs",
+  MEMORY_RESUME_BUILD_JOBS: "memory:resume-build-jobs",
+  MEMORY_CANCEL_BUILD_JOBS: "memory:cancel-build-jobs",
+  MEMORY_GET_BUILD_JOB_PROGRESS: "memory:get-build-job-progress",
   DB_RUN_INTEGRITY_CHECK: "db:run-integrity-check",
   DB_GET_MIGRATION_HEALTH: "db:get-migration-health",
 

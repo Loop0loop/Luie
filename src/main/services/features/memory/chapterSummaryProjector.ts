@@ -11,6 +11,11 @@ import { createLogger } from "../../../../shared/logger/index.js";
 import { utilityProcessBridge } from "../utility/utilityProcessBridge.js";
 import { MEMORY_JOB_TYPES, MEMORY_TARGET_TYPES } from "./memoryJobConstants.js";
 import {
+  claimMemoryBuildJob,
+  finalizeMemoryBuildJobCancellation,
+  isMemoryBuildJobCancellationRequested,
+} from "./jobControl.js";
+import {
   DERIVED_JOB_MAX_ATTEMPTS,
   DERIVED_JOB_RETRY_BASE_BACKOFF_MS,
 } from "../../../constants/memory.js";
@@ -111,17 +116,8 @@ export class ChapterSummaryProjector {
     /* eslint-disable no-await-in-loop -- summary jobs are claimed and finalized sequentially to preserve retry/status ordering. */
     for (const job of jobs) {
       const now = new Date().toISOString();
-      const claimed = await client
-        .update(memoryBuildJob)
-        .set({ status: "running", updatedAt: now })
-        .where(
-          and(
-            eq(memoryBuildJob.id, job.id),
-            inArray(memoryBuildJob.status, ["pending", "failed"]),
-          ),
-        )
-        .returning({ id: memoryBuildJob.id });
-      if (claimed.length === 0) {
+      const claimed = await claimMemoryBuildJob({ jobId: job.id, nowIso: now });
+      if (!claimed.claimed) {
         continue;
       }
 
@@ -192,6 +188,11 @@ export class ChapterSummaryProjector {
               },
             );
           }
+        }
+
+        if (await isMemoryBuildJobCancellationRequested({ jobId: job.id })) {
+          await finalizeMemoryBuildJobCancellation({ jobId: job.id, nowIso: now });
+          continue;
         }
 
         await client

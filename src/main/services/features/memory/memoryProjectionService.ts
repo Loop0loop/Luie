@@ -3,7 +3,12 @@ import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../../infra/database/index.js";
 import { memoryBuildJob, memoryChunk } from "../../../infra/database/index.js";
 import { createLogger } from "../../../../shared/logger/index.js";
-import { MEMORY_JOB_TYPES, MEMORY_TARGET_TYPES } from "./memoryJobConstants.js";
+import {
+  MEMORY_BUILD_JOB_DEDUPE_STATUSES,
+  MEMORY_JOB_TYPES,
+  MEMORY_TARGET_TYPES,
+} from "./memoryJobConstants.js";
+import { claimMemoryBuildJob } from "./jobControl.js";
 import {
   canRetryMemoryBuildJob,
   buildMemoryChunkIndexText,
@@ -40,7 +45,7 @@ class MemoryProjectionService {
           eq(memoryBuildJob.targetType, MEMORY_TARGET_TYPES.CHAPTER),
           eq(memoryBuildJob.targetId, input.chapterId),
           eq(memoryBuildJob.jobType, MEMORY_JOB_TYPES.REBUILD_CHUNKS),
-          inArray(memoryBuildJob.status, ["pending", "running"]),
+          inArray(memoryBuildJob.status, [...MEMORY_BUILD_JOB_DEDUPE_STATUSES]),
         ),
       )
       .limit(1);
@@ -107,20 +112,8 @@ class MemoryProjectionService {
       // Keep each job atomic, but yield between jobs to avoid long sync stretches.
       await yieldToEventLoop();
       const now = new Date().toISOString();
-      const claimed = await client
-        .update(memoryBuildJob)
-        .set({
-          status: "running",
-          updatedAt: now,
-        })
-        .where(
-          and(
-            eq(memoryBuildJob.id, job.id),
-            inArray(memoryBuildJob.status, ["pending", "failed"]),
-          ),
-        )
-        .returning({ id: memoryBuildJob.id });
-      if (claimed.length === 0) {
+      const claimed = await claimMemoryBuildJob({ jobId: job.id, nowIso: now });
+      if (!claimed.claimed) {
         return;
       }
       const source = sourceMap.get(`${job.targetType}:${job.targetId}`);

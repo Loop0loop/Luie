@@ -232,6 +232,10 @@ export default function SettingsModal({ onClose, initialTab }: SettingsModalProp
                   t={t}
                   isBusy={settings.isBusy}
                   onRebuildMemory={settings.handleRebuildMemory}
+                  onPauseMemoryBuildJobs={settings.handlePauseMemoryBuildJobs}
+                  onResumeMemoryBuildJobs={settings.handleResumeMemoryBuildJobs}
+                  onCancelMemoryBuildJobs={settings.handleCancelMemoryBuildJobs}
+                  memoryBuildProgress={settings.memoryBuildProgress}
                   localLlmEnabled={settings.localLlmEnabled}
                   localLlmModelPath={settings.localLlmModelPath}
                   localLlmBinaryPath={settings.localLlmBinaryPath}

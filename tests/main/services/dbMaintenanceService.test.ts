@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
+import crypto from "node:crypto";
 import { ProjectService } from "../../../src/main/services/core/projectService.js";
 import { ChapterService } from "../../../src/main/services/core/chapterService.js";
 import { dbMaintenanceService } from "../../../src/main/services/features/dbMaintenance/index.js";
@@ -9,7 +10,10 @@ import {
 } from "../../../src/main/database/schema/index.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import { projectService } from "../../../src/main/services/core/projectService.js";
-import { MEMORY_JOB_TYPES } from "../../../src/main/services/features/memory/memoryJobConstants.js";
+import {
+  MEMORY_JOB_TYPES,
+  MEMORY_TARGET_TYPES,
+} from "../../../src/main/services/features/memory/memoryJobConstants.js";
 
 describe("dbMaintenanceService", () => {
   const localProjectService = new ProjectService();
@@ -115,5 +119,59 @@ describe("dbMaintenanceService", () => {
           job.jobType === MEMORY_JOB_TYPES.REBUILD_EMBEDDING,
       ),
     ).toBe(true);
+  });
+
+  it("recovers stale running memory jobs with an explicit recovery marker", async () => {
+    const project = await localProjectService.createProject({
+      title: "DB Maintenance Memory Recovery",
+      description: "unit",
+      projectPath: "/tmp/db-maint-memory-recovery.luie",
+    });
+    const staleJobId = crypto.randomUUID();
+    const freshJobId = crypto.randomUUID();
+
+    await db.getClient().insert(memoryBuildJob).values([
+      {
+        id: staleJobId,
+        projectId: String(project.id),
+        targetType: MEMORY_TARGET_TYPES.CHAPTER,
+        targetId: crypto.randomUUID(),
+        jobType: MEMORY_JOB_TYPES.REBUILD_CHUNKS,
+        status: "running",
+        priority: 80,
+        attempts: 1,
+        error: null,
+        createdAt: "2026-06-10T00:00:00.000Z",
+        updatedAt: "2026-06-10T00:00:00.000Z",
+      },
+      {
+        id: freshJobId,
+        projectId: String(project.id),
+        targetType: MEMORY_TARGET_TYPES.CHAPTER,
+        targetId: crypto.randomUUID(),
+        jobType: MEMORY_JOB_TYPES.REBUILD_CHUNKS,
+        status: "running",
+        priority: 80,
+        attempts: 1,
+        error: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ]);
+
+    await dbMaintenanceService.recoverStaleRunningJobs();
+
+    const rows = await db.getClient().select().from(memoryBuildJob);
+    const staleJob = rows.find((row) => row.id === staleJobId);
+    const freshJob = rows.find((row) => row.id === freshJobId);
+
+    expect(staleJob).toMatchObject({
+      status: "pending",
+      error: "RECOVERED_STALE_RUNNING_JOB",
+    });
+    expect(freshJob).toMatchObject({
+      status: "running",
+      error: null,
+    });
   });
 });

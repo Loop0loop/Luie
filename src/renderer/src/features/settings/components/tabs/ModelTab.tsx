@@ -15,6 +15,10 @@ export function ModelTab({
   t,
   isBusy,
   onRebuildMemory,
+  onPauseMemoryBuildJobs,
+  onResumeMemoryBuildJobs,
+  onCancelMemoryBuildJobs,
+  memoryBuildProgress,
   localLlmEnabled,
   localLlmModelPath,
   localLlmBinaryPath,
@@ -83,6 +87,10 @@ export function ModelTab({
         t={t}
         isBusy={isBusy}
         onRebuildMemory={onRebuildMemory}
+        onPauseMemoryBuildJobs={onPauseMemoryBuildJobs}
+        onResumeMemoryBuildJobs={onResumeMemoryBuildJobs}
+        onCancelMemoryBuildJobs={onCancelMemoryBuildJobs}
+        memoryBuildProgress={memoryBuildProgress}
       />
 
       <ApiKeysCard

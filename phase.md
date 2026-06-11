@@ -70,6 +70,21 @@ Phase 4-4 low-end/standard/high-end/quality eval recall 비교 1차 완료 후 M
 Phase 4-4 analysis panel search mode toggle 1차 완료 후 MemoryEvalCase: 365
 Phase 4-4 actual RAG path latency 계측 1차 완료 후 MemoryEvalCase: 365
 Phase 4-4 RAG search stage breakdown 계측 1차 완료 후 MemoryEvalCase: 365
+Phase 4-4 p99/cold-warm latency 계측 1차 완료 후 MemoryEvalCase: 365
+Phase 4-4 vector enabled synthetic probe 계측 1차 완료 후 MemoryEvalCase: 365
+Phase 4-4 rerank cache probe 계측 1차 완료 후 MemoryEvalCase: 365
+Phase 4-4 전체 typecheck 회복 후 MemoryEvalCase: 365
+Phase 4-4 writer-flow query category latency 계측 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5 memory build job control 계약 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5 memory build job control IPC/API 연결 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-3 paused/failed memory job dedupe 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-3 memory job claim helper 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-4 summary/embedding cooperative cancellation 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-5 settings memory progress/control UI 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-5 active progress polling 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-7 jobType progress API/UI 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-7 retry/cancel attention UI 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-7 active polling backoff 1차 완료 후 MemoryEvalCase: 365
 ```
 
 구분:
@@ -745,7 +760,11 @@ package export/import: progress 표시 필수
 - latency report는 실제 적용된 `optimizationPolicy`를 반환한다.
 - latency report는 `optimizationModeComparison`으로 low-end/standard/high-end/quality의 후보 상한, context budget, rerank cache TTL, vector search mode, lexical 후보 검색 latency, quality baseline overlap을 함께 반환한다.
 - latency report는 실제 RAG 검색 경로인 `searchMemoryChunksForRag`와 Layer 3 evidence 조립 경로인 `buildLayer3Evidence`의 p50/p95/max를 함께 반환한다.
-- latency report는 `searchMemoryChunksForRag` 내부 stage인 FTS, exact phrase, quote-token, short-token, vector, RRF, hydrate, parent window의 p50/p95/max와 후보 수를 함께 반환한다.
+- latency report는 `searchMemoryChunksForRag` 내부 stage인 FTS, exact phrase, quote-token, short-token, vector, RRF, hydrate, parent window의 p50/p95/p99/max와 후보 수를 함께 반환한다.
+- latency report는 실제 RAG 검색 경로와 Layer 3 evidence 조립 경로의 cold start, warm p50/p95/p99/max를 함께 반환한다.
+- latency report는 quality mode synthetic embedding으로 vector branch를 실제 실행하는 `vectorSearchProbe`를 함께 반환한다.
+- latency report는 benchmark-local TTL Map으로 동일 query 반복 시 hit/miss, entry count, cached chunk count, heap delta를 측정하는 `rerankCacheProbe`를 함께 반환한다.
+- latency report는 alias lookup, temporal marker, rewrite marker, state change 4개 writer-flow query category의 RAG/Layer3 p50/p95/p99/cold-warm을 함께 반환한다.
 - `memory:run-eval-suite`에서 `--optimization-mode low-end|standard|high-end|quality`를 받을 수 있게 했다.
 - eval suite output은 실제 적용된 `optimizationPolicy`를 함께 저장한다.
 - 앱 설정에는 `llm.searchOptimizationMode`가 저장된다.
@@ -776,22 +795,23 @@ RAG path 계측 추가 후 확인된 `ci-1000` low-end 수치:
 ```text
 firstChunkSearch: 0.192ms
 repeatedChunkSearch: 0.968ms
-searchMemoryChunksForRag: p50 2.391ms, p95 4.268ms, max 4.268ms, resultCount 20
-buildLayer3Evidence: p50 1.787ms, p95 2.458ms, max 2.458ms, evidenceCount 10
+searchMemoryChunksForRag: cold 4.195ms, warm p50 2.713ms, warm p95 3.063ms, warm p99 3.063ms, p50 2.942ms, p95 4.195ms, p99 4.195ms, max 4.195ms, resultCount 20
+buildLayer3Evidence: cold 2.347ms, warm p50 2.062ms, warm p95 2.141ms, warm p99 2.141ms, p50 2.087ms, p95 2.347ms, p99 2.347ms, max 2.347ms, evidenceCount 10
+rerankCacheProbe: ttl 300000ms, queries 5, hits 4, misses 1, entries 1, cachedChunkIds 50, heapDelta 0.081MiB
 threshold: pass
 ```
 
 확인된 `ci-1000` low-end RAG stage breakdown:
 
 ```text
-fts          | p50 0.001ms | p95 0.009ms | max 0.009ms | candidates 0  | skipped 5
-exactPhrase  | p50 0.000ms | p95 0.005ms | max 0.005ms | candidates 0  | skipped 5
-quoteToken   | p50 0.000ms | p95 0.001ms | max 0.001ms | candidates 0  | skipped 5
-shortToken   | p50 1.424ms | p95 1.497ms | max 1.497ms | candidates 50 | skipped 0
-vector       | p50 0.000ms | p95 0.001ms | max 0.001ms | candidates 0  | skipped 5
-rrf          | p50 0.012ms | p95 0.086ms | max 0.086ms | candidates 20 | skipped 0
-hydrate      | p50 0.174ms | p95 0.236ms | max 0.236ms | candidates 20 | skipped 0
-parentWindow | p50 0.571ms | p95 0.846ms | max 0.846ms | candidates 47 | skipped 0
+fts          | p50 0.001ms | p95 0.010ms | p99 0.010ms | max 0.010ms | candidates 0  | skipped 5
+exactPhrase  | p50 0.000ms | p95 0.003ms | p99 0.003ms | max 0.003ms | candidates 0  | skipped 5
+quoteToken   | p50 0.000ms | p95 0.001ms | p99 0.001ms | max 0.001ms | candidates 0  | skipped 5
+shortToken   | p50 1.618ms | p95 1.668ms | p99 1.668ms | max 1.668ms | candidates 50 | skipped 0
+vector       | p50 0.000ms | p95 0.001ms | p99 0.001ms | max 0.001ms | candidates 0  | skipped 5
+rrf          | p50 0.016ms | p95 0.100ms | p99 0.100ms | max 0.100ms | candidates 20 | skipped 0
+hydrate      | p50 0.190ms | p95 0.241ms | p99 0.241ms | max 0.241ms | candidates 20 | skipped 0
+parentWindow | p50 0.575ms | p95 1.012ms | p99 1.012ms | max 1.012ms | candidates 47 | skipped 0
 ```
 
 확인된 `365 eval` mode별 수치:
@@ -819,17 +839,22 @@ quality  | recall 0.9972602739726028 | P0 0 | candidateCap 50 | context 16384 | 
 - 별도 Settings 화면에도 동일 toggle을 노출할지 결정한다.
 - UI에서 "속도 우선이라 일부 근거가 줄어들 수 있음" 같은 품질 저하 설명을 표시한다.
 - background indexing/lazy summary의 실제 job 제어는 Phase 4-5와 연결한다.
-- 실제 `searchMemoryChunksForRag`/`buildLayer3Evidence` 전체 경로 p50/p95/max는 1차 완료했다.
-- FTS/exact phrase/quote-token/short-token/vector/RRF stage별 비용 p50/p95/max는 1차 완료했다.
-- 다음은 p99, cold/warm, vector enabled 환경에서의 stage별 비용을 분리한다.
-- cache TTL memory comparison은 현재 추정치이므로 실제 cache hit/miss와 entry count 계측을 추가한다.
+- 실제 `searchMemoryChunksForRag`/`buildLayer3Evidence` 전체 경로 p50/p95/p99/max는 1차 완료했다.
+- 실제 `searchMemoryChunksForRag`/`buildLayer3Evidence` 전체 경로 cold/warm 분리는 1차 완료했다.
+- FTS/exact phrase/quote-token/short-token/vector/RRF stage별 비용 p50/p95/p99/max는 1차 완료했다.
+- vector enabled synthetic probe의 stage별 비용 분리는 1차 완료했다.
+- 다음은 실제 운영 embedding row와 실제 embedding provider를 쓴 vector enabled 비용을 분리한다.
+- cache TTL estimated memory comparison은 추정치다.
+- benchmark-local rerank cache hit/miss, entry count, cached chunk count, heap delta 계측은 1차 완료했다.
+- 다음은 production cache 저장소가 생겼을 때 실제 cache hit/miss와 eviction을 연결한다.
 
 완료 기준:
 
 - 저사양 모드 토글: analysis panel composer 메뉴 1차 완료
-- mode별 latency 비교: CLI benchmark 계약 + actual RAG path/stage p50/p95 1차 완료
+- mode별 latency 비교: CLI benchmark 계약 + actual RAG path/stage p50/p95/p99와 cold/warm 1차 완료
 - mode별 recall 비교: 365 eval 기준 low-end/standard/high-end/quality 비교 1차 완료
 - mode별 UI 설명: low-end trade-off copy 1차 완료
+- cache probe: benchmark-local TTL Map 기준 hit/miss/entry/heap delta 1차 완료
 
 #### Phase 4-4a. 저사양 검색 정책/벤치마크 계약
 
@@ -846,15 +871,17 @@ quality  | recall 0.9972602739726028 | P0 0 | candidateCap 50 | context 16384 | 
 
 완료된 범위:
 
-- 실제 RAG 검색/evidence path 전체 비용 계측은 1차 완료했다.
-- FTS/exact phrase/quote-token/short-token/vector/RRF/hydrate/parent window stage별 비용 분리 측정은 1차 완료했다.
+- 실제 RAG 검색/evidence path 전체 비용 계측은 p50/p95/p99/max 기준 1차 완료했다.
+- 실제 RAG 검색/evidence path cold/warm 분리 계측은 1차 완료했다.
+- FTS/exact phrase/quote-token/short-token/vector/RRF/hydrate/parent window stage별 비용 분리 측정은 p50/p95/p99/max 기준 1차 완료했다.
 - low-end/standard/high-end/quality eval 비교는 headless Layer 3 evidence retrieval 기준 1차 완료했다.
 
 아직 검증 안 된 범위:
 
-- mode별 eval 비교를 p50/p95/p99 latency와 함께 저장하는 작업은 남아 있다.
-- vector enabled 환경의 실제 vector stage 비용은 아직 대표값으로 검증하지 않았다.
-- 현재 `"검은 기사"` 단일 query는 저사양 성능 대표값으로 부족하므로 query category별 cold/warm/p95/p99가 필요하다.
+- mode별 eval 비교를 p50/p95/p99 latency와 함께 저장하는 작업은 남아 있다. 단일 low-end benchmark query의 RAG path p99/cold-warm은 1차 완료했다.
+- synthetic embedding 기반 vector enabled probe는 1차 완료했다.
+- 실제 운영 embedding row와 실제 embedding provider 기준 vector stage 비용은 아직 대표값으로 검증하지 않았다.
+- query category별 cold/warm/p95/p99는 alias lookup, temporal marker, rewrite marker, state change 4종 기준 1차 완료했다.
 
 #### Phase 4-4b. 저사양 앱 토글/UI 설명
 
@@ -875,8 +902,9 @@ quality  | recall 0.9972602739726028 | P0 0 | candidateCap 50 | context 16384 | 
 
 - 365 eval 기준 low-end/standard/high-end/quality recall 비교: 1차 완료
 - 미래 정보 누수, 초안/폐기 오염, 충돌 후보 질문을 mode별로 비교한다.
-- 단일 평균이 아니라 p50/p95/max latency를 함께 저장한다: RAG path 1차 완료
-- p99와 cold/warm 분리 측정은 남아 있다.
+- 단일 평균이 아니라 p50/p95/p99/max latency를 함께 저장한다: RAG path 1차 완료
+- cold/warm 분리 측정: RAG path 1차 완료
+- writer-flow query category별 측정: alias lookup, temporal marker, rewrite marker, state change 4종 1차 완료
 
 ### Phase 4-5. background job 제어
 
@@ -884,20 +912,271 @@ quality  | recall 0.9972602739726028 | P0 0 | candidateCap 50 | context 16384 | 
 
 - indexing, embedding, summary refresh, repair job을 background로 보내되 작가가 통제할 수 있게 한다.
 
+용어 구분:
+
+- 현재 `MemoryBuildJob` 구현의 확정 job type은 원고 기억화, summary rebuild, embedding rebuild 계열이다.
+- 이 문서의 "repair job"은 넓은 의미의 stale memory 복구 작업을 뜻한다.
+- stale evidence repair 전용 queue는 아직 별도 구현이 아니므로, Phase 4-5에서는 "rebuild job 제어"와 "repair 전용 queue"를 구분한다.
+
 필수 기능:
 
 - pause
 - resume
 - cancel
-- progress 저장
+- progress 저장: 현재는 별도 snapshot 저장이 아니라 DB job status 집계다.
 - app restart 후 재개
 - 실패 job 재시도 제한
 
+sub agent 객관 리뷰 결과:
+
+- 사실: 현재 구현 위치는 프로젝트 구조와 일관성 있다. `shared/ipc -> main handler -> preload -> shared api contract` 흐름을 따른다.
+- 사실: 현재 완료 범위는 "작가가 백그라운드 작업을 완전히 통제한다"가 아니라 "job 상태 전환, IPC/API, Settings progress/control, summary/embedding cooperative cancellation 1차 완료"다.
+- 사실: 실행 중 job cancel은 즉시 중단이 아니라 `cancel_requested` 요청 상태로 기록된다. summary/embedding processor 일부 경로는 checkpoint에서 이를 보고 `canceled`로 마무리한다.
+- 사실: progress는 아직 DB job status를 매번 집계하는 count 기준이다. 별도 snapshot 저장은 없다. "300화 중 몇 화까지 처리됐는지", "embedding/summary/rebuild 중 무엇이 병목인지"는 아직 알 수 없다.
+- 사실: Settings > Model 탭에는 progress 표시와 pause/resume/cancel 버튼이 1차 연결됐다. 실제 작가 flow e2e 테스트는 아직 부족하다.
+- 의견: 외부 queue 기술을 새로 넣기보다 기존 SQLite/Drizzle `MemoryBuildJob` queue를 더 단단히 쓰는 쪽이 현재 프로젝트 구조와 맞다.
+
+현재 완료 범위:
+
+- `MemoryBuildJob` 기반 job control service를 추가했다.
+- claim 전 작업은 `pauseMemoryBuildJobs`로 `pending/failed -> paused` 전환할 수 있다.
+- `resumeMemoryBuildJobs`는 `paused -> pending`으로 되돌린다.
+- `cancelMemoryBuildJobs`는 `pending/failed/paused -> canceled`, `running -> cancel_requested`로 전환한다.
+- summary/embedding processor는 일부 checkpoint에서 `cancel_requested`를 감지하고 partial write를 피한 뒤 `canceled`로 마무리한다.
+- `recoverStaleRunningMemoryBuildJobs`는 app restart 이후 stale running job을 `pending`으로 복구한다.
+- `getMemoryBuildJobProgress`는 status별 count, activeCount, doneCount를 반환한다.
+- retry/backoff 정책은 `jobPolicy.ts`에 `MAX_JOB_ATTEMPTS = 5`, 2초 기반 backoff로 일부 존재한다.
+- 기존 summary/embedding projector는 `pending/failed`만 claim하므로 `paused/canceled` job은 실행 대상에서 빠진다.
+- main IPC는 `memory:pause-build-jobs`, `memory:resume-build-jobs`, `memory:cancel-build-jobs`, `memory:get-build-job-progress`를 검증된 `{ projectId }` payload로 받는다.
+- preload `memoryAdmin` API는 `pauseBuildJobs`, `resumeBuildJobs`, `cancelBuildJobs`, `getBuildJobProgress`를 제공한다.
+- Settings > Model 탭의 memory rebuild card는 progress와 pause/resume/cancel control을 표시한다.
+- active job이 있으면 Settings model tab에서 2초 간격으로 progress를 다시 조회한다.
+
+아직 검증 안 된 범위:
+
+- jobType/chapter/chunk 단위 세부 progress는 아직 없다.
+- progress snapshot cache는 아직 없다.
+- retry/backoff 상태는 progress UI의 "재시도 가능/재시도 대기/재시도 한도 도달" count로 1차 연결됐다. 다음 재시도 예상 시각은 아직 없다.
+- 실행 중인 job에 대한 cooperative cancellation checkpoint는 summary/embedding 일부 경로만 1차 연결됐다.
+- production processor 전체에 공통 control service를 연결한 것은 아니다.
+- progress는 status count 기준이다. chunk 단위 세부 진행률은 아직 없다.
+
 완료 기준:
 
-- job 상태 machine 테스트
-- cancel 후 partial write 없음
-- restart 후 progress 복구
+- job 상태 machine 테스트: `MemoryBuildJob` pause/resume/cancel/recover/progress 1차 완료
+- IPC/API contract 테스트: pause/resume/cancel/progress 1차 완료
+- cancel 후 partial write 없음: pre-claim cancel, summary/embedding checkpoint 1차 완료
+- restart 후 progress 복구: stale running -> pending 복구 1차 완료
+- Settings progress/control UI: total/done/active/status count, pause/resume/cancel, active polling 1차 완료
+
+#### Phase 4-5-1. Job state machine 계약
+
+비유: 작가가 "지금 원고 분석 잠깐 멈춰", "다시 이어서 해", "아직 시작 안 한 작업은 취소해"라고 말했을 때, 작업 카드의 상태가 정확히 바뀌는 단계다.
+
+상태:
+
+- 완료: `pending/failed -> paused`
+- 완료: `paused -> pending`
+- 완료: `pending/failed/paused -> canceled`
+- 완료: `running -> cancel_requested`
+- 완료: stale `running -> pending` 복구
+
+남은 보완:
+
+- 실패 job retry/backoff 정책을 processor 공통 상태 machine과 UI label에 연결한다.
+- 상태 전환 reason/error code를 UI에서 설명 가능한 copy로 매핑한다.
+
+#### Phase 4-5-2. IPC/preload/shared API 계약
+
+비유: 작업실 안쪽 엔진의 정지/재개 버튼을 작가 책상 위 버튼까지 배선하는 단계다.
+
+상태:
+
+- 완료: `memory:pause-build-jobs`
+- 완료: `memory:resume-build-jobs`
+- 완료: `memory:cancel-build-jobs`
+- 완료: `memory:get-build-job-progress`
+- 완료: preload `memoryAdmin.pauseBuildJobs/resumeBuildJobs/cancelBuildJobs/getBuildJobProgress`
+- 완료: IPC input validation test
+
+남은 보완:
+
+- 실패 응답의 사용자 표시 문구를 정리한다.
+- Settings 외 영역에서도 같은 control을 보여줄지 결정한다.
+
+#### Phase 4-5-3. processor claim/retry/recover 통합
+
+비유: 작가가 "멈춰"를 누르면 새 심부름꾼은 출발하지 않고, 앱을 껐다 켜도 중간에 길 잃은 심부름 목록을 다시 정리하는 단계다.
+
+상태:
+
+- 1차 완료: 기존 summary/embedding projector가 `pending/failed`만 claim하는 전제와 맞는다.
+- 1차 완료: 챕터 수정/전체 memory rebuild enqueue가 기존 `paused/failed` job을 우회해 새 `pending` job을 만들지 않게 했다.
+- 1차 완료: `derivedJobWorker.start()`는 시작 시 `dbMaintenanceService.recoverStaleRunningJobs()`를 호출한다.
+- 1차 완료: stale running memory job 복구 marker를 `RECOVERED_STALE_RUNNING_JOB`으로 통일했다.
+- 1차 완료: chunk/summary/embedding processor의 `pending/failed -> running` claim 조건을 `claimMemoryBuildJob` helper로 중앙화했다.
+
+남은 보완:
+
+- retry limit/backoff는 `jobPolicy.ts`에 일부 존재한다. 남은 작업은 이를 `MemoryBuildJob` 상태 machine, progress 집계, UI label과 일관되게 연결하는 것이다.
+- startup recovery 결과를 progress UI에서 작가가 이해할 수 있는 문구로 표시한다.
+
+#### Phase 4-5-4. cooperative cancellation
+
+비유: 이미 자료를 읽고 있는 조수에게 "지금 손에 든 문단까지만 보고 즉시 멈춰"라고 전달하는 단계다.
+
+상태:
+
+- 1차 완료: `running` job cancel 요청은 `cancel_requested`로 기록한다.
+- 1차 완료: summary LLM 생성 중 cancel 요청이 들어오면 summary를 쓰지 않고 `canceled`로 마무리한다.
+- 1차 완료: embedding provider 호출 전후 checkpoint를 추가했다.
+- 제한: 모든 processor loop의 모든 내부 write 지점에 checkpoint가 들어간 것은 아니다.
+
+남은 보완:
+
+- chunk rebuild transaction 내부의 세부 checkpoint는 아직 없다.
+- partial write가 생기지 않도록 checkpoint 단위 transaction 경계를 정한다.
+- provider 호출이 긴 경우 중간 interrupt가 불가능하므로, 호출 전후 checkpoint와 사용자 안내 문구를 함께 유지한다.
+
+#### Phase 4-5-5. 작가용 progress UI
+
+비유: "기억 엔진이 일하는 중"만 보여주는 게 아니라, "300화 중 184화 요약 중", "임베딩 72%", "충돌 복구 대기 12개"처럼 작가가 기다릴지 멈출지 판단하게 해주는 단계다.
+
+상태:
+
+- 1차 완료: Settings > Model 탭의 memory rebuild 카드에서 전체 job progress를 표시한다.
+- 1차 완료: `pending/running/paused/failed/cancel_requested/canceled` count를 작가용 label로 보여준다.
+- 1차 완료: Settings에서 pause/resume/cancel 버튼을 호출할 수 있다.
+- 제한: 현재 progress는 status count 기준이다.
+
+남은 보완:
+
+- jobType별 진행률을 추가한다.
+- chapter/chunk별 진행률을 추가한다.
+- progress snapshot cache를 둔다.
+
+#### Phase 4-5-6. writer workflow e2e
+
+비유: 작가가 12화를 고치고, 기억 엔진이 "이 설정 때문에 뒤 회차를 다시 봐야 함"을 감지하고, 작가가 일시정지/재개/취소를 눌러도 원고와 기억이 깨지지 않는지 보는 실전 리허설이다.
+
+상태:
+
+- 미완료: 현재 테스트는 상태 machine/API routing 중심이다.
+
+필수 flow:
+
+- 과거 회차 수정 -> stale memory/summary/embedding 감지
+- rebuild/repair job 생성 -> pause -> progress 유지 확인
+- resume -> 남은 job 처리
+- cancel -> 아직 시작 안 한 job만 canceled
+- running cancel 요청 -> 안전한 안내 또는 cooperative cancel
+- RAG 질문 -> 취소/재개 이후에도 근거 누락/미래 정보 누수 없음
+
+##### Phase 4-5-6a. 과거 회차 수정 후 rebuild 시나리오
+
+비유: 작가가 12화의 설정을 고쳤더니, 조수가 "이 변경 때문에 13화 이후 기억 카드가 낡았다"고 표시하는 단계다.
+
+테스트 flow:
+
+- 12화 본문 수정
+- 관련 chunk/summary/embedding stale 처리 확인
+- memory rebuild job 생성 확인
+- progress total/active count 증가 확인
+
+완료 기준:
+
+- 회차 수정이 memory job 생성으로 이어지는 DOM 또는 service integration 테스트
+- stale 상태가 RAG 답변에서 확정 근거로 오염되지 않는지 검증
+
+##### Phase 4-5-6b. pause/resume 작가 플로우
+
+비유: 작가가 노트북 배터리가 부족해서 "잠깐 멈춰"를 누르고, 나중에 "이어서 해"를 누르는 단계다.
+
+테스트 flow:
+
+- rebuild job 생성
+- Settings progress card에서 pause 호출
+- pending/failed job이 paused로 남는지 확인
+- resume 호출 후 pending으로 돌아오는지 확인
+- 이후 processor가 남은 job만 처리하는지 확인
+
+완료 기준:
+
+- renderer hook/component 테스트에서 pause/resume 버튼과 preload API 호출 검증
+- service 테스트에서 paused job이 processor claim 대상에서 제외됨을 검증
+
+##### Phase 4-5-6c. cancel/cooperative cancel 작가 플로우
+
+비유: 작가가 "이 분석은 필요 없어졌으니 멈춰"를 눌렀을 때, 조수가 이미 공책에 쓰던 문장을 어중간하게 남기지 않는 단계다.
+
+테스트 flow:
+
+- pending/paused job cancel
+- running summary job cancel_requested
+- running embedding job cancel_requested
+- provider 호출 전후 checkpoint에서 canceled 마무리
+- cancel 이후 RAG 질문에서 partial summary/embedding이 근거로 섞이지 않음
+
+완료 기준:
+
+- pending/paused cancel은 즉시 `canceled`
+- running cancel은 `cancel_requested -> canceled`
+- summary/embedding partial write 방지 테스트
+- chunk rebuild transaction 내부 checkpoint는 별도 보완 항목으로 유지
+
+##### Phase 4-5-6d. restart recovery 작가 플로우
+
+비유: 앱이 꺼졌다 켜져도 조수가 "어제 하다 만 기억 정리"를 잃어버리지 않고 다시 줄 세우는 단계다.
+
+테스트 flow:
+
+- running job을 stale 상태로 준비
+- app startup recovery 호출
+- stale running job이 pending으로 복구되는지 확인
+- progress UI가 복구된 작업을 작가가 이해할 수 있는 label로 보여주는지 확인
+
+완료 기준:
+
+- `RECOVERED_STALE_RUNNING_JOB` marker 검증
+- Settings progress label 검증
+- 복구 후 processor claim이 정상 동작하는 integration 테스트
+
+#### Phase 4-5-7. job progress 세분화와 최적화
+
+비유: 지금은 "조수가 일하는 중"만 보인다. 다음은 "요약 담당 30개, 임베딩 담당 120개, 원고 기억화 15개"처럼 어디서 시간이 걸리는지 보는 단계다.
+
+작업:
+
+- progress를 status count에서 jobType count로 확장한다.
+- 이후 chapter/chunk 단위 진행률을 추가한다.
+- progress snapshot cache를 두어 Settings를 열 때마다 무거운 group query를 반복하지 않게 한다.
+- 실패 job retry/backoff와 progress label을 연결한다.
+
+현재 완료 범위:
+
+- `getMemoryBuildJobProgress`가 status별 count에 더해 jobType별 total/active/done/status count를 반환한다.
+- Settings memory rebuild card가 jobType별 병목을 작가용 label로 표시한다.
+- jobType label은 원고 기억화, 회차 요약, 의미 검색 준비로 구분한다.
+- active job이 많은 jobType이 먼저 보이도록 renderer helper에서 정렬한다.
+- progress attention이 재시도 가능, 재시도 대기, 재시도 한도 도달, 취소 지연 count를 반환한다.
+- Settings memory rebuild card가 attention 항목과 최근 오류 marker를 작가용 label로 표시한다.
+- Settings polling은 running/cancel_requested/취소 지연 상태에서는 2초, pending/failed/paused만 남은 상태에서는 5초로 backoff한다.
+
+완료 기준:
+
+- `getMemoryBuildJobProgress`가 jobType별 total/active/done/status count를 반환한다: 1차 완료
+- Settings UI가 jobType별 병목을 작가용 label로 표시한다: 1차 완료
+- retry/backoff label은 progress UI에 연결한다: 1차 완료
+- 오래 지속되는 `cancel_requested` 상태를 감지한다: 1차 완료
+- active polling은 active job이 있을 때만 유지한다.
+- progress query 비용이 큰 프로젝트에서도 UI를 막지 않는지 benchmark 또는 unit-level budget을 둔다.
+- 2초 고정 polling은 active job 상태와 오래 지속되는 `cancel_requested` 상태를 기준으로 backoff한다: 1차 완료
+
+남은 범위:
+
+- chapter/chunk별 세부 진행률은 아직 없다.
+- progress snapshot cache는 아직 없다.
+- active job 수 자체를 반영한 세밀한 interval 조정은 아직 없다.
 
 ## Phase 5. 작가용 UI 통합
 
@@ -1605,9 +1884,9 @@ pnpm exec eslint <Phase 4-3 touched files>
 - 앱 설정에 `llm.searchOptimizationMode`를 추가했고, main/preload/shared/renderer 계약을 같은 enum으로 연결했다.
 - analysis panel composer에서 Search Mode를 바꿀 수 있고, low-end 설명은 "빠른 검색 · 근거 폭 좁음"으로 표시한다.
 - low-end candidate cap 40은 365 eval에서 recall 0.9698630136986301로 실패했고, candidate cap 50은 low-end/standard/high-end/quality 모두 recall 0.9972602739726028, P0 0으로 통과했다.
-- `ci-1000` low-end benchmark에서 `searchMemoryChunksForRag`는 p50 2.391ms, p95 4.268ms, max 4.268ms였다.
-- 같은 run에서 `buildLayer3Evidence`는 p50 1.787ms, p95 2.458ms, max 2.458ms였다.
-- stage breakdown 기준 주요 비용은 `shortToken` p50 1.424ms, `parentWindow` p50 0.571ms, `hydrate` p50 0.174ms였다.
+- `ci-1000` low-end benchmark에서 `searchMemoryChunksForRag`는 p50 2.942ms, p95/p99/max 4.195ms였다.
+- 같은 run에서 `buildLayer3Evidence`는 p50 2.087ms, p95/p99/max 2.347ms였다.
+- stage breakdown 기준 주요 비용은 `shortToken` p50 1.618ms, `parentWindow` p50 0.575ms, `hydrate` p50 0.190ms였다.
 
 검증:
 
@@ -1624,7 +1903,358 @@ pnpm exec eslint <Phase 4-4 touched files>
 
 제한:
 
-- p99와 cold/warm 분리 측정은 아직 없다.
-- vector enabled 환경에서 stage별 비용은 아직 별도 검증하지 않았다.
-- cache TTL 비교는 여전히 실제 cache hit/miss가 아니라 추정 기반이다.
+- p99와 cold/warm 분리 측정은 이후 Phase 4-4 p99/cold-warm 기록에서 1차 완료했다.
+- synthetic vector probe는 이후 Phase 4-4 p99/cold-warm 기록에서 1차 완료했다.
+- cache TTL estimated memory comparison은 추정 기반이다. benchmark-local hit/miss probe는 이후 Phase 4-4 p99/cold-warm 기록에서 1차 완료했다.
 - 실제 LLM 장문 답변 품질과 judge 비용은 이 수치로 보장되지 않는다.
+
+### 2026-06-11. Phase 4-4 p99/cold-warm latency 계측
+
+확인된 사실:
+
+- `MemoryBenchmarkRagPathMeasurement`에 `p99Ms`, `coldStartMs`, `warmIterations`, `warmP50Ms`, `warmP95Ms`, `warmP99Ms`, `warmMaxMs`를 추가했다.
+- `MemoryBenchmarkLayer3PathMeasurement`에도 같은 cold/warm 필드를 추가했다.
+- `MemoryBenchmarkRagStageMeasurement`에 `p99Ms`를 추가했다.
+- `vectorSearchProbe`를 추가해 quality mode synthetic embedding으로 vector branch를 실제 실행한다.
+- `rerankCacheProbe`를 추가해 benchmark-local TTL Map 기준 hit/miss, entry count, cached chunk count, heap delta를 측정한다.
+- `writerFlowQuerySet`을 추가해 alias lookup, temporal marker, rewrite marker, state change 4개 query category를 측정한다.
+- `ci-1000` low-end benchmark에서 `searchMemoryChunksForRag`는 cold 4.195ms, warm p50 2.713ms, warm p95/p99 3.063ms, 전체 p99 4.195ms였다.
+- 같은 run에서 `buildLayer3Evidence`는 cold 2.347ms, warm p50 2.062ms, warm p95/p99 2.141ms, 전체 p99 2.347ms였다.
+- vector probe는 synthetic embedding row 50개를 materialize했고, vector stage는 skipped 0, p50 0.101ms, p95/p99 0.537ms였다.
+- rerank cache probe는 ttl 300000ms, queries 5, hits 4, misses 1, entries 1, cachedChunkIds 50, heapDelta 0.081MiB였다.
+- writer-flow query set의 RAG path p99는 alias lookup 2.664ms, temporal marker 4.221ms, rewrite marker 4.772ms, state change 11.151ms였다.
+- writer-flow query set의 Layer3 evidence p99는 alias lookup 1.811ms, temporal marker 0.981ms, rewrite marker 1.264ms, state change 1.869ms였다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/benchmark/memoryBenchmarkLatencyRunner.test.ts tests/scripts/memoryBenchmarkLatencyRunner.test.ts
+pnpm exec tsx scripts/run-memory-benchmark-latency.ts --profile ci-1000 --seed 42 --materialize --project-id benchmark-latency-cli-ci-1000-low-end --query "검은 기사" --optimization-mode low-end --out tests/.tmp/memory-benchmark-latency-ci-1000-low-end.json --assert-thresholds
+pnpm exec eslint src/main/services/features/memory/benchmark/memoryBenchmarkLatencyRunner.ts tests/main/services/memory/benchmark/memoryBenchmarkLatencyRunner.test.ts tests/scripts/memoryBenchmarkLatencyRunner.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- query category별 p99/cold-warm 비교는 benchmark seed marker 4종 기준 1차 완료했다. 실제 웹소설 질문문 기반 category는 아직 남아 있다.
+- vector probe는 synthetic embedding 기준이다. 실제 운영 embedding row와 실제 embedding provider 비용까지 대표하지는 않는다.
+- cache probe는 benchmark-local TTL Map 기준이다. production cache 저장소의 eviction/hit/miss까지 대표하지는 않는다.
+
+### 2026-06-11. Phase 4-4 전체 typecheck 회복
+
+확인된 사실:
+
+- 전체 `pnpm run typecheck`를 막던 오류는 `RelationEdge.tsx`의 `BaseEdge style`에 직접 만든 `EdgeStyle` interface를 넘기면서 발생했다.
+- `EdgeStyle`을 React `CSSProperties` 기반 타입으로 바꿔 `BaseEdge`의 style 계약과 맞췄다.
+- 이 수정은 canvas edge style 타입 경계만 바꾸며, RAG/Memory Engine runtime 동작은 변경하지 않는다.
+
+검증:
+
+```text
+pnpm run typecheck
+pnpm exec eslint src/renderer/src/features/canvas/utils/edgeStyles.ts src/renderer/src/features/canvas/components/viewport/edges/RelationEdge.tsx src/main/services/features/memory/benchmark/memoryBenchmarkLatencyRunner.ts tests/main/services/memory/benchmark/memoryBenchmarkLatencyRunner.test.ts tests/scripts/memoryBenchmarkLatencyRunner.test.ts
+pnpm vitest tests/main/services/memory/benchmark/memoryBenchmarkLatencyRunner.test.ts tests/scripts/memoryBenchmarkLatencyRunner.test.ts
+```
+
+### 2026-06-11. Phase 4-5 memory build job control 계약
+
+기록 성격:
+
+- 아래 항목은 Phase 4-5 초기 계약 당시의 기록이다.
+- 최신 기준은 Phase 4-5-4 이후 `running` cancel 거부가 아니라 `running -> cancel_requested`다.
+- 현재 상태를 볼 때는 본문 Phase 4-5와 Phase 4-5-4 기록을 우선한다.
+
+확인된 사실:
+
+- `MemoryBuildJob` 상태 제어 service를 추가했다.
+- pause는 `pending/failed -> paused` 전환만 수행한다.
+- resume은 `paused -> pending` 전환만 수행한다.
+- cancel은 `pending/failed/paused -> canceled`만 허용한다.
+- 당시에는 running job cancel을 partial write/완료 덮어쓰기 위험 때문에 명시적으로 거부했다. 이 정책은 Phase 4-5-4에서 `cancel_requested` 기반 cooperative cancellation으로 변경됐다.
+- stale running recovery는 지정 시각 이전 `running` job을 `pending`으로 되돌린다.
+- progress는 `byStatus`, `activeCount`, `doneCount`, `total`을 반환한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- 이 초기 계약 시점에는 아직 UI에 연결하지 않았다. 이후 Settings progress/control UI는 1차 연결됐다.
+- 이 초기 계약 시점에는 running job을 중간에 멈추는 cooperative cancellation checkpoint가 없었다. 이후 summary/embedding 일부 경로에 1차 checkpoint가 추가됐다.
+- progress는 status count 기준이며 chunk/job 내부 세부 진행률은 아직 없다.
+
+### 2026-06-11. Phase 4-5-3 paused/failed memory job dedupe
+
+확인된 사실:
+
+- 챕터 수정으로 `enqueueChapterDerivedJobs`가 다시 호출될 때 기존 `paused` memory job이 있으면 새 `pending` job을 만들지 않는다.
+- 기존 `failed` memory job도 retry 대상이므로 새 duplicate pending job을 만들지 않고 기존 job의 priority/updatedAt만 갱신한다.
+- 같은 dedupe 상태 집합을 `memoryProjectionService.enqueueChapterChunkRebuild`와 `dbMaintenanceMemory.rebuildMemoryChunks`에도 적용했다.
+- dedupe 대상 상태는 `pending/running/failed/paused`다.
+- `canceled/completed/skipped`는 dedupe 대상이 아니다. 이후 작가가 원고를 다시 수정하면 새 job을 만들 수 있어야 하기 때문이다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/core/chapter/chapterDerivedJobs.test.ts
+pnpm vitest tests/main/services/core/chapter/chapterDerivedJobs.test.ts tests/main/services/memoryProjectionService.test.ts tests/main/services/dbMaintenanceService.test.ts tests/main/services/memory/memoryBuildJobControl.test.ts
+```
+
+제한:
+
+- production processor claim 조건을 공통 helper로 강제하는 작업은 아직 남아 있다.
+- startup recovery는 `derivedJobWorker.start()` 경로에 연결되어 있다. 다만 UI 표시 문구는 아직 없다.
+- summary/embedding cooperative cancellation은 Phase 4-5-4에서 1차 완료했다.
+
+### 2026-06-11. Phase 4-5-3 stale running recovery marker 통일
+
+확인된 사실:
+
+- `derivedJobWorker.start()`는 시작 시 `dbMaintenanceService.recoverStaleRunningJobs()`를 호출한다.
+- DB maintenance recovery는 오래된 `running` search job과 memory job을 `pending`으로 되돌린다.
+- memory job recovery는 이제 `error: "RECOVERED_STALE_RUNNING_JOB"` marker를 남긴다.
+- 이 marker는 `memory/jobControl.recoverStaleRunningMemoryBuildJobs`의 project 단위 복구 marker와 같다.
+- 최근 `running` memory job은 복구하지 않는다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/dbMaintenanceService.test.ts
+```
+
+제한:
+
+- recovery marker를 renderer progress UI 문구로 보여주는 작업은 아직 없다.
+- search dirty queue recovery에는 별도 error column이 없어 같은 marker를 남기지 않는다.
+
+### 2026-06-11. Phase 4-5-3 memory job claim helper
+
+확인된 사실:
+
+- `claimMemoryBuildJob` helper를 추가했다.
+- helper는 `pending/failed` job만 `running`으로 전환한다.
+- helper는 `paused/canceled/running` job을 claim하지 않는다.
+- chunk rebuild processor, chapter summary projector, embedding projector는 직접 claim update를 하지 않고 helper를 호출한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/main/services/memoryProjectionService.test.ts tests/main/services/memory/summary tests/main/services/dbMaintenanceService.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts src/main/services/features/memory/memoryProjectionService.ts src/main/services/features/memory/chapterSummaryProjector.ts src/main/services/features/memory/embeddingProjector.ts tests/main/services/memory/memoryBuildJobControl.test.ts
+```
+
+제한:
+
+- retry limit/backoff 정책 자체는 아직 projector별 canRetry 함수에 남아 있다.
+- summary/embedding cooperative cancellation은 Phase 4-5-4에서 1차 완료했다.
+
+### 2026-06-11. Phase 4-5-4 summary/embedding cooperative cancellation
+
+확인된 사실:
+
+- `cancelMemoryBuildJobs`는 더 이상 `running` job이 있다는 이유만으로 거부하지 않는다.
+- `pending/failed/paused` job은 즉시 `canceled`가 된다.
+- `running` job은 `cancel_requested`가 되고 `error: "CANCELLATION_REQUESTED_BY_USER"` marker를 남긴다.
+- `finalizeMemoryBuildJobCancellation`은 `cancel_requested -> canceled` checkpoint finalize를 담당한다.
+- `isMemoryBuildJobCancellationRequested`는 processor가 `cancel_requested/canceled` 상태를 확인하는 공통 checkpoint다.
+- chapter summary projector는 LLM summary 생성 후 summary write 전에 cancellation checkpoint를 확인한다.
+- embedding projector는 embedding provider 호출 전후에 cancellation checkpoint를 확인한다.
+- embedding provider 호출 중 cancel이 감지되면 취소 job은 `canceled`, 같은 batch의 나머지 job은 `pending`으로 되돌려 다음 tick에서 다시 처리한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/main/services/chapterSummaryProjector.test.ts tests/main/services/memoryProjectionService.test.ts tests/main/handler/ipcInputValidation.memory.test.ts tests/main/services/dbMaintenanceService.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts src/main/services/features/memory/chapterSummaryProjector.ts src/main/services/features/memory/embeddingProjector.ts tests/main/services/memory/memoryBuildJobControl.test.ts tests/main/services/chapterSummaryProjector.test.ts src/shared/api/io.contract.ts
+pnpm run typecheck
+```
+
+제한:
+
+- chunk rebuild transaction 내부는 아직 세부 checkpoint가 없다.
+- `tests/main/services/embeddingProjector.test.ts`는 기존 mock이 DB setup의 `db.initialize`를 가려 suite import 단계에서 실패한다. 이번 변경 검증은 다른 processor/contract 테스트와 typecheck로 수행했다.
+- Settings memory progress UI에서 `cancel_requested` 상태를 "취소 준비 중"으로 보여준다.
+
+### 2026-06-11. Phase 4-5-5 settings memory progress/control UI
+
+확인된 사실:
+
+- Settings model tab의 memory rebuild card가 `memoryAdmin.getBuildJobProgress` 결과를 표시한다.
+- 표시 범위는 total/done/active/percent와 status별 count다.
+- `cancel_requested`는 "취소 준비 중", stale recovery marker는 "중단된 작업 복구됨"으로 변환하는 helper를 추가했다.
+- Settings에서 memory build job pause/resume/cancel API를 호출할 수 있다.
+- rebuild 시작, pause, resume, cancel 이후 progress를 다시 불러온다.
+
+검증:
+
+```text
+pnpm vitest tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/renderer/src/features/settings/hooks/useSettingsModel.ts src/renderer/src/features/settings/components/SettingsModal.tsx src/renderer/src/features/settings/components/tabs/ModelTab.tsx src/renderer/src/features/settings/components/tabs/modelTabSections/RebuildMemoryCard.tsx src/renderer/src/features/settings/components/tabs/modelTabSections/types.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+제한:
+
+- progress는 아직 status count 기준이다.
+- chapter/chunk/jobType별 세부 진행률은 아직 없다.
+- active job이 있을 때 Settings progress polling은 1차 완료했다.
+- snapshot cache는 아직 없다.
+
+### 2026-06-11. Phase 4-5-5 active progress polling
+
+확인된 사실:
+
+- `shouldPollMemoryBuildProgress` helper를 추가했다.
+- Settings model tab은 memory build progress의 `activeCount > 0`일 때 2초 간격으로 progress를 다시 불러온다.
+- active job이 없으면 polling하지 않는다.
+
+검증:
+
+```text
+pnpm vitest tests/renderer/settingsMemoryBuildProgress.test.ts
+```
+
+제한:
+
+- progress snapshot cache는 아직 없다.
+- polling은 Settings model tab이 열린 동안만 동작한다.
+
+### 2026-06-11. Phase 4-5 memory build job control IPC/API 연결
+
+확인된 사실:
+
+- `memory:pause-build-jobs`, `memory:resume-build-jobs`, `memory:cancel-build-jobs`, `memory:get-build-job-progress` IPC 채널을 추가했다.
+- main handler는 네 채널 모두 `{ projectId }` payload를 zod schema로 검증한 뒤 `memory/jobControl` service를 호출한다.
+- preload `memoryAdmin`에는 `pauseBuildJobs`, `resumeBuildJobs`, `cancelBuildJobs`, `getBuildJobProgress`를 추가했다.
+- shared renderer contract에는 pause/resume/cancel count와 `MemoryBuildJobProgress` 반환 타입을 추가했다.
+- 기존 entity/entity alias reject IPC 테스트 fixture도 현재 schema의 필수 `reason` 계약에 맞췄다.
+
+검증:
+
+```text
+pnpm vitest tests/main/handler/ipcInputValidation.memory.test.ts tests/main/services/memory/memoryBuildJobControl.test.ts
+pnpm exec eslint src/main/handler/search/ipcSearchHandlers.ts src/preload/api/projectApi.ts src/shared/api/io.contract.ts src/shared/ipc/channels.ts src/shared/schemas/search.ts src/shared/types/search/status.ts src/shared/types/index.ts tests/main/handler/ipcInputValidation.memory.test.ts tests/main/handler/ipcInputValidation.shared.ts src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- Settings model tab의 status count UI는 Phase 4-5-5에서 1차 완료했다.
+- summary/embedding provider 경로의 cooperative cancellation은 1차 완료했다.
+- chunk/job 내부 세부 진행률은 아직 없다.
+
+### 2026-06-11. Phase 4-5 sub-agent 객관 리뷰 반영
+
+리뷰 결론:
+
+- 사실: Phase 4-5의 service -> IPC handler -> preload -> shared contract -> Settings UI 흐름은 현재 프로젝트 구조와 일관성 있다.
+- 사실: 외부 queue를 새로 도입하기보다 기존 SQLite/Drizzle `MemoryBuildJob` queue를 강화하는 방향이 현재 Electron 로컬 앱 구조와 맞다.
+- 사실: 최신 코드 기준 `running` cancel은 거부가 아니라 `cancel_requested` 요청 상태로 기록된다.
+- 사실: 현재 progress는 status별 count 집계이며, 별도 snapshot 저장이나 jobType/chapter/chunk별 진행률은 아직 없다.
+- 사실: retry/backoff 정책은 `jobPolicy.ts`에 일부 존재하지만, UI/progress/공통 상태 machine과의 연결은 아직 부족하다.
+- 사실: Settings progress helper에는 recovery marker label이 있지만, progress API가 error marker를 집계하지 않으므로 실제 UI에서 recovery marker를 안정적으로 보여준다고 말하기에는 근거가 부족하다.
+- 의견: 현재 문서 상태는 계획서로 쓸 수 있지만, "완료/1차 완료/미완료" 경계가 흐려지면 구현 범위를 과대평가할 위험이 있다.
+
+반영한 수정:
+
+- Phase 4-5 본문에 "최신 기준은 `running -> cancel_requested`"를 고정했다.
+- Phase 4-5 초기 계약 기록은 당시 기록이며, Phase 4-5-4 이후 정책이 supersede했음을 명시했다.
+- "repair job"이 현재 `MemoryBuildJob`의 확정 jobType과 1:1 대응하지 않음을 명시했다.
+- progress 저장은 별도 snapshot이 아니라 DB job status 집계임을 명시했다.
+- Phase 4-5-6을 실제 작가 flow e2e 하위 단계로 쪼갔다.
+  - Phase 4-5-6a: 과거 회차 수정 후 rebuild 시나리오
+  - Phase 4-5-6b: pause/resume 작가 플로우
+  - Phase 4-5-6c: cancel/cooperative cancel 작가 플로우
+  - Phase 4-5-6d: restart recovery 작가 플로우
+- Phase 4-5-7을 추가해 jobType progress, snapshot cache, polling backoff, 오래 지속되는 `cancel_requested` 탐지를 다음 최적화 단위로 분리했다.
+
+남은 객관 리스크:
+
+- Phase 4-5-6 writer workflow e2e는 아직 구현/검증 전이다.
+- 리뷰 당시에는 jobType별 progress API와 Settings 표시가 없어서 작가가 "무엇이 병목인지" 정확히 알 수 없었다. 이 항목은 Phase 4-5-7에서 1차 보완했다.
+- recovery marker는 현재 progress API 출력에 포함되지 않으므로 UI label 검증 범위를 과장하면 안 된다.
+- chunk rebuild transaction 내부 checkpoint는 아직 없다.
+
+### 2026-06-11. Phase 4-5-7 jobType progress API/UI
+
+확인된 사실:
+
+- `getMemoryBuildJobProgress`가 기존 status별 집계에 더해 `byJobType`을 반환한다.
+- `byJobType`은 jobType별 `total`, `activeCount`, `doneCount`, `byStatus`를 포함한다.
+- Settings progress helper는 jobType별 항목을 작가용 label로 변환한다.
+- jobType label은 `rebuild_chunks` = 원고 기억화, `rebuild_summary` = 회차 요약, `rebuild_embedding` = 의미 검색 준비다.
+- Settings memory rebuild card는 전체 progress 아래에 jobType별 진행 상황을 표시한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts
+pnpm vitest tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts src/shared/types/search/status.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts src/renderer/src/features/settings/components/tabs/modelTabSections/RebuildMemoryCard.tsx tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+제한:
+
+- chapter/chunk 단위 진행률은 아직 없다.
+- progress snapshot cache는 아직 없다.
+- 이 기록 시점에는 retry/backoff 상태가 아직 UI label에 연결되지 않았다. 이후 Phase 4-5-7 retry/cancel attention UI에서 1차 연결됐다.
+- 이 기록 시점에는 Settings polling이 active job 존재 여부 기준 2초 고정 polling이었다. 이후 Phase 4-5-7 active polling backoff에서 1차 보완했다.
+
+### 2026-06-11. Phase 4-5-7 retry/cancel attention UI
+
+확인된 사실:
+
+- `getMemoryBuildJobProgress`가 `attention` 요약을 반환한다.
+- `attention`은 `retryableFailedCount`, `retryBackoffCount`, `exhaustedFailedCount`, `staleCancellationRequestedCount`, `latestError`를 포함한다.
+- failed job은 attempts와 updatedAt 기준으로 재시도 가능, 재시도 대기, 재시도 한도 도달로 나뉜다.
+- `cancel_requested` job은 일정 시간 이상 유지되면 취소 지연으로 표시된다.
+- Settings progress helper는 attention 요약을 작가용 label로 변환한다.
+- Settings memory rebuild card는 재시도 가능, 재시도 대기, 재시도 한도 도달, 취소 지연 badge와 최근 오류를 표시한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts
+pnpm vitest tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts src/shared/types/search/status.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts src/renderer/src/features/settings/components/tabs/modelTabSections/RebuildMemoryCard.tsx tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+제한:
+
+- attention은 전체 project 기준 집계다. jobType별 retry/backoff breakdown은 아직 없다.
+- retry/backoff의 다음 재시도 예상 시각은 아직 표시하지 않는다.
+- 오래 지속되는 `cancel_requested` 감지는 count만 제공한다. 어떤 targetId가 지연 중인지는 아직 표시하지 않는다.
+- 이 기록 시점에는 Settings polling이 active job 존재 여부 기준 2초 고정 polling이었다. 이후 Phase 4-5-7 active polling backoff에서 1차 보완했다.
+
+### 2026-06-11. Phase 4-5-7 active polling backoff
+
+확인된 사실:
+
+- `getMemoryBuildProgressPollIntervalMs` helper를 추가했다.
+- active job이 없으면 polling interval은 `null`이다.
+- running 또는 `cancel_requested` job이 있으면 2초 polling을 유지한다.
+- 오래 지속되는 `cancel_requested` attention이 있으면 2초 polling을 유지한다.
+- pending/failed/paused처럼 즉시 처리 중인 job이 없는 active 상태에서는 5초 polling으로 backoff한다.
+- Settings model tab polling effect는 고정 `2_000ms` 대신 helper가 반환한 interval을 사용한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts src/shared/types/search/status.ts src/renderer/src/features/settings/hooks/useSettingsModel.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts src/renderer/src/features/settings/components/tabs/modelTabSections/RebuildMemoryCard.tsx tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+제한:
+
+- active job 수 자체에 따른 세밀한 interval 조정은 아직 없다.
+- 최근 progress 변화량 기반 backoff는 아직 없다.
+- progress snapshot cache는 아직 없다.

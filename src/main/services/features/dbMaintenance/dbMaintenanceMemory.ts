@@ -14,10 +14,13 @@ import {
   synopsis,
 } from "../../../infra/database/index.js";
 import {
+  MEMORY_BUILD_JOB_DEDUPE_STATUSES,
   MEMORY_JOB_PRIORITY,
   MEMORY_JOB_TYPES,
   MEMORY_TARGET_TYPES,
 } from "../memory/memoryJobConstants.js";
+
+const MEMORY_BUILD_JOB_DEDUPE_SQL = `'${MEMORY_BUILD_JOB_DEDUPE_STATUSES.join("','")}'`;
 
 async function upsertPendingMemoryBuildJob(input: {
   client: MainDrizzleClient;
@@ -34,7 +37,7 @@ async function upsertPendingMemoryBuildJob(input: {
           AND "targetType" = ${input.targetType}
           AND "targetId" = ${input.targetId}
           AND "jobType" = ${input.jobType}
-          AND "status" IN ('pending', 'running')
+          AND "status" IN (${sql.raw(MEMORY_BUILD_JOB_DEDUPE_SQL)})
         ORDER BY "updatedAt" DESC
         LIMIT 1;`,
   );
@@ -73,6 +76,8 @@ export async function rebuildMemoryChunks(input: {
   const now = new Date().toISOString();
   if (input.sourceType && input.sourceId) {
     for (const job of MEMORY_REBUILD_JOB_TYPES) {
+      // Keep each job type upsert sequential so duplicate detection observes the latest write.
+      // eslint-disable-next-line no-await-in-loop
       await upsertPendingMemoryBuildJob({
         client: input.client,
         projectId: input.projectId,
@@ -199,7 +204,7 @@ export async function rebuildMemoryChunks(input: {
           memoryBuildJob.jobType,
           MEMORY_REBUILD_JOB_TYPES.map((job) => job.jobType),
         ),
-        inArray(memoryBuildJob.status, ["pending", "running"]),
+        inArray(memoryBuildJob.status, [...MEMORY_BUILD_JOB_DEDUPE_STATUSES]),
       ),
     );
 

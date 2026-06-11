@@ -6,6 +6,7 @@ import type {
   HfModelFile,
   HfModelSearchResult,
   LlmfitResult,
+  MemoryBuildJobProgress,
   MemoryEmbeddingStatus,
   MigrationHealth,
 } from "@shared/types";
@@ -14,6 +15,7 @@ type SemanticSearchState = "ready" | "preparing" | "disabled";
 import type { SettingsTabId } from "@renderer/features/settings/components/tabs/types";
 import type { ToastType } from "@shared/ui/ToastContext";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
+import { getMemoryBuildProgressPollIntervalMs } from "../components/tabs/modelTabSections/memoryBuildProgress";
 
 type ShowToast = (message: string, type: ToastType, duration?: number) => void;
 
@@ -46,6 +48,19 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
   const [embeddingDownloading, setEmbeddingDownloading] = useState(false);
   const [memoryEmbeddingStatus, setMemoryEmbeddingStatus] =
     useState<MemoryEmbeddingStatus | null>(null);
+  const [memoryBuildProgress, setMemoryBuildProgress] =
+    useState<MemoryBuildJobProgress | null>(null);
+
+  const refreshMemoryBuildProgress = useCallback(async () => {
+    if (!currentProject) {
+      setMemoryBuildProgress(null);
+      return;
+    }
+    const response = await api.memoryAdmin.getBuildJobProgress(currentProject.id);
+    if (response.success && response.data) {
+      setMemoryBuildProgress(response.data);
+    }
+  }, [currentProject]);
 
   const refreshMigrationHealth = useCallback(async () => {
     const response = await api.maintenance.getMigrationHealth();
@@ -85,6 +100,7 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
         if (memoryRes.success && memoryRes.data) {
           setMemoryEmbeddingStatus(memoryRes.data);
         }
+        await refreshMemoryBuildProgress();
       }
 
       // 하드웨어 추천(llmfit)은 외부 바이너리 호출이라 느릴 수 있어 비차단으로 로드.
@@ -95,7 +111,17 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
       }
       setLlmfitLoading(false);
     })();
-  }, [activeTab, currentProject, refreshMigrationHealth]);
+  }, [activeTab, currentProject, refreshMemoryBuildProgress, refreshMigrationHealth]);
+
+  useEffect(() => {
+    if (activeTab !== "model" || !currentProject) return;
+    const pollIntervalMs = getMemoryBuildProgressPollIntervalMs(memoryBuildProgress);
+    if (!pollIntervalMs) return;
+    const intervalId = window.setInterval(() => {
+      void refreshMemoryBuildProgress();
+    }, pollIntervalMs);
+    return () => window.clearInterval(intervalId);
+  }, [activeTab, currentProject, memoryBuildProgress, refreshMemoryBuildProgress]);
 
   useEffect(() => {
     const unsubscribe = api.settings.onEmbeddingModelDownloadProgress((progress) => {
@@ -149,10 +175,64 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
         t("settings.localLlm.rebuildMemory.started", { count: response.data?.queued ?? 0 }),
         "success",
       );
+      await refreshMemoryBuildProgress();
     } finally {
       setIsBusy(false);
     }
-  }, [currentProject, showToast, t]);
+  }, [currentProject, refreshMemoryBuildProgress, showToast, t]);
+
+  const handlePauseMemoryBuildJobs = useCallback(async (): Promise<void> => {
+    if (!currentProject) return;
+    setIsBusy(true);
+    try {
+      const response = await api.memoryAdmin.pauseBuildJobs(currentProject.id);
+      if (!response.success) {
+        showToast(response.error?.message ?? t("settings.localLlm.rebuildMemory.pauseFailed"), "error");
+        return;
+      }
+      showToast(t("settings.localLlm.rebuildMemory.paused", { count: response.data?.paused ?? 0 }), "success");
+      await refreshMemoryBuildProgress();
+    } finally {
+      setIsBusy(false);
+    }
+  }, [currentProject, refreshMemoryBuildProgress, showToast, t]);
+
+  const handleResumeMemoryBuildJobs = useCallback(async (): Promise<void> => {
+    if (!currentProject) return;
+    setIsBusy(true);
+    try {
+      const response = await api.memoryAdmin.resumeBuildJobs(currentProject.id);
+      if (!response.success) {
+        showToast(response.error?.message ?? t("settings.localLlm.rebuildMemory.resumeFailed"), "error");
+        return;
+      }
+      showToast(t("settings.localLlm.rebuildMemory.resumed", { count: response.data?.resumed ?? 0 }), "success");
+      await refreshMemoryBuildProgress();
+    } finally {
+      setIsBusy(false);
+    }
+  }, [currentProject, refreshMemoryBuildProgress, showToast, t]);
+
+  const handleCancelMemoryBuildJobs = useCallback(async (): Promise<void> => {
+    if (!currentProject) return;
+    setIsBusy(true);
+    try {
+      const response = await api.memoryAdmin.cancelBuildJobs(currentProject.id);
+      if (!response.success) {
+        showToast(response.error?.message ?? t("settings.localLlm.rebuildMemory.cancelFailed"), "error");
+        return;
+      }
+      showToast(
+        t("settings.localLlm.rebuildMemory.canceled", {
+          count: (response.data?.canceled ?? 0) + (response.data?.cancellationRequested ?? 0),
+        }),
+        "success",
+      );
+      await refreshMemoryBuildProgress();
+    } finally {
+      setIsBusy(false);
+    }
+  }, [currentProject, refreshMemoryBuildProgress, showToast, t]);
 
   const handleDownloadLocalModel = useCallback(async (opts?: {
     repo: string;
@@ -281,6 +361,9 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     isDownloading,
     downloadProgress,
     handleRebuildMemory,
+    handlePauseMemoryBuildJobs,
+    handleResumeMemoryBuildJobs,
+    handleCancelMemoryBuildJobs,
     handleDownloadLocalModel,
     handleSearchHfModels,
     handleGetHfModelFiles,
@@ -292,6 +375,7 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     embeddingProgress,
     embeddingDownloading,
     handleDownloadEmbeddingModel,
+    memoryBuildProgress,
     semanticSearchState,
   };
 }

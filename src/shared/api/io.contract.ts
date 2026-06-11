@@ -97,6 +97,18 @@ export type IoRendererApi = {
     getEmbeddingStatus: (
       projectId: string,
     ) => Promise<IPCResponse<SharedTypes.MemoryEmbeddingStatus>>;
+    pauseBuildJobs: (
+      projectId: string,
+    ) => Promise<IPCResponse<{ paused: number }>>;
+    resumeBuildJobs: (
+      projectId: string,
+    ) => Promise<IPCResponse<{ resumed: number }>>;
+    cancelBuildJobs: (
+      projectId: string,
+    ) => Promise<IPCResponse<{ canceled: number; cancellationRequested: number }>>;
+    getBuildJobProgress: (
+      projectId: string,
+    ) => Promise<IPCResponse<SharedTypes.MemoryBuildJobProgress>>;
     runEvalSuite: (
       input: SharedTypes.MemoryEvalRunRequest,
     ) => Promise<IPCResponse<SharedTypes.MemoryEvalLiveRunnerResult>>;

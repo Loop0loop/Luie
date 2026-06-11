@@ -385,6 +385,7 @@ describe("IPC input validation: narrative memory", () => {
     const input = {
       projectId: "550e8400-e29b-41d4-a716-446655440000",
       entityId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      reason: "중복 후보가 아님",
     };
     const response = (await handler?.({}, input)) as { success: boolean };
 
@@ -433,6 +434,7 @@ describe("IPC input validation: narrative memory", () => {
     const input = {
       projectId: "550e8400-e29b-41d4-a716-446655440000",
       aliasId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      reason: "별칭 근거 부족",
     };
     const response = (await handler?.({}, input)) as { success: boolean };
 
@@ -516,6 +518,94 @@ describe("IPC input validation: narrative memory", () => {
     );
   });
 
+  it("routes valid MEMORY_PAUSE_BUILD_JOBS payloads to memory job control", async () => {
+    mocked.memoryJobControl.pauseMemoryBuildJobs.mockResolvedValue({
+      paused: 2,
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_PAUSE_BUILD_JOBS);
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.memoryJobControl.pauseMemoryBuildJobs).toHaveBeenCalledWith(input);
+  });
+
+  it("routes valid MEMORY_RESUME_BUILD_JOBS payloads to memory job control", async () => {
+    mocked.memoryJobControl.resumeMemoryBuildJobs.mockResolvedValue({
+      resumed: 2,
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_RESUME_BUILD_JOBS);
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.memoryJobControl.resumeMemoryBuildJobs).toHaveBeenCalledWith(input);
+  });
+
+  it("routes valid MEMORY_CANCEL_BUILD_JOBS payloads to memory job control", async () => {
+    mocked.memoryJobControl.cancelMemoryBuildJobs.mockResolvedValue({
+      canceled: 2,
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_CANCEL_BUILD_JOBS);
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.memoryJobControl.cancelMemoryBuildJobs).toHaveBeenCalledWith(input);
+  });
+
+  it("routes valid MEMORY_GET_BUILD_JOB_PROGRESS payloads to memory job control", async () => {
+    mocked.memoryJobControl.getMemoryBuildJobProgress.mockResolvedValue({
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      total: 3,
+      activeCount: 2,
+      doneCount: 1,
+      byStatus: {
+        pending: 1,
+        completed: 1,
+        paused: 1,
+      },
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(
+      IPC_CHANNELS.MEMORY_GET_BUILD_JOB_PROGRESS,
+    );
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(
+      mocked.memoryJobControl.getMemoryBuildJobProgress,
+    ).toHaveBeenCalledWith(input);
+  });
+
   it("returns INVALID_INPUT for malformed MEMORY_GET_CONFLICT_QUEUE payload", async () => {
     await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
 
@@ -560,5 +650,21 @@ describe("IPC input validation: narrative memory", () => {
     expect(response.success).toBe(false);
     expect(response.error?.code).toBe(ErrorCode.INVALID_INPUT);
     expect(mocked.narrativeMemoryQueryService.query).not.toHaveBeenCalled();
+  });
+
+  it("returns INVALID_INPUT for blank MEMORY_PAUSE_BUILD_JOBS projectId", async () => {
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_PAUSE_BUILD_JOBS);
+    expect(handler).toBeDefined();
+
+    const response = (await handler?.({}, { projectId: "   " })) as {
+      success: boolean;
+      error?: { code: string };
+    };
+
+    expect(response.success).toBe(false);
+    expect(response.error?.code).toBe(ErrorCode.INVALID_INPUT);
+    expect(mocked.memoryJobControl.pauseMemoryBuildJobs).not.toHaveBeenCalled();
   });
 });

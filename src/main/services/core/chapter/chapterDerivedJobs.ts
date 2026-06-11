@@ -2,10 +2,13 @@ import crypto from "node:crypto";
 import { sql } from "drizzle-orm";
 import { db } from "../../../infra/database/index.js";
 import {
+  MEMORY_BUILD_JOB_DEDUPE_STATUSES,
   MEMORY_JOB_PRIORITY,
   MEMORY_JOB_TYPES,
   MEMORY_TARGET_TYPES,
 } from "../../features/memory/memoryJobConstants.js";
+
+const MEMORY_BUILD_JOB_DEDUPE_SQL = `'${MEMORY_BUILD_JOB_DEDUPE_STATUSES.join("','")}'`;
 
 const upsertSearchDirtyJob = async (
   store: ReturnType<typeof db.getClient>,
@@ -57,7 +60,7 @@ const upsertMemoryJob = async (
           AND "targetType" = ${MEMORY_TARGET_TYPES.CHAPTER}
           AND "targetId" = ${input.chapterId}
           AND "jobType" = ${input.jobType}
-          AND "status" IN ('pending', 'running')
+          AND "status" IN (${sql.raw(MEMORY_BUILD_JOB_DEDUPE_SQL)})
         ORDER BY "updatedAt" DESC
         LIMIT 1;`,
   );

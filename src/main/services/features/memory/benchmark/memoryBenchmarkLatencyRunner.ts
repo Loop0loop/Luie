@@ -1,6 +1,10 @@
 import { performance } from "node:perf_hooks";
 import { and, eq, like, sql } from "drizzle-orm";
-import { db, memoryChunk } from "../../../../infra/database/index.js";
+import {
+  db,
+  memoryChunk,
+  memoryEmbedding,
+} from "../../../../infra/database/index.js";
 import {
   resolveSearchOptimizationPolicy,
   type SearchOptimizationMode,
@@ -11,6 +15,7 @@ import {
   type RagSearchStageDiagnostic,
   type RagSearchStageName,
 } from "../../rag/internal/contextAssembler.search.js";
+import type { RagEmbeddingProvider } from "../../rag/internal/contextAssembler.types.js";
 import { buildLayer3Evidence } from "../../rag/internal/contextAssembler.layer3.js";
 import type { MemoryLongformBenchmarkProfileName } from "./memoryLongformBenchmarkSeed.js";
 
@@ -47,6 +52,16 @@ export type MemoryBenchmarkCacheTtlMemoryMeasurement = {
   ttlMs: number;
   estimatedEntries: number;
   estimatedMemoryMb: number;
+};
+
+export type MemoryBenchmarkRerankCacheProbeMeasurement = {
+  ttlMs: number;
+  queries: number;
+  hits: number;
+  misses: number;
+  entries: number;
+  cachedChunkIds: number;
+  heapDeltaMb: number;
 };
 
 export type MemoryBenchmarkOptimizationModeMeasurement = {
@@ -103,6 +118,26 @@ export type MemoryBenchmarkLayer3PathMeasurement = {
   maxMs: number;
 };
 
+export type MemoryBenchmarkVectorProbeMeasurement = {
+  mode: "quality";
+  embeddingRowsMaterialized: number;
+  path: MemoryBenchmarkRagPathMeasurement;
+  vectorStage: MemoryBenchmarkRagStageMeasurement | null;
+};
+
+export type MemoryBenchmarkWriterFlowQueryCategory =
+  | "alias-lookup"
+  | "temporal-marker"
+  | "rewrite-marker"
+  | "state-change";
+
+export type MemoryBenchmarkWriterFlowQueryMeasurement = {
+  category: MemoryBenchmarkWriterFlowQueryCategory;
+  query: string;
+  ragSearchPath: MemoryBenchmarkRagPathMeasurement;
+  layer3EvidencePath: MemoryBenchmarkLayer3PathMeasurement;
+};
+
 export type MemoryBenchmarkLatencyReport = {
   schemaVersion: 1;
   projectId: string;
@@ -126,10 +161,13 @@ export type MemoryBenchmarkLatencyReport = {
     sqlitePageCache: MemoryBenchmarkSqlitePageCacheMeasurement;
     candidateCapComparison: MemoryBenchmarkCandidateCapMeasurement[];
     cacheTtlMemoryComparison: MemoryBenchmarkCacheTtlMemoryMeasurement[];
+    rerankCacheProbe: MemoryBenchmarkRerankCacheProbeMeasurement;
     optimizationModeComparison: MemoryBenchmarkOptimizationModeMeasurement[];
     ragSearchPath: MemoryBenchmarkRagPathMeasurement;
     ragSearchStageBreakdown: MemoryBenchmarkRagStageMeasurement[];
     layer3EvidencePath: MemoryBenchmarkLayer3PathMeasurement;
+    vectorSearchProbe: MemoryBenchmarkVectorProbeMeasurement;
+    writerFlowQuerySet: MemoryBenchmarkWriterFlowQueryMeasurement[];
     editAfterIndexPlan: {
       mode: typeof MEMORY_BENCHMARK_LATENCY_BUDGETS.editAfterIndexMode;
       reason: string;
@@ -170,6 +208,28 @@ export const MEMORY_BENCHMARK_LATENCY_BUDGETS = {
   editAfterIndexMode: "background",
   packageProgressRequired: true,
 } as const;
+
+const MEMORY_BENCHMARK_WRITER_FLOW_QUERIES: Array<{
+  category: MemoryBenchmarkWriterFlowQueryCategory;
+  query: string;
+}> = [
+  {
+    category: "alias-lookup",
+    query: "검은 기사",
+  },
+  {
+    category: "temporal-marker",
+    query: "chapter 12",
+  },
+  {
+    category: "rewrite-marker",
+    query: "rewrite-marker",
+  },
+  {
+    category: "state-change",
+    query: "state-change",
+  },
+];
 
 function roundDuration(value: number): number {
   return Math.round(value * 1000) / 1000;
@@ -382,6 +442,64 @@ function estimateCacheTtlMemoryComparison(input: {
   });
 }
 
+async function measureRerankCacheProbe(input: {
+  projectId: string;
+  query: string;
+  candidateCap: number;
+  ttlMs: number;
+  repeatedIterations: number;
+}): Promise<MemoryBenchmarkRerankCacheProbeMeasurement> {
+  const cache = new Map<
+    string,
+    {
+      expiresAt: number;
+      chunkIds: string[];
+    }
+  >();
+  const cacheKey = `${input.projectId}:${input.query}:${input.candidateCap}`;
+  let hits = 0;
+  let misses = 0;
+  const heapBefore = process.memoryUsage().heapUsed;
+
+  for (let index = 0; index < Math.max(1, input.repeatedIterations); index += 1) {
+    const cached = cache.get(cacheKey);
+    const now = performance.now();
+    if (cached && cached.expiresAt > now) {
+      hits += 1;
+      continue;
+    }
+
+    misses += 1;
+    // 동일 query 반복 시 실제 Map TTL cache의 hit/miss와 entry 증가를 측정해야 하므로 순차 처리한다.
+    // eslint-disable-next-line no-await-in-loop
+    const measurement = await measureCandidateCapSearch({
+      projectId: input.projectId,
+      query: input.query,
+      candidateCap: input.candidateCap,
+    });
+    cache.set(cacheKey, {
+      expiresAt: performance.now() + input.ttlMs,
+      chunkIds: measurement.chunkIds,
+    });
+  }
+
+  const heapAfter = process.memoryUsage().heapUsed;
+  const cachedChunkIds = [...cache.values()].reduce(
+    (sum, entry) => sum + entry.chunkIds.length,
+    0,
+  );
+
+  return {
+    ttlMs: input.ttlMs,
+    queries: Math.max(1, input.repeatedIterations),
+    hits,
+    misses,
+    entries: cache.size,
+    cachedChunkIds,
+    heapDeltaMb: bytesToMiB(Math.max(0, heapAfter - heapBefore)),
+  };
+}
+
 async function measureOptimizationModeComparison(input: {
   projectId: string;
   query: string;
@@ -435,6 +553,7 @@ async function measureRagSearchPath(input: {
   query: string;
   limit: number;
   iterations: number;
+  embedTexts?: RagEmbeddingProvider;
 }): Promise<{
   path: MemoryBenchmarkRagPathMeasurement;
   stages: MemoryBenchmarkRagStageMeasurement[];
@@ -451,6 +570,7 @@ async function measureRagSearchPath(input: {
       query: input.query,
       limit: input.limit,
       parentWindow: { before: 1, after: 1 },
+      embedTexts: input.embedTexts,
       diagnostics: { stages: stageDiagnostics },
     });
     durations.push(performance.now() - startedAt);
@@ -466,6 +586,152 @@ async function measureRagSearchPath(input: {
     },
     stages: summarizeRagStageDiagnostics(stageDiagnostics),
   };
+}
+
+function vectorToBuffer(vector: Float32Array): Buffer {
+  return Buffer.from(vector.buffer, vector.byteOffset, vector.byteLength);
+}
+
+function buildSyntheticBenchmarkVector(seed: number): Float32Array {
+  return Float32Array.from([
+    1,
+    (seed % 17) / 17,
+    (seed % 31) / 31,
+    (seed % 47) / 47,
+  ]);
+}
+
+async function materializeSyntheticBenchmarkEmbeddings(input: {
+  projectId: string;
+  limit: number;
+}): Promise<number> {
+  const rows = await db
+    .getClient()
+    .select({
+      chunkId: memoryChunk.id,
+      projectId: memoryChunk.projectId,
+      contentHash: memoryChunk.indexTextHash,
+      chunkIndex: memoryChunk.chunkIndex,
+    })
+    .from(memoryChunk)
+    .where(
+      and(
+        eq(memoryChunk.projectId, input.projectId),
+        eq(memoryChunk.sourceType, "benchmark"),
+      ),
+    )
+    .orderBy(memoryChunk.chunkIndex)
+    .limit(input.limit);
+  const nowIso = new Date().toISOString();
+
+  for (const row of rows) {
+    const vector = buildSyntheticBenchmarkVector(row.chunkIndex);
+    // 벤치마크 전용 synthetic embedding upsert는 chunk/vector pairing을 유지해야 하므로 순차 처리한다.
+    // eslint-disable-next-line no-await-in-loop
+    await db
+      .getClient()
+      .insert(memoryEmbedding)
+      .values({
+        id: `${row.chunkId}:benchmark-vector`,
+        chunkId: row.chunkId,
+        projectId: row.projectId,
+        contentHash: row.contentHash,
+        vec: vectorToBuffer(vector),
+        dimension: vector.length,
+        model: "benchmark:synthetic-vector",
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      })
+      .onConflictDoUpdate({
+        target: [memoryEmbedding.chunkId],
+        set: {
+          projectId: row.projectId,
+          contentHash: row.contentHash,
+          vec: vectorToBuffer(vector),
+          dimension: vector.length,
+          model: "benchmark:synthetic-vector",
+          updatedAt: nowIso,
+        },
+      });
+  }
+
+  return rows.length;
+}
+
+async function measureVectorSearchProbe(input: {
+  projectId: string;
+  query: string;
+  limit: number;
+  iterations: number;
+}): Promise<MemoryBenchmarkVectorProbeMeasurement> {
+  const embeddingRowsMaterialized = await materializeSyntheticBenchmarkEmbeddings({
+    projectId: input.projectId,
+    limit: Math.max(input.limit, 50),
+  });
+  const previousOptimizationMode = process.env.LUIE_SEARCH_OPTIMIZATION_MODE;
+  const previousUtilityProcess = process.env.LUIE_IS_UTILITY_PROCESS;
+  process.env.LUIE_SEARCH_OPTIMIZATION_MODE = "quality";
+  process.env.LUIE_IS_UTILITY_PROCESS = "1";
+  try {
+    const measurement = await measureRagSearchPath({
+      projectId: input.projectId,
+      query: input.query,
+      limit: input.limit,
+      iterations: input.iterations,
+      embedTexts: async () => [buildSyntheticBenchmarkVector(0)],
+    });
+    return {
+      mode: "quality",
+      embeddingRowsMaterialized,
+      path: measurement.path,
+      vectorStage:
+        measurement.stages.find((stage) => stage.stage === "vector") ?? null,
+    };
+  } finally {
+    if (previousOptimizationMode === undefined) {
+      delete process.env.LUIE_SEARCH_OPTIMIZATION_MODE;
+    } else {
+      process.env.LUIE_SEARCH_OPTIMIZATION_MODE = previousOptimizationMode;
+    }
+    if (previousUtilityProcess === undefined) {
+      delete process.env.LUIE_IS_UTILITY_PROCESS;
+    } else {
+      process.env.LUIE_IS_UTILITY_PROCESS = previousUtilityProcess;
+    }
+  }
+}
+
+async function measureWriterFlowQuerySet(input: {
+  projectId: string;
+  limit: number;
+  iterations: number;
+}): Promise<MemoryBenchmarkWriterFlowQueryMeasurement[]> {
+  const measurements: MemoryBenchmarkWriterFlowQueryMeasurement[] = [];
+
+  for (const item of MEMORY_BENCHMARK_WRITER_FLOW_QUERIES) {
+    // writer-flow query별 cold/warm 분포를 독립적으로 남겨야 하므로 순차 측정한다.
+    // eslint-disable-next-line no-await-in-loop
+    const ragSearchMeasurement = await measureRagSearchPath({
+      projectId: input.projectId,
+      query: item.query,
+      limit: input.limit,
+      iterations: input.iterations,
+    });
+    // eslint-disable-next-line no-await-in-loop
+    const layer3EvidencePath = await measureLayer3EvidencePath({
+      projectId: input.projectId,
+      query: item.query,
+      iterations: input.iterations,
+    });
+    measurements.push({
+      category: item.category,
+      query: item.query,
+      ragSearchPath: ragSearchMeasurement.path,
+      layer3EvidencePath,
+    });
+  }
+
+  return measurements;
 }
 
 const RAG_SEARCH_STAGE_ORDER: RagSearchStageName[] = [
@@ -580,6 +846,13 @@ export async function runMemoryBenchmarkLatencyReport(input: {
       candidateCap: optimizationPolicy.candidateCap,
       repeatedIterations: normalizedRepeatedIterations,
     });
+    const rerankCacheProbe = await measureRerankCacheProbe({
+      projectId: input.projectId,
+      query,
+      candidateCap: optimizationPolicy.candidateCap,
+      ttlMs: optimizationPolicy.rerankCacheTtlMs,
+      repeatedIterations: normalizedRepeatedIterations,
+    });
     const optimizationModeComparison = await measureOptimizationModeComparison({
       projectId: input.projectId,
       query,
@@ -594,6 +867,17 @@ export async function runMemoryBenchmarkLatencyReport(input: {
     const layer3EvidencePath = await measureLayer3EvidencePath({
       projectId: input.projectId,
       query,
+      iterations: normalizedRepeatedIterations,
+    });
+    const vectorSearchProbe = await measureVectorSearchProbe({
+      projectId: input.projectId,
+      query,
+      limit,
+      iterations: normalizedRepeatedIterations,
+    });
+    const writerFlowQuerySet = await measureWriterFlowQuerySet({
+      projectId: input.projectId,
+      limit,
       iterations: normalizedRepeatedIterations,
     });
     const memoryStatus = assessMemoryUsage(memoryUsage);
@@ -619,10 +903,13 @@ export async function runMemoryBenchmarkLatencyReport(input: {
         sqlitePageCache,
         candidateCapComparison,
         cacheTtlMemoryComparison,
+        rerankCacheProbe,
         optimizationModeComparison,
         ragSearchPath: ragSearchMeasurement.path,
         ragSearchStageBreakdown: ragSearchMeasurement.stages,
         layer3EvidencePath,
+        vectorSearchProbe,
+        writerFlowQuerySet,
         editAfterIndexPlan: {
           mode: MEMORY_BENCHMARK_LATENCY_BUDGETS.editAfterIndexMode,
           reason: "집필 중 수정 이후 재색인은 전면 차단 작업이 아니라 백그라운드 작업이어야 한다.",

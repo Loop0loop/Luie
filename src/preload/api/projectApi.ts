@@ -270,6 +270,14 @@ export function createProjectApi({
         safeInvoke(IPC_CHANNELS.MEMORY_GET_SUMMARY_STATUS, { projectId }),
       getEmbeddingStatus: (projectId) =>
         safeInvoke(IPC_CHANNELS.MEMORY_GET_EMBEDDING_STATUS, { projectId }),
+      pauseBuildJobs: (projectId) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_PAUSE_BUILD_JOBS, { projectId }),
+      resumeBuildJobs: (projectId) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_RESUME_BUILD_JOBS, { projectId }),
+      cancelBuildJobs: (projectId) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_CANCEL_BUILD_JOBS, { projectId }),
+      getBuildJobProgress: (projectId) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_GET_BUILD_JOB_PROGRESS, { projectId }),
       runEvalSuite: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_RUN_EVAL_SUITE, input),
       runIntentCalibration: (input) =>
