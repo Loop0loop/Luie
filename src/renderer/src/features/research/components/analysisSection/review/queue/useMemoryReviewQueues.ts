@@ -42,6 +42,7 @@ export function useMemoryReviewQueues({
     resolvingConflictId,
     loadConflictQueue,
     handleResolveConflict,
+    handleDeferConflict,
 
     showFactReviewQueue,
     setShowFactReviewQueue,
@@ -112,6 +113,7 @@ export function useMemoryReviewQueues({
       resolvingConflictId: state.resolvingConflictId,
       loadConflictQueue: state.loadConflictQueue,
       handleResolveConflict: state.handleResolveConflict,
+      handleDeferConflict: state.handleDeferConflict,
 
       showFactReviewQueue: state.showFactReviewQueue,
       setShowFactReviewQueue: state.setShowFactReviewQueue,
@@ -234,6 +236,13 @@ export function useMemoryReviewQueues({
     [projectId, chapterId, memoryScope, handleResolveConflict, loadConflictQueue],
   );
 
+  const onDeferConflict = useCallback(
+    (item: AnalysisConflictItem) => {
+      handleDeferConflict(item);
+    },
+    [handleDeferConflict],
+  );
+
   const onConfirmFact = useCallback(
     async (item: AnalysisFactReviewItem) => {
       if (!projectId) return;
@@ -352,6 +361,7 @@ export function useMemoryReviewQueues({
     conflictQueueError,
     resolvingConflictId,
     handleResolveConflict: onResolveConflict,
+    handleDeferConflict: onDeferConflict,
     showFactReviewQueue,
     setShowFactReviewQueue,
     factReviewItems,

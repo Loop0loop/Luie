@@ -11,27 +11,37 @@ describe("AnalysisSection conflict resolution UI", () => {
     const panelSource = readFileSync(
       resolve(
         process.cwd(),
-        "src/renderer/src/features/research/components/analysisSection/ConflictQueuePanel.tsx",
+        "src/renderer/src/features/research/components/analysisSection/review/queue/ConflictQueuePanel.tsx",
       ),
       "utf8",
     );
     const queuesSource = readFileSync(
       resolve(
         process.cwd(),
-        "src/renderer/src/features/research/components/analysisSection/useMemoryReviewQueues.ts",
+        "src/renderer/src/features/research/components/analysisSection/review/queue/useMemoryReviewQueues.ts",
+      ),
+      "utf8",
+    );
+    const storeActionsSource = readFileSync(
+      resolve(
+        process.cwd(),
+        "src/renderer/src/features/research/stores/analysis/analysisStore.actions.ts",
       ),
       "utf8",
     );
 
     expect(analysisSource).toContain("ConflictQueuePanel");
     expect(analysisSource).toContain("handleResolveConflict");
-    expect(queuesSource).toContain("resolveFactConflict");
-    expect(queuesSource).toContain("getConflictQueue");
-    expect(panelSource).toContain("채택");
+    expect(storeActionsSource).toContain("resolveFactConflict");
+    expect(storeActionsSource).toContain("getConflictQueue");
+    expect(panelSource).toContain("analysis.review.queue.conflict.acceptPrior");
+    expect(panelSource).toContain("analysis.review.queue.conflict.acceptNew");
     expect(panelSource).toContain("onResolve");
     expect(panelSource).toContain("invalidatedFact.id");
     expect(panelSource).toContain("invalidatingFact.id");
     expect(panelSource).toContain("evidenceQuotes");
     expect(panelSource).toContain("renderEvidenceQuotes");
+    expect(panelSource).toContain("onDefer");
+    expect(queuesSource).toContain("handleDeferConflict");
   });
 });

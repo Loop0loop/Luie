@@ -61,6 +61,7 @@ export const koBaseAnalysis = {
           newEvidence: "신규 사실",
           acceptPrior: "이전 사실 채택",
           acceptNew: "신규 사실 채택",
+          defer: "나중에 보기",
           fetchError: "충돌 큐 조회 실패",
           resolveError: "충돌 해결 실패",
         },

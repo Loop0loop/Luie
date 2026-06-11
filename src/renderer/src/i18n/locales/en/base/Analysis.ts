@@ -61,6 +61,7 @@ export const enBaseAnalysis = {
           newEvidence: "New Fact",
           acceptPrior: "Accept Prior Fact",
           acceptNew: "Accept New Fact",
+          defer: "Defer",
           fetchError: "Failed to fetch conflict queue",
           resolveError: "Failed to resolve conflict",
         },

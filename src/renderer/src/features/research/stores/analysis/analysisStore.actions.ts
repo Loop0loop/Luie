@@ -24,6 +24,7 @@ export interface AnalysisActions {
   loadNarrativeSummaryStatus: (projectId: string) => Promise<void>;
   loadConflictQueue: (projectId: string, chapterId: string | undefined, memoryScope: MemoryScope) => Promise<void>;
   handleResolveConflict: (projectId: string, item: AnalysisConflictItem, winnerFactId: string) => Promise<void>;
+  handleDeferConflict: (item: AnalysisConflictItem) => void;
   loadFactReviewQueue: (projectId: string) => Promise<void>;
   loadEpisodeReviewQueue: (projectId: string) => Promise<void>;
   loadEntityReviewQueue: (projectId: string) => Promise<void>;
@@ -55,6 +56,7 @@ type AnalysisActionState = {
   input: string;
   isStreaming: boolean;
   ragRunId: string | null;
+  conflictQueueItems: AnalysisConflictItem[];
   loadConflictQueue: AnalysisActions["loadConflictQueue"];
   loadFactReviewQueue: AnalysisActions["loadFactReviewQueue"];
   loadEpisodeReviewQueue: AnalysisActions["loadEpisodeReviewQueue"];
@@ -318,6 +320,13 @@ export function createAnalysisActions(
       } finally {
         set({ resolvingConflictId: null });
       }
+    },
+    handleDeferConflict: (item: AnalysisConflictItem) => {
+      set((state) => ({
+        conflictQueueItems: state.conflictQueueItems.filter(
+          (candidate) => candidate.conflictId !== item.conflictId,
+        ),
+      }));
     },
     loadFactReviewQueue: async (projectId: string) => {
       set({ factReviewLoading: true, factReviewError: null });

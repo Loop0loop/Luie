@@ -61,6 +61,7 @@ export const jaBaseAnalysis = {
           newEvidence: "新規事実",
           acceptPrior: "以前の事実を採用",
           acceptNew: "新規事実を採用",
+          defer: "後で見る",
           fetchError: "衝突キューの取得に失敗しました",
           resolveError: "衝突の解決に失敗しました",
         },

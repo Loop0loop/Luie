@@ -11,12 +11,13 @@ type ConflictQueuePanelProps = {
   renderFact: (fact: AnalysisConflictItem["invalidatedFact"]) => string;
   resolvingConflictId: string | null;
   onResolve: (item: AnalysisConflictItem, winnerFactId: string) => void;
+  onDefer: (item: AnalysisConflictItem) => void;
 };
 
 function renderEvidenceQuotes(
   title: string,
   quotes: AnalysisConflictItem["invalidatedFact"]["evidenceQuotes"],
-  t: (key: string, options?: any) => string,
+  t: (key: string, options?: Record<string, string>) => string,
 ) {
   if (quotes.length === 0) return null;
 
@@ -44,6 +45,7 @@ export function ConflictQueuePanel({
   renderFact,
   resolvingConflictId,
   onResolve,
+  onDefer,
 }: ConflictQueuePanelProps) {
   const { t } = useTranslation();
   return (
@@ -97,6 +99,14 @@ export function ConflictQueuePanel({
                     className="rounded border border-border px-2 py-1 text-[11px] text-muted hover:text-success disabled:opacity-50"
                   >
                     {t("analysis.review.queue.conflict.acceptNew")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDefer(item)}
+                    disabled={resolvingConflictId === item.conflictId}
+                    className="rounded border border-border px-2 py-1 text-[11px] text-muted hover:text-fg disabled:opacity-50"
+                  >
+                    {t("analysis.review.queue.conflict.defer")}
                   </button>
                 </div>
               </div>

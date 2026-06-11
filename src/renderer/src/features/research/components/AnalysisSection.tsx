@@ -332,6 +332,7 @@ export default function AnalysisSection() {
               onToggle={() => review.setShowConflictQueue((prev) => !prev)}
               renderFact={formatConflictFact}
               onResolve={review.handleResolveConflict}
+              onDefer={review.handleDeferConflict}
             />
             <FactReviewPanel
               visible={review.showFactReviewQueue}
