@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { and, eq, isNull } from "drizzle-orm";
 import {
   db,
   memoryCharacterState,
@@ -157,8 +158,53 @@ export function createMemoryTemporalFactCandidateRows(
 
 export async function createMemoryTemporalFactCandidate(
   input: MemoryTemporalFactCandidateCreateInput,
-): Promise<ReturnType<typeof createMemoryTemporalFactCandidateRows>> {
+): Promise<
+  ReturnType<typeof createMemoryTemporalFactCandidateRows> & { created: boolean }
+> {
   const rows = createMemoryTemporalFactCandidateRows(input);
+  const objectEntityPredicate =
+    input.objectEntityId === null
+      ? isNull(memoryFact.objectEntityId)
+      : eq(memoryFact.objectEntityId, input.objectEntityId);
+  const objectValuePredicate =
+    input.objectValue === null
+      ? isNull(memoryFact.objectValue)
+      : eq(memoryFact.objectValue, input.objectValue);
+  const validToChapterIdPredicate =
+    input.validToChapterId === null
+      ? isNull(memoryFact.validToChapterId)
+      : eq(memoryFact.validToChapterId, input.validToChapterId);
+  const validToChapterOrderPredicate =
+    input.validToChapterOrder === null
+      ? isNull(memoryFact.validToChapterOrder)
+      : eq(memoryFact.validToChapterOrder, input.validToChapterOrder);
+  const [rejectedDuplicate] = await db
+    .getClient()
+    .select({ id: memoryFact.id })
+    .from(memoryFact)
+    .where(
+      and(
+        eq(memoryFact.projectId, input.projectId),
+        eq(memoryFact.subjectEntityId, input.subjectEntityId),
+        eq(memoryFact.predicate, input.predicate),
+        objectEntityPredicate,
+        objectValuePredicate,
+        eq(memoryFact.valueType, input.valueType),
+        eq(memoryFact.validFromChapterId, input.validFromChapterId),
+        eq(memoryFact.validFromChapterOrder, input.validFromChapterOrder),
+        validToChapterIdPredicate,
+        validToChapterOrderPredicate,
+        eq(memoryFact.observedAtChapterId, input.observedAtChapterId),
+        eq(memoryFact.observedAtChapterOrder, input.observedAtChapterOrder),
+        eq(memoryFact.sourceContentHash, input.sourceContentHash),
+        eq(memoryFact.extractorVersion, input.extractorVersion),
+        eq(memoryFact.status, "rejected"),
+      ),
+    )
+    .limit(1);
+  if (rejectedDuplicate) {
+    return { ...rows, created: false };
+  }
   db.getClient().transaction((tx) => {
     tx.insert(memoryFact).values(rows.fact).run();
     for (const evidence of rows.evidence) {
@@ -178,5 +224,5 @@ export async function createMemoryTemporalFactCandidate(
         .run();
     }
   });
-  return rows;
+  return { ...rows, created: true };
 }

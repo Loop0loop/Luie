@@ -60,6 +60,34 @@ describe("memoryEntityReviewService", () => {
     return { projectId, entityId, aliasId, nowIso };
   }
 
+  async function attachEntityMention(input: {
+    projectId: string;
+    entityId: string;
+    aliasId?: string | null;
+    nowIso: string;
+    contentHash?: string;
+    sourceContentHash?: string;
+    quote?: string;
+  }) {
+    await db.getClient().insert(memoryEntityMention).values({
+      id: crypto.randomUUID(),
+      projectId: input.projectId,
+      entityId: input.entityId,
+      aliasId: input.aliasId ?? null,
+      chapterId: null,
+      chunkId: null,
+      contentHash: input.contentHash ?? "mention-hash",
+      sourceContentHash: input.sourceContentHash ?? "source-hash",
+      startOffset: 0,
+      endOffset: 2,
+      quote: input.quote ?? "아린",
+      extractorVersion: "entity-v1",
+      confidence: 80,
+      status: "suggested",
+      updatedAt: input.nowIso,
+    });
+  }
+
   it("lists suggested aliases with canonical entity names", async () => {
     const seed = await seedAlias();
 
@@ -81,6 +109,13 @@ describe("memoryEntityReviewService", () => {
 
   it("confirms a suggested alias and canonical entity", async () => {
     const seed = await seedAlias();
+    await attachEntityMention({
+      projectId: seed.projectId,
+      entityId: seed.entityId,
+      aliasId: seed.aliasId,
+      nowIso: seed.nowIso,
+      quote: "검은 기사",
+    });
 
     const result = await confirmMemoryEntityAlias({
       projectId: seed.projectId,
@@ -106,6 +141,11 @@ describe("memoryEntityReviewService", () => {
 
   it("lists suggested entities and confirms one as canonical exportable memory", async () => {
     const seed = await seedAlias();
+    await attachEntityMention({
+      projectId: seed.projectId,
+      entityId: seed.entityId,
+      nowIso: seed.nowIso,
+    });
 
     const list = await listSuggestedMemoryEntities({
       projectId: seed.projectId,
@@ -116,7 +156,7 @@ describe("memoryEntityReviewService", () => {
         id: seed.entityId,
         canonicalName: "아린",
         status: "suggested",
-        mentionCount: 0,
+        mentionCount: 1,
       }),
     ]);
 
@@ -139,12 +179,63 @@ describe("memoryEntityReviewService", () => {
     expect(entityRow.status).toBe("confirmed");
   });
 
+  it("blocks confirming a suggested entity when mention evidence is missing", async () => {
+    const seed = await seedAlias();
+
+    await expect(
+      confirmMemoryEntity({
+        projectId: seed.projectId,
+        entityId: seed.entityId,
+        nowIso: seed.nowIso,
+      }),
+    ).rejects.toThrow("MEMORY_ENTITY_EVIDENCE_REQUIRED");
+
+    const [entityRow] = await db
+      .getClient()
+      .select()
+      .from(memoryEntity)
+      .where(eq(memoryEntity.id, seed.entityId));
+    expect(entityRow.status).toBe("suggested");
+  });
+
+  it("blocks confirming an alias when alias mention evidence is missing", async () => {
+    const seed = await seedAlias();
+    await attachEntityMention({
+      projectId: seed.projectId,
+      entityId: seed.entityId,
+      aliasId: null,
+      nowIso: seed.nowIso,
+    });
+
+    await expect(
+      confirmMemoryEntityAlias({
+        projectId: seed.projectId,
+        aliasId: seed.aliasId,
+        nowIso: seed.nowIso,
+      }),
+    ).rejects.toThrow("MEMORY_ENTITY_EVIDENCE_REQUIRED");
+
+    const [aliasRow] = await db
+      .getClient()
+      .select()
+      .from(memoryEntityAlias)
+      .where(eq(memoryEntityAlias.id, seed.aliasId));
+    const [entityRow] = await db
+      .getClient()
+      .select()
+      .from(memoryEntity)
+      .where(eq(memoryEntity.id, seed.entityId));
+    expect(aliasRow.status).toBe("suggested");
+    expect(entityRow.status).toBe("suggested");
+  });
+
   it("rejects a suggested entity as reviewed canonical memory", async () => {
     const seed = await seedAlias();
 
     const result = await rejectMemoryEntity({
       projectId: seed.projectId,
       entityId: seed.entityId,
+      reason: "동명이인 오탐",
       nowIso: seed.nowIso,
     });
 
@@ -159,6 +250,8 @@ describe("memoryEntityReviewService", () => {
       .from(memoryEntity)
       .where(eq(memoryEntity.id, seed.entityId));
     expect(entityRow.status).toBe("rejected");
+    expect(entityRow.rejectedAt).toBe(seed.nowIso);
+    expect(entityRow.rejectionReason).toBe("동명이인 오탐");
   });
 
   it("rejects a suggested alias without changing the canonical entity", async () => {
@@ -167,6 +260,7 @@ describe("memoryEntityReviewService", () => {
     const result = await rejectMemoryEntityAlias({
       projectId: seed.projectId,
       aliasId: seed.aliasId,
+      reason: "별칭이 아니라 호칭",
       nowIso: seed.nowIso,
     });
 
@@ -183,6 +277,8 @@ describe("memoryEntityReviewService", () => {
       .where(eq(memoryEntity.id, seed.entityId));
 
     expect(aliasRow.status).toBe("rejected");
+    expect(aliasRow.rejectedAt).toBe(seed.nowIso);
+    expect(aliasRow.rejectionReason).toBe("별칭이 아니라 호칭");
     expect(entityRow.status).toBe("suggested");
   });
 

@@ -32,6 +32,16 @@ function clampLimit(limit: number | undefined): number {
   return Math.min(Math.max(limit, 1), MAX_REVIEW_LIMIT);
 }
 
+type EntityEvidenceState = {
+  hasEvidence: number;
+};
+
+function assertMemoryEntityHasEvidence(state: EntityEvidenceState): void {
+  if (Number(state.hasEvidence) !== 1) {
+    throw new Error("MEMORY_ENTITY_EVIDENCE_REQUIRED");
+  }
+}
+
 export async function listSuggestedMemoryEntityAliases(
   input: MemoryEntityAliasReviewQueueInput,
 ): Promise<MemoryEntityAliasReviewQueueResult> {
@@ -121,37 +131,66 @@ export async function listSuggestedMemoryEntities(
 export async function confirmMemoryEntity(
   input: MemoryEntityConfirmInput & { nowIso?: string },
 ): Promise<MemoryEntityReviewMutationResult> {
-  const updated = await db
-    .getClient()
-    .update(memoryEntity)
-    .set({
-      status: "confirmed",
-      updatedAt: input.nowIso ?? new Date().toISOString(),
-    })
-    .where(
-      and(
-        eq(memoryEntity.projectId, input.projectId),
-        eq(memoryEntity.id, input.entityId),
-        eq(memoryEntity.status, "suggested"),
-      ),
-    );
+  const nowIso = input.nowIso ?? new Date().toISOString();
+  const updated = db.getClient().transaction((tx) => {
+    const [candidate] = tx.all<EntityEvidenceState>(sql`
+      SELECT EXISTS (
+        SELECT 1
+        FROM "MemoryEntityMention" mention
+        WHERE mention."projectId" = entity."projectId"
+          AND mention."entityId" = entity."id"
+          AND trim(mention."contentHash") <> ''
+          AND trim(mention."sourceContentHash") <> ''
+          AND trim(mention."quote") <> ''
+      ) AS "hasEvidence"
+      FROM "MemoryEntity" entity
+      WHERE entity."projectId" = ${input.projectId}
+        AND entity."id" = ${input.entityId}
+        AND entity."status" = 'suggested'
+      LIMIT 1;
+    `);
+    if (!candidate) return false;
+    assertMemoryEntityHasEvidence(candidate);
+    const result = tx
+      .update(memoryEntity)
+      .set({
+        status: "confirmed",
+        updatedAt: nowIso,
+      })
+      .where(
+        and(
+          eq(memoryEntity.projectId, input.projectId),
+          eq(memoryEntity.id, input.entityId),
+          eq(memoryEntity.status, "suggested"),
+        ),
+      )
+      .run();
+    return result.changes > 0;
+  });
 
   return {
-    updated: updated.changes > 0,
-    status: updated.changes > 0 ? "confirmed" : undefined,
-    canonicalExportable: updated.changes > 0,
+    updated,
+    status: updated ? "confirmed" : undefined,
+    canonicalExportable: updated,
   };
 }
 
 export async function rejectMemoryEntity(
   input: MemoryEntityRejectInput & { nowIso?: string },
 ): Promise<MemoryEntityReviewMutationResult> {
+  const reason = input.reason.trim();
+  if (reason.length === 0) {
+    throw new Error("MEMORY_ENTITY_REJECTION_REASON_REQUIRED");
+  }
+  const nowIso = input.nowIso ?? new Date().toISOString();
   const updated = await db
     .getClient()
     .update(memoryEntity)
     .set({
       status: "rejected",
-      updatedAt: input.nowIso ?? new Date().toISOString(),
+      rejectedAt: nowIso,
+      rejectionReason: reason,
+      updatedAt: nowIso,
     })
     .where(
       and(
@@ -190,6 +229,25 @@ export async function confirmMemoryEntityAlias(
       .all();
 
     if (!aliasRow) return false;
+    const [candidate] = tx.all<EntityEvidenceState>(sql`
+      SELECT EXISTS (
+        SELECT 1
+        FROM "MemoryEntityMention" mention
+        WHERE mention."projectId" = alias."projectId"
+          AND mention."entityId" = alias."entityId"
+          AND mention."aliasId" = alias."id"
+          AND trim(mention."contentHash") <> ''
+          AND trim(mention."sourceContentHash") <> ''
+          AND trim(mention."quote") <> ''
+      ) AS "hasEvidence"
+      FROM "MemoryEntityAlias" alias
+      WHERE alias."projectId" = ${input.projectId}
+        AND alias."id" = ${input.aliasId}
+        AND alias."status" = 'suggested'
+      LIMIT 1;
+    `);
+    if (!candidate) return false;
+    assertMemoryEntityHasEvidence(candidate);
 
     tx.update(memoryEntityAlias)
       .set({ status: "confirmed", updatedAt: nowIso })
@@ -214,11 +272,20 @@ export async function confirmMemoryEntityAlias(
 export async function rejectMemoryEntityAlias(
   input: MemoryEntityAliasRejectInput & { nowIso?: string },
 ): Promise<MemoryEntityAliasReviewMutationResult> {
+  const reason = input.reason.trim();
+  if (reason.length === 0) {
+    throw new Error("MEMORY_ENTITY_ALIAS_REJECTION_REASON_REQUIRED");
+  }
   const nowIso = input.nowIso ?? new Date().toISOString();
   const result = await db
     .getClient()
     .update(memoryEntityAlias)
-    .set({ status: "rejected", updatedAt: nowIso })
+    .set({
+      status: "rejected",
+      rejectedAt: nowIso,
+      rejectionReason: reason,
+      updatedAt: nowIso,
+    })
     .where(
       and(
         eq(memoryEntityAlias.projectId, input.projectId),

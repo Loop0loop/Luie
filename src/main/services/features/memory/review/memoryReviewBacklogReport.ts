@@ -3,8 +3,10 @@ import { alias } from "drizzle-orm/sqlite-core";
 import {
   chapter,
   db,
+  memoryChunk,
   memoryEntity,
   memoryEntityMention,
+  memoryEpisode,
   memoryEpisodeEvidence,
   memoryFact,
   memoryFactEvidence,
@@ -54,14 +56,28 @@ export type MemoryReviewFactCandidate = {
   evidence: MemoryReviewFactEvidence[];
 };
 
+export type MemoryReviewStaleEvidence = {
+  kind: "entity_mention" | "episode_evidence";
+  id: string;
+  ownerId: string;
+  ownerTitle: string;
+  chunkId: string | null;
+  chapterId: string | null;
+  chapterOrder: number | null;
+  quote: string;
+  reason: "chunk_missing" | "quote_missing_from_chunk";
+};
+
 export type MemoryReviewBacklogReport = {
   projectId: string;
   generatedAt: string;
   entityCandidates: MemoryReviewEntityCandidate[];
   factCandidates: MemoryReviewFactCandidate[];
+  staleEvidence: MemoryReviewStaleEvidence[];
   counts: {
     suggestedEntities: number;
     suggestedFacts: number;
+    staleEvidence: number;
   };
 };
 
@@ -221,6 +237,105 @@ export async function getMemoryReviewBacklogReport(input: {
     evidenceByFact.set(evidence.factId, list);
   }
 
+  const staleEntityMentions = await client
+    .select({
+      kind: memoryEntityMention.id,
+      id: memoryEntityMention.id,
+      ownerId: memoryEntity.id,
+      ownerTitle: memoryEntity.canonicalName,
+      chunkId: memoryEntityMention.chunkId,
+      chapterId: memoryEntityMention.chapterId,
+      chapterOrder: chapter.order,
+      quote: memoryEntityMention.quote,
+      chunkExists: memoryChunk.id,
+      chunkContent: memoryChunk.content,
+    })
+    .from(memoryEntityMention)
+    .innerJoin(
+      memoryEntity,
+      and(
+        eq(memoryEntity.projectId, memoryEntityMention.projectId),
+        eq(memoryEntity.id, memoryEntityMention.entityId),
+      ),
+    )
+    .leftJoin(memoryChunk, eq(memoryChunk.id, memoryEntityMention.chunkId))
+    .leftJoin(chapter, eq(chapter.id, memoryEntityMention.chapterId))
+    .where(
+      and(
+        eq(memoryEntityMention.projectId, input.projectId),
+        eq(memoryEntity.status, "confirmed"),
+      ),
+    )
+    .orderBy(asc(memoryEntity.canonicalName), asc(memoryEntityMention.id));
+
+  const staleEpisodeEvidence = await client
+    .select({
+      kind: memoryEpisodeEvidence.id,
+      id: memoryEpisodeEvidence.id,
+      ownerId: memoryEpisode.id,
+      ownerTitle: memoryEpisode.title,
+      chunkId: memoryEpisodeEvidence.chunkId,
+      chapterId: memoryEpisodeEvidence.chapterId,
+      chapterOrder: chapter.order,
+      quote: memoryEpisodeEvidence.quote,
+      chunkExists: memoryChunk.id,
+      chunkContent: memoryChunk.content,
+    })
+    .from(memoryEpisodeEvidence)
+    .innerJoin(
+      memoryEpisode,
+      and(
+        eq(memoryEpisode.projectId, memoryEpisodeEvidence.projectId),
+        eq(memoryEpisode.id, memoryEpisodeEvidence.episodeId),
+      ),
+    )
+    .leftJoin(memoryChunk, eq(memoryChunk.id, memoryEpisodeEvidence.chunkId))
+    .leftJoin(chapter, eq(chapter.id, memoryEpisodeEvidence.chapterId))
+    .where(
+      and(
+        eq(memoryEpisodeEvidence.projectId, input.projectId),
+        eq(memoryEpisode.status, "confirmed"),
+      ),
+    )
+    .orderBy(asc(memoryEpisode.title), asc(memoryEpisodeEvidence.id));
+
+  const staleEvidence: MemoryReviewStaleEvidence[] = [
+    ...staleEntityMentions.flatMap((row): MemoryReviewStaleEvidence[] => {
+      const reason = getStaleEvidenceReason(row);
+      if (!reason) return [];
+      return [
+        {
+          kind: "entity_mention",
+          id: row.id,
+          ownerId: row.ownerId,
+          ownerTitle: row.ownerTitle,
+          chunkId: row.chunkId,
+          chapterId: row.chapterId,
+          chapterOrder: row.chapterOrder ?? null,
+          quote: row.quote,
+          reason,
+        },
+      ];
+    }),
+    ...staleEpisodeEvidence.flatMap((row): MemoryReviewStaleEvidence[] => {
+      const reason = getStaleEvidenceReason(row);
+      if (!reason) return [];
+      return [
+        {
+          kind: "episode_evidence",
+          id: row.id,
+          ownerId: row.ownerId,
+          ownerTitle: row.ownerTitle,
+          chunkId: row.chunkId,
+          chapterId: row.chapterId,
+          chapterOrder: row.chapterOrder ?? null,
+          quote: row.quote,
+          reason,
+        },
+      ];
+    }),
+  ].slice(0, limit);
+
   return {
     projectId: input.projectId,
     generatedAt: new Date().toISOString(),
@@ -238,9 +353,23 @@ export async function getMemoryReviewBacklogReport(input: {
       ).length,
       evidence: evidenceByFact.get(fact.id) ?? [],
     })),
+    staleEvidence,
     counts: {
       suggestedEntities: entities.length,
       suggestedFacts: facts.length,
+      staleEvidence: staleEvidence.length,
     },
   };
+}
+
+function getStaleEvidenceReason(row: {
+  chunkId: string | null;
+  chunkExists: string | null;
+  chunkContent: string | null;
+  quote: string;
+}): MemoryReviewStaleEvidence["reason"] | null {
+  if (row.chunkId === null) return null;
+  if (row.chunkExists === null) return "chunk_missing";
+  if (!row.chunkContent?.includes(row.quote)) return "quote_missing_from_chunk";
+  return null;
 }

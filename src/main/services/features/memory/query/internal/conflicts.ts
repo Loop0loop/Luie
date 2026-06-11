@@ -10,7 +10,7 @@ import type {
   NarrativeMemoryFactResult,
 } from "../../../../../../shared/types/search.js";
 import { ACTIVE_FACT_STATUSES } from "./constants.js";
-import { countFactEvidence } from "./evidence.js";
+import { countFactEvidence, fetchFactEvidenceQuotes } from "./evidence.js";
 import { loadEntityInfo, resolveMemoryEntityIds } from "./entity.js";
 
 async function fetchFactSummariesFromIds(input: {
@@ -181,6 +181,7 @@ function buildConflictFactSummary(input: {
     canonStatus: string;
   };
   evidenceCount: number;
+  evidenceQuotes: string[];
   entityInfo: Map<string, { name: string; type: string }>;
 }): MemoryConflictFactSummary {
   return {
@@ -203,6 +204,7 @@ function buildConflictFactSummary(input: {
     provenanceKind: input.row.provenanceKind,
     canonStatus: input.row.canonStatus,
     evidenceCount: input.evidenceCount,
+    evidenceQuotes: input.evidenceQuotes,
   };
 }
 
@@ -251,6 +253,10 @@ export async function fetchConflictFactPairs(input: {
     projectId: input.projectId,
     factIds,
   });
+  const evidenceQuotes = await fetchFactEvidenceQuotes({
+    projectId: input.projectId,
+    factIds,
+  });
 
   const factMap = new Map(facts.map((fact) => [fact.id, fact] as const));
 
@@ -266,11 +272,13 @@ export async function fetchConflictFactPairs(input: {
         invalidatedFact: buildConflictFactSummary({
           row: invalidated,
           evidenceCount: evidenceCounts.get(invalidated.id) ?? 0,
+          evidenceQuotes: evidenceQuotes.get(invalidated.id) ?? [],
           entityInfo,
         }),
         invalidatingFact: buildConflictFactSummary({
           row: invalidating,
           evidenceCount: evidenceCounts.get(invalidating.id) ?? 0,
+          evidenceQuotes: evidenceQuotes.get(invalidating.id) ?? [],
           entityInfo,
         }),
       };

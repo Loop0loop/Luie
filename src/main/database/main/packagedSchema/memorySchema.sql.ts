@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS "MemoryEntity" (
     "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TEXT NOT NULL,
     "deletedAt" TEXT,
+    "rejectedAt" TEXT,
+    "rejectionReason" TEXT,
     CONSTRAINT "MemoryEntity_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "MemoryEntityAlias" (
@@ -22,6 +24,8 @@ CREATE TABLE IF NOT EXISTS "MemoryEntityAlias" (
     "status" TEXT NOT NULL DEFAULT 'suggested',
     "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TEXT NOT NULL,
+    "rejectedAt" TEXT,
+    "rejectionReason" TEXT,
     CONSTRAINT "MemoryEntityAlias_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "MemoryEntityAlias_entityId_fkey" FOREIGN KEY ("entityId") REFERENCES "MemoryEntity" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );

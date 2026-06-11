@@ -284,6 +284,8 @@ export function createProjectApi({
         safeInvoke(IPC_CHANNELS.MEMORY_GET_CONFLICT_QUEUE, input),
       getEpisodeReviewQueue: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_EPISODE_REVIEW_QUEUE, input),
+      confirmEpisode: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_EPISODE_CONFIRM, input),
       rejectEpisode: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_EPISODE_REJECT, input),
       getFactReviewQueue: (input) =>

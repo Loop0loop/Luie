@@ -12,6 +12,27 @@ type ConflictQueuePanelProps = {
   onResolve: (item: AnalysisConflictItem, winnerFactId: string) => void;
 };
 
+function renderEvidenceQuotes(
+  title: string,
+  quotes: AnalysisConflictItem["invalidatedFact"]["evidenceQuotes"],
+) {
+  if (quotes.length === 0) return null;
+
+  return (
+    <div className="mt-1 space-y-1">
+      <div className="text-[11px] font-medium text-muted">{title} 근거</div>
+      {quotes.map((quote) => (
+        <blockquote
+          key={quote}
+          className="border-l-2 border-border pl-2 text-[11px] leading-relaxed text-muted"
+        >
+          {quote}
+        </blockquote>
+      ))}
+    </div>
+  );
+}
+
 export function ConflictQueuePanel({
   visible,
   loading,
@@ -52,9 +73,11 @@ export function ConflictQueuePanel({
                 <div className="text-muted">
                   무효화: {renderFact(item.invalidatedFact)}
                 </div>
+                {renderEvidenceQuotes("이전 사실", item.invalidatedFact.evidenceQuotes)}
                 <div className="text-muted">
                   무효화한 사실: {renderFact(item.invalidatingFact)}
                 </div>
+                {renderEvidenceQuotes("신규 사실", item.invalidatingFact.evidenceQuotes)}
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   <button
                     type="button"

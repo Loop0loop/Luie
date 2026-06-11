@@ -5,12 +5,16 @@ import { db } from "../src/main/database/main/databaseService.js";
 import { buildLayer3Evidence } from "../src/main/services/features/rag/internal/contextAssembler.layer3.js";
 import { buildRagGrounding } from "../src/main/services/features/rag/grounding.js";
 import { runLiveMemoryEvalSuite } from "../src/main/services/features/memory/eval/memoryEvalRunner.js";
+import { summarizeMemoryEvalOptimizationFailures } from "../src/main/services/features/memory/eval/memoryEvalOptimizationGuard.js";
 
 type CliOptions = {
   projectId: string;
   label: string;
   topK: number;
   out?: string;
+  assertOptimizedRecall: boolean;
+  minRecall: number;
+  maxP0Failures: number;
 };
 
 function parseArgs(argv: string[]): CliOptions {
@@ -18,6 +22,9 @@ function parseArgs(argv: string[]): CliOptions {
     projectId: "",
     label: "headless-rag-eval",
     topK: 5,
+    assertOptimizedRecall: false,
+    minRecall: 0.98,
+    maxP0Failures: 0,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -43,6 +50,28 @@ function parseArgs(argv: string[]): CliOptions {
     }
     if (arg === "--out" && next) {
       options.out = next;
+      index += 1;
+      continue;
+    }
+    if (arg === "--assert-optimized-recall") {
+      options.assertOptimizedRecall = true;
+      continue;
+    }
+    if (arg === "--min-recall" && next) {
+      const parsed = Number.parseFloat(next);
+      if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) {
+        throw new Error("--min-recall must be a number from 0 to 1");
+      }
+      options.minRecall = parsed;
+      index += 1;
+      continue;
+    }
+    if (arg === "--max-p0-failures" && next) {
+      const parsed = Number.parseInt(next, 10);
+      if (!Number.isFinite(parsed) || parsed < 0) {
+        throw new Error("--max-p0-failures must be a non-negative integer");
+      }
+      options.maxP0Failures = parsed;
       index += 1;
     }
   }
@@ -82,6 +111,22 @@ async function main(): Promise<void> {
     } else {
       // eslint-disable-next-line no-console -- CLI script output.
       console.log(json);
+    }
+    if (options.assertOptimizedRecall) {
+      const failures = summarizeMemoryEvalOptimizationFailures({
+        label: options.label,
+        averageContextRecallAtK: result.averageContextRecallAtK,
+        totalP0FailureCount: result.totalP0FailureCount,
+        minAverageContextRecallAtK: options.minRecall,
+        maxTotalP0FailureCount: options.maxP0Failures,
+      });
+      if (failures.length > 0) {
+        throw new Error(
+          `Memory eval optimization guard failed:\n${failures.join("\n")}`,
+        );
+      }
+      // eslint-disable-next-line no-console -- CLI script assertion output.
+      console.log("Memory eval optimization guard passed");
     }
   } finally {
     await db.disconnect();

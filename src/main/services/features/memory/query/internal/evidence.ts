@@ -38,6 +38,44 @@ export async function countFactEvidence(input: {
   return counts;
 }
 
+export async function fetchFactEvidenceQuotes(input: {
+  projectId: string;
+  factIds: string[];
+  limitPerFact?: number;
+}): Promise<Map<string, string[]>> {
+  if (input.factIds.length === 0) return new Map();
+
+  const rows = await db
+    .getClient()
+    .select({
+      factId: memoryFactEvidence.factId,
+      quote: memoryEpisodeEvidence.quote,
+    })
+    .from(memoryFactEvidence)
+    .innerJoin(
+      memoryEpisodeEvidence,
+      eq(memoryEpisodeEvidence.id, memoryFactEvidence.evidenceId),
+    )
+    .where(
+      and(
+        eq(memoryFactEvidence.projectId, input.projectId),
+        eq(memoryEpisodeEvidence.projectId, input.projectId),
+        inArray(memoryFactEvidence.factId, input.factIds),
+      ),
+    );
+
+  const limit = input.limitPerFact ?? 3;
+  const quotes = new Map<string, string[]>();
+  for (const row of rows) {
+    const list = quotes.get(row.factId) ?? [];
+    if (list.length < limit) {
+      list.push(row.quote);
+    }
+    quotes.set(row.factId, list);
+  }
+  return quotes;
+}
+
 export async function fetchFactEvidence(input: {
   projectId: string;
   facts: NarrativeMemoryFactResult[];

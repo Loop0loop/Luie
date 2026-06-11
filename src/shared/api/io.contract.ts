@@ -117,6 +117,9 @@ export type IoRendererApi = {
     getEpisodeReviewQueue: (
       input: SharedTypes.MemoryEpisodeReviewQueueInput,
     ) => Promise<IPCResponse<SharedTypes.MemoryEpisodeReviewQueueResult>>;
+    confirmEpisode: (
+      input: SharedTypes.MemoryEpisodeConfirmInput,
+    ) => Promise<IPCResponse<SharedTypes.MemoryEpisodeReviewMutationResult>>;
     rejectEpisode: (
       input: SharedTypes.MemoryEpisodeRejectInput,
     ) => Promise<IPCResponse<SharedTypes.MemoryEpisodeRejectResult>>;

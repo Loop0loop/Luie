@@ -15,6 +15,7 @@ describe("memory review template runner", () => {
     expect(source).toContain("getMemoryReviewBacklogReport");
     expect(source).toContain("--out");
     expect(source).toContain("TODO is intentionally invalid");
+    expect(source).toContain("staleEvidence");
     expect(source).toContain('action: "TODO"');
     expect(packageJson.scripts?.["memory:review-template"]).toBe(
       "tsx scripts/generate-memory-review-template.ts",

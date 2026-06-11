@@ -16,6 +16,23 @@ import type {
   MemoryTemporalFactReviewQueueResult,
 } from "../../../../../shared/types/search.js";
 
+type TemporalFactConfirmationState = {
+  provenanceKind: string;
+  canonStatus: string;
+  hasEvidence: number;
+};
+
+function assertTemporalFactCanBecomeCanonical(
+  state: TemporalFactConfirmationState,
+): void {
+  if (state.provenanceKind !== "canon" || state.canonStatus !== "canon") {
+    throw new Error("MEMORY_FACT_CANON_STATUS_REQUIRED");
+  }
+  if (Number(state.hasEvidence) !== 1) {
+    throw new Error("MEMORY_FACT_EVIDENCE_REQUIRED");
+  }
+}
+
 export async function listSuggestedMemoryTemporalFacts(
   input: MemoryTemporalFactReviewQueueInput,
 ): Promise<MemoryTemporalFactReviewQueueResult> {
@@ -82,49 +99,92 @@ export async function listSuggestedMemoryTemporalFacts(
 export async function confirmMemoryTemporalFact(
   input: MemoryTemporalFactConfirmInput & { nowIso?: string },
 ): Promise<MemoryTemporalFactReviewMutationResult> {
-  const [candidate] = await db
-    .getClient()
-    .select({
-      provenanceKind: memoryFact.provenanceKind,
-      canonStatus: memoryFact.canonStatus,
-    })
-    .from(memoryFact)
-    .where(
-      and(
-        eq(memoryFact.projectId, input.projectId),
-        eq(memoryFact.id, input.factId),
-        eq(memoryFact.status, "suggested"),
-      ),
-    )
-    .limit(1);
-  if (
-    candidate &&
-    (candidate.provenanceKind !== "canon" || candidate.canonStatus !== "canon")
-  ) {
-    throw new Error("MEMORY_FACT_CANON_STATUS_REQUIRED");
-  }
-  const updated = await db
-    .getClient()
-    .update(memoryFact)
-    .set({
-      status: "confirmed",
-      rejectedAt: null,
-      rejectionReason: null,
-      updatedAt: input.nowIso ?? new Date().toISOString(),
-    })
-    .where(
-      and(
-        eq(memoryFact.projectId, input.projectId),
-        eq(memoryFact.id, input.factId),
-        eq(memoryFact.status, "suggested"),
-      ),
-    );
+  const nowIso = input.nowIso ?? new Date().toISOString();
+  const updated = db.getClient().transaction((tx) => {
+    const [candidate] = tx
+      .all<TemporalFactConfirmationState>(sql`
+        SELECT
+          fact."provenanceKind" AS "provenanceKind",
+          fact."canonStatus" AS "canonStatus",
+          EXISTS (
+            SELECT 1
+            FROM "MemoryFactEvidence" factEvidence
+            INNER JOIN "MemoryEpisodeEvidence" episodeEvidence
+              ON episodeEvidence."id" = factEvidence."evidenceId"
+              AND episodeEvidence."projectId" = factEvidence."projectId"
+            WHERE factEvidence."projectId" = fact."projectId"
+              AND factEvidence."factId" = fact."id"
+              AND trim(fact."sourceContentHash") <> ''
+              AND trim(episodeEvidence."sourceContentHash") <> ''
+              AND trim(episodeEvidence."quote") <> ''
+          ) AS "hasEvidence"
+        FROM "MemoryFact" fact
+        WHERE fact."projectId" = ${input.projectId}
+          AND fact."id" = ${input.factId}
+          AND fact."status" = 'suggested'
+        LIMIT 1;
+      `);
+    if (!candidate) return false;
+    assertTemporalFactCanBecomeCanonical(candidate);
+    const result = tx
+      .update(memoryFact)
+      .set({
+        status: "confirmed",
+        rejectedAt: null,
+        rejectionReason: null,
+        updatedAt: nowIso,
+      })
+      .where(
+        and(
+          eq(memoryFact.projectId, input.projectId),
+          eq(memoryFact.id, input.factId),
+          eq(memoryFact.status, "suggested"),
+        ),
+      )
+      .run();
+    return result.changes > 0;
+  });
 
   return {
-    updated: updated.changes > 0,
-    status: updated.changes > 0 ? "confirmed" : undefined,
-    canonicalExportable: updated.changes > 0,
+    updated,
+    status: updated ? "confirmed" : undefined,
+    canonicalExportable: updated,
   };
+}
+
+export async function backfillLegacyConfirmedMemoryFactCanonStatus(input: {
+  projectId: string;
+  nowIso?: string;
+}): Promise<{ updated: number }> {
+  const result = await db.getClient().run(sql`
+    UPDATE "MemoryFact"
+    SET
+      "provenanceKind" = 'canon',
+      "canonStatus" = 'canon',
+      "updatedAt" = ${input.nowIso ?? new Date().toISOString()}
+    WHERE "projectId" = ${input.projectId}
+      AND "status" = 'confirmed'
+      AND "provenanceKind" = 'unknown'
+      AND "canonStatus" = 'unknown'
+      AND trim("sourceContentHash") <> ''
+      AND EXISTS (
+        SELECT 1
+        FROM "MemoryFactEvidence" factEvidence
+        INNER JOIN "MemoryEpisodeEvidence" episodeEvidence
+          ON episodeEvidence."id" = factEvidence."evidenceId"
+          AND episodeEvidence."projectId" = factEvidence."projectId"
+        INNER JOIN "MemoryEpisode" episode
+          ON episode."id" = episodeEvidence."episodeId"
+          AND episode."projectId" = episodeEvidence."projectId"
+        WHERE factEvidence."projectId" = "MemoryFact"."projectId"
+          AND factEvidence."factId" = "MemoryFact"."id"
+          AND episode."sourceType" IN ('chapter', 'scene')
+          AND episode."status" IN ('suggested', 'confirmed')
+          AND trim(episodeEvidence."sourceContentHash") <> ''
+          AND trim(episodeEvidence."quote") <> ''
+      );
+  `);
+  return { updated: result.changes };
 }
 
 export async function rejectMemoryTemporalFact(
@@ -189,6 +249,31 @@ export async function resolveMemoryTemporalFactConflict(
     const loserFactId = isInvalidatedWinner
       ? conflict.invalidatingFactId
       : conflict.invalidatedFactId;
+    const [winnerState] = tx.all<TemporalFactConfirmationState>(sql`
+      SELECT
+        fact."provenanceKind" AS "provenanceKind",
+        fact."canonStatus" AS "canonStatus",
+        EXISTS (
+          SELECT 1
+          FROM "MemoryFactEvidence" factEvidence
+          INNER JOIN "MemoryEpisodeEvidence" episodeEvidence
+            ON episodeEvidence."id" = factEvidence."evidenceId"
+            AND episodeEvidence."projectId" = factEvidence."projectId"
+          WHERE factEvidence."projectId" = fact."projectId"
+            AND factEvidence."factId" = fact."id"
+            AND trim(fact."sourceContentHash") <> ''
+            AND trim(episodeEvidence."sourceContentHash") <> ''
+            AND trim(episodeEvidence."quote") <> ''
+        ) AS "hasEvidence"
+      FROM "MemoryFact" fact
+      WHERE fact."projectId" = ${input.projectId}
+        AND fact."id" = ${winnerFactId}
+      LIMIT 1;
+    `);
+    if (!winnerState) {
+      return;
+    }
+    assertTemporalFactCanBecomeCanonical(winnerState);
 
     const winnerUpdate = tx
       .update(memoryFact)

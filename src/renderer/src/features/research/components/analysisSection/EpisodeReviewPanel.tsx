@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, XCircle } from "lucide-react";
+import { CheckCircle, ChevronDown, ChevronRight, XCircle } from "lucide-react";
 import type { AnalysisEpisodeReviewItem } from "./types";
 
 type EpisodeReviewPanelProps = {
@@ -6,8 +6,9 @@ type EpisodeReviewPanelProps = {
   loading: boolean;
   error: string | null;
   items: AnalysisEpisodeReviewItem[];
-  rejectingEpisodeId: string | null;
+  mutatingEpisodeId: string | null;
   onToggle: () => void;
+  onConfirm: (item: AnalysisEpisodeReviewItem) => void;
   onReject: (item: AnalysisEpisodeReviewItem) => void;
 };
 
@@ -19,8 +20,9 @@ export function EpisodeReviewPanel({
   loading,
   error,
   items,
-  rejectingEpisodeId,
+  mutatingEpisodeId,
   onToggle,
+  onConfirm,
   onReject,
 }: EpisodeReviewPanelProps) {
   return (
@@ -52,16 +54,28 @@ export function EpisodeReviewPanel({
                     <div className="font-medium text-fg/90">{item.title}</div>
                     <div className="mt-1 text-muted">{item.summary}</div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => onReject(item)}
-                    disabled={rejectingEpisodeId === item.id}
-                    className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded border border-border text-muted hover:text-danger disabled:opacity-50"
-                    title="거절"
-                    aria-label={`${item.title} 거절`}
-                  >
-                    <XCircle className="h-4 w-4" />
-                  </button>
+                  <div className="shrink-0 flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => onConfirm(item)}
+                      disabled={mutatingEpisodeId === item.id}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded border border-border text-muted hover:text-success disabled:opacity-50"
+                      title="확정"
+                      aria-label={`${item.title} 확정`}
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onReject(item)}
+                      disabled={mutatingEpisodeId === item.id}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded border border-border text-muted hover:text-danger disabled:opacity-50"
+                      title="거절"
+                      aria-label={`${item.title} 거절`}
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted">
                   <span>{item.episodeType}</span>

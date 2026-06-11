@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop -- Episode extraction claims and completes jobs sequentially to avoid duplicate job processing. */
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import {
   db,
@@ -134,7 +135,7 @@ export async function processPendingEpisodeExtractionJobs(input: {
       });
 
       for (const candidate of extracted) {
-        await createMemoryEpisodeCandidate({
+        const result = await createMemoryEpisodeCandidate({
           nowIso,
           projectId: job.projectId,
           sourceType: job.sourceType,
@@ -165,6 +166,7 @@ export async function processPendingEpisodeExtractionJobs(input: {
             };
           }),
         });
+        if (!result.created) continue;
       }
 
       await client

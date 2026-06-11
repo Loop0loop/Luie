@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop -- Entity extraction writes are intentionally sequential to preserve candidate, alias, and mention ordering. */
 import crypto from "node:crypto";
 import { and, asc, eq } from "drizzle-orm";
 import {
@@ -100,6 +101,7 @@ export async function processMemoryEntityExtraction(input: {
       confidence: candidate.confidence ?? 0,
       nowIso,
     });
+    if (entityId === null) continue;
     entityCount += 1;
 
     for (const alias of candidate.aliases ?? []) {
@@ -151,10 +153,10 @@ async function getOrCreateSuggestedEntity(input: {
   canonicalName: string;
   confidence: number;
   nowIso: string;
-}): Promise<string> {
+}): Promise<string | null> {
   const [existing] = await db
     .getClient()
-    .select({ id: memoryEntity.id })
+    .select({ id: memoryEntity.id, status: memoryEntity.status })
     .from(memoryEntity)
     .where(
       and(
@@ -164,7 +166,9 @@ async function getOrCreateSuggestedEntity(input: {
       ),
     )
     .limit(1);
-  if (existing) return existing.id;
+  if (existing) {
+    return existing.status === "rejected" ? null : existing.id;
+  }
 
   const id = crypto.randomUUID();
   await db.getClient().insert(memoryEntity).values({

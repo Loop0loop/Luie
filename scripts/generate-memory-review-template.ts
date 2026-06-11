@@ -87,15 +87,26 @@ async function main(): Promise<void> {
         note: "Edit each action to confirm or reject before running memory:apply-review-decisions. TODO is intentionally invalid.",
         entities,
         facts,
+        staleEvidence: report.staleEvidence.map((item) => ({
+          kind: item.kind,
+          id: item.id,
+          ownerId: item.ownerId,
+          ownerTitle: item.ownerTitle,
+          quote: item.quote,
+          reason: item.reason,
+          action: "REPAIR_OR_REVIEW_MANUALLY",
+        })),
       },
       null,
       2,
     );
     if (options.outPath) {
       await writeFile(path.resolve(options.outPath), `${payload}\n`, "utf8");
+      // eslint-disable-next-line no-console -- CLI script output.
       console.log(JSON.stringify({ written: path.resolve(options.outPath) }, null, 2));
       return;
     }
+    // eslint-disable-next-line no-console -- CLI script output.
     console.log(payload);
   } finally {
     await db.disconnect();
@@ -103,6 +114,7 @@ async function main(): Promise<void> {
 }
 
 await main().catch((error) => {
+  // eslint-disable-next-line no-console -- CLI script error output.
   console.error(
     JSON.stringify(
       { error: error instanceof Error ? error.message : String(error) },

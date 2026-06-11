@@ -10,8 +10,9 @@ type UseMemoryReviewPanelsInput = {
 export function useMemoryReviewPanels({
   projectId,
   chapterId,
+  memoryScope,
 }: UseMemoryReviewPanelsInput) {
-  const queues = useMemoryReviewQueues({ projectId, chapterId });
+  const queues = useMemoryReviewQueues({ projectId, chapterId, memoryScope });
 
   return {
     ...queues,

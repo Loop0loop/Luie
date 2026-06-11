@@ -16,6 +16,8 @@ export const memoryEntity = sqliteTable(
     createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updatedAt").notNull(),
     deletedAt: text("deletedAt"),
+    rejectedAt: text("rejectedAt"),
+    rejectionReason: text("rejectionReason"),
   },
   (table) => [
     index("MemoryEntity_projectId_type_idx").on(table.projectId, table.entityType),
@@ -46,6 +48,8 @@ export const memoryEntityAlias = sqliteTable(
     status: text("status").notNull().default("suggested"),
     createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updatedAt").notNull(),
+    rejectedAt: text("rejectedAt"),
+    rejectionReason: text("rejectionReason"),
   },
   (table) => [
     index("MemoryEntityAlias_entityId_idx").on(table.entityId),

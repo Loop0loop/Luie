@@ -15,12 +15,23 @@ describe("AnalysisSection conflict resolution UI", () => {
       ),
       "utf8",
     );
+    const queuesSource = readFileSync(
+      resolve(
+        process.cwd(),
+        "src/renderer/src/features/research/components/analysisSection/useMemoryReviewQueues.ts",
+      ),
+      "utf8",
+    );
 
-    expect(analysisSource).toContain("resolveFactConflict");
+    expect(analysisSource).toContain("ConflictQueuePanel");
     expect(analysisSource).toContain("handleResolveConflict");
+    expect(queuesSource).toContain("resolveFactConflict");
+    expect(queuesSource).toContain("getConflictQueue");
     expect(panelSource).toContain("채택");
     expect(panelSource).toContain("onResolve");
     expect(panelSource).toContain("invalidatedFact.id");
     expect(panelSource).toContain("invalidatingFact.id");
+    expect(panelSource).toContain("evidenceQuotes");
+    expect(panelSource).toContain("renderEvidenceQuotes");
   });
 });

@@ -107,6 +107,8 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
     "createdBy",
     "updatedAt",
     "deletedAt",
+    "rejectedAt",
+    "rejectionReason",
   ],
   MemoryEntityAlias: [
     "id",
@@ -118,6 +120,8 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
     "status",
     "createdAt",
     "updatedAt",
+    "rejectedAt",
+    "rejectionReason",
   ],
   MemoryEntityMention: [
     "id",

@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Maximize2, Minimize2, Minus } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { MessageList } from "./analysisSection/MessageList";
-import { EmptyState } from "./analysisSection/EmptyState";
 import { PromptComposer } from "./analysisSection/PromptComposer";
 import { SummaryDrawer } from "./analysisSection/SummaryDrawer";
 import type { MemoryScope } from "./analysisSection/types";
@@ -17,9 +16,10 @@ import { useAnalysisStore } from "../stores/analysisStore";
 interface FloatingWrapperProps {
   children: React.ReactNode;
   setViewMode: (mode: "fixView" | "floatingView") => void;
+  compact?: boolean;
 }
 
-function FloatingWrapper({ children, setViewMode }: FloatingWrapperProps) {
+function FloatingWrapper({ children, setViewMode, compact = false }: FloatingWrapperProps) {
   const {
     floatingPosition,
     setFloatingPosition,
@@ -40,23 +40,6 @@ function FloatingWrapper({ children, setViewMode }: FloatingWrapperProps) {
   const [isDraggingState, setIsDraggingState] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const isDragging = useRef(false);
-  const resizeListenersRef = useRef<{
-    onPointerMove: (e: PointerEvent) => void;
-    onPointerUp: (e: PointerEvent) => void;
-  } | null>(null);
-
-  useEffect(() => {
-    setPosition(floatingPosition);
-  }, [floatingPosition]);
-
-  useEffect(() => {
-    return () => {
-      if (resizeListenersRef.current) {
-        window.removeEventListener("pointermove", resizeListenersRef.current.onPointerMove);
-        window.removeEventListener("pointerup", resizeListenersRef.current.onPointerUp);
-      }
-    };
-  }, []);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest("button")) return;
@@ -167,75 +150,76 @@ function FloatingWrapper({ children, setViewMode }: FloatingWrapperProps) {
 
       const onPointerUp = (upEvent: PointerEvent) => {
         handle.releasePointerCapture(upEvent.pointerId);
-        window.removeEventListener("pointermove", onPointerMove);
-        window.removeEventListener("pointerup", onPointerUp);
-        resizeListenersRef.current = null;
+        resizeController.abort();
       };
 
-      resizeListenersRef.current = { onPointerMove, onPointerUp };
-
-      window.addEventListener("pointermove", onPointerMove);
-      window.addEventListener("pointerup", onPointerUp);
+      const resizeController = new AbortController();
+      window.addEventListener("pointermove", onPointerMove, {
+        signal: resizeController.signal,
+      });
+      window.addEventListener("pointerup", onPointerUp, {
+        signal: resizeController.signal,
+      });
     };
 
   return (
     <div
       data-testid="analysis-floating-container"
-      className={`fixed bottom-24 right-6 rounded-3xl border border-white/10 ring-1 ring-white/5 shadow-[0_24px_70px_-15px_rgba(0,0,0,0.7)] bg-neutral-900/55 backdrop-blur-2xl backdrop-saturate-150 z-[9999] flex flex-col overflow-hidden ${
+      className={`group fixed bottom-24 right-6 rounded-3xl border border-white/10 ring-1 ring-white/5 shadow-[0_24px_70px_-15px_rgba(0,0,0,0.7)] bg-neutral-900/55 backdrop-blur-2xl backdrop-saturate-150 z-[9999] flex flex-col overflow-hidden ${
         isDraggingState ? "transition-none" : "transition-all duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)]"
       }`}
       style={{
         width: `${floatingSize.width}px`,
-        height: `${floatingSize.height}px`,
+        height: compact ? "auto" : `${floatingSize.height}px`,
         transform: `translate(${position.x}px, ${position.y}px)`,
       }}
     >
       <div
         data-testid="analysis-header"
-        className="flex items-center justify-between px-4 py-2.5 border-b border-white/10 bg-white/5 cursor-grab active:cursor-grabbing select-none"
+        className="flex items-center justify-end h-9 px-2 cursor-grab active:cursor-grabbing select-none shrink-0"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onLostPointerCapture={handleLostPointerCapture}
       >
-        <span className="text-xs font-semibold flex items-center gap-1.5 tracking-wider text-fg/80">
-          <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
-          원고 분석 (미니)
-        </span>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <button
             data-testid="minimize-to-fab"
             onClick={() => setMinimized(true)}
             onPointerDown={(e) => e.stopPropagation()}
-            className="p-1.5 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-fg transition-all duration-150 active:scale-90"
+            className="p-1.5 rounded-full bg-white/5 hover:bg-white/15 text-neutral-300 hover:text-fg transition-all duration-150 active:scale-90 backdrop-blur-md"
             title="최소화"
           >
-            <Minus className="w-4 h-4" />
+            <Minus className="w-3.5 h-3.5" />
           </button>
           <button
             data-testid="view-mode-toggle"
             onClick={() => setViewMode("fixView")}
             onPointerDown={(e) => e.stopPropagation()}
-            className="p-1.5 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-fg transition-all duration-150 active:scale-90"
+            className="p-1.5 rounded-full bg-white/5 hover:bg-white/15 text-neutral-300 hover:text-fg transition-all duration-150 active:scale-90 backdrop-blur-md"
             title="고정 뷰로 전환"
           >
-            <Minimize2 className="w-4 h-4" />
+            <Minimize2 className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
-      <div className="flex-1 overflow-hidden relative">
+      <div className={`relative overflow-hidden ${compact ? "shrink-0" : "flex-1"}`}>
         {children}
       </div>
 
-      {/* 전방향 리사이즈 핸들 (가장자리 4 + 모서리 4) */}
-      <div onPointerDown={handleResizeStart("n")} className="absolute top-0 left-3 right-3 h-1.5 cursor-ns-resize z-50" />
-      <div onPointerDown={handleResizeStart("s")} className="absolute bottom-0 left-3 right-3 h-1.5 cursor-ns-resize z-50" />
-      <div onPointerDown={handleResizeStart("e")} className="absolute right-0 top-3 bottom-3 w-1.5 cursor-ew-resize z-50" />
-      <div onPointerDown={handleResizeStart("w")} className="absolute left-0 top-3 bottom-3 w-1.5 cursor-ew-resize z-50" />
-      <div onPointerDown={handleResizeStart("nw")} className="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize z-50" />
-      <div onPointerDown={handleResizeStart("ne")} className="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize z-50" />
-      <div onPointerDown={handleResizeStart("sw")} className="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize z-50" />
-      <div onPointerDown={handleResizeStart("se")} className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize z-50" />
+      {/* 전방향 리사이즈 핸들 — 컴팩트(빈 상태)에서는 숨김 */}
+      {!compact && (
+        <>
+          <div onPointerDown={handleResizeStart("n")} className="absolute top-0 left-3 right-3 h-1.5 cursor-ns-resize z-50" />
+          <div onPointerDown={handleResizeStart("s")} className="absolute bottom-0 left-3 right-3 h-1.5 cursor-ns-resize z-50" />
+          <div onPointerDown={handleResizeStart("e")} className="absolute right-0 top-3 bottom-3 w-1.5 cursor-ew-resize z-50" />
+          <div onPointerDown={handleResizeStart("w")} className="absolute left-0 top-3 bottom-3 w-1.5 cursor-ew-resize z-50" />
+          <div onPointerDown={handleResizeStart("nw")} className="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize z-50" />
+          <div onPointerDown={handleResizeStart("ne")} className="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize z-50" />
+          <div onPointerDown={handleResizeStart("sw")} className="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize z-50" />
+          <div onPointerDown={handleResizeStart("se")} className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize z-50" />
+        </>
+      )}
     </div>
   );
 }
@@ -265,6 +249,9 @@ export default function AnalysisSection() {
 
   const disabled = !currentProject;
   const isEmpty = chat.messages.length === 0;
+  const floating = viewMode === "floatingView";
+  // 플로팅 + 빈 상태: 프롬프트만 보이는 컴팩트 형태. 대화 시작하면 전체 채팅 창으로 확장.
+  const floatingCompact = floating && isEmpty;
 
   const composer = (
     <PromptComposer
@@ -291,15 +278,14 @@ export default function AnalysisSection() {
   const renderContent = () => (
     <div
       data-testid="analysis-section-content"
-      className={`relative h-full text-fg flex flex-col overflow-hidden ${
-        viewMode === "floatingView" ? "bg-transparent" : "bg-[#161616]"
-      }`}
+      className={`relative text-fg flex flex-col overflow-hidden ${
+        floatingCompact ? "" : "h-full"
+      } ${floating ? "bg-black/20" : "bg-[#161616]"}`}
     >
       {/* fixView 모드일 때만 고정 헤더와 토글 버튼 렌더링 */}
       {viewMode === "fixView" && (
         <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800 bg-neutral-900/20 select-none">
-          <span className="text-xs font-semibold flex items-center gap-1.5 tracking-wider text-fg/80">
-            <span className="w-1.5 h-1.5 rounded-full bg-neutral-600" />
+          <span className="text-xs font-semibold text-fg/70 tracking-wide">
             원고 분석
           </span>
           <button
@@ -322,37 +308,29 @@ export default function AnalysisSection() {
         onClose={() => review.setShowNarrativeSummaryStatus(false)}
       />
 
-      {/* 메시지 / 빈 상태 — 남는 공간을 빈 상태 안내가 채움 */}
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-24 min-h-0 scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent">
-        {isEmpty ? (
-          <div className="h-full flex flex-col items-center justify-center">
-            <EmptyState
-              contextLabel={currentChapter?.title ?? null}
-              disabled={disabled}
-              onSelectPrompt={(prompt) => void chat.handleSend(prompt)}
-            />
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <MessageList
-              messages={chat.messages}
-              onJumpEvidence={chat.handleJumpEvidence}
-            />
-            <div ref={chat.bottomRef} />
-          </div>
-        )}
-      </div>
+      {/* 메시지 — 빈 상태에서는 영역 자체를 접어 프롬프트만 노출 */}
+      {!floatingCompact && (
+        <div className="flex-1 overflow-y-auto px-4 pt-4 min-h-0 scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent">
+          {!isEmpty && (
+            <div className="space-y-6">
+              <MessageList
+                messages={chat.messages}
+                onJumpEvidence={chat.handleJumpEvidence}
+              />
+              <div ref={chat.bottomRef} />
+            </div>
+          )}
+        </div>
+      )}
 
-      {/* 입력창 — 항상 하단 고정 */}
-      <div className="absolute bottom-3 left-3 right-3 z-overlay">
-        {composer}
-      </div>
+      {/* 입력창 — 하단 고정 (flow) */}
+      <div className="px-3 pb-3 pt-2 shrink-0">{composer}</div>
     </div>
   );
 
   if (viewMode === "floatingView") {
     return createPortal(
-      <FloatingWrapper setViewMode={setViewMode}>
+      <FloatingWrapper setViewMode={setViewMode} compact={floatingCompact}>
         {renderContent()}
       </FloatingWrapper>,
       document.body

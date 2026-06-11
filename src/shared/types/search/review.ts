@@ -15,6 +15,7 @@ export interface MemoryConflictFactSummary {
   provenanceKind: string;
   canonStatus: string;
   evidenceCount: number;
+  evidenceQuotes: string[];
 }
 
 export interface MemoryConflictQueueInput {
@@ -64,6 +65,11 @@ export interface MemoryEpisodeReviewQueueResult {
   items: MemoryEpisodeReviewItem[];
 }
 
+export interface MemoryEpisodeConfirmInput {
+  projectId: string;
+  episodeId: string;
+}
+
 export interface MemoryEpisodeRejectInput {
   projectId: string;
   episodeId: string;
@@ -72,6 +78,12 @@ export interface MemoryEpisodeRejectInput {
 
 export interface MemoryEpisodeRejectResult {
   updated: boolean;
+}
+
+export interface MemoryEpisodeReviewMutationResult {
+  updated: boolean;
+  status?: "confirmed" | "rejected";
+  canonicalExportable?: boolean;
 }
 
 export interface MemoryTemporalFactReviewItem {
@@ -184,6 +196,7 @@ export interface MemoryEntityConfirmInput {
 export interface MemoryEntityRejectInput {
   projectId: string;
   entityId: string;
+  reason: string;
 }
 
 export interface MemoryEntityReviewMutationResult {
@@ -200,6 +213,7 @@ export interface MemoryEntityAliasConfirmInput {
 export interface MemoryEntityAliasRejectInput {
   projectId: string;
   aliasId: string;
+  reason: string;
 }
 
 export interface MemoryEntityAliasReviewMutationResult {

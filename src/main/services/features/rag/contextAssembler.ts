@@ -18,6 +18,7 @@ import {
 } from "../memory/query/narrativeMemoryQueryService.js";
 import type { RagEmbeddingProvider } from "./internal/contextAssembler.types.js";
 import { loadRagPromptConfig } from "./ragPromptConfig.js";
+import { resolveSearchOptimizationPolicy } from "../search/searchOptimizationPolicy.js";
 
 export type RagContextPacket = {
   systemPrompt: string;
@@ -40,7 +41,10 @@ export async function assembleRagContext(input: {
   embedTexts?: RagEmbeddingProvider;
 }): Promise<RagContextPacket> {
   throwIfAborted(input.signal);
-  const budget = input.contextBudget ?? 8_192;
+  const searchPolicy = resolveSearchOptimizationPolicy({
+    requestedContextBudget: input.contextBudget,
+  });
+  const budget = searchPolicy.contextBudgetChars;
   const layer1Limit = Math.max(
     1_000,
     budget - LAYER0_CHAR_LIMIT - 4_000 - 2_000,

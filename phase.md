@@ -19,6 +19,8 @@
 
 현재 상태는 "원문 책갈피를 찾아주는 조수"에서 "작가 질문형 모의고사를 풀기 시작한 조수" 단계로 넘어갔다.
 
+아래 `Memory phase status: 9/9 ready`는 기존 구현 상태 리포트의 engine readiness 지표다. 이 문서의 Phase 1~7 전체가 완료됐다는 뜻이 아니다.
+
 검증된 사실:
 
 ```text
@@ -33,7 +35,7 @@ DB rows / package rows: 746 / 746
 
 이 수치는 현재 eval 365개 기준이다. 장편 전체, 실제 LLM 장문 답변, 모든 작가 질문에 대해 같은 성능이 보장된다는 뜻은 아니다.
 
-이전 기준선:
+Writer-product phase 진행 로그:
 
 ```text
 Phase 시작 전 MemoryEvalCase: 51
@@ -44,7 +46,30 @@ Phase 1-4 완료 후 MemoryEvalCase: 365
 Phase 2-1 완료 후 MemoryEvalCase: 365
 Phase 2-2 계약 완료 후 MemoryEvalCase: 365
 Phase 2-3 완료 후 MemoryEvalCase: 365
+Phase 3-1 fact path 완료 후 MemoryEvalCase: 365
+Phase 3-2a fact path 완료 후 MemoryEvalCase: 365
+Phase 3-2a entity path 완료 후 MemoryEvalCase: 365
+Phase 3-2a episode path 완료 후 MemoryEvalCase: 365
+Phase 3-2b stale evidence backlog path 완료 후 MemoryEvalCase: 365
+Phase 3-2b rejected duplicate suppression 완료 후 MemoryEvalCase: 365
+Phase 3-3 conflict quote queue 연결 후 MemoryEvalCase: 365
+Phase 3-4 suggested memory review UI/reject reason 저장 후 MemoryEvalCase: 365
+Phase 4-1 longform benchmark seed/materialize 완료 후 MemoryEvalCase: 365
+Phase 4-2 latency budget/report 계약 완료 후 MemoryEvalCase: 365
+Phase 4-2 memory usage/regression threshold 계약 완료 후 MemoryEvalCase: 365
+Phase 4-2 threshold assert mode 완료 후 MemoryEvalCase: 365
+Phase 4-3 search optimization policy 적용 후 MemoryEvalCase: 365
+Phase 4-3 candidate cap comparison report 1차 완료 후 MemoryEvalCase: 365
+Phase 4-3 cache TTL memory comparison 1차 완료 후 MemoryEvalCase: 365
+Phase 4-3 stale embedding skip 적용 후 MemoryEvalCase: 365
+Phase 4-3 manual-10000 latency report 완료 후 MemoryEvalCase: 365
 ```
+
+구분:
+
+- engine readiness: 현재 코드/DB에 이미 구축된 Memory Engine 구성요소가 동작 가능한지 보는 상태 리포트다.
+- writer-product phase: 웹소설 작가 flow 기준으로 부족한 부분을 단계적으로 강화하는 이 문서의 작업 계획이다.
+- `fact path 완료`는 temporal fact 경로만 완료됐다는 뜻이다. Entity/Episode 전체가 같은 수준으로 완료됐다는 뜻은 아니다.
 
 ## 실행 원칙
 
@@ -259,6 +284,33 @@ P0 failure 있음 → 확정 답변 차단
 - 기존 `sourceType`은 출처 위치 의미로 유지한다.
 - 정사성은 새 `provenanceKind` 또는 `canonStatus`로 표현한다.
 
+현재 완료 범위:
+
+- `MemoryFact`에 `provenanceKind`, `canonStatus`를 추가했다.
+- 신규 temporal fact 후보는 원문 근거에서 추출된 경우 `canon/canon`으로 저장된다.
+- temporal fact confirm은 `provenanceKind=canon`, `canonStatus=canon`이 아니면 차단한다.
+- draft/discarded/unknown fact는 confirmed canonical memory로 자동 승격되지 않는다.
+- legacy confirmed fact는 chapter/scene evidence가 실제로 연결된 경우에만 `canon/canon`으로 보정한다.
+- canonical package import는 새 필드를 보존하고, 오래된 package는 `unknown/unknown`으로 안전하게 읽는다.
+- temporal fact review queue와 conflict queue는 renderer가 라벨을 붙일 수 있도록 provenance/canon 값을 반환한다.
+
+현재 실제 프로젝트 검증:
+
+```text
+schema column patch: MemoryFact.provenanceKind, MemoryFact.canonStatus 적용
+legacy confirmed unknown fact: 1 → 0
+backfilled confirmed fact: 1
+Memory phase status: 9/9 ready
+canonical package sync: true
+DB rows / package rows: 746 / 746
+```
+
+아직 남은 범위:
+
+- Entity/Episode 자체의 provenance/canon 상태 분리는 별도 단계로 남아 있다.
+- user note/imported memory의 별도 생성 UI와 검토 flow는 아직 구현 전이다.
+- provenance/canon 라벨의 최종 renderer 표시 디자인은 UI 단계에서 더 다듬어야 한다.
+
 기존 `sourceType` 예시:
 
 - chapter
@@ -291,9 +343,9 @@ P0 failure 있음 → 확정 답변 차단
 
 완료 기준:
 
-- schema 변경안
-- migration test 계획
-- package sync verifier 영향 분석
+- schema 변경안: 완료 (`MemoryFact.provenanceKind`, `MemoryFact.canonStatus`)
+- migration test 계획: 완료 (column patch + canonical package test)
+- package sync verifier 영향 분석: 완료 (package sync true 유지)
 
 #### Phase 3-1b. writer/import path validation
 
@@ -304,9 +356,10 @@ P0 failure 있음 → 확정 답변 차단
 
 완료 기준:
 
-- extraction path validation
-- import path validation
-- 잘못된 provenance 저장 단위 테스트
+- extraction path validation: temporal fact path 완료
+- import path validation: package import 보존/legacy default 처리 완료
+- 잘못된 provenance 저장 단위 테스트: draft/unknown confirm 차단 완료
+- 남은 작업: user note/imported 생성 flow의 별도 검토 상태 연결
 
 #### Phase 3-1c. UI label contract
 
@@ -316,9 +369,9 @@ P0 failure 있음 → 확정 답변 차단
 
 완료 기준:
 
-- shared type 정의
-- IPC/preload contract 정의
-- renderer label 테스트
+- shared type 정의: 완료
+- IPC/preload contract 정의: temporal review/conflict query 반환값에 포함
+- renderer label 테스트: safety label 계열은 존재하나 provenance/canon 시각 라벨은 추가 UI 단계에서 보강 필요
 
 ### Phase 3-2. evidence 없는 memory 저장 차단
 
@@ -327,9 +380,29 @@ P0 failure 있음 → 확정 답변 차단
 - 확정 memory는 반드시 evidence를 가져야 한다.
 - evidence가 없으면 suggested 상태로만 저장한다.
 
+현재 완료 범위:
+
+- temporal fact confirm은 transaction 안에서 provenance/canon 상태와 evidence 존재를 함께 검증한다.
+- fact의 `sourceContentHash`, 연결된 `MemoryEpisodeEvidence.sourceContentHash`, quote가 비어 있으면 confirmed 승격을 차단한다.
+- conflict resolve에서 winner fact를 confirmed로 올릴 때도 같은 evidence/canon guard를 적용한다.
+- evidence 없는 canon fact는 suggested 상태에 남는다.
+- entity confirm은 `MemoryEntityMention` evidence가 없으면 confirmed 승격을 차단한다.
+- alias confirm은 해당 alias에 직접 연결된 mention evidence가 없으면 alias/entity 동시 confirm을 차단한다.
+- entity mention의 `contentHash`, `sourceContentHash`, quote가 비어 있으면 evidence로 인정하지 않는다.
+- episode confirm API는 `MemoryEpisodeEvidence`가 없으면 confirmed 승격을 차단한다.
+- episode의 `sourceContentHash`, evidence의 `contentHash`, `sourceContentHash`, quote가 비어 있으면 evidence로 인정하지 않는다.
+- episode confirm은 main service, narrative query facade, IPC handler, preload API contract까지 연결했다.
+
+아직 남은 범위:
+
+- episode confirm UI 버튼/검토 화면 연결은 별도 UI 단계로 남아 있다.
+- rejected memory의 반복 제안 억제는 Phase 3-2b 후속 작업으로 남아 있다.
+
 완료 기준:
 
-- confirmed fact/entity/episode 저장 시 evidence 존재 검증
+- confirmed fact 저장 시 evidence 존재 검증: temporal fact path 완료
+- confirmed entity 저장 시 evidence 존재 검증: entity/alias path 완료
+- confirmed episode 저장 시 evidence 존재 검증: episode path 완료
 - evidence link가 stale이면 confirmed 상태 유지 금지
 - repair 실패 시 review backlog로 이동
 
@@ -342,8 +415,8 @@ P0 failure 있음 → 확정 답변 차단
 
 완료 기준:
 
-- confirmed 승격 service 단위 테스트
-- stale evidence 승격 실패 테스트
+- confirmed 승격 service 단위 테스트: temporal fact/entity/alias/episode path 완료
+- stale evidence 승격 실패 테스트: sourceContentHash/quote empty guard 완료, chunk stale 검증은 Phase 3-2b와 연결 필요
 
 #### Phase 3-2b. review backlog 연결
 
@@ -351,10 +424,27 @@ P0 failure 있음 → 확정 답변 차단
 
 - repair 실패나 evidence 부족 memory는 review backlog로 보낸다.
 
+현재 완료 범위:
+
+- review backlog report가 stale confirmed evidence를 `staleEvidence` 항목으로 노출한다.
+- confirmed entity mention의 chunk가 없거나 quote가 chunk에 없으면 stale evidence로 표시한다.
+- confirmed episode evidence의 chunk가 없거나 quote가 chunk에 없으면 stale evidence로 표시한다.
+- `memory:review-backlog` JSON에는 stale evidence가 자동 포함된다.
+- `memory:review-template`에는 자동 confirm/reject 대상과 분리된 수동 검토 섹션으로 stale evidence를 포함한다.
+- rejected entity와 같은 canonical name/type 후보는 다시 entity/alias/mention으로 제안하지 않는다.
+- rejected episode와 같은 source/hash/type/title/summary 후보는 다시 insert하지 않는다.
+- rejected temporal fact와 같은 subject/predicate/object/time/source 후보는 다시 insert하지 않는다.
+- episode/fact extraction runner는 duplicate suppressed 후보를 처리 성공으로 보되 새 제안 카운트에는 포함하지 않는다.
+
+아직 남은 범위:
+
+- repair job이 unresolved evidence를 발견했을 때 별도 상태 테이블에 영구 기록하는 기능은 없다.
+- stale evidence를 UI에서 직접 repair/reject/defer 처리하는 화면은 남아 있다.
+
 완료 기준:
 
-- backlog row 생성
-- 같은 rejected memory 반복 제안 억제
+- backlog row 생성: 현재 구조에서는 별도 테이블 대신 review backlog report 항목으로 완료
+- 같은 rejected memory 반복 제안 억제: entity/episode/temporal fact path 완료
 
 ### Phase 3-3. conflict ledger와 기존 invalidation 정렬
 
@@ -374,10 +464,11 @@ P0 failure 있음 → 확정 답변 차단
 
 완료 기준:
 
-- `MemoryFactInvalidation` 확장인지 신규 ledger인지 결정
-- 충돌 row 저장 또는 invalidation row 확장
-- 충돌 근거 quote 양쪽 보존
-- UI에서 "검토 필요" 표시 가능
+- `MemoryFactInvalidation`은 fact pair, reason, 생성 시점, 양쪽 fact 연결을 표현할 수 있으므로 1차 conflict ledger로 사용한다.
+- 양쪽 evidence quote는 `MemoryFactEvidence` -> `MemoryEpisodeEvidence` join으로 보존/조회한다.
+- 충돌 큐 API는 양쪽 fact summary에 `evidenceQuotes`를 포함한다.
+- UI는 분석 패널의 충돌 큐에서 "검토 필요" 대상과 양쪽 quote를 표시하고, 이전/신규 사실 채택 액션을 제공한다.
+- 작가가 "나중에 보기", "검토 중", "해결됨" 같은 상태를 별도로 저장하는 영구 review status는 아직 없다. 이 상태가 필요해지면 `MemoryFactInvalidation` 확장 또는 별도 `MemoryConflictLedger`가 필요하다.
 
 #### Phase 3-3a. 기존 invalidation 적합성 검토
 
@@ -391,8 +482,12 @@ P0 failure 있음 → 확정 답변 차단
 
 완료 기준:
 
-- 기존 테이블 확장 가능 여부 문서화
-- 부족 필드 목록
+- 기존 테이블 확장 가능 여부 문서화: 1차 충돌 쌍 저장/조회에는 기존 `MemoryFactInvalidation`으로 충분하다.
+- 부족 필드 목록:
+  - review status: pending/deferred/resolved 같은 작가 검토 상태
+  - reviewer note: 작가가 왜 보류/선택했는지 남기는 메모
+  - resolvedAt/resolvedBy: 해결 시점과 해결 주체
+  - per-conflict UI state: 숨김, 나중에 보기, 우선순위
 
 #### Phase 3-3b. conflict 저장/조회 API
 
@@ -402,9 +497,10 @@ P0 failure 있음 → 확정 답변 차단
 
 완료 기준:
 
-- conflict 생성 테스트
-- conflict 조회 테스트
-- confirm/reject/defer 상태 전이 테스트
+- conflict 생성 테스트: 기존 temporal fact review 경로에서 invalidation row 생성 검증 완료
+- conflict 조회 테스트: `fetchConflictFactPairs`가 양쪽 evidence quote를 반환하는 테스트 추가
+- confirm/reject 상태 전이 테스트: 기존 `resolveMemoryTemporalFactConflict` 경로 사용
+- defer 상태 전이 테스트: 아직 없음. review status 영속화 설계 후 추가
 
 ### Phase 3-4. review workflow 강화
 
@@ -412,11 +508,26 @@ P0 failure 있음 → 확정 답변 차단
 
 - suggested/rejected/confirmed 흐름을 작가가 검토할 수 있게 한다.
 
+현재 완료 범위:
+
+- 분석 패널에 suggested fact/entity/entity alias/episode review panel을 연결했다.
+- 각 panel은 접힌 상태로 표시되고, 열 때 해당 review queue를 조회한다.
+- fact/entity/entity alias/episode는 accept action을 기존 IPC로 호출한다.
+- fact/entity/entity alias/episode reject는 작가가 입력한 reason을 기존 IPC payload에 포함한다.
+- entity/entity alias reject reason 저장을 위해 schema/type/validation/service를 확장했다.
+- entity alias는 confirm/reject 외에 merge/split action을 기존 IPC로 호출한다.
+- mutation 후 해당 queue를 다시 조회한다.
+
+아직 남은 범위:
+
+- reject reason 입력은 native prompt 기반 최소 구현이다. 전용 UI form/modal은 아직 없다.
+- review queue UI의 실제 DOM/e2e 작가 flow 검증은 아직 정적 소스 계약 테스트 수준이다.
+
 완료 기준:
 
-- suggested memory 목록
-- accept/reject 이유 저장
-- 같은 rejected memory 반복 제안 억제
+- suggested memory 목록: fact/entity/entity alias/episode UI 연결 완료
+- accept/reject 이유 저장: fact/entity/entity alias/episode reject reason 저장 완료
+- 같은 rejected memory 반복 제안 억제: Phase 3-2b에서 entity/episode/temporal fact path 완료
 
 ## Phase 4. 장편 성능과 저사양 최적화
 
@@ -433,13 +544,31 @@ P0 failure 있음 → 확정 답변 차단
 - 1천/1만 chunk 규모 테스트 데이터를 만든다.
 - 실제 웹소설 구조처럼 회차, 장면, 인물 반복, 설정 변화가 들어가야 한다.
 
+현재 완료 범위:
+
+- `memory:benchmark-seed` 스크립트를 추가했다.
+- `ci-1000`, `manual-300ch`, `manual-500ch`, `manual-10000` profile을 고정했다.
+- `ci-1000`은 100화, 1천 chunk, 100만 자, low-end profile이다.
+- `manual-10000`은 500화, 1만 chunk, 300만 자 profile이다.
+- seed 값을 넣으면 같은 benchmark manifest가 재현된다.
+- manifest에는 alias 반복, 회차 재정렬, 중간 회차 리라이트, stale embedding, summary refresh, review backlog, renderer list 부하 scenario가 포함된다.
+- 실제 확인한 `ci-1000` manifest는 100 chapters, 1000 chunks, 1,000,000 chars, package row estimate 1112였다.
+- `materializeMemoryLongformBenchmark`를 추가해 manifest를 실제 `Project`, `Chapter`, `MemoryChunk` row로 적재할 수 있다.
+- `memory:benchmark-seed --materialize --project-id <id>` 옵션을 추가했다.
+- materializer는 같은 project id를 다시 적용하면 중복 삽입하지 않고 기존 row 수를 반환한다.
+
+아직 남은 범위:
+
+- 1만 chunk profile은 정의됐지만 실제 장시간 benchmark 실행은 아직 하지 않았다.
+- latency/memory usage 측정과 regression threshold는 Phase 4-2 범위다.
+
 완료 기준:
 
-- 1천 chunk benchmark
-- 1만 chunk benchmark
-- 100화/300화/500화 시뮬레이션
-- 100만~300만 자 원고 시뮬레이션
-- benchmark seed 재현 가능
+- 1천 chunk benchmark: `ci-1000` manifest + DB materialize 테스트 완료
+- 1만 chunk benchmark: `manual-10000` profile 정의 완료, 실제 실행은 수동 benchmark 단계로 남음
+- 100화/300화/500화 시뮬레이션: profile 정의 완료
+- 100만~300만 자 원고 시뮬레이션: profile 정의 완료
+- benchmark seed 재현 가능: 동일 seed manifest equality 테스트 완료
 
 #### Phase 4-1a. 기준 장비 정의
 
@@ -457,8 +586,8 @@ P0 failure 있음 → 확정 답변 차단
 
 완료 기준:
 
-- mode별 benchmark profile 정의
-- CI에서 돌릴 수 있는 경량 profile과 수동 benchmark profile 분리
+- mode별 benchmark profile 정의: low-end/standard/high-end 완료
+- CI에서 돌릴 수 있는 경량 profile과 수동 benchmark profile 분리: `ci-1000`과 `manual-*` 분리 완료
 
 #### Phase 4-1b. 실제 장편 작업 데이터셋
 
@@ -478,9 +607,9 @@ P0 failure 있음 → 확정 답변 차단
 
 완료 기준:
 
-- 300화/500화 seed
-- edit-after-index scenario
-- import/export scenario
+- 300화/500화 seed: `manual-300ch`, `manual-500ch` profile 정의 완료
+- edit-after-index scenario: manifest에 chapterOrders/staleChunkIds 포함
+- import/export scenario: manifest에 package row estimate/expected tables 포함
 
 ### Phase 4-2. latency budget 설정
 
@@ -502,13 +631,29 @@ package export/import: progress 표시 필수
 
 완료 기준:
 
-- query latency 측정
-- cold start latency 측정
-- first query latency 측정
-- repeated query latency 측정
+- query latency 측정: `memory:benchmark-latency`의 `firstChunkSearch`/`repeatedChunkSearch`로 1차 완료
+- cold start latency 측정: 실제 앱 cold start와 연결 필요
+- first query latency 측정: `firstQueryAfterStartMs <= 3000` budget 계약 및 report 완료
+- repeated query latency 측정: `repeatedQueryMs <= 1000` budget 계약 및 report 완료
 - edit-after-index latency 측정
-- memory usage 측정
-- regression threshold 설정
+- memory usage 측정: RSS/heap/sqlite page cache snapshot 1차 완료
+- regression threshold 설정: latency/RSS/heap threshold report 1차 완료
+
+현재 완료:
+
+- `MEMORY_BENCHMARK_LATENCY_BUDGETS`에 작가 체감 기준 latency budget을 코드 계약으로 고정했다.
+- `runMemoryBenchmarkLatencyReport`가 materialized benchmark project의 chunk 검색을 측정한다.
+- report는 첫 검색, 반복 검색, RSS/heap/sqlite page cache, edit-after-index background 정책, package progress 필수 정책을 함께 반환한다.
+- report는 `regressionThresholds`로 first/repeated query, RSS, heap 기준선을 함께 반환한다.
+- `memory:benchmark-latency` 스크립트로 `--project-id`, `--profile`, `--materialize`, `--query`, `--out` 기반 측정 리포트를 생성할 수 있다.
+- `memory:benchmark-latency --assert-thresholds`는 assessment의 fail 항목을 발견하면 non-zero exit로 실패한다.
+
+남은 작업:
+
+- 실제 앱 cold start 직후 첫 query 측정
+- 1만 chunk materialized profile 장시간 측정
+- edit-after-index repair job의 background latency 측정
+- CI artifact 저장
 
 ### Phase 4-3. 검색 최적화
 
@@ -517,6 +662,26 @@ package export/import: progress 표시 필수
 - FTS, short-token, quote-token, vector search의 비용을 측정한다.
 - RRF merge 전에 과한 후보를 줄인다.
 - RRF 후보 상한, context budget, top-k, rerank cache TTL을 명시한다.
+
+현재 완료:
+
+- `SearchOptimizationPolicy`를 추가해 low-end/standard/high-end/quality mode를 코드 계약으로 고정했다.
+- mode별 result limit, candidate cap, RRF top-k, context budget, rerank cache TTL, vector search mode를 명시했다.
+- `searchChunks`는 FTS/short-token/vector 후보 수를 policy candidate cap으로 제한한다.
+- RAG context search는 FTS/exact phrase/quote-token/short-token/vector 후보 수를 policy candidate cap으로 제한한다.
+- `assembleRagContext`는 policy context budget cap을 사용한다.
+- benchmark latency report는 현재 적용된 optimization policy를 함께 반환한다.
+- benchmark latency report는 candidate cap 20/40/current baseline의 latency, result count, baseline overlap ratio를 함께 반환한다.
+- benchmark latency report는 cache TTL 60초/180초/300초별 예상 entry 수와 예상 memory 사용량을 함께 반환한다.
+- vector search는 `MemoryEmbedding.contentHash`와 현재 `MemoryChunk.indexTextHash/contentHash`가 다른 stale embedding을 건너뛴다.
+- `manual-10000` profile 기준 500화/10000 chunk/300만 자 materialize와 latency report를 생성했다.
+
+남은 작업:
+
+- candidate cap별 recall/latency 비교: ci-1000 기준 baseline overlap/latency report 1차 완료, manual 1만 chunk 비교는 남음
+- cache TTL별 memory 사용량 비교: estimated memory comparison 1차 완료, 실제 cache 저장소 계측은 남음
+- stale embedding skip 정책 실제 적용 완료
+- 1만 chunk 기준 manual latency report 완료
 
 검토 기술:
 
@@ -532,11 +697,11 @@ package export/import: progress 표시 필수
 
 완료 기준:
 
-- 1만 chunk 기준 latency report
+- 1만 chunk 기준 latency report: `manual-10000` CLI report 완료
 - top-k recall 유지
 - memory usage report
-- candidate cap별 recall/latency 비교
-- cache TTL별 memory 사용량 비교
+- candidate cap별 recall/latency 비교: policy 계약, 실제 검색 경로 cap, benchmark comparison report 1차 완료
+- cache TTL별 memory 사용량 비교: TTL 계약 및 estimated memory comparison report 1차 완료, 실제 cache 저장소 계측은 남음
 
 ### Phase 4-4. 저사양 모드
 
@@ -823,8 +988,8 @@ RAG + Memory Engine이 다음 조건을 만족하면 "웹소설 작가용 설정
 
 남은 검토 사항:
 
-- `provenanceKind`와 `canonStatus` 중 어떤 이름과 schema가 더 적절한지는 실제 DB 설계 시 결정해야 한다.
-- `MemoryFactInvalidation`으로 conflict ledger를 충분히 표현할 수 있는지는 별도 코드 검토가 필요하다.
+- `provenanceKind`와 `canonStatus`는 schema에 분리 반영했다.
+- `MemoryFactInvalidation`은 1차 fact conflict ledger로 사용할 수 있음을 확인했다. 다만 defer/review status까지 필요하면 확장 설계가 필요하다.
 - LLM answer judge는 아직 기술 선택과 비용/속도 정책을 확정하지 않았다.
 
 ## 진행 기록
@@ -1056,3 +1221,156 @@ p0FailureTypeCounts: {}
 - runtime RAG 답변에는 현재 deterministic safety policy가 붙는다.
 - 실제 LLM judge 결과를 runtime RAG safety에 직접 반영하는 연결은 아직 별도 보강이 필요하다.
 - Phase 3의 정사/초안/폐기 출처 분리가 완료되면 `non_canonical_source` 판단 근거를 더 넓힐 수 있다.
+
+### 2026-06-11. Phase 3-3 conflict quote queue 연결
+
+확인된 사실:
+
+- `MemoryFactInvalidation`은 기존 fact와 새 fact의 충돌 쌍, reason, 생성 시점을 표현할 수 있다.
+- 양쪽 근거 문장은 `MemoryFactEvidence`와 `MemoryEpisodeEvidence`를 join해서 조회할 수 있다.
+- `MemoryConflictFactSummary`에 `evidenceQuotes`를 추가했다.
+- `fetchConflictFactPairs`는 invalidated/invalidating 양쪽 fact의 evidence quote를 반환한다.
+- 분석 패널에 `ConflictQueuePanel`을 연결했다.
+- 충돌 큐를 열면 현재 프로젝트/챕터/memory scope 기준으로 `getConflictQueue`를 호출한다.
+- 사용자는 충돌 항목에서 이전 사실 또는 신규 사실을 채택할 수 있고, UI는 기존 `resolveFactConflict` IPC를 호출한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/query/memoryConflictQueue.test.ts tests/main/services/memory/query/narrativeMemoryQueryService.test.ts tests/renderer/analysisConflictResolution.test.ts
+pnpm run typecheck
+pnpm exec eslint <Phase 3-3 touched files>
+```
+
+제한:
+
+- `defer`, `reviewing`, `hidden`, `resolvedAt`, `reviewerNote` 같은 작가 검토 상태 영속화는 아직 없다.
+- 이 상태가 필요하면 `MemoryFactInvalidation` 확장 또는 별도 `MemoryConflictLedger`가 필요하다.
+- 현재 UI 검증은 정적 소스 검사 중심이다. 실제 작가 플로우 DOM/e2e 검증은 Phase 5 범위에서 보강해야 한다.
+
+### 2026-06-11. Phase 3-4 suggested memory review UI/reject reason 저장
+
+확인된 사실:
+
+- 분석 패널에 `FactReviewPanel`, `EpisodeReviewPanel`, `EntityReviewPanel`, `EntityAliasReviewPanel`을 연결했다.
+- 각 review panel은 사용자가 펼칠 때 suggested queue를 조회한다.
+- fact/entity/entity alias/episode confirm은 기존 IPC를 호출한다.
+- fact/entity/entity alias/episode reject는 `window.prompt`로 받은 reason을 IPC payload에 포함한다.
+- `MemoryEntity`와 `MemoryEntityAlias`에 `rejectedAt`, `rejectionReason`을 추가했다.
+- 기존 DB를 위해 `MemoryEntity`/`MemoryEntityAlias` column patch를 추가했다.
+- entity/entity alias reject service는 빈 reason을 거부하고 reason을 저장한다.
+- entity alias panel은 merge/split action도 기존 IPC에 연결한다.
+- episode panel은 confirm 버튼을 추가해 accept/reject flow를 맞췄다.
+
+검증:
+
+```text
+pnpm vitest tests/renderer/analysisMemoryReviewWorkflow.test.ts
+pnpm vitest tests/main/services/memory/entity/memoryEntityReviewService.test.ts tests/main/services/memory/review/memoryReviewDecisionApply.test.ts tests/renderer/analysisMemoryReviewWorkflow.test.ts
+pnpm vitest tests/renderer/analysisMemoryReviewWorkflow.test.ts tests/renderer/analysisConflictResolution.test.ts
+pnpm run typecheck
+pnpm exec eslint <Phase 3-4 touched files>
+```
+
+제한:
+
+- reject reason 입력은 native prompt 기반 최소 구현이다.
+- 실제 DOM/e2e에서 작가가 큐를 열고 승인/거절하는 end-to-end 검증은 아직 없다.
+
+### 2026-06-11. Phase 4-1 longform benchmark seed/materialize
+
+확인된 사실:
+
+- `MEMORY_LONGFORM_BENCHMARK_PROFILES`에 `ci-1000`, `manual-300ch`, `manual-500ch`, `manual-10000`을 추가했다.
+- `ci-1000`은 low-end 기준 100화/1000 chunk/100만 자 profile이다.
+- `manual-10000`은 500화/10000 chunk/300만 자 profile이다.
+- benchmark manifest는 alias 반복, 회차 재정렬, 중간 리라이트, stale embedding, summary refresh, review backlog, renderer list 부하 scenario를 포함한다.
+- 같은 seed로 생성하면 같은 manifest가 나온다.
+- `memory:benchmark-seed` 스크립트를 추가했다.
+- `--materialize --project-id` 옵션으로 manifest를 실제 DB의 `Project`, `Chapter`, `MemoryChunk` row로 적재할 수 있다.
+- materializer는 같은 project id 재실행 시 중복 삽입하지 않는다.
+- 실제 `ci-1000` manifest 출력은 100 chapters, 1000 chunks, 1,000,000 chars, packageRowEstimate 1112였다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/benchmark/memoryLongformBenchmarkSeed.test.ts tests/main/services/memory/benchmark/memoryLongformBenchmarkMaterialize.test.ts tests/scripts/memoryBenchmarkSeedRunner.test.ts
+pnpm exec tsx scripts/generate-memory-benchmark-seed.ts --profile ci-1000 --seed 42 --out tests/.tmp/memory-benchmark-ci-1000.json
+pnpm run typecheck
+pnpm exec eslint <Phase 4-1 touched files>
+```
+
+제한:
+
+- 1만 chunk profile은 정의됐지만 실제 장시간 benchmark run은 아직 하지 않았다.
+- materialized row 기반 latency/memory usage 측정은 Phase 4-2 범위다.
+
+### 2026-06-11. Phase 4-2 latency budget/report + memory snapshot
+
+확인된 사실:
+
+- `MEMORY_BENCHMARK_LATENCY_BUDGETS`에 작가 체감 기준 latency와 memory budget을 고정했다.
+- first query after start 목표는 3000ms, repeated query 목표는 1000ms다.
+- 일반 근거 검색 목표는 1000ms, 복합 memory query 목표는 3000ms다.
+- RSS budget은 512MiB, heap used budget은 256MiB로 1차 설정했다.
+- `runMemoryBenchmarkLatencyReport`는 materialized benchmark project에서 chunk 검색 latency를 측정한다.
+- report는 `firstChunkSearch`, `repeatedChunkSearch`, `memoryUsage`, `sqlitePageCache`, `editAfterIndexPlan`, `packageProgressPlan`을 반환한다.
+- report는 `regressionThresholds`에 first/repeated query latency, RSS, heap 기준선을 함께 반환한다.
+- `summarizeMemoryBenchmarkLatencyFailures`는 fail 상태인 latency/memory 항목만 CI 실패 메시지로 요약한다.
+- `memory:benchmark-latency` 스크립트를 추가했다.
+- `--materialize --project-id --query --out`으로 benchmark project 생성과 latency/memory report 출력을 한 번에 수행할 수 있다.
+- `--assert-thresholds`를 붙이면 threshold fail이 있을 때 리포트 생성 후 non-zero exit로 실패한다.
+- 실제 `ci-1000` materialized run에서 `"검은 기사"` query report가 생성됐다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/benchmark/memoryLongformBenchmarkSeed.test.ts tests/main/services/memory/benchmark/memoryLongformBenchmarkMaterialize.test.ts tests/main/services/memory/benchmark/memoryBenchmarkLatencyRunner.test.ts tests/scripts/memoryBenchmarkSeedRunner.test.ts tests/scripts/memoryBenchmarkLatencyRunner.test.ts
+pnpm exec tsx scripts/run-memory-benchmark-latency.ts --profile ci-1000 --seed 42 --materialize --project-id benchmark-latency-cli-ci-1000 --query "검은 기사" --out tests/.tmp/memory-benchmark-latency-ci-1000.json --assert-thresholds
+pnpm run typecheck
+pnpm exec eslint <Phase 4-2 touched files>
+```
+
+제한:
+
+- cold start 측정은 실제 Electron app start 직후 query hook과 아직 연결되지 않았다.
+- edit-after-index repair job의 실제 background 소요 시간은 아직 측정하지 않았다.
+- 1만 chunk profile 장시간 run은 아직 수동 benchmark로 남아 있다.
+- threshold assert mode는 생겼지만 CI workflow에 artifact 업로드와 gate로 아직 연결하지 않았다.
+
+### 2026-06-11. Phase 4-3 search optimization policy
+
+확인된 사실:
+
+- `SearchOptimizationPolicy`를 추가했다.
+- 기본 mode는 `standard`다.
+- low-end mode는 result limit 40, candidate cap 40, context budget 6144 chars, rerank cache TTL 300초, vector mode `skip-when-lexical-hits`다.
+- standard mode에서 requested limit 20은 candidate cap 60, context budget 8192 chars, rerank cache TTL 180초로 해석된다.
+- `searchChunks`의 FTS/short-token/vector 후보 LIMIT가 policy candidate cap을 사용한다.
+- RAG `searchMemoryChunksForRag`의 FTS/exact phrase/quote-token/short-token/vector 후보 LIMIT가 policy candidate cap을 사용한다.
+- `assembleRagContext`는 requested context budget을 policy context cap 안으로 제한한다.
+- latency benchmark report는 현재 적용된 `optimizationPolicy`를 함께 출력한다.
+- latency benchmark report는 `candidateCapComparison`으로 cap 20/40/current baseline의 latency, result count, baseline overlap ratio를 출력한다.
+- latency benchmark report는 `cacheTtlMemoryComparison`으로 TTL 60초/180초/300초별 예상 entry 수와 예상 memory 사용량을 출력한다.
+- vector search는 `MemoryEmbedding`을 현재 `MemoryChunk`와 join하고, embedding hash가 현재 `indexTextHash/contentHash`와 같을 때만 후보로 사용한다.
+- `manual-10000` materialize 중 1만 chunk 단일 insert가 stack overflow를 일으켜 chunk insert를 500개 batch로 나눴다.
+- benchmark `sourceId`는 `MemoryChunk_source_chunkIndex_key` 전역 unique와 충돌하지 않도록 project-qualified id로 저장한다.
+- `manual-10000` CLI report는 500 chapters, 10000 chunks, 3,000,000 chars 기준으로 생성됐다.
+- `manual-10000` report에서 firstChunkSearch 0.472ms, repeatedChunkSearch 0.463ms, RSS 225.5MiB, heapUsed 49.814MiB였다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/search/searchOptimizationPolicy.test.ts tests/main/services/search/vectorSearchStaleEmbedding.test.ts tests/main/services/memory/benchmark/memoryBenchmarkLatencyRunner.test.ts
+pnpm exec tsx scripts/run-memory-benchmark-latency.ts --profile ci-1000 --seed 42 --materialize --project-id benchmark-latency-cli-ci-1000 --query "검은 기사" --out tests/.tmp/memory-benchmark-latency-ci-1000.json --assert-thresholds
+pnpm exec tsx scripts/run-memory-benchmark-latency.ts --profile manual-10000 --seed 42 --materialize --project-id benchmark-latency-cli-manual-10000-v2 --query "검은 기사" --out tests/.tmp/memory-benchmark-latency-manual-10000.json --assert-thresholds
+pnpm run typecheck
+pnpm exec eslint <Phase 4-3 touched files>
+```
+
+제한:
+
+- candidate cap 비교는 `ci-1000` 기준 baseline overlap 1차 리포트다. 실제 정답 recall 평가는 아직 아니다.
+- cache TTL memory 비교는 estimated entry size 기반 1차 추정이다. 실제 top-k rerank cache 저장소와 heap delta 계측은 아직 없다.
+- stale embedding skip은 vector search 경로에 적용됐다. 다만 skip된 stale row 수를 report하는 계측은 아직 없다.
+- 1만 chunk manual benchmark는 latency/memory report까지만 완료됐다. eval 기반 정답 recall 검증은 아직 별도다.

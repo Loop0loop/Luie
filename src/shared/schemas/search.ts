@@ -58,6 +58,11 @@ export const memoryEpisodeReviewQueueSchema = z.object({
   limit: z.number().int().positive().max(200).optional(),
 });
 
+export const memoryEpisodeConfirmSchema = z.object({
+  projectId: projectIdSchema,
+  episodeId: z.string().uuid("Invalid episode ID"),
+});
+
 export const memoryEpisodeRejectSchema = z.object({
   projectId: projectIdSchema,
   episodeId: z.string().uuid("Invalid episode ID"),
@@ -105,6 +110,7 @@ export const memoryEntityConfirmSchema = z.object({
 export const memoryEntityRejectSchema = z.object({
   projectId: projectIdSchema,
   entityId: z.string().uuid("Invalid entity ID"),
+  reason: z.string().trim().min(1, "Rejection reason is required").max(1000),
 });
 
 export const memoryEntityAliasConfirmSchema = z.object({
@@ -115,6 +121,7 @@ export const memoryEntityAliasConfirmSchema = z.object({
 export const memoryEntityAliasRejectSchema = z.object({
   projectId: projectIdSchema,
   aliasId: z.string().uuid("Invalid alias ID"),
+  reason: z.string().trim().min(1, "Rejection reason is required").max(1000),
 });
 
 export const memoryEntityMergeSchema = z.object({

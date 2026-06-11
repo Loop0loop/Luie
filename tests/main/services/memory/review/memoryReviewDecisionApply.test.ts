@@ -5,6 +5,7 @@ import {
   chapter,
   db,
   memoryEntity,
+  memoryEntityMention,
   memoryFact,
   project,
 } from "../../../../../src/main/infra/database/index.js";
@@ -45,6 +46,23 @@ describe("applyMemoryReviewDecisions", () => {
       status: "suggested",
       confidence: 90,
       createdBy: "system",
+      updatedAt: nowIso,
+    });
+    await db.getClient().insert(memoryEntityMention).values({
+      id: crypto.randomUUID(),
+      projectId,
+      entityId,
+      aliasId: null,
+      chapterId,
+      chunkId: null,
+      contentHash: "mention-hash",
+      sourceContentHash: "source-hash",
+      startOffset: 0,
+      endOffset: 2,
+      quote: "아린",
+      extractorVersion: "entity-v1",
+      confidence: 90,
+      status: "suggested",
       updatedAt: nowIso,
     });
     await db.getClient().insert(memoryFact).values({

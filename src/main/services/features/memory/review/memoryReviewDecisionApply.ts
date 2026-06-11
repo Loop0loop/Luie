@@ -18,6 +18,7 @@ export type MemoryReviewDecisionAction = "confirm" | "reject";
 export type MemoryReviewEntityDecision = {
   id: string;
   action: string;
+  reason?: string;
 };
 
 export type MemoryReviewFactDecision = {
@@ -62,6 +63,16 @@ const rejectReasonForFact = (decision: MemoryReviewFactDecision): string => {
   const reason = decision.reason?.trim();
   if (!reason) {
     throw new Error("Fact rejection requires a non-empty reason");
+  }
+  return reason;
+};
+
+const rejectReasonForEntity = (
+  decision: MemoryReviewEntityDecision,
+): string => {
+  const reason = decision.reason?.trim();
+  if (!reason) {
+    throw new Error("Entity rejection requires a non-empty reason");
   }
   return reason;
 };
@@ -204,74 +215,79 @@ export async function applyMemoryReviewDecisions(
   input: MemoryReviewDecisionInput,
   options: ApplyOptions = {},
 ): Promise<MemoryReviewDecisionApplyResult> {
-  const results: MemoryReviewDecisionApplyItemResult[] = [];
+  const entityResults = await Promise.all(
+    (input.entities ?? []).map(async (decision) => {
+      try {
+        validateAction(decision.action);
+        const mutation =
+          decision.action === "confirm"
+            ? await confirmMemoryEntity({
+                projectId: input.projectId,
+                entityId: decision.id,
+                nowIso: options.nowIso,
+              })
+            : await rejectMemoryEntity({
+                projectId: input.projectId,
+                entityId: decision.id,
+                reason: rejectReasonForEntity(decision),
+                nowIso: options.nowIso,
+              });
+        return {
+          kind: "entity",
+          id: decision.id,
+          action: decision.action,
+          updated: mutation.updated,
+          status: mutation.status,
+        } satisfies MemoryReviewDecisionApplyItemResult;
+      } catch (error) {
+        return {
+          kind: "entity",
+          id: decision.id,
+          action: decision.action,
+          updated: false,
+          error: error instanceof Error ? error.message : String(error),
+        } satisfies MemoryReviewDecisionApplyItemResult;
+      }
+    }),
+  );
 
-  for (const decision of input.entities ?? []) {
-    try {
-      validateAction(decision.action);
-      const mutation =
-        decision.action === "confirm"
-          ? await confirmMemoryEntity({
-              projectId: input.projectId,
-              entityId: decision.id,
-              nowIso: options.nowIso,
-            })
-          : await rejectMemoryEntity({
-              projectId: input.projectId,
-              entityId: decision.id,
-              nowIso: options.nowIso,
-            });
-      results.push({
-        kind: "entity",
-        id: decision.id,
-        action: decision.action,
-        updated: mutation.updated,
-        status: mutation.status,
-      });
-    } catch (error) {
-      results.push({
-        kind: "entity",
-        id: decision.id,
-        action: decision.action,
-        updated: false,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
+  const factResults = await Promise.all(
+    (input.facts ?? []).map(async (decision) => {
+      try {
+        validateAction(decision.action);
+        const mutation =
+          decision.action === "confirm"
+            ? await confirmMemoryTemporalFact({
+                projectId: input.projectId,
+                factId: decision.id,
+                nowIso: options.nowIso,
+              })
+            : await rejectMemoryTemporalFact({
+                projectId: input.projectId,
+                factId: decision.id,
+                reason: rejectReasonForFact(decision),
+                nowIso: options.nowIso,
+              });
+        return {
+          kind: "fact",
+          id: decision.id,
+          action: decision.action,
+          updated: mutation.updated,
+          status: mutation.status,
+        } satisfies MemoryReviewDecisionApplyItemResult;
+      } catch (error) {
+        return {
+          kind: "fact",
+          id: decision.id,
+          action: decision.action,
+          updated: false,
+          error: error instanceof Error ? error.message : String(error),
+        } satisfies MemoryReviewDecisionApplyItemResult;
+      }
+    }),
+  );
 
-  for (const decision of input.facts ?? []) {
-    try {
-      validateAction(decision.action);
-      const mutation =
-        decision.action === "confirm"
-          ? await confirmMemoryTemporalFact({
-              projectId: input.projectId,
-              factId: decision.id,
-              nowIso: options.nowIso,
-            })
-          : await rejectMemoryTemporalFact({
-              projectId: input.projectId,
-              factId: decision.id,
-              reason: rejectReasonForFact(decision),
-              nowIso: options.nowIso,
-            });
-      results.push({
-        kind: "fact",
-        id: decision.id,
-        action: decision.action,
-        updated: mutation.updated,
-        status: mutation.status,
-      });
-    } catch (error) {
-      results.push({
-        kind: "fact",
-        id: decision.id,
-        action: decision.action,
-        updated: false,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
+  const results = [...entityResults, ...factResults];
 
   const updated = results.filter((result) => result.updated).length;
   let persisted = false;

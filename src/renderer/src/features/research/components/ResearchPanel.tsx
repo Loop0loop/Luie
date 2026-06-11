@@ -29,11 +29,18 @@ interface ResearchPanelProps {
 
 export default function ResearchPanel({
   activeTab,
-  onClose: _onClose,
+  onClose,
   onTabChange,
 }: ResearchPanelProps) {
   const { t } = useTranslation();
   const viewMode = useAnalysisStore((state) => state.viewMode);
+
+  // 플로팅으로 전환되면 사이드바의 분석 패널은 닫는다 (플로팅 창으로 치환)
+  React.useEffect(() => {
+    if (activeTab === "analysis" && viewMode === "floatingView") {
+      onClose?.();
+    }
+  }, [activeTab, viewMode, onClose]);
 
   const tabConfig: Record<
     string,

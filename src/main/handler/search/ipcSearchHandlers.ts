@@ -2,6 +2,7 @@ import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import type {
   MemoryConflictQueueInput,
   MemoryEpisodeCalibrationRequest,
+  MemoryEpisodeConfirmInput,
   MemoryEpisodeRejectInput,
   MemoryEpisodeReviewQueueInput,
   MemoryChunkWindowQuery,
@@ -30,6 +31,7 @@ import {
   memoryChunkWindowSchema,
   memoryConflictQueueQuerySchema,
   memoryEmbeddingStatusSchema,
+  memoryEpisodeConfirmSchema,
   memoryEpisodeRejectSchema,
   memoryEpisodeReviewQueueSchema,
   memoryEntityAliasConfirmSchema,
@@ -72,6 +74,7 @@ type NarrativeMemoryQueryServiceLike = {
   query: (input: NarrativeMemoryQueryInput) => Promise<unknown>;
   getConflictQueue: (input: MemoryConflictQueueInput) => Promise<unknown>;
   listSuggestedEpisodes: (input: MemoryEpisodeReviewQueueInput) => Promise<unknown>;
+  confirmEpisode: (input: MemoryEpisodeConfirmInput) => Promise<unknown>;
   rejectEpisode: (input: MemoryEpisodeRejectInput) => Promise<unknown>;
   listSuggestedFacts: (input: MemoryTemporalFactReviewQueueInput) => Promise<unknown>;
   confirmFact: (input: MemoryTemporalFactConfirmInput) => Promise<unknown>;
@@ -224,6 +227,16 @@ export function registerSearchIPCHandlers(
       argsSchema: z.tuple([memoryEpisodeReviewQueueSchema]),
       handler: (input: MemoryEpisodeReviewQueueInput) =>
         narrativeMemoryQueryService.listSuggestedEpisodes(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_EPISODE_CONFIRM,
+      logTag: "MEMORY_EPISODE_CONFIRM",
+      failMessage: "Failed to confirm episode",
+      argsSchema: z.tuple([memoryEpisodeConfirmSchema]),
+      handler: (input: MemoryEpisodeConfirmInput) =>
+        persistAfterUpdatedReviewMutation(input.projectId, "memory:episode-confirm", () =>
+          narrativeMemoryQueryService.confirmEpisode(input),
+        ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_EPISODE_REJECT,

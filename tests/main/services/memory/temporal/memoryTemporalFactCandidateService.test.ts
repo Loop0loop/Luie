@@ -238,4 +238,73 @@ describe("createMemoryTemporalFactCandidate", () => {
       knowledgeValue: "known",
     });
   });
+
+  it("suppresses a candidate when the same temporal fact was already rejected", async () => {
+    const seed = await seedEvidence();
+    await db.getClient().insert(memoryFact).values({
+      id: crypto.randomUUID(),
+      projectId: seed.projectId,
+      subjectEntityId: seed.arinId,
+      predicate: "belongs_to",
+      objectEntityId: seed.baekyaId,
+      objectValue: null,
+      valueType: "entity",
+      validFromChapterId: seed.chapterId,
+      validFromChapterOrder: 10,
+      validToChapterId: null,
+      validToChapterOrder: null,
+      observedAtChapterId: seed.chapterId,
+      observedAtChapterOrder: 10,
+      confidence: 50,
+      status: "rejected",
+      provenanceKind: "canon",
+      canonStatus: "canon",
+      extractorVersion: "fact-v1",
+      sourceContentHash: "source-hash",
+      invalidatedByFactId: null,
+      rejectedAt: seed.nowIso,
+      rejectionReason: "중복 제안",
+      updatedAt: seed.nowIso,
+    });
+
+    const result = await createMemoryTemporalFactCandidate({
+      nowIso: seed.nowIso,
+      projectId: seed.projectId,
+      subjectEntityId: seed.arinId,
+      predicate: "belongs_to",
+      objectEntityId: seed.baekyaId,
+      objectValue: null,
+      valueType: "entity",
+      validFromChapterId: seed.chapterId,
+      validFromChapterOrder: 10,
+      validToChapterId: null,
+      validToChapterOrder: null,
+      observedAtChapterId: seed.chapterId,
+      observedAtChapterOrder: 10,
+      confidence: 85,
+      extractorVersion: "fact-v1",
+      sourceContentHash: "source-hash",
+      evidenceIds: [seed.evidenceId],
+      projection: {
+        kind: "relation",
+        sourceEntityId: seed.arinId,
+        targetEntityId: seed.baekyaId,
+        relation: "belongs_to",
+      },
+    });
+
+    expect(result.created).toBe(false);
+    const factRows = await db
+      .getClient()
+      .select()
+      .from(memoryFact)
+      .where(eq(memoryFact.projectId, seed.projectId));
+    const evidenceRows = await db
+      .getClient()
+      .select()
+      .from(memoryFactEvidence)
+      .where(eq(memoryFactEvidence.projectId, seed.projectId));
+    expect(factRows).toHaveLength(1);
+    expect(evidenceRows).toHaveLength(0);
+  });
 });

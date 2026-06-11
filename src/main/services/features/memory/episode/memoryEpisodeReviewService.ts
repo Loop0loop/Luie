@@ -5,11 +5,23 @@ import {
   memoryEpisodeEvidence,
 } from "../../../../infra/database/index.js";
 import type {
+  MemoryEpisodeConfirmInput,
   MemoryEpisodeRejectInput,
   MemoryEpisodeRejectResult,
   MemoryEpisodeReviewQueueInput,
+  MemoryEpisodeReviewMutationResult,
   MemoryEpisodeReviewQueueResult,
 } from "../../../../../shared/types/search.js";
+
+type EpisodeEvidenceState = {
+  hasEvidence: number;
+};
+
+function assertMemoryEpisodeHasEvidence(state: EpisodeEvidenceState): void {
+  if (Number(state.hasEvidence) !== 1) {
+    throw new Error("MEMORY_EPISODE_EVIDENCE_REQUIRED");
+  }
+}
 
 export async function listSuggestedMemoryEpisodes(
   input: MemoryEpisodeReviewQueueInput,
@@ -53,6 +65,56 @@ export async function listSuggestedMemoryEpisodes(
       ...row,
       evidenceCount: Number(row.evidenceCount ?? 0),
     })),
+  };
+}
+
+export async function confirmMemoryEpisode(
+  input: MemoryEpisodeConfirmInput & { nowIso?: string },
+): Promise<MemoryEpisodeReviewMutationResult> {
+  const nowIso = input.nowIso ?? new Date().toISOString();
+  const updated = db.getClient().transaction((tx) => {
+    const [candidate] = tx.all<EpisodeEvidenceState>(sql`
+      SELECT EXISTS (
+        SELECT 1
+        FROM "MemoryEpisodeEvidence" evidence
+        WHERE evidence."projectId" = episode."projectId"
+          AND evidence."episodeId" = episode."id"
+          AND trim(episode."sourceContentHash") <> ''
+          AND trim(evidence."contentHash") <> ''
+          AND trim(evidence."sourceContentHash") <> ''
+          AND trim(evidence."quote") <> ''
+      ) AS "hasEvidence"
+      FROM "MemoryEpisode" episode
+      WHERE episode."projectId" = ${input.projectId}
+        AND episode."id" = ${input.episodeId}
+        AND episode."status" = 'suggested'
+      LIMIT 1;
+    `);
+    if (!candidate) return false;
+    assertMemoryEpisodeHasEvidence(candidate);
+    const result = tx
+      .update(memoryEpisode)
+      .set({
+        status: "confirmed",
+        rejectedAt: null,
+        rejectionReason: null,
+        updatedAt: nowIso,
+      })
+      .where(
+        and(
+          eq(memoryEpisode.projectId, input.projectId),
+          eq(memoryEpisode.id, input.episodeId),
+          eq(memoryEpisode.status, "suggested"),
+        ),
+      )
+      .run();
+    return result.changes > 0;
+  });
+
+  return {
+    updated,
+    status: updated ? "confirmed" : undefined,
+    canonicalExportable: updated,
   };
 }
 

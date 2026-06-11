@@ -175,4 +175,24 @@ export const PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
     column: "canonStatus",
     sql: 'ALTER TABLE "MemoryFact" ADD COLUMN "canonStatus" TEXT NOT NULL DEFAULT \'unknown\';',
   },
+  {
+    table: "MemoryEntity",
+    column: "rejectedAt",
+    sql: 'ALTER TABLE "MemoryEntity" ADD COLUMN "rejectedAt" TEXT;',
+  },
+  {
+    table: "MemoryEntity",
+    column: "rejectionReason",
+    sql: 'ALTER TABLE "MemoryEntity" ADD COLUMN "rejectionReason" TEXT;',
+  },
+  {
+    table: "MemoryEntityAlias",
+    column: "rejectedAt",
+    sql: 'ALTER TABLE "MemoryEntityAlias" ADD COLUMN "rejectedAt" TEXT;',
+  },
+  {
+    table: "MemoryEntityAlias",
+    column: "rejectionReason",
+    sql: 'ALTER TABLE "MemoryEntityAlias" ADD COLUMN "rejectionReason" TEXT;',
+  },
 ];

@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop -- Temporal fact candidates are inserted sequentially so duplicate suppression observes current DB state. */
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   chapter,
@@ -133,13 +134,13 @@ export async function processPendingTemporalFactExtraction(input: {
 
   let extracted = 0;
   for (const candidate of candidates) {
-    await createMemoryTemporalFactCandidate({
+    const result = await createMemoryTemporalFactCandidate({
       ...candidate,
       nowIso,
       projectId: input.projectId,
       extractorVersion,
     });
-    extracted += 1;
+    if (result.created) extracted += 1;
   }
 
   return { extracted };

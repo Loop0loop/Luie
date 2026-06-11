@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { and, eq } from "drizzle-orm";
 import {
   db,
   memoryEpisode,
@@ -141,13 +142,34 @@ export function createMemoryEpisodeCandidateRows(
 
 export async function createMemoryEpisodeCandidate(
   input: MemoryEpisodeCandidateCreateInput,
-): Promise<ReturnType<typeof createMemoryEpisodeCandidateRows>> {
+): Promise<ReturnType<typeof createMemoryEpisodeCandidateRows> & { created: boolean }> {
   const rows = createMemoryEpisodeCandidateRows(input);
+  const [rejectedDuplicate] = await db
+    .getClient()
+    .select({ id: memoryEpisode.id })
+    .from(memoryEpisode)
+    .where(
+      and(
+        eq(memoryEpisode.projectId, input.projectId),
+        eq(memoryEpisode.sourceType, input.sourceType),
+        eq(memoryEpisode.sourceId, input.sourceId),
+        eq(memoryEpisode.sourceContentHash, input.sourceContentHash),
+        eq(memoryEpisode.extractorVersion, input.extractorVersion),
+        eq(memoryEpisode.episodeType, input.episodeType),
+        eq(memoryEpisode.title, input.title),
+        eq(memoryEpisode.summary, input.summary),
+        eq(memoryEpisode.status, "rejected"),
+      ),
+    )
+    .limit(1);
+  if (rejectedDuplicate) {
+    return { ...rows, created: false };
+  }
   db.getClient().transaction((tx) => {
     tx.insert(memoryEpisode).values(rows.episode).run();
     for (const evidence of rows.evidence) {
       tx.insert(memoryEpisodeEvidence).values(evidence).run();
     }
   });
-  return rows;
+  return { ...rows, created: true };
 }

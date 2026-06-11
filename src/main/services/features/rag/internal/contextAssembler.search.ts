@@ -11,6 +11,7 @@ import { memoryChunk } from "../../../../database/schema/index.js";
 import type { MemoryChunkSearchResult } from "../../../../../shared/types/index.js";
 import { createLogger } from "../../../../../shared/logger/index.js";
 import type { RagEmbeddingProvider } from "./contextAssembler.types.js";
+import { resolveSearchOptimizationPolicy } from "../../search/searchOptimizationPolicy.js";
 
 type FtsRow = { chunkId: string };
 type ExactPhraseRow = { chunkId: string };
@@ -102,7 +103,11 @@ export async function searchMemoryChunksForRag(
   const normalizedQuery = input.query.trim();
   if (normalizedQuery.length === 0) return [];
 
-  const limit = Math.max(1, Math.min(input.limit, 100));
+  const searchPolicy = resolveSearchOptimizationPolicy({
+    requestedLimit: input.limit,
+  });
+  const limit = searchPolicy.resultLimit;
+  const candidateCap = searchPolicy.candidateCap;
   const client = db.getClient();
   const ftsQuery = buildFtsQuery(normalizedQuery);
   const ftsRows: FtsRow[] =
@@ -113,7 +118,7 @@ export async function searchMemoryChunksForRag(
       WHERE fts."projectId" = ${input.projectId}
         AND "MemoryChunkFts" MATCH ${ftsQuery}
       ORDER BY bm25("MemoryChunkFts"), fts."chunkId"
-      LIMIT ${Math.max(limit, 50)};
+      LIMIT ${candidateCap};
     `)
       : [];
   const exactPhraseCandidates = extractExactPhraseCandidates(normalizedQuery);
@@ -130,7 +135,7 @@ export async function searchMemoryChunksForRag(
           sql` OR `,
         )})
       ORDER BY chunk."chunkIndex" ASC, chunk."id"
-      LIMIT ${Math.max(limit, 50)};
+      LIMIT ${candidateCap};
     `)
       : [];
   const quoteLikeTokens = extractQuoteLikeTokens(normalizedQuery);
@@ -150,7 +155,7 @@ export async function searchMemoryChunksForRag(
                 sql` OR `,
               )})
             ORDER BY chunk."chunkIndex" ASC, chunk."id"
-            LIMIT ${Math.max(limit, 80)};
+            LIMIT ${candidateCap};
           `)
           .map((row) => ({
             chunkId: row.chunkId,
@@ -167,7 +172,7 @@ export async function searchMemoryChunksForRag(
   const lexicalRanks = await searchByShortTokens(
     input.projectId,
     normalizedQuery,
-    Math.max(limit, 50),
+    candidateCap,
     logger,
   );
 
@@ -180,7 +185,7 @@ export async function searchMemoryChunksForRag(
         denseRanks = searchByVector(
           input.projectId,
           queryVector,
-          Math.max(limit, 50),
+          candidateCap,
           logger,
         );
       }

@@ -142,12 +142,16 @@ export const searchByVector = (
       queryVec.byteLength,
     );
     const rows = db.getClient().all<{ chunkId: string }>(sql`
-      SELECT "chunkId"
-      FROM "MemoryEmbedding"
-      WHERE "projectId" = ${projectId}
-        AND "dimension" = ${queryVec.length}
-        AND length("vec") = "dimension" * 4
-      ORDER BY vec_distance_cosine("vec", ${queryVecBlob})
+      SELECT embedding."chunkId" AS "chunkId"
+      FROM "MemoryEmbedding" embedding
+      JOIN "MemoryChunk" chunk
+        ON embedding."chunkId" = chunk."id"
+       AND embedding."projectId" = chunk."projectId"
+      WHERE embedding."projectId" = ${projectId}
+        AND embedding."dimension" = ${queryVec.length}
+        AND length(embedding."vec") = embedding."dimension" * 4
+        AND embedding."contentHash" = COALESCE(NULLIF(chunk."indexTextHash", ''), chunk."contentHash")
+      ORDER BY vec_distance_cosine(embedding."vec", ${queryVecBlob})
       LIMIT ${limit};
     `);
     return rows.map((row, index) => ({

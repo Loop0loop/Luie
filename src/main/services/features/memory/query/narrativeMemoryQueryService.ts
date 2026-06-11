@@ -4,6 +4,7 @@ import type {
   MemoryConflictQueueResult,
   MemoryEpisodeCalibrationRequest,
   MemoryEpisodeCalibrationResult,
+  MemoryEpisodeConfirmInput,
   MemoryEntityAliasConfirmInput,
   MemoryEntityAliasRejectInput,
   MemoryEntityAliasReviewMutationResult,
@@ -20,6 +21,7 @@ import type {
   MemoryEntityReviewQueueResult,
   MemoryEpisodeRejectInput,
   MemoryEpisodeRejectResult,
+  MemoryEpisodeReviewMutationResult,
   MemoryEpisodeReviewQueueInput,
   MemoryEpisodeReviewQueueResult,
   MemoryTemporalFactConfirmInput,
@@ -50,6 +52,7 @@ import {
   splitMemoryEntityAlias,
 } from "../entity/memoryEntityReviewService.js";
 import {
+  confirmMemoryEpisode,
   listSuggestedMemoryEpisodes,
   rejectMemoryEpisode,
 } from "../episode/memoryEpisodeReviewService.js";
@@ -351,6 +354,12 @@ export class NarrativeMemoryQueryService {
     input: MemoryEpisodeReviewQueueInput,
   ): Promise<MemoryEpisodeReviewQueueResult> {
     return await listSuggestedMemoryEpisodes(input);
+  }
+
+  async confirmEpisode(
+    input: MemoryEpisodeConfirmInput,
+  ): Promise<MemoryEpisodeReviewMutationResult> {
+    return await confirmMemoryEpisode(input);
   }
 
   async rejectEpisode(

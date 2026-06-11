@@ -18,6 +18,7 @@ import {
   searchByVector,
   shouldRunVectorSearch,
 } from "./chunkSearch.js";
+import { resolveSearchOptimizationPolicy } from "./searchOptimizationPolicy.js";
 
 const logger = createLogger("SearchService");
 
@@ -34,7 +35,11 @@ export async function searchChunks(
   if (normalizedQuery.length === 0) {
     return [];
   }
-  const limit = Math.max(1, Math.min(input.limit ?? 20, 100));
+  const searchPolicy = resolveSearchOptimizationPolicy({
+    requestedLimit: input.limit,
+  });
+  const limit = searchPolicy.resultLimit;
+  const candidateCap = searchPolicy.candidateCap;
 
   try {
     const client = db.getClient();
@@ -49,14 +54,14 @@ export async function searchChunks(
             WHERE fts."projectId" = ${input.projectId}
               AND "MemoryChunkFts" MATCH ${ftsQuery}
             ORDER BY bm25("MemoryChunkFts"), fts."chunkId"
-            LIMIT ${Math.max(limit, 50)};
+            LIMIT ${candidateCap};
           `)
         : [];
 
     const lexicalRanks = await searchByShortTokens(
       input.projectId,
       normalizedQuery,
-      Math.max(limit, 50),
+      candidateCap,
       logger,
     );
 
@@ -69,7 +74,7 @@ export async function searchChunks(
           denseRanks = searchByVector(
             input.projectId,
             queryVector,
-            Math.max(limit, 50),
+            candidateCap,
             logger,
           );
         }

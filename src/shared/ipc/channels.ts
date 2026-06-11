@@ -119,6 +119,7 @@ export const IPC_CHANNELS = {
   MEMORY_QUERY_NARRATIVE: "memory:query-narrative",
   MEMORY_GET_CONFLICT_QUEUE: "memory:get-conflict-queue",
   MEMORY_EPISODE_REVIEW_QUEUE: "memory:episode-review-queue",
+  MEMORY_EPISODE_CONFIRM: "memory:episode-confirm",
   MEMORY_EPISODE_REJECT: "memory:episode-reject",
   MEMORY_FACT_REVIEW_QUEUE: "memory:fact-review-queue",
   MEMORY_FACT_CONFIRM: "memory:fact-confirm",

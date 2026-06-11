@@ -8,12 +8,18 @@ import {
   project,
 } from "../../../../../src/main/infra/database/index.js";
 import {
+  confirmMemoryEpisode,
   listSuggestedMemoryEpisodes,
   rejectMemoryEpisode,
 } from "../../../../../src/main/services/features/memory/episode/memoryEpisodeReviewService.js";
 
 describe("memoryEpisodeReviewService", () => {
-  it("lists suggested episodes with evidence counts", async () => {
+  async function seedEpisode(input?: {
+    withEvidence?: boolean;
+    contentHash?: string;
+    sourceContentHash?: string;
+    quote?: string;
+  }) {
     const projectId = crypto.randomUUID();
     const episodeId = crypto.randomUUID();
     const nowIso = "2026-06-08T00:00:00.000Z";
@@ -41,29 +47,81 @@ describe("memoryEpisodeReviewService", () => {
       confidence: 0,
       updatedAt: nowIso,
     });
-    await db.getClient().insert(memoryEpisodeEvidence).values({
-      id: crypto.randomUUID(),
-      projectId,
-      episodeId,
-      chapterId: null,
-      chunkId: "chunk-1",
-      contentHash: "chunk-hash",
-      sourceContentHash: "source-hash",
-      startOffset: 0,
-      endOffset: 10,
-      quote: "아린은 봉인된 편지를 읽었다.",
-      updatedAt: nowIso,
-    });
+    if (input?.withEvidence) {
+      await db.getClient().insert(memoryEpisodeEvidence).values({
+        id: crypto.randomUUID(),
+        projectId,
+        episodeId,
+        chapterId: null,
+        chunkId: "chunk-1",
+        contentHash: input.contentHash ?? "chunk-hash",
+        sourceContentHash: input.sourceContentHash ?? "source-hash",
+        startOffset: 0,
+        endOffset: 10,
+        quote: input.quote ?? "아린은 봉인된 편지를 읽었다.",
+        updatedAt: nowIso,
+      });
+    }
 
-    const result = await listSuggestedMemoryEpisodes({ projectId, limit: 20 });
+    return { projectId, episodeId, nowIso };
+  }
+
+  it("lists suggested episodes with evidence counts", async () => {
+    const seed = await seedEpisode({ withEvidence: true });
+
+    const result = await listSuggestedMemoryEpisodes({
+      projectId: seed.projectId,
+      limit: 20,
+    });
 
     expect(result.items).toHaveLength(1);
     expect(result.items[0]).toMatchObject({
-      id: episodeId,
+      id: seed.episodeId,
       title: "아린이 편지를 읽음",
       status: "suggested",
       evidenceCount: 1,
     });
+  });
+
+  it("confirms a suggested episode when source evidence is present", async () => {
+    const seed = await seedEpisode({ withEvidence: true });
+
+    const result = await confirmMemoryEpisode({
+      projectId: seed.projectId,
+      episodeId: seed.episodeId,
+      nowIso: seed.nowIso,
+    });
+
+    expect(result).toEqual({
+      updated: true,
+      status: "confirmed",
+      canonicalExportable: true,
+    });
+    const [row] = await db
+      .getClient()
+      .select()
+      .from(memoryEpisode)
+      .where(eq(memoryEpisode.id, seed.episodeId));
+    expect(row.status).toBe("confirmed");
+  });
+
+  it("blocks confirming a suggested episode when source evidence is missing", async () => {
+    const seed = await seedEpisode();
+
+    await expect(
+      confirmMemoryEpisode({
+        projectId: seed.projectId,
+        episodeId: seed.episodeId,
+        nowIso: seed.nowIso,
+      }),
+    ).rejects.toThrow("MEMORY_EPISODE_EVIDENCE_REQUIRED");
+
+    const [row] = await db
+      .getClient()
+      .select()
+      .from(memoryEpisode)
+      .where(eq(memoryEpisode.id, seed.episodeId));
+    expect(row.status).toBe("suggested");
   });
 
   it("rejects a suggested episode with a review reason", async () => {
