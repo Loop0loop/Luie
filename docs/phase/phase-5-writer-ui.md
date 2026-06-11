@@ -44,7 +44,7 @@ UI 요소:
 - defer된 conflict 재조회: conflict queue의 `active`/`deferred` 필터와 보류 상태 badge로 다시 확인 가능
 - 실제 작가 flow DOM 검증: conflict quote/action/defer/filter 상태 전환 테스트 완료
 
-남은 범위:
+후속 보강 범위:
 
 - 실제 Electron E2E에서 충돌 큐 결정을 preload API가 아니라 UI 조작만으로 검증
 
@@ -62,7 +62,7 @@ UI 요소:
 - 선택 기준 회차가 RAG memory query로 전달됨: RAG context assembler source boundary 테스트 완료
 - 기준 회차 이후 fact 제외: temporal memory query service 테스트 완료
 
-남은 범위:
+후속 보강 범위:
 
 - answer judge/eval scorer를 실제 RAG stream 완료 경로에 붙여 `temporal_blocked`를 end-to-end로 발생시키는 통합 검증
 
@@ -124,6 +124,6 @@ Coverage 문서:
 
 - [Phase 5 Writer Workflow Coverage](phase-5-writer-workflow-coverage.md)
 
-남은 범위:
+후속 보강 범위:
 
 - API 기반 Electron E2E가 아니라 실제 에디터 타이핑/버튼 클릭으로 같은 흐름을 재현하는 순수 UI E2E

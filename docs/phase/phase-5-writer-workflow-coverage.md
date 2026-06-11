@@ -88,7 +88,7 @@
 - eval runner는 저장된 query chapter order를 사용해 미래 정보 누수를 잡는다.
 - scoring은 기준 회차 이후 fact 사용을 P0 failure로 표시한다.
 
-## 남은 E2E 범위
+## 후속 E2E 보강
 
 - 실제 Electron 앱 경계에서 원고 수정, memory rebuild, 검색/RAG 근거 확인까지 이어지는 긴 시나리오는 `tests/e2e/phase5WriterWorkflow.spec.ts`로 고정했다.
 - 남은 선택 보강은 실제 에디터 타이핑/버튼 클릭만으로 같은 흐름을 재현하는 순수 UI E2E다.
