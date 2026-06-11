@@ -1,5 +1,5 @@
 import { NarrativeSummaryStatusPanel } from "./NarrativeSummaryStatusPanel";
-import type { AnalysisNarrativeSummaryStatus } from "./types";
+import type { AnalysisNarrativeSummaryStatus } from "../../shared/types";
 
 type SummaryDrawerProps = {
   open: boolean;

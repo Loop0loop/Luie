@@ -12,6 +12,7 @@ import type {
   RuntimeSupabaseConfig,
   RuntimeSupabaseConfigView,
   SyncPendingProjectDelete,
+  RagSearchOptimizationMode,
   SyncSettings,
   StartupSettings,
   WindowBounds,
@@ -33,6 +34,19 @@ import {
 import { normalizeSyncSettings } from "./syncSettingsNormalizer.js";
 
 const logger = createLogger("SettingsManager");
+
+const SEARCH_OPTIMIZATION_MODES = new Set<RagSearchOptimizationMode>([
+  "low-end",
+  "standard",
+  "high-end",
+  "quality",
+]);
+
+function isSearchOptimizationMode(
+  value: unknown,
+): value is RagSearchOptimizationMode {
+  return typeof value === "string" && SEARCH_OPTIMIZATION_MODES.has(value as RagSearchOptimizationMode);
+}
 
 export class SettingsManager {
   private static instance: SettingsManager;
@@ -58,6 +72,9 @@ export class SettingsManager {
       legacyFile,
       logger,
     });
+    this.applySearchOptimizationModeToRuntime(
+      this.getSearchOptimizationMode(),
+    );
 
     logger.info("Settings manager initialized", {
       path: this.store.path,
@@ -216,6 +233,7 @@ export class SettingsManager {
     ragMaxTokens?: number;
     defaultEmbeddingModelPath?: string;
     defaultEmbeddingModelId?: string;
+    searchOptimizationMode?: RagSearchOptimizationMode;
   } {
     const llm = this.store.get("llm") ?? {};
     return {
@@ -227,6 +245,7 @@ export class SettingsManager {
       ragMaxTokens: (llm as { ragMaxTokens?: number }).ragMaxTokens,
       defaultEmbeddingModelPath: (llm as { defaultEmbeddingModelPath?: string }).defaultEmbeddingModelPath,
       defaultEmbeddingModelId: (llm as { defaultEmbeddingModelId?: string }).defaultEmbeddingModelId,
+      searchOptimizationMode: this.getSearchOptimizationMode(),
     };
   }
 
@@ -239,6 +258,7 @@ export class SettingsManager {
     ragMaxTokens?: number;
     defaultEmbeddingModelPath?: string;
     defaultEmbeddingModelId?: string;
+    searchOptimizationMode?: RagSearchOptimizationMode;
   }): void {
     const current = this.store.get("llm") ?? {};
     const next = {
@@ -246,6 +266,9 @@ export class SettingsManager {
       ...settings,
     };
     this.store.set("llm", next);
+    if (settings.searchOptimizationMode) {
+      this.applySearchOptimizationModeToRuntime(settings.searchOptimizationMode);
+    }
     logger.info("LLM settings updated", {
       changedKeys: Object.keys(settings),
       hasOllamaUrl: Boolean((next as typeof next & { ollama?: { baseUrl?: string } }).ollama?.baseUrl),
@@ -255,7 +278,25 @@ export class SettingsManager {
       hasEmbeddingModelPath: Boolean(
         (next as typeof next & { defaultEmbeddingModelPath?: string }).defaultEmbeddingModelPath,
       ),
+      searchOptimizationMode: next.searchOptimizationMode,
     });
+  }
+
+  getSearchOptimizationMode(): RagSearchOptimizationMode {
+    const llm = this.store.get("llm") ?? {};
+    const mode = (llm as { searchOptimizationMode?: unknown }).searchOptimizationMode;
+    return isSearchOptimizationMode(mode) ? mode : "standard";
+  }
+
+  setSearchOptimizationMode(mode: RagSearchOptimizationMode): RagSearchOptimizationMode {
+    this.setLlmSettings({ searchOptimizationMode: mode });
+    return this.getSearchOptimizationMode();
+  }
+
+  private applySearchOptimizationModeToRuntime(
+    mode: RagSearchOptimizationMode,
+  ): void {
+    process.env.LUIE_SEARCH_OPTIMIZATION_MODE = mode;
   }
 
   getLocalLlmSettings(): {

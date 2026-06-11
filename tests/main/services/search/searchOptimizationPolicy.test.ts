@@ -15,7 +15,7 @@ describe("searchOptimizationPolicy", () => {
     expect(policy).toMatchObject({
       mode: "low-end",
       resultLimit: 40,
-      candidateCap: 40,
+      candidateCap: 50,
       rrfTopK: 40,
       contextBudgetChars: 6_144,
       rerankCacheTtlMs: 300_000,

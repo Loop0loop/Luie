@@ -5,7 +5,7 @@ import type {
   AnalysisEpisodeCalibrationReport,
   AnalysisIntentCalibrationReport,
   AnalysisMemoryEvalReport,
-} from "./types";
+} from "../../shared/types";
 
 type UseMemoryEvalPanelInput = {
   projectId?: string;

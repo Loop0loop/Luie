@@ -10,7 +10,7 @@ import { useProjectStore } from "../../src/renderer/src/features/project/stores/
 import { useAnalysisStore } from "../../src/renderer/src/features/research/stores/analysisStore.js";
 
 // 커스텀 훅 모킹
-vi.mock("../../src/renderer/src/features/research/components/analysisSection/useAnalysisRuntime.js", () => ({
+vi.mock("../../src/renderer/src/features/research/components/analysisSection/runtime/useAnalysisRuntime.js", () => ({
   useAnalysisRuntime: () => ({
     runtimeInfo: {
       status: "running",
@@ -20,6 +20,8 @@ vi.mock("../../src/renderer/src/features/research/components/analysisSection/use
     sidecarStatus: "running",
     runtimePreference: "auto",
     applyRuntimePreference: vi.fn(),
+    searchOptimizationMode: "standard",
+    applySearchOptimizationMode: vi.fn(),
   }),
 }));
 
@@ -38,7 +40,7 @@ vi.mock("../../src/renderer/src/features/research/components/analysisSection/use
   }),
 }));
 
-vi.mock("../../src/renderer/src/features/research/components/analysisSection/useMemoryReviewPanels.js", () => ({
+vi.mock("../../src/renderer/src/features/research/components/analysisSection/review/queue/useMemoryReviewPanels.js", () => ({
   useMemoryReviewPanels: () => ({
     showConflictQueue: false,
     conflictLoading: false,
@@ -111,7 +113,7 @@ vi.mock("../../src/renderer/src/features/research/components/analysisSection/use
   }),
 }));
 
-vi.mock("../../src/renderer/src/features/research/components/analysisSection/useRagChat.js", () => ({
+vi.mock("../../src/renderer/src/features/research/components/analysisSection/chat/useRagChat.js", () => ({
   useRagChat: () => ({
     messages: [],
     input: "",
@@ -232,6 +234,22 @@ describe("AnalysisViewMode", () => {
     const toggleButton = view.container.querySelector('[data-testid="view-mode-toggle"]') ||
                          document.body.querySelector('[data-testid="view-mode-toggle"]');
     expect(toggleButton).toBeTruthy();
+  });
+
+  it("shows RAG search mode choices with low-end trade-off copy in the composer menu", async () => {
+    const view = mountView(<AnalysisSection />);
+    mountedViews.push(view);
+
+    const optionButton =
+      view.container.querySelector('button[title="옵션"]') ||
+      document.body.querySelector('button[title="옵션"]');
+    await clickElement(optionButton);
+
+    const text = `${view.container.textContent ?? ""} ${document.body.textContent ?? ""}`;
+    expect(text).toContain("Search Mode");
+    expect(text).toContain("Low-end");
+    expect(text).toContain("빠른 검색");
+    expect(text).toContain("근거 폭 좁음");
   });
 
   it("mounts to document.body via React Portal when in floatingView mode", async () => {
@@ -390,4 +408,3 @@ describe("AnalysisViewMode", () => {
     unmountView(view2);
   });
 });
-

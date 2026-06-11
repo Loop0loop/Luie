@@ -179,6 +179,8 @@ export const IPC_CHANNELS = {
   SETTINGS_SET_LANGUAGE: "settings:set-language",
   SETTINGS_GET_MENU_BAR_MODE: "settings:get-menu-bar-mode",
   SETTINGS_SET_MENU_BAR_MODE: "settings:set-menu-bar-mode",
+  SETTINGS_GET_SEARCH_OPTIMIZATION_MODE: "settings:get-search-optimization-mode",
+  SETTINGS_SET_SEARCH_OPTIMIZATION_MODE: "settings:set-search-optimization-mode",
   SETTINGS_GET_SHORTCUTS: "settings:get-shortcuts",
   SETTINGS_SET_SHORTCUTS: "settings:set-shortcuts",
   SETTINGS_SET_WINDOW_BOUNDS: "settings:set-window-bounds",

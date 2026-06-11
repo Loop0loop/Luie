@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
-import type { AnalysisNarrativeSummaryStatus } from "./types";
+import type { AnalysisNarrativeSummaryStatus } from "../../shared/types";
 
 type NarrativeSummaryStatusPanelProps = {
   visible: boolean;

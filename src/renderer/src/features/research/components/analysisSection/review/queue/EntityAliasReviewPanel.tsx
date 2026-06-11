@@ -1,6 +1,6 @@
 import { CheckCircle, ChevronDown, ChevronRight, XCircle } from "lucide-react";
 import { useState } from "react";
-import type { AnalysisEntityAliasReviewItem } from "./types";
+import type { AnalysisEntityAliasReviewItem } from "../../shared/types";
 
 type EntityAliasReviewPanelProps = {
   visible: boolean;

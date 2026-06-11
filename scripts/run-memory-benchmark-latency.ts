@@ -14,12 +14,14 @@ import {
   runMemoryBenchmarkLatencyReport,
   summarizeMemoryBenchmarkLatencyFailures,
 } from "../src/main/services/features/memory/benchmark/memoryBenchmarkLatencyRunner.js";
+import type { SearchOptimizationMode } from "../src/main/services/features/search/searchOptimizationPolicy.js";
 
 type CliOptions = {
   projectId?: string;
   profile: MemoryLongformBenchmarkProfileName;
   seed: number;
   query?: string;
+  optimizationMode?: SearchOptimizationMode;
   out?: string;
   materialize: boolean;
   assertThresholds: boolean;
@@ -27,6 +29,15 @@ type CliOptions = {
 
 function isProfileName(value: string): value is MemoryLongformBenchmarkProfileName {
   return value in MEMORY_LONGFORM_BENCHMARK_PROFILES;
+}
+
+function isSearchOptimizationMode(value: string): value is SearchOptimizationMode {
+  return (
+    value === "low-end" ||
+    value === "standard" ||
+    value === "high-end" ||
+    value === "quality"
+  );
 }
 
 function parseArgs(argv: string[]): CliOptions {
@@ -67,6 +78,14 @@ function parseArgs(argv: string[]): CliOptions {
     }
     if (arg === "--query" && next) {
       options.query = next;
+      index += 1;
+      continue;
+    }
+    if (arg === "--optimization-mode" && next) {
+      if (!isSearchOptimizationMode(next)) {
+        throw new Error(`Unknown search optimization mode: ${next}`);
+      }
+      options.optimizationMode = next;
       index += 1;
       continue;
     }
@@ -111,6 +130,7 @@ async function main(): Promise<void> {
       projectId,
       profileName: options.profile,
       query: options.query,
+      optimizationMode: options.optimizationMode,
     });
     const json = `${JSON.stringify(report, null, 2)}\n`;
 

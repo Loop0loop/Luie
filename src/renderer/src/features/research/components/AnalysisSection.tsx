@@ -1,38 +1,35 @@
 import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Maximize2, Minimize2, Minus } from "lucide-react";
+import { Maximize2 } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
-import { MessageList } from "./analysisSection/MessageList";
-import { PromptComposer } from "./analysisSection/PromptComposer";
-import { SummaryDrawer } from "./analysisSection/SummaryDrawer";
-import type { MemoryScope } from "./analysisSection/types";
-import { useAnalysisRuntime } from "./analysisSection/useAnalysisRuntime";
-import { useMemoryReviewPanels } from "./analysisSection/useMemoryReviewPanels";
-import { useRagChat } from "./analysisSection/useRagChat";
+import { MessageList } from "./analysisSection/chat/MessageList";
+import { PromptComposer } from "./analysisSection/chat/PromptComposer";
+import { SummaryDrawer } from "./analysisSection/review/summary/SummaryDrawer";
+import type { MemoryScope } from "./analysisSection/shared/types";
+import { useAnalysisRuntime } from "./analysisSection/runtime/useAnalysisRuntime";
+import { useMemoryReviewPanels } from "./analysisSection/review/queue/useMemoryReviewPanels";
+import { useRagChat } from "./analysisSection/chat/useRagChat";
 import { useAnalysisStore } from "../stores/analysisStore";
 
 interface FloatingWrapperProps {
   children: React.ReactNode;
-  setViewMode: (mode: "fixView" | "floatingView") => void;
   compact?: boolean;
 }
 
-function FloatingWrapper({ children, setViewMode, compact = false }: FloatingWrapperProps) {
+function FloatingWrapper({ children, compact = false }: FloatingWrapperProps) {
   const {
     floatingPosition,
     setFloatingPosition,
     floatingSize,
     setFloatingSize,
-    setMinimized
   } = useAnalysisStore(
     useShallow((state) => ({
       floatingPosition: state.floatingPosition,
       setFloatingPosition: state.setFloatingPosition,
       floatingSize: state.floatingSize,
       setFloatingSize: state.setFloatingSize,
-      setMinimized: state.setMinimized
     }))
   );
 
@@ -42,7 +39,12 @@ function FloatingWrapper({ children, setViewMode, compact = false }: FloatingWra
   const isDragging = useRef(false);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest("button")) return;
+    if (
+      (e.target as HTMLElement).closest(
+        "button, textarea, input, a, [data-no-drag]",
+      )
+    )
+      return;
     const header = e.currentTarget;
     header.setPointerCapture(e.pointerId);
     isDragging.current = true;
@@ -165,7 +167,7 @@ function FloatingWrapper({ children, setViewMode, compact = false }: FloatingWra
   return (
     <div
       data-testid="analysis-floating-container"
-      className={`group fixed bottom-24 right-6 rounded-3xl border border-white/10 ring-1 ring-white/5 shadow-[0_24px_70px_-15px_rgba(0,0,0,0.7)] bg-neutral-900/55 backdrop-blur-2xl backdrop-saturate-150 z-[9999] flex flex-col overflow-hidden ${
+      className={`group fixed bottom-24 right-6 rounded-3xl border border-white/10 ring-1 ring-white/5 shadow-[0_24px_70px_-15px_rgba(0,0,0,0.7)] bg-neutral-900/55 backdrop-blur-2xl backdrop-saturate-150 z-[9999] flex flex-col overflow-hidden cursor-grab active:cursor-grabbing ${
         isDraggingState ? "transition-none" : "transition-all duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)]"
       }`}
       style={{
@@ -173,36 +175,16 @@ function FloatingWrapper({ children, setViewMode, compact = false }: FloatingWra
         height: compact ? "auto" : `${floatingSize.height}px`,
         transform: `translate(${position.x}px, ${position.y}px)`,
       }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onLostPointerCapture={handleLostPointerCapture}
     >
       <div
         data-testid="analysis-header"
-        className="flex items-center justify-end h-9 px-2 cursor-grab active:cursor-grabbing select-none shrink-0"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onLostPointerCapture={handleLostPointerCapture}
-      >
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <button
-            data-testid="minimize-to-fab"
-            onClick={() => setMinimized(true)}
-            onPointerDown={(e) => e.stopPropagation()}
-            className="p-1.5 rounded-full bg-white/5 hover:bg-white/15 text-neutral-300 hover:text-fg transition-all duration-150 active:scale-90 backdrop-blur-md"
-            title="최소화"
-          >
-            <Minus className="w-3.5 h-3.5" />
-          </button>
-          <button
-            data-testid="view-mode-toggle"
-            onClick={() => setViewMode("fixView")}
-            onPointerDown={(e) => e.stopPropagation()}
-            className="p-1.5 rounded-full bg-white/5 hover:bg-white/15 text-neutral-300 hover:text-fg transition-all duration-150 active:scale-90 backdrop-blur-md"
-            title="고정 뷰로 전환"
-          >
-            <Minimize2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
+        className="absolute inset-0 pointer-events-none"
+        aria-hidden="true"
+      />
       <div className={`relative overflow-hidden ${compact ? "shrink-0" : "flex-1"}`}>
         {children}
       </div>
@@ -231,8 +213,12 @@ export default function AnalysisSection() {
   const currentProject = useProjectStore((state) => state.currentItem);
   const [memoryScope, setMemoryScope] = useState<MemoryScope>("current-only");
 
-  const { viewMode, setViewMode } = useAnalysisStore(
-    useShallow((state) => ({ viewMode: state.viewMode, setViewMode: state.setViewMode }))
+  const { viewMode, setViewMode, setMinimized } = useAnalysisStore(
+    useShallow((state) => ({
+      viewMode: state.viewMode,
+      setViewMode: state.setViewMode,
+      setMinimized: state.setMinimized,
+    }))
   );
 
   const runtime = useAnalysisRuntime();
@@ -266,12 +252,19 @@ export default function AnalysisSection() {
       sidecarStatus={runtime.sidecarStatus}
       runtimePreference={runtime.runtimePreference}
       onApplyRuntimePreference={(pref) => void runtime.applyRuntimePreference(pref)}
+      searchOptimizationMode={runtime.searchOptimizationMode}
+      onApplySearchOptimizationMode={(mode) =>
+        void runtime.applySearchOptimizationMode(mode)
+      }
       memoryScope={memoryScope}
       onChangeMemoryScope={setMemoryScope}
       summaryActive={review.showNarrativeSummaryStatus}
       onToggleSummary={() =>
         review.setShowNarrativeSummaryStatus((prev) => !prev)
       }
+      floating={floating}
+      onMinimize={() => setMinimized(true)}
+      onDock={() => setViewMode("fixView")}
     />
   );
 
@@ -310,7 +303,7 @@ export default function AnalysisSection() {
 
       {/* 메시지 — 빈 상태에서는 영역 자체를 접어 프롬프트만 노출 */}
       {!floatingCompact && (
-        <div className="flex-1 overflow-y-auto px-4 pt-4 min-h-0 scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent">
+        <div data-no-drag className="flex-1 overflow-y-auto px-4 pt-4 min-h-0 cursor-auto scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent">
           {!isEmpty && (
             <div className="space-y-6">
               <MessageList
@@ -330,7 +323,7 @@ export default function AnalysisSection() {
 
   if (viewMode === "floatingView") {
     return createPortal(
-      <FloatingWrapper setViewMode={setViewMode} compact={floatingCompact}>
+      <FloatingWrapper compact={floatingCompact}>
         {renderContent()}
       </FloatingWrapper>,
       document.body

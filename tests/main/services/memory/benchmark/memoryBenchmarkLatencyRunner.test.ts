@@ -27,6 +27,7 @@ describe("memoryBenchmarkLatencyRunner", () => {
       profileName: "ci-1000",
       query: "검은 기사",
       repeatedIterations: 3,
+      optimizationMode: "low-end",
     });
 
     expect(MEMORY_BENCHMARK_LATENCY_BUDGETS).toMatchObject({
@@ -57,16 +58,37 @@ describe("memoryBenchmarkLatencyRunner", () => {
     expect(report.measurements.sqlitePageCache.pageCount).toBeGreaterThan(0);
     expect(report.measurements.sqlitePageCache.pageSizeBytes).toBeGreaterThan(0);
     expect(report.optimizationPolicy).toMatchObject({
-      mode: "standard",
+      mode: "low-end",
       resultLimit: 20,
-      candidateCap: 60,
+      candidateCap: 50,
       rrfTopK: 20,
     });
+    expect(report.measurements.optimizationModeComparison.map((row) => row.mode)).toEqual([
+      "low-end",
+      "standard",
+      "high-end",
+      "quality",
+    ]);
+    expect(report.measurements.optimizationModeComparison).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          mode: "low-end",
+          vectorSearchMode: "skip-when-lexical-hits",
+          candidateCap: 50,
+          contextBudgetChars: 6_144,
+        }),
+        expect.objectContaining({
+          mode: "quality",
+          vectorSearchMode: "enabled",
+          contextBudgetChars: 16_384,
+        }),
+      ]),
+    );
     expect(report.measurements.candidateCapComparison).toHaveLength(3);
     expect(report.measurements.candidateCapComparison.map((row) => row.candidateCap)).toEqual([
       20,
       40,
-      60,
+      50,
     ]);
     expect(
       report.measurements.candidateCapComparison.every(
@@ -78,6 +100,55 @@ describe("memoryBenchmarkLatencyRunner", () => {
       ),
     ).toBe(true);
     expect(report.measurements.cacheTtlMemoryComparison).toHaveLength(3);
+    expect(report.measurements.ragSearchPath).toMatchObject({
+      path: "searchMemoryChunksForRag",
+      iterations: 3,
+    });
+    expect(report.measurements.ragSearchPath.resultCount).toBeGreaterThan(0);
+    expect(report.measurements.ragSearchPath.p50Ms).toBeGreaterThanOrEqual(0);
+    expect(report.measurements.ragSearchPath.p95Ms).toBeGreaterThanOrEqual(
+      report.measurements.ragSearchPath.p50Ms,
+    );
+    expect(report.measurements.ragSearchPath.maxMs).toBeGreaterThanOrEqual(
+      report.measurements.ragSearchPath.p95Ms,
+    );
+    expect(
+      report.measurements.ragSearchStageBreakdown.map((row) => row.stage),
+    ).toEqual([
+      "fts",
+      "exactPhrase",
+      "quoteToken",
+      "shortToken",
+      "vector",
+      "rrf",
+      "hydrate",
+      "parentWindow",
+    ]);
+    expect(
+      report.measurements.ragSearchStageBreakdown.every(
+        (row) =>
+          row.iterations === 3 &&
+          row.p50Ms >= 0 &&
+          row.p95Ms >= row.p50Ms &&
+          row.maxMs >= row.p95Ms &&
+          row.maxCandidateCount >= 0 &&
+          (row.stage === "parentWindow" ||
+            row.maxCandidateCount <= report.optimizationPolicy.candidateCap),
+      ),
+    ).toBe(true);
+    expect(report.measurements.layer3EvidencePath).toMatchObject({
+      path: "buildLayer3Evidence",
+      iterations: 3,
+    });
+    expect(report.measurements.layer3EvidencePath.evidenceCount).toBeGreaterThan(
+      0,
+    );
+    expect(report.measurements.layer3EvidencePath.p50Ms).toBeGreaterThanOrEqual(
+      0,
+    );
+    expect(report.measurements.layer3EvidencePath.p95Ms).toBeGreaterThanOrEqual(
+      report.measurements.layer3EvidencePath.p50Ms,
+    );
     expect(
       report.measurements.cacheTtlMemoryComparison.map((row) => row.ttlMs),
     ).toEqual([60_000, 180_000, 300_000]);

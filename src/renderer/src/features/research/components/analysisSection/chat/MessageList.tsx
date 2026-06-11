@@ -1,6 +1,6 @@
 import { AlertCircle, Bot, BookOpen, User } from "lucide-react";
-import type { Message } from "./types";
-import { safetyLabel, safetyTone } from "./runtimeHelpers";
+import type { Message } from "../shared/types";
+import { safetyLabel, safetyTone } from "../runtime/runtimeHelpers";
 
 type MessageListProps = {
   messages: Message[];

@@ -23,6 +23,12 @@ export type SettingsRendererApi = {
     setMenuBarMode: (settings: {
       mode: SharedTypes.WindowMenuBarMode;
     }) => Promise<IPCResponse<{ mode: SharedTypes.WindowMenuBarMode }>>;
+    getSearchOptimizationMode: () => Promise<
+      IPCResponse<{ mode: SharedTypes.RagSearchOptimizationMode }>
+    >;
+    setSearchOptimizationMode: (settings: {
+      mode: SharedTypes.RagSearchOptimizationMode;
+    }) => Promise<IPCResponse<{ mode: SharedTypes.RagSearchOptimizationMode }>>;
     getShortcuts: () => Promise<
       IPCResponse<{
         shortcuts: Record<string, string>;

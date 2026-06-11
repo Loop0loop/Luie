@@ -1,8 +1,6 @@
-export type SearchOptimizationMode =
-  | "low-end"
-  | "standard"
-  | "high-end"
-  | "quality";
+import type { RagSearchOptimizationMode } from "../../../../shared/types/index.js";
+
+export type SearchOptimizationMode = RagSearchOptimizationMode;
 
 export type SearchVectorMode = "enabled" | "skip-when-lexical-hits";
 export type SearchStaleEmbeddingMode = "skip";
@@ -38,7 +36,7 @@ const SEARCH_OPTIMIZATION_PROFILES: Record<
 > = {
   "low-end": {
     maxResultLimit: 40,
-    maxCandidateCap: 40,
+    maxCandidateCap: 50,
     maxContextBudgetChars: 6_144,
     rerankCacheTtlMs: 300_000,
     vectorSearchMode: "skip-when-lexical-hits",

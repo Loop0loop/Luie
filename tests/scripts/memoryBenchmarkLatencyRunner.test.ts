@@ -17,6 +17,7 @@ describe("memory benchmark latency runner", () => {
     expect(source).toContain("--profile");
     expect(source).toContain("--materialize");
     expect(source).toContain("--query");
+    expect(source).toContain("--optimization-mode");
     expect(source).toContain("--out");
     expect(source).toContain("--assert-thresholds");
     expect(source).toContain("summarizeMemoryBenchmarkLatencyFailures");

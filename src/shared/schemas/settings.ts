@@ -97,6 +97,10 @@ export const settingsLlmPreferenceSchema = z.strictObject({
   provider: z.enum(["auto", "sidecar", "ollama", "openai", "gemini"]),
 });
 
+export const settingsSearchOptimizationModeSchema = z.strictObject({
+  mode: z.enum(["low-end", "standard", "high-end", "quality"]),
+});
+
 export const settingsLocalLlmSchema = z.strictObject({
   enabled: z.boolean(),
   modelPath: z.string().min(1).max(4096).optional(),

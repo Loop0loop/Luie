@@ -18,7 +18,10 @@ describe("memory eval suite runner", () => {
     expect(source).toContain("buildRagGrounding");
     expect(source).toContain("--min-recall");
     expect(source).toContain("--max-p0-failures");
+    expect(source).toContain("--optimization-mode");
     expect(source).toContain("--assert-optimized-recall");
+    expect(source).toContain("resolveSearchOptimizationPolicy");
+    expect(source).toContain("optimizationPolicy");
     expect(source).toContain("summarizeMemoryEvalOptimizationFailures");
     expect(packageJson.scripts?.["memory:run-eval-suite"]).toBe(
       "tsx scripts/run-memory-eval-suite.ts",

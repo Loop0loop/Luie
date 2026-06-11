@@ -6,6 +6,7 @@ import {
   settingsAutoSaveSchema,
   settingsLanguageSchema,
   settingsMenuBarModeSchema,
+  settingsSearchOptimizationModeSchema,
   settingsShortcutsSchema,
   windowBoundsSchema,
 } from "../../../../shared/schemas/index.js";
@@ -119,6 +120,26 @@ export function createSettingsCoreHandlers(): IpcHandlerConfig[] {
         const { windowManager } = await import("../../../app/windows/index.js");
         windowManager.applyMenuBarModeToAllWindows();
         return { mode: settingsManager.getMenuBarMode() };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_GET_SEARCH_OPTIMIZATION_MODE,
+      logTag: "SETTINGS_GET_SEARCH_OPTIMIZATION_MODE",
+      failMessage: "Failed to get RAG search optimization mode",
+      handler: async () => {
+        const settingsManager = await loadSettingsManager();
+        return { mode: settingsManager.getSearchOptimizationMode() };
+      },
+    },
+    {
+      channel: IPC_CHANNELS.SETTINGS_SET_SEARCH_OPTIMIZATION_MODE,
+      logTag: "SETTINGS_SET_SEARCH_OPTIMIZATION_MODE",
+      failMessage: "Failed to set RAG search optimization mode",
+      argsSchema: z.tuple([settingsSearchOptimizationModeSchema]),
+      handler: async (settings: { mode: "low-end" | "standard" | "high-end" | "quality" }) => {
+        const settingsManager = await loadSettingsManager();
+        settingsManager.setSearchOptimizationMode(settings.mode);
+        return { mode: settingsManager.getSearchOptimizationMode() };
       },
     },
     {

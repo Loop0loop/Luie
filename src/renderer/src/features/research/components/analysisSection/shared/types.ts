@@ -15,6 +15,7 @@ import type {
   RagQaSafety,
   RagQaStreamPayload,
   UtilitySidecarStatus,
+  RagSearchOptimizationMode,
 } from "@shared/types";
 
 export type Message = {
@@ -62,6 +63,7 @@ export type Message = {
 
 export type RuntimePreference = "auto" | "sidecar" | "ollama" | "openai" | "gemini";
 export type MemoryScope = "current-only" | "with-prior";
+export type SearchOptimizationMode = RagSearchOptimizationMode;
 
 export type GroundingStatus = NonNullable<Message["grounding"]>["status"];
 

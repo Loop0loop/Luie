@@ -6,12 +6,15 @@ import type {
   AnalysisRuntimeInfo,
   AnalysisSidecarStatus,
   RuntimePreference,
-} from "./types";
+  SearchOptimizationMode,
+} from "../shared/types";
 
 export function useAnalysisRuntime() {
   const [runtimeInfo, setRuntimeInfo] = useState<AnalysisRuntimeInfo>(null);
   const [runtimePreference, setRuntimePreference] =
     useState<RuntimePreference>("auto");
+  const [searchOptimizationMode, setSearchOptimizationMode] =
+    useState<SearchOptimizationMode>("standard");
   const [sidecarStatus, setSidecarStatus] =
     useState<AnalysisSidecarStatus>(null);
   const { showToast } = useToast();
@@ -24,6 +27,10 @@ export function useAnalysisRuntime() {
         const provider = all.data?.llm?.preferredProvider;
         if (provider) {
           setRuntimePreference(provider);
+        }
+        const mode = all.data?.llm?.searchOptimizationMode;
+        if (mode) {
+          setSearchOptimizationMode(mode);
         }
       }
 
@@ -97,10 +104,32 @@ export function useAnalysisRuntime() {
     [dialog, showToast],
   );
 
+  const applySearchOptimizationMode = useCallback(
+    async (next: SearchOptimizationMode) => {
+      const response = await api.settings.setSearchOptimizationMode({
+        mode: next,
+      });
+      if (!response.success) {
+        showToast(
+          response.error?.message ?? "검색 모드 변경 실패",
+          "error",
+        );
+        return;
+      }
+
+      const applied = response.data?.mode ?? next;
+      setSearchOptimizationMode(applied);
+      showToast(`검색 모드 변경: ${applied}`, "info");
+    },
+    [showToast],
+  );
+
   return {
     runtimeInfo,
     runtimePreference,
+    searchOptimizationMode,
     sidecarStatus,
     applyRuntimePreference,
+    applySearchOptimizationMode,
   };
 }

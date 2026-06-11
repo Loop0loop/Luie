@@ -47,6 +47,8 @@ type CoreMethodMap = {
   "settings.setLanguage": RendererApi["settings"]["setLanguage"];
   "settings.getMenuBarMode": RendererApi["settings"]["getMenuBarMode"];
   "settings.setMenuBarMode": RendererApi["settings"]["setMenuBarMode"];
+  "settings.getSearchOptimizationMode": RendererApi["settings"]["getSearchOptimizationMode"];
+  "settings.setSearchOptimizationMode": RendererApi["settings"]["setSearchOptimizationMode"];
   "settings.getShortcuts": RendererApi["settings"]["getShortcuts"];
   "settings.setShortcuts": RendererApi["settings"]["setShortcuts"];
   "settings.getWindowBounds": RendererApi["settings"]["getWindowBounds"];

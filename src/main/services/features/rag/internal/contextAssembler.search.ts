@@ -1,3 +1,4 @@
+import { performance } from "node:perf_hooks";
 import { asc, and, eq, or, sql } from "drizzle-orm";
 import { db } from "../../../../database/main/databaseService.js";
 import {
@@ -44,6 +45,23 @@ type ScoredChunk = {
   score: number;
 };
 
+export type RagSearchStageName =
+  | "fts"
+  | "exactPhrase"
+  | "quoteToken"
+  | "shortToken"
+  | "vector"
+  | "rrf"
+  | "hydrate"
+  | "parentWindow";
+
+export type RagSearchStageDiagnostic = {
+  stage: RagSearchStageName;
+  durationMs: number;
+  candidateCount: number;
+  skipped?: boolean;
+};
+
 type SearchInput = {
   projectId: string;
   query: string;
@@ -52,6 +70,9 @@ type SearchInput = {
   parentWindow?: {
     before: number;
     after: number;
+  };
+  diagnostics?: {
+    stages: RagSearchStageDiagnostic[];
   };
 };
 
@@ -97,6 +118,25 @@ function countTokenOverlap(tokens: string[], content: string): number {
   return tokens.filter((token) => normalizedContent.includes(token)).length;
 }
 
+function roundDuration(value: number): number {
+  return Math.round(value * 1000) / 1000;
+}
+
+function recordStage(
+  input: SearchInput,
+  stage: RagSearchStageName,
+  startedAt: number,
+  candidateCount: number,
+  skipped?: boolean,
+): void {
+  input.diagnostics?.stages.push({
+    stage,
+    durationMs: roundDuration(performance.now() - startedAt),
+    candidateCount,
+    skipped,
+  });
+}
+
 export async function searchMemoryChunksForRag(
   input: SearchInput,
 ): Promise<MemoryChunkSearchResult[]> {
@@ -110,6 +150,7 @@ export async function searchMemoryChunksForRag(
   const candidateCap = searchPolicy.candidateCap;
   const client = db.getClient();
   const ftsQuery = buildFtsQuery(normalizedQuery);
+  let stageStartedAt = performance.now();
   const ftsRows: FtsRow[] =
     ftsQuery.length > 0
       ? client.all<{ chunkId: string }>(sql`
@@ -121,7 +162,9 @@ export async function searchMemoryChunksForRag(
       LIMIT ${candidateCap};
     `)
       : [];
+  recordStage(input, "fts", stageStartedAt, ftsRows.length, ftsQuery.length === 0);
   const exactPhraseCandidates = extractExactPhraseCandidates(normalizedQuery);
+  stageStartedAt = performance.now();
   const exactPhraseRows: ExactPhraseRow[] =
     exactPhraseCandidates.length > 0
       ? client.all<ExactPhraseRow>(sql`
@@ -138,7 +181,15 @@ export async function searchMemoryChunksForRag(
       LIMIT ${candidateCap};
     `)
       : [];
+  recordStage(
+    input,
+    "exactPhrase",
+    stageStartedAt,
+    exactPhraseRows.length,
+    exactPhraseCandidates.length === 0,
+  );
   const quoteLikeTokens = extractQuoteLikeTokens(normalizedQuery);
+  stageStartedAt = performance.now();
   const tokenOverlapRows: Array<{ chunkId: string; rank: number }> =
     quoteLikeTokens.length >= 3
       ? client
@@ -168,18 +219,30 @@ export async function searchMemoryChunksForRag(
           )
           .map((row, index) => ({ chunkId: row.chunkId, rank: index + 1 }))
       : [];
+  recordStage(
+    input,
+    "quoteToken",
+    stageStartedAt,
+    tokenOverlapRows.length,
+    quoteLikeTokens.length < 3,
+  );
 
+  stageStartedAt = performance.now();
   const lexicalRanks = await searchByShortTokens(
     input.projectId,
     normalizedQuery,
     candidateCap,
     logger,
   );
+  recordStage(input, "shortToken", stageStartedAt, lexicalRanks.length);
 
   let denseRanks: Array<{ chunkId: string; rank: number }> = [];
-  if (input.embedTexts && shouldRunVectorSearch()) {
+  const embedTexts = input.embedTexts;
+  const vectorStartedAt = performance.now();
+  const vectorSkipped = !embedTexts || !shouldRunVectorSearch();
+  if (!vectorSkipped) {
     try {
-      const vecs = await input.embedTexts(input.projectId, [normalizedQuery]);
+      const vecs = await embedTexts(input.projectId, [normalizedQuery]);
       const queryVector = vecs?.[0] ? new Float32Array(vecs[0]) : null;
       if (queryVector && queryVector.length > 0) {
         denseRanks = searchByVector(
@@ -196,7 +259,9 @@ export async function searchMemoryChunksForRag(
       });
     }
   }
+  recordStage(input, "vector", vectorStartedAt, denseRanks.length, vectorSkipped);
 
+  stageStartedAt = performance.now();
   const merged = mergeWithRRF(
     [
       ftsRows.map((row: FtsRow, index: number) => ({
@@ -213,9 +278,11 @@ export async function searchMemoryChunksForRag(
     ],
     limit,
   ) as ScoredChunk[];
+  recordStage(input, "rrf", stageStartedAt, merged.length);
   if (merged.length === 0) return [];
 
   const chunkIds = merged.map((row) => row.chunkId);
+  stageStartedAt = performance.now();
   const chunkRows: ChunkRow[] = await client
     .select({
       chunkId: memoryChunk.id,
@@ -236,6 +303,7 @@ export async function searchMemoryChunksForRag(
         sql`,`,
       )})`,
     );
+  recordStage(input, "hydrate", stageStartedAt, chunkRows.length);
   const chunkMap = new Map(chunkRows.map((row) => [row.chunkId, row]));
   const mapped = merged
     .map((row) => {
@@ -251,7 +319,10 @@ export async function searchMemoryChunksForRag(
       };
     })
     .filter((row): row is MemoryChunkSearchResult => row !== null);
-  if (!input.parentWindow) return mapped;
+  if (!input.parentWindow) {
+    recordStage(input, "parentWindow", performance.now(), 0, true);
+    return mapped;
+  }
 
   const ranges = mapped.flatMap((row) => {
     const chunk = chunkMap.get(row.chunkId);
@@ -274,6 +345,7 @@ export async function searchMemoryChunksForRag(
     ),
   );
   const windowRows: WindowChunkRow[] =
+    (stageStartedAt = performance.now(),
     predicates.length === 0
       ? []
       : await client
@@ -294,7 +366,8 @@ export async function searchMemoryChunksForRag(
             asc(memoryChunk.sourceType),
             asc(memoryChunk.sourceId),
             asc(memoryChunk.chunkIndex),
-          );
+          ));
+  recordStage(input, "parentWindow", stageStartedAt, windowRows.length);
   const windowRowsBySource = new Map<string, WindowChunkRow[]>();
   for (const row of windowRows) {
     const key = `${row.sourceType}:${row.sourceId}`;

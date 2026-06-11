@@ -1,4 +1,4 @@
-import type { MemoryScope } from "./types";
+import type { MemoryScope } from "../../shared/types";
 import { useMemoryReviewQueues } from "./useMemoryReviewQueues";
 
 type UseMemoryReviewPanelsInput = {

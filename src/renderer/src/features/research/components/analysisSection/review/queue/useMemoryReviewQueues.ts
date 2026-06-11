@@ -8,7 +8,7 @@ import type {
   AnalysisFactReviewItem,
   AnalysisNarrativeSummaryStatus,
   MemoryScope,
-} from "./types";
+} from "../../shared/types";
 
 type UseMemoryReviewQueuesInput = {
   projectId?: string;

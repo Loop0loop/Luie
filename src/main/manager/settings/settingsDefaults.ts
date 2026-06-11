@@ -192,5 +192,6 @@ export const getDefaultSettings = (): AppSettings => ({
     },
     ragTemperature: 0.2,
     ragMaxTokens: 1200,
+    searchOptimizationMode: "standard",
   },
 });

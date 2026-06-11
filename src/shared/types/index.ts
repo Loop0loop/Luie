@@ -260,6 +260,7 @@ export type {
   LlmfitRecommendation,
   LlmfitResult,
   OllamaConnectionResult,
+  RagSearchOptimizationMode,
   RuntimeSupabaseConfig,
   RuntimeSupabaseConfigView,
   ShortcutAction,

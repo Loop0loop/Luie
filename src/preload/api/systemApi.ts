@@ -85,6 +85,17 @@ export function createSystemApi({
           IPC_CHANNELS.SETTINGS_SET_MENU_BAR_MODE,
           settings,
         ),
+      getSearchOptimizationMode: () =>
+        safeInvokeCore(
+          "settings.getSearchOptimizationMode",
+          IPC_CHANNELS.SETTINGS_GET_SEARCH_OPTIMIZATION_MODE,
+        ),
+      setSearchOptimizationMode: (settings) =>
+        safeInvokeCore(
+          "settings.setSearchOptimizationMode",
+          IPC_CHANNELS.SETTINGS_SET_SEARCH_OPTIMIZATION_MODE,
+          settings,
+        ),
       getShortcuts: () =>
         safeInvokeCore(
           "settings.getShortcuts",

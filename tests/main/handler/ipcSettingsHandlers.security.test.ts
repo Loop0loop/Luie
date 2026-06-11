@@ -51,6 +51,8 @@ const mocked = vi.hoisted(() => {
     setLanguage: vi.fn(),
     getMenuBarMode: vi.fn(() => "visible"),
     setMenuBarMode: vi.fn(),
+    getSearchOptimizationMode: vi.fn(() => "standard"),
+    setSearchOptimizationMode: vi.fn(),
     getShortcuts: vi.fn(() => ({ shortcuts: {}, defaults: {} })),
     setShortcuts: vi.fn(() => ({})),
     setAutoSaveEnabled: vi.fn(),
@@ -112,6 +114,8 @@ describe("ipcSettingsHandlers security", () => {
     mocked.settingsManager.getAll.mockClear();
     mocked.settingsManager.getAllForRenderer.mockClear();
     mocked.settingsManager.resetToDefaults.mockClear();
+    mocked.settingsManager.getSearchOptimizationMode.mockClear();
+    mocked.settingsManager.setSearchOptimizationMode.mockClear();
   });
 
   it("returns renderer-safe settings for SETTINGS_GET_ALL", async () => {
@@ -139,6 +143,45 @@ describe("ipcSettingsHandlers security", () => {
     expect(response.data?.sync?.accessTokenCipher).toBeUndefined();
     expect(response.data?.sync?.refreshTokenCipher).toBeUndefined();
     expect(response.data?.sync?.pendingAuthVerifierCipher).toBeUndefined();
+  });
+
+  it("persists the RAG search optimization mode through settings IPC", async () => {
+    const { registerSettingsIPCHandlers } =
+      await import("../../../src/main/handler/system/settings/index.js");
+    registerSettingsIPCHandlers(mocked.logger);
+
+    const getHandler = mocked.handlerMap.get(
+      IPC_CHANNELS.SETTINGS_GET_SEARCH_OPTIMIZATION_MODE,
+    );
+    const setHandler = mocked.handlerMap.get(
+      IPC_CHANNELS.SETTINGS_SET_SEARCH_OPTIMIZATION_MODE,
+    );
+    expect(getHandler).toBeDefined();
+    expect(setHandler).toBeDefined();
+
+    const getResponse = (await getHandler?.({})) as {
+      success: boolean;
+      data?: { mode?: string };
+    };
+    expect(getResponse).toMatchObject({
+      success: true,
+      data: { mode: "standard" },
+    });
+
+    mocked.settingsManager.getSearchOptimizationMode.mockReturnValueOnce(
+      "low-end",
+    );
+    const setResponse = (await setHandler?.({}, { mode: "low-end" })) as {
+      success: boolean;
+      data?: { mode?: string };
+    };
+    expect(setResponse).toMatchObject({
+      success: true,
+      data: { mode: "low-end" },
+    });
+    expect(mocked.settingsManager.setSearchOptimizationMode).toHaveBeenCalledWith(
+      "low-end",
+    );
   });
 
   it("returns renderer-safe settings after SETTINGS_RESET", async () => {

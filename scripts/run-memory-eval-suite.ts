@@ -6,16 +6,30 @@ import { buildLayer3Evidence } from "../src/main/services/features/rag/internal/
 import { buildRagGrounding } from "../src/main/services/features/rag/grounding.js";
 import { runLiveMemoryEvalSuite } from "../src/main/services/features/memory/eval/memoryEvalRunner.js";
 import { summarizeMemoryEvalOptimizationFailures } from "../src/main/services/features/memory/eval/memoryEvalOptimizationGuard.js";
+import {
+  resolveSearchOptimizationPolicy,
+  type SearchOptimizationMode,
+} from "../src/main/services/features/search/searchOptimizationPolicy.js";
 
 type CliOptions = {
   projectId: string;
   label: string;
   topK: number;
+  optimizationMode?: SearchOptimizationMode;
   out?: string;
   assertOptimizedRecall: boolean;
   minRecall: number;
   maxP0Failures: number;
 };
+
+function isSearchOptimizationMode(value: string): value is SearchOptimizationMode {
+  return (
+    value === "low-end" ||
+    value === "standard" ||
+    value === "high-end" ||
+    value === "quality"
+  );
+}
 
 function parseArgs(argv: string[]): CliOptions {
   const options: CliOptions = {
@@ -53,6 +67,14 @@ function parseArgs(argv: string[]): CliOptions {
       index += 1;
       continue;
     }
+    if (arg === "--optimization-mode" && next) {
+      if (!isSearchOptimizationMode(next)) {
+        throw new Error(`Unknown search optimization mode: ${next}`);
+      }
+      options.optimizationMode = next;
+      index += 1;
+      continue;
+    }
     if (arg === "--assert-optimized-recall") {
       options.assertOptimizedRecall = true;
       continue;
@@ -83,6 +105,12 @@ function parseArgs(argv: string[]): CliOptions {
 
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
+  const optimizationPolicy = resolveSearchOptimizationPolicy({
+    mode: options.optimizationMode,
+    requestedLimit: options.topK,
+  });
+  const previousOptimizationMode = process.env.LUIE_SEARCH_OPTIMIZATION_MODE;
+  process.env.LUIE_SEARCH_OPTIMIZATION_MODE = optimizationPolicy.mode;
   await db.initialize();
   try {
     const result = await runLiveMemoryEvalSuite({
@@ -105,7 +133,11 @@ async function main(): Promise<void> {
         };
       },
     });
-    const json = JSON.stringify(result, null, 2);
+    const output = {
+      ...result,
+      optimizationPolicy,
+    };
+    const json = JSON.stringify(output, null, 2);
     if (options.out) {
       await writeFile(options.out, `${json}\n`, "utf8");
     } else {
@@ -129,6 +161,11 @@ async function main(): Promise<void> {
       console.log("Memory eval optimization guard passed");
     }
   } finally {
+    if (previousOptimizationMode === undefined) {
+      delete process.env.LUIE_SEARCH_OPTIMIZATION_MODE;
+    } else {
+      process.env.LUIE_SEARCH_OPTIMIZATION_MODE = previousOptimizationMode;
+    }
     await db.disconnect();
   }
 }

@@ -49,6 +49,17 @@ describe("SettingsManager localLlm settings", () => {
       ragMaxTokens: 1400,
       defaultEmbeddingModelPath: undefined,
       defaultEmbeddingModelId: undefined,
+      searchOptimizationMode: "standard",
     });
+  });
+
+  it("stores RAG search optimization mode and exposes it to search policy env", () => {
+    settingsManager.setSearchOptimizationMode("low-end");
+
+    expect(settingsManager.getSearchOptimizationMode()).toBe("low-end");
+    expect(settingsManager.getLlmSettings().searchOptimizationMode).toBe(
+      "low-end",
+    );
+    expect(process.env.LUIE_SEARCH_OPTIMIZATION_MODE).toBe("low-end");
   });
 });

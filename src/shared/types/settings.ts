@@ -13,6 +13,11 @@ export type ThemeAccent =
   | "slate";
 export type ThemeTexture = boolean;
 export type WindowMenuBarMode = "hidden" | "visible";
+export type RagSearchOptimizationMode =
+  | "low-end"
+  | "standard"
+  | "high-end"
+  | "quality";
 
 export type AppBootstrapStatus = {
   isReady: boolean;
@@ -364,6 +369,7 @@ export interface AppSettings {
     };
     ragTemperature?: number;
     ragMaxTokens?: number;
+    searchOptimizationMode?: RagSearchOptimizationMode;
   };
 }
 

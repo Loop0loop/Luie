@@ -14,7 +14,7 @@ import type {
   AnalysisRagStreamPayload,
   MemoryScope,
   Message,
-} from "./types";
+} from "../shared/types";
 
 type ChatChunkItem = {
   chunkId: string;

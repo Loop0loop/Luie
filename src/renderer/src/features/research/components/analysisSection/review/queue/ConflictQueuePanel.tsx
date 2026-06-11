@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
-import type { AnalysisConflictItem } from "./types";
+import type { AnalysisConflictItem } from "../../shared/types";
 
 type ConflictQueuePanelProps = {
   visible: boolean;
