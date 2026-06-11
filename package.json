@@ -87,6 +87,7 @@
     "memory:review-template": "tsx scripts/generate-memory-review-template.ts",
     "memory:apply-review-decisions": "tsx scripts/apply-memory-review-decisions.ts",
     "memory:materialize-eval-cases": "tsx scripts/materialize-memory-eval-cases.ts",
+    "memory:run-eval-suite": "tsx scripts/run-memory-eval-suite.ts",
     "memory:phase-status": "tsx scripts/memory-phase-status.ts",
     "lint-all": "pnpm run check:deps && pnpm run check:no-native-dialogs && pnpm run check:i18n-parity && pnpm run check:no-escape-hatches && pnpm run check:version-pins && pnpm run check:ipc-contract-map && pnpm run check:ipc-handler-schemas && pnpm run check:security-profile && pnpm run check:utility-process-boundary && pnpm run check:renderer-store-usage && pnpm run check:persist-contracts && pnpm run check:preload-contract-regression && pnpm run check:source-loc && eslint src --ext .ts,.tsx",
     "lint": "eslint src --ext .ts,.tsx",

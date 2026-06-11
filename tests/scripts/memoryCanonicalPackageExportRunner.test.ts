@@ -12,7 +12,8 @@ describe("memory canonical package export runner", () => {
       readFileSync(resolve(process.cwd(), "package.json"), "utf8"),
     ) as { scripts?: Record<string, string> };
 
-    expect(source).toContain("projectService.exportProjectPackage");
+    expect(source).toContain("exportProjectPackageWithOptions");
+    expect(source).not.toContain("projectService");
     expect(source).toContain("readLuieContainerEntry");
     expect(source).toContain("memoryPayloadRows");
     expect(packageJson.scripts?.["memory:export-canonical-package"]).toBe(

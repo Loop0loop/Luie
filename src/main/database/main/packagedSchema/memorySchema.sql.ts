@@ -171,6 +171,8 @@ CREATE TABLE IF NOT EXISTS "MemoryFact" (
     "observedAtChapterOrder" INTEGER NOT NULL,
     "confidence" INTEGER NOT NULL DEFAULT 0,
     "status" TEXT NOT NULL DEFAULT 'suggested',
+    "provenanceKind" TEXT NOT NULL DEFAULT 'unknown',
+    "canonStatus" TEXT NOT NULL DEFAULT 'unknown',
     "extractorVersion" TEXT NOT NULL,
     "sourceContentHash" TEXT NOT NULL,
     "invalidatedByFactId" TEXT,

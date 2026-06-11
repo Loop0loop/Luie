@@ -231,6 +231,7 @@ CREATE TABLE IF NOT EXISTS "MemoryEvalResult" (
     "p0FailureCount" INTEGER NOT NULL DEFAULT 0,
     "p0Failures" TEXT NOT NULL DEFAULT '[]',
     "answer" TEXT,
+    "answerJudgeJson" TEXT,
     "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TEXT NOT NULL,
     CONSTRAINT "MemoryEvalResult_runId_fkey" FOREIGN KEY ("runId") REFERENCES "MemoryEvalRun" ("id") ON DELETE CASCADE ON UPDATE CASCADE,

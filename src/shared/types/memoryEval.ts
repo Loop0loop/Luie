@@ -6,9 +6,13 @@ export type MemoryEvalSeverity = "p0" | "p1" | "p2";
 
 export type MemoryEvalP0Failure =
   | "unsupported_confirmed_answer"
+  | "answer_contains_unsupported_claim"
+  | "expected_answer_not_supported_by_gold_evidence"
   | "deleted_or_draft_fact_confirmed"
   | "future_fact_used_in_past_answer"
-  | "relation_direction_reversed";
+  | "relation_direction_reversed"
+  | "entity_alias_mismatch"
+  | "unresolved_thread_falsely_marked_resolved";
 
 export interface MemoryEvalGoldEvidence {
   id: string;
@@ -30,13 +34,27 @@ export interface MemoryEvalCaseDefinition {
   temporalScopeEndChapterId?: string | null;
   severity?: MemoryEvalSeverity;
   goldEvidence: MemoryEvalGoldEvidence[];
+  expectedEntities?: MemoryEvalExpectedEntity[];
   expectedRelations?: MemoryEvalExpectedRelation[];
+  expectedThreads?: MemoryEvalExpectedThread[];
+}
+
+export interface MemoryEvalExpectedEntity {
+  canonicalName: string;
+  aliases: string[];
 }
 
 export interface MemoryEvalExpectedRelation {
   sourceName: string;
   targetName: string;
   relation: string;
+}
+
+export type MemoryEvalThreadStatus = "unresolved" | "resolved";
+
+export interface MemoryEvalExpectedThread {
+  name: string;
+  status: MemoryEvalThreadStatus;
 }
 
 export interface MemoryEvalObservedFact {
@@ -52,23 +70,39 @@ export interface MemoryEvalObservedRelation {
   relation: string;
 }
 
+export interface MemoryEvalObservedEntity {
+  canonicalName: string;
+  name: string;
+}
+
+export interface MemoryEvalObservedThread {
+  name: string;
+  status: MemoryEvalThreadStatus;
+}
+
 export interface MemoryEvalScoreInput {
   evalCase: MemoryEvalCaseDefinition;
+  answer?: string;
   retrievedEvidence: RagQaEvidence[];
   groundingStatus: RagQaGroundingStatus;
   topK: number;
   queryChapterOrder?: number | null;
   observedFacts?: MemoryEvalObservedFact[];
+  observedEntities?: MemoryEvalObservedEntity[];
   observedRelations?: MemoryEvalObservedRelation[];
+  observedThreads?: MemoryEvalObservedThread[];
 }
 
 export interface MemoryEvalSuiteCaseInput {
   evalCase: MemoryEvalCaseDefinition;
+  answer?: string;
   retrievedEvidence: RagQaEvidence[];
   groundingStatus: RagQaGroundingStatus;
   queryChapterOrder?: number | null;
   observedFacts?: MemoryEvalObservedFact[];
+  observedEntities?: MemoryEvalObservedEntity[];
   observedRelations?: MemoryEvalObservedRelation[];
+  observedThreads?: MemoryEvalObservedThread[];
 }
 
 export interface MemoryEvalSuiteInput {
@@ -89,6 +123,7 @@ export interface MemoryEvalSuiteResult {
   caseCount: number;
   averageContextRecallAtK: number;
   totalP0FailureCount: number;
+  p0FailureTypeCounts: Partial<Record<MemoryEvalP0Failure, number>>;
   results: MemoryEvalScoreResult[];
 }
 
@@ -106,7 +141,15 @@ export interface MemoryEvalAnswererResult {
   evidence: RagQaEvidence[];
   queryChapterOrder?: number | null;
   observedFacts?: MemoryEvalObservedFact[];
+  observedEntities?: MemoryEvalObservedEntity[];
   observedRelations?: MemoryEvalObservedRelation[];
+  observedThreads?: MemoryEvalObservedThread[];
+}
+
+export interface MemoryEvalAnswerJudgeInput {
+  evalCase: MemoryEvalCaseDefinition;
+  answer: string;
+  evidence: RagQaEvidence[];
 }
 
 export interface MemoryEvalLiveRunnerInput {
@@ -116,6 +159,7 @@ export interface MemoryEvalLiveRunnerInput {
   topK: number;
   nowIso?: string;
   answerer: (input: MemoryEvalAnswererInput) => Promise<MemoryEvalAnswererResult>;
+  answerJudge?: (input: MemoryEvalAnswerJudgeInput) => Promise<string>;
 }
 
 export interface MemoryEvalRunRequest {

@@ -160,4 +160,19 @@ export const PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
     column: "contentHash",
     sql: "ALTER TABLE \"ChapterSummary\" ADD COLUMN \"contentHash\" TEXT NOT NULL DEFAULT '';",
   },
+  {
+    table: "MemoryEvalResult",
+    column: "answerJudgeJson",
+    sql: 'ALTER TABLE "MemoryEvalResult" ADD COLUMN "answerJudgeJson" TEXT;',
+  },
+  {
+    table: "MemoryFact",
+    column: "provenanceKind",
+    sql: 'ALTER TABLE "MemoryFact" ADD COLUMN "provenanceKind" TEXT NOT NULL DEFAULT \'unknown\';',
+  },
+  {
+    table: "MemoryFact",
+    column: "canonStatus",
+    sql: 'ALTER TABLE "MemoryFact" ADD COLUMN "canonStatus" TEXT NOT NULL DEFAULT \'unknown\';',
+  },
 ];

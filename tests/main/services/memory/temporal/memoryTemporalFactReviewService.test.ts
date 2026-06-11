@@ -17,7 +17,10 @@ import {
 } from "../../../../../src/main/services/features/memory/temporal/memoryTemporalFactReviewService.js";
 
 describe("memoryTemporalFactReviewService", () => {
-  async function seedFact() {
+  async function seedFact(input?: {
+    provenanceKind?: string;
+    canonStatus?: string;
+  }) {
     const projectId = crypto.randomUUID();
     const chapterId = crypto.randomUUID();
     const subjectId = crypto.randomUUID();
@@ -81,6 +84,8 @@ describe("memoryTemporalFactReviewService", () => {
       observedAtChapterOrder: 10,
       confidence: 88,
       status: "suggested",
+      provenanceKind: input?.provenanceKind,
+      canonStatus: input?.canonStatus,
       extractorVersion: "fact-v1",
       sourceContentHash: "source-hash",
       invalidatedByFactId: null,
@@ -109,7 +114,7 @@ describe("memoryTemporalFactReviewService", () => {
   });
 
   it("confirms a suggested temporal fact as user-approved canonical memory", async () => {
-    const seed = await seedFact();
+    const seed = await seedFact({ provenanceKind: "canon", canonStatus: "canon" });
 
     const result = await confirmMemoryTemporalFact({
       projectId: seed.projectId,
@@ -128,6 +133,51 @@ describe("memoryTemporalFactReviewService", () => {
       .from(memoryFact)
       .where(eq(memoryFact.id, seed.factId));
     expect(row.status).toBe("confirmed");
+    expect(row.provenanceKind).toBe("canon");
+    expect(row.canonStatus).toBe("canon");
+  });
+
+  it("blocks confirmation when provenance and canon status are missing", async () => {
+    const seed = await seedFact();
+
+    await expect(
+      confirmMemoryTemporalFact({
+        projectId: seed.projectId,
+        factId: seed.factId,
+        nowIso: seed.nowIso,
+      }),
+    ).rejects.toThrow("MEMORY_FACT_CANON_STATUS_REQUIRED");
+
+    const [row] = await db
+      .getClient()
+      .select()
+      .from(memoryFact)
+      .where(eq(memoryFact.id, seed.factId));
+    expect(row.status).toBe("suggested");
+  });
+
+  it("blocks draft or discarded facts from becoming confirmed canonical memory", async () => {
+    const draftSeed = await seedFact({
+      provenanceKind: "draft",
+      canonStatus: "draft",
+    });
+
+    await expect(
+      confirmMemoryTemporalFact({
+        projectId: draftSeed.projectId,
+        factId: draftSeed.factId,
+        nowIso: draftSeed.nowIso,
+      }),
+    ).rejects.toThrow("MEMORY_FACT_CANON_STATUS_REQUIRED");
+
+    const [row] = await db
+      .getClient()
+      .select()
+      .from(memoryFact)
+      .where(eq(memoryFact.id, draftSeed.factId));
+    expect(row.status).toBe("suggested");
+    expect(row.provenanceKind).toBe("draft");
+    expect(row.canonStatus).toBe("draft");
   });
 
   it("rejects a suggested temporal fact with a reason", async () => {

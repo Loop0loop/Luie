@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Send, Square, Plus, Brain, Check, Maximize2, Minimize2 } from "lucide-react";
+import { Maximize2, Minimize2, Minus } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
-import { Button } from "@renderer/components/ui/button";
 import { MessageList } from "./analysisSection/MessageList";
-import { NarrativeSummaryStatusPanel } from "./analysisSection/NarrativeSummaryStatusPanel";
-import { RuntimeStatusPanel } from "./analysisSection/RuntimeStatusPanel";
-import type { MemoryScope, RuntimePreference } from "./analysisSection/types";
+import { EmptyState } from "./analysisSection/EmptyState";
+import { PromptComposer } from "./analysisSection/PromptComposer";
+import { SummaryDrawer } from "./analysisSection/SummaryDrawer";
+import type { MemoryScope } from "./analysisSection/types";
 import { useAnalysisRuntime } from "./analysisSection/useAnalysisRuntime";
 import { useMemoryReviewPanels } from "./analysisSection/useMemoryReviewPanels";
 import { useRagChat } from "./analysisSection/useRagChat";
@@ -20,10 +20,43 @@ interface FloatingWrapperProps {
 }
 
 function FloatingWrapper({ children, setViewMode }: FloatingWrapperProps) {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const {
+    floatingPosition,
+    setFloatingPosition,
+    floatingSize,
+    setFloatingSize,
+    setMinimized
+  } = useAnalysisStore(
+    useShallow((state) => ({
+      floatingPosition: state.floatingPosition,
+      setFloatingPosition: state.setFloatingPosition,
+      floatingSize: state.floatingSize,
+      setFloatingSize: state.setFloatingSize,
+      setMinimized: state.setMinimized
+    }))
+  );
+
+  const [position, setPosition] = useState(floatingPosition);
   const [isDraggingState, setIsDraggingState] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const isDragging = useRef(false);
+  const resizeListenersRef = useRef<{
+    onPointerMove: (e: PointerEvent) => void;
+    onPointerUp: (e: PointerEvent) => void;
+  } | null>(null);
+
+  useEffect(() => {
+    setPosition(floatingPosition);
+  }, [floatingPosition]);
+
+  useEffect(() => {
+    return () => {
+      if (resizeListenersRef.current) {
+        window.removeEventListener("pointermove", resizeListenersRef.current.onPointerMove);
+        window.removeEventListener("pointerup", resizeListenersRef.current.onPointerUp);
+      }
+    };
+  }, []);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest("button")) return;
@@ -42,14 +75,14 @@ function FloatingWrapper({ children, setViewMode }: FloatingWrapperProps) {
     const newX = e.clientX - dragStart.current.x;
     const newY = e.clientY - dragStart.current.y;
 
-    const initialLeft = window.innerWidth - 380 - 24;
-    const initialTop = window.innerHeight - 520 - 96;
+    const initialLeft = window.innerWidth - floatingSize.width - 24;
+    const initialTop = window.innerHeight - floatingSize.height - 96;
 
     const currentLeft = initialLeft + newX;
     const currentTop = initialTop + newY;
 
-    const clampedLeft = Math.max(0, Math.min(currentLeft, window.innerWidth - 380));
-    const clampedTop = Math.max(0, Math.min(currentTop, window.innerHeight - 520));
+    const clampedLeft = Math.max(0, Math.min(currentLeft, window.innerWidth - floatingSize.width));
+    const clampedTop = Math.max(0, Math.min(currentTop, window.innerHeight - floatingSize.height));
 
     setPosition({
       x: clampedLeft - initialLeft,
@@ -63,6 +96,7 @@ function FloatingWrapper({ children, setViewMode }: FloatingWrapperProps) {
     header.releasePointerCapture(e.pointerId);
     isDragging.current = false;
     setIsDraggingState(false);
+    setFloatingPosition(position);
   };
 
   const handleLostPointerCapture = () => {
@@ -70,41 +104,138 @@ function FloatingWrapper({ children, setViewMode }: FloatingWrapperProps) {
     setIsDraggingState(false);
   };
 
+  const handleResizeStart =
+    (dir: "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw") =>
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const handle = e.currentTarget;
+      handle.setPointerCapture(e.pointerId);
+
+      const MIN_W = 320;
+      const MAX_W = 760;
+      const MIN_H = 360;
+      const MAX_H = 900;
+      const clamp = (v: number, min: number, max: number) =>
+        Math.max(min, Math.min(max, v));
+
+      const startWidth = floatingSize.width;
+      const startHeight = floatingSize.height;
+      const startX = e.clientX;
+      const startY = e.clientY;
+
+      // 시작 시점의 화면상 좌상단 좌표
+      const startLeft = window.innerWidth - startWidth - 24 + position.x;
+      const startTop = window.innerHeight - startHeight - 96 + position.y;
+
+      const hasE = dir.includes("e");
+      const hasW = dir.includes("w");
+      const hasS = dir.includes("s");
+      const hasN = dir.includes("n");
+
+      const onPointerMove = (moveEvent: PointerEvent) => {
+        const deltaX = moveEvent.clientX - startX;
+        const deltaY = moveEvent.clientY - startY;
+
+        let newWidth = startWidth;
+        let newHeight = startHeight;
+        let newLeft = startLeft;
+        let newTop = startTop;
+
+        if (hasE) newWidth = clamp(startWidth + deltaX, MIN_W, MAX_W);
+        if (hasW) {
+          newWidth = clamp(startWidth - deltaX, MIN_W, MAX_W);
+          newLeft = startLeft + (startWidth - newWidth);
+        }
+        if (hasS) newHeight = clamp(startHeight + deltaY, MIN_H, MAX_H);
+        if (hasN) {
+          newHeight = clamp(startHeight - deltaY, MIN_H, MAX_H);
+          newTop = startTop + (startHeight - newHeight);
+        }
+
+        newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - newWidth));
+        newTop = Math.max(0, Math.min(newTop, window.innerHeight - newHeight));
+
+        setFloatingSize({ width: newWidth, height: newHeight });
+
+        const newInitLeft = window.innerWidth - newWidth - 24;
+        const newInitTop = window.innerHeight - newHeight - 96;
+        const newPos = { x: newLeft - newInitLeft, y: newTop - newInitTop };
+        setPosition(newPos);
+        setFloatingPosition(newPos);
+      };
+
+      const onPointerUp = (upEvent: PointerEvent) => {
+        handle.releasePointerCapture(upEvent.pointerId);
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerup", onPointerUp);
+        resizeListenersRef.current = null;
+      };
+
+      resizeListenersRef.current = { onPointerMove, onPointerUp };
+
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", onPointerUp);
+    };
+
   return (
     <div
       data-testid="analysis-floating-container"
-      className={`fixed bottom-24 right-6 w-[380px] h-[520px] rounded-2xl border border-border shadow-panel backdrop-blur-md bg-panel/80 z-[9999] flex flex-col overflow-hidden ${
+      className={`fixed bottom-24 right-6 rounded-3xl border border-white/10 ring-1 ring-white/5 shadow-[0_24px_70px_-15px_rgba(0,0,0,0.7)] bg-neutral-900/55 backdrop-blur-2xl backdrop-saturate-150 z-[9999] flex flex-col overflow-hidden ${
         isDraggingState ? "transition-none" : "transition-all duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)]"
       }`}
       style={{
+        width: `${floatingSize.width}px`,
+        height: `${floatingSize.height}px`,
         transform: `translate(${position.x}px, ${position.y}px)`,
       }}
     >
       <div
         data-testid="analysis-header"
-        className="flex items-center justify-between px-4 py-3 border-b border-border/40 cursor-grab active:cursor-grabbing select-none"
+        className="flex items-center justify-between px-4 py-2.5 border-b border-white/10 bg-white/5 cursor-grab active:cursor-grabbing select-none"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onLostPointerCapture={handleLostPointerCapture}
       >
-        <span className="text-sm font-semibold flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+        <span className="text-xs font-semibold flex items-center gap-1.5 tracking-wider text-fg/80">
+          <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
           원고 분석 (미니)
         </span>
-        <button
-          data-testid="view-mode-toggle"
-          onClick={() => setViewMode("fixView")}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="p-1.5 rounded-lg hover:bg-active text-muted hover:text-fg transition-colors"
-          title="고정 뷰로 전환"
-        >
-          <Minimize2 className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            data-testid="minimize-to-fab"
+            onClick={() => setMinimized(true)}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="p-1.5 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-fg transition-all duration-150 active:scale-90"
+            title="최소화"
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+          <button
+            data-testid="view-mode-toggle"
+            onClick={() => setViewMode("fixView")}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="p-1.5 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-fg transition-all duration-150 active:scale-90"
+            title="고정 뷰로 전환"
+          >
+            <Minimize2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
       <div className="flex-1 overflow-hidden relative">
         {children}
       </div>
+
+      {/* 전방향 리사이즈 핸들 (가장자리 4 + 모서리 4) */}
+      <div onPointerDown={handleResizeStart("n")} className="absolute top-0 left-3 right-3 h-1.5 cursor-ns-resize z-50" />
+      <div onPointerDown={handleResizeStart("s")} className="absolute bottom-0 left-3 right-3 h-1.5 cursor-ns-resize z-50" />
+      <div onPointerDown={handleResizeStart("e")} className="absolute right-0 top-3 bottom-3 w-1.5 cursor-ew-resize z-50" />
+      <div onPointerDown={handleResizeStart("w")} className="absolute left-0 top-3 bottom-3 w-1.5 cursor-ew-resize z-50" />
+      <div onPointerDown={handleResizeStart("nw")} className="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize z-50" />
+      <div onPointerDown={handleResizeStart("ne")} className="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize z-50" />
+      <div onPointerDown={handleResizeStart("sw")} className="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize z-50" />
+      <div onPointerDown={handleResizeStart("se")} className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize z-50" />
     </div>
   );
 }
@@ -120,12 +251,6 @@ export default function AnalysisSection() {
     useShallow((state) => ({ viewMode: state.viewMode, setViewMode: state.setViewMode }))
   );
 
-  const [showLlmPopover, setShowLlmPopover] = useState(false);
-  const [showMemoryPopover, setShowMemoryPopover] = useState(false);
-
-  const llmRef = useRef<HTMLDivElement>(null);
-  const memoryRef = useRef<HTMLDivElement>(null);
-
   const runtime = useAnalysisRuntime();
   const chat = useRagChat({
     projectId: currentProject?.id,
@@ -138,36 +263,49 @@ export default function AnalysisSection() {
     memoryScope,
   });
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (llmRef.current && !llmRef.current.contains(event.target as Node)) {
-        setShowLlmPopover(false);
+  const disabled = !currentProject;
+  const isEmpty = chat.messages.length === 0;
+
+  const composer = (
+    <PromptComposer
+      input={chat.input}
+      setInput={chat.setInput}
+      isStreaming={chat.isStreaming}
+      disabled={disabled}
+      onSend={() => void chat.handleSend()}
+      onStop={() => void chat.handleStop()}
+      onKeyDown={chat.handleKeyDown}
+      runtimeInfo={runtime.runtimeInfo}
+      sidecarStatus={runtime.sidecarStatus}
+      runtimePreference={runtime.runtimePreference}
+      onApplyRuntimePreference={(pref) => void runtime.applyRuntimePreference(pref)}
+      memoryScope={memoryScope}
+      onChangeMemoryScope={setMemoryScope}
+      summaryActive={review.showNarrativeSummaryStatus}
+      onToggleSummary={() =>
+        review.setShowNarrativeSummaryStatus((prev) => !prev)
       }
-      if (memoryRef.current && !memoryRef.current.contains(event.target as Node)) {
-        setShowMemoryPopover(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+    />
+  );
 
   const renderContent = () => (
     <div
       data-testid="analysis-section-content"
-      className="relative h-full bg-panel text-fg flex flex-col overflow-hidden"
+      className={`relative h-full text-fg flex flex-col overflow-hidden ${
+        viewMode === "floatingView" ? "bg-transparent" : "bg-[#161616]"
+      }`}
     >
       {/* fixView 모드일 때만 고정 헤더와 토글 버튼 렌더링 */}
       {viewMode === "fixView" && (
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 select-none">
-          <span className="text-sm font-semibold flex items-center gap-1.5">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800 bg-neutral-900/20 select-none">
+          <span className="text-xs font-semibold flex items-center gap-1.5 tracking-wider text-fg/80">
+            <span className="w-1.5 h-1.5 rounded-full bg-neutral-600" />
             원고 분석
           </span>
           <button
             data-testid="view-mode-toggle"
             onClick={() => setViewMode("floatingView")}
-            className="p-1.5 rounded-lg hover:bg-active text-muted hover:text-fg transition-colors"
+            className="p-1.5 rounded-lg hover:bg-neutral-850 text-neutral-400 hover:text-fg transition-all duration-150 active:scale-95"
             title="플로팅 뷰로 전환"
           >
             <Maximize2 className="w-4 h-4" />
@@ -175,185 +313,39 @@ export default function AnalysisSection() {
         </div>
       )}
 
-      {/* 메시지 및 서사 요약 영역 */}
-      <div className="h-full overflow-y-auto px-4 pt-4 pb-48 space-y-5 min-h-0">
-        <NarrativeSummaryStatusPanel
-          visible={review.showNarrativeSummaryStatus}
-          loading={review.narrativeSummaryStatusLoading}
-          error={review.narrativeSummaryStatusError}
-          status={review.narrativeSummaryStatus}
-          onToggle={() => review.setShowNarrativeSummaryStatus((prev) => !prev)}
-        />
+      {/* 서사 요약 드로어 (상단 슬라이드 인) */}
+      <SummaryDrawer
+        open={review.showNarrativeSummaryStatus}
+        loading={review.narrativeSummaryStatusLoading}
+        error={review.narrativeSummaryStatusError}
+        status={review.narrativeSummaryStatus}
+        onClose={() => review.setShowNarrativeSummaryStatus(false)}
+      />
 
-        {chat.messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-48 text-muted gap-3">
-            <p className="text-sm text-center">
-              {currentChapter
-                ? `Context: ${currentChapter.title}`
-                : "원고 내용에 대해 질문하세요"}
-            </p>
-          </div>
-        )}
-
-        <MessageList
-          messages={chat.messages}
-          onJumpEvidence={chat.handleJumpEvidence}
-        />
-        <div ref={chat.bottomRef} />
-      </div>
-
-      {/* 플로팅 리퀴드 스타일 입력창 카드 */}
-      <div className="absolute bottom-4 left-4 right-4 bg-surface/90 backdrop-blur-md border border-border shadow-panel rounded-2xl p-3 z-overlay flex flex-col gap-2 transition-shadow">
-        {/* 런타임 상태 간략 표시 영역 */}
-        {runtime.runtimeInfo && (
-          <div className="border-b border-border/40 pb-2">
-            <RuntimeStatusPanel
-              runtimeInfo={runtime.runtimeInfo}
-              sidecarStatus={runtime.sidecarStatus}
+      {/* 메시지 / 빈 상태 — 남는 공간을 빈 상태 안내가 채움 */}
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-24 min-h-0 scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent">
+        {isEmpty ? (
+          <div className="h-full flex flex-col items-center justify-center">
+            <EmptyState
+              contextLabel={currentChapter?.title ?? null}
+              disabled={disabled}
+              onSelectPrompt={(prompt) => void chat.handleSend(prompt)}
             />
           </div>
+        ) : (
+          <div className="space-y-6">
+            <MessageList
+              messages={chat.messages}
+              onJumpEvidence={chat.handleJumpEvidence}
+            />
+            <div ref={chat.bottomRef} />
+          </div>
         )}
+      </div>
 
-        <textarea
-          className="w-full text-sm bg-transparent border-none resize-none text-fg placeholder:text-muted focus:outline-none min-h-[44px] max-h-[120px]"
-          placeholder="질문 입력... (Enter 전송, Shift+Enter 줄바꿈)"
-          value={chat.input}
-          onChange={(event) => chat.setInput(event.target.value)}
-          onKeyDown={chat.handleKeyDown}
-          rows={1}
-          disabled={!currentProject}
-        />
-
-        {/* 하단 툴바 */}
-        <div className="flex items-center justify-between border-t border-border/40 pt-2.5">
-          <div className="flex items-center gap-2">
-            {/* Route 선택 (+) 버튼 */}
-            <div className="relative" ref={llmRef}>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowLlmPopover((prev) => !prev);
-                  setShowMemoryPopover(false);
-                }}
-                className="flex h-7 px-2 items-center justify-center gap-1.5 rounded-full bg-panel/60 border border-border hover:bg-active text-muted hover:text-fg transition-colors text-xs font-medium"
-                title="LLM Route 선택"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>{getLlmPreferenceLabel(runtime.runtimePreference)}</span>
-              </button>
-
-              {showLlmPopover && (
-                <div className="absolute bottom-9 left-0 w-44 rounded-xl border border-border bg-surface shadow-modal py-1 z-dropdown">
-                  <div className="px-2.5 py-1 text-[10px] font-semibold text-muted/80 tracking-wider uppercase">
-                    LLM Route
-                  </div>
-                  <div className="h-[1px] bg-border/60 my-1" />
-                  {(["auto", "sidecar", "ollama", "openai", "gemini"] as const).map((pref) => (
-                    <button
-                      key={pref}
-                      type="button"
-                      onClick={() => {
-                        void runtime.applyRuntimePreference(pref);
-                        setShowLlmPopover(false);
-                      }}
-                      className="w-full px-2.5 py-1.5 text-xs text-left hover:bg-active flex items-center justify-between text-fg"
-                    >
-                      <span>{getLlmPreferenceLabel(pref)}</span>
-                      {runtime.runtimePreference === pref && (
-                        <Check className="w-3.5 h-3.5 text-accent" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Memory 선택 (Brain) 버튼 */}
-            <div className="relative" ref={memoryRef}>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowMemoryPopover((prev) => !prev);
-                  setShowLlmPopover(false);
-                }}
-                className={`flex h-7 px-2 items-center justify-center gap-1.5 rounded-full border transition-colors text-xs font-medium ${
-                  memoryScope === "with-prior"
-                    ? "bg-accent/15 border-accent/30 text-accent hover:bg-accent/25"
-                    : "bg-panel/60 border-border text-muted hover:bg-active hover:text-fg"
-                }`}
-                title="Memory 범위 선택"
-              >
-                <Brain className="w-3.5 h-3.5" />
-                <span>
-                  {memoryScope === "with-prior" ? "현재+과거" : "현재만"}
-                </span>
-              </button>
-
-              {showMemoryPopover && (
-                <div className="absolute bottom-9 left-0 w-40 rounded-xl border border-border bg-surface shadow-modal py-1 z-dropdown">
-                  <div className="px-2.5 py-1 text-[10px] font-semibold text-muted/80 tracking-wider uppercase">
-                    Memory Scope
-                  </div>
-                  <div className="h-[1px] bg-border/60 my-1" />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMemoryScope("current-only");
-                      setShowMemoryPopover(false);
-                    }}
-                    className="w-full px-2.5 py-1.5 text-xs text-left hover:bg-active flex items-center justify-between text-fg"
-                  >
-                    <span>현재 챕터만</span>
-                    {memoryScope === "current-only" && (
-                      <Check className="w-3.5 h-3.5 text-accent" />
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMemoryScope("with-prior");
-                      setShowMemoryPopover(false);
-                    }}
-                    className="w-full px-2.5 py-1.5 text-xs text-left hover:bg-active flex items-center justify-between text-fg"
-                  >
-                    <span>현재 + 과거</span>
-                    {memoryScope === "with-prior" && (
-                      <Check className="w-3.5 h-3.5 text-accent" />
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Context 챕터 이름 표시 */}
-            {currentChapter && (
-              <span className="text-[11px] text-muted max-w-[120px] truncate ml-1 font-medium">
-                Context: {currentChapter.title}
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <Button
-              onClick={
-                chat.isStreaming
-                  ? () => void chat.handleStop()
-                  : () => void chat.handleSend()
-              }
-              disabled={
-                !currentProject || (!chat.isStreaming && !chat.input.trim())
-              }
-              size="icon"
-              className="h-8 w-8 rounded-full shadow-sm disabled:opacity-50"
-            >
-              {chat.isStreaming ? (
-                <Square className="w-3.5 h-3.5 fill-current" />
-              ) : (
-                <Send className="w-3.5 h-3.5" />
-              )}
-            </Button>
-          </div>
-        </div>
+      {/* 입력창 — 항상 하단 고정 */}
+      <div className="absolute bottom-3 left-3 right-3 z-overlay">
+        {composer}
       </div>
     </div>
   );
@@ -368,21 +360,4 @@ export default function AnalysisSection() {
   }
 
   return renderContent();
-}
-
-function getLlmPreferenceLabel(pref: RuntimePreference): string {
-  switch (pref) {
-    case "auto":
-      return "Auto";
-    case "sidecar":
-      return "Local (Sidecar)";
-    case "ollama":
-      return "Local (Ollama)";
-    case "openai":
-      return "GPT (OpenAI)";
-    case "gemini":
-      return "Gemini";
-    default:
-      return pref;
-  }
 }

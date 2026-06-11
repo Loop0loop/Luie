@@ -80,6 +80,32 @@ describe("scoreMemoryEvalCase", () => {
     expect(result.p0Failures).toEqual(["unsupported_confirmed_answer"]);
   });
 
+  it("flags expected answers that are not supported by gold evidence", () => {
+    const result = scoreMemoryEvalCase({
+      evalCase: {
+        ...baseCase,
+        expectedAnswer:
+          "아린은 백야회의 목적을 알고 봉인된 왕관을 훔쳤다.",
+      },
+      answer: "아린은 백야회의 목적을 알고 봉인된 왕관을 훔쳤다.",
+      retrievedEvidence: [
+        {
+          chunkId: "chunk-3-a",
+          chapterId: "chapter-3",
+          offset: 130,
+          quote: "아린은 백야회의 추적을 피해 골목으로 숨어들었다.",
+        },
+      ],
+      groundingStatus: "confirmed",
+      topK: 3,
+    });
+
+    expect(result.p0Failures).toContain(
+      "expected_answer_not_supported_by_gold_evidence",
+    );
+    expect(result.p0Failures).toContain("answer_contains_unsupported_claim");
+  });
+
   it("flags deleted or draft facts used as confirmed memory", () => {
     const result = scoreMemoryEvalCase({
       evalCase: baseCase,
@@ -171,6 +197,207 @@ describe("scoreMemoryEvalCase", () => {
     expect(result.p0Failures).toContain("relation_direction_reversed");
   });
 
+  it("flags entity alias mismatches", () => {
+    const result = scoreMemoryEvalCase({
+      evalCase: {
+        ...baseCase,
+        expectedEntities: [
+          {
+            canonicalName: "아린",
+            aliases: ["흰 까마귀"],
+          },
+        ],
+      },
+      retrievedEvidence: [
+        {
+          chunkId: "chunk-3-a",
+          chapterId: "chapter-3",
+          offset: 130,
+          quote: "흰 까마귀는 백야회의 추적을 피해 골목으로 숨어들었다.",
+        },
+      ],
+      groundingStatus: "confirmed",
+      observedEntities: [
+        {
+          canonicalName: "레온",
+          name: "흰 까마귀",
+        },
+      ],
+      topK: 3,
+    });
+
+    expect(result.p0Failures).toContain("entity_alias_mismatch");
+  });
+
+  it("does not flag entity aliases when the canonical entity matches", () => {
+    const result = scoreMemoryEvalCase({
+      evalCase: {
+        ...baseCase,
+        expectedEntities: [
+          {
+            canonicalName: "아린",
+            aliases: ["흰 까마귀"],
+          },
+        ],
+      },
+      retrievedEvidence: [
+        {
+          chunkId: "chunk-3-a",
+          chapterId: "chapter-3",
+          offset: 130,
+          quote: "흰 까마귀는 백야회의 추적을 피해 골목으로 숨어들었다.",
+        },
+      ],
+      groundingStatus: "confirmed",
+      observedEntities: [
+        {
+          canonicalName: "아린",
+          name: "흰 까마귀",
+        },
+      ],
+      topK: 3,
+    });
+
+    expect(result.p0Failures).not.toContain("entity_alias_mismatch");
+  });
+
+  it("flags unresolved threads that are falsely marked resolved", () => {
+    const result = scoreMemoryEvalCase({
+      evalCase: {
+        ...baseCase,
+        expectedThreads: [
+          {
+            name: "봉인된 편지의 발신자",
+            status: "unresolved",
+          },
+        ],
+      },
+      retrievedEvidence: [
+        {
+          chunkId: "chunk-3-a",
+          chapterId: "chapter-3",
+          offset: 130,
+          quote: "아린은 발신자가 적혀 있지 않은 봉인된 편지를 품에 숨겼다.",
+        },
+      ],
+      groundingStatus: "confirmed",
+      observedThreads: [
+        {
+          name: "봉인된 편지의 발신자",
+          status: "resolved",
+        },
+      ],
+      topK: 3,
+    });
+
+    expect(result.p0Failures).toContain(
+      "unresolved_thread_falsely_marked_resolved",
+    );
+  });
+
+  it("does not flag unresolved threads when the answer keeps them unresolved", () => {
+    const result = scoreMemoryEvalCase({
+      evalCase: {
+        ...baseCase,
+        expectedThreads: [
+          {
+            name: "봉인된 편지의 발신자",
+            status: "unresolved",
+          },
+        ],
+      },
+      retrievedEvidence: [
+        {
+          chunkId: "chunk-3-a",
+          chapterId: "chapter-3",
+          offset: 130,
+          quote: "아린은 발신자가 적혀 있지 않은 봉인된 편지를 품에 숨겼다.",
+        },
+      ],
+      groundingStatus: "confirmed",
+      observedThreads: [
+        {
+          name: "봉인된 편지의 발신자",
+          status: "unresolved",
+        },
+      ],
+      topK: 3,
+    });
+
+    expect(result.p0Failures).not.toContain(
+      "unresolved_thread_falsely_marked_resolved",
+    );
+  });
+
+  it("does not flag deterministic guard failures for supported consistent observations", () => {
+    const result = scoreMemoryEvalCase({
+      evalCase: {
+        ...baseCase,
+        expectedAnswer: "아린은 백야회의 추적을 피했다.",
+        expectedEntities: [
+          {
+            canonicalName: "아린",
+            aliases: ["흰 까마귀"],
+          },
+        ],
+        expectedRelations: [
+          {
+            sourceName: "아린",
+            targetName: "백야회",
+            relation: "hostile_to",
+          },
+        ],
+        expectedThreads: [
+          {
+            name: "봉인된 편지의 발신자",
+            status: "unresolved",
+          },
+        ],
+      },
+      answer: "아린은 백야회의 추적을 피했다.",
+      retrievedEvidence: [
+        {
+          chunkId: "chunk-3-a",
+          chapterId: "chapter-3",
+          offset: 130,
+          quote: "아린은 백야회의 추적을 피했다.",
+        },
+      ],
+      groundingStatus: "confirmed",
+      queryChapterOrder: 3,
+      observedFacts: [
+        {
+          id: "fact-current",
+          status: "confirmed",
+          observedAtChapterOrder: 2,
+          usedAs: "confirmed",
+        },
+      ],
+      observedEntities: [
+        {
+          canonicalName: "아린",
+          name: "흰 까마귀",
+        },
+      ],
+      observedRelations: [
+        {
+          sourceName: "아린",
+          targetName: "백야회",
+          relation: "hostile_to",
+        },
+      ],
+      observedThreads: [
+        {
+          name: "봉인된 편지의 발신자",
+          status: "unresolved",
+        },
+      ],
+      topK: 3,
+    });
+
+    expect(result.p0Failures).toEqual([]);
+  });
+
   it("runs a fixed suite and reports aggregate recall and P0 failures", () => {
     const result = runMemoryEvalSuite({
       topK: 3,
@@ -198,6 +425,9 @@ describe("scoreMemoryEvalCase", () => {
     expect(result.caseCount).toBe(2);
     expect(result.averageContextRecallAtK).toBe(0.5);
     expect(result.totalP0FailureCount).toBe(1);
+    expect(result.p0FailureTypeCounts).toEqual({
+      unsupported_confirmed_answer: 1,
+    });
     expect(result.results.map((item) => item.caseId)).toEqual([
       "case-1",
       "case-2",

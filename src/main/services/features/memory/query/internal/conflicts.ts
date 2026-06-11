@@ -29,6 +29,8 @@ async function fetchFactSummariesFromIds(input: {
     observedAtChapterOrder: number;
     confidence: number;
     status: string;
+    provenanceKind: string;
+    canonStatus: string;
   }>
 > {
   if (input.factIds.length === 0) return [];
@@ -46,6 +48,8 @@ async function fetchFactSummariesFromIds(input: {
       observedAtChapterOrder: memoryFact.observedAtChapterOrder,
       confidence: memoryFact.confidence,
       status: memoryFact.status,
+      provenanceKind: memoryFact.provenanceKind,
+      canonStatus: memoryFact.canonStatus,
     })
     .from(memoryFact)
     .where(
@@ -73,6 +77,8 @@ async function fetchFactSummariesFromIds(input: {
       observedAtChapterOrder: row.observedAtChapterOrder,
       confidence: row.confidence,
       status: row.status,
+      provenanceKind: row.provenanceKind,
+      canonStatus: row.canonStatus,
     }));
 }
 
@@ -171,6 +177,8 @@ function buildConflictFactSummary(input: {
     observedAtChapterOrder: number;
     confidence: number;
     status: string;
+    provenanceKind: string;
+    canonStatus: string;
   };
   evidenceCount: number;
   entityInfo: Map<string, { name: string; type: string }>;
@@ -192,6 +200,8 @@ function buildConflictFactSummary(input: {
     observedAtChapterOrder: input.row.observedAtChapterOrder,
     confidence: input.row.confidence,
     status: input.row.status,
+    provenanceKind: input.row.provenanceKind,
+    canonStatus: input.row.canonStatus,
     evidenceCount: input.evidenceCount,
   };
 }

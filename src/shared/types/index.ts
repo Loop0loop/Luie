@@ -175,6 +175,9 @@ export type {
   RagQaRequest,
   RagQaResult,
   RagQaRunHandle,
+  RagQaSafety,
+  RagQaSafetyLabel,
+  RagQaSafetyReason,
   RagQaStreamPayload,
   SearchIndexStatus,
   SearchQuery,
@@ -201,6 +204,15 @@ export type {
   MemoryEvalSuiteInput,
   MemoryEvalSuiteResult,
 } from "./memoryEval";
+
+export type {
+  MemoryCanonStatus,
+  MemoryProvenanceKind,
+} from "./memoryProvenance";
+export {
+  memoryCanonStatusLabel,
+  memoryProvenanceKindLabel,
+} from "./memoryProvenance";
 
 export type {
   RuntimeFallbackPolicy,

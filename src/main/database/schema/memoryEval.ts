@@ -162,6 +162,7 @@ export const memoryEvalResult = sqliteTable(
     p0FailureCount: integer("p0FailureCount").notNull().default(0),
     p0Failures: text("p0Failures").notNull().default("[]"),
     answer: text("answer"),
+    answerJudgeJson: text("answerJudgeJson"),
     createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updatedAt").notNull(),
   },

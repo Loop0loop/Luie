@@ -12,6 +12,8 @@ export interface MemoryConflictFactSummary {
   observedAtChapterOrder: number;
   confidence: number;
   status: string;
+  provenanceKind: string;
+  canonStatus: string;
   evidenceCount: number;
 }
 
@@ -87,6 +89,8 @@ export interface MemoryTemporalFactReviewItem {
   observedAtChapterOrder: number;
   confidence: number;
   status: string;
+  provenanceKind: string;
+  canonStatus: string;
   evidenceCount: number;
   createdAt: string;
   updatedAt: string;

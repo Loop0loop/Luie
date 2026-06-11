@@ -6,13 +6,15 @@ import {
   searchByShortTokens,
   searchByVector,
   shouldRunVectorSearch,
-} from "../../search/index.js";
+} from "../../search/chunkSearch.js";
 import { memoryChunk } from "../../../../database/schema/index.js";
 import type { MemoryChunkSearchResult } from "../../../../../shared/types/index.js";
 import { createLogger } from "../../../../../shared/logger/index.js";
 import type { RagEmbeddingProvider } from "./contextAssembler.types.js";
 
 type FtsRow = { chunkId: string };
+type ExactPhraseRow = { chunkId: string };
+type TokenOverlapRow = { chunkId: string; content: string; chunkIndex: number };
 type ChunkRow = {
   chunkId: string;
   chapterId: string | null;
@@ -54,6 +56,46 @@ type SearchInput = {
 
 const logger = createLogger("RagContextAssemblerSearch");
 
+function extractExactPhraseCandidates(query: string): string[] {
+  const candidates = new Set<string>();
+  const colonIndex = query.lastIndexOf(":");
+  if (colonIndex >= 0) {
+    candidates.add(query.slice(colonIndex + 1));
+  }
+  candidates.add(query);
+  return [...candidates]
+    .map((candidate) => candidate.replace(/\s+/g, " ").trim())
+    .filter((candidate) => candidate.length >= 12)
+    .slice(0, 3);
+}
+
+function extractQuoteLikeTokens(query: string): string[] {
+  const colonIndex = query.lastIndexOf(":");
+  const quoteLikePart = colonIndex >= 0 ? query.slice(colonIndex + 1) : query;
+  return Array.from(
+    new Set(
+      quoteLikePart
+        .replace(/[^\p{L}\p{N}\s]/gu, " ")
+        .split(/\s+/)
+        .map((token) =>
+          token
+            .trim()
+            .toLowerCase()
+            .replace(
+              /(으로만|에게만|에서는|으로는|에게는|으로|에게|에서|부터|까지|처럼|보다|과는|와는|에는|의|은|는|이|가|을|를|와|과|도|만|로)$/u,
+              "",
+            ),
+        )
+        .filter((token) => token.length >= 2),
+    ),
+  ).slice(0, 16);
+}
+
+function countTokenOverlap(tokens: string[], content: string): number {
+  const normalizedContent = content.toLowerCase();
+  return tokens.filter((token) => normalizedContent.includes(token)).length;
+}
+
 export async function searchMemoryChunksForRag(
   input: SearchInput,
 ): Promise<MemoryChunkSearchResult[]> {
@@ -73,6 +115,53 @@ export async function searchMemoryChunksForRag(
       ORDER BY bm25("MemoryChunkFts"), fts."chunkId"
       LIMIT ${Math.max(limit, 50)};
     `)
+      : [];
+  const exactPhraseCandidates = extractExactPhraseCandidates(normalizedQuery);
+  const exactPhraseRows: ExactPhraseRow[] =
+    exactPhraseCandidates.length > 0
+      ? client.all<ExactPhraseRow>(sql`
+      SELECT chunk."id" AS "chunkId"
+      FROM "MemoryChunk" chunk
+      WHERE chunk."projectId" = ${input.projectId}
+        AND (${sql.join(
+          exactPhraseCandidates.map(
+            (candidate) => sql`instr(chunk."content", ${candidate}) > 0`,
+          ),
+          sql` OR `,
+        )})
+      ORDER BY chunk."chunkIndex" ASC, chunk."id"
+      LIMIT ${Math.max(limit, 50)};
+    `)
+      : [];
+  const quoteLikeTokens = extractQuoteLikeTokens(normalizedQuery);
+  const tokenOverlapRows: Array<{ chunkId: string; rank: number }> =
+    quoteLikeTokens.length >= 3
+      ? client
+          .all<TokenOverlapRow>(sql`
+            SELECT chunk."id" AS "chunkId",
+                   chunk."content" AS "content",
+                   chunk."chunkIndex" AS "chunkIndex"
+            FROM "MemoryChunk" chunk
+            WHERE chunk."projectId" = ${input.projectId}
+              AND (${sql.join(
+                quoteLikeTokens.map(
+                  (token) => sql`instr(lower(chunk."content"), ${token}) > 0`,
+                ),
+                sql` OR `,
+              )})
+            ORDER BY chunk."chunkIndex" ASC, chunk."id"
+            LIMIT ${Math.max(limit, 80)};
+          `)
+          .map((row) => ({
+            chunkId: row.chunkId,
+            score: countTokenOverlap(quoteLikeTokens, row.content),
+            chunkIndex: row.chunkIndex,
+          }))
+          .filter((row) => row.score >= Math.min(4, Math.ceil(quoteLikeTokens.length * 0.45)))
+          .sort((a, b) =>
+            b.score === a.score ? a.chunkIndex - b.chunkIndex : b.score - a.score,
+          )
+          .map((row, index) => ({ chunkId: row.chunkId, rank: index + 1 }))
       : [];
 
   const lexicalRanks = await searchByShortTokens(
@@ -109,6 +198,11 @@ export async function searchMemoryChunksForRag(
         chunkId: row.chunkId,
         rank: index + 1,
       })),
+      exactPhraseRows.map((row: ExactPhraseRow, index: number) => ({
+        chunkId: row.chunkId,
+        rank: index + 1,
+      })),
+      tokenOverlapRows,
       lexicalRanks,
       denseRanks,
     ],

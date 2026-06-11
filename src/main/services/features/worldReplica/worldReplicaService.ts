@@ -15,7 +15,6 @@ import {
   worldDocument,
 } from "../../../infra/database/index.js";
 import { ServiceError } from "../../../utils/error/index.js";
-import { projectService } from "../../core/projectService.js";
 
 const logger = createLogger("WorldReplicaService");
 
@@ -155,6 +154,7 @@ export class WorldReplicaService {
       });
 
       if (input.docType === "graph") {
+        const { projectService } = await import("../../core/projectService.js");
         const exportResult = await projectService.attemptImmediatePackageExport(
           input.projectId,
           "world-document:graph",

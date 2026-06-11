@@ -8,6 +8,10 @@ interface AnalysisStore {
   isAnalyzing: boolean;
   error: string | null;
   viewMode: 'fixView' | 'floatingView';
+  isOpen: boolean;
+  isMinimized: boolean;
+  floatingPosition: { x: number; y: number };
+  floatingSize: { width: number; height: number };
 
   // Actions
   startAnalysis: (chapterId: string, projectId: string) => Promise<void>;
@@ -16,6 +20,10 @@ interface AnalysisStore {
   addStreamItem: (chunk: AnalysisStreamChunk) => void;
   setError: (error: string | null) => void;
   setViewMode: (mode: 'fixView' | 'floatingView') => void;
+  setOpen: (open: boolean) => void;
+  setMinimized: (minimized: boolean) => void;
+  setFloatingPosition: (pos: { x: number; y: number }) => void;
+  setFloatingSize: (size: { width: number; height: number }) => void;
 
   // Cleanup
   reset: () => void;
@@ -26,6 +34,10 @@ export const useAnalysisStore = create<AnalysisStore>((set, _get) => ({
   isAnalyzing: false,
   error: null,
   viewMode: 'fixView',
+  isOpen: false,
+  isMinimized: false,
+  floatingPosition: { x: 0, y: 0 },
+  floatingSize: { width: 380, height: 520 },
 
   /**
    * 분석 시작
@@ -121,13 +133,39 @@ export const useAnalysisStore = create<AnalysisStore>((set, _get) => ({
    * 뷰 모드 설정
    */
   setViewMode: (mode: 'fixView' | 'floatingView') => {
-    set({ viewMode: mode });
+    set({
+      viewMode: mode,
+      isOpen: mode === 'floatingView' ? true : false,
+      isMinimized: false
+    });
+  },
+
+  setOpen: (open: boolean) => {
+    set({ isOpen: open });
+  },
+
+  setMinimized: (minimized: boolean) => {
+    set({ isMinimized: minimized });
+  },
+
+  setFloatingPosition: (pos: { x: number; y: number }) => {
+    set({ floatingPosition: pos });
+  },
+
+  setFloatingSize: (size: { width: number; height: number }) => {
+    set({ floatingSize: size });
   },
 
   /**
    * 리셋
    */
   reset: () => {
-    set({ items: [], isAnalyzing: false, error: null });
+    set({
+      items: [],
+      isAnalyzing: false,
+      error: null,
+      isOpen: false,
+      isMinimized: false
+    });
   },
 }));

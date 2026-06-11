@@ -10,6 +10,7 @@ import AnalysisSection from "@renderer/features/research/components/AnalysisSect
 import SynopsisSection from "@renderer/features/research/components/SynopsisSection";
 import { cn } from "@shared/types/utils";
 import { FeatureErrorBoundary } from "@renderer/shared/error-boundaries/FeatureErrorBoundary";
+import { useAnalysisStore } from "@renderer/features/research/stores/analysisStore";
 
 export type ResearchPanelTab =
   | "character"
@@ -32,6 +33,7 @@ export default function ResearchPanel({
   onTabChange,
 }: ResearchPanelProps) {
   const { t } = useTranslation();
+  const viewMode = useAnalysisStore((state) => state.viewMode);
 
   const tabConfig: Record<
     string,
@@ -96,7 +98,11 @@ export default function ResearchPanel({
         {activeTab === "faction" && <FeatureErrorBoundary featureName="Factions"><FactionManager /></FeatureErrorBoundary>}
         {activeTab === "world" && <FeatureErrorBoundary featureName="World"><WorldSection /></FeatureErrorBoundary>}
         {activeTab === "scrap" && <FeatureErrorBoundary featureName="Scrap"><MemoSection /></FeatureErrorBoundary>}
-        {activeTab === "analysis" && <FeatureErrorBoundary featureName="Analysis"><AnalysisSection /></FeatureErrorBoundary>}
+        {activeTab === "analysis" && viewMode === "fixView" && (
+          <FeatureErrorBoundary featureName="Analysis">
+            <AnalysisSection />
+          </FeatureErrorBoundary>
+        )}
         {activeTab === "synopsis" && <FeatureErrorBoundary featureName="Synopsis"><SynopsisSection /></FeatureErrorBoundary>}
       </div>
     </div>

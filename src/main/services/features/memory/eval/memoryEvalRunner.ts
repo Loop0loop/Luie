@@ -14,6 +14,7 @@ import type {
   MemoryEvalLiveRunnerResult,
   MemoryEvalSuiteCaseInput,
 } from "../../../../../shared/types/index.js";
+import { parseMemoryEvalAnswerJudgeResult } from "./memoryEvalAnswerJudge.js";
 import { runMemoryEvalSuite } from "./memoryEvalScoring.js";
 
 async function loadProjectEvalCases(
@@ -88,8 +89,10 @@ export async function runLiveMemoryEvalSuite(
   try {
     const suiteCases: MemoryEvalSuiteCaseInput[] = [];
     const answersByCase = new Map<string, string>();
+    const answerJudgeJsonByCase = new Map<string, string>();
 
     for (const evalCase of cases) {
+      // eslint-disable-next-line no-await-in-loop -- eval cases run sequentially so persisted answers match deterministic case order.
       const answer = await input.answerer({
         projectId: input.projectId,
         caseId: evalCase.id,
@@ -98,13 +101,28 @@ export async function runLiveMemoryEvalSuite(
         caseType: evalCase.caseType,
       });
       answersByCase.set(evalCase.id, answer.answer);
+      if (input.answerJudge) {
+        // eslint-disable-next-line no-await-in-loop -- judge output is tied to the sequential answer for the same eval case.
+        const rawJudgeResult = await input.answerJudge({
+          evalCase,
+          answer: answer.answer,
+          evidence: answer.evidence,
+        });
+        answerJudgeJsonByCase.set(
+          evalCase.id,
+          JSON.stringify(parseMemoryEvalAnswerJudgeResult(rawJudgeResult)),
+        );
+      }
       suiteCases.push({
         evalCase,
+        answer: answer.answer,
         retrievedEvidence: answer.evidence,
         groundingStatus: answer.groundingStatus,
         queryChapterOrder: answer.queryChapterOrder,
         observedFacts: answer.observedFacts,
+        observedEntities: answer.observedEntities,
         observedRelations: answer.observedRelations,
+        observedThreads: answer.observedThreads,
       });
     }
 
@@ -114,6 +132,7 @@ export async function runLiveMemoryEvalSuite(
     });
 
     for (const result of suiteResult.results) {
+      // eslint-disable-next-line no-await-in-loop -- result rows are persisted one-by-one for traceable run records.
       await db
         .getClient()
         .insert(memoryEvalResult)
@@ -131,6 +150,7 @@ export async function runLiveMemoryEvalSuite(
           p0FailureCount: result.p0FailureCount,
           p0Failures: JSON.stringify(result.p0Failures),
           answer: answersByCase.get(result.caseId) ?? null,
+          answerJudgeJson: answerJudgeJsonByCase.get(result.caseId) ?? null,
           updatedAt: nowIso,
         });
     }

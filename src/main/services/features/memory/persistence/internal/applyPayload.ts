@@ -210,6 +210,8 @@ export const applyMemoryCanonicalPackagePayload = (
     const observedAtChapterId = toStringValue(row.observedAtChapterId);
     const observedAtChapterOrder = toNumberValue(row.observedAtChapterOrder);
     const status = toStringValue(row.status);
+    const provenanceKind = toStringValue(row.provenanceKind) ?? "unknown";
+    const canonStatus = toStringValue(row.canonStatus) ?? "unknown";
     const extractorVersion = toStringValue(row.extractorVersion);
     const sourceContentHash = toStringValue(row.sourceContentHash);
     if (
@@ -251,6 +253,8 @@ export const applyMemoryCanonicalPackagePayload = (
       observedAtChapterOrder,
       confidence: toNumberValue(row.confidence) ?? 0,
       status,
+      provenanceKind,
+      canonStatus,
       extractorVersion,
       sourceContentHash,
       invalidatedByFactId: toNullableStringValue(row.invalidatedByFactId),

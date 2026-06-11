@@ -12,6 +12,7 @@ import type {
   RagQaErrorPayload,
   RagQaEvidence,
   RagQaGrounding,
+  RagQaSafety,
   RagQaStreamPayload,
   UtilitySidecarStatus,
 } from "@shared/types";
@@ -22,6 +23,7 @@ export type Message = {
   content: string;
   evidence?: RagQaEvidence[];
   grounding?: RagQaGrounding;
+  safety?: RagQaSafety;
   narrativeMemory?: {
     intent:
       | "evidence-trace"

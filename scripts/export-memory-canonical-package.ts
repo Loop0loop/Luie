@@ -1,8 +1,9 @@
 #!/usr/bin/env tsx
 
 import { db } from "../src/main/database/main/databaseService.js";
+import { createLogger } from "../src/shared/logger/index.js";
 import { getProjectAttachmentPath } from "../src/main/services/core/project/projectAttachmentStore.js";
-import { projectService } from "../src/main/services/core/projectService.js";
+import { exportProjectPackageWithOptions } from "../src/main/services/core/project/projectExportEngine.js";
 import { readLuieContainerEntry } from "../src/main/services/io/luieContainer.js";
 import {
   LUIE_MEMORY_CANONICAL_FILE,
@@ -12,6 +13,8 @@ import {
 type CliOptions = {
   projectId: string;
 };
+
+const logger = createLogger("MemoryCanonicalPackageExportRunner");
 
 function parseArgs(argv: string[]): CliOptions {
   const options: CliOptions = { projectId: "" };
@@ -45,13 +48,17 @@ async function main(): Promise<void> {
   await db.initialize();
   try {
     const projectPath = await getProjectAttachmentPath(options.projectId);
-    const exported = await projectService.exportProjectPackage(options.projectId);
+    const exported = await exportProjectPackageWithOptions({
+      projectId: options.projectId,
+      logger,
+    });
     const entryPath = `${LUIE_MEMORY_DIR}/${LUIE_MEMORY_CANONICAL_FILE}`;
     const memoryRaw =
       projectPath && exported
         ? await readLuieContainerEntry(projectPath, entryPath)
         : null;
 
+    // eslint-disable-next-line no-console -- CLI script output.
     console.log(
       JSON.stringify(
         {
@@ -72,6 +79,7 @@ async function main(): Promise<void> {
 }
 
 await main().catch((error) => {
+  // eslint-disable-next-line no-console -- CLI script error output.
   console.error(
     JSON.stringify(
       { error: error instanceof Error ? error.message : String(error) },

@@ -46,6 +46,34 @@ function collectP0Failures(
   if (input.groundingStatus === "confirmed" && evidenceHitCount === 0) {
     failures.add("unsupported_confirmed_answer");
   }
+  const expectedClaimTokens = extractClaimTokens(input.evalCase.expectedAnswer);
+  const goldEvidenceText = input.evalCase.goldEvidence
+    .map((evidence) => evidence.quote)
+    .join(" ");
+  const retrievedEvidenceText = input.retrievedEvidence
+    .map((evidence) => evidence.quote)
+    .join(" ");
+  const supportText = `${goldEvidenceText} ${retrievedEvidenceText}`;
+  const supportedExpectedTokenCount = countTokensPresent(
+    expectedClaimTokens,
+    supportText,
+  );
+  const expectedAnswerRequiresSupport = expectedClaimTokens.length >= 3;
+  if (
+    expectedAnswerRequiresSupport &&
+    supportedExpectedTokenCount < Math.ceil(expectedClaimTokens.length * 0.5)
+  ) {
+    failures.add("expected_answer_not_supported_by_gold_evidence");
+  }
+
+  const answerClaimTokens = extractClaimTokens(input.answer);
+  const answerUsesUnsupportedClaims =
+    answerClaimTokens.length >= 3 &&
+    countTokensPresent(answerClaimTokens, supportText) <
+      Math.ceil(answerClaimTokens.length * 0.5);
+  if (input.groundingStatus === "confirmed" && answerUsesUnsupportedClaims) {
+    failures.add("answer_contains_unsupported_claim");
+  }
 
   for (const fact of input.observedFacts ?? []) {
     const factUsedAsConfirmed =
@@ -83,6 +111,31 @@ function collectP0Failures(
     }
   }
 
+  for (const expected of input.evalCase.expectedEntities ?? []) {
+    const expectedCanonical = normalizeName(expected.canonicalName);
+    const expectedAliases = new Set(expected.aliases.map(normalizeName));
+    const hasMismatchedAlias = (input.observedEntities ?? []).some(
+      (observed) =>
+        expectedAliases.has(normalizeName(observed.name)) &&
+        normalizeName(observed.canonicalName) !== expectedCanonical,
+    );
+    if (hasMismatchedAlias) {
+      failures.add("entity_alias_mismatch");
+    }
+  }
+
+  for (const expected of input.evalCase.expectedThreads ?? []) {
+    if (expected.status !== "unresolved") continue;
+    const falselyResolved = (input.observedThreads ?? []).some(
+      (observed) =>
+        normalizeName(observed.name) === normalizeName(expected.name) &&
+        observed.status === "resolved",
+    );
+    if (falselyResolved) {
+      failures.add("unresolved_thread_falsely_marked_resolved");
+    }
+  }
+
   return Array.from(failures);
 }
 
@@ -92,6 +145,56 @@ function normalizeName(value: string): string {
 
 function normalizeRelation(value: string): string {
   return value.trim().toLowerCase();
+}
+
+const CLAIM_TOKEN_STOPWORDS = new Set([
+  "그리고",
+  "그러나",
+  "하지만",
+  "때문",
+  "통해",
+  "대한",
+  "것을",
+  "것이",
+  "것은",
+  "있는",
+  "없는",
+  "한다",
+  "했다",
+  "하게",
+  "되다",
+  "된다",
+  "되어",
+  "에게",
+  "에서",
+  "으로",
+  "라는",
+  "이라고",
+  "근거",
+  "확인",
+  "판단",
+]);
+
+function extractClaimTokens(value: string | null | undefined): string[] {
+  if (!value) return [];
+  const normalized = value
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .split(/\s+/)
+    .map((token) => normalizeClaimToken(token.trim().toLowerCase()))
+    .filter((token) => token.length >= 2 && !CLAIM_TOKEN_STOPWORDS.has(token));
+  return Array.from(new Set(normalized));
+}
+
+function normalizeClaimToken(token: string): string {
+  return token.replace(
+    /(으로만|에게만|에서는|으로는|에게는|으로|에게|에서|부터|까지|처럼|보다|과는|와는|에는|의|은|는|이|가|을|를|와|과|도|만|로)$/u,
+    "",
+  );
+}
+
+function countTokensPresent(tokens: string[], text: string): number {
+  const normalizedText = text.toLowerCase();
+  return tokens.filter((token) => normalizedText.includes(token)).length;
 }
 
 export function scoreMemoryEvalCase(
@@ -130,6 +233,7 @@ export function runMemoryEvalSuite(
   const results = input.cases.map((item) =>
     scoreMemoryEvalCase({
       ...item,
+      answer: item.answer,
       topK: input.topK,
     }),
   );
@@ -141,12 +245,26 @@ export function runMemoryEvalSuite(
     (sum, item) => sum + item.p0FailureCount,
     0,
   );
+  const p0FailureTypeCounts = countP0FailureTypes(results);
 
   return {
     caseCount: results.length,
     averageContextRecallAtK:
       results.length === 0 ? 0 : totalRecall / results.length,
     totalP0FailureCount,
+    p0FailureTypeCounts,
     results,
   };
+}
+
+function countP0FailureTypes(
+  results: MemoryEvalScoreResult[],
+): Partial<Record<MemoryEvalP0Failure, number>> {
+  const counts: Partial<Record<MemoryEvalP0Failure, number>> = {};
+  for (const result of results) {
+    for (const failure of result.p0Failures) {
+      counts[failure] = (counts[failure] ?? 0) + 1;
+    }
+  }
+  return counts;
 }

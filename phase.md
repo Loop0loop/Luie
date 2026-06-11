@@ -1,0 +1,1058 @@
+# RAG + Memory Engine Phase Plan
+
+## 문서 목적
+
+이 문서는 RAG + Memory Engine을 "웹소설 작가가 실제 작업 중 믿고 쓰는 설정 담당 편집자"로 키우기 위한 향후 phase 계획이다.
+
+기준은 기술 기능 목록이 아니라 작가의 실제 흐름이다.
+
+```text
+작가가 설정을 까먹음
+→ 원문 근거를 찾음
+→ 현재 회차 기준으로 말해도 되는지 확인함
+→ 초안/폐기 설정을 걸러냄
+→ 충돌 가능성을 표시함
+→ 근거 문장과 함께 답함
+```
+
+## 현재 기준선
+
+현재 상태는 "원문 책갈피를 찾아주는 조수"에서 "작가 질문형 모의고사를 풀기 시작한 조수" 단계로 넘어갔다.
+
+검증된 사실:
+
+```text
+Memory phase status: 9/9 ready
+MemoryEvalCase: 365
+MemoryEvalEvidence: 365
+RAG averageContextRecallAtK: 1
+RAG totalP0FailureCount: 0
+canonical package sync: true
+DB rows / package rows: 746 / 746
+```
+
+이 수치는 현재 eval 365개 기준이다. 장편 전체, 실제 LLM 장문 답변, 모든 작가 질문에 대해 같은 성능이 보장된다는 뜻은 아니다.
+
+이전 기준선:
+
+```text
+Phase 시작 전 MemoryEvalCase: 51
+Phase 1-1 완료 후 MemoryEvalCase: 91
+Phase 1-2 완료 후 MemoryEvalCase: 301
+Phase 1-3 완료 후 MemoryEvalCase: 365
+Phase 1-4 완료 후 MemoryEvalCase: 365
+Phase 2-1 완료 후 MemoryEvalCase: 365
+Phase 2-2 계약 완료 후 MemoryEvalCase: 365
+Phase 2-3 완료 후 MemoryEvalCase: 365
+```
+
+## 실행 원칙
+
+이 phase plan은 기존 프로젝트 구조를 우선한다.
+
+기존에 있는 기반:
+
+- Memory feature: `src/main/services/features/memory`
+- RAG feature: `src/main/services/features/rag`
+- Memory schema: `src/main/database/schema/memory.ts`
+- Memory eval schema: `src/main/database/schema/memoryEval.ts`
+- Temporal memory schema: `src/main/database/schema/memoryTemporal.ts`
+- Renderer research UI: `src/renderer/src/features/research`
+- IPC contract: `src/shared/ipc/channels.ts`, `src/main/handler/**`, `src/preload/api/**`
+
+작업 분류:
+
+- 기존 구현 확장: 이미 있는 schema/service/runner를 넓힌다.
+- 신규 schema: 기존 테이블 의미를 깨지 않을 때만 추가한다.
+- UI 노출: main/preload/shared/renderer contract를 같이 갱신한다.
+- 테스트만 추가: 기능은 있지만 writer flow 검증이 부족한 경우다.
+
+중요한 설계 제한:
+
+- 기존 `sourceType`은 `chapter`, `scene`, `note` 같은 출처 위치 의미로 유지한다.
+- `canon`, `draft`, `discarded`, `inferred` 같은 정사성/출처 신뢰도는 `sourceType`에 넣지 않는다.
+- 정사성은 별도 `provenanceKind` 또는 `canonStatus` 개념으로 설계한다.
+- LLM judge 결과는 canonical memory가 아니라 eval artifact로 저장한다.
+- confirmed 승격은 transaction 안에서 evidence 존재, content hash, sourceContentHash를 검증한다.
+
+## Phase 1. 작가 실전 시험지 확장
+
+비유: 지금은 조수가 51문제짜리 모의고사를 만점 받은 상태다. 다음은 웹소설 작가가 실제로 틀리는 문제를 500문제, 1000문제로 늘리는 단계다.
+
+목표:
+
+- 현재 51개 eval case를 작가 flow 기반 대형 평가셋으로 확장한다.
+- 검색이 잘 되는지뿐 아니라 "작가가 실제로 물어볼 법한 질문"인지 검증한다.
+
+### Phase 1-1. 작가 pain point taxonomy 고정
+
+작업:
+
+- 웹소설 작가가 자주 겪는 문제를 고정 카테고리로 정의한다.
+- 카테고리는 코드와 eval case naming에 그대로 반영한다.
+
+카테고리:
+
+- 인물/별칭/호칭 혼동
+- 회차별 지식 상태
+- 미래 정보 누수
+- 초안/폐기 설정 오염
+- 관계 방향 뒤집힘
+- 미회수/회수 떡밥 혼동
+- 생존/부상/위치/소속/능력/소유물 변화
+- 감정선/동기 변화
+- 세계관 규칙 충돌
+
+완료 기준:
+
+- taxonomy 문서화
+- 각 카테고리별 최소 10개 seed case 생성 가능
+- eval case name에 category가 안정적으로 들어감
+
+### Phase 1-2. 실제 작가 질문형 eval case 생성
+
+작업:
+
+- "근거 찾아라" 같은 테스트 문장을 작가 질문형으로 바꾼다.
+- 같은 원문 chunk에서 여러 종류의 질문을 생성한다.
+
+예시:
+
+```text
+나중에 A가 이 사실을 알고 있다고 써도 돼?
+이 장면에서 B가 C를 싫어하는 게 확정이야, 추정이야?
+이 떡밥 아직 안 풀린 거 맞아?
+이 설정은 폐기 초안에서 나온 거 아니야?
+```
+
+완료 기준:
+
+- eval case 300개 이상
+- P0 case 비율 최소 40%
+- 모든 case가 gold evidence를 가진다.
+
+### Phase 1-3. 회차 순서 기반 temporal eval 추가
+
+작업:
+
+- 질문 시점을 특정 회차로 고정한다.
+- 해당 회차 이후 정보를 사용하면 실패로 처리한다.
+
+예시:
+
+```text
+5화 기준으로, 주인공이 흑막의 정체를 알고 있다고 말해도 되는가?
+12화 시점에서 여주가 약의 정체를 의심했다는 근거가 있는가?
+```
+
+완료 기준:
+
+- queryChapterOrder 기반 eval 가능
+- future fact 사용 시 P0 failure 발생
+- 회차 순서가 없는 프로젝트는 "근거 부족"으로 처리
+
+### Phase 1-4. 평가 데이터 품질 repair
+
+작업:
+
+- expected answer, gold quote, expected chunk id가 서로 어긋나는 case를 자동 탐지한다.
+- quote가 HTML 태그/줄바꿈 때문에 정확히 안 맞아도 token overlap으로 검증한다.
+
+완료 기준:
+
+- stale/wrong eval evidence 자동 repair
+- expected answer가 gold evidence로 뒷받침되지 않으면 실패 처리
+- eval set 자체의 품질 리포트 생성
+
+## Phase 2. 답변 검수자 강화
+
+비유: Phase 1은 조수에게 시험지를 많이 푸는 단계다. Phase 2는 조수가 답을 말할 때 옆에서 편집자가 빨간펜으로 "근거 없음", "미래 정보", "관계 방향 반대"를 잡는 단계다.
+
+목표:
+
+- RAG가 근거를 찾는 것에서 끝나지 않고, 답변이 근거 안에서만 만들어졌는지 평가한다.
+
+### Phase 2-1. deterministic guard 확장
+
+작업:
+
+- 현재 guard를 더 세분화한다.
+- LLM 없이 잡을 수 있는 P0를 먼저 잡는다.
+
+검출 항목:
+
+- unsupported confirmed answer
+- answer contains unsupported claim
+- expected answer not supported by gold evidence
+- deleted/draft fact confirmed
+- future fact used in past answer
+- relation direction reversed
+- entity alias mismatch
+- unresolved thread falsely marked resolved
+
+완료 기준:
+
+- 각 failure type별 단위 테스트
+- false positive case도 별도 테스트
+- eval result에 failure type별 count 저장
+
+### Phase 2-2. LLM answer judge 추가
+
+작업:
+
+- 실제 LLM 답변을 judge가 다시 평가한다.
+- judge는 반드시 evidence quote와 answer를 함께 본다.
+- judge 결과는 canonical memory가 아니라 eval artifact로만 저장한다.
+
+평가축:
+
+- groundedness: 근거 안에서만 답했는가
+- contradiction: 기존 memory와 모순되는가
+- temporal leakage: 미래 정보를 섞었는가
+- omission: 핵심 근거를 빠뜨렸는가
+- writer usefulness: 작가가 바로 쓸 수 있는 답인가
+
+완료 기준:
+
+- judge prompt 버전 관리
+- judge 결과 JSON schema 고정
+- judge 자체가 근거 없이 판단하면 invalid 처리
+- judge result 저장 위치가 eval run/result 계열로 제한됨
+- judge 결과가 confirmed memory를 직접 생성하지 않음
+
+### Phase 2-3. 답변 차단 정책
+
+작업:
+
+- 위험한 답변은 그대로 보여주지 않는다.
+- 확정/추정/근거부족 라벨을 강제한다.
+- 기존 RAG grounding은 evidence 상태 판단이고, Phase 2-3은 renderer에 전달되는 답변 표시/차단 정책이다.
+
+정책:
+
+```text
+P0 failure 있음 → 확정 답변 차단
+근거 0개 → "근거 부족" 표시
+미래 정보 감지 → "현재 회차 기준 사용 불가" 표시
+초안/폐기 출처 → "정사 아님" 표시
+```
+
+완료 기준:
+
+- renderer에 전달되는 answer contract에 safety label 포함
+- UI에서 확정 답변과 경고 답변이 구분됨
+- 기존 `buildRagGrounding` 결과와 safety label mapping 테스트
+
+## Phase 3. Memory 저장 정책 강화
+
+비유: 지금은 작가 노트에 메모를 적을 수 있다. Phase 3은 그 노트를 "정사", "초안", "폐기", "추정" 색깔 탭으로 나누는 단계다.
+
+목표:
+
+- Memory Engine이 오래 쓸수록 오염되는 문제를 막는다.
+
+### Phase 3-1. provenance/canon 상태 분리
+
+작업:
+
+- memory entry가 "어디 위치에서 왔는지"와 "정사로 믿어도 되는지"를 분리한다.
+- 기존 `sourceType`은 출처 위치 의미로 유지한다.
+- 정사성은 새 `provenanceKind` 또는 `canonStatus`로 표현한다.
+
+기존 `sourceType` 예시:
+
+- chapter
+- scene
+- note
+
+새 provenance/canon 상태 후보:
+
+- canon: 실제 원문
+- draft: 초안
+- discarded: 폐기 설정
+- inferred: 추론
+- user_note: 작가 메모
+- imported: 외부 import
+
+완료 기준:
+
+- 기존 `sourceType` 의미를 바꾸지 않음
+- `provenanceKind` 또는 `canonStatus` schema 설계안 확정
+- provenance/canon 상태 없는 memory 승격 금지
+- provenance/canon 상태별 UI 라벨 가능
+- discarded/draft는 confirmed fact로 자동 승격 금지
+
+#### Phase 3-1a. schema 설계
+
+작업:
+
+- `sourceType` 재사용 금지 원칙을 schema에 반영한다.
+- 기존 canonical package export/import와 호환되는 migration path를 설계한다.
+
+완료 기준:
+
+- schema 변경안
+- migration test 계획
+- package sync verifier 영향 분석
+
+#### Phase 3-1b. writer/import path validation
+
+작업:
+
+- 원문에서 추출된 memory와 import된 memory의 provenance를 다르게 기록한다.
+- user note, imported memory는 confirmed canon으로 자동 승격하지 않는다.
+
+완료 기준:
+
+- extraction path validation
+- import path validation
+- 잘못된 provenance 저장 단위 테스트
+
+#### Phase 3-1c. UI label contract
+
+작업:
+
+- renderer가 provenance/canon 상태를 표시할 수 있게 shared type과 preload contract를 정리한다.
+
+완료 기준:
+
+- shared type 정의
+- IPC/preload contract 정의
+- renderer label 테스트
+
+### Phase 3-2. evidence 없는 memory 저장 차단
+
+작업:
+
+- 확정 memory는 반드시 evidence를 가져야 한다.
+- evidence가 없으면 suggested 상태로만 저장한다.
+
+완료 기준:
+
+- confirmed fact/entity/episode 저장 시 evidence 존재 검증
+- evidence link가 stale이면 confirmed 상태 유지 금지
+- repair 실패 시 review backlog로 이동
+
+#### Phase 3-2a. transaction 승격 guard
+
+작업:
+
+- confirmed 승격은 DB transaction 안에서만 수행한다.
+- evidence row, contentHash, sourceContentHash를 함께 확인한다.
+
+완료 기준:
+
+- confirmed 승격 service 단위 테스트
+- stale evidence 승격 실패 테스트
+
+#### Phase 3-2b. review backlog 연결
+
+작업:
+
+- repair 실패나 evidence 부족 memory는 review backlog로 보낸다.
+
+완료 기준:
+
+- backlog row 생성
+- 같은 rejected memory 반복 제안 억제
+
+### Phase 3-3. conflict ledger와 기존 invalidation 정렬
+
+작업:
+
+- 기존 사실과 새 사실이 충돌하면 덮어쓰지 않는다.
+- 먼저 기존 `MemoryFactInvalidation`으로 표현 가능한지 확인한다.
+- 표현이 부족한 경우에만 별도 `MemoryConflictLedger`를 설계한다.
+
+예시:
+
+```text
+3화: A는 왼손잡이
+18화: A는 오른손으로 검을 잡음
+→ 충돌 확정 아님. "검토 필요" ledger 생성
+```
+
+완료 기준:
+
+- `MemoryFactInvalidation` 확장인지 신규 ledger인지 결정
+- 충돌 row 저장 또는 invalidation row 확장
+- 충돌 근거 quote 양쪽 보존
+- UI에서 "검토 필요" 표시 가능
+
+#### Phase 3-3a. 기존 invalidation 적합성 검토
+
+작업:
+
+- `MemoryFactInvalidation`이 다음을 표현할 수 있는지 확인한다.
+  - 충돌 대상 fact
+  - 새 주장
+  - 양쪽 evidence quote
+  - 작가 검토 상태
+
+완료 기준:
+
+- 기존 테이블 확장 가능 여부 문서화
+- 부족 필드 목록
+
+#### Phase 3-3b. conflict 저장/조회 API
+
+작업:
+
+- conflict 후보를 저장하고 UI에서 조회할 수 있는 service API를 만든다.
+
+완료 기준:
+
+- conflict 생성 테스트
+- conflict 조회 테스트
+- confirm/reject/defer 상태 전이 테스트
+
+### Phase 3-4. review workflow 강화
+
+작업:
+
+- suggested/rejected/confirmed 흐름을 작가가 검토할 수 있게 한다.
+
+완료 기준:
+
+- suggested memory 목록
+- accept/reject 이유 저장
+- 같은 rejected memory 반복 제안 억제
+
+## Phase 4. 장편 성능과 저사양 최적화
+
+비유: 지금은 단편 원고에서 조수가 잘 찾는지 확인했다. Phase 4는 300화짜리 장편 원고 더미를 저사양 노트북 위에 올려도 조수가 버티는지 보는 단계다.
+
+목표:
+
+- "작은 프로젝트에서는 됨"에서 "장편 작업에서도 쓸 수 있음"으로 올린다.
+
+### Phase 4-1. 대형 프로젝트 benchmark 생성
+
+작업:
+
+- 1천/1만 chunk 규모 테스트 데이터를 만든다.
+- 실제 웹소설 구조처럼 회차, 장면, 인물 반복, 설정 변화가 들어가야 한다.
+
+완료 기준:
+
+- 1천 chunk benchmark
+- 1만 chunk benchmark
+- 100화/300화/500화 시뮬레이션
+- 100만~300만 자 원고 시뮬레이션
+- benchmark seed 재현 가능
+
+#### Phase 4-1a. 기준 장비 정의
+
+작업:
+
+- 저사양 기준을 수치로 정의한다.
+
+기준 장비 후보:
+
+```text
+저사양: 4GB RAM, 내장 GPU 없음, 배터리 모드
+일반: 8GB RAM, 내장 GPU, 배터리/전원 혼합
+상위: 16GB RAM 이상, 전원 연결
+```
+
+완료 기준:
+
+- mode별 benchmark profile 정의
+- CI에서 돌릴 수 있는 경량 profile과 수동 benchmark profile 분리
+
+#### Phase 4-1b. 실제 장편 작업 데이터셋
+
+작업:
+
+- chunk 수만 늘리지 않고 웹소설 병목을 재현한다.
+
+포함할 병목:
+
+- 인물 이름/별칭 반복
+- 회차 재정렬
+- 중간 회차 리라이트
+- embedding stale 상태
+- summary refresh 증가
+- review backlog 증가
+- renderer list 렌더링 부하
+
+완료 기준:
+
+- 300화/500화 seed
+- edit-after-index scenario
+- import/export scenario
+
+### Phase 4-2. latency budget 설정
+
+작업:
+
+- 작가가 기다릴 수 있는 시간을 기준으로 budget을 정한다.
+
+목표 budget:
+
+```text
+일반 근거 검색: 300ms ~ 1s
+복합 memory query: 1s ~ 3s
+첫 query after app start: 3s 이하 목표
+반복 query: 1s 이하 목표
+edit-after-index repair: background
+대형 repair job: background
+package export/import: progress 표시 필수
+```
+
+완료 기준:
+
+- query latency 측정
+- cold start latency 측정
+- first query latency 측정
+- repeated query latency 측정
+- edit-after-index latency 측정
+- memory usage 측정
+- regression threshold 설정
+
+### Phase 4-3. 검색 최적화
+
+작업:
+
+- FTS, short-token, quote-token, vector search의 비용을 측정한다.
+- RRF merge 전에 과한 후보를 줄인다.
+- RRF 후보 상한, context budget, top-k, rerank cache TTL을 명시한다.
+
+검토 기술:
+
+- sqlite FTS5 최적화
+- sqlite-vec 사용 범위 제한
+- query token cache
+- chunk window cache
+- top-k rerank cache
+- background embedding build
+- candidate cap
+- context budget cap
+- stale embedding skip
+
+완료 기준:
+
+- 1만 chunk 기준 latency report
+- top-k recall 유지
+- memory usage report
+- candidate cap별 recall/latency 비교
+- cache TTL별 memory 사용량 비교
+
+### Phase 4-4. 저사양 모드
+
+작업:
+
+- 저사양 기기에서는 비싼 작업을 background로 보낸다.
+- 속도를 우선하고, 품질 저하는 명확히 표시한다.
+
+정책:
+
+```text
+속도 우선: FTS + lexical + cached rerank
+품질 우선: vector + judge + expanded context
+저사양 모드: background indexing, lazy summary, bounded top-k
+```
+
+완료 기준:
+
+- 저사양 모드 토글
+- mode별 latency/recall 비교
+- mode별 UI 설명
+
+### Phase 4-5. background job 제어
+
+작업:
+
+- indexing, embedding, summary refresh, repair job을 background로 보내되 작가가 통제할 수 있게 한다.
+
+필수 기능:
+
+- pause
+- resume
+- cancel
+- progress 저장
+- app restart 후 재개
+- 실패 job 재시도 제한
+
+완료 기준:
+
+- job 상태 machine 테스트
+- cancel 후 partial write 없음
+- restart 후 progress 복구
+
+## Phase 5. 작가용 UI 통합
+
+비유: 지금은 조수가 내부적으로 책갈피를 찾아온다. Phase 5는 그 책갈피, 경고 딱지, 충돌 표시를 작가 책상 위에 보기 좋게 붙이는 단계다.
+
+목표:
+
+- 작가가 AI 답변을 믿어도 되는지 바로 판단할 수 있게 한다.
+
+### Phase 5-1. evidence-first answer UI
+
+작업:
+
+- 답변보다 근거를 먼저 확인할 수 있게 한다.
+
+UI 요소:
+
+- 근거 quote
+- 회차/장면 링크
+- 확정/추정/근거부족 라벨
+- 사용된 memory 목록
+
+완료 기준:
+
+- 답변에서 원문 위치로 이동 가능
+- 근거 없는 답변은 확정 라벨 금지
+
+### Phase 5-2. conflict warning UI
+
+작업:
+
+- 설정 충돌 가능성을 작가에게 보여준다.
+
+UI 요소:
+
+- 충돌 후보 양쪽 quote
+- 어느 회차에서 나온 설정인지
+- confirm/reject/defer 버튼
+
+완료 기준:
+
+- conflict ledger와 연결
+- 작가 결정이 memory 상태에 반영
+
+### Phase 5-3. timeline-aware query UI
+
+작업:
+
+- "몇 화 기준으로 답할지"를 UI에서 명확히 한다.
+
+완료 기준:
+
+- 현재 편집 중인 회차 기준 자동 설정
+- 사용자가 기준 회차 변경 가능
+- 미래 정보가 섞이면 경고
+
+### Phase 5-4. writer workflow scenario test
+
+작업:
+
+- 실제 작가 작업 흐름을 DOM/e2e/service 테스트로 만든다.
+- 단일 질문 flow가 아니라 반복 집필 flow를 다룬다.
+
+기본 시나리오:
+
+```text
+작가가 12화를 쓰는 중
+→ "여주가 약의 정체를 지금 알아도 돼?" 질문
+→ 시스템이 12화 이전 근거만 검색
+→ 18화 정보는 미래 정보로 경고
+→ 근거 부족이면 확정 답변 차단
+```
+
+필수 writer workflow 6종:
+
+1. 설정 질문
+   - 작가가 현재 회차 기준으로 설정을 물어본다.
+   - 근거 quote와 safety label이 표시되어야 한다.
+
+2. 집필 중 충돌 자동 감지
+   - 작가가 새 문단을 쓰는 순간 기존 설정과 충돌할 수 있는지 확인한다.
+   - 확정 충돌이 아니면 "검토 필요"로 표시한다.
+
+3. 과거 회차 수정
+   - 작가가 12화를 고친다.
+   - 18화 이후 memory/evidence가 stale 되는지 확인한다.
+   - stale evidence는 repair 또는 review backlog로 이동한다.
+
+4. 초안 폐기
+   - 작가가 초안 설정을 폐기한다.
+   - 폐기 source가 정사 답변에 섞이면 경고한다.
+
+5. 인물명/별칭 변경
+   - 인물 이름이나 별칭이 바뀐다.
+   - 과거 evidence와 alias link가 깨지지 않아야 한다.
+
+6. 회차 순서 변경
+   - chapter order가 바뀐다.
+   - temporal fact와 future leakage 판단이 재계산되어야 한다.
+
+완료 기준:
+
+- DOM/e2e 테스트 존재
+- service 단위 테스트 존재
+- 실제 UI label 검증
+- evidence quote 표시 검증
+- stale repair/backlog 전이 검증
+- chapter order 변경 후 temporal 판단 검증
+
+## Phase 6. Package durability와 이식성
+
+비유: 작가가 노트북을 바꾸거나 원고 파일을 옮겨도 설정 담당 편집자의 노트가 같이 따라가야 한다.
+
+목표:
+
+- `.luie` 파일 안의 memory canonical package가 항상 DB와 맞게 유지된다.
+
+### Phase 6-1. canonical sync 강화
+
+작업:
+
+- DB와 package memory payload 차이를 자동 감지한다.
+- import/export 후 row count뿐 아니라 source id도 검증한다.
+
+완료 기준:
+
+- package sync verifier 통과
+- missing/extra row 자동 보고
+- scoped id/source id mismatch 검출
+
+### Phase 6-2. migration compatibility
+
+작업:
+
+- 오래된 `.luie` 파일도 새 memory schema로 안전하게 연다.
+
+완료 기준:
+
+- schema version별 migration test
+- missing field 기본값 처리
+- unknown field 보존 또는 명확한 discard 정책
+
+### Phase 6-3. crash-safe export
+
+작업:
+
+- export 중 앱이 꺼져도 package가 깨지지 않게 한다.
+
+완료 기준:
+
+- atomic write
+- temp entry cleanup
+- corrupted package recovery test
+
+## Phase 7. 실제 작가 베타 기준 검증
+
+비유: 내부 시험을 통과한 조수를 실제 작가 작업실에 앉혀 보는 단계다.
+
+목표:
+
+- 기능이 아니라 작가 생산성 기준으로 검증한다.
+
+### Phase 7-1. writer task benchmark
+
+작업:
+
+- 작가가 실제로 하는 작업을 benchmark로 만든다.
+
+벤치마크:
+
+- 설정 확인
+- 인물 관계 확인
+- 떡밥 회수 여부 확인
+- 회차 기준 지식 상태 확인
+- 초안/정사 충돌 확인
+
+완료 기준:
+
+- task별 성공률
+- 평균 응답 시간
+- 근거 만족도
+- false confidence rate
+
+### Phase 7-2. feedback loop
+
+작업:
+
+- 작가가 "이 답변 틀림", "이 근거 좋음"을 표시하면 eval set에 반영한다.
+
+완료 기준:
+
+- feedback 저장
+- eval case 자동 후보 생성
+- rejected answer 재발 방지
+
+## 최종 완료 기준
+
+RAG + Memory Engine이 다음 조건을 만족하면 "웹소설 작가용 설정 담당 편집자"라고 부를 수 있다.
+
+```text
+1. 원문 근거를 빠르게 찾는다.
+2. 현재 회차 기준으로 답한다.
+3. 미래 정보를 섞지 않는다.
+4. 초안/폐기 설정을 정사로 말하지 않는다.
+5. 근거 없는 확정 답변을 차단한다.
+6. 충돌 가능성을 quote와 함께 보여준다.
+7. 장편 프로젝트에서도 저사양 모드로 버틴다.
+8. .luie 파일을 옮겨도 memory가 깨지지 않는다.
+```
+
+현재는 1번과 8번의 기초가 가장 강하고, 2~6번은 기반이 있으며, 7번은 앞으로 검증해야 한다.
+
+## Sub Agent 객관 리뷰 반영 기록
+
+리뷰 결론:
+
+- 조건부 승인
+
+리뷰에서 지적된 핵심 문제:
+
+1. 기존 `sourceType`은 출처 위치 의미인데, `canon/draft/discarded`를 넣으면 의미가 충돌한다.
+2. Phase 3-3의 conflict ledger가 기존 `MemoryFactInvalidation`과 어떤 관계인지 불명확하다.
+3. 테스트 설계가 질문-답변 flow 중심이라 실제 작가의 반복 작업을 충분히 반영하지 못한다.
+4. Phase 4의 저사양/장편 기준이 추상적이다.
+5. 이미 구현된 기능과 신규 작업이 섞여 있어 구현 우선순위가 흐릴 수 있다.
+
+반영한 수정:
+
+- `sourceType` 재정의 금지 원칙 추가
+- `provenanceKind` 또는 `canonStatus` 별도 설계로 변경
+- `MemoryFactInvalidation` 적합성 검토 후 부족할 때만 `MemoryConflictLedger` 설계하도록 변경
+- writer workflow test를 6종으로 확장
+  - 설정 질문
+  - 집필 중 충돌 자동 감지
+  - 과거 회차 수정
+  - 초안 폐기
+  - 인물명/별칭 변경
+  - 회차 순서 변경
+- 저사양 기준 장비, 100만~300만 자 데이터셋, first/repeated/edit-after-index latency 측정 추가
+- background job의 pause/resume/cancel/progress/restart recovery 추가
+- 기존 구현 확장 / 신규 schema / UI 노출 / 테스트만 추가를 구분하는 실행 원칙 추가
+
+남은 검토 사항:
+
+- `provenanceKind`와 `canonStatus` 중 어떤 이름과 schema가 더 적절한지는 실제 DB 설계 시 결정해야 한다.
+- `MemoryFactInvalidation`으로 conflict ledger를 충분히 표현할 수 있는지는 별도 코드 검토가 필요하다.
+- LLM answer judge는 아직 기술 선택과 비용/속도 정책을 확정하지 않았다.
+
+## 진행 기록
+
+### 2026-06-11. Phase 1-1 완료
+
+확인된 사실:
+
+- 작가 pain point taxonomy를 9개 카테고리로 고정했다.
+- taxonomy를 공유 상수와 문서, 테스트에 연결했다.
+- deprecated category인 `timeline-leak`, `continuity-conflict`를 repair 명령으로 제거할 수 있게 했다.
+- 실제 프로젝트 기준 eval case/evidence가 51개에서 91개로 늘었다.
+- RAG 평가 결과 `caseCount: 91`, `averageContextRecallAtK: 1`, `totalP0FailureCount: 0`이었다.
+- canonical package sync는 DB/package 198/198 rows로 일치했다.
+
+### 2026-06-11. Phase 1-2 완료
+
+확인된 사실:
+
+- materialize CLI의 `--limit` 상한을 100에서 1000으로 확장했다.
+- 작가 질문형 eval case를 300개까지 생성했다.
+- taxonomy repair 결과 deprecated category 제거 대상은 0개였다.
+- 실제 프로젝트 기준 eval case/evidence가 91개에서 301개로 늘었다.
+- RAG 평가 결과 `caseCount: 301`, `averageContextRecallAtK: 1`, `totalP0FailureCount: 0`이었다.
+- canonical package sync는 DB/package 618/618 rows로 일치했다.
+
+제한:
+
+- 이 결과는 gold evidence가 있는 평가셋에서 검색 근거를 회수하는 성능이다.
+- 실제 LLM 장문 답변의 환각 차단, 미래 정보 누수 차단, 초안/폐기 설정 차단까지 완료됐다는 뜻은 아니다.
+
+### 2026-06-11. Phase 1-3 완료
+
+확인된 사실:
+
+- 회차가 연결된 chunk에서 `temporal-chapter:{chapterOrder}:{chunkId}` eval case를 생성할 수 있게 했다.
+- 생성된 temporal case는 `temporalScopeStartChapterId`와 `temporalScopeEndChapterId`를 해당 회차로 고정한다.
+- 질문 문구는 "N화 기준으로, 이후 회차 정보 없이 확정해도 되는가" 형태다.
+- 실제 프로젝트 기준 temporal chapter eval case 64개를 추가했다.
+- 실제 프로젝트 기준 eval case/evidence가 301개에서 365개로 늘었다.
+- RAG 평가 결과 `caseCount: 365`, `averageContextRecallAtK: 1`, `totalP0FailureCount: 0`이었다.
+- canonical package sync는 DB/package 746/746 rows로 일치했다.
+
+제한:
+
+- 현재 Phase 1-3은 회차 scope가 있는 질문 케이스를 생성하는 단계다.
+- `queryChapterOrder`를 eval case schema에 직접 저장하는 단계는 아직 아니다.
+- 미래 fact를 사용했을 때 P0로 잡는 scorer 기반은 이미 있지만, 실제 answerer가 모든 temporal 질문에서 chapter order를 항상 넘기는지는 다음 단계에서 더 검증해야 한다.
+
+### 2026-06-11. Phase 1-4 완료
+
+확인된 사실:
+
+- eval 품질 audit을 추가했다.
+- audit은 `MemoryEvalCase`와 `MemoryEvalEvidence`, `MemoryChunk`를 함께 보고 다음을 검사한다.
+  - gold quote가 expected chunk 안에서 token overlap으로 뒷받침되는가
+  - expectedAnswer가 gold evidence로 뒷받침되는가
+- quote에 HTML 태그나 줄바꿈이 섞여도 token overlap으로 검사한다.
+- `--quality-audit` 명령으로 품질 리포트를 볼 수 있다.
+- `--repair-quality` 명령으로 unsupported expectedAnswer를 gold evidence 기반 답변으로 수리할 수 있다.
+- 실제 프로젝트 품질 audit 결과는 다음과 같았다.
+
+```text
+evalCasesScanned: 365
+evalEvidenceScanned: 365
+evidenceQuoteMissingInExpectedChunk: 0
+expectedAnswerUnsupported: 0
+repairedExpectedAnswers: 0
+```
+
+- 기존 evidence link repair를 실행해 stale evidence link 3건을 수리했다.
+
+```text
+episodeEvidenceRepaired: 2
+evalEvidenceRepaired: 1
+unresolved: 0
+```
+
+- RAG 평가 결과 `caseCount: 365`, `averageContextRecallAtK: 1`, `totalP0FailureCount: 0`이었다.
+- canonical package sync는 DB/package 746/746 rows로 일치했다.
+
+제한:
+
+- 품질 audit은 deterministic token overlap 기반이다.
+- 의미적으로 맞지만 표현이 크게 다른 expectedAnswer 검증은 Phase 2의 LLM judge에서 더 다뤄야 한다.
+
+### 2026-06-11. Phase 2-1 완료
+
+확인된 사실:
+
+- deterministic guard failure type을 8종으로 확장했다.
+
+```text
+unsupported_confirmed_answer
+answer_contains_unsupported_claim
+expected_answer_not_supported_by_gold_evidence
+deleted_or_draft_fact_confirmed
+future_fact_used_in_past_answer
+relation_direction_reversed
+entity_alias_mismatch
+unresolved_thread_falsely_marked_resolved
+```
+
+- `entity_alias_mismatch`를 추가했다.
+  - 같은 별칭이 다른 canonical entity로 관측되면 P0로 잡는다.
+  - 같은 canonical entity로 관측되면 오탐하지 않는다.
+- `unresolved_thread_falsely_marked_resolved`를 추가했다.
+  - 미회수 떡밥을 resolved로 관측하면 P0로 잡는다.
+  - unresolved로 유지하면 오탐하지 않는다.
+- eval suite 결과에 `p0FailureTypeCounts`를 추가했다.
+- runner는 answerer가 반환한 observed entity/thread 정보를 scorer로 넘길 수 있다.
+- false positive 회귀 테스트를 추가했다.
+- 실제 프로젝트 RAG 평가 결과는 다음과 같았다.
+
+```text
+caseCount: 365
+averageContextRecallAtK: 1
+totalP0FailureCount: 0
+p0FailureTypeCounts: {}
+```
+
+제한:
+
+- 이 단계는 LLM 없이 판단 가능한 deterministic guard다.
+- 실제 LLM 장문 답변의 의미적 누락, 애매한 모순, 작가 유용성 평가는 Phase 2-2의 LLM answer judge가 필요하다.
+- renderer에서 위험 답변을 차단하는 정책은 Phase 2-3 범위다.
+
+### 2026-06-11. Phase 2-2 judge 계약 완료
+
+확인된 사실:
+
+- answer judge prompt version을 고정했다.
+
+```text
+memory-eval-answer-judge-v1
+```
+
+- judge 결과 JSON schema를 코드로 고정했다.
+- judge 결과는 다음 축을 가진다.
+
+```text
+groundedness: grounded | unsupported
+contradiction: none | present
+temporalLeakage: none | present
+omission: none | present
+writerUsefulness: useful | not_useful
+verdict: pass | fail | invalid
+evidenceQuotesUsed: string[]
+rationale: string
+```
+
+- malformed JSON은 `invalid_json`으로 처리한다.
+- schema가 맞지 않으면 `invalid_schema`로 처리한다.
+- prompt version이 다르면 `unsupported_prompt_version`으로 처리한다.
+- judge가 사용한 evidence quote가 없으면 `missing_evidence_quote`로 invalid 처리한다.
+- `MemoryEvalResult.answerJudgeJson`에 judge artifact를 저장할 수 있게 했다.
+- runner는 answerer 결과를 받은 뒤 optional answer judge를 호출하고, parse 결과를 eval result 계열에 저장한다.
+- invalid judge artifact도 eval result에 남기고 confirmed memory를 만들지 않는다.
+- 실제 프로젝트 기존 eval runner는 answer judge 없이도 정상 동작했다.
+
+```text
+caseCount: 365
+averageContextRecallAtK: 1
+totalP0FailureCount: 0
+p0FailureTypeCounts: {}
+```
+
+제한:
+
+- 이 단계는 LLM answer judge의 계약, schema, 저장 경계를 완성한 것이다.
+- 실제 provider 호출, 비용/속도 정책, judge prompt 본문 튜닝은 아직 별도 보강이 필요하다.
+- judge 결과를 renderer 답변 차단 정책에 연결하는 작업은 Phase 2-3 범위다.
+
+### 2026-06-11. Phase 2-3 완료
+
+확인된 사실:
+
+- RAG 답변 contract에 `safety`를 추가했다.
+- safety는 다음 필드를 가진다.
+
+```text
+label
+message
+blocksConfirmedAnswer
+reasons
+```
+
+- safety label은 다음 값을 가진다.
+
+```text
+confirmed
+inferred
+insufficient_evidence
+conflicting
+blocked_p0
+temporal_blocked
+non_canonical_source
+```
+
+- `buildRagAnswerSafety` 정책을 추가했다.
+- 기존 `buildRagGrounding` 결과와 safety label mapping을 테스트로 고정했다.
+- 정책 mapping은 다음과 같다.
+
+```text
+P0 failure 있음 → blocked_p0
+future_fact_used_in_past_answer → temporal_blocked
+deleted_or_draft_fact_confirmed → non_canonical_source
+근거 0개 → insufficient_evidence
+conflicting grounding → conflicting
+근거 있음, 문장별 검증 전 → inferred
+```
+
+- RAG QA 결과 생성 시 `safety`가 자동으로 붙는다.
+- renderer message contract에 `safety`를 추가했다.
+- RAG stream 완료 시 `payload.result.safety`를 message에 복사한다.
+- MessageList에서 safety label과 safety message를 표시한다.
+- renderer helper에 `safetyLabel`, `safetyTone`을 추가했다.
+- 실제 프로젝트 기존 eval runner는 정상 동작했다.
+
+```text
+caseCount: 365
+averageContextRecallAtK: 1
+totalP0FailureCount: 0
+p0FailureTypeCounts: {}
+```
+
+제한:
+
+- runtime RAG 답변에는 현재 deterministic safety policy가 붙는다.
+- 실제 LLM judge 결과를 runtime RAG safety에 직접 반영하는 연결은 아직 별도 보강이 필요하다.
+- Phase 3의 정사/초안/폐기 출처 분리가 완료되면 `non_canonical_source` 판단 근거를 더 넓힐 수 있다.

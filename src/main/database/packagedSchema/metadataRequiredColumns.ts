@@ -239,6 +239,8 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
     "observedAtChapterOrder",
     "confidence",
     "status",
+    "provenanceKind",
+    "canonStatus",
     "extractorVersion",
     "sourceContentHash",
     "invalidatedByFactId",

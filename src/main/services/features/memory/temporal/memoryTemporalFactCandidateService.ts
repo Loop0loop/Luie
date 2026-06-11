@@ -92,6 +92,8 @@ export function createMemoryTemporalFactCandidateRows(
     observedAtChapterOrder: input.observedAtChapterOrder,
     confidence: input.confidence,
     status: "suggested",
+    provenanceKind: "canon",
+    canonStatus: "canon",
     extractorVersion: input.extractorVersion,
     sourceContentHash: input.sourceContentHash,
     invalidatedByFactId: null,

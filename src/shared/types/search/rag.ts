@@ -31,6 +31,33 @@ export interface RagQaGrounding {
   note: string;
 }
 
+export type RagQaSafetyLabel =
+  | "confirmed"
+  | "inferred"
+  | "insufficient_evidence"
+  | "conflicting"
+  | "blocked_p0"
+  | "temporal_blocked"
+  | "non_canonical_source";
+
+export type RagQaSafetyReason =
+  | RagQaGroundingStatus
+  | "unsupported_confirmed_answer"
+  | "answer_contains_unsupported_claim"
+  | "expected_answer_not_supported_by_gold_evidence"
+  | "deleted_or_draft_fact_confirmed"
+  | "future_fact_used_in_past_answer"
+  | "relation_direction_reversed"
+  | "entity_alias_mismatch"
+  | "unresolved_thread_falsely_marked_resolved";
+
+export interface RagQaSafety {
+  label: RagQaSafetyLabel;
+  message: string;
+  blocksConfirmedAnswer: boolean;
+  reasons: RagQaSafetyReason[];
+}
+
 export interface RagQaResult {
   runId: string;
   projectId: string;
@@ -38,6 +65,7 @@ export interface RagQaResult {
   answer: string;
   evidence: RagQaEvidence[];
   grounding: RagQaGrounding;
+  safety: RagQaSafety;
   narrativeMemory?: {
     intent: NarrativeMemoryQueryIntent;
     status: "found" | "insufficient_evidence" | "conflicting";

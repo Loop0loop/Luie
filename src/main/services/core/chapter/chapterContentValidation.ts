@@ -1,4 +1,3 @@
-import { app } from "electron";
 import * as fs from "fs/promises";
 import path from "path";
 import { eq } from "drizzle-orm";
@@ -11,7 +10,7 @@ import {
 import type { ChapterUpdateInput } from "../../../../shared/types/index.js";
 import { sanitizeName } from "../../../../shared/utils/sanitize.js";
 import { ServiceError } from "../../../utils/error/index.js";
-import { isTestEnv } from "../../../utils/env/index.js";
+import { isTestEnv, resolveUserDataPath } from "../../../utils/env/index.js";
 import { autoExtractService } from "../../features/autoExtract/autoExtractService.js";
 import { trackKeywordAppearances } from "../chapterKeywords.js";
 import {
@@ -44,7 +43,7 @@ const writeSuspiciousContentDump = async (input: {
   const projectTitle = await resolveProjectTitle(input.projectId);
   const safeTitle = sanitizeName(projectTitle, "Unknown");
   const dumpDir = path.join(
-    app.getPath("userData"),
+    resolveUserDataPath(),
     SNAPSHOT_BACKUP_DIR,
     safeTitle || "Unknown",
     "_suspicious",

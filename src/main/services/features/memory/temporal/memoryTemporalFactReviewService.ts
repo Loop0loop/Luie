@@ -39,6 +39,8 @@ export async function listSuggestedMemoryTemporalFacts(
       observedAtChapterOrder: memoryFact.observedAtChapterOrder,
       confidence: memoryFact.confidence,
       status: memoryFact.status,
+      provenanceKind: memoryFact.provenanceKind,
+      canonStatus: memoryFact.canonStatus,
       createdAt: memoryFact.createdAt,
       updatedAt: memoryFact.updatedAt,
       evidenceCount: sql<number>`count(${memoryFactEvidence.id})`,
@@ -80,6 +82,27 @@ export async function listSuggestedMemoryTemporalFacts(
 export async function confirmMemoryTemporalFact(
   input: MemoryTemporalFactConfirmInput & { nowIso?: string },
 ): Promise<MemoryTemporalFactReviewMutationResult> {
+  const [candidate] = await db
+    .getClient()
+    .select({
+      provenanceKind: memoryFact.provenanceKind,
+      canonStatus: memoryFact.canonStatus,
+    })
+    .from(memoryFact)
+    .where(
+      and(
+        eq(memoryFact.projectId, input.projectId),
+        eq(memoryFact.id, input.factId),
+        eq(memoryFact.status, "suggested"),
+      ),
+    )
+    .limit(1);
+  if (
+    candidate &&
+    (candidate.provenanceKind !== "canon" || candidate.canonStatus !== "canon")
+  ) {
+    throw new Error("MEMORY_FACT_CANON_STATUS_REQUIRED");
+  }
   const updated = await db
     .getClient()
     .update(memoryFact)

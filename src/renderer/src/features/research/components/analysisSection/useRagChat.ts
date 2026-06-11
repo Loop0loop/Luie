@@ -6,8 +6,8 @@ import {
   useState,
 } from "react";
 import { api } from "@shared/api";
-import { ErrorCode } from "@shared/constants/errorCode";
 import { useToast } from "@shared/ui/ToastContext";
+import { normalizeChatError } from "./chatErrors";
 import { requestChapterNavigation } from "@renderer/features/workspace/services/chapterNavigation";
 import type {
   AnalysisRagErrorPayload,
@@ -27,11 +27,6 @@ type UseRagChatInput = {
   chapterId?: string;
   memoryScope: MemoryScope;
 };
-
-const renderErrorMessage = (payload: AnalysisRagErrorPayload): string =>
-  payload.code === ErrorCode.RAG_QA_ABORTED
-    ? "요청이 중단되었습니다."
-    : (payload.message ?? "Error");
 
 export function useRagChat({
   projectId,
@@ -83,6 +78,7 @@ export function useRagChat({
                   content: payload.result?.answer ?? message.content,
                   evidence: payload.result?.evidence ?? [],
                   grounding: payload.result?.grounding,
+                  safety: payload.result?.safety,
                   narrativeMemory: payload.result?.narrativeMemory,
                   isStreaming: false,
                 }
@@ -102,7 +98,7 @@ export function useRagChat({
             ? {
                 ...message,
                 isStreaming: false,
-                error: renderErrorMessage(payload),
+                error: normalizeChatError(payload.code),
               }
             : message,
         ),
@@ -115,10 +111,11 @@ export function useRagChat({
     };
   }, [ragRunId]);
 
-  const handleSend = useCallback(async () => {
-    if (!projectId || !input.trim() || isStreaming) return;
+  const handleSend = useCallback(async (overrideText?: string) => {
+    const source = (overrideText ?? input).trim();
+    if (!projectId || !source || isStreaming) return;
 
-    const question = input.trim();
+    const question = source;
     const userMessageId = `user-${Date.now()}`;
     const assistantMsgId = `${Date.now()}-${Math.random()
       .toString(36)
@@ -141,7 +138,7 @@ export function useRagChat({
 
     if (!res.success || !res.data?.runId) {
       setIsStreaming(false);
-      const errMsg = res.error?.message ?? "Failed to start";
+      const errMsg = normalizeChatError(res.error?.code);
       setMessages((prev) =>
         prev.map((message) =>
           message.id === assistantMsgId

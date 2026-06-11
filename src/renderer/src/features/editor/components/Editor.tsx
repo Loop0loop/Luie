@@ -207,7 +207,7 @@ function Editor({
 
   // Handle JUMP_TO_MENTION from World Graph
   useEffect(() => {
-    if (!editor) return undefined;
+    if (!isUsableEditor(editor)) return undefined;
     const handleJump = (payload: { entityId: string }) => {
       const charStore = useCharacterStore.getState();
       const termStore = useTermStore.getState();
@@ -250,7 +250,7 @@ function Editor({
 
   // ... (Diff effect) ...
   useEffect(() => {
-    if (!editor) return;
+    if (!isUsableEditor(editor)) return;
     if (editor.commands.setDiff) {
       editor.commands.setDiff({
         comparisonContent,
@@ -260,7 +260,7 @@ function Editor({
   }, [editor, comparisonContent, diffMode]);
 
   useEffect(() => {
-    if (!editor) return;
+    if (!isUsableEditor(editor)) return;
     const current = editor.getHTML();
     if (current !== initialContent) {
       let cancelled = false;
@@ -278,7 +278,7 @@ function Editor({
   }, [editor, chapterId]);
 
   useEffect(() => {
-    if (!editor || !chapterId) return;
+    if (!isUsableEditor(editor) || !chapterId) return;
     const pendingQuery = consumePendingEditorFocusQuery(chapterId);
     if (!pendingQuery) return;
 

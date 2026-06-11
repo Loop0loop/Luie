@@ -14,42 +14,44 @@ export function RuntimeStatusPanel({
   const skipped = runtimeInfo.skipped ?? [];
 
   return (
-    <div className="mb-2 rounded-md border border-border bg-surface/60 px-2.5 py-2 text-[11px] text-muted">
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+    <div className="mb-1 rounded-lg border border-white/10 dark:border-white/5 bg-surface/20 dark:bg-surface/15 backdrop-blur-xl px-2.5 py-1.5 text-[10px] text-muted-foreground/80 shadow-md select-none transition-all duration-200">
+      <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
         <div className="min-w-0">
-          <span className="text-fg-secondary">Requested:</span>{" "}
-          <span>{runtimeLabel(runtimeInfo.requestedProvider ?? runtimeInfo.provider)}</span>
+          <span className="text-muted/60 font-medium">Req:</span>{" "}
+          <span className="font-semibold text-fg/80">{runtimeLabel(runtimeInfo.requestedProvider ?? runtimeInfo.provider)}</span>
         </div>
         <div className="min-w-0">
-          <span className="text-fg-secondary">Resolved:</span>{" "}
-          <span>{runtimeLabel(runtimeInfo.resolvedProvider ?? runtimeInfo.provider)}</span>
+          <span className="text-muted/60 font-medium">Res:</span>{" "}
+          <span className="font-semibold text-fg/80">{runtimeLabel(runtimeInfo.resolvedProvider ?? runtimeInfo.provider)}</span>
         </div>
         {runtimeInfo.backend && (
           <div className="min-w-0">
-            <span className="text-fg-secondary">Backend:</span>{" "}
-            <span>{runtimeInfo.backend}</span>
+            <span className="text-muted/60 font-medium">Backend:</span>{" "}
+            <span className="text-fg/80">{runtimeInfo.backend}</span>
           </div>
         )}
         {runtimeInfo.model && (
           <div className="min-w-0 truncate">
-            <span className="text-fg-secondary">Model:</span>{" "}
-            <span>{runtimeInfo.model}</span>
+            <span className="text-muted/60 font-medium">Model:</span>{" "}
+            <span className="text-fg/80" title={runtimeInfo.model}>{runtimeInfo.model}</span>
           </div>
         )}
         {runtimeInfo.fallbackUsed && (
-          <div className="col-span-2 text-warning">
+          <div className="col-span-2 text-warning font-semibold flex items-center gap-1 mt-0.5">
+            <span className="w-1 h-1 rounded-full bg-warning animate-ping" />
             Fallback route is active
           </div>
         )}
       </div>
       {skipped.length > 0 && (
-        <div className="mt-1 truncate">
-          <span className="text-fg-secondary">Skipped:</span>{" "}
-          {skipped.map((skip) => `${runtimeLabel(skip.provider)} ${skip.code}`).join(", ")}
+        <div className="mt-0.5 truncate border-t border-white/5 pt-0.5">
+          <span className="text-muted/60 font-medium">Skipped:</span>{" "}
+          <span className="text-muted/70">{skipped.map((skip) => `${runtimeLabel(skip.provider)} ${skip.code}`).join(", ")}</span>
         </div>
       )}
       {sidecarStatus && (
-        <div className={`mt-1 truncate ${sidecarStatusTone(sidecarStatus.status)}`}>
+        <div className={`mt-0.5 truncate border-t border-white/5 pt-0.5 flex items-center gap-1 ${sidecarStatusTone(sidecarStatus.status)}`}>
+          <span className="w-1 h-1 rounded-full bg-current animate-pulse" />
           {sidecarStatusSummary(sidecarStatus)}
         </div>
       )}

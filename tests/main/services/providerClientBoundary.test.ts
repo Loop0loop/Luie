@@ -120,11 +120,27 @@ describe("provider client dependency boundary", () => {
     const contextAssemblerSource = providerSource(
       "src/main/services/features/rag/contextAssembler.ts",
     );
+    const contextAssemblerSearchSource = providerSource(
+      "src/main/services/features/rag/internal/contextAssembler.search.ts",
+    );
     const workerSource = providerSource("src/main/utility/rag/ragQaWorker.ts");
 
     expect(contextAssemblerSource).not.toContain("../searchService.js");
     expect(contextAssemblerSource).not.toContain("utilityProcessBridge");
+    expect(contextAssemblerSearchSource).not.toContain("../../search/index.js");
+    expect(contextAssemblerSearchSource).toContain("../../search/chunkSearch.js");
     expect(workerSource).toContain("embedTexts:");
     expect(workerSource).toContain("resolveUtilityEmbeddingRuntimeClient");
+  });
+
+  it("keeps world replica reads importable without the project service IPC graph", () => {
+    const worldReplicaSource = providerSource(
+      "src/main/services/features/worldReplica/worldReplicaService.ts",
+    );
+
+    expect(worldReplicaSource).not.toContain(
+      'import { projectService } from "../../core/projectService.js";',
+    );
+    expect(worldReplicaSource).toContain("await import(\"../../core/projectService.js\")");
   });
 });

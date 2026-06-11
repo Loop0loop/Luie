@@ -146,6 +146,8 @@ describe("createMemoryTemporalFactCandidate", () => {
     expect(factRows).toHaveLength(1);
     expect(factRows[0]).toMatchObject({
       status: "suggested",
+      provenanceKind: "canon",
+      canonStatus: "canon",
       predicate: "belongs_to",
       objectEntityId: seed.baekyaId,
       confidence: 85,

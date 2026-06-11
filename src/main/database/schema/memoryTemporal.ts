@@ -23,6 +23,8 @@ export const memoryFact = sqliteTable(
     observedAtChapterOrder: integer("observedAtChapterOrder").notNull(),
     confidence: integer("confidence").notNull().default(0),
     status: text("status").notNull().default("suggested"),
+    provenanceKind: text("provenanceKind").notNull().default("unknown"),
+    canonStatus: text("canonStatus").notNull().default("unknown"),
     extractorVersion: text("extractorVersion").notNull(),
     sourceContentHash: text("sourceContentHash").notNull(),
     invalidatedByFactId: text("invalidatedByFactId"),
