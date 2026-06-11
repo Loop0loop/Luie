@@ -1162,3 +1162,24 @@ corepack pnpm exec eslint src/renderer/src/features/research/components/Analysis
 제한:
 
 - timeline scope 변경이 실제 RAG 응답에서 future leakage를 차단하는 긴 E2E는 Phase 5-4 보강 범위다.
+
+### 2026-06-11. Phase 5-4 Electron writer workflow E2E 보강
+
+확인된 사실:
+
+- `tests/e2e/phase5WriterWorkflow.spec.ts`를 추가해 Electron 앱 경계에서 원고 수정, memory rebuild, 검색, RAG evidence 확인까지 이어지는 흐름을 검증한다.
+- 재작성된 원고의 `붉은 인장 상자` chunk가 검색되고, RAG 첫 evidence chunk가 현재 검색 결과에 포함되는지 확인한다.
+- Phase 5 writer workflow coverage 문서는 과거 회차 수정 시나리오의 E2E anchor로 새 spec를 참조한다.
+
+검증:
+
+```text
+corepack pnpm vitest tests/scripts/phase5WriterWorkflowCoverage.test.ts
+corepack pnpm exec eslint tests/e2e/phase5WriterWorkflow.spec.ts tests/scripts/phase5WriterWorkflowCoverage.test.ts
+corepack pnpm run typecheck
+```
+
+제한:
+
+- 이 E2E는 preload API를 통한 Electron 앱 경계 검증이다. 실제 에디터 타이핑과 버튼 클릭만 사용하는 순수 UI E2E는 선택 보강 범위다.
+- `corepack pnpm exec playwright test --project=stress tests/e2e/phase5WriterWorkflow.spec.ts`는 현재 로컬 Playwright runner가 기존 E2E spec 전체에서 `Playwright Test did not expect test() to be called here` 오류를 내며 중단되어 실행 완료하지 못했다.

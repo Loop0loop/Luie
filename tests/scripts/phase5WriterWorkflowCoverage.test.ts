@@ -35,6 +35,11 @@ const workflowCoverage = [
     title: "과거 회차 수정",
     files: [
       {
+        path: "tests/e2e/phase5WriterWorkflow.spec.ts",
+        mustContain:
+          "phase5 writer edit -> rebuild -> rag evidence stays on current manuscript",
+      },
+      {
         path: "tests/main/services/memory/memoryEvidenceChunkLinkRepair.test.ts",
         mustContain: "relinks stale episode evidence and entity mentions to current chunks",
       },

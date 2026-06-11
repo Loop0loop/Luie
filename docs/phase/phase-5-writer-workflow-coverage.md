@@ -34,6 +34,8 @@
 
 검증 근거:
 
+- `tests/e2e/phase5WriterWorkflow.spec.ts`
+  - `phase5 writer edit -> rebuild -> rag evidence stays on current manuscript`
 - `tests/main/services/memory/memoryEvidenceChunkLinkRepair.test.ts`
   - `relinks stale episode evidence and entity mentions to current chunks`
 - `tests/main/services/memory/review/memoryReviewBacklogReport.test.ts`
@@ -41,6 +43,7 @@
 
 의미:
 
+- 실제 Electron 앱 경계에서 원고 수정, memory rebuild, 검색/RAG 근거 확인까지 이어지는 긴 흐름을 검증한다.
 - 원문 수정 후 오래된 evidence link를 현재 chunk로 복구할 수 있다.
 - 자동 복구가 불가능한 stale evidence는 review backlog로 이동한다.
 
@@ -87,5 +90,5 @@
 
 ## 남은 E2E 범위
 
-- 실제 Electron UI에서 원고 수정, stale 감지, rebuild, RAG 질문까지 이어지는 긴 시나리오는 아직 별도 E2E로 분리할 수 있다.
-- 현재 Phase 5-4의 1차 완료 기준은 DOM/service 단위의 writer workflow coverage 고정이다.
+- 실제 Electron 앱 경계에서 원고 수정, memory rebuild, 검색/RAG 근거 확인까지 이어지는 긴 시나리오는 `tests/e2e/phase5WriterWorkflow.spec.ts`로 고정했다.
+- 남은 선택 보강은 실제 에디터 타이핑/버튼 클릭만으로 같은 흐름을 재현하는 순수 UI E2E다.

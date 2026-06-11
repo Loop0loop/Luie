@@ -109,12 +109,13 @@ UI 요소:
 
 완료 기준:
 
-- DOM/e2e 테스트 존재: DOM writer flow 테스트와 coverage anchor 1차 완료
+- DOM/e2e 테스트 존재: DOM writer flow 테스트, Electron E2E writer edit/rebuild/RAG flow, coverage anchor 완료
 - service 단위 테스트 존재: RAG safety, stale repair/backlog, temporal, alias, eval runner/scoring 테스트로 1차 완료
 - 실제 UI label 검증: evidence-first, conflict decision, timeline basis label DOM 테스트 완료
 - evidence quote 표시 검증: assistant 답변 evidence quote 선표시 DOM 테스트 완료
 - stale repair/backlog 전이 검증: evidence link repair와 backlog report service 테스트 완료
 - chapter order 변경 후 temporal 판단 검증: queryChapterOrder 기반 eval runner/scoring 테스트 완료
+- 원고 수정 후 rebuild/RAG 검증: Electron E2E에서 현재 원고 chunk와 RAG evidence backlink 확인 완료
 
 Coverage 문서:
 
@@ -122,4 +123,4 @@ Coverage 문서:
 
 남은 범위:
 
-- 실제 Electron E2E에서 원고 수정 -> stale 감지 -> rebuild -> RAG 질문까지 이어지는 긴 통합 시나리오
+- API 기반 Electron E2E가 아니라 실제 에디터 타이핑/버튼 클릭으로 같은 흐름을 재현하는 순수 UI E2E
