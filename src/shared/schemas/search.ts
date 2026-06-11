@@ -98,6 +98,13 @@ export const memoryTemporalFactConflictResolveSchema = z.object({
   reason: z.string().trim().min(1).max(1000).optional(),
 });
 
+export const memoryTemporalFactConflictReviewSchema = z.object({
+  projectId: projectIdSchema,
+  conflictId: z.string().uuid("Invalid conflict ID"),
+  action: z.enum(["defer", "review", "resolve"]),
+  reviewerNote: z.string().trim().min(1).max(1000).nullable().optional(),
+});
+
 export const memoryEntityAliasReviewQueueSchema = z.object({
   projectId: projectIdSchema,
   limit: z.number().int().positive().max(200).optional(),

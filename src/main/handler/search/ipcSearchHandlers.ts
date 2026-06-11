@@ -21,6 +21,7 @@ import type {
   MemoryStaleEvidenceReviewActionInput,
   NarrativeMemoryIntentCalibrationRequest,
   MemoryTemporalFactConfirmInput,
+  MemoryTemporalFactConflictReviewInput,
   MemoryTemporalFactConflictResolveInput,
   MemoryTemporalFactRejectInput,
   MemoryTemporalFactReviewQueueInput,
@@ -35,6 +36,7 @@ import {
   memoryChunkWindowSchema,
   memoryBuildJobControlSchema,
   memoryConflictQueueQuerySchema,
+  memoryTemporalFactConflictReviewSchema,
   memoryEmbeddingStatusSchema,
   memoryEpisodeConfirmSchema,
   memoryEpisodeRejectSchema,
@@ -95,6 +97,7 @@ type NarrativeMemoryQueryServiceLike = {
   confirmFact: (input: MemoryTemporalFactConfirmInput) => Promise<unknown>;
   rejectFact: (input: MemoryTemporalFactRejectInput) => Promise<unknown>;
   resolveFactConflict: (input: MemoryTemporalFactConflictResolveInput) => Promise<unknown>;
+  reviewFactConflict: (input: MemoryTemporalFactConflictReviewInput) => Promise<unknown>;
   listSuggestedEntityAliases: (input: MemoryEntityAliasReviewQueueInput) => Promise<unknown>;
   listSuggestedEntities: (input: MemoryEntityReviewQueueInput) => Promise<unknown>;
   confirmEntity: (input: MemoryEntityConfirmInput) => Promise<unknown>;
@@ -327,6 +330,16 @@ export function registerSearchIPCHandlers(
       handler: (input: MemoryTemporalFactConflictResolveInput) =>
         persistAfterUpdatedReviewMutation(input.projectId, "memory:fact-conflict-resolve", () =>
           narrativeMemoryQueryService.resolveFactConflict(input),
+        ),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_CONFLICT_REVIEW_ACTION,
+      logTag: "MEMORY_CONFLICT_REVIEW_ACTION",
+      failMessage: "Failed to update fact conflict review",
+      argsSchema: z.tuple([memoryTemporalFactConflictReviewSchema]),
+      handler: (input: MemoryTemporalFactConflictReviewInput) =>
+        persistAfterUpdatedReviewMutation(input.projectId, "memory:fact-conflict-review", () =>
+          narrativeMemoryQueryService.reviewFactConflict(input),
         ),
     },
     {

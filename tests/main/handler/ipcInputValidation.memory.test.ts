@@ -335,6 +335,32 @@ describe("IPC input validation: narrative memory", () => {
     );
   });
 
+  it("routes valid MEMORY_CONFLICT_REVIEW_ACTION payloads to the memory review service", async () => {
+    mocked.narrativeMemoryQueryService.reviewFactConflict.mockResolvedValue({
+      updated: true,
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(
+      IPC_CHANNELS.MEMORY_CONFLICT_REVIEW_ACTION,
+    );
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      conflictId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      action: "defer",
+      reviewerNote: "나중에 검토",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.narrativeMemoryQueryService.reviewFactConflict).toHaveBeenCalledWith(
+      input,
+    );
+  });
+
   it("routes valid MEMORY_ENTITY_ALIAS_REVIEW_QUEUE payloads to the memory review service", async () => {
     mocked.narrativeMemoryQueryService.listSuggestedEntityAliases.mockResolvedValue({
       items: [],

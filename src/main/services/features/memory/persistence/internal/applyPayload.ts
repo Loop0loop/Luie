@@ -325,6 +325,9 @@ export const applyMemoryCanonicalPackagePayload = (
       invalidatedFactId,
       invalidatingFactId,
       reason,
+      reviewStatus: toStringValue(row.reviewStatus) ?? "pending",
+      reviewerNote: toNullableStringValue(row.reviewerNote),
+      reviewedAt: toNullableStringValue(row.reviewedAt),
       createdAt: toStringValue(row.createdAt) ?? now,
       updatedAt: toStringValue(row.updatedAt) ?? now,
     };

@@ -237,10 +237,12 @@ export function useMemoryReviewQueues({
   );
 
   const onDeferConflict = useCallback(
-    (item: AnalysisConflictItem) => {
-      handleDeferConflict(item);
+    async (item: AnalysisConflictItem) => {
+      if (!projectId) return;
+      await handleDeferConflict(projectId, item);
+      await loadConflictQueue(projectId, chapterId, memoryScope);
     },
-    [handleDeferConflict],
+    [projectId, chapterId, memoryScope, handleDeferConflict, loadConflictQueue],
   );
 
   const onConfirmFact = useCallback(

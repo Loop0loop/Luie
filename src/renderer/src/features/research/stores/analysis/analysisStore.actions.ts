@@ -24,7 +24,7 @@ export interface AnalysisActions {
   loadNarrativeSummaryStatus: (projectId: string) => Promise<void>;
   loadConflictQueue: (projectId: string, chapterId: string | undefined, memoryScope: MemoryScope) => Promise<void>;
   handleResolveConflict: (projectId: string, item: AnalysisConflictItem, winnerFactId: string) => Promise<void>;
-  handleDeferConflict: (item: AnalysisConflictItem) => void;
+  handleDeferConflict: (projectId: string, item: AnalysisConflictItem) => Promise<void>;
   loadFactReviewQueue: (projectId: string) => Promise<void>;
   loadEpisodeReviewQueue: (projectId: string) => Promise<void>;
   loadEntityReviewQueue: (projectId: string) => Promise<void>;
@@ -321,12 +321,29 @@ export function createAnalysisActions(
         set({ resolvingConflictId: null });
       }
     },
-    handleDeferConflict: (item: AnalysisConflictItem) => {
-      set((state) => ({
-        conflictQueueItems: state.conflictQueueItems.filter(
-          (candidate) => candidate.conflictId !== item.conflictId,
-        ),
-      }));
+    handleDeferConflict: async (projectId: string, item: AnalysisConflictItem) => {
+      set({ resolvingConflictId: item.conflictId, conflictQueueError: null });
+      try {
+        const response = await api.memory.reviewFactConflict({
+          projectId,
+          conflictId: item.conflictId,
+          action: "defer",
+          reviewerNote: null,
+        });
+        if (!response.success || !response.data?.updated) {
+          set({
+            conflictQueueError: response.error?.message ?? i18n.t("analysis.review.queue.conflict.reviewError"),
+          });
+          return;
+        }
+        set((state) => ({
+          conflictQueueItems: state.conflictQueueItems.filter(
+            (candidate) => candidate.conflictId !== item.conflictId,
+          ),
+        }));
+      } finally {
+        set({ resolvingConflictId: null });
+      }
     },
     loadFactReviewQueue: async (projectId: string) => {
       set({ factReviewLoading: true, factReviewError: null });

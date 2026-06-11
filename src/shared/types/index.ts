@@ -169,6 +169,7 @@ export type {
   MemoryEpisodeReviewQueueInput,
   MemoryEpisodeReviewQueueResult,
   MemoryTemporalFactConfirmInput,
+  MemoryTemporalFactConflictReviewInput,
   MemoryTemporalFactConflictResolveInput,
   MemoryTemporalFactRejectInput,
   MemoryTemporalFactReviewItem,

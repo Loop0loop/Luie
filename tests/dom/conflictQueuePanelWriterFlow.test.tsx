@@ -40,6 +40,9 @@ type MountedView = {
 const conflictItem: AnalysisConflictItem = {
   conflictId: "conflict-1",
   reason: "state_conflict",
+  reviewStatus: "pending",
+  reviewerNote: null,
+  reviewedAt: null,
   invalidatedFact: {
     id: "fact-old",
     subjectEntityId: "entity-hero",

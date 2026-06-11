@@ -23,6 +23,7 @@ const mocked = vi.hoisted(() => {
     confirmFact: vi.fn(),
     rejectFact: vi.fn(),
     resolveFactConflict: vi.fn(),
+    reviewFactConflict: vi.fn(),
     listSuggestedEntityAliases: vi.fn(),
     listSuggestedEntities: vi.fn(),
     confirmEntity: vi.fn(),
@@ -153,6 +154,7 @@ export const resetInputValidationMocks = () => {
   mocked.narrativeMemoryQueryService.confirmFact.mockReset();
   mocked.narrativeMemoryQueryService.rejectFact.mockReset();
   mocked.narrativeMemoryQueryService.resolveFactConflict.mockReset();
+  mocked.narrativeMemoryQueryService.reviewFactConflict.mockReset();
   mocked.narrativeMemoryQueryService.listSuggestedEntityAliases.mockReset();
   mocked.narrativeMemoryQueryService.listSuggestedEntities.mockReset();
   mocked.narrativeMemoryQueryService.confirmEntity.mockReset();
@@ -191,6 +193,7 @@ export const registerSearchInputHandlers = async (
     confirmFact?: unknown;
     rejectFact?: unknown;
     resolveFactConflict?: unknown;
+    reviewFactConflict?: unknown;
     listSuggestedEntityAliases?: unknown;
     listSuggestedEntities?: unknown;
     confirmEntity?: unknown;

@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import {
   chapter,
@@ -206,5 +207,112 @@ describe("fetchConflictFactPairs", () => {
         }),
       }),
     ]);
+  });
+
+  it("excludes deferred conflict review items from the active queue", async () => {
+    const projectId = crypto.randomUUID();
+    const chapterId = crypto.randomUUID();
+    const entityId = crypto.randomUUID();
+    const oldFactId = crypto.randomUUID();
+    const newFactId = crypto.randomUUID();
+    const conflictId = crypto.randomUUID();
+    const nowIso = "2026-06-08T00:00:00.000Z";
+
+    await db.getClient().insert(project).values({
+      id: projectId,
+      title: "Deferred Conflict Queue",
+      description: null,
+      projectPath: null,
+      updatedAt: nowIso,
+    });
+    await db.getClient().insert(chapter).values({
+      id: chapterId,
+      projectId,
+      title: "3화",
+      content: "",
+      order: 3,
+      updatedAt: nowIso,
+    });
+    await db.getClient().insert(memoryEntity).values({
+      id: entityId,
+      projectId,
+      entityType: "character",
+      canonicalName: "아린",
+      status: "confirmed",
+      confidence: 100,
+      createdBy: "system",
+      updatedAt: nowIso,
+    });
+    await db.getClient().insert(memoryFact).values([
+      {
+        id: oldFactId,
+        projectId,
+        subjectEntityId: entityId,
+        predicate: "dominant_hand",
+        objectEntityId: null,
+        objectValue: "left",
+        valueType: "string",
+        validFromChapterId: chapterId,
+        validFromChapterOrder: 3,
+        validToChapterId: null,
+        validToChapterOrder: null,
+        observedAtChapterId: chapterId,
+        observedAtChapterOrder: 3,
+        confidence: 88,
+        status: "confirmed",
+        provenanceKind: "canon",
+        canonStatus: "canon",
+        extractorVersion: "fact-v1",
+        sourceContentHash: "source-hash",
+        invalidatedByFactId: null,
+        updatedAt: nowIso,
+      },
+      {
+        id: newFactId,
+        projectId,
+        subjectEntityId: entityId,
+        predicate: "dominant_hand",
+        objectEntityId: null,
+        objectValue: "right",
+        valueType: "string",
+        validFromChapterId: chapterId,
+        validFromChapterOrder: 3,
+        validToChapterId: null,
+        validToChapterOrder: null,
+        observedAtChapterId: chapterId,
+        observedAtChapterOrder: 3,
+        confidence: 87,
+        status: "suggested",
+        provenanceKind: "canon",
+        canonStatus: "canon",
+        extractorVersion: "fact-v1",
+        sourceContentHash: "source-hash",
+        invalidatedByFactId: oldFactId,
+        updatedAt: nowIso,
+      },
+    ]);
+    await db.getClient().insert(memoryFactInvalidation).values({
+      id: conflictId,
+      projectId,
+      invalidatedFactId: oldFactId,
+      invalidatingFactId: newFactId,
+      reason: "same relation slot",
+      updatedAt: nowIso,
+    });
+    await db.getClient().run(sql`
+      UPDATE "MemoryFactInvalidation"
+      SET "reviewStatus" = 'deferred',
+          "reviewerNote" = '나중에 확인',
+          "reviewedAt" = ${nowIso}
+      WHERE "id" = ${conflictId};
+    `);
+
+    const result = await fetchConflictFactPairs({
+      projectId,
+      chapterOrder: null,
+      includePriorMemory: false,
+    });
+
+    expect(result).toEqual([]);
   });
 });

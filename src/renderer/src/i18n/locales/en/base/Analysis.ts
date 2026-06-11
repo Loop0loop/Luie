@@ -67,6 +67,7 @@ export const enBaseAnalysis = {
           defer: "Defer",
           fetchError: "Failed to fetch conflict queue",
           resolveError: "Failed to resolve conflict",
+          reviewError: "Failed to update conflict review status",
         },
         alias: {
           title: "Suggested Aliases",

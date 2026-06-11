@@ -31,6 +31,7 @@ import type {
   MemoryStaleEvidenceReviewActionInput,
   MemoryStaleEvidenceReviewActionResult,
   MemoryTemporalFactConfirmInput,
+  MemoryTemporalFactConflictReviewInput,
   MemoryTemporalFactConflictResolveInput,
   MemoryTemporalFactRejectInput,
   MemoryTemporalFactReviewMutationResult,
@@ -78,6 +79,7 @@ import {
   confirmMemoryTemporalFact,
   listSuggestedMemoryTemporalFacts,
   rejectMemoryTemporalFact,
+  reviewMemoryTemporalFactConflict,
   resolveMemoryTemporalFactConflict,
 } from "../temporal/memoryTemporalFactReviewService.js";
 import {
@@ -421,6 +423,12 @@ export class NarrativeMemoryQueryService {
     input: MemoryTemporalFactConflictResolveInput,
   ): Promise<MemoryTemporalFactReviewMutationResult> {
     return await resolveMemoryTemporalFactConflict(input);
+  }
+
+  async reviewFactConflict(
+    input: MemoryTemporalFactConflictReviewInput,
+  ): Promise<MemoryTemporalFactReviewMutationResult> {
+    return await reviewMemoryTemporalFactConflict(input);
   }
 
   async listSuggestedEntityAliases(

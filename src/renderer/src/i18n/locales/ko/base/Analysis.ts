@@ -67,6 +67,7 @@ export const koBaseAnalysis = {
           defer: "나중에 보기",
           fetchError: "충돌 큐 조회 실패",
           resolveError: "충돌 해결 실패",
+          reviewError: "충돌 검토 상태 저장 실패",
         },
         alias: {
           title: "검토할 별칭",

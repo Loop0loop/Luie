@@ -1117,3 +1117,27 @@ corepack pnpm vitest tests/dom/analysisMessageSafety.test.tsx tests/dom/promptCo
 제한:
 
 - 현재는 DOM/service 단위 coverage다. 실제 Electron E2E에서 원고 수정 -> stale 감지 -> rebuild -> RAG 질문까지 이어지는 긴 통합 시나리오는 아직 없다.
+
+### 2026-06-11. Phase 5-2 conflict review status 영속화 완료
+
+확인된 사실:
+
+- `MemoryFactInvalidation`에 `reviewStatus`, `reviewerNote`, `reviewedAt`을 추가했다.
+- 기존 DB는 packaged schema column patch로 새 conflict review column을 보강한다.
+- conflict queue는 `pending/reviewing` 상태만 active item으로 반환한다.
+- conflict `defer` action은 `reviewStatus=deferred`로 저장하고 active queue에서 제외한다.
+- conflict resolve는 winner/loser fact 상태를 갱신하면서 invalidation row를 `reviewStatus=resolved`로 저장한다.
+- canonical package import/export는 conflict review 상태를 보존한다.
+
+검증:
+
+```text
+corepack pnpm vitest tests/main/services/memory/query/memoryConflictQueue.test.ts tests/main/handler/ipcInputValidation.memory.test.ts tests/dom/conflictQueuePanelWriterFlow.test.tsx
+corepack pnpm vitest tests/main/services/memory/temporal/memoryTemporalFactReviewService.test.ts tests/main/services/memory/query/memoryConflictQueue.test.ts tests/main/handler/ipcInputValidation.memory.test.ts tests/dom/conflictQueuePanelWriterFlow.test.tsx
+corepack pnpm vitest tests/main/services/memory/persistence/memoryCanonicalPackage.test.ts tests/main/services/memory/persistence/memoryCanonicalPackageSyncVerifier.test.ts tests/main/services/memory/persistence/memoryCanonicalExportAudit.test.ts tests/shared/memoryPersistencePolicy.test.ts
+corepack pnpm run typecheck
+```
+
+제한:
+
+- deferred conflict를 다시 여는 별도 필터 UI는 아직 없다.

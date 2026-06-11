@@ -31,6 +31,9 @@ export interface MemoryConflictQueueInput {
 export interface MemoryConflictQueueItem {
   conflictId: string;
   reason: string;
+  reviewStatus: "pending" | "reviewing";
+  reviewerNote: string | null;
+  reviewedAt: string | null;
   invalidatedFact: MemoryConflictFactSummary;
   invalidatingFact: MemoryConflictFactSummary;
 }
@@ -177,6 +180,13 @@ export interface MemoryTemporalFactConflictResolveInput {
   conflictId: string;
   winnerFactId: string;
   reason?: string;
+}
+
+export interface MemoryTemporalFactConflictReviewInput {
+  projectId: string;
+  conflictId: string;
+  action: "defer" | "review" | "resolve";
+  reviewerNote?: string | null;
 }
 
 export interface MemoryTemporalFactReviewMutationResult {

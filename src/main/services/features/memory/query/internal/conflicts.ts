@@ -13,6 +13,14 @@ import { ACTIVE_FACT_STATUSES } from "./constants.js";
 import { countFactEvidence, fetchFactEvidenceQuotes } from "./evidence.js";
 import { loadEntityInfo, resolveMemoryEntityIds } from "./entity.js";
 
+type ActiveConflictReviewStatus = "pending" | "reviewing";
+
+function isActiveConflictReviewStatus(
+  status: string,
+): status is ActiveConflictReviewStatus {
+  return status === "pending" || status === "reviewing";
+}
+
 async function fetchFactSummariesFromIds(input: {
   projectId: string;
   factIds: string[];
@@ -95,6 +103,9 @@ async function fetchConflictQueueRows(input: {
   Array<{
     conflictId: string;
     reason: string;
+    reviewStatus: "pending" | "reviewing";
+    reviewerNote: string | null;
+    reviewedAt: string | null;
     invalidatedFactId: string;
     invalidatingFactId: string;
   }>
@@ -104,6 +115,9 @@ async function fetchConflictQueueRows(input: {
     .select({
       conflictId: memoryFactInvalidation.id,
       reason: memoryFactInvalidation.reason,
+      reviewStatus: memoryFactInvalidation.reviewStatus,
+      reviewerNote: memoryFactInvalidation.reviewerNote,
+      reviewedAt: memoryFactInvalidation.reviewedAt,
       invalidatedFactId: memoryFactInvalidation.invalidatedFactId,
       invalidatingFactId: memoryFactInvalidation.invalidatingFactId,
     })
@@ -126,6 +140,10 @@ async function fetchConflictQueueRows(input: {
     filterEntityIds === null ? [] : filterEntityIds;
 
   const filtered = rows.filter((row) => {
+    if (!isActiveConflictReviewStatus(row.reviewStatus)) {
+      return false;
+    }
+
     const invalidated = factById.get(row.invalidatedFactId);
     const invalidating = factById.get(row.invalidatingFactId);
     if (!invalidated || !invalidating) return false;
@@ -159,6 +177,11 @@ async function fetchConflictQueueRows(input: {
   return filtered.slice(0, limit).map((row) => ({
     conflictId: row.conflictId,
     reason: row.reason,
+    reviewStatus: isActiveConflictReviewStatus(row.reviewStatus)
+      ? row.reviewStatus
+      : "pending",
+    reviewerNote: row.reviewerNote,
+    reviewedAt: row.reviewedAt,
     invalidatedFactId: row.invalidatedFactId,
     invalidatingFactId: row.invalidatingFactId,
   }));
@@ -269,6 +292,9 @@ export async function fetchConflictFactPairs(input: {
       return {
         conflictId: row.conflictId,
         reason: row.reason,
+        reviewStatus: row.reviewStatus,
+        reviewerNote: row.reviewerNote,
+        reviewedAt: row.reviewedAt,
         invalidatedFact: buildConflictFactSummary({
           row: invalidated,
           evidenceCount: evidenceCounts.get(invalidated.id) ?? 0,

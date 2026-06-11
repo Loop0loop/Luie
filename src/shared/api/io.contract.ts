@@ -150,6 +150,9 @@ export type IoRendererApi = {
     resolveFactConflict: (
       input: SharedTypes.MemoryTemporalFactConflictResolveInput,
     ) => Promise<IPCResponse<SharedTypes.MemoryTemporalFactReviewMutationResult>>;
+    reviewFactConflict: (
+      input: SharedTypes.MemoryTemporalFactConflictReviewInput,
+    ) => Promise<IPCResponse<SharedTypes.MemoryTemporalFactReviewMutationResult>>;
     getEntityAliasReviewQueue: (
       input: SharedTypes.MemoryEntityAliasReviewQueueInput,
     ) => Promise<IPCResponse<SharedTypes.MemoryEntityAliasReviewQueueResult>>;

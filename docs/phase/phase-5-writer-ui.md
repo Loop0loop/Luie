@@ -40,11 +40,10 @@ UI 요소:
 
 - conflict ledger와 연결: Phase 3-3의 `MemoryFactInvalidation` 기반 conflict queue/resolve 경로 1차 완료
 - 작가 결정이 memory 상태에 반영: 이전/신규 사실 채택은 기존 `resolveFactConflict` 경로로 1차 완료
-- 나중에 보기: 클라이언트 큐에서 conflict item을 숨기는 writer-facing `defer` UI 1차 완료
+- 나중에 보기: `MemoryFactInvalidation.reviewStatus`에 `deferred`로 영속화하고 active queue에서 제외
 
 남은 범위:
 
-- `defer/reviewing/resolved` 같은 conflict review 상태 영속화
 - defer된 conflict를 다시 보는 필터/상태 표시
 - 실제 작가 flow DOM/e2e에서 conflict warning 결정 흐름 검증
 

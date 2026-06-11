@@ -67,6 +67,7 @@ export const jaBaseAnalysis = {
           defer: "後で見る",
           fetchError: "衝突キューの取得に失敗しました",
           resolveError: "衝突の解決に失敗しました",
+          reviewError: "衝突レビュー状態の保存に失敗しました",
         },
         alias: {
           title: "検討する別名",

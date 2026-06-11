@@ -375,5 +375,14 @@ describe("memoryTemporalFactReviewService", () => {
     expect(loser?.status).toBe("rejected");
     expect(loser?.invalidatedByFactId).toBe(seed.factId);
     expect(loser?.rejectionReason).toBe("검토 후 신규 사실 채택");
+
+    const [conflict] = await db
+      .getClient()
+      .select()
+      .from(memoryFactInvalidation)
+      .where(eq(memoryFactInvalidation.id, conflictId));
+    expect(conflict.reviewStatus).toBe("resolved");
+    expect(conflict.reviewerNote).toBe("검토 후 신규 사실 채택");
+    expect(conflict.reviewedAt).toBe(seed.nowIso);
   });
 });

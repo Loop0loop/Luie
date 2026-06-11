@@ -9,6 +9,7 @@ import {
 } from "../../../../infra/database/index.js";
 import type {
   MemoryTemporalFactConfirmInput,
+  MemoryTemporalFactConflictReviewInput,
   MemoryTemporalFactConflictResolveInput,
   MemoryTemporalFactRejectInput,
   MemoryTemporalFactReviewMutationResult,
@@ -308,8 +309,56 @@ export async function resolveMemoryTemporalFactConflict(
       )
       .run();
 
-    updated = winnerUpdate.changes > 0 && loserUpdate.changes > 0;
+    const conflictUpdate = tx
+      .update(memoryFactInvalidation)
+      .set({
+        reviewStatus: "resolved",
+        reviewerNote: reason,
+        reviewedAt: nowIso,
+        updatedAt: nowIso,
+      })
+      .where(
+        and(
+          eq(memoryFactInvalidation.projectId, input.projectId),
+          eq(memoryFactInvalidation.id, input.conflictId),
+        ),
+      )
+      .run();
+
+    updated =
+      winnerUpdate.changes > 0 &&
+      loserUpdate.changes > 0 &&
+      conflictUpdate.changes > 0;
   });
 
   return { updated };
+}
+
+export async function reviewMemoryTemporalFactConflict(
+  input: MemoryTemporalFactConflictReviewInput & { nowIso?: string },
+): Promise<MemoryTemporalFactReviewMutationResult> {
+  const nowIso = input.nowIso ?? new Date().toISOString();
+  const reviewStatus =
+    input.action === "defer"
+      ? "deferred"
+      : input.action === "review"
+        ? "reviewing"
+        : "resolved";
+  const updated = await db
+    .getClient()
+    .update(memoryFactInvalidation)
+    .set({
+      reviewStatus,
+      reviewerNote: input.reviewerNote?.trim() || null,
+      reviewedAt: nowIso,
+      updatedAt: nowIso,
+    })
+    .where(
+      and(
+        eq(memoryFactInvalidation.projectId, input.projectId),
+        eq(memoryFactInvalidation.id, input.conflictId),
+      ),
+    );
+
+  return { updated: updated.changes > 0 };
 }

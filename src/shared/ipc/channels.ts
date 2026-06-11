@@ -126,6 +126,7 @@ export const IPC_CHANNELS = {
   MEMORY_FACT_CONFIRM: "memory:fact-confirm",
   MEMORY_FACT_REJECT: "memory:fact-reject",
   MEMORY_CONFLICT_RESOLVE: "memory:conflict-resolve",
+  MEMORY_CONFLICT_REVIEW_ACTION: "memory:conflict-review-action",
   MEMORY_ENTITY_ALIAS_REVIEW_QUEUE: "memory:entity-alias-review-queue",
   MEMORY_ENTITY_REVIEW_QUEUE: "memory:entity-review-queue",
   MEMORY_ENTITY_CONFIRM: "memory:entity-confirm",

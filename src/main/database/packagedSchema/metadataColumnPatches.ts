@@ -280,4 +280,19 @@ export const PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
     column: "queryChapterOrder",
     sql: 'ALTER TABLE "MemoryEvalCase" ADD COLUMN "queryChapterOrder" INTEGER;',
   },
+  {
+    table: "MemoryFactInvalidation",
+    column: "reviewStatus",
+    sql: 'ALTER TABLE "MemoryFactInvalidation" ADD COLUMN "reviewStatus" TEXT NOT NULL DEFAULT \'pending\';',
+  },
+  {
+    table: "MemoryFactInvalidation",
+    column: "reviewerNote",
+    sql: 'ALTER TABLE "MemoryFactInvalidation" ADD COLUMN "reviewerNote" TEXT;',
+  },
+  {
+    table: "MemoryFactInvalidation",
+    column: "reviewedAt",
+    sql: 'ALTER TABLE "MemoryFactInvalidation" ADD COLUMN "reviewedAt" TEXT;',
+  },
 ];

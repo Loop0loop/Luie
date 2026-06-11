@@ -306,6 +306,8 @@ export function createProjectApi({
         safeInvoke(IPC_CHANNELS.MEMORY_FACT_REJECT, input),
       resolveFactConflict: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_CONFLICT_RESOLVE, input),
+      reviewFactConflict: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_CONFLICT_REVIEW_ACTION, input),
       getEntityAliasReviewQueue: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_REVIEW_QUEUE, input),
       getEntityReviewQueue: (input) =>
