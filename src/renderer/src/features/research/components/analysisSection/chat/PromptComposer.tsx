@@ -77,6 +77,10 @@ type PromptComposerProps = {
   onApplySearchOptimizationMode: (mode: SearchOptimizationMode) => void;
   memoryScope: MemoryScope;
   onChangeMemoryScope: (scope: MemoryScope) => void;
+  timelineChapter?: {
+    order: number;
+    title: string;
+  };
   summaryActive: boolean;
   onToggleSummary: () => void;
   floating?: boolean;
@@ -105,6 +109,7 @@ export function PromptComposer({
   onApplySearchOptimizationMode,
   memoryScope,
   onChangeMemoryScope,
+  timelineChapter,
   summaryActive,
   onToggleSummary,
   floating = false,
@@ -127,6 +132,13 @@ export function PromptComposer({
   }, [showMenu]);
 
   const sendDisabled = disabled || (!isStreaming && !input.trim());
+  const timelineChapterLabel = timelineChapter
+    ? `${timelineChapter.order}화 · ${timelineChapter.title}`
+    : null;
+  const timelineScopeLabel =
+    memoryScope === "with-prior"
+      ? t("analysis.composer.timelineWithPrior")
+      : t("analysis.composer.timelineCurrentOnly");
 
   return (
     <div className="flex items-center gap-1.5 rounded-[26px] bg-[#2a2a2a]/80 backdrop-blur-xl px-2 py-1.5 shadow-[0_8px_28px_rgba(0,0,0,0.35)] transition-all duration-300">
@@ -235,6 +247,19 @@ export function PromptComposer({
           </div>
         )}
       </div>
+
+      {timelineChapterLabel && (
+        <div className="hidden min-w-0 max-w-[180px] shrink md:block">
+          <div className="truncate text-[10px] font-medium leading-tight text-neutral-300">
+            {t("analysis.composer.timelineBasis", {
+              chapter: timelineChapterLabel,
+            })}
+          </div>
+          <div className="truncate text-[9px] leading-tight text-neutral-500">
+            {timelineScopeLabel}
+          </div>
+        </div>
+      )}
 
       {/* 입력 */}
       <textarea

@@ -1075,3 +1075,26 @@ corepack pnpm exec eslint src/renderer/src/features/research/components/analysis
 - 이번 단계의 `defer`는 클라이언트 큐 숨김이다. DB에 `deferred/reviewing/resolved` 같은 conflict review 상태를 저장하지 않는다.
 - 앱 재시작 또는 conflict queue 재조회 후에는 ledger 기준 conflict가 다시 보일 수 있다.
 - conflict review 상태 영속화가 필요하면 `MemoryFactInvalidation` 확장 또는 별도 conflict review ledger가 필요하다.
+
+### 2026-06-11. Phase 5-3 timeline-aware query UI 1차 완료
+
+확인된 사실:
+
+- `PromptComposer`는 현재 편집 중인 챕터의 `order/title`을 답변 기준 label로 표시한다.
+- memory scope가 `current-only`이면 "현재 회차 근거만" label을 표시한다.
+- memory scope가 `with-prior`이면 "이전 회차 포함" label을 표시한다.
+- `AnalysisSection`은 `useChapterStore.currentItem`의 order/title을 composer에 전달한다.
+- ko/en/ja locale에 timeline basis/scope label을 추가했다.
+
+검증:
+
+```text
+SKIP_DB_TEST_SETUP=1 corepack pnpm vitest tests/dom/promptComposerTimelineScope.test.tsx
+corepack pnpm run typecheck
+corepack pnpm exec eslint src/renderer/src/features/research/components/AnalysisSection.tsx src/renderer/src/features/research/components/analysisSection/chat/PromptComposer.tsx src/renderer/src/i18n/locales/ko/base/Analysis.ts src/renderer/src/i18n/locales/en/base/Analysis.ts src/renderer/src/i18n/locales/ja/base/Analysis.ts tests/dom/promptComposerTimelineScope.test.tsx
+```
+
+제한:
+
+- 이번 단계는 현재 편집 챕터를 기준으로 표시한다. 사용자가 임의의 기준 회차를 직접 선택하는 UI는 아직 없다.
+- future leakage 차단 자체는 기존 RAG safety label 경로에 의존한다. 이번 테스트는 composer label DOM 검증이다.

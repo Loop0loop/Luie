@@ -4,14 +4,14 @@
 
 사실:
 
-- 이 문서의 writer-product phase 기준 최신 명시 완료 지점은 **Phase 5-2 conflict warning UI 클라이언트 defer 1차 완료**다.
+- 이 문서의 writer-product phase 기준 최신 명시 완료 지점은 **Phase 5-3 timeline-aware query UI 1차 완료**다.
 - Phase 3-3에서 conflict quote queue와 기존 conflict resolve IPC/UI 연결은 이미 1차 완료되어 있다.
 - Phase 5-2의 완료 기준인 conflict ledger 연결과 confirm/reject 계열 memory 상태 반영 기반은 있다. `defer`는 현재 클라이언트 큐에서 숨기는 1차 UI로 연결됐고, defer/reviewing/resolved 같은 writer-facing conflict review 상태 영속화는 아직 남아 있다.
 
 판단:
 
-- 현재는 **Phase 5-2 부분 완료 상태**다.
-- 하지만 확인된 구현 기준으로 **Phase 5-2 전체 완료 상태라고 보기는 근거가 부족하다**.
+- 현재는 **Phase 5-3까지 1차 완료 상태**다.
+- 하지만 확인된 구현 기준으로 **Phase 5 전체 완료 상태라고 보기는 아직 근거가 부족하다**. Phase 5-4 writer workflow scenario test가 남아 있다.
 
 ## 문서 구조
 

@@ -276,6 +276,11 @@ export default function AnalysisSection() {
       }
       memoryScope={memoryScope}
       onChangeMemoryScope={setMemoryScope}
+      timelineChapter={
+        currentChapter
+          ? { order: currentChapter.order, title: currentChapter.title }
+          : undefined
+      }
       summaryActive={review.showNarrativeSummaryStatus}
       onToggleSummary={() =>
         review.setShowNarrativeSummaryStatus((prev) => !prev)
