@@ -59,10 +59,12 @@ UI 요소:
 - 현재 편집 중인 회차 기준 자동 설정: composer에 현재 챕터 order/title 기준 label 1차 표시 완료
 - 사용자가 기준 회차 변경 가능: composer의 기준 회차 select로 직접 변경 가능
 - 미래 정보가 섞이면 경고: 기존 RAG safety `temporal_blocked` label 경로 유지
+- 선택 기준 회차가 RAG memory query로 전달됨: RAG context assembler source boundary 테스트 완료
+- 기준 회차 이후 fact 제외: temporal memory query service 테스트 완료
 
 남은 범위:
 
-- timeline scope 변경이 실제 RAG 응답에서 future leakage를 차단하는 end-to-end 검증
+- answer judge/eval scorer를 실제 RAG stream 완료 경로에 붙여 `temporal_blocked`를 end-to-end로 발생시키는 통합 검증
 
 ### Phase 5-4. writer workflow scenario test
 

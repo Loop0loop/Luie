@@ -1204,3 +1204,23 @@ corepack pnpm run typecheck
 제한:
 
 - 실제 Electron E2E에서 conflict queue 결정을 UI 클릭만으로 검증하는 흐름은 아직 선택 보강 범위다.
+
+### 2026-06-11. Phase 5-3 timeline scope future fact guard 보강
+
+확인된 사실:
+
+- `fetchTemporalFacts`는 선택 기준 회차가 12화이고 `includePriorMemory`가 true여도 18화에서 관측된 future fact를 제외한다.
+- RAG context assembler는 renderer에서 넘어온 `chapterId`와 `includePriorMemory`를 narrative memory query에 전달한다.
+- 현재 RAG stream 완료 경로는 eval scorer/answer judge의 future leakage failure를 직접 실행하지 않는다. 따라서 `temporal_blocked` E2E는 아직 answer judge 통합 이후에 완전히 검증할 수 있다.
+
+검증:
+
+```text
+corepack pnpm vitest tests/main/services/memory/query/narrativeMemoryTemporalScope.test.ts tests/main/services/ragContextAssemblerSource.test.ts
+corepack pnpm exec eslint tests/main/services/memory/query/narrativeMemoryTemporalScope.test.ts tests/main/services/ragContextAssemblerSource.test.ts
+corepack pnpm run typecheck
+```
+
+제한:
+
+- 실제 RAG stream 결과에서 `future_fact_used_in_past_answer -> temporal_blocked`가 발생하는 end-to-end 검증은 answer judge/eval scorer 연결 이후 범위다.

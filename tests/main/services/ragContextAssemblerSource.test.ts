@@ -3,13 +3,15 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const source = () =>
-  readFileSync(
-    resolve(
-      process.cwd(),
-      "src/main/services/features/rag/contextAssembler.ts",
-    ),
-    "utf8",
-  );
+  [
+    "src/main/services/features/rag/contextAssembler.ts",
+    "src/main/services/features/rag/internal/contextAssembler.layers.ts",
+    "src/main/services/features/rag/internal/contextAssembler.layer2.ts",
+  ]
+    .map((filePath) =>
+      readFileSync(resolve(process.cwd(), filePath), "utf8"),
+    )
+    .join("\n");
 
 describe("RAG context assembler source boundary", () => {
   it("keeps broad world data in the RAG context layer, not only question-matched entities", () => {
@@ -22,5 +24,13 @@ describe("RAG context assembler source boundary", () => {
     expect(contextAssembler).toContain("[WORLD ENTITIES]");
     expect(contextAssembler).toContain("[RELATIONS]");
     expect(contextAssembler).toContain("[SCRAP MEMOS]");
+  });
+
+  it("passes selected chapter scope into narrative memory query", () => {
+    const contextAssembler = source();
+
+    expect(contextAssembler).toContain("narrativeMemoryQueryService.query");
+    expect(contextAssembler).toContain("chapterId: input.chapterId");
+    expect(contextAssembler).toContain("includePriorMemory: input.includePriorMemory");
   });
 });
