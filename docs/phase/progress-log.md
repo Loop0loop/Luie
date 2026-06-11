@@ -1098,3 +1098,22 @@ corepack pnpm exec eslint src/renderer/src/features/research/components/Analysis
 
 - 이번 단계는 현재 편집 챕터를 기준으로 표시한다. 사용자가 임의의 기준 회차를 직접 선택하는 UI는 아직 없다.
 - future leakage 차단 자체는 기존 RAG safety label 경로에 의존한다. 이번 테스트는 composer label DOM 검증이다.
+
+### 2026-06-11. Phase 5-4 writer workflow scenario coverage 1차 완료
+
+확인된 사실:
+
+- Phase 5 writer workflow 6종을 [Phase 5 Writer Workflow Coverage](phase-5-writer-workflow-coverage.md)에 고정했다.
+- coverage anchor test는 각 workflow가 참조하는 실제 test file과 test name을 확인한다.
+- 설정 질문, 충돌 감지, 과거 회차 수정, 초안 폐기, 인물명/별칭 변경, 회차 순서 변경 흐름이 DOM/service 테스트와 연결됐다.
+
+검증:
+
+```text
+SKIP_DB_TEST_SETUP=1 corepack pnpm vitest tests/scripts/phase5WriterWorkflowCoverage.test.ts
+corepack pnpm vitest tests/dom/analysisMessageSafety.test.tsx tests/dom/promptComposerTimelineScope.test.tsx tests/dom/conflictQueuePanelWriterFlow.test.tsx tests/main/services/ragGrounding.test.ts tests/main/services/memory/memoryEvidenceChunkLinkRepair.test.ts tests/main/services/memory/review/memoryReviewBacklogReport.test.ts tests/main/services/memory/temporal/memoryTemporalFactReviewService.test.ts tests/main/services/memory/entity/memoryEntityReviewService.test.ts tests/main/services/memory/eval/memoryEvalRunner.test.ts tests/main/services/memory/eval/memoryEvalScoring.test.ts tests/scripts/phase5WriterWorkflowCoverage.test.ts
+```
+
+제한:
+
+- 현재는 DOM/service 단위 coverage다. 실제 Electron E2E에서 원고 수정 -> stale 감지 -> rebuild -> RAG 질문까지 이어지는 긴 통합 시나리오는 아직 없다.

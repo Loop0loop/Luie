@@ -111,9 +111,17 @@ UI 요소:
 
 완료 기준:
 
-- DOM/e2e 테스트 존재
-- service 단위 테스트 존재
-- 실제 UI label 검증
-- evidence quote 표시 검증
-- stale repair/backlog 전이 검증
-- chapter order 변경 후 temporal 판단 검증
+- DOM/e2e 테스트 존재: DOM writer flow 테스트와 coverage anchor 1차 완료
+- service 단위 테스트 존재: RAG safety, stale repair/backlog, temporal, alias, eval runner/scoring 테스트로 1차 완료
+- 실제 UI label 검증: evidence-first, conflict decision, timeline basis label DOM 테스트 완료
+- evidence quote 표시 검증: assistant 답변 evidence quote 선표시 DOM 테스트 완료
+- stale repair/backlog 전이 검증: evidence link repair와 backlog report service 테스트 완료
+- chapter order 변경 후 temporal 판단 검증: queryChapterOrder 기반 eval runner/scoring 테스트 완료
+
+Coverage 문서:
+
+- [Phase 5 Writer Workflow Coverage](phase-5-writer-workflow-coverage.md)
+
+남은 범위:
+
+- 실제 Electron E2E에서 원고 수정 -> stale 감지 -> rebuild -> RAG 질문까지 이어지는 긴 통합 시나리오
