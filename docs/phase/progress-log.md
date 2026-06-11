@@ -1,0 +1,1077 @@
+## 진행 기록
+
+### 2026-06-11. Phase 1-1 완료
+
+확인된 사실:
+
+- 작가 pain point taxonomy를 9개 카테고리로 고정했다.
+- taxonomy를 공유 상수와 문서, 테스트에 연결했다.
+- deprecated category인 `timeline-leak`, `continuity-conflict`를 repair 명령으로 제거할 수 있게 했다.
+- 실제 프로젝트 기준 eval case/evidence가 51개에서 91개로 늘었다.
+- RAG 평가 결과 `caseCount: 91`, `averageContextRecallAtK: 1`, `totalP0FailureCount: 0`이었다.
+- canonical package sync는 DB/package 198/198 rows로 일치했다.
+
+### 2026-06-11. Phase 1-2 완료
+
+확인된 사실:
+
+- materialize CLI의 `--limit` 상한을 100에서 1000으로 확장했다.
+- 작가 질문형 eval case를 300개까지 생성했다.
+- taxonomy repair 결과 deprecated category 제거 대상은 0개였다.
+- 실제 프로젝트 기준 eval case/evidence가 91개에서 301개로 늘었다.
+- RAG 평가 결과 `caseCount: 301`, `averageContextRecallAtK: 1`, `totalP0FailureCount: 0`이었다.
+- canonical package sync는 DB/package 618/618 rows로 일치했다.
+
+제한:
+
+- 이 결과는 gold evidence가 있는 평가셋에서 검색 근거를 회수하는 성능이다.
+- 실제 LLM 장문 답변의 환각 차단, 미래 정보 누수 차단, 초안/폐기 설정 차단까지 완료됐다는 뜻은 아니다.
+
+### 2026-06-11. Phase 1-3 완료
+
+확인된 사실:
+
+- 회차가 연결된 chunk에서 `temporal-chapter:{chapterOrder}:{chunkId}` eval case를 생성할 수 있게 했다.
+- 생성된 temporal case는 `temporalScopeStartChapterId`와 `temporalScopeEndChapterId`를 해당 회차로 고정한다.
+- 질문 문구는 "N화 기준으로, 이후 회차 정보 없이 확정해도 되는가" 형태다.
+- 실제 프로젝트 기준 temporal chapter eval case 64개를 추가했다.
+- 실제 프로젝트 기준 eval case/evidence가 301개에서 365개로 늘었다.
+- RAG 평가 결과 `caseCount: 365`, `averageContextRecallAtK: 1`, `totalP0FailureCount: 0`이었다.
+- canonical package sync는 DB/package 746/746 rows로 일치했다.
+
+추가 완료:
+
+- `MemoryEvalCase.queryChapterOrder`를 nullable integer로 추가했다.
+- temporal chapter eval materializer는 chapter order를 `queryChapterOrder`에 저장한다.
+- live eval runner는 answerer가 `queryChapterOrder`를 생략해도 eval case에 저장된 값을 scorer에 넘긴다.
+- 따라서 `3화 기준` 질문에서 8화 fact를 confirmed로 쓰면 `future_fact_used_in_past_answer` P0 failure로 잡힌다.
+- canonical package import mapping도 `queryChapterOrder`를 보존한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/eval/memoryEvalCaseMaterialization.test.ts tests/main/services/memory/eval/memoryEvalRunner.test.ts tests/main/services/memory/persistence/memoryCanonicalPackageSyncVerifier.test.ts
+pnpm exec eslint src/main/database/schema/memoryEval.ts src/main/database/main/packagedSchema/projectSchema.sql.ts src/main/database/packagedSchema/metadataColumnPatches.ts src/shared/types/memoryEval.ts src/main/services/features/memory/eval/memoryEvalCaseMaterialization.ts src/main/services/features/memory/eval/memoryEvalRunner.ts src/main/services/features/memory/persistence/internal/applyPayload.ts tests/main/services/memory/eval/memoryEvalCaseMaterialization.test.ts tests/main/services/memory/eval/memoryEvalRunner.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- 실제 answerer가 모든 temporal 질문에서 UI/IPC 경로로 회차 기준을 자연스럽게 전달하는지는 writer-flow E2E에서 더 검증해야 한다.
+- `tests/main/database/schemaParity.test.ts`는 현재 fresh migration SQL과 bootstrap SQL 사이의 기존 누락도 함께 보고 실패한다. 이번 변경의 직접 경로는 통과했지만, fresh migration parity 정리는 별도 DB migration 정리 작업으로 남긴다.
+
+### 2026-06-11. Phase 1-4 완료
+
+확인된 사실:
+
+- eval 품질 audit을 추가했다.
+- audit은 `MemoryEvalCase`와 `MemoryEvalEvidence`, `MemoryChunk`를 함께 보고 다음을 검사한다.
+  - gold quote가 expected chunk 안에서 token overlap으로 뒷받침되는가
+  - expectedAnswer가 gold evidence로 뒷받침되는가
+- quote에 HTML 태그나 줄바꿈이 섞여도 token overlap으로 검사한다.
+- `--quality-audit` 명령으로 품질 리포트를 볼 수 있다.
+- `--repair-quality` 명령으로 unsupported expectedAnswer를 gold evidence 기반 답변으로 수리할 수 있다.
+- 실제 프로젝트 품질 audit 결과는 다음과 같았다.
+
+```text
+evalCasesScanned: 365
+evalEvidenceScanned: 365
+evidenceQuoteMissingInExpectedChunk: 0
+expectedAnswerUnsupported: 0
+repairedExpectedAnswers: 0
+```
+
+- 기존 evidence link repair를 실행해 stale evidence link 3건을 수리했다.
+
+```text
+episodeEvidenceRepaired: 2
+evalEvidenceRepaired: 1
+unresolved: 0
+```
+
+- RAG 평가 결과 `caseCount: 365`, `averageContextRecallAtK: 1`, `totalP0FailureCount: 0`이었다.
+- canonical package sync는 DB/package 746/746 rows로 일치했다.
+
+제한:
+
+- 품질 audit은 deterministic token overlap 기반이다.
+- 의미적으로 맞지만 표현이 크게 다른 expectedAnswer 검증은 Phase 2의 LLM judge에서 더 다뤄야 한다.
+
+### 2026-06-11. Phase 2-1 완료
+
+확인된 사실:
+
+- deterministic guard failure type을 8종으로 확장했다.
+
+```text
+unsupported_confirmed_answer
+answer_contains_unsupported_claim
+expected_answer_not_supported_by_gold_evidence
+deleted_or_draft_fact_confirmed
+future_fact_used_in_past_answer
+relation_direction_reversed
+entity_alias_mismatch
+unresolved_thread_falsely_marked_resolved
+```
+
+- `entity_alias_mismatch`를 추가했다.
+  - 같은 별칭이 다른 canonical entity로 관측되면 P0로 잡는다.
+  - 같은 canonical entity로 관측되면 오탐하지 않는다.
+- `unresolved_thread_falsely_marked_resolved`를 추가했다.
+  - 미회수 떡밥을 resolved로 관측하면 P0로 잡는다.
+  - unresolved로 유지하면 오탐하지 않는다.
+- eval suite 결과에 `p0FailureTypeCounts`를 추가했다.
+- runner는 answerer가 반환한 observed entity/thread 정보를 scorer로 넘길 수 있다.
+- false positive 회귀 테스트를 추가했다.
+- 실제 프로젝트 RAG 평가 결과는 다음과 같았다.
+
+```text
+caseCount: 365
+averageContextRecallAtK: 1
+totalP0FailureCount: 0
+p0FailureTypeCounts: {}
+```
+
+제한:
+
+- 이 단계는 LLM 없이 판단 가능한 deterministic guard다.
+- 실제 LLM 장문 답변의 의미적 누락, 애매한 모순, 작가 유용성 평가는 Phase 2-2의 LLM answer judge가 필요하다.
+- renderer에서 위험 답변을 차단하는 정책은 Phase 2-3 범위다.
+
+### 2026-06-11. Phase 2-2 judge 계약 완료
+
+확인된 사실:
+
+- answer judge prompt version을 고정했다.
+
+```text
+memory-eval-answer-judge-v1
+```
+
+- judge 결과 JSON schema를 코드로 고정했다.
+- judge 결과는 다음 축을 가진다.
+
+```text
+groundedness: grounded | unsupported
+contradiction: none | present
+temporalLeakage: none | present
+omission: none | present
+writerUsefulness: useful | not_useful
+verdict: pass | fail | invalid
+evidenceQuotesUsed: string[]
+rationale: string
+```
+
+- malformed JSON은 `invalid_json`으로 처리한다.
+- schema가 맞지 않으면 `invalid_schema`로 처리한다.
+- prompt version이 다르면 `unsupported_prompt_version`으로 처리한다.
+- judge가 사용한 evidence quote가 없으면 `missing_evidence_quote`로 invalid 처리한다.
+- `MemoryEvalResult.answerJudgeJson`에 judge artifact를 저장할 수 있게 했다.
+- runner는 answerer 결과를 받은 뒤 optional answer judge를 호출하고, parse 결과를 eval result 계열에 저장한다.
+- invalid judge artifact도 eval result에 남기고 confirmed memory를 만들지 않는다.
+- 실제 프로젝트 기존 eval runner는 answer judge 없이도 정상 동작했다.
+
+```text
+caseCount: 365
+averageContextRecallAtK: 1
+totalP0FailureCount: 0
+p0FailureTypeCounts: {}
+```
+
+제한:
+
+- 이 단계는 LLM answer judge의 계약, schema, 저장 경계를 완성한 것이다.
+- 실제 provider 호출, 비용/속도 정책, judge prompt 본문 튜닝은 아직 별도 보강이 필요하다.
+- judge 결과를 renderer 답변 차단 정책에 연결하는 작업은 Phase 2-3 범위다.
+
+### 2026-06-11. Phase 2-3 완료
+
+확인된 사실:
+
+- RAG 답변 contract에 `safety`를 추가했다.
+- safety는 다음 필드를 가진다.
+
+```text
+label
+message
+blocksConfirmedAnswer
+reasons
+```
+
+- safety label은 다음 값을 가진다.
+
+```text
+confirmed
+inferred
+insufficient_evidence
+conflicting
+blocked_p0
+temporal_blocked
+non_canonical_source
+```
+
+- `buildRagAnswerSafety` 정책을 추가했다.
+- 기존 `buildRagGrounding` 결과와 safety label mapping을 테스트로 고정했다.
+- 정책 mapping은 다음과 같다.
+
+```text
+P0 failure 있음 → blocked_p0
+future_fact_used_in_past_answer → temporal_blocked
+deleted_or_draft_fact_confirmed → non_canonical_source
+근거 0개 → insufficient_evidence
+conflicting grounding → conflicting
+근거 있음, 문장별 검증 전 → inferred
+```
+
+- RAG QA 결과 생성 시 `safety`가 자동으로 붙는다.
+- renderer message contract에 `safety`를 추가했다.
+- RAG stream 완료 시 `payload.result.safety`를 message에 복사한다.
+- MessageList에서 safety label과 safety message를 표시한다.
+- renderer helper에 `safetyLabel`, `safetyTone`을 추가했다.
+- 실제 프로젝트 기존 eval runner는 정상 동작했다.
+
+```text
+caseCount: 365
+averageContextRecallAtK: 1
+totalP0FailureCount: 0
+p0FailureTypeCounts: {}
+```
+
+제한:
+
+- runtime RAG 답변에는 deterministic safety policy가 붙는다.
+- parse된 answer judge artifact를 runtime safety policy에 반영하는 pure mapping은 1차 연결됐다.
+- 실제 provider 호출 결과를 일반 runtime RAG 경로에서 언제/얼마나 호출할지 정하는 비용/속도 정책은 아직 남아 있다.
+- Phase 3의 정사/초안/폐기 출처 분리가 완료되면 `non_canonical_source` 판단 근거를 더 넓힐 수 있다.
+
+### 2026-06-11. Phase 2-3 judge safety mapping 1차 완료
+
+확인된 사실:
+
+- `buildRagAnswerSafety`가 parse된 answer judge artifact를 받을 수 있게 했다.
+- judge가 `temporalLeakage: present`를 반환하면 `future_fact_used_in_past_answer` reason으로 변환하고 `temporal_blocked` safety label을 반환한다.
+- judge가 `groundedness: unsupported`를 반환하면 `answer_contains_unsupported_claim` reason으로 변환하고 `blocked_p0` safety label을 반환한다.
+- judge가 `omission: present`, `contradiction: present`, 또는 reason 없는 `verdict: fail`을 반환해도 확정 답변 차단 reason으로 변환한다.
+- invalid judge artifact는 safety를 직접 차단하지 않는다. invalid artifact 자체는 eval result에 남기는 Phase 2-2 계약을 따른다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/ragGrounding.test.ts tests/main/services/memory/eval/memoryEvalAnswerJudge.test.ts tests/main/services/memory/eval/memoryEvalRunner.test.ts
+pnpm exec eslint src/main/services/features/rag/grounding.ts tests/main/services/ragGrounding.test.ts src/main/services/features/memory/eval/memoryEvalAnswerJudge.ts tests/main/services/memory/eval/memoryEvalAnswerJudge.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- 이 단계는 provider 호출이 아니라 이미 parse된 judge artifact를 safety policy에 반영하는 순수 계약이다.
+- 일반 runtime RAG 답변마다 judge를 호출하는 것은 비용/속도 정책과 UI 대기 UX를 정한 뒤 별도 phase에서 연결해야 한다.
+
+### 2026-06-11. Phase 3-3 conflict quote queue 연결
+
+확인된 사실:
+
+- `MemoryFactInvalidation`은 기존 fact와 새 fact의 충돌 쌍, reason, 생성 시점을 표현할 수 있다.
+- 양쪽 근거 문장은 `MemoryFactEvidence`와 `MemoryEpisodeEvidence`를 join해서 조회할 수 있다.
+- `MemoryConflictFactSummary`에 `evidenceQuotes`를 추가했다.
+- `fetchConflictFactPairs`는 invalidated/invalidating 양쪽 fact의 evidence quote를 반환한다.
+- 분석 패널에 `ConflictQueuePanel`을 연결했다.
+- 충돌 큐를 열면 현재 프로젝트/챕터/memory scope 기준으로 `getConflictQueue`를 호출한다.
+- 사용자는 충돌 항목에서 이전 사실 또는 신규 사실을 채택할 수 있고, UI는 기존 `resolveFactConflict` IPC를 호출한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/query/memoryConflictQueue.test.ts tests/main/services/memory/query/narrativeMemoryQueryService.test.ts tests/renderer/analysisConflictResolution.test.ts
+pnpm run typecheck
+pnpm exec eslint <Phase 3-3 touched files>
+```
+
+제한:
+
+- `defer`, `reviewing`, `hidden`, `resolvedAt`, `reviewerNote` 같은 작가 검토 상태 영속화는 아직 없다.
+- 이 상태가 필요하면 `MemoryFactInvalidation` 확장 또는 별도 `MemoryConflictLedger`가 필요하다.
+- 현재 UI 검증은 정적 소스 검사 중심이다. 실제 작가 플로우 DOM/e2e 검증은 Phase 5 범위에서 보강해야 한다.
+
+### 2026-06-11. Phase 3-4 suggested memory review UI/reject reason 저장
+
+확인된 사실:
+
+- 분석 패널에 `FactReviewPanel`, `EpisodeReviewPanel`, `EntityReviewPanel`, `EntityAliasReviewPanel`을 연결했다.
+- 각 review panel은 사용자가 펼칠 때 suggested queue를 조회한다.
+- fact/entity/entity alias/episode confirm은 기존 IPC를 호출한다.
+- fact/entity/entity alias/episode reject는 `window.prompt`로 받은 reason을 IPC payload에 포함한다.
+- `MemoryEntity`와 `MemoryEntityAlias`에 `rejectedAt`, `rejectionReason`을 추가했다.
+- 기존 DB를 위해 `MemoryEntity`/`MemoryEntityAlias` column patch를 추가했다.
+- entity/entity alias reject service는 빈 reason을 거부하고 reason을 저장한다.
+- entity alias panel은 merge/split action도 기존 IPC에 연결한다.
+- episode panel은 confirm 버튼을 추가해 accept/reject flow를 맞췄다.
+
+검증:
+
+```text
+pnpm vitest tests/renderer/analysisMemoryReviewWorkflow.test.ts
+pnpm vitest tests/main/services/memory/entity/memoryEntityReviewService.test.ts tests/main/services/memory/review/memoryReviewDecisionApply.test.ts tests/renderer/analysisMemoryReviewWorkflow.test.ts
+pnpm vitest tests/renderer/analysisMemoryReviewWorkflow.test.ts tests/renderer/analysisConflictResolution.test.ts
+pnpm run typecheck
+pnpm exec eslint <Phase 3-4 touched files>
+```
+
+제한:
+
+- reject reason 입력은 native prompt 기반 최소 구현이다.
+- 실제 DOM/e2e에서 작가가 큐를 열고 승인/거절하는 end-to-end 검증은 아직 없다.
+
+### 2026-06-11. Phase 4-1 longform benchmark seed/materialize
+
+확인된 사실:
+
+- `MEMORY_LONGFORM_BENCHMARK_PROFILES`에 `ci-1000`, `manual-300ch`, `manual-500ch`, `manual-10000`을 추가했다.
+- `ci-1000`은 low-end 기준 100화/1000 chunk/100만 자 profile이다.
+- `manual-10000`은 500화/10000 chunk/300만 자 profile이다.
+- benchmark manifest는 alias 반복, 회차 재정렬, 중간 리라이트, stale embedding, summary refresh, review backlog, renderer list 부하 scenario를 포함한다.
+- 같은 seed로 생성하면 같은 manifest가 나온다.
+- `memory:benchmark-seed` 스크립트를 추가했다.
+- `--materialize --project-id` 옵션으로 manifest를 실제 DB의 `Project`, `Chapter`, `MemoryChunk` row로 적재할 수 있다.
+- materializer는 같은 project id 재실행 시 중복 삽입하지 않는다.
+- 실제 `ci-1000` manifest 출력은 100 chapters, 1000 chunks, 1,000,000 chars, packageRowEstimate 1112였다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/benchmark/memoryLongformBenchmarkSeed.test.ts tests/main/services/memory/benchmark/memoryLongformBenchmarkMaterialize.test.ts tests/scripts/memoryBenchmarkSeedRunner.test.ts
+pnpm exec tsx scripts/generate-memory-benchmark-seed.ts --profile ci-1000 --seed 42 --out tests/.tmp/memory-benchmark-ci-1000.json
+pnpm run typecheck
+pnpm exec eslint <Phase 4-1 touched files>
+```
+
+제한:
+
+- 1만 chunk profile은 정의됐지만 실제 장시간 benchmark run은 아직 하지 않았다.
+- materialized row 기반 latency/memory usage 측정은 Phase 4-2 범위다.
+
+### 2026-06-11. Phase 4-2 latency budget/report + memory snapshot
+
+확인된 사실:
+
+- `MEMORY_BENCHMARK_LATENCY_BUDGETS`에 작가 체감 기준 latency와 memory budget을 고정했다.
+- first query after start 목표는 3000ms, repeated query 목표는 1000ms다.
+- 일반 근거 검색 목표는 1000ms, 복합 memory query 목표는 3000ms다.
+- RSS budget은 512MiB, heap used budget은 256MiB로 1차 설정했다.
+- `runMemoryBenchmarkLatencyReport`는 materialized benchmark project에서 chunk 검색 latency를 측정한다.
+- report는 `firstChunkSearch`, `repeatedChunkSearch`, `memoryUsage`, `sqlitePageCache`, `editAfterIndexPlan`, `packageProgressPlan`을 반환한다.
+- report는 `regressionThresholds`에 first/repeated query latency, RSS, heap 기준선을 함께 반환한다.
+- `summarizeMemoryBenchmarkLatencyFailures`는 fail 상태인 latency/memory 항목만 CI 실패 메시지로 요약한다.
+- `memory:benchmark-latency` 스크립트를 추가했다.
+- `--materialize --project-id --query --out`으로 benchmark project 생성과 latency/memory report 출력을 한 번에 수행할 수 있다.
+- `--assert-thresholds`를 붙이면 threshold fail이 있을 때 리포트 생성 후 non-zero exit로 실패한다.
+- 실제 `ci-1000` materialized run에서 `"검은 기사"` query report가 생성됐다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/benchmark/memoryLongformBenchmarkSeed.test.ts tests/main/services/memory/benchmark/memoryLongformBenchmarkMaterialize.test.ts tests/main/services/memory/benchmark/memoryBenchmarkLatencyRunner.test.ts tests/scripts/memoryBenchmarkSeedRunner.test.ts tests/scripts/memoryBenchmarkLatencyRunner.test.ts
+pnpm exec tsx scripts/run-memory-benchmark-latency.ts --profile ci-1000 --seed 42 --materialize --project-id benchmark-latency-cli-ci-1000 --query "검은 기사" --out tests/.tmp/memory-benchmark-latency-ci-1000.json --assert-thresholds
+pnpm run typecheck
+pnpm exec eslint <Phase 4-2 touched files>
+```
+
+제한:
+
+- cold start 측정은 실제 Electron app start 직후 query hook과 아직 연결되지 않았다.
+- edit-after-index repair job의 실제 background 소요 시간은 아직 측정하지 않았다.
+- 1만 chunk profile 장시간 run은 아직 수동 benchmark로 남아 있다.
+- threshold assert mode는 생겼지만 CI workflow에 artifact 업로드와 gate로 아직 연결하지 않았다.
+
+### 2026-06-11. Phase 4-3 search optimization policy
+
+확인된 사실:
+
+- `SearchOptimizationPolicy`를 추가했다.
+- 기본 mode는 `standard`다.
+- Phase 4-3 당시 low-end mode는 result limit 40, candidate cap 40, context budget 6144 chars, rerank cache TTL 300초, vector mode `skip-when-lexical-hits`로 시작했다.
+- Phase 4-4 eval guard에서 candidate cap 40은 averageContextRecallAtK 0.9698630136986301로 0.98 기준을 통과하지 못해 candidate cap 50으로 보정했다.
+- standard mode에서 requested limit 20은 candidate cap 60, context budget 8192 chars, rerank cache TTL 180초로 해석된다.
+- `searchChunks`의 FTS/short-token/vector 후보 LIMIT가 policy candidate cap을 사용한다.
+- RAG `searchMemoryChunksForRag`의 FTS/exact phrase/quote-token/short-token/vector 후보 LIMIT가 policy candidate cap을 사용한다.
+- `assembleRagContext`는 requested context budget을 policy context cap 안으로 제한한다.
+- latency benchmark report는 현재 적용된 `optimizationPolicy`를 함께 출력한다.
+- latency benchmark report는 `candidateCapComparison`으로 cap 20/40/current baseline의 latency, result count, baseline overlap ratio를 출력한다.
+- latency benchmark report는 `cacheTtlMemoryComparison`으로 TTL 60초/180초/300초별 예상 entry 수와 예상 memory 사용량을 출력한다.
+- vector search는 `MemoryEmbedding`을 현재 `MemoryChunk`와 join하고, embedding hash가 현재 `indexTextHash/contentHash`와 같을 때만 후보로 사용한다.
+- `manual-10000` materialize 중 1만 chunk 단일 insert가 stack overflow를 일으켜 chunk insert를 500개 batch로 나눴다.
+- benchmark `sourceId`는 `MemoryChunk_source_chunkIndex_key` 전역 unique와 충돌하지 않도록 project-qualified id로 저장한다.
+- `manual-10000` CLI report는 500 chapters, 10000 chunks, 3,000,000 chars 기준으로 생성됐다.
+- `manual-10000` report에서 firstChunkSearch 0.472ms, repeatedChunkSearch 0.463ms, RSS 225.5MiB, heapUsed 49.814MiB였다.
+- `memoryEvalOptimizationGuard`를 추가해 averageContextRecallAtK와 totalP0FailureCount를 threshold로 검사한다.
+- `memory:run-eval-suite --assert-optimized-recall --min-recall 0.98 --max-p0-failures 0` 옵션을 추가했다.
+- 실제 365개 eval run에서 averageContextRecallAtK 0.9972602739726028, totalP0FailureCount 0으로 guard가 통과했다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/search/searchOptimizationPolicy.test.ts tests/main/services/search/vectorSearchStaleEmbedding.test.ts tests/main/services/memory/benchmark/memoryBenchmarkLatencyRunner.test.ts
+pnpm exec tsx scripts/run-memory-benchmark-latency.ts --profile ci-1000 --seed 42 --materialize --project-id benchmark-latency-cli-ci-1000 --query "검은 기사" --out tests/.tmp/memory-benchmark-latency-ci-1000.json --assert-thresholds
+pnpm exec tsx scripts/run-memory-benchmark-latency.ts --profile manual-10000 --seed 42 --materialize --project-id benchmark-latency-cli-manual-10000-v2 --query "검은 기사" --out tests/.tmp/memory-benchmark-latency-manual-10000.json --assert-thresholds
+pnpm run memory:run-eval-suite -- --project-id 454cce80-02b4-4d43-a162-4116898e4b4e --label phase-4-3-optimized-rag --top-k 5 --out tests/.tmp/memory-eval-optimization-guard.json --assert-optimized-recall --min-recall 0.98 --max-p0-failures 0
+pnpm run typecheck
+pnpm exec eslint <Phase 4-3 touched files>
+```
+
+제한:
+
+- candidate cap 비교는 `ci-1000` 기준 baseline overlap 1차 리포트다. 실제 정답 recall 평가는 아직 아니다.
+- cache TTL memory 비교는 estimated entry size 기반 1차 추정이다. 실제 top-k rerank cache 저장소와 heap delta 계측은 아직 없다.
+- stale embedding skip은 vector search 경로에 적용됐다. 다만 skip된 stale row 수를 report하는 계측은 아직 없다.
+- 1만 chunk manual benchmark는 latency/memory report까지 완료됐다. 1만 chunk 데이터셋 자체의 별도 정답 recall 평가는 아직 없다.
+- eval recall guard는 headless Layer 3 evidence retrieval 기준이다. 실제 LLM 장문 답변 품질 전체를 보장하는 검증은 아니다.
+
+### 2026-06-11. Phase 4-4 low-end mode, UI toggle, actual RAG path 계측
+
+확인된 사실:
+
+- `memory:benchmark-latency`와 `memory:run-eval-suite`가 `--optimization-mode low-end|standard|high-end|quality`를 받는다.
+- benchmark/eval output은 실제 적용된 `optimizationPolicy`를 저장한다.
+- 앱 설정에 `llm.searchOptimizationMode`를 추가했고, main/preload/shared/renderer 계약을 같은 enum으로 연결했다.
+- analysis panel composer에서 Search Mode를 바꿀 수 있고, low-end 설명은 "빠른 검색 · 근거 폭 좁음"으로 표시한다.
+- low-end candidate cap 40은 365 eval에서 recall 0.9698630136986301로 실패했고, candidate cap 50은 low-end/standard/high-end/quality 모두 recall 0.9972602739726028, P0 0으로 통과했다.
+- `ci-1000` low-end benchmark에서 `searchMemoryChunksForRag`는 p50 2.942ms, p95/p99/max 4.195ms였다.
+- 같은 run에서 `buildLayer3Evidence`는 p50 2.087ms, p95/p99/max 2.347ms였다.
+- stage breakdown 기준 주요 비용은 `shortToken` p50 1.618ms, `parentWindow` p50 0.575ms, `hydrate` p50 0.190ms였다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/benchmark/memoryBenchmarkLatencyRunner.test.ts tests/scripts/memoryBenchmarkLatencyRunner.test.ts tests/main/services/search/searchOptimizationPolicy.test.ts tests/main/manager/settingsManager.localLlm.test.ts tests/main/handler/ipcSettingsHandlers.security.test.ts tests/dom/analysisViewMode.test.tsx tests/scripts/memoryRunEvalSuiteRunner.test.ts
+pnpm exec tsx scripts/run-memory-benchmark-latency.ts --profile ci-1000 --seed 42 --materialize --project-id benchmark-latency-cli-ci-1000-low-end --query "검은 기사" --optimization-mode low-end --out tests/.tmp/memory-benchmark-latency-ci-1000-low-end.json --assert-thresholds
+pnpm run memory:run-eval-suite -- --project-id 454cce80-02b4-4d43-a162-4116898e4b4e --label phase-4-4-low-end-rag --top-k 5 --optimization-mode low-end --out tests/.tmp/memory-eval-low-end-optimization-guard.json --assert-optimized-recall --min-recall 0.98 --max-p0-failures 0
+pnpm run memory:run-eval-suite -- --project-id 454cce80-02b4-4d43-a162-4116898e4b4e --label phase-4-4-standard-rag --top-k 5 --optimization-mode standard --out tests/.tmp/memory-eval-standard-optimization-guard.json --assert-optimized-recall --min-recall 0.98 --max-p0-failures 0
+pnpm run memory:run-eval-suite -- --project-id 454cce80-02b4-4d43-a162-4116898e4b4e --label phase-4-4-high-end-rag --top-k 5 --optimization-mode high-end --out tests/.tmp/memory-eval-high-end-optimization-guard.json --assert-optimized-recall --min-recall 0.98 --max-p0-failures 0
+pnpm run memory:run-eval-suite -- --project-id 454cce80-02b4-4d43-a162-4116898e4b4e --label phase-4-4-quality-rag --top-k 5 --optimization-mode quality --out tests/.tmp/memory-eval-quality-optimization-guard.json --assert-optimized-recall --min-recall 0.98 --max-p0-failures 0
+pnpm run typecheck
+pnpm exec eslint <Phase 4-4 touched files>
+```
+
+제한:
+
+- p99와 cold/warm 분리 측정은 이후 Phase 4-4 p99/cold-warm 기록에서 1차 완료했다.
+- synthetic vector probe는 이후 Phase 4-4 p99/cold-warm 기록에서 1차 완료했다.
+- cache TTL estimated memory comparison은 추정 기반이다. benchmark-local hit/miss probe는 이후 Phase 4-4 p99/cold-warm 기록에서 1차 완료했다.
+- 실제 LLM 장문 답변 품질과 judge 비용은 이 수치로 보장되지 않는다.
+
+### 2026-06-11. Phase 4-4 p99/cold-warm latency 계측
+
+확인된 사실:
+
+- `MemoryBenchmarkRagPathMeasurement`에 `p99Ms`, `coldStartMs`, `warmIterations`, `warmP50Ms`, `warmP95Ms`, `warmP99Ms`, `warmMaxMs`를 추가했다.
+- `MemoryBenchmarkLayer3PathMeasurement`에도 같은 cold/warm 필드를 추가했다.
+- `MemoryBenchmarkRagStageMeasurement`에 `p99Ms`를 추가했다.
+- `vectorSearchProbe`를 추가해 quality mode synthetic embedding으로 vector branch를 실제 실행한다.
+- `rerankCacheProbe`를 추가해 benchmark-local TTL Map 기준 hit/miss, entry count, cached chunk count, heap delta를 측정한다.
+- `writerFlowQuerySet`을 추가해 alias lookup, temporal marker, rewrite marker, state change 4개 query category를 측정한다.
+- `ci-1000` low-end benchmark에서 `searchMemoryChunksForRag`는 cold 4.195ms, warm p50 2.713ms, warm p95/p99 3.063ms, 전체 p99 4.195ms였다.
+- 같은 run에서 `buildLayer3Evidence`는 cold 2.347ms, warm p50 2.062ms, warm p95/p99 2.141ms, 전체 p99 2.347ms였다.
+- vector probe는 synthetic embedding row 50개를 materialize했고, vector stage는 skipped 0, p50 0.101ms, p95/p99 0.537ms였다.
+- rerank cache probe는 ttl 300000ms, queries 5, hits 4, misses 1, entries 1, cachedChunkIds 50, heapDelta 0.081MiB였다.
+- writer-flow query set의 RAG path p99는 alias lookup 2.664ms, temporal marker 4.221ms, rewrite marker 4.772ms, state change 11.151ms였다.
+- writer-flow query set의 Layer3 evidence p99는 alias lookup 1.811ms, temporal marker 0.981ms, rewrite marker 1.264ms, state change 1.869ms였다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/benchmark/memoryBenchmarkLatencyRunner.test.ts tests/scripts/memoryBenchmarkLatencyRunner.test.ts
+pnpm exec tsx scripts/run-memory-benchmark-latency.ts --profile ci-1000 --seed 42 --materialize --project-id benchmark-latency-cli-ci-1000-low-end --query "검은 기사" --optimization-mode low-end --out tests/.tmp/memory-benchmark-latency-ci-1000-low-end.json --assert-thresholds
+pnpm exec eslint src/main/services/features/memory/benchmark/memoryBenchmarkLatencyRunner.ts tests/main/services/memory/benchmark/memoryBenchmarkLatencyRunner.test.ts tests/scripts/memoryBenchmarkLatencyRunner.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- query category별 p99/cold-warm 비교는 benchmark seed marker 4종 기준 1차 완료했다. 실제 웹소설 질문문 기반 category는 아직 남아 있다.
+- vector probe는 synthetic embedding 기준이다. 실제 운영 embedding row와 실제 embedding provider 비용까지 대표하지는 않는다.
+- cache probe는 benchmark-local TTL Map 기준이다. production cache 저장소의 eviction/hit/miss까지 대표하지는 않는다.
+
+### 2026-06-11. Phase 4-4 전체 typecheck 회복
+
+확인된 사실:
+
+- 전체 `pnpm run typecheck`를 막던 오류는 `RelationEdge.tsx`의 `BaseEdge style`에 직접 만든 `EdgeStyle` interface를 넘기면서 발생했다.
+- `EdgeStyle`을 React `CSSProperties` 기반 타입으로 바꿔 `BaseEdge`의 style 계약과 맞췄다.
+- 이 수정은 canvas edge style 타입 경계만 바꾸며, RAG/Memory Engine runtime 동작은 변경하지 않는다.
+
+검증:
+
+```text
+pnpm run typecheck
+pnpm exec eslint src/renderer/src/features/canvas/utils/edgeStyles.ts src/renderer/src/features/canvas/components/viewport/edges/RelationEdge.tsx src/main/services/features/memory/benchmark/memoryBenchmarkLatencyRunner.ts tests/main/services/memory/benchmark/memoryBenchmarkLatencyRunner.test.ts tests/scripts/memoryBenchmarkLatencyRunner.test.ts
+pnpm vitest tests/main/services/memory/benchmark/memoryBenchmarkLatencyRunner.test.ts tests/scripts/memoryBenchmarkLatencyRunner.test.ts
+```
+
+### 2026-06-11. Phase 4-5 memory build job control 계약
+
+기록 성격:
+
+- 아래 항목은 Phase 4-5 초기 계약 당시의 기록이다.
+- 최신 기준은 Phase 4-5-4 이후 `running` cancel 거부가 아니라 `running -> cancel_requested`다.
+- 현재 상태를 볼 때는 본문 Phase 4-5와 Phase 4-5-4 기록을 우선한다.
+
+확인된 사실:
+
+- `MemoryBuildJob` 상태 제어 service를 추가했다.
+- pause는 `pending/failed -> paused` 전환만 수행한다.
+- resume은 `paused -> pending` 전환만 수행한다.
+- cancel은 `pending/failed/paused -> canceled`만 허용한다.
+- 당시에는 running job cancel을 partial write/완료 덮어쓰기 위험 때문에 명시적으로 거부했다. 이 정책은 Phase 4-5-4에서 `cancel_requested` 기반 cooperative cancellation으로 변경됐다.
+- stale running recovery는 지정 시각 이전 `running` job을 `pending`으로 되돌린다.
+- progress는 `byStatus`, `activeCount`, `doneCount`, `total`을 반환한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- 이 초기 계약 시점에는 아직 UI에 연결하지 않았다. 이후 Settings progress/control UI는 1차 연결됐다.
+- 이 초기 계약 시점에는 running job을 중간에 멈추는 cooperative cancellation checkpoint가 없었다. 이후 summary/embedding 일부 경로에 1차 checkpoint가 추가됐다.
+- progress는 status count 기준이며 chunk/job 내부 세부 진행률은 아직 없다.
+
+### 2026-06-11. Phase 4-5-3 paused/failed memory job dedupe
+
+확인된 사실:
+
+- 챕터 수정으로 `enqueueChapterDerivedJobs`가 다시 호출될 때 기존 `paused` memory job이 있으면 새 `pending` job을 만들지 않는다.
+- 기존 `failed` memory job도 retry 대상이므로 새 duplicate pending job을 만들지 않고 기존 job의 priority/updatedAt만 갱신한다.
+- 같은 dedupe 상태 집합을 `memoryProjectionService.enqueueChapterChunkRebuild`와 `dbMaintenanceMemory.rebuildMemoryChunks`에도 적용했다.
+- dedupe 대상 상태는 `pending/running/failed/paused`다.
+- `canceled/completed/skipped`는 dedupe 대상이 아니다. 이후 작가가 원고를 다시 수정하면 새 job을 만들 수 있어야 하기 때문이다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/core/chapter/chapterDerivedJobs.test.ts
+pnpm vitest tests/main/services/core/chapter/chapterDerivedJobs.test.ts tests/main/services/memoryProjectionService.test.ts tests/main/services/dbMaintenanceService.test.ts tests/main/services/memory/memoryBuildJobControl.test.ts
+```
+
+제한:
+
+- production processor claim 조건을 공통 helper로 강제하는 작업은 아직 남아 있다.
+- startup recovery는 `derivedJobWorker.start()` 경로에 연결되어 있다. 이 기록 당시 UI 표시 문구는 아직 없었다. 이후 Phase 4-5-6d restart recovery Settings label DOM 검증에서 1차 보완했다.
+- summary/embedding cooperative cancellation은 Phase 4-5-4에서 1차 완료했다.
+
+### 2026-06-11. Phase 4-5-3 stale running recovery marker 통일
+
+확인된 사실:
+
+- `derivedJobWorker.start()`는 시작 시 `dbMaintenanceService.recoverStaleRunningJobs()`를 호출한다.
+- DB maintenance recovery는 오래된 `running` search job과 memory job을 `pending`으로 되돌린다.
+- memory job recovery는 이제 `error: "RECOVERED_STALE_RUNNING_JOB"` marker를 남긴다.
+- 이 marker는 `memory/jobControl.recoverStaleRunningMemoryBuildJobs`의 project 단위 복구 marker와 같다.
+- 최근 `running` memory job은 복구하지 않는다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/dbMaintenanceService.test.ts
+```
+
+제한:
+
+- 이 기록 시점에는 recovery marker를 renderer progress UI 문구로 보여주는 작업이 없었다. 이후 Settings memory rebuild card가 `RECOVERED_STALE_RUNNING_JOB` count를 "중단된 작업 복구됨" label로 표시하고 DOM 테스트와 ko/en/ja locale key 테스트로 검증했다.
+- search dirty queue recovery에는 별도 error column이 없어 같은 marker를 남기지 않는다.
+
+### 2026-06-11. Phase 4-5-3 memory job claim helper
+
+확인된 사실:
+
+- `claimMemoryBuildJob` helper를 추가했다.
+- helper는 `pending/failed` job만 `running`으로 전환한다.
+- helper는 `paused/canceled/running` job을 claim하지 않는다.
+- chunk rebuild processor, chapter summary projector, embedding projector는 직접 claim update를 하지 않고 helper를 호출한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/main/services/memoryProjectionService.test.ts tests/main/services/memory/summary tests/main/services/dbMaintenanceService.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts src/main/services/features/memory/memoryProjectionService.ts src/main/services/features/memory/chapterSummaryProjector.ts src/main/services/features/memory/embeddingProjector.ts tests/main/services/memory/memoryBuildJobControl.test.ts
+```
+
+제한:
+
+- retry limit/backoff 정책 자체는 아직 projector별 canRetry 함수에 남아 있다.
+- summary/embedding cooperative cancellation은 Phase 4-5-4에서 1차 완료했다.
+
+### 2026-06-11. Phase 4-5-4 summary/embedding cooperative cancellation
+
+확인된 사실:
+
+- `cancelMemoryBuildJobs`는 더 이상 `running` job이 있다는 이유만으로 거부하지 않는다.
+- `pending/failed/paused` job은 즉시 `canceled`가 된다.
+- `running` job은 `cancel_requested`가 되고 `error: "CANCELLATION_REQUESTED_BY_USER"` marker를 남긴다.
+- `finalizeMemoryBuildJobCancellation`은 `cancel_requested -> canceled` checkpoint finalize를 담당한다.
+- `isMemoryBuildJobCancellationRequested`는 processor가 `cancel_requested/canceled` 상태를 확인하는 공통 checkpoint다.
+- chapter summary projector는 LLM summary 생성 후 summary write 전에 cancellation checkpoint를 확인한다.
+- embedding projector는 embedding provider 호출 전후에 cancellation checkpoint를 확인한다.
+- embedding provider 호출 중 cancel이 감지되면 취소 job은 `canceled`, 같은 batch의 나머지 job은 `pending`으로 되돌려 다음 tick에서 다시 처리한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/main/services/chapterSummaryProjector.test.ts tests/main/services/memoryProjectionService.test.ts tests/main/handler/ipcInputValidation.memory.test.ts tests/main/services/dbMaintenanceService.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts src/main/services/features/memory/chapterSummaryProjector.ts src/main/services/features/memory/embeddingProjector.ts tests/main/services/memory/memoryBuildJobControl.test.ts tests/main/services/chapterSummaryProjector.test.ts src/shared/api/io.contract.ts
+pnpm run typecheck
+```
+
+제한:
+
+- chunk rebuild transaction 내부는 아직 세부 checkpoint가 없다.
+- `tests/main/services/embeddingProjector.test.ts`는 기존 mock이 DB setup의 `db.initialize`를 가려 suite import 단계에서 실패한다. 이번 변경 검증은 다른 processor/contract 테스트와 typecheck로 수행했다.
+- Settings memory progress UI에서 `cancel_requested` 상태를 "취소 준비 중"으로 보여준다.
+
+### 2026-06-11. Phase 4-5-5 settings memory progress/control UI
+
+확인된 사실:
+
+- Settings model tab의 memory rebuild card가 `memoryAdmin.getBuildJobProgress` 결과를 표시한다.
+- 표시 범위는 total/done/active/percent와 status별 count다.
+- `cancel_requested`는 "취소 준비 중", stale recovery marker는 "중단된 작업 복구됨"으로 변환하는 helper를 추가했다.
+- Settings에서 memory build job pause/resume/cancel API를 호출할 수 있다.
+- rebuild 시작, pause, resume, cancel 이후 progress를 다시 불러온다.
+
+검증:
+
+```text
+pnpm vitest tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/renderer/src/features/settings/hooks/useSettingsModel.ts src/renderer/src/features/settings/components/SettingsModal.tsx src/renderer/src/features/settings/components/tabs/ModelTab.tsx src/renderer/src/features/settings/components/tabs/modelTabSections/RebuildMemoryCard.tsx src/renderer/src/features/settings/components/tabs/modelTabSections/types.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+제한:
+
+- 이 기록 시점에는 progress가 status count 기준이었다. 이후 jobType/targetType progress를 1차 연결했다.
+- 이 기록 시점에는 chapter/chunk/jobType별 세부 진행률이 없었다. 이후 jobType/targetType progress는 1차 연결했고, 개별 chapterId/chunkId 단위는 아직 남아 있다.
+- active job이 있을 때 Settings progress polling은 1차 완료했다.
+- 이 기록 시점에는 snapshot cache가 아직 없었다. 이후 Phase 4-5-7 progress snapshot cache에서 1초 TTL cache를 1차 연결했다.
+
+### 2026-06-11. Phase 4-5-5 active progress polling
+
+확인된 사실:
+
+- `shouldPollMemoryBuildProgress` helper를 추가했다.
+- Settings model tab은 memory build progress의 `activeCount > 0`일 때 2초 간격으로 progress를 다시 불러온다.
+- active job이 없으면 polling하지 않는다.
+
+검증:
+
+```text
+pnpm vitest tests/renderer/settingsMemoryBuildProgress.test.ts
+```
+
+제한:
+
+- 이 기록 시점에는 progress snapshot cache가 아직 없었다. 이후 Phase 4-5-7 progress snapshot cache에서 1초 TTL cache를 1차 연결했다.
+- polling은 Settings model tab이 열린 동안만 동작한다.
+
+### 2026-06-11. Phase 4-5 memory build job control IPC/API 연결
+
+확인된 사실:
+
+- `memory:pause-build-jobs`, `memory:resume-build-jobs`, `memory:cancel-build-jobs`, `memory:get-build-job-progress` IPC 채널을 추가했다.
+- main handler는 네 채널 모두 `{ projectId }` payload를 zod schema로 검증한 뒤 `memory/jobControl` service를 호출한다.
+- preload `memoryAdmin`에는 `pauseBuildJobs`, `resumeBuildJobs`, `cancelBuildJobs`, `getBuildJobProgress`를 추가했다.
+- shared renderer contract에는 pause/resume/cancel count와 `MemoryBuildJobProgress` 반환 타입을 추가했다.
+- 기존 entity/entity alias reject IPC 테스트 fixture도 현재 schema의 필수 `reason` 계약에 맞췄다.
+
+검증:
+
+```text
+pnpm vitest tests/main/handler/ipcInputValidation.memory.test.ts tests/main/services/memory/memoryBuildJobControl.test.ts
+pnpm exec eslint src/main/handler/search/ipcSearchHandlers.ts src/preload/api/projectApi.ts src/shared/api/io.contract.ts src/shared/ipc/channels.ts src/shared/schemas/search.ts src/shared/types/search/status.ts src/shared/types/index.ts tests/main/handler/ipcInputValidation.memory.test.ts tests/main/handler/ipcInputValidation.shared.ts src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- Settings model tab의 status count UI는 Phase 4-5-5에서 1차 완료했다.
+- summary/embedding provider 경로의 cooperative cancellation은 1차 완료했다.
+- chunk/job 내부 세부 진행률은 아직 없다.
+
+### 2026-06-11. Phase 4-5 sub-agent 객관 리뷰 반영
+
+리뷰 결론:
+
+- 사실: Phase 4-5의 service -> IPC handler -> preload -> shared contract -> Settings UI 흐름은 현재 프로젝트 구조와 일관성 있다.
+- 사실: 외부 queue를 새로 도입하기보다 기존 SQLite/Drizzle `MemoryBuildJob` queue를 강화하는 방향이 현재 Electron 로컬 앱 구조와 맞다.
+- 사실: 최신 코드 기준 `running` cancel은 거부가 아니라 `cancel_requested` 요청 상태로 기록된다.
+- 사실: 리뷰 당시 progress는 status별 count 집계였고 별도 snapshot 저장이나 jobType/chapter/chunk별 진행률은 없었다. 이후 jobType/targetType progress와 1초 TTL snapshot cache를 1차 연결했다.
+- 사실: 리뷰 당시 retry/backoff 정책은 `jobPolicy.ts`에 일부 존재했지만 UI/progress/공통 상태 machine과의 연결은 부족했다. 이후 retry/cancel attention UI를 1차 연결했다.
+- 사실: Settings progress helper에는 recovery marker label이 있었고, 이후 progress API가 error marker를 집계하며 Settings card DOM이 "중단된 작업 복구됨" label을 표시하도록 1차 보완했다.
+- 의견: 현재 문서 상태는 계획서로 쓸 수 있지만, "완료/1차 완료/미완료" 경계가 흐려지면 구현 범위를 과대평가할 위험이 있다.
+
+반영한 수정:
+
+- Phase 4-5 본문에 "최신 기준은 `running -> cancel_requested`"를 고정했다.
+- Phase 4-5 초기 계약 기록은 당시 기록이며, Phase 4-5-4 이후 정책이 supersede했음을 명시했다.
+- "repair job"이 현재 `MemoryBuildJob`의 확정 jobType과 1:1 대응하지 않음을 명시했다.
+- progress 저장은 별도 snapshot이 아니라 DB job status 집계임을 명시했다.
+- Phase 4-5-6을 실제 작가 flow e2e 하위 단계로 쪼갔다.
+  - Phase 4-5-6a: 과거 회차 수정 후 rebuild 시나리오
+  - Phase 4-5-6b: pause/resume 작가 플로우
+  - Phase 4-5-6c: cancel/cooperative cancel 작가 플로우
+  - Phase 4-5-6d: restart recovery 작가 플로우
+- Phase 4-5-7을 추가해 jobType progress, snapshot cache, polling backoff, 오래 지속되는 `cancel_requested` 탐지를 다음 최적화 단위로 분리했다.
+
+남은 객관 리스크:
+
+- Phase 4-5-6 writer workflow e2e는 아직 구현/검증 전이다.
+- 리뷰 당시에는 jobType별 progress API와 Settings 표시가 없어서 작가가 "무엇이 병목인지" 정확히 알 수 없었다. 이 항목은 Phase 4-5-7에서 1차 보완했다.
+- recovery marker는 현재 progress API 출력에 포함되지 않으므로 UI label 검증 범위를 과장하면 안 된다.
+- chunk rebuild transaction 내부 checkpoint는 아직 없다.
+
+### 2026-06-11. Phase 4-5-7 jobType progress API/UI
+
+확인된 사실:
+
+- `getMemoryBuildJobProgress`가 기존 status별 집계에 더해 `byJobType`을 반환한다.
+- `byJobType`은 jobType별 `total`, `activeCount`, `doneCount`, `byStatus`를 포함한다.
+- Settings progress helper는 jobType별 항목을 작가용 label로 변환한다.
+- jobType label은 `rebuild_chunks` = 원고 기억화, `rebuild_summary` = 회차 요약, `rebuild_embedding` = 의미 검색 준비다.
+- Settings memory rebuild card는 전체 progress 아래에 jobType별 진행 상황을 표시한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts
+pnpm vitest tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts src/shared/types/search/status.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts src/renderer/src/features/settings/components/tabs/modelTabSections/RebuildMemoryCard.tsx tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+제한:
+
+- 이 기록 시점에는 chapter/chunk 단위 진행률이 아직 없었다. 이후 targetType progress는 1차 연결했고, 개별 chapterId/chunkId 단위는 아직 남아 있다.
+- 이 기록 시점에는 progress snapshot cache가 아직 없었다. 이후 Phase 4-5-7 progress snapshot cache에서 1초 TTL cache를 1차 연결했다.
+- 이 기록 시점에는 retry/backoff 상태가 아직 UI label에 연결되지 않았다. 이후 Phase 4-5-7 retry/cancel attention UI에서 1차 연결됐다.
+- 이 기록 시점에는 Settings polling이 active job 존재 여부 기준 2초 고정 polling이었다. 이후 Phase 4-5-7 active polling backoff에서 1차 보완했다.
+
+### 2026-06-11. Phase 4-5-7 retry/cancel attention UI
+
+확인된 사실:
+
+- `getMemoryBuildJobProgress`가 `attention` 요약을 반환한다.
+- `attention`은 `retryableFailedCount`, `retryBackoffCount`, `exhaustedFailedCount`, `staleCancellationRequestedCount`, `nextRetryAt`, `latestError`를 포함한다.
+- failed job은 attempts와 updatedAt 기준으로 재시도 가능, 재시도 대기, 재시도 한도 도달로 나뉜다.
+- 재시도 대기 중인 failed job이 있으면 가장 이른 다음 재시도 시각을 `nextRetryAt`으로 반환한다.
+- `cancel_requested` job은 일정 시간 이상 유지되면 취소 지연으로 표시된다.
+- Settings progress helper는 attention 요약을 작가용 label로 변환한다.
+- Settings memory rebuild card는 재시도 가능, 재시도 대기, 재시도 한도 도달, 취소 지연 badge, 다음 재시도 시각, 최근 오류를 표시한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts
+pnpm vitest tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts src/shared/types/search/status.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts src/renderer/src/features/settings/components/tabs/modelTabSections/RebuildMemoryCard.tsx tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+제한:
+
+- attention은 전체 project 기준 집계다. jobType별 retry/backoff breakdown은 아직 없다.
+- `nextRetryAt`은 project 전체에서 가장 이른 다음 재시도 시각 하나만 표시한다. jobType/target별 다음 재시도 시각은 아직 없다.
+- 오래 지속되는 `cancel_requested` 감지는 count만 제공한다. 어떤 targetId가 지연 중인지는 아직 표시하지 않는다.
+- 이 기록 시점에는 Settings polling이 active job 존재 여부 기준 2초 고정 polling이었다. 이후 Phase 4-5-7 active polling backoff에서 1차 보완했다.
+
+### 2026-06-11. Phase 4-5-7 active polling backoff
+
+확인된 사실:
+
+- `getMemoryBuildProgressPollIntervalMs` helper를 추가했다.
+- active job이 없으면 polling interval은 `null`이다.
+- running 또는 `cancel_requested` job이 있으면 2초 polling을 유지한다.
+- 오래 지속되는 `cancel_requested` attention이 있으면 2초 polling을 유지한다.
+- pending/failed/paused처럼 즉시 처리 중인 job이 없는 active 상태에서는 5초 polling으로 backoff한다.
+- active job이 50개 이상이면 5초, 200개 이상이면 10초로 추가 backoff한다.
+- 오래 지속되는 `cancel_requested` attention은 active job 수보다 우선해서 2초 polling을 유지한다.
+- Settings model tab은 직전 progress snapshot을 기억하고 helper에 전달한다.
+- active progress가 직전 snapshot과 같으면 running 상태도 5초 polling으로 backoff한다.
+- done/active/status count가 바뀌면 2초 polling을 유지한다.
+- Settings model tab polling effect는 고정 `2_000ms` 대신 helper가 반환한 interval을 사용한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm vitest tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts src/shared/types/search/status.ts src/renderer/src/features/settings/hooks/useSettingsModel.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts src/renderer/src/features/settings/components/tabs/modelTabSections/RebuildMemoryCard.tsx tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+제한:
+
+- progress 변화 비교는 전체 active/done/status count 기준이다. 아직 개별 target별 delta까지 비교하지는 않는다.
+- 이 기록 시점에는 progress snapshot cache가 아직 없었다. 이후 Phase 4-5-7 progress snapshot cache에서 1초 TTL cache를 1차 연결했다.
+
+### 2026-06-11. Phase 4-5-7 progress snapshot cache
+
+확인된 사실:
+
+- `getMemoryBuildJobProgress`에 project 단위 process memory snapshot cache를 추가했다.
+- snapshot TTL은 1초다.
+- TTL 안의 반복 progress 조회는 기존 snapshot을 반환한다.
+- TTL이 지난 조회는 DB group query를 다시 수행해 최신 progress를 반환한다.
+- pause/resume/cancel/recover처럼 projectId를 아는 상태 변경은 해당 project cache를 무효화한다.
+- claim/finalize처럼 jobId만 받는 상태 변경은 전체 progress snapshot cache를 무효화한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts src/shared/types/search/status.ts src/renderer/src/features/settings/hooks/useSettingsModel.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts src/renderer/src/features/settings/components/tabs/modelTabSections/RebuildMemoryCard.tsx tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+제한:
+
+- cache는 process memory 기반이다. app restart 후 snapshot은 유지되지 않는다.
+- 외부에서 DB를 직접 수정하면 TTL 안에서는 stale snapshot을 볼 수 있다. 공식 job control API는 cache를 무효화한다.
+- 실제 대형 project에서 progress group query 비용 benchmark는 아직 없다.
+
+### 2026-06-11. Phase 4-5-7 targetType progress API/UI
+
+확인된 사실:
+
+- `getMemoryBuildJobProgress`가 `byTargetType`을 반환한다.
+- `byTargetType`은 targetType별 `total`, `activeCount`, `doneCount`, `byStatus`를 포함한다.
+- Settings progress helper는 targetType별 항목을 작가용 label로 변환한다.
+- targetType label은 회차, 장면, 노트, 시놉시스, 플롯, 인물, 세력, 사건, 자료 메모를 포함한다.
+- Settings memory rebuild card는 전체 progress와 jobType progress 아래에 원고 단위별 진행 상황을 표시한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts src/shared/types/search/status.ts src/renderer/src/features/settings/hooks/useSettingsModel.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts src/renderer/src/features/settings/components/tabs/modelTabSections/RebuildMemoryCard.tsx tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+제한:
+
+- 이 단계는 targetType별 진행률이다. 개별 chapterId/chunkId별 진행률은 아직 없다.
+- targetId 목록이나 특정 회차 제목은 아직 표시하지 않는다.
+- progress UI가 길어질 수 있어, 대형 프로젝트에서는 접기/상위 N개 표시가 필요할 수 있다.
+
+### 2026-06-11. Phase 4-5-7 targetId progress API/UI
+
+확인된 사실:
+
+- `getMemoryBuildJobProgress`가 `byTarget`을 반환한다.
+- `byTarget` key는 `<targetType>:<targetId>` 형식이다.
+- `byTarget`은 target별 `targetType`, `targetId`, `total`, `activeCount`, `doneCount`, `byStatus`를 포함한다.
+- Settings progress helper는 개별 target 항목을 activeCount 우선으로 정렬한다.
+- Settings memory rebuild card는 activeCount가 큰 개별 target 상위 5개를 표시한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts src/shared/types/search/status.ts src/renderer/src/features/settings/hooks/useSettingsModel.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts src/renderer/src/features/settings/components/tabs/modelTabSections/RebuildMemoryCard.tsx tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+제한:
+
+- 이 기록 시점에는 target label이 `회차 <targetId>` 같은 기본 label이었다. 이후 chapter/scene/note target label은 1차 연결했다. synopsis/plot/character/faction/event/scrapMemo/chunk label join은 아직 없다.
+- 상위 5개만 표시한다. 전체 목록/필터 UI는 아직 없다.
+- targetId progress는 MemoryBuildJob 단위 진행률이다. chunk 내부 처리 percent는 아직 아니다.
+
+### 2026-06-11. Phase 4-5-7 chapter target label
+
+확인된 사실:
+
+- chapter target의 label을 DB의 `Chapter.order`와 `Chapter.title`로 보강했다.
+- `byTarget["chapter:<id>"].label`은 chapter row가 있으면 `12화 · 검은 기사` 형식으로 반환한다.
+- chapter row를 찾지 못한 target은 `label: null`로 유지한다.
+- Settings progress helper는 backend label이 있으면 이를 우선 사용하고, 없으면 기존 fallback label을 사용한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts src/shared/types/search/status.ts src/renderer/src/features/settings/hooks/useSettingsModel.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts src/renderer/src/features/settings/components/tabs/modelTabSections/RebuildMemoryCard.tsx tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+제한:
+
+- 이 기록 시점에는 scene/note/synopsis/plot/character/faction/event/scrapMemo target label join이 아직 없었다. 이후 scene/note label은 1차 연결했다.
+- chunk label은 아직 없다.
+- targetId progress는 여전히 MemoryBuildJob 단위 진행률이다. chunk 내부 처리 percent는 아직 아니다.
+
+### 2026-06-11. Phase 4-5-7 scene/note target label
+
+확인된 사실:
+
+- scene target의 label을 DB의 `Chapter.order`, `Scene.order`, `Scene.title`로 보강했다.
+- `byTarget["scene:<id>"].label`은 scene row와 chapter row가 있으면 `12화 · 장면 3 · 골목 추격` 형식으로 반환한다.
+- chapter row가 없으면 scene label은 `장면 3 · 골목 추격` 형식으로 fallback한다.
+- note target의 label을 DB의 `Note.title`로 보강했다.
+- `byTarget["note:<id>"].label`은 note row가 있으면 `노트 · 폐기 후보 설정` 형식으로 반환한다.
+- Settings progress helper는 기존과 동일하게 backend label을 우선 사용한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts src/shared/types/search/status.ts src/renderer/src/features/settings/hooks/useSettingsModel.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts src/renderer/src/features/settings/components/tabs/modelTabSections/RebuildMemoryCard.tsx tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+제한:
+
+- synopsis/plot/character/faction/event/scrapMemo target label join은 아직 없다.
+- chunk label은 아직 없다.
+- targetId progress는 여전히 MemoryBuildJob 단위 진행률이다. chunk 내부 처리 percent는 아직 아니다.
+
+### 2026-06-11. Phase 4-5-7 synopsis/plot/world target label
+
+확인된 사실:
+
+- synopsis target의 label을 DB의 `Synopsis.title`로 보강했다.
+- plot target의 label을 DB의 `Plot.title`로 보강했다.
+- scrapMemo target의 label을 DB의 `ScrapMemo.title`로 보강했다.
+- character/faction/event target의 label을 각각 DB의 `Character.name`, `Faction.name`, `Event.name`으로 보강했다.
+- `byTarget` label은 작가가 읽는 단위로 `시놉시스 · 제목`, `플롯 · 제목`, `자료 메모 · 제목`, `인물 · 이름`, `세력 · 이름`, `사건 · 이름` 형식을 반환한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- chunk label은 아직 없다.
+- targetId progress는 여전히 MemoryBuildJob 단위 진행률이다. chunk 내부 처리 percent는 아직 아니다.
+
+### 2026-06-11. Phase 4-5-7 target top-N SQL limit
+
+확인된 사실:
+
+- `getMemoryBuildJobProgress`는 targetId별 개별 progress를 만들기 전에 SQL에서 activeCount/total 기준 상위 20개 target만 고른다.
+- `byTarget` status breakdown과 target label lookup은 이 상위 20개 target에 대해서만 수행한다.
+- 전체 job 수와 targetType별 count는 기존 전체 집계를 유지한다.
+- Settings UI가 실제로 보여주는 개별 target 후보가 큰 프로젝트에서 무한히 커지지 않도록 제한됐다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- 실제 대형 project에서 group query 비용을 시간/메모리로 측정하는 benchmark는 아직 없다.
+- targetId progress는 여전히 MemoryBuildJob 단위 진행률이다. chunk 내부 처리 percent는 아직 아니다.
+
+### 2026-06-11. Phase 4-5-7 chunk target label
+
+확인된 사실:
+
+- `MEMORY_TARGET_TYPES.CHUNK = "chunk"`를 추가했다.
+- `getMemoryBuildJobProgress`는 targetType이 `chunk`인 job의 targetId를 `MemoryChunk.id`로 보고 label을 조회한다.
+- chunk label은 `Chapter.order`, `Chapter.title`, `Scene.order`, `Scene.title`, `MemoryChunk.chunkIndex`, `MemoryChunk.contextLabel`을 조합한다.
+- 회차 chunk는 `7화 · 비밀의 문 · chunk 4 · 회상 장면`처럼 작가가 원문 위치를 찾을 수 있는 label로 반환한다.
+- Settings progress helper와 ko/en/ja target type label에 chunk를 추가했다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts src/main/services/features/memory/memoryJobConstants.ts tests/main/services/memory/memoryBuildJobControl.test.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+제한:
+
+- targetId progress는 여전히 MemoryBuildJob 단위 진행률이다. chunk 내부 처리 percent는 아직 아니다.
+
+### 2026-06-11. Phase 4-5-7 subagent review 반영
+
+확인된 사실:
+
+- sub agent 리뷰 결과, 프로젝트 구조 일관성은 대체로 맞지만 retry policy 중복, recovery marker 표시 계약, 대형 project progress 비용, scene label 모호성, Phase 4-5-7 과대 범위가 보강 대상으로 확인됐다.
+- retry/backoff 계산은 `jobControl.ts`의 별도 상수가 아니라 memory projection의 `jobPolicy.ts` helper를 사용하도록 맞췄다.
+- stale running recovery marker는 status count가 아니라 `progress.attention.recoveredStaleRunningCount`로 집계한다.
+- Settings progress view의 `recoveredCount`도 `byStatus["RECOVERED_STALE_RUNNING_JOB"]`가 아니라 attention count를 읽는다.
+- Phase 4-5-7은 `4-5-7a`부터 `4-5-7i`까지 하위 phase로 나눴다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts src/main/services/features/memory/projection/jobPolicy.ts tests/main/services/memory/memoryBuildJobControl.test.ts src/shared/types/search/status.ts src/renderer/src/features/settings/hooks/useSettingsModel.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts src/renderer/src/features/settings/components/tabs/modelTabSections/RebuildMemoryCard.tsx tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+남은 범위:
+
+- progress group query 비용 benchmark는 아직 없다.
+- 실제 작가 flow E2E, 예: 과거 회차 수정 -> stale 감지 -> rebuild -> RAG 질문에서 근거 누락/미래 정보 누수 없음, 은 아직 별도 phase로 남아 있다.
+
+### 2026-06-11. Phase 5-1 evidence quote first MessageList DOM
+
+확인된 사실:
+
+- assistant 답변에 evidence가 있으면 MessageList가 답변 본문보다 먼저 evidence quote를 표시한다.
+- evidence quote는 기존 `onJumpEvidence` callback을 유지하는 button으로 렌더링된다.
+- evidence quote card는 현재 계약에서 사용할 수 있는 `chapterId`와 `offset`을 위치 label로 표시한다.
+- evidence quote card는 현재 계약에서 사용할 수 있는 `chunkId`를 표시해 어떤 memory chunk를 답변에 썼는지 확인할 수 있다.
+- safety label helper는 i18n이 아직 초기화되지 않은 테스트/초기 렌더링 상태에서도 한국어 fallback label을 반환한다.
+- assistant safety가 `confirmed`여도 evidence가 없으면 MessageList는 화면 label을 `근거 부족`으로 낮춰 표시한다.
+
+검증:
+
+```text
+pnpm vitest tests/dom/analysisMessageSafety.test.tsx tests/renderer/analysisSafetyLabel.test.ts
+pnpm exec eslint src/renderer/src/features/research/components/analysisSection/chat/MessageList.tsx src/renderer/src/features/research/components/analysisSection/runtime/runtimeHelpers.ts tests/dom/analysisMessageSafety.test.tsx tests/renderer/analysisSafetyLabel.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- quote button은 기존 jump callback을 호출한다. 실제 editor scroll/jump까지 포함한 E2E 검증은 아직 없다.
+- evidence source의 회차/장면 제목 label은 아직 MessageList quote card에 직접 표시하지 않는다. 현재는 `chapterId`와 `offset` 기반 1차 위치 label이다.
+- 사용된 memory 목록 전체를 펼치는 UI는 아직 없다. 현재는 evidence card의 `chunkId` 표시가 1차 식별자 역할을 한다.
+
+### 2026-06-11. Phase 5-2 conflict warning UI client defer 1차 완료
+
+확인된 사실:
+
+- `ConflictQueuePanel`은 기존 conflict pair의 이전/신규 evidence quote를 함께 표시한다.
+- `ConflictQueuePanel`은 기존 이전 사실 채택/신규 사실 채택 버튼에 더해 `나중에 보기` 버튼을 표시한다.
+- `나중에 보기`는 `resolveFactConflict`를 호출하지 않고 현재 renderer conflict queue에서 해당 conflict item을 숨긴다.
+- 기존 conflict resolve 경로는 그대로 유지한다.
+- ko/en/ja locale에 conflict defer label을 추가했다.
+
+검증:
+
+```text
+SKIP_DB_TEST_SETUP=1 corepack pnpm vitest tests/dom/conflictQueuePanelWriterFlow.test.tsx tests/dom/staleEvidenceReviewPanel.test.tsx
+corepack pnpm run typecheck
+corepack pnpm exec eslint src/renderer/src/features/research/components/analysisSection/review/queue/ConflictQueuePanel.tsx src/renderer/src/features/research/components/analysisSection/review/queue/useMemoryReviewQueues.ts src/renderer/src/features/research/components/AnalysisSection.tsx src/renderer/src/features/research/stores/analysis/analysisStore.actions.ts src/renderer/src/i18n/locales/ko/base/Analysis.ts src/renderer/src/i18n/locales/en/base/Analysis.ts src/renderer/src/i18n/locales/ja/base/Analysis.ts tests/dom/conflictQueuePanelWriterFlow.test.tsx
+```
+
+제한:
+
+- 이번 단계의 `defer`는 클라이언트 큐 숨김이다. DB에 `deferred/reviewing/resolved` 같은 conflict review 상태를 저장하지 않는다.
+- 앱 재시작 또는 conflict queue 재조회 후에는 ledger 기준 conflict가 다시 보일 수 있다.
+- conflict review 상태 영속화가 필요하면 `MemoryFactInvalidation` 확장 또는 별도 conflict review ledger가 필요하다.
