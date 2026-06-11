@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   safetyLabel,
   safetyTone,
-} from "../../src/renderer/src/features/research/components/analysisSection/runtimeHelpers.js";
+} from "../../src/renderer/src/features/research/components/analysisSection/runtime/runtimeHelpers.js";
 
 describe("analysis safety labels", () => {
   it("labels blocked and warning RAG answers distinctly", () => {

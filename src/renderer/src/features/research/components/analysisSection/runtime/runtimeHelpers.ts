@@ -2,6 +2,13 @@ import { i18n } from "@renderer/i18n";
 import type { LlmRuntimeInfo, UtilitySidecarStatus } from "@shared/types";
 import type { RagQaSafetyLabel } from "@shared/types";
 
+const translateRuntimeLabel = (key: string, fallback: string): string => {
+  const translated = i18n.t(key, { defaultValue: fallback });
+  return typeof translated === "string" && translated.length > 0 && translated !== key
+    ? translated
+    : fallback;
+};
+
 export const runtimeLabel = (value: string | null | undefined): string => {
   if (!value) return "none";
   if (value === "sidecar") return "Sidecar";
@@ -14,10 +21,10 @@ export const runtimeLabel = (value: string | null | undefined): string => {
 };
 
 export const groundingLabel = (status: "confirmed" | "inferred" | "conflicting" | "insufficient_evidence" | "unknown"): string => {
-  if (status === "confirmed") return i18n.t("analysis.runtime.labels.confirmed");
-  if (status === "inferred") return i18n.t("analysis.runtime.labels.inferred");
-  if (status === "conflicting") return i18n.t("analysis.runtime.labels.conflicting");
-  return i18n.t("analysis.runtime.labels.insufficient_evidence");
+  if (status === "confirmed") return translateRuntimeLabel("analysis.runtime.labels.confirmed", "확정");
+  if (status === "inferred") return translateRuntimeLabel("analysis.runtime.labels.inferred", "추정");
+  if (status === "conflicting") return translateRuntimeLabel("analysis.runtime.labels.conflicting", "충돌");
+  return translateRuntimeLabel("analysis.runtime.labels.insufficient_evidence", "근거 부족");
 };
 
 export const groundingTone = (status: "confirmed" | "inferred" | "conflicting" | "insufficient_evidence" | "unknown"): string => {
@@ -31,14 +38,14 @@ export const groundingTone = (status: "confirmed" | "inferred" | "conflicting" |
 };
 
 export const safetyLabel = (label: RagQaSafetyLabel | "unknown"): string => {
-  if (label === "confirmed") return i18n.t("analysis.runtime.labels.confirmed");
-  if (label === "inferred") return i18n.t("analysis.runtime.labels.inferred");
-  if (label === "insufficient_evidence") return i18n.t("analysis.runtime.labels.insufficient_evidence");
-  if (label === "conflicting") return i18n.t("analysis.runtime.labels.conflicting");
-  if (label === "temporal_blocked") return i18n.t("analysis.runtime.labels.temporal_blocked");
-  if (label === "non_canonical_source") return i18n.t("analysis.runtime.labels.non_canonical_source");
-  if (label === "blocked_p0") return i18n.t("analysis.runtime.labels.blocked_p0");
-  return i18n.t("analysis.runtime.labels.unknown");
+  if (label === "confirmed") return translateRuntimeLabel("analysis.runtime.labels.confirmed", "확정");
+  if (label === "inferred") return translateRuntimeLabel("analysis.runtime.labels.inferred", "추정");
+  if (label === "insufficient_evidence") return translateRuntimeLabel("analysis.runtime.labels.insufficient_evidence", "근거 부족");
+  if (label === "conflicting") return translateRuntimeLabel("analysis.runtime.labels.conflicting", "충돌");
+  if (label === "temporal_blocked") return translateRuntimeLabel("analysis.runtime.labels.temporal_blocked", "회차 기준 불가");
+  if (label === "non_canonical_source") return translateRuntimeLabel("analysis.runtime.labels.non_canonical_source", "정사 아님");
+  if (label === "blocked_p0") return translateRuntimeLabel("analysis.runtime.labels.blocked_p0", "차단");
+  return translateRuntimeLabel("analysis.runtime.labels.unknown", "알 수 없음");
 };
 
 export const safetyTone = (label: RagQaSafetyLabel | "unknown"): string => {
