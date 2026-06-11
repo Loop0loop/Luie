@@ -42,15 +42,27 @@ Phase 시작 전 MemoryEvalCase: 51
 Phase 1-1 완료 후 MemoryEvalCase: 91
 Phase 1-2 완료 후 MemoryEvalCase: 301
 Phase 1-3 완료 후 MemoryEvalCase: 365
+Phase 1-3 queryChapterOrder 저장/runner 연결 완료 후 MemoryEvalCase: 365
 Phase 1-4 완료 후 MemoryEvalCase: 365
 Phase 2-1 완료 후 MemoryEvalCase: 365
 Phase 2-2 계약 완료 후 MemoryEvalCase: 365
 Phase 2-3 완료 후 MemoryEvalCase: 365
+Phase 2-3 judge safety mapping 1차 완료 후 MemoryEvalCase: 365
 Phase 3-1 fact path 완료 후 MemoryEvalCase: 365
+Phase 3-1 entity path provenance/canon 1차 완료 후 MemoryEvalCase: 365
+Phase 3-1 episode path provenance/canon 1차 완료 후 MemoryEvalCase: 365
+Phase 3-1 episode evidence provenance/canon 1차 완료 후 MemoryEvalCase: 365
+Phase 3-1 entity alias/mention provenance/canon 1차 완료 후 MemoryEvalCase: 365
 Phase 3-2a fact path 완료 후 MemoryEvalCase: 365
 Phase 3-2a entity path 완료 후 MemoryEvalCase: 365
 Phase 3-2a episode path 완료 후 MemoryEvalCase: 365
 Phase 3-2b stale evidence backlog path 완료 후 MemoryEvalCase: 365
+Phase 3-2b stale evidence defer state 1차 완료 후 MemoryEvalCase: 365
+Phase 3-2b stale evidence reject/resolved state 1차 완료 후 MemoryEvalCase: 365
+Phase 3-2b stale evidence review IPC 1차 완료 후 MemoryEvalCase: 365
+Phase 3-2b stale evidence review UI 1차 완료 후 MemoryEvalCase: 365
+Phase 3-2b stale evidence repair UI 1차 완료 후 MemoryEvalCase: 365
+Phase 3-2b stale evidence DOM writer flow 1차 완료 후 MemoryEvalCase: 365
 Phase 3-2b rejected duplicate suppression 완료 후 MemoryEvalCase: 365
 Phase 3-3 conflict quote queue 연결 후 MemoryEvalCase: 365
 Phase 3-4 suggested memory review UI/reject reason 저장 후 MemoryEvalCase: 365
@@ -82,9 +94,25 @@ Phase 4-5-3 memory job claim helper 1차 완료 후 MemoryEvalCase: 365
 Phase 4-5-4 summary/embedding cooperative cancellation 1차 완료 후 MemoryEvalCase: 365
 Phase 4-5-5 settings memory progress/control UI 1차 완료 후 MemoryEvalCase: 365
 Phase 4-5-5 active progress polling 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-6b pause button pausable-state DOM guard 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-6c cancel button cancelable-state DOM guard 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-6d restart recovery Settings label DOM 검증 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-6d recovery marker locale key 1차 완료 후 MemoryEvalCase: 365
 Phase 4-5-7 jobType progress API/UI 1차 완료 후 MemoryEvalCase: 365
 Phase 4-5-7 retry/cancel attention UI 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-7 retry nextRetryAt UI 1차 완료 후 MemoryEvalCase: 365
 Phase 4-5-7 active polling backoff 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-7 active count polling backoff 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-7 progress delta polling backoff 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-7 progress snapshot cache 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-7 targetType progress API/UI 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-7 targetId progress API/UI 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-7 chapter target label 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-7 scene/note target label 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-7 synopsis/plot/world target label 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-7 target top-N SQL limit 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-7 chunk target label 1차 완료 후 MemoryEvalCase: 365
+Phase 4-5-7 subagent review 보강 1차 완료 후 MemoryEvalCase: 365
 ```
 
 구분:
@@ -315,6 +343,20 @@ P0 failure 있음 → 확정 답변 차단
 - legacy confirmed fact는 chapter/scene evidence가 실제로 연결된 경우에만 `canon/canon`으로 보정한다.
 - canonical package import는 새 필드를 보존하고, 오래된 package는 `unknown/unknown`으로 안전하게 읽는다.
 - temporal fact review queue와 conflict queue는 renderer가 라벨을 붙일 수 있도록 provenance/canon 값을 반환한다.
+- `MemoryEntity`에 `provenanceKind`, `canonStatus`를 추가했다.
+- 원문 chunk에서 추출된 신규 entity 후보는 `canon/canon`으로 저장된다.
+- entity review queue는 renderer가 라벨을 붙일 수 있도록 provenance/canon 값을 반환한다.
+- canonical package import는 entity provenance/canon 필드를 보존하고, 오래된 package는 `unknown/unknown`으로 안전하게 읽는다.
+- `MemoryEpisode`에 `provenanceKind`, `canonStatus`를 추가했다.
+- 원문 evidence에서 생성되는 신규 episode 후보는 `canon/canon`으로 저장된다.
+- episode review queue는 renderer가 라벨을 붙일 수 있도록 provenance/canon 값을 반환한다.
+- canonical package import는 episode provenance/canon 필드를 보존하고, 오래된 package는 `unknown/unknown`으로 안전하게 읽는다.
+- `MemoryEpisodeEvidence`에 `provenanceKind`, `canonStatus`를 추가했다.
+- 원문 evidence span에서 생성되는 신규 episode evidence row는 `canon/canon`으로 저장된다.
+- canonical package import는 episode evidence provenance/canon 필드를 보존하고, 오래된 package는 `unknown/unknown`으로 안전하게 읽는다.
+- `MemoryEntityAlias`, `MemoryEntityMention`에 `provenanceKind`, `canonStatus`를 추가했다.
+- 원문 chunk에서 추출된 신규 entity alias와 mention row는 `canon/canon`으로 저장된다.
+- canonical package import는 entity alias provenance/canon 필드를 보존하고, 오래된 package는 `unknown/unknown`으로 안전하게 읽는다.
 
 현재 실제 프로젝트 검증:
 
@@ -329,7 +371,8 @@ DB rows / package rows: 746 / 746
 
 아직 남은 범위:
 
-- Entity/Episode 자체의 provenance/canon 상태 분리는 별도 단계로 남아 있다.
+- Entity alias/mention 자체의 provenance/canon 저장 경로는 1차 연결됐다.
+- Episode evidence 자체의 provenance/canon 분리는 1차 연결됐다.
 - user note/imported memory의 별도 생성 UI와 검토 flow는 아직 구현 전이다.
 - provenance/canon 라벨의 최종 renderer 표시 디자인은 UI 단계에서 더 다듬어야 한다.
 
@@ -395,6 +438,98 @@ DB rows / package rows: 746 / 746
 - IPC/preload contract 정의: temporal review/conflict query 반환값에 포함
 - renderer label 테스트: safety label 계열은 존재하나 provenance/canon 시각 라벨은 추가 UI 단계에서 보강 필요
 
+### 2026-06-11. Phase 3-1 entity provenance/canon 1차 완료
+
+확인된 사실:
+
+- `MemoryEntity`에 `provenanceKind`, `canonStatus`를 nullable이 아닌 기본값 `unknown` 컬럼으로 추가했다.
+- packaged bootstrap SQL과 column patch에 entity provenance/canon 컬럼을 추가했다.
+- 원문 `MemoryChunk`에서 추출된 신규 entity 후보는 `provenanceKind=canon`, `canonStatus=canon`으로 저장한다.
+- entity review queue는 `provenanceKind`, `canonStatus`를 shared contract로 반환한다.
+- canonical package import는 entity provenance/canon 값을 보존하고, 오래된 package는 `unknown/unknown`으로 읽는다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/entity/memoryEntityExtractionRunner.test.ts tests/main/services/memory/entity/memoryEntityReviewService.test.ts tests/main/services/memory/persistence/memoryCanonicalPackage.test.ts tests/main/services/memory/persistence/memoryCanonicalPackageSyncVerifier.test.ts
+pnpm exec eslint src/main/database/schema/memoryIdentity.ts src/main/database/main/packagedSchema/memorySchema.sql.ts src/main/database/packagedSchema/metadataColumnPatches.ts src/main/services/features/memory/entity/memoryEntityExtractionRunner.ts src/main/services/features/memory/entity/memoryEntityReviewService.ts src/main/services/features/memory/persistence/internal/applyPayload.ts src/shared/types/search/review.ts tests/main/services/memory/entity/memoryEntityExtractionRunner.test.ts tests/main/services/memory/entity/memoryEntityReviewService.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- 이 단계는 entity 후보 단위 provenance/canon이다. `MemoryEntityAlias`, `MemoryEntityMention` 각각의 provenance/canon 분리는 아직 없다.
+- `MemoryEpisode` provenance/canon은 다음 Phase 3-1 보강 대상이다.
+- 최종 renderer 시각 라벨은 아직 UI 단계에서 보강해야 한다.
+
+### 2026-06-11. Phase 3-1 episode provenance/canon 1차 완료
+
+확인된 사실:
+
+- `MemoryEpisode`에 `provenanceKind`, `canonStatus`를 nullable이 아닌 기본값 `unknown` 컬럼으로 추가했다.
+- packaged bootstrap SQL과 column patch에 episode provenance/canon 컬럼을 추가했다.
+- 원문 evidence에서 생성되는 신규 episode 후보는 `provenanceKind=canon`, `canonStatus=canon`으로 저장한다.
+- episode review queue는 `provenanceKind`, `canonStatus`를 shared contract로 반환한다.
+- canonical package import는 episode provenance/canon 값을 보존하고, 오래된 package는 `unknown/unknown`으로 읽는다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/episode/memoryEpisodeCandidate.test.ts tests/main/services/memory/episode/memoryEpisodeReviewService.test.ts tests/main/services/memory/persistence/memoryCanonicalPackage.test.ts tests/main/services/memory/persistence/memoryCanonicalPackageSyncVerifier.test.ts
+pnpm exec eslint src/main/database/schema/memoryEpisode.ts src/main/database/main/packagedSchema/memorySchema.sql.ts src/main/database/packagedSchema/metadataColumnPatches.ts src/main/services/features/memory/episode/memoryEpisodeCandidate.ts src/main/services/features/memory/episode/memoryEpisodeReviewService.ts src/main/services/features/memory/persistence/internal/applyPayload.ts src/shared/types/search/review.ts tests/main/services/memory/episode/memoryEpisodeCandidate.test.ts tests/main/services/memory/episode/memoryEpisodeReviewService.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- 이 단계는 episode 후보 단위 provenance/canon이다. `MemoryEpisodeEvidence` 각각의 provenance/canon 분리는 아직 없다.
+- 최종 renderer 시각 라벨은 아직 UI 단계에서 보강해야 한다.
+
+### 2026-06-11. Phase 3-1 episode evidence provenance/canon 1차 완료
+
+확인된 사실:
+
+- `MemoryEpisodeEvidence`에 `provenanceKind`, `canonStatus`를 nullable이 아닌 기본값 `unknown` 컬럼으로 추가했다.
+- packaged bootstrap SQL과 column patch에 episode evidence provenance/canon 컬럼을 추가했다.
+- 원문 evidence span에서 생성되는 신규 episode evidence row는 `provenanceKind=canon`, `canonStatus=canon`으로 저장한다.
+- canonical package import는 episode evidence provenance/canon 값을 보존하고, 오래된 package는 `unknown/unknown`으로 읽는다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/episode/memoryEpisodeCandidate.test.ts tests/main/services/memory/episode/memoryEpisodeReviewService.test.ts tests/main/services/memory/persistence/memoryCanonicalPackage.test.ts tests/main/services/memory/persistence/memoryCanonicalPackageSyncVerifier.test.ts
+pnpm exec eslint src/main/database/schema/memoryEpisode.ts src/main/database/main/packagedSchema/memorySchema.sql.ts src/main/database/packagedSchema/metadataColumnPatches.ts src/main/services/features/memory/episode/memoryEpisodeCandidate.ts src/main/services/features/memory/persistence/internal/applyPayload.ts tests/main/services/memory/episode/memoryEpisodeCandidate.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- `MemoryEntityAlias`, `MemoryEntityMention` 각각의 provenance/canon 분리는 아직 없다.
+- episode evidence provenance/canon을 renderer에 직접 노출하는 UI는 아직 없다. 현재는 저장/패키지 보존 계약까지 완료했다.
+
+### 2026-06-11. Phase 3-1 entity alias/mention provenance/canon 1차 완료
+
+확인된 사실:
+
+- `MemoryEntityAlias`, `MemoryEntityMention`에 `provenanceKind`, `canonStatus`를 nullable이 아닌 기본값 `unknown` 컬럼으로 추가했다.
+- packaged bootstrap SQL과 column patch에 alias/mention provenance/canon 컬럼을 추가했다.
+- 원문 `MemoryChunk`에서 추출된 신규 alias row는 `provenanceKind=canon`, `canonStatus=canon`으로 저장한다.
+- 원문 `MemoryChunk`에서 추출된 신규 mention evidence row도 `provenanceKind=canon`, `canonStatus=canon`으로 저장한다.
+- canonical package import는 entity alias provenance/canon 값을 보존하고, 오래된 package는 `unknown/unknown`으로 읽는다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/entity/memoryEntityExtractionRunner.test.ts tests/main/services/memory/entity/memoryEntityReviewService.test.ts tests/main/services/memory/persistence/memoryCanonicalPackage.test.ts tests/main/services/memory/persistence/memoryCanonicalPackageSyncVerifier.test.ts
+pnpm exec eslint src/main/database/schema/memoryIdentity.ts src/main/database/main/packagedSchema/memorySchema.sql.ts src/main/database/packagedSchema/metadataColumnPatches.ts src/main/services/features/memory/entity/memoryEntityExtractionRunner.ts src/main/services/features/memory/persistence/internal/applyPayload.ts tests/main/services/memory/entity/memoryEntityExtractionRunner.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- `MemoryEntityMention`은 현재 canonical package payload에 포함되는 export 대상이 아니라 추출 evidence row로 쓰인다. 따라서 이번 단계의 package import 보존은 `MemoryEntityAlias`에 한정된다.
+- alias/mention provenance/canon을 renderer review UI에 직접 표시하는 단계는 아직 남아 있다.
+
 ### Phase 3-2. evidence 없는 memory 저장 차단
 
 작업:
@@ -453,6 +588,14 @@ DB rows / package rows: 746 / 746
 - confirmed episode evidence의 chunk가 없거나 quote가 chunk에 없으면 stale evidence로 표시한다.
 - `memory:review-backlog` JSON에는 stale evidence가 자동 포함된다.
 - `memory:review-template`에는 자동 confirm/reject 대상과 분리된 수동 검토 섹션으로 stale evidence를 포함한다.
+- stale entity mention/episode evidence는 `reviewStatus`, `reviewerNote`, `reviewedAt`을 저장할 수 있다.
+- 작가가 stale evidence를 "나중에 보기"로 보류하면 active backlog에서 빠지고, 같은 근거가 계속 경고로 튀어나오지 않는다.
+- 작가가 stale evidence를 "버림" 또는 "해결됨"으로 판단하면 reviewer note와 reviewedAt을 저장하고 active backlog에서 제외한다.
+- renderer는 `memory:stale-evidence-review-action` IPC/preload API로 defer/reject/resolve action을 호출할 수 있다.
+- 분석 패널은 stale evidence review panel을 렌더링하고, `getReviewBacklog`로 오래된 근거를 조회한 뒤 defer/reject/resolve action을 호출한다.
+- 분석 패널은 `memory:repair-evidence-links` IPC/preload API로 현재 프로젝트 evidence link repair를 실행하고, 완료 후 stale evidence backlog를 다시 조회한다.
+- stale evidence panel DOM 테스트는 작가가 오래된 근거를 열어 자동 복구/나중에 보기/버림/해결됨 action을 볼 수 있고, 자동 복구 중 row decision이 잠기는 흐름을 검증한다.
+- 분석 패널의 기존 fact/entity/entity alias/episode/conflict review panel도 실제 `AnalysisSection` 렌더링 경로에 복구됐다.
 - rejected entity와 같은 canonical name/type 후보는 다시 entity/alias/mention으로 제안하지 않는다.
 - rejected episode와 같은 source/hash/type/title/summary 후보는 다시 insert하지 않는다.
 - rejected temporal fact와 같은 subject/predicate/object/time/source 후보는 다시 insert하지 않는다.
@@ -460,12 +603,19 @@ DB rows / package rows: 746 / 746
 
 아직 남은 범위:
 
-- repair job이 unresolved evidence를 발견했을 때 별도 상태 테이블에 영구 기록하는 기능은 없다.
-- stale evidence를 UI에서 직접 repair/reject/defer 처리하는 화면은 남아 있다.
+- stale evidence를 UI에서 직접 defer/reject/resolve 처리하는 1차 화면은 있다.
+- stale evidence의 자동 repair 버튼은 있다. 현재 동작은 row 단건 repair가 아니라 프로젝트 단위 evidence link repair를 실행한 뒤 queue를 재조회하는 방식이다.
+- stale evidence panel 단위 DOM writer flow 검증은 있다. 전체 `AnalysisSection`에서 실제 store/API를 타고 큐를 열고 처리하는 e2e 작가 flow 검증은 아직 없다.
 
 완료 기준:
 
 - backlog row 생성: 현재 구조에서는 별도 테이블 대신 review backlog report 항목으로 완료
+- stale evidence 보류: 별도 테이블 대신 `MemoryEntityMention`/`MemoryEpisodeEvidence` 행의 review 상태로 완료
+- stale evidence 버림/해결: `MemoryEntityMention`/`MemoryEpisodeEvidence` 행의 review 상태로 완료
+- stale evidence 상태 전이 IPC: `memory:stale-evidence-review-action` 채널과 preload API로 완료
+- stale evidence 상태 전이 UI: 분석 패널 `StaleEvidenceReviewPanel` 1차 완료
+- stale evidence 자동 repair UI: 분석 패널에서 프로젝트 단위 `memory:repair-evidence-links` 실행 후 backlog reload까지 완료
+- stale evidence panel DOM writer flow: 오래된 근거 label/action 노출과 repair 중 decision lock 검증 완료
 - 같은 rejected memory 반복 제안 억제: entity/episode/temporal fact path 완료
 
 ### Phase 3-3. conflict ledger와 기존 invalidation 정렬
@@ -490,7 +640,8 @@ DB rows / package rows: 746 / 746
 - 양쪽 evidence quote는 `MemoryFactEvidence` -> `MemoryEpisodeEvidence` join으로 보존/조회한다.
 - 충돌 큐 API는 양쪽 fact summary에 `evidenceQuotes`를 포함한다.
 - UI는 분석 패널의 충돌 큐에서 "검토 필요" 대상과 양쪽 quote를 표시하고, 이전/신규 사실 채택 액션을 제공한다.
-- 작가가 "나중에 보기", "검토 중", "해결됨" 같은 상태를 별도로 저장하는 영구 review status는 아직 없다. 이 상태가 필요해지면 `MemoryFactInvalidation` 확장 또는 별도 `MemoryConflictLedger`가 필요하다.
+- stale evidence의 "나중에 보기" 상태는 Phase 3-2b에서 evidence 행 단위로 저장한다.
+- conflict 자체에 대한 "나중에 보기", "검토 중", "해결됨" 같은 영구 review status는 아직 없다. 이 상태가 필요해지면 `MemoryFactInvalidation` 확장 또는 별도 `MemoryConflictLedger`가 필요하다.
 
 #### Phase 3-3a. 기존 invalidation 적합성 검토
 
@@ -944,22 +1095,22 @@ sub agent 객관 리뷰 결과:
 - `cancelMemoryBuildJobs`는 `pending/failed/paused -> canceled`, `running -> cancel_requested`로 전환한다.
 - summary/embedding processor는 일부 checkpoint에서 `cancel_requested`를 감지하고 partial write를 피한 뒤 `canceled`로 마무리한다.
 - `recoverStaleRunningMemoryBuildJobs`는 app restart 이후 stale running job을 `pending`으로 복구한다.
-- `getMemoryBuildJobProgress`는 status별 count, activeCount, doneCount를 반환한다.
+- `getMemoryBuildJobProgress`는 status별 count, jobType별 count, attention, activeCount, doneCount를 반환한다.
 - retry/backoff 정책은 `jobPolicy.ts`에 `MAX_JOB_ATTEMPTS = 5`, 2초 기반 backoff로 일부 존재한다.
 - 기존 summary/embedding projector는 `pending/failed`만 claim하므로 `paused/canceled` job은 실행 대상에서 빠진다.
 - main IPC는 `memory:pause-build-jobs`, `memory:resume-build-jobs`, `memory:cancel-build-jobs`, `memory:get-build-job-progress`를 검증된 `{ projectId }` payload로 받는다.
 - preload `memoryAdmin` API는 `pauseBuildJobs`, `resumeBuildJobs`, `cancelBuildJobs`, `getBuildJobProgress`를 제공한다.
 - Settings > Model 탭의 memory rebuild card는 progress와 pause/resume/cancel control을 표시한다.
-- active job이 있으면 Settings model tab에서 2초 간격으로 progress를 다시 조회한다.
+- active job이 있으면 Settings model tab에서 progress를 다시 조회한다. running/cancel_requested 상태는 2초, 즉시 처리 중이 아닌 active 상태는 5초로 backoff한다.
 
 아직 검증 안 된 범위:
 
-- jobType/chapter/chunk 단위 세부 progress는 아직 없다.
-- progress snapshot cache는 아직 없다.
-- retry/backoff 상태는 progress UI의 "재시도 가능/재시도 대기/재시도 한도 도달" count로 1차 연결됐다. 다음 재시도 예상 시각은 아직 없다.
+- targetType별 원고 단위 progress는 1차 연결됐다. 개별 chapterId/chunkId 단위 세부 progress는 아직 없다.
+- progress snapshot cache는 1초 process memory TTL cache로 1차 연결됐다. app restart 후 유지되는 영구 snapshot은 아니다.
+- retry/backoff 상태는 progress UI의 "재시도 가능/재시도 대기/재시도 한도 도달" count와 가장 이른 다음 재시도 예상 시각으로 1차 연결됐다.
 - 실행 중인 job에 대한 cooperative cancellation checkpoint는 summary/embedding 일부 경로만 1차 연결됐다.
 - production processor 전체에 공통 control service를 연결한 것은 아니다.
-- progress는 status count 기준이다. chunk 단위 세부 진행률은 아직 없다.
+- progress는 status/jobType count 기준이다. chunk 단위 세부 진행률은 아직 없다.
 
 완료 기준:
 
@@ -1102,7 +1253,7 @@ sub agent 객관 리뷰 결과:
 
 완료 기준:
 
-- renderer hook/component 테스트에서 pause/resume 버튼과 preload API 호출 검증
+- renderer hook/component 테스트에서 pause/resume 버튼과 preload API 호출 검증: pause 버튼 pausable-state guard DOM 1차 완료, pause/resume API 호출 flow는 남음
 - service 테스트에서 paused job이 processor claim 대상에서 제외됨을 검증
 
 ##### Phase 4-5-6c. cancel/cooperative cancel 작가 플로우
@@ -1121,6 +1272,7 @@ sub agent 객관 리뷰 결과:
 
 - pending/paused cancel은 즉시 `canceled`
 - running cancel은 `cancel_requested -> canceled`
+- Settings cancel button은 pending/failed/paused/running처럼 실제 취소 가능한 상태가 있을 때만 활성화한다: DOM 1차 완료
 - summary/embedding partial write 방지 테스트
 - chunk rebuild transaction 내부 checkpoint는 별도 보완 항목으로 유지
 
@@ -1138,12 +1290,24 @@ sub agent 객관 리뷰 결과:
 완료 기준:
 
 - `RECOVERED_STALE_RUNNING_JOB` marker 검증
-- Settings progress label 검증
+- Settings progress label 검증: RebuildMemoryCard DOM 및 ko/en/ja locale key 1차 완료
 - 복구 후 processor claim이 정상 동작하는 integration 테스트
 
 #### Phase 4-5-7. job progress 세분화와 최적화
 
 비유: 지금은 "조수가 일하는 중"만 보인다. 다음은 "요약 담당 30개, 임베딩 담당 120개, 원고 기억화 15개"처럼 어디서 시간이 걸리는지 보는 단계다.
+
+하위 phase:
+
+- Phase 4-5-7a. jobType progress API: 원고 기억화/회차 요약/의미 검색 준비 단위로 병목을 센다.
+- Phase 4-5-7b. jobType progress UI: Settings에서 병목을 작가용 label로 표시한다.
+- Phase 4-5-7c. retry/cancel attention: 재시도 가능, 재시도 대기, 재시도 한도 도달, 취소 지연, 복구 marker를 따로 센다.
+- Phase 4-5-7d. active polling backoff: active 상태와 취소 지연 상태에 따라 polling 간격을 조정한다.
+- Phase 4-5-7e. progress snapshot cache: 짧은 TTL cache로 Settings 반복 조회 비용을 줄인다.
+- Phase 4-5-7f. targetType progress: 회차/장면/노트/시놉시스/플롯/인물/세력/사건/자료 메모 단위 진행률을 센다.
+- Phase 4-5-7g. targetId progress: 개별 회차/장면/노트별로 막힌 대상을 보여준다.
+- Phase 4-5-7h. target label 보강: `targetId`를 작가가 읽을 수 있는 제목/순서 label로 바꾼다.
+- Phase 4-5-7i. 대형 프로젝트 progress 최적화: top-N SQL 제한, label join 범위 제한, benchmark를 추가한다.
 
 작업:
 
@@ -1158,25 +1322,44 @@ sub agent 객관 리뷰 결과:
 - Settings memory rebuild card가 jobType별 병목을 작가용 label로 표시한다.
 - jobType label은 원고 기억화, 회차 요약, 의미 검색 준비로 구분한다.
 - active job이 많은 jobType이 먼저 보이도록 renderer helper에서 정렬한다.
-- progress attention이 재시도 가능, 재시도 대기, 재시도 한도 도달, 취소 지연 count를 반환한다.
+- progress attention이 재시도 가능, 재시도 대기, 재시도 한도 도달, 취소 지연, stale running 복구 count를 반환한다.
 - Settings memory rebuild card가 attention 항목과 최근 오류 marker를 작가용 label로 표시한다.
+- backoff 중인 failed job이 있으면 `getMemoryBuildJobProgress`가 가장 이른 `nextRetryAt`을 반환하고 Settings memory rebuild card가 다음 재시도 시각을 표시한다.
 - Settings polling은 running/cancel_requested/취소 지연 상태에서는 2초, pending/failed/paused만 남은 상태에서는 5초로 backoff한다.
+- `getMemoryBuildJobProgress`는 같은 project의 반복 조회를 1초 TTL snapshot cache로 응답한다.
+- pause/resume/cancel/claim/recover/finalize처럼 job 상태를 바꾸는 제어 함수는 progress snapshot cache를 무효화한다.
+- `getMemoryBuildJobProgress`가 targetType별 total/active/done/status count를 반환한다.
+- Settings memory rebuild card가 회차/장면/노트/시놉시스/플롯/인물/세력/사건/자료 메모 단위 진행률을 표시한다.
+- `getMemoryBuildJobProgress`가 targetType+targetId별 total/active/done/status count를 반환한다.
+- Settings memory rebuild card가 activeCount가 큰 개별 target 상위 5개를 표시한다.
+- chapter target은 DB의 chapter order/title을 이용해 `12화 · 제목` 형태 label을 반환한다.
+- scene target은 DB의 chapter order와 scene order/title을 이용해 `12화 · 장면 3 · 제목` 형태 label을 반환한다.
+- note target은 DB의 note title을 이용해 `노트 · 제목` 형태 label을 반환한다.
+- synopsis/plot/scrapMemo target은 DB의 title을 이용해 `시놉시스 · 제목`, `플롯 · 제목`, `자료 메모 · 제목` 형태 label을 반환한다.
+- character/faction/event target은 DB의 name을 이용해 `인물 · 이름`, `세력 · 이름`, `사건 · 이름` 형태 label을 반환한다.
+- targetId별 개별 progress는 SQL에서 activeCount/total 기준 상위 20개 target을 먼저 고른 뒤, 해당 target만 status breakdown과 label lookup을 수행한다.
+- retry/backoff 계산은 processor와 같은 memory projection policy helper를 사용한다.
 
 완료 기준:
 
 - `getMemoryBuildJobProgress`가 jobType별 total/active/done/status count를 반환한다: 1차 완료
 - Settings UI가 jobType별 병목을 작가용 label로 표시한다: 1차 완료
 - retry/backoff label은 progress UI에 연결한다: 1차 완료
+- retry/backoff의 다음 재시도 예상 시각은 progress UI에 연결한다: 1차 완료
+- stale running recovery marker는 status가 아니라 attention count로 표시한다: 1차 완료
 - 오래 지속되는 `cancel_requested` 상태를 감지한다: 1차 완료
 - active polling은 active job이 있을 때만 유지한다.
-- progress query 비용이 큰 프로젝트에서도 UI를 막지 않는지 benchmark 또는 unit-level budget을 둔다.
+- progress query 비용이 큰 프로젝트에서도 UI를 막지 않는지 benchmark 또는 unit-level budget을 둔다: 1초 TTL snapshot cache 단위 테스트 1차 완료
 - 2초 고정 polling은 active job 상태와 오래 지속되는 `cancel_requested` 상태를 기준으로 backoff한다: 1차 완료
+- active job 수가 많을 때 polling interval을 5초/10초로 추가 backoff한다: 1차 완료
+- 최근 progress snapshot이 변하지 않으면 running 상태도 5초로 backoff한다: 1차 완료
+- chapter/chunk 단위 진행률: targetType별 원고 단위와 targetId별 개별 대상 진행률 1차 완료
 
 남은 범위:
 
-- chapter/chunk별 세부 진행률은 아직 없다.
-- progress snapshot cache는 아직 없다.
-- active job 수 자체를 반영한 세밀한 interval 조정은 아직 없다.
+- chapter/scene/note/synopsis/plot/character/faction/event/scrapMemo/chunk target label은 1차 연결됐다.
+- snapshot cache는 process memory TTL cache다. app restart 후 유지되는 영구 snapshot은 아니다.
+- 실제 대형 project에서 group query 비용 benchmark는 아직 없다.
 
 ## Phase 5. 작가용 UI 통합
 
@@ -1527,11 +1710,26 @@ RAG + Memory Engine이 다음 조건을 만족하면 "웹소설 작가용 설정
 - RAG 평가 결과 `caseCount: 365`, `averageContextRecallAtK: 1`, `totalP0FailureCount: 0`이었다.
 - canonical package sync는 DB/package 746/746 rows로 일치했다.
 
+추가 완료:
+
+- `MemoryEvalCase.queryChapterOrder`를 nullable integer로 추가했다.
+- temporal chapter eval materializer는 chapter order를 `queryChapterOrder`에 저장한다.
+- live eval runner는 answerer가 `queryChapterOrder`를 생략해도 eval case에 저장된 값을 scorer에 넘긴다.
+- 따라서 `3화 기준` 질문에서 8화 fact를 confirmed로 쓰면 `future_fact_used_in_past_answer` P0 failure로 잡힌다.
+- canonical package import mapping도 `queryChapterOrder`를 보존한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/eval/memoryEvalCaseMaterialization.test.ts tests/main/services/memory/eval/memoryEvalRunner.test.ts tests/main/services/memory/persistence/memoryCanonicalPackageSyncVerifier.test.ts
+pnpm exec eslint src/main/database/schema/memoryEval.ts src/main/database/main/packagedSchema/projectSchema.sql.ts src/main/database/packagedSchema/metadataColumnPatches.ts src/shared/types/memoryEval.ts src/main/services/features/memory/eval/memoryEvalCaseMaterialization.ts src/main/services/features/memory/eval/memoryEvalRunner.ts src/main/services/features/memory/persistence/internal/applyPayload.ts tests/main/services/memory/eval/memoryEvalCaseMaterialization.test.ts tests/main/services/memory/eval/memoryEvalRunner.test.ts
+pnpm run typecheck
+```
+
 제한:
 
-- 현재 Phase 1-3은 회차 scope가 있는 질문 케이스를 생성하는 단계다.
-- `queryChapterOrder`를 eval case schema에 직접 저장하는 단계는 아직 아니다.
-- 미래 fact를 사용했을 때 P0로 잡는 scorer 기반은 이미 있지만, 실제 answerer가 모든 temporal 질문에서 chapter order를 항상 넘기는지는 다음 단계에서 더 검증해야 한다.
+- 실제 answerer가 모든 temporal 질문에서 UI/IPC 경로로 회차 기준을 자연스럽게 전달하는지는 writer-flow E2E에서 더 검증해야 한다.
+- `tests/main/database/schemaParity.test.ts`는 현재 fresh migration SQL과 bootstrap SQL 사이의 기존 누락도 함께 보고 실패한다. 이번 변경의 직접 경로는 통과했지만, fresh migration parity 정리는 별도 DB migration 정리 작업으로 남긴다.
 
 ### 2026-06-11. Phase 1-4 완료
 
@@ -1712,9 +1910,33 @@ p0FailureTypeCounts: {}
 
 제한:
 
-- runtime RAG 답변에는 현재 deterministic safety policy가 붙는다.
-- 실제 LLM judge 결과를 runtime RAG safety에 직접 반영하는 연결은 아직 별도 보강이 필요하다.
+- runtime RAG 답변에는 deterministic safety policy가 붙는다.
+- parse된 answer judge artifact를 runtime safety policy에 반영하는 pure mapping은 1차 연결됐다.
+- 실제 provider 호출 결과를 일반 runtime RAG 경로에서 언제/얼마나 호출할지 정하는 비용/속도 정책은 아직 남아 있다.
 - Phase 3의 정사/초안/폐기 출처 분리가 완료되면 `non_canonical_source` 판단 근거를 더 넓힐 수 있다.
+
+### 2026-06-11. Phase 2-3 judge safety mapping 1차 완료
+
+확인된 사실:
+
+- `buildRagAnswerSafety`가 parse된 answer judge artifact를 받을 수 있게 했다.
+- judge가 `temporalLeakage: present`를 반환하면 `future_fact_used_in_past_answer` reason으로 변환하고 `temporal_blocked` safety label을 반환한다.
+- judge가 `groundedness: unsupported`를 반환하면 `answer_contains_unsupported_claim` reason으로 변환하고 `blocked_p0` safety label을 반환한다.
+- judge가 `omission: present`, `contradiction: present`, 또는 reason 없는 `verdict: fail`을 반환해도 확정 답변 차단 reason으로 변환한다.
+- invalid judge artifact는 safety를 직접 차단하지 않는다. invalid artifact 자체는 eval result에 남기는 Phase 2-2 계약을 따른다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/ragGrounding.test.ts tests/main/services/memory/eval/memoryEvalAnswerJudge.test.ts tests/main/services/memory/eval/memoryEvalRunner.test.ts
+pnpm exec eslint src/main/services/features/rag/grounding.ts tests/main/services/ragGrounding.test.ts src/main/services/features/memory/eval/memoryEvalAnswerJudge.ts tests/main/services/memory/eval/memoryEvalAnswerJudge.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- 이 단계는 provider 호출이 아니라 이미 parse된 judge artifact를 safety policy에 반영하는 순수 계약이다.
+- 일반 runtime RAG 답변마다 judge를 호출하는 것은 비용/속도 정책과 UI 대기 UX를 정한 뒤 별도 phase에서 연결해야 한다.
 
 ### 2026-06-11. Phase 3-3 conflict quote queue 연결
 
@@ -2008,7 +2230,7 @@ pnpm vitest tests/main/services/core/chapter/chapterDerivedJobs.test.ts tests/ma
 제한:
 
 - production processor claim 조건을 공통 helper로 강제하는 작업은 아직 남아 있다.
-- startup recovery는 `derivedJobWorker.start()` 경로에 연결되어 있다. 다만 UI 표시 문구는 아직 없다.
+- startup recovery는 `derivedJobWorker.start()` 경로에 연결되어 있다. 이 기록 당시 UI 표시 문구는 아직 없었다. 이후 Phase 4-5-6d restart recovery Settings label DOM 검증에서 1차 보완했다.
 - summary/embedding cooperative cancellation은 Phase 4-5-4에서 1차 완료했다.
 
 ### 2026-06-11. Phase 4-5-3 stale running recovery marker 통일
@@ -2029,7 +2251,7 @@ pnpm vitest tests/main/services/dbMaintenanceService.test.ts
 
 제한:
 
-- recovery marker를 renderer progress UI 문구로 보여주는 작업은 아직 없다.
+- 이 기록 시점에는 recovery marker를 renderer progress UI 문구로 보여주는 작업이 없었다. 이후 Settings memory rebuild card가 `RECOVERED_STALE_RUNNING_JOB` count를 "중단된 작업 복구됨" label로 표시하고 DOM 테스트와 ko/en/ja locale key 테스트로 검증했다.
 - search dirty queue recovery에는 별도 error column이 없어 같은 marker를 남기지 않는다.
 
 ### 2026-06-11. Phase 4-5-3 memory job claim helper
@@ -2101,10 +2323,10 @@ pnpm run typecheck
 
 제한:
 
-- progress는 아직 status count 기준이다.
-- chapter/chunk/jobType별 세부 진행률은 아직 없다.
+- 이 기록 시점에는 progress가 status count 기준이었다. 이후 jobType/targetType progress를 1차 연결했다.
+- 이 기록 시점에는 chapter/chunk/jobType별 세부 진행률이 없었다. 이후 jobType/targetType progress는 1차 연결했고, 개별 chapterId/chunkId 단위는 아직 남아 있다.
 - active job이 있을 때 Settings progress polling은 1차 완료했다.
-- snapshot cache는 아직 없다.
+- 이 기록 시점에는 snapshot cache가 아직 없었다. 이후 Phase 4-5-7 progress snapshot cache에서 1초 TTL cache를 1차 연결했다.
 
 ### 2026-06-11. Phase 4-5-5 active progress polling
 
@@ -2122,7 +2344,7 @@ pnpm vitest tests/renderer/settingsMemoryBuildProgress.test.ts
 
 제한:
 
-- progress snapshot cache는 아직 없다.
+- 이 기록 시점에는 progress snapshot cache가 아직 없었다. 이후 Phase 4-5-7 progress snapshot cache에서 1초 TTL cache를 1차 연결했다.
 - polling은 Settings model tab이 열린 동안만 동작한다.
 
 ### 2026-06-11. Phase 4-5 memory build job control IPC/API 연결
@@ -2156,9 +2378,9 @@ pnpm run typecheck
 - 사실: Phase 4-5의 service -> IPC handler -> preload -> shared contract -> Settings UI 흐름은 현재 프로젝트 구조와 일관성 있다.
 - 사실: 외부 queue를 새로 도입하기보다 기존 SQLite/Drizzle `MemoryBuildJob` queue를 강화하는 방향이 현재 Electron 로컬 앱 구조와 맞다.
 - 사실: 최신 코드 기준 `running` cancel은 거부가 아니라 `cancel_requested` 요청 상태로 기록된다.
-- 사실: 현재 progress는 status별 count 집계이며, 별도 snapshot 저장이나 jobType/chapter/chunk별 진행률은 아직 없다.
-- 사실: retry/backoff 정책은 `jobPolicy.ts`에 일부 존재하지만, UI/progress/공통 상태 machine과의 연결은 아직 부족하다.
-- 사실: Settings progress helper에는 recovery marker label이 있지만, progress API가 error marker를 집계하지 않으므로 실제 UI에서 recovery marker를 안정적으로 보여준다고 말하기에는 근거가 부족하다.
+- 사실: 리뷰 당시 progress는 status별 count 집계였고 별도 snapshot 저장이나 jobType/chapter/chunk별 진행률은 없었다. 이후 jobType/targetType progress와 1초 TTL snapshot cache를 1차 연결했다.
+- 사실: 리뷰 당시 retry/backoff 정책은 `jobPolicy.ts`에 일부 존재했지만 UI/progress/공통 상태 machine과의 연결은 부족했다. 이후 retry/cancel attention UI를 1차 연결했다.
+- 사실: Settings progress helper에는 recovery marker label이 있었고, 이후 progress API가 error marker를 집계하며 Settings card DOM이 "중단된 작업 복구됨" label을 표시하도록 1차 보완했다.
 - 의견: 현재 문서 상태는 계획서로 쓸 수 있지만, "완료/1차 완료/미완료" 경계가 흐려지면 구현 범위를 과대평가할 위험이 있다.
 
 반영한 수정:
@@ -2202,8 +2424,8 @@ pnpm run typecheck
 
 제한:
 
-- chapter/chunk 단위 진행률은 아직 없다.
-- progress snapshot cache는 아직 없다.
+- 이 기록 시점에는 chapter/chunk 단위 진행률이 아직 없었다. 이후 targetType progress는 1차 연결했고, 개별 chapterId/chunkId 단위는 아직 남아 있다.
+- 이 기록 시점에는 progress snapshot cache가 아직 없었다. 이후 Phase 4-5-7 progress snapshot cache에서 1초 TTL cache를 1차 연결했다.
 - 이 기록 시점에는 retry/backoff 상태가 아직 UI label에 연결되지 않았다. 이후 Phase 4-5-7 retry/cancel attention UI에서 1차 연결됐다.
 - 이 기록 시점에는 Settings polling이 active job 존재 여부 기준 2초 고정 polling이었다. 이후 Phase 4-5-7 active polling backoff에서 1차 보완했다.
 
@@ -2212,11 +2434,12 @@ pnpm run typecheck
 확인된 사실:
 
 - `getMemoryBuildJobProgress`가 `attention` 요약을 반환한다.
-- `attention`은 `retryableFailedCount`, `retryBackoffCount`, `exhaustedFailedCount`, `staleCancellationRequestedCount`, `latestError`를 포함한다.
+- `attention`은 `retryableFailedCount`, `retryBackoffCount`, `exhaustedFailedCount`, `staleCancellationRequestedCount`, `nextRetryAt`, `latestError`를 포함한다.
 - failed job은 attempts와 updatedAt 기준으로 재시도 가능, 재시도 대기, 재시도 한도 도달로 나뉜다.
+- 재시도 대기 중인 failed job이 있으면 가장 이른 다음 재시도 시각을 `nextRetryAt`으로 반환한다.
 - `cancel_requested` job은 일정 시간 이상 유지되면 취소 지연으로 표시된다.
 - Settings progress helper는 attention 요약을 작가용 label로 변환한다.
-- Settings memory rebuild card는 재시도 가능, 재시도 대기, 재시도 한도 도달, 취소 지연 badge와 최근 오류를 표시한다.
+- Settings memory rebuild card는 재시도 가능, 재시도 대기, 재시도 한도 도달, 취소 지연 badge, 다음 재시도 시각, 최근 오류를 표시한다.
 
 검증:
 
@@ -2230,7 +2453,7 @@ pnpm run typecheck
 제한:
 
 - attention은 전체 project 기준 집계다. jobType별 retry/backoff breakdown은 아직 없다.
-- retry/backoff의 다음 재시도 예상 시각은 아직 표시하지 않는다.
+- `nextRetryAt`은 project 전체에서 가장 이른 다음 재시도 시각 하나만 표시한다. jobType/target별 다음 재시도 시각은 아직 없다.
 - 오래 지속되는 `cancel_requested` 감지는 count만 제공한다. 어떤 targetId가 지연 중인지는 아직 표시하지 않는다.
 - 이 기록 시점에는 Settings polling이 active job 존재 여부 기준 2초 고정 polling이었다. 이후 Phase 4-5-7 active polling backoff에서 1차 보완했다.
 
@@ -2243,7 +2466,37 @@ pnpm run typecheck
 - running 또는 `cancel_requested` job이 있으면 2초 polling을 유지한다.
 - 오래 지속되는 `cancel_requested` attention이 있으면 2초 polling을 유지한다.
 - pending/failed/paused처럼 즉시 처리 중인 job이 없는 active 상태에서는 5초 polling으로 backoff한다.
+- active job이 50개 이상이면 5초, 200개 이상이면 10초로 추가 backoff한다.
+- 오래 지속되는 `cancel_requested` attention은 active job 수보다 우선해서 2초 polling을 유지한다.
+- Settings model tab은 직전 progress snapshot을 기억하고 helper에 전달한다.
+- active progress가 직전 snapshot과 같으면 running 상태도 5초 polling으로 backoff한다.
+- done/active/status count가 바뀌면 2초 polling을 유지한다.
 - Settings model tab polling effect는 고정 `2_000ms` 대신 helper가 반환한 interval을 사용한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm vitest tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts src/shared/types/search/status.ts src/renderer/src/features/settings/hooks/useSettingsModel.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts src/renderer/src/features/settings/components/tabs/modelTabSections/RebuildMemoryCard.tsx tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+제한:
+
+- progress 변화 비교는 전체 active/done/status count 기준이다. 아직 개별 target별 delta까지 비교하지는 않는다.
+- 이 기록 시점에는 progress snapshot cache가 아직 없었다. 이후 Phase 4-5-7 progress snapshot cache에서 1초 TTL cache를 1차 연결했다.
+
+### 2026-06-11. Phase 4-5-7 progress snapshot cache
+
+확인된 사실:
+
+- `getMemoryBuildJobProgress`에 project 단위 process memory snapshot cache를 추가했다.
+- snapshot TTL은 1초다.
+- TTL 안의 반복 progress 조회는 기존 snapshot을 반환한다.
+- TTL이 지난 조회는 DB group query를 다시 수행해 최신 progress를 반환한다.
+- pause/resume/cancel/recover처럼 projectId를 아는 상태 변경은 해당 project cache를 무효화한다.
+- claim/finalize처럼 jobId만 받는 상태 변경은 전체 progress snapshot cache를 무효화한다.
 
 검증:
 
@@ -2255,6 +2508,192 @@ pnpm run typecheck
 
 제한:
 
-- active job 수 자체에 따른 세밀한 interval 조정은 아직 없다.
-- 최근 progress 변화량 기반 backoff는 아직 없다.
-- progress snapshot cache는 아직 없다.
+- cache는 process memory 기반이다. app restart 후 snapshot은 유지되지 않는다.
+- 외부에서 DB를 직접 수정하면 TTL 안에서는 stale snapshot을 볼 수 있다. 공식 job control API는 cache를 무효화한다.
+- 실제 대형 project에서 progress group query 비용 benchmark는 아직 없다.
+
+### 2026-06-11. Phase 4-5-7 targetType progress API/UI
+
+확인된 사실:
+
+- `getMemoryBuildJobProgress`가 `byTargetType`을 반환한다.
+- `byTargetType`은 targetType별 `total`, `activeCount`, `doneCount`, `byStatus`를 포함한다.
+- Settings progress helper는 targetType별 항목을 작가용 label로 변환한다.
+- targetType label은 회차, 장면, 노트, 시놉시스, 플롯, 인물, 세력, 사건, 자료 메모를 포함한다.
+- Settings memory rebuild card는 전체 progress와 jobType progress 아래에 원고 단위별 진행 상황을 표시한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts src/shared/types/search/status.ts src/renderer/src/features/settings/hooks/useSettingsModel.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts src/renderer/src/features/settings/components/tabs/modelTabSections/RebuildMemoryCard.tsx tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+제한:
+
+- 이 단계는 targetType별 진행률이다. 개별 chapterId/chunkId별 진행률은 아직 없다.
+- targetId 목록이나 특정 회차 제목은 아직 표시하지 않는다.
+- progress UI가 길어질 수 있어, 대형 프로젝트에서는 접기/상위 N개 표시가 필요할 수 있다.
+
+### 2026-06-11. Phase 4-5-7 targetId progress API/UI
+
+확인된 사실:
+
+- `getMemoryBuildJobProgress`가 `byTarget`을 반환한다.
+- `byTarget` key는 `<targetType>:<targetId>` 형식이다.
+- `byTarget`은 target별 `targetType`, `targetId`, `total`, `activeCount`, `doneCount`, `byStatus`를 포함한다.
+- Settings progress helper는 개별 target 항목을 activeCount 우선으로 정렬한다.
+- Settings memory rebuild card는 activeCount가 큰 개별 target 상위 5개를 표시한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts src/shared/types/search/status.ts src/renderer/src/features/settings/hooks/useSettingsModel.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts src/renderer/src/features/settings/components/tabs/modelTabSections/RebuildMemoryCard.tsx tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+제한:
+
+- 이 기록 시점에는 target label이 `회차 <targetId>` 같은 기본 label이었다. 이후 chapter/scene/note target label은 1차 연결했다. synopsis/plot/character/faction/event/scrapMemo/chunk label join은 아직 없다.
+- 상위 5개만 표시한다. 전체 목록/필터 UI는 아직 없다.
+- targetId progress는 MemoryBuildJob 단위 진행률이다. chunk 내부 처리 percent는 아직 아니다.
+
+### 2026-06-11. Phase 4-5-7 chapter target label
+
+확인된 사실:
+
+- chapter target의 label을 DB의 `Chapter.order`와 `Chapter.title`로 보강했다.
+- `byTarget["chapter:<id>"].label`은 chapter row가 있으면 `12화 · 검은 기사` 형식으로 반환한다.
+- chapter row를 찾지 못한 target은 `label: null`로 유지한다.
+- Settings progress helper는 backend label이 있으면 이를 우선 사용하고, 없으면 기존 fallback label을 사용한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts src/shared/types/search/status.ts src/renderer/src/features/settings/hooks/useSettingsModel.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts src/renderer/src/features/settings/components/tabs/modelTabSections/RebuildMemoryCard.tsx tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+제한:
+
+- 이 기록 시점에는 scene/note/synopsis/plot/character/faction/event/scrapMemo target label join이 아직 없었다. 이후 scene/note label은 1차 연결했다.
+- chunk label은 아직 없다.
+- targetId progress는 여전히 MemoryBuildJob 단위 진행률이다. chunk 내부 처리 percent는 아직 아니다.
+
+### 2026-06-11. Phase 4-5-7 scene/note target label
+
+확인된 사실:
+
+- scene target의 label을 DB의 `Chapter.order`, `Scene.order`, `Scene.title`로 보강했다.
+- `byTarget["scene:<id>"].label`은 scene row와 chapter row가 있으면 `12화 · 장면 3 · 골목 추격` 형식으로 반환한다.
+- chapter row가 없으면 scene label은 `장면 3 · 골목 추격` 형식으로 fallback한다.
+- note target의 label을 DB의 `Note.title`로 보강했다.
+- `byTarget["note:<id>"].label`은 note row가 있으면 `노트 · 폐기 후보 설정` 형식으로 반환한다.
+- Settings progress helper는 기존과 동일하게 backend label을 우선 사용한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts src/shared/types/search/status.ts src/renderer/src/features/settings/hooks/useSettingsModel.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts src/renderer/src/features/settings/components/tabs/modelTabSections/RebuildMemoryCard.tsx tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+제한:
+
+- synopsis/plot/character/faction/event/scrapMemo target label join은 아직 없다.
+- chunk label은 아직 없다.
+- targetId progress는 여전히 MemoryBuildJob 단위 진행률이다. chunk 내부 처리 percent는 아직 아니다.
+
+### 2026-06-11. Phase 4-5-7 synopsis/plot/world target label
+
+확인된 사실:
+
+- synopsis target의 label을 DB의 `Synopsis.title`로 보강했다.
+- plot target의 label을 DB의 `Plot.title`로 보강했다.
+- scrapMemo target의 label을 DB의 `ScrapMemo.title`로 보강했다.
+- character/faction/event target의 label을 각각 DB의 `Character.name`, `Faction.name`, `Event.name`으로 보강했다.
+- `byTarget` label은 작가가 읽는 단위로 `시놉시스 · 제목`, `플롯 · 제목`, `자료 메모 · 제목`, `인물 · 이름`, `세력 · 이름`, `사건 · 이름` 형식을 반환한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- chunk label은 아직 없다.
+- targetId progress는 여전히 MemoryBuildJob 단위 진행률이다. chunk 내부 처리 percent는 아직 아니다.
+
+### 2026-06-11. Phase 4-5-7 target top-N SQL limit
+
+확인된 사실:
+
+- `getMemoryBuildJobProgress`는 targetId별 개별 progress를 만들기 전에 SQL에서 activeCount/total 기준 상위 20개 target만 고른다.
+- `byTarget` status breakdown과 target label lookup은 이 상위 20개 target에 대해서만 수행한다.
+- 전체 job 수와 targetType별 count는 기존 전체 집계를 유지한다.
+- Settings UI가 실제로 보여주는 개별 target 후보가 큰 프로젝트에서 무한히 커지지 않도록 제한됐다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts tests/main/services/memory/memoryBuildJobControl.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- 실제 대형 project에서 group query 비용을 시간/메모리로 측정하는 benchmark는 아직 없다.
+- targetId progress는 여전히 MemoryBuildJob 단위 진행률이다. chunk 내부 처리 percent는 아직 아니다.
+
+### 2026-06-11. Phase 4-5-7 chunk target label
+
+확인된 사실:
+
+- `MEMORY_TARGET_TYPES.CHUNK = "chunk"`를 추가했다.
+- `getMemoryBuildJobProgress`는 targetType이 `chunk`인 job의 targetId를 `MemoryChunk.id`로 보고 label을 조회한다.
+- chunk label은 `Chapter.order`, `Chapter.title`, `Scene.order`, `Scene.title`, `MemoryChunk.chunkIndex`, `MemoryChunk.contextLabel`을 조합한다.
+- 회차 chunk는 `7화 · 비밀의 문 · chunk 4 · 회상 장면`처럼 작가가 원문 위치를 찾을 수 있는 label로 반환한다.
+- Settings progress helper와 ko/en/ja target type label에 chunk를 추가했다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts src/main/services/features/memory/memoryJobConstants.ts tests/main/services/memory/memoryBuildJobControl.test.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+제한:
+
+- targetId progress는 여전히 MemoryBuildJob 단위 진행률이다. chunk 내부 처리 percent는 아직 아니다.
+
+### 2026-06-11. Phase 4-5-7 subagent review 반영
+
+확인된 사실:
+
+- sub agent 리뷰 결과, 프로젝트 구조 일관성은 대체로 맞지만 retry policy 중복, recovery marker 표시 계약, 대형 project progress 비용, scene label 모호성, Phase 4-5-7 과대 범위가 보강 대상으로 확인됐다.
+- retry/backoff 계산은 `jobControl.ts`의 별도 상수가 아니라 memory projection의 `jobPolicy.ts` helper를 사용하도록 맞췄다.
+- stale running recovery marker는 status count가 아니라 `progress.attention.recoveredStaleRunningCount`로 집계한다.
+- Settings progress view의 `recoveredCount`도 `byStatus["RECOVERED_STALE_RUNNING_JOB"]`가 아니라 attention count를 읽는다.
+- Phase 4-5-7은 `4-5-7a`부터 `4-5-7i`까지 하위 phase로 나눴다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/memoryBuildJobControl.test.ts tests/renderer/settingsMemoryBuildProgress.test.ts
+pnpm exec eslint src/main/services/features/memory/jobControl.ts src/main/services/features/memory/projection/jobPolicy.ts tests/main/services/memory/memoryBuildJobControl.test.ts src/shared/types/search/status.ts src/renderer/src/features/settings/hooks/useSettingsModel.ts src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress.ts src/renderer/src/features/settings/components/tabs/modelTabSections/RebuildMemoryCard.tsx tests/renderer/settingsMemoryBuildProgress.test.ts src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts
+pnpm run typecheck
+```
+
+남은 범위:
+
+- progress group query 비용 benchmark는 아직 없다.
+- 실제 작가 flow E2E, 예: 과거 회차 수정 -> stale 감지 -> rebuild -> RAG 질문에서 근거 누락/미래 정보 누수 없음, 은 아직 별도 phase로 남아 있다.

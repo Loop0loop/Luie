@@ -14,7 +14,21 @@ describe("AnalysisSection memory review workflow", () => {
     const queuesSource = readFileSync(
       resolve(
         process.cwd(),
-        "src/renderer/src/features/research/components/analysisSection/useMemoryReviewQueues.ts",
+        "src/renderer/src/features/research/components/analysisSection/review/queue/useMemoryReviewQueues.ts",
+      ),
+      "utf8",
+    );
+    const actionsSource = readFileSync(
+      resolve(
+        process.cwd(),
+        "src/renderer/src/features/research/stores/analysis/analysisStore.actions.ts",
+      ),
+      "utf8",
+    );
+    const stalePanelSource = readFileSync(
+      resolve(
+        process.cwd(),
+        "src/renderer/src/features/research/components/analysisSection/review/queue/StaleEvidenceReviewPanel.tsx",
       ),
       "utf8",
     );
@@ -23,22 +37,32 @@ describe("AnalysisSection memory review workflow", () => {
     expect(analysisSource).toContain("EpisodeReviewPanel");
     expect(analysisSource).toContain("EntityReviewPanel");
     expect(analysisSource).toContain("EntityAliasReviewPanel");
+    expect(analysisSource).toContain("StaleEvidenceReviewPanel");
 
-    expect(queuesSource).toContain("getFactReviewQueue");
-    expect(queuesSource).toContain("confirmFact");
-    expect(queuesSource).toContain("rejectFact");
-    expect(queuesSource).toContain("getEpisodeReviewQueue");
-    expect(queuesSource).toContain("confirmEpisode");
-    expect(queuesSource).toContain("rejectEpisode");
-    expect(queuesSource).toContain("getEntityReviewQueue");
-    expect(queuesSource).toContain("confirmEntity");
-    expect(queuesSource).toContain("rejectEntity");
-    expect(queuesSource).toContain("getEntityAliasReviewQueue");
-    expect(queuesSource).toContain("confirmEntityAlias");
-    expect(queuesSource).toContain("rejectEntityAlias");
-    expect(queuesSource).toContain("splitEntityAlias");
-    expect(queuesSource).toContain("mergeEntity");
+    expect(actionsSource).toContain("getFactReviewQueue");
+    expect(actionsSource).toContain("confirmFact");
+    expect(actionsSource).toContain("rejectFact");
+    expect(actionsSource).toContain("getEpisodeReviewQueue");
+    expect(actionsSource).toContain("confirmEpisode");
+    expect(actionsSource).toContain("rejectEpisode");
+    expect(actionsSource).toContain("getEntityReviewQueue");
+    expect(actionsSource).toContain("confirmEntity");
+    expect(actionsSource).toContain("rejectEntity");
+    expect(actionsSource).toContain("getEntityAliasReviewQueue");
+    expect(actionsSource).toContain("confirmEntityAlias");
+    expect(actionsSource).toContain("rejectEntityAlias");
+    expect(actionsSource).toContain("splitEntityAlias");
+    expect(actionsSource).toContain("mergeEntity");
+    expect(actionsSource).toContain("getReviewBacklog");
+    expect(actionsSource).toContain("reviewStaleEvidence");
+    expect(actionsSource).toContain("repairEvidenceLinks");
+    expect(queuesSource).toContain("handleReviewStaleEvidence");
+    expect(queuesSource).toContain("handleRepairStaleEvidence");
     expect(queuesSource).toContain("requestRejectReason");
-    expect(queuesSource).toContain("reason,");
+
+    expect(stalePanelSource).toContain("defer");
+    expect(stalePanelSource).toContain("reject");
+    expect(stalePanelSource).toContain("resolve");
+    expect(stalePanelSource).toContain("repair");
   });
 });

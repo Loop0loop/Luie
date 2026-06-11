@@ -8,6 +8,7 @@ import type {
   AnalysisEpisodeReviewItem,
   AnalysisFactReviewItem,
   AnalysisNarrativeSummaryStatus,
+  AnalysisStaleEvidenceReviewItem,
 } from "../../components/analysisSection/shared/types";
 import {
   type AnalysisActions,
@@ -67,6 +68,13 @@ interface AnalysisStoreState {
   entityAliasReviewLoading: boolean;
   entityAliasReviewError: string | null;
   mutatingAliasId: string | null;
+
+  showStaleEvidenceReviewQueue: boolean;
+  staleEvidenceReviewItems: AnalysisStaleEvidenceReviewItem[];
+  staleEvidenceReviewLoading: boolean;
+  staleEvidenceReviewError: string | null;
+  mutatingStaleEvidenceId: string | null;
+  repairingStaleEvidenceLinks: boolean;
 }
 
 interface AnalysisStoreSyncActions {
@@ -85,6 +93,7 @@ interface AnalysisStoreSyncActions {
   setShowEpisodeReviewQueue: (show: boolean | ((prev: boolean) => boolean)) => void;
   setShowEntityReviewQueue: (show: boolean | ((prev: boolean) => boolean)) => void;
   setShowEntityAliasReviewQueue: (show: boolean | ((prev: boolean) => boolean)) => void;
+  setShowStaleEvidenceReviewQueue: (show: boolean | ((prev: boolean) => boolean)) => void;
 
   reset: () => void;
 }
@@ -143,6 +152,13 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   entityAliasReviewLoading: false,
   entityAliasReviewError: null,
   mutatingAliasId: null,
+
+  showStaleEvidenceReviewQueue: false,
+  staleEvidenceReviewItems: [],
+  staleEvidenceReviewLoading: false,
+  staleEvidenceReviewError: null,
+  mutatingStaleEvidenceId: null,
+  repairingStaleEvidenceLinks: false,
 
   // 동기 Actions
   setError: (error) => {
@@ -221,6 +237,13 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
     }));
   },
 
+  setShowStaleEvidenceReviewQueue: (show) => {
+    set((state) => ({
+      showStaleEvidenceReviewQueue:
+        typeof show === "function" ? show(state.showStaleEvidenceReviewQueue) : show,
+    }));
+  },
+
   // 비동기 Actions 팩토리 결합
   ...createAnalysisActions(set, get),
 
@@ -266,6 +289,12 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
       entityAliasReviewLoading: false,
       entityAliasReviewError: null,
       mutatingAliasId: null,
+      showStaleEvidenceReviewQueue: false,
+      staleEvidenceReviewItems: [],
+      staleEvidenceReviewLoading: false,
+      staleEvidenceReviewError: null,
+      mutatingStaleEvidenceId: null,
+      repairingStaleEvidenceLinks: false,
     });
   },
 }));

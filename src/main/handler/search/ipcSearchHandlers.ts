@@ -1,6 +1,8 @@
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import type {
   MemoryConflictQueueInput,
+  MemoryEvidenceRepairInput,
+  MemoryEvidenceRepairResult,
   MemoryEpisodeCalibrationRequest,
   MemoryEpisodeConfirmInput,
   MemoryEpisodeRejectInput,
@@ -15,6 +17,8 @@ import type {
   MemoryEntityAliasSplitInput,
   MemoryEntityMergeInput,
   MemoryEvalRunRequest,
+  MemoryReviewBacklogInput,
+  MemoryStaleEvidenceReviewActionInput,
   NarrativeMemoryIntentCalibrationRequest,
   MemoryTemporalFactConfirmInput,
   MemoryTemporalFactConflictResolveInput,
@@ -43,6 +47,9 @@ import {
   memoryEntityRejectSchema,
   memoryEntityReviewQueueSchema,
   memoryEntityMergeSchema,
+  memoryEvidenceRepairSchema,
+  memoryReviewBacklogSchema,
+  memoryStaleEvidenceReviewActionSchema,
   memoryEvalRunSchema,
   memoryEpisodeCalibrationRunSchema,
   memoryIntentCalibrationRunSchema,
@@ -79,6 +86,7 @@ type SearchServiceLike = {
 
 type NarrativeMemoryQueryServiceLike = {
   query: (input: NarrativeMemoryQueryInput) => Promise<unknown>;
+  getReviewBacklog: (input: MemoryReviewBacklogInput) => Promise<unknown>;
   getConflictQueue: (input: MemoryConflictQueueInput) => Promise<unknown>;
   listSuggestedEpisodes: (input: MemoryEpisodeReviewQueueInput) => Promise<unknown>;
   confirmEpisode: (input: MemoryEpisodeConfirmInput) => Promise<unknown>;
@@ -95,6 +103,10 @@ type NarrativeMemoryQueryServiceLike = {
   rejectEntityAlias: (input: MemoryEntityAliasRejectInput) => Promise<unknown>;
   splitEntityAlias: (input: MemoryEntityAliasSplitInput) => Promise<unknown>;
   mergeEntity: (input: MemoryEntityMergeInput) => Promise<unknown>;
+  reviewStaleEvidence: (
+    input: MemoryStaleEvidenceReviewActionInput,
+  ) => Promise<unknown>;
+  repairEvidenceLinks: (input: MemoryEvidenceRepairInput) => Promise<unknown>;
   runEvalSuite: (input: MemoryEvalRunRequest) => Promise<unknown>;
   runIntentCalibration: (
     input: NarrativeMemoryIntentCalibrationRequest,
@@ -160,6 +172,22 @@ export function registerSearchIPCHandlers(
     return result;
   };
 
+  const persistAfterRepairedEvidenceLinks = async (
+    projectId: string,
+    reason: string,
+    operation: () => Promise<unknown>,
+  ): Promise<unknown> => {
+    const result = (await operation()) as MemoryEvidenceRepairResult;
+    const repairedCount =
+      result.episodeEvidenceRepaired +
+      result.entityMentionRepaired +
+      result.evalEvidenceRepaired;
+    if (repairedCount > 0) {
+      await packagePersistence?.persistPackageAfterMutation(projectId, reason);
+    }
+    return result;
+  };
+
   registerIpcHandlers(logger, [
     {
       channel: IPC_CHANNELS.SEARCH,
@@ -218,6 +246,14 @@ export function registerSearchIPCHandlers(
       argsSchema: z.tuple([narrativeMemoryQuerySchema]),
       handler: (input: NarrativeMemoryQueryInput) =>
         narrativeMemoryQueryService.query(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_REVIEW_BACKLOG,
+      logTag: "MEMORY_REVIEW_BACKLOG",
+      failMessage: "Failed to get memory review backlog",
+      argsSchema: z.tuple([memoryReviewBacklogSchema]),
+      handler: (input: MemoryReviewBacklogInput) =>
+        narrativeMemoryQueryService.getReviewBacklog(input),
     },
     {
       channel: IPC_CHANNELS.MEMORY_GET_CONFLICT_QUEUE,
@@ -367,6 +403,30 @@ export function registerSearchIPCHandlers(
       handler: (input: MemoryEntityMergeInput) =>
         persistAfterUpdatedReviewMutation(input.projectId, "memory:entity-merge", () =>
           narrativeMemoryQueryService.mergeEntity(input),
+        ),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_STALE_EVIDENCE_REVIEW_ACTION,
+      logTag: "MEMORY_STALE_EVIDENCE_REVIEW_ACTION",
+      failMessage: "Failed to review stale evidence",
+      argsSchema: z.tuple([memoryStaleEvidenceReviewActionSchema]),
+      handler: (input: MemoryStaleEvidenceReviewActionInput) =>
+        persistAfterUpdatedReviewMutation(
+          input.projectId,
+          "memory:stale-evidence-review-action",
+          () => narrativeMemoryQueryService.reviewStaleEvidence(input),
+        ),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_REPAIR_EVIDENCE_LINKS,
+      logTag: "MEMORY_REPAIR_EVIDENCE_LINKS",
+      failMessage: "Failed to repair memory evidence links",
+      argsSchema: z.tuple([memoryEvidenceRepairSchema]),
+      handler: (input: MemoryEvidenceRepairInput) =>
+        persistAfterRepairedEvidenceLinks(
+          input.projectId,
+          "memory:repair-evidence-links",
+          () => narrativeMemoryQueryService.repairEvidenceLinks(input),
         ),
     },
     {

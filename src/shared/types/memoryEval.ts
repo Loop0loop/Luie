@@ -32,6 +32,7 @@ export interface MemoryEvalCaseDefinition {
   expectedAnswer?: string | null;
   temporalScopeStartChapterId?: string | null;
   temporalScopeEndChapterId?: string | null;
+  queryChapterOrder?: number | null;
   severity?: MemoryEvalSeverity;
   goldEvidence: MemoryEvalGoldEvidence[];
   expectedEntities?: MemoryEvalExpectedEntity[];

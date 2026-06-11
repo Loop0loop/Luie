@@ -53,8 +53,12 @@ export function buildGroundedRagQaResult(
 export function buildRagAnswerSafety(input: {
   grounding: RagQaGrounding;
   p0Failures?: RagQaSafetyReason[];
+  answerJudge?: RagAnswerJudgeSafetyInput;
 }): RagQaSafety {
-  const p0Failures = input.p0Failures ?? [];
+  const p0Failures = [
+    ...(input.p0Failures ?? []),
+    ...collectAnswerJudgeSafetyReasons(input.answerJudge),
+  ];
   if (p0Failures.includes("future_fact_used_in_past_answer")) {
     return {
       label: "temporal_blocked",
@@ -109,4 +113,45 @@ export function buildRagAnswerSafety(input: {
     blocksConfirmedAnswer: false,
     reasons: ["inferred"],
   };
+}
+
+type RagAnswerJudgeSafetyInput =
+  | {
+      valid: true;
+      result: {
+        groundedness: "grounded" | "unsupported";
+        contradiction: "none" | "present";
+        temporalLeakage: "none" | "present";
+        omission: "none" | "present";
+        verdict: "pass" | "fail" | "invalid";
+      };
+    }
+  | {
+      valid: false;
+    };
+
+function collectAnswerJudgeSafetyReasons(
+  answerJudge: RagAnswerJudgeSafetyInput | undefined,
+): RagQaSafetyReason[] {
+  if (!answerJudge?.valid) return [];
+  const reasons: RagQaSafetyReason[] = [];
+  if (answerJudge.result.temporalLeakage === "present") {
+    reasons.push("future_fact_used_in_past_answer");
+  }
+  if (answerJudge.result.groundedness === "unsupported") {
+    reasons.push("answer_contains_unsupported_claim");
+  }
+  if (answerJudge.result.omission === "present") {
+    reasons.push("expected_answer_not_supported_by_gold_evidence");
+  }
+  if (
+    answerJudge.result.contradiction === "present" &&
+    !reasons.includes("answer_contains_unsupported_claim")
+  ) {
+    reasons.push("answer_contains_unsupported_claim");
+  }
+  if (answerJudge.result.verdict === "fail" && reasons.length === 0) {
+    reasons.push("answer_contains_unsupported_claim");
+  }
+  return Array.from(new Set(reasons));
 }

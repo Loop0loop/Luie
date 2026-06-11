@@ -47,6 +47,7 @@ async function loadProjectEvalCases(
     expectedAnswer: row.expectedAnswer,
     temporalScopeStartChapterId: row.temporalScopeStartChapterId,
     temporalScopeEndChapterId: row.temporalScopeEndChapterId,
+    queryChapterOrder: row.queryChapterOrder,
     severity: row.severity as MemoryEvalCaseDefinition["severity"],
     goldEvidence: evidenceRows
       .filter((evidence) => evidence.caseId === row.id)
@@ -118,7 +119,7 @@ export async function runLiveMemoryEvalSuite(
         answer: answer.answer,
         retrievedEvidence: answer.evidence,
         groundingStatus: answer.groundingStatus,
-        queryChapterOrder: answer.queryChapterOrder,
+        queryChapterOrder: answer.queryChapterOrder ?? evalCase.queryChapterOrder,
         observedFacts: answer.observedFacts,
         observedEntities: answer.observedEntities,
         observedRelations: answer.observedRelations,

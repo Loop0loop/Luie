@@ -238,4 +238,77 @@ describe("runLiveMemoryEvalSuite", () => {
       .where(eq(memoryFact.projectId, projectId));
     expect(memoryFacts).toHaveLength(0);
   });
+
+  it("uses stored query chapter order to catch future facts when answerer omits it", async () => {
+    const projectId = crypto.randomUUID();
+    const caseId = crypto.randomUUID();
+    const nowIso = "2026-06-08T00:00:00.000Z";
+
+    await db.getClient().insert(project).values({
+      id: projectId,
+      title: "Eval Runner Temporal Scope",
+      description: null,
+      projectPath: null,
+      updatedAt: nowIso,
+    });
+    await db.getClient().insert(memoryEvalCase).values({
+      id: caseId,
+      projectId,
+      name: "temporal-chapter:3:future-fact",
+      question: "3화 기준으로, 아린이 백야회의 목적을 알아도 되는가?",
+      caseType: "temporal_state",
+      expectedAnswer: "3화 기준으로는 아직 근거가 부족하다.",
+      temporalScopeStartChapterId: null,
+      temporalScopeEndChapterId: null,
+      queryChapterOrder: 3,
+      severity: "p0",
+      updatedAt: nowIso,
+    });
+    await db.getClient().insert(memoryEvalEvidence).values({
+      id: crypto.randomUUID(),
+      caseId,
+      projectId,
+      chapterId: null,
+      expectedChunkId: "chunk-future",
+      startOffset: null,
+      endOffset: null,
+      quote: "8화에서 아린은 백야회의 목적을 알게 된다.",
+      updatedAt: nowIso,
+    });
+
+    const result = await runLiveMemoryEvalSuite({
+      projectId,
+      label: "temporal-run",
+      engineVersion: "test-engine",
+      topK: 3,
+      nowIso,
+      answerer: async () => ({
+        answer: "아린은 백야회의 목적을 알고 있다.",
+        groundingStatus: "confirmed",
+        evidence: [
+          {
+            chunkId: "chunk-future",
+            chapterId: null,
+            offset: 0,
+            quote: "8화에서 아린은 백야회의 목적을 알게 된다.",
+          },
+        ],
+        observedFacts: [
+          {
+            id: "future-fact",
+            status: "confirmed",
+            observedAtChapterOrder: 8,
+            usedAs: "confirmed",
+          },
+        ],
+      }),
+    });
+
+    expect(result.results[0]?.p0Failures).toContain(
+      "future_fact_used_in_past_answer",
+    );
+    expect(result.p0FailureTypeCounts).toMatchObject({
+      future_fact_used_in_past_answer: 1,
+    });
+  });
 });

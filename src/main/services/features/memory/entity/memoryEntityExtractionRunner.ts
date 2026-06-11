@@ -138,6 +138,8 @@ export async function processMemoryEntityExtraction(input: {
           extractorVersion: input.extractorVersion,
           confidence: mention.confidence ?? candidate.confidence ?? 0,
           status: "suggested",
+          provenanceKind: "canon",
+          canonStatus: "canon",
           updatedAt: nowIso,
         });
       mentionCount += 1;
@@ -177,6 +179,8 @@ async function getOrCreateSuggestedEntity(input: {
     entityType: input.entityType,
     canonicalName: input.canonicalName,
     status: "suggested",
+    provenanceKind: "canon",
+    canonStatus: "canon",
     confidence: input.confidence,
     createdBy: "system",
     updatedAt: input.nowIso,
@@ -214,6 +218,8 @@ async function insertSuggestedAlias(input: {
     alias: input.alias,
     normalizedAlias,
     status: "suggested",
+    provenanceKind: "canon",
+    canonStatus: "canon",
     updatedAt: input.nowIso,
   });
   return true;

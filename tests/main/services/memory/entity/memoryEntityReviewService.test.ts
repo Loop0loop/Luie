@@ -42,6 +42,8 @@ describe("memoryEntityReviewService", () => {
       entityType: "character",
       canonicalName: "아린",
       status: "suggested",
+      provenanceKind: "canon",
+      canonStatus: "canon",
       confidence: 70,
       createdBy: "system",
       updatedAt: nowIso,
@@ -156,6 +158,8 @@ describe("memoryEntityReviewService", () => {
         id: seed.entityId,
         canonicalName: "아린",
         status: "suggested",
+        provenanceKind: "canon",
+        canonStatus: "canon",
         mentionCount: 1,
       }),
     ]);

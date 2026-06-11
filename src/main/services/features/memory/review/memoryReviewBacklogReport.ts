@@ -59,6 +59,7 @@ export type MemoryReviewFactCandidate = {
 export type MemoryReviewStaleEvidence = {
   kind: "entity_mention" | "episode_evidence";
   id: string;
+  reviewStatus: "pending";
   ownerId: string;
   ownerTitle: string;
   chunkId: string | null;
@@ -80,6 +81,94 @@ export type MemoryReviewBacklogReport = {
     staleEvidence: number;
   };
 };
+
+type MemoryReviewStaleEvidenceDecisionStatus =
+  | "deferred"
+  | "rejected"
+  | "resolved";
+
+export async function deferMemoryReviewStaleEvidence(input: {
+  projectId: string;
+  kind: MemoryReviewStaleEvidence["kind"];
+  id: string;
+  reviewerNote?: string | null;
+  reviewedAt?: string;
+}): Promise<{ updated: boolean }> {
+  return updateMemoryReviewStaleEvidenceDecision({
+    ...input,
+    reviewStatus: "deferred",
+  });
+}
+
+export async function rejectMemoryReviewStaleEvidence(input: {
+  projectId: string;
+  kind: MemoryReviewStaleEvidence["kind"];
+  id: string;
+  reviewerNote?: string | null;
+  reviewedAt?: string;
+}): Promise<{ updated: boolean }> {
+  return updateMemoryReviewStaleEvidenceDecision({
+    ...input,
+    reviewStatus: "rejected",
+  });
+}
+
+export async function resolveMemoryReviewStaleEvidence(input: {
+  projectId: string;
+  kind: MemoryReviewStaleEvidence["kind"];
+  id: string;
+  reviewerNote?: string | null;
+  reviewedAt?: string;
+}): Promise<{ updated: boolean }> {
+  return updateMemoryReviewStaleEvidenceDecision({
+    ...input,
+    reviewStatus: "resolved",
+  });
+}
+
+async function updateMemoryReviewStaleEvidenceDecision(input: {
+  projectId: string;
+  kind: MemoryReviewStaleEvidence["kind"];
+  id: string;
+  reviewStatus: MemoryReviewStaleEvidenceDecisionStatus;
+  reviewerNote?: string | null;
+  reviewedAt?: string;
+}): Promise<{ updated: boolean }> {
+  const reviewedAt = input.reviewedAt ?? new Date().toISOString();
+  const update = {
+    reviewStatus: input.reviewStatus,
+    reviewerNote: input.reviewerNote ?? null,
+    reviewedAt,
+    updatedAt: reviewedAt,
+  };
+
+  const result =
+    input.kind === "entity_mention"
+      ? await db
+          .getClient()
+          .update(memoryEntityMention)
+          .set(update)
+          .where(
+            and(
+              eq(memoryEntityMention.projectId, input.projectId),
+              eq(memoryEntityMention.id, input.id),
+            ),
+          )
+          .run()
+      : await db
+          .getClient()
+          .update(memoryEpisodeEvidence)
+          .set(update)
+          .where(
+            and(
+              eq(memoryEpisodeEvidence.projectId, input.projectId),
+              eq(memoryEpisodeEvidence.id, input.id),
+            ),
+          )
+          .run();
+
+  return { updated: result.changes > 0 };
+}
 
 export async function getMemoryReviewBacklogReport(input: {
   projectId: string;
@@ -247,6 +336,7 @@ export async function getMemoryReviewBacklogReport(input: {
       chapterId: memoryEntityMention.chapterId,
       chapterOrder: chapter.order,
       quote: memoryEntityMention.quote,
+      reviewStatus: memoryEntityMention.reviewStatus,
       chunkExists: memoryChunk.id,
       chunkContent: memoryChunk.content,
     })
@@ -264,6 +354,7 @@ export async function getMemoryReviewBacklogReport(input: {
       and(
         eq(memoryEntityMention.projectId, input.projectId),
         eq(memoryEntity.status, "confirmed"),
+        eq(memoryEntityMention.reviewStatus, "pending"),
       ),
     )
     .orderBy(asc(memoryEntity.canonicalName), asc(memoryEntityMention.id));
@@ -278,6 +369,7 @@ export async function getMemoryReviewBacklogReport(input: {
       chapterId: memoryEpisodeEvidence.chapterId,
       chapterOrder: chapter.order,
       quote: memoryEpisodeEvidence.quote,
+      reviewStatus: memoryEpisodeEvidence.reviewStatus,
       chunkExists: memoryChunk.id,
       chunkContent: memoryChunk.content,
     })
@@ -295,6 +387,7 @@ export async function getMemoryReviewBacklogReport(input: {
       and(
         eq(memoryEpisodeEvidence.projectId, input.projectId),
         eq(memoryEpisode.status, "confirmed"),
+        eq(memoryEpisodeEvidence.reviewStatus, "pending"),
       ),
     )
     .orderBy(asc(memoryEpisode.title), asc(memoryEpisodeEvidence.id));
@@ -307,6 +400,7 @@ export async function getMemoryReviewBacklogReport(input: {
         {
           kind: "entity_mention",
           id: row.id,
+          reviewStatus: "pending",
           ownerId: row.ownerId,
           ownerTitle: row.ownerTitle,
           chunkId: row.chunkId,
@@ -324,6 +418,7 @@ export async function getMemoryReviewBacklogReport(input: {
         {
           kind: "episode_evidence",
           id: row.id,
+          reviewStatus: "pending",
           ownerId: row.ownerId,
           ownerTitle: row.ownerTitle,
           chunkId: row.chunkId,

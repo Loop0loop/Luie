@@ -8,6 +8,9 @@ import type {
   AnalysisEntityReviewItem,
   AnalysisEpisodeReviewItem,
   AnalysisFactReviewItem,
+  Message,
+  AnalysisStaleEvidenceReviewAction,
+  AnalysisStaleEvidenceReviewItem,
 } from "../../components/analysisSection/shared/types";
 import { normalizeChatError } from "../../components/analysisSection/chat/chatErrors";
 export interface AnalysisActions {
@@ -25,6 +28,7 @@ export interface AnalysisActions {
   loadEpisodeReviewQueue: (projectId: string) => Promise<void>;
   loadEntityReviewQueue: (projectId: string) => Promise<void>;
   loadEntityAliasReviewQueue: (projectId: string) => Promise<void>;
+  loadStaleEvidenceReviewQueue: (projectId: string) => Promise<void>;
 
   handleConfirmFact: (projectId: string, item: AnalysisFactReviewItem) => Promise<void>;
   handleRejectFact: (projectId: string, item: AnalysisFactReviewItem, reason: string) => Promise<void>;
@@ -36,7 +40,36 @@ export interface AnalysisActions {
   handleRejectEntityAlias: (projectId: string, item: AnalysisEntityAliasReviewItem, reason: string) => Promise<void>;
   handleMergeEntityAlias: (projectId: string, item: AnalysisEntityAliasReviewItem, targetEntityId: string) => Promise<void>;
   handleSplitEntityAlias: (projectId: string, item: AnalysisEntityAliasReviewItem, canonicalName: string) => Promise<void>;
+  handleReviewStaleEvidence: (
+    projectId: string,
+    item: AnalysisStaleEvidenceReviewItem,
+    action: AnalysisStaleEvidenceReviewAction,
+    reviewerNote?: string | null,
+  ) => Promise<void>;
+  handleRepairStaleEvidence: (projectId: string) => Promise<void>;
 }
+
+type AnalysisActionState = {
+  items: Array<NonNullable<AnalysisStreamChunk["item"]>>;
+  messages: Message[];
+  input: string;
+  isStreaming: boolean;
+  ragRunId: string | null;
+  loadConflictQueue: AnalysisActions["loadConflictQueue"];
+  loadFactReviewQueue: AnalysisActions["loadFactReviewQueue"];
+  loadEpisodeReviewQueue: AnalysisActions["loadEpisodeReviewQueue"];
+  loadEntityReviewQueue: AnalysisActions["loadEntityReviewQueue"];
+  loadEntityAliasReviewQueue: AnalysisActions["loadEntityAliasReviewQueue"];
+  loadStaleEvidenceReviewQueue: AnalysisActions["loadStaleEvidenceReviewQueue"];
+};
+
+type AnalysisSet = (
+  partial:
+    | Record<string, unknown>
+    | ((state: AnalysisActionState) => Record<string, unknown>),
+) => void;
+
+type AnalysisGet = () => AnalysisActionState;
 
 let offStream: (() => void) | null = null;
 let offError: (() => void) | null = null;
@@ -52,8 +85,8 @@ export const cleanUpRagStreamListeners = () => {
   }
 };
 export function createAnalysisActions(
-  set: any,
-  get: any,
+  set: AnalysisSet,
+  get: AnalysisGet,
 ): AnalysisActions {
   return {
     startAnalysis: async (chapterId: string, projectId: string) => {
@@ -97,6 +130,7 @@ export function createAnalysisActions(
         await api.analysis.clear();
         set({ items: [], isAnalyzing: false, error: null });
       } catch {
+        set({ isAnalyzing: false });
       }
     },
 
@@ -110,8 +144,8 @@ export function createAnalysisActions(
           (value ?? "").replace(/\s+/g, " ").trim().toLowerCase();
         const incomingSignature = `${chunk.item.type}|${normalize(chunk.item.content)}|${normalize(chunk.item.quote)}`;
 
-        set((state: any) => ({
-          items: state.items.some((existing: any) => {
+        set((state) => ({
+          items: state.items.some((existing) => {
             const existingSignature = `${existing.type}|${normalize(existing.content)}|${normalize(existing.quote)}`;
             return existingSignature === incomingSignature;
           })
@@ -128,7 +162,7 @@ export function createAnalysisActions(
       const question = source;
       const userMessageId = `user-${Date.now()}`;
       const assistantMsgId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-      set((state: any) => ({
+      set((state) => ({
         messages: [
           ...state.messages,
           { id: userMessageId, role: "user", content: question },
@@ -147,8 +181,8 @@ export function createAnalysisActions(
       if (!res.success || !res.data?.runId) {
         set({ isStreaming: false });
         const errMsg = normalizeChatError(res.error?.code);
-        set((state: any) => ({
-          messages: state.messages.map((message: any) =>
+        set((state) => ({
+          messages: state.messages.map((message) =>
             message.id === assistantMsgId
               ? { ...message, isStreaming: false, error: errMsg }
               : message,
@@ -159,8 +193,8 @@ export function createAnalysisActions(
 
       const runId = res.data.runId;
       set({ ragRunId: runId });
-      set((state: any) => ({
-        messages: state.messages.map((message: any) =>
+      set((state) => ({
+        messages: state.messages.map((message) =>
           message.id === assistantMsgId ? { ...message, id: runId } : message,
         ),
       }));
@@ -169,8 +203,8 @@ export function createAnalysisActions(
       offStream = api.rag.onStream((payload) => {
         if (payload.runId !== runId) return;
         if (payload.delta) {
-          set((state: any) => ({
-            messages: state.messages.map((message: any) =>
+          set((state) => ({
+            messages: state.messages.map((message) =>
               message.id === runId
                 ? { ...message, content: message.content + payload.delta }
                 : message,
@@ -183,8 +217,8 @@ export function createAnalysisActions(
         cleanUpRagStreamListeners();
 
         if (payload.result) {
-          set((state: any) => ({
-            messages: state.messages.map((message: any) =>
+          set((state) => ({
+            messages: state.messages.map((message) =>
               message.id === runId
                 ? {
                     ...message,
@@ -206,8 +240,8 @@ export function createAnalysisActions(
         cleanUpRagStreamListeners();
         
         const errMsg = normalizeChatError(payload.code);
-        set((state: any) => ({
-          messages: state.messages.map((message: any) =>
+        set((state) => ({
+          messages: state.messages.map((message) =>
             message.id === runId
               ? { ...message, isStreaming: false, error: errMsg }
               : message,
@@ -222,8 +256,8 @@ export function createAnalysisActions(
       await api.rag.stop(ragRunId);
       set({ isStreaming: false, ragRunId: null });
       cleanUpRagStreamListeners();
-      set((state: any) => ({
-        messages: state.messages.map((message: any) =>
+      set((state) => ({
+        messages: state.messages.map((message) =>
           message.isStreaming ? { ...message, isStreaming: false } : message,
         ),
       }));
@@ -349,6 +383,28 @@ export function createAnalysisActions(
         set({ entityAliasReviewItems: response.data.items });
       } finally {
         set({ entityAliasReviewLoading: false });
+      }
+    },
+    loadStaleEvidenceReviewQueue: async (projectId: string) => {
+      set({ staleEvidenceReviewLoading: true, staleEvidenceReviewError: null });
+      try {
+        const response = await api.memory.getReviewBacklog({
+          projectId,
+          limit: 50,
+          evidenceLimit: 3,
+        });
+        if (!response.success || !response.data) {
+          set({
+            staleEvidenceReviewError:
+              response.error?.message ??
+              i18n.t("analysis.review.queue.staleEvidence.fetchError"),
+            staleEvidenceReviewItems: [],
+          });
+          return;
+        }
+        set({ staleEvidenceReviewItems: response.data.staleEvidence });
+      } finally {
+        set({ staleEvidenceReviewLoading: false });
       }
     },
     handleConfirmFact: async (projectId: string, item: AnalysisFactReviewItem) => {
@@ -496,5 +552,50 @@ export function createAnalysisActions(
         set({ mutatingAliasId: null });
       }
     },
-  };
-}
+     handleReviewStaleEvidence: async (
+       projectId: string,
+       item: AnalysisStaleEvidenceReviewItem,
+       action: AnalysisStaleEvidenceReviewAction,
+       reviewerNote?: string | null,
+    ) => {
+      set({ mutatingStaleEvidenceId: item.id, staleEvidenceReviewError: null });
+      try {
+        const response = await api.memory.reviewStaleEvidence({
+          projectId,
+          kind: item.kind,
+          id: item.id,
+          action,
+          reviewerNote,
+        });
+        if (!response.success || !response.data?.updated) {
+          set({
+            staleEvidenceReviewError:
+              response.error?.message ??
+              i18n.t("analysis.review.queue.staleEvidence.actionError"),
+          });
+          return;
+        }
+        await get().loadStaleEvidenceReviewQueue(projectId);
+      } finally {
+         set({ mutatingStaleEvidenceId: null });
+       }
+     },
+     handleRepairStaleEvidence: async (projectId: string) => {
+       set({ repairingStaleEvidenceLinks: true, staleEvidenceReviewError: null });
+       try {
+         const response = await api.memory.repairEvidenceLinks({ projectId });
+         if (!response.success || !response.data) {
+           set({
+             staleEvidenceReviewError:
+               response.error?.message ??
+               i18n.t("analysis.review.queue.staleEvidence.repairError"),
+           });
+           return;
+         }
+         await get().loadStaleEvidenceReviewQueue(projectId);
+       } finally {
+         set({ repairingStaleEvidenceLinks: false });
+       }
+     },
+   };
+ }

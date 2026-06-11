@@ -89,6 +89,7 @@ export const koBaseSettingsAdvanced = {
         resumeFailed: "메모리 작업 재개에 실패했습니다.",
         cancelFailed: "메모리 작업 취소에 실패했습니다.",
         latestError: "최근 오류: {{error}}",
+        nextRetryAt: "다음 재시도: {{time}}",
         status: {
           pending: "대기 중",
           running: "처리 중",
@@ -98,11 +99,24 @@ export const koBaseSettingsAdvanced = {
           canceled: "취소됨",
           completed: "완료",
           skipped: "건너뜀",
+          RECOVERED_STALE_RUNNING_JOB: "중단된 작업 복구됨",
         },
         jobType: {
           rebuild_chunks: "원고 기억화",
           rebuild_summary: "회차 요약",
           rebuild_embedding: "의미 검색 준비",
+        },
+        targetType: {
+          chapter: "회차",
+          scene: "장면",
+          note: "노트",
+          synopsis: "시놉시스",
+          plot: "플롯",
+          character: "인물",
+          faction: "세력",
+          event: "사건",
+          scrapMemo: "자료 메모",
+          chunk: "기억 조각",
         },
         attention: {
           retryable_failed: "재시도 가능",

@@ -488,6 +488,7 @@ function insertTemporalChapterEvalCase(input: {
       expectedAnswer: excerpt,
       temporalScopeStartChapterId: input.row.chapterId,
       temporalScopeEndChapterId: input.row.chapterId,
+      queryChapterOrder: input.row.chapterOrder,
       severity: "p0",
       updatedAt: input.nowIso,
     })

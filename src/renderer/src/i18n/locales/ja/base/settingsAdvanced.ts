@@ -92,6 +92,7 @@ export const jaBaseSettingsAdvanced = {
         resumeFailed: "メモリージョブの再開に失敗しました。",
         cancelFailed: "メモリージョブの取消に失敗しました。",
         latestError: "最新エラー: {{error}}",
+        nextRetryAt: "次の再試行: {{time}}",
         status: {
           pending: "待機中",
           running: "処理中",
@@ -101,11 +102,24 @@ export const jaBaseSettingsAdvanced = {
           canceled: "取消済み",
           completed: "完了",
           skipped: "スキップ",
+          RECOVERED_STALE_RUNNING_JOB: "中断されたジョブを復旧",
         },
         jobType: {
           rebuild_chunks: "原稿メモリー化",
           rebuild_summary: "章要約",
           rebuild_embedding: "意味検索準備",
+        },
+        targetType: {
+          chapter: "話",
+          scene: "シーン",
+          note: "ノート",
+          synopsis: "シノプシス",
+          plot: "プロット",
+          character: "人物",
+          faction: "勢力",
+          event: "事件",
+          scrapMemo: "資料メモ",
+          chunk: "記憶チャンク",
         },
         attention: {
           retryable_failed: "再試行可能",

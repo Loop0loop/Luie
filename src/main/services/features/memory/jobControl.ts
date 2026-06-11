@@ -1,8 +1,22 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import {
+  character,
   db,
+  chapter,
+  event,
+  faction,
+  memoryChunk,
   memoryBuildJob,
+  note,
+  plot,
+  scrapMemo,
+  scene,
+  synopsis,
 } from "../../../infra/database/index.js";
+import {
+  getMemoryBuildJobRetryBackoffMs,
+  MAX_JOB_ATTEMPTS,
+} from "./projection/jobPolicy.js";
 
 const PAUSABLE_STATUSES = ["pending", "failed"] as const;
 const CLAIMABLE_STATUSES = ["pending", "failed"] as const;
@@ -17,10 +31,10 @@ const ACTIVE_STATUSES = [
   "paused",
   "cancel_requested",
 ] as const;
-const MAX_JOB_ATTEMPTS = 5;
-const BASE_RETRY_BACKOFF_MS = 2_000;
+const RECOVERED_STALE_RUNNING_JOB = "RECOVERED_STALE_RUNNING_JOB";
 const STALE_CANCELLATION_REQUEST_MS = 5_000;
 const PROGRESS_SNAPSHOT_TTL_MS = 1_000;
+const TARGET_PROGRESS_LIMIT = 20;
 
 const progressSnapshotCache = new Map<
   string,
@@ -41,11 +55,34 @@ export type MemoryBuildJobProgress = {
     retryBackoffCount: number;
     exhaustedFailedCount: number;
     staleCancellationRequestedCount: number;
+    recoveredStaleRunningCount: number;
+    nextRetryAt: string | null;
     latestError: string | null;
   };
   byJobType: Record<
     string,
     {
+      total: number;
+      activeCount: number;
+      doneCount: number;
+      byStatus: Record<string, number>;
+    }
+  >;
+  byTargetType: Record<
+    string,
+    {
+      total: number;
+      activeCount: number;
+      doneCount: number;
+      byStatus: Record<string, number>;
+    }
+  >;
+  byTarget: Record<
+    string,
+    {
+      targetType: string;
+      targetId: string;
+      label: string | null;
       total: number;
       activeCount: number;
       doneCount: number;
@@ -69,6 +106,317 @@ function invalidateMemoryBuildProgressSnapshot(projectId?: string): void {
     return;
   }
   progressSnapshotCache.clear();
+}
+
+function createProgressBucket(): {
+  total: number;
+  activeCount: number;
+  doneCount: number;
+  byStatus: Record<string, number>;
+} {
+  return {
+    total: 0,
+    activeCount: 0,
+    doneCount: 0,
+    byStatus: {},
+  };
+}
+
+function addStatusCount(
+  bucket: ReturnType<typeof createProgressBucket>,
+  status: string,
+  count: number,
+): void {
+  bucket.total += count;
+  bucket.byStatus[status] = count;
+  if ((DONE_STATUSES as readonly string[]).includes(status)) {
+    bucket.doneCount += count;
+  }
+  if ((ACTIVE_STATUSES as readonly string[]).includes(status)) {
+    bucket.activeCount += count;
+  }
+}
+
+function targetKey(targetType: string, targetId: string): string {
+  return `${targetType}:${targetId}`;
+}
+
+async function loadTargetLabels(input: {
+  projectId: string;
+  targets: Array<{ targetType: string; targetId: string }>;
+}): Promise<Map<string, string>> {
+  const chapterIds = [
+    ...new Set(
+      input.targets
+        .filter((target) => target.targetType === "chapter")
+        .map((target) => target.targetId),
+    ),
+  ];
+  const sceneIds = [
+    ...new Set(
+      input.targets
+        .filter((target) => target.targetType === "scene")
+        .map((target) => target.targetId),
+    ),
+  ];
+  const noteIds = [
+    ...new Set(
+      input.targets
+        .filter((target) => target.targetType === "note")
+        .map((target) => target.targetId),
+    ),
+  ];
+  const synopsisIds = [
+    ...new Set(
+      input.targets
+        .filter((target) => target.targetType === "synopsis")
+        .map((target) => target.targetId),
+    ),
+  ];
+  const plotIds = [
+    ...new Set(
+      input.targets
+        .filter((target) => target.targetType === "plot")
+        .map((target) => target.targetId),
+    ),
+  ];
+  const characterIds = [
+    ...new Set(
+      input.targets
+        .filter((target) => target.targetType === "character")
+        .map((target) => target.targetId),
+    ),
+  ];
+  const factionIds = [
+    ...new Set(
+      input.targets
+        .filter((target) => target.targetType === "faction")
+        .map((target) => target.targetId),
+    ),
+  ];
+  const eventIds = [
+    ...new Set(
+      input.targets
+        .filter((target) => target.targetType === "event")
+        .map((target) => target.targetId),
+    ),
+  ];
+  const scrapMemoIds = [
+    ...new Set(
+      input.targets
+        .filter((target) => target.targetType === "scrapMemo")
+        .map((target) => target.targetId),
+    ),
+  ];
+  const chunkIds = [
+    ...new Set(
+      input.targets
+        .filter((target) => target.targetType === "chunk")
+        .map((target) => target.targetId),
+    ),
+  ];
+  const labels = new Map<string, string>();
+  if (chapterIds.length > 0) {
+    const rows = await db
+      .getClient()
+      .select({
+        id: chapter.id,
+        title: chapter.title,
+        order: chapter.order,
+      })
+      .from(chapter)
+      .where(
+        and(
+          eq(chapter.projectId, input.projectId),
+          inArray(chapter.id, chapterIds),
+        ),
+      );
+    for (const row of rows) {
+      labels.set(`chapter:${row.id}`, `${row.order}화 · ${row.title}`);
+    }
+  }
+  if (sceneIds.length > 0) {
+    const rows = await db
+      .getClient()
+      .select({
+        id: scene.id,
+        title: scene.title,
+        order: scene.order,
+        chapterOrder: chapter.order,
+      })
+      .from(scene)
+      .leftJoin(chapter, eq(chapter.id, scene.chapterId))
+      .where(
+        and(
+          eq(scene.projectId, input.projectId),
+          inArray(scene.id, sceneIds),
+        ),
+      );
+    for (const row of rows) {
+      const chapterPrefix =
+        typeof row.chapterOrder === "number" ? `${row.chapterOrder}화 · ` : "";
+      labels.set(
+        `scene:${row.id}`,
+        `${chapterPrefix}장면 ${row.order} · ${row.title}`,
+      );
+    }
+  }
+  if (noteIds.length > 0) {
+    const rows = await db
+      .getClient()
+      .select({
+        id: note.id,
+        title: note.title,
+      })
+      .from(note)
+      .where(
+        and(
+          eq(note.projectId, input.projectId),
+          inArray(note.id, noteIds),
+        ),
+      );
+    for (const row of rows) {
+      labels.set(`note:${row.id}`, `노트 · ${row.title}`);
+    }
+  }
+  if (synopsisIds.length > 0) {
+    const rows = await db
+      .getClient()
+      .select({
+        id: synopsis.id,
+        title: synopsis.title,
+      })
+      .from(synopsis)
+      .where(
+        and(
+          eq(synopsis.projectId, input.projectId),
+          inArray(synopsis.id, synopsisIds),
+        ),
+      );
+    for (const row of rows) {
+      labels.set(`synopsis:${row.id}`, `시놉시스 · ${row.title}`);
+    }
+  }
+  if (plotIds.length > 0) {
+    const rows = await db
+      .getClient()
+      .select({
+        id: plot.id,
+        title: plot.title,
+      })
+      .from(plot)
+      .where(
+        and(eq(plot.projectId, input.projectId), inArray(plot.id, plotIds)),
+      );
+    for (const row of rows) {
+      labels.set(`plot:${row.id}`, `플롯 · ${row.title}`);
+    }
+  }
+  if (characterIds.length > 0) {
+    const rows = await db
+      .getClient()
+      .select({
+        id: character.id,
+        name: character.name,
+      })
+      .from(character)
+      .where(
+        and(
+          eq(character.projectId, input.projectId),
+          inArray(character.id, characterIds),
+        ),
+      );
+    for (const row of rows) {
+      labels.set(`character:${row.id}`, `인물 · ${row.name}`);
+    }
+  }
+  if (factionIds.length > 0) {
+    const rows = await db
+      .getClient()
+      .select({
+        id: faction.id,
+        name: faction.name,
+      })
+      .from(faction)
+      .where(
+        and(
+          eq(faction.projectId, input.projectId),
+          inArray(faction.id, factionIds),
+        ),
+      );
+    for (const row of rows) {
+      labels.set(`faction:${row.id}`, `세력 · ${row.name}`);
+    }
+  }
+  if (eventIds.length > 0) {
+    const rows = await db
+      .getClient()
+      .select({
+        id: event.id,
+        name: event.name,
+      })
+      .from(event)
+      .where(
+        and(eq(event.projectId, input.projectId), inArray(event.id, eventIds)),
+      );
+    for (const row of rows) {
+      labels.set(`event:${row.id}`, `사건 · ${row.name}`);
+    }
+  }
+  if (scrapMemoIds.length > 0) {
+    const rows = await db
+      .getClient()
+      .select({
+        id: scrapMemo.id,
+        title: scrapMemo.title,
+      })
+      .from(scrapMemo)
+      .where(
+        and(
+          eq(scrapMemo.projectId, input.projectId),
+          inArray(scrapMemo.id, scrapMemoIds),
+        ),
+      );
+    for (const row of rows) {
+      labels.set(`scrapMemo:${row.id}`, `자료 메모 · ${row.title}`);
+    }
+  }
+  if (chunkIds.length > 0) {
+    const rows = await db
+      .getClient()
+      .select({
+        id: memoryChunk.id,
+        chunkIndex: memoryChunk.chunkIndex,
+        contextLabel: memoryChunk.contextLabel,
+        chapterTitle: chapter.title,
+        chapterOrder: chapter.order,
+        sceneTitle: scene.title,
+        sceneOrder: scene.order,
+      })
+      .from(memoryChunk)
+      .leftJoin(chapter, eq(chapter.id, memoryChunk.chapterId))
+      .leftJoin(scene, eq(scene.id, memoryChunk.sceneId))
+      .where(
+        and(
+          eq(memoryChunk.projectId, input.projectId),
+          inArray(memoryChunk.id, chunkIds),
+        ),
+      );
+    for (const row of rows) {
+      const parts = [
+        typeof row.chapterOrder === "number"
+          ? `${row.chapterOrder}화`
+          : null,
+        row.chapterTitle,
+        typeof row.sceneOrder === "number" ? `장면 ${row.sceneOrder}` : null,
+        row.sceneTitle,
+        `chunk ${row.chunkIndex + 1}`,
+        row.contextLabel,
+      ].filter((part): part is string => typeof part === "string" && part.length > 0);
+      labels.set(`chunk:${row.id}`, parts.join(" · "));
+    }
+  }
+  return labels;
 }
 
 export async function pauseMemoryBuildJobs(input: {
@@ -281,6 +629,75 @@ export async function getMemoryBuildJobProgress(input: {
     .from(memoryBuildJob)
     .where(eq(memoryBuildJob.projectId, input.projectId))
     .groupBy(memoryBuildJob.jobType, memoryBuildJob.status);
+  const targetTypeRows = await db
+    .getClient()
+    .select({
+      targetType: memoryBuildJob.targetType,
+      status: memoryBuildJob.status,
+      count: sql<number>`count(*)`,
+    })
+    .from(memoryBuildJob)
+    .where(eq(memoryBuildJob.projectId, input.projectId))
+    .groupBy(memoryBuildJob.targetType, memoryBuildJob.status);
+  const activeStatusSql = sql.join(
+    ACTIVE_STATUSES.map((status) => sql`${status}`),
+    sql`, `,
+  );
+  const candidateTargetRows = await db
+    .getClient()
+    .select({
+      targetType: memoryBuildJob.targetType,
+      targetId: memoryBuildJob.targetId,
+      activeCount: sql<number>`sum(case when ${memoryBuildJob.status} in (${activeStatusSql}) then 1 else 0 end)`,
+      total: sql<number>`count(*)`,
+    })
+    .from(memoryBuildJob)
+    .where(eq(memoryBuildJob.projectId, input.projectId))
+    .groupBy(memoryBuildJob.targetType, memoryBuildJob.targetId)
+    .orderBy(
+      sql`sum(case when ${memoryBuildJob.status} in (${activeStatusSql}) then 1 else 0 end) desc`,
+      sql`count(*) desc`,
+      memoryBuildJob.targetType,
+      memoryBuildJob.targetId,
+    )
+    .limit(TARGET_PROGRESS_LIMIT);
+  const candidateTargetKeys = new Set(
+    candidateTargetRows.map((row) => targetKey(row.targetType, row.targetId)),
+  );
+  const candidateTargetKeySql = sql.join(
+    [...candidateTargetKeys].map((key) => sql`${key}`),
+    sql`, `,
+  );
+  const targetRows =
+    candidateTargetKeys.size === 0
+      ? []
+      : await db
+    .getClient()
+    .select({
+      targetType: memoryBuildJob.targetType,
+      targetId: memoryBuildJob.targetId,
+      status: memoryBuildJob.status,
+      count: sql<number>`count(*)`,
+    })
+    .from(memoryBuildJob)
+    .where(
+      and(
+        eq(memoryBuildJob.projectId, input.projectId),
+        sql`${memoryBuildJob.targetType} || ':' || ${memoryBuildJob.targetId} in (${candidateTargetKeySql})`,
+      ),
+    )
+    .groupBy(
+      memoryBuildJob.targetType,
+      memoryBuildJob.targetId,
+      memoryBuildJob.status,
+    );
+  const targetLabels = await loadTargetLabels({
+    projectId: input.projectId,
+    targets: targetRows.map((row) => ({
+      targetType: row.targetType,
+      targetId: row.targetId,
+    })),
+  });
   const attentionRows = await db
     .getClient()
     .select({
@@ -293,7 +710,7 @@ export async function getMemoryBuildJobProgress(input: {
     .where(
       and(
         eq(memoryBuildJob.projectId, input.projectId),
-        inArray(memoryBuildJob.status, ["failed", "cancel_requested"]),
+        inArray(memoryBuildJob.status, ["failed", "cancel_requested", "pending"]),
       ),
     );
 
@@ -314,21 +731,30 @@ export async function getMemoryBuildJobProgress(input: {
     const jobType = row.jobType;
     const status = row.status;
     const count = Number(row.count ?? 0);
-    const current = byJobType[jobType] ?? {
-      total: 0,
-      activeCount: 0,
-      doneCount: 0,
-      byStatus: {},
-    };
-    current.total += count;
-    current.byStatus[status] = count;
-    if ((DONE_STATUSES as readonly string[]).includes(status)) {
-      current.doneCount += count;
-    }
-    if ((ACTIVE_STATUSES as readonly string[]).includes(status)) {
-      current.activeCount += count;
-    }
+    const current = byJobType[jobType] ?? createProgressBucket();
+    addStatusCount(current, status, count);
     byJobType[jobType] = current;
+  }
+  const byTargetType: MemoryBuildJobProgress["byTargetType"] = {};
+  for (const row of targetTypeRows) {
+    const targetType = row.targetType;
+    const status = row.status;
+    const count = Number(row.count ?? 0);
+    const current = byTargetType[targetType] ?? createProgressBucket();
+    addStatusCount(current, status, count);
+    byTargetType[targetType] = current;
+  }
+  const byTarget: MemoryBuildJobProgress["byTarget"] = {};
+  for (const row of targetRows) {
+    const key = targetKey(row.targetType, row.targetId);
+    const current = byTarget[key] ?? {
+      targetType: row.targetType,
+      targetId: row.targetId,
+      label: targetLabels.get(key) ?? null,
+      ...createProgressBucket(),
+    };
+    addStatusCount(current, row.status, Number(row.count ?? 0));
+    byTarget[key] = current;
   }
   const nowMs = requestedNowMs;
   const attention = {
@@ -336,9 +762,12 @@ export async function getMemoryBuildJobProgress(input: {
     retryBackoffCount: 0,
     exhaustedFailedCount: 0,
     staleCancellationRequestedCount: 0,
+    recoveredStaleRunningCount: 0,
+    nextRetryAt: null as string | null,
     latestError: null as string | null,
   };
   let latestErrorUpdatedAtMs = Number.NEGATIVE_INFINITY;
+  let nextRetryAtMs = Number.POSITIVE_INFINITY;
   for (const row of attentionRows) {
     const updatedAtMs = Date.parse(row.updatedAt);
     const ageMs =
@@ -354,11 +783,14 @@ export async function getMemoryBuildJobProgress(input: {
         attention.exhaustedFailedCount += 1;
         continue;
       }
-      const backoffMs = BASE_RETRY_BACKOFF_MS * Math.max(1, row.attempts);
+      const backoffMs = getMemoryBuildJobRetryBackoffMs(row.attempts);
       if (ageMs >= backoffMs) {
         attention.retryableFailedCount += 1;
       } else {
         attention.retryBackoffCount += 1;
+        if (Number.isFinite(updatedAtMs)) {
+          nextRetryAtMs = Math.min(nextRetryAtMs, updatedAtMs + backoffMs);
+        }
       }
       continue;
     }
@@ -368,6 +800,12 @@ export async function getMemoryBuildJobProgress(input: {
     ) {
       attention.staleCancellationRequestedCount += 1;
     }
+    if (row.status === "pending" && row.error === RECOVERED_STALE_RUNNING_JOB) {
+      attention.recoveredStaleRunningCount += 1;
+    }
+  }
+  if (Number.isFinite(nextRetryAtMs)) {
+    attention.nextRetryAt = new Date(nextRetryAtMs).toISOString();
   }
 
   const progress = {
@@ -378,6 +816,8 @@ export async function getMemoryBuildJobProgress(input: {
     byStatus,
     attention,
     byJobType,
+    byTargetType,
+    byTarget,
   };
   progressSnapshotCache.set(input.projectId, {
     capturedAtMs: requestedNowMs,

@@ -88,6 +88,8 @@ export function createMemoryEpisodeCandidateRows(
     title: string;
     summary: string;
     status: "suggested";
+    provenanceKind: "canon";
+    canonStatus: "canon";
     confidence: number;
     updatedAt: string;
   };
@@ -102,6 +104,8 @@ export function createMemoryEpisodeCandidateRows(
     startOffset: number | null;
     endOffset: number | null;
     quote: string;
+    provenanceKind: "canon";
+    canonStatus: "canon";
     updatedAt: string;
   }>;
 } {
@@ -121,6 +125,8 @@ export function createMemoryEpisodeCandidateRows(
       title: input.title,
       summary: input.summary,
       status: "suggested",
+      provenanceKind: "canon",
+      canonStatus: "canon",
       confidence: 0,
       updatedAt: input.nowIso,
     },
@@ -135,6 +141,8 @@ export function createMemoryEpisodeCandidateRows(
       startOffset: item.startOffset,
       endOffset: item.endOffset,
       quote: item.quote,
+      provenanceKind: "canon",
+      canonStatus: "canon",
       updatedAt: input.nowIso,
     })),
   };

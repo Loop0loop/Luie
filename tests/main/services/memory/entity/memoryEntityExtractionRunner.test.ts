@@ -90,6 +90,8 @@ describe("processMemoryEntityExtraction", () => {
       entityType: "character",
       canonicalName: "아린",
       status: "suggested",
+      provenanceKind: "canon",
+      canonStatus: "canon",
       confidence: 82,
     });
 
@@ -103,6 +105,8 @@ describe("processMemoryEntityExtraction", () => {
       alias: "검은 기사",
       normalizedAlias: "검은 기사",
       status: "suggested",
+      provenanceKind: "canon",
+      canonStatus: "canon",
     });
 
     const [mention] = await db
@@ -120,6 +124,8 @@ describe("processMemoryEntityExtraction", () => {
       startOffset: 10,
       endOffset: 24,
       status: "suggested",
+      provenanceKind: "canon",
+      canonStatus: "canon",
     });
   });
 

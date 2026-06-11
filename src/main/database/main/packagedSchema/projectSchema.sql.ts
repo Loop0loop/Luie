@@ -161,6 +161,7 @@ CREATE TABLE IF NOT EXISTS "MemoryEvalCase" (
     "expectedAnswer" TEXT,
     "temporalScopeStartChapterId" TEXT,
     "temporalScopeEndChapterId" TEXT,
+    "queryChapterOrder" INTEGER,
     "severity" TEXT NOT NULL DEFAULT 'p1',
     "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TEXT NOT NULL,

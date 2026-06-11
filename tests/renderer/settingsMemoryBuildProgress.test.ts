@@ -5,6 +5,9 @@ import {
   getMemoryBuildStatusLabel,
   shouldPollMemoryBuildProgress,
 } from "../../src/renderer/src/features/settings/components/tabs/modelTabSections/memoryBuildProgress";
+import { enBaseSettingsAdvanced } from "../../src/renderer/src/i18n/locales/en/base/settingsAdvanced";
+import { jaBaseSettingsAdvanced } from "../../src/renderer/src/i18n/locales/ja/base/settingsAdvanced";
+import { koBaseSettingsAdvanced } from "../../src/renderer/src/i18n/locales/ko/base/settingsAdvanced";
 
 describe("settings memory build progress view", () => {
   it("counts active jobs and exposes a completed percentage", () => {
@@ -21,11 +24,14 @@ describe("settings memory build progress view", () => {
         canceled: 1,
       },
       byJobType: {},
+      byTargetType: {},
+      byTarget: {},
       attention: {
         retryableFailedCount: 0,
         retryBackoffCount: 0,
         exhaustedFailedCount: 0,
         staleCancellationRequestedCount: 0,
+        nextRetryAt: null,
         latestError: null,
       },
     });
@@ -73,6 +79,8 @@ describe("settings memory build progress view", () => {
           },
         },
       },
+      byTargetType: {},
+      byTarget: {},
       attention: {
         retryableFailedCount: 0,
         retryBackoffCount: 0,
@@ -102,12 +110,172 @@ describe("settings memory build progress view", () => {
     ]);
   });
 
+  it("exposes target type progress items in writer-facing language", () => {
+    const view = buildMemoryBuildProgressView({
+      projectId: "project-1",
+      total: 5,
+      activeCount: 3,
+      doneCount: 2,
+      byStatus: {
+        pending: 2,
+        running: 1,
+        completed: 2,
+      },
+      byJobType: {},
+      byTargetType: {
+        scene: {
+          total: 3,
+          activeCount: 3,
+          doneCount: 0,
+          byStatus: {
+            pending: 2,
+            running: 1,
+          },
+        },
+        chapter: {
+          total: 2,
+          activeCount: 0,
+          doneCount: 2,
+          byStatus: {
+            completed: 2,
+          },
+        },
+        chunk: {
+          total: 1,
+          activeCount: 1,
+          doneCount: 0,
+          byStatus: {
+            pending: 1,
+          },
+        },
+      },
+      byTarget: {},
+      attention: {
+        retryableFailedCount: 0,
+        retryBackoffCount: 0,
+        exhaustedFailedCount: 0,
+        staleCancellationRequestedCount: 0,
+        latestError: null,
+      },
+    });
+
+    expect(view.targetTypeItems).toEqual([
+      {
+        targetType: "scene",
+        label: "장면",
+        total: 3,
+        activeCount: 3,
+        doneCount: 0,
+        percent: 0,
+      },
+      {
+        targetType: "chunk",
+        label: "기억 조각",
+        total: 1,
+        activeCount: 1,
+        doneCount: 0,
+        percent: 0,
+      },
+      {
+        targetType: "chapter",
+        label: "회차",
+        total: 2,
+        activeCount: 0,
+        doneCount: 2,
+        percent: 100,
+      },
+    ]);
+  });
+
+  it("exposes individual target progress items for chapter-level visibility", () => {
+    const view = buildMemoryBuildProgressView({
+      projectId: "project-1",
+      total: 3,
+      activeCount: 2,
+      doneCount: 1,
+      byStatus: {
+        pending: 1,
+        running: 1,
+        completed: 1,
+      },
+      byJobType: {},
+      byTargetType: {},
+      byTarget: {
+        "chapter:chapter-12": {
+          targetType: "chapter",
+          targetId: "chapter-12",
+          label: "12화 · 검은 기사",
+          total: 2,
+          activeCount: 2,
+          doneCount: 0,
+          byStatus: {
+            pending: 1,
+            running: 1,
+          },
+        },
+        "chapter:chapter-13": {
+          targetType: "chapter",
+          targetId: "chapter-13",
+          label: null,
+          total: 1,
+          activeCount: 0,
+          doneCount: 1,
+          byStatus: {
+            completed: 1,
+          },
+        },
+      },
+      attention: {
+        retryableFailedCount: 0,
+        retryBackoffCount: 0,
+        exhaustedFailedCount: 0,
+        staleCancellationRequestedCount: 0,
+        latestError: null,
+      },
+    });
+
+    expect(view.targetItems).toEqual([
+      {
+        targetKey: "chapter:chapter-12",
+        targetType: "chapter",
+        targetId: "chapter-12",
+        label: "12화 · 검은 기사",
+        total: 2,
+        activeCount: 2,
+        doneCount: 0,
+        percent: 0,
+      },
+      {
+        targetKey: "chapter:chapter-13",
+        targetType: "chapter",
+        targetId: "chapter-13",
+        label: "회차 chapter-13",
+        total: 1,
+        activeCount: 0,
+        doneCount: 1,
+        percent: 100,
+      },
+    ]);
+  });
+
   it("labels cancellation and recovery markers in writer-facing language", () => {
     expect(getMemoryBuildStatusLabel("cancel_requested")).toBe("취소 준비 중");
     expect(getMemoryBuildStatusLabel("RECOVERED_STALE_RUNNING_JOB")).toBe(
       "중단된 작업 복구됨",
     );
     expect(getMemoryBuildStatusLabel("unknown_status")).toBe("unknown_status");
+  });
+
+  it("provides localized labels for recovered restart jobs", () => {
+    expect(
+      koBaseSettingsAdvanced.settings.localLlm.rebuildMemory.status.RECOVERED_STALE_RUNNING_JOB,
+    ).toBe("중단된 작업 복구됨");
+    expect(
+      enBaseSettingsAdvanced.settings.localLlm.rebuildMemory.status.RECOVERED_STALE_RUNNING_JOB,
+    ).toBe("Interrupted jobs recovered");
+    expect(
+      jaBaseSettingsAdvanced.settings.localLlm.rebuildMemory.status.RECOVERED_STALE_RUNNING_JOB,
+    ).toBe("中断されたジョブを復旧");
   });
 
   it("exposes retry and stalled cancellation alerts for writers", () => {
@@ -119,13 +287,18 @@ describe("settings memory build progress view", () => {
       byStatus: {
         failed: 3,
         cancel_requested: 1,
+        pending: 1,
       },
       byJobType: {},
+      byTargetType: {},
+      byTarget: {},
       attention: {
         retryableFailedCount: 1,
         retryBackoffCount: 1,
         exhaustedFailedCount: 1,
         staleCancellationRequestedCount: 1,
+        recoveredStaleRunningCount: 1,
+        nextRetryAt: "2026-06-11T00:00:13.000Z",
         latestError: "MAX_ATTEMPTS_REACHED",
       },
     });
@@ -153,6 +326,8 @@ describe("settings memory build progress view", () => {
       },
     ]);
     expect(view.latestError).toBe("MAX_ATTEMPTS_REACHED");
+    expect(view.recoveredCount).toBe(1);
+    expect(view.nextRetryAt).toBe("2026-06-11T00:00:13.000Z");
   });
 
   it("polls only while memory build jobs are active", () => {
@@ -164,6 +339,8 @@ describe("settings memory build progress view", () => {
         doneCount: 2,
         byStatus: { running: 1, completed: 2 },
         byJobType: {},
+        byTargetType: {},
+        byTarget: {},
         attention: {
           retryableFailedCount: 0,
           retryBackoffCount: 0,
@@ -181,6 +358,8 @@ describe("settings memory build progress view", () => {
         doneCount: 3,
         byStatus: { completed: 3 },
         byJobType: {},
+        byTargetType: {},
+        byTarget: {},
         attention: {
           retryableFailedCount: 0,
           retryBackoffCount: 0,
@@ -202,6 +381,8 @@ describe("settings memory build progress view", () => {
         doneCount: 0,
         byStatus: { running: 10 },
         byJobType: {},
+        byTargetType: {},
+        byTarget: {},
         attention: {
           retryableFailedCount: 0,
           retryBackoffCount: 0,
@@ -219,6 +400,8 @@ describe("settings memory build progress view", () => {
         doneCount: 0,
         byStatus: { pending: 3 },
         byJobType: {},
+        byTargetType: {},
+        byTarget: {},
         attention: {
           retryableFailedCount: 0,
           retryBackoffCount: 0,
@@ -236,6 +419,8 @@ describe("settings memory build progress view", () => {
         doneCount: 1,
         byStatus: { completed: 1 },
         byJobType: {},
+        byTargetType: {},
+        byTarget: {},
         attention: {
           retryableFailedCount: 0,
           retryBackoffCount: 0,
@@ -253,6 +438,8 @@ describe("settings memory build progress view", () => {
         doneCount: 0,
         byStatus: { cancel_requested: 1 },
         byJobType: {},
+        byTargetType: {},
+        byTarget: {},
         attention: {
           retryableFailedCount: 0,
           retryBackoffCount: 0,
@@ -261,6 +448,98 @@ describe("settings memory build progress view", () => {
           latestError: null,
         },
       }),
+    ).toBe(2_000);
+  });
+
+  it("backs off polling further when many memory build jobs are active", () => {
+    expect(
+      getMemoryBuildProgressPollIntervalMs({
+        projectId: "project-1",
+        total: 80,
+        activeCount: 80,
+        doneCount: 0,
+        byStatus: { running: 80 },
+        byJobType: {},
+        byTargetType: {},
+        byTarget: {},
+        attention: {
+          retryableFailedCount: 0,
+          retryBackoffCount: 0,
+          exhaustedFailedCount: 0,
+          staleCancellationRequestedCount: 0,
+          latestError: null,
+        },
+      }),
+    ).toBe(5_000);
+    expect(
+      getMemoryBuildProgressPollIntervalMs({
+        projectId: "project-1",
+        total: 240,
+        activeCount: 240,
+        doneCount: 0,
+        byStatus: { running: 240 },
+        byJobType: {},
+        byTargetType: {},
+        byTarget: {},
+        attention: {
+          retryableFailedCount: 0,
+          retryBackoffCount: 0,
+          exhaustedFailedCount: 0,
+          staleCancellationRequestedCount: 0,
+          latestError: null,
+        },
+      }),
+    ).toBe(10_000);
+    expect(
+      getMemoryBuildProgressPollIntervalMs({
+        projectId: "project-1",
+        total: 240,
+        activeCount: 240,
+        doneCount: 0,
+        byStatus: { cancel_requested: 240 },
+        byJobType: {},
+        byTargetType: {},
+        byTarget: {},
+        attention: {
+          retryableFailedCount: 0,
+          retryBackoffCount: 0,
+          exhaustedFailedCount: 0,
+          staleCancellationRequestedCount: 1,
+          latestError: null,
+        },
+      }),
+    ).toBe(2_000);
+  });
+
+  it("backs off polling when active progress has not changed since the previous snapshot", () => {
+    const previous = {
+      projectId: "project-1",
+      total: 10,
+      activeCount: 2,
+      doneCount: 3,
+      byStatus: { running: 2, completed: 3, pending: 5 },
+      byJobType: {},
+      byTargetType: {},
+      byTarget: {},
+      attention: {
+        retryableFailedCount: 0,
+        retryBackoffCount: 0,
+        exhaustedFailedCount: 0,
+        staleCancellationRequestedCount: 0,
+        latestError: null,
+      },
+    };
+    expect(getMemoryBuildProgressPollIntervalMs(previous, previous)).toBe(5_000);
+    expect(
+      getMemoryBuildProgressPollIntervalMs(
+        {
+          ...previous,
+          activeCount: 1,
+          doneCount: 4,
+          byStatus: { running: 1, completed: 4, pending: 5 },
+        },
+        previous,
+      ),
     ).toBe(2_000);
   });
 });

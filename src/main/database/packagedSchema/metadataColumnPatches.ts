@@ -195,4 +195,89 @@ export const PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
     column: "rejectionReason",
     sql: 'ALTER TABLE "MemoryEntityAlias" ADD COLUMN "rejectionReason" TEXT;',
   },
+  {
+    table: "MemoryEntity",
+    column: "provenanceKind",
+    sql: 'ALTER TABLE "MemoryEntity" ADD COLUMN "provenanceKind" TEXT NOT NULL DEFAULT \'unknown\';',
+  },
+  {
+    table: "MemoryEntity",
+    column: "canonStatus",
+    sql: 'ALTER TABLE "MemoryEntity" ADD COLUMN "canonStatus" TEXT NOT NULL DEFAULT \'unknown\';',
+  },
+  {
+    table: "MemoryEpisode",
+    column: "provenanceKind",
+    sql: 'ALTER TABLE "MemoryEpisode" ADD COLUMN "provenanceKind" TEXT NOT NULL DEFAULT \'unknown\';',
+  },
+  {
+    table: "MemoryEpisode",
+    column: "canonStatus",
+    sql: 'ALTER TABLE "MemoryEpisode" ADD COLUMN "canonStatus" TEXT NOT NULL DEFAULT \'unknown\';',
+  },
+  {
+    table: "MemoryEpisodeEvidence",
+    column: "provenanceKind",
+    sql: 'ALTER TABLE "MemoryEpisodeEvidence" ADD COLUMN "provenanceKind" TEXT NOT NULL DEFAULT \'unknown\';',
+  },
+  {
+    table: "MemoryEpisodeEvidence",
+    column: "canonStatus",
+    sql: 'ALTER TABLE "MemoryEpisodeEvidence" ADD COLUMN "canonStatus" TEXT NOT NULL DEFAULT \'unknown\';',
+  },
+  {
+    table: "MemoryEntityAlias",
+    column: "provenanceKind",
+    sql: 'ALTER TABLE "MemoryEntityAlias" ADD COLUMN "provenanceKind" TEXT NOT NULL DEFAULT \'unknown\';',
+  },
+  {
+    table: "MemoryEntityAlias",
+    column: "canonStatus",
+    sql: 'ALTER TABLE "MemoryEntityAlias" ADD COLUMN "canonStatus" TEXT NOT NULL DEFAULT \'unknown\';',
+  },
+  {
+    table: "MemoryEntityMention",
+    column: "provenanceKind",
+    sql: 'ALTER TABLE "MemoryEntityMention" ADD COLUMN "provenanceKind" TEXT NOT NULL DEFAULT \'unknown\';',
+  },
+  {
+    table: "MemoryEntityMention",
+    column: "canonStatus",
+    sql: 'ALTER TABLE "MemoryEntityMention" ADD COLUMN "canonStatus" TEXT NOT NULL DEFAULT \'unknown\';',
+  },
+  {
+    table: "MemoryEntityMention",
+    column: "reviewStatus",
+    sql: 'ALTER TABLE "MemoryEntityMention" ADD COLUMN "reviewStatus" TEXT NOT NULL DEFAULT \'pending\';',
+  },
+  {
+    table: "MemoryEntityMention",
+    column: "reviewerNote",
+    sql: 'ALTER TABLE "MemoryEntityMention" ADD COLUMN "reviewerNote" TEXT;',
+  },
+  {
+    table: "MemoryEntityMention",
+    column: "reviewedAt",
+    sql: 'ALTER TABLE "MemoryEntityMention" ADD COLUMN "reviewedAt" TEXT;',
+  },
+  {
+    table: "MemoryEpisodeEvidence",
+    column: "reviewStatus",
+    sql: 'ALTER TABLE "MemoryEpisodeEvidence" ADD COLUMN "reviewStatus" TEXT NOT NULL DEFAULT \'pending\';',
+  },
+  {
+    table: "MemoryEpisodeEvidence",
+    column: "reviewerNote",
+    sql: 'ALTER TABLE "MemoryEpisodeEvidence" ADD COLUMN "reviewerNote" TEXT;',
+  },
+  {
+    table: "MemoryEpisodeEvidence",
+    column: "reviewedAt",
+    sql: 'ALTER TABLE "MemoryEpisodeEvidence" ADD COLUMN "reviewedAt" TEXT;',
+  },
+  {
+    table: "MemoryEvalCase",
+    column: "queryChapterOrder",
+    sql: 'ALTER TABLE "MemoryEvalCase" ADD COLUMN "queryChapterOrder" INTEGER;',
+  },
 ];

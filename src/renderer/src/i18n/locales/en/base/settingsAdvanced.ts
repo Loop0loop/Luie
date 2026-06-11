@@ -90,6 +90,7 @@ export const enBaseSettingsAdvanced = {
         resumeFailed: "Failed to resume memory jobs.",
         cancelFailed: "Failed to cancel memory jobs.",
         latestError: "Latest error: {{error}}",
+        nextRetryAt: "Next retry: {{time}}",
         status: {
           pending: "Pending",
           running: "Running",
@@ -99,11 +100,24 @@ export const enBaseSettingsAdvanced = {
           canceled: "Canceled",
           completed: "Completed",
           skipped: "Skipped",
+          RECOVERED_STALE_RUNNING_JOB: "Interrupted jobs recovered",
         },
         jobType: {
           rebuild_chunks: "Draft memory",
           rebuild_summary: "Chapter summaries",
           rebuild_embedding: "Semantic search prep",
+        },
+        targetType: {
+          chapter: "Chapters",
+          scene: "Scenes",
+          note: "Notes",
+          synopsis: "Synopsis",
+          plot: "Plot",
+          character: "Characters",
+          faction: "Factions",
+          event: "Events",
+          scrapMemo: "Scrap notes",
+          chunk: "Memory chunks",
         },
         attention: {
           retryable_failed: "Retryable",

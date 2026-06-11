@@ -123,6 +123,9 @@ export type IoRendererApi = {
     queryNarrative: (
       input: SharedTypes.NarrativeMemoryQueryInput,
     ) => Promise<IPCResponse<SharedTypes.NarrativeMemoryQueryResult>>;
+    getReviewBacklog: (
+      input: SharedTypes.MemoryReviewBacklogInput,
+    ) => Promise<IPCResponse<SharedTypes.MemoryReviewBacklogResult>>;
     getConflictQueue: (
       input: SharedTypes.MemoryConflictQueueInput,
     ) => Promise<IPCResponse<SharedTypes.MemoryConflictQueueResult>>;
@@ -171,6 +174,12 @@ export type IoRendererApi = {
     mergeEntity: (
       input: SharedTypes.MemoryEntityMergeInput,
     ) => Promise<IPCResponse<SharedTypes.MemoryEntityMergeResult>>;
+    reviewStaleEvidence: (
+      input: SharedTypes.MemoryStaleEvidenceReviewActionInput,
+    ) => Promise<IPCResponse<SharedTypes.MemoryStaleEvidenceReviewActionResult>>;
+    repairEvidenceLinks: (
+      input: SharedTypes.MemoryEvidenceRepairInput,
+    ) => Promise<IPCResponse<SharedTypes.MemoryEvidenceRepairResult>>;
     searchChunks: (
       input: SharedTypes.MemoryChunkSearchQuery,
     ) => Promise<IPCResponse<SharedTypes.MemoryChunkSearchResult[]>>;

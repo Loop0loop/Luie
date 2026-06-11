@@ -54,6 +54,8 @@ export const applyMemoryCanonicalPackagePayload = (
       entityType,
       canonicalName,
       status,
+      provenanceKind: toStringValue(row.provenanceKind) ?? "unknown",
+      canonStatus: toStringValue(row.canonStatus) ?? "unknown",
       confidence: toNumberValue(row.confidence) ?? 0,
       createdBy: toStringValue(row.createdBy) ?? "import",
       createdAt: toStringValue(row.createdAt) ?? now,
@@ -94,6 +96,8 @@ export const applyMemoryCanonicalPackagePayload = (
       alias,
       normalizedAlias,
       status,
+      provenanceKind: toStringValue(row.provenanceKind) ?? "unknown",
+      canonStatus: toStringValue(row.canonStatus) ?? "unknown",
       createdAt: toStringValue(row.createdAt) ?? now,
       updatedAt: toStringValue(row.updatedAt) ?? now,
     };
@@ -144,6 +148,8 @@ export const applyMemoryCanonicalPackagePayload = (
       title,
       summary,
       status,
+      provenanceKind: toStringValue(row.provenanceKind) ?? "unknown",
+      canonStatus: toStringValue(row.canonStatus) ?? "unknown",
       confidence: toNumberValue(row.confidence) ?? 0,
       createdAt: toStringValue(row.createdAt) ?? now,
       updatedAt: toStringValue(row.updatedAt) ?? now,
@@ -194,6 +200,8 @@ export const applyMemoryCanonicalPackagePayload = (
       startOffset: toNumberValue(row.startOffset),
       endOffset: toNumberValue(row.endOffset),
       quote,
+      provenanceKind: toStringValue(row.provenanceKind) ?? "unknown",
+      canonStatus: toStringValue(row.canonStatus) ?? "unknown",
       createdAt: toStringValue(row.createdAt) ?? now,
       updatedAt: toStringValue(row.updatedAt) ?? now,
     };
@@ -368,6 +376,7 @@ export const applyMemoryCanonicalPackagePayload = (
       temporalScopeEndChapterId: toNullableStringValue(
         row.temporalScopeEndChapterId,
       ),
+      queryChapterOrder: toNumberValue(row.queryChapterOrder),
       severity: toStringValue(row.severity) ?? "p1",
       createdAt: toStringValue(row.createdAt) ?? now,
       updatedAt: toStringValue(row.updatedAt) ?? now,

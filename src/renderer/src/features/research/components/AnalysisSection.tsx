@@ -7,12 +7,28 @@ import { useChapterStore } from "@renderer/features/manuscript/stores/chapterSto
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { MessageList } from "./analysisSection/chat/MessageList";
 import { PromptComposer } from "./analysisSection/chat/PromptComposer";
+import { ConflictQueuePanel } from "./analysisSection/review/queue/ConflictQueuePanel";
+import { EntityAliasReviewPanel } from "./analysisSection/review/queue/EntityAliasReviewPanel";
+import { EntityReviewPanel } from "./analysisSection/review/queue/EntityReviewPanel";
+import { EpisodeReviewPanel } from "./analysisSection/review/queue/EpisodeReviewPanel";
+import { FactReviewPanel } from "./analysisSection/review/queue/FactReviewPanel";
+import { StaleEvidenceReviewPanel } from "./analysisSection/review/queue/StaleEvidenceReviewPanel";
 import { SummaryDrawer } from "./analysisSection/review/summary/SummaryDrawer";
 import type { MemoryScope } from "./analysisSection/shared/types";
+import type { AnalysisConflictItem } from "./analysisSection/shared/types";
 import { useAnalysisRuntime } from "./analysisSection/runtime/useAnalysisRuntime";
 import { useMemoryReviewPanels } from "./analysisSection/review/queue/useMemoryReviewPanels";
 import { useRagChat } from "./analysisSection/chat/useRagChat";
 import { useAnalysisStore } from "../stores/analysisStore";
+
+const formatConflictFact = (
+  fact: AnalysisConflictItem["invalidatedFact"],
+): string => {
+  const subject = fact.subjectEntityName ?? fact.subjectEntityId;
+  const object =
+    fact.objectEntityName ?? fact.objectValue ?? fact.objectEntityId ?? "";
+  return `${subject} -> ${fact.predicate}${object ? ` -> ${object}` : ""}`;
+};
 
 interface FloatingWrapperProps {
   children: React.ReactNode;
@@ -306,6 +322,71 @@ export default function AnalysisSection() {
       {/* 메시지 — 빈 상태에서는 영역 자체를 접어 프롬프트만 노출 */}
       {!floatingCompact && (
         <div data-no-drag className="flex-1 overflow-y-auto px-4 pt-4 min-h-0 cursor-auto scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent">
+          <div className="mb-4 space-y-2">
+            <ConflictQueuePanel
+              visible={review.showConflictQueue}
+              loading={review.conflictQueueLoading}
+              error={review.conflictQueueError}
+              items={review.conflictQueueItems}
+              resolvingConflictId={review.resolvingConflictId}
+              onToggle={() => review.setShowConflictQueue((prev) => !prev)}
+              renderFact={formatConflictFact}
+              onResolve={review.handleResolveConflict}
+            />
+            <FactReviewPanel
+              visible={review.showFactReviewQueue}
+              loading={review.factReviewLoading}
+              error={review.factReviewError}
+              items={review.factReviewItems}
+              mutatingFactId={review.mutatingFactId}
+              onToggle={() => review.setShowFactReviewQueue((prev) => !prev)}
+              onConfirm={review.handleConfirmFact}
+              onReject={review.handleRejectFact}
+            />
+            <EpisodeReviewPanel
+              visible={review.showEpisodeReviewQueue}
+              loading={review.episodeReviewLoading}
+              error={review.episodeReviewError}
+              items={review.episodeReviewItems}
+              mutatingEpisodeId={review.mutatingEpisodeId}
+              onToggle={() => review.setShowEpisodeReviewQueue((prev) => !prev)}
+              onConfirm={review.handleConfirmEpisode}
+              onReject={review.handleRejectEpisode}
+            />
+            <EntityReviewPanel
+              visible={review.showEntityReviewQueue}
+              loading={review.entityReviewLoading}
+              error={review.entityReviewError}
+              items={review.entityReviewItems}
+              mutatingEntityId={review.mutatingEntityId}
+              onToggle={() => review.setShowEntityReviewQueue((prev) => !prev)}
+              onConfirm={review.handleConfirmEntity}
+              onReject={review.handleRejectEntity}
+            />
+            <EntityAliasReviewPanel
+              visible={review.showEntityAliasReviewQueue}
+              loading={review.entityAliasReviewLoading}
+              error={review.entityAliasReviewError}
+              items={review.entityAliasReviewItems}
+              mutatingAliasId={review.mutatingAliasId}
+              onToggle={() => review.setShowEntityAliasReviewQueue((prev) => !prev)}
+              onConfirm={review.handleConfirmEntityAlias}
+              onReject={review.handleRejectEntityAlias}
+              onMerge={review.handleMergeEntityAlias}
+              onSplit={review.handleSplitEntityAlias}
+            />
+            <StaleEvidenceReviewPanel
+              visible={review.showStaleEvidenceReviewQueue}
+              loading={review.staleEvidenceReviewLoading}
+              error={review.staleEvidenceReviewError}
+              items={review.staleEvidenceReviewItems}
+              mutatingStaleEvidenceId={review.mutatingStaleEvidenceId}
+              repairing={review.repairingStaleEvidenceLinks}
+              onToggle={() => review.setShowStaleEvidenceReviewQueue((prev) => !prev)}
+              onAction={review.handleReviewStaleEvidence}
+              onRepair={review.handleRepairStaleEvidence}
+            />
+          </div>
           {!isEmpty && (
             <div className="space-y-6">
               <MessageList

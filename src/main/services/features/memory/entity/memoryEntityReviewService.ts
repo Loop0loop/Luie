@@ -85,6 +85,8 @@ export async function listSuggestedMemoryEntities(
       entityType: memoryEntity.entityType,
       canonicalName: memoryEntity.canonicalName,
       status: memoryEntity.status,
+      provenanceKind: memoryEntity.provenanceKind,
+      canonStatus: memoryEntity.canonStatus,
       confidence: memoryEntity.confidence,
       createdBy: memoryEntity.createdBy,
       createdAt: memoryEntity.createdAt,

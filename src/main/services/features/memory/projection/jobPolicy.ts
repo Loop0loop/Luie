@@ -15,8 +15,12 @@ export function canRetryMemoryBuildJob(job: {
   if (job.attempts >= MAX_JOB_ATTEMPTS) return false;
   const updatedAtMs = Date.parse(job.updatedAt);
   if (!Number.isFinite(updatedAtMs)) return true;
-  const backoffMs = BASE_RETRY_BACKOFF_MS * Math.max(1, job.attempts);
+  const backoffMs = getMemoryBuildJobRetryBackoffMs(job.attempts);
   return Date.now() - updatedAtMs >= backoffMs;
+}
+
+export function getMemoryBuildJobRetryBackoffMs(attempts: number): number {
+  return BASE_RETRY_BACKOFF_MS * Math.max(1, attempts);
 }
 
 export { MAX_JOB_ATTEMPTS };

@@ -15,6 +15,7 @@ const mocked = vi.hoisted(() => {
   };
   const narrativeMemoryQueryService = {
     query: vi.fn(),
+    getReviewBacklog: vi.fn(),
     getConflictQueue: vi.fn(),
     listSuggestedEpisodes: vi.fn(),
     rejectEpisode: vi.fn(),
@@ -30,6 +31,8 @@ const mocked = vi.hoisted(() => {
     rejectEntityAlias: vi.fn(),
     splitEntityAlias: vi.fn(),
     mergeEntity: vi.fn(),
+    reviewStaleEvidence: vi.fn(),
+    repairEvidenceLinks: vi.fn(),
     runEvalSuite: vi.fn(),
     runIntentCalibration: vi.fn(),
     runEpisodeCalibration: vi.fn(),
@@ -142,6 +145,7 @@ export const resetInputValidationMocks = () => {
   mocked.syncService.setAutoSync.mockReset();
   mocked.syncService.resolveConflict.mockReset();
   mocked.narrativeMemoryQueryService.query.mockReset();
+  mocked.narrativeMemoryQueryService.getReviewBacklog.mockReset();
   mocked.narrativeMemoryQueryService.getConflictQueue.mockReset();
   mocked.narrativeMemoryQueryService.listSuggestedEpisodes.mockReset();
   mocked.narrativeMemoryQueryService.rejectEpisode.mockReset();
@@ -157,6 +161,8 @@ export const resetInputValidationMocks = () => {
   mocked.narrativeMemoryQueryService.rejectEntityAlias.mockReset();
   mocked.narrativeMemoryQueryService.splitEntityAlias.mockReset();
   mocked.narrativeMemoryQueryService.mergeEntity.mockReset();
+  mocked.narrativeMemoryQueryService.reviewStaleEvidence.mockReset();
+  mocked.narrativeMemoryQueryService.repairEvidenceLinks.mockReset();
   mocked.narrativeMemoryQueryService.runEvalSuite.mockReset();
   mocked.narrativeMemoryQueryService.runIntentCalibration.mockReset();
   mocked.narrativeMemoryQueryService.runEpisodeCalibration.mockReset();
@@ -177,6 +183,7 @@ export const resetInputValidationMocks = () => {
 export const registerSearchInputHandlers = async (
   narrativeMemoryQueryService: {
     query: unknown;
+    getReviewBacklog?: unknown;
     getConflictQueue: unknown;
     listSuggestedEpisodes?: unknown;
     rejectEpisode?: unknown;
@@ -192,6 +199,8 @@ export const registerSearchInputHandlers = async (
     rejectEntityAlias?: unknown;
     splitEntityAlias?: unknown;
     mergeEntity?: unknown;
+    reviewStaleEvidence?: unknown;
+    repairEvidenceLinks?: unknown;
     runEvalSuite?: unknown;
     runIntentCalibration?: unknown;
     runEpisodeCalibration?: unknown;

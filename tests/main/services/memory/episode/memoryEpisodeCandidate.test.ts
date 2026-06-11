@@ -75,8 +75,12 @@ describe("memory episode candidate helpers", () => {
     });
 
     expect(rows.episode.status).toBe("suggested");
+    expect(rows.episode.provenanceKind).toBe("canon");
+    expect(rows.episode.canonStatus).toBe("canon");
     expect(rows.evidence).toHaveLength(1);
     expect(rows.evidence[0].episodeId).toBe(rows.episode.id);
+    expect(rows.evidence[0].provenanceKind).toBe("canon");
+    expect(rows.evidence[0].canonStatus).toBe("canon");
     expect(rows.evidence[0].contentHash).toBe("chunk-hash");
   });
 

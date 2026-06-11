@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@shared/api";
 import type {
@@ -50,6 +50,7 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     useState<MemoryEmbeddingStatus | null>(null);
   const [memoryBuildProgress, setMemoryBuildProgress] =
     useState<MemoryBuildJobProgress | null>(null);
+  const previousMemoryBuildProgressRef = useRef<MemoryBuildJobProgress | null>(null);
 
   const refreshMemoryBuildProgress = useCallback(async () => {
     if (!currentProject) {
@@ -58,7 +59,10 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     }
     const response = await api.memoryAdmin.getBuildJobProgress(currentProject.id);
     if (response.success && response.data) {
-      setMemoryBuildProgress(response.data);
+      setMemoryBuildProgress((current) => {
+        previousMemoryBuildProgressRef.current = current;
+        return response.data ?? null;
+      });
     }
   }, [currentProject]);
 
@@ -115,7 +119,10 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
 
   useEffect(() => {
     if (activeTab !== "model" || !currentProject) return;
-    const pollIntervalMs = getMemoryBuildProgressPollIntervalMs(memoryBuildProgress);
+    const pollIntervalMs = getMemoryBuildProgressPollIntervalMs(
+      memoryBuildProgress,
+      previousMemoryBuildProgressRef.current,
+    );
     if (!pollIntervalMs) return;
     const intervalId = window.setInterval(() => {
       void refreshMemoryBuildProgress();

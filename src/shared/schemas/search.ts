@@ -38,6 +38,12 @@ export const memoryConflictQueueQuerySchema = z.object({
   limit: z.number().int().positive().max(200).optional(),
 });
 
+export const memoryReviewBacklogSchema = z.object({
+  projectId: projectIdSchema,
+  limit: z.number().int().positive().max(200).optional(),
+  evidenceLimit: z.number().int().positive().max(10).optional(),
+});
+
 export const memoryEvalRunSchema = z.object({
   projectId: projectIdSchema,
   label: z.string().trim().min(1, "Eval label is required").max(200),
@@ -134,6 +140,18 @@ export const memoryEntityAliasSplitSchema = z.object({
   projectId: projectIdSchema,
   aliasId: z.string().uuid("Invalid alias ID"),
   canonicalName: z.string().trim().min(1, "Canonical name is required").max(200),
+});
+
+export const memoryStaleEvidenceReviewActionSchema = z.object({
+  projectId: projectIdSchema,
+  kind: z.enum(["entity_mention", "episode_evidence"]),
+  id: z.string().uuid("Invalid stale evidence ID"),
+  action: z.enum(["defer", "reject", "resolve"]),
+  reviewerNote: z.string().trim().min(1).max(1000).nullable().optional(),
+});
+
+export const memoryEvidenceRepairSchema = z.object({
+  projectId: projectIdSchema,
 });
 
 export const memoryChunkIdSchema = z.string().uuid("Invalid chunk ID");

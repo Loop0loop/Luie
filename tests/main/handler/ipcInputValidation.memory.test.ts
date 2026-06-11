@@ -142,6 +142,65 @@ describe("IPC input validation: narrative memory", () => {
     );
   });
 
+  it("routes valid MEMORY_REVIEW_BACKLOG payloads to the memory query service", async () => {
+    mocked.narrativeMemoryQueryService.getReviewBacklog.mockResolvedValue({
+      staleEvidence: [],
+      counts: { staleEvidence: 0 },
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MEMORY_REVIEW_BACKLOG);
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      limit: 20,
+      evidenceLimit: 2,
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(mocked.narrativeMemoryQueryService.getReviewBacklog).toHaveBeenCalledWith(
+      input,
+    );
+  });
+
+  it("routes valid MEMORY_REPAIR_EVIDENCE_LINKS payloads and persists repaired memory", async () => {
+    mocked.narrativeMemoryQueryService.repairEvidenceLinks.mockResolvedValue({
+      episodeEvidenceScanned: 2,
+      episodeEvidenceRepaired: 1,
+      episodeEvidenceUnresolved: 1,
+      entityMentionScanned: 1,
+      entityMentionRepaired: 1,
+      entityMentionUnresolved: 0,
+      evalEvidenceScanned: 0,
+      evalEvidenceRepaired: 0,
+      evalEvidenceUnresolved: 0,
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(
+      IPC_CHANNELS.MEMORY_REPAIR_EVIDENCE_LINKS,
+    );
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(
+      mocked.narrativeMemoryQueryService.repairEvidenceLinks,
+    ).toHaveBeenCalledWith(input);
+    expect(mocked.packagePersistence.persistPackageAfterMutation).toHaveBeenCalledWith(
+      input.projectId,
+      "memory:repair-evidence-links",
+    );
+  });
+
   it("routes valid MEMORY_EPISODE_REVIEW_QUEUE payloads to the memory review service", async () => {
     mocked.narrativeMemoryQueryService.listSuggestedEpisodes.mockResolvedValue({
       items: [],
@@ -488,6 +547,38 @@ describe("IPC input validation: narrative memory", () => {
     expect(response.success).toBe(true);
     expect(mocked.narrativeMemoryQueryService.splitEntityAlias).toHaveBeenCalledWith(
       input,
+    );
+  });
+
+  it("routes valid MEMORY_STALE_EVIDENCE_REVIEW_ACTION payloads to the memory review service", async () => {
+    mocked.narrativeMemoryQueryService.reviewStaleEvidence.mockResolvedValue({
+      updated: true,
+      status: "deferred",
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(
+      IPC_CHANNELS.MEMORY_STALE_EVIDENCE_REVIEW_ACTION,
+    );
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      kind: "episode_evidence",
+      id: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      action: "defer",
+      reviewerNote: "원고 수정 후 다시 확인",
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(
+      mocked.narrativeMemoryQueryService.reviewStaleEvidence,
+    ).toHaveBeenCalledWith(input);
+    expect(mocked.packagePersistence.persistPackageAfterMutation).toHaveBeenCalledWith(
+      input.projectId,
+      "memory:stale-evidence-review-action",
     );
   });
 

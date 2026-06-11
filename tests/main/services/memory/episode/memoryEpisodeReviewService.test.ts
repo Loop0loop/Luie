@@ -44,6 +44,8 @@ describe("memoryEpisodeReviewService", () => {
       title: "아린이 편지를 읽음",
       summary: "아린은 봉인된 편지를 읽고 백야회의 목적을 알게 된다.",
       status: "suggested",
+      provenanceKind: "canon",
+      canonStatus: "canon",
       confidence: 0,
       updatedAt: nowIso,
     });
@@ -79,6 +81,8 @@ describe("memoryEpisodeReviewService", () => {
       id: seed.episodeId,
       title: "아린이 편지를 읽음",
       status: "suggested",
+      provenanceKind: "canon",
+      canonStatus: "canon",
       evidenceCount: 1,
     });
   });

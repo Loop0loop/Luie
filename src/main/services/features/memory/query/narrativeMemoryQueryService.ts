@@ -2,6 +2,8 @@ import type {
   MemoryConflictQueueInput,
   MemoryConflictQueueItem,
   MemoryConflictQueueResult,
+  MemoryEvidenceRepairInput,
+  MemoryEvidenceRepairResult,
   MemoryEpisodeCalibrationRequest,
   MemoryEpisodeCalibrationResult,
   MemoryEpisodeConfirmInput,
@@ -24,6 +26,10 @@ import type {
   MemoryEpisodeReviewMutationResult,
   MemoryEpisodeReviewQueueInput,
   MemoryEpisodeReviewQueueResult,
+  MemoryReviewBacklogInput,
+  MemoryReviewBacklogResult,
+  MemoryStaleEvidenceReviewActionInput,
+  MemoryStaleEvidenceReviewActionResult,
   MemoryTemporalFactConfirmInput,
   MemoryTemporalFactConflictResolveInput,
   MemoryTemporalFactRejectInput,
@@ -61,6 +67,13 @@ import {
   runMemoryEpisodeExtractorCalibration,
 } from "../episode/memoryEpisodeExtractorCalibration.js";
 import { llmEpisodeExtractor } from "../episode/memoryEpisodeLlmExtractor.js";
+import {
+  deferMemoryReviewStaleEvidence,
+  getMemoryReviewBacklogReport,
+  rejectMemoryReviewStaleEvidence,
+  resolveMemoryReviewStaleEvidence,
+} from "../review/memoryReviewBacklogReport.js";
+import { repairMemoryEvidenceChunkLinks } from "../repair/memoryEvidenceChunkLinkRepair.js";
 import {
   confirmMemoryTemporalFact,
   listSuggestedMemoryTemporalFacts,
@@ -350,6 +363,24 @@ export class NarrativeMemoryQueryService {
     return { items };
   }
 
+  async getReviewBacklog(
+    input: MemoryReviewBacklogInput,
+  ): Promise<MemoryReviewBacklogResult> {
+    const report = await getMemoryReviewBacklogReport(input);
+    return {
+      staleEvidence: report.staleEvidence,
+      counts: {
+        staleEvidence: report.counts.staleEvidence,
+      },
+    };
+  }
+
+  async repairEvidenceLinks(
+    input: MemoryEvidenceRepairInput,
+  ): Promise<MemoryEvidenceRepairResult> {
+    return repairMemoryEvidenceChunkLinks(input);
+  }
+
   async listSuggestedEpisodes(
     input: MemoryEpisodeReviewQueueInput,
   ): Promise<MemoryEpisodeReviewQueueResult> {
@@ -438,6 +469,33 @@ export class NarrativeMemoryQueryService {
     input: MemoryEntityMergeInput,
   ): Promise<MemoryEntityMergeResult> {
     return await mergeMemoryEntities(input);
+  }
+
+  async reviewStaleEvidence(
+    input: MemoryStaleEvidenceReviewActionInput,
+  ): Promise<MemoryStaleEvidenceReviewActionResult> {
+    const decisionInput = {
+      projectId: input.projectId,
+      kind: input.kind,
+      id: input.id,
+      reviewerNote: input.reviewerNote,
+    };
+    const result =
+      input.action === "defer"
+        ? await deferMemoryReviewStaleEvidence(decisionInput)
+        : input.action === "reject"
+          ? await rejectMemoryReviewStaleEvidence(decisionInput)
+          : await resolveMemoryReviewStaleEvidence(decisionInput);
+
+    return {
+      updated: result.updated,
+      status:
+        input.action === "defer"
+          ? "deferred"
+          : input.action === "reject"
+            ? "rejected"
+            : "resolved",
+    };
   }
 }
 

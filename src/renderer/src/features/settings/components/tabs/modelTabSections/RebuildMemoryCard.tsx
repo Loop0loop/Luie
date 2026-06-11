@@ -5,6 +5,7 @@ import {
   buildMemoryBuildProgressView,
   getMemoryBuildJobTypeLabel,
   getMemoryBuildStatusLabel,
+  getMemoryBuildTargetTypeLabel,
 } from "./memoryBuildProgress";
 
 interface RebuildMemoryCardProps {
@@ -34,7 +35,14 @@ export function RebuildMemoryCard({
     ["failed", progress.failedCount],
     ["cancel_requested", progress.cancellationRequestedCount],
     ["canceled", progress.canceledCount],
+    ["RECOVERED_STALE_RUNNING_JOB", progress.recoveredCount],
   ].filter(([, count]) => Number(count) > 0);
+  const pausableCount = progress.pendingCount + progress.failedCount;
+  const cancelableCount =
+    progress.pendingCount +
+    progress.failedCount +
+    progress.pausedCount +
+    progress.runningCount;
 
   return (
     <div className="rounded-control bg-surface border border-border p-3 space-y-2">
@@ -93,6 +101,13 @@ export function RebuildMemoryCard({
               })}
             </p>
           )}
+          {progress.nextRetryAt && (
+            <p className="truncate text-[11px] text-muted">
+              {t("settings.localLlm.rebuildMemory.nextRetryAt", {
+                time: progress.nextRetryAt,
+              })}
+            </p>
+          )}
           {progress.jobTypeItems.length > 0 && (
             <div className="space-y-1">
               {progress.jobTypeItems.map((item) => (
@@ -104,6 +119,52 @@ export function RebuildMemoryCard({
                     {t(`settings.localLlm.rebuildMemory.jobType.${item.jobType}`, {
                       defaultValue: getMemoryBuildJobTypeLabel(item.jobType),
                     })}
+                  </span>
+                  <span className="shrink-0">
+                    {t("settings.localLlm.rebuildMemory.jobTypeProgress", {
+                      active: item.activeCount,
+                      done: item.doneCount,
+                      total: item.total,
+                      percent: item.percent,
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          {progress.targetTypeItems.length > 0 && (
+            <div className="space-y-1">
+              {progress.targetTypeItems.map((item) => (
+                <div
+                  key={item.targetType}
+                  className="flex items-center justify-between gap-2 text-[11px] text-muted"
+                >
+                  <span className="truncate">
+                    {t(`settings.localLlm.rebuildMemory.targetType.${item.targetType}`, {
+                      defaultValue: getMemoryBuildTargetTypeLabel(item.targetType),
+                    })}
+                  </span>
+                  <span className="shrink-0">
+                    {t("settings.localLlm.rebuildMemory.jobTypeProgress", {
+                      active: item.activeCount,
+                      done: item.doneCount,
+                      total: item.total,
+                      percent: item.percent,
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          {progress.targetItems.length > 0 && (
+            <div className="space-y-1">
+              {progress.targetItems.map((item) => (
+                <div
+                  key={item.targetKey}
+                  className="flex items-center justify-between gap-2 text-[11px] text-muted"
+                >
+                  <span className="truncate">
+                    {item.label}
                   </span>
                   <span className="shrink-0">
                     {t("settings.localLlm.rebuildMemory.jobTypeProgress", {
@@ -134,7 +195,7 @@ export function RebuildMemoryCard({
             size="sm"
             variant="ghost"
             onClick={() => void onPauseMemoryBuildJobs()}
-            disabled={isBusy || progress.activeCount === 0}
+            disabled={isBusy || pausableCount === 0}
           >
             {t("settings.localLlm.rebuildMemory.pause")}
           </Button>
@@ -150,7 +211,7 @@ export function RebuildMemoryCard({
             size="sm"
             variant="ghost"
             onClick={() => void onCancelMemoryBuildJobs()}
-            disabled={isBusy || progress.activeCount === 0}
+            disabled={isBusy || cancelableCount === 0}
           >
             {t("settings.localLlm.rebuildMemory.cancel")}
           </Button>

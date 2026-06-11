@@ -6,6 +6,8 @@ import type {
   MemoryEpisodeReviewItem,
   MemoryEpisodeCalibrationResult,
   MemoryEvalLiveRunnerResult,
+  MemoryReviewStaleEvidenceItem,
+  MemoryStaleEvidenceReviewAction,
   NarrativeMemoryIntentCalibrationResult,
   NarrativeSummaryStatus,
   MemoryTemporalFactReviewItem,
@@ -76,6 +78,8 @@ export type AnalysisEntityReviewItem = MemoryEntityReviewItem;
 export type AnalysisEntityAliasReviewItem = MemoryEntityAliasReviewItem;
 export type AnalysisEpisodeReviewItem = MemoryEpisodeReviewItem;
 export type AnalysisFactReviewItem = MemoryTemporalFactReviewItem;
+export type AnalysisStaleEvidenceReviewItem = MemoryReviewStaleEvidenceItem;
+export type AnalysisStaleEvidenceReviewAction = MemoryStaleEvidenceReviewAction;
 export type AnalysisNarrativeSummaryStatus = NarrativeSummaryStatus;
 export type AnalysisMemoryEvalReport = MemoryEvalLiveRunnerResult;
 export type AnalysisIntentCalibrationReport = NarrativeMemoryIntentCalibrationResult;

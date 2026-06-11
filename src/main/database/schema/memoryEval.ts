@@ -14,6 +14,7 @@ export const memoryEvalCase = sqliteTable(
     expectedAnswer: text("expectedAnswer"),
     temporalScopeStartChapterId: text("temporalScopeStartChapterId"),
     temporalScopeEndChapterId: text("temporalScopeEndChapterId"),
+    queryChapterOrder: integer("queryChapterOrder"),
     severity: text("severity").notNull().default("p1"),
     createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updatedAt").notNull(),

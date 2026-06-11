@@ -39,6 +39,48 @@ export interface MemoryConflictQueueResult {
   items: MemoryConflictQueueItem[];
 }
 
+export interface MemoryReviewBacklogInput {
+  projectId: string;
+  limit?: number;
+  evidenceLimit?: number;
+}
+
+export interface MemoryReviewStaleEvidenceItem {
+  kind: "entity_mention" | "episode_evidence";
+  id: string;
+  reviewStatus: "pending";
+  ownerId: string;
+  ownerTitle: string;
+  chunkId: string | null;
+  chapterId: string | null;
+  chapterOrder: number | null;
+  quote: string;
+  reason: "chunk_missing" | "quote_missing_from_chunk";
+}
+
+export interface MemoryReviewBacklogResult {
+  staleEvidence: MemoryReviewStaleEvidenceItem[];
+  counts: {
+    staleEvidence: number;
+  };
+}
+
+export interface MemoryEvidenceRepairInput {
+  projectId: string;
+}
+
+export interface MemoryEvidenceRepairResult {
+  episodeEvidenceScanned: number;
+  episodeEvidenceRepaired: number;
+  episodeEvidenceUnresolved: number;
+  entityMentionScanned: number;
+  entityMentionRepaired: number;
+  entityMentionUnresolved: number;
+  evalEvidenceScanned: number;
+  evalEvidenceRepaired: number;
+  evalEvidenceUnresolved: number;
+}
+
 export interface MemoryEpisodeReviewItem {
   id: string;
   projectId: string;
@@ -50,6 +92,8 @@ export interface MemoryEpisodeReviewItem {
   title: string;
   summary: string;
   status: string;
+  provenanceKind: string;
+  canonStatus: string;
   confidence: number;
   evidenceCount: number;
   createdAt: string;
@@ -170,6 +214,8 @@ export interface MemoryEntityReviewItem {
   entityType: string;
   canonicalName: string;
   status: string;
+  provenanceKind: string;
+  canonStatus: string;
   confidence: number;
   createdBy: string;
   mentionCount: number;
@@ -239,4 +285,26 @@ export interface MemoryEntityAliasSplitInput {
 export interface MemoryEntityAliasSplitResult {
   updated: boolean;
   entityId: string | null;
+}
+
+export type MemoryStaleEvidenceReviewKind =
+  | "entity_mention"
+  | "episode_evidence";
+
+export type MemoryStaleEvidenceReviewAction =
+  | "defer"
+  | "reject"
+  | "resolve";
+
+export interface MemoryStaleEvidenceReviewActionInput {
+  projectId: string;
+  kind: MemoryStaleEvidenceReviewKind;
+  id: string;
+  action: MemoryStaleEvidenceReviewAction;
+  reviewerNote?: string | null;
+}
+
+export interface MemoryStaleEvidenceReviewActionResult {
+  updated: boolean;
+  status?: "deferred" | "rejected" | "resolved";
 }

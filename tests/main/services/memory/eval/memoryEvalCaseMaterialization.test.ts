@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import {
   db,
   memoryEvalCase,
@@ -439,6 +439,7 @@ describe("materializeMemoryEvalCasesFromEpisodeEvidence", () => {
           caseType: "temporal_state",
           temporalScopeStartChapterId: chapterOneId,
           temporalScopeEndChapterId: chapterOneId,
+          queryChapterOrder: 1,
           severity: "p0",
         }),
         expect.objectContaining({
@@ -447,10 +448,30 @@ describe("materializeMemoryEvalCasesFromEpisodeEvidence", () => {
           caseType: "temporal_state",
           temporalScopeStartChapterId: chapterTwoId,
           temporalScopeEndChapterId: chapterTwoId,
+          queryChapterOrder: 2,
           severity: "p0",
         }),
       ]),
     );
+    const scopeRows = await db.getClient().all<{
+      name: string;
+      queryChapterOrder: number | null;
+    }>(sql`
+      SELECT "name", "queryChapterOrder"
+      FROM "MemoryEvalCase"
+      WHERE "projectId" = ${projectId}
+      ORDER BY "name" ASC;
+    `);
+    expect(scopeRows).toEqual([
+      {
+        name: "temporal-chapter:1:temporal-chunk-1",
+        queryChapterOrder: 1,
+      },
+      {
+        name: "temporal-chapter:2:temporal-chunk-2",
+        queryChapterOrder: 2,
+      },
+    ]);
 
     const evidence = await db
       .getClient()

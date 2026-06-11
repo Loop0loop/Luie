@@ -40,6 +40,8 @@ export async function listSuggestedMemoryEpisodes(
       title: memoryEpisode.title,
       summary: memoryEpisode.summary,
       status: memoryEpisode.status,
+      provenanceKind: memoryEpisode.provenanceKind,
+      canonStatus: memoryEpisode.canonStatus,
       confidence: memoryEpisode.confidence,
       createdAt: memoryEpisode.createdAt,
       updatedAt: memoryEpisode.updatedAt,

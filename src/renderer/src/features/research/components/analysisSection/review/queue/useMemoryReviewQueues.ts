@@ -8,6 +8,8 @@ import type {
   AnalysisEntityReviewItem,
   AnalysisEpisodeReviewItem,
   AnalysisFactReviewItem,
+  AnalysisStaleEvidenceReviewAction,
+  AnalysisStaleEvidenceReviewItem,
   MemoryScope,
 } from "../../shared/types";
 
@@ -82,6 +84,17 @@ export function useMemoryReviewQueues({
     handleRejectEntityAlias,
     handleMergeEntityAlias,
     handleSplitEntityAlias,
+
+    showStaleEvidenceReviewQueue,
+    setShowStaleEvidenceReviewQueue,
+    staleEvidenceReviewItems,
+    staleEvidenceReviewLoading,
+    staleEvidenceReviewError,
+    mutatingStaleEvidenceId,
+    repairingStaleEvidenceLinks,
+    loadStaleEvidenceReviewQueue,
+    handleReviewStaleEvidence,
+    handleRepairStaleEvidence,
   } = useAnalysisStore(
     useShallow((state) => ({
       showNarrativeSummaryStatus: state.showNarrativeSummaryStatus,
@@ -141,6 +154,17 @@ export function useMemoryReviewQueues({
       handleRejectEntityAlias: state.handleRejectEntityAlias,
       handleMergeEntityAlias: state.handleMergeEntityAlias,
       handleSplitEntityAlias: state.handleSplitEntityAlias,
+
+      showStaleEvidenceReviewQueue: state.showStaleEvidenceReviewQueue,
+      setShowStaleEvidenceReviewQueue: state.setShowStaleEvidenceReviewQueue,
+      staleEvidenceReviewItems: state.staleEvidenceReviewItems,
+      staleEvidenceReviewLoading: state.staleEvidenceReviewLoading,
+      staleEvidenceReviewError: state.staleEvidenceReviewError,
+      mutatingStaleEvidenceId: state.mutatingStaleEvidenceId,
+      repairingStaleEvidenceLinks: state.repairingStaleEvidenceLinks,
+      loadStaleEvidenceReviewQueue: state.loadStaleEvidenceReviewQueue,
+      handleReviewStaleEvidence: state.handleReviewStaleEvidence,
+      handleRepairStaleEvidence: state.handleRepairStaleEvidence,
     }))
   );
 
@@ -174,9 +198,26 @@ export function useMemoryReviewQueues({
     void loadEntityAliasReviewQueue(projectId);
   }, [projectId, showEntityAliasReviewQueue, loadEntityAliasReviewQueue]);
 
+  useEffect(() => {
+    if (!showStaleEvidenceReviewQueue || !projectId) return;
+    void loadStaleEvidenceReviewQueue(projectId);
+  }, [projectId, showStaleEvidenceReviewQueue, loadStaleEvidenceReviewQueue]);
+
   const requestRejectReason = useCallback(
     (type: "fact" | "episode" | "entity" | "alias"): string | null => {
       const promptMessage = t(`analysis.review.queue.${type}.rejectReasonPrompt`);
+      const reason = window.prompt(promptMessage);
+      const trimmed = reason?.trim() ?? "";
+      return trimmed.length > 0 ? trimmed : null;
+    },
+    [t],
+  );
+
+  const requestStaleEvidenceNote = useCallback(
+    (action: AnalysisStaleEvidenceReviewAction): string | null => {
+      const promptMessage = t(
+        `analysis.review.queue.staleEvidence.${action}ReasonPrompt`,
+      );
       const reason = window.prompt(promptMessage);
       const trimmed = reason?.trim() ?? "";
       return trimmed.length > 0 ? trimmed : null;
@@ -281,6 +322,23 @@ export function useMemoryReviewQueues({
     [projectId, handleSplitEntityAlias],
   );
 
+  const onReviewStaleEvidence = useCallback(
+    async (
+      item: AnalysisStaleEvidenceReviewItem,
+      action: AnalysisStaleEvidenceReviewAction,
+    ) => {
+      if (!projectId) return;
+      const reviewerNote = requestStaleEvidenceNote(action);
+      await handleReviewStaleEvidence(projectId, item, action, reviewerNote);
+    },
+    [projectId, handleReviewStaleEvidence, requestStaleEvidenceNote],
+  );
+
+  const onRepairStaleEvidence = useCallback(async () => {
+    if (!projectId) return;
+    await handleRepairStaleEvidence(projectId);
+  }, [projectId, handleRepairStaleEvidence]);
+
   return {
     showNarrativeSummaryStatus,
     setShowNarrativeSummaryStatus,
@@ -328,5 +386,14 @@ export function useMemoryReviewQueues({
     handleRejectEntityAlias: onRejectEntityAlias,
     handleMergeEntityAlias: onMergeEntityAlias,
     handleSplitEntityAlias: onSplitEntityAlias,
+    showStaleEvidenceReviewQueue,
+    setShowStaleEvidenceReviewQueue,
+    staleEvidenceReviewItems,
+    staleEvidenceReviewLoading,
+    staleEvidenceReviewError,
+    mutatingStaleEvidenceId,
+    repairingStaleEvidenceLinks,
+    handleReviewStaleEvidence: onReviewStaleEvidence,
+    handleRepairStaleEvidence: onRepairStaleEvidence,
   };
 }

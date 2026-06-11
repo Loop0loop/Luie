@@ -288,6 +288,8 @@ export function createProjectApi({
     memory: {
       queryNarrative: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_QUERY_NARRATIVE, input),
+      getReviewBacklog: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_REVIEW_BACKLOG, input),
       getConflictQueue: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_GET_CONFLICT_QUEUE, input),
       getEpisodeReviewQueue: (input) =>
@@ -320,6 +322,10 @@ export function createProjectApi({
         safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_SPLIT, input),
       mergeEntity: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_MERGE, input),
+      reviewStaleEvidence: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_STALE_EVIDENCE_REVIEW_ACTION, input),
+      repairEvidenceLinks: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_REPAIR_EVIDENCE_LINKS, input),
       searchChunks: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_SEARCH_CHUNKS, input),
       getChunkBacklink: (chunkId) =>

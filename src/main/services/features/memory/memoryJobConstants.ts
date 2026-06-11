@@ -17,6 +17,7 @@ export const MEMORY_TARGET_TYPES = {
   FACTION: "faction",
   EVENT: "event",
   SCRAP_MEMO: "scrapMemo",
+  CHUNK: "chunk",
 } as const;
 
 export type MemoryTargetType =
