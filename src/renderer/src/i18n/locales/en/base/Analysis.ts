@@ -36,6 +36,7 @@ export const enBaseAnalysis = {
       currentChapterOnly: "Current chapter only",
       currentAndPrior: "Current + Prior",
       timelineBasis: "Basis: {{chapter}}",
+      timelineChapterSelect: "Select basis chapter",
       timelineCurrentOnly: "Current chapter evidence only",
       timelineWithPrior: "Includes prior chapters",
       placeholder: "Ask anything",

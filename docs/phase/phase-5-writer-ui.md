@@ -56,12 +56,11 @@ UI 요소:
 완료 기준:
 
 - 현재 편집 중인 회차 기준 자동 설정: composer에 현재 챕터 order/title 기준 label 1차 표시 완료
-- 사용자가 기준 회차 변경 가능: 기존 memory scope 토글로 현재 회차만/이전 회차 포함 전환 가능
+- 사용자가 기준 회차 변경 가능: composer의 기준 회차 select로 직접 변경 가능
 - 미래 정보가 섞이면 경고: 기존 RAG safety `temporal_blocked` label 경로 유지
 
 남은 범위:
 
-- 기준 회차 자체를 현재 편집 회차가 아닌 다른 회차로 직접 선택하는 UI
 - timeline scope 변경이 실제 RAG 응답에서 future leakage를 차단하는 end-to-end 검증
 
 ### Phase 5-4. writer workflow scenario test

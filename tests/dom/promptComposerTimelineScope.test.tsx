@@ -12,6 +12,7 @@ const translations: Record<string, string> = {
   "analysis.composer.currentChapterOnly": "현재 챕터만",
   "analysis.composer.currentAndPrior": "현재 + 과거",
   "analysis.composer.timelineBasis": "{{chapter}} 기준",
+  "analysis.composer.timelineChapterSelect": "기준 회차 선택",
   "analysis.composer.timelineCurrentOnly": "현재 회차 근거만",
   "analysis.composer.timelineWithPrior": "이전 회차 포함",
   "analysis.composer.searchModes.lowEnd": "빠른 검색 · 근거 폭 좁음",
@@ -64,6 +65,12 @@ const mountComposer = (
         summaryActive={false}
         onToggleSummary={vi.fn()}
         timelineChapter={{ order: 12, title: "약의 정체" }}
+        timelineChapters={[
+          { id: "chapter-11", order: 11, title: "전조" },
+          { id: "chapter-12", order: 12, title: "약의 정체" },
+        ]}
+        timelineChapterId="chapter-12"
+        onChangeTimelineChapter={vi.fn()}
       />,
     );
   });
@@ -106,5 +113,57 @@ describe("PromptComposer timeline scope", () => {
 
     expect(view.container.textContent).toContain("12화 · 약의 정체 기준");
     expect(view.container.textContent).toContain("이전 회차 포함");
+  });
+
+  it("lets the writer choose a different basis chapter", () => {
+    const onChangeTimelineChapter = vi.fn();
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    mounted.push({ container, root });
+
+    act(() => {
+      root.render(
+        <PromptComposer
+          input=""
+          setInput={vi.fn()}
+          isStreaming={false}
+          disabled={false}
+          onSend={vi.fn()}
+          onStop={vi.fn()}
+          onKeyDown={vi.fn()}
+          runtimeInfo={null}
+          sidecarStatus={null}
+          runtimePreference="auto"
+          onApplyRuntimePreference={vi.fn()}
+          searchOptimizationMode="standard"
+          onApplySearchOptimizationMode={vi.fn()}
+          memoryScope="current-only"
+          onChangeMemoryScope={vi.fn()}
+          summaryActive={false}
+          onToggleSummary={vi.fn()}
+          timelineChapter={{ order: 12, title: "약의 정체" }}
+          timelineChapters={[
+            { id: "chapter-11", order: 11, title: "전조" },
+            { id: "chapter-12", order: 12, title: "약의 정체" },
+          ]}
+          timelineChapterId="chapter-12"
+          onChangeTimelineChapter={onChangeTimelineChapter}
+        />,
+      );
+    });
+
+    const select = container.querySelector<HTMLSelectElement>(
+      'select[aria-label="기준 회차 선택"]',
+    );
+    expect(select).not.toBeNull();
+
+    act(() => {
+      if (!select) throw new Error("Timeline select missing");
+      select.value = "chapter-11";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+
+    expect(onChangeTimelineChapter).toHaveBeenCalledWith("chapter-11");
   });
 });

@@ -81,6 +81,13 @@ type PromptComposerProps = {
     order: number;
     title: string;
   };
+  timelineChapters?: Array<{
+    id: string;
+    order: number;
+    title: string;
+  }>;
+  timelineChapterId?: string;
+  onChangeTimelineChapter?: (chapterId: string) => void;
   summaryActive: boolean;
   onToggleSummary: () => void;
   floating?: boolean;
@@ -110,6 +117,9 @@ export function PromptComposer({
   memoryScope,
   onChangeMemoryScope,
   timelineChapter,
+  timelineChapters = [],
+  timelineChapterId,
+  onChangeTimelineChapter,
   summaryActive,
   onToggleSummary,
   floating = false,
@@ -249,15 +259,35 @@ export function PromptComposer({
       </div>
 
       {timelineChapterLabel && (
-        <div className="hidden min-w-0 max-w-[180px] shrink md:block">
+        <div className="hidden min-w-0 max-w-[210px] shrink md:block">
           <div className="truncate text-[10px] font-medium leading-tight text-neutral-300">
             {t("analysis.composer.timelineBasis", {
               chapter: timelineChapterLabel,
             })}
           </div>
-          <div className="truncate text-[9px] leading-tight text-neutral-500">
-            {timelineScopeLabel}
-          </div>
+          {timelineChapters.length > 1 && timelineChapterId && onChangeTimelineChapter ? (
+            <select
+              aria-label={t("analysis.composer.timelineChapterSelect")}
+              value={timelineChapterId}
+              onChange={(event) => onChangeTimelineChapter(event.target.value)}
+              className="mt-0.5 w-full truncate rounded border border-white/5 bg-neutral-900/80 px-1 py-0.5 text-[9px] leading-tight text-neutral-400 focus:outline-none"
+            >
+              {timelineChapters.map((chapter) => (
+                <option key={chapter.id} value={chapter.id}>
+                  {chapter.order}화 · {chapter.title}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div className="truncate text-[9px] leading-tight text-neutral-500">
+              {timelineScopeLabel}
+            </div>
+          )}
+          {timelineChapters.length > 1 && (
+            <div className="truncate text-[9px] leading-tight text-neutral-500">
+              {timelineScopeLabel}
+            </div>
+          )}
         </div>
       )}
 

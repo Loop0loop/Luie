@@ -36,6 +36,7 @@ export const jaBaseAnalysis = {
       currentChapterOnly: "現在のチャプターのみ",
       currentAndPrior: "現在 + 過去",
       timelineBasis: "{{chapter}} 基準",
+      timelineChapterSelect: "基準回を選択",
       timelineCurrentOnly: "現在回の根拠のみ",
       timelineWithPrior: "以前の回を含む",
       placeholder: "何でも聞いてください",

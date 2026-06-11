@@ -36,6 +36,7 @@ export const koBaseAnalysis = {
       currentChapterOnly: "현재 챕터만",
       currentAndPrior: "현재 + 과거",
       timelineBasis: "{{chapter}} 기준",
+      timelineChapterSelect: "기준 회차 선택",
       timelineCurrentOnly: "현재 회차 근거만",
       timelineWithPrior: "이전 회차 포함",
       placeholder: "무엇이든 부탁하세요",

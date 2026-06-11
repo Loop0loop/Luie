@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useMemo, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import { Maximize2 } from "lucide-react";
@@ -225,11 +225,38 @@ function FloatingWrapper({ children, compact = false }: FloatingWrapperProps) {
 
 export default function AnalysisSection() {
   const { t } = useTranslation();
-  const { currentItem: currentChapter } = useChapterStore(
-    useShallow((state) => ({ currentItem: state.currentItem })),
+  const { currentItem: currentChapter, items: chapters } = useChapterStore(
+    useShallow((state) => ({
+      currentItem: state.currentItem,
+      items: state.items,
+    })),
   );
   const currentProject = useProjectStore((state) => state.currentItem);
   const [memoryScope, setMemoryScope] = useState<MemoryScope>("current-only");
+  const [timelineChapterId, setTimelineChapterId] = useState<string | undefined>();
+  const selectedTimelineChapterId =
+    timelineChapterId && chapters.some((chapter) => chapter.id === timelineChapterId)
+      ? timelineChapterId
+      : currentChapter?.id;
+
+  const timelineChapter = useMemo(
+    () =>
+      chapters.find((chapter) => chapter.id === selectedTimelineChapterId) ??
+      currentChapter ??
+      null,
+    [chapters, currentChapter, selectedTimelineChapterId],
+  );
+  const timelineChapters = useMemo(
+    () =>
+      [...chapters]
+        .sort((a, b) => a.order - b.order)
+        .map((chapter) => ({
+          id: chapter.id,
+          order: chapter.order,
+          title: chapter.title,
+        })),
+    [chapters],
+  );
 
   const { viewMode, setViewMode, setMinimized } = useAnalysisStore(
     useShallow((state) => ({
@@ -242,12 +269,12 @@ export default function AnalysisSection() {
   const runtime = useAnalysisRuntime();
   const chat = useRagChat({
     projectId: currentProject?.id,
-    chapterId: currentChapter?.id,
+    chapterId: timelineChapter?.id,
     memoryScope,
   });
   const review = useMemoryReviewPanels({
     projectId: currentProject?.id,
-    chapterId: currentChapter?.id,
+    chapterId: timelineChapter?.id,
     memoryScope,
   });
 
@@ -277,10 +304,13 @@ export default function AnalysisSection() {
       memoryScope={memoryScope}
       onChangeMemoryScope={setMemoryScope}
       timelineChapter={
-        currentChapter
-          ? { order: currentChapter.order, title: currentChapter.title }
+        timelineChapter
+          ? { order: timelineChapter.order, title: timelineChapter.title }
           : undefined
       }
+      timelineChapters={timelineChapters}
+      timelineChapterId={timelineChapter?.id}
+      onChangeTimelineChapter={setTimelineChapterId}
       summaryActive={review.showNarrativeSummaryStatus}
       onToggleSummary={() =>
         review.setShowNarrativeSummaryStatus((prev) => !prev)

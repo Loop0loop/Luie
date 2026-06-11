@@ -1141,3 +1141,24 @@ corepack pnpm run typecheck
 제한:
 
 - deferred conflict를 다시 여는 별도 필터 UI는 아직 없다.
+
+### 2026-06-11. Phase 5-3 timeline basis chapter 선택 UI 완료
+
+확인된 사실:
+
+- `PromptComposer`는 기준 회차 select를 표시하고 사용자가 현재 편집 회차가 아닌 기준 회차를 직접 선택할 수 있다.
+- `AnalysisSection`은 선택된 기준 회차를 RAG chat과 memory review queue에 전달한다.
+- 선택된 회차가 현재 chapter list에 없으면 현재 편집 회차로 fallback한다.
+- ko/en/ja locale에 기준 회차 선택 label을 추가했다.
+
+검증:
+
+```text
+SKIP_DB_TEST_SETUP=1 corepack pnpm vitest tests/dom/promptComposerTimelineScope.test.tsx
+corepack pnpm run typecheck
+corepack pnpm exec eslint src/renderer/src/features/research/components/AnalysisSection.tsx src/renderer/src/features/research/components/analysisSection/chat/PromptComposer.tsx src/renderer/src/i18n/locales/ko/base/Analysis.ts src/renderer/src/i18n/locales/en/base/Analysis.ts src/renderer/src/i18n/locales/ja/base/Analysis.ts tests/dom/promptComposerTimelineScope.test.tsx
+```
+
+제한:
+
+- timeline scope 변경이 실제 RAG 응답에서 future leakage를 차단하는 긴 E2E는 Phase 5-4 보강 범위다.
