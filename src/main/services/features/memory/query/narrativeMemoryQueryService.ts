@@ -356,6 +356,7 @@ export class NarrativeMemoryQueryService {
       projectId: input.projectId,
       chapterOrder,
       includePriorMemory: input.includePriorMemory ?? false,
+      reviewFilter: input.reviewFilter,
       entityId: input.entityId,
       entityName: input.entityName,
       entityType: input.entityType,

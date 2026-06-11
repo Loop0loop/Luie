@@ -41,11 +41,12 @@ UI 요소:
 - conflict ledger와 연결: Phase 3-3의 `MemoryFactInvalidation` 기반 conflict queue/resolve 경로 1차 완료
 - 작가 결정이 memory 상태에 반영: 이전/신규 사실 채택은 기존 `resolveFactConflict` 경로로 1차 완료
 - 나중에 보기: `MemoryFactInvalidation.reviewStatus`에 `deferred`로 영속화하고 active queue에서 제외
+- defer된 conflict 재조회: conflict queue의 `active`/`deferred` 필터와 보류 상태 badge로 다시 확인 가능
+- 실제 작가 flow DOM 검증: conflict quote/action/defer/filter 상태 전환 테스트 완료
 
 남은 범위:
 
-- defer된 conflict를 다시 보는 필터/상태 표시
-- 실제 작가 flow DOM/e2e에서 conflict warning 결정 흐름 검증
+- 실제 Electron E2E에서 충돌 큐 결정을 preload API가 아니라 UI 조작만으로 검증
 
 ### Phase 5-3. timeline-aware query UI
 

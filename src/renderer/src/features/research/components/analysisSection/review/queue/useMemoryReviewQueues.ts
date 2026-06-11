@@ -36,6 +36,8 @@ export function useMemoryReviewQueues({
 
     showConflictQueue,
     setShowConflictQueue,
+    conflictQueueReviewFilter,
+    setConflictQueueReviewFilter,
     conflictQueueItems,
     conflictQueueLoading,
     conflictQueueError,
@@ -107,6 +109,8 @@ export function useMemoryReviewQueues({
 
       showConflictQueue: state.showConflictQueue,
       setShowConflictQueue: state.setShowConflictQueue,
+      conflictQueueReviewFilter: state.conflictQueueReviewFilter,
+      setConflictQueueReviewFilter: state.setConflictQueueReviewFilter,
       conflictQueueItems: state.conflictQueueItems,
       conflictQueueLoading: state.conflictQueueLoading,
       conflictQueueError: state.conflictQueueError,
@@ -177,8 +181,20 @@ export function useMemoryReviewQueues({
 
   useEffect(() => {
     if (!showConflictQueue || !projectId) return;
-    void loadConflictQueue(projectId, chapterId, memoryScope);
-  }, [projectId, chapterId, memoryScope, showConflictQueue, loadConflictQueue]);
+    void loadConflictQueue(
+      projectId,
+      chapterId,
+      memoryScope,
+      conflictQueueReviewFilter,
+    );
+  }, [
+    projectId,
+    chapterId,
+    memoryScope,
+    conflictQueueReviewFilter,
+    showConflictQueue,
+    loadConflictQueue,
+  ]);
 
   useEffect(() => {
     if (!showFactReviewQueue || !projectId) return;
@@ -231,18 +247,42 @@ export function useMemoryReviewQueues({
     async (item: AnalysisConflictItem, winnerFactId: string) => {
       if (!projectId) return;
       await handleResolveConflict(projectId, item, winnerFactId);
-      await loadConflictQueue(projectId, chapterId, memoryScope);
+      await loadConflictQueue(
+        projectId,
+        chapterId,
+        memoryScope,
+        conflictQueueReviewFilter,
+      );
     },
-    [projectId, chapterId, memoryScope, handleResolveConflict, loadConflictQueue],
+    [
+      projectId,
+      chapterId,
+      memoryScope,
+      conflictQueueReviewFilter,
+      handleResolveConflict,
+      loadConflictQueue,
+    ],
   );
 
   const onDeferConflict = useCallback(
     async (item: AnalysisConflictItem) => {
       if (!projectId) return;
       await handleDeferConflict(projectId, item);
-      await loadConflictQueue(projectId, chapterId, memoryScope);
+      await loadConflictQueue(
+        projectId,
+        chapterId,
+        memoryScope,
+        conflictQueueReviewFilter,
+      );
     },
-    [projectId, chapterId, memoryScope, handleDeferConflict, loadConflictQueue],
+    [
+      projectId,
+      chapterId,
+      memoryScope,
+      conflictQueueReviewFilter,
+      handleDeferConflict,
+      loadConflictQueue,
+    ],
   );
 
   const onConfirmFact = useCallback(
@@ -358,6 +398,8 @@ export function useMemoryReviewQueues({
     narrativeSummaryStatusError,
     showConflictQueue,
     setShowConflictQueue,
+    conflictQueueReviewFilter,
+    setConflictQueueReviewFilter,
     conflictQueueItems,
     conflictQueueLoading,
     conflictQueueError,

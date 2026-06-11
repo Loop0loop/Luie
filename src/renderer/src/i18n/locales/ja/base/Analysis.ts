@@ -63,6 +63,15 @@ export const jaBaseAnalysis = {
           priorEvidence: "以前の事実",
           invalidating: "無効化した事実: {{fact}}",
           newEvidence: "新規事実",
+          filter: {
+            active: "検討中",
+            deferred: "保留項目",
+          },
+          status: {
+            pending: "待機",
+            reviewing: "検討中",
+            deferred: "保留",
+          },
           acceptPrior: "以前の事実を採用",
           acceptNew: "新規事実を採用",
           defer: "後で見る",

@@ -3,6 +3,7 @@ import { api } from "@shared/api";
 import { i18n } from "@renderer/i18n";
 import type {
   MemoryScope,
+  ConflictReviewFilter,
   AnalysisConflictItem,
   AnalysisEntityAliasReviewItem,
   AnalysisEntityReviewItem,
@@ -22,7 +23,12 @@ export interface AnalysisActions {
   handleSend: (projectId: string, chapterId: string | undefined, memoryScope: MemoryScope) => Promise<void>;
   handleStop: () => Promise<void>;
   loadNarrativeSummaryStatus: (projectId: string) => Promise<void>;
-  loadConflictQueue: (projectId: string, chapterId: string | undefined, memoryScope: MemoryScope) => Promise<void>;
+  loadConflictQueue: (
+    projectId: string,
+    chapterId: string | undefined,
+    memoryScope: MemoryScope,
+    reviewFilter?: ConflictReviewFilter,
+  ) => Promise<void>;
   handleResolveConflict: (projectId: string, item: AnalysisConflictItem, winnerFactId: string) => Promise<void>;
   handleDeferConflict: (projectId: string, item: AnalysisConflictItem) => Promise<void>;
   loadFactReviewQueue: (projectId: string) => Promise<void>;
@@ -281,13 +287,19 @@ export function createAnalysisActions(
         set({ narrativeSummaryStatusLoading: false });
       }
     },
-    loadConflictQueue: async (projectId: string, chapterId: string | undefined, memoryScope: MemoryScope) => {
+    loadConflictQueue: async (
+      projectId: string,
+      chapterId: string | undefined,
+      memoryScope: MemoryScope,
+      reviewFilter: ConflictReviewFilter = "active",
+    ) => {
       set({ conflictQueueLoading: true, conflictQueueError: null });
       try {
         const response = await api.memory.getConflictQueue({
           projectId,
           chapterId,
           includePriorMemory: memoryScope === "with-prior",
+          reviewFilter,
         });
         if (!response.success || !response.data) {
           set({
@@ -316,7 +328,6 @@ export function createAnalysisActions(
           });
           return;
         }
-        await get().loadConflictQueue(projectId, undefined, "current-only");
       } finally {
         set({ resolvingConflictId: null });
       }

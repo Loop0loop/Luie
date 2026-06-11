@@ -63,6 +63,15 @@ export const enBaseAnalysis = {
           priorEvidence: "Prior Fact",
           invalidating: "Invalidating Fact: {{fact}}",
           newEvidence: "New Fact",
+          filter: {
+            active: "Active",
+            deferred: "Deferred items",
+          },
+          status: {
+            pending: "Pending",
+            reviewing: "Reviewing",
+            deferred: "Deferred",
+          },
           acceptPrior: "Accept Prior Fact",
           acceptNew: "Accept New Fact",
           defer: "Defer",

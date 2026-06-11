@@ -1183,3 +1183,24 @@ corepack pnpm run typecheck
 
 - 이 E2E는 preload API를 통한 Electron 앱 경계 검증이다. 실제 에디터 타이핑과 버튼 클릭만 사용하는 순수 UI E2E는 선택 보강 범위다.
 - `corepack pnpm exec playwright test --project=stress tests/e2e/phase5WriterWorkflow.spec.ts`는 현재 로컬 Playwright runner가 기존 E2E spec 전체에서 `Playwright Test did not expect test() to be called here` 오류를 내며 중단되어 실행 완료하지 못했다.
+
+### 2026-06-11. Phase 5-2 deferred conflict 재조회 UI 완료
+
+확인된 사실:
+
+- conflict queue 조회 입력에 `reviewFilter: "active" | "deferred"`를 추가했다.
+- 기본 conflict queue는 기존처럼 `pending`/`reviewing`만 보여주고, deferred 필터를 선택하면 `MemoryFactInvalidation.reviewStatus = deferred` 항목을 다시 보여준다.
+- `ConflictQueuePanel`은 active/deferred 필터 버튼과 pending/reviewing/deferred 상태 badge를 표시한다.
+- 보류된 conflict는 다시 조회한 뒤 이전/신규 사실 채택 action으로 해결할 수 있고, 이미 deferred 상태인 row에서는 defer 버튼을 비활성화한다.
+
+검증:
+
+```text
+corepack pnpm vitest tests/dom/conflictQueuePanelWriterFlow.test.tsx tests/main/services/memory/query/memoryConflictQueue.test.ts tests/main/handler/ipcInputValidation.memory.test.ts
+corepack pnpm exec eslint src/shared/types/search/review.ts src/shared/schemas/search.ts src/main/services/features/memory/query/internal/conflicts.ts src/main/services/features/memory/query/narrativeMemoryQueryService.ts src/renderer/src/features/research/components/AnalysisSection.tsx src/renderer/src/features/research/components/analysisSection/review/queue/ConflictQueuePanel.tsx src/renderer/src/features/research/components/analysisSection/review/queue/useMemoryReviewQueues.ts src/renderer/src/features/research/stores/analysis/analysisStore.ts src/renderer/src/features/research/stores/analysis/analysisStore.actions.ts src/renderer/src/i18n/locales/ko/base/Analysis.ts src/renderer/src/i18n/locales/en/base/Analysis.ts src/renderer/src/i18n/locales/ja/base/Analysis.ts tests/dom/conflictQueuePanelWriterFlow.test.tsx tests/main/services/memory/query/memoryConflictQueue.test.ts tests/main/handler/ipcInputValidation.memory.test.ts
+corepack pnpm run typecheck
+```
+
+제한:
+
+- 실제 Electron E2E에서 conflict queue 결정을 UI 클릭만으로 검증하는 흐름은 아직 선택 보강 범위다.

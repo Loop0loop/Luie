@@ -363,6 +363,8 @@ export default function AnalysisSection() {
               loading={review.conflictQueueLoading}
               error={review.conflictQueueError}
               items={review.conflictQueueItems}
+              reviewFilter={review.conflictQueueReviewFilter}
+              onChangeReviewFilter={review.setConflictQueueReviewFilter}
               resolvingConflictId={review.resolvingConflictId}
               onToggle={() => review.setShowConflictQueue((prev) => !prev)}
               renderFact={formatConflictFact}

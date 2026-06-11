@@ -63,6 +63,15 @@ export const koBaseAnalysis = {
           priorEvidence: "이전 사실",
           invalidating: "무효화한 사실: {{fact}}",
           newEvidence: "신규 사실",
+          filter: {
+            active: "검토 중",
+            deferred: "보류 항목",
+          },
+          status: {
+            pending: "대기",
+            reviewing: "검토 중",
+            deferred: "보류됨",
+          },
           acceptPrior: "이전 사실 채택",
           acceptNew: "신규 사실 채택",
           defer: "나중에 보기",

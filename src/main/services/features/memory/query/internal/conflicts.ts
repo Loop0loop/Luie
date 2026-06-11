@@ -14,11 +14,24 @@ import { countFactEvidence, fetchFactEvidenceQuotes } from "./evidence.js";
 import { loadEntityInfo, resolveMemoryEntityIds } from "./entity.js";
 
 type ActiveConflictReviewStatus = "pending" | "reviewing";
+type DeferredConflictReviewStatus = "deferred";
+type ConflictReviewStatus =
+  | ActiveConflictReviewStatus
+  | DeferredConflictReviewStatus;
+type ConflictReviewFilter = "active" | "deferred";
 
 function isActiveConflictReviewStatus(
   status: string,
 ): status is ActiveConflictReviewStatus {
   return status === "pending" || status === "reviewing";
+}
+
+function matchesConflictReviewFilter(
+  status: string,
+  filter: ConflictReviewFilter,
+): status is ConflictReviewStatus {
+  if (filter === "deferred") return status === "deferred";
+  return isActiveConflictReviewStatus(status);
 }
 
 async function fetchFactSummariesFromIds(input: {
@@ -94,6 +107,7 @@ async function fetchConflictQueueRows(input: {
   projectId: string;
   chapterOrder: number | null;
   includePriorMemory: boolean;
+  reviewFilter?: ConflictReviewFilter;
   entityId?: string;
   entityName?: string;
   entityNames?: string[];
@@ -103,7 +117,7 @@ async function fetchConflictQueueRows(input: {
   Array<{
     conflictId: string;
     reason: string;
-    reviewStatus: "pending" | "reviewing";
+    reviewStatus: ConflictReviewStatus;
     reviewerNote: string | null;
     reviewedAt: string | null;
     invalidatedFactId: string;
@@ -139,8 +153,9 @@ async function fetchConflictQueueRows(input: {
   const resolvedFilterEntityIds =
     filterEntityIds === null ? [] : filterEntityIds;
 
+  const reviewFilter = input.reviewFilter ?? "active";
   const filtered = rows.filter((row) => {
-    if (!isActiveConflictReviewStatus(row.reviewStatus)) {
+    if (!matchesConflictReviewFilter(row.reviewStatus, reviewFilter)) {
       return false;
     }
 
@@ -177,7 +192,7 @@ async function fetchConflictQueueRows(input: {
   return filtered.slice(0, limit).map((row) => ({
     conflictId: row.conflictId,
     reason: row.reason,
-    reviewStatus: isActiveConflictReviewStatus(row.reviewStatus)
+    reviewStatus: matchesConflictReviewFilter(row.reviewStatus, reviewFilter)
       ? row.reviewStatus
       : "pending",
     reviewerNote: row.reviewerNote,
@@ -246,6 +261,7 @@ export async function fetchConflictFactPairs(input: {
   projectId: string;
   chapterOrder: number | null;
   includePriorMemory: boolean;
+  reviewFilter?: ConflictReviewFilter;
   entityId?: string;
   entityName?: string;
   entityNames?: string[];

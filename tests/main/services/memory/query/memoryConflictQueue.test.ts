@@ -314,5 +314,21 @@ describe("fetchConflictFactPairs", () => {
     });
 
     expect(result).toEqual([]);
+
+    const deferredResult = await fetchConflictFactPairs({
+      projectId,
+      chapterOrder: null,
+      includePriorMemory: false,
+      reviewFilter: "deferred",
+    });
+
+    expect(deferredResult).toEqual([
+      expect.objectContaining({
+        conflictId,
+        reviewStatus: "deferred",
+        reviewerNote: "나중에 확인",
+        reviewedAt: nowIso,
+      }),
+    ]);
   });
 });

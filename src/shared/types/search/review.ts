@@ -22,6 +22,7 @@ export interface MemoryConflictQueueInput {
   projectId: string;
   chapterId?: string;
   includePriorMemory?: boolean;
+  reviewFilter?: "active" | "deferred";
   entityId?: string;
   entityName?: string;
   entityType?: string;
@@ -31,7 +32,7 @@ export interface MemoryConflictQueueInput {
 export interface MemoryConflictQueueItem {
   conflictId: string;
   reason: string;
-  reviewStatus: "pending" | "reviewing";
+  reviewStatus: "pending" | "reviewing" | "deferred";
   reviewerNote: string | null;
   reviewedAt: string | null;
   invalidatedFact: MemoryConflictFactSummary;

@@ -15,6 +15,11 @@ const translations: Record<string, string> = {
   "analysis.review.queue.conflict.priorEvidence": "이전 사실",
   "analysis.review.queue.conflict.invalidating": "새 설정: {{fact}}",
   "analysis.review.queue.conflict.newEvidence": "신규 사실",
+  "analysis.review.queue.conflict.filter.active": "검토 중",
+  "analysis.review.queue.conflict.filter.deferred": "보류 항목",
+  "analysis.review.queue.conflict.status.pending": "대기",
+  "analysis.review.queue.conflict.status.reviewing": "검토 중",
+  "analysis.review.queue.conflict.status.deferred": "보류됨",
   "analysis.review.queue.conflict.acceptPrior": "이전 사실 채택",
   "analysis.review.queue.conflict.acceptNew": "신규 사실 채택",
   "analysis.review.queue.conflict.defer": "나중에 보기",
@@ -86,9 +91,15 @@ const conflictItem: AnalysisConflictItem = {
 const mountPanel = ({
   onResolve = vi.fn(),
   onDefer = vi.fn(),
+  reviewFilter = "active",
+  onChangeReviewFilter = vi.fn(),
+  items = [conflictItem],
 }: {
   onResolve?: (item: AnalysisConflictItem, winnerFactId: string) => void;
   onDefer?: (item: AnalysisConflictItem) => void;
+  reviewFilter?: "active" | "deferred";
+  onChangeReviewFilter?: (filter: "active" | "deferred") => void;
+  items?: AnalysisConflictItem[];
 } = {}): MountedView => {
   const container = document.createElement("div");
   document.body.appendChild(container);
@@ -99,7 +110,9 @@ const mountPanel = ({
         visible
         loading={false}
         error={null}
-        items={[conflictItem]}
+        items={items}
+        reviewFilter={reviewFilter}
+        onChangeReviewFilter={onChangeReviewFilter}
         onToggle={vi.fn()}
         renderFact={(fact) => `${fact.subjectEntityName} ${fact.predicate} ${fact.objectValue}`}
         resolvingConflictId={null}
@@ -160,6 +173,7 @@ describe("ConflictQueuePanel writer flow", () => {
     expect(view.container.textContent).toContain("이전 사실 채택");
     expect(view.container.textContent).toContain("신규 사실 채택");
     expect(view.container.textContent).toContain("나중에 보기");
+    expect(view.container.textContent).toContain("대기");
   });
 
   it("defers a conflict without resolving either memory fact", async () => {
@@ -172,5 +186,28 @@ describe("ConflictQueuePanel writer flow", () => {
 
     expect(onDefer).toHaveBeenCalledWith(conflictItem);
     expect(onResolve).not.toHaveBeenCalled();
+  });
+
+  it("lets the writer reopen deferred conflicts with a status filter", async () => {
+    const onChangeReviewFilter = vi.fn();
+    const deferredConflict = {
+      ...conflictItem,
+      reviewStatus: "deferred" as const,
+      reviewerNote: "나중에 확인",
+      reviewedAt: "2026-06-11T00:00:00.000Z",
+    };
+    const view = mountPanel({
+      reviewFilter: "deferred",
+      onChangeReviewFilter,
+      items: [deferredConflict],
+    });
+    mounted.push(view);
+
+    expect(view.container.textContent).toContain("보류됨");
+    expect(view.container.textContent).toContain("나중에 보기");
+
+    await clickButton(view.container, "검토 중");
+
+    expect(onChangeReviewFilter).toHaveBeenCalledWith("active");
   });
 });

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { AnalysisItem } from "@shared/types/analysis.js";
 import type {
   Message,
+  ConflictReviewFilter,
   AnalysisConflictItem,
   AnalysisEntityAliasReviewItem,
   AnalysisEntityReviewItem,
@@ -40,6 +41,7 @@ interface AnalysisStoreState {
   narrativeSummaryStatusError: string | null;
 
   showConflictQueue: boolean;
+  conflictQueueReviewFilter: ConflictReviewFilter;
   conflictQueueItems: AnalysisConflictItem[];
   conflictQueueLoading: boolean;
   conflictQueueError: string | null;
@@ -89,6 +91,7 @@ interface AnalysisStoreSyncActions {
 
   setShowNarrativeSummaryStatus: (show: boolean | ((prev: boolean) => boolean)) => void;
   setShowConflictQueue: (show: boolean | ((prev: boolean) => boolean)) => void;
+  setConflictQueueReviewFilter: (filter: ConflictReviewFilter) => void;
   setShowFactReviewQueue: (show: boolean | ((prev: boolean) => boolean)) => void;
   setShowEpisodeReviewQueue: (show: boolean | ((prev: boolean) => boolean)) => void;
   setShowEntityReviewQueue: (show: boolean | ((prev: boolean) => boolean)) => void;
@@ -124,6 +127,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   narrativeSummaryStatusError: null,
 
   showConflictQueue: false,
+  conflictQueueReviewFilter: "active",
   conflictQueueItems: [],
   conflictQueueLoading: false,
   conflictQueueError: null,
@@ -211,6 +215,10 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
     set((state) => ({
       showConflictQueue: typeof show === "function" ? show(state.showConflictQueue) : show,
     }));
+  },
+
+  setConflictQueueReviewFilter: (filter) => {
+    set({ conflictQueueReviewFilter: filter });
   },
 
   setShowFactReviewQueue: (show) => {

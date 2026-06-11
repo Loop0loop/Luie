@@ -32,6 +32,7 @@ export const memoryConflictQueueQuerySchema = z.object({
   projectId: projectIdSchema,
   chapterId: chapterIdSchema.optional(),
   includePriorMemory: z.boolean().optional(),
+  reviewFilter: z.enum(["active", "deferred"]).optional(),
   entityId: z.string().trim().min(1).optional(),
   entityName: z.string().trim().min(1).optional(),
   entityType: z.string().trim().min(1).optional(),
