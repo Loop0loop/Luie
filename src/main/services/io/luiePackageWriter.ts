@@ -9,6 +9,27 @@ export const ensureParentDir = async (targetPath: string): Promise<void> => {
   await fsp.mkdir(dir, { recursive: true });
 };
 
+export const listPackageWriteArtifacts = async (
+  targetPath: string,
+): Promise<string[]> => {
+  const dir = path.dirname(targetPath);
+  const baseName = path.basename(targetPath);
+  try {
+    const entries = await fsp.readdir(dir);
+    return entries
+      .filter(
+        (entry) =>
+          entry.startsWith(`${baseName}.tmp-`) ||
+          entry.startsWith(`${baseName}.bak-`),
+      )
+      .sort();
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException;
+    if (err?.code === "ENOENT") return [];
+    throw error;
+  }
+};
+
 export const withPackageWriteLock = async <T>(
   packagePath: string,
   task: () => Promise<T>,

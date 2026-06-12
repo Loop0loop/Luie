@@ -12,9 +12,9 @@ import {
   readLuieContainerEntry,
   writeLuieContainer,
 } from "../../../src/main/services/io/luieContainer.js";
+import { listPackageWriteArtifacts } from "../../../src/main/services/io/luiePackageWriter.js";
 import { writeLuieSqliteEntry } from "../../../src/main/services/io/luieSqliteContainer.js";
 import {
-  makeExactMixedByteText,
   makeMixedNarrativeText,
 } from "../luieFixtures.js";
 
@@ -205,6 +205,78 @@ describe("luieContainer", () => {
     expect(chapterRaw).toBe("# sqlite hello");
     expect(snapshotIndexRaw).toContain('"snapshot-1"');
     await expectNoWalSidecars(packagePath);
+  });
+
+  it("preserves the previous package and cleans temp artifacts after a failed full write", async () => {
+    tempRoot = await fsp.mkdtemp(
+      path.join(os.tmpdir(), "luie-container-crash-safe-"),
+    );
+    const packagePath = path.join(tempRoot, "crash-safe.luie");
+
+    await writeLuieContainer({
+      targetPath: packagePath,
+      payload: {
+        meta: {
+          projectId: "project-crash-safe",
+          title: "Stable Package",
+        },
+        chapters: [
+          {
+            id: "chapter-1",
+            content: "stable content",
+          },
+        ],
+        characters: [],
+        terms: [],
+        synopsis: { synopsis: "", status: "draft" },
+        plot: { columns: [] },
+        drawing: { paths: [] },
+        mindmap: { nodes: [], edges: [] },
+        memos: { memos: [] },
+        graph: { nodes: [], edges: [] },
+        snapshots: [],
+      },
+      logger,
+    });
+
+    await expect(
+      writeLuieContainer({
+        targetPath: packagePath,
+        payload: {
+          meta: {
+            projectId: "project-crash-safe",
+            title: "Broken Package",
+          },
+          chapters: [
+            {
+              id: "../../evil",
+              content: "should not replace stable content",
+            },
+          ],
+          characters: [],
+          terms: [],
+          synopsis: { synopsis: "", status: "draft" },
+          plot: { columns: [] },
+          drawing: { paths: [] },
+          mindmap: { nodes: [], edges: [] },
+          memos: { memos: [] },
+          graph: { nodes: [], edges: [] },
+          snapshots: [],
+        },
+        logger,
+      }),
+    ).rejects.toMatchObject({
+      code: ErrorCode.FS_READ_FAILED,
+    });
+
+    const chapterRaw = await readLuieContainerEntry(
+      packagePath,
+      "manuscript/chapter-1.md",
+      logger,
+    );
+
+    expect(chapterRaw).toBe("stable content");
+    expect(await listPackageWriteArtifacts(packagePath)).toEqual([]);
   });
 
   it.each([5_000, 100_000, 1_000_000, 2_000_000, 5_000_000])(

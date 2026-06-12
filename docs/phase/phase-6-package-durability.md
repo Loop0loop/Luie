@@ -65,3 +65,13 @@
 - atomic write
 - temp entry cleanup
 - corrupted package recovery test
+
+완료된 범위:
+
+- 실패한 SQLite-backed `.luie` full write가 기존 package entry를 유지하는지 검증한다.
+- 실패한 full write 후 `.tmp-*`/`.bak-*` package artifact가 남지 않는지 검증한다.
+
+아직 남은 범위:
+
+- atomic replace 실패 중 backup restore branch를 강제로 태우는 테스트는 아직 없다.
+- corrupted package recovery test는 아직 남아 있다.

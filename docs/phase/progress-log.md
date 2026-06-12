@@ -1321,3 +1321,26 @@ pnpm vitest tests/main/services/memory/persistence/memoryCanonicalPackage.test.t
 제한:
 
 - unknown row field discard가 실제 `.luie` 파일 import UI에서 사용자에게 노출되는지는 아직 검증하지 않았다.
+
+### 2026-06-12. Phase 6-3 failed full write temp cleanup 1차 완료
+
+확인된 사실:
+
+- unsafe package entry 때문에 SQLite-backed `.luie` full write가 실패하면 기존 package entry는 유지된다.
+- 실패 후 target package 주변에 `.tmp-*`/`.bak-*` write artifact가 남지 않는지 `listPackageWriteArtifacts`로 검증한다.
+
+아키텍처 부합:
+
+- package write helper는 main IO 경계 안에 유지했다.
+- `.luie` container format, IPC, preload, renderer contract는 변경하지 않았다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/luieContainer.test.ts
+```
+
+제한:
+
+- atomic replace 실패 중 backup restore branch를 강제로 태우는 테스트는 아직 없다.
+- corrupted package recovery test는 아직 남아 있다.
