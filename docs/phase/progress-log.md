@@ -1540,3 +1540,31 @@ pnpm run typecheck
 - `evidence_helpful` feedback을 eval set 품질 보강 후보로 전환하는 정책은 아직 없다.
 - renderer UI feedback 버튼과 IPC endpoint는 아직 없다.
 - rejected answer 재발 방지 guard는 아직 없다.
+
+### 2026-06-13. Phase 7-2 rejected answer 재발 방지 guard 1차 완료
+
+확인된 사실:
+
+- `detectRejectedAnswerRecurrence`는 저장된 `answer_wrong` feedback 중 같은 project/question/answer 조합을 찾는다.
+- 같은 질문과 같은 답변이 반복되면 `blocked: true`, `reason: repeated_rejected_answer`, feedback id 목록을 반환한다.
+- `evidence_helpful` feedback은 rejected answer guard 대상에서 제외된다.
+- 같은 질문이라도 수정된 답변이면 차단하지 않는다.
+
+아키텍처 부합:
+
+- guard는 main memory eval domain의 feedback service에 두었다.
+- 기존 feedback 저장 table을 재사용하고 새 DB schema를 추가하지 않았다.
+- IPC/preload/renderer contract는 아직 변경하지 않았다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/eval/memoryEvalFeedbackService.test.ts
+pnpm exec eslint src/main/services/features/memory/eval/memoryEvalFeedbackService.ts tests/main/services/memory/eval/memoryEvalFeedbackService.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- guard를 실제 RAG answerer/renderer 차단 경로에 연결하지는 않았다.
+- renderer UI feedback 버튼과 IPC endpoint는 아직 없다.

@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
   db,
   memoryEvalCase,
@@ -27,6 +27,18 @@ export type RecordMemoryEvalFeedbackInput = {
 export type RecordMemoryEvalFeedbackResult = {
   id: string;
   evalCaseId?: string;
+};
+
+export type DetectRejectedAnswerRecurrenceInput = {
+  projectId: string;
+  question: string;
+  answer: string;
+};
+
+export type DetectRejectedAnswerRecurrenceResult = {
+  blocked: boolean;
+  feedbackIds: string[];
+  reason: "repeated_rejected_answer" | null;
 };
 
 export async function recordMemoryEvalFeedback(
@@ -96,4 +108,42 @@ export async function recordMemoryEvalFeedback(
   });
 
   return { id, evalCaseId };
+}
+
+export async function detectRejectedAnswerRecurrence(
+  input: DetectRejectedAnswerRecurrenceInput,
+): Promise<DetectRejectedAnswerRecurrenceResult> {
+  const rows = await db
+    .getClient()
+    .select({
+      id: memoryEvalFeedback.id,
+      question: memoryEvalFeedback.question,
+      answer: memoryEvalFeedback.answer,
+    })
+    .from(memoryEvalFeedback)
+    .where(
+      and(
+        eq(memoryEvalFeedback.projectId, input.projectId),
+        eq(memoryEvalFeedback.feedbackKind, "answer_wrong"),
+      ),
+    );
+  const question = normalizeFeedbackText(input.question);
+  const answer = normalizeFeedbackText(input.answer);
+  const feedbackIds = rows
+    .filter(
+      (row) =>
+        normalizeFeedbackText(row.question) === question &&
+        normalizeFeedbackText(row.answer ?? "") === answer,
+    )
+    .map((row) => row.id);
+
+  return {
+    blocked: feedbackIds.length > 0,
+    feedbackIds,
+    reason: feedbackIds.length > 0 ? "repeated_rejected_answer" : null,
+  };
+}
+
+function normalizeFeedbackText(value: string): string {
+  return value.trim().replace(/\s+/gu, " ").toLowerCase();
 }

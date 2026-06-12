@@ -9,7 +9,10 @@ import {
   memoryEvalFeedback,
   project,
 } from "../../../../../src/main/infra/database/index.js";
-import { recordMemoryEvalFeedback } from "../../../../../src/main/services/features/memory/eval/memoryEvalFeedbackService.js";
+import {
+  detectRejectedAnswerRecurrence,
+  recordMemoryEvalFeedback,
+} from "../../../../../src/main/services/features/memory/eval/memoryEvalFeedbackService.js";
 
 describe("recordMemoryEvalFeedback", () => {
   it("stores writer feedback for a wrong answer", async () => {
@@ -151,5 +154,57 @@ describe("recordMemoryEvalFeedback", () => {
         updatedAt: nowIso,
       }),
     ]);
+  });
+
+  it("detects repeated wrong answers while allowing revised answers", async () => {
+    const projectId = crypto.randomUUID();
+    const nowIso = "2026-06-12T15:20:00.000Z";
+    await db.getClient().insert(project).values({
+      id: projectId,
+      title: "Rejected Answer Guard",
+      description: null,
+      projectPath: null,
+      updatedAt: nowIso,
+    });
+
+    const rejected = await recordMemoryEvalFeedback({
+      projectId,
+      feedbackKind: "answer_wrong",
+      question: "3화 기준으로 아린이 봉인을 알아도 되나?",
+      answer: "알고 있다.",
+      note: "3화 기준으로는 아직 모른다.",
+      nowIso,
+    });
+    await recordMemoryEvalFeedback({
+      projectId,
+      feedbackKind: "evidence_helpful",
+      question: "3화 기준으로 아린이 봉인을 알아도 되나?",
+      answer: "근거가 좋다.",
+      nowIso,
+    });
+
+    await expect(
+      detectRejectedAnswerRecurrence({
+        projectId,
+        question: " 3화 기준으로 아린이 봉인을 알아도 되나? ",
+        answer: "알고 있다.",
+      }),
+    ).resolves.toEqual({
+      blocked: true,
+      feedbackIds: [rejected.id],
+      reason: "repeated_rejected_answer",
+    });
+
+    await expect(
+      detectRejectedAnswerRecurrence({
+        projectId,
+        question: "3화 기준으로 아린이 봉인을 알아도 되나?",
+        answer: "3화 기준으로는 아직 모른다.",
+      }),
+    ).resolves.toEqual({
+      blocked: false,
+      feedbackIds: [],
+      reason: null,
+    });
   });
 });
