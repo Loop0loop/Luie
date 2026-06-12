@@ -260,13 +260,10 @@ describe("getMemoryPhaseStatusReport", () => {
         "crash-safe package write cleanup and recovery coverage",
         "corrupt .luie open recovery notice verification",
         "renderer UI package durability E2E for corrupt package recovery",
-      ]),
-    );
-    expect(phases[0]?.remaining).toEqual(
-      expect.arrayContaining([
         "forced app shutdown crash-safe export E2E",
       ]),
     );
+    expect(phases[0]?.remaining).toEqual([]);
     expect(phases[0]?.remaining).not.toContain(
       "source id mismatch auto repair",
     );

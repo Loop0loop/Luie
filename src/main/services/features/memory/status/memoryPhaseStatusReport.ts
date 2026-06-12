@@ -88,8 +88,9 @@ const MEMORY_ROADMAP_PHASE_STATUSES: MemoryRoadmapPhaseStatus[] = [
       "crash-safe package write cleanup and recovery coverage",
       "corrupt .luie open recovery notice verification",
       "renderer UI package durability E2E for corrupt package recovery",
+      "forced app shutdown crash-safe export E2E",
     ],
-    remaining: ["forced app shutdown crash-safe export E2E"],
+    remaining: [],
     architectureAlignment: {
       status: "aligned",
       notes: [

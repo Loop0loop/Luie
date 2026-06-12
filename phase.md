@@ -14,6 +14,7 @@
 - Phase 6-3 failed full write의 기존 package 보존과 temp/backup artifact cleanup 검증은 1차 완료되어 있다.
 - Phase 6-3 atomic replace 실패 후 backup restore branch 검증은 기존 rollback 테스트로 확인되어 있다.
 - Phase 6-3 corrupted package를 DB state에서 `.recovered-*` sqlite-v2 package로 복구하는 경로는 targeted test로 확인되어 있다.
+- Phase 6-3 실제 Electron main process 강제 종료 중 export가 끊겨도 기존 `.luie`가 읽을 수 있는 이전 상태로 남는 경로는 E2E로 확인되어 있다.
 - Phase 7-1 writer task benchmark의 5개 작가 작업 taxonomy와 metric summary 계약은 1차 완료되어 있다.
 - Phase 7-1 live memory eval runner는 writer task benchmark summary와 case별 answerer 응답 시간 측정을 반환한다.
 - Phase 7-1 writer task benchmark summary를 run별 DB row로 저장하는 경로는 1차 완료되어 있다.
@@ -31,8 +32,7 @@
 
 판단:
 
-- 현재는 **Phase 6-1 source id mismatch repair option 1차 완료 상태**다.
-- 다만 실제 앱 강제 종료 중 export가 끊기는 crash-safe export E2E는 추가 보강 대상으로 남아 있다.
+- 현재는 **Phase 6 package durability 1차 완료 상태**다.
 - 실제 작가 베타 데이터 기반 threshold 값은 아직 확정하지 않았다. 근거가 부족하다.
 
 ## 문서 구조

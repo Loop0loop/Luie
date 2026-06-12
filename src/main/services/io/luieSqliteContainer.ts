@@ -48,6 +48,14 @@ CREATE TABLE IF NOT EXISTS "LuieContainerEntry" (
 CREATE INDEX IF NOT EXISTS "LuieContainerEntry_updatedAt_idx" ON "LuieContainerEntry"("updatedAt");
 `;
 
+const pauseBeforeAtomicReplaceForE2E = async (): Promise<void> => {
+  const markerPath = process.env.LUIE_E2E_PAUSE_PACKAGE_WRITE_BEFORE_REPLACE;
+  if (!markerPath || process.env.E2E_DISABLE_SINGLE_INSTANCE !== "1") return;
+  await fsp.mkdir(path.dirname(markerPath), { recursive: true });
+  await fsp.writeFile(markerPath, new Date().toISOString(), "utf8");
+  await new Promise<never>(() => undefined);
+};
+
 type SqliteContainerInfoRow = {
   format: string;
   container: string;
@@ -266,6 +274,7 @@ export const writeLuieSqliteContainer = async (input: {
       database.close();
       database = null;
 
+      await pauseBeforeAtomicReplaceForE2E();
       await atomicReplace(tempPath, input.targetPath, input.logger);
     } catch (error) {
       if (database) {

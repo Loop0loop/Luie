@@ -70,7 +70,8 @@
 - corrupted `.luie` package open 시 기존 DB project state에서 `.recovered-*` sqlite-v2 package를 생성하고 attachment path를 복구 경로로 옮기는지 검증한다.
 - corrupted `.luie` package open 결과가 renderer의 recovery notice state로 연결되는지 DOM 운영 시나리오 테스트로 검증한다.
 - corrupted `.luie` package open을 실제 Electron renderer UI 클릭으로 실행하고 recovery banner가 표시되는지 E2E로 검증했다.
+- package export가 atomic replace 직전에 멈춘 상태에서 Electron main process를 강제 종료해도 기존 `.luie` package가 읽을 수 있는 이전 상태로 남는지 E2E로 검증했다.
 
-아직 남은 범위:
+제한:
 
-- crash-safe export 자체의 실제 앱 강제 종료 시나리오는 아직 별도 E2E로 검증하지 않았다.
+- SIGKILL은 프로세스 정리 기회를 주지 않으므로 atomic replace 전 생성된 temp 파일 cleanup은 이 E2E의 검증 범위가 아니다.

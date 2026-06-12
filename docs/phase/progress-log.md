@@ -2006,3 +2006,36 @@ pnpm run typecheck
 pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
 rg -n "canonical source id mismatch repair option|source id mismatch auto repair|forced app shutdown crash-safe export E2E" tests/.tmp/memory-phase-status-roadmap.json
 ```
+
+### 2026-06-13. Phase 6-3 forced shutdown crash-safe export E2E 1차 완료
+
+확인된 사실:
+
+- `tests/e2e/packageDurability.phase6.spec.ts`에 forced shutdown export E2E를 추가했다.
+- E2E는 baseline `.luie`를 만든 뒤 DB에 새 chapter를 추가하고, 두 번째 materialize/export가 atomic replace 직전에 멈춘 상태에서 Electron main process를 `SIGKILL`로 종료한다.
+- 강제 종료 후 기존 target `.luie`의 `meta.json`을 다시 읽어 baseline chapter는 남아 있고, interrupted export의 새 chapter는 반영되지 않았음을 검증한다.
+- Phase 6 roadmap status에서 `forced app shutdown crash-safe export E2E`를 완료 범위로 옮기고 remaining을 비웠다.
+
+아키텍처 부합:
+
+- 테스트 hook은 main IO package writer 내부에 환경 변수로만 활성화되는 atomic replace 직전 pause 지점이다.
+- 기존 IPC channel, preload API, renderer 직접 Node 접근, DB schema, `.luie` canonical package format은 변경하지 않았다.
+- E2E는 기존 `project.materializeLuie` preload capability를 사용한다.
+
+아키텍처 불일치 또는 제한:
+
+- 이 hook은 E2E 안정성을 위한 테스트 전용 환경 변수다. 일반 런타임에서는 `LUIE_E2E_PAUSE_PACKAGE_WRITE_BEFORE_REPLACE`가 없으면 동작하지 않는다.
+- `SIGKILL`은 프로세스 정리 기회를 주지 않으므로 atomic replace 전 temp 파일 cleanup은 이 E2E의 검증 범위가 아니다. 정상 예외 경로의 temp/backup cleanup은 기존 rollback 테스트가 검증한다.
+
+검증:
+
+```text
+pnpm run build
+node node_modules/@playwright/test/cli.js test --project=e2e tests/e2e/packageDurability.phase6.spec.ts -g "forced shutdown"
+node node_modules/@playwright/test/cli.js test --project=e2e tests/e2e/packageDurability.phase6.spec.ts
+pnpm vitest tests/main/services/memory/status/memoryPhaseStatusReport.test.ts
+pnpm exec eslint src/main/services/io/luieSqliteContainer.ts tests/e2e/packageDurability.phase6.spec.ts src/main/services/features/memory/status/memoryPhaseStatusReport.ts tests/main/services/memory/status/memoryPhaseStatusReport.test.ts
+pnpm run typecheck
+pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
+rg -n "phase6-package-durability|forced app shutdown crash-safe export E2E|\"remaining\": \\[\\]" tests/.tmp/memory-phase-status-roadmap.json
+```
