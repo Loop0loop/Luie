@@ -1344,3 +1344,28 @@ pnpm vitest tests/main/services/luieContainer.test.ts
 
 - atomic replace 실패 중 backup restore branch를 강제로 태우는 테스트는 아직 없다.
 - corrupted package recovery test는 아직 남아 있다.
+
+### 2026-06-12. Phase 6-3 atomic replace backup restore 검증 확인
+
+확인된 사실:
+
+- `tests/main/services/luiePackageWriter.rollback.test.ts`는 injected `fs.rename` failure로 atomic replace fallback branch를 강제로 태운다.
+- target을 `.bak-*`로 옮긴 뒤 새 target rename이 실패하면 기존 target 내용이 복구되는지 검증한다.
+- 같은 테스트 파일은 container write가 atomic replace 전에 실패해도 `.tmp-*`/`.bak-*` debris가 남지 않는지 검증한다.
+
+아키텍처 부합:
+
+- 검증 범위는 main IO boundary의 package writer에 한정되어 있다.
+- `.luie` container format, IPC, preload, renderer contract는 변경하지 않았다.
+- 하드코딩 정책상 새 cross-process constant나 shared contract가 필요하지 않았다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/luiePackageWriter.rollback.test.ts
+```
+
+제한:
+
+- 이 단계는 기존 rollback 테스트를 Phase 6-3 상태 문서에 반영한 것이다.
+- corrupted package recovery test는 아직 남아 있다.
