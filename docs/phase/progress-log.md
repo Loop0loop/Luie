@@ -1939,3 +1939,36 @@ pnpm run typecheck
 pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
 rg -n "unknown row field import warning|unknown row field import UI notice|source id mismatch auto repair|schema version fixture matrix beyond v1|forced app shutdown crash-safe export E2E" tests/.tmp/memory-phase-status-roadmap.json
 ```
+
+### 2026-06-13. Phase 6-2 schema version fixture matrix 1차 완료
+
+확인된 사실:
+
+- `LuieMemoryCanonicalSchema` compatibility test를 table-driven fixture matrix로 확장했다.
+- supported fixture는 legacy missing `schemaVersion`과 explicit v1을 포함한다.
+- unsupported fixture는 future version, zero version, string version을 포함한다.
+- missing `schemaVersion`은 parse 결과에서 v1로 정규화된다.
+- Phase 6 roadmap status에서 `schema version fixture matrix beyond v1 and missing-version`을 남은 범위에서 제거했다.
+
+아키텍처 부합:
+
+- 변경은 main project package schema 검증과 관련 테스트에 한정했다.
+- `.luie` 파일에 `schemaVersion`이 없는 legacy payload를 계속 허용하며, package format을 바꾸지 않는다.
+- IPC channel, preload API, renderer 직접 Node 접근, DB schema 변경은 없다.
+
+아키텍처 불일치 또는 제한:
+
+- 이 단계는 canonical memory schema version fixture matrix 보강이다.
+- source id mismatch 자동 복구와 실제 앱 강제 종료 crash-safe export E2E는 아직 남은 범위다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/persistence/memoryCanonicalPackage.test.ts -t "LuieMemoryCanonicalSchema compatibility"
+pnpm vitest tests/main/services/memory/persistence/memoryCanonicalPackage.test.ts
+pnpm vitest tests/main/services/memory/status/memoryPhaseStatusReport.test.ts
+pnpm exec eslint src/main/services/core/project/projectLuieSchemas.ts tests/main/services/memory/persistence/memoryCanonicalPackage.test.ts src/main/services/features/memory/status/memoryPhaseStatusReport.ts tests/main/services/memory/status/memoryPhaseStatusReport.test.ts
+pnpm run typecheck
+pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
+rg -n "schema version fixture matrix|schema version fixture matrix beyond v1|source id mismatch auto repair|forced app shutdown crash-safe export E2E" tests/.tmp/memory-phase-status-roadmap.json
+```

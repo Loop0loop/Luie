@@ -156,7 +156,7 @@ const memoryStatusRequiredTables = new Set<string>(MEMORY_STATUS_REQUIRED_EXPORT
 
 export const LuieMemoryCanonicalSchema = z
   .object({
-    schemaVersion: z.number().optional(),
+    schemaVersion: z.number().default(1),
     exportedAt: z.string().optional(),
     tables: z.record(
       z.string(),

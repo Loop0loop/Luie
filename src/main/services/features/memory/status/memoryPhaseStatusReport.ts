@@ -82,6 +82,7 @@ const MEMORY_ROADMAP_PHASE_STATUSES: MemoryRoadmapPhaseStatus[] = [
       "canonical sync source id mismatch reporting",
       "actual .luie memory canonical write/read roundtrip",
       "schema version compatibility and unknown row field discard policy",
+      "schema version fixture matrix and legacy v1 normalization",
       "unknown row field import warning and renderer notice",
       "crash-safe package write cleanup and recovery coverage",
       "corrupt .luie open recovery notice verification",
@@ -89,7 +90,6 @@ const MEMORY_ROADMAP_PHASE_STATUSES: MemoryRoadmapPhaseStatus[] = [
     ],
     remaining: [
       "source id mismatch auto repair",
-      "schema version fixture matrix beyond v1 and missing-version",
       "forced app shutdown crash-safe export E2E",
     ],
     architectureAlignment: {

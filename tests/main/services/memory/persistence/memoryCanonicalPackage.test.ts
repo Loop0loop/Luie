@@ -56,24 +56,68 @@ const createTx = () => {
 };
 
 describe("LuieMemoryCanonicalSchema compatibility", () => {
-  it("accepts legacy canonical memory payloads without schemaVersion", () => {
-    const parsed = LuieMemoryCanonicalSchema.parse({
-      exportedAt: "2026-06-11T00:00:00.000Z",
-      tables: {},
-    });
+  it("normalizes supported canonical memory schema version fixtures", () => {
+    const fixtures = [
+      {
+        label: "legacy missing schemaVersion",
+        payload: {
+          exportedAt: "2026-06-11T00:00:00.000Z",
+          tables: {},
+        },
+      },
+      {
+        label: "explicit v1 schemaVersion",
+        payload: {
+          schemaVersion: 1,
+          exportedAt: "2026-06-11T00:00:00.000Z",
+          tables: {},
+        },
+      },
+    ];
 
-    expect(parsed.schemaVersion).toBeUndefined();
-    expect(parsed.tables).toEqual({});
+    for (const fixture of fixtures) {
+      const parsed = LuieMemoryCanonicalSchema.parse(fixture.payload);
+
+      expect(parsed, fixture.label).toMatchObject({
+        schemaVersion: 1,
+        tables: {},
+      });
+    }
   });
 
-  it("rejects unsupported future canonical memory schema versions", () => {
-    const result = LuieMemoryCanonicalSchema.safeParse({
-      schemaVersion: 999,
-      exportedAt: "2026-06-11T00:00:00.000Z",
-      tables: {},
-    });
+  it("rejects unsupported canonical memory schema version fixtures", () => {
+    const fixtures = [
+      {
+        label: "future schemaVersion",
+        payload: {
+          schemaVersion: 999,
+          exportedAt: "2026-06-11T00:00:00.000Z",
+          tables: {},
+        },
+      },
+      {
+        label: "zero schemaVersion",
+        payload: {
+          schemaVersion: 0,
+          exportedAt: "2026-06-11T00:00:00.000Z",
+          tables: {},
+        },
+      },
+      {
+        label: "string schemaVersion",
+        payload: {
+          schemaVersion: "1",
+          exportedAt: "2026-06-11T00:00:00.000Z",
+          tables: {},
+        },
+      },
+    ];
 
-    expect(result.success).toBe(false);
+    for (const fixture of fixtures) {
+      const result = LuieMemoryCanonicalSchema.safeParse(fixture.payload);
+
+      expect(result.success, fixture.label).toBe(false);
+    }
   });
 
   it("documents canonical memory unknown row fields as discarded on import", () => {
