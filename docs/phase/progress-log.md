@@ -1511,3 +1511,32 @@ pnpm run check:drizzle:main
 - renderer UI feedback 버튼과 IPC endpoint는 아직 없다.
 - feedback에서 eval case 자동 후보를 생성하지는 않는다.
 - rejected answer 재발 방지 guard는 아직 없다.
+
+### 2026-06-13. Phase 7-2 feedback 기반 eval case 후보 생성 1차 완료
+
+확인된 사실:
+
+- `answer_wrong` feedback 저장 시 `createEvalCaseCandidate` 옵션을 주면 `MemoryEvalCase` 후보를 생성한다.
+- feedback note는 후보 eval case의 `expectedAnswer`로 저장한다.
+- feedback evidence는 `MemoryEvalEvidence`로 저장하고 chunk id, chapter id, quote, offset range를 보존한다.
+- 후보 생성이 끝난 feedback row는 `status = eval_case_created`로 갱신된다.
+
+아키텍처 부합:
+
+- 구현은 main memory eval domain의 feedback service 안에 유지했다.
+- 기존 eval case/evidence DB table을 재사용해 eval set 반영 경로를 만들었다.
+- 새 IPC/preload/renderer contract는 추가하지 않았다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/eval/memoryEvalFeedbackService.test.ts
+pnpm exec eslint src/main/services/features/memory/eval/memoryEvalFeedbackService.ts tests/main/services/memory/eval/memoryEvalFeedbackService.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- `evidence_helpful` feedback을 eval set 품질 보강 후보로 전환하는 정책은 아직 없다.
+- renderer UI feedback 버튼과 IPC endpoint는 아직 없다.
+- rejected answer 재발 방지 guard는 아직 없다.
