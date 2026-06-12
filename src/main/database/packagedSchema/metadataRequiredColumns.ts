@@ -97,6 +97,14 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
     "p0FailureCount",
     "p0Failures",
   ],
+  MemoryEvalFeedback: [
+    "id",
+    "projectId",
+    "feedbackKind",
+    "question",
+    "evidenceJson",
+    "status",
+  ],
   MemoryEntity: [
     "id",
     "projectId",

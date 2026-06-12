@@ -1475,3 +1475,39 @@ pnpm run typecheck
 
 - writer task benchmark summary를 별도 DB row로 저장하지는 않는다.
 - 실제 작가 베타 데이터 기반 threshold는 아직 확정하지 않았다.
+
+### 2026-06-13. Phase 7-2 writer feedback 저장 1차 완료
+
+확인된 사실:
+
+- `MemoryEvalFeedback` DB table을 추가했다.
+- `recordMemoryEvalFeedback`는 project/run/case/result reference, feedback kind, question, answer, evidence JSON, note, status를 저장한다.
+- 현재 feedback kind는 `answer_wrong`과 `evidence_helpful`이다.
+- feedback 저장 테스트는 실제 DB insert 후 row를 다시 조회해 검증한다.
+
+아키텍처 부합:
+
+- DB schema 변경은 Drizzle schema, packaged bootstrap SQL, packaged metadata, Drizzle migration SQL을 함께 갱신했다.
+- 저장 로직은 main memory eval domain 내부에 두고 renderer/preload를 건드리지 않았다.
+- 새 table은 `.luie` canonical memory package format에 포함하지 않았다. 이 단계는 작가 feedback 저장용 운영 데이터이며 package canonical storage 규칙은 변경하지 않았다.
+
+아키텍처 불일치 또는 제한:
+
+- `pnpm vitest tests/main/database/schemaParity.test.ts`는 10개 중 9개가 통과했고, `bootstrap SQL matches generated Drizzle migration schema`만 실패한다.
+- 실패 diff는 기존 memory provenance/review/queryChapterOrder/answerJudgeJson 누적 migration-bootstrap 불일치가 남아 있기 때문이다. 이번 변경의 직접 범위인 required table 생성, Drizzle column/index/FK parity는 통과했다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/eval/memoryEvalFeedbackService.test.ts
+pnpm vitest tests/main/database/schemaParity.test.ts
+pnpm exec eslint src/main/database/schema/memoryEval.ts src/main/services/features/memory/eval/memoryEvalFeedbackService.ts src/main/services/features/memory/eval/index.ts tests/main/services/memory/eval/memoryEvalFeedbackService.test.ts
+pnpm run typecheck
+pnpm run check:drizzle:main
+```
+
+제한:
+
+- renderer UI feedback 버튼과 IPC endpoint는 아직 없다.
+- feedback에서 eval case 자동 후보를 생성하지는 않는다.
+- rejected answer 재발 방지 guard는 아직 없다.

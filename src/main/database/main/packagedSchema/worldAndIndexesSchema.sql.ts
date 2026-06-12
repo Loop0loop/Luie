@@ -160,6 +160,7 @@ CREATE INDEX IF NOT EXISTS "SearchDirtyQueue_source_idx" ON "SearchDirtyQueue"("
 CREATE UNIQUE INDEX IF NOT EXISTS "MemoryChunk_source_chunkIndex_key" ON "MemoryChunk"("sourceType", "sourceId", "chunkIndex");
 CREATE UNIQUE INDEX IF NOT EXISTS "MemoryChunk_id_projectId_key" ON "MemoryChunk"("id", "projectId");
 CREATE INDEX IF NOT EXISTS "MemoryChunk_projectId_source_idx" ON "MemoryChunk"("projectId", "sourceType", "sourceId");
+CREATE INDEX IF NOT EXISTS "MemoryChunk_projectId_source_paragraph_idx" ON "MemoryChunk"("projectId", "sourceType", "sourceId", "paragraphStartIndex", "paragraphEndIndex");
 CREATE INDEX IF NOT EXISTS "MemoryChunk_projectId_chapterId_idx" ON "MemoryChunk"("projectId", "chapterId");
 CREATE INDEX IF NOT EXISTS "MemoryChunk_projectId_sceneId_idx" ON "MemoryChunk"("projectId", "sceneId");
 CREATE INDEX IF NOT EXISTS "MemoryBuildJob_projectId_status_priority_idx" ON "MemoryBuildJob"("projectId", "status", "priority");
@@ -182,6 +183,9 @@ CREATE INDEX IF NOT EXISTS "MemoryEvalRun_projectId_status_idx" ON "MemoryEvalRu
 CREATE INDEX IF NOT EXISTS "MemoryEvalResult_runId_idx" ON "MemoryEvalResult"("runId");
 CREATE INDEX IF NOT EXISTS "MemoryEvalResult_caseId_idx" ON "MemoryEvalResult"("caseId");
 CREATE INDEX IF NOT EXISTS "MemoryEvalResult_projectId_p0_idx" ON "MemoryEvalResult"("projectId", "p0FailureCount");
+CREATE INDEX IF NOT EXISTS "MemoryEvalFeedback_projectId_status_idx" ON "MemoryEvalFeedback"("projectId", "status");
+CREATE INDEX IF NOT EXISTS "MemoryEvalFeedback_projectId_kind_idx" ON "MemoryEvalFeedback"("projectId", "feedbackKind");
+CREATE INDEX IF NOT EXISTS "MemoryEvalFeedback_caseId_idx" ON "MemoryEvalFeedback"("caseId");
 CREATE INDEX IF NOT EXISTS "MemoryEntity_projectId_type_idx" ON "MemoryEntity"("projectId", "entityType");
 CREATE INDEX IF NOT EXISTS "MemoryEntity_projectId_status_idx" ON "MemoryEntity"("projectId", "status");
 CREATE UNIQUE INDEX IF NOT EXISTS "MemoryEntity_id_projectId_key" ON "MemoryEntity"("id", "projectId");

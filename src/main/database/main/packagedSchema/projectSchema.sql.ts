@@ -239,4 +239,20 @@ CREATE TABLE IF NOT EXISTS "MemoryEvalResult" (
     CONSTRAINT "MemoryEvalResult_caseId_fkey" FOREIGN KEY ("caseId") REFERENCES "MemoryEvalCase" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "MemoryEvalResult_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+CREATE TABLE IF NOT EXISTS "MemoryEvalFeedback" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "runId" TEXT,
+    "caseId" TEXT,
+    "resultId" TEXT,
+    "feedbackKind" TEXT NOT NULL,
+    "question" TEXT NOT NULL,
+    "answer" TEXT,
+    "evidenceJson" TEXT NOT NULL DEFAULT '[]',
+    "note" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    CONSTRAINT "MemoryEvalFeedback_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
 `;

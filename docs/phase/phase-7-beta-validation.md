@@ -49,3 +49,14 @@
 - feedback 저장
 - eval case 자동 후보 생성
 - rejected answer 재발 방지
+
+완료된 범위:
+
+- 작가 피드백을 `MemoryEvalFeedback` DB table에 저장하는 main-domain 서비스를 추가했다.
+- `answer_wrong`/`evidence_helpful` feedback kind와 question/answer/evidence/note/status를 저장한다.
+
+아직 남은 범위:
+
+- renderer UI에서 "이 답변 틀림", "이 근거 좋음"을 누르는 흐름은 아직 연결하지 않았다.
+- feedback에서 eval case 자동 후보를 생성하는 경로는 아직 없다.
+- rejected answer 재발 방지 guard는 아직 없다.

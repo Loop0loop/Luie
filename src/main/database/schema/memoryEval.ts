@@ -188,3 +188,32 @@ export const memoryEvalResult = sqliteTable(
     }).onDelete("cascade").onUpdate("cascade"),
   ],
 );
+
+export const memoryEvalFeedback = sqliteTable(
+  "MemoryEvalFeedback",
+  {
+    id: text("id").primaryKey().notNull(),
+    projectId: text("projectId").notNull(),
+    runId: text("runId"),
+    caseId: text("caseId"),
+    resultId: text("resultId"),
+    feedbackKind: text("feedbackKind").notNull(),
+    question: text("question").notNull(),
+    answer: text("answer"),
+    evidenceJson: text("evidenceJson").notNull().default("[]"),
+    note: text("note"),
+    status: text("status").notNull().default("pending"),
+    createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updatedAt").notNull(),
+  },
+  (table) => [
+    index("MemoryEvalFeedback_projectId_status_idx").on(table.projectId, table.status),
+    index("MemoryEvalFeedback_projectId_kind_idx").on(table.projectId, table.feedbackKind),
+    index("MemoryEvalFeedback_caseId_idx").on(table.caseId),
+    foreignKey({
+      name: "MemoryEvalFeedback_projectId_fkey",
+      columns: [table.projectId],
+      foreignColumns: [project.id],
+    }).onDelete("cascade").onUpdate("cascade"),
+  ],
+);
