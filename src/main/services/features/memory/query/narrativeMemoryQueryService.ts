@@ -64,18 +64,6 @@ import {
   rejectMemoryEpisode,
 } from "../episode/memoryEpisodeReviewService.js";
 import {
-  createDefaultMemoryEpisodeCalibrationCases,
-  runMemoryEpisodeExtractorCalibration,
-} from "../episode/memoryEpisodeExtractorCalibration.js";
-import { llmEpisodeExtractor } from "../episode/memoryEpisodeLlmExtractor.js";
-import {
-  deferMemoryReviewStaleEvidence,
-  getMemoryReviewBacklogReport,
-  rejectMemoryReviewStaleEvidence,
-  resolveMemoryReviewStaleEvidence,
-} from "../review/memoryReviewBacklogReport.js";
-import { repairMemoryEvidenceChunkLinks } from "../repair/memoryEvidenceChunkLinkRepair.js";
-import {
   confirmMemoryTemporalFact,
   listSuggestedMemoryTemporalFacts,
   rejectMemoryTemporalFact,
@@ -109,11 +97,14 @@ import {
   loadEntityProfiles,
   resolveMemoryEntityIds,
 } from "./internal/entity.js";
-import { runLiveMemoryEvalSuite } from "../eval/memoryEvalRunner.js";
 import {
-  createDefaultNarrativeMemoryIntentCalibrationCases,
-  runNarrativeMemoryIntentClassifierCalibration,
-} from "./internal/memoryIntentClassifierCalibration.js";
+  getNarrativeMemoryReviewBacklog,
+  repairNarrativeMemoryEvidenceLinks,
+  reviewNarrativeMemoryStaleEvidence,
+  runNarrativeMemoryEpisodeCalibration,
+  runNarrativeMemoryEvalSuite,
+  runNarrativeMemoryIntentCalibration,
+} from "./narrativeMemoryApplicationFacades.js";
 
 const logger = createLogger("NarrativeMemoryQueryService");
 
@@ -283,65 +274,22 @@ export class NarrativeMemoryQueryService {
   async runEvalSuite(
     input: MemoryEvalRunRequest,
   ): Promise<MemoryEvalLiveRunnerResult> {
-    return await runLiveMemoryEvalSuite({
-      projectId: input.projectId,
-      label: input.label,
-      engineVersion: "narrative-memory-query-service",
-      topK: input.topK ?? 5,
-      answerer: async (evalCase) => {
-        const result = await this.query({
-          projectId: evalCase.projectId,
-          question: evalCase.question,
-          includePriorMemory: true,
-        });
-        const groundingStatus =
-          result.status === "found"
-            ? "inferred"
-            : result.status === "conflicting"
-              ? "conflicting"
-              : "insufficient_evidence";
-
-        return {
-          answer: formatNarrativeMemoryQueryResult(result),
-          groundingStatus,
-          evidence: result.evidence,
-          observedFacts: result.facts.map((fact) => ({
-            id: fact.id,
-            status: fact.status,
-            observedAtChapterOrder: fact.observedAtChapterOrder,
-            usedAs: groundingStatus,
-          })),
-          observedRelations: result.facts
-            .filter((fact) => fact.relatedEntityName)
-            .map((fact) => ({
-              sourceName: fact.subjectEntityId,
-              targetName: fact.relatedEntityName ?? "",
-              relation: fact.predicate,
-            })),
-        };
-      },
+    return await runNarrativeMemoryEvalSuite({
+      request: input,
+      query: (queryInput) => this.query(queryInput),
     });
   }
 
   async runIntentCalibration(
     input: NarrativeMemoryIntentCalibrationRequest,
   ): Promise<NarrativeMemoryIntentCalibrationResult> {
-    return await runNarrativeMemoryIntentClassifierCalibration({
-      projectId: input.projectId,
-      cases: createDefaultNarrativeMemoryIntentCalibrationCases(),
-      classifier: input.useLlm
-        ? classifyNarrativeMemoryQueryPlanWithLlm
-        : async ({ question }) => buildNarrativeMemoryQueryPlan(question),
-    });
+    return await runNarrativeMemoryIntentCalibration(input);
   }
 
   async runEpisodeCalibration(
     input: MemoryEpisodeCalibrationRequest,
   ): Promise<MemoryEpisodeCalibrationResult> {
-    return await runMemoryEpisodeExtractorCalibration({
-      extractor: llmEpisodeExtractor,
-      cases: createDefaultMemoryEpisodeCalibrationCases(input.projectId),
-    });
+    return await runNarrativeMemoryEpisodeCalibration(input);
   }
 
   async getConflictQueue(
@@ -369,19 +317,13 @@ export class NarrativeMemoryQueryService {
   async getReviewBacklog(
     input: MemoryReviewBacklogInput,
   ): Promise<MemoryReviewBacklogResult> {
-    const report = await getMemoryReviewBacklogReport(input);
-    return {
-      staleEvidence: report.staleEvidence,
-      counts: {
-        staleEvidence: report.counts.staleEvidence,
-      },
-    };
+    return await getNarrativeMemoryReviewBacklog(input);
   }
 
   async repairEvidenceLinks(
     input: MemoryEvidenceRepairInput,
   ): Promise<MemoryEvidenceRepairResult> {
-    return repairMemoryEvidenceChunkLinks(input);
+    return repairNarrativeMemoryEvidenceLinks(input);
   }
 
   async listSuggestedEpisodes(
@@ -483,28 +425,7 @@ export class NarrativeMemoryQueryService {
   async reviewStaleEvidence(
     input: MemoryStaleEvidenceReviewActionInput,
   ): Promise<MemoryStaleEvidenceReviewActionResult> {
-    const decisionInput = {
-      projectId: input.projectId,
-      kind: input.kind,
-      id: input.id,
-      reviewerNote: input.reviewerNote,
-    };
-    const result =
-      input.action === "defer"
-        ? await deferMemoryReviewStaleEvidence(decisionInput)
-        : input.action === "reject"
-          ? await rejectMemoryReviewStaleEvidence(decisionInput)
-          : await resolveMemoryReviewStaleEvidence(decisionInput);
-
-    return {
-      updated: result.updated,
-      status:
-        input.action === "defer"
-          ? "deferred"
-          : input.action === "reject"
-            ? "rejected"
-            : "resolved",
-    };
+    return await reviewNarrativeMemoryStaleEvidence(input);
   }
 }
 

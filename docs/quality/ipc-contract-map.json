@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-06-11T23:37:44.211Z",
+  "generatedAt": "2026-06-12T00:40:22.962Z",
   "summary": {
     "definedChannels": 238,
     "errors": 0,
@@ -1140,8 +1140,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 559
+            "file": "src/main/handler/system/dbMaintenance/index.ts",
+            "line": 24
           }
         ],
         "main_emit": [],
@@ -1171,8 +1171,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 552
+            "file": "src/main/handler/system/dbMaintenance/index.ts",
+            "line": 17
           }
         ],
         "main_emit": [],
@@ -2287,8 +2287,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 538
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 445
           }
         ],
         "main_emit": [],
@@ -2318,8 +2318,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 326
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 233
           }
         ],
         "main_emit": [],
@@ -2349,8 +2349,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 336
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 243
           }
         ],
         "main_emit": [],
@@ -2380,8 +2380,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 382
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 289
           }
         ],
         "main_emit": [],
@@ -2411,8 +2411,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 392
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 299
           }
         ],
         "main_emit": [],
@@ -2442,8 +2442,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 346
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 253
           }
         ],
         "main_emit": [],
@@ -2473,8 +2473,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 402
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 309
           }
         ],
         "main_emit": [],
@@ -2504,8 +2504,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 362
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 269
           }
         ],
         "main_emit": [],
@@ -2535,8 +2535,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 412
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 319
           }
         ],
         "main_emit": [],
@@ -2566,8 +2566,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 372
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 279
           }
         ],
         "main_emit": [],
@@ -2597,8 +2597,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 354
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 261
           }
         ],
         "main_emit": [],
@@ -2628,8 +2628,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 278
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 185
           }
         ],
         "main_emit": [],
@@ -2659,8 +2659,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 288
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 195
           }
         ],
         "main_emit": [],
@@ -2690,8 +2690,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 270
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 177
           }
         ],
         "main_emit": [],
@@ -2721,8 +2721,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 306
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 213
           }
         ],
         "main_emit": [],
@@ -2752,8 +2752,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 316
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 223
           }
         ],
         "main_emit": [],
@@ -2783,8 +2783,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 298
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 205
           }
         ],
         "main_emit": [],
@@ -2814,8 +2814,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 545
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 452
           }
         ],
         "main_emit": [],
@@ -2845,8 +2845,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 485
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 392
           }
         ],
         "main_emit": [],
@@ -2876,8 +2876,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 470
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 377
           }
         ],
         "main_emit": [],
@@ -2907,8 +2907,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 477
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 384
           }
         ],
         "main_emit": [],
@@ -2938,8 +2938,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 262
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 169
           }
         ],
         "main_emit": [],
@@ -2969,8 +2969,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 516
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 423
           }
         ],
         "main_emit": [],
@@ -3000,8 +3000,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 501
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 408
           }
         ],
         "main_emit": [],
@@ -3031,8 +3031,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 493
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 400
           }
         ],
         "main_emit": [],
@@ -3062,8 +3062,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 230
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 137
           }
         ],
         "main_emit": [],
@@ -3093,8 +3093,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 524
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 431
           }
         ],
         "main_emit": [],
@@ -3124,8 +3124,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 246
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 153
           }
         ],
         "main_emit": [],
@@ -3155,8 +3155,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 219
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 126
           }
         ],
         "main_emit": [],
@@ -3186,8 +3186,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 434
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 341
           }
         ],
         "main_emit": [],
@@ -3217,8 +3217,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 531
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 438
           }
         ],
         "main_emit": [],
@@ -3248,8 +3248,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 254
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 161
           }
         ],
         "main_emit": [],
@@ -3279,8 +3279,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 462
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 369
           }
         ],
         "main_emit": [],
@@ -3310,8 +3310,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 446
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 353
           }
         ],
         "main_emit": [],
@@ -3341,8 +3341,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 454
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 361
           }
         ],
         "main_emit": [],
@@ -3372,8 +3372,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 238
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 145
           }
         ],
         "main_emit": [],
@@ -3403,8 +3403,8 @@
         ],
         "main_handle": [
           {
-            "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 422
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 329
           }
         ],
         "main_emit": [],
@@ -4873,7 +4873,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 196
+            "line": 27
           }
         ],
         "main_emit": [],
@@ -4904,7 +4904,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 203
+            "line": 34
           }
         ],
         "main_emit": [],
@@ -4935,7 +4935,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/search/ipcSearchHandlers.ts",
-            "line": 211
+            "line": 42
           }
         ],
         "main_emit": [],

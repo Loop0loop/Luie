@@ -137,6 +137,13 @@ vi.mock("../../../src/main/services/features/memory/jobControl.js", () => ({
   getMemoryBuildJobProgress: mocked.memoryJobControl.getMemoryBuildJobProgress,
 }));
 
+vi.mock("../../../src/main/services/features/memory/index.js", () => ({
+  pauseMemoryBuildJobs: mocked.memoryJobControl.pauseMemoryBuildJobs,
+  resumeMemoryBuildJobs: mocked.memoryJobControl.resumeMemoryBuildJobs,
+  cancelMemoryBuildJobs: mocked.memoryJobControl.cancelMemoryBuildJobs,
+  getMemoryBuildJobProgress: mocked.memoryJobControl.getMemoryBuildJobProgress,
+}));
+
 export const resetInputValidationMocks = () => {
   mocked.handlerMap.clear();
   mocked.syncService.getStatus.mockReset();
@@ -210,9 +217,9 @@ export const registerSearchInputHandlers = async (
   },
   packagePersistence = mocked.packagePersistence,
 ) => {
-  const { registerSearchIPCHandlers } =
-    await import("../../../src/main/handler/search/ipcSearchHandlers.js");
-  registerSearchIPCHandlers(
+  const { registerMemoryIPCHandlers } =
+    await import("../../../src/main/handler/memory/ipcMemoryHandlers.js");
+  registerMemoryIPCHandlers(
     mocked.logger,
     sharedSearchServices(),
     sharedSearchIndexServices(),

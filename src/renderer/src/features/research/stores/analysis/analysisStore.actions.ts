@@ -9,89 +9,18 @@ import type {
   AnalysisEntityReviewItem,
   AnalysisEpisodeReviewItem,
   AnalysisFactReviewItem,
-  Message,
   AnalysisStaleEvidenceReviewAction,
   AnalysisStaleEvidenceReviewItem,
 } from "../../components/analysisSection/shared/types";
-import { normalizeChatError } from "../../components/analysisSection/chat/chatErrors";
-export interface AnalysisActions {
-  startAnalysis: (chapterId: string, projectId: string) => Promise<void>;
-  stopAnalysis: () => Promise<void>;
-  clearAnalysis: () => Promise<void>;
-  addStreamItem: (chunk: AnalysisStreamChunk) => void;
+import { createRagChatActions } from "./actions/ragChatActions";
+import type {
+  AnalysisActions,
+  AnalysisGet,
+  AnalysisSet,
+} from "./analysisStore.types";
 
-  handleSend: (projectId: string, chapterId: string | undefined, memoryScope: MemoryScope) => Promise<void>;
-  handleStop: () => Promise<void>;
-  loadNarrativeSummaryStatus: (projectId: string) => Promise<void>;
-  loadConflictQueue: (
-    projectId: string,
-    chapterId: string | undefined,
-    memoryScope: MemoryScope,
-    reviewFilter?: ConflictReviewFilter,
-  ) => Promise<void>;
-  handleResolveConflict: (projectId: string, item: AnalysisConflictItem, winnerFactId: string) => Promise<void>;
-  handleDeferConflict: (projectId: string, item: AnalysisConflictItem) => Promise<void>;
-  loadFactReviewQueue: (projectId: string) => Promise<void>;
-  loadEpisodeReviewQueue: (projectId: string) => Promise<void>;
-  loadEntityReviewQueue: (projectId: string) => Promise<void>;
-  loadEntityAliasReviewQueue: (projectId: string) => Promise<void>;
-  loadStaleEvidenceReviewQueue: (projectId: string) => Promise<void>;
-
-  handleConfirmFact: (projectId: string, item: AnalysisFactReviewItem) => Promise<void>;
-  handleRejectFact: (projectId: string, item: AnalysisFactReviewItem, reason: string) => Promise<void>;
-  handleConfirmEpisode: (projectId: string, item: AnalysisEpisodeReviewItem) => Promise<void>;
-  handleRejectEpisode: (projectId: string, item: AnalysisEpisodeReviewItem, reason: string) => Promise<void>;
-  handleConfirmEntity: (projectId: string, item: AnalysisEntityReviewItem) => Promise<void>;
-  handleRejectEntity: (projectId: string, item: AnalysisEntityReviewItem, reason: string) => Promise<void>;
-  handleConfirmEntityAlias: (projectId: string, item: AnalysisEntityAliasReviewItem) => Promise<void>;
-  handleRejectEntityAlias: (projectId: string, item: AnalysisEntityAliasReviewItem, reason: string) => Promise<void>;
-  handleMergeEntityAlias: (projectId: string, item: AnalysisEntityAliasReviewItem, targetEntityId: string) => Promise<void>;
-  handleSplitEntityAlias: (projectId: string, item: AnalysisEntityAliasReviewItem, canonicalName: string) => Promise<void>;
-  handleReviewStaleEvidence: (
-    projectId: string,
-    item: AnalysisStaleEvidenceReviewItem,
-    action: AnalysisStaleEvidenceReviewAction,
-    reviewerNote?: string | null,
-  ) => Promise<void>;
-  handleRepairStaleEvidence: (projectId: string) => Promise<void>;
-}
-
-type AnalysisActionState = {
-  items: Array<NonNullable<AnalysisStreamChunk["item"]>>;
-  messages: Message[];
-  input: string;
-  isStreaming: boolean;
-  ragRunId: string | null;
-  conflictQueueItems: AnalysisConflictItem[];
-  loadConflictQueue: AnalysisActions["loadConflictQueue"];
-  loadFactReviewQueue: AnalysisActions["loadFactReviewQueue"];
-  loadEpisodeReviewQueue: AnalysisActions["loadEpisodeReviewQueue"];
-  loadEntityReviewQueue: AnalysisActions["loadEntityReviewQueue"];
-  loadEntityAliasReviewQueue: AnalysisActions["loadEntityAliasReviewQueue"];
-  loadStaleEvidenceReviewQueue: AnalysisActions["loadStaleEvidenceReviewQueue"];
-};
-
-type AnalysisSet = (
-  partial:
-    | Record<string, unknown>
-    | ((state: AnalysisActionState) => Record<string, unknown>),
-) => void;
-
-type AnalysisGet = () => AnalysisActionState;
-
-let offStream: (() => void) | null = null;
-let offError: (() => void) | null = null;
-
-export const cleanUpRagStreamListeners = () => {
-  if (offStream) {
-    offStream();
-    offStream = null;
-  }
-  if (offError) {
-    offError();
-    offError = null;
-  }
-};
+export type { AnalysisActions } from "./analysisStore.types";
+export { cleanUpRagStreamListeners } from "./actions/ragChatActions";
 export function createAnalysisActions(
   set: AnalysisSet,
   get: AnalysisGet,
@@ -162,114 +91,7 @@ export function createAnalysisActions(
         }));
       }
     },
-    handleSend: async (projectId: string, chapterId: string | undefined, memoryScope: MemoryScope) => {
-      const { input, isStreaming } = get();
-      const source = input.trim();
-      if (!projectId || !source || isStreaming) return;
-
-      const question = source;
-      const userMessageId = `user-${Date.now()}`;
-      const assistantMsgId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-      set((state) => ({
-        messages: [
-          ...state.messages,
-          { id: userMessageId, role: "user", content: question },
-          { id: assistantMsgId, role: "assistant", content: "", isStreaming: true },
-        ],
-        input: "",
-        isStreaming: true,
-      }));
-
-      const res = await api.rag.ask({
-        projectId,
-        question,
-        chapterId,
-        includePriorMemory: memoryScope === "with-prior",
-      });
-      if (!res.success || !res.data?.runId) {
-        set({ isStreaming: false });
-        const errMsg = normalizeChatError(res.error?.code);
-        set((state) => ({
-          messages: state.messages.map((message) =>
-            message.id === assistantMsgId
-              ? { ...message, isStreaming: false, error: errMsg }
-              : message,
-          ),
-        }));
-        throw new Error(errMsg);
-      }
-
-      const runId = res.data.runId;
-      set({ ragRunId: runId });
-      set((state) => ({
-        messages: state.messages.map((message) =>
-          message.id === assistantMsgId ? { ...message, id: runId } : message,
-        ),
-      }));
-      cleanUpRagStreamListeners();
-
-      offStream = api.rag.onStream((payload) => {
-        if (payload.runId !== runId) return;
-        if (payload.delta) {
-          set((state) => ({
-            messages: state.messages.map((message) =>
-              message.id === runId
-                ? { ...message, content: message.content + payload.delta }
-                : message,
-            ),
-          }));
-        }
-
-        if (!payload.done) return;
-        set({ isStreaming: false, ragRunId: null });
-        cleanUpRagStreamListeners();
-
-        if (payload.result) {
-          set((state) => ({
-            messages: state.messages.map((message) =>
-              message.id === runId
-                ? {
-                    ...message,
-                    content: payload.result?.answer ?? message.content,
-                    evidence: payload.result?.evidence ?? [],
-                    grounding: payload.result?.grounding,
-                    safety: payload.result?.safety,
-                    narrativeMemory: payload.result?.narrativeMemory,
-                    isStreaming: false,
-                  }
-                : message,
-            ),
-          }));
-        }
-      }, runId);
-      offError = api.rag.onError((payload) => {
-        if (payload.runId && payload.runId !== runId) return;
-        set({ isStreaming: false, ragRunId: null });
-        cleanUpRagStreamListeners();
-        
-        const errMsg = normalizeChatError(payload.code);
-        set((state) => ({
-          messages: state.messages.map((message) =>
-            message.id === runId
-              ? { ...message, isStreaming: false, error: errMsg }
-              : message,
-          ),
-        }));
-      }, runId);
-    },
-    handleStop: async () => {
-      const { ragRunId } = get();
-      if (!ragRunId) return;
-
-      await api.rag.stop(ragRunId);
-      set({ isStreaming: false, ragRunId: null });
-      cleanUpRagStreamListeners();
-      set((state) => ({
-        messages: state.messages.map((message) =>
-          message.isStreaming ? { ...message, isStreaming: false } : message,
-        ),
-      }));
-    },
+    ...createRagChatActions(set, get),
 
     loadNarrativeSummaryStatus: async (projectId: string) => {
       set({ narrativeSummaryStatusLoading: true, narrativeSummaryStatusError: null });
