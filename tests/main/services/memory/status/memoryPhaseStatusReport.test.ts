@@ -15,6 +15,7 @@ import {
   memoryNarrativeSummary,
   project,
 } from "../../../../../src/main/infra/database/index.js";
+import { getMemoryRoadmapPhaseStatuses } from "../../../../../src/main/services/features/memory/status/index.js";
 
 const mocked = vi.hoisted(() => ({
   verifyMemoryCanonicalPackageSync: vi.fn(),
@@ -29,8 +30,9 @@ vi.mock(
 
 describe("getMemoryPhaseStatusReport", () => {
   it("reports phase readiness and review remaining counts from live DB rows", async () => {
-    const { getMemoryPhaseStatusReport } =
-      await import("../../../../../src/main/services/features/memory/status/memoryPhaseStatusReport.js");
+    const { getMemoryPhaseStatusReport } = await import(
+      "../../../../../src/main/services/features/memory/status/memoryPhaseStatusReport.js"
+    );
     const projectId = crypto.randomUUID();
     const chapterId = crypto.randomUUID();
     const chunkId = crypto.randomUUID();
@@ -229,5 +231,54 @@ describe("getMemoryPhaseStatusReport", () => {
       ["phase8-summary", "ready"],
       ["phase9-package-sync", "ready"],
     ]);
+    expect(report.roadmapPhases.map((phase) => phase.phase)).toEqual([
+      "phase6-package-durability",
+      "phase7-beta-validation",
+    ]);
+  });
+
+  it("exposes the current Phase 6 and Phase 7 roadmap status separately from DB readiness", () => {
+    const phases = getMemoryRoadmapPhaseStatuses();
+
+    expect(phases.map((phase) => phase.phase)).toEqual([
+      "phase6-package-durability",
+      "phase7-beta-validation",
+    ]);
+    expect(phases[0]).toMatchObject({
+      status: "verified-with-known-gaps",
+      architectureAlignment: {
+        status: "aligned",
+      },
+    });
+    expect(phases[0]?.completed).toEqual(
+      expect.arrayContaining([
+        "canonical sync source id mismatch reporting",
+        "actual .luie memory canonical write/read roundtrip",
+        "crash-safe package write cleanup and recovery coverage",
+      ]),
+    );
+    expect(phases[0]?.remaining).toEqual(
+      expect.arrayContaining([
+        "renderer/UI package durability E2E",
+        "restart recovery UI notice verification",
+      ]),
+    );
+
+    expect(phases[1]).toMatchObject({
+      status: "verified-with-known-gaps",
+      architectureAlignment: {
+        status: "aligned",
+      },
+    });
+    expect(phases[1]?.completed).toEqual(
+      expect.arrayContaining([
+        "writer task benchmark taxonomy and metric summary",
+        "persisted writer benchmark threshold assessment CLI",
+        "writer feedback DB, IPC/preload API, UI buttons, and rejected-answer guard",
+      ]),
+    );
+    expect(phases[1]?.remaining).toContain(
+      "real writer beta data threshold calibration",
+    );
   });
 });

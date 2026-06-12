@@ -1784,3 +1784,33 @@ pnpm run typecheck
 
 - `--assert-thresholds` 검증은 의도적으로 exit 1을 반환했다. 현재 beta sample이 없어 `insufficient_beta_data`가 맞다.
 - 실제 작가 베타 데이터 기반 threshold 값은 아직 확정하지 않았다. 근거가 부족하다.
+
+### 2026-06-13. Phase 6/7 roadmap status surface 1차 완료
+
+확인된 사실:
+
+- `memory:phase-status`가 반환하는 main memory status report에 `roadmapPhases`를 추가했다.
+- `roadmapPhases`는 현재 문서 기준 Phase 6 package durability와 Phase 7 writer beta validation의 완료된 범위/남은 범위/아키텍처 부합 여부를 DB readiness 지표와 분리해서 노출한다.
+- Phase 6은 package durability targeted coverage가 있으나 renderer/UI package durability E2E와 restart recovery UI notice 검증은 남은 범위로 표시한다.
+- Phase 7은 writer benchmark, persisted threshold assessment CLI, feedback loop가 있으나 실제 작가 베타 데이터 기반 threshold calibration은 남은 범위로 표시한다.
+
+아키텍처 부합:
+
+- 상태 리포트는 main memory domain 안에 유지했다.
+- script는 기존 `getMemoryPhaseStatusReport` 호출 경로를 유지하며 새 report field만 직렬화한다.
+- IPC, preload API, renderer, DB schema, `.luie` package format은 변경하지 않았다.
+
+아키텍처 불일치 또는 제한:
+
+- 기존 `memory:phase-status`의 `phases` 배열은 여전히 오래된 DB readiness 축(`phase1-eval`~`phase9-package-sync`)이다. 이번 변경은 이를 제거하지 않고 `roadmapPhases`를 추가해 현재 Phase 6/7 문서 체계를 별도 surface로 노출했다.
+- 실제 작가 베타 데이터 기반 threshold 값은 아직 확정하지 않았다. 근거가 부족하다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/status/memoryPhaseStatusReport.test.ts tests/scripts/memoryPhaseStatusRunner.test.ts
+pnpm exec eslint src/main/services/features/memory/status/memoryPhaseStatusReport.ts src/main/services/features/memory/status/index.ts tests/main/services/memory/status/memoryPhaseStatusReport.test.ts tests/scripts/memoryPhaseStatusRunner.test.ts
+pnpm run typecheck
+pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
+rg -n "roadmapPhases|phase6-package-durability|phase7-beta-validation|real writer beta data threshold calibration|renderer/UI package durability E2E" tests/.tmp/memory-phase-status-roadmap.json
+```
