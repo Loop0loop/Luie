@@ -259,13 +259,15 @@ const flushAsync = async () => {
 const waitForDom = async (
   getElement: () => Element | null,
   message: string,
+  attempt = 0,
 ): Promise<Element> => {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
-    const element = getElement();
-    if (element) return element;
-    await flushAsync();
+  const element = getElement();
+  if (element) return element;
+  if (attempt >= 20) {
+    throw new Error(`${message}. Current text: ${document.body.textContent ?? ""}`);
   }
-  throw new Error(`${message}. Current text: ${document.body.textContent ?? ""}`);
+  await flushAsync();
+  return waitForDom(getElement, message, attempt + 1);
 };
 
 const clickButtonByText = async (
@@ -323,6 +325,7 @@ describe("app operational scenarios", () => {
     mocked.api.fs.approveProjectPath.mockReset();
     mocked.api.project.openLuie.mockReset();
     mocked.api.snapshot.importFromFile.mockReset();
+    mocked.setRecoveryState.mockReset();
   });
 
   afterEach(() => {
@@ -505,6 +508,75 @@ describe("app operational scenarios", () => {
     expect(mocked.showToast).toHaveBeenCalledWith(
       "Opened the restored .luie file.",
       "success",
+    );
+  });
+
+  it("surfaces corrupted .luie recovery notice after opening a recovered package", async () => {
+    mocked.api.app.getBootstrapStatus.mockResolvedValue({
+      success: true,
+      data: {
+        isReady: true,
+      },
+    });
+    mocked.api.fs.selectFile.mockResolvedValue({
+      success: true,
+      data: "/tmp/corrupt.luie",
+    });
+    mocked.api.project.openLuie.mockResolvedValue({
+      success: true,
+      data: {
+        project: {
+          id: "project-recovered",
+          title: "Recovered Corrupt Draft",
+          projectPath: "/tmp/recovered-corrupt.luie",
+          attachmentStatus: "attached",
+          pathMissing: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        recovery: true,
+        recoveryPath: "/tmp/recovered-corrupt.luie",
+        recoveryReason: "corrupt",
+      },
+    });
+    mocked.api.fs.approveProjectPath.mockResolvedValue({
+      success: true,
+      data: {
+        normalizedPath: "/tmp/recovered-corrupt.luie",
+      },
+    });
+
+    const view = mountView(<App />);
+    mountedViews.push(view);
+    await flushAsync();
+
+    await act(async () => {
+      const onOpenLuieFile = mocked.projectTemplateProps?.onOpenLuieFile as
+        | (() => Promise<void>)
+        | undefined;
+      await onOpenLuieFile?.();
+    });
+    await flushAsync();
+
+    expect(mocked.api.fs.selectFile).toHaveBeenCalledWith({
+      title: "Open .luie",
+      filters: [{ name: "Luie Project", extensions: ["luie"] }],
+    });
+    expect(mocked.api.project.openLuie).toHaveBeenCalledWith(
+      "/tmp/corrupt.luie",
+    );
+    expect(mocked.projectState.setCurrentProject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "project-recovered",
+        projectPath: "/tmp/recovered-corrupt.luie",
+        attachmentStatus: "attached",
+        pathMissing: false,
+      }),
+    );
+    expect(mocked.setRecoveryState).toHaveBeenCalledWith(
+      true,
+      "corrupt",
+      "/tmp/recovered-corrupt.luie",
     );
   });
 

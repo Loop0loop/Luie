@@ -1814,3 +1814,34 @@ pnpm run typecheck
 pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
 rg -n "roadmapPhases|phase6-package-durability|phase7-beta-validation|real writer beta data threshold calibration|renderer/UI package durability E2E" tests/.tmp/memory-phase-status-roadmap.json
 ```
+
+### 2026-06-13. Phase 6-3 corrupted package recovery UI notice 검증
+
+확인된 사실:
+
+- `App`의 `.luie` open flow가 `project.openLuie`의 `recovery/recoveryReason/recoveryPath` 응답을 `useDataRecoveryStore.setRecoveryState`로 전달하는 DOM 운영 시나리오 테스트를 추가했다.
+- corrupted `.luie` open 결과가 `recoveryReason: "corrupt"`와 복구된 `.recovered-*` 계열 path를 renderer recovery notice state로 넘기는 경로를 검증한다.
+- Phase 6 roadmap status에서 `restart recovery UI notice verification`을 남은 범위에서 제거하고, `corrupt .luie open recovery notice verification`을 완료 범위로 반영했다.
+
+아키텍처 부합:
+
+- renderer는 기존 preload `project.openLuie` capability 응답만 사용한다.
+- Node/Electron 직접 접근, IPC channel 추가, DB schema 변경, `.luie` package format 변경은 없다.
+- UI notice state는 기존 renderer workspace store를 사용한다.
+
+아키텍처 불일치 또는 제한:
+
+- 이 검증은 jsdom DOM 운영 시나리오이며, 실제 Electron 앱 restart와 사용자의 실제 클릭을 포함하는 Playwright/E2E는 아니다.
+- 실제 renderer/UI 조작까지 포함한 package durability E2E는 추가 보강 대상으로 남아 있다.
+
+검증:
+
+```text
+SKIP_DB_TEST_SETUP=1 pnpm vitest tests/dom/appOperationalScenarios.test.tsx -t "surfaces corrupted .luie recovery notice"
+SKIP_DB_TEST_SETUP=1 pnpm vitest tests/dom/appOperationalScenarios.test.tsx
+pnpm vitest tests/main/services/memory/status/memoryPhaseStatusReport.test.ts tests/scripts/memoryPhaseStatusRunner.test.ts
+pnpm exec eslint src/main/services/features/memory/status/memoryPhaseStatusReport.ts src/main/services/features/memory/status/index.ts tests/main/services/memory/status/memoryPhaseStatusReport.test.ts tests/scripts/memoryPhaseStatusRunner.test.ts tests/dom/appOperationalScenarios.test.tsx
+pnpm run typecheck
+pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
+rg -n "corrupt \\.luie open recovery notice verification|restart recovery UI notice verification|renderer/UI package durability E2E" tests/.tmp/memory-phase-status-roadmap.json
+```

@@ -255,14 +255,10 @@ describe("getMemoryPhaseStatusReport", () => {
         "canonical sync source id mismatch reporting",
         "actual .luie memory canonical write/read roundtrip",
         "crash-safe package write cleanup and recovery coverage",
+        "corrupt .luie open recovery notice verification",
       ]),
     );
-    expect(phases[0]?.remaining).toEqual(
-      expect.arrayContaining([
-        "renderer/UI package durability E2E",
-        "restart recovery UI notice verification",
-      ]),
-    );
+    expect(phases[0]?.remaining).toEqual(["renderer/UI package durability E2E"]);
 
     expect(phases[1]).toMatchObject({
       status: "verified-with-known-gaps",

@@ -83,11 +83,9 @@ const MEMORY_ROADMAP_PHASE_STATUSES: MemoryRoadmapPhaseStatus[] = [
       "actual .luie memory canonical write/read roundtrip",
       "schema version compatibility and unknown row field discard policy",
       "crash-safe package write cleanup and recovery coverage",
+      "corrupt .luie open recovery notice verification",
     ],
-    remaining: [
-      "renderer/UI package durability E2E",
-      "restart recovery UI notice verification",
-    ],
+    remaining: ["renderer/UI package durability E2E"],
     architectureAlignment: {
       status: "aligned",
       notes: [
