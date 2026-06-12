@@ -7,7 +7,7 @@
   "author": "Luie Team",
   "license": "MIT",
   "private": true,
-  "packageManager": "pnpm@11.5.1",
+  "packageManager": "pnpm@11.5.3",
   "scripts": {
     "predev": "pnpm rebuild:electron",
     "dev": "electron-vite",
