@@ -4,7 +4,7 @@ import "dotenv/config";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { db } from "../src/main/infra/database/index.js";
-import { getMemoryPhaseStatusReport } from "../src/main/services/features/memory/status/memoryPhaseStatusReport.js";
+import { getMemoryPhaseStatusReport } from "../src/main/services/features/memory/status/index.js";
 
 type CliOptions = {
   projectId: string;

@@ -4,8 +4,10 @@ import { writeFile } from "node:fs/promises";
 import { db } from "../src/main/database/main/databaseService.js";
 import { buildLayer3Evidence } from "../src/main/services/features/rag/internal/contextAssembler.layer3.js";
 import { buildRagGrounding } from "../src/main/services/features/rag/grounding.js";
-import { runLiveMemoryEvalSuite } from "../src/main/services/features/memory/eval/memoryEvalRunner.js";
-import { summarizeMemoryEvalOptimizationFailures } from "../src/main/services/features/memory/eval/memoryEvalOptimizationGuard.js";
+import {
+  runLiveMemoryEvalSuite,
+  summarizeMemoryEvalOptimizationFailures,
+} from "../src/main/services/features/memory/eval/index.js";
 import {
   resolveSearchOptimizationPolicy,
   type SearchOptimizationMode,

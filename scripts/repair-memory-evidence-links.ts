@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
 import { db } from "../src/main/database/main/databaseService.js";
-import { repairMemoryEvidenceChunkLinks } from "../src/main/services/features/memory/repair/memoryEvidenceChunkLinkRepair.js";
+import { repairMemoryEvidenceChunkLinks } from "../src/main/services/features/memory/repair/index.js";
 
 type CliOptions = {
   projectId: string;

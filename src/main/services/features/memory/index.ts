@@ -1,8 +1,20 @@
+export { chapterSummaryProjector } from "./chapterSummaryProjector.js";
+export { embeddingProjector } from "./embeddingProjector.js";
+export { memoryProjectionService } from "./memoryProjectionService.js";
+export * from "./benchmark/index.js";
+export * from "./entity/index.js";
+export * from "./episode/index.js";
+export * from "./eval/index.js";
+export * from "./job/index.js";
+export * from "./memoryJobConstants.js";
+export * from "./persistence/index.js";
+export * from "./projection/index.js";
 export {
-  cancelMemoryBuildJobs,
-  getMemoryBuildJobProgress,
-  pauseMemoryBuildJobs,
-  resumeMemoryBuildJobs,
-} from "./jobControl.js";
-export { narrativeMemoryQueryService } from "./query/narrativeMemoryQueryService.js";
-export { getNarrativeSummaryStatus } from "./summary/memoryNarrativeSummaryStatus.js";
+  formatNarrativeMemoryQueryResult,
+  narrativeMemoryQueryService,
+} from "./query/index.js";
+export * from "./repair/index.js";
+export * from "./review/index.js";
+export * from "./status/index.js";
+export * from "./summary/index.js";
+export * from "./temporal/index.js";

@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
 import { db } from "../src/main/database/main/databaseService.js";
-import { getMemoryCanonicalExportAudit } from "../src/main/services/features/memory/persistence/memoryCanonicalExportAudit.js";
+import { getMemoryCanonicalExportAudit } from "../src/main/services/features/memory/persistence/index.js";
 
 function parseProjectId(argv: string[]): string {
   for (let index = 0; index < argv.length; index += 1) {

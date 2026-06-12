@@ -10,7 +10,7 @@ import {
   type MemoryEntityExtractionChunk,
   type MemoryEntityExtractor,
   type MemoryEntityExtractorCandidate,
-} from "../src/main/services/features/memory/entity/memoryEntityExtractionRunner.js";
+} from "../src/main/services/features/memory/entity/index.js";
 
 type CliOptions = {
   projectId: string;

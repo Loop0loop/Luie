@@ -3,7 +3,7 @@
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { db } from "../src/main/database/main/databaseService.js";
-import { getMemoryReviewBacklogReport } from "../src/main/services/features/memory/review/memoryReviewBacklogReport.js";
+import { getMemoryReviewBacklogReport } from "../src/main/services/features/memory/review/index.js";
 
 type CliOptions = {
   projectId: string;

@@ -10,7 +10,7 @@ import {
   type MemoryEpisodeExtractionChunk,
   type MemoryEpisodeExtractor,
   type MemoryEpisodeExtractorCandidate,
-} from "../src/main/services/features/memory/episode/memoryEpisodeExtractionProcessor.js";
+} from "../src/main/services/features/memory/episode/index.js";
 
 type CliOptions = {
   projectId: string;

@@ -2,6 +2,7 @@ import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { useAnalysisStore } from "@renderer/features/research/stores/analysisStore";
+import { useDialog } from "@shared/ui/useDialog";
 import type {
   AnalysisConflictItem,
   AnalysisEntityAliasReviewItem,
@@ -25,6 +26,7 @@ export function useMemoryReviewQueues({
   memoryScope,
 }: UseMemoryReviewQueuesInput) {
   const { t } = useTranslation();
+  const dialog = useDialog();
 
   const {
     showNarrativeSummaryStatus,
@@ -222,25 +224,35 @@ export function useMemoryReviewQueues({
   }, [projectId, showStaleEvidenceReviewQueue, loadStaleEvidenceReviewQueue]);
 
   const requestRejectReason = useCallback(
-    (type: "fact" | "episode" | "entity" | "alias"): string | null => {
+    async (
+      type: "fact" | "episode" | "entity" | "alias",
+    ): Promise<string | null> => {
       const promptMessage = t(`analysis.review.queue.${type}.rejectReasonPrompt`);
-      const reason = window.prompt(promptMessage);
+      const reason = await dialog.prompt({
+        title: promptMessage,
+        message: promptMessage,
+      });
       const trimmed = reason?.trim() ?? "";
       return trimmed.length > 0 ? trimmed : null;
     },
-    [t],
+    [dialog, t],
   );
 
   const requestStaleEvidenceNote = useCallback(
-    (action: AnalysisStaleEvidenceReviewAction): string | null => {
+    async (
+      action: AnalysisStaleEvidenceReviewAction,
+    ): Promise<string | null> => {
       const promptMessage = t(
         `analysis.review.queue.staleEvidence.${action}ReasonPrompt`,
       );
-      const reason = window.prompt(promptMessage);
+      const reason = await dialog.prompt({
+        title: promptMessage,
+        message: promptMessage,
+      });
       const trimmed = reason?.trim() ?? "";
       return trimmed.length > 0 ? trimmed : null;
     },
-    [t],
+    [dialog, t],
   );
 
   const onResolveConflict = useCallback(
@@ -296,7 +308,7 @@ export function useMemoryReviewQueues({
   const onRejectFact = useCallback(
     async (item: AnalysisFactReviewItem) => {
       if (!projectId) return;
-      const reason = requestRejectReason("fact");
+      const reason = await requestRejectReason("fact");
       if (!reason) return;
       await handleRejectFact(projectId, item, reason);
     },
@@ -314,7 +326,7 @@ export function useMemoryReviewQueues({
   const onRejectEpisode = useCallback(
     async (item: AnalysisEpisodeReviewItem) => {
       if (!projectId) return;
-      const reason = requestRejectReason("episode");
+      const reason = await requestRejectReason("episode");
       if (!reason) return;
       await handleRejectEpisode(projectId, item, reason);
     },
@@ -332,7 +344,7 @@ export function useMemoryReviewQueues({
   const onRejectEntity = useCallback(
     async (item: AnalysisEntityReviewItem) => {
       if (!projectId) return;
-      const reason = requestRejectReason("entity");
+      const reason = await requestRejectReason("entity");
       if (!reason) return;
       await handleRejectEntity(projectId, item, reason);
     },
@@ -350,7 +362,7 @@ export function useMemoryReviewQueues({
   const onRejectEntityAlias = useCallback(
     async (item: AnalysisEntityAliasReviewItem) => {
       if (!projectId) return;
-      const reason = requestRejectReason("alias");
+      const reason = await requestRejectReason("alias");
       if (!reason) return;
       await handleRejectEntityAlias(projectId, item, reason);
     },
@@ -379,7 +391,7 @@ export function useMemoryReviewQueues({
       action: AnalysisStaleEvidenceReviewAction,
     ) => {
       if (!projectId) return;
-      const reviewerNote = requestStaleEvidenceNote(action);
+      const reviewerNote = await requestStaleEvidenceNote(action);
       await handleReviewStaleEvidence(projectId, item, action, reviewerNote);
     },
     [projectId, handleReviewStaleEvidence, requestStaleEvidenceNote],

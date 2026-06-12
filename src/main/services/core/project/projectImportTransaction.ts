@@ -19,7 +19,7 @@ import type {
 import {
   applyMemoryCanonicalPackagePayload,
   type MemoryCanonicalPackagePayload,
-} from "../../features/memory/persistence/memoryCanonicalPackage.js";
+} from "../../features/memory/persistence/index.js";
 
 
 const { project, projectSettings, chapter, character, term, faction, event, worldEntity, entityRelation, snapshot: snapshotTable, worldDocument: worldDocumentTable, scrapMemo, projectAttachment } = schema;

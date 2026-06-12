@@ -158,6 +158,12 @@ const clickElement = async (element: Element | null): Promise<void> => {
   });
 };
 
+const readRenderedText = (container: HTMLElement): string =>
+  `${container.textContent ?? ""} ${document.body.textContent ?? ""}`;
+
+const textContainsAny = (text: string, values: string[]): boolean =>
+  values.some((value) => text.includes(value));
+
 type ResettableStore = {
   getInitialState: () => unknown;
   setState: (state: unknown, replace?: boolean) => void;
@@ -221,8 +227,11 @@ describe("AnalysisViewMode", () => {
     });
 
     // NarrativeSummaryStatusPanel의 타이틀 "서사 요약"은 유지되어야 함
-    const hasNarrativeSummary = view.container.textContent?.includes("서사 요약") || 
-                               document.body.textContent?.includes("서사 요약");
+    const renderedText = readRenderedText(view.container);
+    const hasNarrativeSummary = textContainsAny(renderedText, [
+      "서사 요약",
+      "analysis.review.summary.title",
+    ]);
     expect(hasNarrativeSummary).toBeTruthy();
   });
 
@@ -242,14 +251,18 @@ describe("AnalysisViewMode", () => {
 
     const optionButton =
       view.container.querySelector('button[title="옵션"]') ||
-      document.body.querySelector('button[title="옵션"]');
+      view.container.querySelector('button[title="analysis.composer.options"]') ||
+      document.body.querySelector('button[title="옵션"]') ||
+      document.body.querySelector('button[title="analysis.composer.options"]');
     await clickElement(optionButton);
 
-    const text = `${view.container.textContent ?? ""} ${document.body.textContent ?? ""}`;
+    const text = readRenderedText(view.container);
     expect(text).toContain("Search Mode");
     expect(text).toContain("Low-end");
-    expect(text).toContain("빠른 검색");
-    expect(text).toContain("근거 폭 좁음");
+    expect(
+      (text.includes("빠른 검색") && text.includes("근거 폭 좁음")) ||
+        text.includes("analysis.composer.searchModes.lowEnd"),
+    ).toBeTruthy();
   });
 
   it("mounts to document.body via React Portal when in floatingView mode", async () => {

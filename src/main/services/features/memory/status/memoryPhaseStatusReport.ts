@@ -13,7 +13,7 @@ import {
   memoryFactEvidence,
   memoryNarrativeSummary,
 } from "../../../../infra/database/index.js";
-import { verifyMemoryCanonicalPackageSync } from "../persistence/memoryCanonicalPackageSyncVerifier.js";
+import { verifyMemoryCanonicalPackageSync } from "../persistence/index.js";
 
 type PhaseStatus = "ready" | "needs-review" | "missing" | "out-of-sync";
 

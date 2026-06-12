@@ -11,7 +11,7 @@ import {
   type MemoryTemporalFactExtractionEvidence,
   type MemoryTemporalFactExtractor,
   type MemoryTemporalFactExtractorCandidate,
-} from "../src/main/services/features/memory/temporal/memoryTemporalFactExtractionRunner.js";
+} from "../src/main/services/features/memory/temporal/index.js";
 
 type CliOptions = {
   projectId: string;

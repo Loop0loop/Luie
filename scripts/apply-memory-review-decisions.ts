@@ -8,7 +8,7 @@ import {
   applyMemoryReviewDecisions,
   validateMemoryReviewDecisionsAgainstDb,
   type MemoryReviewDecisionInput,
-} from "../src/main/services/features/memory/review/memoryReviewDecisionApply.js";
+} from "../src/main/services/features/memory/review/index.js";
 
 type CliOptions = {
   filePath: string;

@@ -5,10 +5,10 @@ import type { RuntimeRoutePlan } from "../src/shared/types/llmRuntime.js";
 import { db } from "../src/main/database/main/databaseService.js";
 import { generateUtilityText } from "../src/main/utility/llm/textGeneration.js";
 import {
+  generateProjectNarrativeSummaryHierarchy,
   materializeChapterSummariesForNarrativeMemory,
   type ChapterSummaryMaterializer,
-} from "../src/main/services/features/memory/summary/memoryChapterSummaryMaterialization.js";
-import { generateProjectNarrativeSummaryHierarchy } from "../src/main/services/features/memory/summary/memoryNarrativeSummaryRunner.js";
+} from "../src/main/services/features/memory/summary/index.js";
 
 type CliOptions = {
   projectId: string;

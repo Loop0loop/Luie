@@ -4,12 +4,12 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { db } from "../src/main/infra/database/index.js";
-import { materializeMemoryLongformBenchmark } from "../src/main/services/features/memory/benchmark/memoryLongformBenchmarkMaterialize.js";
 import {
   buildMemoryLongformBenchmarkSeed,
+  materializeMemoryLongformBenchmark,
   MEMORY_LONGFORM_BENCHMARK_PROFILES,
   type MemoryLongformBenchmarkProfileName,
-} from "../src/main/services/features/memory/benchmark/memoryLongformBenchmarkSeed.js";
+} from "../src/main/services/features/memory/benchmark/index.js";
 
 type CliOptions = {
   profile: MemoryLongformBenchmarkProfileName;

@@ -3,7 +3,7 @@ import {
   MEMORY_CANONICAL_EXPORTABLE_TABLES,
   MEMORY_STATUS_REQUIRED_EXPORT_TABLES,
   isMemoryCanonicalExportableStatus,
-} from "../../features/memory/persistence/memoryPersistencePolicy.js";
+} from "../../features/memory/persistence/index.js";
 
 export const LuieMetaSchema = z
   .object({

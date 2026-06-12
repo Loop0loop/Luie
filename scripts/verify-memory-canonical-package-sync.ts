@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
 import { db } from "../src/main/database/main/databaseService.js";
-import { verifyMemoryCanonicalPackageSync } from "../src/main/services/features/memory/persistence/memoryCanonicalPackageSyncVerifier.js";
+import { verifyMemoryCanonicalPackageSync } from "../src/main/services/features/memory/persistence/index.js";
 
 function parseProjectId(argv: string[]): string {
   for (let index = 0; index < argv.length; index += 1) {

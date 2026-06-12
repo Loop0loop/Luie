@@ -15,7 +15,7 @@ import {
 import {
   formatNarrativeMemoryQueryResult,
   narrativeMemoryQueryService,
-} from "../memory/query/narrativeMemoryQueryService.js";
+} from "../memory/query/index.js";
 import type { RagEmbeddingProvider } from "./internal/contextAssembler.types.js";
 import { loadRagPromptConfig } from "./ragPromptConfig.js";
 import { resolveSearchOptimizationPolicy } from "../search/searchOptimizationPolicy.js";

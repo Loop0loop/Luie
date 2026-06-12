@@ -25,7 +25,7 @@ describe("AnalysisSection conflict resolution UI", () => {
     const storeActionsSource = readFileSync(
       resolve(
         process.cwd(),
-        "src/renderer/src/features/research/stores/analysis/analysisStore.actions.ts",
+        "src/renderer/src/features/research/stores/analysis/actions/conflictQueueActions.ts",
       ),
       "utf8",
     );

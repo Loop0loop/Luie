@@ -13,7 +13,7 @@ import {
   createDefaultMemoryEpisodeCalibrationCases,
   runMemoryEpisodeExtractorCalibration,
   type MemoryEpisodeExtractor,
-} from "../src/main/services/features/memory/episode/memoryEpisodeExtractorCalibration.js";
+} from "../src/main/services/features/memory/episode/index.js";
 import {
   createDefaultNarrativeMemoryIntentCalibrationCases,
   runNarrativeMemoryIntentClassifierCalibration,

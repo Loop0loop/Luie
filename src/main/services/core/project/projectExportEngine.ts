@@ -30,7 +30,7 @@ import {
   type LoggerLike,
   type ParsedWorldPayload,
 } from "./exportEngine/index.js";
-import { buildMemoryCanonicalPackagePayload } from "../../features/memory/persistence/memoryCanonicalPackage.js";
+import { buildMemoryCanonicalPackagePayload } from "../../features/memory/persistence/index.js";
 
 const resolveExportPath = (
   projectId: string,

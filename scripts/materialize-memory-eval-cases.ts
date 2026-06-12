@@ -1,15 +1,15 @@
 #!/usr/bin/env tsx
 
 import { db } from "../src/main/database/main/databaseService.js";
-import { auditMemoryEvalCaseQuality } from "../src/main/services/features/memory/eval/memoryEvalQualityAudit.js";
 import {
+  auditMemoryEvalCaseQuality,
   countMemoryEvalCases,
   materializeMemoryEvalCasesFromEpisodeEvidence,
   materializeTemporalChapterEvalCasesFromChunks,
   materializeWriterPainPointEvalCasesFromChunks,
   repairLegacyEpisodeEvalCases,
   repairWriterPainPointTaxonomyEvalCases,
-} from "../src/main/services/features/memory/eval/memoryEvalCaseMaterialization.js";
+} from "../src/main/services/features/memory/eval/index.js";
 
 type CliOptions = {
   projectId: string;

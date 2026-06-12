@@ -22,13 +22,13 @@ import {
 } from "../episode/memoryEpisodeExtractorCalibration.js";
 import { llmEpisodeExtractor } from "../episode/memoryEpisodeLlmExtractor.js";
 import { runLiveMemoryEvalSuite } from "../eval/memoryEvalRunner.js";
-import { repairMemoryEvidenceChunkLinks } from "../repair/memoryEvidenceChunkLinkRepair.js";
+import { repairMemoryEvidenceChunkLinks } from "../repair/index.js";
 import {
   deferMemoryReviewStaleEvidence,
   getMemoryReviewBacklogReport,
   rejectMemoryReviewStaleEvidence,
   resolveMemoryReviewStaleEvidence,
-} from "../review/memoryReviewBacklogReport.js";
+} from "../review/index.js";
 import { formatNarrativeMemoryQueryResult } from "./internal/formatter.js";
 import { classifyNarrativeMemoryQueryPlanWithLlm } from "./internal/llmIntentClassifier.js";
 import { buildNarrativeMemoryQueryPlan } from "./internal/plan.js";

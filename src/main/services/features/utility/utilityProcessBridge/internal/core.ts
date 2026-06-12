@@ -11,12 +11,6 @@ import type {
 import { createLogger } from "../../../../../../shared/logger/index.js";
 import { resolveRuntimeRoutePlan } from "../../../../llm/modelRuntimeFactory.js";
 import {
-  REQUEST_TIMEOUT_ASK_MS,
-  REQUEST_TIMEOUT_EMBED_MS,
-  REQUEST_TIMEOUT_GENERATE_MS,
-  REQUEST_TIMEOUT_SIDECAR_START_MS,
-  REQUEST_TIMEOUT_STATUS_MS,
-  REQUEST_TIMEOUT_STOP_MS,
   START_TIMEOUT_MS,
   STOP_GRACE_MS,
   STOP_TIMEOUT_MS,
@@ -39,6 +33,11 @@ import {
   handleUtilityOutboundMessage,
   type UtilityProcessBridgeEventHost,
 } from "./eventHandlers.js";
+import {
+  buildUtilityRequestMessage,
+  getUtilityRequestTimeoutMs,
+  type UtilityRequestMethod,
+} from "./requestMessages.js";
 
 const logger = createLogger("UtilityProcessBridge");
 
@@ -327,114 +326,20 @@ export class UtilityProcessBridge {
   private async request(method: "sidecar.status"): Promise<unknown>;
   private async request(method: "sidecar.stop"): Promise<unknown>;
   private async request(
-    method:
-      | "ragQa.ask"
-      | "ragQa.stop"
-      | "embedding.embed"
-      | "llm.generateText"
-      | "sidecar.start"
-      | "sidecar.status"
-      | "sidecar.stop",
+    method: UtilityRequestMethod,
     payload?: unknown,
   ): Promise<unknown> {
     const child = this.utilityChild;
     if (!child) throw new Error("Utility process is not running");
     const requestId = this.nextRequestId();
     return await new Promise<unknown>((resolve, reject) => {
-      const timeoutMs =
-        method === "ragQa.stop" || method === "sidecar.stop"
-          ? REQUEST_TIMEOUT_STOP_MS
-          : method === "sidecar.status"
-            ? REQUEST_TIMEOUT_STATUS_MS
-            : method === "sidecar.start"
-              ? REQUEST_TIMEOUT_SIDECAR_START_MS
-              : method === "embedding.embed"
-                ? REQUEST_TIMEOUT_EMBED_MS
-                : method === "llm.generateText"
-                  ? REQUEST_TIMEOUT_GENERATE_MS
-                  : REQUEST_TIMEOUT_ASK_MS;
+      const timeoutMs = getUtilityRequestTimeoutMs(method);
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(requestId);
         reject(new Error(`Utility request timeout: ${method}`));
       }, timeoutMs);
       this.pendingRequests.set(requestId, { resolve, reject, timeout });
-      if (method === "ragQa.ask") {
-        child.postMessage({
-          type: "request",
-          requestId,
-          method: "ragQa.ask",
-          payload: payload as UtilityRagQaRequest,
-        } satisfies UtilityInboundMessage);
-        return;
-      }
-      if (method === "embedding.embed") {
-        child.postMessage({
-          type: "request",
-          requestId,
-          method: "embedding.embed",
-          payload: payload as {
-            projectId: string;
-            texts: string[];
-            runtimePlan?: UtilityRagQaRequest["runtimePlan"];
-          },
-        } satisfies UtilityInboundMessage);
-        return;
-      }
-      if (method === "llm.generateText") {
-        child.postMessage({
-          type: "request",
-          requestId,
-          method: "llm.generateText",
-          payload: payload as {
-            projectId: string;
-            prompt: string;
-            maxTokens?: number;
-            temperature?: number;
-            runtimePlan?: UtilityRagQaRequest["runtimePlan"];
-          },
-        } satisfies UtilityInboundMessage);
-        return;
-      }
-      if (method === "sidecar.start") {
-        child.postMessage({
-          type: "request",
-          requestId,
-          method: "sidecar.start",
-          payload: payload as {
-            binaryPath: string;
-            modelPath: string;
-            options?: {
-              gpuLayers?: number;
-              contextSize?: number;
-              cacheRamMiB?: number;
-              cacheReuse?: number;
-            };
-          },
-        } satisfies UtilityInboundMessage);
-        return;
-      }
-      if (method === "sidecar.stop") {
-        child.postMessage({
-          type: "request",
-          requestId,
-          method: "sidecar.stop",
-        } satisfies UtilityInboundMessage);
-        return;
-      }
-      if (method === "sidecar.status") {
-        child.postMessage({
-          type: "request",
-          requestId,
-          method: "sidecar.status",
-        } satisfies UtilityInboundMessage);
-        return;
-      }
-      child.postMessage({
-        type: "request",
-        requestId,
-        method,
-        payload: payload as { runId?: string } | undefined,
-      } satisfies UtilityInboundMessage);
+      child.postMessage(buildUtilityRequestMessage({ requestId, method, payload }));
     });
   }
 
