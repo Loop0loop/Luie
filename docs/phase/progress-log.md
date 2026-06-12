@@ -1753,3 +1753,34 @@ pnpm run typecheck
 
 - 실제 작가 베타 데이터 기반 threshold 값은 아직 확정하지 않았다. 근거가 부족하다.
 - gate를 실행하는 CLI/CI 명령은 아직 없다.
+
+### 2026-06-13. Phase 7-1 writer benchmark threshold assessment CLI 1차 완료
+
+확인된 사실:
+
+- `memory:assess-writer-benchmark` script를 추가했다.
+- CLI는 persisted `MemoryWriterTaskBenchmarkRun.summaryJson` rows를 읽어 `assessMemoryWriterTaskBenchmarkThresholds`를 실행한다.
+- `--minimum-beta-runs`, `--project-id`, `--out`, `--assert-thresholds`를 지원한다.
+- 현재 dev DB 기준 beta run count는 0이라 assessment status는 `insufficient_beta_data`다.
+- `--assert-thresholds`를 붙이면 `passed`가 아닌 상태에서 non-zero exit로 실패한다.
+
+아키텍처 부합:
+
+- threshold 판단 로직은 main memory benchmark domain pure policy를 재사용한다.
+- script는 DB에서 run artifact를 읽는 orchestration만 담당한다.
+- 실제 beta 데이터가 없는 상태에서 threshold 값을 확정하지 않는다.
+
+검증:
+
+```text
+pnpm vitest tests/scripts/memoryWriterBenchmarkThresholdRunner.test.ts
+pnpm exec tsx scripts/assess-memory-writer-benchmark-thresholds.ts --minimum-beta-runs 3
+pnpm exec tsx scripts/assess-memory-writer-benchmark-thresholds.ts --minimum-beta-runs 3 --assert-thresholds
+pnpm exec eslint scripts/assess-memory-writer-benchmark-thresholds.ts tests/scripts/memoryWriterBenchmarkThresholdRunner.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- `--assert-thresholds` 검증은 의도적으로 exit 1을 반환했다. 현재 beta sample이 없어 `insufficient_beta_data`가 맞다.
+- 실제 작가 베타 데이터 기반 threshold 값은 아직 확정하지 않았다. 근거가 부족하다.

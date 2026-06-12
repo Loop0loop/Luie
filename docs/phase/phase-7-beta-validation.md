@@ -34,6 +34,7 @@
 - live memory eval runner가 answerer 응답 시간을 측정해 writer task benchmark summary를 반환한다.
 - live memory eval runner가 writer task benchmark summary를 `MemoryWriterTaskBenchmarkRun` DB row로 저장한다.
 - writer task benchmark threshold calibration gate를 추가했다. beta sample 수가 최소 기준보다 적으면 `insufficient_beta_data`로 판단하고 threshold 확정/통과 판정을 하지 않는다.
+- persisted writer benchmark run을 읽어 threshold assessment를 실행하는 `memory:assess-writer-benchmark` CLI를 추가했다.
 
 아직 남은 범위:
 
