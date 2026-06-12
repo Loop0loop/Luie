@@ -28,7 +28,7 @@
 
 판단:
 
-- 현재는 **Phase 6-3 corrupted package recovery UI notice 검증 1차 완료 상태**다.
+- 현재는 **Phase 6 package durability E2E runner 복구 1차 완료 상태**다.
 - 다만 실제 renderer/UI 조작까지 포함한 package durability E2E는 추가 보강 대상으로 남아 있다.
 - 실제 작가 베타 데이터 기반 threshold 값은 아직 확정하지 않았다. 근거가 부족하다.
 

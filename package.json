@@ -66,7 +66,7 @@
     "bench:writing-loop:profiles": "node scripts/run-writing-loop-profiles.mjs",
     "bench:writing-loop:profiles:all": "node scripts/run-writing-loop-profiles.mjs --include-500",
     "bench:writing-loop:repeat": "node scripts/run-writing-loop-repeat.mjs",
-    "bench:writing-loop:fullprod": "pnpm exec playwright test --project=stress tests/e2e/writingLoop.fullprod.spec.ts",
+    "bench:writing-loop:fullprod": "node node_modules/@playwright/test/cli.js test --project=stress tests/e2e/writingLoop.fullprod.spec.ts",
     "bench:writing-loop:fullprod:repeat": "node scripts/run-writing-loop-fullprod-repeat.mjs",
     "resilience:luie:report": "node scripts/luie-resilience-report.mjs",
     "resilience:luie": "node scripts/luie-resilience-report.mjs --run-all",
@@ -99,10 +99,10 @@
     "test": "pnpm rebuild better-sqlite3 && vitest",
     "test:ui-mode-integrity": "SKIP_DB_TEST_SETUP=1 vitest tests/renderer/services/uiModeIntegrity.test.ts tests/renderer/services/layoutModeActions.integrity.test.ts tests/renderer/stores/editorStore.uiModeIntegrity.test.ts",
     "test:prepare": "electron-rebuild --force --version $(node -p \"require('electron/package.json').version\")",
-    "test:e2e": "pnpm test:prepare && pnpm build && playwright test --project=e2e",
-    "test:stress": "pnpm test:prepare && pnpm build && playwright test --project=stress",
-    "test:vr": "pnpm build && playwright test --project=visual",
-    "test:smoke": "pnpm test:prepare && pnpm build && playwright test --project=smoke"
+    "test:e2e": "pnpm test:prepare && pnpm build && node node_modules/@playwright/test/cli.js test --project=e2e",
+    "test:stress": "pnpm test:prepare && pnpm build && node node_modules/@playwright/test/cli.js test --project=stress",
+    "test:vr": "pnpm build && node node_modules/@playwright/test/cli.js test --project=visual",
+    "test:smoke": "pnpm test:prepare && pnpm build && node node_modules/@playwright/test/cli.js test --project=smoke"
   },
   "dependencies": {
     "@google/genai": "2.8.0",

@@ -1845,3 +1845,30 @@ pnpm run typecheck
 pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
 rg -n "corrupt \\.luie open recovery notice verification|restart recovery UI notice verification|renderer/UI package durability E2E" tests/.tmp/memory-phase-status-roadmap.json
 ```
+
+### 2026-06-13. Phase 6 package durability E2E runner 복구
+
+확인된 사실:
+
+- 기존 `pnpm exec playwright test` / `playwright test` 진입점은 현재 로컬 환경에서 `Playwright Test did not expect test() to be called here` 오류로 테스트 수집에 실패한다.
+- `node node_modules/@playwright/test/cli.js test` 진입점은 같은 `@playwright/test@1.60.0` runner로 정상 수집/실행된다.
+- package scripts의 Playwright 진입점을 `@playwright/test` CLI로 고정했다.
+- Electron smoke spec가 실제 GUI 실행에서 통과하는 것을 확인했다.
+
+아키텍처 부합:
+
+- 앱 코드, IPC, preload API, DB schema, `.luie` package format은 변경하지 않았다.
+- 변경은 E2E runner script 계약과 그 회귀 테스트에 한정했다.
+
+아키텍처 불일치 또는 제한:
+
+- 이 단계는 E2E runner 복구이며, package durability full UI E2E 자체를 추가한 것은 아니다.
+- Electron GUI 실행은 sandbox 밖 권한이 필요했다.
+
+검증:
+
+```text
+pnpm vitest tests/scripts/playwrightCliRunner.test.ts
+node node_modules/@playwright/test/cli.js test --list --project=smoke
+node node_modules/@playwright/test/cli.js test --project=smoke tests/e2e/smoke.spec.ts
+```
