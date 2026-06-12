@@ -256,9 +256,17 @@ describe("getMemoryPhaseStatusReport", () => {
         "actual .luie memory canonical write/read roundtrip",
         "crash-safe package write cleanup and recovery coverage",
         "corrupt .luie open recovery notice verification",
+        "renderer UI package durability E2E for corrupt package recovery",
       ]),
     );
-    expect(phases[0]?.remaining).toEqual(["renderer/UI package durability E2E"]);
+    expect(phases[0]?.remaining).toEqual(
+      expect.arrayContaining([
+        "source id mismatch auto repair",
+        "schema version fixture matrix beyond v1 and missing-version",
+        "unknown row field import UI notice",
+        "forced app shutdown crash-safe export E2E",
+      ]),
+    );
 
     expect(phases[1]).toMatchObject({
       status: "verified-with-known-gaps",

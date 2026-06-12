@@ -26,11 +26,11 @@
 - 같은 canonical row id가 있어도 FK/source id 필드가 다르면 `sourceIdMismatches`로 보고한다.
 - canonical package payload를 실제 DB에 import한 뒤 다시 payload로 rebuild해 source id mismatch가 0인지 검증한다.
 - canonical package payload를 실제 `.luie` sqlite-v2 file에 write/read한 뒤 DB import/rebuild 비교까지 이어지는 왕복 검증을 추가했다.
+- corrupted `.luie` package open을 실제 Electron renderer UI 클릭으로 실행하고 recovery banner가 표시되는지 E2E로 검증했다.
 
 아직 남은 범위:
 
 - source id mismatch 자동 복구는 하지 않는다.
-- 실제 renderer/UI 조작까지 포함한 package durability E2E는 추가 보강 대상이다.
 
 ### Phase 6-2. migration compatibility
 
@@ -74,7 +74,8 @@
 - atomic replace가 target을 backup으로 옮긴 뒤 새 target rename에 실패하면 기존 파일을 복구하는지 검증한다.
 - corrupted `.luie` package open 시 기존 DB project state에서 `.recovered-*` sqlite-v2 package를 생성하고 attachment path를 복구 경로로 옮기는지 검증한다.
 - corrupted `.luie` package open 결과가 renderer의 recovery notice state로 연결되는지 DOM 운영 시나리오 테스트로 검증한다.
+- corrupted `.luie` package open을 실제 Electron renderer UI 클릭으로 실행하고 recovery banner가 표시되는지 E2E로 검증했다.
 
 아직 남은 범위:
 
-- 실제 renderer/UI 조작까지 포함한 package durability E2E는 추가 보강 대상이다.
+- crash-safe export 자체의 실제 앱 강제 종료 시나리오는 아직 별도 E2E로 검증하지 않았다.

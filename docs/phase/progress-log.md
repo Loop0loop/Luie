@@ -1872,3 +1872,34 @@ pnpm vitest tests/scripts/playwrightCliRunner.test.ts
 node node_modules/@playwright/test/cli.js test --list --project=smoke
 node node_modules/@playwright/test/cli.js test --project=smoke tests/e2e/smoke.spec.ts
 ```
+
+### 2026-06-13. Phase 6 package durability renderer/UI E2E 1차 완료
+
+확인된 사실:
+
+- `tests/e2e/packageDurability.phase6.spec.ts`를 추가했다.
+- E2E는 Electron 앱을 실제로 띄운 뒤 renderer의 `.luie` 열기 버튼을 클릭한다.
+- 테스트는 DB에 attached project를 만들고, 해당 `.luie` 파일을 고의로 손상시킨 뒤, native open dialog를 테스트 경로로 대체한다.
+- `project.openLuie`의 corrupted package recovery 경로가 `.recovered-*` package를 만들고, renderer가 editor로 전환된 뒤 recovery banner를 표시하는지 확인한다.
+
+아키텍처 부합:
+
+- renderer는 기존 UI 버튼과 preload `project.openLuie` capability를 사용한다.
+- main은 기존 project/package recovery service를 사용한다.
+- IPC channel, preload API, DB schema, `.luie` package format은 변경하지 않았다.
+
+아키텍처 불일치 또는 제한:
+
+- native file dialog는 자동화 안정성을 위해 Electron main process에서 테스트 경로를 반환하도록 대체했다.
+- 실제 앱 강제 종료 중 export가 끊기는 시나리오는 아직 별도 E2E로 검증하지 않았다.
+
+검증:
+
+```text
+node node_modules/@playwright/test/cli.js test --project=e2e tests/e2e/packageDurability.phase6.spec.ts
+pnpm vitest tests/main/services/memory/status/memoryPhaseStatusReport.test.ts tests/scripts/playwrightCliRunner.test.ts
+pnpm exec eslint tests/e2e/packageDurability.phase6.spec.ts src/main/services/features/memory/status/memoryPhaseStatusReport.ts tests/main/services/memory/status/memoryPhaseStatusReport.test.ts tests/scripts/playwrightCliRunner.test.ts
+pnpm run typecheck
+pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
+rg -n "renderer UI package durability E2E|renderer/UI package durability E2E|forced app shutdown crash-safe export E2E|source id mismatch auto repair|unknown row field import UI notice" tests/.tmp/memory-phase-status-roadmap.json
+```

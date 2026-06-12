@@ -84,8 +84,14 @@ const MEMORY_ROADMAP_PHASE_STATUSES: MemoryRoadmapPhaseStatus[] = [
       "schema version compatibility and unknown row field discard policy",
       "crash-safe package write cleanup and recovery coverage",
       "corrupt .luie open recovery notice verification",
+      "renderer UI package durability E2E for corrupt package recovery",
     ],
-    remaining: ["renderer/UI package durability E2E"],
+    remaining: [
+      "source id mismatch auto repair",
+      "schema version fixture matrix beyond v1 and missing-version",
+      "unknown row field import UI notice",
+      "forced app shutdown crash-safe export E2E",
+    ],
     architectureAlignment: {
       status: "aligned",
       notes: [
