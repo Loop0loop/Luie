@@ -156,6 +156,83 @@ describe("recordMemoryEvalFeedback", () => {
     ]);
   });
 
+  it("materializes helpful evidence feedback onto an existing eval case", async () => {
+    const projectId = crypto.randomUUID();
+    const caseId = crypto.randomUUID();
+    const nowIso = "2026-06-12T15:15:00.000Z";
+    await db.getClient().insert(project).values({
+      id: projectId,
+      title: "Helpful Evidence Feedback",
+      description: null,
+      projectPath: null,
+      updatedAt: nowIso,
+    });
+    await db.getClient().insert(chapter).values({
+      id: "chapter-helpful",
+      projectId,
+      title: "5화",
+      content: "아린은 봉인의 균열을 확인했다.",
+      order: 5,
+      updatedAt: nowIso,
+    });
+    await db.getClient().insert(memoryEvalCase).values({
+      id: caseId,
+      projectId,
+      name: "helpful-evidence-case",
+      question: "아린이 봉인을 확인했나?",
+      caseType: "qa",
+      expectedAnswer: "아린은 봉인의 균열을 확인했다.",
+      temporalScopeStartChapterId: null,
+      temporalScopeEndChapterId: null,
+      severity: "p1",
+      updatedAt: nowIso,
+    });
+
+    const feedback = await recordMemoryEvalFeedback({
+      projectId,
+      caseId,
+      feedbackKind: "evidence_helpful",
+      question: "아린이 봉인을 확인했나?",
+      answer: "확인했다.",
+      evidence: [
+        {
+          chunkId: "chunk-helpful",
+          chapterId: "chapter-helpful",
+          offset: 0,
+          quote: "아린은 봉인의 균열을 확인했다.",
+        },
+      ],
+      nowIso,
+    });
+
+    expect(feedback.evalEvidenceCount).toBe(1);
+
+    const [feedbackRow] = await db
+      .getClient()
+      .select()
+      .from(memoryEvalFeedback)
+      .where(eq(memoryEvalFeedback.id, feedback.id));
+    expect(feedbackRow.status).toBe("eval_evidence_created");
+
+    const evidenceRows = await db
+      .getClient()
+      .select()
+      .from(memoryEvalEvidence)
+      .where(eq(memoryEvalEvidence.caseId, caseId));
+    expect(evidenceRows).toEqual([
+      expect.objectContaining({
+        projectId,
+        caseId,
+        expectedChunkId: "chunk-helpful",
+        chapterId: "chapter-helpful",
+        startOffset: 0,
+        endOffset: 17,
+        quote: "아린은 봉인의 균열을 확인했다.",
+        updatedAt: nowIso,
+      }),
+    ]);
+  });
+
   it("detects repeated wrong answers while allowing revised answers", async () => {
     const projectId = crypto.randomUUID();
     const nowIso = "2026-06-12T15:20:00.000Z";

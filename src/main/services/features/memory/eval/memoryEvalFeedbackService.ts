@@ -38,6 +38,7 @@ export async function recordMemoryEvalFeedback(
     input.createEvalCaseCandidate && input.feedbackKind === "answer_wrong"
       ? crypto.randomUUID()
       : undefined;
+  let evalEvidenceCount = 0;
 
   db.getClient().transaction((tx) => {
     tx.insert(memoryEvalFeedback).values({
@@ -56,46 +57,82 @@ export async function recordMemoryEvalFeedback(
       updatedAt: nowIso,
     }).run();
 
-    if (!evalCaseId) return;
-
-    tx.insert(memoryEvalCase).values({
-      id: evalCaseId,
-      projectId: input.projectId,
-      name: `feedback:answer_wrong:${id}`,
-      question: input.question,
-      caseType: "qa",
-      expectedAnswer: input.note ?? null,
-      temporalScopeStartChapterId: null,
-      temporalScopeEndChapterId: null,
-      severity: "p0",
-      updatedAt: nowIso,
-    }).run();
-
-    const evidenceRows = (input.evidence ?? []).map((evidence) => ({
-      id: crypto.randomUUID(),
-      caseId: evalCaseId,
-      projectId: input.projectId,
-      chapterId: evidence.chapterId ?? null,
-      expectedChunkId: evidence.chunkId,
-      startOffset: evidence.offset,
-      endOffset: evidence.offset + evidence.quote.length,
-      quote: evidence.quote,
-      updatedAt: nowIso,
-      createdAt: nowIso,
-    }));
-    if (evidenceRows.length > 0) {
-      tx.insert(memoryEvalEvidence).values(evidenceRows).run();
-    }
-    tx.update(memoryEvalFeedback)
-      .set({
-        status: "eval_case_created",
+    if (evalCaseId) {
+      tx.insert(memoryEvalCase).values({
+        id: evalCaseId,
+        projectId: input.projectId,
+        name: `feedback:answer_wrong:${id}`,
+        question: input.question,
+        caseType: "qa",
+        expectedAnswer: input.note ?? null,
+        temporalScopeStartChapterId: null,
+        temporalScopeEndChapterId: null,
+        severity: "p0",
         updatedAt: nowIso,
-      })
-      .where(eq(memoryEvalFeedback.id, id))
-      .run();
+      }).run();
+
+      const evidenceRows = buildEvalEvidenceRows({
+        caseId: evalCaseId,
+        projectId: input.projectId,
+        evidence: input.evidence ?? [],
+        nowIso,
+      });
+      if (evidenceRows.length > 0) {
+        tx.insert(memoryEvalEvidence).values(evidenceRows).run();
+      }
+      tx.update(memoryEvalFeedback)
+        .set({
+          status: "eval_case_created",
+          updatedAt: nowIso,
+        })
+        .where(eq(memoryEvalFeedback.id, id))
+        .run();
+    }
+
+    if (
+      input.feedbackKind === "evidence_helpful" &&
+      input.caseId &&
+      (input.evidence?.length ?? 0) > 0
+    ) {
+      const evidenceRows = buildEvalEvidenceRows({
+        caseId: input.caseId,
+        projectId: input.projectId,
+        evidence: input.evidence ?? [],
+        nowIso,
+      });
+      tx.insert(memoryEvalEvidence).values(evidenceRows).run();
+      evalEvidenceCount = evidenceRows.length;
+      tx.update(memoryEvalFeedback)
+        .set({
+          status: "eval_evidence_created",
+          updatedAt: nowIso,
+        })
+        .where(eq(memoryEvalFeedback.id, id))
+        .run();
+    }
   });
 
-  return { id, evalCaseId };
+  return { id, evalCaseId, evalEvidenceCount };
+}
+
+function buildEvalEvidenceRows(input: {
+  caseId: string;
+  projectId: string;
+  evidence: NonNullable<RecordMemoryEvalFeedbackInput["evidence"]>;
+  nowIso: string;
+}) {
+  return input.evidence.map((evidence) => ({
+    id: crypto.randomUUID(),
+    caseId: input.caseId,
+    projectId: input.projectId,
+    chapterId: evidence.chapterId ?? null,
+    expectedChunkId: evidence.chunkId,
+    startOffset: evidence.offset,
+    endOffset: evidence.offset + evidence.quote.length,
+    quote: evidence.quote,
+    updatedAt: input.nowIso,
+    createdAt: input.nowIso,
+  }));
 }
 
 export async function detectRejectedAnswerRecurrence(

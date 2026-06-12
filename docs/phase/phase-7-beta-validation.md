@@ -57,9 +57,10 @@
 - analysis memory eval panel에 "이 답변 틀림"/"이 근거 좋음" feedback 버튼을 연결했다.
 - `answer_wrong`/`evidence_helpful` feedback kind와 question/answer/evidence/note/status를 저장한다.
 - `answer_wrong` feedback은 옵션에 따라 `MemoryEvalCase`와 `MemoryEvalEvidence` 후보를 생성하고 feedback status를 `eval_case_created`로 갱신한다.
+- `evidence_helpful` feedback은 기존 eval case id와 evidence가 있으면 `MemoryEvalEvidence` 후보로 반영하고 feedback status를 `eval_evidence_created`로 갱신한다.
 - 저장된 `answer_wrong` feedback과 같은 질문/같은 답변이 반복될 때 `repeated_rejected_answer`로 감지하는 guard를 추가했다.
 - RAG stream 완료 결과가 저장된 rejected answer와 같은 질문/같은 답변이면 safety label을 `blocked_p0`로 바꾸고 `repeated_rejected_answer` reason을 붙인다.
 
 아직 남은 범위:
 
-- `evidence_helpful` feedback을 eval set 품질 보강 후보로 전환하는 정책은 아직 없다.
+- 실제 작가 베타 데이터 기반 threshold는 아직 확정하지 않았다.

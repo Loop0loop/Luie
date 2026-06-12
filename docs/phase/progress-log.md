@@ -1662,3 +1662,32 @@ pnpm run typecheck
 
 - 이미 streaming delta로 표시된 텍스트를 중간에 숨기지는 않는다. 최종 result safety가 차단 상태를 표시한다.
 - `evidence_helpful` feedback을 eval set 품질 보강 후보로 전환하는 정책은 아직 없다.
+
+### 2026-06-13. Phase 7-2 helpful evidence feedback eval set 반영 1차 완료
+
+확인된 사실:
+
+- `evidence_helpful` feedback에 기존 eval case id와 evidence가 있으면 `MemoryEvalEvidence` row를 생성한다.
+- materialize가 끝난 feedback row는 `status = eval_evidence_created`로 갱신된다.
+- 응답 DTO는 생성한 eval evidence 수를 `evalEvidenceCount`로 반환한다.
+- feedback row 저장과 evidence materialize는 같은 DB transaction 안에서 처리된다.
+
+아키텍처 부합:
+
+- eval set 보강 정책은 main memory eval domain service 내부에 유지했다.
+- shared type에는 cross-process 응답 DTO의 optional count만 추가했다.
+- DB schema/package format은 변경하지 않고 기존 `MemoryEvalEvidence` table을 재사용했다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/eval/memoryEvalFeedbackService.test.ts tests/main/handler/ipcInputValidation.memory.test.ts
+pnpm exec eslint src/main/services/features/memory/eval/memoryEvalFeedbackService.ts src/shared/types/memoryEval.ts tests/main/services/memory/eval/memoryEvalFeedbackService.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- case id가 없는 `evidence_helpful` feedback은 기존처럼 feedback row만 `pending`으로 남긴다.
+- evidence 중복 제거 정책은 아직 없다.
+- 실제 작가 베타 데이터 기반 threshold는 아직 확정하지 않았다.

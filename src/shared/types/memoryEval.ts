@@ -219,6 +219,7 @@ export interface MemoryEvalFeedbackRecordRequest {
 export interface MemoryEvalFeedbackRecordResult {
   id: string;
   evalCaseId?: string;
+  evalEvidenceCount?: number;
 }
 
 export interface MemoryEvalLiveRunnerResult extends MemoryEvalSuiteResult {
