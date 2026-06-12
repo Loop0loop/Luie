@@ -15,6 +15,7 @@ import {
   applyMemoryCanonicalPackagePayload,
   buildMemoryCanonicalPackagePayload,
 } from "../../../../../src/main/services/features/memory/persistence/memoryCanonicalPackage.js";
+import { compareMemoryCanonicalPackagePayloads } from "../../../../../src/main/services/features/memory/persistence/memoryCanonicalPackageSyncVerifier.js";
 
 const createTx = () => {
   const inserted: unknown[] = [];
@@ -671,5 +672,119 @@ describe("applyMemoryCanonicalPackagePayload", () => {
         }),
       ],
     ]);
+  });
+
+  it("keeps canonical source ids aligned after import and rebuild", async () => {
+    const targetProjectId = crypto.randomUUID();
+    const nowIso = "2026-06-12T00:00:00.000Z";
+    await db.getClient().insert(project).values({
+      id: targetProjectId,
+      title: "Canonical Roundtrip Target",
+      description: null,
+      projectPath: null,
+      updatedAt: nowIso,
+    });
+    await db.getClient().insert(chapter).values({
+      id: "chapter-1",
+      projectId: targetProjectId,
+      title: "1화",
+      content: "Alice entered the hall.",
+      order: 1,
+      updatedAt: nowIso,
+    });
+
+    const packagePayload = {
+      schemaVersion: 1 as const,
+      exportedAt: "2026-06-11T00:00:00.000Z",
+      tables: {
+        MemoryEntity: [
+          {
+            id: "entity-1",
+            projectId: "source-project",
+            entityType: "character",
+            canonicalName: "Alice",
+            status: "confirmed",
+            updatedAt: "2026-06-11T01:00:00.000Z",
+          },
+        ],
+        MemoryEpisode: [
+          {
+            id: "episode-1",
+            projectId: "source-project",
+            sourceType: "analysis",
+            sourceId: "source-episode-1",
+            sourceContentHash: "source-content-hash",
+            extractorVersion: "rule",
+            episodeType: "event",
+            title: "Alice enters",
+            summary: "Alice starts chapter 1.",
+            status: "suggested",
+            confidence: 0.8,
+            chapterId: "chapter-1",
+            updatedAt: "2026-06-11T01:00:00.000Z",
+          },
+        ],
+        MemoryEpisodeEvidence: [
+          {
+            id: "evidence-1",
+            projectId: "source-project",
+            episodeId: "episode-1",
+            chapterId: "chapter-1",
+            contentHash: "content-hash",
+            sourceContentHash: "source-content-hash",
+            quote: "Alice entered the hall.",
+            updatedAt: "2026-06-11T01:00:00.000Z",
+          },
+        ],
+        MemoryFact: [
+          {
+            id: "fact-1",
+            projectId: "source-project",
+            subjectEntityId: "entity-1",
+            predicate: "presence",
+            objectValue: "hall",
+            valueType: "string",
+            validFromChapterId: "chapter-1",
+            validFromChapterOrder: 1,
+            observedAtChapterId: "chapter-1",
+            observedAtChapterOrder: 1,
+            status: "confirmed",
+            extractorVersion: "manual",
+            sourceContentHash: "source-content-hash",
+            updatedAt: "2026-06-11T01:00:00.000Z",
+          },
+        ],
+        MemoryFactEvidence: [
+          {
+            id: "fact-evidence-1",
+            projectId: "source-project",
+            factId: "fact-1",
+            evidenceId: "evidence-1",
+            updatedAt: "2026-06-11T01:00:00.000Z",
+          },
+        ],
+      },
+    };
+
+    db.getClient().transaction((tx) => {
+      applyMemoryCanonicalPackagePayload(tx, {
+        projectId: targetProjectId,
+        importedAt: new Date(nowIso),
+        validChapterIds: new Set(["chapter-1"]),
+        payload: packagePayload,
+      });
+    });
+
+    const rebuiltPayload =
+      await buildMemoryCanonicalPackagePayload(targetProjectId);
+    const comparison = compareMemoryCanonicalPackagePayloads({
+      projectId: targetProjectId,
+      dbPayload: rebuiltPayload,
+      packagePayload,
+    });
+
+    expect(comparison.inSync).toBe(true);
+    expect(comparison.tables.MemoryFact.sourceIdMismatches).toEqual([]);
+    expect(comparison.tables.MemoryFactEvidence.sourceIdMismatches).toEqual([]);
   });
 });

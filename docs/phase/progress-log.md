@@ -1249,3 +1249,29 @@ pnpm vitest tests/main/services/memory/persistence/memoryCanonicalPackageSyncVer
 
 - source id mismatch 자동 복구는 하지 않는다.
 - 실제 `.luie` import/export 왕복 후 전체 source id mismatch가 0인지 확인하는 긴 통합 검증은 다음 보강 범위다.
+
+### 2026-06-12. Phase 6-1 canonical payload import/rebuild source id 검증 1차 완료
+
+확인된 사실:
+
+- `compareMemoryCanonicalPackagePayloads`를 추가해 verifier의 DB/package 비교 규칙을 package 파일 읽기와 분리했다.
+- canonical package payload를 실제 DB transaction에 import한 뒤 `buildMemoryCanonicalPackagePayload`로 다시 rebuild하는 테스트를 추가했다.
+- import로 scoped 된 `MemoryFact.subjectEntityId`와 `MemoryFactEvidence.factId/evidenceId`는 package source id와 mismatch 없이 비교된다.
+
+아키텍처 부합:
+
+- `.luie` package payload schema는 변경하지 않았다.
+- 기존 `verifyMemoryCanonicalPackageSync` public API는 유지했다.
+- 비교 helper는 main memory persistence 내부에 두고, shared contract나 renderer/preload 경계는 건드리지 않았다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/persistence/memoryCanonicalPackage.test.ts
+pnpm vitest tests/main/services/memory/persistence/memoryCanonicalPackageSyncVerifier.test.ts
+```
+
+제한:
+
+- 실제 `.luie` container write/read를 포함하지 않는 DB-level 왕복 검증이다.
+- 실제 파일 기반 package 왕복은 Phase 6-1 추가 보강 또는 Phase 6-3 crash-safe export와 함께 검증해야 한다.

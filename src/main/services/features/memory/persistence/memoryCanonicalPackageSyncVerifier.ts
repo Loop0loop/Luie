@@ -6,7 +6,10 @@ import { MEMORY_CANONICAL_EXPORTABLE_TABLES } from "./memoryPersistencePolicy.js
 import { getProjectAttachmentPath } from "../../../core/project/projectAttachmentStore.js";
 import { LuieMemoryCanonicalSchema } from "../../../core/project/projectLuieSchemas.js";
 import { readLuieContainerEntry } from "../../../io/luieContainer.js";
-import { buildMemoryCanonicalPackagePayload } from "./memoryCanonicalPackage.js";
+import {
+  buildMemoryCanonicalPackagePayload,
+  type MemoryCanonicalPackagePayload,
+} from "./memoryCanonicalPackage.js";
 
 type TableName = (typeof MEMORY_CANONICAL_EXPORTABLE_TABLES)[number];
 
@@ -30,6 +33,13 @@ export type MemoryCanonicalPackageSyncVerification = {
   projectPath: string | null;
   entryPath: string;
   packageEntryPresent: boolean;
+  inSync: boolean;
+  totalDbRows: number;
+  totalPackageRows: number;
+  tables: Record<TableName, MemoryCanonicalPackageSyncTable>;
+};
+
+export type MemoryCanonicalPackageSyncComparison = {
   inSync: boolean;
   totalDbRows: number;
   totalPackageRows: number;
@@ -190,19 +200,45 @@ export async function verifyMemoryCanonicalPackageSync(input: {
   const rawPackagePayload = projectPath
     ? await readLuieContainerEntry(projectPath, entryPath)
     : null;
-  const packagePayload = rawPackagePayload
-    ? LuieMemoryCanonicalSchema.parse(JSON.parse(rawPackagePayload))
-    : { tables: {} };
+  const packagePayload: Pick<MemoryCanonicalPackagePayload, "tables"> =
+    rawPackagePayload
+      ? {
+          tables: (LuieMemoryCanonicalSchema.parse(
+            JSON.parse(rawPackagePayload),
+          ).tables ?? {}) as MemoryCanonicalPackagePayload["tables"],
+        }
+      : { tables: {} };
+  const comparison = compareMemoryCanonicalPackagePayloads({
+    projectId: input.projectId,
+    dbPayload,
+    packagePayload,
+    packageEntryPresent: rawPackagePayload !== null,
+  });
 
+  return {
+    projectId: input.projectId,
+    projectPath,
+    entryPath,
+    packageEntryPresent: rawPackagePayload !== null,
+    ...comparison,
+  };
+}
+
+export function compareMemoryCanonicalPackagePayloads(input: {
+  projectId: string;
+  dbPayload: MemoryCanonicalPackagePayload;
+  packagePayload: Pick<MemoryCanonicalPackagePayload, "tables">;
+  packageEntryPresent?: boolean;
+}): MemoryCanonicalPackageSyncComparison {
   const tables = {} as Record<TableName, MemoryCanonicalPackageSyncTable>;
   let totalDbRows = 0;
   let totalPackageRows = 0;
-  let inSync = rawPackagePayload !== null;
+  let inSync = input.packageEntryPresent !== false;
 
   for (const tableName of MEMORY_CANONICAL_EXPORTABLE_TABLES) {
     const rowIdInput = { projectId: input.projectId, tableName };
-    const dbRows = dbPayload.tables[tableName];
-    const packageRows = packagePayload.tables?.[tableName];
+    const dbRows = input.dbPayload.tables[tableName];
+    const packageRows = input.packagePayload.tables?.[tableName];
     const dbIds = rowIds(dbRows, rowIdInput);
     const packageIds = rowIds(packageRows, rowIdInput);
     const missingInPackage = diff(dbIds, packageIds);
@@ -232,10 +268,6 @@ export async function verifyMemoryCanonicalPackageSync(input: {
   }
 
   return {
-    projectId: input.projectId,
-    projectPath,
-    entryPath,
-    packageEntryPresent: rawPackagePayload !== null,
     inSync,
     totalDbRows,
     totalPackageRows,

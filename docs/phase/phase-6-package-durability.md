@@ -24,11 +24,12 @@
 - canonical package sync verifier가 table별 `missingInPackage`/`extraInPackage`를 보고한다.
 - import-scoped DB id(`projectId:Table:sourceId`)와 package source id는 같은 row id로 비교한다.
 - 같은 canonical row id가 있어도 FK/source id 필드가 다르면 `sourceIdMismatches`로 보고한다.
+- canonical package payload를 실제 DB에 import한 뒤 다시 payload로 rebuild해 source id mismatch가 0인지 검증한다.
 
 아직 남은 범위:
 
 - source id mismatch 자동 복구는 하지 않는다.
-- 실제 `.luie` import/export 왕복 후 전체 source id mismatch가 0인지 확인하는 긴 통합 검증은 추가 보강 대상이다.
+- 실제 `.luie` 파일 write/read까지 포함한 package 왕복 검증은 추가 보강 대상이다.
 
 ### Phase 6-2. migration compatibility
 
