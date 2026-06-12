@@ -108,6 +108,7 @@ const MEMORY_ROADMAP_PHASE_STATUSES: MemoryRoadmapPhaseStatus[] = [
       "live eval writer benchmark summary persistence",
       "persisted writer benchmark threshold assessment CLI",
       "persisted beta benchmark threshold candidate calibration",
+      "real beta threshold finalization guard",
       "writer feedback DB, IPC/preload API, UI buttons, and rejected-answer guard",
       "helpful evidence feedback materialization",
     ],

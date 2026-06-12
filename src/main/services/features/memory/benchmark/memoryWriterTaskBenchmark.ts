@@ -52,6 +52,27 @@ export type MemoryWriterTaskBenchmarkThresholdCalibration =
       minimumBetaRunCount: number;
     };
 
+export type MemoryWriterTaskBenchmarkThresholdFinalization =
+  | {
+      status: "finalized";
+      betaRunCount: number;
+      minimumBetaRunCount: number;
+      confirmedRealBetaData: true;
+      thresholds: MemoryWriterTaskBenchmarkThresholds;
+    }
+  | {
+      status: "unconfirmed_real_beta_data";
+      betaRunCount: number;
+      minimumBetaRunCount: number;
+      confirmedRealBetaData: false;
+    }
+  | {
+      status: "insufficient_beta_data";
+      betaRunCount: number;
+      minimumBetaRunCount: number;
+      confirmedRealBetaData: boolean;
+    };
+
 export const MEMORY_WRITER_TASK_BENCHMARK_TASKS: readonly MemoryWriterTaskBenchmarkTask[] =
   [
     {
@@ -219,6 +240,49 @@ export function calibrateMemoryWriterTaskBenchmarkThresholds(input: {
         aggregate.averageResponseTimeMs ??
         DEFAULT_WRITER_TASK_BENCHMARK_THRESHOLDS.maxAverageResponseTimeMs,
     },
+  };
+}
+
+export function finalizeMemoryWriterTaskBenchmarkThresholds(input: {
+  summaries: MemoryWriterTaskBenchmarkSummary[];
+  minimumBetaRunCount: number;
+  confirmRealBetaData: boolean;
+}): MemoryWriterTaskBenchmarkThresholdFinalization {
+  const betaRunCount = input.summaries.length;
+  if (betaRunCount < input.minimumBetaRunCount) {
+    return {
+      status: "insufficient_beta_data",
+      betaRunCount,
+      minimumBetaRunCount: input.minimumBetaRunCount,
+      confirmedRealBetaData: input.confirmRealBetaData,
+    };
+  }
+  if (!input.confirmRealBetaData) {
+    return {
+      status: "unconfirmed_real_beta_data",
+      betaRunCount,
+      minimumBetaRunCount: input.minimumBetaRunCount,
+      confirmedRealBetaData: false,
+    };
+  }
+  const calibration = calibrateMemoryWriterTaskBenchmarkThresholds({
+    summaries: input.summaries,
+    minimumBetaRunCount: input.minimumBetaRunCount,
+  });
+  if (calibration.status !== "calibrated") {
+    return {
+      status: "insufficient_beta_data",
+      betaRunCount,
+      minimumBetaRunCount: input.minimumBetaRunCount,
+      confirmedRealBetaData: true,
+    };
+  }
+  return {
+    status: "finalized",
+    betaRunCount,
+    minimumBetaRunCount: input.minimumBetaRunCount,
+    confirmedRealBetaData: true,
+    thresholds: calibration.thresholds,
   };
 }
 

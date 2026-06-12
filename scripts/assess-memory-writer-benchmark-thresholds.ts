@@ -11,6 +11,7 @@ import {
 import {
   assessMemoryWriterTaskBenchmarkThresholds,
   calibrateMemoryWriterTaskBenchmarkThresholds,
+  finalizeMemoryWriterTaskBenchmarkThresholds,
   type MemoryWriterTaskBenchmarkThresholds,
 } from "../src/main/services/features/memory/benchmark/index.js";
 import type { MemoryWriterTaskBenchmarkSummary } from "../src/shared/types/index.js";
@@ -21,6 +22,8 @@ type CliOptions = {
   out?: string;
   assertThresholds: boolean;
   calibrateThresholds: boolean;
+  finalizeThresholds: boolean;
+  confirmRealBetaData: boolean;
   thresholds: Partial<MemoryWriterTaskBenchmarkThresholds>;
 };
 
@@ -29,6 +32,8 @@ function parseArgs(argv: string[]): CliOptions {
     minimumBetaRuns: 3,
     assertThresholds: false,
     calibrateThresholds: false,
+    finalizeThresholds: false,
+    confirmRealBetaData: false,
     thresholds: {},
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -55,6 +60,14 @@ function parseArgs(argv: string[]): CliOptions {
     }
     if (arg === "--calibrate-thresholds") {
       options.calibrateThresholds = true;
+      continue;
+    }
+    if (arg === "--finalize-thresholds") {
+      options.finalizeThresholds = true;
+      continue;
+    }
+    if (arg === "--confirm-real-beta-data") {
+      options.confirmRealBetaData = true;
       continue;
     }
     if (arg === "--min-success-rate" && next) {
@@ -125,6 +138,13 @@ async function main(): Promise<void> {
         ? calibrateMemoryWriterTaskBenchmarkThresholds({
             summaries,
             minimumBetaRunCount: options.minimumBetaRuns,
+          })
+        : null,
+      finalization: options.finalizeThresholds
+        ? finalizeMemoryWriterTaskBenchmarkThresholds({
+            summaries,
+            minimumBetaRunCount: options.minimumBetaRuns,
+            confirmRealBetaData: options.confirmRealBetaData,
           })
         : null,
     };

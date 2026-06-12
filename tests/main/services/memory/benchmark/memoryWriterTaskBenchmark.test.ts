@@ -4,6 +4,7 @@ import {
   assessMemoryWriterTaskBenchmarkThresholds,
   calibrateMemoryWriterTaskBenchmarkThresholds,
   classifyMemoryWriterTaskBenchmarkCase,
+  finalizeMemoryWriterTaskBenchmarkThresholds,
   summarizeMemoryWriterTaskBenchmark,
 } from "../../../../../src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.js";
 import type {
@@ -318,6 +319,108 @@ describe("memoryWriterTaskBenchmark", () => {
       status: "insufficient_beta_data",
       betaRunCount: 1,
       minimumBetaRunCount: 3,
+    });
+  });
+
+  it("refuses threshold finalization without explicit real beta data confirmation", () => {
+    const summary = summarizeMemoryWriterTaskBenchmark([
+      {
+        evalCase: makeCase("setting", {}),
+        scoreResult: makeScore("setting", {}),
+        responseTimeMs: 100,
+      },
+    ]);
+
+    expect(
+      finalizeMemoryWriterTaskBenchmarkThresholds({
+        summaries: [summary, summary, summary],
+        minimumBetaRunCount: 3,
+        confirmRealBetaData: false,
+      }),
+    ).toEqual({
+      status: "unconfirmed_real_beta_data",
+      betaRunCount: 3,
+      minimumBetaRunCount: 3,
+      confirmedRealBetaData: false,
+    });
+  });
+
+  it("refuses threshold finalization when beta samples are insufficient", () => {
+    const summary = summarizeMemoryWriterTaskBenchmark([
+      {
+        evalCase: makeCase("setting", {}),
+        scoreResult: makeScore("setting", {}),
+        responseTimeMs: 100,
+      },
+    ]);
+
+    expect(
+      finalizeMemoryWriterTaskBenchmarkThresholds({
+        summaries: [summary],
+        minimumBetaRunCount: 3,
+        confirmRealBetaData: true,
+      }),
+    ).toEqual({
+      status: "insufficient_beta_data",
+      betaRunCount: 1,
+      minimumBetaRunCount: 3,
+      confirmedRealBetaData: true,
+    });
+  });
+
+  it("finalizes threshold candidates only after confirmed real beta samples exist", () => {
+    const passing = summarizeMemoryWriterTaskBenchmark([
+      {
+        evalCase: makeCase("setting", {}),
+        scoreResult: makeScore("setting", {}),
+        responseTimeMs: 100,
+      },
+    ]);
+    const slowerSupported = summarizeMemoryWriterTaskBenchmark([
+      {
+        evalCase: makeCase("relation", {
+          caseType: "relation",
+          expectedRelations: [
+            { sourceName: "아린", targetName: "백야회", relation: "member_of" },
+          ],
+        }),
+        scoreResult: makeScore("relation", {
+          contextRecallAtK: 0.8,
+        }),
+        responseTimeMs: 300,
+      },
+    ]);
+    const falseConfident = summarizeMemoryWriterTaskBenchmark([
+      {
+        evalCase: makeCase("draft", {
+          question: "폐기 설정을 정사라고 답해도 되나?",
+        }),
+        scoreResult: makeScore("draft", {
+          contextRecallAtK: 0.4,
+          p0FailureCount: 1,
+          p0Failures: ["deleted_or_draft_fact_confirmed"],
+        }),
+        responseTimeMs: 500,
+      },
+    ]);
+
+    expect(
+      finalizeMemoryWriterTaskBenchmarkThresholds({
+        summaries: [passing, slowerSupported, falseConfident],
+        minimumBetaRunCount: 3,
+        confirmRealBetaData: true,
+      }),
+    ).toEqual({
+      status: "finalized",
+      betaRunCount: 3,
+      minimumBetaRunCount: 3,
+      confirmedRealBetaData: true,
+      thresholds: {
+        minSuccessRate: 2 / 3,
+        minEvidenceSatisfactionRate: (1 + 0.8 + 0.4) / 3,
+        maxFalseConfidenceRate: 1 / 3,
+        maxAverageResponseTimeMs: 300,
+      },
     });
   });
 });

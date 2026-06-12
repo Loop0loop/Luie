@@ -285,6 +285,7 @@ describe("getMemoryPhaseStatusReport", () => {
         "writer task benchmark taxonomy and metric summary",
         "persisted writer benchmark threshold assessment CLI",
         "persisted beta benchmark threshold candidate calibration",
+        "real beta threshold finalization guard",
         "writer feedback DB, IPC/preload API, UI buttons, and rejected-answer guard",
       ]),
     );
