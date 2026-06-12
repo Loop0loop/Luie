@@ -4,7 +4,7 @@ import {
   getResponsivePanelSize,
   isLayoutSurfaceId,
   type LayoutSurfaceId,
-} from "../../../src/shared/constants/layoutSizing.js";
+} from "../../../src/renderer/src/shared/constants/layoutSizing.js";
 
 describe("layoutSizing", () => {
   it("accepts only declared layout surface ids", () => {

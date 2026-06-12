@@ -24,7 +24,7 @@ import {
   CANVAS_GRID_GAP_Y_PX,
   CANVAS_GRID_ORIGIN_X_PX,
   CANVAS_GRID_ORIGIN_Y_PX,
-} from "@shared/constants/canvasSizing";
+} from "@renderer/shared/constants/canvasSizing";
 import type { CanvasProjection } from "../types/canvasProjection.types";
 import type { RFEntityNodeData, RFRelationEdgeData } from "../types/reactFlow.types";
 

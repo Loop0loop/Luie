@@ -1,5 +1,5 @@
 import path from "node:path";
-import { ErrorCode } from "../../../shared/constants/errorCode.js";
+import { ErrorCode } from "../../../shared/constants/errors/index.js";
 import { ServiceError } from "../error/index.js";
 
 const MAX_PATH_LENGTH = 4096;

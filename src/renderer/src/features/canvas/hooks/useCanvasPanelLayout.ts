@@ -19,7 +19,7 @@ import {
   getResponsivePanelSize,
   toPanelPercentSize,
   type ResponsivePanelSize,
-} from "@shared/constants/layoutSizing";
+} from "@renderer/shared/constants/layoutSizing";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 

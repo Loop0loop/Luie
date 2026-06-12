@@ -6,7 +6,7 @@ import {
 import { toPlainRows, uniqueIds } from "./valueUtils.js";
 import { db } from "../../../../../infra/database/index.js";
 import * as schema from "../../../../../infra/database/index.js";
-import { isMemoryRowExportable } from "../../../../../../shared/constants/index.js";
+import { isMemoryRowExportable } from "../memoryPersistencePolicy.js";
 
 const {
   memoryEntity,

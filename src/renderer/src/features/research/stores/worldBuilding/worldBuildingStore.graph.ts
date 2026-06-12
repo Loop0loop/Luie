@@ -2,7 +2,7 @@ import {
   getDefaultRelationForPair,
   isRelationAllowed,
   isWorldEntityBackedType,
-} from "@shared/constants/worldRelationRules";
+} from "@shared/constants/world";
 import type {
   Character,
   EntityRelation,

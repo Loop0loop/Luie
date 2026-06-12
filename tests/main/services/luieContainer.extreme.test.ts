@@ -7,7 +7,7 @@ import path from "node:path";
 import * as fsp from "node:fs/promises";
 import Database from "better-sqlite3";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ErrorCode } from "../../../src/shared/constants/errorCode.js";
+import { ErrorCode } from "../../../src/shared/constants/errors/index.js";
 import {
   probeLuieContainer,
   readLuieContainerEntry,

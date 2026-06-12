@@ -1,7 +1,7 @@
 import {
   buildDefaultLayoutSurfaceRatios,
-} from "@shared/constants/layoutSizing";
-import { buildDefaultSidebarWidths } from "@shared/constants/sidebarSizing";
+} from "@renderer/shared/constants/layoutSizing";
+import { buildDefaultSidebarWidths } from "@renderer/shared/constants/sidebarSizing";
 import { DEFAULT_SCRIVENER_SECTIONS } from "./constants";
 import type { ProjectLayoutState } from "./types";
 

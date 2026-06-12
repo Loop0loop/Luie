@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { isWorldEntityBackedType } from "../../../../shared/constants/worldRelationRules.js";
+import { isWorldEntityBackedType } from "../../../../shared/constants/world/relationRules.js";
 import type {
   RelationKind,
   WorldEntitySourceType,

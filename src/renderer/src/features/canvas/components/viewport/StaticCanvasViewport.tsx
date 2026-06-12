@@ -12,7 +12,7 @@ import { useMemo } from "react";
 import {
   CANVAS_RF_EDGE_TYPE_RELATION,
   CANVAS_RF_NODE_TYPE_ENTITY,
-} from "@shared/constants/canvasSizing";
+} from "@renderer/shared/constants/canvasSizing";
 import { useStaticProjection } from "../../hooks/useStaticProjection";
 import type { CanvasProjection } from "../../types/canvasProjection.types";
 import { RelationEdge } from "./edges/RelationEdge";

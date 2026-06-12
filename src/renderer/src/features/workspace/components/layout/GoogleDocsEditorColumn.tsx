@@ -8,8 +8,8 @@ import {
   EDITOR_A4_PAGE_HEIGHT_PX,
   EDITOR_A4_PAGE_WIDTH_PX,
   EDITOR_PAGE_VERTICAL_PADDING_PX,
-} from "@shared/constants/configs";
-import { toPercentSize } from "@shared/constants/sidebarSizing";
+} from "@renderer/shared/constants/editorLayout";
+import { toPercentSize } from "@renderer/shared/constants/sidebarSizing";
 import { getPanelLayoutValue } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import type { DocsPageMargins } from "./googleDocsLayout.types";

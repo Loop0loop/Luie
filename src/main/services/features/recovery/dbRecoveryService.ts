@@ -3,7 +3,7 @@ import path from "path";
 import { app } from "electron";
 import Database from "better-sqlite3";
 import { createLogger } from "../../../../shared/logger/index.js";
-import { SNAPSHOT_BACKUP_DIR } from "../../../../shared/constants/paths.js";
+import { SNAPSHOT_BACKUP_DIR } from "../../../../shared/constants/storage/paths.js";
 import type {
   DbRecoveryCheckpoint,
   DbRecoveryFileStatus,

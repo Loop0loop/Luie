@@ -13,7 +13,7 @@ import { useTermStore } from "@renderer/features/research/stores/termStore";
 import { useToast } from "@shared/ui/ToastContext";
 import { useTranslation } from "react-i18next";
 import { api } from "@shared/api";
-import { TERM_DRAG_COMMIT_TIMEOUT_MS } from "@shared/constants/configs";
+import { TERM_DRAG_COMMIT_TIMEOUT_MS } from "@renderer/features/research/constants/worldInteraction";
 import {
   buildTermOrderUpdates,
   cancelCommitTimeout,

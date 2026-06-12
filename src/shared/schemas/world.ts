@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { isRelationAllowed } from "../constants/worldRelationRules";
-import { WORLD_SCRAP_MEMOS_SCHEMA_VERSION } from "../constants/persistence";
+import { isRelationAllowed } from "../constants/world/relationRules";
+import { WORLD_SCRAP_MEMOS_SCHEMA_VERSION } from "../constants/storage/persistence";
 import { PATH_MAX_LENGTH, characterIdSchema, chapterIdSchema, projectIdSchema, termIdSchema } from "./common";
 
 export const characterCreateSchema = z.object({

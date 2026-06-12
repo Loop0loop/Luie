@@ -1,4 +1,4 @@
-import { isWorldEntityBackedType } from "../constants/worldRelationRules.js";
+import { isWorldEntityBackedType } from "../constants/world/relationRules.js";
 import type {
   EntityRelation,
   WorldGraphCanvasBlock,

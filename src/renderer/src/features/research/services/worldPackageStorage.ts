@@ -5,7 +5,7 @@ import {
   LUIE_WORLD_SCRAP_MEMOS_FILE,
   LUIE_WORLD_SYNOPSIS_FILE,
 } from "@shared/constants";
-import { WORLD_SCRAP_MEMOS_SCHEMA_VERSION } from "@shared/constants/persistence";
+import { WORLD_SCRAP_MEMOS_SCHEMA_VERSION } from "@shared/constants/storage/persistence";
 import type {
   ReplicaWorldDocumentType,
   WorldDrawingData,

@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import type { PanelSize } from "react-resizable-panels";
-import type { SidebarWidthFeature } from "@shared/constants/sidebarSizing";
-import { toPxSize } from "@shared/constants/sidebarSizing";
+import type { SidebarWidthFeature } from "@renderer/shared/constants/sidebarSizing";
+import { toPxSize } from "@renderer/shared/constants/sidebarSizing";
 import { useCollapsedSidebarStore } from "./useCollapsedSidebarStore";
 
 export type UseCollapsibleSidebarResult = {

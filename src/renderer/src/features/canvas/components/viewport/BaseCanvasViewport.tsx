@@ -36,7 +36,7 @@ import ReactFlow, {
   type NodeProps,
   type EdgeProps,
 } from "reactflow";
-import { CANVAS_FIT_VIEW_PADDING, CANVAS_ZOOM_MAX, CANVAS_ZOOM_MIN } from "@shared/constants/canvasSizing";
+import { CANVAS_FIT_VIEW_PADDING, CANVAS_ZOOM_MAX, CANVAS_ZOOM_MIN } from "@renderer/shared/constants/canvasSizing";
 import { useCanvasViewStore } from "../../stores";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { type CanvasProjection } from "../../types";

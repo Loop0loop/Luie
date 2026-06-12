@@ -6,9 +6,11 @@ import {
   LUIE_PACKAGE_FORMAT,
   LUIE_PACKAGE_VERSION,
   MARKDOWN_EXTENSION,
+} from "../../../../shared/constants/index.js";
+import {
   MEMORY_CANONICAL_EXPORTABLE_TABLES,
   isMemoryRowExportable,
-} from "../../../../shared/constants/index.js";
+} from "../memory/persistence/memoryPersistencePolicy.js";
 import type { LuiePackageExportData } from "../../io/luiePackageTypes.js";
 import type { MemoryCanonicalPackagePayload } from "../memory/persistence/memoryCanonicalPackage.js";
 import { writeLuieContainer } from "../../io/luieContainer.js";

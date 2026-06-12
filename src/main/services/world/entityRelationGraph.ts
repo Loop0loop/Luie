@@ -2,7 +2,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import {
   CANVAS_AUX_NODE_SUBTYPES,
   MEMORY_DOMAIN_SOURCE_TYPES,
-} from "../../../shared/constants/memoryDomain.js";
+} from "./constants.js";
 import type {
   EntityRelation,
   RelationKind,

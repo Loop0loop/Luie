@@ -2,7 +2,7 @@ import type { ComponentType } from "react";
 import { ChevronLeft, History, Settings, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
-import type { DocsLayoutPanelTab } from "@shared/constants/layoutSizing";
+import type { DocsLayoutPanelTab } from "@renderer/shared/constants/layoutSizing";
 
 type GoogleDocsHeaderProps = {
   activeChapterId?: string;

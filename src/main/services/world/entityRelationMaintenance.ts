@@ -1,5 +1,5 @@
 import { and, eq, inArray, isNull } from "drizzle-orm";
-import { isWorldEntityBackedType } from "../../../shared/constants/worldRelationRules.js";
+import { isWorldEntityBackedType } from "../../../shared/constants/world/relationRules.js";
 import type { WorldEntitySourceType } from "../../../shared/types/index.js";
 import type { MainDrizzleClient } from "../../infra/database/index.js";
 import {

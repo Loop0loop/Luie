@@ -24,7 +24,7 @@ import {
   getSidebarWidthConfig,
   toPercentSize,
   toPxSize,
-} from "@shared/constants/sidebarSizing";
+} from "@renderer/shared/constants/sidebarSizing";
 import { useSidebarResizeCommit } from "@renderer/features/workspace/hooks/useSidebarResizeCommit";
 import { useFixedPixelPanelGroupLayout } from "@renderer/features/workspace/hooks/useFixedPixelPanelGroupLayout";
 import {

@@ -13,7 +13,7 @@ import {
   HeadingLevel,
 } from "docx";
 import { ServiceError } from "../../../utils/error/index.js";
-import { ErrorCode } from "../../../../shared/constants/errorCode.js";
+import { ErrorCode } from "../../../../shared/constants/errors/index.js";
 import { hwpxExportService } from "../hwpx/hwpxExportService.js";
 import { prepareExportContent } from "../../../../shared/utils/exportContentNormalization.js";
 

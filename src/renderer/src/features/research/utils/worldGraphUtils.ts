@@ -1,12 +1,12 @@
 import { MarkerType, type Edge, type Node } from "reactflow";
 import { type EntityRelation, type WorldGraphNode } from "@shared/types";
-import { RELATION_COLORS } from "@shared/constants/world";
 import {
+  RELATION_COLORS,
   WORLD_GRAPH_FALLBACK_COLUMNS,
   WORLD_GRAPH_FALLBACK_X_STEP_PX,
   WORLD_GRAPH_FALLBACK_Y_STEP_PX,
   WORLD_GRAPH_MENU_MARGIN_PX,
-} from "@shared/constants/worldGraphUI";
+} from "../constants/worldGraphUI";
 
 export const clamp = (value: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, value));

@@ -17,7 +17,7 @@ import {
 import {
   MEMORY_CANONICAL_EXPORTABLE_TABLES,
   isMemoryRowExportable,
-} from "../../../../../shared/constants/index.js";
+} from "./memoryPersistencePolicy.js";
 import { getProjectAttachmentPath } from "../../../core/project/projectAttachmentStore.js";
 import { buildMemoryCanonicalPackagePayload } from "./memoryCanonicalPackage.js";
 

@@ -11,7 +11,7 @@ import { exportCreateArgsSchema } from "../../../shared/schemas/index.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
 import { ServiceError } from "../../utils/error/index.js";
-import { ErrorCode } from "../../../shared/constants/errorCode.js";
+import { ErrorCode } from "../../../shared/constants/errors/index.js";
 
 /**
  * Export request payload from renderer

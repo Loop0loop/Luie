@@ -37,8 +37,8 @@ import {
   getLayoutSurfaceDefaultRatio,
   getResponsivePanelSize,
   toPanelPercentSize,
-} from "@shared/constants/layoutSizing";
-import { toPercentSize } from "@shared/constants/sidebarSizing";
+} from "@renderer/shared/constants/layoutSizing";
+import { toPercentSize } from "@renderer/shared/constants/sidebarSizing";
 import {
   getPanelLayoutValue,
   useLayoutPersist,

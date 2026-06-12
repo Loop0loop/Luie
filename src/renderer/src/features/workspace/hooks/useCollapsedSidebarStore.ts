@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { SidebarWidthFeature } from "@shared/constants/sidebarSizing";
+import type { SidebarWidthFeature } from "@renderer/shared/constants/sidebarSizing";
 
 type CollapsedSidebarStore = {
   collapsedSidebars: Record<string, boolean>;

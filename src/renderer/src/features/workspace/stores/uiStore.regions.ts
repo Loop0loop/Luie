@@ -1,14 +1,14 @@
 import {
   DEFAULT_UI_CONTEXT_OPEN,
   DEFAULT_UI_SIDEBAR_OPEN,
-} from "@shared/constants";
+} from "@renderer/features/workspace/constants/uiDefaults";
 import {
   buildDefaultSidebarWidths,
   getSidebarDefaultWidth,
   normalizeSidebarWidthInput,
   normalizeSidebarWidthsWithMigrations,
   type SidebarWidthFeature,
-} from "@shared/constants/sidebarSizing";
+} from "@renderer/shared/constants/sidebarSizing";
 import type {
   DocsRightTab,
   RightPanelTab,

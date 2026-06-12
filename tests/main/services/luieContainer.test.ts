@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import * as fsp from "node:fs/promises";
 import { afterEach, describe, expect, it } from "vitest";
-import { ErrorCode } from "../../../src/shared/constants/errorCode.js";
+import { ErrorCode } from "../../../src/shared/constants/errors/index.js";
 import {
   probeLuieContainer,
   readLuieContainerEntry,

@@ -6,7 +6,7 @@ import {
   getLayoutSurfaceConfig,
   getLayoutSurfaceDefaultRatio,
   type LayoutSurfaceId,
-} from "@shared/constants/layoutSizing";
+} from "@renderer/shared/constants/layoutSizing";
 import { useLayoutSurfaceResizeCommit } from "@renderer/features/workspace/hooks/useLayoutSurfaceResizeCommit";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useProjectLayoutStore } from "@renderer/features/workspace/stores/projectLayoutStore";

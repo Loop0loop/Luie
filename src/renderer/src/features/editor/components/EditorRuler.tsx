@@ -8,7 +8,7 @@ import {
   EDITOR_RULER_MIN_BODY_WIDTH_PX,
   EDITOR_RULER_MIN_MARGIN_PX,
   INCH_PX,
-} from "@shared/constants/configs";
+} from "@renderer/shared/constants/editorLayout";
 
 interface EditorRulerProps {
   onMarginsChange?: (margins: { left: number; right: number; firstLineIndent: number }) => void;

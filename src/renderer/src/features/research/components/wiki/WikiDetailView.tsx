@@ -4,7 +4,7 @@ import { BookOpen, Sparkles, Trash2, User, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
-import { CHARACTER_TEMPLATES } from "@shared/constants";
+import { CHARACTER_TEMPLATES } from "../../constants/characterTemplates";
 import { BufferedInput } from "@shared/ui/BufferedInput";
 import { useDialog } from "@shared/ui/useDialog";
 import { cn } from "@shared/types/utils";

@@ -1,4 +1,4 @@
-import { ErrorCode } from "../../../shared/constants/errorCode.js";
+import { ErrorCode } from "../../../shared/constants/errors/index.js";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import type {

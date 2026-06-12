@@ -5,7 +5,7 @@ import {
   DEFAULT_EDITOR_THEME_CONTRAST,
   DEFAULT_EDITOR_THEME_TEMP,
   DEFAULT_EDITOR_THEME_TEXTURE,
-} from "@shared/constants/configs";
+} from "@shared/constants/app/configs";
 import { editorSettingsSchema } from "@shared/schemas/index.js";
 import { api } from "@shared/api";
 import { useEditorStore } from "@renderer/domains/editor";

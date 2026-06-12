@@ -10,7 +10,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import JSZip from "jszip";
 import { ServiceError } from "../../../utils/error/index.js";
-import { ErrorCode } from "../../../../shared/constants/errorCode.js";
+import { ErrorCode } from "../../../../shared/constants/errors/index.js";
 import type { ExportOptions, ExportResult } from "../export/index.js";
 import {
   convertHtmlToParagraphs,

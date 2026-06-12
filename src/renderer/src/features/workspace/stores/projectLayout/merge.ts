@@ -1,7 +1,7 @@
 import {
   normalizeLayoutSurfaceRatiosWithMigrations,
-} from "@shared/constants/layoutSizing";
-import { normalizeSidebarWidthsWithMigrations } from "@shared/constants/sidebarSizing";
+} from "@renderer/shared/constants/layoutSizing";
+import { normalizeSidebarWidthsWithMigrations } from "@renderer/shared/constants/sidebarSizing";
 import {
   sanitizePersistedDocsRightTab,
   sanitizeResearchPanelSizes,

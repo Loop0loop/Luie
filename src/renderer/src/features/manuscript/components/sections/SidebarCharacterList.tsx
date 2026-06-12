@@ -12,7 +12,7 @@ import { useCharacterStore } from "@renderer/features/research/stores/characterS
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { cn } from "@shared/types/utils";
-import { CHARACTER_TEMPLATES } from "@shared/constants";
+import { CHARACTER_TEMPLATES } from "@renderer/features/research/constants/characterTemplates";
 import { Modal } from "@shared/ui/Modal";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 

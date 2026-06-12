@@ -1,8 +1,8 @@
 import {
   LUIE_MEMORY_CANONICAL_FILE,
   LUIE_MEMORY_DIR,
-  MEMORY_CANONICAL_EXPORTABLE_TABLES,
 } from "../../../../../shared/constants/index.js";
+import { MEMORY_CANONICAL_EXPORTABLE_TABLES } from "./memoryPersistencePolicy.js";
 import { getProjectAttachmentPath } from "../../../core/project/projectAttachmentStore.js";
 import { LuieMemoryCanonicalSchema } from "../../../core/project/projectLuieSchemas.js";
 import { readLuieContainerEntry } from "../../../io/luieContainer.js";

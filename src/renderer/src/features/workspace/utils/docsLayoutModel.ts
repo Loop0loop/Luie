@@ -8,7 +8,7 @@ import {
   type DocsLayoutPanelTab,
   type LayoutSurfaceConfig,
   type LayoutSurfaceId,
-} from "@shared/constants/layoutSizing";
+} from "@renderer/shared/constants/layoutSizing";
 
 export type DocsLayoutSurfaceState = {
   activePanelSurface: LayoutSurfaceId | null;

@@ -5,7 +5,7 @@ import {
   getDocsLayoutSurfaceState,
   getDocsRightPanelId,
 } from "../../../src/renderer/src/features/workspace/utils/docsLayoutModel.js";
-import { buildDefaultLayoutSurfaceRatios } from "../../../src/shared/constants/layoutSizing.js";
+import { buildDefaultLayoutSurfaceRatios } from "../../../src/renderer/src/shared/constants/layoutSizing.js";
 
 describe("docsLayoutModel", () => {
   it("keeps docs right tab, panel id, and persisted surface aligned", () => {

@@ -1,5 +1,5 @@
 import { eq, and, asc, desc } from "drizzle-orm";
-import { WORLD_SCRAP_MEMOS_SCHEMA_VERSION } from "../../../../shared/constants/persistence.js";
+import { WORLD_SCRAP_MEMOS_SCHEMA_VERSION } from "../../../../shared/constants/storage/persistence.js";
 import { ErrorCode } from "../../../../shared/constants/index.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import type {

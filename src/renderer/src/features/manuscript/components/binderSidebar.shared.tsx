@@ -11,7 +11,7 @@ import {
   User,
 } from "lucide-react";
 import type { DragItemType } from "@shared/ui/GlobalDragContext";
-import type { EditorLayoutPanelTab } from "@shared/constants/layoutSizing";
+import type { EditorLayoutPanelTab } from "@renderer/shared/constants/layoutSizing";
 
 export type BinderTab = EditorLayoutPanelTab;
 

@@ -28,7 +28,7 @@ import {
 import {
   LUIE_PACKAGE_EXTENSION_NO_DOT,
   LUIE_PACKAGE_FILTER_NAME,
-} from "@shared/constants/paths";
+} from "@shared/constants/storage/paths";
 import {
   BootstrapGate,
   parseBootstrapStatus,

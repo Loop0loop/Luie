@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   MEMORY_EVAL_PAIN_POINT_SEED_CASES_PER_CATEGORY,
   WRITER_PAIN_POINT_TAXONOMY,
-} from "../../src/shared/constants/memoryEvalPainPoints.js";
+} from "../../src/main/services/features/memory/eval/memoryEvalPainPoints.js";
 
 const REQUIRED_TAXONOMY_KEYS = [
   "alias-confusion",

@@ -6,7 +6,7 @@ import { beginLayoutRestoring } from "@renderer/features/workspace/hooks/useProj
 import {
   getResponsivePanelSize,
   toPanelPercentSize,
-} from "@shared/constants/layoutSizing";
+} from "@renderer/shared/constants/layoutSizing";
 import { api } from "@shared/api";
 import { BinderSidebarPanelBody } from "./BinderSidebarPanelBody";
 import { BinderSidebarTabs } from "./BinderSidebarTabs";

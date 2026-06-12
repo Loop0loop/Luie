@@ -1,4 +1,4 @@
-import { MEMORY_CANONICAL_EXPORTABLE_TABLES } from "../../../../../../shared/constants/index.js";
+import { MEMORY_CANONICAL_EXPORTABLE_TABLES } from "../memoryPersistencePolicy.js";
 
 const _memoryCanonicalExportableTables = MEMORY_CANONICAL_EXPORTABLE_TABLES;
 

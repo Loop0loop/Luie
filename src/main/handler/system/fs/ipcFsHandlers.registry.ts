@@ -3,14 +3,14 @@ import type { OpenDialogReturnValue, SaveDialogReturnValue } from "electron";
 import * as fsp from "fs/promises";
 import * as path from "path";
 import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
-import { ErrorCode } from "../../../../shared/constants/errorCode.js";
+import { ErrorCode } from "../../../../shared/constants/errors/index.js";
 import {
   LUIE_PACKAGE_EXTENSION,
   LUIE_PACKAGE_EXTENSION_NO_DOT,
   LUIE_PACKAGE_FILTER_NAME,
   MARKDOWN_EXTENSION,
 } from "../../../../shared/constants/index.js";
-import { SNAPSHOT_BACKUP_DIR } from "../../../../shared/constants/paths.js";
+import { SNAPSHOT_BACKUP_DIR } from "../../../../shared/constants/storage/paths.js";
 import { readLuieContainerEntry } from "../../../infra/filesystem/index.js";
 import { registerIpcHandlers } from "../../core/ipcRegistrar.js";
 import type { LoggerLike } from "../../core/types.js";

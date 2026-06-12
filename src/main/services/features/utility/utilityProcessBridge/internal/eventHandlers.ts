@@ -1,6 +1,6 @@
 import { BrowserWindow } from "electron";
 import { IPC_CHANNELS } from "../../../../../../shared/ipc/channels.js";
-import { ErrorCode } from "../../../../../../shared/constants/errorCode.js";
+import { ErrorCode } from "../../../../../../shared/constants/errors/index.js";
 import { createLogger } from "../../../../../../shared/logger/index.js";
 import {
   type RagQaErrorPayload,

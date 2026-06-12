@@ -6,12 +6,12 @@ import {
   setDocsBinderRailOpen,
   setDocsSidebarOpen as setDocsSidebarRegionOpen,
 } from "@renderer/features/workspace/services/layoutRegionActions";
-import type { DocsLayoutPanelTab } from "@shared/constants/layoutSizing";
+import type { DocsLayoutPanelTab } from "@renderer/shared/constants/layoutSizing";
 import { useLayoutPersist } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import {
   EDITOR_RULER_DEFAULT_MARGIN_LEFT_PX,
   EDITOR_RULER_DEFAULT_MARGIN_RIGHT_PX,
-} from "@shared/constants/configs";
+} from "@renderer/shared/constants/editorLayout";
 import type { DocsPageMargins } from "./googleDocsLayout.types";
 import {
   buildDocsLayoutPersistEntries,

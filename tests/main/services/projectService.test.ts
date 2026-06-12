@@ -13,7 +13,7 @@ import {
 } from "../../../src/main/services/core/projectService.js";
 import { db } from "../../../src/main/database/index.js";
 import * as schema from "../../../src/main/database/schema/index.js";
-import { ErrorCode } from "../../../src/shared/constants/errorCode.js";
+import { ErrorCode } from "../../../src/shared/constants/errors/index.js";
 import {
   probeLuieContainer,
   readLuieContainerEntry,

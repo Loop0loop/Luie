@@ -7,7 +7,7 @@ import type {
   GraphPluginManifest,
   WorldEntitySourceType,
 } from "../../../../shared/types/index.js";
-import { isRelationAllowed } from "../../../../shared/constants/worldRelationRules.js";
+import { isRelationAllowed } from "../../../../shared/constants/world/relationRules.js";
 import { ErrorCode } from "../../../../shared/constants/index.js";
 import {
   assertManifestMatchesCatalog as assertManifestCatalogImpl,

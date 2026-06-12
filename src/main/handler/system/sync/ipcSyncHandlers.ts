@@ -4,7 +4,7 @@ import { registerIpcHandlers } from "../../core/ipcRegistrar.js";
 import type { LoggerLike } from "../../core/types.js";
 import type * as SettingsManagerModule from "../../../domains/settings/index.js";
 import type * as SupabaseEnvModule from "../../../domains/sync/index.js";
-import { ErrorCode } from "../../../../shared/constants/errorCode.js";
+import { ErrorCode } from "../../../../shared/constants/errors/index.js";
 import {
   syncRuntimeConfigSetArgsSchema,
   syncRuntimeConfigValidateArgsSchema,

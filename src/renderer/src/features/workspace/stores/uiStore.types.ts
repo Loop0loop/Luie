@@ -1,5 +1,5 @@
-import type { LayoutSurfaceId } from "@shared/constants/layoutSizing";
-import type { SidebarWidthFeature } from "@shared/constants/sidebarSizing";
+import type { LayoutSurfaceId } from "@renderer/shared/constants/layoutSizing";
+import type { SidebarWidthFeature } from "@renderer/shared/constants/sidebarSizing";
 import type { Snapshot } from "@shared/types";
 import type { FocusedClosableTarget } from "./closableFocusStore";
 

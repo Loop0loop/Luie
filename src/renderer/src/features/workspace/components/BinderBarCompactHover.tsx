@@ -31,7 +31,7 @@ import {
   COMPACT_BINDER_MIN_WIDTH_PX,
   COMPACT_BINDER_MAX_WIDTH_PX,
   COMPACT_BINDER_SNAPSHOT_VIEWER_WIDTH_PX,
-} from "@shared/constants/layoutSizing";
+} from "@renderer/shared/constants/layoutSizing";
 
 const SnapshotViewer = lazy(
   () => import("@renderer/features/snapshot/components/SnapshotViewer"),

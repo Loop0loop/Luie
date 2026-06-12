@@ -5,7 +5,7 @@ import { Handle, Position } from "reactflow";
 import { cn } from "@renderer/lib/utils";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import type { WorldEntitySourceType } from "@shared/types";
-import { WORLD_GRAPH_MINIMAP_COLORS } from "@shared/constants/worldGraphUI";
+import { WORLD_GRAPH_MINIMAP_COLORS } from "@renderer/features/research/constants/worldGraphUI";
 
 type CustomEntityNodeProps = {
   id: string;

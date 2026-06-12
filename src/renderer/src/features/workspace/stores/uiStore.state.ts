@@ -2,18 +2,18 @@ import type { StateCreator } from "zustand";
 import {
   DEFAULT_UI_CONTEXT_TAB,
   DEFAULT_UI_VIEW,
-} from "@shared/constants";
+} from "@renderer/features/workspace/constants/uiDefaults";
 import {
   buildDefaultLayoutSurfaceRatios,
   normalizeLayoutSurfaceRatiosWithMigrations,
   type LayoutSurfaceId,
-} from "@shared/constants/layoutSizing";
+} from "@renderer/shared/constants/layoutSizing";
 import {
   buildDefaultSidebarWidths,
   getSynchronizedSidebarWidthFeatures,
   normalizeSidebarWidthInput,
   normalizeSidebarWidthsWithMigrations,
-} from "@shared/constants/sidebarSizing";
+} from "@renderer/shared/constants/sidebarSizing";
 import {
   clearFocusedClosableTarget,
   getFocusedClosableTarget,

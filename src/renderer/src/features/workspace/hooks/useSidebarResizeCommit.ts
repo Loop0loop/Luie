@@ -8,8 +8,8 @@ import type { PanelSize } from "react-resizable-panels";
 import {
   clampSidebarWidth,
   type SidebarWidthFeature,
-} from "@shared/constants/sidebarSizing";
-import { SIDEBAR_RESIZE_COMMIT_IDLE_MS } from "@shared/constants/configs";
+} from "@renderer/shared/constants/sidebarSizing";
+import { SIDEBAR_RESIZE_COMMIT_IDLE_MS } from "@renderer/features/workspace/constants/uiDefaults";
 
 type SidebarWidthSetter = (feature: string, width: number) => void;
 

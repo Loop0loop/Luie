@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { type TFunction } from "i18next";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
-import { CHARACTER_TEMPLATES } from "@shared/constants";
+import { CHARACTER_TEMPLATES } from "../../constants/characterTemplates";
 import { useShallow } from "zustand/react/shallow";
 import { useEntityManager } from "@renderer/features/research/hooks/useEntityManager";
 

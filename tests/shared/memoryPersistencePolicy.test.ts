@@ -6,7 +6,7 @@ import {
   MEMORY_CANONICAL_EXPORTABLE_TABLES,
   MEMORY_PERSISTENCE_CLASSES,
   MEMORY_REGENERABLE_PROJECTION_TABLES,
-} from "../../src/shared/constants/memoryPersistencePolicy.js";
+} from "../../src/main/services/features/memory/persistence/memoryPersistencePolicy.js";
 
 const KNOWN_MEMORY_TABLES = [
   "MemoryChunk",

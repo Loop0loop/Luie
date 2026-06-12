@@ -1,6 +1,6 @@
 import { type ReactNode, useState, useRef, useEffect, useCallback } from "react";
 import { cn } from "@shared/types/utils";
-import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@shared/constants/configs";
+import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@renderer/shared/constants/editorLayout";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 
 interface FocusHoverSidebarProps {

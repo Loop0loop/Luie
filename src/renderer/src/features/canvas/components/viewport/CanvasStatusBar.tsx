@@ -6,7 +6,7 @@
  *   - 이 컴포넌트는 렌더링만 담당합니다.
  */
 import { useTranslation } from "react-i18next";
-import { CANVAS_STATUS_BAR_HEIGHT_PX } from "@shared/constants/layoutSizing";
+import { CANVAS_STATUS_BAR_HEIGHT_PX } from "@renderer/shared/constants/layoutSizing";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useCanvasView } from "../../hooks/useCanvasView";
 import { CANVAS_MODE_I18N } from "../../constants";

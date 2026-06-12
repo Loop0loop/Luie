@@ -15,7 +15,7 @@ import type { Snapshot } from "@shared/types";
 import {
   getEditorLayoutPanelSurface,
   getLayoutSurfaceDefaultRatio,
-} from "@shared/constants/layoutSizing";
+} from "@renderer/shared/constants/layoutSizing";
 
 
 export function useSplitView() {

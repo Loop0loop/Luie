@@ -1,7 +1,7 @@
 import type {
   MemoryEvalCaseType,
   MemoryEvalSeverity,
-} from "../types/memoryEval.js";
+} from "../../../../../shared/types/memoryEval.js";
 
 export type WriterPainPointTaxonomyKey =
   | "alias-confusion"

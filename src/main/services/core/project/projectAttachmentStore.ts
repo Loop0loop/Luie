@@ -5,7 +5,7 @@ import * as schema from "../../../infra/database/index.js";
 import type { MainDrizzleClient, DbLike } from "../../../infra/database/index.js";
 import { ensureSafeAbsolutePath } from "../../../utils/fs/index.js";
 import { ServiceError } from "../../../utils/error/index.js";
-import { ErrorCode } from "../../../../shared/constants/errorCode.js";
+import { ErrorCode } from "../../../../shared/constants/errors/index.js";
 
 const { project, projectAttachment } = schema;
 

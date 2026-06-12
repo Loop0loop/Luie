@@ -12,7 +12,7 @@ import {
   type ResponsivePanelSize,
   toPanelPercentSize,
   type DocsLayoutPanelTab,
-} from "@shared/constants/layoutSizing";
+} from "@renderer/shared/constants/layoutSizing";
 import { beginLayoutRestoring } from "@renderer/features/workspace/hooks/useProjectLayoutPersistence";
 import { getDocsRightPanelId } from "../../utils/docsLayoutModel";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";

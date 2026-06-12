@@ -13,7 +13,7 @@ import type { DbLike } from "../../../../infra/database/index.js";
 import {
   WRITER_PAIN_POINT_TAXONOMY,
   type WriterPainPointTaxonomyKey,
-} from "../../../../../shared/constants/memoryEvalPainPoints.js";
+} from "./memoryEvalPainPoints.js";
 import type {
   MemoryEvalCaseType,
   MemoryEvalSeverity,

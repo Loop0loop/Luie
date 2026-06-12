@@ -4,7 +4,7 @@ import { ProjectService } from "../../../src/main/services/core/projectService.j
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import { projectService } from "../../../src/main/services/core/projectService.js";
 import { generateText } from "../../helpers/generateText";
-import { ErrorCode } from "../../../src/shared/constants/errorCode";
+import { ErrorCode } from "../../../src/shared/constants/errors";
 
 type ChapterRecord = {
   content: string;

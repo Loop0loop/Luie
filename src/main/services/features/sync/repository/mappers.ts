@@ -2,7 +2,7 @@ import { createLogger } from "../../../../../shared/logger/index.js";
 import {
   MEMORY_CANONICAL_EXPORTABLE_TABLES,
   isMemoryRowExportable,
-} from "../../../../../shared/constants/index.js";
+} from "../../memory/persistence/memoryPersistencePolicy.js";
 import type {
   SyncBundle,
   SyncChapterRecord,

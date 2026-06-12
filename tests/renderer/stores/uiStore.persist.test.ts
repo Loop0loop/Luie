@@ -1,8 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  DEFAULT_UI_VIEW,
-  STORAGE_KEY_UI,
-} from "../../../src/shared/constants/index.js";
+import { STORAGE_KEY_UI } from "../../../src/shared/constants/index.js";
+import { DEFAULT_UI_VIEW } from "../../../src/renderer/src/features/workspace/constants/uiDefaults.js";
 
 type StorageLike = {
   getItem: (key: string) => string | null;

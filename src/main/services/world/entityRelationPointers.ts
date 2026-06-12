@@ -1,4 +1,4 @@
-import { isWorldEntityBackedType } from "../../../shared/constants/worldRelationRules.js";
+import { isWorldEntityBackedType } from "../../../shared/constants/world/relationRules.js";
 import type { WorldEntitySourceType } from "../../../shared/types/index.js";
 
 export function buildCanonicalWorldEntityPointers(input: {

@@ -7,7 +7,7 @@ import path from "node:path";
 import * as fsp from "node:fs/promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IPC_CHANNELS } from "../../../src/shared/ipc/channels.js";
-import { ErrorCode } from "../../../src/shared/constants/errorCode.js";
+import { ErrorCode } from "../../../src/shared/constants/errors/index.js";
 import {
   LUIE_PACKAGE_CONTAINER_DIR,
   LUIE_PACKAGE_FORMAT,

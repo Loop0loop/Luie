@@ -45,10 +45,19 @@ renderer feature 전용 UI/상태 값
 
 예시:
 
-- `src/shared/constants/errorCode.ts`
-- `src/shared/constants/paths.ts`
-- `src/shared/constants/persistence.ts`
-- `src/shared/constants/memoryPersistencePolicy.ts`
+- `src/shared/constants/app/*`
+- `src/shared/constants/editor/*`
+- `src/shared/constants/errors/*`
+- `src/shared/constants/runtime/*`
+- `src/shared/constants/storage/*`
+- `src/shared/constants/shortcuts/*`
+- `src/shared/constants/world/*`
+
+호환:
+
+- `src/shared/constants/index.ts`는 shared constants 루트의 유일한 파일이다.
+- `src/shared/constants/app/configs.ts`는 기존 config 계약 호환을 위한 app-domain barrel만 담당한다.
+- 새 상수는 가능하면 위 세부 파일에 직접 추가한다.
 
 주의:
 
@@ -69,6 +78,7 @@ renderer feature 전용 UI/상태 값
 - DB job state machine 정책
 - provider/runtime/download 정책
 - benchmark budget처럼 main script/service에서만 쓰는 값
+- memory canonical export/eval taxonomy처럼 main memory pipeline에서만 쓰는 정책값
 - 도메인 내부 SQL/query limit
 
 권장 위치:
@@ -77,6 +87,8 @@ renderer feature 전용 UI/상태 값
 src/main/services/features/memory/job/policy.ts
 src/main/services/features/memory/job/constants.ts
 src/main/services/features/memory/benchmark/budgets.ts
+src/main/services/features/memory/persistence/memoryPersistencePolicy.ts
+src/main/services/features/memory/eval/memoryEvalPainPoints.ts
 src/main/services/features/rag/internal/constants.ts
 src/main/services/llm/sidecarConstants.ts
 ```
@@ -174,4 +186,3 @@ Phase 1-5 refix에서는 아래 기준을 적용한다.
 3. main과 renderer가 IPC contract로 함께 해석하면 shared에 둔다.
 4. shared로 올린 값은 schema/type/contract와 함께 문서화한다.
 5. 기존 shared 상수 중 renderer-only 또는 main-only로 보이는 값은 즉시 이동하지 않고 별도 cleanup 후보로 기록한다.
-

@@ -1,7 +1,6 @@
 import "dotenv/config";
 import { and, eq, isNull } from "drizzle-orm";
 import { createLogger } from "../../../../shared/logger/index.js";
-import { AUTO_EXTRACT_DEBOUNCE_MS } from "../../../../shared/constants/index.js";
 import { db } from "../../../infra/database/index.js";
 import { character, term } from "../../../infra/database/index.js";
 import { keywordExtractor } from "../../../core/keywordExtractor.js";
@@ -15,6 +14,7 @@ import {
   GeminiResultSchema,
   type GeminiResult,
 } from "./autoExtractPrompt.js";
+import { AUTO_EXTRACT_DEBOUNCE_MS } from "./constants.js";
 
 const logger = createLogger("AutoExtractService");
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";

@@ -17,8 +17,8 @@ import { useProjectStore } from "@renderer/domains/project";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { api } from "@shared/api";
 import type { Chapter, Snapshot } from "@shared/types";
-import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@shared/constants/configs";
-import { SIDEBAR_WIDTH_CONFIG } from "@shared/constants/sidebarSizing";
+import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@renderer/shared/constants/editorLayout";
+import { SIDEBAR_WIDTH_CONFIG } from "@renderer/shared/constants/sidebarSizing";
 import { useDialog } from "@shared/ui/useDialog";
 
 type ResearchItemType =

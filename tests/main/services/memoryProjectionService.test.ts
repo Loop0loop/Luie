@@ -9,7 +9,7 @@ import { searchService } from "../../../src/main/services/features/search/index.
 import { projectService } from "../../../src/main/services/core/projectService.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import type { ServiceError } from "../../../src/main/utils/error/index.js";
-import { ErrorCode } from "../../../src/shared/constants/errorCode.js";
+import { ErrorCode } from "../../../src/shared/constants/errors/index.js";
 import {
   db,
   memoryChunk,

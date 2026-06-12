@@ -10,7 +10,16 @@ import {
     CircleDashed,
     type LucideIcon,
 } from "lucide-react";
-import type { WorldEntitySourceType } from "@shared/types";
+import type { RelationKind, WorldEntitySourceType } from "@shared/types";
+
+export const RELATION_COLORS: Record<RelationKind, string> = {
+    belongs_to: "#c7d2fe",
+    enemy_of: "#fecaca",
+    causes: "#fed7aa",
+    controls: "#e9d5ff",
+    located_in: "#bbf7d0",
+    violates: "#fde68a",
+};
 
 export const WORLD_GRAPH_FALLBACK_COLUMNS = 4;
 export const WORLD_GRAPH_FALLBACK_X_STEP_PX = 280;

@@ -1,4 +1,4 @@
-import type { LayoutSurfaceId } from "@shared/constants/layoutSizing";
+import type { LayoutSurfaceId } from "@renderer/shared/constants/layoutSizing";
 import type {
   DocsRightTab,
   ResearchTab,

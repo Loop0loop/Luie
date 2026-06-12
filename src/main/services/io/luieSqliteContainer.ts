@@ -8,7 +8,7 @@ import {
   LUIE_PACKAGE_META_FILENAME,
   LUIE_PACKAGE_VERSION,
 } from "../../../shared/constants/index.js";
-import { ErrorCode } from "../../../shared/constants/errorCode.js";
+import { ErrorCode } from "../../../shared/constants/errors/index.js";
 import { normalizeZipPath, isSafeZipPath } from "../../utils/package/index.js";
 import { ServiceError } from "../../utils/error/index.js";
 import {

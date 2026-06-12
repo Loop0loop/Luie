@@ -18,7 +18,7 @@ import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { calculateForceLayout } from "../../utils/graphLayout";
 import { GRAPH_CONSTELLATION_EDGE_DEFAULTS } from "../../constants/edge";
-import { CANVAS_ZOOM_MAX, CANVAS_ZOOM_MIN } from "@shared/constants/canvasSizing";
+import { CANVAS_ZOOM_MAX, CANVAS_ZOOM_MIN } from "@renderer/shared/constants/canvasSizing";
 import type { WorldGraphData } from "@shared/types";
 import {
   EDGE_FALLBACK_OPACITY,

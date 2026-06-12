@@ -5,8 +5,8 @@ import { Editor } from "@renderer/domains/editor";
 import type { ResizablePanelData } from "@renderer/features/workspace/stores/uiStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import type { Chapter } from "@shared/types";
-import { toPercentSize } from "@shared/constants/sidebarSizing";
-import { SPLIT_PANEL_MIN_SIZE_PERCENT } from "@shared/constants/layoutSizing";
+import { toPercentSize } from "@renderer/shared/constants/sidebarSizing";
+import { SPLIT_PANEL_MIN_SIZE_PERCENT } from "@renderer/shared/constants/layoutSizing";
 
 // Lazy Loaded Panels
 const ResearchPanel = React.lazy(

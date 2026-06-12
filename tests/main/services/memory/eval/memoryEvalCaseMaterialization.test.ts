@@ -21,7 +21,7 @@ import {
 import {
   MEMORY_EVAL_PAIN_POINT_SEED_CASES_PER_CATEGORY,
   WRITER_PAIN_POINT_TAXONOMY,
-} from "../../../../../src/shared/constants/memoryEvalPainPoints.js";
+} from "../../../../../src/main/services/features/memory/eval/memoryEvalPainPoints.js";
 
 describe("materializeMemoryEvalCasesFromEpisodeEvidence", () => {
   it("creates evidence-recall eval cases from episode evidence", async () => {

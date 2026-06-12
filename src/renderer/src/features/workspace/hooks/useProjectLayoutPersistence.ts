@@ -3,8 +3,8 @@ import type { EditorUiMode } from "@shared/types";
 import {
   normalizeLayoutSurfaceRatiosWithMigrations,
   type LayoutSurfaceId,
-} from "@shared/constants/layoutSizing";
-import { normalizeSidebarWidthsWithMigrations } from "@shared/constants/sidebarSizing";
+} from "@renderer/shared/constants/layoutSizing";
+import { normalizeSidebarWidthsWithMigrations } from "@renderer/shared/constants/sidebarSizing";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import type { ResizablePanelData } from "@renderer/features/workspace/stores/uiStore";
 import {

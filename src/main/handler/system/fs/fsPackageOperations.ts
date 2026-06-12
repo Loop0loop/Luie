@@ -5,7 +5,7 @@ import {
   DEFAULT_PROJECT_FILE_BASENAME,
   LUIE_PACKAGE_EXTENSION,
 } from "../../../../shared/constants/index.js";
-import { ErrorCode } from "../../../../shared/constants/errorCode.js";
+import { ErrorCode } from "../../../../shared/constants/errors/index.js";
 import { sanitizeName } from "../../../../shared/utils/sanitize.js";
 import {
   ensureLuieExtension,

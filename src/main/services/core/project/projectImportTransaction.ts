@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { db } from "../../../infra/database/index.js";
 import * as schema from "../../../infra/database/index.js";
 import { DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS } from "../../../../shared/constants/index.js";
-import { WORLD_SCRAP_MEMOS_SCHEMA_VERSION } from "../../../../shared/constants/persistence.js";
+import { WORLD_SCRAP_MEMOS_SCHEMA_VERSION } from "../../../../shared/constants/storage/persistence.js";
 import { normalizeWorldScrapPayload } from "../../../../shared/world/worldDocumentCodec.js";
 import type { ReplicaWorldDocumentType } from "../../../../shared/types/index.js";
 import type {

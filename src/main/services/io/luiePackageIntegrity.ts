@@ -3,7 +3,7 @@ import {
   LUIE_PACKAGE_FORMAT,
   LUIE_PACKAGE_VERSION,
 } from "../../../shared/constants/index.js";
-import { ErrorCode } from "../../../shared/constants/errorCode.js";
+import { ErrorCode } from "../../../shared/constants/errors/index.js";
 import { ServiceError } from "../../utils/error/index.js";
 
 const isCompatibleLuieVersion = (value: unknown): boolean => {

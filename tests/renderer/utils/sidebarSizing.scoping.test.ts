@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getSidebarDefaultWidth,
   normalizeSidebarWidthsWithMigrations,
-} from "../../../src/shared/constants/sidebarSizing.js";
+} from "../../../src/renderer/src/shared/constants/sidebarSizing.js";
 
 describe("sidebarSizing scoped width migration", () => {
   it("migrates legacy shared right widths into docs/editor scoped keys", () => {

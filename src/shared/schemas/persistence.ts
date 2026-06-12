@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { PROJECT_LAYOUT_SCHEMA_VERSION, UI_STORE_SCHEMA_VERSION } from "../constants/persistence";
+import {
+  PROJECT_LAYOUT_SCHEMA_VERSION,
+  UI_STORE_SCHEMA_VERSION,
+} from "../constants/storage/persistence";
 
 const uiRightPanelTabSchema = z.enum([
   "character",

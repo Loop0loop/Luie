@@ -1,4 +1,4 @@
-import { CANVAS_FIT_VIEW_PADDING } from "@shared/constants/canvasSizing";
+import { CANVAS_FIT_VIEW_PADDING } from "@renderer/shared/constants/canvasSizing";
 
 export const PRO_OPTIONS = { hideAttribution: true } as const;
 export const FIT_VIEW_OPTIONS = { padding: CANVAS_FIT_VIEW_PADDING } as const;

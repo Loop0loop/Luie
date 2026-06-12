@@ -6,11 +6,11 @@ import {
 import {
   buildDefaultLayoutSurfaceRatios,
   normalizeLayoutSurfaceRatiosWithMigrations,
-} from "@shared/constants/layoutSizing";
+} from "@renderer/shared/constants/layoutSizing";
 import {
   buildDefaultSidebarWidths,
   normalizeSidebarWidthsWithMigrations,
-} from "@shared/constants/sidebarSizing";
+} from "@renderer/shared/constants/sidebarSizing";
 import {
   type UiStorePersistedState,
   uiStorePersistedStateSchema,

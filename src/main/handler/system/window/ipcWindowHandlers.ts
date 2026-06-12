@@ -4,7 +4,7 @@ import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
 import { registerIpcHandlers } from "../../core/ipcRegistrar.js";
 import type { LoggerLike } from "../../core/types.js";
 import { ServiceError } from "../../../utils/error/index.js";
-import { ErrorCode } from "../../../../shared/constants/errorCode.js";
+import { ErrorCode } from "../../../../shared/constants/errors/index.js";
 import {
   ensureBootstrapReady,
   getBootstrapStatus,

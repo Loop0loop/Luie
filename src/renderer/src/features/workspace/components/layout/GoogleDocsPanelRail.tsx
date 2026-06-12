@@ -13,7 +13,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
 import { DraggableItem } from "@shared/ui/DraggableItem";
-import type { DocsLayoutPanelTab } from "@shared/constants/layoutSizing";
+import type { DocsLayoutPanelTab } from "@renderer/shared/constants/layoutSizing";
 import type { DragItemType } from "@shared/ui/GlobalDragContext";
 import { useEditorStore } from "@renderer/domains/editor";
 

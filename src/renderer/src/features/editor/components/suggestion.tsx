@@ -2,7 +2,7 @@ import { ReactRenderer } from "@tiptap/react";
 import {
   SUGGESTION_MAX_ITEMS,
   SUGGESTION_POPUP_Z_INDEX,
-} from "@shared/constants";
+} from "@renderer/features/editor/constants/suggestion";
 import type { Content, Editor } from "@tiptap/core";
 import type {
   SuggestionKeyDownProps,

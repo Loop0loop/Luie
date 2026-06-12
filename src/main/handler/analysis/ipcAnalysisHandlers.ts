@@ -1,6 +1,6 @@
 import { BrowserWindow } from "electron";
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
-import { ErrorCode } from "../../../shared/constants/errorCode.js";
+import { ErrorCode } from "../../../shared/constants/errors/index.js";
 import type { AnalysisRequest } from "../../../shared/types/analysis.js";
 import { analysisStartArgsSchema } from "../../../shared/schemas/index.js";
 import { analysisSecurity } from "../../domains/analysis/index.js";

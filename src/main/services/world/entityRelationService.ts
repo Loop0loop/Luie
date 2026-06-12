@@ -5,7 +5,7 @@
 import { asc, eq } from "drizzle-orm";
 import { createLogger } from "../../../shared/logger/index.js";
 import { ErrorCode } from "../../../shared/constants/index.js";
-import { isRelationAllowed } from "../../../shared/constants/worldRelationRules.js";
+import { isRelationAllowed } from "../../../shared/constants/world/relationRules.js";
 import type {
   EntityRelationCreateInput,
   EntityRelationUpdateInput,

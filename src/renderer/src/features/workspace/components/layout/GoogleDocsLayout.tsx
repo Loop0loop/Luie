@@ -9,7 +9,7 @@ import {
 import { Menu } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import WindowBar from "@renderer/features/workspace/components/WindowBar";
-import { getResponsivePanelSize, toPanelPercentSize } from "@shared/constants/layoutSizing";
+import { getResponsivePanelSize, toPanelPercentSize } from "@renderer/shared/constants/layoutSizing";
 import { GoogleDocsEditorColumn } from "./GoogleDocsEditorColumn";
 import { GoogleDocsHeader } from "./GoogleDocsHeader";
 import { GoogleDocsPanelRail } from "./GoogleDocsPanelRail";

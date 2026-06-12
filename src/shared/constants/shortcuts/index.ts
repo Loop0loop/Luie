@@ -1,4 +1,4 @@
-import type { ShortcutAction } from "../types/index.js";
+import type { ShortcutAction } from "../../types/index.js";
 
 export const SHORTCUT_ACTIONS: Array<{ id: ShortcutAction; labelKey: string }> = [
   { id: "app.openSettings", labelKey: "settings.shortcuts.openSettings" },
@@ -58,4 +58,3 @@ export const SHORTCUT_ACTIONS: Array<{ id: ShortcutAction; labelKey: string }> =
   { id: "editor.fontSize.decrease", labelKey: "settings.shortcuts.editorFontDecrease" },
   { id: "window.toggleFullscreen", labelKey: "settings.shortcuts.toggleFullscreen" },
 ];
-

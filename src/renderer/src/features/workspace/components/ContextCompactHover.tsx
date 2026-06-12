@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 import { FocusHoverSidebar } from "@renderer/domains/manuscript";
 import { useProjectStore } from "@renderer/domains/project";
 import { useCharacterStore, useTermStore } from "@renderer/domains/world";
-import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@shared/constants/configs";
-import { SIDEBAR_WIDTH_CONFIG } from "@shared/constants/sidebarSizing";
+import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@renderer/shared/constants/editorLayout";
+import { SIDEBAR_WIDTH_CONFIG } from "@renderer/shared/constants/sidebarSizing";
 
 type ContextTab = "synopsis" | "characters" | "terms";
 

@@ -7,7 +7,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
-import { CHARACTER_TEMPLATES } from "@shared/constants";
+import { CHARACTER_TEMPLATES } from "../../constants/characterTemplates";
 import { cn } from "@shared/types/utils";
 import { Modal } from "@shared/ui/Modal";
 import type { CharacterLike } from "@renderer/features/research/components/character/useCharacterManager";

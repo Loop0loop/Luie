@@ -5,7 +5,7 @@ import { useProjectLayoutStore } from "@renderer/features/workspace/stores/proje
 import {
   normalizeLayoutSurfaceRatioInput,
   type LayoutSurfaceId,
-} from "@shared/constants/layoutSizing";
+} from "@renderer/shared/constants/layoutSizing";
 import { createLogger } from "@shared/logger";
 
 const logger = createLogger("useLayoutPersist");

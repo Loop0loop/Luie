@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { OBSERVABILITY_EVENT_SCHEMA_VERSION } from "../constants/persistence";
+import { OBSERVABILITY_EVENT_SCHEMA_VERSION } from "../constants/storage/persistence";
 
 export type LogSink = Partial<{
   debug: (message: string, data?: unknown) => unknown;

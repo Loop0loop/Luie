@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import { LUIE_PACKAGE_EXTENSION } from "../../../../shared/constants/index.js";
-import { ErrorCode } from "../../../../shared/constants/errorCode.js";
+import { ErrorCode } from "../../../../shared/constants/errors/index.js";
 import type { ProjectDeleteInput } from "../../../../shared/types/index.js";
 import { ensureSafeAbsolutePath } from "../../../utils/fs/index.js";
 import { ServiceError } from "../../../utils/error/index.js";

@@ -1,4 +1,4 @@
-import { ErrorCode } from "@shared/constants/errorCode";
+import { ErrorCode } from "@shared/constants/errors";
 import { i18n } from "@renderer/i18n";
 
 /**
