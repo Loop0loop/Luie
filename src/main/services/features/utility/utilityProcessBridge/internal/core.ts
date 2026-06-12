@@ -188,7 +188,7 @@ export class UtilityProcessBridge {
     if (runHandle?.runId) {
       this.ragRunToWindowId.set(runHandle.runId, targetWindowId);
       this.setRagRunWatchdog(runHandle.runId);
-      this.flushPendingRagEvents(runHandle.runId);
+      await this.flushPendingRagEvents(runHandle.runId);
     }
     return runHandle;
   }
@@ -348,7 +348,9 @@ export class UtilityProcessBridge {
       this.handleSidecarStatusEvent(message.payload);
       return;
     }
-    handleUtilityOutboundMessage(this.eventHost, message);
+    void handleUtilityOutboundMessage(this.eventHost, message).catch((error) => {
+      logger.warn("Failed to handle utility outbound message", { error });
+    });
   }
 
   private get eventHost(): UtilityProcessBridgeEventHost {
@@ -389,8 +391,8 @@ export class UtilityProcessBridge {
     enqueuePendingRagEventInternal(this.eventHost, runId, event);
   }
 
-  private flushPendingRagEvents(runId: string): void {
-    flushPendingRagEventsInternal(this.eventHost, runId);
+  private async flushPendingRagEvents(runId: string): Promise<void> {
+    await flushPendingRagEventsInternal(this.eventHost, runId);
   }
 
   private clearPendingRagEvents(): void {

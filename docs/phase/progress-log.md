@@ -1634,3 +1634,31 @@ pnpm run typecheck
 - rejected answer guard를 실제 RAG answerer/renderer 차단 경로에 연결하지는 않았다.
 - `evidence_helpful` feedback을 eval set 품질 보강 후보로 전환하는 정책은 아직 없다.
 - Electron 화면을 띄운 수동/브라우저 UI 검증은 이번 targeted 검증에 포함하지 않았다.
+
+### 2026-06-13. Phase 7-2 rejected answer guard RAG 결과 연결 1차 완료
+
+확인된 사실:
+
+- RAG final stream payload가 renderer로 전달되기 전에 main RAG guard를 통과한다.
+- guard는 `MemoryEvalFeedback`의 저장된 `answer_wrong` feedback과 같은 project/question/answer 조합을 검사한다.
+- 반복된 rejected answer는 `safety.label = blocked_p0`, `blocksConfirmedAnswer = true`, `reasons += repeated_rejected_answer`로 반환된다.
+- guard 실패 시에는 RAG 완료 이벤트 자체를 깨지 않도록 원본 payload를 전달한다.
+
+아키텍처 부합:
+
+- DB 조회와 feedback guard 판단은 main process service에 유지했다.
+- utility process worker에는 DB/memory feedback 의존성을 추가하지 않았다.
+- renderer는 기존 RAG stream result의 typed safety envelope를 그대로 소비한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/ragRejectedAnswerGuard.test.ts tests/main/services/utilityProcessBridgeRejectedAnswerGuard.test.ts tests/main/services/ragGrounding.test.ts tests/main/services/utilityProcessBridgeProtocol.test.ts tests/main/services/memory/eval/memoryEvalFeedbackService.test.ts
+pnpm exec eslint src/main/services/features/rag/rejectedAnswerGuard.ts src/main/services/features/rag/grounding.ts src/shared/types/search/rag.ts src/main/services/features/utility/utilityProcessBridge/internal/eventHandlers.ts src/main/services/features/utility/utilityProcessBridge/internal/core.ts tests/main/services/ragRejectedAnswerGuard.test.ts tests/main/services/utilityProcessBridgeRejectedAnswerGuard.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- 이미 streaming delta로 표시된 텍스트를 중간에 숨기지는 않는다. 최종 result safety가 차단 상태를 표시한다.
+- `evidence_helpful` feedback을 eval set 품질 보강 후보로 전환하는 정책은 아직 없다.

@@ -49,7 +49,8 @@ export type RagQaSafetyReason =
   | "future_fact_used_in_past_answer"
   | "relation_direction_reversed"
   | "entity_alias_mismatch"
-  | "unresolved_thread_falsely_marked_resolved";
+  | "unresolved_thread_falsely_marked_resolved"
+  | "repeated_rejected_answer";
 
 export interface RagQaSafety {
   label: RagQaSafetyLabel;

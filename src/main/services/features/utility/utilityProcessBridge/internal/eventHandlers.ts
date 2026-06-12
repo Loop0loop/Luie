@@ -9,6 +9,7 @@ import {
   type UtilitySidecarStatusEvent,
   type UtilitySidecarStatus,
 } from "../../../../../../shared/types/index.js";
+import { applyRejectedAnswerGuardToRagResult } from "../../../rag/rejectedAnswerGuard.js";
 import {
   RAG_RUN_WATCHDOG_MS,
   type PendingRagEvent,
@@ -27,17 +28,17 @@ export interface UtilityProcessBridgeEventHost {
   lastSidecarStatuses: Map<UtilitySidecarPurpose, UtilitySidecarStatus>;
   setRagRunWatchdog: (runId: string) => void;
   clearRagRunWatchdog: (runId: string) => void;
-  flushPendingRagEvents: (runId: string) => void;
+  flushPendingRagEvents: (runId: string) => Promise<void>;
   enqueuePendingRagEvent: (runId: string, event: PendingRagEvent) => void;
   clearPendingRagEvents: () => void;
   emitCrashErrorsToActiveRuns: (message: string) => void;
   stopRagQaAsync: (runId: string) => void;
 }
 
-export const handleUtilityOutboundMessage = (
+export const handleUtilityOutboundMessage = async (
   bridge: UtilityProcessBridgeEventHost,
   message: UtilityOutboundMessage,
-): void => {
+): Promise<void> => {
   if (message.type === "response") {
     const pending = bridge.pendingRequests.get(message.requestId);
     if (!pending) return;
@@ -56,7 +57,7 @@ export const handleUtilityOutboundMessage = (
   }
 
   if (message.type === "event" && message.event === "ragQa.stream") {
-    forwardRagStream(bridge, message.payload);
+    await forwardRagStream(bridge, message.payload);
     return;
   }
   if (message.type === "event" && message.event === "ragQa.error") {
@@ -101,10 +102,10 @@ const broadcastSidecarStatus = (payload: UtilitySidecarStatusEvent): void => {
   }
 };
 
-export const forwardRagStream = (
+export const forwardRagStream = async (
   bridge: UtilityProcessBridgeEventHost,
   payload: RagQaStreamPayload,
-): void => {
+): Promise<void> => {
   const targetId = bridge.ragRunToWindowId.get(payload.runId);
   if (!targetId) {
     bridge.enqueuePendingRagEvent(payload.runId, { kind: "stream", payload });
@@ -116,7 +117,10 @@ export const forwardRagStream = (
     return;
   }
   bridge.setRagRunWatchdog(payload.runId);
-  targetWindow.webContents.send(IPC_CHANNELS.RAG_QA_STREAM, payload);
+  targetWindow.webContents.send(
+    IPC_CHANNELS.RAG_QA_STREAM,
+    await guardCompletedRagStreamPayload(payload),
+  );
   if (payload.done) {
     bridge.clearRagRunWatchdog(payload.runId);
     bridge.ragRunToWindowId.delete(payload.runId);
@@ -186,10 +190,10 @@ export const enqueuePendingRagEventInternal = (
   }
 };
 
-export const flushPendingRagEventsInternal = (
+export const flushPendingRagEventsInternal = async (
   bridge: UtilityProcessBridgeEventHost,
   runId: string,
-): void => {
+): Promise<void> => {
   const timer = bridge.pendingRagEventTimers.get(runId);
   if (timer) {
     clearTimeout(timer);
@@ -198,14 +202,35 @@ export const flushPendingRagEventsInternal = (
   const events = bridge.pendingRagEvents.get(runId);
   if (!events || events.length === 0) return;
   bridge.pendingRagEvents.delete(runId);
-  for (const event of events) {
+  await events.reduce<Promise<void>>(async (previous, event) => {
+    await previous;
     if (event.kind === "stream") {
-      forwardRagStream(bridge, event.payload);
+      await forwardRagStream(bridge, event.payload);
     } else {
       forwardRagError(bridge, event.payload);
     }
-  }
+  }, Promise.resolve());
 };
+
+async function guardCompletedRagStreamPayload(
+  payload: RagQaStreamPayload,
+): Promise<RagQaStreamPayload> {
+  if (!payload.done || !payload.result) {
+    return payload;
+  }
+  try {
+    return {
+      ...payload,
+      result: await applyRejectedAnswerGuardToRagResult(payload.result),
+    };
+  } catch (error) {
+    logger.warn("Failed to apply rejected answer guard to RAG result", {
+      runId: payload.runId,
+      error,
+    });
+    return payload;
+  }
+}
 
 export const clearPendingRagEventsInternal = (
   bridge: UtilityProcessBridgeEventHost,

@@ -76,6 +76,14 @@ export function buildRagAnswerSafety(input: {
     };
   }
   if (p0Failures.length > 0) {
+    if (p0Failures.includes("repeated_rejected_answer")) {
+      return {
+        label: "blocked_p0",
+        message: "이전에 틀렸다고 표시된 동일 답변입니다.",
+        blocksConfirmedAnswer: true,
+        reasons: p0Failures,
+      };
+    }
     return {
       label: "blocked_p0",
       message: "검수 실패가 있어 확정 답변으로 표시하지 않습니다.",
