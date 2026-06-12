@@ -6,7 +6,7 @@
 
 - 이 문서의 writer-product phase 기준 최신 명시 완료 지점은 **Phase 5-4 writer workflow scenario coverage 1차 완료**다.
 - Phase 6-1 canonical sync verifier의 scoped id/source id mismatch 보고와 DB-level import/rebuild source id 검증은 1차 완료되어 있다.
-- Phase 6-2 canonical memory payload schema version compatibility의 legacy/missing-version 허용과 future-version 거부는 1차 완료되어 있다.
+- Phase 6-2 canonical memory payload schema version compatibility의 legacy/missing-version 허용, future-version 거부, unknown row field discard 정책은 1차 완료되어 있다.
 - Phase 3-3에서 conflict quote queue와 기존 conflict resolve IPC/UI 연결은 이미 1차 완료되어 있다.
 - Phase 5-2의 완료 기준인 conflict ledger 연결과 confirm/reject/defer 계열 memory 상태 반영 기반은 있다. `defer`와 `resolved`는 `MemoryFactInvalidation.reviewStatus`로 영속화된다.
 

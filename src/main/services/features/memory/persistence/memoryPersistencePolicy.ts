@@ -3,6 +3,8 @@ export const MEMORY_PERSISTENCE_CLASSES = {
   REGENERABLE_PROJECTION: "regenerable_projection",
 } as const;
 
+export const MEMORY_CANONICAL_UNKNOWN_ROW_FIELD_POLICY = "discard" as const;
+
 export type MemoryPersistenceClass =
   typeof MEMORY_PERSISTENCE_CLASSES[keyof typeof MEMORY_PERSISTENCE_CLASSES];
 

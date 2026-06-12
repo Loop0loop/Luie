@@ -1299,3 +1299,25 @@ pnpm vitest tests/main/services/memory/persistence/memoryCanonicalPackage.test.t
 
 - schema version별 fixture matrix는 아직 v1/missing-version 중심이다.
 - unknown row field의 보존/폐기 정책은 apply/import 단계별로 더 명확히 문서화해야 한다.
+
+### 2026-06-12. Phase 6-2 canonical memory unknown row field discard 정책 1차 완료
+
+확인된 사실:
+
+- `MEMORY_CANONICAL_UNKNOWN_ROW_FIELD_POLICY = "discard"`를 main memory persistence policy에 추가했다.
+- canonical memory schema는 compatibility를 위해 unknown row field를 parse 단계에서 허용하지만, apply/import 단계는 명시적으로 매핑한 DB column만 저장한다.
+
+아키텍처 부합:
+
+- policy 값은 main memory persistence domain 안에 둬서 shared/renderer contract를 늘리지 않았다.
+- 기존 `.luie` package format과 import transaction shape는 변경하지 않았다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/persistence/memoryCanonicalPackage.test.ts
+```
+
+제한:
+
+- unknown row field discard가 실제 `.luie` 파일 import UI에서 사용자에게 노출되는지는 아직 검증하지 않았다.

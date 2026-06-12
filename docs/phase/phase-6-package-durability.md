@@ -47,11 +47,12 @@
 
 - `schemaVersion`이 없는 legacy canonical memory payload는 v1로 읽을 수 있다.
 - future `schemaVersion`은 조용히 받아들이지 않고 unsupported schema로 거부한다.
+- canonical memory row의 unknown field는 import/apply 단계에서 DB column으로 보존하지 않고 discard하는 정책을 코드 상수로 고정했다.
 
 아직 남은 범위:
 
 - schema version별 fixture matrix는 아직 v1/missing-version 중심이다.
-- unknown row field의 보존/폐기 정책은 apply/import 단계별로 더 명확히 문서화해야 한다.
+- unknown row field의 discard가 실제 `.luie` 파일 import UI에서 사용자에게 노출되는지는 아직 검증하지 않았다.
 
 ### Phase 6-3. crash-safe export
 

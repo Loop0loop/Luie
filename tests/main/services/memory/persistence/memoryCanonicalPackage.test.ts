@@ -12,6 +12,7 @@ import {
   project,
 } from "../../../../../src/main/infra/database/index.js";
 import { LuieMemoryCanonicalSchema } from "../../../../../src/main/services/core/project/projectLuieSchemas.js";
+import { MEMORY_CANONICAL_UNKNOWN_ROW_FIELD_POLICY } from "../../../../../src/main/services/features/memory/persistence/index.js";
 import {
   applyMemoryCanonicalPackagePayload,
   buildMemoryCanonicalPackagePayload,
@@ -54,6 +55,10 @@ describe("LuieMemoryCanonicalSchema compatibility", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("documents canonical memory unknown row fields as discarded on import", () => {
+    expect(MEMORY_CANONICAL_UNKNOWN_ROW_FIELD_POLICY).toBe("discard");
   });
 });
 
