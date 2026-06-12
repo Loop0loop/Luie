@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   MEMORY_WRITER_TASK_BENCHMARK_TASKS,
+  assessMemoryWriterTaskBenchmarkThresholds,
   classifyMemoryWriterTaskBenchmarkCase,
   summarizeMemoryWriterTaskBenchmark,
 } from "../../../../../src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.js";
@@ -175,5 +176,72 @@ describe("memoryWriterTaskBenchmark", () => {
         }),
       ]),
     );
+  });
+
+  it("refuses threshold calibration when beta sample count is insufficient", () => {
+    const summary = summarizeMemoryWriterTaskBenchmark([
+      {
+        evalCase: makeCase("setting", {}),
+        scoreResult: makeScore("setting", {}),
+        responseTimeMs: 120,
+      },
+    ]);
+
+    expect(
+      assessMemoryWriterTaskBenchmarkThresholds({
+        summaries: [summary],
+        minimumBetaRunCount: 3,
+      }),
+    ).toEqual({
+      status: "insufficient_beta_data",
+      betaRunCount: 1,
+      minimumBetaRunCount: 3,
+      failures: [],
+    });
+  });
+
+  it("assesses writer benchmark thresholds only after enough beta samples exist", () => {
+    const passing = summarizeMemoryWriterTaskBenchmark([
+      {
+        evalCase: makeCase("setting", {}),
+        scoreResult: makeScore("setting", {}),
+        responseTimeMs: 120,
+      },
+    ]);
+    const failing = summarizeMemoryWriterTaskBenchmark([
+      {
+        evalCase: makeCase("draft", {
+          question: "폐기 설정을 확정해도 되나?",
+        }),
+        scoreResult: makeScore("draft", {
+          contextRecallAtK: 0,
+          p0FailureCount: 1,
+          p0Failures: ["deleted_or_draft_fact_confirmed"],
+        }),
+        responseTimeMs: 1200,
+      },
+    ]);
+
+    expect(
+      assessMemoryWriterTaskBenchmarkThresholds({
+        summaries: [passing, passing, failing],
+        minimumBetaRunCount: 3,
+        thresholds: {
+          minSuccessRate: 0.8,
+          minEvidenceSatisfactionRate: 0.7,
+          maxFalseConfidenceRate: 0.1,
+          maxAverageResponseTimeMs: 800,
+        },
+      }),
+    ).toEqual({
+      status: "failed",
+      betaRunCount: 3,
+      minimumBetaRunCount: 3,
+      failures: [
+        "successRate",
+        "evidenceSatisfactionRate",
+        "falseConfidenceRate",
+      ],
+    });
   });
 });

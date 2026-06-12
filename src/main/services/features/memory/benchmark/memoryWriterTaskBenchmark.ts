@@ -19,6 +19,26 @@ export type MemoryWriterTaskBenchmarkCaseResult = {
   responseTimeMs?: number;
 };
 
+export type MemoryWriterTaskBenchmarkThresholds = {
+  minSuccessRate: number;
+  minEvidenceSatisfactionRate: number;
+  maxFalseConfidenceRate: number;
+  maxAverageResponseTimeMs: number;
+};
+
+export type MemoryWriterTaskBenchmarkThresholdFailure =
+  | "successRate"
+  | "evidenceSatisfactionRate"
+  | "falseConfidenceRate"
+  | "averageResponseTimeMs";
+
+export type MemoryWriterTaskBenchmarkThresholdAssessment = {
+  status: "passed" | "failed" | "insufficient_beta_data";
+  betaRunCount: number;
+  minimumBetaRunCount: number;
+  failures: MemoryWriterTaskBenchmarkThresholdFailure[];
+};
+
 export const MEMORY_WRITER_TASK_BENCHMARK_TASKS: readonly MemoryWriterTaskBenchmarkTask[] =
   [
     {
@@ -118,6 +138,57 @@ export function summarizeMemoryWriterTaskBenchmark(
   };
 }
 
+export function assessMemoryWriterTaskBenchmarkThresholds(input: {
+  summaries: MemoryWriterTaskBenchmarkSummary[];
+  minimumBetaRunCount: number;
+  thresholds?: MemoryWriterTaskBenchmarkThresholds;
+}): MemoryWriterTaskBenchmarkThresholdAssessment {
+  const betaRunCount = input.summaries.length;
+  if (betaRunCount < input.minimumBetaRunCount) {
+    return {
+      status: "insufficient_beta_data",
+      betaRunCount,
+      minimumBetaRunCount: input.minimumBetaRunCount,
+      failures: [],
+    };
+  }
+  const thresholds = input.thresholds ?? DEFAULT_WRITER_TASK_BENCHMARK_THRESHOLDS;
+  const aggregate = aggregateBenchmarkSummaries(input.summaries);
+  const failures: MemoryWriterTaskBenchmarkThresholdFailure[] = [];
+  if (aggregate.successRate < thresholds.minSuccessRate) {
+    failures.push("successRate");
+  }
+  if (
+    aggregate.evidenceSatisfactionRate <
+    thresholds.minEvidenceSatisfactionRate
+  ) {
+    failures.push("evidenceSatisfactionRate");
+  }
+  if (aggregate.falseConfidenceRate > thresholds.maxFalseConfidenceRate) {
+    failures.push("falseConfidenceRate");
+  }
+  if (
+    aggregate.averageResponseTimeMs !== null &&
+    aggregate.averageResponseTimeMs > thresholds.maxAverageResponseTimeMs
+  ) {
+    failures.push("averageResponseTimeMs");
+  }
+  return {
+    status: failures.length === 0 ? "passed" : "failed",
+    betaRunCount,
+    minimumBetaRunCount: input.minimumBetaRunCount,
+    failures,
+  };
+}
+
+export const DEFAULT_WRITER_TASK_BENCHMARK_THRESHOLDS: MemoryWriterTaskBenchmarkThresholds =
+  {
+    minSuccessRate: 0.8,
+    minEvidenceSatisfactionRate: 0.75,
+    maxFalseConfidenceRate: 0.05,
+    maxAverageResponseTimeMs: 5_000,
+  };
+
 function summarizeTask(
   taskId: MemoryWriterTaskBenchmarkTaskId,
   results: MemoryWriterTaskBenchmarkCaseResult[],
@@ -169,4 +240,42 @@ function isSuccessfulCase(result: MemoryWriterTaskBenchmarkCaseResult): boolean 
 function ratio(numerator: number, denominator: number): number {
   if (denominator === 0) return 0;
   return numerator / denominator;
+}
+
+function aggregateBenchmarkSummaries(
+  summaries: MemoryWriterTaskBenchmarkSummary[],
+): Pick<
+  MemoryWriterTaskBenchmarkSummary,
+  | "successRate"
+  | "averageResponseTimeMs"
+  | "evidenceSatisfactionRate"
+  | "falseConfidenceRate"
+> {
+  const averageResponseTimes = summaries
+    .map((summary) => summary.averageResponseTimeMs)
+    .filter((value): value is number => typeof value === "number");
+  return {
+    successRate: averageMetric(summaries, (summary) => summary.successRate),
+    averageResponseTimeMs:
+      averageResponseTimes.length === 0
+        ? null
+        : averageResponseTimes.reduce((sum, value) => sum + value, 0) /
+          averageResponseTimes.length,
+    evidenceSatisfactionRate: averageMetric(
+      summaries,
+      (summary) => summary.evidenceSatisfactionRate,
+    ),
+    falseConfidenceRate: averageMetric(
+      summaries,
+      (summary) => summary.falseConfidenceRate,
+    ),
+  };
+}
+
+function averageMetric(
+  summaries: MemoryWriterTaskBenchmarkSummary[],
+  select: (summary: MemoryWriterTaskBenchmarkSummary) => number,
+): number {
+  if (summaries.length === 0) return 0;
+  return summaries.reduce((sum, summary) => sum + select(summary), 0) / summaries.length;
 }

@@ -1725,3 +1725,31 @@ pnpm run check:drizzle:main
 
 - 실제 작가 베타 데이터 기반 threshold는 아직 확정하지 않았다.
 - benchmark summary JSON의 장기 canonical package 포함 여부는 정하지 않았다. 이번 단계는 DB run artifact 저장으로 제한했다.
+
+### 2026-06-13. Phase 7-1 writer task benchmark threshold calibration gate 1차 완료
+
+확인된 사실:
+
+- `assessMemoryWriterTaskBenchmarkThresholds`를 추가했다.
+- beta run sample 수가 `minimumBetaRunCount`보다 적으면 `insufficient_beta_data`를 반환한다.
+- beta sample이 충분할 때만 successRate, evidenceSatisfactionRate, falseConfidenceRate, averageResponseTimeMs threshold를 평가한다.
+- 현재 repo 안에는 실제 작가 베타 데이터셋이 없어 threshold 값을 확정하지 않았다.
+
+아키텍처 부합:
+
+- threshold 판단은 main memory benchmark domain의 pure policy로 추가했다.
+- 실제 데이터가 없을 때 임의 threshold를 확정값처럼 저장하지 않는다.
+- DB schema, IPC, preload contract는 변경하지 않았다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/benchmark/memoryWriterTaskBenchmark.test.ts tests/main/services/memory/eval/memoryEvalRunner.test.ts
+pnpm exec eslint src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.ts tests/main/services/memory/benchmark/memoryWriterTaskBenchmark.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- 실제 작가 베타 데이터 기반 threshold 값은 아직 확정하지 않았다. 근거가 부족하다.
+- gate를 실행하는 CLI/CI 명령은 아직 없다.
