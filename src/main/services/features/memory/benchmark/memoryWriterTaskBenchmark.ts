@@ -2,14 +2,10 @@ import type {
   MemoryEvalCaseDefinition,
   MemoryEvalP0Failure,
   MemoryEvalScoreResult,
+  MemoryWriterTaskBenchmarkSummary,
+  MemoryWriterTaskBenchmarkTaskId,
+  MemoryWriterTaskBenchmarkTaskSummary,
 } from "../../../../../shared/types/index.js";
-
-export type MemoryWriterTaskBenchmarkTaskId =
-  | "setting-check"
-  | "character-relation-check"
-  | "thread-resolution-check"
-  | "chapter-knowledge-state-check"
-  | "draft-canon-conflict-check";
 
 export type MemoryWriterTaskBenchmarkTask = {
   id: MemoryWriterTaskBenchmarkTaskId;
@@ -21,28 +17,6 @@ export type MemoryWriterTaskBenchmarkCaseResult = {
   evalCase: MemoryEvalCaseDefinition;
   scoreResult: MemoryEvalScoreResult;
   responseTimeMs?: number;
-};
-
-export type MemoryWriterTaskBenchmarkTaskSummary = {
-  taskId: MemoryWriterTaskBenchmarkTaskId;
-  caseCount: number;
-  successCount: number;
-  successRate: number;
-  averageResponseTimeMs: number | null;
-  evidenceSatisfactionRate: number;
-  falseConfidenceRate: number;
-  p0FailureCount: number;
-};
-
-export type MemoryWriterTaskBenchmarkSummary = {
-  schemaVersion: 1;
-  taskCount: number;
-  caseCount: number;
-  successRate: number;
-  averageResponseTimeMs: number | null;
-  evidenceSatisfactionRate: number;
-  falseConfidenceRate: number;
-  tasks: MemoryWriterTaskBenchmarkTaskSummary[];
 };
 
 export const MEMORY_WRITER_TASK_BENCHMARK_TASKS: readonly MemoryWriterTaskBenchmarkTask[] =

@@ -1447,3 +1447,31 @@ pnpm vitest tests/main/services/memory/benchmark/memoryWriterTaskBenchmark.test.
 
 - 실제 live writer benchmark runner와 DB 저장은 아직 없다.
 - 실제 작가 베타 데이터 기반 threshold는 아직 확정하지 않았다.
+
+### 2026-06-12. Phase 7-1 live eval writer task summary 연결
+
+확인된 사실:
+
+- `runLiveMemoryEvalSuite`가 answerer 호출 시간을 case별로 측정한다.
+- live eval result에 `writerTaskBenchmark` summary를 포함한다.
+- summary는 task별 성공률, 평균 응답 시간, 근거 만족도, false confidence rate를 반환한다.
+- renderer/API가 사용하는 `MemoryEvalLiveRunnerResult` shared DTO에 해당 summary contract를 추가했다.
+
+아키텍처 부합:
+
+- live eval result는 이미 shared DTO와 renderer report 경계로 전달되는 값이므로, summary contract를 shared type에 둔 것은 shared의 DTO 역할과 부합한다.
+- response time 측정과 summary 계산은 main memory eval/benchmark domain 내부에 유지했다.
+- IPC channel/preload API shape는 기존 `runEvalSuite` response envelope를 유지하고, payload DTO만 확장했다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/benchmark/memoryWriterTaskBenchmark.test.ts tests/main/services/memory/eval/memoryEvalRunner.test.ts
+pnpm exec eslint src/shared/types/memoryEval.ts src/shared/types/index.ts src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.ts src/main/services/features/memory/eval/memoryEvalRunner.ts tests/main/services/memory/benchmark/memoryWriterTaskBenchmark.test.ts tests/main/services/memory/eval/memoryEvalRunner.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- writer task benchmark summary를 별도 DB row로 저장하지는 않는다.
+- 실제 작가 베타 데이터 기반 threshold는 아직 확정하지 않았다.

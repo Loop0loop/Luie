@@ -12,12 +12,13 @@
 - Phase 6-3 atomic replace 실패 후 backup restore branch 검증은 기존 rollback 테스트로 확인되어 있다.
 - Phase 6-3 corrupted package를 DB state에서 `.recovered-*` sqlite-v2 package로 복구하는 경로는 targeted test로 확인되어 있다.
 - Phase 7-1 writer task benchmark의 5개 작가 작업 taxonomy와 metric summary 계약은 1차 완료되어 있다.
+- Phase 7-1 live memory eval runner는 writer task benchmark summary와 case별 answerer 응답 시간 측정을 반환한다.
 - Phase 3-3에서 conflict quote queue와 기존 conflict resolve IPC/UI 연결은 이미 1차 완료되어 있다.
 - Phase 5-2의 완료 기준인 conflict ledger 연결과 confirm/reject/defer 계열 memory 상태 반영 기반은 있다. `defer`와 `resolved`는 `MemoryFactInvalidation.reviewStatus`로 영속화된다.
 
 판단:
 
-- 현재는 **Phase 7-1 writer task benchmark 계약 1차 완료 상태**다.
+- 현재는 **Phase 7-1 live writer task benchmark summary 연결 완료 상태**다.
 - 다만 실제 renderer/UI 조작까지 포함한 package durability E2E는 추가 보강 대상으로 남아 있다.
 
 ## 문서 구조

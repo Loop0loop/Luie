@@ -216,6 +216,9 @@ export type {
   MemoryEvalSuiteCaseInput,
   MemoryEvalSuiteInput,
   MemoryEvalSuiteResult,
+  MemoryWriterTaskBenchmarkSummary,
+  MemoryWriterTaskBenchmarkTaskId,
+  MemoryWriterTaskBenchmarkTaskSummary,
 } from "./memoryEval";
 
 export type {

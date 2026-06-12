@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { performance } from "node:perf_hooks";
 import { eq } from "drizzle-orm";
 import {
   db,
@@ -16,6 +17,7 @@ import type {
 } from "../../../../../shared/types/index.js";
 import { parseMemoryEvalAnswerJudgeResult } from "./memoryEvalAnswerJudge.js";
 import { runMemoryEvalSuite } from "./memoryEvalScoring.js";
+import { summarizeMemoryWriterTaskBenchmark } from "../benchmark/memoryWriterTaskBenchmark.js";
 
 async function loadProjectEvalCases(
   projectId: string,
@@ -91,8 +93,10 @@ export async function runLiveMemoryEvalSuite(
     const suiteCases: MemoryEvalSuiteCaseInput[] = [];
     const answersByCase = new Map<string, string>();
     const answerJudgeJsonByCase = new Map<string, string>();
+    const responseTimeMsByCase = new Map<string, number>();
 
     for (const evalCase of cases) {
+      const answerStartMs = performance.now();
       // eslint-disable-next-line no-await-in-loop -- eval cases run sequentially so persisted answers match deterministic case order.
       const answer = await input.answerer({
         projectId: input.projectId,
@@ -101,6 +105,7 @@ export async function runLiveMemoryEvalSuite(
         expectedAnswer: evalCase.expectedAnswer,
         caseType: evalCase.caseType,
       });
+      responseTimeMsByCase.set(evalCase.id, performance.now() - answerStartMs);
       answersByCase.set(evalCase.id, answer.answer);
       if (input.answerJudge) {
         // eslint-disable-next-line no-await-in-loop -- judge output is tied to the sequential answer for the same eval case.
@@ -131,6 +136,22 @@ export async function runLiveMemoryEvalSuite(
       topK: input.topK,
       cases: suiteCases,
     });
+    const scoreResultByCase = new Map(
+      suiteResult.results.map((result) => [result.caseId, result]),
+    );
+    const writerTaskBenchmark = summarizeMemoryWriterTaskBenchmark(
+      cases.flatMap((evalCase) => {
+        const scoreResult = scoreResultByCase.get(evalCase.id);
+        if (!scoreResult) return [];
+        return [
+          {
+            evalCase,
+            scoreResult,
+            responseTimeMs: responseTimeMsByCase.get(evalCase.id),
+          },
+        ];
+      }),
+    );
 
     for (const result of suiteResult.results) {
       // eslint-disable-next-line no-await-in-loop -- result rows are persisted one-by-one for traceable run records.
@@ -169,6 +190,7 @@ export async function runLiveMemoryEvalSuite(
     return {
       runId,
       ...suiteResult,
+      writerTaskBenchmark,
     };
   } catch (error) {
     await db

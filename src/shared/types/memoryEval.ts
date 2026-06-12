@@ -128,6 +128,35 @@ export interface MemoryEvalSuiteResult {
   results: MemoryEvalScoreResult[];
 }
 
+export type MemoryWriterTaskBenchmarkTaskId =
+  | "setting-check"
+  | "character-relation-check"
+  | "thread-resolution-check"
+  | "chapter-knowledge-state-check"
+  | "draft-canon-conflict-check";
+
+export interface MemoryWriterTaskBenchmarkTaskSummary {
+  taskId: MemoryWriterTaskBenchmarkTaskId;
+  caseCount: number;
+  successCount: number;
+  successRate: number;
+  averageResponseTimeMs: number | null;
+  evidenceSatisfactionRate: number;
+  falseConfidenceRate: number;
+  p0FailureCount: number;
+}
+
+export interface MemoryWriterTaskBenchmarkSummary {
+  schemaVersion: 1;
+  taskCount: number;
+  caseCount: number;
+  successRate: number;
+  averageResponseTimeMs: number | null;
+  evidenceSatisfactionRate: number;
+  falseConfidenceRate: number;
+  tasks: MemoryWriterTaskBenchmarkTaskSummary[];
+}
+
 export interface MemoryEvalAnswererInput {
   projectId: string;
   caseId: string;
@@ -171,4 +200,5 @@ export interface MemoryEvalRunRequest {
 
 export interface MemoryEvalLiveRunnerResult extends MemoryEvalSuiteResult {
   runId: string;
+  writerTaskBenchmark: MemoryWriterTaskBenchmarkSummary;
 }

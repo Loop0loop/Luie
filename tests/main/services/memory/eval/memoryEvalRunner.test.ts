@@ -115,6 +115,26 @@ describe("runLiveMemoryEvalSuite", () => {
     expect(result.p0FailureTypeCounts).toEqual({
       relation_direction_reversed: 1,
     });
+    expect(result.writerTaskBenchmark).toMatchObject({
+      schemaVersion: 1,
+      taskCount: 5,
+      caseCount: 1,
+      successRate: 0,
+      evidenceSatisfactionRate: 1,
+      falseConfidenceRate: 0,
+    });
+    expect(result.writerTaskBenchmark.averageResponseTimeMs).toBeGreaterThanOrEqual(
+      0,
+    );
+    expect(result.writerTaskBenchmark.tasks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: "character-relation-check",
+          caseCount: 1,
+          p0FailureCount: 1,
+        }),
+      ]),
+    );
 
     const [runRow] = await db
       .getClient()
