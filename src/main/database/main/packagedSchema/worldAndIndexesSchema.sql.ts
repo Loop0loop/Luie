@@ -183,6 +183,8 @@ CREATE INDEX IF NOT EXISTS "MemoryEvalRun_projectId_status_idx" ON "MemoryEvalRu
 CREATE INDEX IF NOT EXISTS "MemoryEvalResult_runId_idx" ON "MemoryEvalResult"("runId");
 CREATE INDEX IF NOT EXISTS "MemoryEvalResult_caseId_idx" ON "MemoryEvalResult"("caseId");
 CREATE INDEX IF NOT EXISTS "MemoryEvalResult_projectId_p0_idx" ON "MemoryEvalResult"("projectId", "p0FailureCount");
+CREATE INDEX IF NOT EXISTS "MemoryWriterTaskBenchmarkRun_runId_idx" ON "MemoryWriterTaskBenchmarkRun"("runId");
+CREATE INDEX IF NOT EXISTS "MemoryWriterTaskBenchmarkRun_projectId_updatedAt_idx" ON "MemoryWriterTaskBenchmarkRun"("projectId", "updatedAt");
 CREATE INDEX IF NOT EXISTS "MemoryEvalFeedback_projectId_status_idx" ON "MemoryEvalFeedback"("projectId", "status");
 CREATE INDEX IF NOT EXISTS "MemoryEvalFeedback_projectId_kind_idx" ON "MemoryEvalFeedback"("projectId", "feedbackKind");
 CREATE INDEX IF NOT EXISTS "MemoryEvalFeedback_caseId_idx" ON "MemoryEvalFeedback"("caseId");

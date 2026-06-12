@@ -8,6 +8,7 @@ import {
   memoryEvalRelation,
   memoryEvalResult,
   memoryEvalRun,
+  memoryWriterTaskBenchmarkRun,
   memoryFact,
   project,
 } from "../../../../../src/main/infra/database/index.js";
@@ -148,6 +149,28 @@ describe("runLiveMemoryEvalSuite", () => {
         }),
       ]),
     );
+    const [benchmarkRow] = await db
+      .getClient()
+      .select()
+      .from(memoryWriterTaskBenchmarkRun)
+      .where(eq(memoryWriterTaskBenchmarkRun.runId, result.runId));
+    expect(benchmarkRow).toMatchObject({
+      runId: result.runId,
+      projectId,
+      schemaVersion: 1,
+      taskCount: 5,
+      caseCount: 1,
+      successRate: 0,
+      evidenceSatisfactionRate: 1,
+      falseConfidenceRate: 0,
+      p0FailureCount: 1,
+      updatedAt: nowIso,
+    });
+    expect(JSON.parse(benchmarkRow.summaryJson)).toMatchObject({
+      schemaVersion: 1,
+      taskCount: 5,
+      caseCount: 1,
+    });
 
     const [runRow] = await db
       .getClient()

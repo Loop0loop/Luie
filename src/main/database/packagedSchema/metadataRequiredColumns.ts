@@ -97,6 +97,15 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
     "p0FailureCount",
     "p0Failures",
   ],
+  MemoryWriterTaskBenchmarkRun: [
+    "id",
+    "runId",
+    "projectId",
+    "schemaVersion",
+    "taskCount",
+    "caseCount",
+    "summaryJson",
+  ],
   MemoryEvalFeedback: [
     "id",
     "projectId",

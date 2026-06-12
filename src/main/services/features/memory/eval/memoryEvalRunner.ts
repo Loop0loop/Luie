@@ -8,6 +8,7 @@ import {
   memoryEvalRelation,
   memoryEvalResult,
   memoryEvalRun,
+  memoryWriterTaskBenchmarkRun,
 } from "../../../../infra/database/index.js";
 import type {
   MemoryEvalCaseDefinition,
@@ -152,6 +153,27 @@ export async function runLiveMemoryEvalSuite(
         ];
       }),
     );
+    await db
+      .getClient()
+      .insert(memoryWriterTaskBenchmarkRun)
+      .values({
+        id: crypto.randomUUID(),
+        runId,
+        projectId: input.projectId,
+        schemaVersion: writerTaskBenchmark.schemaVersion,
+        taskCount: writerTaskBenchmark.taskCount,
+        caseCount: writerTaskBenchmark.caseCount,
+        successRate: writerTaskBenchmark.successRate,
+        averageResponseTimeMs: writerTaskBenchmark.averageResponseTimeMs,
+        evidenceSatisfactionRate: writerTaskBenchmark.evidenceSatisfactionRate,
+        falseConfidenceRate: writerTaskBenchmark.falseConfidenceRate,
+        p0FailureCount: writerTaskBenchmark.tasks.reduce(
+          (sum, task) => sum + task.p0FailureCount,
+          0,
+        ),
+        summaryJson: JSON.stringify(writerTaskBenchmark),
+        updatedAt: nowIso,
+      });
 
     for (const result of suiteResult.results) {
       // eslint-disable-next-line no-await-in-loop -- result rows are persisted one-by-one for traceable run records.

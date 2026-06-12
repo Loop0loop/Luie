@@ -1691,3 +1691,37 @@ pnpm run typecheck
 - case id가 없는 `evidence_helpful` feedback은 기존처럼 feedback row만 `pending`으로 남긴다.
 - evidence 중복 제거 정책은 아직 없다.
 - 실제 작가 베타 데이터 기반 threshold는 아직 확정하지 않았다.
+
+### 2026-06-13. Phase 7-1 writer task benchmark summary DB 저장 1차 완료
+
+확인된 사실:
+
+- `MemoryWriterTaskBenchmarkRun` DB table을 추가했다.
+- live memory eval runner는 run별 writer task benchmark summary를 aggregate metric과 `summaryJson`으로 저장한다.
+- 저장 metric은 schemaVersion, taskCount, caseCount, successRate, averageResponseTimeMs, evidenceSatisfactionRate, falseConfidenceRate, p0FailureCount다.
+- benchmark summary row는 `MemoryEvalRun`과 `Project`에 FK로 연결된다.
+
+아키텍처 부합:
+
+- benchmark summary 저장은 main memory eval runner 내부에 유지했다.
+- cross-process DTO shape는 기존 `writerTaskBenchmark` response를 유지하고 DB row 저장만 추가했다.
+- DB schema 변경은 Drizzle schema, packaged bootstrap SQL, metadata table/required columns, migration SQL을 함께 갱신했다.
+
+아키텍처 불일치 또는 제한:
+
+- `pnpm vitest tests/main/database/schemaParity.test.ts`는 10개 중 9개가 통과했고, `bootstrap SQL matches generated Drizzle migration schema` 1건은 계속 실패한다.
+- 실패 diff는 기존 memory provenance/review/queryChapterOrder/answerJudgeJson 누적 migration-bootstrap 불일치가 남아 있기 때문이다. 이번 변경의 직접 범위인 benchmark summary row 저장, Drizzle check, targeted runner test는 통과했다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/benchmark/memoryWriterTaskBenchmark.test.ts tests/main/services/memory/eval/memoryEvalRunner.test.ts tests/main/database/schemaParity.test.ts
+pnpm exec eslint src/main/database/schema/memoryEval.ts src/main/database/main/packagedSchema/projectSchema.sql.ts src/main/database/main/packagedSchema/worldAndIndexesSchema.sql.ts src/main/database/packagedSchema/metadataTables.ts src/main/database/packagedSchema/metadataRequiredColumns.ts src/main/services/features/memory/eval/memoryEvalRunner.ts tests/main/services/memory/eval/memoryEvalRunner.test.ts
+pnpm run typecheck
+pnpm run check:drizzle:main
+```
+
+제한:
+
+- 실제 작가 베타 데이터 기반 threshold는 아직 확정하지 않았다.
+- benchmark summary JSON의 장기 canonical package 포함 여부는 정하지 않았다. 이번 단계는 DB run artifact 저장으로 제한했다.

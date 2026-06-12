@@ -239,6 +239,24 @@ CREATE TABLE IF NOT EXISTS "MemoryEvalResult" (
     CONSTRAINT "MemoryEvalResult_caseId_fkey" FOREIGN KEY ("caseId") REFERENCES "MemoryEvalCase" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "MemoryEvalResult_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+CREATE TABLE IF NOT EXISTS "MemoryWriterTaskBenchmarkRun" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "runId" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "schemaVersion" INTEGER NOT NULL DEFAULT 1,
+    "taskCount" INTEGER NOT NULL DEFAULT 0,
+    "caseCount" INTEGER NOT NULL DEFAULT 0,
+    "successRate" REAL NOT NULL DEFAULT 0,
+    "averageResponseTimeMs" REAL,
+    "evidenceSatisfactionRate" REAL NOT NULL DEFAULT 0,
+    "falseConfidenceRate" REAL NOT NULL DEFAULT 0,
+    "p0FailureCount" INTEGER NOT NULL DEFAULT 0,
+    "summaryJson" TEXT NOT NULL DEFAULT '{}',
+    "createdAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TEXT NOT NULL,
+    CONSTRAINT "MemoryWriterTaskBenchmarkRun_runId_fkey" FOREIGN KEY ("runId") REFERENCES "MemoryEvalRun" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "MemoryWriterTaskBenchmarkRun_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
 CREATE TABLE IF NOT EXISTS "MemoryEvalFeedback" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,

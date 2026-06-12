@@ -18,6 +18,7 @@ export const PACKAGED_SCHEMA_REQUIRED_TABLES = [
   "MemoryEvalRelation",
   "MemoryEvalRun",
   "MemoryEvalResult",
+  "MemoryWriterTaskBenchmarkRun",
   "MemoryEvalFeedback",
   "MemoryEntity",
   "MemoryEntityAlias",

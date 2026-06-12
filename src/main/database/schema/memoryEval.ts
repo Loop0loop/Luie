@@ -189,6 +189,43 @@ export const memoryEvalResult = sqliteTable(
   ],
 );
 
+export const memoryWriterTaskBenchmarkRun = sqliteTable(
+  "MemoryWriterTaskBenchmarkRun",
+  {
+    id: text("id").primaryKey().notNull(),
+    runId: text("runId").notNull(),
+    projectId: text("projectId").notNull(),
+    schemaVersion: integer("schemaVersion").notNull().default(1),
+    taskCount: integer("taskCount").notNull().default(0),
+    caseCount: integer("caseCount").notNull().default(0),
+    successRate: real("successRate").notNull().default(0),
+    averageResponseTimeMs: real("averageResponseTimeMs"),
+    evidenceSatisfactionRate: real("evidenceSatisfactionRate").notNull().default(0),
+    falseConfidenceRate: real("falseConfidenceRate").notNull().default(0),
+    p0FailureCount: integer("p0FailureCount").notNull().default(0),
+    summaryJson: text("summaryJson").notNull().default("{}"),
+    createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updatedAt").notNull(),
+  },
+  (table) => [
+    index("MemoryWriterTaskBenchmarkRun_runId_idx").on(table.runId),
+    index("MemoryWriterTaskBenchmarkRun_projectId_updatedAt_idx").on(
+      table.projectId,
+      table.updatedAt,
+    ),
+    foreignKey({
+      name: "MemoryWriterTaskBenchmarkRun_runId_fkey",
+      columns: [table.runId],
+      foreignColumns: [memoryEvalRun.id],
+    }).onDelete("cascade").onUpdate("cascade"),
+    foreignKey({
+      name: "MemoryWriterTaskBenchmarkRun_projectId_fkey",
+      columns: [table.projectId],
+      foreignColumns: [project.id],
+    }).onDelete("cascade").onUpdate("cascade"),
+  ],
+);
+
 export const memoryEvalFeedback = sqliteTable(
   "MemoryEvalFeedback",
   {
