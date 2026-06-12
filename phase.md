@@ -6,6 +6,7 @@
 
 - 이 문서의 writer-product phase 기준 최신 명시 완료 지점은 **Phase 5-4 writer workflow scenario coverage 1차 완료**다.
 - Phase 6-1 canonical sync verifier의 scoped id/source id mismatch 보고와 DB-level import/rebuild source id 검증은 1차 완료되어 있다.
+- Phase 6-1 실제 `.luie` 파일 write/read를 포함한 memory canonical package 왕복 검증은 targeted integration test로 확인되어 있다.
 - Phase 6-2 canonical memory payload schema version compatibility의 legacy/missing-version 허용, future-version 거부, unknown row field discard 정책은 1차 완료되어 있다.
 - Phase 6-3 failed full write의 기존 package 보존과 temp/backup artifact cleanup 검증은 1차 완료되어 있다.
 - Phase 6-3 atomic replace 실패 후 backup restore branch 검증은 기존 rollback 테스트로 확인되어 있다.
@@ -16,7 +17,7 @@
 판단:
 
 - 현재는 **Phase 6-3 crash-safe export 1차 완료 상태**다.
-- 다만 실제 `.luie` 파일 write/read까지 포함한 package 왕복 검증은 추가 보강 대상으로 남아 있다.
+- 다만 실제 renderer/UI 조작까지 포함한 package durability E2E는 추가 보강 대상으로 남아 있다.
 
 ## 문서 구조
 

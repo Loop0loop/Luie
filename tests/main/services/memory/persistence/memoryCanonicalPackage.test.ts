@@ -1,5 +1,12 @@
 import crypto from "node:crypto";
+import os from "node:os";
+import path from "node:path";
+import * as fsp from "node:fs/promises";
 import { describe, expect, it, vi } from "vitest";
+import {
+  LUIE_MEMORY_CANONICAL_FILE,
+  LUIE_MEMORY_DIR,
+} from "../../../../../src/shared/constants/index.js";
 import {
   chapter,
   db,
@@ -16,8 +23,20 @@ import { MEMORY_CANONICAL_UNKNOWN_ROW_FIELD_POLICY } from "../../../../../src/ma
 import {
   applyMemoryCanonicalPackagePayload,
   buildMemoryCanonicalPackagePayload,
+  type MemoryCanonicalPackagePayload,
 } from "../../../../../src/main/services/features/memory/persistence/memoryCanonicalPackage.js";
 import { compareMemoryCanonicalPackagePayloads } from "../../../../../src/main/services/features/memory/persistence/memoryCanonicalPackageSyncVerifier.js";
+import {
+  readLuieContainerEntry,
+  writeLuieContainer,
+} from "../../../../../src/main/services/io/luieContainer.js";
+
+const containerLogger = {
+  info: () => undefined,
+  debug: () => undefined,
+  warn: () => undefined,
+  error: () => undefined,
+};
 
 const createTx = () => {
   const inserted: unknown[] = [];
@@ -814,5 +833,174 @@ describe("applyMemoryCanonicalPackagePayload", () => {
     expect(comparison.inSync).toBe(true);
     expect(comparison.tables.MemoryFact.sourceIdMismatches).toEqual([]);
     expect(comparison.tables.MemoryFactEvidence.sourceIdMismatches).toEqual([]);
+  });
+
+  it("keeps canonical source ids aligned after real .luie file write and read", async () => {
+    const targetProjectId = crypto.randomUUID();
+    const nowIso = "2026-06-12T02:00:00.000Z";
+    const packagePayload: MemoryCanonicalPackagePayload = {
+      schemaVersion: 1,
+      exportedAt: "2026-06-12T01:00:00.000Z",
+      tables: {
+        MemoryEntity: [
+          {
+            id: "entity-file-1",
+            projectId: "source-project",
+            entityType: "character",
+            canonicalName: "Arin",
+            status: "confirmed",
+            confidence: 95,
+            createdBy: "user",
+            updatedAt: nowIso,
+          },
+        ],
+        MemoryEpisode: [
+          {
+            id: "episode-file-1",
+            projectId: "source-project",
+            sourceType: "chapter",
+            sourceId: "chapter-file-1",
+            chapterId: "chapter-file-1",
+            sceneId: null,
+            sourceContentHash: "file-source-content-hash",
+            extractorVersion: "episode-v1",
+            episodeType: "event",
+            title: "Archive opened",
+            summary: "Arin opened the recovered archive.",
+            status: "suggested",
+            confidence: 80,
+            updatedAt: nowIso,
+          },
+        ],
+        MemoryEpisodeEvidence: [
+          {
+            id: "evidence-file-1",
+            projectId: "source-project",
+            episodeId: "episode-file-1",
+            chapterId: "chapter-file-1",
+            chunkId: null,
+            contentHash: "file-content-hash",
+            sourceContentHash: "file-source-content-hash",
+            quote: "Arin opened the recovered archive.",
+            updatedAt: nowIso,
+          },
+        ],
+        MemoryFact: [
+          {
+            id: "fact-file-1",
+            projectId: "source-project",
+            subjectEntityId: "entity-file-1",
+            predicate: "opened",
+            objectEntityId: null,
+            objectValue: "archive",
+            valueType: "string",
+            validFromChapterId: "chapter-file-1",
+            validFromChapterOrder: 1,
+            validToChapterId: null,
+            validToChapterOrder: null,
+            observedAtChapterId: "chapter-file-1",
+            observedAtChapterOrder: 1,
+            confidence: 90,
+            status: "confirmed",
+            extractorVersion: "manual",
+            sourceContentHash: "file-source-content-hash",
+            invalidatedByFactId: null,
+            updatedAt: nowIso,
+          },
+        ],
+        MemoryFactEvidence: [
+          {
+            id: "fact-evidence-file-1",
+            projectId: "source-project",
+            factId: "fact-file-1",
+            evidenceId: "evidence-file-1",
+            updatedAt: nowIso,
+          },
+        ],
+      },
+    };
+    const tempRoot = await fsp.mkdtemp(
+      path.join(os.tmpdir(), "luie-memory-canonical-file-"),
+    );
+
+    try {
+      const packagePath = path.join(tempRoot, "canonical-roundtrip.luie");
+      await writeLuieContainer({
+        targetPath: packagePath,
+        payload: {
+          meta: {
+            projectId: "source-project",
+            title: "Canonical File Roundtrip",
+          },
+          chapters: [
+            {
+              id: "chapter-file-1",
+              content: "Arin opened the recovered archive.",
+            },
+          ],
+          characters: [],
+          terms: [],
+          synopsis: { synopsis: "", status: "draft" },
+          plot: { columns: [] },
+          drawing: { paths: [] },
+          mindmap: { nodes: [], edges: [] },
+          memos: { memos: [] },
+          graph: { nodes: [], edges: [] },
+          snapshots: [],
+          memory: packagePayload,
+        },
+        logger: containerLogger,
+      });
+
+      const rawMemory = await readLuieContainerEntry(
+        packagePath,
+        `${LUIE_MEMORY_DIR}/${LUIE_MEMORY_CANONICAL_FILE}`,
+        containerLogger,
+      );
+      expect(rawMemory).not.toBeNull();
+      const parsedPayload = LuieMemoryCanonicalSchema.parse(
+        JSON.parse(rawMemory ?? "{}"),
+      );
+
+      await db.getClient().insert(project).values({
+        id: targetProjectId,
+        title: "Canonical File Roundtrip Target",
+        description: null,
+        projectPath: null,
+        updatedAt: nowIso,
+      });
+      await db.getClient().insert(chapter).values({
+        id: "chapter-file-1",
+        projectId: targetProjectId,
+        title: "1화",
+        content: "Arin opened the recovered archive.",
+        order: 1,
+        updatedAt: nowIso,
+      });
+      db.getClient().transaction((tx) => {
+        applyMemoryCanonicalPackagePayload(tx, {
+          projectId: targetProjectId,
+          importedAt: new Date(nowIso),
+          validChapterIds: new Set(["chapter-file-1"]),
+          payload: parsedPayload,
+        });
+      });
+
+      const rebuiltPayload =
+        await buildMemoryCanonicalPackagePayload(targetProjectId);
+      const comparison = compareMemoryCanonicalPackagePayloads({
+        projectId: targetProjectId,
+        dbPayload: rebuiltPayload,
+        packagePayload: parsedPayload,
+      });
+
+      expect(comparison.inSync).toBe(true);
+      expect(comparison.tables.MemoryFact.sourceIdMismatches).toEqual([]);
+      expect(
+        comparison.tables.MemoryFactEvidence.sourceIdMismatches,
+      ).toEqual([]);
+    } finally {
+      await fsp.rm(tempRoot, { recursive: true, force: true });
+    }
   });
 });

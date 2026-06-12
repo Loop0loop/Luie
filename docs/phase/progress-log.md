@@ -1395,3 +1395,29 @@ pnpm vitest tests/main/services/projectService.test.ts -t "recovers .luie from d
 
 - 이 검증은 targeted main integration test다.
 - 실제 앱 restart 직후 renderer UI 안내까지 포함한 E2E는 아직 별도 보강 범위다.
+
+### 2026-06-12. Phase 6-1 실제 `.luie` memory canonical 왕복 검증 보강
+
+확인된 사실:
+
+- canonical memory payload를 실제 sqlite-v2 `.luie` container에 쓴다.
+- `memory/canonical.json` entry를 다시 읽어 `LuieMemoryCanonicalSchema`로 parse한다.
+- 읽은 payload를 DB에 import한 뒤 `buildMemoryCanonicalPackagePayload`로 rebuild한다.
+- rebuild payload와 file에서 읽은 package payload를 비교해 source id mismatch가 0인지 확인한다.
+
+아키텍처 부합:
+
+- 검증은 main memory persistence와 main IO container 경계 안에서 수행했다.
+- `.luie` package format, IPC channel, preload API, renderer contract는 변경하지 않았다.
+- canonical source id 비교 helper를 그대로 사용해 기존 sync verifier 규칙과 일치시켰다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/persistence/memoryCanonicalPackage.test.ts
+```
+
+제한:
+
+- 이 검증은 실제 file IO와 DB import/rebuild를 포함하지만 renderer/UI 조작은 포함하지 않는다.
+- source id mismatch 자동 복구는 여전히 하지 않는다.
