@@ -1568,3 +1568,37 @@ pnpm run typecheck
 
 - guard를 실제 RAG answerer/renderer 차단 경로에 연결하지는 않았다.
 - renderer UI feedback 버튼과 IPC endpoint는 아직 없다.
+
+### 2026-06-13. Phase 7-2 writer feedback IPC/preload API 연결 1차 완료
+
+확인된 사실:
+
+- `MEMORY_RECORD_EVAL_FEEDBACK` IPC channel을 추가했다.
+- shared `MemoryEvalFeedbackRecordRequest`/`MemoryEvalFeedbackRecordResult` DTO와 `memoryEvalFeedbackRecordSchema` 입력 검증을 추가했다.
+- main memory IPC handler는 검증된 feedback payload를 `NarrativeMemoryQueryService.recordEvalFeedback`로 위임한다.
+- preload `memoryAdmin.recordEvalFeedback` API와 renderer IO contract를 추가했다.
+- IPC contract map에 새 channel의 preload invoke/main handle 사용을 반영했다.
+
+아키텍처 부합:
+
+- channel, DTO, schema는 shared 경계에 두고 main handler는 검증/위임만 수행한다.
+- feedback 저장 구현은 기존 main memory eval domain service를 재사용한다.
+- renderer는 Node/Electron 직접 접근 없이 preload capability를 통해서만 feedback 저장을 호출할 수 있다.
+
+검증:
+
+```text
+pnpm vitest tests/main/handler/ipcInputValidation.memory.test.ts
+pnpm vitest tests/main/services/memory/eval/memoryEvalFeedbackService.test.ts
+pnpm exec eslint src/shared/ipc/channels.ts src/shared/types/memoryEval.ts src/shared/types/index.ts src/shared/schemas/search.ts src/main/handler/memory/types.ts src/main/handler/memory/ipcMemoryHandlers.ts src/main/services/features/memory/query/narrativeMemoryQueryService.ts src/main/services/features/memory/eval/memoryEvalFeedbackService.ts src/preload/api/projectApi.ts src/shared/api/io.contract.ts tests/main/handler/ipcInputValidation.memory.test.ts tests/main/handler/ipcInputValidation.shared.ts
+pnpm run typecheck
+pnpm run check:ipc-contract-map
+pnpm run check:ipc-handler-schemas
+pnpm run check:preload-contract-regression
+```
+
+제한:
+
+- renderer UI의 실제 feedback 버튼/상태 표시는 아직 연결하지 않았다.
+- rejected answer guard를 실제 RAG answerer/renderer 차단 경로에 연결하지는 않았다.
+- `evidence_helpful` feedback을 eval set 품질 보강 후보로 전환하는 정책은 아직 없다.

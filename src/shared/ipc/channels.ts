@@ -113,6 +113,7 @@ export const IPC_CHANNELS = {
   MEMORY_REBUILD_CHUNKS: "memory:rebuild-chunks",
   MEMORY_JOB_STATUS: "memory:job-status",
   MEMORY_RUN_EVAL_SUITE: "memory:run-eval-suite",
+  MEMORY_RECORD_EVAL_FEEDBACK: "memory:record-eval-feedback",
   MEMORY_RUN_INTENT_CALIBRATION: "memory:run-intent-calibration",
   MEMORY_RUN_EPISODE_CALIBRATION: "memory:run-episode-calibration",
   MEMORY_SEARCH_CHUNKS: "memory:search-chunks",

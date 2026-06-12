@@ -44,6 +44,8 @@ import type {
   NarrativeMemoryQueryResult,
 } from "../../../../../shared/types/search.js";
 import type {
+  MemoryEvalFeedbackRecordRequest,
+  MemoryEvalFeedbackRecordResult,
   MemoryEvalLiveRunnerResult,
   MemoryEvalRunRequest,
 } from "../../../../../shared/types/memoryEval.js";
@@ -105,6 +107,7 @@ import {
   runNarrativeMemoryEvalSuite,
   runNarrativeMemoryIntentCalibration,
 } from "./narrativeMemoryApplicationFacades.js";
+import { recordMemoryEvalFeedback } from "../eval/memoryEvalFeedbackService.js";
 
 const logger = createLogger("NarrativeMemoryQueryService");
 
@@ -278,6 +281,12 @@ export class NarrativeMemoryQueryService {
       request: input,
       query: (queryInput) => this.query(queryInput),
     });
+  }
+
+  async recordEvalFeedback(
+    input: MemoryEvalFeedbackRecordRequest,
+  ): Promise<MemoryEvalFeedbackRecordResult> {
+    return await recordMemoryEvalFeedback(input);
   }
 
   async runIntentCalibration(

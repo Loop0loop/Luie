@@ -280,6 +280,8 @@ export function createProjectApi({
         safeInvoke(IPC_CHANNELS.MEMORY_GET_BUILD_JOB_PROGRESS, { projectId }),
       runEvalSuite: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_RUN_EVAL_SUITE, input),
+      recordEvalFeedback: (input) =>
+        safeInvoke(IPC_CHANNELS.MEMORY_RECORD_EVAL_FEEDBACK, input),
       runIntentCalibration: (input) =>
         safeInvoke(IPC_CHANNELS.MEMORY_RUN_INTENT_CALIBRATION, input),
       runEpisodeCalibration: (input) =>

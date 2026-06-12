@@ -198,6 +198,26 @@ export interface MemoryEvalRunRequest {
   topK?: number;
 }
 
+export type MemoryEvalFeedbackKind = "answer_wrong" | "evidence_helpful";
+
+export interface MemoryEvalFeedbackRecordRequest {
+  projectId: string;
+  runId?: string | null;
+  caseId?: string | null;
+  resultId?: string | null;
+  feedbackKind: MemoryEvalFeedbackKind;
+  question: string;
+  answer?: string | null;
+  evidence?: RagQaEvidence[];
+  note?: string | null;
+  createEvalCaseCandidate?: boolean;
+}
+
+export interface MemoryEvalFeedbackRecordResult {
+  id: string;
+  evalCaseId?: string;
+}
+
 export interface MemoryEvalLiveRunnerResult extends MemoryEvalSuiteResult {
   runId: string;
   writerTaskBenchmark: MemoryWriterTaskBenchmarkSummary;

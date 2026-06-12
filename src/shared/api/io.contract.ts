@@ -112,6 +112,9 @@ export type IoRendererApi = {
     runEvalSuite: (
       input: SharedTypes.MemoryEvalRunRequest,
     ) => Promise<IPCResponse<SharedTypes.MemoryEvalLiveRunnerResult>>;
+    recordEvalFeedback: (
+      input: SharedTypes.MemoryEvalFeedbackRecordRequest,
+    ) => Promise<IPCResponse<SharedTypes.MemoryEvalFeedbackRecordResult>>;
     runIntentCalibration: (
       input: SharedTypes.NarrativeMemoryIntentCalibrationRequest,
     ) => Promise<IPCResponse<SharedTypes.NarrativeMemoryIntentCalibrationResult>>;

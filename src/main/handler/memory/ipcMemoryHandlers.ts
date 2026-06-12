@@ -19,6 +19,7 @@ import {
   memoryEpisodeConfirmSchema,
   memoryEpisodeRejectSchema,
   memoryEpisodeReviewQueueSchema,
+  memoryEvalFeedbackRecordSchema,
   memoryEvalRunSchema,
   memoryEvidenceRepairSchema,
   memoryIntentCalibrationRunSchema,
@@ -50,6 +51,7 @@ import type {
   MemoryEpisodeConfirmInput,
   MemoryEpisodeRejectInput,
   MemoryEpisodeReviewQueueInput,
+  MemoryEvalFeedbackRecordRequest,
   MemoryEvalRunRequest,
   MemoryEvidenceRepairInput,
   MemoryEvidenceRepairResult,
@@ -356,6 +358,14 @@ export function registerMemoryIPCHandlers(
       argsSchema: z.tuple([memoryEvalRunSchema]),
       handler: (input: MemoryEvalRunRequest) =>
         narrativeMemoryQueryService.runEvalSuite(input),
+    },
+    {
+      channel: IPC_CHANNELS.MEMORY_RECORD_EVAL_FEEDBACK,
+      logTag: "MEMORY_RECORD_EVAL_FEEDBACK",
+      failMessage: "Failed to record memory eval feedback",
+      argsSchema: z.tuple([memoryEvalFeedbackRecordSchema]),
+      handler: (input: MemoryEvalFeedbackRecordRequest) =>
+        narrativeMemoryQueryService.recordEvalFeedback(input),
     },
     {
       channel: IPC_CHANNELS.MEMORY_RUN_INTENT_CALIBRATION,

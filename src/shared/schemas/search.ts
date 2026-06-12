@@ -51,6 +51,32 @@ export const memoryEvalRunSchema = z.object({
   topK: z.number().int().positive().max(100).optional(),
 });
 
+export const memoryEvalFeedbackRecordSchema = z.object({
+  projectId: projectIdSchema,
+  runId: z.string().uuid("Invalid eval run ID").nullable().optional(),
+  caseId: z.string().uuid("Invalid eval case ID").nullable().optional(),
+  resultId: z.string().uuid("Invalid eval result ID").nullable().optional(),
+  feedbackKind: z.enum(["answer_wrong", "evidence_helpful"]),
+  question: z
+    .string()
+    .trim()
+    .min(1, "Question is required")
+    .max(20_000, "Question is too large"),
+  answer: z.string().trim().min(1).max(20_000).nullable().optional(),
+  evidence: z
+    .array(
+      z.object({
+        chunkId: z.string().trim().min(1, "Chunk ID is required"),
+        chapterId: chapterIdSchema.nullish(),
+        offset: z.number().int().nonnegative(),
+        quote: z.string().trim().min(1, "Evidence quote is required").max(20_000),
+      }),
+    )
+    .optional(),
+  note: z.string().trim().min(1).max(4_000).nullable().optional(),
+  createEvalCaseCandidate: z.boolean().optional(),
+});
+
 export const memoryIntentCalibrationRunSchema = z.object({
   projectId: projectIdSchema,
   useLlm: z.boolean().optional(),

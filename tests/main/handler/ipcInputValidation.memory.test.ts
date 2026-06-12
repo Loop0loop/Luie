@@ -39,6 +39,43 @@ describe("IPC input validation: narrative memory", () => {
     );
   });
 
+  it("routes valid MEMORY_RECORD_EVAL_FEEDBACK payloads to the memory feedback recorder", async () => {
+    mocked.narrativeMemoryQueryService.recordEvalFeedback.mockResolvedValue({
+      id: "feedback-1",
+      evalCaseId: "case-1",
+    });
+
+    await registerSearchInputHandlers(mocked.narrativeMemoryQueryService);
+
+    const handler = mocked.handlerMap.get(
+      IPC_CHANNELS.MEMORY_RECORD_EVAL_FEEDBACK,
+    );
+    expect(handler).toBeDefined();
+
+    const input = {
+      projectId: "550e8400-e29b-41d4-a716-446655440000",
+      feedbackKind: "answer_wrong",
+      question: "3화 기준으로 아린이 이 사실을 알아도 되나?",
+      answer: "알고 있다.",
+      evidence: [
+        {
+          chunkId: "chunk-8",
+          chapterId: "550e8400-e29b-41d4-a716-446655440001",
+          offset: 12,
+          quote: "8화에서 아린은 사실을 알게 된다.",
+        },
+      ],
+      note: "3화 기준으로는 아직 모른다.",
+      createEvalCaseCandidate: true,
+    };
+    const response = (await handler?.({}, input)) as { success: boolean };
+
+    expect(response.success).toBe(true);
+    expect(
+      mocked.narrativeMemoryQueryService.recordEvalFeedback,
+    ).toHaveBeenCalledWith(input);
+  });
+
   it("routes valid MEMORY_RUN_INTENT_CALIBRATION payloads to the memory calibration runner", async () => {
     mocked.narrativeMemoryQueryService.runIntentCalibration.mockResolvedValue({
       caseCount: 8,

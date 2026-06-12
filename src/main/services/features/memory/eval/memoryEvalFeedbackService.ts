@@ -6,28 +6,16 @@ import {
   memoryEvalEvidence,
   memoryEvalFeedback,
 } from "../../../../infra/database/index.js";
-import type { RagQaEvidence } from "../../../../../shared/types/index.js";
+import type {
+  MemoryEvalFeedbackRecordRequest,
+  MemoryEvalFeedbackRecordResult,
+} from "../../../../../shared/types/index.js";
 
-export type MemoryEvalFeedbackKind = "answer_wrong" | "evidence_helpful";
-
-export type RecordMemoryEvalFeedbackInput = {
-  projectId: string;
-  runId?: string | null;
-  caseId?: string | null;
-  resultId?: string | null;
-  feedbackKind: MemoryEvalFeedbackKind;
-  question: string;
-  answer?: string | null;
-  evidence?: RagQaEvidence[];
-  note?: string | null;
-  createEvalCaseCandidate?: boolean;
+export type RecordMemoryEvalFeedbackInput = MemoryEvalFeedbackRecordRequest & {
   nowIso?: string;
 };
 
-export type RecordMemoryEvalFeedbackResult = {
-  id: string;
-  evalCaseId?: string;
-};
+export type RecordMemoryEvalFeedbackResult = MemoryEvalFeedbackRecordResult;
 
 export type DetectRejectedAnswerRecurrenceInput = {
   projectId: string;

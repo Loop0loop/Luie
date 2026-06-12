@@ -13,6 +13,7 @@ import type {
   MemoryEpisodeConfirmInput,
   MemoryEpisodeRejectInput,
   MemoryEpisodeReviewQueueInput,
+  MemoryEvalFeedbackRecordRequest,
   MemoryEvalRunRequest,
   MemoryEvidenceRepairInput,
   MemoryStaleEvidenceReviewActionInput,
@@ -61,6 +62,9 @@ export type NarrativeMemoryQueryServiceLike = {
   ) => Promise<unknown>;
   repairEvidenceLinks: (input: MemoryEvidenceRepairInput) => Promise<unknown>;
   runEvalSuite: (input: MemoryEvalRunRequest) => Promise<unknown>;
+  recordEvalFeedback: (
+    input: MemoryEvalFeedbackRecordRequest,
+  ) => Promise<unknown>;
   runIntentCalibration: (
     input: NarrativeMemoryIntentCalibrationRequest,
   ) => Promise<unknown>;

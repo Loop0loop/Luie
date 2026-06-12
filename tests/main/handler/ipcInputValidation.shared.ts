@@ -35,6 +35,7 @@ const mocked = vi.hoisted(() => {
     reviewStaleEvidence: vi.fn(),
     repairEvidenceLinks: vi.fn(),
     runEvalSuite: vi.fn(),
+    recordEvalFeedback: vi.fn(),
     runIntentCalibration: vi.fn(),
     runEpisodeCalibration: vi.fn(),
   };
@@ -173,6 +174,7 @@ export const resetInputValidationMocks = () => {
   mocked.narrativeMemoryQueryService.reviewStaleEvidence.mockReset();
   mocked.narrativeMemoryQueryService.repairEvidenceLinks.mockReset();
   mocked.narrativeMemoryQueryService.runEvalSuite.mockReset();
+  mocked.narrativeMemoryQueryService.recordEvalFeedback.mockReset();
   mocked.narrativeMemoryQueryService.runIntentCalibration.mockReset();
   mocked.narrativeMemoryQueryService.runEpisodeCalibration.mockReset();
   mocked.narrativeSummaryStatusService.getStatus.mockReset();
@@ -212,6 +214,7 @@ export const registerSearchInputHandlers = async (
     reviewStaleEvidence?: unknown;
     repairEvidenceLinks?: unknown;
     runEvalSuite?: unknown;
+    recordEvalFeedback?: unknown;
     runIntentCalibration?: unknown;
     runEpisodeCalibration?: unknown;
   },
