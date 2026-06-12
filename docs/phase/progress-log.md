@@ -1224,3 +1224,28 @@ corepack pnpm run typecheck
 제한:
 
 - 실제 RAG stream 결과에서 `future_fact_used_in_past_answer -> temporal_blocked`가 발생하는 end-to-end 검증은 answer judge/eval scorer 연결 이후 범위다.
+
+### 2026-06-12. Phase 6-1 canonical sync source id mismatch 보고 1차 완료
+
+확인된 사실:
+
+- `verifyMemoryCanonicalPackageSync`는 table별 `sourceIdMismatches`를 반환한다.
+- DB row id가 import-scoped id(`projectId:Table:sourceId`)이고 package row id가 원본 source id여도 같은 canonical row로 비교한다.
+- 같은 row id가 DB와 package 양쪽에 있어도 `MemoryFact.subjectEntityId` 같은 FK source id가 다르면 sync 불일치로 보고한다.
+
+아키텍처 부합:
+
+- `.luie` package payload format은 변경하지 않았다.
+- IPC channel, preload API, renderer contract는 변경하지 않았다.
+- 변경 범위는 main memory persistence verifier와 해당 targeted test에 한정했다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/persistence/memoryCanonicalPackageSyncVerifier.test.ts
+```
+
+제한:
+
+- source id mismatch 자동 복구는 하지 않는다.
+- 실제 `.luie` import/export 왕복 후 전체 source id mismatch가 0인지 확인하는 긴 통합 검증은 다음 보강 범위다.

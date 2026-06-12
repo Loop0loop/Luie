@@ -5,13 +5,14 @@
 사실:
 
 - 이 문서의 writer-product phase 기준 최신 명시 완료 지점은 **Phase 5-4 writer workflow scenario coverage 1차 완료**다.
+- Phase 6-1 canonical sync verifier의 scoped id/source id mismatch 보고는 1차 완료되어 있다.
 - Phase 3-3에서 conflict quote queue와 기존 conflict resolve IPC/UI 연결은 이미 1차 완료되어 있다.
 - Phase 5-2의 완료 기준인 conflict ledger 연결과 confirm/reject/defer 계열 memory 상태 반영 기반은 있다. `defer`와 `resolved`는 `MemoryFactInvalidation.reviewStatus`로 영속화된다.
 
 판단:
 
-- 현재는 **Phase 5 전체 1차 완료 상태**다.
-- 다만 실제 Electron E2E에서 원고 수정부터 RAG 질문까지 이어지는 긴 통합 시나리오는 추가 보강 대상으로 남아 있다.
+- 현재는 **Phase 6-1 canonical sync 강화 일부 완료 상태**다.
+- 다만 실제 `.luie` import/export 왕복 후 source id mismatch가 0인지 확인하는 긴 통합 검증은 추가 보강 대상으로 남아 있다.
 
 ## 문서 구조
 

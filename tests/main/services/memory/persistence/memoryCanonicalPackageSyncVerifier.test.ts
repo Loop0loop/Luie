@@ -167,4 +167,58 @@ describe("verifyMemoryCanonicalPackageSync", () => {
       extraInPackage: [],
     });
   });
+
+  it("reports scoped foreign id mismatches for matching canonical row ids", async () => {
+    const { verifyMemoryCanonicalPackageSync } =
+      await import("../../../../../src/main/services/features/memory/persistence/memoryCanonicalPackageSyncVerifier.js");
+    mocked.getProjectAttachmentPath.mockResolvedValue("/tmp/project.luie");
+    mocked.buildMemoryCanonicalPackagePayload.mockResolvedValue({
+      schemaVersion: 1,
+      exportedAt: "2026-06-08T00:00:00.000Z",
+      tables: {
+        MemoryFact: [
+          {
+            id: "project-1:MemoryFact:fact-1",
+            projectId: "project-1",
+            subjectEntityId: "project-1:MemoryEntity:entity-db",
+            predicate: "knows_secret",
+            valueType: "text",
+            status: "confirmed",
+          },
+        ],
+      },
+    });
+    mocked.readLuieContainerEntry.mockResolvedValue(
+      JSON.stringify({
+        schemaVersion: 1,
+        exportedAt: "2026-06-08T00:01:00.000Z",
+        tables: {
+          MemoryFact: [
+            {
+              id: "fact-1",
+              projectId: "source-project",
+              subjectEntityId: "entity-package",
+              predicate: "knows_secret",
+              valueType: "text",
+              status: "confirmed",
+            },
+          ],
+        },
+      }),
+    );
+
+    const result = await verifyMemoryCanonicalPackageSync({
+      projectId: "project-1",
+    });
+
+    expect(result.inSync).toBe(false);
+    expect(result.tables.MemoryFact.sourceIdMismatches).toEqual([
+      {
+        rowId: "fact-1",
+        field: "subjectEntityId",
+        dbValue: "entity-db",
+        packageValue: "entity-package",
+      },
+    ]);
+  });
 });

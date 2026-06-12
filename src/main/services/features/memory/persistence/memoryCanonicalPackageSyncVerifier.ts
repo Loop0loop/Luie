@@ -10,11 +10,19 @@ import { buildMemoryCanonicalPackagePayload } from "./memoryCanonicalPackage.js"
 
 type TableName = (typeof MEMORY_CANONICAL_EXPORTABLE_TABLES)[number];
 
+export type MemoryCanonicalPackageSyncSourceIdMismatch = {
+  rowId: string;
+  field: string;
+  dbValue: string | null;
+  packageValue: string | null;
+};
+
 export type MemoryCanonicalPackageSyncTable = {
   dbRows: number;
   packageRows: number;
   missingInPackage: string[];
   extraInPackage: string[];
+  sourceIdMismatches: MemoryCanonicalPackageSyncSourceIdMismatch[];
 };
 
 export type MemoryCanonicalPackageSyncVerification = {
@@ -58,6 +66,118 @@ const diff = (left: string[], right: string[]): string[] => {
   return left.filter((id) => !rightSet.has(id));
 };
 
+const SOURCE_ID_FIELDS_BY_TABLE: Partial<
+  Record<TableName, Partial<Record<string, TableName | null>>>
+> = {
+  MemoryEntityAlias: {
+    entityId: "MemoryEntity",
+  },
+  MemoryEpisode: {
+    sourceId: null,
+  },
+  MemoryEpisodeEvidence: {
+    episodeId: "MemoryEpisode",
+  },
+  MemoryFact: {
+    subjectEntityId: "MemoryEntity",
+    objectEntityId: "MemoryEntity",
+    invalidatedByFactId: "MemoryFact",
+  },
+  MemoryFactEvidence: {
+    factId: "MemoryFact",
+    evidenceId: "MemoryEpisodeEvidence",
+  },
+  MemoryFactInvalidation: {
+    invalidatedFactId: "MemoryFact",
+    invalidatingFactId: "MemoryFact",
+  },
+  MemoryEvalEvidence: {
+    caseId: "MemoryEvalCase",
+  },
+  MemoryEvalEntity: {
+    caseId: "MemoryEvalCase",
+  },
+  MemoryEvalRelation: {
+    caseId: "MemoryEvalCase",
+  },
+};
+
+const rowMapById = (
+  rows: Array<Record<string, unknown>> | undefined,
+  input: {
+    projectId: string;
+    tableName: TableName;
+  },
+): Map<string, Record<string, unknown>> => {
+  const map = new Map<string, Record<string, unknown>>();
+  for (const row of rows ?? []) {
+    if (typeof row.id !== "string") continue;
+    const id = normalizeCanonicalRowId(input.projectId, input.tableName, row.id);
+    if (id.length > 0) {
+      map.set(id, row);
+    }
+  }
+  return map;
+};
+
+const normalizeSourceIdValue = (
+  projectId: string,
+  tableName: TableName | null,
+  value: unknown,
+): string | null => {
+  if (typeof value !== "string" || value.length === 0) return null;
+  return tableName ? normalizeCanonicalRowId(projectId, tableName, value) : value;
+};
+
+const findSourceIdMismatches = (input: {
+  projectId: string;
+  tableName: TableName;
+  dbRows: Array<Record<string, unknown>> | undefined;
+  packageRows: Array<Record<string, unknown>> | undefined;
+}): MemoryCanonicalPackageSyncSourceIdMismatch[] => {
+  const fields = SOURCE_ID_FIELDS_BY_TABLE[input.tableName];
+  if (!fields) return [];
+
+  const packageRowsById = rowMapById(input.packageRows, {
+    projectId: input.projectId,
+    tableName: input.tableName,
+  });
+  const mismatches: MemoryCanonicalPackageSyncSourceIdMismatch[] = [];
+
+  for (const dbRow of input.dbRows ?? []) {
+    if (typeof dbRow.id !== "string") continue;
+    const rowId = normalizeCanonicalRowId(
+      input.projectId,
+      input.tableName,
+      dbRow.id,
+    );
+    const packageRow = packageRowsById.get(rowId);
+    if (!packageRow) continue;
+
+    for (const [field, linkedTable] of Object.entries(fields)) {
+      const dbValue = normalizeSourceIdValue(
+        input.projectId,
+        linkedTable ?? null,
+        dbRow[field],
+      );
+      const packageValue = normalizeSourceIdValue(
+        input.projectId,
+        linkedTable ?? null,
+        packageRow[field],
+      );
+      if (dbValue === packageValue) continue;
+      mismatches.push({
+        rowId,
+        field,
+        dbValue,
+        packageValue,
+      });
+    }
+  }
+
+  return mismatches;
+};
+
 export async function verifyMemoryCanonicalPackageSync(input: {
   projectId: string;
 }): Promise<MemoryCanonicalPackageSyncVerification> {
@@ -81,19 +201,32 @@ export async function verifyMemoryCanonicalPackageSync(input: {
 
   for (const tableName of MEMORY_CANONICAL_EXPORTABLE_TABLES) {
     const rowIdInput = { projectId: input.projectId, tableName };
-    const dbIds = rowIds(dbPayload.tables[tableName], rowIdInput);
-    const packageIds = rowIds(packagePayload.tables?.[tableName], rowIdInput);
+    const dbRows = dbPayload.tables[tableName];
+    const packageRows = packagePayload.tables?.[tableName];
+    const dbIds = rowIds(dbRows, rowIdInput);
+    const packageIds = rowIds(packageRows, rowIdInput);
     const missingInPackage = diff(dbIds, packageIds);
     const extraInPackage = diff(packageIds, dbIds);
+    const sourceIdMismatches = findSourceIdMismatches({
+      projectId: input.projectId,
+      tableName,
+      dbRows,
+      packageRows,
+    });
     tables[tableName] = {
       dbRows: dbIds.length,
       packageRows: packageIds.length,
       missingInPackage,
       extraInPackage,
+      sourceIdMismatches,
     };
     totalDbRows += dbIds.length;
     totalPackageRows += packageIds.length;
-    if (missingInPackage.length > 0 || extraInPackage.length > 0) {
+    if (
+      missingInPackage.length > 0 ||
+      extraInPackage.length > 0 ||
+      sourceIdMismatches.length > 0
+    ) {
       inSync = false;
     }
   }
