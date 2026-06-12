@@ -7,6 +7,7 @@ import {
 import {
   readLuieSqliteEntry,
   writeLuieSqliteContainer,
+  writeLuieSqliteEntry,
 } from "./luieSqliteContainer.js";
 import type {
   LuiePackageExportData,
@@ -187,6 +188,64 @@ export const writeLuieContainer = async (input: {
   });
   return {
     normalizedPath,
+    kind: "sqlite-v2",
+  };
+};
+
+export const writeLuieContainerEntry = async (input: {
+  targetPath: string;
+  entryPath: string;
+  content: string;
+  logger: LoggerLike;
+}): Promise<{
+  normalizedPath: string;
+  kind: "sqlite-v2";
+}> => {
+  const normalizedPath = ensureLuieExtension(input.targetPath);
+  const probe = await probeLuieContainer(normalizedPath);
+
+  if (!probe.exists) {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Missing .luie container for entry write",
+      {
+        targetPath: probe.normalizedPath,
+        entryPath: input.entryPath,
+      },
+    );
+  }
+
+  if (probe.kind === "legacy-package") {
+    throw new ServiceError(
+      ErrorCode.LUIE_LEGACY_FORMAT_UNSUPPORTED,
+      LEGACY_LUIE_UNSUPPORTED_MESSAGE,
+      {
+        targetPath: probe.normalizedPath,
+        entryPath: input.entryPath,
+        containerKind: probe.kind,
+      },
+    );
+  }
+  if (probe.kind === "unknown") {
+    throw new ServiceError(
+      ErrorCode.FS_WRITE_FAILED,
+      "Unsupported .luie container format",
+      {
+        targetPath: probe.normalizedPath,
+        entryPath: input.entryPath,
+        containerKind: probe.kind,
+      },
+    );
+  }
+
+  await writeLuieSqliteEntry({
+    targetPath: probe.normalizedPath,
+    entryPath: input.entryPath,
+    content: input.content,
+    logger: input.logger,
+  });
+  return {
+    normalizedPath: probe.normalizedPath,
     kind: "sqlite-v2",
   };
 };

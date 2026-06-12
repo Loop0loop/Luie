@@ -5,7 +5,11 @@ import {
 import { MEMORY_CANONICAL_EXPORTABLE_TABLES } from "./memoryPersistencePolicy.js";
 import { getProjectAttachmentPath } from "../../../core/project/projectAttachmentStore.js";
 import { LuieMemoryCanonicalSchema } from "../../../core/project/projectLuieSchemas.js";
-import { readLuieContainerEntry } from "../../../io/luieContainer.js";
+import {
+  readLuieContainerEntry,
+  writeLuieContainerEntry,
+} from "../../../io/luieContainer.js";
+import type { LoggerLike } from "../../../io/luiePackageTypes.js";
 import {
   buildMemoryCanonicalPackagePayload,
   type MemoryCanonicalPackagePayload,
@@ -33,6 +37,9 @@ export type MemoryCanonicalPackageSyncVerification = {
   projectPath: string | null;
   entryPath: string;
   packageEntryPresent: boolean;
+  repair?: {
+    sourceIdMismatches: number;
+  };
   inSync: boolean;
   totalDbRows: number;
   totalPackageRows: number;
@@ -190,6 +197,8 @@ const findSourceIdMismatches = (input: {
 
 export async function verifyMemoryCanonicalPackageSync(input: {
   projectId: string;
+  repairSourceIdMismatches?: boolean;
+  logger?: LoggerLike;
 }): Promise<MemoryCanonicalPackageSyncVerification> {
   const entryPath = `${LUIE_MEMORY_DIR}/${LUIE_MEMORY_CANONICAL_FILE}`;
   const [projectPath, dbPayload] = await Promise.all([
@@ -214,6 +223,43 @@ export async function verifyMemoryCanonicalPackageSync(input: {
     packagePayload,
     packageEntryPresent: rawPackagePayload !== null,
   });
+  const sourceIdMismatchCount = Object.values(comparison.tables).reduce(
+    (total, table) => total + table.sourceIdMismatches.length,
+    0,
+  );
+  if (
+    input.repairSourceIdMismatches &&
+    projectPath &&
+    rawPackagePayload !== null &&
+    sourceIdMismatchCount > 0
+  ) {
+    const logger = input.logger ?? {
+      error: () => undefined,
+    };
+    await writeLuieContainerEntry({
+      targetPath: projectPath,
+      entryPath,
+      content: JSON.stringify(dbPayload, null, 2),
+      logger,
+    });
+    const repairedComparison = compareMemoryCanonicalPackagePayloads({
+      projectId: input.projectId,
+      dbPayload,
+      packagePayload: dbPayload,
+      packageEntryPresent: true,
+    });
+
+    return {
+      projectId: input.projectId,
+      projectPath,
+      entryPath,
+      packageEntryPresent: true,
+      repair: {
+        sourceIdMismatches: sourceIdMismatchCount,
+      },
+      ...repairedComparison,
+    };
+  }
 
   return {
     projectId: input.projectId,

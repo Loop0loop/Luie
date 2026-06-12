@@ -26,11 +26,8 @@
 - 같은 canonical row id가 있어도 FK/source id 필드가 다르면 `sourceIdMismatches`로 보고한다.
 - canonical package payload를 실제 DB에 import한 뒤 다시 payload로 rebuild해 source id mismatch가 0인지 검증한다.
 - canonical package payload를 실제 `.luie` sqlite-v2 file에 write/read한 뒤 DB import/rebuild 비교까지 이어지는 왕복 검증을 추가했다.
+- source id mismatch가 있을 때 명시적 repair 옵션으로 attached `.luie`의 canonical memory entry를 DB payload 기준으로 재작성할 수 있다.
 - corrupted `.luie` package open을 실제 Electron renderer UI 클릭으로 실행하고 recovery banner가 표시되는지 E2E로 검증했다.
-
-아직 남은 범위:
-
-- source id mismatch 자동 복구는 하지 않는다.
 
 ### Phase 6-2. migration compatibility
 

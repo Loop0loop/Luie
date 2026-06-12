@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocked = vi.hoisted(() => ({
   getProjectAttachmentPath: vi.fn(),
   readLuieContainerEntry: vi.fn(),
+  writeLuieContainerEntry: vi.fn(),
   buildMemoryCanonicalPackagePayload: vi.fn(),
 }));
 
@@ -15,6 +16,7 @@ vi.mock(
 
 vi.mock("../../../../../src/main/services/io/luieContainer.js", () => ({
   readLuieContainerEntry: mocked.readLuieContainerEntry,
+  writeLuieContainerEntry: mocked.writeLuieContainerEntry,
 }));
 
 vi.mock(
@@ -29,6 +31,7 @@ describe("verifyMemoryCanonicalPackageSync", () => {
   beforeEach(() => {
     mocked.getProjectAttachmentPath.mockReset();
     mocked.readLuieContainerEntry.mockReset();
+    mocked.writeLuieContainerEntry.mockReset();
     mocked.buildMemoryCanonicalPackagePayload.mockReset();
   });
 
@@ -220,5 +223,71 @@ describe("verifyMemoryCanonicalPackageSync", () => {
         packageValue: "entity-package",
       },
     ]);
+  });
+
+  it("repairs source id mismatches by rewriting the attached canonical memory entry from DB payload", async () => {
+    const { verifyMemoryCanonicalPackageSync } =
+      await import("../../../../../src/main/services/features/memory/persistence/memoryCanonicalPackageSyncVerifier.js");
+    mocked.getProjectAttachmentPath.mockResolvedValue("/tmp/project.luie");
+    mocked.buildMemoryCanonicalPackagePayload.mockResolvedValue({
+      schemaVersion: 1,
+      exportedAt: "2026-06-08T00:00:00.000Z",
+      tables: {
+        MemoryFact: [
+          {
+            id: "project-1:MemoryFact:fact-1",
+            projectId: "project-1",
+            subjectEntityId: "project-1:MemoryEntity:entity-db",
+            predicate: "knows_secret",
+            valueType: "text",
+            status: "confirmed",
+          },
+        ],
+      },
+    });
+    mocked.readLuieContainerEntry.mockResolvedValue(
+      JSON.stringify({
+        schemaVersion: 1,
+        exportedAt: "2026-06-08T00:01:00.000Z",
+        tables: {
+          MemoryFact: [
+            {
+              id: "fact-1",
+              projectId: "source-project",
+              subjectEntityId: "entity-package",
+              predicate: "knows_secret",
+              valueType: "text",
+              status: "confirmed",
+            },
+          ],
+        },
+      }),
+    );
+
+    const result = await verifyMemoryCanonicalPackageSync({
+      projectId: "project-1",
+      repairSourceIdMismatches: true,
+      logger: {
+        error: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+      },
+    });
+
+    expect(result.inSync).toBe(true);
+    expect(result.repair).toEqual({
+      sourceIdMismatches: 1,
+    });
+    expect(result.tables.MemoryFact.sourceIdMismatches).toEqual([]);
+    expect(mocked.writeLuieContainerEntry).toHaveBeenCalledTimes(1);
+    expect(mocked.writeLuieContainerEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetPath: "/tmp/project.luie",
+        entryPath: "memory/canonical.json",
+        content: expect.stringContaining(
+          '"subjectEntityId": "project-1:MemoryEntity:entity-db"',
+        ),
+      }),
+    );
   });
 });

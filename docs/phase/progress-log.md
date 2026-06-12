@@ -1972,3 +1972,37 @@ pnpm run typecheck
 pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
 rg -n "schema version fixture matrix|schema version fixture matrix beyond v1|source id mismatch auto repair|forced app shutdown crash-safe export E2E" tests/.tmp/memory-phase-status-roadmap.json
 ```
+
+### 2026-06-13. Phase 6-1 source id mismatch repair option 1차 완료
+
+확인된 사실:
+
+- `verifyMemoryCanonicalPackageSync`에 `repairSourceIdMismatches` 명시 옵션을 추가했다.
+- source id mismatch가 감지되고 attached `.luie` canonical memory entry가 있을 때, DB canonical payload 기준으로 `memory/canonical.json` entry를 재작성한다.
+- repair 실행 후 반환되는 comparison은 source id mismatch가 제거된 상태를 반영하고, `repair.sourceIdMismatches`에 복구한 mismatch 수를 기록한다.
+- `.luie` full package writer를 쓰지 않고 entry-level writer wrapper를 사용해 기존 package의 다른 entry를 보존한다.
+- Phase 6 roadmap status에서 `source id mismatch auto repair`를 남은 범위에서 제거했다.
+
+아키텍처 부합:
+
+- 변경은 main io/package boundary와 memory persistence verifier에 한정했다.
+- 기존 verifier 기본 동작은 보고-only로 유지하고, repair는 명시 옵션이 있을 때만 수행한다.
+- canonical memory package format, DB schema, IPC channel, preload API, renderer는 변경하지 않았다.
+
+아키텍처 불일치 또는 제한:
+
+- repair 옵션은 source id mismatch 복구를 위한 entry 재작성 경로다. 실제 앱 강제 종료 중 export가 끊기는 crash-safe export E2E는 아직 남은 범위다.
+- legacy `.luie` package에는 entry-level write를 적용하지 않고 기존 unsupported 정책을 유지한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/persistence/memoryCanonicalPackageSyncVerifier.test.ts -t "repairs source id mismatches"
+pnpm vitest tests/main/services/memory/persistence/memoryCanonicalPackageSyncVerifier.test.ts
+pnpm exec eslint src/main/services/io/luieContainer.ts src/main/services/features/memory/persistence/memoryCanonicalPackageSyncVerifier.ts tests/main/services/memory/persistence/memoryCanonicalPackageSyncVerifier.test.ts
+pnpm vitest tests/main/services/memory/status/memoryPhaseStatusReport.test.ts
+pnpm exec eslint src/main/services/io/luieContainer.ts src/main/services/features/memory/persistence/memoryCanonicalPackageSyncVerifier.ts tests/main/services/memory/persistence/memoryCanonicalPackageSyncVerifier.test.ts src/main/services/features/memory/status/memoryPhaseStatusReport.ts tests/main/services/memory/status/memoryPhaseStatusReport.test.ts
+pnpm run typecheck
+pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
+rg -n "canonical source id mismatch repair option|source id mismatch auto repair|forced app shutdown crash-safe export E2E" tests/.tmp/memory-phase-status-roadmap.json
+```
