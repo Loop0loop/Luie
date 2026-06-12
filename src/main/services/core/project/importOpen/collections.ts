@@ -29,6 +29,8 @@ import {
   LuieWorldScrapMemosSchema,
   LuieWorldSynopsisSchema,
 } from "../projectLuieSchemas.js";
+import { MEMORY_CANONICAL_UNKNOWN_ROW_FIELD_POLICY } from "../../../features/memory/persistence/memoryPersistencePolicy.js";
+import type { ProjectImportWarning } from "../../../../../shared/types/project.js";
 
 type LoggerLike = LuieWriterLogger;
 
@@ -43,6 +45,195 @@ export type LuieImportCollections = {
   memos?: z.infer<typeof LuieWorldScrapMemosSchema>;
   graph?: z.infer<typeof LuieWorldGraphSchema>;
   memory?: z.infer<typeof LuieMemoryCanonicalSchema>;
+  importWarnings: ProjectImportWarning[];
+};
+
+const MEMORY_CANONICAL_KNOWN_ROW_FIELDS: Record<string, Set<string>> = {
+  MemoryEntity: new Set([
+    "id",
+    "projectId",
+    "entityType",
+    "canonicalName",
+    "status",
+    "provenanceKind",
+    "canonStatus",
+    "confidence",
+    "createdBy",
+    "createdAt",
+    "updatedAt",
+    "deletedAt",
+  ]),
+  MemoryEntityAlias: new Set([
+    "id",
+    "projectId",
+    "entityId",
+    "entityType",
+    "alias",
+    "normalizedAlias",
+    "status",
+    "provenanceKind",
+    "canonStatus",
+    "createdAt",
+    "updatedAt",
+  ]),
+  MemoryEpisode: new Set([
+    "id",
+    "projectId",
+    "sourceType",
+    "sourceId",
+    "chapterId",
+    "sceneId",
+    "sourceContentHash",
+    "extractorVersion",
+    "episodeType",
+    "title",
+    "summary",
+    "status",
+    "provenanceKind",
+    "canonStatus",
+    "confidence",
+    "createdAt",
+    "updatedAt",
+    "rejectedAt",
+    "rejectionReason",
+  ]),
+  MemoryEpisodeEvidence: new Set([
+    "id",
+    "projectId",
+    "episodeId",
+    "chapterId",
+    "chunkId",
+    "contentHash",
+    "sourceContentHash",
+    "startOffset",
+    "endOffset",
+    "quote",
+    "provenanceKind",
+    "canonStatus",
+    "createdAt",
+    "updatedAt",
+  ]),
+  MemoryFact: new Set([
+    "id",
+    "projectId",
+    "subjectEntityId",
+    "predicate",
+    "objectEntityId",
+    "objectValue",
+    "valueType",
+    "validFromChapterId",
+    "validFromChapterOrder",
+    "validToChapterId",
+    "validToChapterOrder",
+    "observedAtChapterId",
+    "observedAtChapterOrder",
+    "confidence",
+    "status",
+    "provenanceKind",
+    "canonStatus",
+    "extractorVersion",
+    "sourceContentHash",
+    "invalidatedByFactId",
+    "createdAt",
+    "updatedAt",
+    "rejectedAt",
+    "rejectionReason",
+  ]),
+  MemoryFactEvidence: new Set([
+    "id",
+    "projectId",
+    "factId",
+    "evidenceId",
+    "createdAt",
+    "updatedAt",
+  ]),
+  MemoryFactInvalidation: new Set([
+    "id",
+    "projectId",
+    "invalidatedFactId",
+    "invalidatingFactId",
+    "reason",
+    "reviewStatus",
+    "reviewerNote",
+    "reviewedAt",
+    "createdAt",
+    "updatedAt",
+  ]),
+  MemoryEvalCase: new Set([
+    "id",
+    "projectId",
+    "name",
+    "question",
+    "caseType",
+    "expectedAnswer",
+    "temporalScopeStartChapterId",
+    "temporalScopeEndChapterId",
+    "queryChapterOrder",
+    "severity",
+    "createdAt",
+    "updatedAt",
+  ]),
+  MemoryEvalEvidence: new Set([
+    "id",
+    "caseId",
+    "projectId",
+    "chapterId",
+    "expectedChunkId",
+    "startOffset",
+    "endOffset",
+    "quote",
+    "createdAt",
+    "updatedAt",
+  ]),
+  MemoryEvalEntity: new Set([
+    "id",
+    "caseId",
+    "projectId",
+    "name",
+    "entityType",
+    "expectedAttributes",
+    "createdAt",
+    "updatedAt",
+  ]),
+  MemoryEvalRelation: new Set([
+    "id",
+    "caseId",
+    "projectId",
+    "sourceName",
+    "targetName",
+    "relation",
+    "temporalScope",
+    "expectedAttributes",
+    "createdAt",
+    "updatedAt",
+  ]),
+};
+
+const summarizeUnknownCanonicalMemoryRowFields = (
+  memory: z.infer<typeof LuieMemoryCanonicalSchema> | null,
+): ProjectImportWarning[] => {
+  const warnings: ProjectImportWarning[] = [];
+  for (const [table, rows] of Object.entries(memory?.tables ?? {})) {
+    const knownFields = MEMORY_CANONICAL_KNOWN_ROW_FIELDS[table];
+    if (!knownFields) continue;
+    const unknownFields = new Set<string>();
+    for (const row of rows) {
+      for (const field of Object.keys(row)) {
+        if (!knownFields.has(field)) {
+          unknownFields.add(field);
+        }
+      }
+    }
+    if (unknownFields.size > 0) {
+      warnings.push({
+        code: "canonical_memory_unknown_row_fields_discarded",
+        policy: MEMORY_CANONICAL_UNKNOWN_ROW_FIELD_POLICY,
+        table,
+        fields: Array.from(unknownFields).sort(),
+      });
+    }
+  }
+  return warnings;
 };
 
 const parseLuieDocumentOrThrow = <T>(
@@ -198,6 +389,18 @@ export const readLuieImportCollections = async (
       label: "canonical memory",
     },
   );
+  const importWarnings = summarizeUnknownCanonicalMemoryRowFields(parsedMemory);
+  for (const warning of importWarnings) {
+    logger.warn?.(
+      "Discarded unknown canonical memory row fields during .luie import",
+      {
+        packagePath: resolvedPath,
+        table: warning.table,
+        fields: warning.fields,
+        policy: warning.policy,
+      },
+    );
+  }
 
   return {
     characters: parsedCharacters?.characters ?? [],
@@ -259,5 +462,6 @@ export const readLuieImportCollections = async (
           tables: parsedMemory.tables ?? {},
         }
       : undefined,
+    importWarnings,
   };
 };

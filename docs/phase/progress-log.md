@@ -1903,3 +1903,39 @@ pnpm run typecheck
 pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
 rg -n "renderer UI package durability E2E|renderer/UI package durability E2E|forced app shutdown crash-safe export E2E|source id mismatch auto repair|unknown row field import UI notice" tests/.tmp/memory-phase-status-roadmap.json
 ```
+
+### 2026-06-13. Phase 6-2 unknown row field import UI notice 1차 완료
+
+확인된 사실:
+
+- `.luie` import reader가 canonical memory row의 알 수 없는 필드를 table/fields/policy warning으로 보고한다.
+- warning code는 `canonical_memory_unknown_row_fields_discarded`이고 policy는 기존 `MEMORY_CANONICAL_UNKNOWN_ROW_FIELD_POLICY`의 `discard`를 사용한다.
+- warning 감지는 `applyMemoryCanonicalPackagePayload`가 실제 소비하는 11개 canonical table field 목록을 기준으로 한다.
+- `project.openLuie` 성공 결과가 `importWarnings`를 renderer로 반환하고, renderer는 해당 warning이 있으면 info toast를 표시한다.
+- main targeted test는 `MemoryEntity`와 `MemoryEvalCase`의 future-only field가 테이블별 warning으로 분리되는지 검증한다.
+- DOM 운영 시나리오 테스트는 `.luie` import 성공 결과에 warning이 있을 때 사용자 알림 toast가 호출되는지 검증한다.
+
+아키텍처 부합:
+
+- import warning은 기존 main project import 경로에서 계산한다.
+- renderer는 기존 preload `project.openLuie` 응답 surface를 통해 받은 metadata만 사용한다.
+- IPC channel 추가, preload API 함수 추가, DB schema 변경, `.luie` package format 변경은 없다.
+
+아키텍처 불일치 또는 제한:
+
+- unknown field는 정책상 보존하지 않고 discard한다. 이는 Phase 6-2 문서의 “unknown field 보존 또는 명확한 discard 정책” 중 discard 쪽 구현이다.
+- schema version별 fixture matrix는 아직 v1/missing-version 중심이다.
+- source id mismatch 자동 복구와 실제 앱 강제 종료 crash-safe export E2E는 아직 남은 범위다.
+
+검증:
+
+```text
+SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/projectImportOpen.test.ts -t "reports discarded unknown canonical memory row fields"
+SKIP_DB_TEST_SETUP=1 pnpm vitest tests/dom/appOperationalScenarios.test.tsx -t "shows a notice when .luie import discards future canonical memory fields"
+SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/projectImportOpen.test.ts tests/dom/appOperationalScenarios.test.tsx
+pnpm vitest tests/main/services/memory/status/memoryPhaseStatusReport.test.ts
+pnpm exec eslint src/shared/types/project.ts src/main/services/core/project/importOpen/collections.ts src/main/services/core/project/projectImportOpen.ts src/renderer/src/app/App.tsx tests/main/services/projectImportOpen.test.ts tests/dom/appOperationalScenarios.test.tsx src/main/services/features/memory/status/memoryPhaseStatusReport.ts tests/main/services/memory/status/memoryPhaseStatusReport.test.ts
+pnpm run typecheck
+pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
+rg -n "unknown row field import warning|unknown row field import UI notice|source id mismatch auto repair|schema version fixture matrix beyond v1|forced app shutdown crash-safe export E2E" tests/.tmp/memory-phase-status-roadmap.json
+```

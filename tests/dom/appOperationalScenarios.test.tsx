@@ -22,6 +22,8 @@ const mocked = vi.hoisted(() => {
     "settings.projectTemplate.toast.restoreCompleted":
       "Opened the restored .luie file.",
     "settings.projectTemplate.toast.restoreFailed": "Restore failed.",
+    "settings.projectTemplate.toast.importWarnings":
+      "Some future memory fields were skipped during import.",
     loading: "Loading",
     "errorBoundary.title": "Unexpected error",
     "errorBoundary.description": "The app hit an unexpected error.",
@@ -577,6 +579,64 @@ describe("app operational scenarios", () => {
       true,
       "corrupt",
       "/tmp/recovered-corrupt.luie",
+    );
+  });
+
+  it("shows a notice when .luie import discards future canonical memory fields", async () => {
+    mocked.api.app.getBootstrapStatus.mockResolvedValue({
+      success: true,
+      data: {
+        isReady: true,
+      },
+    });
+    mocked.api.fs.selectFile.mockResolvedValue({
+      success: true,
+      data: "/tmp/future-memory.luie",
+    });
+    mocked.api.project.openLuie.mockResolvedValue({
+      success: true,
+      data: {
+        project: {
+          id: "project-import-warnings",
+          title: "Future Memory",
+          projectPath: "/tmp/future-memory.luie",
+          attachmentStatus: "attached",
+          pathMissing: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        importWarnings: [
+          {
+            code: "canonical_memory_unknown_row_fields_discarded",
+            policy: "discard",
+            table: "MemoryEntity",
+            fields: ["futureOnlyColumn"],
+          },
+        ],
+      },
+    });
+    mocked.api.fs.approveProjectPath.mockResolvedValue({
+      success: true,
+      data: {
+        normalizedPath: "/tmp/future-memory.luie",
+      },
+    });
+
+    const view = mountView(<App />);
+    mountedViews.push(view);
+    await flushAsync();
+
+    await act(async () => {
+      const onOpenLuieFile = mocked.projectTemplateProps?.onOpenLuieFile as
+        | (() => Promise<void>)
+        | undefined;
+      await onOpenLuieFile?.();
+    });
+    await flushAsync();
+
+    expect(mocked.showToast).toHaveBeenCalledWith(
+      "Some future memory fields were skipped during import.",
+      "info",
     );
   });
 

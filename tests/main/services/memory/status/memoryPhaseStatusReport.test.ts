@@ -254,6 +254,7 @@ describe("getMemoryPhaseStatusReport", () => {
       expect.arrayContaining([
         "canonical sync source id mismatch reporting",
         "actual .luie memory canonical write/read roundtrip",
+        "unknown row field import warning and renderer notice",
         "crash-safe package write cleanup and recovery coverage",
         "corrupt .luie open recovery notice verification",
         "renderer UI package durability E2E for corrupt package recovery",
@@ -263,9 +264,11 @@ describe("getMemoryPhaseStatusReport", () => {
       expect.arrayContaining([
         "source id mismatch auto repair",
         "schema version fixture matrix beyond v1 and missing-version",
-        "unknown row field import UI notice",
         "forced app shutdown crash-safe export E2E",
       ]),
+    );
+    expect(phases[0]?.remaining).not.toContain(
+      "unknown row field import UI notice",
     );
 
     expect(phases[1]).toMatchObject({

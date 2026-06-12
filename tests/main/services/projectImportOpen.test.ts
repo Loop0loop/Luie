@@ -308,6 +308,96 @@ describe("projectImportOpen", () => {
     );
   });
 
+  it("reports discarded unknown canonical memory row fields in the import result", async () => {
+    mocked.readLuieContainerEntry.mockImplementation(
+      async (_packagePath: string, entryPath: string) => {
+        if (entryPath === "meta.json") {
+          return JSON.stringify({
+            format: "luie",
+            version: 1,
+            projectId: "project-1",
+            title: "Project 1",
+            updatedAt: "2026-03-12T03:00:00.000Z",
+            chapters: [],
+          });
+        }
+        if (entryPath === "memory/canonical.json") {
+          return JSON.stringify({
+            schemaVersion: 1,
+            tables: {
+              MemoryEntity: [
+                {
+                  id: "memory-entity-1",
+                  projectId: "project-1",
+                  entityType: "character",
+                  canonicalName: "Alice",
+                  status: "confirmed",
+                  futureOnlyColumn: "discarded",
+                  updatedAt: "2026-03-12T02:45:00.000Z",
+                },
+              ],
+              MemoryEvalCase: [
+                {
+                  id: "memory-eval-case-1",
+                  projectId: "project-1",
+                  name: "Recall Alice",
+                  question: "Who is Alice?",
+                  futureEvalColumn: "discarded",
+                },
+              ],
+            },
+          });
+        }
+        return null;
+      },
+    );
+    const logger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    };
+
+    const result = await openLuieProjectPackage({
+      packagePath: "/tmp/project-1.luie",
+      logger,
+      exportRecoveredPackage: vi.fn(),
+      getProjectById: vi.fn(async (projectId: string) => ({
+        id: projectId,
+      })),
+    });
+
+    expect(result.importWarnings).toEqual([
+      {
+        code: "canonical_memory_unknown_row_fields_discarded",
+        policy: "discard",
+        table: "MemoryEntity",
+        fields: ["futureOnlyColumn"],
+      },
+      {
+        code: "canonical_memory_unknown_row_fields_discarded",
+        policy: "discard",
+        table: "MemoryEvalCase",
+        fields: ["futureEvalColumn"],
+      },
+    ]);
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Discarded unknown canonical memory row fields during .luie import",
+      expect.objectContaining({
+        packagePath: "/tmp/project-1.luie",
+        table: "MemoryEntity",
+        fields: ["futureOnlyColumn"],
+      }),
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Discarded unknown canonical memory row fields during .luie import",
+      expect.objectContaining({
+        packagePath: "/tmp/project-1.luie",
+        table: "MemoryEvalCase",
+        fields: ["futureEvalColumn"],
+      }),
+    );
+  });
+
   it("skips stale package imports when the local database is newer", async () => {
     mocked.findUniqueResult = [
       {

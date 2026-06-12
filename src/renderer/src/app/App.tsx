@@ -313,6 +313,21 @@ export default function App() {
               imported.data.recoveryPath,
             );
         }
+        if (
+          imported.data.importWarnings?.some(
+            (warning) =>
+              warning.code ===
+              "canonical_memory_unknown_row_fields_discarded",
+          )
+        ) {
+          showToast(
+            t(
+              "settings.projectTemplate.toast.importWarnings",
+              "Some future memory fields were skipped during import.",
+            ),
+            "info",
+          );
+        }
       } else {
         showToast(
           imported.error?.message ??

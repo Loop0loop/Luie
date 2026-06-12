@@ -333,5 +333,6 @@ export const openLuieProjectPackage = async (input: {
   return {
     project: await input.getProjectById(created.id),
     conflict: "luie-newer" as const,
+    importWarnings: collections.importWarnings,
   };
 };

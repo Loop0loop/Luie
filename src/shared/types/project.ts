@@ -27,6 +27,14 @@ export interface ProjectOpenResult {
   conflict?: "db-newer" | "luie-newer";
   recoveryPath?: string;
   recoveryReason?: "missing" | "corrupt";
+  importWarnings?: ProjectImportWarning[];
+}
+
+export interface ProjectImportWarning {
+  code: "canonical_memory_unknown_row_fields_discarded";
+  policy: "discard";
+  table: string;
+  fields: string[];
 }
 
 export interface ProjectCreateInput {

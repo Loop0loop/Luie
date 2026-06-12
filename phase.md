@@ -8,6 +8,7 @@
 - Phase 6-1 canonical sync verifier의 scoped id/source id mismatch 보고와 DB-level import/rebuild source id 검증은 1차 완료되어 있다.
 - Phase 6-1 실제 `.luie` 파일 write/read를 포함한 memory canonical package 왕복 검증은 targeted integration test로 확인되어 있다.
 - Phase 6-2 canonical memory payload schema version compatibility의 legacy/missing-version 허용, future-version 거부, unknown row field discard 정책은 1차 완료되어 있다.
+- Phase 6-2 unknown canonical row field discard를 `.luie` import warning과 renderer info toast로 사용자에게 알리는 경로는 1차 완료되어 있다.
 - Phase 6-3 failed full write의 기존 package 보존과 temp/backup artifact cleanup 검증은 1차 완료되어 있다.
 - Phase 6-3 atomic replace 실패 후 backup restore branch 검증은 기존 rollback 테스트로 확인되어 있다.
 - Phase 6-3 corrupted package를 DB state에서 `.recovered-*` sqlite-v2 package로 복구하는 경로는 targeted test로 확인되어 있다.
@@ -28,7 +29,7 @@
 
 판단:
 
-- 현재는 **Phase 6 package durability renderer/UI E2E 1차 완료 상태**다.
+- 현재는 **Phase 6-2 unknown row field import UI notice 1차 완료 상태**다.
 - 다만 실제 앱 강제 종료 중 export가 끊기는 crash-safe export E2E는 추가 보강 대상으로 남아 있다.
 - 실제 작가 베타 데이터 기반 threshold 값은 아직 확정하지 않았다. 근거가 부족하다.
 
