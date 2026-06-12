@@ -112,6 +112,19 @@ describe("runLiveMemoryEvalSuite", () => {
     expect(result.results[0]?.p0Failures).toEqual([
       "relation_direction_reversed",
     ]);
+    expect(result.results[0]).toMatchObject({
+      caseId,
+      question: "아린과 백야회의 관계는?",
+      answer: "아린은 백야회의 추적을 피했다.",
+      retrievedEvidence: [
+        {
+          chunkId: "chunk-1",
+          chapterId: null,
+          offset: 0,
+          quote: "아린은 백야회의 추적을 피했다.",
+        },
+      ],
+    });
     expect(result.p0FailureTypeCounts).toEqual({
       relation_direction_reversed: 1,
     });

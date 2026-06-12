@@ -1,4 +1,11 @@
-import { BarChart3, ChevronDown, ChevronRight, Play } from "lucide-react";
+import {
+  BarChart3,
+  ChevronDown,
+  ChevronRight,
+  Play,
+  ThumbsDown,
+  ThumbsUp,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type {
   AnalysisEpisodeCalibrationReport,
@@ -17,6 +24,11 @@ type MemoryEvalReportPanelProps = {
   onRun: () => void;
   onRunIntentCalibration: () => void;
   onRunEpisodeCalibration: () => void;
+  pendingFeedbackKey: string | null;
+  onRecordAnswerWrong: (item: AnalysisMemoryEvalReport["results"][number]) => void;
+  onRecordEvidenceHelpful: (
+    item: AnalysisMemoryEvalReport["results"][number],
+  ) => void;
 };
 
 const formatPercent = (value: number): string => `${Math.round(value * 100)}%`;
@@ -32,6 +44,9 @@ export function MemoryEvalReportPanel({
   onRun,
   onRunIntentCalibration,
   onRunEpisodeCalibration,
+  pendingFeedbackKey,
+  onRecordAnswerWrong,
+  onRecordEvidenceHelpful,
 }: MemoryEvalReportPanelProps) {
   const { t } = useTranslation();
   return (
@@ -104,7 +119,29 @@ export function MemoryEvalReportPanel({
                   <div key={item.caseId} className="border-b border-border/60 px-2 py-1 last:border-b-0">
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate">{item.caseId}</span>
-                      <span>{formatPercent(item.contextRecallAtK)}</span>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <span>{formatPercent(item.contextRecallAtK)}</span>
+                        <button
+                          type="button"
+                          onClick={() => onRecordAnswerWrong(item)}
+                          disabled={pendingFeedbackKey !== null}
+                          className="inline-flex h-6 w-6 items-center justify-center rounded border border-border text-muted hover:text-danger disabled:opacity-50"
+                          title={t("analysis.review.evaluation.answerWrong")}
+                          aria-label={t("analysis.review.evaluation.answerWrong")}
+                        >
+                          <ThumbsDown className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onRecordEvidenceHelpful(item)}
+                          disabled={pendingFeedbackKey !== null}
+                          className="inline-flex h-6 w-6 items-center justify-center rounded border border-border text-muted hover:text-fg disabled:opacity-50"
+                          title={t("analysis.review.evaluation.evidenceHelpful")}
+                          aria-label={t("analysis.review.evaluation.evidenceHelpful")}
+                        >
+                          <ThumbsUp className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                     {item.p0Failures.length > 0 && (
                       <div className="mt-1 text-danger">{item.p0Failures.join(", ")}</div>

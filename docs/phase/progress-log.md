@@ -1602,3 +1602,35 @@ pnpm run check:preload-contract-regression
 - renderer UI의 실제 feedback 버튼/상태 표시는 아직 연결하지 않았다.
 - rejected answer guard를 실제 RAG answerer/renderer 차단 경로에 연결하지는 않았다.
 - `evidence_helpful` feedback을 eval set 품질 보강 후보로 전환하는 정책은 아직 없다.
+
+### 2026-06-13. Phase 7-2 writer feedback UI 버튼 연결 1차 완료
+
+확인된 사실:
+
+- live memory eval result row에 feedback 저장에 필요한 question, answer, retrievedEvidence를 포함했다.
+- `AnalysisSection`에 memory eval panel hook/component를 연결했다.
+- memory eval result row에 "이 답변 틀림"과 "이 근거 좋음" icon button을 추가했다.
+- "이 답변 틀림"은 `answer_wrong` feedback과 eval case 후보 생성 옵션으로 저장된다.
+- "이 근거 좋음"은 `evidence_helpful` feedback으로 저장된다.
+
+아키텍처 부합:
+
+- renderer는 preload `memoryAdmin.recordEvalFeedback` capability만 호출하고 main/DB에 직접 접근하지 않는다.
+- feedback payload는 shared DTO에 있는 question/answer/evidence shape를 따른다.
+- UI 상태와 toast 처리는 analysis memory eval hook 내부에 두고 panel component는 props 기반 presentational component로 유지했다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/eval/memoryEvalRunner.test.ts
+pnpm vitest tests/renderer/analysisMemoryEvalReport.test.ts
+pnpm vitest tests/main/services/memory/eval/memoryEvalFeedbackService.test.ts tests/main/handler/ipcInputValidation.memory.test.ts
+pnpm exec eslint src/shared/types/memoryEval.ts src/main/services/features/memory/eval/memoryEvalScoring.ts src/main/services/features/memory/eval/memoryEvalRunner.ts src/renderer/src/features/research/components/AnalysisSection.tsx src/renderer/src/features/research/components/analysisSection/review/evaluation/useMemoryEvalPanel.ts src/renderer/src/features/research/components/analysisSection/review/evaluation/MemoryEvalReportPanel.tsx src/renderer/src/i18n/locales/ko/base/Analysis.ts src/renderer/src/i18n/locales/en/base/Analysis.ts src/renderer/src/i18n/locales/ja/base/Analysis.ts tests/main/services/memory/eval/memoryEvalRunner.test.ts tests/renderer/analysisMemoryEvalReport.test.ts
+pnpm run typecheck
+```
+
+제한:
+
+- rejected answer guard를 실제 RAG answerer/renderer 차단 경로에 연결하지는 않았다.
+- `evidence_helpful` feedback을 eval set 품질 보강 후보로 전환하는 정책은 아직 없다.
+- Electron 화면을 띄운 수동/브라우저 UI 검증은 이번 targeted 검증에 포함하지 않았다.

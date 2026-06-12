@@ -54,12 +54,12 @@
 
 - 작가 피드백을 `MemoryEvalFeedback` DB table에 저장하는 main-domain 서비스를 추가했다.
 - 작가 피드백 저장용 `MEMORY_RECORD_EVAL_FEEDBACK` IPC channel과 preload `memoryAdmin.recordEvalFeedback` API를 추가했다.
+- analysis memory eval panel에 "이 답변 틀림"/"이 근거 좋음" feedback 버튼을 연결했다.
 - `answer_wrong`/`evidence_helpful` feedback kind와 question/answer/evidence/note/status를 저장한다.
 - `answer_wrong` feedback은 옵션에 따라 `MemoryEvalCase`와 `MemoryEvalEvidence` 후보를 생성하고 feedback status를 `eval_case_created`로 갱신한다.
 - 저장된 `answer_wrong` feedback과 같은 질문/같은 답변이 반복될 때 `repeated_rejected_answer`로 감지하는 guard를 추가했다.
 
 아직 남은 범위:
 
-- renderer UI에서 "이 답변 틀림", "이 근거 좋음" 버튼을 누르는 화면 흐름은 아직 연결하지 않았다.
 - `evidence_helpful` feedback을 eval set 품질 보강 후보로 전환하는 정책은 아직 없다.
 - rejected answer guard를 실제 RAG answerer/renderer 차단 경로에 연결하지는 않았다.

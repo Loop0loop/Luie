@@ -216,6 +216,9 @@ export function scoreMemoryEvalCase(
 
   return {
     caseId: input.evalCase.id,
+    question: input.evalCase.question,
+    answer: input.answer,
+    retrievedEvidence: input.retrievedEvidence,
     evidenceHitCount,
     evidenceMissCount,
     contextRecallAtK:

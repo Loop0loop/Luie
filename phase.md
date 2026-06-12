@@ -15,6 +15,7 @@
 - Phase 7-1 live memory eval runner는 writer task benchmark summary와 case별 answerer 응답 시간 측정을 반환한다.
 - Phase 7-2 writer feedback 저장 DB 모델과 main-domain 저장 서비스는 1차 완료되어 있다.
 - Phase 7-2 writer feedback 저장 IPC/preload API 경로는 1차 완료되어 있다.
+- Phase 7-2 analysis memory eval panel의 feedback 버튼 연결은 1차 완료되어 있다.
 - Phase 7-2 `answer_wrong` feedback에서 eval case/evidence 후보를 자동 생성하는 경로는 1차 완료되어 있다.
 - Phase 7-2 저장된 `answer_wrong` feedback과 동일 질문/동일 답변 반복을 감지하는 재발 방지 guard는 1차 완료되어 있다.
 - Phase 3-3에서 conflict quote queue와 기존 conflict resolve IPC/UI 연결은 이미 1차 완료되어 있다.
@@ -22,7 +23,7 @@
 
 판단:
 
-- 현재는 **Phase 7-2 writer feedback IPC/preload API 연결 1차 완료 상태**다.
+- 현재는 **Phase 7-2 writer feedback UI 버튼 연결 1차 완료 상태**다.
 - 다만 실제 renderer/UI 조작까지 포함한 package durability E2E는 추가 보강 대상으로 남아 있다.
 
 ## 문서 구조

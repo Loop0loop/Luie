@@ -7,6 +7,10 @@ import type {
   AnalysisIntentCalibrationReport,
   AnalysisMemoryEvalReport,
 } from "../../shared/types";
+import type {
+  MemoryEvalFeedbackKind,
+  MemoryEvalScoreResult,
+} from "@shared/types";
 
 type UseMemoryEvalPanelInput = {
   projectId?: string;
@@ -22,6 +26,9 @@ export function useMemoryEvalPanel({ projectId }: UseMemoryEvalPanelInput) {
     useState<AnalysisEpisodeCalibrationReport | null>(null);
   const [memoryEvalLoading, setMemoryEvalLoading] = useState(false);
   const [memoryEvalError, setMemoryEvalError] = useState<string | null>(null);
+  const [pendingFeedbackKey, setPendingFeedbackKey] = useState<string | null>(
+    null,
+  );
   const { showToast } = useToast();
 
   const handleRunMemoryEval = useCallback(async () => {
@@ -91,6 +98,51 @@ export function useMemoryEvalPanel({ projectId }: UseMemoryEvalPanelInput) {
     }
   }, [projectId, showToast]);
 
+  const recordFeedback = useCallback(
+    async (item: MemoryEvalScoreResult, feedbackKind: MemoryEvalFeedbackKind) => {
+      if (!projectId) return;
+      const feedbackKey = `${feedbackKind}:${item.caseId}`;
+      setPendingFeedbackKey(feedbackKey);
+      setMemoryEvalError(null);
+      try {
+        const response = await api.memoryAdmin.recordEvalFeedback({
+          projectId,
+          runId: memoryEvalReport?.runId,
+          caseId: item.caseId,
+          feedbackKind,
+          question: item.question,
+          answer: item.answer,
+          evidence: item.retrievedEvidence,
+          createEvalCaseCandidate: feedbackKind === "answer_wrong",
+        });
+        if (!response.success) {
+          setMemoryEvalError(
+            response.error?.message ??
+              i18n.t("analysis.review.evaluation.feedbackError"),
+          );
+          return;
+        }
+        showToast(
+          i18n.t("analysis.review.evaluation.feedbackRecorded"),
+          "info",
+        );
+      } finally {
+        setPendingFeedbackKey(null);
+      }
+    },
+    [memoryEvalReport?.runId, projectId, showToast],
+  );
+
+  const handleRecordAnswerWrong = useCallback(
+    (item: MemoryEvalScoreResult) => recordFeedback(item, "answer_wrong"),
+    [recordFeedback],
+  );
+
+  const handleRecordEvidenceHelpful = useCallback(
+    (item: MemoryEvalScoreResult) => recordFeedback(item, "evidence_helpful"),
+    [recordFeedback],
+  );
+
   return {
     showMemoryEvalReport,
     setShowMemoryEvalReport,
@@ -99,8 +151,11 @@ export function useMemoryEvalPanel({ projectId }: UseMemoryEvalPanelInput) {
     episodeCalibrationReport,
     memoryEvalLoading,
     memoryEvalError,
+    pendingFeedbackKey,
     handleRunMemoryEval,
     handleRunIntentCalibration,
     handleRunEpisodeCalibration,
+    handleRecordAnswerWrong,
+    handleRecordEvidenceHelpful,
   };
 }

@@ -11,17 +11,28 @@ describe("AnalysisSection memory eval report UI", () => {
     const panelSource = readFileSync(
       resolve(
         process.cwd(),
-        "src/renderer/src/features/research/components/analysisSection/MemoryEvalReportPanel.tsx",
+        "src/renderer/src/features/research/components/analysisSection/review/evaluation/MemoryEvalReportPanel.tsx",
+      ),
+      "utf8",
+    );
+    const hookSource = readFileSync(
+      resolve(
+        process.cwd(),
+        "src/renderer/src/features/research/components/analysisSection/review/evaluation/useMemoryEvalPanel.ts",
       ),
       "utf8",
     );
 
     expect(analysisSource).toContain("MemoryEvalReportPanel");
-    expect(analysisSource).toContain("api.memoryAdmin.runEvalSuite");
-    expect(analysisSource).toContain("api.memoryAdmin.runIntentCalibration");
-    expect(analysisSource).toContain("api.memoryAdmin.runEpisodeCalibration");
-    expect(analysisSource).toContain("useLlm: true");
-    expect(panelSource).toContain("메모리 평가");
+    expect(analysisSource).toContain("useMemoryEvalPanel");
+    expect(hookSource).toContain("api.memoryAdmin.runEvalSuite");
+    expect(hookSource).toContain("api.memoryAdmin.runIntentCalibration");
+    expect(hookSource).toContain("api.memoryAdmin.runEpisodeCalibration");
+    expect(hookSource).toContain("useLlm: true");
+    expect(hookSource).toContain("api.memoryAdmin.recordEvalFeedback");
+    expect(panelSource).toContain("analysis.review.evaluation.title");
+    expect(panelSource).toContain("onRecordAnswerWrong");
+    expect(panelSource).toContain("onRecordEvidenceHelpful");
     expect(panelSource).toContain("LLM intent calibration");
     expect(panelSource).toContain("LLM episode calibration");
     expect(panelSource).toContain("averageContextRecallAtK");

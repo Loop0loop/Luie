@@ -113,6 +113,9 @@ export interface MemoryEvalSuiteInput {
 
 export interface MemoryEvalScoreResult {
   caseId: string;
+  question: string;
+  answer?: string;
+  retrievedEvidence: RagQaEvidence[];
   evidenceHitCount: number;
   evidenceMissCount: number;
   contextRecallAtK: number;

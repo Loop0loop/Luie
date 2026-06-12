@@ -13,10 +13,12 @@ import { EntityReviewPanel } from "./analysisSection/review/queue/EntityReviewPa
 import { EpisodeReviewPanel } from "./analysisSection/review/queue/EpisodeReviewPanel";
 import { FactReviewPanel } from "./analysisSection/review/queue/FactReviewPanel";
 import { StaleEvidenceReviewPanel } from "./analysisSection/review/queue/StaleEvidenceReviewPanel";
+import { MemoryEvalReportPanel } from "./analysisSection/review/evaluation/MemoryEvalReportPanel";
 import { SummaryDrawer } from "./analysisSection/review/summary/SummaryDrawer";
 import type { MemoryScope } from "./analysisSection/shared/types";
 import type { AnalysisConflictItem } from "./analysisSection/shared/types";
 import { useAnalysisRuntime } from "./analysisSection/runtime/useAnalysisRuntime";
+import { useMemoryEvalPanel } from "./analysisSection/review/evaluation/useMemoryEvalPanel";
 import { useMemoryReviewPanels } from "./analysisSection/review/queue/useMemoryReviewPanels";
 import { useRagChat } from "./analysisSection/chat/useRagChat";
 import { useAnalysisStore } from "../stores/analysisStore";
@@ -277,6 +279,9 @@ export default function AnalysisSection() {
     chapterId: timelineChapter?.id,
     memoryScope,
   });
+  const evalPanel = useMemoryEvalPanel({
+    projectId: currentProject?.id,
+  });
 
   const disabled = !currentProject;
   const isEmpty = chat.messages.length === 0;
@@ -423,6 +428,23 @@ export default function AnalysisSection() {
               onToggle={() => review.setShowStaleEvidenceReviewQueue((prev) => !prev)}
               onAction={review.handleReviewStaleEvidence}
               onRepair={review.handleRepairStaleEvidence}
+            />
+            <MemoryEvalReportPanel
+              visible={evalPanel.showMemoryEvalReport}
+              loading={evalPanel.memoryEvalLoading}
+              error={evalPanel.memoryEvalError}
+              report={evalPanel.memoryEvalReport}
+              intentCalibrationReport={evalPanel.intentCalibrationReport}
+              episodeCalibrationReport={evalPanel.episodeCalibrationReport}
+              onToggle={() =>
+                evalPanel.setShowMemoryEvalReport((prev) => !prev)
+              }
+              onRun={evalPanel.handleRunMemoryEval}
+              onRunIntentCalibration={evalPanel.handleRunIntentCalibration}
+              onRunEpisodeCalibration={evalPanel.handleRunEpisodeCalibration}
+              pendingFeedbackKey={evalPanel.pendingFeedbackKey}
+              onRecordAnswerWrong={evalPanel.handleRecordAnswerWrong}
+              onRecordEvidenceHelpful={evalPanel.handleRecordEvidenceHelpful}
             />
           </div>
           {!isEmpty && (
