@@ -1421,3 +1421,29 @@ pnpm vitest tests/main/services/memory/persistence/memoryCanonicalPackage.test.t
 
 - 이 검증은 실제 file IO와 DB import/rebuild를 포함하지만 renderer/UI 조작은 포함하지 않는다.
 - source id mismatch 자동 복구는 여전히 하지 않는다.
+
+### 2026-06-12. Phase 7-1 writer task benchmark 계약 1차 완료
+
+확인된 사실:
+
+- writer task benchmark 작업 5종을 코드로 고정했다.
+- 작업 5종은 설정 확인, 인물 관계 확인, 떡밥 회수 여부 확인, 회차 기준 지식 상태 확인, 초안/정사 충돌 확인이다.
+- 기존 memory eval score result를 task별 성공률, 평균 응답 시간, 근거 만족도, false confidence rate로 요약한다.
+- false confidence rate는 근거 없는 확정, unsupported claim, 초안/폐기 확정, 미래 정보 사용, 미회수 떡밥 오판 계열 P0 failure를 기준으로 계산한다.
+
+아키텍처 부합:
+
+- 새 계약은 main memory benchmark domain 내부에 추가했다.
+- 기존 eval scoring result를 입력으로 받아 shared/IPC/preload/renderer 계약을 변경하지 않았다.
+- 기존 latency benchmark와 같은 benchmark export boundary를 사용한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/benchmark/memoryWriterTaskBenchmark.test.ts
+```
+
+제한:
+
+- 실제 live writer benchmark runner와 DB 저장은 아직 없다.
+- 실제 작가 베타 데이터 기반 threshold는 아직 확정하지 않았다.

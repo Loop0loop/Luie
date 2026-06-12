@@ -27,6 +27,16 @@
 - 근거 만족도
 - false confidence rate
 
+완료된 범위:
+
+- writer task benchmark의 5개 작업 taxonomy를 코드로 고정했다.
+- 기존 memory eval score 결과를 task별 성공률, 평균 응답 시간, 근거 만족도, false confidence rate로 요약하는 계약을 추가했다.
+
+아직 남은 범위:
+
+- 실제 live writer benchmark run을 저장/실행하는 runner는 아직 없다.
+- 실제 작가 베타 데이터 기반 threshold는 아직 확정하지 않았다.
+
 ### Phase 7-2. feedback loop
 
 작업:
