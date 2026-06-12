@@ -1369,3 +1369,29 @@ pnpm vitest tests/main/services/luiePackageWriter.rollback.test.ts
 
 - 이 단계는 기존 rollback 테스트를 Phase 6-3 상태 문서에 반영한 것이다.
 - corrupted package recovery test는 아직 남아 있다.
+
+### 2026-06-12. Phase 6-3 corrupted package recovery 보강
+
+확인된 사실:
+
+- corrupted `.luie` file을 기존 DB project path로 열면 recovery result가 반환된다.
+- 복구 결과는 원본 corrupted file을 덮어쓰지 않고 `.recovered-*` `.luie` file을 만든다.
+- 복구된 file은 `probeLuieContainer` 기준 `sqlite-v2`이고 `meta.json`을 다시 읽을 수 있다.
+- 복구된 package 주변에 WAL sidecar가 남지 않는지 확인한다.
+
+아키텍처 부합:
+
+- 복구 검증은 main project service와 main IO container 경계 안에서 수행했다.
+- `.luie` package format, IPC channel, preload API, renderer contract는 변경하지 않았다.
+- 기존 DB state에서 package를 재생성하는 현재 project domain 책임과 부합한다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/projectService.test.ts -t "recovers .luie from db when package is corrupted"
+```
+
+제한:
+
+- 이 검증은 targeted main integration test다.
+- 실제 앱 restart 직후 renderer UI 안내까지 포함한 E2E는 아직 별도 보강 범위다.

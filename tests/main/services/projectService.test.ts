@@ -25,6 +25,12 @@ import {
 } from "../luieFixtures.js";
 
 const localProjectService = new ProjectService();
+const containerLogger = {
+  info: () => undefined,
+  debug: () => undefined,
+  warn: () => undefined,
+  error: () => undefined,
+};
 
 beforeAll(() => {
   vi.spyOn(projectService, "schedulePackageExport").mockImplementation(
@@ -93,7 +99,36 @@ describe("ProjectService", () => {
 
     const result = await localProjectService.openLuieProject(projectPath);
     expect(result.recovery).toBe(true);
+    expect(result.recoveryReason).toBe("corrupt");
     expect((result.project as { id: string }).id).toBe(created.id);
+
+    const recoveryPath = String(result.recoveryPath);
+    expect(recoveryPath).not.toBe(projectPath);
+    expect(path.basename(recoveryPath)).toContain(".recovered-");
+    expect(path.extname(recoveryPath)).toBe(".luie");
+    expect(await fs.readFile(projectPath, "utf-8")).toBe("not-a-sqlite");
+
+    await expect(fs.access(recoveryPath)).resolves.toBeUndefined();
+    await expect(fs.access(`${recoveryPath}-wal`)).rejects.toThrow();
+    await expect(fs.access(`${recoveryPath}-shm`)).rejects.toThrow();
+
+    const probe = await probeLuieContainer(recoveryPath);
+    expect(probe).toMatchObject({
+      exists: true,
+      kind: "sqlite-v2",
+      layout: "file",
+    });
+
+    const metaRaw = await readLuieContainerEntry(
+      recoveryPath,
+      "meta.json",
+      containerLogger,
+    );
+    expect(metaRaw).not.toBeNull();
+    expect(JSON.parse(metaRaw ?? "{}")).toMatchObject({
+      projectId: created.id,
+      title: "Recovery Project",
+    });
   });
 
   it("fails open when a legacy .luie directory package is attached without deleting existing db data", async () => {

@@ -71,7 +71,8 @@
 - 실패한 SQLite-backed `.luie` full write가 기존 package entry를 유지하는지 검증한다.
 - 실패한 full write 후 `.tmp-*`/`.bak-*` package artifact가 남지 않는지 검증한다.
 - atomic replace가 target을 backup으로 옮긴 뒤 새 target rename에 실패하면 기존 파일을 복구하는지 검증한다.
+- corrupted `.luie` package open 시 기존 DB project state에서 `.recovered-*` sqlite-v2 package를 생성하고 attachment path를 복구 경로로 옮기는지 검증한다.
 
 아직 남은 범위:
 
-- corrupted package recovery test는 아직 남아 있다.
+- 실제 앱 restart 직후 corrupted package recovery UI 안내는 아직 검증하지 않았다.
