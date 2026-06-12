@@ -284,11 +284,12 @@ describe("getMemoryPhaseStatusReport", () => {
       expect.arrayContaining([
         "writer task benchmark taxonomy and metric summary",
         "persisted writer benchmark threshold assessment CLI",
+        "persisted beta benchmark threshold candidate calibration",
         "writer feedback DB, IPC/preload API, UI buttons, and rejected-answer guard",
       ]),
     );
     expect(phases[1]?.remaining).toContain(
-      "real writer beta data threshold calibration",
+      "real writer beta data threshold finalization",
     );
   });
 });

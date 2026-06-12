@@ -2039,3 +2039,37 @@ pnpm run typecheck
 pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
 rg -n "phase6-package-durability|forced app shutdown crash-safe export E2E|\"remaining\": \\[\\]" tests/.tmp/memory-phase-status-roadmap.json
 ```
+
+### 2026-06-13. Phase 7-1 threshold candidate calibration 1차 완료
+
+확인된 사실:
+
+- `calibrateMemoryWriterTaskBenchmarkThresholds`를 추가했다.
+- beta benchmark summary 수가 `minimumBetaRunCount`보다 적으면 `insufficient_beta_data`로 threshold candidate를 만들지 않는다.
+- beta benchmark summary 수가 충분하면 관측 aggregate를 기준으로 success/evidence/false-confidence/response-time threshold candidate를 산출한다.
+- `memory:assess-writer-benchmark` CLI에 `--calibrate-thresholds` 옵션을 추가해 persisted writer benchmark run에서 assessment와 calibration report를 함께 출력할 수 있게 했다.
+- Phase 7 roadmap status에 `persisted beta benchmark threshold candidate calibration`을 완료 범위로 추가했다.
+
+아키텍처 부합:
+
+- 변경은 main memory benchmark domain과 기존 script surface에 한정했다.
+- DB schema, IPC channel, preload API, renderer는 변경하지 않았다.
+- threshold 확정 정책은 main benchmark domain의 순수 함수로 유지했다.
+
+아키텍처 불일치 또는 제한:
+
+- 실제 작가 베타 데이터가 아직 없으므로 threshold candidate를 제품 기준값으로 확정하지 않았다. 근거가 부족하다.
+- 이번 단계는 persisted beta run이 들어왔을 때 후보를 산출하는 경로를 만든 것이며, 실제 베타 수집 자체는 포함하지 않는다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/benchmark/memoryWriterTaskBenchmark.test.ts -t "calibrates threshold candidates|refuses threshold candidate"
+pnpm vitest tests/main/services/memory/benchmark/memoryWriterTaskBenchmark.test.ts
+pnpm vitest tests/scripts/memoryWriterBenchmarkThresholdRunner.test.ts
+pnpm vitest tests/main/services/memory/benchmark/memoryWriterTaskBenchmark.test.ts tests/scripts/memoryWriterBenchmarkThresholdRunner.test.ts tests/main/services/memory/status/memoryPhaseStatusReport.test.ts
+pnpm exec eslint src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.ts scripts/assess-memory-writer-benchmark-thresholds.ts tests/main/services/memory/benchmark/memoryWriterTaskBenchmark.test.ts tests/scripts/memoryWriterBenchmarkThresholdRunner.test.ts src/main/services/features/memory/status/memoryPhaseStatusReport.ts tests/main/services/memory/status/memoryPhaseStatusReport.test.ts
+pnpm run typecheck
+pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
+rg -n "phase7-beta-validation|persisted beta benchmark threshold candidate calibration|real writer beta data threshold finalization|real writer beta data threshold calibration" tests/.tmp/memory-phase-status-roadmap.json
+```

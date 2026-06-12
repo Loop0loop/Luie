@@ -10,6 +10,7 @@ import {
 } from "../src/main/infra/database/index.js";
 import {
   assessMemoryWriterTaskBenchmarkThresholds,
+  calibrateMemoryWriterTaskBenchmarkThresholds,
   type MemoryWriterTaskBenchmarkThresholds,
 } from "../src/main/services/features/memory/benchmark/index.js";
 import type { MemoryWriterTaskBenchmarkSummary } from "../src/shared/types/index.js";
@@ -19,6 +20,7 @@ type CliOptions = {
   minimumBetaRuns: number;
   out?: string;
   assertThresholds: boolean;
+  calibrateThresholds: boolean;
   thresholds: Partial<MemoryWriterTaskBenchmarkThresholds>;
 };
 
@@ -26,6 +28,7 @@ function parseArgs(argv: string[]): CliOptions {
   const options: CliOptions = {
     minimumBetaRuns: 3,
     assertThresholds: false,
+    calibrateThresholds: false,
     thresholds: {},
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -48,6 +51,10 @@ function parseArgs(argv: string[]): CliOptions {
     }
     if (arg === "--assert-thresholds") {
       options.assertThresholds = true;
+      continue;
+    }
+    if (arg === "--calibrate-thresholds") {
+      options.calibrateThresholds = true;
       continue;
     }
     if (arg === "--min-success-rate" && next) {
@@ -114,6 +121,12 @@ async function main(): Promise<void> {
     const report = {
       projectId: options.projectId ?? null,
       assessment,
+      calibration: options.calibrateThresholds
+        ? calibrateMemoryWriterTaskBenchmarkThresholds({
+            summaries,
+            minimumBetaRunCount: options.minimumBetaRuns,
+          })
+        : null,
     };
     const json = `${JSON.stringify(report, null, 2)}\n`;
     if (options.out) {

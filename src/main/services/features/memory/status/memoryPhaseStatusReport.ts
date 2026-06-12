@@ -107,10 +107,11 @@ const MEMORY_ROADMAP_PHASE_STATUSES: MemoryRoadmapPhaseStatus[] = [
       "writer task benchmark taxonomy and metric summary",
       "live eval writer benchmark summary persistence",
       "persisted writer benchmark threshold assessment CLI",
+      "persisted beta benchmark threshold candidate calibration",
       "writer feedback DB, IPC/preload API, UI buttons, and rejected-answer guard",
       "helpful evidence feedback materialization",
     ],
-    remaining: ["real writer beta data threshold calibration"],
+    remaining: ["real writer beta data threshold finalization"],
     architectureAlignment: {
       status: "aligned",
       notes: [

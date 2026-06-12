@@ -20,6 +20,7 @@
 - Phase 7-1 writer task benchmark summary를 run별 DB row로 저장하는 경로는 1차 완료되어 있다.
 - Phase 7-1 writer task benchmark threshold calibration gate는 1차 완료되어 있으며, beta sample 부족 시 threshold 확정을 거부한다.
 - Phase 7-1 persisted writer benchmark threshold assessment CLI는 1차 완료되어 있다.
+- Phase 7-1 persisted beta benchmark run이 충분할 때 threshold candidate를 산출하는 calibration 경로와 CLI 옵션은 1차 완료되어 있다.
 - Phase 7-2 writer feedback 저장 DB 모델과 main-domain 저장 서비스는 1차 완료되어 있다.
 - Phase 7-2 writer feedback 저장 IPC/preload API 경로는 1차 완료되어 있다.
 - Phase 7-2 analysis memory eval panel의 feedback 버튼 연결은 1차 완료되어 있다.
@@ -33,7 +34,8 @@
 판단:
 
 - 현재는 **Phase 6 package durability 1차 완료 상태**다.
-- 실제 작가 베타 데이터 기반 threshold 값은 아직 확정하지 않았다. 근거가 부족하다.
+- 현재는 **Phase 7-1 threshold candidate calibration 1차 완료 상태**다.
+- 실제 작가 베타 데이터 기반 threshold 값을 기준값으로 확정하지는 않았다. 근거가 부족하다.
 
 ## 문서 구조
 

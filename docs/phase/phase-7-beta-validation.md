@@ -35,10 +35,11 @@
 - live memory eval runner가 writer task benchmark summary를 `MemoryWriterTaskBenchmarkRun` DB row로 저장한다.
 - writer task benchmark threshold calibration gate를 추가했다. beta sample 수가 최소 기준보다 적으면 `insufficient_beta_data`로 판단하고 threshold 확정/통과 판정을 하지 않는다.
 - persisted writer benchmark run을 읽어 threshold assessment를 실행하는 `memory:assess-writer-benchmark` CLI를 추가했다.
+- persisted beta benchmark run이 최소 기준 이상이면 관측 aggregate로 threshold candidate를 산출하는 calibration 경로와 `--calibrate-thresholds` CLI 옵션을 추가했다.
 
 아직 남은 범위:
 
-- 실제 작가 베타 데이터가 아직 없어 threshold 값은 확정하지 않았다.
+- 실제 작가 베타 데이터가 아직 없어 threshold candidate를 기준값으로 확정하지 않았다.
 
 ### Phase 7-2. feedback loop
 
@@ -65,4 +66,4 @@
 
 아직 남은 범위:
 
-- 실제 작가 베타 데이터가 아직 없어 threshold 값은 확정하지 않았다.
+- 실제 작가 베타 데이터가 아직 없어 threshold candidate를 기준값으로 확정하지 않았다.

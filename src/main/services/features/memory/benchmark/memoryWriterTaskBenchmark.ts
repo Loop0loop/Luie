@@ -39,6 +39,19 @@ export type MemoryWriterTaskBenchmarkThresholdAssessment = {
   failures: MemoryWriterTaskBenchmarkThresholdFailure[];
 };
 
+export type MemoryWriterTaskBenchmarkThresholdCalibration =
+  | {
+      status: "calibrated";
+      betaRunCount: number;
+      minimumBetaRunCount: number;
+      thresholds: MemoryWriterTaskBenchmarkThresholds;
+    }
+  | {
+      status: "insufficient_beta_data";
+      betaRunCount: number;
+      minimumBetaRunCount: number;
+    };
+
 export const MEMORY_WRITER_TASK_BENCHMARK_TASKS: readonly MemoryWriterTaskBenchmarkTask[] =
   [
     {
@@ -178,6 +191,34 @@ export function assessMemoryWriterTaskBenchmarkThresholds(input: {
     betaRunCount,
     minimumBetaRunCount: input.minimumBetaRunCount,
     failures,
+  };
+}
+
+export function calibrateMemoryWriterTaskBenchmarkThresholds(input: {
+  summaries: MemoryWriterTaskBenchmarkSummary[];
+  minimumBetaRunCount: number;
+}): MemoryWriterTaskBenchmarkThresholdCalibration {
+  const betaRunCount = input.summaries.length;
+  if (betaRunCount < input.minimumBetaRunCount) {
+    return {
+      status: "insufficient_beta_data",
+      betaRunCount,
+      minimumBetaRunCount: input.minimumBetaRunCount,
+    };
+  }
+  const aggregate = aggregateBenchmarkSummaries(input.summaries);
+  return {
+    status: "calibrated",
+    betaRunCount,
+    minimumBetaRunCount: input.minimumBetaRunCount,
+    thresholds: {
+      minSuccessRate: aggregate.successRate,
+      minEvidenceSatisfactionRate: aggregate.evidenceSatisfactionRate,
+      maxFalseConfidenceRate: aggregate.falseConfidenceRate,
+      maxAverageResponseTimeMs:
+        aggregate.averageResponseTimeMs ??
+        DEFAULT_WRITER_TASK_BENCHMARK_THRESHOLDS.maxAverageResponseTimeMs,
+    },
   };
 }
 

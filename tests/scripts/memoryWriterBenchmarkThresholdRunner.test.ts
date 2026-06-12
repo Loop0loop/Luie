@@ -14,6 +14,8 @@ describe("memory writer benchmark threshold runner", () => {
 
     expect(source).toContain("memoryWriterTaskBenchmarkRun");
     expect(source).toContain("assessMemoryWriterTaskBenchmarkThresholds");
+    expect(source).toContain("calibrateMemoryWriterTaskBenchmarkThresholds");
+    expect(source).toContain("--calibrate-thresholds");
     expect(source).toContain("--minimum-beta-runs");
     expect(source).toContain("--assert-thresholds");
     expect(source).toContain("--project-id");

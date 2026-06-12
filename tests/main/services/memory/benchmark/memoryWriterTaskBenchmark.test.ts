@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   MEMORY_WRITER_TASK_BENCHMARK_TASKS,
   assessMemoryWriterTaskBenchmarkThresholds,
+  calibrateMemoryWriterTaskBenchmarkThresholds,
   classifyMemoryWriterTaskBenchmarkCase,
   summarizeMemoryWriterTaskBenchmark,
 } from "../../../../../src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.js";
@@ -242,6 +243,81 @@ describe("memoryWriterTaskBenchmark", () => {
         "evidenceSatisfactionRate",
         "falseConfidenceRate",
       ],
+    });
+  });
+
+  it("calibrates threshold candidates from enough beta benchmark samples", () => {
+    const fastPassing = summarizeMemoryWriterTaskBenchmark([
+      {
+        evalCase: makeCase("setting", {}),
+        scoreResult: makeScore("setting", {}),
+        responseTimeMs: 100,
+      },
+    ]);
+    const slowerSupported = summarizeMemoryWriterTaskBenchmark([
+      {
+        evalCase: makeCase("relation", {
+          caseType: "relation",
+          expectedRelations: [
+            { sourceName: "아린", targetName: "백야회", relation: "member_of" },
+          ],
+        }),
+        scoreResult: makeScore("relation", {
+          contextRecallAtK: 0.8,
+        }),
+        responseTimeMs: 300,
+      },
+    ]);
+    const falseConfident = summarizeMemoryWriterTaskBenchmark([
+      {
+        evalCase: makeCase("draft", {
+          question: "폐기 설정을 정사라고 답해도 되나?",
+        }),
+        scoreResult: makeScore("draft", {
+          contextRecallAtK: 0.4,
+          p0FailureCount: 1,
+          p0Failures: ["deleted_or_draft_fact_confirmed"],
+        }),
+        responseTimeMs: 500,
+      },
+    ]);
+
+    expect(
+      calibrateMemoryWriterTaskBenchmarkThresholds({
+        summaries: [fastPassing, slowerSupported, falseConfident],
+        minimumBetaRunCount: 3,
+      }),
+    ).toEqual({
+      status: "calibrated",
+      betaRunCount: 3,
+      minimumBetaRunCount: 3,
+      thresholds: {
+        minSuccessRate: 2 / 3,
+        minEvidenceSatisfactionRate: (1 + 0.8 + 0.4) / 3,
+        maxFalseConfidenceRate: 1 / 3,
+        maxAverageResponseTimeMs: 300,
+      },
+    });
+  });
+
+  it("refuses threshold candidate calibration when beta samples are insufficient", () => {
+    const summary = summarizeMemoryWriterTaskBenchmark([
+      {
+        evalCase: makeCase("setting", {}),
+        scoreResult: makeScore("setting", {}),
+        responseTimeMs: 100,
+      },
+    ]);
+
+    expect(
+      calibrateMemoryWriterTaskBenchmarkThresholds({
+        summaries: [summary],
+        minimumBetaRunCount: 3,
+      }),
+    ).toEqual({
+      status: "insufficient_beta_data",
+      betaRunCount: 1,
+      minimumBetaRunCount: 3,
     });
   });
 });
