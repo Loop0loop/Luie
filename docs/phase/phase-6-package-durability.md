@@ -43,6 +43,16 @@
 - missing field 기본값 처리
 - unknown field 보존 또는 명확한 discard 정책
 
+완료된 범위:
+
+- `schemaVersion`이 없는 legacy canonical memory payload는 v1로 읽을 수 있다.
+- future `schemaVersion`은 조용히 받아들이지 않고 unsupported schema로 거부한다.
+
+아직 남은 범위:
+
+- schema version별 fixture matrix는 아직 v1/missing-version 중심이다.
+- unknown row field의 보존/폐기 정책은 apply/import 단계별로 더 명확히 문서화해야 한다.
+
 ### Phase 6-3. crash-safe export
 
 작업:

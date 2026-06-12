@@ -1275,3 +1275,27 @@ pnpm vitest tests/main/services/memory/persistence/memoryCanonicalPackageSyncVer
 
 - 실제 `.luie` container write/read를 포함하지 않는 DB-level 왕복 검증이다.
 - 실제 파일 기반 package 왕복은 Phase 6-1 추가 보강 또는 Phase 6-3 crash-safe export와 함께 검증해야 한다.
+
+### 2026-06-12. Phase 6-2 canonical memory schema version compatibility 1차 완료
+
+확인된 사실:
+
+- `LuieMemoryCanonicalSchema`는 `schemaVersion`이 없는 legacy canonical memory payload를 계속 허용한다.
+- `schemaVersion: 1`이 아닌 future canonical memory payload는 unsupported schema version으로 거부한다.
+- 오래된 package를 안전하게 여는 경로와 알 수 없는 미래 package를 조용히 오독하지 않는 경로를 테스트로 고정했다.
+
+아키텍처 부합:
+
+- `.luie` package payload format을 변경하지 않고 parser validation만 강화했다.
+- 기존 import transaction, IPC, preload, renderer 경계는 변경하지 않았다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/persistence/memoryCanonicalPackage.test.ts
+```
+
+제한:
+
+- schema version별 fixture matrix는 아직 v1/missing-version 중심이다.
+- unknown row field의 보존/폐기 정책은 apply/import 단계별로 더 명확히 문서화해야 한다.

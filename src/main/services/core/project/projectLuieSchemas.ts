@@ -165,6 +165,14 @@ export const LuieMemoryCanonicalSchema = z
   })
   .passthrough()
   .superRefine((value, context) => {
+    if (value.schemaVersion !== undefined && value.schemaVersion !== 1) {
+      context.addIssue({
+        code: "custom",
+        path: ["schemaVersion"],
+        message: "Unsupported canonical memory schema version.",
+      });
+    }
+
     for (const [tableName, rows] of Object.entries(value.tables ?? {})) {
       if (!memoryCanonicalTables.has(tableName)) {
         context.addIssue({

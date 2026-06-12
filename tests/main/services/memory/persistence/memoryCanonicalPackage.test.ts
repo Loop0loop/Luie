@@ -11,6 +11,7 @@ import {
   memoryFactEvidence,
   project,
 } from "../../../../../src/main/infra/database/index.js";
+import { LuieMemoryCanonicalSchema } from "../../../../../src/main/services/core/project/projectLuieSchemas.js";
 import {
   applyMemoryCanonicalPackagePayload,
   buildMemoryCanonicalPackagePayload,
@@ -33,6 +34,28 @@ const createTx = () => {
     },
   };
 };
+
+describe("LuieMemoryCanonicalSchema compatibility", () => {
+  it("accepts legacy canonical memory payloads without schemaVersion", () => {
+    const parsed = LuieMemoryCanonicalSchema.parse({
+      exportedAt: "2026-06-11T00:00:00.000Z",
+      tables: {},
+    });
+
+    expect(parsed.schemaVersion).toBeUndefined();
+    expect(parsed.tables).toEqual({});
+  });
+
+  it("rejects unsupported future canonical memory schema versions", () => {
+    const result = LuieMemoryCanonicalSchema.safeParse({
+      schemaVersion: 999,
+      exportedAt: "2026-06-11T00:00:00.000Z",
+      tables: {},
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
 
 describe("applyMemoryCanonicalPackagePayload", () => {
   it("exports confirmed entity and fact rows with evidence anchors while excluding suggested candidates", async () => {
