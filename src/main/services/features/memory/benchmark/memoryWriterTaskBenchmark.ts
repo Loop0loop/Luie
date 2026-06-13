@@ -73,6 +73,22 @@ export type MemoryWriterTaskBenchmarkThresholdFinalization =
       confirmedRealBetaData: boolean;
     };
 
+export type MemoryWriterTaskBenchmarkFinalizationMissingRequirement =
+  | "minimum_beta_run_count"
+  | "confirmed_real_beta_data";
+
+export type MemoryWriterTaskBenchmarkFinalizationManifest = {
+  schemaVersion: 1;
+  projectId: string | null;
+  generatedAt: string;
+  status: "ready" | "not_ready";
+  betaRunCount: number;
+  minimumBetaRunCount: number;
+  confirmedRealBetaData: boolean;
+  missingRequirements: MemoryWriterTaskBenchmarkFinalizationMissingRequirement[];
+  finalization: MemoryWriterTaskBenchmarkThresholdFinalization;
+};
+
 export const MEMORY_WRITER_TASK_BENCHMARK_TASKS: readonly MemoryWriterTaskBenchmarkTask[] =
   [
     {
@@ -283,6 +299,39 @@ export function finalizeMemoryWriterTaskBenchmarkThresholds(input: {
     minimumBetaRunCount: input.minimumBetaRunCount,
     confirmedRealBetaData: true,
     thresholds: calibration.thresholds,
+  };
+}
+
+export function buildMemoryWriterTaskBenchmarkFinalizationManifest(input: {
+  projectId?: string | null;
+  generatedAt: string;
+  summaries: MemoryWriterTaskBenchmarkSummary[];
+  minimumBetaRunCount: number;
+  confirmRealBetaData: boolean;
+}): MemoryWriterTaskBenchmarkFinalizationManifest {
+  const finalization = finalizeMemoryWriterTaskBenchmarkThresholds({
+    summaries: input.summaries,
+    minimumBetaRunCount: input.minimumBetaRunCount,
+    confirmRealBetaData: input.confirmRealBetaData,
+  });
+  const missingRequirements: MemoryWriterTaskBenchmarkFinalizationMissingRequirement[] =
+    [];
+  if (input.summaries.length < input.minimumBetaRunCount) {
+    missingRequirements.push("minimum_beta_run_count");
+  }
+  if (!input.confirmRealBetaData) {
+    missingRequirements.push("confirmed_real_beta_data");
+  }
+  return {
+    schemaVersion: 1,
+    projectId: input.projectId ?? null,
+    generatedAt: input.generatedAt,
+    status: missingRequirements.length === 0 ? "ready" : "not_ready",
+    betaRunCount: input.summaries.length,
+    minimumBetaRunCount: input.minimumBetaRunCount,
+    confirmedRealBetaData: input.confirmRealBetaData,
+    missingRequirements,
+    finalization,
   };
 }
 

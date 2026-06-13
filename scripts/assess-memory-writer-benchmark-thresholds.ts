@@ -10,6 +10,7 @@ import {
 } from "../src/main/infra/database/index.js";
 import {
   assessMemoryWriterTaskBenchmarkThresholds,
+  buildMemoryWriterTaskBenchmarkFinalizationManifest,
   calibrateMemoryWriterTaskBenchmarkThresholds,
   finalizeMemoryWriterTaskBenchmarkThresholds,
   type MemoryWriterTaskBenchmarkThresholds,
@@ -23,6 +24,7 @@ type CliOptions = {
   assertThresholds: boolean;
   calibrateThresholds: boolean;
   finalizeThresholds: boolean;
+  finalizationManifest: boolean;
   confirmRealBetaData: boolean;
   thresholds: Partial<MemoryWriterTaskBenchmarkThresholds>;
 };
@@ -33,6 +35,7 @@ function parseArgs(argv: string[]): CliOptions {
     assertThresholds: false,
     calibrateThresholds: false,
     finalizeThresholds: false,
+    finalizationManifest: false,
     confirmRealBetaData: false,
     thresholds: {},
   };
@@ -64,6 +67,10 @@ function parseArgs(argv: string[]): CliOptions {
     }
     if (arg === "--finalize-thresholds") {
       options.finalizeThresholds = true;
+      continue;
+    }
+    if (arg === "--finalization-manifest") {
+      options.finalizationManifest = true;
       continue;
     }
     if (arg === "--confirm-real-beta-data") {
@@ -142,6 +149,15 @@ async function main(): Promise<void> {
         : null,
       finalization: options.finalizeThresholds
         ? finalizeMemoryWriterTaskBenchmarkThresholds({
+            summaries,
+            minimumBetaRunCount: options.minimumBetaRuns,
+            confirmRealBetaData: options.confirmRealBetaData,
+          })
+        : null,
+      finalizationManifest: options.finalizationManifest
+        ? buildMemoryWriterTaskBenchmarkFinalizationManifest({
+            projectId: options.projectId ?? null,
+            generatedAt: new Date().toISOString(),
             summaries,
             minimumBetaRunCount: options.minimumBetaRuns,
             confirmRealBetaData: options.confirmRealBetaData,

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   MEMORY_WRITER_TASK_BENCHMARK_TASKS,
   assessMemoryWriterTaskBenchmarkThresholds,
+  buildMemoryWriterTaskBenchmarkFinalizationManifest,
   calibrateMemoryWriterTaskBenchmarkThresholds,
   classifyMemoryWriterTaskBenchmarkCase,
   finalizeMemoryWriterTaskBenchmarkThresholds,
@@ -420,6 +421,85 @@ describe("memoryWriterTaskBenchmark", () => {
         minEvidenceSatisfactionRate: (1 + 0.8 + 0.4) / 3,
         maxFalseConfidenceRate: 1 / 3,
         maxAverageResponseTimeMs: 300,
+      },
+    });
+  });
+
+  it("builds a not-ready finalization manifest with missing beta requirements", () => {
+    const summary = summarizeMemoryWriterTaskBenchmark([
+      {
+        evalCase: makeCase("setting", {}),
+        scoreResult: makeScore("setting", {}),
+        responseTimeMs: 100,
+      },
+    ]);
+
+    expect(
+      buildMemoryWriterTaskBenchmarkFinalizationManifest({
+        projectId: "project-1",
+        generatedAt: "2026-06-13T00:00:00.000Z",
+        summaries: [summary],
+        minimumBetaRunCount: 3,
+        confirmRealBetaData: false,
+      }),
+    ).toEqual({
+      schemaVersion: 1,
+      projectId: "project-1",
+      generatedAt: "2026-06-13T00:00:00.000Z",
+      status: "not_ready",
+      betaRunCount: 1,
+      minimumBetaRunCount: 3,
+      confirmedRealBetaData: false,
+      missingRequirements: [
+        "minimum_beta_run_count",
+        "confirmed_real_beta_data",
+      ],
+      finalization: {
+        status: "insufficient_beta_data",
+        betaRunCount: 1,
+        minimumBetaRunCount: 3,
+        confirmedRealBetaData: false,
+      },
+    });
+  });
+
+  it("builds a ready finalization manifest only when real beta data is confirmed", () => {
+    const summary = summarizeMemoryWriterTaskBenchmark([
+      {
+        evalCase: makeCase("setting", {}),
+        scoreResult: makeScore("setting", {}),
+        responseTimeMs: 100,
+      },
+    ]);
+
+    expect(
+      buildMemoryWriterTaskBenchmarkFinalizationManifest({
+        projectId: "project-1",
+        generatedAt: "2026-06-13T00:00:00.000Z",
+        summaries: [summary, summary, summary],
+        minimumBetaRunCount: 3,
+        confirmRealBetaData: true,
+      }),
+    ).toEqual({
+      schemaVersion: 1,
+      projectId: "project-1",
+      generatedAt: "2026-06-13T00:00:00.000Z",
+      status: "ready",
+      betaRunCount: 3,
+      minimumBetaRunCount: 3,
+      confirmedRealBetaData: true,
+      missingRequirements: [],
+      finalization: {
+        status: "finalized",
+        betaRunCount: 3,
+        minimumBetaRunCount: 3,
+        confirmedRealBetaData: true,
+        thresholds: {
+          minSuccessRate: 1,
+          minEvidenceSatisfactionRate: 1,
+          maxFalseConfidenceRate: 0,
+          maxAverageResponseTimeMs: 100,
+        },
       },
     });
   });

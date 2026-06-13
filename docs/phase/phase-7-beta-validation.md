@@ -37,6 +37,7 @@
 - persisted writer benchmark run을 읽어 threshold assessment를 실행하는 `memory:assess-writer-benchmark` CLI를 추가했다.
 - persisted beta benchmark run이 최소 기준 이상이면 관측 aggregate로 threshold candidate를 산출하는 calibration 경로와 `--calibrate-thresholds` CLI 옵션을 추가했다.
 - 실제 beta 데이터 확인을 명시하지 않으면 threshold finalization을 `unconfirmed_real_beta_data`로 거부하는 finalization guard와 `--finalize-thresholds`, `--confirm-real-beta-data` CLI 옵션을 추가했다.
+- threshold finalization readiness를 `ready`/`not_ready`와 `missingRequirements`로 기록하는 manifest 경로와 `--finalization-manifest` CLI 옵션을 추가했다.
 
 아직 남은 범위:
 

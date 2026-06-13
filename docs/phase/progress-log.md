@@ -2105,3 +2105,36 @@ pnpm run typecheck
 pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
 rg -n "phase7-beta-validation|real beta threshold finalization guard|real writer beta data threshold finalization" tests/.tmp/memory-phase-status-roadmap.json
 ```
+
+### 2026-06-13. Phase 7-1 threshold finalization manifest 1차 완료
+
+확인된 사실:
+
+- `buildMemoryWriterTaskBenchmarkFinalizationManifest`를 추가했다.
+- manifest는 `ready`/`not_ready`, beta run 수, 최소 beta run 수, 실제 beta 데이터 확인 여부, `missingRequirements`, finalization 결과를 함께 기록한다.
+- beta sample 수가 부족하면 `minimum_beta_run_count`를 missing requirement로 기록한다.
+- 실제 beta 데이터 확인이 명시되지 않으면 `confirmed_real_beta_data`를 missing requirement로 기록한다.
+- `memory:assess-writer-benchmark` CLI에 `--finalization-manifest` 옵션을 추가했다.
+- Phase 7 roadmap status에 `real beta threshold finalization manifest`를 완료 범위로 추가했다.
+
+아키텍처 부합:
+
+- 변경은 main memory benchmark domain과 기존 script surface에 한정했다.
+- DB schema, IPC channel, preload API, renderer는 변경하지 않았다.
+- manifest 생성은 main benchmark domain의 순수 함수로 유지했다.
+
+아키텍처 불일치 또는 제한:
+
+- 실제 작가 베타 데이터가 아직 없으므로 threshold 값을 제품 기준값으로 확정하지 않았다. 근거가 부족하다.
+- 이번 단계는 finalization readiness 증거를 남기는 경로이며, 실제 베타 수집 자체는 포함하지 않는다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/benchmark/memoryWriterTaskBenchmark.test.ts tests/scripts/memoryWriterBenchmarkThresholdRunner.test.ts
+pnpm vitest tests/main/services/memory/benchmark/memoryWriterTaskBenchmark.test.ts tests/scripts/memoryWriterBenchmarkThresholdRunner.test.ts tests/main/services/memory/status/memoryPhaseStatusReport.test.ts
+pnpm exec eslint src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.ts scripts/assess-memory-writer-benchmark-thresholds.ts tests/main/services/memory/benchmark/memoryWriterTaskBenchmark.test.ts tests/scripts/memoryWriterBenchmarkThresholdRunner.test.ts src/main/services/features/memory/status/memoryPhaseStatusReport.ts tests/main/services/memory/status/memoryPhaseStatusReport.test.ts
+pnpm run typecheck
+pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
+rg -n "phase7-beta-validation|real beta threshold finalization manifest|real writer beta data threshold finalization" tests/.tmp/memory-phase-status-roadmap.json
+```

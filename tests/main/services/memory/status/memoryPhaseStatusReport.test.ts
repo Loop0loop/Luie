@@ -286,6 +286,7 @@ describe("getMemoryPhaseStatusReport", () => {
         "persisted writer benchmark threshold assessment CLI",
         "persisted beta benchmark threshold candidate calibration",
         "real beta threshold finalization guard",
+        "real beta threshold finalization manifest",
         "writer feedback DB, IPC/preload API, UI buttons, and rejected-answer guard",
       ]),
     );
