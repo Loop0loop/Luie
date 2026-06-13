@@ -2170,3 +2170,35 @@ pnpm run typecheck
 pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
 rg -n "phase7-beta-validation|real beta threshold finalization readiness assertion CLI|real writer beta data threshold finalization" tests/.tmp/memory-phase-status-roadmap.json
 ```
+
+### 2026-06-13. Phase 7-1 real beta run label provenance filter 1차 완료
+
+확인된 사실:
+
+- `selectMemoryWriterTaskBenchmarkFinalizationSummaries`를 추가했다.
+- finalization 입력 summary를 `MemoryEvalRun.label` prefix 기준으로 필터링할 수 있게 했다.
+- `memory:assess-writer-benchmark` CLI에 `--real-beta-label-prefix` 옵션을 추가했다.
+- CLI는 `MemoryWriterTaskBenchmarkRun`과 `MemoryEvalRun`을 join해 run label을 읽고, 필터링 결과를 `finalizationSelection`으로 report에 포함한다.
+- Phase 7 roadmap status에 `real beta benchmark run label provenance filter`를 완료 범위로 추가했다.
+
+아키텍처 부합:
+
+- 변경은 main memory benchmark domain과 기존 script surface에 한정했다.
+- 기존 `MemoryEvalRun.label`을 provenance로 사용했으며 DB schema, IPC channel, preload API, renderer는 변경하지 않았다.
+- label prefix 선택 정책은 main benchmark domain의 순수 함수로 유지했다.
+
+아키텍처 불일치 또는 제한:
+
+- 실제 작가 베타 데이터가 아직 없으므로 threshold 값을 제품 기준값으로 확정하지 않았다. 근거가 부족하다.
+- label prefix는 provenance gate이며, run이 실제 작가 베타 세션에서 생성됐는지에 대한 최종 운영 증빙은 별도 수집 절차가 필요하다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/benchmark/memoryWriterTaskBenchmark.test.ts tests/scripts/memoryWriterBenchmarkThresholdRunner.test.ts
+pnpm vitest tests/main/services/memory/benchmark/memoryWriterTaskBenchmark.test.ts tests/scripts/memoryWriterBenchmarkThresholdRunner.test.ts tests/main/services/memory/status/memoryPhaseStatusReport.test.ts
+pnpm exec eslint src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.ts scripts/assess-memory-writer-benchmark-thresholds.ts tests/main/services/memory/benchmark/memoryWriterTaskBenchmark.test.ts tests/scripts/memoryWriterBenchmarkThresholdRunner.test.ts src/main/services/features/memory/status/memoryPhaseStatusReport.ts tests/main/services/memory/status/memoryPhaseStatusReport.test.ts
+pnpm run typecheck
+pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
+rg -n "phase7-beta-validation|real beta benchmark run label provenance filter|real writer beta data threshold finalization" tests/.tmp/memory-phase-status-roadmap.json
+```

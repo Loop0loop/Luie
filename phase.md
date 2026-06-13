@@ -24,6 +24,7 @@
 - Phase 7-1 threshold finalization guard는 1차 완료되어 있으며, 실제 beta 데이터 확인 없이는 threshold 확정을 거부한다.
 - Phase 7-1 threshold finalization readiness manifest는 1차 완료되어 있으며, 부족한 beta 확정 조건을 `missingRequirements`로 기록한다.
 - Phase 7-1 threshold finalization readiness assertion CLI는 1차 완료되어 있으며, readiness가 `not_ready`이면 자동화에서 실패시킬 수 있다.
+- Phase 7-1 real beta benchmark run label provenance filter는 1차 완료되어 있으며, `MemoryEvalRun.label` prefix로 finalization 입력 run을 제한할 수 있다.
 - Phase 7-2 writer feedback 저장 DB 모델과 main-domain 저장 서비스는 1차 완료되어 있다.
 - Phase 7-2 writer feedback 저장 IPC/preload API 경로는 1차 완료되어 있다.
 - Phase 7-2 analysis memory eval panel의 feedback 버튼 연결은 1차 완료되어 있다.
@@ -37,7 +38,7 @@
 판단:
 
 - 현재는 **Phase 6 package durability 1차 완료 상태**다.
-- 현재는 **Phase 7-1 threshold candidate calibration, finalization guard, readiness manifest, readiness assertion CLI 1차 완료 상태**다.
+- 현재는 **Phase 7-1 threshold candidate calibration, finalization guard, readiness manifest, readiness assertion CLI, real beta label provenance filter 1차 완료 상태**다.
 - 실제 작가 베타 데이터 기반 threshold 값을 기준값으로 확정하지는 않았다. 근거가 부족하다.
 
 ## 문서 구조

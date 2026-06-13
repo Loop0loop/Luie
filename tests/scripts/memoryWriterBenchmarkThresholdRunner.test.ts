@@ -13,6 +13,8 @@ describe("memory writer benchmark threshold runner", () => {
     ) as { scripts?: Record<string, string> };
 
     expect(source).toContain("memoryWriterTaskBenchmarkRun");
+    expect(source).toContain("memoryEvalRun");
+    expect(source).toContain("innerJoin");
     expect(source).toContain("assessMemoryWriterTaskBenchmarkThresholds");
     expect(source).toContain(
       "buildMemoryWriterTaskBenchmarkFinalizationManifest",
@@ -20,11 +22,15 @@ describe("memory writer benchmark threshold runner", () => {
     expect(source).toContain("calibrateMemoryWriterTaskBenchmarkThresholds");
     expect(source).toContain("finalizeMemoryWriterTaskBenchmarkThresholds");
     expect(source).toContain(
+      "selectMemoryWriterTaskBenchmarkFinalizationSummaries",
+    );
+    expect(source).toContain(
       "summarizeMemoryWriterTaskBenchmarkFinalizationReadinessFailures",
     );
     expect(source).toContain("--calibrate-thresholds");
     expect(source).toContain("--finalization-manifest");
     expect(source).toContain("--assert-finalization-ready");
+    expect(source).toContain("--real-beta-label-prefix");
     expect(source).toContain("--finalize-thresholds");
     expect(source).toContain("--confirm-real-beta-data");
     expect(source).toContain("--minimum-beta-runs");

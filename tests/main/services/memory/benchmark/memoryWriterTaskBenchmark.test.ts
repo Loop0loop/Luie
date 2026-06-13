@@ -6,6 +6,7 @@ import {
   calibrateMemoryWriterTaskBenchmarkThresholds,
   classifyMemoryWriterTaskBenchmarkCase,
   finalizeMemoryWriterTaskBenchmarkThresholds,
+  selectMemoryWriterTaskBenchmarkFinalizationSummaries,
   summarizeMemoryWriterTaskBenchmarkFinalizationReadinessFailures,
   summarizeMemoryWriterTaskBenchmark,
 } from "../../../../../src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.js";
@@ -549,5 +550,56 @@ describe("memoryWriterTaskBenchmark", () => {
     expect(
       summarizeMemoryWriterTaskBenchmarkFinalizationReadinessFailures(manifest),
     ).toEqual([]);
+  });
+
+  it("selects only real beta labeled benchmark runs for threshold finalization", () => {
+    const summary = summarizeMemoryWriterTaskBenchmark([
+      {
+        evalCase: makeCase("setting", {}),
+        scoreResult: makeScore("setting", {}),
+        responseTimeMs: 100,
+      },
+    ]);
+
+    expect(
+      selectMemoryWriterTaskBenchmarkFinalizationSummaries({
+        records: [
+          { runLabel: "headless-rag-eval", summary },
+          { runLabel: "real-writer-beta:2026-06-13:a", summary },
+          { runLabel: "real-writer-beta:2026-06-13:b", summary },
+        ],
+        realBetaLabelPrefix: "real-writer-beta:",
+      }),
+    ).toEqual({
+      summaries: [summary, summary],
+      includedRunCount: 2,
+      excludedRunCount: 1,
+      realBetaLabelPrefix: "real-writer-beta:",
+    });
+  });
+
+  it("keeps all benchmark runs when no real beta label prefix is required", () => {
+    const summary = summarizeMemoryWriterTaskBenchmark([
+      {
+        evalCase: makeCase("setting", {}),
+        scoreResult: makeScore("setting", {}),
+        responseTimeMs: 100,
+      },
+    ]);
+
+    expect(
+      selectMemoryWriterTaskBenchmarkFinalizationSummaries({
+        records: [
+          { runLabel: "headless-rag-eval", summary },
+          { runLabel: "real-writer-beta:2026-06-13:a", summary },
+        ],
+        realBetaLabelPrefix: undefined,
+      }),
+    ).toEqual({
+      summaries: [summary, summary],
+      includedRunCount: 2,
+      excludedRunCount: 0,
+      realBetaLabelPrefix: null,
+    });
   });
 });

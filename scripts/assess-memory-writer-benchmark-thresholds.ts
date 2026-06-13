@@ -6,6 +6,7 @@ import path from "node:path";
 import { eq } from "drizzle-orm";
 import {
   db,
+  memoryEvalRun,
   memoryWriterTaskBenchmarkRun,
 } from "../src/main/infra/database/index.js";
 import {
@@ -13,6 +14,7 @@ import {
   buildMemoryWriterTaskBenchmarkFinalizationManifest,
   calibrateMemoryWriterTaskBenchmarkThresholds,
   finalizeMemoryWriterTaskBenchmarkThresholds,
+  selectMemoryWriterTaskBenchmarkFinalizationSummaries,
   summarizeMemoryWriterTaskBenchmarkFinalizationReadinessFailures,
   type MemoryWriterTaskBenchmarkThresholds,
 } from "../src/main/services/features/memory/benchmark/index.js";
@@ -28,6 +30,7 @@ type CliOptions = {
   finalizeThresholds: boolean;
   finalizationManifest: boolean;
   confirmRealBetaData: boolean;
+  realBetaLabelPrefix?: string;
   thresholds: Partial<MemoryWriterTaskBenchmarkThresholds>;
 };
 
@@ -84,6 +87,11 @@ function parseArgs(argv: string[]): CliOptions {
       options.confirmRealBetaData = true;
       continue;
     }
+    if (arg === "--real-beta-label-prefix" && next) {
+      options.realBetaLabelPrefix = next;
+      index += 1;
+      continue;
+    }
     if (arg === "--min-success-rate" && next) {
       options.thresholds.minSuccessRate = parseRatio(next, "--min-success-rate");
       index += 1;
@@ -119,24 +127,50 @@ function parseArgs(argv: string[]): CliOptions {
   return options;
 }
 
-async function loadSummaries(
+async function loadBenchmarkRecords(
   projectId?: string,
-): Promise<MemoryWriterTaskBenchmarkSummary[]> {
+): Promise<{ runLabel: string; summary: MemoryWriterTaskBenchmarkSummary }[]> {
   const rows = projectId
     ? await db
         .getClient()
-        .select()
+        .select({
+          runLabel: memoryEvalRun.label,
+          summaryJson: memoryWriterTaskBenchmarkRun.summaryJson,
+        })
         .from(memoryWriterTaskBenchmarkRun)
+        .innerJoin(
+          memoryEvalRun,
+          eq(memoryWriterTaskBenchmarkRun.runId, memoryEvalRun.id),
+        )
         .where(eq(memoryWriterTaskBenchmarkRun.projectId, projectId))
-    : await db.getClient().select().from(memoryWriterTaskBenchmarkRun);
-  return rows.map((row) => JSON.parse(row.summaryJson) as MemoryWriterTaskBenchmarkSummary);
+    : await db
+        .getClient()
+        .select({
+          runLabel: memoryEvalRun.label,
+          summaryJson: memoryWriterTaskBenchmarkRun.summaryJson,
+        })
+        .from(memoryWriterTaskBenchmarkRun)
+        .innerJoin(
+          memoryEvalRun,
+          eq(memoryWriterTaskBenchmarkRun.runId, memoryEvalRun.id),
+        );
+  return rows.map((row) => ({
+    runLabel: row.runLabel,
+    summary: JSON.parse(row.summaryJson) as MemoryWriterTaskBenchmarkSummary,
+  }));
 }
 
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   await db.initialize();
   try {
-    const summaries = await loadSummaries(options.projectId);
+    const records = await loadBenchmarkRecords(options.projectId);
+    const finalizationSelection =
+      selectMemoryWriterTaskBenchmarkFinalizationSummaries({
+        records,
+        realBetaLabelPrefix: options.realBetaLabelPrefix,
+      });
+    const summaries = finalizationSelection.summaries;
     const assessment = assessMemoryWriterTaskBenchmarkThresholds({
       summaries,
       minimumBetaRunCount: options.minimumBetaRuns,
@@ -157,6 +191,7 @@ async function main(): Promise<void> {
         : null;
     const report = {
       projectId: options.projectId ?? null,
+      finalizationSelection,
       assessment,
       calibration: options.calibrateThresholds
         ? calibrateMemoryWriterTaskBenchmarkThresholds({

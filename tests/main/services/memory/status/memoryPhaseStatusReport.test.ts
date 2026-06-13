@@ -288,6 +288,7 @@ describe("getMemoryPhaseStatusReport", () => {
         "real beta threshold finalization guard",
         "real beta threshold finalization manifest",
         "real beta threshold finalization readiness assertion CLI",
+        "real beta benchmark run label provenance filter",
         "writer feedback DB, IPC/preload API, UI buttons, and rejected-answer guard",
       ]),
     );

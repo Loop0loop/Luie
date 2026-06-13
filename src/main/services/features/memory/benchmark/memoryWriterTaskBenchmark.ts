@@ -89,6 +89,18 @@ export type MemoryWriterTaskBenchmarkFinalizationManifest = {
   finalization: MemoryWriterTaskBenchmarkThresholdFinalization;
 };
 
+export type MemoryWriterTaskBenchmarkFinalizationRecord = {
+  runLabel: string;
+  summary: MemoryWriterTaskBenchmarkSummary;
+};
+
+export type MemoryWriterTaskBenchmarkFinalizationSelection = {
+  summaries: MemoryWriterTaskBenchmarkSummary[];
+  includedRunCount: number;
+  excludedRunCount: number;
+  realBetaLabelPrefix: string | null;
+};
+
 export const MEMORY_WRITER_TASK_BENCHMARK_TASKS: readonly MemoryWriterTaskBenchmarkTask[] =
   [
     {
@@ -347,6 +359,22 @@ export function summarizeMemoryWriterTaskBenchmarkFinalizationReadinessFailures(
       (requirement) => `Missing requirement: ${requirement}`,
     ),
   ];
+}
+
+export function selectMemoryWriterTaskBenchmarkFinalizationSummaries(input: {
+  records: MemoryWriterTaskBenchmarkFinalizationRecord[];
+  realBetaLabelPrefix?: string;
+}): MemoryWriterTaskBenchmarkFinalizationSelection {
+  const prefix = input.realBetaLabelPrefix?.trim();
+  const selectedRecords = prefix
+    ? input.records.filter((record) => record.runLabel.startsWith(prefix))
+    : input.records;
+  return {
+    summaries: selectedRecords.map((record) => record.summary),
+    includedRunCount: selectedRecords.length,
+    excludedRunCount: input.records.length - selectedRecords.length,
+    realBetaLabelPrefix: prefix && prefix.length > 0 ? prefix : null,
+  };
 }
 
 export const DEFAULT_WRITER_TASK_BENCHMARK_THRESHOLDS: MemoryWriterTaskBenchmarkThresholds =
