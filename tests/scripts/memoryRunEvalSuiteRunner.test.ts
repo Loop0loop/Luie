@@ -23,6 +23,9 @@ describe("memory eval suite runner", () => {
     expect(source).toContain("resolveSearchOptimizationPolicy");
     expect(source).toContain("optimizationPolicy");
     expect(source).toContain("summarizeMemoryEvalOptimizationFailures");
+    expect(source).toContain("buildMemoryWriterTaskBenchmarkRealBetaRunLabel");
+    expect(source).toContain("MEMORY_WRITER_TASK_REAL_BETA_LABEL_PREFIX");
+    expect(source).toContain("--real-beta-run-id");
     expect(packageJson.scripts?.["memory:run-eval-suite"]).toBe(
       "tsx scripts/run-memory-eval-suite.ts",
     );

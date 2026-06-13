@@ -9,6 +9,10 @@ import {
   summarizeMemoryEvalOptimizationFailures,
 } from "../src/main/services/features/memory/eval/index.js";
 import {
+  MEMORY_WRITER_TASK_REAL_BETA_LABEL_PREFIX,
+  buildMemoryWriterTaskBenchmarkRealBetaRunLabel,
+} from "../src/main/services/features/memory/benchmark/index.js";
+import {
   resolveSearchOptimizationPolicy,
   type SearchOptimizationMode,
 } from "../src/main/services/features/search/searchOptimizationPolicy.js";
@@ -19,6 +23,7 @@ type CliOptions = {
   topK: number;
   optimizationMode?: SearchOptimizationMode;
   out?: string;
+  realBetaRunId?: string;
   assertOptimizedRecall: boolean;
   minRecall: number;
   maxP0Failures: number;
@@ -52,6 +57,11 @@ function parseArgs(argv: string[]): CliOptions {
     }
     if (arg === "--label" && next) {
       options.label = next;
+      index += 1;
+      continue;
+    }
+    if (arg === "--real-beta-run-id" && next) {
+      options.realBetaRunId = next;
       index += 1;
       continue;
     }
@@ -107,6 +117,9 @@ function parseArgs(argv: string[]): CliOptions {
 
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
+  const runLabel = options.realBetaRunId
+    ? buildMemoryWriterTaskBenchmarkRealBetaRunLabel(options.realBetaRunId)
+    : options.label;
   const optimizationPolicy = resolveSearchOptimizationPolicy({
     mode: options.optimizationMode,
     requestedLimit: options.topK,
@@ -117,7 +130,7 @@ async function main(): Promise<void> {
   try {
     const result = await runLiveMemoryEvalSuite({
       projectId: options.projectId,
-      label: options.label,
+      label: runLabel,
       engineVersion: "headless-rag-context",
       topK: options.topK,
       answerer: async (evalCase) => {
@@ -137,6 +150,10 @@ async function main(): Promise<void> {
     });
     const output = {
       ...result,
+      label: runLabel,
+      realBetaLabelPrefix: options.realBetaRunId
+        ? MEMORY_WRITER_TASK_REAL_BETA_LABEL_PREFIX
+        : null,
       optimizationPolicy,
     };
     const json = JSON.stringify(output, null, 2);
@@ -148,7 +165,7 @@ async function main(): Promise<void> {
     }
     if (options.assertOptimizedRecall) {
       const failures = summarizeMemoryEvalOptimizationFailures({
-        label: options.label,
+        label: runLabel,
         averageContextRecallAtK: result.averageContextRecallAtK,
         totalP0FailureCount: result.totalP0FailureCount,
         minAverageContextRecallAtK: options.minRecall,

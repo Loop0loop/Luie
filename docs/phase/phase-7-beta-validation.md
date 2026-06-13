@@ -40,6 +40,7 @@
 - threshold finalization readiness를 `ready`/`not_ready`와 `missingRequirements`로 기록하는 manifest 경로와 `--finalization-manifest` CLI 옵션을 추가했다.
 - threshold finalization readiness가 `not_ready`이면 CLI를 실패시키는 `--assert-finalization-ready` gate를 추가했다.
 - `MemoryEvalRun.label` prefix로 persisted benchmark run을 real beta 입력만 필터링하는 `--real-beta-label-prefix` provenance gate를 추가했다.
+- `memory:run-eval-suite`에 canonical real beta label을 생성하는 `--real-beta-run-id` 옵션을 추가했다.
 
 아직 남은 범위:
 

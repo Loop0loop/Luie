@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   MEMORY_WRITER_TASK_BENCHMARK_TASKS,
+  MEMORY_WRITER_TASK_REAL_BETA_LABEL_PREFIX,
   assessMemoryWriterTaskBenchmarkThresholds,
+  buildMemoryWriterTaskBenchmarkRealBetaRunLabel,
   buildMemoryWriterTaskBenchmarkFinalizationManifest,
   calibrateMemoryWriterTaskBenchmarkThresholds,
   classifyMemoryWriterTaskBenchmarkCase,
@@ -55,6 +57,19 @@ const makeScore = (
 });
 
 describe("memoryWriterTaskBenchmark", () => {
+  it("builds a canonical real beta run label for persisted benchmark provenance", () => {
+    expect(MEMORY_WRITER_TASK_REAL_BETA_LABEL_PREFIX).toBe("real-writer-beta:");
+    expect(
+      buildMemoryWriterTaskBenchmarkRealBetaRunLabel(" 2026-06-13-session-a "),
+    ).toBe("real-writer-beta:2026-06-13-session-a");
+  });
+
+  it("rejects blank real beta run ids", () => {
+    expect(() => buildMemoryWriterTaskBenchmarkRealBetaRunLabel("   ")).toThrow(
+      "real beta run id is required",
+    );
+  });
+
   it("defines the five Phase 7 writer task benchmark categories", () => {
     expect(MEMORY_WRITER_TASK_BENCHMARK_TASKS.map((task) => task.id)).toEqual([
       "setting-check",

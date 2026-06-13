@@ -101,6 +101,8 @@ export type MemoryWriterTaskBenchmarkFinalizationSelection = {
   realBetaLabelPrefix: string | null;
 };
 
+export const MEMORY_WRITER_TASK_REAL_BETA_LABEL_PREFIX = "real-writer-beta:";
+
 export const MEMORY_WRITER_TASK_BENCHMARK_TASKS: readonly MemoryWriterTaskBenchmarkTask[] =
   [
     {
@@ -375,6 +377,16 @@ export function selectMemoryWriterTaskBenchmarkFinalizationSummaries(input: {
     excludedRunCount: input.records.length - selectedRecords.length,
     realBetaLabelPrefix: prefix && prefix.length > 0 ? prefix : null,
   };
+}
+
+export function buildMemoryWriterTaskBenchmarkRealBetaRunLabel(
+  realBetaRunId: string,
+): string {
+  const normalizedRunId = realBetaRunId.trim();
+  if (!normalizedRunId) {
+    throw new Error("real beta run id is required");
+  }
+  return `${MEMORY_WRITER_TASK_REAL_BETA_LABEL_PREFIX}${normalizedRunId}`;
 }
 
 export const DEFAULT_WRITER_TASK_BENCHMARK_THRESHOLDS: MemoryWriterTaskBenchmarkThresholds =

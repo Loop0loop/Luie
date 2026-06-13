@@ -2202,3 +2202,36 @@ pnpm run typecheck
 pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
 rg -n "phase7-beta-validation|real beta benchmark run label provenance filter|real writer beta data threshold finalization" tests/.tmp/memory-phase-status-roadmap.json
 ```
+
+### 2026-06-13. Phase 7-1 real beta eval runner canonical label option 1차 완료
+
+확인된 사실:
+
+- `MEMORY_WRITER_TASK_REAL_BETA_LABEL_PREFIX`와 `buildMemoryWriterTaskBenchmarkRealBetaRunLabel`을 추가했다.
+- canonical real beta run label은 `real-writer-beta:<runId>` 형식이다.
+- blank real beta run id는 거부한다.
+- `memory:run-eval-suite` CLI에 `--real-beta-run-id` 옵션을 추가했다.
+- `--real-beta-run-id`를 사용하면 eval run label이 threshold finalization filter와 같은 canonical prefix로 저장된다.
+- Phase 7 roadmap status에 `real beta eval runner canonical label option`을 완료 범위로 추가했다.
+
+아키텍처 부합:
+
+- 변경은 main memory benchmark domain과 기존 eval runner script surface에 한정했다.
+- 기존 `MemoryEvalRun.label`을 사용했으며 DB schema, IPC channel, preload API, renderer는 변경하지 않았다.
+- label 생성 규칙은 main benchmark domain의 순수 함수로 유지했다.
+
+아키텍처 불일치 또는 제한:
+
+- 실제 작가 베타 데이터가 아직 없으므로 threshold 값을 제품 기준값으로 확정하지 않았다. 근거가 부족하다.
+- 이번 단계는 실제 beta run을 수집할 때 provenance label을 일관되게 남기는 경로이며, 실제 베타 수집 자체는 포함하지 않는다.
+
+검증:
+
+```text
+pnpm vitest tests/main/services/memory/benchmark/memoryWriterTaskBenchmark.test.ts tests/scripts/memoryRunEvalSuiteRunner.test.ts
+pnpm vitest tests/main/services/memory/benchmark/memoryWriterTaskBenchmark.test.ts tests/scripts/memoryRunEvalSuiteRunner.test.ts tests/main/services/memory/status/memoryPhaseStatusReport.test.ts
+pnpm exec eslint src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.ts scripts/run-memory-eval-suite.ts tests/main/services/memory/benchmark/memoryWriterTaskBenchmark.test.ts tests/scripts/memoryRunEvalSuiteRunner.test.ts src/main/services/features/memory/status/memoryPhaseStatusReport.ts tests/main/services/memory/status/memoryPhaseStatusReport.test.ts
+pnpm run typecheck
+pnpm exec tsx scripts/memory-phase-status.ts --out tests/.tmp/memory-phase-status-roadmap.json
+rg -n "phase7-beta-validation|real beta eval runner canonical label option|real writer beta data threshold finalization" tests/.tmp/memory-phase-status-roadmap.json
+```
