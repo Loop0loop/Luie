@@ -13,6 +13,7 @@ import {
   buildMemoryWriterTaskBenchmarkFinalizationManifest,
   calibrateMemoryWriterTaskBenchmarkThresholds,
   finalizeMemoryWriterTaskBenchmarkThresholds,
+  summarizeMemoryWriterTaskBenchmarkFinalizationReadinessFailures,
   type MemoryWriterTaskBenchmarkThresholds,
 } from "../src/main/services/features/memory/benchmark/index.js";
 import type { MemoryWriterTaskBenchmarkSummary } from "../src/shared/types/index.js";
@@ -22,6 +23,7 @@ type CliOptions = {
   minimumBetaRuns: number;
   out?: string;
   assertThresholds: boolean;
+  assertFinalizationReady: boolean;
   calibrateThresholds: boolean;
   finalizeThresholds: boolean;
   finalizationManifest: boolean;
@@ -33,6 +35,7 @@ function parseArgs(argv: string[]): CliOptions {
   const options: CliOptions = {
     minimumBetaRuns: 3,
     assertThresholds: false,
+    assertFinalizationReady: false,
     calibrateThresholds: false,
     finalizeThresholds: false,
     finalizationManifest: false,
@@ -59,6 +62,10 @@ function parseArgs(argv: string[]): CliOptions {
     }
     if (arg === "--assert-thresholds") {
       options.assertThresholds = true;
+      continue;
+    }
+    if (arg === "--assert-finalization-ready") {
+      options.assertFinalizationReady = true;
       continue;
     }
     if (arg === "--calibrate-thresholds") {
@@ -138,6 +145,16 @@ async function main(): Promise<void> {
           ? (options.thresholds as MemoryWriterTaskBenchmarkThresholds)
           : undefined,
     });
+    const finalizationManifest =
+      options.finalizationManifest || options.assertFinalizationReady
+        ? buildMemoryWriterTaskBenchmarkFinalizationManifest({
+            projectId: options.projectId ?? null,
+            generatedAt: new Date().toISOString(),
+            summaries,
+            minimumBetaRunCount: options.minimumBetaRuns,
+            confirmRealBetaData: options.confirmRealBetaData,
+          })
+        : null;
     const report = {
       projectId: options.projectId ?? null,
       assessment,
@@ -154,15 +171,7 @@ async function main(): Promise<void> {
             confirmRealBetaData: options.confirmRealBetaData,
           })
         : null,
-      finalizationManifest: options.finalizationManifest
-        ? buildMemoryWriterTaskBenchmarkFinalizationManifest({
-            projectId: options.projectId ?? null,
-            generatedAt: new Date().toISOString(),
-            summaries,
-            minimumBetaRunCount: options.minimumBetaRuns,
-            confirmRealBetaData: options.confirmRealBetaData,
-          })
-        : null,
+      finalizationManifest,
     };
     const json = `${JSON.stringify(report, null, 2)}\n`;
     if (options.out) {
@@ -177,6 +186,15 @@ async function main(): Promise<void> {
       throw new Error(
         `Memory writer benchmark thresholds not passed: ${assessment.status}`,
       );
+    }
+    if (options.assertFinalizationReady && finalizationManifest) {
+      const failures =
+        summarizeMemoryWriterTaskBenchmarkFinalizationReadinessFailures(
+          finalizationManifest,
+        );
+      if (failures.length > 0) {
+        throw new Error(failures.join("\n"));
+      }
     }
   } finally {
     await db.disconnect();

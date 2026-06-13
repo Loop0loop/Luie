@@ -335,6 +335,20 @@ export function buildMemoryWriterTaskBenchmarkFinalizationManifest(input: {
   };
 }
 
+export function summarizeMemoryWriterTaskBenchmarkFinalizationReadinessFailures(
+  manifest: MemoryWriterTaskBenchmarkFinalizationManifest,
+): string[] {
+  if (manifest.status === "ready") {
+    return [];
+  }
+  return [
+    `Memory writer benchmark finalization is not ready: ${manifest.status}`,
+    ...manifest.missingRequirements.map(
+      (requirement) => `Missing requirement: ${requirement}`,
+    ),
+  ];
+}
+
 export const DEFAULT_WRITER_TASK_BENCHMARK_THRESHOLDS: MemoryWriterTaskBenchmarkThresholds =
   {
     minSuccessRate: 0.8,

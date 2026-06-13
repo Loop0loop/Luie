@@ -6,6 +6,7 @@ import {
   calibrateMemoryWriterTaskBenchmarkThresholds,
   classifyMemoryWriterTaskBenchmarkCase,
   finalizeMemoryWriterTaskBenchmarkThresholds,
+  summarizeMemoryWriterTaskBenchmarkFinalizationReadinessFailures,
   summarizeMemoryWriterTaskBenchmark,
 } from "../../../../../src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.js";
 import type {
@@ -502,5 +503,51 @@ describe("memoryWriterTaskBenchmark", () => {
         },
       },
     });
+  });
+
+  it("summarizes finalization readiness failures from a not-ready manifest", () => {
+    const summary = summarizeMemoryWriterTaskBenchmark([
+      {
+        evalCase: makeCase("setting", {}),
+        scoreResult: makeScore("setting", {}),
+        responseTimeMs: 100,
+      },
+    ]);
+    const manifest = buildMemoryWriterTaskBenchmarkFinalizationManifest({
+      projectId: "project-1",
+      generatedAt: "2026-06-13T00:00:00.000Z",
+      summaries: [summary],
+      minimumBetaRunCount: 3,
+      confirmRealBetaData: false,
+    });
+
+    expect(
+      summarizeMemoryWriterTaskBenchmarkFinalizationReadinessFailures(manifest),
+    ).toEqual([
+      "Memory writer benchmark finalization is not ready: not_ready",
+      "Missing requirement: minimum_beta_run_count",
+      "Missing requirement: confirmed_real_beta_data",
+    ]);
+  });
+
+  it("does not report finalization readiness failures from a ready manifest", () => {
+    const summary = summarizeMemoryWriterTaskBenchmark([
+      {
+        evalCase: makeCase("setting", {}),
+        scoreResult: makeScore("setting", {}),
+        responseTimeMs: 100,
+      },
+    ]);
+    const manifest = buildMemoryWriterTaskBenchmarkFinalizationManifest({
+      projectId: "project-1",
+      generatedAt: "2026-06-13T00:00:00.000Z",
+      summaries: [summary, summary, summary],
+      minimumBetaRunCount: 3,
+      confirmRealBetaData: true,
+    });
+
+    expect(
+      summarizeMemoryWriterTaskBenchmarkFinalizationReadinessFailures(manifest),
+    ).toEqual([]);
   });
 });

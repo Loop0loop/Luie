@@ -110,6 +110,7 @@ const MEMORY_ROADMAP_PHASE_STATUSES: MemoryRoadmapPhaseStatus[] = [
       "persisted beta benchmark threshold candidate calibration",
       "real beta threshold finalization guard",
       "real beta threshold finalization manifest",
+      "real beta threshold finalization readiness assertion CLI",
       "writer feedback DB, IPC/preload API, UI buttons, and rejected-answer guard",
       "helpful evidence feedback materialization",
     ],
