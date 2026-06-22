@@ -1,0 +1,51 @@
+/**
+ * Storage, path, and filename constants
+ */
+
+export const STORAGE_KEY_MEMOS_PREFIX = 'luie:memos:'
+export const STORAGE_KEY_MEMOS_NONE = 'luie:memos:none'
+export const STORAGE_KEY_MEMO_SIDEBAR_LAYOUT = 'memo-sidebar-layout-v3'
+export const STORAGE_KEY_MEMO_SIDEBAR_LAYOUT_LEGACY = 'memo-sidebar-layout-v2'
+export const STORAGE_KEY_CHARACTER_SIDEBAR_LAYOUT = 'character-sidebar-layout-v2'
+export const STORAGE_KEY_FONTS_INSTALLED = 'luie:fonts:installed'
+export const STORAGE_KEY_UI = 'luie-ui-v2'
+export const STORAGE_KEY_PROJECT_LAYOUT = 'luie-project-layout-v2'
+
+export const LOG_DIR_NAME = 'logs'
+export const LOG_FILE_NAME = 'luie.log'
+export const SNAPSHOT_MIRROR_DIR = 'snapshot-mirror'
+export const SNAPSHOT_BACKUP_DIR = 'Backups'
+export const SETTINGS_STORE_NAME = 'settings'
+export const SETTINGS_FILE_NAME = 'settings.json'
+export const APP_DIR_NAME = 'luie'
+
+export const LUIE_PACKAGE_EXTENSION = '.luie'
+export const LUIE_PACKAGE_EXTENSION_NO_DOT = 'luie'
+export const LUIE_PACKAGE_FORMAT = 'luie'
+export const LUIE_PACKAGE_FILTER_NAME = 'Luie Project'
+export const DEFAULT_PROJECT_DIR_NAME = 'New Project'
+export const DEFAULT_PROJECT_FILE_BASENAME = 'project'
+export const DEFAULT_PROJECT_FILENAME = `New Project${LUIE_PACKAGE_EXTENSION}`
+// `.luie` is now a single-file SQLite container.
+export const LUIE_PACKAGE_CONTAINER_DIR = 'sqlite'
+export const LUIE_PACKAGE_VERSION = 2
+export const LUIE_PACKAGE_META_FILENAME = 'meta.json'
+export const LUIE_MANUSCRIPT_DIR = 'manuscript'
+export const LUIE_MANUSCRIPT_README = `${LUIE_MANUSCRIPT_DIR}/README.md`
+export const LUIE_WORLD_DIR = 'world'
+export const LUIE_MEMORY_DIR = 'memory'
+export const LUIE_SNAPSHOTS_DIR = 'snapshots'
+export const LUIE_ASSETS_DIR = 'assets'
+export const LUIE_WORLD_CHARACTERS_FILE = 'characters.json'
+export const LUIE_WORLD_TERMS_FILE = 'terms.json'
+export const LUIE_WORLD_SYNOPSIS_FILE = 'synopsis.json'
+export const LUIE_WORLD_PLOT_FILE = 'plot-board.json'
+export const LUIE_WORLD_DRAWING_FILE = 'map-drawing.json'
+export const LUIE_WORLD_MINDMAP_FILE = 'mindmap.json'
+export const LUIE_WORLD_SCRAP_MEMOS_FILE = 'scrap-memos.json'
+export const LUIE_WORLD_GRAPH_FILE = 'graph.json'
+export const LUIE_MEMORY_CANONICAL_FILE = 'canonical.json'
+export const MARKDOWN_EXTENSION = '.md'
+export const MARKDOWN_EXTENSION_NO_DOT = 'md'
+export const TEXT_EXTENSION = '.txt'
+export const TEXT_EXTENSION_NO_DOT = 'txt'

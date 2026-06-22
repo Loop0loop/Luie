@@ -1,0 +1,357 @@
+@theme {
+  /* Colors */
+  --color-app: var(--bg-app);
+  --color-sidebar: var(--bg-sidebar);
+  --color-panel: var(--bg-panel);
+  --color-surface: var(--bg-surface);
+  --color-surface-hover: var(--bg-surface-hover);
+  --color-element: var(--bg-element);
+  --color-element-hover: var(--bg-element-hover);
+  --color-active: var(--bg-active);
+  --color-canvas: var(--bg-canvas);
+  --color-background: var(--bg-app);
+  --color-card: var(--bg-surface);
+  --color-popover: var(--bg-surface);
+  --color-input: var(--bg-element);
+  --color-ring: var(--ring-color, var(--accent-bg));
+  --color-hover: var(--bg-hover);
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-panel: var(--bg-panel);
+  --color-editor-bg: var(--editor-bg);
+
+  /* Text Colors */
+  --color-fg: var(--text-primary);
+  --color-muted: var(--text-secondary);
+  --color-subtle: var(--text-tertiary);
+  --color-accent: var(--text-accent);
+  --color-on-accent: var(--text-on-accent);
+  --color-foreground: var(--text-primary);
+  --color-card-foreground: var(--text-primary);
+  --color-popover-foreground: var(--text-primary);
+  --color-muted-foreground: var(--text-secondary);
+  --color-muted-fg: var(--text-secondary);
+  --color-secondary: var(--bg-secondary);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-primary-foreground: var(--accent-fg);
+  --color-secondary-foreground: var(--text-primary);
+  --color-accent-foreground: var(--accent-fg);
+  --color-destructive-foreground: var(--text-on-accent);
+
+  /* Semantic Colors */
+  --color-primary: var(--accent-bg);
+  --color-destructive: var(--danger-fg);
+  --color-error: var(--danger-fg);
+  --color-accent-bg: var(--accent-bg);
+  --color-accent-fg: var(--accent-fg);
+  --color-success-fg: var(--success-fg);
+  --color-danger-fg: var(--danger-fg);
+
+  /* Borders */
+  --color-border: var(--border-default);
+  --color-border-active: var(--border-active);
+  --color-border-focus: var(--border-focus);
+}
+
+@layer components {
+  /* Namuwiki & Global Components Priority Layer */
+}
+
+:root {
+  /* 
+    DESIGN TOKENS - ZINC SCALE (Neutral, Professional)
+    Using specific hex values to ensure consistency across themes
+  */
+
+  /* === LIGHT THEME (Default) === */
+  /* Backgrounds */
+  --bg-app: #ffffff; /* Main Canvas */
+  --bg-sidebar: #f4f4f5; /* Zinc-100 */
+  --bg-panel: #ffffff; /* Panel matches app */
+  --bg-surface: #ffffff;
+  --bg-surface-hover: rgba(0, 0, 0, 0.04); /* Vercel-style alpha hover */
+  --bg-element: #ffffff;
+  --bg-element-hover: rgba(0, 0, 0, 0.04);
+  --bg-active: rgba(0, 0, 0, 0.08); /* Zinc-200 equivalent alpha */
+
+  /* Text */
+  --text-primary: #18181b; /* Zinc-900 - Sharp, readable black */
+  --text-secondary: #71717a; /* Zinc-500 - Clear secondary info */
+  --text-tertiary: #a1a1aa; /* Zinc-400 - Placeholders */
+  --text-accent: #2563eb; /* Blue-600 - Standard interaction blue */
+  --text-on-accent: #ffffff;
+
+  /* Semantic UI */
+  --accent-bg: #2563eb; /* Blue-600 */
+  --accent-bg-hover: #1d4ed8; /* Blue-700 */
+  --accent-fg: #ffffff;
+  --success-fg: #16a34a; /* Green-600 */
+  --danger-fg: #ef4444; /* Red-500 */
+
+  /* Aliases (legacy UI tokens) */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-hover: var(--bg-element-hover);
+  --bg-canvas: #ffffff;
+  --accent-primary: #2563eb;
+  --grid-line: #e5e7eb;
+  --danger-fg: #dc2626; /* Red-600 */
+
+  /* Borders */
+  --border-default: #e4e4e7; /* Zinc-200 */
+  --border-active: #d4d4d8; /* Zinc-300 */
+  --border-focus: #18181b; /* Zinc-900 */
+
+  /* Editor Specific (Can differ from UI) */
+  --editor-bg: #ffffff;
+  --editor-text: #18181b;
+  --editor-selection: #bfdbfe; /* Blue-200 */
+
+  /* Dimensions */
+  --header-height: 48px;
+  --sidebar-width: 260px;
+  --panel-width: 320px;
+  --collapsed-width: 0px; /* For animations */
+  --context-panel-section-padding: 16px;
+  --context-panel-header-font-size: 12px;
+  --context-panel-body-font-size: 13px;
+  --context-panel-tag-font-size: 10px;
+  --context-panel-section-margin-bottom: 8px;
+
+  --memo-search-icon-size: 12px;
+  --memo-search-font-size: 12px;
+  --memo-tag-font-size: 9px;
+  --memo-date-font-size: 10px;
+  --memo-date-icon-size: 8px;
+  --memo-tag-icon-size: 14px;
+  --memo-tag-input-font-size: 12px;
+  --memo-title-font-weight: 500;
+
+  --text-editor-min-height: 400px;
+  --world-overview-min-height: 400px;
+  --world-overview-line-height: 1.6;
+  --world-overview-font-size: 14px;
+  --world-mindmap-root-x: 300px;
+  --world-mindmap-root-y: 300px;
+  --world-status-font-size: 11px;
+  --world-hint-font-size: 12px;
+  --world-draw-text-font-size: 14px;
+  --world-draw-text-font-weight: 700;
+
+  --character-color-fallback: #ccc;
+  --character-icon-back-size: 16px;
+  --character-avatar-icon-size: 32px;
+  --character-add-icon-size: 24px;
+  --character-backstory-min-height: 100px;
+  --character-relation-min-height: 200px;
+  --character-relation-font-size: 12px;
+  --character-relation-margin-bottom: 8px;
+
+  /* Namuwiki Theme Tokens (Light) */
+  --namu-blue: #00a2e8;
+  --namu-border: #cccccc;
+  --namu-table-bg: #f5f5f5;
+  --namu-table-label: #00a2e8;
+  --namu-hover-bg: #eef9fe;
+  --namu-header-text: #ffffff;
+  --namu-link: #0275d8;
+
+  --editor-toolbar-icon-size: 16px;
+  --editor-toolbar-dropdown-icon-size: 12px;
+  --editor-toolbar-plus-minus-font-size: 14px;
+  --editor-toolbar-mobile-icon-size: 14px;
+
+  /* Typography */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --font-serif:
+    "KoPub Batang", "KoPubBatang", "Noto Serif KR", "Nanum Myeongjo", "Batang", "Merriweather", Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono:
+    "D2Coding", "NanumGothicCoding", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+
+  /* Backwards-compatible aliases */
+  --bg-primary: var(--bg-app);
+  --bg-secondary: var(--bg-element-hover);
+  --bg-hover: var(--bg-element-hover);
+
+  /* Elevations */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+  --icon-size-xs: 12px;
+  --icon-size-sm: 14px;
+  --icon-size-md: 16px;
+  --icon-size-lg: 18px;
+  --icon-size-xl: 20px;
+  --icon-size-xxl: 24px;
+  --icon-size-xxxl: 32px;
+
+  --font-weight-semibold: 600;
+}
+
+/* === DARK THEME (Linear/Vercel Inspired) === */
+[data-theme="dark"] {
+  /* Backgrounds */
+  --bg-app: #09090b; /* Deepest Zinc (Main Canvas) */
+  --bg-sidebar: #09090b; /* Same as app for clean look */
+  --bg-panel: #18181b; /* Surface Color (Opaque) */
+  --bg-surface: #18181b; /* Added missing token for Modals/Cards */
+  --bg-panel-header: #18181b;
+  --bg-element: #27272a; /* Zinc-800 */
+  --bg-element-hover: rgba(255, 255, 255, 0.08);
+  --bg-active: rgba(255, 255, 255, 0.12);
+
+  /* Text */
+  --text-primary: #ffffff; /* Brighter for clear readability */
+  --text-secondary: #d4d4d8; /* Zinc-300 */
+  --text-tertiary: #a1a1aa; /* Zinc-400 */
+  --text-accent: #60a5fa; /* Blue-400 */
+  --text-on-accent: #ffffff;
+
+  /* Semantic UI */
+  --accent-bg: #2563eb; /* Blue-600 (Slightly deeper for better contrast on dark) */
+  --accent-bg-hover: #3b82f6; /* Blue-500 */
+  --accent-fg: #ffffff;
+  --success-fg: #22c55e;
+  --danger-fg: #ef4444;
+
+  /* Aliases */
+  --bg-primary: var(--bg-app);
+  --bg-secondary: var(--bg-element);
+  --bg-hover: var(--bg-element-hover);
+  --bg-canvas: var(--bg-app);
+  --accent-primary: var(--accent-bg);
+
+  /* Borders - The Key to "Clean" UI */
+  /* 8% opacity white for subtle separation, enough for definition but not "grid prison" */
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-active: rgba(255, 255, 255, 0.16);
+  --border-focus: #52525b;
+
+  --grid-line: var(--border-default);
+
+  /* Editor */
+  --editor-bg: #09090b;
+  --editor-text: #ededed;
+  --editor-selection: #1e3a8a;
+
+  /* Namuwiki Theme Tokens (Dark) */
+  --namu-blue: #38bdf8;
+  --namu-border: var(--border-default);
+  --namu-table-bg: #18181b;
+  --namu-table-label: #0ea5e9;
+  --namu-hover-bg: #27272a;
+  --namu-header-text: #ffffff;
+  --namu-link: #60a5fa;
+}
+
+/* === SEPIA THEME (Writer Focused) === */
+[data-theme="sepia"] {
+  /* Backgrounds */
+  --bg-app: #fbf0d9; /* Warm Paper */
+  --bg-sidebar: #f5e6cc; /* Slightly darker paper */
+  --bg-panel: #fbf0d9; /* Panel matches app */
+  --bg-surface: #fffefb; /* Card/Input background */
+  --bg-surface-hover: rgba(95, 75, 50, 0.05); /* Sepia alpha hover */
+  --bg-element: #fffefb;
+  --bg-element-hover: rgba(95, 75, 50, 0.05);
+  --bg-active: rgba(95, 75, 50, 0.1);
+
+  /* Text */
+  --text-primary: #5f4b32; /* Dark brown */
+  --text-secondary: #8c7b66;
+  --text-tertiary: #b8aa9c;
+  --text-accent: #cc7832; /* Warm Orange/Brown */
+
+  /* Borders */
+  --border-default: #e6dac6;
+  --border-active: #dcc8ae;
+  --border-focus: #5f4b32;
+
+  /* Semantic UI */
+  --accent-bg: #cc7832;
+  --accent-bg-hover: #b96725;
+  --accent-fg: #fffefb;
+  --success-fg: #2e7d32;
+  --danger-fg: #b91c1c;
+
+  /* Aliases (legacy UI tokens) */
+  --bg-primary: #fbf0d9;
+  --bg-secondary: #efe4cb;
+  --bg-hover: #efe4cb;
+  --bg-canvas: #fbf0d9;
+  --accent-primary: #cc7832;
+  --grid-line: #e6dcc6;
+  --danger-fg: #b91c1c;
+
+  /* Editor */
+  --editor-bg: #fbf0d9;
+  --editor-text: #433422;
+  --editor-selection: #e6dcc6;
+
+  /* Namuwiki Theme Tokens (Sepia) */
+  --namu-blue: #cc7832; /* Earthy Orange/Brown to match Sepia */
+  --namu-border: #dcc8ae;
+  --namu-table-bg: #efe4cb;
+  --namu-table-label: #5f4b32;
+  --namu-hover-bg: #e6dac6;
+  --namu-header-text: #fffefb;
+  --namu-link: #b96725;
+}
+
+/* === ATMOSPHERE MODIFIERS (Temperature) === */
+
+/* Warm (Emotion / Story) */
+[data-temp="warm"] {
+  --bg-app: #fffbf5; /* Warm white */
+}
+[data-theme="dark"][data-temp="warm"] {
+  --bg-app: #1c1917; /* Warm black (Stone-900) */
+  --bg-sidebar: #1c1917;
+  --bg-panel: #292524;
+  --bg-surface: #292524;
+  --text-primary: #f5f5f4;
+  --text-secondary: #a8a29e;
+}
+[data-theme="sepia"][data-temp="warm"] {
+  /* Sepia is already warm, just deepen it slightly */
+  --bg-app: #f5ebd6;
+}
+
+/* Cool (Analysis / Focus) */
+[data-temp="cool"] {
+  --bg-app: #f8fafc; /* Cool white (Slate-50) */
+  --bg-sidebar: #f1f5f9;
+}
+[data-theme="dark"][data-temp="cool"] {
+  --bg-app: #0f172a; /* Cool black (Slate-900) */
+  --bg-sidebar: #0f172a;
+  --bg-panel: #1e293b;
+  --bg-surface: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border-default: rgba(148, 163, 184, 0.1);
+}
+[data-theme="sepia"][data-temp="cool"] {
+  /* Desaturate Sepia slightly for a cooler paper look */
+  --bg-app: #f0ebe4;
+  --bg-sidebar: #e8e2d9;
+  --text-primary: #5c554a;
+}
+
+/* === CONTRAST MODIFIERS === */
+[data-contrast="high"] {
+  --text-primary: #000000;
+  --text-secondary: #333333;
+  --border-default: #d4d4d8; /* Stronger border */
+}
+[data-theme="dark"][data-contrast="high"] {
+  --text-primary: #ffffff;
+  --text-secondary: #e4e4e7;
+  --border-default: rgba(255, 255, 255, 0.2);
+}

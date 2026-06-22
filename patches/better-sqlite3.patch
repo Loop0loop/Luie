@@ -1,0 +1,73 @@
+diff --git a/lib/database.js b/lib/database.js
+index acd5b59de0ffab8e47b6959cd53b14f9f7d72a2f..af2dc145891ab8b47183b68a9d1c51e0802de8cb 100644
+--- a/lib/database.js
++++ b/lib/database.js
+@@ -45,7 +45,19 @@ function Database(filenameGiven, options) {
+ 	// Load the native addon
+ 	let addon;
+ 	if (nativeBinding == null) {
+-		addon = DEFAULT_ADDON || (DEFAULT_ADDON = require('bindings')('better_sqlite3.node'));
++		try {
++			addon = DEFAULT_ADDON || (DEFAULT_ADDON = require('bindings')('better_sqlite3.node'));
++		} catch (err) {
++			const abi = process.versions.modules;
++			const arch = process.arch;
++			const platform = process.platform;
++			const fallbackPath = path.resolve(__dirname, '..', 'bin', `${platform}-${arch}-${abi}`, 'better-sqlite3.node');
++			if (fs.existsSync(fallbackPath)) {
++				addon = DEFAULT_ADDON || (DEFAULT_ADDON = require(fallbackPath));
++			} else {
++				throw err;
++			}
++		}
+ 	} else if (typeof nativeBinding === 'string') {
+ 		// See <https://webpack.js.org/api/module-variables/#__non_webpack_require__-webpack-specific>
+ 		const requireFunc = typeof __non_webpack_require__ === 'function' ? __non_webpack_require__ : require;
+diff --git a/src/better_sqlite3.cpp b/src/better_sqlite3.cpp
+index 13f054a641f63dda3ebbf71ea5613cf12b054fad..9c00f055c42b384d891b9a346c66d1197915b85f 100644
+--- a/src/better_sqlite3.cpp
++++ b/src/better_sqlite3.cpp
+@@ -57,7 +57,11 @@ NODE_MODULE_INIT(/* exports, context */) {
+ 
+ 	// Initialize addon instance.
+ 	Addon* addon = new Addon(isolate);
++	#if defined(V8_MAJOR_VERSION) && V8_MAJOR_VERSION >= 13
++	v8::Local<v8::External> data = v8::External::New(isolate, addon, v8::kExternalPointerTypeTagDefault);
++	#else
+ 	v8::Local<v8::External> data = v8::External::New(isolate, addon);
++	#endif
+ 	node::AddEnvironmentCleanupHook(isolate, Addon::Cleanup, addon);
+ 
+ 	// Create and export native-backed classes and functions.
+diff --git a/src/util/helpers.cpp b/src/util/helpers.cpp
+index f7771520075e2dc871d1d60b801bbbb540c6c23d..7fa6c8bb7cfbef301189ae461599f5ac73dac9ef 100644
+--- a/src/util/helpers.cpp
++++ b/src/util/helpers.cpp
+@@ -89,8 +89,9 @@ void SetPrototypeGetter(
+ 	recv->InstanceTemplate()->SetNativeDataProperty(
+ 		InternalizedFromLatin1(isolate, name),
+ 		func,
+-		0,
+-		data
++		nullptr,
++		data,
++		v8::PropertyAttribute::None
+ 	);
+ }
+ 
+diff --git a/src/util/macros.cpp b/src/util/macros.cpp
+index e75d53763e575cb1ec5f560d1303100ebb380249..dc2afbc7f6136d78992857d3dea588a5cfc674fd 100644
+--- a/src/util/macros.cpp
++++ b/src/util/macros.cpp
+@@ -27,7 +27,11 @@
+ #define EasyIsolate v8::Isolate* isolate = v8::Isolate::GetCurrent()
+ #define OnlyIsolate info.GetIsolate()
+ #define OnlyContext isolate->GetCurrentContext()
++#if defined(V8_MAJOR_VERSION) && V8_MAJOR_VERSION >= 13
++#define OnlyAddon static_cast<Addon*>(info.Data().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault))
++#else
+ #define OnlyAddon static_cast<Addon*>(info.Data().As<v8::External>()->Value())
++#endif
+ #define UseIsolate v8::Isolate* isolate = OnlyIsolate
+ #define UseContext v8::Local<v8::Context> ctx = OnlyContext
+ #define UseAddon Addon* addon = OnlyAddon

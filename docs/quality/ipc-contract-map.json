@@ -1,0 +1,7406 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-06-12T15:17:58.121Z",
+  "summary": {
+    "definedChannels": 239,
+    "errors": 0,
+    "warnings": 0
+  },
+  "entries": [
+    {
+      "key": "ANALYSIS_CLEAR",
+      "channel": "analysis:clear",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 269
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/analysis/ipcAnalysisHandlers.ts",
+            "line": 106
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "ANALYSIS_ERROR",
+      "channel": "analysis:error",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [],
+        "main_handle": [],
+        "main_emit": [
+          {
+            "file": "src/main/services/features/analysis/analysisStreamRunner.ts",
+            "line": 435
+          },
+          {
+            "file": "src/main/services/features/analysis/manuscriptAnalysisService.ts",
+            "line": 147
+          }
+        ],
+        "renderer_listen": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 283
+          }
+        ],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 0,
+        "main_handle": 0,
+        "main_emit": 2,
+        "renderer_listen": 1,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "ANALYSIS_START",
+      "channel": "analysis:start",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 267
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/analysis/ipcAnalysisHandlers.ts",
+            "line": 63
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "ANALYSIS_STOP",
+      "channel": "analysis:stop",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 268
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/analysis/ipcAnalysisHandlers.ts",
+            "line": 96
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "ANALYSIS_STREAM",
+      "channel": "analysis:stream",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [],
+        "main_handle": [],
+        "main_emit": [
+          {
+            "file": "src/main/services/features/analysis/analysisStreamRunner.ts",
+            "line": 56
+          }
+        ],
+        "renderer_listen": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 274
+          }
+        ],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 0,
+        "main_handle": 0,
+        "main_emit": 1,
+        "renderer_listen": 1,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "APP_APPLY_UPDATE",
+      "channel": "app:apply-update",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 29
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
+            "line": 69
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "APP_BEFORE_QUIT",
+      "channel": "app:before-quit",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [],
+        "main_handle": [],
+        "main_emit": [
+          {
+            "file": "src/main/lifecycle/shutdown/shutdown.ts",
+            "line": 101
+          }
+        ],
+        "renderer_listen": [
+          {
+            "file": "src/preload/index.ts",
+            "line": 400
+          }
+        ],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 0,
+        "main_handle": 0,
+        "main_emit": 1,
+        "renderer_listen": 1,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "APP_BOOTSTRAP_STATUS_CHANGED",
+      "channel": "app:bootstrap-status-changed",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [],
+        "main_handle": [],
+        "main_emit": [
+          {
+            "file": "src/main/lifecycle/bootstrap/bootstrap.ts",
+            "line": 42
+          }
+        ],
+        "renderer_listen": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 41
+          }
+        ],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 0,
+        "main_handle": 0,
+        "main_emit": 1,
+        "renderer_listen": 1,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "APP_CHECK_UPDATE",
+      "channel": "app:check-update",
+      "allowlisted": true,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 24
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
+            "line": 51
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "APP_DOWNLOAD_UPDATE",
+      "channel": "app:download-update",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 28
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
+            "line": 63
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "APP_FLUSH_COMPLETE",
+      "channel": "app:flush-complete",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [],
+        "main_handle": [],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [
+          {
+            "file": "src/preload/index.ts",
+            "line": 406
+          }
+        ],
+        "main_listen": [
+          {
+            "file": "src/main/lifecycle/shutdown/shutdown.ts",
+            "line": 89
+          }
+        ]
+      },
+      "usageCounts": {
+        "renderer_invoke": 0,
+        "main_handle": 0,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 1,
+        "main_listen": 1
+      }
+    },
+    {
+      "key": "APP_GET_BOOTSTRAP_STATUS",
+      "channel": "app:get-bootstrap-status",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 33
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
+            "line": 81
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "APP_GET_UPDATE_STATE",
+      "channel": "app:get-update-state",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 26
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
+            "line": 57
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "APP_GET_VERSION",
+      "channel": "app:get-version",
+      "allowlisted": true,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 23
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
+            "line": 43
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "APP_QUIT",
+      "channel": "app:quit",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 55
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
+            "line": 33
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "APP_QUIT_PHASE",
+      "channel": "app:quit-phase",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [],
+        "main_handle": [],
+        "main_emit": [
+          {
+            "file": "src/main/lifecycle/shutdown/shutdown.ts",
+            "line": 36
+          }
+        ],
+        "renderer_listen": [
+          {
+            "file": "src/preload/api/windowApi.ts",
+            "line": 25
+          }
+        ],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 0,
+        "main_handle": 0,
+        "main_emit": 1,
+        "renderer_listen": 1,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "APP_ROLLBACK_UPDATE",
+      "channel": "app:rollback-update",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 31
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
+            "line": 75
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "APP_UPDATE_STATE_CHANGED",
+      "channel": "app:update-state-changed",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [],
+        "main_handle": [],
+        "main_emit": [
+          {
+            "file": "src/main/services/features/appUpdate/appUpdateService.ts",
+            "line": 74
+          }
+        ],
+        "renderer_listen": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 50
+          }
+        ],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 0,
+        "main_handle": 0,
+        "main_emit": 1,
+        "renderer_listen": 1,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "AUTO_SAVE",
+      "channel": "auto-save",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/index.ts",
+            "line": 352
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/writing/ipcAutoSaveHandlers.ts",
+            "line": 22
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "CHAPTER_CREATE",
+      "channel": "chapter:create",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 89
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/project/ipcChapterHandlers.ts",
+            "line": 34
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "CHAPTER_DELETE",
+      "channel": "chapter:delete",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 108
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/project/ipcChapterHandlers.ts",
+            "line": 69
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "CHAPTER_GET",
+      "channel": "chapter:get",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 97
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/project/ipcChapterHandlers.ts",
+            "line": 41
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "CHAPTER_GET_ALL",
+      "channel": "chapter:get-all",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 99
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/project/ipcChapterHandlers.ts",
+            "line": 48
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "CHAPTER_GET_DELETED",
+      "channel": "chapter:get-deleted",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 105
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/project/ipcChapterHandlers.ts",
+            "line": 55
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "CHAPTER_PURGE",
+      "channel": "chapter:purge",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 110
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/project/ipcChapterHandlers.ts",
+            "line": 83
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "CHAPTER_REORDER",
+      "channel": "chapter:reorder",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 112
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/project/ipcChapterHandlers.ts",
+            "line": 90
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "CHAPTER_RESTORE",
+      "channel": "chapter:restore",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 109
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/project/ipcChapterHandlers.ts",
+            "line": 76
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "CHAPTER_UPDATE",
+      "channel": "chapter:update",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 107
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/project/ipcChapterHandlers.ts",
+            "line": 62
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "CHARACTER_CREATE",
+      "channel": "character:create",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 151
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcCharacterHandlers.ts",
+            "line": 30
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "CHARACTER_DELETE",
+      "channel": "character:delete",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 156
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcCharacterHandlers.ts",
+            "line": 60
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "CHARACTER_GENERATE_IMAGE",
+      "channel": "character:generate-image",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 158
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcCharacterAIHandlers.ts",
+            "line": 42
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "CHARACTER_GENERATE_QUOTE",
+      "channel": "character:generate-quote",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 160
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcCharacterAIHandlers.ts",
+            "line": 49
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "CHARACTER_GENERATE_STATS",
+      "channel": "character:generate-stats",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 162
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcCharacterAIHandlers.ts",
+            "line": 56
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "CHARACTER_GET",
+      "channel": "character:get",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 152
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcCharacterHandlers.ts",
+            "line": 38
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "CHARACTER_GET_ALL",
+      "channel": "character:get-all",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 154
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcCharacterHandlers.ts",
+            "line": 45
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "CHARACTER_UPDATE",
+      "channel": "character:update",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 155
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcCharacterHandlers.ts",
+            "line": 52
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "DB_GET_MIGRATION_HEALTH",
+      "channel": "db:get-migration-health",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 349
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/dbMaintenance/index.ts",
+            "line": 24
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "DB_RUN_INTEGRITY_CHECK",
+      "channel": "db:run-integrity-check",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 347
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/dbMaintenance/index.ts",
+            "line": 17
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "EMBEDDING_MODEL_DOWNLOAD",
+      "channel": "embedding-model:download",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 180
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/llmfitEmbeddingHandlers.ts",
+            "line": 96
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "EMBEDDING_MODEL_DOWNLOAD_PROGRESS",
+      "channel": "embedding-model:download-progress",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [],
+        "main_handle": [],
+        "main_emit": [
+          {
+            "file": "src/main/handler/system/settings/llmfitEmbeddingHandlers.ts",
+            "line": 21
+          }
+        ],
+        "renderer_listen": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 189
+          }
+        ],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 0,
+        "main_handle": 0,
+        "main_emit": 1,
+        "renderer_listen": 1,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "EMBEDDING_MODEL_STATUS",
+      "channel": "embedding-model:status",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 178
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/llmfitEmbeddingHandlers.ts",
+            "line": 79
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "ENTITY_RELATION_CREATE",
+      "channel": "world:createRelation",
+      "allowlisted": true,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 22
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcEntityRelationHandlers.ts",
+            "line": 38
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "ENTITY_RELATION_DELETE",
+      "channel": "world:deleteRelation",
+      "allowlisted": true,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 25
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcEntityRelationHandlers.ts",
+            "line": 62
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "ENTITY_RELATION_GET_ALL",
+      "channel": "world:getRelations",
+      "allowlisted": true,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 23
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcEntityRelationHandlers.ts",
+            "line": 46
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "ENTITY_RELATION_UPDATE",
+      "channel": "world:updateRelation",
+      "allowlisted": true,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 24
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcEntityRelationHandlers.ts",
+            "line": 54
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "EVENT_CREATE",
+      "channel": "event:create",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 165
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcEventHandlers.ts",
+            "line": 30
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "EVENT_DELETE",
+      "channel": "event:delete",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 169
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcEventHandlers.ts",
+            "line": 60
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "EVENT_GET",
+      "channel": "event:get",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 166
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcEventHandlers.ts",
+            "line": 38
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "EVENT_GET_ALL",
+      "channel": "event:get-all",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 167
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcEventHandlers.ts",
+            "line": 45
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "EVENT_UPDATE",
+      "channel": "event:update",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 168
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcEventHandlers.ts",
+            "line": 52
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "EXPORT_CREATE",
+      "channel": "export:create",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 214
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/writing/ipcExportHandlers.ts",
+            "line": 76
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "FACTION_CREATE",
+      "channel": "faction:create",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 172
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcFactionHandlers.ts",
+            "line": 30
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "FACTION_DELETE",
+      "channel": "faction:delete",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 177
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcFactionHandlers.ts",
+            "line": 60
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "FACTION_GET",
+      "channel": "faction:get",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 173
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcFactionHandlers.ts",
+            "line": 38
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "FACTION_GET_ALL",
+      "channel": "faction:get-all",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 175
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcFactionHandlers.ts",
+            "line": 45
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "FACTION_UPDATE",
+      "channel": "faction:update",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 176
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcFactionHandlers.ts",
+            "line": 52
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "FS_APPROVE_PROJECT_PATH",
+      "channel": "fs:approve-project-path",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 255
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/fs/ipcFsHandlers.registry.ts",
+            "line": 95
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "FS_CREATE_LUIE_PACKAGE",
+      "channel": "fs:create-luie-package",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 246
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/fs/ipcFsHandlers.registry.ts",
+            "line": 289
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "FS_READ_FILE",
+      "channel": "fs:read-file",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 235
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/fs/ipcFsHandlers.registry.ts",
+            "line": 226
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "FS_READ_LUIE_ENTRY",
+      "channel": "fs:read-luie-entry",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 237
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/fs/ipcFsHandlers.registry.ts",
+            "line": 256
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "FS_SAVE_PROJECT",
+      "channel": "fs:save-project",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 218
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/fs/ipcFsHandlers.registry.ts",
+            "line": 215
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "FS_SELECT_DIRECTORY",
+      "channel": "fs:select-directory",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 224
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/fs/ipcFsHandlers.registry.ts",
+            "line": 116
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "FS_SELECT_FILE",
+      "channel": "fs:select-file",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 226
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/fs/ipcFsHandlers.registry.ts",
+            "line": 166
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "FS_SELECT_SAVE_LOCATION",
+      "channel": "fs:select-save-location",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 230
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/fs/ipcFsHandlers.registry.ts",
+            "line": 134
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "FS_SELECT_SNAPSHOT_BACKUP",
+      "channel": "fs:select-snapshot-backup",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 228
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/fs/ipcFsHandlers.registry.ts",
+            "line": 194
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "FS_WRITE_FILE",
+      "channel": "fs:write-file",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 244
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/fs/ipcFsHandlers.registry.ts",
+            "line": 271
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "FS_WRITE_PROJECT_FILE",
+      "channel": "fs:write-project-file",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 248
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/fs/ipcFsHandlers.registry.ts",
+            "line": 297
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "LLMFIT_GET_RECOMMENDATIONS",
+      "channel": "llmfit:get-recommendations",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 159
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/llmfitEmbeddingHandlers.ts",
+            "line": 33
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "LLMFIT_INSTALL",
+      "channel": "llmfit:install",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 161
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/llmfitEmbeddingHandlers.ts",
+            "line": 64
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "LLMFIT_STATUS",
+      "channel": "llmfit:status",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 163
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/llmfitEmbeddingHandlers.ts",
+            "line": 72
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "LOGGER_LOG",
+      "channel": "logger:log",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/index.ts",
+            "line": 282
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/logger/ipcLoggerHandlers.ts",
+            "line": 40
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "LOGGER_LOG_BATCH",
+      "channel": "logger:log-batch",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/index.ts",
+            "line": 278
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/logger/ipcLoggerHandlers.ts",
+            "line": 53
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MANUAL_SAVE",
+      "channel": "manual-save",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 57
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/writing/ipcAutoSaveHandlers.ts",
+            "line": 41
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_CANCEL_BUILD_JOBS",
+      "channel": "memory:cancel-build-jobs",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 278
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 455
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_CONFLICT_RESOLVE",
+      "channel": "memory:conflict-resolve",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 310
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 235
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_CONFLICT_REVIEW_ACTION",
+      "channel": "memory:conflict-review-action",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 312
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 245
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_ENTITY_ALIAS_CONFIRM",
+      "channel": "memory:entity-alias-confirm",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 322
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 291
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_ENTITY_ALIAS_REJECT",
+      "channel": "memory:entity-alias-reject",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 324
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 301
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_ENTITY_ALIAS_REVIEW_QUEUE",
+      "channel": "memory:entity-alias-review-queue",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 314
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 255
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_ENTITY_ALIAS_SPLIT",
+      "channel": "memory:entity-alias-split",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 326
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 311
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_ENTITY_CONFIRM",
+      "channel": "memory:entity-confirm",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 318
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 271
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_ENTITY_MERGE",
+      "channel": "memory:entity-merge",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 328
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 321
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_ENTITY_REJECT",
+      "channel": "memory:entity-reject",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 320
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 281
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_ENTITY_REVIEW_QUEUE",
+      "channel": "memory:entity-review-queue",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 316
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 263
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_EPISODE_CONFIRM",
+      "channel": "memory:episode-confirm",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 300
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 187
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_EPISODE_REJECT",
+      "channel": "memory:episode-reject",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 302
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 197
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_EPISODE_REVIEW_QUEUE",
+      "channel": "memory:episode-review-queue",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 298
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 179
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_FACT_CONFIRM",
+      "channel": "memory:fact-confirm",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 306
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 215
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_FACT_REJECT",
+      "channel": "memory:fact-reject",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 308
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 225
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_FACT_REVIEW_QUEUE",
+      "channel": "memory:fact-review-queue",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 304
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 207
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_GET_BUILD_JOB_PROGRESS",
+      "channel": "memory:get-build-job-progress",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 280
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 462
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_GET_CHAPTER_SUMMARY",
+      "channel": "memory:get-chapter-summary",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 340
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 402
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_GET_CHUNK_BACKLINK",
+      "channel": "memory:get-chunk-backlink",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 336
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 387
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_GET_CHUNK_WINDOW",
+      "channel": "memory:get-chunk-window",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 338
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 394
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_GET_CONFLICT_QUEUE",
+      "channel": "memory:get-conflict-queue",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 296
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 171
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_GET_EMBEDDING_STATUS",
+      "channel": "memory:get-embedding-status",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 272
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 433
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_GET_NARRATIVE_SUMMARY_STATUS",
+      "channel": "memory:get-narrative-summary-status",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 342
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 418
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_GET_SUMMARY_STATUS",
+      "channel": "memory:get-summary-status",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 270
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 410
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_JOB_STATUS",
+      "channel": "memory:job-status",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 268
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 139
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_PAUSE_BUILD_JOBS",
+      "channel": "memory:pause-build-jobs",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 274
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 441
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_QUERY_NARRATIVE",
+      "channel": "memory:query-narrative",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 292
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 155
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_REBUILD_CHUNKS",
+      "channel": "memory:rebuild-chunks",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 266
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 128
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_RECORD_EVAL_FEEDBACK",
+      "channel": "memory:record-eval-feedback",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 284
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 363
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_REPAIR_EVIDENCE_LINKS",
+      "channel": "memory:repair-evidence-links",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 332
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 343
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_RESUME_BUILD_JOBS",
+      "channel": "memory:resume-build-jobs",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 276
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 448
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_REVIEW_BACKLOG",
+      "channel": "memory:review-backlog",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 294
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 163
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_RUN_EPISODE_CALIBRATION",
+      "channel": "memory:run-episode-calibration",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 288
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 379
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_RUN_EVAL_SUITE",
+      "channel": "memory:run-eval-suite",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 282
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 355
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_RUN_INTENT_CALIBRATION",
+      "channel": "memory:run-intent-calibration",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 286
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 371
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_SEARCH_CHUNKS",
+      "channel": "memory:search-chunks",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 334
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 147
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MEMORY_STALE_EVIDENCE_REVIEW_ACTION",
+      "channel": "memory:stale-evidence-review-action",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 330
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/memory/ipcMemoryHandlers.ts",
+            "line": 331
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MODEL_DOWNLOAD_CANCEL",
+      "channel": "model:download-cancel",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 153
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/modelDownloadHandlers.ts",
+            "line": 148
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MODEL_DOWNLOAD_PROGRESS",
+      "channel": "model:download-progress",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [],
+        "main_handle": [],
+        "main_emit": [
+          {
+            "file": "src/main/handler/system/settings/llmHandlers.ts",
+            "line": 26
+          },
+          {
+            "file": "src/main/handler/system/settings/modelDownloadHandlers.ts",
+            "line": 41
+          }
+        ],
+        "renderer_listen": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 172
+          }
+        ],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 0,
+        "main_handle": 0,
+        "main_emit": 2,
+        "renderer_listen": 1,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MODEL_DOWNLOAD_START",
+      "channel": "model:download-start",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 151
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/modelDownloadHandlers.ts",
+            "line": 118
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MODEL_GET_HF_FILES",
+      "channel": "model:get-hf-files",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 157
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/modelDownloadHandlers.ts",
+            "line": 168
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "MODEL_SEARCH_HF",
+      "channel": "model:search-hf",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 155
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/modelDownloadHandlers.ts",
+            "line": 158
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "NOTE_CREATE",
+      "channel": "note:create",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 122
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcNoteHandlers.ts",
+            "line": 19
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "NOTE_DELETE",
+      "channel": "note:delete",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 126
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcNoteHandlers.ts",
+            "line": 47
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "NOTE_GET",
+      "channel": "note:get",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 123
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcNoteHandlers.ts",
+            "line": 26
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "NOTE_GET_ALL",
+      "channel": "note:get-all",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 124
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcNoteHandlers.ts",
+            "line": 33
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "NOTE_UPDATE",
+      "channel": "note:update",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 125
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcNoteHandlers.ts",
+            "line": 40
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PLOT_CREATE",
+      "channel": "plot:create",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 137
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcPlotHandlers.ts",
+            "line": 19
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PLOT_DELETE",
+      "channel": "plot:delete",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 141
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcPlotHandlers.ts",
+            "line": 47
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PLOT_GET",
+      "channel": "plot:get",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 138
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcPlotHandlers.ts",
+            "line": 26
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PLOT_GET_ALL",
+      "channel": "plot:get-all",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 139
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcPlotHandlers.ts",
+            "line": 33
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PLOT_UPDATE",
+      "channel": "plot:update",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 140
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcPlotHandlers.ts",
+            "line": 40
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PLUGIN_APPLY_TEMPLATE",
+      "channel": "plugin:apply-template",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 48
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/plugin/ipcPluginHandlers.ts",
+            "line": 61
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PLUGIN_GET_TEMPLATES",
+      "channel": "plugin:get-templates",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 47
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/plugin/ipcPluginHandlers.ts",
+            "line": 55
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PLUGIN_INSTALL",
+      "channel": "plugin:install",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 45
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/plugin/ipcPluginHandlers.ts",
+            "line": 41
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PLUGIN_LIST_CATALOG",
+      "channel": "plugin:list-catalog",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 43
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/plugin/ipcPluginHandlers.ts",
+            "line": 29
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PLUGIN_LIST_INSTALLED",
+      "channel": "plugin:list-installed",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 44
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/plugin/ipcPluginHandlers.ts",
+            "line": 35
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PLUGIN_UNINSTALL",
+      "channel": "plugin:uninstall",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 46
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/plugin/ipcPluginHandlers.ts",
+            "line": 48
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PROJECT_ATTACH_LUIE",
+      "channel": "project:attach-luie",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 73
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/project/ipcProjectHandlers.ts",
+            "line": 50
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PROJECT_CREATE",
+      "channel": "project:create",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 53
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/project/ipcProjectHandlers.ts",
+            "line": 36
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PROJECT_DELETE",
+      "channel": "project:delete",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 58
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/project/ipcProjectHandlers.ts",
+            "line": 89
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PROJECT_GET",
+      "channel": "project:get",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 54
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/project/ipcProjectHandlers.ts",
+            "line": 69
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PROJECT_GET_ALL",
+      "channel": "project:get-all",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 56
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/project/ipcProjectHandlers.ts",
+            "line": 76
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PROJECT_MARK_OPENED",
+      "channel": "project:mark-opened",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 67
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/project/ipcProjectHandlers.ts",
+            "line": 103
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PROJECT_MATERIALIZE_LUIE",
+      "channel": "project:materialize-luie",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 80
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/project/ipcProjectHandlers.ts",
+            "line": 58
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PROJECT_OPEN_LUIE",
+      "channel": "project:open-luie",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 61
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/project/ipcProjectHandlers.ts",
+            "line": 43
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PROJECT_REMOVE_LOCAL",
+      "channel": "project:remove-local",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 59
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/project/ipcProjectHandlers.ts",
+            "line": 96
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "PROJECT_UPDATE",
+      "channel": "project:update",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 57
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/project/ipcProjectHandlers.ts",
+            "line": 82
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "RAG_QA_ASK",
+      "channel": "rag-qa:ask",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 352
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/analysis/ipcRagQaHandlers.ts",
+            "line": 31
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "RAG_QA_ERROR",
+      "channel": "rag-qa:error",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [],
+        "main_handle": [],
+        "main_emit": [
+          {
+            "file": "src/main/services/features/utility/utilityProcessBridge/internal/eventHandlers.ts",
+            "line": 141
+          },
+          {
+            "file": "src/main/services/features/utility/utilityProcessBridge/internal/eventHandlers.ts",
+            "line": 164
+          },
+          {
+            "file": "src/main/services/features/utility/utilityProcessBridge/internal/eventHandlers.ts",
+            "line": 235
+          }
+        ],
+        "renderer_listen": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 371
+          }
+        ],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 0,
+        "main_handle": 0,
+        "main_emit": 3,
+        "renderer_listen": 1,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "RAG_QA_STOP",
+      "channel": "rag-qa:stop",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 353
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/analysis/ipcRagQaHandlers.ts",
+            "line": 58
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "RAG_QA_STREAM",
+      "channel": "rag-qa:stream",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [],
+        "main_handle": [],
+        "main_emit": [
+          {
+            "file": "src/main/services/features/utility/utilityProcessBridge/internal/eventHandlers.ts",
+            "line": 119
+          }
+        ],
+        "renderer_listen": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 360
+          }
+        ],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 0,
+        "main_handle": 0,
+        "main_emit": 1,
+        "renderer_listen": 1,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "RECOVERY_DB_RUN",
+      "channel": "recovery:db-run",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 203
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/recovery/ipcRecoveryHandlers.ts",
+            "line": 19
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "RECOVERY_DB_STATUS",
+      "channel": "recovery:db-status",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 201
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/recovery/ipcRecoveryHandlers.ts",
+            "line": 10
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SCENE_CREATE",
+      "channel": "scene:create",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 115
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcSceneHandlers.ts",
+            "line": 19
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SCENE_DELETE",
+      "channel": "scene:delete",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 119
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcSceneHandlers.ts",
+            "line": 47
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SCENE_GET",
+      "channel": "scene:get",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 116
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcSceneHandlers.ts",
+            "line": 26
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SCENE_GET_ALL",
+      "channel": "scene:get-all",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 117
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcSceneHandlers.ts",
+            "line": 33
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SCENE_UPDATE",
+      "channel": "scene:update",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 118
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcSceneHandlers.ts",
+            "line": 40
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SCRAP_MEMO_CREATE",
+      "channel": "scrap-memo:create",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 144
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcScrapMemoHandlers.ts",
+            "line": 21
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SCRAP_MEMO_DELETE",
+      "channel": "scrap-memo:delete",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 148
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcScrapMemoHandlers.ts",
+            "line": 42
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SCRAP_MEMO_GET_ALL",
+      "channel": "scrap-memo:get-all",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 146
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcScrapMemoHandlers.ts",
+            "line": 28
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SCRAP_MEMO_UPDATE",
+      "channel": "scrap-memo:update",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 147
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcScrapMemoHandlers.ts",
+            "line": 35
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SEARCH",
+      "channel": "search",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 257
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/search/ipcSearchHandlers.ts",
+            "line": 27
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SEARCH_INDEX_STATUS",
+      "channel": "search:index-status",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 260
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/search/ipcSearchHandlers.ts",
+            "line": 34
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SEARCH_REBUILD_INDEX",
+      "channel": "search:rebuild-index",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 262
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/search/ipcSearchHandlers.ts",
+            "line": 42
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_GET_ALL",
+      "channel": "settings:get-all",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 61
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/coreHandlers.ts",
+            "line": 20
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_GET_AUTO_SAVE",
+      "channel": "settings:get-auto-save",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 66
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/coreHandlers.ts",
+            "line": 51
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_GET_EDITOR",
+      "channel": "settings:get-editor",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 63
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/coreHandlers.ts",
+            "line": 29
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_GET_LANGUAGE",
+      "channel": "settings:get-language",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 70
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/coreHandlers.ts",
+            "line": 82
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_GET_LLM_RUNTIME",
+      "channel": "settings:get-llm-runtime",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 128
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/llmHandlers.ts",
+            "line": 146
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_GET_LOCAL_LLM",
+      "channel": "settings:get-local-llm",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 134
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/llmHandlers.ts",
+            "line": 152
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_GET_MENU_BAR_MODE",
+      "channel": "settings:get-menu-bar-mode",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 78
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/coreHandlers.ts",
+            "line": 102
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_GET_SEARCH_OPTIMIZATION_MODE",
+      "channel": "settings:get-search-optimization-mode",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 89
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/coreHandlers.ts",
+            "line": 126
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_GET_SHORTCUTS",
+      "channel": "settings:get-shortcuts",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 100
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/coreHandlers.ts",
+            "line": 146
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_GET_WINDOW_BOUNDS",
+      "channel": "settings:get-window-bounds",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 111
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/coreHandlers.ts",
+            "line": 183
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_LIST_OLLAMA_MODELS",
+      "channel": "settings:list-ollama-models",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 130
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/llmHandlers.ts",
+            "line": 201
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_RESET",
+      "channel": "settings:reset",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 197
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/coreHandlers.ts",
+            "line": 192
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_SET_AUTO_SAVE",
+      "channel": "settings:set-auto-save",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 68
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/coreHandlers.ts",
+            "line": 63
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_SET_EDITOR",
+      "channel": "settings:set-editor",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 65
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/coreHandlers.ts",
+            "line": 38
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_SET_LANGUAGE",
+      "channel": "settings:set-language",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 72
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/coreHandlers.ts",
+            "line": 91
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_SET_LLM_KEYS",
+      "channel": "settings:set-llm-keys",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 126
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/llmHandlers.ts",
+            "line": 128
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_SET_LLM_PREFERENCE",
+      "channel": "settings:set-llm-preference",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 124
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/llmHandlers.ts",
+            "line": 101
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_SET_LOCAL_LLM",
+      "channel": "settings:set-local-llm",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 136
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/llmHandlers.ts",
+            "line": 166
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_SET_MENU_BAR_MODE",
+      "channel": "settings:set-menu-bar-mode",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 83
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/coreHandlers.ts",
+            "line": 111
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_SET_OLLAMA_CONFIG",
+      "channel": "settings:set-ollama-config",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 122
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/llmHandlers.ts",
+            "line": 75
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_SET_SEARCH_OPTIMIZATION_MODE",
+      "channel": "settings:set-search-optimization-mode",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 94
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/coreHandlers.ts",
+            "line": 135
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_SET_SHORTCUTS",
+      "channel": "settings:set-shortcuts",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 105
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/coreHandlers.ts",
+            "line": 155
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_SET_WINDOW_BOUNDS",
+      "channel": "settings:set-window-bounds",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 116
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/coreHandlers.ts",
+            "line": 167
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SETTINGS_TEST_OLLAMA_CONNECTION",
+      "channel": "settings:test-ollama-connection",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 132
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/llmHandlers.ts",
+            "line": 222
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SIDECAR_STATUS",
+      "channel": "sidecar:status",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 138
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/llmHandlers.ts",
+            "line": 186
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SIDECAR_STATUS_CHANGED",
+      "channel": "sidecar:status-changed",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [],
+        "main_handle": [],
+        "main_emit": [
+          {
+            "file": "src/main/services/features/utility/utilityProcessBridge/internal/eventHandlers.ts",
+            "line": 100
+          }
+        ],
+        "renderer_listen": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 143
+          }
+        ],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 0,
+        "main_handle": 0,
+        "main_emit": 1,
+        "renderer_listen": 1,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SIDECAR_STOP",
+      "channel": "sidecar:stop",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 149
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/settings/llmHandlers.ts",
+            "line": 192
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SNAPSHOT_CREATE",
+      "channel": "snapshot:create",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 187
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/writing/ipcSnapshotHandlers.ts",
+            "line": 29
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SNAPSHOT_DELETE",
+      "channel": "snapshot:delete",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 211
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/writing/ipcSnapshotHandlers.ts",
+            "line": 67
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SNAPSHOT_GET_ALL",
+      "channel": "snapshot:get-all",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 200
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/writing/ipcSnapshotHandlers.ts",
+            "line": 45
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SNAPSHOT_GET_BY_CHAPTER",
+      "channel": "snapshot:get-by-chapter",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 202
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/writing/ipcSnapshotHandlers.ts",
+            "line": 53
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SNAPSHOT_GET_BY_PROJECT",
+      "channel": "snapshot:get-by-project",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 189
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/writing/ipcSnapshotHandlers.ts",
+            "line": 37
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SNAPSHOT_IMPORT_FILE",
+      "channel": "snapshot:import-file",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 204
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/writing/ipcSnapshotHandlers.ts",
+            "line": 81
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SNAPSHOT_LIST_RESTORE_CANDIDATES",
+      "channel": "snapshot:list-restore-candidates",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 195
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/writing/ipcSnapshotHandlers.ts",
+            "line": 61
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SNAPSHOT_RESTORE",
+      "channel": "snapshot:restore",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 210
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/writing/ipcSnapshotHandlers.ts",
+            "line": 74
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "STARTUP_COMPLETE_WIZARD",
+      "channel": "startup:complete-wizard",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 260
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/startup/ipcStartupHandlers.ts",
+            "line": 15
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "STARTUP_GET_READINESS",
+      "channel": "startup:get-readiness",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 258
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/startup/ipcStartupHandlers.ts",
+            "line": 9
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SYNC_AUTH_RESULT",
+      "channel": "sync:auth-result",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [],
+        "main_handle": [],
+        "main_emit": [
+          {
+            "file": "src/main/lifecycle/deep-link/deepLink.ts",
+            "line": 37
+          }
+        ],
+        "renderer_listen": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 250
+          }
+        ],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 0,
+        "main_handle": 0,
+        "main_emit": 1,
+        "renderer_listen": 1,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SYNC_CONNECT_GOOGLE",
+      "channel": "sync:connect-google",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 208
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/sync/ipcSyncHandlers.ts",
+            "line": 51
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SYNC_DISCONNECT",
+      "channel": "sync:disconnect",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 210
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/sync/ipcSyncHandlers.ts",
+            "line": 57
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SYNC_GET_RUNTIME_CONFIG",
+      "channel": "sync:get-runtime-config",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 215
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/sync/ipcSyncHandlers.ts",
+            "line": 88
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SYNC_GET_STATUS",
+      "channel": "sync:get-status",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 206
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/sync/ipcSyncHandlers.ts",
+            "line": 45
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SYNC_RESOLVE_CONFLICT",
+      "channel": "sync:resolveConflict",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 232
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/sync/ipcSyncHandlers.ts",
+            "line": 77
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SYNC_RUN_NOW",
+      "channel": "sync:run-now",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 211
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/sync/ipcSyncHandlers.ts",
+            "line": 63
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SYNC_SET_AUTO",
+      "channel": "sync:set-auto",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 213
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/sync/ipcSyncHandlers.ts",
+            "line": 69
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SYNC_SET_RUNTIME_CONFIG",
+      "channel": "sync:set-runtime-config",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 220
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/sync/ipcSyncHandlers.ts",
+            "line": 102
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SYNC_STATUS_CHANGED",
+      "channel": "sync:status-changed",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [],
+        "main_handle": [],
+        "main_emit": [
+          {
+            "file": "src/main/services/features/sync/syncService.ts",
+            "line": 431
+          }
+        ],
+        "renderer_listen": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 241
+          }
+        ],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 0,
+        "main_handle": 0,
+        "main_emit": 1,
+        "renderer_listen": 1,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SYNC_VALIDATE_RUNTIME_CONFIG",
+      "channel": "sync:validate-runtime-config",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/systemApi.ts",
+            "line": 226
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/sync/ipcSyncHandlers.ts",
+            "line": 131
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SYNOPSIS_CREATE",
+      "channel": "synopsis:create",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 129
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcSynopsisHandlers.ts",
+            "line": 22
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SYNOPSIS_DELETE",
+      "channel": "synopsis:delete",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 134
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcSynopsisHandlers.ts",
+            "line": 50
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SYNOPSIS_GET",
+      "channel": "synopsis:get",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 130
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcSynopsisHandlers.ts",
+            "line": 29
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SYNOPSIS_GET_ALL",
+      "channel": "synopsis:get-all",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 132
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcSynopsisHandlers.ts",
+            "line": 36
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "SYNOPSIS_UPDATE",
+      "channel": "synopsis:update",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 133
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcSynopsisHandlers.ts",
+            "line": 43
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "TERM_CREATE",
+      "channel": "term:create",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 180
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcTermHandlers.ts",
+            "line": 30
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "TERM_DELETE",
+      "channel": "term:delete",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 184
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcTermHandlers.ts",
+            "line": 58
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "TERM_GET",
+      "channel": "term:get",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 181
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcTermHandlers.ts",
+            "line": 37
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "TERM_GET_ALL",
+      "channel": "term:get-all",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 182
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcTermHandlers.ts",
+            "line": 44
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "TERM_UPDATE",
+      "channel": "term:update",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/projectApi.ts",
+            "line": 183
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcTermHandlers.ts",
+            "line": 51
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WINDOW_CLOSE",
+      "channel": "window:close",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/windowApi.ts",
+            "line": 33
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
+            "line": 21
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WINDOW_MAXIMIZE",
+      "channel": "window:maximize",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/windowApi.ts",
+            "line": 32
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
+            "line": 90
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WINDOW_MINIMIZE",
+      "channel": "window:minimize",
+      "allowlisted": true,
+      "usage": {
+        "renderer_invoke": [],
+        "main_handle": [],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 0,
+        "main_handle": 0,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WINDOW_OPEN_EXPORT",
+      "channel": "window:open-export",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/windowApi.ts",
+            "line": 38
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
+            "line": 139
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WINDOW_OPEN_WORLD_GRAPH",
+      "channel": "window:open-world-graph",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/windowApi.ts",
+            "line": 43
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
+            "line": 165
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WINDOW_SET_FULLSCREEN",
+      "channel": "window:set-fullscreen",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/windowApi.ts",
+            "line": 36
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
+            "line": 120
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WINDOW_TOGGLE_DEV_TOOLS",
+      "channel": "window:toggle-dev-tools",
+      "allowlisted": true,
+      "usage": {
+        "renderer_invoke": [],
+        "main_handle": [],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 0,
+        "main_handle": 0,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WINDOW_TOGGLE_FULLSCREEN",
+      "channel": "window:toggle-fullscreen",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/windowApi.ts",
+            "line": 34
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
+            "line": 104
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WINDOW_UNMAXIMIZE",
+      "channel": "window:unmaximize",
+      "allowlisted": true,
+      "usage": {
+        "renderer_invoke": [],
+        "main_handle": [],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 0,
+        "main_handle": 0,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WORLD_ENTITY_CREATE",
+      "channel": "world-entity:create",
+      "allowlisted": true,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 13
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcWorldEntityHandlers.ts",
+            "line": 33
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WORLD_ENTITY_DELETE",
+      "channel": "world-entity:delete",
+      "allowlisted": true,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 19
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcWorldEntityHandlers.ts",
+            "line": 71
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WORLD_ENTITY_GET",
+      "channel": "world-entity:get",
+      "allowlisted": true,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 14
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcWorldEntityHandlers.ts",
+            "line": 41
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WORLD_ENTITY_GET_ALL",
+      "channel": "world-entity:get-all",
+      "allowlisted": true,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 15
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcWorldEntityHandlers.ts",
+            "line": 48
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WORLD_ENTITY_UPDATE",
+      "channel": "world-entity:update",
+      "allowlisted": true,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 16
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcWorldEntityHandlers.ts",
+            "line": 55
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WORLD_ENTITY_UPDATE_POSITION",
+      "channel": "world-entity:update-position",
+      "allowlisted": true,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 18
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcWorldEntityHandlers.ts",
+            "line": 63
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WORLD_GRAPH_GET",
+      "channel": "world:getGraph",
+      "allowlisted": true,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 28
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcEntityRelationHandlers.ts",
+            "line": 69
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WORLD_GRAPH_GET_MENTIONS",
+      "channel": "world:getMentions",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 30
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcEntityRelationHandlers.ts",
+            "line": 79
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WORLD_STORAGE_GET_DOCUMENT",
+      "channel": "world-storage:get-document",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 34
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcWorldStorageHandlers.ts",
+            "line": 39
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WORLD_STORAGE_GET_SCRAP_MEMOS",
+      "channel": "world-storage:get-scrap-memos",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 38
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcWorldStorageHandlers.ts",
+            "line": 60
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WORLD_STORAGE_SET_DOCUMENT",
+      "channel": "world-storage:set-document",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 36
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcWorldStorageHandlers.ts",
+            "line": 49
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WORLD_STORAGE_SET_SCRAP_MEMOS",
+      "channel": "world-storage:set-scrap-memos",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/worldApi.ts",
+            "line": 40
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/world/ipcWorldStorageHandlers.ts",
+            "line": 67
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
+        "main_emit": 0,
+        "renderer_listen": 0,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    }
+  ]
+}

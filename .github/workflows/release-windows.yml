@@ -1,0 +1,106 @@
+name: release-windows
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-windows-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        arch: [x64, arm64]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: 'pnpm'
+
+      - name: Setup Python for node-gyp
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Sync package version from tag
+        id: release_meta
+        run: node scripts/ci/sync-release-version-from-tag.mjs
+
+      - name: Build Windows nsis-web package
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run generate
+          pnpm run build
+          pnpm exec electron-builder --win nsis-web --${{ matrix.arch }} --config electron-builder.json --publish never
+
+      - name: List Windows dist outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          find dist -maxdepth 2 -type f -print | sort
+
+      - name: Upload Windows assets to release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release_meta.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 \
+            || gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --generate-notes \
+            || gh release view "$RELEASE_TAG" >/dev/null
+
+          shopt -s nullglob
+          installers=(dist/*.exe)
+          assets=(dist/*.exe dist/*.7z dist/*.blockmap)
+          if [ -f dist/latest.yml ]; then
+            assets+=(dist/latest.yml)
+          fi
+          if [ -f dist/latest-${{ matrix.arch }}.yml ]; then
+            assets+=(dist/latest-${{ matrix.arch }}.yml)
+          fi
+          if [ "${{ matrix.arch }}" = "x64" ] && [ "${#installers[@]}" -eq 0 ]; then
+            echo "No Windows nsis-web installer .exe found in dist for x64 build"
+            exit 1
+          fi
+          if [ "${#assets[@]}" -eq 0 ]; then
+            echo "No Windows release assets found in dist"
+            exit 1
+          fi
+
+          gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ matrix.arch }}-dist
+          path: |
+            dist/*.exe
+            dist/*.7z
+            dist/latest.yml
+            dist/latest-${{ matrix.arch }}.yml
+            dist/*.blockmap
+          if-no-files-found: warn

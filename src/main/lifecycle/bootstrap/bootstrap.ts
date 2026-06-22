@@ -1,0 +1,99 @@
+import { BrowserWindow } from "electron";
+import {
+  createLogger,
+  createPerformanceTimer,
+} from "../../../shared/logger/index.js";
+import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
+import type { AppBootstrapStatus } from "../../../shared/types/index.js";
+import { db } from "../../infra/database/index.js";
+
+const logger = createLogger("BootstrapLifecycle");
+
+let bootstrapStatus: AppBootstrapStatus = { isReady: false };
+let bootstrapPromise: Promise<AppBootstrapStatus> | null = null;
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return "Failed to initialize database";
+};
+
+/**
+ * llmfit 바이너리를 백그라운드로 설치 시도한다(R6.5/R7.1).
+ * 비차단: 설치기는 실패해도 throw 하지 않으며, 어떤 결과든 부팅을 막지 않는다.
+ */
+const triggerLlmfitInstall = async (): Promise<void> => {
+  try {
+    const { llmfitInstaller } = await import("../../domains/settings/llm.js");
+    const status = await llmfitInstaller.ensureInstalled();
+    logger.info("llmfit install attempted during bootstrap", {
+      installed: status.installed,
+    });
+  } catch (error) {
+    logger.warn("llmfit install trigger failed (non-blocking)", error);
+  }
+};
+
+const broadcastBootstrapStatus = (): void => {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (win.isDestroyed()) continue;
+    try {
+      win.webContents.send(
+        IPC_CHANNELS.APP_BOOTSTRAP_STATUS_CHANGED,
+        bootstrapStatus,
+      );
+    } catch (error) {
+      logger.warn("Failed to broadcast bootstrap status", error);
+    }
+  }
+};
+
+const updateBootstrapStatus = (nextStatus: AppBootstrapStatus): void => {
+  bootstrapStatus = nextStatus;
+  broadcastBootstrapStatus();
+};
+
+export const getBootstrapStatus = (): AppBootstrapStatus => bootstrapStatus;
+
+export const ensureBootstrapReady = async (): Promise<AppBootstrapStatus> => {
+  if (bootstrapStatus.isReady) {
+    return bootstrapStatus;
+  }
+  if (bootstrapPromise) {
+    return bootstrapPromise;
+  }
+
+  updateBootstrapStatus({ isReady: false });
+  const timer = createPerformanceTimer({
+    scope: "bootstrap",
+    event: "bootstrap.ensure-ready",
+  });
+
+  bootstrapPromise = db
+    .initialize()
+    .then(() => {
+      updateBootstrapStatus({ isReady: true });
+      timer.complete(logger, {
+        isReady: true,
+      });
+      logger.info("Bootstrap completed");
+      // 부팅 완료 후 비차단으로 llmfit 설치를 트리거(부팅 흐름과 분리, R7.1).
+      void triggerLlmfitInstall();
+      return bootstrapStatus;
+    })
+    .catch((error) => {
+      const message = getErrorMessage(error);
+      updateBootstrapStatus({ isReady: false, error: message });
+      timer.fail(logger, error, {
+        isReady: false,
+      });
+      logger.error("Bootstrap failed", error);
+      return bootstrapStatus;
+    })
+    .finally(() => {
+      bootstrapPromise = null;
+    });
+
+  return bootstrapPromise;
+};

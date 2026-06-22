@@ -1,0 +1,54 @@
+{
+  "phases": [
+    {
+      "name": "Phase 1: Canvas main(IPC) 연결",
+      "tasks": [
+        "useCanvasGraphData 훅 신설 — canvas 진입 시 worldBuildingStore.loadGraph 트리거 (worldGraph.get + worldStorage replica 병합)",
+        "CanvasPane에 로더 연결 + projection을 뷰포트/상태바 공용으로 승격",
+        "StaticCanvasViewport projection 주입 prop 지원(독립 사용 호환)",
+        "BaseCanvasViewport 노드 드래그 위치 영속화(updateGraphNodePosition) — world 요소 양방향 동기화 완성",
+        "CanvasStatusBar 실제 projection 노드/엣지 카운트 연결"
+      ],
+      "status": "Done",
+      "notes": [
+        "main의 getWorldGraph는 이미 Character/Faction/Event/Term/WorldEntity/Scene/Note/Synopsis/Plot/Scrap 전 엔티티를 집계 → IPC/preload/store 배선은 완비되어 있었고, 끊긴 고리는 'canvas 진입 시 loadGraph 미호출'이었음.",
+        "canvas sidebar 파일/폴더 관리 + bottom toolbar 블럭추가/원고들고오기/이미지삽입은 후속 UI/UX 작업(사용자가 추가 작업 필요하다고 명시)."
+      ]
+    },
+    {
+      "name": "Phase 2: RAG(Memory Engine) 구조 및 상태 확인",
+      "tasks": [
+        "RAG 파이프라인 구조 파악(청크/임베딩/검색/QA) — 완료",
+        "현재 인물 관계·사건·복선 추출 정확도 수준 진단 — 완료",
+        "Phase 2-1: 정확도(오답률) 향상 방안 심층 조사 — 진행 중"
+      ],
+      "status": "In Progress",
+      "diagnosis": [
+        "A. 검색 토대가 기본 상태에서 무력화: 임베딩은 클라우드/임베딩모델 설정 시에만 생성 → 로컬/미설정 시 벡터검색 죽고 FTS만, 그 FTS도 unicode61이라 한국어 부분매칭 불가.",
+        "B. 청킹이 문자 수 기준 휴리스틱(토큰카운트=문자수).",
+        "C. 인물관계/사건/복선 자동 추출 부재: 관계 수동, 멘션 문자열매칭, autoExtract는 엔티티분류만, 복선 데이터모델 없음.",
+        "D. 인프라(Job큐/utility프로세스/스트리밍/RRF틀/증분임베딩)는 견고 — 데이터가 안 채워지는 게 문제."
+      ],
+      "subphases": {
+        "P2-A": {
+          "name": "검색 토대 복구",
+          "tasks": [
+            "FTS 한국어 토크나이저 unicode61 → trigram 전환 + 레거시 자동 마이그레이션/재색인 (완료)",
+            "trigram 3자 미만 토큰용 LIKE 폴백을 RRF 소스로 통합 (완료)",
+            "로컬 임베딩 경로 확보 (sidecar embedding 등) — TODO",
+            "임베딩 상태 사용자 노출 게이트 — TODO"
+          ],
+          "status": "In Progress"
+        }
+      }
+    },
+    {
+      "name": "Phase 3: Graph 연결",
+      "tasks": [
+        "GraphSurface mock 데이터 → RAG 기반 실데이터 관계도로 교체",
+        "인물 관계 / 챕터별 관계 / 사건·복선 흐름 시각화"
+      ],
+      "status": "Pending"
+    }
+  ]
+}

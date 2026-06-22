@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-02-27T00:00:00.000Z",
+  "entries": [
+    {
+      "file": "src/renderer/src/features/research/components/world/graph/WorldInspector.tsx",
+      "reason": "World graph in-progress path excluded from V3 scope",
+      "owner": "world-team",
+      "expiresAt": "2026-12-31T23:59:59.000Z"
+    }
+  ]
+}
