@@ -1,0 +1,15 @@
+[
+  {
+    "pluginId": "foundation-graph",
+    "version": "1.0.0",
+    "name": "Foundation Graph",
+    "summary": "Starter templates for a kingdom-scale world graph.",
+    "releaseTag": "foundation-graph-v1.0.0",
+    "assetUrl": "https://github.com/luie-team/luie/releases/download/foundation-graph-v1.0.0/foundation-graph-1.0.0.zip",
+    "devAssetPath": "packages/foundation-graph/dist/foundation-graph-1.0.0.zip",
+    "sha256": "6c35bae2692844f5008856f3a50562e88d2afc6c91d2ecb78b85b65c1151713c",
+    "size": 1925,
+    "minAppVersion": "0.1.16",
+    "apiVersion": "1.0.0"
+  }
+]

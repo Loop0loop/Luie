@@ -1,0 +1,23 @@
+{
+  "id": "foundation-graph",
+  "name": "Foundation Graph",
+  "version": "1.0.0",
+  "apiVersion": "1.0.0",
+  "kind": "graph-template-bundle",
+  "description": "Foundational world graph templates for kingdoms, rules, places, and anchor concepts.",
+  "author": "Luie Team",
+  "templates": [
+    {
+      "id": "kingdom-foundation",
+      "title": "Kingdom Foundation",
+      "summary": "A baseline graph for a capital city, a ruling institution, a core law, and a signature relic.",
+      "thumbnail": "assets/foundation-grid.svg",
+      "graphEntry": "templates/kingdom-foundation.graph.json",
+      "tags": [
+        "starter",
+        "kingdom",
+        "worldbuilding"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,487 @@
+import {
+  useState,
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+} from "react";
+import { useTranslation } from "react-i18next";
+
+import { useProjectStore } from "@renderer/domains/project";
+import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { useEditorStore } from "@renderer/domains/editor";
+import { useProjectInit } from "@renderer/domains/project";
+import { useDataRecoveryStore } from "@renderer/features/workspace/stores/useDataRecoveryStore";
+import { useProjectTemplate } from "@renderer/domains/project";
+import { useShortcutStore } from "@renderer/features/workspace/stores/shortcutStore";
+import { useToast } from "@shared/ui/ToastContext";
+import type {
+  AppBootstrapStatus,
+  AppQuitPhasePayload,
+  Project,
+} from "@shared/types/index.js";
+import { api } from "@shared/api";
+import {
+  getReadableLuieAttachmentPath,
+  isLuieAttachmentPath,
+} from "@shared/projectAttachment";
+import {
+  LUIE_PACKAGE_EXTENSION_NO_DOT,
+  LUIE_PACKAGE_FILTER_NAME,
+} from "@shared/constants/storage/paths";
+import {
+  BootstrapGate,
+  parseBootstrapStatus,
+  QuitOverlay,
+  useThemeAttributes,
+  useUiModeIntegrityDevCheck,
+  useWindowMode,
+} from "./shell";
+
+const ExportWindow = lazy(
+  () => import("@renderer/domains/export/ExportWindow"),
+);
+const ProjectTemplateSelector = lazy(
+  () =>
+    import("@renderer/features/workspace/components/ProjectTemplateSelector"),
+);
+const EditorRoot = lazy(
+  () => import("@renderer/features/workspace/components/EditorRoot"),
+);
+const OAuthResultPage = lazy(
+  () => import("@renderer/features/auth/components/OAuthResultPage"),
+);
+const WorldSection = lazy(
+  () => import("@renderer/domains/world/WorldSection"),
+);
+const StartupWizard = lazy(
+  () => import("@renderer/features/startup/components/StartupWizard"),
+);
+
+export default function App() {
+  const { t } = useTranslation();
+  const { showToast } = useToast();
+  const [bootstrapStatus, setBootstrapStatus] = useState<AppBootstrapStatus>({
+    isReady: false,
+  });
+  const [isBootstrapLoading, setIsBootstrapLoading] = useState(true);
+  const windowMode = useWindowMode();
+  const [quitPhase, setQuitPhase] = useState<AppQuitPhasePayload | null>(null);
+
+  const view = useUIStore((state) => state.view);
+  const loadShortcuts = useShortcutStore((state) => state.loadShortcuts);
+  const projects = useProjectStore((state) => state.items);
+  const setCurrentProject = useProjectStore((state) => state.setCurrentProject);
+  const updateProject = useProjectStore((state) => state.updateProject);
+  const loadProjects = useProjectStore((state) => state.loadProjects);
+  const theme = useEditorStore((state) => state.theme);
+  const themeTemp = useEditorStore((state) => state.themeTemp);
+  const themeContrast = useEditorStore((state) => state.themeContrast);
+  const themeAccent = useEditorStore((state) => state.themeAccent);
+  const themeTexture = useEditorStore((state) => state.themeTexture);
+  const enableAnimations = useEditorStore((state) => state.enableAnimations);
+
+  const refreshBootstrapStatus = useCallback(async () => {
+    setIsBootstrapLoading(true);
+    try {
+      const response = await api.app.getBootstrapStatus();
+      const parsed = parseBootstrapStatus(response.data);
+      if (response.success && parsed) {
+        setBootstrapStatus(parsed);
+        return;
+      }
+
+      setBootstrapStatus({
+        isReady: false,
+        error: t("bootstrap.fetchFailed"),
+      });
+    } catch {
+      setBootstrapStatus({
+        isReady: false,
+        error: t("bootstrap.fetchFailed"),
+      });
+    } finally {
+      setIsBootstrapLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    void Promise.resolve().then(refreshBootstrapStatus);
+    const unsubscribe = api.app.onBootstrapStatus((status) => {
+      const parsed = parseBootstrapStatus(status);
+      if (!parsed) return;
+      setBootstrapStatus(parsed);
+      setIsBootstrapLoading(false);
+    });
+    return unsubscribe;
+  }, [refreshBootstrapStatus]);
+
+  const { currentProject } = useProjectInit(bootstrapStatus.isReady);
+
+  useEffect(() => {
+    const projectId = currentProject?.id;
+    if (!projectId) {
+      return;
+    }
+
+    let active = true;
+    void api.project
+      .markOpened?.(projectId)
+      .then((response) => {
+        if (!active || !response?.success) {
+          return;
+        }
+        void loadProjects();
+      })
+      .catch((error) => {
+        api.logger.warn("Failed to update project local open state", {
+          projectId,
+          error,
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [currentProject?.id, loadProjects]);
+
+  useEffect(() => {
+    if (windowMode !== "world-graph") return;
+    if (currentProject) return;
+    if (projects.length === 0) return;
+
+    setCurrentProject(projects[0] ?? null);
+  }, [currentProject, projects, setCurrentProject, windowMode]);
+
+  useEffect(() => {
+    const unsubscribe = api.lifecycle.onQuitPhase((payload) => {
+      if (!payload || typeof payload !== "object") return;
+      const next = payload as Partial<AppQuitPhasePayload>;
+      if (typeof next.phase !== "string") return;
+      setQuitPhase({
+        phase: next.phase as AppQuitPhasePayload["phase"],
+        message: typeof next.message === "string" ? next.message : undefined,
+      });
+    });
+    return unsubscribe;
+  }, []);
+
+  useThemeAttributes({
+    enableAnimations,
+    theme,
+    themeAccent,
+    themeContrast,
+    themeTemp,
+    themeTexture,
+  });
+
+  useEffect(() => {
+    if (!bootstrapStatus.isReady) return;
+    void loadShortcuts();
+  }, [bootstrapStatus.isReady, loadShortcuts]);
+
+  useUiModeIntegrityDevCheck();
+
+  const setView = useUIStore((state) => state.setView);
+
+  const { handleSelectProject } = useProjectTemplate((_id: string) => {});
+
+  const handleOpenExistingProject = useCallback(
+    async (project: (typeof projects)[number]) => {
+      if (project.attachmentStatus === "unsupported-legacy-container") {
+        showToast(
+          t("settings.projectTemplate.toast.legacyUnsupportedBlocked"),
+          "error",
+        );
+        return;
+      }
+      try {
+        let nextProject = project;
+        const projectPath = getReadableLuieAttachmentPath(project);
+        if (projectPath) {
+          const approved = await api.fs.approveProjectPath(projectPath);
+          if (approved.success && approved.data?.normalizedPath) {
+            const normalizedPath = approved.data.normalizedPath;
+            if (normalizedPath !== projectPath) {
+              await updateProject(
+                project.id,
+                undefined,
+                undefined,
+                normalizedPath,
+              );
+              nextProject = {
+                ...project,
+                projectPath: normalizedPath,
+                attachmentStatus: "attached",
+                pathMissing: false,
+              };
+            }
+          }
+        }
+        setCurrentProject(nextProject);
+        setView("editor");
+      } catch (error) {
+        api.logger.error("Failed to open existing project", {
+          projectId: project.id,
+          error,
+        });
+        showToast(
+          t("settings.projectTemplate.toast.pathRepairFailed"),
+          "error",
+        );
+      }
+    },
+    [setCurrentProject, setView, showToast, t, updateProject],
+  );
+
+  useEffect(() => {
+    const status = currentProject?.attachmentStatus;
+    if (status === "missing-attachment") {
+      showToast(t("project.toast.missingAttachment"), "info");
+      return;
+    }
+    if (status === "invalid-attachment") {
+      showToast(t("project.toast.invalidAttachment"), "info");
+      return;
+    }
+    if (status === "unsupported-legacy-container") {
+      showToast(t("project.toast.legacyUnsupportedAttachment"), "error");
+    }
+  }, [currentProject?.attachmentStatus, currentProject?.id, showToast, t]);
+
+  const openProjectWithApprovedAttachment = useCallback(
+    async (project: Project, fallbackPath?: string) => {
+      const candidatePath = project.projectPath ?? fallbackPath ?? null;
+      let normalizedPath = candidatePath;
+
+      if (candidatePath) {
+        const approved = await api.fs.approveProjectPath(candidatePath);
+        normalizedPath =
+          approved.success && approved.data?.normalizedPath
+            ? approved.data.normalizedPath
+            : candidatePath;
+      }
+
+      if (normalizedPath && normalizedPath !== project.projectPath) {
+        await updateProject(project.id, undefined, undefined, normalizedPath);
+      }
+
+      setCurrentProject({
+        ...project,
+        projectPath: normalizedPath,
+        attachmentStatus:
+          normalizedPath && isLuieAttachmentPath(normalizedPath)
+            ? "attached"
+            : (project.attachmentStatus ??
+              (normalizedPath ? "attached" : "detached")),
+        pathMissing: false,
+      });
+      setView("editor");
+    },
+    [setCurrentProject, setView, updateProject],
+  );
+
+  const handleOpenLuieFile = useCallback(async () => {
+    try {
+      const response = await api.fs.selectFile({
+        title: t("settings.projectTemplate.actions.openLuie"),
+        filters: [
+          {
+            name: LUIE_PACKAGE_FILTER_NAME,
+            extensions: [LUIE_PACKAGE_EXTENSION_NO_DOT],
+          },
+        ],
+      });
+
+      if (!response.success || !response.data) {
+        return;
+      }
+
+      const selectedPath = response.data;
+      const imported = await api.project.openLuie(selectedPath);
+      if (imported.success && imported.data) {
+        await openProjectWithApprovedAttachment(
+          imported.data.project,
+          selectedPath,
+        );
+        if (imported.data.recovery) {
+          useDataRecoveryStore
+            .getState()
+            .setRecoveryState(
+              true,
+              imported.data.recoveryReason,
+              imported.data.recoveryPath,
+            );
+        }
+        if (
+          imported.data.importWarnings?.some(
+            (warning) =>
+              warning.code ===
+              "canonical_memory_unknown_row_fields_discarded",
+          )
+        ) {
+          showToast(
+            t(
+              "settings.projectTemplate.toast.importWarnings",
+              "Some future memory fields were skipped during import.",
+            ),
+            "info",
+          );
+        }
+      } else {
+        showToast(
+          imported.error?.message ??
+            t("settings.projectTemplate.toast.luieAttachFailed"),
+          "error",
+        );
+      }
+    } catch (error) {
+      api.logger.error("Failed to open luie file", error);
+    }
+  }, [openProjectWithApprovedAttachment, showToast, t]);
+
+  const handleRestoreBackup = useCallback(
+    async (filePath: string) => {
+      try {
+        const importResult = await api.snapshot.importFromFile(filePath);
+        if (!importResult.success || !importResult.data) {
+          showToast(
+            importResult.error?.message ??
+              t("settings.projectTemplate.toast.restoreFailed"),
+            "error",
+          );
+          return false;
+        }
+
+        await loadProjects();
+        await openProjectWithApprovedAttachment(importResult.data);
+        showToast(
+          t("settings.projectTemplate.toast.restoreCompleted"),
+          "success",
+        );
+        return true;
+      } catch (error) {
+        api.logger.error("Failed to restore backup into .luie", error);
+        showToast(t("settings.projectTemplate.toast.restoreFailed"), "error");
+        return false;
+      }
+    },
+    [loadProjects, openProjectWithApprovedAttachment, showToast, t],
+  );
+
+  const quitOverlay = <QuitOverlay quitPhase={quitPhase} />;
+  const appScreenFallback = (
+    <div className="flex h-screen items-center justify-center bg-app text-fg">
+      {t("loading")}
+    </div>
+  );
+
+  if (windowMode === "export") {
+    return (
+      <>
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center h-screen bg-[#333] text-white">
+              {t("loading")}
+            </div>
+          }
+        >
+          <ExportWindow />
+        </Suspense>
+        {quitOverlay}
+      </>
+    );
+  }
+
+  if (windowMode === "oauth-result") {
+    return (
+      <>
+        <Suspense fallback={appScreenFallback}>
+          <OAuthResultPage />
+        </Suspense>
+        {quitOverlay}
+      </>
+    );
+  }
+
+  if (windowMode === "world-graph") {
+    return (
+      <>
+        <Suspense fallback={appScreenFallback}>
+          <div className="w-screen h-screen bg-app overflow-hidden">
+            <WorldSection
+              worldId={currentProject?.id || ""}
+              projectTitle={currentProject?.title}
+              graphOnly
+              onBackToEditor={() => {
+                window.location.hash = "";
+              }}
+              onOpenSettings={() => {
+                window.dispatchEvent(new Event("luie:open-settings"));
+                window.location.hash = "";
+              }}
+            />
+          </div>
+        </Suspense>
+        {quitOverlay}
+      </>
+    );
+  }
+
+  if (windowMode === "startup-wizard") {
+    return (
+      <>
+        <Suspense fallback={appScreenFallback}>
+          <StartupWizard />
+        </Suspense>
+        {quitOverlay}
+      </>
+    );
+  }
+
+  if (!bootstrapStatus.isReady) {
+    return (
+      <>
+        <BootstrapGate
+          bootstrapStatus={bootstrapStatus}
+          isBootstrapLoading={isBootstrapLoading}
+          onQuit={() => {
+            void api.app.quit();
+          }}
+          onRetry={() => {
+            void refreshBootstrapStatus();
+          }}
+        />
+        {quitOverlay}
+      </>
+    );
+  }
+
+  if (view === "template" || !currentProject) {
+    return (
+      <>
+        <Suspense fallback={appScreenFallback}>
+          <ProjectTemplateSelector
+            onSelectProject={handleSelectProject}
+            projects={projects}
+            onOpenProject={(project) => {
+              void handleOpenExistingProject(project);
+            }}
+            onOpenLuieFile={handleOpenLuieFile}
+            onRestoreBackup={handleRestoreBackup}
+          />
+        </Suspense>
+        {quitOverlay}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Suspense fallback={appScreenFallback}>
+        <EditorRoot />
+      </Suspense>
+      {quitOverlay}
+    </>
+  );
+}

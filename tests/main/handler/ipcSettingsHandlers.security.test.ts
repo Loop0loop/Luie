@@ -1,0 +1,201 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { IPC_CHANNELS } from "../../../src/shared/ipc/channels.js";
+
+const mocked = vi.hoisted(() => {
+  const handlerMap = new Map<
+    string,
+    (event: unknown, ...args: unknown[]) => Promise<unknown>
+  >();
+
+  const baseSettings = {
+    editor: {
+      fontFamily: "system-ui",
+      fontSize: 16,
+      lineHeight: 1.5,
+      maxWidth: 700,
+      spellcheckEnabled: true,
+      theme: "light",
+      themeTemp: "neutral",
+      themeContrast: "soft",
+      themeAccent: "blue",
+      themeTexture: "none",
+      uiMode: "default",
+    },
+    autoSaveEnabled: true,
+    autoSaveInterval: 30000,
+    sync: {
+      connected: true,
+      autoSync: true,
+      accessTokenCipher: "secret-access",
+      refreshTokenCipher: "secret-refresh",
+      pendingAuthState: "secret-state",
+      pendingAuthVerifierCipher: "secret-verifier",
+      pendingAuthCreatedAt: new Date().toISOString(),
+    },
+  };
+
+  const settingsManager = {
+    getAll: vi.fn(() => baseSettings),
+    getAllForRenderer: vi.fn(() => ({
+      ...baseSettings,
+      sync: {
+        connected: true,
+        autoSync: true,
+      },
+    })),
+    getEditorSettings: vi.fn(() => baseSettings.editor),
+    setEditorSettings: vi.fn(),
+    getAutoSaveEnabled: vi.fn(() => true),
+    getAutoSaveInterval: vi.fn(() => 30000),
+    getLanguage: vi.fn(() => "ko"),
+    setLanguage: vi.fn(),
+    getMenuBarMode: vi.fn(() => "visible"),
+    setMenuBarMode: vi.fn(),
+    getSearchOptimizationMode: vi.fn(() => "standard"),
+    setSearchOptimizationMode: vi.fn(),
+    getShortcuts: vi.fn(() => ({ shortcuts: {}, defaults: {} })),
+    setShortcuts: vi.fn(() => ({})),
+    setAutoSaveEnabled: vi.fn(),
+    setAutoSaveInterval: vi.fn(),
+    setWindowBounds: vi.fn(),
+    getWindowBounds: vi.fn(() => undefined),
+    resetToDefaults: vi.fn(),
+  };
+
+  return {
+    handlerMap,
+    settingsManager,
+    logger: {
+      info: vi.fn(),
+      debug: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    },
+  };
+});
+
+vi.mock("electron", () => ({
+  app: {
+    isPackaged: false,
+    getPath: () => process.cwd(),
+  },
+  nativeTheme: {
+    shouldUseDarkColors: false,
+  },
+  ipcMain: {
+    handle: vi.fn(
+      (
+        channel: string,
+        handler: (event: unknown, ...args: unknown[]) => Promise<unknown>,
+      ) => {
+        mocked.handlerMap.set(channel, handler);
+      },
+    ),
+  },
+}));
+
+vi.mock("../../../src/main/manager/settings/index.js", () => ({
+  settingsManager: mocked.settingsManager,
+}));
+
+vi.mock("../../../src/main/lifecycle/menu/index.js", () => ({
+  applyApplicationMenu: vi.fn(),
+}));
+
+vi.mock("../../../src/main/manager/window/index.js", () => ({
+  windowManager: {
+    applySpellCheckSettingToAllWindows: vi.fn(),
+  },
+}));
+
+describe("ipcSettingsHandlers security", () => {
+  beforeEach(() => {
+    mocked.handlerMap.clear();
+    mocked.settingsManager.getAll.mockClear();
+    mocked.settingsManager.getAllForRenderer.mockClear();
+    mocked.settingsManager.resetToDefaults.mockClear();
+    mocked.settingsManager.getSearchOptimizationMode.mockClear();
+    mocked.settingsManager.setSearchOptimizationMode.mockClear();
+  });
+
+  it("returns renderer-safe settings for SETTINGS_GET_ALL", async () => {
+    const { registerSettingsIPCHandlers } =
+      await import("../../../src/main/handler/system/settings/index.js");
+    registerSettingsIPCHandlers(mocked.logger);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.SETTINGS_GET_ALL);
+    expect(handler).toBeDefined();
+
+    const response = (await handler?.({})) as {
+      success: boolean;
+      data?: {
+        sync?: {
+          accessTokenCipher?: string;
+          refreshTokenCipher?: string;
+          pendingAuthVerifierCipher?: string;
+        };
+      };
+    };
+
+    expect(response.success).toBe(true);
+    expect(mocked.settingsManager.getAllForRenderer).toHaveBeenCalledTimes(1);
+    expect(mocked.settingsManager.getAll).not.toHaveBeenCalled();
+    expect(response.data?.sync?.accessTokenCipher).toBeUndefined();
+    expect(response.data?.sync?.refreshTokenCipher).toBeUndefined();
+    expect(response.data?.sync?.pendingAuthVerifierCipher).toBeUndefined();
+  });
+
+  it("persists the RAG search optimization mode through settings IPC", async () => {
+    const { registerSettingsIPCHandlers } =
+      await import("../../../src/main/handler/system/settings/index.js");
+    registerSettingsIPCHandlers(mocked.logger);
+
+    const getHandler = mocked.handlerMap.get(
+      IPC_CHANNELS.SETTINGS_GET_SEARCH_OPTIMIZATION_MODE,
+    );
+    const setHandler = mocked.handlerMap.get(
+      IPC_CHANNELS.SETTINGS_SET_SEARCH_OPTIMIZATION_MODE,
+    );
+    expect(getHandler).toBeDefined();
+    expect(setHandler).toBeDefined();
+
+    const getResponse = (await getHandler?.({})) as {
+      success: boolean;
+      data?: { mode?: string };
+    };
+    expect(getResponse).toMatchObject({
+      success: true,
+      data: { mode: "standard" },
+    });
+
+    mocked.settingsManager.getSearchOptimizationMode.mockReturnValueOnce(
+      "low-end",
+    );
+    const setResponse = (await setHandler?.({}, { mode: "low-end" })) as {
+      success: boolean;
+      data?: { mode?: string };
+    };
+    expect(setResponse).toMatchObject({
+      success: true,
+      data: { mode: "low-end" },
+    });
+    expect(mocked.settingsManager.setSearchOptimizationMode).toHaveBeenCalledWith(
+      "low-end",
+    );
+  });
+
+  it("returns renderer-safe settings after SETTINGS_RESET", async () => {
+    const { registerSettingsIPCHandlers } =
+      await import("../../../src/main/handler/system/settings/index.js");
+    registerSettingsIPCHandlers(mocked.logger);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.SETTINGS_RESET);
+    expect(handler).toBeDefined();
+
+    const response = (await handler?.({})) as { success: boolean };
+    expect(response.success).toBe(true);
+    expect(mocked.settingsManager.resetToDefaults).toHaveBeenCalledTimes(1);
+    expect(mocked.settingsManager.getAllForRenderer).toHaveBeenCalledTimes(1);
+    expect(mocked.settingsManager.getAll).not.toHaveBeenCalled();
+  });
+});

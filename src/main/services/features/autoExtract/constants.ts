@@ -1,0 +1,1 @@
+export const AUTO_EXTRACT_DEBOUNCE_MS = 2000;

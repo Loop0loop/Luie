@@ -1,0 +1,1 @@
+- [Canvas Feature](project_canvas_feature.md) — WIP mock-data UI scaffolding on feature/canvas; treat mocks/stubs as known, focus on i18n/dup/magic-numbers

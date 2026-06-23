@@ -1,0 +1,2 @@
+export const SUGGESTION_MAX_ITEMS = 10;
+export const SUGGESTION_POPUP_Z_INDEX = 1000;

@@ -1,0 +1,1 @@
+export const TERM_DRAG_COMMIT_TIMEOUT_MS = 8000;

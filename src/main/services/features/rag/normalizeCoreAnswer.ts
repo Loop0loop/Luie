@@ -1,0 +1,25 @@
+export function normalizeCoreAnswer(raw: string): string {
+  const withoutThinking = raw.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+  const lines = withoutThinking
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+  const filtered = lines.filter(
+    (line) =>
+      !/^okay[,!]?/i.test(line) &&
+      !/^let'?s\s+/i.test(line) &&
+      !/^starting with/i.test(line) &&
+      !/^the user/i.test(line) &&
+      !/^##\s*output rules/i.test(line) &&
+      !/^##\s*layer\s*\d+/i.test(line),
+  );
+  const deduped: string[] = [];
+  for (const line of filtered) {
+    const last = deduped[deduped.length - 1];
+    if (last === line) {
+      continue;
+    }
+    deduped.push(line);
+  }
+  return deduped.join("\n").trim();
+}

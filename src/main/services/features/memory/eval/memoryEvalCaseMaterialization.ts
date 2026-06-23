@@ -1,0 +1,454 @@
+import crypto from "node:crypto";
+import { and, eq, sql } from "drizzle-orm";
+import {
+  db,
+  chapter,
+  memoryChunk,
+  memoryEpisode,
+  memoryEpisodeEvidence,
+  memoryEvalCase,
+  memoryEvalEvidence,
+} from "../../../../infra/database/index.js";
+import type { DbLike } from "../../../../infra/database/index.js";
+import {
+  WRITER_PAIN_POINT_TAXONOMY,
+  type WriterPainPointTaxonomyKey,
+} from "./memoryEvalPainPoints.js";
+import {
+  buildEvidenceRecallQuestion,
+  buildTemporalChapterCaseName,
+  buildWriterPainPointCaseName,
+  excerptFromContent,
+  WRITER_PAIN_POINT_TEMPLATES,
+  type ChunkEvalSeedRow,
+  type TemporalChunkEvalSeedRow,
+  type WriterPainPointTemplate,
+} from "./memoryEvalCaseMaterializationTemplates.js";
+
+type EpisodeEvidenceEvalSeedRow = {
+  evidenceId: string;
+  projectId: string;
+  episodeTitle: string;
+  chapterId: string | null;
+  chunkId: string | null;
+  startOffset: number | null;
+  endOffset: number | null;
+  quote: string;
+};
+
+export async function materializeMemoryEvalCasesFromEpisodeEvidence(input: {
+  projectId: string;
+  nowIso?: string;
+  limit?: number;
+}): Promise<{ inspected: number; created: number; skipped: number }> {
+  const nowIso = input.nowIso ?? new Date().toISOString();
+  const limit = Math.max(1, input.limit ?? 20);
+  const client = db.getClient();
+  const rows = await client
+    .select({
+      evidenceId: memoryEpisodeEvidence.id,
+      projectId: memoryEpisodeEvidence.projectId,
+      episodeTitle: memoryEpisode.title,
+      chapterId: memoryEpisodeEvidence.chapterId,
+      chunkId: memoryEpisodeEvidence.chunkId,
+      startOffset: memoryEpisodeEvidence.startOffset,
+      endOffset: memoryEpisodeEvidence.endOffset,
+      quote: memoryEpisodeEvidence.quote,
+    })
+    .from(memoryEpisodeEvidence)
+    .innerJoin(
+      memoryEpisode,
+      eq(memoryEpisode.id, memoryEpisodeEvidence.episodeId),
+    )
+    .where(eq(memoryEpisodeEvidence.projectId, input.projectId))
+    .limit(limit);
+
+  let created = 0;
+  let skipped = 0;
+
+  for (const row of rows) {
+    const name = `episode evidence: ${row.episodeTitle}`;
+    // eslint-disable-next-line no-await-in-loop -- duplicate checks are scoped per generated fixture name.
+    const existing = await client
+      .select({ id: memoryEvalCase.id })
+      .from(memoryEvalCase)
+      .where(
+        and(
+          eq(memoryEvalCase.projectId, input.projectId),
+          eq(memoryEvalCase.name, name),
+        ),
+      )
+      .limit(1);
+    if (existing.length > 0) {
+      skipped += 1;
+      continue;
+    }
+    // eslint-disable-next-line no-await-in-loop -- each eval fixture is inserted atomically with its evidence row.
+    await insertEvalCaseFromEpisodeEvidence(row, name, nowIso);
+    created += 1;
+  }
+
+  return { inspected: rows.length, created, skipped };
+}
+
+export async function materializeWriterPainPointEvalCasesFromChunks(input: {
+  projectId: string;
+  nowIso?: string;
+  limit?: number;
+}): Promise<{ inspected: number; created: number; skipped: number }> {
+  const nowIso = input.nowIso ?? new Date().toISOString();
+  const limit = Math.max(1, input.limit ?? 50);
+  const client = db.getClient();
+  const chunkLimit = Math.max(1, Math.ceil(limit / WRITER_PAIN_POINT_TEMPLATES.length));
+  const rows = await client
+    .select({
+      chunkId: memoryChunk.id,
+      projectId: memoryChunk.projectId,
+      chapterId: memoryChunk.chapterId,
+      startOffset: memoryChunk.startOffset,
+      endOffset: memoryChunk.endOffset,
+      contextLabel: memoryChunk.contextLabel,
+      content: memoryChunk.content,
+    })
+    .from(memoryChunk)
+    .where(eq(memoryChunk.projectId, input.projectId))
+    .limit(chunkLimit);
+
+  const candidates = rows.flatMap((row) =>
+    WRITER_PAIN_POINT_TEMPLATES.map((template) => ({
+      row,
+      template,
+      name: buildWriterPainPointCaseName({
+        templateKey: template.key,
+        chunkId: row.chunkId,
+      }),
+    })),
+  );
+  const selected = candidates.slice(0, limit);
+  const existingNames = new Set(
+    (
+      await client
+        .select({ name: memoryEvalCase.name })
+        .from(memoryEvalCase)
+        .where(eq(memoryEvalCase.projectId, input.projectId))
+    ).map((row) => row.name),
+  );
+
+  let created = 0;
+  let skipped = 0;
+
+  db.getClient().transaction((tx) => {
+    for (const candidate of selected) {
+      if (existingNames.has(candidate.name)) {
+        skipped += 1;
+        continue;
+      }
+      insertWriterPainPointEvalCase({
+        tx,
+        row: candidate.row,
+        template: candidate.template,
+        name: candidate.name,
+        nowIso,
+      });
+      created += 1;
+    }
+  });
+
+  return { inspected: rows.length, created, skipped };
+}
+
+export async function materializeTemporalChapterEvalCasesFromChunks(input: {
+  projectId: string;
+  nowIso?: string;
+  limit?: number;
+}): Promise<{ inspected: number; created: number; skipped: number }> {
+  const nowIso = input.nowIso ?? new Date().toISOString();
+  const limit = Math.max(1, input.limit ?? 50);
+  const client = db.getClient();
+  const rows = await client
+    .select({
+      chunkId: memoryChunk.id,
+      projectId: memoryChunk.projectId,
+      chapterId: memoryChunk.chapterId,
+      startOffset: memoryChunk.startOffset,
+      endOffset: memoryChunk.endOffset,
+      contextLabel: memoryChunk.contextLabel,
+      content: memoryChunk.content,
+      chapterOrder: chapter.order,
+      chapterTitle: chapter.title,
+    })
+    .from(memoryChunk)
+    .innerJoin(chapter, eq(chapter.id, memoryChunk.chapterId))
+    .where(eq(memoryChunk.projectId, input.projectId))
+    .limit(limit);
+
+  const candidates = rows.map((row) => ({
+    row,
+    name: buildTemporalChapterCaseName({
+      chapterOrder: row.chapterOrder,
+      chunkId: row.chunkId,
+    }),
+  }));
+  const existingNames = new Set(
+    (
+      await client
+        .select({ name: memoryEvalCase.name })
+        .from(memoryEvalCase)
+        .where(eq(memoryEvalCase.projectId, input.projectId))
+    ).map((row) => row.name),
+  );
+
+  let created = 0;
+  let skipped = 0;
+
+  db.getClient().transaction((tx) => {
+    for (const candidate of candidates) {
+      if (existingNames.has(candidate.name)) {
+        skipped += 1;
+        continue;
+      }
+      insertTemporalChapterEvalCase({
+        tx,
+        row: candidate.row,
+        name: candidate.name,
+        nowIso,
+      });
+      created += 1;
+    }
+  });
+
+  return { inspected: rows.length, created, skipped };
+}
+
+export async function repairLegacyEpisodeEvalCases(input: {
+  projectId: string;
+  nowIso?: string;
+}): Promise<{ inspected: number; repaired: number }> {
+  const nowIso = input.nowIso ?? new Date().toISOString();
+  const rows = await db.getClient().all<{
+    caseId: string;
+    caseName: string;
+    question: string;
+    expectedAnswer: string | null;
+    quote: string;
+  }>(sql`
+    SELECT evalCase.id AS caseId,
+           evalCase.name AS caseName,
+           evalCase.question AS question,
+           evalCase.expectedAnswer AS expectedAnswer,
+           evidence.quote AS quote
+    FROM "MemoryEvalCase" evalCase
+    INNER JOIN "MemoryEvalEvidence" evidence
+      ON evidence."caseId" = evalCase.id
+    WHERE evalCase."projectId" = ${input.projectId}
+      AND evalCase.name LIKE 'episode evidence:%';
+  `);
+
+  let repaired = 0;
+  db.getClient().transaction((tx) => {
+    for (const row of rows) {
+      const title = row.caseName.replace(/^episode evidence:\s*/, "").trim();
+      const question = buildEvidenceRecallQuestion({
+        title: title || row.caseName,
+        quote: row.quote,
+      });
+      const expectedAnswer = excerptFromContent(row.quote);
+      if (
+        row.question === question &&
+        (row.expectedAnswer ?? "") === expectedAnswer
+      ) {
+        continue;
+      }
+      tx.update(memoryEvalCase)
+        .set({
+          question,
+          expectedAnswer,
+          updatedAt: nowIso,
+        })
+        .where(eq(memoryEvalCase.id, row.caseId))
+        .run();
+      repaired += 1;
+    }
+  });
+
+  return { inspected: rows.length, repaired };
+}
+
+export async function repairWriterPainPointTaxonomyEvalCases(input: {
+  projectId: string;
+}): Promise<{
+  inspected: number;
+  deprecatedRemoved: number;
+  currentKept: number;
+}> {
+  const currentKeys = new Set(WRITER_PAIN_POINT_TAXONOMY.map((item) => item.key));
+  const rows = await db.getClient().all<{ id: string; name: string }>(sql`
+    SELECT "id", "name"
+    FROM "MemoryEvalCase"
+    WHERE "projectId" = ${input.projectId}
+      AND "name" LIKE 'writer-pain:%';
+  `);
+  const deprecatedRows = rows.filter((row) => {
+    const key = row.name.split(":")[1];
+    return !currentKeys.has(key as WriterPainPointTaxonomyKey);
+  });
+
+  db.getClient().transaction((tx) => {
+    for (const row of deprecatedRows) {
+      tx.delete(memoryEvalEvidence)
+        .where(eq(memoryEvalEvidence.caseId, row.id))
+        .run();
+      tx.delete(memoryEvalCase).where(eq(memoryEvalCase.id, row.id)).run();
+    }
+  });
+
+  return {
+    inspected: rows.length,
+    deprecatedRemoved: deprecatedRows.length,
+    currentKept: rows.length - deprecatedRows.length,
+  };
+}
+
+async function insertEvalCaseFromEpisodeEvidence(
+  row: EpisodeEvidenceEvalSeedRow,
+  name: string,
+  nowIso: string,
+): Promise<void> {
+  const caseId = crypto.randomUUID();
+  db.getClient().transaction((tx) => {
+    tx.insert(memoryEvalCase)
+      .values({
+        id: caseId,
+        projectId: row.projectId,
+        name,
+        question: buildEvidenceRecallQuestion({
+          title: row.episodeTitle,
+          quote: row.quote,
+        }),
+        caseType: "qa",
+        expectedAnswer: excerptFromContent(row.quote),
+        temporalScopeStartChapterId: row.chapterId,
+        temporalScopeEndChapterId: row.chapterId,
+        severity: "p1",
+        updatedAt: nowIso,
+      })
+      .run();
+    tx.insert(memoryEvalEvidence)
+      .values({
+        id: crypto.randomUUID(),
+        caseId,
+        projectId: row.projectId,
+        chapterId: row.chapterId,
+        expectedChunkId: row.chunkId,
+        startOffset: row.startOffset,
+        endOffset: row.endOffset,
+        quote: row.quote,
+        updatedAt: nowIso,
+      })
+      .run();
+  });
+}
+
+function insertWriterPainPointEvalCase(input: {
+  tx: DbLike;
+  row: ChunkEvalSeedRow;
+  template: WriterPainPointTemplate;
+  name: string;
+  nowIso: string;
+}): void {
+  const caseId = crypto.randomUUID();
+  const contextLabel = input.row.contextLabel?.trim() || "현재 원문";
+  const excerpt = excerptFromContent(input.row.content);
+  input.tx
+    .insert(memoryEvalCase)
+    .values({
+      id: caseId,
+      projectId: input.row.projectId,
+      name: input.name,
+      question: input.template.question({ contextLabel, excerpt }),
+      caseType: input.template.caseType,
+      expectedAnswer: excerpt,
+      temporalScopeStartChapterId: input.row.chapterId,
+      temporalScopeEndChapterId: input.row.chapterId,
+      severity: input.template.severity,
+      updatedAt: input.nowIso,
+    })
+    .run();
+  input.tx
+    .insert(memoryEvalEvidence)
+    .values({
+      id: crypto.randomUUID(),
+      caseId,
+      projectId: input.row.projectId,
+      chapterId: input.row.chapterId,
+      expectedChunkId: input.row.chunkId,
+      startOffset: input.row.startOffset,
+      endOffset: input.row.endOffset,
+      quote: input.row.content,
+      updatedAt: input.nowIso,
+    })
+    .run();
+}
+
+function insertTemporalChapterEvalCase(input: {
+  tx: DbLike;
+  row: TemporalChunkEvalSeedRow;
+  name: string;
+  nowIso: string;
+}): void {
+  const caseId = crypto.randomUUID();
+  const contextLabel =
+    input.row.contextLabel?.trim() ||
+    input.row.chapterTitle.trim() ||
+    `${input.row.chapterOrder}화`;
+  const excerpt = excerptFromContent(input.row.content);
+  input.tx
+    .insert(memoryEvalCase)
+    .values({
+      id: caseId,
+      projectId: input.row.projectId,
+      name: input.name,
+      question: `${contextLabel} 기준으로, 이 사실을 이후 회차 정보 없이 확정해도 되는지 원문 근거로 확인해줘: ${excerpt}`,
+      caseType: "temporal_state",
+      expectedAnswer: excerpt,
+      temporalScopeStartChapterId: input.row.chapterId,
+      temporalScopeEndChapterId: input.row.chapterId,
+      queryChapterOrder: input.row.chapterOrder,
+      severity: "p0",
+      updatedAt: input.nowIso,
+    })
+    .run();
+  input.tx
+    .insert(memoryEvalEvidence)
+    .values({
+      id: crypto.randomUUID(),
+      caseId,
+      projectId: input.row.projectId,
+      chapterId: input.row.chapterId,
+      expectedChunkId: input.row.chunkId,
+      startOffset: input.row.startOffset,
+      endOffset: input.row.endOffset,
+      quote: input.row.content,
+      updatedAt: input.nowIso,
+    })
+    .run();
+}
+
+export async function countMemoryEvalCases(input: {
+  projectId: string;
+}): Promise<{ evalCaseCount: number; evalEvidenceCount: number }> {
+  const [caseRows, evidenceRows] = await Promise.all([
+    db.getClient().all<{ count: number }>(sql`
+      SELECT COUNT(*) AS count FROM "MemoryEvalCase"
+      WHERE "projectId" = ${input.projectId};
+    `),
+    db.getClient().all<{ count: number }>(sql`
+      SELECT COUNT(*) AS count FROM "MemoryEvalEvidence"
+      WHERE "projectId" = ${input.projectId};
+    `),
+  ]);
+  return {
+    evalCaseCount: Number(caseRows[0]?.count ?? 0),
+    evalEvidenceCount: Number(evidenceRows[0]?.count ?? 0),
+  };
+}

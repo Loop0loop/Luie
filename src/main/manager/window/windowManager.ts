@@ -1,0 +1,336 @@
+/**
+ * Window Manager - BrowserWindow 관리
+ */
+
+import { app, BrowserWindow, type BrowserWindowConstructorOptions } from "electron"
+import { join } from "path"
+import windowStateKeeper from "electron-window-state"
+import { createLogger } from "../../../shared/logger/index.js"
+import {
+  APP_NAME,
+  WINDOW_DEFAULT_HEIGHT,
+  WINDOW_DEFAULT_WIDTH,
+  WINDOW_MIN_HEIGHT,
+  WINDOW_MIN_WIDTH,
+} from "../../../shared/constants/index.js"
+import { settingsManager } from "../settings/index.js"
+import {
+  applyWindowMenuBarMode,
+  createSecureWebPreferences,
+  getTitleBarOptions,
+  resolveWindowIconPath,
+  shouldShowMenuBar,
+  WINDOW_BACKGROUND_COLOR,
+  withWindowIcon,
+} from "./windowChrome.js"
+import {
+  getRendererEnvironment,
+} from "./windowRouting.js"
+import {
+  createExportBrowserWindow,
+  createStartupWizardBrowserWindow,
+  createWorldGraphBrowserWindow,
+} from "./windowSecondaryWindows.js"
+
+const logger = createLogger("WindowManager")
+
+const resolveAppPath = (): string =>
+  typeof app.getAppPath === "function" ? app.getAppPath() : process.cwd()
+
+const resolvePreloadEntryPath = (): string =>
+  join(resolveAppPath(), "out", "preload", "index.cjs")
+
+const resolveRendererIndexPath = (): string =>
+  join(resolveAppPath(), "out", "renderer", "index.html")
+
+class WindowManager {
+  private mainWindow: BrowserWindow | null = null
+  private startupWizardWindow: BrowserWindow | null = null
+  private exportWindow: BrowserWindow | null = null
+  private worldGraphWindow: BrowserWindow | null = null
+
+  private getMenuBarMode() {
+    return settingsManager.getMenuBarMode()
+  }
+
+  private isSpellcheckEnabled() {
+    return settingsManager.getEditorSettings().spellcheckEnabled ?? true
+  }
+
+  private applyMenuBarMode(win: BrowserWindow) {
+    applyWindowMenuBarMode(win, this.getMenuBarMode())
+  }
+
+  private applySpellCheckerSetting(win: BrowserWindow) {
+    const session = win.webContents?.session
+    if (
+      !session ||
+      typeof session.setSpellCheckerEnabled !== "function"
+    ) {
+      return
+    }
+    session.setSpellCheckerEnabled(this.isSpellcheckEnabled())
+  }
+
+  private createBrowserWindow(
+    options: BrowserWindowConstructorOptions,
+  ): BrowserWindow {
+    const browserWindow = new BrowserWindow({
+      ...options,
+      webPreferences:
+        options.webPreferences ??
+        createSecureWebPreferences(
+          resolvePreloadEntryPath(),
+          this.isSpellcheckEnabled(),
+        ),
+    })
+    this.applySpellCheckerSetting(browserWindow)
+    return browserWindow
+  }
+
+  private attachWindowClosedLogger(
+    win: BrowserWindow,
+    onClosed: () => void,
+    label: string,
+  ): void {
+    win.on("closed", () => {
+      onClosed()
+      logger.info(`${label} closed`)
+    })
+  }
+
+  private attachWindowEvent(
+    win: BrowserWindow,
+    eventName: "ready-to-show",
+    listener: () => void,
+  ): void {
+    const eventTarget = win as BrowserWindow & {
+      once?: (event: "ready-to-show", listener: () => void) => BrowserWindow
+      on: (event: "ready-to-show", listener: () => void) => BrowserWindow
+    }
+
+    if (typeof eventTarget.once === "function") {
+      eventTarget.once(eventName, listener)
+      return
+    }
+    eventTarget.on(eventName, listener)
+  }
+
+  private attachLoadFailureLogging(
+    result: Promise<unknown> | unknown,
+    onError: (error: unknown) => void,
+  ): void {
+    if (
+      result &&
+      typeof result === "object" &&
+      "catch" in result &&
+      typeof result.catch === "function"
+    ) {
+      void result.catch(onError)
+    }
+  }
+
+  createMainWindow(options: { deferShow?: boolean } = {}): BrowserWindow {
+    const deferShow = options.deferShow === true
+    if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+      return this.mainWindow
+    }
+    this.mainWindow = null
+
+    const windowState = windowStateKeeper({
+      defaultWidth: WINDOW_DEFAULT_WIDTH,
+      defaultHeight: WINDOW_DEFAULT_HEIGHT,
+    })
+    const environment = getRendererEnvironment()
+    const windowIconPath = resolveWindowIconPath()
+
+    this.mainWindow = this.createBrowserWindow({
+      x: windowState.x,
+      y: windowState.y,
+      width: windowState.width,
+      height: windowState.height,
+      minWidth: WINDOW_MIN_WIDTH,
+      minHeight: WINDOW_MIN_HEIGHT,
+      title: APP_NAME,
+      show: false,
+      backgroundColor: WINDOW_BACKGROUND_COLOR,
+      ...withWindowIcon(windowIconPath),
+      ...getTitleBarOptions(),
+      ...(process.platform !== "darwin"
+        ? { autoHideMenuBar: !shouldShowMenuBar(this.getMenuBarMode()) }
+        : {}),
+    })
+
+    this.applyMenuBarMode(this.mainWindow)
+    windowState.manage(this.mainWindow)
+
+    if (environment.useDevServer) {
+      logger.info("Loading development server", {
+        url: environment.devServerUrl,
+        isPackaged: environment.isPackaged,
+      })
+      this.attachLoadFailureLogging(
+        this.mainWindow.loadURL(environment.devServerUrl),
+        (error) => {
+          logger.error("Failed to load development renderer URL", {
+            url: environment.devServerUrl,
+            error,
+          })
+        },
+      )
+      this.mainWindow.webContents.openDevTools({ mode: "detach" })
+    } else {
+      const indexPath = resolveRendererIndexPath()
+      logger.info("Loading production renderer", {
+        path: indexPath,
+        isPackaged: environment.isPackaged,
+      })
+      this.attachLoadFailureLogging(this.mainWindow.loadFile(indexPath), (error) => {
+        logger.error("Failed to load production renderer file", {
+          path: indexPath,
+          error,
+        })
+      })
+    }
+
+    this.attachWindowEvent(this.mainWindow, "ready-to-show", () => {
+      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+        logger.info("Main window ready to show", { deferShow })
+        if (!deferShow) {
+          this.showMainWindow()
+        }
+      }
+    })
+
+    this.attachWindowClosedLogger(
+      this.mainWindow,
+      () => {
+        this.mainWindow = null
+      },
+      "Main window",
+    )
+
+    logger.info("Main window created", {
+      isPackaged: environment.isPackaged,
+      useDevServer: environment.useDevServer,
+    })
+    return this.mainWindow
+  }
+
+  createStartupWizardWindow(): BrowserWindow {
+    if (this.startupWizardWindow && !this.startupWizardWindow.isDestroyed()) {
+      this.startupWizardWindow.focus()
+      return this.startupWizardWindow
+    }
+
+    this.startupWizardWindow = createStartupWizardBrowserWindow({
+      createBrowserWindow: (windowOptions) =>
+        this.createBrowserWindow(windowOptions),
+      getMenuBarMode: () => this.getMenuBarMode(),
+      logger,
+      onClosed: () => {
+        this.startupWizardWindow = null
+      },
+    })
+
+    return this.startupWizardWindow
+  }
+
+  getMainWindow(): BrowserWindow | null {
+    return this.mainWindow
+  }
+
+  isMainWindowWebContentsId(webContentsId: number): boolean {
+    if (!this.mainWindow || this.mainWindow.isDestroyed()) {
+      return false
+    }
+    return this.mainWindow.webContents.id === webContentsId
+  }
+
+  getStartupWizardWindow(): BrowserWindow | null {
+    return this.startupWizardWindow
+  }
+
+  closeStartupWizardWindow(): void {
+    if (this.startupWizardWindow && !this.startupWizardWindow.isDestroyed()) {
+      this.startupWizardWindow.close()
+    }
+    this.startupWizardWindow = null
+  }
+
+  closeMainWindow(): void {
+    if (this.mainWindow) {
+      this.mainWindow.close()
+    }
+  }
+
+  showMainWindow(): void {
+    if (!this.mainWindow || this.mainWindow.isDestroyed()) {
+      return
+    }
+    if (!this.mainWindow.isVisible()) {
+      this.mainWindow.show()
+    }
+    this.mainWindow.focus()
+  }
+
+  createExportWindow(chapterId: string): BrowserWindow {
+    if (this.exportWindow && !this.exportWindow.isDestroyed()) {
+      this.exportWindow.focus()
+      return this.exportWindow
+    }
+    this.exportWindow = null
+
+    this.exportWindow = createExportBrowserWindow(chapterId, {
+      createBrowserWindow: (windowOptions) =>
+        this.createBrowserWindow(windowOptions),
+      getMenuBarMode: () => this.getMenuBarMode(),
+      logger,
+      onClosed: () => {
+        this.exportWindow = null
+      },
+    })
+
+    return this.exportWindow
+  }
+
+  createWorldGraphWindow(): BrowserWindow {
+    if (this.worldGraphWindow && !this.worldGraphWindow.isDestroyed()) {
+      this.worldGraphWindow.focus()
+      return this.worldGraphWindow
+    }
+    this.worldGraphWindow = null
+
+    this.worldGraphWindow = createWorldGraphBrowserWindow({
+      createBrowserWindow: (windowOptions) =>
+        this.createBrowserWindow(windowOptions),
+      getMenuBarMode: () => this.getMenuBarMode(),
+      logger,
+      onClosed: () => {
+        this.worldGraphWindow = null
+      },
+    })
+
+    return this.worldGraphWindow
+  }
+
+  applyMenuBarModeToAllWindows(): void {
+    const windows = BrowserWindow.getAllWindows()
+    for (const win of windows) {
+      if (!win.isDestroyed()) {
+        this.applyMenuBarMode(win)
+      }
+    }
+  }
+
+  applySpellCheckSettingToAllWindows(): void {
+    const windows = BrowserWindow.getAllWindows()
+    for (const win of windows) {
+      if (!win.isDestroyed()) {
+        this.applySpellCheckerSetting(win)
+      }
+    }
+  }
+}
+
+export const windowManager = new WindowManager()

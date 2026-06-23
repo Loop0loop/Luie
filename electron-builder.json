@@ -1,0 +1,106 @@
+{
+  "appId": "com.luie.app",
+  "productName": "Luie",
+  "directories": {
+    "output": "dist",
+    "buildResources": "build"
+  },
+  "files": [
+    "out/**/*",
+    "package.json",
+    "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme,AUTHORS,LICENSE,LICENSE.*,LICENCE,LICENCE.*,docs,doc,example,examples,test,tests,__tests__,coverage,.github}/**",
+    "!**/node_modules/**/*.map",
+    "!**/node_modules/**/*.d.ts",
+    "!**/node_modules/**/*.d.mts",
+    "!**/node_modules/better-sqlite3/deps/**"
+  ],
+  "asarUnpack": [
+    "node_modules/better-sqlite3/**",
+    "node_modules/node-llama-cpp/**",
+    "node_modules/sqlite-vec/**"
+  ],
+  "electronLanguages": ["en", "ko", "ja"],
+  "extraResources": [
+    {
+      "from": "node_modules/bindings",
+      "to": "node_modules/bindings",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "node_modules/file-uri-to-path",
+      "to": "node_modules/file-uri-to-path",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "build/icons/icon.png",
+      "to": "icon.png"
+    },
+    {
+      "from": "drizzle",
+      "to": "drizzle",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "resources/models",
+      "to": "models",
+      "filter": ["**/*.gguf"]
+    }
+  ],
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "Loop0loop",
+      "repo": "Luie",
+      "releaseType": "release"
+    }
+  ],
+  "mac": {
+    "category": "public.app-category.productivity",
+    "icon": "build/icons/icon.icns",
+    "artifactName": "Luie-${version}-${arch}.${ext}",
+    "target": ["dmg", "zip"],
+    "hardenedRuntime": true,
+    "gatekeeperAssess": false,
+    "entitlements": "build/entitlements.mac.plist",
+    "entitlementsInherit": "build/entitlements.mac.plist"
+  },
+  "afterSign": "scripts/notarize.mjs",
+  "dmg": {
+    "artifactName": "Luie-${version}-${arch}.${ext}"
+  },
+  "pkg": {
+    "artifactName": "Luie-${version}-${arch}.${ext}",
+    "installLocation": "/Applications"
+  },
+  "win": {
+    "icon": "build/icons/icon.ico",
+    "executableName": "Luie",
+    "target": ["nsis-web"]
+  },
+  "nsis": {
+    "oneClick": true,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": false,
+    "allowElevation": true,
+    "createDesktopShortcut": "always",
+    "createStartMenuShortcut": true,
+    "shortcutName": "Luie",
+    "uninstallDisplayName": "Luie",
+    "displayLanguageSelector": false,
+    "installerIcon": "build/icons/icon.ico",
+    "uninstallerIcon": "build/icons/icon.ico",
+    "installerHeaderIcon": "build/icons/icon.ico",
+    "warningsAsErrors": false
+  },
+  "nsisWeb": {
+    "artifactName": "Luie-Web-Setup-${version}-${arch}.${ext}"
+  },
+  "portable": {
+    "artifactName": "Luie-Portable-${version}-${arch}.${ext}"
+  },
+  "linux": {
+    "icon": "build/icons/icon.png",
+    "artifactName": "Luie-${version}-${arch}.${ext}",
+    "target": ["AppImage", "deb"]
+  }
+}

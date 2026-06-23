@@ -1,0 +1,407 @@
+/**
+ * .luie 파일 임포트 로직
+ */
+
+import { useCallback, useEffect, useRef } from "react";
+import { z } from "zod";
+import { useShallow } from "zustand/react/shallow";
+import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
+import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
+import { useTermStore } from "@renderer/features/research/stores/termStore";
+import type { Project } from "@shared/types";
+import { api } from "@shared/api";
+import { i18n } from "@renderer/i18n";
+import {
+  LUIE_PACKAGE_FORMAT,
+  LUIE_PACKAGE_META_FILENAME,
+  LUIE_MANUSCRIPT_DIR,
+  MARKDOWN_EXTENSION,
+} from "@shared/constants";
+import {
+  canAttemptLuieImport,
+  hasReachedLuieImportRetryLimit,
+  registerLuieImportFailure,
+  type LuieImportRetryState,
+} from "./fileImportRetryPolicy";
+import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
+import {
+  readCharacterImportInputs,
+  readTermImportInputs,
+} from "./fileImport";
+
+const LuieMetaSchema = z
+  .object({
+    format: z.literal(LUIE_PACKAGE_FORMAT),
+    version: z.number(),
+    chapters: z
+      .array(
+        z.object({
+          id: z.string().optional(),
+          title: z.string().optional(),
+          order: z.number().optional(),
+          file: z.string().optional(),
+          content: z.string().optional(),
+        }),
+      )
+      .optional(),
+  })
+  .passthrough();
+
+export function useFileImport(currentProject: Project | null) {
+  const luieAttachmentPath = getReadableLuieAttachmentPath(currentProject);
+  const {
+    items: chapters,
+    isLoading: chaptersLoading,
+    loadAll: loadChapters,
+    create: createChapter,
+    update: updateChapter,
+    delete: deleteChapter,
+  } = useChapterStore(
+    useShallow((state) => ({
+      items: state.items,
+      isLoading: state.isLoading,
+      loadAll: state.loadAll,
+      create: state.create,
+      update: state.update,
+      delete: state.delete,
+    })),
+  );
+  const {
+    items: characters,
+    isLoading: charactersLoading,
+    loadAll: loadCharacters,
+    create: createCharacter,
+    delete: deleteCharacter,
+  } = useCharacterStore(
+    useShallow((state) => ({
+      items: state.items,
+      isLoading: state.isLoading,
+      loadAll: state.loadAll,
+      create: state.create,
+      delete: state.delete,
+    })),
+  );
+  const {
+    items: terms,
+    isLoading: termsLoading,
+    loadAll: loadTerms,
+    create: createTerm,
+    delete: deleteTerm,
+  } = useTermStore(
+    useShallow((state) => ({
+      items: state.items,
+      isLoading: state.isLoading,
+      loadAll: state.loadAll,
+      create: state.create,
+      delete: state.delete,
+    })),
+  );
+  const importedProjectIdRef = useRef<string | null>(null);
+  const requestedLoadRef = useRef<string | null>(null);
+  const importingProjectIdRef = useRef<string | null>(null);
+  const activeProjectIdRef = useRef<string | null>(null);
+  const importRetryStateRef = useRef<Map<string, LuieImportRetryState>>(
+    new Map(),
+  );
+  const retryTimerRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map(),
+  );
+  const clearRetryTimer = useCallback((projectId: string) => {
+    const timer = retryTimerRef.current.get(projectId);
+    if (!timer) return;
+    clearTimeout(timer);
+    retryTimerRef.current.delete(projectId);
+  }, []);
+
+  useEffect(() => {
+    activeProjectIdRef.current = currentProject?.id ?? null;
+    void (async () => {
+      if (!currentProject || !luieAttachmentPath) {
+        return;
+      }
+
+      const projectId = currentProject.id;
+
+      // 이미 임포트한 프로젝트면 스킵
+      if (importedProjectIdRef.current === projectId) {
+        return;
+      }
+
+      if (requestedLoadRef.current !== projectId) {
+        requestedLoadRef.current = projectId;
+        // Ensure DB is loaded before deciding to import
+        try {
+          await Promise.all([
+            loadChapters(projectId),
+            loadCharacters(projectId),
+            loadTerms(projectId),
+          ]);
+        } catch (error) {
+          await api.logger.warn("Failed to load DB state before .luie import", {
+            projectId,
+            error,
+          });
+        }
+        return;
+      }
+
+      if (activeProjectIdRef.current !== projectId) {
+        return;
+      }
+
+      if (importingProjectIdRef.current === projectId) {
+        return;
+      }
+
+      if (chaptersLoading || charactersLoading || termsLoading) {
+        return;
+      }
+
+      // 이미 데이터가 있으면 임포트 안 함
+      if (chapters.length > 0 || characters.length > 0 || terms.length > 0) {
+        importedProjectIdRef.current = projectId;
+        importRetryStateRef.current.delete(projectId);
+        clearRetryTimer(projectId);
+        return;
+      }
+
+      const path = luieAttachmentPath;
+
+      const retryState = importRetryStateRef.current.get(projectId);
+      if (!canAttemptLuieImport(retryState)) {
+        return;
+      }
+
+      importingProjectIdRef.current = projectId;
+      const createdChapterIds: string[] = [];
+      const createdCharacterIds: string[] = [];
+      const createdTermIds: string[] = [];
+
+      try {
+        const metaResult = await api.fs.readLuieEntry(
+          path,
+          LUIE_PACKAGE_META_FILENAME,
+        );
+        if (!metaResult.success || !metaResult.data) {
+          throw new Error(
+            `LUIE_IMPORT_META_READ_FAILED:${metaResult.error?.code ?? "EMPTY_META"}`,
+          );
+        }
+
+        const parsed = LuieMetaSchema.safeParse(JSON.parse(metaResult.data));
+        if (!parsed.success) {
+          api.logger.warn("Invalid project meta format", {
+            path,
+            issues: parsed.error.issues,
+          });
+          importedProjectIdRef.current = projectId;
+          importRetryStateRef.current.delete(projectId);
+          clearRetryTimer(projectId);
+          return;
+        }
+
+        const fileChapters = parsed.data.chapters ?? [];
+
+        if (fileChapters.length === 0) {
+          importedProjectIdRef.current = projectId;
+          importRetryStateRef.current.delete(projectId);
+          clearRetryTimer(projectId);
+          return;
+        }
+
+        const chapterPayloads: Array<{
+          title: string;
+          order?: number;
+          content: string;
+        }> = [];
+
+        for (const ch of fileChapters) {
+          const title = ch.title ?? i18n.t("project.defaults.untitled");
+          let chapterContent = typeof ch.content === "string" ? ch.content : "";
+          const entryPath =
+            ch.file ||
+            (ch.id
+              ? `${LUIE_MANUSCRIPT_DIR}/${ch.id}${MARKDOWN_EXTENSION}`
+              : null);
+
+          if (typeof ch.content !== "string" && entryPath) {
+            const contentResult = await api.fs.readLuieEntry(path, entryPath);
+            if (!contentResult.success) {
+              throw new Error(
+                `LUIE_IMPORT_CHAPTER_READ_FAILED:${entryPath}:${contentResult.error?.code ?? "UNKNOWN_ERROR"}`,
+              );
+            }
+            if (typeof contentResult.data === "string") {
+              chapterContent = contentResult.data;
+            }
+          }
+
+          chapterPayloads.push({
+            title,
+            order: typeof ch.order === "number" ? ch.order : undefined,
+            content: chapterContent,
+          });
+        }
+
+        const characterInputs = await readCharacterImportInputs(
+          path,
+          projectId,
+          characters.length > 0,
+        );
+        const termInputs = await readTermImportInputs(
+          path,
+          projectId,
+          terms.length > 0,
+        );
+
+        if (activeProjectIdRef.current !== projectId) {
+          return;
+        }
+
+        for (const chapterInput of chapterPayloads) {
+          const created = await createChapter({
+            projectId,
+            title: chapterInput.title,
+            order: chapterInput.order,
+          });
+          if (!created?.id) {
+            throw new Error("LUIE_IMPORT_CHAPTER_CREATE_FAILED");
+          }
+          createdChapterIds.push(created.id);
+          await updateChapter({
+            id: created.id,
+            content: chapterInput.content,
+          });
+          const chapterUpdateError = useChapterStore.getState().error;
+          if (chapterUpdateError) {
+            throw new Error(
+              `LUIE_IMPORT_CHAPTER_UPDATE_FAILED:${chapterUpdateError}`,
+            );
+          }
+        }
+
+        for (const characterInput of characterInputs) {
+          const created = await createCharacter(characterInput);
+          if (!created?.id) {
+            throw new Error("LUIE_IMPORT_CHARACTER_CREATE_FAILED");
+          }
+          createdCharacterIds.push(created.id);
+        }
+
+        for (const termInput of termInputs) {
+          const created = await createTerm(termInput);
+          if (!created?.id) {
+            throw new Error("LUIE_IMPORT_TERM_CREATE_FAILED");
+          }
+          createdTermIds.push(created.id);
+        }
+
+        importedProjectIdRef.current = projectId;
+        importRetryStateRef.current.delete(projectId);
+        clearRetryTimer(projectId);
+      } catch (error) {
+        api.logger.error("Failed to parse project file", { path, error });
+        await Promise.allSettled([
+          ...createdChapterIds.map((id) => deleteChapter(id)),
+          ...createdCharacterIds.map((id) => deleteCharacter(id)),
+          ...createdTermIds.map((id) => deleteTerm(id)),
+        ]);
+        if (
+          createdChapterIds.length > 0 ||
+          createdCharacterIds.length > 0 ||
+          createdTermIds.length > 0
+        ) {
+          await api.logger.warn(
+            "Rolled back partial .luie import after failure",
+            {
+              projectId,
+              path,
+              chapters: createdChapterIds.length,
+              characters: createdCharacterIds.length,
+              terms: createdTermIds.length,
+            },
+          );
+        }
+        if (activeProjectIdRef.current !== projectId) {
+          return;
+        }
+        const nextRetryState = registerLuieImportFailure(
+          importRetryStateRef.current.get(projectId),
+        );
+
+        if (hasReachedLuieImportRetryLimit(nextRetryState)) {
+          importRetryStateRef.current.delete(projectId);
+          clearRetryTimer(projectId);
+          importedProjectIdRef.current = projectId;
+          await api.logger.warn(
+            "Stopped .luie import retries after retry limit",
+            {
+              projectId,
+              path,
+              attempts: nextRetryState.attempts,
+            },
+          );
+          return;
+        }
+
+        importRetryStateRef.current.set(projectId, nextRetryState);
+        await api.logger.warn("Scheduled .luie import retry after failure", {
+          projectId,
+          path,
+          attempts: nextRetryState.attempts,
+          nextRetryAt: new Date(nextRetryState.nextRetryAt).toISOString(),
+        });
+
+        clearRetryTimer(projectId);
+        const retryDelayMs = Math.max(
+          0,
+          nextRetryState.nextRetryAt - Date.now(),
+        );
+        const retryProjectId = projectId;
+        const retryTimer = setTimeout(() => {
+          retryTimerRef.current.delete(retryProjectId);
+          void Promise.allSettled([
+            loadChapters(retryProjectId),
+            loadCharacters(retryProjectId),
+            loadTerms(retryProjectId),
+          ]);
+        }, retryDelayMs);
+        retryTimerRef.current.set(retryProjectId, retryTimer);
+      } finally {
+        if (importingProjectIdRef.current === projectId) {
+          importingProjectIdRef.current = null;
+        }
+      }
+    })();
+  }, [
+    currentProject,
+    luieAttachmentPath,
+    chapters.length,
+    characters.length,
+    terms.length,
+    chaptersLoading,
+    charactersLoading,
+    termsLoading,
+    loadChapters,
+    loadCharacters,
+    loadTerms,
+    createChapter,
+    updateChapter,
+    deleteChapter,
+    createCharacter,
+    deleteCharacter,
+    createTerm,
+    deleteTerm,
+    clearRetryTimer,
+  ]);
+
+  useEffect(() => {
+    const retryTimers = retryTimerRef.current;
+    return () => {
+      for (const timer of retryTimers.values()) {
+        clearTimeout(timer);
+      }
+      retryTimers.clear();
+    };
+  }, []);
+}

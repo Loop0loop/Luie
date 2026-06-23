@@ -1,0 +1,498 @@
+import type {
+  MemoryEvalCaseDefinition,
+  MemoryEvalP0Failure,
+  MemoryEvalScoreResult,
+  MemoryWriterTaskBenchmarkSummary,
+  MemoryWriterTaskBenchmarkTaskId,
+  MemoryWriterTaskBenchmarkTaskSummary,
+} from "../../../../../shared/types/index.js";
+
+export type MemoryWriterTaskBenchmarkTask = {
+  id: MemoryWriterTaskBenchmarkTaskId;
+  labelKo: string;
+  goal: string;
+};
+
+export type MemoryWriterTaskBenchmarkCaseResult = {
+  evalCase: MemoryEvalCaseDefinition;
+  scoreResult: MemoryEvalScoreResult;
+  responseTimeMs?: number;
+};
+
+export type MemoryWriterTaskBenchmarkThresholds = {
+  minSuccessRate: number;
+  minEvidenceSatisfactionRate: number;
+  maxFalseConfidenceRate: number;
+  maxAverageResponseTimeMs: number;
+};
+
+export type MemoryWriterTaskBenchmarkThresholdFailure =
+  | "successRate"
+  | "evidenceSatisfactionRate"
+  | "falseConfidenceRate"
+  | "averageResponseTimeMs";
+
+export type MemoryWriterTaskBenchmarkThresholdAssessment = {
+  status: "passed" | "failed" | "insufficient_beta_data";
+  betaRunCount: number;
+  minimumBetaRunCount: number;
+  failures: MemoryWriterTaskBenchmarkThresholdFailure[];
+};
+
+export type MemoryWriterTaskBenchmarkThresholdCalibration =
+  | {
+      status: "calibrated";
+      betaRunCount: number;
+      minimumBetaRunCount: number;
+      thresholds: MemoryWriterTaskBenchmarkThresholds;
+    }
+  | {
+      status: "insufficient_beta_data";
+      betaRunCount: number;
+      minimumBetaRunCount: number;
+    };
+
+export type MemoryWriterTaskBenchmarkThresholdFinalization =
+  | {
+      status: "finalized";
+      betaRunCount: number;
+      minimumBetaRunCount: number;
+      confirmedRealBetaData: true;
+      thresholds: MemoryWriterTaskBenchmarkThresholds;
+    }
+  | {
+      status: "unconfirmed_real_beta_data";
+      betaRunCount: number;
+      minimumBetaRunCount: number;
+      confirmedRealBetaData: false;
+    }
+  | {
+      status: "insufficient_beta_data";
+      betaRunCount: number;
+      minimumBetaRunCount: number;
+      confirmedRealBetaData: boolean;
+    };
+
+export type MemoryWriterTaskBenchmarkFinalizationMissingRequirement =
+  | "minimum_beta_run_count"
+  | "confirmed_real_beta_data"
+  | "real_beta_label_prefix";
+
+export type MemoryWriterTaskBenchmarkFinalizationManifest = {
+  schemaVersion: 1;
+  projectId: string | null;
+  generatedAt: string;
+  status: "ready" | "not_ready";
+  betaRunCount: number;
+  minimumBetaRunCount: number;
+  confirmedRealBetaData: boolean;
+  realBetaLabelPrefix: string | null;
+  missingRequirements: MemoryWriterTaskBenchmarkFinalizationMissingRequirement[];
+  finalization: MemoryWriterTaskBenchmarkThresholdFinalization;
+};
+
+export type MemoryWriterTaskBenchmarkFinalizationRecord = {
+  runLabel: string;
+  summary: MemoryWriterTaskBenchmarkSummary;
+};
+
+export type MemoryWriterTaskBenchmarkFinalizationSelection = {
+  summaries: MemoryWriterTaskBenchmarkSummary[];
+  includedRunCount: number;
+  excludedRunCount: number;
+  realBetaLabelPrefix: string | null;
+};
+
+export const MEMORY_WRITER_TASK_REAL_BETA_LABEL_PREFIX = "real-writer-beta:";
+
+export const MEMORY_WRITER_TASK_BENCHMARK_TASKS: readonly MemoryWriterTaskBenchmarkTask[] =
+  [
+    {
+      id: "setting-check",
+      labelKo: "설정 확인",
+      goal: "원문 근거로 세계관, 설정, 상태를 확인한다.",
+    },
+    {
+      id: "character-relation-check",
+      labelKo: "인물 관계 확인",
+      goal: "인물, 별칭, 관계 방향을 뒤집지 않고 확인한다.",
+    },
+    {
+      id: "thread-resolution-check",
+      labelKo: "떡밥 회수 여부 확인",
+      goal: "미회수/회수된 떡밥 상태를 근거와 함께 구분한다.",
+    },
+    {
+      id: "chapter-knowledge-state-check",
+      labelKo: "회차 기준 지식 상태 확인",
+      goal: "기준 회차 이후 정보를 섞지 않고 당시 지식 상태를 확인한다.",
+    },
+    {
+      id: "draft-canon-conflict-check",
+      labelKo: "초안/정사 충돌 확인",
+      goal: "초안, 폐기 설정, 정사 원문을 혼동하지 않는다.",
+    },
+  ] as const;
+
+const FALSE_CONFIDENCE_FAILURES = new Set<MemoryEvalP0Failure>([
+  "unsupported_confirmed_answer",
+  "answer_contains_unsupported_claim",
+  "expected_answer_not_supported_by_gold_evidence",
+  "deleted_or_draft_fact_confirmed",
+  "future_fact_used_in_past_answer",
+  "unresolved_thread_falsely_marked_resolved",
+]);
+
+export function classifyMemoryWriterTaskBenchmarkCase(
+  evalCase: MemoryEvalCaseDefinition,
+): MemoryWriterTaskBenchmarkTaskId {
+  const searchableText = `${evalCase.name} ${evalCase.question} ${
+    evalCase.expectedAnswer ?? ""
+  }`.toLowerCase();
+  if (
+    evalCase.caseType === "relation" ||
+    (evalCase.expectedRelations?.length ?? 0) > 0
+  ) {
+    return "character-relation-check";
+  }
+  if (
+    evalCase.caseType === "temporal_state" ||
+    evalCase.queryChapterOrder !== undefined ||
+    evalCase.temporalScopeStartChapterId ||
+    evalCase.temporalScopeEndChapterId
+  ) {
+    return "chapter-knowledge-state-check";
+  }
+  if ((evalCase.expectedThreads?.length ?? 0) > 0) {
+    return "thread-resolution-check";
+  }
+  if (
+    searchableText.includes("초안") ||
+    searchableText.includes("폐기") ||
+    searchableText.includes("draft") ||
+    searchableText.includes("canon")
+  ) {
+    return "draft-canon-conflict-check";
+  }
+  return "setting-check";
+}
+
+export function summarizeMemoryWriterTaskBenchmark(
+  results: MemoryWriterTaskBenchmarkCaseResult[],
+): MemoryWriterTaskBenchmarkSummary {
+  const taskSummaries = MEMORY_WRITER_TASK_BENCHMARK_TASKS.map((task) => {
+    const taskResults = results.filter(
+      (result) =>
+        classifyMemoryWriterTaskBenchmarkCase(result.evalCase) === task.id,
+    );
+    return summarizeTask(task.id, taskResults);
+  });
+  const totals = summarizeTask(
+    "setting-check",
+    results,
+  );
+
+  return {
+    schemaVersion: 1,
+    taskCount: MEMORY_WRITER_TASK_BENCHMARK_TASKS.length,
+    caseCount: results.length,
+    successRate: totals.successRate,
+    averageResponseTimeMs: totals.averageResponseTimeMs,
+    evidenceSatisfactionRate: totals.evidenceSatisfactionRate,
+    falseConfidenceRate: totals.falseConfidenceRate,
+    tasks: taskSummaries,
+  };
+}
+
+export function assessMemoryWriterTaskBenchmarkThresholds(input: {
+  summaries: MemoryWriterTaskBenchmarkSummary[];
+  minimumBetaRunCount: number;
+  thresholds?: MemoryWriterTaskBenchmarkThresholds;
+}): MemoryWriterTaskBenchmarkThresholdAssessment {
+  const betaRunCount = input.summaries.length;
+  if (betaRunCount < input.minimumBetaRunCount) {
+    return {
+      status: "insufficient_beta_data",
+      betaRunCount,
+      minimumBetaRunCount: input.minimumBetaRunCount,
+      failures: [],
+    };
+  }
+  const thresholds = input.thresholds ?? DEFAULT_WRITER_TASK_BENCHMARK_THRESHOLDS;
+  const aggregate = aggregateBenchmarkSummaries(input.summaries);
+  const failures: MemoryWriterTaskBenchmarkThresholdFailure[] = [];
+  if (aggregate.successRate < thresholds.minSuccessRate) {
+    failures.push("successRate");
+  }
+  if (
+    aggregate.evidenceSatisfactionRate <
+    thresholds.minEvidenceSatisfactionRate
+  ) {
+    failures.push("evidenceSatisfactionRate");
+  }
+  if (aggregate.falseConfidenceRate > thresholds.maxFalseConfidenceRate) {
+    failures.push("falseConfidenceRate");
+  }
+  if (
+    aggregate.averageResponseTimeMs !== null &&
+    aggregate.averageResponseTimeMs > thresholds.maxAverageResponseTimeMs
+  ) {
+    failures.push("averageResponseTimeMs");
+  }
+  return {
+    status: failures.length === 0 ? "passed" : "failed",
+    betaRunCount,
+    minimumBetaRunCount: input.minimumBetaRunCount,
+    failures,
+  };
+}
+
+export function calibrateMemoryWriterTaskBenchmarkThresholds(input: {
+  summaries: MemoryWriterTaskBenchmarkSummary[];
+  minimumBetaRunCount: number;
+}): MemoryWriterTaskBenchmarkThresholdCalibration {
+  const betaRunCount = input.summaries.length;
+  if (betaRunCount < input.minimumBetaRunCount) {
+    return {
+      status: "insufficient_beta_data",
+      betaRunCount,
+      minimumBetaRunCount: input.minimumBetaRunCount,
+    };
+  }
+  const aggregate = aggregateBenchmarkSummaries(input.summaries);
+  return {
+    status: "calibrated",
+    betaRunCount,
+    minimumBetaRunCount: input.minimumBetaRunCount,
+    thresholds: {
+      minSuccessRate: aggregate.successRate,
+      minEvidenceSatisfactionRate: aggregate.evidenceSatisfactionRate,
+      maxFalseConfidenceRate: aggregate.falseConfidenceRate,
+      maxAverageResponseTimeMs:
+        aggregate.averageResponseTimeMs ??
+        DEFAULT_WRITER_TASK_BENCHMARK_THRESHOLDS.maxAverageResponseTimeMs,
+    },
+  };
+}
+
+export function finalizeMemoryWriterTaskBenchmarkThresholds(input: {
+  summaries: MemoryWriterTaskBenchmarkSummary[];
+  minimumBetaRunCount: number;
+  confirmRealBetaData: boolean;
+}): MemoryWriterTaskBenchmarkThresholdFinalization {
+  const betaRunCount = input.summaries.length;
+  if (betaRunCount < input.minimumBetaRunCount) {
+    return {
+      status: "insufficient_beta_data",
+      betaRunCount,
+      minimumBetaRunCount: input.minimumBetaRunCount,
+      confirmedRealBetaData: input.confirmRealBetaData,
+    };
+  }
+  if (!input.confirmRealBetaData) {
+    return {
+      status: "unconfirmed_real_beta_data",
+      betaRunCount,
+      minimumBetaRunCount: input.minimumBetaRunCount,
+      confirmedRealBetaData: false,
+    };
+  }
+  const calibration = calibrateMemoryWriterTaskBenchmarkThresholds({
+    summaries: input.summaries,
+    minimumBetaRunCount: input.minimumBetaRunCount,
+  });
+  if (calibration.status !== "calibrated") {
+    return {
+      status: "insufficient_beta_data",
+      betaRunCount,
+      minimumBetaRunCount: input.minimumBetaRunCount,
+      confirmedRealBetaData: true,
+    };
+  }
+  return {
+    status: "finalized",
+    betaRunCount,
+    minimumBetaRunCount: input.minimumBetaRunCount,
+    confirmedRealBetaData: true,
+    thresholds: calibration.thresholds,
+  };
+}
+
+export function buildMemoryWriterTaskBenchmarkFinalizationManifest(input: {
+  projectId?: string | null;
+  generatedAt: string;
+  summaries: MemoryWriterTaskBenchmarkSummary[];
+  minimumBetaRunCount: number;
+  confirmRealBetaData: boolean;
+  realBetaLabelPrefix?: string | null;
+  requireRealBetaLabelPrefix?: boolean;
+}): MemoryWriterTaskBenchmarkFinalizationManifest {
+  const finalization = finalizeMemoryWriterTaskBenchmarkThresholds({
+    summaries: input.summaries,
+    minimumBetaRunCount: input.minimumBetaRunCount,
+    confirmRealBetaData: input.confirmRealBetaData,
+  });
+  const missingRequirements: MemoryWriterTaskBenchmarkFinalizationMissingRequirement[] =
+    [];
+  if (input.summaries.length < input.minimumBetaRunCount) {
+    missingRequirements.push("minimum_beta_run_count");
+  }
+  if (!input.confirmRealBetaData) {
+    missingRequirements.push("confirmed_real_beta_data");
+  }
+  const realBetaLabelPrefix = input.realBetaLabelPrefix?.trim() || null;
+  if (input.requireRealBetaLabelPrefix && !realBetaLabelPrefix) {
+    missingRequirements.push("real_beta_label_prefix");
+  }
+  return {
+    schemaVersion: 1,
+    projectId: input.projectId ?? null,
+    generatedAt: input.generatedAt,
+    status: missingRequirements.length === 0 ? "ready" : "not_ready",
+    betaRunCount: input.summaries.length,
+    minimumBetaRunCount: input.minimumBetaRunCount,
+    confirmedRealBetaData: input.confirmRealBetaData,
+    realBetaLabelPrefix,
+    missingRequirements,
+    finalization,
+  };
+}
+
+export function summarizeMemoryWriterTaskBenchmarkFinalizationReadinessFailures(
+  manifest: MemoryWriterTaskBenchmarkFinalizationManifest,
+): string[] {
+  if (manifest.status === "ready") {
+    return [];
+  }
+  return [
+    `Memory writer benchmark finalization is not ready: ${manifest.status}`,
+    ...manifest.missingRequirements.map(
+      (requirement) => `Missing requirement: ${requirement}`,
+    ),
+  ];
+}
+
+export function selectMemoryWriterTaskBenchmarkFinalizationSummaries(input: {
+  records: MemoryWriterTaskBenchmarkFinalizationRecord[];
+  realBetaLabelPrefix?: string;
+}): MemoryWriterTaskBenchmarkFinalizationSelection {
+  const prefix = input.realBetaLabelPrefix?.trim();
+  const selectedRecords = prefix
+    ? input.records.filter((record) => record.runLabel.startsWith(prefix))
+    : input.records;
+  return {
+    summaries: selectedRecords.map((record) => record.summary),
+    includedRunCount: selectedRecords.length,
+    excludedRunCount: input.records.length - selectedRecords.length,
+    realBetaLabelPrefix: prefix && prefix.length > 0 ? prefix : null,
+  };
+}
+
+export function buildMemoryWriterTaskBenchmarkRealBetaRunLabel(
+  realBetaRunId: string,
+): string {
+  const normalizedRunId = realBetaRunId.trim();
+  if (!normalizedRunId) {
+    throw new Error("real beta run id is required");
+  }
+  return `${MEMORY_WRITER_TASK_REAL_BETA_LABEL_PREFIX}${normalizedRunId}`;
+}
+
+export const DEFAULT_WRITER_TASK_BENCHMARK_THRESHOLDS: MemoryWriterTaskBenchmarkThresholds =
+  {
+    minSuccessRate: 0.8,
+    minEvidenceSatisfactionRate: 0.75,
+    maxFalseConfidenceRate: 0.05,
+    maxAverageResponseTimeMs: 5_000,
+  };
+
+function summarizeTask(
+  taskId: MemoryWriterTaskBenchmarkTaskId,
+  results: MemoryWriterTaskBenchmarkCaseResult[],
+): MemoryWriterTaskBenchmarkTaskSummary {
+  const caseCount = results.length;
+  const successCount = results.filter(isSuccessfulCase).length;
+  const responseTimes = results
+    .map((result) => result.responseTimeMs)
+    .filter((value): value is number => typeof value === "number");
+  const p0FailureCount = results.reduce(
+    (sum, result) => sum + result.scoreResult.p0FailureCount,
+    0,
+  );
+  const falseConfidenceCount = results.filter((result) =>
+    result.scoreResult.p0Failures.some((failure) =>
+      FALSE_CONFIDENCE_FAILURES.has(failure),
+    ),
+  ).length;
+
+  return {
+    taskId,
+    caseCount,
+    successCount,
+    successRate: ratio(successCount, caseCount),
+    averageResponseTimeMs:
+      responseTimes.length === 0
+        ? null
+        : responseTimes.reduce((sum, value) => sum + value, 0) /
+          responseTimes.length,
+    evidenceSatisfactionRate:
+      caseCount === 0
+        ? 0
+        : results.reduce(
+            (sum, result) => sum + result.scoreResult.contextRecallAtK,
+            0,
+          ) / caseCount,
+    falseConfidenceRate: ratio(falseConfidenceCount, caseCount),
+    p0FailureCount,
+  };
+}
+
+function isSuccessfulCase(result: MemoryWriterTaskBenchmarkCaseResult): boolean {
+  return (
+    result.scoreResult.p0FailureCount === 0 &&
+    result.scoreResult.contextRecallAtK > 0
+  );
+}
+
+function ratio(numerator: number, denominator: number): number {
+  if (denominator === 0) return 0;
+  return numerator / denominator;
+}
+
+function aggregateBenchmarkSummaries(
+  summaries: MemoryWriterTaskBenchmarkSummary[],
+): Pick<
+  MemoryWriterTaskBenchmarkSummary,
+  | "successRate"
+  | "averageResponseTimeMs"
+  | "evidenceSatisfactionRate"
+  | "falseConfidenceRate"
+> {
+  const averageResponseTimes = summaries
+    .map((summary) => summary.averageResponseTimeMs)
+    .filter((value): value is number => typeof value === "number");
+  return {
+    successRate: averageMetric(summaries, (summary) => summary.successRate),
+    averageResponseTimeMs:
+      averageResponseTimes.length === 0
+        ? null
+        : averageResponseTimes.reduce((sum, value) => sum + value, 0) /
+          averageResponseTimes.length,
+    evidenceSatisfactionRate: averageMetric(
+      summaries,
+      (summary) => summary.evidenceSatisfactionRate,
+    ),
+    falseConfidenceRate: averageMetric(
+      summaries,
+      (summary) => summary.falseConfidenceRate,
+    ),
+  };
+}
+
+function averageMetric(
+  summaries: MemoryWriterTaskBenchmarkSummary[],
+  select: (summary: MemoryWriterTaskBenchmarkSummary) => number,
+): number {
+  if (summaries.length === 0) return 0;
+  return summaries.reduce((sum, summary) => sum + select(summary), 0) / summaries.length;
+}

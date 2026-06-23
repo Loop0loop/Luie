@@ -1,0 +1,275 @@
+import type { StateCreator } from "zustand";
+import type { IPCResponse } from "@shared/ipc";
+import { api } from "@shared/api";
+
+interface BaseItem {
+  id: string;
+}
+
+export interface CRUDStore<T extends BaseItem, CreateInput, UpdateInput> {
+  items: T[];
+  currentItem: T | null;
+  isLoading: boolean;
+  error: string | null;
+
+  loadAll: (parentId?: string) => Promise<void>;
+  loadOne: (id: string) => Promise<void>;
+  create: (input: CreateInput) => Promise<T | null>;
+  update: (input: UpdateInput) => Promise<void>;
+  delete: (id: string) => Promise<boolean>;
+  setCurrent: (item: T | null) => void;
+}
+
+export type APIClient<T, CreateInput, UpdateInput> = {
+  getAll: (parentId?: string) => Promise<IPCResponse<T[]>>;
+  get: (id: string) => Promise<IPCResponse<T>>;
+  create: (input: CreateInput) => Promise<IPCResponse<T>>;
+  update: (input: UpdateInput) => Promise<IPCResponse<T>>;
+  delete: (id: string) => Promise<IPCResponse<unknown>>;
+};
+
+export type APIClientWithRequiredGetAll<T, CreateInput, UpdateInput> = Omit<
+  APIClient<T, CreateInput, UpdateInput>,
+  "getAll"
+> & {
+  getAll: (parentId: string) => Promise<IPCResponse<T[]>>;
+};
+
+export function withProjectScopedGetAll<T, CreateInput, UpdateInput>(
+  apiClient: APIClient<T, CreateInput, UpdateInput>,
+): APIClient<T, CreateInput, UpdateInput>;
+export function withProjectScopedGetAll<T, CreateInput, UpdateInput>(
+  apiClient: APIClientWithRequiredGetAll<T, CreateInput, UpdateInput>,
+): APIClient<T, CreateInput, UpdateInput>;
+export function withProjectScopedGetAll<T, CreateInput, UpdateInput>(
+  apiClient:
+    | APIClient<T, CreateInput, UpdateInput>
+    | APIClientWithRequiredGetAll<T, CreateInput, UpdateInput>,
+): APIClient<T, CreateInput, UpdateInput> {
+  return {
+    ...apiClient,
+    getAll: (parentId?: string) => apiClient.getAll(parentId || ""),
+  };
+}
+
+export function createAliasSetter<
+  TStore extends { items: TItem[]; currentItem: TItem | null },
+  TItem,
+>(
+  set: (
+    partial: Partial<TStore> | ((state: TStore) => Partial<TStore>),
+  ) => void,
+  aliasItemsKey: keyof TStore,
+  aliasCurrentKey: keyof TStore,
+) {
+  return (partial: Partial<TStore> | ((state: TStore) => Partial<TStore>)) =>
+    set((state: TStore) => {
+      const next = typeof partial === "function" ? partial(state) : partial;
+      const hasNextItems = Object.prototype.hasOwnProperty.call(next, "items");
+      const hasNextCurrent = Object.prototype.hasOwnProperty.call(
+        next,
+        "currentItem",
+      );
+      const nextItems =
+        hasNextItems && next.items !== undefined ? next.items : state.items;
+      const nextCurrent = hasNextCurrent
+        ? (next.currentItem as TItem | null)
+        : state.currentItem;
+
+      return {
+        ...next,
+        [aliasItemsKey]: nextItems,
+        [aliasCurrentKey]: nextCurrent,
+      } as Partial<TStore>;
+    });
+}
+
+export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
+  apiClient: APIClient<T, CreateInput, UpdateInput>,
+  name: string,
+): StateCreator<CRUDStore<T, CreateInput, UpdateInput>> {
+  let createInFlight = false;
+  let loadAllRequestId = 0;
+  let loadOneRequestId = 0;
+
+  return (set) => ({
+    items: [],
+    currentItem: null,
+    isLoading: false,
+    error: null,
+
+    loadAll: async (parentId?: string) => {
+      const requestId = ++loadAllRequestId;
+      set({ isLoading: true, error: null });
+      try {
+        const response = await apiClient.getAll(parentId);
+        if (requestId !== loadAllRequestId) {
+          return;
+        }
+        if (response.success && response.data) {
+          set({ items: response.data });
+        } else {
+          set({ items: [], error: response.error?.message });
+        }
+      } catch (error) {
+        if (requestId !== loadAllRequestId) {
+          return;
+        }
+        api.logger.error(`Failed to load ${name}s:`, error);
+        set({ items: [], error: (error as Error).message });
+      } finally {
+        if (requestId === loadAllRequestId) {
+          set({ isLoading: false });
+        }
+      }
+    },
+
+    loadOne: async (id: string) => {
+      const requestId = ++loadOneRequestId;
+      set({ isLoading: true, error: null });
+      try {
+        const response = await apiClient.get(id);
+        if (requestId !== loadOneRequestId) {
+          return;
+        }
+        if (response.success && response.data) {
+          set({ currentItem: response.data });
+        } else {
+          set({ currentItem: null, error: response.error?.message });
+        }
+      } catch (error) {
+        if (requestId !== loadOneRequestId) {
+          return;
+        }
+        api.logger.error(`Failed to load ${name}:`, error);
+        set({ currentItem: null, error: (error as Error).message });
+      } finally {
+        if (requestId === loadOneRequestId) {
+          set({ isLoading: false });
+        }
+      }
+    },
+
+    create: async (input: CreateInput) => {
+      if (createInFlight) {
+        const message = `Failed to create ${name}: another create request is already in flight.`;
+        set({ error: message });
+        api.logger.warn(message);
+        return null;
+      }
+      createInFlight = true;
+      set({ isLoading: true, error: null });
+      try {
+        const response = await apiClient.create(input);
+        if (response.success && response.data) {
+          const newItem = response.data;
+          set((state) => ({ items: [...state.items, newItem] }));
+          return newItem;
+        }
+        set({ error: response.error?.message });
+        return null;
+      } catch (error) {
+        api.logger.error(`Failed to create ${name}:`, error);
+        set({ error: (error as Error).message });
+        return null;
+      } finally {
+        createInFlight = false;
+        set({ isLoading: false });
+      }
+    },
+
+    update: async (input: UpdateInput) => {
+      set({ isLoading: true, error: null });
+      try {
+        const response = await apiClient.update(input);
+        if (response.success && response.data) {
+          const updatedItem = response.data;
+          set((state) => {
+            const existingItem = state.items.find(
+              (item) => item.id === updatedItem.id,
+            );
+            const existingCurrent = state.currentItem;
+            const inputHasContent = Object.prototype.hasOwnProperty.call(
+              input,
+              "content",
+            );
+            const existingHasContent =
+              existingItem && "content" in existingItem;
+            const updatedHasContent = "content" in updatedItem;
+            const needsContentMerge =
+              !inputHasContent &&
+              existingHasContent &&
+              updatedHasContent &&
+              existingItem;
+
+            type ItemWithContent = { content: unknown };
+            const existingContent = existingItem
+              ? (existingItem as unknown as ItemWithContent).content
+              : undefined;
+            const existingCurrentContent = existingCurrent
+              ? (existingCurrent as unknown as ItemWithContent).content
+              : undefined;
+
+            const mergedItem: T = needsContentMerge
+              ? {
+                  ...updatedItem,
+                  content: existingContent,
+                }
+              : updatedItem;
+
+            const mergedCurrent: T =
+              existingCurrent?.id === updatedItem.id && needsContentMerge
+                ? {
+                    ...updatedItem,
+                    content: existingCurrentContent,
+                  }
+                : updatedItem;
+
+            return {
+              items: state.items.map((item) =>
+                item.id === mergedItem.id ? mergedItem : item,
+              ),
+              currentItem:
+                state.currentItem?.id === mergedCurrent.id
+                  ? mergedCurrent
+                  : state.currentItem,
+            };
+          });
+        } else {
+          set({ error: response.error?.message });
+        }
+      } catch (error) {
+        api.logger.error(`Failed to update ${name}:`, error);
+        set({ error: (error as Error).message });
+      } finally {
+        set({ isLoading: false });
+      }
+    },
+
+    delete: async (id: string) => {
+      set({ isLoading: true, error: null });
+      try {
+        const response = await apiClient.delete(id);
+        if (response.success) {
+          set((state) => ({
+            items: state.items.filter((item) => item.id !== id),
+            currentItem:
+              state.currentItem?.id === id ? null : state.currentItem,
+          }));
+          return true;
+        } else {
+          set({ error: response.error?.message });
+          return false;
+        }
+      } catch (error) {
+        api.logger.error(`Failed to delete ${name}:`, error);
+        set({ error: (error as Error).message });
+        return false;
+      } finally {
+        set({ isLoading: false });
+      }
+    },
+
+    setCurrent: (item: T | null) => set({ currentItem: item }),
+  });
+}
