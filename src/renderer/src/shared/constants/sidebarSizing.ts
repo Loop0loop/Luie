@@ -47,7 +47,6 @@ export type SidebarWidthFeature =
   | "factionSidebar"
   | "memoSidebar"
   | "worldGraphSidebar"
-  | "worldGraphInspector"
   | "binder"
   | "context"
   | "inspector";
@@ -115,7 +114,6 @@ export const SIDEBAR_WIDTH_CONFIG: Record<
   factionSidebar: { ...PANEL_SIDEBAR_WIDTH_CONFIG },
   memoSidebar: { ...PANEL_SIDEBAR_WIDTH_CONFIG },
   worldGraphSidebar: { ...PANEL_SIDEBAR_WIDTH_CONFIG },
-  worldGraphInspector: { ...PANEL_WIDTH_CONFIG },
   binder: { ...PANEL_SIDEBAR_WIDTH_CONFIG },
   context: { ...PANEL_WIDTH_CONFIG },
   inspector: { ...PANEL_WIDTH_CONFIG },

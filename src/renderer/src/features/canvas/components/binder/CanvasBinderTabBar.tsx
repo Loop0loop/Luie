@@ -1,7 +1,7 @@
 /**
  * CanvasBinderTabBar — BinderBar 상단 탭 전환 (요소 | AI).
  *
- * UI-only. 상태는 CanvasInspectorPanel에서 로컬 useState로 관리.
+ * UI-only. 상태는 호출 컴포넌트에서 로컬 useState로 관리.
  */
 
 import { useTranslation } from "react-i18next";
