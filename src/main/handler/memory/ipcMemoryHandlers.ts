@@ -123,6 +123,14 @@ export function registerMemoryIPCHandlers(
     return result;
   };
 
+  const persistedReviewHandler =
+    <TInput extends { projectId: string }>(
+      reason: string,
+      operation: (input: TInput) => Promise<unknown>,
+    ) =>
+    (input: TInput) =>
+      persistAfterUpdatedReviewMutation(input.projectId, reason, () => operation(input));
+
   registerIpcHandlers(logger, [
     {
       channel: IPC_CHANNELS.MEMORY_REBUILD_CHUNKS,
@@ -188,20 +196,18 @@ export function registerMemoryIPCHandlers(
       logTag: "MEMORY_EPISODE_CONFIRM",
       failMessage: "Failed to confirm episode",
       argsSchema: z.tuple([memoryEpisodeConfirmSchema]),
-      handler: (input: MemoryEpisodeConfirmInput) =>
-        persistAfterUpdatedReviewMutation(input.projectId, "memory:episode-confirm", () =>
-          narrativeMemoryQueryService.confirmEpisode(input),
-        ),
+      handler: persistedReviewHandler<MemoryEpisodeConfirmInput>("memory:episode-confirm", (input) =>
+        narrativeMemoryQueryService.confirmEpisode(input),
+      ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_EPISODE_REJECT,
       logTag: "MEMORY_EPISODE_REJECT",
       failMessage: "Failed to reject episode",
       argsSchema: z.tuple([memoryEpisodeRejectSchema]),
-      handler: (input: MemoryEpisodeRejectInput) =>
-        persistAfterUpdatedReviewMutation(input.projectId, "memory:episode-reject", () =>
-          narrativeMemoryQueryService.rejectEpisode(input),
-        ),
+      handler: persistedReviewHandler<MemoryEpisodeRejectInput>("memory:episode-reject", (input) =>
+        narrativeMemoryQueryService.rejectEpisode(input),
+      ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_FACT_REVIEW_QUEUE,
@@ -216,40 +222,36 @@ export function registerMemoryIPCHandlers(
       logTag: "MEMORY_FACT_CONFIRM",
       failMessage: "Failed to confirm fact",
       argsSchema: z.tuple([memoryTemporalFactConfirmSchema]),
-      handler: (input: MemoryTemporalFactConfirmInput) =>
-        persistAfterUpdatedReviewMutation(input.projectId, "memory:fact-confirm", () =>
-          narrativeMemoryQueryService.confirmFact(input),
-        ),
+      handler: persistedReviewHandler<MemoryTemporalFactConfirmInput>("memory:fact-confirm", (input) =>
+        narrativeMemoryQueryService.confirmFact(input),
+      ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_FACT_REJECT,
       logTag: "MEMORY_FACT_REJECT",
       failMessage: "Failed to reject fact",
       argsSchema: z.tuple([memoryTemporalFactRejectSchema]),
-      handler: (input: MemoryTemporalFactRejectInput) =>
-        persistAfterUpdatedReviewMutation(input.projectId, "memory:fact-reject", () =>
-          narrativeMemoryQueryService.rejectFact(input),
-        ),
+      handler: persistedReviewHandler<MemoryTemporalFactRejectInput>("memory:fact-reject", (input) =>
+        narrativeMemoryQueryService.rejectFact(input),
+      ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_CONFLICT_RESOLVE,
       logTag: "MEMORY_CONFLICT_RESOLVE",
       failMessage: "Failed to resolve fact conflict",
       argsSchema: z.tuple([memoryTemporalFactConflictResolveSchema]),
-      handler: (input: MemoryTemporalFactConflictResolveInput) =>
-        persistAfterUpdatedReviewMutation(input.projectId, "memory:fact-conflict-resolve", () =>
-          narrativeMemoryQueryService.resolveFactConflict(input),
-        ),
+      handler: persistedReviewHandler<MemoryTemporalFactConflictResolveInput>(
+        "memory:fact-conflict-resolve", (input) => narrativeMemoryQueryService.resolveFactConflict(input),
+      ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_CONFLICT_REVIEW_ACTION,
       logTag: "MEMORY_CONFLICT_REVIEW_ACTION",
       failMessage: "Failed to update fact conflict review",
       argsSchema: z.tuple([memoryTemporalFactConflictReviewSchema]),
-      handler: (input: MemoryTemporalFactConflictReviewInput) =>
-        persistAfterUpdatedReviewMutation(input.projectId, "memory:fact-conflict-review", () =>
-          narrativeMemoryQueryService.reviewFactConflict(input),
-        ),
+      handler: persistedReviewHandler<MemoryTemporalFactConflictReviewInput>(
+        "memory:fact-conflict-review", (input) => narrativeMemoryQueryService.reviewFactConflict(input),
+      ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_ENTITY_ALIAS_REVIEW_QUEUE,
@@ -272,72 +274,63 @@ export function registerMemoryIPCHandlers(
       logTag: "MEMORY_ENTITY_CONFIRM",
       failMessage: "Failed to confirm entity",
       argsSchema: z.tuple([memoryEntityConfirmSchema]),
-      handler: (input: MemoryEntityConfirmInput) =>
-        persistAfterUpdatedReviewMutation(input.projectId, "memory:entity-confirm", () =>
-          narrativeMemoryQueryService.confirmEntity(input),
-        ),
+      handler: persistedReviewHandler<MemoryEntityConfirmInput>("memory:entity-confirm", (input) =>
+        narrativeMemoryQueryService.confirmEntity(input),
+      ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_ENTITY_REJECT,
       logTag: "MEMORY_ENTITY_REJECT",
       failMessage: "Failed to reject entity",
       argsSchema: z.tuple([memoryEntityRejectSchema]),
-      handler: (input: MemoryEntityRejectInput) =>
-        persistAfterUpdatedReviewMutation(input.projectId, "memory:entity-reject", () =>
-          narrativeMemoryQueryService.rejectEntity(input),
-        ),
+      handler: persistedReviewHandler<MemoryEntityRejectInput>("memory:entity-reject", (input) =>
+        narrativeMemoryQueryService.rejectEntity(input),
+      ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_ENTITY_ALIAS_CONFIRM,
       logTag: "MEMORY_ENTITY_ALIAS_CONFIRM",
       failMessage: "Failed to confirm entity alias",
       argsSchema: z.tuple([memoryEntityAliasConfirmSchema]),
-      handler: (input: MemoryEntityAliasConfirmInput) =>
-        persistAfterUpdatedReviewMutation(input.projectId, "memory:entity-alias-confirm", () =>
-          narrativeMemoryQueryService.confirmEntityAlias(input),
-        ),
+      handler: persistedReviewHandler<MemoryEntityAliasConfirmInput>(
+        "memory:entity-alias-confirm", (input) => narrativeMemoryQueryService.confirmEntityAlias(input),
+      ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_ENTITY_ALIAS_REJECT,
       logTag: "MEMORY_ENTITY_ALIAS_REJECT",
       failMessage: "Failed to reject entity alias",
       argsSchema: z.tuple([memoryEntityAliasRejectSchema]),
-      handler: (input: MemoryEntityAliasRejectInput) =>
-        persistAfterUpdatedReviewMutation(input.projectId, "memory:entity-alias-reject", () =>
-          narrativeMemoryQueryService.rejectEntityAlias(input),
-        ),
+      handler: persistedReviewHandler<MemoryEntityAliasRejectInput>(
+        "memory:entity-alias-reject", (input) => narrativeMemoryQueryService.rejectEntityAlias(input),
+      ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_ENTITY_ALIAS_SPLIT,
       logTag: "MEMORY_ENTITY_ALIAS_SPLIT",
       failMessage: "Failed to split entity alias",
       argsSchema: z.tuple([memoryEntityAliasSplitSchema]),
-      handler: (input: MemoryEntityAliasSplitInput) =>
-        persistAfterUpdatedReviewMutation(input.projectId, "memory:entity-alias-split", () =>
-          narrativeMemoryQueryService.splitEntityAlias(input),
-        ),
+      handler: persistedReviewHandler<MemoryEntityAliasSplitInput>(
+        "memory:entity-alias-split", (input) => narrativeMemoryQueryService.splitEntityAlias(input),
+      ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_ENTITY_MERGE,
       logTag: "MEMORY_ENTITY_MERGE",
       failMessage: "Failed to merge memory entity",
       argsSchema: z.tuple([memoryEntityMergeSchema]),
-      handler: (input: MemoryEntityMergeInput) =>
-        persistAfterUpdatedReviewMutation(input.projectId, "memory:entity-merge", () =>
-          narrativeMemoryQueryService.mergeEntity(input),
-        ),
+      handler: persistedReviewHandler<MemoryEntityMergeInput>("memory:entity-merge", (input) =>
+        narrativeMemoryQueryService.mergeEntity(input),
+      ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_STALE_EVIDENCE_REVIEW_ACTION,
       logTag: "MEMORY_STALE_EVIDENCE_REVIEW_ACTION",
       failMessage: "Failed to review stale evidence",
       argsSchema: z.tuple([memoryStaleEvidenceReviewActionSchema]),
-      handler: (input: MemoryStaleEvidenceReviewActionInput) =>
-        persistAfterUpdatedReviewMutation(
-          input.projectId,
-          "memory:stale-evidence-review-action",
-          () => narrativeMemoryQueryService.reviewStaleEvidence(input),
-        ),
+      handler: persistedReviewHandler<MemoryStaleEvidenceReviewActionInput>(
+        "memory:stale-evidence-review-action", (input) => narrativeMemoryQueryService.reviewStaleEvidence(input),
+      ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_REPAIR_EVIDENCE_LINKS,
