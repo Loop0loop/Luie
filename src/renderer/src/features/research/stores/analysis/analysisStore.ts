@@ -23,7 +23,6 @@ interface AnalysisStoreState {
   isAnalyzing: boolean;
   error: string | null;
   viewMode: 'fixView' | 'floatingView';
-  isOpen: boolean;
   isMinimized: boolean;
   floatingPosition: { x: number; y: number };
   floatingSize: { width: number; height: number };
@@ -82,7 +81,6 @@ interface AnalysisStoreState {
 interface AnalysisStoreSyncActions {
   setError: (error: string | null) => void;
   setViewMode: (mode: 'fixView' | 'floatingView') => void;
-  setOpen: (open: boolean) => void;
   setMinimized: (minimized: boolean) => void;
   setFloatingPosition: (pos: { x: number; y: number }) => void;
   setFloatingSize: (size: { width: number; height: number }) => void;
@@ -109,7 +107,6 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   isAnalyzing: false,
   error: null,
   viewMode: 'fixView',
-  isOpen: false,
   isMinimized: false,
   floatingPosition: { x: 0, y: 0 },
   floatingSize: { width: 380, height: 520 },
@@ -172,13 +169,8 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   setViewMode: (mode) => {
     set({
       viewMode: mode,
-      isOpen: mode === 'floatingView' ? true : false,
       isMinimized: false
     });
-  },
-
-  setOpen: (open) => {
-    set({ isOpen: open });
   },
 
   setMinimized: (minimized) => {
@@ -262,7 +254,6 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
       items: [],
       isAnalyzing: false,
       error: null,
-      isOpen: false,
       isMinimized: false,
       messages: [],
       input: "",

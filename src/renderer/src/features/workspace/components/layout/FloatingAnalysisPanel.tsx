@@ -5,16 +5,15 @@ import { useAnalysisStore } from "@renderer/features/research/stores/analysisSto
 import AnalysisSection from "@renderer/features/research/components/AnalysisSection";
 
 export function FloatingAnalysisPanel() {
-  const { viewMode, isOpen, isMinimized, setMinimized } = useAnalysisStore(
+  const { viewMode, isMinimized, setMinimized } = useAnalysisStore(
     useShallow((state) => ({
       viewMode: state.viewMode,
-      isOpen: state.isOpen,
       isMinimized: state.isMinimized,
       setMinimized: state.setMinimized,
     })),
   );
 
-  if (viewMode !== "floatingView" || !isOpen) return null;
+  if (viewMode !== "floatingView") return null;
 
   if (isMinimized) {
     return (
