@@ -16,7 +16,6 @@ import type {
   WorldGraphNode,
 } from "@shared/types";
 import { applyGraphNodePosition } from "@shared/world/worldGraphDocument";
-import { type WorldFilter } from "./worldBuildingStore.types";
 
 export const parseNodeAttributes = (
   value: unknown,
@@ -219,40 +218,6 @@ export const removeRelationFromGraph = (
     ...graphData,
     edges: graphData.edges.filter((edge) => edge.id !== relationId),
   };
-};
-
-export const filterGraphData = (
-  graphData: WorldGraphData | null,
-  filter: WorldFilter,
-): WorldGraphData => {
-  if (!graphData) {
-    return { nodes: [], edges: [] };
-  }
-
-  const { searchQuery, entityTypes, relationKinds } = filter;
-  const normalizedQuery = searchQuery.trim().toLowerCase();
-
-  const nodes = graphData.nodes.filter((node) => {
-    const displayType = node.subType ?? node.entityType;
-    if (!entityTypes.includes(displayType)) return false;
-    if (!normalizedQuery) return true;
-
-    const nameMatch = node.name.toLowerCase().includes(normalizedQuery);
-    const descriptionMatch = (node.description ?? "")
-      .toLowerCase()
-      .includes(normalizedQuery);
-    return nameMatch || descriptionMatch;
-  });
-
-  const nodeIds = new Set(nodes.map((node) => node.id));
-  const edges = graphData.edges.filter(
-    (edge) =>
-      relationKinds.includes(edge.relation) &&
-      nodeIds.has(edge.sourceId) &&
-      nodeIds.has(edge.targetId),
-  );
-
-  return { nodes, edges };
 };
 
 export const isValidRelationForPair = (

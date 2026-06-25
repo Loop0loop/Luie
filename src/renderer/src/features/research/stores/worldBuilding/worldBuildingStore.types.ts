@@ -2,7 +2,6 @@ import type {
   EntityRelation,
   EntityRelationCreateInput,
   EntityRelationUpdateInput,
-  RelationKind,
   WorldEntityCreateInput,
   WorldEntitySourceType,
   WorldEntityType,
@@ -14,13 +13,6 @@ import type {
   WorldGraphNode,
   WorldTimelineTrack,
 } from "@shared/types";
-
-export interface WorldFilter {
-  entityTypes: string[];
-  relationKinds: RelationKind[];
-  searchQuery: string;
-  tags: string[];
-}
 
 export type CreateGraphNodeInput = {
   projectId: string;
