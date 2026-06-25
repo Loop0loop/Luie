@@ -2,7 +2,6 @@ export * from "./analysis/analysisStore";
 export * from "./character/characterStore";
 export * from "./event/eventStore";
 export * from "./faction/factionStore";
-export * from "./plugin/graphPluginStore";
 export * from "./memo/memoStore";
 export * from "./term/termStore";
 export * from "./worldBuilding/worldBuildingStore";
