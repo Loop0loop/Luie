@@ -34,6 +34,9 @@ export const applyMemoryCanonicalPackagePayload = (
 ): void => {
   const tables = input.payload?.tables ?? {};
   const now = input.importedAt.toISOString();
+  const validChapterIds = input.validChapterIds;
+  const hasValidChapter = (chapterId: string | null): boolean =>
+    !chapterId || !validChapterIds || validChapterIds.has(chapterId);
   const entityIdMap = new Map<string, string>();
   const episodeIdMap = new Map<string, string>();
   const episodeEvidenceIdMap = new Map<string, string>();
@@ -126,13 +129,7 @@ export const applyMemoryCanonicalPackagePayload = (
       return null;
     }
     const chapterId = toNullableStringValue(row.chapterId);
-    if (
-      chapterId &&
-      input.validChapterIds &&
-      !input.validChapterIds.has(chapterId)
-    ) {
-      return null;
-    }
+    if (!hasValidChapter(chapterId)) return null;
     const id = buildScopedMemoryId(input.projectId, "MemoryEpisode", sourceId);
     episodeIdMap.set(sourceId, id);
     return {
@@ -176,13 +173,7 @@ export const applyMemoryCanonicalPackagePayload = (
     const episodeId = episodeIdMap.get(sourceEpisodeId);
     if (!episodeId) return null;
     const chapterId = toNullableStringValue(row.chapterId);
-    if (
-      chapterId &&
-      input.validChapterIds &&
-      !input.validChapterIds.has(chapterId)
-    ) {
-      return null;
-    }
+    if (!hasValidChapter(chapterId)) return null;
     const id = buildScopedMemoryId(
       input.projectId,
       "MemoryEpisodeEvidence",
@@ -272,17 +263,11 @@ export const applyMemoryCanonicalPackagePayload = (
       rejectionReason: toNullableStringValue(row.rejectionReason),
     };
   }).filter((row) => {
-    if (input.validChapterIds) {
-      if (!input.validChapterIds.has(row.validFromChapterId)) return false;
-      if (!input.validChapterIds.has(row.observedAtChapterId)) return false;
-      if (
-        row.validToChapterId &&
-        !input.validChapterIds.has(row.validToChapterId)
-      ) {
-        return false;
-      }
-    }
-    return true;
+    return (
+      hasValidChapter(row.validFromChapterId) &&
+      hasValidChapter(row.observedAtChapterId) &&
+      hasValidChapter(row.validToChapterId)
+    );
   });
 
   const factIds = new Set(factCandidates.map((row) => row.id));
@@ -413,10 +398,7 @@ export const applyMemoryCanonicalPackagePayload = (
     };
   }).filter((row) => {
     if (!evalCaseIds.has(row.caseId)) return false;
-    if (row.chapterId && input.validChapterIds) {
-      return input.validChapterIds.has(row.chapterId);
-    }
-    return true;
+    return hasValidChapter(row.chapterId);
   });
 
   const evalEntities = mapRows(tables.MemoryEvalEntity, (row) => {
