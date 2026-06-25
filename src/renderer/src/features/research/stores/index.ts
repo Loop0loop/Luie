@@ -6,4 +6,3 @@ export * from "./plugin/graphPluginStore";
 export * from "./memo/memoStore";
 export * from "./term/termStore";
 export * from "./worldBuilding/worldBuildingStore";
-export * from "./worldGraphUi/worldGraphUiStore";
