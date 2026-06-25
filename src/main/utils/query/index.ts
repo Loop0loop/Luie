@@ -1,6 +1,1 @@
-export {
-  escapeLike,
-  expectOne,
-  firstOrNull,
-  insertMany,
-} from "./queryHelpers.js";
+export { escapeLike } from "./queryHelpers.js";
