@@ -297,76 +297,85 @@ export function useMemoryReviewQueues({
     ],
   );
 
+  const runReviewAction = useCallback(
+    async <TItem,>(
+      item: TItem,
+      action: (projectId: string, item: TItem) => Promise<void>,
+    ) => {
+      if (!projectId) return;
+      await action(projectId, item);
+    },
+    [projectId],
+  );
+
+  const runRejectReviewAction = useCallback(
+    async <TItem,>(
+      type: "fact" | "episode" | "entity" | "alias",
+      item: TItem,
+      action: (projectId: string, item: TItem, reason: string) => Promise<void>,
+    ) => {
+      if (!projectId) return;
+      const reason = await requestRejectReason(type);
+      if (!reason) return;
+      await action(projectId, item, reason);
+    },
+    [projectId, requestRejectReason],
+  );
+
   const onConfirmFact = useCallback(
     async (item: AnalysisFactReviewItem) => {
-      if (!projectId) return;
-      await handleConfirmFact(projectId, item);
+      await runReviewAction(item, handleConfirmFact);
     },
-    [projectId, handleConfirmFact],
+    [handleConfirmFact, runReviewAction],
   );
 
   const onRejectFact = useCallback(
     async (item: AnalysisFactReviewItem) => {
-      if (!projectId) return;
-      const reason = await requestRejectReason("fact");
-      if (!reason) return;
-      await handleRejectFact(projectId, item, reason);
+      await runRejectReviewAction("fact", item, handleRejectFact);
     },
-    [projectId, handleRejectFact, requestRejectReason],
+    [handleRejectFact, runRejectReviewAction],
   );
 
   const onConfirmEpisode = useCallback(
     async (item: AnalysisEpisodeReviewItem) => {
-      if (!projectId) return;
-      await handleConfirmEpisode(projectId, item);
+      await runReviewAction(item, handleConfirmEpisode);
     },
-    [projectId, handleConfirmEpisode],
+    [handleConfirmEpisode, runReviewAction],
   );
 
   const onRejectEpisode = useCallback(
     async (item: AnalysisEpisodeReviewItem) => {
-      if (!projectId) return;
-      const reason = await requestRejectReason("episode");
-      if (!reason) return;
-      await handleRejectEpisode(projectId, item, reason);
+      await runRejectReviewAction("episode", item, handleRejectEpisode);
     },
-    [projectId, handleRejectEpisode, requestRejectReason],
+    [handleRejectEpisode, runRejectReviewAction],
   );
 
   const onConfirmEntity = useCallback(
     async (item: AnalysisEntityReviewItem) => {
-      if (!projectId) return;
-      await handleConfirmEntity(projectId, item);
+      await runReviewAction(item, handleConfirmEntity);
     },
-    [projectId, handleConfirmEntity],
+    [handleConfirmEntity, runReviewAction],
   );
 
   const onRejectEntity = useCallback(
     async (item: AnalysisEntityReviewItem) => {
-      if (!projectId) return;
-      const reason = await requestRejectReason("entity");
-      if (!reason) return;
-      await handleRejectEntity(projectId, item, reason);
+      await runRejectReviewAction("entity", item, handleRejectEntity);
     },
-    [projectId, handleRejectEntity, requestRejectReason],
+    [handleRejectEntity, runRejectReviewAction],
   );
 
   const onConfirmEntityAlias = useCallback(
     async (item: AnalysisEntityAliasReviewItem) => {
-      if (!projectId) return;
-      await handleConfirmEntityAlias(projectId, item);
+      await runReviewAction(item, handleConfirmEntityAlias);
     },
-    [projectId, handleConfirmEntityAlias],
+    [handleConfirmEntityAlias, runReviewAction],
   );
 
   const onRejectEntityAlias = useCallback(
     async (item: AnalysisEntityAliasReviewItem) => {
-      if (!projectId) return;
-      const reason = await requestRejectReason("alias");
-      if (!reason) return;
-      await handleRejectEntityAlias(projectId, item, reason);
+      await runRejectReviewAction("alias", item, handleRejectEntityAlias);
     },
-    [projectId, handleRejectEntityAlias, requestRejectReason],
+    [handleRejectEntityAlias, runRejectReviewAction],
   );
 
   const onMergeEntityAlias = useCallback(
