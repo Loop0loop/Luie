@@ -6,9 +6,8 @@ const RENDERER_ROOT = path.join(process.cwd(), "src", "renderer", "src");
 
 const ALLOWED_LOCAL_STORAGE_FILES = new Set([
   "src/renderer/src/app/fontLoader.ts",
-  "src/renderer/src/features/research/components/event/EventDetailView.tsx",
-  "src/renderer/src/features/research/components/faction/FactionDetailView.tsx",
   "src/renderer/src/features/research/components/MemoSection.tsx",
+  "src/renderer/src/features/research/components/wiki/EntityDetailView.tsx",
   "src/renderer/src/features/research/components/wiki/WikiDetailView.tsx",
   "src/renderer/src/features/research/services/worldPackageStorageHelpers/localStorage.ts",
   "src/renderer/src/features/workspace/hooks/useCollapsedSidebarStore.ts",
