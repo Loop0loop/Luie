@@ -27,7 +27,7 @@ import {
   toPxSize,
 } from "@renderer/shared/constants/sidebarSizing";
 
-type SidebarFeature = "eventSidebar" | "factionSidebar";
+type SidebarFeature = "characterSidebar" | "eventSidebar" | "factionSidebar";
 
 type PeekGroup = {
   name: string;
