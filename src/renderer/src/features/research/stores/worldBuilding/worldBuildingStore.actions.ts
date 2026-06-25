@@ -58,6 +58,30 @@ function updateGraphNodeSelection(input: UpdateGraphNodeInput) {
   };
 }
 
+function applyActiveGraphUpdate(
+  set: StoreSetter<WorldBuildingState>,
+  projectId: string,
+  update: (graphData: WorldGraphData | null) => WorldGraphData | null | undefined,
+): WorldGraphData | null {
+  let nextGraphSnapshot: WorldGraphData | null = null;
+
+  set((state) => {
+    if (state.activeProjectId !== projectId) {
+      return state;
+    }
+    const nextGraph = update(state.graphData);
+    if (nextGraph === undefined) {
+      return state;
+    }
+    nextGraphSnapshot = nextGraph;
+    return {
+      graphData: nextGraph,
+    };
+  });
+
+  return nextGraphSnapshot;
+}
+
 export function createWorldBuildingActions(
   set: StoreSetter<WorldBuildingState>,
   get: StoreGetter<WorldBuildingState>,
@@ -82,18 +106,11 @@ export function createWorldBuildingActions(
           return nextNode;
         }
 
-        let nextGraphSnapshot: WorldGraphData | null = null;
-
-        set((state) => {
-          if (state.activeProjectId !== projectId) {
-            return state;
-          }
-          const nextGraph = appendNodeToGraph(state.graphData, nextNode);
-          nextGraphSnapshot = nextGraph;
-          return {
-            graphData: nextGraph,
-          };
-        });
+        const nextGraphSnapshot = applyActiveGraphUpdate(
+          set,
+          projectId,
+          (graphData) => appendNodeToGraph(graphData, nextNode),
+        );
         await syncGraphBackedStore(nextNode.entityType, projectId);
         await persistGraphDocument(projectId, nextGraphSnapshot);
 
@@ -113,18 +130,11 @@ export function createWorldBuildingActions(
       const projectId = get().activeProjectId;
       if (!projectId) return;
 
-      let nextGraphSnapshot: WorldGraphData | null = null;
-
-      set((state) => {
-        if (state.activeProjectId !== projectId) {
-          return state;
-        }
-        const nextGraph = replaceNodeInGraph(state.graphData, updatedNode);
-        nextGraphSnapshot = nextGraph;
-        return {
-          graphData: nextGraph,
-        };
-      });
+      const nextGraphSnapshot = applyActiveGraphUpdate(
+        set,
+        projectId,
+        (graphData) => replaceNodeInGraph(graphData, updatedNode),
+      );
       await syncGraphBackedStore(updatedNode.entityType, projectId);
       await persistGraphDocument(projectId, nextGraphSnapshot);
     },
@@ -136,24 +146,17 @@ export function createWorldBuildingActions(
       const projectId = get().activeProjectId;
       if (!current || !projectId) return;
 
-      let nextGraphSnapshot: WorldGraphData | null = null;
-
-      set((state) => {
-        if (state.activeProjectId !== projectId) {
-          return state;
-        }
-
-        const nextGraph = updateNodePositionInGraph(
-          state.graphData,
-          input.id,
-          input.positionX,
-          input.positionY,
-        );
-        nextGraphSnapshot = nextGraph;
-        return {
-          graphData: nextGraph,
-        };
-      });
+      const nextGraphSnapshot = applyActiveGraphUpdate(
+        set,
+        projectId,
+        (graphData) =>
+          updateNodePositionInGraph(
+            graphData,
+            input.id,
+            input.positionX,
+            input.positionY,
+          ),
+      );
 
       if (isWorldEntityBackedType(current.entityType)) {
         await api.worldEntity.updatePosition(input);
@@ -177,26 +180,22 @@ export function createWorldBuildingActions(
       });
       if (normalizedInputs.length === 0) return;
 
-      let nextGraphSnapshot: WorldGraphData | null = null;
-
-      set((state) => {
-        if (state.activeProjectId !== projectId) {
-          return state;
-        }
-        let nextGraph = state.graphData;
-        normalizedInputs.forEach((input) => {
-          nextGraph = updateNodePositionInGraph(
-            nextGraph,
-            input.id,
-            input.positionX,
-            input.positionY,
-          );
-        });
-        nextGraphSnapshot = nextGraph;
-        return {
-          graphData: nextGraph,
-        };
-      });
+      const nextGraphSnapshot = applyActiveGraphUpdate(
+        set,
+        projectId,
+        (graphData) => {
+          let nextGraph = graphData;
+          normalizedInputs.forEach((input) => {
+            nextGraph = updateNodePositionInGraph(
+              nextGraph,
+              input.id,
+              input.positionX,
+              input.positionY,
+            );
+          });
+          return nextGraph;
+        },
+      );
 
       await Promise.all(
         normalizedInputs.map(async (input) => {
@@ -225,18 +224,11 @@ export function createWorldBuildingActions(
       const deleted = await deleteGraphNodeByType(current);
       if (!deleted) return false;
 
-      let nextGraphSnapshot: WorldGraphData | null = null;
-
-      set((state) => {
-        if (state.activeProjectId !== projectId) {
-          return state;
-        }
-        const nextGraph = removeNodeFromGraph(state.graphData, id);
-        nextGraphSnapshot = nextGraph;
-        return {
-          graphData: nextGraph,
-        };
-      });
+      const nextGraphSnapshot = applyActiveGraphUpdate(
+        set,
+        projectId,
+        (graphData) => removeNodeFromGraph(graphData, id),
+      );
       clearGraphBackedSelection(current.entityType, id);
       await syncGraphBackedStore(current.entityType, projectId);
       await persistGraphDocument(projectId, nextGraphSnapshot);
@@ -302,21 +294,11 @@ export function createWorldBuildingActions(
         return createdRelation;
       }
 
-      let nextGraphSnapshot: WorldGraphData | null = null;
-
-      set((state) => {
-        if (state.activeProjectId !== resolvedProjectId) {
-          return state;
-        }
-        const nextGraph = appendRelationToGraph(
-          state.graphData,
-          createdRelation,
-        );
-        nextGraphSnapshot = nextGraph;
-        return {
-          graphData: nextGraph,
-        };
-      });
+      const nextGraphSnapshot = applyActiveGraphUpdate(
+        set,
+        resolvedProjectId,
+        (graphData) => appendRelationToGraph(graphData, createdRelation),
+      );
       await persistGraphDocument(resolvedProjectId, nextGraphSnapshot);
       return createdRelation;
     },
@@ -329,21 +311,11 @@ export function createWorldBuildingActions(
       const projectId = get().activeProjectId;
       if (!projectId) return true;
 
-      let nextGraphSnapshot: WorldGraphData | null = null;
-
-      set((state) => {
-        if (state.activeProjectId !== projectId) {
-          return state;
-        }
-        const nextGraph = replaceRelationInGraph(
-          state.graphData,
-          updatedRelation,
-        );
-        nextGraphSnapshot = nextGraph;
-        return {
-          graphData: nextGraph,
-        };
-      });
+      const nextGraphSnapshot = applyActiveGraphUpdate(
+        set,
+        projectId,
+        (graphData) => replaceRelationInGraph(graphData, updatedRelation),
+      );
       await persistGraphDocument(projectId, nextGraphSnapshot);
       return true;
     },
@@ -353,18 +325,11 @@ export function createWorldBuildingActions(
       const response = await api.entityRelation.delete(id);
       if (!response.success || !projectId) return false;
 
-      let nextGraphSnapshot: WorldGraphData | null = null;
-
-      set((state) => {
-        if (state.activeProjectId !== projectId) {
-          return state;
-        }
-        const nextGraph = removeRelationFromGraph(state.graphData, id);
-        nextGraphSnapshot = nextGraph;
-        return {
-          graphData: nextGraph,
-        };
-      });
+      const nextGraphSnapshot = applyActiveGraphUpdate(
+        set,
+        projectId,
+        (graphData) => removeRelationFromGraph(graphData, id),
+      );
       await persistGraphDocument(projectId, nextGraphSnapshot);
       return true;
     },
@@ -374,24 +339,17 @@ export function createWorldBuildingActions(
       if (!projectId) return;
       const nextCanvasBlocks = normalizeCanvasBlocks(blocks);
 
-      let nextGraphSnapshot: WorldGraphData | null = null;
-
-      set((state) => {
-        if (state.activeProjectId !== projectId) {
-          return state;
-        }
-        if (!state.graphData) {
-          return state;
-        }
-
-        nextGraphSnapshot = {
-          ...state.graphData,
-          canvasBlocks: nextCanvasBlocks,
-        };
-        return {
-          graphData: nextGraphSnapshot,
-        };
-      });
+      const nextGraphSnapshot = applyActiveGraphUpdate(
+        set,
+        projectId,
+        (graphData) =>
+          graphData
+            ? {
+                ...graphData,
+                canvasBlocks: nextCanvasBlocks,
+              }
+            : undefined,
+      );
 
       await persistGraphDocument(projectId, nextGraphSnapshot);
     },
@@ -401,24 +359,17 @@ export function createWorldBuildingActions(
       if (!projectId) return;
       const nextCanvasEdges = normalizeCanvasEdges(edges);
 
-      let nextGraphSnapshot: WorldGraphData | null = null;
-
-      set((state) => {
-        if (state.activeProjectId !== projectId) {
-          return state;
-        }
-        if (!state.graphData) {
-          return state;
-        }
-
-        nextGraphSnapshot = {
-          ...state.graphData,
-          canvasEdges: nextCanvasEdges,
-        };
-        return {
-          graphData: nextGraphSnapshot,
-        };
-      });
+      const nextGraphSnapshot = applyActiveGraphUpdate(
+        set,
+        projectId,
+        (graphData) =>
+          graphData
+            ? {
+                ...graphData,
+                canvasEdges: nextCanvasEdges,
+              }
+            : undefined,
+      );
 
       await persistGraphDocument(projectId, nextGraphSnapshot);
     },
@@ -428,24 +379,17 @@ export function createWorldBuildingActions(
       if (!projectId) return;
       const nextTimelines = normalizeTimelines(timelines);
 
-      let nextGraphSnapshot: WorldGraphData | null = null;
-
-      set((state) => {
-        if (state.activeProjectId !== projectId) {
-          return state;
-        }
-        if (!state.graphData) {
-          return state;
-        }
-
-        nextGraphSnapshot = {
-          ...state.graphData,
-          timelines: nextTimelines,
-        };
-        return {
-          graphData: nextGraphSnapshot,
-        };
-      });
+      const nextGraphSnapshot = applyActiveGraphUpdate(
+        set,
+        projectId,
+        (graphData) =>
+          graphData
+            ? {
+                ...graphData,
+                timelines: nextTimelines,
+              }
+            : undefined,
+      );
 
       await persistGraphDocument(projectId, nextGraphSnapshot);
     },
