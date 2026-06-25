@@ -1,5 +1,5 @@
 import { i18n } from "@renderer/i18n";
-import type { LlmRuntimeInfo, UtilitySidecarStatus } from "@shared/types";
+import type { UtilitySidecarStatus } from "@shared/types";
 import type { RagQaSafetyLabel } from "@shared/types";
 
 const translateRuntimeLabel = (key: string, fallback: string): string => {
@@ -18,23 +18,6 @@ export const runtimeLabel = (value: string | null | undefined): string => {
   if (value === "deterministic") return "Deterministic";
   if (value === "unavailable") return "Unavailable";
   return value;
-};
-
-export const groundingLabel = (status: "confirmed" | "inferred" | "conflicting" | "insufficient_evidence" | "unknown"): string => {
-  if (status === "confirmed") return translateRuntimeLabel("analysis.runtime.labels.confirmed", "확정");
-  if (status === "inferred") return translateRuntimeLabel("analysis.runtime.labels.inferred", "추정");
-  if (status === "conflicting") return translateRuntimeLabel("analysis.runtime.labels.conflicting", "충돌");
-  return translateRuntimeLabel("analysis.runtime.labels.insufficient_evidence", "근거 부족");
-};
-
-export const groundingTone = (status: "confirmed" | "inferred" | "conflicting" | "insufficient_evidence" | "unknown"): string => {
-  if (status === "confirmed")
-    return "border-success/30 bg-success/10 text-success";
-  if (status === "inferred")
-    return "border-warning/30 bg-warning/10 text-warning";
-  if (status === "conflicting")
-    return "border-danger/30 bg-danger/10 text-danger";
-  return "border-border bg-surface text-muted";
 };
 
 export const safetyLabel = (label: RagQaSafetyLabel | "unknown"): string => {
@@ -80,12 +63,4 @@ export const sidecarStatusSummary = (status: UtilitySidecarStatus): string => {
   if (status.status === "crashed") return "Sidecar: crashed";
   if (status.status === "cooldown") return "Sidecar: cooldown";
   return status.lastError ? "Sidecar: stopped with error" : "Sidecar: stopped";
-};
-
-export const formatRuntimeInfo = (runtime: LlmRuntimeInfo | null): string => {
-  if (!runtime) return "";
-  return [
-    runtimeLabel(runtime.requestedProvider ?? runtime.provider),
-    runtimeLabel(runtime.resolvedProvider ?? runtime.provider),
-  ].join("/");
 };
