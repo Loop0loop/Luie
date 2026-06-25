@@ -19,7 +19,7 @@ import type { MemoryScope } from "./analysisSection/shared/types";
 import type { AnalysisConflictItem } from "./analysisSection/shared/types";
 import { useAnalysisRuntime } from "./analysisSection/runtime/useAnalysisRuntime";
 import { useMemoryEvalPanel } from "./analysisSection/review/evaluation/useMemoryEvalPanel";
-import { useMemoryReviewPanels } from "./analysisSection/review/queue/useMemoryReviewPanels";
+import { useMemoryReviewQueues } from "./analysisSection/review/queue/useMemoryReviewQueues";
 import { useRagChat } from "./analysisSection/chat/useRagChat";
 import { useAnalysisStore } from "../stores/analysisStore";
 
@@ -274,7 +274,7 @@ export default function AnalysisSection() {
     chapterId: timelineChapter?.id,
     memoryScope,
   });
-  const review = useMemoryReviewPanels({
+  const review = useMemoryReviewQueues({
     projectId: currentProject?.id,
     chapterId: timelineChapter?.id,
     memoryScope,

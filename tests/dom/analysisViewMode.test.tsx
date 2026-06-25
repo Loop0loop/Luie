@@ -25,7 +25,7 @@ vi.mock("../../src/renderer/src/features/research/components/analysisSection/run
   }),
 }));
 
-vi.mock("../../src/renderer/src/features/research/components/analysisSection/useMemoryEvalPanel.js", () => ({
+vi.mock("../../src/renderer/src/features/research/components/analysisSection/review/evaluation/useMemoryEvalPanel.js", () => ({
   useMemoryEvalPanel: () => ({
     showMemoryEvalReport: false,
     memoryEvalLoading: false,
@@ -40,8 +40,8 @@ vi.mock("../../src/renderer/src/features/research/components/analysisSection/use
   }),
 }));
 
-vi.mock("../../src/renderer/src/features/research/components/analysisSection/review/queue/useMemoryReviewPanels.js", () => ({
-  useMemoryReviewPanels: () => ({
+vi.mock("../../src/renderer/src/features/research/components/analysisSection/review/queue/useMemoryReviewQueues.js", () => ({
+  useMemoryReviewQueues: () => ({
     showConflictQueue: false,
     conflictLoading: false,
     conflictError: null,
