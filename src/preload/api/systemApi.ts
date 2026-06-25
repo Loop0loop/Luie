@@ -18,6 +18,18 @@ export function createSystemApi({
   RendererApi,
   "app" | "logger" | "settings" | "recovery" | "sync" | "startup" | "analysis"
 > {
+  const invoke = (channel: string) =>
+    (...args: unknown[]) => safeInvoke(channel, ...args);
+  const onChannel = <T>(channel: string, callback: (payload: T) => void) => {
+    const listener = (_event: unknown, payload: T) => {
+      callback(payload);
+    };
+    ipcRenderer.on(channel, listener);
+    return () => {
+      ipcRenderer.removeListener(channel, listener);
+    };
+  };
+
   return {
     app: {
       getVersion: () => safeInvokeCore("app.getVersion", IPC_CHANNELS.APP_GET_VERSION),
@@ -34,24 +46,13 @@ export function createSystemApi({
           "app.getBootstrapStatus",
           IPC_CHANNELS.APP_GET_BOOTSTRAP_STATUS,
         ),
-      onBootstrapStatus: (callback) => {
-        const listener = (_event: unknown, status: AppBootstrapStatus) => {
-          callback(status);
-        };
-        ipcRenderer.on(IPC_CHANNELS.APP_BOOTSTRAP_STATUS_CHANGED, listener);
-        return () => {
-          ipcRenderer.removeListener(IPC_CHANNELS.APP_BOOTSTRAP_STATUS_CHANGED, listener);
-        };
-      },
-      onUpdateState: (callback) => {
-        const listener = (_event: unknown, state: AppUpdateState) => {
-          callback(state);
-        };
-        ipcRenderer.on(IPC_CHANNELS.APP_UPDATE_STATE_CHANGED, listener);
-        return () => {
-          ipcRenderer.removeListener(IPC_CHANNELS.APP_UPDATE_STATE_CHANGED, listener);
-        };
-      },
+      onBootstrapStatus: (callback) =>
+        onChannel<AppBootstrapStatus>(
+          IPC_CHANNELS.APP_BOOTSTRAP_STATUS_CHANGED,
+          callback,
+        ),
+      onUpdateState: (callback) =>
+        onChannel<AppUpdateState>(IPC_CHANNELS.APP_UPDATE_STATE_CHANGED, callback),
       quit: () => safeInvoke(IPC_CHANNELS.APP_QUIT),
       manualSave: () =>
         safeInvoke<{ success: boolean }>(IPC_CHANNELS.MANUAL_SAVE),
@@ -63,9 +64,8 @@ export function createSystemApi({
         safeInvokeCore("settings.getEditor", IPC_CHANNELS.SETTINGS_GET_EDITOR),
       setEditor: (settings) =>
         safeInvokeCore("settings.setEditor", IPC_CHANNELS.SETTINGS_SET_EDITOR, settings),
-      getAutoSave: () => safeInvoke(IPC_CHANNELS.SETTINGS_GET_AUTO_SAVE),
-      setAutoSave: (settings) =>
-        safeInvoke(IPC_CHANNELS.SETTINGS_SET_AUTO_SAVE, settings),
+      getAutoSave: invoke(IPC_CHANNELS.SETTINGS_GET_AUTO_SAVE),
+      setAutoSave: invoke(IPC_CHANNELS.SETTINGS_SET_AUTO_SAVE),
       getLanguage: () =>
         safeInvokeCore("settings.getLanguage", IPC_CHANNELS.SETTINGS_GET_LANGUAGE),
       setLanguage: (settings) =>
@@ -118,83 +118,47 @@ export function createSystemApi({
           IPC_CHANNELS.SETTINGS_SET_WINDOW_BOUNDS,
           bounds,
         ),
-      setOllamaConfig: (input) =>
-        safeInvoke(IPC_CHANNELS.SETTINGS_SET_OLLAMA_CONFIG, input),
-      setLlmPreference: (input) =>
-        safeInvoke(IPC_CHANNELS.SETTINGS_SET_LLM_PREFERENCE, input),
-      setLlmKeys: (input) =>
-        safeInvoke(IPC_CHANNELS.SETTINGS_SET_LLM_KEYS, input),
-      getLlmRuntime: () =>
-        safeInvoke(IPC_CHANNELS.SETTINGS_GET_LLM_RUNTIME),
+      setOllamaConfig: invoke(IPC_CHANNELS.SETTINGS_SET_OLLAMA_CONFIG),
+      setLlmPreference: invoke(IPC_CHANNELS.SETTINGS_SET_LLM_PREFERENCE),
+      setLlmKeys: invoke(IPC_CHANNELS.SETTINGS_SET_LLM_KEYS),
+      getLlmRuntime: invoke(IPC_CHANNELS.SETTINGS_GET_LLM_RUNTIME),
       listOllamaModels: (baseUrl) =>
         safeInvoke(IPC_CHANNELS.SETTINGS_LIST_OLLAMA_MODELS, baseUrl),
       testOllamaConnection: (baseUrl) =>
         safeInvoke(IPC_CHANNELS.SETTINGS_TEST_OLLAMA_CONNECTION, baseUrl),
-      getLocalLlmSettings: () =>
-        safeInvoke(IPC_CHANNELS.SETTINGS_GET_LOCAL_LLM),
-      setLocalLlmSettings: (input) =>
-        safeInvoke(IPC_CHANNELS.SETTINGS_SET_LOCAL_LLM, input),
-      getSidecarStatus: () =>
-        safeInvoke(IPC_CHANNELS.SIDECAR_STATUS),
-      onSidecarStatusChanged: (callback) => {
-        const listener = (_event: unknown, payload: UtilitySidecarStatusEvent) => {
-          callback(payload);
-        };
-        ipcRenderer.on(IPC_CHANNELS.SIDECAR_STATUS_CHANGED, listener);
-        return () => {
-          ipcRenderer.removeListener(IPC_CHANNELS.SIDECAR_STATUS_CHANGED, listener);
-        };
-      },
-      stopSidecar: () =>
-        safeInvoke(IPC_CHANNELS.SIDECAR_STOP),
-      startModelDownload: (input) =>
-        safeInvoke(IPC_CHANNELS.MODEL_DOWNLOAD_START, input),
-      cancelModelDownload: () =>
-        safeInvoke(IPC_CHANNELS.MODEL_DOWNLOAD_CANCEL),
+      getLocalLlmSettings: invoke(IPC_CHANNELS.SETTINGS_GET_LOCAL_LLM),
+      setLocalLlmSettings: invoke(IPC_CHANNELS.SETTINGS_SET_LOCAL_LLM),
+      getSidecarStatus: invoke(IPC_CHANNELS.SIDECAR_STATUS),
+      onSidecarStatusChanged: (callback) =>
+        onChannel<UtilitySidecarStatusEvent>(
+          IPC_CHANNELS.SIDECAR_STATUS_CHANGED,
+          callback,
+        ),
+      stopSidecar: invoke(IPC_CHANNELS.SIDECAR_STOP),
+      startModelDownload: invoke(IPC_CHANNELS.MODEL_DOWNLOAD_START),
+      cancelModelDownload: invoke(IPC_CHANNELS.MODEL_DOWNLOAD_CANCEL),
       searchHfModels: (query) =>
         safeInvoke(IPC_CHANNELS.MODEL_SEARCH_HF, { query }),
       getHfModelFiles: (repoId) =>
         safeInvoke(IPC_CHANNELS.MODEL_GET_HF_FILES, { repoId }),
-      getLlmfitRecommendations: (options) =>
-        safeInvoke(IPC_CHANNELS.LLMFIT_GET_RECOMMENDATIONS, options),
-      installLlmfit: () =>
-        safeInvoke(IPC_CHANNELS.LLMFIT_INSTALL),
-      getLlmfitStatus: () =>
-        safeInvoke(IPC_CHANNELS.LLMFIT_STATUS),
-      onModelDownloadProgress: (callback) => {
-        const listener = (_event: unknown, data: {
+      getLlmfitRecommendations: invoke(IPC_CHANNELS.LLMFIT_GET_RECOMMENDATIONS),
+      installLlmfit: invoke(IPC_CHANNELS.LLMFIT_INSTALL),
+      getLlmfitStatus: invoke(IPC_CHANNELS.LLMFIT_STATUS),
+      onModelDownloadProgress: (callback) =>
+        onChannel<{
           stage: "binary" | "model" | "complete" | "error";
           pct: number;
           error?: string;
-        }) => {
-          callback(data);
-        };
-        ipcRenderer.on(IPC_CHANNELS.MODEL_DOWNLOAD_PROGRESS, listener);
-        return () => {
-          ipcRenderer.removeListener(IPC_CHANNELS.MODEL_DOWNLOAD_PROGRESS, listener);
-        };
-      },
-      getEmbeddingModelStatus: () =>
-        safeInvoke(IPC_CHANNELS.EMBEDDING_MODEL_STATUS),
-      downloadEmbeddingModel: () =>
-        safeInvoke(IPC_CHANNELS.EMBEDDING_MODEL_DOWNLOAD),
-      onEmbeddingModelDownloadProgress: (callback) => {
-        const listener = (_event: unknown, data: {
+        }>(IPC_CHANNELS.MODEL_DOWNLOAD_PROGRESS, callback),
+      getEmbeddingModelStatus: invoke(IPC_CHANNELS.EMBEDDING_MODEL_STATUS),
+      downloadEmbeddingModel: invoke(IPC_CHANNELS.EMBEDDING_MODEL_DOWNLOAD),
+      onEmbeddingModelDownloadProgress: (callback) =>
+        onChannel<{
           stage: "downloading" | "complete" | "error";
           pct: number;
           error?: string;
-        }) => {
-          callback(data);
-        };
-        ipcRenderer.on(IPC_CHANNELS.EMBEDDING_MODEL_DOWNLOAD_PROGRESS, listener);
-        return () => {
-          ipcRenderer.removeListener(
-            IPC_CHANNELS.EMBEDDING_MODEL_DOWNLOAD_PROGRESS,
-            listener,
-          );
-        };
-      },
-      reset: () => safeInvoke(IPC_CHANNELS.SETTINGS_RESET),
+        }>(IPC_CHANNELS.EMBEDDING_MODEL_DOWNLOAD_PROGRESS, callback),
+      reset: invoke(IPC_CHANNELS.SETTINGS_RESET),
     },
     recovery: {
       getStatus: () =>
@@ -234,24 +198,10 @@ export function createSystemApi({
           IPC_CHANNELS.SYNC_RESOLVE_CONFLICT,
           resolution,
         ),
-      onStatusChanged: (callback) => {
-        const listener = (_event: unknown, status: SyncStatus) => {
-          callback(status);
-        };
-        ipcRenderer.on(IPC_CHANNELS.SYNC_STATUS_CHANGED, listener);
-        return () => {
-          ipcRenderer.removeListener(IPC_CHANNELS.SYNC_STATUS_CHANGED, listener);
-        };
-      },
-      onAuthResult: (callback) => {
-        const listener = (_event: unknown, result: SyncAuthResult) => {
-          callback(result);
-        };
-        ipcRenderer.on(IPC_CHANNELS.SYNC_AUTH_RESULT, listener);
-        return () => {
-          ipcRenderer.removeListener(IPC_CHANNELS.SYNC_AUTH_RESULT, listener);
-        };
-      },
+      onStatusChanged: (callback) =>
+        onChannel<SyncStatus>(IPC_CHANNELS.SYNC_STATUS_CHANGED, callback),
+      onAuthResult: (callback) =>
+        onChannel<SyncAuthResult>(IPC_CHANNELS.SYNC_AUTH_RESULT, callback),
     },
     startup: {
       getReadiness: () =>
@@ -265,26 +215,12 @@ export function createSystemApi({
     analysis: {
       start: (chapterId, projectId) =>
         safeInvoke(IPC_CHANNELS.ANALYSIS_START, { chapterId, projectId }),
-      stop: () => safeInvoke(IPC_CHANNELS.ANALYSIS_STOP),
-      clear: () => safeInvoke(IPC_CHANNELS.ANALYSIS_CLEAR),
-      onStream: (callback) => {
-        const listener = (_event: unknown, data: unknown) => {
-          callback(data);
-        };
-        ipcRenderer.on(IPC_CHANNELS.ANALYSIS_STREAM, listener);
-        return () => {
-          ipcRenderer.removeListener(IPC_CHANNELS.ANALYSIS_STREAM, listener);
-        };
-      },
-      onError: (callback) => {
-        const listener = (_event: unknown, error: unknown) => {
-          callback(error);
-        };
-        ipcRenderer.on(IPC_CHANNELS.ANALYSIS_ERROR, listener);
-        return () => {
-          ipcRenderer.removeListener(IPC_CHANNELS.ANALYSIS_ERROR, listener);
-        };
-      },
+      stop: invoke(IPC_CHANNELS.ANALYSIS_STOP),
+      clear: invoke(IPC_CHANNELS.ANALYSIS_CLEAR),
+      onStream: (callback) =>
+        onChannel<unknown>(IPC_CHANNELS.ANALYSIS_STREAM, callback),
+      onError: (callback) =>
+        onChannel<unknown>(IPC_CHANNELS.ANALYSIS_ERROR, callback),
     },
   };
 }

@@ -42,24 +42,6 @@ export default function ResearchPanel({
     }
   }, [activeTab, viewMode, onClose]);
 
-  const tabConfig: Record<
-    string,
-    { title: string; icon: React.JSX.Element }
-  > = {
-    synopsis: { title: t("sidebar.item.synopsis", "Synopsis"), icon: <FileText className="icon-lg" /> },
-    character: { title: t("research.title.characters", "Characters"), icon: <User className="icon-lg" /> },
-    event: { title: t("research.title.events", "Events"), icon: <Calendar className="icon-lg" /> },
-    faction: { title: t("research.title.factions", "Factions"), icon: <Shield className="icon-lg" /> },
-    world: { title: t("research.title.world", "World"), icon: <Globe className="icon-lg" /> },
-    scrap: { title: t("research.title.scrap", "Scrap"), icon: <BookOpen className="icon-lg" /> },
-    analysis: { title: t("research.title.analysis", "Analysis"), icon: <Sparkles className="icon-lg" /> },
-  };
-
-  // Safe fallback (keep tabConfig for future extensions if needed)
-  if (!tabConfig[activeTab]) {
-    // This just ensures tabConfig doesn't throw if not found
-  }
-
   const tabs: { id: "character" | "event" | "faction" | "world" | "synopsis" | "scrap" | "analysis"; icon: React.ElementType; label: string }[] = [
     { id: 'character', label: t("research.title.characters", "Characters"), icon: User },
     { id: 'event', label: t("research.title.events", "Events"), icon: Calendar },

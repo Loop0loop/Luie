@@ -2,6 +2,14 @@ import { IPC_CHANNELS } from "../../shared/ipc/channels.js";
 import type { RendererApi } from "../../shared/api/index.js";
 import type { PreloadApiModuleContext } from "./types.js";
 
+type BasicCrudApi = {
+  create: (input: unknown) => ReturnType<PreloadApiModuleContext["safeInvoke"]>;
+  get: (id: string) => ReturnType<PreloadApiModuleContext["safeInvoke"]>;
+  getAll: (projectId: string) => ReturnType<PreloadApiModuleContext["safeInvoke"]>;
+  update: (input: unknown) => ReturnType<PreloadApiModuleContext["safeInvoke"]>;
+  delete: (id: string) => ReturnType<PreloadApiModuleContext["safeInvoke"]>;
+};
+
 export function createProjectApi({
   autoSave,
   ipcRenderer,
@@ -47,6 +55,27 @@ export function createProjectApi({
       return value.toString(16);
     });
   };
+  const invoke = (channel: string) =>
+    (...args: unknown[]) => safeInvoke(channel, ...args);
+  const invokeOne = (channel: string) =>
+    (input: unknown) => safeInvoke(channel, input);
+  const invokeProjectPayload = (channel: string) =>
+    (projectId: string) => safeInvoke(channel, { projectId });
+  const createCrudApi = (
+    channels: {
+      create: string;
+      get: string;
+      getAll: string;
+      update: string;
+      delete: string;
+    },
+  ): BasicCrudApi => ({
+    create: (input) => safeInvoke(channels.create, input),
+    get: (id) => safeInvoke(channels.get, id),
+    getAll: (projectId) => safeInvoke(channels.getAll, projectId),
+    update: (input) => safeInvoke(channels.update, input),
+    delete: (id) => safeInvoke(channels.delete, id),
+  });
 
   return {
     project: {
@@ -111,41 +140,39 @@ export function createProjectApi({
       reorder: (projectId, chapterIds) =>
         safeInvoke(IPC_CHANNELS.CHAPTER_REORDER, projectId, chapterIds),
     },
-    scene: {
-      create: (input) => safeInvoke(IPC_CHANNELS.SCENE_CREATE, input),
-      get: (id) => safeInvoke(IPC_CHANNELS.SCENE_GET, id),
-      getAll: (projectId) => safeInvoke(IPC_CHANNELS.SCENE_GET_ALL, projectId),
-      update: (input) => safeInvoke(IPC_CHANNELS.SCENE_UPDATE, input),
-      delete: (id) => safeInvoke(IPC_CHANNELS.SCENE_DELETE, id),
-    },
-    note: {
-      create: (input) => safeInvoke(IPC_CHANNELS.NOTE_CREATE, input),
-      get: (id) => safeInvoke(IPC_CHANNELS.NOTE_GET, id),
-      getAll: (projectId) => safeInvoke(IPC_CHANNELS.NOTE_GET_ALL, projectId),
-      update: (input) => safeInvoke(IPC_CHANNELS.NOTE_UPDATE, input),
-      delete: (id) => safeInvoke(IPC_CHANNELS.NOTE_DELETE, id),
-    },
-    synopsis: {
-      create: (input) => safeInvoke(IPC_CHANNELS.SYNOPSIS_CREATE, input),
-      get: (id) => safeInvoke(IPC_CHANNELS.SYNOPSIS_GET, id),
-      getAll: (projectId) =>
-        safeInvoke(IPC_CHANNELS.SYNOPSIS_GET_ALL, projectId),
-      update: (input) => safeInvoke(IPC_CHANNELS.SYNOPSIS_UPDATE, input),
-      delete: (id) => safeInvoke(IPC_CHANNELS.SYNOPSIS_DELETE, id),
-    },
-    plot: {
-      create: (input) => safeInvoke(IPC_CHANNELS.PLOT_CREATE, input),
-      get: (id) => safeInvoke(IPC_CHANNELS.PLOT_GET, id),
-      getAll: (projectId) => safeInvoke(IPC_CHANNELS.PLOT_GET_ALL, projectId),
-      update: (input) => safeInvoke(IPC_CHANNELS.PLOT_UPDATE, input),
-      delete: (id) => safeInvoke(IPC_CHANNELS.PLOT_DELETE, id),
-    },
+    scene: createCrudApi({
+      create: IPC_CHANNELS.SCENE_CREATE,
+      get: IPC_CHANNELS.SCENE_GET,
+      getAll: IPC_CHANNELS.SCENE_GET_ALL,
+      update: IPC_CHANNELS.SCENE_UPDATE,
+      delete: IPC_CHANNELS.SCENE_DELETE,
+    }) as RendererApi["scene"],
+    note: createCrudApi({
+      create: IPC_CHANNELS.NOTE_CREATE,
+      get: IPC_CHANNELS.NOTE_GET,
+      getAll: IPC_CHANNELS.NOTE_GET_ALL,
+      update: IPC_CHANNELS.NOTE_UPDATE,
+      delete: IPC_CHANNELS.NOTE_DELETE,
+    }) as RendererApi["note"],
+    synopsis: createCrudApi({
+      create: IPC_CHANNELS.SYNOPSIS_CREATE,
+      get: IPC_CHANNELS.SYNOPSIS_GET,
+      getAll: IPC_CHANNELS.SYNOPSIS_GET_ALL,
+      update: IPC_CHANNELS.SYNOPSIS_UPDATE,
+      delete: IPC_CHANNELS.SYNOPSIS_DELETE,
+    }) as RendererApi["synopsis"],
+    plot: createCrudApi({
+      create: IPC_CHANNELS.PLOT_CREATE,
+      get: IPC_CHANNELS.PLOT_GET,
+      getAll: IPC_CHANNELS.PLOT_GET_ALL,
+      update: IPC_CHANNELS.PLOT_UPDATE,
+      delete: IPC_CHANNELS.PLOT_DELETE,
+    }) as RendererApi["plot"],
     scrapMemo: {
-      create: (input) => safeInvoke(IPC_CHANNELS.SCRAP_MEMO_CREATE, input),
-      getAll: (projectId) =>
-        safeInvoke(IPC_CHANNELS.SCRAP_MEMO_GET_ALL, projectId),
-      update: (input) => safeInvoke(IPC_CHANNELS.SCRAP_MEMO_UPDATE, input),
-      delete: (id) => safeInvoke(IPC_CHANNELS.SCRAP_MEMO_DELETE, id),
+      create: invokeOne(IPC_CHANNELS.SCRAP_MEMO_CREATE),
+      getAll: invokeOne(IPC_CHANNELS.SCRAP_MEMO_GET_ALL),
+      update: invokeOne(IPC_CHANNELS.SCRAP_MEMO_UPDATE),
+      delete: invokeOne(IPC_CHANNELS.SCRAP_MEMO_DELETE),
     },
     character: {
       create: (input) => safeInvoke(IPC_CHANNELS.CHARACTER_CREATE, input),
@@ -154,35 +181,31 @@ export function createProjectApi({
         safeInvoke(IPC_CHANNELS.CHARACTER_GET_ALL, projectId),
       update: (input) => safeInvoke(IPC_CHANNELS.CHARACTER_UPDATE, input),
       delete: (id) => safeInvoke(IPC_CHANNELS.CHARACTER_DELETE, id),
-      generateImage: (input) =>
-        safeInvoke(IPC_CHANNELS.CHARACTER_GENERATE_IMAGE, input),
-      generateQuote: (input) =>
-        safeInvoke(IPC_CHANNELS.CHARACTER_GENERATE_QUOTE, input),
-      generateStats: (input) =>
-        safeInvoke(IPC_CHANNELS.CHARACTER_GENERATE_STATS, input),
+      generateImage: invokeOne(IPC_CHANNELS.CHARACTER_GENERATE_IMAGE),
+      generateQuote: invokeOne(IPC_CHANNELS.CHARACTER_GENERATE_QUOTE),
+      generateStats: invokeOne(IPC_CHANNELS.CHARACTER_GENERATE_STATS),
     },
-    event: {
-      create: (input) => safeInvoke(IPC_CHANNELS.EVENT_CREATE, input),
-      get: (id) => safeInvoke(IPC_CHANNELS.EVENT_GET, id),
-      getAll: (projectId) => safeInvoke(IPC_CHANNELS.EVENT_GET_ALL, projectId),
-      update: (input) => safeInvoke(IPC_CHANNELS.EVENT_UPDATE, input),
-      delete: (id) => safeInvoke(IPC_CHANNELS.EVENT_DELETE, id),
-    },
-    faction: {
-      create: (input) => safeInvoke(IPC_CHANNELS.FACTION_CREATE, input),
-      get: (id) => safeInvoke(IPC_CHANNELS.FACTION_GET, id),
-      getAll: (projectId) =>
-        safeInvoke(IPC_CHANNELS.FACTION_GET_ALL, projectId),
-      update: (input) => safeInvoke(IPC_CHANNELS.FACTION_UPDATE, input),
-      delete: (id) => safeInvoke(IPC_CHANNELS.FACTION_DELETE, id),
-    },
-    term: {
-      create: (input) => safeInvoke(IPC_CHANNELS.TERM_CREATE, input),
-      get: (id) => safeInvoke(IPC_CHANNELS.TERM_GET, id),
-      getAll: (projectId) => safeInvoke(IPC_CHANNELS.TERM_GET_ALL, projectId),
-      update: (input) => safeInvoke(IPC_CHANNELS.TERM_UPDATE, input),
-      delete: (id) => safeInvoke(IPC_CHANNELS.TERM_DELETE, id),
-    },
+    event: createCrudApi({
+      create: IPC_CHANNELS.EVENT_CREATE,
+      get: IPC_CHANNELS.EVENT_GET,
+      getAll: IPC_CHANNELS.EVENT_GET_ALL,
+      update: IPC_CHANNELS.EVENT_UPDATE,
+      delete: IPC_CHANNELS.EVENT_DELETE,
+    }) as RendererApi["event"],
+    faction: createCrudApi({
+      create: IPC_CHANNELS.FACTION_CREATE,
+      get: IPC_CHANNELS.FACTION_GET,
+      getAll: IPC_CHANNELS.FACTION_GET_ALL,
+      update: IPC_CHANNELS.FACTION_UPDATE,
+      delete: IPC_CHANNELS.FACTION_DELETE,
+    }) as RendererApi["faction"],
+    term: createCrudApi({
+      create: IPC_CHANNELS.TERM_CREATE,
+      get: IPC_CHANNELS.TERM_GET,
+      getAll: IPC_CHANNELS.TERM_GET_ALL,
+      update: IPC_CHANNELS.TERM_UPDATE,
+      delete: IPC_CHANNELS.TERM_DELETE,
+    }) as RendererApi["term"],
     snapshot: {
       create: (input) => safeInvoke(IPC_CHANNELS.SNAPSHOT_CREATE, input),
       getByProject: (projectId) =>
@@ -211,7 +234,7 @@ export function createProjectApi({
       delete: (id) => safeInvoke(IPC_CHANNELS.SNAPSHOT_DELETE, id),
     },
     export: {
-      create: (request) => safeInvoke(IPC_CHANNELS.EXPORT_CREATE, request),
+      create: invokeOne(IPC_CHANNELS.EXPORT_CREATE),
     },
     fs: {
       saveProject: (projectName, projectPath, content) =>
@@ -254,99 +277,59 @@ export function createProjectApi({
       approveProjectPath: (projectPath) =>
         safeInvoke(IPC_CHANNELS.FS_APPROVE_PROJECT_PATH, projectPath),
     },
-    search: (query) => safeInvoke(IPC_CHANNELS.SEARCH, query),
+    search: invokeOne(IPC_CHANNELS.SEARCH),
     searchAdmin: {
-      getIndexStatus: (projectId) =>
-        safeInvoke(IPC_CHANNELS.SEARCH_INDEX_STATUS, projectId),
-      rebuildIndex: (projectId) =>
-        safeInvoke(IPC_CHANNELS.SEARCH_REBUILD_INDEX, projectId),
+      getIndexStatus: invokeOne(IPC_CHANNELS.SEARCH_INDEX_STATUS),
+      rebuildIndex: invokeOne(IPC_CHANNELS.SEARCH_REBUILD_INDEX),
     },
     memoryAdmin: {
-      rebuildChunks: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_REBUILD_CHUNKS, input),
-      getJobStatus: (projectId) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_JOB_STATUS, projectId),
-      getSummaryStatus: (projectId) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_GET_SUMMARY_STATUS, { projectId }),
-      getEmbeddingStatus: (projectId) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_GET_EMBEDDING_STATUS, { projectId }),
-      pauseBuildJobs: (projectId) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_PAUSE_BUILD_JOBS, { projectId }),
-      resumeBuildJobs: (projectId) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_RESUME_BUILD_JOBS, { projectId }),
-      cancelBuildJobs: (projectId) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_CANCEL_BUILD_JOBS, { projectId }),
-      getBuildJobProgress: (projectId) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_GET_BUILD_JOB_PROGRESS, { projectId }),
-      runEvalSuite: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_RUN_EVAL_SUITE, input),
-      recordEvalFeedback: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_RECORD_EVAL_FEEDBACK, input),
-      runIntentCalibration: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_RUN_INTENT_CALIBRATION, input),
-      runEpisodeCalibration: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_RUN_EPISODE_CALIBRATION, input),
+      rebuildChunks: invokeOne(IPC_CHANNELS.MEMORY_REBUILD_CHUNKS),
+      getJobStatus: invokeOne(IPC_CHANNELS.MEMORY_JOB_STATUS),
+      getSummaryStatus: invokeProjectPayload(IPC_CHANNELS.MEMORY_GET_SUMMARY_STATUS),
+      getEmbeddingStatus: invokeProjectPayload(IPC_CHANNELS.MEMORY_GET_EMBEDDING_STATUS),
+      pauseBuildJobs: invokeProjectPayload(IPC_CHANNELS.MEMORY_PAUSE_BUILD_JOBS),
+      resumeBuildJobs: invokeProjectPayload(IPC_CHANNELS.MEMORY_RESUME_BUILD_JOBS),
+      cancelBuildJobs: invokeProjectPayload(IPC_CHANNELS.MEMORY_CANCEL_BUILD_JOBS),
+      getBuildJobProgress: invokeProjectPayload(IPC_CHANNELS.MEMORY_GET_BUILD_JOB_PROGRESS),
+      runEvalSuite: invokeOne(IPC_CHANNELS.MEMORY_RUN_EVAL_SUITE),
+      recordEvalFeedback: invokeOne(IPC_CHANNELS.MEMORY_RECORD_EVAL_FEEDBACK),
+      runIntentCalibration: invokeOne(IPC_CHANNELS.MEMORY_RUN_INTENT_CALIBRATION),
+      runEpisodeCalibration: invokeOne(IPC_CHANNELS.MEMORY_RUN_EPISODE_CALIBRATION),
     },
     memory: {
-      queryNarrative: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_QUERY_NARRATIVE, input),
-      getReviewBacklog: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_REVIEW_BACKLOG, input),
-      getConflictQueue: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_GET_CONFLICT_QUEUE, input),
-      getEpisodeReviewQueue: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_EPISODE_REVIEW_QUEUE, input),
-      confirmEpisode: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_EPISODE_CONFIRM, input),
-      rejectEpisode: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_EPISODE_REJECT, input),
-      getFactReviewQueue: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_FACT_REVIEW_QUEUE, input),
-      confirmFact: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_FACT_CONFIRM, input),
-      rejectFact: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_FACT_REJECT, input),
-      resolveFactConflict: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_CONFLICT_RESOLVE, input),
-      reviewFactConflict: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_CONFLICT_REVIEW_ACTION, input),
-      getEntityAliasReviewQueue: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_REVIEW_QUEUE, input),
-      getEntityReviewQueue: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_REVIEW_QUEUE, input),
-      confirmEntity: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_CONFIRM, input),
-      rejectEntity: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_REJECT, input),
-      confirmEntityAlias: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_CONFIRM, input),
-      rejectEntityAlias: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_REJECT, input),
-      splitEntityAlias: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_SPLIT, input),
-      mergeEntity: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_ENTITY_MERGE, input),
-      reviewStaleEvidence: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_STALE_EVIDENCE_REVIEW_ACTION, input),
-      repairEvidenceLinks: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_REPAIR_EVIDENCE_LINKS, input),
-      searchChunks: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_SEARCH_CHUNKS, input),
-      getChunkBacklink: (chunkId) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_GET_CHUNK_BACKLINK, chunkId),
-      getChunkWindow: (input) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_GET_CHUNK_WINDOW, input),
-      getChapterSummary: (chapterId) =>
-        safeInvoke(IPC_CHANNELS.MEMORY_GET_CHAPTER_SUMMARY, chapterId),
+      queryNarrative: invokeOne(IPC_CHANNELS.MEMORY_QUERY_NARRATIVE),
+      getReviewBacklog: invokeOne(IPC_CHANNELS.MEMORY_REVIEW_BACKLOG),
+      getConflictQueue: invokeOne(IPC_CHANNELS.MEMORY_GET_CONFLICT_QUEUE),
+      getEpisodeReviewQueue: invokeOne(IPC_CHANNELS.MEMORY_EPISODE_REVIEW_QUEUE),
+      confirmEpisode: invokeOne(IPC_CHANNELS.MEMORY_EPISODE_CONFIRM),
+      rejectEpisode: invokeOne(IPC_CHANNELS.MEMORY_EPISODE_REJECT),
+      getFactReviewQueue: invokeOne(IPC_CHANNELS.MEMORY_FACT_REVIEW_QUEUE),
+      confirmFact: invokeOne(IPC_CHANNELS.MEMORY_FACT_CONFIRM),
+      rejectFact: invokeOne(IPC_CHANNELS.MEMORY_FACT_REJECT),
+      resolveFactConflict: invokeOne(IPC_CHANNELS.MEMORY_CONFLICT_RESOLVE),
+      reviewFactConflict: invokeOne(IPC_CHANNELS.MEMORY_CONFLICT_REVIEW_ACTION),
+      getEntityAliasReviewQueue: invokeOne(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_REVIEW_QUEUE),
+      getEntityReviewQueue: invokeOne(IPC_CHANNELS.MEMORY_ENTITY_REVIEW_QUEUE),
+      confirmEntity: invokeOne(IPC_CHANNELS.MEMORY_ENTITY_CONFIRM),
+      rejectEntity: invokeOne(IPC_CHANNELS.MEMORY_ENTITY_REJECT),
+      confirmEntityAlias: invokeOne(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_CONFIRM),
+      rejectEntityAlias: invokeOne(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_REJECT),
+      splitEntityAlias: invokeOne(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_SPLIT),
+      mergeEntity: invokeOne(IPC_CHANNELS.MEMORY_ENTITY_MERGE),
+      reviewStaleEvidence: invokeOne(IPC_CHANNELS.MEMORY_STALE_EVIDENCE_REVIEW_ACTION),
+      repairEvidenceLinks: invokeOne(IPC_CHANNELS.MEMORY_REPAIR_EVIDENCE_LINKS),
+      searchChunks: invokeOne(IPC_CHANNELS.MEMORY_SEARCH_CHUNKS),
+      getChunkBacklink: invokeOne(IPC_CHANNELS.MEMORY_GET_CHUNK_BACKLINK),
+      getChunkWindow: invokeOne(IPC_CHANNELS.MEMORY_GET_CHUNK_WINDOW),
+      getChapterSummary: invokeOne(IPC_CHANNELS.MEMORY_GET_CHAPTER_SUMMARY),
       getNarrativeSummaryStatus: (projectId) =>
         safeInvoke(IPC_CHANNELS.MEMORY_GET_NARRATIVE_SUMMARY_STATUS, {
           projectId,
         }),
     },
     maintenance: {
-      runIntegrityCheck: () => safeInvoke(IPC_CHANNELS.DB_RUN_INTEGRITY_CHECK),
-      getMigrationHealth: () =>
-        safeInvoke(IPC_CHANNELS.DB_GET_MIGRATION_HEALTH),
+      runIntegrityCheck: invoke(IPC_CHANNELS.DB_RUN_INTEGRITY_CHECK),
+      getMigrationHealth: invoke(IPC_CHANNELS.DB_GET_MIGRATION_HEALTH),
     },
     rag: {
       ask: (input) => safeInvoke(IPC_CHANNELS.RAG_QA_ASK, input),

@@ -431,8 +431,8 @@ export const registerAppReady = (
     });
 
     const ipcRegistrationStartedAt = Date.now();
-    const { registerIPCHandlers } = await import("../../handler/index.js");
-    await registerIPCHandlers();
+    const { registerAllIPCHandlers } = await import("../../handler/index.js");
+    await registerAllIPCHandlers();
     logger.info("Startup checkpoint: IPC handlers ready", {
       elapsedMs: Date.now() - ipcRegistrationStartedAt,
       startupElapsedMs: Date.now() - startupStartedAtMs,
