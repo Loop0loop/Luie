@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const editorSettingsSchema = z.strictObject({
+const editorSettingsShape = z.strictObject({
   fontFamily: z.union([z.enum(["system-ui", "serif", "mono"]), z.string()]),
   fontPreset: z
     .string()
@@ -30,13 +30,11 @@ export const editorSettingsSchema = z.strictObject({
   maxWidth: z.number().int().positive(),
   spellcheckEnabled: z.boolean().optional().default(true),
   theme: z.enum(["light", "dark", "sepia"]),
-  themeTemp: z.enum(["neutral", "warm", "cool"]).optional().default("neutral"),
   themeContrast: z.enum(["soft", "high"]).optional().default("soft"),
   themeAccent: z
     .enum(["blue", "violet", "green", "amber", "rose", "slate"])
     .optional()
     .default("blue"),
-  themeTexture: z.boolean().optional().default(true),
   uiMode: z
     .enum(["default", "docs", "editor", "word", "scrivener"])
     .transform((v) => (v === "word" ? "editor" : v))
@@ -50,6 +48,19 @@ export const editorSettingsSchema = z.strictObject({
     term: z.string(),
   }).optional(),
 });
+
+// Strip removed legacy keys (themeTemp/themeTexture) before strict validation
+// so existing users' stored settings still parse instead of resetting to
+// defaults. Safe to drop this shim once no stored settings carry them.
+export const editorSettingsSchema = z.preprocess((value) => {
+  if (value && typeof value === "object") {
+    const { themeTemp, themeTexture, ...rest } = value as Record<string, unknown>;
+    void themeTemp;
+    void themeTexture;
+    return rest;
+  }
+  return value;
+}, editorSettingsShape);
 
 export const settingsAutoSaveSchema = z.strictObject({
   enabled: z.boolean().optional(),

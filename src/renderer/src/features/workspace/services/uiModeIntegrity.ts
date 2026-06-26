@@ -37,10 +37,8 @@ export type UiModeIntegritySnapshot = {
   lineHeight: number;
   maxWidth: number;
   theme: EditorSettings["theme"];
-  themeTemp: EditorSettings["themeTemp"];
   themeContrast: EditorSettings["themeContrast"];
   themeAccent: EditorSettings["themeAccent"];
-  themeTexture: EditorSettings["themeTexture"];
 };
 
 export function captureUiModeIntegritySnapshot(input: {
@@ -70,10 +68,8 @@ export function captureUiModeIntegritySnapshot(input: {
     lineHeight: input.editor.lineHeight,
     maxWidth: input.editor.maxWidth,
     theme: input.editor.theme,
-    themeTemp: input.editor.themeTemp,
     themeContrast: input.editor.themeContrast,
     themeAccent: input.editor.themeAccent,
-    themeTexture: input.editor.themeTexture,
   };
 }
 
@@ -98,10 +94,8 @@ const NON_LAYOUT_KEYS: Array<keyof Omit<UiModeIntegritySnapshot, "uiMode">> = [
   "lineHeight",
   "maxWidth",
   "theme",
-  "themeTemp",
   "themeContrast",
   "themeAccent",
-  "themeTexture",
 ];
 
 export function getUiModeIntegrityViolations(

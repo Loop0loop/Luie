@@ -176,6 +176,14 @@ shadcn 어휘 대부분은 `global.tokens.css @theme`에서 Luie 단축형과 **
 `rounded-control`(28회), `rounded-panel`(1), `shadow-panel`(2), `z-dropdown`(3), `p-panel-pad`(2), `gap-panel-gap`(1) 등 → 해당 요소들이 의도한 곡률/그림자/간격/z-index를 **조용히 못 받고 있음**.
 → **Phase 2b(신설)**: 사용 중인 config 토큰을 `@theme`로 이관 + `tailwind.config.js` 삭제. 단 `rounded-control` 등 28곳이 의도대로 곡률을 "되살아나" **눈에 보이는 변화**가 생기므로 별도 승인 후 진행.
 
+### 후속 정리 완료 (2026-06-26)
+D2에서 inert로 남겼던 `themeTemp`/`themeTexture` 필드를 **완전 삭제** + i18n 미사용 키 제거.
+- 스키마: `editorSettingsSchema`를 `z.preprocess`로 감싸 **legacy 키(themeTemp/themeTexture)를 strict 검증 전에 strip** → 기존 사용자의 저장 설정이 reset되지 않고 그대로 파싱됨(strictObject + safeParse-fallback 구조라 필수). strict 검증은 그 외 unknown 키에 대해 유지.
+- 필드 제거: `types/settings.ts`(필드+`ThemeTemperature`/`ThemeTexture` 타입), `types/index.ts`(re-export), `constants/editor/defaults.ts`, main `settingsDefaults.ts`, `editorStore`(상태/normalizer/import), `uiModeIntegrity`(스냅샷 3곳).
+- i18n: ko/en/ja `Settings.ts`에서 `appearance.texture`/`appearance.atmosphere` 키 제거(3개 로케일 대칭).
+- 검증: `tsx` 런타임 테스트로 **legacy 설정 파싱+strip+kept 필드 보존+unknown 거부** 확인 · `tsc` clean · `pnpm build` exit 0 · 가드 green · i18n parity는 기존 144개 diff(무관) 외 신규 0.
+- 남은 후속: preprocess strip 셤은 저장 설정에서 legacy 키가 사라진 뒤 제거 가능(주석 표시됨).
+
 ### D2 완료 (2026-06-26) — 정정된 범위
 **조사 중 정정:** D2 원안은 `temp/contrast/texture/uiMode` 제거였으나, 코드 확인 결과 두 개는 cosmetic 축이 아니었다:
 - `uiMode` = **4-레이아웃 선택자**(default/docs/editor/scrivener/focus). 전용 `uiModeIntegrity` 서비스 + dev 무결성 체크 존재. 제거 시 멀티 레이아웃 시스템 붕괴 → **유지**.

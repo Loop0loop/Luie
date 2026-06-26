@@ -2,7 +2,6 @@ export type FontFamilyPreset = "system-ui" | "serif" | "mono";
 export type FontFamily = FontFamilyPreset | string;
 export type FontPreset = "inter";
 export type EditorTheme = "light" | "dark" | "sepia";
-export type ThemeTemperature = "neutral" | "warm" | "cool";
 export type ThemeContrast = "soft" | "high";
 export type ThemeAccent =
   | "blue"
@@ -11,7 +10,6 @@ export type ThemeAccent =
   | "amber"
   | "rose"
   | "slate";
-export type ThemeTexture = boolean;
 export type WindowMenuBarMode = "hidden" | "visible";
 export type RagSearchOptimizationMode =
   | "low-end"
@@ -320,10 +318,8 @@ export interface EditorSettings {
   maxWidth: number;
   spellcheckEnabled: boolean;
   theme: EditorTheme;
-  themeTemp: "neutral" | "warm" | "cool";
   themeContrast: "soft" | "high";
   themeAccent: ThemeAccent;
-  themeTexture: ThemeTexture;
   uiMode: EditorUiMode;
   enableAnimations: boolean;
   entityColors?: {

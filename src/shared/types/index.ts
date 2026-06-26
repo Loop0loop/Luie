@@ -302,8 +302,6 @@ export type {
   SyncStatus,
   ThemeAccent,
   ThemeContrast,
-  ThemeTemperature,
-  ThemeTexture,
   WindowBounds,
   WindowMenuBarMode,
   WindowState,
