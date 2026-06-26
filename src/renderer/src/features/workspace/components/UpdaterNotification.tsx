@@ -116,7 +116,7 @@ export default function UpdaterNotification() {
   if (!visible) return null;
 
   return (
-    <div className="fixed right-4 bottom-4 w-[360px] max-w-[calc(100vw-2rem)] bg-surface border border-border rounded-xl shadow-2xl overflow-hidden z-[140] animate-in slide-in-from-bottom-5 fade-in duration-300">
+    <div className="fixed right-4 bottom-4 w-[360px] max-w-[calc(100vw-2rem)] bg-surface border border-border rounded-xl shadow-xl overflow-hidden z-[140] animate-in slide-in-from-bottom-5 fade-in duration-300">
       <div className="p-4 flex flex-col gap-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">

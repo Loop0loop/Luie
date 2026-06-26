@@ -84,7 +84,7 @@ function HeroImage({
         )}
       >
         <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center transition-transform group-hover/cta:scale-105"
+          className="w-16 h-16 rounded-lg flex items-center justify-center transition-transform group-hover/cta:scale-105"
           style={{ backgroundColor: `${characterColor}15` }}
         >
           {isGenerating ? (

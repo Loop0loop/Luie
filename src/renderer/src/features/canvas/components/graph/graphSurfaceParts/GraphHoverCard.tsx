@@ -20,7 +20,7 @@ export function GraphHoverCard({
   return (
     <div
       className={cn(
-        "absolute top-16 z-30 w-[300px] rounded-2xl border border-border/30 bg-panel/85 backdrop-blur-xl p-4 shadow-[0_12px_40px_rgba(0,0,0,0.25)] animate-in fade-in duration-300 text-fg flex flex-col gap-3.5 select-none overflow-hidden after:absolute after:top-0 after:left-0 after:right-0 after:h-[1px] after:bg-gradient-to-r after:from-accent/40 after:to-transparent after:rounded-t-2xl transition-all duration-300",
+        "absolute top-16 z-30 w-[300px] rounded-lg border border-border/30 bg-panel/85 backdrop-blur-xl p-4 shadow-[0_12px_40px_rgba(0,0,0,0.25)] animate-in fade-in duration-300 text-fg flex flex-col gap-3.5 select-none overflow-hidden after:absolute after:top-0 after:left-0 after:right-0 after:h-[1px] after:bg-gradient-to-r after:from-accent/40 after:to-transparent after:rounded-t-2xl transition-all duration-300",
         isRightPanelOpen ? "right-[340px]" : "right-6",
       )}
     >

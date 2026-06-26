@@ -75,7 +75,7 @@ export function MessageList({ messages, onJumpEvidence }: MessageListProps) {
               <div
                 className={`text-[13px] leading-[1.6] whitespace-pre-wrap ${
                   msg.role === "user"
-                    ? "bg-neutral-850 border border-white/5 text-fg/90 px-4 py-2.5 rounded-2xl rounded-tr-none shadow-sm"
+                    ? "bg-neutral-850 border border-white/5 text-fg/90 px-4 py-2.5 rounded-lg rounded-tr-none shadow-sm"
                     : "text-fg/90 py-1 px-1"
                 }`}
               >

@@ -131,10 +131,10 @@ export default function StartupWizard() {
 
   return (
     <div className="min-h-screen bg-app text-fg flex items-center justify-center px-6">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-panel shadow-xl p-8">
+      <div className="w-full max-w-md rounded-lg border border-border bg-panel shadow-xl p-8">
         {step === "intro" && (
           <div className="flex flex-col items-center gap-5 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+            <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-accent/10 text-accent">
               <Sparkles className="h-7 w-7" />
             </div>
             <h1 className="text-xl font-semibold">

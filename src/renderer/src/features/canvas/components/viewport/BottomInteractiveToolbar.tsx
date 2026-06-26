@@ -47,7 +47,7 @@ export function BottomInteractiveToolbar() {
       data-testid="bottom-interactive-toolbar"
     >
       <div className={cn(
-        "flex h-11 items-center gap-2 rounded-full border shadow-2xl backdrop-blur-md px-3 py-1",
+        "flex h-11 items-center gap-2 rounded-full border shadow-xl backdrop-blur-md px-3 py-1",
         "bg-[#f5f5f5]/95 border-gray-300 text-gray-800 dark:bg-[#2c2c2c]/95 dark:border-[#3d3d3d] dark:text-white",
         transitionClass
       )}>

@@ -121,7 +121,7 @@ export function ColorPickerMenu({
       </button>
 
       {open && (
-        <div className="absolute left-1/2 top-full z-50 mt-1 -translate-x-1/2 rounded-xl border border-border bg-panel p-3.5 shadow-2xl" style={{ minWidth: "11rem" }}>
+        <div className="absolute left-1/2 top-full z-50 mt-1 -translate-x-1/2 rounded-xl border border-border bg-panel p-3.5 shadow-xl" style={{ minWidth: "11rem" }}>
           <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-muted">
             {label}
           </p>

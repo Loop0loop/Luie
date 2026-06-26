@@ -168,7 +168,7 @@ export function PromptComposer({
         </button>
 
         {showMenu && (
-          <div className="absolute bottom-11 left-0 w-52 rounded-2xl bg-[#1a1a1a]/95 backdrop-blur-2xl shadow-2xl p-1.5 z-50 animate-[fadeIn_0.15s_ease-out]">
+          <div className="absolute bottom-11 left-0 w-52 rounded-lg bg-[#1a1a1a]/95 backdrop-blur-2xl shadow-xl p-1.5 z-50 animate-[fadeIn_0.15s_ease-out]">
             <button
               type="button"
               onClick={() => {

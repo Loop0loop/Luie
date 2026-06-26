@@ -16,7 +16,7 @@ export function GraphLegendModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-panel border border-border/40 w-[400px] rounded-2xl shadow-2xl p-5 flex flex-col gap-4 text-fg relative animate-in zoom-in-95 duration-200 select-none">
+      <div className="bg-panel border border-border/40 w-[400px] rounded-lg shadow-xl p-5 flex flex-col gap-4 text-fg relative animate-in zoom-in-95 duration-200 select-none">
         <button
           type="button"
           onClick={onClose}

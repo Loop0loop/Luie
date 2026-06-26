@@ -15,7 +15,7 @@ const BASELINE = {
   rawHex: 313,
   rawColor: 197,
   arbitraryPx: 403,
-  roundedBig: 170,
+  roundedBig: 157,
   shadowBig: 41,
   shadcnVocab: 0, // Phase 1: shadcn long-form vocab fully removed (banned going forward)
 };

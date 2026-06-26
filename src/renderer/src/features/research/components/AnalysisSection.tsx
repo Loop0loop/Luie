@@ -186,7 +186,7 @@ function FloatingWrapper({ children, compact = false }: FloatingWrapperProps) {
   return (
     <div
       data-testid="analysis-floating-container"
-      className={`group fixed bottom-24 right-6 rounded-3xl border border-white/10 ring-1 ring-white/5 shadow-[0_24px_70px_-15px_rgba(0,0,0,0.7)] bg-neutral-900/55 backdrop-blur-2xl backdrop-saturate-150 z-[9999] flex flex-col overflow-hidden cursor-grab active:cursor-grabbing ${
+      className={`group fixed bottom-24 right-6 rounded-xl border border-white/10 ring-1 ring-white/5 shadow-[0_24px_70px_-15px_rgba(0,0,0,0.7)] bg-neutral-900/55 backdrop-blur-2xl backdrop-saturate-150 z-[9999] flex flex-col overflow-hidden cursor-grab active:cursor-grabbing ${
         isDraggingState ? "transition-none" : "transition-all duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)]"
       }`}
       style={{

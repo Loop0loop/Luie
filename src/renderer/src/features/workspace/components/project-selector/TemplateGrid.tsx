@@ -68,7 +68,7 @@ export function TemplateGrid({
               transition-all duration-300 
               shadow-sm
               group-hover:-translate-y-1.5 
-              group-hover:shadow-2xl 
+              group-hover:shadow-xl 
               group-hover:border-white/10
               group-hover:bg-surface
             "

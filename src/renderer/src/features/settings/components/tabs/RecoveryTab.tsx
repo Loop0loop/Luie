@@ -181,7 +181,7 @@ export const RecoveryTab = memo(function RecoveryTab({
               )}
             </div>
             {recoveryStatus?.preview?.excerpt && (
-              <div className="mt-4 rounded-2xl bg-app px-4 py-4 text-sm leading-7 text-fg">
+              <div className="mt-4 rounded-lg bg-app px-4 py-4 text-sm leading-7 text-fg">
                 <div className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-subtle">
                   {t("settings.recovery.summary.preview")}
                 </div>
@@ -193,7 +193,7 @@ export const RecoveryTab = memo(function RecoveryTab({
 
         {recoveryResult && (
           <div
-            className={`mt-6 rounded-2xl border px-4 py-3 text-sm leading-7 ${
+            className={`mt-6 rounded-lg border px-4 py-3 text-sm leading-7 ${
               recoveryResult.success
                 ? "border-success/30 bg-success/10 text-fg"
                 : "border-danger/30 bg-danger/10 text-danger-fg"
@@ -204,7 +204,7 @@ export const RecoveryTab = memo(function RecoveryTab({
         )}
 
         {recoveryStatusError && (
-          <div className="mt-4 rounded-2xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm leading-7 text-danger-fg">
+          <div className="mt-4 rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm leading-7 text-danger-fg">
             {recoveryStatusError}
           </div>
         )}
@@ -253,7 +253,7 @@ export const RecoveryTab = memo(function RecoveryTab({
           </button>
 
           {showTechnicalDetails && (
-            <div className="mt-4 space-y-4 rounded-2xl border border-border bg-app/60 p-4">
+            <div className="mt-4 space-y-4 rounded-lg border border-border bg-app/60 p-4">
               <div className="text-sm text-muted">
                 {t("settings.recovery.scope.libraryDescription")}
               </div>
