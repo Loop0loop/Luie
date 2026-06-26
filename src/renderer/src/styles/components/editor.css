@@ -44,9 +44,9 @@
        letter-spacing, word-spacing 은 Editor 외부 컨테이너에서
        CSS custom property로 주입 → store 변경 시 즉시 반영(reactive). */
     font-size: 1rem;
-    line-height: var(--editor-line-height, inherit);
-    letter-spacing: var(--editor-letter-spacing, 0.05em);
-    word-spacing: var(--editor-word-spacing, 0.06em);
+    line-height: var(--editor-line-height, 1.9);
+    letter-spacing: var(--editor-letter-spacing, 0.02em);
+    word-spacing: var(--editor-word-spacing, 0.04em);
     word-break: keep-all;
     overflow-wrap: break-word;
 
@@ -90,9 +90,9 @@
     margin-top: 0;
     margin-bottom: var(--editor-paragraph-spacing, 1em);
     /* --editor-line-height 는 Editor.tsx에서 ProseMirror root에 CSS var로 주입된다.
-       fallback 1.4 = 커서가 한국어 글자와 거의 같은 높이로 보이는 최적값 */
-    line-height: var(--editor-line-height, 1.4);
-    min-height: calc(var(--editor-font-size, 1rem) * var(--editor-line-height, 1.4));
+       fallback 1.9 = 노벨피아·문피아 한국어 장문 본문 기준 (헤더 주석과 일치) */
+    line-height: var(--editor-line-height, 1.9);
+    min-height: calc(var(--editor-font-size, 1rem) * var(--editor-line-height, 1.9));
 }
 
 /* ================================================================

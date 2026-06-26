@@ -54,7 +54,7 @@ export default function EditorToolbar({
 
   const fontSize = useEditorStore((state) => state.fontSize);
   const lineHeight = useEditorStore((state) => state.lineHeight);
-  const letterSpacing = useEditorStore((state) => state.letterSpacing ?? 0.05);
+  const letterSpacing = useEditorStore((state) => state.letterSpacing ?? 0.02);
   const paragraphSpacing = useEditorStore((state) => state.paragraphSpacing ?? 1);
   const setFontSize = useEditorStore((state) => state.setFontSize);
   const updateSettings = useEditorStore((state) => state.updateSettings);
@@ -95,7 +95,7 @@ export default function EditorToolbar({
   };
 
   const renderEditorCanvasToggle = () => (
-    <div className="flex h-7 items-center rounded-md border border-border bg-muted/20 p-0.5 text-xs font-medium">
+    <div className="flex h-7 items-center rounded-control border border-border bg-muted/20 p-0.5 text-xs font-medium">
       <button
         type="button"
         onClick={() => {

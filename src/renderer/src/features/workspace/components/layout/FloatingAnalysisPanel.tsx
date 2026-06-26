@@ -20,7 +20,7 @@ export function FloatingAnalysisPanel() {
       <div
         data-testid="analysis-minimized-fab"
         onClick={() => setMinimized(false)}
-        className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-accent hover:bg-accent/90 text-white flex items-center justify-center shadow-lg cursor-pointer z-[9999] hover:scale-110 active:scale-95 transition-all duration-300 ease-out"
+        className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-accent hover:bg-accent/90 text-white flex items-center justify-center shadow-lg cursor-pointer z-modal hover:scale-110 active:scale-95 transition-all duration-300 ease-out"
         title="원고 분석 열기"
       >
         <Sparkles className="w-5 h-5 animate-pulse" />

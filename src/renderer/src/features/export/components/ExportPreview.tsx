@@ -33,7 +33,7 @@ export function ExportPreview({
     startPageNumber,
 }: ExportPreviewProps) {
     return (
-        <div className="flex-1 bg-canvas relative flex flex-col min-w-0">
+        <div className="flex-1 bg-app relative flex flex-col min-w-0">
             {/* Toolbar */}
             <div className="h-10 border-b border-border bg-panel flex items-center justify-between px-4 shrink-0">
                 <div className="flex items-center gap-2 text-xs text-muted">
@@ -48,7 +48,7 @@ export function ExportPreview({
             </div>
 
             {/* Canvas Scroll Area */}
-            <div className="flex-1 overflow-y-auto p-8 flex flex-col items-center gap-8 custom-scrollbar bg-canvas">
+            <div className="flex-1 overflow-y-auto p-8 flex flex-col items-center gap-8 custom-scrollbar bg-app">
                 {/* Page Rendering */}
                 <div
                     className="bg-[#fcfcfc] shadow-[0_0_15px_rgba(0,0,0,0.1)] transition-all duration-300 relative shrink-0 ring-1 ring-border/20 rounded-sm"

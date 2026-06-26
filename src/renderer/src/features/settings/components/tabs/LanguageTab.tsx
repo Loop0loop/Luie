@@ -15,21 +15,21 @@ export const LanguageTab = memo(function LanguageTab({ t, language }: LanguageTa
                 <div className="flex gap-3">
                     <button
                         onClick={() => setLanguage("ko")}
-                        className={`px-4 py-2 rounded-lg border text-sm transition-colors duration-150 ${language === "ko" ? "border-accent text-accent bg-accent/5 ring-1 ring-accent" : "border-border text-muted hover:text-fg"
+                        className={`px-4 py-2 rounded-panel border text-sm transition-colors duration-150 ${language === "ko" ? "border-accent text-accent bg-accent/5 ring-1 ring-accent" : "border-border text-muted hover:text-fg"
                             }`}
                     >
                         {t("settings.language.options.ko")}
                     </button>
                     <button
                         onClick={() => setLanguage("en")}
-                        className={`px-4 py-2 rounded-lg border text-sm transition-colors duration-150 ${language === "en" ? "border-accent text-accent bg-accent/5 ring-1 ring-accent" : "border-border text-muted hover:text-fg"
+                        className={`px-4 py-2 rounded-panel border text-sm transition-colors duration-150 ${language === "en" ? "border-accent text-accent bg-accent/5 ring-1 ring-accent" : "border-border text-muted hover:text-fg"
                             }`}
                     >
                         {t("settings.language.options.en")}
                     </button>
                     <button
                         onClick={() => setLanguage("ja")}
-                        className={`px-4 py-2 rounded-lg border text-sm transition-colors duration-150 ${language === "ja" ? "border-accent text-accent bg-accent/5 ring-1 ring-accent" : "border-border text-muted hover:text-fg"
+                        className={`px-4 py-2 rounded-panel border text-sm transition-colors duration-150 ${language === "ja" ? "border-accent text-accent bg-accent/5 ring-1 ring-accent" : "border-border text-muted hover:text-fg"
                             }`}
                     >
                         {t("settings.language.options.ja")}

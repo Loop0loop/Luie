@@ -44,24 +44,24 @@ export function DrawingCanvas() {
       />
 
       {/* Floating Toolbar */}
-      <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 p-2 bg-panel/90 backdrop-blur-md border border-border rounded-xl shadow-lg">
+      <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 p-2 bg-panel/90 backdrop-blur-md border border-border rounded-panel shadow-lg">
         <div className="flex flex-col gap-2 border-b border-border/50 pb-2">
           <button
-            className={cn("w-10 h-10 flex items-center justify-center rounded-lg hover:bg-hover hover:text-fg transition-colors", tool === "pen" && "bg-accent text-accent-fg")}
+            className={cn("w-10 h-10 flex items-center justify-center rounded-panel hover:bg-hover hover:text-fg transition-colors", tool === "pen" && "bg-accent text-accent-fg")}
             onClick={() => setTool("pen")}
             title={t("world.drawing.toolPen")}
           >
             <PenTool className="w-5 h-5" />
           </button>
           <button
-            className={cn("w-10 h-10 flex items-center justify-center rounded-lg hover:bg-hover hover:text-fg transition-colors", tool === "icon" && "bg-accent text-accent-fg")}
+            className={cn("w-10 h-10 flex items-center justify-center rounded-panel hover:bg-hover hover:text-fg transition-colors", tool === "icon" && "bg-accent text-accent-fg")}
             onClick={() => setTool("icon")}
             title={t("world.drawing.toolIcon")}
           >
             <MapIcon className="w-5 h-5" />
           </button>
           <button
-            className={cn("w-10 h-10 flex items-center justify-center rounded-lg hover:bg-hover hover:text-fg transition-colors", tool === "text" && "bg-accent text-accent-fg")}
+            className={cn("w-10 h-10 flex items-center justify-center rounded-panel hover:bg-hover hover:text-fg transition-colors", tool === "text" && "bg-accent text-accent-fg")}
             onClick={() => setTool("text")}
             title={t("world.drawing.toolText")}
           >
@@ -72,13 +72,13 @@ export function DrawingCanvas() {
         {/* Sub-tools for Icons */}
         {tool === "icon" && (
           <div className="flex flex-col gap-2 border-b border-border/50 pb-2 animate-in slide-in-from-left-2 fade-in">
-            <button onClick={() => setIconType("mountain")} className={cn("w-10 h-10 flex items-center justify-center rounded-lg hover:bg-hover", iconType === "mountain" && "bg-active/20 text-active")}>
+            <button onClick={() => setIconType("mountain")} className={cn("w-10 h-10 flex items-center justify-center rounded-panel hover:bg-hover", iconType === "mountain" && "bg-active/20 text-active")}>
               <Mountain className="w-5 h-5" />
             </button>
-            <button onClick={() => setIconType("castle")} className={cn("w-10 h-10 flex items-center justify-center rounded-lg hover:bg-hover", iconType === "castle" && "bg-active/20 text-active")}>
+            <button onClick={() => setIconType("castle")} className={cn("w-10 h-10 flex items-center justify-center rounded-panel hover:bg-hover", iconType === "castle" && "bg-active/20 text-active")}>
               <Castle className="w-5 h-5" />
             </button>
-            <button onClick={() => setIconType("village")} className={cn("w-10 h-10 flex items-center justify-center rounded-lg hover:bg-hover", iconType === "village" && "bg-active/20 text-active")}>
+            <button onClick={() => setIconType("village")} className={cn("w-10 h-10 flex items-center justify-center rounded-panel hover:bg-hover", iconType === "village" && "bg-active/20 text-active")}>
               <Tent className="w-5 h-5" />
             </button>
           </div>
@@ -110,10 +110,10 @@ export function DrawingCanvas() {
         </div>
 
         <div className="flex flex-col gap-2 pt-2 border-t border-border/50">
-          <button className="w-10 h-10 flex items-center justify-center rounded-lg text-muted hover:text-error hover:bg-error/10" onClick={undo} title={t("undo")}>
+          <button className="w-10 h-10 flex items-center justify-center rounded-panel text-muted hover:text-error hover:bg-error/10" onClick={undo} title={t("undo")}>
             <Navigation className="w-5 h-5 -rotate-90" />
           </button>
-          <button className="w-10 h-10 flex items-center justify-center rounded-lg text-muted hover:text-error hover:bg-error/10" onClick={clearCanvas} title={t("clear")}>
+          <button className="w-10 h-10 flex items-center justify-center rounded-panel text-muted hover:text-error hover:bg-error/10" onClick={clearCanvas} title={t("clear")}>
             <Eraser className="w-5 h-5" />
           </button>
         </div>

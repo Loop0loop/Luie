@@ -84,7 +84,7 @@ export default function SidebarChapterList() {
             {/* Menu Overlay */}
             {menuOpenId && (
                 <div
-                    className="fixed inset-0 z-[9000] bg-transparent"
+                    className="fixed inset-0 z-dropdown bg-transparent"
                     onPointerDown={closeMenu}
                 />
             )}
@@ -93,23 +93,23 @@ export default function SidebarChapterList() {
             {menuOpenId && (
                 <div
                     ref={menuRef}
-                    className="fixed z-[10000] bg-panel border border-border rounded-lg shadow-lg min-w-[160px] p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col text-fg"
+                    className="fixed z-dropdown bg-panel border border-border rounded-panel shadow-lg min-w-[160px] p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col text-fg"
                     style={{ top: menuPosition.y, left: menuPosition.x }}
                 >
                     <div
-                        className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-md transition-all hover:bg-surface-hover hover:text-fg"
+                        className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-control transition-all hover:bg-surface-hover hover:text-fg"
                         onClick={(e) => void handleAction("rename", menuOpenId, e)}
                     >
                         <Edit2 className="w-3.5 h-3.5" /> {t("sidebar.menu.rename")}
                     </div>
                     <div
-                        className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-md transition-all hover:bg-surface-hover hover:text-fg"
+                        className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-control transition-all hover:bg-surface-hover hover:text-fg"
                         onClick={(e) => void handleAction("duplicate", menuOpenId, e)}
                     >
                         <Copy className="w-3.5 h-3.5" /> {t("sidebar.menu.duplicate")}
                     </div>
                     <div
-                        className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-md transition-all hover:bg-surface-hover hover:text-red-600 text-red-500"
+                        className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-control transition-all hover:bg-surface-hover hover:text-red-600 text-red-500"
                         onClick={(e) => void handleAction("delete", menuOpenId, e)}
                     >
                         <Trash2 className="w-3.5 h-3.5" /> {t("sidebar.menu.delete")}
@@ -131,7 +131,7 @@ export default function SidebarChapterList() {
                         >
                             <div
                                 className={cn(
-                                    "group flex items-center justify-between px-3 py-2 rounded-md transition-colors cursor-pointer text-sm select-none min-h-[36px]",
+                                    "group flex items-center justify-between px-3 py-2 rounded-control transition-colors cursor-pointer text-sm select-none min-h-[36px]",
                                     isActive ? "bg-accent/10 text-accent font-medium" : "text-muted hover:bg-surface-hover hover:text-fg"
                                 )}
                                 onClick={() => {

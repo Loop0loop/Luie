@@ -43,7 +43,7 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
 
   return (
     <div
-      className="group bg-panel border-2 border-border hover:border-accent rounded-xl shadow-sm hover:shadow-lg transition-all overflow-hidden flex flex-col items-center min-w-[120px]"
+      className="group bg-panel border-2 border-border hover:border-accent rounded-panel shadow-sm hover:shadow-lg transition-all overflow-hidden flex flex-col items-center min-w-[120px]"
       style={{
         width: (data.image || isEditingImage) ? 160 : "auto",
       }}
@@ -199,7 +199,7 @@ export function MindMapBoard() {
         <Background color="var(--grid-line)" gap={24} size={1} />
 
         {/* Custom Controls */}
-        <div className="absolute bottom-4 left-4 z-10 flex flex-col gap-2 bg-panel/90 backdrop-blur border border-border p-1.5 rounded-xl shadow-lg">
+        <div className="absolute bottom-4 left-4 z-10 flex flex-col gap-2 bg-panel/90 backdrop-blur border border-border p-1.5 rounded-panel shadow-lg">
           <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.zoomIn()} title={t("world.mindmap.controls.zoomIn")}>+</button>
           <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.zoomOut()} title={t("world.mindmap.controls.zoomOut")}>-</button>
           <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.fitView()} title={t("world.mindmap.controls.fitView")}>⛶</button>

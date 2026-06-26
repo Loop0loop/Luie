@@ -45,12 +45,11 @@ export const GraphFilterSidebar = memo(() => {
     <div className="flex h-full w-full flex-col bg-sidebar text-sidebar-foreground border-r border-border/20 overflow-hidden select-none min-w-0">
       <div className="flex h-13 items-center justify-between border-b border-border/20 px-4.5 shrink-0 bg-element/10 min-w-0">
         <div className="flex items-center gap-2.5 min-w-0">
-          <Workflow className="h-3.5 w-3.5 text-accent animate-pulse shrink-0" />
+          <Workflow className="h-3.5 w-3.5 text-accent shrink-0" />
           <span className="text-[11px] font-black tracking-widest text-fg uppercase truncate">
             {t("canvas.graph.scenarioAnalysis", "관계 시나리오 분석")}
           </span>
         </div>
-        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] shrink-0" />
       </div>
 
       <ScrollArea className="flex-1 p-4.5 bg-sidebar/20 min-w-0">
@@ -59,7 +58,7 @@ export const GraphFilterSidebar = memo(() => {
             <label className="text-[9.5px] uppercase font-black tracking-widest text-muted pl-0.5">
               {t("canvas.graph.analysisMode", "시나리오 분석 모드")}
             </label>
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-element border border-border/20 h-auto py-1 min-w-0 shadow-inner flex-wrap">
+            <div className="flex items-center gap-1.5 p-1 rounded-panel bg-element border border-border/20 h-auto py-1 min-w-0 shadow-inner flex-wrap">
               <Button
                 variant="ghost"
                 size="xs"
@@ -68,9 +67,9 @@ export const GraphFilterSidebar = memo(() => {
                   setSelectedFocusNode("all");
                 }}
                 className={cn(
-                  "flex-1 shrink-0 min-w-[75px] flex items-center justify-center gap-1.5 rounded-lg text-[10px] font-extrabold h-8 cursor-pointer border-none transition-all duration-200",
+                  "flex-1 shrink-0 min-w-[75px] flex items-center justify-center gap-1.5 rounded-panel text-[10px] font-extrabold h-8 cursor-pointer border-none transition-all duration-200",
                   activeMode === "character"
-                    ? "bg-panel text-accent shadow-[0_2px_8px_rgba(0,0,0,0.15)] border border-border/20 hover:bg-panel"
+                    ? "bg-panel text-accent border border-border hover:bg-panel"
                     : "text-muted hover:bg-element-hover/50 hover:text-fg bg-transparent",
                 )}
               >
@@ -85,9 +84,9 @@ export const GraphFilterSidebar = memo(() => {
                   setSelectedFocusNode("all");
                 }}
                 className={cn(
-                  "flex-1 shrink-0 min-w-[75px] flex items-center justify-center gap-1.5 rounded-lg text-[10px] font-extrabold h-8 cursor-pointer border-none transition-all duration-200",
+                  "flex-1 shrink-0 min-w-[75px] flex items-center justify-center gap-1.5 rounded-panel text-[10px] font-extrabold h-8 cursor-pointer border-none transition-all duration-200",
                   activeMode === "event"
-                    ? "bg-panel text-accent shadow-[0_2px_8px_rgba(0,0,0,0.15)] border border-border/20 hover:bg-panel"
+                    ? "bg-panel text-accent border border-border hover:bg-panel"
                     : "text-muted hover:bg-element-hover/50 hover:text-fg bg-transparent",
                 )}
               >
@@ -102,7 +101,7 @@ export const GraphFilterSidebar = memo(() => {
               <Calendar className="h-3.5 w-3.5 shrink-0 text-muted/80" />
               {t("canvas.graph.chapterRange", "에피소드/챕터 범위")}
             </label>
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-element border border-border/20 h-auto py-1 min-w-0 shadow-inner flex-wrap">
+            <div className="flex items-center gap-1.5 p-1 rounded-panel bg-element border border-border/20 h-auto py-1 min-w-0 shadow-inner flex-wrap">
               <Button
                 variant="ghost"
                 size="xs"
@@ -112,9 +111,9 @@ export const GraphFilterSidebar = memo(() => {
                   setEndChapter(15);
                 }}
                 className={cn(
-                  "flex-1 shrink-0 min-w-[85px] flex items-center justify-center rounded-lg text-[9.5px] font-extrabold h-8 cursor-pointer border-none transition-all duration-200",
+                  "flex-1 shrink-0 min-w-[85px] flex items-center justify-center rounded-panel text-[9.5px] font-extrabold h-8 cursor-pointer border-none transition-all duration-200",
                   selectedChapterFilter === "all"
-                    ? "bg-panel text-accent shadow-[0_2px_8px_rgba(0,0,0,0.15)] border border-border/20 hover:bg-panel"
+                    ? "bg-panel text-accent border border-border hover:bg-panel"
                     : "text-muted hover:bg-element-hover/50 hover:text-fg bg-transparent",
                 )}
               >
@@ -129,9 +128,9 @@ export const GraphFilterSidebar = memo(() => {
                   setEndChapter(13);
                 }}
                 className={cn(
-                  "flex-1 shrink-0 min-w-[85px] flex items-center justify-center rounded-lg text-[9.5px] font-extrabold h-8 cursor-pointer border-none transition-all duration-200",
+                  "flex-1 shrink-0 min-w-[85px] flex items-center justify-center rounded-panel text-[9.5px] font-extrabold h-8 cursor-pointer border-none transition-all duration-200",
                   selectedChapterFilter === "early"
-                    ? "bg-panel text-accent shadow-[0_2px_8px_rgba(0,0,0,0.15)] border border-border/20 hover:bg-panel"
+                    ? "bg-panel text-accent border border-border hover:bg-panel"
                     : "text-muted hover:bg-element-hover/50 hover:text-fg bg-transparent",
                 )}
               >
@@ -150,7 +149,7 @@ export const GraphFilterSidebar = memo(() => {
                 <select
                   value={startChapter}
                   onChange={(e) => handleStartChapterChange(Number(e.target.value))}
-                  className="w-full rounded-xl border border-border/20 pl-3 pr-7 py-2.5 text-[11px] font-extrabold cursor-pointer outline-none bg-element text-fg hover:bg-element-hover/80 transition-all appearance-none shadow-sm min-w-0"
+                  className="w-full rounded-panel border border-border/20 pl-3 pr-7 py-2.5 text-[11px] font-extrabold cursor-pointer outline-none bg-element text-fg hover:bg-element-hover/80 transition-all appearance-none shadow-sm min-w-0"
                 >
                   <option value={12}>12{t("canvas.graph.chapterUnit", "화")}</option>
                   <option value={13}>13{t("canvas.graph.chapterUnit", "화")}</option>
@@ -166,7 +165,7 @@ export const GraphFilterSidebar = memo(() => {
                 <select
                   value={endChapter}
                   onChange={(e) => handleEndChapterChange(Number(e.target.value))}
-                  className="w-full rounded-xl border border-border/20 pl-3 pr-7 py-2.5 text-[11px] font-extrabold cursor-pointer outline-none bg-element text-fg hover:bg-element-hover/80 transition-all appearance-none shadow-sm min-w-0"
+                  className="w-full rounded-panel border border-border/20 pl-3 pr-7 py-2.5 text-[11px] font-extrabold cursor-pointer outline-none bg-element text-fg hover:bg-element-hover/80 transition-all appearance-none shadow-sm min-w-0"
                 >
                   <option value={12}>12{t("canvas.graph.chapterUnit", "화")}</option>
                   <option value={13}>13{t("canvas.graph.chapterUnit", "화")}</option>
@@ -188,7 +187,7 @@ export const GraphFilterSidebar = memo(() => {
               <select
                 value={selectedFocusNode}
                 onChange={(e) => setSelectedFocusNode(e.target.value)}
-                className="w-full rounded-xl border border-border/20 px-3.5 py-2.5 text-[11.5px] font-extrabold cursor-pointer outline-none bg-element text-fg hover:bg-element-hover/80 transition-all appearance-none pr-8.5 shadow-sm min-w-0"
+                className="w-full rounded-panel border border-border/20 px-3.5 py-2.5 text-[11.5px] font-extrabold cursor-pointer outline-none bg-element text-fg hover:bg-element-hover/80 transition-all appearance-none pr-8.5 shadow-sm min-w-0"
               >
                 <option value="all">{t("canvas.graph.viewAllNetwork", "전체 연결망 보기")}</option>
                 {activeMode === "character" ? (

@@ -105,7 +105,7 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleTabChange("explorer")}
-            className="flex items-center justify-center p-1.5 rounded-md bg-active text-fg transition-all duration-150 relative border-none cursor-pointer"
+            className="flex items-center justify-center p-1.5 rounded-control bg-active text-fg transition-all duration-150 relative border-none cursor-pointer"
             title={t("canvas.activity.explorer")}
           >
             <Files className="h-[18px] w-[18px] text-accent" />
@@ -114,7 +114,7 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
 
           <button
             onClick={() => handleTabChange("search")}
-            className="flex items-center justify-center p-1.5 rounded-md text-muted hover:bg-muted/40 hover:text-fg transition-all duration-150 border-none cursor-pointer bg-transparent"
+            className="flex items-center justify-center p-1.5 rounded-control text-muted hover:bg-muted/40 hover:text-fg transition-all duration-150 border-none cursor-pointer bg-transparent"
             title={t("canvas.activity.search")}
           >
             <Search className="h-[18px] w-[18px]" />
@@ -122,7 +122,7 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
 
           <button
             onClick={() => handleTabChange("bookmark")}
-            className="flex items-center justify-center p-1.5 rounded-md text-muted hover:bg-muted/40 hover:text-fg transition-all duration-150 border-none cursor-pointer bg-transparent"
+            className="flex items-center justify-center p-1.5 rounded-control text-muted hover:bg-muted/40 hover:text-fg transition-all duration-150 border-none cursor-pointer bg-transparent"
             title={t("canvas.activity.bookmark")}
           >
             <Bookmark className="h-[18px] w-[18px]" />
@@ -132,7 +132,7 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
         <div className="flex items-center gap-1">
           <button
             onClick={() => onClose?.()}
-            className="flex h-9 w-9 items-center justify-center rounded-md border-none bg-transparent p-2 text-muted hover:bg-active hover:text-fg cursor-pointer transition-colors duration-150"
+            className="flex h-9 w-9 items-center justify-center rounded-control border-none bg-transparent p-2 text-muted hover:bg-active hover:text-fg cursor-pointer transition-colors duration-150"
             title={t("canvas.activity.closeCanvas")}
           >
             <X className="icon-xl" />

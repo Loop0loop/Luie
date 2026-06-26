@@ -22,7 +22,6 @@ export const AppearanceTab = memo(function AppearanceTab({
     const {
         theme,
         themeContrast,
-        themeAccent,
         uiMode,
         enableAnimations,
         entityColors,
@@ -31,7 +30,6 @@ export const AppearanceTab = memo(function AppearanceTab({
         useShallow((state) => ({
             theme: state.theme,
             themeContrast: state.themeContrast,
-            themeAccent: state.themeAccent,
             uiMode: state.uiMode,
             enableAnimations: state.enableAnimations,
             entityColors: state.entityColors,
@@ -51,7 +49,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                         <button
                             key={mode}
                             onClick={() => onApplySettings({ theme: mode })}
-                            className={`flex items-center justify-center px-4 py-3 rounded-xl border text-sm font-medium transition-colors duration-150 ${theme === mode
+                            className={`flex items-center justify-center px-4 py-3 rounded-panel border text-sm font-medium transition-colors duration-150 ${theme === mode
                                 ? "border-accent text-accent bg-accent/5 ring-1 ring-accent shadow-sm"
                                 : "border-border text-muted hover:border-text-tertiary hover:bg-surface-hover"
                                 }`}
@@ -91,42 +89,6 @@ export const AppearanceTab = memo(function AppearanceTab({
 
             <section className="space-y-4">
                 <div>
-                    <h3 className="text-base font-semibold text-fg">{t("settings.appearance.accent.title")}</h3>
-                    <p className="text-sm text-muted mt-1">{t("settings.appearance.accent.description")}</p>
-                </div>
-                <div className="flex gap-4">
-                    {(["blue", "violet", "green", "amber", "rose", "slate"] as const).map((accent) => (
-                        <button
-                            key={accent}
-                            onClick={() => onApplySettings({ themeAccent: accent })}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${themeAccent === accent ? "ring-2 ring-offset-2 ring-accent scale-110" : "hover:scale-110"
-                                }`}
-                            style={{
-                                backgroundColor: `var(--color-bg-${accent}, ${accent === "blue"
-                                    ? "#3b82f6"
-                                    : accent === "violet"
-                                        ? "#8b5cf6"
-                                        : accent === "green"
-                                            ? "#10b981"
-                                            : accent === "amber"
-                                                ? "#f59e0b"
-                                                : accent === "rose"
-                                                    ? "#f43f5e"
-                                                    : "#64748b"
-                                    })`,
-                            }}
-                            title={accent}
-                        >
-                            {themeAccent === accent && <Check className="w-5 h-5 text-white" />}
-                        </button>
-                    ))}
-                </div>
-            </section>
-
-            <div className="h-px bg-border my-6" />
-
-            <section className="space-y-4">
-                <div>
                     <h3 className="text-base font-semibold text-fg">{t("settings.appearance.contrast.title")}</h3>
                     <p className="text-sm text-muted mt-1">{t("settings.appearance.contrast.description")}</p>
                 </div>
@@ -135,7 +97,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                         <button
                             key={c}
                             onClick={() => onApplySettings({ themeContrast: c })}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${themeContrast === c
+                            className={`px-3 py-1.5 rounded-panel text-xs font-medium border transition-colors ${themeContrast === c
                                 ? "bg-accent text-accent-fg border-transparent"
                                 : "border-border text-muted hover:text-fg"
                                 }`}
@@ -158,7 +120,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                         <button
                             key={mode}
                             onClick={() => onApplySettings({ uiMode: mode })}
-                            className={`px-4 py-3 rounded-xl border text-sm font-medium transition-colors duration-150 text-left ${(uiMode || "default") === mode
+                            className={`px-4 py-3 rounded-panel border text-sm font-medium transition-colors duration-150 text-left ${(uiMode || "default") === mode
                                 ? "border-accent text-accent bg-accent/5 ring-1 ring-accent shadow-sm"
                                 : "border-border text-muted hover:border-text-tertiary hover:bg-surface-hover"
                                 }`}
@@ -184,7 +146,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     {(["character", "event", "faction", "term"] as const).map((type) => (
-                        <div key={type} className="flex flex-col items-center gap-2 p-3 rounded-xl border border-border bg-surface hover:bg-surface-hover transition-colors">
+                        <div key={type} className="flex flex-col items-center gap-2 p-3 rounded-panel border border-border bg-surface hover:bg-surface-hover transition-colors">
                             <span className="text-sm font-medium text-fg capitalize">{t(`research.graph.entity.${type}`, type)}</span>
                             <div className="relative w-8 h-8 rounded-full overflow-hidden border border-border/50 ring-2 ring-transparent focus-within:ring-accent transition-all cursor-pointer">
                                 <input
@@ -222,7 +184,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                             <button
                                 onClick={() => onMenuBarModeChange("hidden")}
                                 disabled={isMenuBarUpdating}
-                                className={`px-4 py-3 rounded-xl border text-sm font-medium transition-colors duration-150 ${menuBarMode === "hidden"
+                                className={`px-4 py-3 rounded-panel border text-sm font-medium transition-colors duration-150 ${menuBarMode === "hidden"
                                     ? "border-accent text-accent bg-accent/5 ring-1 ring-accent"
                                     : "border-border text-muted hover:border-text-tertiary hover:bg-surface-hover"
                                     } ${isMenuBarUpdating ? "opacity-70 cursor-not-allowed" : ""}`}
@@ -232,7 +194,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                             <button
                                 onClick={() => onMenuBarModeChange("visible")}
                                 disabled={isMenuBarUpdating}
-                                className={`px-4 py-3 rounded-xl border text-sm font-medium transition-colors duration-150 ${menuBarMode === "visible"
+                                className={`px-4 py-3 rounded-panel border text-sm font-medium transition-colors duration-150 ${menuBarMode === "visible"
                                     ? "border-accent text-accent bg-accent/5 ring-1 ring-accent"
                                     : "border-border text-muted hover:border-text-tertiary hover:bg-surface-hover"
                                     } ${isMenuBarUpdating ? "opacity-70 cursor-not-allowed" : ""}`}

@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { ChevronLeft, History, Settings, Trash2 } from "lucide-react";
+import { BookOpen, ChevronLeft, History, Settings, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
 import type { DocsLayoutPanelTab } from "@renderer/shared/constants/layoutSizing";
@@ -63,14 +63,10 @@ export function GoogleDocsHeader({
         )}
 
         <div
-          className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-surface-hover"
+          className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-control text-accent transition-colors hover:bg-surface-hover"
           title={t("home")}
         >
-          <div className="relative flex h-8 w-6 scale-90 items-center justify-center rounded-[2px] bg-blue-500 shadow-sm">
-            <div className="mb-1 h-0.5 w-4 rounded-sm bg-white" />
-            <div className="mb-1 h-0.5 w-4 rounded-sm bg-white" />
-            <div className="ml-1 mr-auto h-0.5 w-2 rounded-sm bg-white" />
-          </div>
+          <BookOpen className="h-5 w-5" />
         </div>
 
         <input
@@ -82,7 +78,7 @@ export function GoogleDocsHeader({
             }
           }}
           placeholder={t("project.defaults.untitled")}
-          className="max-w-[400px] min-w-[150px] truncate rounded-[4px] border border-transparent bg-transparent px-2 py-0.5 text-[18px] text-fg transition-colors duration-150 hover:bg-surface-hover focus:bg-app focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="max-w-[400px] min-w-[150px] truncate rounded-[4px] border border-transparent bg-transparent px-2 py-0.5 text-[18px] text-fg transition-colors duration-150 hover:bg-surface-hover focus:bg-app focus:outline-none focus:ring-2 focus:ring-accent"
         />
       </div>
 

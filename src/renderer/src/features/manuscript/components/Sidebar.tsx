@@ -360,7 +360,7 @@ function Sidebar({
         <>
           {menuOpenId && (
             <div
-              className="fixed inset-0 z-[9000] bg-transparent"
+              className="fixed inset-0 z-dropdown bg-transparent"
               onPointerDown={closeMenu}
             />
           )}
@@ -368,18 +368,18 @@ function Sidebar({
           {menuOpenId && (
             <div
               ref={menuRef}
-              className="fixed z-[9000] bg-panel border border-border rounded-lg shadow-lg min-w-42.5 p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col"
+              className="fixed z-dropdown bg-panel border border-border rounded-panel shadow-lg min-w-42.5 p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col"
               style={{ top: menuPosition.y, left: menuPosition.x }}
             >
               <div
-                className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
+                className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-control transition-all hover:bg-active hover:text-fg"
                 onClick={() => void handleAction("open_below", menuOpenId)}
               >
                 <ArrowDownFromLine className="icon-sm" />{" "}
                 {t("sidebar.menu.openBelow")}
               </div>
               <div
-                className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
+                className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-control transition-all hover:bg-active hover:text-fg"
                 onClick={() => void handleAction("open_right", menuOpenId)}
               >
                 <ArrowRightFromLine className="icon-sm" />{" "}
@@ -387,19 +387,19 @@ function Sidebar({
               </div>
               <div className="h-px bg-border my-1" />
               <div
-                className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
+                className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-control transition-all hover:bg-active hover:text-fg"
                 onClick={() => void handleAction("rename", menuOpenId)}
               >
                 <Edit2 className="icon-sm" /> {t("sidebar.menu.rename")}
               </div>
               <div
-                className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
+                className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-control transition-all hover:bg-active hover:text-fg"
                 onClick={() => void handleAction("duplicate", menuOpenId)}
               >
                 <Copy className="icon-sm" /> {t("sidebar.menu.duplicate")}
               </div>
               <div
-                className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-md transition-all hover:bg-active hover:text-fg"
+                className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-control transition-all hover:bg-active hover:text-fg"
                 onClick={() => void handleAction("delete", menuOpenId)}
                 style={{ color: "hsl(var(--destructive))" }}
               >
@@ -435,7 +435,7 @@ function Sidebar({
 
           <div className="p-3">
             <button
-              className="flex items-center gap-2 w-full p-2 bg-transparent border-none rounded-md text-muted text-[13px] cursor-pointer hover:bg-surface-hover hover:text-fg transition-colors"
+              className="flex items-center gap-2 w-full p-2 bg-transparent border-none rounded-control text-muted text-[13px] cursor-pointer hover:bg-surface-hover hover:text-fg transition-colors"
               onClick={onOpenSettings}
               onPointerEnter={onPrefetchSettings}
             >

@@ -114,7 +114,7 @@ export function SidebarCollapseStrip({
       <div
         onMouseEnter={() => isCollapsed && setIsPeeking(true)}
         onMouseLeave={closePeek}
-        className="absolute top-0 bottom-0 z-20 bg-sidebar/95 border-r border-border/30 shadow-xl overflow-hidden transition-[width] duration-150 ease-out flex flex-col"
+        className="absolute top-0 bottom-0 z-20 bg-sidebar/95 border-r border-border/30 shadow-panel overflow-hidden transition-[width] duration-150 ease-out flex flex-col"
         style={{
           left: stripWidth,
           width: peekVisible ? PEEK_WIDTH : 0,

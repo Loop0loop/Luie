@@ -198,7 +198,7 @@ export default function BaseCanvasViewport({
         zoomOnPinch
         zoomOnDoubleClick={false}
         proOptions={PRO_OPTIONS}
-        className="bg-canvas"
+        className="bg-app"
       >
         <Background
           variant={BackgroundVariant.Dots}

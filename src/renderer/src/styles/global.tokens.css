@@ -8,14 +8,12 @@
   --color-element: var(--bg-element);
   --color-element-hover: var(--bg-element-hover);
   --color-active: var(--bg-active);
-  --color-canvas: var(--bg-canvas);
   --color-background: var(--bg-app);
   --color-card: var(--bg-surface);
   --color-popover: var(--bg-surface);
   --color-input: var(--bg-element);
   --color-ring: var(--ring-color, var(--accent-bg));
   --color-hover: var(--bg-hover);
-  --color-bg-primary: var(--bg-primary);
   --color-bg-secondary: var(--bg-secondary);
   --color-bg-panel: var(--bg-panel);
   --color-editor-bg: var(--editor-bg);
@@ -63,6 +61,27 @@
   --spacing-control-y: 0.5rem;
   --spacing-panel-pad: 1.25rem;
   --spacing-panel-gap: 1rem;
+
+  /* Z-index layers — replaces ad-hoc z-[9999]/z-[9000]/z-[10000] escalation.
+     v4's z-* is functional (no theme namespace), so the named utilities are
+     defined via @utility below; these vars hold the single source of values. */
+  --z-index-dropdown: 50; /* context menus, popovers, tooltips, their backdrops */
+  --z-index-banner: 100; /* sticky top banners (offline) */
+  --z-index-toast: 150; /* transient notifications */
+  --z-index-modal: 1000; /* full-surface dialogs + floating panels */
+}
+
+@utility z-dropdown {
+  z-index: var(--z-index-dropdown);
+}
+@utility z-banner {
+  z-index: var(--z-index-banner);
+}
+@utility z-toast {
+  z-index: var(--z-index-toast);
+}
+@utility z-modal {
+  z-index: var(--z-index-modal);
 }
 
 @layer components {

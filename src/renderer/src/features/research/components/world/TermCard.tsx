@@ -22,8 +22,8 @@ export const TermCard = ({
   return (
     <div
       className={cn(
-        "group flex flex-col justify-between p-4 bg-element border border-border rounded-xl relative shadow-sm transition-all overflow-hidden h-full",
-        isOverlay ? "cursor-grabbing shadow-xl border-accent scale-105 z-50 bg-element-hover" : "hover:bg-element-hover hover:border-accent/40 hover:-translate-y-1 hover:shadow-md cursor-grab"
+        "group flex flex-col justify-between p-4 bg-element border border-border rounded-panel relative shadow-sm transition-all overflow-hidden h-full",
+        isOverlay ? "cursor-grabbing shadow-panel border-accent scale-105 z-50 bg-element-hover" : "hover:bg-element-hover hover:border-accent/40 hover:-translate-y-1 hover:shadow-md cursor-grab"
       )}
       onClick={onSelect ? () => onSelect(item.id) : undefined}
     >

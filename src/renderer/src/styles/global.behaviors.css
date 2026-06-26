@@ -1,49 +1,7 @@
 
-/* === ACCENT MODIFIERS === */
-[data-accent="violet"] {
-  --text-accent: #8b5cf6;
-  --text-on-accent: #ffffff;
-  --accent-bg: #8b5cf6;
-  --accent-bg-hover: #7c3aed;
-  --accent-fg: #ffffff;
-  --ring-color: #8b5cf6;
-}
-
-[data-accent="green"] {
-  --text-accent: #10b981;
-  --text-on-accent: #ffffff;
-  --accent-bg: #10b981;
-  --accent-bg-hover: #059669;
-  --accent-fg: #ffffff;
-  --ring-color: #10b981;
-}
-
-[data-accent="amber"] {
-  --text-accent: #f59e0b;
-  --text-on-accent: #ffffff;
-  --accent-bg: #f59e0b;
-  --accent-bg-hover: #d97706;
-  --accent-fg: #ffffff;
-  --ring-color: #f59e0b;
-}
-
-[data-accent="rose"] {
-  --text-accent: #f43f5e;
-  --text-on-accent: #ffffff;
-  --accent-bg: #f43f5e;
-  --accent-bg-hover: #e11d48;
-  --accent-fg: #ffffff;
-  --ring-color: #f43f5e;
-}
-
-[data-accent="slate"] {
-  --text-accent: #64748b;
-  --text-on-accent: #ffffff;
-  --accent-bg: #64748b;
-  --accent-bg-hover: #475569;
-  --accent-fg: #ffffff;
-  --ring-color: #64748b;
-}
+/* Single brand accent (blue) is defined as the base --accent-bg in
+   global.tokens.css. Alternate [data-accent] swatches were removed to
+   converge on one product accent. */
 
 body {
   font-family: var(--font-sans);

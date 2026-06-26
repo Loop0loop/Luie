@@ -73,14 +73,14 @@ export function RecentProjectsSection({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            className="px-3 py-1.5 text-xs rounded-md bg-surface border border-border text-fg hover:bg-surface-hover"
+            className="px-3 py-1.5 text-xs rounded-control bg-surface border border-border text-fg hover:bg-surface-hover"
             onClick={() => onOpenLuieFile?.()}
           >
             {t("settings.projectTemplate.actions.openLuie")}
           </button>
           <button
             type="button"
-            className="px-3 py-1.5 text-xs rounded-md bg-surface border border-border text-fg hover:bg-surface-hover"
+            className="px-3 py-1.5 text-xs rounded-control bg-surface border border-border text-fg hover:bg-surface-hover"
             onClick={() => onOpenRestoreDialog?.()}
           >
             {t("settings.projectTemplate.actions.restore")}
@@ -120,7 +120,7 @@ export function RecentProjectsSection({
               </div>
               <button
                 type="button"
-                className="px-3 py-1.5 text-xs rounded-md bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-danger/10 hover:text-danger transition-colors flex items-center gap-1.5 leading-none"
+                className="px-3 py-1.5 text-xs rounded-control bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-danger/10 hover:text-danger transition-colors flex items-center gap-1.5 leading-none"
                 onClick={() => onDisconnectGoogle?.()}
               >
                 <LogOut className="w-3 h-3" />
@@ -130,7 +130,7 @@ export function RecentProjectsSection({
           ) : (
             <button
               type="button"
-              className="px-4 py-1.5 text-xs font-medium rounded-md bg-[var(--accent-bg)] text-[var(--accent-fg)] hover:bg-[var(--accent-bg-hover)] border border-[var(--accent-border)] transition-colors shadow-sm flex items-center gap-2"
+              className="px-4 py-1.5 text-xs font-medium rounded-control bg-[var(--accent-bg)] text-[var(--accent-fg)] hover:bg-[var(--accent-bg-hover)] border border-[var(--accent-border)] transition-colors shadow-sm flex items-center gap-2"
               onClick={() => onConnectGoogle?.()}
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -164,7 +164,7 @@ export function RecentProjectsSection({
           return (
             <div
               key={p.id}
-              className="bg-surface border border-border rounded-lg p-5 w-full text-left cursor-pointer transition-all duration-200 relative flex justify-between items-start hover:bg-surface-hover hover:border-border-active hover:-translate-y-0.5 hover:shadow-md group"
+              className="bg-surface border border-border rounded-panel p-5 w-full text-left cursor-pointer transition-all duration-200 relative flex justify-between items-start hover:bg-surface-hover hover:border-border-active hover:-translate-y-0.5 hover:shadow-md group"
               onClick={() => {
                 onOpenProject?.(p);
               }}

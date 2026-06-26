@@ -221,13 +221,13 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
           />
 
           {/* View mode toggle */}
-          <div className="flex items-center gap-1 p-0.5 rounded-lg bg-surface-hover border border-border/60 shrink-0">
+          <div className="flex items-center gap-1 p-0.5 rounded-panel bg-surface-hover border border-border/60 shrink-0">
             <button
               type="button"
               onClick={() => switchViewMode("wiki")}
               title="위키 뷰"
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors",
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-control text-[12px] font-medium transition-colors",
                 viewMode === "wiki"
                   ? "bg-surface text-fg shadow-sm"
                   : "text-muted hover:text-fg",
@@ -241,7 +241,7 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
               onClick={() => switchViewMode("visual")}
               title="시각화 뷰"
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors",
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-control text-[12px] font-medium transition-colors",
                 viewMode === "visual"
                   ? "bg-surface text-fg shadow-sm"
                   : "text-muted hover:text-fg",
@@ -256,7 +256,7 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
             type="button"
             onClick={handleDeleteCharacter}
             title={t("character.wiki.deleteCharacterTitle")}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-danger/10 hover:text-danger"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-control text-muted transition-colors hover:bg-danger/10 hover:text-danger"
           >
             <Trash2 size={14} />
           </button>

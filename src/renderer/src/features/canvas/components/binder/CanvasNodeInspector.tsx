@@ -350,7 +350,7 @@ function ChapterNodeDetail({ nodeId, projectId, graphData }: ChapterNodeDetailPr
   return (
     <div className="space-y-5 p-panel-pad py-4">
       {/* 3줄 요약 섹션 */}
-      <section className="rounded-lg bg-surface-hover border border-border/40 p-3">
+      <section className="rounded-panel bg-surface-hover border border-border/40 p-3">
         <div className="flex items-center gap-1.5 mb-2">
           <Sparkles className="h-3.5 w-3.5 text-accent animate-pulse" />
           <h4 className="text-xs font-semibold text-fg/80">

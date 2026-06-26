@@ -1,8 +1,8 @@
 export const DEFAULT_EDITOR_FONT_FAMILY = "system-ui" as const;
 export const DEFAULT_EDITOR_FONT_SIZE = 16;
-export const DEFAULT_EDITOR_LINE_HEIGHT = 1.4;
-export const DEFAULT_EDITOR_LETTER_SPACING = 0.05;
-export const DEFAULT_EDITOR_WORD_SPACING = 0.06;
+export const DEFAULT_EDITOR_LINE_HEIGHT = 1.9;
+export const DEFAULT_EDITOR_LETTER_SPACING = 0.02;
+export const DEFAULT_EDITOR_WORD_SPACING = 0.04;
 export const DEFAULT_EDITOR_PARAGRAPH_SPACING = 1.0;
 export const DEFAULT_EDITOR_MAX_WIDTH = 800;
 export const DEFAULT_EDITOR_THEME = "light" as const;

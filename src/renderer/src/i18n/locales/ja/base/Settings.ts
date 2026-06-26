@@ -71,10 +71,6 @@ export const jaBaseSettings = {
         title: "ベーステーマ",
         description: "画面全体の明るさと基調トーンを選択します。",
       },
-      accent: {
-        title: "アクセントカラー",
-        description: "主要アクションや強調要素の色を選択します。",
-      },
       contrast: {
         title: "コントラスト",
         description: "画面の視認性を調整します。",

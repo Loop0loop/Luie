@@ -47,15 +47,15 @@ export function BottomInteractiveToolbar() {
       data-testid="bottom-interactive-toolbar"
     >
       <div className={cn(
-        "flex h-11 items-center gap-2 rounded-full border shadow-xl backdrop-blur-md px-3 py-1",
-        "bg-[#f5f5f5]/95 border-gray-300 text-gray-800 dark:bg-[#2c2c2c]/95 dark:border-[#3d3d3d] dark:text-white",
+        "flex h-11 items-center gap-2 rounded-full border shadow-panel px-3 py-1",
+        "bg-panel border-border text-fg",
         transitionClass
       )}>
-        
-        {/* 1. Figma 스타일 세그먼트 토글 (가장 좌측 배치) */}
+
+        {/* 1. 세그먼트 토글 (가장 좌측 배치) */}
         <div className={cn(
           "flex items-center gap-1 p-0.5 rounded-full shrink-0 h-8",
-          "bg-[#e0e0e0] border border-gray-300 dark:bg-[#1e1e1e] dark:border-[#3d3d3d]",
+          "bg-element border border-border",
           transitionClass
         )}>
           <Button
@@ -66,8 +66,8 @@ export function BottomInteractiveToolbar() {
               "rounded-full text-[11px] font-bold h-7 px-3.5 border-none cursor-pointer",
               transitionClass,
               !isGraphMode
-                ? "bg-[#0c8ce9] text-white shadow-md shadow-[#0c8ce9]/20 hover:bg-[#0c8ce9] hover:text-white"
-                : "text-[#666666] hover:bg-gray-200/50 hover:text-black dark:text-[#b3b3b3] dark:hover:bg-[#2c2c2c] dark:hover:text-white bg-transparent"
+                ? "bg-accent text-on-accent hover:bg-accent-bg-hover"
+                : "text-muted hover:bg-surface-hover hover:text-fg bg-transparent"
             )}
           >
             {t("canvas.activity.canvas")}
@@ -80,8 +80,8 @@ export function BottomInteractiveToolbar() {
               "rounded-full text-[11px] font-bold h-7 px-3.5 border-none cursor-pointer",
               transitionClass,
               isGraphMode
-                ? "bg-[#0c8ce9] text-white shadow-md shadow-[#0c8ce9]/20 hover:bg-[#0c8ce9] hover:text-white"
-                : "text-[#666666] hover:bg-gray-200/50 hover:text-black dark:text-[#b3b3b3] dark:hover:bg-[#2c2c2c] dark:hover:text-white bg-transparent"
+                ? "bg-accent text-on-accent hover:bg-accent-bg-hover"
+                : "text-muted hover:bg-surface-hover hover:text-fg bg-transparent"
             )}
           >
             {t("canvas.activity.graph")}
@@ -89,7 +89,7 @@ export function BottomInteractiveToolbar() {
         </div>
 
         {/* 구분선 */}
-        <div className="w-px h-5 bg-gray-300 dark:bg-[#3d3d3d]" />
+        <div className="w-px h-5 bg-border" />
 
         {/* 2. 모드별 동적 액션 목록 (중앙 배치 + 너비 308px 고정으로 Layout Shift 완전 방지) */}
         <div className="flex items-center gap-1 w-[308px] shrink-0 justify-center">
@@ -103,7 +103,7 @@ export function BottomInteractiveToolbar() {
                 title={t("canvas.toolbar.newBlock")}
                 className={cn(
                   "text-xs font-medium rounded-full h-8 px-1 w-[98px] shrink-0 justify-center gap-1 border-none cursor-pointer bg-transparent",
-                  "text-[#666666] hover:text-black hover:bg-gray-200 dark:text-[#b3b3b3] dark:hover:text-white dark:hover:bg-[#3d3d3d]",
+                  "text-muted hover:text-fg hover:bg-surface-hover",
                   transitionClass
                 )}
               >
@@ -118,7 +118,7 @@ export function BottomInteractiveToolbar() {
                 title={t("canvas.toolbar.importDoc")}
                 className={cn(
                   "text-xs font-medium rounded-full h-8 px-1 w-[98px] shrink-0 justify-center gap-1 border-none cursor-pointer bg-transparent",
-                  "text-[#666666] hover:text-black hover:bg-gray-200 dark:text-[#b3b3b3] dark:hover:text-white dark:hover:bg-[#3d3d3d]",
+                  "text-muted hover:text-fg hover:bg-surface-hover",
                   transitionClass
                 )}
               >
@@ -133,7 +133,7 @@ export function BottomInteractiveToolbar() {
                 title={t("canvas.toolbar.insertImage")}
                 className={cn(
                   "text-xs font-medium rounded-full h-8 px-1 w-[98px] shrink-0 justify-center gap-1 border-none cursor-pointer bg-transparent",
-                  "text-[#666666] hover:text-black hover:bg-gray-200 dark:text-[#b3b3b3] dark:hover:text-white dark:hover:bg-[#3d3d3d]",
+                  "text-muted hover:text-fg hover:bg-surface-hover",
                   transitionClass
                 )}
               >
@@ -151,7 +151,7 @@ export function BottomInteractiveToolbar() {
                 title={t("canvas.toolbar.filterLayer")}
                 className={cn(
                   "text-xs font-medium rounded-full h-8 px-1 w-[98px] shrink-0 justify-center gap-1 border-none cursor-pointer bg-transparent",
-                  "text-[#666666] hover:text-black hover:bg-gray-200 dark:text-[#b3b3b3] dark:hover:text-white dark:hover:bg-[#3d3d3d]",
+                  "text-muted hover:text-fg hover:bg-surface-hover",
                   transitionClass
                 )}
               >
@@ -166,7 +166,7 @@ export function BottomInteractiveToolbar() {
                 title={t("canvas.toolbar.aiSync")}
                 className={cn(
                   "text-xs font-medium rounded-full h-8 px-1 w-[98px] shrink-0 justify-center gap-1 border-none cursor-pointer bg-transparent",
-                  "text-[#666666] hover:text-black hover:bg-gray-200 dark:text-[#b3b3b3] dark:hover:text-white dark:hover:bg-[#3d3d3d]",
+                  "text-muted hover:text-fg hover:bg-surface-hover",
                   transitionClass
                 )}
               >
@@ -181,7 +181,7 @@ export function BottomInteractiveToolbar() {
                 title={t("canvas.toolbar.focusCenter")}
                 className={cn(
                   "text-xs font-medium rounded-full h-8 px-1 w-[98px] shrink-0 justify-center gap-1 border-none cursor-pointer bg-transparent",
-                  "text-[#666666] hover:text-black hover:bg-gray-200 dark:text-[#b3b3b3] dark:hover:text-white dark:hover:bg-[#3d3d3d]",
+                  "text-muted hover:text-fg hover:bg-surface-hover",
                   transitionClass
                 )}
               >
@@ -193,7 +193,7 @@ export function BottomInteractiveToolbar() {
         </div>
 
         {/* 구분선 */}
-        <div className="w-px h-5 bg-gray-300 dark:bg-[#3d3d3d]" />
+        <div className="w-px h-5 bg-border" />
 
         {/* 3. 에디터 복귀 버튼 (우측 배치) */}
         <Button
@@ -203,7 +203,7 @@ export function BottomInteractiveToolbar() {
           title={t("canvas.toolbar.exit")}
           className={cn(
             "text-xs font-semibold rounded-full h-8 px-3 gap-1 border-none cursor-pointer bg-transparent shrink-0",
-            "text-[#666666] hover:text-black hover:bg-gray-200 dark:text-[#b3b3b3] dark:hover:text-white dark:hover:bg-[#3d3d3d]",
+            "text-muted hover:text-fg hover:bg-surface-hover",
             transitionClass
           )}
         >

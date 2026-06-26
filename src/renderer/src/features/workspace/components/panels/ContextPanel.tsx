@@ -395,7 +395,7 @@ function ContextPanel({
                   {t("context.synopsisHeader")}
                 </div>
                 <textarea
-                  className="w-full border border-border rounded-lg p-3 text-sm text-fg bg-element resize-none font-sans leading-relaxed min-h-50"
+                  className="w-full border border-border rounded-panel p-3 text-sm text-fg bg-element resize-none font-sans leading-relaxed min-h-50"
                   placeholder={t("context.placeholder.synopsis")}
                   value={currentProject?.description || ""}
                   readOnly
@@ -411,7 +411,7 @@ function ContextPanel({
                   return (
                     <div
                       key={item.id}
-                      className="bg-element border border-border rounded-lg p-3 mb-2 cursor-pointer transition-all hover:border-active hover:bg-element-hover"
+                      className="bg-element border border-border rounded-panel p-3 mb-2 cursor-pointer transition-all hover:border-active hover:bg-element-hover"
                       onClick={() => handleItemClick(item)}
                     >
                       <div className="flex flex-col gap-1">
@@ -430,7 +430,7 @@ function ContextPanel({
                 {filteredTerms.map((item) => (
                   <div
                     key={item.id}
-                    className="bg-element border border-border rounded-lg p-3 mb-2 cursor-pointer transition-all hover:border-active hover:bg-element-hover"
+                    className="bg-element border border-border rounded-panel p-3 mb-2 cursor-pointer transition-all hover:border-active hover:bg-element-hover"
                     onClick={() => handleItemClick(item)}
                   >
                     <div className="flex justify-between items-start mb-1">

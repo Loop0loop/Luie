@@ -43,8 +43,8 @@ export function MessageList({ messages, onJumpEvidence }: MessageListProps) {
             className={`flex gap-3 items-start ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             {msg.role === "assistant" && (
-              <div className="w-7 h-7 rounded-full bg-neutral-800 border border-neutral-700/50 flex items-center justify-center shrink-0 shadow-sm">
-                <Bot className="w-3.5 h-3.5 text-neutral-400" />
+              <div className="w-7 h-7 rounded-full bg-element border border-border flex items-center justify-center shrink-0 shadow-sm">
+                <Bot className="w-3.5 h-3.5 text-muted" />
               </div>
             )}
             <div
@@ -56,7 +56,7 @@ export function MessageList({ messages, onJumpEvidence }: MessageListProps) {
                     <button
                       key={ev.chunkId}
                       onClick={() => void onJumpEvidence(ev)}
-                      className="block w-full rounded border border-white/5 bg-neutral-800/10 px-2.5 py-1.5 text-left text-[11px] text-muted/80 transition-all duration-150 hover:border-accent/30 hover:bg-neutral-800/30 hover:text-accent"
+                      className="block w-full rounded border border-border bg-element/30 px-2.5 py-1.5 text-left text-[11px] text-muted/80 transition-all duration-150 hover:border-accent/30 hover:bg-element-hover hover:text-accent"
                       title={ev.quote}
                     >
                       <span className="mb-1 inline-flex items-center gap-1.5 text-[10px] text-muted/60">
@@ -75,12 +75,12 @@ export function MessageList({ messages, onJumpEvidence }: MessageListProps) {
               <div
                 className={`text-[13px] leading-[1.6] whitespace-pre-wrap ${
                   msg.role === "user"
-                    ? "bg-neutral-850 border border-white/5 text-fg/90 px-4 py-2.5 rounded-lg rounded-tr-none shadow-sm"
+                    ? "bg-element border border-border text-fg/90 px-4 py-2.5 rounded-panel rounded-tr-none shadow-sm"
                     : "text-fg/90 py-1 px-1"
                 }`}
               >
                 {msg.error ? (
-                  <span className="flex items-center gap-1.5 text-red-500/90 font-medium">
+                  <span className="flex items-center gap-1.5 text-danger-fg font-medium">
                     <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                     {msg.error}
                   </span>
@@ -114,7 +114,7 @@ export function MessageList({ messages, onJumpEvidence }: MessageListProps) {
                     <button
                       key={ev.chunkId}
                       onClick={() => void onJumpEvidence(ev)}
-                      className="inline-flex items-center gap-1.5 text-[10px] text-muted/60 hover:text-accent bg-neutral-800/10 hover:bg-neutral-800/30 border border-white/5 rounded px-2.5 py-0.5 transition-all duration-150"
+                      className="inline-flex items-center gap-1.5 text-[10px] text-muted/60 hover:text-accent bg-element/30 hover:bg-element-hover border border-border rounded px-2.5 py-0.5 transition-all duration-150"
                       title={ev.quote}
                     >
                       <BookOpen className="w-3 h-3 shrink-0" />
@@ -126,8 +126,8 @@ export function MessageList({ messages, onJumpEvidence }: MessageListProps) {
             </div>
 
             {msg.role === "user" && (
-              <div className="w-7 h-7 rounded-full bg-neutral-800/40 border border-neutral-700/30 flex items-center justify-center shrink-0 shadow-sm">
-                <User className="w-3.5 h-3.5 text-neutral-500" />
+              <div className="w-7 h-7 rounded-full bg-element/40 border border-border flex items-center justify-center shrink-0 shadow-sm">
+                <User className="w-3.5 h-3.5 text-muted" />
               </div>
             )}
           </div>

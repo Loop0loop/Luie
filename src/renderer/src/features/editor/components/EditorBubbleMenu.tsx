@@ -59,7 +59,7 @@ export default function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
     <BubbleMenu
       editor={editor}
       options={{ placement: "top" }}
-      className="flex items-center gap-1 bg-app text-fg shadow-lg border border-border rounded-lg p-1.5"
+      className="flex items-center gap-1 bg-app text-fg shadow-lg border border-border rounded-panel p-1.5"
     >
       <button
         onClick={() => editor.chain().focus().toggleBold().run()}

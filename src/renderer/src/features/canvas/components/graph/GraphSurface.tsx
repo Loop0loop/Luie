@@ -170,7 +170,7 @@ export default function GraphSurface() {
         labelStyle,
         labelBgStyle,
         labelBgPadding: [8, 4] as [number, number],
-        animated: !isCharacterMode && strength >= 2,
+        animated: false,
         markerEnd: isCharacterMode ? undefined : {
           type: MarkerType.ArrowClosed,
           width: cfg.markerSize,
@@ -308,8 +308,7 @@ export default function GraphSurface() {
         const animatedBackup = edge.data?.animatedBackup ?? edge.animated ?? false;
         const labelBgStrokeBackup = edge.data?.labelBgStrokeBackup ?? edge.labelBgStyle?.stroke;
 
-        const isCharacterMode = activeMode === "character";
-        const relationColor = isCharacterMode ? "rgba(165, 180, 252, 0.95)" : "rgba(248, 113, 113, 0.95)";
+        const relationColor = "var(--accent)";
 
         // strokeWidthBackup이 숫자형인지 강제 안전 변환 및 NaN 방지 고도화
         const baseWidth = typeof strokeWidthBackup === "number" ? strokeWidthBackup : (Number(strokeWidthBackup) || EDGE_FALLBACK_STROKE_WIDTH);
@@ -324,8 +323,8 @@ export default function GraphSurface() {
             animatedBackup,
             labelBgStrokeBackup,
           },
-          // 관련 에지는 반드시 애니메이션 활성화 (에너지 흐름 선사)
-          animated: isRelated ? true : false,
+          // 평형 다이어그램: 에지 애니메이션 미사용
+          animated: false,
           style: {
             ...edge.style,
             // 관련 에지는 선명하게, 관련 없는 에지는 시야에서 전면 투명 소거
@@ -371,7 +370,7 @@ export default function GraphSurface() {
   );
 
   return (
-    <div className="h-full w-full bg-canvas relative overflow-hidden select-none">
+    <div className="h-full w-full bg-app relative overflow-hidden select-none">
       {/* React Flow Canvas */}
       <ReactFlow
         nodes={nodes}
@@ -398,7 +397,7 @@ export default function GraphSurface() {
         zoomOnPinch
         zoomOnDoubleClick={false}
         proOptions={PRO_OPTIONS}
-        className="bg-canvas"
+        className="bg-app"
       >
         <Background
           variant={BackgroundVariant.Dots}
@@ -414,7 +413,7 @@ export default function GraphSurface() {
         <button
           type="button"
           onClick={() => setIsGuideModalOpen(true)}
-          className="h-9 w-9 rounded-full bg-panel/90 hover:bg-panel border border-border/40 hover:border-border/80 flex items-center justify-center text-muted hover:text-fg shadow-xl backdrop-blur-md transition-all cursor-pointer"
+          className="h-9 w-9 rounded-full bg-panel hover:bg-panel border border-border/40 hover:border-border/80 flex items-center justify-center text-muted hover:text-fg shadow-panel transition-all cursor-pointer"
           title={t("canvas.graph.legend.open", "그래프 범례 보기")}
         >
           <HelpCircle className="h-4.5 w-4.5" />

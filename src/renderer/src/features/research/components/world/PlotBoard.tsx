@@ -189,7 +189,7 @@ export function PlotBoard() {
           {columns.map((col) => (
             <div
               key={col.id}
-              className="w-80 shrink-0 flex flex-col bg-sidebar border border-border rounded-xl shadow-sm max-h-full group/col"
+              className="w-80 shrink-0 flex flex-col bg-sidebar border border-border rounded-panel shadow-sm max-h-full group/col"
             >
               {/* Column Header */}
               <div className="p-3 flex items-center gap-2 border-b border-border bg-panel/50 rounded-t-xl">
@@ -218,7 +218,7 @@ export function PlotBoard() {
                 {col.cards.map((card) => (
                   <div
                     key={card.id}
-                    className="bg-panel border border-border rounded-lg p-3 shadow-sm relative group hover:border-active transition-all hover:shadow-md"
+                    className="bg-panel border border-border rounded-panel p-3 shadow-sm relative group hover:border-active transition-all hover:shadow-md"
                   >
                     <BufferedTextArea
                       className="w-full bg-transparent border-none resize-none text-sm text-fg leading-relaxed outline-none min-h-[60px]"
@@ -238,7 +238,7 @@ export function PlotBoard() {
 
               {/* Footer Action */}
               <button
-                className="m-3 p-2 flex items-center justify-center gap-2 rounded-lg border border-dashed border-border text-xs text-muted font-medium hover:text-accent hover:border-accent hover:bg-accent/5 transition-all"
+                className="m-3 p-2 flex items-center justify-center gap-2 rounded-panel border border-dashed border-border text-xs text-muted font-medium hover:text-accent hover:border-accent hover:bg-accent/5 transition-all"
                 onClick={() => addCard(col.id)}
               >
                 <Plus className="w-4 h-4" /> {t("world.plot.addBeat")}
@@ -248,7 +248,7 @@ export function PlotBoard() {
 
           {/* Add Column Button */}
           <div
-            className="w-16 shrink-0 flex items-center justify-center border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-accent hover:bg-accent/5 transition-all group"
+            className="w-16 shrink-0 flex items-center justify-center border-2 border-dashed border-border rounded-panel cursor-pointer hover:border-accent hover:bg-accent/5 transition-all group"
             onClick={addColumn}
             title={t("world.plot.addAct")}
           >

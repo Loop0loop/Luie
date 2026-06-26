@@ -18,7 +18,7 @@ export default function SynopsisSection() {
         {t("context.synopsisHeader")}
       </div>
       <textarea
-        className="w-full border border-border rounded-lg p-3 text-sm text-fg bg-element resize-none font-sans leading-relaxed min-h-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        className="w-full border border-border rounded-panel p-3 text-sm text-fg bg-element resize-none font-sans leading-relaxed min-h-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
         placeholder={t("context.placeholder.synopsis")}
         value={currentProject?.description || ""}
         readOnly

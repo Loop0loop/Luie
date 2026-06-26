@@ -44,7 +44,7 @@ export function FontSelector() {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 w-32 bg-panel border border-border shadow-xl rounded-md z-50 py-1 max-h-48 overflow-y-auto">
+        <div className="absolute top-full left-0 mt-1 w-32 bg-panel border border-border shadow-panel rounded-control z-50 py-1 max-h-48 overflow-y-auto">
           {FONT_FAMILIES.map((font: FontFamily) => (
             <button
               key={font}

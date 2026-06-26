@@ -166,7 +166,7 @@ export function BinderSidebar({
                     if (event.buttons !== 0) return;
                     scheduleClosePanel();
                 }}
-                className={`bg-sidebar shadow-xl flex flex-row shrink-0 min-w-0 z-10 ${
+                className={`bg-sidebar shadow-panel flex flex-row shrink-0 min-w-0 z-10 ${
                     enableAnimations
                         ? isAutoClosing
                             ? "animate-out slide-out-to-right fade-out duration-150"

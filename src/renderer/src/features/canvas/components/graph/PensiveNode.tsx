@@ -32,29 +32,23 @@ function PensiveNode({ id, data, selected }: NodeProps<GraphNodeData>) {
     : data.type === "character"
       ? "rounded-full"
       : data.type === "event"
-        ? "rotate-45 rounded-md"
-        : "rounded-xl";
+        ? "rotate-45 rounded-control"
+        : "rounded-panel";
 
-  // 포커스 발광 섀도우를 인물(블루-퍼플) vs 사건(네온 레드) 테마 색으로 역동적 아우라 연출
-  const isEvent = data.type === "event";
-  const glowShadow = isEvent
-    ? "shadow-[0_0_22px_rgba(248,113,113,0.7),0_0_10px_rgba(248,113,113,0.4)] ring-red-400/40"
-    : "shadow-[0_0_22px_rgba(165,180,252,0.7),0_0_10px_rgba(165,180,252,0.4)] ring-indigo-400/40";
-
-  // 등급별 링 및 발광 섀도우 효과 (웹소설 수사 단서판 & 성운 광배 융합 이펙트 - 테마 변수 기반)
+  // 포커스 강조: 네온 발광 대신 토큰 기반 링으로 톤다운 (평형 다이어그램)
   const starGradeClass = isChapter
     ? isFocused
-      ? "bg-fg ring-4 ring-fg/30 shadow-[0_0_18px_var(--accent-bg)] scale-110"
-      : "bg-muted/60 border border-border/40 shadow-[0_0_8px_var(--border-default)] hover:scale-125 hover:bg-fg"
+      ? "bg-fg ring-2 ring-accent/50"
+      : "bg-muted/60 border border-border/40 hover:bg-fg"
     : data.starGrade === "prime"
-      ? `bg-fg ring-4 ${glowShadow}`
+      ? "bg-fg ring-2 ring-accent/40"
       : data.starGrade === "major"
         ? isFocused
-          ? `bg-fg ring-4 ${glowShadow} scale-110`
-          : "bg-muted/80 border border-border/50 shadow-[0_0_10px_var(--border-default)] hover:scale-125 hover:bg-fg"
+          ? "bg-fg ring-2 ring-accent/40"
+          : "bg-muted/80 border border-border/50 hover:bg-fg"
         : isFocused
-          ? `bg-fg ring-4 ${glowShadow} scale-110`
-          : "bg-muted/40 border border-border/30 shadow-[0_0_6px_var(--border-default)] hover:scale-125 hover:bg-fg";
+          ? "bg-fg ring-2 ring-accent/40"
+          : "bg-muted/40 border border-border/30 hover:bg-fg";
 
   return (
     <div
@@ -79,7 +73,7 @@ function PensiveNode({ id, data, selected }: NodeProps<GraphNodeData>) {
           left: "50%",
         }}
         className={cn(
-          "absolute top-full mt-3.5 whitespace-nowrap transition-all duration-300 pointer-events-none px-4 py-2.5 rounded-lg bg-panel/95 border border-border/40 shadow-xl text-fg z-50 flex flex-col gap-1 min-w-[200px] max-w-[280px] opacity-0 -translate-y-2 scale-95 group-hover:opacity-100 group-hover:translate-y-0"
+          "absolute top-full mt-3.5 whitespace-nowrap transition-all duration-300 pointer-events-none px-4 py-2.5 rounded-panel bg-panel/95 border border-border/40 shadow-panel text-fg z-50 flex flex-col gap-1 min-w-[200px] max-w-[280px] opacity-0 -translate-y-2 scale-95 group-hover:opacity-100 group-hover:translate-y-0"
         )}
       >
         <div className="flex items-center justify-between gap-3 border-b border-border/20 pb-1.5">

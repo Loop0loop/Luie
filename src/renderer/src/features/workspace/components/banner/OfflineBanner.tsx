@@ -34,7 +34,7 @@ export function OfflineBanner() {
     if (!isOffline || dismissed) return null;
 
     return (
-        <div className="w-full bg-warning/15 border-b border-warning/30 px-4 py-2 flex items-center justify-between shadow-sm relative z-[100] animate-in slide-in-from-top-2 fade-in">
+        <div className="w-full bg-warning/15 border-b border-warning/30 px-4 py-2 flex items-center justify-between shadow-sm relative z-banner animate-in slide-in-from-top-2 fade-in">
             <div className="flex items-center gap-3">
                 <div className="p-1.5 bg-warning/20 rounded-full text-warning-fg">
                     <WifiOff className="w-4 h-4" />
@@ -50,7 +50,7 @@ export function OfflineBanner() {
             </div>
             <button
                 onClick={() => setDismissed(true)}
-                className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-muted hover:text-fg"
+                className="p-1.5 rounded-control hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-muted hover:text-fg"
                 title={t("common.dismiss", "Dismiss")}
             >
                 <X className="w-4 h-4" />

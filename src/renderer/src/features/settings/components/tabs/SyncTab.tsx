@@ -61,7 +61,7 @@ export const SyncTab = memo(function SyncTab({
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <section className="p-4 bg-surface rounded-xl border border-border">
+      <section className="p-4 bg-surface rounded-panel border border-border">
         <h3 className="text-base font-semibold text-fg mb-2">
           {t("settings.sync.title")}
         </h3>
@@ -101,12 +101,12 @@ export const SyncTab = memo(function SyncTab({
         </div>
 
         {status.degradedReason && (
-          <div className="mb-4 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning-fg">
+          <div className="mb-4 rounded-control border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning-fg">
             {status.degradedReason}
           </div>
         )}
         {status.lastError && (
-          <div className="mb-4 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger-fg">
+          <div className="mb-4 rounded-control border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger-fg">
             {status.lastError}
           </div>
         )}
@@ -114,7 +114,7 @@ export const SyncTab = memo(function SyncTab({
         <div className="flex flex-wrap gap-3">
           {showAuthAction ? (
             <button
-              className="px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-accent text-white rounded-panel text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50"
               onClick={showReconnect ? onReconnectGoogle : onConnectGoogle}
               disabled={connectDisabled}
             >
@@ -123,14 +123,14 @@ export const SyncTab = memo(function SyncTab({
           ) : (
             <>
               <button
-                className="px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50"
+                className="px-4 py-2 bg-accent text-white rounded-panel text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50"
                 onClick={onSyncNow}
                 disabled={isBusy}
               >
                 {t("settings.sync.actions.syncNow")}
               </button>
               <button
-                className="px-4 py-2 bg-element hover:bg-element-hover border border-border rounded-lg text-sm font-medium text-fg transition-colors disabled:opacity-50"
+                className="px-4 py-2 bg-element hover:bg-element-hover border border-border rounded-panel text-sm font-medium text-fg transition-colors disabled:opacity-50"
                 onClick={onDisconnect}
                 disabled={isBusy}
               >
@@ -140,7 +140,7 @@ export const SyncTab = memo(function SyncTab({
           )}
         </div>
 
-        <div className="mt-4 flex items-center justify-between rounded-lg border border-border px-3 py-2">
+        <div className="mt-4 flex items-center justify-between rounded-panel border border-border px-3 py-2">
           <span className="text-sm text-fg">
             {t("settings.sync.fields.autoSync")}
           </span>
@@ -159,7 +159,7 @@ export const SyncTab = memo(function SyncTab({
           </button>
         </div>
 
-        <div className="mt-4 flex items-center justify-between bg-warning/10 border border-warning/30 rounded-lg p-3">
+        <div className="mt-4 flex items-center justify-between bg-warning/10 border border-warning/30 rounded-panel p-3">
           <div className="text-sm text-warning-fg">
             {t("settings.sync.conflicts", {
               total: status.conflicts.total,
@@ -170,7 +170,7 @@ export const SyncTab = memo(function SyncTab({
           </div>
           {status.conflicts.total > 0 && (
             <button
-              className="px-3 py-1.5 bg-warning hover:bg-warning/90 text-warning-fg text-xs font-semibold rounded-md shadow-sm transition-colors disabled:opacity-50"
+              className="px-3 py-1.5 bg-warning hover:bg-warning/90 text-warning-fg text-xs font-semibold rounded-control shadow-sm transition-colors disabled:opacity-50"
               onClick={() => setIsResolving(true)}
               disabled={isBusy}
             >

@@ -81,7 +81,7 @@ export default function ResearchPanel({
         </div>
       ) : null}
 
-      <div className="flex-1 flex flex-col overflow-hidden bg-bg-primary relative">
+      <div className="flex-1 flex flex-col overflow-hidden bg-app relative">
         {activeTab === "character" && <FeatureErrorBoundary featureName="Characters"><CharacterManager /></FeatureErrorBoundary>}
         {activeTab === "event" && <FeatureErrorBoundary featureName="Events"><EventManager /></FeatureErrorBoundary>}
         {activeTab === "faction" && <FeatureErrorBoundary featureName="Factions"><FactionManager /></FeatureErrorBoundary>}

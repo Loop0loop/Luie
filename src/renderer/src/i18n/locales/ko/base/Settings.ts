@@ -70,10 +70,6 @@ export const koBaseSettings = {
         title: "테마 모드 (Base Theme)",
         description: "기본적인 밝기를 선택합니다.",
       },
-      accent: {
-        title: "강조 색상 (Accent Color)",
-        description: "버튼과 강조 요소의 색상을 선택하세요.",
-      },
       contrast: {
         title: "대비 (Contrast)",
         description: "화면의 선명도를 조절합니다.",

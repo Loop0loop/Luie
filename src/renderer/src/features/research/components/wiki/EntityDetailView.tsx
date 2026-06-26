@@ -217,12 +217,12 @@ export function EntityDetailView({
             value={entity.name}
             onSave={(val) => handleUpdate("name", val)}
           />
-          <div className="flex items-center gap-1 p-0.5 rounded-lg bg-surface-hover border border-border/60 shrink-0">
+          <div className="flex items-center gap-1 p-0.5 rounded-panel bg-surface-hover border border-border/60 shrink-0">
             <button
               type="button"
               onClick={() => switchViewMode("wiki")}
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors",
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-control text-[12px] font-medium transition-colors",
                 viewMode === "wiki" ? "bg-surface text-fg shadow-sm" : "text-muted hover:text-fg",
               )}
             >
@@ -232,7 +232,7 @@ export function EntityDetailView({
               type="button"
               onClick={() => switchViewMode("visual")}
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors",
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-control text-[12px] font-medium transition-colors",
                 viewMode === "visual" ? "bg-surface text-fg shadow-sm" : "text-muted hover:text-fg",
               )}
             >
@@ -293,7 +293,7 @@ export function EntityDetailView({
               <button
                 type="button"
                 onClick={addSection}
-                className="p-3 border-2 border-dashed border-border rounded-lg text-center text-subtle cursor-pointer mt-4 w-full bg-transparent hover:text-fg hover:border-fg transition-colors"
+                className="p-3 border-2 border-dashed border-border rounded-panel text-center text-subtle cursor-pointer mt-4 w-full bg-transparent hover:text-fg hover:border-fg transition-colors"
               >
                 {t(`${prefix}.addSection`, "+ Add Section")}
               </button>

@@ -20,7 +20,7 @@ export function GraphHoverCard({
   return (
     <div
       className={cn(
-        "absolute top-16 z-30 w-[300px] rounded-lg border border-border/30 bg-panel/85 backdrop-blur-xl p-4 shadow-[0_12px_40px_rgba(0,0,0,0.25)] animate-in fade-in duration-300 text-fg flex flex-col gap-3.5 select-none overflow-hidden after:absolute after:top-0 after:left-0 after:right-0 after:h-[1px] after:bg-gradient-to-r after:from-accent/40 after:to-transparent after:rounded-t-2xl transition-all duration-300",
+        "absolute top-16 z-30 w-[300px] rounded-panel border border-border/30 bg-panel p-4 shadow-panel animate-in fade-in duration-300 text-fg flex flex-col gap-3.5 select-none overflow-hidden transition-all duration-300",
         isRightPanelOpen ? "right-[340px]" : "right-6",
       )}
     >
@@ -34,7 +34,7 @@ export function GraphHoverCard({
       </div>
 
       {hoverNode.data.description && (
-        <p className="text-[11px] leading-relaxed text-muted break-keep bg-element/40 p-3 rounded-xl border border-border/15 select-text relative z-10 font-normal">
+        <p className="text-[11px] leading-relaxed text-muted break-keep bg-element/40 p-3 rounded-panel border border-border/15 select-text relative z-10 font-normal">
           {hoverNode.data.description}
         </p>
       )}
@@ -50,7 +50,7 @@ export function GraphHoverCard({
             {hoverNode.data.relationships.slice(0, 3).map((rel, index) => (
               <div
                 key={index}
-                className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-element/20 border border-border/15 hover:border-border/30 hover:bg-element/30 transition-all duration-200 text-[10px]"
+                className="flex flex-col gap-1.5 p-2.5 rounded-panel bg-element/20 border border-border/15 hover:border-border/30 hover:bg-element/30 transition-all duration-200 text-[10px]"
               >
                 <div className="flex items-center justify-between font-extrabold">
                   <span className="text-fg">{hoverNode.data.label}</span>
@@ -81,7 +81,7 @@ export function GraphHoverCard({
             {hoverNode.data.relatedChapters.map((chapter, index) => (
               <span
                 key={index}
-                className="text-[9px] font-bold text-fg bg-element/60 border border-border/15 px-2.5 py-1 rounded-full hover:bg-element hover:scale-105 transition-all cursor-default"
+                className="text-[9px] font-bold text-fg bg-element/60 border border-border/15 px-2.5 py-1 rounded-full hover:bg-element transition-all cursor-default"
               >
                 {chapter}
               </span>

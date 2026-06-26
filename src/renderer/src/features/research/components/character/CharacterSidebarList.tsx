@@ -66,7 +66,7 @@ export function CharacterSidebarList({
           {CHARACTER_TEMPLATES.map((template) => (
             <div
               key={template.id}
-              className="flex flex-col items-center justify-center p-4 border border-border rounded-lg cursor-pointer hover:bg-surface-hover transition-colors gap-2"
+              className="flex flex-col items-center justify-center p-4 border border-border rounded-panel cursor-pointer hover:bg-surface-hover transition-colors gap-2"
               onClick={() => handleAddCharacter(template.id)}
             >
               <div className="p-3 bg-surface rounded-full shadow-sm">

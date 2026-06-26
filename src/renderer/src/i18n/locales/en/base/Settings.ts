@@ -69,10 +69,6 @@ export const enBaseSettings = {
         title: "Base Theme",
         description: "Choose the baseline brightness and tone.",
       },
-      accent: {
-        title: "Accent Color",
-        description: "Choose colors for key actions and highlights.",
-      },
       contrast: {
         title: "Contrast",
         description: "Adjust visual sharpness of the interface.",

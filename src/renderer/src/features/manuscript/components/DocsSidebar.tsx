@@ -11,7 +11,7 @@ export default function DocsSidebar({
   const { handleAddChapter } = useChapterManagement();
 
   return (
-    <div className="flex flex-col h-full bg-app text-fg relative">
+    <div className="flex flex-col h-full bg-sidebar text-fg relative">
 
       {/* Header */}
       {!hideHeader && (
@@ -19,7 +19,7 @@ export default function DocsSidebar({
           <h2 className="font-semibold text-sm text-muted">{t("sidebar.title")}</h2>
           <button
             onClick={() => { void handleAddChapter(); }}
-            className="w-6 h-6 rounded-md hover:bg-surface-hover flex items-center justify-center transition-colors text-muted"
+            className="w-6 h-6 rounded-control hover:bg-surface-hover flex items-center justify-center transition-colors text-muted"
             title={t("sidebar.action.new")}
           >
             <Plus className="w-4 h-4" />

@@ -115,14 +115,14 @@ export default function WorldSection({
 
       {!graphOnly && worldTab !== "graph" && (
         <div className="flex w-full items-center justify-between shrink-0 select-none border-b border-border/40 bg-sidebar/30 backdrop-blur-xl px-4 py-1.5 text-muted z-20">
-          <div className="flex items-center gap-1 bg-element/80 rounded-lg p-1 border border-border/40">
+          <div className="flex items-center gap-1 bg-element/80 rounded-panel p-1 border border-border/40">
             {WORLD_TAB_ITEMS.map((item) => (
               <TabButton
                 key={item.key}
                 label={t(item.labelKey)}
                 active={worldTab === item.key}
                 onClick={() => setWorldTab(item.key)}
-                className="flex-1 cursor-pointer px-4 py-1 rounded-md text-center text-[11px] font-medium transition-all duration-200 hover:text-fg"
+                className="flex-1 cursor-pointer px-4 py-1 rounded-control text-center text-[11px] font-medium transition-all duration-200 hover:text-fg"
                 activeClassName="bg-sidebar text-fg shadow-sm border border-border/40 font-semibold"
               />
             ))}
@@ -149,7 +149,7 @@ export default function WorldSection({
 
       {graphOnly && isGuideOpen && (
         <div className="absolute inset-0 z-40 bg-black/40 backdrop-blur-sm flex items-center justify-center p-6">
-          <div className="w-full max-w-xl rounded-xl border border-border bg-panel p-5 shadow-xl">
+          <div className="w-full max-w-xl rounded-panel border border-border bg-panel p-5 shadow-panel">
             <div className="flex items-center justify-between gap-3 mb-4">
               <h2 className="text-base font-semibold text-fg">
                 {t("world.graph.menu.helpTitle")}
@@ -157,7 +157,7 @@ export default function WorldSection({
               <button
                 type="button"
                 onClick={() => setIsGuideOpen(false)}
-                className="rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-fg hover:bg-element"
+                className="rounded-control border border-border px-2 py-1 text-xs text-muted hover:text-fg hover:bg-element"
               >
                 {t("world.graph.inspector.close")}
               </button>
@@ -168,7 +168,7 @@ export default function WorldSection({
               <li>{t("world.graph.help.step3")}</li>
               <li>{t("world.graph.help.step4")}</li>
             </ul>
-            <div className="mt-4 rounded-md border border-border/70 bg-element px-3 py-2 text-xs text-muted">
+            <div className="mt-4 rounded-control border border-border/70 bg-element px-3 py-2 text-xs text-muted">
               {t("world.graph.help.shortcuts")}
             </div>
           </div>

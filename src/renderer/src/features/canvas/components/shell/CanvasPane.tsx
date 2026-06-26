@@ -45,7 +45,7 @@ export default function CanvasPane() {
 
   return (
     <div
-      className="relative flex h-full w-full flex-col bg-canvas"
+      className="relative flex h-full w-full flex-col bg-app"
       data-testid="canvas-pane"
     >
       {/* 메인 뷰포트 영역 (Static / Graph 교체식) */}

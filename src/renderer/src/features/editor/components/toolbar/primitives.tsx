@@ -23,7 +23,7 @@ export const ToolbarButton = ({
     type="button"
     aria-label={label}
     className={cn(
-      "flex h-8 min-w-8 items-center justify-center rounded-md px-2 text-xs text-muted transition-colors hover:bg-hover hover:text-fg disabled:pointer-events-none disabled:opacity-45",
+      "flex h-8 min-w-8 items-center justify-center rounded-control px-2 text-xs text-muted transition-colors hover:bg-hover hover:text-fg disabled:pointer-events-none disabled:opacity-45",
       active && "bg-accent/15 text-accent",
       className,
     )}

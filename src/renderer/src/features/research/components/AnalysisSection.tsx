@@ -186,7 +186,7 @@ function FloatingWrapper({ children, compact = false }: FloatingWrapperProps) {
   return (
     <div
       data-testid="analysis-floating-container"
-      className={`group fixed bottom-24 right-6 rounded-xl border border-white/10 ring-1 ring-white/5 shadow-[0_24px_70px_-15px_rgba(0,0,0,0.7)] bg-neutral-900/55 backdrop-blur-2xl backdrop-saturate-150 z-[9999] flex flex-col overflow-hidden cursor-grab active:cursor-grabbing ${
+      className={`group fixed bottom-24 right-6 rounded-panel border border-border shadow-panel bg-panel/80 backdrop-blur-xl z-modal flex flex-col overflow-hidden cursor-grab active:cursor-grabbing ${
         isDraggingState ? "transition-none" : "transition-all duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)]"
       }`}
       style={{
@@ -331,18 +331,18 @@ export default function AnalysisSection() {
       data-testid="analysis-section-content"
       className={`relative text-fg flex flex-col overflow-hidden ${
         floatingCompact ? "" : "h-full"
-      } ${floating ? "bg-black/20" : "bg-[#161616]"}`}
+      } ${floating ? "bg-app/40" : "bg-panel"}`}
     >
       {/* fixView 모드일 때만 고정 헤더와 토글 버튼 렌더링 */}
       {viewMode === "fixView" && (
-        <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800 bg-neutral-900/20 select-none">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-element/20 select-none">
           <span className="text-xs font-semibold text-fg/70 tracking-wide">
             {t("analysis.title")}
           </span>
           <button
             data-testid="view-mode-toggle"
             onClick={() => setViewMode("floatingView")}
-            className="p-1.5 rounded-lg hover:bg-neutral-850 text-neutral-400 hover:text-fg transition-all duration-150 active:scale-95"
+            className="p-1.5 rounded-control hover:bg-surface-hover text-muted hover:text-fg transition-all duration-150 active:scale-95"
             title={t("analysis.viewMode.switchToFloating")}
           >
             <Maximize2 className="w-4 h-4" />
@@ -361,7 +361,7 @@ export default function AnalysisSection() {
 
       {/* 메시지 — 빈 상태에서는 영역 자체를 접어 프롬프트만 노출 */}
       {!floatingCompact && (
-        <div data-no-drag className="flex-1 overflow-y-auto px-4 pt-4 min-h-0 cursor-auto scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent">
+        <div data-no-drag className="flex-1 overflow-y-auto px-4 pt-4 min-h-0 cursor-auto custom-scrollbar">
           <div className="mb-4 space-y-2">
             <ConflictQueuePanel
               visible={review.showConflictQueue}

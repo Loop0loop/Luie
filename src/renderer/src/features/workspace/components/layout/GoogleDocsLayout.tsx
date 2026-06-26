@@ -116,7 +116,7 @@ export default function GoogleDocsLayout({
           <div className="pointer-events-auto absolute left-4 top-4 z-50">
             <button
               onClick={() => setDocsSidebarOpen(true)}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-border/50 bg-app text-muted shadow-sm transition-colors duration-150 hover:bg-surface-hover"
+              className="flex h-10 w-10 items-center justify-center rounded-control border border-border bg-app text-muted shadow-sm transition-colors duration-150 hover:bg-surface-hover"
               title={t("sidebar.toggle.open")}
             >
               <Menu className="h-5 w-5" />
@@ -156,7 +156,7 @@ export default function GoogleDocsLayout({
 
               <PanelResizeHandle
                 data-separator-feature="docs.sidebar"
-                className="relative z-20 w-1 shrink-0 cursor-col-resize bg-border/40 transition-colors hover:bg-blue-500/50 focus-visible:bg-blue-500/50"
+                className="relative z-20 w-1 shrink-0 cursor-col-resize bg-border/40 transition-colors hover:bg-accent/50 focus-visible:bg-accent/50"
               >
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>

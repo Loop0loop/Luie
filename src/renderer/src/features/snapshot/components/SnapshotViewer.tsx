@@ -141,7 +141,7 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
         </div>
         <button
           onClick={handleRestore}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-medium"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-control bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-medium"
         >
           <RotateCcw className="w-3.5 h-3.5" />
           {t("snapshot.viewer.restoreButton")}

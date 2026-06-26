@@ -46,7 +46,7 @@ export function EntityVisualPanel({
   return (
     <div className="flex flex-col gap-4 max-w-[760px]">
       <div className="flex justify-end">
-        <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2 py-1">
+        <div className="inline-flex items-center gap-1 rounded-panel border border-border bg-surface px-2 py-1">
           <label htmlFor={scopeControlId} className="text-[11px] text-muted">
             Memory
           </label>

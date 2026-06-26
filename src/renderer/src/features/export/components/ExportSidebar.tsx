@@ -265,7 +265,7 @@ export function ExportSidebar({
                                 </div>
                             </div>
 
-                            <div className="space-y-2 rounded-xl border border-border bg-surface/60 p-3">
+                            <div className="space-y-2 rounded-panel border border-border bg-surface/60 p-3">
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="space-y-1">
                                         <label className="text-sm font-semibold text-fg">
@@ -339,7 +339,7 @@ export function ExportSidebar({
                 <button
                     onClick={handleExport}
                     disabled={isExporting || !hasChapter}
-                    className="w-full h-11 bg-accent hover:bg-accent-hover text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full h-11 bg-accent hover:bg-accent-hover text-white font-bold rounded-panel transition-colors flex items-center justify-center gap-2 shadow-lg shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <Download className="w-5 h-5" />
                     {isExporting ? t("exportWindow.button.exporting") : t("exportWindow.button.export", { format: format.toUpperCase() })}

@@ -217,7 +217,7 @@ export default function MainLayout({
               <>
                 <button
                   onClick={toggleLeftSidebar}
-                  className="absolute left-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-lg border border-border/80 bg-app/90 text-muted shadow-md backdrop-blur-sm transition-all hover:bg-accent hover:text-fg active:scale-95 cursor-pointer"
+                  className="absolute left-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-panel border border-border/80 bg-app/90 text-muted shadow-md backdrop-blur-sm transition-all hover:bg-accent hover:text-fg active:scale-95 cursor-pointer"
                   title={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
                   aria-label={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
                 >
@@ -225,7 +225,7 @@ export default function MainLayout({
                 </button>
                 <button
                   onClick={() => setRegionOpen("rightPanel", !isContextOpen)}
-                  className="absolute right-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-lg border border-border/80 bg-app/90 text-muted shadow-md backdrop-blur-sm transition-all hover:bg-accent hover:text-fg active:scale-95 cursor-pointer"
+                  className="absolute right-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-panel border border-border/80 bg-app/90 text-muted shadow-md backdrop-blur-sm transition-all hover:bg-accent hover:text-fg active:scale-95 cursor-pointer"
                   title={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
                   aria-label={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
                 >
@@ -236,7 +236,7 @@ export default function MainLayout({
             {!isCanvasMode && (
               <div className="flex items-center px-4 py-2 h-12 shrink-0">
                 <button
-                  className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-colors duration-150 hover:bg-active hover:text-fg"
+                  className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-control flex items-center justify-center transition-colors duration-150 hover:bg-active hover:text-fg"
                   onClick={toggleLeftSidebar}
                   title={
                     isSidebarOpen
@@ -254,7 +254,7 @@ export default function MainLayout({
                 <div className="flex-1" />
 
                 <button
-                  className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-colors duration-150 hover:bg-active hover:text-fg"
+                  className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-control flex items-center justify-center transition-colors duration-150 hover:bg-active hover:text-fg"
                   onClick={() => setRegionOpen("rightPanel", !isContextOpen)}
                   title={
                     isContextOpen
@@ -282,7 +282,7 @@ export default function MainLayout({
                   id="main-primary-content"
                   defaultSize={toPercentSize(50)}
                   minSize={toPercentSize(20)}
-                  className="min-w-0 bg-canvas relative flex flex-col"
+                  className="min-w-0 bg-app relative flex flex-col"
                 >
                   {children}
                 </Panel>

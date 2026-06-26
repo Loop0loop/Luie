@@ -288,7 +288,7 @@ export default function ScrivenerLayout({
           <Panel
             id="main-editor"
             minSize={toPercentSize(30)}
-            className="min-w-0 bg-canvas flex flex-col relative z-0"
+            className="min-w-0 bg-app flex flex-col relative z-0"
           >
             {/* Header / Title Bar of Editor Pane? (Like Scrivener Header) */}
             <div className="h-8 bg-surface border-b border-border flex items-center px-4 justify-between shrink-0">
