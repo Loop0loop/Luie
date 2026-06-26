@@ -18,7 +18,7 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
 
   if (!activeNode) {
     return (
-      <div className="flex h-full flex-col items-center justify-center p-6 text-center text-muted-foreground select-none">
+      <div className="flex h-full flex-col items-center justify-center p-6 text-center text-muted select-none">
         <Info className="h-6 w-6 opacity-30 mb-2" />
         <p className="text-xs">{t("canvas.graph.details.notFound", "설정 정보가 존재하지 않습니다.")}</p>
       </div>
@@ -78,12 +78,12 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
                   className="flex flex-col gap-2 p-3 rounded-xl bg-element/10 border border-border/20 hover:border-border/40 hover:bg-element/20 transition-all duration-200"
                 >
                   <div className="flex items-center justify-between text-[11px] font-extrabold text-fg">
-                    <span className="text-foreground">{activeNode.data.label}</span>
+                    <span className="text-fg">{activeNode.data.label}</span>
                     <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-panel text-[9.5px] text-muted border border-border/20 shrink-0 font-bold">
                       <span>{rel.type}</span>
                       <ArrowRight className="h-2.5 w-2.5 text-accent/60" />
                     </div>
-                    <span className="text-foreground">{rel.targetName}</span>
+                    <span className="text-fg">{rel.targetName}</span>
                   </div>
                   {rel.details && (
                     <span className="text-[9.5px] text-muted pl-2 border-l border-border/20 break-keep font-medium leading-normal">

@@ -89,8 +89,8 @@ export default function GoogleDocsLayout({
   };
 
   return (
-    <div className="flex h-screen flex-col bg-background font-sans text-foreground transition-colors duration-200">
-      <div className="bg-background transition-colors duration-200">
+    <div className="flex h-screen flex-col bg-app font-sans text-fg transition-colors duration-200">
+      <div className="bg-app transition-colors duration-200">
         <WindowBar />
       </div>
 
@@ -116,7 +116,7 @@ export default function GoogleDocsLayout({
           <div className="pointer-events-auto absolute left-4 top-4 z-50">
             <button
               onClick={() => setDocsSidebarOpen(true)}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-border/50 bg-background text-muted-foreground shadow-sm transition-colors duration-150 hover:bg-surface-hover"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-border/50 bg-app text-muted shadow-sm transition-colors duration-150 hover:bg-surface-hover"
               title={t("sidebar.toggle.open")}
             >
               <Menu className="h-5 w-5" />
@@ -143,7 +143,7 @@ export default function GoogleDocsLayout({
                 minSize={docsSidebarSize.minSize}
                 maxSize={docsSidebarSize.maxSize}
                 onResize={handleSidebarResize}
-                className={`flex min-w-0 shrink-0 flex-col overflow-hidden border-r border-border bg-background ${
+                className={`flex min-w-0 shrink-0 flex-col overflow-hidden border-r border-border bg-app ${
                   enableAnimations
                     ? isSidebarClosing
                       ? "animate-out slide-out-to-left fade-out duration-200"

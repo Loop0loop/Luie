@@ -25,7 +25,7 @@ export function GraphHoverCard({
       )}
     >
       <div className="flex items-center justify-between border-b border-border/20 pb-2.5 relative z-10">
-        <h4 className="text-[13px] font-black tracking-tight text-foreground">{hoverNode.data.label}</h4>
+        <h4 className="text-[13px] font-black tracking-tight text-fg">{hoverNode.data.label}</h4>
         {hoverNode.data.type && (
           <span className="text-[9px] uppercase tracking-wider font-extrabold text-accent bg-accent/10 border border-accent/20 px-2 py-0.5 rounded">
             {t(`canvas.node.kind.${hoverNode.data.type}` as never, hoverNode.data.type)}
@@ -53,14 +53,14 @@ export function GraphHoverCard({
                 className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-element/20 border border-border/15 hover:border-border/30 hover:bg-element/30 transition-all duration-200 text-[10px]"
               >
                 <div className="flex items-center justify-between font-extrabold">
-                  <span className="text-foreground">{hoverNode.data.label}</span>
-                  <span className="text-[8.5px] bg-panel px-1.5 py-0.5 rounded text-muted-foreground border border-border/20 shrink-0 font-bold">
+                  <span className="text-fg">{hoverNode.data.label}</span>
+                  <span className="text-[8.5px] bg-panel px-1.5 py-0.5 rounded text-muted border border-border/20 shrink-0 font-bold">
                     {rel.type}
                   </span>
-                  <span className="text-foreground">{rel.targetName}</span>
+                  <span className="text-fg">{rel.targetName}</span>
                 </div>
                 {rel.details && (
-                  <span className="text-[9px] text-muted-foreground pl-1.5 border-l border-border/30 leading-normal break-keep font-medium">
+                  <span className="text-[9px] text-muted pl-1.5 border-l border-border/30 leading-normal break-keep font-medium">
                     {rel.details}
                   </span>
                 )}
@@ -81,7 +81,7 @@ export function GraphHoverCard({
             {hoverNode.data.relatedChapters.map((chapter, index) => (
               <span
                 key={index}
-                className="text-[9px] font-bold text-foreground bg-element/60 border border-border/15 px-2.5 py-1 rounded-full hover:bg-element hover:scale-105 transition-all cursor-default"
+                className="text-[9px] font-bold text-fg bg-element/60 border border-border/15 px-2.5 py-1 rounded-full hover:bg-element hover:scale-105 transition-all cursor-default"
               >
                 {chapter}
               </span>

@@ -43,12 +43,12 @@ export const TreeNode = memo(({
         className={cn(
           "group flex h-7 items-center gap-1.5 rounded cursor-pointer text-xs transition-all duration-150",
           isSelected
-            ? "bg-active text-foreground font-semibold"
-            : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+            ? "bg-active text-fg font-semibold"
+            : "text-muted hover:bg-muted/40 hover:text-fg",
         )}
       >
         {isFolder ? (
-          <span className="shrink-0 text-muted-foreground/60">
+          <span className="shrink-0 text-muted/60">
             {isExpanded ? (
               <ChevronDown className="h-3.5 w-3.5" />
             ) : (
@@ -59,7 +59,7 @@ export const TreeNode = memo(({
           <span className="w-3.5 h-3.5" />
         )}
 
-        <span className="shrink-0 text-muted-foreground/75 group-hover:text-foreground">
+        <span className="shrink-0 text-muted/75 group-hover:text-fg">
           {node.type === "folder" ? (
             isExpanded ? (
               <FolderOpen className="h-3.5 w-3.5" />
@@ -78,7 +78,7 @@ export const TreeNode = memo(({
         {node.type === "canvas" && (
           <Badge
             variant="outline"
-            className="shrink-0 scale-75 origin-right border-border/80 bg-background/50 px-1 py-0 text-[9px] uppercase tracking-wider text-muted-foreground"
+            className="shrink-0 scale-75 origin-right border-border/80 bg-app/50 px-1 py-0 text-[9px] uppercase tracking-wider text-muted"
           >
             {t("canvas.activity.canvas")}
           </Badge>

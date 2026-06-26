@@ -205,7 +205,7 @@ export default function BaseCanvasViewport({
           gap={20}
           size={1.5}
           color="currentColor"
-          className="text-muted-foreground/25 dark:text-muted-foreground/35"
+          className="text-muted/25 dark:text-muted/35"
         />
         {extraChildren}
       </ReactFlow>

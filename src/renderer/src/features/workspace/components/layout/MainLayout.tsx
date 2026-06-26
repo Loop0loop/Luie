@@ -217,7 +217,7 @@ export default function MainLayout({
               <>
                 <button
                   onClick={toggleLeftSidebar}
-                  className="absolute left-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-lg border border-border/80 bg-background/90 text-muted-foreground shadow-md backdrop-blur-sm transition-all hover:bg-accent hover:text-foreground active:scale-95 cursor-pointer"
+                  className="absolute left-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-lg border border-border/80 bg-app/90 text-muted shadow-md backdrop-blur-sm transition-all hover:bg-accent hover:text-fg active:scale-95 cursor-pointer"
                   title={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
                   aria-label={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
                 >
@@ -225,7 +225,7 @@ export default function MainLayout({
                 </button>
                 <button
                   onClick={() => setRegionOpen("rightPanel", !isContextOpen)}
-                  className="absolute right-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-lg border border-border/80 bg-background/90 text-muted-foreground shadow-md backdrop-blur-sm transition-all hover:bg-accent hover:text-foreground active:scale-95 cursor-pointer"
+                  className="absolute right-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-lg border border-border/80 bg-app/90 text-muted shadow-md backdrop-blur-sm transition-all hover:bg-accent hover:text-fg active:scale-95 cursor-pointer"
                   title={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
                   aria-label={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
                 >

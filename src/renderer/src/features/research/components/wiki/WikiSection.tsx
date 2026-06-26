@@ -54,7 +54,7 @@ export function WikiSection({
           type="button"
           onClick={onDelete}
           title={t("character.wiki.sectionDeleteTitle")}
-          className="opacity-0 group-hover/section:opacity-100 transition-opacity p-1 rounded text-muted hover:text-destructive hover:bg-destructive/10 shrink-0"
+          className="opacity-0 group-hover/section:opacity-100 transition-opacity p-1 rounded text-muted hover:text-danger hover:bg-danger/10 shrink-0"
         >
           <Trash2 size={12} />
         </button>

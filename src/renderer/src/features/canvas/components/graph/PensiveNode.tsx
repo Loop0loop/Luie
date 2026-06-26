@@ -44,17 +44,17 @@ function PensiveNode({ id, data, selected }: NodeProps<GraphNodeData>) {
   // 등급별 링 및 발광 섀도우 효과 (웹소설 수사 단서판 & 성운 광배 융합 이펙트 - 테마 변수 기반)
   const starGradeClass = isChapter
     ? isFocused
-      ? "bg-foreground ring-4 ring-foreground/30 shadow-[0_0_18px_var(--accent-bg)] scale-110"
-      : "bg-muted-foreground/60 border border-border/40 shadow-[0_0_8px_var(--border-default)] hover:scale-125 hover:bg-foreground"
+      ? "bg-fg ring-4 ring-fg/30 shadow-[0_0_18px_var(--accent-bg)] scale-110"
+      : "bg-muted/60 border border-border/40 shadow-[0_0_8px_var(--border-default)] hover:scale-125 hover:bg-fg"
     : data.starGrade === "prime"
-      ? `bg-foreground ring-4 ${glowShadow}`
+      ? `bg-fg ring-4 ${glowShadow}`
       : data.starGrade === "major"
         ? isFocused
-          ? `bg-foreground ring-4 ${glowShadow} scale-110`
-          : "bg-muted-foreground/80 border border-border/50 shadow-[0_0_10px_var(--border-default)] hover:scale-125 hover:bg-foreground"
+          ? `bg-fg ring-4 ${glowShadow} scale-110`
+          : "bg-muted/80 border border-border/50 shadow-[0_0_10px_var(--border-default)] hover:scale-125 hover:bg-fg"
         : isFocused
-          ? `bg-foreground ring-4 ${glowShadow} scale-110`
-          : "bg-muted/40 border border-border/30 shadow-[0_0_6px_var(--border-default)] hover:scale-125 hover:bg-foreground";
+          ? `bg-fg ring-4 ${glowShadow} scale-110`
+          : "bg-muted/40 border border-border/30 shadow-[0_0_6px_var(--border-default)] hover:scale-125 hover:bg-fg";
 
   return (
     <div
@@ -83,16 +83,16 @@ function PensiveNode({ id, data, selected }: NodeProps<GraphNodeData>) {
         )}
       >
         <div className="flex items-center justify-between gap-3 border-b border-border/20 pb-1.5">
-          <span className="text-[12px] font-extrabold tracking-tight text-foreground">{data.label}</span>
+          <span className="text-[12px] font-extrabold tracking-tight text-fg">{data.label}</span>
           {data.type && (
-            <span className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground bg-element border border-border/20 px-1.5 py-0.5 rounded-sm">
+            <span className="text-[9px] uppercase tracking-wider font-semibold text-muted bg-element border border-border/20 px-1.5 py-0.5 rounded-sm">
               {t(`canvas.node.kind.${data.type}` as never, data.type)}
             </span>
           )}
         </div>
         
         {data.description && (
-          <p className="text-[10px] text-muted-foreground whitespace-normal leading-relaxed break-keep">
+          <p className="text-[10px] text-muted whitespace-normal leading-relaxed break-keep">
             {data.description}
           </p>
         )}

@@ -27,7 +27,7 @@ function DocsHeaderIconButton(props: {
     <button
       onClick={onClick}
       className={cn(
-        "flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-hover",
+        "flex h-10 w-10 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover",
         active && "bg-accent/10 text-accent",
       )}
       title={title}
@@ -50,12 +50,12 @@ export function GoogleDocsHeader({
   const { t } = useTranslation();
 
   return (
-    <header className="flex h-[64px] shrink-0 select-none items-center justify-between bg-background px-4 transition-colors duration-200">
+    <header className="flex h-[64px] shrink-0 select-none items-center justify-between bg-app px-4 transition-colors duration-200">
       <div className="flex min-w-0 items-center gap-3">
         {isSidebarOpen && (
           <button
             onClick={() => onToggleSidebar(false)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-hover"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover"
             title={t("sidebar.toggle.close")}
           >
             <ChevronLeft className="h-5 w-5" />
@@ -82,7 +82,7 @@ export function GoogleDocsHeader({
             }
           }}
           placeholder={t("project.defaults.untitled")}
-          className="max-w-[400px] min-w-[150px] truncate rounded-[4px] border border-transparent bg-transparent px-2 py-0.5 text-[18px] text-foreground transition-colors duration-150 hover:bg-surface-hover focus:bg-background focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="max-w-[400px] min-w-[150px] truncate rounded-[4px] border border-transparent bg-transparent px-2 py-0.5 text-[18px] text-fg transition-colors duration-150 hover:bg-surface-hover focus:bg-app focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 

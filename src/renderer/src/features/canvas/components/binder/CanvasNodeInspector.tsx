@@ -358,7 +358,7 @@ function ChapterNodeDetail({ nodeId, projectId, graphData }: ChapterNodeDetailPr
           </h4>
         </div>
         {loading ? (
-          <p className="text-xs text-muted-foreground italic">
+          <p className="text-xs text-muted italic">
             {t("canvas.status.loading")}
           </p>
         ) : summary ? (
@@ -372,14 +372,14 @@ function ChapterNodeDetail({ nodeId, projectId, graphData }: ChapterNodeDetailPr
           </div>
         ) : (
           <div className="text-center py-2">
-            <p className="text-xs text-muted-foreground mb-2">
+            <p className="text-xs text-muted mb-2">
               {t("canvas.status.empty")}
             </p>
             <button
               type="button"
               disabled={generating}
               onClick={handleGenerateSummary}
-              className="inline-flex items-center gap-1.5 rounded bg-accent px-2.5 py-1 text-[11px] font-semibold text-accent-foreground hover:bg-accent/90 transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded bg-accent px-2.5 py-1 text-[11px] font-semibold text-accent-fg hover:bg-accent/90 transition-colors disabled:opacity-50"
             >
               <RefreshCw className={cn("h-3 w-3", generating && "animate-spin")} />
               <span>
@@ -393,13 +393,13 @@ function ChapterNodeDetail({ nodeId, projectId, graphData }: ChapterNodeDetailPr
       {/* 등장인물 리스트 */}
       <section>
         <div className="flex items-center gap-1.5 mb-2">
-          <User className="h-4 w-4 text-muted-foreground" />
+          <User className="h-4 w-4 text-muted" />
           <h4 className="text-xs font-semibold text-fg/80">
             {t("canvas.graph.character")}
           </h4>
         </div>
         {connectedCharacters.length === 0 ? (
-          <p className="text-xs italic text-muted-foreground pl-5">
+          <p className="text-xs italic text-muted pl-5">
             {t("canvas.status.empty")}
           </p>
         ) : (
@@ -419,13 +419,13 @@ function ChapterNodeDetail({ nodeId, projectId, graphData }: ChapterNodeDetailPr
       {/* 미해결 복선/남은 떡밥 */}
       <section>
         <div className="flex items-center gap-1.5 mb-2">
-          <HelpCircle className="h-4 w-4 text-muted-foreground" />
+          <HelpCircle className="h-4 w-4 text-muted" />
           <h4 className="text-xs font-semibold text-fg/80">
             {t("canvas.graph.relations")}
           </h4>
         </div>
         {connectedMemosAndEvents.length === 0 ? (
-          <p className="text-xs italic text-muted-foreground pl-5">
+          <p className="text-xs italic text-muted pl-5">
             {t("canvas.status.empty")}
           </p>
         ) : (
@@ -437,7 +437,7 @@ function ChapterNodeDetail({ nodeId, projectId, graphData }: ChapterNodeDetailPr
                 </span>{" "}
                 {item.name}
                 {item.description && (
-                  <span className="text-muted-foreground text-[11px] block pl-2">
+                  <span className="text-muted text-[11px] block pl-2">
                     {item.description}
                   </span>
                 )}

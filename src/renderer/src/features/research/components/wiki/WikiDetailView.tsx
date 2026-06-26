@@ -256,7 +256,7 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
             type="button"
             onClick={handleDeleteCharacter}
             title={t("character.wiki.deleteCharacterTitle")}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-destructive/10 hover:text-destructive"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-danger/10 hover:text-danger"
           >
             <Trash2 size={14} />
           </button>
@@ -300,7 +300,7 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
                   <button
                     type="button"
                     onClick={() => attrs.removeRole(role)}
-                    className="opacity-0 group-hover/tag:opacity-100 transition-opacity hover:text-destructive ml-0.5"
+                    className="opacity-0 group-hover/tag:opacity-100 transition-opacity hover:text-danger ml-0.5"
                   >
                     <X size={9} />
                   </button>
@@ -320,7 +320,7 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
                   <button
                     type="button"
                     onClick={() => attrs.removeKeyword(kw)}
-                    className="opacity-0 group-hover/tag:opacity-100 transition-opacity hover:text-destructive ml-0.5"
+                    className="opacity-0 group-hover/tag:opacity-100 transition-opacity hover:text-danger ml-0.5"
                   >
                     <X size={9} />
                   </button>

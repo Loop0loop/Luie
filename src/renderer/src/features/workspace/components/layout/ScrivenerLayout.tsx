@@ -297,7 +297,7 @@ export default function ScrivenerLayout({
                 {!shouldRenderSidebar && (
                   <button
                     onClick={() => setRegionOpen("leftSidebar", true)}
-                    className="p-1 rounded hover:bg-muted/40 text-muted-foreground transition-colors mr-2 shrink-0"
+                    className="p-1 rounded hover:bg-muted/40 text-muted transition-colors mr-2 shrink-0"
                     title={t("sidebar.toggle.open")}
                   >
                     <Menu className="w-4 h-4" />
@@ -311,7 +311,7 @@ export default function ScrivenerLayout({
                 {!shouldRenderInspector && (
                   <button
                     onClick={() => setRegionOpen("rightPanel", true)}
-                    className="p-1 rounded hover:bg-muted/40 text-muted-foreground transition-colors shrink-0"
+                    className="p-1 rounded hover:bg-muted/40 text-muted transition-colors shrink-0"
                     title={t("scrivener.inspector.open")}
                   >
                     <Menu className="w-4 h-4" />
@@ -408,7 +408,7 @@ export default function ScrivenerLayout({
                   <span className="text-xs font-semibold uppercase tracking-wide text-muted ml-2">{t("scrivener.inspector.title")}</span>
                   <button
                     onClick={() => setRegionOpen("rightPanel", false)}
-                    className="p-1.5 rounded hover:bg-muted/40 text-muted-foreground transition-colors"
+                    className="p-1.5 rounded hover:bg-muted/40 text-muted transition-colors"
                     title={t("scrivener.inspector.close")}
                   >
                     <ChevronRight className="w-4 h-4" />

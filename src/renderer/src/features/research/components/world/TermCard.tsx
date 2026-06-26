@@ -40,14 +40,14 @@ export const TermCard = ({
           </span>
         )}
 
-        <div className="text-xs text-muted-foreground line-clamp-3 leading-relaxed opacity-80">
+        <div className="text-xs text-muted line-clamp-3 leading-relaxed opacity-80">
           {item.definition || t("world.term.noDefinition")}
         </div>
       </div>
 
       {onDelete && !isOverlay && (
         <button
-          className="absolute top-3 right-3 p-1.5 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive text-muted transition-all cursor-pointer"
+          className="absolute top-3 right-3 p-1.5 rounded opacity-0 group-hover:opacity-100 hover:bg-danger/10 hover:text-danger text-muted transition-all cursor-pointer"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();

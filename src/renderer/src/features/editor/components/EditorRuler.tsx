@@ -152,7 +152,7 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
   return (
     <div
       ref={rulerRef}
-      className="relative bg-background select-none overflow-visible text-xs"
+      className="relative bg-app select-none overflow-visible text-xs"
       style={{ width: EDITOR_A4_PAGE_WIDTH_PX, height: EDITOR_RULER_HEIGHT_PX }}
     >
       {/* Gray backgrounds for margins */}

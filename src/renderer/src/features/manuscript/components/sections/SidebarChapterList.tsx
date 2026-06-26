@@ -132,7 +132,7 @@ export default function SidebarChapterList() {
                             <div
                                 className={cn(
                                     "group flex items-center justify-between px-3 py-2 rounded-md transition-colors cursor-pointer text-sm select-none min-h-[36px]",
-                                    isActive ? "bg-accent/10 text-accent font-medium" : "text-muted-foreground hover:bg-surface-hover hover:text-foreground"
+                                    isActive ? "bg-accent/10 text-accent font-medium" : "text-muted hover:bg-surface-hover hover:text-fg"
                                 )}
                                 onClick={() => {
                                     handleSelectChapter(chapter.id);
@@ -148,7 +148,7 @@ export default function SidebarChapterList() {
                                         onChange={(e) => setEditValue(e.target.value)}
                                         onBlur={commitRename}
                                         onKeyDown={handleKeyDown}
-                                        className="bg-background border border-accent/50 rounded px-1 py-0.5 w-full text-foreground outline-none text-sm h-6 leading-none"
+                                        className="bg-app border border-accent/50 rounded px-1 py-0.5 w-full text-fg outline-none text-sm h-6 leading-none"
                                     />
                                 ) : (
                                     <span className="truncate flex-1 leading-normal">{chapter.title || t("project.defaults.untitled")}</span>
@@ -162,7 +162,7 @@ export default function SidebarChapterList() {
                                             toggleMenuByElement(chapter.id, e.currentTarget);
                                         }}
                                         className={cn(
-                                            "opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-sm hover:bg-background/50",
+                                            "opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-sm hover:bg-app/50",
                                             (menuOpenId === chapter.id) && "opacity-100"
                                         )}
                                     >

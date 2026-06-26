@@ -181,7 +181,7 @@ export default function EditorLayout({
 
                 {/* Scrollable Editor Area */}
                 <div
-                  className="flex-1 h-full overflow-y-scroll bg-background flex flex-col items-center custom-scrollbar shrink-0 relative"
+                  className="flex-1 h-full overflow-y-scroll bg-app flex flex-col items-center custom-scrollbar shrink-0 relative"
                   data-editor-scroll-container="true"
                 >
                   {/* Editor Container (No Paper Shadow) */}

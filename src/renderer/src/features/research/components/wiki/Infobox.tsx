@@ -39,7 +39,7 @@ export function InfoboxRow({
             {onDelete && (
               <button
                 type="button"
-                className="absolute -left-0.5 top-1/2 -translate-y-1/2 opacity-0 group-hover/row:opacity-100 transition-opacity border-none bg-transparent text-muted cursor-pointer p-0.5 hover:text-destructive"
+                className="absolute -left-0.5 top-1/2 -translate-y-1/2 opacity-0 group-hover/row:opacity-100 transition-opacity border-none bg-transparent text-muted cursor-pointer p-0.5 hover:text-danger"
                 onClick={(e) => { e.stopPropagation(); onDelete(); }}
                 title={t("character.wiki.fieldDeleteTitle")}
               >

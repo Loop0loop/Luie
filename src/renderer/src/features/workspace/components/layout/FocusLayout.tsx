@@ -43,7 +43,7 @@ export default function FocusLayout({
   };
 
   return (
-    <div className="w-full h-full bg-background text-foreground relative flex flex-col overflow-hidden transition-colors duration-500">
+    <div className="w-full h-full bg-app text-fg relative flex flex-col overflow-hidden transition-colors duration-500">
       
       {/* Top Bar (Stealth) */}
       <div 
@@ -52,19 +52,19 @@ export default function FocusLayout({
             showUI ? "opacity-100 pointer-events-auto" : "opacity-0"
         )}
       >
-        <div className="text-sm font-medium text-muted-foreground/50">
+        <div className="text-sm font-medium text-muted/50">
             {activeChapterTitle || "Untitled"}
         </div>
         
         <div className="flex items-center gap-4">
              {/* Fullscreen Toggle (Optional, if OS supports it) */}
-             {/* <button className="text-muted-foreground/50 hover:text-foreground transition-colors">
+             {/* <button className="text-muted/50 hover:text-fg transition-colors">
                 <Maximize2 className="w-5 h-5" />
              </button> */}
              
              <button 
                 onClick={handleExitFocus}
-                className="group flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface/70 hover:bg-surface-hover transition-all text-muted-foreground hover:text-foreground backdrop-blur-sm"
+                className="group flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface/70 hover:bg-surface-hover transition-all text-muted hover:text-fg backdrop-blur-sm"
              >
                 <span className="text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0">
                     {t("exit")}
@@ -88,7 +88,7 @@ export default function FocusLayout({
             showUI ? "opacity-100 pointer-events-auto" : "opacity-0"
         )}
       >
-         <span className="text-xs font-medium text-muted-foreground/40 font-mono">
+         <span className="text-xs font-medium text-muted/40 font-mono">
             {t("editor.status.wordLabel")} {wordCount ?? 0}
          </span>
       </div>

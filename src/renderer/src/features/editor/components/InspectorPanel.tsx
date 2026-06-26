@@ -89,11 +89,11 @@ export default function InspectorPanel({
           <div className="p-4 flex flex-col h-full">
             <div className="bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800/30 rounded-lg p-3 shadow-sm h-64 flex flex-col relative">
               {/* Index Card Style Header */}
-              <div className="border-b border-yellow-200 dark:border-yellow-800/30 pb-2 mb-2 font-bold text-center text-foreground/80 truncate">
+              <div className="border-b border-yellow-200 dark:border-yellow-800/30 pb-2 mb-2 font-bold text-center text-fg/80 truncate">
                 {activeChapter?.title || "Untitled"}
               </div>
               <textarea
-                className="flex-1 w-full bg-transparent border-none resize-none focus:ring-0 text-sm p-0 leading-relaxed placeholder:text-muted-foreground/50"
+                className="flex-1 w-full bg-transparent border-none resize-none focus:ring-0 text-sm p-0 leading-relaxed placeholder:text-muted/50"
                 placeholder={t("inspector.synopsis.placeholder")}
                 value={synopsis}
                 onChange={(e) => handleSynopsisChange(e.target.value)}
@@ -219,7 +219,7 @@ function InspectorTabButton({
       onClick={onClick}
       title={title}
       className={cn(
-        "p-2 rounded transition-colors text-muted-foreground hover:text-foreground",
+        "p-2 rounded transition-colors text-muted hover:text-fg",
         isActive && "bg-accent/10 text-accent",
       )}
     >

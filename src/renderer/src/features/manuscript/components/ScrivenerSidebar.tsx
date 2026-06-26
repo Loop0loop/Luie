@@ -50,7 +50,7 @@ export default function ScrivenerSidebar({
   return (
     <div className="flex flex-col h-full w-full bg-sidebar select-none overflow-hidden text-sm">
       {/* Top Header - maybe "Explorer"? Optional. */}
-      <div className="px-4 py-2 text-xs font-semibold text-muted-foreground bg-sidebar shadow-sm shrink-0 z-10">
+      <div className="px-4 py-2 text-xs font-semibold text-muted bg-sidebar shadow-sm shrink-0 z-10">
         {t("sidebar.explorerTitle") || "Explorer"}
       </div>
 
@@ -163,7 +163,7 @@ export default function ScrivenerSidebar({
               onClick={() =>
                 useUIStore.getState().setMainView({ type: "analysis" })
               }
-              className="px-3 py-2 text-xs text-left hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+              className="px-3 py-2 text-xs text-left hover:bg-white/5 text-muted hover:text-fg transition-colors flex items-center gap-2"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-purple-500/50"></span>
               {t("research.title.analysis")}
@@ -214,14 +214,14 @@ function CollapsibleSection({
         className="flex items-center px-1 py-1 cursor-pointer hover:bg-white/5 transition-colors group"
         onClick={onToggle}
       >
-        <div className="p-0.5 text-muted-foreground group-hover:text-foreground">
+        <div className="p-0.5 text-muted group-hover:text-fg">
           {isOpen ? (
             <ChevronDown className="w-4 h-4" />
           ) : (
             <ChevronRight className="w-4 h-4" />
           )}
         </div>
-        <div className="font-semibold text-xs text-foreground/80 group-hover:text-foreground flex-1 truncate">
+        <div className="font-semibold text-xs text-fg/80 group-hover:text-fg flex-1 truncate">
           {title}
         </div>
         {actions && (

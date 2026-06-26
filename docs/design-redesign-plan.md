@@ -143,16 +143,29 @@
 
 ---
 
-## 4. 먼저 정해야 할 결정 (Decisions)
+## 4. 결정 사항 (Decisions) — 확정됨 2026-06-26
 
-| # | 결정 | 권장 | 이유 |
+| # | 결정 | 확정값 | 이유 |
 | --- | --- | --- | --- |
-| D1 | 남길 토큰 어휘 | **Luie(`app/fg/panel`)** | 사용량 우세(103 vs 43), 도메인 의미 명확 |
-| D2 | 설정 축 처리 | temp/contrast/texture/uiMode **제거** | 정체성 > 유연성. 유지 시 "고급" 격리 |
-| D3 | canvasTokens.ts | **코어로 흡수** | 캔버스만의 색 체계가 분리 원인 |
-| D4 | shadcn 곡률/그림자 | **다운튠**(radius≤`control`, shadow 2종만) | writer-first 상한선 |
+| D1 | 남길 토큰 어휘 | ✅ **Luie(`app/fg/panel`)** | 사용량 우세, 도메인 의미 명확. shadcn long-form → Luie 단축형 변환 |
+| D2 | 설정 축 처리 | ✅ **3축으로 제거** | 테마3 + accent1만. temp/contrast/texture/uiMode 제거 |
+| D3 | canvasTokens.ts | 코어로 흡수 (Phase 3) | 캔버스만의 색 체계가 분리 원인 |
+| D4 | shadcn 곡률/그림자 | 다운튠(radius≤`control`, shadow 2종) | writer-first 상한선 |
 
-> D1/D2는 사용자 확인 권장 — 제품 방향성 결정이라 코드만으론 못 정함.
+### Phase 1 정밀 스코프 (인벤토리 후 수정)
+shadcn 어휘 대부분은 `global.tokens.css @theme`에서 Luie 단축형과 **동일 CSS 변수**로 브리지됨 → 변환 시 시각 변화 0.
+
+**안전 변환(동일 변수 검증 완료):**
+- `text-muted-foreground` → `text-muted` (105회)
+- `text-foreground` → `text-fg` (74회)
+- `bg-background` → `bg-app` (26회)
+- `*-accent-foreground` → `*-accent-fg` (4회)
+- `*-destructive` → `*-danger` (17회, `destructive-foreground` 제외)
+
+**제외(이중 정의 충돌 — 별도 처리):**
+- `surface`/`card`/`popover`: `@theme --color-surface=var(--bg-surface)` 이지만 `tailwind.config.surface=var(--bg-element)` → **서로 다른 변수**. 변환 시 색 변경됨. ⚠ tailwind v4 `@theme`와 `tailwind.config.js` 색 정의가 충돌하는 latent 버그 → Phase 2에서 정리.
+- `components/ui/*` 원자(button/badge/scroll-area): shadcn primitive 레이어 → 유지(D4 다운튠만).
+- `bg-secondary`/`text-secondary`: Luie 단축형 부재 → 보류.
 
 ---
 

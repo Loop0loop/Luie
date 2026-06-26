@@ -17,7 +17,7 @@ export function BinderSidebarTabs(props: {
       <div className="w-8 bg-surface border-l border-border flex items-start justify-center py-3 shrink-0">
         <button
           onClick={props.onOpenRail}
-          className="w-6 h-6 rounded-md hover:bg-surface-hover text-muted-foreground flex items-center justify-center"
+          className="w-6 h-6 rounded-md hover:bg-surface-hover text-muted flex items-center justify-center"
           title={props.t("sidebar.toggle.open")}
         >
           <ChevronLeft className="w-4 h-4" />
@@ -30,7 +30,7 @@ export function BinderSidebarTabs(props: {
     <div className="w-12 bg-surface border-l border-border flex flex-col items-center py-3 gap-2 shrink-0 z-20 h-full">
       <button
         onClick={props.onCloseRail}
-        className="w-9 h-9 mb-1 rounded-full hover:bg-surface-hover text-muted-foreground flex items-center justify-center transition-colors duration-150"
+        className="w-9 h-9 mb-1 rounded-full hover:bg-surface-hover text-muted flex items-center justify-center transition-colors duration-150"
         title={props.t("sidebar.toggle.close")}
       >
         <ChevronLeft className="w-4 h-4 rotate-180" />

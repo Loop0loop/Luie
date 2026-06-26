@@ -47,21 +47,21 @@ export function DrawingCanvas() {
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 p-2 bg-panel/90 backdrop-blur-md border border-border rounded-xl shadow-lg">
         <div className="flex flex-col gap-2 border-b border-border/50 pb-2">
           <button
-            className={cn("w-10 h-10 flex items-center justify-center rounded-lg hover:bg-hover hover:text-fg transition-colors", tool === "pen" && "bg-accent text-accent-foreground")}
+            className={cn("w-10 h-10 flex items-center justify-center rounded-lg hover:bg-hover hover:text-fg transition-colors", tool === "pen" && "bg-accent text-accent-fg")}
             onClick={() => setTool("pen")}
             title={t("world.drawing.toolPen")}
           >
             <PenTool className="w-5 h-5" />
           </button>
           <button
-            className={cn("w-10 h-10 flex items-center justify-center rounded-lg hover:bg-hover hover:text-fg transition-colors", tool === "icon" && "bg-accent text-accent-foreground")}
+            className={cn("w-10 h-10 flex items-center justify-center rounded-lg hover:bg-hover hover:text-fg transition-colors", tool === "icon" && "bg-accent text-accent-fg")}
             onClick={() => setTool("icon")}
             title={t("world.drawing.toolIcon")}
           >
             <MapIcon className="w-5 h-5" />
           </button>
           <button
-            className={cn("w-10 h-10 flex items-center justify-center rounded-lg hover:bg-hover hover:text-fg transition-colors", tool === "text" && "bg-accent text-accent-foreground")}
+            className={cn("w-10 h-10 flex items-center justify-center rounded-lg hover:bg-hover hover:text-fg transition-colors", tool === "text" && "bg-accent text-accent-fg")}
             onClick={() => setTool("text")}
             title={t("world.drawing.toolText")}
           >

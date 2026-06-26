@@ -226,7 +226,7 @@ function AxisEditor({ axes, color, onChange }: AxisEditorProps) {
               "shrink-0 transition-opacity",
               axes.length <= MIN_RADAR_AXES
                 ? "opacity-0 pointer-events-none"
-                : "opacity-0 group-hover/axis:opacity-100 text-muted hover:text-destructive",
+                : "opacity-0 group-hover/axis:opacity-100 text-muted hover:text-danger",
             )}
           >
             <X size={10} />

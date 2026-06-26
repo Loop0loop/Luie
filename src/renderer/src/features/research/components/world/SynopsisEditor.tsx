@@ -120,7 +120,7 @@ export function SynopsisEditor() {
             {/* Top Row: Genre & Audience */}
             <div className="grid grid-cols-2 gap-12">
               <div className="group/field">
-                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 group-focus-within/field:text-accent transition-colors">
+                <label className="block text-[10px] font-bold text-muted uppercase tracking-widest mb-2 group-focus-within/field:text-accent transition-colors">
                   {t("world.synopsis.genre", "Genre")}
                 </label>
                 <BufferedInput
@@ -137,7 +137,7 @@ export function SynopsisEditor() {
                 />
               </div>
               <div className="group/field">
-                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 group-focus-within/field:text-accent transition-colors">
+                <label className="block text-[10px] font-bold text-muted uppercase tracking-widest mb-2 group-focus-within/field:text-accent transition-colors">
                   {t("world.synopsis.audience", "Target Audience")}
                 </label>
                 <BufferedInput
@@ -157,7 +157,7 @@ export function SynopsisEditor() {
 
             {/* Logline - Featured */}
             <div className="group/field">
-              <label className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 group-focus-within/field:text-accent transition-colors">
+              <label className="flex items-center gap-2 text-[10px] font-bold text-muted uppercase tracking-widest mb-3 group-focus-within/field:text-accent transition-colors">
                 <Sparkles className="w-3 h-3" />{" "}
                 {t("world.synopsis.logline", "Logline")}
               </label>

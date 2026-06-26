@@ -101,7 +101,7 @@ function HeroImage({
             위키 내용을 분석해 이미지와 대사를 만듭니다
           </span>
         </div>
-        {error && <span className="text-[12px] text-destructive">{error}</span>}
+        {error && <span className="text-[12px] text-danger">{error}</span>}
       </button>
     );
   }
@@ -117,7 +117,7 @@ function HeroImage({
       >
         이미지 생성하기
       </button>
-      {error && <span className="text-[11px] text-destructive">{error}</span>}
+      {error && <span className="text-[11px] text-danger">{error}</span>}
     </div>
   );
 }
@@ -209,8 +209,8 @@ function StatsCard({ axes, color, isAnalyzing, error, onAnalyze, onAxesChange }:
 
       {/* Error banner */}
       {error && (
-        <div className="px-5 py-2.5 bg-destructive/8 border-b border-destructive/20">
-          <p className="text-[12px] text-destructive">{error}</p>
+        <div className="px-5 py-2.5 bg-danger/8 border-b border-danger/20">
+          <p className="text-[12px] text-danger">{error}</p>
         </div>
       )}
 

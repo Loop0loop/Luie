@@ -245,7 +245,7 @@ export function GoogleDocsRightPanel({
         maxSize={rightPanelSize.maxSize}
         onResize={handlePanelResize}
         onMouseDownCapture={onFocus}
-        className={`flex min-w-0 shrink-0 flex-col overflow-hidden border-l border-border bg-background ${
+        className={`flex min-w-0 shrink-0 flex-col overflow-hidden border-l border-border bg-app ${
           enableAnimations
             ? isClosing
               ? "animate-out slide-out-to-right fade-out duration-200"

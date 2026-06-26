@@ -118,7 +118,7 @@ export function ExportPreview({
                 >
                     {showPageNumbers && (
                         <div
-                            className="absolute bottom-4 left-0 w-full flex items-center justify-center text-[10pt] text-foreground/50"
+                            className="absolute bottom-4 left-0 w-full flex items-center justify-center text-[10pt] text-fg/50"
                         >
                             - {startPageNumber + 1} -
                         </div>

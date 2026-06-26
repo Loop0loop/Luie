@@ -56,10 +56,10 @@ export function MessageList({ messages, onJumpEvidence }: MessageListProps) {
                     <button
                       key={ev.chunkId}
                       onClick={() => void onJumpEvidence(ev)}
-                      className="block w-full rounded border border-white/5 bg-neutral-800/10 px-2.5 py-1.5 text-left text-[11px] text-muted-foreground/80 transition-all duration-150 hover:border-accent/30 hover:bg-neutral-800/30 hover:text-accent"
+                      className="block w-full rounded border border-white/5 bg-neutral-800/10 px-2.5 py-1.5 text-left text-[11px] text-muted/80 transition-all duration-150 hover:border-accent/30 hover:bg-neutral-800/30 hover:text-accent"
                       title={ev.quote}
                     >
-                      <span className="mb-1 inline-flex items-center gap-1.5 text-[10px] text-muted-foreground/60">
+                      <span className="mb-1 inline-flex items-center gap-1.5 text-[10px] text-muted/60">
                         <BookOpen className="w-3 h-3 shrink-0" />
                         {t("analysis.chat.evidenceCount", { index: index + 1 })}
                         <span aria-hidden="true">·</span>
@@ -114,7 +114,7 @@ export function MessageList({ messages, onJumpEvidence }: MessageListProps) {
                     <button
                       key={ev.chunkId}
                       onClick={() => void onJumpEvidence(ev)}
-                      className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground/60 hover:text-accent bg-neutral-800/10 hover:bg-neutral-800/30 border border-white/5 rounded px-2.5 py-0.5 transition-all duration-150"
+                      className="inline-flex items-center gap-1.5 text-[10px] text-muted/60 hover:text-accent bg-neutral-800/10 hover:bg-neutral-800/30 border border-white/5 rounded px-2.5 py-0.5 transition-all duration-150"
                       title={ev.quote}
                     >
                       <BookOpen className="w-3 h-3 shrink-0" />

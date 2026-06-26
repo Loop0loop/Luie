@@ -31,7 +31,7 @@ export function CompactDropdown<T extends string | number>({
     <div className={cn("relative", className)} ref={ref}>
       <button
         type="button"
-        className="flex h-8 w-full items-center gap-1 rounded-md border border-border/70 bg-background px-2 text-xs text-fg transition-colors hover:bg-hover"
+        className="flex h-8 w-full items-center gap-1 rounded-md border border-border/70 bg-app px-2 text-xs text-fg transition-colors hover:bg-hover"
         aria-label={ariaLabel}
         onClick={() => setOpen((v) => !v)}
       >
@@ -153,7 +153,7 @@ export function ColorPickerMenu({
             })}
           </div>
 
-          <div className="mt-3 flex items-center gap-1.5 rounded-lg border border-border bg-background px-2 py-1.5">
+          <div className="mt-3 flex items-center gap-1.5 rounded-lg border border-border bg-app px-2 py-1.5">
             <div
               className="h-4 w-4 shrink-0 rounded-sm ring-1 ring-black/10"
               style={{

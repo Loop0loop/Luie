@@ -56,7 +56,7 @@ export default function ResearchPanel({
     <div className="flex flex-col h-full w-full bg-sidebar border-l border-border overflow-hidden">
       {onTabChange ? (
         /* Tab Navigation Header (Google Docs Mode) */
-        <div className="flex items-center border-b border-border bg-background overflow-x-auto no-scrollbar shrink-0 h-12 px-2 gap-2">
+        <div className="flex items-center border-b border-border bg-app overflow-x-auto no-scrollbar shrink-0 h-12 px-2 gap-2">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -68,7 +68,7 @@ export default function ResearchPanel({
                   "flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium whitespace-nowrap rounded-full transition-colors",
                   isActive
                     ? "bg-accent/15 text-accent"
-                    : "text-muted-foreground hover:bg-surface-hover hover:text-fg"
+                    : "text-muted hover:bg-surface-hover hover:text-fg"
                 )}
                 title={tab.label}
               >

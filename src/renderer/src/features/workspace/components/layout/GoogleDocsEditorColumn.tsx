@@ -98,13 +98,13 @@ export function GoogleDocsEditorColumn({
                 data-editor-scroll-container="true"
               >
                 <div className="sticky top-0 z-30 flex w-full shrink-0 justify-center bg-sidebar/95 pb-2 pt-4 select-none backdrop-blur-sm">
-                  <div className="border border-border bg-background shadow-sm">
+                  <div className="border border-border bg-app shadow-sm">
                     <EditorRuler onMarginsChange={setPageMargins} />
                   </div>
                 </div>
 
                 <div
-                  className="relative mb-8 box-border flex min-h-0 flex-col border border-border bg-background shadow-sm transition-shadow duration-150 ease-in-out"
+                  className="relative mb-8 box-border flex min-h-0 flex-col border border-border bg-app shadow-sm transition-shadow duration-150 ease-in-out"
                   style={{
                     width: `${EDITOR_A4_PAGE_WIDTH_PX}px`,
                     minHeight: `${EDITOR_A4_PAGE_HEIGHT_PX}px`,

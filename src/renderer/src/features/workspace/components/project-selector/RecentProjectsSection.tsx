@@ -120,7 +120,7 @@ export function RecentProjectsSection({
               </div>
               <button
                 type="button"
-                className="px-3 py-1.5 text-xs rounded-md bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-destructive/10 hover:text-destructive transition-colors flex items-center gap-1.5 leading-none"
+                className="px-3 py-1.5 text-xs rounded-md bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-danger/10 hover:text-danger transition-colors flex items-center gap-1.5 leading-none"
                 onClick={() => onDisconnectGoogle?.()}
               >
                 <LogOut className="w-3 h-3" />
