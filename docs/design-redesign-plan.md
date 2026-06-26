@@ -186,6 +186,15 @@ shadcn 어휘 대부분은 `global.tokens.css @theme`에서 Luie 단축형과 **
 - 검증: `tsc` clean · `pnpm build` exit 0 · 가드 green.
 - 다음 확장: 같은 "루트만 손대기" 패턴을 sidebar/binder/panel로 — **시각 검토 동반 권장**(헤드리스 일괄 금지).
 
+**Phase 4 확장 #1 — 좌측 binder/sidebar 셸 (2026-06-26):**
+구조화 모드의 좌측 네비 셸이 모드마다 panel/sidebar로 갈렸던 것(역할=sidebar)을 통일:
+- ScrivenerLayout 사이드바 래퍼 `bg-panel`→`bg-sidebar` (내부 ScrivenerSidebar가 이미 bg-sidebar라 정합)
+- EditorLayout 사이드바 래퍼 `bg-panel`→`bg-sidebar`
+- BinderSidebar 셸 `bg-panel`→`bg-sidebar`
+- MainLayout·ScrivenerSidebar는 이미 bg-sidebar ✓
+- **보류**: GoogleDocsLayout / DocsSidebar는 docs 모드 의도된 흰색(bg-app)이라 시각 검토 전까지 유지. BinderSidebar의 `shadow-xl`(SaaS 그림자 과잉)도 별도 검토.
+- 검증: tsc clean · build exit 0 · 가드 green. ⚠ 눈에 보이는 변화(구조화 모드 좌측 컬럼이 panel→sidebar 색).
+
 ### 후속 정리 완료 (2026-06-26)
 D2에서 inert로 남겼던 `themeTemp`/`themeTexture` 필드를 **완전 삭제** + i18n 미사용 키 제거.
 - 스키마: `editorSettingsSchema`를 `z.preprocess`로 감싸 **legacy 키(themeTemp/themeTexture)를 strict 검증 전에 strip** → 기존 사용자의 저장 설정이 reset되지 않고 그대로 파싱됨(strictObject + safeParse-fallback 구조라 필수). strict 검증은 그 외 unknown 키에 대해 유지.

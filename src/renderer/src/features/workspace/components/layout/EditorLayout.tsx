@@ -126,7 +126,7 @@ export default function EditorLayout({
           suppressHoverOpen={isToolbarHoverZoneActive}
         >
           <div
-            className="h-full flex flex-col bg-panel border-r border-border"
+            className="h-full flex flex-col bg-sidebar border-r border-border"
             style={{ minWidth: SIDEBAR_WIDTH_CONFIG.mainSidebar.minPx }}
           >
             {sidebar}

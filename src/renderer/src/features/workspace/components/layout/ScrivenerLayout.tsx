@@ -265,7 +265,7 @@ export default function ScrivenerLayout({
                 defaultSize={toPanelPercentSize(binderRatio)}
                 minSize={binderSize.minSize}
                 maxSize={binderSize.maxSize}
-                className={`bg-panel border-r border-border flex flex-col shrink-0 min-w-0 overflow-hidden ${enableAnimations
+                className={`bg-sidebar border-r border-border flex flex-col shrink-0 min-w-0 overflow-hidden ${enableAnimations
                   ? isSidebarClosing
                     ? "animate-out slide-out-to-left fade-out duration-200"
                     : "animate-in slide-in-from-left fade-in duration-200"
