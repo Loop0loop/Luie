@@ -53,7 +53,6 @@ type CoreMethodMap = {
   "settings.setShortcuts": RendererApi["settings"]["setShortcuts"];
   "settings.getWindowBounds": RendererApi["settings"]["getWindowBounds"];
   "settings.setWindowBounds": RendererApi["settings"]["setWindowBounds"];
-  "settings.setOllamaConfig": RendererApi["settings"]["setOllamaConfig"];
   "recovery.getStatus": RendererApi["recovery"]["getStatus"];
   "recovery.runDb": RendererApi["recovery"]["runDb"];
   "fs.readLuieEntry": RendererApi["fs"]["readLuieEntry"];
