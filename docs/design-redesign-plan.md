@@ -176,6 +176,19 @@ shadcn 어휘 대부분은 `global.tokens.css @theme`에서 Luie 단축형과 **
 `rounded-control`(28회), `rounded-panel`(1), `shadow-panel`(2), `z-dropdown`(3), `p-panel-pad`(2), `gap-panel-gap`(1) 등 → 해당 요소들이 의도한 곡률/그림자/간격/z-index를 **조용히 못 받고 있음**.
 → **Phase 2b(신설)**: 사용 중인 config 토큰을 `@theme`로 이관 + `tailwind.config.js` 삭제. 단 `rounded-control` 등 28곳이 의도대로 곡률을 "되살아나" **눈에 보이는 변화**가 생기므로 별도 승인 후 진행.
 
+### D2 완료 (2026-06-26) — 정정된 범위
+**조사 중 정정:** D2 원안은 `temp/contrast/texture/uiMode` 제거였으나, 코드 확인 결과 두 개는 cosmetic 축이 아니었다:
+- `uiMode` = **4-레이아웃 선택자**(default/docs/editor/scrivener/focus). 전용 `uiModeIntegrity` 서비스 + dev 무결성 체크 존재. 제거 시 멀티 레이아웃 시스템 붕괴 → **유지**.
+- `themeContrast: soft|high` = **접근성(고대비)** 기능 → **유지**.
+→ 사용자 승인 하에 **순수 장식 축 `themeTemp`(색온도) + `themeTexture`(종이질감)만 제거**로 정정.
+
+**구현 방식(중요):** zod 스키마가 `z.strictObject`라 필드를 스키마에서 지우면 **기존 사용자의 저장된 설정(themeTemp/themeTexture 키 포함)이 unknown key로 검증 실패**. 따라서:
+- 제품에서 제거: AppearanceTab UI(atmosphere/texture 섹션), 적용 레이어(`setup.ts`, `useThemeAttributes.ts`, `App.tsx`), 죽은 CSS(`[data-temp]` 6블록, `[data-texture]` 2블록).
+- **inert로 보존**: `types/settings.ts`, `schemas/settings.ts`, `constants/editor/defaults.ts`, main `settingsDefaults.ts`, `editorStore` 필드 → 기존 저장 데이터 호환.
+- 완전 필드 삭제는 별도 설정 마이그레이션 필요 → **후속 작업**.
+
+검증: `pnpm build` exit 0 · `tsc` clean · 빌드 CSS에서 data-temp/data-texture 제거 + data-contrast 유지 확인 · 가드 rawHex 332→313, rawColor 201→197, roundedBig 175→170.
+
 ### Phase 2b 완료 (2026-06-26)
 죽은 `tailwind.config.js` 정리 — 사용 중인 토큰만 `@theme`로 이관 후 config 삭제.
 - `@theme`에 `--radius-control/-panel`, `--shadow-panel`, `--spacing-control-x/-y/-panel-pad/-panel-gap` 추가 → `rounded-control`(28곳) 등 **죽은 클래스 부활**(빌드 CSS에서 emit 확인).

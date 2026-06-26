@@ -21,10 +21,8 @@ export const AppearanceTab = memo(function AppearanceTab({
 }: AppearanceTabProps) {
     const {
         theme,
-        themeTemp,
         themeContrast,
         themeAccent,
-        themeTexture,
         uiMode,
         enableAnimations,
         entityColors,
@@ -32,10 +30,8 @@ export const AppearanceTab = memo(function AppearanceTab({
     } = useEditorStore(
         useShallow((state) => ({
             theme: state.theme,
-            themeTemp: state.themeTemp,
             themeContrast: state.themeContrast,
             themeAccent: state.themeAccent,
-            themeTexture: state.themeTexture,
             uiMode: state.uiMode,
             enableAnimations: state.enableAnimations,
             entityColors: state.entityColors,
@@ -129,50 +125,26 @@ export const AppearanceTab = memo(function AppearanceTab({
 
             <div className="h-px bg-border my-6" />
 
-            <div className="grid grid-cols-2 gap-8">
-                <section className="space-y-4">
-                    <div>
-                        <h3 className="text-base font-semibold text-fg">{t("settings.appearance.texture.title")}</h3>
-                        <p className="text-sm text-muted mt-1">{t("settings.appearance.texture.description")}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
+            <section className="space-y-4">
+                <div>
+                    <h3 className="text-base font-semibold text-fg">{t("settings.appearance.contrast.title")}</h3>
+                    <p className="text-sm text-muted mt-1">{t("settings.appearance.contrast.description")}</p>
+                </div>
+                <div className="flex gap-2">
+                    {(["soft", "high"] as const).map((c) => (
                         <button
-                            onClick={() => onApplySettings({ themeTexture: !themeTexture })}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${themeTexture ? "bg-accent" : "bg-border"
+                            key={c}
+                            onClick={() => onApplySettings({ themeContrast: c })}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${themeContrast === c
+                                ? "bg-accent text-accent-fg border-transparent"
+                                : "border-border text-muted hover:text-fg"
                                 }`}
                         >
-                            <span
-                                className={`${themeTexture ? "translate-x-6" : "translate-x-1"
-                                    } inline-block h-4 w-4 transform rounded-full bg-surface shadow-sm transition-transform`}
-                            />
+                            {c === "soft" ? t("settings.appearance.contrast.soft") : t("settings.appearance.contrast.high")}
                         </button>
-                        <span className="text-sm font-medium text-fg">
-                            {themeTexture ? t("settings.appearance.texture.on") : t("settings.appearance.texture.off")}
-                        </span>
-                    </div>
-                </section>
-
-                <section className="space-y-4">
-                    <div>
-                        <h3 className="text-base font-semibold text-fg">{t("settings.appearance.contrast.title")}</h3>
-                        <p className="text-sm text-muted mt-1">{t("settings.appearance.contrast.description")}</p>
-                    </div>
-                    <div className="flex gap-2">
-                        {(["soft", "high"] as const).map((c) => (
-                            <button
-                                key={c}
-                                onClick={() => onApplySettings({ themeContrast: c })}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${themeContrast === c
-                                    ? "bg-accent text-accent-fg border-transparent"
-                                    : "border-border text-muted hover:text-fg"
-                                    }`}
-                            >
-                                {c === "soft" ? t("settings.appearance.contrast.soft") : t("settings.appearance.contrast.high")}
-                            </button>
-                        ))}
-                    </div>
-                </section>
-            </div>
+                    ))}
+                </div>
+            </section>
 
             <div className="h-px bg-border my-6" />
 
@@ -200,47 +172,6 @@ export const AppearanceTab = memo(function AppearanceTab({
                             </div>
                         </button>
                     ))}
-                </div>
-            </section>
-
-            <div className="h-px bg-border my-6" />
-
-            <section className="space-y-4">
-                <div>
-                    <h3 className="text-base font-semibold text-fg">{t("settings.appearance.atmosphere.title")}</h3>
-                    <p className="text-sm text-muted mt-1">{t("settings.appearance.atmosphere.description")}</p>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                    <button
-                        onClick={() => onApplySettings({ themeTemp: "cool" })}
-                        className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-colors duration-150 ${themeTemp === "cool" ? "border-blue-500 bg-blue-500/5 ring-1 ring-blue-500" : "border-border hover:bg-surface-hover"
-                            }`}
-                    >
-                        <span className="text-sm font-semibold text-fg mb-1">{t("settings.appearance.atmosphere.cool.title")}</span>
-                        <span className="text-xs text-muted">{t("settings.appearance.atmosphere.cool.description")}</span>
-                    </button>
-
-                    <button
-                        onClick={() => onApplySettings({ themeTemp: "neutral" })}
-                        className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-colors duration-150 ${themeTemp === "neutral"
-                            ? "border-accent bg-accent/5 ring-1 ring-accent"
-                            : "border-border hover:bg-surface-hover"
-                            }`}
-                    >
-                        <span className="text-sm font-semibold text-fg mb-1">{t("settings.appearance.atmosphere.neutral.title")}</span>
-                        <span className="text-xs text-muted">{t("settings.appearance.atmosphere.neutral.description")}</span>
-                    </button>
-
-                    <button
-                        onClick={() => onApplySettings({ themeTemp: "warm" })}
-                        className={`relative group flex flex-col items-start p-4 rounded-xl border text-left transition-colors duration-150 ${themeTemp === "warm"
-                            ? "border-orange-500 bg-orange-500/5 ring-1 ring-orange-500"
-                            : "border-border hover:bg-surface-hover"
-                            }`}
-                    >
-                        <span className="text-sm font-semibold text-fg mb-1">{t("settings.appearance.atmosphere.warm.title")}</span>
-                        <span className="text-xs text-muted">{t("settings.appearance.atmosphere.warm.description")}</span>
-                    </button>
                 </div>
             </section>
 

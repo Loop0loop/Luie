@@ -75,10 +75,8 @@ export default function App() {
   const updateProject = useProjectStore((state) => state.updateProject);
   const loadProjects = useProjectStore((state) => state.loadProjects);
   const theme = useEditorStore((state) => state.theme);
-  const themeTemp = useEditorStore((state) => state.themeTemp);
   const themeContrast = useEditorStore((state) => state.themeContrast);
   const themeAccent = useEditorStore((state) => state.themeAccent);
-  const themeTexture = useEditorStore((state) => state.themeTexture);
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
 
   const refreshBootstrapStatus = useCallback(async () => {
@@ -171,8 +169,6 @@ export default function App() {
     theme,
     themeAccent,
     themeContrast,
-    themeTemp,
-    themeTexture,
   });
 
   useEffect(() => {
