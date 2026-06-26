@@ -176,6 +176,16 @@ shadcn 어휘 대부분은 `global.tokens.css @theme`에서 Luie 단축형과 **
 `rounded-control`(28회), `rounded-panel`(1), `shadow-panel`(2), `z-dropdown`(3), `p-panel-pad`(2), `gap-panel-gap`(1) 등 → 해당 요소들이 의도한 곡률/그림자/간격/z-index를 **조용히 못 받고 있음**.
 → **Phase 2b(신설)**: 사용 중인 config 토큰을 `@theme`로 이관 + `tailwind.config.js` 삭제. 단 `rounded-control` 등 28곳이 의도대로 곡률을 "되살아나" **눈에 보이는 변화**가 생기므로 별도 승인 후 진행.
 
+### Phase 4 파일럿 (inspector) 완료 (2026-06-26)
+**역할→배경 토큰 컨벤션(확정):** 루트 컨테이너만 역할색을 소유하고, 내부 카드는 surface/element를 자유 사용.
+- rail/binder = `bg-sidebar` · editor = `bg-app` · **inspector = `bg-panel`** · modal = `bg-surface`+`shadow-modal`
+
+**중요 방법론 발견:** raw grep의 역할별 bg 카운트(예: inspector에 bg-surface 11)는 **과장**이다 — 대부분 *정당한 중첩 카드 배경*이지 루트 불일치가 아니다. 그래서 일괄 치환이 아니라 **루트 컨테이너만** 손대는 게 맞다.
+
+**파일럿 결과:** inspector 3개 중 `InspectorPanel`·`GraphNodeInspector`는 이미 루트 `bg-panel` ✓. 유일한 실제 불일치는 `CanvasNodeInspector`가 **호스트에 따라 다른 배경**(ContextPanel→panel, 바인더 사이드바 canvas탭→surface)을 받던 것. → CanvasNodeInspector 루트들이 `bg-panel`을 **자체 소유**하도록 수정해 호스트와 무관하게 일관.
+- 검증: `tsc` clean · `pnpm build` exit 0 · 가드 green.
+- 다음 확장: 같은 "루트만 손대기" 패턴을 sidebar/binder/panel로 — **시각 검토 동반 권장**(헤드리스 일괄 금지).
+
 ### 후속 정리 완료 (2026-06-26)
 D2에서 inert로 남겼던 `themeTemp`/`themeTexture` 필드를 **완전 삭제** + i18n 미사용 키 제거.
 - 스키마: `editorSettingsSchema`를 `z.preprocess`로 감싸 **legacy 키(themeTemp/themeTexture)를 strict 검증 전에 strip** → 기존 사용자의 저장 설정이 reset되지 않고 그대로 파싱됨(strictObject + safeParse-fallback 구조라 필수). strict 검증은 그 외 unknown 키에 대해 유지.

@@ -41,7 +41,7 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
 
   if (!node) {
     return (
-      <div className="p-panel-pad text-xs italic text-muted">
+      <div className="h-full bg-panel p-panel-pad text-xs italic text-muted">
         {t("canvas.status.empty")}
       </div>
     );
@@ -52,7 +52,7 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
   // 캐릭터 위키 재활용
   if (normalizedType === "character") {
     return (
-      <div className="relative flex h-full flex-col overflow-y-auto">
+      <div className="relative flex h-full flex-col overflow-y-auto bg-panel">
         <div className="absolute top-4 right-4 z-10">
           <button
             type="button"
@@ -72,7 +72,7 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
   // 사건 타임라인 상세 재활용
   if (normalizedType === "event") {
     return (
-      <div className="relative flex h-full flex-col overflow-y-auto">
+      <div className="relative flex h-full flex-col overflow-y-auto bg-panel">
         <div className="absolute top-4 right-4 z-10">
           <button
             type="button"
@@ -92,7 +92,7 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
   // 원고(챕터) 노드 전용 디테일 뷰
   if (normalizedType === "chapter") {
     return (
-      <div className="flex h-full flex-col overflow-hidden">
+      <div className="flex h-full flex-col overflow-hidden bg-panel">
         {/* Header */}
         <div className="shrink-0 border-b border-border/40 px-panel-pad py-control-y flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -157,7 +157,7 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
     graphData?.nodes.filter((n) => connectedNodeIds.has(n.id)) ?? [];
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden bg-panel">
       {/* Header */}
       <div className="shrink-0 border-b border-border/40 px-panel-pad py-control-y">
         <div className="flex items-center gap-2">
