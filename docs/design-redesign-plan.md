@@ -176,6 +176,15 @@ shadcn 어휘 대부분은 `global.tokens.css @theme`에서 Luie 단축형과 **
 `rounded-control`(28회), `rounded-panel`(1), `shadow-panel`(2), `z-dropdown`(3), `p-panel-pad`(2), `gap-panel-gap`(1) 등 → 해당 요소들이 의도한 곡률/그림자/간격/z-index를 **조용히 못 받고 있음**.
 → **Phase 2b(신설)**: 사용 중인 config 토큰을 `@theme`로 이관 + `tailwind.config.js` 삭제. 단 `rounded-control` 등 28곳이 의도대로 곡률을 "되살아나" **눈에 보이는 변화**가 생기므로 별도 승인 후 진행.
 
+### Phase 2b 완료 (2026-06-26)
+죽은 `tailwind.config.js` 정리 — 사용 중인 토큰만 `@theme`로 이관 후 config 삭제.
+- `@theme`에 `--radius-control/-panel`, `--shadow-panel`, `--spacing-control-x/-y/-panel-pad/-panel-gap` 추가 → `rounded-control`(28곳) 등 **죽은 클래스 부활**(빌드 CSS에서 emit 확인).
+- 네임드 z 토큰은 v4 namespace 없음 → `z-overlay→z-20`, `z-dropdown→z-50`, `z-modal→z-[9000]` 변환(6파일).
+- `tailwind.config.js` 삭제.
+- **dark: 버그 수정**: config의 `darkMode: [selector, data-theme=dark]`가 죽어 있어 `dark:`(72곳)가 OS 설정을 따르던 latent 버그 → `global.css`에 `@custom-variant dark (&:where([data-theme="dark"], ...))` 추가. 빌드 CSS에서 `[data-theme=dark]` 셀렉터로 컴파일 확인.
+- 검증: `pnpm build` exit 0 · `tsc --noEmit` 통과 · 빌드 CSS에서 토큰 emit 확인 · 가드 green.
+- ⚠ **눈에 보이는 변화**: rounded-control 28곳이 의도한 곡률(10px)을 받기 시작 / dark: 72곳이 앱 테마를 따름. 둘 다 원 의도 복원(정합성 수정).
+
 ### Phase 2a 완료 (2026-06-26)
 - 위키 `--namu-*` 토큰을 코어 토큰으로 alias(`accent-bg`/`text-accent`/`border-default`/`bg-sidebar`/`bg-surface-hover`/`text-on-accent`). per-theme(dark/sepia) 중복 정의 삭제 → core 변수 cascade로 자동 테마.
 - 둘째 accent 블루 `#00a2e8`/`#38bdf8`/`#0ea5e9` 제거 → **accent 단일화**. rawHex 352→332. 컴포넌트 수정 0건(var 이름 유지).

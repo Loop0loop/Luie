@@ -53,6 +53,16 @@
   --color-border: var(--border-default);
   --color-border-active: var(--border-active);
   --color-border-focus: var(--border-focus);
+
+  /* Radius / Shadow / Spacing — migrated from the (dead, v4-unloaded)
+     tailwind.config.js. Only tokens actually used in the codebase are kept. */
+  --radius-control: 0.625rem;
+  --radius-panel: 0.875rem;
+  --shadow-panel: 0 10px 28px rgba(15, 23, 42, 0.14);
+  --spacing-control-x: 0.75rem;
+  --spacing-control-y: 0.5rem;
+  --spacing-panel-pad: 1.25rem;
+  --spacing-panel-gap: 1rem;
 }
 
 @layer components {

@@ -192,7 +192,7 @@ export default function ProjectTemplateSelector({
 
       {menuOpenId && (
         <div
-          className="fixed inset-0 z-dropdown bg-transparent"
+          className="fixed inset-0 z-50 bg-transparent"
           onPointerDown={closeMenu}
         />
       )}

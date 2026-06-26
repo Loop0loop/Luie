@@ -62,7 +62,7 @@ export function RuntimeStatusDot({
       </button>
 
       {open && (
-        <div className="absolute bottom-9 right-0 w-64 z-dropdown animate-[fadeIn_0.15s_ease-out]">
+        <div className="absolute bottom-9 right-0 w-64 z-50 animate-[fadeIn_0.15s_ease-out]">
           <RuntimeStatusPanel
             runtimeInfo={runtimeInfo}
             sidecarStatus={sidecarStatus}
