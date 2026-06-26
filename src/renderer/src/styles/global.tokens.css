@@ -149,14 +149,17 @@
   --character-relation-font-size: 12px;
   --character-relation-margin-bottom: 8px;
 
-  /* Namuwiki Theme Tokens (Light) */
-  --namu-blue: #00a2e8;
-  --namu-border: #cccccc;
-  --namu-table-bg: #f5f5f5;
-  --namu-table-label: #00a2e8;
-  --namu-hover-bg: #eef9fe;
-  --namu-header-text: #ffffff;
-  --namu-link: #0275d8;
+  /* Wiki (formerly "Namuwiki") tokens — aliased to core tokens so the wiki
+     shares Luie's single accent/border/surface palette. Defined once here;
+     they cascade across themes because the core vars they reference are
+     redefined per [data-theme]. */
+  --namu-blue: var(--accent-bg);
+  --namu-border: var(--border-default);
+  --namu-table-bg: var(--bg-sidebar);
+  --namu-table-label: var(--text-accent);
+  --namu-hover-bg: var(--bg-surface-hover);
+  --namu-header-text: var(--text-on-accent);
+  --namu-link: var(--text-accent);
 
   --editor-toolbar-icon-size: 16px;
   --editor-toolbar-dropdown-icon-size: 12px;
@@ -239,15 +242,6 @@
   --editor-bg: #09090b;
   --editor-text: #ededed;
   --editor-selection: #1e3a8a;
-
-  /* Namuwiki Theme Tokens (Dark) */
-  --namu-blue: #38bdf8;
-  --namu-border: var(--border-default);
-  --namu-table-bg: #18181b;
-  --namu-table-label: #0ea5e9;
-  --namu-hover-bg: #27272a;
-  --namu-header-text: #ffffff;
-  --namu-link: #60a5fa;
 }
 
 /* === SEPIA THEME (Writer Focused) === */
@@ -293,15 +287,6 @@
   --editor-bg: #fbf0d9;
   --editor-text: #433422;
   --editor-selection: #e6dcc6;
-
-  /* Namuwiki Theme Tokens (Sepia) */
-  --namu-blue: #cc7832; /* Earthy Orange/Brown to match Sepia */
-  --namu-border: #dcc8ae;
-  --namu-table-bg: #efe4cb;
-  --namu-table-label: #5f4b32;
-  --namu-hover-bg: #e6dac6;
-  --namu-header-text: #fffefb;
-  --namu-link: #b96725;
 }
 
 /* === ATMOSPHERE MODIFIERS (Temperature) === */

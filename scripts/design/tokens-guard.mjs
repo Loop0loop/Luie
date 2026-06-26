@@ -12,7 +12,7 @@ const EXCLUDE = [path.join(ROOT, "components/ui")]; // shadcn primitive layer
 // Baselines captured on feat/design @ c3413545 (pre-Phase-1).
 // Lower these as phases reduce the numbers; CI fails if actual > baseline.
 const BASELINE = {
-  rawHex: 352,
+  rawHex: 332,
   rawColor: 201,
   arbitraryPx: 403,
   roundedBig: 175,

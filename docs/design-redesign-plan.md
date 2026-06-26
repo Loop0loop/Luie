@@ -162,10 +162,23 @@ shadcn 어휘 대부분은 `global.tokens.css @theme`에서 Luie 단축형과 **
 - `*-accent-foreground` → `*-accent-fg` (4회)
 - `*-destructive` → `*-danger` (17회, `destructive-foreground` 제외)
 
-**제외(이중 정의 충돌 — 별도 처리):**
-- `surface`/`card`/`popover`: `@theme --color-surface=var(--bg-surface)` 이지만 `tailwind.config.surface=var(--bg-element)` → **서로 다른 변수**. 변환 시 색 변경됨. ⚠ tailwind v4 `@theme`와 `tailwind.config.js` 색 정의가 충돌하는 latent 버그 → Phase 2에서 정리.
+**제외:**
 - `components/ui/*` 원자(button/badge/scroll-area): shadcn primitive 레이어 → 유지(D4 다운튠만).
 - `bg-secondary`/`text-secondary`: Luie 단축형 부재 → 보류.
+
+### ⚠ Phase 2 조사 중 정정된 사실 (중요)
+처음엔 `surface`를 "`@theme` vs `tailwind.config.js` 이중 정의 충돌"로 봤으나, 실측 결과 **충돌은 없다**:
+- 이 프로젝트는 **Tailwind v4**(`@tailwindcss/postcss` 4.3.1)이고 `global.css`에 **`@config` 디렉티브가 없다.**
+- v4는 `@config` 없으면 **`tailwind.config.js`를 로드하지 않는다.** → `tailwind.config.js`는 **통째로 죽은 파일**.
+- 따라서 모든 색/유틸은 `global.tokens.css`의 `@theme`에서만 생성. `bg-surface`=`--bg-surface`로 일관 해석됨(충돌 없음). 모든 테마는 `[data-theme]` CSS 변수 재정의로 작동.
+
+**대신 진짜 버그 발견:** `tailwind.config.js`에만 있는 토큰 클래스가 **죽은 클래스**(CSS 미생성):
+`rounded-control`(28회), `rounded-panel`(1), `shadow-panel`(2), `z-dropdown`(3), `p-panel-pad`(2), `gap-panel-gap`(1) 등 → 해당 요소들이 의도한 곡률/그림자/간격/z-index를 **조용히 못 받고 있음**.
+→ **Phase 2b(신설)**: 사용 중인 config 토큰을 `@theme`로 이관 + `tailwind.config.js` 삭제. 단 `rounded-control` 등 28곳이 의도대로 곡률을 "되살아나" **눈에 보이는 변화**가 생기므로 별도 승인 후 진행.
+
+### Phase 2a 완료 (2026-06-26)
+- 위키 `--namu-*` 토큰을 코어 토큰으로 alias(`accent-bg`/`text-accent`/`border-default`/`bg-sidebar`/`bg-surface-hover`/`text-on-accent`). per-theme(dark/sepia) 중복 정의 삭제 → core 변수 cascade로 자동 테마.
+- 둘째 accent 블루 `#00a2e8`/`#38bdf8`/`#0ea5e9` 제거 → **accent 단일화**. rawHex 352→332. 컴포넌트 수정 0건(var 이름 유지).
 
 ---
 
