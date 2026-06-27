@@ -52,7 +52,6 @@ export function GoogleDocsEditorColumn({
     },
     [additionalPanelIds, updatePanelSize],
   );
-
   return (
     <Panel
       id="center-content"

@@ -237,10 +237,13 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
   const persistCanvasFiles = useCallback(async (
     update: (files: readonly WorldGraphCanvasFile[]) => WorldGraphCanvasFile[],
   ) => {
+    if (!useWorldBuildingStore.getState().graphData && currentProject?.id) {
+      await loadGraph(currentProject.id);
+    }
     const currentFiles =
       useWorldBuildingStore.getState().graphData?.canvasFiles ?? canvasFiles;
     await setGraphCanvasFiles(update(currentFiles));
-  }, [canvasFiles, setGraphCanvasFiles]);
+  }, [canvasFiles, currentProject?.id, loadGraph, setGraphCanvasFiles]);
 
   const createNode = useCallback(async (type: "canvas" | "folder") => {
     if (!currentProject?.id) return;

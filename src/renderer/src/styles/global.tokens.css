@@ -228,20 +228,23 @@
 
 /* === DARK THEME (Linear/Vercel Inspired) === */
 [data-theme="dark"] {
-  /* Backgrounds */
-  --bg-app: #0d0d0f; /* Writing surface — lifted off pure black to soften the recessed well */
-  --bg-sidebar: #161619; /* Chrome frame: one calm step above the writing surface (still below panel #18181b) */
-  --bg-panel: #18181b; /* Surface Color (Opaque) */
-  --bg-surface: #18181b; /* Added missing token for Modals/Cards */
-  --bg-panel-header: #18181b;
-  --bg-element: #27272a; /* Zinc-800 */
+  /* Backgrounds — Notion/Linear-calibrated "recessed editor" model.
+     Editor is the dark focal surface; chrome (sidebar/toolbar/footer) sits one
+     calm step lighter as the frame. Subtle cool (blue) tint — pure greys read
+     drab/murky on screen, +2~3pt blue makes them clean. None pure-black. */
+  --bg-app: #1a1a1c; /* Editor — neutral dark focal surface (≈ Notion #191919) */
+  --bg-sidebar: #212123; /* Chrome frame — one step lighter (≈ Notion sidebar) */
+  --bg-panel: #28282b; /* Floating surface (modal/inspector/dropdown) */
+  --bg-surface: #28282b;
+  --bg-panel-header: #28282b;
+  --bg-element: #313135; /* Inputs/controls — top of the stack */
   --bg-element-hover: rgba(255, 255, 255, 0.08);
   --bg-active: rgba(255, 255, 255, 0.12);
 
   /* Text */
-  --text-primary: #f4f4f5; /* Zinc-50 — soft white, avoids harsh pure-white glare on dark */
-  --text-secondary: #d4d4d8; /* Zinc-300 */
-  --text-tertiary: #a1a1aa; /* Zinc-400 */
+  --text-primary: #d7d7da; /* Clean neutral light grey (≈ Notion #D4D4D4), crisp not drab */
+  --text-secondary: #989aa2; /* Quieter secondary, clearly below primary */
+  --text-tertiary: #6c6e77; /* Placeholders — recede further */
   --text-accent: #60a5fa; /* Blue-400 */
   --text-on-accent: #ffffff;
 
@@ -268,9 +271,82 @@
   --grid-line: var(--border-default);
 
   /* Editor */
-  --editor-bg: #0d0d0f;
-  --editor-text: #ededed;
+  --editor-bg: #1a1a1c; /* Matches bg-app — neutral dark writing surface */
+  --editor-text: #d0d0d4; /* Body text — clean, comfortable on the dark surface */
   --editor-selection: #1e3a8a;
+}
+
+/* === DARK TONE (user-selectable color temperature) ===
+   Neutral = the base [data-theme="dark"] block above (no override).
+   Cool/Warm only re-tint the background ladder + text; structure unchanged. */
+/* Cool — Tokyo Night grounded (blue-leaning, calm night) */
+[data-theme="dark"][data-temp="cool"] {
+  --bg-app: #181a23; /* ≈ Tokyo Night editor #1a1b26 */
+  --bg-sidebar: #1f2230;
+  --bg-panel: #262a38;
+  --bg-surface: #262a38;
+  --bg-panel-header: #262a38;
+  --bg-element: #2f3345;
+  --editor-bg: #181a23;
+  --editor-text: #c7ccdb; /* ≈ Tokyo Night fg #c0caf5, dimmed */
+  --text-primary: #ccd2e2;
+}
+/* Warm — Gruvbox/Everforest grounded (amber-cream, retro groove) */
+[data-theme="dark"][data-temp="warm"] {
+  --bg-app: #1f1c17; /* warm dark ≈ Gruvbox bg0_hard #1d2021 warmed */
+  --bg-sidebar: #29251e;
+  --bg-panel: #322d24;
+  --bg-surface: #322d24;
+  --bg-panel-header: #322d24;
+  --bg-element: #3d372c;
+  --editor-bg: #1f1c17;
+  --editor-text: #ded5c2; /* ≈ Gruvbox cream #ebdbb2 / Everforest #d3c6aa */
+  --text-primary: #e6ddca;
+}
+
+/* Light — cool (blue-grey paper, GitHub-light-leaning) */
+[data-theme="light"][data-temp="cool"] {
+  --bg-app: #fbfcfd;
+  --bg-sidebar: #eef1f4;
+  --bg-panel: #fbfcfd;
+  --bg-surface: #fbfcfd;
+  --bg-element: #fbfcfd;
+  --editor-bg: #fbfcfd;
+  --editor-text: #1b1e24;
+  --text-primary: #1b1e24;
+}
+/* Light — warm (ivory cream, ≈ Solarized Light base3 #fdf6e3) */
+[data-theme="light"][data-temp="warm"] {
+  --bg-app: #fdf9f0;
+  --bg-sidebar: #f4ece0;
+  --bg-panel: #fdf9f0;
+  --bg-surface: #fdf9f0;
+  --bg-element: #fdf9f0;
+  --editor-bg: #fdf9f0;
+  --editor-text: #211d18;
+  --text-primary: #211d18;
+}
+/* Sepia — cool (greyer, less amber paper) */
+[data-theme="sepia"][data-temp="cool"] {
+  --bg-app: #f3eee1;
+  --bg-sidebar: #e8e1d2;
+  --bg-panel: #f3eee1;
+  --bg-surface: #faf7f0;
+  --bg-element: #faf7f0;
+  --editor-bg: #f3eee1;
+  --editor-text: #4a4034;
+  --text-primary: #4a4034;
+}
+/* Sepia — warm (deeper amber paper) */
+[data-theme="sepia"][data-temp="warm"] {
+  --bg-app: #f9e9c4;
+  --bg-sidebar: #f0dcae;
+  --bg-panel: #f9e9c4;
+  --bg-surface: #fdf6e6;
+  --bg-element: #fdf6e6;
+  --editor-bg: #f9e9c4;
+  --editor-text: #4a3a22;
+  --text-primary: #5a4528;
 }
 
 /* === SEPIA THEME (Writer Focused) === */

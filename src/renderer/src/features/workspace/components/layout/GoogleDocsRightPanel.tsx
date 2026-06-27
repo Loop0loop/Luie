@@ -240,6 +240,7 @@ export function GoogleDocsRightPanel({
         collapsible
         collapsedSize={0}
         data-panel-animated="true"
+        groupResizeBehavior="preserve-pixel-size"
         defaultSize={toPanelPercentSize(rightPanelRatio)}
         minSize={rightPanelSize.minSize}
         maxSize={rightPanelSize.maxSize}

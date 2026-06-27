@@ -76,6 +76,7 @@ export default function App() {
   const loadProjects = useProjectStore((state) => state.loadProjects);
   const theme = useEditorStore((state) => state.theme);
   const themeContrast = useEditorStore((state) => state.themeContrast);
+  const themeTemp = useEditorStore((state) => state.themeTemp);
   const themeAccent = useEditorStore((state) => state.themeAccent);
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
 
@@ -169,6 +170,7 @@ export default function App() {
     theme,
     themeAccent,
     themeContrast,
+    themeTemp,
   });
 
   useEffect(() => {

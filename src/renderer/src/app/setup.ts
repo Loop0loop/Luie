@@ -3,6 +3,7 @@ import {
   DEFAULT_EDITOR_THEME,
   DEFAULT_EDITOR_THEME_ACCENT,
   DEFAULT_EDITOR_THEME_CONTRAST,
+  DEFAULT_EDITOR_THEME_TEMP,
 } from "@shared/constants/app/configs";
 import { editorSettingsSchema } from "@shared/schemas/index.js";
 import { api } from "@shared/api";
@@ -70,6 +71,7 @@ type ThemeSeed = Pick<
   EditorSettings,
   | "theme"
   | "themeContrast"
+  | "themeTemp"
   | "themeAccent"
   | "enableAnimations"
 >;
@@ -77,6 +79,7 @@ type ThemeSeed = Pick<
 const DEFAULT_THEME_SEED: ThemeSeed = {
   theme: DEFAULT_EDITOR_THEME,
   themeContrast: DEFAULT_EDITOR_THEME_CONTRAST,
+  themeTemp: DEFAULT_EDITOR_THEME_TEMP,
   themeAccent: DEFAULT_EDITOR_THEME_ACCENT,
   enableAnimations: true,
 };
@@ -85,6 +88,7 @@ const applyThemeSeed = (theme: ThemeSeed): void => {
   const root = document.documentElement;
   root.setAttribute("data-theme", theme.theme);
   root.setAttribute("data-contrast", theme.themeContrast);
+  root.setAttribute("data-temp", theme.themeTemp);
   root.setAttribute("data-accent", theme.themeAccent);
   root.setAttribute(
     "data-animations",
@@ -95,6 +99,7 @@ const applyThemeSeed = (theme: ThemeSeed): void => {
 const toThemeSeed = (settings: EditorSettings): ThemeSeed => ({
   theme: settings.theme,
   themeContrast: settings.themeContrast,
+  themeTemp: settings.themeTemp,
   themeAccent: settings.themeAccent,
   enableAnimations: settings.enableAnimations,
 });

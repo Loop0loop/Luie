@@ -5,6 +5,7 @@ import type {
   FontFamily,
   FontPreset,
   ThemeContrast,
+  ThemeTemp,
   ThemeAccent,
   EditorUiMode,
 } from "@shared/types";
@@ -19,6 +20,7 @@ import {
   DEFAULT_EDITOR_THEME,
   DEFAULT_EDITOR_THEME_ACCENT,
   DEFAULT_EDITOR_THEME_CONTRAST,
+  DEFAULT_EDITOR_THEME_TEMP,
 } from "@shared/constants/app/configs";
 import { editorSettingsSchema } from "@shared/schemas";
 import { api } from "@shared/api";
@@ -46,6 +48,7 @@ const DEFAULT_SETTINGS: EditorSettings = {
   spellcheckEnabled: true,
   theme: DEFAULT_EDITOR_THEME,
   themeContrast: DEFAULT_EDITOR_THEME_CONTRAST as ThemeContrast,
+  themeTemp: DEFAULT_EDITOR_THEME_TEMP as ThemeTemp,
   themeAccent: DEFAULT_EDITOR_THEME_ACCENT as ThemeAccent,
   uiMode: "default",
   enableAnimations: true,
@@ -89,6 +92,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       paragraphSpacing: current.paragraphSpacing ?? DEFAULT_EDITOR_PARAGRAPH_SPACING,
       theme: current.theme,
       themeContrast: current.themeContrast ?? DEFAULT_EDITOR_THEME_CONTRAST,
+      themeTemp: current.themeTemp ?? DEFAULT_EDITOR_THEME_TEMP,
       themeAccent: current.themeAccent ?? DEFAULT_EDITOR_THEME_ACCENT,
       uiMode: current.uiMode ?? "default",
       enableAnimations: current.enableAnimations ?? true,

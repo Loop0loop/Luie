@@ -75,6 +75,13 @@ export const enBaseSettings = {
         soft: "Soft",
         high: "High",
       },
+      tone: {
+        title: "Tone",
+        description: "Choose the color temperature of the theme.",
+        cool: "Cool",
+        neutral: "Neutral",
+        warm: "Warm",
+      },
     },
     view: {
       pc: "PC",

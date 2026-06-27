@@ -100,8 +100,8 @@ function PropertyRow({
   readonlyValue?: string;
 }) {
   return (
-    <div className="flex items-start gap-3 py-1.5 border-b border-border/40 last:border-b-0">
-      <span className="w-24 shrink-0 text-[13px] text-muted pt-0.5">{label}</span>
+    <div className="flex items-start gap-3 py-1.5 border-b border-border/30 last:border-b-0">
+      <span className="w-24 shrink-0 text-[12px] text-muted/80 pt-1">{label}</span>
       <div className="flex-1 min-w-0">
         {readonlyValue !== undefined ? (
           <span className="text-[14px] text-fg">{readonlyValue}</span>

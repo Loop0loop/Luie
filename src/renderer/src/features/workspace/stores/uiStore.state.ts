@@ -329,9 +329,6 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
           sidebarWidths: {
             ...state.sidebarWidths,
             mainSidebar: normalized,
-            docsBinder: normalized,
-            scrivenerBinder: normalized,
-            binder: normalized,
           },
         };
       }

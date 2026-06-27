@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getSynchronizedSidebarWidthFeatures,
   getSidebarDefaultWidth,
   normalizeSidebarWidthsWithMigrations,
 } from "../../../src/renderer/src/shared/constants/sidebarSizing.js";
@@ -28,11 +29,23 @@ describe("sidebarSizing scoped width migration", () => {
     });
 
     expect(normalized.docsCharacter).toBe(430);
-    expect(normalized.editorCharacter).toBe(400);
+    expect(normalized.editorCharacter).toBe(390);
   });
 
   it("applies conservative default width for scoped right panels", () => {
     expect(getSidebarDefaultWidth("docsCharacter")).toBe(600);
     expect(getSidebarDefaultWidth("editorCharacter")).toBe(600);
+  });
+
+  it("does not runtime-sync independent left sidebar widths", () => {
+    expect(getSynchronizedSidebarWidthFeatures("mainSidebar")).toEqual([]);
+    expect(getSynchronizedSidebarWidthFeatures("docsBinder")).toEqual([]);
+    expect(getSynchronizedSidebarWidthFeatures("scrivenerBinder")).toEqual([]);
+  });
+
+  it("does not runtime-sync docs and editor right panel widths", () => {
+    expect(getSynchronizedSidebarWidthFeatures("docsCharacter")).toEqual([]);
+    expect(getSynchronizedSidebarWidthFeatures("editorCharacter")).toEqual([]);
+    expect(getSynchronizedSidebarWidthFeatures("character")).toEqual([]);
   });
 });

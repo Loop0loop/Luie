@@ -14,8 +14,8 @@ import {
 } from "@renderer/features/workspace/hooks/useLayoutPersist";
 
 const CANVAS_LAYOUT_ENTRIES: LayoutPersistEntry[] = [
-  { id: "canvas-activity", surface: "canvas.activity" },
-  { id: "canvas-binder", surface: "canvas.binder" },
+  { id: "canvas-activity", index: 0, surface: "canvas.activity" },
+  { id: "canvas-binder", index: 2, surface: "canvas.binder" },
 ];
 
 export function useCanvasLayoutPersist(projectId?: string | null) {

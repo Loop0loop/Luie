@@ -7,4 +7,5 @@ export const DEFAULT_EDITOR_PARAGRAPH_SPACING = 1.0;
 export const DEFAULT_EDITOR_MAX_WIDTH = 800;
 export const DEFAULT_EDITOR_THEME = "light" as const;
 export const DEFAULT_EDITOR_THEME_CONTRAST = "soft" as const;
+export const DEFAULT_EDITOR_THEME_TEMP = "neutral" as const;
 export const DEFAULT_EDITOR_THEME_ACCENT = "blue" as const;

@@ -27,34 +27,32 @@ export function InfoboxRow({
 }: InfoboxRowProps) {
   const { t } = useTranslation();
   return (
-    <div className="flex border-b border-border last:border-b-0 min-h-[40px] group/row hover:bg-surface-hover transition-colors">
-      <div className="w-[100px] bg-surface-hover px-2 py-2 font-semibold text-muted border-r border-border flex items-center justify-center text-center leading-tight shrink-0 relative text-[12px]">
+    <div className="flex flex-col gap-1 py-2 border-b border-border/40 last:border-b-0 group/row">
+      <div className="flex items-center justify-between gap-1">
         {isCustom ? (
-          <div className="flex items-center relative w-full justify-center">
-            <BufferedInput
-              className="border-none bg-transparent w-full color-inherit font-inherit p-1 text-center focus:outline-none focus:bg-active focus:rounded-sm text-[12px]"
-              value={label}
-              onSave={onLabelSave || (() => {})}
-            />
-            {onDelete && (
-              <button
-                type="button"
-                className="absolute -left-0.5 top-1/2 -translate-y-1/2 opacity-0 group-hover/row:opacity-100 transition-opacity border-none bg-transparent text-muted cursor-pointer p-0.5 hover:text-danger"
-                onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                title={t("character.wiki.fieldDeleteTitle")}
-              >
-                <X size={10} />
-              </button>
-            )}
-          </div>
+          <BufferedInput
+            className="border-none bg-transparent w-full text-[11px] font-medium text-muted p-0 focus:outline-none focus:text-fg/80"
+            value={label}
+            onSave={onLabelSave || (() => {})}
+          />
         ) : (
-          label
+          <span className="text-[11px] font-medium text-muted">{label}</span>
+        )}
+        {onDelete && (
+          <button
+            type="button"
+            className="opacity-0 group-hover/row:opacity-100 transition-opacity border-none bg-transparent text-muted cursor-pointer p-0.5 hover:text-danger shrink-0"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            title={t("character.wiki.fieldDeleteTitle")}
+          >
+            <X size={10} />
+          </button>
         )}
       </div>
-      <div className="flex-1 px-2.5 py-1.5 flex items-center bg-surface text-fg text-[13px]">
+      <div className="flex items-center text-fg text-[13px]">
         {type === "select" ? (
           <select
-            className="border-none bg-transparent w-full text-fg text-[13px] p-0.5 focus:outline-none cursor-pointer"
+            className="border-none bg-transparent w-full text-fg text-[13px] p-0 focus:outline-none cursor-pointer"
             value={value || ""}
             onChange={(e) => onSave?.(e.target.value)}
           >
@@ -67,7 +65,7 @@ export function InfoboxRow({
           </select>
         ) : (
           <BufferedInput
-            className="border-none bg-transparent w-full text-fg text-[13px] p-0.5 focus:outline-none focus:bg-active focus:rounded-sm placeholder:text-muted/40"
+            className="border-none bg-transparent w-full text-fg text-[13px] p-0 focus:outline-none placeholder:text-muted/35"
             value={value || ""}
             placeholder={placeholder || t("character.wiki.valuePlaceholder")}
             onSave={onSave || (() => {})}
@@ -83,22 +81,55 @@ export function Infobox({
   image,
   rows,
   onAddField,
+  isEditing = true,
 }: {
   title: string;
   image?: React.ReactNode;
   rows: InfoboxRowProps[];
   onAddField: () => void;
+  /** When false, render as a read-only profile card (text only). */
+  isEditing?: boolean;
 }) {
   const { t } = useTranslation();
-  return (
-    <div className="w-full border border-border bg-surface rounded-panel overflow-hidden shrink-0 shadow-sm text-[13px]">
-      <div className="bg-accent text-white text-center px-3 py-2.5 font-bold text-[14px]">
-        {title}
+  // ponytail: title is now shown in the page header; prop kept to avoid caller churn.
+  void title;
+
+  // ── Read mode: profile card with text rows, empty values hidden ─────────
+  if (!isEditing) {
+    const filled = rows.filter((r) => r.value && r.value.trim().length > 0);
+    return (
+      <div className="w-full shrink-0 rounded-panel border border-border/60 bg-surface/40 p-4">
+        {image && (
+          <div className="flex items-center justify-center pb-3 mb-1">{image}</div>
+        )}
+        {filled.length > 0 ? (
+          <dl className="flex flex-col">
+            {filled.map((row) => (
+              <div
+                key={row.label + (row.isCustom ? "cust" : "fixed")}
+                className="flex items-baseline justify-between gap-3 py-1.5 border-b border-border/30 last:border-b-0"
+              >
+                <dt className="text-[11px] text-muted shrink-0">{row.label}</dt>
+                <dd className="text-[13px] text-fg text-right break-words">
+                  {row.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <p className="text-center text-[12px] text-muted/60 py-2">
+            {t("character.wiki.profileEmpty", "프로필 정보 없음")}
+          </p>
+        )}
       </div>
+    );
+  }
+
+  // ── Edit mode ───────────────────────────────────────────────────────────
+  return (
+    <div className="w-full shrink-0 text-[13px]">
       {image && (
-        <div className="w-full bg-surface-hover flex items-center justify-center border-b border-border py-6">
-          {image}
-        </div>
+        <div className="flex items-center justify-center pb-3">{image}</div>
       )}
       <div className="flex flex-col">
         {rows.map((row) => (
@@ -107,7 +138,7 @@ export function Infobox({
       </div>
       <button
         type="button"
-        className="w-full px-3 py-2.5 bg-surface border-none border-t border-border text-muted text-[12px] cursor-pointer flex items-center justify-center gap-1.5 hover:bg-surface-hover hover:text-fg transition-colors"
+        className="mt-2 flex items-center gap-1 bg-transparent border-none text-[12px] text-muted/60 hover:text-accent transition-colors cursor-pointer p-0"
         onClick={onAddField}
       >
         <Plus size={11} />

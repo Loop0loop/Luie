@@ -130,8 +130,8 @@ export default function ScrivenerLayout({
   const inspectorConfig = getLayoutSurfaceConfig("scrivener.inspector");
 
   const onLayoutChanged = useLayoutPersist([
-    { id: "sidebar", surface: "scrivener.binder" },
-    { id: "inspector", surface: "scrivener.inspector" },
+    { id: "sidebar", index: 0, surface: "scrivener.binder" },
+    { id: "inspector", index: 2, surface: "scrivener.inspector" },
   ]);
 
   const binderRatio =
@@ -201,6 +201,11 @@ export default function ScrivenerLayout({
       }
     };
   }, [panels]);
+
+  const editorSplitPanelIds =
+    panels.length > 0
+      ? ["editor-content", ...panels.map((panel) => panel.id)]
+      : ["editor-content", "scrivener-editor-placeholder"];
 
   const renderMainContent = () => {
     switch (mainView.type) {

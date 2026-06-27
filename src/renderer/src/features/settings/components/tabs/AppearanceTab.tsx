@@ -22,6 +22,7 @@ export const AppearanceTab = memo(function AppearanceTab({
     const {
         theme,
         themeContrast,
+        themeTemp,
         uiMode,
         enableAnimations,
         entityColors,
@@ -30,6 +31,7 @@ export const AppearanceTab = memo(function AppearanceTab({
         useShallow((state) => ({
             theme: state.theme,
             themeContrast: state.themeContrast,
+            themeTemp: state.themeTemp,
             uiMode: state.uiMode,
             enableAnimations: state.enableAnimations,
             entityColors: state.entityColors,
@@ -82,6 +84,28 @@ export const AppearanceTab = memo(function AppearanceTab({
                             {enableAnimations ? t("settings.appearance.animations.on", "켜짐") : t("settings.appearance.animations.off", "꺼짐")}
                         </span>
                     </div>
+                </div>
+            </section>
+
+            <div className="h-px bg-border my-6" />
+            <section className="space-y-4">
+                <div>
+                    <h3 className="text-base font-semibold text-fg">{t("settings.appearance.tone.title")}</h3>
+                    <p className="text-sm text-muted mt-1">{t("settings.appearance.tone.description")}</p>
+                </div>
+                <div className="flex gap-2">
+                    {(["cool", "neutral", "warm"] as const).map((tone) => (
+                        <button
+                            key={tone}
+                            onClick={() => onApplySettings({ themeTemp: tone })}
+                            className={`px-3 py-1.5 rounded-panel text-xs font-medium border transition-colors ${themeTemp === tone
+                                ? "bg-accent text-accent-fg border-transparent"
+                                : "border-border text-muted hover:text-fg"
+                                }`}
+                        >
+                            {t(`settings.appearance.tone.${tone}`)}
+                        </button>
+                    ))}
                 </div>
             </section>
 

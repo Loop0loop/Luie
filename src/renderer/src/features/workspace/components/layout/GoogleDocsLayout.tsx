@@ -48,7 +48,8 @@ export default function GoogleDocsLayout({
     handleRightTabClick,
     isPanelRailOpen,
     isSidebarOpen,
-    onLayoutChanged,
+    onRightLayoutChanged,
+    onSidebarLayoutChanged,
     pageMargins,
     rightPanelConfig,
     rightPanelRatio,
@@ -61,14 +62,16 @@ export default function GoogleDocsLayout({
   } = useGoogleDocsLayoutState(currentProjectId ?? null);
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
   const docsLayoutGroupRef = useRef<HTMLDivElement | null>(null);
+  const docsContentGroupRef = useRef<HTMLDivElement | null>(null);
   const docsSidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
   const docsLayoutGroupWidth = useElementWidth(docsLayoutGroupRef);
+  const docsContentGroupWidth = useElementWidth(docsContentGroupRef);
   const docsSidebarSize = getResponsivePanelSize(
     docsLayoutGroupWidth,
     docsSidebarConfig,
   );
   const rightPanelSize = rightPanelConfig
-    ? getResponsivePanelSize(docsLayoutGroupWidth, rightPanelConfig)
+    ? getResponsivePanelSize(docsContentGroupWidth, rightPanelConfig)
     : null;
   const {
     isClosing: isSidebarClosing,
@@ -87,7 +90,6 @@ export default function GoogleDocsLayout({
       setDocsSidebarOpen(false);
     }
   };
-
   return (
     <div className="flex h-screen flex-col bg-app font-sans text-fg transition-colors duration-200">
       <div className="bg-app transition-colors duration-200">
@@ -129,7 +131,7 @@ export default function GoogleDocsLayout({
           className="relative flex h-full w-full flex-1 overflow-hidden"
           id="docs-layout-group"
           elementRef={docsLayoutGroupRef}
-          onLayoutChanged={onLayoutChanged}
+          onLayoutChanged={onSidebarLayoutChanged}
         >
           {shouldRenderSidebar && (
             <>
@@ -163,37 +165,61 @@ export default function GoogleDocsLayout({
             </>
           )}
 
-          <GoogleDocsEditorColumn
-            additionalPanelIds={additionalPanelIds}
-            additionalPanels={additionalPanels}
-            editor={editor}
-            onOpenExport={onOpenExport}
-            onOpenWorldGraph={onOpenWorldGraph}
-            pageMargins={pageMargins}
-            setPageMargins={setPageMargins}
+          <Panel
+            id="docs-main-area"
+            minSize={0}
+            className="relative z-0 flex min-w-0 flex-1 overflow-hidden"
           >
-            {children}
-          </GoogleDocsEditorColumn>
+            <PanelGroup
+              orientation="horizontal"
+              className="relative flex h-full w-full flex-1 overflow-hidden"
+              id="docs-content-group"
+              elementRef={docsContentGroupRef}
+              onLayoutChanged={onRightLayoutChanged}
+            >
+              <GoogleDocsEditorColumn
+                additionalPanelIds={additionalPanelIds}
+                additionalPanels={additionalPanels}
+                editor={editor}
+                onOpenExport={onOpenExport}
+                onOpenWorldGraph={onOpenWorldGraph}
+                pageMargins={pageMargins}
+                setPageMargins={setPageMargins}
+              >
+                {children}
+              </GoogleDocsEditorColumn>
 
-          <GoogleDocsRightPanel
-            activeChapterContent={activeChapterContent}
-            activeChapterId={activeChapterId}
-            activeChapterTitle={activeChapterTitle}
-            activePanelSurface={activePanelSurface}
-            activeRightTab={activeRightTab}
-            closeRightPanel={closeRightPanel}
-            currentProjectId={currentProjectId}
-            onFocus={() => setFocusedClosableTarget({ kind: "docs-tab" })}
-            onRefreshTrash={() => setTrashRefreshKey((current) => current + 1)}
-            onSaveChapter={onSaveChapter}
-            rightPanelSize={rightPanelSize}
-            rightPanelRatio={rightPanelRatio ?? 0}
-            trashRefreshKey={trashRefreshKey}
-          />
+              <GoogleDocsRightPanel
+                activeChapterContent={activeChapterContent}
+                activeChapterId={activeChapterId}
+                activeChapterTitle={activeChapterTitle}
+                activePanelSurface={activePanelSurface}
+                activeRightTab={activeRightTab}
+                closeRightPanel={closeRightPanel}
+                currentProjectId={currentProjectId}
+                onFocus={() => setFocusedClosableTarget({ kind: "docs-tab" })}
+                onRefreshTrash={() => setTrashRefreshKey((current) => current + 1)}
+                onSaveChapter={onSaveChapter}
+                rightPanelSize={rightPanelSize}
+                rightPanelRatio={rightPanelRatio ?? 0}
+                trashRefreshKey={trashRefreshKey}
+              />
 
-          {!shouldRenderSidebar && !activeRightTab && (
+              {!activeRightTab && (
+                <Panel
+                  id="docs-right-placeholder"
+                  defaultSize={0}
+                  minSize={0}
+                  maxSize={0}
+                  className="pointer-events-none overflow-hidden opacity-0"
+                />
+              )}
+            </PanelGroup>
+          </Panel>
+
+          {!shouldRenderSidebar && (
             <Panel
-              id="docs-layout-placeholder"
+              id="docs-sidebar-placeholder"
               defaultSize={0}
               minSize={0}
               maxSize={0}

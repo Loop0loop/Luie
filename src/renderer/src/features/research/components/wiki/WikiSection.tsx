@@ -24,6 +24,10 @@ type WikiSectionProps = {
   onRename: (next: string) => void;
   onUpdateContent: (next: string) => void;
   onDelete: () => void;
+  /** When false, render as a read-only document block. Default: true (edit). */
+  isEditing?: boolean;
+  /** Called when the user clicks the "write" CTA on an empty read-mode section. */
+  onEnterEdit?: () => void;
 };
 
 export function WikiSection({
@@ -33,23 +37,48 @@ export function WikiSection({
   onRename,
   onUpdateContent,
   onDelete,
+  isEditing = true,
+  onEnterEdit,
 }: WikiSectionProps) {
   const { t } = useTranslation();
   const placeholder =
     SECTION_PROMPTS[id] ?? t("character.wiki.sectionPlaceholder");
 
+  // ── Read mode: render as a document block, no inputs ────────────────────
+  if (!isEditing) {
+    const hasContent = content.trim().length > 0;
+    return (
+      <section id={id} className="flex flex-col gap-2.5 scroll-mt-8">
+        <h2 className="text-[16px] font-semibold text-fg leading-snug">
+          {label}
+        </h2>
+        {hasContent ? (
+          <p className="whitespace-pre-wrap text-fg/85 text-[14px] leading-[1.9]">
+            {content}
+          </p>
+        ) : (
+          <button
+            type="button"
+            onClick={onEnterEdit}
+            className="self-start text-[12px] text-muted hover:text-accent transition-colors border border-border/50 hover:border-border rounded-control px-2.5 py-1"
+          >
+            작성하기
+          </button>
+        )}
+      </section>
+    );
+  }
+
+  // ── Edit mode ───────────────────────────────────────────────────────────
   return (
     <div id={id} className="group/section flex flex-col gap-3">
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2.5 flex-1 min-w-0">
-          <div className="w-[3px] h-5 bg-accent rounded-full shrink-0" />
-          <BufferedInput
-            value={label}
-            className="flex-1 border-none bg-transparent text-[15px] font-semibold text-fg/80 p-0 focus:outline-none leading-snug min-w-0"
-            onSave={onRename}
-          />
-        </div>
+        <BufferedInput
+          value={label}
+          className="flex-1 border-none bg-transparent text-[15px] font-semibold text-fg p-0 focus:outline-none leading-snug min-w-0"
+          onSave={onRename}
+        />
         <button
           type="button"
           onClick={onDelete}
@@ -60,18 +89,13 @@ export function WikiSection({
         </button>
       </div>
 
-      {/* Divider */}
-      <div className="h-px bg-border/40" />
-
-      {/* Writing area — borderless, accent margin line */}
-      <div className="pl-4 border-l-2 border-accent/20">
-        <BufferedTextArea
-          value={content}
-          placeholder={placeholder}
-          className="w-full min-h-[100px] bg-transparent border-none text-fg text-[14px] leading-[2.1] resize-y placeholder:text-muted/35 focus:outline-none p-0"
-          onSave={onUpdateContent}
-        />
-      </div>
+      {/* Writing area */}
+      <BufferedTextArea
+        value={content}
+        placeholder={placeholder}
+        className="w-full min-h-[100px] bg-transparent border-none text-fg text-[14px] leading-[2.1] resize-y placeholder:text-muted/35 focus:outline-none p-0"
+        onSave={onUpdateContent}
+      />
     </div>
   );
 }

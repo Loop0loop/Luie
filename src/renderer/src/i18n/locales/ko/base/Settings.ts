@@ -76,6 +76,13 @@ export const koBaseSettings = {
         soft: "Soft",
         high: "High",
       },
+      tone: {
+        title: "톤 (Tone)",
+        description: "테마의 색 온도를 선택합니다.",
+        cool: "차가움",
+        neutral: "기본",
+        warm: "따뜻함",
+      },
     },
     view: {
       pc: "PC",

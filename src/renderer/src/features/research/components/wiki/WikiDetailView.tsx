@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpen, FileText, Trash2, User, X } from "lucide-react";
+import { BookOpen, FileText, Pencil, Check, Trash2, User, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
@@ -124,6 +124,10 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
     localStorage.setItem(currentViewModeStorageKey, mode);
   };
 
+  // ── Read / edit mode (wiki view only) ──────────────────────────────────
+  // Default: read — the wiki reads as a finished document. 편집 toggles inputs.
+  const [isEditing, setIsEditing] = useState(false);
+
   // ── Character load ──────────────────────────────────────────────────────
   useEffect(() => {
     if (characterId) void loadCharacter(characterId);
@@ -215,16 +219,16 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
     <div className="flex-1 overflow-auto px-8 py-7 sm:px-6 sm:py-6 flex flex-col gap-5 bg-panel text-fg min-w-0">
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-2 pb-4 border-b border-border">
+      <div className="flex flex-col gap-1.5 pb-4 border-b border-border/60">
         <div className="flex items-center gap-2">
           <BufferedInput
-            className="text-[26px] font-extrabold text-fg leading-tight border-none bg-transparent flex-1 focus:outline-none min-w-0"
+            className="text-[22px] font-semibold text-fg leading-tight border-none bg-transparent flex-1 focus:outline-none min-w-0"
             value={character.name}
             onSave={(val) => updateCharacter({ id: character.id, name: val })}
           />
 
           {/* View mode toggle */}
-          <div className="flex items-center gap-1 p-0.5 rounded-panel bg-surface-hover border border-border/60 shrink-0">
+          <div className="flex items-center gap-0.5 shrink-0">
             <button
               type="button"
               onClick={() => switchViewMode("wiki")}
@@ -232,7 +236,7 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
               className={cn(
                 "flex items-center gap-1.5 px-2.5 py-1.5 rounded-control text-[12px] font-medium transition-colors",
                 viewMode === "wiki"
-                  ? "bg-surface text-fg shadow-sm"
+                  ? "bg-surface-hover text-fg"
                   : "text-muted hover:text-fg",
               )}
             >
@@ -246,7 +250,7 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
               className={cn(
                 "flex items-center gap-1.5 px-2.5 py-1.5 rounded-control text-[12px] font-medium transition-colors",
                 viewMode === "document"
-                  ? "bg-surface text-fg shadow-sm"
+                  ? "bg-surface-hover text-fg"
                   : "text-muted hover:text-fg",
               )}
             >
@@ -259,19 +263,19 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
             type="button"
             onClick={handleDeleteCharacter}
             title={t("character.wiki.deleteCharacterTitle")}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-control text-muted transition-colors hover:bg-danger/10 hover:text-danger"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-control text-muted/70 transition-colors hover:bg-danger/10 hover:text-danger"
           >
             <Trash2 size={14} />
           </button>
         </div>
 
         <div className="flex items-center gap-1.5 text-[12px] text-muted">
-          <span className="font-medium">{t("character.classificationLabel")}</span>
+          <span>{t("character.classificationLabel")}</span>
           <span className="text-border/60">·</span>
-          <span className="text-accent/80">{t(currentTemplate.nameKey)}</span>
+          <span className="text-fg/70">{t(currentTemplate.nameKey)}</span>
           <span className="text-border/60">·</span>
           <BufferedInput
-            className="inline min-w-[60px] font-medium text-accent/80 bg-transparent border-none p-0 focus:outline-none focus:bg-active focus:rounded-sm focus:px-1 transition-all"
+            className="inline min-w-[60px] text-fg/70 bg-transparent border-none p-0 focus:outline-none focus:bg-active focus:rounded-sm focus:px-1 transition-all"
             value={character.description || ""}
             placeholder={t("character.uncategorized")}
             onSave={(val) => updateCharacter({ id: character.id, description: val })}
@@ -296,14 +300,17 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
               {attrs.roles.map((role) => (
                 <span
                   key={role}
-                  className="group/tag flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[12px] font-medium"
-                  style={{ backgroundColor: `${attrs.characterColor}18`, color: attrs.characterColor }}
+                  className="group/tag inline-flex items-center gap-1 text-[12px] text-fg/70"
                 >
+                  <span
+                    className="h-1.5 w-1.5 rounded-full"
+                    style={{ backgroundColor: attrs.characterColor }}
+                  />
                   {role}
                   <button
                     type="button"
                     onClick={() => attrs.removeRole(role)}
-                    className="opacity-0 group-hover/tag:opacity-100 transition-opacity hover:text-danger ml-0.5"
+                    className="opacity-0 group-hover/tag:opacity-100 transition-opacity hover:text-danger"
                   >
                     <X size={9} />
                   </button>
@@ -317,13 +324,13 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
               {attrs.keywords.map((kw) => (
                 <span
                   key={kw}
-                  className="group/tag flex items-center gap-0.5 px-2 py-0.5 rounded-full border border-border/60 text-muted text-[12px]"
+                  className="group/tag inline-flex items-center gap-0.5 text-[12px] text-muted"
                 >
                   #{kw}
                   <button
                     type="button"
                     onClick={() => attrs.removeKeyword(kw)}
-                    className="opacity-0 group-hover/tag:opacity-100 transition-opacity hover:text-danger ml-0.5"
+                    className="opacity-0 group-hover/tag:opacity-100 transition-opacity hover:text-danger"
                   >
                     <X size={9} />
                   </button>

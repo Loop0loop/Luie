@@ -173,20 +173,7 @@ export const buildDefaultSidebarWidths = (): Record<
     ),
   ) as Record<SidebarWidthFeature, number>;
 
-const SIDEBAR_WIDTH_SYNC_GROUPS: SidebarWidthFeature[][] = [
-  ["mainSidebar", "docsBinder", "scrivenerBinder", "binder"],
-  ["mainContext", "scrivenerInspector", "context", "inspector"],
-  ["docsCharacter", "editorCharacter", "character"],
-  ["docsEvent", "editorEvent", "event"],
-  ["docsFaction", "editorFaction", "faction"],
-  ["docsWorld", "editorWorld", "world"],
-  ["docsScrap", "editorScrap", "scrap"],
-  ["docsAnalysis", "editorAnalysis", "analysis"],
-  ["docsSnapshot", "editorSnapshot", "snapshot"],
-  ["docsTrash", "editorTrash", "trash"],
-  ["docsEditor", "editor"],
-  ["docsExport", "export"],
-];
+const SIDEBAR_WIDTH_SYNC_GROUPS: SidebarWidthFeature[][] = [];
 
 export const getSynchronizedSidebarWidthFeatures = (
   feature: string,

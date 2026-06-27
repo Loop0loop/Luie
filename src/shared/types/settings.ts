@@ -3,6 +3,7 @@ export type FontFamily = FontFamilyPreset | string;
 export type FontPreset = "inter";
 export type EditorTheme = "light" | "dark" | "sepia";
 export type ThemeContrast = "soft" | "high";
+export type ThemeTemp = "cool" | "neutral" | "warm";
 export type ThemeAccent =
   | "blue"
   | "violet"
@@ -319,6 +320,7 @@ export interface EditorSettings {
   spellcheckEnabled: boolean;
   theme: EditorTheme;
   themeContrast: "soft" | "high";
+  themeTemp: ThemeTemp;
   themeAccent: ThemeAccent;
   uiMode: EditorUiMode;
   enableAnimations: boolean;

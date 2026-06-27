@@ -31,6 +31,7 @@ const editorSettingsShape = z.strictObject({
   spellcheckEnabled: z.boolean().optional().default(true),
   theme: z.enum(["light", "dark", "sepia"]),
   themeContrast: z.enum(["soft", "high"]).optional().default("soft"),
+  themeTemp: z.enum(["cool", "neutral", "warm"]).catch("neutral"),
   themeAccent: z
     .enum(["blue", "violet", "green", "amber", "rose", "slate"])
     .optional()
@@ -53,7 +54,6 @@ const editorSettingsShape = z.strictObject({
 export const editorSettingsSchema = z.preprocess((value) => {
   if (value && typeof value === "object") {
     const next = { ...(value as Record<string, unknown>) };
-    delete next.themeTemp;
     delete next.themeTexture;
     return next;
   }

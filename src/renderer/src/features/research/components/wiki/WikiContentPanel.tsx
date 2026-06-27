@@ -22,12 +22,17 @@ type WikiContentPanelProps = {
   /** i18n namespace: "character" | "event" | "faction". */
   i18nPrefix: string;
   newSectionFallback?: string;
+  /** When false, sections render read-only. Default: true. */
+  isEditing?: boolean;
+  onEnterEdit?: () => void;
 };
 
 export function WikiContentPanel({
   attrs,
   i18nPrefix,
   newSectionFallback,
+  isEditing = true,
+  onEnterEdit,
 }: WikiContentPanelProps) {
   const { t } = useTranslation();
   const dialog = useDialog();
@@ -66,23 +71,28 @@ export function WikiContentPanel({
 
   return (
     <div className="flex flex-col gap-9">
-      {/* Table of Contents */}
-      <nav className="self-start">
-        <p className="text-[11px] font-medium text-muted mb-2 uppercase tracking-wider">
-          {t(`${i18nPrefix}.tocLabel`, "Contents")}
-        </p>
-        <div className="flex flex-col gap-0.5 text-[13px] pl-3 border-l border-border/50">
-          {sections.map((sec) => (
-            <a
-              key={sec.id}
-              href={`#${sec.id}`}
-              className="text-accent/70 no-underline hover:text-accent hover:underline leading-snug py-0.5 transition-colors"
-            >
-              {sec.label}
-            </a>
-          ))}
-        </div>
-      </nav>
+      {/* Table of Contents — inline, only when there are sections */}
+      {sections.length > 0 && (
+        <nav className="self-start flex items-center gap-2 flex-wrap">
+          <p className="text-[11px] font-medium text-muted/70 uppercase tracking-wider">
+            {t(`${i18nPrefix}.tocLabel`, "Contents")}
+          </p>
+          <div className="flex items-center gap-1.5 flex-wrap text-[12px]">
+            {sections.map((sec, i) => (
+              <a
+                key={sec.id}
+                href={`#${sec.id}`}
+                className="text-muted no-underline hover:text-fg hover:underline transition-colors"
+              >
+                {sec.label}
+                {i < sections.length - 1 && (
+                  <span className="text-border/60 ml-1.5">·</span>
+                )}
+              </a>
+            ))}
+          </div>
+        </nav>
+      )}
 
       {/* Sections */}
       {sections.map((sec) => (
@@ -94,18 +104,22 @@ export function WikiContentPanel({
           onRename={(val) => renameSection(sec.id, val)}
           onUpdateContent={(val) => attrs.setSectionContent(sec.id, val)}
           onDelete={() => deleteSection(sec.id)}
+          isEditing={isEditing}
+          onEnterEdit={onEnterEdit}
         />
       ))}
 
-      {/* Add section */}
-      <button
-        type="button"
-        onClick={addSection}
-        className="self-start flex items-center gap-1.5 text-[13px] text-muted/50 hover:text-accent transition-colors cursor-pointer bg-transparent border-none pl-1"
-      >
-        <span className="text-[16px] leading-none">+</span>
-        {t(`${i18nPrefix}.addSection`, "+ Add section")}
-      </button>
+      {/* Add section — edit mode only */}
+      {isEditing && (
+        <button
+          type="button"
+          onClick={addSection}
+          className="self-start flex items-center gap-1.5 text-[13px] text-muted/50 hover:text-accent transition-colors cursor-pointer bg-transparent border-none pl-1"
+        >
+          <span className="text-[16px] leading-none">+</span>
+          {t(`${i18nPrefix}.addSection`, "+ Add section")}
+        </button>
+      )}
     </div>
   );
 }

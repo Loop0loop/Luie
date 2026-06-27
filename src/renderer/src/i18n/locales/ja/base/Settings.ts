@@ -77,6 +77,13 @@ export const jaBaseSettings = {
         soft: "ソフト",
         high: "ハイ",
       },
+      tone: {
+        title: "トーン",
+        description: "テーマの色温度を選択します。",
+        cool: "クール",
+        neutral: "標準",
+        warm: "ウォーム",
+      },
     },
     view: {
       pc: "PC",
