@@ -5,7 +5,9 @@ import { BufferedInput } from "@shared/ui/BufferedInput";
 import { useDialog } from "@shared/ui/useDialog";
 import { cn } from "@shared/types/utils";
 import { parseStructuredAttributes } from "@renderer/features/research/utils/parseStructuredAttributes";
-import { EntityDocumentView } from "@renderer/features/research/components/shared/EntityDocumentView";
+import NotionDocumentView, {
+  type DocumentPropertyRow,
+} from "@renderer/features/research/components/shared/NotionDocumentView";
 import { Infobox } from "./Infobox";
 import { WikiContentPanel, type WikiContentModel } from "./WikiContentPanel";
 
@@ -223,10 +225,33 @@ export function EntityDetailView({
       </div>
 
       {viewMode === "document" ? (
-        <EntityDocumentView
-          value={(attributes.document as string) || ""}
-          onSave={(html) => handleAttrUpdate("document", html)}
-          placeholder={t(`${prefix}.document.placeholder`, "자유롭게 써보세요...")}
+        <NotionDocumentView
+          properties={[
+            {
+              label: t(`${prefix}.classificationLabel`, "Classification"),
+              readonlyValue: t(`${prefix}.template.basic`, templateFallback),
+            },
+            {
+              label: t(`${prefix}.wiki.descriptionLabel`, "설명"),
+              value: entity.description || "",
+              placeholder: t(`${prefix}.uncategorized`, "Uncategorized"),
+              onSave: (val) => handleUpdate("description", val),
+            },
+            ...customFields.map<DocumentPropertyRow>((field) => ({
+              label: field.label,
+              value: (attributes[field.key] as string) || undefined,
+              placeholder: field.placeholder,
+              onSave: (value) => handleAttrUpdate(field.key, value),
+            })),
+          ]}
+          sections={sections}
+          getSectionContent={(id) => (attributes[id] as string) || ""}
+          setSections={(next) => handleAttrUpdate("sections", next)}
+          setSectionContent={(id, value) => handleAttrUpdate(id, value)}
+          bodyPlaceholder={t(
+            `${prefix}.document.bodyPlaceholder`,
+            "# 제목 으로 섹션을 만들고 자유롭게 써보세요. 마크다운(##, -, **굵게**)을 사용할 수 있어요.",
+          )}
         />
       ) : (
         <div className="@container">
