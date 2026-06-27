@@ -33,6 +33,10 @@ import {
 } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
+import {
+  shouldPersistMainLayoutContext,
+  type MainLayoutResizeSurface,
+} from "@renderer/features/workspace/utils/mainLayoutResize";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -81,6 +85,7 @@ export default function MainLayout({
   const mainContentGroupRef = useRef<HTMLDivElement | null>(null);
   const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
   const contextPanelRef = useRef<PanelImperativeHandle | null>(null);
+  const activeResizeSurfaceRef = useRef<MainLayoutResizeSurface | null>(null);
   const mainLayoutGroupWidth = useElementWidth(mainLayoutGroupRef);
   const mainContentGroupWidth = useElementWidth(mainContentGroupRef);
   const mainSidebarSize = getResponsivePanelSize(
@@ -92,12 +97,37 @@ export default function MainLayout({
     mainContextConfig,
   );
 
-  const onSidebarLayoutChanged = useLayoutPersist([
+  const persistSidebarLayoutChanged = useLayoutPersist([
     { id: "sidebar-panel", index: 0, surface: sidebarSurface },
   ]);
-  const onContextLayoutChanged = useLayoutPersist([
+  const persistContextLayoutChanged = useLayoutPersist([
     { id: "context-panel", index: 1, surface: contextSurface },
   ]);
+  const markResizeSurface = useCallback((surface: MainLayoutResizeSurface) => {
+    activeResizeSurfaceRef.current = surface;
+  }, []);
+  const onSidebarLayoutChanged = useCallback(
+    (layout: Layout) => {
+      const activeSurface = activeResizeSurfaceRef.current;
+      persistSidebarLayoutChanged(layout);
+      window.requestAnimationFrame(() => {
+        if (activeResizeSurfaceRef.current === activeSurface) {
+          activeResizeSurfaceRef.current = null;
+        }
+      });
+    },
+    [persistSidebarLayoutChanged],
+  );
+  const onContextLayoutChanged = useCallback(
+    (layout: Layout) => {
+      if (!shouldPersistMainLayoutContext(activeResizeSurfaceRef.current)) {
+        return;
+      }
+      persistContextLayoutChanged(layout);
+      activeResizeSurfaceRef.current = null;
+    },
+    [persistContextLayoutChanged],
+  );
   const onContentLayoutChanged = useCallback(
     (layout: Layout) => {
       additionalPanelIds.forEach((panelId, panelIndex) => {
@@ -206,6 +236,8 @@ export default function MainLayout({
           {shouldRenderSidebar && (
             <PanelResizeHandle
               data-separator-feature={sidebarSurface}
+              onKeyDown={() => markResizeSurface(sidebarSurface)}
+              onPointerDown={() => markResizeSurface(sidebarSurface)}
               className="w-1 bg-transparent hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative"
             />
           )}
@@ -289,6 +321,8 @@ export default function MainLayout({
               {shouldRenderContext && (
                 <PanelResizeHandle
                   data-separator-feature={contextSurface}
+                  onKeyDown={() => markResizeSurface(contextSurface)}
+                  onPointerDown={() => markResizeSurface(contextSurface)}
                   className="w-1 bg-transparent hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative"
                 />
               )}
