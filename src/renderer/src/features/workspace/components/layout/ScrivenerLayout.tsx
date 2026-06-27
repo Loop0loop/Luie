@@ -202,11 +202,6 @@ export default function ScrivenerLayout({
     };
   }, [panels]);
 
-  const editorSplitPanelIds =
-    panels.length > 0
-      ? ["editor-content", ...panels.map((panel) => panel.id)]
-      : ["editor-content", "scrivener-editor-placeholder"];
-
   const renderMainContent = () => {
     switch (mainView.type) {
       case "character":

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpen, FileText, Pencil, Check, Trash2, User, X } from "lucide-react";
+import { BookOpen, FileText, Trash2, User, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
@@ -123,10 +123,6 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
     setViewModeState({ storageKey: currentViewModeStorageKey, mode });
     localStorage.setItem(currentViewModeStorageKey, mode);
   };
-
-  // ── Read / edit mode (wiki view only) ──────────────────────────────────
-  // Default: read — the wiki reads as a finished document. 편집 toggles inputs.
-  const [isEditing, setIsEditing] = useState(false);
 
   // ── Character load ──────────────────────────────────────────────────────
   useEffect(() => {
