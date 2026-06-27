@@ -5,7 +5,7 @@
 
 // ── Domain types ──────────────────────────────────────────────────────────
 
-export type CharacterViewMode = "wiki" | "visual";
+export type CharacterViewMode = "wiki" | "document";
 
 export type RadarAxis = {
   label: string;

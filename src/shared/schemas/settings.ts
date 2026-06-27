@@ -49,15 +49,13 @@ const editorSettingsShape = z.strictObject({
   }).optional(),
 });
 
-// Strip removed legacy keys (themeTemp/themeTexture) before strict validation
-// so existing users' stored settings still parse instead of resetting to
-// defaults. Safe to drop this shim once no stored settings carry them.
+// Legacy stored settings may still include removed themeTemp/themeTexture keys.
 export const editorSettingsSchema = z.preprocess((value) => {
   if (value && typeof value === "object") {
-    const { themeTemp, themeTexture, ...rest } = value as Record<string, unknown>;
-    void themeTemp;
-    void themeTexture;
-    return rest;
+    const next = { ...(value as Record<string, unknown>) };
+    delete next.themeTemp;
+    delete next.themeTexture;
+    return next;
   }
   return value;
 }, editorSettingsShape);

@@ -32,6 +32,7 @@ export function buildProjection(
   graphData: WorldGraphData | null,
   _mode: CanvasMode,
   scope: CanvasScope | null,
+  focuses: readonly string[] = [],
 ): CanvasProjection {
   const empty: CanvasProjection = {
     nodes: [],
@@ -40,15 +41,18 @@ export function buildProjection(
   };
 
   if (!scope || !graphData) return empty;
+  const focusIds = new Set(focuses);
 
-  const nodes: CanvasProjectionNode[] = graphData.nodes.map((node) => ({
-    id: node.id,
-    kind: ENTITY_TYPE_TO_NODE_KIND[node.entityType] ?? "world-entity",
-    label: node.name,
-    x: node.positionX,
-    y: node.positionY,
-    description: node.description ?? null,
-  }));
+  const nodes: CanvasProjectionNode[] = graphData.nodes
+    .filter((node) => focusIds.size === 0 || focusIds.has(node.id))
+    .map((node) => ({
+      id: node.id,
+      kind: ENTITY_TYPE_TO_NODE_KIND[node.entityType] ?? "world-entity",
+      label: node.name,
+      x: node.positionX,
+      y: node.positionY,
+      description: node.description ?? null,
+    }));
 
   const nodeIds = new Set(nodes.map((n) => n.id));
 

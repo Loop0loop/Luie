@@ -7,6 +7,8 @@ import {
   Folder,
   FolderOpen,
   Layout,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { Badge } from "@renderer/components/ui/badge";
 import { cn } from "@shared/types/utils";
@@ -20,6 +22,8 @@ interface TreeNodeProps {
   selectedNodeId: string | null;
   toggleFolder: (id: string) => void;
   handleNodeClick: (node: FileNode) => void;
+  onRenameNode: (node: FileNode) => void;
+  onDeleteNode: (node: FileNode) => void;
 }
 
 export const TreeNode = memo(({
@@ -29,6 +33,8 @@ export const TreeNode = memo(({
   selectedNodeId,
   toggleFolder,
   handleNodeClick,
+  onRenameNode,
+  onDeleteNode,
 }: TreeNodeProps) => {
   const { t } = useTranslation();
   const isFolder = node.type === "folder";
@@ -83,6 +89,33 @@ export const TreeNode = memo(({
             {t("canvas.activity.canvas")}
           </Badge>
         )}
+
+        {!node.readOnly && (
+          <div className="ml-auto hidden shrink-0 items-center gap-0.5 pr-1 group-hover:flex">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onRenameNode(node);
+              }}
+              className="flex h-5 w-5 items-center justify-center rounded-control text-muted hover:bg-muted/50 hover:text-fg"
+              title={t("sidebar.menu.rename")}
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onDeleteNode(node);
+              }}
+              className="flex h-5 w-5 items-center justify-center rounded-control text-muted hover:bg-danger/10 hover:text-danger"
+              title={t("sidebar.menu.delete")}
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          </div>
+        )}
       </div>
 
       {isFolder && isExpanded && node.children && node.children.length > 0 && (
@@ -96,6 +129,8 @@ export const TreeNode = memo(({
               selectedNodeId={selectedNodeId}
               toggleFolder={toggleFolder}
               handleNodeClick={handleNodeClick}
+              onRenameNode={onRenameNode}
+              onDeleteNode={onDeleteNode}
             />
           ))}
         </div>

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildWorldGraphDocument,
   mergeWorldGraphLayout,
+  normalizeCanvasFiles,
 } from "../../src/shared/world/worldGraphDocument.js";
 import type { WorldGraphData } from "../../src/shared/types/index.js";
 
@@ -107,6 +108,7 @@ describe("worldGraphDocument", () => {
       edges: [],
       canvasBlocks: [],
       canvasEdges: [],
+      canvasFiles: [],
       timelines: [],
       updatedAt: "2026-03-13T09:00:00.000Z",
     });
@@ -372,12 +374,15 @@ describe("worldGraphDocument", () => {
           {
             id: "canvas-1",
             sourceId: "block-1",
+            sourceHandle: undefined,
             targetId: "node-2",
+            targetHandle: undefined,
             relation: "linked",
             direction: "bidirectional",
             color: "#abcdef",
           },
         ],
+        canvasFiles: [],
         timelines: [
           {
             id: "timeline-1",
@@ -388,5 +393,65 @@ describe("worldGraphDocument", () => {
         updatedAt: "2026-03-13T09:00:00.000Z",
       },
     );
+  });
+
+  it("drops invalid canvas file parents that would cycle or point to non-folders", () => {
+    expect(
+      normalizeCanvasFiles([
+        {
+          id: "folder-a",
+          kind: "folder",
+          name: "A",
+          parentId: "folder-b",
+        },
+        {
+          id: "folder-b",
+          kind: "folder",
+          name: "B",
+          parentId: "folder-a",
+        },
+        {
+          id: "canvas-1",
+          kind: "canvas",
+          name: "Canvas",
+          parentId: "missing",
+        },
+        {
+          id: "canvas-2",
+          kind: "canvas",
+          name: "Nested",
+          parentId: "canvas-1",
+        },
+      ]),
+    ).toEqual([
+      {
+        id: "folder-a",
+        kind: "folder",
+        name: "A",
+        parentId: null,
+        updatedAt: undefined,
+      },
+      {
+        id: "folder-b",
+        kind: "folder",
+        name: "B",
+        parentId: null,
+        updatedAt: undefined,
+      },
+      {
+        id: "canvas-1",
+        kind: "canvas",
+        name: "Canvas",
+        parentId: null,
+        updatedAt: undefined,
+      },
+      {
+        id: "canvas-2",
+        kind: "canvas",
+        name: "Nested",
+        parentId: null,
+        updatedAt: undefined,
+      },
+    ]);
   });
 });

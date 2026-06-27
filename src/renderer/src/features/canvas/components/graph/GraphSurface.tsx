@@ -4,7 +4,6 @@ import ReactFlow, {
   BackgroundVariant,
   PanOnScrollMode,
   MarkerType,
-  type Edge,
   type Node,
   useNodesState,
   useEdgesState
@@ -12,14 +11,14 @@ import ReactFlow, {
 import { useTranslation } from "react-i18next";
 import { HelpCircle } from "lucide-react";
 import PensiveNode from "./PensiveNode";
-import type { GraphNodeData, GraphNodeType } from "../../types/graph";
+import type { GraphNodeData } from "../../types/graph";
 import { useGraphStore } from "../../stores/graph/graphStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { calculateForceLayout } from "../../utils/graphLayout";
+import { buildGraphSurfaceData } from "../../utils/graphSurfaceData";
 import { GRAPH_CONSTELLATION_EDGE_DEFAULTS } from "../../constants/edge";
 import { CANVAS_ZOOM_MAX, CANVAS_ZOOM_MIN } from "@renderer/shared/constants/canvasSizing";
-import type { WorldGraphData } from "@shared/types";
 import {
   EDGE_FALLBACK_OPACITY,
   EDGE_FALLBACK_STROKE_WIDTH,
@@ -36,60 +35,6 @@ import {
 
 const nodeTypes = {
   pensive: PensiveNode,
-};
-
-const toGraphNodeType = (entityType: string): GraphNodeType => {
-  if (entityType === "Character") return "character";
-  if (entityType === "Faction") return "faction";
-  if (entityType === "Event" || entityType === "Scene") return "event";
-  if (entityType === "Chapter") return "chapter";
-  return "world-entity";
-};
-
-const buildGraphSurfaceData = (
-  graphData: WorldGraphData | null,
-): { sourceNodes: Node<GraphNodeData>[]; sourceEdges: Edge[] } => {
-  if (!graphData) return { sourceNodes: [], sourceEdges: [] };
-
-  const nodeNameById = new Map(graphData.nodes.map((node) => [node.id, node.name]));
-  const relationshipsByNodeId = new Map<string, NonNullable<GraphNodeData["relationships"]>>();
-  for (const edge of graphData.edges) {
-    const sourceRelationships = relationshipsByNodeId.get(edge.sourceId) ?? [];
-    sourceRelationships.push({
-      targetName: nodeNameById.get(edge.targetId) ?? edge.targetId,
-      type: edge.relation,
-      details: edge.relation,
-    });
-    relationshipsByNodeId.set(edge.sourceId, sourceRelationships);
-  }
-
-  return {
-    sourceNodes: graphData.nodes.map((node): Node<GraphNodeData> => ({
-      id: node.id,
-      type: "pensive",
-      position: {
-        x: Number.isFinite(node.positionX) ? node.positionX : 0,
-        y: Number.isFinite(node.positionY) ? node.positionY : 0,
-      },
-      data: {
-        label: node.name,
-        type: toGraphNodeType(node.entityType),
-        description: node.description ?? "",
-        relatedChapters: [],
-        relationships: relationshipsByNodeId.get(node.id) ?? [],
-        sourceTexts: [],
-      },
-    })),
-    sourceEdges: graphData.edges.map((edge): Edge => ({
-      id: edge.id,
-      source: edge.sourceId,
-      target: edge.targetId,
-      data: {
-        label: edge.relation,
-        strength: 1,
-      },
-    })),
-  };
 };
 
 export default function GraphSurface() {

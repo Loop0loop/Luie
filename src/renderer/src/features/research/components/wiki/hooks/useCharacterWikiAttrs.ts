@@ -44,6 +44,8 @@ export type CharacterWikiAttrs = {
   setCustomFields: (fields: CustomField[]) => void;
   /** Generic setter for any attribute key (e.g. template fields). */
   setAttr: (key: string, value: unknown) => void;
+  /** Atomic multi-key setter — one update merging several attribute keys. */
+  setManyAttrs: (updates: Record<string, unknown>) => void;
 };
 
 // ── Hook ──────────────────────────────────────────────────────────────────
@@ -150,6 +152,17 @@ export function useCharacterWikiAttrs(): CharacterWikiAttrs {
     [update],
   );
 
+  const setManyAttrs = useCallback(
+    (updates: Record<string, unknown>) => {
+      if (!character) return;
+      updateCharacter({
+        id: character.id,
+        attributes: { ...attrsRef.current, ...updates },
+      });
+    },
+    [character, updateCharacter],
+  );
+
   const addRole = useCallback(
     (role: string) => {
       const cur = (attrsRef.current.roles as string[]) ?? [];
@@ -203,5 +216,6 @@ export function useCharacterWikiAttrs(): CharacterWikiAttrs {
     setSections,
     setCustomFields,
     setAttr,
+    setManyAttrs,
   };
 }

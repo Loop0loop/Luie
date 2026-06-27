@@ -11,6 +11,7 @@ import { runWithProjectLock } from "@renderer/features/research/utils/projectMut
 
 interface BaseItem {
   id: string;
+  projectId: string;
 }
 
 /**
@@ -38,7 +39,7 @@ export interface WorldEntityCRUDBase<
 export interface CreateWorldEntityCRUDStoreOptions<
   T extends BaseItem,
   CreateInput extends { projectId?: string },
-  UpdateInput,
+  UpdateInput extends { id: string },
   AliasesT,
 > {
   /** API 클라이언트 (예: api.character, api.term 등) */
@@ -62,7 +63,7 @@ export interface CreateWorldEntityCRUDStoreOptions<
 export function createWorldEntityCRUDStore<
   T extends BaseItem,
   CreateInput extends { projectId?: string },
-  UpdateInput,
+  UpdateInput extends { id: string },
   AliasesT,
 >(
   options: CreateWorldEntityCRUDStoreOptions<
@@ -116,6 +117,11 @@ export function createWorldEntityCRUDStore<
       );
     };
 
+    const getProjectIdForItem = (id: string): string | null =>
+      get().items.find((item) => item.id === id)?.projectId ??
+      (get().currentItem?.id === id ? get().currentItem?.projectId : null) ??
+      null;
+
     const createWithSync = async (input: CreateInput): Promise<T | null> => {
       const projectId =
         input.projectId ?? useProjectStore.getState().currentItem?.id;
@@ -137,7 +143,7 @@ export function createWorldEntityCRUDStore<
     };
 
     const updateWithSync = async (input: UpdateInput): Promise<void> => {
-      const projectId = useProjectStore.getState().currentItem?.id;
+      const projectId = getProjectIdForItem(input.id);
       if (!projectId) {
         return;
       }
@@ -149,7 +155,7 @@ export function createWorldEntityCRUDStore<
     };
 
     const deleteWithSync = async (id: string): Promise<boolean> => {
-      const projectId = useProjectStore.getState().currentItem?.id;
+      const projectId = getProjectIdForItem(id);
       if (!projectId) {
         return false;
       }
@@ -168,6 +174,8 @@ export function createWorldEntityCRUDStore<
 
     return {
       ...crudSlice,
+      [aliasItemsKey]: crudSlice.items,
+      [aliasCurrentKey]: crudSlice.currentItem,
       create: createWithSync,
       update: updateWithSync,
       delete: deleteWithSync,

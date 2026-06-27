@@ -78,6 +78,8 @@ export type {
   WorldGraphCanvasBlock,
   WorldGraphCanvasEdge,
   WorldGraphCanvasEdgeDirection,
+  WorldGraphCanvasFile,
+  WorldGraphCanvasFileKind,
   WorldGraphCanvasMemoBlockData,
   WorldGraphCanvasTimelineBlockData,
   WorldGraphData,

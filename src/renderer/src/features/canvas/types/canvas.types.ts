@@ -14,6 +14,7 @@ export type CanvasMode =
 
 /** Modes that have a real implementation today. Other modes show "coming soon". */
 import type { CANVAS_AVAILABLE_MODES as _CANVAS_AVAILABLE_MODES } from "../constants/i18n";
+import type { MainView } from "@renderer/features/workspace/stores/uiStore.types";
 export { CANVAS_AVAILABLE_MODES } from "../constants/i18n";
 
 export type CanvasAvailableMode = (typeof _CANVAS_AVAILABLE_MODES)[number];
@@ -74,5 +75,8 @@ export interface FileNode {
   name: string;
   type: "file" | "canvas" | "folder";
   children?: FileNode[];
+  readOnly?: boolean;
+  focusIds?: string[];
+  canvasFileId?: string;
+  mainView?: MainView;
 }
-

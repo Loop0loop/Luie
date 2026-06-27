@@ -135,6 +135,8 @@ export const appendNodeToGraph = (
   edges: graphData?.edges ?? [],
   canvasBlocks: graphData?.canvasBlocks ?? [],
   canvasEdges: graphData?.canvasEdges ?? [],
+  canvasFiles: graphData?.canvasFiles ?? [],
+  timelines: graphData?.timelines ?? [],
 });
 
 export const replaceNodeInGraph = (

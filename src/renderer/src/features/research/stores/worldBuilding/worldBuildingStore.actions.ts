@@ -4,6 +4,7 @@ import type {
   EntityRelationUpdateInput,
   WorldGraphCanvasBlock,
   WorldGraphCanvasEdge,
+  WorldGraphCanvasFile,
   WorldGraphData,
   WorldEntityCreateInput,
   WorldEntityUpdateInput,
@@ -13,6 +14,7 @@ import type {
 import {
   normalizeCanvasBlocks,
   normalizeCanvasEdges,
+  normalizeCanvasFiles,
   normalizeTimelines,
 } from "@shared/world/worldGraphDocument";
 import {
@@ -86,6 +88,12 @@ export function createWorldBuildingActions(
   set: StoreSetter<WorldBuildingState>,
   get: StoreGetter<WorldBuildingState>,
 ): WorldBuildingActions {
+  const ensureGraphLoaded = async (projectId: string): Promise<boolean> => {
+    if (get().graphData) return true;
+    await get().loadGraph(projectId);
+    return Boolean(get().graphData);
+  };
+
   return {
     loadGraph: createLoadGraphAction(set, get),
 
@@ -337,18 +345,14 @@ export function createWorldBuildingActions(
     setGraphCanvasBlocks: async (blocks: WorldGraphCanvasBlock[]) => {
       const projectId = get().activeProjectId;
       if (!projectId) return;
+      if (!(await ensureGraphLoaded(projectId))) return;
       const nextCanvasBlocks = normalizeCanvasBlocks(blocks);
 
       const nextGraphSnapshot = applyActiveGraphUpdate(
         set,
         projectId,
         (graphData) =>
-          graphData
-            ? {
-                ...graphData,
-                canvasBlocks: nextCanvasBlocks,
-              }
-            : undefined,
+          graphData ? { ...graphData, canvasBlocks: nextCanvasBlocks } : undefined,
       );
 
       await persistGraphDocument(projectId, nextGraphSnapshot);
@@ -357,18 +361,30 @@ export function createWorldBuildingActions(
     setGraphCanvasEdges: async (edges: WorldGraphCanvasEdge[]) => {
       const projectId = get().activeProjectId;
       if (!projectId) return;
+      if (!(await ensureGraphLoaded(projectId))) return;
       const nextCanvasEdges = normalizeCanvasEdges(edges);
 
       const nextGraphSnapshot = applyActiveGraphUpdate(
         set,
         projectId,
         (graphData) =>
-          graphData
-            ? {
-                ...graphData,
-                canvasEdges: nextCanvasEdges,
-              }
-            : undefined,
+          graphData ? { ...graphData, canvasEdges: nextCanvasEdges } : undefined,
+      );
+
+      await persistGraphDocument(projectId, nextGraphSnapshot);
+    },
+
+    setGraphCanvasFiles: async (files: WorldGraphCanvasFile[]) => {
+      const projectId = get().activeProjectId;
+      if (!projectId) return;
+      if (!(await ensureGraphLoaded(projectId))) return;
+      const nextCanvasFiles = normalizeCanvasFiles(files);
+
+      const nextGraphSnapshot = applyActiveGraphUpdate(
+        set,
+        projectId,
+        (graphData) =>
+          graphData ? { ...graphData, canvasFiles: nextCanvasFiles } : undefined,
       );
 
       await persistGraphDocument(projectId, nextGraphSnapshot);
@@ -377,18 +393,14 @@ export function createWorldBuildingActions(
     setTimelines: async (timelines: WorldTimelineTrack[]) => {
       const projectId = get().activeProjectId;
       if (!projectId) return;
+      if (!(await ensureGraphLoaded(projectId))) return;
       const nextTimelines = normalizeTimelines(timelines);
 
       const nextGraphSnapshot = applyActiveGraphUpdate(
         set,
         projectId,
         (graphData) =>
-          graphData
-            ? {
-                ...graphData,
-                timelines: nextTimelines,
-              }
-            : undefined,
+          graphData ? { ...graphData, timelines: nextTimelines } : undefined,
       );
 
       await persistGraphDocument(projectId, nextGraphSnapshot);

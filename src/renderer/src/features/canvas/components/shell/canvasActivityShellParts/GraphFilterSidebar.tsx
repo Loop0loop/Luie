@@ -6,6 +6,8 @@ import { ScrollArea } from "@renderer/components/ui/scroll-area";
 import { cn } from "@shared/types/utils";
 
 import { useGraphStore } from "../../../stores/graph/graphStore";
+import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
+import { buildGraphSurfaceData } from "../../../utils/graphSurfaceData";
 
 export const GraphFilterSidebar = memo(() => {
   const { t } = useTranslation();
@@ -15,6 +17,10 @@ export const GraphFilterSidebar = memo(() => {
   const setSelectedChapterFilter = useGraphStore((state) => state.setSelectedChapterFilter);
   const selectedFocusNode = useGraphStore((state) => state.selectedFocusNode);
   const setSelectedFocusNode = useGraphStore((state) => state.setSelectedFocusNode);
+  const graphData = useWorldBuildingStore((state) => state.graphData);
+  const focusOptions = buildGraphSurfaceData(graphData).sourceNodes.filter((node) =>
+    activeMode === "character" ? node.data.type === "character" : node.data.type === "event",
+  );
 
   const [startChapter, setStartChapter] = useState(12);
   const [endChapter, setEndChapter] = useState(15);
@@ -190,17 +196,11 @@ export const GraphFilterSidebar = memo(() => {
                 className="w-full rounded-panel border border-border/20 px-3.5 py-2.5 text-[11.5px] font-extrabold cursor-pointer outline-none bg-element text-fg hover:bg-element-hover/80 transition-all appearance-none pr-8.5 shadow-sm min-w-0"
               >
                 <option value="all">{t("canvas.graph.viewAllNetwork", "전체 연결망 보기")}</option>
-                {activeMode === "character" ? (
-                  <>
-                    <option value="jinseo">{t("canvas.graph.nodes.jinseo", "진서 (주인공)")}</option>
-                    <option value="serin">{t("canvas.graph.nodes.serin", "세린 (첩보원)")}</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="ambush">{t("canvas.graph.nodes.ambush", "마차 습격 사건")}</option>
-                    <option value="rebels">{t("canvas.graph.nodes.rebels", "반란군 세력")}</option>
-                  </>
-                )}
+                {focusOptions.map((node) => (
+                  <option key={node.id} value={node.id}>
+                    {node.data.label}
+                  </option>
+                ))}
               </select>
               <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-muted">
                 <ChevronDown className="h-3.5 w-3.5" />

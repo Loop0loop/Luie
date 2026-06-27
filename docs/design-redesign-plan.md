@@ -238,3 +238,28 @@ D2에서 inert로 남겼던 `themeTemp`/`themeTexture` 필드를 **완전 삭제
 - **나중(P6):** 온보딩 서사 + 타이포 확장.
 
 ROI 1순위는 **Phase 1**(불쾌한 골짜기의 1차 원인 직접 제거).
+
+---
+
+## 6. MainLayout 크롬 통합 (2026-06-27) — 별도 트랙
+
+> 근거: [design-competitor-contrast-2026-06.md](./design-competitor-contrast-2026-06.md)
+> 트리거: 사용자 관찰 — sideBar / ToolBar / binderSideBar / footer가 "한 앱"이 아니라 따로 노는 4개로 읽힘.
+
+### 측정된 원인 (다크 기준 elevation)
+- 에디터 `bg-app` #09090b (0) · footer `bg-background`(=app) #09090b (0) · sideBar `bg-sidebar` #121214 (1) · **ToolBar `bg-panel` #18181b (2, 모달/카드와 동일 높이)**.
+- 크롬이 되어야 할 4영역이 0·1·2 세 높이로 흩어짐 + footer가 shadcn 어휘(`bg-background`/`text-muted-foreground`/무토큰 `rounded`) 혼용.
+
+### 결정 (2026-06-27)
+- **규칙: 크롬(sideBar·ToolBar·binderSideBar·footer) = `bg-sidebar` 단일 elevation, 에디터 = `bg-app`.** "틀-안-에디터" — 에디터가 움푹 들어간 집필 면, 크롬은 하나의 연속된 틀.
+- `bg-panel`/`bg-surface`는 *진짜 떠 있는 것*(모달·드롭다운·인스펙터)에만 예약. 크롬 금지.
+- 테마 적용/검증 순서: **다크 → 라이트 → 세피아**.
+
+### #1 완료 (2026-06-27) — 크롬 elevation 단일화
+- `EditorToolbar.tsx` 루트 `bg-panel`→`bg-sidebar` (단, 에디터/캔버스 토글의 *선택된 칸*은 `bg-panel` 유지 = 의도된 raised 표시).
+- `StatusFooter.tsx` `bg-background`→`bg-sidebar`, `text-muted-foreground`→`text-muted`, export 버튼 `hover:bg-hover rounded`→`hover:bg-active rounded-control` (어휘 단일화).
+- `BinderSidebar.tsx` 루트 `shadow-panel` 제거(같은 높이 크롬은 그림자로 떠 보이면 안 됨). bg는 이미 `bg-sidebar`.
+- `Sidebar.tsx`는 MainLayout `bg-sidebar` 패널을 상속하므로 elevation 변경 불필요.
+- 검증: `tsc --noEmit` 통과. ⚠ 눈에 보이는 변화: 다크에서 툴바가 한 단계 어두워지고 footer가 한 단계 밝아져 크롬이 하나의 틀로 합쳐짐.
+- **남은 관찰(범위 밖)**: `Sidebar.tsx:151,248` `hover:bg-bg-active` 오타 토큰(미해석 → hover 죽음).
+- 다음: 라이트/세피아 테마에서 동일 규칙 시각 검증 → 같은 높이 크롬 간 테두리 최소화.

@@ -1,8 +1,9 @@
 import { memo, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Info, BookOpen, Users, Quote, ArrowRight } from "lucide-react";
-import { MOCK_GRAPH_NODES } from "../../constants/graphMockData";
 import { useGraphStore } from "../../stores/graph/graphStore";
+import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
+import { buildGraphSurfaceData } from "../../utils/graphSurfaceData";
 
 interface GraphNodeInspectorProps {
   nodeId: string;
@@ -11,10 +12,11 @@ interface GraphNodeInspectorProps {
 function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
   const { t } = useTranslation();
   const setFocusId = useGraphStore((state) => state.setFocusId);
+  const graphData = useWorldBuildingStore((state) => state.graphData);
 
   const activeNode = useMemo(() => {
-    return MOCK_GRAPH_NODES.find((node) => node.id === nodeId) ?? null;
-  }, [nodeId]);
+    return buildGraphSurfaceData(graphData).sourceNodes.find((node) => node.id === nodeId) ?? null;
+  }, [graphData, nodeId]);
 
   if (!activeNode) {
     return (

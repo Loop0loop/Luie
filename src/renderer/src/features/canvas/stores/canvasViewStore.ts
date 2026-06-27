@@ -125,7 +125,7 @@ export const useCanvasViewStore = create<CanvasViewState>()(
         }),
       setFocuses: (focuses) =>
         set({
-          focuses: focuses.filter((id) => typeof id === "string"),
+          focuses: Array.from(new Set(focuses.filter((id) => typeof id === "string"))),
         }),
       setViewport: (next) =>
         set((state) => ({
