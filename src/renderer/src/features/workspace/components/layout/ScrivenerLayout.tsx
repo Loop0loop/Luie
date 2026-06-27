@@ -46,6 +46,10 @@ import {
 import {
   groupLayoutMatchesPanels,
 } from "@renderer/features/workspace/utils/panelGroupLayout";
+import {
+  getScrivenerLayoutPersistTarget,
+  type ScrivenerLayoutResizeSurface,
+} from "@renderer/features/workspace/utils/scrivenerLayoutResize";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
 
@@ -105,6 +109,7 @@ export default function ScrivenerLayout({
   const scrivenerLayoutGroupRef = useRef<HTMLDivElement | null>(null);
   const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
   const inspectorPanelRef = useRef<PanelImperativeHandle | null>(null);
+  const activeResizeSurfaceRef = useRef<ScrivenerLayoutResizeSurface | null>(null);
   const previousPanelCountRef = useRef(panels.length);
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
   const maxWidth = useEditorStore((state) => state.maxWidth);
@@ -129,10 +134,37 @@ export default function ScrivenerLayout({
   const binderConfig = getLayoutSurfaceConfig("scrivener.binder");
   const inspectorConfig = getLayoutSurfaceConfig("scrivener.inspector");
 
-  const onLayoutChanged = useLayoutPersist([
+  const onBinderLayoutChanged = useLayoutPersist([
+    { id: "sidebar", index: 0, surface: "scrivener.binder" },
+  ]);
+  const onInspectorLayoutChanged = useLayoutPersist([
+    { id: "inspector", index: 2, surface: "scrivener.inspector" },
+  ]);
+  const onAllLayoutChanged = useLayoutPersist([
     { id: "sidebar", index: 0, surface: "scrivener.binder" },
     { id: "inspector", index: 2, surface: "scrivener.inspector" },
   ]);
+  const markResizeSurface = useCallback((surface: ScrivenerLayoutResizeSurface) => {
+    activeResizeSurfaceRef.current = surface;
+  }, []);
+  const onLayoutChanged = useCallback(
+    (layout: Layout) => {
+      const target = getScrivenerLayoutPersistTarget(
+        activeResizeSurfaceRef.current,
+      );
+      activeResizeSurfaceRef.current = null;
+      if (target === "binder") {
+        onBinderLayoutChanged(layout);
+        return;
+      }
+      if (target === "inspector") {
+        onInspectorLayoutChanged(layout);
+        return;
+      }
+      onAllLayoutChanged(layout);
+    },
+    [onAllLayoutChanged, onBinderLayoutChanged, onInspectorLayoutChanged],
+  );
 
   const binderRatio =
     layoutSurfaceRatios["scrivener.binder"] ||
@@ -275,10 +307,15 @@ export default function ScrivenerLayout({
                 {sidebar}
               </Panel>
 
-              <PanelResizeHandle data-separator-feature="scrivener.binder" className={`w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative ${enableAnimations && isSidebarClosing
+              <PanelResizeHandle
+                data-separator-feature="scrivener.binder"
+                onKeyDown={() => markResizeSurface("scrivener.binder")}
+                onPointerDown={() => markResizeSurface("scrivener.binder")}
+                className={`w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative ${enableAnimations && isSidebarClosing
                 ? "opacity-0 transition-opacity duration-200"
                 : ""
-                }`}>
+                }`}
+              >
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
             </>
@@ -380,10 +417,15 @@ export default function ScrivenerLayout({
           {/* Pane 3: Inspector (Right) */}
           {shouldRenderInspector && (
             <>
-              <PanelResizeHandle data-separator-feature="scrivener.inspector" className={`w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative ${enableAnimations && isInspectorClosing
+              <PanelResizeHandle
+                data-separator-feature="scrivener.inspector"
+                onKeyDown={() => markResizeSurface("scrivener.inspector")}
+                onPointerDown={() => markResizeSurface("scrivener.inspector")}
+                className={`w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative ${enableAnimations && isInspectorClosing
                 ? "opacity-0 transition-opacity duration-200"
                 : ""
-                }`}>
+                }`}
+              >
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
 
