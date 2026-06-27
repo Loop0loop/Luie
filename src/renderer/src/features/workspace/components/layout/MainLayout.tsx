@@ -35,6 +35,7 @@ import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWi
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
 import {
   shouldCloseMainLayoutPanelOnResize,
+  shouldLockMainLayoutContextResize,
   shouldPersistMainLayoutContext,
   type MainLayoutResizeSurface,
 } from "@renderer/features/workspace/utils/mainLayoutResize";
@@ -103,6 +104,7 @@ export default function MainLayout({
     mainContentGroupWidth,
     mainContextConfig,
   );
+  const [isContextResizeLocked, setIsContextResizeLocked] = useState(false);
 
   const persistSidebarLayoutChanged = useLayoutPersist([
     { id: "sidebar-panel", index: 0, surface: sidebarSurface },
@@ -112,6 +114,7 @@ export default function MainLayout({
   ]);
   const markResizeSurface = useCallback((surface: MainLayoutResizeSurface) => {
     activeResizeSurfaceRef.current = surface;
+    setIsContextResizeLocked(shouldLockMainLayoutContextResize(surface));
   }, []);
   const scheduleResizeSurfaceClear = useCallback(
     (surface: MainLayoutResizeSurface | null) => {
@@ -122,6 +125,7 @@ export default function MainLayout({
       activeResizeClearTimerRef.current = window.setTimeout(() => {
         if (activeResizeSurfaceRef.current === surface) {
           activeResizeSurfaceRef.current = null;
+          setIsContextResizeLocked(false);
         }
         activeResizeClearTimerRef.current = null;
       }, 180);
@@ -142,6 +146,7 @@ export default function MainLayout({
         logger.debug("Skipped context layout persistence during main sidebar resize", {
           activeResizeSurface: activeResizeSurfaceRef.current,
           contextSurface,
+          isContextResizeLocked,
           layout,
         });
         return;
@@ -149,7 +154,12 @@ export default function MainLayout({
       persistContextLayoutChanged(layout);
       scheduleResizeSurfaceClear(activeResizeSurfaceRef.current);
     },
-    [contextSurface, persistContextLayoutChanged, scheduleResizeSurfaceClear],
+    [
+      contextSurface,
+      isContextResizeLocked,
+      persistContextLayoutChanged,
+      scheduleResizeSurfaceClear,
+    ],
   );
   const onContentLayoutChanged = useCallback(
     (layout: Layout) => {
@@ -434,6 +444,7 @@ export default function MainLayout({
                         openingRegion: openingRegionRef.current,
                         activeResizeSurface: activeResizeSurfaceRef.current,
                         contextSurface,
+                        isContextResizeLocked,
                         mainContentGroupWidth,
                       });
                     }
@@ -445,6 +456,7 @@ export default function MainLayout({
                       asPercentage: panelSize.asPercentage,
                       activeResizeSurface: activeResizeSurfaceRef.current,
                       contextSurface,
+                      isContextResizeLocked,
                       mainContentGroupWidth,
                     });
                     suppressLayoutPersistenceFor(500);
@@ -452,6 +464,7 @@ export default function MainLayout({
                   }
                 }}
                 data-panel-animated="true"
+                disabled={isContextResizeLocked}
                 groupResizeBehavior="preserve-pixel-size"
                 defaultSize={isContextOpen ? contextDefaultSize : 0}
                 minSize={mainContextSize.minSize}

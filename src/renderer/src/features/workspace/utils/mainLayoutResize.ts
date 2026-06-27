@@ -14,6 +14,10 @@ export const shouldPersistMainLayoutContext = (
 ): boolean =>
   surface !== "default.sidebar" && surface !== "canvas.activity";
 
+export const shouldLockMainLayoutContextResize = (
+  surface: MainLayoutResizeSurface | null,
+): boolean => !shouldPersistMainLayoutContext(surface);
+
 export const shouldCloseMainLayoutPanelOnResize = (
   panelSize: MainLayoutPanelSize,
   isOpening: boolean,
