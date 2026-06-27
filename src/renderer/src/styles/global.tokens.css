@@ -229,8 +229,8 @@
 /* === DARK THEME (Linear/Vercel Inspired) === */
 [data-theme="dark"] {
   /* Backgrounds */
-  --bg-app: #09090b; /* Deepest Zinc (Main Canvas) */
-  --bg-sidebar: #121214; /* Subtle lift above canvas so binder/sidebar reads as structure */
+  --bg-app: #0d0d0f; /* Writing surface — lifted off pure black to soften the recessed well */
+  --bg-sidebar: #161619; /* Chrome frame: one calm step above the writing surface (still below panel #18181b) */
   --bg-panel: #18181b; /* Surface Color (Opaque) */
   --bg-surface: #18181b; /* Added missing token for Modals/Cards */
   --bg-panel-header: #18181b;
@@ -239,7 +239,7 @@
   --bg-active: rgba(255, 255, 255, 0.12);
 
   /* Text */
-  --text-primary: #ffffff; /* Brighter for clear readability */
+  --text-primary: #f4f4f5; /* Zinc-50 — soft white, avoids harsh pure-white glare on dark */
   --text-secondary: #d4d4d8; /* Zinc-300 */
   --text-tertiary: #a1a1aa; /* Zinc-400 */
   --text-accent: #60a5fa; /* Blue-400 */
@@ -268,7 +268,7 @@
   --grid-line: var(--border-default);
 
   /* Editor */
-  --editor-bg: #09090b;
+  --editor-bg: #0d0d0f;
   --editor-text: #ededed;
   --editor-selection: #1e3a8a;
 }

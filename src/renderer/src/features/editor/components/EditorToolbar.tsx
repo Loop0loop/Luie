@@ -137,7 +137,7 @@ export default function EditorToolbar({
   );
 
   return (
-    <div className="flex w-full select-none items-center justify-center border-b border-border bg-sidebar px-2 py-1.5">
+    <div className="flex w-full select-none items-center justify-center bg-sidebar px-2 py-1.5">
       <div className="flex items-center gap-0.5">
         <div
           className={cn(
