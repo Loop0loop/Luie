@@ -20,4 +20,14 @@ describe("MainLayout panel topology", () => {
     expect(source).toContain('id="context-panel"');
     expect(source).not.toContain('id="main-layout-body-group"');
   });
+
+  it("does not update region state from panel onResize handlers", () => {
+    const source = readMainLayoutSource();
+    const onResizeHandlers = Array.from(
+      source.matchAll(/onResize=\{\(panelSize\) => \{[\s\S]*?\n\s*\}\}/g),
+      ([match]) => match,
+    ).join("\n");
+
+    expect(onResizeHandlers).not.toContain("setRegionOpen(");
+  });
 });

@@ -126,29 +126,6 @@ export default function MainLayout({
     },
     [],
   );
-  const onMainLayoutChanged = useCallback(
-    (layout: Layout) => {
-      const activeSurface = activeResizeSurfaceRef.current;
-      persistSidebarLayoutChanged(layout);
-      if (!shouldPersistMainLayoutContext(activeSurface)) {
-        logger.debug("Skipped context layout persistence during main sidebar resize", {
-          activeResizeSurface: activeSurface,
-          contextSurface,
-          layout,
-        });
-        scheduleResizeSurfaceClear(activeSurface);
-        return;
-      }
-      persistContextLayoutChanged(layout);
-      scheduleResizeSurfaceClear(activeSurface);
-    },
-    [
-      contextSurface,
-      persistContextLayoutChanged,
-      persistSidebarLayoutChanged,
-      scheduleResizeSurfaceClear,
-    ],
-  );
   const onContentLayoutChanged = useCallback(
     (layout: Layout) => {
       additionalPanelIds.forEach((panelId, panelIndex) => {
@@ -235,6 +212,95 @@ export default function MainLayout({
     panelRef: contextPanelRef,
   });
 
+  const closeCollapsedRegionAfterMainLayoutChanged = useCallback(
+    (layout: Layout, activeSurface: MainLayoutResizeSurface | null) => {
+      if (
+        activeSurface === sidebarSurface &&
+        isSidebarOpen &&
+        !isSidebarOpening &&
+        !isSidebarClosing
+      ) {
+        const rawSize = getPanelLayoutValue(layout, "sidebar-panel", 0);
+        if (
+          typeof rawSize === "number" &&
+          shouldCloseMainLayoutPanelOnResize(
+            { asPercentage: rawSize, inPixels: Number.POSITIVE_INFINITY },
+            false,
+            false,
+          )
+        ) {
+          logger.debug("Closed left sidebar after collapsed layout commit", {
+            asPercentage: rawSize,
+            sidebarSurface,
+          });
+          suppressLayoutPersistenceFor(500);
+          setRegionOpen("leftSidebar", false);
+        }
+      }
+
+      if (
+        activeSurface === contextSurface &&
+        isContextOpen &&
+        !isContextOpening &&
+        !isContextClosing
+      ) {
+        const rawSize = getPanelLayoutValue(layout, "context-panel", 2);
+        if (
+          typeof rawSize === "number" &&
+          shouldCloseMainLayoutPanelOnResize(
+            { asPercentage: rawSize, inPixels: Number.POSITIVE_INFINITY },
+            false,
+            false,
+          )
+        ) {
+          logger.debug("Closed context panel after collapsed layout commit", {
+            asPercentage: rawSize,
+            activeResizeSurface: activeSurface,
+            contextSurface,
+          });
+          suppressLayoutPersistenceFor(500);
+          setRegionOpen("rightPanel", false);
+        }
+      }
+    },
+    [
+      contextSurface,
+      isContextClosing,
+      isContextOpen,
+      isContextOpening,
+      isSidebarClosing,
+      isSidebarOpen,
+      isSidebarOpening,
+      setRegionOpen,
+      sidebarSurface,
+    ],
+  );
+  const onMainLayoutChanged = useCallback(
+    (layout: Layout) => {
+      const activeSurface = activeResizeSurfaceRef.current;
+      persistSidebarLayoutChanged(layout);
+      closeCollapsedRegionAfterMainLayoutChanged(layout, activeSurface);
+      if (!shouldPersistMainLayoutContext(activeSurface)) {
+        logger.debug("Skipped context layout persistence during main sidebar resize", {
+          activeResizeSurface: activeSurface,
+          contextSurface,
+          layout,
+        });
+        scheduleResizeSurfaceClear(activeSurface);
+        return;
+      }
+      persistContextLayoutChanged(layout);
+      scheduleResizeSurfaceClear(activeSurface);
+    },
+    [
+      closeCollapsedRegionAfterMainLayoutChanged,
+      contextSurface,
+      persistContextLayoutChanged,
+      persistSidebarLayoutChanged,
+      scheduleResizeSurfaceClear,
+    ],
+  );
+
   useEffect(() => {
     if (shouldRenderSidebar) return;
     const safeRatio =
@@ -268,37 +334,6 @@ export default function MainLayout({
             panelRef={sidebarPanelRef}
             collapsible
             collapsedSize={0}
-            onResize={(panelSize) => {
-              const isOpening =
-                isSidebarOpening || openingRegionRef.current === "leftSidebar";
-              const shouldClose = shouldCloseMainLayoutPanelOnResize(
-                panelSize,
-                isOpening,
-                isSidebarClosing,
-              );
-              if (!shouldClose) {
-                if (isOpening || isSidebarClosing) {
-                  logger.debug("Ignored left sidebar resize during transition", {
-                    inPixels: panelSize.inPixels,
-                    asPercentage: panelSize.asPercentage,
-                    isSidebarOpening,
-                    isSidebarClosing,
-                    openingRegion: openingRegionRef.current,
-                    sidebarSurface,
-                  });
-                }
-                return;
-              }
-              if (isSidebarOpen) {
-                logger.debug("Closed left sidebar from collapsed resize", {
-                  inPixels: panelSize.inPixels,
-                  asPercentage: panelSize.asPercentage,
-                  sidebarSurface,
-                });
-                suppressLayoutPersistenceFor(500);
-                setRegionOpen("leftSidebar", false);
-              }
-            }}
             data-panel-animated="true"
             defaultSize={isSidebarOpen ? sidebarDefaultSize : 0}
             minSize={mainSidebarSize.minSize}
@@ -402,41 +437,6 @@ export default function MainLayout({
             panelRef={contextPanelRef}
             collapsible
             collapsedSize={0}
-            onResize={(panelSize) => {
-              const isOpening =
-                isContextOpening || openingRegionRef.current === "rightPanel";
-              const shouldClose = shouldCloseMainLayoutPanelOnResize(
-                panelSize,
-                isOpening,
-                isContextClosing,
-              );
-              if (!shouldClose) {
-                if (isOpening || isContextClosing) {
-                  logger.debug("Ignored context panel resize during transition", {
-                    inPixels: panelSize.inPixels,
-                    asPercentage: panelSize.asPercentage,
-                    isContextOpening,
-                    isContextClosing,
-                    openingRegion: openingRegionRef.current,
-                    activeResizeSurface: activeResizeSurfaceRef.current,
-                    contextSurface,
-                    mainLayoutGroupWidth,
-                  });
-                }
-                return;
-              }
-              if (isContextOpen) {
-                logger.debug("Closed context panel from collapsed resize", {
-                  inPixels: panelSize.inPixels,
-                  asPercentage: panelSize.asPercentage,
-                  activeResizeSurface: activeResizeSurfaceRef.current,
-                  contextSurface,
-                  mainLayoutGroupWidth,
-                });
-                suppressLayoutPersistenceFor(500);
-                setRegionOpen("rightPanel", false);
-              }
-            }}
             data-panel-animated="true"
             groupResizeBehavior="preserve-pixel-size"
             defaultSize={isContextOpen ? contextDefaultSize : 0}
