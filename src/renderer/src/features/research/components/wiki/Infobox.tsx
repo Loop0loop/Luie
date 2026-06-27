@@ -27,8 +27,8 @@ export function InfoboxRow({
 }: InfoboxRowProps) {
   const { t } = useTranslation();
   return (
-    <div className="flex border-b border-(--namu-border) last:border-b-0 min-h-[40px] group/row hover:bg-(--namu-hover-bg) transition-colors">
-      <div className="w-[100px] bg-(--namu-table-bg) px-2 py-2 font-semibold text-(--namu-table-label) border-r border-(--namu-border) flex items-center justify-center text-center leading-tight shrink-0 relative text-[12px]">
+    <div className="flex border-b border-border last:border-b-0 min-h-[40px] group/row hover:bg-surface-hover transition-colors">
+      <div className="w-[100px] bg-surface-hover px-2 py-2 font-semibold text-muted border-r border-border flex items-center justify-center text-center leading-tight shrink-0 relative text-[12px]">
         {isCustom ? (
           <div className="flex items-center relative w-full justify-center">
             <BufferedInput
@@ -91,12 +91,12 @@ export function Infobox({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="w-full border border-(--namu-border) bg-surface rounded-panel overflow-hidden shrink-0 shadow-sm text-[13px]">
+    <div className="w-full border border-border bg-surface rounded-panel overflow-hidden shrink-0 shadow-sm text-[13px]">
       <div className="bg-accent text-white text-center px-3 py-2.5 font-bold text-[14px]">
         {title}
       </div>
       {image && (
-        <div className="w-full bg-(--namu-table-bg) flex items-center justify-center border-b border-(--namu-border) py-6">
+        <div className="w-full bg-surface-hover flex items-center justify-center border-b border-border py-6">
           {image}
         </div>
       )}
@@ -107,7 +107,7 @@ export function Infobox({
       </div>
       <button
         type="button"
-        className="w-full px-3 py-2.5 bg-surface border-none border-t border-(--namu-border) text-muted text-[12px] cursor-pointer flex items-center justify-center gap-1.5 hover:bg-(--namu-hover-bg) hover:text-fg transition-colors"
+        className="w-full px-3 py-2.5 bg-surface border-none border-t border-border text-muted text-[12px] cursor-pointer flex items-center justify-center gap-1.5 hover:bg-surface-hover hover:text-fg transition-colors"
         onClick={onAddField}
       >
         <Plus size={11} />
