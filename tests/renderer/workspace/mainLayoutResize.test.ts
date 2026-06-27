@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  shouldCloseMainLayoutPanelOnResize,
   shouldPersistMainLayoutContext,
   type MainLayoutResizeSurface,
 } from "../../../src/renderer/src/features/workspace/utils/mainLayoutResize.js";
@@ -19,5 +20,36 @@ describe("main layout resize routing", () => {
         "scrivener.binder" as MainLayoutResizeSurface,
       ),
     ).toBe(true);
+  });
+
+  it("does not close a panel for collapsed resize events during open or close transitions", () => {
+    const collapsedSize = { asPercentage: 0, inPixels: 0 };
+
+    expect(shouldCloseMainLayoutPanelOnResize(collapsedSize, true, false)).toBe(false);
+    expect(shouldCloseMainLayoutPanelOnResize(collapsedSize, false, true)).toBe(false);
+  });
+
+  it("closes a panel only when a stable resize leaves it collapsed", () => {
+    expect(
+      shouldCloseMainLayoutPanelOnResize(
+        { asPercentage: 0.1, inPixels: 40 },
+        false,
+        false,
+      ),
+    ).toBe(true);
+    expect(
+      shouldCloseMainLayoutPanelOnResize(
+        { asPercentage: 5, inPixels: 0 },
+        false,
+        false,
+      ),
+    ).toBe(true);
+    expect(
+      shouldCloseMainLayoutPanelOnResize(
+        { asPercentage: 5, inPixels: 40 },
+        false,
+        false,
+      ),
+    ).toBe(false);
   });
 });

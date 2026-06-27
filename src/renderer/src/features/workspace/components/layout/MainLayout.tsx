@@ -34,9 +34,13 @@ import {
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
 import {
+  shouldCloseMainLayoutPanelOnResize,
   shouldPersistMainLayoutContext,
   type MainLayoutResizeSurface,
 } from "@renderer/features/workspace/utils/mainLayoutResize";
+import { createLogger } from "@shared/logger";
+
+const logger = createLogger("MainLayout");
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -86,6 +90,9 @@ export default function MainLayout({
   const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
   const contextPanelRef = useRef<PanelImperativeHandle | null>(null);
   const activeResizeSurfaceRef = useRef<MainLayoutResizeSurface | null>(null);
+  const activeResizeClearTimerRef = useRef<number | null>(null);
+  const openingRegionRef = useRef<"leftSidebar" | "rightPanel" | null>(null);
+  const openingRegionTimerRef = useRef<number | null>(null);
   const mainLayoutGroupWidth = useElementWidth(mainLayoutGroupRef);
   const mainContentGroupWidth = useElementWidth(mainContentGroupRef);
   const mainSidebarSize = getResponsivePanelSize(
@@ -106,27 +113,43 @@ export default function MainLayout({
   const markResizeSurface = useCallback((surface: MainLayoutResizeSurface) => {
     activeResizeSurfaceRef.current = surface;
   }, []);
+  const scheduleResizeSurfaceClear = useCallback(
+    (surface: MainLayoutResizeSurface | null) => {
+      if (surface === null) return;
+      if (activeResizeClearTimerRef.current !== null) {
+        window.clearTimeout(activeResizeClearTimerRef.current);
+      }
+      activeResizeClearTimerRef.current = window.setTimeout(() => {
+        if (activeResizeSurfaceRef.current === surface) {
+          activeResizeSurfaceRef.current = null;
+        }
+        activeResizeClearTimerRef.current = null;
+      }, 180);
+    },
+    [],
+  );
   const onSidebarLayoutChanged = useCallback(
     (layout: Layout) => {
       const activeSurface = activeResizeSurfaceRef.current;
       persistSidebarLayoutChanged(layout);
-      window.requestAnimationFrame(() => {
-        if (activeResizeSurfaceRef.current === activeSurface) {
-          activeResizeSurfaceRef.current = null;
-        }
-      });
+      scheduleResizeSurfaceClear(activeSurface);
     },
-    [persistSidebarLayoutChanged],
+    [persistSidebarLayoutChanged, scheduleResizeSurfaceClear],
   );
   const onContextLayoutChanged = useCallback(
     (layout: Layout) => {
       if (!shouldPersistMainLayoutContext(activeResizeSurfaceRef.current)) {
+        logger.debug("Skipped context layout persistence during main sidebar resize", {
+          activeResizeSurface: activeResizeSurfaceRef.current,
+          contextSurface,
+          layout,
+        });
         return;
       }
       persistContextLayoutChanged(layout);
-      activeResizeSurfaceRef.current = null;
+      scheduleResizeSurfaceClear(activeResizeSurfaceRef.current);
     },
-    [persistContextLayoutChanged],
+    [contextSurface, persistContextLayoutChanged, scheduleResizeSurfaceClear],
   );
   const onContentLayoutChanged = useCallback(
     (layout: Layout) => {
@@ -164,6 +187,45 @@ export default function MainLayout({
     openSize: sidebarDefaultSize,
     panelRef: sidebarPanelRef,
   });
+
+  const markOpeningRegion = useCallback((region: "leftSidebar" | "rightPanel") => {
+    openingRegionRef.current = region;
+    if (openingRegionTimerRef.current !== null) {
+      window.clearTimeout(openingRegionTimerRef.current);
+    }
+    openingRegionTimerRef.current = window.setTimeout(() => {
+      if (openingRegionRef.current === region) {
+        openingRegionRef.current = null;
+      }
+      openingRegionTimerRef.current = null;
+    }, 360);
+  }, []);
+
+  const toggleSidebar = useCallback(() => {
+    if (!isSidebarOpen) {
+      markOpeningRegion("leftSidebar");
+    }
+    toggleLeftSidebar();
+  }, [isSidebarOpen, markOpeningRegion, toggleLeftSidebar]);
+
+  const toggleContextPanel = useCallback(() => {
+    if (!isContextOpen) {
+      markOpeningRegion("rightPanel");
+    }
+    setRegionOpen("rightPanel", !isContextOpen);
+  }, [isContextOpen, markOpeningRegion, setRegionOpen]);
+
+  useEffect(
+    () => () => {
+      if (activeResizeClearTimerRef.current !== null) {
+        window.clearTimeout(activeResizeClearTimerRef.current);
+      }
+      if (openingRegionTimerRef.current !== null) {
+        window.clearTimeout(openingRegionTimerRef.current);
+      }
+    },
+    [],
+  );
   const {
     isClosing: isContextClosing,
     isOpening: isContextOpening,
@@ -209,10 +271,32 @@ export default function MainLayout({
             collapsible
             collapsedSize={0}
             onResize={(panelSize) => {
-              if (isSidebarOpening || isSidebarClosing) return;
-              const isCollapsed =
-                panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
-              if (isCollapsed && isSidebarOpen) {
+              const isOpening =
+                isSidebarOpening || openingRegionRef.current === "leftSidebar";
+              const shouldClose = shouldCloseMainLayoutPanelOnResize(
+                panelSize,
+                isOpening,
+                isSidebarClosing,
+              );
+              if (!shouldClose) {
+                if (isOpening || isSidebarClosing) {
+                  logger.debug("Ignored left sidebar resize during transition", {
+                    inPixels: panelSize.inPixels,
+                    asPercentage: panelSize.asPercentage,
+                    isSidebarOpening,
+                    isSidebarClosing,
+                    openingRegion: openingRegionRef.current,
+                    sidebarSurface,
+                  });
+                }
+                return;
+              }
+              if (isSidebarOpen) {
+                logger.debug("Closed left sidebar from collapsed resize", {
+                  inPixels: panelSize.inPixels,
+                  asPercentage: panelSize.asPercentage,
+                  sidebarSurface,
+                });
                 suppressLayoutPersistenceFor(500);
                 setRegionOpen("leftSidebar", false);
               }
@@ -251,7 +335,7 @@ export default function MainLayout({
             {/* 패널 접기/펴기 토글 — 에디터 코너에 떠 있는 버튼. 일반 모드는 고스트,
                 캔버스 모드는 캔버스 위에 떠야 하므로 backdrop 칩 스타일. */}
             <button
-              onClick={toggleLeftSidebar}
+              onClick={toggleSidebar}
               className={
                 isCanvasMode
                   ? "absolute left-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-panel border border-border/80 bg-app/90 text-muted shadow-md backdrop-blur-sm transition-all hover:bg-accent hover:text-fg active:scale-95 cursor-pointer"
@@ -263,7 +347,7 @@ export default function MainLayout({
               {isSidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
             </button>
             <button
-              onClick={() => setRegionOpen("rightPanel", !isContextOpen)}
+              onClick={toggleContextPanel}
               className={
                 isCanvasMode
                   ? "absolute right-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-panel border border-border/80 bg-app/90 text-muted shadow-md backdrop-blur-sm transition-all hover:bg-accent hover:text-fg active:scale-95 cursor-pointer"
@@ -333,10 +417,36 @@ export default function MainLayout({
                 collapsible
                 collapsedSize={0}
                 onResize={(panelSize) => {
-                  if (isContextOpening || isContextClosing) return;
-                  const isCollapsed =
-                    panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
-                  if (isCollapsed && isContextOpen) {
+                  const isOpening =
+                    isContextOpening || openingRegionRef.current === "rightPanel";
+                  const shouldClose = shouldCloseMainLayoutPanelOnResize(
+                    panelSize,
+                    isOpening,
+                    isContextClosing,
+                  );
+                  if (!shouldClose) {
+                    if (isOpening || isContextClosing) {
+                      logger.debug("Ignored context panel resize during transition", {
+                        inPixels: panelSize.inPixels,
+                        asPercentage: panelSize.asPercentage,
+                        isContextOpening,
+                        isContextClosing,
+                        openingRegion: openingRegionRef.current,
+                        activeResizeSurface: activeResizeSurfaceRef.current,
+                        contextSurface,
+                        mainContentGroupWidth,
+                      });
+                    }
+                    return;
+                  }
+                  if (isContextOpen) {
+                    logger.debug("Closed context panel from collapsed resize", {
+                      inPixels: panelSize.inPixels,
+                      asPercentage: panelSize.asPercentage,
+                      activeResizeSurface: activeResizeSurfaceRef.current,
+                      contextSurface,
+                      mainContentGroupWidth,
+                    });
                     suppressLayoutPersistenceFor(500);
                     setRegionOpen("rightPanel", false);
                   }
