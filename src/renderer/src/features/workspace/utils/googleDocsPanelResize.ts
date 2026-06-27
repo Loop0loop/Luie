@@ -3,7 +3,7 @@ type PanelSizeLike = {
   inPixels: number;
 };
 
-export const shouldCloseDocsRightPanelOnResize = (
+export const shouldCloseDocsPanelOnResize = (
   panelSize: PanelSizeLike,
   isOpening: boolean,
   isClosing: boolean,
@@ -11,3 +11,5 @@ export const shouldCloseDocsRightPanelOnResize = (
   if (isOpening || isClosing) return false;
   return panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
 };
+
+export const shouldCloseDocsRightPanelOnResize = shouldCloseDocsPanelOnResize;

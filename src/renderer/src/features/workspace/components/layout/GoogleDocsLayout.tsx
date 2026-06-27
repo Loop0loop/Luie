@@ -21,6 +21,7 @@ import { useEditorStore } from "@renderer/domains/editor";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
 import { suppressLayoutPersistenceFor } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import { SidebarHoverStrip } from "@renderer/features/workspace/components/SidebarHoverStrip";
+import { shouldCloseDocsPanelOnResize } from "../../utils/googleDocsPanelResize";
 
 export default function GoogleDocsLayout({
   children,
@@ -75,6 +76,7 @@ export default function GoogleDocsLayout({
     : null;
   const {
     isClosing: isSidebarClosing,
+    isOpening: isSidebarOpening,
     shouldRender: shouldRenderSidebar,
   } = useResizablePanelPresence({
     enableAnimations,
@@ -83,9 +85,13 @@ export default function GoogleDocsLayout({
     panelRef: docsSidebarPanelRef,
   });
   const handleSidebarResize = (panelSize: PanelSize) => {
-    const isCollapsed =
-      panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
-    if (isCollapsed) {
+    if (
+      shouldCloseDocsPanelOnResize(
+        panelSize,
+        isSidebarOpening,
+        isSidebarClosing,
+      )
+    ) {
       suppressLayoutPersistenceFor(500);
       setDocsSidebarOpen(false);
     }

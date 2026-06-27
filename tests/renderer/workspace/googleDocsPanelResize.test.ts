@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { shouldCloseDocsRightPanelOnResize } from "../../../src/renderer/src/features/workspace/utils/googleDocsPanelResize.js";
+import {
+  shouldCloseDocsPanelOnResize,
+  shouldCloseDocsRightPanelOnResize,
+} from "../../../src/renderer/src/features/workspace/utils/googleDocsPanelResize.js";
 
 describe("google docs right panel resize", () => {
   it("does not close while the panel is opening or closing", () => {
@@ -27,6 +30,12 @@ describe("google docs right panel resize", () => {
         false,
         false,
       ),
+    ).toBe(false);
+  });
+
+  it("uses the same transition guard for docs sidebar panels", () => {
+    expect(
+      shouldCloseDocsPanelOnResize({ asPercentage: 0, inPixels: 0 }, true, false),
     ).toBe(false);
   });
 });
