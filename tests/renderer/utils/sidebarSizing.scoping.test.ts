@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getSynchronizedSidebarWidthFeatures,
+  getPersistableSidebarWidths,
   getSidebarDefaultWidth,
   normalizeSidebarWidthsWithMigrations,
 } from "../../../src/renderer/src/shared/constants/sidebarSizing.js";
@@ -47,5 +48,33 @@ describe("sidebarSizing scoped width migration", () => {
     expect(getSynchronizedSidebarWidthFeatures("docsCharacter")).toEqual([]);
     expect(getSynchronizedSidebarWidthFeatures("editorCharacter")).toEqual([]);
     expect(getSynchronizedSidebarWidthFeatures("character")).toEqual([]);
+  });
+
+  it("omits legacy shared keys from persisted sidebar widths", () => {
+    const persistable = getPersistableSidebarWidths({
+      mainSidebar: 300,
+      docsBinder: 310,
+      scrivenerBinder: 320,
+      docsCharacter: 430,
+      editorCharacter: 390,
+      characterSidebar: 280,
+      character: 700,
+      binder: 360,
+      context: 650,
+      inspector: 640,
+    });
+
+    expect(persistable).toMatchObject({
+      mainSidebar: 300,
+      docsBinder: 310,
+      scrivenerBinder: 320,
+      docsCharacter: 430,
+      editorCharacter: 390,
+      characterSidebar: 280,
+    });
+    expect(persistable.character).toBeUndefined();
+    expect(persistable.binder).toBeUndefined();
+    expect(persistable.context).toBeUndefined();
+    expect(persistable.inspector).toBeUndefined();
   });
 });

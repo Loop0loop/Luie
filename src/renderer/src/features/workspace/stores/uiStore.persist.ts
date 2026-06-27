@@ -9,6 +9,7 @@ import {
 } from "@renderer/shared/constants/layoutSizing";
 import {
   buildDefaultSidebarWidths,
+  getPersistableSidebarWidths,
   normalizeSidebarWidthsWithMigrations,
 } from "@renderer/shared/constants/sidebarSizing";
 import {
@@ -150,7 +151,7 @@ export const buildUiStorePersistOptions = (): PersistOptions<
     worldTab: state.worldTab,
     isManuscriptMenuOpen: state.isManuscriptMenuOpen,
     scrivenerSections: state.scrivenerSections,
-    sidebarWidths: normalizeSidebarWidthsWithMigrations(state.sidebarWidths),
+    sidebarWidths: getPersistableSidebarWidths(state.sidebarWidths),
     layoutSurfaceRatios: normalizeLayoutSurfaceRatiosWithMigrations(
       state.layoutSurfaceRatios,
       state.sidebarWidths,

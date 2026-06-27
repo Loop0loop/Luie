@@ -175,6 +175,23 @@ export const buildDefaultSidebarWidths = (): Record<
 
 const SIDEBAR_WIDTH_SYNC_GROUPS: SidebarWidthFeature[][] = [];
 
+const LEGACY_SIDEBAR_WIDTH_FEATURES = new Set<string>([
+  "character",
+  "event",
+  "faction",
+  "world",
+  "scrap",
+  "analysis",
+  "snapshot",
+  "trash",
+  "memo",
+  "editor",
+  "export",
+  "binder",
+  "context",
+  "inspector",
+]);
+
 export const getSynchronizedSidebarWidthFeatures = (
   feature: string,
 ): SidebarWidthFeature[] => {
@@ -307,6 +324,17 @@ export const normalizeSidebarWidthsWithMigrations = (
   applyLegacyRightWidthMigration(input, normalized);
 
   return normalized;
+};
+
+export const getPersistableSidebarWidths = (
+  input: unknown,
+): Record<string, number> => {
+  const normalized = normalizeSidebarWidthsWithMigrations(input);
+  return Object.fromEntries(
+    Object.entries(normalized).filter(
+      ([feature]) => !LEGACY_SIDEBAR_WIDTH_FEATURES.has(feature),
+    ),
+  );
 };
 
 export const toPxSize = (value: number): string =>

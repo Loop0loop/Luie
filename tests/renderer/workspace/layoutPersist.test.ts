@@ -18,6 +18,11 @@ vi.mock("@shared/logger", () => ({
 vi.mock("@renderer/shared/constants/layoutSizing", () => ({
   normalizeLayoutSurfaceRatioInput: (_surface: string, value: unknown) =>
     typeof value === "number" ? value : null,
+  normalizeLayoutSurfaceRatiosWithMigrations: (value: unknown) => value,
+}));
+
+vi.mock("@renderer/shared/constants/sidebarSizing", () => ({
+  normalizeSidebarWidthsWithMigrations: (value: unknown) => value,
 }));
 
 import {
@@ -25,6 +30,9 @@ import {
   getPanelRatioFromLayout,
   isPersistableLayoutRatio,
 } from "../../../src/renderer/src/features/workspace/hooks/useLayoutPersist.js";
+import {
+  getProjectLayoutPersistenceMode,
+} from "../../../src/renderer/src/features/workspace/hooks/useProjectLayoutPersistence.js";
 
 describe("useLayoutPersist layout parsing", () => {
   it("reads numeric ratios from keyed layouts", () => {
@@ -94,5 +102,11 @@ describe("useLayoutPersist layout parsing", () => {
     expect(isPersistableLayoutRatio(0)).toBe(false);
     expect(isPersistableLayoutRatio(0.1)).toBe(false);
     expect(isPersistableLayoutRatio(0.2)).toBe(true);
+  });
+
+  it("uses an isolated persistence mode while canvas is the main view", () => {
+    expect(getProjectLayoutPersistenceMode("default", "editor")).toBe("default");
+    expect(getProjectLayoutPersistenceMode("default", "canvas")).toBe("canvas");
+    expect(getProjectLayoutPersistenceMode("docs", "canvas")).toBe("canvas");
   });
 });

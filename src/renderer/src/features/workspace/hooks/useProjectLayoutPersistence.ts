@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { EditorUiMode } from "@shared/types";
+import type { MainView } from "@renderer/features/workspace/stores/uiStore";
 import {
   normalizeLayoutSurfaceRatiosWithMigrations,
   type LayoutSurfaceId,
@@ -15,6 +16,14 @@ import {
 } from "@renderer/features/workspace/stores/projectLayoutStore";
 
 let layoutRestoringDepth = 0;
+
+type ProjectLayoutPersistenceMode = EditorUiMode | "canvas";
+
+export const getProjectLayoutPersistenceMode = (
+  uiMode: EditorUiMode,
+  mainViewType: MainView["type"],
+): ProjectLayoutPersistenceMode =>
+  mainViewType === "canvas" ? "canvas" : uiMode;
 
 export const beginLayoutRestoring = (): (() => void) => {
   if (typeof document === "undefined") return () => {};
@@ -34,7 +43,7 @@ export const beginLayoutRestoring = (): (() => void) => {
 
 export function useProjectLayoutPersistence(
   projectId: string | null | undefined,
-  uiMode: EditorUiMode,
+  uiMode: ProjectLayoutPersistenceMode,
 ): void {
   const hasHydrated = useUIStore((state) => state.hasHydrated);
   const isSidebarOpen = useUIStore((state) => state.regions.leftSidebar.open);
