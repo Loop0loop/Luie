@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   shouldCloseMainLayoutPanelOnResize,
-  shouldLockMainLayoutContextResize,
   shouldPersistMainLayoutContext,
   type MainLayoutResizeSurface,
 } from "../../../src/renderer/src/features/workspace/utils/mainLayoutResize.js";
@@ -10,13 +9,6 @@ describe("main layout resize routing", () => {
   it("does not persist context layout while the left sidebar is being resized", () => {
     expect(shouldPersistMainLayoutContext("default.sidebar")).toBe(false);
     expect(shouldPersistMainLayoutContext("canvas.activity")).toBe(false);
-  });
-
-  it("locks context panel resizing while the main sidebar is being resized", () => {
-    expect(shouldLockMainLayoutContextResize("default.sidebar")).toBe(true);
-    expect(shouldLockMainLayoutContextResize("canvas.activity")).toBe(true);
-    expect(shouldLockMainLayoutContextResize("default.panel")).toBe(false);
-    expect(shouldLockMainLayoutContextResize(null)).toBe(false);
   });
 
   it("persists context layout for context drags and non-user layout changes", () => {
