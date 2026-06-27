@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpen, Sparkles, Trash2, User, X } from "lucide-react";
+import { BookOpen, FileText, Trash2, User, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
@@ -10,8 +10,9 @@ import { useDialog } from "@shared/ui/useDialog";
 import { cn } from "@shared/types/utils";
 import { Infobox } from "./Infobox";
 import { WikiContentPanel } from "./WikiContentPanel";
-import { CharacterVisualPanel } from "./CharacterVisualPanel";
+import { CharacterDocumentView } from "./CharacterDocumentView";
 import { useCharacterWikiAttrs } from "./hooks/useCharacterWikiAttrs";
+import { useEffectiveCharacterSections } from "./hooks/useEffectiveCharacterSections";
 import { type CharacterViewMode, CHARACTER_VIEW_MODE_KEY } from "./types";
 
 const getViewModeStorageKey = (id?: string) =>
@@ -19,7 +20,7 @@ const getViewModeStorageKey = (id?: string) =>
 
 const readViewMode = (id?: string): CharacterViewMode => {
   const stored = localStorage.getItem(getViewModeStorageKey(id));
-  return stored === "visual" || stored === "wiki" ? stored : "wiki";
+  return stored === "document" ? "document" : "wiki";
 };
 
 // ── AddTagInline ──────────────────────────────────────────────────────────
@@ -101,6 +102,8 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
 
   // ── Attribute hook ──────────────────────────────────────────────────────
   const attrs = useCharacterWikiAttrs();
+
+  const effectiveSections = useEffectiveCharacterSections(attrs.sections);
 
   // ── View mode (persisted per character) ────────────────────────────────
   const currentViewModeStorageKey = getViewModeStorageKey(character?.id ?? characterId);
@@ -238,17 +241,17 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
             </button>
             <button
               type="button"
-              onClick={() => switchViewMode("visual")}
-              title="시각화 뷰"
+              onClick={() => switchViewMode("document")}
+              title="문서 뷰"
               className={cn(
                 "flex items-center gap-1.5 px-2.5 py-1.5 rounded-control text-[12px] font-medium transition-colors",
-                viewMode === "visual"
+                viewMode === "document"
                   ? "bg-surface text-fg shadow-sm"
                   : "text-muted hover:text-fg",
               )}
             >
-              <Sparkles size={12} />
-              시각화
+              <FileText size={12} />
+              문서
             </button>
           </div>
 
@@ -334,7 +337,15 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
           <div className="@container">
             <div className="flex flex-col @min-[700px]:flex-row gap-8 items-start">
               <div className="flex-1 min-w-0 w-full @min-[700px]:order-1 order-2">
-                <WikiContentPanel attrs={attrs} />
+                <WikiContentPanel
+                  attrs={{
+                    sections: effectiveSections,
+                    getSectionContent: attrs.getSectionContent,
+                    setSectionContent: attrs.setSectionContent,
+                    setSections: attrs.setSections,
+                  }}
+                  i18nPrefix="character"
+                />
               </div>
               <div className="w-full @min-[700px]:w-[280px] shrink-0 @min-[700px]:order-2 order-1">
                 <Infobox
@@ -348,8 +359,21 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
           </div>
         </>
       ) : (
-        /* Visual: full-width visualization panel */
-        <CharacterVisualPanel characterId={character.id} characterName={character.name} attrs={attrs} />
+        /* Document: Notion-style view synced with the wiki data */
+        <CharacterDocumentView
+          classification={t(currentTemplate.nameKey)}
+          description={character.description || ""}
+          onDescriptionSave={(val) =>
+            updateCharacter({ id: character.id, description: val })
+          }
+          properties={infoboxRows.map((row) => ({
+            label: row.label,
+            value: row.value,
+            placeholder: row.placeholder,
+            onSave: row.onSave,
+          }))}
+          attrs={attrs}
+        />
       )}
     </div>
   );
