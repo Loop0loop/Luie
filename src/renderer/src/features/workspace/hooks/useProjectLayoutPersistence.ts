@@ -18,12 +18,23 @@ import {
 let layoutRestoringDepth = 0;
 
 type ProjectLayoutPersistenceMode = EditorUiMode | "canvas";
+type ProjectLayoutSizingPatch = Pick<
+  ProjectLayoutState,
+  "sidebarWidths" | "layoutSurfaceRatios" | "workspace"
+>;
 
 export const getProjectLayoutPersistenceMode = (
   uiMode: EditorUiMode,
   mainViewType: MainView["type"],
 ): ProjectLayoutPersistenceMode =>
   mainViewType === "canvas" ? "canvas" : uiMode;
+
+export const appendProjectLayoutSizingPatch = <T extends object>(
+  patch: T,
+  sizingPatch: ProjectLayoutSizingPatch,
+  hasLayoutSizingChanged: boolean,
+): T | (T & ProjectLayoutSizingPatch) =>
+  hasLayoutSizingChanged ? { ...patch, ...sizingPatch } : patch;
 
 export const beginLayoutRestoring = (): (() => void) => {
   if (typeof document === "undefined") return () => {};
@@ -316,13 +327,19 @@ export function useProjectLayoutPersistence(
       ) {
         return;
       }
-      upsertProjectLayout(projectId, {
-        main: {
-          sidebarOpen: isSidebarOpen,
-          contextOpen: isContextOpen,
-        },
-        ...layoutPatch,
-      });
+      upsertProjectLayout(
+        projectId,
+        appendProjectLayoutSizingPatch(
+          {
+            main: {
+              sidebarOpen: isSidebarOpen,
+              contextOpen: isContextOpen,
+            },
+          },
+          layoutPatch,
+          hasLayoutSizingChanged,
+        ),
+      );
       return;
     }
 
@@ -336,14 +353,20 @@ export function useProjectLayoutPersistence(
       ) {
         return;
       }
-      upsertProjectLayout(projectId, {
-        docs: {
-          sidebarOpen: isSidebarOpen,
-          binderBarOpen: isBinderBarOpen,
-          rightTab: sanitizedTab,
-        },
-        ...layoutPatch,
-      });
+      upsertProjectLayout(
+        projectId,
+        appendProjectLayoutSizingPatch(
+          {
+            docs: {
+              sidebarOpen: isSidebarOpen,
+              binderBarOpen: isBinderBarOpen,
+              rightTab: sanitizedTab,
+            },
+          },
+          layoutPatch,
+          hasLayoutSizingChanged,
+        ),
+      );
       return;
     }
 
@@ -357,14 +380,20 @@ export function useProjectLayoutPersistence(
       ) {
         return;
       }
-      upsertProjectLayout(projectId, {
-        editor: {
-          sidebarOpen: isSidebarOpen,
-          binderRailOpen: isBinderBarOpen,
-          rightTab: sanitizedTab,
-        },
-        ...layoutPatch,
-      });
+      upsertProjectLayout(
+        projectId,
+        appendProjectLayoutSizingPatch(
+          {
+            editor: {
+              sidebarOpen: isSidebarOpen,
+              binderRailOpen: isBinderBarOpen,
+              rightTab: sanitizedTab,
+            },
+          },
+          layoutPatch,
+          hasLayoutSizingChanged,
+        ),
+      );
       return;
     }
 
@@ -377,14 +406,20 @@ export function useProjectLayoutPersistence(
       ) {
         return;
       }
-      upsertProjectLayout(projectId, {
-        scrivener: {
-          sidebarOpen: isSidebarOpen,
-          inspectorOpen: isContextOpen,
-          sections: scrivenerSections,
-        },
-        ...layoutPatch,
-      });
+      upsertProjectLayout(
+        projectId,
+        appendProjectLayoutSizingPatch(
+          {
+            scrivener: {
+              sidebarOpen: isSidebarOpen,
+              inspectorOpen: isContextOpen,
+              sections: scrivenerSections,
+            },
+          },
+          layoutPatch,
+          hasLayoutSizingChanged,
+        ),
+      );
     }
   }, [
     docsRightTab,

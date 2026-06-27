@@ -31,6 +31,7 @@ import {
   isPersistableLayoutRatio,
 } from "../../../src/renderer/src/features/workspace/hooks/useLayoutPersist.js";
 import {
+  appendProjectLayoutSizingPatch,
   getProjectLayoutPersistenceMode,
 } from "../../../src/renderer/src/features/workspace/hooks/useProjectLayoutPersistence.js";
 
@@ -108,5 +109,27 @@ describe("useLayoutPersist layout parsing", () => {
     expect(getProjectLayoutPersistenceMode("default", "editor")).toBe("default");
     expect(getProjectLayoutPersistenceMode("default", "canvas")).toBe("canvas");
     expect(getProjectLayoutPersistenceMode("docs", "canvas")).toBe("canvas");
+  });
+
+  it("keeps toggle-only project layout patches from rewriting sizing state", () => {
+    const chromePatch = {
+      main: {
+        sidebarOpen: false,
+        contextOpen: true,
+      },
+    };
+    const sizingPatch = {
+      sidebarWidths: { mainSidebar: 320 },
+      layoutSurfaceRatios: { "default.sidebar": 0 },
+      workspace: { panels: [], researchPanelSizes: {} },
+    };
+
+    expect(appendProjectLayoutSizingPatch(chromePatch, sizingPatch, false)).toEqual(
+      chromePatch,
+    );
+    expect(appendProjectLayoutSizingPatch(chromePatch, sizingPatch, true)).toEqual({
+      ...chromePatch,
+      ...sizingPatch,
+    });
   });
 });
