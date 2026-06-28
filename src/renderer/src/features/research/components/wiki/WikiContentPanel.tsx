@@ -22,17 +22,15 @@ type WikiContentPanelProps = {
   /** i18n namespace: "character" | "event" | "faction". */
   i18nPrefix: string;
   newSectionFallback?: string;
-  /** When false, sections render read-only. Default: true. */
-  isEditing?: boolean;
-  onEnterEdit?: () => void;
+  /** Character signature colour (hex) for section markers. */
+  accentColor?: string;
 };
 
 export function WikiContentPanel({
   attrs,
   i18nPrefix,
   newSectionFallback,
-  isEditing = true,
-  onEnterEdit,
+  accentColor,
 }: WikiContentPanelProps) {
   const { t } = useTranslation();
   const dialog = useDialog();
@@ -71,7 +69,7 @@ export function WikiContentPanel({
 
   return (
     <div className="flex flex-col gap-9">
-      {/* Table of Contents — inline, only when there are sections */}
+      {/* Table of Contents — inline */}
       {sections.length > 0 && (
         <nav className="self-start flex items-center gap-2 flex-wrap">
           <p className="text-[11px] font-medium text-muted/70 uppercase tracking-wider">
@@ -101,25 +99,22 @@ export function WikiContentPanel({
           id={sec.id}
           label={sec.label}
           content={attrs.getSectionContent(sec.id)}
+          accentColor={accentColor}
           onRename={(val) => renameSection(sec.id, val)}
           onUpdateContent={(val) => attrs.setSectionContent(sec.id, val)}
           onDelete={() => deleteSection(sec.id)}
-          isEditing={isEditing}
-          onEnterEdit={onEnterEdit}
         />
       ))}
 
-      {/* Add section — edit mode only */}
-      {isEditing && (
-        <button
-          type="button"
-          onClick={addSection}
-          className="self-start flex items-center gap-1.5 text-[13px] text-muted/50 hover:text-accent transition-colors cursor-pointer bg-transparent border-none pl-1"
-        >
-          <span className="text-[16px] leading-none">+</span>
-          {t(`${i18nPrefix}.addSection`, "+ Add section")}
-        </button>
-      )}
+      {/* Add section */}
+      <button
+        type="button"
+        onClick={addSection}
+        className="self-start flex items-center gap-1.5 text-[13px] text-muted/50 hover:text-accent transition-colors cursor-pointer bg-transparent border-none pl-1"
+      >
+        <span className="text-[16px] leading-none">+</span>
+        {t(`${i18nPrefix}.addSection`, "+ Add section")}
+      </button>
     </div>
   );
 }

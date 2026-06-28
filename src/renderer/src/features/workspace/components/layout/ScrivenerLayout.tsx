@@ -140,10 +140,6 @@ export default function ScrivenerLayout({
   const onInspectorLayoutChanged = useLayoutPersist([
     { id: "inspector", index: 2, surface: "scrivener.inspector" },
   ]);
-  const onAllLayoutChanged = useLayoutPersist([
-    { id: "sidebar", index: 0, surface: "scrivener.binder" },
-    { id: "inspector", index: 2, surface: "scrivener.inspector" },
-  ]);
   const markResizeSurface = useCallback((surface: ScrivenerLayoutResizeSurface) => {
     activeResizeSurfaceRef.current = surface;
   }, []);
@@ -161,9 +157,8 @@ export default function ScrivenerLayout({
         onInspectorLayoutChanged(layout);
         return;
       }
-      onAllLayoutChanged(layout);
     },
-    [onAllLayoutChanged, onBinderLayoutChanged, onInspectorLayoutChanged],
+    [onBinderLayoutChanged, onInspectorLayoutChanged],
   );
 
   const binderRatio =
@@ -294,6 +289,7 @@ export default function ScrivenerLayout({
                 collapsible
                 collapsedSize={0}
                 data-panel-animated="true"
+                groupResizeBehavior="preserve-pixel-size"
                 defaultSize={toPanelPercentSize(binderRatio)}
                 minSize={binderSize.minSize}
                 maxSize={binderSize.maxSize}
@@ -309,6 +305,8 @@ export default function ScrivenerLayout({
 
               <PanelResizeHandle
                 data-separator-feature="scrivener.binder"
+                onKeyDownCapture={() => markResizeSurface("scrivener.binder")}
+                onPointerDownCapture={() => markResizeSurface("scrivener.binder")}
                 onKeyDown={() => markResizeSurface("scrivener.binder")}
                 onPointerDown={() => markResizeSurface("scrivener.binder")}
                 className={`w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative ${enableAnimations && isSidebarClosing
@@ -419,6 +417,8 @@ export default function ScrivenerLayout({
             <>
               <PanelResizeHandle
                 data-separator-feature="scrivener.inspector"
+                onKeyDownCapture={() => markResizeSurface("scrivener.inspector")}
+                onPointerDownCapture={() => markResizeSurface("scrivener.inspector")}
                 onKeyDown={() => markResizeSurface("scrivener.inspector")}
                 onPointerDown={() => markResizeSurface("scrivener.inspector")}
                 className={`w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative ${enableAnimations && isInspectorClosing
@@ -435,6 +435,7 @@ export default function ScrivenerLayout({
                 collapsible
                 collapsedSize={0}
                 data-panel-animated="true"
+                groupResizeBehavior="preserve-pixel-size"
                 defaultSize={toPanelPercentSize(inspectorRatio)}
                 minSize={inspectorSize.minSize}
                 maxSize={inspectorSize.maxSize}

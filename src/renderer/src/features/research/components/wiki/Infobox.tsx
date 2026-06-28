@@ -79,57 +79,45 @@ export function InfoboxRow({
 export function Infobox({
   title,
   image,
+  imageUrl,
+  color,
   rows,
   onAddField,
-  isEditing = true,
 }: {
   title: string;
   image?: React.ReactNode;
+  /** Generated portrait URL; falls back to `image` node when absent. */
+  imageUrl?: string | null;
+  /** Character signature colour (hex). When set, the box renders as a tinted identity card. */
+  color?: string;
   rows: InfoboxRowProps[];
   onAddField: () => void;
-  /** When false, render as a read-only profile card (text only). */
-  isEditing?: boolean;
 }) {
   const { t } = useTranslation();
   // ponytail: title is now shown in the page header; prop kept to avoid caller churn.
   void title;
 
-  // ── Read mode: profile card with text rows, empty values hidden ─────────
-  if (!isEditing) {
-    const filled = rows.filter((r) => r.value && r.value.trim().length > 0);
-    return (
-      <div className="w-full shrink-0 rounded-panel border border-border/60 bg-surface/40 p-4">
-        {image && (
-          <div className="flex items-center justify-center pb-3 mb-1">{image}</div>
-        )}
-        {filled.length > 0 ? (
-          <dl className="flex flex-col">
-            {filled.map((row) => (
-              <div
-                key={row.label + (row.isCustom ? "cust" : "fixed")}
-                className="flex items-baseline justify-between gap-3 py-1.5 border-b border-border/30 last:border-b-0"
-              >
-                <dt className="text-[11px] text-muted shrink-0">{row.label}</dt>
-                <dd className="text-[13px] text-fg text-right break-words">
-                  {row.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        ) : (
-          <p className="text-center text-[12px] text-muted/60 py-2">
-            {t("character.wiki.profileEmpty", "프로필 정보 없음")}
-          </p>
-        )}
-      </div>
-    );
-  }
+  const portrait = imageUrl ? (
+    <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+  ) : (
+    image
+  );
 
-  // ── Edit mode ───────────────────────────────────────────────────────────
-  return (
-    <div className="w-full shrink-0 text-[13px]">
-      {image && (
-        <div className="flex items-center justify-center pb-3">{image}</div>
+  const body = (
+    <>
+      {(portrait || color) && (
+        <div className="flex items-center justify-center pb-3">
+          <div
+            className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full"
+            style={
+              color
+                ? { backgroundColor: `${color}1a`, border: `1px solid ${color}33` }
+                : undefined
+            }
+          >
+            {portrait}
+          </div>
+        </div>
       )}
       <div className="flex flex-col">
         {rows.map((row) => (
@@ -138,12 +126,24 @@ export function Infobox({
       </div>
       <button
         type="button"
-        className="mt-2 flex items-center gap-1 bg-transparent border-none text-[12px] text-muted/60 hover:text-accent transition-colors cursor-pointer p-0"
+        className="mt-2 flex items-center gap-1 bg-transparent border-none text-[12px] text-subtle hover:text-accent transition-colors cursor-pointer p-0"
         onClick={onAddField}
       >
         <Plus size={11} />
         <span>{t("character.wiki.addField")}</span>
       </button>
-    </div>
+    </>
   );
+
+  // Character identity card (colour present); event/faction keep the plain box.
+  if (color) {
+    return (
+      <div className="w-full shrink-0 overflow-hidden rounded-panel border border-border bg-surface text-[13px] shadow-panel">
+        <div className="h-1" style={{ backgroundColor: color }} />
+        <div className="p-4">{body}</div>
+      </div>
+    );
+  }
+
+  return <div className="w-full shrink-0 text-[13px]">{body}</div>;
 }

@@ -231,9 +231,17 @@ export function useLayoutPersist(
             continue;
           }
 
-          logger.debug(`[useLayoutPersist] Committing layout surface ratio`, {
+          logger.warn(`[layoutPersist] committing layout surface ratio`, {
             surface: entry.surface,
             nextRatio,
+            layout,
+          });
+          console.log("[layoutPersist:commit]", {
+            entryId: entry.id,
+            entryIndex: entry.index ?? index,
+            surface: entry.surface,
+            nextRatio,
+            layout,
           });
           lastCommitRef.current.set(entry.surface, {
             ratio: nextRatio,

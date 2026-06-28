@@ -12,12 +12,12 @@ describe("scrivener layout resize routing", () => {
     );
   });
 
-  it("falls back to both panels for non-user layout changes", () => {
-    expect(getScrivenerLayoutPersistTarget(null)).toBe("all");
+  it("does not persist non-user layout commits without an active resize handle", () => {
+    expect(getScrivenerLayoutPersistTarget(null)).toBe("none");
     expect(
       getScrivenerLayoutPersistTarget(
         "default.sidebar" as ScrivenerLayoutResizeSurface,
       ),
-    ).toBe("all");
+    ).toBe("none");
   });
 });

@@ -334,18 +334,10 @@ export default function MainLayout({
             panelRef={sidebarPanelRef}
             collapsible
             collapsedSize={0}
-            data-panel-animated="true"
             defaultSize={isSidebarOpen ? sidebarDefaultSize : 0}
             minSize={mainSidebarSize.minSize}
             maxSize={mainSidebarSize.maxSize}
-            className={`bg-sidebar overflow-hidden flex flex-col z-10 ${enableAnimations
-                ? isSidebarClosing
-                  ? "animate-out slide-out-to-left fade-out duration-200"
-                  : isSidebarOpen
-                    ? "animate-in slide-in-from-left fade-in duration-200"
-                    : ""
-                : ""
-              }`}
+            className="bg-sidebar overflow-hidden flex flex-col z-10"
           >
             {shouldRenderSidebar ? sidebar : null}
           </Panel>
@@ -437,19 +429,11 @@ export default function MainLayout({
             panelRef={contextPanelRef}
             collapsible
             collapsedSize={0}
-            data-panel-animated="true"
             groupResizeBehavior="preserve-pixel-size"
             defaultSize={isContextOpen ? contextDefaultSize : 0}
             minSize={mainContextSize.minSize}
             maxSize={mainContextSize.maxSize}
-            className={`bg-panel border-l border-border overflow-hidden flex flex-col z-10 ${enableAnimations
-                ? isContextClosing
-                  ? "animate-out slide-out-to-right fade-out duration-200"
-                  : isContextOpen
-                    ? "animate-in slide-in-from-right fade-in duration-200"
-                    : ""
-                : ""
-              }`}
+            className="bg-panel border-l border-border overflow-hidden flex flex-col z-10"
           >
             {shouldRenderContext ? contextPanel : null}
           </Panel>

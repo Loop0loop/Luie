@@ -13,7 +13,11 @@ import { WikiContentPanel } from "./WikiContentPanel";
 import { CharacterDocumentView } from "./CharacterDocumentView";
 import { useCharacterWikiAttrs } from "./hooks/useCharacterWikiAttrs";
 import { useEffectiveCharacterSections } from "./hooks/useEffectiveCharacterSections";
-import { type CharacterViewMode, CHARACTER_VIEW_MODE_KEY } from "./types";
+import {
+  type CharacterViewMode,
+  CHARACTER_VIEW_MODE_KEY,
+  CHARACTER_COLOR_PRESETS,
+} from "./types";
 
 const getViewModeStorageKey = (id?: string) =>
   id ? `${CHARACTER_VIEW_MODE_KEY}:${id}` : CHARACTER_VIEW_MODE_KEY;
@@ -71,6 +75,58 @@ function AddTagInline({ onAdd, placeholder }: AddTagInlineProps) {
       className="text-[12px] bg-transparent border-b border-accent/60 outline-none w-20 text-fg pb-0.5 placeholder:text-muted/40"
       placeholder="입력 후 Enter"
     />
+  );
+}
+
+// ── ColorDotPicker ──────────────────────────────────────────────────────────
+
+type ColorDotPickerProps = {
+  color: string;
+  onPick: (color: string) => void;
+};
+
+/** Header swatch that opens the preset palette — sets the character signature colour. */
+function ColorDotPicker({ color, onPick }: ColorDotPickerProps) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        title="캐릭터 색"
+        className="h-4 w-4 rounded-full ring-2 ring-app transition-transform hover:scale-110"
+        style={{ backgroundColor: color }}
+      />
+      {open && (
+        <>
+          <button
+            type="button"
+            aria-hidden
+            className="fixed inset-0 z-dropdown cursor-default border-none bg-transparent"
+            onClick={() => setOpen(false)}
+          />
+          <div className="absolute left-0 top-6 z-dropdown grid grid-cols-4 gap-1.5 rounded-control border border-border bg-panel p-2 shadow-panel">
+            {CHARACTER_COLOR_PRESETS.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => {
+                  onPick(preset);
+                  setOpen(false);
+                }}
+                className="h-5 w-5 rounded-full transition-transform hover:scale-110"
+                style={{
+                  backgroundColor: preset,
+                  outline: preset === color ? "2px solid var(--text-primary)" : "none",
+                  outlineOffset: "1px",
+                }}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -212,11 +268,15 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
   // ── Render ──────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex-1 overflow-auto px-8 py-7 sm:px-6 sm:py-6 flex flex-col gap-5 bg-panel text-fg min-w-0">
+    <div
+      className="flex-1 overflow-auto px-8 py-7 sm:px-6 sm:py-6 flex flex-col gap-5 bg-panel text-fg min-w-0"
+      style={{ borderLeft: `3px solid ${attrs.characterColor}` }}
+    >
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-1.5 pb-4 border-b border-border/60">
         <div className="flex items-center gap-2">
+          <ColorDotPicker color={attrs.characterColor} onPick={attrs.setCharacterColor} />
           <BufferedInput
             className="text-[22px] font-semibold text-fg leading-tight border-none bg-transparent flex-1 focus:outline-none min-w-0"
             value={character.name}
@@ -348,12 +408,15 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
                     setSections: attrs.setSections,
                   }}
                   i18nPrefix="character"
+                  accentColor={attrs.characterColor}
                 />
               </div>
               <div className="w-full @min-[700px]:w-[280px] shrink-0 @min-[700px]:order-2 order-1">
                 <Infobox
                   title={character.name}
-                  image={<User size={80} color="var(--border-active)" />}
+                  image={<User size={48} color={attrs.characterColor} />}
+                  imageUrl={attrs.generatedImage}
+                  color={attrs.characterColor}
                   rows={infoboxRows}
                   onAddField={addCustomField}
                 />
@@ -366,6 +429,7 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
         <CharacterDocumentView
           classification={t(currentTemplate.nameKey)}
           description={character.description || ""}
+          accentColor={attrs.characterColor}
           onDescriptionSave={(val) =>
             updateCharacter({ id: character.id, description: val })
           }

@@ -492,3 +492,56 @@
     height: 0;
     display: none;
 }
+
+/* Section headings (= wiki sections) read as distinct blocks:
+   denser than manuscript chapters + a character-coloured marker bar. */
+.entity-document .ProseMirror h1 {
+    position: relative;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-top: 1.8em;
+    padding-left: 0.75rem;
+}
+.entity-document .ProseMirror h1:first-child {
+    margin-top: 0;
+}
+.entity-document .ProseMirror h1::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.18em;
+    bottom: 0.18em;
+    width: 3px;
+    border-radius: 9999px;
+    background: var(--entity-accent, var(--border-active));
+}
+
+/* Notion-style placeholder on every empty block so empty sections invite
+   writing instead of reading as voids. Pairs with Placeholder showOnlyCurrent:false. */
+.entity-document .ProseMirror .is-empty::before {
+    content: attr(data-placeholder);
+    color: var(--text-tertiary);
+    float: left;
+    height: 0;
+    pointer-events: none;
+}
+
+/* Callout block — markdown blockquotes (`> `) render as a tinted callout box
+   in the entity document. Native markdown so it round-trips on save; tinted
+   with the character accent for a Notion-style highlight. */
+.entity-document .ProseMirror blockquote {
+    margin: 1.25em 0;
+    padding: 0.7rem 1rem 0.7rem 1.1rem;
+    border: none;
+    border-left: 3px solid var(--entity-accent, var(--accent-bg));
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--entity-accent, var(--accent-bg)) 7%, transparent);
+    color: var(--text-primary);
+    font-style: normal;
+}
+.entity-document .ProseMirror blockquote p {
+    margin: 0.3em 0;
+    font-style: normal;
+}
+.entity-document .ProseMirror blockquote p:first-child { margin-top: 0; }
+.entity-document .ProseMirror blockquote p:last-child { margin-bottom: 0; }

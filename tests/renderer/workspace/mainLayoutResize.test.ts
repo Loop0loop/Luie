@@ -1,25 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
+  getMainLayoutPersistTarget,
   shouldCloseMainLayoutPanelOnResize,
-  shouldPersistMainLayoutContext,
-  type MainLayoutResizeSurface,
 } from "../../../src/renderer/src/features/workspace/utils/mainLayoutResize.js";
 
 describe("main layout resize routing", () => {
-  it("does not persist context layout while the left sidebar is being resized", () => {
-    expect(shouldPersistMainLayoutContext("default.sidebar")).toBe(false);
-    expect(shouldPersistMainLayoutContext("canvas.activity")).toBe(false);
+  it("persists only the surface currently being resized", () => {
+    expect(getMainLayoutPersistTarget("default.sidebar")).toBe("sidebar");
+    expect(getMainLayoutPersistTarget("canvas.activity")).toBe("sidebar");
+    expect(getMainLayoutPersistTarget("default.panel")).toBe("context");
+    expect(getMainLayoutPersistTarget("canvas.binder")).toBe("context");
   });
 
-  it("persists context layout for context drags and non-user layout changes", () => {
-    expect(shouldPersistMainLayoutContext("default.panel")).toBe(true);
-    expect(shouldPersistMainLayoutContext("canvas.binder")).toBe(true);
-    expect(shouldPersistMainLayoutContext(null)).toBe(true);
-    expect(
-      shouldPersistMainLayoutContext(
-        "scrivener.binder" as MainLayoutResizeSurface,
-      ),
-    ).toBe(true);
+  it("does not persist non-user layout commits without an active resize handle", () => {
+    expect(getMainLayoutPersistTarget(null)).toBe("none");
   });
 
   it("does not close a panel for collapsed resize events during open or close transitions", () => {

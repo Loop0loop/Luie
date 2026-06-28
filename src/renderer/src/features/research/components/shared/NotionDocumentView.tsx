@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -25,6 +25,10 @@ type NotionDocumentViewProps = {
   setSections: (sections: WikiSectionData[]) => void;
   setSectionContent: (id: string, value: string) => void;
   bodyPlaceholder: string;
+  /** Optional page header (portrait + tagline) rendered above the properties. */
+  header?: ReactNode;
+  /** Entity signature colour (hex) — tints the per-section heading markers. */
+  accentColor?: string;
 };
 
 const AUTOSAVE_DELAY_MS = 500;
@@ -43,6 +47,8 @@ export default function NotionDocumentView({
   setSections,
   setSectionContent,
   bodyPlaceholder,
+  header,
+  accentColor,
 }: NotionDocumentViewProps) {
   // Compose into one markdown document — once per mount; the parent keys this
   // view by entity id (re-mount on switch).
@@ -63,13 +69,15 @@ export default function NotionDocumentView({
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="mx-auto w-full max-w-[720px] px-2 py-2 flex flex-col gap-8">
+        {/* ── Page header (portrait + tagline) ───────────────────────── */}
+        {header}
         {/* ── Properties ─────────────────────────────────────────────── */}
         <div className="flex flex-col">
           {properties.map((row) => (
             <PropertyRow key={row.label} label={row.label} readonlyValue={row.readonlyValue}>
               {row.onSave ? (
                 <BufferedInput
-                  className="w-full bg-transparent border-none p-0 text-[14px] text-fg focus:outline-none placeholder:text-muted/40"
+                  className="w-full bg-transparent border-none p-0 text-[14px] text-fg focus:outline-none placeholder:text-subtle"
                   value={row.value ?? ""}
                   placeholder={row.placeholder ?? ""}
                   onSave={row.onSave}
@@ -83,6 +91,7 @@ export default function NotionDocumentView({
         <MarkdownDocumentEditor
           initialMarkdown={initialBody}
           placeholder={bodyPlaceholder}
+          accentColor={accentColor}
           onSave={saveBody}
         />
       </div>
@@ -100,11 +109,11 @@ function PropertyRow({
   readonlyValue?: string;
 }) {
   return (
-    <div className="flex items-start gap-3 py-1.5 border-b border-border/30 last:border-b-0">
-      <span className="w-24 shrink-0 text-[12px] text-muted/80 pt-1">{label}</span>
-      <div className="flex-1 min-w-0">
+    <div className="flex items-start gap-3 -mx-2 rounded-control px-2 py-1.5 transition-colors hover:bg-surface-hover">
+      <span className="w-24 shrink-0 text-[12px] text-muted pt-1">{label}</span>
+      <div className="flex-1 min-w-0 pt-0.5">
         {readonlyValue !== undefined ? (
-          <span className="text-[14px] text-fg">{readonlyValue}</span>
+          <span className="text-[14px] text-fg">{readonlyValue || "—"}</span>
         ) : (
           children
         )}
@@ -116,10 +125,12 @@ function PropertyRow({
 function MarkdownDocumentEditor({
   initialMarkdown,
   placeholder,
+  accentColor,
   onSave,
 }: {
   initialMarkdown: string;
   placeholder: string;
+  accentColor?: string;
   onSave: (markdown: string) => void;
 }) {
   const saveTimer = useRef<number | null>(null);
@@ -131,7 +142,15 @@ function MarkdownDocumentEditor({
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Placeholder.configure({ placeholder }),
+      Placeholder.configure({
+        // Hint on every empty block (not just the focused one) so each section
+        // reads as a fillable block instead of a void. Headings carry their own
+        // label, so they get no hint.
+        showOnlyCurrent: false,
+        includeChildren: true,
+        placeholder: ({ node }) =>
+          node.type.name === "heading" ? "" : placeholder,
+      }),
       Markdown.configure({ html: false }),
     ],
     content: initialMarkdown,
@@ -162,7 +181,10 @@ function MarkdownDocumentEditor({
   }, [editor]);
 
   return (
-    <div className="tiptap entity-document">
+    <div
+      className="tiptap entity-document"
+      style={accentColor ? { ["--entity-accent" as string]: accentColor } : undefined}
+    >
       <EditorContent editor={editor} />
     </div>
   );

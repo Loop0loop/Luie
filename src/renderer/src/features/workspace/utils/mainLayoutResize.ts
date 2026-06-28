@@ -4,15 +4,31 @@ export type MainLayoutResizeSurface =
   | "canvas.activity"
   | "canvas.binder";
 
+export type MainLayoutPersistTarget = "sidebar" | "context" | "none";
+
 type MainLayoutPanelSize = {
   asPercentage: number;
   inPixels: number;
 };
 
+export const getMainLayoutPersistTarget = (
+  surface: MainLayoutResizeSurface | null,
+): MainLayoutPersistTarget => {
+  switch (surface) {
+    case "default.sidebar":
+    case "canvas.activity":
+      return "sidebar";
+    case "default.panel":
+    case "canvas.binder":
+      return "context";
+    default:
+      return "none";
+  }
+};
+
 export const shouldPersistMainLayoutContext = (
   surface: MainLayoutResizeSurface | null,
-): boolean =>
-  surface !== "default.sidebar" && surface !== "canvas.activity";
+): boolean => getMainLayoutPersistTarget(surface) !== "sidebar";
 
 export const shouldCloseMainLayoutPanelOnResize = (
   panelSize: MainLayoutPanelSize,

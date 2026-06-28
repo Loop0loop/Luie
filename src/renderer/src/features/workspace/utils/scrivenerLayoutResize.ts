@@ -2,7 +2,7 @@ export type ScrivenerLayoutResizeSurface =
   | "scrivener.binder"
   | "scrivener.inspector";
 
-export type ScrivenerLayoutPersistTarget = "binder" | "inspector" | "all";
+export type ScrivenerLayoutPersistTarget = "binder" | "inspector" | "none";
 
 export const getScrivenerLayoutPersistTarget = (
   surface: ScrivenerLayoutResizeSurface | null,
@@ -13,6 +13,6 @@ export const getScrivenerLayoutPersistTarget = (
     case "scrivener.inspector":
       return "inspector";
     default:
-      return "all";
+      return "none";
   }
 };
