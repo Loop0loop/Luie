@@ -3,13 +3,22 @@ import type {
   KeyboardEventHandler,
   PointerEventHandler,
 } from "react";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { PanelSize } from "react-resizable-panels";
 import {
   clampSidebarWidth,
   type SidebarWidthFeature,
 } from "@renderer/shared/constants/sidebarSizing";
 import { SIDEBAR_RESIZE_COMMIT_IDLE_MS } from "@renderer/features/workspace/constants/uiDefaults";
+
+// True while a programmatic layout pass is running (container resize,
+// collapse/expand, project restore — see beginLayoutRestoring). react-resizable
+// -panels fires onResize during group.setLayout(), so without this guard those
+// programmatic resizes would commit and the stored width drifts on its own
+// through a setLayout↔commit feedback loop. Only real user drags must persist.
+export const isLayoutRestoring = (): boolean =>
+  typeof document !== "undefined" &&
+  document.documentElement.getAttribute("data-layout-restoring") === "true";
 
 type SidebarWidthSetter = (feature: string, width: number) => void;
 
@@ -98,17 +107,20 @@ export function createSidebarResizeCommitController(
         return;
       }
 
+      // Skip resizes coming from a programmatic layout pass — only user drags
+      // should persist (otherwise the width drifts on its own).
+      if (isLayoutRestoring()) {
+        return;
+      }
+
       const nextWidth = clampSidebarWidth(feature, Math.round(panelSize.inPixels));
       if (!isInteracting) {
+        // Not a user drag (mount, container resize, post-release settle). Track
+        // the baseline once but never commit — committing here re-enters through
+        // the px→%→px round-trip and the width drifts on its own.
         if (lastCommittedWidth === null) {
           lastCommittedWidth = nextWidth;
-          return;
         }
-        if (Math.abs(lastCommittedWidth - nextWidth) < 1) {
-          return;
-        }
-        pendingWidth = nextWidth;
-        flushPendingWidth();
         return;
       }
 
@@ -138,15 +150,20 @@ export function useSidebarResizeCommit(
   options?: UseSidebarResizeCommitOptions,
 ) {
   const idleMs = options?.idleMs ?? SIDEBAR_RESIZE_COMMIT_IDLE_MS;
+  // Seed the initial width once. It must NOT be a useMemo dep: committing during
+  // a drag changes the stored width, which would otherwise recreate the
+  // controller mid-drag and reset isInteracting to false — dropping the drag
+  // onto the immediate-commit path and causing the width to drift on its own.
+  const initialWidthRef = useRef(options?.initialWidth);
   const controller = useMemo(
     () =>
       createSidebarResizeCommitController(
         feature,
         setSidebarWidth,
         idleMs,
-        options?.initialWidth,
+        initialWidthRef.current,
       ),
-    [feature, idleMs, options?.initialWidth, setSidebarWidth],
+    [feature, idleMs, setSidebarWidth],
   );
 
   const onResize = useCallback(

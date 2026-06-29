@@ -78,8 +78,10 @@ export function EntityManagerShell({
     sidebarFeature,
     sidebarWidths[sidebarFeature] || getSidebarDefaultWidth(sidebarFeature),
   );
+  console.warn("[wprobe:render]", sidebarFeature, "stored=", sidebarWidths[sidebarFeature], "used=", sidebarWidth);
   const commitSidebarWidth = useCallback(
     (feature: string, width: number) => {
+      console.warn("[wprobe:commit]", feature, width);
       setSidebarWidth(feature, width);
       if (!currentProjectId || !uiHasHydrated || !projectLayoutHasHydrated) {
         return;
@@ -108,11 +110,15 @@ export function EntityManagerShell({
   const {
     isCollapsed,
     isHydrated: isCollapseHydrated,
-    onResize: handleSidebarResize,
+    onResize: rawHandleSidebarResize,
     toggle,
   } = useCollapsibleSidebar(sidebarFeature, baseOnResize);
+  const handleSidebarResize = (panelSize: { inPixels?: number; asPercentage?: number }) => {
+    console.warn("[wprobe:onResize]", sidebarFeature, "px=", panelSize.inPixels, "pct=", panelSize.asPercentage, "restoring=", document.documentElement.getAttribute("data-layout-restoring"));
+    rawHandleSidebarResize(panelSize as never);
+  };
 
-  const { isLayoutReady } = useFixedPixelPanelGroupLayout({
+  const { hasCompletedInitialLayout } = useFixedPixelPanelGroupLayout({
     containerRef,
     groupRef: panelGroupRef,
     fixedPanels: [
@@ -131,7 +137,7 @@ export function EntityManagerShell({
     enableAnimations,
     uiHasHydrated,
     projectLayoutHasHydrated,
-    isLayoutReady,
+    isLayoutReady: hasCompletedInitialLayout,
     isCollapseHydrated,
   });
 

@@ -28,6 +28,13 @@ type UseFixedPixelPanelGroupLayoutOptions = {
 
 type FixedPixelPanelGroupLayoutState = {
   isLayoutReady: boolean;
+  /**
+   * Latches true the first time the layout becomes ready and never resets.
+   * Use this (not isLayoutReady) to gate "hide until laid out" so the panel
+   * does not flash hidden every time a container resize transiently
+   * invalidates isLayoutReady.
+   */
+  hasCompletedInitialLayout: boolean;
 };
 
 const clampNumber = (value: number, min: number, max: number): number =>
@@ -209,5 +216,8 @@ export function useFixedPixelPanelGroupLayout({
     targetLayoutSignature,
   ]);
 
-  return { isLayoutReady: targetLayoutSignature !== null && readyLayoutSignature === targetLayoutSignature };
+  return {
+    isLayoutReady: targetLayoutSignature !== null && readyLayoutSignature === targetLayoutSignature,
+    hasCompletedInitialLayout: readyLayoutSignature !== null,
+  };
 }

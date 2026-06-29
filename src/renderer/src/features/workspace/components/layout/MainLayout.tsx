@@ -110,6 +110,7 @@ export default function MainLayout({
   ]);
   const markResizeSurface = useCallback((surface: MainLayoutResizeSurface) => {
     activeResizeSurfaceRef.current = surface;
+    setIsResizing(true);
   }, []);
   const scheduleResizeSurfaceClear = useCallback(
     (surface: MainLayoutResizeSurface | null) => {
@@ -122,6 +123,7 @@ export default function MainLayout({
           activeResizeSurfaceRef.current = null;
         }
         activeResizeClearTimerRef.current = null;
+        setIsResizing(false);
       }, 180);
     },
     [],
@@ -152,6 +154,8 @@ export default function MainLayout({
   const [contextDefaultSize, setContextDefaultSize] = useState(() =>
     toPanelPercentSize(contextRatio),
   );
+  // Disable panel flex transitions while a separator is being dragged.
+  const [isResizing, setIsResizing] = useState(false);
   const {
     isClosing: isSidebarClosing,
     isOpening: isSidebarOpening,
@@ -201,6 +205,15 @@ export default function MainLayout({
     },
     [],
   );
+  useEffect(() => {
+    const stopResizing = () => setIsResizing(false);
+    window.addEventListener("pointerup", stopResizing);
+    window.addEventListener("pointercancel", stopResizing);
+    return () => {
+      window.removeEventListener("pointerup", stopResizing);
+      window.removeEventListener("pointercancel", stopResizing);
+    };
+  }, []);
   const {
     isClosing: isContextClosing,
     isOpening: isContextOpening,
@@ -334,10 +347,18 @@ export default function MainLayout({
             panelRef={sidebarPanelRef}
             collapsible
             collapsedSize={0}
+            data-panel-animated={isResizing ? undefined : "true"}
             defaultSize={isSidebarOpen ? sidebarDefaultSize : 0}
             minSize={mainSidebarSize.minSize}
             maxSize={mainSidebarSize.maxSize}
-            className="bg-sidebar overflow-hidden flex flex-col z-10"
+            className={`bg-sidebar overflow-hidden flex flex-col z-10 ${enableAnimations
+                ? isSidebarClosing
+                  ? "animate-out slide-out-to-left fade-out duration-200"
+                  : isSidebarOpen
+                    ? "animate-in slide-in-from-left fade-in duration-200"
+                    : ""
+                : ""
+              }`}
           >
             {shouldRenderSidebar ? sidebar : null}
           </Panel>
@@ -429,11 +450,19 @@ export default function MainLayout({
             panelRef={contextPanelRef}
             collapsible
             collapsedSize={0}
+            data-panel-animated={isResizing ? undefined : "true"}
             groupResizeBehavior="preserve-pixel-size"
             defaultSize={isContextOpen ? contextDefaultSize : 0}
             minSize={mainContextSize.minSize}
             maxSize={mainContextSize.maxSize}
-            className="bg-panel border-l border-border overflow-hidden flex flex-col z-10"
+            className={`bg-panel border-l border-border overflow-hidden flex flex-col z-10 ${enableAnimations
+                ? isContextClosing
+                  ? "animate-out slide-out-to-right fade-out duration-200"
+                  : isContextOpen
+                    ? "animate-in slide-in-from-right fade-in duration-200"
+                    : ""
+                : ""
+              }`}
           >
             {shouldRenderContext ? contextPanel : null}
           </Panel>

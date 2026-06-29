@@ -3,6 +3,7 @@ import type { PanelSize } from "react-resizable-panels";
 import type { SidebarWidthFeature } from "@renderer/shared/constants/sidebarSizing";
 import { toPxSize } from "@renderer/shared/constants/sidebarSizing";
 import { useCollapsedSidebarStore } from "./useCollapsedSidebarStore";
+import { isLayoutRestoring } from "./useSidebarResizeCommit";
 
 export type UseCollapsibleSidebarResult = {
   isCollapsed: boolean;
@@ -67,10 +68,20 @@ export function useCollapsibleSidebar(
 
   const onResize = useCallback(
     (panelSize: PanelSize) => {
+      // Ignore resizes from a programmatic layout pass (mount, container
+      // resize, expand/collapse setLayout). Otherwise a transient onResize on
+      // reopen would flip the persisted collapsed state on its own.
+      if (isLayoutRestoring()) {
+        return;
+      }
       const collapsed =
         typeof panelSize.inPixels === "number" && panelSize.inPixels <= 0;
-      setCollapsedSidebar(feature, collapsed);
-      if (!collapsed) {
+      if (collapsed) {
+        // Auto-collapse when the user drags to zero. Never auto-expand from a
+        // resize — expanding is the toggle button's job — so the saved hidden
+        // state is not clobbered.
+        setCollapsedSidebar(feature, true);
+      } else {
         baseOnResize(panelSize);
       }
     },

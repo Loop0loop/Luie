@@ -69,6 +69,7 @@ export function useResizablePanelPresence({
     }
 
     if (!enableAnimations || durationMs <= 0) {
+      safelyUsePanel(panelRef, (panel) => panel.collapse());
       setShouldRender(false);
       setIsClosing(false);
       setIsOpening(false);
