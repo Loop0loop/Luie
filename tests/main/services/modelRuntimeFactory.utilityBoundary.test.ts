@@ -2,15 +2,26 @@ import { describe, expect, it, vi } from "vitest";
 
 describe("modelRuntimeFactory utility process boundary", () => {
   const mockUtilityElectron = () => {
-    vi.doMock("electron", () => ({
+    const electronMock = {
       app: {
         isPackaged: false,
         getAppPath: () => process.cwd(),
         getPath: () => "/tmp/luie-model-runtime-test",
       },
+      BrowserWindow: {
+        getAllWindows: () => [],
+        fromId: () => null,
+      },
       nativeTheme: {
         shouldUseDarkColors: false,
       },
+      utilityProcess: {
+        fork: vi.fn(),
+      },
+    };
+    vi.doMock("electron", () => ({
+      ...electronMock,
+      default: electronMock,
     }));
   };
 
@@ -25,6 +36,24 @@ describe("modelRuntimeFactory utility process boundary", () => {
       providerHint: "deterministic",
       embeddingModel: null,
     });
+  });
+
+  it("maps none provider hint to deterministic config", async () => {
+    vi.resetModules();
+    vi.stubEnv("LUIE_LLM_PROVIDER_HINT", "none");
+    vi.stubEnv("OPENAI_API_KEY", "test-key");
+    vi.stubEnv("OPENAI_MODEL", "gpt-5.4-nano");
+    mockUtilityElectron();
+
+    const { resolveRuntimeModelConfig } =
+      await import("../../../src/main/services/llm/modelRuntimeFactory.js");
+
+    await expect(resolveRuntimeModelConfig("project-1")).resolves.toEqual({
+      providerHint: "deterministic",
+      embeddingModel: null,
+    });
+
+    vi.unstubAllEnvs();
   });
 
   it("loads the utility RAG worker without requiring BrowserWindow from electron", async () => {

@@ -35,6 +35,22 @@ DB rows / package rows: 746 / 746
 
 이 수치는 현재 eval 365개 기준이다. 장편 전체, 실제 LLM 장문 답변, 모든 작가 질문에 대해 같은 성능이 보장된다는 뜻은 아니다.
 
+## 2026-06-28 Sub Agent 검증 판정
+
+아래 표는 phase 문서와 현재 코드/테스트를 나눠 검증한 결과다. `완료`는 작가 제품 기준의 완료를 뜻하고, `부분 완료`는 기반은 있으나 실제 작가 flow 검증이 남았다는 뜻이다.
+
+| Phase | 현재 판정 | 근거 | 남은 핵심 |
+| --- | --- | --- | --- |
+| Phase 1. 작가 실전 시험지 확장 | 부분 완료 | 365개 eval case/evidence, pain point taxonomy, `queryChapterOrder` 저장 경로가 있다. | 템플릿 생성 case가 많아 실제 작가 질문 샘플링/검수가 필요하다. |
+| Phase 2. answer judge/실패 분류 | 부분 완료 | P0 failure type, answer judge artifact, RAG safety label UI가 있다. | LLM judge는 일반 RAG runtime 차단 경로에 완전히 붙지 않았다. |
+| Phase 3. Memory 저장 정책 | 부분 완료 / risky | fact path의 evidence/provenance guard와 conflict queue는 강하다. | entity/episode confirm은 canon/provenance guard가 약하고 review UI는 1차 수준이다. |
+| Phase 4. Performance/jobs | 부분 완료 / risky | benchmark profile, search mode, memory build job control/progress가 있다. | 실제 앱 cold start, 장시간 p95/p99, 저사양 장편 artifact가 부족하다. |
+| Phase 5. Writer UI | 부분 완료 | evidence-first UI, conflict panel, timeline composer가 있다. | 실제 UI 클릭/타이핑 E2E로 future block, conflict decision, 원문 jump를 닫아야 한다. |
+| Phase 6. Package durability | 거의 완료 | `.luie` canonical sync, corrupt recovery, forced shutdown E2E가 있다. | SIGKILL 중 temp cleanup은 명시적 검증 제외다. |
+| Phase 7. 실제 작가 베타 | 미완료 | benchmark/feedback/threshold infrastructure는 있다. | 실제 작가 beta data와 제품 threshold finalization이 없다. |
+
+현재 제품 판정: **웹소설 작가용 설정 담당 편집자로는 아직 beta 수준**이다. Phase 6은 강하지만, Phase 1~5의 실제 writer-flow 검증과 Phase 7의 실제 베타 데이터가 남아 있다.
+
 Writer-product phase 진행 로그:
 
 ```text

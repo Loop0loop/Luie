@@ -250,16 +250,6 @@ class RagQaWorker {
         ...runtimeLogFieldsFromProvider(runtime.providerName),
         isModelLoaded: runtime.isModelLoaded(),
       });
-      if (runtime.providerName === "deterministic") {
-        this.emitError({
-          runId: run.runId,
-          code: ErrorCode.RAG_QA_FAILED,
-          message:
-            "LLM 모델이 설정되지 않았습니다. 설정 > AI 모델에서 모델을 구성해주세요.",
-        });
-        return;
-      }
-
       const generationConfig = await this.loadGenerationConfig();
       const { systemPrompt, userPrompt, evidence, narrativeMemory } =
         await assembleRagContext({

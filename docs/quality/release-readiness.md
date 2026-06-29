@@ -34,6 +34,7 @@
 
 ## New Feature Entry Checklist
 - Is state ownership local/shared/global for a concrete reason?
+- Does the change follow `docs/quality/state-management-policy.md`?
 - Are selectors minimal?
 - Is persist strictly necessary?
 - Are request/response contracts strict and versioned where needed?

@@ -1,300 +1,178 @@
-# RAG + Memory Engine 현재 상태와 향후 계획
+# Luie 작업 정리 - 2026-06-29
 
 ## 한 줄 요약
 
-현재 RAG + Memory Engine은 웹소설 작가가 "내가 전에 쓴 설정/대사/관계의 근거가 어디 있었지?"라고 물었을 때, 현재 테스트 범위 안에서는 원문 근거를 찾아주는 수준까지 왔다.
+이번 작업은 Luie를 "편집자"가 아니라 "작품을 같이 기억하는 동반자"로 검증하기 위해, 상태관리 방침을 정리하고 Phase 문서를 재판정한 뒤, 합성 웹소설 기반 Phase 5 작가 플로우 테스트를 실제로 통과시키는 데 집중했다.
 
-아직 "작가 대신 완전히 안전하게 설정 판단을 끝내주는 조수"라고 말하기에는 이르다. 지금은 "원문 책갈피를 빠르게 찾아주는 조수 + 틀린 확정 답변 일부를 경고하는 검수자"에 가깝다.
+## 완료한 작업
 
-## 현재 진척도
+### 1. 상태관리 점검과 정책 문서화
 
-비유하면 지금 상태는 다음과 같다.
+- `docs/quality/state-management-policy.md` 추가
+  - Zustand를 기본 상태관리 기준으로 명시
+  - store 소유권, persist 허용 범위, 파생 상태, IPC/API 경계 규칙 정리
+  - 위험 지점과 변경 체크리스트 추가
+- `docs/quality/release-readiness.md`에 상태관리 정책 링크 추가
 
-```text
-자료 창고 만들기        ██████████ 100%
-원문 책갈피 찾기        ██████████ 100%   현재 eval 기준
-기억 오염 복구          █████████░ 90%
-작가 pain point 평가    ████████░░ 80%
-답변 검수               █████░░░░░ 50%
-대형 장편 검증          ██░░░░░░░░ 20%
-작가용 UI 경고          ██░░░░░░░░ 20%
+### 2. phase 문서 재검증
+
+- `docs/phase/00-overview.md`에 2026-06-28 기준 subagent 검증 결과 반영
+- `docs/phase/phase-3-memory-policy.md`의 오래된 conflict ledger 문구 정리
+- `docs/phase/phase-7-beta-validation.md`에 "실제 beta 데이터 대기" 상태 반영
+- `src/main/services/features/memory/status/memoryPhaseStatusReport.ts`
+  - Phase 7 상태에 `blocked-on-real-beta-data` 추가
+- `tests/main/services/memory/status/memoryPhaseStatusReport.test.ts`
+  - Phase 7 기대 상태 갱신
+
+판정:
+
+- Phase 1-6은 부분 완료 또는 근접 완료
+- Phase 7은 인프라만 있고 실제 beta 작가 데이터가 부족함
+- 전체 앱은 "작가 동반자 beta"에 가깝고, 아직 실사용 작가에게 완성품으로 말하기는 이르다
+
+### 3. 합성 웹소설 fixture 추가
+
+- `tests/fixtures/writerFlowSyntheticNovel.ts` 추가
+- 제목: `회귀한 탑 관리자는 엔딩을 숨긴다`
+- 실제 웹소설 플랫폼의 장르 관습만 참고하고, 특정 작품/문장/설정은 복제하지 않음
+- 포함한 작가 플로우:
+  - 설정 질문
+  - 집필 중 충돌 자동 감지
+  - 과거 회차 수정
+  - 초안 폐기
+  - 인물명/별칭 변경
+  - 회차 순서 변경
+
+### 4. Phase 5 작가 플로우 테스트 강화
+
+- `docs/phase/phase-5-writer-workflow-coverage.md`
+  - 합성 웹소설 fixture를 공식 테스트 근거로 추가
+- `tests/scripts/phase5WriterWorkflowCoverage.test.ts`
+  - 6개 writer workflow가 fixture와 coverage 문서에 모두 고정되도록 보강
+- DOM 테스트 3개를 같은 합성 작품 데이터로 맞춤
+  - `tests/dom/analysisMessageSafety.test.tsx`
+  - `tests/dom/conflictQueuePanelWriterFlow.test.tsx`
+  - `tests/dom/promptComposerTimelineScope.test.tsx`
+
+### 5. Vitest 설정 복구
+
+- `vitest.config.ts` 추가
+  - `@renderer`, `@shared` alias 설정
+  - `tests/setup.ts` 연결
+  - `tests/dom/**/*.test.tsx`를 jsdom 환경으로 매핑
+- 이 설정 누락 때문에 DOM 테스트 alias 해석과 DB service 테스트 setup이 깨지고 있었음
+
+### 6. Phase 5 E2E 실패 수정
+
+Phase 5 Electron E2E에서 실제 실패 2개를 잡았다.
+
+1. Electron named export 문제
+   - 실패: `electron` does not provide an export named `BrowserWindow`
+   - 수정:
+     - `src/main/services/features/utility/utilityProcessBridge/internal/core.ts`
+     - `src/main/services/features/utility/utilityProcessBridge/internal/eventHandlers.ts`
+   - Electron dynamic chunk에서 default import를 쓰도록 변경
+
+2. 테스트 환경에서 외부 OpenAI 호출 문제
+   - 실패: `GPT-5.4-nano` 모델 접근 불가
+   - 원인: `LUIE_LLM_PROVIDER_HINT=none`을 runtime factory가 무시하고 OpenAI env를 사용함
+   - 수정:
+     - `src/main/services/llm/modelRuntimeFactory.ts`
+     - `src/main/utility/rag/ragQaWorker.ts`
+     - `tests/main/services/modelRuntimeFactory.utilityBoundary.test.ts`
+   - `none` 또는 `deterministic` provider hint면 deterministic runtime을 강제
+   - RAG worker가 deterministic provider를 에러로 막지 않고 기존 generation path를 타게 변경
+
+## 검증 결과
+
+### 통과
+
+```bash
+pnpm vitest run \
+  tests/scripts/phase5WriterWorkflowCoverage.test.ts \
+  tests/dom/analysisMessageSafety.test.tsx \
+  tests/dom/promptComposerTimelineScope.test.tsx \
+  tests/dom/conflictQueuePanelWriterFlow.test.tsx \
+  tests/main/services/ragGrounding.test.ts \
+  tests/main/services/memory/memoryEvidenceChunkLinkRepair.test.ts \
+  tests/main/services/memory/review/memoryReviewBacklogReport.test.ts \
+  tests/main/services/memory/temporal/memoryTemporalFactReviewService.test.ts \
+  tests/main/services/memory/entity/memoryEntityReviewService.test.ts \
+  tests/main/services/memory/eval/memoryEvalRunner.test.ts \
+  tests/main/services/memory/eval/memoryEvalScoring.test.ts \
+  tests/main/services/modelRuntimeFactory.utilityBoundary.test.ts \
+  --reporter=verbose --no-file-parallelism
 ```
 
-주의: 위 퍼센트는 제품 완성률이 아니라 이해를 돕기 위한 비유다. 확인된 숫자는 아래 "검증된 사실"에 적었다.
+결과:
 
-## 지금까지 만든 것
+- 12 files passed
+- 63 tests passed
 
-## 1. 원문을 잘게 쪼개는 책갈피 창고
-
-웹소설 작가 입장으로 비유하면, 원고 전체를 사람이 찾기 좋게 포스트잇 단위로 잘라 둔 상태다.
-
-작가가 할 수 있는 일:
-
-- "3화쯤에서 주인공이 약속했던 말 어디 있었지?"
-- "아내가 아달린과 관련된 장면이 어디였지?"
-- "이 설정이 원문에 실제로 있었나?"
-
-현재 가능한 수준:
-
-- 원문을 `MemoryChunk`로 나누고 검색 대상으로 사용한다.
-- 현재 프로젝트 기준 chunk는 69개다.
-- chunk가 다시 만들어져도 evidence link를 복구할 수 있다.
-
-## 2. 인물/사건/설정 기억장
-
-웹소설 작가 입장으로 비유하면, 캐릭터 카드와 사건 카드, 설정 메모장을 따로 만들기 시작한 상태다.
-
-작가가 할 수 있는 일:
-
-- "이 인물은 확정된 캐릭터인가, 후보인가?"
-- "이 사건은 어떤 근거에서 나온 기억인가?"
-- "이 설정은 몇 화 근거가 있나?"
-
-현재 가능한 수준:
-
-- Entity memory가 있다.
-- Episode memory가 있다.
-- Temporal fact memory가 있다.
-- Narrative summary가 있다.
-
-현재 프로젝트 기준 확인된 수치:
-
-- entities: 10개
-- confirmed entities: 6개
-- rejected entities: 4개
-- facts: 1개
-- episodes: 1개
-- chapter summaries: 3개
-- narrative summaries: 3개
-
-## 3. RAG 근거 찾기
-
-웹소설 작가 입장으로 비유하면, "기억으로 대답하는 조수"가 아니라 "원문을 펼쳐서 해당 문단을 찾아오는 조수"에 가깝다.
-
-작가가 할 수 있는 일:
-
-- "이 인물이 백야회와 적대한다는 근거 찾아줘."
-- "이 장면에서 아내의 이름을 부르는 부분 찾아줘."
-- "이 떡밥이 실제 원문에 있었는지 확인해줘."
-
-현재 가능한 수준:
-
-- FTS 검색
-- 짧은 토큰 검색
-- quote-like token overlap 검색
-- exact quote 후보 검색
-- RRF 기반 검색 결과 병합
-
-쉽게 말하면, 문장이 HTML 태그나 줄바꿈 때문에 정확히 같지 않아도 핵심 단어가 겹치면 관련 chunk를 끌어올릴 수 있다.
-
-## 4. 끊어진 책갈피 복구
-
-웹소설 작가 입장으로 비유하면, 원고를 다시 저장하거나 문단이 밀려서 예전 책갈피가 다른 페이지를 가리켜도, 실제 문장을 보고 다시 맞는 페이지에 꽂는 기능이다.
-
-작가가 겪는 문제:
-
-- 원고 수정 후 예전 근거 링크가 엉뚱한 문단을 가리킴
-- chunk id는 살아 있는데 실제 quote가 그 chunk 안에 없음
-- HTML 태그/줄바꿈 때문에 원문 quote가 정확히 매칭되지 않음
-
-현재 가능한 수준:
-
-- chunk id가 사라진 evidence 복구
-- chunk id는 있지만 quote가 없는 evidence 복구
-- exact quote가 안 맞아도 핵심 token overlap으로 복구
-
-## 5. 웹소설 작가 pain point 평가셋
-
-웹소설 작가 입장으로 비유하면, "작가가 실제로 자주 터뜨리는 사고 목록"을 시험지로 만든 것이다.
-
-현재 평가하는 문제:
-
-- 인물/별칭/호칭 혼동
-- 타임라인 누수
-- 캐릭터가 아직 모르는 정보를 알고 있다고 처리하는 문제
-- 미회수 떡밥과 회수된 떡밥 혼동
-- 초안/폐기 설정을 정사로 섞는 문제
-- 관계 방향 뒤집기
-- 생존/위치/소속/능력/소유물 연속성 충돌
-
-현재 가능한 수준:
-
-- writer pain point 기반 eval case 50개 생성
-- legacy episode evidence case 1개 포함
-- 총 eval case 51개
-
-## 6. 답변 검수 장치
-
-웹소설 작가 입장으로 비유하면, 조수가 대답한 뒤 "이거 원문 근거 없는 말인데요?"라고 빨간펜을 드는 1차 검수자다.
-
-현재 잡을 수 있는 문제:
-
-- 근거가 없는데 확정 답변으로 말함
-- 기대 답변이 gold evidence로 뒷받침되지 않음
-- 답변에 근거 밖 내용을 섞음
-- draft/deleted fact를 확정 사실처럼 사용
-- 미래 회차 정보를 과거 시점 답변에 사용
-- 관계 방향을 반대로 말함
-
-아직 한계:
-
-- 모든 문학적 모순을 완벽하게 잡는 단계는 아니다.
-- 실제 LLM 장문 답변 전체를 의미 단위로 판정하는 judge는 아직 더 필요하다.
-
-## 검증된 사실
-
-현재 프로젝트 기준 마지막 확인 결과:
-
-```text
-Memory phase status: 9/9 ready
-전체 phase: 100%
-MemoryEvalCase: 51
-MemoryEvalEvidence: 51
-RAG eval caseCount: 51
-RAG averageContextRecallAtK: 1
-RAG totalP0FailureCount: 0
-canonical package sync: true
-DB rows / package rows: 118 / 118
+```bash
+pnpm run typecheck
 ```
 
-이 말은 현재 eval 시험지 51개 안에서는 RAG가 필요한 근거를 모두 top-k 안에서 찾았다는 뜻이다.
+결과:
 
-하지만 이 결과가 모든 장편 원고, 모든 실제 작가 질문, 모든 LLM 답변에서 그대로 유지된다는 뜻은 아니다. 그건 아직 근거가 부족하다.
+- passed
 
-## 현재 작가가 기대해도 되는 기준선
-
-## 가능하다
-
-웹소설 작가가 이런 식으로 물으면 현재 구조로 처리 가능하다.
-
-- "이 설정이 원문에 있었는지 근거 찾아줘."
-- "이 인물이 이 사실을 알고 있다고 봐도 되는지 근거 찾아줘."
-- "이 관계 방향이 맞는지 원문 근거로 확인해줘."
-- "이 장면이 미회수 떡밥인지, 이미 회수된 사실인지 근거부터 찾아줘."
-- "초안 설정이 정사에 섞였는지 확인해줘."
-- "예전 근거 링크가 깨졌는지 고쳐줘."
-
-## 부분적으로 가능하다
-
-이런 작업은 가능하지만 아직 완전 자동화라고 말하기 어렵다.
-
-- "전체 장편의 모든 모순을 찾아줘."
-- "캐릭터 감정선이 자연스러운지 판단해줘."
-- "작가가 까먹은 떡밥을 전부 뽑아줘."
-- "100화 뒤 설정과 3화 설정이 충돌하는지 전부 검수해줘."
-
-현재는 근거 후보를 찾고 일부 위험한 답변을 잡는 수준이다. 완전한 편집자급 검수는 다음 단계다.
-
-## 아직 어렵다
-
-이건 현재 상태에서 확정적으로 가능하다고 말할 수 없다.
-
-- 수백 화 장편 전체에서 항상 빠른 검색 보장
-- 실제 LLM 장문 답변의 모든 환각 차단
-- 암시/상징/복선 같은 문학적 의미의 완전 자동 판정
-- 작가 의도와 독자 해석의 차이까지 자동 판단
-
-## 향후 계획
-
-## 1단계: 시험지를 늘린다
-
-비유: 지금은 조수가 51문제짜리 모의고사를 만점 받은 상태다. 다음은 500문제, 1000문제짜리 실전 문제집을 풀게 해야 한다.
-
-명확한 작업:
-
-- eval case를 51개에서 수백 개 이상으로 확장
-- 회차별 지식 상태 case 추가
-- 인물 별명/본명/직함 case 추가
-- 소속 변경, 사망/부상, 위치 변경 case 추가
-- 미회수/회수 떡밥 case 추가
-- 폐기 설정/정사 설정 충돌 case 추가
-
-목표:
-
-- 작은 샘플이 아니라 웹소설 작업에서 자주 터지는 문제를 넓게 검증한다.
-
-## 2단계: 답변 검수자를 강화한다
-
-비유: 지금은 조수가 책갈피를 잘 찾아온다. 다음은 조수가 책갈피를 보고 엉뚱한 말을 하지 못하게 옆에 편집자를 붙이는 단계다.
-
-명확한 작업:
-
-- LLM answer judge 추가
-- groundedness 평가
-- contradiction 평가
-- temporal leakage 평가
-- unsupported claim 평가
-- omission 평가
-- writer usefulness 평가
-
-목표:
-
-- "근거를 찾았다"에서 끝내지 않고 "근거 안에서만 대답했다"까지 검증한다.
-
-## 3단계: Memory 저장 정책을 강화한다
-
-비유: 지금은 작가 노트에 메모를 넣을 수 있다. 다음은 낙서, 초안, 폐기 설정, 확정 설정을 다른 색 펜으로 구분하는 단계다.
-
-명확한 작업:
-
-- confirmed / suggested / rejected 정책 강화
-- evidence 없는 memory 저장 차단
-- conflict 발생 시 기존 fact 자동 덮어쓰기 금지
-- 정사/초안/폐기/추정 source type 분리
-- memory conflict ledger 추가
-
-목표:
-
-- Memory Engine이 오래 쓸수록 더러워지는 문제를 막는다.
-
-## 4단계: 대형 장편 스트레스 테스트
-
-비유: 지금은 단편 원고에서 조수가 잘 찾는지 확인했다. 다음은 300화짜리 장편 원고 더미를 책상에 올려놓고도 버티는지 보는 단계다.
-
-명확한 작업:
-
-- 1천 chunk 테스트
-- 1만 chunk 테스트
-- 100화/300화/500화급 프로젝트 테스트
-- cold start latency 측정
-- query latency 측정
-- memory usage 측정
-- package export/import 시간 측정
-
-목표:
-
-- "작은 프로젝트에서는 됨"이 아니라 "저사양 장편 작업에서도 쓸 수 있음"으로 올린다.
-
-## 5단계: 작가용 UI로 보여준다
-
-비유: 지금은 조수가 내부적으로 책갈피를 찾아온다. 다음은 작가 책상 위에 "근거 문장", "위험 표시", "충돌 표시"를 눈에 보이게 붙이는 단계다.
-
-명확한 작업:
-
-- 답변 옆 원문 quote 표시
-- 확정/추정/근거부족 라벨 표시
-- 미래 정보 사용 경고
-- 폐기 설정 감지 경고
-- 관계 방향 충돌 경고
-- 관련 회차로 바로 이동하는 링크
-
-목표:
-
-- 작가가 AI 답변을 믿어도 되는지 바로 판단할 수 있게 한다.
-
-## 최종 목표
-
-최종적으로 만들고 싶은 것은 "그럴듯하게 말하는 AI"가 아니다.
-
-웹소설 작가 기준의 목표는 다음이다.
-
-```text
-작가가 설정을 까먹음
-→ AI가 원문 근거를 찾음
-→ 현재 회차 기준으로 말해도 되는지 확인함
-→ 초안/폐기 설정을 걸러냄
-→ 충돌 가능성을 표시함
-→ 근거 문장과 함께 답함
+```bash
+pnpm run build
 ```
 
-즉 목표는 "말 잘하는 조수"가 아니라 "원문을 들고 확인하는 설정 담당 편집자"다.
+결과:
+
+- passed
+- 기존 chunk size warning은 남아 있음
+
+```bash
+node node_modules/@playwright/test/cli.js test --project=stress tests/e2e/phase5WriterWorkflow.spec.ts
+```
+
+결과:
+
+- 1 passed
+
+### 실행 중 필요했던 조치
+
+- DB/Vitest 실행 전 Node ABI용:
+
+```bash
+pnpm rebuild better-sqlite3
+```
+
+- Electron E2E 실행 전 Electron ABI용:
+
+```bash
+pnpm test:prepare
+```
+
+## 현재 리스크
+
+- `qa:core` 전체는 아직 이번 작업 후 실행하지 않았다.
+- `test:prepare`와 `pnpm rebuild better-sqlite3`가 ABI를 서로 바꾸므로, Vitest와 Electron E2E를 오갈 때 순서를 조심해야 한다.
+- Phase 5 E2E는 여전히 preload API 기반 긴 흐름이다. 실제 에디터 타이핑/버튼 클릭만으로 재현하는 순수 UI E2E는 아직 없다.
+- Phase 7은 실제 beta 작가 데이터가 없어서 완료로 볼 수 없다.
+- `bencium-claude-code-design-skill` submodule/외부 경로가 modified로 표시되지만 이번 작업 내용은 아니다.
+
+## 다음 추천 작업
+
+1. 현재 diff를 커밋 단위로 나누기
+   - 상태관리/phase 문서
+   - Phase 5 fixture/test
+   - Vitest 설정 복구
+   - RAG/E2E runtime fix
+
+2. `qa:core` 또는 최소 guard subset 실행
+
+3. Phase 5 순수 UI E2E 추가 여부 결정
+   - 실제 에디터 입력
+   - composer 질문
+   - evidence 표시
+   - conflict/defer UI
+
+4. Phase 7 beta 검증 준비
+   - 실제 웹소설 작가 작업 샘플
+   - 장편 원고 기준 latency/accuracy 측정
+   - 작가 질문 로그 기반 eval case 확대

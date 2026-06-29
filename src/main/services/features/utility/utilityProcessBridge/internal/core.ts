@@ -1,5 +1,5 @@
 import path from "node:path";
-import { app, utilityProcess } from "electron";
+import electron from "electron";
 import type { UtilityProcess } from "electron";
 import type {
   RagQaRequest,
@@ -40,6 +40,7 @@ import {
 } from "./requestMessages.js";
 
 const logger = createLogger("UtilityProcessBridge");
+const { app, utilityProcess } = electron;
 
 export class UtilityProcessBridge {
   private utilityChild: UtilityProcess | null = null;

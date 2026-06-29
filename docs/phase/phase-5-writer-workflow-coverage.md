@@ -2,6 +2,12 @@
 
 이 문서는 Phase 5-4 writer workflow scenario test의 근거 파일을 고정한다.
 
+## Synthetic writer fixture
+
+- `tests/fixtures/writerFlowSyntheticNovel.ts`
+  - 실제 플랫폼의 장르 관습(회귀, 탑/던전, 봉인 아이템, 초안 폐기, 별칭 변경, 회차 순서 변경)을 참고한 완전 가짜 웹소설이다.
+  - 테스트는 Luie를 편집자가 아니라 작품을 같이 기억하는 동반자로 검증한다.
+
 ## 1. 설정 질문
 
 검증 근거:

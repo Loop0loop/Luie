@@ -275,7 +275,7 @@ describe("getMemoryPhaseStatusReport", () => {
     );
 
     expect(phases[1]).toMatchObject({
-      status: "verified-with-known-gaps",
+      status: "blocked-on-real-beta-data",
       architectureAlignment: {
         status: "aligned",
       },

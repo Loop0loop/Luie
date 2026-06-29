@@ -5,6 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ConflictQueuePanel } from "../../src/renderer/src/features/research/components/analysisSection/review/queue/ConflictQueuePanel.js";
 import type { AnalysisConflictItem } from "../../src/renderer/src/features/research/components/analysisSection/shared/types.js";
+import { writerFlowSyntheticNovel } from "../fixtures/writerFlowSyntheticNovel.js";
 
 const translations: Record<string, string> = {
   "analysis.review.queue.conflict.title": "충돌 큐",
@@ -24,6 +25,9 @@ const translations: Record<string, string> = {
   "analysis.review.queue.conflict.acceptNew": "신규 사실 채택",
   "analysis.review.queue.conflict.defer": "나중에 보기",
 };
+
+const chapter12 = writerFlowSyntheticNovel.chapters[1];
+const chapter18 = writerFlowSyntheticNovel.chapters[2];
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -51,8 +55,8 @@ const conflictItem: AnalysisConflictItem = {
   invalidatedFact: {
     id: "fact-old",
     subjectEntityId: "entity-hero",
-    subjectEntityName: "주인공",
-    predicate: "knows_secret",
+    subjectEntityName: "서린",
+    predicate: "knows_sealed_medicine",
     objectEntityId: null,
     objectEntityName: null,
     objectValue: "모른다",
@@ -65,26 +69,26 @@ const conflictItem: AnalysisConflictItem = {
     provenanceKind: "canon",
     canonStatus: "canon",
     evidenceCount: 1,
-    evidenceQuotes: ["3화에서 주인공은 비밀을 아직 알지 못했다."],
+    evidenceQuotes: [chapter12.canon],
   },
   invalidatingFact: {
     id: "fact-new",
     subjectEntityId: "entity-hero",
-    subjectEntityName: "주인공",
-    predicate: "knows_secret",
+    subjectEntityName: "서린",
+    predicate: "knows_sealed_medicine",
     objectEntityId: null,
     objectEntityName: null,
     objectValue: "안다",
     valueType: "text",
-    validFromChapterOrder: 8,
+    validFromChapterOrder: chapter18.order,
     validToChapterOrder: null,
-    observedAtChapterOrder: 8,
+    observedAtChapterOrder: chapter18.order,
     confidence: 0.88,
     status: "suggested",
     provenanceKind: "canon",
     canonStatus: "canon",
     evidenceCount: 1,
-    evidenceQuotes: ["8화에서 주인공은 비밀의 이름을 직접 말했다."],
+    evidenceQuotes: [chapter18.canon],
   },
 };
 
@@ -166,10 +170,14 @@ describe("ConflictQueuePanel writer flow", () => {
     mounted.push(view);
 
     expect(view.container.textContent).toContain("충돌 큐");
-    expect(view.container.textContent).toContain("이전 설정: 주인공 knows_secret 모른다");
-    expect(view.container.textContent).toContain("새 설정: 주인공 knows_secret 안다");
-    expect(view.container.textContent).toContain("3화에서 주인공은 비밀을 아직 알지 못했다.");
-    expect(view.container.textContent).toContain("8화에서 주인공은 비밀의 이름을 직접 말했다.");
+    expect(view.container.textContent).toContain(
+      "이전 설정: 서린 knows_sealed_medicine 모른다",
+    );
+    expect(view.container.textContent).toContain(
+      "새 설정: 서린 knows_sealed_medicine 안다",
+    );
+    expect(view.container.textContent).toContain(chapter12.canon);
+    expect(view.container.textContent).toContain(chapter18.canon);
     expect(view.container.textContent).toContain("이전 사실 채택");
     expect(view.container.textContent).toContain("신규 사실 채택");
     expect(view.container.textContent).toContain("나중에 보기");

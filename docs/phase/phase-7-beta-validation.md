@@ -6,6 +6,12 @@
 
 - 기능이 아니라 작가 생산성 기준으로 검증한다.
 
+현재 판정:
+
+- benchmark, feedback, threshold CLI 같은 검증 인프라는 구축됐다.
+- 실제 작가 beta data가 없으므로 제품 기준 threshold는 아직 확정하지 않는다.
+- 따라서 Phase 7은 **완료가 아니라 real beta data 대기 상태**다.
+
 ### Phase 7-1. writer task benchmark
 
 작업:

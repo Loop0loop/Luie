@@ -321,7 +321,7 @@ pnpm run typecheck
 - 충돌 큐 API는 양쪽 fact summary에 `evidenceQuotes`를 포함한다.
 - UI는 분석 패널의 충돌 큐에서 "검토 필요" 대상과 양쪽 quote를 표시하고, 이전/신규 사실 채택 액션을 제공한다.
 - stale evidence의 "나중에 보기" 상태는 Phase 3-2b에서 evidence 행 단위로 저장한다.
-- conflict 자체에 대한 "나중에 보기", "검토 중", "해결됨" 같은 영구 review status는 아직 없다. 이 상태가 필요해지면 `MemoryFactInvalidation` 확장 또는 별도 `MemoryConflictLedger`가 필요하다.
+- conflict 자체의 `pending`/`reviewing`/`deferred`/`resolved` review status는 `MemoryFactInvalidation` 확장으로 1차 구현됐다. 별도 `MemoryConflictLedger`는 아직 만들지 않는다.
 
 #### Phase 3-3a. 기존 invalidation 적합성 검토
 
@@ -336,11 +336,10 @@ pnpm run typecheck
 완료 기준:
 
 - 기존 테이블 확장 가능 여부 문서화: 1차 충돌 쌍 저장/조회에는 기존 `MemoryFactInvalidation`으로 충분하다.
-- 부족 필드 목록:
-  - review status: pending/deferred/resolved 같은 작가 검토 상태
-  - reviewer note: 작가가 왜 보류/선택했는지 남기는 메모
-  - resolvedAt/resolvedBy: 해결 시점과 해결 주체
-  - per-conflict UI state: 숨김, 나중에 보기, 우선순위
+- `MemoryFactInvalidation` 확장으로 review status, reviewer note, reviewedAt을 저장한다.
+- 아직 부족한 필드:
+  - resolvedBy: 해결 주체
+  - per-conflict UI state: 숨김, 우선순위
 
 #### Phase 3-3b. conflict 저장/조회 API
 
@@ -353,7 +352,7 @@ pnpm run typecheck
 - conflict 생성 테스트: 기존 temporal fact review 경로에서 invalidation row 생성 검증 완료
 - conflict 조회 테스트: `fetchConflictFactPairs`가 양쪽 evidence quote를 반환하는 테스트 추가
 - confirm/reject 상태 전이 테스트: 기존 `resolveMemoryTemporalFactConflict` 경로 사용
-- defer 상태 전이 테스트: 아직 없음. review status 영속화 설계 후 추가
+- defer 상태 전이 테스트: `MemoryFactInvalidation.reviewStatus=deferred` 영속화와 deferred 필터 재조회 경로 1차 완료
 
 ### Phase 3-4. review workflow 강화
 

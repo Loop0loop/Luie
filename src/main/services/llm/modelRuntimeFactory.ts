@@ -46,6 +46,7 @@ type EnvOpenAiConfig = {
 };
 
 const BUNDLED_PROXY_API_KEY_PLACEHOLDER = "__bundled-edge-function__";
+const TEST_PROVIDER_HINTS = new Set(["none", "deterministic"]);
 
 type PlannedRuntime =
   | { kind: "sidecar"; candidate: Extract<RuntimeRouteCandidate, { kind: "sidecar" }> }
@@ -254,6 +255,25 @@ async function attachSupabaseProxyCapabilities(plan: RuntimeRoutePlan): Promise<
 }
 
 export async function resolveRuntimeRoutePlan(): Promise<RuntimeRoutePlanningResult> {
+  if (TEST_PROVIDER_HINTS.has(process.env.LUIE_LLM_PROVIDER_HINT?.trim().toLowerCase() ?? "")) {
+    return {
+      preferred: "auto",
+      plan: {
+        requestedProvider: "auto",
+        fallbackPolicy: "try-next",
+        order: [],
+        candidates: [],
+        skipped: [
+          {
+            provider: "deterministic",
+            code: "TEST_PROVIDER_HINT",
+            message: "Using deterministic runtime from LUIE_LLM_PROVIDER_HINT",
+          },
+        ],
+      },
+    };
+  }
+
   let preferred: RequestedProvider = "auto";
   let localLlm:
     | {
