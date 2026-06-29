@@ -69,6 +69,12 @@ export type CanvasSelection =
   | { kind: "node"; id: string }
   | { kind: "edge"; id: string };
 
+export type CanvasEntityPreview =
+  | { kind: "character"; id: string }
+  | { kind: "event"; id: string }
+  | { kind: "faction"; id: string }
+  | { kind: "memo"; id: string };
+
 /** Sidebar Obsidian style file explorer node type */
 export interface FileNode {
   id: string;

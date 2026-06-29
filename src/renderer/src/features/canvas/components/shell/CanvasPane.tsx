@@ -26,6 +26,10 @@ const GraphWorkspace = lazy(
   () => import("../graph/GraphWorkspace"),
 );
 
+const CanvasEntityPreview = lazy(
+  () => import("./CanvasEntityPreview"),
+);
+
 const loadingFallback = (
   <div className="flex h-full items-center justify-center text-xs text-muted" />
 );
@@ -38,6 +42,7 @@ export default function CanvasPane() {
   useCanvasGraphData();
 
   const activePanel = useCanvasViewStore((state) => state.activePanel);
+  const entityPreview = useCanvasViewStore((state) => state.entityPreview);
   const isGraphMode = activePanel === "graph";
 
   // graphData → projection(노드/엣지 카운트 + 뷰포트 데이터). graph 모드는 별도 파이프라인.
@@ -54,6 +59,8 @@ export default function CanvasPane() {
           <Suspense fallback={loadingFallback}>
             {isGraphMode ? (
               <GraphWorkspace />
+            ) : entityPreview ? (
+              <CanvasEntityPreview preview={entityPreview} />
             ) : (
               <StaticCanvasViewport projection={projection} />
             )}

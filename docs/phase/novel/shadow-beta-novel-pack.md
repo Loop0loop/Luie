@@ -129,6 +129,23 @@ novel/{genre}/
 - 각 작품에는 작가의 계획, 수정 불안, 보류 결정, 애매한 질문 흔적이 있어야 한다.
 - 질문은 시험지처럼 정돈된 질문만 만들지 않는다. clean/writer-like/messy 변형을 함께 둔다.
 
+## 2026-06-29 Author Realism Revision Notes
+
+1차 생성물 검증 결과, 구조는 맞았지만 실제 생성 데이터가 "작가 작업실"보다 "평가 항목을 채운 시험지"에 가까웠다. 2차 보강에서는 아래 원칙을 추가 적용한다.
+
+- 작가는 설정을 확인하는 사람이 아니라, 방금 쓴 장면 때문에 자기 설정을 의심하는 사람이다.
+- 원고를 길게 늘리는 것보다 "폐기 설정처럼 보이는 잔재", "회차 지식 상태가 애매해지는 대사", "회수인지 강화인지 헷갈리는 떡밥 장면"을 우선 만든다.
+- `session_logs`는 정답 요약이 아니라 수정 직후의 불안, 임시 판단, 나중에 확인할 질문을 남긴다.
+- `author_questions_raw.jsonl`은 stage별로 질문 감정이 달라야 한다. planning, after chapter, revision pass가 같은 질문을 반복하면 안 된다.
+- `gold_evidence.jsonl`은 같은 quote 반복을 금지한다. 원고 장면, canon, timeline, revision_log, session_log를 섞어 작가가 실제로 뒤져볼 흔적 조합을 만든다.
+- `feedback_seed.jsonl`은 "이 답변은 틀림"보다 작가가 실제로 교정할 법한 말투로 작성한다.
+
+웹 조사 반영:
+
+- 작가용 장문 집필 도구들은 원고뿐 아니라 노트, 메타데이터, 캐릭터/장소/플롯 추적, 수정 전 snapshot 같은 프로젝트 관리 기능을 제공한다. Shadow beta도 원고 파일만으로는 부족하고 writer_room이 실제 작업 흔적을 가져야 한다.
+- 장편 서사 생성 연구는 긴 이야기에서 플롯 일관성, 시간/사실 충돌, revision, memory-enhanced planning을 핵심 문제로 본다. Shadow beta의 목적도 문장력 평가가 아니라 long-form consistency와 근거 기반 수정 리허설이다.
+- 따라서 Phase 7 rehearsal 데이터는 "정답을 알고 있는 질문지"보다 "원고를 쓰다 꼬인 흔적과 그 흔적을 근거로 복구하는 질문"을 우선한다.
+
 ## 1차 분량
 
 | 단계 | 분량 | 목적 |

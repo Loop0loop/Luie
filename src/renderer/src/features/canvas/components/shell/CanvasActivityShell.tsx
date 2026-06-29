@@ -97,6 +97,8 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
   const setActivePanel = useCanvasViewStore((state) => state.setActivePanel);
   const setFocuses = useCanvasViewStore((state) => state.setFocuses);
   const selectNode = useCanvasViewStore((state) => state.selectNode);
+  const openEntityPreview = useCanvasViewStore((state) => state.openEntityPreview);
+  const clearEntityPreview = useCanvasViewStore((state) => state.clearEntityPreview);
   const isGraphMode = activePanel === "graph";
   const setMainView = useUIStore((state) => state.setMainView);
   const currentProject = useProjectStore((state) => state.currentProject);
@@ -211,19 +213,28 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
   const handleNodeClick = useCallback((node: FileNode) => {
     setSelectedNodeId(node.id);
     setFocuses(node.focusIds ?? []);
+    if (
+      node.mainView?.type === "character" ||
+      node.mainView?.type === "event" ||
+      node.mainView?.type === "faction" ||
+      node.mainView?.type === "memo"
+    ) {
+      openEntityPreview({ kind: node.mainView.type, id: node.mainView.id ?? node.id });
+      return;
+    }
     selectNode(node.focusIds?.length === 1 ? node.focusIds[0] : null);
-    if (node.mainView) {
+    if (node.mainView?.type === "canvas") {
+      clearEntityPreview();
       setMainView(node.mainView);
-      if (node.mainView.type === "canvas") {
-        setActivePanel("canvas");
-      }
+      setActivePanel("canvas");
     }
     if (node.type === "folder") {
       toggleFolder(node.id);
+      clearEntityPreview();
     } else if (!node.mainView) {
       showToast(t("canvas.graph.demoNotImplemented", { actionName: node.name }), "info");
     }
-  }, [selectNode, setActivePanel, setFocuses, setMainView, showToast, t, toggleFolder]);
+  }, [clearEntityPreview, openEntityPreview, selectNode, setActivePanel, setFocuses, setMainView, showToast, t, toggleFolder]);
 
   const handleTabChange = useCallback((tabKey: "explorer" | "search" | "bookmark") => {
     showToast(
