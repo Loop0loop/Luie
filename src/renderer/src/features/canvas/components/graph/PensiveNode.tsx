@@ -56,7 +56,7 @@ function PensiveNode({ id, data, selected }: NodeProps<GraphNodeData>) {
       onMouseEnter={() => setHoverId(id)}
       onMouseLeave={() => setHoverId(null)}
       className={cn(
-        "group relative flex items-center justify-center transition-all duration-300 cursor-pointer",
+        "group relative flex items-center justify-center transition-[background-color,border-color,box-shadow,opacity,transform] duration-300 cursor-pointer",
         shapeClass,
         SIZE_CLASSES[data.starGrade ?? "minor"],
         starGradeClass,
@@ -73,7 +73,7 @@ function PensiveNode({ id, data, selected }: NodeProps<GraphNodeData>) {
           left: "50%",
         }}
         className={cn(
-          "absolute top-full mt-3.5 whitespace-nowrap transition-all duration-300 pointer-events-none px-4 py-2.5 rounded-panel bg-panel/95 border border-border/40 shadow-panel text-fg z-50 flex flex-col gap-1 min-w-[200px] max-w-[280px] opacity-0 -translate-y-2 scale-95 group-hover:opacity-100 group-hover:translate-y-0"
+          "absolute top-full mt-3.5 whitespace-nowrap transition-[opacity,transform] duration-300 pointer-events-none px-4 py-2.5 rounded-panel bg-panel/95 border border-border/40 shadow-panel text-fg z-50 flex flex-col gap-1 min-w-[200px] max-w-[280px] opacity-0 -translate-y-2 scale-95 group-hover:opacity-100 group-hover:translate-y-0"
         )}
       >
         <div className="flex items-center justify-between gap-3 border-b border-border/20 pb-1.5">

@@ -20,7 +20,9 @@ export function GraphLegendModal({
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4.5 right-4.5 h-6 w-6 rounded-panel hover:bg-muted flex items-center justify-center text-muted hover:text-fg transition-all cursor-pointer border-none bg-transparent"
+          className="absolute top-4.5 right-4.5 h-6 w-6 rounded-panel hover:bg-muted flex items-center justify-center text-muted hover:text-fg transition-colors cursor-pointer border-none bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          title={t("canvas.graph.guide.close", "확인")}
+          aria-label={t("canvas.graph.guide.close", "확인")}
         >
           <X className="h-4 w-4" />
         </button>
@@ -77,7 +79,7 @@ export function GraphLegendModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-[10.5px] font-bold tracking-tight text-on-accent bg-accent hover:bg-accent/90 px-4 py-2 rounded-panel cursor-pointer transition-all border-none"
+            className="text-[10.5px] font-bold tracking-tight text-on-accent bg-accent hover:bg-accent/90 px-4 py-2 rounded-panel cursor-pointer transition-colors border-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           >
             {t("canvas.graph.guide.close", "확인")}
           </button>

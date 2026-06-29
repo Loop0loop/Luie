@@ -1,0 +1,31 @@
+{
+  "datasetKind": "shadow_beta",
+  "realBetaConfirmed": false,
+  "labelPrefix": "shadow-beta:modern_fantasy:",
+  "canFinalizeThresholds": false,
+  "purpose": "Phase 7 rehearsal only",
+  "generatedAt": "2026-06-29",
+  "generatorNotes": [
+    "Generated from docs/phase/novel/shadow-beta-novel-pack.md v1",
+    "Synthetic writer room and manuscript data only"
+  ],
+  "copyrightPolicy": {
+    "source": "synthetic",
+    "copiesExistingCommercialText": false,
+    "usesNovelFaceTextVerbatim": false,
+    "notes": "Genre conventions only; all names, settings, and prose are newly generated."
+  },
+  "taxonomyCoverage": {
+    "setting_check": 10,
+    "relationship_check": 10,
+    "foreshadowing_status": 10,
+    "chapter_knowledge_state": 10,
+    "draft_canon_conflict": 10
+  },
+  "authorFlowCoverage": {
+    "sessionLogs": 3,
+    "rawAuthorQuestions": 30,
+    "decisionLogRequired": true,
+    "uncertaintyLogRequired": true
+  }
+}

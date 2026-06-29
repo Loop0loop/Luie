@@ -18,13 +18,13 @@ export const CANVAS_HANDLE_CLASS =
  * Tailwind arbitrary value는 상수화해 한 곳에서 관리합니다.
  */
 export const CANVAS_NODE_SHADOW_CLASS =
-  "shadow-[0_2px_8px_rgba(0,0,0,0.15)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.25)]";
+  "shadow-sm hover:shadow-md";
 
 /**
  * 노드 카드 선택 상태 shadow.
  */
 export const CANVAS_NODE_SELECTED_SHADOW_CLASS =
-  "shadow-[0_0_0_2px_var(--accent-bg),0_4px_12px_rgba(0,0,0,0.3)]";
+  "ring-2 ring-accent shadow-md";
 
 /**
  * hex 알파값 상수 — 동적 색상에 투명도를 붙일 때 사용합니다.

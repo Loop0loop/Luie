@@ -39,7 +39,7 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
         </div>
         <button 
           onClick={() => setFocusId(null)}
-          className="text-[10px] text-muted hover:text-fg font-extrabold tracking-tight bg-element border border-border/40 hover:border-border/80 px-2.5 py-1 rounded-control transition-all cursor-pointer"
+          className="text-[10px] text-muted hover:text-fg font-extrabold tracking-tight bg-element border border-border/40 hover:border-border/80 px-2.5 py-1 rounded-control transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         >
           {t("canvas.graph.details.deselect", "해제")}
         </button>
@@ -77,7 +77,7 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
               {activeNode.data.relationships.map((rel, index) => (
                 <div 
                   key={index} 
-                  className="flex flex-col gap-2 p-3 rounded-panel bg-element/10 border border-border/20 hover:border-border/40 hover:bg-element/20 transition-all duration-200"
+                  className="flex flex-col gap-2 p-3 rounded-panel bg-element/10 border border-border/20 hover:border-border/40 hover:bg-element/20 transition-colors duration-200"
                 >
                   <div className="flex items-center justify-between text-[11px] font-extrabold text-fg">
                     <span className="text-fg">{activeNode.data.label}</span>

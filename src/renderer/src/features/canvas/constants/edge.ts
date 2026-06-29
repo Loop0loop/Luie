@@ -37,7 +37,7 @@ export const CANVAS_CANVAS_EDGE_DEFAULTS = CANVAS_FREE_EDGE_DEFAULTS;
 // ─── World Graph Constellation Edge Style Configuration ───────────────────
 export const GRAPH_CONSTELLATION_EDGE_DEFAULTS = {
   character: {
-    stroke: "rgba(165, 180, 252, 0.45)", // 은은하고 매혹적인 별자리(Constellation) 바이올렛 블루
+    stroke: "var(--accent-bg)", // 토큰 기반 별자리 관계선
     widthMultiplier: 0.8, // 줌 아웃 시 시인성 확보를 위해 미세 증폭
     opacityBase: 0.35,
     opacityMultiplier: 0.15,
@@ -45,7 +45,7 @@ export const GRAPH_CONSTELLATION_EDGE_DEFAULTS = {
     markerSize: undefined,
   },
   event: {
-    stroke: "rgba(248, 113, 113, 0.75)", // 수사 드라마의 직관적인 빨간 실(Thread Red) 라이트닝 레드 테마
+    stroke: "var(--danger-fg)", // 토큰 기반 사건 인과선
     widthMultiplier: 1.1,
     opacityBase: 0.50,
     opacityMultiplier: 0.20,

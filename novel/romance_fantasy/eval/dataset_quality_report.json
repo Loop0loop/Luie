@@ -1,0 +1,16 @@
+{
+  "genre": "romance_fantasy",
+  "passed": true,
+  "checks": {
+    "manifestDisallowsFinalization": true,
+    "manuscriptHasNoMetaMarkers": true,
+    "goldEvidenceQuotesExist": true,
+    "goldAnswersSupportedByEvidence": true,
+    "discardedSettingsNotInCanon": true,
+    "questionFormsCovered": true,
+    "rawQuestionsLookWriterLike": true,
+    "chapterKnowledgeTrapsExist": true,
+    "revisionLogAffectsEvidence": true,
+    "rejectedAnswersBlockable": true
+  }
+}

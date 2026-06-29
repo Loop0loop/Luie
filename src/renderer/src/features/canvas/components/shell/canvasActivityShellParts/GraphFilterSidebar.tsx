@@ -73,7 +73,7 @@ export const GraphFilterSidebar = memo(() => {
                   setSelectedFocusNode("all");
                 }}
                 className={cn(
-                  "flex-1 shrink-0 min-w-[75px] flex items-center justify-center gap-1.5 rounded-panel text-[10px] font-extrabold h-8 cursor-pointer border-none transition-all duration-200",
+                  "flex-1 shrink-0 min-w-[75px] flex items-center justify-center gap-1.5 rounded-panel text-[10px] font-extrabold h-8 cursor-pointer border-none transition-colors duration-200",
                   activeMode === "character"
                     ? "bg-panel text-accent border border-border hover:bg-panel"
                     : "text-muted hover:bg-element-hover/50 hover:text-fg bg-transparent",
@@ -90,7 +90,7 @@ export const GraphFilterSidebar = memo(() => {
                   setSelectedFocusNode("all");
                 }}
                 className={cn(
-                  "flex-1 shrink-0 min-w-[75px] flex items-center justify-center gap-1.5 rounded-panel text-[10px] font-extrabold h-8 cursor-pointer border-none transition-all duration-200",
+                  "flex-1 shrink-0 min-w-[75px] flex items-center justify-center gap-1.5 rounded-panel text-[10px] font-extrabold h-8 cursor-pointer border-none transition-colors duration-200",
                   activeMode === "event"
                     ? "bg-panel text-accent border border-border hover:bg-panel"
                     : "text-muted hover:bg-element-hover/50 hover:text-fg bg-transparent",
@@ -117,7 +117,7 @@ export const GraphFilterSidebar = memo(() => {
                   setEndChapter(15);
                 }}
                 className={cn(
-                  "flex-1 shrink-0 min-w-[85px] flex items-center justify-center rounded-panel text-[9.5px] font-extrabold h-8 cursor-pointer border-none transition-all duration-200",
+                  "flex-1 shrink-0 min-w-[85px] flex items-center justify-center rounded-panel text-[9.5px] font-extrabold h-8 cursor-pointer border-none transition-colors duration-200",
                   selectedChapterFilter === "all"
                     ? "bg-panel text-accent border border-border hover:bg-panel"
                     : "text-muted hover:bg-element-hover/50 hover:text-fg bg-transparent",
@@ -134,7 +134,7 @@ export const GraphFilterSidebar = memo(() => {
                   setEndChapter(13);
                 }}
                 className={cn(
-                  "flex-1 shrink-0 min-w-[85px] flex items-center justify-center rounded-panel text-[9.5px] font-extrabold h-8 cursor-pointer border-none transition-all duration-200",
+                  "flex-1 shrink-0 min-w-[85px] flex items-center justify-center rounded-panel text-[9.5px] font-extrabold h-8 cursor-pointer border-none transition-colors duration-200",
                   selectedChapterFilter === "early"
                     ? "bg-panel text-accent border border-border hover:bg-panel"
                     : "text-muted hover:bg-element-hover/50 hover:text-fg bg-transparent",
@@ -155,7 +155,8 @@ export const GraphFilterSidebar = memo(() => {
                 <select
                   value={startChapter}
                   onChange={(e) => handleStartChapterChange(Number(e.target.value))}
-                  className="w-full rounded-panel border border-border/20 pl-3 pr-7 py-2.5 text-[11px] font-extrabold cursor-pointer outline-none bg-element text-fg hover:bg-element-hover/80 transition-all appearance-none shadow-sm min-w-0"
+                  aria-label={t("canvas.graph.startChapter", "시작 챕터")}
+                  className="w-full rounded-panel border border-border/20 pl-3 pr-7 py-2.5 text-[11px] font-extrabold cursor-pointer outline-none bg-element text-fg hover:bg-element-hover/80 transition-colors appearance-none shadow-sm min-w-0 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
                 >
                   <option value={12}>12{t("canvas.graph.chapterUnit", "화")}</option>
                   <option value={13}>13{t("canvas.graph.chapterUnit", "화")}</option>
@@ -171,7 +172,8 @@ export const GraphFilterSidebar = memo(() => {
                 <select
                   value={endChapter}
                   onChange={(e) => handleEndChapterChange(Number(e.target.value))}
-                  className="w-full rounded-panel border border-border/20 pl-3 pr-7 py-2.5 text-[11px] font-extrabold cursor-pointer outline-none bg-element text-fg hover:bg-element-hover/80 transition-all appearance-none shadow-sm min-w-0"
+                  aria-label={t("canvas.graph.endChapter", "끝 챕터")}
+                  className="w-full rounded-panel border border-border/20 pl-3 pr-7 py-2.5 text-[11px] font-extrabold cursor-pointer outline-none bg-element text-fg hover:bg-element-hover/80 transition-colors appearance-none shadow-sm min-w-0 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
                 >
                   <option value={12}>12{t("canvas.graph.chapterUnit", "화")}</option>
                   <option value={13}>13{t("canvas.graph.chapterUnit", "화")}</option>
@@ -193,7 +195,8 @@ export const GraphFilterSidebar = memo(() => {
               <select
                 value={selectedFocusNode}
                 onChange={(e) => setSelectedFocusNode(e.target.value)}
-                className="w-full rounded-panel border border-border/20 px-3.5 py-2.5 text-[11.5px] font-extrabold cursor-pointer outline-none bg-element text-fg hover:bg-element-hover/80 transition-all appearance-none pr-8.5 shadow-sm min-w-0"
+                aria-label={activeMode === "character" ? t("canvas.graph.characterFocus", "인물 집중 추적") : t("canvas.graph.eventFocus", "특정 사건 추적")}
+                className="w-full rounded-panel border border-border/20 px-3.5 py-2.5 text-[11.5px] font-extrabold cursor-pointer outline-none bg-element text-fg hover:bg-element-hover/80 transition-colors appearance-none pr-8.5 shadow-sm min-w-0 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
               >
                 <option value="all">{t("canvas.graph.viewAllNetwork", "전체 연결망 보기")}</option>
                 {focusOptions.map((node) => (

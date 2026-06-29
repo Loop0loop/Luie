@@ -352,8 +352,9 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleTabChange("explorer")}
-            className="flex items-center justify-center p-1.5 rounded-control bg-active text-fg transition-all duration-150 relative border-none cursor-pointer"
+            className="flex items-center justify-center p-1.5 rounded-control bg-active text-fg transition-colors duration-150 relative border-none cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             title={t("canvas.activity.explorer")}
+            aria-label={t("canvas.activity.explorer")}
           >
             <Files className="h-[18px] w-[18px] text-accent" />
             <span className="absolute -bottom-[9px] left-1/2 -translate-x-1/2 w-8 h-[2px] bg-accent" />
@@ -361,16 +362,18 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
 
           <button
             onClick={() => handleTabChange("search")}
-            className="flex items-center justify-center p-1.5 rounded-control text-muted hover:bg-muted/40 hover:text-fg transition-all duration-150 border-none cursor-pointer bg-transparent"
+            className="flex items-center justify-center p-1.5 rounded-control text-muted hover:bg-muted/40 hover:text-fg transition-colors duration-150 border-none cursor-pointer bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             title={t("canvas.activity.search")}
+            aria-label={t("canvas.activity.search")}
           >
             <Search className="h-[18px] w-[18px]" />
           </button>
 
           <button
             onClick={() => handleTabChange("bookmark")}
-            className="flex items-center justify-center p-1.5 rounded-control text-muted hover:bg-muted/40 hover:text-fg transition-all duration-150 border-none cursor-pointer bg-transparent"
+            className="flex items-center justify-center p-1.5 rounded-control text-muted hover:bg-muted/40 hover:text-fg transition-colors duration-150 border-none cursor-pointer bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             title={t("canvas.activity.bookmark")}
+            aria-label={t("canvas.activity.bookmark")}
           >
             <Bookmark className="h-[18px] w-[18px]" />
           </button>
@@ -381,6 +384,7 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
             onClick={() => onClose?.()}
             className="flex h-9 w-9 items-center justify-center rounded-control border-none bg-transparent p-2 text-muted hover:bg-active hover:text-fg cursor-pointer transition-colors duration-150"
             title={t("canvas.activity.closeCanvas")}
+            aria-label={t("canvas.activity.closeCanvas")}
           >
             <X className="icon-xl" />
           </button>
@@ -394,6 +398,7 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
             size="icon-xs"
             onClick={() => handleToolbarAction("new-file")}
             title={t("canvas.activity.newFile")}
+            aria-label={t("canvas.activity.newFile")}
             className="h-6 w-6 text-muted/75 hover:bg-muted/40 hover:text-fg [&_svg]:h-3.5 [&_svg]:w-3.5"
           >
             <FilePlus />
@@ -404,6 +409,7 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
             size="icon-xs"
             onClick={() => handleToolbarAction("new-folder")}
             title={t("canvas.activity.newFolder")}
+            aria-label={t("canvas.activity.newFolder")}
             className="h-6 w-6 text-muted/75 hover:bg-muted/40 hover:text-fg [&_svg]:h-3.5 [&_svg]:w-3.5"
           >
             <FolderPlus />
@@ -415,6 +421,7 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
           size="icon-xs"
           onClick={toggleAllFolders}
           title="모두 펼치기 / 접기"
+          aria-label="모두 펼치기 / 접기"
           className="h-6 w-6 text-muted/75 hover:bg-muted/40 hover:text-fg [&_svg]:h-3.5 [&_svg]:w-3.5"
         >
           <ChevronsUpDown />

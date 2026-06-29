@@ -39,7 +39,9 @@ export function BottomInteractiveToolbar() {
   };
 
   // 애니메이션 클래스 헬퍼
-  const transitionClass = enableAnimations ? "transition-all duration-300 ease-in-out" : "transition-none";
+  const transitionClass = enableAnimations
+    ? "transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-300 ease-in-out"
+    : "transition-none";
 
   return (
     <div
@@ -215,4 +217,3 @@ export function BottomInteractiveToolbar() {
     </div>
   );
 }
-

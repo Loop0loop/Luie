@@ -47,7 +47,7 @@ export const TreeNode = memo(({
         onClick={() => handleNodeClick(node)}
         style={{ paddingLeft: `${depth * 12 + 10}px` }}
         className={cn(
-          "group flex h-7 items-center gap-1.5 rounded cursor-pointer text-xs transition-all duration-150",
+          "group flex h-7 items-center gap-1.5 rounded cursor-pointer text-xs transition-colors duration-150",
           isSelected
             ? "bg-active text-fg font-semibold"
             : "text-muted hover:bg-muted/40 hover:text-fg",
@@ -98,8 +98,9 @@ export const TreeNode = memo(({
                 event.stopPropagation();
                 onRenameNode(node);
               }}
-              className="flex h-5 w-5 items-center justify-center rounded-control text-muted hover:bg-muted/50 hover:text-fg"
+              className="flex h-5 w-5 items-center justify-center rounded-control text-muted hover:bg-muted/50 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               title={t("sidebar.menu.rename")}
+              aria-label={t("sidebar.menu.rename")}
             >
               <Pencil className="h-3 w-3" />
             </button>
@@ -109,8 +110,9 @@ export const TreeNode = memo(({
                 event.stopPropagation();
                 onDeleteNode(node);
               }}
-              className="flex h-5 w-5 items-center justify-center rounded-control text-muted hover:bg-danger/10 hover:text-danger"
+              className="flex h-5 w-5 items-center justify-center rounded-control text-muted hover:bg-danger/10 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               title={t("sidebar.menu.delete")}
+              aria-label={t("sidebar.menu.delete")}
             >
               <Trash2 className="h-3 w-3" />
             </button>

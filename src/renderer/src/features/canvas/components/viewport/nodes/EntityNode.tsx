@@ -28,7 +28,7 @@ function EntityNodeInner({ data }: NodeProps<RFEntityNodeData>) {
 
       <div
         className={cn(
-          "flex h-full w-full flex-col overflow-hidden rounded-panel border transition-all duration-150",
+          "flex h-full w-full flex-col overflow-hidden rounded-panel border transition-[background-color,border-color,box-shadow] duration-150",
           data.isSelected
             ? `border-accent ${CANVAS_NODE_SELECTED_SHADOW_CLASS}`
             : `border-border ${CANVAS_NODE_SHADOW_CLASS} hover:border-border-active`,
