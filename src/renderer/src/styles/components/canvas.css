@@ -1,0 +1,149 @@
+.canvas-document-editor .ProseMirror {
+    min-height: 35rem;
+    height: auto;
+    padding: 0 0 6rem;
+    outline: none;
+    color: var(--text-primary);
+    word-break: keep-all;
+}
+
+.canvas-document-editor .ProseMirror .is-empty::before {
+    content: attr(data-placeholder);
+    color: var(--text-tertiary);
+    float: left;
+    height: 0;
+    pointer-events: none;
+}
+
+.canvas-document-editor .ProseMirror p {
+    min-height: 1.75rem;
+    margin: 0 0 1.25rem;
+    line-height: 1.85;
+}
+
+.canvas-document-editor .ProseMirror h1,
+.canvas-document-editor .ProseMirror h2,
+.canvas-document-editor .ProseMirror h3 {
+    color: var(--text-primary);
+    font-weight: 700;
+    letter-spacing: 0;
+    line-height: 1.35;
+    word-break: keep-all;
+}
+
+.canvas-document-editor .ProseMirror h1 {
+    margin: 4rem 0 1.4rem;
+    font-size: 1.625rem;
+}
+
+.canvas-document-editor .ProseMirror h1:first-child {
+    margin-top: 0;
+}
+
+.canvas-document-editor .ProseMirror h2 {
+    margin: 3rem 0 1rem;
+    font-size: 1.375rem;
+}
+
+.canvas-document-editor .ProseMirror h3 {
+    margin: 2rem 0 0.75rem;
+    font-size: 1.125rem;
+}
+
+.canvas-document-editor .ProseMirror ul,
+.canvas-document-editor .ProseMirror ol {
+    margin: 0.5rem 0 1.4rem;
+    padding-left: 1.5rem;
+}
+
+.canvas-document-editor .ProseMirror ul {
+    list-style: disc;
+}
+
+.canvas-document-editor .ProseMirror ol {
+    list-style: decimal;
+}
+
+.canvas-document-editor .ProseMirror li {
+    margin: 0.35rem 0;
+    line-height: 1.75;
+}
+
+.canvas-document-editor .ProseMirror li > p {
+    margin: 0;
+    min-height: auto;
+}
+
+.canvas-document-editor .ProseMirror hr {
+    width: 100%;
+    margin: 2.25rem 0;
+    border: 0;
+    border-top: 1px solid var(--border-default);
+}
+
+.canvas-document-editor .ProseMirror blockquote {
+    margin: 1.5rem 0;
+    padding: 0.25rem 0 0.25rem 1rem;
+    border-left: 3px solid var(--border-active);
+    color: var(--text-secondary);
+}
+
+.canvas-document-editor .ProseMirror blockquote p {
+    margin: 0.25rem 0;
+}
+
+.canvas-document-editor .ProseMirror code {
+    border-radius: 0.35rem;
+    background: var(--bg-surface-hover);
+    padding: 0.1rem 0.35rem;
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+}
+
+.canvas-document-editor .ProseMirror pre {
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    border-radius: var(--radius-control);
+    background: var(--bg-sidebar);
+    padding: 1rem;
+}
+
+.canvas-document-editor .ProseMirror pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.canvas-document-editor .ProseMirror ul[data-type="taskList"] {
+    list-style: none;
+    padding-left: 0;
+}
+
+.canvas-document-editor .ProseMirror li[data-type="taskItem"] {
+    display: flex;
+    gap: 0.65rem;
+}
+
+.canvas-document-editor .ProseMirror li[data-type="taskItem"] label {
+    padding-top: 0.2rem;
+}
+
+.canvas-document-editor .ProseMirror details.toggle {
+    margin: 1rem 0 1.5rem;
+}
+
+.canvas-document-editor .ProseMirror details.toggle summary {
+    cursor: pointer;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.canvas-document-editor .ProseMirror .callout {
+    margin: 1.5rem 0;
+    border-radius: var(--radius-control);
+    background: var(--bg-surface-hover);
+    padding: 0.85rem 1rem;
+}
+
+.canvas-document-editor .ProseMirror .callout p {
+    margin: 0.25rem 0;
+}

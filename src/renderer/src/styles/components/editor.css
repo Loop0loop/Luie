@@ -516,8 +516,7 @@
     background: var(--entity-accent, var(--border-active));
 }
 
-/* Notion-style placeholder on every empty block so empty sections invite
-   writing instead of reading as voids. Pairs with Placeholder showOnlyCurrent:false. */
+/* Placeholder for the active empty block only. */
 .entity-document .ProseMirror .is-empty::before {
     content: attr(data-placeholder);
     color: var(--text-tertiary);
