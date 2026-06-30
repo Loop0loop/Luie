@@ -69,10 +69,12 @@ export default function CanvasPane() {
       </div>
 
       {/* 화면 중앙 하단 공통 플로팅 툴바 */}
-      <BottomInteractiveToolbar />
+      {!entityPreview && <BottomInteractiveToolbar />}
 
       {/* 정보 상태 바 — graph 모드에서는 자체 파이프라인이라 카운트를 숨긴다 */}
-      <CanvasStatusBar projection={isGraphMode ? null : projection} />
+      {!entityPreview && (
+        <CanvasStatusBar projection={isGraphMode ? null : projection} />
+      )}
     </div>
   );
 }

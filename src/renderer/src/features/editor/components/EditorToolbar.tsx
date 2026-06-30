@@ -45,6 +45,8 @@ export default function EditorToolbar({
   isCanvasMode = false,
   onOpenExport,
   canOpenExport = true,
+  hideCanvasToggle = false,
+  className,
 }: EditorToolbarProps) {
   const { t } = useTranslation();
 
@@ -137,7 +139,7 @@ export default function EditorToolbar({
   );
 
   return (
-    <div className="flex w-full select-none items-center justify-center bg-sidebar px-2 py-1.5">
+    <div className={cn("flex w-full select-none items-center justify-center bg-sidebar px-2 py-1.5", className)}>
       <div className="flex items-center gap-0.5">
         <div
           className={cn(
@@ -283,7 +285,7 @@ export default function EditorToolbar({
           )}
         </div>
 
-        {renderEditorCanvasToggle()}
+        {!hideCanvasToggle && renderEditorCanvasToggle()}
 
         <div
           className={cn(
