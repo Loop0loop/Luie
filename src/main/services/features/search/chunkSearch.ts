@@ -7,6 +7,11 @@ type LoggerLike = {
   warn: (message: string, details?: unknown) => void;
 };
 
+type ChunkIdScope = {
+  chunkIdPrefix?: string;
+  maxShadowBetaChapter?: number | null;
+};
+
 const RRF_K = 60;
 const VECTOR_SEARCH_UTILITY_ONLY =
   process.env.LUIE_VECTOR_SEARCH_UTILITY_ONLY !== "0";
@@ -94,12 +99,43 @@ export const mergeWithRRF = (
     .map(([chunkId, score]) => ({ chunkId, score }));
 };
 
+const buildShadowBetaChapterLikeSql = (scope: ChunkIdScope) => {
+  const prefix = scope.chunkIdPrefix;
+  if (!prefix) return undefined;
+  if (scope.maxShadowBetaChapter === undefined || scope.maxShadowBetaChapter === null) {
+    return sql`${memoryChunk.id} LIKE ${`${escapeLike(prefix)}%`} ESCAPE '\\'`;
+  }
+  const chapters = Array.from(
+    { length: Math.max(0, scope.maxShadowBetaChapter) },
+    (_, index) => index + 1,
+  );
+  if (chapters.length === 0) return sql`0 = 1`;
+  return or(
+    ...chapters.map(
+      (chapterOrder) =>
+        sql`${memoryChunk.id} LIKE ${`${escapeLike(prefix)}chapter-${chapterOrder}:%`} ESCAPE '\\'`,
+    ),
+  );
+};
+
+const buildShadowBetaChapterLikePatterns = (scope: ChunkIdScope): string[] => {
+  const prefix = scope.chunkIdPrefix;
+  if (!prefix) return [];
+  if (scope.maxShadowBetaChapter === undefined || scope.maxShadowBetaChapter === null) {
+    return [`${escapeLike(prefix)}%`];
+  }
+  return Array.from(
+    { length: Math.max(0, scope.maxShadowBetaChapter) },
+    (_, index) => `${escapeLike(prefix)}chapter-${index + 1}:%`,
+  );
+};
+
 export const searchByShortTokens = async (
   projectId: string,
   query: string,
   limit: number,
   logger: LoggerLike,
-  chunkIdPrefix?: string,
+  scope: ChunkIdScope = {},
 ): Promise<Array<{ chunkId: string; rank: number }>> => {
   const shortTokens = collectShortTokens(query);
   if (shortTokens.length === 0) return [];
@@ -118,9 +154,7 @@ export const searchByShortTokens = async (
         and(
           eq(memoryChunk.projectId, projectId),
           or(...predicates),
-          chunkIdPrefix
-            ? sql`${memoryChunk.id} LIKE ${`${escapeLike(chunkIdPrefix)}%`} ESCAPE '\\'`
-            : undefined,
+          buildShadowBetaChapterLikeSql(scope),
         ),
       )
       .orderBy(desc(memoryChunk.updatedAt))
@@ -143,7 +177,7 @@ export const searchByVector = (
   queryVec: Float32Array,
   limit: number,
   logger: LoggerLike,
-  chunkIdPrefix?: string,
+  scope: ChunkIdScope = {},
 ): Array<{ chunkId: string; rank: number }> => {
   try {
     const queryVecBlob = Buffer.from(
@@ -151,6 +185,7 @@ export const searchByVector = (
       queryVec.byteOffset,
       queryVec.byteLength,
     );
+    const scopedPatterns = buildShadowBetaChapterLikePatterns(scope);
     const rows = db.getClient().all<{ chunkId: string }>(sql`
       SELECT embedding."chunkId" AS "chunkId"
       FROM "MemoryEmbedding" embedding
@@ -161,7 +196,10 @@ export const searchByVector = (
         AND embedding."dimension" = ${queryVec.length}
         AND length(embedding."vec") = embedding."dimension" * 4
         AND embedding."contentHash" = COALESCE(NULLIF(chunk."indexTextHash", ''), chunk."contentHash")
-        ${chunkIdPrefix ? sql`AND chunk."id" LIKE ${`${escapeLike(chunkIdPrefix)}%`} ESCAPE '\\'` : sql``}
+        ${scope.chunkIdPrefix ? sql`AND (${scopedPatterns.length > 0 ? sql.join(
+          scopedPatterns.map((pattern) => sql`chunk."id" LIKE ${pattern} ESCAPE '\\'`),
+          sql` OR `,
+        ) : sql`0 = 1`})` : sql``}
       ORDER BY vec_distance_cosine(embedding."vec", ${queryVecBlob})
       LIMIT ${limit};
     `);

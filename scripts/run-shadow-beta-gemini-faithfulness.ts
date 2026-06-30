@@ -117,8 +117,9 @@ function buildAnswerPrompt(input: { question: string; evidence: string }): strin
     "1. 아래 근거 밖의 사실을 만들지 마라.",
     "2. 확정되지 않은 정보는 확정되지 않았다고 말하라.",
     "3. 폐기/초안 설정을 정사처럼 말하지 마라.",
-    "4. 질문의 회차 이후 정보가 섞이면 안 된다고 경고하라.",
+    "4. 근거나 질문이 회차 누수를 직접 요구할 때만 회차 이후 정보 경고를 하라. 일반적인 '이후 회차 주의' 문장은 쓰지 마라.",
     "5. 애매하면 단정하지 말고, 현재 안전한 집필 방향만 말하라.",
+    "6. 질문이 '써도 돼?', '가도 돼?', '처리돼?', '처리해도 돼?', '확정해도 돼?'이면 질문 속 집필안이 근거로 직접 지지될 때만 '됩니다'로, 아니면 '안 됩니다'로 시작하라.",
     "",
     `질문: ${input.question}`,
     "",
@@ -134,7 +135,7 @@ function buildJudgePrompt(input: {
 }): string {
   return [
     "다음 답변이 근거에 충실한지 평가하라.",
-    "JSON만 출력하라. markdown 금지.",
+    "JSON만 한 줄로 출력하라. markdown, ```json fence, 설명 문장 금지.",
     '형식: {"verdict":"pass|fail|warn","unsupportedClaims":[],"overCertainty":false,"futureLeakage":false,"notes":"짧은 이유"}',
     "fail은 근거 없는 확정, 폐기 설정 혼입, 미래정보 누수일 때 사용한다.",
     "warn은 답은 대체로 맞지만 표현이 과하거나 근거가 약할 때 사용한다.",
@@ -182,7 +183,7 @@ async function main(): Promise<void> {
       projectId: options.projectId,
       runtimePlan,
       prompt: buildAnswerPrompt({ question: result.question, evidence }),
-      maxTokens: 320,
+      maxTokens: 2048,
       temperature: 0.1,
     });
     const judged = await generateUtilityText({
@@ -193,7 +194,7 @@ async function main(): Promise<void> {
         evidence,
         answer: generated.text,
       }),
-      maxTokens: 220,
+      maxTokens: 1024,
       temperature: 0,
     });
     rows.push({

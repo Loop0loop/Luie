@@ -25,6 +25,7 @@ type CliOptions = {
   out?: string;
   realBetaRunId?: string;
   shadowBetaGenreScope: boolean;
+  shadowBetaChapterScope: boolean;
   assertOptimizedRecall: boolean;
   minRecall: number;
   maxP0Failures: number;
@@ -45,6 +46,7 @@ function parseArgs(argv: string[]): CliOptions {
     label: "headless-rag-eval",
     topK: 5,
     shadowBetaGenreScope: false,
+    shadowBetaChapterScope: false,
     assertOptimizedRecall: false,
     minRecall: 0.98,
     maxP0Failures: 0,
@@ -83,6 +85,10 @@ function parseArgs(argv: string[]): CliOptions {
     }
     if (arg === "--shadow-beta-genre-scope") {
       options.shadowBetaGenreScope = true;
+      continue;
+    }
+    if (arg === "--shadow-beta-chapter-scope") {
+      options.shadowBetaChapterScope = true;
       continue;
     }
     if (arg === "--optimization-mode" && next) {
@@ -152,16 +158,27 @@ async function main(): Promise<void> {
       engineVersion: "headless-rag-context",
       topK: options.topK,
       answerer: async (evalCase) => {
+        if (
+          options.shadowBetaChapterScope &&
+          (evalCase.queryChapterOrder === undefined || evalCase.queryChapterOrder === null)
+        ) {
+          throw new Error(
+            `--shadow-beta-chapter-scope requires queryChapterOrder for ${evalCase.caseId}`,
+          );
+        }
         const layer3 = await buildLayer3Evidence(
           evalCase.projectId,
           evalCase.question,
           undefined,
-          options.shadowBetaGenreScope
+          options.shadowBetaGenreScope || options.shadowBetaChapterScope
             ? {
                 chunkIdPrefix: buildShadowBetaChunkIdPrefix({
                   projectId: evalCase.projectId,
                   caseKey: evalCase.caseId,
                 }),
+                maxShadowBetaChapter: options.shadowBetaChapterScope
+                  ? evalCase.queryChapterOrder
+                  : undefined,
               }
             : undefined,
         );

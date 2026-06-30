@@ -205,10 +205,7 @@ function loadGenreRows(input: {
       expectedAnswer: buildSupportedExpectedAnswer({ answer, evidence: goldEvidence }),
       temporalScopeStartChapterId: null,
       temporalScopeEndChapterId: null,
-      queryChapterOrder:
-        question.taskType === "chapter_knowledge_state"
-          ? question.allowedUntilChapter
-          : null,
+      queryChapterOrder: question.allowedUntilChapter ?? null,
       severity: "p0",
       updatedAt: input.nowIso,
     });
@@ -358,7 +355,9 @@ async function main(): Promise<void> {
       }
       tx.insert(memoryEvalCase).values(combined.cases).run();
       tx.insert(memoryEvalEvidence).values(combined.evidence).run();
-      tx.insert(memoryEvalFeedback).values(combined.feedback).run();
+      if (combined.feedback.length > 0) {
+        tx.insert(memoryEvalFeedback).values(combined.feedback).run();
+      }
     });
 
     console.log(

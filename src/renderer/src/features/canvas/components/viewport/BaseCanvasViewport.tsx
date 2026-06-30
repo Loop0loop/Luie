@@ -35,6 +35,7 @@ import ReactFlow, {
   type OnSelectionChangeParams,
   type NodeProps,
   type EdgeProps,
+  type Connection,
 } from "reactflow";
 import { CANVAS_FIT_VIEW_PADDING, CANVAS_ZOOM_MAX, CANVAS_ZOOM_MIN } from "@renderer/shared/constants/canvasSizing";
 import { useCanvasViewStore } from "../../stores";
@@ -43,6 +44,15 @@ import { type CanvasProjection } from "../../types";
 import { buildFlowGraph } from "../../utils";
 import { useCanvasSelection } from "../../hooks/useCanvasView";
 import { handleSelectionChange, handlePaneClick } from "../../utils/selectionHandlers";
+import type { WorldEntitySourceType } from "@shared/types";
+
+const normalizeEntityType = (type: string): WorldEntitySourceType => {
+  const t = type.toLowerCase();
+  if (t === "place" || t === "concept" || t === "rule" || t === "item" || t === "worldentity") {
+    return "WorldEntity";
+  }
+  return (type.charAt(0).toUpperCase() + type.slice(1)) as WorldEntitySourceType;
+};
 
 // ─── static config (shared) ───────────────────────────────────────────────────
 
@@ -68,6 +78,8 @@ interface BaseCanvasViewportProps {
   onEdgesChange?: (changes: EdgeChange[]) => void;
   /** Whether nodes are draggable (static=true, dynamic=false) */
   nodesDraggable?: boolean;
+  /** Whether nodes can be connected to other nodes */
+  nodesConnectable?: boolean;
   /** 드래그 종료 시 노드 위치를 worldBuildingStore에 영속화할지 (기본 true) */
   persistPositions?: boolean;
   /** Extra children inside ReactFlow (e.g., CanvasFloatingToolbar) */
@@ -89,6 +101,7 @@ export default function BaseCanvasViewport({
   onNodesChange,
   onEdgesChange,
   nodesDraggable = true,
+  nodesConnectable = true,
   persistPositions = true,
   extraChildren,
   bottomToolbar,
@@ -101,6 +114,8 @@ export default function BaseCanvasViewport({
   const updateGraphNodePosition = useWorldBuildingStore(
     (s) => s.updateGraphNodePosition,
   );
+  const createRelation = useWorldBuildingStore((s) => s.createRelation);
+  const currentProjectId = useWorldBuildingStore((s) => s.activeProjectId);
 
   const selectedNodeId = selection.kind === "node" ? selection.id : null;
 
@@ -118,13 +133,21 @@ export default function BaseCanvasViewport({
   );
 
   // projection / 선택 변화로 그래프가 갱신되면 내부 상태를 재동기화한다.
-  // 단, 드래그 중 사용자가 옮긴 위치는 보존하기 위해 기존 위치를 우선 계승한다.
+  // 단, 드래그 중 사용자가 옮긴 위치와 선택 상태는 보존하기 위해 기존 정보를 계승한다.
   useEffect(() => {
     setNodes((prevNodes) => {
-      const prevById = new Map(prevNodes.map((n) => [n.id, n.position]));
+      const prevData = new Map(
+        prevNodes.map((n) => [n.id, { position: n.position, selected: n.selected }]),
+      );
       return flowGraph.nodes.map((node) => {
-        const prevPos = prevById.get(node.id);
-        return prevPos ? { ...node, position: prevPos } : node;
+        const prev = prevData.get(node.id);
+        return prev
+          ? {
+              ...node,
+              position: prev.position,
+              selected: prev.selected ?? node.selected,
+            }
+          : node;
       });
     });
     setEdges(flowGraph.edges);
@@ -169,6 +192,33 @@ export default function BaseCanvasViewport({
     handlePaneClick(clearSelection);
   }, [clearSelection]);
 
+  const onConnect = useCallback(
+    async (connection: Connection) => {
+      if (!connection.source || !connection.target || !currentProjectId) return;
+
+      const graphNodes = useWorldBuildingStore.getState().graphData?.nodes ?? [];
+      const sourceNode = graphNodes.find((n) => n.id === connection.source);
+      const targetNode = graphNodes.find((n) => n.id === connection.target);
+
+      if (!sourceNode || !targetNode) return;
+
+      try {
+        await createRelation({
+          projectId: currentProjectId,
+          sourceId: connection.source,
+          sourceType: normalizeEntityType(sourceNode.entityType),
+          targetId: connection.target,
+          targetType: normalizeEntityType(targetNode.entityType),
+          relation: "belongs_to",
+        });
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("Failed to create connection:", err);
+      }
+    },
+    [currentProjectId, createRelation],
+  );
+
   return (
     <div className={wrapperClassName} data-testid={dataTestId}>
       <ReactFlow
@@ -186,8 +236,9 @@ export default function BaseCanvasViewport({
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
         onNodeDragStop={onNodeDragStop}
+        onConnect={onConnect}
         nodesDraggable={nodesDraggable}
-        nodesConnectable={false}
+        nodesConnectable={nodesConnectable}
         elementsSelectable
         deleteKeyCode={null}
         multiSelectionKeyCode="Shift"

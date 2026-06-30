@@ -105,6 +105,7 @@ export async function runLiveMemoryEvalSuite(
         question: evalCase.question,
         expectedAnswer: evalCase.expectedAnswer,
         caseType: evalCase.caseType,
+        queryChapterOrder: evalCase.queryChapterOrder,
       });
       responseTimeMsByCase.set(evalCase.id, performance.now() - answerStartMs);
       answersByCase.set(evalCase.id, answer.answer);

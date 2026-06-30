@@ -6,6 +6,7 @@ import TaskItem from "@tiptap/extension-task-item";
 import { Details, DetailsSummary, DetailsContent } from "@tiptap/extension-details";
 import { Markdown } from "tiptap-markdown";
 import { Callout, SlashCommand } from "@renderer/features/editor/components/hooks/useEditorExtensions";
+import { useEditorConfig } from "@renderer/features/editor/hooks/useEditorConfig";
 
 type MarkdownStorage = { markdown?: { getMarkdown?: () => string } };
 
@@ -38,7 +39,7 @@ export function CanvasMarkdownEditor({
       Markdown.configure({ html: false }),
     ],
     content: initialMarkdown,
-    editorProps: { attributes: { class: "ProseMirror focus:outline-none" } },
+    editorProps: { attributes: { class: "ProseMirror" } },
     onUpdate: ({ editor }) => {
       if (saveTimer.current !== null) window.clearTimeout(saveTimer.current);
       saveTimer.current = window.setTimeout(() => {
@@ -57,8 +58,13 @@ export function CanvasMarkdownEditor({
     };
   }, [editor]);
 
+  const { fontFamilyCss } = useEditorConfig();
+
   return (
-    <div className="canvas-document-editor mt-16 text-fg">
+    <div
+      className="canvas-document-editor mt-12 text-fg"
+      style={{ fontFamily: fontFamilyCss }}
+    >
       <EditorContent editor={editor} />
     </div>
   );

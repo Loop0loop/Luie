@@ -1,16 +1,19 @@
 /**
- * CanvasActivityShell — Obsidian 스타일 파일 탐색기 shell과 graph mode sidebar 분기.
+ * CanvasActivityShell — Redesigned minimal sidebar for canvas explorer.
+ *
+ * Design decisions:
+ *   - Single compact header (no tab bar — search/bookmark were stubs)
+ *   - Toolbar actions integrated into header row
+ *   - Cleaner file tree with better visual hierarchy
+ *   - Graph mode renders GraphFilterSidebar (Phase 4 redesign)
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Bookmark,
   ChevronsUpDown,
   FilePlus,
-  Files,
   FolderPlus,
-  Search,
   X,
 } from "lucide-react";
 import { Button } from "@renderer/components/ui/button";
@@ -30,7 +33,6 @@ import { useWorldBuildingStore } from "@renderer/features/research/stores/worldB
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import {
   GraphFilterSidebar,
-  TAB_I18N_KEYS,
   TreeNode,
   getAllFolderIds,
 } from "./canvasActivityShellParts";
@@ -236,15 +238,6 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
     }
   }, [clearEntityPreview, openEntityPreview, selectNode, setActivePanel, setFocuses, setMainView, showToast, t, toggleFolder]);
 
-  const handleTabChange = useCallback((tabKey: "explorer" | "search" | "bookmark") => {
-    showToast(
-      t("canvas.graph.demoNotImplemented", {
-        actionName: t(TAB_I18N_KEYS[tabKey]),
-      }),
-      "info",
-    );
-  }, [showToast, t]);
-
   const persistCanvasFiles = useCallback(async (
     update: (files: readonly WorldGraphCanvasFile[]) => WorldGraphCanvasFile[],
   ) => {
@@ -359,51 +352,13 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
 
   return (
     <div className="flex h-full w-full flex-col bg-sidebar text-fg border-r border-border/30 overflow-hidden">
-      <div className="flex h-12 items-center justify-between border-b border-border/20 px-3 shrink-0 select-none">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => handleTabChange("explorer")}
-            className="flex items-center justify-center p-1.5 rounded-control bg-active text-fg transition-colors duration-150 relative border-none cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            title={t("canvas.activity.explorer")}
-            aria-label={t("canvas.activity.explorer")}
-          >
-            <Files className="h-[18px] w-[18px] text-accent" />
-            <span className="absolute -bottom-[9px] left-1/2 -translate-x-1/2 w-8 h-[2px] bg-accent" />
-          </button>
+      {/* Compact header: title + actions in one row */}
+      <div className="flex h-10 items-center justify-between border-b border-border/20 px-3 shrink-0 select-none bg-element/30">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-muted truncate">
+          {t("canvas.activity.explorer", "Explorer")}
+        </span>
 
-          <button
-            onClick={() => handleTabChange("search")}
-            className="flex items-center justify-center p-1.5 rounded-control text-muted hover:bg-muted/40 hover:text-fg transition-colors duration-150 border-none cursor-pointer bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            title={t("canvas.activity.search")}
-            aria-label={t("canvas.activity.search")}
-          >
-            <Search className="h-[18px] w-[18px]" />
-          </button>
-
-          <button
-            onClick={() => handleTabChange("bookmark")}
-            className="flex items-center justify-center p-1.5 rounded-control text-muted hover:bg-muted/40 hover:text-fg transition-colors duration-150 border-none cursor-pointer bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            title={t("canvas.activity.bookmark")}
-            aria-label={t("canvas.activity.bookmark")}
-          >
-            <Bookmark className="h-[18px] w-[18px]" />
-          </button>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => onClose?.()}
-            className="flex h-9 w-9 items-center justify-center rounded-control border-none bg-transparent p-2 text-muted hover:bg-active hover:text-fg cursor-pointer transition-colors duration-150"
-            title={t("canvas.activity.closeCanvas")}
-            aria-label={t("canvas.activity.closeCanvas")}
-          >
-            <X className="icon-xl" />
-          </button>
-        </div>
-      </div>
-
-      <div className="flex h-9 items-center justify-between border-b border-border/20 px-3 bg-muted/10 shrink-0 select-none">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <Button
             variant="ghost"
             size="icon-xs"
@@ -425,22 +380,33 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
           >
             <FolderPlus />
           </Button>
-        </div>
 
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={toggleAllFolders}
-          title="모두 펼치기 / 접기"
-          aria-label="모두 펼치기 / 접기"
-          className="h-6 w-6 text-muted/75 hover:bg-muted/40 hover:text-fg [&_svg]:h-3.5 [&_svg]:w-3.5"
-        >
-          <ChevronsUpDown />
-        </Button>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={toggleAllFolders}
+            title={t("canvas.activity.toggleAll", "Toggle all")}
+            aria-label={t("canvas.activity.toggleAll", "Toggle all")}
+            className="h-6 w-6 text-muted/75 hover:bg-muted/40 hover:text-fg [&_svg]:h-3.5 [&_svg]:w-3.5"
+          >
+            <ChevronsUpDown />
+          </Button>
+
+          <div className="w-px h-4 bg-border/50 mx-0.5" />
+
+          <button
+            onClick={() => onClose?.()}
+            className="flex h-6 w-6 items-center justify-center rounded-control border-none bg-transparent text-muted hover:bg-active hover:text-fg cursor-pointer transition-colors duration-150"
+            title={t("canvas.activity.closeCanvas")}
+            aria-label={t("canvas.activity.closeCanvas")}
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
-      <ScrollArea className="flex-1 p-2">
-        <div className="flex flex-col gap-0.5">
+      <ScrollArea className="flex-1 py-1.5 px-1">
+        <div className="flex flex-col gap-px">
           {explorerData.map((node) => (
             <TreeNode
               key={node.id}

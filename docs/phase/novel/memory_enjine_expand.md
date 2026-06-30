@@ -109,6 +109,48 @@ After Phase 7 shadow rehearsal is stable:
    - work + chapter + canonLayer scope
 5. Promote only the smallest scope model that improves recall without hiding valid evidence.
 
+## External Reference: Microsoft Memora
+
+Memora should be tracked as a design reference, not adopted as a dependency.
+
+Reference:
+
+- `https://github.com/microsoft/Memora`
+- `https://arxiv.org/abs/2602.03315`
+
+Useful idea for Luie:
+
+- Keep the original manuscript or writer note as the memory value.
+- Add a short chapter-scoped abstraction for retrieval.
+- Add cue anchors so writer questions can find the right evidence without scanning every future note.
+
+Possible Luie mapping:
+
+```text
+manuscript chunk
+  value: original scene text
+  primary abstraction: chapter-safe summary
+  cue anchors:
+    - character + knowledge state
+    - relationship + direction
+    - foreshadowing + status
+    - canon/draft/discarded conflict
+    - allowedUntilChapter
+```
+
+Why not import Memora directly:
+
+- Luie is Electron/TypeScript/SQLite; Memora is Python-first.
+- Memora dependencies are too heavy for the current desktop memory path.
+- Luie needs strict writer provenance, canon-layer control, and chapter leakage guards.
+
+Small future experiment:
+
+1. Generate chapter-scoped cue cards for the 4 shadow beta works.
+2. Run cue-first retrieval on the existing 220 eval cases.
+3. Compare against current genre + chapter scope recall.
+4. Keep `P0 = 0`; reject the idea if cue cards improve recall by leaking future facts.
+
 ## Working Summary
 
 Current genre scope is a Phase 7 test harness.
@@ -123,4 +165,5 @@ not:
 
 ```text
 genre
+https://github.com/microsoft/Memora
 ```

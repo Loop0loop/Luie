@@ -5,23 +5,28 @@
  * position/transform 패턴을 프레임워크 계약으로 요구합니다.
  * 이 컴포넌트는 그 보일러플레이트를 한 곳에 격리합니다.
  *
- * color prop이 있으면 text-color와 border-color에 동적으로 적용됩니다.
- * (CanvasEdge처럼 엣지 색상을 레이블에도 반영할 때 사용)
+ * color prop이 6-digit hex일 때만 text-color/border-color에 적용.
+ * CSS variable(var(--x))이나 3-digit hex는 색상 적용을 건너뛰고
+ * 기본 muted 스타일을 유지합니다 (안전한 fallback).
  */
 
 import { EdgeLabelRenderer } from "reactflow";
 import type { ReactNode } from "react";
-import { HEX_ALPHA_25 } from "../../../constants";
 
 interface EdgeLabelProps {
   labelX: number;
   labelY: number;
-  /** 동적 색상 (런타임 hex/CSS variable). 없으면 기본 muted 스타일 적용. */
+  /** 동적 색상 (6-digit hex만 지원). CSS variable이면 적용 안 함. */
   color?: string;
   children: ReactNode;
 }
 
+const SIX_DIGIT_HEX = /^#[0-9a-fA-F]{6}$/;
+
 export function EdgeLabel({ labelX, labelY, color, children }: EdgeLabelProps) {
+  const safeColor = color && SIX_DIGIT_HEX.test(color) ? color : undefined;
+  const borderColor = safeColor ? `${safeColor}40` : undefined; // 25% alpha
+
   return (
     <EdgeLabelRenderer>
       <div
@@ -29,16 +34,12 @@ export function EdgeLabel({ labelX, labelY, color, children }: EdgeLabelProps) {
           position: "absolute",
           transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
           pointerEvents: "all",
-          // color/borderColor는 런타임 동적값 — 인라인 스타일 정당화됨
-          ...(color && {
-            color,
-            borderColor: `${color}${HEX_ALPHA_25}`, // 25% opacity
-          }),
+          ...(safeColor && { color: safeColor, borderColor }),
         }}
         className={
-          color
-            ? "nodrag nopan rounded-full border bg-panel/95 px-2 py-0.5 text-[10px] font-medium shadow-panel backdrop-blur-sm"
-            : "nodrag nopan rounded-full border border-border/40 bg-panel/95 px-2 py-0.5 text-[10px] text-muted shadow-panel backdrop-blur-sm"
+          safeColor
+            ? "nodrag nopan rounded-control border bg-panel/95 px-2.5 py-0.5 text-canvas-edge-label font-medium shadow-sm backdrop-blur-sm"
+            : "nodrag nopan rounded-control border border-border bg-panel/95 px-2.5 py-0.5 text-canvas-edge-label text-muted shadow-sm backdrop-blur-sm"
         }
       >
         {children}

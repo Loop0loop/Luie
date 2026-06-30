@@ -13,20 +13,21 @@
  */
 
 // ─── Node geometry (px) ───────────────────────────────────────────────────────
-// Document-style canvas cards: enough height for title, summary, and link count.
+// Document-style canvas cards: Obsidian Canvas 비율(넓적한 카드)에 맞춰 폭 확대.
+// 이전 240×132(1.82:1)는 좁고 길쭉해 보였음 → 300×140으로 넓적하게.
 
-export const CANVAS_ENTITY_NODE_WIDTH_PX = 240 as const;
-export const CANVAS_ENTITY_NODE_HEIGHT_PX = 132 as const;
-export const CANVAS_MEMO_NODE_WIDTH_PX = 220 as const;
+export const CANVAS_ENTITY_NODE_WIDTH_PX = 300 as const;
+export const CANVAS_ENTITY_NODE_HEIGHT_PX = 140 as const;
+export const CANVAS_MEMO_NODE_WIDTH_PX = 260 as const;
 export const CANVAS_MEMO_NODE_MIN_HEIGHT_PX = 90 as const;
-export const CANVAS_TIMELINE_NODE_WIDTH_PX = 240 as const;
+export const CANVAS_TIMELINE_NODE_WIDTH_PX = 280 as const;
 export const CANVAS_TIMELINE_NODE_HEIGHT_PX = 64 as const;
 
 // ─── Auto-layout grid (px) ────────────────────────────────────────────────────
 
 export const CANVAS_GRID_COLS = 5 as const;
-export const CANVAS_GRID_GAP_X_PX = 280 as const;
-export const CANVAS_GRID_GAP_Y_PX = 170 as const;
+export const CANVAS_GRID_GAP_X_PX = 340 as const;
+export const CANVAS_GRID_GAP_Y_PX = 180 as const;
 export const CANVAS_GRID_ORIGIN_X_PX = 80 as const;
 export const CANVAS_GRID_ORIGIN_Y_PX = 80 as const;
 

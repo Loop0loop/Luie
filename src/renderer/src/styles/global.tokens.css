@@ -52,7 +52,7 @@
   --color-border-active: var(--border-active);
   --color-border-focus: var(--border-focus);
 
-    /* Radius / Shadow / Spacing — migrated from the (dead, v4-unloaded)
+  /* Radius / Shadow / Spacing — migrated from the (dead, v4-unloaded)
      tailwind.config.js. Only tokens actually used in the codebase are kept. */
   --radius-control: 0.625rem;
   --radius-panel: 0.875rem;
@@ -69,6 +69,13 @@
   --text-canvas-doc-body: 0.9375rem;        /* 15px — property line body */
   --container-canvas-doc: 56.25rem;         /* 900px — document column */
   --spacing-canvas-doc-label: 11.875rem;    /* 190px — property label column */
+
+  /* Canvas node/block feature tokens — Obsidian Canvas card typography.
+     Replaces repeated text-[10px]/[11px]/[15px] in EntityNode. */
+  --text-canvas-node-meta: 0.625rem;        /* 10px — kind label, connection count */
+  --text-canvas-node-desc: 0.6875rem;       /* 11px — description line */
+  --text-canvas-node-label: 0.9375rem;      /* 15px — node title */
+  --text-canvas-edge-label: 0.625rem;       /* 10px — edge label */
 
   /* Z-index layers — replaces ad-hoc z-[9999]/z-[9000]/z-[10000] escalation.
      v4's z-* is functional (no theme namespace), so the named utilities are

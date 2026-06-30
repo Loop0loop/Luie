@@ -67,6 +67,7 @@ type SearchInput = {
   query: string;
   limit: number;
   chunkIdPrefix?: string;
+  maxShadowBetaChapter?: number | null;
   embedTexts?: RagEmbeddingProvider;
   parentWindow?: {
     before: number;
@@ -138,6 +139,43 @@ function recordStage(
   });
 }
 
+function buildChunkIdScopeSql(input: SearchInput) {
+  if (!input.chunkIdPrefix) return sql``;
+  if (input.maxShadowBetaChapter === undefined || input.maxShadowBetaChapter === null) {
+    return sql`AND chunk."id" LIKE ${`${input.chunkIdPrefix}%`}`;
+  }
+  const chapters = Array.from(
+    { length: Math.max(0, input.maxShadowBetaChapter) },
+    (_, index) => index + 1,
+  );
+  if (chapters.length === 0) return sql`AND 0 = 1`;
+  return sql`AND (${sql.join(
+    chapters.map(
+      (chapterOrder) =>
+        sql`chunk."id" LIKE ${`${input.chunkIdPrefix}chapter-${chapterOrder}:%`}`,
+    ),
+    sql` OR `,
+  )})`;
+}
+
+function buildMemoryChunkIdScopePredicate(input: SearchInput) {
+  if (!input.chunkIdPrefix) return undefined;
+  if (input.maxShadowBetaChapter === undefined || input.maxShadowBetaChapter === null) {
+    return sql`${memoryChunk.id} LIKE ${`${input.chunkIdPrefix}%`}`;
+  }
+  const chapters = Array.from(
+    { length: Math.max(0, input.maxShadowBetaChapter) },
+    (_, index) => index + 1,
+  );
+  if (chapters.length === 0) return sql`0 = 1`;
+  return or(
+    ...chapters.map(
+      (chapterOrder) =>
+        sql`${memoryChunk.id} LIKE ${`${input.chunkIdPrefix}chapter-${chapterOrder}:%`}`,
+    ),
+  );
+}
+
 export async function searchMemoryChunksForRag(
   input: SearchInput,
 ): Promise<MemoryChunkSearchResult[]> {
@@ -162,7 +200,7 @@ export async function searchMemoryChunksForRag(
        AND chunk."projectId" = fts."projectId"
       WHERE fts."projectId" = ${input.projectId}
         AND "MemoryChunkFts" MATCH ${ftsQuery}
-        ${input.chunkIdPrefix ? sql`AND chunk."id" LIKE ${`${input.chunkIdPrefix}%`}` : sql``}
+        ${buildChunkIdScopeSql(input)}
       ORDER BY bm25("MemoryChunkFts"), fts."chunkId"
       LIMIT ${candidateCap};
     `)
@@ -176,7 +214,7 @@ export async function searchMemoryChunksForRag(
       SELECT chunk."id" AS "chunkId"
       FROM "MemoryChunk" chunk
       WHERE chunk."projectId" = ${input.projectId}
-        ${input.chunkIdPrefix ? sql`AND chunk."id" LIKE ${`${input.chunkIdPrefix}%`}` : sql``}
+        ${buildChunkIdScopeSql(input)}
         AND (${sql.join(
           exactPhraseCandidates.map(
             (candidate) => sql`instr(chunk."content", ${candidate}) > 0`,
@@ -205,7 +243,7 @@ export async function searchMemoryChunksForRag(
                    chunk."chunkIndex" AS "chunkIndex"
             FROM "MemoryChunk" chunk
             WHERE chunk."projectId" = ${input.projectId}
-              ${input.chunkIdPrefix ? sql`AND chunk."id" LIKE ${`${input.chunkIdPrefix}%`}` : sql``}
+              ${buildChunkIdScopeSql(input)}
               AND (${sql.join(
                 quoteLikeTokens.map(
                   (token) => sql`instr(lower(chunk."content"), ${token}) > 0`,
@@ -240,7 +278,10 @@ export async function searchMemoryChunksForRag(
     normalizedQuery,
     candidateCap,
     logger,
-    input.chunkIdPrefix,
+    {
+      chunkIdPrefix: input.chunkIdPrefix,
+      maxShadowBetaChapter: input.maxShadowBetaChapter,
+    },
   );
   recordStage(input, "shortToken", stageStartedAt, lexicalRanks.length);
 
@@ -258,7 +299,10 @@ export async function searchMemoryChunksForRag(
           queryVector,
           candidateCap,
           logger,
-          input.chunkIdPrefix,
+          {
+            chunkIdPrefix: input.chunkIdPrefix,
+            maxShadowBetaChapter: input.maxShadowBetaChapter,
+          },
         );
       }
     } catch (error) {
@@ -351,6 +395,7 @@ export async function searchMemoryChunksForRag(
       eq(memoryChunk.sourceType, range.sourceType),
       eq(memoryChunk.sourceId, range.sourceId),
       sql`${memoryChunk.chunkIndex} BETWEEN ${range.minIndex} AND ${range.maxIndex}`,
+      buildMemoryChunkIdScopePredicate(input),
     ),
   );
   const windowRows: WindowChunkRow[] =
