@@ -1,14 +1,14 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { ChapterService } from "../../../src/main/services/core/chapterService.js";
+import { ChapterService } from "../../../src/main/services/features/manuscript/chapterService.js";
 import {
   ProjectService,
   projectService,
-} from "../../../src/main/services/core/projectService.js";
+} from "../../../src/main/services/features/project/projectService.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import { cacheDb } from "../../../src/main/database/cache/index.js";
-import { CharacterService } from "../../../src/main/services/world/characterService.js";
-import { TermService } from "../../../src/main/services/world/termService.js";
-import { worldMentionService } from "../../../src/main/services/world/worldMentionService.js";
+import { CharacterService } from "../../../src/main/services/features/world/entities/characterService.js";
+import { TermService } from "../../../src/main/services/features/world/entities/termService.js";
+import { worldMentionService } from "../../../src/main/services/features/world/graph/worldMentionService.js";
 
 const chapterService = new ChapterService();
 const characterService = new CharacterService();

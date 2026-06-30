@@ -104,6 +104,13 @@ describe("memoryWriterTaskBenchmark", () => {
     ).toBe("thread-resolution-check");
     expect(
       classifyMemoryWriterTaskBenchmarkCase(
+        makeCase("thread-text", {
+          question: "이 떡밥은 아직 미회수 상태로 봐야 하나?",
+        }),
+      ),
+    ).toBe("thread-resolution-check");
+    expect(
+      classifyMemoryWriterTaskBenchmarkCase(
         makeCase("temporal", {
           caseType: "temporal_state",
           queryChapterOrder: 3,
@@ -120,6 +127,14 @@ describe("memoryWriterTaskBenchmark", () => {
     expect(classifyMemoryWriterTaskBenchmarkCase(makeCase("setting", {}))).toBe(
       "setting-check",
     );
+    expect(
+      classifyMemoryWriterTaskBenchmarkCase(
+        makeCase("persisted-setting", {
+          name: "shadow-beta:modern_fantasy:setting_check:case-1",
+          expectedAnswer: "답변에서 폐기 여부도 같이 설명한다.",
+        }),
+      ),
+    ).toBe("setting-check");
   });
 
   it("summarizes success, response time, evidence satisfaction, and false confidence by task", () => {

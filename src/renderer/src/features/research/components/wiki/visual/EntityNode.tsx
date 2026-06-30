@@ -28,7 +28,7 @@ function EntityNodeImpl({ data }: NodeProps<EntityNodeData>) {
   return (
     <div
       className={cn(
-        "rounded-lg border bg-surface text-center shadow-sm select-none",
+        "rounded-panel border bg-surface text-center shadow-sm select-none",
         isCenter
           ? "px-4 py-3 min-w-[150px] border-2"
           : "px-3 py-2 min-w-[110px] border-border/60",

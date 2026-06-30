@@ -27,34 +27,32 @@ export function InfoboxRow({
 }: InfoboxRowProps) {
   const { t } = useTranslation();
   return (
-    <div className="flex border-b border-(--namu-border) last:border-b-0 min-h-[40px] group/row hover:bg-(--namu-hover-bg) transition-colors">
-      <div className="w-[100px] bg-(--namu-table-bg) px-2 py-2 font-semibold text-(--namu-table-label) border-r border-(--namu-border) flex items-center justify-center text-center leading-tight shrink-0 relative text-[12px]">
+    <div className="flex flex-col gap-1 py-2 border-b border-border/40 last:border-b-0 group/row">
+      <div className="flex items-center justify-between gap-1">
         {isCustom ? (
-          <div className="flex items-center relative w-full justify-center">
-            <BufferedInput
-              className="border-none bg-transparent w-full color-inherit font-inherit p-1 text-center focus:outline-none focus:bg-active focus:rounded-sm text-[12px]"
-              value={label}
-              onSave={onLabelSave || (() => {})}
-            />
-            {onDelete && (
-              <button
-                type="button"
-                className="absolute -left-0.5 top-1/2 -translate-y-1/2 opacity-0 group-hover/row:opacity-100 transition-opacity border-none bg-transparent text-muted cursor-pointer p-0.5 hover:text-destructive"
-                onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                title={t("character.wiki.fieldDeleteTitle")}
-              >
-                <X size={10} />
-              </button>
-            )}
-          </div>
+          <BufferedInput
+            className="border-none bg-transparent w-full text-[11px] font-medium text-muted p-0 focus:outline-none focus:text-fg/80"
+            value={label}
+            onSave={onLabelSave || (() => {})}
+          />
         ) : (
-          label
+          <span className="text-[11px] font-medium text-muted">{label}</span>
+        )}
+        {onDelete && (
+          <button
+            type="button"
+            className="opacity-0 group-hover/row:opacity-100 transition-opacity border-none bg-transparent text-muted cursor-pointer p-0.5 hover:text-danger shrink-0"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            title={t("character.wiki.fieldDeleteTitle")}
+          >
+            <X size={10} />
+          </button>
         )}
       </div>
-      <div className="flex-1 px-2.5 py-1.5 flex items-center bg-surface text-fg text-[13px]">
+      <div className="flex items-center text-fg text-[13px]">
         {type === "select" ? (
           <select
-            className="border-none bg-transparent w-full text-fg text-[13px] p-0.5 focus:outline-none cursor-pointer"
+            className="border-none bg-transparent w-full text-fg text-[13px] p-0 focus:outline-none cursor-pointer"
             value={value || ""}
             onChange={(e) => onSave?.(e.target.value)}
           >
@@ -67,7 +65,7 @@ export function InfoboxRow({
           </select>
         ) : (
           <BufferedInput
-            className="border-none bg-transparent w-full text-fg text-[13px] p-0.5 focus:outline-none focus:bg-active focus:rounded-sm placeholder:text-muted/40"
+            className="border-none bg-transparent w-full text-fg text-[13px] p-0 focus:outline-none placeholder:text-muted/35"
             value={value || ""}
             placeholder={placeholder || t("character.wiki.valuePlaceholder")}
             onSave={onSave || (() => {})}
@@ -81,23 +79,44 @@ export function InfoboxRow({
 export function Infobox({
   title,
   image,
+  imageUrl,
+  color,
   rows,
   onAddField,
 }: {
   title: string;
   image?: React.ReactNode;
+  /** Generated portrait URL; falls back to `image` node when absent. */
+  imageUrl?: string | null;
+  /** Character signature colour (hex). When set, the box renders as a tinted identity card. */
+  color?: string;
   rows: InfoboxRowProps[];
   onAddField: () => void;
 }) {
   const { t } = useTranslation();
-  return (
-    <div className="w-full border border-(--namu-border) bg-surface rounded-lg overflow-hidden shrink-0 shadow-sm text-[13px]">
-      <div className="bg-accent text-white text-center px-3 py-2.5 font-bold text-[14px]">
-        {title}
-      </div>
-      {image && (
-        <div className="w-full bg-(--namu-table-bg) flex items-center justify-center border-b border-(--namu-border) py-6">
-          {image}
+  // ponytail: title is now shown in the page header; prop kept to avoid caller churn.
+  void title;
+
+  const portrait = imageUrl ? (
+    <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+  ) : (
+    image
+  );
+
+  const body = (
+    <>
+      {(portrait || color) && (
+        <div className="flex items-center justify-center pb-3">
+          <div
+            className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full"
+            style={
+              color
+                ? { backgroundColor: `${color}1a`, border: `1px solid ${color}33` }
+                : undefined
+            }
+          >
+            {portrait}
+          </div>
         </div>
       )}
       <div className="flex flex-col">
@@ -107,12 +126,24 @@ export function Infobox({
       </div>
       <button
         type="button"
-        className="w-full px-3 py-2.5 bg-surface border-none border-t border-(--namu-border) text-muted text-[12px] cursor-pointer flex items-center justify-center gap-1.5 hover:bg-(--namu-hover-bg) hover:text-fg transition-colors"
+        className="mt-2 flex items-center gap-1 bg-transparent border-none text-[12px] text-subtle hover:text-accent transition-colors cursor-pointer p-0"
         onClick={onAddField}
       >
         <Plus size={11} />
         <span>{t("character.wiki.addField")}</span>
       </button>
-    </div>
+    </>
   );
+
+  // Character identity card (colour present); event/faction keep the plain box.
+  if (color) {
+    return (
+      <div className="w-full shrink-0 overflow-hidden rounded-panel border border-border bg-surface text-[13px] shadow-panel">
+        <div className="h-1" style={{ backgroundColor: color }} />
+        <div className="p-4">{body}</div>
+      </div>
+    );
+  }
+
+  return <div className="w-full shrink-0 text-[13px]">{body}</div>;
 }

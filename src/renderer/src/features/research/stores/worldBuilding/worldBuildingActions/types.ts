@@ -23,5 +23,6 @@ export type WorldBuildingActions = Pick<
   | "deleteRelation"
   | "setGraphCanvasBlocks"
   | "setGraphCanvasEdges"
+  | "setGraphCanvasFiles"
   | "setTimelines"
 >;

@@ -71,7 +71,7 @@ describe("ProjectService path safety", () => {
     const renameSpy = vi.spyOn(fs, "rename");
 
     const { ProjectService } =
-      await import("../../../src/main/services/core/projectService.js");
+      await import("../../../src/main/services/features/project/projectService.js");
     const service = new ProjectService();
     const scheduleSpy = vi
       .spyOn(service, "schedulePackageExport")

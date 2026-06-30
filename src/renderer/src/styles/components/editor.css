@@ -44,9 +44,9 @@
        letter-spacing, word-spacing 은 Editor 외부 컨테이너에서
        CSS custom property로 주입 → store 변경 시 즉시 반영(reactive). */
     font-size: 1rem;
-    line-height: var(--editor-line-height, inherit);
-    letter-spacing: var(--editor-letter-spacing, 0.05em);
-    word-spacing: var(--editor-word-spacing, 0.06em);
+    line-height: var(--editor-line-height, 1.9);
+    letter-spacing: var(--editor-letter-spacing, 0.02em);
+    word-spacing: var(--editor-word-spacing, 0.04em);
     word-break: keep-all;
     overflow-wrap: break-word;
 
@@ -90,9 +90,9 @@
     margin-top: 0;
     margin-bottom: var(--editor-paragraph-spacing, 1em);
     /* --editor-line-height 는 Editor.tsx에서 ProseMirror root에 CSS var로 주입된다.
-       fallback 1.4 = 커서가 한국어 글자와 거의 같은 높이로 보이는 최적값 */
-    line-height: var(--editor-line-height, 1.4);
-    min-height: calc(var(--editor-font-size, 1rem) * var(--editor-line-height, 1.4));
+       fallback 1.9 = 노벨피아·문피아 한국어 장문 본문 기준 (헤더 주석과 일치) */
+    line-height: var(--editor-line-height, 1.9);
+    min-height: calc(var(--editor-font-size, 1rem) * var(--editor-line-height, 1.9));
 }
 
 /* ================================================================
@@ -474,3 +474,73 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background-color: var(--text-tertiary);
 }
+
+/* ================================================================
+   ENTITY DOCUMENT VIEW (research "문서" mode)
+   ----------------------------------------------------------------
+   Reuses the .tiptap prose typography but drops the manuscript-only
+   typewriter tail and full-height stretch so it sits naturally in a
+   short entity panel.
+   ================================================================ */
+.entity-document .ProseMirror {
+    min-height: 12rem;
+    height: auto;
+    flex: none;
+}
+.entity-document .ProseMirror::after {
+    content: none;
+    height: 0;
+    display: none;
+}
+
+/* Section headings (= wiki sections) read as distinct blocks:
+   denser than manuscript chapters + a character-coloured marker bar. */
+.entity-document .ProseMirror h1 {
+    position: relative;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-top: 1.8em;
+    padding-left: 0.75rem;
+}
+.entity-document .ProseMirror h1:first-child {
+    margin-top: 0;
+}
+.entity-document .ProseMirror h1::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.18em;
+    bottom: 0.18em;
+    width: 3px;
+    border-radius: 9999px;
+    background: var(--entity-accent, var(--border-active));
+}
+
+/* Placeholder for the active empty block only. */
+.entity-document .ProseMirror .is-empty::before {
+    content: attr(data-placeholder);
+    color: var(--text-tertiary);
+    float: left;
+    height: 0;
+    pointer-events: none;
+}
+
+/* Callout block — markdown blockquotes (`> `) render as a tinted callout box
+   in the entity document. Native markdown so it round-trips on save; tinted
+   with the character accent for a Notion-style highlight. */
+.entity-document .ProseMirror blockquote {
+    margin: 1.25em 0;
+    padding: 0.7rem 1rem 0.7rem 1.1rem;
+    border: none;
+    border-left: 3px solid var(--entity-accent, var(--accent-bg));
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--entity-accent, var(--accent-bg)) 7%, transparent);
+    color: var(--text-primary);
+    font-style: normal;
+}
+.entity-document .ProseMirror blockquote p {
+    margin: 0.3em 0;
+    font-style: normal;
+}
+.entity-document .ProseMirror blockquote p:first-child { margin-top: 0; }
+.entity-document .ProseMirror blockquote p:last-child { margin-bottom: 0; }

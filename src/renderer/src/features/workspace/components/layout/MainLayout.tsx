@@ -33,6 +33,14 @@ import {
 } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
+import {
+  shouldCloseMainLayoutPanelOnResize,
+  shouldPersistMainLayoutContext,
+  type MainLayoutResizeSurface,
+} from "@renderer/features/workspace/utils/mainLayoutResize";
+import { createLogger } from "@shared/logger";
+
+const logger = createLogger("MainLayout");
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -73,11 +81,17 @@ export default function MainLayout({
     })),
   );
 
-  const mainSidebarConfig = getLayoutSurfaceConfig("default.sidebar");
-  const mainContextConfig = getLayoutSurfaceConfig("default.panel");
+  const sidebarSurface = isCanvasMode ? "canvas.activity" : "default.sidebar";
+  const contextSurface = isCanvasMode ? "canvas.binder" : "default.panel";
+  const mainSidebarConfig = getLayoutSurfaceConfig(sidebarSurface);
+  const mainContextConfig = getLayoutSurfaceConfig(contextSurface);
   const mainLayoutGroupRef = useRef<HTMLDivElement | null>(null);
   const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
   const contextPanelRef = useRef<PanelImperativeHandle | null>(null);
+  const activeResizeSurfaceRef = useRef<MainLayoutResizeSurface | null>(null);
+  const activeResizeClearTimerRef = useRef<number | null>(null);
+  const openingRegionRef = useRef<"leftSidebar" | "rightPanel" | null>(null);
+  const openingRegionTimerRef = useRef<number | null>(null);
   const mainLayoutGroupWidth = useElementWidth(mainLayoutGroupRef);
   const mainSidebarSize = getResponsivePanelSize(
     mainLayoutGroupWidth,
@@ -88,10 +102,35 @@ export default function MainLayout({
     mainContextConfig,
   );
 
-  const onLayoutChanged = useLayoutPersist([
-    { id: "sidebar-panel", surface: "default.sidebar" },
-    { id: "context-panel", surface: "default.panel" },
+  const persistSidebarLayoutChanged = useLayoutPersist([
+    { id: "sidebar-panel", index: 0, surface: sidebarSurface },
   ]);
+  const persistContextLayoutChanged = useLayoutPersist([
+    { id: "context-panel", index: 2, surface: contextSurface },
+  ]);
+  // Disable panel flex transitions while a separator is being dragged.
+  const [isResizing, setIsResizing] = useState(false);
+
+  const markResizeSurface = useCallback((surface: MainLayoutResizeSurface) => {
+    activeResizeSurfaceRef.current = surface;
+    setIsResizing(true);
+  }, []);
+  const scheduleResizeSurfaceClear = useCallback(
+    (surface: MainLayoutResizeSurface | null) => {
+      if (surface === null) return;
+      if (activeResizeClearTimerRef.current !== null) {
+        window.clearTimeout(activeResizeClearTimerRef.current);
+      }
+      activeResizeClearTimerRef.current = window.setTimeout(() => {
+        if (activeResizeSurfaceRef.current === surface) {
+          activeResizeSurfaceRef.current = null;
+        }
+        activeResizeClearTimerRef.current = null;
+        setIsResizing(false);
+      }, 180);
+    },
+    [],
+  );
   const onContentLayoutChanged = useCallback(
     (layout: Layout) => {
       additionalPanelIds.forEach((panelId, panelIndex) => {
@@ -106,11 +145,11 @@ export default function MainLayout({
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
 
   const sidebarRatio =
-    layoutSurfaceRatios["default.sidebar"] ||
-    getLayoutSurfaceDefaultRatio("default.sidebar");
+    layoutSurfaceRatios[sidebarSurface] ||
+    getLayoutSurfaceDefaultRatio(sidebarSurface);
   const contextRatio =
-    layoutSurfaceRatios["default.panel"] ||
-    getLayoutSurfaceDefaultRatio("default.panel");
+    layoutSurfaceRatios[contextSurface] ||
+    getLayoutSurfaceDefaultRatio(contextSurface);
 
   const [sidebarDefaultSize, setSidebarDefaultSize] = useState(() =>
     toPanelPercentSize(sidebarRatio),
@@ -128,6 +167,54 @@ export default function MainLayout({
     openSize: sidebarDefaultSize,
     panelRef: sidebarPanelRef,
   });
+
+  const markOpeningRegion = useCallback((region: "leftSidebar" | "rightPanel") => {
+    openingRegionRef.current = region;
+    if (openingRegionTimerRef.current !== null) {
+      window.clearTimeout(openingRegionTimerRef.current);
+    }
+    openingRegionTimerRef.current = window.setTimeout(() => {
+      if (openingRegionRef.current === region) {
+        openingRegionRef.current = null;
+      }
+      openingRegionTimerRef.current = null;
+    }, 360);
+  }, []);
+
+  const toggleSidebar = useCallback(() => {
+    if (!isSidebarOpen) {
+      markOpeningRegion("leftSidebar");
+    }
+    toggleLeftSidebar();
+  }, [isSidebarOpen, markOpeningRegion, toggleLeftSidebar]);
+
+  const toggleContextPanel = useCallback(() => {
+    if (!isContextOpen) {
+      markOpeningRegion("rightPanel");
+    }
+    setRegionOpen("rightPanel", !isContextOpen);
+  }, [isContextOpen, markOpeningRegion, setRegionOpen]);
+
+  useEffect(
+    () => () => {
+      if (activeResizeClearTimerRef.current !== null) {
+        window.clearTimeout(activeResizeClearTimerRef.current);
+      }
+      if (openingRegionTimerRef.current !== null) {
+        window.clearTimeout(openingRegionTimerRef.current);
+      }
+    },
+    [],
+  );
+  useEffect(() => {
+    const stopResizing = () => setIsResizing(false);
+    window.addEventListener("pointerup", stopResizing);
+    window.addEventListener("pointercancel", stopResizing);
+    return () => {
+      window.removeEventListener("pointerup", stopResizing);
+      window.removeEventListener("pointercancel", stopResizing);
+    };
+  }, []);
   const {
     isClosing: isContextClosing,
     isOpening: isContextOpening,
@@ -139,21 +226,110 @@ export default function MainLayout({
     panelRef: contextPanelRef,
   });
 
+  const closeCollapsedRegionAfterMainLayoutChanged = useCallback(
+    (layout: Layout, activeSurface: MainLayoutResizeSurface | null) => {
+      if (
+        activeSurface === sidebarSurface &&
+        isSidebarOpen &&
+        !isSidebarOpening &&
+        !isSidebarClosing
+      ) {
+        const rawSize = getPanelLayoutValue(layout, "sidebar-panel", 0);
+        if (
+          typeof rawSize === "number" &&
+          shouldCloseMainLayoutPanelOnResize(
+            { asPercentage: rawSize, inPixels: Number.POSITIVE_INFINITY },
+            false,
+            false,
+          )
+        ) {
+          logger.debug("Closed left sidebar after collapsed layout commit", {
+            asPercentage: rawSize,
+            sidebarSurface,
+          });
+          suppressLayoutPersistenceFor(500);
+          setRegionOpen("leftSidebar", false);
+        }
+      }
+
+      if (
+        activeSurface === contextSurface &&
+        isContextOpen &&
+        !isContextOpening &&
+        !isContextClosing
+      ) {
+        const rawSize = getPanelLayoutValue(layout, "context-panel", 2);
+        if (
+          typeof rawSize === "number" &&
+          shouldCloseMainLayoutPanelOnResize(
+            { asPercentage: rawSize, inPixels: Number.POSITIVE_INFINITY },
+            false,
+            false,
+          )
+        ) {
+          logger.debug("Closed context panel after collapsed layout commit", {
+            asPercentage: rawSize,
+            activeResizeSurface: activeSurface,
+            contextSurface,
+          });
+          suppressLayoutPersistenceFor(500);
+          setRegionOpen("rightPanel", false);
+        }
+      }
+    },
+    [
+      contextSurface,
+      isContextClosing,
+      isContextOpen,
+      isContextOpening,
+      isSidebarClosing,
+      isSidebarOpen,
+      isSidebarOpening,
+      setRegionOpen,
+      sidebarSurface,
+    ],
+  );
+  const onMainLayoutChanged = useCallback(
+    (layout: Layout) => {
+      const activeSurface = activeResizeSurfaceRef.current;
+      persistSidebarLayoutChanged(layout);
+      closeCollapsedRegionAfterMainLayoutChanged(layout, activeSurface);
+      if (!shouldPersistMainLayoutContext(activeSurface)) {
+        logger.debug("Skipped context layout persistence during main sidebar resize", {
+          activeResizeSurface: activeSurface,
+          contextSurface,
+          layout,
+        });
+        scheduleResizeSurfaceClear(activeSurface);
+        return;
+      }
+      persistContextLayoutChanged(layout);
+      scheduleResizeSurfaceClear(activeSurface);
+    },
+    [
+      closeCollapsedRegionAfterMainLayoutChanged,
+      contextSurface,
+      persistContextLayoutChanged,
+      persistSidebarLayoutChanged,
+      scheduleResizeSurfaceClear,
+    ],
+  );
+
   useEffect(() => {
     if (shouldRenderSidebar) return;
     const safeRatio =
-      sidebarRatio < 5 ? getLayoutSurfaceDefaultRatio("default.sidebar") : sidebarRatio;
+      sidebarRatio < 5 ? getLayoutSurfaceDefaultRatio(sidebarSurface) : sidebarRatio;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSidebarDefaultSize(toPanelPercentSize(safeRatio));
-  }, [shouldRenderSidebar, sidebarRatio]);
+  }, [shouldRenderSidebar, sidebarRatio, sidebarSurface]);
 
   useEffect(() => {
     if (shouldRenderContext) return;
     const safeRatio =
-      contextRatio < 5 ? getLayoutSurfaceDefaultRatio("default.panel") : contextRatio;
+      contextRatio < 5 ? getLayoutSurfaceDefaultRatio(contextSurface) : contextRatio;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setContextDefaultSize(toPanelPercentSize(safeRatio));
-  }, [shouldRenderContext, contextRatio]);
+  }, [shouldRenderContext, contextRatio, contextSurface]);
 
   return (
     <div className="flex flex-col h-screen bg-app text-fg">
@@ -165,112 +341,68 @@ export default function MainLayout({
           orientation="horizontal"
           className="flex flex-1 overflow-hidden relative w-full h-full"
           elementRef={mainLayoutGroupRef}
-          onLayoutChanged={onLayoutChanged}
+          onLayoutChanged={onMainLayoutChanged}
         >
-          {/* Sidebar */}
-          {shouldRenderSidebar && (
-            <Panel
-              id="sidebar-panel"
-              panelRef={sidebarPanelRef}
-              collapsible
-              collapsedSize={0}
-              onResize={(panelSize) => {
-                if (isSidebarOpening || isSidebarClosing) return;
-                const isCollapsed =
-                  panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
-                if (isCollapsed) {
-                  suppressLayoutPersistenceFor(500);
-                  setRegionOpen("leftSidebar", false);
-                }
-              }}
-              data-panel-animated="true"
-              defaultSize={sidebarDefaultSize}
-              minSize={mainSidebarSize.minSize}
-              maxSize={mainSidebarSize.maxSize}
-              className={`bg-sidebar border-r border-border overflow-hidden flex flex-col z-10 ${enableAnimations
-                  ? isSidebarClosing
-                    ? "animate-out slide-out-to-left fade-out duration-200"
-                    : "animate-in slide-in-from-left fade-in duration-200"
-                  : ""
-                }`}
-            >
-              {sidebar}
-            </Panel>
-          )}
+          <Panel
+            id="sidebar-panel"
+            panelRef={sidebarPanelRef}
+            collapsible
+            collapsedSize={0}
+            data-panel-animated={isResizing ? undefined : "true"}
+            defaultSize={isSidebarOpen ? sidebarDefaultSize : 0}
+            minSize={mainSidebarSize.minSize}
+            maxSize={mainSidebarSize.maxSize}
+            className={`bg-sidebar overflow-hidden flex flex-col z-10 ${enableAnimations
+                ? isSidebarClosing
+                  ? "animate-out slide-out-to-left fade-out duration-200"
+                  : isSidebarOpen
+                    ? "animate-in slide-in-from-left fade-in duration-200"
+                    : ""
+                : ""
+              }`}
+          >
+            {shouldRenderSidebar ? sidebar : null}
+          </Panel>
 
           {shouldRenderSidebar && (
             <PanelResizeHandle
-              data-separator-feature="default.sidebar"
-              className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative"
+              data-separator-feature={sidebarSurface}
+              onKeyDown={() => markResizeSurface(sidebarSurface)}
+              onPointerDown={() => markResizeSurface(sidebarSurface)}
+              className="w-1 bg-transparent hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative"
             />
           )}
 
           {/* Main Content */}
           <Panel
             id="main-content-panel"
+            minSize={toPercentSize(10)}
             className="flex-1 min-w-0 bg-app relative flex flex-col z-0"
           >
-            <EditorDropZones />
-
-            {/* 캔버스 모드용 플로팅 접기/펴기 복원 버튼 — 항상 표시, 상태에 따라 아이콘 전환 */}
-            {isCanvasMode && (
-              <>
-                <button
-                  onClick={toggleLeftSidebar}
-                  className="absolute left-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-lg border border-border/80 bg-background/90 text-muted-foreground shadow-md backdrop-blur-sm transition-all hover:bg-accent hover:text-foreground active:scale-95 cursor-pointer"
-                  title={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
-                  aria-label={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
-                >
-                  {isSidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
-                </button>
-                <button
-                  onClick={() => setRegionOpen("rightPanel", !isContextOpen)}
-                  className="absolute right-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-lg border border-border/80 bg-background/90 text-muted-foreground shadow-md backdrop-blur-sm transition-all hover:bg-accent hover:text-foreground active:scale-95 cursor-pointer"
-                  title={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
-                  aria-label={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
-                >
-                  {isContextOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
-                </button>
-              </>
+            {/* 패널 접기/펴기 토글 — 에디터 코너에 떠 있는 버튼. 일반 모드는 고스트,
+                캔버스 모드는 캔버스 위에 떠야 하므로 backdrop 칩 스타일. */}
+            {!isCanvasMode && (
+              <button
+                onClick={toggleSidebar}
+                className="absolute left-2 top-2 z-40 flex h-8 w-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-active hover:text-fg cursor-pointer"
+                title={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
+                aria-label={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
+              >
+                {isSidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+              </button>
             )}
             {!isCanvasMode && (
-              <div className="flex items-center px-4 py-2 h-12 shrink-0">
-                <button
-                  className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-colors duration-150 hover:bg-active hover:text-fg"
-                  onClick={toggleLeftSidebar}
-                  title={
-                    isSidebarOpen
-                      ? t("mainLayout.tooltip.sidebarCollapse")
-                      : t("mainLayout.tooltip.sidebarExpand")
-                  }
-                >
-                  {isSidebarOpen ? (
-                    <PanelLeftClose className="icon-xl" />
-                  ) : (
-                    <PanelLeftOpen className="icon-xl" />
-                  )}
-                </button>
-
-                <div className="flex-1" />
-
-                <button
-                  className="bg-transparent border-none text-muted cursor-pointer p-2 rounded-md flex items-center justify-center transition-colors duration-150 hover:bg-active hover:text-fg"
-                  onClick={() => setRegionOpen("rightPanel", !isContextOpen)}
-                  title={
-                    isContextOpen
-                      ? t("mainLayout.tooltip.contextCollapse")
-                      : t("mainLayout.tooltip.contextExpand")
-                  }
-                >
-                  {isContextOpen ? (
-                    <PanelRightClose className="icon-xl" />
-                  ) : (
-                    <PanelRightOpen className="icon-xl" />
-                  )}
-                </button>
-              </div>
+              <button
+                onClick={toggleContextPanel}
+                className="absolute right-2 top-2 z-40 flex h-8 w-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-active hover:text-fg cursor-pointer"
+                title={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
+                aria-label={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
+              >
+                {isContextOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+              </button>
             )}
 
+            <EditorDropZones />
             <div className="flex-1 overflow-y-auto flex flex-col">
               <PanelGroup
                 id="main-layout-content-group"
@@ -282,7 +414,7 @@ export default function MainLayout({
                   id="main-primary-content"
                   defaultSize={toPercentSize(50)}
                   minSize={toPercentSize(20)}
-                  className="min-w-0 bg-canvas relative flex flex-col"
+                  className="min-w-0 bg-app relative flex flex-col"
                 >
                   {children}
                 </Panel>
@@ -303,51 +435,34 @@ export default function MainLayout({
 
           {shouldRenderContext && (
             <PanelResizeHandle
-              data-separator-feature="default.panel"
-              className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative"
+              data-separator-feature={contextSurface}
+              onKeyDown={() => markResizeSurface(contextSurface)}
+              onPointerDown={() => markResizeSurface(contextSurface)}
+              className="w-1 bg-transparent hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative"
             />
           )}
 
-          {/* Context Panel */}
-          {shouldRenderContext && (
-            <Panel
-              id="context-panel"
-              panelRef={contextPanelRef}
-              collapsible
-              collapsedSize={0}
-              onResize={(panelSize) => {
-                if (isContextOpening || isContextClosing) return;
-                const isCollapsed =
-                  panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
-                if (isCollapsed) {
-                  suppressLayoutPersistenceFor(500);
-                  setRegionOpen("rightPanel", false);
-                }
-              }}
-              data-panel-animated="true"
-              defaultSize={contextDefaultSize}
-              minSize={mainContextSize.minSize}
-              maxSize={mainContextSize.maxSize}
-              className={`bg-panel border-l border-border overflow-hidden flex flex-col z-10 ${enableAnimations
-                  ? isContextClosing
-                    ? "animate-out slide-out-to-right fade-out duration-200"
-                    : "animate-in slide-in-from-right fade-in duration-200"
-                  : ""
-                }`}
-            >
-              {contextPanel}
-            </Panel>
-          )}
-
-          {!shouldRenderSidebar && !shouldRenderContext && (
-            <Panel
-              id="main-layout-placeholder"
-              defaultSize={0}
-              minSize={0}
-              maxSize={0}
-              className="pointer-events-none overflow-hidden opacity-0"
-            />
-          )}
+          <Panel
+            id="context-panel"
+            panelRef={contextPanelRef}
+            collapsible
+            collapsedSize={0}
+            data-panel-animated={isResizing ? undefined : "true"}
+            groupResizeBehavior="preserve-pixel-size"
+            defaultSize={isContextOpen ? contextDefaultSize : 0}
+            minSize={mainContextSize.minSize}
+            maxSize={mainContextSize.maxSize}
+            className={`bg-panel border-l border-border overflow-hidden flex flex-col z-10 ${enableAnimations
+                ? isContextClosing
+                  ? "animate-out slide-out-to-right fade-out duration-200"
+                  : isContextOpen
+                    ? "animate-in slide-in-from-right fade-in duration-200"
+                    : ""
+                : ""
+              }`}
+          >
+            {shouldRenderContext ? contextPanel : null}
+          </Panel>
         </PanelGroup>
       </div>
     </div>

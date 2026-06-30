@@ -45,7 +45,7 @@ export default function SidebarMemoList() {
     <div className="flex flex-col h-full bg-sidebar/50">
       <div className="flex items-center justify-end px-2 py-1 gap-1 border-b border-border/20">
         <button
-          className="p-1 hover:bg-white/10 rounded text-muted-foreground hover:text-foreground transition-colors"
+          className="p-1 hover:bg-white/10 rounded text-muted hover:text-fg transition-colors"
           onClick={handleAddNote}
           title={t("memo.title")}
         >
@@ -81,7 +81,7 @@ export default function SidebarMemoList() {
                 {note.title || t("project.defaults.untitled")}
               </div>
               <div
-                className="text-xs text-muted-foreground truncate opacity-70"
+                className="text-xs text-muted truncate opacity-70"
                 suppressHydrationWarning
               >
                 {new Date(note.updatedAt).toLocaleDateString()}

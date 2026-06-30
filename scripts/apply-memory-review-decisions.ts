@@ -3,7 +3,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { db } from "../src/main/database/main/databaseService.js";
-import { projectService } from "../src/main/services/core/projectService.js";
+import { projectService } from "../src/main/services/features/project/projectService.js";
 import {
   applyMemoryReviewDecisions,
   validateMemoryReviewDecisionsAgainstDb,

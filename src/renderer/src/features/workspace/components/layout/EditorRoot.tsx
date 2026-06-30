@@ -18,7 +18,10 @@ import { useShallow } from "zustand/react/shallow";
 import { useChapterManagement } from "@renderer/domains/manuscript";
 import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import { useWorkspaceDropHandlers } from "@renderer/features/workspace/hooks/useWorkspaceDropHandlers";
-import { useProjectLayoutPersistence } from "@renderer/features/workspace/hooks/useProjectLayoutPersistence";
+import {
+  getProjectLayoutPersistenceMode,
+  useProjectLayoutPersistence,
+} from "@renderer/features/workspace/hooks/useProjectLayoutPersistence";
 import { emitShortcutCommand } from "@renderer/features/workspace/hooks/useShortcutCommand";
 import { useDialog } from "@shared/ui/useDialog";
 import { openDocsRightTab as openDocsPanelTab } from "@renderer/features/workspace/services/docsPanelService";
@@ -87,7 +90,11 @@ export default function EditorRoot() {
   const currentProject = useProjectStore((state) => state.currentProject);
   const updateProject = useProjectStore((state) => state.updateProject);
 
-  useProjectLayoutPersistence(currentProject?.id ?? null, uiMode);
+  const layoutPersistenceMode = getProjectLayoutPersistenceMode(
+    uiMode,
+    mainViewType,
+  );
+  useProjectLayoutPersistence(currentProject?.id ?? null, layoutPersistenceMode);
 
   const setProjectAwareSidebarOpen = useCallback(
     (open: boolean) => {

@@ -40,6 +40,7 @@ const normalizeErrorMessage = (error: unknown): string =>
 export const useMemoStore = create<MemoStore>((set, get) => {
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
   let pendingSave: Promise<void> | null = null;
+  let hasPendingChanges = false;
 
   const clearSaveTimer = (): void => {
     if (!saveTimer) return;
@@ -49,7 +50,8 @@ export const useMemoStore = create<MemoStore>((set, get) => {
 
   const persistNotes = async (): Promise<void> => {
     const { activeProjectId, activeProjectPath, notes } = get();
-    if (!activeProjectId) return;
+    if (!activeProjectId || !hasPendingChanges) return;
+    hasPendingChanges = false;
 
     set((state) =>
       state.isSaving && state.error === null && state.saveError === null
@@ -66,6 +68,7 @@ export const useMemoStore = create<MemoStore>((set, get) => {
         },
       );
     } catch (error) {
+      hasPendingChanges = true;
       const message = normalizeErrorMessage(error);
       void api.logger.warn("Failed to save memo store state", {
         projectId: activeProjectId,
@@ -84,20 +87,34 @@ export const useMemoStore = create<MemoStore>((set, get) => {
   const schedulePersist = (): void => {
     const { activeProjectId } = get();
     if (!activeProjectId) return;
+    hasPendingChanges = true;
 
     clearSaveTimer();
     saveTimer = setTimeout(() => {
       saveTimer = null;
-      pendingSave = persistNotes();
-      void pendingSave;
+      const save = persistNotes();
+      pendingSave = save;
+      void save.finally(() => {
+        if (pendingSave === save) {
+          pendingSave = null;
+        }
+      });
     }, DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS);
   };
 
   const flushPendingSave = async (): Promise<void> => {
     clearSaveTimer();
     await pendingSave;
-    pendingSave = persistNotes();
-    await pendingSave;
+    if (!hasPendingChanges) return;
+    const save = persistNotes();
+    pendingSave = save;
+    try {
+      await save;
+    } finally {
+      if (pendingSave === save) {
+        pendingSave = null;
+      }
+    }
   };
 
   return {
@@ -276,6 +293,7 @@ export const useMemoStore = create<MemoStore>((set, get) => {
     reset: () => {
       clearSaveTimer();
       pendingSave = null;
+      hasPendingChanges = false;
       set({
         activeProjectId: null,
         activeProjectPath: null,

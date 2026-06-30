@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { ExternalApiProvider } from "../../../src/main/services/llm/providers/externalApiProvider.js";
-import { GeminiProvider } from "../../../src/main/services/llm/providers/geminiProvider.js";
+import { ExternalApiProvider } from "../../../src/main/services/features/llm/providers/externalApiProvider.js";
+import { GeminiProvider } from "../../../src/main/services/features/llm/providers/geminiProvider.js";
 
 const providerSource = (relativePath: string): string =>
   readFileSync(resolve(process.cwd(), relativePath), "utf8");
@@ -10,10 +10,10 @@ const providerSource = (relativePath: string): string =>
 describe("provider client dependency boundary", () => {
   it("keeps provider clients free of settings and sync token imports", () => {
     const externalApiProvider = providerSource(
-      "src/main/services/llm/providers/externalApiProvider.ts",
+      "src/main/services/features/llm/providers/externalApiProvider.ts",
     );
     const geminiProvider = providerSource(
-      "src/main/services/llm/providers/geminiProvider.ts",
+      "src/main/services/features/llm/providers/geminiProvider.ts",
     );
 
     for (const source of [externalApiProvider, geminiProvider]) {
@@ -79,7 +79,7 @@ describe("provider client dependency boundary", () => {
     expect(materializerSource).not.toContain("ensureSyncAccessToken");
     expect(materializerSource).not.toContain("getSupabaseConfig");
     expect(materializerSource).not.toContain(
-      "../../services/llm/embeddingModelConstants",
+      "../../services/features/llm/embeddingModelConstants",
     );
     expect(materializerSource).toContain("proxyResolverForCandidate");
   });
@@ -90,7 +90,7 @@ describe("provider client dependency boundary", () => {
     );
 
     expect(supervisorSource).not.toContain(
-      "../../services/llm/embeddingModelConstants",
+      "../../services/features/llm/embeddingModelConstants",
     );
     expect(supervisorSource).toContain("./embeddingModelConstants");
   });
@@ -139,8 +139,10 @@ describe("provider client dependency boundary", () => {
     );
 
     expect(worldReplicaSource).not.toContain(
-      'import { projectService } from "../../core/projectService.js";',
+      'import { projectService } from "../project/projectService.js";',
     );
-    expect(worldReplicaSource).toContain("await import(\"../../core/projectService.js\")");
+    expect(worldReplicaSource).toContain(
+      'await import("../project/projectService.js")',
+    );
   });
 });

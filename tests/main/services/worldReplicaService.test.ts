@@ -89,7 +89,7 @@ vi.mock("../../../src/main/database/index.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/core/projectService.js", () => ({
+vi.mock("../../../src/main/services/features/project/projectService.js", () => ({
   projectService: {
     attemptImmediatePackageExport: (projectId: string, reason: string) =>
       mocked.attemptImmediatePackageExport(projectId, reason),
@@ -172,8 +172,50 @@ describe("worldReplicaService", () => {
     });
   });
 
+  it("uses canonical scrap memo rows instead of stale aggregate document payload", async () => {
+    mocked.worldDocumentFindUnique.mockReturnValue({
+      payload: JSON.stringify({
+        schemaVersion: 2,
+        memos: [
+          {
+            id: "stale-memo",
+            title: "Stale",
+            content: "Old",
+            tags: [],
+            updatedAt: "2026-03-12T01:00:00.000Z",
+          },
+        ],
+        updatedAt: "2026-03-12T01:00:00.000Z",
+      }),
+      updatedAt: new Date("2026-03-12T01:00:00.000Z"),
+    });
+    mocked.scrapMemoFindMany.mockResolvedValue([
+      {
+        id: "memo-1",
+        title: "Memo",
+        content: "Fresh",
+        tags: JSON.stringify(["tag"]),
+        updatedAt: new Date("2026-03-12T02:00:00.000Z"),
+      },
+    ]);
+
+    await expect(
+      worldReplicaService.getScrapMemos("7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1"),
+    ).resolves.toMatchObject({
+      found: true,
+      data: {
+        memos: [
+          {
+            id: "memo-1",
+            content: "Fresh",
+          },
+        ],
+      },
+    });
+  });
+
   it("replaces scrap memo rows and stores the aggregate payload together", async () => {
-    await worldReplicaService.setScrapMemos({
+    await expect(worldReplicaService.setScrapMemos({
       projectId: "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
       data: {
         schemaVersion: 2,
@@ -188,7 +230,7 @@ describe("worldReplicaService", () => {
         ],
         updatedAt: "2026-03-12T03:00:00.000Z",
       },
-    });
+    })).resolves.toEqual({});
 
     expect(mocked.transaction).toHaveBeenCalledTimes(1);
     expect(mocked.worldDocumentWrite).toHaveBeenCalledWith(
@@ -221,24 +263,39 @@ describe("worldReplicaService", () => {
         sortOrder: 0,
       }),
     ]);
+    expect(mocked.attemptImmediatePackageExport).toHaveBeenCalledWith(
+      "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
+      "world-document:scrap",
+    );
   });
 
-  it("triggers package export when the graph document is updated", async () => {
+  it("surfaces scrap memo package export failures", async () => {
+    mocked.attemptImmediatePackageExport.mockResolvedValueOnce({
+      exported: false,
+      error: new Error("scrap export failed"),
+    });
+
+    await expect(
+      worldReplicaService.setScrapMemos({
+        projectId: "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
+        data: {
+          schemaVersion: 2,
+          memos: [],
+          updatedAt: "2026-03-12T03:00:00.000Z",
+        },
+      }),
+    ).resolves.toEqual({
+      packageExportError: "scrap export failed",
+    });
+  });
+
+  it("triggers package export when any replica document is updated", async () => {
     await expect(
       worldReplicaService.setDocument({
         projectId: "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
-        docType: "graph",
+        docType: "synopsis",
         payload: {
-          nodes: [
-            {
-              id: "character-1",
-              entityType: "Character",
-              name: "Alice",
-              positionX: 120,
-              positionY: 240,
-            },
-          ],
-          edges: [],
+          synopsis: "Alice starts the case.",
           updatedAt: "2026-03-13T09:00:00.000Z",
         },
       }),
@@ -246,11 +303,11 @@ describe("worldReplicaService", () => {
 
     expect(mocked.attemptImmediatePackageExport).toHaveBeenCalledWith(
       "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
-      "world-document:graph",
+      "world-document:synopsis",
     );
   });
 
-  it("surfaces graph package export failures without hiding them", async () => {
+  it("surfaces replica package export failures without hiding them", async () => {
     mocked.attemptImmediatePackageExport.mockResolvedValueOnce({
       exported: false,
       error: new Error("export failed"),

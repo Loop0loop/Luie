@@ -65,7 +65,7 @@ export class FeatureErrorBoundary extends Component<Props, State> {
       if (fallback) return fallback;
 
       return (
-        <div className="flex flex-col items-center justify-center gap-4 p-8 text-center h-full min-h-[160px] bg-panel rounded-lg border border-border/50">
+        <div className="flex flex-col items-center justify-center gap-4 p-8 text-center h-full min-h-[160px] bg-panel rounded-panel border border-border/50">
           <div className="flex items-center justify-center w-10 h-10 rounded-full bg-danger/10 text-danger shrink-0">
             <AlertCircle className="w-5 h-5" />
           </div>
@@ -86,7 +86,7 @@ export class FeatureErrorBoundary extends Component<Props, State> {
 
           <button
             onClick={this.handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-accent text-on-accent hover:opacity-90 transition-opacity"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-control bg-accent text-on-accent hover:opacity-90 transition-opacity"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             다시 시도

@@ -21,10 +21,26 @@ const binaryPath = join(releaseDir, "better_sqlite3.node");
 const forgeMetaPath = join(releaseDir, ".forge-meta");
 const expectedForgeMeta = `${process.arch}--${electronAbi}`;
 
+const loadsWithCurrentNodeAbi = () => {
+  try {
+    const Database = require("better-sqlite3");
+    const database = new Database(":memory:");
+    database.close();
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const nodeAbi = process.versions.modules;
+const binaryLooksLikeNodeBuild =
+  nodeAbi !== electronAbi && existsSync(binaryPath) && loadsWithCurrentNodeAbi();
+
 const hasMatchingBuild =
   existsSync(binaryPath) &&
   existsSync(forgeMetaPath) &&
-  readFileSync(forgeMetaPath, "utf8").trim() === expectedForgeMeta;
+  readFileSync(forgeMetaPath, "utf8").trim() === expectedForgeMeta &&
+  !binaryLooksLikeNodeBuild;
 
 if (hasMatchingBuild) {
   console.log(
@@ -36,6 +52,11 @@ if (hasMatchingBuild) {
 console.log(
   `electron-rebuild required: better-sqlite3 ${betterSqlite.version}, Electron ${electron.version} ABI ${electronAbi}`,
 );
+if (binaryLooksLikeNodeBuild) {
+  console.log(
+    `electron-rebuild required: binary loads in Node ABI ${nodeAbi}, not Electron ABI ${electronAbi}`,
+  );
+}
 
 const result = spawnSync(
   "pnpm",

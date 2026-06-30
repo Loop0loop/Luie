@@ -15,6 +15,7 @@ import {
 } from "@renderer/shared/constants/layoutSizing";
 import { beginLayoutRestoring } from "@renderer/features/workspace/hooks/useProjectLayoutPersistence";
 import { getDocsRightPanelId } from "../../utils/docsLayoutModel";
+import { shouldCloseDocsRightPanelOnResize } from "../../utils/googleDocsPanelResize";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
 import { suppressLayoutPersistenceFor } from "@renderer/features/workspace/hooks/useLayoutPersist";
 
@@ -169,6 +170,7 @@ export function GoogleDocsRightPanel({
   const panelRef = useRef<PanelImperativeHandle | null>(null);
   const {
     isClosing,
+    isOpening,
     shouldRender: shouldRenderPanel,
   } = useResizablePanelPresence({
     enableAnimations,
@@ -208,9 +210,7 @@ export function GoogleDocsRightPanel({
   }, [renderedTab, shouldRenderPanel]);
 
   const handlePanelResize = (panelSize: PanelSize) => {
-    const isCollapsed =
-      panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
-    if (isCollapsed) {
+    if (shouldCloseDocsRightPanelOnResize(panelSize, isOpening, isClosing)) {
       suppressLayoutPersistenceFor(500);
       closeRightPanel();
     }
@@ -240,12 +240,13 @@ export function GoogleDocsRightPanel({
         collapsible
         collapsedSize={0}
         data-panel-animated="true"
+        groupResizeBehavior="preserve-pixel-size"
         defaultSize={toPanelPercentSize(rightPanelRatio)}
         minSize={rightPanelSize.minSize}
         maxSize={rightPanelSize.maxSize}
         onResize={handlePanelResize}
         onMouseDownCapture={onFocus}
-        className={`flex min-w-0 shrink-0 flex-col overflow-hidden border-l border-border bg-background ${
+        className={`flex min-w-0 shrink-0 flex-col overflow-hidden border-l border-border bg-app ${
           enableAnimations
             ? isClosing
               ? "animate-out slide-out-to-right fade-out duration-200"

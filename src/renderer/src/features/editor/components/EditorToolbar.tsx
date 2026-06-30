@@ -45,6 +45,8 @@ export default function EditorToolbar({
   isCanvasMode = false,
   onOpenExport,
   canOpenExport = true,
+  hideCanvasToggle = false,
+  className,
 }: EditorToolbarProps) {
   const { t } = useTranslation();
 
@@ -54,7 +56,7 @@ export default function EditorToolbar({
 
   const fontSize = useEditorStore((state) => state.fontSize);
   const lineHeight = useEditorStore((state) => state.lineHeight);
-  const letterSpacing = useEditorStore((state) => state.letterSpacing ?? 0.05);
+  const letterSpacing = useEditorStore((state) => state.letterSpacing ?? 0.02);
   const paragraphSpacing = useEditorStore((state) => state.paragraphSpacing ?? 1);
   const setFontSize = useEditorStore((state) => state.setFontSize);
   const updateSettings = useEditorStore((state) => state.updateSettings);
@@ -95,7 +97,7 @@ export default function EditorToolbar({
   };
 
   const renderEditorCanvasToggle = () => (
-    <div className="flex h-7 items-center rounded-md border border-border bg-muted/20 p-0.5 text-xs font-medium">
+    <div className="flex h-7 items-center rounded-control border border-border bg-muted/20 p-0.5 text-xs font-medium">
       <button
         type="button"
         onClick={() => {
@@ -137,7 +139,7 @@ export default function EditorToolbar({
   );
 
   return (
-    <div className="flex w-full select-none items-center justify-center border-b border-border bg-panel px-2 py-1.5">
+    <div className={cn("flex w-full select-none items-center justify-center bg-sidebar px-2 py-1.5", className)}>
       <div className="flex items-center gap-0.5">
         <div
           className={cn(
@@ -283,7 +285,7 @@ export default function EditorToolbar({
           )}
         </div>
 
-        {renderEditorCanvasToggle()}
+        {!hideCanvasToggle && renderEditorCanvasToggle()}
 
         <div
           className={cn(

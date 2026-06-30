@@ -30,6 +30,7 @@ type Item = {
 
 type CreateInput = {
   name: string;
+  projectId?: string;
 };
 
 type UpdateInput = {
@@ -154,6 +155,53 @@ describe("createCRUDStore", () => {
       name: "Hero",
     });
     await store.getState().loadAll("project-1");
+  });
+
+  it("allows concurrent create calls for different projects", async () => {
+    const projectOneCreate = deferred<IPCResponse<Item>>();
+    const projectTwoCreate = deferred<IPCResponse<Item>>();
+    const apiClient = createApiClient(
+      Promise.resolve({
+        success: true,
+        data: {
+          id: "fallback",
+          name: "Fallback",
+        },
+      }),
+      Promise.resolve({
+        success: true,
+        data: [],
+      }),
+    );
+    apiClient.create.mockImplementation((input: CreateInput) =>
+      input.projectId === "project-1"
+        ? projectOneCreate.promise
+        : projectTwoCreate.promise,
+    );
+    const store = create(
+      createCRUDSlice<Item, CreateInput, UpdateInput>(apiClient, "Item"),
+    );
+
+    const firstCreate = store
+      .getState()
+      .create({ name: "Hero", projectId: "project-1" });
+    const secondCreate = store
+      .getState()
+      .create({ name: "Rival", projectId: "project-2" });
+
+    expect(apiClient.create).toHaveBeenCalledTimes(2);
+
+    projectOneCreate.resolve({
+      success: true,
+      data: { id: "item-1", name: "Hero" },
+    });
+    projectTwoCreate.resolve({
+      success: true,
+      data: { id: "item-2", name: "Rival" },
+    });
+
+    await expect(firstCreate).resolves.toMatchObject({ id: "item-1" });
+    await expect(secondCreate).resolves.toMatchObject({ id: "item-2" });
   });
 
   it("returns false and surfaces an error when delete fails", async () => {

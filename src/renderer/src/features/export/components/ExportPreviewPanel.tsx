@@ -67,10 +67,10 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
     <div className="flex flex-col h-full bg-panel text-fg overflow-hidden relative border-l border-border">
       {/* Header / Selection & Actions */}
       <div className="flex items-center justify-between px-4 py-3 bg-secondary border-b border-border shrink-0">
-        <div className="flex items-center gap-2 bg-input/50 p-1 rounded-lg border border-border">
+        <div className="flex items-center gap-2 bg-input/50 p-1 rounded-panel border border-border">
           <button
             className={cn(
-              "px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5",
+              "px-3 py-1.5 rounded-control text-xs font-medium transition-all flex items-center gap-1.5",
               format === "hwp" ? "bg-surface text-accent shadow-sm" : "text-muted hover:text-fg"
             )}
             onClick={() => setFormat("hwp")}
@@ -79,7 +79,7 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
           </button>
           <button
             className={cn(
-              "px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5",
+              "px-3 py-1.5 rounded-control text-xs font-medium transition-all flex items-center gap-1.5",
               format === "word" ? "bg-surface text-accent shadow-sm" : "text-muted hover:text-fg"
             )}
             onClick={() => setFormat("word")}
@@ -89,7 +89,7 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
         </div>
 
         <button
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white rounded-md text-xs font-medium hover:brightness-110 transition-all shadow-sm"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white rounded-control text-xs font-medium hover:brightness-110 transition-all shadow-sm"
           onClick={handleExport}
         >
           <Download className="w-3.5 h-3.5" />

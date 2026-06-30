@@ -9,6 +9,7 @@ import {
 } from "@renderer/shared/constants/layoutSizing";
 import {
   buildDefaultSidebarWidths,
+  getPersistableSidebarWidths,
   normalizeSidebarWidthsWithMigrations,
 } from "@renderer/shared/constants/sidebarSizing";
 import {
@@ -25,7 +26,6 @@ import {
 import type { ZodError } from "zod";
 import {
   buildRegionsFromLegacyState,
-  cloneRegions,
   DEFAULT_REGIONS,
   isRecord,
   mergeScrivenerSections,
@@ -35,6 +35,20 @@ import { DEFAULT_SCRIVENER_SECTIONS, type UIStore } from "./uiStore.types";
 
 const DEFAULT_SIDEBAR_WIDTHS: Record<string, number> = buildDefaultSidebarWidths();
 const DEFAULT_LAYOUT_SURFACE_RATIOS = buildDefaultLayoutSurfaceRatios();
+
+export const getPersistableUiRegions = (
+  regions: UIStore["regions"],
+): UIStore["regions"] => ({
+  leftSidebar: {
+    ...DEFAULT_REGIONS.leftSidebar,
+    widthPx: regions.leftSidebar.widthPx,
+  },
+  rightPanel: {
+    ...DEFAULT_REGIONS.rightPanel,
+    widthByTab: { ...regions.rightPanel.widthByTab },
+  },
+  rightRail: { ...DEFAULT_REGIONS.rightRail },
+});
 
 const getBrowserLogger = () =>
   typeof window === "undefined" ? null : (window.api?.logger ?? null);
@@ -150,12 +164,12 @@ export const buildUiStorePersistOptions = (): PersistOptions<
     worldTab: state.worldTab,
     isManuscriptMenuOpen: state.isManuscriptMenuOpen,
     scrivenerSections: state.scrivenerSections,
-    sidebarWidths: normalizeSidebarWidthsWithMigrations(state.sidebarWidths),
+    sidebarWidths: getPersistableSidebarWidths(state.sidebarWidths),
     layoutSurfaceRatios: normalizeLayoutSurfaceRatiosWithMigrations(
       state.layoutSurfaceRatios,
       state.sidebarWidths,
     ),
-    regions: cloneRegions(state.regions),
+    regions: getPersistableUiRegions(state.regions),
   }),
   merge: (persistedState, currentState) => {
     if (!isRecord(persistedState)) {

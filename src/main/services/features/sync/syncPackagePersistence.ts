@@ -20,7 +20,7 @@ import {
   snapshot as snapshotTable,
 } from "../../../infra/database/index.js";
 import { ensureSafeAbsolutePath } from "../../../utils/fs/index.js";
-import { projectService } from "../../core/projectService.js";
+import { projectService } from "../project/projectService.js";
 import { getProjectAttachmentPath } from "../../core/project/projectAttachmentStore.js";
 import type { SyncBundle } from "./syncMapper.js";
 import type { WorldDocumentType } from "./syncWorldDocNormalizer.js";
@@ -140,8 +140,9 @@ export const buildProjectPackagePayload = async (input: {
       deletedWorldDocTypes.add(doc.docType as WorldDocumentType);
       continue;
     }
-    if (worldDocs.has(doc.docType as WorldDocumentType)) continue;
-    worldDocs.set(doc.docType as WorldDocumentType, doc.payload);
+    const docType = doc.docType as WorldDocumentType;
+    if (deletedWorldDocTypes.has(docType) || worldDocs.has(docType)) continue;
+    worldDocs.set(docType, doc.payload);
   }
 
   await hydrateMissingWorldDocsFromPackage(
@@ -342,6 +343,7 @@ export const persistBundleToLuiePackages = async (input: {
       });
     } catch (error) {
       failedProjects.push(project.id);
+      projectService.schedulePackageExport(project.id, "sync:retry");
       logger.error("Failed to persist merged bundle into .luie package", {
         projectId: project.id,
         projectPath: safeProjectPath,

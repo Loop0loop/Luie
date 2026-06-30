@@ -22,8 +22,8 @@ export const TermCard = ({
   return (
     <div
       className={cn(
-        "group flex flex-col justify-between p-4 bg-element border border-border rounded-xl relative shadow-sm transition-all overflow-hidden h-full",
-        isOverlay ? "cursor-grabbing shadow-xl border-accent scale-105 z-50 bg-element-hover" : "hover:bg-element-hover hover:border-accent/40 hover:-translate-y-1 hover:shadow-md cursor-grab"
+        "group flex flex-col justify-between p-4 bg-element border border-border rounded-panel relative shadow-sm transition-all overflow-hidden h-full",
+        isOverlay ? "cursor-grabbing shadow-panel border-accent scale-105 z-50 bg-element-hover" : "hover:bg-element-hover hover:border-accent/40 hover:-translate-y-1 hover:shadow-md cursor-grab"
       )}
       onClick={onSelect ? () => onSelect(item.id) : undefined}
     >
@@ -40,14 +40,14 @@ export const TermCard = ({
           </span>
         )}
 
-        <div className="text-xs text-muted-foreground line-clamp-3 leading-relaxed opacity-80">
+        <div className="text-xs text-muted line-clamp-3 leading-relaxed opacity-80">
           {item.definition || t("world.term.noDefinition")}
         </div>
       </div>
 
       {onDelete && !isOverlay && (
         <button
-          className="absolute top-3 right-3 p-1.5 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive text-muted transition-all cursor-pointer"
+          className="absolute top-3 right-3 p-1.5 rounded opacity-0 group-hover:opacity-100 hover:bg-danger/10 hover:text-danger text-muted transition-all cursor-pointer"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();

@@ -88,9 +88,19 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
   apiClient: APIClient<T, CreateInput, UpdateInput>,
   name: string,
 ): StateCreator<CRUDStore<T, CreateInput, UpdateInput>> {
-  let createInFlight = false;
+  const createInFlight = new Set<string>();
   let loadAllRequestId = 0;
   let loadOneRequestId = 0;
+
+  const getCreateLockKey = (input: CreateInput): string => {
+    if (input && typeof input === "object" && "projectId" in input) {
+      const projectId = (input as { projectId?: unknown }).projectId;
+      if (typeof projectId === "string" && projectId.length > 0) {
+        return projectId;
+      }
+    }
+    return "__global__";
+  };
 
   return (set) => ({
     items: [],
@@ -151,13 +161,14 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
     },
 
     create: async (input: CreateInput) => {
-      if (createInFlight) {
+      const lockKey = getCreateLockKey(input);
+      if (createInFlight.has(lockKey)) {
         const message = `Failed to create ${name}: another create request is already in flight.`;
         set({ error: message });
         api.logger.warn(message);
         return null;
       }
-      createInFlight = true;
+      createInFlight.add(lockKey);
       set({ isLoading: true, error: null });
       try {
         const response = await apiClient.create(input);
@@ -173,7 +184,7 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
         set({ error: (error as Error).message });
         return null;
       } finally {
-        createInFlight = false;
+        createInFlight.delete(lockKey);
         set({ isLoading: false });
       }
     },

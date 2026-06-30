@@ -102,7 +102,7 @@ vi.mock("../../../src/main/database/index.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/core/projectService.js", () => ({
+vi.mock("../../../src/main/services/features/project/projectService.js", () => ({
   projectService: {
     persistPackageAfterMutation: (projectId: string, reason: string) =>
       mocked.persistPackageAfterMutation(projectId, reason),

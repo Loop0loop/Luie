@@ -6,6 +6,7 @@ import {
   scrapMemo,
   worldDocument,
 } from "../../../../infra/database/index.js";
+import { parseWorldJsonSafely } from "../../../../../shared/world/worldDocumentCodec.js";
 import type { SyncBundle } from "../syncMapper.js";
 import {
   normalizeDrawingPayload,
@@ -98,6 +99,9 @@ const normalizeWorldDocumentPayload = (
   }
 };
 
+const hasInvalidJsonPayloadString = (payload: unknown): boolean =>
+  typeof payload === "string" && parseWorldJsonSafely(payload) === null;
+
 export const applyReplicaWorldState = (
   tx: DbLike,
   bundle: SyncBundle,
@@ -133,6 +137,13 @@ export const applyReplicaWorldState = (
 
     for (const [docType, doc] of worldDocMap.entries()) {
       if (docType === "scrap") {
+        continue;
+      }
+      if (hasInvalidJsonPayloadString(doc.payload)) {
+        logger.warn("Skipping invalid sync world document payload", {
+          projectId: proj.id,
+          docType,
+        });
         continue;
       }
       const normalizedPayload = normalizeWorldDocumentPayload(
@@ -198,20 +209,26 @@ export const applyReplicaWorldState = (
         .run();
     }
 
-    tx.delete(scrapMemo).where(eq(scrapMemo.projectId, proj.id)).run();
+    const shouldRewriteScrapMemos =
+      worldDocMap.has("scrap") ||
+      memos.length > 0 ||
+      deletedDocTypes.has("scrap");
+    if (shouldRewriteScrapMemos) {
+      tx.delete(scrapMemo).where(eq(scrapMemo.projectId, proj.id)).run();
 
-    const scrapMemoRows = normalizedScrapPayload.memos.map((memo, index) => ({
-      id: memo.id,
-      projectId: proj.id,
-      title: memo.title,
-      content: memo.content,
-      tags: JSON.stringify(memo.tags),
-      sortOrder: index,
-      createdAt: new Date(memo.updatedAt).toISOString(),
-      updatedAt: new Date(memo.updatedAt).toISOString(),
-    }));
-    if (scrapMemoRows.length > 0) {
-      tx.insert(scrapMemo).values(scrapMemoRows).run();
+      const scrapMemoRows = normalizedScrapPayload.memos.map((memo, index) => ({
+        id: memo.id,
+        projectId: proj.id,
+        title: memo.title,
+        content: memo.content,
+        tags: JSON.stringify(memo.tags),
+        sortOrder: index,
+        createdAt: new Date(memo.updatedAt).toISOString(),
+        updatedAt: new Date(memo.updatedAt).toISOString(),
+      }));
+      if (scrapMemoRows.length > 0) {
+        tx.insert(scrapMemo).values(scrapMemoRows).run();
+      }
     }
 
     if (deletedDocTypes.size > 0 || worldDocMap.size > 0 || memos.length > 0) {

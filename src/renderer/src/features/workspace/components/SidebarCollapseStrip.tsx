@@ -2,6 +2,7 @@
 import { useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 
 // Strip is wider when collapsed so "펼치기" label is readable
 const STRIP_WIDTH_COLLAPSED = 22;
@@ -20,6 +21,7 @@ export function SidebarCollapseStrip({
   children,
 }: SidebarCollapseStripProps) {
   const { t } = useTranslation();
+  const enableAnimations = useEditorStore((state) => state.enableAnimations);
   const [isPeeking, setIsPeeking] = useState(false);
 
   const openPeek = useCallback(() => {
@@ -57,7 +59,11 @@ export function SidebarCollapseStrip({
       {/* Strip — always in flex flow */}
       <div
         style={{ width: stripWidth }}
-        className="flex-shrink-0 h-full flex flex-col bg-sidebar border-r border-border/50 z-10 transition-[width] duration-150"
+        className={`flex-shrink-0 h-full flex flex-col bg-sidebar border-r border-border/50 z-10 ${
+          enableAnimations
+            ? "transition-[width] duration-150 motion-reduce:transition-none"
+            : "transition-none"
+        }`}
         onMouseEnter={openPeek}
         onMouseLeave={closePeek}
       >
@@ -114,10 +120,15 @@ export function SidebarCollapseStrip({
       <div
         onMouseEnter={() => isCollapsed && setIsPeeking(true)}
         onMouseLeave={closePeek}
-        className="absolute top-0 bottom-0 z-20 bg-sidebar/95 border-r border-border/30 shadow-2xl overflow-hidden transition-[width] duration-150 ease-out flex flex-col"
+        className={`absolute top-0 bottom-0 z-20 bg-sidebar/95 border-r border-border/30 shadow-panel overflow-hidden flex flex-col ${
+          enableAnimations
+            ? "transition-transform duration-150 ease-out motion-reduce:transition-none"
+            : "transition-none"
+        }`}
         style={{
           left: stripWidth,
-          width: peekVisible ? PEEK_WIDTH : 0,
+          width: PEEK_WIDTH,
+          transform: peekVisible ? "translateX(0)" : "translateX(-100%)",
           pointerEvents: peekVisible ? "auto" : "none",
         }}
       >

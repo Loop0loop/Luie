@@ -59,7 +59,7 @@ function HeroImage({
           type="button"
           onClick={onRegenerate}
           title="이미지 재생성"
-          className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/50 text-white/70 hover:bg-black/70 hover:text-white transition-all backdrop-blur-sm text-[12px] opacity-0 group-hover/img:opacity-100"
+          className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-panel bg-black/50 text-white/70 hover:bg-black/70 hover:text-white transition-all backdrop-blur-sm text-[12px] opacity-0 group-hover/img:opacity-100"
         >
           <RefreshCw size={11} />
           재생성
@@ -84,7 +84,7 @@ function HeroImage({
         )}
       >
         <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center transition-transform group-hover/cta:scale-105"
+          className="w-16 h-16 rounded-panel flex items-center justify-center transition-transform group-hover/cta:scale-105"
           style={{ backgroundColor: `${characterColor}15` }}
         >
           {isGenerating ? (
@@ -101,7 +101,7 @@ function HeroImage({
             위키 내용을 분석해 이미지와 대사를 만듭니다
           </span>
         </div>
-        {error && <span className="text-[12px] text-destructive">{error}</span>}
+        {error && <span className="text-[12px] text-danger">{error}</span>}
       </button>
     );
   }
@@ -117,7 +117,7 @@ function HeroImage({
       >
         이미지 생성하기
       </button>
-      {error && <span className="text-[11px] text-destructive">{error}</span>}
+      {error && <span className="text-[11px] text-danger">{error}</span>}
     </div>
   );
 }
@@ -181,7 +181,7 @@ type StatsCardProps = {
 
 function StatsCard({ axes, color, isAnalyzing, error, onAnalyze, onAxesChange }: StatsCardProps) {
   return (
-    <div className="rounded-xl border border-border bg-surface overflow-hidden">
+    <div className="rounded-panel border border-border bg-surface overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/50">
         <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">
@@ -192,7 +192,7 @@ function StatsCard({ axes, color, isAnalyzing, error, onAnalyze, onAxesChange }:
           disabled={isAnalyzing}
           onClick={onAnalyze}
           className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all border",
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-panel text-[12px] font-medium transition-all border",
             isAnalyzing
               ? "border-border/30 text-muted/40 cursor-not-allowed"
               : "border-border/60 text-muted hover:border-accent/60 hover:text-accent hover:bg-accent/5 cursor-pointer",
@@ -209,8 +209,8 @@ function StatsCard({ axes, color, isAnalyzing, error, onAnalyze, onAxesChange }:
 
       {/* Error banner */}
       {error && (
-        <div className="px-5 py-2.5 bg-destructive/8 border-b border-destructive/20">
-          <p className="text-[12px] text-destructive">{error}</p>
+        <div className="px-5 py-2.5 bg-danger/8 border-b border-danger/20">
+          <p className="text-[12px] text-danger">{error}</p>
         </div>
       )}
 
@@ -236,7 +236,7 @@ type ColorThemeProps = {
 
 function ColorTheme({ value, onChange }: ColorThemeProps) {
   return (
-    <div className="rounded-xl border border-border bg-surface px-5 py-3.5 flex items-center gap-4">
+    <div className="rounded-panel border border-border bg-surface px-5 py-3.5 flex items-center gap-4">
       <span className="text-[11px] font-semibold text-muted uppercase tracking-widest shrink-0">
         테마 컬러
       </span>
@@ -348,7 +348,7 @@ export function CharacterVisualPanel({ characterId, characterName, attrs }: Char
     <div className="flex flex-col gap-4 max-w-[680px]">
 
       {/* ── Hero card: image + quote ────────────────────────────────────── */}
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <div className="rounded-panel border border-border bg-surface overflow-hidden">
         <HeroImage
           src={generatedImage}
           characterName={characterName}
@@ -378,7 +378,7 @@ export function CharacterVisualPanel({ characterId, characterName, attrs }: Char
         <button
           type="button"
           onClick={() => generateImage(buildInput(), setGeneratedImage)}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-[13px] font-medium border border-dashed border-accent/40 text-accent/80 hover:bg-accent/5 hover:border-accent/70 transition-colors cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-panel text-[13px] font-medium border border-dashed border-accent/40 text-accent/80 hover:bg-accent/5 hover:border-accent/70 transition-colors cursor-pointer"
         >
           <Sparkles size={13} />
           이미지 생성하기

@@ -19,7 +19,7 @@ import type {
   RelationKind,
 } from "../../../../shared/types/index.js";
 import type * as schema from "../../../infra/database/index.js";
-import { buildCanonicalWorldEntityPointers } from "../../world/entityRelationPointers.js";
+import { buildCanonicalWorldEntityPointers } from "../../features/world/graph/entityRelationPointers.js";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

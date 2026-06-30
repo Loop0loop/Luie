@@ -49,6 +49,12 @@ function buildNodes(
   selectedNodeId: string | null,
 ): Node<RFEntityNodeData>[] {
   let autoIndex = 0;
+  const connectionCounts = new Map<string, number>();
+  for (const edge of projection.edges) {
+    connectionCounts.set(edge.sourceId, (connectionCounts.get(edge.sourceId) ?? 0) + 1);
+    connectionCounts.set(edge.targetId, (connectionCounts.get(edge.targetId) ?? 0) + 1);
+  }
+
   return projection.nodes.map((node) => {
     const position = hasPersistedPosition(node.x, node.y)
       ? { x: node.x, y: node.y }
@@ -64,6 +70,7 @@ function buildNodes(
         kind: node.kind,
         label: node.label,
         description: node.description ?? null,
+        connectionCount: connectionCounts.get(node.id) ?? 0,
         isSelected: node.id === selectedNodeId,
       } satisfies RFEntityNodeData,
     };

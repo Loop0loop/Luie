@@ -87,6 +87,26 @@ describe("readLuieImportCollections", () => {
       }),
     );
     mocked.entries.set(
+      "world/graph.json",
+      JSON.stringify({
+        nodes: [],
+        edges: [],
+        canvasBlocks: [],
+        canvasEdges: [],
+        canvasFiles: [
+          {
+            id: "folder-1",
+            kind: "folder",
+            name: "Reference",
+            parentId: null,
+            updatedAt: "2026-03-02T01:00:00.000Z",
+          },
+        ],
+        timelines: [],
+        updatedAt: "2026-03-02T01:00:00.000Z",
+      }),
+    );
+    mocked.entries.set(
       "memory/canonical.json",
       JSON.stringify({
         schemaVersion: 1,
@@ -113,6 +133,10 @@ describe("readLuieImportCollections", () => {
     expect(collections.snapshots).toHaveLength(1);
     expect(collections.synopsis).toMatchObject({ synopsis: "story" });
     expect(collections.memos?.memos).toHaveLength(1);
+    expect(collections.graph).toMatchObject({
+      canvasFiles: [expect.objectContaining({ id: "folder-1" })],
+      timelines: [],
+    });
     expect(collections.memory?.tables?.MemoryEntity).toHaveLength(1);
   });
 

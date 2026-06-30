@@ -36,7 +36,7 @@ export function EntityAliasReviewPanel({
   const [canonicalNames, setCanonicalNames] = useState<Record<string, string>>({});
 
   return (
-    <div className="rounded-lg border border-border bg-surface px-3 py-2 text-xs">
+    <div className="rounded-panel border border-border bg-surface px-3 py-2 text-xs">
       <button
         type="button"
         onClick={onToggle}

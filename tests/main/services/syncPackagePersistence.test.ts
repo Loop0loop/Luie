@@ -47,6 +47,24 @@ describe("syncPackagePersistence", () => {
           updatedAt: "2026-03-03T00:00:00.000Z",
           deletedAt: "2026-03-03T00:00:00.000Z",
         },
+        {
+          id: "project-1:graph-old",
+          userId: "user-1",
+          projectId: "project-1",
+          docType: "graph",
+          payload: {
+            nodes: [
+              {
+                id: "stale-node",
+                entityType: "Character",
+                name: "Stale",
+              },
+            ],
+            edges: [],
+            updatedAt: "2026-03-01T00:00:00.000Z",
+          },
+          updatedAt: "2026-03-01T00:00:00.000Z",
+        },
       ],
       memos: [],
       snapshots: [],
@@ -150,6 +168,7 @@ describe("syncPackagePersistence", () => {
       edges: [],
       canvasBlocks: [],
       canvasEdges: [],
+      canvasFiles: [],
       timelines: [],
     });
     expect(result?.synopsis).toMatchObject({

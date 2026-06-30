@@ -63,12 +63,12 @@ export function TemplateGrid({
               relative aspect-3/4 w-full
               bg-surface/40 
               border border-white/5 
-              rounded-md 
+              rounded-control 
               overflow-hidden 
               transition-all duration-300 
               shadow-sm
               group-hover:-translate-y-1.5 
-              group-hover:shadow-2xl 
+              group-hover:shadow-xl 
               group-hover:border-white/10
               group-hover:bg-surface
             "

@@ -28,7 +28,6 @@ export default function EventDetailView({ eventId }: EventDetailViewProps) {
     <EntityDetailView
       entity={currentItem}
       entityId={eventId}
-      entityKind="event"
       icon={<Calendar size={80} color="var(--border-active)" />}
       loadEntity={loadEvent}
       updateEntity={updateEvent}

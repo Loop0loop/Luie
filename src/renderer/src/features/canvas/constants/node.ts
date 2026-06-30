@@ -11,27 +11,29 @@
  * group-hover:opacity-60 은 EntityNode처럼 group wrapper가 있는 경우에만 효과 있음.
  */
 export const CANVAS_HANDLE_CLASS =
-  "h-2.5! w-2.5! rounded-full! border-2! border-panel! bg-accent! opacity-0 transition-opacity duration-150 hover:opacity-100 group-hover:opacity-60";
+  "canvas-node-handle opacity-0 transition-opacity duration-150 hover:opacity-100 group-hover:opacity-80";
 
 /**
- * 노드 카드 기본 shadow 클래스.
- * Tailwind arbitrary value는 상수화해 한 곳에서 관리합니다.
+ * 노드 카드 기본 shadow 클래스 — Obsidian Canvas 카드는 미묘한 그림자로
+ * 캔버스 배경 위에 떠 있는 느낌. hover 시 살짝 강조.
  */
 export const CANVAS_NODE_SHADOW_CLASS =
-  "shadow-[0_2px_8px_rgba(0,0,0,0.15)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.25)]";
+  "shadow-sm hover:shadow-md";
 
 /**
- * 노드 카드 선택 상태 shadow.
+ * 노드 카드 선택 상태 — Obsidian Canvas 스타일.
+ * 파랑 ring 대신 더 두꺼운 보더 + 강조 그림자로 선택 표현.
+ * (DESIGN.md "chrome recedes" + Notion/Obsidian 참조 — 파랑 ring 회피)
  */
 export const CANVAS_NODE_SELECTED_SHADOW_CLASS =
-  "shadow-[0_0_0_2px_var(--accent-bg),0_4px_12px_rgba(0,0,0,0.3)]";
+  "shadow-md";
 
 /**
  * hex 알파값 상수 — 동적 색상에 투명도를 붙일 때 사용합니다.
  * 예: `${colour}${HEX_ALPHA_20}` → 20% 투명도
  */
 export const HEX_ALPHA_20 = "33" as const; // 0x33 / 0xFF ≈ 20%
-export const HEX_ALPHA_25 = "40" as const; // 0x40 / 0xFF ≈ 25px
+export const HEX_ALPHA_25 = "40" as const; // 0x40 / 0xFF ≈ 25%
 
 // ─── World Graph Constellation Core Node IDs ───────────────────────────────
 export const GRAPH_CORE_CHARACTERS = {

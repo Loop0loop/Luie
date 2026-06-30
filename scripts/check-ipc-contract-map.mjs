@@ -129,6 +129,22 @@ export const collectIpcUsage = (files, rootDir = PROJECT_ROOT) => {
         usageByKey,
         content,
         relativeFile: normalized,
+        category: "renderer_invoke",
+        regex:
+          /\b(?:invoke|invokeOne|invokeProjectPayload)\(\s*IPC_CHANNELS\.([A-Z0-9_]+)/g,
+      });
+      pushMatches({
+        usageByKey,
+        content,
+        relativeFile: normalized,
+        category: "renderer_invoke",
+        regex:
+          /\b(?:create|get|getAll|update|delete):\s*IPC_CHANNELS\.([A-Z0-9_]+)/g,
+      });
+      pushMatches({
+        usageByKey,
+        content,
+        relativeFile: normalized,
         category: "renderer_send",
         regex: /ipcRenderer\.send\(\s*IPC_CHANNELS\.([A-Z0-9_]+)/g,
       });
@@ -138,6 +154,14 @@ export const collectIpcUsage = (files, rootDir = PROJECT_ROOT) => {
         relativeFile: normalized,
         category: "renderer_listen",
         regex: /ipcRenderer\.(?:on|once)\(\s*IPC_CHANNELS\.([A-Z0-9_]+)/g,
+      });
+      pushMatches({
+        usageByKey,
+        content,
+        relativeFile: normalized,
+        category: "renderer_listen",
+        regex:
+          /\b(?:onChannel|onRunScopedChannel)(?:<[^>]+>)?\(\s*IPC_CHANNELS\.([A-Z0-9_]+)/g,
       });
       continue;
     }

@@ -353,6 +353,14 @@ export interface WorldGraphCanvasEdge {
   color?: string;
   direction?: WorldGraphCanvasEdgeDirection;
 }
+export type WorldGraphCanvasFileKind = "folder" | "canvas";
+export interface WorldGraphCanvasFile {
+  id: string;
+  kind: WorldGraphCanvasFileKind;
+  name: string;
+  parentId?: string | null;
+  updatedAt?: string;
+}
 export type WorldGraphCanvasBlock =
   | {
       id: string;
@@ -382,6 +390,7 @@ export interface WorldGraphData {
   edges: EntityRelation[];
   canvasBlocks?: WorldGraphCanvasBlock[];
   canvasEdges?: WorldGraphCanvasEdge[];
+  canvasFiles?: WorldGraphCanvasFile[];
   timelines?: WorldTimelineTrack[];
 }
 export interface WorldGraphMentionsQuery {

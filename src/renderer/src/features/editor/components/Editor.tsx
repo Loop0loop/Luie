@@ -323,7 +323,7 @@ function Editor({
 
   return (
     <div
-      className="flex flex-col h-full w-full bg-transparent text-foreground relative box-border overflow-hidden"
+      className="flex flex-col h-full w-full bg-transparent text-fg relative box-border overflow-hidden"
       data-testid="editor"
       style={{
         "--entity-character-color": entityColors?.character ?? "#2563eb",
@@ -386,7 +386,7 @@ function Editor({
             <input
               type="text"
               className={cn(
-                "w-full border-none bg-transparent pb-4 text-2xl font-bold text-foreground outline-none shrink-0 placeholder:text-muted-foreground",
+                "w-full border-none bg-transparent pb-4 text-2xl font-bold text-fg outline-none shrink-0 placeholder:text-muted",
                 isMobileView && "px-6",
                 readOnly && "pointer-events-none opacity-80",
               )}

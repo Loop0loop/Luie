@@ -10,12 +10,12 @@ import {
   parseSha256Content,
   parseDigestField,
   type GithubReleaseAsset,
-} from "../../../src/main/services/llm/llmfitInstaller.js";
+} from "../../../src/main/infra/llm/llmfitInstaller.js";
 import {
   resolveLlmfitPlatformKey,
   llmfitBinaryName,
   LLMFIT_ASSET_TARGETS,
-} from "../../../src/main/services/llm/llmfitConstants.js";
+} from "../../../src/main/infra/llm/llmfitConstants.js";
 
 // v0.9.29 실제 릴리스 자산 구조를 본뜬 픽스처.
 const VERSION = "v0.9.29";

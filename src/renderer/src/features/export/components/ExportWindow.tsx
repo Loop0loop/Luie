@@ -38,7 +38,7 @@ export default function ExportWindow() {
   } = useExportManager();
 
   return (
-    <div className="flex flex-col w-screen h-screen bg-canvas text-fg overflow-hidden select-none font-sans">
+    <div className="flex flex-col w-screen h-screen bg-app text-fg overflow-hidden select-none font-sans">
       {/* Window Bar */}
       <div className="shrink-0 bg-panel border-b border-border">
         <WindowBar title={t("exportWindow.title")} />

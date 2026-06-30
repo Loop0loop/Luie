@@ -4,6 +4,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MessageList } from "../../src/renderer/src/features/research/components/analysisSection/chat/MessageList.js";
+import { writerFlowSyntheticNovel } from "../fixtures/writerFlowSyntheticNovel.js";
 
 const { translate } = vi.hoisted(() => {
   const translations: Record<string, string> = {
@@ -36,8 +37,12 @@ vi.mock("react-i18next", () => ({
 describe("MessageList safety label", () => {
   let container: HTMLDivElement;
   let root: Root;
+  const chapter12 = writerFlowSyntheticNovel.chapters[1];
 
   beforeEach(() => {
+    Object.assign(globalThis, {
+      IS_REACT_ACT_ENVIRONMENT: true,
+    });
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -87,13 +92,14 @@ describe("MessageList safety label", () => {
             {
               id: "assistant-1",
               role: "assistant",
-              content: "여주는 아직 약의 정체를 모릅니다.",
+              content: "12화 기준으로 서린은 아직 봉인 약의 정체를 모릅니다.",
+              answerMode: "EVIDENCE",
               evidence: [
                 {
                   chunkId: "chunk-1",
-                  chapterId: "chapter-12",
+                  chapterId: chapter12.id,
                   offset: 42,
-                  quote: "여주는 병의 이름만 들었고 약의 정체는 알지 못했다.",
+                  quote: chapter12.canon,
                 },
               ],
             },
@@ -105,11 +111,32 @@ describe("MessageList safety label", () => {
 
     const text = container.textContent ?? "";
     expect(text).toContain("chunk-1");
+    expect(text).toContain("근거 답변");
     expect(text).toContain("chapter-12 · offset 42");
-    expect(text).toContain("여주는 병의 이름만 들었고 약의 정체는 알지 못했다.");
-    expect(text.indexOf("여주는 병의 이름만 들었고 약의 정체는 알지 못했다.")).toBeLessThan(
-      text.indexOf("여주는 아직 약의 정체를 모릅니다."),
+    expect(text).toContain(chapter12.canon);
+    expect(text.indexOf(chapter12.canon)).toBeLessThan(
+      text.indexOf("12화 기준으로 서린은 아직 봉인 약의 정체를 모릅니다."),
     );
+  });
+
+  it("renders advisory answers separately from canon answers", () => {
+    act(() => {
+      root.render(
+        <MessageList
+          messages={[
+            {
+              id: "assistant-1",
+              role: "assistant",
+              content: "일반 조언으로는 갈등 선택지를 둘로 나누는 방법이 있습니다.",
+              answerMode: "ADVISORY",
+            },
+          ]}
+          onJumpEvidence={vi.fn()}
+        />,
+      );
+    });
+
+    expect(container.textContent).toContain("일반 조언");
   });
 
   it("does not show a confirmed label when the answer has no evidence", () => {

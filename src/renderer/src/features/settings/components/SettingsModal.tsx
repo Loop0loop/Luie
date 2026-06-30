@@ -60,7 +60,7 @@ interface SettingsModalProps {
 }
 
 const settingsTabFallback = (
-  <div className="min-h-[320px] animate-pulse rounded-xl bg-surface/60" />
+  <div className="min-h-[320px] animate-pulse rounded-panel bg-surface/60" />
 );
 
 export default function SettingsModal({ onClose, initialTab }: SettingsModalProps) {
@@ -115,11 +115,11 @@ export default function SettingsModal({ onClose, initialTab }: SettingsModalProp
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 animate-in fade-in duration-100"
+      className="fixed inset-0 z-modal flex items-center justify-center bg-black/60 animate-in fade-in duration-100"
       onClick={onClose}
     >
       <div
-        className="w-[1000px] h-[80vh] max-h-[850px] bg-panel border border-border shadow-full rounded-xl flex overflow-hidden animate-in zoom-in-95 duration-150"
+        className="w-[1000px] h-[80vh] max-h-[850px] bg-panel border border-border shadow-full rounded-panel flex overflow-hidden animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-64 bg-sidebar border-r border-border flex flex-col pt-3">
@@ -133,7 +133,7 @@ export default function SettingsModal({ onClose, initialTab }: SettingsModalProp
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-panel text-sm font-medium transition-colors ${
                   activeTab === tab.id
                     ? "bg-accent text-accent-fg shadow-md"
                     : "text-muted hover:bg-surface-hover hover:text-fg"
@@ -151,7 +151,7 @@ export default function SettingsModal({ onClose, initialTab }: SettingsModalProp
         <div className="flex-1 bg-panel flex flex-col relative min-w-0">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 text-subtle hover:text-fg hover:bg-active rounded-lg transition-colors z-10"
+            className="absolute top-4 right-4 p-2 text-subtle hover:text-fg hover:bg-active rounded-panel transition-colors z-10"
           >
             <X className="w-5 h-5" />
           </button>

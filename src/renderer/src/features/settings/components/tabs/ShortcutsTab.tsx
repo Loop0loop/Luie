@@ -50,7 +50,7 @@ const ShortcutRow = memo(function ShortcutRow({
             <div className="text-sm text-muted group-hover:text-fg transition-colors">{label}</div>
             <div className="relative w-40">
                 <input
-                    className="w-full bg-surface border border-border rounded-md px-3 py-1.5 text-sm font-mono text-fg focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-colors text-center"
+                    className="w-full bg-surface border border-border rounded-control px-3 py-1.5 text-sm font-mono text-fg focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-colors text-center"
                     value={value}
                     placeholder={placeholder}
                     disabled={disabled}

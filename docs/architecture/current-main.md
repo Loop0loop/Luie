@@ -142,6 +142,12 @@ Renderer feature/store
 ## Startup Flow
 
 ```text
+pnpm dev
+  -> predev: pnpm run rebuild:electron
+  -> scripts/rebuild-electron-if-needed.mjs
+      - better-sqlite3 binary must target Electron ABI, not the current Node ABI
+  -> electron-vite
+  -> Electron main entry
 index.ts
   -> dotenv/config
   -> registerSingleInstance
@@ -168,6 +174,7 @@ index.ts
 - handler 입력 검증은 shared Zod schema를 사용합니다.
 - renderer는 preload `contextBridge.exposeInMainWorld("api", rendererApi)`를 통해 main capability에 접근합니다.
 - DB lifecycle은 `db.initialize()`, `db.getClient()`, `db.disconnect()`, `cacheDb.*` 계약에 의존합니다.
+- Electron runtime의 `better-sqlite3` native binary는 `predev`/`postinstall`의 `rebuild:electron`에서 Electron ABI로 검증되어야 합니다. Node test용 rebuild 이후 stale `.forge-meta`만 믿고 건너뛰면 startup sqlite readiness가 실패합니다.
 - `.luie` package는 canonical storage이며 SQLite DB는 rebuild 가능한 cache로 취급됩니다.
 - FS 접근은 approved root, absolute path validation, restricted roots, `.luie` package permission 구분을 보존해야 합니다.
 - shutdown은 renderer flush, autosave critical flush, pending package export, derived worker/sidecar stop, snapshot pruning, DB checkpoint/disconnect 순서를 보존해야 합니다.

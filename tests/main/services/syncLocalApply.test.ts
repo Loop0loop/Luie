@@ -66,7 +66,7 @@ describe("syncLocalApply.applyReplicaWorldState", () => {
       synopsis: "hello",
     });
 
-    expect(tx.delete).toHaveBeenCalledWith(scrapMemo);
+    expect(tx.delete).not.toHaveBeenCalledWith(scrapMemo);
     expect(tx.update).toHaveBeenCalledWith(project);
     expect(projectUpdates[0]).toMatchObject({
       updatedAt: expect.any(String),
@@ -125,6 +125,45 @@ describe("syncLocalApply.applyReplicaWorldState", () => {
     expect(tx.update).toHaveBeenCalledWith(project);
   });
 
+  it("skips invalid JSON world document strings instead of overwriting with defaults", () => {
+    const run = vi.fn();
+    const where = vi.fn(() => ({ run }));
+    const tx = {
+      delete: vi.fn(() => ({ where })),
+      insert: vi.fn(() => ({
+        values: vi.fn(() => ({
+          onConflictDoUpdate: vi.fn(() => ({ run })),
+          run,
+        })),
+      })),
+      update: vi.fn(() => ({
+        set: vi.fn(() => ({ where })),
+      })),
+    } as never;
+
+    const bundle = createEmptySyncBundle();
+    bundle.projects.push({
+      id: "project-1",
+      userId: "user-1",
+      title: "Novel",
+      description: null,
+      createdAt: "2026-03-01T00:00:00.000Z",
+      updatedAt: "2026-03-02T00:00:00.000Z",
+    });
+    bundle.worldDocuments.push({
+      id: "project-1:graph",
+      userId: "user-1",
+      projectId: "project-1",
+      docType: "graph",
+      payload: "not-json",
+      updatedAt: "2026-03-03T00:00:00.000Z",
+    });
+
+    applyReplicaWorldState(tx, bundle, new Set());
+
+    expect(tx.insert).not.toHaveBeenCalledWith(worldDocument);
+  });
+
   it("materializes scrap memos from replica memo rows", () => {
     const worldDocumentValues: unknown[] = [];
     const scrapMemoValues: unknown[] = [];
@@ -175,6 +214,7 @@ describe("syncLocalApply.applyReplicaWorldState", () => {
       docType: "scrap",
     });
     expect(scrapMemoValues).toHaveLength(1);
+    expect(tx.delete).toHaveBeenCalledWith(scrapMemo);
     expect(scrapMemoValues[0]).toMatchObject([
       {
         id: "memo-1",

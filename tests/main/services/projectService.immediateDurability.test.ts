@@ -11,7 +11,7 @@ vi.mock(
   }),
 );
 
-import { ProjectService } from "../../../src/main/services/core/projectService.js";
+import { ProjectService } from "../../../src/main/services/features/project/projectService.js";
 
 describe("ProjectService immediate package durability", () => {
   it("returns exported=true without queueing a retry when immediate export succeeds", async () => {

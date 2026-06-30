@@ -100,7 +100,7 @@ export default function SidebarCharacterList({
     <div className="flex flex-col h-full bg-sidebar/50">
       <div className="flex items-center justify-end px-2 py-1 gap-1 border-b border-border/20">
         <button
-          className="p-1 hover:bg-white/10 rounded text-muted-foreground hover:text-foreground transition-colors"
+          className="p-1 hover:bg-white/10 rounded text-muted hover:text-fg transition-colors"
           onClick={() => setIsTemplateModalOpen(true)}
           title={t("character.addTitle")}
         >
@@ -136,7 +136,7 @@ export default function SidebarCharacterList({
           {CHARACTER_TEMPLATES.map((template) => (
             <div
               key={template.id}
-              className="flex flex-col items-center justify-center p-4 border border-border rounded-lg cursor-pointer hover:bg-surface-hover transition-colors gap-2"
+              className="flex flex-col items-center justify-center p-4 border border-border rounded-panel cursor-pointer hover:bg-surface-hover transition-colors gap-2"
               onClick={() => handleAddCharacter(template.id)}
             >
               <div className="p-3 bg-surface rounded-full shadow-sm">
@@ -167,7 +167,7 @@ function CharacterGroup({
   return (
     <div>
       <div
-        className="px-3 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer flex items-center gap-1.5 select-none transition-colors"
+        className="px-3 py-1 text-xs font-semibold text-muted hover:text-fg cursor-pointer flex items-center gap-1.5 select-none transition-colors"
         onClick={() => setIsOpen(!isOpen)}
       >
         {isOpen ? (
@@ -194,7 +194,7 @@ function CharacterGroup({
             >
               <div
                 className={cn(
-                  "pl-8 pr-3 py-1.5 cursor-pointer text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors border-l-2 border-transparent",
+                  "pl-8 pr-3 py-1.5 cursor-pointer text-sm text-muted hover:text-fg flex items-center gap-2 transition-colors border-l-2 border-transparent",
                   selectedId === char.id &&
                     "bg-accent/10 text-accent border-accent",
                 )}

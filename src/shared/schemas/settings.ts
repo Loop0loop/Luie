@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const editorSettingsSchema = z.strictObject({
+const editorSettingsShape = z.strictObject({
   fontFamily: z.union([z.enum(["system-ui", "serif", "mono"]), z.string()]),
   fontPreset: z
     .string()
@@ -30,13 +30,12 @@ export const editorSettingsSchema = z.strictObject({
   maxWidth: z.number().int().positive(),
   spellcheckEnabled: z.boolean().optional().default(true),
   theme: z.enum(["light", "dark", "sepia"]),
-  themeTemp: z.enum(["neutral", "warm", "cool"]).optional().default("neutral"),
   themeContrast: z.enum(["soft", "high"]).optional().default("soft"),
+  themeTemp: z.enum(["cool", "neutral", "warm"]).catch("neutral"),
   themeAccent: z
     .enum(["blue", "violet", "green", "amber", "rose", "slate"])
     .optional()
     .default("blue"),
-  themeTexture: z.boolean().optional().default(true),
   uiMode: z
     .enum(["default", "docs", "editor", "word", "scrivener"])
     .transform((v) => (v === "word" ? "editor" : v))
@@ -50,6 +49,16 @@ export const editorSettingsSchema = z.strictObject({
     term: z.string(),
   }).optional(),
 });
+
+// Legacy stored settings may still include removed themeTemp/themeTexture keys.
+export const editorSettingsSchema = z.preprocess((value) => {
+  if (value && typeof value === "object") {
+    const next = { ...(value as Record<string, unknown>) };
+    delete next.themeTexture;
+    return next;
+  }
+  return value;
+}, editorSettingsShape);
 
 export const settingsAutoSaveSchema = z.strictObject({
   enabled: z.boolean().optional(),

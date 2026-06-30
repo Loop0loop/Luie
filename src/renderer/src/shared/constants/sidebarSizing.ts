@@ -173,20 +173,24 @@ export const buildDefaultSidebarWidths = (): Record<
     ),
   ) as Record<SidebarWidthFeature, number>;
 
-const SIDEBAR_WIDTH_SYNC_GROUPS: SidebarWidthFeature[][] = [
-  ["mainSidebar", "docsBinder", "scrivenerBinder", "binder"],
-  ["mainContext", "scrivenerInspector", "context", "inspector"],
-  ["docsCharacter", "editorCharacter", "character"],
-  ["docsEvent", "editorEvent", "event"],
-  ["docsFaction", "editorFaction", "faction"],
-  ["docsWorld", "editorWorld", "world"],
-  ["docsScrap", "editorScrap", "scrap"],
-  ["docsAnalysis", "editorAnalysis", "analysis"],
-  ["docsSnapshot", "editorSnapshot", "snapshot"],
-  ["docsTrash", "editorTrash", "trash"],
-  ["docsEditor", "editor"],
-  ["docsExport", "export"],
-];
+const SIDEBAR_WIDTH_SYNC_GROUPS: SidebarWidthFeature[][] = [];
+
+const LEGACY_SIDEBAR_WIDTH_FEATURES = new Set<string>([
+  "character",
+  "event",
+  "faction",
+  "world",
+  "scrap",
+  "analysis",
+  "snapshot",
+  "trash",
+  "memo",
+  "editor",
+  "export",
+  "binder",
+  "context",
+  "inspector",
+]);
 
 export const getSynchronizedSidebarWidthFeatures = (
   feature: string,
@@ -320,6 +324,17 @@ export const normalizeSidebarWidthsWithMigrations = (
   applyLegacyRightWidthMigration(input, normalized);
 
   return normalized;
+};
+
+export const getPersistableSidebarWidths = (
+  input: unknown,
+): Record<string, number> => {
+  const normalized = normalizeSidebarWidthsWithMigrations(input);
+  return Object.fromEntries(
+    Object.entries(normalized).filter(
+      ([feature]) => !LEGACY_SIDEBAR_WIDTH_FEATURES.has(feature),
+    ),
+  );
 };
 
 export const toPxSize = (value: number): string =>

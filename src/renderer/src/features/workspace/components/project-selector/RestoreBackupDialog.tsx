@@ -36,7 +36,7 @@ const RestoreCandidateListItem = memo(function RestoreCandidateListItem({
     <button
       type="button"
       data-testid={`restore-candidate-${candidate.snapshotId}`}
-      className={`w-full rounded-lg border px-4 py-3 text-left transition-colors ${
+      className={`w-full rounded-panel border px-4 py-3 text-left transition-colors ${
         isSelected
           ? "border-accent bg-accent/10"
           : "border-border bg-surface hover:bg-surface-hover"
@@ -109,7 +109,7 @@ export function RestoreBackupDialog({
         <div className="flex items-center justify-between gap-3 w-full">
           <button
             type="button"
-            className="px-4 py-2 bg-transparent border border-border rounded-md text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg disabled:opacity-60 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-transparent border border-border rounded-control text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg disabled:opacity-60 disabled:cursor-not-allowed"
             onClick={onRefresh}
             disabled={isLoading || isRestoring}
           >
@@ -118,7 +118,7 @@ export function RestoreBackupDialog({
           <div className="flex items-center justify-end gap-3">
             <button
               type="button"
-              className="px-4 py-2 bg-transparent border border-border rounded-md text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg disabled:opacity-60 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-transparent border border-border rounded-control text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg disabled:opacity-60 disabled:cursor-not-allowed"
               onClick={onClose}
               disabled={isRestoring}
             >
@@ -126,7 +126,7 @@ export function RestoreBackupDialog({
             </button>
             <button
               type="button"
-              className="px-4 py-2 bg-accent border-none rounded-md text-white text-[13px] font-medium cursor-pointer transition-all hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-accent border-none rounded-control text-white text-[13px] font-medium cursor-pointer transition-all hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
               onClick={() => {
                 if (selectedCandidate) {
                   void onRestore(selectedCandidate);
@@ -148,18 +148,18 @@ export function RestoreBackupDialog({
         </p>
 
         {isLoading ? (
-          <div className="rounded-lg border border-border bg-surface px-4 py-10 text-center text-sm text-muted">
+          <div className="rounded-panel border border-border bg-surface px-4 py-10 text-center text-sm text-muted">
             {t("settings.projectTemplate.restoreDialog.loading")}
           </div>
         ) : error ? (
-          <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-4 text-sm text-red-200">
+          <div className="rounded-panel border border-red-500/40 bg-red-500/10 px-4 py-4 text-sm text-red-200">
             <div className="font-semibold text-fg">
               {t("settings.projectTemplate.restoreDialog.errorTitle")}
             </div>
             <p className="mt-2 mb-0">{error}</p>
           </div>
         ) : candidates.length === 0 ? (
-          <div className="rounded-lg border border-border bg-surface px-4 py-10 text-center">
+          <div className="rounded-panel border border-border bg-surface px-4 py-10 text-center">
             <div className="text-base font-semibold text-fg">
               {t("settings.projectTemplate.restoreDialog.emptyTitle")}
             </div>
@@ -180,7 +180,7 @@ export function RestoreBackupDialog({
               ))}
             </div>
 
-            <div className="rounded-lg border border-border bg-surface p-4">
+            <div className="rounded-panel border border-border bg-surface p-4">
               {selectedCandidate ? (
                 <div className="space-y-4">
                   <div>
@@ -195,7 +195,7 @@ export function RestoreBackupDialog({
                   </div>
 
                   <dl className="grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-lg border border-border bg-canvas px-3 py-3">
+                    <div className="rounded-panel border border-border bg-app px-3 py-3">
                       <dt className="text-xs text-subtle">
                         {t(
                           "settings.projectTemplate.restoreDialog.projectLabel",
@@ -205,7 +205,7 @@ export function RestoreBackupDialog({
                         {selectedCandidate.projectTitle}
                       </dd>
                     </div>
-                    <div className="rounded-lg border border-border bg-canvas px-3 py-3">
+                    <div className="rounded-panel border border-border bg-app px-3 py-3">
                       <dt className="text-xs text-subtle">
                         {t(
                           "settings.projectTemplate.restoreDialog.savedAtLabel",
@@ -215,7 +215,7 @@ export function RestoreBackupDialog({
                         {formatDateTime(selectedCandidate.savedAt)}
                       </dd>
                     </div>
-                    <div className="rounded-lg border border-border bg-canvas px-3 py-3 sm:col-span-2">
+                    <div className="rounded-panel border border-border bg-app px-3 py-3 sm:col-span-2">
                       <dt className="text-xs text-subtle">
                         {t(
                           "settings.projectTemplate.restoreDialog.chapterLabel",
@@ -228,7 +228,7 @@ export function RestoreBackupDialog({
                     </div>
                   </dl>
 
-                  <div className="rounded-lg border border-border bg-canvas px-3 py-3">
+                  <div className="rounded-panel border border-border bg-app px-3 py-3">
                     <div className="text-xs text-subtle">
                       {t("settings.projectTemplate.restoreDialog.previewLabel")}
                     </div>

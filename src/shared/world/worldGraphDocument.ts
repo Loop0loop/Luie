@@ -4,6 +4,8 @@ import type {
   WorldGraphCanvasBlock,
   WorldGraphCanvasEdge,
   WorldGraphCanvasEdgeDirection,
+  WorldGraphCanvasFile,
+  WorldGraphCanvasFileKind,
   WorldGraphCanvasMemoBlockData,
   WorldGraphCanvasTimelineBlockData,
   WorldGraphData,
@@ -30,6 +32,7 @@ type GraphDocumentPayload = {
   edges?: EntityRelation[];
   canvasBlocks?: WorldGraphCanvasBlock[];
   canvasEdges?: WorldGraphCanvasEdge[];
+  canvasFiles?: WorldGraphCanvasFile[];
   timelines?: WorldTimelineTrack[];
   updatedAt?: string;
 };
@@ -257,6 +260,49 @@ export const normalizeCanvasBlocks = (
   return dedupeByIdLastWins(blocks);
 };
 
+const normalizeCanvasFileKind = (value: unknown): WorldGraphCanvasFileKind =>
+  value === "folder" ? "folder" : "canvas";
+
+export const normalizeCanvasFiles = (value: unknown): WorldGraphCanvasFile[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const files: WorldGraphCanvasFile[] = [];
+  for (const item of value) {
+    if (!isRecord(item) || typeof item.id !== "string") {
+      continue;
+    }
+
+    files.push({
+      id: item.id,
+      kind: normalizeCanvasFileKind(item.kind),
+      name: typeof item.name === "string" ? item.name : "Untitled Canvas",
+      parentId: typeof item.parentId === "string" ? item.parentId : null,
+      updatedAt: typeof item.updatedAt === "string" ? item.updatedAt : undefined,
+    });
+  }
+
+  const deduped = dedupeByIdLastWins(files);
+  const byId = new Map(deduped.map((file) => [file.id, file]));
+
+  return deduped.map((file) => {
+    let parentId = file.parentId;
+    const seen = new Set([file.id]);
+
+    while (parentId) {
+      const parent = byId.get(parentId);
+      if (!parent || parent.kind !== "folder" || seen.has(parent.id)) {
+        return { ...file, parentId: null };
+      }
+      seen.add(parent.id);
+      parentId = parent.parentId;
+    }
+
+    return file;
+  });
+};
+
 const stripTransientGraphPosition = (
   attributes: WorldGraphNode["attributes"],
 ): WorldGraphNode["attributes"] => {
@@ -266,6 +312,20 @@ const stripTransientGraphPosition = (
 
   const { graphPosition: _graphPosition, ...rest } = attributes;
   return Object.keys(rest).length > 0 ? rest : null;
+};
+
+const stripUndefinedFields = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    return value.map(stripUndefinedFields);
+  }
+  if (!isRecord(value)) {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([, entryValue]) => entryValue !== undefined)
+      .map(([key, entryValue]) => [key, stripUndefinedFields(entryValue)]),
+  );
 };
 
 export const applyGraphNodePosition = (
@@ -323,6 +383,9 @@ export const mergeWorldGraphLayout = (
   const canvasEdges = hasOwn(payload, "canvasEdges")
     ? normalizeCanvasEdges(payload.canvasEdges)
     : normalizeCanvasEdges(graphData.canvasEdges);
+  const canvasFiles = hasOwn(payload, "canvasFiles")
+    ? normalizeCanvasFiles(payload.canvasFiles)
+    : normalizeCanvasFiles(graphData.canvasFiles);
   const timelines = hasOwn(payload, "timelines")
     ? normalizeTimelines(payload.timelines)
     : normalizeTimelines(graphData.timelines);
@@ -345,6 +408,7 @@ export const mergeWorldGraphLayout = (
     edges: dedupeByIdLastWins(graphData.edges),
     canvasBlocks,
     canvasEdges,
+    canvasFiles,
     timelines,
   };
 };
@@ -359,28 +423,34 @@ export const buildWorldGraphDocument = (
   const edges = dedupeByIdLastWins(graphData.edges);
   const canvasBlocks = normalizeCanvasBlocks(graphData.canvasBlocks);
   const canvasEdges = normalizeCanvasEdges(graphData.canvasEdges);
+  const canvasFiles = normalizeCanvasFiles(graphData.canvasFiles);
   const timelines = normalizeTimelines(graphData.timelines);
 
-  return {
-    nodes: nodes.map((node) => ({
-      id: node.id,
-      entityType: node.entityType,
-      subType: node.subType,
-      name: node.name,
-      description: node.description ?? null,
-      firstAppearance: node.firstAppearance ?? null,
-      attributes: stripTransientGraphPosition(node.attributes),
-      positionX: node.positionX,
-      positionY: node.positionY,
-    })),
-    edges: edges.map((edge) => ({
-      ...edge,
-      attributes: edge.attributes ?? null,
-    })),
+  return stripUndefinedFields({
+    nodes: nodes.map((node) =>
+      ({
+        id: node.id,
+        entityType: node.entityType,
+        subType: node.subType,
+        name: node.name,
+        description: node.description ?? null,
+        firstAppearance: node.firstAppearance ?? null,
+        attributes: stripTransientGraphPosition(node.attributes),
+        positionX: node.positionX,
+        positionY: node.positionY,
+      }),
+    ),
+    edges: edges.map((edge) =>
+      ({
+        ...edge,
+        attributes: edge.attributes ?? null,
+      }),
+    ),
     // Always include canvas data to properly overwrite stale data
     canvasBlocks,
     canvasEdges,
+    canvasFiles,
     timelines,
     updatedAt,
-  };
+  }) as GraphDocumentPayload;
 };

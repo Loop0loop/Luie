@@ -1,6 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock(
+  "@renderer/shared/constants/layoutSizing",
+  async () =>
+    await import(
+      "../../../src/renderer/src/shared/constants/layoutSizing.js"
+    ),
+);
+
 import {
-  buildDocsLayoutPersistEntries,
+  buildDocsRightLayoutPersistEntries,
+  buildDocsSidebarLayoutPersistEntries,
   getActiveDocsRightTab,
   getDocsLayoutSurfaceState,
   getDocsRightPanelId,
@@ -14,9 +24,11 @@ describe("docsLayoutModel", () => {
     expect(getActiveDocsRightTab(true, null, "world")).toBe("world");
     expect(getActiveDocsRightTab(false, "analysis", "world")).toBeNull();
 
-    expect(buildDocsLayoutPersistEntries("analysis")).toEqual([
-      { id: "left-sidebar", surface: "docs.sidebar" },
-      { id: "right-context-panel-analysis", surface: "docs.panel.analysis" },
+    expect(buildDocsSidebarLayoutPersistEntries()).toEqual([
+      { id: "left-sidebar", index: 0, surface: "docs.sidebar" },
+    ]);
+    expect(buildDocsRightLayoutPersistEntries("analysis")).toEqual([
+      { id: "right-context-panel-analysis", index: 1, surface: "docs.panel.analysis" },
     ]);
   });
 

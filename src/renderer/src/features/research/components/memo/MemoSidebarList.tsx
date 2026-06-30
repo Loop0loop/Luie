@@ -28,10 +28,14 @@ export function MemoSidebarList({
     <div className="h-full bg-sidebar border-r border-border flex flex-col">
       <div className="px-4 py-3 text-xs font-bold text-muted flex justify-between items-center uppercase tracking-wider">
         <span>{t("memo.sectionTitle")}</span>
-        <Plus
-          className="icon-sm cursor-pointer hover:text-fg transition-colors"
+        <button
+          type="button"
           onClick={handleAddNote}
-        />
+          aria-label={t("memo.addTitle", "Add memo")}
+          className="p-0.5 text-muted hover:text-fg transition-colors rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <Plus className="icon-sm" aria-hidden="true" />
+        </button>
       </div>
 
       <div className="px-3 py-2">
@@ -48,9 +52,11 @@ export function MemoSidebarList({
           data={filteredNotes}
           style={{ height: "100%" }}
           itemContent={(_index, note) => (
-            <div
+            <button
+              type="button"
+              aria-current={activeNoteId === note.id ? "true" : undefined}
               className={cn(
-                "px-4 py-3 border-b border-border cursor-pointer transition-colors hover:bg-element-hover overflow-hidden w-full box-border",
+                "flex flex-col text-left px-4 py-3 border-b border-border cursor-pointer transition-colors hover:bg-element-hover overflow-hidden w-full box-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
                 activeNoteId === note.id &&
                   "bg-active border-l-[3px] border-l-accent pl-3.25",
               )}
@@ -98,7 +104,7 @@ export function MemoSidebarList({
                 />
                 {new Date(note.updatedAt).toLocaleDateString()}
               </div>
-            </div>
+            </button>
           )}
         />
       </div>

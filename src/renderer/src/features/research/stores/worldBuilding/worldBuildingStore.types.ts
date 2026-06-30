@@ -9,6 +9,7 @@ import type {
   WorldEntityUpdatePositionInput,
   WorldGraphCanvasBlock,
   WorldGraphCanvasEdge,
+  WorldGraphCanvasFile,
   WorldGraphData,
   WorldGraphNode,
   WorldTimelineTrack,
@@ -67,6 +68,7 @@ export interface WorldBuildingState {
   deleteRelation: (id: string) => Promise<boolean>;
   setGraphCanvasBlocks: (blocks: WorldGraphCanvasBlock[]) => Promise<void>;
   setGraphCanvasEdges: (edges: WorldGraphCanvasEdge[]) => Promise<void>;
+  setGraphCanvasFiles: (files: WorldGraphCanvasFile[]) => Promise<void>;
   setTimelines: (timelines: WorldTimelineTrack[]) => Promise<void>;
 }
 

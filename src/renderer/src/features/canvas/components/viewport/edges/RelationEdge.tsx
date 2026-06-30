@@ -3,6 +3,8 @@
  *
  * stroke 색상만 런타임 동적값이므로 인라인 스타일로 유지합니다.
  * strokeWidth / opacity / transition은 상수 참조로 처리합니다.
+ *
+ * 선택 상태: Obsidian Canvas는 파랑 대신 기본 stroke를 진하게 유지.
  */
 
 import { memo } from "react";
@@ -36,9 +38,9 @@ function RelationEdgeInner({
     targetPosition,
   });
 
-  const strokeColour = selected
-    ? "var(--accent-bg)"
-    : (data?.color ?? "var(--text-secondary)");
+  // Obsidian Canvas: 선택 시 파랑 accent 대신 기본 색상 유지 + 진하기만 강조.
+  // data.color가 없으면 text-secondary 토큰 사용 (선택 여부와 무관).
+  const strokeColour = data?.color ?? "var(--text-secondary)";
 
   const edgeStyle = getEdgeStyle(selected ?? false, strokeColour);
   const label = data?.label;
@@ -52,9 +54,8 @@ function RelationEdgeInner({
         style={edgeStyle}
       />
 
-      {/* color 없음 → EdgeLabel이 기본 muted 스타일 적용 */}
       {label && (
-        <EdgeLabel labelX={labelX} labelY={labelY}>
+        <EdgeLabel labelX={labelX} labelY={labelY} color={data?.color}>
           {label}
         </EdgeLabel>
       )}

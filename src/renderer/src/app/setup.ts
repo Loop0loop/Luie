@@ -4,7 +4,6 @@ import {
   DEFAULT_EDITOR_THEME_ACCENT,
   DEFAULT_EDITOR_THEME_CONTRAST,
   DEFAULT_EDITOR_THEME_TEMP,
-  DEFAULT_EDITOR_THEME_TEXTURE,
 } from "@shared/constants/app/configs";
 import { editorSettingsSchema } from "@shared/schemas/index.js";
 import { api } from "@shared/api";
@@ -71,29 +70,26 @@ function setupResizeObserverWarningFilter(): void {
 type ThemeSeed = Pick<
   EditorSettings,
   | "theme"
-  | "themeTemp"
   | "themeContrast"
+  | "themeTemp"
   | "themeAccent"
-  | "themeTexture"
   | "enableAnimations"
 >;
 
 const DEFAULT_THEME_SEED: ThemeSeed = {
   theme: DEFAULT_EDITOR_THEME,
-  themeTemp: DEFAULT_EDITOR_THEME_TEMP,
   themeContrast: DEFAULT_EDITOR_THEME_CONTRAST,
+  themeTemp: DEFAULT_EDITOR_THEME_TEMP,
   themeAccent: DEFAULT_EDITOR_THEME_ACCENT,
-  themeTexture: DEFAULT_EDITOR_THEME_TEXTURE,
   enableAnimations: true,
 };
 
 const applyThemeSeed = (theme: ThemeSeed): void => {
   const root = document.documentElement;
   root.setAttribute("data-theme", theme.theme);
-  root.setAttribute("data-temp", theme.themeTemp);
   root.setAttribute("data-contrast", theme.themeContrast);
+  root.setAttribute("data-temp", theme.themeTemp);
   root.setAttribute("data-accent", theme.themeAccent);
-  root.setAttribute("data-texture", String(theme.themeTexture));
   root.setAttribute(
     "data-animations",
     theme.enableAnimations ? "on" : "off",
@@ -102,10 +98,9 @@ const applyThemeSeed = (theme: ThemeSeed): void => {
 
 const toThemeSeed = (settings: EditorSettings): ThemeSeed => ({
   theme: settings.theme,
-  themeTemp: settings.themeTemp,
   themeContrast: settings.themeContrast,
+  themeTemp: settings.themeTemp,
   themeAccent: settings.themeAccent,
-  themeTexture: settings.themeTexture,
   enableAnimations: settings.enableAnimations,
 });
 

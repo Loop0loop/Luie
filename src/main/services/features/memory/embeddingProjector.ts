@@ -14,7 +14,7 @@ import {
   finalizeMemoryBuildJobCancellation,
   isMemoryBuildJobCancellationRequested,
 } from "./jobControl.js";
-import { resolveRuntimeModelConfig } from "../../llm/modelRuntimeFactory.js";
+import { resolveRuntimeModelConfig } from "../llm/modelRuntimeFactory.js";
 import {
   DERIVED_JOB_MAX_ATTEMPTS,
   DERIVED_JOB_RETRY_BASE_BACKOFF_MS,

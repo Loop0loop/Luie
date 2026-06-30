@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpen, Sparkles, Trash2, User, X } from "lucide-react";
+import { BookOpen, FileText, Trash2, User, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
@@ -10,16 +10,21 @@ import { useDialog } from "@shared/ui/useDialog";
 import { cn } from "@shared/types/utils";
 import { Infobox } from "./Infobox";
 import { WikiContentPanel } from "./WikiContentPanel";
-import { CharacterVisualPanel } from "./CharacterVisualPanel";
+import { CharacterDocumentView } from "./CharacterDocumentView";
 import { useCharacterWikiAttrs } from "./hooks/useCharacterWikiAttrs";
-import { type CharacterViewMode, CHARACTER_VIEW_MODE_KEY } from "./types";
+import { useEffectiveCharacterSections } from "./hooks/useEffectiveCharacterSections";
+import {
+  type CharacterViewMode,
+  CHARACTER_VIEW_MODE_KEY,
+  CHARACTER_COLOR_PRESETS,
+} from "./types";
 
 const getViewModeStorageKey = (id?: string) =>
   id ? `${CHARACTER_VIEW_MODE_KEY}:${id}` : CHARACTER_VIEW_MODE_KEY;
 
 const readViewMode = (id?: string): CharacterViewMode => {
   const stored = localStorage.getItem(getViewModeStorageKey(id));
-  return stored === "visual" || stored === "wiki" ? stored : "wiki";
+  return stored === "document" ? "document" : "wiki";
 };
 
 // ── AddTagInline ──────────────────────────────────────────────────────────
@@ -73,6 +78,58 @@ function AddTagInline({ onAdd, placeholder }: AddTagInlineProps) {
   );
 }
 
+// ── ColorDotPicker ──────────────────────────────────────────────────────────
+
+type ColorDotPickerProps = {
+  color: string;
+  onPick: (color: string) => void;
+};
+
+/** Header swatch that opens the preset palette — sets the character signature colour. */
+function ColorDotPicker({ color, onPick }: ColorDotPickerProps) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        title="캐릭터 색"
+        className="h-4 w-4 rounded-full ring-2 ring-app transition-transform hover:scale-110"
+        style={{ backgroundColor: color }}
+      />
+      {open && (
+        <>
+          <button
+            type="button"
+            aria-hidden
+            className="fixed inset-0 z-dropdown cursor-default border-none bg-transparent"
+            onClick={() => setOpen(false)}
+          />
+          <div className="absolute left-0 top-6 z-dropdown grid grid-cols-4 gap-1.5 rounded-control border border-border bg-panel p-2 shadow-panel">
+            {CHARACTER_COLOR_PRESETS.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => {
+                  onPick(preset);
+                  setOpen(false);
+                }}
+                className="h-5 w-5 rounded-full transition-transform hover:scale-110"
+                style={{
+                  backgroundColor: preset,
+                  outline: preset === color ? "2px solid var(--text-primary)" : "none",
+                  outlineOffset: "1px",
+                }}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── WikiDetailView ────────────────────────────────────────────────────────
 
 interface WikiDetailViewProps {
@@ -101,6 +158,8 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
 
   // ── Attribute hook ──────────────────────────────────────────────────────
   const attrs = useCharacterWikiAttrs();
+
+  const effectiveSections = useEffectiveCharacterSections(attrs.sections);
 
   // ── View mode (persisted per character) ────────────────────────────────
   const currentViewModeStorageKey = getViewModeStorageKey(character?.id ?? characterId);
@@ -209,27 +268,31 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
   // ── Render ──────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex-1 overflow-auto px-8 py-7 sm:px-6 sm:py-6 flex flex-col gap-5 bg-panel text-fg min-w-0">
+    <div
+      className="flex-1 overflow-auto px-8 py-7 sm:px-6 sm:py-6 flex flex-col gap-5 bg-panel text-fg min-w-0"
+      style={{ borderLeft: `3px solid ${attrs.characterColor}` }}
+    >
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-2 pb-4 border-b border-border">
+      <div className="flex flex-col gap-1.5 pb-4 border-b border-border/60">
         <div className="flex items-center gap-2">
+          <ColorDotPicker color={attrs.characterColor} onPick={attrs.setCharacterColor} />
           <BufferedInput
-            className="text-[26px] font-extrabold text-fg leading-tight border-none bg-transparent flex-1 focus:outline-none min-w-0"
+            className="text-[22px] font-semibold text-fg leading-tight border-none bg-transparent flex-1 focus:outline-none min-w-0"
             value={character.name}
             onSave={(val) => updateCharacter({ id: character.id, name: val })}
           />
 
           {/* View mode toggle */}
-          <div className="flex items-center gap-1 p-0.5 rounded-lg bg-surface-hover border border-border/60 shrink-0">
+          <div className="flex items-center gap-0.5 shrink-0">
             <button
               type="button"
               onClick={() => switchViewMode("wiki")}
               title="위키 뷰"
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors",
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-control text-[12px] font-medium transition-colors",
                 viewMode === "wiki"
-                  ? "bg-surface text-fg shadow-sm"
+                  ? "bg-surface-hover text-fg"
                   : "text-muted hover:text-fg",
               )}
             >
@@ -238,17 +301,17 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
             </button>
             <button
               type="button"
-              onClick={() => switchViewMode("visual")}
-              title="시각화 뷰"
+              onClick={() => switchViewMode("document")}
+              title="문서 뷰"
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors",
-                viewMode === "visual"
-                  ? "bg-surface text-fg shadow-sm"
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-control text-[12px] font-medium transition-colors",
+                viewMode === "document"
+                  ? "bg-surface-hover text-fg"
                   : "text-muted hover:text-fg",
               )}
             >
-              <Sparkles size={12} />
-              시각화
+              <FileText size={12} />
+              문서
             </button>
           </div>
 
@@ -256,19 +319,19 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
             type="button"
             onClick={handleDeleteCharacter}
             title={t("character.wiki.deleteCharacterTitle")}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-destructive/10 hover:text-destructive"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-control text-muted/70 transition-colors hover:bg-danger/10 hover:text-danger"
           >
             <Trash2 size={14} />
           </button>
         </div>
 
         <div className="flex items-center gap-1.5 text-[12px] text-muted">
-          <span className="font-medium">{t("character.classificationLabel")}</span>
+          <span>{t("character.classificationLabel")}</span>
           <span className="text-border/60">·</span>
-          <span className="text-accent/80">{t(currentTemplate.nameKey)}</span>
+          <span className="text-fg/70">{t(currentTemplate.nameKey)}</span>
           <span className="text-border/60">·</span>
           <BufferedInput
-            className="inline min-w-[60px] font-medium text-accent/80 bg-transparent border-none p-0 focus:outline-none focus:bg-active focus:rounded-sm focus:px-1 transition-all"
+            className="inline min-w-[60px] text-fg/70 bg-transparent border-none p-0 focus:outline-none focus:bg-active focus:rounded-sm focus:px-1 transition-all"
             value={character.description || ""}
             placeholder={t("character.uncategorized")}
             onSave={(val) => updateCharacter({ id: character.id, description: val })}
@@ -293,14 +356,17 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
               {attrs.roles.map((role) => (
                 <span
                   key={role}
-                  className="group/tag flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[12px] font-medium"
-                  style={{ backgroundColor: `${attrs.characterColor}18`, color: attrs.characterColor }}
+                  className="group/tag inline-flex items-center gap-1 text-[12px] text-fg/70"
                 >
+                  <span
+                    className="h-1.5 w-1.5 rounded-full"
+                    style={{ backgroundColor: attrs.characterColor }}
+                  />
                   {role}
                   <button
                     type="button"
                     onClick={() => attrs.removeRole(role)}
-                    className="opacity-0 group-hover/tag:opacity-100 transition-opacity hover:text-destructive ml-0.5"
+                    className="opacity-0 group-hover/tag:opacity-100 transition-opacity hover:text-danger"
                   >
                     <X size={9} />
                   </button>
@@ -314,13 +380,13 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
               {attrs.keywords.map((kw) => (
                 <span
                   key={kw}
-                  className="group/tag flex items-center gap-0.5 px-2 py-0.5 rounded-full border border-border/60 text-muted text-[12px]"
+                  className="group/tag inline-flex items-center gap-0.5 text-[12px] text-muted"
                 >
                   #{kw}
                   <button
                     type="button"
                     onClick={() => attrs.removeKeyword(kw)}
-                    className="opacity-0 group-hover/tag:opacity-100 transition-opacity hover:text-destructive ml-0.5"
+                    className="opacity-0 group-hover/tag:opacity-100 transition-opacity hover:text-danger"
                   >
                     <X size={9} />
                   </button>
@@ -334,12 +400,23 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
           <div className="@container">
             <div className="flex flex-col @min-[700px]:flex-row gap-8 items-start">
               <div className="flex-1 min-w-0 w-full @min-[700px]:order-1 order-2">
-                <WikiContentPanel attrs={attrs} />
+                <WikiContentPanel
+                  attrs={{
+                    sections: effectiveSections,
+                    getSectionContent: attrs.getSectionContent,
+                    setSectionContent: attrs.setSectionContent,
+                    setSections: attrs.setSections,
+                  }}
+                  i18nPrefix="character"
+                  accentColor={attrs.characterColor}
+                />
               </div>
               <div className="w-full @min-[700px]:w-[280px] shrink-0 @min-[700px]:order-2 order-1">
                 <Infobox
                   title={character.name}
-                  image={<User size={80} color="var(--border-active)" />}
+                  image={<User size={48} color={attrs.characterColor} />}
+                  imageUrl={attrs.generatedImage}
+                  color={attrs.characterColor}
                   rows={infoboxRows}
                   onAddField={addCustomField}
                 />
@@ -348,8 +425,22 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
           </div>
         </>
       ) : (
-        /* Visual: full-width visualization panel */
-        <CharacterVisualPanel characterId={character.id} characterName={character.name} attrs={attrs} />
+        /* Document: Notion-style view synced with the wiki data */
+        <CharacterDocumentView
+          classification={t(currentTemplate.nameKey)}
+          description={character.description || ""}
+          accentColor={attrs.characterColor}
+          onDescriptionSave={(val) =>
+            updateCharacter({ id: character.id, description: val })
+          }
+          properties={infoboxRows.map((row) => ({
+            label: row.label,
+            value: row.value,
+            placeholder: row.placeholder,
+            onSave: row.onSave,
+          }))}
+          attrs={attrs}
+        />
       )}
     </div>
   );

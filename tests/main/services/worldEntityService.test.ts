@@ -31,7 +31,7 @@ const mocked = vi.hoisted(() => {
   };
 });
 
-vi.mock("../../../src/main/services/world/characterService.js", () => ({
+vi.mock("../../../src/main/services/features/world/entities/characterService.js", () => ({
   getWorldDbClient: () => ({
     worldEntity: {
       create: mocked.worldEntityCreate,
@@ -43,7 +43,7 @@ vi.mock("../../../src/main/services/world/characterService.js", () => ({
   }),
 }));
 
-vi.mock("../../../src/main/services/core/projectService.js", () => ({
+vi.mock("../../../src/main/services/features/project/projectService.js", () => ({
   projectService: {
     touchProject: (projectId: string) => mocked.projectTouch(projectId),
     persistPackageAfterMutation: (projectId: string, reason: string) =>
@@ -51,11 +51,11 @@ vi.mock("../../../src/main/services/core/projectService.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/core/chapterKeywords.js", () => ({
+vi.mock("../../../src/main/services/features/manuscript/chapterKeywords.js", () => ({
   rebuildProjectKeywordAppearances: vi.fn(async () => undefined),
 }));
 
-import { WorldEntityService } from "../../../src/main/services/world/worldEntityService.js";
+import { WorldEntityService } from "../../../src/main/services/features/world/entities/worldEntityService.js";
 
 describe("WorldEntityService freshness", () => {
   beforeEach(() => {

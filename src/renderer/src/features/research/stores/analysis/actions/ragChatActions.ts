@@ -99,6 +99,7 @@ export function createRagChatActions(
                 ? {
                     ...message,
                     content: payload.result?.answer ?? message.content,
+                    answerMode: payload.result?.answerMode,
                     evidence: payload.result?.evidence ?? [],
                     grounding: payload.result?.grounding,
                     safety: payload.result?.safety,

@@ -24,9 +24,14 @@ export function suppressLayoutPersistenceFor(durationMs: number): void {
 const isLayoutPersistenceSuppressed = (): boolean =>
   layoutPersistenceSuppressionDepth > 0;
 
+export const isPersistableLayoutRatio = (ratio: number): boolean =>
+  Number.isFinite(ratio) && ratio > 0.1;
+
 export interface LayoutPersistEntry {
   /** Must match the Panel's `id` prop */
   id: string;
+  /** Array layout index from react-resizable-panels when ids are not reported. */
+  index?: number;
   /** uiStore key to save the resulting ratio to */
   surface: LayoutSurfaceId;
 }
@@ -85,7 +90,7 @@ export const getPanelRatioFromLayout = (
   entry: LayoutPersistEntry,
   index: number,
 ): unknown => {
-  return getPanelLayoutValue(layout, entry.id, index);
+  return getPanelLayoutValue(layout, entry.id, entry.index ?? index);
 };
 
 /**
@@ -209,6 +214,9 @@ export function useLayoutPersist(
             continue;
           }
           warnedEntriesRef.current.delete(`${entry.surface}:${entry.id}`);
+          if (!isPersistableLayoutRatio(nextRatio)) {
+            continue;
+          }
 
           const previousCommit = lastCommitRef.current.get(entry.surface);
           if (
@@ -223,10 +231,6 @@ export function useLayoutPersist(
             continue;
           }
 
-          logger.debug(`[useLayoutPersist] Committing layout surface ratio`, {
-            surface: entry.surface,
-            nextRatio,
-          });
           lastCommitRef.current.set(entry.surface, {
             ratio: nextRatio,
             timestampMs: nowMs,

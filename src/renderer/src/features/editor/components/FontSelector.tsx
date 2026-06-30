@@ -35,7 +35,7 @@ export function FontSelector() {
   return (
     <div className="relative" ref={ref}>
       <button
-        className="flex items-center gap-1 px-2 h-8 rounded bg-background border border-border/60 text-fg text-xs cursor-pointer hover:bg-hover w-24 justify-between shadow-sm"
+        className="flex items-center gap-1 px-2 h-8 rounded bg-app border border-border/60 text-fg text-xs cursor-pointer hover:bg-hover w-24 justify-between shadow-sm"
         onClick={() => setIsOpen(!isOpen)}
         title={t("settings.section.font")}
       >
@@ -44,7 +44,7 @@ export function FontSelector() {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 w-32 bg-panel border border-border shadow-xl rounded-md z-50 py-1 max-h-48 overflow-y-auto">
+        <div className="absolute top-full left-0 mt-1 w-32 bg-panel border border-border shadow-panel rounded-control z-50 py-1 max-h-48 overflow-y-auto">
           {FONT_FAMILIES.map((font: FontFamily) => (
             <button
               key={font}

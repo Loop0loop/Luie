@@ -149,6 +149,22 @@ export function classifyMemoryWriterTaskBenchmarkCase(
   const searchableText = `${evalCase.name} ${evalCase.question} ${
     evalCase.expectedAnswer ?? ""
   }`.toLowerCase();
+  const caseName = evalCase.name.toLowerCase();
+  if (caseName.includes("setting_check")) {
+    return "setting-check";
+  }
+  if (caseName.includes("relationship_check")) {
+    return "character-relation-check";
+  }
+  if (caseName.includes("foreshadowing_status")) {
+    return "thread-resolution-check";
+  }
+  if (caseName.includes("chapter_knowledge_state")) {
+    return "chapter-knowledge-state-check";
+  }
+  if (caseName.includes("draft_canon_conflict")) {
+    return "draft-canon-conflict-check";
+  }
   if (
     evalCase.caseType === "relation" ||
     (evalCase.expectedRelations?.length ?? 0) > 0
@@ -157,13 +173,22 @@ export function classifyMemoryWriterTaskBenchmarkCase(
   }
   if (
     evalCase.caseType === "temporal_state" ||
-    evalCase.queryChapterOrder !== undefined ||
+    (evalCase.queryChapterOrder !== undefined &&
+      evalCase.queryChapterOrder !== null) ||
     evalCase.temporalScopeStartChapterId ||
     evalCase.temporalScopeEndChapterId
   ) {
     return "chapter-knowledge-state-check";
   }
   if ((evalCase.expectedThreads?.length ?? 0) > 0) {
+    return "thread-resolution-check";
+  }
+  if (
+    searchableText.includes("떡밥") ||
+    searchableText.includes("회수") ||
+    searchableText.includes("미회수") ||
+    searchableText.includes("foreshadowing")
+  ) {
     return "thread-resolution-check";
   }
   if (

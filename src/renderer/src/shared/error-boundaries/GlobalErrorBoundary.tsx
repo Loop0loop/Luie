@@ -74,7 +74,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
             {t("errorBoundary.description")}
           </p>
 
-          <div className="bg-panel border border-border rounded-lg p-4 mb-8 w-full max-w-lg text-left overflow-auto max-h-48">
+          <div className="bg-panel border border-border rounded-panel p-4 mb-8 w-full max-w-lg text-left overflow-auto max-h-48">
             <code className="text-xs font-mono text-danger-fg block wrap-break-word">
               {this.state.error?.toString()}
             </code>
@@ -82,7 +82,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
 
           <button
             onClick={this.handleReload}
-            className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-fg rounded-lg font-medium hover:opacity-90 transition-opacity"
+            className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-fg rounded-panel font-medium hover:opacity-90 transition-opacity"
             style={{
               backgroundColor: "var(--color-accent-bg)",
               color: "var(--color-accent-fg)",

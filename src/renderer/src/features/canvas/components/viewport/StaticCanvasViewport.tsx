@@ -8,7 +8,7 @@
  *   - BottomCreateToolbar 는 별도 파일로 분리됩니다.
  */
 
-import { useMemo } from "react";
+
 import {
   CANVAS_RF_EDGE_TYPE_RELATION,
   CANVAS_RF_NODE_TYPE_ENTITY,
@@ -46,14 +46,12 @@ export default function StaticCanvasViewport({
 }: StaticCanvasViewportProps = {}) {
   const fallbackProjection = useStaticProjection();
   const projection = injectedProjection ?? fallbackProjection;
-  const nodeTypes = useMemo(() => NODE_TYPES, []);
-  const edgeTypes = useMemo(() => EDGE_TYPES, []);
 
   return (
     <BaseCanvasViewport
       projection={projection}
-      nodeTypes={nodeTypes}
-      edgeTypes={edgeTypes}
+      nodeTypes={NODE_TYPES}
+      edgeTypes={EDGE_TYPES}
       nodesDraggable={true}
       extraChildren={null}
       bottomToolbar={null}

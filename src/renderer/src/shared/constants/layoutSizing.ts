@@ -138,9 +138,9 @@ export const LAYOUT_SURFACE_CONFIG: Record<
 };
 
 const LEGACY_WIDTH_KEYS_BY_LAYOUT_SURFACE: Record<LayoutSurfaceId, string[]> = {
-  "default.sidebar": ["mainSidebar", "binder"],
-  "default.panel": ["mainContext", "context"],
-  "docs.sidebar": ["docsBinder", "binder"],
+  "default.sidebar": ["mainSidebar"],
+  "default.panel": ["mainContext"],
+  "docs.sidebar": ["docsBinder"],
   "docs.panel.character": ["docsCharacter", "character"],
   "docs.panel.event": ["docsEvent", "event"],
   "docs.panel.faction": ["docsFaction", "faction"],
@@ -160,8 +160,8 @@ const LEGACY_WIDTH_KEYS_BY_LAYOUT_SURFACE: Record<LayoutSurfaceId, string[]> = {
   "editor.panel.snapshot": ["editorSnapshot", "snapshot"],
   "editor.panel.trash": ["editorTrash", "trash"],
   "editor.panel.canvas": ["editorCanvas"],
-  "scrivener.binder": ["scrivenerBinder", "binder"],
-  "scrivener.inspector": ["scrivenerInspector", "inspector"],
+  "scrivener.binder": ["scrivenerBinder"],
+  "scrivener.inspector": ["scrivenerInspector"],
   "canvas.activity": ["canvasActivity"],
   "canvas.binder": ["canvasBinder"],
 };

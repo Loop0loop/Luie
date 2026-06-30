@@ -131,10 +131,10 @@ export default function StartupWizard() {
 
   return (
     <div className="min-h-screen bg-app text-fg flex items-center justify-center px-6">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-panel shadow-xl p-8">
+      <div className="w-full max-w-md rounded-panel border border-border bg-panel shadow-panel p-8">
         {step === "intro" && (
           <div className="flex flex-col items-center gap-5 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+            <div className="flex h-14 w-14 items-center justify-center rounded-panel bg-accent/10 text-accent">
               <Sparkles className="h-7 w-7" />
             </div>
             <h1 className="text-xl font-semibold">
@@ -146,7 +146,7 @@ export default function StartupWizard() {
             <button
               type="button"
               onClick={() => setStep("setup")}
-              className="w-full rounded-lg bg-accent px-4 py-2 text-sm text-white hover:bg-accent/90"
+              className="w-full rounded-panel bg-accent px-4 py-2 text-sm text-white hover:bg-accent/90"
             >
               {t("startupWizard.onboarding.introNext")}
             </button>
@@ -208,7 +208,7 @@ export default function StartupWizard() {
                   type="button"
                   onClick={() => void handleDownloadEmbedding()}
                   disabled={embeddingDownloading}
-                  className="w-full rounded-lg border border-border bg-bg px-4 py-2 text-xs text-fg hover:bg-surface-hover disabled:opacity-50"
+                  className="w-full rounded-panel border border-border bg-bg px-4 py-2 text-xs text-fg hover:bg-surface-hover disabled:opacity-50"
                 >
                   {embeddingDownloading
                     ? t("settings.localLlm.embedding.downloading")
@@ -252,14 +252,14 @@ export default function StartupWizard() {
               <button
                 type="button"
                 onClick={() => void finalize()}
-                className="flex-1 rounded-lg border border-border bg-bg px-4 py-2 text-sm text-muted hover:bg-surface-hover"
+                className="flex-1 rounded-panel border border-border bg-bg px-4 py-2 text-sm text-muted hover:bg-surface-hover"
               >
                 {t("startupWizard.onboarding.skip")}
               </button>
               <button
                 type="button"
                 onClick={() => void finalize()}
-                className="flex-1 rounded-lg bg-accent px-4 py-2 text-sm text-white hover:bg-accent/90"
+                className="flex-1 rounded-panel bg-accent px-4 py-2 text-sm text-white hover:bg-accent/90"
               >
                 {t("startupWizard.onboarding.next")}
               </button>
@@ -289,7 +289,7 @@ export default function StartupWizard() {
                 <button
                   type="button"
                   onClick={() => setAttempt((prev) => prev + 1)}
-                  className="w-full rounded-lg bg-accent px-4 py-2 text-sm text-white hover:bg-accent/90"
+                  className="w-full rounded-panel bg-accent px-4 py-2 text-sm text-white hover:bg-accent/90"
                 >
                   {t("startupWizard.actions.retry")}
                 </button>

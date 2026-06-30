@@ -13,11 +13,11 @@ vi.mock(
   }),
 );
 
-import { ProjectService } from "../../../src/main/services/core/projectService.js";
-import { ChapterService } from "../../../src/main/services/core/chapterService.js";
+import { ProjectService } from "../../../src/main/services/features/project/projectService.js";
+import { ChapterService } from "../../../src/main/services/features/manuscript/chapterService.js";
 import { memoryProjectionService } from "../../../src/main/services/features/memory/memoryProjectionService.js";
 import { searchService } from "../../../src/main/services/features/search/index.js";
-import { projectService } from "../../../src/main/services/core/projectService.js";
+import { projectService } from "../../../src/main/services/features/project/projectService.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import { db } from "../../../src/main/database/index.js";
 

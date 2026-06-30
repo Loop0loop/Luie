@@ -338,7 +338,7 @@ vi.mock("../../../src/main/services/features/sync/syncRepository.js", () => {
   };
 });
 
-vi.mock("../../../src/main/services/core/projectService.js", () => ({
+vi.mock("../../../src/main/services/features/project/projectService.js", () => ({
   projectService: {
     openLuieProject: (...args: unknown[]) => mocked.openLuieProject(...args),
   },

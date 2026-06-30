@@ -8,14 +8,12 @@
   --color-element: var(--bg-element);
   --color-element-hover: var(--bg-element-hover);
   --color-active: var(--bg-active);
-  --color-canvas: var(--bg-canvas);
   --color-background: var(--bg-app);
   --color-card: var(--bg-surface);
   --color-popover: var(--bg-surface);
   --color-input: var(--bg-element);
   --color-ring: var(--ring-color, var(--accent-bg));
   --color-hover: var(--bg-hover);
-  --color-bg-primary: var(--bg-primary);
   --color-bg-secondary: var(--bg-secondary);
   --color-bg-panel: var(--bg-panel);
   --color-editor-bg: var(--editor-bg);
@@ -53,6 +51,52 @@
   --color-border: var(--border-default);
   --color-border-active: var(--border-active);
   --color-border-focus: var(--border-focus);
+
+  /* Radius / Shadow / Spacing — migrated from the (dead, v4-unloaded)
+     tailwind.config.js. Only tokens actually used in the codebase are kept. */
+  --radius-control: 0.625rem;
+  --radius-panel: 0.875rem;
+  --shadow-panel: 0 10px 28px rgba(15, 23, 42, 0.14);
+  --spacing-control-x: 0.75rem;
+  --spacing-control-y: 0.5rem;
+  --spacing-panel-pad: 1.25rem;
+  --spacing-panel-gap: 1rem;
+
+  /* Canvas document feature tokens — replaces repeated arbitrary values
+     (text-[40px], text-[15px], max-w-[900px], w-[190px]) in the canvas
+     document shell. Scoped naming keeps them discoverable. */
+  --text-canvas-doc-title: 2.5rem;          /* 40px — document title */
+  --text-canvas-doc-body: 0.9375rem;        /* 15px — property line body */
+  --container-canvas-doc: 56.25rem;         /* 900px — document column */
+  --spacing-canvas-doc-label: 11.875rem;    /* 190px — property label column */
+
+  /* Canvas node/block feature tokens — Obsidian Canvas card typography.
+     Replaces repeated text-[10px]/[11px]/[15px] in EntityNode. */
+  --text-canvas-node-meta: 0.625rem;        /* 10px — kind label, connection count */
+  --text-canvas-node-desc: 0.6875rem;       /* 11px — description line */
+  --text-canvas-node-label: 0.9375rem;      /* 15px — node title */
+  --text-canvas-edge-label: 0.625rem;       /* 10px — edge label */
+
+  /* Z-index layers — replaces ad-hoc z-[9999]/z-[9000]/z-[10000] escalation.
+     v4's z-* is functional (no theme namespace), so the named utilities are
+     defined via @utility below; these vars hold the single source of values. */
+  --z-index-dropdown: 50; /* context menus, popovers, tooltips, their backdrops */
+  --z-index-banner: 100; /* sticky top banners (offline) */
+  --z-index-toast: 150; /* transient notifications */
+  --z-index-modal: 1000; /* full-surface dialogs + floating panels */
+}
+
+@utility z-dropdown {
+  z-index: var(--z-index-dropdown);
+}
+@utility z-banner {
+  z-index: var(--z-index-banner);
+}
+@utility z-toast {
+  z-index: var(--z-index-toast);
+}
+@utility z-modal {
+  z-index: var(--z-index-modal);
 }
 
 @layer components {
@@ -149,14 +193,17 @@
   --character-relation-font-size: 12px;
   --character-relation-margin-bottom: 8px;
 
-  /* Namuwiki Theme Tokens (Light) */
-  --namu-blue: #00a2e8;
-  --namu-border: #cccccc;
-  --namu-table-bg: #f5f5f5;
-  --namu-table-label: #00a2e8;
-  --namu-hover-bg: #eef9fe;
-  --namu-header-text: #ffffff;
-  --namu-link: #0275d8;
+  /* Wiki (formerly "Namuwiki") tokens — aliased to core tokens so the wiki
+     shares Luie's single accent/border/surface palette. Defined once here;
+     they cascade across themes because the core vars they reference are
+     redefined per [data-theme]. */
+  --namu-blue: var(--accent-bg);
+  --namu-border: var(--border-default);
+  --namu-table-bg: var(--bg-sidebar);
+  --namu-table-label: var(--text-accent);
+  --namu-hover-bg: var(--bg-surface-hover);
+  --namu-header-text: var(--text-on-accent);
+  --namu-link: var(--text-accent);
 
   --editor-toolbar-icon-size: 16px;
   --editor-toolbar-dropdown-icon-size: 12px;
@@ -196,20 +243,23 @@
 
 /* === DARK THEME (Linear/Vercel Inspired) === */
 [data-theme="dark"] {
-  /* Backgrounds */
-  --bg-app: #09090b; /* Deepest Zinc (Main Canvas) */
-  --bg-sidebar: #09090b; /* Same as app for clean look */
-  --bg-panel: #18181b; /* Surface Color (Opaque) */
-  --bg-surface: #18181b; /* Added missing token for Modals/Cards */
-  --bg-panel-header: #18181b;
-  --bg-element: #27272a; /* Zinc-800 */
+  /* Backgrounds — Notion/Linear-calibrated "recessed editor" model.
+     Editor is the dark focal surface; chrome (sidebar/toolbar/footer) sits one
+     calm step lighter as the frame. Subtle cool (blue) tint — pure greys read
+     drab/murky on screen, +2~3pt blue makes them clean. None pure-black. */
+  --bg-app: #1a1a1c; /* Editor — neutral dark focal surface (≈ Notion #191919) */
+  --bg-sidebar: #212123; /* Chrome frame — one step lighter (≈ Notion sidebar) */
+  --bg-panel: #28282b; /* Floating surface (modal/inspector/dropdown) */
+  --bg-surface: #28282b;
+  --bg-panel-header: #28282b;
+  --bg-element: #313135; /* Inputs/controls — top of the stack */
   --bg-element-hover: rgba(255, 255, 255, 0.08);
   --bg-active: rgba(255, 255, 255, 0.12);
 
   /* Text */
-  --text-primary: #ffffff; /* Brighter for clear readability */
-  --text-secondary: #d4d4d8; /* Zinc-300 */
-  --text-tertiary: #a1a1aa; /* Zinc-400 */
+  --text-primary: #d7d7da; /* Clean neutral light grey (≈ Notion #D4D4D4), crisp not drab */
+  --text-secondary: #989aa2; /* Quieter secondary, clearly below primary */
+  --text-tertiary: #6c6e77; /* Placeholders — recede further */
   --text-accent: #60a5fa; /* Blue-400 */
   --text-on-accent: #ffffff;
 
@@ -236,18 +286,82 @@
   --grid-line: var(--border-default);
 
   /* Editor */
-  --editor-bg: #09090b;
-  --editor-text: #ededed;
+  --editor-bg: #1a1a1c; /* Matches bg-app — neutral dark writing surface */
+  --editor-text: #d0d0d4; /* Body text — clean, comfortable on the dark surface */
   --editor-selection: #1e3a8a;
+}
 
-  /* Namuwiki Theme Tokens (Dark) */
-  --namu-blue: #38bdf8;
-  --namu-border: var(--border-default);
-  --namu-table-bg: #18181b;
-  --namu-table-label: #0ea5e9;
-  --namu-hover-bg: #27272a;
-  --namu-header-text: #ffffff;
-  --namu-link: #60a5fa;
+/* === DARK TONE (user-selectable color temperature) ===
+   Neutral = the base [data-theme="dark"] block above (no override).
+   Cool/Warm only re-tint the background ladder + text; structure unchanged. */
+/* Cool — Tokyo Night grounded (blue-leaning, calm night) */
+[data-theme="dark"][data-temp="cool"] {
+  --bg-app: #181a23; /* ≈ Tokyo Night editor #1a1b26 */
+  --bg-sidebar: #1f2230;
+  --bg-panel: #262a38;
+  --bg-surface: #262a38;
+  --bg-panel-header: #262a38;
+  --bg-element: #2f3345;
+  --editor-bg: #181a23;
+  --editor-text: #c7ccdb; /* ≈ Tokyo Night fg #c0caf5, dimmed */
+  --text-primary: #ccd2e2;
+}
+/* Warm — Gruvbox/Everforest grounded (amber-cream, retro groove) */
+[data-theme="dark"][data-temp="warm"] {
+  --bg-app: #1f1c17; /* warm dark ≈ Gruvbox bg0_hard #1d2021 warmed */
+  --bg-sidebar: #29251e;
+  --bg-panel: #322d24;
+  --bg-surface: #322d24;
+  --bg-panel-header: #322d24;
+  --bg-element: #3d372c;
+  --editor-bg: #1f1c17;
+  --editor-text: #ded5c2; /* ≈ Gruvbox cream #ebdbb2 / Everforest #d3c6aa */
+  --text-primary: #e6ddca;
+}
+
+/* Light — cool (blue-grey paper, GitHub-light-leaning) */
+[data-theme="light"][data-temp="cool"] {
+  --bg-app: #fbfcfd;
+  --bg-sidebar: #eef1f4;
+  --bg-panel: #fbfcfd;
+  --bg-surface: #fbfcfd;
+  --bg-element: #fbfcfd;
+  --editor-bg: #fbfcfd;
+  --editor-text: #1b1e24;
+  --text-primary: #1b1e24;
+}
+/* Light — warm (ivory cream, ≈ Solarized Light base3 #fdf6e3) */
+[data-theme="light"][data-temp="warm"] {
+  --bg-app: #fdf9f0;
+  --bg-sidebar: #f4ece0;
+  --bg-panel: #fdf9f0;
+  --bg-surface: #fdf9f0;
+  --bg-element: #fdf9f0;
+  --editor-bg: #fdf9f0;
+  --editor-text: #211d18;
+  --text-primary: #211d18;
+}
+/* Sepia — cool (greyer, less amber paper) */
+[data-theme="sepia"][data-temp="cool"] {
+  --bg-app: #f3eee1;
+  --bg-sidebar: #e8e1d2;
+  --bg-panel: #f3eee1;
+  --bg-surface: #faf7f0;
+  --bg-element: #faf7f0;
+  --editor-bg: #f3eee1;
+  --editor-text: #4a4034;
+  --text-primary: #4a4034;
+}
+/* Sepia — warm (deeper amber paper) */
+[data-theme="sepia"][data-temp="warm"] {
+  --bg-app: #f9e9c4;
+  --bg-sidebar: #f0dcae;
+  --bg-panel: #f9e9c4;
+  --bg-surface: #fdf6e6;
+  --bg-element: #fdf6e6;
+  --editor-bg: #f9e9c4;
+  --editor-text: #4a3a22;
+  --text-primary: #5a4528;
 }
 
 /* === SEPIA THEME (Writer Focused) === */
@@ -293,55 +407,6 @@
   --editor-bg: #fbf0d9;
   --editor-text: #433422;
   --editor-selection: #e6dcc6;
-
-  /* Namuwiki Theme Tokens (Sepia) */
-  --namu-blue: #cc7832; /* Earthy Orange/Brown to match Sepia */
-  --namu-border: #dcc8ae;
-  --namu-table-bg: #efe4cb;
-  --namu-table-label: #5f4b32;
-  --namu-hover-bg: #e6dac6;
-  --namu-header-text: #fffefb;
-  --namu-link: #b96725;
-}
-
-/* === ATMOSPHERE MODIFIERS (Temperature) === */
-
-/* Warm (Emotion / Story) */
-[data-temp="warm"] {
-  --bg-app: #fffbf5; /* Warm white */
-}
-[data-theme="dark"][data-temp="warm"] {
-  --bg-app: #1c1917; /* Warm black (Stone-900) */
-  --bg-sidebar: #1c1917;
-  --bg-panel: #292524;
-  --bg-surface: #292524;
-  --text-primary: #f5f5f4;
-  --text-secondary: #a8a29e;
-}
-[data-theme="sepia"][data-temp="warm"] {
-  /* Sepia is already warm, just deepen it slightly */
-  --bg-app: #f5ebd6;
-}
-
-/* Cool (Analysis / Focus) */
-[data-temp="cool"] {
-  --bg-app: #f8fafc; /* Cool white (Slate-50) */
-  --bg-sidebar: #f1f5f9;
-}
-[data-theme="dark"][data-temp="cool"] {
-  --bg-app: #0f172a; /* Cool black (Slate-900) */
-  --bg-sidebar: #0f172a;
-  --bg-panel: #1e293b;
-  --bg-surface: #1e293b;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --border-default: rgba(148, 163, 184, 0.1);
-}
-[data-theme="sepia"][data-temp="cool"] {
-  /* Desaturate Sepia slightly for a cooler paper look */
-  --bg-app: #f0ebe4;
-  --bg-sidebar: #e8e2d9;
-  --text-primary: #5c554a;
 }
 
 /* === CONTRAST MODIFIERS === */

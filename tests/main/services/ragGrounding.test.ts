@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  deriveRagAnswerMode,
   buildGroundedRagQaResult,
   buildRagAnswerSafety,
   buildRagGrounding,
@@ -170,5 +171,21 @@ describe("RAG grounding status", () => {
       blocksConfirmedAnswer: false,
       reasons: ["inferred"],
     });
+    expect(result.answerMode).toBe("EVIDENCE");
+  });
+
+  it("separates advisory questions from canon answers", () => {
+    expect(
+      deriveRagAnswerMode({
+        question: "이 장면을 더 긴장감 있게 쓰려면 어떻게 해야 해?",
+        evidence: [evidence()],
+        safety: {
+          label: "inferred",
+          message: "근거는 있지만 문장별 검증 전이므로 추정 답변입니다.",
+          blocksConfirmedAnswer: false,
+          reasons: ["inferred"],
+        },
+      }),
+    ).toBe("ADVISORY");
   });
 });

@@ -89,6 +89,14 @@ const resolveSaveDialogPath = (result: SaveDialogReturnValue) => {
   return result.filePath;
 };
 
+const getSelectedFilePermissions = (
+  selectedPath: string,
+  basePermissions: FsPathPermission[],
+): FsPathPermission[] =>
+  selectedPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)
+    ? [...basePermissions, "package"]
+    : basePermissions;
+
 export function registerFsIPCHandlers(logger: LoggerLike): void {
   registerIpcHandlers(logger, [
     {
@@ -152,13 +160,11 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
         });
         const selectedPath = resolveSaveDialogPath(result);
         if (!selectedPath) return null;
-        const isLuiePath = selectedPath
-          .toLowerCase()
-          .endsWith(LUIE_PACKAGE_EXTENSION);
-        const permissions: FsPathPermission[] = isLuiePath
-          ? ["read", "write", "package"]
-          : ["read", "write"];
-        await approvePathForSession(selectedPath, permissions, "file");
+        await approvePathForSession(
+          selectedPath,
+          getSelectedFilePermissions(selectedPath, ["read", "write"]),
+          "file",
+        );
         return selectedPath;
       },
     },
@@ -180,13 +186,11 @@ export function registerFsIPCHandlers(logger: LoggerLike): void {
         });
         const selectedPath = resolveOpenDialogPath(result);
         if (!selectedPath) return null;
-        const isLuiePath = selectedPath
-          .toLowerCase()
-          .endsWith(LUIE_PACKAGE_EXTENSION);
-        const permissions: FsPathPermission[] = isLuiePath
-          ? ["read", "package"]
-          : ["read"];
-        await approvePathForSession(selectedPath, permissions, "file");
+        await approvePathForSession(
+          selectedPath,
+          getSelectedFilePermissions(selectedPath, ["read"]),
+          "file",
+        );
         return selectedPath;
       },
     },

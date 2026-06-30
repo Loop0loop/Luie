@@ -16,7 +16,9 @@ import {
 import { verifyMemoryCanonicalPackageSync } from "../persistence/index.js";
 
 type PhaseStatus = "ready" | "needs-review" | "missing" | "out-of-sync";
-type RoadmapPhaseStatus = "verified-with-known-gaps";
+type RoadmapPhaseStatus =
+  | "verified-with-known-gaps"
+  | "blocked-on-real-beta-data";
 type ArchitectureAlignmentStatus = "aligned";
 
 export type MemoryRoadmapPhaseStatus = {
@@ -102,7 +104,7 @@ const MEMORY_ROADMAP_PHASE_STATUSES: MemoryRoadmapPhaseStatus[] = [
   {
     phase: "phase7-beta-validation",
     label: "Phase 7 writer beta validation",
-    status: "verified-with-known-gaps",
+    status: "blocked-on-real-beta-data",
     completed: [
       "writer task benchmark taxonomy and metric summary",
       "live eval writer benchmark summary persistence",

@@ -28,7 +28,6 @@ export default function FactionDetailView({ factionId }: FactionDetailViewProps)
     <EntityDetailView
       entity={currentItem}
       entityId={factionId}
-      entityKind="faction"
       icon={<Shield size={80} color="var(--border-active)" />}
       loadEntity={loadFaction}
       updateEntity={updateFaction}

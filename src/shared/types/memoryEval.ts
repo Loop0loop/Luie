@@ -166,6 +166,7 @@ export interface MemoryEvalAnswererInput {
   question: string;
   expectedAnswer?: string | null;
   caseType?: MemoryEvalCaseType;
+  queryChapterOrder?: number | null;
 }
 
 export interface MemoryEvalAnswererResult {

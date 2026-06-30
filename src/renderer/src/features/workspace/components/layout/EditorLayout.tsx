@@ -126,7 +126,7 @@ export default function EditorLayout({
           suppressHoverOpen={isToolbarHoverZoneActive}
         >
           <div
-            className="h-full flex flex-col bg-panel border-r border-border"
+            className="h-full flex flex-col bg-sidebar border-r border-border"
             style={{ minWidth: SIDEBAR_WIDTH_CONFIG.mainSidebar.minPx }}
           >
             {sidebar}
@@ -181,7 +181,7 @@ export default function EditorLayout({
 
                 {/* Scrollable Editor Area */}
                 <div
-                  className="flex-1 h-full overflow-y-scroll bg-background flex flex-col items-center custom-scrollbar shrink-0 relative"
+                  className="flex-1 h-full overflow-y-scroll bg-app flex flex-col items-center custom-scrollbar shrink-0 relative"
                   data-editor-scroll-container="true"
                 >
                   {/* Editor Container (No Paper Shadow) */}

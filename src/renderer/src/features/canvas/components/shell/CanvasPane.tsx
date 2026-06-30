@@ -26,6 +26,10 @@ const GraphWorkspace = lazy(
   () => import("../graph/GraphWorkspace"),
 );
 
+const CanvasEntityPreview = lazy(
+  () => import("./CanvasEntityPreview"),
+);
+
 const loadingFallback = (
   <div className="flex h-full items-center justify-center text-xs text-muted" />
 );
@@ -38,6 +42,7 @@ export default function CanvasPane() {
   useCanvasGraphData();
 
   const activePanel = useCanvasViewStore((state) => state.activePanel);
+  const entityPreview = useCanvasViewStore((state) => state.entityPreview);
   const isGraphMode = activePanel === "graph";
 
   // graphData → projection(노드/엣지 카운트 + 뷰포트 데이터). graph 모드는 별도 파이프라인.
@@ -45,7 +50,7 @@ export default function CanvasPane() {
 
   return (
     <div
-      className="relative flex h-full w-full flex-col bg-canvas"
+      className="relative flex h-full w-full flex-col bg-app"
       data-testid="canvas-pane"
     >
       {/* 메인 뷰포트 영역 (Static / Graph 교체식) */}
@@ -54,6 +59,8 @@ export default function CanvasPane() {
           <Suspense fallback={loadingFallback}>
             {isGraphMode ? (
               <GraphWorkspace />
+            ) : entityPreview ? (
+              <CanvasEntityPreview preview={entityPreview} />
             ) : (
               <StaticCanvasViewport projection={projection} />
             )}
@@ -62,10 +69,12 @@ export default function CanvasPane() {
       </div>
 
       {/* 화면 중앙 하단 공통 플로팅 툴바 */}
-      <BottomInteractiveToolbar />
+      {!entityPreview && <BottomInteractiveToolbar />}
 
       {/* 정보 상태 바 — graph 모드에서는 자체 파이프라인이라 카운트를 숨긴다 */}
-      <CanvasStatusBar projection={isGraphMode ? null : projection} />
+      {!entityPreview && (
+        <CanvasStatusBar projection={isGraphMode ? null : projection} />
+      )}
     </div>
   );
 }

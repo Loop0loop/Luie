@@ -35,13 +35,14 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
   const { t } = useTranslation();
   const graphData = useWorldBuildingStore((state) => state.graphData);
   const clearSelection = useCanvasViewStore((s) => s.clearSelection);
+  const selectNode = useCanvasViewStore((s) => s.selectNode);
   const currentProjectId = useProjectStore((state) => state.currentProject?.id);
 
   const node = graphData?.nodes.find((n) => n.id === nodeId) ?? null;
 
   if (!node) {
     return (
-      <div className="p-panel-pad text-xs italic text-muted">
+      <div className="h-full bg-panel p-panel-pad text-xs italic text-muted">
         {t("canvas.status.empty")}
       </div>
     );
@@ -52,7 +53,7 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
   // 캐릭터 위키 재활용
   if (normalizedType === "character") {
     return (
-      <div className="relative flex h-full flex-col overflow-y-auto">
+      <div className="relative flex h-full flex-col overflow-y-auto bg-panel">
         <div className="absolute top-4 right-4 z-10">
           <button
             type="button"
@@ -72,7 +73,7 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
   // 사건 타임라인 상세 재활용
   if (normalizedType === "event") {
     return (
-      <div className="relative flex h-full flex-col overflow-y-auto">
+      <div className="relative flex h-full flex-col overflow-y-auto bg-panel">
         <div className="absolute top-4 right-4 z-10">
           <button
             type="button"
@@ -92,7 +93,7 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
   // 원고(챕터) 노드 전용 디테일 뷰
   if (normalizedType === "chapter") {
     return (
-      <div className="flex h-full flex-col overflow-hidden">
+      <div className="flex h-full flex-col overflow-hidden bg-panel">
         {/* Header */}
         <div className="shrink-0 border-b border-border/40 px-panel-pad py-control-y flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -157,7 +158,7 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
     graphData?.nodes.filter((n) => connectedNodeIds.has(n.id)) ?? [];
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden bg-panel">
       {/* Header */}
       <div className="shrink-0 border-b border-border/40 px-panel-pad py-control-y">
         <div className="flex items-center gap-2">
@@ -219,7 +220,8 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
                 return (
                   <li
                     key={cnNode.id}
-                    className="flex items-center gap-2 text-xs text-fg/80"
+                    onClick={() => selectNode(cnNode.id)}
+                    className="flex items-center gap-2 text-xs text-fg/80 hover:bg-surface-hover/50 p-1 rounded-control cursor-pointer transition-colors"
                   >
                     <span
                       className="h-1.5 w-1.5 shrink-0 rounded-full"
@@ -228,7 +230,7 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
                     />
                     <span className="truncate">{cnNode.name}</span>
                     {rel?.relation && (
-                      <span className="ml-auto shrink-0 text-[10px] text-muted">
+                      <span className="ml-auto shrink-0 text-[10px] text-muted pr-1">
                         {rel.relation}
                       </span>
                     )}
@@ -350,7 +352,7 @@ function ChapterNodeDetail({ nodeId, projectId, graphData }: ChapterNodeDetailPr
   return (
     <div className="space-y-5 p-panel-pad py-4">
       {/* 3줄 요약 섹션 */}
-      <section className="rounded-lg bg-surface-hover border border-border/40 p-3">
+      <section className="rounded-panel bg-surface-hover border border-border/40 p-3">
         <div className="flex items-center gap-1.5 mb-2">
           <Sparkles className="h-3.5 w-3.5 text-accent animate-pulse" />
           <h4 className="text-xs font-semibold text-fg/80">
@@ -358,7 +360,7 @@ function ChapterNodeDetail({ nodeId, projectId, graphData }: ChapterNodeDetailPr
           </h4>
         </div>
         {loading ? (
-          <p className="text-xs text-muted-foreground italic">
+          <p className="text-xs text-muted italic">
             {t("canvas.status.loading")}
           </p>
         ) : summary ? (
@@ -372,14 +374,14 @@ function ChapterNodeDetail({ nodeId, projectId, graphData }: ChapterNodeDetailPr
           </div>
         ) : (
           <div className="text-center py-2">
-            <p className="text-xs text-muted-foreground mb-2">
+            <p className="text-xs text-muted mb-2">
               {t("canvas.status.empty")}
             </p>
             <button
               type="button"
               disabled={generating}
               onClick={handleGenerateSummary}
-              className="inline-flex items-center gap-1.5 rounded bg-accent px-2.5 py-1 text-[11px] font-semibold text-accent-foreground hover:bg-accent/90 transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded bg-accent px-2.5 py-1 text-[11px] font-semibold text-accent-fg hover:bg-accent/90 transition-colors disabled:opacity-50"
             >
               <RefreshCw className={cn("h-3 w-3", generating && "animate-spin")} />
               <span>
@@ -393,13 +395,13 @@ function ChapterNodeDetail({ nodeId, projectId, graphData }: ChapterNodeDetailPr
       {/* 등장인물 리스트 */}
       <section>
         <div className="flex items-center gap-1.5 mb-2">
-          <User className="h-4 w-4 text-muted-foreground" />
+          <User className="h-4 w-4 text-muted" />
           <h4 className="text-xs font-semibold text-fg/80">
             {t("canvas.graph.character")}
           </h4>
         </div>
         {connectedCharacters.length === 0 ? (
-          <p className="text-xs italic text-muted-foreground pl-5">
+          <p className="text-xs italic text-muted pl-5">
             {t("canvas.status.empty")}
           </p>
         ) : (
@@ -419,13 +421,13 @@ function ChapterNodeDetail({ nodeId, projectId, graphData }: ChapterNodeDetailPr
       {/* 미해결 복선/남은 떡밥 */}
       <section>
         <div className="flex items-center gap-1.5 mb-2">
-          <HelpCircle className="h-4 w-4 text-muted-foreground" />
+          <HelpCircle className="h-4 w-4 text-muted" />
           <h4 className="text-xs font-semibold text-fg/80">
             {t("canvas.graph.relations")}
           </h4>
         </div>
         {connectedMemosAndEvents.length === 0 ? (
-          <p className="text-xs italic text-muted-foreground pl-5">
+          <p className="text-xs italic text-muted pl-5">
             {t("canvas.status.empty")}
           </p>
         ) : (
@@ -437,7 +439,7 @@ function ChapterNodeDetail({ nodeId, projectId, graphData }: ChapterNodeDetailPr
                 </span>{" "}
                 {item.name}
                 {item.description && (
-                  <span className="text-muted-foreground text-[11px] block pl-2">
+                  <span className="text-muted text-[11px] block pl-2">
                     {item.description}
                   </span>
                 )}

@@ -290,39 +290,25 @@ async function flushLogs() {
   if (logQueue.length > 0) scheduleLogFlush();
 }
 
-const createLoggerApi = (): RendererApi["logger"] => ({
-  debug: (message, data) => {
-    logQueue.push({ level: "debug", message, data: sanitizeForIpc(data) });
-    if (logQueue.length >= LOG_BATCH_SIZE) {
-      void flushLogs();
-    } else {
-      scheduleLogFlush();
-    }
-    return Promise.resolve({ success: true } as IPCResponse<never>);
-  },
-  info: (message, data) => {
-    logQueue.push({ level: "info", message, data: sanitizeForIpc(data) });
-    if (logQueue.length >= LOG_BATCH_SIZE) {
-      void flushLogs();
-    } else {
-      scheduleLogFlush();
-    }
-    return Promise.resolve({ success: true } as IPCResponse<never>);
-  },
-  warn: (message, data) => {
-    logQueue.push({ level: "warn", message, data: sanitizeForIpc(data) });
-    if (logQueue.length >= LOG_BATCH_SIZE) {
-      void flushLogs();
-    } else {
-      scheduleLogFlush();
-    }
-    return Promise.resolve({ success: true } as IPCResponse<never>);
-  },
-  error: (message, data) => {
-    logQueue.push({ level: "error", message, data: sanitizeForIpc(data) });
+const enqueueLoggerMessage = (
+  level: "debug" | "info" | "warn" | "error",
+  message: string,
+  data: unknown,
+) => {
+  logQueue.push({ level, message, data: sanitizeForIpc(data) });
+  if (level === "error" || logQueue.length >= LOG_BATCH_SIZE) {
     void flushLogs();
-    return Promise.resolve({ success: true } as IPCResponse<never>);
-  },
+  } else {
+    scheduleLogFlush();
+  }
+  return Promise.resolve({ success: true } as IPCResponse<never>);
+};
+
+const createLoggerApi = (): RendererApi["logger"] => ({
+  debug: (message, data) => enqueueLoggerMessage("debug", message, data),
+  info: (message, data) => enqueueLoggerMessage("info", message, data),
+  warn: (message, data) => enqueueLoggerMessage("warn", message, data),
+  error: (message, data) => enqueueLoggerMessage("error", message, data),
 });
 
 type AutoSavePayload = { chapterId: string; content: string; projectId: string };

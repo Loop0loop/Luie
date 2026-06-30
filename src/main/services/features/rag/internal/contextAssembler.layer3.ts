@@ -36,6 +36,26 @@ type Layer3FallbackRow = {
   endOffset: number | null;
 };
 
+function buildShadowBetaChapterPredicate(options?: {
+  chunkIdPrefix?: string;
+  maxShadowBetaChapter?: number | null;
+}) {
+  if (!options?.chunkIdPrefix) return undefined;
+  if (options.maxShadowBetaChapter === undefined || options.maxShadowBetaChapter === null) {
+    return likeWithEscape(memoryChunk.id, `${options.chunkIdPrefix}%`);
+  }
+  const chapters = Array.from(
+    { length: Math.max(0, options.maxShadowBetaChapter) },
+    (_, index) => index + 1,
+  );
+  if (chapters.length === 0) return sql`0 = 1`;
+  return or(
+    ...chapters.map((chapterOrder) =>
+      likeWithEscape(memoryChunk.id, `${options.chunkIdPrefix}chapter-${chapterOrder}:%`),
+    ),
+  );
+}
+
 const KOREAN_SUFFIXES = [
   "은",
   "는",
@@ -141,11 +161,14 @@ export async function buildLayer3Evidence(
   projectId: string,
   question: string,
   embedTexts?: RagEmbeddingProvider,
+  options?: { chunkIdPrefix?: string; maxShadowBetaChapter?: number | null },
 ): Promise<Layer3Result> {
   let rows: MemoryChunkSearchResult[] = await searchMemoryChunksForRag({
     projectId,
     query: question,
     limit: 10,
+    chunkIdPrefix: options?.chunkIdPrefix,
+    maxShadowBetaChapter: options?.maxShadowBetaChapter,
     embedTexts,
     parentWindow: { before: 1, after: 1 },
   });
@@ -176,7 +199,13 @@ export async function buildLayer3Evidence(
             endOffset: memoryChunk.endOffset,
           })
           .from(memoryChunk)
-          .where(and(eq(memoryChunk.projectId, projectId), lexicalPredicate))
+          .where(
+            and(
+              eq(memoryChunk.projectId, projectId),
+              lexicalPredicate,
+              buildShadowBetaChapterPredicate(options),
+            ),
+          )
           .orderBy(desc(memoryChunk.updatedAt))
           .limit(10);
         rows = lexicalRows.map((row) => ({

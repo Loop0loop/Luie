@@ -18,12 +18,12 @@ export function BootstrapGate({
 
   return (
     <div className="min-h-screen bg-app text-fg flex items-center justify-center px-6">
-      <div className="w-full max-w-3xl rounded-2xl border border-border bg-panel p-8 shadow-lg">
+      <div className="w-full max-w-3xl rounded-panel border border-border bg-panel p-8 shadow-lg">
         <div className="space-y-4">
-          <div className="h-6 w-52 rounded-md bg-surface animate-pulse" />
-          <div className="h-4 w-full rounded-md bg-surface animate-pulse" />
-          <div className="h-4 w-[82%] rounded-md bg-surface animate-pulse" />
-          <div className="h-4 w-[68%] rounded-md bg-surface animate-pulse" />
+          <div className="h-6 w-52 rounded-control bg-surface animate-pulse" />
+          <div className="h-4 w-full rounded-control bg-surface animate-pulse" />
+          <div className="h-4 w-[82%] rounded-control bg-surface animate-pulse" />
+          <div className="h-4 w-[68%] rounded-control bg-surface animate-pulse" />
         </div>
 
         {!showError && (
@@ -38,13 +38,13 @@ export function BootstrapGate({
             <div className="flex gap-3">
               <button
                 onClick={onRetry}
-                className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 transition-colors"
+                className="px-4 py-2 rounded-panel bg-accent text-white text-sm font-medium hover:bg-accent/90 transition-colors"
               >
                 {t("bootstrap.retry")}
               </button>
               <button
                 onClick={onQuit}
-                className="px-4 py-2 rounded-lg border border-border text-sm font-medium text-fg hover:bg-surface-hover transition-colors"
+                className="px-4 py-2 rounded-panel border border-border text-sm font-medium text-fg hover:bg-surface-hover transition-colors"
               >
                 {t("bootstrap.quit")}
               </button>

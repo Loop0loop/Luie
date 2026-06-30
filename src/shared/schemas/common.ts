@@ -25,15 +25,18 @@ export const dialogOptionsSchema = z.strictObject({
   title: z.string().min(1).max(200).optional(),
 });
 
-export const projectIdSchema = z.string().uuid("Invalid project ID");
-export const chapterIdSchema = z.string().uuid("Invalid chapter ID");
-export const characterIdSchema = z.string().uuid("Invalid character ID");
-export const eventIdSchema = z.string().uuid("Invalid event ID");
-export const factionIdSchema = z.string().uuid("Invalid faction ID");
-export const termIdSchema = z.string().uuid("Invalid term ID");
-export const sceneIdSchema = z.string().uuid("Invalid scene ID");
-export const noteIdSchema = z.string().uuid("Invalid note ID");
-export const synopsisIdSchema = z.string().uuid("Invalid synopsis ID");
-export const plotIdSchema = z.string().uuid("Invalid plot ID");
-export const scrapMemoIdSchema = z.string().uuid("Invalid scrap memo ID");
-export const snapshotIdSchema = z.string().uuid("Invalid snapshot ID");
+const entityIdSchema = (label: string) =>
+  z.string().min(1, `${label} is required`).max(256, `${label} is too long`);
+
+export const projectIdSchema = entityIdSchema("Project ID");
+export const chapterIdSchema = entityIdSchema("Chapter ID");
+export const characterIdSchema = entityIdSchema("Character ID");
+export const eventIdSchema = entityIdSchema("Event ID");
+export const factionIdSchema = entityIdSchema("Faction ID");
+export const termIdSchema = entityIdSchema("Term ID");
+export const sceneIdSchema = entityIdSchema("Scene ID");
+export const noteIdSchema = entityIdSchema("Note ID");
+export const synopsisIdSchema = entityIdSchema("Synopsis ID");
+export const plotIdSchema = entityIdSchema("Plot ID");
+export const scrapMemoIdSchema = entityIdSchema("Scrap memo ID");
+export const snapshotIdSchema = entityIdSchema("Snapshot ID");

@@ -88,7 +88,7 @@ export const EditorTab = memo(function EditorTab({
                   customFontFamily: undefined,
                 })
               }
-              className={`p-4 rounded-xl border text-left transition-colors duration-150 ${
+              className={`p-4 rounded-panel border text-left transition-colors duration-150 ${
                 fontFamily === f.id && !fontPreset && !customFontFamily
                   ? "border-accent ring-1 ring-accent bg-accent/5"
                   : "border-border hover:bg-surface-hover"
@@ -126,7 +126,7 @@ export const EditorTab = memo(function EditorTab({
               customFontFamily: undefined,
             })
           }
-          className={`w-full p-4 rounded-xl border text-left transition-colors duration-150 ${
+          className={`w-full p-4 rounded-panel border text-left transition-colors duration-150 ${
             fontPreset === "inter"
               ? "border-accent ring-1 ring-accent bg-accent/5"
               : "border-border hover:bg-surface-hover"
@@ -169,10 +169,10 @@ export const EditorTab = memo(function EditorTab({
                     value={fontSearch}
                     onChange={(e) => setFontSearch(e.target.value)}
                     placeholder={t("settings.systemFonts.search", "폰트 검색...")}
-                    className="w-full pl-8 pr-3 py-2 text-sm border border-border rounded-lg bg-surface text-fg focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-full pl-8 pr-3 py-2 text-sm border border-border rounded-panel bg-surface text-fg focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
-                <div className="max-h-52 overflow-y-auto rounded-lg border border-border divide-y divide-border scrollbar-hide">
+                <div className="max-h-52 overflow-y-auto rounded-panel border border-border divide-y divide-border scrollbar-hide">
                   {filteredFonts.length > 0 ? (
                     filteredFonts.map((font) => {
                       const isSelected =
@@ -238,7 +238,7 @@ export const EditorTab = memo(function EditorTab({
             value={customInput}
             onChange={(e) => setCustomInput(e.target.value)}
             placeholder={t("settings.customFont.placeholder")}
-            className="flex-1 px-3 py-2 border border-border rounded-lg bg-surface text-fg text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+            className="flex-1 px-3 py-2 border border-border rounded-panel bg-surface text-fg text-sm focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <button
             onClick={() => {
@@ -248,7 +248,7 @@ export const EditorTab = memo(function EditorTab({
                 fontPreset: undefined,
               });
             }}
-            className="px-4 py-2 bg-accent text-accent-fg rounded-lg text-sm font-medium hover:bg-accent-bg-hover transition-colors"
+            className="px-4 py-2 bg-accent text-accent-fg rounded-panel text-sm font-medium hover:bg-accent-bg-hover transition-colors"
           >
             {t("settings.customFont.apply")}
           </button>
@@ -300,14 +300,14 @@ export const EditorTab = memo(function EditorTab({
           <h3 className="text-base font-semibold text-fg">
             {t("settings.section.fontSize")}
           </h3>
-          <div className="flex items-center gap-3 bg-surface border border-border rounded-lg p-1">
+          <div className="flex items-center gap-3 bg-surface border border-border rounded-panel p-1">
             <button
               onClick={() => {
                 const next = Math.max(12, localFontSize - 1);
                 onSetLocalFontSize(next);
                 onApplySettings({ fontSize: next });
               }}
-              className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
+              className="p-1 hover:bg-element-hover rounded-control text-muted hover:text-fg transition-colors"
             >
               <Minus className="w-4 h-4" />
             </button>
@@ -320,7 +320,7 @@ export const EditorTab = memo(function EditorTab({
                 onSetLocalFontSize(next);
                 onApplySettings({ fontSize: next });
               }}
-              className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
+              className="p-1 hover:bg-element-hover rounded-control text-muted hover:text-fg transition-colors"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -333,7 +333,7 @@ export const EditorTab = memo(function EditorTab({
           <h3 className="text-base font-semibold text-fg">
             {t("settings.section.lineHeight")}
           </h3>
-          <div className="flex items-center gap-3 bg-surface border border-border rounded-lg p-1">
+          <div className="flex items-center gap-3 bg-surface border border-border rounded-panel p-1">
             <button
               onClick={() => {
                 const next = Math.max(
@@ -343,7 +343,7 @@ export const EditorTab = memo(function EditorTab({
                 onSetLocalLineHeight(next);
                 onApplySettings({ lineHeight: next });
               }}
-              className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
+              className="p-1 hover:bg-element-hover rounded-control text-muted hover:text-fg transition-colors"
             >
               <Minus className="w-4 h-4" />
             </button>
@@ -359,7 +359,7 @@ export const EditorTab = memo(function EditorTab({
                 onSetLocalLineHeight(next);
                 onApplySettings({ lineHeight: next });
               }}
-              className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
+              className="p-1 hover:bg-element-hover rounded-control text-muted hover:text-fg transition-colors"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -377,14 +377,14 @@ export const EditorTab = memo(function EditorTab({
               {t("settings.letterSpacing.description", "글자 사이 간격을 조절합니다")}
             </p>
           </div>
-          <div className="flex items-center gap-3 bg-surface border border-border rounded-lg p-1">
+          <div className="flex items-center gap-3 bg-surface border border-border rounded-panel p-1">
             <button
               onClick={() => {
                 const next = Math.max(0, Number((localLetterSpacing - 0.01).toFixed(2)));
                 onSetLocalLetterSpacing(next);
                 onApplySettings({ letterSpacing: next });
               }}
-              className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
+              className="p-1 hover:bg-element-hover rounded-control text-muted hover:text-fg transition-colors"
             >
               <Minus className="w-4 h-4" />
             </button>
@@ -397,7 +397,7 @@ export const EditorTab = memo(function EditorTab({
                 onSetLocalLetterSpacing(next);
                 onApplySettings({ letterSpacing: next });
               }}
-              className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
+              className="p-1 hover:bg-element-hover rounded-control text-muted hover:text-fg transition-colors"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -415,14 +415,14 @@ export const EditorTab = memo(function EditorTab({
               {t("settings.wordSpacing.description", "단어 사이 간격을 조절합니다")}
             </p>
           </div>
-          <div className="flex items-center gap-3 bg-surface border border-border rounded-lg p-1">
+          <div className="flex items-center gap-3 bg-surface border border-border rounded-panel p-1">
             <button
               onClick={() => {
                 const next = Math.max(0, Number((localWordSpacing - 0.01).toFixed(2)));
                 onSetLocalWordSpacing(next);
                 onApplySettings({ wordSpacing: next });
               }}
-              className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
+              className="p-1 hover:bg-element-hover rounded-control text-muted hover:text-fg transition-colors"
             >
               <Minus className="w-4 h-4" />
             </button>
@@ -435,7 +435,7 @@ export const EditorTab = memo(function EditorTab({
                 onSetLocalWordSpacing(next);
                 onApplySettings({ wordSpacing: next });
               }}
-              className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
+              className="p-1 hover:bg-element-hover rounded-control text-muted hover:text-fg transition-colors"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -453,14 +453,14 @@ export const EditorTab = memo(function EditorTab({
               {t("settings.paragraphSpacing.description", "엔터 후 문단 사이 간격을 조절합니다")}
             </p>
           </div>
-          <div className="flex items-center gap-3 bg-surface border border-border rounded-lg p-1">
+          <div className="flex items-center gap-3 bg-surface border border-border rounded-panel p-1">
             <button
               onClick={() => {
                 const next = Math.max(0, Number((localParagraphSpacing - 0.1).toFixed(1)));
                 onSetLocalParagraphSpacing(next);
                 onApplySettings({ paragraphSpacing: next });
               }}
-              className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
+              className="p-1 hover:bg-element-hover rounded-control text-muted hover:text-fg transition-colors"
             >
               <Minus className="w-4 h-4" />
             </button>
@@ -473,7 +473,7 @@ export const EditorTab = memo(function EditorTab({
                 onSetLocalParagraphSpacing(next);
                 onApplySettings({ paragraphSpacing: next });
               }}
-              className="p-1 hover:bg-element-hover rounded-md text-muted hover:text-fg transition-colors"
+              className="p-1 hover:bg-element-hover rounded-control text-muted hover:text-fg transition-colors"
             >
               <Plus className="w-4 h-4" />
             </button>

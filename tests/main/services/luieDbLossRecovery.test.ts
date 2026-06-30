@@ -3,8 +3,8 @@ import { promises as fs } from "node:fs";
 import { app } from "electron";
 import { describe, expect, it } from "vitest";
 import { db } from "../../../src/main/database/index.js";
-import { projectService } from "../../../src/main/services/core/projectService.js";
-import { chapterService } from "../../../src/main/services/core/chapterService.js";
+import { projectService } from "../../../src/main/services/features/project/projectService.js";
+import { chapterService } from "../../../src/main/services/features/manuscript/chapterService.js";
 import { snapshotService } from "../../../src/main/services/features/snapshot/snapshotService.js";
 import { readLuieContainerEntry } from "../../../src/main/services/io/luieContainer.js";
 

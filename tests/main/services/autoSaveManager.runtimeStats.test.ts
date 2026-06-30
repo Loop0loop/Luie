@@ -15,7 +15,7 @@ vi.mock("../../../src/main/database/index.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/core/chapterService.js", () => ({
+vi.mock("../../../src/main/services/features/manuscript/chapterService.js", () => ({
   chapterService: {
     updateChapter: updateChapterMock,
   },

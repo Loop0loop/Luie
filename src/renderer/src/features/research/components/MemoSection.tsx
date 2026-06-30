@@ -175,7 +175,7 @@ function MemoSectionInner({
   const panelGroupRef = useRef<GroupImperativeHandle | null>(null);
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
 
-  const { isLayoutReady } = useFixedPixelPanelGroupLayout({
+  const { hasCompletedInitialLayout } = useFixedPixelPanelGroupLayout({
     containerRef,
     groupRef: panelGroupRef,
     fixedPanels: [
@@ -191,7 +191,9 @@ function MemoSectionInner({
   });
   const shouldHideUntilLayoutReady =
     !enableAnimations &&
-    (!uiHasHydrated || !projectLayoutHasHydrated || !isLayoutReady);
+    (!uiHasHydrated ||
+      !projectLayoutHasHydrated ||
+      !hasCompletedInitialLayout);
 
   useShortcutCommand((command) => {
     if (command.type === "scrap.addMemo") {

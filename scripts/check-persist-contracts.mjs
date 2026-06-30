@@ -49,6 +49,16 @@ const getPropertyName = (property) => {
   return null;
 };
 
+const isStateRegionsClone = (node) =>
+  ts.isCallExpression(node) &&
+  ts.isIdentifier(node.expression) &&
+  node.expression.text === "cloneRegions" &&
+  node.arguments.length === 1 &&
+  ts.isPropertyAccessExpression(node.arguments[0]) &&
+  ts.isIdentifier(node.arguments[0].expression) &&
+  node.arguments[0].expression.text === "state" &&
+  node.arguments[0].name.text === "regions";
+
 export const analyzePersistContractsSource = (content, relativeFile) => {
   const sourceFile = ts.createSourceFile(
     relativeFile,
@@ -91,6 +101,23 @@ export const analyzePersistContractsSource = (content, relativeFile) => {
       missing,
     });
   });
+
+  if (relativeFile.endsWith("uiStore.persist.ts")) {
+    walk(sourceFile, (node) => {
+      if (!ts.isPropertyAssignment(node)) return;
+      if (getPropertyName(node) !== "regions") return;
+      if (!isStateRegionsClone(node.initializer)) return;
+
+      findings.push({
+        type: "persist-contract-global-region-open-state",
+        severity: "error",
+        file: relativeFile,
+        line: getLineNumber(sourceFile, node.getStart(sourceFile)),
+        message:
+          "UI store persist must not save global region open/tab state; persist widths only.",
+      });
+    });
+  }
 
   return findings;
 };

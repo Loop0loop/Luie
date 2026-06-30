@@ -150,7 +150,7 @@ const CanvasElementsTab = memo(() => {
           <p className="text-xs font-semibold text-fg/60">
             {t("canvas.graph.details.emptyTitle", "설정 수사 정보")}
           </p>
-          <p className="text-[11px] text-muted-foreground leading-normal">
+          <p className="text-[11px] text-muted leading-normal">
             {t("canvas.graph.details.emptyDescription", "월드 그래프에서 인물이나 사건 노드를 클릭하면 큼직한 상세 설정 수사 메모가 이 바인더 패널에 활성화됩니다.")}
           </p>
         </div>
@@ -169,7 +169,7 @@ const CanvasElementsTab = memo(() => {
             <p className="text-xs font-semibold text-fg/60">
               {t("canvas.inspector.emptyTitle")}
             </p>
-            <p className="text-[11px] text-muted-foreground leading-normal">
+            <p className="text-[11px] text-muted leading-normal">
               {t("canvas.inspector.emptyDescription")}
             </p>
           </div>
@@ -301,7 +301,7 @@ function ContextPanel({
       )}
 
       <div className="flex items-center px-4 pt-3 shrink-0">
-        <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+        <span className="text-[11px] font-bold uppercase tracking-widest text-muted">
           {isCanvasMode
             ? activePanel === "graph"
               ? t("canvas.binder.graphHeader", "인물 관계 수사망")
@@ -395,7 +395,7 @@ function ContextPanel({
                   {t("context.synopsisHeader")}
                 </div>
                 <textarea
-                  className="w-full border border-border rounded-lg p-3 text-sm text-fg bg-element resize-none font-sans leading-relaxed min-h-50"
+                  className="w-full border border-border rounded-panel p-3 text-sm text-fg bg-element resize-none font-sans leading-relaxed min-h-50"
                   placeholder={t("context.placeholder.synopsis")}
                   value={currentProject?.description || ""}
                   readOnly
@@ -411,7 +411,7 @@ function ContextPanel({
                   return (
                     <div
                       key={item.id}
-                      className="bg-element border border-border rounded-lg p-3 mb-2 cursor-pointer transition-all hover:border-active hover:bg-element-hover"
+                      className="bg-element border border-border rounded-panel p-3 mb-2 cursor-pointer transition-all hover:border-active hover:bg-element-hover"
                       onClick={() => handleItemClick(item)}
                     >
                       <div className="flex flex-col gap-1">
@@ -430,7 +430,7 @@ function ContextPanel({
                 {filteredTerms.map((item) => (
                   <div
                     key={item.id}
-                    className="bg-element border border-border rounded-lg p-3 mb-2 cursor-pointer transition-all hover:border-active hover:bg-element-hover"
+                    className="bg-element border border-border rounded-panel p-3 mb-2 cursor-pointer transition-all hover:border-active hover:bg-element-hover"
                     onClick={() => handleItemClick(item)}
                   >
                     <div className="flex justify-between items-start mb-1">

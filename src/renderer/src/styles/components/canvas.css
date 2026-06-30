@@ -1,0 +1,308 @@
+.canvas-entity-node {
+    color: var(--text-primary);
+}
+
+.canvas-node-handle {
+    width: 0.625rem;
+    height: 0.625rem;
+    border-width: 2px;
+    border-style: solid;
+    border-color: var(--bg-panel);
+    border-radius: var(--radius-control);
+    background: var(--border-active);
+}
+
+.canvas-document-editor .ProseMirror {
+    min-height: 35rem;
+    height: auto;
+    padding: 0 0 6rem;
+    outline: none;
+    color: var(--text-primary);
+    font-family: var(--font-serif);
+    word-break: keep-all;
+}
+
+.canvas-document-editor .ProseMirror,
+.canvas-document-editor .ProseMirror * {
+    font-family: inherit !important;
+}
+
+/* Notion/Pensive style: contenteditable focus shows the caret only — no
+   colored outline/ring. The caret is the visible focus indicator, so this
+   satisfies "visible focus" without a loud blue ring on the writing surface. */
+
+/* Canvas node/edge — prefers-reduced-motion guard.
+   DESIGN.md §8 "the one gap to close": OS-level reduced-motion 지원.
+   canvas node hover/selected transition과 edge stroke transition을 비활성화.
+   Luie 자체 클래스라 !important 없이 specificity로 처리한다. */
+@media (prefers-reduced-motion: reduce) {
+  .canvas-entity-node,
+  .canvas-node-handle,
+  .canvas-document-editor .ProseMirror {
+    transition-duration: 0ms;
+    animation-duration: 0ms;
+  }
+}
+
+.canvas-document-editor .ProseMirror .is-empty::before {
+    content: attr(data-placeholder);
+    color: var(--text-tertiary);
+    float: left;
+    height: 0;
+    pointer-events: none;
+}
+
+.canvas-document-editor .ProseMirror p {
+    min-height: 1.75rem;
+    margin: 0 0 1.25rem;
+    line-height: 1.85;
+}
+
+.canvas-document-editor .ProseMirror h1,
+.canvas-document-editor .ProseMirror h2,
+.canvas-document-editor .ProseMirror h3 {
+    color: var(--text-primary);
+    font-weight: 700;
+    letter-spacing: 0;
+    line-height: 1.35;
+    word-break: keep-all;
+}
+
+.canvas-document-editor .ProseMirror h1 {
+    margin: 4rem 0 1.4rem;
+    font-size: 1.625rem;
+}
+
+.canvas-document-editor .ProseMirror h1:first-child {
+    margin-top: 0;
+}
+
+.canvas-document-editor .ProseMirror h2 {
+    margin: 3rem 0 1rem;
+    font-size: 1.375rem;
+}
+
+.canvas-document-editor .ProseMirror h3 {
+    margin: 2rem 0 0.75rem;
+    font-size: 1.125rem;
+}
+
+.canvas-document-editor .ProseMirror ul,
+.canvas-document-editor .ProseMirror ol {
+    margin: 0.5rem 0 1.4rem;
+    padding-left: 1.5rem;
+}
+
+.canvas-document-editor .ProseMirror ul {
+    list-style: disc;
+}
+
+.canvas-document-editor .ProseMirror ol {
+    list-style: decimal;
+}
+
+.canvas-document-editor .ProseMirror li {
+    margin: 0.35rem 0;
+    line-height: 1.75;
+}
+
+.canvas-document-editor .ProseMirror li > p {
+    margin: 0;
+    min-height: auto;
+}
+
+.canvas-document-editor .ProseMirror hr {
+    width: 100%;
+    margin: 2.25rem 0;
+    border: 0;
+    border-top: 1px solid var(--border-default);
+}
+
+.canvas-document-editor .ProseMirror blockquote {
+    margin: 1.5rem 0;
+    padding: 0.25rem 0 0.25rem 1rem;
+    border-left: 3px solid var(--border-active);
+    color: var(--text-secondary);
+}
+
+.canvas-document-editor .ProseMirror blockquote p {
+    margin: 0.25rem 0;
+}
+
+.canvas-document-editor .ProseMirror code {
+    border-radius: 0.35rem;
+    background: var(--bg-surface-hover);
+    padding: 0.1rem 0.35rem;
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+}
+
+.canvas-document-editor .ProseMirror pre {
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    border-radius: var(--radius-control);
+    background: var(--bg-sidebar);
+    padding: 1rem;
+}
+
+.canvas-document-editor .ProseMirror pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.canvas-document-editor .ProseMirror ul[data-type="taskList"] {
+    list-style: none;
+    padding-left: 0;
+}
+
+.canvas-document-editor .ProseMirror li[data-type="taskItem"] {
+    display: flex;
+    gap: 0.65rem;
+}
+
+.canvas-document-editor .ProseMirror li[data-type="taskItem"] label {
+    padding-top: 0.2rem;
+}
+
+.canvas-document-editor .ProseMirror details.toggle {
+    margin: 1rem 0 1.5rem;
+}
+
+.canvas-document-editor .ProseMirror details.toggle summary {
+    cursor: pointer;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.canvas-document-editor .ProseMirror .callout {
+    margin: 1.5rem 0;
+    border-radius: var(--radius-control);
+    background: var(--bg-surface-hover);
+    padding: 0.85rem 1rem;
+}
+
+.canvas-document-editor .ProseMirror .callout p {
+    margin: 0.25rem 0;
+}
+
+/* Corkboard Background Override */
+.react-flow__background {
+    background-color: var(--canvas-bg, #f3ece0) !important;
+    transition: background-color 0.2s ease;
+}
+
+[data-theme="dark"] .react-flow__background {
+    background-color: var(--canvas-bg-dark, #1c1816) !important;
+}
+
+.react-flow__background-pattern {
+    stroke: var(--canvas-grid, #e2d6bf) !important;
+    stroke-width: 0.8 !important;
+}
+
+[data-theme="dark"] .react-flow__background-pattern {
+    stroke: var(--canvas-grid-dark, #2b231f) !important;
+}
+
+/* Index Card & Push-Pin Style */
+.canvas-entity-node-obsidian {
+    width: 256px;
+    height: 132px;
+    border-style: solid;
+    color: var(--text-primary);
+    position: relative;
+}
+
+.canvas-node-normal {
+    border-width: 1px;
+    border-color: var(--border-default, rgba(0, 0, 0, 0.08));
+    background-color: var(--node-bg, #fffefc);
+    box-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.05), 
+        0 4px 12px rgba(0, 0, 0, 0.02),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+    border-radius: 6px;
+    transform: rotate(-0.5deg);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+[data-theme="dark"] .canvas-node-normal {
+    background-color: var(--node-bg-dark, #25201e);
+    border-color: var(--border-default, rgba(255, 255, 255, 0.06));
+    box-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.25), 
+        0 4px 12px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.canvas-node-normal:hover {
+    transform: translateY(-2px) rotate(0.2deg);
+    box-shadow: 
+        0 6px 16px rgba(0, 0, 0, 0.08), 
+        0 2px 4px rgba(0, 0, 0, 0.03),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+    border-color: color-mix(in srgb, var(--node-color) 30%, var(--border-default));
+}
+
+[data-theme="dark"] .canvas-node-normal:hover {
+    box-shadow: 
+        0 6px 16px rgba(0, 0, 0, 0.35), 
+        0 2px 4px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.canvas-node-selected {
+    border-width: 1px;
+    border-color: color-mix(in srgb, var(--node-color) 80%, var(--border-default));
+    background-color: var(--node-bg, #fffefc);
+    box-shadow: 
+        0 0 0 3px color-mix(in srgb, var(--node-color) 18%, transparent), 
+        0 8px 24px rgba(0, 0, 0, 0.12);
+    transform: scale(1.02) rotate(0deg);
+    border-radius: 6px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+[data-theme="dark"] .canvas-node-selected {
+    background-color: var(--node-bg-dark, #25201e);
+    box-shadow: 
+        0 0 0 3px color-mix(in srgb, var(--node-color) 15%, transparent), 
+        0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* Push-Pin detail */
+.node-push-pin {
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--node-color);
+    box-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.3), 
+        0 3px 6px color-mix(in srgb, var(--node-color) 45%, transparent),
+        inset 0 -2px 3px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    z-index: 20;
+    pointer-events: none;
+}
+
+/* Pin shadow line */
+.node-push-pin::after {
+    content: '';
+    position: absolute;
+    top: 7px;
+    left: 6px;
+    width: 1.5px;
+    height: 5px;
+    background: rgba(0, 0, 0, 0.35);
+    transform: rotate(20deg);
+    transform-origin: top left;
+}
+
+[data-theme="dark"] .node-push-pin::after {
+    background: rgba(0, 0, 0, 0.55);
+}
+

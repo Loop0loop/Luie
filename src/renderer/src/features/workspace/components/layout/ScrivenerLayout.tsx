@@ -46,6 +46,10 @@ import {
 import {
   groupLayoutMatchesPanels,
 } from "@renderer/features/workspace/utils/panelGroupLayout";
+import {
+  getScrivenerLayoutPersistTarget,
+  type ScrivenerLayoutResizeSurface,
+} from "@renderer/features/workspace/utils/scrivenerLayoutResize";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
 
@@ -105,6 +109,7 @@ export default function ScrivenerLayout({
   const scrivenerLayoutGroupRef = useRef<HTMLDivElement | null>(null);
   const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
   const inspectorPanelRef = useRef<PanelImperativeHandle | null>(null);
+  const activeResizeSurfaceRef = useRef<ScrivenerLayoutResizeSurface | null>(null);
   const previousPanelCountRef = useRef(panels.length);
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
   const maxWidth = useEditorStore((state) => state.maxWidth);
@@ -129,10 +134,32 @@ export default function ScrivenerLayout({
   const binderConfig = getLayoutSurfaceConfig("scrivener.binder");
   const inspectorConfig = getLayoutSurfaceConfig("scrivener.inspector");
 
-  const onLayoutChanged = useLayoutPersist([
-    { id: "sidebar", surface: "scrivener.binder" },
-    { id: "inspector", surface: "scrivener.inspector" },
+  const onBinderLayoutChanged = useLayoutPersist([
+    { id: "sidebar", index: 0, surface: "scrivener.binder" },
   ]);
+  const onInspectorLayoutChanged = useLayoutPersist([
+    { id: "inspector", index: 2, surface: "scrivener.inspector" },
+  ]);
+  const markResizeSurface = useCallback((surface: ScrivenerLayoutResizeSurface) => {
+    activeResizeSurfaceRef.current = surface;
+  }, []);
+  const onLayoutChanged = useCallback(
+    (layout: Layout) => {
+      const target = getScrivenerLayoutPersistTarget(
+        activeResizeSurfaceRef.current,
+      );
+      activeResizeSurfaceRef.current = null;
+      if (target === "binder") {
+        onBinderLayoutChanged(layout);
+        return;
+      }
+      if (target === "inspector") {
+        onInspectorLayoutChanged(layout);
+        return;
+      }
+    },
+    [onBinderLayoutChanged, onInspectorLayoutChanged],
+  );
 
   const binderRatio =
     layoutSurfaceRatios["scrivener.binder"] ||
@@ -262,10 +289,11 @@ export default function ScrivenerLayout({
                 collapsible
                 collapsedSize={0}
                 data-panel-animated="true"
+                groupResizeBehavior="preserve-pixel-size"
                 defaultSize={toPanelPercentSize(binderRatio)}
                 minSize={binderSize.minSize}
                 maxSize={binderSize.maxSize}
-                className={`bg-panel border-r border-border flex flex-col shrink-0 min-w-0 overflow-hidden ${enableAnimations
+                className={`bg-sidebar border-r border-border flex flex-col shrink-0 min-w-0 overflow-hidden ${enableAnimations
                   ? isSidebarClosing
                     ? "animate-out slide-out-to-left fade-out duration-200"
                     : "animate-in slide-in-from-left fade-in duration-200"
@@ -275,10 +303,17 @@ export default function ScrivenerLayout({
                 {sidebar}
               </Panel>
 
-              <PanelResizeHandle data-separator-feature="scrivener.binder" className={`w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative ${enableAnimations && isSidebarClosing
+              <PanelResizeHandle
+                data-separator-feature="scrivener.binder"
+                onKeyDownCapture={() => markResizeSurface("scrivener.binder")}
+                onPointerDownCapture={() => markResizeSurface("scrivener.binder")}
+                onKeyDown={() => markResizeSurface("scrivener.binder")}
+                onPointerDown={() => markResizeSurface("scrivener.binder")}
+                className={`w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative ${enableAnimations && isSidebarClosing
                 ? "opacity-0 transition-opacity duration-200"
                 : ""
-                }`}>
+                }`}
+              >
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
             </>
@@ -288,7 +323,7 @@ export default function ScrivenerLayout({
           <Panel
             id="main-editor"
             minSize={toPercentSize(30)}
-            className="min-w-0 bg-canvas flex flex-col relative z-0"
+            className="min-w-0 bg-app flex flex-col relative z-0"
           >
             {/* Header / Title Bar of Editor Pane? (Like Scrivener Header) */}
             <div className="h-8 bg-surface border-b border-border flex items-center px-4 justify-between shrink-0">
@@ -297,7 +332,7 @@ export default function ScrivenerLayout({
                 {!shouldRenderSidebar && (
                   <button
                     onClick={() => setRegionOpen("leftSidebar", true)}
-                    className="p-1 rounded hover:bg-muted/40 text-muted-foreground transition-colors mr-2 shrink-0"
+                    className="p-1 rounded hover:bg-muted/40 text-muted transition-colors mr-2 shrink-0"
                     title={t("sidebar.toggle.open")}
                   >
                     <Menu className="w-4 h-4" />
@@ -311,7 +346,7 @@ export default function ScrivenerLayout({
                 {!shouldRenderInspector && (
                   <button
                     onClick={() => setRegionOpen("rightPanel", true)}
-                    className="p-1 rounded hover:bg-muted/40 text-muted-foreground transition-colors shrink-0"
+                    className="p-1 rounded hover:bg-muted/40 text-muted transition-colors shrink-0"
                     title={t("scrivener.inspector.open")}
                   >
                     <Menu className="w-4 h-4" />
@@ -380,10 +415,17 @@ export default function ScrivenerLayout({
           {/* Pane 3: Inspector (Right) */}
           {shouldRenderInspector && (
             <>
-              <PanelResizeHandle data-separator-feature="scrivener.inspector" className={`w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative ${enableAnimations && isInspectorClosing
+              <PanelResizeHandle
+                data-separator-feature="scrivener.inspector"
+                onKeyDownCapture={() => markResizeSurface("scrivener.inspector")}
+                onPointerDownCapture={() => markResizeSurface("scrivener.inspector")}
+                onKeyDown={() => markResizeSurface("scrivener.inspector")}
+                onPointerDown={() => markResizeSurface("scrivener.inspector")}
+                className={`w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative ${enableAnimations && isInspectorClosing
                 ? "opacity-0 transition-opacity duration-200"
                 : ""
-                }`}>
+                }`}
+              >
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
 
@@ -393,6 +435,7 @@ export default function ScrivenerLayout({
                 collapsible
                 collapsedSize={0}
                 data-panel-animated="true"
+                groupResizeBehavior="preserve-pixel-size"
                 defaultSize={toPanelPercentSize(inspectorRatio)}
                 minSize={inspectorSize.minSize}
                 maxSize={inspectorSize.maxSize}
@@ -408,7 +451,7 @@ export default function ScrivenerLayout({
                   <span className="text-xs font-semibold uppercase tracking-wide text-muted ml-2">{t("scrivener.inspector.title")}</span>
                   <button
                     onClick={() => setRegionOpen("rightPanel", false)}
-                    className="p-1.5 rounded hover:bg-muted/40 text-muted-foreground transition-colors"
+                    className="p-1.5 rounded hover:bg-muted/40 text-muted transition-colors"
                     title={t("scrivener.inspector.close")}
                   >
                     <ChevronRight className="w-4 h-4" />

@@ -28,12 +28,3 @@ export const CANVAS_NODE_KIND_COLOUR: Record<CanvasNodeKind, string> = {
   "world-entity":"var(--canvas-node-world-entity, #e0de71)", // yellow (3)
 } as const;
 
-/** Node kind → 배경 tint (색상 10% 투명도) — Obsidian 스타일 */
-export const CANVAS_NODE_KIND_BG: Record<CanvasNodeKind, string> = {
-  chapter:       "var(--canvas-node-chapter-bg,      rgba(168,130,255,0.08))",
-  character:     "var(--canvas-node-character-bg,    rgba(251, 70, 76, 0.08))",
-  event:         "var(--canvas-node-event-bg,        rgba(233,151, 63, 0.08))",
-  faction:       "var(--canvas-node-faction-bg,      rgba( 68,207,110, 0.08))",
-  term:          "var(--canvas-node-term-bg,         rgba( 83,223,221, 0.08))",
-  "world-entity":"var(--canvas-node-world-entity-bg, rgba(224,222,113, 0.08))",
-} as const;

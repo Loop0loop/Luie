@@ -3,13 +3,13 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const IMMEDIATE_DURABILITY_TARGETS = [
-  "src/main/services/core/chapterService.ts",
-  "src/main/services/world/characterService.ts",
-  "src/main/services/world/termService.ts",
-  "src/main/services/world/eventService.ts",
-  "src/main/services/world/factionService.ts",
-  "src/main/services/world/worldEntityService.ts",
-  "src/main/services/world/entityRelationService.ts",
+  "src/main/services/features/manuscript/chapterService.ts",
+  "src/main/services/features/world/entities/characterService.ts",
+  "src/main/services/features/world/entities/termService.ts",
+  "src/main/services/features/world/entities/eventService.ts",
+  "src/main/services/features/world/entities/factionService.ts",
+  "src/main/services/features/world/entities/worldEntityService.ts",
+  "src/main/services/features/world/graph/entityRelationService.ts",
 ];
 
 describe("canonical write durability boundary", () => {

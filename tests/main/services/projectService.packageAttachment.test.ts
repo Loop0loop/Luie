@@ -125,7 +125,7 @@ vi.mock("../../../src/main/services/io/luieContainer.js", () => ({
     mocked.readLuieContainerEntry(...args),
 }));
 
-import { ProjectService } from "../../../src/main/services/core/projectService.js";
+import { ProjectService } from "../../../src/main/services/features/project/projectService.js";
 
 describe("ProjectService package attachment flows", () => {
   beforeEach(() => {
