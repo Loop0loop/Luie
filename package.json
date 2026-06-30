@@ -56,6 +56,7 @@
     "check:build-warning-regression": "node scripts/check-build-warning-regression.mjs",
     "check:ipc-contract-map": "node scripts/check-ipc-contract-map.mjs",
     "check:ipc-handler-schemas": "node scripts/check-ipc-handler-schemas.mjs",
+    "check:main-service-boundaries": "node scripts/check-main-service-boundaries.mjs",
     "check:security-profile": "node scripts/check-security-profile.mjs",
     "check:utility-process-boundary": "node scripts/check-utility-process-boundary.mjs",
     "check:renderer-store-usage": "node scripts/check-renderer-store-usage.mjs",

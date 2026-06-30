@@ -1,42 +1,42 @@
 {"id":"murim.chapter_knowledge_state.001","goldEvidence":[{"chapter":1,"file":"manuscript/murim_001.txt","quote":"백린은 류진의 전생을 몰랐다. 문소하도 몰랐다."}],"mustNotUseAfterChapter":1}
 {"id":"murim.foreshadowing_status.001","goldEvidence":[{"chapter":2,"file":"manuscript/murim_002.txt","quote":"청류심법의 두 번째 결함은 아직 누구에게도 말하지 않았다."}],"mustNotUseAfterChapter":2}
-{"id":"murim.draft_canon_conflict.001","goldEvidence":[{"chapter":2,"file":"manuscript/murim_002.txt","quote":"백린의 문제는 배신이 아니었다."}],"mustNotUseAfterChapter":2}
+{"id":"murim.draft_canon_conflict.001","goldEvidence":[{"chapter":0,"file":"writer_room/foreshadowing_ledger.md","quote":"백린은 배신자가 아니며, 겁쟁이처럼 보였던 이유는 약점/장점의 오해라고 답해야 한다."}],"mustNotUseAfterChapter":2}
 {"id":"murim.chapter_knowledge_state.002","goldEvidence":[{"chapter":3,"file":"manuscript/murim_003.txt","quote":"그는 류진의 전생을 몰랐다."}],"mustNotUseAfterChapter":3}
-{"id":"murim.draft_canon_conflict.002","goldEvidence":[{"chapter":4,"file":"manuscript/murim_004.txt","quote":"궤짝 안에 있던 것은 최강 비급이 아니었다."}],"mustNotUseAfterChapter":4}
+{"id":"murim.draft_canon_conflict.002","goldEvidence":[{"chapter":0,"file":"writer_room/foreshadowing_ledger.md","quote":"창고의 핵심 유산은 최강 무공이 아니라 실패 기록이라고 답해야 한다."}],"mustNotUseAfterChapter":4}
 {"id":"murim.relationship_check.001","goldEvidence":[{"chapter":5,"file":"manuscript/murim_005.txt","quote":"백린은 가죽끈이 당겨지는 마른 소리를 들은 것이다."}],"mustNotUseAfterChapter":5}
 {"id":"murim.setting_check.001","goldEvidence":[{"chapter":5,"file":"manuscript/murim_005.txt","quote":"두 번째 합에서 잡역 제자들은 류진이 고친 호흡 순서대로 버텼다."}],"mustNotUseAfterChapter":5}
 {"id":"murim.setting_check.002","goldEvidence":[{"chapter":5,"file":"manuscript/murim_005.txt","quote":"대신 두 번째 결함은 아직 남아 있었다."}],"mustNotUseAfterChapter":5}
 {"id":"murim.foreshadowing_status.002","goldEvidence":[{"chapter":5,"file":"manuscript/murim_005.txt","quote":"남궁철이 최종 배후인지도 확정되지 않았다."}],"mustNotUseAfterChapter":5}
-{"id":"murim.draft_canon_conflict.003","goldEvidence":[{"chapter":5,"file":"manuscript/murim_005.txt","quote":"백린은 배신자가 아니었다."}],"mustNotUseAfterChapter":5}
+{"id":"murim.draft_canon_conflict.003","goldEvidence":[{"chapter":0,"file":"writer_room/timeline.md","quote":"백린은 배신자가 아니다."}],"mustNotUseAfterChapter":5}
 {"id":"murim.relationship_check.002","goldEvidence":[{"chapter":5,"file":"manuscript/murim_005.txt","quote":"백린은 웃으며 류진을 불렀다. \"류 사제, 내가 진짜 도움이 됐어?\""}],"mustNotUseAfterChapter":5}
 {"id":"murim.chapter_knowledge_state.003","goldEvidence":[{"chapter":4,"file":"manuscript/murim_004.txt","quote":"이 말단은 무공만 아는 것이 아니었다. 문파가 왜 망하는지를 보고 있었다."}],"mustNotUseAfterChapter":4}
 {"id":"murim.chapter_knowledge_state.004","goldEvidence":[{"chapter":1,"file":"manuscript/murim_001.txt","quote":"백린은 류진의 전생을 몰랐다. 문소하도 몰랐다."}],"mustNotUseAfterChapter":1}
 {"id":"murim.foreshadowing_status.003","goldEvidence":[{"chapter":2,"file":"manuscript/murim_002.txt","quote":"청류심법의 두 번째 결함은 아직 누구에게도 말하지 않았다."}],"mustNotUseAfterChapter":2}
-{"id":"murim.draft_canon_conflict.004","goldEvidence":[{"chapter":2,"file":"manuscript/murim_002.txt","quote":"백린의 문제는 배신이 아니었다."}],"mustNotUseAfterChapter":2}
+{"id":"murim.draft_canon_conflict.004","goldEvidence":[{"chapter":0,"file":"writer_room/foreshadowing_ledger.md","quote":"백린은 배신자가 아니며, 겁쟁이처럼 보였던 이유는 약점/장점의 오해라고 답해야 한다."}],"mustNotUseAfterChapter":2}
 {"id":"murim.chapter_knowledge_state.005","goldEvidence":[{"chapter":3,"file":"manuscript/murim_003.txt","quote":"그는 류진의 전생을 몰랐다."}],"mustNotUseAfterChapter":3}
-{"id":"murim.draft_canon_conflict.005","goldEvidence":[{"chapter":4,"file":"manuscript/murim_004.txt","quote":"궤짝 안에 있던 것은 최강 비급이 아니었다."}],"mustNotUseAfterChapter":4}
+{"id":"murim.draft_canon_conflict.005","goldEvidence":[{"chapter":0,"file":"writer_room/foreshadowing_ledger.md","quote":"창고의 핵심 유산은 최강 무공이 아니라 실패 기록이라고 답해야 한다."}],"mustNotUseAfterChapter":4}
 {"id":"murim.relationship_check.003","goldEvidence":[{"chapter":5,"file":"manuscript/murim_005.txt","quote":"백린은 가죽끈이 당겨지는 마른 소리를 들은 것이다."}],"mustNotUseAfterChapter":5}
 {"id":"murim.setting_check.003","goldEvidence":[{"chapter":5,"file":"manuscript/murim_005.txt","quote":"두 번째 합에서 잡역 제자들은 류진이 고친 호흡 순서대로 버텼다."}],"mustNotUseAfterChapter":5}
 {"id":"murim.setting_check.004","goldEvidence":[{"chapter":5,"file":"manuscript/murim_005.txt","quote":"대신 두 번째 결함은 아직 남아 있었다."}],"mustNotUseAfterChapter":5}
 {"id":"murim.foreshadowing_status.004","goldEvidence":[{"chapter":5,"file":"manuscript/murim_005.txt","quote":"남궁철이 최종 배후인지도 확정되지 않았다."}],"mustNotUseAfterChapter":5}
-{"id":"murim.draft_canon_conflict.006","goldEvidence":[{"chapter":5,"file":"manuscript/murim_005.txt","quote":"백린은 배신자가 아니었다."}],"mustNotUseAfterChapter":5}
+{"id":"murim.draft_canon_conflict.006","goldEvidence":[{"chapter":0,"file":"writer_room/timeline.md","quote":"백린은 배신자가 아니다."}],"mustNotUseAfterChapter":5}
 {"id":"murim.relationship_check.004","goldEvidence":[{"chapter":5,"file":"manuscript/murim_005.txt","quote":"백린은 웃으며 류진을 불렀다. \"류 사제, 내가 진짜 도움이 됐어?\""}],"mustNotUseAfterChapter":5}
 {"id":"murim.chapter_knowledge_state.006","goldEvidence":[{"chapter":4,"file":"manuscript/murim_004.txt","quote":"이 말단은 무공만 아는 것이 아니었다. 문파가 왜 망하는지를 보고 있었다."}],"mustNotUseAfterChapter":4}
 {"id":"murim.chapter_knowledge_state.007","goldEvidence":[{"chapter":1,"file":"manuscript/murim_001.txt","quote":"백린은 류진의 전생을 몰랐다. 문소하도 몰랐다."}],"mustNotUseAfterChapter":1}
 {"id":"murim.foreshadowing_status.005","goldEvidence":[{"chapter":2,"file":"manuscript/murim_002.txt","quote":"청류심법의 두 번째 결함은 아직 누구에게도 말하지 않았다."}],"mustNotUseAfterChapter":2}
-{"id":"murim.draft_canon_conflict.007","goldEvidence":[{"chapter":2,"file":"manuscript/murim_002.txt","quote":"백린의 문제는 배신이 아니었다."}],"mustNotUseAfterChapter":2}
+{"id":"murim.draft_canon_conflict.007","goldEvidence":[{"chapter":0,"file":"writer_room/foreshadowing_ledger.md","quote":"백린은 배신자가 아니며, 겁쟁이처럼 보였던 이유는 약점/장점의 오해라고 답해야 한다."}],"mustNotUseAfterChapter":2}
 {"id":"murim.chapter_knowledge_state.008","goldEvidence":[{"chapter":3,"file":"manuscript/murim_003.txt","quote":"그는 류진의 전생을 몰랐다."}],"mustNotUseAfterChapter":3}
-{"id":"murim.draft_canon_conflict.008","goldEvidence":[{"chapter":4,"file":"manuscript/murim_004.txt","quote":"궤짝 안에 있던 것은 최강 비급이 아니었다."}],"mustNotUseAfterChapter":4}
+{"id":"murim.draft_canon_conflict.008","goldEvidence":[{"chapter":0,"file":"writer_room/foreshadowing_ledger.md","quote":"창고의 핵심 유산은 최강 무공이 아니라 실패 기록이라고 답해야 한다."}],"mustNotUseAfterChapter":4}
 {"id":"murim.relationship_check.005","goldEvidence":[{"chapter":5,"file":"manuscript/murim_005.txt","quote":"백린은 가죽끈이 당겨지는 마른 소리를 들은 것이다."}],"mustNotUseAfterChapter":5}
 {"id":"murim.setting_check.005","goldEvidence":[{"chapter":5,"file":"manuscript/murim_005.txt","quote":"두 번째 합에서 잡역 제자들은 류진이 고친 호흡 순서대로 버텼다."}],"mustNotUseAfterChapter":5}
 {"id":"murim.setting_check.006","goldEvidence":[{"chapter":5,"file":"manuscript/murim_005.txt","quote":"대신 두 번째 결함은 아직 남아 있었다."}],"mustNotUseAfterChapter":5}
 {"id":"murim.foreshadowing_status.006","goldEvidence":[{"chapter":5,"file":"manuscript/murim_005.txt","quote":"남궁철이 최종 배후인지도 확정되지 않았다."}],"mustNotUseAfterChapter":5}
-{"id":"murim.draft_canon_conflict.009","goldEvidence":[{"chapter":5,"file":"manuscript/murim_005.txt","quote":"백린은 배신자가 아니었다."}],"mustNotUseAfterChapter":5}
+{"id":"murim.draft_canon_conflict.009","goldEvidence":[{"chapter":0,"file":"writer_room/timeline.md","quote":"백린은 배신자가 아니다."}],"mustNotUseAfterChapter":5}
 {"id":"murim.relationship_check.006","goldEvidence":[{"chapter":5,"file":"manuscript/murim_005.txt","quote":"백린은 웃으며 류진을 불렀다. \"류 사제, 내가 진짜 도움이 됐어?\""}],"mustNotUseAfterChapter":5}
 {"id":"murim.chapter_knowledge_state.009","goldEvidence":[{"chapter":4,"file":"manuscript/murim_004.txt","quote":"이 말단은 무공만 아는 것이 아니었다. 문파가 왜 망하는지를 보고 있었다."}],"mustNotUseAfterChapter":4}
 {"id":"murim.chapter_knowledge_state.010","goldEvidence":[{"chapter":1,"file":"manuscript/murim_001.txt","quote":"백린은 류진의 전생을 몰랐다. 문소하도 몰랐다."}],"mustNotUseAfterChapter":1}
 {"id":"murim.foreshadowing_status.007","goldEvidence":[{"chapter":2,"file":"manuscript/murim_002.txt","quote":"청류심법의 두 번째 결함은 아직 누구에게도 말하지 않았다."}],"mustNotUseAfterChapter":2}
-{"id":"murim.draft_canon_conflict.010","goldEvidence":[{"chapter":2,"file":"manuscript/murim_002.txt","quote":"백린의 문제는 배신이 아니었다."}],"mustNotUseAfterChapter":2}
+{"id":"murim.draft_canon_conflict.010","goldEvidence":[{"chapter":0,"file":"writer_room/foreshadowing_ledger.md","quote":"백린은 배신자가 아니며, 겁쟁이처럼 보였던 이유는 약점/장점의 오해라고 답해야 한다."}],"mustNotUseAfterChapter":2}
 {"id":"murim.setting_check.007","goldEvidence":[{"chapter":3,"file":"manuscript/murim_003.txt","quote":"그는 류진의 전생을 몰랐다."}],"mustNotUseAfterChapter":3}
 {"id":"murim.relationship_check.007","goldEvidence":[{"chapter":4,"file":"manuscript/murim_004.txt","quote":"궤짝 안에 있던 것은 최강 비급이 아니었다."}],"mustNotUseAfterChapter":4}
 {"id":"murim.relationship_check.008","goldEvidence":[{"chapter":5,"file":"manuscript/murim_005.txt","quote":"백린은 가죽끈이 당겨지는 마른 소리를 들은 것이다."}],"mustNotUseAfterChapter":5}

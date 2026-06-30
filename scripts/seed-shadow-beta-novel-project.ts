@@ -16,6 +16,7 @@ type CliOptions = {
   projectId: string;
   root: string;
   genre: string | null;
+  indexHints: boolean;
   replace: boolean;
   dryRun: boolean;
 };
@@ -46,6 +47,7 @@ function parseArgs(argv: string[]): CliOptions {
     projectId: "shadow-beta-novel-pack",
     root: "novel",
     genre: null,
+    indexHints: true,
     replace: false,
     dryRun: false,
   };
@@ -65,6 +67,10 @@ function parseArgs(argv: string[]): CliOptions {
     if (arg === "--genre" && next) {
       options.genre = next;
       index += 1;
+      continue;
+    }
+    if (arg === "--no-index-hints") {
+      options.indexHints = false;
       continue;
     }
     if (arg === "--replace") {
@@ -190,7 +196,9 @@ async function main(): Promise<void> {
   const root = path.resolve(process.cwd(), options.root);
   const nowIso = new Date().toISOString();
   const files = listSourceFiles(root, options.genre);
-  const indexHints = buildIndexHints(root, options.genre);
+  const indexHints = options.indexHints
+    ? buildIndexHints(root, options.genre)
+    : new Map<string, string[]>();
   const chapterRows = files.map((file) => {
     const content = fs.readFileSync(file.absoluteFile, "utf8");
     return {
@@ -257,6 +265,7 @@ async function main(): Promise<void> {
           projectId: options.projectId,
           root: options.root,
           genre: options.genre,
+          indexHints: options.indexHints,
           replace: options.replace,
           dryRun: true,
           chapters: chapterRows.length,
@@ -296,6 +305,7 @@ async function main(): Promise<void> {
           projectId: options.projectId,
           root: options.root,
           genre: options.genre,
+          indexHints: options.indexHints,
           replaced: options.replace,
           chapters: chapterRows.length,
           chunks: chunkRows.length,

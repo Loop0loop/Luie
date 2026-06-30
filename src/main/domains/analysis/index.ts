@@ -10,4 +10,4 @@ export { searchService } from "../../services/features/search/index.js";
 export {
   invalidateModelRuntimeCache,
   resolveRuntimeModelInfo,
-} from "../../services/llm/modelRuntimeFactory.js";
+} from "../../services/features/llm/index.js";

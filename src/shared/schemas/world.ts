@@ -1,10 +1,18 @@
 import { z } from "zod";
 import { isRelationAllowed } from "../constants/world/relationRules";
 import { WORLD_SCRAP_MEMOS_SCHEMA_VERSION } from "../constants/storage/persistence";
-import { PATH_MAX_LENGTH, characterIdSchema, chapterIdSchema, projectIdSchema, termIdSchema } from "./common";
+import {
+  PATH_MAX_LENGTH,
+  characterIdSchema,
+  chapterIdSchema,
+  eventIdSchema,
+  factionIdSchema,
+  projectIdSchema,
+  termIdSchema,
+} from "./common";
 
 export const characterCreateSchema = z.object({
-  projectId: z.string().uuid("Invalid project ID"),
+  projectId: projectIdSchema,
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   firstAppearance: z.string().optional(),
@@ -12,7 +20,7 @@ export const characterCreateSchema = z.object({
 });
 
 export const characterUpdateSchema = z.object({
-  id: z.string().uuid("Invalid character ID"),
+  id: characterIdSchema,
   name: z.string().min(1, "Name is required").optional(),
   description: z.string().optional(),
   firstAppearance: z.string().optional(),
@@ -20,7 +28,7 @@ export const characterUpdateSchema = z.object({
 });
 
 export const eventCreateSchema = z.object({
-  projectId: z.string().uuid("Invalid project ID"),
+  projectId: projectIdSchema,
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   firstAppearance: z.string().optional(),
@@ -28,7 +36,7 @@ export const eventCreateSchema = z.object({
 });
 
 export const eventUpdateSchema = z.object({
-  id: z.string().uuid("Invalid event ID"),
+  id: eventIdSchema,
   name: z.string().min(1, "Name is required").optional(),
   description: z.string().optional(),
   firstAppearance: z.string().optional(),
@@ -36,7 +44,7 @@ export const eventUpdateSchema = z.object({
 });
 
 export const factionCreateSchema = z.object({
-  projectId: z.string().uuid("Invalid project ID"),
+  projectId: projectIdSchema,
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   firstAppearance: z.string().optional(),
@@ -44,7 +52,7 @@ export const factionCreateSchema = z.object({
 });
 
 export const factionUpdateSchema = z.object({
-  id: z.string().uuid("Invalid faction ID"),
+  id: factionIdSchema,
   name: z.string().min(1, "Name is required").optional(),
   description: z.string().optional(),
   firstAppearance: z.string().optional(),
@@ -52,7 +60,7 @@ export const factionUpdateSchema = z.object({
 });
 
 export const termCreateSchema = z.object({
-  projectId: z.string().uuid("Invalid project ID"),
+  projectId: projectIdSchema,
   term: z.string().min(1, "Term is required"),
   definition: z.string().optional(),
   category: z.string().optional(),
@@ -60,7 +68,7 @@ export const termCreateSchema = z.object({
 });
 
 export const termUpdateSchema = z.object({
-  id: z.string().uuid("Invalid term ID"),
+  id: termIdSchema,
   term: z.string().min(1, "Term is required").optional(),
   definition: z.string().optional(),
   category: z.string().optional(),
@@ -158,10 +166,8 @@ export const relationKindSchema = z.enum([
   "violates",
 ]);
 
-export const worldEntityIdSchema = z.string().uuid("Invalid world entity ID");
-export const entityRelationIdSchema = z
-  .string()
-  .uuid("Invalid entity relation ID");
+export const worldEntityIdSchema = z.string().min(1).max(256);
+export const entityRelationIdSchema = z.string().min(1).max(256);
 
 export const worldEntityCreateSchema = z.object({
   projectId: projectIdSchema,
@@ -194,9 +200,9 @@ export const worldEntityUpdatePositionSchema = z.object({
 export const entityRelationCreateSchema = z
   .object({
     projectId: projectIdSchema,
-    sourceId: z.string().uuid("Invalid source ID"),
+    sourceId: z.string().min(1).max(256),
     sourceType: entityRelationTypeSchema,
-    targetId: z.string().uuid("Invalid target ID"),
+    targetId: z.string().min(1).max(256),
     targetType: entityRelationTypeSchema,
     relation: relationKindSchema,
     attributes: z.record(z.string(), z.unknown()).optional(),
@@ -221,7 +227,7 @@ export const entityRelationUpdateSchema = z.object({
 
 export const worldGraphMentionsQuerySchema = z.object({
   projectId: projectIdSchema,
-  entityId: z.string().uuid("Invalid entity ID"),
+  entityId: z.string().min(1).max(256),
   entityType: entityRelationTypeSchema,
   limit: z.number().int().positive().max(500).optional(),
 });

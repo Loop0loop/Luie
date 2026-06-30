@@ -4,8 +4,8 @@ import { createLogger } from "../../../../shared/logger/index.js";
 import { db } from "../../../infra/database/index.js";
 import { character, term } from "../../../infra/database/index.js";
 import { keywordExtractor } from "../../../core/keywordExtractor.js";
-import { characterService } from "../../world/characterService.js";
-import { termService } from "../../world/termService.js";
+import { characterService } from "../world/entities/characterService.js";
+import { termService } from "../world/entities/termService.js";
 import { invokeGeminiProxy } from "../analysis/geminiApiKeyResolver.js";
 import { buildDeterministicGeminiResult } from "../analysis/localFallbackAnalyzer.js";
 import {

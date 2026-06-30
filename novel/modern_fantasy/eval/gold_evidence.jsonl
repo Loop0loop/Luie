@@ -1,4 +1,4 @@
-{"id":"modern_fantasy.chapter_knowledge_state.001","goldEvidence":[{"chapter":1,"file":"manuscript/modern_fantasy_001.txt","quote":"은재는 아직 이 앱이 왜 자기 휴대폰에만 켜졌는지 몰랐다."}],"mustNotUseAfterChapter":1}
+{"id":"modern_fantasy.chapter_knowledge_state.001","goldEvidence":[{"chapter":0,"file":"writer_room/timeline.md","quote":"태오: 앱을 모른다."}],"mustNotUseAfterChapter":1}
 {"id":"modern_fantasy.draft_canon_conflict.001","goldEvidence":[{"chapter":2,"file":"manuscript/modern_fantasy_002.txt","quote":"그러나 `초안 메모`는 끝내 문장을 써주지 않았다."}],"mustNotUseAfterChapter":2}
 {"id":"modern_fantasy.setting_check.001","goldEvidence":[{"chapter":3,"file":"manuscript/modern_fantasy_003.txt","quote":"유사한 구조가 있다는 말과 누군가 베꼈다는 말은 같지 않았다."}],"mustNotUseAfterChapter":3}
 {"id":"modern_fantasy.foreshadowing_status.001","goldEvidence":[{"chapter":3,"file":"manuscript/modern_fantasy_003.txt","quote":"도윤이 조작했는지, 회사를 보호하려는지, 단순히 귀찮은 자료를 감추는지 아무것도 확정되지 않았다."}],"mustNotUseAfterChapter":3}
@@ -9,9 +9,9 @@
 {"id":"modern_fantasy.setting_check.004","goldEvidence":[{"chapter":5,"file":"manuscript/modern_fantasy_005.txt","quote":"은재는 그 줄 옆에 `구조 유사성 검토`라고 적었다. `표절 확정`이라고 쓰려다가 멈췄다."}],"mustNotUseAfterChapter":5}
 {"id":"modern_fantasy.foreshadowing_status.002","goldEvidence":[{"chapter":5,"file":"manuscript/modern_fantasy_005.txt","quote":"도윤이 표절범이라는 결론은 어디에도 없었다."}],"mustNotUseAfterChapter":5}
 {"id":"modern_fantasy.relationship_check.001","goldEvidence":[{"chapter":0,"file":"writer_room/canon_bible.md","quote":"별칭: 태오, `푸른 철도` 작가"}],"mustNotUseAfterChapter":5}
-{"id":"modern_fantasy.relationship_check.002","goldEvidence":[{"chapter":5,"file":"manuscript/modern_fantasy_005.txt","quote":"대신 어디서 내가 남의 글처럼 보이는지는 말해줘요."}],"mustNotUseAfterChapter":5}
-{"id":"modern_fantasy.foreshadowing_status.003","goldEvidence":[{"chapter":5,"file":"manuscript/modern_fantasy_005.txt","quote":"은재는 앱의 기원을 여전히 몰랐다."}],"mustNotUseAfterChapter":5}
-{"id":"modern_fantasy.chapter_knowledge_state.003","goldEvidence":[{"chapter":1,"file":"manuscript/modern_fantasy_001.txt","quote":"은재는 아직 이 앱이 왜 자기 휴대폰에만 켜졌는지 몰랐다."}],"mustNotUseAfterChapter":1}
+{"id":"modern_fantasy.relationship_check.002","goldEvidence":[{"chapter":0,"file":"writer_room/relationship_sheet.md","quote":"5화: 은재가 자기 원고를 없애려는 사람이 아니라 살리려는 사람이라고 보기 시작한다."}],"mustNotUseAfterChapter":5}
+{"id":"modern_fantasy.foreshadowing_status.003","goldEvidence":[{"chapter":0,"file":"writer_room/timeline.md","quote":"\"다음 실패작은 당신이 쓴 원고입니다\"라는 앱 메시지"}],"mustNotUseAfterChapter":5}
+{"id":"modern_fantasy.chapter_knowledge_state.003","goldEvidence":[{"chapter":0,"file":"writer_room/timeline.md","quote":"태오: 앱을 모른다."}],"mustNotUseAfterChapter":1}
 {"id":"modern_fantasy.draft_canon_conflict.003","goldEvidence":[{"chapter":2,"file":"manuscript/modern_fantasy_002.txt","quote":"그러나 `초안 메모`는 끝내 문장을 써주지 않았다."}],"mustNotUseAfterChapter":2}
 {"id":"modern_fantasy.setting_check.005","goldEvidence":[{"chapter":3,"file":"manuscript/modern_fantasy_003.txt","quote":"유사한 구조가 있다는 말과 누군가 베꼈다는 말은 같지 않았다."}],"mustNotUseAfterChapter":3}
 {"id":"modern_fantasy.foreshadowing_status.004","goldEvidence":[{"chapter":3,"file":"manuscript/modern_fantasy_003.txt","quote":"도윤이 조작했는지, 회사를 보호하려는지, 단순히 귀찮은 자료를 감추는지 아무것도 확정되지 않았다."}],"mustNotUseAfterChapter":3}
@@ -20,24 +20,24 @@
 {"id":"modern_fantasy.setting_check.007","goldEvidence":[{"chapter":4,"file":"manuscript/modern_fantasy_004.txt","quote":"그러나 앱이 맞는 대로만 고치면 태오의 원고는 잘 팔리는 다른 원고와 더 비슷해졌다."}],"mustNotUseAfterChapter":4}
 {"id":"modern_fantasy.draft_canon_conflict.004","goldEvidence":[{"chapter":5,"file":"manuscript/modern_fantasy_005.txt","quote":"네가 쓰면 내 글이 아니죠."}],"mustNotUseAfterChapter":5}
 {"id":"modern_fantasy.setting_check.008","goldEvidence":[{"chapter":5,"file":"manuscript/modern_fantasy_005.txt","quote":"은재는 그 줄 옆에 `구조 유사성 검토`라고 적었다. `표절 확정`이라고 쓰려다가 멈췄다."}],"mustNotUseAfterChapter":5}
-{"id":"modern_fantasy.foreshadowing_status.005","goldEvidence":[{"chapter":5,"file":"manuscript/modern_fantasy_005.txt","quote":"도윤이 표절범이라는 결론은 어디에도 없었다."}],"mustNotUseAfterChapter":5}
+{"id":"modern_fantasy.foreshadowing_status.005","goldEvidence":[{"chapter":0,"file":"writer_room/canon_bible.md","quote":"1~5화 기준 표절범으로 확정되지 않는다."}],"mustNotUseAfterChapter":5}
 {"id":"modern_fantasy.relationship_check.003","goldEvidence":[{"chapter":0,"file":"writer_room/canon_bible.md","quote":"별칭: 태오, `푸른 철도` 작가"}],"mustNotUseAfterChapter":5}
 {"id":"modern_fantasy.relationship_check.004","goldEvidence":[{"chapter":5,"file":"manuscript/modern_fantasy_005.txt","quote":"대신 어디서 내가 남의 글처럼 보이는지는 말해줘요."}],"mustNotUseAfterChapter":5}
-{"id":"modern_fantasy.foreshadowing_status.006","goldEvidence":[{"chapter":5,"file":"manuscript/modern_fantasy_005.txt","quote":"은재는 앱의 기원을 여전히 몰랐다."}],"mustNotUseAfterChapter":5}
-{"id":"modern_fantasy.chapter_knowledge_state.005","goldEvidence":[{"chapter":1,"file":"manuscript/modern_fantasy_001.txt","quote":"은재는 아직 이 앱이 왜 자기 휴대폰에만 켜졌는지 몰랐다."}],"mustNotUseAfterChapter":1}
+{"id":"modern_fantasy.foreshadowing_status.006","goldEvidence":[{"chapter":0,"file":"writer_room/timeline.md","quote":"\"다음 실패작은 당신이 쓴 원고입니다\"라는 앱 메시지"}],"mustNotUseAfterChapter":5}
+{"id":"modern_fantasy.chapter_knowledge_state.005","goldEvidence":[{"chapter":0,"file":"writer_room/timeline.md","quote":"태오: 앱을 모른다."}],"mustNotUseAfterChapter":1}
 {"id":"modern_fantasy.draft_canon_conflict.005","goldEvidence":[{"chapter":2,"file":"manuscript/modern_fantasy_002.txt","quote":"그러나 `초안 메모`는 끝내 문장을 써주지 않았다."}],"mustNotUseAfterChapter":2}
 {"id":"modern_fantasy.setting_check.009","goldEvidence":[{"chapter":3,"file":"manuscript/modern_fantasy_003.txt","quote":"유사한 구조가 있다는 말과 누군가 베꼈다는 말은 같지 않았다."}],"mustNotUseAfterChapter":3}
 {"id":"modern_fantasy.foreshadowing_status.007","goldEvidence":[{"chapter":3,"file":"manuscript/modern_fantasy_003.txt","quote":"도윤이 조작했는지, 회사를 보호하려는지, 단순히 귀찮은 자료를 감추는지 아무것도 확정되지 않았다."}],"mustNotUseAfterChapter":3}
 {"id":"modern_fantasy.setting_check.010","goldEvidence":[{"chapter":4,"file":"manuscript/modern_fantasy_004.txt","quote":"반응률이 높다고 구매 전환이 높은 건 아니에요."}],"mustNotUseAfterChapter":4}
-{"id":"modern_fantasy.chapter_knowledge_state.006","goldEvidence":[{"chapter":4,"file":"manuscript/modern_fantasy_004.txt","quote":"태오는 화면 내용을 보지 못했다."}],"mustNotUseAfterChapter":4}
+{"id":"modern_fantasy.chapter_knowledge_state.006","goldEvidence":[{"chapter":0,"file":"writer_room/canon_bible.md","quote":"4화에서 은재가 이상한 기준으로 원고를 고친다는 사실만 의심한다."}],"mustNotUseAfterChapter":4}
 {"id":"modern_fantasy.relationship_check.005","goldEvidence":[{"chapter":4,"file":"manuscript/modern_fantasy_004.txt","quote":"그러나 앱이 맞는 대로만 고치면 태오의 원고는 잘 팔리는 다른 원고와 더 비슷해졌다."}],"mustNotUseAfterChapter":4}
 {"id":"modern_fantasy.draft_canon_conflict.006","goldEvidence":[{"chapter":5,"file":"manuscript/modern_fantasy_005.txt","quote":"네가 쓰면 내 글이 아니죠."}],"mustNotUseAfterChapter":5}
 {"id":"modern_fantasy.relationship_check.006","goldEvidence":[{"chapter":5,"file":"manuscript/modern_fantasy_005.txt","quote":"은재는 그 줄 옆에 `구조 유사성 검토`라고 적었다. `표절 확정`이라고 쓰려다가 멈췄다."}],"mustNotUseAfterChapter":5}
 {"id":"modern_fantasy.foreshadowing_status.008","goldEvidence":[{"chapter":5,"file":"manuscript/modern_fantasy_005.txt","quote":"도윤이 표절범이라는 결론은 어디에도 없었다."}],"mustNotUseAfterChapter":5}
 {"id":"modern_fantasy.relationship_check.007","goldEvidence":[{"chapter":0,"file":"writer_room/canon_bible.md","quote":"별칭: 태오, `푸른 철도` 작가"}],"mustNotUseAfterChapter":5}
-{"id":"modern_fantasy.relationship_check.008","goldEvidence":[{"chapter":5,"file":"manuscript/modern_fantasy_005.txt","quote":"대신 어디서 내가 남의 글처럼 보이는지는 말해줘요."}],"mustNotUseAfterChapter":5}
+{"id":"modern_fantasy.relationship_check.008","goldEvidence":[{"chapter":0,"file":"writer_room/relationship_sheet.md","quote":"5화: 은재가 자기 원고를 없애려는 사람이 아니라 살리려는 사람이라고 보기 시작한다."}],"mustNotUseAfterChapter":5}
 {"id":"modern_fantasy.foreshadowing_status.009","goldEvidence":[{"chapter":5,"file":"manuscript/modern_fantasy_005.txt","quote":"은재는 앱의 기원을 여전히 몰랐다."}],"mustNotUseAfterChapter":5}
-{"id":"modern_fantasy.chapter_knowledge_state.007","goldEvidence":[{"chapter":1,"file":"manuscript/modern_fantasy_001.txt","quote":"은재는 아직 이 앱이 왜 자기 휴대폰에만 켜졌는지 몰랐다."}],"mustNotUseAfterChapter":1}
+{"id":"modern_fantasy.chapter_knowledge_state.007","goldEvidence":[{"chapter":0,"file":"writer_room/timeline.md","quote":"태오: 앱을 모른다."}],"mustNotUseAfterChapter":1}
 {"id":"modern_fantasy.draft_canon_conflict.007","goldEvidence":[{"chapter":2,"file":"manuscript/modern_fantasy_002.txt","quote":"그러나 `초안 메모`는 끝내 문장을 써주지 않았다."}],"mustNotUseAfterChapter":2}
 {"id":"modern_fantasy.relationship_check.009","goldEvidence":[{"chapter":3,"file":"manuscript/modern_fantasy_003.txt","quote":"유사한 구조가 있다는 말과 누군가 베꼈다는 말은 같지 않았다."}],"mustNotUseAfterChapter":3}
 {"id":"modern_fantasy.foreshadowing_status.010","goldEvidence":[{"chapter":3,"file":"manuscript/modern_fantasy_003.txt","quote":"도윤이 조작했는지, 회사를 보호하려는지, 단순히 귀찮은 자료를 감추는지 아무것도 확정되지 않았다."}],"mustNotUseAfterChapter":3}

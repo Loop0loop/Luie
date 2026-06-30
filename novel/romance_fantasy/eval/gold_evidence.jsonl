@@ -1,10 +1,10 @@
 {"id":"romance_fantasy.draft_canon_conflict.001","goldEvidence":[{"chapter":1,"file":"manuscript/romance_fantasy_001.txt","quote":"아멜리아는 황녀가 아니었다."}],"mustNotUseAfterChapter":1}
 {"id":"romance_fantasy.setting_check.001","goldEvidence":[{"chapter":2,"file":"manuscript/romance_fantasy_002.txt","quote":"90일이면 됩니다. 문서 폐기 명령만 유예되면 돼요."}],"mustNotUseAfterChapter":2}
-{"id":"romance_fantasy.draft_canon_conflict.002","goldEvidence":[{"chapter":3,"file":"manuscript/romance_fantasy_003.txt","quote":"그러나 카엘은 회귀자가 아니었다."}],"mustNotUseAfterChapter":3}
+{"id":"romance_fantasy.draft_canon_conflict.002","goldEvidence":[{"chapter":0,"file":"writer_room/discarded_settings.md","quote":"canonicalReplacement: 카엘은 기록 조작 사건의 생존자다."}],"mustNotUseAfterChapter":3}
 {"id":"romance_fantasy.chapter_knowledge_state.001","goldEvidence":[{"chapter":3,"file":"manuscript/romance_fantasy_003.txt","quote":"아멜리아는 아직 문서 보관권 조작자가 누구인지 몰랐다."}],"mustNotUseAfterChapter":3}
 {"id":"romance_fantasy.relationship_check.001","goldEvidence":[{"chapter":4,"file":"manuscript/romance_fantasy_004.txt","quote":"카엘의 시선이 자기 얼굴이 아니라 손목에 묶인 봉인끈으로 먼저 내려가는 것을 보았다."}],"mustNotUseAfterChapter":4}
 {"id":"romance_fantasy.relationship_check.002","goldEvidence":[{"chapter":4,"file":"manuscript/romance_fantasy_004.txt","quote":"그 말은 고백이 아니었다."}],"mustNotUseAfterChapter":4}
-{"id":"romance_fantasy.foreshadowing_status.001","goldEvidence":[{"chapter":4,"file":"manuscript/romance_fantasy_004.txt","quote":"침묵은 수상했지만, 직접 조작자의 증거는 아직 없었다."}],"mustNotUseAfterChapter":4}
+{"id":"romance_fantasy.foreshadowing_status.001","goldEvidence":[{"chapter":0,"file":"writer_room/foreshadowing_ledger.md","quote":"5화 기준 직접 조작자는 확정되지 않았다고 답해야 한다."}],"mustNotUseAfterChapter":4}
 {"id":"romance_fantasy.foreshadowing_status.002","goldEvidence":[{"chapter":5,"file":"manuscript/romance_fantasy_005.txt","quote":"하지만 인장이 곧 손은 아니었다."}],"mustNotUseAfterChapter":5}
 {"id":"romance_fantasy.draft_canon_conflict.003","goldEvidence":[{"chapter":5,"file":"manuscript/romance_fantasy_005.txt","quote":"카엘은 미래를 아는 사람이 아니라, 과거 기록 조작 사건에서 살아남은 사람이었다."}],"mustNotUseAfterChapter":5}
 {"id":"romance_fantasy.relationship_check.003","goldEvidence":[{"chapter":5,"file":"manuscript/romance_fantasy_005.txt","quote":"동맹까지 끝내자는 말은 아니겠죠."}],"mustNotUseAfterChapter":5}
@@ -12,11 +12,11 @@
 {"id":"romance_fantasy.setting_check.002","goldEvidence":[{"chapter":4,"file":"manuscript/romance_fantasy_004.txt","quote":"봉인끈 끝의 푸른 밀랍은 감사관이 보면 바로 압수할 문서고 표식이었다."}],"mustNotUseAfterChapter":4}
 {"id":"romance_fantasy.draft_canon_conflict.004","goldEvidence":[{"chapter":1,"file":"manuscript/romance_fantasy_001.txt","quote":"아멜리아는 황녀가 아니었다."}],"mustNotUseAfterChapter":1}
 {"id":"romance_fantasy.setting_check.003","goldEvidence":[{"chapter":2,"file":"manuscript/romance_fantasy_002.txt","quote":"90일이면 됩니다. 문서 폐기 명령만 유예되면 돼요."}],"mustNotUseAfterChapter":2}
-{"id":"romance_fantasy.draft_canon_conflict.005","goldEvidence":[{"chapter":3,"file":"manuscript/romance_fantasy_003.txt","quote":"그러나 카엘은 회귀자가 아니었다."}],"mustNotUseAfterChapter":3}
+{"id":"romance_fantasy.draft_canon_conflict.005","goldEvidence":[{"chapter":0,"file":"writer_room/discarded_settings.md","quote":"canonicalReplacement: 카엘은 기록 조작 사건의 생존자다."}],"mustNotUseAfterChapter":3}
 {"id":"romance_fantasy.chapter_knowledge_state.002","goldEvidence":[{"chapter":3,"file":"manuscript/romance_fantasy_003.txt","quote":"아멜리아는 아직 문서 보관권 조작자가 누구인지 몰랐다."}],"mustNotUseAfterChapter":3}
 {"id":"romance_fantasy.relationship_check.005","goldEvidence":[{"chapter":4,"file":"manuscript/romance_fantasy_004.txt","quote":"카엘의 시선이 자기 얼굴이 아니라 손목에 묶인 봉인끈으로 먼저 내려가는 것을 보았다."}],"mustNotUseAfterChapter":4}
 {"id":"romance_fantasy.relationship_check.006","goldEvidence":[{"chapter":4,"file":"manuscript/romance_fantasy_004.txt","quote":"그 말은 고백이 아니었다."}],"mustNotUseAfterChapter":4}
-{"id":"romance_fantasy.foreshadowing_status.003","goldEvidence":[{"chapter":4,"file":"manuscript/romance_fantasy_004.txt","quote":"침묵은 수상했지만, 직접 조작자의 증거는 아직 없었다."}],"mustNotUseAfterChapter":4}
+{"id":"romance_fantasy.foreshadowing_status.003","goldEvidence":[{"chapter":0,"file":"writer_room/foreshadowing_ledger.md","quote":"5화 기준 직접 조작자는 확정되지 않았다고 답해야 한다."}],"mustNotUseAfterChapter":4}
 {"id":"romance_fantasy.foreshadowing_status.004","goldEvidence":[{"chapter":5,"file":"manuscript/romance_fantasy_005.txt","quote":"하지만 인장이 곧 손은 아니었다."}],"mustNotUseAfterChapter":5}
 {"id":"romance_fantasy.draft_canon_conflict.006","goldEvidence":[{"chapter":5,"file":"manuscript/romance_fantasy_005.txt","quote":"카엘은 미래를 아는 사람이 아니라, 과거 기록 조작 사건에서 살아남은 사람이었다."}],"mustNotUseAfterChapter":5}
 {"id":"romance_fantasy.relationship_check.007","goldEvidence":[{"chapter":5,"file":"manuscript/romance_fantasy_005.txt","quote":"동맹까지 끝내자는 말은 아니겠죠."}],"mustNotUseAfterChapter":5}
@@ -24,11 +24,11 @@
 {"id":"romance_fantasy.setting_check.004","goldEvidence":[{"chapter":4,"file":"manuscript/romance_fantasy_004.txt","quote":"봉인끈 끝의 푸른 밀랍은 감사관이 보면 바로 압수할 문서고 표식이었다."}],"mustNotUseAfterChapter":4}
 {"id":"romance_fantasy.draft_canon_conflict.007","goldEvidence":[{"chapter":1,"file":"manuscript/romance_fantasy_001.txt","quote":"아멜리아는 황녀가 아니었다."}],"mustNotUseAfterChapter":1}
 {"id":"romance_fantasy.setting_check.005","goldEvidence":[{"chapter":2,"file":"manuscript/romance_fantasy_002.txt","quote":"90일이면 됩니다. 문서 폐기 명령만 유예되면 돼요."}],"mustNotUseAfterChapter":2}
-{"id":"romance_fantasy.draft_canon_conflict.008","goldEvidence":[{"chapter":3,"file":"manuscript/romance_fantasy_003.txt","quote":"그러나 카엘은 회귀자가 아니었다."}],"mustNotUseAfterChapter":3}
+{"id":"romance_fantasy.draft_canon_conflict.008","goldEvidence":[{"chapter":0,"file":"writer_room/discarded_settings.md","quote":"canonicalReplacement: 카엘은 기록 조작 사건의 생존자다."}],"mustNotUseAfterChapter":3}
 {"id":"romance_fantasy.chapter_knowledge_state.003","goldEvidence":[{"chapter":3,"file":"manuscript/romance_fantasy_003.txt","quote":"아멜리아는 아직 문서 보관권 조작자가 누구인지 몰랐다."}],"mustNotUseAfterChapter":3}
 {"id":"romance_fantasy.relationship_check.009","goldEvidence":[{"chapter":4,"file":"manuscript/romance_fantasy_004.txt","quote":"카엘의 시선이 자기 얼굴이 아니라 손목에 묶인 봉인끈으로 먼저 내려가는 것을 보았다."}],"mustNotUseAfterChapter":4}
 {"id":"romance_fantasy.relationship_check.010","goldEvidence":[{"chapter":4,"file":"manuscript/romance_fantasy_004.txt","quote":"그 말은 고백이 아니었다."}],"mustNotUseAfterChapter":4}
-{"id":"romance_fantasy.foreshadowing_status.005","goldEvidence":[{"chapter":4,"file":"manuscript/romance_fantasy_004.txt","quote":"침묵은 수상했지만, 직접 조작자의 증거는 아직 없었다."}],"mustNotUseAfterChapter":4}
+{"id":"romance_fantasy.foreshadowing_status.005","goldEvidence":[{"chapter":0,"file":"writer_room/foreshadowing_ledger.md","quote":"5화 기준 직접 조작자는 확정되지 않았다고 답해야 한다."}],"mustNotUseAfterChapter":4}
 {"id":"romance_fantasy.foreshadowing_status.006","goldEvidence":[{"chapter":5,"file":"manuscript/romance_fantasy_005.txt","quote":"하지만 인장이 곧 손은 아니었다."}],"mustNotUseAfterChapter":5}
 {"id":"romance_fantasy.draft_canon_conflict.009","goldEvidence":[{"chapter":5,"file":"manuscript/romance_fantasy_005.txt","quote":"카엘은 미래를 아는 사람이 아니라, 과거 기록 조작 사건에서 살아남은 사람이었다."}],"mustNotUseAfterChapter":5}
 {"id":"romance_fantasy.setting_check.006","goldEvidence":[{"chapter":5,"file":"manuscript/romance_fantasy_005.txt","quote":"동맹까지 끝내자는 말은 아니겠죠."}],"mustNotUseAfterChapter":5}
@@ -40,7 +40,7 @@
 {"id":"romance_fantasy.chapter_knowledge_state.005","goldEvidence":[{"chapter":3,"file":"manuscript/romance_fantasy_003.txt","quote":"아멜리아는 아직 문서 보관권 조작자가 누구인지 몰랐다."}],"mustNotUseAfterChapter":3}
 {"id":"romance_fantasy.foreshadowing_status.008","goldEvidence":[{"chapter":4,"file":"manuscript/romance_fantasy_004.txt","quote":"카엘의 시선이 자기 얼굴이 아니라 손목에 묶인 봉인끈으로 먼저 내려가는 것을 보았다."}],"mustNotUseAfterChapter":4}
 {"id":"romance_fantasy.chapter_knowledge_state.006","goldEvidence":[{"chapter":4,"file":"manuscript/romance_fantasy_004.txt","quote":"그 말은 고백이 아니었다."}],"mustNotUseAfterChapter":4}
-{"id":"romance_fantasy.foreshadowing_status.009","goldEvidence":[{"chapter":4,"file":"manuscript/romance_fantasy_004.txt","quote":"침묵은 수상했지만, 직접 조작자의 증거는 아직 없었다."}],"mustNotUseAfterChapter":4}
+{"id":"romance_fantasy.foreshadowing_status.009","goldEvidence":[{"chapter":0,"file":"writer_room/foreshadowing_ledger.md","quote":"5화 기준 직접 조작자는 확정되지 않았다고 답해야 한다."}],"mustNotUseAfterChapter":4}
 {"id":"romance_fantasy.foreshadowing_status.010","goldEvidence":[{"chapter":5,"file":"manuscript/romance_fantasy_005.txt","quote":"하지만 인장이 곧 손은 아니었다."}],"mustNotUseAfterChapter":5}
 {"id":"romance_fantasy.chapter_knowledge_state.007","goldEvidence":[{"chapter":5,"file":"manuscript/romance_fantasy_005.txt","quote":"카엘은 미래를 아는 사람이 아니라, 과거 기록 조작 사건에서 살아남은 사람이었다."}],"mustNotUseAfterChapter":5}
 {"id":"romance_fantasy.chapter_knowledge_state.008","goldEvidence":[{"chapter":5,"file":"manuscript/romance_fantasy_005.txt","quote":"동맹까지 끝내자는 말은 아니겠죠."}],"mustNotUseAfterChapter":5}

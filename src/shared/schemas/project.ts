@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { projectIdSchema } from "./common";
 
 export const projectCreateSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -7,18 +8,18 @@ export const projectCreateSchema = z.object({
 });
 
 export const projectUpdateSchema = z.object({
-  id: z.string().uuid("Invalid project ID"),
+  id: projectIdSchema,
   title: z.string().min(1, "Title is required").optional(),
   description: z.string().optional(),
   projectPath: z.string().optional(),
 });
 
 export const projectDeleteRequestSchema = z.object({
-  id: z.string().uuid("Invalid project ID"),
+  id: projectIdSchema,
   deleteFile: z.boolean().optional(),
 });
 
 export const projectDeleteArgSchema = z.union([
-  z.string().uuid("Invalid project ID"),
+  projectIdSchema,
   projectDeleteRequestSchema,
 ]);
