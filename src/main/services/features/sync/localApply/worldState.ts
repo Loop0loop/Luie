@@ -6,6 +6,7 @@ import {
   scrapMemo,
   worldDocument,
 } from "../../../../infra/database/index.js";
+import { parseWorldJsonSafely } from "../../../../../shared/world/worldDocumentCodec.js";
 import type { SyncBundle } from "../syncMapper.js";
 import {
   normalizeDrawingPayload,
@@ -98,6 +99,9 @@ const normalizeWorldDocumentPayload = (
   }
 };
 
+const hasInvalidJsonPayloadString = (payload: unknown): boolean =>
+  typeof payload === "string" && parseWorldJsonSafely(payload) === null;
+
 export const applyReplicaWorldState = (
   tx: DbLike,
   bundle: SyncBundle,
@@ -133,6 +137,13 @@ export const applyReplicaWorldState = (
 
     for (const [docType, doc] of worldDocMap.entries()) {
       if (docType === "scrap") {
+        continue;
+      }
+      if (hasInvalidJsonPayloadString(doc.payload)) {
+        logger.warn("Skipping invalid sync world document payload", {
+          projectId: proj.id,
+          docType,
+        });
         continue;
       }
       const normalizedPayload = normalizeWorldDocumentPayload(
