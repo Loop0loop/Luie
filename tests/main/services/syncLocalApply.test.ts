@@ -66,7 +66,7 @@ describe("syncLocalApply.applyReplicaWorldState", () => {
       synopsis: "hello",
     });
 
-    expect(tx.delete).toHaveBeenCalledWith(scrapMemo);
+    expect(tx.delete).not.toHaveBeenCalledWith(scrapMemo);
     expect(tx.update).toHaveBeenCalledWith(project);
     expect(projectUpdates[0]).toMatchObject({
       updatedAt: expect.any(String),
@@ -214,6 +214,7 @@ describe("syncLocalApply.applyReplicaWorldState", () => {
       docType: "scrap",
     });
     expect(scrapMemoValues).toHaveLength(1);
+    expect(tx.delete).toHaveBeenCalledWith(scrapMemo);
     expect(scrapMemoValues[0]).toMatchObject([
       {
         id: "memo-1",
