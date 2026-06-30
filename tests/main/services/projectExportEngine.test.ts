@@ -320,6 +320,55 @@ describe("projectExportEngine", () => {
     );
   });
 
+  it("drops invalid character attributes instead of exporting non-importable strings", async () => {
+    mocked.projectFindUnique.mockResolvedValueOnce({
+      id: "project-1",
+      title: "Project 1",
+      description: null,
+      createdAt: new Date("2026-03-12T00:00:00.000Z"),
+      updatedAt: new Date("2026-03-12T00:00:00.000Z"),
+      chapters: [],
+      characters: [
+        {
+          id: "character-1",
+          name: "Alice",
+          description: null,
+          firstAppearance: null,
+          attributes: "not-json",
+          createdAt: new Date("2026-03-12T00:00:00.000Z"),
+          updatedAt: new Date("2026-03-12T00:00:00.000Z"),
+        },
+      ],
+      terms: [],
+      factions: [],
+      events: [],
+      worldEntities: [],
+      entityRelations: [],
+      snapshots: [],
+    });
+
+    await exportProjectPackageWithOptions({
+      projectId: "project-1",
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+      },
+    });
+
+    expect(mocked.writeLuieContainer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          characters: [
+            expect.objectContaining({
+              id: "character-1",
+              attributes: null,
+            }),
+          ],
+        }),
+      }),
+    );
+  });
+
   it("fails export instead of overwriting package-only world docs with defaults when JSON is invalid", async () => {
     mocked.readLuieContainerEntry.mockImplementation(
       async (_projectPath: string, entryPath: string) => {

@@ -101,7 +101,7 @@ export const buildExportCharacterData = (characters: CharacterExportRecord[]) =>
         try {
           attributes = JSON.parse(character.attributes);
         } catch {
-          attributes = character.attributes;
+          attributes = null;
         }
       }
       return {
