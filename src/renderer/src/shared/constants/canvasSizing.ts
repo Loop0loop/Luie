@@ -13,10 +13,10 @@
  */
 
 // ─── Node geometry (px) ───────────────────────────────────────────────────────
-// Obsidian Canvas 기준: 기본 카드 200×100px, 최소 높이 64px
+// Document-style canvas cards: enough height for title, summary, and link count.
 
-export const CANVAS_ENTITY_NODE_WIDTH_PX = 200 as const;
-export const CANVAS_ENTITY_NODE_HEIGHT_PX = 64 as const;
+export const CANVAS_ENTITY_NODE_WIDTH_PX = 240 as const;
+export const CANVAS_ENTITY_NODE_HEIGHT_PX = 132 as const;
 export const CANVAS_MEMO_NODE_WIDTH_PX = 220 as const;
 export const CANVAS_MEMO_NODE_MIN_HEIGHT_PX = 90 as const;
 export const CANVAS_TIMELINE_NODE_WIDTH_PX = 240 as const;
@@ -25,8 +25,8 @@ export const CANVAS_TIMELINE_NODE_HEIGHT_PX = 64 as const;
 // ─── Auto-layout grid (px) ────────────────────────────────────────────────────
 
 export const CANVAS_GRID_COLS = 5 as const;
-export const CANVAS_GRID_GAP_X_PX = 220 as const;
-export const CANVAS_GRID_GAP_Y_PX = 100 as const;
+export const CANVAS_GRID_GAP_X_PX = 280 as const;
+export const CANVAS_GRID_GAP_Y_PX = 170 as const;
 export const CANVAS_GRID_ORIGIN_X_PX = 80 as const;
 export const CANVAS_GRID_ORIGIN_Y_PX = 80 as const;
 
@@ -62,4 +62,3 @@ export const CANVAS_BINDER_LAYOUT_CONFIG = {
   minPx: 220,
   maxPx: 420,
 };
-

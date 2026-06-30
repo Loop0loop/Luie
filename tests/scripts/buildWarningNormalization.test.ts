@@ -25,7 +25,7 @@ describe("build warning normalization", () => {
 
   it("parses and sorts importer lists for dynamic/static mix warning", () => {
     const line =
-      "(!) /Users/user/Luie/src/main/database/index.ts is dynamically imported by /Users/user/Luie/src/main/lifecycle/shutdown.ts, /Users/user/Luie/src/main/lifecycle/shutdown.ts but also statically imported by /Users/user/Luie/src/main/services/core/projectService.ts, /Users/user/Luie/src/main/lifecycle/bootstrap.ts, dynamic import will not move module into another chunk.";
+      "(!) /Users/user/Luie/src/main/database/index.ts is dynamically imported by /Users/user/Luie/src/main/lifecycle/shutdown.ts, /Users/user/Luie/src/main/lifecycle/shutdown.ts but also statically imported by /Users/user/Luie/src/main/services/features/project/projectService.ts, /Users/user/Luie/src/main/lifecycle/bootstrap.ts, dynamic import will not move module into another chunk.";
 
     const parsed = parseWarningLine(line, "/Users/user/Luie");
     expect(parsed).toEqual({
@@ -34,15 +34,15 @@ describe("build warning normalization", () => {
       dynamicImporters: ["src/main/lifecycle/shutdown.ts"],
       staticImporters: [
         "src/main/lifecycle/bootstrap.ts",
-        "src/main/services/core/projectService.ts",
+        "src/main/services/features/project/projectService.ts",
       ],
     });
   });
 
   it("deduplicates warnings regardless of importer order", () => {
     const output = [
-      "(!) /Users/user/Luie/src/main/database/index.ts is dynamically imported by /Users/user/Luie/src/main/lifecycle/shutdown.ts but also statically imported by /Users/user/Luie/src/main/lifecycle/bootstrap.ts, /Users/user/Luie/src/main/services/core/projectService.ts, dynamic import will not move module into another chunk.",
-      "(!) /Users/user/Luie/src/main/database/index.ts is dynamically imported by /Users/user/Luie/src/main/lifecycle/shutdown.ts but also statically imported by /Users/user/Luie/src/main/services/core/projectService.ts, /Users/user/Luie/src/main/lifecycle/bootstrap.ts, dynamic import will not move module into another chunk.",
+      "(!) /Users/user/Luie/src/main/database/index.ts is dynamically imported by /Users/user/Luie/src/main/lifecycle/shutdown.ts but also statically imported by /Users/user/Luie/src/main/lifecycle/bootstrap.ts, /Users/user/Luie/src/main/services/features/project/projectService.ts, dynamic import will not move module into another chunk.",
+      "(!) /Users/user/Luie/src/main/database/index.ts is dynamically imported by /Users/user/Luie/src/main/lifecycle/shutdown.ts but also statically imported by /Users/user/Luie/src/main/services/features/project/projectService.ts, /Users/user/Luie/src/main/lifecycle/bootstrap.ts, dynamic import will not move module into another chunk.",
     ].join("\n");
 
     const warnings = extractWarningObjects(output, "/Users/user/Luie");

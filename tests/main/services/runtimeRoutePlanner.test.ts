@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildRuntimeRoutePlan } from "../../../src/main/services/llm/runtimeRoutePlanner.js";
+import { buildRuntimeRoutePlan } from "../../../src/main/services/features/llm/runtimeRoutePlanner.js";
 
 describe("runtimeRoutePlanner", () => {
   it("builds a fail-closed sidecar-only plan for explicit sidecar selection", () => {

@@ -10,7 +10,7 @@ import { eq } from "drizzle-orm";
 import {
   ProjectService,
   projectService,
-} from "../../../src/main/services/core/projectService.js";
+} from "../../../src/main/services/features/project/projectService.js";
 import { db } from "../../../src/main/database/index.js";
 import * as schema from "../../../src/main/database/schema/index.js";
 import { ErrorCode } from "../../../src/shared/constants/errors/index.js";

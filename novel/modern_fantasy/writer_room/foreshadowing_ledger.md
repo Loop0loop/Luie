@@ -68,4 +68,26 @@
   - 5화 기준 태오는 수상함을 느끼지만 앱 기능은 모른다.
 - falseConfidenceTrap:
   - 휴대폰을 봤다는 사실을 앱 기능을 안다는 뜻으로 확장하면 안 된다.
+# 6~15화 추가 떡밥
 
+## 다음 실패작 문구
+
+- status: reinforced
+- firstSeen: 5화
+- reinforcedIn: 6화, 15화
+- currentMeaning: 은재가 직접 원고를 쓰지 않아도 리포트가 작가 선택에 개입할 수 있음을 가리킨다.
+- notYetConfirmed: 앱이 왜 리포트를 원고처럼 판정하는지.
+
+## 도윤의 뒷장
+
+- status: reinforced
+- firstSeen: 8화
+- currentMeaning: 도윤이 숨긴 것은 표절 증거가 아니라 회사 예측 모델 실패 분석이다.
+- notYetConfirmed: 도윤이 앱을 아는지, 보고서와 앱 문구가 왜 겹치는지.
+
+## 개입 흔적
+
+- status: seeded
+- firstSeen: 15화
+- currentMeaning: 은재의 편집/리포트가 태오 원고에 남긴 영향을 수치화하는 새 앱 항목.
+- notYetConfirmed: 대필 비율인지, 수정량인지, 윤리 위험 지표인지.

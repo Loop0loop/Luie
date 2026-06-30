@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { DEFAULT_EMBEDDING_MODEL } from "../../../src/main/services/llm/embeddingModelConstants.js";
+import { DEFAULT_EMBEDDING_MODEL } from "../../../src/main/services/features/llm/embeddingModelConstants.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../../..");

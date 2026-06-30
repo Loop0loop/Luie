@@ -13,7 +13,7 @@ import type {
   WorldEntitySourceType,
 } from "../../../../../shared/types/index.js";
 import { ServiceError } from "../../../../utils/error/index.js";
-import { projectService } from "../../../core/projectService.js";
+import { projectService } from "../../project/projectService.js";
 import { db } from "../../../../infra/database/index.js";
 import { entityRelation } from "../../../../infra/database/index.js";
 import { buildWorldGraph } from "./entityRelationGraph.js";

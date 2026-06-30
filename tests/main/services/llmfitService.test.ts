@@ -5,7 +5,7 @@
  * 파서가 throw 없이 안전하게 동작하는지 검증한다(P6).
  */
 import { describe, expect, it } from "vitest";
-import { LlmfitService } from "../../../src/main/services/llm/llmfitService.js";
+import { LlmfitService } from "../../../src/main/infra/llm/llmfitService.js";
 
 const svc = new LlmfitService();
 

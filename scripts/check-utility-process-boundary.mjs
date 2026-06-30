@@ -35,7 +35,7 @@ const isMainUtilityBridgeImport = (specifier) =>
   specifier.includes("infra/utility-process");
 
 const isMainSidecarManagerImport = (specifier) =>
-  specifier.includes("services/llm/sidecarManager") ||
+  specifier.includes("infra/llm/sidecarManager") ||
   specifier.includes("domains/settings/llm");
 
 export function analyzeUtilityProcessBoundarySource(source, file) {

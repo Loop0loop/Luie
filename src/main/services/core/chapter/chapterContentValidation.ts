@@ -12,7 +12,7 @@ import { sanitizeName } from "../../../../shared/utils/sanitize.js";
 import { ServiceError } from "../../../utils/error/index.js";
 import { isTestEnv, resolveUserDataPath } from "../../../utils/env/index.js";
 import { autoExtractService } from "../../features/autoExtract/autoExtractService.js";
-import { trackKeywordAppearances } from "../chapterKeywords.js";
+import { trackKeywordAppearances } from "../../features/manuscript/chapterKeywords.js";
 import {
   chapterLogger,
   fireAndForget,

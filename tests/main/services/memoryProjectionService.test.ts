@@ -1,12 +1,12 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { ProjectService } from "../../../src/main/services/core/projectService.js";
-import { ChapterService } from "../../../src/main/services/core/chapterService.js";
+import { ProjectService } from "../../../src/main/services/features/project/projectService.js";
+import { ChapterService } from "../../../src/main/services/features/manuscript/chapterService.js";
 import {
   chunkText,
   memoryProjectionService,
 } from "../../../src/main/services/features/memory/memoryProjectionService.js";
 import { searchService } from "../../../src/main/services/features/search/index.js";
-import { projectService } from "../../../src/main/services/core/projectService.js";
+import { projectService } from "../../../src/main/services/features/project/projectService.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import type { ServiceError } from "../../../src/main/utils/error/index.js";
 import { ErrorCode } from "../../../src/shared/constants/errors/index.js";

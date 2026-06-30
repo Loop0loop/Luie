@@ -7,7 +7,7 @@ import type {
   EventCreateInput,
   EventUpdateInput,
 } from "../../../../../shared/types/index.js";
-import { projectService } from "../../../core/projectService.js";
+import { projectService } from "../../project/projectService.js";
 import { ServiceError } from "../../../../utils/error/index.js";
 
 const logger = createLogger("EventService");

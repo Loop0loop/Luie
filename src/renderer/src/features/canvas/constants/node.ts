@@ -11,7 +11,7 @@
  * group-hover:opacity-60 은 EntityNode처럼 group wrapper가 있는 경우에만 효과 있음.
  */
 export const CANVAS_HANDLE_CLASS =
-  "h-2.5! w-2.5! rounded-full! border-2! border-panel! bg-accent! opacity-0 transition-opacity duration-150 hover:opacity-100 group-hover:opacity-60";
+  "canvas-node-handle opacity-0 transition-opacity duration-150 hover:opacity-100 group-hover:opacity-80";
 
 /**
  * 노드 카드 기본 shadow 클래스.

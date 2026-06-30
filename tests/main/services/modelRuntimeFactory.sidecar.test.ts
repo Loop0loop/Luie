@@ -17,7 +17,7 @@ vi.mock("../../../src/main/manager/settings/index.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/llm/sidecarManager.js", () => ({
+vi.mock("../../../src/main/infra/llm/sidecarManager.js", () => ({
   sidecarManager: {
     ensureStarted: mocked.ensureStarted,
   },
@@ -34,7 +34,7 @@ vi.mock("../../../src/main/services/features/sync/syncAccessToken.js", () => ({
 import {
   invalidateModelRuntimeCache,
   resolveRuntimeModelInfo,
-} from "../../../src/main/services/llm/modelRuntimeFactory.js";
+} from "../../../src/main/services/features/llm/modelRuntimeFactory.js";
 
 describe("modelRuntimeFactory sidecar", () => {
   beforeEach(() => {
@@ -165,7 +165,7 @@ describe("modelRuntimeFactory sidecar", () => {
     mocked.getLocalLlmSettings.mockReturnValue(undefined);
 
     const { plan } =
-      await import("../../../src/main/services/llm/modelRuntimeFactory.js").then(
+      await import("../../../src/main/services/features/llm/modelRuntimeFactory.js").then(
         (module) => module.resolveRuntimeRoutePlan(),
       );
 
@@ -203,7 +203,7 @@ describe("modelRuntimeFactory sidecar", () => {
     mocked.getLocalLlmSettings.mockReturnValue(undefined);
 
     const { plan } =
-      await import("../../../src/main/services/llm/modelRuntimeFactory.js").then(
+      await import("../../../src/main/services/features/llm/modelRuntimeFactory.js").then(
         (module) => module.resolveRuntimeRoutePlan(),
       );
 

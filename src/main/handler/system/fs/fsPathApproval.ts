@@ -118,10 +118,10 @@ const resolveCanonicalPath = async (
 export const approvePathForSession = async (
   inputPath: string,
   permissions: FsPathPermission[],
-  treatAs: "file" | "directory" = "file",
+  _treatAs: "file" | "directory" = "file",
 ): Promise<void> => {
   const safePath = ensureSafeAbsolutePath(inputPath, "path");
-  const rootPath = treatAs === "directory" ? safePath : path.dirname(safePath);
+  const rootPath = safePath;
   const canonicalRoot = await resolveCanonicalPath(rootPath, "write");
   upsertApprovedRoot(canonicalRoot, permissions);
 };
@@ -161,7 +161,7 @@ export const assertAllowedFsPath = async (
     if (!entry.permissions.has(options.permission)) continue;
     if (!isPathWithinRoot(canonicalPath, rootPath)) continue;
     entry.lastAccessedAt = Date.now();
-    return safePath;
+    return canonicalPath;
   }
 
   throw new ServiceError(

@@ -12,8 +12,8 @@ import type {
   TermUpdateInput,
   TermAppearanceInput,
 } from "../../../../../shared/types/index.js";
-import { rebuildProjectKeywordAppearances } from "../../../core/chapterKeywords.js";
-import { projectService } from "../../../core/projectService.js";
+import { rebuildProjectKeywordAppearances } from "../../manuscript/chapterKeywords.js";
+import { projectService } from "../../project/projectService.js";
 import { ServiceError } from "../../../../utils/error/index.js";
 import { escapeLike } from "../../../../utils/query/index.js";
 

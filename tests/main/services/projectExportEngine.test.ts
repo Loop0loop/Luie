@@ -320,6 +320,30 @@ describe("projectExportEngine", () => {
     );
   });
 
+  it("fails export instead of overwriting package-only world docs with defaults when JSON is invalid", async () => {
+    mocked.readLuieContainerEntry.mockImplementation(
+      async (_projectPath: string, entryPath: string) => {
+        if (entryPath === "world/plot-board.json") {
+          return "{not-json";
+        }
+        return null;
+      },
+    );
+    const logger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+    };
+
+    await expect(
+      exportProjectPackageWithOptions({
+        projectId: "project-1",
+        logger,
+      }),
+    ).rejects.toThrow("Invalid .luie world JSON");
+
+    expect(mocked.writeLuieContainer).not.toHaveBeenCalled();
+  });
+
   it("sets meta.updatedAt from the latest exported canonical content timestamp", async () => {
     mocked.projectFindUnique.mockResolvedValueOnce({
       id: "project-1",

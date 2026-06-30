@@ -7,7 +7,10 @@ import path from "node:path";
 import * as fsp from "node:fs/promises";
 import { afterEach, describe, expect, it } from "vitest";
 import { ErrorCode } from "../../../src/shared/constants/errors/index.js";
-import { approvePathForSession } from "../../../src/main/handler/system/fs/index.js";
+import {
+  approvePathForSession,
+  assertAllowedFsPath,
+} from "../../../src/main/handler/system/fs/index.js";
 import { deleteProjectPackageFileIfRequested } from "../../../src/main/services/core/project/projectDeletionPolicy.js";
 
 describe("project package deletion policy security", () => {
@@ -76,5 +79,26 @@ describe("project package deletion policy security", () => {
     await expect(fsp.access(packagePath)).rejects.toMatchObject({
       code: "ENOENT",
     });
+  });
+
+  it("returns the canonical path that was approved for filesystem operations", async () => {
+    const root = await makeTempRoot("luie-approval-canonical-");
+    const realDir = path.join(root, "real");
+    const linkDir = path.join(root, "link");
+    const realPackagePath = path.join(realDir, "project.luie");
+    const linkPackagePath = path.join(linkDir, "project.luie");
+    await fsp.mkdir(realDir, { recursive: true });
+    await fsp.writeFile(realPackagePath, "not a real package", "utf-8");
+    await fsp.symlink(realDir, linkDir, "dir");
+
+    await approvePathForSession(linkPackagePath, ["package"], "file");
+
+    await expect(
+      assertAllowedFsPath(linkPackagePath, {
+        fieldName: "projectPath",
+        mode: "read",
+        permission: "package",
+      }),
+    ).resolves.toBe(realPackagePath);
   });
 });

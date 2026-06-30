@@ -8,7 +8,7 @@ import type {
   ChapterUpdateInput,
 } from "../../../../shared/types/index.js";
 import { ServiceError } from "../../../utils/error/index.js";
-import { projectService } from "../projectService.js";
+import { projectService } from "../../features/project/projectService.js";
 import { applyChapterContentUpdate } from "./chapterContentValidation.js";
 import {
   hashChapterContent,

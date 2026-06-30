@@ -8,7 +8,7 @@ import type {
   ScrapMemoUpdateInput,
 } from "../../../../../shared/types/index.js";
 import { ServiceError } from "../../../../utils/error/index.js";
-import { projectService } from "../../../core/projectService.js";
+import { projectService } from "../../project/projectService.js";
 import { dbMaintenanceService } from "../../dbMaintenance/index.js";
 import { MEMORY_TARGET_TYPES } from "../../memory/memoryJobConstants.js";
 

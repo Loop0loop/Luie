@@ -18,7 +18,7 @@ describe("syncWorldDocNormalizer.normalizeGraphPayload", () => {
     });
   });
 
-  it("preserves canvas blocks/edges/timelines including color fields", () => {
+  it("preserves canvas blocks/edges/files/timelines including color fields", () => {
     const normalized = normalizeGraphPayload(
       "project-1",
       {
@@ -47,6 +47,22 @@ describe("syncWorldDocNormalizer.normalizeGraphPayload", () => {
             direction: "unidirectional",
           },
         ],
+        canvasFiles: [
+          {
+            id: "folder-1",
+            kind: "folder",
+            name: "Reference",
+            parentId: null,
+            updatedAt: "2026-02-22T00:05:00.000Z",
+          },
+          {
+            id: "canvas-1",
+            kind: "canvas",
+            name: "Board",
+            parentId: "folder-1",
+            updatedAt: "2026-02-22T00:06:00.000Z",
+          },
+        ],
         timelines: [
           {
             id: "timeline-1",
@@ -71,6 +87,16 @@ describe("syncWorldDocNormalizer.normalizeGraphPayload", () => {
           id: "edge-1",
           color: "#00aaff",
           direction: "unidirectional",
+        }),
+      ],
+      canvasFiles: [
+        expect.objectContaining({
+          id: "folder-1",
+          kind: "folder",
+        }),
+        expect.objectContaining({
+          id: "canvas-1",
+          parentId: "folder-1",
         }),
       ],
       timelines: [

@@ -10,13 +10,6 @@ const LEGACY_SERVICE_PATTERNS = [
   /services\/world\//,
   /services\/llm\//,
 ];
-const ALLOWED_LEGACY_IMPORTERS = new Set([
-  "src/main/domains/project/index.ts",
-  "src/main/domains/manuscript/index.ts",
-  "src/main/domains/world/index.ts",
-  "src/main/domains/settings/llm.ts",
-  "src/main/services/index.ts",
-]);
 
 const collectMainFiles = (root) =>
   execFileSync("rg", ["--files", "src/main"], {
@@ -30,10 +23,7 @@ const collectMainFiles = (root) =>
 
 export const analyzeMainServiceBoundarySource = (content, relativeFile) => {
   const normalizedFile = relativeFile.replaceAll("\\", "/");
-  if (
-    !normalizedFile.startsWith("src/main/") ||
-    ALLOWED_LEGACY_IMPORTERS.has(normalizedFile)
-  ) {
+  if (!normalizedFile.startsWith("src/main/")) {
     return [];
   }
 

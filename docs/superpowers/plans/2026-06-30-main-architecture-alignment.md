@@ -44,13 +44,11 @@ src/main/services/features/world/
   cache/*
 
 src/main/services/features/llm/
-  runtime/*
+  *
   providers/*
 
 src/main/infra/llm/
-  sidecar/*
-  downloader/*
-  llmfit/*
+  *
 ```
 
 Temporary legacy re-export files stay at the old paths until all internal imports are moved:
@@ -470,7 +468,7 @@ Expected: PASS.
 - Modify `src/main/services/index.ts`
 - Remove compatibility re-export files only after import scan is clean
 
-- [ ] **Step 1: Replace direct legacy imports**
+- [x] **Step 1: Replace direct legacy imports**
 
 Run:
 
@@ -488,7 +486,7 @@ import { resolveRuntimeModelInfo } from "../domains/analysis/index.js";
 import { sidecarManager } from "../domains/settings/llm.js";
 ```
 
-- [ ] **Step 2: Enforce boundary checker**
+- [x] **Step 2: Enforce boundary checker**
 
 Run:
 
@@ -498,7 +496,7 @@ pnpm run check:main-service-boundaries
 
 Expected: PASS.
 
-- [ ] **Step 3: Reduce `src/main/services/index.ts`**
+- [x] **Step 3: Reduce `src/main/services/index.ts`**
 
 Replace `src/main/services/index.ts` with:
 
@@ -508,7 +506,7 @@ export * from "./features/index.js";
 
 If typecheck shows external imports still rely on legacy service exports, update those imports to domains or feature barrels.
 
-- [ ] **Step 4: Verify final phase**
+- [x] **Step 4: Verify final phase**
 
 Run:
 
@@ -534,8 +532,8 @@ Do not mix this with `.luie` save/export bug fixes. Those are separate behavior 
 
 1. Phase 0: add guardrails.
 2. Phase 1: move world.
-3. Phase 2: move project/manuscript.
-4. Phase 3: split LLM.
-5. Phase 4: enforce boundaries.
+3. Phase 2: move project/manuscript public service entries; keep deep helpers in `services/core/project/*` and `services/core/chapter/*`.
+4. Phase 3: split LLM into `services/features/llm` and `infra/llm`.
+5. Phase 4: enforce boundaries, reduce `services/index.ts`, and remove public compatibility stubs.
 
 Each phase should be a separate commit.

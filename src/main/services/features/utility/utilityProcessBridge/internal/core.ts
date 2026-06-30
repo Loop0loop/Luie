@@ -9,7 +9,7 @@ import type {
   UtilitySidecarStatusEvent,
 } from "../../../../../../shared/types/index.js";
 import { createLogger } from "../../../../../../shared/logger/index.js";
-import { resolveRuntimeRoutePlan } from "../../../../llm/modelRuntimeFactory.js";
+import { resolveRuntimeRoutePlan } from "../../../llm/modelRuntimeFactory.js";
 import {
   START_TIMEOUT_MS,
   STOP_GRACE_MS,

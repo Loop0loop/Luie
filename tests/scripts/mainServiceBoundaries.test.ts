@@ -26,7 +26,7 @@ describe("check-main-service-boundaries", () => {
     ]);
   });
 
-  it("allows domain barrels to bridge old paths during migration", () => {
+  it("flags legacy service imports in domain barrels too", () => {
     const source = `
       export { projectService } from "../../services/core/projectService.js";
     `;
@@ -36,6 +36,13 @@ describe("check-main-service-boundaries", () => {
         source,
         "src/main/domains/project/index.ts",
       ),
-    ).toEqual([]);
+    ).toEqual([
+      {
+        file: "src/main/domains/project/index.ts",
+        line: 2,
+        source:
+          'export { projectService } from "../../services/core/projectService.js";',
+      },
+    ]);
   });
 });

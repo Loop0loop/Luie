@@ -20,7 +20,7 @@ import {
   snapshot as snapshotTable,
 } from "../../../infra/database/index.js";
 import { ensureSafeAbsolutePath } from "../../../utils/fs/index.js";
-import { projectService } from "../../core/projectService.js";
+import { projectService } from "../project/projectService.js";
 import { getProjectAttachmentPath } from "../../core/project/projectAttachmentStore.js";
 import type { SyncBundle } from "./syncMapper.js";
 import type { WorldDocumentType } from "./syncWorldDocNormalizer.js";

@@ -18,7 +18,7 @@ type LoggerLike = {
 };
 
 const loadAppearanceCacheService = async () =>
-  (await import("../../world/appearanceCacheService.js"))
+  (await import("../../features/world/cache/appearanceCacheService.js"))
     .appearanceCacheService;
 
 const loadChapterSearchCacheService = async () =>
@@ -97,14 +97,11 @@ export const deleteProjectRecord = async (
 ) => {
   const request = normalizeProjectDeleteInput(input);
   let queuedProjectDelete = false;
+  let deletedProjectRecord = false;
 
   try {
     await ensureProjectExists(request.id);
     const projectPath = await getProjectAttachmentPath(request.id);
-    await deleteProjectPackageFileIfRequested({
-      deleteFile: request.deleteFile,
-      projectPath,
-    });
 
     settingsManager.addPendingProjectDelete({
       projectId: request.id,
@@ -124,17 +121,35 @@ export const deleteProjectRecord = async (
         id: request.id,
       });
     }
+    deletedProjectRecord = true;
 
     await clearProjectCaches(request.id, "delete", logger);
     clearSyncBaselineForProject(request.id);
+
+    try {
+      await deleteProjectPackageFileIfRequested({
+        deleteFile: request.deleteFile,
+        projectPath,
+      });
+    } catch (fileDeleteError) {
+      logger.warn("Project DB record deleted but package file deletion failed", {
+        projectId: request.id,
+        projectPath,
+        fileDeleteError,
+      });
+      return {
+        success: true,
+        fileDeleted: false,
+      };
+    }
 
     logger.info("Project deleted successfully", {
       projectId: request.id,
       deleteFile: request.deleteFile,
     });
-    return { success: true };
+    return { success: true, fileDeleted: request.deleteFile ? true : undefined };
   } catch (error) {
-    if (queuedProjectDelete) {
+    if (queuedProjectDelete && !deletedProjectRecord) {
       settingsManager.removePendingProjectDeletes([request.id]);
     }
     logger.error("Failed to delete project", error);

@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import {
+  ErrorCode,
   LUIE_PACKAGE_EXTENSION,
   LUIE_WORLD_DIR,
   LUIE_WORLD_DRAWING_FILE,
@@ -9,6 +10,7 @@ import {
   LUIE_WORLD_SCRAP_MEMOS_FILE,
   LUIE_WORLD_SYNOPSIS_FILE,
 } from "../../../../../shared/constants/index.js";
+import { ServiceError } from "../../../../utils/error/index.js";
 import { readLuieContainerEntry } from "../../../io/luieContainer.js";
 import { worldReplicaService } from "../../../features/worldReplica/index.js";
 import {
@@ -43,14 +45,22 @@ const safeParseWorldPayloadForExport = <T>(
 
   const parsed = schema.safeParse(payload);
   if (!parsed.success) {
-    logger.warn("Invalid world document payload during export; using default", {
+    const details = {
       source: options.source,
       projectId: options.projectId,
       packagePath: options.packagePath,
       entryPath: options.entryPath,
       label: options.label,
       issues: parsed.error.issues,
-    });
+    };
+    if (options.source === "package") {
+      throw new ServiceError(
+        ErrorCode.VALIDATION_FAILED,
+        "Invalid .luie world document payload",
+        details,
+      );
+    }
+    logger.warn("Invalid world document payload during export; using default", details);
   }
   return parsed;
 };
@@ -86,37 +96,17 @@ export const readWorldPayloadFromPackage = async (
     label: string,
   ): Promise<ReturnType<z.ZodType<T>["safeParse"]>> => {
     const entryPath = `${LUIE_WORLD_DIR}/${fileName}`;
+    const raw = await readLuieContainerEntry(projectPath, entryPath, logger);
+    if (typeof raw !== "string" || raw.trim().length === 0) {
+      return schema.safeParse(null);
+    }
+    let parsedJson: unknown;
     try {
-      const raw = await readLuieContainerEntry(projectPath, entryPath, logger);
-      if (typeof raw !== "string" || raw.trim().length === 0) {
-        return schema.safeParse(null);
-      }
-      let parsedJson: unknown;
-      try {
-        parsedJson = JSON.parse(raw);
-      } catch (error) {
-        logger.warn("Invalid .luie world JSON; using default during export", {
-          packagePath: projectPath,
-          entryPath,
-          label,
-          error,
-        });
-        return schema.safeParse(null);
-      }
-      return safeParseWorldPayloadForExport(
-        parsedJson,
-        schema,
-        {
-          source: "package",
-          packagePath: projectPath,
-          entryPath,
-          label,
-        },
-        logger,
-      );
+      parsedJson = JSON.parse(raw);
     } catch (error) {
-      logger.warn(
-        "Failed to read .luie world document; using default during export",
+      throw new ServiceError(
+        ErrorCode.VALIDATION_FAILED,
+        "Invalid .luie world JSON",
         {
           projectPath,
           entryPath,
@@ -124,8 +114,18 @@ export const readWorldPayloadFromPackage = async (
           error,
         },
       );
-      return schema.safeParse(null);
     }
+    return safeParseWorldPayloadForExport(
+      parsedJson,
+      schema,
+      {
+        source: "package",
+        packagePath: projectPath,
+        entryPath,
+        label,
+      },
+      logger,
+    );
   };
 
   const [synopsis, plot, drawing, mindmap, memos, graph] = await Promise.all([

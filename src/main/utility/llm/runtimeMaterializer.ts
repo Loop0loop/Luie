@@ -9,10 +9,10 @@ import type {
 import type {
   ModelRuntimeClient,
   RuntimeSupabaseProxyResolver,
-} from "../../services/llm/modelRuntimeClient.js";
-import { DeterministicProvider } from "../../services/llm/providers/deterministicProvider.js";
-import { ExternalApiProvider } from "../../services/llm/providers/externalApiProvider.js";
-import { GeminiProvider } from "../../services/llm/providers/geminiProvider.js";
+} from "../../services/features/llm/modelRuntimeClient.js";
+import { DeterministicProvider } from "../../services/features/llm/providers/deterministicProvider.js";
+import { ExternalApiProvider } from "../../services/features/llm/providers/externalApiProvider.js";
+import { GeminiProvider } from "../../services/features/llm/providers/geminiProvider.js";
 import {
   UTILITY_BUNDLED_MODELS_DIR,
   UTILITY_DEFAULT_EMBEDDING_MODEL,

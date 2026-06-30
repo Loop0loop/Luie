@@ -19,6 +19,7 @@ export interface RFEntityNodeData {
   readonly kind: CanvasNodeKind;
   readonly label: string;
   readonly description?: string | null;
+  readonly connectionCount: number;
   /** Whether this node is currently selected in canvasViewStore. */
   readonly isSelected: boolean;
 }

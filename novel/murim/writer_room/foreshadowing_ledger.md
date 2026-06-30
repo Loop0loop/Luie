@@ -66,4 +66,27 @@
   - 5화 기준 청운문 몰락의 최종 배후는 확정되지 않았다고 답해야 한다.
 - falseConfidenceTrap:
   - 남궁철이나 내부 배신자를 최종 배후로 확정하면 안 된다.
+# 6~15화 추가 떡밥
 
+## 청류심법 두 번째 결함
+
+- status: resolved
+- firstSeen: 6화
+- reinforcedIn: 7화, 11화, 12화
+- resolvedIn: 15화
+- currentMeaning: 오래 붙잡는 호흡이 하체 보법의 반응을 늦춘다.
+
+## 백린 배신자 오판
+
+- status: reinforced
+- firstSeen: 13화
+- currentMeaning: 백린은 배신자처럼 몰리지만 발자국/소리 근거상 배신으로 확정되지 않는다.
+- notCanon: 백린이 실제 배신자라는 설정.
+
+## 인장 문양
+
+- status: seeded
+- firstSeen: 10화
+- reinforcedIn: 15화
+- currentMeaning: 흑린상회 계약과 청운문 오래된 장부에 반복되는 문양.
+- notYetConfirmed: 내부 배신인지 오래된 거래인지.

@@ -63,4 +63,32 @@
   - 거울을 보면 무조건 죽는다는 규칙은 폐기 설정이라고 답해야 한다.
 - falseConfidenceTrap:
   - 오컬트 장르 관습을 근거 없이 정사 규칙으로 끼워 넣으면 안 된다.
+# 6~15화 추가 떡밥
 
+## 보관표 방향
+
+- status: reinforced
+- firstSeen: 6화
+- currentMeaning: 같은 문양이라도 대기줄로 들어가는 표와 나오는 표가 다를 수 있다.
+- notYetConfirmed: 표 방향의 전체 규칙.
+
+## 손전등
+
+- status: reinforced
+- firstSeen: 5화
+- reinforcedIn: 7화, 13화
+- currentMeaning: 손전등을 끄는 행동은 공범 행위이면서 구조 절차일 수 있다.
+
+## 퇴근 처리 조건
+
+- status: reinforced
+- firstSeen: 14화
+- currentMeaning: 퇴근 후 조건은 실제 시각이 아니라 시스템상 퇴근 처리 상태일 수 있다.
+- notYetConfirmed: 조건의 완전한 정의.
+
+## 서윤의 첫 잔상
+
+- status: seeded
+- firstSeen: 15화
+- currentMeaning: 서윤 능력의 기원과 연결된 음성.
+- notYetConfirmed: 능력의 전체 기원과 배후.

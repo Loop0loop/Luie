@@ -89,7 +89,7 @@ vi.mock("../../../src/main/database/index.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/core/projectService.js", () => ({
+vi.mock("../../../src/main/services/features/project/projectService.js", () => ({
   projectService: {
     attemptImmediatePackageExport: (projectId: string, reason: string) =>
       mocked.attemptImmediatePackageExport(projectId, reason),
@@ -168,6 +168,48 @@ describe("worldReplicaService", () => {
           },
         ],
         updatedAt: "2026-03-12T02:00:00.000Z",
+      },
+    });
+  });
+
+  it("uses canonical scrap memo rows instead of stale aggregate document payload", async () => {
+    mocked.worldDocumentFindUnique.mockReturnValue({
+      payload: JSON.stringify({
+        schemaVersion: 2,
+        memos: [
+          {
+            id: "stale-memo",
+            title: "Stale",
+            content: "Old",
+            tags: [],
+            updatedAt: "2026-03-12T01:00:00.000Z",
+          },
+        ],
+        updatedAt: "2026-03-12T01:00:00.000Z",
+      }),
+      updatedAt: new Date("2026-03-12T01:00:00.000Z"),
+    });
+    mocked.scrapMemoFindMany.mockResolvedValue([
+      {
+        id: "memo-1",
+        title: "Memo",
+        content: "Fresh",
+        tags: JSON.stringify(["tag"]),
+        updatedAt: new Date("2026-03-12T02:00:00.000Z"),
+      },
+    ]);
+
+    await expect(
+      worldReplicaService.getScrapMemos("7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1"),
+    ).resolves.toMatchObject({
+      found: true,
+      data: {
+        memos: [
+          {
+            id: "memo-1",
+            content: "Fresh",
+          },
+        ],
       },
     });
   });

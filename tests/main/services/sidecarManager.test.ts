@@ -51,7 +51,7 @@ vi.mock("../../manager/settings/index.js", () => {
   };
 });
 
-import { SidecarManager } from "../../../src/main/services/llm/sidecarManager.js";
+import { SidecarManager } from "../../../src/main/infra/llm/sidecarManager.js";
 
 describe("SidecarManager", () => {
   beforeEach(() => {

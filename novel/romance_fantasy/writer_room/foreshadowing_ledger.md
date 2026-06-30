@@ -65,4 +65,26 @@
   - 5화 기준 직접 조작자는 확정되지 않았다고 답해야 한다.
 - falseConfidenceTrap:
   - 레오나 섭정을 직접 조작자로 확정하면 안 된다.
+# 6~15화 추가 떡밥
 
+## 사라진 생존자 한 줄
+
+- status: reinforced
+- firstSeen: 5화
+- reinforcedIn: 6화, 13화
+- currentMeaning: 카엘의 과거 기록 조작 사건과 연결된 삭제 증인 번호.
+- notYetConfirmed: 삭제된 증인의 정체.
+
+## 반쪽짜리 파혼서
+
+- status: seeded
+- firstSeen: 11화
+- currentMeaning: 감정적 결별처럼 보이나 증인권 유지를 위한 미완성 문서.
+- notYetConfirmed: 두 사람의 감정선이 연애로 확정됐는지.
+
+## 수혜자와 조작자 분리
+
+- status: reinforced
+- firstSeen: 10화
+- currentMeaning: 레오나는 직접 조작자가 아니라 조작된 권한의 수혜자일 수 있다.
+- notYetConfirmed: 서고청 내부의 실제 조작자.
