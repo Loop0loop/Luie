@@ -27,7 +27,7 @@ type WorldReplicaServiceLike = {
   setScrapMemos: (input: {
     projectId: string;
     data: WorldScrapMemosData;
-  }) => Promise<void>;
+  }) => Promise<unknown>;
 };
 
 export function registerWorldStorageIPCHandlers(

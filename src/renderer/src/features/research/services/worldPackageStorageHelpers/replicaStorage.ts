@@ -84,6 +84,17 @@ export const saveReplicaScrapMemos = async (
     });
     return false;
   }
+  const packageExportResult = response.data as
+    | { packageExportError?: string }
+    | null
+    | undefined;
+  if (packageExportResult?.packageExportError) {
+    await api.logger.warn("Failed to export world replica scrap memos", {
+      projectId,
+      error: packageExportResult.packageExportError,
+    });
+    return false;
+  }
   return true;
 };
 

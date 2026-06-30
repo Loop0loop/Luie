@@ -215,7 +215,7 @@ describe("worldReplicaService", () => {
   });
 
   it("replaces scrap memo rows and stores the aggregate payload together", async () => {
-    await worldReplicaService.setScrapMemos({
+    await expect(worldReplicaService.setScrapMemos({
       projectId: "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
       data: {
         schemaVersion: 2,
@@ -230,7 +230,7 @@ describe("worldReplicaService", () => {
         ],
         updatedAt: "2026-03-12T03:00:00.000Z",
       },
-    });
+    })).resolves.toEqual({});
 
     expect(mocked.transaction).toHaveBeenCalledTimes(1);
     expect(mocked.worldDocumentWrite).toHaveBeenCalledWith(
@@ -267,6 +267,26 @@ describe("worldReplicaService", () => {
       "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
       "world-document:scrap",
     );
+  });
+
+  it("surfaces scrap memo package export failures", async () => {
+    mocked.attemptImmediatePackageExport.mockResolvedValueOnce({
+      exported: false,
+      error: new Error("scrap export failed"),
+    });
+
+    await expect(
+      worldReplicaService.setScrapMemos({
+        projectId: "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
+        data: {
+          schemaVersion: 2,
+          memos: [],
+          updatedAt: "2026-03-12T03:00:00.000Z",
+        },
+      }),
+    ).resolves.toEqual({
+      packageExportError: "scrap export failed",
+    });
   });
 
   it("triggers package export when any replica document is updated", async () => {

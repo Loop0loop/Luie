@@ -289,7 +289,7 @@ export class WorldReplicaService {
   async setScrapMemos(input: {
     projectId: string;
     data: WorldScrapMemosData;
-  }): Promise<void> {
+  }): Promise<WorldReplicaDocumentSetResult> {
     try {
       await this.ensureDbReady();
       const payload: WorldScrapMemosData = {
@@ -368,7 +368,7 @@ export class WorldReplicaService {
           .run();
       });
 
-      await attemptWorldReplicaPackageExport(input.projectId, "scrap");
+      return await attemptWorldReplicaPackageExport(input.projectId, "scrap");
     } catch (error) {
       logger.error("Failed to save replica scrap memos", {
         projectId: input.projectId,
