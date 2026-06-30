@@ -2,6 +2,7 @@ import { z } from "zod";
 import { isRelationAllowed } from "../constants/world/relationRules";
 import { WORLD_SCRAP_MEMOS_SCHEMA_VERSION } from "../constants/storage/persistence";
 import {
+  LARGE_TEXT_MAX_LENGTH,
   PATH_MAX_LENGTH,
   characterIdSchema,
   chapterIdSchema,
@@ -122,11 +123,140 @@ export const worldReplicaDocumentGetSchema = z.strictObject({
   docType: replicaWorldDocumentTypeSchema,
 });
 
-export const worldReplicaDocumentSetSchema = z.strictObject({
-  projectId: projectIdSchema,
-  docType: replicaWorldDocumentTypeSchema,
-  payload: z.unknown(),
-});
+const worldReplicaRecordSchema = z.record(z.string(), z.unknown());
+
+const worldReplicaObjectPayloadSchema = z
+  .object({
+    updatedAt: z.string().optional(),
+  })
+  .passthrough();
+
+const worldReplicaSynopsisPayloadSchema = z
+  .object({
+    synopsis: z.string().max(LARGE_TEXT_MAX_LENGTH).optional(),
+    updatedAt: z.string().optional(),
+  })
+  .passthrough();
+
+const worldReplicaGraphPayloadSchema = z
+  .object({
+    nodes: z.array(worldReplicaRecordSchema).optional(),
+    edges: z.array(worldReplicaRecordSchema).optional(),
+    canvasBlocks: z.array(worldReplicaRecordSchema).optional(),
+    canvasEdges: z.array(worldReplicaRecordSchema).optional(),
+    canvasFiles: z.array(worldReplicaRecordSchema).optional(),
+    timelines: z.array(worldReplicaRecordSchema).optional(),
+    updatedAt: z.string().optional(),
+  })
+  .passthrough();
+
+const isJsonSerializableValue = (
+  value: unknown,
+  seen = new WeakSet<object>(),
+): boolean => {
+  if (value === null) return true;
+  const valueType = typeof value;
+  if (
+    valueType === "string" ||
+    valueType === "number" ||
+    valueType === "boolean"
+  ) {
+    return Number.isFinite(value as number) || valueType !== "number";
+  }
+  if (
+    valueType === "undefined" ||
+    valueType === "function" ||
+    valueType === "symbol" ||
+    valueType === "bigint"
+  ) {
+    return false;
+  }
+  if (valueType !== "object") return false;
+
+  const objectValue = value as object;
+  if (seen.has(objectValue)) return false;
+  seen.add(objectValue);
+
+  if (Array.isArray(value)) {
+    const isSerializable = value.every((item) =>
+      isJsonSerializableValue(item, seen),
+    );
+    seen.delete(objectValue);
+    return isSerializable;
+  }
+
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) {
+    seen.delete(objectValue);
+    return false;
+  }
+
+  const isSerializable = Object.values(
+    value as Record<string, unknown>,
+  ).every((item) => isJsonSerializableValue(item, seen));
+  seen.delete(objectValue);
+  return isSerializable;
+};
+
+const addWorldReplicaPayloadIssues = (
+  payload: unknown,
+  ctx: z.RefinementCtx,
+): void => {
+  if (!isJsonSerializableValue(payload)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Payload must be JSON serializable",
+      path: ["payload"],
+    });
+    return;
+  }
+
+  const serialized = JSON.stringify(payload);
+  if (serialized.length > LARGE_TEXT_MAX_LENGTH) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Payload is too large",
+      path: ["payload"],
+    });
+  }
+};
+
+export const worldReplicaDocumentSetSchema = z
+  .discriminatedUnion("docType", [
+    z.strictObject({
+      projectId: projectIdSchema,
+      docType: z.literal("synopsis"),
+      payload: worldReplicaSynopsisPayloadSchema,
+    }),
+    z.strictObject({
+      projectId: projectIdSchema,
+      docType: z.literal("plot"),
+      payload: worldReplicaObjectPayloadSchema,
+    }),
+    z.strictObject({
+      projectId: projectIdSchema,
+      docType: z.literal("drawing"),
+      payload: worldReplicaObjectPayloadSchema,
+    }),
+    z.strictObject({
+      projectId: projectIdSchema,
+      docType: z.literal("mindmap"),
+      payload: worldReplicaObjectPayloadSchema,
+    }),
+    z.strictObject({
+      projectId: projectIdSchema,
+      docType: z.literal("graph"),
+      payload: worldReplicaGraphPayloadSchema,
+    }),
+    z.strictObject({
+      projectId: projectIdSchema,
+      docType: z.literal("scrap"),
+      payload: worldScrapMemosDataSchema,
+    }),
+  ])
+  .superRefine((value, ctx) => {
+    addWorldReplicaPayloadIssues(value.payload, ctx);
+  });
 
 export const worldReplicaScrapMemosGetSchema = z.strictObject({
   projectId: projectIdSchema,

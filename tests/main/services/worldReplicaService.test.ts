@@ -263,24 +263,19 @@ describe("worldReplicaService", () => {
         sortOrder: 0,
       }),
     ]);
+    expect(mocked.attemptImmediatePackageExport).toHaveBeenCalledWith(
+      "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
+      "world-document:scrap",
+    );
   });
 
-  it("triggers package export when the graph document is updated", async () => {
+  it("triggers package export when any replica document is updated", async () => {
     await expect(
       worldReplicaService.setDocument({
         projectId: "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
-        docType: "graph",
+        docType: "synopsis",
         payload: {
-          nodes: [
-            {
-              id: "character-1",
-              entityType: "Character",
-              name: "Alice",
-              positionX: 120,
-              positionY: 240,
-            },
-          ],
-          edges: [],
+          synopsis: "Alice starts the case.",
           updatedAt: "2026-03-13T09:00:00.000Z",
         },
       }),
@@ -288,11 +283,11 @@ describe("worldReplicaService", () => {
 
     expect(mocked.attemptImmediatePackageExport).toHaveBeenCalledWith(
       "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
-      "world-document:graph",
+      "world-document:synopsis",
     );
   });
 
-  it("surfaces graph package export failures without hiding them", async () => {
+  it("surfaces replica package export failures without hiding them", async () => {
     mocked.attemptImmediatePackageExport.mockResolvedValueOnce({
       exported: false,
       error: new Error("export failed"),

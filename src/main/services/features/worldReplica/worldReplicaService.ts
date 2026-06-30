@@ -24,6 +24,10 @@ type WorldReplicaDocumentSetResult = {
   packageExportError?: string;
 };
 
+type PackageExportFailureResult = {
+  packageExportError?: string;
+};
+
 const parseJsonSafely = (
   value: string,
   context: Record<string, unknown>,
@@ -47,6 +51,33 @@ const toIsoString = (
     return value.toISOString();
   }
   return value;
+};
+
+const attemptWorldReplicaPackageExport = async (
+  projectId: string,
+  docType: ReplicaWorldDocumentType,
+): Promise<PackageExportFailureResult> => {
+  const { projectService } = await import("../project/projectService.js");
+  const reason = `world-document:${docType}`;
+  const exportResult = await projectService.attemptImmediatePackageExport(
+    projectId,
+    reason,
+  );
+  if (exportResult.error || (!exportResult.exported && !exportResult.skipped)) {
+    const message =
+      exportResult.error instanceof Error
+        ? exportResult.error.message
+        : String(exportResult.error);
+    logger.warn("Replica world document saved but immediate .luie export failed", {
+      projectId,
+      docType,
+      error: exportResult.error,
+    });
+    return {
+      packageExportError: message,
+    };
+  }
+  return {};
 };
 
 export class WorldReplicaService {
@@ -153,31 +184,10 @@ export class WorldReplicaService {
           .run();
       });
 
-      if (input.docType === "graph") {
-        const { projectService } = await import("../project/projectService.js");
-        const exportResult = await projectService.attemptImmediatePackageExport(
-          input.projectId,
-          "world-document:graph",
-        );
-        if (
-          exportResult.error ||
-          (!exportResult.exported && !exportResult.skipped)
-        ) {
-          const message =
-            exportResult.error instanceof Error
-              ? exportResult.error.message
-              : String(exportResult.error);
-          logger.warn("Graph replica saved but immediate .luie export failed", {
-            projectId: input.projectId,
-            error: exportResult.error,
-          });
-          return {
-            packageExportError: message,
-          };
-        }
-      }
-
-      return {};
+      return await attemptWorldReplicaPackageExport(
+        input.projectId,
+        input.docType,
+      );
     } catch (error) {
       logger.error("Failed to save replica world document", {
         ...input,
@@ -357,6 +367,8 @@ export class WorldReplicaService {
           .where(eq(project.id, input.projectId))
           .run();
       });
+
+      await attemptWorldReplicaPackageExport(input.projectId, "scrap");
     } catch (error) {
       logger.error("Failed to save replica scrap memos", {
         projectId: input.projectId,

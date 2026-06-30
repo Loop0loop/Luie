@@ -15,7 +15,6 @@ import {
 import {
   buildProjectPackagePayload as buildProjectPackagePayloadImpl,
   persistBundleToLuiePackages,
-  recoverDbCacheFromPersistedPackages,
 } from "./syncPackagePersistence.js";
 import type { SyncBundle } from "./syncMapper.js";
 
@@ -74,16 +73,9 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
   }) => Promise<LuiePackageExportData | null>;
   logger: LoggerLike;
 }): Promise<void> => {
-  const persistedPackages = await persistBundleToLuiePackages({
-    bundle: input.bundle,
-    hydrateMissingWorldDocsFromPackage:
-      input.hydrateMissingWorldDocsFromPackage,
-    buildProjectPackagePayload: input.buildProjectPackagePayload,
-    logger: input.logger,
-  });
-
   const client = db.getClient();
   const deletedProjectIds = collectDeletedProjectIds(input.bundle);
+  const bundleProjectIds = input.bundle.projects.map((project) => project.id);
   try {
     client.transaction((tx) => {
       applyProjectDeletes(tx, deletedProjectIds);
@@ -102,28 +94,24 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
       applyChapterTombstones(tx, input.bundle.tombstones, deletedProjectIds);
     });
   } catch (error) {
-    const persistedProjectIds = persistedPackages.map((item) => item.projectId);
     input.logger.error(
-      "Failed to apply merged bundle to DB cache after .luie persistence",
+      "Failed to apply merged bundle to DB cache before .luie persistence",
       {
         error,
-        persistedProjectIds,
       },
     );
 
-    const failedRecoveryProjectIds = await recoverDbCacheFromPersistedPackages(
-      persistedPackages,
-      input.logger,
-    );
-    if (failedRecoveryProjectIds.length > 0) {
-      throw new Error(
-        `SYNC_DB_CACHE_APPLY_FAILED:${persistedProjectIds.join(",") || "none"};SYNC_DB_CACHE_RECOVERY_FAILED:${failedRecoveryProjectIds.join(",")}`,
-        { cause: error },
-      );
-    }
     throw new Error(
-      `SYNC_DB_CACHE_APPLY_FAILED:${persistedProjectIds.join(",") || "none"}`,
+      `SYNC_DB_CACHE_APPLY_FAILED:${bundleProjectIds.join(",") || "none"}`,
       { cause: error },
     );
   }
+
+  await persistBundleToLuiePackages({
+    bundle: input.bundle,
+    hydrateMissingWorldDocsFromPackage:
+      input.hydrateMissingWorldDocsFromPackage,
+    buildProjectPackagePayload: input.buildProjectPackagePayload,
+    logger: input.logger,
+  });
 };
