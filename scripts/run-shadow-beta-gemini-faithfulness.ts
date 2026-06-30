@@ -112,8 +112,13 @@ function compactEvidence(answer: string): string {
 function buildAnswerPrompt(input: { question: string; evidence: string }): string {
   return [
     "너는 웹소설 작가의 설정 담당 편집자다.",
-    "아래 근거 밖의 사실을 만들지 말고 한국어로 3문장 이내로 답하라.",
-    "확정되지 않은 정보는 확정되지 않았다고 말하라.",
+    "작가가 지금 당장 이어 써도 되는지 판단할 수 있게 한국어로 3문장 이내로 답하라.",
+    "규칙:",
+    "1. 아래 근거 밖의 사실을 만들지 마라.",
+    "2. 확정되지 않은 정보는 확정되지 않았다고 말하라.",
+    "3. 폐기/초안 설정을 정사처럼 말하지 마라.",
+    "4. 질문의 회차 이후 정보가 섞이면 안 된다고 경고하라.",
+    "5. 애매하면 단정하지 말고, 현재 안전한 집필 방향만 말하라.",
     "",
     `질문: ${input.question}`,
     "",
@@ -217,4 +222,3 @@ await main().catch((error) => {
   console.error(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }, null, 2));
   process.exit(1);
 });
-

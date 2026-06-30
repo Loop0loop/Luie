@@ -24,6 +24,7 @@ type CliOptions = {
   optimizationMode?: SearchOptimizationMode;
   out?: string;
   realBetaRunId?: string;
+  shadowBetaGenreScope: boolean;
   assertOptimizedRecall: boolean;
   minRecall: number;
   maxP0Failures: number;
@@ -43,6 +44,7 @@ function parseArgs(argv: string[]): CliOptions {
     projectId: "",
     label: "headless-rag-eval",
     topK: 5,
+    shadowBetaGenreScope: false,
     assertOptimizedRecall: false,
     minRecall: 0.98,
     maxP0Failures: 0,
@@ -77,6 +79,10 @@ function parseArgs(argv: string[]): CliOptions {
     if (arg === "--out" && next) {
       options.out = next;
       index += 1;
+      continue;
+    }
+    if (arg === "--shadow-beta-genre-scope") {
+      options.shadowBetaGenreScope = true;
       continue;
     }
     if (arg === "--optimization-mode" && next) {
@@ -115,6 +121,18 @@ function parseArgs(argv: string[]): CliOptions {
   return options;
 }
 
+function extractShadowBetaGenre(caseKey: string | undefined): string | null {
+  return caseKey?.match(/^shadow-beta:([^:]+):/u)?.[1] ?? null;
+}
+
+function buildShadowBetaChunkIdPrefix(input: {
+  projectId: string;
+  caseKey: string;
+}): string | undefined {
+  const genre = extractShadowBetaGenre(input.caseKey);
+  return genre ? `${input.projectId}:shadow-beta:${genre}:` : undefined;
+}
+
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   const runLabel = options.realBetaRunId
@@ -137,6 +155,15 @@ async function main(): Promise<void> {
         const layer3 = await buildLayer3Evidence(
           evalCase.projectId,
           evalCase.question,
+          undefined,
+          options.shadowBetaGenreScope
+            ? {
+                chunkIdPrefix: buildShadowBetaChunkIdPrefix({
+                  projectId: evalCase.projectId,
+                  caseKey: evalCase.caseId,
+                }),
+              }
+            : undefined,
         );
         const grounding = buildRagGrounding({
           evidence: layer3.evidence,

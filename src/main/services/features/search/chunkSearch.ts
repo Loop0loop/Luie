@@ -99,6 +99,7 @@ export const searchByShortTokens = async (
   query: string,
   limit: number,
   logger: LoggerLike,
+  chunkIdPrefix?: string,
 ): Promise<Array<{ chunkId: string; rank: number }>> => {
   const shortTokens = collectShortTokens(query);
   if (shortTokens.length === 0) return [];
@@ -113,7 +114,15 @@ export const searchByShortTokens = async (
       .getClient()
       .select({ chunkId: memoryChunk.id })
       .from(memoryChunk)
-      .where(and(eq(memoryChunk.projectId, projectId), or(...predicates)))
+      .where(
+        and(
+          eq(memoryChunk.projectId, projectId),
+          or(...predicates),
+          chunkIdPrefix
+            ? sql`${memoryChunk.id} LIKE ${`${escapeLike(chunkIdPrefix)}%`} ESCAPE '\\'`
+            : undefined,
+        ),
+      )
       .orderBy(desc(memoryChunk.updatedAt))
       .limit(limit);
     return rows.map((row, index) => ({
@@ -134,6 +143,7 @@ export const searchByVector = (
   queryVec: Float32Array,
   limit: number,
   logger: LoggerLike,
+  chunkIdPrefix?: string,
 ): Array<{ chunkId: string; rank: number }> => {
   try {
     const queryVecBlob = Buffer.from(
@@ -151,6 +161,7 @@ export const searchByVector = (
         AND embedding."dimension" = ${queryVec.length}
         AND length(embedding."vec") = embedding."dimension" * 4
         AND embedding."contentHash" = COALESCE(NULLIF(chunk."indexTextHash", ''), chunk."contentHash")
+        ${chunkIdPrefix ? sql`AND chunk."id" LIKE ${`${escapeLike(chunkIdPrefix)}%`} ESCAPE '\\'` : sql``}
       ORDER BY vec_distance_cosine(embedding."vec", ${queryVecBlob})
       LIMIT ${limit};
     `);

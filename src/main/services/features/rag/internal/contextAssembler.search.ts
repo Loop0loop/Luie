@@ -66,6 +66,7 @@ type SearchInput = {
   projectId: string;
   query: string;
   limit: number;
+  chunkIdPrefix?: string;
   embedTexts?: RagEmbeddingProvider;
   parentWindow?: {
     before: number;
@@ -156,8 +157,12 @@ export async function searchMemoryChunksForRag(
       ? client.all<{ chunkId: string }>(sql`
       SELECT fts."chunkId" AS "chunkId"
       FROM "MemoryChunkFts" fts
+      JOIN "MemoryChunk" chunk
+        ON chunk."id" = fts."chunkId"
+       AND chunk."projectId" = fts."projectId"
       WHERE fts."projectId" = ${input.projectId}
         AND "MemoryChunkFts" MATCH ${ftsQuery}
+        ${input.chunkIdPrefix ? sql`AND chunk."id" LIKE ${`${input.chunkIdPrefix}%`}` : sql``}
       ORDER BY bm25("MemoryChunkFts"), fts."chunkId"
       LIMIT ${candidateCap};
     `)
@@ -171,6 +176,7 @@ export async function searchMemoryChunksForRag(
       SELECT chunk."id" AS "chunkId"
       FROM "MemoryChunk" chunk
       WHERE chunk."projectId" = ${input.projectId}
+        ${input.chunkIdPrefix ? sql`AND chunk."id" LIKE ${`${input.chunkIdPrefix}%`}` : sql``}
         AND (${sql.join(
           exactPhraseCandidates.map(
             (candidate) => sql`instr(chunk."content", ${candidate}) > 0`,
@@ -199,6 +205,7 @@ export async function searchMemoryChunksForRag(
                    chunk."chunkIndex" AS "chunkIndex"
             FROM "MemoryChunk" chunk
             WHERE chunk."projectId" = ${input.projectId}
+              ${input.chunkIdPrefix ? sql`AND chunk."id" LIKE ${`${input.chunkIdPrefix}%`}` : sql``}
               AND (${sql.join(
                 quoteLikeTokens.map(
                   (token) => sql`instr(lower(chunk."content"), ${token}) > 0`,
@@ -233,6 +240,7 @@ export async function searchMemoryChunksForRag(
     normalizedQuery,
     candidateCap,
     logger,
+    input.chunkIdPrefix,
   );
   recordStage(input, "shortToken", stageStartedAt, lexicalRanks.length);
 
@@ -250,6 +258,7 @@ export async function searchMemoryChunksForRag(
           queryVector,
           candidateCap,
           logger,
+          input.chunkIdPrefix,
         );
       }
     } catch (error) {

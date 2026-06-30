@@ -52,7 +52,7 @@
   --color-border-active: var(--border-active);
   --color-border-focus: var(--border-focus);
 
-  /* Radius / Shadow / Spacing — migrated from the (dead, v4-unloaded)
+    /* Radius / Shadow / Spacing — migrated from the (dead, v4-unloaded)
      tailwind.config.js. Only tokens actually used in the codebase are kept. */
   --radius-control: 0.625rem;
   --radius-panel: 0.875rem;
@@ -61,6 +61,14 @@
   --spacing-control-y: 0.5rem;
   --spacing-panel-pad: 1.25rem;
   --spacing-panel-gap: 1rem;
+
+  /* Canvas document feature tokens — replaces repeated arbitrary values
+     (text-[40px], text-[15px], max-w-[900px], w-[190px]) in the canvas
+     document shell. Scoped naming keeps them discoverable. */
+  --text-canvas-doc-title: 2.5rem;          /* 40px — document title */
+  --text-canvas-doc-body: 0.9375rem;        /* 15px — property line body */
+  --container-canvas-doc: 56.25rem;         /* 900px — document column */
+  --spacing-canvas-doc-label: 11.875rem;    /* 190px — property label column */
 
   /* Z-index layers — replaces ad-hoc z-[9999]/z-[9000]/z-[10000] escalation.
      v4's z-* is functional (no theme namespace), so the named utilities are

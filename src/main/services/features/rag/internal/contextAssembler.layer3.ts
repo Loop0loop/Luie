@@ -141,11 +141,13 @@ export async function buildLayer3Evidence(
   projectId: string,
   question: string,
   embedTexts?: RagEmbeddingProvider,
+  options?: { chunkIdPrefix?: string },
 ): Promise<Layer3Result> {
   let rows: MemoryChunkSearchResult[] = await searchMemoryChunksForRag({
     projectId,
     query: question,
     limit: 10,
+    chunkIdPrefix: options?.chunkIdPrefix,
     embedTexts,
     parentWindow: { before: 1, after: 1 },
   });
@@ -176,7 +178,15 @@ export async function buildLayer3Evidence(
             endOffset: memoryChunk.endOffset,
           })
           .from(memoryChunk)
-          .where(and(eq(memoryChunk.projectId, projectId), lexicalPredicate))
+          .where(
+            and(
+              eq(memoryChunk.projectId, projectId),
+              lexicalPredicate,
+              options?.chunkIdPrefix
+                ? likeWithEscape(memoryChunk.id, `${options.chunkIdPrefix}%`)
+                : undefined,
+            ),
+          )
           .orderBy(desc(memoryChunk.updatedAt))
           .limit(10);
         rows = lexicalRows.map((row) => ({
