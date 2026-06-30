@@ -1,39 +1,58 @@
 import type { ReactNode } from "react";
-import { GitBranch, X } from "lucide-react";
+import { GitBranch, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatDate, getString, getStringArray, getTagValues } from "./canvasDocumentModel";
+import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 
 export function DocumentShell({
   children,
   kindLabel,
   title,
-  onClose,
 }: {
   children: ReactNode;
   kindLabel: string;
   title: string;
-  onClose: () => void;
 }) {
   const { t } = useTranslation();
+  const isSidebarOpen = useUIStore((state) => state.regions.leftSidebar.open);
+  const isContextOpen = useUIStore((state) => state.regions.rightPanel.open);
+  const toggleLeftSidebar = useUIStore((state) => state.toggleLeftSidebar);
+  const setRegionOpen = useUIStore((state) => state.setRegionOpen);
+
   return (
     <div className="flex h-full min-h-0 w-full flex-col bg-app text-fg" data-testid="canvas-document-view">
       <div className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-panel px-3">
-        <div className="flex min-w-0 items-center gap-2 text-xs">
-          <span className="text-muted">{t("canvas.activity.canvas")}</span>
+        <div className="flex min-w-0 items-center gap-2.5 text-xs">
+          {/* 좌측 사이드바 접기/펴기 버튼 */}
+          <button
+            type="button"
+            onClick={toggleLeftSidebar}
+            className="flex h-7 w-7 items-center justify-center rounded-control text-muted hover:bg-surface-hover hover:text-fg transition-colors cursor-pointer shrink-0"
+            title={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
+            aria-label={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
+          >
+            {isSidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+          </button>
+
+          <span className="text-muted ml-0.5">{t("canvas.activity.canvas")}</span>
           <span className="text-subtle">/</span>
           <span className="text-muted">{kindLabel}</span>
           <span className="text-subtle">/</span>
           <span className="truncate font-medium text-fg">{title}</span>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="flex h-8 w-8 items-center justify-center rounded-control bg-transparent text-muted transition-colors hover:bg-active hover:text-fg focus-visible:bg-active focus-visible:outline-none"
-          title={t("canvas.toolbar.backToCanvas")}
-          aria-label={t("canvas.toolbar.backToCanvas")}
-        >
-          <X className="h-4 w-4" aria-hidden="true" />
-        </button>
+
+        <div className="flex items-center gap-1 shrink-0">
+          {/* 우측 바인더 접기/펴기 버튼 */}
+          <button
+            type="button"
+            onClick={() => setRegionOpen("rightPanel", !isContextOpen)}
+            className="flex h-7 w-7 items-center justify-center rounded-control text-muted hover:bg-surface-hover hover:text-fg transition-colors cursor-pointer shrink-0"
+            title={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
+            aria-label={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
+          >
+            {isContextOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+          </button>
+        </div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto bg-panel">{children}</div>
     </div>

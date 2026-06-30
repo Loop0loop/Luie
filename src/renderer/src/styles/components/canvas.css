@@ -22,6 +22,11 @@
     word-break: keep-all;
 }
 
+.canvas-document-editor .ProseMirror,
+.canvas-document-editor .ProseMirror * {
+    font-family: inherit !important;
+}
+
 /* Notion/Pensive style: contenteditable focus shows the caret only — no
    colored outline/ring. The caret is the visible focus indicator, so this
    satisfies "visible focus" without a loud blue ring on the writing surface. */

@@ -12,6 +12,7 @@ import type {
   NarrativeSummaryStatus,
   MemoryTemporalFactReviewItem,
   RagQaErrorPayload,
+  RagQaAnswerMode,
   RagQaEvidence,
   RagQaGrounding,
   RagQaSafety,
@@ -24,6 +25,7 @@ export type Message = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  answerMode?: RagQaAnswerMode;
   evidence?: RagQaEvidence[];
   grounding?: RagQaGrounding;
   safety?: RagQaSafety;

@@ -1,9 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
+import Highlight from "@tiptap/extension-highlight";
+import { TextStyle } from "@tiptap/extension-text-style";
+import { Color } from "@tiptap/extension-color";
+import UnderlineExtension from "@tiptap/extension-underline";
 import { Details, DetailsSummary, DetailsContent } from "@tiptap/extension-details";
 import { Markdown } from "tiptap-markdown";
 import { Callout, SlashCommand } from "@renderer/features/editor/components/hooks/useEditorExtensions";
@@ -25,6 +29,8 @@ export function CanvasMarkdownEditor({
   onSave: (markdown: string) => void;
   children?: React.ReactNode;
 }) {
+
+
   const saveTimer = useRef<number | null>(null);
   const onSaveRef = useRef(onSave);
 
@@ -32,11 +38,17 @@ export function CanvasMarkdownEditor({
     onSaveRef.current = onSave;
   }, [onSave]);
 
+  const [, forceUpdate] = useState({});
+
   const editor = useEditor({
     extensions: [
       StarterKit,
       TaskList,
       TaskItem.configure({ nested: true }),
+      Highlight.configure({ multicolor: true }),
+      TextStyle,
+      Color,
+      UnderlineExtension,
       Callout,
       Details.configure({ persist: true, HTMLAttributes: { class: "toggle" } }),
       DetailsSummary,
@@ -52,6 +64,10 @@ export function CanvasMarkdownEditor({
         saveTimer.current = null;
         onSaveRef.current(getMarkdown(editor.storage, editor.getText()));
       }, AUTOSAVE_DELAY_MS);
+      forceUpdate({});
+    },
+    onSelectionUpdate: () => {
+      forceUpdate({});
     },
   });
 

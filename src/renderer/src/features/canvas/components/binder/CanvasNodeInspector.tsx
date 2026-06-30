@@ -35,6 +35,7 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
   const { t } = useTranslation();
   const graphData = useWorldBuildingStore((state) => state.graphData);
   const clearSelection = useCanvasViewStore((s) => s.clearSelection);
+  const selectNode = useCanvasViewStore((s) => s.selectNode);
   const currentProjectId = useProjectStore((state) => state.currentProject?.id);
 
   const node = graphData?.nodes.find((n) => n.id === nodeId) ?? null;
@@ -219,7 +220,8 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
                 return (
                   <li
                     key={cnNode.id}
-                    className="flex items-center gap-2 text-xs text-fg/80"
+                    onClick={() => selectNode(cnNode.id)}
+                    className="flex items-center gap-2 text-xs text-fg/80 hover:bg-surface-hover/50 p-1 rounded-control cursor-pointer transition-colors"
                   >
                     <span
                       className="h-1.5 w-1.5 shrink-0 rounded-full"
@@ -228,7 +230,7 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
                     />
                     <span className="truncate">{cnNode.name}</span>
                     {rel?.relation && (
-                      <span className="ml-auto shrink-0 text-[10px] text-muted">
+                      <span className="ml-auto shrink-0 text-[10px] text-muted pr-1">
                         {rel.relation}
                       </span>
                     )}

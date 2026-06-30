@@ -54,7 +54,7 @@ Correct behavior:
 
 ## Validation
 
-Generated on 2026-06-30:
+Dataset validation on 2026-06-30:
 
 ```text
 modern_fantasy: 8
@@ -80,5 +80,77 @@ Validation checks:
 Next connection point:
 
 ```text
-wire answerMode into the eval runner/prompt layer only after this dataset shape is stable.
+wire answerMode into the product answer UI only after this runner stays stable.
+```
+
+## Gemini Smoke Runs
+
+Runner:
+
+```text
+scripts/run-answer-mode-eval.ts
+```
+
+Run 001:
+
+```text
+model: gemini-3.5-flash
+cases: 32
+pass: 31
+fail: 1
+output: tests/.tmp/answer-mode-v1-run-001.json
+```
+
+Failure:
+
+```text
+case: murim.answer_mode_v1.evidence.002
+question: 백린이 물러나는 건 겁이 많아서야?
+expected: EVIDENCE
+actual: INSUFFICIENT
+```
+
+Diagnosis:
+
+```text
+The failure exposed weak gold evidence, not a clear model failure.
+The original quote said 백린's hearing is a strength and the delay is a training issue,
+but it did not directly include the "not fear" contrast asked by the question.
+```
+
+Fix:
+
+```text
+Added the direct manuscript quote from novel/murim/manuscript/murim_007.txt:
+"겁나서 멈춘 게 아닙니다." 류진이 말했다. "숨을 너무 오래 붙잡아서 발이 늦는 겁니다."
+```
+
+Run 002:
+
+```text
+model: gemini-3.5-flash
+cases: 32
+pass: 32
+fail: 0
+output: tests/.tmp/answer-mode-v1-run-002.json
+```
+
+Meaning:
+
+```text
+This proves the answer-mode leash can be tested in a small controlled harness:
+EVIDENCE answers stay evidence-backed,
+INSUFFICIENT answers abstain,
+ADVISORY answers remain advice rather than canon.
+
+It does not prove real writer fit or production threshold readiness.
+```
+
+## Current Status
+
+```text
+answer_mode_v1 dataset: ready for MVP harness use
+Gemini answer-mode smoke: passed 32/32 after evidence alignment fix
+real beta replacement: NOT ALLOWED
+next risk: product UI must expose mode, evidence, and uncertainty clearly
 ```

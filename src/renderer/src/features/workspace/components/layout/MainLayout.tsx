@@ -108,6 +108,9 @@ export default function MainLayout({
   const persistContextLayoutChanged = useLayoutPersist([
     { id: "context-panel", index: 2, surface: contextSurface },
   ]);
+  // Disable panel flex transitions while a separator is being dragged.
+  const [isResizing, setIsResizing] = useState(false);
+
   const markResizeSurface = useCallback((surface: MainLayoutResizeSurface) => {
     activeResizeSurfaceRef.current = surface;
     setIsResizing(true);
@@ -154,8 +157,6 @@ export default function MainLayout({
   const [contextDefaultSize, setContextDefaultSize] = useState(() =>
     toPanelPercentSize(contextRatio),
   );
-  // Disable panel flex transitions while a separator is being dragged.
-  const [isResizing, setIsResizing] = useState(false);
   const {
     isClosing: isSidebarClosing,
     isOpening: isSidebarOpening,
@@ -380,30 +381,26 @@ export default function MainLayout({
           >
             {/* 패널 접기/펴기 토글 — 에디터 코너에 떠 있는 버튼. 일반 모드는 고스트,
                 캔버스 모드는 캔버스 위에 떠야 하므로 backdrop 칩 스타일. */}
-            <button
-              onClick={toggleSidebar}
-              className={
-                isCanvasMode
-                  ? "absolute left-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-panel border border-border/80 bg-app/90 text-muted shadow-md backdrop-blur-sm transition-all hover:bg-accent hover:text-fg active:scale-95 cursor-pointer"
-                  : "absolute left-2 top-2 z-40 flex h-8 w-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-active hover:text-fg cursor-pointer"
-              }
-              title={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
-              aria-label={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
-            >
-              {isSidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
-            </button>
-            <button
-              onClick={toggleContextPanel}
-              className={
-                isCanvasMode
-                  ? "absolute right-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-panel border border-border/80 bg-app/90 text-muted shadow-md backdrop-blur-sm transition-all hover:bg-accent hover:text-fg active:scale-95 cursor-pointer"
-                  : "absolute right-2 top-2 z-40 flex h-8 w-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-active hover:text-fg cursor-pointer"
-              }
-              title={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
-              aria-label={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
-            >
-              {isContextOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
-            </button>
+            {!isCanvasMode && (
+              <button
+                onClick={toggleSidebar}
+                className="absolute left-2 top-2 z-40 flex h-8 w-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-active hover:text-fg cursor-pointer"
+                title={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
+                aria-label={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
+              >
+                {isSidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+              </button>
+            )}
+            {!isCanvasMode && (
+              <button
+                onClick={toggleContextPanel}
+                className="absolute right-2 top-2 z-40 flex h-8 w-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-active hover:text-fg cursor-pointer"
+                title={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
+                aria-label={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
+              >
+                {isContextOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+              </button>
+            )}
 
             <EditorDropZones />
             <div className="flex-1 overflow-y-auto flex flex-col">

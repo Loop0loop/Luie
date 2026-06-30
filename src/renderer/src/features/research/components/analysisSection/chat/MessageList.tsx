@@ -1,7 +1,7 @@
 import { AlertCircle, Bot, BookOpen, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Message } from "../shared/types";
-import { safetyLabel, safetyTone } from "../runtime/runtimeHelpers";
+import { answerModeLabel, safetyLabel, safetyTone } from "../runtime/runtimeHelpers";
 import type { RagQaSafetyLabel } from "@shared/types";
 
 type MessageListProps = {
@@ -70,6 +70,11 @@ export function MessageList({ messages, onJumpEvidence }: MessageListProps) {
                       <span className="block line-clamp-2">{ev.quote}</span>
                     </button>
                   ))}
+                </div>
+              )}
+              {msg.role === "assistant" && msg.answerMode && (
+                <div className="mb-1 pl-1 text-[10px] font-medium uppercase tracking-wide text-muted">
+                  {answerModeLabel(msg.answerMode)}
                 </div>
               )}
               <div

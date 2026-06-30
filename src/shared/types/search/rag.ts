@@ -40,6 +40,8 @@ export type RagQaSafetyLabel =
   | "temporal_blocked"
   | "non_canonical_source";
 
+export type RagQaAnswerMode = "EVIDENCE" | "INSUFFICIENT" | "ADVISORY";
+
 export type RagQaSafetyReason =
   | RagQaGroundingStatus
   | "unsupported_confirmed_answer"
@@ -64,6 +66,7 @@ export interface RagQaResult {
   projectId: string;
   question: string;
   answer: string;
+  answerMode: RagQaAnswerMode;
   evidence: RagQaEvidence[];
   grounding: RagQaGrounding;
   safety: RagQaSafety;

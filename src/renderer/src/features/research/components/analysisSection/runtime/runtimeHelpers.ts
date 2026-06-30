@@ -1,6 +1,6 @@
 import { i18n } from "@renderer/i18n";
 import type { UtilitySidecarStatus } from "@shared/types";
-import type { RagQaSafetyLabel } from "@shared/types";
+import type { RagQaAnswerMode, RagQaSafetyLabel } from "@shared/types";
 
 const translateRuntimeLabel = (key: string, fallback: string): string => {
   const translated = i18n.t(key, { defaultValue: fallback });
@@ -44,6 +44,12 @@ export const safetyTone = (label: RagQaSafetyLabel | "unknown"): string => {
   )
     return "border-danger/30 bg-danger/10 text-danger";
   return "border-border bg-surface text-muted";
+};
+
+export const answerModeLabel = (mode: RagQaAnswerMode): string => {
+  if (mode === "EVIDENCE") return "근거 답변";
+  if (mode === "INSUFFICIENT") return "근거 부족";
+  return "일반 조언";
 };
 
 export const sidecarStatusTone = (

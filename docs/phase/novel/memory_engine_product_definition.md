@@ -211,8 +211,8 @@ Status as of 2026-06-30:
 | Project/work scope | Project exists; work-level scope is still future expansion. | Partial |
 | Evidence display in UI | Evidence-backed UI exists in parts, but product-level flow needs audit. | Partial |
 | Optional AI answer | Gemini/local runtime architecture exists; AI is not fully product-positioned as subordinate in UI. | Partial |
-| No-evidence refusal | Not enough abstention/no-evidence hard cases yet. | Missing |
-| Answer mode separation | Product policy is defined; implementation/UI still needs audit. | Missing |
+| No-evidence refusal | `answer_mode_v1` includes insufficient-evidence cases and Gemini smoke passed. UI/product path still needs audit. | Partial |
+| Answer mode separation | `EVIDENCE`/`INSUFFICIENT`/`ADVISORY` policy and 32-case runner exist. UI audit shows `ADVISORY` is not wired into the product contract yet. | Partial |
 | Draft/discarded/canon separation | Test data and some guards exist; real product UX needs audit. | Partial |
 | Real writer validation | No real beta data. | Missing |
 
@@ -221,7 +221,7 @@ MVP readiness:
 ```text
 Memory Engine infrastructure: ~65%
 MVP product clarity after this definition: ~70%
-MVP implementation confidence: ~55-60%
+MVP implementation confidence: ~60-65%
 Real writer workflow validation: low, needs beta
 ```
 
@@ -231,12 +231,11 @@ Do not add more broad features first.
 
 Next smallest useful work:
 
-1. Add no-evidence / abstention eval cases.
-2. Add answer-mode classification to eval: `EVIDENCE`, `INSUFFICIENT`, `ADVISORY`.
-3. Audit the current UI path against the MVP list above.
-4. Ensure AI answer surfaces evidence and uncertainty, not just prose.
-5. Keep local-first and non-AI usage visible in product copy/UI.
-6. Run real writer beta later; until then, label results as rehearsal only.
+1. Add `answerMode` to the RAG result contract and render it in chat.
+2. Ensure AI answer surfaces mode, evidence, and uncertainty, not just prose.
+3. Add more no-evidence / abstention cases after the UI path is wired.
+4. Keep local-first and non-AI usage visible in product copy/UI.
+5. Run real writer beta later; until then, label results as rehearsal only.
 
 ## Final Anchor
 

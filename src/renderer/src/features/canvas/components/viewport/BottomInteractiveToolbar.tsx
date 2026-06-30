@@ -45,19 +45,19 @@ export function BottomInteractiveToolbar() {
 
   return (
     <div
-      className="pointer-events-auto absolute bottom-6 left-1/2 z-30 -translate-x-1/2 select-none"
+      className="pointer-events-auto absolute bottom-10 left-1/2 z-30 -translate-x-1/2 select-none"
       data-testid="bottom-interactive-toolbar"
     >
       <div className={cn(
         "flex h-11 items-center gap-2 rounded-full border shadow-panel px-3 py-1",
-        "bg-panel border-border text-fg",
+        "bg-panel/95 backdrop-blur-md border-border/60 text-fg",
         transitionClass
       )}>
 
         {/* 1. 세그먼트 토글 (가장 좌측 배치) */}
         <div className={cn(
           "flex items-center gap-1 p-0.5 rounded-full shrink-0 h-8",
-          "bg-element border border-border",
+          "bg-element border border-border/40",
           transitionClass
         )}>
           <Button
@@ -91,7 +91,7 @@ export function BottomInteractiveToolbar() {
         </div>
 
         {/* 구분선 */}
-        <div className="w-px h-5 bg-border" />
+        <div className="w-px h-5 bg-border/50" />
 
         {/* 2. 모드별 동적 액션 목록 (중앙 배치 + 너비 308px 고정으로 Layout Shift 완전 방지) */}
         <div className="flex items-center gap-1 w-[308px] shrink-0 justify-center">

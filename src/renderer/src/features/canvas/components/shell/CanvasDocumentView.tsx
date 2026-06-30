@@ -18,7 +18,6 @@ import {
   type EntityKind,
 } from "./document/canvasDocumentModel";
 import {
-  CanvasContextBar,
   DocumentShell,
   PropertyLine,
   TagList,
@@ -28,25 +27,21 @@ import { useCanvasEntity } from "./document/useCanvasEntity";
 
 interface CanvasDocumentViewProps {
   preview: CanvasEntityPreview;
-  onClose: () => void;
 }
 
 export default function CanvasDocumentView({
   preview,
-  onClose,
 }: CanvasDocumentViewProps) {
   if (preview.kind === "memo") {
-    return <MemoDocumentView memoId={preview.id} onClose={onClose} />;
+    return <MemoDocumentView memoId={preview.id} />;
   }
-  return <EntityDocumentView preview={preview} onClose={onClose} />;
+  return <EntityDocumentView preview={preview} />;
 }
 
 function EntityDocumentView({
   preview,
-  onClose,
 }: {
   preview: Extract<CanvasEntityPreview, { kind: EntityKind }>;
-  onClose: () => void;
 }) {
   const { t } = useTranslation();
   const entityState = useCanvasEntity(preview);
@@ -65,7 +60,7 @@ function EntityDocumentView({
 
   if (!entityState.entity) {
     return (
-      <DocumentShell kindLabel={kindLabel} title={kindLabel} onClose={onClose}>
+      <DocumentShell kindLabel={kindLabel} title={kindLabel}>
         <div className="flex h-full items-center justify-center text-sm text-muted">
           {t("canvas.preview.entityNotFound", "문서를 찾을 수 없습니다.")}
         </div>
@@ -80,7 +75,7 @@ function EntityDocumentView({
     getString(attrs[CANVAS_DOCUMENT_MARKDOWN_KEY]) || composeMarkdown(sections, attrs);
 
   return (
-    <DocumentShell kindLabel={kindLabel} title={entity.name} onClose={onClose}>
+    <DocumentShell kindLabel={kindLabel} title={entity.name}>
       <article className="mx-auto flex w-full max-w-[900px] flex-col px-10 py-12">
         <CanvasMarkdownEditor
           key={`${preview.kind}:${entity.id}`}
@@ -97,11 +92,6 @@ function EntityDocumentView({
           }
         >
           <div className="mt-4">
-            <CanvasContextBar
-              kindLabel={kindLabel}
-              firstAppearance={entity.firstAppearance}
-              updatedAt={entity.updatedAt}
-            />
             <BufferedInput
               className="mt-5 w-full border-none bg-transparent p-0 text-[36px] font-extrabold leading-tight tracking-tight text-fg outline-none placeholder:text-subtle focus-visible:bg-surface-hover"
               style={{ fontFamily: fontFamilyCss }}
@@ -142,10 +132,8 @@ function EntityDocumentView({
 
 function MemoDocumentView({
   memoId,
-  onClose,
 }: {
   memoId: string;
-  onClose: () => void;
 }) {
   const { t } = useTranslation();
   const { fontFamilyCss } = useEditorConfig();
@@ -157,7 +145,7 @@ function MemoDocumentView({
 
   if (!note) {
     return (
-      <DocumentShell kindLabel={scrapLabel} title={scrapLabel} onClose={onClose}>
+      <DocumentShell kindLabel={scrapLabel} title={scrapLabel}>
         <div className="flex h-full items-center justify-center text-sm text-muted">
           {t("canvas.preview.memoNotFound", "메모를 찾을 수 없습니다.")}
         </div>
@@ -166,7 +154,7 @@ function MemoDocumentView({
   }
 
   return (
-    <DocumentShell kindLabel={scrapLabel} title={note.title} onClose={onClose}>
+    <DocumentShell kindLabel={scrapLabel} title={note.title}>
       <article className="mx-auto flex w-full max-w-[900px] flex-col px-10 py-12">
         <CanvasMarkdownEditor
           key={`memo:${note.id}`}
@@ -174,7 +162,6 @@ function MemoDocumentView({
           onSave={(content) => updateNote(note.id, { content })}
         >
           <div className="mt-4">
-            <CanvasContextBar kindLabel={scrapLabel} updatedAt={note.updatedAt} />
             <BufferedInput
               className="mt-5 w-full border-none bg-transparent p-0 text-[36px] font-extrabold leading-tight tracking-tight text-fg outline-none placeholder:text-subtle focus-visible:bg-surface-hover"
               style={{ fontFamily: fontFamilyCss }}

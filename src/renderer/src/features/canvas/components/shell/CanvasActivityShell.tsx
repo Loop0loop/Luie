@@ -238,6 +238,7 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
     }
   }, [clearEntityPreview, openEntityPreview, selectNode, setActivePanel, setFocuses, setMainView, showToast, t, toggleFolder]);
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const persistCanvasFiles = useCallback(async (
     update: (files: readonly WorldGraphCanvasFile[]) => WorldGraphCanvasFile[],
   ) => {
@@ -353,7 +354,7 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
   return (
     <div className="flex h-full w-full flex-col bg-sidebar text-fg border-r border-border/30 overflow-hidden">
       {/* Compact header: title + actions in one row */}
-      <div className="flex h-10 items-center justify-between border-b border-border/20 px-3 shrink-0 select-none bg-element/30">
+      <div className="flex h-11 items-center justify-between border-b border-border/10 px-3 shrink-0 select-none bg-transparent">
         <span className="text-[11px] font-bold uppercase tracking-wider text-muted truncate">
           {t("canvas.activity.explorer", "Explorer")}
         </span>
@@ -365,7 +366,7 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
             onClick={() => handleToolbarAction("new-file")}
             title={t("canvas.activity.newFile")}
             aria-label={t("canvas.activity.newFile")}
-            className="h-6 w-6 text-muted/75 hover:bg-muted/40 hover:text-fg [&_svg]:h-3.5 [&_svg]:w-3.5"
+            className="h-6 w-6 text-muted/75 hover:bg-surface-hover hover:text-fg [&_svg]:h-3.5 [&_svg]:w-3.5 rounded-control transition-colors"
           >
             <FilePlus />
           </Button>
@@ -376,7 +377,7 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
             onClick={() => handleToolbarAction("new-folder")}
             title={t("canvas.activity.newFolder")}
             aria-label={t("canvas.activity.newFolder")}
-            className="h-6 w-6 text-muted/75 hover:bg-muted/40 hover:text-fg [&_svg]:h-3.5 [&_svg]:w-3.5"
+            className="h-6 w-6 text-muted/75 hover:bg-surface-hover hover:text-fg [&_svg]:h-3.5 [&_svg]:w-3.5 rounded-control transition-colors"
           >
             <FolderPlus />
           </Button>
@@ -387,16 +388,17 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
             onClick={toggleAllFolders}
             title={t("canvas.activity.toggleAll", "Toggle all")}
             aria-label={t("canvas.activity.toggleAll", "Toggle all")}
-            className="h-6 w-6 text-muted/75 hover:bg-muted/40 hover:text-fg [&_svg]:h-3.5 [&_svg]:w-3.5"
+            className="h-6 w-6 text-muted/75 hover:bg-surface-hover hover:text-fg [&_svg]:h-3.5 [&_svg]:w-3.5 rounded-control transition-colors"
           >
             <ChevronsUpDown />
           </Button>
 
-          <div className="w-px h-4 bg-border/50 mx-0.5" />
+          <div className="w-px h-4 bg-border/20 mx-0.5" />
 
           <button
+            type="button"
             onClick={() => onClose?.()}
-            className="flex h-6 w-6 items-center justify-center rounded-control border-none bg-transparent text-muted hover:bg-active hover:text-fg cursor-pointer transition-colors duration-150"
+            className="flex h-6 w-6 items-center justify-center rounded-control border-none bg-transparent text-muted hover:bg-surface-hover hover:text-fg cursor-pointer transition-colors duration-150"
             title={t("canvas.activity.closeCanvas")}
             aria-label={t("canvas.activity.closeCanvas")}
           >

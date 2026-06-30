@@ -183,6 +183,7 @@ export type {
   NarrativeMemoryQueryResult,
   NarrativeMemorySource,
   NarrativeMemoryTraceStep,
+  RagQaAnswerMode,
   RagQaErrorPayload,
   RagQaEvidence,
   RagQaGrounding,
