@@ -140,8 +140,9 @@ export const buildProjectPackagePayload = async (input: {
       deletedWorldDocTypes.add(doc.docType as WorldDocumentType);
       continue;
     }
-    if (worldDocs.has(doc.docType as WorldDocumentType)) continue;
-    worldDocs.set(doc.docType as WorldDocumentType, doc.payload);
+    const docType = doc.docType as WorldDocumentType;
+    if (deletedWorldDocTypes.has(docType) || worldDocs.has(docType)) continue;
+    worldDocs.set(docType, doc.payload);
   }
 
   await hydrateMissingWorldDocsFromPackage(
