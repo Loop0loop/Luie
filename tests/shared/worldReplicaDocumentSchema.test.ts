@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { worldReplicaDocumentSetSchema } from "../../src/shared/schemas/index";
+import { buildWorldGraphDocument } from "../../src/shared/world/worldGraphDocument";
 
 describe("worldReplicaDocumentSetSchema", () => {
   it("accepts graph payloads with canvas files", () => {
@@ -19,6 +20,54 @@ describe("worldReplicaDocumentSetSchema", () => {
           ],
           updatedAt: "2026-06-30T00:00:00.000Z",
         },
+      }).success,
+    ).toBe(true);
+  });
+
+  it("accepts graph payloads built by the renderer graph document codec", () => {
+    const payload = buildWorldGraphDocument(
+      {
+        nodes: [
+          {
+            id: "character-1",
+            entityType: "Character",
+            name: "Alice",
+            attributes: null,
+            positionX: 120,
+            positionY: 240,
+          },
+        ],
+        edges: [],
+        canvasBlocks: [
+          {
+            id: "block-1",
+            type: "memo",
+            positionX: 10,
+            positionY: 20,
+            data: {
+              title: "Memo",
+              body: "",
+              tags: [],
+            },
+          },
+        ],
+        canvasFiles: [
+          {
+            id: "file-1",
+            kind: "canvas",
+            name: "Board",
+            parentId: null,
+          },
+        ],
+      },
+      "2026-06-30T00:00:00.000Z",
+    );
+
+    expect(
+      worldReplicaDocumentSetSchema.safeParse({
+        projectId: "project-1",
+        docType: "graph",
+        payload,
       }).success,
     ).toBe(true);
   });

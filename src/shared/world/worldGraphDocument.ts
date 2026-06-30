@@ -314,6 +314,20 @@ const stripTransientGraphPosition = (
   return Object.keys(rest).length > 0 ? rest : null;
 };
 
+const stripUndefinedFields = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    return value.map(stripUndefinedFields);
+  }
+  if (!isRecord(value)) {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([, entryValue]) => entryValue !== undefined)
+      .map(([key, entryValue]) => [key, stripUndefinedFields(entryValue)]),
+  );
+};
+
 export const applyGraphNodePosition = (
   node: WorldGraphNode,
   positionX: number,
@@ -412,27 +426,31 @@ export const buildWorldGraphDocument = (
   const canvasFiles = normalizeCanvasFiles(graphData.canvasFiles);
   const timelines = normalizeTimelines(graphData.timelines);
 
-  return {
-    nodes: nodes.map((node) => ({
-      id: node.id,
-      entityType: node.entityType,
-      subType: node.subType,
-      name: node.name,
-      description: node.description ?? null,
-      firstAppearance: node.firstAppearance ?? null,
-      attributes: stripTransientGraphPosition(node.attributes),
-      positionX: node.positionX,
-      positionY: node.positionY,
-    })),
-    edges: edges.map((edge) => ({
-      ...edge,
-      attributes: edge.attributes ?? null,
-    })),
+  return stripUndefinedFields({
+    nodes: nodes.map((node) =>
+      ({
+        id: node.id,
+        entityType: node.entityType,
+        subType: node.subType,
+        name: node.name,
+        description: node.description ?? null,
+        firstAppearance: node.firstAppearance ?? null,
+        attributes: stripTransientGraphPosition(node.attributes),
+        positionX: node.positionX,
+        positionY: node.positionY,
+      }),
+    ),
+    edges: edges.map((edge) =>
+      ({
+        ...edge,
+        attributes: edge.attributes ?? null,
+      }),
+    ),
     // Always include canvas data to properly overwrite stale data
     canvasBlocks,
     canvasEdges,
     canvasFiles,
     timelines,
     updatedAt,
-  };
+  }) as GraphDocumentPayload;
 };

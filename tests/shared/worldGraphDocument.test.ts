@@ -94,7 +94,6 @@ describe("worldGraphDocument", () => {
         {
           id: "character-1",
           entityType: "Character",
-          subType: undefined,
           name: "Alice",
           description: null,
           firstAppearance: null,
