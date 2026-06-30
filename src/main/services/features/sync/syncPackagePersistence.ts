@@ -342,6 +342,7 @@ export const persistBundleToLuiePackages = async (input: {
       });
     } catch (error) {
       failedProjects.push(project.id);
+      projectService.schedulePackageExport(project.id, "sync:retry");
       logger.error("Failed to persist merged bundle into .luie package", {
         projectId: project.id,
         projectPath: safeProjectPath,
