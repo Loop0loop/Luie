@@ -43,7 +43,8 @@ export function MessageList({ messages, onJumpEvidence }: MessageListProps) {
         const showMemoryUi = hasMemoryUiIntent(previousQuestion);
         const showEvidence =
           showMemoryUi && msg.role === "assistant" && msg.answerMode !== "ADVISORY" && evidence.length > 0;
-        const showBlockingSafety = Boolean(showMemoryUi && msg.safety?.blocksConfirmedAnswer && effectiveSafetyLabel);
+        const showSafety = Boolean(showMemoryUi && effectiveSafetyLabel && msg.answerMode !== "ADVISORY");
+        const showBlockingSafety = Boolean(showSafety && msg.safety?.blocksConfirmedAnswer);
 
         return (
           <div
@@ -80,7 +81,7 @@ export function MessageList({ messages, onJumpEvidence }: MessageListProps) {
                 )}
               </div>
 
-              {showBlockingSafety && msg.safety && effectiveSafetyLabel && (
+              {showSafety && msg.safety && effectiveSafetyLabel && (
                 <div className="mt-2 flex flex-wrap gap-1.5 pl-1">
                   <span
                     className={`inline-flex items-center gap-1.5 text-[10px] border rounded px-2.5 py-0.5 ${safetyTone(effectiveSafetyLabel)}`}
@@ -88,9 +89,11 @@ export function MessageList({ messages, onJumpEvidence }: MessageListProps) {
                   >
                     {safetyLabel(effectiveSafetyLabel)}
                   </span>
-                  <span className="text-[10px] text-muted">
-                    {msg.safety.message}
-                  </span>
+                  {showBlockingSafety && (
+                    <span className="text-[10px] text-muted">
+                      {msg.safety.message}
+                    </span>
+                  )}
                 </div>
               )}
 

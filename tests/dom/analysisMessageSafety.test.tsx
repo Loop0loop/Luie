@@ -9,6 +9,7 @@ import { writerFlowSyntheticNovel } from "../fixtures/writerFlowSyntheticNovel.j
 const { translate } = vi.hoisted(() => {
   const translations: Record<string, string> = {
     "analysis.runtime.labels.temporal_blocked": "회차 기준 불가",
+    "analysis.runtime.labels.insufficient_evidence": "근거 부족",
     "analysis.chat.evidenceCount": "근거 {{index}}",
   };
   return {
@@ -61,6 +62,11 @@ describe("MessageList safety label", () => {
         <MessageList
           messages={[
             {
+              id: "user-1",
+              role: "user",
+              content: "3화 기준으로 이 답변 확정해도 돼?",
+            },
+            {
               id: "assistant-1",
               role: "assistant",
               content: "이 답변은 현재 회차 기준으로 확정할 수 없습니다.",
@@ -84,11 +90,16 @@ describe("MessageList safety label", () => {
     );
   });
 
-  it("shows evidence quotes before the assistant answer", () => {
+  it("keeps evidence collapsed without internal chunk details", () => {
     act(() => {
       root.render(
         <MessageList
           messages={[
+            {
+              id: "user-1",
+              role: "user",
+              content: "12화 기준으로 서린이 봉인 약 정체를 알아?",
+            },
             {
               id: "assistant-1",
               role: "assistant",
@@ -110,25 +121,41 @@ describe("MessageList safety label", () => {
     });
 
     const text = container.textContent ?? "";
-    expect(text).toContain("chunk-1");
-    expect(text).toContain("근거 답변");
-    expect(text).toContain("chapter-12 · offset 42");
+    expect(text).toContain("근거 보기 1");
+    expect(text).not.toContain("chunk-1");
+    expect(text).not.toContain("offset 42");
     expect(text).toContain(chapter12.canon);
-    expect(text.indexOf(chapter12.canon)).toBeLessThan(
-      text.indexOf("12화 기준으로 서린은 아직 봉인 약의 정체를 모릅니다."),
-    );
   });
 
-  it("renders advisory answers separately from canon answers", () => {
+  it("renders advisory answers without manuscript grounding chrome", () => {
     act(() => {
       root.render(
         <MessageList
           messages={[
             {
+              id: "user-1",
+              role: "user",
+              content: "ㅎㅇ",
+            },
+            {
               id: "assistant-1",
               role: "assistant",
-              content: "일반 조언으로는 갈등 선택지를 둘로 나누는 방법이 있습니다.",
+              content: "안녕하세요.",
               answerMode: "ADVISORY",
+              evidence: [
+                {
+                  chunkId: "chunk-1",
+                  chapterId: chapter12.id,
+                  offset: 42,
+                  quote: chapter12.canon,
+                },
+              ],
+              safety: {
+                label: "inferred",
+                message: "근거는 있지만 문장별 검증 전이므로 추정 답변입니다.",
+                blocksConfirmedAnswer: false,
+                reasons: ["inferred"],
+              },
             },
           ]}
           onJumpEvidence={vi.fn()}
@@ -136,7 +163,10 @@ describe("MessageList safety label", () => {
       );
     });
 
-    expect(container.textContent).toContain("일반 조언");
+    expect(container.textContent).toContain("안녕하세요.");
+    expect(container.textContent).not.toContain("일반 답변");
+    expect(container.textContent).not.toContain("근거 보기");
+    expect(container.textContent).not.toContain("추정");
   });
 
   it("does not show a confirmed label when the answer has no evidence", () => {
@@ -144,6 +174,11 @@ describe("MessageList safety label", () => {
       root.render(
         <MessageList
           messages={[
+            {
+              id: "user-1",
+              role: "user",
+              content: "이 설정 정사야?",
+            },
             {
               id: "assistant-1",
               role: "assistant",

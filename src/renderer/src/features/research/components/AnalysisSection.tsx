@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import { Bot, Maximize2 } from "lucide-react";
@@ -7,30 +7,12 @@ import { useChapterStore } from "@renderer/features/manuscript/stores/chapterSto
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { MessageList } from "./analysisSection/chat/MessageList";
 import { PromptComposer } from "./analysisSection/chat/PromptComposer";
-import { ConflictQueuePanel } from "./analysisSection/review/queue/ConflictQueuePanel";
-import { EntityAliasReviewPanel } from "./analysisSection/review/queue/EntityAliasReviewPanel";
-import { EntityReviewPanel } from "./analysisSection/review/queue/EntityReviewPanel";
-import { EpisodeReviewPanel } from "./analysisSection/review/queue/EpisodeReviewPanel";
-import { FactReviewPanel } from "./analysisSection/review/queue/FactReviewPanel";
-import { StaleEvidenceReviewPanel } from "./analysisSection/review/queue/StaleEvidenceReviewPanel";
-import { MemoryEvalReportPanel } from "./analysisSection/review/evaluation/MemoryEvalReportPanel";
+import { NarrativeSummaryStatusPanel } from "./analysisSection/review/summary/NarrativeSummaryStatusPanel";
 import { SummaryDrawer } from "./analysisSection/review/summary/SummaryDrawer";
 import type { MemoryScope } from "./analysisSection/shared/types";
-import type { AnalysisConflictItem } from "./analysisSection/shared/types";
 import { useAnalysisRuntime } from "./analysisSection/runtime/useAnalysisRuntime";
-import { useMemoryEvalPanel } from "./analysisSection/review/evaluation/useMemoryEvalPanel";
-import { useMemoryReviewQueues } from "./analysisSection/review/queue/useMemoryReviewQueues";
 import { useRagChat } from "./analysisSection/chat/useRagChat";
 import { useAnalysisStore } from "../stores/analysisStore";
-
-const formatConflictFact = (
-  fact: AnalysisConflictItem["invalidatedFact"],
-): string => {
-  const subject = fact.subjectEntityName ?? fact.subjectEntityId;
-  const object =
-    fact.objectEntityName ?? fact.objectValue ?? fact.objectEntityId ?? "";
-  return `${subject} -> ${fact.predicate}${object ? ` -> ${object}` : ""}`;
-};
 
 interface FloatingWrapperProps {
   children: React.ReactNode;
@@ -268,11 +250,27 @@ export default function AnalysisSection() {
     [chapters],
   );
 
-  const { viewMode, setViewMode, setMinimized } = useAnalysisStore(
+  const {
+    viewMode,
+    setViewMode,
+    setMinimized,
+    showNarrativeSummaryStatus,
+    setShowNarrativeSummaryStatus,
+    narrativeSummaryStatus,
+    narrativeSummaryStatusLoading,
+    narrativeSummaryStatusError,
+    loadNarrativeSummaryStatus,
+  } = useAnalysisStore(
     useShallow((state) => ({
       viewMode: state.viewMode,
       setViewMode: state.setViewMode,
       setMinimized: state.setMinimized,
+      showNarrativeSummaryStatus: state.showNarrativeSummaryStatus,
+      setShowNarrativeSummaryStatus: state.setShowNarrativeSummaryStatus,
+      narrativeSummaryStatus: state.narrativeSummaryStatus,
+      narrativeSummaryStatusLoading: state.narrativeSummaryStatusLoading,
+      narrativeSummaryStatusError: state.narrativeSummaryStatusError,
+      loadNarrativeSummaryStatus: state.loadNarrativeSummaryStatus,
     }))
   );
 
@@ -282,22 +280,12 @@ export default function AnalysisSection() {
     chapterId: timelineChapter?.id,
     memoryScope,
   });
-  const review = useMemoryReviewQueues({
-    projectId: currentProject?.id,
-    chapterId: timelineChapter?.id,
-    memoryScope,
-  });
-  const evalPanel = useMemoryEvalPanel({
-    projectId: currentProject?.id,
-  });
 
-  const reviewCount =
-    (review.conflictQueueItems?.length ?? 0) +
-    (review.factReviewItems?.length ?? 0) +
-    (review.episodeReviewItems?.length ?? 0) +
-    (review.entityReviewItems?.length ?? 0) +
-    (review.entityAliasReviewItems?.length ?? 0) +
-    (review.staleEvidenceReviewItems?.length ?? 0);
+  useEffect(() => {
+    if (showNarrativeSummaryStatus && currentProject) {
+      void loadNarrativeSummaryStatus(currentProject.id);
+    }
+  }, [showNarrativeSummaryStatus, currentProject, loadNarrativeSummaryStatus]);
 
   const disabled = !currentProject;
   const isEmpty = chat.messages.length === 0;
@@ -332,10 +320,8 @@ export default function AnalysisSection() {
       timelineChapters={timelineChapters}
       timelineChapterId={timelineChapter?.id}
       onChangeTimelineChapter={setTimelineChapterId}
-      summaryActive={review.showNarrativeSummaryStatus}
-      onToggleSummary={() =>
-        review.setShowNarrativeSummaryStatus((prev) => !prev)
-      }
+      summaryActive={showNarrativeSummaryStatus}
+      onToggleSummary={() => setShowNarrativeSummaryStatus((prev) => !prev)}
       floating={floating}
       onMinimize={() => setMinimized(true)}
       onDock={() => {
@@ -386,11 +372,6 @@ export default function AnalysisSection() {
               }`}
             >
               {t("analysis.tabs.review")}
-              {reviewCount > 0 && (
-                <span className="w-3.5 h-3.5 text-[8px] font-bold rounded-full bg-destructive text-on-accent flex items-center justify-center shrink-0 ml-1 shadow-sm">
-                  {reviewCount}
-                </span>
-              )}
             </button>
           </div>
 
@@ -415,101 +396,25 @@ export default function AnalysisSection() {
 
       {/* 서사 요약 드로어 (상단 슬라이드 인) */}
       <SummaryDrawer
-        open={review.showNarrativeSummaryStatus}
-        loading={review.narrativeSummaryStatusLoading}
-        error={review.narrativeSummaryStatusError}
-        status={review.narrativeSummaryStatus}
-        onClose={() => review.setShowNarrativeSummaryStatus(false)}
+        open={showNarrativeSummaryStatus}
+        loading={narrativeSummaryStatusLoading}
+        error={narrativeSummaryStatusError}
+        status={narrativeSummaryStatus}
+        onClose={() => setShowNarrativeSummaryStatus(false)}
       />
 
       {/* 본문 콘텐츠 — 탭 분기 */}
       {!floatingCompact && (
         <div data-no-drag className="flex-1 overflow-y-auto px-5 pt-4 min-h-0 cursor-auto custom-scrollbar">
           {sectionTab === "review" ? (
-            /* 설정 검토 탭: 7개 리뷰 패널만 표시 */
-            <div className="mb-4 space-y-2.5">
-              <ConflictQueuePanel
-                visible={review.showConflictQueue}
-                loading={review.conflictQueueLoading}
-                error={review.conflictQueueError}
-                items={review.conflictQueueItems}
-                reviewFilter={review.conflictQueueReviewFilter}
-                onChangeReviewFilter={review.setConflictQueueReviewFilter}
-                resolvingConflictId={review.resolvingConflictId}
-                onToggle={() => review.setShowConflictQueue((prev) => !prev)}
-                renderFact={formatConflictFact}
-                onResolve={review.handleResolveConflict}
-                onDefer={review.handleDeferConflict}
-              />
-              <FactReviewPanel
-                visible={review.showFactReviewQueue}
-                loading={review.factReviewLoading}
-                error={review.factReviewError}
-                items={review.factReviewItems}
-                mutatingFactId={review.mutatingFactId}
-                onToggle={() => review.setShowFactReviewQueue((prev) => !prev)}
-                onConfirm={review.handleConfirmFact}
-                onReject={review.handleRejectFact}
-              />
-              <EpisodeReviewPanel
-                visible={review.showEpisodeReviewQueue}
-                loading={review.episodeReviewLoading}
-                error={review.episodeReviewError}
-                items={review.episodeReviewItems}
-                mutatingEpisodeId={review.mutatingEpisodeId}
-                onToggle={() => review.setShowEpisodeReviewQueue((prev) => !prev)}
-                onConfirm={review.handleConfirmEpisode}
-                onReject={review.handleRejectEpisode}
-              />
-              <EntityReviewPanel
-                visible={review.showEntityReviewQueue}
-                loading={review.entityReviewLoading}
-                error={review.entityReviewError}
-                items={review.entityReviewItems}
-                mutatingEntityId={review.mutatingEntityId}
-                onToggle={() => review.setShowEntityReviewQueue((prev) => !prev)}
-                onConfirm={review.handleConfirmEntity}
-                onReject={review.handleRejectEntity}
-              />
-              <EntityAliasReviewPanel
-                visible={review.showEntityAliasReviewQueue}
-                loading={review.entityAliasReviewLoading}
-                error={review.entityAliasReviewError}
-                items={review.entityAliasReviewItems}
-                mutatingAliasId={review.mutatingAliasId}
-                onToggle={() => review.setShowEntityAliasReviewQueue((prev) => !prev)}
-                onConfirm={review.handleConfirmEntityAlias}
-                onReject={review.handleRejectEntityAlias}
-                onMerge={review.handleMergeEntityAlias}
-                onSplit={review.handleSplitEntityAlias}
-              />
-              <StaleEvidenceReviewPanel
-                visible={review.showStaleEvidenceReviewQueue}
-                loading={review.staleEvidenceReviewLoading}
-                error={review.staleEvidenceReviewError}
-                items={review.staleEvidenceReviewItems}
-                mutatingStaleEvidenceId={review.mutatingStaleEvidenceId}
-                repairing={review.repairingStaleEvidenceLinks}
-                onToggle={() => review.setShowStaleEvidenceReviewQueue((prev) => !prev)}
-                onAction={review.handleReviewStaleEvidence}
-                onRepair={review.handleRepairStaleEvidence}
-              />
-              <MemoryEvalReportPanel
-                visible={evalPanel.showMemoryEvalReport}
-                loading={evalPanel.memoryEvalLoading}
-                error={evalPanel.memoryEvalError}
-                report={evalPanel.memoryEvalReport}
-                intentCalibrationReport={evalPanel.intentCalibrationReport}
-                episodeCalibrationReport={evalPanel.episodeCalibrationReport}
-                onToggle={() =>
-                  evalPanel.setShowMemoryEvalReport((prev) => !prev)
-                }
-                onRun={evalPanel.handleRunMemoryEval}
-                onRunIntentCalibration={evalPanel.handleRunIntentCalibration}
-                onRunEpisodeCalibration={evalPanel.handleRunEpisodeCalibration}
-                pendingFeedbackKey={evalPanel.pendingFeedbackKey}
-                onRecordAnswerWrong={evalPanel.handleRecordAnswerWrong}
-                onRecordEvidenceHelpful={evalPanel.handleRecordEvidenceHelpful}
+            /* 설정 검토 탭: 서사 요약만 표시 */
+            <div className="mb-4">
+              <NarrativeSummaryStatusPanel
+                visible={showNarrativeSummaryStatus}
+                onToggle={() => setShowNarrativeSummaryStatus((prev) => !prev)}
+                loading={narrativeSummaryStatusLoading}
+                error={narrativeSummaryStatusError}
+                status={narrativeSummaryStatus}
               />
             </div>
           ) : (

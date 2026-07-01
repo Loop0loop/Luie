@@ -25,94 +25,6 @@ vi.mock("../../src/renderer/src/features/research/components/analysisSection/run
   }),
 }));
 
-vi.mock("../../src/renderer/src/features/research/components/analysisSection/review/evaluation/useMemoryEvalPanel.js", () => ({
-  useMemoryEvalPanel: () => ({
-    showMemoryEvalReport: false,
-    memoryEvalLoading: false,
-    memoryEvalError: null,
-    memoryEvalReport: null,
-    intentCalibrationReport: null,
-    episodeCalibrationReport: null,
-    setShowMemoryEvalReport: vi.fn(),
-    handleRunMemoryEval: vi.fn(),
-    handleRunIntentCalibration: vi.fn(),
-    handleRunEpisodeCalibration: vi.fn(),
-  }),
-}));
-
-vi.mock("../../src/renderer/src/features/research/components/analysisSection/review/queue/useMemoryReviewQueues.js", () => ({
-  useMemoryReviewQueues: () => ({
-    showConflictQueue: false,
-    conflictLoading: false,
-    conflictError: null,
-    conflictItems: [],
-    resolvingConflictId: null,
-    setShowConflictQueue: vi.fn(),
-    handleResolveConflict: vi.fn(),
-
-    showEpisodeReview: false,
-    episodeReviewLoading: false,
-    episodeReviewError: null,
-    episodeReviewItems: [],
-    rejectingEpisodeId: null,
-    setShowEpisodeReview: vi.fn(),
-    handleRejectEpisode: vi.fn(),
-
-    showFactReview: false,
-    factReviewLoading: false,
-    factReviewError: null,
-    factReviewItems: [],
-    mutatingFactId: null,
-    setShowFactReview: vi.fn(),
-    handleConfirmFact: vi.fn(),
-    handleRejectFact: vi.fn(),
-
-    showEntityReview: false,
-    entityReviewLoading: false,
-    entityReviewError: null,
-    entityReviewItems: [],
-    mutatingEntityId: null,
-    setShowEntityReview: vi.fn(),
-    handleConfirmEntity: vi.fn(),
-    handleRejectEntity: vi.fn(),
-
-    showEntityAliasReview: false,
-    entityAliasReviewLoading: false,
-    entityAliasReviewError: null,
-    entityAliasReviewItems: [],
-    mutatingAliasId: null,
-    setShowEntityAliasReview: vi.fn(),
-    handleConfirmEntityAlias: vi.fn(),
-    handleRejectEntityAlias: vi.fn(),
-    handleMergeEntityAlias: vi.fn(),
-    handleSplitEntityAlias: vi.fn(),
-
-    showNarrativeSummaryStatus: true,
-    narrativeSummaryStatusLoading: false,
-    narrativeSummaryStatusError: null,
-    narrativeSummaryStatus: {
-      totalCount: 5,
-      staleCount: 1,
-      byType: { character: 3, plot: 2 },
-      summaries: [
-        {
-          id: "summary-1",
-          title: "주인공의 결심",
-          scopeType: "chapter",
-          scopeId: "chapter-1",
-          summaryType: "character",
-          isStale: false,
-          sourceCount: 2,
-          confidence: 90,
-          status: "confirmed",
-          summary: "주인공은 모험을 떠나기로 결심한다.",
-        },
-      ],
-    },
-    setShowNarrativeSummaryStatus: vi.fn(),
-  }),
-}));
-
 vi.mock("../../src/renderer/src/features/research/components/analysisSection/chat/useRagChat.js", () => ({
   useRagChat: () => ({
     messages: [],
@@ -206,7 +118,30 @@ describe("AnalysisViewMode", () => {
     document.body.innerHTML = "";
   });
 
-  it("removes 6 panels (ConflictQueuePanel, EpisodeReviewPanel, etc.) and keeps NarrativeSummaryStatusPanel", () => {
+  it("removes 6 panels (ConflictQueuePanel, EpisodeReviewPanel, etc.) and keeps NarrativeSummaryStatusPanel", async () => {
+    useAnalysisStore.setState({
+      showNarrativeSummaryStatus: true,
+      narrativeSummaryStatus: {
+        totalCount: 5,
+        staleCount: 1,
+        byType: { character: 3, plot: 2 },
+        summaries: [
+          {
+            id: "summary-1",
+            title: "주인공의 결심",
+            scopeType: "chapter",
+            scopeId: "chapter-1",
+            summaryType: "character",
+            isStale: false,
+            sourceCount: 2,
+            confidence: 90,
+            status: "confirmed",
+            summary: "주인공은 모험을 떠나기로 결심한다.",
+          },
+        ],
+      },
+    });
+
     const view = mountView(<AnalysisSection />);
     mountedViews.push(view);
 
@@ -225,6 +160,10 @@ describe("AnalysisViewMode", () => {
                       document.body.textContent?.includes(title);
       expect(hasText).toBeFalsy();
     });
+
+    // review 탭으로 전환해야 NarrativeSummaryStatusPanel이 노출됨
+    const reviewTabButton = view.container.querySelectorAll('[role="tab"]')[1];
+    await clickElement(reviewTabButton);
 
     // NarrativeSummaryStatusPanel의 타이틀 "서사 요약"은 유지되어야 함
     const renderedText = readRenderedText(view.container);
