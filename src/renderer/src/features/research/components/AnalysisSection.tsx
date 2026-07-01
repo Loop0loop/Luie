@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
-import { Maximize2 } from "lucide-react";
+import { Bot, Maximize2 } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
@@ -186,8 +186,8 @@ function FloatingWrapper({ children, compact = false }: FloatingWrapperProps) {
   return (
     <div
       data-testid="analysis-floating-container"
-      className={`group fixed bottom-24 right-6 rounded-panel border border-border shadow-panel bg-panel/80 backdrop-blur-xl z-modal flex flex-col overflow-hidden cursor-grab active:cursor-grabbing ${
-        isDraggingState ? "transition-none" : "transition-all duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)]"
+      className={`group fixed bottom-24 right-6 rounded-3xl border border-border/30 bg-panel/80 dark:bg-panel/70 backdrop-blur-xl shadow-panel z-modal flex flex-col overflow-hidden cursor-grab active:cursor-grabbing ${
+        isDraggingState ? "transition-none" : "transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
       }`}
       style={{
         width: `${floatingSize.width}px`,
@@ -227,6 +227,7 @@ function FloatingWrapper({ children, compact = false }: FloatingWrapperProps) {
 
 export default function AnalysisSection() {
   const { t } = useTranslation();
+  const [sectionTab, setSectionTab] = useState<"chat" | "review">("chat");
   const { currentItem: currentChapter, items: chapters } = useChapterStore(
     useShallow((state) => ({
       currentItem: state.currentItem,
@@ -283,6 +284,14 @@ export default function AnalysisSection() {
     projectId: currentProject?.id,
   });
 
+  const reviewCount =
+    (review.conflictQueueItems?.length ?? 0) +
+    (review.factReviewItems?.length ?? 0) +
+    (review.episodeReviewItems?.length ?? 0) +
+    (review.entityReviewItems?.length ?? 0) +
+    (review.entityAliasReviewItems?.length ?? 0) +
+    (review.staleEvidenceReviewItems?.length ?? 0);
+
   const disabled = !currentProject;
   const isEmpty = chat.messages.length === 0;
   const floating = viewMode === "floatingView";
@@ -331,22 +340,53 @@ export default function AnalysisSection() {
       data-testid="analysis-section-content"
       className={`relative text-fg flex flex-col overflow-hidden ${
         floatingCompact ? "" : "h-full"
-      } ${floating ? "bg-app/40" : "bg-panel"}`}
+      } ${floating ? "bg-transparent" : "bg-panel"}`}
     >
-      {/* fixView 모드일 때만 고정 헤더와 토글 버튼 렌더링 */}
-      {viewMode === "fixView" && (
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-element/20 select-none">
-          <span className="text-xs font-semibold text-fg/70 tracking-wide">
-            {t("analysis.title")}
-          </span>
-          <button
-            data-testid="view-mode-toggle"
-            onClick={() => setViewMode("floatingView")}
-            className="p-1.5 rounded-control hover:bg-surface-hover text-muted hover:text-fg transition-all duration-150 active:scale-95"
-            title={t("analysis.viewMode.switchToFloating")}
-          >
-            <Maximize2 className="w-4 h-4" />
-          </button>
+      {/* 탭 헤더 영역 — 컴팩트 뷰가 아닐 때 항상 노출 */}
+      {!floatingCompact && (
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border/15 bg-element/5 select-none shrink-0 gap-2">
+          {/* 세련된 알약 형태 탭 버튼들 */}
+          <div className="flex items-center gap-0.5 bg-element/10 border border-border/15 p-0.5 rounded-full text-[11px] font-medium tracking-tight text-muted">
+            <button
+              type="button"
+              onClick={() => setSectionTab("chat")}
+              className={`rounded-full px-3.5 py-1 transition-colors duration-200 active:scale-95 ${
+                sectionTab === "chat"
+                  ? "bg-surface text-fg shadow-sm font-semibold"
+                  : "hover:text-fg"
+              }`}
+            >
+              {t("analysis.tabs.chat")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSectionTab("review")}
+              className={`rounded-full px-3.5 py-1 flex items-center transition-colors duration-200 active:scale-95 ${
+                sectionTab === "review"
+                  ? "bg-surface text-fg shadow-sm font-semibold"
+                  : "hover:text-fg"
+              }`}
+            >
+              {t("analysis.tabs.review")}
+              {reviewCount > 0 && (
+                <span className="w-3.5 h-3.5 text-[8px] font-bold rounded-full bg-destructive text-on-accent flex items-center justify-center shrink-0 ml-1 shadow-sm">
+                  {reviewCount}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* 뷰 모드 전환 토글 (고정 뷰일 때만 보임) */}
+          {viewMode === "fixView" && (
+            <button
+              data-testid="view-mode-toggle"
+              onClick={() => setViewMode("floatingView")}
+              className="p-1.5 rounded-full hover:bg-surface-hover text-muted hover:text-fg transition-[colors,transform] duration-150 active:scale-90 shrink-0"
+              title={t("analysis.viewMode.switchToFloating")}
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       )}
 
@@ -359,108 +399,165 @@ export default function AnalysisSection() {
         onClose={() => review.setShowNarrativeSummaryStatus(false)}
       />
 
-      {/* 메시지 — 빈 상태에서는 영역 자체를 접어 프롬프트만 노출 */}
+      {/* 본문 콘텐츠 — 탭 분기 */}
       {!floatingCompact && (
-        <div data-no-drag className="flex-1 overflow-y-auto px-4 pt-4 min-h-0 cursor-auto custom-scrollbar">
-          <div className="mb-4 space-y-2">
-            <ConflictQueuePanel
-              visible={review.showConflictQueue}
-              loading={review.conflictQueueLoading}
-              error={review.conflictQueueError}
-              items={review.conflictQueueItems}
-              reviewFilter={review.conflictQueueReviewFilter}
-              onChangeReviewFilter={review.setConflictQueueReviewFilter}
-              resolvingConflictId={review.resolvingConflictId}
-              onToggle={() => review.setShowConflictQueue((prev) => !prev)}
-              renderFact={formatConflictFact}
-              onResolve={review.handleResolveConflict}
-              onDefer={review.handleDeferConflict}
-            />
-            <FactReviewPanel
-              visible={review.showFactReviewQueue}
-              loading={review.factReviewLoading}
-              error={review.factReviewError}
-              items={review.factReviewItems}
-              mutatingFactId={review.mutatingFactId}
-              onToggle={() => review.setShowFactReviewQueue((prev) => !prev)}
-              onConfirm={review.handleConfirmFact}
-              onReject={review.handleRejectFact}
-            />
-            <EpisodeReviewPanel
-              visible={review.showEpisodeReviewQueue}
-              loading={review.episodeReviewLoading}
-              error={review.episodeReviewError}
-              items={review.episodeReviewItems}
-              mutatingEpisodeId={review.mutatingEpisodeId}
-              onToggle={() => review.setShowEpisodeReviewQueue((prev) => !prev)}
-              onConfirm={review.handleConfirmEpisode}
-              onReject={review.handleRejectEpisode}
-            />
-            <EntityReviewPanel
-              visible={review.showEntityReviewQueue}
-              loading={review.entityReviewLoading}
-              error={review.entityReviewError}
-              items={review.entityReviewItems}
-              mutatingEntityId={review.mutatingEntityId}
-              onToggle={() => review.setShowEntityReviewQueue((prev) => !prev)}
-              onConfirm={review.handleConfirmEntity}
-              onReject={review.handleRejectEntity}
-            />
-            <EntityAliasReviewPanel
-              visible={review.showEntityAliasReviewQueue}
-              loading={review.entityAliasReviewLoading}
-              error={review.entityAliasReviewError}
-              items={review.entityAliasReviewItems}
-              mutatingAliasId={review.mutatingAliasId}
-              onToggle={() => review.setShowEntityAliasReviewQueue((prev) => !prev)}
-              onConfirm={review.handleConfirmEntityAlias}
-              onReject={review.handleRejectEntityAlias}
-              onMerge={review.handleMergeEntityAlias}
-              onSplit={review.handleSplitEntityAlias}
-            />
-            <StaleEvidenceReviewPanel
-              visible={review.showStaleEvidenceReviewQueue}
-              loading={review.staleEvidenceReviewLoading}
-              error={review.staleEvidenceReviewError}
-              items={review.staleEvidenceReviewItems}
-              mutatingStaleEvidenceId={review.mutatingStaleEvidenceId}
-              repairing={review.repairingStaleEvidenceLinks}
-              onToggle={() => review.setShowStaleEvidenceReviewQueue((prev) => !prev)}
-              onAction={review.handleReviewStaleEvidence}
-              onRepair={review.handleRepairStaleEvidence}
-            />
-            <MemoryEvalReportPanel
-              visible={evalPanel.showMemoryEvalReport}
-              loading={evalPanel.memoryEvalLoading}
-              error={evalPanel.memoryEvalError}
-              report={evalPanel.memoryEvalReport}
-              intentCalibrationReport={evalPanel.intentCalibrationReport}
-              episodeCalibrationReport={evalPanel.episodeCalibrationReport}
-              onToggle={() =>
-                evalPanel.setShowMemoryEvalReport((prev) => !prev)
-              }
-              onRun={evalPanel.handleRunMemoryEval}
-              onRunIntentCalibration={evalPanel.handleRunIntentCalibration}
-              onRunEpisodeCalibration={evalPanel.handleRunEpisodeCalibration}
-              pendingFeedbackKey={evalPanel.pendingFeedbackKey}
-              onRecordAnswerWrong={evalPanel.handleRecordAnswerWrong}
-              onRecordEvidenceHelpful={evalPanel.handleRecordEvidenceHelpful}
-            />
-          </div>
-          {!isEmpty && (
-            <div className="space-y-6">
-              <MessageList
-                messages={chat.messages}
-                onJumpEvidence={chat.handleJumpEvidence}
+        <div data-no-drag className="flex-1 overflow-y-auto px-5 pt-4 min-h-0 cursor-auto custom-scrollbar">
+          {sectionTab === "review" ? (
+            /* 설정 검토 탭: 7개 리뷰 패널만 표시 */
+            <div className="mb-4 space-y-2.5">
+              <ConflictQueuePanel
+                visible={review.showConflictQueue}
+                loading={review.conflictQueueLoading}
+                error={review.conflictQueueError}
+                items={review.conflictQueueItems}
+                reviewFilter={review.conflictQueueReviewFilter}
+                onChangeReviewFilter={review.setConflictQueueReviewFilter}
+                resolvingConflictId={review.resolvingConflictId}
+                onToggle={() => review.setShowConflictQueue((prev) => !prev)}
+                renderFact={formatConflictFact}
+                onResolve={review.handleResolveConflict}
+                onDefer={review.handleDeferConflict}
               />
-              <div ref={chat.bottomRef} />
+              <FactReviewPanel
+                visible={review.showFactReviewQueue}
+                loading={review.factReviewLoading}
+                error={review.factReviewError}
+                items={review.factReviewItems}
+                mutatingFactId={review.mutatingFactId}
+                onToggle={() => review.setShowFactReviewQueue((prev) => !prev)}
+                onConfirm={review.handleConfirmFact}
+                onReject={review.handleRejectFact}
+              />
+              <EpisodeReviewPanel
+                visible={review.showEpisodeReviewQueue}
+                loading={review.episodeReviewLoading}
+                error={review.episodeReviewError}
+                items={review.episodeReviewItems}
+                mutatingEpisodeId={review.mutatingEpisodeId}
+                onToggle={() => review.setShowEpisodeReviewQueue((prev) => !prev)}
+                onConfirm={review.handleConfirmEpisode}
+                onReject={review.handleRejectEpisode}
+              />
+              <EntityReviewPanel
+                visible={review.showEntityReviewQueue}
+                loading={review.entityReviewLoading}
+                error={review.entityReviewError}
+                items={review.entityReviewItems}
+                mutatingEntityId={review.mutatingEntityId}
+                onToggle={() => review.setShowEntityReviewQueue((prev) => !prev)}
+                onConfirm={review.handleConfirmEntity}
+                onReject={review.handleRejectEntity}
+              />
+              <EntityAliasReviewPanel
+                visible={review.showEntityAliasReviewQueue}
+                loading={review.entityAliasReviewLoading}
+                error={review.entityAliasReviewError}
+                items={review.entityAliasReviewItems}
+                mutatingAliasId={review.mutatingAliasId}
+                onToggle={() => review.setShowEntityAliasReviewQueue((prev) => !prev)}
+                onConfirm={review.handleConfirmEntityAlias}
+                onReject={review.handleRejectEntityAlias}
+                onMerge={review.handleMergeEntityAlias}
+                onSplit={review.handleSplitEntityAlias}
+              />
+              <StaleEvidenceReviewPanel
+                visible={review.showStaleEvidenceReviewQueue}
+                loading={review.staleEvidenceReviewLoading}
+                error={review.staleEvidenceReviewError}
+                items={review.staleEvidenceReviewItems}
+                mutatingStaleEvidenceId={review.mutatingStaleEvidenceId}
+                repairing={review.repairingStaleEvidenceLinks}
+                onToggle={() => review.setShowStaleEvidenceReviewQueue((prev) => !prev)}
+                onAction={review.handleReviewStaleEvidence}
+                onRepair={review.handleRepairStaleEvidence}
+              />
+              <MemoryEvalReportPanel
+                visible={evalPanel.showMemoryEvalReport}
+                loading={evalPanel.memoryEvalLoading}
+                error={evalPanel.memoryEvalError}
+                report={evalPanel.memoryEvalReport}
+                intentCalibrationReport={evalPanel.intentCalibrationReport}
+                episodeCalibrationReport={evalPanel.episodeCalibrationReport}
+                onToggle={() =>
+                  evalPanel.setShowMemoryEvalReport((prev) => !prev)
+                }
+                onRun={evalPanel.handleRunMemoryEval}
+                onRunIntentCalibration={evalPanel.handleRunIntentCalibration}
+                onRunEpisodeCalibration={evalPanel.handleRunEpisodeCalibration}
+                pendingFeedbackKey={evalPanel.pendingFeedbackKey}
+                onRecordAnswerWrong={evalPanel.handleRecordAnswerWrong}
+                onRecordEvidenceHelpful={evalPanel.handleRecordEvidenceHelpful}
+              />
+            </div>
+          ) : (
+            /* 채팅 대화 탭: GPT/클로드 대화창 형식 */
+            <div className="h-full flex flex-col min-h-0">
+              {isEmpty ? (
+                /* 빈 상태: 가이드와 4가지 빠른 프롬프트 카드 */
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-6 select-none animate-[fadeIn_0.4s_ease-out]">
+                  <div className="w-11 h-11 rounded-panel bg-element/20 border border-border/10 flex items-center justify-center shadow-sm mb-4">
+                    <Bot className="w-5 h-5 text-muted" />
+                  </div>
+                  <h3 className="text-[13px] font-semibold text-fg/90 mb-2 tracking-tight">
+                    {t("analysis.emptyState.title")}
+                  </h3>
+                  <p className="text-[11px] text-muted max-w-[250px] leading-relaxed mb-6">
+                    원고의 등장인물 관계, 세계관 설정 충돌, 복선 회수 여부 등을 AI와 함께 점검해 보세요.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 w-full max-w-[340px]">
+                    <button
+                      type="button"
+                      onClick={() => chat.setInput(t("analysis.emptyState.summaryPrompt"))}
+                      className="rounded-control border border-border/10 hover:border-accent/20 bg-element/5 hover:bg-element/12 p-3 text-left text-xs transition-[colors,transform] duration-200 hover:scale-[1.01] active:scale-98"
+                    >
+                      <div className="font-semibold mb-0.5 text-fg/80">{t("analysis.emptyState.summaryLabel")}</div>
+                      <div className="text-[10px] text-muted truncate">{t("analysis.emptyState.summaryPrompt")}</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => chat.setInput(t("analysis.emptyState.relationPrompt"))}
+                      className="rounded-control border border-border/10 hover:border-accent/20 bg-element/5 hover:bg-element/12 p-3 text-left text-xs transition-[colors,transform] duration-200 hover:scale-[1.01] active:scale-98"
+                    >
+                      <div className="font-semibold mb-0.5 text-fg/80">{t("analysis.emptyState.relationLabel")}</div>
+                      <div className="text-[10px] text-muted truncate">{t("analysis.emptyState.relationPrompt")}</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => chat.setInput(t("analysis.emptyState.conflictPrompt"))}
+                      className="rounded-control border border-border/10 hover:border-accent/20 bg-element/5 hover:bg-element/12 p-3 text-left text-xs transition-[colors,transform] duration-200 hover:scale-[1.01] active:scale-98"
+                    >
+                      <div className="font-semibold mb-0.5 text-fg/80">{t("analysis.emptyState.conflictLabel")}</div>
+                      <div className="text-[10px] text-muted truncate">{t("analysis.emptyState.conflictPrompt")}</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => chat.setInput(t("analysis.emptyState.foreshadowPrompt"))}
+                      className="rounded-control border border-border/10 hover:border-accent/20 bg-element/5 hover:bg-element/12 p-3 text-left text-xs transition-[colors,transform] duration-200 hover:scale-[1.01] active:scale-98"
+                    >
+                      <div className="font-semibold mb-0.5 text-fg/80">{t("analysis.emptyState.foreshadowLabel")}</div>
+                      <div className="text-[10px] text-muted truncate">{t("analysis.emptyState.foreshadowPrompt")}</div>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* 메시지가 있을 때는 메시지 리스트 렌더링 */
+                <div className="space-y-6 pb-4">
+                  <MessageList
+                    messages={chat.messages}
+                    onJumpEvidence={chat.handleJumpEvidence}
+                  />
+                  <div ref={chat.bottomRef} />
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
 
-      {/* 입력창 — 하단 고정 (flow) */}
-      <div className="px-3 pb-3 pt-2 shrink-0">{composer}</div>
+      {/* 입력창 — 채팅 탭이거나 플로팅 컴팩트 뷰일 때만 노출 */}
+      {(sectionTab === "chat" || floatingCompact) && (
+        <div className="px-3 pb-3 pt-2 shrink-0">{composer}</div>
+      )}
     </div>
   );
 

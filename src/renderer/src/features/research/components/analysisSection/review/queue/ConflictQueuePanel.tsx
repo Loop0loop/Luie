@@ -56,7 +56,7 @@ export function ConflictQueuePanel({
 }: ConflictQueuePanelProps) {
   const { t } = useTranslation();
   return (
-    <div className="rounded-panel border border-border bg-surface px-3 py-2 text-xs">
+    <div className="rounded-panel border border-border/40 bg-surface/40 dark:bg-surface/20 backdrop-blur-md px-3.5 py-2.5 text-xs shadow-sm">
       <button
         type="button"
         onClick={onToggle}
@@ -73,10 +73,10 @@ export function ConflictQueuePanel({
                 key={filter}
                 type="button"
                 onClick={() => onChangeReviewFilter(filter)}
-                className={`rounded border px-2 py-1 text-[11px] ${
+                className={`rounded-full border px-3 py-1 text-[11px] transition-[colors,transform] duration-150 active:scale-95 ${
                   reviewFilter === filter
-                    ? "border-accent text-fg"
-                    : "border-border text-muted hover:text-fg"
+                    ? "border-accent/60 bg-accent/10 text-fg"
+                    : "border-border/40 text-muted hover:text-fg hover:bg-surface-hover"
                 }`}
               >
                 {t(`analysis.review.queue.conflict.filter.${filter}`)}
@@ -93,7 +93,7 @@ export function ConflictQueuePanel({
             items.map((item) => (
               <div
                 key={item.conflictId}
-                className="rounded border border-border bg-panel/60 p-2"
+                className="rounded-control border border-border/40 bg-element/40 p-2.5 shadow-sm"
               >
                 <div className="flex flex-wrap items-center gap-1.5 font-medium text-fg/90">
                   <span>[{item.reason}]</span>
@@ -114,7 +114,7 @@ export function ConflictQueuePanel({
                     type="button"
                     onClick={() => onResolve(item, item.invalidatedFact.id)}
                     disabled={resolvingConflictId === item.conflictId}
-                    className="rounded border border-border px-2 py-1 text-[11px] text-muted hover:text-success disabled:opacity-50"
+                    className="rounded-control border border-border/40 px-2.5 py-1 text-[11px] text-muted hover:text-success hover:bg-success/5 active:scale-95 transition-[colors,transform] duration-150 disabled:opacity-50"
                   >
                     {t("analysis.review.queue.conflict.acceptPrior")}
                   </button>
@@ -122,7 +122,7 @@ export function ConflictQueuePanel({
                     type="button"
                     onClick={() => onResolve(item, item.invalidatingFact.id)}
                     disabled={resolvingConflictId === item.conflictId}
-                    className="rounded border border-border px-2 py-1 text-[11px] text-muted hover:text-success disabled:opacity-50"
+                    className="rounded-control border border-border/40 px-2.5 py-1 text-[11px] text-muted hover:text-success hover:bg-success/5 active:scale-95 transition-[colors,transform] duration-150 disabled:opacity-50"
                   >
                     {t("analysis.review.queue.conflict.acceptNew")}
                   </button>
@@ -133,7 +133,7 @@ export function ConflictQueuePanel({
                       resolvingConflictId === item.conflictId ||
                       item.reviewStatus === "deferred"
                     }
-                    className="rounded border border-border px-2 py-1 text-[11px] text-muted hover:text-fg disabled:opacity-50"
+                    className="rounded-control border border-border/40 px-2.5 py-1 text-[11px] text-muted hover:text-fg hover:bg-surface-hover active:scale-95 transition-[colors,transform] duration-150 disabled:opacity-50"
                   >
                     {t("analysis.review.queue.conflict.defer")}
                   </button>

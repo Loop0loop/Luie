@@ -151,20 +151,20 @@ export function PromptComposer({
       : t("analysis.composer.timelineCurrentOnly");
 
   return (
-    <div className="flex items-center gap-1.5 rounded-control bg-element/80 backdrop-blur-xl px-2 py-1.5 shadow-panel transition-all duration-300">
+    <div className="flex items-center gap-2 rounded-full bg-panel/40 dark:bg-panel/30 border border-border/30 backdrop-blur-2xl pl-3.5 pr-2 py-2 shadow-panel focus-within:border-accent/40 focus-within:ring-1 focus-within:ring-accent/15 transition-[colors,box-shadow,border-color] duration-200">
       {/* + 메뉴 — 서사 요약 / LLM Route / Memory Scope 통합 */}
       <div className="relative shrink-0" ref={menuRef}>
         <button
           type="button"
           onClick={() => setShowMenu((prev) => !prev)}
-          className={`flex w-8 h-8 items-center justify-center rounded-full transition-all duration-150 active:scale-90 ${
+          className={`flex w-7.5 h-7.5 items-center justify-center rounded-full border transition-[colors,transform] duration-150 active:scale-90 ${
             showMenu
-              ? "bg-surface-hover text-fg"
-              : "text-muted hover:bg-surface-hover hover:text-fg"
+              ? "bg-surface-hover border-border/40 text-fg"
+              : "border-border/10 text-muted hover:bg-surface-hover hover:text-fg"
           }`}
           title={t("analysis.composer.options")}
         >
-          <Plus className="w-5 h-5 shrink-0" />
+          <Plus className="w-4 h-4 shrink-0" />
         </button>
 
         {showMenu && (
@@ -270,7 +270,7 @@ export function PromptComposer({
               aria-label={t("analysis.composer.timelineChapterSelect")}
               value={timelineChapterId}
               onChange={(event) => onChangeTimelineChapter(event.target.value)}
-              className="mt-0.5 w-full truncate rounded border border-border bg-element px-1 py-0.5 text-[9px] leading-tight text-muted focus:outline-none"
+              className="mt-1 w-full truncate rounded-control border border-border/20 bg-element/30 hover:bg-element/50 px-2 py-0.5 text-[9px] leading-tight text-muted/95 focus:outline-none focus:ring-1 focus:ring-accent/20 transition-colors duration-150 select-none cursor-pointer"
             >
               {timelineChapters.map((chapter) => (
                 <option key={chapter.id} value={chapter.id}>
@@ -293,7 +293,7 @@ export function PromptComposer({
 
       {/* 입력 */}
       <textarea
-        className="flex-1 text-[13px] bg-transparent border-none resize-none text-fg/90 placeholder:text-muted/70 focus:outline-none min-h-[24px] max-h-[120px] py-1.5 px-1 align-middle"
+        className="flex-1 text-[13px] bg-transparent border-none resize-none text-fg/90 placeholder:text-muted/50 focus:outline-none min-h-[22px] max-h-[120px] py-1 px-1.5 align-middle custom-scrollbar leading-[1.5]"
         placeholder={t("analysis.composer.placeholder")}
         value={input}
         onChange={(event) => setInput(event.target.value)}
@@ -312,7 +312,7 @@ export function PromptComposer({
             type="button"
             data-testid="minimize-to-fab"
             onClick={onMinimize}
-            className="p-1.5 rounded-full text-muted hover:text-fg hover:bg-surface-hover transition-all duration-150 active:scale-90 shrink-0"
+            className="p-1.5 rounded-full text-muted hover:text-fg hover:bg-surface-hover transition-[colors,transform] duration-150 active:scale-90 shrink-0"
             title={t("analysis.composer.minimize")}
           >
             <Minus className="w-3.5 h-3.5" />
@@ -321,7 +321,7 @@ export function PromptComposer({
             type="button"
             data-testid="view-mode-toggle"
             onClick={onDock}
-            className="p-1.5 rounded-full text-muted hover:text-fg hover:bg-surface-hover transition-all duration-150 active:scale-90 shrink-0"
+            className="p-1.5 rounded-full text-muted hover:text-fg hover:bg-surface-hover transition-[colors,transform] duration-150 active:scale-90 shrink-0"
             title={t("analysis.viewMode.switchToDock")}
           >
             <Minimize2 className="w-3.5 h-3.5" />
@@ -334,12 +334,12 @@ export function PromptComposer({
         type="button"
         onClick={isStreaming ? onStop : onSend}
         disabled={sendDisabled}
-        className="w-8 h-8 rounded-full bg-accent text-on-accent hover:bg-accent-bg-hover disabled:bg-element disabled:text-muted flex items-center justify-center shadow-md disabled:shadow-none transition-all duration-150 hover:scale-105 active:scale-95 shrink-0"
+        className="w-7.5 h-7.5 rounded-full bg-accent text-on-accent hover:bg-accent-bg-hover disabled:bg-element/30 disabled:text-muted/50 flex items-center justify-center shadow-md disabled:shadow-none transition-[colors,transform,box-shadow] duration-150 hover:scale-105 active:scale-95 shrink-0"
       >
         {isStreaming ? (
-          <Square className="w-3.5 h-3.5 fill-current" />
+          <Square className="w-3 h-3 fill-current" />
         ) : (
-          <ArrowUp className="w-4 h-4 stroke-[2.5]" />
+          <ArrowUp className="w-3.5 h-3.5 stroke-[2.5]" />
         )}
       </button>
     </div>

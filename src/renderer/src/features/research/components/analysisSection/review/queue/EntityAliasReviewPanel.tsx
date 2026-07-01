@@ -36,7 +36,7 @@ export function EntityAliasReviewPanel({
   const [canonicalNames, setCanonicalNames] = useState<Record<string, string>>({});
 
   return (
-    <div className="rounded-panel border border-border bg-surface px-3 py-2 text-xs">
+    <div className="rounded-panel border border-border/40 bg-surface/40 dark:bg-surface/20 backdrop-blur-md px-3.5 py-2.5 text-xs shadow-sm">
       <button
         type="button"
         onClick={onToggle}
@@ -57,7 +57,7 @@ export function EntityAliasReviewPanel({
             items.map((item) => (
               <div
                 key={item.id}
-                className="rounded border border-border bg-panel/60 p-2"
+                className="rounded-control border border-border/40 bg-element/40 p-2.5 shadow-sm"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -71,7 +71,7 @@ export function EntityAliasReviewPanel({
                       type="button"
                       onClick={() => onConfirm(item)}
                       disabled={mutatingAliasId === item.id}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded border border-border text-muted hover:text-success disabled:opacity-50"
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/40 text-muted hover:border-success/30 hover:bg-success/10 disabled:opacity-50 transition-[colors,transform] duration-150 active:scale-90"
                       title={t("analysis.review.queue.alias.confirm")}
                       aria-label={`${formatAlias(item)} ${t("analysis.review.queue.alias.confirm")}`}
                     >
@@ -81,7 +81,7 @@ export function EntityAliasReviewPanel({
                       type="button"
                       onClick={() => onReject(item)}
                       disabled={mutatingAliasId === item.id}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded border border-border text-muted hover:text-danger disabled:opacity-50"
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/40 text-muted hover:border-danger/30 hover:bg-danger/10 disabled:opacity-50 transition-[colors,transform] duration-150 active:scale-90"
                       title={t("analysis.review.queue.alias.reject")}
                       aria-label={`${formatAlias(item)} ${t("analysis.review.queue.alias.reject")}`}
                     >
@@ -104,14 +104,14 @@ export function EntityAliasReviewPanel({
                       }))
                     }
                     placeholder="targetEntityId"
-                    className="min-w-0 flex-1 rounded border border-border bg-surface px-2 py-1 text-[11px] text-fg placeholder:text-muted"
+                    className="min-w-0 flex-1 rounded-control border border-border/40 bg-surface/50 focus:border-accent/40 focus:outline-none px-2 py-1.5 text-[11px] text-fg placeholder:text-muted"
                     aria-label={`${formatAlias(item)} targetEntityId`}
                   />
                   <button
                     type="button"
                     onClick={() => onMerge(item, (targetEntityIds[item.id] ?? "").trim())}
                     disabled={mutatingAliasId === item.id || !(targetEntityIds[item.id] ?? "").trim()}
-                    className="shrink-0 rounded border border-border px-2 py-1 text-[11px] text-muted hover:text-fg disabled:opacity-50"
+                    className="shrink-0 rounded-control border border-border/40 px-2.5 py-1 text-[11px] text-muted hover:text-fg hover:bg-surface-hover active:scale-95 transition-[colors,transform] duration-150 disabled:opacity-50"
                   >
                     {t("analysis.review.queue.alias.merge")}
                   </button>
@@ -127,14 +127,14 @@ export function EntityAliasReviewPanel({
                       }))
                     }
                     placeholder="canonicalName"
-                    className="min-w-0 flex-1 rounded border border-border bg-surface px-2 py-1 text-[11px] text-fg placeholder:text-muted"
+                    className="min-w-0 flex-1 rounded-control border border-border/40 bg-surface/50 focus:border-accent/40 focus:outline-none px-2 py-1.5 text-[11px] text-fg placeholder:text-muted"
                     aria-label={`${formatAlias(item)} canonicalName`}
                   />
                   <button
                     type="button"
                     onClick={() => onSplit(item, (canonicalNames[item.id] ?? item.alias).trim())}
                     disabled={mutatingAliasId === item.id || !(canonicalNames[item.id] ?? item.alias).trim()}
-                    className="shrink-0 rounded border border-border px-2 py-1 text-[11px] text-muted hover:text-fg disabled:opacity-50"
+                    className="shrink-0 rounded-control border border-border/40 px-2.5 py-1 text-[11px] text-muted hover:text-fg hover:bg-surface-hover active:scale-95 transition-[colors,transform] duration-150 disabled:opacity-50"
                   >
                     {t("analysis.review.queue.alias.split")}
                   </button>

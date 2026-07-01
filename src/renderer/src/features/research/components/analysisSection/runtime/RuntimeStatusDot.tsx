@@ -15,7 +15,7 @@ const resolveDotTone = (
 ): string => {
   if (runtimeInfo?.fallbackUsed) return "text-warning";
   if (sidecarStatus) return sidecarStatusTone(sidecarStatus.status);
-  return "text-emerald-500/80";
+  return "text-success-fg";
 };
 
 /**
@@ -50,7 +50,7 @@ export function RuntimeStatusDot({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex items-center justify-center w-6 h-6 rounded-full hover:bg-neutral-800/60 transition-colors"
+        className="flex items-center justify-center w-6 h-6 rounded-full hover:bg-surface-hover transition-colors"
         title={t("analysis.runtime.statusTitle")}
         aria-label={t("analysis.runtime.statusTitle")}
       >
