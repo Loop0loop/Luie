@@ -338,7 +338,10 @@ export default function AnalysisSection() {
       }
       floating={floating}
       onMinimize={() => setMinimized(true)}
-      onDock={() => setViewMode("fixView")}
+      onDock={() => {
+        setViewMode("fixView");
+        setMinimized(false);
+      }}
     />
   );
 
@@ -396,7 +399,10 @@ export default function AnalysisSection() {
             <button
               data-testid="view-mode-toggle"
               type="button"
-              onClick={() => setViewMode("floatingView")}
+              onClick={() => {
+                setViewMode("floatingView");
+                setMinimized(false);
+              }}
               className="p-1.5 rounded-full hover:bg-surface-hover text-muted hover:text-fg transition-[colors,transform] duration-150 active:scale-90 shrink-0"
               title={t("analysis.viewMode.switchToFloating")}
               aria-label={t("analysis.viewMode.switchToFloating")}
