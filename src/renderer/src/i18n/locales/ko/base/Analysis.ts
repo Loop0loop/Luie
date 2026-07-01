@@ -1,10 +1,15 @@
 export const koBaseAnalysis = {
   analysis: {
     title: "원고 분석",
+    tabs: {
+      chat: "채팅 대화",
+      review: "설정 검토",
+    },
     viewMode: {
       switchToFloating: "플로팅 뷰로 전환",
       switchToDock: "고정 뷰로 전환",
     },
+    resizeHandle: "리사이즈 핸들",
     emptyState: {
       title: "원고에 대해 무엇이든 물어보세요",
       summaryLabel: "이번 챕터 요약",

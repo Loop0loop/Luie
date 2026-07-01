@@ -45,6 +45,8 @@ export function RuntimeStatusDot({
 
   const tone = resolveDotTone(runtimeInfo, sidecarStatus);
 
+  const panelId = "runtime-status-panel";
+
   return (
     <div className="relative shrink-0" ref={ref}>
       <button
@@ -53,6 +55,9 @@ export function RuntimeStatusDot({
         className="flex items-center justify-center w-6 h-6 rounded-full hover:bg-surface-hover transition-colors"
         title={t("analysis.runtime.statusTitle")}
         aria-label={t("analysis.runtime.statusTitle")}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls={panelId}
       >
         <span
           className={`w-1.5 h-1.5 rounded-full bg-current ${tone} ${
@@ -62,7 +67,7 @@ export function RuntimeStatusDot({
       </button>
 
       {open && (
-        <div className="absolute bottom-9 right-0 w-64 z-50 animate-[fadeIn_0.15s_ease-out]">
+        <div id={panelId} role="dialog" aria-modal="false" className="absolute bottom-9 right-0 w-64 z-50 animate-[fadeIn_0.15s_ease-out]">
           <RuntimeStatusPanel
             runtimeInfo={runtimeInfo}
             sidecarStatus={sidecarStatus}

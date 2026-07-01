@@ -86,7 +86,7 @@ export function ConflictQueuePanel({
           {loading ? (
             <div className="text-muted">{t("analysis.review.queue.conflict.loading")}</div>
           ) : error ? (
-            <div className="text-danger">⚠️ {error}</div>
+            <div role="alert" className="text-danger">⚠️ {error}</div>
           ) : items.length === 0 ? (
             <div className="text-muted">{t("analysis.review.queue.conflict.empty")}</div>
           ) : (

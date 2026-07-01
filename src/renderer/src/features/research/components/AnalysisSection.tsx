@@ -37,7 +37,12 @@ interface FloatingWrapperProps {
   compact?: boolean;
 }
 
-function FloatingWrapper({ children, compact = false }: FloatingWrapperProps) {
+function FloatingWrapper({
+  children,
+  compact = false,
+}: FloatingWrapperProps) {
+  const { t } = useTranslation();
+  const resizeHandleLabel = t("analysis.resizeHandle", "Resize handle");
   const {
     floatingPosition,
     setFloatingPosition,
@@ -186,8 +191,10 @@ function FloatingWrapper({ children, compact = false }: FloatingWrapperProps) {
   return (
     <div
       data-testid="analysis-floating-container"
+      role="dialog"
+      aria-label={t("analysis.title")}
       className={`group fixed bottom-24 right-6 rounded-3xl border border-border/30 bg-panel/80 dark:bg-panel/70 backdrop-blur-xl shadow-panel z-modal flex flex-col overflow-hidden cursor-grab active:cursor-grabbing ${
-        isDraggingState ? "transition-none" : "transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+        isDraggingState ? "transition-none select-none" : "transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
       }`}
       style={{
         width: `${floatingSize.width}px`,
@@ -211,14 +218,14 @@ function FloatingWrapper({ children, compact = false }: FloatingWrapperProps) {
       {/* 전방향 리사이즈 핸들 — 컴팩트(빈 상태)에서는 숨김 */}
       {!compact && (
         <>
-          <div onPointerDown={handleResizeStart("n")} className="absolute top-0 left-3 right-3 h-1.5 cursor-ns-resize z-50" />
-          <div onPointerDown={handleResizeStart("s")} className="absolute bottom-0 left-3 right-3 h-1.5 cursor-ns-resize z-50" />
-          <div onPointerDown={handleResizeStart("e")} className="absolute right-0 top-3 bottom-3 w-1.5 cursor-ew-resize z-50" />
-          <div onPointerDown={handleResizeStart("w")} className="absolute left-0 top-3 bottom-3 w-1.5 cursor-ew-resize z-50" />
-          <div onPointerDown={handleResizeStart("nw")} className="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize z-50" />
-          <div onPointerDown={handleResizeStart("ne")} className="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize z-50" />
-          <div onPointerDown={handleResizeStart("sw")} className="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize z-50" />
-          <div onPointerDown={handleResizeStart("se")} className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize z-50" />
+          <div role="separator" aria-label={resizeHandleLabel} tabIndex={0} onPointerDown={handleResizeStart("n")} className="absolute top-0 left-3 right-3 h-1.5 cursor-ns-resize z-50" />
+          <div role="separator" aria-label={resizeHandleLabel} tabIndex={0} onPointerDown={handleResizeStart("s")} className="absolute bottom-0 left-3 right-3 h-1.5 cursor-ns-resize z-50" />
+          <div role="separator" aria-label={resizeHandleLabel} tabIndex={0} onPointerDown={handleResizeStart("e")} className="absolute right-0 top-3 bottom-3 w-1.5 cursor-ew-resize z-50" />
+          <div role="separator" aria-label={resizeHandleLabel} tabIndex={0} onPointerDown={handleResizeStart("w")} className="absolute left-0 top-3 bottom-3 w-1.5 cursor-ew-resize z-50" />
+          <div role="separator" aria-label={resizeHandleLabel} tabIndex={0} onPointerDown={handleResizeStart("nw")} className="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize z-50" />
+          <div role="separator" aria-label={resizeHandleLabel} tabIndex={0} onPointerDown={handleResizeStart("ne")} className="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize z-50" />
+          <div role="separator" aria-label={resizeHandleLabel} tabIndex={0} onPointerDown={handleResizeStart("sw")} className="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize z-50" />
+          <div role="separator" aria-label={resizeHandleLabel} tabIndex={0} onPointerDown={handleResizeStart("se")} className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize z-50" />
         </>
       )}
     </div>
@@ -346,9 +353,15 @@ export default function AnalysisSection() {
       {!floatingCompact && (
         <div className="flex items-center justify-between px-5 py-3 border-b border-border/15 bg-element/5 select-none shrink-0 gap-2">
           {/* 세련된 알약 형태 탭 버튼들 */}
-          <div className="flex items-center gap-0.5 bg-element/10 border border-border/15 p-0.5 rounded-full text-[11px] font-medium tracking-tight text-muted">
+          <div
+            role="tablist"
+            aria-label={t("analysis.title")}
+            className="flex items-center gap-0.5 bg-element/10 border border-border/15 p-0.5 rounded-full text-[11px] font-medium tracking-tight text-muted"
+          >
             <button
               type="button"
+              role="tab"
+              aria-selected={sectionTab === "chat"}
               onClick={() => setSectionTab("chat")}
               className={`rounded-full px-3.5 py-1 transition-colors duration-200 active:scale-95 ${
                 sectionTab === "chat"
@@ -360,6 +373,8 @@ export default function AnalysisSection() {
             </button>
             <button
               type="button"
+              role="tab"
+              aria-selected={sectionTab === "review"}
               onClick={() => setSectionTab("review")}
               className={`rounded-full px-3.5 py-1 flex items-center transition-colors duration-200 active:scale-95 ${
                 sectionTab === "review"
@@ -380,9 +395,11 @@ export default function AnalysisSection() {
           {viewMode === "fixView" && (
             <button
               data-testid="view-mode-toggle"
+              type="button"
               onClick={() => setViewMode("floatingView")}
               className="p-1.5 rounded-full hover:bg-surface-hover text-muted hover:text-fg transition-[colors,transform] duration-150 active:scale-90 shrink-0"
               title={t("analysis.viewMode.switchToFloating")}
+              aria-label={t("analysis.viewMode.switchToFloating")}
             >
               <Maximize2 className="w-3.5 h-3.5" />
             </button>

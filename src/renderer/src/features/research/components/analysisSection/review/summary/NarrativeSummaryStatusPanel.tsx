@@ -51,7 +51,7 @@ export function NarrativeSummaryStatusPanel({
               {t("analysis.review.summary.loading")}
             </div>
           ) : error ? (
-            <div className="text-danger flex items-center gap-1.5 py-1">⚠️ {error}</div>
+            <div role="alert" className="text-danger flex items-center gap-1.5 py-1">⚠️ {error}</div>
           ) : !status || status.totalCount === 0 ? (
             <div className="text-muted/80 py-1">{t("analysis.review.summary.empty")}</div>
           ) : (

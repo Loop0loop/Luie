@@ -163,6 +163,7 @@ export function PromptComposer({
               : "border-border/10 text-muted hover:bg-surface-hover hover:text-fg"
           }`}
           title={t("analysis.composer.options")}
+          aria-label={t("analysis.composer.options")}
         >
           <Plus className="w-4 h-4 shrink-0" />
         </button>
@@ -293,6 +294,7 @@ export function PromptComposer({
 
       {/* 입력 */}
       <textarea
+        aria-label={t("analysis.composer.placeholder")}
         className="flex-1 text-[13px] bg-transparent border-none resize-none text-fg/90 placeholder:text-muted/50 focus:outline-none min-h-[22px] max-h-[120px] py-1 px-1.5 align-middle custom-scrollbar leading-[1.5]"
         placeholder={t("analysis.composer.placeholder")}
         value={input}
@@ -314,6 +316,7 @@ export function PromptComposer({
             onClick={onMinimize}
             className="p-1.5 rounded-full text-muted hover:text-fg hover:bg-surface-hover transition-[colors,transform] duration-150 active:scale-90 shrink-0"
             title={t("analysis.composer.minimize")}
+            aria-label={t("analysis.composer.minimize")}
           >
             <Minus className="w-3.5 h-3.5" />
           </button>
@@ -323,6 +326,7 @@ export function PromptComposer({
             onClick={onDock}
             className="p-1.5 rounded-full text-muted hover:text-fg hover:bg-surface-hover transition-[colors,transform] duration-150 active:scale-90 shrink-0"
             title={t("analysis.viewMode.switchToDock")}
+            aria-label={t("analysis.viewMode.switchToDock")}
           >
             <Minimize2 className="w-3.5 h-3.5" />
           </button>

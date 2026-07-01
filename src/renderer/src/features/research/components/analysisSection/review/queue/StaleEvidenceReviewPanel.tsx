@@ -71,7 +71,7 @@ export function StaleEvidenceReviewPanel({
           {loading ? (
             <div className="text-muted">{t("analysis.review.queue.staleEvidence.loading")}</div>
           ) : error ? (
-            <div className="text-danger">⚠️ {error}</div>
+            <div role="alert" className="text-danger">⚠️ {error}</div>
           ) : items.length === 0 ? (
             <div className="text-muted">{t("analysis.review.queue.staleEvidence.empty")}</div>
           ) : (

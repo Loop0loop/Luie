@@ -50,7 +50,7 @@ export function EntityAliasReviewPanel({
           {loading ? (
             <div className="text-muted">{t("analysis.review.queue.alias.loading")}</div>
           ) : error ? (
-            <div className="text-danger">⚠️ {error}</div>
+            <div role="alert" className="text-danger">⚠️ {error}</div>
           ) : items.length === 0 ? (
             <div className="text-muted">{t("analysis.review.queue.alias.empty")}</div>
           ) : (
