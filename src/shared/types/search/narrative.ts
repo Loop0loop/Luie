@@ -94,6 +94,8 @@ export interface NarrativeMemoryFactResult {
   observedAtChapterOrder: number;
   confidence: number;
   status: string;
+  provenanceKind: string;
+  canonStatus: string;
   evidenceCount: number;
   relatedEntityId: string | null;
   relatedEntityName: string | null;

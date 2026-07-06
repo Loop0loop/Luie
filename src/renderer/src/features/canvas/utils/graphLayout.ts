@@ -17,19 +17,20 @@ export function calculateForceLayout(
   if (nodes.length === 0) return [];
 
   // 1. 복사본 생성 및 노드 성간 등급에 따른 초기 궤도 배치 (거성은 중앙 고정, 조연은 은하 궤도 분산)
-  const layoutNodes = nodes.map((node) => {
+  const layoutNodes = nodes.map((node, index) => {
     const isPrime = node.data?.starGrade === "prime";
     const isMajor = node.data?.starGrade === "major";
     
     // prime은 중앙에 완벽 고정 배치, major는 중간 궤도(140px 반경), minor는 외곽 궤도(260px 반경)에 균등 분산 시작
-    const angle = Math.random() * Math.PI * 2;
+    // 결정적인 레이아웃을 위해 노드 인덱스를 기반으로 각도 계산
+    const angle = (index / nodes.length) * Math.PI * 2;
     const radius = isPrime ? 0 : isMajor ? 140 : 260;
     
     return {
       ...node,
       position: {
-        x: node.position?.x ?? (center.x + Math.cos(angle) * radius + (Math.random() - 0.5) * 40),
-        y: node.position?.y ?? (center.y + Math.sin(angle) * radius + (Math.random() - 0.5) * 40),
+        x: node.position?.x ?? (center.x + Math.cos(angle) * radius),
+        y: node.position?.y ?? (center.y + Math.sin(angle) * radius),
       },
     };
   });

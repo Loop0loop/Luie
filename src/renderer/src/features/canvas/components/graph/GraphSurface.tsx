@@ -3,10 +3,10 @@ import ReactFlow, {
   Background,
   BackgroundVariant,
   PanOnScrollMode,
-  MarkerType,
   type Node,
   useNodesState,
-  useEdgesState
+  useEdgesState,
+  useReactFlow
 } from "reactflow";
 import { useTranslation } from "react-i18next";
 import { HelpCircle } from "lucide-react";
@@ -17,12 +17,8 @@ import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { calculateForceLayout } from "../../utils/graphLayout";
 import { buildGraphSurfaceData } from "../../utils/graphSurfaceData";
-import { GRAPH_CONSTELLATION_EDGE_DEFAULTS } from "../../constants/edge";
 import { CANVAS_ZOOM_MAX, CANVAS_ZOOM_MIN } from "@renderer/shared/constants/canvasSizing";
 import {
-  EDGE_FALLBACK_OPACITY,
-  EDGE_FALLBACK_STROKE_WIDTH,
-  EDGE_FOCUS_OPACITY,
   FIT_VIEW_OPTIONS,
   GraphHoverCard,
   GraphLegendModal,
@@ -31,6 +27,8 @@ import {
   LAYOUT_ITERATIONS_CHARACTER,
   LAYOUT_ITERATIONS_EVENT,
   PRO_OPTIONS,
+  useGraphDataFiltering,
+  useFocusSync,
 } from "./graphSurfaceParts";
 
 const nodeTypes = {
@@ -42,6 +40,8 @@ export default function GraphSurface() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
+  const { fitView } = useReactFlow();
+  const hasInitialFitView = useRef(false);
 
   const nodesRef = useRef(nodes);
   useEffect(() => {
@@ -63,6 +63,8 @@ export default function GraphSurface() {
     [graphData],
   );
 
+  const isEmpty = sourceNodes.length === 0;
+
   // hoverId에 대응하는 노드 데이터를 실시간 추적하여 호버 플로팅 카드에 공급
   const hoverNode = useMemo(() => {
     if (!hoverId) return null;
@@ -70,115 +72,13 @@ export default function GraphSurface() {
   }, [hoverId, nodes]);
 
   // 2. 모드 및 필터 조건에 부합하는 동적 그래프 데이터 파이프라인 (Constellation Monotone Rule)
-  const { filteredNodes, filteredEdges } = useMemo(() => {
-    // A. 에지 필터링 및 스타일 빌드
-    const computedEdges = sourceEdges.map((edge) => {
-      const strength = edge.data?.strength ?? 1;
-      const isCharacterMode = activeMode === "character";
-
-      const cfg = isCharacterMode 
-        ? GRAPH_CONSTELLATION_EDGE_DEFAULTS.character 
-        : GRAPH_CONSTELLATION_EDGE_DEFAULTS.event;
-
-      const edgeStyle: React.CSSProperties = {
-        stroke: cfg.stroke,
-        strokeWidth: strength * cfg.widthMultiplier,
-        opacity: cfg.opacityBase + strength * cfg.opacityMultiplier,
-      };
-
-      if ("dasharray" in cfg) {
-        edgeStyle.strokeDasharray = cfg.dasharray;
-      }
-
-      // 엣지 라벨 스타일 정의 (다크 럭셔리 & 피그마 감성)
-      const labelStyle: React.CSSProperties = {
-        fill: "var(--text-secondary)", // 테마 변수로 교체
-        fontSize: 9,
-        fontWeight: 700,
-        fontFamily: "var(--font-sans, Inter, system-ui, sans-serif)",
-        letterSpacing: "-0.01em",
-      };
-
-      const labelBgStyle: React.CSSProperties = {
-        fill: "var(--bg-panel)", // 하드코딩 블랙 탈피, 테마 변수 적용
-        fillOpacity: 0.95,
-        stroke: "var(--border-default)", // 테마 테두리
-        strokeWidth: 1.2,
-        rx: 6, // 둥근 라운딩 처리
-        ry: 6,
-      };
-
-      return {
-        ...edge,
-        type: "straight", // 직선 에지로 꼬임 0% 통제
-        label: edge.data?.label,
-        labelStyle,
-        labelBgStyle,
-        labelBgPadding: [8, 4] as [number, number],
-        animated: false,
-        markerEnd: isCharacterMode ? undefined : {
-          type: MarkerType.ArrowClosed,
-          width: cfg.markerSize,
-          height: cfg.markerSize,
-          color: "currentColor",
-        },
-        style: edgeStyle,
-      };
-    });
-
-    // B. 노드 크기 및 별자리 발광 속성 동적 연산
-    const computedNodes = sourceNodes.map((node): Node<GraphNodeData> => {
-      const degree = computedEdges.filter(
-        (edge) => edge.source === node.id || edge.target === node.id,
-      ).length;
-      const starGrade: "prime" | "major" | "minor" =
-        degree >= 3 ? "prime" : degree >= 1 ? "major" : "minor";
-
-      // 특정 캐릭터/사건 빠른 필터 포커싱 시, 대상 노드가 아닌 것들은 감쇠 처리
-      let filterFocusedOpacity = 1.0;
-      if (selectedFocusNode !== "all") {
-        if (node.id !== selectedFocusNode) {
-          // 직접적으로 에지 연결되지 않은 노드는 거의 투명화
-          const isConnected = computedEdges.some(
-            (e) => (e.source === selectedFocusNode && e.target === node.id) ||
-                   (e.target === selectedFocusNode && e.source === node.id) ||
-                   node.id === selectedFocusNode
-          );
-          filterFocusedOpacity = isConnected ? 0.95 : 0.15;
-        }
-      }
-
-      // 캔버스 내 직접 클릭 포커스 격리 (Focus Isolation): 비관련 노드는 0% 투명화 소멸
-      let canvasFocusedOpacity = 1.0;
-      let isInteractivePointerEvents = true;
-      if (focusId) {
-        if (node.id !== focusId) {
-          const isNeighbor = computedEdges.some(
-            (e) => (e.source === focusId && e.target === node.id) ||
-                   (e.target === focusId && e.source === node.id)
-          );
-          canvasFocusedOpacity = isNeighbor ? 0.95 : 0.0;
-          isInteractivePointerEvents = isNeighbor;
-        }
-      }
-
-      return {
-        ...node,
-        data: {
-          ...node.data,
-          starGrade,
-          opacity: filterFocusedOpacity * canvasFocusedOpacity,
-          isInteractive: isInteractivePointerEvents,
-          isFocused: false,
-        },
-      };
-    });
-
-    return {
-      filteredNodes: computedNodes,
-      filteredEdges: computedEdges,
-    };
-  }, [activeMode, selectedFocusNode, focusId, sourceNodes, sourceEdges]);
+  const { filteredNodes, filteredEdges } = useGraphDataFiltering({
+    sourceNodes,
+    sourceEdges,
+    activeMode,
+    selectedFocusNode,
+    focusId,
+  });
 
   // 3. 필터 변경 또는 마운트 시 Force Layout 기동 (모드별 중심점 및 물리력 분기 대응)
   useEffect(() => {
@@ -205,92 +105,20 @@ export default function GraphSurface() {
   }, [filteredNodes, filteredEdges, setNodes, setEdges]);
 
   // focusId 상태가 전역으로 변동될 때 노드 및 에지의 focus/강조 상태를 동기화
+  useFocusSync({ focusId, setNodes, setEdges });
+
+  // 초기 로딩 시에만 fitView 적용 (노드 변경 시마다 리셋 방지)
   useEffect(() => {
-    // 1. 노드 포커스 갱신
-    setNodes((prevNodes) =>
-      prevNodes.map((node) => ({
-        ...node,
-        data: {
-          ...node.data,
-          isFocused: node.id === focusId,
-        },
-      }))
-    );
-
-    // 2. 에지 포커스 및 네온 라이팅 효과 동기화
-    setEdges((prevEdges) =>
-      prevEdges.map((edge) => {
-        if (!focusId) {
-          // 포커스가 해제된 경우: 원래 스타일 복원
-          return {
-            ...edge,
-            animated: edge.data?.animatedBackup ?? edge.animated,
-            style: {
-              ...edge.style,
-              opacity: edge.data?.opacityBackup ?? edge.style?.opacity ?? EDGE_FALLBACK_OPACITY,
-              strokeWidth: edge.data?.strokeWidthBackup ?? edge.style?.strokeWidth ?? EDGE_FALLBACK_STROKE_WIDTH,
-              stroke: edge.data?.strokeBackup ?? edge.style?.stroke,
-            },
-            labelStyle: {
-              ...edge.labelStyle,
-              opacity: 1.0,
-            },
-            labelBgStyle: {
-              ...edge.labelBgStyle,
-              opacity: 1.0,
-              stroke: edge.data?.labelBgStrokeBackup ?? edge.labelBgStyle?.stroke,
-            }
-          };
-        }
-
-        // 특정 노드가 포커스된 경우
-        const isRelated = edge.source === focusId || edge.target === focusId;
-        
-        // 백업 상태 저장 (최초 1회)
-        const opacityBackup = edge.data?.opacityBackup ?? edge.style?.opacity ?? EDGE_FALLBACK_OPACITY;
-        const strokeWidthBackup = edge.data?.strokeWidthBackup ?? edge.style?.strokeWidth ?? EDGE_FALLBACK_STROKE_WIDTH;
-        const strokeBackup = edge.data?.strokeBackup ?? edge.style?.stroke ?? "currentColor";
-        const animatedBackup = edge.data?.animatedBackup ?? edge.animated ?? false;
-        const labelBgStrokeBackup = edge.data?.labelBgStrokeBackup ?? edge.labelBgStyle?.stroke;
-
-        const relationColor = "var(--accent)";
-
-        // strokeWidthBackup이 숫자형인지 강제 안전 변환 및 NaN 방지 고도화
-        const baseWidth = typeof strokeWidthBackup === "number" ? strokeWidthBackup : (Number(strokeWidthBackup) || EDGE_FALLBACK_STROKE_WIDTH);
-
-        return {
-          ...edge,
-          data: {
-            ...edge.data,
-            opacityBackup,
-            strokeWidthBackup,
-            strokeBackup,
-            animatedBackup,
-            labelBgStrokeBackup,
-          },
-          // 평형 다이어그램: 에지 애니메이션 미사용
-          animated: false,
-          style: {
-            ...edge.style,
-            // 관련 에지는 선명하게, 관련 없는 에지는 시야에서 전면 투명 소거
-            opacity: isRelated ? EDGE_FOCUS_OPACITY : 0,
-            strokeWidth: isRelated ? (baseWidth + 1.2) : baseWidth,
-            stroke: isRelated ? relationColor : strokeBackup,
-            pointerEvents: isRelated ? "auto" : "none", // 비관련 에지 이벤트 완전 차단
-          },
-          labelStyle: {
-            ...edge.labelStyle,
-            opacity: isRelated ? 1.0 : 0,
-          },
-          labelBgStyle: {
-            ...edge.labelBgStyle,
-            opacity: isRelated ? 1.0 : 0,
-            stroke: isRelated ? relationColor : labelBgStrokeBackup,
-          }
-        };
-      })
-    );
-  }, [focusId, activeMode, setNodes, setEdges, filteredEdges]);
+    if (filteredNodes.length > 0 && !hasInitialFitView.current) {
+      hasInitialFitView.current = true;
+      // 약간의 지연을 주어 노드 렌더링 완료 후 fitView 호출
+      const timeoutId = setTimeout(() => {
+        fitView({ padding: 0.2, duration: 200 });
+      }, 100);
+      return () => clearTimeout(timeoutId);
+    }
+    return undefined;
+  }, [filteredNodes, fitView]);
 
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node<GraphNodeData>) => {
@@ -314,6 +142,29 @@ export default function GraphSurface() {
     [setNodes]
   );
 
+  if (isEmpty) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-app">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface">
+            <HelpCircle className="h-6 w-6 text-muted" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-medium text-fg">
+              {t("canvas.graph.empty.title", "그래프 데이터가 없습니다")}
+            </p>
+            <p className="text-xs text-muted">
+              {t(
+                "canvas.graph.empty.description",
+                "캐릭터, 사건, 단체 등을 추가하면 관계 그래프가 생성됩니다."
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full w-full bg-app relative overflow-hidden select-none">
       {/* React Flow Canvas */}
@@ -328,7 +179,6 @@ export default function GraphSurface() {
         nodeTypes={nodeTypes}
         minZoom={CANVAS_ZOOM_MIN}
         maxZoom={CANVAS_ZOOM_MAX}
-        fitView
         fitViewOptions={FIT_VIEW_OPTIONS}
         nodesDraggable={true}
         nodesConnectable={false}
@@ -338,7 +188,7 @@ export default function GraphSurface() {
         selectionKeyCode="Shift"
         panOnScroll
         panOnScrollMode={PanOnScrollMode.Free}
-        zoomOnScroll={false}
+        zoomOnScroll
         zoomOnPinch
         zoomOnDoubleClick={false}
         proOptions={PRO_OPTIONS}

@@ -143,7 +143,7 @@ export function CanvasMarkdownEditor({
 
           <button
             type="button"
-            onClick={() => editor.chain().focus().toggleHighlight({ color: "#FEF08A" }).run()}
+            onClick={() => editor.chain().focus().toggleHighlight({ color: "var(--highlight-default)" }).run()}
             className={cn(
               "flex h-7 w-7 items-center justify-center rounded-control transition-colors",
               editor.isActive("highlight") ? "bg-active text-fg" : "text-muted hover:bg-surface-hover hover:text-fg"

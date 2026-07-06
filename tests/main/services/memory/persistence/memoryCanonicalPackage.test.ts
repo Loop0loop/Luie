@@ -19,7 +19,7 @@ import {
   project,
 } from "../../../../../src/main/infra/database/index.js";
 import { LuieMemoryCanonicalSchema } from "../../../../../src/main/services/core/project/projectLuieSchemas.js";
-import { MEMORY_CANONICAL_UNKNOWN_ROW_FIELD_POLICY } from "../../../../../src/main/services/features/memory/persistence/index.js";
+import { MEMORY_CANONICAL_UNKNOWN_ROW_FIELD_POLICY } from "../../../../../src/main/services/features/memory/persistence/memoryPersistencePolicy.js";
 import {
   applyMemoryCanonicalPackagePayload,
   buildMemoryCanonicalPackagePayload,

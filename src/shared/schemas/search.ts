@@ -28,23 +28,6 @@ export const narrativeMemoryQuerySchema = z.object({
   includePriorMemory: z.boolean().optional(),
 });
 
-export const memoryConflictQueueQuerySchema = z.object({
-  projectId: projectIdSchema,
-  chapterId: chapterIdSchema.optional(),
-  includePriorMemory: z.boolean().optional(),
-  reviewFilter: z.enum(["active", "deferred"]).optional(),
-  entityId: z.string().trim().min(1).optional(),
-  entityName: z.string().trim().min(1).optional(),
-  entityType: z.string().trim().min(1).optional(),
-  limit: z.number().int().positive().max(200).optional(),
-});
-
-export const memoryReviewBacklogSchema = z.object({
-  projectId: projectIdSchema,
-  limit: z.number().int().positive().max(200).optional(),
-  evidenceLimit: z.number().int().positive().max(10).optional(),
-});
-
 export const memoryEvalRunSchema = z.object({
   projectId: projectIdSchema,
   label: z.string().trim().min(1, "Eval label is required").max(200),
@@ -83,108 +66,6 @@ export const memoryIntentCalibrationRunSchema = z.object({
 });
 
 export const memoryEpisodeCalibrationRunSchema = z.object({
-  projectId: projectIdSchema,
-});
-
-export const memoryEpisodeReviewQueueSchema = z.object({
-  projectId: projectIdSchema,
-  limit: z.number().int().positive().max(200).optional(),
-});
-
-export const memoryEpisodeConfirmSchema = z.object({
-  projectId: projectIdSchema,
-  episodeId: z.string().uuid("Invalid episode ID"),
-});
-
-export const memoryEpisodeRejectSchema = z.object({
-  projectId: projectIdSchema,
-  episodeId: z.string().uuid("Invalid episode ID"),
-  reason: z.string().trim().min(1, "Rejection reason is required").max(1000),
-});
-
-export const memoryTemporalFactReviewQueueSchema = z.object({
-  projectId: projectIdSchema,
-  limit: z.number().int().positive().max(200).optional(),
-});
-
-export const memoryTemporalFactConfirmSchema = z.object({
-  projectId: projectIdSchema,
-  factId: z.string().uuid("Invalid fact ID"),
-});
-
-export const memoryTemporalFactRejectSchema = z.object({
-  projectId: projectIdSchema,
-  factId: z.string().uuid("Invalid fact ID"),
-  reason: z.string().trim().min(1, "Rejection reason is required").max(1000),
-});
-
-export const memoryTemporalFactConflictResolveSchema = z.object({
-  projectId: projectIdSchema,
-  conflictId: z.string().uuid("Invalid conflict ID"),
-  winnerFactId: z.string().uuid("Invalid fact ID"),
-  reason: z.string().trim().min(1).max(1000).optional(),
-});
-
-export const memoryTemporalFactConflictReviewSchema = z.object({
-  projectId: projectIdSchema,
-  conflictId: z.string().uuid("Invalid conflict ID"),
-  action: z.enum(["defer", "review", "resolve"]),
-  reviewerNote: z.string().trim().min(1).max(1000).nullable().optional(),
-});
-
-export const memoryEntityAliasReviewQueueSchema = z.object({
-  projectId: projectIdSchema,
-  limit: z.number().int().positive().max(200).optional(),
-});
-
-export const memoryEntityReviewQueueSchema = z.object({
-  projectId: projectIdSchema,
-  limit: z.number().int().positive().max(200).optional(),
-});
-
-export const memoryEntityConfirmSchema = z.object({
-  projectId: projectIdSchema,
-  entityId: z.string().uuid("Invalid entity ID"),
-});
-
-export const memoryEntityRejectSchema = z.object({
-  projectId: projectIdSchema,
-  entityId: z.string().uuid("Invalid entity ID"),
-  reason: z.string().trim().min(1, "Rejection reason is required").max(1000),
-});
-
-export const memoryEntityAliasConfirmSchema = z.object({
-  projectId: projectIdSchema,
-  aliasId: z.string().uuid("Invalid alias ID"),
-});
-
-export const memoryEntityAliasRejectSchema = z.object({
-  projectId: projectIdSchema,
-  aliasId: z.string().uuid("Invalid alias ID"),
-  reason: z.string().trim().min(1, "Rejection reason is required").max(1000),
-});
-
-export const memoryEntityMergeSchema = z.object({
-  projectId: projectIdSchema,
-  targetEntityId: z.string().uuid("Invalid target entity ID"),
-  sourceEntityId: z.string().uuid("Invalid source entity ID"),
-});
-
-export const memoryEntityAliasSplitSchema = z.object({
-  projectId: projectIdSchema,
-  aliasId: z.string().uuid("Invalid alias ID"),
-  canonicalName: z.string().trim().min(1, "Canonical name is required").max(200),
-});
-
-export const memoryStaleEvidenceReviewActionSchema = z.object({
-  projectId: projectIdSchema,
-  kind: z.enum(["entity_mention", "episode_evidence"]),
-  id: z.string().uuid("Invalid stale evidence ID"),
-  action: z.enum(["defer", "reject", "resolve"]),
-  reviewerNote: z.string().trim().min(1).max(1000).nullable().optional(),
-});
-
-export const memoryEvidenceRepairSchema = z.object({
   projectId: projectIdSchema,
 });
 

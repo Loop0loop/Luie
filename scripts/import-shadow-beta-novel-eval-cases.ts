@@ -44,6 +44,13 @@ type GoldEvidence = {
   mustNotUseAfterChapter: number;
 };
 
+type ExpansionQuestion = WriterQuestion & {
+  sourceType: "shadow_beta_expansion";
+  expectedAnswer: string;
+  goldEvidence: GoldEvidence["goldEvidence"];
+  mustNotUseAfterChapter: number;
+};
+
 type FeedbackSeed = {
   id: string;
   kind: string;
@@ -141,6 +148,14 @@ function buildSupportedExpectedAnswer(input: {
   return quote;
 }
 
+function buildCaseQuestion(input: {
+  questionWriterLike?: string;
+  questionMessy?: string;
+  questionClean: string;
+}): string {
+  return input.questionWriterLike || input.questionMessy || input.questionClean;
+}
+
 function chunkId(input: {
   projectId: string;
   genre: string;
@@ -171,6 +186,9 @@ function loadGenreRows(input: {
   }
 
   const questions = readJsonl<WriterQuestion>(path.join(evalRoot, "writer_questions.jsonl"));
+  const expansionQuestions = readJsonl<ExpansionQuestion>(
+    path.join(evalRoot, "chapter_06_15_eval_expansion.jsonl"),
+  );
   const answers = new Map(
     readJsonl<GoldAnswer>(path.join(evalRoot, "gold_answers.jsonl")).map((row) => [
       row.id,
@@ -200,7 +218,7 @@ function loadGenreRows(input: {
       id: caseId,
       projectId: input.projectId,
       name: `shadow-beta:${input.genre}:${question.taskType}:${question.id}`,
-      question: question.questionWriterLike || question.questionMessy || question.questionClean,
+      question: buildCaseQuestion(question),
       caseType: buildCaseType(question.taskType),
       expectedAnswer: buildSupportedExpectedAnswer({ answer, evidence: goldEvidence }),
       temporalScopeStartChapterId: null,
@@ -211,6 +229,46 @@ function loadGenreRows(input: {
     });
     rows.evidence.push(
       ...goldEvidence.goldEvidence.map((item, index) => ({
+        id: `${caseId}:evidence:${index + 1}`,
+        caseId,
+        projectId: input.projectId,
+        chapterId: null,
+        expectedChunkId: chunkId({
+          projectId: input.projectId,
+          genre: input.genre,
+          evidence: item,
+        }),
+        startOffset: null,
+        endOffset: null,
+        quote: item.quote,
+        updatedAt: input.nowIso,
+      })),
+    );
+  }
+
+  for (const question of expansionQuestions) {
+    if (question.sourceType !== "shadow_beta_expansion") {
+      throw new Error(`${input.genre}: invalid expansion sourceType for ${question.id}`);
+    }
+    if (!TASK_TYPES.has(question.taskType)) {
+      throw new Error(`${input.genre}: unknown expansion taskType ${question.taskType}`);
+    }
+    const caseId = `shadow-beta:${input.genre}:${question.id}`;
+    rows.cases.push({
+      id: caseId,
+      projectId: input.projectId,
+      name: `shadow-beta:${input.genre}:${question.taskType}:${question.id}`,
+      question: buildCaseQuestion(question),
+      caseType: buildCaseType(question.taskType),
+      expectedAnswer: question.expectedAnswer,
+      temporalScopeStartChapterId: null,
+      temporalScopeEndChapterId: null,
+      queryChapterOrder: question.allowedUntilChapter ?? null,
+      severity: "p0",
+      updatedAt: input.nowIso,
+    });
+    rows.evidence.push(
+      ...question.goldEvidence.map((item, index) => ({
         id: `${caseId}:evidence:${index + 1}`,
         caseId,
         projectId: input.projectId,

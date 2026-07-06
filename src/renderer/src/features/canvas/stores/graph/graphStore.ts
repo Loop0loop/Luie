@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import type { GraphDepth } from "../../types/graph";
 
 interface GraphState {
@@ -21,21 +22,36 @@ interface GraphState {
   setSelectedFocusNode: (nodeId: string) => void;
 }
 
-export const useGraphStore = create<GraphState>()((set) => ({
-  depth: 1,
-  focusId: null,
-  hoverId: null,
+export const useGraphStore = create<GraphState>()(
+  persist(
+    (set) => ({
+      depth: 1,
+      focusId: null,
+      hoverId: null,
 
-  // 초기값
-  activeMode: "character",
-  selectedChapterFilter: "all",
-  selectedFocusNode: "all",
+      // 초기값
+      activeMode: "character",
+      selectedChapterFilter: "all",
+      selectedFocusNode: "all",
 
-  setDepth: (depth) => set({ depth }),
-  setFocusId: (focusId) => set({ focusId }),
-  setHoverId: (hoverId) => set({ hoverId }),
+      setDepth: (depth) => set({ depth }),
+      setFocusId: (focusId) => set({ focusId }),
+      setHoverId: (hoverId) => set({ hoverId }),
 
-  setActiveMode: (activeMode) => set({ activeMode }),
-  setSelectedChapterFilter: (selectedChapterFilter) => set({ selectedChapterFilter }),
-  setSelectedFocusNode: (selectedFocusNode) => set({ selectedFocusNode }),
-}));
+      setActiveMode: (activeMode) => set({ activeMode }),
+      setSelectedChapterFilter: (selectedChapterFilter) => set({ selectedChapterFilter }),
+      setSelectedFocusNode: (selectedFocusNode) => set({ selectedFocusNode }),
+    }),
+    {
+      name: "graph_store_v1",
+      storage: createJSONStorage(() => localStorage),
+      // hoverId와 focusId는 transient 상태이므로 persist하지 않음
+      partialize: (state) => ({
+        depth: state.depth,
+        activeMode: state.activeMode,
+        selectedChapterFilter: state.selectedChapterFilter,
+        selectedFocusNode: state.selectedFocusNode,
+      }),
+    }
+  )
+);

@@ -114,5 +114,9 @@ describe("narrative memory temporal scope", () => {
 
     expect(facts.map((fact) => fact.id)).toEqual([currentFactId]);
     expect(facts.map((fact) => fact.id)).not.toContain(futureFactId);
+    expect(facts[0]).toMatchObject({
+      provenanceKind: "canon",
+      canonStatus: "canon",
+    });
   });
 });

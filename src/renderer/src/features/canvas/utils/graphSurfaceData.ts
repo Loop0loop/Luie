@@ -1,6 +1,5 @@
 import type { Edge, Node } from "reactflow";
 import type { WorldGraphData } from "@shared/types";
-import { MOCK_GRAPH_EDGES, MOCK_GRAPH_NODES } from "../constants/graphMockData";
 import type { GraphNodeData, GraphNodeType } from "../types/graph";
 
 export interface GraphSurfaceData {
@@ -16,11 +15,16 @@ const toGraphNodeType = (entityType: string): GraphNodeType => {
   return "world-entity";
 };
 
+/**
+ * Build graph surface data from WorldGraphData.
+ * Returns empty arrays when graphData is null/empty — no mock fallback.
+ * Callers should handle the empty state (e.g., show empty state UI).
+ */
 export function buildGraphSurfaceData(
   graphData: WorldGraphData | null,
 ): GraphSurfaceData {
   if (!graphData?.nodes.length) {
-    return { sourceNodes: MOCK_GRAPH_NODES, sourceEdges: MOCK_GRAPH_EDGES };
+    return { sourceNodes: [], sourceEdges: [] };
   }
 
   const nodeNameById = new Map(graphData.nodes.map((node) => [node.id, node.name]));

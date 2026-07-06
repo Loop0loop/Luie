@@ -12,20 +12,25 @@ import { useTranslation } from "react-i18next";
 import { useCanvasViewStore } from "../../stores";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
+import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { cn } from "@shared/types/utils";
 import { createLogger } from "@shared/logger";
 import { Button } from "@renderer/components/ui/button";
+import { useToast } from "@shared/ui/ToastContext";
 
 const logger = createLogger("BottomInteractiveToolbar");
 
 export function BottomInteractiveToolbar() {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   
   // Zustand Stores
   const activePanel = useCanvasViewStore((state) => state.activePanel);
   const setActivePanel = useCanvasViewStore((state) => state.setActivePanel);
   const setMainView = useUIStore((state) => state.setMainView);
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
+  const currentProjectId = useProjectStore((state) => state.currentProject?.id);
 
   const isGraphMode = activePanel === "graph";
 
@@ -34,8 +39,49 @@ export function BottomInteractiveToolbar() {
     setMainView({ type: "editor" });
   };
 
-  const handleAction = (actionKey: string) => {
+  const handleAction = async (actionKey: string) => {
     logger.info("Toolbar action triggered", { actionKey });
+
+    switch (actionKey) {
+      case "new-block": {
+        // TODO: Implement memo node creation when API is ready
+        showToast(t("canvas.toolbar.comingSoon"), "info");
+        break;
+      }
+
+      case "insert-image": {
+        showToast(t("canvas.toolbar.comingSoon"), "info");
+        break;
+      }
+
+      case "filter-layer": {
+        useUIStore.getState().toggleLeftSidebar();
+        break;
+      }
+
+      case "ai-sync": {
+        if (!currentProjectId) {
+          showToast(t("canvas.toolbar.error.noProject"), "error");
+          return;
+        }
+        try {
+          await useWorldBuildingStore.getState().loadGraph(currentProjectId);
+          showToast(t("canvas.toolbar.success.synced"), "success");
+        } catch (error) {
+          logger.error("Failed to sync", error);
+          showToast(t("canvas.toolbar.error.syncFailed"), "error");
+        }
+        break;
+      }
+
+      case "focus-center": {
+        useCanvasViewStore.getState().clearSelection();
+        break;
+      }
+
+      default:
+        logger.warn("Unknown action", { actionKey });
+    }
   };
 
   // 애니메이션 클래스 헬퍼

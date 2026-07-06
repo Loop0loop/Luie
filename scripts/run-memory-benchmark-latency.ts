@@ -7,11 +7,13 @@ import { db } from "../src/main/infra/database/index.js";
 import {
   MEMORY_LONGFORM_BENCHMARK_PROFILES,
   buildMemoryLongformBenchmarkSeed,
-  materializeMemoryLongformBenchmark,
+  type MemoryLongformBenchmarkProfileName,
+} from "../src/main/services/features/memory/benchmark/memoryLongformBenchmarkSeed.js";
+import { materializeMemoryLongformBenchmark } from "../src/main/services/features/memory/benchmark/memoryLongformBenchmarkMaterialize.js";
+import {
   runMemoryBenchmarkLatencyReport,
   summarizeMemoryBenchmarkLatencyFailures,
-  type MemoryLongformBenchmarkProfileName,
-} from "../src/main/services/features/memory/benchmark/index.js";
+} from "../src/main/services/features/memory/benchmark/memoryBenchmarkLatencyRunner.js";
 import type { SearchOptimizationMode } from "../src/main/services/features/search/searchOptimizationPolicy.js";
 
 type CliOptions = {

@@ -1,16 +1,9 @@
 import type {
   LlmRuntimeInfo,
-  MemoryConflictQueueItem,
-  MemoryEntityReviewItem,
-  MemoryEntityAliasReviewItem,
-  MemoryEpisodeReviewItem,
   MemoryEpisodeCalibrationResult,
   MemoryEvalLiveRunnerResult,
-  MemoryReviewStaleEvidenceItem,
-  MemoryStaleEvidenceReviewAction,
   NarrativeMemoryIntentCalibrationResult,
   NarrativeSummaryStatus,
-  MemoryTemporalFactReviewItem,
   RagQaErrorPayload,
   RagQaAnswerMode,
   RagQaEvidence,
@@ -67,7 +60,6 @@ export type Message = {
 
 export type RuntimePreference = "auto" | "sidecar" | "ollama" | "openai" | "gemini";
 export type MemoryScope = "current-only" | "with-prior";
-export type ConflictReviewFilter = "active" | "deferred";
 export type SearchOptimizationMode = RagSearchOptimizationMode;
 
 export type GroundingStatus = NonNullable<Message["grounding"]>["status"];
@@ -76,13 +68,6 @@ export type AnalysisRagStreamPayload = RagQaStreamPayload;
 export type AnalysisRagErrorPayload = RagQaErrorPayload;
 export type AnalysisRuntimeInfo = LlmRuntimeInfo | null;
 export type AnalysisSidecarStatus = UtilitySidecarStatus | null;
-export type AnalysisConflictItem = MemoryConflictQueueItem;
-export type AnalysisEntityReviewItem = MemoryEntityReviewItem;
-export type AnalysisEntityAliasReviewItem = MemoryEntityAliasReviewItem;
-export type AnalysisEpisodeReviewItem = MemoryEpisodeReviewItem;
-export type AnalysisFactReviewItem = MemoryTemporalFactReviewItem;
-export type AnalysisStaleEvidenceReviewItem = MemoryReviewStaleEvidenceItem;
-export type AnalysisStaleEvidenceReviewAction = MemoryStaleEvidenceReviewAction;
 export type AnalysisNarrativeSummaryStatus = NarrativeSummaryStatus;
 export type AnalysisMemoryEvalReport = MemoryEvalLiveRunnerResult;
 export type AnalysisIntentCalibrationReport = NarrativeMemoryIntentCalibrationResult;

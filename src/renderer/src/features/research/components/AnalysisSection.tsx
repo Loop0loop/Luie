@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
-import { Bot, Maximize2 } from "lucide-react";
+import { BookOpen, Bot, Maximize2, Scale, Search, Users } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
@@ -423,47 +423,51 @@ export default function AnalysisSection() {
               {isEmpty ? (
                 /* 빈 상태: 가이드와 4가지 빠른 프롬프트 카드 */
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-6 select-none animate-[fadeIn_0.4s_ease-out]">
-                  <div className="w-11 h-11 rounded-panel bg-element/20 border border-border/10 flex items-center justify-center shadow-sm mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-element/20 border border-border/10 flex items-center justify-center shadow-sm mb-5">
                     <Bot className="w-5 h-5 text-muted" />
                   </div>
                   <h3 className="text-[13px] font-semibold text-fg/90 mb-2 tracking-tight">
                     {t("analysis.emptyState.title")}
                   </h3>
-                  <p className="text-[11px] text-muted max-w-[250px] leading-relaxed mb-6">
-                    원고의 등장인물 관계, 세계관 설정 충돌, 복선 회수 여부 등을 AI와 함께 점검해 보세요.
+                  <p className="text-[11px] text-muted max-w-[260px] leading-relaxed mb-6">
+                    {t("analysis.emptyState.subtitle")}
                   </p>
-                  <div className="grid grid-cols-2 gap-2 w-full max-w-[340px]">
+                  <div className="grid grid-cols-2 gap-3 w-full max-w-[360px]">
                     <button
                       type="button"
                       onClick={() => chat.setInput(t("analysis.emptyState.summaryPrompt"))}
-                      className="rounded-control border border-border/10 hover:border-accent/20 bg-element/5 hover:bg-element/12 p-3 text-left text-xs transition-[colors,transform] duration-200 hover:scale-[1.01] active:scale-98"
+                      className="rounded-2xl border border-border/5 hover:border-accent/20 bg-element/5 hover:bg-element/10 p-4 text-left text-xs transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 active:scale-98 group"
                     >
-                      <div className="font-semibold mb-0.5 text-fg/80">{t("analysis.emptyState.summaryLabel")}</div>
-                      <div className="text-[10px] text-muted truncate">{t("analysis.emptyState.summaryPrompt")}</div>
+                      <BookOpen className="w-3.5 h-3.5 text-muted group-hover:text-accent mb-2 transition-colors" />
+                      <div className="font-semibold mb-1 text-fg/80">{t("analysis.emptyState.summaryLabel")}</div>
+                      <div className="text-[10px] text-muted line-clamp-2">{t("analysis.emptyState.summaryPrompt")}</div>
                     </button>
                     <button
                       type="button"
                       onClick={() => chat.setInput(t("analysis.emptyState.relationPrompt"))}
-                      className="rounded-control border border-border/10 hover:border-accent/20 bg-element/5 hover:bg-element/12 p-3 text-left text-xs transition-[colors,transform] duration-200 hover:scale-[1.01] active:scale-98"
+                      className="rounded-2xl border border-border/5 hover:border-accent/20 bg-element/5 hover:bg-element/10 p-4 text-left text-xs transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 active:scale-98 group"
                     >
-                      <div className="font-semibold mb-0.5 text-fg/80">{t("analysis.emptyState.relationLabel")}</div>
-                      <div className="text-[10px] text-muted truncate">{t("analysis.emptyState.relationPrompt")}</div>
+                      <Users className="w-3.5 h-3.5 text-muted group-hover:text-accent mb-2 transition-colors" />
+                      <div className="font-semibold mb-1 text-fg/80">{t("analysis.emptyState.relationLabel")}</div>
+                      <div className="text-[10px] text-muted line-clamp-2">{t("analysis.emptyState.relationPrompt")}</div>
                     </button>
                     <button
                       type="button"
                       onClick={() => chat.setInput(t("analysis.emptyState.conflictPrompt"))}
-                      className="rounded-control border border-border/10 hover:border-accent/20 bg-element/5 hover:bg-element/12 p-3 text-left text-xs transition-[colors,transform] duration-200 hover:scale-[1.01] active:scale-98"
+                      className="rounded-2xl border border-border/5 hover:border-accent/20 bg-element/5 hover:bg-element/10 p-4 text-left text-xs transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 active:scale-98 group"
                     >
-                      <div className="font-semibold mb-0.5 text-fg/80">{t("analysis.emptyState.conflictLabel")}</div>
-                      <div className="text-[10px] text-muted truncate">{t("analysis.emptyState.conflictPrompt")}</div>
+                      <Scale className="w-3.5 h-3.5 text-muted group-hover:text-accent mb-2 transition-colors" />
+                      <div className="font-semibold mb-1 text-fg/80">{t("analysis.emptyState.conflictLabel")}</div>
+                      <div className="text-[10px] text-muted line-clamp-2">{t("analysis.emptyState.conflictPrompt")}</div>
                     </button>
                     <button
                       type="button"
                       onClick={() => chat.setInput(t("analysis.emptyState.foreshadowPrompt"))}
-                      className="rounded-control border border-border/10 hover:border-accent/20 bg-element/5 hover:bg-element/12 p-3 text-left text-xs transition-[colors,transform] duration-200 hover:scale-[1.01] active:scale-98"
+                      className="rounded-2xl border border-border/5 hover:border-accent/20 bg-element/5 hover:bg-element/10 p-4 text-left text-xs transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 active:scale-98 group"
                     >
-                      <div className="font-semibold mb-0.5 text-fg/80">{t("analysis.emptyState.foreshadowLabel")}</div>
-                      <div className="text-[10px] text-muted truncate">{t("analysis.emptyState.foreshadowPrompt")}</div>
+                      <Search className="w-3.5 h-3.5 text-muted group-hover:text-accent mb-2 transition-colors" />
+                      <div className="font-semibold mb-1 text-fg/80">{t("analysis.emptyState.foreshadowLabel")}</div>
+                      <div className="text-[10px] text-muted line-clamp-2">{t("analysis.emptyState.foreshadowPrompt")}</div>
                     </button>
                   </div>
                 </div>

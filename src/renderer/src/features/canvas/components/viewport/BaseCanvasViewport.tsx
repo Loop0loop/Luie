@@ -211,9 +211,8 @@ export default function BaseCanvasViewport({
           targetType: normalizeEntityType(targetNode.entityType),
           relation: "belongs_to",
         });
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error("Failed to create connection:", err);
+      } catch {
+        // Connection creation failed — logged via worldBuildingStore
       }
     },
     [currentProjectId, createRelation],
@@ -245,7 +244,7 @@ export default function BaseCanvasViewport({
         selectionKeyCode="Shift"
         panOnScroll
         panOnScrollMode={PanOnScrollMode.Free}
-        zoomOnScroll={false}
+        zoomOnScroll
         zoomOnPinch
         zoomOnDoubleClick={false}
         proOptions={PRO_OPTIONS}

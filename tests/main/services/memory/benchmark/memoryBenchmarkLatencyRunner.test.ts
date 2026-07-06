@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import { buildMemoryLongformBenchmarkSeed } from "../../../../../src/main/services/features/memory/benchmark/memoryLongformBenchmarkSeed.js";
 import { materializeMemoryLongformBenchmark } from "../../../../../src/main/services/features/memory/benchmark/memoryLongformBenchmarkMaterialize.js";
 import {
-  MEMORY_BENCHMARK_LATENCY_BUDGETS,
   runMemoryBenchmarkLatencyReport,
   summarizeMemoryBenchmarkLatencyFailures,
-  type MemoryBenchmarkLatencyReport,
 } from "../../../../../src/main/services/features/memory/benchmark/memoryBenchmarkLatencyRunner.js";
+import {
+  MEMORY_BENCHMARK_LATENCY_BUDGETS,
+  type MemoryBenchmarkLatencyReport,
+} from "../../../../../src/main/services/features/memory/benchmark/latency/types.js";
 
 describe("memoryBenchmarkLatencyRunner", () => {
   it("reports writer-facing latency budgets for a materialized longform project", async () => {

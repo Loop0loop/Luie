@@ -28,8 +28,6 @@ import {
 } from "./latency/ragPathMeasurements.js";
 import type { MemoryLongformBenchmarkProfileName } from "./memoryLongformBenchmarkSeed.js";
 
-export * from "./latency/types.js";
-
 export async function runMemoryBenchmarkLatencyReport(input: {
   projectId: string;
   profileName: MemoryLongformBenchmarkProfileName;

@@ -17,7 +17,7 @@ import {
   selectMemoryWriterTaskBenchmarkFinalizationSummaries,
   summarizeMemoryWriterTaskBenchmarkFinalizationReadinessFailures,
   type MemoryWriterTaskBenchmarkThresholds,
-} from "../src/main/services/features/memory/benchmark/index.js";
+} from "../src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.js";
 import type { MemoryWriterTaskBenchmarkSummary } from "../src/shared/types/index.js";
 
 type CliOptions = {

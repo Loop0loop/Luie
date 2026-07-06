@@ -62,7 +62,9 @@ export function WorkspacePanels({
             }}
             className="min-w-0 bg-panel relative flex flex-col"
           >
-            <div className="flex justify-between items-center p-2 border-b border-border bg-surface text-xs font-semibold text-muted">
+            {/* ponytail: pr-12 keeps the panel ✕ clear of MainLayout's floating
+                right toggle (absolute right-2 top-2, ~40px wide) on the rightmost panel. */}
+            <div className="flex justify-between items-center p-2 pr-12 border-b border-border bg-surface text-xs font-semibold text-muted">
               <span className="uppercase">{panel.content.type}</span>
               <button
                 onClick={(e) => {

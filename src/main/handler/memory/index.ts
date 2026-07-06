@@ -9,7 +9,6 @@ export function registerMemoryHandlers(options: {
   embeddingProjector: Parameters<typeof registerMemoryIPCHandlers>[4];
   narrativeMemoryQueryService: Parameters<typeof registerMemoryIPCHandlers>[5];
   narrativeSummaryStatusService: Parameters<typeof registerMemoryIPCHandlers>[6];
-  packagePersistence?: Parameters<typeof registerMemoryIPCHandlers>[7];
 }): void {
   registerMemoryIPCHandlers(
     options.logger,
@@ -19,6 +18,5 @@ export function registerMemoryHandlers(options: {
     options.embeddingProjector,
     options.narrativeMemoryQueryService,
     options.narrativeSummaryStatusService,
-    options.packagePersistence,
   );
 }

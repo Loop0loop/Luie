@@ -21,6 +21,16 @@ export class ExternalApiProvider implements ModelRuntimeClient {
     this.generationMode = config.supabaseProxy && config.baseUrl.includes("openai.com") ? "buffered" : "streaming";
   }
 
+  private get usesOpenAiApi(): boolean {
+    return this.config.baseUrl.includes("openai.com");
+  }
+
+  private tokenLimitPayload(maxTokens: number): { max_tokens: number } | { max_completion_tokens: number } {
+    return this.usesOpenAiApi
+      ? { max_completion_tokens: maxTokens }
+      : { max_tokens: maxTokens };
+  }
+
   private async generateViaSupabase(
     input: { systemPrompt?: string; userPrompt: string },
     options?: GenerateOptions,
@@ -42,7 +52,7 @@ export class ExternalApiProvider implements ModelRuntimeClient {
         model: this.config.chatModel,
         stream: false,
         temperature: options?.temperature ?? 0.2,
-        max_tokens: options?.maxTokens ?? 1024,
+        ...this.tokenLimitPayload(options?.maxTokens ?? 1024),
         messages: [
           ...(input.systemPrompt
             ? [{ role: "system", content: input.systemPrompt }]
@@ -125,7 +135,7 @@ export class ExternalApiProvider implements ModelRuntimeClient {
         model: this.config.chatModel,
         stream: true,
         temperature: options?.temperature ?? 0.2,
-        max_tokens: options?.maxTokens ?? 1024,
+        ...this.tokenLimitPayload(options?.maxTokens ?? 1024),
         messages: [
           ...(input.systemPrompt
             ? [{ role: "system", content: input.systemPrompt }]

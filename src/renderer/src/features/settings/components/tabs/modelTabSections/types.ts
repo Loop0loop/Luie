@@ -9,6 +9,14 @@ import type {
 
 export type SemanticSearchState = "ready" | "preparing" | "disabled";
 
+export type LlmProvider = "auto" | "sidecar" | "ollama" | "openai" | "gemini";
+
+export interface OllamaConfig {
+  baseUrl: string;
+  chatModel: string;
+  apiKey: string;
+}
+
 export type DownloadProgress =
   | { stage: "binary" | "model" | "complete" | "error"; pct: number; error?: string }
   | null;
@@ -30,7 +38,11 @@ export interface ModelTabProps {
   localLlmBinaryPath?: string;
   openaiApiKey: string;
   geminiApiKey: string;
+  ollamaConfig: OllamaConfig;
+  preferredProvider: LlmProvider;
   onSaveLlmKeys: (openaiApiKey: string, geminiApiKey: string) => Promise<boolean>;
+  onSaveOllamaConfig: (config: OllamaConfig) => Promise<boolean>;
+  onSetLlmPreference: (provider: LlmProvider) => Promise<void>;
   isDownloading: boolean;
   downloadProgress: DownloadProgress;
   onDownloadLocalModel: (opts?: { repo: string; filename: string }) => Promise<void>;

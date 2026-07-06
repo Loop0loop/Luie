@@ -6,10 +6,10 @@ import path from "node:path";
 import { db } from "../src/main/infra/database/index.js";
 import {
   buildMemoryLongformBenchmarkSeed,
-  materializeMemoryLongformBenchmark,
   MEMORY_LONGFORM_BENCHMARK_PROFILES,
   type MemoryLongformBenchmarkProfileName,
-} from "../src/main/services/features/memory/benchmark/index.js";
+} from "../src/main/services/features/memory/benchmark/memoryLongformBenchmarkSeed.js";
+import { materializeMemoryLongformBenchmark } from "../src/main/services/features/memory/benchmark/memoryLongformBenchmarkMaterialize.js";
 
 type CliOptions = {
   profile: MemoryLongformBenchmarkProfileName;

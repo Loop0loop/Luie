@@ -46,23 +46,18 @@ export const enBaseCore = {
       noteTitle: "New memo",
     },
     toast: {
-      recoveredFromDb:
-        "The file was corrupted, so we restored it from local cache.",
-      recoveredMissingPackage:
-        "The original .luie file was missing, so we rebuilt a new package from local data.",
+      recoveredFromDb: "The file was corrupted, so we restored it from local cache.",
+      recoveredMissingPackage: "The original .luie file was missing, so we rebuilt a new package from local data.",
       dbNewerSynced: "Local cache was newer, so the project file was updated.",
-      pathMissing:
-        "The local .luie attachment is unavailable, so the project opened from local data.",
-      missingAttachment:
-        "The attached .luie file is missing, so the project opened from local data.",
-      invalidAttachment:
-        "The attached .luie path is invalid, so the project opened from local data.",
-      legacyUnsupportedAttachment:
-        "This app no longer supports legacy package .luie files.",
+      pathMissing: "The local .luie attachment is unavailable, so the project opened from local data.",
+      missingAttachment: "The attached .luie file is missing, so the project opened from local data.",
+      invalidAttachment: "The attached .luie path is invalid, so the project opened from local data.",
+      legacyUnsupportedAttachment: "This app no longer supports legacy package .luie files.",
     },
     templateDescription: "Created with {templateId} template",
   },
   sidebar: {
+    explorerTitle: "Explorer",
     title: "PROJECT BINDER",
     menu: {
       openBelow: "Open below",
@@ -132,17 +127,21 @@ export const enBaseCore = {
       {
         id: "1",
         title: "Reference: Medieval clothing",
-        content:
-          "Link: https://wiki...\n\nNoble clothing in the Middle Ages was more ornate than expected...",
-        tags: ["reference", "costume"],
+        content: "Link: https://wiki...\n\nNoble clothing in the Middle Ages was more ornate than expected...",
+        tags: [
+          "reference",
+          "costume"
+        ],
       },
       {
         id: "2",
         title: "Idea fragments",
-        content:
-          "- What if the protagonist was the villain?\n- What if memories before the loop were distorted?",
-        tags: ["idea", "plot"],
-      },
+        content: "- What if the protagonist was the villain?\n- What if memories before the loop were distorted?",
+        tags: [
+          "idea",
+          "plot"
+        ],
+      }
     ],
   },
   startupWizard: {
@@ -158,12 +157,10 @@ export const enBaseCore = {
     },
     onboarding: {
       introTitle: "Welcome to Luie",
-      introBody:
-        "Luie is a local-first writing app for long-form fiction. It helps your draft with AI semantic search, canvas, and a relationship graph.",
+      introBody: "Luie is a local-first writing app for long-form fiction. It helps your draft with AI semantic search, canvas, and a relationship graph.",
       introNext: "Get started",
       setupTitle: "Install Local AI",
-      setupBody:
-        "Install the embedding model that powers on-device semantic search. You can also install it later in Settings.",
+      setupBody: "Install the embedding model that powers on-device semantic search. You can also install it later in Settings.",
       recommendTitle: "Recommended for your PC",
       skip: "Skip",
       next: "Next",
@@ -171,6 +168,35 @@ export const enBaseCore = {
     },
   },
   toolbar: {
+    tooltip: {
+      undo: "실행 취소",
+      redo: "다시 실행",
+      bold: "Bold",
+      italic: "Italic",
+      underline: "Underline",
+      strikethrough: "Strikethrough",
+      textColor: "Text Color",
+      highlight: "Highlight",
+      alignLeft: "왼쪽 정렬",
+      alignCenter: "가운데 정렬",
+      alignRight: "오른쪽 정렬",
+      bulletList: "글머리 기호",
+      orderedList: "번호 매기기",
+      toggleMobileView: "화면 보기 전환",
+      openWorldGraph: "세계관 그래프 열기",
+    },
+    view: {
+      mobile: "모바일 화면",
+      desktop: "PC 화면",
+      graph: "그래프",
+    },
+    ribbon: {
+      home: "홈",
+      insert: "삽입",
+      draw: "그리기",
+      view: "보기",
+      paste: "붙여넣기",
+    },
     editor: "Editor",
     canvas: "Canvas",
   },

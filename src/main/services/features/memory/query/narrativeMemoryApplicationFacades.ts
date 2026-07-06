@@ -1,12 +1,6 @@
 import type {
   MemoryEpisodeCalibrationRequest,
   MemoryEpisodeCalibrationResult,
-  MemoryEvidenceRepairInput,
-  MemoryEvidenceRepairResult,
-  MemoryReviewBacklogInput,
-  MemoryReviewBacklogResult,
-  MemoryStaleEvidenceReviewActionInput,
-  MemoryStaleEvidenceReviewActionResult,
   NarrativeMemoryIntentCalibrationRequest,
   NarrativeMemoryIntentCalibrationResult,
   NarrativeMemoryQueryInput,
@@ -22,13 +16,6 @@ import {
 } from "../episode/memoryEpisodeExtractorCalibration.js";
 import { llmEpisodeExtractor } from "../episode/memoryEpisodeLlmExtractor.js";
 import { runLiveMemoryEvalSuite } from "../eval/memoryEvalRunner.js";
-import { repairMemoryEvidenceChunkLinks } from "../repair/index.js";
-import {
-  deferMemoryReviewStaleEvidence,
-  getMemoryReviewBacklogReport,
-  rejectMemoryReviewStaleEvidence,
-  resolveMemoryReviewStaleEvidence,
-} from "../review/index.js";
 import { formatNarrativeMemoryQueryResult } from "./internal/formatter.js";
 import { classifyNarrativeMemoryQueryPlanWithLlm } from "./internal/llmIntentClassifier.js";
 import { buildNarrativeMemoryQueryPlan } from "./internal/plan.js";
@@ -100,49 +87,4 @@ export async function runNarrativeMemoryEpisodeCalibration(
     extractor: llmEpisodeExtractor,
     cases: createDefaultMemoryEpisodeCalibrationCases(input.projectId),
   });
-}
-
-export async function getNarrativeMemoryReviewBacklog(
-  input: MemoryReviewBacklogInput,
-): Promise<MemoryReviewBacklogResult> {
-  const report = await getMemoryReviewBacklogReport(input);
-  return {
-    staleEvidence: report.staleEvidence,
-    counts: {
-      staleEvidence: report.counts.staleEvidence,
-    },
-  };
-}
-
-export async function repairNarrativeMemoryEvidenceLinks(
-  input: MemoryEvidenceRepairInput,
-): Promise<MemoryEvidenceRepairResult> {
-  return repairMemoryEvidenceChunkLinks(input);
-}
-
-export async function reviewNarrativeMemoryStaleEvidence(
-  input: MemoryStaleEvidenceReviewActionInput,
-): Promise<MemoryStaleEvidenceReviewActionResult> {
-  const decisionInput = {
-    projectId: input.projectId,
-    kind: input.kind,
-    id: input.id,
-    reviewerNote: input.reviewerNote,
-  };
-  const result =
-    input.action === "defer"
-      ? await deferMemoryReviewStaleEvidence(decisionInput)
-      : input.action === "reject"
-        ? await rejectMemoryReviewStaleEvidence(decisionInput)
-        : await resolveMemoryReviewStaleEvidence(decisionInput);
-
-  return {
-    updated: result.updated,
-    status:
-      input.action === "defer"
-        ? "deferred"
-        : input.action === "reject"
-          ? "rejected"
-          : "resolved",
-  };
 }

@@ -1,12 +1,18 @@
 export const jaBaseAnalysis = {
   analysis: {
     title: "原稿分析",
+    tabs: {
+      chat: "チャット",
+      review: "設定レビュー",
+    },
     viewMode: {
-      switchToFloating: "フロー팅ビューに切り替え",
+      switchToFloating: "フローティングビューに切り替え",
       switchToDock: "固定ビューに切り替え",
     },
+    resizeHandle: "リサイズハンドル",
     emptyState: {
       title: "原稿について何でも聞いてください",
+      subtitle: "登場人物の関係、世界観の整合性、未回収の伏線などをAIと一緒に確認しましょう。",
       summaryLabel: "今回のチャプター要約",
       summaryPrompt: "今回のチャプターを1段落で要約して。",
       relationLabel: "人物関係整理",
@@ -17,7 +23,7 @@ export const jaBaseAnalysis = {
       foreshadowPrompt: "まだ回収されていない伏線があるか教えて。",
     },
     chat: {
-      evidenceCount: "出処 #{{index}}",
+      evidenceCount: "出典 #{{index}}",
       error: {
         aborted: "リクエストが中断されました。",
         failed: "分析エンジンを起動できませんでした。しばらくしてからもう一度お試しください。",
@@ -44,8 +50,8 @@ export const jaBaseAnalysis = {
     },
     review: {
       summary: {
-        title: "叙事要약",
-        loading: "検索中...",
+        title: "叙事の要約",
+        loading: "読み込み中...",
         empty: "生成された hierarchy summary がありません。",
         allCount: "全体 {{count}}",
         staleCount: "stale {{count}}",
@@ -56,7 +62,7 @@ export const jaBaseAnalysis = {
       queue: {
         conflict: {
           title: "衝突キュー",
-          loading: "検索中...",
+          loading: "読み込み中...",
           empty: "現在の基準で衝突候補はありません。",
           evidenceQuote: "{{title}} 根拠",
           invalidated: "無効化: {{fact}}",
@@ -81,7 +87,7 @@ export const jaBaseAnalysis = {
         },
         alias: {
           title: "検討する別名",
-          loading: "検索中...",
+          loading: "読み込み中...",
           empty: "検討する suggested 別名はありません。",
           confirm: "確定",
           reject: "却下",
@@ -96,7 +102,7 @@ export const jaBaseAnalysis = {
         },
         entity: {
           title: "検討するエンティティ",
-          loading: "検索中...",
+          loading: "読み込み中...",
           empty: "検討する suggested エンティティはありません。",
           confirm: "確定",
           reject: "却下",
@@ -110,7 +116,7 @@ export const jaBaseAnalysis = {
         },
         episode: {
           title: "検討するエピソード",
-          loading: "検索中...",
+          loading: "読み込み中...",
           empty: "検討する suggested エピソードはありません。",
           confirm: "確定",
           reject: "却下",
@@ -123,7 +129,7 @@ export const jaBaseAnalysis = {
         },
         fact: {
           title: "検討する事実",
-          loading: "検索中...",
+          loading: "読み込み中...",
           empty: "検討する suggested 事実は無効です。",
           observedRange: "{{validFrom}}話から観察 {{observedAt}}話",
           confirm: "canonical memoryとして承認",
@@ -137,7 +143,7 @@ export const jaBaseAnalysis = {
         },
         staleEvidence: {
           title: "古い根拠",
-          loading: "検索中...",
+          loading: "読み込み中...",
           empty: "検討する古い根拠はありません。",
           defer: "後で見る",
           reject: "破棄",
@@ -193,6 +199,15 @@ export const jaBaseAnalysis = {
         blocked_p0: "遮断",
         unknown: "不明",
       },
+    },
+    toast: {
+      error: "分析中にエラーが発生しました。",
+      apiKeyMissing:
+        "Gemini APIキーが設定されていません。環境変数を確認してください。",
+      quotaExceeded:
+        "Gemini APIの利用上限を超えました。しばらくしてから再試行してください。",
+      networkError: "ネットワークエラーが発生しました。接続を確認してください。",
+      unknown: "不明なエラーが発生しました。",
     },
   },
 } as const;

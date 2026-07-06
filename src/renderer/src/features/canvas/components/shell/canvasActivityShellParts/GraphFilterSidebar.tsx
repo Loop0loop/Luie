@@ -26,19 +26,30 @@ export const GraphFilterSidebar = memo(() => {
   const selectedFocusNode = useGraphStore((state) => state.selectedFocusNode);
   const setSelectedFocusNode = useGraphStore((state) => state.setSelectedFocusNode);
   const graphData = useWorldBuildingStore((state) => state.graphData);
+
   const focusOptions = buildGraphSurfaceData(graphData).sourceNodes.filter((node) =>
     activeMode === "character" ? node.data.type === "character" : node.data.type === "event",
   );
 
-  const [startChapter, setStartChapter] = useState(12);
-  const [endChapter, setEndChapter] = useState(15);
+  const [startChapter, setStartChapter] = useState<number | "all">("all");
+  const [endChapter, setEndChapter] = useState<number | "all">("all");
+
+  // 동적 챕터 목록 생성 (현재는 사용되지 않지만 향후 확장용)
+  // const chapterNumbers = useMemo(() => {
+  //   return chapters
+  //     .map((ch) => ch.order)
+  //     .filter((order): order is number => typeof order === "number")
+  //     .sort((a, b) => a - b);
+  // }, [chapters]);
 
   const handleStartChapterChange = useCallback((val: number) => {
-    setStartChapter(Math.min(val, endChapter));
+    const currentEnd = typeof endChapter === "number" ? endChapter : 15;
+    setStartChapter(Math.min(val, currentEnd));
   }, [endChapter]);
 
   const handleEndChapterChange = useCallback((val: number) => {
-    setEndChapter(Math.max(val, startChapter));
+    const currentStart = typeof startChapter === "number" ? startChapter : 12;
+    setEndChapter(Math.max(val, currentStart));
   }, [startChapter]);
 
   return (

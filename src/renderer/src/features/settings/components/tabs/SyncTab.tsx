@@ -161,7 +161,7 @@ export const SyncTab = memo(function SyncTab({
 
         <div className="mt-4 flex items-center justify-between bg-warning/10 border border-warning/30 rounded-panel p-3">
           <div className="text-sm text-warning-fg">
-            {t("settings.sync.conflicts", {
+            {t("settings.sync.conflicts.summary", {
               total: status.conflicts.total,
               chapters: status.conflicts.chapters,
               memos: status.conflicts.memos,

@@ -4,14 +4,12 @@ import { writeFile } from "node:fs/promises";
 import { db } from "../src/main/database/main/databaseService.js";
 import { buildLayer3Evidence } from "../src/main/services/features/rag/internal/contextAssembler.layer3.js";
 import { buildRagGrounding } from "../src/main/services/features/rag/grounding.js";
-import {
-  runLiveMemoryEvalSuite,
-  summarizeMemoryEvalOptimizationFailures,
-} from "../src/main/services/features/memory/eval/index.js";
+import { runLiveMemoryEvalSuite } from "../src/main/services/features/memory/eval/memoryEvalRunner.js";
+import { summarizeMemoryEvalOptimizationFailures } from "../src/main/services/features/memory/eval/memoryEvalOptimizationGuard.js";
 import {
   MEMORY_WRITER_TASK_REAL_BETA_LABEL_PREFIX,
   buildMemoryWriterTaskBenchmarkRealBetaRunLabel,
-} from "../src/main/services/features/memory/benchmark/index.js";
+} from "../src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.js";
 import {
   resolveSearchOptimizationPolicy,
   type SearchOptimizationMode,

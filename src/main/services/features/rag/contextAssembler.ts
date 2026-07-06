@@ -9,13 +9,13 @@ import type {
 import {
   buildLayer0ProjectSummary,
   buildLayer1ChapterSummaries,
-  buildLayer2WorldContext,
-  buildLayer3Evidence,
-} from "./internal/contextAssembler.layers.js";
+} from "./internal/contextAssembler.layer0.js";
+import { buildLayer2WorldContext } from "./internal/contextAssembler.layer2.js";
+import { buildLayer3Evidence } from "./internal/contextAssembler.layer3.js";
 import {
   formatNarrativeMemoryQueryResult,
   narrativeMemoryQueryService,
-} from "../memory/query/index.js";
+} from "../memory/query/narrativeMemoryQueryService.js";
 import type { RagEmbeddingProvider } from "./internal/contextAssembler.types.js";
 import { loadRagPromptConfig } from "./ragPromptConfig.js";
 import { resolveSearchOptimizationPolicy } from "../search/searchOptimizationPolicy.js";

@@ -32,33 +32,26 @@ export async function collectMemorySourceRows(
   client: MainDrizzleClient,
   jobs: MemoryBuildJobRow[],
 ): Promise<MemorySourceRow[]> {
-  const chapterIds = jobs
-    .filter((job) => job.targetType === MEMORY_TARGET_TYPES.CHAPTER)
-    .map((job) => job.targetId);
-  const sceneIds = jobs
-    .filter((job) => job.targetType === MEMORY_TARGET_TYPES.SCENE)
-    .map((job) => job.targetId);
-  const noteIds = jobs
-    .filter((job) => job.targetType === MEMORY_TARGET_TYPES.NOTE)
-    .map((job) => job.targetId);
-  const synopsisIds = jobs
-    .filter((job) => job.targetType === MEMORY_TARGET_TYPES.SYNOPSIS)
-    .map((job) => job.targetId);
-  const plotIds = jobs
-    .filter((job) => job.targetType === MEMORY_TARGET_TYPES.PLOT)
-    .map((job) => job.targetId);
-  const eventIds = jobs
-    .filter((job) => job.targetType === MEMORY_TARGET_TYPES.EVENT)
-    .map((job) => job.targetId);
-  const characterIds = jobs
-    .filter((job) => job.targetType === MEMORY_TARGET_TYPES.CHARACTER)
-    .map((job) => job.targetId);
-  const factionIds = jobs
-    .filter((job) => job.targetType === MEMORY_TARGET_TYPES.FACTION)
-    .map((job) => job.targetId);
-  const scrapMemoIds = jobs
-    .filter((job) => job.targetType === MEMORY_TARGET_TYPES.SCRAP_MEMO)
-    .map((job) => job.targetId);
+  const idsByType = new Map<string, string[]>();
+  for (const job of jobs) {
+    const ids = idsByType.get(job.targetType);
+    if (ids) {
+      ids.push(job.targetId);
+    } else {
+      idsByType.set(job.targetType, [job.targetId]);
+    }
+  }
+  const idsFor = (targetType: string): string[] => idsByType.get(targetType) ?? [];
+
+  const chapterIds = idsFor(MEMORY_TARGET_TYPES.CHAPTER);
+  const sceneIds = idsFor(MEMORY_TARGET_TYPES.SCENE);
+  const noteIds = idsFor(MEMORY_TARGET_TYPES.NOTE);
+  const synopsisIds = idsFor(MEMORY_TARGET_TYPES.SYNOPSIS);
+  const plotIds = idsFor(MEMORY_TARGET_TYPES.PLOT);
+  const eventIds = idsFor(MEMORY_TARGET_TYPES.EVENT);
+  const characterIds = idsFor(MEMORY_TARGET_TYPES.CHARACTER);
+  const factionIds = idsFor(MEMORY_TARGET_TYPES.FACTION);
+  const scrapMemoIds = idsFor(MEMORY_TARGET_TYPES.SCRAP_MEMO);
 
   const chapterRows =
     chapterIds.length > 0

@@ -29,7 +29,8 @@ const loadAppearanceCacheService = async () =>
   (await import("../world/cache/appearanceCacheService.js")).appearanceCacheService;
 
 const loadChapterSearchCacheService = async () =>
-  (await import("../search/index.js")).chapterSearchCacheService;
+  (await import("../search/chapterSearchCacheService.js"))
+    .chapterSearchCacheService;
 
 export class ChapterService {
   private writeSerialQueue: Promise<void> = Promise.resolve();

@@ -27,7 +27,8 @@ import {
 } from "./chapterRuntime.js";
 
 const loadChapterSearchCacheService = async () =>
-  (await import("../../features/search/index.js")).chapterSearchCacheService;
+  (await import("../../features/search/chapterSearchCacheService.js"))
+    .chapterSearchCacheService;
 
 type RunInWriteSerialQueue = <T>(task: () => Promise<T>) => Promise<T>;
 

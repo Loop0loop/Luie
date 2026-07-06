@@ -1,15 +1,9 @@
-import {
-  buildMemoryCanonicalPackagePayload,
-  applyMemoryCanonicalPackagePayload,
-  createEmptyMemoryCanonicalPackagePayload,
-  type MemoryCanonicalPackagePayload,
-  type MemoryCanonicalTableName,
-} from "./internal/index.js";
-
-export type { MemoryCanonicalPackagePayload, MemoryCanonicalTableName };
-
 export {
   buildMemoryCanonicalPackagePayload,
-  applyMemoryCanonicalPackagePayload,
   createEmptyMemoryCanonicalPackagePayload,
-};
+} from "./internal/buildPayload.js";
+export { applyMemoryCanonicalPackagePayload } from "./internal/applyPayload.js";
+export type {
+  MemoryCanonicalPackagePayload,
+  MemoryCanonicalTableName,
+} from "./internal/types.js";

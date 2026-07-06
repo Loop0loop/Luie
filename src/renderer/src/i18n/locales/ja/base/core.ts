@@ -46,24 +46,18 @@ export const jaBaseCore = {
       noteTitle: "新しいメモ",
     },
     toast: {
-      recoveredFromDb:
-        "ファイルが破損していたため、ローカルキャッシュから復元しました。",
-      recoveredMissingPackage:
-        "元の .luie ファイルが見つからなかったため、ローカルデータから新しいパッケージを復元しました。",
-      dbNewerSynced:
-        "ローカルキャッシュが新しいため、プロジェクトファイルを更新しました。",
-      pathMissing:
-        "ローカル .luie 接続を利用できないため、ローカルデータで開きます。",
-      missingAttachment:
-        "接続された .luie ファイルが見つからないため、ローカルデータで開きます。",
-      invalidAttachment:
-        "接続された .luie パスが無効なため、ローカルデータで開きます。",
-      legacyUnsupportedAttachment:
-        "このアプリは旧 package .luie をもうサポートしていません。",
+      recoveredFromDb: "ファイルが破損していたため、ローカルキャッシュから復元しました。",
+      recoveredMissingPackage: "元の .luie ファイルが見つからなかったため、ローカルデータから新しいパッケージを復元しました。",
+      dbNewerSynced: "ローカルキャッシュが新しいため、プロジェクトファイルを更新しました。",
+      pathMissing: "ローカル .luie 接続を利用できないため、ローカルデータで開きます。",
+      missingAttachment: "接続された .luie ファイルが見つからないため、ローカルデータで開きます。",
+      invalidAttachment: "接続された .luie パスが無効なため、ローカルデータで開きます。",
+      legacyUnsupportedAttachment: "このアプリは旧 package .luie をもうサポートしていません。",
     },
     templateDescription: "{templateId} テンプレートで作成",
   },
   sidebar: {
+    explorerTitle: "エクスプローラー",
     title: "PROJECT BINDER",
     menu: {
       openBelow: "下に開く",
@@ -133,17 +127,21 @@ export const jaBaseCore = {
       {
         id: "1",
         title: "参考資料: 中世衣装",
-        content:
-          "リンク: https://wiki...\n\n中世の貴族衣装は思った以上に華やかだった...",
-        tags: ["資料", "衣装"],
+        content: "リンク: https://wiki...\n\n中世の貴族衣装は思った以上に華やかだった...",
+        tags: [
+          "資料",
+          "衣装"
+        ],
       },
       {
         id: "2",
         title: "アイデアの断片",
-        content:
-          "- 主人公が実は悪役だったら？\n- ループ前の記憶が歪んでいたら？",
-        tags: ["アイデア", "プロット"],
-      },
+        content: "- 主人公が実は悪役だったら？\n- ループ前の記憶が歪んでいたら？",
+        tags: [
+          "アイデア",
+          "プロット"
+        ],
+      }
     ],
   },
   startupWizard: {
@@ -159,12 +157,10 @@ export const jaBaseCore = {
     },
     onboarding: {
       introTitle: "Luie へようこそ",
-      introBody:
-        "Luie は長編創作のためのローカルファーストな執筆アプリです。AIセマンティック検索・キャンバス・関係グラフで原稿を支援します。",
+      introBody: "Luie は長編創作のためのローカルファーストな執筆アプリです。AIセマンティック検索・キャンバス・関係グラフで原稿を支援します。",
       introNext: "はじめる",
       setupTitle: "ローカルAIのインストール",
-      setupBody:
-        "デバイス上で動作するセマンティック検索用の埋め込みモデルをインストールします。後で設定からインストールすることもできます。",
+      setupBody: "デバイス上で動作するセマンティック検索用の埋め込みモデルをインストールします。後で設定からインストールすることもできます。",
       recommendTitle: "あなたのPCへのおすすめ",
       skip: "スキップ",
       next: "次へ",
@@ -172,6 +168,35 @@ export const jaBaseCore = {
     },
   },
   toolbar: {
+    tooltip: {
+      undo: "元に戻す",
+      redo: "やり直す",
+      bold: "太字",
+      italic: "斜体",
+      underline: "下線",
+      strikethrough: "打ち消し線",
+      textColor: "文字色",
+      highlight: "ハイライト",
+      alignLeft: "左揃え",
+      alignCenter: "中央揃え",
+      alignRight: "右揃え",
+      bulletList: "箇条書き",
+      orderedList: "番号付きリスト",
+      toggleMobileView: "画面表示を切り替え",
+      openWorldGraph: "世界観グラフを開く",
+    },
+    view: {
+      mobile: "モバイル画面",
+      desktop: "PC画面",
+      graph: "グラフ",
+    },
+    ribbon: {
+      home: "ホーム",
+      insert: "挿入",
+      draw: "描画",
+      view: "表示",
+      paste: "貼り付け",
+    },
     editor: "エディター",
     canvas: "キャンバス",
   },

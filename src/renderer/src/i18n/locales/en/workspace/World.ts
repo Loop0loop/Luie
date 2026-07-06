@@ -75,8 +75,7 @@ export const enWorkspaceWorld = {
     tocLabel: "Contents",
     addSection: "+ Add section",
     newSection: "New section",
-    deleteCharacterConfirm:
-      "Delete this character? This action cannot be undone.",
+    deleteCharacterConfirm: "Delete this character? This action cannot be undone.",
     deleteSectionConfirm: "Delete this section? (Content will be kept)",
     newFieldLabel: "New field",
     deleteFieldConfirm: "Delete this field?",
@@ -95,7 +94,7 @@ export const enWorkspaceWorld = {
       "3. Personality",
       "4. Background",
       "5. Relationships",
-      "6. Author notes",
+      "6. Author notes"
     ],
     defaults: {
       name: "Click here to enter a name",
@@ -212,12 +211,11 @@ export const enWorkspaceWorld = {
       },
       inspector: {
         emptySelection: "Click on a node or relation\nto view details.",
-        deleteNodeConfirm: 'Delete "{{name}}"?',
+        deleteNodeConfirm: "Delete \"{{name}}\"?",
         untitled: "Untitled Entity",
         empty: "Empty",
         tagsPlaceholder: "Comma separated...",
-        descriptionPlaceholder:
-          "Write detailed lore, background story, key traits here...",
+        descriptionPlaceholder: "Write detailed lore, background story, key traits here...",
         relation: "Relation",
         changeRelation: "Change Relation",
         selectNewRelation: "Select New Relation",
@@ -242,8 +240,7 @@ export const enWorkspaceWorld = {
         library: "Library",
         items: "items",
         noResults: "No results found",
-        noResultsHint:
-          "Try selecting different filters or\nchanging your search query",
+        noResultsHint: "Try selecting different filters or\nchanging your search query",
       },
     },
     synopsis: {

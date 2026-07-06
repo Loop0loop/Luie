@@ -8,28 +8,6 @@ export function sha256(input: string): string {
   return crypto.createHash("sha256").update(input).digest("hex");
 }
 
-export function estimateTokenCountFromChars(content: string): number {
-  // Phase 1 uses a cheap proxy for token count. Real tokenizer integration belongs to Phase 2+.
-  return content.length;
-}
-
-export function buildMemoryContextLabel(input: {
-  sourceType: string;
-  title?: string | null;
-}): string | null {
-  const title = input.title?.trim();
-  if (!title) return null;
-  return `${input.sourceType}: ${title}`;
-}
-
-export function buildMemoryChunkIndexText(input: {
-  contextLabel: string | null;
-  content: string;
-}): string {
-  if (!input.contextLabel) return input.content;
-  return `[${input.contextLabel}]\n${input.content}`;
-}
-
 function collectParagraphBoundaries(input: string): Array<{
   start: number;
   end: number;

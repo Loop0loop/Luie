@@ -118,7 +118,7 @@ describe("AnalysisViewMode", () => {
     document.body.innerHTML = "";
   });
 
-  it("removes 6 panels (ConflictQueuePanel, EpisodeReviewPanel, etc.) and keeps NarrativeSummaryStatusPanel", async () => {
+  it("keeps review tab focused on NarrativeSummaryStatusPanel", async () => {
     useAnalysisStore.setState({
       showNarrativeSummaryStatus: true,
       narrativeSummaryStatus: {

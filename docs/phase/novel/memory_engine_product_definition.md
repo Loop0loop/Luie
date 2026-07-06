@@ -212,7 +212,7 @@ Status as of 2026-06-30:
 | Evidence display in UI | Evidence-backed UI exists in parts, but product-level flow needs audit. | Partial |
 | Optional AI answer | Gemini/local runtime architecture exists; AI is not fully product-positioned as subordinate in UI. | Partial |
 | No-evidence refusal | `answer_mode_v1` includes insufficient-evidence cases and Gemini smoke passed. UI/product path still needs audit. | Partial |
-| Answer mode separation | `EVIDENCE`/`INSUFFICIENT`/`ADVISORY` policy and 32-case runner exist. UI audit shows `ADVISORY` is not wired into the product contract yet. | Partial |
+| Answer mode separation | `EVIDENCE`/`INSUFFICIENT`/`ADVISORY` policy, runner, and RAG result field exist. Chat uses it to suppress noisy Memory Engine chrome. `ADVISORY` is heuristic only. | Partial |
 | Draft/discarded/canon separation | Test data and some guards exist; real product UX needs audit. | Partial |
 | Real writer validation | No real beta data. | Missing |
 
@@ -231,11 +231,10 @@ Do not add more broad features first.
 
 Next smallest useful work:
 
-1. Add `answerMode` to the RAG result contract and render it in chat.
-2. Ensure AI answer surfaces mode, evidence, and uncertainty, not just prose.
-3. Add more no-evidence / abstention cases after the UI path is wired.
-4. Keep local-first and non-AI usage visible in product copy/UI.
-5. Run real writer beta later; until then, label results as rehearsal only.
+1. Run the app and manually verify casual input does not show `추정`, chunk UUID, or offset.
+2. Add more no-evidence / abstention cases after the UI path is verified.
+3. Keep local-first and non-AI usage visible in product copy/UI.
+4. Run real writer beta later; until then, label results as rehearsal only.
 
 ## Final Anchor
 

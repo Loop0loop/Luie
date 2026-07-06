@@ -7,7 +7,6 @@ import {
 import { useShallow } from "zustand/react/shallow";
 import { useAnalysisStore } from "@renderer/features/research/stores/analysisStore";
 import { requestChapterNavigation } from "@renderer/features/workspace/services/chapterNavigation";
-import { api } from "@shared/api";
 import type {
   MemoryScope,
 } from "../shared/types";
@@ -77,7 +76,6 @@ export function useRagChat({
     if (!item.chapterId) {
       return;
     }
-    await api.memory.getChunkBacklink(item.chunkId);
     requestChapterNavigation({
       chapterId: item.chapterId,
       query: item.quote?.trim().slice(0, 48),

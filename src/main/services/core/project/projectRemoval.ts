@@ -22,7 +22,8 @@ const loadAppearanceCacheService = async () =>
     .appearanceCacheService;
 
 const loadChapterSearchCacheService = async () =>
-  (await import("../../features/search/index.js")).chapterSearchCacheService;
+  (await import("../../features/search/chapterSearchCacheService.js"))
+    .chapterSearchCacheService;
 
 const clearSyncBaselineForProject = (projectId: string): void => {
   const syncSettings = settingsManager.getSyncSettings();

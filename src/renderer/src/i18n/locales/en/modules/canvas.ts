@@ -1,6 +1,3 @@
-/**
- * Canvas i18n — English tree. Keys grow per phase.
- */
 export const enCanvas = {
   workspace: {
     title: "Canvas",

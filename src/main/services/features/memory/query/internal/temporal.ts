@@ -112,6 +112,8 @@ export async function fetchTemporalFacts(input: {
       observedAtChapterOrder: memoryFact.observedAtChapterOrder,
       confidence: memoryFact.confidence,
       status: memoryFact.status,
+      provenanceKind: memoryFact.provenanceKind,
+      canonStatus: memoryFact.canonStatus,
       invalidatedByFactId: memoryFact.invalidatedByFactId,
     })
     .from(memoryFact)
@@ -160,6 +162,8 @@ export async function fetchTemporalFacts(input: {
     observedAtChapterOrder: row.observedAtChapterOrder,
     confidence: row.confidence,
     status: row.status,
+    provenanceKind: row.provenanceKind,
+    canonStatus: row.canonStatus,
     evidenceCount: evidenceCounts.get(row.id) ?? 0,
     ...resolveRelatedEntity({
       fact: row,

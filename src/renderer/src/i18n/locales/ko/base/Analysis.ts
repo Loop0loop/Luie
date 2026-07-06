@@ -12,6 +12,7 @@ export const koBaseAnalysis = {
     resizeHandle: "리사이즈 핸들",
     emptyState: {
       title: "원고에 대해 무엇이든 물어보세요",
+      subtitle: "원고의 등장인물 관계, 세계관 설정 충돌, 복선 회수 여부 등을 AI와 함께 점검해 보세요.",
       summaryLabel: "이번 챕터 요약",
       summaryPrompt: "이번 챕터를 한 문단으로 요약해줘.",
       relationLabel: "인물 관계 정리",
@@ -198,6 +199,15 @@ export const koBaseAnalysis = {
         blocked_p0: "차단",
         unknown: "알 수 없음",
       },
+    },
+    toast: {
+      error: "분석 중 오류가 발생했습니다.",
+      apiKeyMissing:
+        "Gemini API 키가 설정되지 않았습니다. 환경 변수를 확인해주세요.",
+      quotaExceeded:
+        "Gemini API 할당량을 초과했습니다. 잠시 후 다시 시도해주세요.",
+      networkError: "네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.",
+      unknown: "알 수 없는 오류가 발생했습니다.",
     },
   },
 } as const;

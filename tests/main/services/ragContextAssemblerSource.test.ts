@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 const source = () =>
   [
     "src/main/services/features/rag/contextAssembler.ts",
-    "src/main/services/features/rag/internal/contextAssembler.layers.ts",
     "src/main/services/features/rag/internal/contextAssembler.layer2.ts",
   ]
     .map((filePath) =>

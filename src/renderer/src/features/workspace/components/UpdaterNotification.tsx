@@ -65,6 +65,8 @@ export default function UpdaterNotification() {
   const detail = useMemo(() => {
     if (state.status === "available" && state.latestVersion) {
       return t("updater.message.available", {
+        current: state.currentVersion,
+        latest: state.latestVersion,
         defaultValue: `현재 ${state.currentVersion} → 최신 ${state.latestVersion}`,
       });
     }

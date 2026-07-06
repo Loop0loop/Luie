@@ -1,10 +1,6 @@
 const MAX_JOB_ATTEMPTS = 5;
 const BASE_RETRY_BACKOFF_MS = 2_000;
 
-export function yieldToEventLoop(): Promise<void> {
-  return new Promise((resolve) => setImmediate(resolve));
-}
-
 export function canRetryMemoryBuildJob(job: {
   status: string;
   attempts: number;

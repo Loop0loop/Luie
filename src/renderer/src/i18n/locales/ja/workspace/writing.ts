@@ -58,6 +58,7 @@ export const jaWorkspaceWriting = {
       alignLeft: "左揃え",
       alignCenter: "中央揃え",
       alignRight: "右揃え",
+      alignJustify: "両端揃え",
       bulletList: "箇条書きリスト",
       orderedList: "番号付きリスト",
       addComment: "コメントを追加",
@@ -65,6 +66,9 @@ export const jaWorkspaceWriting = {
       openWorldGraph: "ワールドグラフを開く",
       fontSizeIncrease: "文字サイズを大きく",
       fontSizeDecrease: "文字サイズを小さく",
+      letterSpacing: "文字間隔",
+      lineHeight: "行間",
+      paragraphSpacing: "段落間隔",
       view: {
         mobile: "モバイル表示",
         desktop: "PC表示",
@@ -74,6 +78,20 @@ export const jaWorkspaceWriting = {
       mobile: "モバイル",
       desktop: "PC",
       graph: "グラフ",
+    },
+    typography: "タイポグラフィ",
+    sceneDivider: "シーン区切り",
+    clearFormatting: "書式をクリア",
+    selectAll: "すべて選択",
+    export: "エクスポート",
+    more: "もっと見る",
+    paragraphStyle: "段落スタイル",
+    fontSize: "フォントサイズ",
+    paragraph: {
+      paragraph: "標準テキスト",
+      heading1: "見出し 1",
+      heading2: "見出し 2",
+      heading3: "見出し 3",
     },
     layout: {
       default: "デフォルトレイアウト",
@@ -111,43 +129,6 @@ export const jaWorkspaceWriting = {
       contextExpand: "パネルを展開",
     },
   },
-  analysis: {
-    title: "編集者のデスク",
-    selectChapter: "レビューする原稿",
-    startButton: "フィードバックを取得",
-    analyzing: "原稿を読んでいます...",
-    emptyState:
-      "こんにちは、作家さん。\nレビューしたい章を机に置いてください。\nゆっくり読んで感想をお伝えします。",
-    disclaimer:
-      "原稿・キャラクター・用語などを使って分析します。\n分析結果は保存されず、セッション終了時に破棄されます。",
-    disclaimerLink: "詳しく見る",
-    disclaimerDetailTitle: "データ処理方針",
-    disclaimerDetailBody:
-      "1. データ使用目的\n- 提供いただいた原稿データはAI分析のためだけに使用します。\n- その他の目的には使用しません。\n\n2. 保存と破棄\n- 分析のために送信されたデータは永久保存されません。\n- 揮発性メモリで処理され、セッション終了時に破棄されます。\n\n3. 第三者提供の禁止\n- 同意なしに第三者へ提供したり、学習目的で使用しません。\n\n安心して創作に集中してください。",
-    result: {
-      reaction: "読者メモ",
-      contradiction: "レビュー・メモ",
-      empty: "フィードバックはありません。",
-    },
-    actions: {
-      reset: "リセット",
-      reanalyze: "再分析",
-      moveToContext: "文脈に移動",
-    },
-    toast: {
-      start: "分析を開始します...",
-      error: "分析中にエラーが発生しました。",
-      apiKeyMissing:
-        "Gemini APIキーが設定されていません。環境変数を確認してください。",
-      quotaExceeded:
-        "Gemini APIの利用上限を超えました。しばらくしてから再試行してください。",
-      networkError:
-        "ネットワークエラーが発生しました。接続を確認してください。",
-      unknown: "不明なエラーが発生しました。",
-      navigateChapter: '"{title}" に移動します。',
-      navigateFallback: "参照された文脈へ移動します。(context: {contextId})",
-    },
-  },
   slashMenu: {
     header: "基本ブロック",
     description: {
@@ -176,5 +157,36 @@ export const jaWorkspaceWriting = {
     },
     toggleTitle: "トグルタイトル",
     calloutContent: "メモ内容",
+  },
+  editor: {
+    bubbleMenu: {
+      bold: "太字",
+      italic: "斜体",
+      underline: "下線",
+      strikethrough: "打ち消し線",
+      highlight: "ハイライト",
+      textColor: "文字色",
+      quote: "引用",
+      addTerm: "用語を追加",
+      emptySelection: "選択範囲が空です",
+      addTermSuccess: '用語集に登録しました: "{{text}}"',
+    },
+    status: {
+      saving: "保存中...",
+      saved: "保存済み",
+      unsaved: "未保存",
+      error: "保存に失敗しました",
+      charLabel: "文字数:",
+      separator: " | ",
+      wordLabel: "単語数:",
+    },
+    placeholder: {
+      title: "タイトルを入力してください...",
+      body: "ここに物語を書いてください...",
+    },
+    actions: {
+      quickExport: "エクスポート",
+      quickExportTitle: "クイックエクスポート",
+    },
   },
 } as const;

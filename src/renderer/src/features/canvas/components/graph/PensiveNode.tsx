@@ -67,35 +67,7 @@ function PensiveNode({ id, data, selected }: NodeProps<GraphNodeData>) {
         )}
       </div>
 
-      {/* 호버 시 상세 정보 카드 */}
-      <div
-        className={cn(
-          "absolute top-full mt-12 whitespace-nowrap pointer-events-none px-4 py-2.5 rounded-lg bg-panel/95 border border-border/40 shadow-lg text-fg z-50 flex flex-col gap-1.5 min-w-[220px] max-w-[300px] opacity-0 -translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200"
-        )}
-      >
-        <div className="flex items-center justify-between gap-3 border-b border-border/20 pb-1.5">
-          <span className="text-[13px] font-extrabold tracking-tight text-fg">{data.label}</span>
-          {data.type && (
-            <span className="text-[9px] uppercase tracking-wider font-semibold text-muted bg-element border border-border/20 px-1.5 py-0.5 rounded-sm">
-              {t(`canvas.node.kind.${data.type}` as never, data.type)}
-            </span>
-          )}
-        </div>
-        
-        {data.description && (
-          <p className="text-[11px] text-muted whitespace-normal leading-relaxed break-keep">
-            {data.description}
-          </p>
-        )}
-        
-        {data.starGrade === "prime" && (
-          <div className="mt-1 flex justify-end">
-            <span className="text-[8px] font-black text-on-accent bg-accent px-2 py-0.5 rounded-sm uppercase tracking-widest shrink-0">
-              {t("canvas.node.coreBadge")}
-            </span>
-          </div>
-        )}
-      </div>
+      {/* 호버 시 상세 정보는 GraphHoverCard에서 처리 */}
 
       <Handle type="source" position={Position.Bottom} className="opacity-0" />
     </div>

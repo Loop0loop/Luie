@@ -42,9 +42,21 @@ describe("memory eval suite runner", () => {
       "utf8",
     );
 
+    expect(source).toContain("chapter_06_15_eval_expansion.jsonl");
     expect(source).toContain("queryChapterOrder: question.allowedUntilChapter ?? null");
     expect(source).not.toContain('question.taskType === "chapter_knowledge_state"');
     expect(source).toContain("if (combined.feedback.length > 0)");
+  });
+
+  it("validates shadow beta expansion continuity questions", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "scripts/validate-shadow-beta-novel-pack.mjs"),
+      "utf8",
+    );
+
+    expect(source).toContain("chapter_06_15_eval_expansion.jsonl");
+    expect(source).toContain("sourceType");
+    expect(source).toContain("shadow_beta_expansion");
   });
 
   it("keeps Gemini writer answers from adding generic future warnings", () => {

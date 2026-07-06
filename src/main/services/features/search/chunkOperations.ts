@@ -11,13 +11,7 @@ import type {
 import { db } from "../../../database/main/databaseService.js";
 import { memoryChunk } from "../../../database/schema/index.js";
 import { ServiceError } from "../../../utils/error/index.js";
-import {
-  buildFtsQuery,
-  mergeWithRRF,
-  searchByShortTokens,
-  searchByVector,
-  shouldRunVectorSearch,
-} from "./chunkSearch.js";
+import { searchHybridChunkRanks } from "./chunkSearch.js";
 import { resolveSearchOptimizationPolicy } from "./searchOptimizationPolicy.js";
 
 const logger = createLogger("SearchService");
@@ -43,60 +37,15 @@ export async function searchChunks(
 
   try {
     const client = db.getClient();
-    const ftsQuery = buildFtsQuery(normalizedQuery);
-    const ftsRows =
-      ftsQuery.length > 0
-        ? client.all<{
-            chunkId: string;
-          }>(sql`
-            SELECT fts."chunkId" AS "chunkId"
-            FROM "MemoryChunkFts" fts
-            WHERE fts."projectId" = ${input.projectId}
-              AND "MemoryChunkFts" MATCH ${ftsQuery}
-            ORDER BY bm25("MemoryChunkFts"), fts."chunkId"
-            LIMIT ${candidateCap};
-          `)
-        : [];
-
-    const lexicalRanks = await searchByShortTokens(
-      input.projectId,
+    const merged = await searchHybridChunkRanks({
+      projectId: input.projectId,
       normalizedQuery,
+      resultLimit: limit,
       candidateCap,
       logger,
-    );
-
-    let denseRanks: Array<{ chunkId: string; rank: number }> = [];
-    if (shouldRunVectorSearch()) {
-      try {
-        const vecs = await embedQuery(input.projectId, [normalizedQuery]);
-        const queryVector = vecs?.[0] ? new Float32Array(vecs[0]) : null;
-        if (queryVector && queryVector.length > 0) {
-          denseRanks = searchByVector(
-            input.projectId,
-            queryVector,
-            candidateCap,
-            logger,
-          );
-        }
-      } catch (error) {
-        logger.warn("Embedding unavailable; fallback to FTS only", {
-          projectId: input.projectId,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    }
-
-    const merged = mergeWithRRF(
-      [
-        ftsRows.map((row, index) => ({
-          chunkId: row.chunkId,
-          rank: index + 1,
-        })),
-        lexicalRanks,
-        denseRanks,
-      ],
-      limit,
-    );
+      embedQuery,
+      vectorWarningMessage: "Embedding unavailable; fallback to FTS only",
+    });
     if (merged.length === 0) {
       return [];
     }

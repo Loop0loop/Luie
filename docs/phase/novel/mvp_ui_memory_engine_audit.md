@@ -5,8 +5,8 @@ Date: 2026-07-01
 ## Verdict
 
 ```text
-UI is partial but the first answer-mode label path is wired.
-Evidence-backed, insufficient-evidence, and advisory labels can now travel through the product contract.
+UI is partial but less noisy.
+Answer mode travels through the product contract, but internal labels are not shown by default.
 ```
 
 ## Checked Path
@@ -75,20 +75,21 @@ safety label: can this answer be trusted as grounded/canonical?
 answer mode: what kind of answer is this?
 ```
 
-For MVP, the answer-mode label is now visible, while safety labels remain separate.
+For MVP, answer mode is used to decide what to hide or show. It is not a user-facing badge by default.
 
 ## MVP Gap
 
 ```text
-EVIDENCE: wired through answerMode + evidence + safety
-INSUFFICIENT: wired through answerMode + safety
-ADVISORY: wired through answerMode label, heuristic only
+EVIDENCE: evidence is available behind `근거 보기` when the previous user question has manuscript/canon intent
+INSUFFICIENT: blocking safety is visible only for manuscript/canon intent
+ADVISORY: no Memory Engine chrome by default
 ```
 
 ## Minimum Next Fix
 
 ```text
-Replace the advisory heuristic with the answer-mode eval classifier only if real usage shows the heuristic mislabels common writer questions.
+Do not add more greeting/advice exceptions.
+If the UI still feels noisy, add explicit mode buttons before adding more heuristics.
 ```
 
 ## Do Not Do Yet
@@ -101,7 +102,7 @@ Replace the advisory heuristic with the answer-mode eval classifier only if real
 ## Current MVP Readiness Impact
 
 ```text
-Memory Engine UI path: partial but usable for MVP leash display
-MVP blocker removed: ADVISORY now has a visible product label
-Recommended next step: run the app and verify labels against real chat flow
+Memory Engine UI path: partial but usable for MVP
+MVP blocker reduced: diagnostic chrome is hidden unless the user asks a manuscript/canon-style question
+Recommended next step: run the app and verify that casual input does not show offset/chunk/safety noise
 ```

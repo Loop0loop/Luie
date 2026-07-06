@@ -15,7 +15,7 @@ export function GraphLegendModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-modal flex items-center justify-center bg-overlay backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-panel border border-border/40 w-[400px] rounded-panel shadow-panel p-5 flex flex-col gap-4 text-fg relative animate-in zoom-in-95 duration-200 select-none">
         <button
           type="button"
@@ -64,11 +64,11 @@ export function GraphLegendModal({
             </span>
             <div className="grid grid-cols-1 gap-2 pl-0.5">
               <div className="flex items-center gap-2.5 text-[11px] text-fg font-semibold bg-surface/40 p-2 rounded-panel border border-border/10">
-                <span className="w-6 border-b border-dashed border-indigo-400" />
+                <span className="w-6 border-b border-dashed border-accent" />
                 <span>{t("canvas.graph.legend.edge.character", "성간 인물 관계선")}</span>
               </div>
               <div className="flex items-center gap-2.5 text-[11px] text-fg font-semibold bg-surface/40 p-2 rounded-panel border border-border/10">
-                <span className="w-6 border-b-2 border-red-400" />
+                <span className="w-6 border-b-2 border-danger" />
                 <span>{t("canvas.graph.legend.edge.event", "인과 관계 수사선 (붉은 실)")}</span>
               </div>
             </div>

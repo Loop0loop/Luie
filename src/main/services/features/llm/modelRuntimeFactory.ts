@@ -47,6 +47,8 @@ type EnvOpenAiConfig = {
 
 const BUNDLED_PROXY_API_KEY_PLACEHOLDER = "__bundled-edge-function__";
 const TEST_PROVIDER_HINTS = new Set(["none", "deterministic"]);
+const normalizeCloudModelId = (value: string): string =>
+  value.trim().replace(/^models\//i, "").toLowerCase();
 
 type PlannedRuntime =
   | { kind: "sidecar"; candidate: Extract<RuntimeRouteCandidate, { kind: "sidecar" }> }
@@ -139,9 +141,11 @@ function loadEnvGeminiConfig(): EnvGeminiConfig | null {
     process.env.GOOGLE_API_KEY?.trim() ||
     settingsManager.getLlmSettings().geminiApiKey?.trim() ||
     "";
-  const model = process.env.GEMINI_MODEL?.trim() ?? "gemini-2.5-flash-lite";
+  const model = normalizeCloudModelId(process.env.GEMINI_MODEL ?? "gemini-2.5-flash-lite");
   if (!model) return null;
-  const alternativeModel = process.env.ALTERNATIVE_GEMINI_MODEL?.trim() || undefined;
+  const alternativeModel = process.env.ALTERNATIVE_GEMINI_MODEL
+    ? normalizeCloudModelId(process.env.ALTERNATIVE_GEMINI_MODEL)
+    : undefined;
   if (packaged) {
     return {
       apiKey: BUNDLED_PROXY_API_KEY_PLACEHOLDER,
@@ -160,7 +164,7 @@ function loadEnvOpenAiConfig(): EnvOpenAiConfig | null {
     process.env.OPENAI_API_KEY?.trim() ||
     settingsManager.getLlmSettings().openaiApiKey?.trim() ||
     "";
-  const model = process.env.OPENAI_MODEL?.trim() ?? "gpt-5.4-nano";
+  const model = normalizeCloudModelId(process.env.OPENAI_MODEL ?? "gpt-5.4-nano");
   if (!model) return null;
   if (packaged) {
     return {

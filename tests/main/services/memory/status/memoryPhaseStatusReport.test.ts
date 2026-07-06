@@ -15,7 +15,6 @@ import {
   memoryNarrativeSummary,
   project,
 } from "../../../../../src/main/infra/database/index.js";
-import { getMemoryRoadmapPhaseStatuses } from "../../../../../src/main/services/features/memory/status/index.js";
 
 const mocked = vi.hoisted(() => ({
   verifyMemoryCanonicalPackageSync: vi.fn(),
@@ -231,71 +230,5 @@ describe("getMemoryPhaseStatusReport", () => {
       ["phase8-summary", "ready"],
       ["phase9-package-sync", "ready"],
     ]);
-    expect(report.roadmapPhases.map((phase) => phase.phase)).toEqual([
-      "phase6-package-durability",
-      "phase7-beta-validation",
-    ]);
-  });
-
-  it("exposes the current Phase 6 and Phase 7 roadmap status separately from DB readiness", () => {
-    const phases = getMemoryRoadmapPhaseStatuses();
-
-    expect(phases.map((phase) => phase.phase)).toEqual([
-      "phase6-package-durability",
-      "phase7-beta-validation",
-    ]);
-    expect(phases[0]).toMatchObject({
-      status: "verified-with-known-gaps",
-      architectureAlignment: {
-        status: "aligned",
-      },
-    });
-    expect(phases[0]?.completed).toEqual(
-      expect.arrayContaining([
-        "canonical sync source id mismatch reporting",
-        "canonical source id mismatch repair option",
-        "actual .luie memory canonical write/read roundtrip",
-        "schema version fixture matrix and legacy v1 normalization",
-        "unknown row field import warning and renderer notice",
-        "crash-safe package write cleanup and recovery coverage",
-        "corrupt .luie open recovery notice verification",
-        "renderer UI package durability E2E for corrupt package recovery",
-        "forced app shutdown crash-safe export E2E",
-      ]),
-    );
-    expect(phases[0]?.remaining).toEqual([]);
-    expect(phases[0]?.remaining).not.toContain(
-      "source id mismatch auto repair",
-    );
-    expect(phases[0]?.remaining).not.toContain(
-      "schema version fixture matrix beyond v1 and missing-version",
-    );
-    expect(phases[0]?.remaining).not.toContain(
-      "unknown row field import UI notice",
-    );
-
-    expect(phases[1]).toMatchObject({
-      status: "blocked-on-real-beta-data",
-      architectureAlignment: {
-        status: "aligned",
-      },
-    });
-    expect(phases[1]?.completed).toEqual(
-      expect.arrayContaining([
-        "writer task benchmark taxonomy and metric summary",
-        "persisted writer benchmark threshold assessment CLI",
-        "persisted beta benchmark threshold candidate calibration",
-        "real beta threshold finalization guard",
-        "real beta threshold finalization manifest",
-        "real beta threshold finalization readiness assertion CLI",
-        "real beta benchmark run label provenance filter",
-        "real beta eval runner canonical label option",
-        "real beta label provenance required for finalization readiness assertion",
-        "writer feedback DB, IPC/preload API, UI buttons, and rejected-answer guard",
-      ]),
-    );
-    expect(phases[1]?.remaining).toContain(
-      "real writer beta data threshold finalization",
-    );
   });
 });

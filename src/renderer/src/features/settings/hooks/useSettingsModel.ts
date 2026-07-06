@@ -31,6 +31,14 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
   const [localLlmCacheReuse, setLocalLlmCacheReuse] = useState<number | undefined>();
   const [openaiApiKey, setOpenaiApiKey] = useState("");
   const [geminiApiKey, setGeminiApiKey] = useState("");
+  const [ollamaConfig, setOllamaConfig] = useState<{ baseUrl: string; chatModel: string; apiKey: string }>({
+    baseUrl: "http://localhost:11434",
+    chatModel: "",
+    apiKey: "",
+  });
+  const [preferredProvider, setPreferredProvider] = useState<
+    "auto" | "sidecar" | "ollama" | "openai" | "gemini"
+  >("auto");
   const [downloadProgress, setDownloadProgress] = useState<{
     stage: "binary" | "model" | "complete" | "error";
     pct: number;
@@ -91,6 +99,16 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
         }
         if (typeof llm.geminiApiKey === "string") {
           setGeminiApiKey(llm.geminiApiKey);
+        }
+        if (llm.ollama) {
+          setOllamaConfig({
+            baseUrl: llm.ollama.baseUrl ?? "http://localhost:11434",
+            chatModel: llm.ollama.chatModel ?? "",
+            apiKey: llm.ollama.apiKey ?? "",
+          });
+        }
+        if (llm.preferredProvider) {
+          setPreferredProvider(llm.preferredProvider);
         }
       }
       await refreshMigrationHealth();
@@ -342,6 +360,45 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     }
   }, [showToast, t]);
 
+  const handleSaveOllamaConfig = useCallback(
+    async (config: { baseUrl: string; chatModel: string; apiKey: string }): Promise<boolean> => {
+      setIsBusy(true);
+      try {
+        const response = await api.settings.setOllamaConfig({
+          baseUrl: config.baseUrl,
+          chatModel: config.chatModel,
+          ...(config.apiKey ? { apiKey: config.apiKey } : {}),
+        });
+        if (response.success) {
+          setOllamaConfig(config);
+          showToast(t("settings.localLlm.ollama.saved"), "success");
+          return true;
+        }
+        showToast(response.error?.message ?? t("settings.localLlm.ollama.saveFailed"), "error");
+        return false;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : t("settings.localLlm.ollama.saveFailed");
+        showToast(message, "error");
+        return false;
+      } finally {
+        setIsBusy(false);
+      }
+    },
+    [showToast, t],
+  );
+
+  const handleSetLlmPreference = useCallback(
+    async (provider: "auto" | "sidecar" | "ollama" | "openai" | "gemini"): Promise<void> => {
+      const response = await api.settings.setLlmPreference({ provider });
+      if (response.success) {
+        setPreferredProvider(provider);
+      } else {
+        showToast(response.error?.message ?? t("settings.localLlm.preferenceSwitchFailed"), "error");
+      }
+    },
+    [showToast, t],
+  );
+
   // 의미 검색 게이트: 임베딩 모델 미설치=비활성, 임베딩 잡 진행 중=준비중, 그 외=준비됨.
   const pendingEmbeddings =
     (memoryEmbeddingStatus?.pendingCount ?? 0) +
@@ -365,6 +422,10 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     localLlmBinaryPath,
     openaiApiKey,
     geminiApiKey,
+    ollamaConfig,
+    preferredProvider,
+    handleSaveOllamaConfig,
+    handleSetLlmPreference,
     isDownloading,
     downloadProgress,
     handleRebuildMemory,

@@ -1,6 +1,3 @@
-/**
- * Canvas i18n — Japanese tree. Keys grow per phase.
- */
 export const jaCanvas = {
   workspace: {
     title: "キャンバス",
@@ -12,6 +9,12 @@ export const jaCanvas = {
     entities: "エンティティ",
     memory: "メモリー",
     search: "検索",
+    bookmark: "ブックマーク",
+    newFile: "新規ファイル",
+    newFolder: "新規フォルダ",
+    sort: "ソート",
+    closeSidebar: "サイドバーを閉じる",
+    closeCanvas: "キャンバスを閉じる",
   },
   panel: {
     views: "ビュー",
@@ -57,6 +60,10 @@ export const jaCanvas = {
   empty: {
     title: "話が選択されていません",
     description: "話を選択するとキャンバスが表示されます。",
+    noNodes: {
+      title: "接続された要素がありません",
+      description: "この話に接続されたキャラクター・イベント・勢力などがありません。",
+    },
   },
   sidebar: {
     activity: "アクティビティ",
@@ -147,6 +154,7 @@ export const jaCanvas = {
     fallbackTimeline: "タイムライン",
     emptyDescription: "キャンバス資料ブロック",
     held: "保留",
+    coreBadge: "コア",
   },
   toolbar: {
     fitView: "画面に合わせる",
@@ -183,6 +191,16 @@ export const jaCanvas = {
     entityNotFound: "ドキュメントが見つかりません。",
     memoNotFound: "メモが見つかりません。",
   },
+  type: {
+    label: "ラベル",
+    dynamic: "動的",
+    static: "静的",
+  },
+  create: {
+    blank: "空白",
+    text: "テキスト",
+    media: "メディア",
+  },
   graph: {
     scope: "分析範囲",
     episode: "エピソードグラフ",
@@ -211,6 +229,25 @@ export const jaCanvas = {
     emptyTitle: "ノードを選択してください",
     emptyDescription: "グラフでノードをクリックすると、この領域に詳細な分析情報が表示されます。",
     demoNotImplemented: "[{{actionName}}]機能はUI/UXデモ段階です。今後のアップデートでサービスレイヤーにバインドされる予定です。",
+    scenarioAnalysis: "シナリオ分析",
+    analysisMode: "分析モード",
+    characterMap: "相関図",
+    eventFlow: "イベントフロー",
+    chapterRange: "章の範囲",
+    allChapters: "すべての章",
+    earlyChapters: "序盤の章",
+    characterFocus: "キャラクターフォーカス",
+    eventFocus: "イベントフォーカス",
+    viewAllNetwork: "ネットワーク全体を表示",
+    authorGuide: "作家ガイド",
+    characterGuideTip: "キャラクターの人間関係のパスをたどります。",
+    eventGuideTip: "プロットのタイムラインをたどります。",
+    nodes: {
+      jinseo: "ジンソ",
+      serin: "セリン",
+      ambush: "待ち伏せ",
+      rebels: "反乱軍",
+    },
     title: "ワールドナビゲーター",
     subtitle: "小説内の人物たちの人物関係図とチャプター別の核心事件の因果関係を、星座ノードと捜査ピンボードのテーマで立体的に可視化する作家専用ナビゲーターです。",
     legend: {

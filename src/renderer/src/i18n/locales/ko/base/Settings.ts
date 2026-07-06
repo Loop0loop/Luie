@@ -26,7 +26,7 @@ export const koBaseSettings = {
       shortcuts: "단축키 (Shortcuts)",
       recovery: "파일 복원 (File Recovery)",
       sync: "동기화 (Sync)",
-      model: "모델 (Model)",
+      model: "AI",
       language: "언어 (Language)",
     },
     section: {

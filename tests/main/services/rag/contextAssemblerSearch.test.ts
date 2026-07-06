@@ -80,4 +80,79 @@ describe("searchMemoryChunksForRag", () => {
 
     expect(results[0]?.chunkId).toBe(exactChunkId);
   });
+
+  it("prefers the chapter chunk where both queried characters co-occur", async () => {
+    const projectId = crypto.randomUUID();
+    const nowIso = "2026-07-01T00:00:00.000Z";
+    const singleNameChunkId = crypto.randomUUID();
+    const coOccurringChunkId = crypto.randomUUID();
+
+    await db.getClient().insert(project).values({
+      id: projectId,
+      title: "RAG Co-occurrence Search",
+      description: null,
+      projectPath: null,
+      updatedAt: nowIso,
+    });
+    await db
+      .getClient()
+      .insert(memoryChunk)
+      .values([
+        {
+          id: singleNameChunkId,
+          projectId,
+          sourceType: "chapter",
+          sourceId: "chapter-4",
+          chapterId: "chapter-4",
+          sceneId: null,
+          chunkIndex: 0,
+          content:
+            "루디우스는 혼자 시장을 지나갔다. 루디우스는 아무도 만나지 않았다. 루디우스의 검만 빛났다.",
+          contentHash: "single-name-content-hash",
+          indexText:
+            "루디우스는 혼자 시장을 지나갔다 루디우스는 아무도 만나지 않았다 루디우스의 검만 빛났다",
+          indexTextHash: "single-name-index-hash",
+          contextLabel: "chapter: single",
+          sourceContentHash: "source-hash",
+          startOffset: 0,
+          endOffset: 60,
+          paragraphStartIndex: 0,
+          paragraphEndIndex: 0,
+          tokenCount: 60,
+          updatedAt: nowIso,
+        },
+        {
+          id: coOccurringChunkId,
+          projectId,
+          sourceType: "chapter",
+          sourceId: "chapter-17",
+          chapterId: "chapter-17",
+          sceneId: null,
+          chunkIndex: 1,
+          content:
+            "주인공은 폐허의 문 앞에서 루디우스를 처음 마주했다. 둘은 짧게 인사를 나눴다.",
+          contentHash: "co-occurring-content-hash",
+          indexText:
+            "주인공은 폐허의 문 앞에서 루디우스를 처음 마주했다 둘은 짧게 인사를 나눴다",
+          indexTextHash: "co-occurring-index-hash",
+          contextLabel: "chapter: co-occurring",
+          sourceContentHash: "source-hash",
+          startOffset: 100,
+          endOffset: 170,
+          paragraphStartIndex: 1,
+          paragraphEndIndex: 1,
+          tokenCount: 70,
+          updatedAt: nowIso,
+        },
+      ]);
+
+    const results = await searchMemoryChunksForRag({
+      projectId,
+      query: "주인공이랑 루디우스 만난 챕터가 어디였지?",
+      limit: 5,
+    });
+
+    expect(results[0]?.chunkId).toBe(coOccurringChunkId);
+    expect(results[0]?.chapterId).toBe("chapter-17");
+  });
 });

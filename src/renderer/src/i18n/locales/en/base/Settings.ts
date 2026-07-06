@@ -26,7 +26,7 @@ export const enBaseSettings = {
       shortcuts: "Shortcuts",
       recovery: "File Recovery",
       sync: "Sync",
-      model: "Model",
+      model: "AI",
       language: "Language",
     },
     section: {
@@ -42,9 +42,8 @@ export const enBaseSettings = {
       menuBar: "Menu Bar",
     },
     customFont: {
-      description:
-        "Enter the font-family name of a font installed on your system.",
-      placeholder: 'e.g., "Noto Sans KR", "Pretendard"',
+      description: "Enter the font-family name of a font installed on your system.",
+      placeholder: "e.g., \"Noto Sans KR\", \"Pretendard\"",
       apply: "Apply",
       active: "Active",
     },
@@ -54,14 +53,13 @@ export const enBaseSettings = {
       docs: "Google Docs Style",
       editor: "Editor Mode",
       scrivener: "Scrivener Style",
+      focus: "Focus Mode",
     },
     menuBar: {
-      description:
-        "On macOS, hide mode switches the window into immersive fullscreen.",
+      description: "On macOS, hide mode switches the window into immersive fullscreen.",
       hide: "Hide menu bar",
       show: "Show menu bar",
-      applyHint:
-        "Changes apply immediately. (Hide: fullscreen, Show: windowed)",
+      applyHint: "Changes apply immediately. (Hide: fullscreen, Show: windowed)",
       applyFailed: "Failed to apply the menu bar mode. Please try again.",
     },
     appearance: {
@@ -92,10 +90,8 @@ export const enBaseSettings = {
       serif: "Serif",
       mono: "Mono",
       helper: {
-        primary:
-          "System fonts are used by default. Inter is available as an optional bundled font.",
-        optional:
-          "Only installed fonts can be applied. Otherwise, fallback fonts are used.",
+        primary: "System fonts are used by default. Inter is available as an optional bundled font.",
+        optional: "Only installed fonts can be applied. Otherwise, fallback fonts are used.",
       },
     },
     optionalFont: {
@@ -108,8 +104,7 @@ export const enBaseSettings = {
       },
     },
     spellcheck: {
-      description:
-        "Turn Electron's built-in spellcheck underlines and suggestions on or off.",
+      description: "Turn Electron's built-in spellcheck underlines and suggestions on or off.",
       on: "On",
       off: "Off",
     },

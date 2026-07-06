@@ -1,7 +1,7 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
-import { loadLocaleResources } from "@renderer/i18n/resources";
+import { loadLocaleResources, type LocaleResources } from "@renderer/i18n/resources";
 import { api } from "@shared/api";
 
 export const SUPPORTED_LANGUAGES = ["ko", "en", "ja"] as const;
@@ -39,6 +39,17 @@ const ensureLanguageResources = async (
   i18n.addResourceBundle(language, "common", resources.common, true, true);
 };
 
+const loadAllLocaleResources = async (): Promise<
+  Record<SupportedLanguage, LocaleResources>
+> => {
+  const [ko, en, ja] = await Promise.all([
+    loadLocaleResources("ko"),
+    loadLocaleResources("en"),
+    loadLocaleResources("ja"),
+  ]);
+  return { ko, en, ja };
+};
+
 const loadSavedLanguagePreference = async (): Promise<void> => {
   try {
     const response = await api.settings.getLanguage();
@@ -65,7 +76,7 @@ export async function initI18n(): Promise<typeof i18n> {
   }
 
   const initialLanguage = detectInitialLanguage();
-  const initialResources = await loadLocaleResources(initialLanguage);
+  const allResources = await loadAllLocaleResources();
 
   initPromise = i18n
     .use(initReactI18next)
@@ -73,7 +84,9 @@ export async function initI18n(): Promise<typeof i18n> {
     .init({
       lng: initialLanguage,
       resources: {
-        [initialLanguage]: initialResources,
+        ko: allResources.ko,
+        en: allResources.en,
+        ja: allResources.ja,
       },
       fallbackLng: "ko",
       supportedLngs: SUPPORTED_LANGUAGES,

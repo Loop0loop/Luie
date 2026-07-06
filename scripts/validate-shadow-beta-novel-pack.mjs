@@ -68,24 +68,31 @@ function validateGenre(genre) {
   const evidences = readJsonl(path.join(evalRoot, "gold_evidence.jsonl"));
   const feedback = readJsonl(path.join(evalRoot, "feedback_seed.jsonl"));
   const rawQuestions = readJsonl(path.join(evalRoot, "author_questions_raw.jsonl"));
+  const expansionQuestions = readJsonl(path.join(evalRoot, "chapter_06_15_eval_expansion.jsonl"));
 
   if (questions.length !== 50) fail(errors, `${genre}: writer_questions must have 50 rows`);
   if (answers.length !== 50) fail(errors, `${genre}: gold_answers must have 50 rows`);
   if (evidences.length !== 50) fail(errors, `${genre}: gold_evidence must have 50 rows`);
   if (feedback.length !== 10) fail(errors, `${genre}: feedback_seed must have 10 rows`);
   if (rawQuestions.length < 30) fail(errors, `${genre}: author_questions_raw must have at least 30 rows`);
+  if (expansionQuestions.length !== 5) fail(errors, `${genre}: chapter_06_15_eval_expansion must have 5 rows`);
 
   const questionIds = new Set(questions.map((row) => row.id));
+  const expansionIds = new Set(expansionQuestions.map((row) => row.id));
   const answerIds = new Set(answers.map((row) => row.id));
   const evidenceIds = new Set(evidences.map((row) => row.id));
   const writerLike = new Set(questions.map((row) => row.questionWriterLike));
+  const expansionWriterLike = new Set(expansionQuestions.map((row) => row.questionWriterLike));
   const expectedAnswers = new Set(answers.map((row) => row.expectedAnswer));
   const taskTypes = new Set(questions.map((row) => row.taskType));
+  const expansionTaskTypes = new Set(expansionQuestions.map((row) => row.taskType));
 
   if (questionIds.size !== questions.length) fail(errors, `${genre}: duplicate writer question ids`);
+  if (expansionIds.size !== expansionQuestions.length) fail(errors, `${genre}: duplicate expansion question ids`);
   if (answerIds.size !== answers.length) fail(errors, `${genre}: duplicate gold answer ids`);
   if (evidenceIds.size !== evidences.length) fail(errors, `${genre}: duplicate gold evidence ids`);
   if (writerLike.size !== questions.length) fail(errors, `${genre}: duplicate writer-like questions`);
+  if (expansionWriterLike.size !== expansionQuestions.length) fail(errors, `${genre}: duplicate expansion writer-like questions`);
   if (expectedAnswers.size !== answers.length) fail(errors, `${genre}: duplicate expected answers`);
 
   for (const taskType of requiredTaskTypes) {
@@ -97,6 +104,13 @@ function validateGenre(genre) {
   for (const taskType of requiredTaskTypes) {
     const count = questions.filter((row) => row.taskType === taskType).length;
     if (count !== 10) fail(errors, `${genre}: taskType ${taskType} must have 10 rows, got ${count}`);
+  }
+  for (const taskType of expansionTaskTypes) {
+    if (!requiredTaskTypes.has(taskType)) fail(errors, `${genre}: unknown expansion taskType ${taskType}`);
+  }
+  for (const taskType of requiredTaskTypes) {
+    const count = expansionQuestions.filter((row) => row.taskType === taskType).length;
+    if (count !== 1) fail(errors, `${genre}: expansion taskType ${taskType} must have 1 row, got ${count}`);
   }
 
   for (const id of questionIds) {
@@ -111,6 +125,31 @@ function validateGenre(genre) {
     if (row.genre !== genre) fail(errors, `${genre}: ${row.id} has genre ${row.genre}`);
     if (!Number.isInteger(row.allowedUntilChapter) || row.allowedUntilChapter < 1 || row.allowedUntilChapter > 5) {
       fail(errors, `${genre}: ${row.id} has invalid allowedUntilChapter`);
+    }
+  }
+
+  for (const row of expansionQuestions) {
+    if (row.genre !== genre) fail(errors, `${genre}: expansion ${row.id} has genre ${row.genre}`);
+    if (row.sourceType !== "shadow_beta_expansion") {
+      fail(errors, `${genre}: expansion ${row.id} has invalid sourceType ${row.sourceType}`);
+    }
+    if (!Number.isInteger(row.allowedUntilChapter) || row.allowedUntilChapter < 6 || row.allowedUntilChapter > 15) {
+      fail(errors, `${genre}: expansion ${row.id} has invalid allowedUntilChapter`);
+    }
+    if (!Array.isArray(row.goldEvidence) || row.goldEvidence.length === 0) {
+      fail(errors, `${genre}: expansion ${row.id} has no goldEvidence`);
+      continue;
+    }
+    for (const item of row.goldEvidence) {
+      if (item.chapter > row.mustNotUseAfterChapter) {
+        fail(errors, `${genre}: expansion ${row.id} evidence chapter exceeds mustNotUseAfterChapter`);
+      }
+      if (item.chapter > row.allowedUntilChapter) {
+        fail(errors, `${genre}: expansion ${row.id} evidence chapter exceeds allowedUntilChapter`);
+      }
+      if (!quoteExists(genreRoot, item)) {
+        fail(errors, `${genre}: expansion ${row.id} quote not found in ${item.file}`);
+      }
     }
   }
 
@@ -168,7 +207,10 @@ function validateGenre(genre) {
   }
 
   const uniqueEvidenceQuotes = new Set(
-    evidences.flatMap((row) => row.goldEvidence.map((item) => `${item.file}:${item.quote}`)),
+    [
+      ...evidences.flatMap((row) => row.goldEvidence),
+      ...expansionQuestions.flatMap((row) => row.goldEvidence),
+    ].map((item) => `${item.file}:${item.quote}`),
   );
 
   return {
@@ -178,6 +220,7 @@ function validateGenre(genre) {
       questions: questions.length,
       answers: answers.length,
       evidences: evidences.length,
+      expansionQuestions: expansionQuestions.length,
       feedback: feedback.length,
       rawQuestions: rawQuestions.length,
       uniqueWriterLike: writerLike.size,

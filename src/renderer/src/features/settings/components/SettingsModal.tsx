@@ -241,7 +241,11 @@ export default function SettingsModal({ onClose, initialTab }: SettingsModalProp
                   localLlmBinaryPath={settings.localLlmBinaryPath}
                   openaiApiKey={settings.openaiApiKey}
                   geminiApiKey={settings.geminiApiKey}
+                  ollamaConfig={settings.ollamaConfig}
+                  preferredProvider={settings.preferredProvider}
                   onSaveLlmKeys={settings.handleSaveLlmKeys}
+                  onSaveOllamaConfig={settings.handleSaveOllamaConfig}
+                  onSetLlmPreference={settings.handleSetLlmPreference}
                   isDownloading={settings.isDownloading}
                   downloadProgress={settings.downloadProgress}
                   onDownloadLocalModel={settings.handleDownloadLocalModel}
