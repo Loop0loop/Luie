@@ -2,7 +2,7 @@
 
 **작성일:** 2026-07-18  
 **브랜치:** `feature/00-save-integrity`  
-**상태:** 구현 완료, 저장 정합성 검증 통과 (저장소 전체 baseline gate는 §16 참조)
+**상태:** 부분 구현 — 정상 저장 경로 검증 통과, 데이터 무손실 차단 항목 보완 필요 (§16)
 
 ## 1. 목적
 
@@ -15,6 +15,8 @@ Luie의 사용자 입력을 즉시 화면에 반영하고, SQLite 커밋을 사�
 - `Cmd+S`와 `Ctrl+S`는 모든 대기 중 변경과 `.luie` 체크포인트를 강제로 완료한다.
 - `.luie` 체크포인트 실패를 SQLite 저장 실패처럼 취급하지 않되 사용자에게 숨기지 않는다.
 - 캐릭터 저장 개선을 공통 world entity 경계에서 해결해 용어, 사건, 세력에도 같은 정책을 적용한다.
+
+위 항목은 최종 목표 계약이다. 2026-07-19 재검증에서 강제 input flush와 실패 payload 보존이 아직 이 계약을 충족하지 못하는 것으로 확인됐다.
 
 ## 2. 현재 문제
 
@@ -60,7 +62,7 @@ BufferedInput 500ms debounce
 | `dirty` | renderer에만 반영된 변경이 있다. |
 | `saving` | SQLite mutation이 진행 중이다. |
 | `saved` | SQLite transaction이 커밋됐다. |
-| `error` | 커밋하지 못했으며 변경 payload를 유지하고 있다. |
+| `error` | 커밋하지 못했으며 변경 payload를 유지해야 한다. 현재 구현은 이 계약을 충족하지 못한다. |
 
 `.luie` 체크포인트 상태는 위 상태와 분리한다. SQLite 저장은 성공했지만 파일 export가 실패한 경우 `로컬 저장됨 · 프로젝트 파일 백업 실패`로 표현한다.
 
@@ -120,6 +122,8 @@ result:     { name: "김철수" }
 - 삭제 요청은 해당 entity의 pending update를 먼저 drain한 뒤 실행한다.
 - 이미 삭제된 entity update는 main service에서 명시적으로 실패한다.
 
+현재 구현은 성공 경로의 직렬화와 병합만 충족한다. CRUD IPC 실패가 `null`로 변환되면 실패 payload가 queue에서 제거되며, 삭제 전 pending update drain도 아직 연결되지 않았다.
+
 ## 6. 입력 정책
 
 - 기본 debounce: 250ms
@@ -133,9 +137,11 @@ result:     { name: "김철수" }
 
 ### 7.1 Revision
 
-`Project`에는 현재 SQLite 원본의 단조 증가 `revision`을, `ProjectAttachment`에는 마지막으로 export된 `exportedRevision`을 저장한다.
+`Project`에는 체크포인트 대상 mutation의 단조 증가 `revision`을, `ProjectAttachment`에는 마지막으로 export된 `exportedRevision`을 저장한다.
 
-entity mutation transaction은 데이터 변경과 `Project.revision + 1`을 같은 transaction에서 수행한다. exporter는 시작 시 revision을 캡처하고, 파일 교체가 성공한 뒤에만 해당 값을 `exportedRevision`으로 기록한다.
+1차 구현은 character, event, faction, term의 create/update/delete transaction에서 데이터 변경과 `Project.revision + 1`을 함께 수행한다. exporter는 시작 시 revision을 캡처하고, 파일 교체가 성공한 뒤에만 해당 값을 `exportedRevision`으로 기록한다.
+
+따라서 현재 revision은 `.luie` 전체 payload의 freshness를 아직 대표하지 않는다. project-wide recovery를 보장하려면 chapter, relation, project metadata 등 package에 포함되는 canonical mutation도 같은 revision 계약에 포함해야 한다.
 
 export 도중 새 mutation이 발생하면 `revision > exportedRevision`이 유지되므로 다음 export가 예약된다.
 
@@ -153,7 +159,7 @@ export 도중 새 mutation이 발생하면 `revision > exportedRevision`이 유�
 
 ## 8. `Cmd+S` / `Ctrl+S`
 
-전역 단축키는 브라우저 기본 저장 동작을 막고 다음 순서를 실행한다.
+전역 단축키의 목표 순서는 다음과 같다.
 
 ```text
 renderer input flush
@@ -163,6 +169,8 @@ renderer input flush
   -> .luie checkpoint runNow
   -> 결과 표시
 ```
+
+현재 구현은 `world entity mutation queue drain`부터 시작한다. 활성 `BufferedInput`과 원고 제목의 debounce 값을 먼저 flush하는 공통 경계는 아직 없다.
 
 성공 시 기존 toast를 짧게 사용하고, 자동 저장 성공은 조용히 처리한다. 실패는 사라지는 성공 toast로 덮지 않고 복구 가능한 오류 상태로 유지한다.
 
@@ -177,6 +185,8 @@ renderer input flush
 5. 실패 또는 timeout이면 저장 후 종료, 종료 취소, 저장 생략을 명확히 선택
 
 비정상 종료 후 SQLite WAL 복구가 끝나면 revision 차이를 확인해 `.luie`를 다시 생성한다. SQLite는 기존 `WAL`, `synchronous=FULL`, `foreign_keys=ON`, `busy_timeout=5000` 설정을 유지한다.
+
+현재 quit handshake는 world mutation 실패도 `finally`에서 완료 신호를 보내고, export flush의 `failed > 0`을 종료 차단 조건으로 사용하지 않는다. 실패를 renderer에서 main까지 전달하고 기본 종료 취소로 연결하는 보완이 필요하다.
 
 ## 10. Projection 정책
 
@@ -194,6 +204,8 @@ renderer input flush
 - `.luie` export 오류: SQLite 저장 성공을 유지하고 export queue에 재시도 상태를 남긴다.
 - 앱 종료 timeout: 현재처럼 사용자에게 종료 취소를 기본 선택으로 제공한다.
 - 오류 로그에는 projectId, entityType, entityId, mutation 단계, elapsedMs를 기록하고 사용자 입력 전문은 기록하지 않는다.
+
+현재 구현은 위 재시도 정책을 완성하지 않았다. SQLite/IPC 실패 payload 보존과 backoff가 없고, scheduled export가 `false` 또는 throw로 끝나면 dirty retry 상태가 사라질 수 있다.
 
 ## 12. 데이터 불변식
 
@@ -228,7 +240,9 @@ renderer input flush
 - 범용 event sourcing
 - 저장 상태 UI 전면 디자인 개편
 
-## 14. 검증 기준
+## 14. 목표 검증 기준
+
+아래 항목은 최종 acceptance criteria다. §16의 PASS는 현재 실제 테스트가 증명하는 범위로 제한해 해석한다.
 
 - 100회의 연속 캐릭터 field mutation에서 마지막 값이 SQLite와 renderer에 동일하다.
 - 한 mutation을 지연시킨 상태에서 두 번째 mutation을 보내도 두 번째 값이 유실되지 않는다.
@@ -252,20 +266,33 @@ renderer input flush
 
 ## 16. 구현 및 검증 결과
 
-2026-07-19 기준 `feature/00-save-integrity`에서 1차 구현 범위를 완료했다.
+2026-07-19 기준 `feature/00-save-integrity`에는 다음 정상 경로가 구현돼 있다.
 
-- 100회 연속 world entity patch의 마지막 값 보존: PASS
-- 실제 SQLite `revision=2`, `.luie exportedRevision=1` startup recovery: PASS
-- 최신 캐릭터 값의 실제 `.luie` round-trip 및 `exportedRevision=2` 수렴: PASS
-- BufferedInput, mutation queue, graph delta, manual save, checkpoint recovery 타깃 회귀: 11 files, 23 tests PASS
-- IPC handler schema, Drizzle main schema, TypeScript, 변경 파일 ESLint, derived DB benchmark: PASS
+- `BufferedInput` 250ms debounce와 blur, Enter, unmount 단일 flush
+- 동일 world entity의 성공 mutation 직렬화와 latest-patch 병합
+- character, event, faction, term create/update/delete의 transaction revision 증가
+- captured revision export와 stale attached project의 startup recovery 예약
+- manual-save IPC와 renderer/main quit handshake 기본 경로
 
-실행 명령:
+재검증에서 다음 차단 항목을 확인했다.
+
+- **P0:** `Cmd/Ctrl+S`와 quit이 활성 input debounce를 먼저 flush하지 않는다.
+- **P0:** CRUD IPC 실패가 `null`로 변환돼 실패 mutation payload가 queue에서 제거될 수 있다.
+- **P0:** world/export flush 실패가 quit 차단 상태로 끝까지 전달되지 않는다.
+- **P1:** scheduled export의 `false`/throw 이후 dirty retry 상태가 유지되지 않는다.
+- **P1:** 삭제 전에 같은 entity의 pending update를 drain하지 않는다.
+- **P1:** revision이 world entity 4종에만 적용돼 `.luie` 전체 freshness를 대표하지 않는다.
+
+Fresh verification (2026-07-19):
 
 ```bash
-SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest tests/dom/bufferedInputSavePolicy.test.tsx tests/renderer/stores/worldEntityMutationQueue.test.ts tests/renderer/stores/characterStoreMutationLock.test.ts tests/renderer/stores/worldBuildingStore.graph.test.ts tests/main/services/projectRevisionStore.test.ts tests/main/services/projectCheckpointRecovery.test.ts tests/main/handler/manualSaveHandler.test.ts tests/renderer/services/saveCoordinator.test.ts tests/renderer/stores/worldEntitySaveBurst.test.ts --run
+SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/dom/bufferedInputSavePolicy.test.tsx tests/dom/projectSaveShortcut.test.tsx tests/renderer/services/saveCoordinator.test.ts tests/renderer/stores/worldEntityMutationQueue.test.ts tests/renderer/stores/worldEntitySaveBurst.test.ts tests/main/handler/manualSaveHandler.test.ts tests/main/services/projectCheckpointRecovery.test.ts tests/main/services/projectExportEngine.test.ts tests/main/services/projectExportQueue.test.ts
+# 9 files, 19 tests PASS
 
-ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron ./node_modules/vitest/vitest.mjs tests/main/services/worldEntitySaveIntegrity.test.ts tests/main/services/projectSaveRecovery.integration.test.ts --run
+ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron ./node_modules/vitest/vitest.mjs run --no-file-parallelism tests/main/services/projectRevisionStore.test.ts tests/main/services/worldEntitySaveIntegrity.test.ts tests/main/services/projectSaveRecovery.integration.test.ts
+# 3 files, 8 tests PASS
 ```
 
-저장소 전체 `qa:core`는 이번 변경과 무관한 기존 baseline 문제로 아직 green이 아니다. 전체 lint의 기존 20개 오류, `graphStore` persist 계약 누락, 기존 500 LOC 초과 7개 파일, 기존 대형 chunk warning, core 묶음의 OAuth Electron mock·기존 DOM/validation 테스트 13개 실패를 확인했다. 이번 변경으로 한도를 넘었던 `EditorRoot`와 `projectService`는 종료 flush hook 추출로 다시 500 LOC 이하로 정리했다.
+이 결과는 정상 경로와 직접 seed한 stale-checkpoint recovery를 검증한다. 실제 export 실패 후 프로세스 재시작, debounce 중 shortcut/quit, IPC `success:false`/timeout, export `false`/throw는 아직 검증하지 않는다. 100회 burst 테스트는 mock 기반이며 SQLite 또는 latency P95를 측정하지 않는다. 기존 writing-loop에는 percentile 계산 인프라가 있지만 이번 저장 파이프라인의 P95 artifact와 95% 신뢰 근거는 없다.
+
+저장소 전체 `qa:core`는 이번 변경과 무관한 기존 baseline 문제로 아직 green이 아니다. 저장 정합성 완료 표시는 위 P0 차단 항목과 해당 실패 주입 테스트가 해결된 뒤에만 복구한다.

@@ -98,7 +98,7 @@ git commit -m "fix(storage): flush buffered inputs once"
 
 ### Task 2: world entity latest-patch queue와 optimistic state
 
-**Status:** 완료
+**Status:** 부분 완료 — 성공 mutation 직렬화 완료, 실패 payload 보존 미구현
 
 **Files:**
 - Create: `src/renderer/src/shared/store/worldEntityMutationQueue.ts`
@@ -175,7 +175,7 @@ export async function flushWorldEntityMutations(): Promise<void>;
 export function getPendingWorldEntityMutationCount(): number;
 ```
 
-queue는 `pending` patch와 하나의 `inFlight` loop만 가진다. `enqueue` 호출별 resolver를 보관하고, 해당 호출이 포함된 batch의 실행 결과로 resolve한다. 실패한 batch는 error를 reject하고 아직 실행하지 않은 pending patch는 유지한다.
+queue는 `pending` patch와 하나의 `inFlight` loop만 가진다. `enqueue` 호출별 resolver를 보관하고, 해당 호출이 포함된 batch의 실행 결과로 resolve한다. raw `execute` reject에서는 아직 실행하지 않은 pending patch가 남지만, 실제 CRUD IPC 실패는 `null`로 변환되어 성공처럼 제거된다. 실패 payload 보존과 재시도는 후속 Task에서 보완한다.
 
 - [x] **Step 4: CRUD update가 결과를 반환하도록 변경**
 
@@ -706,7 +706,7 @@ git commit -m "feat(storage): recover stale project checkpoints"
 
 ### Task 6: `Cmd/Ctrl+S`와 종료 시 전체 flush
 
-**Status:** 완료
+**Status:** 부분 완료 — manual-save/quit 연결 완료, 활성 input flush와 실패 전파 미구현
 
 **Files:**
 - Modify: `src/shared/api/settings.contract.ts`
@@ -797,6 +797,8 @@ export async function saveProjectNow(projectId: string): Promise<void> {
 
 기존 `chapter.save` shortcut handler는 먼저 현재 원고 `handleSave`를 호출한 뒤 `saveProjectNow(currentProjectId)`를 호출한다. shortcut id와 기본 `Cmd/Ctrl+S` 설정은 유지한다.
 
+재검증 결과, `handleSave`와 `saveProjectNow` 전에 활성 `BufferedInput` 및 원고 제목 debounce를 강제 flush하는 공통 경계는 없다. 따라서 이 단계는 목표 저장 순서를 완전히 충족하지 않는다.
+
 - [x] **Step 5: 종료 handshake를 renderer flush까지 확장**
 
 preload는 `APP_BEFORE_QUIT`에서 곧바로 완료 응답을 보내지 않는다. `lifecycle.onBeforeQuit`으로 renderer에 알리고, renderer는 `flushWorldEntityMutations()` 후 `lifecycle.completeFlush()`를 호출한다. `PreloadApiModuleContext.completeAppFlush`는 preload autoSave/log queue까지 flush한 뒤 기존 `APP_FLUSH_COMPLETE` payload를 전송한다.
@@ -830,6 +832,8 @@ return api.lifecycle.onBeforeQuit(() => {
 
 world queue pending count가 0보다 크면 기존 `rendererDirty`에도 반영한다. main shutdown timeout과 사용자 선택 정책은 변경하지 않는다.
 
+재검증 결과, world flush 실패에도 `finally`에서 완료 handshake를 보내며 main은 export flush의 `failed > 0`을 종료 차단 조건으로 사용하지 않는다. 실패 전파와 재요청 정책은 후속 Task에서 보완한다.
+
 - [x] **Step 6: shortcut 및 preload 계약 테스트 실행**
 
 Run: `SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest tests/renderer/services/saveCoordinator.test.ts tests/main/handler/manualSaveHandler.test.ts tests/dom/projectSaveShortcut.test.tsx tests/scripts/preloadContractRegression.test.ts tests/main/handler/ipcInputValidation.system.test.ts tests/renderer/stores/worldEntityMutationQueue.test.ts --run`
@@ -849,7 +853,7 @@ git commit -m "feat(storage): flush projects with save shortcut"
 
 ### Task 7: 통합 정합성 검증과 품질 게이트
 
-**Status:** 완료 — 저장 범위 검증 통과, repo-wide baseline 실패 기록
+**Status:** 부분 완료 — 정상 경로 검증 통과, 실패 주입·실제 재시작·P95 검증 미완료
 
 **Files:**
 - Create: `tests/renderer/stores/worldEntitySaveBurst.test.ts`
@@ -860,9 +864,9 @@ git commit -m "feat(storage): flush projects with save shortcut"
 - Modify: `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
 
 **Interfaces:**
-- Verifies: 100회 연속 patch의 last-write-wins
-- Verifies: manual save 뒤 `revision === exportedRevision`
-- Verifies: export 실패 뒤 startup recovery
+- Verifies: mock API에서 100회 연속 patch의 마지막 값 보존
+- Verifies: 직접 seed한 stale revision의 같은 프로세스 recovery와 `.luie` round-trip
+- Does not verify: manual save 뒤 revision 수렴, 실제 export 실패 후 프로세스 재시작
 
 - [x] **Step 1: 100회 연속 저장 통합 테스트 작성**
 
@@ -930,7 +934,7 @@ Run (real DB/FS): `ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron ./node_mo
 
 Expected: PASS.
 
-Actual: 11 files, 23 tests PASS.
+Actual: 11 files, 23 tests PASS. 이 숫자는 정상 경로 회귀 통과를 의미하며, SQLite 기반 100회 저장이나 실제 export 실패·프로세스 재시작을 증명하지 않는다.
 
 - [x] **Step 4: 저장소 정책 게이트 실행**
 
@@ -962,7 +966,7 @@ Actual: core test 묶음 27 files/179 tests PASS, 기존 4 files/13 tests FAIL. 
 
 - [x] **Step 6: 설계 문서 상태 갱신**
 
-`docs/superpowers/specs/2026-07-18-save-integrity-design.md`의 상태를 `구현 완료, 검증 통과`로 변경하고 실제 테스트 명령과 결과를 문서 마지막에 기록한다.
+당시 `docs/superpowers/specs/2026-07-18-save-integrity-design.md`의 상태를 `구현 완료, 검증 통과`로 변경했다. 2026-07-19 재검증에서 검증 범위 과장을 확인해 `부분 구현`으로 정정하고 P0/P1 차단 항목을 문서 마지막에 기록했다.
 
 - [x] **Step 7: Task 7 커밋**
 
