@@ -208,14 +208,8 @@ export function ensurePackagedSqliteSchema(
     // Run Drizzle migrate — applies only migrations not yet in __drizzle_migrations
     migrate(drizzleDb, { migrationsFolder });
 
-    // Safety net: run the full bootstrap SQL to create any tables that were skipped
-    // by the Prisma baseline path (markInitialMigrationAsApplied records migrations
-    // as applied without executing their SQL). All statements use CREATE TABLE IF NOT
-    // EXISTS / CREATE INDEX IF NOT EXISTS, so this is fully idempotent.
-    database.exec(PACKAGED_SCHEMA_BOOTSTRAP_SQL);
-
-    // Apply column patches for existing DBs that may be missing columns
-    // added after the initial schema was created (e.g. deletedAt on WorldEntity).
+    // Patch existing tables before bootstrap creates indexes that may reference
+    // columns absent from legacy databases.
     let patchedColumns = 0;
     for (const patch of PACKAGED_SCHEMA_COLUMN_PATCHES) {
       if (!sqliteTableExists(database, patch.table)) continue;
@@ -223,6 +217,13 @@ export function ensurePackagedSqliteSchema(
       database.exec(patch.sql);
       patchedColumns += 1;
     }
+
+    // Safety net: run the full bootstrap SQL to create any tables that were skipped
+    // by the Prisma baseline path (markInitialMigrationAsApplied records migrations
+    // as applied without executing their SQL). All statements use CREATE TABLE IF NOT
+    // EXISTS / CREATE INDEX IF NOT EXISTS, so this is fully idempotent.
+    database.exec(PACKAGED_SCHEMA_BOOTSTRAP_SQL);
+
     let patchedIndexes = 0;
     for (const patch of PACKAGED_SCHEMA_INDEX_PATCHES) {
       if (!sqliteTableExists(database, patch.table)) continue;

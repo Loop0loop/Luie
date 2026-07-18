@@ -4,12 +4,14 @@ CREATE TABLE IF NOT EXISTS "Project" (
     "title" TEXT NOT NULL,
     "description" TEXT,
     "projectPath" TEXT,
+    "revision" INTEGER NOT NULL DEFAULT 0,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
 );
 CREATE TABLE IF NOT EXISTS "ProjectAttachment" (
     "projectId" TEXT NOT NULL PRIMARY KEY,
     "projectPath" TEXT,
+    "exportedRevision" INTEGER NOT NULL DEFAULT 0,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     CONSTRAINT "ProjectAttachment_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE

@@ -286,7 +286,7 @@ git commit -m "fix(storage): queue world entity mutations"
 
 ### Task 3: project/export revision 스키마와 저장소
 
-**Status:** 대기
+**Status:** 완료
 
 **Files:**
 - Modify: `src/main/database/schema/foundation.ts`
@@ -304,7 +304,7 @@ git commit -m "fix(storage): queue world entity mutations"
 - Produces: `markProjectExported(projectId, revision): Promise<void>`
 - Produces: `listProjectsNeedingExport(): Promise<string[]>`
 
-- [ ] **Step 1: revision 불변식 실패 테스트 작성**
+- [x] **Step 1: revision 불변식 실패 테스트 작성**
 
 `projectRevisionStore.test.ts`는 실제 임시 SQLite DB를 사용해 다음을 검증한다.
 
@@ -325,13 +325,15 @@ it("never advances exportedRevision beyond the current project revision", async 
 });
 ```
 
-- [ ] **Step 2: schema 부재로 실패 확인**
+- [x] **Step 2: schema 부재로 실패 확인**
 
 Run: `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/projectRevisionStore.test.ts --run`
 
 Expected: `revision` 또는 `exportedRevision` column/export 부재로 FAIL.
 
-- [ ] **Step 3: Drizzle schema와 packaged bootstrap 갱신**
+Actual: schema default 부재와 `bumpProjectRevision`이 0을 반환하는 RED를 각각 확인했다.
+
+- [x] **Step 3: Drizzle schema와 packaged bootstrap 갱신**
 
 ```ts
 revision: integer("revision").notNull().default(0),
@@ -342,7 +344,7 @@ exportedRevision: integer("exportedRevision").notNull().default(0),
 
 `PACKAGED_SCHEMA_BOOTSTRAP_PROJECT_SQL`, metadata required columns, legacy column patch에도 동일한 기본값을 반영한다.
 
-- [ ] **Step 4: main migration 생성**
+- [x] **Step 4: main migration 생성**
 
 Run: `pnpm exec drizzle-kit generate --config=drizzle.main.config.ts --name=save_integrity_revisions`
 
@@ -355,7 +357,7 @@ ALTER TABLE `Project` ADD `revision` integer DEFAULT 0 NOT NULL;
 ALTER TABLE `ProjectAttachment` ADD `exportedRevision` integer DEFAULT 0 NOT NULL;
 ```
 
-- [ ] **Step 5: revision store 최소 구현**
+- [x] **Step 5: revision store 최소 구현**
 
 `bumpProjectRevision`은 전달받은 Drizzle transaction/client로 `revision + 1`과 `updatedAt`을 한 UPDATE에서 수행하고 새 revision을 반환한다. `markProjectExported`는 현재 revision보다 큰 값과 기존 exported revision보다 작은 값을 거부한다.
 
@@ -387,17 +389,19 @@ export async function markProjectExported(
 export async function listProjectsNeedingExport(): Promise<string[]>;
 ```
 
-- [ ] **Step 6: schema와 store 테스트 실행**
+- [x] **Step 6: schema와 store 테스트 실행**
 
 Run: `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/projectRevisionStore.test.ts tests/main/database/schemaParity.test.ts tests/main/database/drizzleBootstrap.test.ts --run`
 
 Expected: PASS.
 
+Actual (2026-07-18): revision store 2 tests, schema parity 10 tests, Electron runtime bootstrap 4 tests PASS; Drizzle check, 대상 ESLint, typecheck PASS. 검증 중 레거시 column patch보다 bootstrap index가 먼저 실행되던 기존 순서 버그를 `databaseSchemaBootstrap.ts`에서 수정했다.
+
 Run: `pnpm run check:drizzle:main`
 
 Expected: PASS.
 
-- [ ] **Step 7: Task 3 커밋**
+- [x] **Step 7: Task 3 커밋**
 
 ```bash
 git add src/main/database/schema/foundation.ts src/main/database/main/packagedSchema/projectSchema.sql.ts src/main/database/packagedSchema/metadataRequiredColumns.ts src/main/database/packagedSchema/metadataColumnPatches.ts src/main/database/main/databaseSchemaBootstrap.ts src/main/services/core/project/projectRevisionStore.ts tests/main/services/projectRevisionStore.test.ts
