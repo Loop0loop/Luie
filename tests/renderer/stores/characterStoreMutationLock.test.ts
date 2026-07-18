@@ -290,6 +290,120 @@ describe("characterStore mutation locking", () => {
     expect(getPendingWorldEntityMutationCount()).toBe(0);
   });
 
+  it("preserves a newer optimistic entity when an older retry ACK becomes stale", async () => {
+    const retryAck = deferred<IPCResponse<Character>>();
+    const character: Character = {
+      id: "char-optimistic-race",
+      projectId: "project-1",
+      name: "Original",
+      attributes: { role: "support", color: "gray" },
+      createdAt: new Date("2026-03-10T00:00:00.000Z"),
+      updatedAt: new Date("2026-03-10T00:00:00.000Z"),
+    };
+    mockedApi.character.update
+      .mockResolvedValueOnce({
+        success: false,
+        error: { message: "initial failed" },
+      })
+      .mockReturnValueOnce(retryAck.promise)
+      .mockResolvedValueOnce({
+        success: false,
+        error: { message: "newer failed" },
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        data: {
+          ...character,
+          name: "Latest B",
+          attributes: { role: "lead", color: "red", tagline: "Hero" },
+        },
+      });
+    useCharacterStore.setState({
+      items: [character],
+      characters: [character],
+      currentItem: character,
+      currentCharacter: character,
+    });
+    useWorldBuildingStore.setState({
+      graphData: {
+        nodes: [
+          {
+            id: character.id,
+            entityType: "Character",
+            name: character.name,
+            attributes: character.attributes,
+            positionX: 10,
+            positionY: 20,
+          },
+        ],
+        edges: [],
+      },
+    });
+
+    await expect(
+      useCharacterStore.getState().updateCharacter({
+        id: character.id,
+        name: "Retry A",
+        attributesPatch: { role: "lead", color: "blue" },
+      }),
+    ).rejects.toThrow("initial failed");
+
+    const retryFlush = flushWorldEntityMutations();
+    expect(mockedApi.character.update).toHaveBeenCalledTimes(2);
+    const newerSave = useCharacterStore.getState().updateCharacter({
+      id: character.id,
+      name: "Latest B",
+      attributesPatch: { color: "red", tagline: "Hero" },
+    });
+    const retryFailure = expect(retryFlush).rejects.toThrow("newer failed");
+    const newerFailure = expect(newerSave).rejects.toThrow("newer failed");
+
+    retryAck.resolve({
+      success: true,
+      data: {
+        ...character,
+        name: "Retry A",
+        attributes: { role: "lead", color: "blue" },
+      },
+    });
+    await Promise.all([retryFailure, newerFailure]);
+
+    expect(mockedApi.character.update).toHaveBeenCalledTimes(3);
+    expect(mockedApi.character.update).toHaveBeenLastCalledWith({
+      id: character.id,
+      name: "Latest B",
+      attributesPatch: { color: "red", tagline: "Hero" },
+    });
+    expect(useCharacterStore.getState().items[0]).toMatchObject({
+      name: "Latest B",
+      attributes: { role: "lead", color: "red", tagline: "Hero" },
+    });
+    expect(useCharacterStore.getState().currentItem).toMatchObject({
+      name: "Latest B",
+      attributes: { role: "lead", color: "red", tagline: "Hero" },
+    });
+    expect(useWorldBuildingStore.getState().graphData?.nodes[0]).toMatchObject({
+      name: "Latest B",
+      attributes: { role: "lead", color: "red", tagline: "Hero" },
+      positionX: 10,
+      positionY: 20,
+    });
+    expect(getPendingWorldEntityMutationCount()).toBe(1);
+
+    await flushWorldEntityMutations();
+
+    expect(mockedApi.character.update).toHaveBeenCalledTimes(4);
+    expect(useCharacterStore.getState().currentItem).toMatchObject({
+      name: "Latest B",
+      attributes: { role: "lead", color: "red", tagline: "Hero" },
+    });
+    expect(useWorldBuildingStore.getState().graphData?.nodes[0]).toMatchObject({
+      name: "Latest B",
+      attributes: { role: "lead", color: "red", tagline: "Hero" },
+    });
+    expect(getPendingWorldEntityMutationCount()).toBe(0);
+  });
+
   it("skips graph refresh when delete fails", async () => {
     mockedApi.character.delete.mockResolvedValue({
       success: false,

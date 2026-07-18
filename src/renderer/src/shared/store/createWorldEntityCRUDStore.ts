@@ -108,6 +108,62 @@ export function createWorldEntityCRUDStore<
       string,
       ReturnType<typeof createLatestMutationQueue<UpdateInput, T>>
     >();
+    const optimisticUpdates = new Map<
+      string,
+      Array<{ generation: number; patch: UpdateInput }>
+    >();
+    let optimisticGeneration = 0;
+
+    const mergeUpdateInputs = (
+      left: UpdateInput | null,
+      right: UpdateInput,
+    ): UpdateInput => ({
+      ...left,
+      ...right,
+      ...(left?.attributesPatch || right.attributesPatch
+        ? {
+            attributesPatch: {
+              ...(left?.attributesPatch ?? {}),
+              ...(right.attributesPatch ?? {}),
+            },
+          }
+        : {}),
+    });
+
+    const applyOptimisticPatch = (item: T, patch: UpdateInput): T => {
+      const { attributesPatch, ...scalarInput } = patch;
+      return {
+        ...item,
+        ...scalarInput,
+        ...(attributesPatch
+          ? {
+              attributes: {
+                ...parseStructuredAttributes(
+                  (item as T & { attributes?: unknown }).attributes,
+                ),
+                ...attributesPatch,
+              },
+            }
+          : {}),
+      };
+    };
+
+    const applyOptimisticState = (id: string, patch: UpdateInput): void => {
+      setWithAlias(
+        (state) =>
+          ({
+            items: state.items.map((item) =>
+              item.id === id ? applyOptimisticPatch(item, patch) : item,
+            ),
+            currentItem:
+              state.currentItem?.id === id
+                ? applyOptimisticPatch(state.currentItem, patch)
+                : state.currentItem,
+          }) as Partial<
+            WorldEntityCRUDBase<T, CreateInput, UpdateInput> & AliasesT
+          >,
+      );
+    };
 
     const scopedApiClient = withProjectScopedGetAll(apiClient);
 
@@ -163,63 +219,50 @@ export function createWorldEntityCRUDStore<
         return null;
       }
 
-      const { attributesPatch, ...scalarInput } = input;
-      const applyOptimisticPatch = (item: T): T => ({
-        ...item,
-        ...scalarInput,
-        ...(attributesPatch
-          ? {
-              attributes: {
-                ...parseStructuredAttributes(
-                  (item as T & { attributes?: unknown }).attributes,
-                ),
-                ...attributesPatch,
-              },
-            }
-          : {}),
+      optimisticGeneration += 1;
+      const trackedUpdates = optimisticUpdates.get(input.id) ?? [];
+      trackedUpdates.push({
+        generation: optimisticGeneration,
+        patch: input,
       });
-      setWithAlias(
-        (state) =>
-          ({
-            items: state.items.map((item) =>
-              item.id === input.id ? applyOptimisticPatch(item) : item,
-            ),
-            currentItem:
-              state.currentItem?.id === input.id
-                ? applyOptimisticPatch(state.currentItem)
-                : state.currentItem,
-          }) as Partial<
-            WorldEntityCRUDBase<T, CreateInput, UpdateInput> & AliasesT
-          >,
-      );
+      optimisticUpdates.set(input.id, trackedUpdates);
+      applyOptimisticState(input.id, input);
 
       let queue = updateQueues.get(input.id);
       if (!queue) {
         const createdQueue = createLatestMutationQueue<UpdateInput, T>({
-          merge: (left, right) => ({
-            ...left,
-            ...right,
-            ...(left?.attributesPatch || right.attributesPatch
-              ? {
-                  attributesPatch: {
-                    ...(left?.attributesPatch ?? {}),
-                    ...(right.attributesPatch ?? {}),
-                  },
-                }
-              : {}),
-          }),
+          merge: mergeUpdateInputs,
           execute: async (patch) => {
+            const updatesAtStart = optimisticUpdates.get(patch.id) ?? [];
+            const coveredGeneration =
+              updatesAtStart[updatesAtStart.length - 1]?.generation ?? 0;
             const updated = await crudSlice.update(patch);
             if (!updated) {
               throw new Error(
                 get().error || `Failed to persist ${entityName} update.`,
               );
             }
+            const newerUpdates = (
+              optimisticUpdates.get(patch.id) ?? []
+            ).filter((update) => update.generation > coveredGeneration);
+            const newerPatch = newerUpdates.reduce<UpdateInput | null>(
+              (merged, update) => mergeUpdateInputs(merged, update.patch),
+              null,
+            );
+            if (newerPatch) {
+              optimisticUpdates.set(patch.id, newerUpdates);
+              applyOptimisticState(patch.id, newerPatch);
+            } else {
+              optimisticUpdates.delete(patch.id);
+            }
+            const projected = newerPatch
+              ? applyOptimisticPatch(updated, newerPatch)
+              : updated;
             useWorldBuildingStore.setState((state) => ({
               graphData: replaceEntityNodePreservingPosition(
                 state.graphData,
                 entityName,
-                updated as unknown as Character | Event | Faction | Term,
+                projected as unknown as Character | Event | Faction | Term,
               ),
             }));
             return updated;
@@ -228,6 +271,7 @@ export function createWorldEntityCRUDStore<
             if (updateQueues.get(input.id) === createdQueue) {
               updateQueues.delete(input.id);
             }
+            optimisticUpdates.delete(input.id);
           },
         });
         queue = createdQueue;

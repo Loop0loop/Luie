@@ -1628,3 +1628,16 @@ Actual (2026-07-19): 테스트 하네스 수정 후 RED는 2 files/15 tests 중 
 - [x] **Step 6: SSOT/report 동기화 및 단일 커밋**
 
 Actual (2026-07-19): 최초 RED는 2 files/8 tests 중 3건이 throw payload 제거, failed/newer key 유실, CRUD `null` ACK 성공 처리로 예상대로 실패했다. 추가 null ACK/next-enqueue RED도 기존 코드에서 `null` resolve로 실패했다. 최종 focused는 2 files/9 tests, Task 8~13 저장 회귀는 12 files/72 tests PASS이며 stderr warning/unhandled rejection이 없다. 실패 batch는 waiter reject 후에도 pending/active에 남고, 다음 flush/enqueue가 latest nested patch를 한 번 재시도한다. waiter 없는 retry ACK도 store/graph에 반영한 뒤 entity map/global registry를 정리한다. 대상 ESLint와 `git diff --check`는 PASS다. `tsc6 --noEmit`은 Task 13 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 오류 1건만 유지한다.
+
+#### Task 13 review follow-up: retry ACK와 newer optimistic patch 경합
+
+**Status:** 완료
+
+- [x] retained A retry 중 newer B가 들어온 뒤 A ACK/B 실패에서 B projection 유지 RED
+- [x] entity별 optimistic generation과 unacknowledged patch 최소 추적
+- [x] stale ACK 반영 후 ACK가 커버하지 못한 newer patch만 store/graph에 재합성
+- [x] 최신 ACK 성공/queue idle 후 generation cache와 entity queue map 정리
+- [x] focused/Task 8~13 회귀, ESLint, diff-check, tsc, SSOT/report 동기화
+- [x] follow-up 단일 커밋 `fix(storage): preserve latest optimistic entity`
+
+Actual (2026-07-19): RED는 실제 character store 경로 1 files/5 tests 중 1건이 retained A retry ACK 뒤 B persist 실패 시 items/current/graph가 B가 아닌 A full entity로 덮어써져 예상대로 실패했다. entity별 generation과 unacknowledged patch를 추적해 execute 시작 후 들어온 patch만 A ACK에 재합성했다. B 실패 후 items/current/graph는 latest scalar와 nested attribute key를 유지하고 queue pending count는 1이며, 다음 retry 성공 후 ACK 상태와 일치하고 0이 된다. focused 2 files/10 tests와 Task 8~13 회귀 12 files/73 tests는 stderr warning/unhandled rejection 없이 PASS했다. 대상 ESLint와 `git diff --check`는 PASS다. `tsc6 --noEmit`은 follow-up 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 1건만 유지한다.

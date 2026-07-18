@@ -438,3 +438,9 @@ queue execute의 throw와 CRUD `null` ACK는 둘 다 실패다. 해당 batch의 
 retained patch에 waiter가 없어도 pending count와 global active queue에 포함한다. waiter 없는 global retry가 성공하면 CRUD ACK를 store와 graph에 적용한 뒤 entity queue map과 global registry를 둘 다 정리한다. retry 성공 후 pending count는 0이다.
 
 Task 13 검증에서 focused 2 files/9 tests와 Task 8~13 저장 회귀 12 files/72 tests가 stderr warning/unhandled rejection 없이 PASS했다. 테스트는 원본 오류 전파, 한 flush 내 재시도 0회, retained pending/active count, explicit flush/next enqueue 재시도, failed/newer scalar·attribute merge, CRUD `null` ACK의 store/graph retry 반영, 100-burst latest 회귀를 증명한다.
+
+### 18.4 retry ACK와 optimistic generation
+
+retained A의 retry가 in-flight인 동안 newer B가 들어오면 A ACK full entity가 B의 optimistic state를 최종 상태로 덮어쓰지 않아야 한다. world entity factory는 entity별 optimistic generation과 아직 ACK되지 않은 patch를 추적한다. execute 시작 시점의 generation까지는 해당 ACK가 커버한다. ACK 도착 후에 생긴 patch만 nested `attributesPatch`를 보존하는 latest merge로 store와 graph에 재합성한다. newer persist가 실패하면 재합성한 projection을 유지하고 payload도 queue에 남긴다. 최신 ACK가 성공해 queue가 idle이 되면 optimistic generation cache와 entity queue map을 모두 정리한다.
+
+review follow-up 검증에서 focused 2 files/10 tests와 Task 8~13 회귀 12 files/73 tests가 stderr warning/unhandled rejection 없이 PASS했다. 실패 A 보존 → A retry in-flight → same scalar/attribute key를 바꾼 B enqueue → A ACK → B 실패를 순서대로 주입해 items/current/graph의 B projection과 pending payload를 검증했다. 다음 B retry 성공 후에는 ACK 상태와 pending count 0을 확인했다.
