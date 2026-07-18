@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS } from "@shared/constants";
 
 interface BufferedInputProps extends Omit<
@@ -20,19 +20,50 @@ export function BufferedInput({
   const isComposing = useRef(false);
   const [isEditing, setIsEditing] = useState(false);
   const debounceTimer = useRef<number | null>(null);
+  const latestValue = useRef(externalValue);
+  const lastSavedValue = useRef(externalValue);
+  const onSaveRef = useRef(onSave);
+
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
 
   const displayedValue = useMemo(() => {
     return isEditing ? localValue : externalValue;
   }, [externalValue, isEditing, localValue]);
 
-  const scheduleSave = (value: string) => {
-    if (debounceTimer.current) {
+  const cancelScheduledSave = () => {
+    if (debounceTimer.current !== null) {
       window.clearTimeout(debounceTimer.current);
+      debounceTimer.current = null;
     }
+  };
+
+  const flush = (value = latestValue.current) => {
+    cancelScheduledSave();
+    if (value === lastSavedValue.current) return;
+    lastSavedValue.current = value;
+    onSaveRef.current(value);
+  };
+
+  const scheduleSave = (value: string) => {
+    latestValue.current = value;
+    cancelScheduledSave();
     debounceTimer.current = window.setTimeout(() => {
-      onSave(value);
+      debounceTimer.current = null;
+      flush(value);
     }, debounceTime);
   };
+
+  useEffect(
+    () => () => {
+      cancelScheduledSave();
+      if (latestValue.current === lastSavedValue.current) return;
+      lastSavedValue.current = latestValue.current;
+      onSaveRef.current(latestValue.current);
+    },
+    [],
+  );
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const next = e.target.value;
@@ -44,6 +75,7 @@ export function BufferedInput({
 
   const handleCompositionStart = () => {
     isComposing.current = true;
+    cancelScheduledSave();
   };
 
   const handleCompositionEnd = (
@@ -58,18 +90,21 @@ export function BufferedInput({
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     setIsEditing(true);
     setLocalValue(externalValue);
+    latestValue.current = externalValue;
+    lastSavedValue.current = externalValue;
     props.onFocus?.(e);
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     setIsEditing(false);
-    onSave(e.target.value);
+    latestValue.current = e.target.value;
+    flush();
     props.onBlur?.(e);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !isComposing.current) {
-      onSave(localValue);
+      flush(localValue);
       e.currentTarget.blur();
     }
     props.onKeyDown?.(e);
