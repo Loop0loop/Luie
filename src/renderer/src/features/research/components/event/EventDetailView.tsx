@@ -13,9 +13,10 @@ const EVENT_SECTIONS = [
 
 interface EventDetailViewProps {
   eventId?: string;
+  onBack?: () => void;
 }
 
-export default function EventDetailView({ eventId }: EventDetailViewProps) {
+export default function EventDetailView({ eventId, onBack }: EventDetailViewProps) {
   const { currentItem, updateEvent, loadEvent } = useEventStore(
     useShallow((state) => ({
       currentItem: state.currentItem,
@@ -36,6 +37,7 @@ export default function EventDetailView({ eventId }: EventDetailViewProps) {
       storagePrefix="event-view-mode"
       noSelectionFallback="No Event Selected"
       templateFallback="Basic Event"
+      onBack={onBack}
     />
   );
 }

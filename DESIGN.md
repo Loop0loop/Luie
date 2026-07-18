@@ -20,8 +20,8 @@ intent is encoded directly in the token comments:
   the editor is the dark focal writing surface; the chrome (sidebar, toolbar,
   footer) sits **one calm step lighter** as the frame. In light themes it
   inverts — the editor is paper, the chrome is a slightly tinted frame.
-- **Calm, neutral, professional.** Zinc neutral scale, a single blue brand
-  accent, no pure black, subtle cool tint in dark (pure greys "read drab"). The
+- **Calm, neutral, professional.** Zinc neutral scale, a single muted-brass
+  brand accent, no pure black, subtle cool tint in dark (pure greys "read drab"). The
   comments explicitly calibrate against **Notion, Linear, Vercel, Tokyo Night,
   Gruvbox, Everforest, Solarized**.
 - **Writer-focused.** A dedicated Sepia ("warm paper") theme exists for long-form
@@ -108,13 +108,14 @@ colors.
 | `text-fg` | `#18181b` | `#d7d7da` | Primary |
 | `text-muted` | `#71717a` | `#989aa2` | Secondary |
 | `text-subtle` | `#a1a1aa` | `#6c6e77` | Tertiary / placeholder |
-| `text-accent` | `#2563eb` | `#60a5fa` | Links / interactive |
+| `text-accent` | `#795d2b` | `#d0b178` | Links / interactive |
 
 ### Brand + semantic
 
-- **One accent only:** blue (`--accent-bg #2563eb`). Alternate accent swatches
-  were deliberately removed ([`global.behaviors.css:2`](src/renderer/src/styles/global.behaviors.css)).
-  In Sepia the accent becomes warm orange `#cc7832`.
+- **One accent only:** muted brass (`--accent-bg #806330` in light,
+  `#b79152` in dark). Alternate accent swatches were deliberately removed
+  ([`global.behaviors.css:2`](src/renderer/src/styles/global.behaviors.css)).
+  Sepia uses the darker brass `#8a602e` for paper contrast.
 - `--success-fg` green, `--danger-fg` red, `--accent-fg` (`on-accent`) white.
 - Borders: `border` (`--border-default`), `border-active`, `border-focus`. In
   dark, borders are **white at 8% opacity** — "enough for definition, not a grid
@@ -339,7 +340,7 @@ change:
 SURFACES   bg-app  bg-sidebar  bg-panel  bg-surface  bg-element
 OVERLAYS   bg-surface-hover  bg-active            (alpha, compose over surfaces)
 TEXT       text-fg  text-muted  text-subtle  text-accent  text-on-accent
-BRAND      accent (blue #2563eb / sepia #cc7832)  success  danger
+BRAND      accent (muted brass; theme-adaptive)  success  danger
 BORDER     border  border-active  border-focus
 RADIUS     rounded-control (10px)  rounded-panel (14px)
 SHADOW     shadow-sm/md/lg  shadow-panel

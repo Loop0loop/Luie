@@ -286,6 +286,8 @@ export function BinderBarCompactHover({
                     onOpenSnapshot={setSelectedSnapshot}
                     isPinned={isPinned}
                     onTogglePinned={() => setIsPinned((prev) => !prev)}
+                    onResearchTabChange={openRightPanelTab}
+                    showHeader={false}
                     t={t}
                   />
                 </div>

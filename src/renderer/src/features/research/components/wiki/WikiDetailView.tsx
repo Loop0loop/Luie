@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpen, FileText, Trash2, User, X } from "lucide-react";
+import { BookOpen, ChevronLeft, FileText, Trash2, User, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
@@ -134,9 +134,10 @@ function ColorDotPicker({ color, onPick }: ColorDotPickerProps) {
 
 interface WikiDetailViewProps {
   characterId?: string;
+  onBack?: () => void;
 }
 
-export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
+export default function WikiDetailView({ characterId, onBack }: WikiDetailViewProps) {
   const { t } = useTranslation();
   const dialog = useDialog();
 
@@ -268,14 +269,22 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
   // ── Render ──────────────────────────────────────────────────────────────
 
   return (
-    <div
-      className="flex-1 overflow-auto px-8 py-7 sm:px-6 sm:py-6 flex flex-col gap-5 bg-panel text-fg min-w-0"
-      style={{ borderLeft: `3px solid ${attrs.characterColor}` }}
-    >
+    <div className="flex-1 overflow-auto px-8 py-7 sm:px-6 sm:py-6 flex flex-col gap-5 bg-panel text-fg min-w-0">
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-1.5 pb-4 border-b border-border/60">
+      <div className="flex flex-col gap-1.5 pb-2">
         <div className="flex items-center gap-2">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              title={t("back", "뒤로가기")}
+              aria-label={t("back", "뒤로가기")}
+              className="flex size-8 shrink-0 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <ChevronLeft className="icon-sm" aria-hidden="true" />
+            </button>
+          ) : null}
           <ColorDotPicker color={attrs.characterColor} onPick={attrs.setCharacterColor} />
           <BufferedInput
             className="text-[22px] font-semibold text-fg leading-tight border-none bg-transparent flex-1 focus:outline-none min-w-0"
@@ -395,7 +404,6 @@ export default function WikiDetailView({ characterId }: WikiDetailViewProps) {
               <AddTagInline onAdd={attrs.addKeyword} placeholder="+ 태그" />
             </div>
           </div>
-          <div className="h-px bg-border/30" />
           {/* Two-column — sections left, Infobox right */}
           <div className="@container">
             <div className="flex flex-col @min-[700px]:flex-row gap-8 items-start">

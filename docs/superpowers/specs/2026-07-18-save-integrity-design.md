@@ -296,3 +296,78 @@ ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron ./node_modules/vitest/vitest
 이 결과는 정상 경로와 직접 seed한 stale-checkpoint recovery를 검증한다. 실제 export 실패 후 프로세스 재시작, debounce 중 shortcut/quit, IPC `success:false`/timeout, export `false`/throw는 아직 검증하지 않는다. 100회 burst 테스트는 mock 기반이며 SQLite 또는 latency P95를 측정하지 않는다. 기존 writing-loop에는 percentile 계산 인프라가 있지만 이번 저장 파이프라인의 P95 artifact와 95% 신뢰 근거는 없다.
 
 저장소 전체 `qa:core`는 이번 변경과 무관한 기존 baseline 문제로 아직 green이 아니다. 저장 정합성 완료 표시는 위 P0 차단 항목과 해당 실패 주입 테스트가 해결된 뒤에만 복구한다.
+
+## 17. Renderer save-buffer 강제 flush 설계
+
+### 17.1 결정
+
+manual save와 quit이 DOM focus나 개별 component 위치를 추측하지 않도록 renderer 전용 save-buffer registry를 사용한다. registry는 Node/Electron API가 없는 UI-safe module `src/shared/ui/saveBufferRegistry.ts`에 두어 shared input과 renderer hook이 같은 singleton을 사용한다. 새 상태 관리 dependency, 전역 DOM event, Zustand draft store는 추가하지 않는다.
+
+registry는 다음 두 기능만 제공한다.
+
+```ts
+type SaveBufferFlush = () => void | Promise<void>;
+
+registerSaveBufferFlush(flush: SaveBufferFlush): () => void;
+flushSaveBuffers(): Promise<void>;
+```
+
+- mounted buffer는 flush callback을 등록하고 unmount에서 해제한다.
+- `flushSaveBuffers()`는 호출 시점의 callback snapshot을 전부 실행하고 비동기 결과를 기다린다.
+- 하나가 실패해도 나머지 callback 실행은 끝까지 기다린 뒤 전체 flush를 실패로 반환한다.
+- registry는 저장 상태나 retry 정책을 소유하지 않는다. 각 buffer와 mutation queue가 기존 dirty 상태를 유지한다.
+
+### 17.2 등록 대상
+
+- `BufferedInput`: 예약 timer를 취소하고 최신 dirty 값을 `onSave`에 전달한다.
+- `BufferedTextArea`: focus가 남아 있어도 최신 dirty 값을 `onSave`에 전달한다.
+- `useEditorAutosave`: dirty인 최신 title/content draft가 실제 `onSave`를 완료할 때까지 기다린다. 저장 중 새 draft가 들어오면 latest pending draft까지 drain한 뒤 resolve하고, clean editor instance는 아무 작업도 하지 않는다.
+
+editor autosave callback은 active draft를 직접 소유하므로 shortcut handler가 부모의 오래된 `activeChapterTitle`과 `content`를 다시 저장하지 않는다. manual save는 registry flush 결과만 사용해 최신 editor draft를 확정한다.
+
+### 17.3 저장 순서
+
+manual save:
+
+```text
+flushSaveBuffers()
+  -> flushWorldEntityMutations()
+  -> api.app.manualSave(projectId)
+  -> main autosave flush
+  -> .luie checkpoint
+```
+
+quit:
+
+```text
+APP_BEFORE_QUIT
+  -> flushSaveBuffers()
+  -> flushWorldEntityMutations()
+  -> completeFlush()
+```
+
+buffer 또는 world queue flush가 실패하면 뒤 단계로 진행하지 않는다. quit은 완료 handshake를 보내지 않아 main의 기존 timeout/사용자 결정 경계로 이동한다. export queue의 `failed > 0` 처리와 실패 mutation retry는 별도 P0 Task로 유지한다.
+
+### 17.4 동시성과 중복 방지
+
+- registry flush와 debounce timer가 경쟁해도 각 buffer의 기존 single-flush guard를 통과한다.
+- 같은 entity의 여러 input callback은 기존 entity별 mutation queue가 직렬화한다.
+- editor autosave는 동시에 `onSave`를 실행하지 않고 최신 pending draft 하나만 유지한다.
+- flush가 성공한 값은 뒤늦은 timer가 다시 저장하지 않는다.
+
+### 17.5 검증 기준
+
+- debounce timer를 진행하지 않은 `BufferedInput` 변경이 manual flush 직후 저장 callback에 한 번 전달된다.
+- focus된 `BufferedTextArea` 변경도 blur 없이 manual flush된다.
+- editor title/content 변경 직후 manual flush가 부모의 이전 값이 아닌 최신 draft를 저장한다.
+- buffer callback이 끝난 뒤 world mutation drain과 main checkpoint가 순서대로 실행된다.
+- buffer flush 실패 시 main checkpoint와 quit 완료 handshake가 호출되지 않는다.
+- unmount한 buffer callback은 이후 global flush에서 호출되지 않는다.
+
+### 17.6 범위 제외
+
+- 실패한 world mutation payload 보존 및 backoff
+- scheduled export `false`/throw retry
+- project-wide revision 확대
+- renderer root 밖에서 quit listener를 소유하도록 lifecycle 구조 변경
+- 저장 상태 toast/UI 개편

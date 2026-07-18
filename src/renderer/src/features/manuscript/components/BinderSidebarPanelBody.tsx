@@ -33,50 +33,77 @@ export function BinderSidebarPanelBody(props: {
   isPinned: boolean;
   pinLocked?: boolean;
   onTogglePinned: () => void;
+  onResearchTabChange?: (tab: "character" | "event" | "faction") => void;
+  showHeader?: boolean;
   t: (key: string) => string;
 }) {
+  const isResearchEntityTab =
+    props.activeTab === "character" ||
+    props.activeTab === "event" ||
+    props.activeTab === "faction";
+
   return (
-    <div className="flex-1 h-full overflow-hidden relative min-w-0">
-      <button
-        onClick={props.onTogglePinned}
-        disabled={props.pinLocked}
-        className="absolute top-4 right-12 p-1.5 rounded-full bg-surface/90 border border-border/50 text-muted hover:text-fg hover:bg-surface disabled:opacity-60 disabled:cursor-default disabled:hover:text-muted disabled:hover:bg-surface/90 z-50 shadow-sm transition-colors duration-150"
-        title={props.isPinned ? "Unpin" : "Pin"}
-      >
-        {props.isPinned ? <Pin className="w-4 h-4" /> : <PinOff className="w-4 h-4" />}
-      </button>
-      <button
-        onClick={props.onClose}
-        className="absolute top-4 right-2 p-1.5 rounded-full bg-surface/90 border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-colors duration-150"
-        title={props.t("sidebar.toggle.close")}
-      >
-        <X className="w-4 h-4" />
-      </button>
+    <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
+      {props.showHeader !== false ? (
+        <header className="flex h-9 shrink-0 items-center border-b border-border bg-sidebar px-3">
+          <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-subtle">
+            {isResearchEntityTab ? "Research" : props.activeTab}
+          </span>
+          <div className="ml-auto flex items-center gap-1">
+            <button
+              type="button"
+              onClick={props.onTogglePinned}
+              disabled={props.pinLocked}
+              className="flex size-7 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              title={props.isPinned ? "Unpin" : "Pin"}
+              aria-label={props.isPinned ? "Unpin" : "Pin"}
+            >
+              {props.isPinned ? <Pin className="icon-sm" /> : <PinOff className="icon-sm" />}
+            </button>
+            <button
+              type="button"
+              onClick={props.onClose}
+              className="flex size-7 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              title={props.t("sidebar.toggle.close")}
+              aria-label={props.t("sidebar.toggle.close")}
+            >
+              <X className="icon-sm" />
+            </button>
+          </div>
+        </header>
+      ) : null}
 
       {props.activeTab === "snapshot" && (
         <button
           onClick={props.onBackToSnapshotList}
-          className="absolute top-4 left-3 p-1.5 rounded-full bg-surface/90 border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-colors duration-150"
+          className="absolute left-3 top-10 z-50 flex size-7 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           title={props.t("back")}
+          aria-label={props.t("back")}
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="icon-sm" />
         </button>
       )}
 
-      <div className="flex-1 overflow-hidden pt-4 h-full">
+      <div className="min-h-0 flex-1 overflow-hidden">
         <Suspense
           fallback={
             <div className="p-4 text-sm text-muted">{props.t("loading")}</div>
           }
         >
-          {props.activeTab === "character" && (
-            <ResearchPanel activeTab="character" onClose={props.onClose} />
-          )}
-          {props.activeTab === "event" && (
-            <ResearchPanel activeTab="event" onClose={props.onClose} />
-          )}
-          {props.activeTab === "faction" && (
-            <ResearchPanel activeTab="faction" onClose={props.onClose} />
+          {isResearchEntityTab && (
+            <ResearchPanel
+              activeTab={props.activeTab}
+              onClose={props.onClose}
+              onTabChange={(tab) => {
+                if (
+                  tab === "character" ||
+                  tab === "event" ||
+                  tab === "faction"
+                ) {
+                  props.onResearchTabChange?.(tab);
+                }
+              }}
+            />
           )}
           {props.activeTab === "world" && (
             <WorldPanel onClose={props.onClose} />

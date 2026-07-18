@@ -124,12 +124,12 @@
   --text-primary: #18181b; /* Zinc-900 - Sharp, readable black */
   --text-secondary: #71717a; /* Zinc-500 - Clear secondary info */
   --text-tertiary: #a1a1aa; /* Zinc-400 - Placeholders */
-  --text-accent: #2563eb; /* Blue-600 - Standard interaction blue */
+  --text-accent: #795d2b; /* Muted brass — interactive text, not decoration */
   --text-on-accent: #ffffff;
 
   /* Semantic UI */
-  --accent-bg: #2563eb; /* Blue-600 */
-  --accent-bg-hover: #1d4ed8; /* Blue-700 */
+  --accent-bg: #806330; /* Muted brass — contrast-safe with white text */
+  --accent-bg-hover: #6d5428;
   --accent-fg: #ffffff;
   --success-fg: #16a34a; /* Green-600 */
   --danger-fg: #ef4444; /* Red-500 */
@@ -139,7 +139,7 @@
   --bg-secondary: #f9fafb;
   --bg-hover: var(--bg-element-hover);
   --bg-canvas: #ffffff;
-  --accent-primary: #2563eb;
+  --accent-primary: var(--accent-bg);
   --grid-line: #e5e7eb;
   --danger-fg: #dc2626; /* Red-600 */
 
@@ -151,7 +151,7 @@
   /* Editor Specific (Can differ from UI) */
   --editor-bg: #ffffff;
   --editor-text: #18181b;
-  --editor-selection: #bfdbfe; /* Blue-200 */
+  --editor-selection: #eadcbf; /* Warm paper selection */
 
   /* Dimensions */
   --header-height: 48px;
@@ -245,7 +245,7 @@
 [data-theme="dark"] {
   /* Backgrounds — Notion/Linear-calibrated "recessed editor" model.
      Editor is the dark focal surface; chrome (sidebar/toolbar/footer) sits one
-     calm step lighter as the frame. Subtle cool (blue) tint — pure greys read
+     calm step lighter as the frame. Subtle cool tint — pure greys read
      drab/murky on screen, +2~3pt blue makes them clean. None pure-black. */
   --bg-app: #1a1a1c; /* Editor — neutral dark focal surface (≈ Notion #191919) */
   --bg-sidebar: #212123; /* Chrome frame — one step lighter (≈ Notion sidebar) */
@@ -260,13 +260,13 @@
   --text-primary: #d7d7da; /* Clean neutral light grey (≈ Notion #D4D4D4), crisp not drab */
   --text-secondary: #989aa2; /* Quieter secondary, clearly below primary */
   --text-tertiary: #6c6e77; /* Placeholders — recede further */
-  --text-accent: #60a5fa; /* Blue-400 */
+  --text-accent: #d0b178; /* Light brass for dark-surface interaction */
   --text-on-accent: #ffffff;
 
   /* Semantic UI */
-  --accent-bg: #2563eb; /* Blue-600 (Slightly deeper for better contrast on dark) */
-  --accent-bg-hover: #3b82f6; /* Blue-500 */
-  --accent-fg: #ffffff;
+  --accent-bg: #b79152; /* Brass — contrast-safe with dark foreground */
+  --accent-bg-hover: #c6a363;
+  --accent-fg: #211b11;
   --success-fg: #22c55e;
   --danger-fg: #ef4444;
 
@@ -288,7 +288,7 @@
   /* Editor */
   --editor-bg: #1a1a1c; /* Matches bg-app — neutral dark writing surface */
   --editor-text: #d0d0d4; /* Body text — clean, comfortable on the dark surface */
-  --editor-selection: #1e3a8a;
+  --editor-selection: #5d4829;
 }
 
 /* === DARK TONE (user-selectable color temperature) ===
@@ -380,7 +380,7 @@
   --text-primary: #5f4b32; /* Dark brown */
   --text-secondary: #8c7b66;
   --text-tertiary: #b8aa9c;
-  --text-accent: #cc7832; /* Warm Orange/Brown */
+  --text-accent: #8a602e; /* Dark brass for warm paper */
 
   /* Borders */
   --border-default: #e6dac6;
@@ -388,8 +388,8 @@
   --border-focus: #5f4b32;
 
   /* Semantic UI */
-  --accent-bg: #cc7832;
-  --accent-bg-hover: #b96725;
+  --accent-bg: #8a602e;
+  --accent-bg-hover: #735026;
   --accent-fg: #fffefb;
   --success-fg: #2e7d32;
   --danger-fg: #b91c1c;
@@ -399,7 +399,7 @@
   --bg-secondary: #efe4cb;
   --bg-hover: #efe4cb;
   --bg-canvas: #fbf0d9;
-  --accent-primary: #cc7832;
+  --accent-primary: var(--accent-bg);
   --grid-line: #e6dcc6;
   --danger-fg: #b91c1c;
 

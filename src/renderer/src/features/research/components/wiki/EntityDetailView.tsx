@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpen, FileText } from "lucide-react";
+import { BookOpen, ChevronLeft, FileText } from "lucide-react";
 import { BufferedInput } from "@shared/ui/BufferedInput";
 import { useDialog } from "@shared/ui/useDialog";
 import { cn } from "@shared/types/utils";
@@ -55,6 +55,7 @@ type EntityDetailViewProps = {
   storagePrefix: string;
   noSelectionFallback: string;
   templateFallback: string;
+  onBack?: () => void;
 };
 
 export function EntityDetailView({
@@ -68,6 +69,7 @@ export function EntityDetailView({
   storagePrefix,
   noSelectionFallback,
   templateFallback,
+  onBack,
 }: EntityDetailViewProps) {
   const { t } = useTranslation();
   const dialog = useDialog();
@@ -185,6 +187,17 @@ export function EntityDetailView({
     <div className="flex-1 overflow-auto p-8 sm:p-6 flex flex-col gap-6 bg-panel text-fg min-w-0">
       <div className="flex flex-col gap-2 pb-4 border-b border-border">
         <div className="flex items-center gap-2">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="flex size-8 shrink-0 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              title={t("back", "뒤로가기")}
+              aria-label={t("back", "뒤로가기")}
+            >
+              <ChevronLeft className="icon-sm" aria-hidden="true" />
+            </button>
+          ) : null}
           <BufferedInput
             className="text-[26px] font-extrabold text-fg leading-tight border-none bg-transparent flex-1 focus:outline-none min-w-0"
             value={entity.name}

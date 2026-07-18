@@ -183,6 +183,7 @@ export function BinderSidebar({
                     isPinned={effectivePinned}
                     pinLocked={isSnapshotTab}
                     onTogglePinned={() => setIsPinned((prev) => !prev)}
+                    onResearchTabChange={setActiveRightTab}
                     t={t}
                 />
 
