@@ -2,7 +2,7 @@
 
 **작성일:** 2026-07-18  
 **브랜치:** `feature/00-save-integrity`  
-**상태:** 설계 승인, 구현 계획 작성 전
+**상태:** 구현 완료, 저장 정합성 검증 통과 (저장소 전체 baseline gate는 §16 참조)
 
 ## 1. 목적
 
@@ -250,3 +250,22 @@ renderer input flush
 6. 전역 강제 저장 및 종료 flush
 7. 통합 정합성·복구 검증
 
+## 16. 구현 및 검증 결과
+
+2026-07-19 기준 `feature/00-save-integrity`에서 1차 구현 범위를 완료했다.
+
+- 100회 연속 world entity patch의 마지막 값 보존: PASS
+- 실제 SQLite `revision=2`, `.luie exportedRevision=1` startup recovery: PASS
+- 최신 캐릭터 값의 실제 `.luie` round-trip 및 `exportedRevision=2` 수렴: PASS
+- BufferedInput, mutation queue, graph delta, manual save, checkpoint recovery 타깃 회귀: 11 files, 23 tests PASS
+- IPC handler schema, Drizzle main schema, TypeScript, 변경 파일 ESLint, derived DB benchmark: PASS
+
+실행 명령:
+
+```bash
+SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest tests/dom/bufferedInputSavePolicy.test.tsx tests/renderer/stores/worldEntityMutationQueue.test.ts tests/renderer/stores/characterStoreMutationLock.test.ts tests/renderer/stores/worldBuildingStore.graph.test.ts tests/main/services/projectRevisionStore.test.ts tests/main/services/projectCheckpointRecovery.test.ts tests/main/handler/manualSaveHandler.test.ts tests/renderer/services/saveCoordinator.test.ts tests/renderer/stores/worldEntitySaveBurst.test.ts --run
+
+ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron ./node_modules/vitest/vitest.mjs tests/main/services/worldEntitySaveIntegrity.test.ts tests/main/services/projectSaveRecovery.integration.test.ts --run
+```
+
+저장소 전체 `qa:core`는 이번 변경과 무관한 기존 baseline 문제로 아직 green이 아니다. 전체 lint의 기존 20개 오류, `graphStore` persist 계약 누락, 기존 500 LOC 초과 7개 파일, 기존 대형 chunk warning, core 묶음의 OAuth Electron mock·기존 DOM/validation 테스트 13개 실패를 확인했다. 이번 변경으로 한도를 넘었던 `EditorRoot`와 `projectService`는 종료 flush hook 추출로 다시 500 LOC 이하로 정리했다.

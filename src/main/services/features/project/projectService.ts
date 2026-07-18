@@ -45,7 +45,6 @@ import {
   updateProjectRecord,
 } from "../../core/project/projectMutation.js";
 import { listProjectsNeedingExport } from "../../core/project/projectRevisionStore.js";
-
 const logger = createLogger("ProjectService");
 
 const DEBOUNCED_PACKAGE_EXPORT_REASONS = new Set<string>([
@@ -357,7 +356,6 @@ export class ProjectService {
   async checkpointProject(projectId: string, reason: string): Promise<boolean> {
     return await this.exportProjectPackageNow(projectId, reason);
   }
-
   async exportProjectPackageNow(
     projectId: string,
     reason?: string,

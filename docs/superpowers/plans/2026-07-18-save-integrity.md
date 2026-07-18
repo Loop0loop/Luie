@@ -849,9 +849,14 @@ git commit -m "feat(storage): flush projects with save shortcut"
 
 ### Task 7: 통합 정합성 검증과 품질 게이트
 
+**Status:** 완료 — 저장 범위 검증 통과, repo-wide baseline 실패 기록
+
 **Files:**
 - Create: `tests/renderer/stores/worldEntitySaveBurst.test.ts`
 - Create: `tests/main/services/projectSaveRecovery.integration.test.ts`
+- Create: `src/renderer/src/features/workspace/hooks/useProjectQuitFlush.ts`
+- Modify: `src/renderer/src/features/workspace/components/layout/EditorRoot.tsx`
+- Modify: `src/main/services/features/project/projectService.ts`
 - Modify: `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
 
 **Interfaces:**
@@ -859,7 +864,7 @@ git commit -m "feat(storage): flush projects with save shortcut"
 - Verifies: manual save 뒤 `revision === exportedRevision`
 - Verifies: export 실패 뒤 startup recovery
 
-- [ ] **Step 1: 100회 연속 저장 통합 테스트 작성**
+- [x] **Step 1: 100회 연속 저장 통합 테스트 작성**
 
 ```ts
 it("persists the final value from one hundred queued character patches", async () => {
@@ -892,7 +897,7 @@ it("persists the final value from one hundred queued character patches", async (
 });
 ```
 
-- [ ] **Step 2: crash recovery 통합 테스트 작성**
+- [x] **Step 2: crash recovery 통합 테스트 작성**
 
 revision 2, exportedRevision 1 상태의 실제 임시 DB와 `.luie`를 만든 뒤 `scheduleStalePackageExports()` 및 queue flush를 실행한다. 최종 `.luie`를 다시 읽어 최신 캐릭터 값과 exportedRevision 2를 확인한다.
 
@@ -917,13 +922,17 @@ await expect(getProjectRevisionState(projectId)).resolves.toEqual({
 });
 ```
 
-- [ ] **Step 3: 타깃 테스트 실행**
+- [x] **Step 3: 타깃 테스트 실행**
 
-Run: `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/dom/bufferedInputSavePolicy.test.tsx tests/renderer/stores/worldEntityMutationQueue.test.ts tests/renderer/stores/characterStoreMutationLock.test.ts tests/renderer/stores/worldEntityAttributePatch.test.ts tests/renderer/stores/worldBuildingStoreGraphDelta.test.ts tests/main/services/projectRevisionStore.test.ts tests/main/services/worldEntitySaveIntegrity.test.ts tests/main/services/projectCheckpointRecovery.test.ts tests/main/handler/manualSaveHandler.test.ts tests/renderer/services/saveCoordinator.test.ts tests/renderer/stores/worldEntitySaveBurst.test.ts tests/main/services/projectSaveRecovery.integration.test.ts --run`
+Run: `SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest tests/dom/bufferedInputSavePolicy.test.tsx tests/renderer/stores/worldEntityMutationQueue.test.ts tests/renderer/stores/characterStoreMutationLock.test.ts tests/renderer/stores/worldBuildingStore.graph.test.ts tests/main/services/projectRevisionStore.test.ts tests/main/services/projectCheckpointRecovery.test.ts tests/main/handler/manualSaveHandler.test.ts tests/renderer/services/saveCoordinator.test.ts tests/renderer/stores/worldEntitySaveBurst.test.ts --run`
+
+Run (real DB/FS): `ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron ./node_modules/vitest/vitest.mjs tests/main/services/worldEntitySaveIntegrity.test.ts tests/main/services/projectSaveRecovery.integration.test.ts --run`
 
 Expected: PASS.
 
-- [ ] **Step 4: 저장소 정책 게이트 실행**
+Actual: 11 files, 23 tests PASS.
+
+- [x] **Step 4: 저장소 정책 게이트 실행**
 
 Run: `pnpm run check:ipc-handler-schemas`
 
@@ -941,19 +950,23 @@ Run: `pnpm run lint`
 
 Expected: PASS.
 
-- [ ] **Step 5: 전체 core QA 실행**
+Actual: IPC schema, Drizzle main, typecheck, 변경 파일 ESLint, derived DB benchmark PASS. 전체 lint는 기존 20 errors/1 warning으로 FAIL했다.
+
+- [x] **Step 5: 전체 core QA 실행**
 
 Run: `pnpm run qa:core`
 
 Expected: PASS. Native ABI 문제만 발생하면 코드 실패와 분리해 `pnpm rebuild better-sqlite3` 후 한 번 재실행한다.
 
-- [ ] **Step 6: 설계 문서 상태 갱신**
+Actual: core test 묶음 27 files/179 tests PASS, 기존 4 files/13 tests FAIL. 추가 baseline gate 실패는 `graphStore` persist 계약, 기존 500 LOC 초과 7 files, 기존 build chunk warning이다. 이번 변경으로 LOC 한도를 넘었던 `EditorRoot`와 `projectService`는 정리 완료했다.
+
+- [x] **Step 6: 설계 문서 상태 갱신**
 
 `docs/superpowers/specs/2026-07-18-save-integrity-design.md`의 상태를 `구현 완료, 검증 통과`로 변경하고 실제 테스트 명령과 결과를 문서 마지막에 기록한다.
 
-- [ ] **Step 7: Task 7 커밋**
+- [x] **Step 7: Task 7 커밋**
 
 ```bash
-git add tests/renderer/stores/worldEntitySaveBurst.test.ts tests/main/services/projectSaveRecovery.integration.test.ts docs/superpowers/specs/2026-07-18-save-integrity-design.md
+git add docs/superpowers/plans/2026-07-18-save-integrity.md docs/superpowers/specs/2026-07-18-save-integrity-design.md tests/renderer/stores/worldEntitySaveBurst.test.ts tests/main/services/projectSaveRecovery.integration.test.ts src/renderer/src/features/workspace/hooks/useProjectQuitFlush.ts src/renderer/src/features/workspace/components/layout/EditorRoot.tsx src/main/services/features/project/projectService.ts
 git commit -m "test(storage): verify save integrity recovery"
 ```

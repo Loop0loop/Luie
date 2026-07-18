@@ -51,18 +51,13 @@ import {
   WorkspacePanels,
 } from "./rootShell";
 import { FloatingAnalysisPanel } from "./FloatingAnalysisPanel";
-import { api } from "@shared/api";
-import {
-  flushWorldEntityMutations,
-  getPendingWorldEntityMutationCount,
-} from "@renderer/shared/store/worldEntityMutationQueue";
-
+import { useProjectQuitFlush } from "@renderer/features/workspace/hooks/useProjectQuitFlush";
 export default function EditorRoot() {
+  useProjectQuitFlush();
   const { t } = useTranslation();
   const dialog = useDialog();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTabId | undefined>(undefined);
-
   const uiMode = useEditorStore((state) => state.uiMode);
   const setUiMode = useEditorStore((state) => state.setUiMode);
   const fontSize = useEditorStore((state) => state.fontSize);
@@ -187,23 +182,6 @@ export default function EditorRoot() {
     setWorldTab,
     addPanel,
   });
-
-  useEffect(
-    () =>
-      api.lifecycle.onBeforeQuit(() => {
-        if (getPendingWorldEntityMutationCount() > 0) {
-          api.lifecycle.setDirty(true);
-        }
-        void flushWorldEntityMutations()
-          .catch((error) => {
-            void api.logger.error("Failed to flush world entity mutations", {
-              error,
-            });
-          })
-          .finally(() => api.lifecycle.completeFlush());
-      }),
-    [],
-  );
 
   const openDocsRightTab = useCallback((tab: Exclude<DocsRightTab, null>) => {
     openDocsPanelTab(tab);
