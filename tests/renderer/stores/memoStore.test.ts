@@ -297,10 +297,13 @@ describe("memoStore", () => {
     );
   });
 
-  it("records saveError when memo persistence fails", async () => {
-    mocked.storage.saveScrapMemos.mockRejectedValue(
-      new Error("Failed to persist scrap world data to canonical .luie."),
+  it("rejects failed persistence and retries the dirty memo snapshot", async () => {
+    const failure = new Error(
+      "Failed to persist scrap world data to canonical .luie.",
     );
+    mocked.storage.saveScrapMemos
+      .mockRejectedValueOnce(failure)
+      .mockResolvedValueOnce(undefined);
 
     await memoStoreModule.useMemoStore
       .getState()
@@ -312,11 +315,83 @@ describe("memoStore", () => {
       tags: [],
     });
 
-    await vi.advanceTimersByTimeAsync(DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS);
-    await memoStoreModule.useMemoStore.getState().flushSave();
+    const firstFlush = memoStoreModule.useMemoStore.getState().flushSave();
+    await expect(firstFlush).rejects.toBe(failure);
 
     expect(memoStoreModule.useMemoStore.getState().saveError).toBe(
       "Failed to persist scrap world data to canonical .luie.",
+    );
+
+    await expect(
+      memoStoreModule.useMemoStore.getState().flushSave(),
+    ).resolves.toBeUndefined();
+    expect(mocked.storage.saveScrapMemos).toHaveBeenCalledTimes(2);
+  });
+
+  it("consumes a scheduled save rejection and keeps it retryable", async () => {
+    mocked.storage.saveScrapMemos
+      .mockRejectedValueOnce(new Error("scheduled memo failure"))
+      .mockResolvedValueOnce(undefined);
+
+    await memoStoreModule.useMemoStore
+      .getState()
+      .loadNotes("project-1", "/tmp/project-1.luie");
+    memoStoreModule.useMemoStore.getState().addNote("project-1", {
+      title: "Draft",
+      content: "Retry me",
+      tags: [],
+    });
+
+    await vi.advanceTimersByTimeAsync(DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS);
+    expect(memoStoreModule.useMemoStore.getState().saveError).toBe(
+      "scheduled memo failure",
+    );
+
+    await expect(
+      memoStoreModule.useMemoStore.getState().flushSave(),
+    ).resolves.toBeUndefined();
+    expect(mocked.storage.saveScrapMemos).toHaveBeenCalledTimes(2);
+  });
+
+  it("drains the latest memo snapshot after an in-flight save", async () => {
+    let resolveFirst!: () => void;
+    mocked.storage.saveScrapMemos
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveFirst = resolve;
+          }),
+      )
+      .mockResolvedValueOnce(undefined);
+
+    await memoStoreModule.useMemoStore
+      .getState()
+      .loadNotes("project-1", "/tmp/project-1.luie");
+    const note = memoStoreModule.useMemoStore.getState().addNote("project-1", {
+      title: "Draft",
+      content: "First snapshot",
+      tags: [],
+    });
+    if (!note) throw new Error("memo creation failed");
+
+    await vi.advanceTimersByTimeAsync(DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS);
+    memoStoreModule.useMemoStore.getState().updateNote(note.id, {
+      content: "Latest snapshot",
+    });
+    const flush = memoStoreModule.useMemoStore.getState().flushSave();
+    await Promise.resolve();
+    expect(mocked.storage.saveScrapMemos).toHaveBeenCalledTimes(1);
+
+    resolveFirst();
+    await flush;
+
+    expect(mocked.storage.saveScrapMemos).toHaveBeenCalledTimes(2);
+    expect(mocked.storage.saveScrapMemos).toHaveBeenLastCalledWith(
+      "project-1",
+      "/tmp/project-1.luie",
+      expect.objectContaining({
+        memos: [expect.objectContaining({ content: "Latest snapshot" })],
+      }),
     );
   });
 });

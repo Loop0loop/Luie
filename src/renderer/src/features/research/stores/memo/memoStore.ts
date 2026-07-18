@@ -77,6 +77,7 @@ export const useMemoStore = create<MemoStore>((set, get) => {
       if (get().activeProjectId === activeProjectId) {
         set({ error: message, saveError: message });
       }
+      throw error;
     } finally {
       if (get().activeProjectId === activeProjectId) {
         set({ isSaving: false });
@@ -94,11 +95,10 @@ export const useMemoStore = create<MemoStore>((set, get) => {
       saveTimer = null;
       const save = persistNotes();
       pendingSave = save;
-      void save.finally(() => {
-        if (pendingSave === save) {
-          pendingSave = null;
-        }
-      });
+      const clearPending = () => {
+        if (pendingSave === save) pendingSave = null;
+      };
+      void save.then(clearPending, clearPending);
     }, DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS);
   };
 

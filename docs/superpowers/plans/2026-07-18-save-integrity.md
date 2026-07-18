@@ -1553,3 +1553,34 @@ git commit -m "fix(storage): enforce buffer persistence ack"
 - [x] follow-up 단일 커밋 `fix(storage): close buffer barrier races`
 
 Actual (2026-07-19): follow-up RED는 2 files/21 tests 중 4건이 explicit 손실, button/status barrier 조기 완료, description rerender hydration 재실행으로 예상대로 실패했다. component barrier는 input callback과 registry가 같은 in-flight Promise를 공유하며 실패한 latest snapshot을 다음 flush에서 재시도한다. Synopsis main save가 pending인 동안 description rerender를 주입해도 load는 1회이고 후속 metadata payload가 최신 synopsis를 유지한다. 최종 검증 결과는 Task 11 report에 기록했다.
+
+---
+
+### Task 12: Canvas active buffer를 global save barrier에 연결
+
+**Status:** 완료
+
+**Files:**
+- Modify: `src/renderer/src/features/canvas/components/shell/CanvasDocumentView.tsx`
+- Modify: `src/renderer/src/features/canvas/components/shell/document/CanvasMarkdownEditor.tsx`
+- Modify: `src/renderer/src/features/research/stores/memo/memoStore.ts`
+- Create: `tests/dom/canvasSaveBuffer.test.tsx`
+- Modify: `tests/renderer/stores/memoStore.test.ts`
+- Modify: `docs/superpowers/plans/2026-07-18-save-integrity.md`
+- Modify: `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
+
+**Interfaces:**
+- Requires: Task 10 `flushSaveBuffers()` → world mutation drain → main checkpoint 순서.
+- Changes: Canvas markdown 500ms timer를 global registry에서 실제 `onSave` ACK까지 drain한다.
+- Changes: Canvas memo title/content callback은 memo store `flushSave()` ACK를 반환한다.
+- Changes: Canvas entity title/description/markdown callback은 world entity update Promise를 반환한다.
+- Changes: memo persistence 실패는 barrier에 reject되고 dirty snapshot은 다음 flush에서 재시도된다.
+
+- [x] **Step 1: Canvas/memo 저장 공백 RED 테스트 작성 및 실패 확인**
+- [x] **Step 2: Canvas markdown latest/in-flight/timer drain 최소 구현**
+- [x] **Step 3: Canvas callsite를 실제 persistence ACK에 연결**
+- [x] **Step 4: memo store 오류 전파·dirty retry 수명주기 보정**
+- [x] **Step 5: focused 및 Task 8~12 회귀, ESLint, diff-check, tsc 검증**
+- [x] **Step 6: SSOT/report 동기화 및 단일 커밋**
+
+Actual (2026-07-19): RED는 2 files/14 tests 중 6건이 markdown registry 미연결, memo flush Promise 폐기, entity description blur 의존, memo persistence 오류 삼킴으로 예상대로 실패했다. GREEN은 focused 2 files/20 tests, Task 8~12 회귀 9 files/59 tests PASS이며 stderr warning/unhandled rejection이 없다. 변경 파일 ESLint와 `git diff --check`는 PASS다. `./node_modules/.bin/tsc6 --noEmit`은 Task 12 신규 오류 없이 사용자 소유 dirty `BinderSidebarPanelBody.tsx:102`의 기존 `ResearchPanelTab` 오류 1건으로 exit 2다.

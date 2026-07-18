@@ -398,7 +398,14 @@ buffer 또는 world queue flush가 실패하면 뒤 단계로 진행하지 않�
 - 직접 ACK: `TermManager`, `WikiDetailView`의 world entity callback은 queue Promise를 반환한다.
 - 다음 단계 drain: dirty wiki/Infobox/Canvas entity title callback은 Promise를 반환하지 않지만 호출 중 `worldEntityMutationQueue`에 동기 enqueue되며 Task 10의 world flush가 drain한다.
 - Task 11 해결: `PlotBoard`는 state-only callback과 250ms effect를 제거하고 최신 snapshot을 `savePlot`에 직렬화한다. `SynopsisEditor`는 최신 draft snapshot을 직렬화하고 package save와 project description update를 await한다.
-- 후속 blocker: `CanvasDocumentView` memo title은 memo timer, `CanvasMarkdownEditor`는 500ms timer, Canvas description은 focus된 plain textarea의 blur, dirty `NotionDocumentView` body는 500ms timer에 의존한다. 이 경로들은 아직 registry 또는 Task 10 drain에 연결되지 않아 focus 유지 직후 manual save/quit에서 누락될 수 있다. 사용자 dirty 파일은 Task 11에서 수정하지 않았다.
+- [x] Task 12 해결: `CanvasMarkdownEditor` timer, Canvas entity title/description/markdown, Canvas memo title/content를 registry와 실제 persistence ACK에 연결했다. memo persistence 실패는 barrier에 전파하고 dirty snapshot을 다음 flush에서 재시도한다.
+- 후속 blocker: dirty `NotionDocumentView` body는 아직 500ms timer에 의존한다. 사용자 dirty 파일이므로 Task 12에서 수정하지 않았다.
+
+Task 12는 Canvas 경로만 해결했다. `CanvasMarkdownEditor`는 최신 markdown snapshot과 in-flight Promise를 소유하고 registry callback에서 timer를 취소한 뒤 실제 `onSave` ACK까지 drain한다. timer와 barrier가 경쟁하면 같은 snapshot은 같은 Promise를 공유하고, 실패한 snapshot은 clean으로 승격하지 않아 다음 barrier에서 재시도한다.
+
+Canvas entity description은 plain textarea를 기존 `BufferedTextArea`로 교체한다. entity title/description/markdown callback은 `entityState.update` Promise를 반환해 Task 10의 buffer 단계가 ACK를 기다린다. Canvas memo title/content callback은 `updateNote` 직후 `flushSave()`를 반환한다. memo persistence 실패는 `saveError`와 dirty 상태를 유지하면서 explicit flush에 reject되고, 예약 저장 rejection은 consume돼 unhandled rejection을 만들지 않는다. dirty `NotionDocumentView` timer는 사용자 작업 범위이므로 후속 blocker로 유지한다.
+
+검증 결과는 focused 2 files/20 tests와 Task 8~12 저장 회귀 9 files/59 tests PASS이며 stderr warning/unhandled rejection 0이다. 변경 파일 ESLint와 `git diff --check`는 PASS다. 전체 `tsc6 --noEmit`은 Task 12 신규 오류 없이 사용자 소유 dirty `BinderSidebarPanelBody.tsx:102`의 기존 오류 1건만 유지한다.
 
 ### 17.6 범위 제외
 

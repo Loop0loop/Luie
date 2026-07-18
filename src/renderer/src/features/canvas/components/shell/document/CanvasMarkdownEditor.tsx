@@ -15,10 +15,35 @@ import { useEditorConfig } from "@renderer/features/editor/hooks/useEditorConfig
 import EditorToolbar from "@renderer/features/editor/components/EditorToolbar";
 import { Bold, Italic, Underline, Strikethrough, Highlighter } from "lucide-react";
 import { cn } from "@shared/types/utils";
+import { registerSaveBufferFlush } from "@shared/ui/saveBufferRegistry";
 
 type MarkdownStorage = { markdown?: { getMarkdown?: () => string } };
 
 const AUTOSAVE_DELAY_MS = 500;
+
+const consumeBackgroundSave = (result: void | Promise<unknown>): void => {
+  void Promise.resolve(result).catch(() => undefined);
+};
+
+const preserveUnmountSave = (
+  initial: void | Promise<unknown>,
+  retry: () => void | Promise<unknown>,
+): void => {
+  let current: Promise<unknown> | null = Promise.resolve(initial);
+  let unregister: () => void = () => undefined;
+  const flush = async (): Promise<void> => {
+    if (!current) current = Promise.resolve().then(retry);
+    try {
+      await current;
+      unregister();
+    } catch (error) {
+      current = null;
+      throw error;
+    }
+  };
+  unregister = registerSaveBufferFlush(flush);
+  consumeBackgroundSave(flush());
+};
 
 export function CanvasMarkdownEditor({
   initialMarkdown,
@@ -26,19 +51,72 @@ export function CanvasMarkdownEditor({
   children,
 }: {
   initialMarkdown: string;
-  onSave: (markdown: string) => void;
+  onSave: (markdown: string) => void | Promise<unknown>;
   children?: React.ReactNode;
 }) {
-
-
   const saveTimer = useRef<number | null>(null);
   const onSaveRef = useRef(onSave);
+  const latestMarkdown = useRef(initialMarkdown);
+  const lastSavedMarkdown = useRef(initialMarkdown);
+  const inFlightSave = useRef<{
+    markdown: string;
+    promise: Promise<void>;
+  } | null>(null);
+  const flushRef = useRef<() => void | Promise<void>>(() => undefined);
 
   useEffect(() => {
     onSaveRef.current = onSave;
   }, [onSave]);
 
   const [, forceUpdate] = useState({});
+
+  const cancelScheduledSave = () => {
+    if (saveTimer.current === null) return;
+    window.clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+  };
+
+  const flush = (markdown = latestMarkdown.current): void | Promise<void> => {
+    cancelScheduledSave();
+    const inFlight = inFlightSave.current;
+    if (inFlight) {
+      if (markdown === inFlight.markdown) return inFlight.promise;
+      return inFlight.promise.then(async () => {
+        await flushRef.current();
+      });
+    }
+    if (markdown === lastSavedMarkdown.current) return;
+
+    let result: void | Promise<unknown>;
+    try {
+      result = onSaveRef.current(markdown);
+    } catch (error) {
+      result = Promise.reject(error);
+    }
+    const promise = Promise.resolve(result)
+      .then(() => {
+        lastSavedMarkdown.current = markdown;
+      })
+      .finally(() => {
+        if (inFlightSave.current?.promise === promise) {
+          inFlightSave.current = null;
+        }
+      });
+    inFlightSave.current = { markdown, promise };
+    return promise;
+  };
+
+  useEffect(() => {
+    flushRef.current = flush;
+  });
+
+  useEffect(
+    () =>
+      registerSaveBufferFlush(async () => {
+        await flushRef.current();
+      }),
+    [],
+  );
 
   const editor = useEditor({
     extensions: [
@@ -59,10 +137,12 @@ export function CanvasMarkdownEditor({
     content: initialMarkdown,
     editorProps: { attributes: { class: "ProseMirror" } },
     onUpdate: ({ editor }) => {
-      if (saveTimer.current !== null) window.clearTimeout(saveTimer.current);
+      const markdown = getMarkdown(editor.storage, editor.getText());
+      latestMarkdown.current = markdown;
+      cancelScheduledSave();
       saveTimer.current = window.setTimeout(() => {
         saveTimer.current = null;
-        onSaveRef.current(getMarkdown(editor.storage, editor.getText()));
+        consumeBackgroundSave(flushRef.current());
       }, AUTOSAVE_DELAY_MS);
       forceUpdate({});
     },
@@ -73,12 +153,15 @@ export function CanvasMarkdownEditor({
 
   useEffect(() => {
     return () => {
-      if (saveTimer.current === null) return;
-      window.clearTimeout(saveTimer.current);
-      saveTimer.current = null;
-      if (editor) onSaveRef.current(getMarkdown(editor.storage, editor.getText()));
+      cancelScheduledSave();
+      const markdown = latestMarkdown.current;
+      if (markdown === lastSavedMarkdown.current && !inFlightSave.current)
+        return;
+      preserveUnmountSave(flushRef.current(), () =>
+        onSaveRef.current(markdown),
+      );
     };
-  }, [editor]);
+  }, []);
 
   const { fontFamilyCss } = useEditorConfig();
 
