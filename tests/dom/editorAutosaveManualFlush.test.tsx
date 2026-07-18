@@ -140,7 +140,9 @@ describe("editor autosave manual flush", () => {
     const root = mountAutosave({ title: "A", content: "1", onSave });
     root.render({ title: "B", content: "2", onSave });
 
-    await expect(flushSaveBuffers()).rejects.toThrow("chapter save failed");
+    await act(async () => {
+      await expect(flushSaveBuffers()).rejects.toThrow("chapter save failed");
+    });
   });
 
   it("continues to the latest draft when an older in-flight save fails", async () => {
