@@ -16,8 +16,8 @@ import { ProjectService } from "../../../src/main/services/features/project/proj
 describe("ProjectService immediate package durability", () => {
   it("returns exported=true without queueing a retry when immediate export succeeds", async () => {
     const service = new ProjectService();
-    const exportSpy = vi
-      .spyOn(service, "exportProjectPackageNow")
+    const checkpointSpy = vi
+      .spyOn(service, "checkpointProject")
       .mockResolvedValue(true);
     const scheduleSpy = vi
       .spyOn(service, "schedulePackageExport")
@@ -27,7 +27,7 @@ describe("ProjectService immediate package durability", () => {
       service.attemptImmediatePackageExport("project-1", "chapter:update"),
     ).resolves.toEqual({ exported: true });
 
-    expect(exportSpy).toHaveBeenCalledWith("project-1", "chapter:update");
+    expect(checkpointSpy).toHaveBeenCalledWith("project-1", "chapter:update");
     expect(scheduleSpy).not.toHaveBeenCalled();
   });
 
@@ -63,7 +63,7 @@ describe("ProjectService immediate package durability", () => {
       .mockImplementation(() => {});
 
     await expect(
-      service.ensureImmediatePackageExport("project-1", "chapter:create"),
+      service.ensureImmediatePackageExport("project-1", "manual-save"),
     ).rejects.toMatchObject({
       code: "FS_2002",
       message: "Failed to persist canonical .luie after mutation",
@@ -71,7 +71,7 @@ describe("ProjectService immediate package durability", () => {
 
     expect(scheduleSpy).toHaveBeenCalledWith(
       "project-1",
-      "chapter:create:retry",
+      "manual-save:retry",
     );
   });
 
@@ -84,10 +84,10 @@ describe("ProjectService immediate package durability", () => {
       .spyOn(service, "schedulePackageExport")
       .mockImplementation(() => {});
 
-    await service.persistPackageAfterMutation("project-1", "chapter:create");
+    await service.persistPackageAfterMutation("project-1", "manual-save");
     await service.persistPackageAfterMutation("project-1", "chapter:update");
 
-    expect(immediateSpy).toHaveBeenCalledWith("project-1", "chapter:create");
+    expect(immediateSpy).toHaveBeenCalledWith("project-1", "manual-save");
     expect(scheduleSpy).toHaveBeenCalledWith(
       "project-1",
       "chapter:update:debounced",

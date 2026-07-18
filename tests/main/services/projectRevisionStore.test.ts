@@ -10,6 +10,7 @@ import {
 import {
   bumpProjectRevision,
   getProjectRevisionState,
+  listProjectsNeedingExport,
   markProjectExported,
 } from "../../../src/main/services/core/project/projectRevisionStore.js";
 
@@ -97,6 +98,36 @@ describe("projectRevisionStore", () => {
     await expect(
       markProjectExported("project-1", 2, client as never),
     ).rejects.toMatchObject({ code: "VAL_3001" });
+
+    sqlite.close();
+  });
+
+  it("lists only attached projects with a stale checkpoint", async () => {
+    const { client, sqlite } = createClient();
+    const now = "2026-07-18T00:00:00.000Z";
+    for (const id of ["stale", "clean", "unattached"]) {
+      client
+        .insert(project)
+        .values({ id, title: id, createdAt: now, updatedAt: now })
+        .run();
+      bumpProjectRevision(client as never, id, now);
+    }
+    for (const id of ["stale", "clean"]) {
+      client
+        .insert(projectAttachment)
+        .values({
+          projectId: id,
+          projectPath: `/tmp/${id}.luie`,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .run();
+    }
+    await markProjectExported("clean", 1, client as never);
+
+    await expect(listProjectsNeedingExport(client as never)).resolves.toEqual([
+      "stale",
+    ]);
 
     sqlite.close();
   });

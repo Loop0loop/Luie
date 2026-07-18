@@ -44,6 +44,7 @@ import {
   createProjectRecord,
   updateProjectRecord,
 } from "../../core/project/projectMutation.js";
+import { listProjectsNeedingExport } from "../../core/project/projectRevisionStore.js";
 
 const logger = createLogger("ProjectService");
 
@@ -345,6 +346,18 @@ export class ProjectService {
     this.exportQueue.schedule(projectId, reason);
   }
 
+  async scheduleStalePackageExports(): Promise<number> {
+    const projectIds = await listProjectsNeedingExport();
+    for (const projectId of projectIds) {
+      this.schedulePackageExport(projectId, "startup-recovery");
+    }
+    return projectIds.length;
+  }
+
+  async checkpointProject(projectId: string, reason: string): Promise<boolean> {
+    return await this.exportProjectPackageNow(projectId, reason);
+  }
+
   async exportProjectPackageNow(
     projectId: string,
     reason?: string,
@@ -370,7 +383,7 @@ export class ProjectService {
         return { exported: false, skipped: true };
       }
 
-      const exported = await this.exportProjectPackageNow(projectId, reason);
+      const exported = await this.checkpointProject(projectId, reason);
       if (!exported) {
         const error = new ServiceError(
           ErrorCode.FS_WRITE_FAILED,

@@ -1,4 +1,12 @@
-export type ProjectExportRun = (projectId: string) => Promise<boolean>;
+import {
+  getProjectRevisionState,
+  markProjectExported,
+} from "./projectRevisionStore.js";
+
+export type ProjectExportRun = (
+  projectId: string,
+  revision: number,
+) => Promise<boolean>;
 
 export type ProjectExportQueueFlushResult = {
   total: number;
@@ -140,7 +148,14 @@ export class ProjectExportQueue {
       let exported = false;
       while (state.dirty) {
         state.dirty = false;
-        exported = await this.runExport(projectId);
+        const { revision: capturedRevision } =
+          await getProjectRevisionState(projectId);
+        exported = await this.runExport(projectId, capturedRevision);
+        if (exported) {
+          await markProjectExported(projectId, capturedRevision);
+        }
+        const latest = await getProjectRevisionState(projectId);
+        state.dirty = state.dirty || latest.revision > capturedRevision;
       }
       return exported;
     };

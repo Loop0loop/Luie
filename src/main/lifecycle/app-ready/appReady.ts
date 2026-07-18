@@ -136,6 +136,15 @@ const runDeferredStartupMaintenance = async (logger: Logger): Promise<void> => {
   }
 
   try {
+    const scheduledExports = await projectService.scheduleStalePackageExports();
+    logger.info("Stale project checkpoint recovery scheduled", {
+      scheduledExports,
+    });
+  } catch (error) {
+    logger.warn("Stale project checkpoint recovery skipped", error);
+  }
+
+  try {
     const { entityRelationService } =
       await import("../../domains/world/index.js");
     await entityRelationService.cleanupOrphanRelationsAcrossProjects({

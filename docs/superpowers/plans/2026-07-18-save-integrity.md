@@ -590,13 +590,15 @@ git commit -m "fix(storage): commit world entity patches first"
 
 ### Task 5: revision-aware `.luie` checkpoint와 복구
 
+**Status:** 완료
+
 **Files:**
 - Modify: `src/main/services/features/project/projectService.ts`
 - Modify: `src/main/services/core/project/projectExportQueue.ts`
-- Modify: `src/main/services/core/project/projectAttachmentStore.ts`
 - Modify: `src/main/lifecycle/app-ready/appReady.ts`
 - Modify: `tests/main/services/projectExportQueue.test.ts`
 - Modify: `tests/main/services/projectService.immediateDurability.test.ts`
+- Modify: `tests/main/services/projectRevisionStore.test.ts`
 - Create: `tests/main/services/projectCheckpointRecovery.test.ts`
 
 **Interfaces:**
@@ -604,7 +606,7 @@ git commit -m "fix(storage): commit world entity patches first"
 - Produces: `ProjectService.checkpointProject(projectId, reason): Promise<boolean>`
 - Produces: `ProjectService.scheduleStalePackageExports(): Promise<number>`
 
-- [ ] **Step 1: export 도중 새 revision이 생기는 실패 테스트 작성**
+- [x] **Step 1: export 도중 새 revision이 생기는 실패 테스트 작성**
 
 ```ts
 it("keeps a project dirty when a newer revision appears during export", async () => {
@@ -641,13 +643,13 @@ it("schedules only attached projects whose checkpoint is stale", async () => {
 });
 ```
 
-- [ ] **Step 2: 현재 queue가 revision을 모르는 상태로 실패 확인**
+- [x] **Step 2: 현재 queue가 revision을 모르는 상태로 실패 확인**
 
 Run: `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/projectExportQueue.test.ts tests/main/services/projectCheckpointRecovery.test.ts --run`
 
 Expected: revision 인자 또는 recovery method 부재로 FAIL.
 
-- [ ] **Step 3: export callback에 captured revision 전달**
+- [x] **Step 3: export callback에 captured revision 전달**
 
 queue run loop는 실행 직전에 `getProjectRevisionState(projectId).revision`을 캡처한다. export 성공 후에만 `markProjectExported(projectId, capturedRevision)`을 호출한다. 성공 뒤 최신 revision이 더 크면 `dirty = true`로 유지해 다음 loop에서 재실행한다.
 
@@ -665,7 +667,7 @@ const latest = await getProjectRevisionState(projectId);
 state.dirty = latest.revision > capturedRevision;
 ```
 
-- [ ] **Step 4: startup recovery 연결**
+- [x] **Step 4: startup recovery 연결**
 
 `runDeferredStartupMaintenance`에서 bootstrap 성공 뒤 `projectService.scheduleStalePackageExports()`를 호출한다. 이 method는 attachment가 있고 `revision > exportedRevision`인 프로젝트만 기존 queue에 예약한다.
 
@@ -679,20 +681,24 @@ async scheduleStalePackageExports(): Promise<number> {
 }
 ```
 
-- [ ] **Step 5: 기존 atomic writer 재사용 검증**
+- [x] **Step 5: 기존 atomic writer 재사용 검증**
 
-`projectExportEngine`과 `luieSqliteContainer`는 수정하지 않는다. 기존 temp file + `atomicReplace` 경계를 `projectCheckpointRecovery.test.ts`의 실제 `.luie` round-trip으로 확인한다.
+`projectExportEngine`과 `luieSqliteContainer`는 수정하지 않는다. 기존 `luieContainer.test.ts`의 실제 `.luie` round-trip과 이전 파일 보존 테스트로 temp file + atomic replace 경계를 확인한다.
 
-- [ ] **Step 6: checkpoint 테스트 실행**
+- [x] **Step 6: checkpoint 테스트 실행**
 
-Run: `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/projectExportQueue.test.ts tests/main/services/projectService.immediateDurability.test.ts tests/main/services/projectCheckpointRecovery.test.ts tests/main/services/luieContainer.test.ts --run`
+Run: `SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest tests/main/services/projectExportQueue.test.ts tests/main/services/projectService.immediateDurability.test.ts tests/main/services/projectCheckpointRecovery.test.ts tests/main/services/projectRevisionStore.test.ts --run`
+
+Run (native `.luie` round-trip): `ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron ./node_modules/vitest/vitest.mjs tests/main/services/luieContainer.test.ts --run`
 
 Expected: PASS.
 
-- [ ] **Step 7: Task 5 커밋**
+Actual (2026-07-19): checkpoint/recovery 4 files, 12 tests PASS; 실제 `.luie` atomic container 12 tests PASS; 대상 ESLint, `./node_modules/.bin/tsc6 --noEmit`, `git diff --check` PASS.
+
+- [x] **Step 7: Task 5 커밋**
 
 ```bash
-git add src/main/services/features/project/projectService.ts src/main/services/core/project/projectExportQueue.ts src/main/services/core/project/projectAttachmentStore.ts src/main/lifecycle/app-ready/appReady.ts tests/main/services/projectExportQueue.test.ts tests/main/services/projectService.immediateDurability.test.ts tests/main/services/projectCheckpointRecovery.test.ts
+git add docs/superpowers/plans/2026-07-18-save-integrity.md src/main/services/features/project/projectService.ts src/main/services/core/project/projectExportQueue.ts src/main/lifecycle/app-ready/appReady.ts tests/main/services/projectExportQueue.test.ts tests/main/services/projectService.immediateDurability.test.ts tests/main/services/projectRevisionStore.test.ts tests/main/services/projectCheckpointRecovery.test.ts
 git commit -m "feat(storage): recover stale project checkpoints"
 ```
 
