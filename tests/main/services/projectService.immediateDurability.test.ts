@@ -189,4 +189,22 @@ describe("ProjectService immediate package durability", () => {
     expect(mocked.exportProjectPackage).toHaveBeenCalledOnce();
     expect(mocked.markProjectExported).toHaveBeenCalledWith("project-1", 1);
   });
+
+  it("returns local-save success for a missing project before revision lookup", async () => {
+    mocked.attachmentPath.mockResolvedValue(null);
+    mocked.getProjectRevisionState.mockRejectedValue(
+      new Error("project not found"),
+    );
+    const service = new ProjectService();
+
+    await expect(
+      service.exportProjectPackageNow("missing-project", "manual-save"),
+    ).resolves.toBe(true);
+    expect(mocked.getProjectRevisionState).not.toHaveBeenCalled();
+    expect(mocked.exportProjectPackage).not.toHaveBeenCalled();
+    expect(mocked.markProjectExported).not.toHaveBeenCalled();
+    await expect(service.flushPendingExports()).resolves.toMatchObject({
+      total: 0,
+    });
+  });
 });

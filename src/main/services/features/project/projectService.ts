@@ -104,16 +104,17 @@ const getCanonicalProjectAttachmentPath = async (
 export class ProjectService {
   private exportQueue = new ProjectExportQueue(
     PACKAGE_EXPORT_DEBOUNCE_MS,
+    async (projectId: string) => await this.exportProjectPackage(projectId),
+    logger,
     async (projectId: string) => {
-      if (!(await getCanonicalProjectAttachmentPath(projectId))) {
+      const shouldSkip = !(await getCanonicalProjectAttachmentPath(projectId));
+      if (shouldSkip) {
         logger.info("Skipped queued project export (detached project)", {
           projectId,
         });
-        return "skipped";
       }
-      return await this.exportProjectPackage(projectId);
+      return shouldSkip;
     },
-    logger,
   );
   private hasLoggedRuntimeExportSkip = false;
 

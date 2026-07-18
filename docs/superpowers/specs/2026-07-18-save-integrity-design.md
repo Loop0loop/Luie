@@ -464,3 +464,5 @@ soft export flush의 `failed > 0` 또는 `timedOut`은 모두 종료 차단 상�
 export engine의 boolean은 실제 파일 쓰기 실패와 canonical `.luie` attachment 부재를 구분하지 않는다. engine 계약은 바꾸지 않고 `ProjectService`가 queue에 전달하는 adapter에서 attachment를 선검사한다. missing, non-`.luie`, unsafe/invalid path와 존재하지 않는 project의 attachment 조회 `null`은 supported detached 상태로 `skipped` 처리한다.
 
 `skipped`는 queue dirty와 registry를 정리하지만 `markProjectExported`, failed stat/log를 만들지 않는다. flush는 `total`에는 포함하되 `flushed`와 `failed` 모두 증가시키지 않는다. public `runNow`/`exportProjectPackageNow`는 SQLite local save 성공 의미로 `true`를 반환하므로 MANUAL_SAVE가 실패로 오인하지 않는다. 이후 유효한 attachment가 연결되고 새 mutation/schedule이 오면 실제 export를 수행한다. attachment가 유효한 상태에서 engine이 `false` 또는 throw한 경우에만 Task 14의 실패 보존과 다음 호출 재시도를 적용한다.
+
+skip eligibility는 project revision 조회보다 먼저 판정한다. generic queue는 optional resolver만 소유하고 canonical attachment 유효성은 `ProjectService`에 남긴다. resolver가 skip을 확정하면 revision 조회, export engine, exported revision mark를 모두 호출하지 않고 dirty와 예약 timer를 정리한다. async resolver 대기 중 같은 project schedule이 들어와도 detached skip 결과가 확정되면 해당 no-op work를 함께 정리해 registry leak을 만들지 않는다. resolver/attachment 조회 자체가 throw하면 정상 skip이 아니라 retry 가능한 실패로 보존한다.

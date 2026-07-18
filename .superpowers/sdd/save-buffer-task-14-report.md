@@ -50,3 +50,17 @@
 - Electron-as-Node recovery: 2 files/2 tests PASS
 - Target ESLint and diff-check: PASS
 - Typecheck: follow-up errors 0; only the known user dirty baseline remains
+
+## Second review follow-up — pre-revision skip
+
+- RED: 3 files/30 tests, 3 expected failures because revision lookup preceded skip eligibility
+- Queue accepts an optional project-agnostic skip resolver and calls it before revision capture
+- missing/detached project skip calls revision/export/mark zero times and returns public local-save success
+- skip resolution clears a concurrent schedule timer and dirty state without a second resolver run
+- resolver throw remains a retained export failure; attached flow keeps revision/export/mark ordering
+- Actual shutdown wiring covers explicit skip after hard retry failure and timeout, each exiting once
+- Focused: 5 files/39 tests PASS
+- Task 8~14 regression: 17 files/114 tests PASS
+- Electron-as-Node recovery: 2 files/2 tests PASS
+- Target ESLint and diff-check: PASS
+- Typecheck: second follow-up errors 0; only the known user dirty baseline remains

@@ -190,4 +190,23 @@ describe("shutdown export decision wiring", () => {
     expect(mocked.dialog).toHaveBeenCalledTimes(2);
     expect(mocked.appExit).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ["failure", flushResult(1)],
+    ["timeout", flushResult(0, true)],
+  ])(
+    "finalizes once after explicitly skipping a hard retry %s",
+    async (_label, hardResult) => {
+      mocked.flushPendingExports
+        .mockResolvedValueOnce(flushResult(1))
+        .mockResolvedValueOnce(hardResult);
+      mocked.dialogResponses.push(0, 1);
+
+      triggerBeforeQuit();
+
+      await vi.waitFor(() => expect(mocked.appExit).toHaveBeenCalledOnce());
+      expect(mocked.dialog).toHaveBeenCalledTimes(2);
+      expect(mocked.flushPendingExports).toHaveBeenCalledTimes(2);
+    },
+  );
 });

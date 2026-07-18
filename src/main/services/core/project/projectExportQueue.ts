@@ -10,6 +10,10 @@ export type ProjectExportRun = (
   revision: number,
 ) => Promise<ProjectExportRunResult>;
 
+export type ProjectExportSkipResolver = (
+  projectId: string,
+) => Promise<boolean>;
+
 export type ProjectExportQueueFlushResult = {
   total: number;
   flushed: number;
@@ -50,6 +54,7 @@ export class ProjectExportQueue {
     private readonly debounceMs: number,
     private readonly runExport: ProjectExportRun,
     private readonly logger: QueueLogger,
+    private readonly shouldSkip?: ProjectExportSkipResolver,
   ) {}
 
   private getOrCreate(projectId: string): ProjectExportState {
@@ -146,6 +151,11 @@ export class ProjectExportQueue {
       let exported: ProjectExportRunResult = false;
       while (state.dirty) {
         state.dirty = false;
+        if (await this.shouldSkip?.(projectId)) {
+          state.dirty = false;
+          this.clearTimer(state);
+          return "skipped";
+        }
         const { revision: capturedRevision } =
           await getProjectRevisionState(projectId);
         exported = await this.runExport(projectId, capturedRevision);

@@ -1688,3 +1688,17 @@ Actual (2026-07-19): 최초 RED는 3 files에서 queue false 오집계/dirty 제
 - [x] follow-up 단일 커밋 `fix(storage): distinguish skipped exports`
 
 Actual (2026-07-19): skip RED는 2 files/20 tests 중 5건이 detached/invalid attachment를 실제 export와 flushed로 계산하고 attachment 이후 총 export 횟수가 오염돼 예상대로 실패했다. tri-state는 queue 내부에만 두고 public runNow boolean은 `skipped`를 local save 성공으로 반환한다. focused 5 files/34 tests와 실제 shutdown wiring 5경로, Task 8~14 회귀 17 files/109 tests, Electron-as-Node DB recovery 2 files/2 tests가 PASS했다. 대상 ESLint와 `git diff --check`는 PASS다. `tsc6 --noEmit`은 follow-up 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 1건만 유지한다.
+
+#### Task 14 second review follow-up: revision 전 skip 판정
+
+**Status:** 완료
+
+- [x] generic queue에 optional pre-revision skip resolver 추가
+- [x] missing project/detached skip은 revision/export/mark 0회와 idle cleanup
+- [x] async skip 판정 중 concurrent schedule의 dirty/timer cleanup RED/GREEN
+- [x] attached 경로의 revision capture/export/mark 회귀
+- [x] hard retry 실패 뒤 명시적 skip의 actual shutdown wiring 테스트
+- [x] 회귀/DB/정적 검증과 SSOT/report 동기화
+- [x] follow-up 단일 커밋 `fix(storage): skip exports before revision lookup`
+
+Actual (2026-07-19): RED는 3 files/30 tests 중 3건이 missing project의 revision 오류 선행과 async skip resolver 미호출로 예상대로 실패했다. optional resolver를 revision capture 전에 실행하고 skip 확정 시 concurrent timer/dirty도 정리했다. focused 5 files/39 tests, Task 8~14 회귀 17 files/114 tests, Electron-as-Node DB recovery 2 files/2 tests가 PASS했다. actual shutdown wiring은 hard retry failure/timeout 뒤 두 번째 dialog에서 명시적 skip 시 각각 `app.exit(0)` 1회를 검증한다. 대상 ESLint와 `git diff --check`는 PASS다. `tsc6 --noEmit`은 second follow-up 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 1건만 유지한다.

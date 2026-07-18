@@ -321,4 +321,45 @@ describe("ProjectExportQueue", () => {
     });
     expect(runExport).toHaveBeenCalledTimes(2);
   });
+
+  it("skips before revision lookup when eligibility rejects the project", async () => {
+    revisionMocks.getProjectRevisionState.mockRejectedValue(
+      new Error("project not found"),
+    );
+    const runExport = vi.fn<ProjectExportRun>();
+    const shouldSkip = vi.fn(async () => true);
+    const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+    const queue = new ProjectExportQueue(100, runExport, logger, shouldSkip);
+
+    await expect(queue.runNow("missing-project", "manual-save")).resolves.toBe(
+      true,
+    );
+    expect(revisionMocks.getProjectRevisionState).not.toHaveBeenCalled();
+    expect(runExport).not.toHaveBeenCalled();
+    expect(revisionMocks.markProjectExported).not.toHaveBeenCalled();
+    await expect(queue.flush()).resolves.toMatchObject({ total: 0 });
+  });
+
+  it("cleans a concurrent schedule when async eligibility resolves to skip", async () => {
+    vi.useFakeTimers();
+    const eligibility = deferred<boolean>();
+    const shouldSkip = vi.fn(() => eligibility.promise);
+    const runExport = vi.fn<ProjectExportRun>();
+    const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+    const queue = new ProjectExportQueue(100, runExport, logger, shouldSkip);
+
+    const runNow = queue.runNow("project-1", "manual-save");
+    await vi.waitFor(() => expect(shouldSkip).toHaveBeenCalledOnce());
+    queue.schedule("project-1", "concurrent-change");
+
+    eligibility.resolve(true);
+    await expect(runNow).resolves.toBe(true);
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(shouldSkip).toHaveBeenCalledOnce();
+    expect(runExport).not.toHaveBeenCalled();
+    expect(revisionMocks.getProjectRevisionState).not.toHaveBeenCalled();
+    await expect(queue.flush()).resolves.toMatchObject({ total: 0 });
+    vi.useRealTimers();
+  });
 });
