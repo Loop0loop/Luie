@@ -4,14 +4,11 @@
 
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocked = vi.hoisted(() => ({
   handlers: {} as Record<string, () => void | Promise<void>>,
-  calls: [] as string[],
-  saveProjectNow: vi.fn(async () => {
-    mocked.calls.push("project");
-  }),
+  saveProjectNow: vi.fn(async () => undefined),
 }));
 
 vi.mock("@renderer/features/workspace/hooks/useShortcuts", () => ({
@@ -43,10 +40,15 @@ vi.mock("@shared/api", () => ({
 import { useEditorRootShortcuts } from "../../src/renderer/src/features/workspace/components/useEditorRootShortcuts.js";
 
 describe("project save shortcut", () => {
-  it("saves the active chapter before checkpointing the project", async () => {
-    const handleSave = vi.fn(async () => {
-      mocked.calls.push("chapter");
-    });
+  beforeEach(() => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  });
+
+  afterEach(() => {
+    Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT");
+  });
+
+  it("delegates saving to the project coordinator", async () => {
     const noOp = () => undefined;
     const container = document.createElement("div");
     const root = createRoot(container);
@@ -54,7 +56,6 @@ describe("project save shortcut", () => {
       useEditorRootShortcuts({
         setIsSettingsOpen: noOp,
         handleAddChapter: noOp,
-        handleSave,
         currentProjectId: "project-1",
         handleDeleteActiveChapter: noOp,
         openChapterByIndex: noOp,
@@ -76,8 +77,6 @@ describe("project save shortcut", () => {
         fontSize: 16,
         setUiMode: noOp,
         uiMode: "default",
-        activeChapterTitle: "Chapter",
-        content: "Draft",
       });
       return null;
     };
@@ -89,7 +88,7 @@ describe("project save shortcut", () => {
       await mocked.handlers["chapter.save"]?.();
     });
 
-    expect(mocked.calls).toEqual(["chapter", "project"]);
+    expect(mocked.saveProjectNow).toHaveBeenCalledOnce();
     expect(mocked.saveProjectNow).toHaveBeenCalledWith("project-1");
     act(() => root.unmount());
   });

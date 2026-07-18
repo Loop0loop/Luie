@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { api } from "@shared/api";
+import { flushSaveBuffers } from "@shared/ui/saveBufferRegistry";
 import {
   flushWorldEntityMutations,
   getPendingWorldEntityMutationCount,
@@ -12,13 +13,13 @@ export function useProjectQuitFlush(): void {
         if (getPendingWorldEntityMutationCount() > 0) {
           api.lifecycle.setDirty(true);
         }
-        void flushWorldEntityMutations()
-          .catch((error) => {
-            void api.logger.error("Failed to flush world entity mutations", {
-              error,
-            });
-          })
-          .finally(() => api.lifecycle.completeFlush());
+        void (async () => {
+          await flushSaveBuffers();
+          await flushWorldEntityMutations();
+          await api.lifecycle.completeFlush();
+        })().catch((error) => {
+          void api.logger.error("Failed to flush renderer saves", { error });
+        });
       }),
     [],
   );

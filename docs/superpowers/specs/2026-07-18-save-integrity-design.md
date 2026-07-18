@@ -170,7 +170,7 @@ renderer input flush
   -> 결과 표시
 ```
 
-현재 구현은 `world entity mutation queue drain`부터 시작한다. 활성 `BufferedInput`과 원고 제목의 debounce 값을 먼저 flush하는 공통 경계는 아직 없다.
+현재 구현은 renderer save-buffer registry를 먼저 flush한 뒤 world entity mutation queue와 main checkpoint를 순서대로 실행한다. shortcut handler는 부모의 오래된 원고 값을 직접 저장하지 않고 이 공통 경계만 호출한다.
 
 성공 시 기존 toast를 짧게 사용하고, 자동 저장 성공은 조용히 처리한다. 실패는 사라지는 성공 toast로 덮지 않고 복구 가능한 오류 상태로 유지한다.
 
@@ -186,7 +186,7 @@ renderer input flush
 
 비정상 종료 후 SQLite WAL 복구가 끝나면 revision 차이를 확인해 `.luie`를 다시 생성한다. SQLite는 기존 `WAL`, `synchronous=FULL`, `foreign_keys=ON`, `busy_timeout=5000` 설정을 유지한다.
 
-현재 quit handshake는 world mutation 실패도 `finally`에서 완료 신호를 보내고, export flush의 `failed > 0`을 종료 차단 조건으로 사용하지 않는다. 실패를 renderer에서 main까지 전달하고 기본 종료 취소로 연결하는 보완이 필요하다.
+현재 quit handshake는 renderer buffer 또는 world mutation flush가 실패하면 완료 신호를 보내지 않아 기존 main timeout/사용자 결정 경계로 이동한다. 다만 export flush의 `failed > 0`은 아직 종료 차단 조건으로 사용하지 않는다.
 
 ## 10. Projection 정책
 
@@ -273,12 +273,12 @@ renderer input flush
 - character, event, faction, term create/update/delete의 transaction revision 증가
 - captured revision export와 stale attached project의 startup recovery 예약
 - manual-save IPC와 renderer/main quit handshake 기본 경로
+- manual save와 quit의 renderer buffer → world mutation 선행 flush
 
 재검증에서 다음 차단 항목을 확인했다.
 
-- **P0:** `Cmd/Ctrl+S`와 quit이 활성 input debounce를 먼저 flush하지 않는다.
 - **P0:** CRUD IPC 실패가 `null`로 변환돼 실패 mutation payload가 queue에서 제거될 수 있다.
-- **P0:** world/export flush 실패가 quit 차단 상태로 끝까지 전달되지 않는다.
+- **P0:** export flush의 `failed > 0`이 quit 차단 상태로 전달되지 않는다.
 - **P1:** scheduled export의 `false`/throw 이후 dirty retry 상태가 유지되지 않는다.
 - **P1:** 삭제 전에 같은 entity의 pending update를 drain하지 않는다.
 - **P1:** revision이 world entity 4종에만 적용돼 `.luie` 전체 freshness를 대표하지 않는다.
@@ -291,11 +291,17 @@ SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/
 
 ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron ./node_modules/vitest/vitest.mjs run --no-file-parallelism tests/main/services/projectRevisionStore.test.ts tests/main/services/worldEntitySaveIntegrity.test.ts tests/main/services/projectSaveRecovery.integration.test.ts
 # 3 files, 8 tests PASS
+
+SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/renderer/services/saveCoordinator.test.ts tests/dom/projectSaveShortcut.test.tsx tests/dom/projectQuitFlush.test.tsx tests/dom/bufferedInputSavePolicy.test.tsx tests/dom/editorAutosaveManualFlush.test.tsx tests/renderer/stores/worldEntityMutationQueue.test.ts
+# 6 files, 25 tests PASS; stderr warning 없음
+
+./node_modules/.bin/tsc6 --noEmit
+# Task 10 오류 없음; 사용자 소유 dirty BinderSidebarPanelBody.tsx:102의 기존 ResearchPanelTab 오류 1건으로 exit 2
 ```
 
 이 결과는 정상 경로와 직접 seed한 stale-checkpoint recovery를 검증한다. 실제 export 실패 후 프로세스 재시작, debounce 중 shortcut/quit, IPC `success:false`/timeout, export `false`/throw는 아직 검증하지 않는다. 100회 burst 테스트는 mock 기반이며 SQLite 또는 latency P95를 측정하지 않는다. 기존 writing-loop에는 percentile 계산 인프라가 있지만 이번 저장 파이프라인의 P95 artifact와 95% 신뢰 근거는 없다.
 
-저장소 전체 `qa:core`는 이번 변경과 무관한 기존 baseline 문제로 아직 green이 아니다. 저장 정합성 완료 표시는 위 P0 차단 항목과 해당 실패 주입 테스트가 해결된 뒤에만 복구한다.
+Task 10으로 active input 선행 flush와 renderer world mutation 실패 시 quit completion 차단은 해결됐다. 저장소 전체 `qa:core`는 이번 변경과 무관한 기존 baseline 문제로 아직 green이 아니다. 저장 정합성 완료 표시는 남은 P0 차단 항목과 해당 실패 주입 테스트가 해결된 뒤에만 복구한다.
 
 ## 17. Renderer save-buffer 강제 flush 설계
 

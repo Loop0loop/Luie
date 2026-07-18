@@ -1351,7 +1351,7 @@ git commit -m "fix(storage): drain latest editor draft"
 
 ### Task 10: manual save와 quit의 renderer buffer 선행 flush
 
-**Status:** 구현 대기
+**Status:** 완료
 
 **Files:**
 - Modify: `src/renderer/src/features/workspace/services/saveCoordinator.ts`
@@ -1370,7 +1370,7 @@ git commit -m "fix(storage): drain latest editor draft"
 - Changes: `saveProjectNow(projectId)` ordering to buffers → world → main
 - Changes: quit completion signal is sent only after buffers and world queue both succeed
 
-- [ ] **Step 1: manual save 순서 RED 테스트 확장**
+- [x] **Step 1: manual save 순서 RED 테스트 확장**
 
 `tests/renderer/services/saveCoordinator.test.ts`에서 registry를 mock하고 순서를 고정한다.
 
@@ -1394,7 +1394,7 @@ it("flushes renderer buffers before world mutations and main checkpoint", async 
 
 buffer failure 테스트는 `flushWorldEntityMutations`와 `manualSave`가 호출되지 않는지 확인한다.
 
-- [ ] **Step 2: shortcut이 부모의 stale chapter 값을 직접 저장하지 않는 RED 테스트 작성**
+- [x] **Step 2: shortcut이 부모의 stale chapter 값을 직접 저장하지 않는 RED 테스트 작성**
 
 `tests/dom/projectSaveShortcut.test.tsx`에서 `handleSave`, `activeChapterTitle`, `content` props를 제거하고 다음만 확인한다.
 
@@ -1407,7 +1407,7 @@ expect(mocked.saveProjectNow).toHaveBeenCalledWith("project-1");
 
 Expected current failure: hook props 타입과 구현이 아직 `handleSave(activeChapterTitle, content)`를 요구한다.
 
-- [ ] **Step 3: quit 성공 순서와 실패 차단 RED 테스트 작성**
+- [x] **Step 3: quit 성공 순서와 실패 차단 RED 테스트 작성**
 
 `tests/dom/projectQuitFlush.test.tsx`에서 hook harness를 mount하고 lifecycle callback을 직접 실행한다.
 
@@ -1429,13 +1429,13 @@ it("does not complete quit when a renderer buffer fails", async () => {
 });
 ```
 
-- [ ] **Step 4: Task 10 RED 확인**
+- [x] **Step 4: Task 10 RED 확인**
 
 Run: `SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/renderer/services/saveCoordinator.test.ts tests/dom/projectSaveShortcut.test.tsx tests/dom/projectQuitFlush.test.tsx`
 
 Expected: buffers-first ordering과 quit failure 차단 테스트 FAIL.
 
-- [ ] **Step 5: coordinator와 quit hook에 registry 선행 flush 연결**
+- [x] **Step 5: coordinator와 quit hook에 registry 선행 flush 연결**
 
 ```ts
 export async function saveProjectNow(projectId: string): Promise<void> {
@@ -1460,11 +1460,11 @@ void (async () => {
 });
 ```
 
-- [ ] **Step 6: shortcut의 stale direct save 제거**
+- [x] **Step 6: shortcut의 stale direct save 제거**
 
 `chapter.save`은 `currentProjectId`가 있을 때 `saveProjectNow(currentProjectId)`만 호출한다. `useEditorRootShortcuts` props와 `EditorRoot` 호출부에서 `handleSave`, `activeChapterTitle`, `content`를 제거한다. 최신 editor draft는 Task 9 registry callback이 저장한다.
 
-- [ ] **Step 7: Task 10 GREEN 및 저장 회귀 확인**
+- [x] **Step 7: Task 10 GREEN 및 저장 회귀 확인**
 
 Run: `SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/renderer/services/saveCoordinator.test.ts tests/dom/projectSaveShortcut.test.tsx tests/dom/projectQuitFlush.test.tsx tests/dom/bufferedInputSavePolicy.test.tsx tests/dom/editorAutosaveManualFlush.test.tsx tests/renderer/stores/worldEntityMutationQueue.test.ts`
 
@@ -1474,11 +1474,13 @@ Run: `./node_modules/.bin/tsc6 --noEmit`
 
 Expected: PASS.
 
-- [ ] **Step 8: SSOT 상태 갱신 및 차단 항목 축소**
+Actual (2026-07-19): RED에서 3 files, 6 tests가 buffer flush 미연결, stale shortcut save, quit failure completion 때문에 예상대로 FAIL했다. GREEN은 저장 회귀 6 files, 25 tests PASS이고 stderr warning이 없다. buffer와 world failure 모두 quit completion을 차단한다. `./node_modules/.bin/tsc6 --noEmit`은 Task 10 오류 없이 사용자 소유 dirty `BinderSidebarPanelBody.tsx:102`의 기존 `ResearchPanelTab` 오류 1건으로 exit 2다.
+
+- [x] **Step 8: SSOT 상태 갱신 및 차단 항목 축소**
 
 Task 10을 `완료`로 바꾸고 실제 결과를 기록한다. 설계 §16에서 active input flush P0와 world mutation quit failure를 해결됨으로 이동한다. export queue의 `failed > 0`, 실패 mutation payload 보존, project-wide revision은 미해결로 유지한다.
 
-- [ ] **Step 9: Task 10 커밋**
+- [x] **Step 9: Task 10 커밋**
 
 ```bash
 git add src/renderer/src/features/workspace/services/saveCoordinator.ts src/renderer/src/features/workspace/hooks/useProjectQuitFlush.ts src/renderer/src/features/workspace/components/useEditorRootShortcuts.ts src/renderer/src/features/workspace/components/layout/EditorRoot.tsx tests/renderer/services/saveCoordinator.test.ts tests/dom/projectSaveShortcut.test.tsx tests/dom/projectQuitFlush.test.tsx docs/superpowers/plans/2026-07-18-save-integrity.md docs/superpowers/specs/2026-07-18-save-integrity-design.md

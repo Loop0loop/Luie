@@ -15,7 +15,6 @@ import { saveProjectNow } from "@renderer/features/workspace/services/saveCoordi
 interface UseEditorRootShortcutsProps {
     setIsSettingsOpen: (open: boolean) => void;
     handleAddChapter: () => void;
-    handleSave: (title: string, content: string) => Promise<void>;
     currentProjectId: string | null;
     handleDeleteActiveChapter: () => void;
     openChapterByIndex: (index: number) => void;
@@ -29,14 +28,11 @@ interface UseEditorRootShortcutsProps {
     fontSize: number;
     setUiMode: (mode: EditorUiMode) => void;
     uiMode: EditorUiMode;
-    activeChapterTitle: string;
-    content: string;
 }
 
 export function useEditorRootShortcuts({
     setIsSettingsOpen,
     handleAddChapter,
-    handleSave,
     currentProjectId,
     handleDeleteActiveChapter,
     openChapterByIndex,
@@ -50,8 +46,6 @@ export function useEditorRootShortcuts({
     fontSize,
     setUiMode,
     uiMode,
-    activeChapterTitle,
-    content,
 }: UseEditorRootShortcutsProps) {
     const chapterChordRef = useRef<{ digits: string; timerId?: number }>({
         digits: "",
@@ -104,11 +98,9 @@ export function useEditorRootShortcuts({
             "app.quit": () => void api.app.quit(),
             "chapter.new": () => void handleAddChapter(),
             "chapter.save": async () => {
+                if (!currentProjectId) return;
                 try {
-                    await handleSave(activeChapterTitle, content);
-                    if (currentProjectId) {
-                        await saveProjectNow(currentProjectId);
-                    }
+                    await saveProjectNow(currentProjectId);
                 } catch (error) {
                     void api.logger.error("Manual project save failed", { error });
                 }
@@ -164,10 +156,7 @@ export function useEditorRootShortcuts({
             "view.toggleFocusMode": () => void setUiMode(uiMode === "focus" ? "default" : "focus"),
         }),
         [
-            activeChapterTitle,
-            content,
             handleAddChapter,
-            handleSave,
             currentProjectId,
             handleDeleteActiveChapter,
             closeFocusedSurface,

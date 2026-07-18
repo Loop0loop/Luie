@@ -264,7 +264,6 @@ export default function EditorRoot() {
   useEditorRootShortcuts({
     setIsSettingsOpen,
     handleAddChapter,
-    handleSave,
     currentProjectId: currentProject?.id ?? null,
     handleDeleteActiveChapter,
     openChapterByIndex,
@@ -278,8 +277,6 @@ export default function EditorRoot() {
     fontSize,
     setUiMode,
     uiMode,
-    activeChapterTitle,
-    content,
   });
 
   const prefetchSettings = useCallback(() => {
