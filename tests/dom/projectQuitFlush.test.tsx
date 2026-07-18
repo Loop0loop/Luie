@@ -7,7 +7,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocked = vi.hoisted(() => ({
-  beforeQuit: undefined as (() => void) | undefined,
+  beforeQuit: undefined as
+    | ((payload: { requestId: string }) => void)
+    | undefined,
   calls: [] as string[],
   flushSaveBuffers: vi.fn(async () => undefined),
   flushWorldEntityMutations: vi.fn(async () => undefined),
@@ -29,7 +31,7 @@ vi.mock("@renderer/shared/store/worldEntityMutationQueue", () => ({
 vi.mock("@shared/api", () => ({
   api: {
     lifecycle: {
-      onBeforeQuit: (callback: () => void) => {
+      onBeforeQuit: (callback: (payload: { requestId: string }) => void) => {
         mocked.beforeQuit = callback;
         return () => {
           mocked.beforeQuit = undefined;
@@ -64,6 +66,9 @@ describe("useProjectQuitFlush", () => {
     });
     mocked.getPendingWorldEntityMutationCount.mockReset().mockReturnValue(1);
     mocked.setDirty.mockReset();
+    mocked.setDirty.mockImplementation((dirty: boolean) => {
+      mocked.calls.push(dirty ? "dirty" : "clean");
+    });
     mocked.completeFlush.mockReset().mockImplementation(async () => {
       mocked.calls.push("complete");
     });
@@ -79,22 +84,31 @@ describe("useProjectQuitFlush", () => {
   });
 
   it("completes quit only after buffers and world mutations flush", async () => {
-    act(() => mocked.beforeQuit?.());
+    act(() => mocked.beforeQuit?.({ requestId: "quit-1" }));
 
     await vi.waitFor(() =>
-      expect(mocked.calls).toEqual(["buffers", "world", "complete"]),
+      expect(mocked.calls).toEqual([
+        "dirty",
+        "buffers",
+        "world",
+        "clean",
+        "complete",
+      ]),
     );
-    expect(mocked.setDirty).toHaveBeenCalledWith(true);
+    expect(mocked.setDirty).toHaveBeenNthCalledWith(1, true);
+    expect(mocked.setDirty).toHaveBeenNthCalledWith(2, false);
+    expect(mocked.completeFlush).toHaveBeenCalledWith("quit-1");
   });
 
   it("does not complete quit when a renderer buffer fails", async () => {
     mocked.flushSaveBuffers.mockRejectedValueOnce(new Error("buffer failed"));
 
-    act(() => mocked.beforeQuit?.());
+    act(() => mocked.beforeQuit?.({ requestId: "quit-2" }));
 
     await vi.waitFor(() => expect(mocked.loggerError).toHaveBeenCalledOnce());
     expect(mocked.flushWorldEntityMutations).not.toHaveBeenCalled();
     expect(mocked.completeFlush).not.toHaveBeenCalled();
+    expect(mocked.setDirty).toHaveBeenLastCalledWith(true);
   });
 
   it("does not complete quit when a world mutation fails", async () => {
@@ -102,10 +116,22 @@ describe("useProjectQuitFlush", () => {
       new Error("world failed"),
     );
 
-    act(() => mocked.beforeQuit?.());
+    act(() => mocked.beforeQuit?.({ requestId: "quit-3" }));
 
     await vi.waitFor(() => expect(mocked.loggerError).toHaveBeenCalledOnce());
     expect(mocked.flushSaveBuffers).toHaveBeenCalledOnce();
     expect(mocked.completeFlush).not.toHaveBeenCalled();
+    expect(mocked.setDirty).toHaveBeenLastCalledWith(true);
+  });
+
+  it("restores dirty state when preload autosave completion fails", async () => {
+    mocked.completeFlush.mockRejectedValueOnce(new Error("autosave failed"));
+
+    act(() => mocked.beforeQuit?.({ requestId: "quit-4" }));
+
+    await vi.waitFor(() => expect(mocked.loggerError).toHaveBeenCalledOnce());
+    expect(mocked.setDirty).toHaveBeenNthCalledWith(1, true);
+    expect(mocked.setDirty).toHaveBeenNthCalledWith(2, false);
+    expect(mocked.setDirty).toHaveBeenNthCalledWith(3, true);
   });
 });

@@ -205,7 +205,9 @@ export type {
 } from "./llmRuntime";
 
 export type {
+  AppBeforeQuitPayload,
   AppBootstrapStatus,
+  AppFlushCompletePayload,
   AppQuitPhase,
   AppQuitPhasePayload,
   AppSettings,

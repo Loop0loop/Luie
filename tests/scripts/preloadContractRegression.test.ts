@@ -96,9 +96,12 @@ describe("preload contract regression analyzer", () => {
 
   it("exposes renderer-controlled quit flush completion", () => {
     expect(preloadSource).toContain("onBeforeQuit: (callback)");
-    expect(preloadSource).toContain("completeFlush: () => completeAppFlush()");
+    expect(preloadSource).toContain(
+      "completeFlush: (requestId) => completeAppFlush(requestId)",
+    );
     expect(preloadSource).toContain(
       "ipcRenderer.send(IPC_CHANNELS.APP_FLUSH_COMPLETE",
     );
+    expect(preloadSource).toContain("requestId,");
   });
 });

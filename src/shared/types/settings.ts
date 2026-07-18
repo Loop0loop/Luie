@@ -101,6 +101,15 @@ export interface AppQuitPhasePayload {
   message?: string;
 }
 
+export interface AppBeforeQuitPayload {
+  requestId: string;
+}
+
+export interface AppFlushCompletePayload extends AppBeforeQuitPayload {
+  hadQueuedAutoSaves: boolean;
+  rendererDirty: boolean;
+}
+
 export interface DbRecoveryCheckpoint {
   busy: number;
   log: number;

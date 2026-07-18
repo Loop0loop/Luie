@@ -1730,3 +1730,53 @@ Actual (2026-07-19): RED는 3 files/30 tests 중 3건이 missing project의 revi
 - [x] **Step 5: SSOT/report 동기화 및 단일 커밋**
 
 Actual (2026-07-19): 오염 없는 RED는 실제 character store 1 file/10 tests 중 3건이 update ACK 전 delete 호출, retained retry 미실행, delete drain 중 newer update 허용으로 예상대로 실패했다. entity id별 deleting guard와 기존 queue `flush`를 연결하고 성공 시 queue/generation/graph node를 정리했다. focused character 1 file/10 tests, queue/character/burst/event·faction wrapper 4 files/18 tests, Task 8~15 비-DB 저장 회귀 17 files/119 tests가 PASS했고 unhandled rejection은 없다. 대상 ESLint와 `git diff --check`는 PASS다. `tsc6 --noEmit`은 Task 15 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 1건만 유지한다.
+
+---
+
+### Task 16: 프로젝트 전환 저장 scope와 종료 재시도 계약
+
+**Status:** 완료 — 독립 재리뷰 Production-ready
+
+**Files:**
+- Modify: `src/renderer/src/features/research/components/world/PlotBoard.tsx`
+- Modify: `src/renderer/src/features/research/components/world/SynopsisEditor.tsx`
+- Modify: `src/main/lifecycle/shutdown/shutdown.ts`
+- Modify: `src/renderer/src/features/workspace/components/useEditorRootShortcuts.ts`
+- Modify: 관련 renderer DOM/main lifecycle 테스트
+- Modify: 저장 SSOT와 Task 16 report
+
+**Interfaces:**
+- Changes: Plot/Synopsis dirty snapshot은 변경 당시의 `projectId`와 canonical attachment path를 함께 캡처한다.
+- Changes: 프로젝트 A 저장이 실패하거나 in-flight인 상태에서 B로 전환해도 A payload는 A target으로만 drain하며 B hydration이 A retry를 지우지 않는다.
+- Changes: quit 첫 renderer handshake가 실패한 뒤 사용자가 `저장 후 종료`를 선택하면 renderer flush를 다시 요청하고 ACK 성공 전에는 export/finalize로 진행하지 않는다.
+- Changes: renderer 재flush도 실패하면 기본 `종료 취소`인 명시적 결정 경계로 이동한다. `저장 생략`을 고른 경우에만 ACK 없이 종료할 수 있다.
+- Changes: renderer flush timeout/cancel 시 IPC listener를 제거한다.
+- Changes: Cmd/Ctrl+S export 실패는 logger뿐 아니라 사용자가 관찰 가능한 실패 상태로 표시한다.
+- Excludes: 사용자 dirty `NotionDocumentView`, project-wide revision 확대, world mutation 자동 backoff, P95 인증.
+
+- [x] **Step 1: 프로젝트 A 실패/in-flight → B 전환 RED 테스트**
+- [x] **Step 2: Plot/Synopsis project-bound pending drain 최소 구현**
+- [x] **Step 3: renderer handshake retry/second-failure decision/listener cleanup RED 테스트**
+- [x] **Step 4: shutdown renderer reflush와 명시적 skip 최소 구현**
+- [x] **Step 5: manual save failure 사용자 표시 RED/GREEN**
+- [x] **Step 6: focused/전체 저장 회귀와 정적 검증**
+- [x] **Step 7: 독립 코드 리뷰, SSOT/report 동기화, 단일 커밋**
+
+#### Task 16 review follow-up: 실제 input/preload/main ACK 경계
+
+**Status:** 완료 — 두 차례 No-Go 후속 및 최종 재리뷰 clean
+
+- [x] Plot/Synopsis의 blur 전 input dirty value를 project scope에 고정
+- [x] project in-flight 전환과 load 중 save ACK 뒤 stale hydration RED/GREEN
+- [x] Plot/Synopsis component unmount 뒤 failed pending을 detached registry에 유지
+- [x] renderer buffer/world 성공 뒤에만 `rendererDirty=false`로 ACK
+- [x] preload autosave `success:false`/throw payload 재보존과 clean ACK 차단
+- [x] quit main manuscript flush reject/timeout의 retry/cancel/explicit skip 결정 경계
+- [x] malformed/mismatched/sender 불일치 renderer ACK 거부
+- [x] focused/전체 저장 회귀, Electron DB recovery, 정적 검증, 재리뷰
+
+Actual (2026-07-19): 최초 RED는 A 실패 payload의 B 전환 소실, B target 교차 저장, renderer 재flush 부재, stale IPC listener, manual save 실패 무표시를 재현했다. 1차 리뷰 No-Go 뒤 실제 input callback 재바인딩, sticky renderer dirty, preload `success:false` false-ACK, main flush reject/timeout false-success, late hydration, component unmount retry 소실을 추가 RED로 고정했다. 2차 리뷰에서 동일 field id 전환, overlapping preload flush의 조기 ACK, 같은 barrier 중 newer enqueue 누락, retry ACK 뒤 revisit late load overwrite까지 mutation으로 확인하고 보완했다.
+
+최종 구현은 project id/path/payload snapshot queue, project-keyed input subtree, hydration gate/cache/generation 및 load-start pending snapshot, detached unmount registry를 사용한다. preload autosave는 key sequence와 single-flight queue-empty drain으로 실패 payload와 최신 concurrent payload를 보존한다. quit은 requestId/sender/payload shape를 검증하며 renderer와 main save의 retry/cancel/explicit skip 결정을 분리한다. Cmd/Ctrl+S failure는 logger와 error toast에 함께 남는다.
+
+최종 root 검증은 Task 8~16 저장 회귀 19 files/167 tests, Electron-as-Node DB recovery 2 files/2 tests, 대상 ESLint와 `git diff --check` PASS다. 전체 `tsc6 --noEmit`은 Task 16 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 1건만 유지한다. 독립 코드·테스트 재리뷰는 모두 Production-ready이며 Critical/Important 0이다. 이 수치는 correctness 근거이며 P95/95% confidence 인증은 아니다.

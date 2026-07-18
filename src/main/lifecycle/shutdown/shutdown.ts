@@ -1,5 +1,5 @@
 import { app, ipcMain, dialog } from "electron";
-import type { BrowserWindow } from "electron";
+import type { BrowserWindow, IpcMainEvent } from "electron";
 import { windowManager } from "../../app/windows/index.js";
 import { db } from "../../infra/database/index.js";
 import { projectService } from "../../domains/project/index.js";
@@ -12,10 +12,22 @@ import {
   QUIT_SAVE_TIMEOUT_MS,
 } from "../../../shared/constants/index.js";
 import type { createLogger } from "../../../shared/logger/index.js";
-import type { AppQuitPhase } from "../../../shared/types/index.js";
+import type {
+  AppBeforeQuitPayload,
+  AppFlushCompletePayload,
+  AppQuitPhase,
+} from "../../../shared/types/index.js";
 import { resolveProjectExportQuitDecision } from "./exportFlushDecision.js";
 
 type Logger = ReturnType<typeof createLogger>;
+
+type RendererFlushAttempt = {
+  acknowledged: boolean;
+  hadQueuedAutoSaves: boolean;
+  rendererDirty: boolean;
+};
+
+let rendererFlushRequestSequence = 0;
 
 const loadAutoSaveManager = async () =>
   (await import("../../domains/manuscript/index.js")).autoSaveManager;
@@ -51,6 +63,160 @@ const showQuitDialog = async (
     ? dialog.showMessageBox(mainWindow, options)
     : dialog.showMessageBox(options);
 
+const requestRendererFlush = async (
+  mainWindow: BrowserWindow | null,
+): Promise<RendererFlushAttempt> => {
+  const failedAttempt: RendererFlushAttempt = {
+    acknowledged: false,
+    hadQueuedAutoSaves: false,
+    rendererDirty: false,
+  };
+  if (!mainWindow || mainWindow.isDestroyed() || !mainWindow.webContents) {
+    return failedAttempt;
+  }
+
+  return new Promise<RendererFlushAttempt>((resolve, reject) => {
+    const requestId = `quit-flush-${++rendererFlushRequestSequence}`;
+    let settled = false;
+    const finish = (result: RendererFlushAttempt) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      ipcMain.removeListener(IPC_CHANNELS.APP_FLUSH_COMPLETE, onComplete);
+      resolve(result);
+    };
+    const onComplete = (event: IpcMainEvent, payload: unknown) => {
+      const completion = payload as
+        | Partial<AppFlushCompletePayload>
+        | undefined;
+      if (
+        event.sender !== mainWindow.webContents ||
+        completion?.requestId !== requestId ||
+        typeof completion.hadQueuedAutoSaves !== "boolean" ||
+        typeof completion.rendererDirty !== "boolean"
+      ) {
+        return;
+      }
+      finish({
+        acknowledged: true,
+        hadQueuedAutoSaves: completion.hadQueuedAutoSaves,
+        rendererDirty: completion.rendererDirty,
+      });
+    };
+    const timeout = setTimeout(
+      () => finish(failedAttempt),
+      QUIT_RENDERER_FLUSH_TIMEOUT_MS,
+    );
+
+    try {
+      ipcMain.on(IPC_CHANNELS.APP_FLUSH_COMPLETE, onComplete);
+      mainWindow.webContents.send(IPC_CHANNELS.APP_BEFORE_QUIT, {
+        requestId,
+      } satisfies AppBeforeQuitPayload);
+    } catch (error) {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timeout);
+        ipcMain.removeListener(IPC_CHANNELS.APP_FLUSH_COMPLETE, onComplete);
+        reject(error);
+      }
+    }
+  });
+};
+
+const resolveRendererFlushRetry = async (
+  mainWindow: BrowserWindow | null,
+  logger: Logger,
+): Promise<"saved" | "skip" | "cancel"> => {
+  let retry: RendererFlushAttempt = {
+    acknowledged: false,
+    hadQueuedAutoSaves: false,
+    rendererDirty: false,
+  };
+  try {
+    retry = await requestRendererFlush(mainWindow);
+  } catch (error) {
+    logger.warn("Renderer flush retry request failed", error);
+  }
+
+  if (retry.acknowledged && !retry.rendererDirty) return "saved";
+
+  let retryResponse = 2;
+  try {
+    retryResponse = (
+      await showQuitDialog(mainWindow, {
+        type: "warning",
+        title: "변경사항을 저장하지 못했습니다",
+        message: "앱 화면의 변경사항 저장을 완료하지 못했습니다.",
+        detail: "다시 시도하거나, 저장하지 않고 종료할 수 있습니다.",
+        buttons: ["다시 시도", "저장하지 않고 종료", "종료 취소"],
+        defaultId: 2,
+        cancelId: 2,
+        noLink: true,
+      })
+    ).response;
+  } catch (dialogError) {
+    logger.error("Renderer flush retry dialog failed", dialogError);
+  }
+
+  if (retryResponse === 0) {
+    return resolveRendererFlushRetry(mainWindow, logger);
+  }
+  return retryResponse === 1 ? "skip" : "cancel";
+};
+
+const runMainSaveAttempt = async (
+  flushAll: () => Promise<unknown>,
+): Promise<boolean> => {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      flushAll().then(() => true),
+      new Promise<boolean>((resolve) => {
+        timeout = setTimeout(() => resolve(false), QUIT_SAVE_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+};
+
+const resolveMainSaveRetry = async (
+  mainWindow: BrowserWindow | null,
+  flushAll: () => Promise<unknown>,
+  logger: Logger,
+): Promise<"saved" | "skip" | "cancel"> => {
+  try {
+    if (await runMainSaveAttempt(flushAll)) return "saved";
+    logger.warn("Main save during quit timed out");
+  } catch (error) {
+    logger.error("Main save during quit failed", error);
+  }
+
+  let retryResponse = 2;
+  try {
+    retryResponse = (
+      await showQuitDialog(mainWindow, {
+        type: "warning",
+        title: "변경사항을 저장하지 못했습니다",
+        message: "문서 변경사항 저장을 완료하지 못했습니다.",
+        detail: "다시 시도하거나, 저장하지 않고 종료할 수 있습니다.",
+        buttons: ["다시 시도", "저장하지 않고 종료", "종료 취소"],
+        defaultId: 2,
+        cancelId: 2,
+        noLink: true,
+      })
+    ).response;
+  } catch (dialogError) {
+    logger.error("Main save retry dialog failed", dialogError);
+  }
+
+  if (retryResponse === 0) {
+    return resolveMainSaveRetry(mainWindow, flushAll, logger);
+  }
+  return retryResponse === 1 ? "skip" : "cancel";
+};
+
 export const registerShutdownHandlers = (logger: Logger): void => {
   let isQuitting = false;
 
@@ -82,25 +248,10 @@ export const registerShutdownHandlers = (logger: Logger): void => {
 
       if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
         try {
-          rendererFlushed = await new Promise<boolean>((resolve) => {
-            const timeout = setTimeout(
-              () => resolve(false),
-              QUIT_RENDERER_FLUSH_TIMEOUT_MS,
-            );
-            ipcMain.once(IPC_CHANNELS.APP_FLUSH_COMPLETE, (_event, payload) => {
-              rendererHadQueued = Boolean(
-                (payload as { hadQueuedAutoSaves?: unknown } | undefined)
-                  ?.hadQueuedAutoSaves,
-              );
-              rendererDirty = Boolean(
-                (payload as { rendererDirty?: unknown } | undefined)
-                  ?.rendererDirty,
-              );
-              clearTimeout(timeout);
-              resolve(true);
-            });
-            mainWindow.webContents.send(IPC_CHANNELS.APP_BEFORE_QUIT);
-          });
+          const rendererFlush = await requestRendererFlush(mainWindow);
+          rendererFlushed = rendererFlush.acknowledged;
+          rendererHadQueued = rendererFlush.hadQueuedAutoSaves;
+          rendererDirty = rendererFlush.rendererDirty;
           logger.info("Renderer flush phase completed", {
             rendererFlushed,
             rendererHadQueued,
@@ -158,16 +309,54 @@ export const registerShutdownHandlers = (logger: Logger): void => {
 
           if (response.response === 0) {
             logger.info("User chose: save and quit");
-            try {
-              await Promise.race([
-                autoSaveManager.flushAll(),
-                new Promise((resolve) =>
-                  setTimeout(resolve, QUIT_SAVE_TIMEOUT_MS),
-                ),
-              ]);
-              await autoSaveManager.flushMirrorsToSnapshots("session-end");
-            } catch (error) {
-              logger.error("Save during quit failed", error);
+            let skipRendererSave = false;
+
+            if (!rendererFlushed || rendererDirty) {
+              const rendererRetryDecision = await resolveRendererFlushRetry(
+                mainWindow,
+                logger,
+              );
+              if (rendererRetryDecision === "cancel") {
+                logger.info(
+                  "Quit cancelled by user during renderer flush retry",
+                );
+                isQuitting = false;
+                sendQuitPhase(mainWindow, "aborted", "종료가 취소되었습니다.");
+                return;
+              }
+              skipRendererSave = rendererRetryDecision === "skip";
+            }
+
+            let skipMainSave = skipRendererSave;
+            if (!skipMainSave) {
+              const mainSaveDecision = await resolveMainSaveRetry(
+                mainWindow,
+                () => autoSaveManager.flushAll(),
+                logger,
+              );
+              if (mainSaveDecision === "cancel") {
+                logger.info("Quit cancelled by user during main save retry");
+                isQuitting = false;
+                sendQuitPhase(mainWindow, "aborted", "종료가 취소되었습니다.");
+                return;
+              }
+              skipMainSave = mainSaveDecision === "skip";
+            }
+
+            if (skipMainSave) {
+              try {
+                await autoSaveManager.flushMirrorsToSnapshots(
+                  "session-end-no-save",
+                );
+              } catch (error) {
+                logger.warn("Mirror-to-snapshot conversion failed", error);
+              }
+            } else {
+              try {
+                await autoSaveManager.flushMirrorsToSnapshots("session-end");
+              } catch (error) {
+                logger.error("Save during quit failed", error);
+              }
             }
           } else {
             logger.info(
@@ -182,10 +371,11 @@ export const registerShutdownHandlers = (logger: Logger): void => {
             }
           }
         } catch (dialogError) {
-          logger.error(
-            "Quit dialog failed; exiting with mirrors on disk",
-            dialogError,
-          );
+          logger.error("Quit dialog failed", dialogError);
+          logger.info("Quit cancelled because unsaved changes dialog failed");
+          isQuitting = false;
+          sendQuitPhase(mainWindow, "aborted", "종료가 취소되었습니다.");
+          return;
         }
       } else {
         try {

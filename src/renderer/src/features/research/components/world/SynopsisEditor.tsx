@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
+import { api } from "@shared/api";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { BufferedTextArea, BufferedInput } from "@shared/ui/BufferedInput";
 import { cn } from "@shared/types/utils";
@@ -9,7 +10,16 @@ import { worldPackageStorage } from "@renderer/features/research/services/worldP
 import type { WorldSynopsisData, WorldSynopsisStatus } from "@shared/types";
 import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
 import { useToast } from "@shared/ui/ToastContext";
-import { registerSaveBufferFlush } from "@shared/ui/saveBufferRegistry";
+import {
+  preserveUnmountSave,
+  registerSaveBufferFlush,
+} from "@shared/ui/saveBufferRegistry";
+
+interface PendingSynopsisSave {
+  projectId: string;
+  projectPath: string | null;
+  data: WorldSynopsisData;
+}
 
 export function SynopsisEditor() {
   const { t } = useTranslation();
@@ -27,6 +37,7 @@ export function SynopsisEditor() {
   const [genre, setGenre] = useState("");
   const [targetAudience, setTargetAudience] = useState("");
   const [logline, setLogline] = useState("");
+  const [editableScope, setEditableScope] = useState<string | null>(null);
   const synopsisRef = useRef<WorldSynopsisData>({
     synopsis: currentProject?.description ?? "",
     status: "draft",
@@ -34,20 +45,68 @@ export function SynopsisEditor() {
     targetAudience: "",
     logline: "",
   });
-  const synopsisDirtyRef = useRef(false);
+  const synopsisByScopeRef = useRef(new Map<string, WorldSynopsisData>());
+  const hydratedScopesRef = useRef(new Set<string>());
+  const mutationGenerationByScopeRef = useRef(new Map<string, number>());
+  const activeScopeRef = useRef<string | null>(null);
+  const pendingSynopsisSavesRef = useRef<PendingSynopsisSave[]>([]);
   const saveInFlightRef = useRef<Promise<void> | null>(null);
   const flushSynopsisRef = useRef<() => Promise<void>>(async () => undefined);
   const descriptionRef = useRef(currentProject?.description ?? "");
   const projectId = currentProject?.id;
+  const projectScope = projectId
+    ? `${projectId}\0${luieAttachmentPath ?? ""}`
+    : null;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     descriptionRef.current = currentProject?.description ?? "";
   }, [currentProject?.description]);
 
-  useEffect(() => {
-    if (!projectId) return;
+  useLayoutEffect(() => {
+    if (!projectId || !projectScope) return;
     let cancelled = false;
     const fallback = descriptionRef.current;
+    const applySynopsis = (
+      source: WorldSynopsisData,
+      cache = true,
+    ): void => {
+      const nextSynopsis: WorldSynopsisData = {
+        synopsis: source.synopsis ?? fallback,
+        status: source.status ?? "draft",
+        genre: source.genre ?? "",
+        targetAudience: source.targetAudience ?? "",
+        logline: source.logline ?? "",
+      };
+      setStatus(nextSynopsis.status ?? "draft");
+      setGenre(nextSynopsis.genre ?? "");
+      setTargetAudience(nextSynopsis.targetAudience ?? "");
+      setLogline(nextSynopsis.logline ?? "");
+      synopsisRef.current = nextSynopsis;
+      if (cache) synopsisByScopeRef.current.set(projectScope, nextSynopsis);
+    };
+    const scopeChanged = activeScopeRef.current !== projectScope;
+    activeScopeRef.current = projectScope;
+    const pendingAtLoadStart = pendingSynopsisSavesRef.current.find(
+      (save) =>
+        save.projectId === projectId &&
+        save.projectPath === luieAttachmentPath,
+    );
+    if (scopeChanged) {
+      const cachedSynopsis = synopsisByScopeRef.current.get(projectScope);
+      const transitionSynopsis = pendingAtLoadStart?.data ?? cachedSynopsis;
+      if (transitionSynopsis) {
+        hydratedScopesRef.current.add(projectScope);
+        setEditableScope(projectScope);
+        applySynopsis(transitionSynopsis);
+      } else {
+        setEditableScope(null);
+        applySynopsis({ synopsis: fallback, status: "draft" }, false);
+      }
+    }
+    const loadGeneration = mutationGenerationByScopeRef.current.get(
+      projectScope,
+    );
+    void flushSynopsisRef.current().catch(() => undefined);
 
     void (async () => {
       const loaded = await worldPackageStorage.loadSynopsis(
@@ -56,24 +115,36 @@ export function SynopsisEditor() {
         fallback,
       );
       if (cancelled) return;
-      setStatus(loaded.status ?? "draft");
-      setGenre(loaded.genre ?? "");
-      setTargetAudience(loaded.targetAudience ?? "");
-      setLogline(loaded.logline ?? "");
-      synopsisRef.current = {
-        synopsis: loaded.synopsis ?? fallback,
-        status: loaded.status ?? "draft",
-        genre: loaded.genre ?? "",
-        targetAudience: loaded.targetAudience ?? "",
-        logline: loaded.logline ?? "",
-      };
-      synopsisDirtyRef.current = false;
-    })();
+      if (
+        mutationGenerationByScopeRef.current.get(projectScope) !==
+        loadGeneration
+      ) {
+        return;
+      }
+      const pending = pendingSynopsisSavesRef.current.find(
+        (save) =>
+          save.projectId === projectId &&
+          save.projectPath === luieAttachmentPath,
+      );
+      applySynopsis(pending?.data ?? pendingAtLoadStart?.data ?? loaded);
+      hydratedScopesRef.current.add(projectScope);
+      if (activeScopeRef.current === projectScope) {
+        setEditableScope(projectScope);
+      }
+    })().catch((error: unknown) => {
+      if (!cancelled) {
+        void api.logger.warn("Failed to load synopsis project scope", {
+          projectId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        showToast(t("research.toast.worldSaveFailed"), "error");
+      }
+    });
 
     return () => {
       cancelled = true;
     };
-  }, [projectId, luieAttachmentPath]);
+  }, [projectId, luieAttachmentPath, projectScope, showToast, t]);
 
   const flushSynopsis = async (): Promise<void> => {
     const inFlight = saveInFlightRef.current;
@@ -81,11 +152,11 @@ export function SynopsisEditor() {
       await inFlight;
       return flushSynopsisRef.current();
     }
-    if (!synopsisDirtyRef.current || !currentProject?.id) return;
+    const snapshot = pendingSynopsisSavesRef.current[0];
+    if (!snapshot) return;
 
-    const snapshot = synopsisRef.current;
     const save = worldPackageStorage
-      .saveSynopsis(currentProject.id, luieAttachmentPath, snapshot)
+      .saveSynopsis(snapshot.projectId, snapshot.projectPath, snapshot.data)
       .catch((error: unknown) => {
         showToast(t("research.toast.worldSaveFailed"), "error");
         throw error;
@@ -93,7 +164,9 @@ export function SynopsisEditor() {
     saveInFlightRef.current = save;
     try {
       await save;
-      if (synopsisRef.current === snapshot) synopsisDirtyRef.current = false;
+      if (pendingSynopsisSavesRef.current[0] === snapshot) {
+        pendingSynopsisSavesRef.current.shift();
+      }
     } finally {
       if (saveInFlightRef.current === save) saveInFlightRef.current = null;
     }
@@ -109,23 +182,64 @@ export function SynopsisEditor() {
     [],
   );
 
+  useEffect(
+    () => () => {
+      if (
+        pendingSynopsisSavesRef.current.length === 0 &&
+        !saveInFlightRef.current
+      ) {
+        return;
+      }
+      preserveUnmountSave(flushSynopsisRef.current(), () =>
+        flushSynopsisRef.current(),
+      );
+    },
+    [],
+  );
+
   const persistSynopsis = (
     overrides: Partial<WorldSynopsisData>,
   ): Promise<void> => {
-    if (!currentProject?.id) return Promise.resolve();
-    const payload = {
-      ...synopsisRef.current,
+    if (
+      !projectId ||
+      !projectScope ||
+      !hydratedScopesRef.current.has(projectScope)
+    ) {
+      return Promise.resolve();
+    }
+    const data = {
+      ...(synopsisByScopeRef.current.get(projectScope) ?? synopsisRef.current),
       ...overrides,
     };
-    synopsisRef.current = payload;
-    synopsisDirtyRef.current = true;
+    synopsisByScopeRef.current.set(projectScope, data);
+    mutationGenerationByScopeRef.current.set(
+      projectScope,
+      (mutationGenerationByScopeRef.current.get(projectScope) ?? 0) + 1,
+    );
+    if (activeScopeRef.current === projectScope) synopsisRef.current = data;
+    const pending: PendingSynopsisSave = {
+      projectId,
+      projectPath: luieAttachmentPath,
+      data,
+    };
+    const pendingIndex = pendingSynopsisSavesRef.current.findIndex(
+      (save) =>
+        save.projectId === pending.projectId &&
+        save.projectPath === pending.projectPath,
+    );
+    if (pendingIndex === -1) pendingSynopsisSavesRef.current.push(pending);
+    else pendingSynopsisSavesRef.current[pendingIndex] = pending;
     return flushSynopsis();
   };
 
-  if (!currentProject) return null;
+  if (!currentProject || !projectId) return null;
 
   return (
-    <div className="h-full flex flex-col bg-[#faf9f6]/50 dark:bg-zinc-900 overflow-hidden transition-colors duration-500">
+    <fieldset
+      key={projectScope}
+      disabled={editableScope !== projectScope}
+      className="h-full min-w-0 m-0 p-0 border-0 flex flex-col bg-[#faf9f6]/50 dark:bg-zinc-900 overflow-hidden transition-colors duration-500"
+    >
       {/* Header - Minimalist */}
       <div
         className={cn(
@@ -247,7 +361,7 @@ export function SynopsisEditor() {
               readOnly={status === "locked"}
               onSave={async (val) => {
                 const [updated] = await Promise.all([
-                  updateProject({ id: currentProject.id, description: val }),
+                  updateProject({ id: projectId, description: val }),
                   persistSynopsis({ synopsis: val }),
                 ]);
                 if (!updated)
@@ -260,6 +374,6 @@ export function SynopsisEditor() {
           </div>
         </div>
       </div>
-    </div>
+    </fieldset>
   );
 }

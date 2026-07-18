@@ -1,12 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, X, Trash2, GripVertical } from "lucide-react";
+import { api } from "@shared/api";
 import { BufferedTextArea, BufferedInput } from "@shared/ui/BufferedInput";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { worldPackageStorage } from "@renderer/features/research/services/worldPackageStorage";
 import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
 import { useToast } from "@shared/ui/ToastContext";
-import { registerSaveBufferFlush } from "@shared/ui/saveBufferRegistry";
+import {
+  preserveUnmountSave,
+  registerSaveBufferFlush,
+} from "@shared/ui/saveBufferRegistry";
 
 interface PlotCard {
   id: string;
@@ -19,10 +23,17 @@ interface PlotColumn {
   cards: PlotCard[];
 }
 
+interface PendingPlotSave {
+  projectId: string;
+  projectPath: string | null;
+  columns: PlotColumn[];
+}
+
 export function PlotBoard() {
   const { t } = useTranslation();
   const { showToast } = useToast();
   const currentProject = useProjectStore((state) => state.currentItem);
+  const projectId = currentProject?.id;
   const luieAttachmentPath = getReadableLuieAttachmentPath(currentProject);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const defaultColumns = useMemo<PlotColumn[]>(
@@ -49,34 +60,101 @@ export function PlotBoard() {
     [t],
   );
   const [columns, setColumns] = useState<PlotColumn[]>(defaultColumns);
+  const [editableScope, setEditableScope] = useState<string | null>(null);
   const columnsRef = useRef(columns);
-  const plotDirtyRef = useRef(false);
+  const columnsByScopeRef = useRef(new Map<string, PlotColumn[]>());
+  const hydratedScopesRef = useRef(new Set<string>());
+  const mutationGenerationByScopeRef = useRef(new Map<string, number>());
+  const activeScopeRef = useRef<string | null>(null);
+  const pendingPlotSavesRef = useRef<PendingPlotSave[]>([]);
   const saveInFlightRef = useRef<Promise<void> | null>(null);
   const flushPlotRef = useRef<() => Promise<void>>(async () => undefined);
+  const projectScope = projectId
+    ? `${projectId}\0${luieAttachmentPath ?? ""}`
+    : null;
 
-  useEffect(() => {
-    if (!currentProject?.id) {
+  useLayoutEffect(() => {
+    if (!projectId || !projectScope) {
       return;
     }
 
     let cancelled = false;
+    const scopeChanged = activeScopeRef.current !== projectScope;
+    activeScopeRef.current = projectScope;
+    const pendingAtLoadStart = pendingPlotSavesRef.current.find(
+      (save) =>
+        save.projectId === projectId &&
+        save.projectPath === luieAttachmentPath,
+    );
+    if (scopeChanged) {
+      const cachedColumns = columnsByScopeRef.current.get(projectScope);
+      const transitionColumns =
+        pendingAtLoadStart?.columns ?? cachedColumns ?? defaultColumns;
+      if (pendingAtLoadStart || cachedColumns) {
+        hydratedScopesRef.current.add(projectScope);
+        setEditableScope(projectScope);
+      } else {
+        setEditableScope(null);
+      }
+      columnsRef.current = transitionColumns;
+      setColumns(transitionColumns);
+    }
+    const loadGeneration = mutationGenerationByScopeRef.current.get(
+      projectScope,
+    );
+    void flushPlotRef.current().catch(() => undefined);
     void (async () => {
       const loaded = await worldPackageStorage.loadPlot(
-        currentProject.id,
+        projectId,
         luieAttachmentPath,
       );
       if (cancelled) return;
-      const nextColumns =
-        loaded.columns.length > 0 ? loaded.columns : defaultColumns;
+      if (
+        mutationGenerationByScopeRef.current.get(projectScope) !==
+        loadGeneration
+      ) {
+        return;
+      }
+      const pending = pendingPlotSavesRef.current.find(
+        (save) =>
+          save.projectId === projectId &&
+          save.projectPath === luieAttachmentPath,
+      );
+      const nextColumns = pending
+        ? pending.columns
+        : pendingAtLoadStart
+          ? pendingAtLoadStart.columns
+        : loaded.columns.length > 0
+          ? loaded.columns
+          : defaultColumns;
+      columnsByScopeRef.current.set(projectScope, nextColumns);
+      hydratedScopesRef.current.add(projectScope);
       columnsRef.current = nextColumns;
-      plotDirtyRef.current = false;
       setColumns(nextColumns);
-    })();
+      if (activeScopeRef.current === projectScope) {
+        setEditableScope(projectScope);
+      }
+    })().catch((error: unknown) => {
+      if (!cancelled) {
+        void api.logger.warn("Failed to load plot project scope", {
+          projectId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        showToast(t("research.toast.worldSaveFailed"), "error");
+      }
+    });
 
     return () => {
       cancelled = true;
     };
-  }, [currentProject?.id, luieAttachmentPath, defaultColumns]);
+  }, [
+    projectId,
+    luieAttachmentPath,
+    defaultColumns,
+    projectScope,
+    showToast,
+    t,
+  ]);
 
   useEffect(() => {
     const element = scrollContainerRef.current;
@@ -103,11 +181,13 @@ export function PlotBoard() {
       await inFlight;
       return flushPlotRef.current();
     }
-    if (!plotDirtyRef.current || !currentProject?.id) return;
+    const snapshot = pendingPlotSavesRef.current[0];
+    if (!snapshot) return;
 
-    const snapshot = columnsRef.current;
     const save = worldPackageStorage
-      .savePlot(currentProject.id, luieAttachmentPath, { columns: snapshot })
+      .savePlot(snapshot.projectId, snapshot.projectPath, {
+        columns: snapshot.columns,
+      })
       .catch((error: unknown) => {
         showToast(t("research.toast.worldSaveFailed"), "error");
         throw error;
@@ -115,7 +195,9 @@ export function PlotBoard() {
     saveInFlightRef.current = save;
     try {
       await save;
-      if (columnsRef.current === snapshot) plotDirtyRef.current = false;
+      if (pendingPlotSavesRef.current[0] === snapshot) {
+        pendingPlotSavesRef.current.shift();
+      }
     } finally {
       if (saveInFlightRef.current === save) saveInFlightRef.current = null;
     }
@@ -128,13 +210,55 @@ export function PlotBoard() {
 
   useEffect(() => registerSaveBufferFlush(() => flushPlotRef.current()), []);
 
+  useEffect(
+    () => () => {
+      if (
+        pendingPlotSavesRef.current.length === 0 &&
+        !saveInFlightRef.current
+      ) {
+        return;
+      }
+      preserveUnmountSave(flushPlotRef.current(), () =>
+        flushPlotRef.current(),
+      );
+    },
+    [],
+  );
+
   const commitColumns = (
     update: (current: PlotColumn[]) => PlotColumn[],
   ): Promise<void> => {
-    const nextColumns = update(columnsRef.current);
-    columnsRef.current = nextColumns;
-    plotDirtyRef.current = true;
-    setColumns(nextColumns);
+    if (
+      !projectId ||
+      !projectScope ||
+      !hydratedScopesRef.current.has(projectScope)
+    ) {
+      return Promise.resolve();
+    }
+    const nextColumns = update(
+      columnsByScopeRef.current.get(projectScope) ?? columnsRef.current,
+    );
+    columnsByScopeRef.current.set(projectScope, nextColumns);
+    mutationGenerationByScopeRef.current.set(
+      projectScope,
+      (mutationGenerationByScopeRef.current.get(projectScope) ?? 0) + 1,
+    );
+    const pending: PendingPlotSave = {
+      projectId,
+      projectPath: luieAttachmentPath,
+      columns: nextColumns,
+    };
+    const pendingIndex = pendingPlotSavesRef.current.findIndex(
+      (save) =>
+        save.projectId === pending.projectId &&
+        save.projectPath === pending.projectPath,
+    );
+    if (pendingIndex === -1) pendingPlotSavesRef.current.push(pending);
+    else pendingPlotSavesRef.current[pendingIndex] = pending;
+    if (activeScopeRef.current === projectScope) {
+      columnsRef.current = nextColumns;
+      setColumns(nextColumns);
+    }
     return flushPlot();
   };
 
@@ -216,7 +340,11 @@ export function PlotBoard() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-app overflow-hidden">
+    <fieldset
+      key={projectScope}
+      disabled={editableScope !== projectScope}
+      className="h-full min-w-0 m-0 p-0 border-0 flex flex-col bg-app overflow-hidden"
+    >
       {/* Horizontal Scroll Area */}
       <div
         className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar"
@@ -284,18 +412,19 @@ export function PlotBoard() {
           ))}
 
           {/* Add Column Button */}
-          <div
+          <button
+            type="button"
             className="w-16 shrink-0 flex items-center justify-center border-2 border-dashed border-border rounded-panel cursor-pointer hover:border-accent hover:bg-accent/5 transition-all group"
             onClick={addColumn}
             title={t("world.plot.addAct")}
           >
             <Plus className="w-8 h-8 text-muted group-hover:text-accent transition-colors" />
-          </div>
+          </button>
         </div>
       </div>
 
       {/* Visual Bar / Scroll Indicator Area (Optional polished look) */}
       <div className="h-4 bg-sidebar border-t border-border shrink-0" />
-    </div>
+    </fieldset>
   );
 }

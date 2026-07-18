@@ -1,32 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS } from "@shared/constants";
-import { registerSaveBufferFlush } from "./saveBufferRegistry";
+import {
+  preserveUnmountSave,
+  registerSaveBufferFlush,
+} from "./saveBufferRegistry";
 
 const COMPOSITION_FLUSH_ERROR =
   "Cannot flush a save buffer while IME composition is active";
 
 const consumeBackgroundFlush = (result: void | Promise<unknown>): void => {
   void Promise.resolve(result).catch(() => undefined);
-};
-
-const preserveUnmountSave = (
-  initial: void | Promise<unknown>,
-  retry: () => void | Promise<unknown>,
-): void => {
-  let current: Promise<unknown> | null = Promise.resolve(initial);
-  let unregister: () => void = () => undefined;
-  const flush = async (): Promise<void> => {
-    if (!current) current = Promise.resolve().then(retry);
-    try {
-      await current;
-      unregister();
-    } catch (error) {
-      current = null;
-      throw error;
-    }
-  };
-  unregister = registerSaveBufferFlush(flush);
-  consumeBackgroundFlush(flush());
 };
 
 interface BufferedInputProps extends Omit<

@@ -474,3 +474,43 @@ export engine의 boolean은 실제 파일 쓰기 실패와 canonical `.luie` att
 `skipped`는 queue dirty와 registry를 정리하지만 `markProjectExported`, failed stat/log를 만들지 않는다. flush는 `total`에는 포함하되 `flushed`와 `failed` 모두 증가시키지 않는다. public `runNow`/`exportProjectPackageNow`는 SQLite local save 성공 의미로 `true`를 반환하므로 MANUAL_SAVE가 실패로 오인하지 않는다. 이후 유효한 attachment가 연결되고 새 mutation/schedule이 오면 실제 export를 수행한다. attachment가 유효한 상태에서 engine이 `false` 또는 throw한 경우에만 Task 14의 실패 보존과 다음 호출 재시도를 적용한다.
 
 skip eligibility는 project revision 조회보다 먼저 판정한다. generic queue는 optional resolver만 소유하고 canonical attachment 유효성은 `ProjectService`에 남긴다. resolver가 skip을 확정하면 revision 조회, export engine, exported revision mark를 모두 호출하지 않고 dirty와 예약 timer를 정리한다. async resolver 대기 중 같은 project schedule이 들어와도 detached skip 결과가 확정되면 해당 no-op work를 함께 정리해 registry leak을 만들지 않는다. resolver/attachment 조회 자체가 throw하면 정상 skip이 아니라 retry 가능한 실패로 보존한다.
+
+## 20. 프로젝트 전환과 renderer 종료 재시도
+
+### 20.1 project-bound pending snapshot
+
+Plot/Synopsis의 저장 단위는 payload만이 아니라 변경 당시의 `projectId`, readable `.luie` attachment path, payload를 묶은 immutable snapshot이다. retry는 현재 선택된 프로젝트를 다시 읽지 않고 캡처된 target을 사용한다. 프로젝트 A의 in-flight/failed snapshot이 남아 있을 때 B hydration은 A pending을 clean으로 만들거나 B target으로 바꾸지 않는다. 전환 시 A drain을 먼저 시도하되 실패하면 registry에 A snapshot을 보존하고 이후 explicit flush가 A target으로 재시도한다. B의 변경은 별도 scope의 latest snapshot으로 직렬화한다.
+
+### 20.2 quit renderer ACK 재시도
+
+첫 `APP_BEFORE_QUIT` handshake가 timeout되거나 renderer dirty를 보고하면 저장되지 않은 변경 dialog로 이동한다. 사용자가 `저장 후 종료`를 선택하면 main manuscript flush만 수행하는 것으로 충분하지 않다. main은 renderer에 `APP_BEFORE_QUIT`를 다시 보내 buffer와 world queue의 실제 ACK를 받아야 한다. 재시도 ACK가 없으면 export/finalize로 진행하지 않고 기본값이 `종료 취소`인 두 번째 dialog에서 재시도, 취소, 명시적 저장 생략 중 하나를 받는다. 저장 생략만 renderer ACK 없이 종료를 허용한다. 각 handshake attempt는 성공, timeout, throw 모든 경로에서 자체 IPC listener와 timer를 정리한다.
+
+### 20.3 manual save 결과 표시
+
+Cmd/Ctrl+S는 buffer → world queue → main manuscript/package ACK가 모두 성공했을 때만 성공이다. 어느 단계든 reject하면 logger 기록과 함께 renderer에서 사용자가 관찰 가능한 실패 상태를 표시한다. 앞선 editor chapter가 durable해졌더라도 package export 실패를 전체 저장 성공으로 표시하지 않는다.
+
+### 20.4 마일스톤 재검증 상태
+
+2026-07-19 Task 8~15 재검증은 비-DB 저장 회귀 17 files/119 tests, Electron DB recovery 2 files/2 tests, 변경 범위 ESLint와 diff-check가 PASS했다. 전체 타입체크는 저장 변경 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 1건으로 차단됐다. 독립 마일스톤 리뷰는 프로젝트 전환 교차 저장과 `저장 후 종료` renderer false-success를 Critical로 판정해 No-Go를 유지했고, 이 결과를 Task 16 입력으로 사용했다.
+
+### 20.5 review follow-up ACK 불변식
+
+프로젝트 scope는 component-level pending payload뿐 아니라 각 `BufferedInput`/`BufferedTextArea`의 latest dirty value까지 포함한다. A input이 blur/debounce되기 전에 B로 전환되면 A render의 callback과 A target으로만 drain하고 B callback에 전달하지 않는다. A/B scope가 같은 field id를 사용해도 input instance를 공유하지 않는다.
+
+비동기 hydration은 해당 scope의 mutation generation을 캡처한다. load 중 edit/save가 시작되거나 ACK된 경우 늦은 load 결과는 최신 ref/UI를 덮어쓰지 않는다. component가 unmount될 때 pending/in-flight save가 남으면 detached registry callback이 캡처한 project target과 payload를 성공 ACK까지 보유한다.
+
+renderer quit hook은 buffer와 world queue가 모두 성공한 뒤에만 `rendererDirty=false`로 내리고 requestId를 echo한다. 실패하면 true를 유지하고 완료 ACK를 보내지 않는다. preload autosave flush는 모든 IPC response의 `success`를 검사한다. `success:false` 또는 throw인 payload는 최신 concurrent payload와 병합해 queue에 보존하고 flush를 reject하며, `completeAppFlush`는 clean ACK를 보내지 않는다.
+
+main의 `autoSaveManager.flushAll()` reject 또는 timeout도 저장 성공이 아니다. `저장 후 종료` 뒤 이 단계가 실패하면 retry, 종료 취소, 명시적 저장 생략의 두 번째 결정 경계로 이동하며 기본값은 종료 취소다. 성공 ACK 또는 명시적 skip 전에는 export/finalize로 진행하지 않는다.
+
+renderer flush ACK는 활성 requestId 일치뿐 아니라 boolean payload 형식과 main window sender를 검증한다. stale request, malformed payload, 다른 sender의 ACK는 성공으로 처리하지 않는다.
+
+새 project scope에 cache 또는 pending full snapshot이 없으면 Plot/Synopsis native control은 hydration 성공 전까지 비활성화한다. 이는 기본/fallback payload로 아직 읽지 않은 기존 문서를 덮는 것보다 안전을 우선하는 정책이다. load 실패 시 잠금을 유지하고 log/toast를 남긴다. cache/pending scope 재진입은 즉시 편집할 수 있지만, load 시작 시 pending immutable snapshot과 mutation generation을 함께 캡처해 retry ACK 뒤 늦게 도착한 load도 최신 값을 되돌리지 못한다.
+
+preload autosave flush는 하나의 tail로 직렬화한다. 성공 batch 중 새 payload가 들어오면 같은 explicit barrier가 queue-empty까지 계속 drain한다. 실패 batch는 같은 호출에서 재시도하지 않고 reject하며 payload를 보존한다. 다음 explicit request만 retained payload를 재시도한다. 따라서 앞선 quit request가 in-flight인 동안 다음 request가 빈 queue를 보고 clean ACK하는 경로가 없다.
+
+### 20.6 Task 16 최종 검증
+
+Task 16 최종 root 회귀는 19 files/167 tests PASS이며, 실제 preload bridge/queue, 동일 field id project switch, pending retry ACK 뒤 late revisit load, component unmount detached retry, renderer late/foreign/malformed ACK, main reject/timeout 결정을 포함한다. Electron DB recovery 2 files/2 tests, 대상 ESLint와 diff-check도 PASS했다. 전체 타입체크는 Task 16 신규 오류 없이 사용자 dirty Binder baseline 1건만 남는다. 두 독립 재리뷰 verdict는 Production-ready, Critical/Important 0이다.
+
+여전히 범위 밖인 항목은 사용자 dirty `NotionDocumentView` timer, project-wide revision 확대, world mutation 자동 backoff, 저장 latency P95 및 95% confidence 인증이다. 따라서 Task 16 correctness 계약은 완료됐지만 저장 무결성 전체 로드맵의 이 후속 항목까지 완료됐다고 주장하지 않는다.

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useShortcuts } from "@renderer/features/workspace/hooks/useShortcuts";
 import { emitShortcutCommand } from "@renderer/features/workspace/hooks/useShortcutCommand";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
@@ -11,6 +12,7 @@ import type { createLayoutModeActions } from "@renderer/features/workspace/servi
 import type { EditorUiMode } from "@shared/types";
 import type { WorldTab } from "@renderer/features/workspace/stores/uiStore";
 import { saveProjectNow } from "@renderer/features/workspace/services/saveCoordinator";
+import { useToast } from "@shared/ui/ToastContext";
 
 interface UseEditorRootShortcutsProps {
     setIsSettingsOpen: (open: boolean) => void;
@@ -47,6 +49,8 @@ export function useEditorRootShortcuts({
     setUiMode,
     uiMode,
 }: UseEditorRootShortcutsProps) {
+    const { showToast } = useToast();
+    const { t } = useTranslation();
     const chapterChordRef = useRef<{ digits: string; timerId?: number }>({
         digits: "",
     });
@@ -103,6 +107,7 @@ export function useEditorRootShortcuts({
                     await saveProjectNow(currentProjectId);
                 } catch (error) {
                     void api.logger.error("Manual project save failed", { error });
+                    showToast(t("editor.status.error"), "error");
                 }
             },
             "chapter.delete": () => void handleDeleteActiveChapter(),
@@ -172,6 +177,8 @@ export function useEditorRootShortcuts({
             uiMode,
             setUiMode,
             setIsSettingsOpen,
+            showToast,
+            t,
         ],
     );
 

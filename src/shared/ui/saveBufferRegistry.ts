@@ -16,3 +16,23 @@ export async function flushSaveBuffers(): Promise<void> {
   );
   if (failure) throw failure.reason;
 }
+
+export function preserveUnmountSave(
+  initial: void | Promise<unknown>,
+  retry: () => void | Promise<unknown>,
+): void {
+  let current: Promise<unknown> | null = Promise.resolve(initial);
+  let unregister: () => void = () => undefined;
+  const flush = async (): Promise<void> => {
+    if (!current) current = Promise.resolve().then(retry);
+    try {
+      await current;
+      unregister();
+    } catch (error) {
+      current = null;
+      throw error;
+    }
+  };
+  unregister = registerSaveBufferFlush(flush);
+  void flush().catch(() => undefined);
+}
