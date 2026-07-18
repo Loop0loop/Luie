@@ -276,10 +276,10 @@ renderer input flush
 - manual save와 quit의 renderer buffer → world mutation 선행 flush
 - shared buffer의 실제 persistence ACK, IME 명시적 flush 차단, unmount 실패 payload 재시도
 - Plot/Synopsis buffer의 timer 비의존 직접 persistence barrier
+- 실패한 world mutation payload 보존, latest merge, 다음 flush/enqueue 재시도
 
 재검증에서 다음 차단 항목을 확인했다.
 
-- **P0:** CRUD IPC 실패가 `null`로 변환돼 실패 mutation payload가 queue에서 제거될 수 있다.
 - **P0:** export flush의 `failed > 0`이 quit 차단 상태로 전달되지 않는다.
 - **P1:** scheduled export의 `false`/throw 이후 dirty retry 상태가 유지되지 않는다.
 - **P1:** 삭제 전에 같은 entity의 pending update를 drain하지 않는다.
@@ -413,8 +413,28 @@ follow-up 검증은 focused 2 files/17 tests와 Task 8~12 회귀 10 files/66 tes
 
 ### 17.6 범위 제외
 
-- 실패한 world mutation payload 보존 및 backoff
+- 실패한 world mutation의 자동 backoff
 - scheduled export `false`/throw retry
 - project-wide revision 확대
 - renderer root 밖에서 quit listener를 소유하도록 lifecycle 구조 변경
 - 저장 상태 toast/UI 개편
+
+## 18. World entity mutation 실패 보존 정책
+
+### 18.1 내구성 경계
+
+queue execute의 throw와 CRUD `null` ACK는 둘 다 실패다. 해당 batch의 caller Promise는 원본 오류로 reject하여 input buffer가 clean으로 승격하지 않게 한다. 단, 실패 patch 자체는 queue의 retained pending으로 남긴다.
+
+### 18.2 latest merge와 retry
+
+- 실패 batch A 뒤에 대기 중인 newer batch B가 있으면 `merge(A, B)`로 재병합한다.
+- scalar와 동일 attribute key는 B가 이기고, A에만 있는 attribute key는 유지한다.
+- 실패를 관찰한 global flush는 같은 오류를 즉시 전파하고 같은 호출 안에서 재시도하지 않는다.
+- 실패가 settle된 뒤의 다음 enqueue 또는 다음 explicit global flush가 retained latest patch를 한 번 재시도한다.
+- 자동 backoff와 delete-before-update drain은 P1로 유지한다.
+
+### 18.3 상태와 정리
+
+retained patch에 waiter가 없어도 pending count와 global active queue에 포함한다. waiter 없는 global retry가 성공하면 CRUD ACK를 store와 graph에 적용한 뒤 entity queue map과 global registry를 둘 다 정리한다. retry 성공 후 pending count는 0이다.
+
+Task 13 검증에서 focused 2 files/9 tests와 Task 8~13 저장 회귀 12 files/72 tests가 stderr warning/unhandled rejection 없이 PASS했다. 테스트는 원본 오류 전파, 한 flush 내 재시도 0회, retained pending/active count, explicit flush/next enqueue 재시도, failed/newer scalar·attribute merge, CRUD `null` ACK의 store/graph retry 반영, 100-burst latest 회귀를 증명한다.

@@ -193,9 +193,9 @@ export function createWorldEntityCRUDStore<
           >,
       );
 
-      const queue =
-        updateQueues.get(input.id) ??
-        createLatestMutationQueue<UpdateInput, T>({
+      let queue = updateQueues.get(input.id);
+      if (!queue) {
+        const createdQueue = createLatestMutationQueue<UpdateInput, T>({
           merge: (left, right) => ({
             ...left,
             ...right,
@@ -208,25 +208,33 @@ export function createWorldEntityCRUDStore<
                 }
               : {}),
           }),
-          execute: crudSlice.update,
+          execute: async (patch) => {
+            const updated = await crudSlice.update(patch);
+            if (!updated) {
+              throw new Error(
+                get().error || `Failed to persist ${entityName} update.`,
+              );
+            }
+            useWorldBuildingStore.setState((state) => ({
+              graphData: replaceEntityNodePreservingPosition(
+                state.graphData,
+                entityName,
+                updated as unknown as Character | Event | Faction | Term,
+              ),
+            }));
+            return updated;
+          },
+          onIdle: () => {
+            if (updateQueues.get(input.id) === createdQueue) {
+              updateQueues.delete(input.id);
+            }
+          },
         });
-      updateQueues.set(input.id, queue);
-
-      try {
-        const updated = await queue.enqueue(input);
-        if (updated) {
-          useWorldBuildingStore.setState((state) => ({
-            graphData: replaceEntityNodePreservingPosition(
-              state.graphData,
-              entityName,
-              updated as unknown as Character | Event | Faction | Term,
-            ),
-          }));
-        }
-        return updated;
-      } finally {
-        if (queue.pendingCount() === 0) updateQueues.delete(input.id);
+        queue = createdQueue;
+        updateQueues.set(input.id, queue);
       }
+
+      return queue.enqueue(input);
     };
 
     const deleteWithSync = async (id: string): Promise<boolean> => {

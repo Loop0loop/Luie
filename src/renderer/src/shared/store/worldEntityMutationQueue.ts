@@ -14,6 +14,7 @@ const activeQueues = new Set<TrackedMutationQueue>();
 export function createLatestMutationQueue<P, R>(options: {
   merge: (left: P | null, right: P) => P;
   execute: (patch: P) => Promise<R | null>;
+  onIdle?: () => void;
 }): LatestMutationQueue<P, R> {
   type Waiter = {
     resolve: (result: R | null) => void;
@@ -24,6 +25,26 @@ export function createLatestMutationQueue<P, R>(options: {
   let pending: Batch | null = null;
   let inFlight: Promise<void> | null = null;
   let unsettledCount = 0;
+  let retainedWork = false;
+
+  const syncActiveState = (): void => {
+    if (pending || inFlight || unsettledCount > 0) {
+      activeQueues.add(queue);
+      return;
+    }
+    activeQueues.delete(queue);
+    options.onIdle?.();
+  };
+
+  const retainFailedBatch = (batch: Batch): void => {
+    const newer = pending;
+    pending = newer
+      ? {
+          patch: options.merge(batch.patch, newer.patch),
+          waiters: newer.waiters,
+        }
+      : { patch: batch.patch, waiters: [] };
+  };
 
   const drain = (): Promise<void> => {
     if (inFlight) return inFlight;
@@ -34,8 +55,14 @@ export function createLatestMutationQueue<P, R>(options: {
       pending = null;
       try {
         const result = await options.execute(batch.patch);
+        if (result === null) {
+          throw new Error("World entity mutation returned no acknowledgement.");
+        }
+        retainedWork = false;
         batch.waiters.forEach((waiter) => waiter.resolve(result));
       } catch (error) {
+        retainedWork = true;
+        retainFailedBatch(batch);
         batch.waiters.forEach((waiter) => waiter.reject(error));
         throw error;
       }
@@ -44,6 +71,7 @@ export function createLatestMutationQueue<P, R>(options: {
 
     inFlight = run().finally(() => {
       inFlight = null;
+      syncActiveState();
     });
     return inFlight;
   };
@@ -55,12 +83,12 @@ export function createLatestMutationQueue<P, R>(options: {
         const waiter: Waiter = {
           resolve: (result) => {
             unsettledCount -= 1;
-            if (unsettledCount === 0) activeQueues.delete(queue);
+            syncActiveState();
             resolve(result);
           },
           reject: (error) => {
             unsettledCount -= 1;
-            if (unsettledCount === 0) activeQueues.delete(queue);
+            syncActiveState();
             reject(error);
           },
         };
@@ -70,14 +98,14 @@ export function createLatestMutationQueue<P, R>(options: {
         } else {
           pending = { patch: options.merge(null, patch), waiters: [waiter] };
         }
-        activeQueues.add(queue);
+        syncActiveState();
         void drain().catch(() => undefined);
       }),
     flush: async () => {
       if (inFlight) await inFlight;
       if (pending) await drain();
     },
-    pendingCount: () => unsettledCount,
+    pendingCount: () => Math.max(unsettledCount, retainedWork ? 1 : 0),
   };
 
   return queue;

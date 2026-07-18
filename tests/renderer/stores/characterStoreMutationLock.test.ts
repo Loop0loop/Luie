@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useCharacterStore } from "../../../src/renderer/src/features/research/stores/characterStore.js";
 import { useProjectStore } from "../../../src/renderer/src/features/project/stores/projectStore.js";
 import { useWorldBuildingStore } from "../../../src/renderer/src/features/research/stores/worldBuildingStore.js";
+import {
+  flushWorldEntityMutations,
+  getPendingWorldEntityMutationCount,
+} from "../../../src/renderer/src/shared/store/worldEntityMutationQueue.js";
 import type { Character } from "../../../src/shared/types";
 
 type IPCResponse<T> = {
@@ -221,6 +225,69 @@ describe("characterStore mutation locking", () => {
       id: character.id,
       attributesPatch: { color: "red", tagline: "Lead" },
     });
+  });
+
+  it("rejects a null update ACK and applies the retained retry to the graph", async () => {
+    const character: Character = {
+      id: "char-retry",
+      projectId: "project-1",
+      name: "Original",
+      createdAt: new Date("2026-03-10T00:00:00.000Z"),
+      updatedAt: new Date("2026-03-10T00:00:00.000Z"),
+    };
+    mockedApi.character.update
+      .mockResolvedValueOnce({
+        success: false,
+        data: null,
+        error: { message: "write failed" },
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        data: { ...character, name: "Retried" },
+      });
+    useCharacterStore.setState({
+      items: [character],
+      characters: [character],
+      currentItem: character,
+      currentCharacter: character,
+    });
+    useWorldBuildingStore.setState({
+      graphData: {
+        nodes: [
+          {
+            id: character.id,
+            entityType: "Character",
+            name: character.name,
+            attributes: null,
+            positionX: 10,
+            positionY: 20,
+          },
+        ],
+        edges: [],
+      },
+    });
+
+    await expect(
+      useCharacterStore.getState().updateCharacter({
+        id: character.id,
+        name: "Retried",
+      }),
+    ).rejects.toThrow("write failed");
+    expect(getPendingWorldEntityMutationCount()).toBe(1);
+
+    await flushWorldEntityMutations();
+
+    expect(mockedApi.character.update).toHaveBeenCalledTimes(2);
+    expect(mockedApi.character.update).toHaveBeenLastCalledWith({
+      id: character.id,
+      name: "Retried",
+    });
+    expect(useWorldBuildingStore.getState().graphData?.nodes[0]).toMatchObject({
+      name: "Retried",
+      positionX: 10,
+      positionY: 20,
+    });
+    expect(getPendingWorldEntityMutationCount()).toBe(0);
   });
 
   it("skips graph refresh when delete fails", async () => {

@@ -1597,3 +1597,34 @@ Actual (2026-07-19): RED는 2 files/14 tests 중 6건이 markdown registry 미�
 - [x] follow-up 단일 커밋 `fix(storage): serialize memo save drain`
 
 Actual (2026-07-19): 테스트 하네스 수정 후 RED는 2 files/15 tests 중 4건이 P1 pending 중 P2 동시 시작과 hook cleanup/scope, Canvas scope rejection 미처리로 예상대로 실패했다. 최종 focused는 2 files/17 tests, Task 8~12 회귀는 10 files/66 tests PASS이며 stderr warning/unhandled rejection 0이다. P1 settle 전 P2 호출 0, P1 성공 뒤 latest P2 한 번, P2 ACK 뒤 barrier 완료, P1/P2 실패의 dirty retry와 이전 project scope 유지를 검증했다. 변경 파일 ESLint와 `git diff --check`는 PASS다. `tsc6 --noEmit`은 follow-up 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 오류 1건만 유지한다.
+
+---
+
+### Task 13: 실패한 world entity mutation payload 보존과 명시적 재시도
+
+**Status:** 완료
+
+**Files:**
+- Modify: `src/renderer/src/shared/store/worldEntityMutationQueue.ts`
+- Modify: `src/renderer/src/shared/store/createWorldEntityCRUDStore.ts`
+- Modify: `tests/renderer/stores/worldEntityMutationQueue.test.ts`
+- Modify: `tests/renderer/stores/characterStoreMutationLock.test.ts`
+- Modify: `docs/superpowers/plans/2026-07-18-save-integrity.md`
+- Modify: `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
+- Create: `.superpowers/sdd/save-buffer-task-13-report.md`
+
+**Interfaces:**
+- Changes: execute throw와 CRUD `null` ACK를 둘 다 mutation 실패로 취급한다.
+- Changes: 실패 batch의 waiter는 reject하되 patch는 waiter 없는 pending work로 보존한다.
+- Changes: 실패 patch와 더 최신 patch는 `merge(failed, newer)` 순서로 병합한다.
+- Changes: 다음 enqueue 또는 다음 explicit global flush가 보존된 latest patch를 한 번 재시도한다.
+- Excludes: 한 flush 내 무한 retry, 자동 backoff, delete-before-update drain.
+
+- [x] **Step 1: queue failure retention/merge RED 테스트**
+- [x] **Step 2: CRUD null ACK RED 통합 테스트**
+- [x] **Step 3: retained pending과 active/map lifecycle 최소 구현**
+- [x] **Step 4: waiter 없는 retry ACK의 store/graph reconciliation**
+- [x] **Step 5: focused 및 Task 8~13 저장 회귀, ESLint, diff-check, tsc 검증**
+- [x] **Step 6: SSOT/report 동기화 및 단일 커밋**
+
+Actual (2026-07-19): 최초 RED는 2 files/8 tests 중 3건이 throw payload 제거, failed/newer key 유실, CRUD `null` ACK 성공 처리로 예상대로 실패했다. 추가 null ACK/next-enqueue RED도 기존 코드에서 `null` resolve로 실패했다. 최종 focused는 2 files/9 tests, Task 8~13 저장 회귀는 12 files/72 tests PASS이며 stderr warning/unhandled rejection이 없다. 실패 batch는 waiter reject 후에도 pending/active에 남고, 다음 flush/enqueue가 latest nested patch를 한 번 재시도한다. waiter 없는 retry ACK도 store/graph에 반영한 뒤 entity map/global registry를 정리한다. 대상 ESLint와 `git diff --check`는 PASS다. `tsc6 --noEmit`은 Task 13 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 오류 1건만 유지한다.

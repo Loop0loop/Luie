@@ -64,4 +64,127 @@ describe("worldEntityMutationQueue", () => {
     await Promise.all([save, flush]);
     expect(getPendingWorldEntityMutationCount()).toBe(0);
   });
+
+  it("retains a rejected patch until the next explicit flush succeeds", async () => {
+    const failure = new Error("disk unavailable");
+    const patch = { id: "char-retry", name: "Hero" };
+    const execute = vi
+      .fn()
+      .mockRejectedValueOnce(failure)
+      .mockResolvedValueOnce(patch);
+    const queue = createLatestMutationQueue({
+      merge: (left, right) => ({ ...left, ...right }),
+      execute,
+    });
+
+    const save = queue.enqueue(patch);
+    const firstFlush = flushWorldEntityMutations();
+
+    await expect(save).rejects.toBe(failure);
+    await expect(firstFlush).rejects.toBe(failure);
+    expect(execute).toHaveBeenCalledOnce();
+    expect(queue.pendingCount()).toBe(1);
+    expect(getPendingWorldEntityMutationCount()).toBe(1);
+
+    await flushWorldEntityMutations();
+
+    expect(execute).toHaveBeenCalledTimes(2);
+    expect(execute).toHaveBeenLastCalledWith(patch);
+    expect(queue.pendingCount()).toBe(0);
+    expect(getPendingWorldEntityMutationCount()).toBe(0);
+  });
+
+  it("treats a null ACK as failure and retries it on the next enqueue", async () => {
+    const execute = vi
+      .fn()
+      .mockResolvedValueOnce(null)
+      .mockImplementationOnce(async (patch) => patch);
+    const queue = createLatestMutationQueue({
+      merge: (left, right: { id: string; name?: string; description?: string }) =>
+        ({ ...left, ...right }),
+      execute,
+    });
+
+    await expect(
+      queue.enqueue({ id: "char-null", description: "Lead" }),
+    ).rejects.toThrow("no acknowledgement");
+    expect(queue.pendingCount()).toBe(1);
+
+    await expect(
+      queue.enqueue({ id: "char-null", name: "Hero" }),
+    ).resolves.toEqual({
+      id: "char-null",
+      name: "Hero",
+      description: "Lead",
+    });
+    expect(execute).toHaveBeenCalledTimes(2);
+    expect(execute).toHaveBeenLastCalledWith({
+      id: "char-null",
+      name: "Hero",
+      description: "Lead",
+    });
+    expect(getPendingWorldEntityMutationCount()).toBe(0);
+  });
+
+  it("merges a failed patch before newer pending values without losing keys", async () => {
+    type Patch = {
+      id: string;
+      name?: string;
+      description?: string;
+      attributesPatch?: Record<string, unknown>;
+    };
+    const failure = new Error("temporary failure");
+    const firstAttempt = deferred<Patch>();
+    const execute = vi
+      .fn()
+      .mockReturnValueOnce(firstAttempt.promise)
+      .mockImplementationOnce(async (patch: Patch) => patch);
+    const queue = createLatestMutationQueue<Patch, Patch>({
+      merge: (left, right) => ({
+        ...left,
+        ...right,
+        attributesPatch:
+          left?.attributesPatch || right.attributesPatch
+            ? {
+                ...(left?.attributesPatch ?? {}),
+                ...(right.attributesPatch ?? {}),
+              }
+            : undefined,
+      }),
+      execute,
+    });
+
+    const failedSave = queue.enqueue({
+      id: "char-merge",
+      name: "Old",
+      description: "Lead",
+      attributesPatch: { role: "lead", color: "blue" },
+    });
+    const newerSave = queue.enqueue({
+      id: "char-merge",
+      name: "New",
+      attributesPatch: { color: "red", tagline: "Hero" },
+    });
+    const firstFlush = flushWorldEntityMutations();
+
+    firstAttempt.reject(failure);
+    await expect(failedSave).rejects.toBe(failure);
+    await expect(firstFlush).rejects.toBe(failure);
+    expect(execute).toHaveBeenCalledOnce();
+
+    await flushWorldEntityMutations();
+    await expect(newerSave).resolves.toEqual({
+      id: "char-merge",
+      name: "New",
+      description: "Lead",
+      attributesPatch: { role: "lead", color: "red", tagline: "Hero" },
+    });
+    expect(execute).toHaveBeenLastCalledWith({
+      id: "char-merge",
+      name: "New",
+      description: "Lead",
+      attributesPatch: { role: "lead", color: "red", tagline: "Hero" },
+    });
+    expect(getPendingWorldEntityMutationCount()).toBe(0);
+  });
 });
