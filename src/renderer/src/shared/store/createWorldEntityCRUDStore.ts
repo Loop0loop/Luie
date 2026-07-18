@@ -1,4 +1,5 @@
 import type { StateCreator } from "zustand";
+import type { Character, Event, Faction, Term } from "@shared/types";
 import {
   createAliasSetter,
   createCRUDSlice,
@@ -8,6 +9,9 @@ import {
 import { useProjectStore } from "@renderer/domains/project";
 import { refreshWorldGraph } from "@renderer/features/research/utils/worldGraphRefresh";
 import { runWithProjectLock } from "@renderer/features/research/utils/projectMutationLock";
+import { createLatestMutationQueue } from "./worldEntityMutationQueue";
+import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuilding/worldBuildingStore";
+import { replaceEntityNodePreservingPosition } from "@renderer/features/research/stores/worldBuilding/worldBuildingStore.graph";
 
 interface BaseItem {
   id: string;
@@ -31,7 +35,7 @@ export interface WorldEntityCRUDBase<
   loadAll: (parentId?: string) => Promise<void>;
   loadOne: (id: string) => Promise<void>;
   create: (input: CreateInput) => Promise<T | null>;
-  update: (input: UpdateInput) => Promise<void>;
+  update: (input: UpdateInput) => Promise<T | null>;
   delete: (id: string) => Promise<boolean>;
   setCurrent: (item: T | null) => void;
 }
@@ -45,7 +49,7 @@ export interface CreateWorldEntityCRUDStoreOptions<
   /** API 클라이언트 (예: api.character, api.term 등) */
   apiClient: APIClient<T, CreateInput, UpdateInput>;
   /** 엔티티 이름 (로깅용, 예: "Character", "Term") */
-  entityName: string;
+  entityName: "Character" | "Event" | "Faction" | "Term";
   /** 별칭 메서드 접두사 (예: "Character", "Term") */
   methodPrefix: string;
   /** items 별칭 키 (예: "characters", "terms") */
@@ -93,6 +97,10 @@ export function createWorldEntityCRUDStore<
     >(set, aliasItemsKey, aliasCurrentKey);
 
     const mutationLocks = new Set<string>();
+    const updateQueues = new Map<
+      string,
+      ReturnType<typeof createLatestMutationQueue<UpdateInput, T>>
+    >();
 
     const scopedApiClient = withProjectScopedGetAll(apiClient);
 
@@ -142,16 +150,50 @@ export function createWorldEntityCRUDStore<
       });
     };
 
-    const updateWithSync = async (input: UpdateInput): Promise<void> => {
+    const updateWithSync = async (input: UpdateInput): Promise<T | null> => {
       const projectId = getProjectIdForItem(input.id);
       if (!projectId) {
-        return;
+        return null;
       }
 
-      await runWithProjectLock(mutationLocks, projectId, async () => {
-        await crudSlice.update(input);
-        await reloadCurrentGraph(projectId);
-      });
+      setWithAlias(
+        (state) =>
+          ({
+            items: state.items.map((item) =>
+              item.id === input.id ? ({ ...item, ...input } as T) : item,
+            ),
+            currentItem:
+              state.currentItem?.id === input.id
+                ? ({ ...state.currentItem, ...input } as T)
+                : state.currentItem,
+          }) as Partial<
+            WorldEntityCRUDBase<T, CreateInput, UpdateInput> & AliasesT
+          >,
+      );
+
+      const queue =
+        updateQueues.get(input.id) ??
+        createLatestMutationQueue<UpdateInput, T>({
+          merge: (left, right) => ({ ...left, ...right }),
+          execute: crudSlice.update,
+        });
+      updateQueues.set(input.id, queue);
+
+      try {
+        const updated = await queue.enqueue(input);
+        if (updated) {
+          useWorldBuildingStore.setState((state) => ({
+            graphData: replaceEntityNodePreservingPosition(
+              state.graphData,
+              entityName,
+              updated as unknown as Character | Event | Faction | Term,
+            ),
+          }));
+        }
+        return updated;
+      } finally {
+        if (queue.pendingCount() === 0) updateQueues.delete(input.id);
+      }
     };
 
     const deleteWithSync = async (id: string): Promise<boolean> => {

@@ -58,12 +58,14 @@ export const useProjectStore = create<ProjectStore>((set, _get, store) => {
       description?: string,
       projectPath?: string,
     ) => crudSlice.create({ title, description, projectPath }),
-    updateProject: (
+    updateProject: async (
       id: string,
       title?: string,
       description?: string,
       projectPath?: string,
-    ) => crudSlice.update({ id, title, description, projectPath }),
+    ) => {
+      await crudSlice.update({ id, title, description, projectPath });
+    },
     deleteProject: async (id: string) => await crudSlice.delete(id),
     deleteProjectWithOptions: async (input: { id: string; deleteFile?: boolean }) => {
       setWithAlias({ isLoading: true, error: null } as Partial<ProjectStore>);

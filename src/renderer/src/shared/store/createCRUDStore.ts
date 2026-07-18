@@ -15,7 +15,7 @@ export interface CRUDStore<T extends BaseItem, CreateInput, UpdateInput> {
   loadAll: (parentId?: string) => Promise<void>;
   loadOne: (id: string) => Promise<void>;
   create: (input: CreateInput) => Promise<T | null>;
-  update: (input: UpdateInput) => Promise<void>;
+  update: (input: UpdateInput) => Promise<T | null>;
   delete: (id: string) => Promise<boolean>;
   setCurrent: (item: T | null) => void;
 }
@@ -246,12 +246,15 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
                   : state.currentItem,
             };
           });
+          return updatedItem;
         } else {
           set({ error: response.error?.message });
+          return null;
         }
       } catch (error) {
         api.logger.error(`Failed to update ${name}:`, error);
         set({ error: (error as Error).message });
+        return null;
       } finally {
         set({ isLoading: false });
       }

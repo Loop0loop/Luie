@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useCharacterStore } from "../../../src/renderer/src/features/research/stores/characterStore.js";
 import { useProjectStore } from "../../../src/renderer/src/features/project/stores/projectStore.js";
+import { useWorldBuildingStore } from "../../../src/renderer/src/features/research/stores/worldBuildingStore.js";
 import type { Character } from "../../../src/shared/types";
 
 type IPCResponse<T> = {
@@ -58,16 +59,12 @@ const deferred = <T,>() => {
   return { promise, resolve, reject };
 };
 
-const flushMicrotasks = async () => {
-  await Promise.resolve();
-  await Promise.resolve();
-};
-
 describe("characterStore mutation locking", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resetStore(useCharacterStore as unknown as ResettableStore);
     resetStore(useProjectStore as unknown as ResettableStore);
+    resetStore(useWorldBuildingStore as unknown as ResettableStore);
 
     mockedApi.character.getAll.mockResolvedValue({ success: true, data: [] });
     mockedApi.character.get.mockResolvedValue({
@@ -81,12 +78,22 @@ describe("characterStore mutation locking", () => {
     mockedApi.character.delete.mockResolvedValue({ success: true });
   });
 
-  it("keeps the project lock until the graph refresh finishes", async () => {
-    const createDeferred = deferred<IPCResponse<Character>>();
-    const refreshDeferred = deferred<void>();
+  it("persists an update queued while another update is in flight", async () => {
+    const firstUpdate = deferred<IPCResponse<Character>>();
+    const character: Character = {
+      id: "char-1",
+      projectId: "project-1",
+      name: "Original",
+      createdAt: new Date("2026-03-10T00:00:00.000Z"),
+      updatedAt: new Date("2026-03-10T00:00:00.000Z"),
+    };
 
-    mockedApi.character.create.mockReturnValue(createDeferred.promise);
-    mockedRefresh.refreshWorldGraph.mockReturnValue(refreshDeferred.promise);
+    mockedApi.character.update
+      .mockReturnValueOnce(firstUpdate.promise)
+      .mockResolvedValueOnce({
+        success: true,
+        data: { ...character, name: "Hero", description: "Lead" },
+      });
 
     useProjectStore.setState({
       currentItem: {
@@ -105,35 +112,56 @@ describe("characterStore mutation locking", () => {
       },
     });
 
-    const firstCreate = useCharacterStore.getState().create({
-      projectId: "project-1",
-      name: "Hero",
+    useCharacterStore.setState({
+      items: [character],
+      characters: [character],
+      currentItem: character,
+      currentCharacter: character,
     });
-
-    createDeferred.resolve({
-      success: true,
-      data: {
-        id: "char-1",
-        projectId: "project-1",
-        name: "Hero",
-        createdAt: new Date("2026-03-10T00:00:00.000Z"),
-        updatedAt: new Date("2026-03-10T00:00:00.000Z"),
+    useWorldBuildingStore.setState({
+      graphData: {
+        nodes: [
+          {
+            id: character.id,
+            entityType: "Character",
+            name: character.name,
+            attributes: null,
+            positionX: 10,
+            positionY: 20,
+          },
+        ],
+        edges: [],
       },
     });
-    await flushMicrotasks();
 
-    const secondCreate = useCharacterStore.getState().create({
-      projectId: "project-1",
-      name: "Rival",
+    const nameSave = useCharacterStore.getState().updateCharacter({
+      id: character.id,
+      name: "Hero",
+    });
+    const descriptionSave = useCharacterStore.getState().updateCharacter({
+      id: character.id,
+      description: "Lead",
     });
 
-    expect(mockedApi.character.create).toHaveBeenCalledTimes(1);
-    await expect(secondCreate).resolves.toBeNull();
+    expect(mockedApi.character.update).toHaveBeenCalledOnce();
 
-    refreshDeferred.resolve();
-    await expect(firstCreate).resolves.toMatchObject({
-      id: "char-1",
+    firstUpdate.resolve({
+      success: true,
+      data: { ...character, name: "Hero" },
+    });
+    await Promise.all([nameSave, descriptionSave]);
+
+    expect(mockedApi.character.update).toHaveBeenCalledTimes(2);
+    expect(mockedApi.character.update).toHaveBeenLastCalledWith({
+      id: character.id,
+      description: "Lead",
+    });
+    expect(mockedRefresh.refreshWorldGraph).not.toHaveBeenCalled();
+    expect(useWorldBuildingStore.getState().graphData?.nodes[0]).toMatchObject({
       name: "Hero",
+      description: "Lead",
+      positionX: 10,
+      positionY: 20,
     });
   });
 
@@ -160,6 +188,17 @@ describe("characterStore mutation locking", () => {
         createdAt: new Date("2026-03-10T00:00:00.000Z"),
         updatedAt: new Date("2026-03-10T00:00:00.000Z"),
       },
+    });
+    const character: Character = {
+      id: "char-1",
+      projectId: "project-1",
+      name: "Hero",
+      createdAt: new Date("2026-03-10T00:00:00.000Z"),
+      updatedAt: new Date("2026-03-10T00:00:00.000Z"),
+    };
+    useCharacterStore.setState({
+      items: [character],
+      characters: [character],
     });
 
     await expect(

@@ -98,7 +98,7 @@ git commit -m "fix(storage): flush buffered inputs once"
 
 ### Task 2: world entity latest-patch queue와 optimistic state
 
-**Status:** 대기
+**Status:** 완료
 
 **Files:**
 - Create: `src/renderer/src/shared/store/worldEntityMutationQueue.ts`
@@ -118,7 +118,7 @@ git commit -m "fix(storage): flush buffered inputs once"
 - Changes: `CRUDStore.update(input): Promise<T | null>`
 - Consumes later: Task 6의 manual save와 종료 flush
 
-- [ ] **Step 1: 저장 중 두 번째 patch가 버려지는 실패 테스트 작성**
+- [x] **Step 1: 저장 중 두 번째 patch가 버려지는 실패 테스트 작성**
 
 `worldEntityMutationQueue.test.ts`에 다음 동작을 고정한다.
 
@@ -149,13 +149,15 @@ it("serializes and merges patches that arrive during an in-flight update", async
 });
 ```
 
-- [ ] **Step 2: 현재 구현에 queue가 없어 실패하는지 확인**
+- [x] **Step 2: 현재 구현에 queue가 없어 실패하는지 확인**
 
 Run: `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/renderer/stores/worldEntityMutationQueue.test.ts --run`
 
 Expected: module 또는 export 부재로 FAIL.
 
-- [ ] **Step 3: 최소 latest-patch queue 구현**
+Actual: module 부재 확인 후 최소 export surface를 만들었고, `execute`가 0회 호출되는 RED를 확인했다.
+
+- [x] **Step 3: 최소 latest-patch queue 구현**
 
 ```ts
 export type LatestMutationQueue<P, R> = {
@@ -175,7 +177,7 @@ export function getPendingWorldEntityMutationCount(): number;
 
 queue는 `pending` patch와 하나의 `inFlight` loop만 가진다. `enqueue` 호출별 resolver를 보관하고, 해당 호출이 포함된 batch의 실행 결과로 resolve한다. 실패한 batch는 error를 reject하고 아직 실행하지 않은 pending patch는 유지한다.
 
-- [ ] **Step 4: CRUD update가 결과를 반환하도록 변경**
+- [x] **Step 4: CRUD update가 결과를 반환하도록 변경**
 
 `CRUDStore.update`를 `Promise<T | null>`로 바꾸고 성공 시 `updatedItem`, 실패 시 `null`을 반환한다. 기존 호출자는 반환값을 무시해도 동작하도록 유지한다.
 
@@ -201,7 +203,7 @@ update: async (input: UpdateInput): Promise<T | null> => {
 };
 ```
 
-- [ ] **Step 5: world entity update를 entity id별 queue로 연결**
+- [x] **Step 5: world entity update를 entity id별 queue로 연결**
 
 `createWorldEntityCRUDStore`에서 프로젝트 `Set` lock을 update 경로에 사용하지 않는다. update input은 즉시 `items/currentItem`에 shallow merge한다. queue의 execute는 `crudSlice.update`를 호출한다. entity id마다 queue instance를 하나만 두어 서로 다른 entity는 병렬로, 같은 entity는 직렬로 저장한다.
 
@@ -225,7 +227,7 @@ export const replaceEntityNodePreservingPosition = (
 };
 ```
 
-- [ ] **Step 6: 기존 lock 테스트를 보존 정책 테스트로 교체**
+- [x] **Step 6: 기존 lock 테스트를 보존 정책 테스트로 교체**
 
 `characterStoreMutationLock.test.ts`의 첫 테스트를 다음 요구로 변경한다.
 
@@ -271,7 +273,9 @@ Run: `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/renderer/stores/worldEntityMutation
 
 Expected: PASS.
 
-- [ ] **Step 7: Task 2 커밋**
+Actual (2026-07-18): 관련 4 files, 13 tests PASS; 대상 ESLint PASS; `./node_modules/.bin/tsc6 --noEmit` PASS.
+
+- [x] **Step 7: Task 2 커밋**
 
 ```bash
 git add src/renderer/src/shared/store/worldEntityMutationQueue.ts src/renderer/src/shared/store/createCRUDStore.ts src/renderer/src/shared/store/createWorldEntityCRUDStore.ts src/renderer/src/features/project/stores/projectStore.ts src/renderer/src/features/research/stores/worldBuilding/worldBuildingStore.graph.ts tests/renderer/stores/worldEntityMutationQueue.test.ts tests/renderer/stores/createCRUDStore.test.ts tests/renderer/stores/characterStoreMutationLock.test.ts tests/renderer/stores/worldBuildingStore.graph.test.ts

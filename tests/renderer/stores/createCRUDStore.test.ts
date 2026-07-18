@@ -232,6 +232,20 @@ describe("createCRUDStore", () => {
     expect(apiClient.delete).toHaveBeenCalledWith("item-1");
   });
 
+  it("returns the item acknowledged by update", async () => {
+    const apiClient = createApiClient(
+      Promise.resolve({ success: true, data: { id: "item-1", name: "Hero" } }),
+      Promise.resolve({ success: true, data: [] }),
+    );
+    const store = create(
+      createCRUDSlice<Item, CreateInput, UpdateInput>(apiClient, "Item"),
+    );
+
+    await expect(
+      store.getState().update({ id: "item-1", name: "Updated" }),
+    ).resolves.toEqual({ id: "item-1", name: "Updated" });
+  });
+
   it("ignores stale loadAll responses when a newer project load finishes first", async () => {
     const firstLoad = deferred<IPCResponse<Item[]>>();
     const secondLoad = deferred<IPCResponse<Item[]>>();
