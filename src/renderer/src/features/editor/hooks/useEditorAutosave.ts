@@ -50,6 +50,7 @@ export function useEditorAutosave({
   );
   const currentSavePromiseRef = useRef<Promise<void> | null>(null);
   const lastSaveErrorRef = useRef<unknown>(null);
+  const hasLastSaveErrorRef = useRef(false);
   const onSaveRef = useRef(onSave);
 
   useEffect(() => {
@@ -68,8 +69,6 @@ export function useEditorAutosave({
   const performSave = useCallback(
     async (currentTitle: string, currentContent: string) => {
       if (!onSave) return;
-      // Guard: don't update state if unmounted
-      if (!isMountedRef.current) return;
 
       if (isSaveInFlightRef.current) {
         pendingDraftRef.current = {
@@ -79,20 +78,24 @@ export function useEditorAutosave({
         return;
       }
 
+      if (
+        currentTitle === lastSavedRef.current.title &&
+        currentContent === lastSavedRef.current.content
+      ) {
+        return;
+      }
+
       isSaveInFlightRef.current = true;
 
-      setSaveStatus("saving");
+      if (isMountedRef.current) setSaveStatus("saving");
       let savePromise: Promise<void> | null = null;
       try {
         savePromise = Promise.resolve(onSave(currentTitle, currentContent));
         currentSavePromiseRef.current = savePromise;
         await savePromise;
         lastSaveErrorRef.current = null;
-
-        if (!isMountedRef.current) return;
-
+        hasLastSaveErrorRef.current = false;
         lastSavedRef.current = { title: currentTitle, content: currentContent };
-        setSaveStatus("saved");
         retryCount.current = 0;
         const latestDraft = latestDraftRef.current;
         const isLatestDraftSaved =
@@ -100,17 +103,25 @@ export function useEditorAutosave({
           latestDraft.content === currentContent;
         api.lifecycle?.setDirty?.(!isLatestDraftSaved);
 
+        if (!isMountedRef.current) return;
+
+        setSaveStatus("saved");
+
         // Removed idle reset logic so "saved" status stays visible
       } catch (error) {
         api.logger.error("Autosave failed", error);
 
-        if (!isMountedRef.current) return;
-        setSaveStatus("error");
         const latestDraft = latestDraftRef.current;
         const stillLatestDraft =
           latestDraft.title === currentTitle &&
           latestDraft.content === currentContent;
-        if (stillLatestDraft) lastSaveErrorRef.current = error;
+        if (stillLatestDraft) {
+          lastSaveErrorRef.current = error;
+          hasLastSaveErrorRef.current = true;
+        }
+
+        if (!isMountedRef.current) return;
+        setSaveStatus("error");
 
         if (retryCount.current < RETRY_DELAYS.length) {
           const delay = RETRY_DELAYS[retryCount.current];
@@ -166,6 +177,7 @@ export function useEditorAutosave({
     latestDraftRef.current = { title, content };
     if (title !== previousDraft.title || content !== previousDraft.content) {
       lastSaveErrorRef.current = null;
+      hasLastSaveErrorRef.current = false;
     }
 
     if (!onSave) return;
@@ -207,10 +219,12 @@ export function useEditorAutosave({
         continue;
       }
 
-      if (lastSaveErrorRef.current) {
+      if (hasLastSaveErrorRef.current) {
         clearTimerRef(retryTimerRef);
         throw lastSaveErrorRef.current;
       }
+
+      if (!isMountedRef.current) return;
 
       const latest = latestDraftRef.current;
       if (
@@ -237,24 +251,16 @@ export function useEditorAutosave({
       clearTimerRef(debounceTimerRef);
       clearTimerRef(idleResetTimerRef);
       clearTimerRef(retryTimerRef);
+      isMountedRef.current = false;
       const latestDraft = latestDraftRef.current;
-      const save = onSaveRef.current;
       if (
-        save &&
+        onSaveRef.current &&
         (latestDraft.title !== lastSavedRef.current.title ||
           latestDraft.content !== lastSavedRef.current.content)
       ) {
-        void Promise.resolve(save(latestDraft.title, latestDraft.content))
-          .then(() => {
-            lastSavedRef.current = latestDraft;
-            api.lifecycle?.setDirty?.(false);
-          })
-          .catch((error) => {
-            api.logger.error("Autosave flush on unmount failed", error);
-          });
+        void performSaveRef.current?.(latestDraft.title, latestDraft.content);
       }
       retryCount.current = 0;
-      isMountedRef.current = false;
     };
   }, []);
 

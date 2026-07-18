@@ -9,14 +9,16 @@ import { flushSaveBuffers } from "../../src/shared/ui/saveBufferRegistry.js";
 
 const mocked = vi.hoisted(() => ({
   setDirty: vi.fn(),
+  showToast: vi.fn(),
+  t: (key: string) => key,
 }));
 
 vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({ t: mocked.t }),
 }));
 
 vi.mock("@shared/ui/ToastContext", () => ({
-  useToast: () => ({ showToast: vi.fn() }),
+  useToast: () => ({ showToast: mocked.showToast }),
 }));
 
 vi.mock("@shared/api", () => ({
@@ -48,6 +50,10 @@ const mountAutosave = (initial: HarnessProps) => {
   return {
     render: (props: HarnessProps) =>
       act(() => root.render(<Harness {...props} />)),
+    unmount: () => {
+      if (!mountedRoots.delete(root)) return;
+      act(() => root.unmount());
+    },
   };
 };
 
@@ -161,5 +167,82 @@ describe("editor autosave manual flush", () => {
 
     await expect(flushSaveBuffers()).resolves.toBeUndefined();
     expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it("drains the latest draft after unmount without a parallel save", async () => {
+    vi.useFakeTimers();
+    const first = deferred<void>();
+    const onSave = vi
+      .fn<(title: string, content: string) => Promise<void>>()
+      .mockReturnValueOnce(first.promise)
+      .mockResolvedValueOnce(undefined);
+    const root = mountAutosave({ title: "A", content: "1", onSave });
+
+    root.render({ title: "B", content: "2", onSave });
+    await act(async () =>
+      vi.advanceTimersByTimeAsync(EDITOR_AUTOSAVE_DEBOUNCE_MS),
+    );
+    root.render({ title: "C", content: "3", onSave });
+    const flushPromise = flushSaveBuffers();
+    await act(async () => Promise.resolve());
+
+    root.unmount();
+    expect(onSave).toHaveBeenCalledTimes(1);
+
+    first.resolve();
+    await act(async () => flushPromise);
+    expect(onSave.mock.calls).toEqual([
+      ["B", "2"],
+      ["C", "3"],
+    ]);
+  });
+
+  it("does not repeat the latest draft when its debounce fires after flush", async () => {
+    vi.useFakeTimers();
+    const first = deferred<void>();
+    const onSave = vi
+      .fn<(title: string, content: string) => Promise<void>>()
+      .mockReturnValueOnce(first.promise)
+      .mockResolvedValue(undefined);
+    const root = mountAutosave({ title: "A", content: "1", onSave });
+
+    root.render({ title: "B", content: "2", onSave });
+    const flushPromise = flushSaveBuffers();
+    await act(async () => Promise.resolve());
+    root.render({ title: "C", content: "3", onSave });
+
+    first.resolve();
+    await act(async () => flushPromise);
+    expect(onSave.mock.calls).toEqual([
+      ["B", "2"],
+      ["C", "3"],
+    ]);
+
+    await act(async () =>
+      vi.advanceTimersByTimeAsync(EDITOR_AUTOSAVE_DEBOUNCE_MS),
+    );
+    expect(onSave).toHaveBeenCalledTimes(2);
+  });
+
+  it("rejects once when the latest save rejects with undefined", async () => {
+    const onSave = vi
+      .fn<(title: string, content: string) => Promise<void>>()
+      .mockRejectedValueOnce(undefined)
+      .mockRejectedValue(new Error("unexpected retry"));
+    const root = mountAutosave({ title: "A", content: "1", onSave });
+    root.render({ title: "B", content: "2", onSave });
+
+    const noRejection = Symbol("no rejection");
+    let rejection: unknown = noRejection;
+    await act(async () => {
+      try {
+        await flushSaveBuffers();
+      } catch (error) {
+        rejection = error;
+      }
+    });
+
+    expect(rejection).toBeUndefined();
+    expect(onSave).toHaveBeenCalledOnce();
   });
 });
