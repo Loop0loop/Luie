@@ -429,7 +429,7 @@ queue execute의 throw와 CRUD `null` ACK는 둘 다 실패다. 해당 batch의 
 - scalar와 동일 attribute key는 B가 이기고, A에만 있는 attribute key는 유지한다.
 - 실패를 관찰한 global flush는 같은 오류를 즉시 전파하고 같은 호출 안에서 재시도하지 않는다.
 - 실패가 settle된 뒤의 다음 enqueue 또는 다음 explicit global flush가 retained latest patch를 한 번 재시도한다.
-- 자동 backoff와 delete-before-update drain은 P1로 유지한다.
+- 자동 backoff는 P1로 유지한다.
 
 ### 18.3 상태와 정리
 
@@ -442,6 +442,14 @@ Task 13 검증에서 focused 2 files/9 tests와 Task 8~13 저장 회귀 12 files
 retained A의 retry가 in-flight인 동안 newer B가 들어오면 A ACK full entity가 B의 optimistic state를 최종 상태로 덮어쓰지 않아야 한다. world entity factory는 entity별 optimistic generation과 아직 ACK되지 않은 patch를 추적한다. execute 시작 시점의 generation까지는 해당 ACK가 커버한다. ACK 도착 후에 생긴 patch만 nested `attributesPatch`를 보존하는 latest merge로 store와 graph에 재합성한다. newer persist가 실패하면 재합성한 projection을 유지하고 payload도 queue에 남긴다. 최신 ACK가 성공해 queue가 idle이 되면 optimistic generation cache와 entity queue map을 모두 정리한다.
 
 Task 13 review follow-up은 focused 2 files/10 tests와 Task 8~13 저장 회귀 12 files/73 tests PASS로 최신 optimistic projection 보존을 검증했다.
+
+### 18.5 delete-before-update drain
+
+delete는 entity id별 deleting guard를 먼저 획득하고 같은 entity의 update queue만 flush한다. 이미 실패해 retained된 patch가 있으면 이 flush가 한 번 retry하며, ACK 성공 전에는 delete API를 호출하지 않는다. drain의 `false`/`null`/throw는 delete를 중단하고 retained payload와 optimistic projection을 유지한다.
+
+guard가 활성화된 동안 같은 entity의 새 update는 optimistic state 적용 전에 reject해 caller dirty 상태를 유지한다. delete 실패 또는 취소 뒤에는 guard를 해제해 update 재시도를 허용한다. delete 성공 뒤에는 해당 queue와 optimistic generation을 정리하고 graph node를 즉시 제거한 뒤 refresh로 삭제 상태를 확정한다. guard와 drain은 entity 단위이며 다른 entity queue나 project 전체 update를 기다리지 않는다.
+
+delete 성공 뒤 이미 obsolete된 component가 다시 update를 호출하면 entity가 store에 없으므로 기존 not-found 경계에서 persistence를 생략한다. 삭제된 entity를 복원하지 않는 것이 우선이며, 이 post-delete stale callback을 별도 hard error로 바꾸는 것은 이번 범위에 포함하지 않는다. Task 15 검증은 실제 character store 10 tests와 관련 queue/store 18 tests, Task 8~15 비-DB 저장 회귀 119 tests로 drain 순서, retained retry, guard 해제, entity 독립성, graph cleanup을 고정한다.
 
 ## 19. Project export 실패와 종료 정책
 

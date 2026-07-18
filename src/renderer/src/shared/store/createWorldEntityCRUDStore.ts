@@ -11,7 +11,10 @@ import { refreshWorldGraph } from "@renderer/features/research/utils/worldGraphR
 import { runWithProjectLock } from "@renderer/features/research/utils/projectMutationLock";
 import { createLatestMutationQueue } from "./worldEntityMutationQueue";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuilding/worldBuildingStore";
-import { replaceEntityNodePreservingPosition } from "@renderer/features/research/stores/worldBuilding/worldBuildingStore.graph";
+import {
+  removeNodeFromGraph,
+  replaceEntityNodePreservingPosition,
+} from "@renderer/features/research/stores/worldBuilding/worldBuildingStore.graph";
 import { parseStructuredAttributes } from "@renderer/features/research/utils/parseStructuredAttributes";
 
 interface BaseItem {
@@ -104,6 +107,7 @@ export function createWorldEntityCRUDStore<
     >(set, aliasItemsKey, aliasCurrentKey);
 
     const mutationLocks = new Set<string>();
+    const deletingEntities = new Set<string>();
     const updateQueues = new Map<
       string,
       ReturnType<typeof createLatestMutationQueue<UpdateInput, T>>
@@ -214,6 +218,10 @@ export function createWorldEntityCRUDStore<
     };
 
     const updateWithSync = async (input: UpdateInput): Promise<T | null> => {
+      if (deletingEntities.has(input.id)) {
+        throw new Error(`${entityName} ${input.id} is being deleted.`);
+      }
+
       const projectId = getProjectIdForItem(input.id);
       if (!projectId) {
         return null;
@@ -242,9 +250,9 @@ export function createWorldEntityCRUDStore<
                 get().error || `Failed to persist ${entityName} update.`,
               );
             }
-            const newerUpdates = (
-              optimisticUpdates.get(patch.id) ?? []
-            ).filter((update) => update.generation > coveredGeneration);
+            const newerUpdates = (optimisticUpdates.get(patch.id) ?? []).filter(
+              (update) => update.generation > coveredGeneration,
+            );
             const newerPatch = newerUpdates.reduce<UpdateInput | null>(
               (merged, update) => mergeUpdateInputs(merged, update.patch),
               null,
@@ -283,20 +291,39 @@ export function createWorldEntityCRUDStore<
 
     const deleteWithSync = async (id: string): Promise<boolean> => {
       const projectId = getProjectIdForItem(id);
-      if (!projectId) {
+      if (!projectId || deletingEntities.has(id)) {
         return false;
       }
 
-      return (
-        (await runWithProjectLock(mutationLocks, projectId, async () => {
-          const deleted = await crudSlice.delete(id);
-          if (!deleted) {
+      deletingEntities.add(id);
+      try {
+        const queue = updateQueues.get(id);
+        if (queue) {
+          try {
+            await queue.flush();
+          } catch {
             return false;
           }
-          await reloadCurrentGraph(projectId);
-          return true;
-        })) ?? false
-      );
+        }
+
+        return (
+          (await runWithProjectLock(mutationLocks, projectId, async () => {
+            const deleted = await crudSlice.delete(id);
+            if (!deleted) {
+              return false;
+            }
+            updateQueues.delete(id);
+            optimisticUpdates.delete(id);
+            useWorldBuildingStore.setState((state) => ({
+              graphData: removeNodeFromGraph(state.graphData, id),
+            }));
+            await reloadCurrentGraph(projectId);
+            return true;
+          })) ?? false
+        );
+      } finally {
+        deletingEntities.delete(id);
+      }
     };
 
     return {

@@ -1702,3 +1702,31 @@ Actual (2026-07-19): skip RED는 2 files/20 tests 중 5건이 detached/invalid a
 - [x] follow-up 단일 커밋 `fix(storage): skip exports before revision lookup`
 
 Actual (2026-07-19): RED는 3 files/30 tests 중 3건이 missing project의 revision 오류 선행과 async skip resolver 미호출로 예상대로 실패했다. optional resolver를 revision capture 전에 실행하고 skip 확정 시 concurrent timer/dirty도 정리했다. focused 5 files/39 tests, Task 8~14 회귀 17 files/114 tests, Electron-as-Node DB recovery 2 files/2 tests가 PASS했다. actual shutdown wiring은 hard retry failure/timeout 뒤 두 번째 dialog에서 명시적 skip 시 각각 `app.exit(0)` 1회를 검증한다. 대상 ESLint와 `git diff --check`는 PASS다. `tsc6 --noEmit`은 second follow-up 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 1건만 유지한다.
+
+---
+
+### Task 15: world entity 삭제 전 update drain
+
+**Status:** 완료
+
+**Files:**
+- Modify: `src/renderer/src/shared/store/createWorldEntityCRUDStore.ts`
+- Modify: `tests/renderer/stores/characterStoreMutationLock.test.ts`
+- Modify: `docs/superpowers/plans/2026-07-18-save-integrity.md`
+- Modify: `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
+- Create: `.superpowers/sdd/save-buffer-task-15-report.md`
+
+**Interfaces:**
+- Changes: delete는 같은 entity의 in-flight/pending update queue를 먼저 drain하고 retained payload는 명시적으로 한 번 retry한다.
+- Changes: drain 또는 retry 실패 시 delete API를 호출하지 않고 payload와 optimistic UI를 유지한다.
+- Changes: delete drain 동안 같은 entity의 새 update는 optimistic state를 바꾸기 전에 reject한다.
+- Changes: delete 성공 뒤 queue/generation/graph lifecycle을 정리하며 다른 entity queue는 기다리지 않는다.
+- Excludes: project-wide serialization, 자동 backoff, Notion UI, project-wide revision 확대.
+
+- [x] **Step 1: 실제 character store delete/update 경합 RED 테스트**
+- [x] **Step 2: entity-level deleting guard와 queue drain 최소 구현**
+- [x] **Step 3: delete 성공/실패 lifecycle과 다른 entity 독립성 회귀**
+- [x] **Step 4: focused 및 Task 8~15 저장 회귀, 정적 검증**
+- [x] **Step 5: SSOT/report 동기화 및 단일 커밋**
+
+Actual (2026-07-19): 오염 없는 RED는 실제 character store 1 file/10 tests 중 3건이 update ACK 전 delete 호출, retained retry 미실행, delete drain 중 newer update 허용으로 예상대로 실패했다. entity id별 deleting guard와 기존 queue `flush`를 연결하고 성공 시 queue/generation/graph node를 정리했다. focused character 1 file/10 tests, queue/character/burst/event·faction wrapper 4 files/18 tests, Task 8~15 비-DB 저장 회귀 17 files/119 tests가 PASS했고 unhandled rejection은 없다. 대상 ESLint와 `git diff --check`는 PASS다. `tsc6 --noEmit`은 Task 15 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 1건만 유지한다.

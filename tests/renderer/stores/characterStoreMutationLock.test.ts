@@ -52,7 +52,7 @@ const resetStore = (store: ResettableStore): void => {
   store.setState(store.getInitialState(), true);
 };
 
-const deferred = <T,>() => {
+const deferred = <T>() => {
   let resolve!: (value: T) => void;
   let reject!: (reason?: unknown) => void;
   const promise = new Promise<T>((promiseResolve, promiseReject) => {
@@ -61,6 +61,37 @@ const deferred = <T,>() => {
   });
 
   return { promise, resolve, reject };
+};
+
+const createCharacter = (id: string, name = "Original"): Character => ({
+  id,
+  projectId: "project-1",
+  name,
+  createdAt: new Date("2026-03-10T00:00:00.000Z"),
+  updatedAt: new Date("2026-03-10T00:00:00.000Z"),
+});
+
+const seedCharacters = (characters: Character[]): void => {
+  const current = characters[0] ?? null;
+  useCharacterStore.setState({
+    items: characters,
+    characters,
+    currentItem: current,
+    currentCharacter: current,
+  });
+  useWorldBuildingStore.setState({
+    graphData: {
+      nodes: characters.map((character) => ({
+        id: character.id,
+        entityType: "Character" as const,
+        name: character.name,
+        attributes: null,
+        positionX: 10,
+        positionY: 20,
+      })),
+      edges: [],
+    },
+  });
 };
 
 describe("characterStore mutation locking", () => {
@@ -402,6 +433,192 @@ describe("characterStore mutation locking", () => {
       attributes: { role: "lead", color: "red", tagline: "Hero" },
     });
     expect(getPendingWorldEntityMutationCount()).toBe(0);
+  });
+
+  it("waits for an in-flight entity update before deleting it", async () => {
+    const updateAck = deferred<IPCResponse<Character>>();
+    const character = createCharacter("char-delete-drain");
+    seedCharacters([character]);
+    mockedApi.character.update.mockReturnValueOnce(updateAck.promise);
+
+    const update = useCharacterStore.getState().updateCharacter({
+      id: character.id,
+      name: "Saved first",
+    });
+    const deletion = useCharacterStore.getState().deleteCharacter(character.id);
+    const deleteCallsBeforeAck = mockedApi.character.delete.mock.calls.length;
+
+    updateAck.resolve({
+      success: true,
+      data: { ...character, name: "Saved first" },
+    });
+    await expect(update).resolves.toBeUndefined();
+    await expect(deletion).resolves.toBe(true);
+
+    expect(deleteCallsBeforeAck).toBe(0);
+    expect(mockedApi.character.delete).toHaveBeenCalledOnce();
+    expect(useCharacterStore.getState().items).toEqual([]);
+    expect(useCharacterStore.getState().currentItem).toBeNull();
+    expect(
+      useWorldBuildingStore
+        .getState()
+        .graphData?.nodes.some((node) => node.id === character.id),
+    ).toBe(false);
+  });
+
+  it("retries a retained update once and aborts delete when the retry has no ACK", async () => {
+    const retryAck = deferred<IPCResponse<Character>>();
+    const character = createCharacter("char-delete-retry");
+    seedCharacters([character]);
+    mockedApi.character.update
+      .mockResolvedValueOnce({
+        success: false,
+        error: { message: "initial failed" },
+      })
+      .mockReturnValueOnce(retryAck.promise)
+      .mockResolvedValueOnce({
+        success: true,
+        data: { ...character, name: "Retained" },
+      });
+
+    await expect(
+      useCharacterStore.getState().updateCharacter({
+        id: character.id,
+        name: "Retained",
+      }),
+    ).rejects.toThrow("initial failed");
+
+    const failedDeletion = useCharacterStore
+      .getState()
+      .deleteCharacter(character.id);
+    await Promise.resolve();
+    const updateCallsBeforeRetryAck =
+      mockedApi.character.update.mock.calls.length;
+    const deleteCallsBeforeRetryAck =
+      mockedApi.character.delete.mock.calls.length;
+
+    retryAck.resolve({ success: true, data: null });
+    const failedDeleteResult = await failedDeletion;
+    const pendingAfterFailedDelete = getPendingWorldEntityMutationCount();
+    const retainedItemAfterFailedDelete =
+      useCharacterStore.getState().currentItem;
+    const nextDeleteResult = await useCharacterStore
+      .getState()
+      .deleteCharacter(character.id);
+
+    expect(updateCallsBeforeRetryAck).toBe(2);
+    expect(deleteCallsBeforeRetryAck).toBe(0);
+    expect(failedDeleteResult).toBe(false);
+    expect(pendingAfterFailedDelete).toBe(1);
+    expect(retainedItemAfterFailedDelete).toMatchObject({
+      id: character.id,
+      name: "Retained",
+    });
+    expect(nextDeleteResult).toBe(true);
+    expect(mockedApi.character.update).toHaveBeenCalledTimes(3);
+    expect(mockedApi.character.delete).toHaveBeenCalledOnce();
+    expect(getPendingWorldEntityMutationCount()).toBe(0);
+  });
+
+  it("rejects a newer update without applying it while delete drains the entity", async () => {
+    const updateAck = deferred<IPCResponse<Character>>();
+    const character = createCharacter("char-delete-guard");
+    seedCharacters([character]);
+    mockedApi.character.update
+      .mockReturnValueOnce(updateAck.promise)
+      .mockResolvedValueOnce({
+        success: true,
+        data: { ...character, name: "Blocked B" },
+      });
+
+    const firstUpdate = useCharacterStore.getState().updateCharacter({
+      id: character.id,
+      name: "Drain A",
+    });
+    const deletion = useCharacterStore.getState().deleteCharacter(character.id);
+    const rejectedUpdate = useCharacterStore.getState().updateCharacter({
+      id: character.id,
+      name: "Blocked B",
+    });
+    const itemDuringDrain = useCharacterStore.getState().currentItem;
+    const graphDuringDrain =
+      useWorldBuildingStore.getState().graphData?.nodes[0];
+
+    updateAck.resolve({
+      success: true,
+      data: { ...character, name: "Drain A" },
+    });
+    const [firstResult, deletionResult, rejectedResult] =
+      await Promise.allSettled([firstUpdate, deletion, rejectedUpdate]);
+
+    expect(rejectedResult).toMatchObject({
+      status: "rejected",
+      reason: expect.objectContaining({
+        message: expect.stringContaining("being deleted"),
+      }),
+    });
+    expect(itemDuringDrain).toMatchObject({
+      name: "Drain A",
+    });
+    expect(graphDuringDrain).toMatchObject({
+      name: "Original",
+    });
+    expect(mockedApi.character.update).toHaveBeenCalledOnce();
+    expect(firstResult.status).toBe("fulfilled");
+    expect(deletionResult).toMatchObject({ status: "fulfilled", value: true });
+  });
+
+  it("releases the entity guard after delete failure", async () => {
+    const character = createCharacter("char-delete-failure");
+    seedCharacters([character]);
+    mockedApi.character.delete.mockResolvedValueOnce({
+      success: false,
+      error: { message: "delete failed" },
+    });
+    mockedApi.character.update.mockResolvedValueOnce({
+      success: true,
+      data: { ...character, name: "Retry allowed" },
+    });
+
+    await expect(
+      useCharacterStore.getState().deleteCharacter(character.id),
+    ).resolves.toBe(false);
+    await expect(
+      useCharacterStore.getState().updateCharacter({
+        id: character.id,
+        name: "Retry allowed",
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(mockedApi.character.update).toHaveBeenCalledOnce();
+    expect(useCharacterStore.getState().currentItem).toMatchObject({
+      name: "Retry allowed",
+    });
+  });
+
+  it("deletes one entity without waiting for another entity update", async () => {
+    const otherUpdateAck = deferred<IPCResponse<Character>>();
+    const deletedCharacter = createCharacter("char-delete-independent");
+    const updatingCharacter = createCharacter("char-update-independent");
+    seedCharacters([deletedCharacter, updatingCharacter]);
+    mockedApi.character.update.mockReturnValueOnce(otherUpdateAck.promise);
+
+    const otherUpdate = useCharacterStore.getState().updateCharacter({
+      id: updatingCharacter.id,
+      name: "Still saving",
+    });
+    const deletion = useCharacterStore
+      .getState()
+      .deleteCharacter(deletedCharacter.id);
+
+    await expect(deletion).resolves.toBe(true);
+    expect(mockedApi.character.delete).toHaveBeenCalledOnce();
+
+    otherUpdateAck.resolve({
+      success: true,
+      data: { ...updatingCharacter, name: "Still saving" },
+    });
+    await otherUpdate;
   });
 
   it("skips graph refresh when delete fails", async () => {
