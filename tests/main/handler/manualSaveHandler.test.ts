@@ -60,4 +60,49 @@ describe("MANUAL_SAVE handler", () => {
       "manual-save",
     );
   });
+
+  it("rejects when the project checkpoint returns false", async () => {
+    const autoSaveManager = {
+      triggerSave: vi.fn(async () => undefined),
+      flushAll: vi.fn(async () => undefined),
+    };
+    const projectService = {
+      exportProjectPackageNow: vi.fn(async () => false),
+    };
+    registerAutoSaveIPCHandlers(
+      { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
+      autoSaveManager,
+      projectService,
+    );
+    const handler = mocked.handlers.find(
+      (candidate) => candidate.channel === IPC_CHANNELS.MANUAL_SAVE,
+    );
+
+    await expect(handler?.handler("project-1")).rejects.toThrow(
+      "Failed to export project package",
+    );
+  });
+
+  it("preserves a thrown project checkpoint failure", async () => {
+    const failure = new Error("checkpoint failed");
+    const autoSaveManager = {
+      triggerSave: vi.fn(async () => undefined),
+      flushAll: vi.fn(async () => undefined),
+    };
+    const projectService = {
+      exportProjectPackageNow: vi.fn(async () => {
+        throw failure;
+      }),
+    };
+    registerAutoSaveIPCHandlers(
+      { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
+      autoSaveManager,
+      projectService,
+    );
+    const handler = mocked.handlers.find(
+      (candidate) => candidate.channel === IPC_CHANNELS.MANUAL_SAVE,
+    );
+
+    await expect(handler?.handler("project-1")).rejects.toBe(failure);
+  });
 });

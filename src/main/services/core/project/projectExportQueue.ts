@@ -117,14 +117,7 @@ export class ProjectExportQueue {
 
     state.timer = setTimeout(() => {
       state.timer = null;
-      void this.runLoop(projectId, reason).catch((error) => {
-        this.trackReason(reason, "failed");
-        this.logger.error("Failed to export project package", {
-          projectId,
-          reason,
-          error,
-        });
-      });
+      void this.runLoop(projectId, reason).catch(() => undefined);
     }, this.debounceMs);
   }
 
@@ -151,9 +144,17 @@ export class ProjectExportQueue {
         const { revision: capturedRevision } =
           await getProjectRevisionState(projectId);
         exported = await this.runExport(projectId, capturedRevision);
-        if (exported) {
-          await markProjectExported(projectId, capturedRevision);
+        if (!exported) {
+          state.dirty = true;
+          this.trackReason(reason, "failed");
+          this.logger.error("Project package export returned false", {
+            projectId,
+            reason,
+            capturedRevision,
+          });
+          return false;
         }
+        await markProjectExported(projectId, capturedRevision);
         const latest = await getProjectRevisionState(projectId);
         state.dirty = state.dirty || latest.revision > capturedRevision;
       }
@@ -162,6 +163,7 @@ export class ProjectExportQueue {
 
     const task = execute()
       .catch((error) => {
+        state.dirty = true;
         this.trackReason(reason, "failed");
         this.logger.error("Failed to run package export", {
           projectId,
@@ -200,8 +202,12 @@ export class ProjectExportQueue {
     let failed = 0;
     const jobs = pendingProjectIds.map(async (projectId) => {
       try {
-        await this.runLoop(projectId, "flush");
-        flushed += 1;
+        const exported = await this.runLoop(projectId, "flush");
+        if (exported) {
+          flushed += 1;
+        } else {
+          failed += 1;
+        }
       } catch (error) {
         failed += 1;
         this.logger.error("Failed to flush pending package export", {

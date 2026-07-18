@@ -13,6 +13,7 @@ import {
 } from "../../../shared/constants/index.js";
 import type { createLogger } from "../../../shared/logger/index.js";
 import type { AppQuitPhase } from "../../../shared/types/index.js";
+import { resolveProjectExportQuitDecision } from "./exportFlushDecision.js";
 
 type Logger = ReturnType<typeof createLogger>;
 
@@ -200,46 +201,12 @@ export const registerShutdownHandlers = (logger: Logger): void => {
         "export-flush",
         "프로젝트 파일(.luie)을 안전하게 저장 중입니다...",
       );
-      let exportDecision: "continue" | "cancel" = "continue";
-      const softFlush = await projectService.flushPendingExports(
+      const exportDecision = await resolveProjectExportQuitDecision(
+        (timeoutMs) => projectService.flushPendingExports(timeoutMs),
+        (options) => showQuitDialog(mainWindow, options),
         QUIT_EXPORT_SOFT_TIMEOUT_MS,
+        QUIT_EXPORT_HARD_TIMEOUT_MS,
       );
-      if (softFlush.timedOut) {
-        const response = await showQuitDialog(mainWindow, {
-          type: "question",
-          title: "저장 지연 감지",
-          message: "프로젝트 파일 저장이 지연되고 있습니다.",
-          detail:
-            "기본값은 종료 취소입니다. 계속 대기할지, 저장을 생략하고 종료할지 선택하세요.",
-          buttons: ["재시도", "종료 취소", "저장 생략 후 종료"],
-          defaultId: 1,
-          cancelId: 1,
-          noLink: true,
-        });
-
-        if (response.response === 1) {
-          exportDecision = "cancel";
-        } else if (response.response === 0) {
-          const hardFlush = await projectService.flushPendingExports(
-            QUIT_EXPORT_HARD_TIMEOUT_MS,
-          );
-          if (hardFlush.timedOut) {
-            const hardResponse = await showQuitDialog(mainWindow, {
-              type: "warning",
-              title: "저장 지연 지속",
-              message: "저장이 아직 완료되지 않았습니다.",
-              detail: "안전을 위해 종료를 취소하는 것을 권장합니다.",
-              buttons: ["종료 취소", "저장 생략 후 종료"],
-              defaultId: 0,
-              cancelId: 0,
-              noLink: true,
-            });
-            if (hardResponse.response === 0) {
-              exportDecision = "cancel";
-            }
-          }
-        }
-      }
 
       if (exportDecision === "cancel") {
         logger.info("Quit cancelled by user during export flush");

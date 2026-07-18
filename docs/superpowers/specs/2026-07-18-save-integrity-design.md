@@ -186,7 +186,7 @@ renderer input flush
 
 비정상 종료 후 SQLite WAL 복구가 끝나면 revision 차이를 확인해 `.luie`를 다시 생성한다. SQLite는 기존 `WAL`, `synchronous=FULL`, `foreign_keys=ON`, `busy_timeout=5000` 설정을 유지한다.
 
-현재 quit handshake는 renderer buffer 또는 world mutation flush가 실패하면 완료 신호를 보내지 않아 기존 main timeout/사용자 결정 경계로 이동한다. 다만 export flush의 `failed > 0`은 아직 종료 차단 조건으로 사용하지 않는다.
+현재 quit handshake는 renderer buffer 또는 world mutation flush가 실패하면 완료 신호를 보내지 않아 기존 main timeout/사용자 결정 경계로 이동한다. export flush의 `failed > 0`과 timeout도 main 사용자 결정 경계에서 종료를 차단한다.
 
 ## 10. Projection 정책
 
@@ -205,7 +205,7 @@ renderer input flush
 - 앱 종료 timeout: 현재처럼 사용자에게 종료 취소를 기본 선택으로 제공한다.
 - 오류 로그에는 projectId, entityType, entityId, mutation 단계, elapsedMs를 기록하고 사용자 입력 전문은 기록하지 않는다.
 
-현재 구현은 위 재시도 정책을 완성하지 않았다. SQLite/IPC 실패 payload 보존과 backoff가 없고, scheduled export가 `false` 또는 throw로 끝나면 dirty retry 상태가 사라질 수 있다.
+현재 구현은 SQLite/IPC 실패 payload와 export `false`/throw의 dirty retry 상태를 보존한다. 자동 backoff는 아직 적용하지 않고 다음 enqueue 또는 explicit flush에서 한 번 재시도한다.
 
 ## 12. 데이터 불변식
 
@@ -277,11 +277,10 @@ renderer input flush
 - shared buffer의 실제 persistence ACK, IME 명시적 flush 차단, unmount 실패 payload 재시도
 - Plot/Synopsis buffer의 timer 비의존 직접 persistence barrier
 - 실패한 world mutation payload 보존, latest merge, 다음 flush/enqueue 재시도
+- export `false`/throw dirty 보존, 다음 호출 재시도, manual/quit 실패 차단
 
 재검증에서 다음 차단 항목을 확인했다.
 
-- **P0:** export flush의 `failed > 0`이 quit 차단 상태로 전달되지 않는다.
-- **P1:** scheduled export의 `false`/throw 이후 dirty retry 상태가 유지되지 않는다.
 - **P1:** 삭제 전에 같은 entity의 pending update를 drain하지 않는다.
 - **P1:** revision이 world entity 4종에만 적용돼 `.luie` 전체 freshness를 대표하지 않는다.
 
@@ -364,7 +363,7 @@ APP_BEFORE_QUIT
   -> completeFlush()
 ```
 
-buffer 또는 world queue flush가 실패하면 뒤 단계로 진행하지 않는다. quit은 완료 handshake를 보내지 않아 main의 기존 timeout/사용자 결정 경계로 이동한다. export queue의 `failed > 0` 처리와 실패 mutation retry는 별도 P0 Task로 유지한다.
+buffer 또는 world queue flush가 실패하면 뒤 단계로 진행하지 않는다. quit은 완료 handshake를 보내지 않아 main의 기존 timeout/사용자 결정 경계로 이동한다. export queue의 `failed > 0`과 timeout도 종료 취소가 기본인 main dialog 경계로 이동한다.
 
 ### 17.4 동시성과 중복 방지
 
@@ -414,7 +413,6 @@ follow-up 검증은 focused 2 files/17 tests와 Task 8~12 회귀 10 files/66 tes
 ### 17.6 범위 제외
 
 - 실패한 world mutation의 자동 backoff
-- scheduled export `false`/throw retry
 - project-wide revision 확대
 - renderer root 밖에서 quit listener를 소유하도록 lifecycle 구조 변경
 - 저장 상태 toast/UI 개편
@@ -443,4 +441,20 @@ Task 13 검증에서 focused 2 files/9 tests와 Task 8~13 저장 회귀 12 files
 
 retained A의 retry가 in-flight인 동안 newer B가 들어오면 A ACK full entity가 B의 optimistic state를 최종 상태로 덮어쓰지 않아야 한다. world entity factory는 entity별 optimistic generation과 아직 ACK되지 않은 patch를 추적한다. execute 시작 시점의 generation까지는 해당 ACK가 커버한다. ACK 도착 후에 생긴 patch만 nested `attributesPatch`를 보존하는 latest merge로 store와 graph에 재합성한다. newer persist가 실패하면 재합성한 projection을 유지하고 payload도 queue에 남긴다. 최신 ACK가 성공해 queue가 idle이 되면 optimistic generation cache와 entity queue map을 모두 정리한다.
 
-review follow-up 검증에서 focused 2 files/10 tests와 Task 8~13 회귀 12 files/73 tests가 stderr warning/unhandled rejection 없이 PASS했다. 실패 A 보존 → A retry in-flight → same scalar/attribute key를 바꾼 B enqueue → A ACK → B 실패를 순서대로 주입해 items/current/graph의 B projection과 pending payload를 검증했다. 다음 B retry 성공 후에는 ACK 상태와 pending count 0을 확인했다.
+Task 13 review follow-up은 focused 2 files/10 tests와 Task 8~13 저장 회귀 12 files/73 tests PASS로 최신 optimistic projection 보존을 검증했다.
+
+## 19. Project export 실패와 종료 정책
+
+### 19.1 queue 실패 보존
+
+`runExport`가 `false`를 반환하거나 throw하면 실제 `.luie` 교체가 완료되지 않은 것이다. queue는 captured revision을 exported로 표시하지 않고 해당 project를 dirty registry에 유지한다. 실패를 관찰한 runLoop/flush는 같은 호출 안에서 즉시 재시도하지 않는다. 다음 schedule, runNow 또는 explicit flush가 retained project/revision을 한 번 재시도한다.
+
+성공 시에만 captured revision을 `markProjectExported`에 전달한다. export 중 더 최신 revision이 생기면 기존 계약대로 latest revision까지 직렬 drain한다. flush의 `flushed`는 성공 project만, `failed`는 완료된 `false`/throw project만 집계하고 timeout은 아직 완료되지 않은 job과 구분한다. scheduled 실패 Promise는 consume하되 dirty 상태와 실패 logging/stat을 유지한다.
+
+### 19.2 manual save 경계
+
+main autosave flush 뒤 강제 package export가 `false` 또는 throw로 끝나면 MANUAL_SAVE handler는 성공 payload를 만들지 않는다. IPC registrar의 기존 failure 변환을 통해 renderer coordinator가 reject되며 Cmd+S 성공으로 오인하지 않는다. `true`일 때만 `{ success: true, exported: true }`를 반환한다.
+
+### 19.3 quit 사용자 결정
+
+soft export flush의 `failed > 0` 또는 `timedOut`은 모두 종료 차단 상태다. 첫 dialog의 기본값은 종료 취소이며 사용자는 재시도, 종료 취소, 저장 생략 후 종료 중 하나를 명시적으로 선택한다. 재시도 hard flush도 실패 또는 timeout이면 두 번째 warning을 표시하고 기본값을 종료 취소로 둔다. hard flush 성공 또는 사용자의 명시적 skip에서만 finalize와 `app.exit`으로 진행한다.

@@ -1641,3 +1641,36 @@ Actual (2026-07-19): 최초 RED는 2 files/8 tests 중 3건이 throw payload 제
 - [x] follow-up 단일 커밋 `fix(storage): preserve latest optimistic entity`
 
 Actual (2026-07-19): RED는 실제 character store 경로 1 files/5 tests 중 1건이 retained A retry ACK 뒤 B persist 실패 시 items/current/graph가 B가 아닌 A full entity로 덮어써져 예상대로 실패했다. entity별 generation과 unacknowledged patch를 추적해 execute 시작 후 들어온 patch만 A ACK에 재합성했다. B 실패 후 items/current/graph는 latest scalar와 nested attribute key를 유지하고 queue pending count는 1이며, 다음 retry 성공 후 ACK 상태와 일치하고 0이 된다. focused 2 files/10 tests와 Task 8~13 회귀 12 files/73 tests는 stderr warning/unhandled rejection 없이 PASS했다. 대상 ESLint와 `git diff --check`는 PASS다. `tsc6 --noEmit`은 follow-up 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 1건만 유지한다.
+
+---
+
+### Task 14: export 실패 보존과 종료 안전 경계
+
+**Status:** 완료
+
+**Files:**
+- Modify: `src/main/services/core/project/projectExportQueue.ts`
+- Modify: `src/main/handler/writing/ipcAutoSaveHandlers.ts`
+- Modify: `src/main/lifecycle/shutdown/shutdown.ts`
+- Modify: `tests/main/services/projectExportQueue.test.ts`
+- Modify: `tests/main/handler/manualSaveHandler.test.ts`
+- Create: `tests/main/lifecycle/shutdownExportDecision.test.ts`
+- Modify: `docs/superpowers/plans/2026-07-18-save-integrity.md`
+- Modify: `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
+- Create: `.superpowers/sdd/save-buffer-task-14-report.md`
+
+**Interfaces:**
+- Changes: export callback의 `false`와 throw는 해당 project를 dirty로 유지하고 현재 호출에서는 실패로 끝난다.
+- Changes: 다음 schedule/runNow/flush만 retained project를 한 번 재시도하며, 성공 뒤에만 exported revision과 queue registry를 정리한다.
+- Changes: manual save의 export `false`/throw는 IPC failure로 전파한다.
+- Changes: quit soft/hard flush의 `failed > 0`과 timeout은 모두 사용자 결정 경계로 이동하며 기본값은 종료 취소다.
+
+- [x] **Step 1: queue false/throw retention과 next-call retry RED**
+- [x] **Step 2: scheduled failure unhandled 방지와 newer revision 회귀 RED**
+- [x] **Step 3: manual save false/throw RED**
+- [x] **Step 4: quit cancel/retry/skip 및 hard failure RED**
+- [x] **Step 5: 최소 queue/manual/quit 구현**
+- [x] **Step 6: focused 및 Task 8~14 저장 회귀, 정적 검증**
+- [x] **Step 7: SSOT/report 동기화 및 단일 커밋**
+
+Actual (2026-07-19): 최초 RED는 3 files에서 queue false 오집계/dirty 제거, throw retry 제거, scheduled failure 정리, manual false 성공 응답의 5 assertion이 예상대로 실패했고 quit helper 부재로 1 suite가 실패했다. GREEN은 focused 3 files/18 tests, Task 8~14 비-DB 저장 회귀 15 files/93 tests PASS이며 unhandled rejection이 없다. Electron-as-Node DB recovery는 2 files/2 tests PASS했다. `dirty=false`와 `failed` 무시 변이는 각각 retry/quit cancel 테스트를 실패시켰다. 대상 ESLint와 `git diff --check`는 PASS다. `tsc6 --noEmit`은 Task 14 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 1건만 유지한다.

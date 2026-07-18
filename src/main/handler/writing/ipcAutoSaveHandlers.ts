@@ -58,6 +58,9 @@ export function registerAutoSaveIPCHandlers(
           projectId,
           "manual-save",
         );
+        if (!exported) {
+          throw new Error("Failed to export project package");
+        }
         logger.info("MANUAL_SAVE completed", {
           projectId,
           exported,
