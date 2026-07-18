@@ -1334,7 +1334,7 @@ Run: `./node_modules/.bin/tsc6 --noEmit`
 
 Expected: PASS.
 
-Actual (2026-07-19): 4 files, 9 tests PASS. editor autosave callback 부재로 최신 debounce draft, in-flight 뒤 pending draft, 최신 실패 전파가 각각 RED인 것을 확인했다. 오래된 in-flight 저장 실패는 최신 draft 실패로 취급하지 않고 drain을 계속하며, clean/no-`onSave` hook은 no-op이다. review follow-up에서 mid-flush unmount 직렬화, flush 중 생성된 debounce timer 중복 방지, falsy rejection 전파를 각각 RED→GREEN으로 보강했다. `./node_modules/.bin/tsc6 --noEmit`은 Task 9 오류 없이 사용자 소유 dirty `BinderSidebarPanelBody.tsx`의 기존 `ResearchPanelTab` 오류 1건으로 exit 2다.
+Actual (2026-07-19): 4 files, 10 tests PASS. editor autosave callback 부재로 최신 debounce draft, in-flight 뒤 pending draft, 최신 실패 전파가 각각 RED인 것을 확인했다. 오래된 in-flight 저장 실패는 최신 draft 실패로 취급하지 않고 drain을 계속하며, clean/no-`onSave` hook은 no-op이다. review follow-up에서 mid-flush unmount 직렬화, flush 중 생성된 debounce timer 중복 방지, falsy rejection 전파, in-flight 중 `onSave` 제거 시 종료를 각각 RED→GREEN으로 보강했다. `./node_modules/.bin/tsc6 --noEmit`은 Task 9 오류 없이 사용자 소유 dirty `BinderSidebarPanelBody.tsx`의 기존 `ResearchPanelTab` 오류 1건으로 exit 2다.
 
 - [x] **Step 7: SSOT 상태와 Task 9 결과 갱신**
 

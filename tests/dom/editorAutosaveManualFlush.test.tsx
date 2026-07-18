@@ -67,6 +67,14 @@ const deferred = <T,>() => {
   return { promise, reject, resolve };
 };
 
+const afterMicrotasks = (count: number) => {
+  let promise = Promise.resolve();
+  for (let index = 0; index < count; index++) {
+    promise = promise.then(() => undefined);
+  }
+  return promise;
+};
+
 describe("editor autosave manual flush", () => {
   beforeEach(() => {
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -243,6 +251,36 @@ describe("editor autosave manual flush", () => {
     });
 
     expect(rejection).toBeUndefined();
+    expect(onSave).toHaveBeenCalledOnce();
+  });
+
+  it("settles after an in-flight save when the latest draft has no onSave", async () => {
+    const first = deferred<void>();
+    const onSave = vi
+      .fn<(title: string, content: string) => Promise<void>>()
+      .mockReturnValueOnce(first.promise);
+    const root = mountAutosave({ title: "A", content: "1", onSave });
+
+    root.render({ title: "B", content: "2", onSave });
+    const flushPromise = flushSaveBuffers();
+    await act(async () => Promise.resolve());
+    expect(onSave).toHaveBeenCalledOnce();
+
+    root.render({ title: "C", content: "3" });
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: false });
+    first.resolve();
+    const settled = await Promise.race([
+      flushPromise.then(() => true),
+      afterMicrotasks(20).then(() => false),
+    ]);
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+
+    if (!settled) {
+      root.unmount();
+      await act(async () => flushPromise);
+    }
+
+    expect(settled).toBe(true);
     expect(onSave).toHaveBeenCalledOnce();
   });
 });

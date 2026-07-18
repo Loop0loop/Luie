@@ -208,7 +208,6 @@ export function useEditorAutosave({
   const flushLatestDraft = useCallback(async () => {
     clearTimerRef(debounceTimerRef);
     clearTimerRef(retryTimerRef);
-    if (!onSaveRef.current) return;
 
     for (;;) {
       const currentSave = currentSavePromiseRef.current;
@@ -233,6 +232,8 @@ export function useEditorAutosave({
       ) {
         return;
       }
+
+      if (!onSaveRef.current) return;
 
       // A newer draft may arrive while this save is in flight.
       // eslint-disable-next-line no-await-in-loop
