@@ -48,7 +48,8 @@ export function PlotBoard() {
     [t],
   );
   const [columns, setColumns] = useState<PlotColumn[]>(defaultColumns);
-  const [isHydrated, setIsHydrated] = useState(false);
+  const columnsRef = useRef(columns);
+  const saveChainRef = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     if (!currentProject?.id) {
@@ -62,31 +63,16 @@ export function PlotBoard() {
         luieAttachmentPath,
       );
       if (cancelled) return;
-      setColumns(loaded.columns.length > 0 ? loaded.columns : defaultColumns);
-      setIsHydrated(true);
+      const nextColumns =
+        loaded.columns.length > 0 ? loaded.columns : defaultColumns;
+      columnsRef.current = nextColumns;
+      setColumns(nextColumns);
     })();
 
     return () => {
       cancelled = true;
     };
   }, [currentProject?.id, luieAttachmentPath, defaultColumns]);
-
-  useEffect(() => {
-    if (!currentProject?.id || !isHydrated) return;
-    const timer = window.setTimeout(() => {
-      void worldPackageStorage
-        .savePlot(currentProject.id, luieAttachmentPath, {
-          columns,
-        })
-        .catch(() => {
-          showToast(t("research.toast.worldSaveFailed"), "error");
-        });
-    }, 250);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [columns, currentProject?.id, isHydrated, luieAttachmentPath, showToast, t]);
 
   useEffect(() => {
     const element = scrollContainerRef.current;
@@ -107,32 +93,57 @@ export function PlotBoard() {
     };
   }, []);
 
+  const commitColumns = (
+    update: (current: PlotColumn[]) => PlotColumn[],
+  ): Promise<void> => {
+    const nextColumns = update(columnsRef.current);
+    columnsRef.current = nextColumns;
+    setColumns(nextColumns);
+    if (!currentProject?.id) return Promise.resolve();
+    const save = saveChainRef.current
+      .catch(() => undefined)
+      .then(() =>
+        worldPackageStorage.savePlot(currentProject.id, luieAttachmentPath, {
+          columns: nextColumns,
+        }),
+      )
+      .catch((error: unknown) => {
+        showToast(t("research.toast.worldSaveFailed"), "error");
+        throw error;
+      });
+    saveChainRef.current = save;
+    return save;
+  };
+
   const addColumn = () => {
-    const newId = `act-${Date.now()}`;
-    setColumns((prev) => [
-      ...prev,
-      {
-        id: newId,
-        title: `${t("world.plot.newAct")} ${prev.length + 1}`,
-        cards: [],
-      },
-    ]);
+    void commitColumns((prev) => {
+      const newId = `act-${Date.now()}`;
+      return [
+        ...prev,
+        {
+          id: newId,
+          title: `${t("world.plot.newAct")} ${prev.length + 1}`,
+          cards: [],
+        },
+      ];
+    }).catch(() => undefined);
   };
 
   const removeColumn = (colId: string) => {
-    setColumns((prev) => prev.filter((column) => column.id !== colId));
+    void commitColumns((prev) =>
+      prev.filter((column) => column.id !== colId),
+    ).catch(() => undefined);
   };
 
-  const updateColumnTitle = (colId: string, newTitle: string) => {
-    setColumns((prev) =>
+  const updateColumnTitle = (colId: string, newTitle: string): Promise<void> =>
+    commitColumns((prev) =>
       prev.map((column) =>
         column.id === colId ? { ...column, title: newTitle } : column,
       ),
     );
-  };
 
   const addCard = (colId: string) => {
-    setColumns((cols) =>
+    void commitColumns((cols) =>
       cols.map((col) => {
         if (col.id === colId) {
           return {
@@ -145,11 +156,15 @@ export function PlotBoard() {
         }
         return col;
       }),
-    );
+    ).catch(() => undefined);
   };
 
-  const updateCard = (colId: string, cardId: string, content: string) => {
-    setColumns((cols) =>
+  const updateCard = (
+    colId: string,
+    cardId: string,
+    content: string,
+  ): Promise<void> =>
+    commitColumns((cols) =>
       cols.map((col) => {
         if (col.id === colId) {
           return {
@@ -162,10 +177,9 @@ export function PlotBoard() {
         return col;
       }),
     );
-  };
 
   const deleteCard = (colId: string, cardId: string) => {
-    setColumns((cols) =>
+    void commitColumns((cols) =>
       cols.map((col) => {
         if (col.id === colId) {
           return {
@@ -175,7 +189,7 @@ export function PlotBoard() {
         }
         return col;
       }),
-    );
+    ).catch(() => undefined);
   };
 
   return (

@@ -274,6 +274,8 @@ renderer input flush
 - captured revision export와 stale attached project의 startup recovery 예약
 - manual-save IPC와 renderer/main quit handshake 기본 경로
 - manual save와 quit의 renderer buffer → world mutation 선행 flush
+- shared buffer의 실제 persistence ACK, IME 명시적 flush 차단, unmount 실패 payload 재시도
+- Plot/Synopsis buffer의 timer 비의존 직접 persistence barrier
 
 재검증에서 다음 차단 항목을 확인했다.
 
@@ -296,8 +298,17 @@ SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/
 # 6 files, 26 tests PASS; stderr warning 없음
 # world flush 오류 전파 테스트는 오류를 삼키는 임시 production 변이에서 FAIL한 뒤 원본 복원 후 PASS
 
+SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism --reporter=verbose tests/renderer/services/saveCoordinator.test.ts tests/dom/projectSaveShortcut.test.tsx tests/dom/projectQuitFlush.test.tsx tests/dom/bufferedInputSavePolicy.test.tsx tests/dom/editorAutosaveManualFlush.test.tsx tests/renderer/stores/worldEntityMutationQueue.test.ts tests/dom/worldBufferedPersistence.test.tsx
+# Task 11 포함 7 files, 35 tests PASS; stderr warning/unhandled rejection 없음
+
+./node_modules/.bin/eslint src/shared/ui/BufferedInput.tsx src/renderer/src/features/research/components/world/PlotBoard.tsx src/renderer/src/features/research/components/world/SynopsisEditor.tsx tests/dom/bufferedInputSavePolicy.test.tsx tests/dom/worldBufferedPersistence.test.tsx
+# PASS
+
+git diff --check
+# PASS
+
 ./node_modules/.bin/tsc6 --noEmit
-# Task 10 오류 없음; 사용자 소유 dirty BinderSidebarPanelBody.tsx:102의 기존 ResearchPanelTab 오류 1건으로 exit 2
+# Task 11 오류 없음; 사용자 소유 dirty BinderSidebarPanelBody.tsx:102의 기존 ResearchPanelTab 오류 1건으로 exit 2
 ```
 
 이 결과는 정상 경로와 직접 seed한 stale-checkpoint recovery를 검증한다. 실제 export 실패 후 프로세스 재시작, debounce 중 shortcut/quit, IPC `success:false`/timeout, export `false`/throw는 아직 검증하지 않는다. 100회 burst 테스트는 mock 기반이며 SQLite 또는 latency P95를 측정하지 않는다. 기존 writing-loop에는 percentile 계산 인프라가 있지만 이번 저장 파이프라인의 P95 artifact와 95% 신뢰 근거는 없다.
@@ -360,6 +371,9 @@ buffer 또는 world queue flush가 실패하면 뒤 단계로 진행하지 않�
 - registry flush와 debounce timer가 경쟁해도 각 buffer의 기존 single-flush guard를 통과한다.
 - 같은 값의 in-flight 저장은 동일 Promise를 공유하고, 더 최신 값은 그 저장 뒤에 직렬화한다.
 - buffer는 비동기 저장 성공 뒤에만 clean으로 전환하며 실패한 최신 값은 다음 flush에서 재시도한다.
+- IME 조합 중 일반 debounce/event 저장은 억제하고 global flush는 reject해 manual save/quit 다음 단계를 차단한다.
+- debounce, blur, Enter, composition-end의 background rejection은 consume하지만 dirty 상태를 유지한다.
+- unmount 저장이 실패하면 detached registry callback이 payload를 보유하고 다음 global flush에서 재시도한다.
 - 같은 entity의 여러 input callback은 기존 entity별 mutation queue가 직렬화한다.
 - [x] editor autosave는 동시에 `onSave`를 실행하지 않고 최신 pending draft 하나만 유지한다.
 - flush가 성공한 값은 뒤늦은 timer가 다시 저장하지 않는다.
@@ -372,6 +386,16 @@ buffer 또는 world queue flush가 실패하면 뒤 단계로 진행하지 않�
 - buffer callback이 끝난 뒤 world mutation drain과 main checkpoint가 순서대로 실행된다.
 - buffer flush 실패 시 main checkpoint와 quit 완료 handshake가 호출되지 않는다.
 - unmount한 buffer callback은 이후 global flush에서 호출되지 않는다.
+- 실패 payload를 가진 unmount buffer만 retry callback을 유지하며 성공 직후 registry에서 제거된다.
+
+### 17.7 Shared input callsite 감사와 후속 blocker
+
+2026-07-19 전체 callsite를 읽기 전용 감사했다.
+
+- 직접 ACK: `TermManager`, `WikiDetailView`의 world entity callback은 queue Promise를 반환한다.
+- 다음 단계 drain: dirty wiki/Infobox/Canvas entity title callback은 Promise를 반환하지 않지만 호출 중 `worldEntityMutationQueue`에 동기 enqueue되며 Task 10의 world flush가 drain한다.
+- Task 11 해결: `PlotBoard`는 state-only callback과 250ms effect를 제거하고 최신 snapshot을 `savePlot`에 직렬화한다. `SynopsisEditor`는 최신 draft snapshot을 직렬화하고 package save와 project description update를 await한다.
+- 후속 blocker: `CanvasDocumentView` memo title은 memo timer, `CanvasMarkdownEditor`는 500ms timer, Canvas description은 focus된 plain textarea의 blur, dirty `NotionDocumentView` body는 500ms timer에 의존한다. 이 경로들은 아직 registry 또는 Task 10 drain에 연결되지 않아 focus 유지 직후 manual save/quit에서 누락될 수 있다. 사용자 dirty 파일은 Task 11에서 수정하지 않았다.
 
 ### 17.6 범위 제외
 

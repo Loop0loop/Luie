@@ -1486,3 +1486,57 @@ Task 10을 `완료`로 바꾸고 실제 결과를 기록한다. 설계 §16에�
 git add src/renderer/src/features/workspace/services/saveCoordinator.ts src/renderer/src/features/workspace/hooks/useProjectQuitFlush.ts src/renderer/src/features/workspace/components/useEditorRootShortcuts.ts src/renderer/src/features/workspace/components/layout/EditorRoot.tsx tests/renderer/services/saveCoordinator.test.ts tests/dom/projectSaveShortcut.test.tsx tests/dom/projectQuitFlush.test.tsx docs/superpowers/plans/2026-07-18-save-integrity.md docs/superpowers/specs/2026-07-18-save-integrity-design.md
 git commit -m "fix(storage): flush renderer buffers first"
 ```
+
+---
+
+### Task 11: shared buffer persistence ACK 계약과 실패 수명주기
+
+**Status:** 완료
+
+**Files:**
+- Modify: `src/shared/ui/BufferedInput.tsx`
+- Modify: `src/renderer/src/features/research/components/world/PlotBoard.tsx`
+- Modify: `src/renderer/src/features/research/components/world/SynopsisEditor.tsx`
+- Modify: `tests/dom/bufferedInputSavePolicy.test.tsx`
+- Create: `tests/dom/worldBufferedPersistence.test.tsx`
+- Modify: `docs/superpowers/plans/2026-07-18-save-integrity.md`
+- Modify: `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
+
+**Interfaces:**
+- Requires: shared input `onSave`가 실제 persistence ACK 또는 동기 enqueue의 drain Promise를 반환한다.
+- Changes: IME 조합 중 global flush는 incomplete value를 저장하지 않고 reject한다.
+- Changes: background flush rejection은 consume하되 dirty payload를 유지한다.
+- Changes: unmount 뒤 실패 payload는 global registry에 남아 후속 flush에서 재시도된다.
+
+- [x] **Step 1: 모든 `BufferedInput`/`BufferedTextArea` callsite를 읽기 전용 감사**
+
+각 callback을 `실제 ACK 반환`, `동기 queue enqueue 반환`, `void/local state`, `Promise 폐기`로 분류한다. 사용자 dirty callsite는 수정하지 않고 이 Task의 blocker로 기록한다.
+
+- [x] **Step 2: persistence ACK와 IME 차단 RED 테스트 작성**
+
+Plot/Synopsis persistence Promise가 pending이면 `flushSaveBuffers()`가 완료되지 않고 resolve 뒤에만 완료되는지 검증한다. composition 중 global flush는 reject하고 coordinator/quit의 다음 단계가 호출되지 않는 기존 테스트와 함께 검증한다.
+
+- [x] **Step 3: background rejection과 unmount 재시도 RED 테스트 작성**
+
+debounce, blur, composition-end, unmount rejection에서 unhandled rejection이 없고 clean 승격되지 않으며, unmount 뒤에도 같은 payload를 global flush로 재시도해 성공할 수 있음을 검증한다.
+
+- [x] **Step 4: shared buffer 최소 수명주기 구현**
+
+일반 event 경로는 returned Promise rejection을 명시적으로 consume한다. global registry 경로만 rejection을 호출자에게 전파한다. unmount dirty payload는 저장 성공 전까지 retry flusher로 registry에 유지하고 성공하면 해제한다.
+
+- [x] **Step 5: Plot/Synopsis callback을 실제 ACK barrier로 연결**
+
+Plot은 timer 대기 없이 input callback에서 최신 columns snapshot을 실제 `savePlot`에 전달하고 그 Promise를 반환한다. Synopsis는 `saveSynopsis` 및 project description update의 Promise를 반환한다. 오류 toast를 유지하되 reject를 다시 전파한다.
+
+- [x] **Step 6: GREEN, 회귀, SSOT 동기화**
+
+관련 focused 테스트와 Task 8~10 저장 파이프라인 회귀를 실행한다. 변경 파일 ESLint, `git diff --check`, `tsc6 --noEmit` 결과를 기록하고 설계 §17의 persistence ACK/IME/failure lifecycle 계약을 갱신한다.
+
+Actual (2026-07-19): RED에서 2 files/16 tests 중 5건이 예상대로 실패했고 debounce/blur/Enter/unmount rejection 4건이 unhandled로 검출됐다. 구현 후 focused 2 files/17 tests가 stderr warning 없이 통과했다. Plot/Synopsis pending Promise가 resolve되기 전 barrier가 완료되지 않으며 main synopsis는 project와 package ACK를 모두 기다린다. 전체 저장 회귀와 정적 검증 결과는 Task 11 report에 기록했다.
+
+- [x] **Step 7: Task 11 커밋**
+
+```bash
+git add src/shared/ui/BufferedInput.tsx src/renderer/src/features/research/components/world/PlotBoard.tsx src/renderer/src/features/research/components/world/SynopsisEditor.tsx tests/dom/bufferedInputSavePolicy.test.tsx tests/dom/worldBufferedPersistence.test.tsx docs/superpowers/plans/2026-07-18-save-integrity.md docs/superpowers/specs/2026-07-18-save-integrity-design.md .superpowers/sdd/save-buffer-task-11-report.md
+git commit -m "fix(storage): enforce buffer persistence ack"
+```

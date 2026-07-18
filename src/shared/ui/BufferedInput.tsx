@@ -2,6 +2,33 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS } from "@shared/constants";
 import { registerSaveBufferFlush } from "./saveBufferRegistry";
 
+const COMPOSITION_FLUSH_ERROR =
+  "Cannot flush a save buffer while IME composition is active";
+
+const consumeBackgroundFlush = (result: void | Promise<unknown>): void => {
+  void Promise.resolve(result).catch(() => undefined);
+};
+
+const preserveUnmountSave = (
+  initial: void | Promise<unknown>,
+  retry: () => void | Promise<unknown>,
+): void => {
+  let current: Promise<unknown> | null = Promise.resolve(initial);
+  let unregister: () => void = () => undefined;
+  const flush = async (): Promise<void> => {
+    if (!current) current = Promise.resolve().then(retry);
+    try {
+      await current;
+      unregister();
+    } catch (error) {
+      current = null;
+      throw error;
+    }
+  };
+  unregister = registerSaveBufferFlush(flush);
+  consumeBackgroundFlush(flush());
+};
+
 interface BufferedInputProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   "onChange"
@@ -24,7 +51,9 @@ export function BufferedInput({
   const latestValue = useRef(externalValue);
   const lastSavedValue = useRef(externalValue);
   const onSaveRef = useRef(onSave);
-  const flushRef = useRef<() => void | Promise<unknown>>(() => undefined);
+  const flushRef = useRef<(explicit?: boolean) => void | Promise<unknown>>(
+    () => undefined,
+  );
   const inFlightSave = useRef<{
     value: string;
     promise: Promise<void>;
@@ -45,8 +74,16 @@ export function BufferedInput({
     }
   };
 
-  const flush = (value = latestValue.current): void | Promise<void> => {
+  const flush = (
+    explicit = false,
+    value = latestValue.current,
+  ): void | Promise<void> => {
     cancelScheduledSave();
+    if (isComposing.current) {
+      return explicit
+        ? Promise.reject(new Error(COMPOSITION_FLUSH_ERROR))
+        : undefined;
+    }
     const inFlight = inFlightSave.current;
     if (inFlight) {
       if (value === inFlight.value) return inFlight.promise;
@@ -81,9 +118,10 @@ export function BufferedInput({
   });
 
   useEffect(
-    () => registerSaveBufferFlush(async () => {
-      await flushRef.current();
-    }),
+    () =>
+      registerSaveBufferFlush(async () => {
+        await flushRef.current(true);
+      }),
     [],
   );
 
@@ -92,13 +130,17 @@ export function BufferedInput({
     cancelScheduledSave();
     debounceTimer.current = window.setTimeout(() => {
       debounceTimer.current = null;
-      flush(value);
+      consumeBackgroundFlush(flush(false, value));
     }, debounceTime);
   };
 
   useEffect(
     () => () => {
-      void flushRef.current();
+      cancelScheduledSave();
+      if (isComposing.current) return;
+      const value = latestValue.current;
+      if (value === lastSavedValue.current && !inFlightSave.current) return;
+      preserveUnmountSave(flushRef.current(), () => onSaveRef.current(value));
     },
     [],
   );
@@ -106,6 +148,7 @@ export function BufferedInput({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const next = e.target.value;
     setLocalValue(next);
+    latestValue.current = next;
     if (!isComposing.current) {
       scheduleSave(next);
     }
@@ -136,13 +179,13 @@ export function BufferedInput({
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     setIsEditing(false);
     latestValue.current = e.target.value;
-    flush();
+    consumeBackgroundFlush(flush());
     props.onBlur?.(e);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !isComposing.current) {
-      flush(localValue);
+      consumeBackgroundFlush(flush(false, localValue));
       e.currentTarget.blur();
     }
     props.onKeyDown?.(e);
@@ -181,7 +224,9 @@ export function BufferedTextArea({
   const latestValue = useRef(externalValue);
   const lastSavedValue = useRef(externalValue);
   const onSaveRef = useRef(onSave);
-  const flushRef = useRef<() => void | Promise<unknown>>(() => undefined);
+  const flushRef = useRef<(explicit?: boolean) => void | Promise<unknown>>(
+    () => undefined,
+  );
   const inFlightSave = useRef<{
     value: string;
     promise: Promise<void>;
@@ -195,8 +240,15 @@ export function BufferedTextArea({
     return isEditing ? localValue : externalValue;
   }, [externalValue, isEditing, localValue]);
 
-  const flush = (value = latestValue.current): void | Promise<void> => {
-    if (isComposing.current) return;
+  const flush = (
+    explicit = false,
+    value = latestValue.current,
+  ): void | Promise<void> => {
+    if (isComposing.current) {
+      return explicit
+        ? Promise.reject(new Error(COMPOSITION_FLUSH_ERROR))
+        : undefined;
+    }
     const inFlight = inFlightSave.current;
     if (inFlight) {
       if (value === inFlight.value) return inFlight.promise;
@@ -231,15 +283,19 @@ export function BufferedTextArea({
   });
 
   useEffect(
-    () => registerSaveBufferFlush(async () => {
-      await flushRef.current();
-    }),
+    () =>
+      registerSaveBufferFlush(async () => {
+        await flushRef.current(true);
+      }),
     [],
   );
 
   useEffect(
     () => () => {
-      void flushRef.current();
+      if (isComposing.current) return;
+      const value = latestValue.current;
+      if (value === lastSavedValue.current && !inFlightSave.current) return;
+      preserveUnmountSave(flushRef.current(), () => onSaveRef.current(value));
     },
     [],
   );
@@ -259,7 +315,7 @@ export function BufferedTextArea({
     isComposing.current = false;
     latestValue.current = e.currentTarget.value;
     setLocalValue(e.currentTarget.value);
-    void flush();
+    consumeBackgroundFlush(flush());
   };
 
   const handleFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
@@ -273,7 +329,7 @@ export function BufferedTextArea({
   const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
     setIsEditing(false);
     latestValue.current = e.target.value;
-    void flush();
+    consumeBackgroundFlush(flush());
     props.onBlur?.(e);
   };
 

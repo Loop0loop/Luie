@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
@@ -26,6 +26,14 @@ export function SynopsisEditor() {
   const [genre, setGenre] = useState("");
   const [targetAudience, setTargetAudience] = useState("");
   const [logline, setLogline] = useState("");
+  const synopsisRef = useRef<WorldSynopsisData>({
+    synopsis: currentProject?.description ?? "",
+    status: "draft",
+    genre: "",
+    targetAudience: "",
+    logline: "",
+  });
+  const saveChainRef = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     if (!currentProject?.id) return;
@@ -42,32 +50,44 @@ export function SynopsisEditor() {
       setGenre(loaded.genre ?? "");
       setTargetAudience(loaded.targetAudience ?? "");
       setLogline(loaded.logline ?? "");
+      synopsisRef.current = {
+        synopsis: loaded.synopsis ?? currentProject.description ?? "",
+        status: loaded.status ?? "draft",
+        genre: loaded.genre ?? "",
+        targetAudience: loaded.targetAudience ?? "",
+        logline: loaded.logline ?? "",
+      };
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [
-    currentProject?.id,
-    luieAttachmentPath,
-    currentProject?.description,
-  ]);
+  }, [currentProject?.id, luieAttachmentPath, currentProject?.description]);
 
-  const persistSynopsis = (overrides: Partial<WorldSynopsisData>) => {
-    if (!currentProject?.id) return;
-    const payload: WorldSynopsisData = {
-      synopsis: currentProject.description ?? "",
-      status,
-      genre,
-      targetAudience,
-      logline,
+  const persistSynopsis = (
+    overrides: Partial<WorldSynopsisData>,
+  ): Promise<void> => {
+    if (!currentProject?.id) return Promise.resolve();
+    const payload = {
+      ...synopsisRef.current,
       ...overrides,
     };
-    void worldPackageStorage
-      .saveSynopsis(currentProject.id, luieAttachmentPath, payload)
-      .catch(() => {
+    synopsisRef.current = payload;
+    const save = saveChainRef.current
+      .catch(() => undefined)
+      .then(() =>
+        worldPackageStorage.saveSynopsis(
+          currentProject.id,
+          luieAttachmentPath,
+          payload,
+        ),
+      )
+      .catch((error: unknown) => {
         showToast(t("research.toast.worldSaveFailed"), "error");
+        throw error;
       });
+    saveChainRef.current = save;
+    return save;
   };
 
   if (!currentProject) return null;
@@ -94,7 +114,7 @@ export function SynopsisEditor() {
               key={s}
               onClick={() => {
                 setStatus(s);
-                persistSynopsis({ status: s });
+                void persistSynopsis({ status: s }).catch(() => undefined);
               }}
               className={cn(
                 "px-3 py-1 rounded-full text-[11px] font-bold transition-all flex items-center gap-1.5 border-none",
@@ -132,7 +152,7 @@ export function SynopsisEditor() {
                   value={genre}
                   onSave={(val) => {
                     setGenre(val);
-                    persistSynopsis({ genre: val });
+                    return persistSynopsis({ genre: val });
                   }}
                 />
               </div>
@@ -149,7 +169,7 @@ export function SynopsisEditor() {
                   value={targetAudience}
                   onSave={(val) => {
                     setTargetAudience(val);
-                    persistSynopsis({ targetAudience: val });
+                    return persistSynopsis({ targetAudience: val });
                   }}
                 />
               </div>
@@ -170,7 +190,7 @@ export function SynopsisEditor() {
                 value={logline}
                 onSave={(val) => {
                   setLogline(val);
-                  persistSynopsis({ logline: val });
+                  return persistSynopsis({ logline: val });
                 }}
                 rows={2}
               />
@@ -193,9 +213,13 @@ export function SynopsisEditor() {
               placeholder={t("world.synopsis.placeholder")}
               value={currentProject.description || ""}
               readOnly={status === "locked"}
-              onSave={(val) => {
-                void updateProject({ id: currentProject.id, description: val });
-                persistSynopsis({ synopsis: val });
+              onSave={async (val) => {
+                const [updated] = await Promise.all([
+                  updateProject({ id: currentProject.id, description: val }),
+                  persistSynopsis({ synopsis: val }),
+                ]);
+                if (!updated)
+                  throw new Error("Failed to save project synopsis");
               }}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
