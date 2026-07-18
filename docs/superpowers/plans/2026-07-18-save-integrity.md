@@ -1159,7 +1159,7 @@ git commit -m "fix(storage): register shared save buffers"
 
 ### Task 9: editor autosave latest-draft drain
 
-**Status:** 구현 대기
+**Status:** 완료
 
 **Files:**
 - Create: `tests/dom/editorAutosaveManualFlush.test.tsx`
@@ -1172,7 +1172,7 @@ git commit -m "fix(storage): register shared save buffers"
 - Produces: clean editor에서는 no-op이고 dirty editor에서는 최신 title/content의 `onSave` 완료까지 기다리는 registered flush
 - Preserves: 기존 debounce, latest pending draft, retry UI와 `api.lifecycle.setDirty`
 
-- [ ] **Step 1: debounce 이전 최신 editor draft flush RED 테스트 작성**
+- [x] **Step 1: debounce 이전 최신 editor draft flush RED 테스트 작성**
 
 `tests/dom/editorAutosaveManualFlush.test.tsx`는 `ToastContext`, i18n, shared API를 mock하고 hook harness를 mount한다.
 
@@ -1220,7 +1220,7 @@ it("flushes the latest editor draft before autosave debounce", async () => {
 });
 ```
 
-- [ ] **Step 2: in-flight 저장 뒤 latest pending draft까지 기다리는 RED 테스트 작성**
+- [x] **Step 2: in-flight 저장 뒤 latest pending draft까지 기다리는 RED 테스트 작성**
 
 ```tsx
 it("waits for the latest draft queued behind an in-flight save", async () => {
@@ -1255,13 +1255,13 @@ it("rejects manual flush when the latest editor save fails", async () => {
 });
 ```
 
-- [ ] **Step 3: editor autosave RED 확인**
+- [x] **Step 3: editor autosave RED 확인**
 
 Run: `SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/dom/editorAutosaveManualFlush.test.tsx`
 
 Expected: registry에 editor callback이 없어 두 테스트 FAIL.
 
-- [ ] **Step 4: 현재 save cycle을 관찰할 ref와 manual flush 추가**
+- [x] **Step 4: 현재 save cycle을 관찰할 ref와 manual flush 추가**
 
 `useEditorAutosave`에 save/error ref를 추가하고 기존 `performSaveRef`의 반환 타입을 `Promise<void>`로 변경한다.
 
@@ -1284,7 +1284,7 @@ lastSaveErrorRef.current = null;
 
 catch에서는 `lastSaveErrorRef.current = error`를 기록한다. finally에서는 자신이 등록한 promise일 때만 ref를 비운 뒤 기존 latest pending draft를 시작한다.
 
-- [ ] **Step 5: 최신 draft가 durable할 때까지 기다리는 registry callback 구현**
+- [x] **Step 5: 최신 draft가 durable할 때까지 기다리는 registry callback 구현**
 
 ```ts
 const flushLatestDraft = useCallback(async () => {
@@ -1324,7 +1324,7 @@ useEffect(
 
 title/content effect에서 새 draft를 받으면 이전 draft의 `lastSaveErrorRef`를 지운다. manual flush 성공 시 debounce timer가 뒤늦게 같은 draft를 다시 저장하지 않아야 한다.
 
-- [ ] **Step 6: Task 9 GREEN 및 기존 autosave 회귀 확인**
+- [x] **Step 6: Task 9 GREEN 및 기존 autosave 회귀 확인**
 
 Run: `SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/dom/editorAutosaveManualFlush.test.tsx tests/dom/editorReadyCleanup.test.tsx`
 
@@ -1334,11 +1334,13 @@ Run: `./node_modules/.bin/tsc6 --noEmit`
 
 Expected: PASS.
 
-- [ ] **Step 7: SSOT 상태와 Task 9 결과 갱신**
+Actual (2026-07-19): 4 files, 6 tests PASS. editor autosave callback 부재로 최신 debounce draft, in-flight 뒤 pending draft, 최신 실패 전파가 각각 RED인 것을 확인했다. 오래된 in-flight 저장 실패는 최신 draft 실패로 취급하지 않고 drain을 계속하며, clean/no-`onSave` hook은 no-op이다. `./node_modules/.bin/tsc6 --noEmit`은 Task 9 오류 없이 사용자 소유 dirty `BinderSidebarPanelBody.tsx`의 기존 `ResearchPanelTab` 오류 1건으로 exit 2다.
+
+- [x] **Step 7: SSOT 상태와 Task 9 결과 갱신**
 
 Task 9를 `완료`로 바꾸고 실제 테스트 결과를 기록한다. 설계 §17.2 editor autosave 항목과 §17.4 latest pending drain을 구현 완료로 표시한다.
 
-- [ ] **Step 8: Task 9 커밋**
+- [x] **Step 8: Task 9 커밋**
 
 ```bash
 git add src/renderer/src/features/editor/hooks/useEditorAutosave.ts tests/dom/editorAutosaveManualFlush.test.tsx docs/superpowers/plans/2026-07-18-save-integrity.md docs/superpowers/specs/2026-07-18-save-integrity-design.md

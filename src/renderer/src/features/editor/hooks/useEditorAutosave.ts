@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@shared/ui/ToastContext";
+import { registerSaveBufferFlush } from "@shared/ui/saveBufferRegistry";
 import { api } from "@shared/api";
 import { EDITOR_AUTOSAVE_DEBOUNCE_MS } from "@shared/constants";
 import { useEditorStatsStore } from "@renderer/features/editor/stores/editorStatsStore";
@@ -47,6 +48,8 @@ export function useEditorAutosave({
   const pendingDraftRef = useRef<{ title: string; content: string } | null>(
     null,
   );
+  const currentSavePromiseRef = useRef<Promise<void> | null>(null);
+  const lastSaveErrorRef = useRef<unknown>(null);
   const onSaveRef = useRef(onSave);
 
   useEffect(() => {
@@ -59,10 +62,9 @@ export function useEditorAutosave({
   const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const performSaveRef = useRef<
-    ((currentTitle: string, currentContent: string) => void) | null
+    ((currentTitle: string, currentContent: string) => Promise<void>) | null
   >(null);
 
-  /* eslint-disable react-hooks/preserve-manual-memoization -- keep the stable ref-backed save callback used by retry timers */
   const performSave = useCallback(
     async (currentTitle: string, currentContent: string) => {
       if (!onSave) return;
@@ -80,8 +82,12 @@ export function useEditorAutosave({
       isSaveInFlightRef.current = true;
 
       setSaveStatus("saving");
+      let savePromise: Promise<void> | null = null;
       try {
-        await Promise.resolve(onSave(currentTitle, currentContent));
+        savePromise = Promise.resolve(onSave(currentTitle, currentContent));
+        currentSavePromiseRef.current = savePromise;
+        await savePromise;
+        lastSaveErrorRef.current = null;
 
         if (!isMountedRef.current) return;
 
@@ -100,14 +106,15 @@ export function useEditorAutosave({
 
         if (!isMountedRef.current) return;
         setSaveStatus("error");
+        const latestDraft = latestDraftRef.current;
+        const stillLatestDraft =
+          latestDraft.title === currentTitle &&
+          latestDraft.content === currentContent;
+        if (stillLatestDraft) lastSaveErrorRef.current = error;
 
         if (retryCount.current < RETRY_DELAYS.length) {
           const delay = RETRY_DELAYS[retryCount.current];
           retryCount.current++;
-          const latestDraft = latestDraftRef.current;
-          const stillLatestDraft =
-            latestDraft.title === currentTitle &&
-            latestDraft.content === currentContent;
           if (stillLatestDraft) {
             showToast(
               t("editor.autosave.retryingIn", { seconds: delay / 1000 }),
@@ -129,6 +136,9 @@ export function useEditorAutosave({
           showToast(t("editor.autosave.failed"), "error");
         }
       } finally {
+        if (currentSavePromiseRef.current === savePromise) {
+          currentSavePromiseRef.current = null;
+        }
         isSaveInFlightRef.current = false;
 
         const pendingDraft = pendingDraftRef.current;
@@ -145,7 +155,6 @@ export function useEditorAutosave({
     },
     [onSave, showToast, t],
   );
-  /* eslint-enable react-hooks/preserve-manual-memoization */
 
   useEffect(() => {
     performSaveRef.current = performSave;
@@ -153,7 +162,11 @@ export function useEditorAutosave({
 
   // Debounced save trigger
   useEffect(() => {
+    const previousDraft = latestDraftRef.current;
     latestDraftRef.current = { title, content };
+    if (title !== previousDraft.title || content !== previousDraft.content) {
+      lastSaveErrorRef.current = null;
+    }
 
     if (!onSave) return;
 
@@ -179,6 +192,44 @@ export function useEditorAutosave({
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     };
   }, [title, content, onSave, performSave]);
+
+  const flushLatestDraft = useCallback(async () => {
+    clearTimerRef(debounceTimerRef);
+    clearTimerRef(retryTimerRef);
+    if (!onSaveRef.current) return;
+
+    for (;;) {
+      const currentSave = currentSavePromiseRef.current;
+      if (currentSave) {
+        // The flush barrier must drain each save cycle before observing the next.
+        // eslint-disable-next-line no-await-in-loop
+        await currentSave.catch(() => undefined);
+        continue;
+      }
+
+      if (lastSaveErrorRef.current) {
+        clearTimerRef(retryTimerRef);
+        throw lastSaveErrorRef.current;
+      }
+
+      const latest = latestDraftRef.current;
+      if (
+        latest.title === lastSavedRef.current.title &&
+        latest.content === lastSavedRef.current.content
+      ) {
+        return;
+      }
+
+      // A newer draft may arrive while this save is in flight.
+      // eslint-disable-next-line no-await-in-loop
+      await performSaveRef.current?.(latest.title, latest.content);
+    }
+  }, []);
+
+  useEffect(
+    () => registerSaveBufferFlush(flushLatestDraft),
+    [flushLatestDraft],
+  );
 
   // ✅ Full cleanup on unmount: cancel ALL pending timers + reset retry state
   useEffect(() => {
