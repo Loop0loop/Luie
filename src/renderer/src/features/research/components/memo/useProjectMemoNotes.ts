@@ -1,8 +1,20 @@
 import { useEffect, useRef } from "react";
+import { api } from "@shared/api";
 import { useMemoStore } from "@renderer/features/research/stores/memoStore";
 import type { Note } from "@renderer/features/research/stores/memo.types";
 
 const EMPTY_NOTES: Note[] = [];
+
+const logBackgroundFailure = (
+  message: string,
+  projectId: string,
+  error: unknown,
+): void => {
+  void api.logger.warn(message, {
+    projectId,
+    error: error instanceof Error ? error.message : String(error),
+  });
+};
 
 type UseProjectMemoNotesOptions = {
   defaultNotes?: Note[];
@@ -36,11 +48,24 @@ export function useProjectMemoNotes(options: UseProjectMemoNotesOptions) {
 
   useEffect(() => {
     if (!projectId) return;
-    void loadNotes(projectId, projectPath, fallbackNotesRef.current);
+    void loadNotes(projectId, projectPath, fallbackNotesRef.current).catch(
+      (error) =>
+        logBackgroundFailure(
+          "Failed to load memo project scope",
+          projectId,
+          error,
+        ),
+    );
 
     return () => {
       if (flushOnCleanup) {
-        void flushSave();
+        void flushSave().catch((error) =>
+          logBackgroundFailure(
+            "Failed to flush memo store during cleanup",
+            projectId,
+            error,
+          ),
+        );
       }
     };
   }, [flushOnCleanup, flushSave, loadNotes, projectId, projectPath]);

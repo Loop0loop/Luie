@@ -1584,3 +1584,16 @@ Actual (2026-07-19): follow-up RED는 2 files/21 tests 중 4건이 explicit 손�
 - [x] **Step 6: SSOT/report 동기화 및 단일 커밋**
 
 Actual (2026-07-19): RED는 2 files/14 tests 중 6건이 markdown registry 미연결, memo flush Promise 폐기, entity description blur 의존, memo persistence 오류 삼킴으로 예상대로 실패했다. GREEN은 focused 2 files/20 tests, Task 8~12 회귀 9 files/59 tests PASS이며 stderr warning/unhandled rejection이 없다. 변경 파일 ESLint와 `git diff --check`는 PASS다. `./node_modules/.bin/tsc6 --noEmit`은 Task 12 신규 오류 없이 사용자 소유 dirty `BinderSidebarPanelBody.tsx:102`의 기존 `ResearchPanelTab` 오류 1건으로 exit 2다.
+
+#### Task 12 review follow-up: memo save drain 직렬화
+
+**Status:** 완료
+
+- [x] scheduled/explicit memo persistence를 단일 drain으로 직렬화하는 RED 테스트
+- [x] in-flight 성공 뒤 latest snapshot 1회 drain 및 barrier ACK 대기
+- [x] 실패 dirty 유지, background consume, 다음 explicit/scheduled retry
+- [x] memo cleanup/project scope background rejection consume·logging 정책
+- [x] focused/Task 8~12 회귀, ESLint, diff-check, tsc 및 SSOT/report 동기화
+- [x] follow-up 단일 커밋 `fix(storage): serialize memo save drain`
+
+Actual (2026-07-19): 테스트 하네스 수정 후 RED는 2 files/15 tests 중 4건이 P1 pending 중 P2 동시 시작과 hook cleanup/scope, Canvas scope rejection 미처리로 예상대로 실패했다. 최종 focused는 2 files/17 tests, Task 8~12 회귀는 10 files/66 tests PASS이며 stderr warning/unhandled rejection 0이다. P1 settle 전 P2 호출 0, P1 성공 뒤 latest P2 한 번, P2 ACK 뒤 barrier 완료, P1/P2 실패의 dirty retry와 이전 project scope 유지를 검증했다. 변경 파일 ESLint와 `git diff --check`는 PASS다. `tsc6 --noEmit`은 follow-up 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 오류 1건만 유지한다.

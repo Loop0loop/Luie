@@ -93,28 +93,33 @@ export const useMemoStore = create<MemoStore>((set, get) => {
     clearSaveTimer();
     saveTimer = setTimeout(() => {
       saveTimer = null;
-      const save = persistNotes();
-      pendingSave = save;
-      const clearPending = () => {
-        if (pendingSave === save) pendingSave = null;
-      };
-      void save.then(clearPending, clearPending);
+      void startSaveDrain().catch(() => undefined);
     }, DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS);
+  };
+
+  const startSaveDrain = (): Promise<void> => {
+    const current = pendingSave;
+    if (current) {
+      return current.then(() =>
+        hasPendingChanges ? startSaveDrain() : undefined,
+      );
+    }
+    if (!hasPendingChanges) return Promise.resolve();
+
+    const drain = (): Promise<void> =>
+      hasPendingChanges ? persistNotes().then(drain) : Promise.resolve();
+    const save = drain();
+    pendingSave = save;
+    const clearPending = () => {
+      if (pendingSave === save) pendingSave = null;
+    };
+    void save.then(clearPending, clearPending);
+    return save;
   };
 
   const flushPendingSave = async (): Promise<void> => {
     clearSaveTimer();
-    await pendingSave;
-    if (!hasPendingChanges) return;
-    const save = persistNotes();
-    pendingSave = save;
-    try {
-      await save;
-    } finally {
-      if (pendingSave === save) {
-        pendingSave = null;
-      }
-    }
+    await startSaveDrain();
   };
 
   return {

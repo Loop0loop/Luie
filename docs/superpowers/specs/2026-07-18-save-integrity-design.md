@@ -407,6 +407,10 @@ Canvas entity description은 plain textarea를 기존 `BufferedTextArea`로 교�
 
 검증 결과는 focused 2 files/20 tests와 Task 8~12 저장 회귀 9 files/59 tests PASS이며 stderr warning/unhandled rejection 0이다. 변경 파일 ESLint와 `git diff --check`는 PASS다. 전체 `tsc6 --noEmit`은 Task 12 신규 오류 없이 사용자 소유 dirty `BinderSidebarPanelBody.tsx:102`의 기존 오류 1건만 유지한다.
 
+Task 12 review follow-up은 memo scheduled/explicit persistence를 하나의 직렬 drain으로 통합한다. in-flight snapshot이 settle하기 전에는 다음 `saveScrapMemos`를 시작하지 않고, 성공 뒤 dirty latest snapshot 하나만 이어서 저장한다. in-flight 실패는 dirty와 store error를 유지한 채 해당 explicit barrier에 reject하며, 다음 scheduled/explicit drain이 최신 snapshot을 재시도한다. cleanup과 UI project scope 전환의 fire-and-forget Promise는 callsite에서 rejection을 consume하고 context를 logging하되, store가 이전 scope와 `saveError`를 유지해 데이터 손실을 숨기지 않는다.
+
+follow-up 검증은 focused 2 files/17 tests와 Task 8~12 회귀 10 files/66 tests PASS이며 stderr warning/unhandled rejection 0이다. deferred P1이 pending인 동안 P2 timer를 경과시켜도 persistence 호출은 1회이고, P1 뒤 P2가 시작돼 P2 ACK 후 barrier가 완료된다. 실패 시 latest dirty retry와 scope 보존도 검증했다. 변경 파일 ESLint와 `git diff --check`는 PASS이며 전체 타입체크는 follow-up 신규 오류 없이 사용자 dirty baseline 1건만 유지한다.
+
 ### 17.6 범위 제외
 
 - 실패한 world mutation payload 보존 및 backoff

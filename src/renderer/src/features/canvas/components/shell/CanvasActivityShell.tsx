@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@renderer/components/ui/button";
 import { ScrollArea } from "@renderer/components/ui/scroll-area";
+import { api } from "@shared/api";
 
 import { useCanvasViewStore } from "../../stores/canvasViewStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
@@ -68,10 +69,15 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
     void useCharacterStore.getState().loadCharacters(projectId);
     void useEventStore.getState().loadEvents(projectId);
     void useFactionStore.getState().loadFactions(projectId);
-    void useMemoStore.getState().loadNotes(
-      projectId,
-      currentProject.projectPath ?? null,
-    );
+    void useMemoStore
+      .getState()
+      .loadNotes(projectId, currentProject.projectPath ?? null)
+      .catch((error) => {
+        void api.logger.warn("Failed to load Canvas memo project scope", {
+          projectId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
     void loadGraph(projectId);
   }, [currentProject?.id, currentProject?.projectPath, loadGraph]);
 
