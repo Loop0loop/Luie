@@ -35,3 +35,18 @@
 - Target ESLint: PASS
 - `git diff --check`: PASS
 - `tsc6 --noEmit`: Task 14 errors 0; blocked only by user-owned dirty `BinderSidebarPanelBody.tsx:102` baseline TS2322
+
+## Review follow-up — detached skip and shutdown wiring
+
+- RED: 2 files/20 tests, 5 expected failures from detached work counted/exported as success output
+- Queue callback result is internal `boolean | "skipped"`; public `runNow` remains boolean
+- missing, non-`.luie`, invalid relative path, and missing-project attachment `null` cleanly skip
+- skip clears dirty state without failure stat, export engine call, or exported revision mark
+- manual-save callers receive local-save success; a later valid attachment and schedule exports normally
+- timeout followed by late throw retains dirty and retries on the next flush
+- real `before-quit` wiring covers cancel/re-entry, hard retry success, explicit skip, and hard failure/timeout cancel
+- Focused: 5 files/34 tests PASS
+- Task 8~14 regression: 17 files/109 tests PASS
+- Electron-as-Node recovery: 2 files/2 tests PASS
+- Target ESLint and diff-check: PASS
+- Typecheck: follow-up errors 0; only the known user dirty baseline remains

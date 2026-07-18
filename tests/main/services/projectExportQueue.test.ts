@@ -13,14 +13,19 @@ vi.mock(
   () => revisionMocks,
 );
 
-import { ProjectExportQueue } from "../../../src/main/services/core/project/projectExportQueue.js";
+import {
+  ProjectExportQueue,
+  type ProjectExportRun,
+} from "../../../src/main/services/core/project/projectExportQueue.js";
 
 const deferred = <T>() => {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((resolvePromise) => {
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
     resolve = resolvePromise;
+    reject = rejectPromise;
   });
-  return { promise, resolve };
+  return { promise, resolve, reject };
 };
 
 describe("ProjectExportQueue", () => {
@@ -266,5 +271,54 @@ describe("ProjectExportQueue", () => {
       timedOut: false,
     });
     expect(runExport).toHaveBeenCalledOnce();
+  });
+
+  it("cleans up a skipped export without marking or counting a failure", async () => {
+    const runExport = vi
+      .fn<ProjectExportRun>()
+      .mockResolvedValue("skipped");
+    const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+    const queue = new ProjectExportQueue(100, runExport, logger);
+
+    queue.schedule("project-1", "detached-save");
+    await expect(queue.flush()).resolves.toEqual({
+      total: 1,
+      flushed: 0,
+      failed: 0,
+      timedOut: false,
+    });
+    expect(revisionMocks.markProjectExported).not.toHaveBeenCalled();
+    expect(queue.getReasonStats()["detached-save"]?.failed).toBe(0);
+    await expect(queue.flush()).resolves.toMatchObject({ total: 0 });
+  });
+
+  it("retains a late throw after timeout and retries on the next flush", async () => {
+    const lateExport = deferred<boolean>();
+    const runExport = vi
+      .fn<(projectId: string, revision: number) => Promise<boolean>>()
+      .mockReturnValueOnce(lateExport.promise)
+      .mockResolvedValueOnce(true);
+    const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+    const queue = new ProjectExportQueue(100, runExport, logger);
+
+    queue.schedule("project-1", "late-throw");
+    await expect(queue.flush(1)).resolves.toMatchObject({
+      failed: 0,
+      timedOut: true,
+    });
+
+    lateExport.reject(new Error("late disk failure"));
+    await vi.waitFor(() =>
+      expect(queue.getReasonStats().flush?.failed).toBe(1),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    await expect(queue.flush()).resolves.toMatchObject({
+      total: 1,
+      flushed: 1,
+      failed: 0,
+      timedOut: false,
+    });
+    expect(runExport).toHaveBeenCalledTimes(2);
   });
 });

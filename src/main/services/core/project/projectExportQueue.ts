@@ -3,10 +3,12 @@ import {
   markProjectExported,
 } from "./projectRevisionStore.js";
 
+export type ProjectExportRunResult = boolean | "skipped";
+
 export type ProjectExportRun = (
   projectId: string,
   revision: number,
-) => Promise<boolean>;
+) => Promise<ProjectExportRunResult>;
 
 export type ProjectExportQueueFlushResult = {
   total: number;
@@ -23,7 +25,7 @@ type QueueLogger = {
 
 type ProjectExportState = {
   timer: NodeJS.Timeout | null;
-  inFlight: Promise<boolean> | null;
+  inFlight: Promise<ProjectExportRunResult> | null;
   dirty: boolean;
 };
 
@@ -126,10 +128,13 @@ export class ProjectExportQueue {
     state.dirty = true;
     this.clearTimer(state);
     this.trackReason(reason, "immediate");
-    return await this.runLoop(projectId, reason ?? "immediate");
+    return (await this.runLoop(projectId, reason ?? "immediate")) !== false;
   }
 
-  private async runLoop(projectId: string, reason?: string): Promise<boolean> {
+  private async runLoop(
+    projectId: string,
+    reason?: string,
+  ): Promise<ProjectExportRunResult> {
     this.trackReason(reason, "started");
     const state = this.getOrCreate(projectId);
     if (state.inFlight) {
@@ -137,13 +142,16 @@ export class ProjectExportQueue {
       return state.inFlight;
     }
 
-    const execute = async (): Promise<boolean> => {
-      let exported = false;
+    const execute = async (): Promise<ProjectExportRunResult> => {
+      let exported: ProjectExportRunResult = false;
       while (state.dirty) {
         state.dirty = false;
         const { revision: capturedRevision } =
           await getProjectRevisionState(projectId);
         exported = await this.runExport(projectId, capturedRevision);
+        if (exported === "skipped") {
+          return exported;
+        }
         if (!exported) {
           state.dirty = true;
           this.trackReason(reason, "failed");
@@ -203,9 +211,9 @@ export class ProjectExportQueue {
     const jobs = pendingProjectIds.map(async (projectId) => {
       try {
         const exported = await this.runLoop(projectId, "flush");
-        if (exported) {
+        if (exported === true) {
           flushed += 1;
-        } else {
+        } else if (exported === false) {
           failed += 1;
         }
       } catch (error) {

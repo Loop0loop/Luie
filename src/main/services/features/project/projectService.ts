@@ -8,6 +8,7 @@ import * as schema from "../../../infra/database/index.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import {
   ErrorCode,
+  LUIE_PACKAGE_EXTENSION,
   PACKAGE_EXPORT_DEBOUNCE_MS,
 } from "../../../../shared/constants/index.js";
 import type {
@@ -16,6 +17,7 @@ import type {
   ProjectUpdateInput,
 } from "../../../../shared/types/index.js";
 import { ServiceError } from "../../../utils/error/index.js";
+import { ensureSafeAbsolutePath } from "../../../utils/fs/index.js";
 import { ProjectExportQueue } from "../../core/project/projectExportQueue.js";
 import { withProjectPathStatus } from "../../core/project/projectListStatus.js";
 import {
@@ -82,10 +84,35 @@ const loadProjectExportEngine = async () =>
 const loadProjectImportOpen = async () =>
   (await import("../../core/project/projectImportOpen.js")).openLuieProjectPackage;
 
+const getCanonicalProjectAttachmentPath = async (
+  projectId: string,
+): Promise<string | null> => {
+  const projectPath = await getProjectAttachmentPath(projectId);
+  if (
+    !projectPath ||
+    !projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)
+  ) {
+    return null;
+  }
+  try {
+    return ensureSafeAbsolutePath(projectPath, "projectPath");
+  } catch {
+    return null;
+  }
+};
+
 export class ProjectService {
   private exportQueue = new ProjectExportQueue(
     PACKAGE_EXPORT_DEBOUNCE_MS,
-    async (projectId: string) => await this.exportProjectPackage(projectId),
+    async (projectId: string) => {
+      if (!(await getCanonicalProjectAttachmentPath(projectId))) {
+        logger.info("Skipped queued project export (detached project)", {
+          projectId,
+        });
+        return "skipped";
+      }
+      return await this.exportProjectPackage(projectId);
+    },
     logger,
   );
   private hasLoggedRuntimeExportSkip = false;
@@ -368,8 +395,8 @@ export class ProjectService {
     reason: string,
   ): Promise<PackageExportAttemptResult> {
     try {
-      const projectPath = await getProjectAttachmentPath(projectId);
-      if (!projectPath || !projectPath.toLowerCase().endsWith(".luie")) {
+      const projectPath = await getCanonicalProjectAttachmentPath(projectId);
+      if (!projectPath) {
         logger.info(
           "Skipped immediate project package export (no canonical .luie attachment)",
           {

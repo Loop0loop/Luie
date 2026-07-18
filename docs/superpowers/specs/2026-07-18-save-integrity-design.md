@@ -458,3 +458,9 @@ main autosave flush 뒤 강제 package export가 `false` 또는 throw로 끝나�
 ### 19.3 quit 사용자 결정
 
 soft export flush의 `failed > 0` 또는 `timedOut`은 모두 종료 차단 상태다. 첫 dialog의 기본값은 종료 취소이며 사용자는 재시도, 종료 취소, 저장 생략 후 종료 중 하나를 명시적으로 선택한다. 재시도 hard flush도 실패 또는 timeout이면 두 번째 warning을 표시하고 기본값을 종료 취소로 둔다. hard flush 성공 또는 사용자의 명시적 skip에서만 finalize와 `app.exit`으로 진행한다.
+
+### 19.4 detached project 정상 skip
+
+export engine의 boolean은 실제 파일 쓰기 실패와 canonical `.luie` attachment 부재를 구분하지 않는다. engine 계약은 바꾸지 않고 `ProjectService`가 queue에 전달하는 adapter에서 attachment를 선검사한다. missing, non-`.luie`, unsafe/invalid path와 존재하지 않는 project의 attachment 조회 `null`은 supported detached 상태로 `skipped` 처리한다.
+
+`skipped`는 queue dirty와 registry를 정리하지만 `markProjectExported`, failed stat/log를 만들지 않는다. flush는 `total`에는 포함하되 `flushed`와 `failed` 모두 증가시키지 않는다. public `runNow`/`exportProjectPackageNow`는 SQLite local save 성공 의미로 `true`를 반환하므로 MANUAL_SAVE가 실패로 오인하지 않는다. 이후 유효한 attachment가 연결되고 새 mutation/schedule이 오면 실제 export를 수행한다. attachment가 유효한 상태에서 engine이 `false` 또는 throw한 경우에만 Task 14의 실패 보존과 다음 호출 재시도를 적용한다.

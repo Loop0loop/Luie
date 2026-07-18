@@ -1674,3 +1674,17 @@ Actual (2026-07-19): RED는 실제 character store 경로 1 files/5 tests 중 1�
 - [x] **Step 7: SSOT/report 동기화 및 단일 커밋**
 
 Actual (2026-07-19): 최초 RED는 3 files에서 queue false 오집계/dirty 제거, throw retry 제거, scheduled failure 정리, manual false 성공 응답의 5 assertion이 예상대로 실패했고 quit helper 부재로 1 suite가 실패했다. GREEN은 focused 3 files/18 tests, Task 8~14 비-DB 저장 회귀 15 files/93 tests PASS이며 unhandled rejection이 없다. Electron-as-Node DB recovery는 2 files/2 tests PASS했다. `dirty=false`와 `failed` 무시 변이는 각각 retry/quit cancel 테스트를 실패시켰다. 대상 ESLint와 `git diff --check`는 PASS다. `tsc6 --noEmit`은 Task 14 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 1건만 유지한다.
+
+#### Task 14 review follow-up: detached skip과 shutdown wiring
+
+**Status:** 완료
+
+- [x] attachment missing/non-`.luie`/invalid path를 queue adapter의 정상 `skipped`로 분리
+- [x] skipped는 exported revision/failure stat 없이 idle cleanup하고 public manual save에는 성공 반환
+- [x] attachment 뒤 새 schedule이 실제 export를 수행하는 RED/GREEN
+- [x] 실제 `registerShutdownHandlers`의 cancel/retry/skip/hard failure wiring RED/GREEN
+- [x] timeout 뒤 late throw retry RED/GREEN
+- [x] Task 8~14 회귀, Electron DB recovery, 정적 검증, SSOT/report 동기화
+- [x] follow-up 단일 커밋 `fix(storage): distinguish skipped exports`
+
+Actual (2026-07-19): skip RED는 2 files/20 tests 중 5건이 detached/invalid attachment를 실제 export와 flushed로 계산하고 attachment 이후 총 export 횟수가 오염돼 예상대로 실패했다. tri-state는 queue 내부에만 두고 public runNow boolean은 `skipped`를 local save 성공으로 반환한다. focused 5 files/34 tests와 실제 shutdown wiring 5경로, Task 8~14 회귀 17 files/109 tests, Electron-as-Node DB recovery 2 files/2 tests가 PASS했다. 대상 ESLint와 `git diff --check`는 PASS다. `tsc6 --noEmit`은 follow-up 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 1건만 유지한다.
