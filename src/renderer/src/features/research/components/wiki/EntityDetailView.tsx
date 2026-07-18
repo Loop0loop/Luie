@@ -41,7 +41,7 @@ type UpdateInput = {
   id: string;
   name?: string;
   description?: string;
-  attributes?: Record<string, unknown>;
+  attributesPatch?: Record<string, unknown>;
 };
 
 type EntityDetailViewProps = {
@@ -135,11 +135,15 @@ export function EntityDetailView({
   };
 
   const handleAttrUpdate = (key: string, value: unknown) => {
-    void updateEntity({ id: entity.id, attributes: { ...attributes, [key]: value } });
+    void updateEntity({ id: entity.id, attributesPatch: { [key]: value } });
   };
 
   const addCustomField = () => {
-    const newKey = `custom_${Date.now()}`;
+    let nextIndex = customFields.length;
+    while (customFields.some((field) => field.key === `custom_${nextIndex}`)) {
+      nextIndex += 1;
+    }
+    const newKey = `custom_${nextIndex}`;
     handleAttrUpdate("customFields", [
       ...customFields,
       {

@@ -16,6 +16,7 @@ import { rebuildProjectKeywordAppearances } from "../../manuscript/chapterKeywor
 import { projectService } from "../../project/projectService.js";
 import { ServiceError } from "../../../../utils/error/index.js";
 import { escapeLike } from "../../../../utils/query/index.js";
+import { bumpProjectRevision } from "../../../core/project/projectRevisionStore.js";
 
 const loadAppearanceCacheService = async () =>
   (await import("../cache/appearanceCacheService.js")).appearanceCacheService;
@@ -28,39 +29,40 @@ export class TermService {
       logger.info("Creating term", input);
 
       const now = new Date().toISOString();
-      const [result] = await db
-        .getClient()
-        .insert(term)
-        .values({
-          id: crypto.randomUUID(),
-          projectId: input.projectId,
-          term: input.term,
-          definition: input.definition ?? null,
-          category: input.category ?? null,
-          order: input.order ?? 0,
-          firstAppearance: input.firstAppearance ?? null,
-          updatedAt: now,
-        })
-        .returning();
-
-      if (!result) {
-        throw new ServiceError(
-          ErrorCode.TERM_CREATE_FAILED,
-          "Failed to create term",
-          { input },
-        );
-      }
+      const result = db.getClient().transaction((tx) => {
+        const created = tx
+          .insert(term)
+          .values({
+            id: crypto.randomUUID(),
+            projectId: input.projectId,
+            term: input.term,
+            definition: input.definition ?? null,
+            category: input.category ?? null,
+            order: input.order ?? 0,
+            firstAppearance: input.firstAppearance ?? null,
+            updatedAt: now,
+          })
+          .returning()
+          .get();
+        if (!created) {
+          throw new ServiceError(
+            ErrorCode.TERM_CREATE_FAILED,
+            "Failed to create term",
+            { input },
+          );
+        }
+        bumpProjectRevision(tx, input.projectId, now);
+        return created;
+      });
 
       logger.info("Term created successfully", { termId: result.id });
-      await rebuildProjectKeywordAppearances(input.projectId, {
+      void rebuildProjectKeywordAppearances(input.projectId, {
         includeCharacters: false,
         includeTerms: true,
-      });
-      await projectService.touchProject(input.projectId);
-      await projectService.persistPackageAfterMutation(
-        input.projectId,
-        "term:create",
+      }).catch((error) =>
+        logger.warn("Failed to rebuild term appearances", error),
       );
+      projectService.schedulePackageExport(input.projectId, "term:create");
       return result;
     } catch (error) {
       logger.error("Failed to create term", error);
@@ -133,6 +135,7 @@ export class TermService {
   async updateTerm(input: TermUpdateInput) {
     try {
       const updateData: Partial<typeof term.$inferInsert> = {};
+      const now = new Date().toISOString();
 
       if (input.term !== undefined) updateData.term = input.term;
       if (input.definition !== undefined)
@@ -141,46 +144,44 @@ export class TermService {
       if (input.order !== undefined) updateData.order = input.order;
       if (input.firstAppearance !== undefined)
         updateData.firstAppearance = input.firstAppearance;
+      updateData.updatedAt = now;
 
-      const currentResults = await db
-        .getClient()
-        .select({
-          id: term.id,
-          projectId: term.projectId,
-          deletedAt: term.deletedAt,
-        })
-        .from(term)
-        .where(eq(term.id, input.id))
-        .limit(1);
-      const current = currentResults[0];
-      if (!current || current.deletedAt) {
-        throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
-          id: input.id,
-        });
-      }
-
-      const [updated] = await db
-        .getClient()
-        .update(term)
-        .set(updateData)
-        .where(eq(term.id, input.id))
-        .returning();
-
-      if (!updated) {
-        throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
-          id: input.id,
-        });
-      }
+      const updated = db.getClient().transaction((tx) => {
+        const current = tx
+          .select()
+          .from(term)
+          .where(eq(term.id, input.id))
+          .get();
+        if (!current || current.deletedAt) {
+          throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
+            id: input.id,
+          });
+        }
+        const next = tx
+          .update(term)
+          .set(updateData)
+          .where(eq(term.id, input.id))
+          .returning()
+          .get();
+        if (!next) {
+          throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
+            id: input.id,
+          });
+        }
+        bumpProjectRevision(tx, String(current.projectId), now);
+        return next;
+      });
 
       logger.info("Term updated successfully", { termId: updated.id });
       if (input.term !== undefined) {
-        await rebuildProjectKeywordAppearances(String(updated.projectId), {
+        void rebuildProjectKeywordAppearances(String(updated.projectId), {
           includeCharacters: false,
           includeTerms: true,
-        });
+        }).catch((error) =>
+          logger.warn("Failed to rebuild term appearances", error),
+        );
       }
-      await projectService.touchProject(String(updated.projectId));
-      await projectService.persistPackageAfterMutation(
+      projectService.schedulePackageExport(
         String(updated.projectId),
         "term:update",
       );
@@ -199,50 +200,45 @@ export class TermService {
 
   async deleteTerm(id: string) {
     try {
-      const currentResults = await db
-        .getClient()
-        .select({ projectId: term.projectId, deletedAt: term.deletedAt })
-        .from(term)
-        .where(eq(term.id, id))
-        .limit(1);
-      const current = currentResults[0];
-
-      const projectId = current?.projectId ?? null;
       const now = new Date().toISOString();
 
-      db.getClient().transaction((tx) => {
-        if (projectId) {
-          tx.delete(entityRelation)
-            .where(
-              or(
-                eq(entityRelation.sourceId, id),
-                eq(entityRelation.targetId, id),
-              ),
-            )
-            .run();
-        }
-        const result = tx
-          .update(term)
-          .set({ deletedAt: now, updatedAt: now })
-          .where(eq(term.id, id))
-          .run();
-        if (!result) {
+      const projectId = db.getClient().transaction((tx) => {
+        const current = tx.select().from(term).where(eq(term.id, id)).get();
+        if (!current || current.deletedAt) {
           throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
             id,
           });
         }
+        tx.delete(entityRelation)
+          .where(
+            or(
+              eq(entityRelation.sourceId, id),
+              eq(entityRelation.targetId, id),
+            ),
+          )
+          .run();
+        const deleted = tx
+          .update(term)
+          .set({ deletedAt: now, updatedAt: now })
+          .where(eq(term.id, id))
+          .returning()
+          .get();
+        if (!deleted) {
+          throw new ServiceError(ErrorCode.TERM_NOT_FOUND, "Term not found", {
+            id,
+          });
+        }
+        bumpProjectRevision(tx, String(current.projectId), now);
+        return String(current.projectId);
       });
-      const appearanceCacheService = await loadAppearanceCacheService();
-      await appearanceCacheService.clearTermEntity(id);
+      void loadAppearanceCacheService()
+        .then((service) => service.clearTermEntity(id))
+        .catch((error) =>
+          logger.warn("Failed to clear term appearances", error),
+        );
 
       logger.info("Term deleted successfully", { termId: id });
-      if (projectId) {
-        await projectService.touchProject(projectId);
-        await projectService.persistPackageAfterMutation(
-          projectId,
-          "term:delete",
-        );
-      }
+      projectService.schedulePackageExport(projectId, "term:delete");
       return { success: true };
     } catch (error) {
       logger.error("Failed to delete term", error);

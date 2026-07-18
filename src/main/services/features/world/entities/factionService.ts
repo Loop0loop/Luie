@@ -9,6 +9,8 @@ import type {
 } from "../../../../../shared/types/index.js";
 import { projectService } from "../../project/projectService.js";
 import { ServiceError } from "../../../../utils/error/index.js";
+import { bumpProjectRevision } from "../../../core/project/projectRevisionStore.js";
+import { mergeStructuredAttributes } from "./worldEntityUpdateHelpers.js";
 
 const logger = createLogger("FactionService");
 
@@ -18,35 +20,37 @@ export class FactionService {
       logger.info("Creating faction", input);
 
       const now = new Date().toISOString();
-      const [result] = await db
-        .getClient()
-        .insert(faction)
-        .values({
-          id: crypto.randomUUID(),
-          projectId: input.projectId,
-          name: input.name,
-          description: input.description ?? null,
-          firstAppearance: input.firstAppearance ?? null,
-          attributes: input.attributes
-            ? JSON.stringify(input.attributes)
-            : null,
-          updatedAt: now,
-        })
-        .returning();
-
-      if (!result) {
-        throw new ServiceError(
-          ErrorCode.FACTION_CREATE_FAILED,
-          "Failed to create faction",
-          { input },
-        );
-      }
+      const result = db.getClient().transaction((tx) => {
+        const created = tx
+          .insert(faction)
+          .values({
+            id: crypto.randomUUID(),
+            projectId: input.projectId,
+            name: input.name,
+            description: input.description ?? null,
+            firstAppearance: input.firstAppearance ?? null,
+            attributes: input.attributes
+              ? JSON.stringify(input.attributes)
+              : null,
+            updatedAt: now,
+          })
+          .returning()
+          .get();
+        if (!created) {
+          throw new ServiceError(
+            ErrorCode.FACTION_CREATE_FAILED,
+            "Failed to create faction",
+            { input },
+          );
+        }
+        bumpProjectRevision(tx, input.projectId, now);
+        return created;
+      });
 
       logger.info("Faction created successfully", {
         factionId: result.id,
       });
-      await projectService.touchProject(input.projectId);
-      await projectService.persistPackageAfterMutation(
+      projectService.schedulePackageExport(
         input.projectId,
         "faction:create",
       );
@@ -120,55 +124,61 @@ export class FactionService {
   async updateFaction(input: FactionUpdateInput) {
     try {
       const updateData: Partial<typeof faction.$inferInsert> = {};
+      const now = new Date().toISOString();
 
       if (input.name !== undefined) updateData.name = input.name;
       if (input.description !== undefined)
         updateData.description = input.description;
       if (input.firstAppearance !== undefined)
         updateData.firstAppearance = input.firstAppearance;
-      if (input.attributes !== undefined) {
-        updateData.attributes = JSON.stringify(input.attributes);
-      }
+      updateData.updatedAt = now;
 
-      const currentResults = await db
-        .getClient()
-        .select({
-          id: faction.id,
-          projectId: faction.projectId,
-          deletedAt: faction.deletedAt,
-        })
-        .from(faction)
-        .where(eq(faction.id, input.id))
-        .limit(1);
-      const current = currentResults[0];
-      if (!current || current.deletedAt) {
-        throw new ServiceError(
-          ErrorCode.FACTION_NOT_FOUND,
-          "Faction not found",
-          { id: input.id },
-        );
-      }
-
-      const [updated] = await db
-        .getClient()
-        .update(faction)
-        .set(updateData)
-        .where(eq(faction.id, input.id))
-        .returning();
-
-      if (!updated) {
-        throw new ServiceError(
-          ErrorCode.FACTION_UPDATE_FAILED,
-          "Faction not found",
-          { id: input.id },
-        );
-      }
+      const updated = db.getClient().transaction((tx) => {
+        const current = tx
+          .select()
+          .from(faction)
+          .where(eq(faction.id, input.id))
+          .get();
+        if (!current || current.deletedAt) {
+          throw new ServiceError(
+            ErrorCode.FACTION_NOT_FOUND,
+            "Faction not found",
+            { id: input.id },
+          );
+        }
+        if (
+          input.attributes !== undefined ||
+          input.attributesPatch !== undefined
+        ) {
+          updateData.attributes = JSON.stringify(
+            mergeStructuredAttributes(
+              current.attributes,
+              input.attributes,
+              input.attributesPatch,
+            ),
+          );
+        }
+        const next = tx
+          .update(faction)
+          .set(updateData)
+          .where(eq(faction.id, input.id))
+          .returning()
+          .get();
+        if (!next) {
+          throw new ServiceError(
+            ErrorCode.FACTION_UPDATE_FAILED,
+            "Faction not found",
+            { id: input.id },
+          );
+        }
+        bumpProjectRevision(tx, String(current.projectId), now);
+        return next;
+      });
 
       logger.info("Faction updated successfully", {
         factionId: updated.id,
       });
-      await projectService.touchProject(String(updated.projectId));
-      await projectService.persistPackageAfterMutation(
+      projectService.schedulePackageExport(
         String(updated.projectId),
         "faction:update",
       );
@@ -187,50 +197,48 @@ export class FactionService {
 
   async deleteFaction(id: string) {
     try {
-      const currentResults = await db
-        .getClient()
-        .select({ projectId: faction.projectId, deletedAt: faction.deletedAt })
-        .from(faction)
-        .where(eq(faction.id, id))
-        .limit(1);
-      const current = currentResults[0];
-
-      const projectId = current?.projectId ?? null;
       const now = new Date().toISOString();
 
-      db.getClient().transaction((tx) => {
-        if (projectId) {
-          tx.delete(entityRelation)
-            .where(
-              or(
-                eq(entityRelation.sourceId, id),
-                eq(entityRelation.targetId, id),
-              ),
-            )
-            .run();
-        }
-        const result = tx
-          .update(faction)
-          .set({ deletedAt: now, updatedAt: now })
+      const projectId = db.getClient().transaction((tx) => {
+        const current = tx
+          .select()
+          .from(faction)
           .where(eq(faction.id, id))
-          .run();
-        if (!result) {
+          .get();
+        if (!current || current.deletedAt) {
           throw new ServiceError(
             ErrorCode.FACTION_NOT_FOUND,
             "Faction not found",
             { id },
           );
         }
+        tx.delete(entityRelation)
+          .where(
+            or(
+              eq(entityRelation.sourceId, id),
+              eq(entityRelation.targetId, id),
+            ),
+          )
+          .run();
+        const deleted = tx
+          .update(faction)
+          .set({ deletedAt: now, updatedAt: now })
+          .where(eq(faction.id, id))
+          .returning()
+          .get();
+        if (!deleted) {
+          throw new ServiceError(
+            ErrorCode.FACTION_NOT_FOUND,
+            "Faction not found",
+            { id },
+          );
+        }
+        bumpProjectRevision(tx, String(current.projectId), now);
+        return String(current.projectId);
       });
 
       logger.info("Faction deleted successfully", { factionId: id });
-      if (projectId) {
-        await projectService.touchProject(projectId);
-        await projectService.persistPackageAfterMutation(
-          projectId,
-          "faction:delete",
-        );
-      }
+      projectService.schedulePackageExport(projectId, "faction:delete");
       return { success: true };
     } catch (error) {
       logger.error("Failed to delete faction", error);

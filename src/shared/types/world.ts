@@ -165,6 +165,7 @@ export interface CharacterUpdateInput {
   description?: string;
   firstAppearance?: string;
   attributes?: Record<string, unknown>;
+  attributesPatch?: Record<string, unknown>;
 }
 export interface CharacterAppearanceInput {
   projectId: string;
@@ -209,6 +210,7 @@ export interface EventUpdateInput {
   description?: string;
   firstAppearance?: string;
   attributes?: Record<string, unknown>;
+  attributesPatch?: Record<string, unknown>;
 }
 export interface FactionCreateInput {
   projectId: string;
@@ -223,6 +225,7 @@ export interface FactionUpdateInput {
   description?: string;
   firstAppearance?: string;
   attributes?: Record<string, unknown>;
+  attributesPatch?: Record<string, unknown>;
 }
 export type WorldEntityType = "Place" | "Concept" | "Rule" | "Item";
 export type WorldEntitySourceType =

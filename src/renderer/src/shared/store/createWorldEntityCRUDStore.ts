@@ -12,6 +12,7 @@ import { runWithProjectLock } from "@renderer/features/research/utils/projectMut
 import { createLatestMutationQueue } from "./worldEntityMutationQueue";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuilding/worldBuildingStore";
 import { replaceEntityNodePreservingPosition } from "@renderer/features/research/stores/worldBuilding/worldBuildingStore.graph";
+import { parseStructuredAttributes } from "@renderer/features/research/utils/parseStructuredAttributes";
 
 interface BaseItem {
   id: string;
@@ -43,7 +44,10 @@ export interface WorldEntityCRUDBase<
 export interface CreateWorldEntityCRUDStoreOptions<
   T extends BaseItem,
   CreateInput extends { projectId?: string },
-  UpdateInput extends { id: string },
+  UpdateInput extends {
+    id: string;
+    attributesPatch?: Record<string, unknown>;
+  },
   AliasesT,
 > {
   /** API 클라이언트 (예: api.character, api.term 등) */
@@ -67,7 +71,10 @@ export interface CreateWorldEntityCRUDStoreOptions<
 export function createWorldEntityCRUDStore<
   T extends BaseItem,
   CreateInput extends { projectId?: string },
-  UpdateInput extends { id: string },
+  UpdateInput extends {
+    id: string;
+    attributesPatch?: Record<string, unknown>;
+  },
   AliasesT,
 >(
   options: CreateWorldEntityCRUDStoreOptions<
@@ -156,15 +163,30 @@ export function createWorldEntityCRUDStore<
         return null;
       }
 
+      const { attributesPatch, ...scalarInput } = input;
+      const applyOptimisticPatch = (item: T): T => ({
+        ...item,
+        ...scalarInput,
+        ...(attributesPatch
+          ? {
+              attributes: {
+                ...parseStructuredAttributes(
+                  (item as T & { attributes?: unknown }).attributes,
+                ),
+                ...attributesPatch,
+              },
+            }
+          : {}),
+      });
       setWithAlias(
         (state) =>
           ({
             items: state.items.map((item) =>
-              item.id === input.id ? ({ ...item, ...input } as T) : item,
+              item.id === input.id ? applyOptimisticPatch(item) : item,
             ),
             currentItem:
               state.currentItem?.id === input.id
-                ? ({ ...state.currentItem, ...input } as T)
+                ? applyOptimisticPatch(state.currentItem)
                 : state.currentItem,
           }) as Partial<
             WorldEntityCRUDBase<T, CreateInput, UpdateInput> & AliasesT
@@ -174,7 +196,18 @@ export function createWorldEntityCRUDStore<
       const queue =
         updateQueues.get(input.id) ??
         createLatestMutationQueue<UpdateInput, T>({
-          merge: (left, right) => ({ ...left, ...right }),
+          merge: (left, right) => ({
+            ...left,
+            ...right,
+            ...(left?.attributesPatch || right.attributesPatch
+              ? {
+                  attributesPatch: {
+                    ...(left?.attributesPatch ?? {}),
+                    ...(right.attributesPatch ?? {}),
+                  },
+                }
+              : {}),
+          }),
           execute: crudSlice.update,
         });
       updateQueues.set(input.id, queue);

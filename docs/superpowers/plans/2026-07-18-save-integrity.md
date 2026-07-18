@@ -412,6 +412,8 @@ git commit -m "feat(storage): track project export revisions"
 
 ### Task 4: world entity patch transaction과 빠른 ACK
 
+**Status:** 완료
+
 **Files:**
 - Modify: `src/shared/types/world.ts`
 - Modify: `src/shared/schemas/world.ts`
@@ -426,8 +428,8 @@ git commit -m "feat(storage): track project export revisions"
 - Modify: `src/main/services/features/project/projectService.ts`
 - Modify: `src/shared/constants/runtime/interactionTiming.ts`
 - Create: `tests/main/services/worldEntitySaveIntegrity.test.ts`
-- Create: `tests/renderer/stores/worldEntityAttributePatch.test.ts`
-- Modify: `tests/main/handler/ipcInputValidation.system.test.ts`
+- Modify: `tests/renderer/stores/characterStoreMutationLock.test.ts`
+- Verify: `tests/main/handler/ipcInputValidation.system.test.ts`
 - Modify: `tests/scripts/packageDurabilityBoundary.test.ts`
 
 **Interfaces:**
@@ -436,7 +438,7 @@ git commit -m "feat(storage): track project export revisions"
 - Consumes: `bumpProjectRevision(tx, projectId, nowIso)` from Task 3
 - Changes: world entity create/update/delete schedule `.luie` export after SQLite commit instead of awaiting full export
 
-- [ ] **Step 1: attributes patch와 ACK 경계 실패 테스트 작성**
+- [x] **Step 1: attributes patch와 ACK 경계 실패 테스트 작성**
 
 `worldEntitySaveIntegrity.test.ts`에 실제 DB 기반으로 다음을 작성한다.
 
@@ -465,13 +467,13 @@ it("merges character attributes and commits revision before scheduling export", 
 });
 ```
 
-- [ ] **Step 2: schema/input 부재로 실패 확인**
+- [x] **Step 2: schema/input 부재로 실패 확인**
 
 Run: `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/worldEntitySaveIntegrity.test.ts tests/main/handler/ipcInputValidation.system.test.ts --run`
 
 Expected: `attributesPatch`가 제거되거나 revision이 증가하지 않아 FAIL.
 
-- [ ] **Step 3: shared patch 계약 추가**
+- [x] **Step 3: shared patch 계약 추가**
 
 character/event/faction update type과 Zod schema에 다음을 추가한다.
 
@@ -501,7 +503,7 @@ void updateEntity({
 });
 ```
 
-`useCharacterWikiAttrs.setManyAttrs`도 `attributesPatch: updates`를 전송한다. `worldEntityAttributePatch.test.ts`는 서로 다른 key를 연속 변경했을 때 두 patch가 queue에서 병합되고 어느 key도 사라지지 않는지 검증한다.
+`useCharacterWikiAttrs.setManyAttrs`도 `attributesPatch: updates`를 전송한다. 기존 `characterStoreMutationLock.test.ts`에 서로 다른 key를 연속 변경했을 때 두 patch가 queue에서 병합되고 어느 key도 사라지지 않는지 검증하는 회귀 테스트를 추가한다.
 
 `createWorldEntityCRUDStore`의 queue merge도 `attributesPatch`만 중첩 병합한다.
 
@@ -520,7 +522,7 @@ const mergeWorldEntityUpdate = (left, right) => ({
 });
 ```
 
-- [ ] **Step 4: entity update를 단일 transaction으로 변경**
+- [x] **Step 4: entity update를 단일 transaction으로 변경**
 
 character/event/faction은 transaction 안에서 현재 row를 조회하고 structured attributes를 병합한 뒤 entity update와 `bumpProjectRevision`을 실행한다. term은 scalar patch update와 revision 증가만 같은 transaction에 둔다.
 
@@ -557,7 +559,7 @@ return updated;
 
 name/term 변경에 따른 appearance rebuild는 `void ...catch(logger.warn)`으로 projection 작업으로 분리한다. create/delete에도 revision 증가와 scheduled export를 적용해 revision 불변식을 유지한다.
 
-- [ ] **Step 5: package export debounce를 1500ms로 변경**
+- [x] **Step 5: package export debounce를 1500ms로 변경**
 
 ```ts
 export const PACKAGE_EXPORT_DEBOUNCE_MS = 1500;
@@ -565,20 +567,22 @@ export const PACKAGE_EXPORT_DEBOUNCE_MS = 1500;
 
 `DEBOUNCED_PACKAGE_EXPORT_REASONS`에 character, term, event, faction의 create/update/delete reason을 추가한다. `persistPackageAfterMutation`은 해당 reason에서 즉시 export를 기다리지 않는다.
 
-- [ ] **Step 6: 잘못된 durability guard 수정**
+- [x] **Step 6: 잘못된 durability guard 수정**
 
 `packageDurabilityBoundary.test.ts`는 service에 `schedulePackageExport` 문자열이 없음을 검사하지 않는다. 대신 모든 canonical mutation이 `bumpProjectRevision`과 중앙 `persistPackageAfterMutation` 또는 `schedulePackageExport`를 거치는지 검사한다.
 
-- [ ] **Step 7: Task 4 테스트 실행**
+- [x] **Step 7: Task 4 테스트 실행**
 
-Run: `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/worldEntitySaveIntegrity.test.ts tests/renderer/stores/worldEntityAttributePatch.test.ts tests/main/handler/ipcInputValidation.system.test.ts tests/scripts/packageDurabilityBoundary.test.ts --run`
+Run: `ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron ./node_modules/vitest/vitest.mjs tests/main/services/worldEntitySaveIntegrity.test.ts tests/renderer/stores/characterStoreMutationLock.test.ts tests/main/handler/ipcInputValidation.system.test.ts tests/scripts/packageDurabilityBoundary.test.ts --run`
 
 Expected: PASS.
 
-- [ ] **Step 8: Task 4 커밋**
+Actual (2026-07-18): 핵심 4 files, 19 tests PASS; queue/CRUD 회귀 3 files, 11 tests PASS; graph delta 3 tests PASS; 대상 ESLint, `./node_modules/.bin/tsc6 --noEmit`, `git diff --check` PASS. 로컬 native module이 Electron ABI로 빌드되어 실제 DB 테스트는 Electron Node 런타임으로 실행했다.
+
+- [x] **Step 8: Task 4 커밋**
 
 ```bash
-git add src/shared/types/world.ts src/shared/schemas/world.ts src/renderer/src/shared/store/createWorldEntityCRUDStore.ts src/renderer/src/features/research/components/wiki/hooks/useCharacterWikiAttrs.ts src/renderer/src/features/research/components/wiki/EntityDetailView.tsx src/main/services/features/world/entities/worldEntityUpdateHelpers.ts src/main/services/features/world/entities/characterService.ts src/main/services/features/world/entities/eventService.ts src/main/services/features/world/entities/factionService.ts src/main/services/features/world/entities/termService.ts src/main/services/features/project/projectService.ts src/shared/constants/runtime/interactionTiming.ts tests/main/services/worldEntitySaveIntegrity.test.ts tests/renderer/stores/worldEntityAttributePatch.test.ts tests/main/handler/ipcInputValidation.system.test.ts tests/scripts/packageDurabilityBoundary.test.ts
+git add docs/superpowers/plans/2026-07-18-save-integrity.md src/shared/types/world.ts src/shared/schemas/world.ts src/renderer/src/shared/store/createWorldEntityCRUDStore.ts src/renderer/src/features/research/components/wiki/hooks/useCharacterWikiAttrs.ts src/renderer/src/features/research/components/wiki/EntityDetailView.tsx src/main/services/features/world/entities/worldEntityUpdateHelpers.ts src/main/services/features/world/entities/characterService.ts src/main/services/features/world/entities/eventService.ts src/main/services/features/world/entities/factionService.ts src/main/services/features/world/entities/termService.ts src/main/services/features/project/projectService.ts src/shared/constants/runtime/interactionTiming.ts tests/main/services/worldEntitySaveIntegrity.test.ts tests/renderer/stores/characterStoreMutationLock.test.ts tests/scripts/packageDurabilityBoundary.test.ts
 git commit -m "fix(storage): commit world entity patches first"
 ```
 

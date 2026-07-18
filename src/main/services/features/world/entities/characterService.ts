@@ -16,6 +16,8 @@ import { rebuildProjectKeywordAppearances } from "../../manuscript/chapterKeywor
 import { projectService } from "../../project/projectService.js";
 import { ServiceError } from "../../../../utils/error/index.js";
 import { escapeLike } from "../../../../utils/query/index.js";
+import { bumpProjectRevision } from "../../../core/project/projectRevisionStore.js";
+import { mergeStructuredAttributes } from "./worldEntityUpdateHelpers.js";
 
 const loadAppearanceCacheService = async () =>
   (await import("../cache/appearanceCacheService.js")).appearanceCacheService;
@@ -30,39 +32,43 @@ export class CharacterService {
       logger.info("Creating character", input);
 
       const now = new Date().toISOString();
-      const [result] = await db
-        .getClient()
-        .insert(character)
-        .values({
-          id: crypto.randomUUID(),
-          projectId: input.projectId,
-          name: input.name,
-          description: input.description ?? null,
-          firstAppearance: input.firstAppearance ?? null,
-          attributes: input.attributes
-            ? JSON.stringify(input.attributes)
-            : null,
-          updatedAt: now,
-        })
-        .returning();
-
-      if (!result) {
-        throw new ServiceError(
-          ErrorCode.CHARACTER_CREATE_FAILED,
-          "Failed to create character",
-          { input },
-        );
-      }
+      const result = db.getClient().transaction((tx) => {
+        const created = tx
+          .insert(character)
+          .values({
+            id: crypto.randomUUID(),
+            projectId: input.projectId,
+            name: input.name,
+            description: input.description ?? null,
+            firstAppearance: input.firstAppearance ?? null,
+            attributes: input.attributes
+              ? JSON.stringify(input.attributes)
+              : null,
+            updatedAt: now,
+          })
+          .returning()
+          .get();
+        if (!created) {
+          throw new ServiceError(
+            ErrorCode.CHARACTER_CREATE_FAILED,
+            "Failed to create character",
+            { input },
+          );
+        }
+        bumpProjectRevision(tx, input.projectId, now);
+        return created;
+      });
 
       logger.info("Character created successfully", {
         characterId: result.id,
       });
-      await rebuildProjectKeywordAppearances(input.projectId, {
+      void rebuildProjectKeywordAppearances(input.projectId, {
         includeCharacters: true,
         includeTerms: false,
-      });
-      await projectService.touchProject(input.projectId);
-      await projectService.persistPackageAfterMutation(
+      }).catch((error) =>
+        logger.warn("Failed to rebuild character appearances", error),
+      );
+      projectService.schedulePackageExport(
         input.projectId,
         "character:create",
       );
@@ -144,61 +150,67 @@ export class CharacterService {
   async updateCharacter(input: CharacterUpdateInput) {
     try {
       const updateData: Partial<typeof character.$inferInsert> = {};
+      const now = new Date().toISOString();
 
       if (input.name !== undefined) updateData.name = input.name;
       if (input.description !== undefined)
         updateData.description = input.description;
       if (input.firstAppearance !== undefined)
         updateData.firstAppearance = input.firstAppearance;
-      if (input.attributes !== undefined) {
-        updateData.attributes = JSON.stringify(input.attributes);
-      }
+      updateData.updatedAt = now;
 
-      const currentResults = await db
-        .getClient()
-        .select({
-          id: character.id,
-          projectId: character.projectId,
-          deletedAt: character.deletedAt,
-        })
-        .from(character)
-        .where(eq(character.id, input.id))
-        .limit(1);
-      const current = currentResults[0];
-      if (!current || current.deletedAt) {
-        throw new ServiceError(
-          ErrorCode.CHARACTER_NOT_FOUND,
-          "Character not found",
-          { id: input.id },
-        );
-      }
-
-      const [updated] = await db
-        .getClient()
-        .update(character)
-        .set(updateData)
-        .where(eq(character.id, input.id))
-        .returning();
-
-      if (!updated) {
-        throw new ServiceError(
-          ErrorCode.CHARACTER_NOT_FOUND,
-          "Character not found",
-          { id: input.id },
-        );
-      }
+      const updated = db.getClient().transaction((tx) => {
+        const current = tx
+          .select()
+          .from(character)
+          .where(eq(character.id, input.id))
+          .get();
+        if (!current || current.deletedAt) {
+          throw new ServiceError(
+            ErrorCode.CHARACTER_NOT_FOUND,
+            "Character not found",
+            { id: input.id },
+          );
+        }
+        if (
+          input.attributes !== undefined ||
+          input.attributesPatch !== undefined
+        ) {
+          updateData.attributes = JSON.stringify(
+            mergeStructuredAttributes(
+              current.attributes,
+              input.attributes,
+              input.attributesPatch,
+            ),
+          );
+        }
+        const next = tx
+          .update(character)
+          .set(updateData)
+          .where(eq(character.id, input.id))
+          .returning()
+          .get();
+        if (!next) {
+          throw new ServiceError(
+            ErrorCode.CHARACTER_NOT_FOUND,
+            "Character not found",
+            { id: input.id },
+          );
+        }
+        bumpProjectRevision(tx, String(current.projectId), now);
+        return next;
+      });
 
       logger.info("Character updated successfully", {
         characterId: updated.id,
       });
       if (input.name !== undefined) {
-        await rebuildProjectKeywordAppearances(String(updated.projectId), {
+        void rebuildProjectKeywordAppearances(String(updated.projectId), {
           includeCharacters: true,
           includeTerms: false,
-        });
+        }).catch((error) => logger.warn("Failed to rebuild character appearances", error));
       }
-      await projectService.touchProject(String(updated.projectId));
-      await projectService.persistPackageAfterMutation(
+      projectService.schedulePackageExport(
         String(updated.projectId),
         "character:update",
       );
@@ -217,55 +229,53 @@ export class CharacterService {
 
   async deleteCharacter(id: string) {
     try {
-      const currentResults = await db
-        .getClient()
-        .select({
-          projectId: character.projectId,
-          deletedAt: character.deletedAt,
-        })
-        .from(character)
-        .where(eq(character.id, id))
-        .limit(1);
-      const current = currentResults[0];
-
-      const projectId = current?.projectId ?? null;
       const now = new Date().toISOString();
 
-      db.getClient().transaction((tx) => {
-        if (projectId) {
-          tx.delete(entityRelation)
-            .where(
-              or(
-                eq(entityRelation.sourceId, id),
-                eq(entityRelation.targetId, id),
-              ),
-            )
-            .run();
-        }
-        const result = tx
-          .update(character)
-          .set({ deletedAt: now, updatedAt: now })
+      const projectId = db.getClient().transaction((tx) => {
+        const current = tx
+          .select()
+          .from(character)
           .where(eq(character.id, id))
-          .run();
-        if (!result) {
+          .get();
+        if (!current || current.deletedAt) {
           throw new ServiceError(
             ErrorCode.CHARACTER_NOT_FOUND,
             "Character not found",
             { id },
           );
         }
+        tx.delete(entityRelation)
+          .where(
+            or(
+              eq(entityRelation.sourceId, id),
+              eq(entityRelation.targetId, id),
+            ),
+          )
+          .run();
+        const deleted = tx
+          .update(character)
+          .set({ deletedAt: now, updatedAt: now })
+          .where(eq(character.id, id))
+          .returning()
+          .get();
+        if (!deleted) {
+          throw new ServiceError(
+            ErrorCode.CHARACTER_NOT_FOUND,
+            "Character not found",
+            { id },
+          );
+        }
+        bumpProjectRevision(tx, String(current.projectId), now);
+        return String(current.projectId);
       });
-      const appearanceCacheService = await loadAppearanceCacheService();
-      await appearanceCacheService.clearCharacterEntity(id);
+      void loadAppearanceCacheService()
+        .then((service) => service.clearCharacterEntity(id))
+        .catch((error) =>
+          logger.warn("Failed to clear character appearances", error),
+        );
 
       logger.info("Character deleted successfully", { characterId: id });
-      if (projectId) {
-        await projectService.touchProject(projectId);
-        await projectService.persistPackageAfterMutation(
-          projectId,
-          "character:delete",
-        );
-      }
+      projectService.schedulePackageExport(projectId, "character:delete");
       return { success: true };
     } catch (error) {
       logger.error("Failed to delete character", error);

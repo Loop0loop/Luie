@@ -165,6 +165,64 @@ describe("characterStore mutation locking", () => {
     });
   });
 
+  it("merges attribute keys waiting behind an in-flight update", async () => {
+    const firstUpdate = deferred<IPCResponse<Character>>();
+    const character: Character = {
+      id: "char-attributes",
+      projectId: "project-1",
+      name: "Hero",
+      attributes: {},
+      createdAt: new Date("2026-03-10T00:00:00.000Z"),
+      updatedAt: new Date("2026-03-10T00:00:00.000Z"),
+    };
+    mockedApi.character.update
+      .mockReturnValueOnce(firstUpdate.promise)
+      .mockResolvedValueOnce({
+        success: true,
+        data: {
+          ...character,
+          attributes: { color: "red", tagline: "Lead" },
+        },
+      });
+    useCharacterStore.setState({
+      items: [character],
+      characters: [character],
+      currentItem: character,
+      currentCharacter: character,
+    });
+
+    const first = useCharacterStore.getState().updateCharacter({
+      id: character.id,
+      attributesPatch: { role: "lead" },
+    });
+    const second = useCharacterStore.getState().updateCharacter({
+      id: character.id,
+      attributesPatch: { color: "red" },
+    });
+    const third = useCharacterStore.getState().updateCharacter({
+      id: character.id,
+      attributesPatch: { tagline: "Lead" },
+    });
+
+    expect(useCharacterStore.getState().currentItem).toMatchObject({
+      attributes: { role: "lead", color: "red", tagline: "Lead" },
+    });
+    expect(useCharacterStore.getState().currentItem).not.toHaveProperty(
+      "attributesPatch",
+    );
+
+    firstUpdate.resolve({
+      success: true,
+      data: { ...character, attributes: { role: "lead" } },
+    });
+    await Promise.all([first, second, third]);
+
+    expect(mockedApi.character.update).toHaveBeenLastCalledWith({
+      id: character.id,
+      attributesPatch: { color: "red", tagline: "Lead" },
+    });
+  });
+
   it("skips graph refresh when delete fails", async () => {
     mockedApi.character.delete.mockResolvedValue({
       success: false,

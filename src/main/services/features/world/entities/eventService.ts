@@ -9,6 +9,8 @@ import type {
 } from "../../../../../shared/types/index.js";
 import { projectService } from "../../project/projectService.js";
 import { ServiceError } from "../../../../utils/error/index.js";
+import { bumpProjectRevision } from "../../../core/project/projectRevisionStore.js";
+import { mergeStructuredAttributes } from "./worldEntityUpdateHelpers.js";
 
 const logger = createLogger("EventService");
 
@@ -18,38 +20,37 @@ export class EventService {
       logger.info("Creating event", input);
 
       const now = new Date().toISOString();
-      const [result] = await db
-        .getClient()
-        .insert(event)
-        .values({
-          id: crypto.randomUUID(),
-          projectId: input.projectId,
-          name: input.name,
-          description: input.description ?? null,
-          firstAppearance: input.firstAppearance ?? null,
-          attributes: input.attributes
-            ? JSON.stringify(input.attributes)
-            : null,
-          updatedAt: now,
-        })
-        .returning();
-
-      if (!result) {
-        throw new ServiceError(
-          ErrorCode.EVENT_CREATE_FAILED,
-          "Failed to create event",
-          { input },
-        );
-      }
+      const result = db.getClient().transaction((tx) => {
+        const created = tx
+          .insert(event)
+          .values({
+            id: crypto.randomUUID(),
+            projectId: input.projectId,
+            name: input.name,
+            description: input.description ?? null,
+            firstAppearance: input.firstAppearance ?? null,
+            attributes: input.attributes
+              ? JSON.stringify(input.attributes)
+              : null,
+            updatedAt: now,
+          })
+          .returning()
+          .get();
+        if (!created) {
+          throw new ServiceError(
+            ErrorCode.EVENT_CREATE_FAILED,
+            "Failed to create event",
+            { input },
+          );
+        }
+        bumpProjectRevision(tx, input.projectId, now);
+        return created;
+      });
 
       logger.info("Event created successfully", {
         eventId: result.id,
       });
-      await projectService.touchProject(input.projectId);
-      await projectService.persistPackageAfterMutation(
-        input.projectId,
-        "event:create",
-      );
+      projectService.schedulePackageExport(input.projectId, "event:create");
       return result;
     } catch (error) {
       logger.error("Failed to create event", error);
@@ -116,53 +117,59 @@ export class EventService {
   async updateEvent(input: EventUpdateInput) {
     try {
       const updateData: Partial<typeof event.$inferInsert> = {};
+      const now = new Date().toISOString();
 
       if (input.name !== undefined) updateData.name = input.name;
       if (input.description !== undefined)
         updateData.description = input.description;
       if (input.firstAppearance !== undefined)
         updateData.firstAppearance = input.firstAppearance;
-      if (input.attributes !== undefined) {
-        updateData.attributes = JSON.stringify(input.attributes);
-      }
+      updateData.updatedAt = now;
 
-      const currentResults = await db
-        .getClient()
-        .select({
-          id: event.id,
-          projectId: event.projectId,
-          deletedAt: event.deletedAt,
-        })
-        .from(event)
-        .where(eq(event.id, input.id))
-        .limit(1);
-      const current = currentResults[0];
-      if (!current || current.deletedAt) {
-        throw new ServiceError(ErrorCode.EVENT_NOT_FOUND, "Event not found", {
-          id: input.id,
-        });
-      }
-
-      const [updated] = await db
-        .getClient()
-        .update(event)
-        .set(updateData)
-        .where(eq(event.id, input.id))
-        .returning();
-
-      if (!updated) {
-        throw new ServiceError(
-          ErrorCode.EVENT_UPDATE_FAILED,
-          "Event not found",
-          { id: input.id },
-        );
-      }
+      const updated = db.getClient().transaction((tx) => {
+        const current = tx
+          .select()
+          .from(event)
+          .where(eq(event.id, input.id))
+          .get();
+        if (!current || current.deletedAt) {
+          throw new ServiceError(ErrorCode.EVENT_NOT_FOUND, "Event not found", {
+            id: input.id,
+          });
+        }
+        if (
+          input.attributes !== undefined ||
+          input.attributesPatch !== undefined
+        ) {
+          updateData.attributes = JSON.stringify(
+            mergeStructuredAttributes(
+              current.attributes,
+              input.attributes,
+              input.attributesPatch,
+            ),
+          );
+        }
+        const next = tx
+          .update(event)
+          .set(updateData)
+          .where(eq(event.id, input.id))
+          .returning()
+          .get();
+        if (!next) {
+          throw new ServiceError(
+            ErrorCode.EVENT_UPDATE_FAILED,
+            "Event not found",
+            { id: input.id },
+          );
+        }
+        bumpProjectRevision(tx, String(current.projectId), now);
+        return next;
+      });
 
       logger.info("Event updated successfully", {
         eventId: updated.id,
       });
-      await projectService.touchProject(String(updated.projectId));
-      await projectService.persistPackageAfterMutation(
+      projectService.schedulePackageExport(
         String(updated.projectId),
         "event:update",
       );
@@ -181,48 +188,40 @@ export class EventService {
 
   async deleteEvent(id: string) {
     try {
-      const currentResults = await db
-        .getClient()
-        .select({ projectId: event.projectId, deletedAt: event.deletedAt })
-        .from(event)
-        .where(eq(event.id, id))
-        .limit(1);
-      const current = currentResults[0];
-
-      const projectId = current?.projectId ?? null;
       const now = new Date().toISOString();
 
-      db.getClient().transaction((tx) => {
-        if (projectId) {
-          tx.delete(entityRelation)
-            .where(
-              or(
-                eq(entityRelation.sourceId, id),
-                eq(entityRelation.targetId, id),
-              ),
-            )
-            .run();
-        }
-        const result = tx
-          .update(event)
-          .set({ deletedAt: now, updatedAt: now })
-          .where(eq(event.id, id))
-          .run();
-        if (!result) {
+      const projectId = db.getClient().transaction((tx) => {
+        const current = tx.select().from(event).where(eq(event.id, id)).get();
+        if (!current || current.deletedAt) {
           throw new ServiceError(ErrorCode.EVENT_NOT_FOUND, "Event not found", {
             id,
           });
         }
+        tx.delete(entityRelation)
+          .where(
+            or(
+              eq(entityRelation.sourceId, id),
+              eq(entityRelation.targetId, id),
+            ),
+          )
+          .run();
+        const deleted = tx
+          .update(event)
+          .set({ deletedAt: now, updatedAt: now })
+          .where(eq(event.id, id))
+          .returning()
+          .get();
+        if (!deleted) {
+          throw new ServiceError(ErrorCode.EVENT_NOT_FOUND, "Event not found", {
+            id,
+          });
+        }
+        bumpProjectRevision(tx, String(current.projectId), now);
+        return String(current.projectId);
       });
 
       logger.info("Event deleted successfully", { eventId: id });
-      if (projectId) {
-        await projectService.touchProject(projectId);
-        await projectService.persistPackageAfterMutation(
-          projectId,
-          "event:delete",
-        );
-      }
+      projectService.schedulePackageExport(projectId, "event:delete");
       return { success: true };
     } catch (error) {
       logger.error("Failed to delete event", error);

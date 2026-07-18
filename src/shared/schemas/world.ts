@@ -26,6 +26,7 @@ export const characterUpdateSchema = z.object({
   description: z.string().optional(),
   firstAppearance: z.string().optional(),
   attributes: z.record(z.string(), z.unknown()).optional(),
+  attributesPatch: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const eventCreateSchema = z.object({
@@ -42,6 +43,7 @@ export const eventUpdateSchema = z.object({
   description: z.string().optional(),
   firstAppearance: z.string().optional(),
   attributes: z.record(z.string(), z.unknown()).optional(),
+  attributesPatch: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const factionCreateSchema = z.object({
@@ -58,6 +60,7 @@ export const factionUpdateSchema = z.object({
   description: z.string().optional(),
   firstAppearance: z.string().optional(),
   attributes: z.record(z.string(), z.unknown()).optional(),
+  attributesPatch: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const termCreateSchema = z.object({

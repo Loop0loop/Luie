@@ -78,7 +78,7 @@ export function useCharacterWikiAttrs(): CharacterWikiAttrs {
       if (!character) return;
       updateCharacter({
         id: character.id,
-        attributes: { ...attrsRef.current, [key]: value },
+        attributesPatch: { [key]: value },
       });
     },
     [character, updateCharacter],
@@ -157,7 +157,7 @@ export function useCharacterWikiAttrs(): CharacterWikiAttrs {
       if (!character) return;
       updateCharacter({
         id: character.id,
-        attributes: { ...attrsRef.current, ...updates },
+        attributesPatch: updates,
       });
     },
     [character, updateCharacter],

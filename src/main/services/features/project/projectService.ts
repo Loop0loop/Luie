@@ -50,6 +50,18 @@ const logger = createLogger("ProjectService");
 const DEBOUNCED_PACKAGE_EXPORT_REASONS = new Set<string>([
   "chapter:create",
   "chapter:update",
+  "character:create",
+  "character:update",
+  "character:delete",
+  "event:create",
+  "event:update",
+  "event:delete",
+  "faction:create",
+  "faction:update",
+  "faction:delete",
+  "term:create",
+  "term:update",
+  "term:delete",
   "world-document:graph",
   "snapshot:create",
 ]);
