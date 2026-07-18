@@ -187,13 +187,6 @@ export const registerAppReady = (
     const bootstrapStatus = await ensureBootstrapReady();
     if (!bootstrapStatus.isReady) {
       logger.error("App bootstrap did not complete", bootstrapStatus);
-    } else {
-      try {
-        const derivedJobWorker = await loadDerivedJobWorker();
-        derivedJobWorker.start();
-      } catch (error) {
-        logger.warn("Failed to start derived job worker", error);
-      }
     }
 
     const isDev = isDevEnv();
@@ -219,6 +212,13 @@ export const registerAppReady = (
           reason,
           startupElapsedMs: Date.now() - startupStartedAtMs,
         });
+        if (bootstrapStatus.isReady) {
+          void loadDerivedJobWorker()
+            .then((derivedJobWorker) => derivedJobWorker.start())
+            .catch((error) => {
+              logger.warn("Failed to start derived job worker", error);
+            });
+        }
       }
 
       /**
