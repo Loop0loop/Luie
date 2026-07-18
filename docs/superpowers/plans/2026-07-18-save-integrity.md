@@ -1540,3 +1540,16 @@ Actual (2026-07-19): RED에서 2 files/16 tests 중 5건이 예상대로 실패�
 git add src/shared/ui/BufferedInput.tsx src/renderer/src/features/research/components/world/PlotBoard.tsx src/renderer/src/features/research/components/world/SynopsisEditor.tsx tests/dom/bufferedInputSavePolicy.test.tsx tests/dom/worldBufferedPersistence.test.tsx docs/superpowers/plans/2026-07-18-save-integrity.md docs/superpowers/specs/2026-07-18-save-integrity-design.md .superpowers/sdd/save-buffer-task-11-report.md
 git commit -m "fix(storage): enforce buffer persistence ack"
 ```
+
+#### Task 11 review follow-up: barrier 경쟁 조건
+
+**Status:** 완료
+
+- [x] in-flight 뒤 latest flush가 IME explicit 정책을 잃는 RED 테스트
+- [x] Plot button mutation과 Synopsis status mutation의 pending/failure/retry barrier RED 테스트
+- [x] Synopsis project description rerender의 hydration stale overwrite RED 테스트
+- [x] Shared explicit 전달, component-level latest snapshot barrier, identity-only hydration 최소 구현
+- [x] focused/7-file 회귀, ESLint, diff-check, tsc 검증 및 SSOT/report 동기화
+- [x] follow-up 단일 커밋 `fix(storage): close buffer barrier races`
+
+Actual (2026-07-19): follow-up RED는 2 files/21 tests 중 4건이 explicit 손실, button/status barrier 조기 완료, description rerender hydration 재실행으로 예상대로 실패했다. component barrier는 input callback과 registry가 같은 in-flight Promise를 공유하며 실패한 latest snapshot을 다음 flush에서 재시도한다. Synopsis main save가 pending인 동안 description rerender를 주입해도 load는 1회이고 후속 metadata payload가 최신 synopsis를 유지한다. 최종 검증 결과는 Task 11 report에 기록했다.

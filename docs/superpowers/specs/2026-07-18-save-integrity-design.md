@@ -299,7 +299,7 @@ SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/
 # world flush 오류 전파 테스트는 오류를 삼키는 임시 production 변이에서 FAIL한 뒤 원본 복원 후 PASS
 
 SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism --reporter=verbose tests/renderer/services/saveCoordinator.test.ts tests/dom/projectSaveShortcut.test.tsx tests/dom/projectQuitFlush.test.tsx tests/dom/bufferedInputSavePolicy.test.tsx tests/dom/editorAutosaveManualFlush.test.tsx tests/renderer/stores/worldEntityMutationQueue.test.ts tests/dom/worldBufferedPersistence.test.tsx
-# Task 11 포함 7 files, 35 tests PASS; stderr warning/unhandled rejection 없음
+# Task 11 review follow-up 포함 7 files, 39 tests PASS; stderr warning/unhandled rejection 없음
 
 ./node_modules/.bin/eslint src/shared/ui/BufferedInput.tsx src/renderer/src/features/research/components/world/PlotBoard.tsx src/renderer/src/features/research/components/world/SynopsisEditor.tsx tests/dom/bufferedInputSavePolicy.test.tsx tests/dom/worldBufferedPersistence.test.tsx
 # PASS
@@ -377,6 +377,9 @@ buffer 또는 world queue flush가 실패하면 뒤 단계로 진행하지 않�
 - 같은 entity의 여러 input callback은 기존 entity별 mutation queue가 직렬화한다.
 - [x] editor autosave는 동시에 `onSave`를 실행하지 않고 최신 pending draft 하나만 유지한다.
 - flush가 성공한 값은 뒤늦은 timer가 다시 저장하지 않는다.
+- shared input의 explicit flush 정책은 이전 in-flight 저장 뒤 latest drain에도 유지돼, 그 사이 IME composition이 시작되면 전체 barrier가 reject된다.
+- Plot/Synopsis의 button mutation도 component-level registry callback이 동일 in-flight Promise를 공유한다. 실패 시 latest snapshot은 dirty로 남고 다음 global flush가 재시도한다.
+- Synopsis hydration은 project id와 attachment path가 바뀔 때만 실행한다. 같은 project의 description ACK rerender는 hydration/ref를 덮어쓰지 않는다.
 
 ### 17.5 검증 기준
 

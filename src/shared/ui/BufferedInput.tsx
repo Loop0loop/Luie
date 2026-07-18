@@ -88,7 +88,7 @@ export function BufferedInput({
     if (inFlight) {
       if (value === inFlight.value) return inFlight.promise;
       return inFlight.promise.then(async () => {
-        await flushRef.current();
+        await flushRef.current(explicit);
       });
     }
     if (value === lastSavedValue.current) return;
@@ -253,7 +253,7 @@ export function BufferedTextArea({
     if (inFlight) {
       if (value === inFlight.value) return inFlight.promise;
       return inFlight.promise.then(async () => {
-        await flushRef.current();
+        await flushRef.current(explicit);
       });
     }
     if (value === lastSavedValue.current) return;

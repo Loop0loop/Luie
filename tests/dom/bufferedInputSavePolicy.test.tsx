@@ -254,6 +254,34 @@ describe("BufferedInput save policy", () => {
     expect(onSave.mock.calls).toEqual([["첫 값"], ["최신 값"]]);
   });
 
+  it("preserves an explicit IME barrier behind an older in-flight save", async () => {
+    vi.useFakeTimers();
+    let resolveFirst: (() => void) | undefined;
+    const firstSave = new Promise<void>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const onSave = vi.fn().mockReturnValueOnce(firstSave);
+    const { input } = mountInput(onSave);
+
+    act(() => input.focus());
+    changeInput(input, "첫 값");
+    await act(async () => vi.advanceTimersByTimeAsync(250));
+    changeInput(input, "조합 중 최신 값");
+    const flush = flushSaveBuffers();
+    await act(async () => Promise.resolve());
+    act(() => {
+      input.dispatchEvent(
+        new CompositionEvent("compositionstart", {
+          bubbles: true,
+        }),
+      );
+    });
+
+    resolveFirst?.();
+    await expect(flush).rejects.toThrow(/composition/i);
+    expect(onSave.mock.calls).toEqual([["첫 값"]]);
+  });
+
   it("retries a textarea value after its async save rejects", async () => {
     const onSave = vi
       .fn()

@@ -6,6 +6,7 @@ import { useProjectStore } from "@renderer/features/project/stores/projectStore"
 import { worldPackageStorage } from "@renderer/features/research/services/worldPackageStorage";
 import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
 import { useToast } from "@shared/ui/ToastContext";
+import { registerSaveBufferFlush } from "@shared/ui/saveBufferRegistry";
 
 interface PlotCard {
   id: string;
@@ -49,7 +50,9 @@ export function PlotBoard() {
   );
   const [columns, setColumns] = useState<PlotColumn[]>(defaultColumns);
   const columnsRef = useRef(columns);
-  const saveChainRef = useRef<Promise<void>>(Promise.resolve());
+  const plotDirtyRef = useRef(false);
+  const saveInFlightRef = useRef<Promise<void> | null>(null);
+  const flushPlotRef = useRef<() => Promise<void>>(async () => undefined);
 
   useEffect(() => {
     if (!currentProject?.id) {
@@ -66,6 +69,7 @@ export function PlotBoard() {
       const nextColumns =
         loaded.columns.length > 0 ? loaded.columns : defaultColumns;
       columnsRef.current = nextColumns;
+      plotDirtyRef.current = false;
       setColumns(nextColumns);
     })();
 
@@ -93,26 +97,45 @@ export function PlotBoard() {
     };
   }, []);
 
+  const flushPlot = async (): Promise<void> => {
+    const inFlight = saveInFlightRef.current;
+    if (inFlight) {
+      await inFlight;
+      return flushPlotRef.current();
+    }
+    if (!plotDirtyRef.current || !currentProject?.id) return;
+
+    const snapshot = columnsRef.current;
+    const save = worldPackageStorage
+      .savePlot(currentProject.id, luieAttachmentPath, { columns: snapshot })
+      .catch((error: unknown) => {
+        showToast(t("research.toast.worldSaveFailed"), "error");
+        throw error;
+      });
+    saveInFlightRef.current = save;
+    try {
+      await save;
+      if (columnsRef.current === snapshot) plotDirtyRef.current = false;
+    } finally {
+      if (saveInFlightRef.current === save) saveInFlightRef.current = null;
+    }
+    return flushPlotRef.current();
+  };
+
+  useEffect(() => {
+    flushPlotRef.current = flushPlot;
+  });
+
+  useEffect(() => registerSaveBufferFlush(() => flushPlotRef.current()), []);
+
   const commitColumns = (
     update: (current: PlotColumn[]) => PlotColumn[],
   ): Promise<void> => {
     const nextColumns = update(columnsRef.current);
     columnsRef.current = nextColumns;
+    plotDirtyRef.current = true;
     setColumns(nextColumns);
-    if (!currentProject?.id) return Promise.resolve();
-    const save = saveChainRef.current
-      .catch(() => undefined)
-      .then(() =>
-        worldPackageStorage.savePlot(currentProject.id, luieAttachmentPath, {
-          columns: nextColumns,
-        }),
-      )
-      .catch((error: unknown) => {
-        showToast(t("research.toast.worldSaveFailed"), "error");
-        throw error;
-      });
-    saveChainRef.current = save;
-    return save;
+    return flushPlot();
   };
 
   const addColumn = () => {
