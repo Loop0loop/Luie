@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS } from "@shared/constants";
+import { registerSaveBufferFlush } from "./saveBufferRegistry";
 
 interface BufferedInputProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   "onChange"
 > {
   value: string;
-  onSave: (value: string) => void;
+  onSave: (value: string) => void | Promise<unknown>;
   debounceTime?: number;
 }
 
@@ -23,6 +24,7 @@ export function BufferedInput({
   const latestValue = useRef(externalValue);
   const lastSavedValue = useRef(externalValue);
   const onSaveRef = useRef(onSave);
+  const flushRef = useRef<() => void | Promise<unknown>>(() => undefined);
 
   useEffect(() => {
     onSaveRef.current = onSave;
@@ -43,8 +45,19 @@ export function BufferedInput({
     cancelScheduledSave();
     if (value === lastSavedValue.current) return;
     lastSavedValue.current = value;
-    onSaveRef.current(value);
+    return onSaveRef.current(value);
   };
+
+  useEffect(() => {
+    flushRef.current = flush;
+  });
+
+  useEffect(
+    () => registerSaveBufferFlush(async () => {
+      await flushRef.current();
+    }),
+    [],
+  );
 
   const scheduleSave = (value: string) => {
     latestValue.current = value;
@@ -57,10 +70,7 @@ export function BufferedInput({
 
   useEffect(
     () => () => {
-      cancelScheduledSave();
-      if (latestValue.current === lastSavedValue.current) return;
-      lastSavedValue.current = latestValue.current;
-      onSaveRef.current(latestValue.current);
+      void flushRef.current();
     },
     [],
   );
@@ -129,7 +139,7 @@ interface BufferedTextAreaProps extends Omit<
   "onChange"
 > {
   value: string;
-  onSave: (value: string) => void;
+  onSave: (value: string) => void | Promise<unknown>;
 }
 
 export function BufferedTextArea({
@@ -140,12 +150,45 @@ export function BufferedTextArea({
   const [localValue, setLocalValue] = useState(externalValue);
   const isComposing = useRef(false);
   const [isEditing, setIsEditing] = useState(false);
+  const latestValue = useRef(externalValue);
+  const lastSavedValue = useRef(externalValue);
+  const onSaveRef = useRef(onSave);
+  const flushRef = useRef<() => void | Promise<unknown>>(() => undefined);
+
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
 
   const displayedValue = useMemo(() => {
     return isEditing ? localValue : externalValue;
   }, [externalValue, isEditing, localValue]);
 
+  const flush = (value = latestValue.current) => {
+    if (isComposing.current || value === lastSavedValue.current) return;
+    lastSavedValue.current = value;
+    return onSaveRef.current(value);
+  };
+
+  useEffect(() => {
+    flushRef.current = flush;
+  });
+
+  useEffect(
+    () => registerSaveBufferFlush(async () => {
+      await flushRef.current();
+    }),
+    [],
+  );
+
+  useEffect(
+    () => () => {
+      void flushRef.current();
+    },
+    [],
+  );
+
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    latestValue.current = e.target.value;
     setLocalValue(e.target.value);
   };
 
@@ -157,19 +200,23 @@ export function BufferedTextArea({
     e: React.CompositionEvent<HTMLTextAreaElement>,
   ) => {
     isComposing.current = false;
+    latestValue.current = e.currentTarget.value;
     setLocalValue(e.currentTarget.value);
-    onSave(e.currentTarget.value);
+    void flush();
   };
 
   const handleFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
     setIsEditing(true);
     setLocalValue(externalValue);
+    latestValue.current = externalValue;
+    lastSavedValue.current = externalValue;
     props.onFocus?.(e);
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
     setIsEditing(false);
-    onSave(e.target.value);
+    latestValue.current = e.target.value;
+    void flush();
     props.onBlur?.(e);
   };
 

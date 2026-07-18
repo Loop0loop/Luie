@@ -319,9 +319,9 @@ flushSaveBuffers(): Promise<void>;
 
 ### 17.2 등록 대상
 
-- `BufferedInput`: 예약 timer를 취소하고 최신 dirty 값을 `onSave`에 전달한다.
-- `BufferedTextArea`: focus가 남아 있어도 최신 dirty 값을 `onSave`에 전달한다.
-- `useEditorAutosave`: dirty인 최신 title/content draft가 실제 `onSave`를 완료할 때까지 기다린다. 저장 중 새 draft가 들어오면 latest pending draft까지 drain한 뒤 resolve하고, clean editor instance는 아무 작업도 하지 않는다.
+- [x] `BufferedInput`: 예약 timer를 취소하고 최신 dirty 값을 `onSave`에 전달한다.
+- [x] `BufferedTextArea`: focus가 남아 있어도 최신 dirty 값을 `onSave`에 전달한다.
+- [ ] `useEditorAutosave`: dirty인 최신 title/content draft가 실제 `onSave`를 완료할 때까지 기다린다. 저장 중 새 draft가 들어오면 latest pending draft까지 drain한 뒤 resolve하고, clean editor instance는 아무 작업도 하지 않는다.
 
 editor autosave callback은 active draft를 직접 소유하므로 shortcut handler가 부모의 오래된 `activeChapterTitle`과 `content`를 다시 저장하지 않는다. manual save는 registry flush 결과만 사용해 최신 editor draft를 확정한다.
 

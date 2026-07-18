@@ -979,7 +979,7 @@ git commit -m "test(storage): verify save integrity recovery"
 
 ### Task 8: renderer save-buffer registry와 shared input 등록
 
-**Status:** 구현 대기
+**Status:** 완료
 
 **Files:**
 - Create: `src/shared/ui/saveBufferRegistry.ts`
@@ -987,6 +987,7 @@ git commit -m "test(storage): verify save integrity recovery"
 - Modify: `src/shared/ui/BufferedInput.tsx`
 - Modify: `tests/dom/bufferedInputSavePolicy.test.tsx`
 - Modify: `docs/superpowers/plans/2026-07-18-save-integrity.md`
+- Modify: `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
 
 **Interfaces:**
 - Produces: `registerSaveBufferFlush(flush: SaveBufferFlush): () => void`
@@ -994,7 +995,7 @@ git commit -m "test(storage): verify save integrity recovery"
 - Produces: `SaveBufferFlush = () => void | Promise<void>`
 - Consumes later: Task 9의 editor autosave와 Task 10의 manual save/quit coordinator
 
-- [ ] **Step 1: registry가 모든 callback을 기다리고 실패를 전파하는 RED 테스트 작성**
+- [x] **Step 1: registry가 모든 callback을 기다리고 실패를 전파하는 RED 테스트 작성**
 
 ```ts
 import { describe, expect, it, vi } from "vitest";
@@ -1025,13 +1026,13 @@ describe("saveBufferRegistry", () => {
 });
 ```
 
-- [ ] **Step 2: registry 테스트가 module 부재로 실패하는지 확인**
+- [x] **Step 2: registry 테스트가 module 부재로 실패하는지 확인**
 
 Run: `SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/renderer/services/saveBufferRegistry.test.ts`
 
 Expected: FAIL with `Cannot find module .../saveBufferRegistry`.
 
-- [ ] **Step 3: 최소 registry 구현**
+- [x] **Step 3: 최소 registry 구현**
 
 ```ts
 export type SaveBufferFlush = () => void | Promise<void>;
@@ -1054,7 +1055,7 @@ export async function flushSaveBuffers(): Promise<void> {
 }
 ```
 
-- [ ] **Step 4: shared input의 timer 이전 global flush RED 테스트 작성**
+- [x] **Step 4: shared input의 timer 이전 global flush RED 테스트 작성**
 
 `tests/dom/bufferedInputSavePolicy.test.tsx`에 `BufferedTextArea`와 `flushSaveBuffers`를 import하고 다음 테스트를 추가한다.
 
@@ -1098,38 +1099,40 @@ it("removes an unmounted input from the global registry", async () => {
 });
 ```
 
-- [ ] **Step 5: shared input RED 확인**
+- [x] **Step 5: shared input RED 확인**
 
 Run: `SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/dom/bufferedInputSavePolicy.test.tsx`
 
 Expected: 두 신규 테스트 FAIL. 기존 blur, IME, unmount 3개는 PASS.
 
-- [ ] **Step 6: `BufferedInput`과 `BufferedTextArea`를 registry에 등록**
+- [x] **Step 6: `BufferedInput`과 `BufferedTextArea`를 registry에 등록**
 
-두 component의 `onSave` 타입은 비동기 callback도 보존하도록 다음으로 통일한다.
+두 component의 `onSave` 타입은 기존 `Promise<T>` callback도 보존하도록 다음으로 통일한다.
 
 ```ts
-onSave: (value: string) => void | Promise<void>;
+onSave: (value: string) => void | Promise<unknown>;
 ```
 
 각 component는 최신 flush 함수를 ref로 유지하고 mount 동안 한 번 등록한다. render 중 ref를 쓰지 않고 effect에서 최신 callback을 반영한다.
 
 ```ts
-const flushRef = useRef<() => void | Promise<void>>(() => undefined);
+const flushRef = useRef<() => void | Promise<unknown>>(() => undefined);
 
 useEffect(() => {
   flushRef.current = flush;
-}, [flush]);
+});
 
 useEffect(
-  () => registerSaveBufferFlush(() => flushRef.current()),
+  () => registerSaveBufferFlush(async () => {
+    await flushRef.current();
+  }),
   [],
 );
 ```
 
 `BufferedTextArea`에는 `latestValue`, `lastSavedValue`, `onSaveRef`를 추가하고 change에서 latest 값을 갱신한다. blur, composition end, unmount, registry가 같은 `flush()`를 사용하며 동일 값은 한 번만 전달한다.
 
-- [ ] **Step 7: Task 8 GREEN 및 회귀 확인**
+- [x] **Step 7: Task 8 GREEN 및 회귀 확인**
 
 Run: `SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/renderer/services/saveBufferRegistry.test.ts tests/dom/bufferedInputSavePolicy.test.tsx`
 
@@ -1139,11 +1142,13 @@ Run: `./node_modules/.bin/tsc6 --noEmit`
 
 Expected: PASS.
 
-- [ ] **Step 8: SSOT 상태와 Task 8 결과 갱신**
+Actual (2026-07-19): 6 files, 7 tests PASS; 대상 ESLint와 `git diff --check` PASS. registry module 부재 RED와 shared input 2 tests RED를 확인한 뒤 대상 2 files/7 tests가 warning 없이 통과했다. 기존 `Promise<T | null>` callback 호환을 위해 shared input callback은 `Promise<unknown>`을 허용하고 registry adapter에서 `Promise<void>`로 수렴한다. `./node_modules/.bin/tsc6 --noEmit`에서 Task 8이 추가한 오류는 없으며, 시작 전부터 dirty인 `BinderSidebarPanelBody.tsx`의 기존 3 errors 때문에 전체 명령은 exit 2다.
+
+- [x] **Step 8: SSOT 상태와 Task 8 결과 갱신**
 
 이 Task의 `Status`를 `완료`로 바꾸고 실제 files/tests 수를 기록한다. 설계 §17.2의 shared input 두 항목은 구현 완료로 표시하되 editor/manual/quit 항목은 완료로 표시하지 않는다.
 
-- [ ] **Step 9: Task 8 커밋**
+- [x] **Step 9: Task 8 커밋**
 
 ```bash
 git add src/shared/ui/saveBufferRegistry.ts src/shared/ui/BufferedInput.tsx tests/renderer/services/saveBufferRegistry.test.ts tests/dom/bufferedInputSavePolicy.test.tsx docs/superpowers/plans/2026-07-18-save-integrity.md docs/superpowers/specs/2026-07-18-save-integrity-design.md
