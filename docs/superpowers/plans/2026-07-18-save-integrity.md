@@ -1,6 +1,6 @@
 # Save Integrity Implementation Plan
 
-> **Execution rule:** Use `superpowers:executing-plans` and implement this plan in the current branch task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** world entity 입력을 SQLite에 빠르고 유실 없이 저장하고, `.luie` 체크포인트와 `Cmd/Ctrl+S`, 종료 flush를 명확한 내구성 경계로 연결한다.
 
@@ -973,4 +973,507 @@ Actual: core test 묶음 27 files/179 tests PASS, 기존 4 files/13 tests FAIL. 
 ```bash
 git add docs/superpowers/plans/2026-07-18-save-integrity.md docs/superpowers/specs/2026-07-18-save-integrity-design.md tests/renderer/stores/worldEntitySaveBurst.test.ts tests/main/services/projectSaveRecovery.integration.test.ts src/renderer/src/features/workspace/hooks/useProjectQuitFlush.ts src/renderer/src/features/workspace/components/layout/EditorRoot.tsx src/main/services/features/project/projectService.ts
 git commit -m "test(storage): verify save integrity recovery"
+```
+
+---
+
+### Task 8: renderer save-buffer registry와 shared input 등록
+
+**Status:** 구현 대기
+
+**Files:**
+- Create: `src/shared/ui/saveBufferRegistry.ts`
+- Create: `tests/renderer/services/saveBufferRegistry.test.ts`
+- Modify: `src/shared/ui/BufferedInput.tsx`
+- Modify: `tests/dom/bufferedInputSavePolicy.test.tsx`
+- Modify: `docs/superpowers/plans/2026-07-18-save-integrity.md`
+
+**Interfaces:**
+- Produces: `registerSaveBufferFlush(flush: SaveBufferFlush): () => void`
+- Produces: `flushSaveBuffers(): Promise<void>`
+- Produces: `SaveBufferFlush = () => void | Promise<void>`
+- Consumes later: Task 9의 editor autosave와 Task 10의 manual save/quit coordinator
+
+- [ ] **Step 1: registry가 모든 callback을 기다리고 실패를 전파하는 RED 테스트 작성**
+
+```ts
+import { describe, expect, it, vi } from "vitest";
+import {
+  flushSaveBuffers,
+  registerSaveBufferFlush,
+} from "../../../src/shared/ui/saveBufferRegistry.js";
+
+describe("saveBufferRegistry", () => {
+  it("waits for every registered buffer before reporting a failure", async () => {
+    const calls: string[] = [];
+    const unregisterFirst = registerSaveBufferFlush(async () => {
+      calls.push("first");
+      await Promise.resolve();
+    });
+    const unregisterSecond = registerSaveBufferFlush(async () => {
+      calls.push("second");
+      throw new Error("buffer failed");
+    });
+
+    await expect(flushSaveBuffers()).rejects.toThrow("buffer failed");
+    expect(calls).toEqual(["first", "second"]);
+
+    unregisterFirst();
+    unregisterSecond();
+    await expect(flushSaveBuffers()).resolves.toBeUndefined();
+  });
+});
+```
+
+- [ ] **Step 2: registry 테스트가 module 부재로 실패하는지 확인**
+
+Run: `SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/renderer/services/saveBufferRegistry.test.ts`
+
+Expected: FAIL with `Cannot find module .../saveBufferRegistry`.
+
+- [ ] **Step 3: 최소 registry 구현**
+
+```ts
+export type SaveBufferFlush = () => void | Promise<void>;
+
+const flushers = new Set<SaveBufferFlush>();
+
+export function registerSaveBufferFlush(flush: SaveBufferFlush): () => void {
+  flushers.add(flush);
+  return () => flushers.delete(flush);
+}
+
+export async function flushSaveBuffers(): Promise<void> {
+  const results = await Promise.allSettled(
+    [...flushers].map((flush) => Promise.resolve().then(flush)),
+  );
+  const failure = results.find(
+    (result): result is PromiseRejectedResult => result.status === "rejected",
+  );
+  if (failure) throw failure.reason;
+}
+```
+
+- [ ] **Step 4: shared input의 timer 이전 global flush RED 테스트 작성**
+
+`tests/dom/bufferedInputSavePolicy.test.tsx`에 `BufferedTextArea`와 `flushSaveBuffers`를 import하고 다음 테스트를 추가한다.
+
+```tsx
+it("flushes a dirty input before its debounce timer", async () => {
+  vi.useFakeTimers();
+  const onSave = vi.fn();
+  const { input } = mountInput(onSave);
+
+  act(() => input.focus());
+  changeInput(input, "즉시 저장");
+  await act(async () => flushSaveBuffers());
+
+  expect(onSave).toHaveBeenCalledOnce();
+  expect(onSave).toHaveBeenCalledWith("즉시 저장");
+  await act(async () => vi.advanceTimersByTimeAsync(250));
+  expect(onSave).toHaveBeenCalledOnce();
+});
+
+it("flushes a focused textarea without blur", async () => {
+  const onSave = vi.fn();
+  const { textarea } = mountTextArea(onSave);
+
+  act(() => textarea.focus());
+  changeTextArea(textarea, "포커스된 본문");
+  await act(async () => flushSaveBuffers());
+
+  expect(onSave).toHaveBeenCalledOnce();
+  expect(onSave).toHaveBeenCalledWith("포커스된 본문");
+});
+
+it("removes an unmounted input from the global registry", async () => {
+  const onSave = vi.fn();
+  const { input, unmount } = mountInput(onSave);
+  changeInput(input, "unmount 값");
+  unmount();
+  onSave.mockClear();
+
+  await act(async () => flushSaveBuffers());
+  expect(onSave).not.toHaveBeenCalled();
+});
+```
+
+- [ ] **Step 5: shared input RED 확인**
+
+Run: `SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/dom/bufferedInputSavePolicy.test.tsx`
+
+Expected: 두 신규 테스트 FAIL. 기존 blur, IME, unmount 3개는 PASS.
+
+- [ ] **Step 6: `BufferedInput`과 `BufferedTextArea`를 registry에 등록**
+
+두 component의 `onSave` 타입은 비동기 callback도 보존하도록 다음으로 통일한다.
+
+```ts
+onSave: (value: string) => void | Promise<void>;
+```
+
+각 component는 최신 flush 함수를 ref로 유지하고 mount 동안 한 번 등록한다. render 중 ref를 쓰지 않고 effect에서 최신 callback을 반영한다.
+
+```ts
+const flushRef = useRef<() => void | Promise<void>>(() => undefined);
+
+useEffect(() => {
+  flushRef.current = flush;
+}, [flush]);
+
+useEffect(
+  () => registerSaveBufferFlush(() => flushRef.current()),
+  [],
+);
+```
+
+`BufferedTextArea`에는 `latestValue`, `lastSavedValue`, `onSaveRef`를 추가하고 change에서 latest 값을 갱신한다. blur, composition end, unmount, registry가 같은 `flush()`를 사용하며 동일 값은 한 번만 전달한다.
+
+- [ ] **Step 7: Task 8 GREEN 및 회귀 확인**
+
+Run: `SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/renderer/services/saveBufferRegistry.test.ts tests/dom/bufferedInputSavePolicy.test.tsx`
+
+Expected: 2 files, 모든 테스트 PASS. stderr warning 없음.
+
+Run: `./node_modules/.bin/tsc6 --noEmit`
+
+Expected: PASS.
+
+- [ ] **Step 8: SSOT 상태와 Task 8 결과 갱신**
+
+이 Task의 `Status`를 `완료`로 바꾸고 실제 files/tests 수를 기록한다. 설계 §17.2의 shared input 두 항목은 구현 완료로 표시하되 editor/manual/quit 항목은 완료로 표시하지 않는다.
+
+- [ ] **Step 9: Task 8 커밋**
+
+```bash
+git add src/shared/ui/saveBufferRegistry.ts src/shared/ui/BufferedInput.tsx tests/renderer/services/saveBufferRegistry.test.ts tests/dom/bufferedInputSavePolicy.test.tsx docs/superpowers/plans/2026-07-18-save-integrity.md docs/superpowers/specs/2026-07-18-save-integrity-design.md
+git commit -m "fix(storage): register shared save buffers"
+```
+
+---
+
+### Task 9: editor autosave latest-draft drain
+
+**Status:** 구현 대기
+
+**Files:**
+- Create: `tests/dom/editorAutosaveManualFlush.test.tsx`
+- Modify: `src/renderer/src/features/editor/hooks/useEditorAutosave.ts`
+- Modify: `docs/superpowers/plans/2026-07-18-save-integrity.md`
+- Modify: `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
+
+**Interfaces:**
+- Consumes: `registerSaveBufferFlush(flush: SaveBufferFlush): () => void`
+- Produces: clean editor에서는 no-op이고 dirty editor에서는 최신 title/content의 `onSave` 완료까지 기다리는 registered flush
+- Preserves: 기존 debounce, latest pending draft, retry UI와 `api.lifecycle.setDirty`
+
+- [ ] **Step 1: debounce 이전 최신 editor draft flush RED 테스트 작성**
+
+`tests/dom/editorAutosaveManualFlush.test.tsx`는 `ToastContext`, i18n, shared API를 mock하고 hook harness를 mount한다.
+
+```tsx
+type HarnessProps = {
+  title: string;
+  content: string;
+  onSave: (title: string, content: string) => Promise<void>;
+};
+
+const Harness = (props: HarnessProps) => {
+  useEditorAutosave(props);
+  return null;
+};
+
+const mountAutosave = (initial: HarnessProps) => {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  act(() => root.render(<Harness {...initial} />));
+  return {
+    render: (props: HarnessProps) =>
+      act(() => root.render(<Harness {...props} />)),
+    unmount: () => act(() => root.unmount()),
+  };
+};
+```
+
+```tsx
+it("flushes the latest editor draft before autosave debounce", async () => {
+  vi.useFakeTimers();
+  const onSave = vi.fn(async () => undefined);
+  const root = mountAutosave({
+    title: "이전 제목",
+    content: "이전 본문",
+    onSave,
+  });
+
+  root.render({ title: "최신 제목", content: "최신 본문", onSave });
+  await act(async () => flushSaveBuffers());
+
+  expect(onSave).toHaveBeenCalledOnce();
+  expect(onSave).toHaveBeenCalledWith("최신 제목", "최신 본문");
+  await act(async () => vi.advanceTimersByTimeAsync(EDITOR_AUTOSAVE_DEBOUNCE_MS));
+  expect(onSave).toHaveBeenCalledOnce();
+});
+```
+
+- [ ] **Step 2: in-flight 저장 뒤 latest pending draft까지 기다리는 RED 테스트 작성**
+
+```tsx
+it("waits for the latest draft queued behind an in-flight save", async () => {
+  vi.useFakeTimers();
+  const first = deferred<void>();
+  const onSave = vi
+    .fn<() => Promise<void>>()
+    .mockReturnValueOnce(first.promise)
+    .mockResolvedValueOnce(undefined);
+  const root = mountAutosave({ title: "A", content: "1", onSave });
+
+  root.render({ title: "B", content: "2", onSave });
+  await vi.advanceTimersByTimeAsync(EDITOR_AUTOSAVE_DEBOUNCE_MS);
+  root.render({ title: "C", content: "3", onSave });
+  const flushPromise = flushSaveBuffers();
+
+  first.resolve();
+  await flushPromise;
+
+  expect(onSave).toHaveBeenLastCalledWith("C", "3");
+  expect(onSave).toHaveBeenCalledTimes(2);
+});
+
+it("rejects manual flush when the latest editor save fails", async () => {
+  const onSave = vi.fn(async () => {
+    throw new Error("chapter save failed");
+  });
+  const root = mountAutosave({ title: "A", content: "1", onSave });
+  root.render({ title: "B", content: "2", onSave });
+
+  await expect(flushSaveBuffers()).rejects.toThrow("chapter save failed");
+});
+```
+
+- [ ] **Step 3: editor autosave RED 확인**
+
+Run: `SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/dom/editorAutosaveManualFlush.test.tsx`
+
+Expected: registry에 editor callback이 없어 두 테스트 FAIL.
+
+- [ ] **Step 4: 현재 save cycle을 관찰할 ref와 manual flush 추가**
+
+`useEditorAutosave`에 save/error ref를 추가하고 기존 `performSaveRef`의 반환 타입을 `Promise<void>`로 변경한다.
+
+```ts
+const currentSavePromiseRef = useRef<Promise<void> | null>(null);
+const lastSaveErrorRef = useRef<unknown>(null);
+const performSaveRef = useRef<
+  ((currentTitle: string, currentContent: string) => Promise<void>) | null
+>(null);
+```
+
+`performSave`에서 실제 `onSave` promise를 ref에 보관하고 성공 시 error를 지운다.
+
+```ts
+const savePromise = Promise.resolve(onSave(currentTitle, currentContent));
+currentSavePromiseRef.current = savePromise;
+await savePromise;
+lastSaveErrorRef.current = null;
+```
+
+catch에서는 `lastSaveErrorRef.current = error`를 기록한다. finally에서는 자신이 등록한 promise일 때만 ref를 비운 뒤 기존 latest pending draft를 시작한다.
+
+- [ ] **Step 5: 최신 draft가 durable할 때까지 기다리는 registry callback 구현**
+
+```ts
+const flushLatestDraft = useCallback(async () => {
+  clearTimerRef(debounceTimerRef);
+  clearTimerRef(retryTimerRef);
+  if (!onSaveRef.current) return;
+
+  for (;;) {
+    const currentSave = currentSavePromiseRef.current;
+    if (currentSave) {
+      await currentSave.catch(() => undefined);
+      continue;
+    }
+
+    if (lastSaveErrorRef.current) {
+      clearTimerRef(retryTimerRef);
+      throw lastSaveErrorRef.current;
+    }
+
+    const latest = latestDraftRef.current;
+    if (
+      latest.title === lastSavedRef.current.title &&
+      latest.content === lastSavedRef.current.content
+    ) {
+      return;
+    }
+
+    await performSaveRef.current?.(latest.title, latest.content);
+  }
+}, []);
+
+useEffect(
+  () => registerSaveBufferFlush(flushLatestDraft),
+  [flushLatestDraft],
+);
+```
+
+title/content effect에서 새 draft를 받으면 이전 draft의 `lastSaveErrorRef`를 지운다. manual flush 성공 시 debounce timer가 뒤늦게 같은 draft를 다시 저장하지 않아야 한다.
+
+- [ ] **Step 6: Task 9 GREEN 및 기존 autosave 회귀 확인**
+
+Run: `SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/dom/editorAutosaveManualFlush.test.tsx tests/dom/editorReadyCleanup.test.tsx`
+
+Expected: 두 파일의 모든 테스트 PASS. unhandled rejection과 `act(...)` warning 없음.
+
+Run: `./node_modules/.bin/tsc6 --noEmit`
+
+Expected: PASS.
+
+- [ ] **Step 7: SSOT 상태와 Task 9 결과 갱신**
+
+Task 9를 `완료`로 바꾸고 실제 테스트 결과를 기록한다. 설계 §17.2 editor autosave 항목과 §17.4 latest pending drain을 구현 완료로 표시한다.
+
+- [ ] **Step 8: Task 9 커밋**
+
+```bash
+git add src/renderer/src/features/editor/hooks/useEditorAutosave.ts tests/dom/editorAutosaveManualFlush.test.tsx docs/superpowers/plans/2026-07-18-save-integrity.md docs/superpowers/specs/2026-07-18-save-integrity-design.md
+git commit -m "fix(storage): drain latest editor draft"
+```
+
+---
+
+### Task 10: manual save와 quit의 renderer buffer 선행 flush
+
+**Status:** 구현 대기
+
+**Files:**
+- Modify: `src/renderer/src/features/workspace/services/saveCoordinator.ts`
+- Modify: `src/renderer/src/features/workspace/hooks/useProjectQuitFlush.ts`
+- Modify: `src/renderer/src/features/workspace/components/useEditorRootShortcuts.ts`
+- Modify: `src/renderer/src/features/workspace/components/layout/EditorRoot.tsx`
+- Modify: `tests/renderer/services/saveCoordinator.test.ts`
+- Modify: `tests/dom/projectSaveShortcut.test.tsx`
+- Create: `tests/dom/projectQuitFlush.test.tsx`
+- Modify: `docs/superpowers/plans/2026-07-18-save-integrity.md`
+- Modify: `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
+
+**Interfaces:**
+- Consumes: `flushSaveBuffers(): Promise<void>`
+- Consumes: `flushWorldEntityMutations(): Promise<void>`
+- Changes: `saveProjectNow(projectId)` ordering to buffers → world → main
+- Changes: quit completion signal is sent only after buffers and world queue both succeed
+
+- [ ] **Step 1: manual save 순서 RED 테스트 확장**
+
+`tests/renderer/services/saveCoordinator.test.ts`에서 registry를 mock하고 순서를 고정한다.
+
+```ts
+it("flushes renderer buffers before world mutations and main checkpoint", async () => {
+  mocked.flushSaveBuffers.mockImplementationOnce(async () => {
+    mocked.calls.push("buffers");
+  });
+  mocked.flushWorldEntityMutations.mockImplementationOnce(async () => {
+    mocked.calls.push("world");
+  });
+  mocked.manualSave.mockImplementationOnce(async () => {
+    mocked.calls.push("main");
+    return { success: true, data: { success: true, exported: true } };
+  });
+
+  await saveProjectNow("project-1");
+  expect(mocked.calls).toEqual(["buffers", "world", "main"]);
+});
+```
+
+buffer failure 테스트는 `flushWorldEntityMutations`와 `manualSave`가 호출되지 않는지 확인한다.
+
+- [ ] **Step 2: shortcut이 부모의 stale chapter 값을 직접 저장하지 않는 RED 테스트 작성**
+
+`tests/dom/projectSaveShortcut.test.tsx`에서 `handleSave`, `activeChapterTitle`, `content` props를 제거하고 다음만 확인한다.
+
+```ts
+await act(async () => mocked.handlers["chapter.save"]?.());
+
+expect(mocked.saveProjectNow).toHaveBeenCalledOnce();
+expect(mocked.saveProjectNow).toHaveBeenCalledWith("project-1");
+```
+
+Expected current failure: hook props 타입과 구현이 아직 `handleSave(activeChapterTitle, content)`를 요구한다.
+
+- [ ] **Step 3: quit 성공 순서와 실패 차단 RED 테스트 작성**
+
+`tests/dom/projectQuitFlush.test.tsx`에서 hook harness를 mount하고 lifecycle callback을 직접 실행한다.
+
+```tsx
+it("completes quit only after buffers and world mutations flush", async () => {
+  act(() => mocked.beforeQuit?.());
+  await vi.waitFor(() =>
+    expect(mocked.calls).toEqual(["buffers", "world", "complete"]),
+  );
+  expect(mocked.calls).toEqual(["buffers", "world", "complete"]);
+});
+
+it("does not complete quit when a renderer buffer fails", async () => {
+  mocked.flushSaveBuffers.mockRejectedValueOnce(new Error("buffer failed"));
+  act(() => mocked.beforeQuit?.());
+  await vi.waitFor(() => expect(mocked.loggerError).toHaveBeenCalledOnce());
+  expect(mocked.flushWorldEntityMutations).not.toHaveBeenCalled();
+  expect(mocked.completeFlush).not.toHaveBeenCalled();
+});
+```
+
+- [ ] **Step 4: Task 10 RED 확인**
+
+Run: `SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/renderer/services/saveCoordinator.test.ts tests/dom/projectSaveShortcut.test.tsx tests/dom/projectQuitFlush.test.tsx`
+
+Expected: buffers-first ordering과 quit failure 차단 테스트 FAIL.
+
+- [ ] **Step 5: coordinator와 quit hook에 registry 선행 flush 연결**
+
+```ts
+export async function saveProjectNow(projectId: string): Promise<void> {
+  await flushSaveBuffers();
+  await flushWorldEntityMutations();
+  const response = await api.app.manualSave(projectId);
+  if (!response.success) {
+    throw new Error(response.error?.message ?? "Failed to save project");
+  }
+}
+```
+
+quit hook은 `finally` completion을 제거한다.
+
+```ts
+void (async () => {
+  await flushSaveBuffers();
+  await flushWorldEntityMutations();
+  await api.lifecycle.completeFlush();
+})().catch((error) => {
+  void api.logger.error("Failed to flush renderer saves", { error });
+});
+```
+
+- [ ] **Step 6: shortcut의 stale direct save 제거**
+
+`chapter.save`은 `currentProjectId`가 있을 때 `saveProjectNow(currentProjectId)`만 호출한다. `useEditorRootShortcuts` props와 `EditorRoot` 호출부에서 `handleSave`, `activeChapterTitle`, `content`를 제거한다. 최신 editor draft는 Task 9 registry callback이 저장한다.
+
+- [ ] **Step 7: Task 10 GREEN 및 저장 회귀 확인**
+
+Run: `SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/renderer/services/saveCoordinator.test.ts tests/dom/projectSaveShortcut.test.tsx tests/dom/projectQuitFlush.test.tsx tests/dom/bufferedInputSavePolicy.test.tsx tests/dom/editorAutosaveManualFlush.test.tsx tests/renderer/stores/worldEntityMutationQueue.test.ts`
+
+Expected: 모든 파일 PASS. stderr warning 없음.
+
+Run: `./node_modules/.bin/tsc6 --noEmit`
+
+Expected: PASS.
+
+- [ ] **Step 8: SSOT 상태 갱신 및 차단 항목 축소**
+
+Task 10을 `완료`로 바꾸고 실제 결과를 기록한다. 설계 §16에서 active input flush P0와 world mutation quit failure를 해결됨으로 이동한다. export queue의 `failed > 0`, 실패 mutation payload 보존, project-wide revision은 미해결로 유지한다.
+
+- [ ] **Step 9: Task 10 커밋**
+
+```bash
+git add src/renderer/src/features/workspace/services/saveCoordinator.ts src/renderer/src/features/workspace/hooks/useProjectQuitFlush.ts src/renderer/src/features/workspace/components/useEditorRootShortcuts.ts src/renderer/src/features/workspace/components/layout/EditorRoot.tsx tests/renderer/services/saveCoordinator.test.ts tests/dom/projectSaveShortcut.test.tsx tests/dom/projectQuitFlush.test.tsx docs/superpowers/plans/2026-07-18-save-integrity.md docs/superpowers/specs/2026-07-18-save-integrity-design.md
+git commit -m "fix(storage): flush renderer buffers first"
 ```
