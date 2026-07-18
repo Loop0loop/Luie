@@ -11,7 +11,9 @@ import { flushSaveBuffers } from "../../src/shared/ui/saveBufferRegistry.js";
 
 const mountedRoots = new Set<Root>();
 
-const mountInput = (onSave: (value: string) => void) => {
+const mountInput = (
+  onSave: (value: string) => void | Promise<unknown>,
+) => {
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
@@ -33,7 +35,9 @@ const mountInput = (onSave: (value: string) => void) => {
   };
 };
 
-const mountTextArea = (onSave: (value: string) => void) => {
+const mountTextArea = (
+  onSave: (value: string) => void | Promise<unknown>,
+) => {
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
@@ -196,5 +200,54 @@ describe("BufferedInput save policy", () => {
 
     await act(async () => flushSaveBuffers());
     expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it("waits for an in-flight input save before flushing a newer value", async () => {
+    vi.useFakeTimers();
+    let resolveFirst: (() => void) | undefined;
+    const firstSave = new Promise<void>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const onSave = vi.fn((value: string) => {
+      return value === "첫 값" ? firstSave : Promise.resolve();
+    });
+    const { input } = mountInput(onSave);
+
+    act(() => input.focus());
+    changeInput(input, "첫 값");
+    await act(async () => vi.advanceTimersByTimeAsync(250));
+    changeInput(input, "최신 값");
+
+    let settled = false;
+    const flush = flushSaveBuffers();
+    void flush.then(() => {
+      settled = true;
+    });
+    await act(async () => Promise.resolve());
+
+    expect(settled).toBe(false);
+    expect(onSave).toHaveBeenCalledOnce();
+
+    resolveFirst?.();
+    await act(async () => flush);
+    expect(onSave.mock.calls).toEqual([["첫 값"], ["최신 값"]]);
+  });
+
+  it("retries a textarea value after its async save rejects", async () => {
+    const onSave = vi.fn()
+      .mockRejectedValueOnce(new Error("save failed"))
+      .mockResolvedValueOnce(undefined);
+    const { textarea } = mountTextArea(onSave);
+
+    act(() => textarea.focus());
+    changeTextArea(textarea, "재시도할 본문");
+
+    await expect(flushSaveBuffers()).rejects.toThrow("save failed");
+    await act(async () => flushSaveBuffers());
+
+    expect(onSave.mock.calls).toEqual([
+      ["재시도할 본문"],
+      ["재시도할 본문"],
+    ]);
   });
 });

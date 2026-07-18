@@ -351,6 +351,8 @@ buffer 또는 world queue flush가 실패하면 뒤 단계로 진행하지 않�
 ### 17.4 동시성과 중복 방지
 
 - registry flush와 debounce timer가 경쟁해도 각 buffer의 기존 single-flush guard를 통과한다.
+- 같은 값의 in-flight 저장은 동일 Promise를 공유하고, 더 최신 값은 그 저장 뒤에 직렬화한다.
+- buffer는 비동기 저장 성공 뒤에만 clean으로 전환하며 실패한 최신 값은 다음 flush에서 재시도한다.
 - 같은 entity의 여러 input callback은 기존 entity별 mutation queue가 직렬화한다.
 - editor autosave는 동시에 `onSave`를 실행하지 않고 최신 pending draft 하나만 유지한다.
 - flush가 성공한 값은 뒤늦은 timer가 다시 저장하지 않는다.

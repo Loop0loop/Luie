@@ -1142,7 +1142,7 @@ Run: `./node_modules/.bin/tsc6 --noEmit`
 
 Expected: PASS.
 
-Actual (2026-07-19): 6 files, 7 tests PASS; 대상 ESLint와 `git diff --check` PASS. registry module 부재 RED와 shared input 2 tests RED를 확인한 뒤 대상 2 files/7 tests가 warning 없이 통과했다. 기존 `Promise<T | null>` callback 호환을 위해 shared input callback은 `Promise<unknown>`을 허용하고 registry adapter에서 `Promise<void>`로 수렴한다. `./node_modules/.bin/tsc6 --noEmit`에서 Task 8이 추가한 오류는 없으며, 시작 전부터 dirty인 `BinderSidebarPanelBody.tsx`의 기존 3 errors 때문에 전체 명령은 exit 2다.
+Actual (2026-07-19): 6 files, 9 tests PASS; 대상 ESLint와 `git diff --check` PASS. registry module 부재 RED, shared input global flush 2 tests RED, async in-flight/retry 2 tests RED를 확인했다. 같은 값의 in-flight Promise는 공유하고 최신 값은 그 뒤에 직렬화하며, 성공 뒤에만 clean으로 전환해 실패한 값은 재시도한다. 기존 `Promise<T | null>` callback 호환을 위해 shared input callback은 `Promise<unknown>`을 허용하고 registry adapter에서 `Promise<void>`로 수렴한다. `./node_modules/.bin/tsc6 --noEmit`에서 Task 8이 추가한 오류는 없으며, 사용자 소유 dirty 파일의 기존 error 때문에 전체 명령은 exit 2다.
 
 - [x] **Step 8: SSOT 상태와 Task 8 결과 갱신**
 

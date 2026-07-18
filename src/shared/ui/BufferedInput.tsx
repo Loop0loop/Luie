@@ -25,6 +25,10 @@ export function BufferedInput({
   const lastSavedValue = useRef(externalValue);
   const onSaveRef = useRef(onSave);
   const flushRef = useRef<() => void | Promise<unknown>>(() => undefined);
+  const inFlightSave = useRef<{
+    value: string;
+    promise: Promise<void>;
+  } | null>(null);
 
   useEffect(() => {
     onSaveRef.current = onSave;
@@ -41,11 +45,35 @@ export function BufferedInput({
     }
   };
 
-  const flush = (value = latestValue.current) => {
+  const flush = (value = latestValue.current): void | Promise<void> => {
     cancelScheduledSave();
+    const inFlight = inFlightSave.current;
+    if (inFlight) {
+      if (value === inFlight.value) return inFlight.promise;
+      return inFlight.promise.then(async () => {
+        await flushRef.current();
+      });
+    }
     if (value === lastSavedValue.current) return;
-    lastSavedValue.current = value;
-    return onSaveRef.current(value);
+
+    let result: void | Promise<unknown>;
+    try {
+      result = onSaveRef.current(value);
+    } catch (error) {
+      result = Promise.reject(error);
+    }
+
+    const promise = Promise.resolve(result)
+      .then(() => {
+        lastSavedValue.current = value;
+      })
+      .finally(() => {
+        if (inFlightSave.current?.promise === promise) {
+          inFlightSave.current = null;
+        }
+      });
+    inFlightSave.current = { value, promise };
+    return promise;
   };
 
   useEffect(() => {
@@ -154,6 +182,10 @@ export function BufferedTextArea({
   const lastSavedValue = useRef(externalValue);
   const onSaveRef = useRef(onSave);
   const flushRef = useRef<() => void | Promise<unknown>>(() => undefined);
+  const inFlightSave = useRef<{
+    value: string;
+    promise: Promise<void>;
+  } | null>(null);
 
   useEffect(() => {
     onSaveRef.current = onSave;
@@ -163,10 +195,35 @@ export function BufferedTextArea({
     return isEditing ? localValue : externalValue;
   }, [externalValue, isEditing, localValue]);
 
-  const flush = (value = latestValue.current) => {
-    if (isComposing.current || value === lastSavedValue.current) return;
-    lastSavedValue.current = value;
-    return onSaveRef.current(value);
+  const flush = (value = latestValue.current): void | Promise<void> => {
+    if (isComposing.current) return;
+    const inFlight = inFlightSave.current;
+    if (inFlight) {
+      if (value === inFlight.value) return inFlight.promise;
+      return inFlight.promise.then(async () => {
+        await flushRef.current();
+      });
+    }
+    if (value === lastSavedValue.current) return;
+
+    let result: void | Promise<unknown>;
+    try {
+      result = onSaveRef.current(value);
+    } catch (error) {
+      result = Promise.reject(error);
+    }
+
+    const promise = Promise.resolve(result)
+      .then(() => {
+        lastSavedValue.current = value;
+      })
+      .finally(() => {
+        if (inFlightSave.current?.promise === promise) {
+          inFlightSave.current = null;
+        }
+      });
+    inFlightSave.current = { value, promise };
+    return promise;
   };
 
   useEffect(() => {
