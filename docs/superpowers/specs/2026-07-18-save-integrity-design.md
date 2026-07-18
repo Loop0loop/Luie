@@ -293,7 +293,8 @@ ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron ./node_modules/vitest/vitest
 # 3 files, 8 tests PASS
 
 SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/renderer/services/saveCoordinator.test.ts tests/dom/projectSaveShortcut.test.tsx tests/dom/projectQuitFlush.test.tsx tests/dom/bufferedInputSavePolicy.test.tsx tests/dom/editorAutosaveManualFlush.test.tsx tests/renderer/stores/worldEntityMutationQueue.test.ts
-# 6 files, 25 tests PASS; stderr warning 없음
+# 6 files, 26 tests PASS; stderr warning 없음
+# world flush 오류 전파 테스트는 오류를 삼키는 임시 production 변이에서 FAIL한 뒤 원본 복원 후 PASS
 
 ./node_modules/.bin/tsc6 --noEmit
 # Task 10 오류 없음; 사용자 소유 dirty BinderSidebarPanelBody.tsx:102의 기존 ResearchPanelTab 오류 1건으로 exit 2

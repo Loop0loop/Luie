@@ -1474,7 +1474,7 @@ Run: `./node_modules/.bin/tsc6 --noEmit`
 
 Expected: PASS.
 
-Actual (2026-07-19): RED에서 3 files, 6 tests가 buffer flush 미연결, stale shortcut save, quit failure completion 때문에 예상대로 FAIL했다. GREEN은 저장 회귀 6 files, 25 tests PASS이고 stderr warning이 없다. buffer와 world failure 모두 quit completion을 차단한다. `./node_modules/.bin/tsc6 --noEmit`은 Task 10 오류 없이 사용자 소유 dirty `BinderSidebarPanelBody.tsx:102`의 기존 `ResearchPanelTab` 오류 1건으로 exit 2다.
+Actual (2026-07-19): RED에서 3 files, 6 tests가 buffer flush 미연결, stale shortcut save, quit failure completion 때문에 예상대로 FAIL했다. review follow-up에서 world flush 오류의 동일 객체 전파와 main checkpoint 차단 테스트를 추가했고, 오류를 임시로 삼키는 production 변이에서 해당 테스트가 예상대로 FAIL한 뒤 원본을 복원했다. focused GREEN은 3 files, 7 tests, 저장 회귀는 6 files, 26 tests PASS이며 stderr warning이 없다. buffer와 world failure 모두 quit completion을 차단한다. `./node_modules/.bin/tsc6 --noEmit`은 Task 10 오류 없이 사용자 소유 dirty `BinderSidebarPanelBody.tsx:102`의 기존 `ResearchPanelTab` 오류 1건으로 exit 2다.
 
 - [x] **Step 8: SSOT 상태 갱신 및 차단 항목 축소**
 

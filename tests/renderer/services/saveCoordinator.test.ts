@@ -67,4 +67,20 @@ describe("saveProjectNow", () => {
     expect(mocked.flushWorldEntityMutations).not.toHaveBeenCalled();
     expect(mocked.manualSave).not.toHaveBeenCalled();
   });
+
+  it("propagates a world mutation failure before the main checkpoint", async () => {
+    const worldError = new Error("world failed");
+    mocked.flushSaveBuffers.mockImplementationOnce(async () => {
+      mocked.calls.push("buffers");
+    });
+    mocked.flushWorldEntityMutations.mockImplementationOnce(async () => {
+      mocked.calls.push("world");
+      throw worldError;
+    });
+
+    await expect(saveProjectNow("project-1")).rejects.toBe(worldError);
+
+    expect(mocked.calls).toEqual(["buffers", "world"]);
+    expect(mocked.manualSave).not.toHaveBeenCalled();
+  });
 });
