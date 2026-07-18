@@ -197,7 +197,9 @@ export const registerAutoSaveInputHandlers = async (autoSaveManager: {
 }) => {
   const { registerAutoSaveIPCHandlers } =
     await import("../../../src/main/handler/writing/ipcAutoSaveHandlers.js");
-  registerAutoSaveIPCHandlers(mocked.logger, autoSaveManager);
+  registerAutoSaveIPCHandlers(mocked.logger, autoSaveManager, {
+    exportProjectPackageNow: async () => true,
+  });
 };
 
 export { mocked };

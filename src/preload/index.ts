@@ -46,6 +46,7 @@ function sanitizeForIpc(value: unknown, seen = new WeakSet<object>()): unknown {
 
 const LONG_TIMEOUT_CHANNELS = new Set<string>([
   IPC_CHANNELS.CHAPTER_CREATE,
+  IPC_CHANNELS.MANUAL_SAVE,
   IPC_CHANNELS.SNAPSHOT_IMPORT_FILE,
   IPC_CHANNELS.EXPORT_CREATE,
   IPC_CHANNELS.PROJECT_OPEN_LUIE,
@@ -365,6 +366,18 @@ const autoSave = (
   });
 
 const loggerApi = createLoggerApi();
+const completeAppFlush = async (): Promise<void> => {
+  const hadQueuedAutoSaves = autoSaveQueue.size > 0;
+  try {
+    await flushAutoSaves();
+    await flushLogs();
+  } finally {
+    ipcRenderer.send(IPC_CHANNELS.APP_FLUSH_COMPLETE, {
+      hadQueuedAutoSaves,
+      rendererDirty,
+    });
+  }
+};
 const rendererApi = createRendererApi({
   autoSave: {
     autoSave,
@@ -379,22 +392,10 @@ const rendererApi = createRendererApi({
   safeInvokeCore,
   sanitizeForIpc,
   loggerApi,
+  completeAppFlush,
 });
 
 contextBridge.exposeInMainWorld("api", rendererApi);
-
-ipcRenderer.on(IPC_CHANNELS.APP_BEFORE_QUIT, async () => {
-  const hadQueuedAutoSaves = autoSaveQueue.size > 0;
-  try {
-    await flushAutoSaves();
-    await flushLogs();
-  } finally {
-    ipcRenderer.send(IPC_CHANNELS.APP_FLUSH_COMPLETE, {
-      hadQueuedAutoSaves,
-      rendererDirty,
-    });
-  }
-});
 
 window.addEventListener("beforeunload", () => {
   void flushAutoSaves();

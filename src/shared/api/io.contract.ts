@@ -169,6 +169,8 @@ export type IoRendererApi = {
   ) => Promise<IPCResponse<unknown>>;
   lifecycle: {
     setDirty: (dirty: boolean) => void;
+    onBeforeQuit: (callback: () => void) => () => void;
+    completeFlush: () => Promise<void>;
     onQuitPhase: (
       callback: (payload: SharedTypes.AppQuitPhasePayload) => void,
     ) => () => void;

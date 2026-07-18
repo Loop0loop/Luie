@@ -77,4 +77,28 @@ describe("preload contract regression analyzer", () => {
   it("does not publish raw ipcRenderer or generic invoke/send methods on RendererApi", () => {
     expect(rendererApiSource).not.toMatch(/\b(?:ipcRenderer|invoke|send)\s*:/);
   });
+
+  it("flushes preload autosaves before manual save IPC", () => {
+    const manualSaveStart = preloadSource.indexOf("manualSave: async (projectId)");
+    const preloadFlush = preloadSource.indexOf(
+      "await autoSave.flushAutoSaves()",
+      manualSaveStart,
+    );
+    const mainInvoke = preloadSource.indexOf(
+      "IPC_CHANNELS.MANUAL_SAVE",
+      manualSaveStart,
+    );
+
+    expect(manualSaveStart).toBeGreaterThanOrEqual(0);
+    expect(preloadFlush).toBeGreaterThan(manualSaveStart);
+    expect(mainInvoke).toBeGreaterThan(preloadFlush);
+  });
+
+  it("exposes renderer-controlled quit flush completion", () => {
+    expect(preloadSource).toContain("onBeforeQuit: (callback)");
+    expect(preloadSource).toContain("completeFlush: () => completeAppFlush()");
+    expect(preloadSource).toContain(
+      "ipcRenderer.send(IPC_CHANNELS.APP_FLUSH_COMPLETE",
+    );
+  });
 });

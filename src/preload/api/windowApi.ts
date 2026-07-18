@@ -6,6 +6,7 @@ import type { PreloadApiModuleContext } from "./types.js";
 
 export function createWindowApi({
   autoSave,
+  completeAppFlush,
   ipcRenderer,
   safeInvoke,
   safeInvokeCore,
@@ -15,6 +16,14 @@ export function createWindowApi({
       setDirty: (dirty) => {
         autoSave.setRendererDirty(Boolean(dirty));
       },
+      onBeforeQuit: (callback) => {
+        const listener = () => callback();
+        ipcRenderer.on(IPC_CHANNELS.APP_BEFORE_QUIT, listener);
+        return () => {
+          ipcRenderer.removeListener(IPC_CHANNELS.APP_BEFORE_QUIT, listener);
+        };
+      },
+      completeFlush: () => completeAppFlush(),
       onQuitPhase: (callback) => {
         const listener = (
           _event: IpcRendererEvent,

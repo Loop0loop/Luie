@@ -85,4 +85,5 @@ export type PreloadApiModuleContext = {
   safeInvokeCore: SafeInvokeCore;
   sanitizeForIpc: (value: unknown) => unknown;
   loggerApi: RendererApi["logger"];
+  completeAppFlush: () => Promise<void>;
 };

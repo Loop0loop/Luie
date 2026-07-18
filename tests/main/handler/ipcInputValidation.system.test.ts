@@ -248,5 +248,22 @@ describe("IPC input validation: window / sync / chapter / autosave", () => {
     expect(response.error?.code).toBe(ErrorCode.INVALID_INPUT);
     expect(autoSaveManager.triggerSave).not.toHaveBeenCalled();
   });
-});
 
+  it("returns INVALID_INPUT for MANUAL_SAVE without a valid project id", async () => {
+    const autoSaveManager = {
+      triggerSave: vi.fn(),
+      flushAll: vi.fn(),
+    };
+    await registerAutoSaveInputHandlers(autoSaveManager);
+
+    const handler = mocked.handlerMap.get(IPC_CHANNELS.MANUAL_SAVE);
+    const response = (await handler?.({}, "")) as {
+      success: boolean;
+      error?: { code: string };
+    };
+
+    expect(response.success).toBe(false);
+    expect(response.error?.code).toBe(ErrorCode.INVALID_INPUT);
+    expect(autoSaveManager.flushAll).not.toHaveBeenCalled();
+  });
+});

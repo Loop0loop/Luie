@@ -70,6 +70,7 @@ export async function registerAllIPCHandlers(): Promise<void> {
   registerWritingHandlers({
     logger,
     autoSaveManager: await loadAutoSaveManager(),
+    projectService,
     snapshotService,
   });
 

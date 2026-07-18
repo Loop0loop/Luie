@@ -10,11 +10,13 @@ import {
 import type { createLayoutModeActions } from "@renderer/features/workspace/services/layoutModeActions";
 import type { EditorUiMode } from "@shared/types";
 import type { WorldTab } from "@renderer/features/workspace/stores/uiStore";
+import { saveProjectNow } from "@renderer/features/workspace/services/saveCoordinator";
 
 interface UseEditorRootShortcutsProps {
     setIsSettingsOpen: (open: boolean) => void;
     handleAddChapter: () => void;
-    handleSave: (title: string, content: string) => void;
+    handleSave: (title: string, content: string) => Promise<void>;
+    currentProjectId: string | null;
     handleDeleteActiveChapter: () => void;
     openChapterByIndex: (index: number) => void;
     handleRenameProject: () => Promise<void>;
@@ -35,6 +37,7 @@ export function useEditorRootShortcuts({
     setIsSettingsOpen,
     handleAddChapter,
     handleSave,
+    currentProjectId,
     handleDeleteActiveChapter,
     openChapterByIndex,
     handleRenameProject,
@@ -100,7 +103,16 @@ export function useEditorRootShortcuts({
             },
             "app.quit": () => void api.app.quit(),
             "chapter.new": () => void handleAddChapter(),
-            "chapter.save": () => void handleSave(activeChapterTitle, content),
+            "chapter.save": async () => {
+                try {
+                    await handleSave(activeChapterTitle, content);
+                    if (currentProjectId) {
+                        await saveProjectNow(currentProjectId);
+                    }
+                } catch (error) {
+                    void api.logger.error("Manual project save failed", { error });
+                }
+            },
             "chapter.delete": () => void handleDeleteActiveChapter(),
             "chapter.open.1": () => openChapterByIndex(0),
             "chapter.open.2": () => openChapterByIndex(1),
@@ -156,6 +168,7 @@ export function useEditorRootShortcuts({
             content,
             handleAddChapter,
             handleSave,
+            currentProjectId,
             handleDeleteActiveChapter,
             closeFocusedSurface,
             isSidebarOpen,

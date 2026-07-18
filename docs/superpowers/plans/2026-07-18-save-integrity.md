@@ -706,8 +706,11 @@ git commit -m "feat(storage): recover stale project checkpoints"
 
 ### Task 6: `Cmd/Ctrl+S`와 종료 시 전체 flush
 
+**Status:** 완료
+
 **Files:**
 - Modify: `src/shared/api/settings.contract.ts`
+- Modify: `src/shared/api/io.contract.ts`
 - Modify: `src/preload/api/systemApi.ts`
 - Modify: `src/preload/api/types.ts`
 - Modify: `src/preload/api/windowApi.ts`
@@ -721,6 +724,8 @@ git commit -m "feat(storage): recover stale project checkpoints"
 - Create: `tests/main/handler/manualSaveHandler.test.ts`
 - Create: `tests/renderer/services/saveCoordinator.test.ts`
 - Create: `tests/dom/projectSaveShortcut.test.tsx`
+- Modify: `tests/main/handler/ipcInputValidation.shared.ts`
+- Modify: `tests/main/handler/ipcInputValidation.system.test.ts`
 - Modify: `tests/scripts/preloadContractRegression.test.ts`
 
 **Interfaces:**
@@ -729,7 +734,7 @@ git commit -m "feat(storage): recover stale project checkpoints"
 - Adds: `api.lifecycle.onBeforeQuit(callback: () => void): () => void`
 - Adds: `api.lifecycle.completeFlush(): Promise<void>`
 
-- [ ] **Step 1: manual save 순서 실패 테스트 작성**
+- [x] **Step 1: manual save 순서 실패 테스트 작성**
 
 `saveCoordinator.test.ts`에서 다음 순서를 검증한다.
 
@@ -751,13 +756,13 @@ it("drains renderer mutations before forcing the main checkpoint", async () => {
 
 `manualSaveHandler.test.ts`는 `autoSaveManager.flushAll()` 뒤 `projectService.exportProjectPackageNow(projectId, "manual-save")`가 호출되는지 검증한다.
 
-- [ ] **Step 2: API 부재로 실패 확인**
+- [x] **Step 2: API 부재로 실패 확인**
 
 Run: `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/renderer/services/saveCoordinator.test.ts tests/main/handler/manualSaveHandler.test.ts --run`
 
 Expected: `manualSave(projectId)` 또는 coordinator 부재로 FAIL.
 
-- [ ] **Step 3: 기존 MANUAL_SAVE IPC를 프로젝트 flush로 확장**
+- [x] **Step 3: 기존 MANUAL_SAVE IPC를 프로젝트 flush로 확장**
 
 handler 입력 schema는 `z.tuple([projectIdSchema])`다. 처리 순서는 다음으로 고정한다.
 
@@ -778,7 +783,7 @@ manualSave: (
 ) => Promise<IPCResponse<{ success: boolean; exported: boolean }>>;
 ```
 
-- [ ] **Step 4: renderer save coordinator 연결**
+- [x] **Step 4: renderer save coordinator 연결**
 
 ```ts
 export async function saveProjectNow(projectId: string): Promise<void> {
@@ -792,7 +797,7 @@ export async function saveProjectNow(projectId: string): Promise<void> {
 
 기존 `chapter.save` shortcut handler는 먼저 현재 원고 `handleSave`를 호출한 뒤 `saveProjectNow(currentProjectId)`를 호출한다. shortcut id와 기본 `Cmd/Ctrl+S` 설정은 유지한다.
 
-- [ ] **Step 5: 종료 handshake를 renderer flush까지 확장**
+- [x] **Step 5: 종료 handshake를 renderer flush까지 확장**
 
 preload는 `APP_BEFORE_QUIT`에서 곧바로 완료 응답을 보내지 않는다. `lifecycle.onBeforeQuit`으로 renderer에 알리고, renderer는 `flushWorldEntityMutations()` 후 `lifecycle.completeFlush()`를 호출한다. `PreloadApiModuleContext.completeAppFlush`는 preload autoSave/log queue까지 flush한 뒤 기존 `APP_FLUSH_COMPLETE` payload를 전송한다.
 
@@ -825,16 +830,18 @@ return api.lifecycle.onBeforeQuit(() => {
 
 world queue pending count가 0보다 크면 기존 `rendererDirty`에도 반영한다. main shutdown timeout과 사용자 선택 정책은 변경하지 않는다.
 
-- [ ] **Step 6: shortcut 및 preload 계약 테스트 실행**
+- [x] **Step 6: shortcut 및 preload 계약 테스트 실행**
 
-Run: `SKIP_DB_TEST_SETUP=1 pnpm vitest tests/renderer/services/saveCoordinator.test.ts tests/main/handler/manualSaveHandler.test.ts tests/dom/projectSaveShortcut.test.tsx tests/scripts/preloadContractRegression.test.ts --run`
+Run: `SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest tests/renderer/services/saveCoordinator.test.ts tests/main/handler/manualSaveHandler.test.ts tests/dom/projectSaveShortcut.test.tsx tests/scripts/preloadContractRegression.test.ts tests/main/handler/ipcInputValidation.system.test.ts tests/renderer/stores/worldEntityMutationQueue.test.ts --run`
 
 Expected: PASS.
 
-- [ ] **Step 7: Task 6 커밋**
+Actual (2026-07-19): 6 files, 25 tests PASS; 대상 ESLint, `./node_modules/.bin/tsc6 --noEmit`, `git diff --check` PASS. preload `manualSave`는 main IPC 전에 preload autosave queue를 추가로 flush한다.
+
+- [x] **Step 7: Task 6 커밋**
 
 ```bash
-git add src/shared/api/settings.contract.ts src/preload/api/systemApi.ts src/preload/api/types.ts src/preload/api/windowApi.ts src/preload/index.ts src/main/handler/writing/ipcAutoSaveHandlers.ts src/main/handler/writing/index.ts src/main/handler/index.ts src/renderer/src/features/workspace/services/saveCoordinator.ts src/renderer/src/features/workspace/components/useEditorRootShortcuts.ts src/renderer/src/features/workspace/components/layout/EditorRoot.tsx tests/main/handler/manualSaveHandler.test.ts tests/renderer/services/saveCoordinator.test.ts tests/dom/projectSaveShortcut.test.tsx tests/scripts/preloadContractRegression.test.ts
+git add docs/superpowers/plans/2026-07-18-save-integrity.md src/shared/api/settings.contract.ts src/shared/api/io.contract.ts src/preload/api/systemApi.ts src/preload/api/types.ts src/preload/api/windowApi.ts src/preload/index.ts src/main/handler/writing/ipcAutoSaveHandlers.ts src/main/handler/writing/index.ts src/main/handler/index.ts src/renderer/src/features/workspace/services/saveCoordinator.ts src/renderer/src/features/workspace/components/useEditorRootShortcuts.ts src/renderer/src/features/workspace/components/layout/EditorRoot.tsx tests/main/handler/manualSaveHandler.test.ts tests/renderer/services/saveCoordinator.test.ts tests/dom/projectSaveShortcut.test.tsx tests/main/handler/ipcInputValidation.shared.ts tests/main/handler/ipcInputValidation.system.test.ts tests/scripts/preloadContractRegression.test.ts
 git commit -m "feat(storage): flush projects with save shortcut"
 ```
 

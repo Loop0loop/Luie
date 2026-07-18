@@ -51,6 +51,11 @@ import {
   WorkspacePanels,
 } from "./rootShell";
 import { FloatingAnalysisPanel } from "./FloatingAnalysisPanel";
+import { api } from "@shared/api";
+import {
+  flushWorldEntityMutations,
+  getPendingWorldEntityMutationCount,
+} from "@renderer/shared/store/worldEntityMutationQueue";
 
 export default function EditorRoot() {
   const { t } = useTranslation();
@@ -183,6 +188,23 @@ export default function EditorRoot() {
     addPanel,
   });
 
+  useEffect(
+    () =>
+      api.lifecycle.onBeforeQuit(() => {
+        if (getPendingWorldEntityMutationCount() > 0) {
+          api.lifecycle.setDirty(true);
+        }
+        void flushWorldEntityMutations()
+          .catch((error) => {
+            void api.logger.error("Failed to flush world entity mutations", {
+              error,
+            });
+          })
+          .finally(() => api.lifecycle.completeFlush());
+      }),
+    [],
+  );
+
   const openDocsRightTab = useCallback((tab: Exclude<DocsRightTab, null>) => {
     openDocsPanelTab(tab);
   }, []);
@@ -265,6 +287,7 @@ export default function EditorRoot() {
     setIsSettingsOpen,
     handleAddChapter,
     handleSave,
+    currentProjectId: currentProject?.id ?? null,
     handleDeleteActiveChapter,
     openChapterByIndex,
     handleRenameProject,
