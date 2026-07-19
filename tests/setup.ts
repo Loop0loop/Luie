@@ -23,6 +23,7 @@ const skipDbSetup = process.env.SKIP_DB_TEST_SETUP === "1";
 
 process.env.DATABASE_URL = `file:${testDbPath}`;
 process.env.CACHE_DATABASE_URL = `file:${testCacheDbPath}`;
+process.env.LUIE_USER_DATA_PATH = testDbDir;
 
 vi.mock("electron", () => ({
   app: {

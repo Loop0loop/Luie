@@ -119,6 +119,12 @@ RED exact 5-file 명령은 31 tests 중 12건이 실패했다. Task 4 계약 실
 
 follow-up mutation RED는 snapshot mark-before-write에서 4 tests 중 3건, corrupt recovery capture-after-export에서 targeted 1 test가 예상대로 실패했다. 원복 뒤 두 경로 focused 2 files/5 tests가 PASS했다. 대상 ESLint와 `git diff --check`는 PASS다. 직접 `tsc6 --noEmit`은 Task 4 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 한 건만 유지한다. `pnpm run typecheck` wrapper는 무출력 장기 대기로 중단했다. Task 1~3 기준 commit은 각각 `8ae3d04c`, `a028e5a7`, `a171b90e`다. follow-up 구현·commit 뒤 최종 root 코드 리뷰는 Production-ready, QA는 PASS, SSOT는 Approved로 모두 Critical/Important 0이다.
 
+### Baseline green follow-up
+
+Task 4 당시 남긴 world-entry 5건과 `dbRecoveryService` 7건의 harness baseline을 후속으로 정리했다. export는 package 전체/JSON/schema 오류를 계속 fail-closed로 유지하면서 `maxSizeBytes`와 동일 `entryPath`가 있는 oversized sqlite world entry만 개별 격리한다. recovery unit test의 외부 mock은 suite `beforeEach`에서 등록해 Vitest 전역 real DB setup 이후 test 대상의 dynamic import에만 적용한다. 전역 test setup은 worker별 임시 경로를 `LUIE_USER_DATA_PATH`로 지정한다.
+
+기본 Electron-as-Node 실행에서 `projectService.test.ts` 15 tests, `dbRecoveryService.test.ts` 7 tests, `projectExportEngine.test.ts` 7 tests가 PASS했고 tracked settings diff는 0이다. 독립 리뷰는 Production-ready, Critical/Important/Minor 0이다.
+
 ## 6. 제외 항목
 
 이 작업은 export queue 자동 backoff, Notion UI timer, 저장 latency P95 인증을 변경하지 않는다. mark 실패 뒤 보존된 snapshot recovery artifact의 자동 cleanup도 범위 밖이다. 기존 파일 삭제 위험을 피하기 위한 의도적 LOW risk이며, 안전한 artifact identity와 사용자 선택 정책이 생길 때만 추가한다.

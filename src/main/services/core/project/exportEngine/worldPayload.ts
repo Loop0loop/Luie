@@ -96,7 +96,24 @@ export const readWorldPayloadFromPackage = async (
     label: string,
   ): Promise<ReturnType<z.ZodType<T>["safeParse"]>> => {
     const entryPath = `${LUIE_WORLD_DIR}/${fileName}`;
-    const raw = await readLuieContainerEntry(projectPath, entryPath, logger);
+    let raw: string | null;
+    try {
+      raw = await readLuieContainerEntry(projectPath, entryPath, logger);
+    } catch (error) {
+      const oversizedEntry =
+        error instanceof ServiceError &&
+        error.code === ErrorCode.FS_READ_FAILED &&
+        typeof error.details?.maxSizeBytes === "number" &&
+        error.details?.entryPath === entryPath;
+      if (!oversizedEntry) throw error;
+      logger.warn("Skipping oversized .luie world document during export", {
+        projectPath,
+        entryPath,
+        label,
+        error,
+      });
+      return schema.safeParse(null);
+    }
     if (typeof raw !== "string" || raw.trim().length === 0) {
       return schema.safeParse(null);
     }

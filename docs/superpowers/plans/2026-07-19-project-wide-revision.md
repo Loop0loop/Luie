@@ -318,6 +318,16 @@ fix(storage): converge direct revision checkpoints
 
 Actual (2026-07-19): 기준 commit은 Task 1 `8ae3d04c`, Task 2 `a028e5a7`, Task 3 `a171b90e`다. RED exact 5-file 명령은 31 tests 중 Task 4 계약 누락 7건과 기존 대용량 world-entry baseline 5건이 실패했다. GREEN은 package hydration final revision baseline, snapshot attachment/write/mark rollback, attach/materialize capture order와 failure mark 금지, corrupt recovery 수렴, writer 중 concurrent mutation dirty 보존을 고정한 Task 4 계약 17 tests PASS다. exact 명령은 Task 4 관련 26 tests PASS이며 동일 기존 baseline 5건만 남았다. follow-up mutation RED는 snapshot mark-before-write 3건과 corrupt capture-after-export 1건을 검출했고 원복 GREEN focused 2 files/5 tests PASS다. snapshot mark 실패는 DB state를 rollback하고 작성된 recovery artifact를 경로와 함께 logging하며 보존한다. Task 1~3와 공유 recovery 11 files/49 tests, Task 8~16 Electron-as-Node 저장 회귀 19 files/167 tests PASS다. 대상 ESLint/diff-check PASS, direct `tsc6 --noEmit`은 사용자 dirty Binder TS2322 한 건만 유지한다. pnpm wrapper는 무출력 장기 대기로 중단했다. 구현·commit·follow-up 완료 뒤 root 코드 리뷰는 Production-ready, QA는 PASS, SSOT는 Approved로 모두 Critical/Important 0이다.
 
+#### Baseline green follow-up
+
+- [x] oversized sqlite world entry 하나가 나머지 readable world document export를 중단하는 RED 재현
+- [x] `dbRecoveryService.test.ts`의 hoisted mock이 전역 DB setup을 가로채는 RED 재현
+- [x] Vitest settings 경로가 tracked `.luie-user-data`로 fallback하는 side effect 재현
+- [x] 최소 구현과 기본 Electron-as-Node 회귀 확인
+- [x] 독립 리뷰·SSOT 확정·단일 커밋
+
+Actual (2026-07-19): package 전체/JSON/schema 오류는 계속 export를 중단하고, 5 MiB를 넘은 개별 sqlite world entry만 warn 뒤 기본값으로 격리한다. `dbRecoveryService.test.ts`의 Electron·better-sqlite3·main DB mock은 suite `beforeEach`의 `vi.doMock`으로 늦춰 전역 real DB setup과 분리했다. `tests/setup.ts`는 worker별 `testDbDir`를 `LUIE_USER_DATA_PATH`로 사용해 tracked settings 파일을 더럽히지 않는다. 기본 Electron-as-Node 실행에서 `projectService.test.ts` 15 tests, `dbRecoveryService.test.ts` 7 tests, `projectExportEngine.test.ts` 7 tests가 PASS했고 settings diff는 0이다. 독립 리뷰는 Production-ready, Critical/Important/Minor 0이다.
+
 ---
 
 ## 완료 조건
