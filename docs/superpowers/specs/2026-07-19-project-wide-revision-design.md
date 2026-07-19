@@ -1,6 +1,6 @@
 # Project-wide revision 설계
 
-**상태:** 승인됨, 구현 전  
+**상태:** 구현 중 — Task 1 완료
 **상위 SSOT:** `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
 
 ## 1. 목표
@@ -79,6 +79,14 @@ sync는 merged chapter, world, memory canonical row를 같은 DB transaction에 
 8. `revision > exportedRevision` startup recovery가 새 canonical source 변경도 `.luie`에 반영한다.
 
 구현은 ChapterBody export SSOT 통일, revision trigger/bootstrap, sync memory apply와 transaction revision capture, queue 밖 full writer checkpoint 수렴 순서로 진행한다. 각 단계는 해당 RED/GREEN 결과를 이 문서와 실행 계획에 함께 기록한다.
+
+### Task 1 검증 결과 (2026-07-19)
+
+normal exporter는 `ChapterBody` left join 결과를 우선하고 row가 없을 때만 `Chapter.content`를 사용한다. sync collector는 전체 chapter body를 단일 query와 `Map`으로 overlay하며, sync apply와 package/snapshot import는 `Chapter`와 hash를 포함한 `ChapterBody`를 같은 transaction에서 기록한다.
+
+RED는 지정 Electron-as-Node 4 files/17 tests 중 5건이 예상 원인으로 실패했다. GREEN은 같은 4 files/17 tests PASS다. 대상 ESLint와 `git diff --check`는 PASS이고, 전체 `tsc6 --noEmit`은 Task 1 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 한 건만 남는다. 독립 재리뷰는 Production-ready, Critical/Important 0으로 판정했다.
+
+최종 리뷰 follow-up은 query builder의 `.values()`/`.set()`만 검증하고 실제 `.run()`을 놓치던 false-positive를 제거했다. package/snapshot import는 `Chapter`와 `ChapterBody` 각각의 direct run을, sync apply는 기존 Chapter update run·신규 Chapter insert run·두 ChapterBody conflict run을 검증한다. 네 production run을 임시 제거한 mutation RED는 2 files/9 tests 중 3건 실패했고, 원복 후 전체 focused 4 files/17 tests가 PASS했다. 최종 재리뷰 verdict는 Production-ready, Critical/Important/Minor 0이다.
 
 ## 6. 제외 항목
 

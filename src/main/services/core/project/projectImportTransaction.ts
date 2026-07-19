@@ -20,9 +20,10 @@ import {
   applyMemoryCanonicalPackagePayload,
   type MemoryCanonicalPackagePayload,
 } from "../../features/memory/persistence/memoryCanonicalPackage.js";
+import { hashChapterContent } from "../chapter/chapterContentStore.js";
 
 
-const { project, projectSettings, chapter, character, term, faction, event, worldEntity, entityRelation, snapshot: snapshotTable, worldDocument: worldDocumentTable, scrapMemo, projectAttachment } = schema;
+const { project, projectSettings, chapter, chapterBody, character, term, faction, event, worldEntity, entityRelation, snapshot: snapshotTable, worldDocument: worldDocumentTable, scrapMemo, projectAttachment } = schema;
 
 type ExistingProjectLookup = { id: string; updatedAt: Date } | null;
 
@@ -288,6 +289,12 @@ export const applyProjectImportTransaction = async (
       tx.insert(chapter).values(chaptersForCreate.map((c) => ({
         ...c,
         createdAt: now,
+        updatedAt: now,
+      }))).run();
+      tx.insert(chapterBody).values(chaptersForCreate.map((c) => ({
+        chapterId: c.id,
+        content: c.content,
+        contentHash: hashChapterContent(c.content),
         updatedAt: now,
       }))).run();
     }

@@ -15,8 +15,9 @@ import {
 import { sanitizeName } from "../../../../shared/utils/sanitize.js";
 import { writeLuieContainer } from "../../io/luieContainer.js";
 import { readFullSnapshotArtifact } from "./snapshotArtifacts.js";
+import { hashChapterContent } from "../../core/chapter/chapterContentStore.js";
 
-const { project, projectSettings, chapter, character, term } = schema;
+const { project, projectSettings, chapter, chapterBody, character, term } = schema;
 
 type LoggerLike = {
   info: (message: string, data?: unknown) => void;
@@ -182,6 +183,16 @@ const createImportedProject = async (
 
     if (chaptersForCreate.length > 0) {
       tx.insert(chapter).values(chaptersForCreate).run();
+      tx.insert(chapterBody)
+        .values(
+          chaptersForCreate.map((chapterRow) => ({
+            chapterId: chapterRow.id,
+            content: chapterRow.content,
+            contentHash: hashChapterContent(chapterRow.content),
+            updatedAt: now,
+          })),
+        )
+        .run();
     }
 
     if (charactersForCreate.length > 0) {

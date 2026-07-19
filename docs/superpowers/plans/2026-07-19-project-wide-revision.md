@@ -56,7 +56,7 @@
 - `upsertChapter(tx, chapter)`는 Chapter와 ChapterBody를 같은 transaction에서 갱신.
 - package/snapshot import는 Chapter insert와 ChapterBody insert를 같은 transaction에서 수행.
 
-- [ ] **Step 1: RED 작성**
+- [x] **Step 1: RED 작성**
 
 다음 assertion을 실제 DB 또는 현재 query mock에 추가한다.
 
@@ -69,7 +69,7 @@ expect(savedChapterBody.content).toBe("remote-body");
 
 fixture는 같은 chapter에 `Chapter.content = "legacy-old"`, `ChapterBody.content = "chapter-body-new"`를 저장한다. import/sync assertion은 두 table 값이 같은지 확인한다.
 
-- [ ] **Step 2: RED 확인**
+- [x] **Step 2: RED 확인**
 
 Run:
 
@@ -79,24 +79,28 @@ ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron ./node_modules/vitest/vitest
 
 Expected: exporter/sync collector가 legacy content를 읽거나 ChapterBody가 없어 FAIL.
 
-- [ ] **Step 3: 최소 GREEN**
+- [x] **Step 3: 최소 GREEN**
 
 - `getProjectForExport()`의 chapter query는 `ChapterBody`를 left join하고 `bodyContent ?? chapter.content`를 mapper 입력으로 사용한다.
 - `buildLocalBundleFromDatabase()`는 project chapter의 body rows를 한 번에 읽어 `Map<chapterId, content>`로 overlay한다. chapter마다 query하는 N+1은 만들지 않는다.
 - `upsertChapter()`는 기존 Chapter upsert 뒤 `ChapterBody`를 `chapterId` conflict update하고 `hashChapterContent(content)`를 저장한다.
 - `applyProjectImportTransaction()`와 snapshot import transaction도 동일한 body row를 bulk insert한다.
 
-- [ ] **Step 4: GREEN·정적 검증**
+- [x] **Step 4: GREEN·정적 검증**
 
 Step 2 명령을 다시 실행한다. 이어서 대상 ESLint, `pnpm run typecheck`, `git diff --check`를 실행한다. typecheck는 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 `TS2322` 외 신규 오류가 없어야 한다.
 
-- [ ] **Step 5: 검토·SSOT·커밋**
+- [x] **Step 5: 검토·SSOT·커밋**
 
 subagent가 export/sync/import 세 경로의 본문 우선순위와 테스트를 독립 검토한다. 설계 SSOT에 실제 테스트 결과를 기록하고 사용자 승인 후 정확한 Task 1 파일만 다음 메시지로 커밋한다.
 
 ```text
 fix(storage): export canonical chapter bodies
 ```
+
+Actual (2026-07-19): RED는 4 files/17 tests 중 5건이 normal export와 sync collector의 legacy 본문 사용, sync apply와 package/snapshot import의 `ChapterBody` 누락으로 예상대로 실패했다. 최소 구현 뒤 같은 Electron-as-Node 명령은 4 files/17 tests PASS이고, body overlay 테스트는 두 chapter를 한 번의 `ChapterBody` query로 처리하면서 row 없는 chapter의 legacy fallback도 고정한다. 대상 ESLint와 `git diff --check`는 PASS다. `tsc6 --noEmit`은 Task 1 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102`의 기존 TS2322 한 건만 유지한다. 독립 재리뷰 verdict는 Production-ready이며 Critical/Important 0이다.
+
+Final review follow-up: insert/update query를 만들기만 하고 `.run()`하지 않는 변이를 기존 mock assertion이 놓치는 Important 1건을 수정했다. table별 run spy와 sync 기존 update/신규 insert branch assertion을 먼저 추가한 뒤 production의 네 `.run()`을 임시 제거했을 때 focused 2 files/9 tests 중 3건이 예상대로 실패했다. production 원복 후 지정 4 files/17 tests는 다시 PASS했고, 재리뷰는 Production-ready, Critical/Important/Minor 0이다.
 
 ---
 

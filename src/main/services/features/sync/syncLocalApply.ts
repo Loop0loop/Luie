@@ -3,8 +3,10 @@ import { DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS } from "../../../../shared/c
 import type { SyncBundle } from "./syncMapper.js";
 import type { SyncChapterRecord } from "./syncMapper.js";
 import type { DbLike } from "../../../infra/database/index.js";
+import { hashChapterContent } from "../../core/chapter/chapterContentStore.js";
 import {
   chapter,
+  chapterBody,
   character,
   event,
   faction,
@@ -98,13 +100,14 @@ export const upsertChapter = (tx: DbLike, ch: SyncChapterRecord): void => {
     .limit(1)
     .get();
 
+  const updatedAt = new Date(ch.updatedAt).toISOString();
   const data = {
     title: ch.title,
     content: ch.content,
     synopsis: ch.synopsis,
     order: ch.order,
     wordCount: ch.wordCount,
-    updatedAt: new Date(ch.updatedAt).toISOString(),
+    updatedAt,
     deletedAt: ch.deletedAt ? new Date(ch.deletedAt).toISOString() : null,
     projectId: ch.projectId,
   };
@@ -120,6 +123,24 @@ export const upsertChapter = (tx: DbLike, ch: SyncChapterRecord): void => {
       })
       .run();
   }
+
+  const contentHash = hashChapterContent(ch.content);
+  tx.insert(chapterBody)
+    .values({
+      chapterId: ch.id,
+      content: ch.content,
+      contentHash,
+      updatedAt,
+    })
+    .onConflictDoUpdate({
+      target: [chapterBody.chapterId],
+      set: {
+        content: ch.content,
+        contentHash,
+        updatedAt,
+      },
+    })
+    .run();
 };
 
 export const upsertCharacters = (
