@@ -16,7 +16,7 @@ import { rebuildProjectKeywordAppearances } from "../../manuscript/chapterKeywor
 import { projectService } from "../../project/projectService.js";
 import { ServiceError } from "../../../../utils/error/index.js";
 import { escapeLike } from "../../../../utils/query/index.js";
-import { bumpProjectRevision } from "../../../core/project/projectRevisionStore.js";
+import { touchProjectUpdatedAt } from "../../../core/project/projectRevisionStore.js";
 
 const loadAppearanceCacheService = async () =>
   (await import("../cache/appearanceCacheService.js")).appearanceCacheService;
@@ -51,7 +51,7 @@ export class TermService {
             { input },
           );
         }
-        bumpProjectRevision(tx, input.projectId, now);
+        touchProjectUpdatedAt(tx, input.projectId, now);
         return created;
       });
 
@@ -168,7 +168,7 @@ export class TermService {
             id: input.id,
           });
         }
-        bumpProjectRevision(tx, String(current.projectId), now);
+        touchProjectUpdatedAt(tx, String(current.projectId), now);
         return next;
       });
 
@@ -228,7 +228,7 @@ export class TermService {
             id,
           });
         }
-        bumpProjectRevision(tx, String(current.projectId), now);
+        touchProjectUpdatedAt(tx, String(current.projectId), now);
         return String(current.projectId);
       });
       void loadAppearanceCacheService()

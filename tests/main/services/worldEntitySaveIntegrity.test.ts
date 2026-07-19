@@ -12,6 +12,13 @@ import { projectService } from "../../../src/main/services/features/project/proj
 import { getProjectRevisionState } from "../../../src/main/services/core/project/projectRevisionStore.js";
 import { characterUpdateSchema } from "../../../src/shared/schemas/world.js";
 
+const projectUpdatedAt = (): string | undefined =>
+  db
+    .getClient()
+    .select({ updatedAt: schema.project.updatedAt })
+    .from(schema.project)
+    .get()?.updatedAt;
+
 describe("world entity save integrity", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -42,6 +49,7 @@ describe("world entity save integrity", () => {
       createdAt: now,
       updatedAt: now,
     });
+    const baseline = await getProjectRevisionState("project-1");
     const schedule = vi
       .spyOn(projectService, "schedulePackageExport")
       .mockImplementation(() => undefined);
@@ -56,9 +64,10 @@ describe("world entity save integrity", () => {
       color: "red",
     });
     await expect(getProjectRevisionState("project-1")).resolves.toEqual({
-      revision: 1,
+      revision: baseline.revision + 1,
       exportedRevision: 0,
     });
+    expect(projectUpdatedAt()).not.toBe(now);
     expect(schedule).toHaveBeenCalledWith("project-1", "character:update");
   });
 
@@ -93,6 +102,7 @@ describe("world entity save integrity", () => {
       createdAt: now,
       updatedAt: now,
     });
+    const baseline = await getProjectRevisionState("project-1");
     const schedule = vi
       .spyOn(projectService, "schedulePackageExport")
       .mockImplementation(() => undefined);
@@ -101,10 +111,22 @@ describe("world entity save integrity", () => {
       id: "event-1",
       attributesPatch: { weather: "rain" },
     });
+    await expect(getProjectRevisionState("project-1")).resolves.toMatchObject({
+      revision: baseline.revision + 1,
+    });
+    expect(projectUpdatedAt()).not.toBe(now);
+    await db.getClient().update(schema.project).set({ updatedAt: now });
+
     await factionService.updateFaction({
       id: "faction-1",
       description: "Allies",
     });
+    await expect(getProjectRevisionState("project-1")).resolves.toMatchObject({
+      revision: baseline.revision + 2,
+    });
+    expect(projectUpdatedAt()).not.toBe(now);
+    await db.getClient().update(schema.project).set({ updatedAt: now });
+
     await termService.updateTerm({
       id: "term-1",
       definition: "Magic energy",
@@ -115,8 +137,9 @@ describe("world entity save integrity", () => {
       weather: "rain",
     });
     await expect(getProjectRevisionState("project-1")).resolves.toMatchObject({
-      revision: 3,
+      revision: baseline.revision + 3,
     });
+    expect(projectUpdatedAt()).not.toBe(now);
     expect(schedule.mock.calls).toEqual([
       ["project-1", "event:update"],
       ["project-1", "faction:update"],
@@ -135,16 +158,24 @@ describe("world entity save integrity", () => {
     const schedule = vi
       .spyOn(projectService, "schedulePackageExport")
       .mockImplementation(() => undefined);
+    const baseline = await getProjectRevisionState("project-1");
 
     const created = await eventService.createEvent({
       projectId: "project-1",
       name: "Opening",
     });
+    await expect(getProjectRevisionState("project-1")).resolves.toMatchObject({
+      revision: baseline.revision + 1,
+    });
+    expect(projectUpdatedAt()).not.toBe(now);
+    await db.getClient().update(schema.project).set({ updatedAt: now });
+
     await eventService.deleteEvent(created.id);
 
     await expect(getProjectRevisionState("project-1")).resolves.toMatchObject({
-      revision: 2,
+      revision: baseline.revision + 2,
     });
+    expect(projectUpdatedAt()).not.toBe(now);
     expect(schedule.mock.calls).toEqual([
       ["project-1", "event:create"],
       ["project-1", "event:delete"],

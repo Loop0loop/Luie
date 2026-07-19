@@ -15,6 +15,10 @@ import {
   ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_SQL,
   ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_TRIGGER_SQL,
 } from "./entityRelationPointerSql.js";
+import {
+  PROJECT_REVISION_TRIGGER_NAMES,
+  PROJECT_REVISION_TRIGGER_SQL,
+} from "./projectRevisionTriggerSql.js";
 import { resolveMigrationPathContext } from "../runtime/index.js";
 import {
   backfillMemoryChunkIndexText,
@@ -112,6 +116,22 @@ function enforceEntityRelationPointerConsistency(
   database.exec(ENTITY_RELATION_POINTER_NORMALIZE_INSERT_TRIGGER_SQL);
   database.exec(ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_TRIGGER_SQL);
   logger.info("EntityRelation pointer consistency enforced");
+}
+
+function ensureProjectRevisionTriggers(
+  database: InstanceType<typeof Database>,
+  logger: LoggerLike,
+): void {
+  const hasAllTriggers = PROJECT_REVISION_TRIGGER_NAMES.every((triggerName) =>
+    sqliteTriggerExists(database, triggerName),
+  );
+  if (hasAllTriggers) return;
+
+  database.transaction(() => {
+    database.exec(PROJECT_REVISION_TRIGGER_SQL);
+    database.exec(`UPDATE "Project" SET "revision" = "revision" + 1;`);
+  })();
+  logger.info("Project revision triggers installed and revisions backfilled");
 }
 
 /**
@@ -258,6 +278,7 @@ export function ensurePackagedSqliteSchema(
 
     backfillChapterBody(database, logger);
     enforceEntityRelationPointerConsistency(database, logger);
+    ensureProjectRevisionTriggers(database, logger);
 
     logger.info("Packaged SQLite Drizzle migration ensured", {
       dbPath,

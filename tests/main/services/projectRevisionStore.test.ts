@@ -12,6 +12,7 @@ import {
   getProjectRevisionState,
   listProjectsNeedingExport,
   markProjectExported,
+  touchProjectUpdatedAt,
 } from "../../../src/main/services/core/project/projectRevisionStore.js";
 
 const createClient = () => {
@@ -72,6 +73,25 @@ describe("projectRevisionStore", () => {
 
     expect(projectColumns.revision?.default).toBe(0);
     expect(attachmentColumns.exportedRevision?.default).toBe(0);
+  });
+
+  it("touches project bookkeeping without explicitly changing revision", () => {
+    const { client, sqlite } = createClient();
+    const createdAt = "2026-07-18T00:00:00.000Z";
+    const touchedAt = "2026-07-19T00:00:00.000Z";
+    client.insert(project).values({
+      id: "project-1",
+      title: "Novel",
+      createdAt,
+      updatedAt: createdAt,
+    }).run();
+
+    touchProjectUpdatedAt(client as never, "project-1", touchedAt);
+
+    expect(
+      sqlite.prepare(`SELECT "revision", "updatedAt" FROM "Project" WHERE "id" = ?`).get("project-1"),
+    ).toEqual({ revision: 0, updatedAt: touchedAt });
+    sqlite.close();
   });
 
   it("never advances exported revision beyond the project revision", async () => {

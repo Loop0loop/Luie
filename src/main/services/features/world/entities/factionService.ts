@@ -9,7 +9,7 @@ import type {
 } from "../../../../../shared/types/index.js";
 import { projectService } from "../../project/projectService.js";
 import { ServiceError } from "../../../../utils/error/index.js";
-import { bumpProjectRevision } from "../../../core/project/projectRevisionStore.js";
+import { touchProjectUpdatedAt } from "../../../core/project/projectRevisionStore.js";
 import { mergeStructuredAttributes } from "./worldEntityUpdateHelpers.js";
 
 const logger = createLogger("FactionService");
@@ -43,7 +43,7 @@ export class FactionService {
             { input },
           );
         }
-        bumpProjectRevision(tx, input.projectId, now);
+        touchProjectUpdatedAt(tx, input.projectId, now);
         return created;
       });
 
@@ -171,7 +171,7 @@ export class FactionService {
             { id: input.id },
           );
         }
-        bumpProjectRevision(tx, String(current.projectId), now);
+        touchProjectUpdatedAt(tx, String(current.projectId), now);
         return next;
       });
 
@@ -233,7 +233,7 @@ export class FactionService {
             { id },
           );
         }
-        bumpProjectRevision(tx, String(current.projectId), now);
+        touchProjectUpdatedAt(tx, String(current.projectId), now);
         return String(current.projectId);
       });
 

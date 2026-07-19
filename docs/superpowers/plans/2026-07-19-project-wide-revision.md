@@ -137,7 +137,7 @@ export function touchProjectUpdatedAt(
 
 direct table은 Chapter, Character, Term, Faction, Event, WorldEntity, EntityRelation, Snapshot, WorldDocument, ScrapMemo와 `MEMORY_CANONICAL_EXPORTABLE_TABLES` 11종이다. ChapterBody는 owner Chapter lookup trigger를 사용한다.
 
-- [ ] **Step 1: RED 작성**
+- [x] **Step 1: RED 작성**
 
 `projectRevisionTrigger.test.ts`가 다음을 실제 bootstrap DB로 검증한다.
 
@@ -153,7 +153,7 @@ direct table은 Chapter, Character, Term, Faction, Event, WorldEntity, EntityRel
 
 `worldEntitySaveIntegrity.test.ts`는 seed 뒤 baseline을 읽어 service mutation revision delta와 `Project.updatedAt` 변경을 함께 검증한다. recovery test는 고정 revision seed를 없애고 baseline mark → raw chapter mutation → export 수렴을 검증한다.
 
-- [ ] **Step 2: RED 확인**
+- [x] **Step 2: RED 확인**
 
 Run:
 
@@ -163,7 +163,7 @@ ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron ./node_modules/vitest/vitest
 
 Expected: trigger module/설치가 없어 FAIL.
 
-- [ ] **Step 3: 최소 GREEN**
+- [x] **Step 3: 최소 GREEN**
 
 - 고정 table 목록에서 idempotent INSERT/UPDATE/DELETE SQL을 만든다.
 - EntityRelation UPDATE OF에는 `projectId`, semantic fields, `createdAt`, `updatedAt`을 포함하고 pointer columns는 제외한다.
@@ -171,17 +171,19 @@ Expected: trigger module/설치가 없어 FAIL.
 - bootstrap은 trigger가 하나라도 없으면 `CREATE TRIGGER`와 `UPDATE Project SET revision = revision + 1`을 하나의 better-sqlite3 transaction에서 실행한다.
 - 기존 four entity service는 `bumpProjectRevision` 대신 `touchProjectUpdatedAt`을 사용해 trigger 이중 증가를 없앤다.
 
-- [ ] **Step 4: GREEN·회귀·정적 검증**
+- [x] **Step 4: GREEN·회귀·정적 검증**
 
 Step 2와 `tests/main/database/entityRelationPointerTrigger.test.ts`, 기존 export queue/recovery tests를 Electron-as-Node로 실행한다. 대상 ESLint, `pnpm run typecheck`, `git diff --check`를 실행한다.
 
-- [ ] **Step 5: 검토·SSOT·커밋**
+- [x] **Step 5: 검토·SSOT·커밋**
 
 subagent가 trigger SQL, 테스트 false-positive, SSOT table 목록을 따로 검토한다. Critical/Important 0이면 결과를 문서에 기록하고 사용자 승인 후 커밋한다.
 
 ```text
 feat(storage): track canonical project revisions
 ```
+
+Actual (2026-07-19): RED는 trigger module과 `touchProjectUpdatedAt` 부재, raw canonical mutation 미추적으로 지정 4 files 중 3 files가 예상 실패했다. 최소 구현 뒤 지정 4 files/20 tests PASS, pointer trigger와 export queue/checkpoint/DB-loss recovery를 포함한 8 files/63 tests PASS다. 총 68개 trigger와 direct table 21종의 정확한 집합 및 각 direct table 실제 CRUD delta, partial legacy trigger 복구 시 모든 project 정확히 +1 및 다음 bootstrap idempotency, canonical transaction과 강제 backfill 실패 rollback 원자성을 실제 DB로 검증했다. 최종 리뷰 follow-up은 project A/B의 Chapter 사이로 `ChapterBody.chapterId` 이동 시 양쪽 revision이 각각 +1임을 production 변경 없이 고정했고, 재리뷰는 Production-ready, Critical/Important/Minor 0이다. 대상 ESLint와 `git diff --check`는 PASS이며, `tsc6 --noEmit`은 Task 2 신규 오류 없이 사용자 dirty Binder TS2322 baseline만 유지한다. 별도 `dbRecoveryService.test.ts`는 hoisted `better-sqlite3` mock과 전역 cache DB setup 충돌로 production 진입 전 7 tests가 skip되어 통과 수에 포함하지 않았다.
 
 ---
 

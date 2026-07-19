@@ -1,6 +1,6 @@
 # Project-wide revision 설계
 
-**상태:** 구현 중 — Task 1 완료
+**상태:** 구현 중 — Task 1~2 완료
 **상위 SSOT:** `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
 
 ## 1. 목표
@@ -87,6 +87,18 @@ normal exporter는 `ChapterBody` left join 결과를 우선하고 row가 없을 
 RED는 지정 Electron-as-Node 4 files/17 tests 중 5건이 예상 원인으로 실패했다. GREEN은 같은 4 files/17 tests PASS다. 대상 ESLint와 `git diff --check`는 PASS이고, 전체 `tsc6 --noEmit`은 Task 1 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 한 건만 남는다. 독립 재리뷰는 Production-ready, Critical/Important 0으로 판정했다.
 
 최종 리뷰 follow-up은 query builder의 `.values()`/`.set()`만 검증하고 실제 `.run()`을 놓치던 false-positive를 제거했다. package/snapshot import는 `Chapter`와 `ChapterBody` 각각의 direct run을, sync apply는 기존 Chapter update run·신규 Chapter insert run·두 ChapterBody conflict run을 검증한다. 네 production run을 임시 제거한 mutation RED는 2 files/9 tests 중 3건 실패했고, 원복 후 전체 focused 4 files/17 tests가 PASS했다. 최종 재리뷰 verdict는 Production-ready, Critical/Important/Minor 0이다.
+
+### Task 2 검증 결과 (2026-07-19)
+
+revision trigger는 Project metadata 2개, direct table 21종의 INSERT/UPDATE/DELETE 63개, `ChapterBody` owner lookup 3개로 총 68개다. direct table은 Chapter, Character, Term, Faction, Event, WorldEntity, EntityRelation, Snapshot, WorldDocument, ScrapMemo와 `MEMORY_CANONICAL_EXPORTABLE_TABLES` 11종이다. EntityRelation UPDATE trigger는 pointer column을 제외하고 `projectId`, semantic column, `createdAt`, `updatedAt`만 추적한다.
+
+RED는 지정 Electron-as-Node 4 files에서 trigger module과 `touchProjectUpdatedAt` 부재, raw canonical mutation 미추적으로 3 files가 예상대로 실패했다. 최소 구현 뒤 같은 4 files/20 tests가 PASS했고, pointer trigger와 export queue/checkpoint/DB-loss recovery를 포함한 8 files/63 tests도 PASS했다. 실제 bootstrap DB는 direct table 21종 각각의 CRUD와 ChapterBody CRUD, old/new project 이동, Project `updatedAt`-only 불변, EntityRelation pointer-only delta 0과 semantic delta 1, excluded table 불변, canonical transaction rollback을 검증한다. trigger 하나만 삭제한 partial legacy DB는 재-bootstrap에서 두 기존 project가 각각 정확히 +1 되고, 다음 bootstrap은 불변이었다. 강제 backfill 실패에서는 생성된 trigger와 먼저 갱신된 project revision이 모두 rollback됐다.
+
+대상 ESLint와 `git diff --check`는 PASS다. `tsc6 --noEmit`은 Task 2 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102`의 기존 TS2322 한 건만 유지한다.
+
+추가로 `dbRecoveryService.test.ts`를 단독 실행했으나 7 tests가 실행 전에 모두 skip됐다. 이 파일이 hoist한 `better-sqlite3` mock은 suite `beforeEach` 전 전역 DB setup에서 cache database가 먼저 생성될 때 `pragma`를 제공하지 않아 `cacheDb.ts:83`에서 실패한다. Task 2 production 경로 진입 전의 기존 test-harness 충돌이므로 8 files/63 tests PASS 수에는 포함하지 않았다.
+
+최종 리뷰 follow-up은 서로 다른 project A/B의 Chapter 사이로 `ChapterBody.chapterId`를 이동할 때 두 project revision이 각각 정확히 +1 되는 실제 DB 회귀를 추가했다. production 변경 없이 focused 4 files/20 tests와 expanded 8 files/63 tests가 PASS했고, 최종 재리뷰는 Production-ready, Critical/Important/Minor 0이다.
 
 ## 6. 제외 항목
 

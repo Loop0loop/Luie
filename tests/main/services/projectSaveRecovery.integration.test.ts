@@ -8,7 +8,10 @@ import { afterEach, describe, expect, it } from "vitest";
 import { db } from "../../../src/main/database/index.js";
 import * as schema from "../../../src/main/database/schema/index.js";
 import { projectService } from "../../../src/main/services/features/project/projectService.js";
-import { getProjectRevisionState } from "../../../src/main/services/core/project/projectRevisionStore.js";
+import {
+  getProjectRevisionState,
+  markProjectExported,
+} from "../../../src/main/services/core/project/projectRevisionStore.js";
 import { readLuieContainerEntry } from "../../../src/main/services/io/luieContainer.js";
 
 const logger = {
@@ -33,7 +36,6 @@ describe("project save recovery", () => {
     await db.getClient().insert(schema.project).values({
       id: "project-recovery",
       title: "Novel",
-      revision: 2,
       createdAt: now,
       updatedAt: now,
     });
@@ -44,13 +46,26 @@ describe("project save recovery", () => {
       createdAt: now,
       updatedAt: now,
     });
-    await db.getClient().insert(schema.character).values({
-      id: "character-recovery",
+    await db.getClient().insert(schema.chapter).values({
+      id: "chapter-recovery",
       projectId: "project-recovery",
-      name: "Hero",
-      description: "latest",
+      title: "Chapter",
+      content: "before",
+      order: 0,
       createdAt: now,
       updatedAt: now,
+    });
+    const baseline = await getProjectRevisionState("project-recovery");
+    await markProjectExported("project-recovery", baseline.revision);
+
+    await db.getClient().update(schema.chapter).set({
+      content: "latest",
+      updatedAt: "2026-07-19T01:00:00.000Z",
+    });
+    const stale = await getProjectRevisionState("project-recovery");
+    expect(stale).toEqual({
+      revision: baseline.revision + 1,
+      exportedRevision: baseline.revision,
     });
 
     await expect(projectService.scheduleStalePackageExports()).resolves.toBe(1);
@@ -59,23 +74,18 @@ describe("project save recovery", () => {
       timedOut: false,
     });
 
-    const characters = JSON.parse(
-      String(
-        await readLuieContainerEntry(
-          projectPath,
-          "world/characters.json",
-          logger,
-        ),
+    await expect(
+      readLuieContainerEntry(
+        projectPath,
+        "manuscript/chapter-recovery.md",
+        logger,
       ),
-    ) as { characters: Array<{ id: string; description?: string }> };
-    expect(characters.characters).toContainEqual(
-      expect.objectContaining({
-        id: "character-recovery",
-        description: "latest",
-      }),
-    );
+    ).resolves.toBe("latest");
     await expect(
       getProjectRevisionState("project-recovery"),
-    ).resolves.toEqual({ revision: 2, exportedRevision: 2 });
+    ).resolves.toEqual({
+      revision: stale.revision,
+      exportedRevision: stale.revision,
+    });
   });
 });

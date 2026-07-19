@@ -26,6 +26,24 @@ export function bumpProjectRevision(
   return updated.revision;
 }
 
+export function touchProjectUpdatedAt(
+  client: DbLike,
+  projectId: string,
+  nowIso: string,
+): void {
+  const updated = client
+    .update(project)
+    .set({ updatedAt: nowIso })
+    .where(eq(project.id, projectId))
+    .returning({ id: project.id })
+    .get();
+  if (!updated) {
+    throw new ServiceError(ErrorCode.PROJECT_NOT_FOUND, "Project not found", {
+      projectId,
+    });
+  }
+}
+
 export async function getProjectRevisionState(
   projectId: string,
   client?: DbLike,
