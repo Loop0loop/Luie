@@ -1780,3 +1780,47 @@ Actual (2026-07-19): 최초 RED는 A 실패 payload의 B 전환 소실, B target
 최종 구현은 project id/path/payload snapshot queue, project-keyed input subtree, hydration gate/cache/generation 및 load-start pending snapshot, detached unmount registry를 사용한다. preload autosave는 key sequence와 single-flight queue-empty drain으로 실패 payload와 최신 concurrent payload를 보존한다. quit은 requestId/sender/payload shape를 검증하며 renderer와 main save의 retry/cancel/explicit skip 결정을 분리한다. Cmd/Ctrl+S failure는 logger와 error toast에 함께 남는다.
 
 최종 root 검증은 Task 8~16 저장 회귀 19 files/167 tests, Electron-as-Node DB recovery 2 files/2 tests, 대상 ESLint와 `git diff --check` PASS다. 전체 `tsc6 --noEmit`은 Task 16 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 1건만 유지한다. 독립 코드·테스트 재리뷰는 모두 Production-ready이며 Critical/Important 0이다. 이 수치는 correctness 근거이며 P95/95% confidence 인증은 아니다.
+
+---
+
+### Task 17: Notion 문서 본문 공용 저장 경계 연결
+
+**Status:** 완료 — 독립 review Approved, 단일 commit 반영
+
+**Files:**
+- Modify: `src/renderer/src/features/research/components/shared/NotionDocumentView.tsx`
+- Create: `tests/dom/notionDocumentSaveBuffer.test.tsx`
+- Modify: `docs/superpowers/plans/2026-07-18-save-integrity.md`
+- Modify: `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
+- Modify: `.superpowers/sdd/progress.md`
+- Create: `.superpowers/sdd/save-buffer-task-17-report.md`
+
+**Interfaces:**
+- Changes: Notion 본문 500ms timer가 `registerSaveBufferFlush`에 latest markdown을 등록한다.
+- Changes: explicit flush는 timer를 취소하고 동일 snapshot의 timer/flush 경합을 한 번의 `saveBody` enqueue로 합친다.
+- Changes: in-flight 뒤 newer markdown을 직렬 drain하고 성공한 snapshot만 clean으로 승격한다.
+- Changes: 한 setter가 실패해도 같은 snapshot의 나머지 setter가 settle될 때까지 in-flight를 유지한 뒤 첫 오류를 전파한다.
+- Changes: 뒤 setter의 동기 throw도 rejected Promise로 수집해 앞선 pending ACK를 버리지 않는다.
+- Changes: background rejection은 consume하되 dirty snapshot을 다음 explicit flush에 보존한다.
+- Changes: dirty/in-flight unmount는 공용 `preserveUnmountSave`에 snapshot과 retry를 넘긴다.
+- Preserves: `saveBody`는 모든 world mutation setter를 첫 await 전에 동기 호출하고 그 결과 Promise를 반환하며, 기존 coordinator가 뒤의 world queue를 flush한다.
+- Excludes: 새 queue/전역 상태, Canvas 공용화, world mutation automatic backoff, P95 인증.
+
+- [x] **Step 1: production 변경 전 Notion latest/race/drain/failure/unmount RED 테스트 작성**
+- [x] **Step 2: 기능 부재로 focused RED 확인**
+- [x] **Step 3: 기존 Canvas ref/drain 패턴과 공용 registry 최소 적용**
+- [x] **Step 4: focused GREEN과 Task 8~17 저장 회귀 확인**
+- [x] **Step 5: 대상 ESLint, diff-check, typecheck baseline 확인**
+- [x] **Step 6: SSOT/report 동기화**
+- [x] **Step 7: 독립 task review Critical/Important 0 및 spec/quality 승인**
+- [x] **Step 8: root가 사용자 accentColor hunk와 Task 17 hunk를 분리해 commit**
+
+Actual (2026-07-19): 지정 `pnpm vitest` RED 명령은 pnpm 11.5.3 wrapper가 60초간 무출력로 정지해 exit 130으로 중단했다. 동일 로컬 Vitest 명령의 RED는 1 file/6 tests 중 registry 미연결·오류 재시도 부재 5건이 예상 실패하고 기존 timer 경합 1건만 PASS했다. 최소 구현 후 focused 1 file/6 tests와 Task 8~17 저장 회귀 20 files/173 tests가 PASS했다. 대상 ESLint와 `git diff --check`는 PASS다. `tsc6 --noEmit`은 Task 17 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 1건만 유지한다. 사용자 소유 `accentColor` 제거 hunk는 의미 변경 없이 보존했다. world mutation automatic backoff와 save latency P95/95% confidence 인증은 여전히 미완료다.
+
+Review follow-up (2026-07-19): 보강 RED는 1 file/6 tests 중 3건이 async setter ACK 전 barrier 완료, first ACK 전 second snapshot 시작, in-flight unmount latest 조기 시작으로 예상 실패했다. `setSections`/`setSectionContent` 반환을 `void | Promise<unknown>`으로 허용하고 `saveBody`가 모든 setter를 첫 await 전에 순서대로 호출한 뒤 `Promise.all`을 await/return하도록 보정했다. GREEN은 focused 1 file/6 tests와 동일 저장 회귀 20 files/173 tests PASS이며 ESLint/diff-check PASS, Task 17 type 오류 0과 기존 Binder TS2322 baseline 1건만 유지한다.
+
+Second review follow-up (2026-07-19): RED는 1 file/7 tests 중 1건이 첫 setter reject 직후 다른 setter ACK pending을 기다리지 않고 barrier/in-flight를 해제해 예상 실패했고 기존 6건은 PASS했다. `Promise.allSettled`로 동일 snapshot의 모든 setter 결과를 기다린 뒤 첫 rejected reason을 그대로 throw하도록 최소 보정했다. GREEN은 focused 7/7, 저장 회귀 20 files/174 tests PASS이며 ESLint/diff-check PASS, Task 17 type 오류 0과 기존 Binder TS2322 baseline 1건만 유지한다.
+
+Final review follow-up (2026-07-19): RED는 1 file/8 tests 중 1건이 앞선 setter pending 뒤 `setSectionContent` 동기 throw에서 `allSettled` 도달 전 barrier/in-flight를 해제해 예상 실패했고 기존 7건은 PASS했다. 각 setter 동기 호출을 local collector의 `Promise.resolve`/`Promise.reject`로 개별 수집하고 모든 호출 뒤 `allSettled`하는 최소 보정으로 pending ACK와 원래 sync error를 함께 보존했다. GREEN은 focused 8/8, 저장 회귀 20 files/175 tests PASS이며 ESLint/diff-check PASS, Task 17 type 오류 0과 기존 Binder TS2322 baseline 1건만 유지한다.
+
+최종 독립 재리뷰는 Spec Compliance ✅, Task quality Approved, Critical/Important/Minor 0이다. staged Task에는 저장 로직·테스트·SSOT만 포함했고 사용자 소유 `accentColor` 제거 hunk는 working tree에 unstaged로 보존했다.

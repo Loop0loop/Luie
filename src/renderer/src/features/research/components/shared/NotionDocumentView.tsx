@@ -4,6 +4,10 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Markdown } from "tiptap-markdown";
 import { BufferedInput } from "@shared/ui/BufferedInput";
+import {
+  preserveUnmountSave,
+  registerSaveBufferFlush,
+} from "@shared/ui/saveBufferRegistry";
 import type { WikiSectionData } from "@renderer/features/research/components/wiki/types";
 
 /** tiptap-markdown augments editor.storage at runtime; type it locally. */
@@ -22,8 +26,8 @@ type NotionDocumentViewProps = {
   properties: DocumentPropertyRow[];
   sections: WikiSectionData[];
   getSectionContent: (id: string) => string;
-  setSections: (sections: WikiSectionData[]) => void;
-  setSectionContent: (id: string, value: string) => void;
+  setSections: (sections: WikiSectionData[]) => void | Promise<unknown>;
+  setSectionContent: (id: string, value: string) => void | Promise<unknown>;
   bodyPlaceholder: string;
   /** Optional page header (portrait + tagline) rendered above the properties. */
   header?: ReactNode;
@@ -32,6 +36,10 @@ type NotionDocumentViewProps = {
 };
 
 const AUTOSAVE_DELAY_MS = 500;
+
+const consumeBackgroundSave = (result: void | Promise<unknown>): void => {
+  void Promise.resolve(result).catch(() => undefined);
+};
 
 /**
  * Notion-style document view shared by all entity types. The header is a list
@@ -58,12 +66,25 @@ export default function NotionDocumentView({
       .join("\n\n"),
   );
 
-  const saveBody = (markdown: string) => {
+  const saveBody = async (markdown: string): Promise<void> => {
     const { sections: nextSections, contentById } = decomposeBody(markdown, sections);
-    setSections(nextSections);
+    const saves: Promise<unknown>[] = [];
+    const collectSave = (save: () => void | Promise<unknown>): void => {
+      try {
+        saves.push(Promise.resolve(save()));
+      } catch (error) {
+        saves.push(Promise.reject(error));
+      }
+    };
+    collectSave(() => setSections(nextSections));
     for (const [id, content] of Object.entries(contentById)) {
-      setSectionContent(id, content);
+      collectSave(() => setSectionContent(id, content));
     }
+    const results = await Promise.allSettled(saves);
+    const failure = results.find(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    );
+    if (failure) throw failure.reason;
   };
 
   return (
@@ -131,13 +152,66 @@ function MarkdownDocumentEditor({
   initialMarkdown: string;
   placeholder: string;
   accentColor?: string;
-  onSave: (markdown: string) => void;
+  onSave: (markdown: string) => void | Promise<unknown>;
 }) {
   const saveTimer = useRef<number | null>(null);
   const onSaveRef = useRef(onSave);
+  const latestMarkdown = useRef(initialMarkdown);
+  const lastSavedMarkdown = useRef(initialMarkdown);
+  const inFlightSave = useRef<{
+    markdown: string;
+    promise: Promise<void>;
+  } | null>(null);
+  const flushRef = useRef<() => void | Promise<void>>(() => undefined);
+
   useEffect(() => {
     onSaveRef.current = onSave;
   }, [onSave]);
+
+  const cancelScheduledSave = () => {
+    if (saveTimer.current === null) return;
+    window.clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+  };
+
+  const flush = (markdown = latestMarkdown.current): void | Promise<void> => {
+    cancelScheduledSave();
+    const inFlight = inFlightSave.current;
+    if (inFlight) {
+      if (markdown === inFlight.markdown) return inFlight.promise;
+      return inFlight.promise.then(async () => {
+        await flushRef.current();
+      });
+    }
+    if (markdown === lastSavedMarkdown.current) return;
+
+    let result: void | Promise<unknown>;
+    try {
+      result = onSaveRef.current(markdown);
+    } catch (error) {
+      result = Promise.reject(error);
+    }
+    const promise = Promise.resolve(result)
+      .then(() => {
+        lastSavedMarkdown.current = markdown;
+      })
+      .finally(() => {
+        if (inFlightSave.current?.promise === promise) {
+          inFlightSave.current = null;
+        }
+      });
+    inFlightSave.current = { markdown, promise };
+    return promise;
+  };
+
+  useEffect(() => {
+    flushRef.current = flush;
+  });
+
+  useEffect(
+    () => registerSaveBufferFlush(() => flushRef.current()),
+    [],
+  );
 
   const editor = useEditor({
     extensions: [
@@ -156,29 +230,29 @@ function MarkdownDocumentEditor({
     content: initialMarkdown,
     editorProps: { attributes: { class: "ProseMirror focus:outline-none" } },
     onUpdate: ({ editor }) => {
-      if (saveTimer.current !== null) window.clearTimeout(saveTimer.current);
+      const markdown =
+        (editor.storage as MarkdownStorage).markdown?.getMarkdown?.() ??
+        editor.getText();
+      latestMarkdown.current = markdown;
+      cancelScheduledSave();
       saveTimer.current = window.setTimeout(() => {
-        const md =
-          (editor.storage as MarkdownStorage).markdown?.getMarkdown?.() ??
-          editor.getText();
-        onSaveRef.current(md);
+        saveTimer.current = null;
+        consumeBackgroundSave(flushRef.current());
       }, AUTOSAVE_DELAY_MS);
     },
   });
 
   useEffect(() => {
     return () => {
-      if (saveTimer.current !== null) {
-        window.clearTimeout(saveTimer.current);
-        if (editor) {
-          const md =
-            (editor.storage as MarkdownStorage).markdown?.getMarkdown?.() ??
-            editor.getText();
-          onSaveRef.current(md);
-        }
-      }
+      cancelScheduledSave();
+      const markdown = latestMarkdown.current;
+      if (markdown === lastSavedMarkdown.current && !inFlightSave.current)
+        return;
+      preserveUnmountSave(flushRef.current(), () =>
+        onSaveRef.current(markdown),
+      );
     };
-  }, [editor]);
+  }, []);
 
   return (
     <div

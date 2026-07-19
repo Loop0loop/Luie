@@ -517,3 +517,35 @@ Task 16 최종 root 회귀는 19 files/167 tests PASS이며, 실제 preload brid
 Project-wide revision Task 4는 queue 밖 full writer도 `capture → atomic write → attachment → captured mark`로 수렴시켰다. package hydration은 final transaction revision을 attachment baseline으로 저장한다. snapshot writer 실패는 생성한 Project/Attachment를 rollback하고, write 성공 뒤 mark 실패도 DB state는 rollback하되 이미 작성한 `.luie`는 recovery artifact로 보존한다. 기존 파일일 가능성이 있어 자동 삭제하지 않는다. attach/materialize/corrupt recovery는 mark 실패를 성공으로 반환하지 않으며 capture 뒤 mutation은 더 높은 dirty revision으로 남는다. Task 4 계약 17 tests, Task 1~3 공유 focused 11 files/49 tests, Task 8~16 저장 회귀 19 files/167 tests가 PASS했다. exact Task 4 5-file 명령의 Task 4 관련 26 tests는 PASS이고 기존 대용량 world-entry baseline 5건만 남는다. 대상 ESLint/diff-check PASS, direct tsc6는 사용자 dirty Binder TS2322 한 건만 유지한다. 기준 commit은 Task 1 `8ae3d04c`, Task 2 `a028e5a7`, Task 3 `a171b90e`다.
 
 Task 16 당시 범위 밖이던 project-wide revision 확대는 후속 Task 1~4에서 해결됐다. 여전히 범위 밖인 항목은 사용자 dirty `NotionDocumentView` timer, world mutation 자동 backoff, 저장 latency P95 및 95% confidence 인증이다. 따라서 저장 무결성 전체 로드맵의 이 후속 항목까지 완료됐다고 주장하지 않는다.
+
+## 21. Notion 문서 본문 저장 경계
+
+### 21.1 latest snapshot과 explicit barrier
+
+`NotionDocumentView`의 markdown editor는 update 즉시 latest markdown ref를 갱신하고 500ms background timer를 예약한다. renderer global flush가 먼저 오면 timer를 취소하고 latest snapshot을 `saveBody`에 정확히 한 번 전달한다. 성공한 snapshot만 last-saved ref로 승격하므로 남은 timer나 다음 barrier가 같은 값을 중복 enqueue하지 않는다.
+
+### 21.2 경합, 실패, unmount
+
+동일 snapshot의 timer와 explicit flush는 하나의 in-flight Promise를 공유한다. in-flight 중 newer markdown이 생기고 barrier가 다시 들어오면 이전 enqueue 뒤 latest ref를 직렬 drain한다. 동기 throw나 Promise rejection은 clean 전환 전에 전파하며 background timer는 rejection만 consume한다. 따라서 다음 explicit flush가 같은 dirty snapshot을 재시도한다.
+
+dirty 또는 in-flight 상태에서 component가 unmount되면 공용 `preserveUnmountSave`가 initial drain과 캡처한 latest retry를 detached registry에 보존한다. 성공하면 unregister하고 실패하면 다음 global flush에서 재시도한다. 별도 component queue나 전역 상태는 만들지 않는다.
+
+### 21.3 downstream 저장 순서와 검증
+
+Notion `saveBody`는 `setSections`와 모든 `setSectionContent`를 첫 await 전에 순서대로 동기 호출한다. 각 setter의 `void | Promise<unknown>` 결과를 `Promise.allSettled`로 모두 기다린 뒤 첫 rejected reason을 다시 throw하므로, 한 setter가 먼저 실패해도 다른 parent callback ACK가 pending인 동안 buffer barrier와 in-flight를 해제하지 않는다. 기존 save coordinator는 이 enqueue 경계 뒤 `flushWorldEntityMutations()`를 실행하며 component는 별도 queue나 전역 상태를 만들지 않는다.
+
+Task 17 focused는 1 file/8 tests, Task 8~17 저장 회귀는 20 files/175 tests PASS다. 대상 ESLint와 diff-check도 PASS했고 typecheck 신규 오류는 없다. 사용자 dirty Binder TS2322 baseline만 유지한다. 이 검증은 automatic backoff, save latency P95 또는 95% confidence 인증을 포함하지 않는다.
+
+### 21.4 review follow-up ACK 검증
+
+timer가 첫 async setter ACK를 기다리는 동안 같은 snapshot의 explicit flush가 들어오면 기존 in-flight Promise를 공유하고 setter를 중복 호출하지 않는다. barrier는 ACK 전 pending이다. first snapshot의 sections/content 결과가 모두 settle되기 전에는 newer snapshot의 setter를 시작하지 않으며 실제 호출 순서는 `first sections → first content → second sections → second content`다.
+
+first snapshot in-flight 중 newer markdown을 받은 뒤 unmount되면 detached registry가 first ACK 뒤 latest를 한 번 시도한다. latest 실패는 clean으로 승격하지 않고 다음 global flush가 같은 latest snapshot을 재시도한다. 보강 RED 3건은 기존 sync-only callback 경계에서 실패했고 최소 ACK 보정 뒤 focused 6/6, 당시 저장 회귀 173/173이 PASS했다.
+
+### 21.5 partial rejection settle 경계
+
+같은 snapshot의 setter 중 하나가 reject하고 다른 하나가 pending이면 첫 오류만 보고 조기 종료하지 않는다. 모든 결과가 settle될 때까지 barrier와 in-flight를 유지하고 newer/retry setter를 시작하지 않는다. settle 완료 뒤 원래 첫 오류를 그대로 전파하며, 그 다음 explicit flush만 latest snapshot을 시작한다. 이 follow-up RED는 focused 7건 중 신규 1건만 실패했고 `allSettled` 보정 뒤 focused 7/7, 저장 회귀 174/174가 PASS했다.
+
+### 21.6 synchronous throw 수집
+
+앞선 setter가 pending Promise를 반환한 뒤 뒤 setter가 동기 throw해도 `saveBody`가 즉시 종료되지 않는다. local collector는 각 setter 호출 결과를 `Promise.resolve`로, 동기 오류를 `Promise.reject`로 같은 saves 배열에 수집한다. 모든 setter는 첫 await 전에 호출되며 `allSettled` 뒤 첫 오류를 전파한다. 따라서 앞선 ACK settle 전 barrier/overlap은 pending이고 newer setter는 0회다. 이 RED는 focused 8건 중 신규 1건만 실패했고 보정 뒤 focused 8/8, 저장 회귀 175/175가 PASS했다.
