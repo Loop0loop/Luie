@@ -9,7 +9,7 @@
 - Electron process boundary를 명확히 유지한다.
 - `shared`를 얇고 강한 계약 계층으로 유지한다.
 - 도메인은 작게 흩뜨리지 않고 큰 업무 축으로 묶는다.
-- 파일당 500 LOC 내외 원칙을 장기 품질 기준으로 둔다.
+- hand-written production TS/TSX/CSS와 test TS/TSX 파일당 500 LOC 이하 원칙을 장기 품질 기준으로 둔다.
 - 하드코딩 값은 constants/config/policy로 격리한다.
 - 기존 IPC, preload API, DB, `.luie` package 계약은 보존한다.
 
@@ -101,17 +101,17 @@ src/
 
 의견: 큰 도메인 기준은 아래처럼 잡는 것이 현재 프로젝트와 가장 잘 맞습니다.
 
-| Domain | 의미 |
-| --- | --- |
-| `project` | 프로젝트 생성, 열기, `.luie` 연결, project package export/import |
-| `manuscript` | chapter, writing state, autosave trigger, manuscript search context |
-| `world` | character, term, event, faction, memo, world graph, world package payload |
-| `sync` | Supabase sync, auth, conflict, tombstone, baseline |
-| `export` | DOCX/HWPX/export preview/package export UI |
-| `settings` | app/editor/model/sync/startup settings |
-| `analysis` | manuscript analysis, RAG QA, embedding, memory projection |
-| `recovery` | snapshot, emergency save, restore candidate, DB/cache recovery |
-| `canvas` | renderer canvas view, graph surface, visual exploration |
+| Domain       | 의미                                                                      |
+| ------------ | ------------------------------------------------------------------------- |
+| `project`    | 프로젝트 생성, 열기, `.luie` 연결, project package export/import          |
+| `manuscript` | chapter, writing state, autosave trigger, manuscript search context       |
+| `world`      | character, term, event, faction, memo, world graph, world package payload |
+| `sync`       | Supabase sync, auth, conflict, tombstone, baseline                        |
+| `export`     | DOCX/HWPX/export preview/package export UI                                |
+| `settings`   | app/editor/model/sync/startup settings                                    |
+| `analysis`   | manuscript analysis, RAG QA, embedding, memory projection                 |
+| `recovery`   | snapshot, emergency save, restore candidate, DB/cache recovery            |
+| `canvas`     | renderer canvas view, graph surface, visual exploration                   |
 
 주의: `character`, `term`, `event`, `faction`은 최상위 도메인이 아니라 `world` 내부 모델로 취급합니다.
 
@@ -207,10 +207,26 @@ main domain error
 
 목표:
 
-- 일반 소스 파일은 500 LOC 내외를 넘지 않는다.
-- 초과 시 새 기능 추가보다 분리 계획을 먼저 세운다.
-- i18n locale, generated schema, packaged schema는 예외 후보지만 문서화해야 한다.
+- hand-written production TS/TSX/CSS와 test TS/TSX 파일은 500 LOC를 넘지 않는다.
+- 초과 시 새 기능 추가보다 기존 레이어 패턴을 따른 책임 분리 계획을 먼저 세운다.
+- generated/vendor artifact만 근거와 생성 경로를 문서화한 예외로 허용한다.
+- i18n locale은 hand-written data이므로 locale/domain 조립 파일로 분리하며 영구 예외로 두지 않는다.
 - 분리는 public API 유지, barrel export 유지, targeted test 순서로 진행한다.
+
+이 정책에서 SPA는 renderer runtime을 설명할 때의 Single Page Application과 구분해, 모듈화 Phase에서는 **Single Pattern Architecture**를 뜻한다. 위 target rules를 축약하거나 대체하지 않고 다음 하나의 정식 흐름을 유지한다.
+
+```text
+renderer domain component/hook/store
+  -> renderer domain adapter
+  -> @shared/api
+  -> preload domain API
+  -> safeInvoke / IPC channel
+  -> main IPC handler
+  -> domain service
+  -> infra adapter (database/repository/FS/native)
+```
+
+`shared`는 이 흐름의 cross-process contract/schema/type/constant만 소유한다.
 
 ## Verification Policy
 
@@ -227,4 +243,3 @@ pnpm run check:core-complexity
 ```
 
 확실하지 않습니다: 현재 `AGENTS.md`는 bun 명령을 언급하지만 `package.json`은 `pnpm@11.5.0`과 `pnpm` scripts를 기준으로 합니다. 이 문서는 현재 `package.json` 사실에 맞춰 `pnpm` 검증 명령을 기록합니다.
-

@@ -26,11 +26,13 @@
 **Status:** 완료
 
 **Files:**
+
 - Create: `tests/dom/bufferedInputSavePolicy.test.tsx`
 - Modify: `src/shared/ui/BufferedInput.tsx`
 - Modify: `src/shared/constants/runtime/interactionTiming.ts`
 
 **Interfaces:**
+
 - Consumes: `BufferedInputProps.onSave(value: string): void`
 - Produces: blur, Enter, unmount가 동일한 pending value를 최대 한 번 flush하는 `BufferedInput`
 - Produces: `DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS = 250`
@@ -101,6 +103,7 @@ git commit -m "fix(storage): flush buffered inputs once"
 **Status:** 부분 완료 — 성공 mutation 직렬화 완료, 실패 payload 보존 미구현
 
 **Files:**
+
 - Create: `src/renderer/src/shared/store/worldEntityMutationQueue.ts`
 - Create: `tests/renderer/stores/worldEntityMutationQueue.test.ts`
 - Modify: `src/renderer/src/shared/store/createCRUDStore.ts`
@@ -111,6 +114,7 @@ git commit -m "fix(storage): flush buffered inputs once"
 - Modify: `tests/renderer/stores/worldBuildingStore.graph.test.ts`
 
 **Interfaces:**
+
 - Produces: `createLatestMutationQueue<P, R>(options): LatestMutationQueue<P, R>`
 - Produces: `flushWorldEntityMutations(): Promise<void>`
 - Produces: `getPendingWorldEntityMutationCount(): number`
@@ -289,6 +293,7 @@ git commit -m "fix(storage): queue world entity mutations"
 **Status:** 완료
 
 **Files:**
+
 - Modify: `src/main/database/schema/foundation.ts`
 - Modify: `src/main/database/main/packagedSchema/projectSchema.sql.ts`
 - Modify: `src/main/database/packagedSchema/metadataRequiredColumns.ts`
@@ -299,6 +304,7 @@ git commit -m "fix(storage): queue world entity mutations"
 - Generate locally (gitignored): `drizzle/main/0001_save_integrity_revisions.sql`
 
 **Interfaces:**
+
 - Produces: `bumpProjectRevision(tx, projectId, nowIso): number`
 - Produces: `getProjectRevisionState(projectId): Promise<{ revision: number; exportedRevision: number }>`
 - Produces: `markProjectExported(projectId, revision): Promise<void>`
@@ -415,6 +421,7 @@ git commit -m "feat(storage): track project export revisions"
 **Status:** 완료
 
 **Files:**
+
 - Modify: `src/shared/types/world.ts`
 - Modify: `src/shared/schemas/world.ts`
 - Modify: `src/renderer/src/shared/store/createWorldEntityCRUDStore.ts`
@@ -433,6 +440,7 @@ git commit -m "feat(storage): track project export revisions"
 - Modify: `tests/scripts/packageDurabilityBoundary.test.ts`
 
 **Interfaces:**
+
 - Adds: `attributesPatch?: Record<string, unknown>` to character/event/faction update input
 - Produces: `mergeStructuredAttributes(current, patch): Record<string, unknown>`
 - Consumes: `bumpProjectRevision(tx, projectId, nowIso)` from Task 3
@@ -593,6 +601,7 @@ git commit -m "fix(storage): commit world entity patches first"
 **Status:** 완료
 
 **Files:**
+
 - Modify: `src/main/services/features/project/projectService.ts`
 - Modify: `src/main/services/core/project/projectExportQueue.ts`
 - Modify: `src/main/lifecycle/app-ready/appReady.ts`
@@ -602,6 +611,7 @@ git commit -m "fix(storage): commit world entity patches first"
 - Create: `tests/main/services/projectCheckpointRecovery.test.ts`
 
 **Interfaces:**
+
 - Changes: `ProjectExportRun(projectId, revision): Promise<boolean>`
 - Produces: `ProjectService.checkpointProject(projectId, reason): Promise<boolean>`
 - Produces: `ProjectService.scheduleStalePackageExports(): Promise<number>`
@@ -659,8 +669,7 @@ export type ProjectExportRun = (
   revision: number,
 ) => Promise<boolean>;
 
-const { revision: capturedRevision } =
-  await getProjectRevisionState(projectId);
+const { revision: capturedRevision } = await getProjectRevisionState(projectId);
 const exported = await runExport(projectId, capturedRevision);
 if (exported) await markProjectExported(projectId, capturedRevision);
 const latest = await getProjectRevisionState(projectId);
@@ -709,6 +718,7 @@ git commit -m "feat(storage): recover stale project checkpoints"
 **Status:** 부분 완료 — manual-save/quit 연결 완료, 활성 input flush와 실패 전파 미구현
 
 **Files:**
+
 - Modify: `src/shared/api/settings.contract.ts`
 - Modify: `src/shared/api/io.contract.ts`
 - Modify: `src/preload/api/systemApi.ts`
@@ -729,6 +739,7 @@ git commit -m "feat(storage): recover stale project checkpoints"
 - Modify: `tests/scripts/preloadContractRegression.test.ts`
 
 **Interfaces:**
+
 - Changes: `api.app.manualSave(projectId: string): Promise<IPCResponse<{ success: boolean; exported: boolean }>>`
 - Produces: `saveProjectNow(projectId: string): Promise<void>`
 - Adds: `api.lifecycle.onBeforeQuit(callback: () => void): () => void`
@@ -778,9 +789,8 @@ return { success: true, exported };
 preload와 shared `RendererApi.app` contract의 `manualSave`에 `projectId`를 추가한다.
 
 ```ts
-manualSave: (
-  projectId: string,
-) => Promise<IPCResponse<{ success: boolean; exported: boolean }>>;
+manualSave: (projectId: string) =>
+  Promise<IPCResponse<{ success: boolean; exported: boolean }>>;
 ```
 
 - [x] **Step 4: renderer save coordinator 연결**
@@ -824,9 +834,7 @@ lifecycle: {
 
 ```ts
 return api.lifecycle.onBeforeQuit(() => {
-  void flushWorldEntityMutations().finally(() =>
-    api.lifecycle.completeFlush(),
-  );
+  void flushWorldEntityMutations().finally(() => api.lifecycle.completeFlush());
 });
 ```
 
@@ -856,6 +864,7 @@ git commit -m "feat(storage): flush projects with save shortcut"
 **Status:** 부분 완료 — 정상 경로 검증 통과, 실패 주입·실제 재시작·P95 검증 미완료
 
 **Files:**
+
 - Create: `tests/renderer/stores/worldEntitySaveBurst.test.ts`
 - Create: `tests/main/services/projectSaveRecovery.integration.test.ts`
 - Create: `src/renderer/src/features/workspace/hooks/useProjectQuitFlush.ts`
@@ -864,6 +873,7 @@ git commit -m "feat(storage): flush projects with save shortcut"
 - Modify: `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
 
 **Interfaces:**
+
 - Verifies: mock API에서 100회 연속 patch의 마지막 값 보존
 - Verifies: 직접 seed한 stale revision의 같은 프로세스 recovery와 `.luie` round-trip
 - Does not verify: manual save 뒤 revision 수렴, 실제 export 실패 후 프로세스 재시작
@@ -982,6 +992,7 @@ git commit -m "test(storage): verify save integrity recovery"
 **Status:** 완료
 
 **Files:**
+
 - Create: `src/shared/ui/saveBufferRegistry.ts`
 - Create: `tests/renderer/services/saveBufferRegistry.test.ts`
 - Modify: `src/shared/ui/BufferedInput.tsx`
@@ -990,6 +1001,7 @@ git commit -m "test(storage): verify save integrity recovery"
 - Modify: `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
 
 **Interfaces:**
+
 - Produces: `registerSaveBufferFlush(flush: SaveBufferFlush): () => void`
 - Produces: `flushSaveBuffers(): Promise<void>`
 - Produces: `SaveBufferFlush = () => void | Promise<void>`
@@ -1123,9 +1135,10 @@ useEffect(() => {
 });
 
 useEffect(
-  () => registerSaveBufferFlush(async () => {
-    await flushRef.current();
-  }),
+  () =>
+    registerSaveBufferFlush(async () => {
+      await flushRef.current();
+    }),
   [],
 );
 ```
@@ -1162,12 +1175,14 @@ git commit -m "fix(storage): register shared save buffers"
 **Status:** 완료
 
 **Files:**
+
 - Create: `tests/dom/editorAutosaveManualFlush.test.tsx`
 - Modify: `src/renderer/src/features/editor/hooks/useEditorAutosave.ts`
 - Modify: `docs/superpowers/plans/2026-07-18-save-integrity.md`
 - Modify: `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
 
 **Interfaces:**
+
 - Consumes: `registerSaveBufferFlush(flush: SaveBufferFlush): () => void`
 - Produces: clean editor에서는 no-op이고 dirty editor에서는 최신 title/content의 `onSave` 완료까지 기다리는 registered flush
 - Preserves: 기존 debounce, latest pending draft, retry UI와 `api.lifecycle.setDirty`
@@ -1215,7 +1230,9 @@ it("flushes the latest editor draft before autosave debounce", async () => {
 
   expect(onSave).toHaveBeenCalledOnce();
   expect(onSave).toHaveBeenCalledWith("최신 제목", "최신 본문");
-  await act(async () => vi.advanceTimersByTimeAsync(EDITOR_AUTOSAVE_DEBOUNCE_MS));
+  await act(async () =>
+    vi.advanceTimersByTimeAsync(EDITOR_AUTOSAVE_DEBOUNCE_MS),
+  );
   expect(onSave).toHaveBeenCalledOnce();
 });
 ```
@@ -1316,10 +1333,7 @@ const flushLatestDraft = useCallback(async () => {
   }
 }, []);
 
-useEffect(
-  () => registerSaveBufferFlush(flushLatestDraft),
-  [flushLatestDraft],
-);
+useEffect(() => registerSaveBufferFlush(flushLatestDraft), [flushLatestDraft]);
 ```
 
 title/content effect에서 새 draft를 받으면 이전 draft의 `lastSaveErrorRef`를 지운다. manual flush 성공 시 debounce timer가 뒤늦게 같은 draft를 다시 저장하지 않아야 한다.
@@ -1354,6 +1368,7 @@ git commit -m "fix(storage): drain latest editor draft"
 **Status:** 완료
 
 **Files:**
+
 - Modify: `src/renderer/src/features/workspace/services/saveCoordinator.ts`
 - Modify: `src/renderer/src/features/workspace/hooks/useProjectQuitFlush.ts`
 - Modify: `src/renderer/src/features/workspace/components/useEditorRootShortcuts.ts`
@@ -1365,6 +1380,7 @@ git commit -m "fix(storage): drain latest editor draft"
 - Modify: `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
 
 **Interfaces:**
+
 - Consumes: `flushSaveBuffers(): Promise<void>`
 - Consumes: `flushWorldEntityMutations(): Promise<void>`
 - Changes: `saveProjectNow(projectId)` ordering to buffers → world → main
@@ -1494,6 +1510,7 @@ git commit -m "fix(storage): flush renderer buffers first"
 **Status:** 완료
 
 **Files:**
+
 - Modify: `src/shared/ui/BufferedInput.tsx`
 - Modify: `src/renderer/src/features/research/components/world/PlotBoard.tsx`
 - Modify: `src/renderer/src/features/research/components/world/SynopsisEditor.tsx`
@@ -1503,6 +1520,7 @@ git commit -m "fix(storage): flush renderer buffers first"
 - Modify: `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
 
 **Interfaces:**
+
 - Requires: shared input `onSave`가 실제 persistence ACK 또는 동기 enqueue의 drain Promise를 반환한다.
 - Changes: IME 조합 중 global flush는 incomplete value를 저장하지 않고 reject한다.
 - Changes: background flush rejection은 consume하되 dirty payload를 유지한다.
@@ -1561,6 +1579,7 @@ Actual (2026-07-19): follow-up RED는 2 files/21 tests 중 4건이 explicit 손�
 **Status:** 완료
 
 **Files:**
+
 - Modify: `src/renderer/src/features/canvas/components/shell/CanvasDocumentView.tsx`
 - Modify: `src/renderer/src/features/canvas/components/shell/document/CanvasMarkdownEditor.tsx`
 - Modify: `src/renderer/src/features/research/stores/memo/memoStore.ts`
@@ -1570,6 +1589,7 @@ Actual (2026-07-19): follow-up RED는 2 files/21 tests 중 4건이 explicit 손�
 - Modify: `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
 
 **Interfaces:**
+
 - Requires: Task 10 `flushSaveBuffers()` → world mutation drain → main checkpoint 순서.
 - Changes: Canvas markdown 500ms timer를 global registry에서 실제 `onSave` ACK까지 drain한다.
 - Changes: Canvas memo title/content callback은 memo store `flushSave()` ACK를 반환한다.
@@ -1605,6 +1625,7 @@ Actual (2026-07-19): 테스트 하네스 수정 후 RED는 2 files/15 tests 중 
 **Status:** 완료
 
 **Files:**
+
 - Modify: `src/renderer/src/shared/store/worldEntityMutationQueue.ts`
 - Modify: `src/renderer/src/shared/store/createWorldEntityCRUDStore.ts`
 - Modify: `tests/renderer/stores/worldEntityMutationQueue.test.ts`
@@ -1614,6 +1635,7 @@ Actual (2026-07-19): 테스트 하네스 수정 후 RED는 2 files/15 tests 중 
 - Create: `.superpowers/sdd/save-buffer-task-13-report.md`
 
 **Interfaces:**
+
 - Changes: execute throw와 CRUD `null` ACK를 둘 다 mutation 실패로 취급한다.
 - Changes: 실패 batch의 waiter는 reject하되 patch는 waiter 없는 pending work로 보존한다.
 - Changes: 실패 patch와 더 최신 patch는 `merge(failed, newer)` 순서로 병합한다.
@@ -1649,6 +1671,7 @@ Actual (2026-07-19): RED는 실제 character store 경로 1 files/5 tests 중 1�
 **Status:** 완료
 
 **Files:**
+
 - Modify: `src/main/services/core/project/projectExportQueue.ts`
 - Modify: `src/main/handler/writing/ipcAutoSaveHandlers.ts`
 - Modify: `src/main/lifecycle/shutdown/shutdown.ts`
@@ -1660,6 +1683,7 @@ Actual (2026-07-19): RED는 실제 character store 경로 1 files/5 tests 중 1�
 - Create: `.superpowers/sdd/save-buffer-task-14-report.md`
 
 **Interfaces:**
+
 - Changes: export callback의 `false`와 throw는 해당 project를 dirty로 유지하고 현재 호출에서는 실패로 끝난다.
 - Changes: 다음 schedule/runNow/flush만 retained project를 한 번 재시도하며, 성공 뒤에만 exported revision과 queue registry를 정리한다.
 - Changes: manual save의 export `false`/throw는 IPC failure로 전파한다.
@@ -1710,6 +1734,7 @@ Actual (2026-07-19): RED는 3 files/30 tests 중 3건이 missing project의 revi
 **Status:** 완료
 
 **Files:**
+
 - Modify: `src/renderer/src/shared/store/createWorldEntityCRUDStore.ts`
 - Modify: `tests/renderer/stores/characterStoreMutationLock.test.ts`
 - Modify: `docs/superpowers/plans/2026-07-18-save-integrity.md`
@@ -1717,6 +1742,7 @@ Actual (2026-07-19): RED는 3 files/30 tests 중 3건이 missing project의 revi
 - Create: `.superpowers/sdd/save-buffer-task-15-report.md`
 
 **Interfaces:**
+
 - Changes: delete는 같은 entity의 in-flight/pending update queue를 먼저 drain하고 retained payload는 명시적으로 한 번 retry한다.
 - Changes: drain 또는 retry 실패 시 delete API를 호출하지 않고 payload와 optimistic UI를 유지한다.
 - Changes: delete drain 동안 같은 entity의 새 update는 optimistic state를 바꾸기 전에 reject한다.
@@ -1738,6 +1764,7 @@ Actual (2026-07-19): 오염 없는 RED는 실제 character store 1 file/10 tests
 **Status:** 완료 — 독립 재리뷰 Production-ready
 
 **Files:**
+
 - Modify: `src/renderer/src/features/research/components/world/PlotBoard.tsx`
 - Modify: `src/renderer/src/features/research/components/world/SynopsisEditor.tsx`
 - Modify: `src/main/lifecycle/shutdown/shutdown.ts`
@@ -1746,6 +1773,7 @@ Actual (2026-07-19): 오염 없는 RED는 실제 character store 1 file/10 tests
 - Modify: 저장 SSOT와 Task 16 report
 
 **Interfaces:**
+
 - Changes: Plot/Synopsis dirty snapshot은 변경 당시의 `projectId`와 canonical attachment path를 함께 캡처한다.
 - Changes: 프로젝트 A 저장이 실패하거나 in-flight인 상태에서 B로 전환해도 A payload는 A target으로만 drain하며 B hydration이 A retry를 지우지 않는다.
 - Changes: quit 첫 renderer handshake가 실패한 뒤 사용자가 `저장 후 종료`를 선택하면 renderer flush를 다시 요청하고 ACK 성공 전에는 export/finalize로 진행하지 않는다.
@@ -1788,6 +1816,7 @@ Actual (2026-07-19): 최초 RED는 A 실패 payload의 B 전환 소실, B target
 **Status:** 완료 — 독립 review Approved, 단일 commit 반영
 
 **Files:**
+
 - Modify: `src/renderer/src/features/research/components/shared/NotionDocumentView.tsx`
 - Create: `tests/dom/notionDocumentSaveBuffer.test.tsx`
 - Modify: `docs/superpowers/plans/2026-07-18-save-integrity.md`
@@ -1796,6 +1825,7 @@ Actual (2026-07-19): 최초 RED는 A 실패 payload의 B 전환 소실, B target
 - Create: `.superpowers/sdd/save-buffer-task-17-report.md`
 
 **Interfaces:**
+
 - Changes: Notion 본문 500ms timer가 `registerSaveBufferFlush`에 latest markdown을 등록한다.
 - Changes: explicit flush는 timer를 취소하고 동일 snapshot의 timer/flush 경합을 한 번의 `saveBody` enqueue로 합친다.
 - Changes: in-flight 뒤 newer markdown을 직렬 drain하고 성공한 snapshot만 clean으로 승격한다.
@@ -1824,3 +1854,123 @@ Second review follow-up (2026-07-19): RED는 1 file/7 tests 중 1건이 첫 sett
 Final review follow-up (2026-07-19): RED는 1 file/8 tests 중 1건이 앞선 setter pending 뒤 `setSectionContent` 동기 throw에서 `allSettled` 도달 전 barrier/in-flight를 해제해 예상 실패했고 기존 7건은 PASS했다. 각 setter 동기 호출을 local collector의 `Promise.resolve`/`Promise.reject`로 개별 수집하고 모든 호출 뒤 `allSettled`하는 최소 보정으로 pending ACK와 원래 sync error를 함께 보존했다. GREEN은 focused 8/8, 저장 회귀 20 files/175 tests PASS이며 ESLint/diff-check PASS, Task 17 type 오류 0과 기존 Binder TS2322 baseline 1건만 유지한다.
 
 최종 독립 재리뷰는 Spec Compliance ✅, Task quality Approved, Critical/Important/Minor 0이다. staged Task에는 저장 로직·테스트·SSOT만 포함했고 사용자 소유 `accentColor` 제거 hunk는 working tree에 unstaged로 보존했다.
+
+---
+
+### Task 18: world mutation bounded backoff
+
+**Status:** 계획 확정 — 구현 전 TDD RED 대기
+
+**Files:**
+
+- Modify: `tests/renderer/stores/worldEntityMutationQueue.test.ts`
+- Modify: `tests/renderer/stores/characterStoreMutationLock.test.ts`
+- Modify: `src/renderer/src/shared/store/worldEntityMutationQueue.ts`
+- Modify: `src/renderer/src/shared/store/createWorldEntityCRUDStore.ts`
+- Modify: `src/main/services/features/project/projectService.ts`
+- Modify: `tests/main/services/projectService.immediateDurability.test.ts`
+- Modify: `tests/main/services/projectExportQueue.test.ts` (dirty retention 회귀가 기존 테스트로 부족할 때만)
+- Modify: 저장 SSOT/plan/progress와 Task 18 report
+
+**Interfaces:**
+
+- Adds: `createLatestMutationQueue`의 opt-in retry delay 정책. 기본값은 자동 재시도 없음이다.
+- Uses: character/event/faction/term update factory에서만 `[250, 500, 1000]` 정책을 주입한다.
+- Preserves: 실패 caller reject, retained latest patch, nested attributes merge, optimistic generation, delete drain, global active count.
+- Interrupts: enqueue/flush가 예약 timer를 취소하고 즉시 retry한다.
+- Changes: immediate export failure의 `${reason}:retry` 자동 schedule은 제거하고 dirty payload/revision과 오류 전파를 유지한다.
+- Excludes: graph/replica/document buffer backoff, 범용 retry abstraction, error taxonomy/IPC 재설계.
+
+- [ ] **Step 1: fake timer RED — exact delay와 exhaustion**
+  - 최초 실패 + 250/500/1000ms 자동 3회, 총 4회 상한을 고정한다.
+  - exhaustion 뒤 pending/global active count 1과 latest payload 보존을 검증한다.
+- [ ] **Step 2: fake timer RED — foreground interrupt와 latest merge**
+  - 예약 중 새 enqueue와 explicit/global flush가 timer를 취소하고 즉시 실행하는지 검증한다.
+  - retained scalar/`attributesPatch`와 newer patch의 latest merge를 검증한다.
+  - timer와 foreground 경합에서 concurrent execute 최대 1을 검증한다.
+  - 새 patch만 retry budget을 초기화하고 explicit flush는 budget을 초기화하지 않음을 검증한다.
+- [ ] **Step 3: opt-in queue policy 최소 구현**
+  - generic queue 기본 동작을 유지하고 retry delay가 전달된 queue만 timer chain을 사용한다.
+  - success/idle cleanup과 background rejection consumption을 구현한다.
+- [ ] **Step 4: 실제 world store ACK/reconciliation RED/GREEN**
+  - waiter 없는 timer retry 성공이 store/graph/optimistic generation과 entity queue map을 정리하는지 검증한다.
+  - manual/quit global flush 실패는 reject하고 payload는 남는지 검증한다.
+- [ ] **Step 5: export 비적용 회귀**
+  - immediate export `false`/throw 뒤 `${reason}:retry` schedule이 없음을 RED/GREEN으로 고정한다.
+  - queue dirty 상태와 manual/quit 오류 전파는 유지하고 fake timer만으로 `runExport`가 다시 호출되지 않음을 증명한다.
+  - persisted revision drift의 startup recovery 1회는 유지하되 실패 뒤 같은 세션의 timer chain이 생기지 않음을 검증한다.
+  - graph/replica/document export 오류가 entity queue retry를 만들지 않음을 확인한다.
+- [ ] **Step 6: focused/저장 회귀/정적 검증**
+  - focused queue/store/export 테스트를 실행한다.
+  - Task 8~18 저장 회귀, 대상 ESLint, `git diff --check`, direct typecheck baseline을 확인한다.
+- [ ] **Step 7: SSOT/report 동기화, 독립 리뷰, 단일 커밋**
+  - 코드와 문서 수치가 일치하는지 독립 검토한다.
+  - Critical/Important 0 뒤 `fix(storage): retry world mutations with backoff` 한 커밋으로 닫는다.
+
+---
+
+### Task 19: 저장 latency P95와 95% 신뢰 인증
+
+**Status:** Task 18 이후 대기
+
+**Goal:** 저장 correctness와 별개로, 실제 SQLite commit ACK와 explicit save barrier의 latency를 반복 측정 가능한 artifact로 인증한다.
+
+- [ ] 환경, Electron/SQLite ABI, fixture 크기, warm-up, sample count를 고정한다.
+- [ ] 실제 DB write를 사용하며 mock timer/burst 결과를 latency sample로 세지 않는다.
+- [ ] 최소 30회 warm-up 뒤 독립 sample을 수집하고 raw values, P50/P95/P99, 실패율을 저장한다.
+- [ ] bootstrap 또는 percentile 기반 95% confidence interval을 산출하고 계산 script/test를 함께 둔다.
+- [ ] world 단건, 100-burst latest merge, Cmd/Ctrl+S 전체 barrier를 별도 시나리오로 측정한다.
+- [ ] CI/로컬 편차 때문에 hard gate가 부적절하면 regression budget과 인증 artifact를 분리해 문서화한다.
+- [ ] 독립 재실행에서 결과가 재현되고 SSOT/report가 일치한 뒤 한 Task/한 커밋으로 닫는다.
+
+---
+
+## Phase 20: SPA(Single Pattern Architecture) + 500 LOC 모듈화
+
+**Status:** 마지막 Phase — Task 18/19 완료 후 시작
+
+**Definition of Done:** 레이어별 정식 의존 패턴이 하나이고, hand-written production TS/TSX/CSS와 test TS/TSX가 파일당 500 LOC 이하이며, public API·IPC·DB·UI behavior 회귀가 없다. generated/vendor만 근거가 있는 예외로 허용한다.
+
+### 20.1 Guardrail Task — 사실 baseline과 자동 gate
+
+- [ ] 기존 `pnpm run check:source-loc`의 `src` TS/TSX/CSS baseline과 `tests` TS/TSX baseline을 다시 계수하고 `docs/architecture/migration-guardrails.md`와 일치시킨다.
+- [ ] 신규/변경 hand-written source/test의 500 LOC 초과를 막는 repo check를 기존 `check:*` 패턴으로 확장한다.
+- [ ] 기존 초과 파일은 명시적 debt allowlist로 시작하되 각 분리 커밋에서 allowlist를 줄이고 최종 0으로 만든다.
+- [ ] SPA는 다음 하나의 흐름으로 고정한다.
+  - renderer: `domain component/hook/store → renderer domain adapter → @shared/api`
+  - preload: `domain API module → safeInvoke → IPC channel`
+  - main: `IPC handler → domain service → infra adapter(database/repository/FS/native)`
+  - shared: cross-process `contract/schema/type/constant`만 소유
+
+### 20.2 Production Task batches — behavior-neutral responsibility split
+
+실행 시점 `check:source-loc` 재계수가 우선이지만 2026-07-20 production baseline은 9개다. 아래 7개를 원자 Task/commit 경계로 고정한다.
+
+1. **Locale trio:** `settingsAdvanced.ts` en/ja/ko(538/538/572)를 같은 domain/key 경계로 함께 분리하고 i18n parity를 검증한다.
+2. **Editor CSS:** `styles/components/editor.css`(532)를 cascade 책임 단위로 분리한다. 사용자 dirty hunk와 겹치므로 소유권을 먼저 확인하고 다른 production batch와 섞지 않는다.
+3. **Analysis UI:** `AnalysisSection.tsx`(507)를 기존 `analysisSection/**` feature helper 패턴으로 분리한다.
+4. **Shared settings:** `settings.ts`(506)를 settings 계약 축으로 분리하고 기존 파일은 호환 barrel로 유지한다.
+5. **Memory benchmark:** `memoryWriterTaskBenchmark.ts`(524)를 scenario/measurement/reporting 책임으로 분리한다.
+6. **Model runtime:** `modelRuntimeFactory.ts`(510)를 provider decision과 runtime construction 책임으로 분리한다.
+7. **Project service:** `projectService.ts`(528)를 마지막에 분리하며 public class/singleton과 export queue facade를 유지한다.
+
+각 파일은 기존 인접 directory의 `index.ts`/facade/helper 패턴을 따른다. import 호환을 위해 원래 파일은 얇은 facade 또는 barrel로 유지하고, domain responsibility 단위로만 분리한다. 위 번호 하나마다 targeted characterization test → 최소 이동 → typecheck/lint/architecture check → 독립 review → 한 Task/한 커밋 순서를 지킨다.
+
+### 20.3 Test Task batches — behavior별 suite 분리
+
+2026-07-20 baseline은 18개다. **기존 대형 test 파일 하나를 원자 Task/commit 하나**로 고정하고 그 파일 내부를 behavior/context별 suite와 순수 fixture builder로 분리한다. 서로 다른 기존 대형 test 파일을 같은 커밋에 묶지 않는다. 파일 크기만 줄이려고 공용 mutable fixture를 만들지 않는다.
+
+- sync: `syncService.test.ts`(1243), `syncMemoryCanonicalApply.test.ts`(861)
+- world/renderer: `worldBufferedPersistence.test.tsx`(1170), `characterStoreMutationLock.test.ts`(667), `memoStore.test.ts`(568), `worldPackageStorage.test.ts`(535)
+- memory: `memoryCanonicalPackage.test.ts`(1051), `memoryBuildJobControl.test.ts`(753), `memoryWriterTaskBenchmark.test.ts`(694), `memoryReviewBacklogReport.test.ts`(585), `memoryEntityReviewService.test.ts`(556), `settingsMemoryBuildProgress.test.ts`(546), `memoryNarrativeSummaryRunner.test.ts`(533)
+- lifecycle/project: `appOperationalScenarios.test.tsx`(702), `projectExportEngine.test.ts`(630), `luieContainer.extreme.test.ts`(578), `luieContainer.test.ts`(570), `projectService.test.ts`(546)
+
+계수상 목록은 실행 전 재생성하며 문서의 숫자와 차이가 나면 코드가 아니라 SSOT baseline을 먼저 갱신한다. 각 분리 전후 test count, test name set, pass/fail 결과를 비교한다.
+
+### 20.4 Final certification
+
+- [ ] allowlist가 generated/vendor 외 0인지 확인한다.
+- [ ] `pnpm run check:source-loc`와 tests TS/TSX 계수 결과에서 500 초과 hand-written 파일이 0인지 확인한다.
+- [ ] full typecheck/lint/core QA와 관련 Electron DB suites를 통과한다.
+- [ ] architecture 문서의 main/renderer/shared 현재 사실을 최종 계수와 동기화한다.
+- [ ] 독립 architecture/code/test 리뷰 Critical/Important 0 뒤 Phase 완료를 기록한다.

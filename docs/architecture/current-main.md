@@ -182,7 +182,13 @@ index.ts
 
 ## 500 LOC 초과 Main 파일
 
-사실: Phase 4 이후 현재 `src/main`에는 500 LOC 초과 코드 파일이 없습니다.
+사실(2026-07-20): 현재 `src/main`에는 500 LOC 초과 hand-written TypeScript 파일이 3개 있습니다. 과거 Phase 4 직후의 0개 기록은 현재 코드와 드리프트해 아래 baseline으로 대체합니다.
+
+| File                                                                       | LOC | Phase 20 분리 기준                                            |
+| -------------------------------------------------------------------------- | --: | ------------------------------------------------------------- |
+| `src/main/services/features/project/projectService.ts`                     | 528 | public facade를 유지하고 project 책임별 helper/service로 분리 |
+| `src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.ts` | 524 | benchmark scenario, measurement, reporting 책임 분리          |
+| `src/main/services/features/llm/modelRuntimeFactory.ts`                    | 510 | provider selection과 runtime construction 책임 분리           |
 
 | File                                                                    | LOC | 비고                                                      |
 | ----------------------------------------------------------------------- | --: | --------------------------------------------------------- |

@@ -7,7 +7,7 @@
 - 현재 코드 구조를 먼저 사실 기준으로 고정한다.
 - `main`, `preload`, `renderer`, `shared` 경계를 명확히 문서화한다.
 - 이후 리아키텍처는 소스 삭제가 아니라 호환 레이어를 둔 점진 이전으로만 진행한다.
-- 파일당 500 LOC 내외 원칙을 장기 품질 기준으로 둔다.
+- hand-written production TS/TSX/CSS와 test TS/TSX 파일당 500 LOC 이하 원칙을 장기 품질 기준으로 둔다.
 
 ## 현재 기준 문서
 

@@ -56,13 +56,13 @@ BufferedInput 500ms debounce
 
 ### 3.2 저장 완료 의미
 
-| 상태 | 의미 |
-| --- | --- |
-| `clean` | renderer와 SQLite가 일치한다. |
-| `dirty` | renderer에만 반영된 변경이 있다. |
-| `saving` | SQLite mutation이 진행 중이다. |
-| `saved` | SQLite transaction이 커밋됐다. |
-| `error` | 커밋하지 못했으며 변경 payload를 유지해야 한다. 2026-07-18 1차 구현은 이 계약을 충족하지 못했으나 이후 Task 8~16에서 해결했다. |
+| 상태     | 의미                                                                                                                           |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `clean`  | renderer와 SQLite가 일치한다.                                                                                                  |
+| `dirty`  | renderer에만 반영된 변경이 있다.                                                                                               |
+| `saving` | SQLite mutation이 진행 중이다.                                                                                                 |
+| `saved`  | SQLite transaction이 커밋됐다.                                                                                                 |
+| `error`  | 커밋하지 못했으며 변경 payload를 유지해야 한다. 2026-07-18 1차 구현은 이 계약을 충족하지 못했으나 이후 Task 8~16에서 해결했다. |
 
 `.luie` 체크포인트 상태는 위 상태와 분리한다. SQLite 저장은 성공했지만 파일 export가 실패한 경우 `로컬 저장됨 · 프로젝트 파일 백업 실패`로 표현한다.
 
@@ -549,3 +549,63 @@ first snapshot in-flight 중 newer markdown을 받은 뒤 unmount되면 detached
 ### 21.6 synchronous throw 수집
 
 앞선 setter가 pending Promise를 반환한 뒤 뒤 setter가 동기 throw해도 `saveBody`가 즉시 종료되지 않는다. local collector는 각 setter 호출 결과를 `Promise.resolve`로, 동기 오류를 `Promise.reject`로 같은 saves 배열에 수집한다. 모든 setter는 첫 await 전에 호출되며 `allSettled` 뒤 첫 오류를 전파한다. 따라서 앞선 ACK settle 전 barrier/overlap은 pending이고 newer setter는 0회다. 이 RED는 focused 8건 중 신규 1건만 실패했고 보정 뒤 focused 8/8, 저장 회귀 175/175가 PASS했다.
+
+## 22. World mutation 제한 재시도 정책
+
+### 22.1 적용 범위와 시간표
+
+자동 재시도는 renderer의 `createWorldEntityCRUDStore`가 소유한 character/event/faction/term **update queue**에만 적용한다. 이 경로는 main SQLite transaction 성공 뒤 package export를 debounce schedule하고 entity ACK를 먼저 반환하므로 mutation 실패와 export 실패가 한 응답으로 합쳐지지 않는다. graph document, scrap/replica document, Plot/Synopsis/Canvas/Notion buffer처럼 export 결과가 응답에 섞이거나 별도 저장 경계를 쓰는 경로는 이번 자동 backoff 대상이 아니다.
+
+최초 foreground 시도가 실패하면 같은 entity의 latest patch를 보존하고 `250ms → 500ms → 1000ms` 순서로 최대 3회 자동 재시도한다. 새 patch가 없는 한 background 자동 실행 상한은 3회다. 최초 시도까지 합치면 사용자 mutation generation 하나의 무인 실행 상한은 총 4회다.
+
+retry delay는 renderer world 저장 정책이므로 `src/renderer/src/shared/store` 경계 또는 해당 feature 정책 파일이 소유한다. main-only 또는 cross-process 계약이 아니므로 편의를 위해 `src/shared/constants`로 올리지 않는다. 새 dependency, 범용 retry framework, IPC 계약 변경은 만들지 않는다.
+
+### 22.2 latest patch와 ACK 의미
+
+- 실패한 batch는 waiter 유무와 관계없이 pending/active 상태로 남는다.
+- 같은 entity에 새 patch가 들어오면 retained patch와 기존 nested `attributesPatch` 규칙으로 병합하며 최신 scalar 값을 우선한다.
+- 실패를 관찰한 원래 `enqueue` 또는 explicit `flush` Promise는 즉시 reject한다. 자동 재시도 예약을 저장 성공 ACK로 오인하지 않는다.
+- timer retry는 background 작업이므로 rejection을 consume하되 payload와 pending count를 지우지 않는다.
+- 실제 CRUD ACK가 성공한 경우에만 retained 상태, retry index, timer, active queue를 정리하고 store/graph reconciliation을 적용한다.
+- `null` ACK와 thrown/rejected 오류는 현재 renderer에서 구조화된 transient 분류가 보존되지 않으므로 동일한 제한 재시도 대상으로 취급한다. validation/permission 오류도 무한 반복되지 않고 같은 총 4회 상한 안에서 멈춘다. 오류 taxonomy 확대는 별도 설계 없이는 이번 범위에 넣지 않는다.
+
+### 22.3 foreground interrupt 정책
+
+새 입력, `Cmd/Ctrl+S`, 종료 handshake, delete-before-update drain처럼 queue의 `enqueue` 또는 `flush`를 호출하는 foreground 경계는 예약된 retry timer를 먼저 취소하고 retained latest patch를 즉시 실행한다. timer와 foreground 호출이 경쟁해도 동일 entity에서 `execute`를 동시에 두 번 실행하지 않고 기존 in-flight Promise를 공유한다.
+
+foreground 즉시 실행이 다시 실패하면 해당 호출자는 오류를 그대로 받고 payload는 보존된다. 새 patch를 받은 enqueue만 새 mutation generation으로 간주해 자동 retry budget을 `250ms`부터 초기화한다. `Cmd/Ctrl+S`, 종료 handshake, delete drain을 포함한 explicit flush는 사용자 주도 즉시 시도일 뿐 자동 budget을 초기화하지 않는다. 취소한 timer가 있었다면 해당 retry index부터 다시 예약하며, 이미 자동 3회를 소진했다면 추가 timer 없이 retained 상태를 유지한다. 따라서 반복 shortcut이 자동 chain을 무한히 재생성하지 않는다.
+
+성공하면 이전 generation의 timer, retry index, retained 상태를 전부 정리한다. 자동 3회를 소진한 queue도 payload를 유지하므로 이후 explicit flush는 즉시 한 번 다시 시도할 수 있고, 이후 새 입력은 latest merge와 함께 새 bounded chain을 시작한다.
+
+global `flushWorldEntityMutations()`는 active queue를 queue-empty까지 drain하려 하지만, 한 foreground 호출 안에서 실패 batch를 반복 실행하지 않는다. 첫 실패를 caller에 전파한 뒤 background chain만 예약한다. 따라서 manual save와 quit은 실패를 사용자 결정 경계로 전달하면서도 다음 안전한 재시도 가능성을 유지한다.
+
+### 22.4 export 비적용
+
+`.luie` project export 오류는 권한, 경로, 디스크 부족, 손상된 attachment처럼 즉시 반복해도 회복되지 않을 수 있으므로 같은 세션에서 오류가 trigger가 되는 자동 timer 재시도를 하지 않는다. `ProjectExportQueue`는 `false`/throw 시 dirty project와 revision을 보존하고 다음 실제 mutation schedule, `runNow`, explicit flush 또는 사용자의 종료 재시도 결정에서만 다시 실행한다. 다음 앱 시작의 `scheduleStalePackageExports` 1회는 실패 직후 backoff가 아니라 persisted revision drift 복구 경계이므로 유지한다. 이 startup attempt도 실패하면 같은 세션에서 자체 timer chain을 만들지 않는다.
+
+현재 `ProjectService.attemptImmediatePackageExport`는 immediate export의 `false`/throw 뒤 `${reason}:retry` schedule을 추가해 자동 timer를 만든다. Task 18에서 이 schedule을 제거하고 오류 전파와 queue dirty 보존만 유지한다. 이미 SQLite mutation ACK에 package export error를 섞는 world replica/document 경로는 ACK 분리 전까지 entity backoff에 편입하지 않는다. export queue의 delay, dirty retention, manual/quit 결정 경계는 보존한다.
+
+### 22.5 TDD 검증 기준
+
+production 변경 전에 fake timer 기반 RED로 다음을 고정한다.
+
+1. 최초 실패 뒤 정확히 250ms, 500ms, 1000ms에 재시도하고 총 4회 뒤 멈추며 payload/pending count를 보존한다.
+2. 중간 ACK 성공은 남은 timer를 취소하고 pending/global active count를 0으로 만든다.
+3. 예약 중 새 enqueue는 timer를 취소하고 retained+newer latest patch를 즉시 한 번 실행하며 새 mutation generation의 budget만 초기화한다.
+4. explicit/global flush는 timer를 취소하고 즉시 실행하며 실패를 caller에 전파하되 자동 budget을 초기화하지 않는다.
+5. timer, enqueue, flush, delete drain 경합에서도 entity별 concurrent execute는 최대 1이다.
+6. waiter 없는 background ACK도 optimistic generation 이후 store/graph를 최신 patch 기준으로 reconcile하고 queue map을 정리한다.
+7. immediate export `false`/throw 뒤 retry schedule이 없고, timer만 진행시켜도 export 실행 횟수가 증가하지 않는다.
+8. graph/replica/document export 오류는 entity mutation queue 재실행을 만들지 않는다.
+
+Task 18은 focused RED/GREEN, Task 8~18 저장 회귀, 대상 ESLint, diff-check, typecheck baseline, 독립 코드/테스트 리뷰를 모두 통과한 뒤에만 완료로 기록한다.
+
+## 23. 남은 저장 무결성 로드맵
+
+순서는 고정한다.
+
+1. **Task 18 — world mutation bounded backoff:** 본 문서 22절을 TDD로 구현한다.
+2. **Task 19 — 저장 latency P95/95% 신뢰 인증:** 실제 SQLite ACK 경계와 manual flush 경계를 반복 측정하고 raw sample, percentile 계산, 환경 정보를 artifact로 남긴다. mock burst 통과를 latency 인증으로 대체하지 않는다.
+3. **Phase 20 — SPA + 500 LOC 모듈화:** 저장 로직 완료 뒤 behavior-neutral 구조 정리를 수행한다. 이 Phase에서 SPA는 runtime의 Single Page Application이 아니라 **Single Pattern Architecture**, 즉 레이어마다 하나의 정식 의존 흐름만 허용한다는 뜻으로 사용한다.
+
+Phase 20은 renderer `domain component/hook/store → domain adapter → @shared/api`, preload `domain API → safeInvoke/IPC channel`, main `IPC handler → domain service → infra adapter(database/repository/FS/native)`, shared `cross-process contract/schema/type/constant`라는 기존 target pattern을 보존한다. legacy 병렬 진입점이나 두 번째 queue/store 패턴을 만들지 않는다. hand-written production `.ts`/`.tsx`/`.css`와 test `.ts`/`.tsx`는 500 LOC 이하가 완료 조건이며 generated/vendor artifact만 생성 경로와 근거를 기록한 예외로 둔다. i18n dictionary와 CSS는 generated가 아니므로 locale/domain 및 cascade 책임 단위로 분리한다. 세부 실행 단위와 현재 초과 목록은 구현 계획과 `docs/architecture/migration-guardrails.md`를 SSOT로 삼는다.

@@ -80,22 +80,29 @@ src/shared/
 
 의견:
 
-- 파일당 500 LOC 내외를 장기 품질 기준으로 둡니다.
+- hand-written production TS/TSX/CSS와 test TS/TSX 파일당 500 LOC 이하를 장기 품질 기준으로 둡니다.
 - `src/main/services/features/memory/query/narrativeMemoryQueryService.ts`는 `query/internal/*`로 분리되어 현재 167 LOC입니다.
-- `src/renderer/src/styles/global.css`처럼 정적 자원/번들 파일도 정책 예외로 관리합니다.
+- generated/vendor artifact만 생성 경로와 근거를 기록한 정책 예외로 허용합니다.
 - i18n locale 파일은 키 단위가 아니라 큰 locale 도메인 단위로 분해해 관리합니다.
 - 500 LOC 초과 파일은 우선 삭제가 아니라 책임 분리 후보로 표시합니다.
 
-사실(2026-06-08 기준):
+사실(2026-07-20 기준):
 
-현재 소스-영역( `src/main`, `src/renderer`, `src/shared` )을 스캔했을 때 500 LOC 초과 결과는 아래와 같습니다.  
-(`tests` 영역은 테스트 규칙/운영 범위가 달라 본 규칙의 기본 스코프에서 분리합니다.)
+현재 `scripts/check-source-loc.mjs` 기준 hand-written production source를 재계수하면 `src` 9개, 별도 TS/TSX 계수 기준 `tests` 18개가 500 LOC를 초과합니다. 세부 경로와 batch는 `docs/superpowers/plans/2026-07-18-save-integrity.md`의 Phase 20이 실행 SSOT입니다. `src` 초과는 다음과 같습니다. script는 line terminator 기준이라 `wc -l`보다 1 크게 계산될 수 있으며 gate 수치를 정본으로 사용합니다.
 
-| 경로                                 | LOC | 상태                 |
-| ------------------------------------ | --: | -------------------- |
-| `src/renderer/src/styles/global.css` | 530 | 예외(정적 자원 번들) |
+| 경로                                                                       | LOC |
+| -------------------------------------------------------------------------- | --: |
+| `src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts`                | 572 |
+| `src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts`                | 538 |
+| `src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts`                | 538 |
+| `src/renderer/src/styles/components/editor.css`                            | 532 |
+| `src/main/services/features/project/projectService.ts`                     | 528 |
+| `src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.ts` | 524 |
+| `src/main/services/features/llm/modelRuntimeFactory.ts`                    | 510 |
+| `src/renderer/src/features/research/components/AnalysisSection.tsx`        | 507 |
+| `src/shared/types/settings.ts`                                             | 506 |
 
-사실: `tests`에서 500 LOC 초과인 파일은 `tests/dom/appOperationalScenarios.test.tsx`(569), `tests/main/services/syncService.test.ts`(1166), `tests/main/services/luieContainer.extreme.test.ts`(543), `tests/renderer/components/worldGraph/canvasTab.behavior.test.tsx`(549), `tests/main/database/schemaParity.test.ts`(535)입니다.
+`tests` 초과 18개는 sync 2, world/renderer 4, memory 7, lifecycle/project 5개로 분류한다. 같은 파일이 여러 분류에 중복되지 않는다. 실행 전 자동 계수로 baseline drift가 없는지 확인하는 것이 Phase 20.1의 첫 문서 gate다.
 
 의견: `tests/main/handler/ipcInputValidation.test.ts`는 공통 세팅 분리로 테스트 본체를 `ipcInputValidation.shared.ts`, `ipcInputValidation.memory.test.ts`, `ipcInputValidation.system.test.ts`로 쪼개 500 LOC 한도 위험에서 해소했습니다.
 
@@ -103,13 +110,13 @@ src/shared/
 
 사실:
 
-- `src` 디렉터리에서 500 LOC 초과인 코드 파일은 현재 0개입니다.
-- `src/renderer/src/features/research/components/AnalysisSection.tsx`는 Phase 2에서 237 LOC로 분리되어 해소되었습니다.
+- 과거 2026-06-08 기준 `src` 0개 기록은 현재 코드와 드리프트해 위 2026-07-20 baseline으로 대체합니다.
+- `src/renderer/src/features/research/components/AnalysisSection.tsx`는 현재 507 LOC(source gate 기준)로 다시 기준을 넘었으며 Phase 20 후보입니다.
 - `src/shared/types/search.ts`는 Phase 3에서 6 LOC 재수출 진입점으로 축소되어 해소되었습니다.
 - `src/main/services/features/search/searchService.ts`는 Phase 4에서 54 LOC public facade로 축소되어 해소되었습니다.
 - `src/main/services/features/memory/entity/memoryEntityReviewService.ts`는 Phase 4에서 232 LOC로 축소되어 해소되었습니다.
-- 스타일 번들(`src/renderer/src/styles/global.css`)은 아키텍처 대상 외 예외로 남아 있습니다.
-- 테스트 파일에서만 500 LOC 초과가 남아 있고(프로젝트 룰상 별도 범주로 관리), 이번 단계에서 우선순위 대상은 아닙니다.
+- 스타일 번들 `src/renderer/src/styles/global.css`는 현재 12 LOC(source gate 기준)이므로 예외가 아닙니다.
+- tests도 Phase 20 완료 조건에 포함하며 behavior별 suite로 분리합니다.
 
 ## 구조 개선 후보 (500 LOC 기준 외, 단계적 정리 대상)
 
