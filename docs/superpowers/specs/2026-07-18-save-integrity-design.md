@@ -141,7 +141,7 @@ result:     { name: "김철수" }
 
 1차 구현은 character, event, faction, term의 create/update/delete transaction에서 데이터 변경과 `Project.revision + 1`을 함께 수행한다. exporter는 시작 시 revision을 캡처하고, 파일 교체가 성공한 뒤에만 해당 값을 `exportedRevision`으로 기록한다.
 
-따라서 현재 revision은 `.luie` 전체 payload의 freshness를 아직 대표하지 않는다. project-wide recovery를 보장하려면 chapter, relation, project metadata 등 package에 포함되는 canonical mutation도 같은 revision 계약에 포함해야 한다.
+따라서 현재 revision은 `.luie` 전체 payload의 freshness를 아직 대표하지 않는다. project-wide recovery 확대의 승인된 범위와 구현 계약은 `docs/superpowers/specs/2026-07-19-project-wide-revision-design.md`를 해당 주제의 SSOT로 사용한다.
 
 export 도중 새 mutation이 발생하면 `revision > exportedRevision`이 유지되므로 다음 export가 예약된다.
 
