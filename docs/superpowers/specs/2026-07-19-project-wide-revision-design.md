@@ -55,6 +55,7 @@ SQLite `AFTER INSERT/UPDATE/DELETE` trigger가 canonical table의 `projectId`로
 - soft delete와 restore는 `UPDATE`이므로 revision 대상이다.
 - project cascade delete 중 child trigger는 삭제될 project를 되살리지 않는다.
 - trigger 설치 실패는 schema bootstrap 실패로 처리한다. revision 없이 저장을 계속하지 않는다.
+- trigger 집합이 처음 설치되거나 일부 누락된 기존 DB는 설치와 모든 기존 project의 revision 1회 증가를 하나의 transaction으로 수행한다. 재실행은 증가시키지 않으며, 이전 버전에서 추적하지 못한 canonical 변경을 stale checkpoint recovery 대상으로 만든다.
 - export scheduling과 retry 정책은 기존 `ProjectExportQueue`를 그대로 사용한다.
 
 ## 5. 검증 계약
