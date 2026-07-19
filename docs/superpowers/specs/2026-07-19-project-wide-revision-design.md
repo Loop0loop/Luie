@@ -1,6 +1,6 @@
 # Project-wide revision 설계
 
-**상태:** 구현 중 — Task 1~3 완료
+**상태:** Task 1~4 구현·commit·follow-up 및 최종 3중 재리뷰 완료
 **상위 SSOT:** `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
 
 ## 1. 목표
@@ -61,7 +61,8 @@ sync는 merged chapter, world, memory canonical row를 같은 DB transaction에 
 - trigger 설치 실패는 schema bootstrap 실패로 처리한다. revision 없이 저장을 계속하지 않는다.
 - trigger 집합이 처음 설치되거나 일부 누락된 기존 DB는 설치와 모든 기존 project의 revision 1회 증가를 하나의 transaction으로 수행한다. 재실행은 증가시키지 않으며, 이전 버전에서 추적하지 못한 canonical 변경을 stale checkpoint recovery 대상으로 만든다.
 - 기존 package hydration은 transaction 마지막 revision을 attachment의 `exportedRevision`으로 함께 기록한다.
-- queue 밖 full checkpoint writer인 sync, snapshot import, attach, materialize, 손상 package recovery는 payload source와 일치하는 revision을 capture하고 atomic write 성공 뒤 그 값만 mark한다. mark 실패 시 dirty 상태를 유지한다.
+- queue 밖 기존 full checkpoint writer인 sync, attach, materialize, 손상 package recovery는 payload source와 일치하는 revision을 capture하고 atomic write 성공 뒤 그 값만 mark한다. mark 실패는 성공으로 반환하지 않고 attachment baseline을 전진시키지 않아 dirty 상태를 유지한다.
+- 신규 snapshot import는 생성 transaction에서 attachment와 revision을 캡처한다. writer 실패는 생성한 Project/Attachment를 rollback한다. write 성공 뒤 mark 실패도 생성 DB state를 rollback하지만 작성된 `.luie`는 recovery artifact로 보존하고 해당 경로와 정책을 logging한다. 기존 파일 삭제 위험 때문에 자동 cleanup하지 않는다.
 - renderer의 package entry writer는 DB 저장 뒤 동일 entry를 쓰는 호환 mirror 또는 template 보조 파일 writer이므로 full checkpoint로 mark하지 않는다.
 - export scheduling과 retry 정책은 기존 `ProjectExportQueue`를 그대로 사용한다.
 
@@ -110,6 +111,14 @@ package persistence는 Project current revision을 다시 조회하지 않고 tr
 
 회귀는 `syncService.test.ts`의 공식 `package.json` harness와 동일한 `SKIP_DB_TEST_SETUP=1` 환경에서 `syncService.test.ts`와 `projectExportQueue.test.ts` 2 files/27 tests PASS다. env 없이 실행하면 syncService의 기존 hoisted DB mock이 전역 setup의 `client.delete`를 제공하지 않아 14 tests가 본문 전 실패하므로, Task 3 신규 실제 DB 증거는 별도의 focused Electron DB suite 3 files/14 tests에서 확보했다. 대상 ESLint와 `git diff --check`는 PASS다. 직접 `tsc6 --noEmit`은 Task 3 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 한 건만 유지한다. `pnpm run typecheck` wrapper는 pnpm 11.5.3 registry signature/version-switch 검증이 불가능해 compiler 진입 전 종료했다.
 
+### Task 4 검증 결과 (2026-07-19)
+
+package hydration은 Chapter/ChapterBody와 모든 canonical row insert 뒤 transaction의 최종 revision을 읽어 같은 transaction의 `ProjectAttachment.exportedRevision`에 기록한다. snapshot import는 legacy `Project.projectPath`를 쓰지 않고 attachment를 만든 뒤 최종 revision을 캡처한다. writer 실패와 mark 실패는 생성한 Project/Attachment를 제거하고 reject하며, write 성공 뒤 mark 실패의 output `.luie`는 recovery artifact로 보존한다. attach/materialize는 공통 local helper에서 `capture → full export → attachment path → captured mark` 순서를 사용한다. corrupt recovery도 같은 순서로 새 recovery attachment만 성공 후 mark한다. capture 뒤 writer 중 canonical mutation은 더 높은 current revision으로 남는다.
+
+RED exact 5-file 명령은 31 tests 중 12건이 실패했다. Task 4 계약 실패 7건은 package baseline 0, snapshot legacy path/mark 부재/concurrency false-clean, attach/materialize mark 부재, corrupt recovery baseline 0이었다. 나머지 5건은 Task 4와 무관한 기존 `projectService.test.ts` 대용량 world-entry baseline이다. GREEN은 Task 4 계약 경로 17 tests PASS이고, exact 5-file 명령에서는 Task 4 관련 26 tests가 PASS하며 동일 기존 baseline 5건만 남았다. Task 1~3와 공유 recovery focused는 11 files/49 tests PASS, Task 8~16 저장 회귀는 Electron-as-Node 19 files/167 tests PASS다.
+
+follow-up mutation RED는 snapshot mark-before-write에서 4 tests 중 3건, corrupt recovery capture-after-export에서 targeted 1 test가 예상대로 실패했다. 원복 뒤 두 경로 focused 2 files/5 tests가 PASS했다. 대상 ESLint와 `git diff --check`는 PASS다. 직접 `tsc6 --noEmit`은 Task 4 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 한 건만 유지한다. `pnpm run typecheck` wrapper는 무출력 장기 대기로 중단했다. Task 1~3 기준 commit은 각각 `8ae3d04c`, `a028e5a7`, `a171b90e`다. follow-up 구현·commit 뒤 최종 root 코드 리뷰는 Production-ready, QA는 PASS, SSOT는 Approved로 모두 Critical/Important 0이다.
+
 ## 6. 제외 항목
 
-이 작업은 export queue 자동 backoff, Notion UI timer, 저장 latency P95 인증을 변경하지 않는다. revision 정확성만 닫는다.
+이 작업은 export queue 자동 backoff, Notion UI timer, 저장 latency P95 인증을 변경하지 않는다. mark 실패 뒤 보존된 snapshot recovery artifact의 자동 cleanup도 범위 밖이다. 기존 파일 삭제 위험을 피하기 위한 의도적 LOW risk이며, 안전한 artifact identity와 사용자 선택 정책이 생길 때만 추가한다.

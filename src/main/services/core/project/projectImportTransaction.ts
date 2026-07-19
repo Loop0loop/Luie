@@ -276,8 +276,6 @@ export const applyProjectImportTransaction = async (
       updatedAt: now,
     }).run();
 
-    const createdProject = tx.select().from(project).where(eq(project.id, resolvedProjectId)).get()!;
-
     tx.insert(projectSettings).values({
       id: resolvedProjectId,
       projectId: resolvedProjectId,
@@ -359,16 +357,22 @@ export const applyProjectImportTransaction = async (
       validChapterIds: new Set(chaptersForCreate.map((chapterRow) => chapterRow.id)),
       payload: memoryCanonical,
     });
+    const createdProject = tx.select().from(project).where(eq(project.id, resolvedProjectId)).get()!;
     const normalizedProjectPath = resolvedPath || null;
     if (normalizedProjectPath) {
       const now2 = new Date().toISOString();
       tx.insert(projectAttachment).values({
         projectId: resolvedProjectId,
         projectPath: normalizedProjectPath,
+        exportedRevision: createdProject.revision,
         updatedAt: now2,
       }).onConflictDoUpdate({
         target: projectAttachment.projectId,
-        set: { projectPath: normalizedProjectPath, updatedAt: now2 },
+        set: {
+          projectPath: normalizedProjectPath,
+          exportedRevision: createdProject.revision,
+          updatedAt: now2,
+        },
       }).run();
     }
     return createdProject;

@@ -16,7 +16,7 @@ Luie의 사용자 입력을 즉시 화면에 반영하고, SQLite 커밋을 사�
 - `.luie` 체크포인트 실패를 SQLite 저장 실패처럼 취급하지 않되 사용자에게 숨기지 않는다.
 - 캐릭터 저장 개선을 공통 world entity 경계에서 해결해 용어, 사건, 세력에도 같은 정책을 적용한다.
 
-위 항목은 최종 목표 계약이다. 2026-07-19 재검증에서 강제 input flush와 실패 payload 보존이 아직 이 계약을 충족하지 못하는 것으로 확인됐다.
+위 항목은 최종 목표 계약이다. 2026-07-18 1차 구현과 당시 재검증에서는 강제 input flush와 실패 payload 보존이 이 계약을 충족하지 못했다. 이후 Task 8~16에서 두 경로를 해결했고, project-wide revision은 [2026-07-19 SSOT](./2026-07-19-project-wide-revision-design.md)의 Task 1~4에서 해결했다.
 
 ## 2. 현재 문제
 
@@ -62,7 +62,7 @@ BufferedInput 500ms debounce
 | `dirty` | renderer에만 반영된 변경이 있다. |
 | `saving` | SQLite mutation이 진행 중이다. |
 | `saved` | SQLite transaction이 커밋됐다. |
-| `error` | 커밋하지 못했으며 변경 payload를 유지해야 한다. 현재 구현은 이 계약을 충족하지 못한다. |
+| `error` | 커밋하지 못했으며 변경 payload를 유지해야 한다. 2026-07-18 1차 구현은 이 계약을 충족하지 못했으나 이후 Task 8~16에서 해결했다. |
 
 `.luie` 체크포인트 상태는 위 상태와 분리한다. SQLite 저장은 성공했지만 파일 export가 실패한 경우 `로컬 저장됨 · 프로젝트 파일 백업 실패`로 표현한다.
 
@@ -122,7 +122,7 @@ result:     { name: "김철수" }
 - 삭제 요청은 해당 entity의 pending update를 먼저 drain한 뒤 실행한다.
 - 이미 삭제된 entity update는 main service에서 명시적으로 실패한다.
 
-현재 구현은 성공 경로의 직렬화와 병합만 충족한다. CRUD IPC 실패가 `null`로 변환되면 실패 payload가 queue에서 제거되며, 삭제 전 pending update drain도 아직 연결되지 않았다.
+2026-07-18 1차 구현은 성공 경로의 직렬화와 병합만 충족했다. 당시 CRUD IPC 실패 payload 제거는 Task 13에서, 삭제 전 pending update drain 누락은 Task 15에서 해결됐다.
 
 ## 6. 입력 정책
 
@@ -139,9 +139,9 @@ result:     { name: "김철수" }
 
 `Project`에는 체크포인트 대상 mutation의 단조 증가 `revision`을, `ProjectAttachment`에는 마지막으로 export된 `exportedRevision`을 저장한다.
 
-1차 구현은 character, event, faction, term의 create/update/delete transaction에서 데이터 변경과 `Project.revision + 1`을 함께 수행한다. exporter는 시작 시 revision을 캡처하고, 파일 교체가 성공한 뒤에만 해당 값을 `exportedRevision`으로 기록한다.
+2026-07-18 1차 구현은 character, event, faction, term의 create/update/delete transaction에서만 데이터 변경과 `Project.revision + 1`을 함께 수행했다. exporter는 시작 시 revision을 캡처하고, 파일 교체가 성공한 뒤에만 해당 값을 `exportedRevision`으로 기록했다.
 
-따라서 현재 revision은 `.luie` 전체 payload의 freshness를 아직 대표하지 않는다. project-wide recovery 확대의 승인된 범위와 구현 계약은 `docs/superpowers/specs/2026-07-19-project-wide-revision-design.md`를 해당 주제의 SSOT로 사용한다.
+따라서 당시 revision은 `.luie` 전체 payload의 freshness를 대표하지 못했다. 현재는 [2026-07-19 project-wide revision SSOT](./2026-07-19-project-wide-revision-design.md)의 Task 1~4가 canonical payload 전체와 queue 밖 writer checkpoint까지 해결했으며, 해당 문서를 현재 계약의 SSOT로 사용한다.
 
 export 도중 새 mutation이 발생하면 `revision > exportedRevision`이 유지되므로 다음 export가 예약된다.
 
@@ -278,11 +278,12 @@ renderer input flush
 - Plot/Synopsis buffer의 timer 비의존 직접 persistence barrier
 - 실패한 world mutation payload 보존, latest merge, 다음 flush/enqueue 재시도
 - export `false`/throw dirty 보존, 다음 호출 재시도, manual/quit 실패 차단
+- package/snapshot import, attach/materialize, corrupt recovery의 captured revision checkpoint 수렴
 
-재검증에서 다음 차단 항목을 확인했다.
+당시 재검증에서 다음 차단 항목을 확인했다. 두 항목은 후속 Task에서 해결됐다.
 
-- **P1:** 삭제 전에 같은 entity의 pending update를 drain하지 않는다.
-- **P1:** revision이 world entity 4종에만 적용돼 `.luie` 전체 freshness를 대표하지 않는다.
+- **P1 (Task 15 해결):** 삭제 전에 같은 entity의 pending update를 drain하지 않았다.
+- **P1 (Project-wide revision Task 1~4 해결):** revision이 world entity 4종에만 적용돼 `.luie` 전체 freshness를 대표하지 않았다.
 
 Fresh verification (2026-07-19):
 
@@ -413,7 +414,7 @@ follow-up 검증은 focused 2 files/17 tests와 Task 8~12 회귀 10 files/66 tes
 ### 17.6 범위 제외
 
 - 실패한 world mutation의 자동 backoff
-- project-wide revision 확대
+- project-wide revision 확대 (당시 Task 12 범위 밖, 후속 Project-wide revision Task 1~4에서 해결)
 - renderer root 밖에서 quit listener를 소유하도록 lifecycle 구조 변경
 - 저장 상태 toast/UI 개편
 
@@ -513,4 +514,6 @@ preload autosave flush는 하나의 tail로 직렬화한다. 성공 batch 중 �
 
 Task 16 최종 root 회귀는 19 files/167 tests PASS이며, 실제 preload bridge/queue, 동일 field id project switch, pending retry ACK 뒤 late revisit load, component unmount detached retry, renderer late/foreign/malformed ACK, main reject/timeout 결정을 포함한다. Electron DB recovery 2 files/2 tests, 대상 ESLint와 diff-check도 PASS했다. 전체 타입체크는 Task 16 신규 오류 없이 사용자 dirty Binder baseline 1건만 남는다. 두 독립 재리뷰 verdict는 Production-ready, Critical/Important 0이다.
 
-여전히 범위 밖인 항목은 사용자 dirty `NotionDocumentView` timer, project-wide revision 확대, world mutation 자동 backoff, 저장 latency P95 및 95% confidence 인증이다. 따라서 Task 16 correctness 계약은 완료됐지만 저장 무결성 전체 로드맵의 이 후속 항목까지 완료됐다고 주장하지 않는다.
+Project-wide revision Task 4는 queue 밖 full writer도 `capture → atomic write → attachment → captured mark`로 수렴시켰다. package hydration은 final transaction revision을 attachment baseline으로 저장한다. snapshot writer 실패는 생성한 Project/Attachment를 rollback하고, write 성공 뒤 mark 실패도 DB state는 rollback하되 이미 작성한 `.luie`는 recovery artifact로 보존한다. 기존 파일일 가능성이 있어 자동 삭제하지 않는다. attach/materialize/corrupt recovery는 mark 실패를 성공으로 반환하지 않으며 capture 뒤 mutation은 더 높은 dirty revision으로 남는다. Task 4 계약 17 tests, Task 1~3 공유 focused 11 files/49 tests, Task 8~16 저장 회귀 19 files/167 tests가 PASS했다. exact Task 4 5-file 명령의 Task 4 관련 26 tests는 PASS이고 기존 대용량 world-entry baseline 5건만 남는다. 대상 ESLint/diff-check PASS, direct tsc6는 사용자 dirty Binder TS2322 한 건만 유지한다. 기준 commit은 Task 1 `8ae3d04c`, Task 2 `a028e5a7`, Task 3 `a171b90e`다.
+
+Task 16 당시 범위 밖이던 project-wide revision 확대는 후속 Task 1~4에서 해결됐다. 여전히 범위 밖인 항목은 사용자 dirty `NotionDocumentView` timer, world mutation 자동 backoff, 저장 latency P95 및 95% confidence 인증이다. 따라서 저장 무결성 전체 로드맵의 이 후속 항목까지 완료됐다고 주장하지 않는다.

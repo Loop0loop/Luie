@@ -28,6 +28,10 @@ import {
   setProjectAttachmentPath,
 } from "./projectAttachmentStore.js";
 import { readLuieImportCollections } from "./importOpen/index.js";
+import {
+  getProjectRevisionState,
+  markProjectExported,
+} from "./projectRevisionStore.js";
 
 type LoggerLike = LuieWriterLogger & {
   info: (message: string, details?: unknown) => void;
@@ -198,6 +202,7 @@ export const openLuieProjectPackage = async (input: {
       );
     }
     const recoveryPath = await resolveRecoveredPackagePath(resolvedPath);
+    const { revision } = await getProjectRevisionState(existingByPath.id);
     const exported = await input.exportRecoveredPackage(existingByPath.id, recoveryPath);
     if (!exported) {
       throw new ServiceError(
@@ -207,6 +212,7 @@ export const openLuieProjectPackage = async (input: {
       );
     }
     await setProjectAttachmentPath(existingByPath.id, recoveryPath);
+    await markProjectExported(existingByPath.id, revision);
     const project = await input.getProjectById(existingByPath.id);
     return {
       project,

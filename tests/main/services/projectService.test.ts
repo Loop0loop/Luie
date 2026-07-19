@@ -19,6 +19,7 @@ import {
   readLuieContainerEntry,
   writeLuieContainer,
 } from "../../../src/main/services/io/luieContainer.js";
+import * as projectRevisionStore from "../../../src/main/services/core/project/projectRevisionStore.js";
 import {
   makeExactMixedByteText,
   makeMixedNarrativeText,
@@ -94,10 +95,35 @@ describe("ProjectService", () => {
       description: "test",
       projectPath,
     });
+    const projectId = String(created.id);
+    const beforeRecovery = await projectRevisionStore.getProjectRevisionState(projectId);
+    const markSpy = vi.spyOn(projectRevisionStore, "markProjectExported");
+    const internalService = localProjectService as unknown as {
+      exportProjectPackageWithOptions: (
+        targetProjectId: string,
+        options: { targetPath?: string; worldSourcePath?: string | null },
+      ) => Promise<boolean>;
+    };
+    const exportProjectPackageWithOptions =
+      internalService.exportProjectPackageWithOptions.bind(localProjectService);
+    const exportSpy = vi
+      .spyOn(internalService, "exportProjectPackageWithOptions")
+      .mockImplementation(async (targetProjectId, options) => {
+        const now = new Date().toISOString();
+        await db.getClient().insert(schema.character).values({
+          id: `recovery-race-${projectId}`,
+          projectId,
+          name: "Recovery race",
+          createdAt: now,
+          updatedAt: now,
+        });
+        return await exportProjectPackageWithOptions(targetProjectId, options);
+      });
 
     await fs.writeFile(projectPath, "not-a-sqlite", "utf-8");
 
     const result = await localProjectService.openLuieProject(projectPath);
+    exportSpy.mockRestore();
     expect(result.recovery).toBe(true);
     expect(result.recoveryReason).toBe("corrupt");
     expect((result.project as { id: string }).id).toBe(created.id);
@@ -129,6 +155,14 @@ describe("ProjectService", () => {
       projectId: created.id,
       title: "Recovery Project",
     });
+    const revisionState = await projectRevisionStore.getProjectRevisionState(projectId);
+    expect(markSpy).toHaveBeenCalledWith(projectId, beforeRecovery.revision);
+    expect(revisionState).toEqual({
+      revision: beforeRecovery.revision + 1,
+      exportedRevision: beforeRecovery.revision,
+    });
+    await expect(projectRevisionStore.listProjectsNeedingExport()).resolves.toContain(projectId);
+    markSpy.mockRestore();
   });
 
   it("fails open when a legacy .luie directory package is attached without deleting existing db data", async () => {

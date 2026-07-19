@@ -16,6 +16,10 @@ import {
 } from "./projectPathPolicy.js";
 import { readLuieContainerEntry } from "../../io/luieContainer.js";
 import { LuieMetaSchema } from "./projectLuieSchemas.js";
+import {
+  getProjectRevisionState,
+  markProjectExported,
+} from "./projectRevisionStore.js";
 
 type LoggerLike = {
   info: (message: string, context?: unknown) => void;
@@ -109,6 +113,31 @@ const readLuieMetaForAttachment = async (
   return parsed.data;
 };
 
+const writeAndAttachCheckpoint = async <TProject>(input: {
+  projectId: string;
+  projectPath: string;
+  worldSourcePath: string | null;
+  failureMessage: string;
+  hooks: AttachmentHooks<TProject>;
+}): Promise<void> => {
+  const { revision } = await getProjectRevisionState(input.projectId);
+  const exported = await input.hooks.exportProjectPackageWithOptions(
+    input.projectId,
+    {
+      targetPath: input.projectPath,
+      worldSourcePath: input.worldSourcePath,
+    },
+  );
+  if (!exported) {
+    throw new ServiceError(ErrorCode.FS_WRITE_FAILED, input.failureMessage, {
+      projectId: input.projectId,
+      projectPath: input.projectPath,
+    });
+  }
+  await setProjectAttachmentPath(input.projectId, input.projectPath);
+  await markProjectExported(input.projectId, revision);
+};
+
 export const attachProjectPackageFile = async <TProject>(
   projectId: string,
   packagePath: string,
@@ -153,22 +182,13 @@ export const attachProjectPackageFile = async <TProject>(
       );
     }
 
-    const exported = await hooks.exportProjectPackageWithOptions(projectId, {
-      targetPath: normalizedPath,
+    await writeAndAttachCheckpoint({
+      projectId,
+      projectPath: normalizedPath,
       worldSourcePath: normalizedPath,
+      failureMessage: "Failed to attach .luie package",
+      hooks,
     });
-    if (!exported) {
-      throw new ServiceError(
-        ErrorCode.FS_WRITE_FAILED,
-        "Failed to attach .luie package",
-        {
-          projectId,
-          packagePath: normalizedPath,
-        },
-      );
-    }
-
-    await setProjectAttachmentPath(projectId, normalizedPath);
     hooks.logger.info("Project attached to existing .luie package", {
       projectId,
       packagePath: normalizedPath,
@@ -215,22 +235,13 @@ export const materializeProjectPackageFile = async <TProject>(
       );
     }
 
-    const exported = await hooks.exportProjectPackageWithOptions(projectId, {
-      targetPath: normalizedPath,
+    await writeAndAttachCheckpoint({
+      projectId,
+      projectPath: normalizedPath,
       worldSourcePath: currentAttachmentPath ?? null,
+      failureMessage: "Failed to materialize .luie package",
+      hooks,
     });
-    if (!exported) {
-      throw new ServiceError(
-        ErrorCode.FS_WRITE_FAILED,
-        "Failed to materialize .luie package",
-        {
-          projectId,
-          targetPath: normalizedPath,
-        },
-      );
-    }
-
-    await setProjectAttachmentPath(projectId, normalizedPath);
     hooks.logger.info("Project materialized into .luie package", {
       projectId,
       targetPath: normalizedPath,

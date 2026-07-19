@@ -4,6 +4,7 @@
 import os from "node:os";
 import path from "node:path";
 import * as fsp from "node:fs/promises";
+import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it } from "vitest";
 import { db } from "../../../src/main/database/index.js";
 import * as schema from "../../../src/main/database/schema/index.js";
@@ -55,13 +56,20 @@ describe("project save recovery", () => {
       createdAt: now,
       updatedAt: now,
     });
+    await db.getClient().insert(schema.chapterBody).values({
+      chapterId: "chapter-recovery",
+      content: "before",
+      contentHash: "before-hash",
+      updatedAt: now,
+    });
     const baseline = await getProjectRevisionState("project-recovery");
     await markProjectExported("project-recovery", baseline.revision);
 
-    await db.getClient().update(schema.chapter).set({
+    await db.getClient().update(schema.chapterBody).set({
       content: "latest",
+      contentHash: "latest-hash",
       updatedAt: "2026-07-19T01:00:00.000Z",
-    });
+    }).where(eq(schema.chapterBody.chapterId, "chapter-recovery"));
     const stale = await getProjectRevisionState("project-recovery");
     expect(stale).toEqual({
       revision: baseline.revision + 1,

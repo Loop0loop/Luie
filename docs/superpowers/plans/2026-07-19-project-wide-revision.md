@@ -279,7 +279,7 @@ Actual (2026-07-19): 초기 지정 3 files RED는 helper 부재, revision captur
 - attach/materialize/corrupt recovery: export 전 capture → full export → attachment path 설정 → captured mark.
 - capture 뒤 mutation은 더 큰 revision으로 남는다. mark 실패는 성공으로 반환하지 않는다.
 
-- [ ] **Step 1: RED 작성**
+- [x] **Step 1: RED 작성**
 
 - project import는 mock 호출 순서가 아니라 chapter+body를 포함한 실제 DB transaction 후 `revision === exportedRevision`을 검증한다.
 - snapshot import 성공은 revision 수렴, writer 실패와 mark 실패는 reject 후 Project/Attachment rollback을 각각 검증한다.
@@ -287,7 +287,7 @@ Actual (2026-07-19): 초기 지정 3 files RED는 helper 부재, revision captur
 - corrupt recovery real DB test는 recovery path 변경 뒤 `revision === exportedRevision`을 검증한다.
 - chapter recovery test는 package 본문뿐 아니라 flush 뒤 `revision === exportedRevision === stale.revision`을 검증한다.
 
-- [ ] **Step 2: RED 확인**
+- [x] **Step 2: RED 확인**
 
 Run:
 
@@ -297,24 +297,26 @@ ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron ./node_modules/vitest/vitest
 
 Expected: direct writer baseline/mark가 없어 FAIL.
 
-- [ ] **Step 3: 최소 GREEN**
+- [x] **Step 3: 최소 GREEN**
 
 - import transaction의 project select를 모든 canonical insert 뒤로 옮긴다.
 - snapshot import는 legacy `Project.projectPath` 대신 ProjectAttachment를 만들고 captured revision만 성공 후 mark한다.
 - attach/materialize 두 sibling flow는 같은 파일의 작은 local helper로 capture/export/attach/mark 순서를 공유한다.
 - corrupt recovery는 동일 순서를 직접 적용한다. renderer entry writer에는 mark를 추가하지 않는다.
 
-- [ ] **Step 4: 전체 저장 회귀와 정적 검증**
+- [x] **Step 4: 전체 저장 회귀와 정적 검증**
 
 Task 1~4 focused tests와 기존 Task 8~16 저장 회귀를 Electron-as-Node로 실행한다. 대상 ESLint, `pnpm run typecheck`, `git diff --check`를 실행한다. 사용자 dirty TS2322 외 신규 오류가 없어야 한다.
 
-- [ ] **Step 5: 최종 독립 검토·SSOT·커밋**
+- [x] **Step 5: 최종 독립 재리뷰**
 
-코드, 테스트, SSOT 세 subagent가 Critical/Important 0인지 검토한다. 실제 테스트 수와 verdict, Task 1~3 commit hash를 문서에 기록한다. Task 4 자신의 hash는 기록하지 않는다. 사용자 승인 후 정확한 Task 4 파일만 커밋한다.
+구현과 amend 뒤 root 코드·QA·SSOT 3중 재리뷰가 모두 통과했다. 실제 테스트 수와 verdict를 확정했으며 Task 4 자신의 hash는 기록하지 않는다.
 
 ```text
 fix(storage): converge direct revision checkpoints
 ```
+
+Actual (2026-07-19): 기준 commit은 Task 1 `8ae3d04c`, Task 2 `a028e5a7`, Task 3 `a171b90e`다. RED exact 5-file 명령은 31 tests 중 Task 4 계약 누락 7건과 기존 대용량 world-entry baseline 5건이 실패했다. GREEN은 package hydration final revision baseline, snapshot attachment/write/mark rollback, attach/materialize capture order와 failure mark 금지, corrupt recovery 수렴, writer 중 concurrent mutation dirty 보존을 고정한 Task 4 계약 17 tests PASS다. exact 명령은 Task 4 관련 26 tests PASS이며 동일 기존 baseline 5건만 남았다. follow-up mutation RED는 snapshot mark-before-write 3건과 corrupt capture-after-export 1건을 검출했고 원복 GREEN focused 2 files/5 tests PASS다. snapshot mark 실패는 DB state를 rollback하고 작성된 recovery artifact를 경로와 함께 logging하며 보존한다. Task 1~3와 공유 recovery 11 files/49 tests, Task 8~16 Electron-as-Node 저장 회귀 19 files/167 tests PASS다. 대상 ESLint/diff-check PASS, direct `tsc6 --noEmit`은 사용자 dirty Binder TS2322 한 건만 유지한다. pnpm wrapper는 무출력 장기 대기로 중단했다. 구현·commit·follow-up 완료 뒤 root 코드 리뷰는 Production-ready, QA는 PASS, SSOT는 Approved로 모두 Critical/Important 0이다.
 
 ---
 
@@ -325,6 +327,8 @@ fix(storage): converge direct revision checkpoints
 - canonical mutation/rollback/project 이동이 revision과 원자적이다.
 - 최초/부분 trigger 설치 backfill은 정확히 한 번 실행된다.
 - sync와 모든 queue 밖 full writer는 payload와 같은 captured revision만 mark한다.
-- write/mark 실패와 concurrent mutation은 dirty 상태를 유지한다.
+- 기존 project writer의 write/mark 실패는 성공을 반환하지 않고 attachment baseline을 전진시키지 않아 dirty 상태를 유지한다.
+- 신규 snapshot import의 write/mark 실패는 성공을 반환하지 않고 생성한 Project/Attachment를 rollback한다. write 성공 뒤 mark 실패의 output `.luie`는 recovery artifact로 보존한다.
+- capture 뒤 concurrent mutation은 더 높은 dirty revision으로 남는다.
 - 파생·로컬 table과 renderer entry mirror는 revision checkpoint를 오염시키지 않는다.
 - 사용자 dirty UI 파일은 diff/commit에 포함되지 않는다.
