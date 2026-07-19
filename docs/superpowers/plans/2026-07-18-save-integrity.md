@@ -1859,7 +1859,7 @@ Final review follow-up (2026-07-19): RED는 1 file/8 tests 중 1건이 앞선 se
 
 ### Task 18: world mutation bounded backoff
 
-**Status:** 계획 확정 — 구현 전 TDD RED 대기
+**Status:** 완료 — 독립 코드/테스트 재리뷰 Production-ready
 
 **Files:**
 
@@ -1870,6 +1870,7 @@ Final review follow-up (2026-07-19): RED는 1 file/8 tests 중 1건이 앞선 se
 - Modify: `src/main/services/features/project/projectService.ts`
 - Modify: `tests/main/services/projectService.immediateDurability.test.ts`
 - Modify: `tests/main/services/projectExportQueue.test.ts` (dirty retention 회귀가 기존 테스트로 부족할 때만)
+- Create: `tests/renderer/services/worldDocumentNoRetry.test.ts`
 - Modify: 저장 SSOT/plan/progress와 Task 18 report
 
 **Interfaces:**
@@ -1881,31 +1882,35 @@ Final review follow-up (2026-07-19): RED는 1 file/8 tests 중 1건이 앞선 se
 - Changes: immediate export failure의 `${reason}:retry` 자동 schedule은 제거하고 dirty payload/revision과 오류 전파를 유지한다.
 - Excludes: graph/replica/document buffer backoff, 범용 retry abstraction, error taxonomy/IPC 재설계.
 
-- [ ] **Step 1: fake timer RED — exact delay와 exhaustion**
+- [x] **Step 1: fake timer RED — exact delay와 exhaustion**
   - 최초 실패 + 250/500/1000ms 자동 3회, 총 4회 상한을 고정한다.
   - exhaustion 뒤 pending/global active count 1과 latest payload 보존을 검증한다.
-- [ ] **Step 2: fake timer RED — foreground interrupt와 latest merge**
+- [x] **Step 2: fake timer RED — foreground interrupt와 latest merge**
   - 예약 중 새 enqueue와 explicit/global flush가 timer를 취소하고 즉시 실행하는지 검증한다.
   - retained scalar/`attributesPatch`와 newer patch의 latest merge를 검증한다.
   - timer와 foreground 경합에서 concurrent execute 최대 1을 검증한다.
   - 새 patch만 retry budget을 초기화하고 explicit flush는 budget을 초기화하지 않음을 검증한다.
-- [ ] **Step 3: opt-in queue policy 최소 구현**
+- [x] **Step 3: opt-in queue policy 최소 구현**
   - generic queue 기본 동작을 유지하고 retry delay가 전달된 queue만 timer chain을 사용한다.
   - success/idle cleanup과 background rejection consumption을 구현한다.
-- [ ] **Step 4: 실제 world store ACK/reconciliation RED/GREEN**
+- [x] **Step 4: 실제 world store ACK/reconciliation RED/GREEN**
   - waiter 없는 timer retry 성공이 store/graph/optimistic generation과 entity queue map을 정리하는지 검증한다.
   - manual/quit global flush 실패는 reject하고 payload는 남는지 검증한다.
-- [ ] **Step 5: export 비적용 회귀**
+- [x] **Step 5: export 비적용 회귀**
   - immediate export `false`/throw 뒤 `${reason}:retry` schedule이 없음을 RED/GREEN으로 고정한다.
   - queue dirty 상태와 manual/quit 오류 전파는 유지하고 fake timer만으로 `runExport`가 다시 호출되지 않음을 증명한다.
   - persisted revision drift의 startup recovery 1회는 유지하되 실패 뒤 같은 세션의 timer chain이 생기지 않음을 검증한다.
   - graph/replica/document export 오류가 entity queue retry를 만들지 않음을 확인한다.
-- [ ] **Step 6: focused/저장 회귀/정적 검증**
+- [x] **Step 6: focused/저장 회귀/정적 검증**
   - focused queue/store/export 테스트를 실행한다.
   - Task 8~18 저장 회귀, 대상 ESLint, `git diff --check`, direct typecheck baseline을 확인한다.
-- [ ] **Step 7: SSOT/report 동기화, 독립 리뷰, 단일 커밋**
+- [x] **Step 7: SSOT/report 동기화, 독립 리뷰, 단일 커밋**
   - 코드와 문서 수치가 일치하는지 독립 검토한다.
   - Critical/Important 0 뒤 `fix(storage): retry world mutations with backoff` 한 커밋으로 닫는다.
+
+Actual (2026-07-20): 초기 정책 RED는 3 files/38 tests 중 11 FAIL·27 PASS였고 exact `0/250/750/1750ms`, explicit flush budget 유지, newer generation reset, latest nested merge, waiter-less ACK, delete stale timer, export false/throw 무자동 재시도를 고정했다. 최소 구현 뒤 review가 성공 ACK continuation strand, 실패 continuation, auto retry 재실패 중 newer enqueue 지연, 후속 ACK 전 flush 조기 완료를 발견했고 각 항목을 production 변경 전 단일 RED로 재현했다. 최종 queue는 batch 시작 시 foreground 요청을 소비하고 실행 중 도착한 요청만 실패 후 즉시 drain하며, flush는 queue-empty까지 새 in-flight generation도 await한다.
+
+최종 focused 4 files/44 tests, export/startup 포함 인접 회귀 6 files/58 tests, Task 8~18 저장 회귀 21 files/194 tests PASS다. 대상 ESLint와 `git diff --check`도 PASS했다. direct `tsc6 --noEmit`은 Task 18 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 한 건만 유지한다. 독립 코드 리뷰는 Production-ready, 테스트 리뷰는 Approved이며 두 리뷰 모두 Critical/Important/Minor 0이다.
 
 ---
 
@@ -1952,16 +1957,16 @@ Final review follow-up (2026-07-19): RED는 1 file/8 tests 중 1건이 앞선 se
 4. **Shared settings:** `settings.ts`(506)를 settings 계약 축으로 분리하고 기존 파일은 호환 barrel로 유지한다.
 5. **Memory benchmark:** `memoryWriterTaskBenchmark.ts`(524)를 scenario/measurement/reporting 책임으로 분리한다.
 6. **Model runtime:** `modelRuntimeFactory.ts`(510)를 provider decision과 runtime construction 책임으로 분리한다.
-7. **Project service:** `projectService.ts`(528)를 마지막에 분리하며 public class/singleton과 export queue facade를 유지한다.
+7. **Project service:** `projectService.ts`(526)를 마지막에 분리하며 public class/singleton과 export queue facade를 유지한다.
 
 각 파일은 기존 인접 directory의 `index.ts`/facade/helper 패턴을 따른다. import 호환을 위해 원래 파일은 얇은 facade 또는 barrel로 유지하고, domain responsibility 단위로만 분리한다. 위 번호 하나마다 targeted characterization test → 최소 이동 → typecheck/lint/architecture check → 독립 review → 한 Task/한 커밋 순서를 지킨다.
 
 ### 20.3 Test Task batches — behavior별 suite 분리
 
-2026-07-20 baseline은 18개다. **기존 대형 test 파일 하나를 원자 Task/commit 하나**로 고정하고 그 파일 내부를 behavior/context별 suite와 순수 fixture builder로 분리한다. 서로 다른 기존 대형 test 파일을 같은 커밋에 묶지 않는다. 파일 크기만 줄이려고 공용 mutable fixture를 만들지 않는다.
+2026-07-20 Task 18 이후 baseline은 19개다. **기존 대형 test 파일 하나를 원자 Task/commit 하나**로 고정하고 그 파일 내부를 behavior/context별 suite와 순수 fixture builder로 분리한다. 서로 다른 기존 대형 test 파일을 같은 커밋에 묶지 않는다. 파일 크기만 줄이려고 공용 mutable fixture를 만들지 않는다.
 
 - sync: `syncService.test.ts`(1243), `syncMemoryCanonicalApply.test.ts`(861)
-- world/renderer: `worldBufferedPersistence.test.tsx`(1170), `characterStoreMutationLock.test.ts`(667), `memoStore.test.ts`(568), `worldPackageStorage.test.ts`(535)
+- world/renderer: `worldBufferedPersistence.test.tsx`(1170), `characterStoreMutationLock.test.ts`(762), `worldEntityMutationQueue.test.ts`(719), `memoStore.test.ts`(568), `worldPackageStorage.test.ts`(535)
 - memory: `memoryCanonicalPackage.test.ts`(1051), `memoryBuildJobControl.test.ts`(753), `memoryWriterTaskBenchmark.test.ts`(694), `memoryReviewBacklogReport.test.ts`(585), `memoryEntityReviewService.test.ts`(556), `settingsMemoryBuildProgress.test.ts`(546), `memoryNarrativeSummaryRunner.test.ts`(533)
 - lifecycle/project: `appOperationalScenarios.test.tsx`(702), `projectExportEngine.test.ts`(630), `luieContainer.extreme.test.ts`(578), `luieContainer.test.ts`(570), `projectService.test.ts`(546)
 

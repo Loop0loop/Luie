@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useCharacterStore } from "../../../src/renderer/src/features/research/stores/characterStore.js";
 import { useProjectStore } from "../../../src/renderer/src/features/project/stores/projectStore.js";
 import { useWorldBuildingStore } from "../../../src/renderer/src/features/research/stores/worldBuildingStore.js";
@@ -101,16 +101,24 @@ describe("characterStore mutation locking", () => {
     resetStore(useProjectStore as unknown as ResettableStore);
     resetStore(useWorldBuildingStore as unknown as ResettableStore);
 
-    mockedApi.character.getAll.mockResolvedValue({ success: true, data: [] });
-    mockedApi.character.get.mockResolvedValue({
+    mockedApi.character.getAll
+      .mockReset()
+      .mockResolvedValue({ success: true, data: [] });
+    mockedApi.character.get.mockReset().mockResolvedValue({
       success: true,
       data: null,
     });
-    mockedApi.character.update.mockResolvedValue({
+    mockedApi.character.update.mockReset().mockResolvedValue({
       success: true,
       data: null,
     });
-    mockedApi.character.delete.mockResolvedValue({ success: true });
+    mockedApi.character.delete
+      .mockReset()
+      .mockResolvedValue({ success: true });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("persists an update queued while another update is in flight", async () => {
@@ -321,6 +329,62 @@ describe("characterStore mutation locking", () => {
     expect(getPendingWorldEntityMutationCount()).toBe(0);
   });
 
+  it("reconciles a waiter-less background retry ACK and clears the queue", async () => {
+    vi.useFakeTimers();
+    const character = createCharacter("char-background-retry");
+    const retryAck = deferred<IPCResponse<Character>>();
+    seedCharacters([character]);
+    mockedApi.character.update
+      .mockResolvedValueOnce({
+        success: false,
+        error: { message: "temporary failure" },
+      })
+      .mockReturnValueOnce(retryAck.promise)
+      .mockResolvedValueOnce({
+        success: true,
+        data: { ...character, name: "Latest", description: "Newest" },
+      });
+
+    await expect(
+      useCharacterStore.getState().updateCharacter({
+        id: character.id,
+        name: "Retry A",
+      }),
+    ).rejects.toThrow("temporary failure");
+    expect(getPendingWorldEntityMutationCount()).toBe(1);
+
+    await vi.advanceTimersByTimeAsync(250);
+    const newerSave = useCharacterStore.getState().updateCharacter({
+      id: character.id,
+      name: "Latest",
+      description: "Newest",
+    });
+    expect(mockedApi.character.update).toHaveBeenCalledTimes(2);
+    expect(useCharacterStore.getState().currentItem).toMatchObject({
+      name: "Latest",
+      description: "Newest",
+    });
+
+    retryAck.resolve({
+      success: true,
+      data: { ...character, name: "Retry A" },
+    });
+    await newerSave;
+
+    expect(mockedApi.character.update).toHaveBeenCalledTimes(3);
+    expect(useCharacterStore.getState().currentItem).toMatchObject({
+      name: "Latest",
+      description: "Newest",
+    });
+    expect(useWorldBuildingStore.getState().graphData?.nodes[0]).toMatchObject({
+      name: "Latest",
+      description: "Newest",
+      positionX: 10,
+      positionY: 20,
+    });
+    expect(getPendingWorldEntityMutationCount()).toBe(0);
+  });
+
   it("preserves a newer optimistic entity when an older retry ACK becomes stale", async () => {
     const retryAck = deferred<IPCResponse<Character>>();
     const character: Character = {
@@ -517,6 +581,37 @@ describe("characterStore mutation locking", () => {
     expect(nextDeleteResult).toBe(true);
     expect(mockedApi.character.update).toHaveBeenCalledTimes(3);
     expect(mockedApi.character.delete).toHaveBeenCalledOnce();
+    expect(getPendingWorldEntityMutationCount()).toBe(0);
+  });
+
+  it("cancels a stale update retry timer before delete drains", async () => {
+    vi.useFakeTimers();
+    const character = createCharacter("char-delete-timer");
+    seedCharacters([character]);
+    mockedApi.character.update
+      .mockResolvedValueOnce({
+        success: false,
+        error: { message: "initial failed" },
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        data: { ...character, name: "Saved before delete" },
+      });
+
+    await expect(
+      useCharacterStore.getState().updateCharacter({
+        id: character.id,
+        name: "Saved before delete",
+      }),
+    ).rejects.toThrow("initial failed");
+    await expect(
+      useCharacterStore.getState().deleteCharacter(character.id),
+    ).resolves.toBe(true);
+
+    expect(mockedApi.character.update).toHaveBeenCalledTimes(2);
+    expect(mockedApi.character.delete).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(mockedApi.character.update).toHaveBeenCalledTimes(2);
     expect(getPendingWorldEntityMutationCount()).toBe(0);
   });
 

@@ -600,11 +600,21 @@ production 변경 전에 fake timer 기반 RED로 다음을 고정한다.
 
 Task 18은 focused RED/GREEN, Task 8~18 저장 회귀, 대상 ESLint, diff-check, typecheck baseline, 독립 코드/테스트 리뷰를 모두 통과한 뒤에만 완료로 기록한다.
 
+### 22.6 Task 18 구현 및 검증 결과
+
+`createLatestMutationQueue`는 opt-in `retryDelaysMs`와 retry timer/index를 소유한다. character/event/faction/term update factory만 `[250, 500, 1000]`을 전달하고 generic queue는 기존 foreground-only 동작을 유지한다. foreground enqueue는 retry timer를 취소하고 budget을 새 generation으로 초기화하지만 explicit flush는 budget을 초기화하지 않는다.
+
+foreground 요청은 batch 시작 시 소비한다. 실행 중 새 요청이 들어오고 현재 auto retry가 실패하면 다음 timer를 예약하지 않고 retained+newer patch를 즉시 단일-flight로 drain한다. 성공/실패 waiter continuation에서 enqueue가 재진입해도 pending을 놓치지 않는다. `flush()`는 `inFlight || pending`이 없어질 때까지 새 in-flight generation도 await하는 queue-empty barrier이며, 현재 attempt 실패는 즉시 throw하므로 같은 flush 호출에서 retained 실패 batch를 반복 실행하지 않는다.
+
+`ProjectService.attemptImmediatePackageExport`의 `false`/throw 뒤 `${reason}:retry` schedule은 제거했다. export queue dirty revision, explicit/manual/quit flush, 다음 앱 시작의 stale revision recovery 1회는 유지한다. 실제 graph `persistGraphDocument`와 replica scrap `saveReplicaScrapMemos`도 package export 오류 뒤 60초 timer 진행에서 재호출되지 않는다.
+
+TDD는 초기 정책 RED 3 files/38 tests 중 11 FAIL·27 PASS에서 시작했다. review follow-up은 성공 ACK continuation strand, 실패 catch continuation, in-flight auto retry 재실패 중 newer enqueue, 후속 ACK 전 flush 조기 완료를 각각 production 변경 전 단일 FAIL로 재현했다. 최종 focused는 4 files/44 tests, export/startup 포함 인접 회귀는 6 files/58 tests, Task 8~18 저장 회귀는 21 files/194 tests PASS다. 대상 ESLint와 diff-check도 PASS했다. direct `tsc6 --noEmit`은 Task 18 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 한 건만 유지한다. 독립 코드·테스트 최종 재리뷰는 모두 Production-ready/Approved이며 Critical/Important/Minor 0이다.
+
 ## 23. 남은 저장 무결성 로드맵
 
 순서는 고정한다.
 
-1. **Task 18 — world mutation bounded backoff:** 본 문서 22절을 TDD로 구현한다.
+1. **Task 18 — world mutation bounded backoff:** 완료. 본 문서 22절의 제한 재시도와 export 무자동 재시도를 구현했다.
 2. **Task 19 — 저장 latency P95/95% 신뢰 인증:** 실제 SQLite ACK 경계와 manual flush 경계를 반복 측정하고 raw sample, percentile 계산, 환경 정보를 artifact로 남긴다. mock burst 통과를 latency 인증으로 대체하지 않는다.
 3. **Phase 20 — SPA + 500 LOC 모듈화:** 저장 로직 완료 뒤 behavior-neutral 구조 정리를 수행한다. 이 Phase에서 SPA는 runtime의 Single Page Application이 아니라 **Single Pattern Architecture**, 즉 레이어마다 하나의 정식 의존 흐름만 허용한다는 뜻으로 사용한다.
 

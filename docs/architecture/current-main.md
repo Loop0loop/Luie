@@ -186,7 +186,7 @@ index.ts
 
 | File                                                                       | LOC | Phase 20 분리 기준                                            |
 | -------------------------------------------------------------------------- | --: | ------------------------------------------------------------- |
-| `src/main/services/features/project/projectService.ts`                     | 528 | public facade를 유지하고 project 책임별 helper/service로 분리 |
+| `src/main/services/features/project/projectService.ts`                     | 526 | public facade를 유지하고 project 책임별 helper/service로 분리 |
 | `src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.ts` | 524 | benchmark scenario, measurement, reporting 책임 분리          |
 | `src/main/services/features/llm/modelRuntimeFactory.ts`                    | 510 | provider selection과 runtime construction 책임 분리           |
 

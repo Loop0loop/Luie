@@ -240,6 +240,7 @@ export function createWorldEntityCRUDStore<
       if (!queue) {
         const createdQueue = createLatestMutationQueue<UpdateInput, T>({
           merge: mergeUpdateInputs,
+          retryDelaysMs: [250, 500, 1000],
           execute: async (patch) => {
             const updatesAtStart = optimisticUpdates.get(patch.id) ?? [];
             const coveredGeneration =

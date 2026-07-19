@@ -420,8 +420,7 @@ export class ProjectService {
             projectPath,
           },
         );
-        this.schedulePackageExport(projectId, `${reason}:retry`);
-        logger.warn("Immediate project package export returned no output; queued retry", {
+        logger.warn("Immediate project package export returned no output", {
           projectId,
           reason,
           projectPath,
@@ -433,8 +432,7 @@ export class ProjectService {
       }
       return { exported: true };
     } catch (error) {
-      this.schedulePackageExport(projectId, `${reason}:retry`);
-      logger.warn("Immediate project package export failed; queued retry", {
+      logger.warn("Immediate project package export failed", {
         projectId,
         reason,
         error,

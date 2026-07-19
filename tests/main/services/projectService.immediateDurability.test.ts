@@ -2,7 +2,7 @@
 // PROVES: immediate-export policy branching and retry decisions
 // DOES_NOT_PROVE: actual .luie file durability on disk
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocked = vi.hoisted(() => ({
   attachmentPath: vi.fn(
@@ -14,6 +14,7 @@ const mocked = vi.hoisted(() => ({
     exportedRevision: 0,
   })),
   markProjectExported: vi.fn(async () => undefined),
+  listProjectsNeedingExport: vi.fn(async (): Promise<string[]> => []),
 }));
 
 vi.mock(
@@ -28,7 +29,7 @@ vi.mock(
   () => ({
     getProjectRevisionState: mocked.getProjectRevisionState,
     markProjectExported: mocked.markProjectExported,
-    listProjectsNeedingExport: vi.fn(async () => []),
+    listProjectsNeedingExport: mocked.listProjectsNeedingExport,
   }),
 );
 
@@ -44,12 +45,20 @@ import { ProjectService } from "../../../src/main/services/features/project/proj
 describe("ProjectService immediate package durability", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocked.attachmentPath.mockResolvedValue("/tmp/project-1.luie");
-    mocked.exportProjectPackage.mockResolvedValue(true);
-    mocked.getProjectRevisionState.mockResolvedValue({
+    mocked.attachmentPath
+      .mockReset()
+      .mockResolvedValue("/tmp/project-1.luie");
+    mocked.exportProjectPackage.mockReset().mockResolvedValue(true);
+    mocked.getProjectRevisionState.mockReset().mockResolvedValue({
       revision: 1,
       exportedRevision: 0,
     });
+    mocked.markProjectExported.mockReset().mockResolvedValue(undefined);
+    mocked.listProjectsNeedingExport.mockReset().mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("returns exported=true without queueing a retry when immediate export succeeds", async () => {
@@ -69,13 +78,14 @@ describe("ProjectService immediate package durability", () => {
     expect(scheduleSpy).not.toHaveBeenCalled();
   });
 
-  it("queues a retry when immediate export fails", async () => {
+  it("does not queue a timer retry when immediate export throws", async () => {
+    vi.useFakeTimers();
     const service = new ProjectService();
     const diskError = new Error("disk failure");
-    vi.spyOn(service, "exportProjectPackageNow").mockRejectedValue(diskError);
-    const scheduleSpy = vi
-      .spyOn(service, "schedulePackageExport")
-      .mockImplementation(() => {});
+    mocked.exportProjectPackage
+      .mockRejectedValueOnce(diskError)
+      .mockResolvedValueOnce(true);
+    const scheduleSpy = vi.spyOn(service, "schedulePackageExport");
 
     const result = await service.attemptImmediatePackageExport(
       "project-1",
@@ -84,12 +94,43 @@ describe("ProjectService immediate package durability", () => {
 
     expect(result).toMatchObject({
       exported: false,
-      error: diskError,
+      error: expect.any(Error),
     });
-    expect(scheduleSpy).toHaveBeenCalledWith(
-      "project-1",
-      "chapter:update:retry",
-    );
+    expect(result.error).toBe(diskError);
+    expect(scheduleSpy).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(mocked.exportProjectPackage).toHaveBeenCalledOnce();
+
+    await expect(service.flushPendingExports()).resolves.toMatchObject({
+      total: 1,
+      flushed: 1,
+      failed: 0,
+    });
+    expect(mocked.exportProjectPackage).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not queue a timer retry when immediate export returns false", async () => {
+    vi.useFakeTimers();
+    const service = new ProjectService();
+    mocked.exportProjectPackage
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+    const scheduleSpy = vi.spyOn(service, "schedulePackageExport");
+
+    await expect(
+      service.attemptImmediatePackageExport("project-1", "chapter:update"),
+    ).resolves.toMatchObject({ exported: false, error: expect.any(Error) });
+
+    expect(scheduleSpy).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(mocked.exportProjectPackage).toHaveBeenCalledOnce();
+
+    await expect(service.flushPendingExports()).resolves.toMatchObject({
+      total: 1,
+      flushed: 1,
+      failed: 0,
+    });
+    expect(mocked.exportProjectPackage).toHaveBeenCalledTimes(2);
   });
 
   it("throws when strict immediate export is required and export fails", async () => {
@@ -107,10 +148,7 @@ describe("ProjectService immediate package durability", () => {
       message: "Failed to persist canonical .luie after mutation",
     });
 
-    expect(scheduleSpy).toHaveBeenCalledWith(
-      "project-1",
-      "manual-save:retry",
-    );
+    expect(scheduleSpy).not.toHaveBeenCalled();
   });
 
   it("routes mutation persistence through centralized policy API", async () => {
@@ -187,6 +225,33 @@ describe("ProjectService immediate package durability", () => {
       failed: 0,
     });
     expect(mocked.exportProjectPackage).toHaveBeenCalledOnce();
+    expect(mocked.markProjectExported).toHaveBeenCalledWith("project-1", 1);
+  });
+
+  it("retries failed startup recovery only through an explicit flush", async () => {
+    vi.useFakeTimers();
+    mocked.listProjectsNeedingExport.mockResolvedValue(["project-1"]);
+    mocked.exportProjectPackage
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+    const service = new ProjectService();
+
+    await expect(service.scheduleStalePackageExports()).resolves.toBe(1);
+    expect(mocked.exportProjectPackage).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(1_500);
+    expect(mocked.exportProjectPackage).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(mocked.exportProjectPackage).toHaveBeenCalledOnce();
+    expect(mocked.markProjectExported).not.toHaveBeenCalled();
+
+    await expect(service.flushPendingExports()).resolves.toMatchObject({
+      total: 1,
+      flushed: 1,
+      failed: 0,
+      timedOut: false,
+    });
+    expect(mocked.exportProjectPackage).toHaveBeenCalledTimes(2);
     expect(mocked.markProjectExported).toHaveBeenCalledWith("project-1", 1);
   });
 

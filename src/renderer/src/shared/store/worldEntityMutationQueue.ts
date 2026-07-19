@@ -15,6 +15,7 @@ export function createLatestMutationQueue<P, R>(options: {
   merge: (left: P | null, right: P) => P;
   execute: (patch: P) => Promise<R | null>;
   onIdle?: () => void;
+  retryDelaysMs?: readonly number[];
 }): LatestMutationQueue<P, R> {
   type Waiter = {
     resolve: (result: R | null) => void;
@@ -26,6 +27,15 @@ export function createLatestMutationQueue<P, R>(options: {
   let inFlight: Promise<void> | null = null;
   let unsettledCount = 0;
   let retainedWork = false;
+  let foregroundDrainRequested = false;
+  let retryTimer: ReturnType<typeof setTimeout> | null = null;
+  let retryIndex = 0;
+
+  const cancelRetryTimer = (): void => {
+    if (retryTimer === null) return;
+    clearTimeout(retryTimer);
+    retryTimer = null;
+  };
 
   const syncActiveState = (): void => {
     if (pending || inFlight || unsettledCount > 0) {
@@ -46,32 +56,55 @@ export function createLatestMutationQueue<P, R>(options: {
       : { patch: batch.patch, waiters: [] };
   };
 
+  const scheduleRetry = (): void => {
+    const delay = options.retryDelaysMs?.[retryIndex];
+    if (delay === undefined || retryTimer !== null || !pending) return;
+    retryTimer = setTimeout(() => {
+      retryTimer = null;
+      retryIndex += 1;
+      void drain().catch(() => undefined);
+    }, delay);
+  };
+
   const drain = (): Promise<void> => {
     if (inFlight) return inFlight;
 
     const run = async (): Promise<void> => {
       const batch = pending;
       if (!batch) return;
+      foregroundDrainRequested = false;
       pending = null;
       try {
         const result = await options.execute(batch.patch);
         if (result === null) {
           throw new Error("World entity mutation returned no acknowledgement.");
         }
+        cancelRetryTimer();
+        retryIndex = 0;
         retainedWork = false;
         batch.waiters.forEach((waiter) => waiter.resolve(result));
       } catch (error) {
         retainedWork = true;
         retainFailedBatch(batch);
         batch.waiters.forEach((waiter) => waiter.reject(error));
+        if (!foregroundDrainRequested) scheduleRetry();
         throw error;
       }
       await run();
     };
 
     inFlight = run().finally(() => {
+      const shouldContinue = Boolean(
+        pending &&
+          retryTimer === null &&
+          (!retainedWork || foregroundDrainRequested),
+      );
       inFlight = null;
       syncActiveState();
+
+      if (shouldContinue) {
+        void drain().catch(() => undefined);
+      }
     });
     return inFlight;
   };
@@ -79,6 +112,9 @@ export function createLatestMutationQueue<P, R>(options: {
   const queue: LatestMutationQueue<P, R> = {
     enqueue: (patch) =>
       new Promise<R | null>((resolve, reject) => {
+        if (retainedWork) foregroundDrainRequested = true;
+        cancelRetryTimer();
+        retryIndex = 0;
         unsettledCount += 1;
         const waiter: Waiter = {
           resolve: (result) => {
@@ -102,8 +138,14 @@ export function createLatestMutationQueue<P, R>(options: {
         void drain().catch(() => undefined);
       }),
     flush: async () => {
-      if (inFlight) await inFlight;
-      if (pending) await drain();
+      cancelRetryTimer();
+      const flushUntilIdle = async (): Promise<void> => {
+        const current = inFlight ?? (pending ? drain() : null);
+        if (!current) return;
+        await current;
+        return flushUntilIdle();
+      };
+      await flushUntilIdle();
     },
     pendingCount: () => Math.max(unsettledCount, retainedWork ? 1 : 0),
   };

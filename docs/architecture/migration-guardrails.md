@@ -88,7 +88,7 @@ src/shared/
 
 사실(2026-07-20 기준):
 
-현재 `scripts/check-source-loc.mjs` 기준 hand-written production source를 재계수하면 `src` 9개, 별도 TS/TSX 계수 기준 `tests` 18개가 500 LOC를 초과합니다. 세부 경로와 batch는 `docs/superpowers/plans/2026-07-18-save-integrity.md`의 Phase 20이 실행 SSOT입니다. `src` 초과는 다음과 같습니다. script는 line terminator 기준이라 `wc -l`보다 1 크게 계산될 수 있으며 gate 수치를 정본으로 사용합니다.
+현재 `scripts/check-source-loc.mjs` 기준 hand-written production source를 재계수하면 `src` 9개, 별도 TS/TSX 계수 기준 `tests` 19개가 500 LOC를 초과합니다. 세부 경로와 batch는 `docs/superpowers/plans/2026-07-18-save-integrity.md`의 Phase 20이 실행 SSOT입니다. `src` 초과는 다음과 같습니다. script는 line terminator 기준이라 `wc -l`보다 1 크게 계산될 수 있으며 gate 수치를 정본으로 사용합니다.
 
 | 경로                                                                       | LOC |
 | -------------------------------------------------------------------------- | --: |
@@ -96,13 +96,13 @@ src/shared/
 | `src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts`                | 538 |
 | `src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts`                | 538 |
 | `src/renderer/src/styles/components/editor.css`                            | 532 |
-| `src/main/services/features/project/projectService.ts`                     | 528 |
+| `src/main/services/features/project/projectService.ts`                     | 526 |
 | `src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.ts` | 524 |
 | `src/main/services/features/llm/modelRuntimeFactory.ts`                    | 510 |
 | `src/renderer/src/features/research/components/AnalysisSection.tsx`        | 507 |
 | `src/shared/types/settings.ts`                                             | 506 |
 
-`tests` 초과 18개는 sync 2, world/renderer 4, memory 7, lifecycle/project 5개로 분류한다. 같은 파일이 여러 분류에 중복되지 않는다. 실행 전 자동 계수로 baseline drift가 없는지 확인하는 것이 Phase 20.1의 첫 문서 gate다.
+`tests` 초과 19개는 sync 2, world/renderer 5, memory 7, lifecycle/project 5개로 분류한다. 같은 파일이 여러 분류에 중복되지 않는다. 실행 전 자동 계수로 baseline drift가 없는지 확인하는 것이 Phase 20.1의 첫 문서 gate다.
 
 의견: `tests/main/handler/ipcInputValidation.test.ts`는 공통 세팅 분리로 테스트 본체를 `ipcInputValidation.shared.ts`, `ipcInputValidation.memory.test.ts`, `ipcInputValidation.system.test.ts`로 쪼개 500 LOC 한도 위험에서 해소했습니다.
 
