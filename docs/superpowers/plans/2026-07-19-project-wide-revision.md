@@ -214,7 +214,7 @@ export type SyncCapturedRevisions = ReadonlyMap<string, number>;
 
 `applyMergedBundleToLocalFirstLuie()`의 DB transaction은 merged chapter/world/memory를 적용한 뒤 non-deleted bundle project revision을 읽어 `SyncCapturedRevisions`를 반환한다. `persistBundleToLuiePackages()`는 이 map을 필수 입력으로 받고 현재 revision을 다시 조회하지 않는다.
 
-- [ ] **Step 1: RED 작성**
+- [x] **Step 1: RED 작성**
 
 - memory apply test는 local+remote merged canonical rows가 raw `row.id`를 유지해 DB에 upsert되고 명시적 deleted row만 제거되는지 검증한다. bundle에 없는 suggested/local-only row는 보존돼야 한다.
 - transaction failure 시 memory와 revision 모두 rollback되는지 검증한다.
@@ -222,7 +222,7 @@ export type SyncCapturedRevisions = ReadonlyMap<string, number>;
 - persistence test는 전달된 revision 7로 write를 시작하고 writer 안에서 DB current revision을 8로 올린 뒤 `markProjectExported(projectId, 7)`만 호출되는지 검증한다.
 - write/mark 실패 시 mark 성공 기록이 없고 `sync:retry`가 예약되는지 검증한다.
 
-- [ ] **Step 2: RED 확인**
+- [x] **Step 2: RED 확인**
 
 Run:
 
@@ -232,24 +232,26 @@ ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron ./node_modules/vitest/vitest
 
 Expected: memory DB apply와 transaction capture interface가 없어 FAIL.
 
-- [ ] **Step 3: 최소 GREEN**
+- [x] **Step 3: 최소 GREEN**
 
 - sync memory helper는 허용된 canonical table만 처리한다. non-deleted merged row는 dependency 순서로 upsert하고 명시적 deleted row만 dependency 역순으로 삭제한다. bundle에 없는 package 밖 local row는 보존한다. sync row의 `row.id`와 `projectId`를 보존하고 import용 ID rescoping helper는 재사용하지 않는다.
 - DB transaction 마지막 select 결과를 map으로 반환한다.
 - package persistence는 map의 captured revision을 payload build/write와 함께 사용하고 성공 후 같은 값만 mark한다.
 - capture 후 concurrent edit는 더 큰 current revision으로 남아 startup/queue dirty 판정이 유지된다.
 
-- [ ] **Step 4: GREEN·회귀·정적 검증**
+- [x] **Step 4: GREEN·회귀·정적 검증**
 
 Step 2, `syncService.test.ts`, `projectExportQueue.test.ts`를 실행한다. 대상 ESLint, `pnpm run typecheck`, `git diff --check`를 실행한다.
 
-- [ ] **Step 5: 검토·SSOT·커밋**
+- [x] **Step 5: 검토·SSOT·커밋**
 
 subagent가 memory FK 순서, raw ID 보존, concurrency test를 독립 검토한다. 결과를 SSOT에 기록하고 사용자 승인 후 커밋한다.
 
 ```text
 fix(sync): persist canonical revision baselines
 ```
+
+Actual (2026-07-19): 초기 지정 3 files RED는 helper 부재, revision capture 누락, captured mark/mark-failure retry 누락으로 예상 실패했다. 최종 리뷰 follow-up RED는 Entity의 unmentioned Alias/Fact child에서 generic FK 오류, Episode의 unmentioned Evidence child에서 silent cascade를 실제 DB로 재현했고, current-revision 재조회 변이는 강화 persistence test에서 `writer → select:project → mark:8`로 실패했으며 project 소유권 불일치 delete false-positive도 RED로 고정했다. 최소 구현과 follow-up 뒤 3 files/14 tests PASS다. FK-enabled SQLite TEMP trigger log로 canonical 11종의 exact dependency INSERT/역순 DELETE 실행을 검증했고 raw ID/projectId, forward self-FK, local-only suggested 보존, memory+revision rollback을 확인했다. 중앙 FK metadata preflight는 Alias cascade/Fact restrict, Episode/Eval child, cross-project child를 보존하고 모든 실제 dependent가 같은 bundle/project에서 명시 삭제된 경우만 성공한다. 강화 persistence test는 실제 DB/attachment/revision store에서 captured bundle title이 writer payload에 전달됨을 확인하고 writer callback의 canonical mutation으로 revision 7→8 후 captured 7만 mark한다. Project select spy는 writer 전 current revision 재조회가 없고 mark validation 경계에서만 조회됨을 고정하며 최종 dirty 판정도 유지한다. write/mark 실패는 성공 기록 없이 `sync:retry`를 예약한다. 공식 harness의 `SKIP_DB_TEST_SETUP=1`로 syncService/projectExportQueue 2 files/27 tests PASS이며, 신규 실제 DB 증거는 focused suite에서 별도 확보했다. 대상 ESLint/diff-check PASS, 직접 `tsc6 --noEmit`은 사용자 dirty Binder TS2322 baseline 한 건만 유지한다. `pnpm run typecheck` wrapper는 pnpm registry signature/version-switch 검증 단계에서 compiler 실행 전 종료했다. follow-up 자체검토 결과 Critical/Important 0이며 root 재리뷰 대기다.
 
 ---
 

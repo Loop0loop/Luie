@@ -16,12 +16,12 @@ import type { MemoryCanonicalPackagePayload } from "../memory/persistence/memory
 import { writeLuieContainer } from "../../io/luieContainer.js";
 import { db } from "../../../infra/database/index.js";
 import {
-  project as projectTable,
   snapshot as snapshotTable,
 } from "../../../infra/database/index.js";
 import { ensureSafeAbsolutePath } from "../../../utils/fs/index.js";
 import { projectService } from "../project/projectService.js";
 import { getProjectAttachmentPath } from "../../core/project/projectAttachmentStore.js";
+import { markProjectExported } from "../../core/project/projectRevisionStore.js";
 import type { SyncBundle } from "./syncMapper.js";
 import type { WorldDocumentType } from "./syncWorldDocNormalizer.js";
 import {
@@ -241,6 +241,7 @@ export const buildProjectPackagePayload = async (input: {
 
 export const persistBundleToLuiePackages = async (input: {
   bundle: SyncBundle;
+  capturedRevisions: ReadonlyMap<string, number>;
   hydrateMissingWorldDocsFromPackage: (
     worldDocs: Map<WorldDocumentType, unknown>,
     projectPath: string,
@@ -260,19 +261,29 @@ export const persistBundleToLuiePackages = async (input: {
   }) => Promise<LuiePackageExportData | null>;
   logger: LoggerLike;
 }): Promise<PersistedLuiePackage[]> => {
-  const { bundle, hydrateMissingWorldDocsFromPackage, logger } = input;
+  const {
+    bundle,
+    capturedRevisions,
+    hydrateMissingWorldDocsFromPackage,
+    logger,
+  } = input;
   const buildPayload =
     input.buildProjectPackagePayload ?? buildProjectPackagePayload;
   const failedProjects: string[] = [];
   const persistedProjects: PersistedLuiePackage[] = [];
   for (const project of bundle.projects) {
+    if (project.deletedAt) continue;
+    const capturedRevision = capturedRevisions.get(project.id);
+    if (capturedRevision === undefined) {
+      failedProjects.push(project.id);
+      projectService.schedulePackageExport(project.id, "sync:retry");
+      logger.error("Missing captured revision for sync .luie persistence", {
+        projectId: project.id,
+      });
+      continue;
+    }
     const store = db.getClient();
-    const [projRows, snapshotRows] = await Promise.all([
-      store
-        .select()
-        .from(projectTable)
-        .where(eq(projectTable.id, project.id))
-        .limit(1),
+    const [snapshotRows, projectPath] = await Promise.all([
       store
         .select({
           id: snapshotTable.id,
@@ -284,19 +295,6 @@ export const persistBundleToLuiePackages = async (input: {
         .from(snapshotTable)
         .where(eq(snapshotTable.projectId, project.id))
         .orderBy(desc(snapshotTable.createdAt)),
-    ]);
-    const projectRow = projRows[0] ?? null;
-    const localProject = projectRow
-      ? {
-          ...projectRow,
-          snapshots: snapshotRows.map((row) => ({
-            ...row,
-            createdAt: new Date(row.createdAt),
-          })),
-        }
-      : null;
-    const [, projectPath] = await Promise.all([
-      Promise.resolve(localProject),
       getProjectAttachmentPath(project.id),
     ]);
 
@@ -325,7 +323,10 @@ export const persistBundleToLuiePackages = async (input: {
       bundle,
       projectId: project.id,
       projectPath: safeProjectPath,
-      localSnapshots: localProject?.snapshots ?? [],
+      localSnapshots: snapshotRows.map((row) => ({
+        ...row,
+        createdAt: new Date(row.createdAt),
+      })),
       hydrateMissingWorldDocsFromPackage,
       logger,
     });
@@ -337,6 +338,7 @@ export const persistBundleToLuiePackages = async (input: {
         payload,
         logger,
       });
+      await markProjectExported(project.id, capturedRevision);
       persistedProjects.push({
         projectId: project.id,
         projectPath: safeProjectPath,
@@ -344,7 +346,7 @@ export const persistBundleToLuiePackages = async (input: {
     } catch (error) {
       failedProjects.push(project.id);
       projectService.schedulePackageExport(project.id, "sync:retry");
-      logger.error("Failed to persist merged bundle into .luie package", {
+      logger.error("Failed to persist or checkpoint merged .luie package", {
         projectId: project.id,
         projectPath: safeProjectPath,
         error,

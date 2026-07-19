@@ -1,6 +1,6 @@
 # Project-wide revision 설계
 
-**상태:** 구현 중 — Task 1~2 완료
+**상태:** 구현 중 — Task 1~3 완료
 **상위 SSOT:** `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
 
 ## 1. 목표
@@ -99,6 +99,16 @@ RED는 지정 Electron-as-Node 4 files에서 trigger module과 `touchProjectUpda
 추가로 `dbRecoveryService.test.ts`를 단독 실행했으나 7 tests가 실행 전에 모두 skip됐다. 이 파일이 hoist한 `better-sqlite3` mock은 suite `beforeEach` 전 전역 DB setup에서 cache database가 먼저 생성될 때 `pragma`를 제공하지 않아 `cacheDb.ts:83`에서 실패한다. Task 2 production 경로 진입 전의 기존 test-harness 충돌이므로 8 files/63 tests PASS 수에는 포함하지 않았다.
 
 최종 리뷰 follow-up은 서로 다른 project A/B의 Chapter 사이로 `ChapterBody.chapterId`를 이동할 때 두 project revision이 각각 정확히 +1 되는 실제 DB 회귀를 추가했다. production 변경 없이 focused 4 files/20 tests와 expanded 8 files/63 tests가 PASS했고, 최종 재리뷰는 Production-ready, Critical/Important/Minor 0이다.
+
+### Task 3 검증 결과 (2026-07-19)
+
+sync DB transaction은 chapter/world 적용 뒤 `MEMORY_CANONICAL_EXPORTABLE_TABLES` 11종을 dependency 순으로 upsert하고 역순으로 명시 삭제한 다음, non-deleted bundle project revision을 `ReadonlyMap`으로 캡처한다. memory row는 import용 rescoping 없이 raw `row.id`/`projectId`를 유지하며 bundle에 없는 local-only/suggested row는 보존한다. `MemoryFact.invalidatedByFactId`는 모든 fact upsert 뒤 복원해 같은 table 안의 forward FK도 지원한다. canonical FK metadata는 identity, episode/evidence, fact/evidence/invalidation, eval case 자식 관계를 중앙에서 정의한다. parent 삭제 전 실제 child ID와 child projectId를 읽고 같은 bundle/project에서 명시 삭제되지 않은 child가 하나라도 있으면 `SYNC_MEMORY_DELETE_BLOCKED`로 transaction 전체를 rollback한다.
+
+초기 RED는 지정 3 files에서 helper module 부재, revision capture 순서 누락, captured mark/mark-failure retry 누락으로 3 files가 예상 실패했다. 최종 리뷰 follow-up RED는 unmentioned Alias/Fact child를 둔 Entity 삭제가 generic FK 오류를 내고 Episode child는 cascade로 조용히 삭제되는 2건을 실제 DB에서 잡았다. current revision 재조회 변이는 강화 persistence test에서 `writer → select:project → mark:8`로 실패했고 project 소유권 불일치 delete false-positive도 RED로 고정했다. GREEN은 최종 3 files/14 tests PASS다. 실제 FK-enabled SQLite에서 reverse-shuffled 11종 row를 적용했고 TEMP trigger log로 정확한 INSERT dependency 순서와 DELETE 역순을 검증했다. raw ID/projectId, self-FK, local-only suggested 보존, memory mutation과 trigger revision의 transaction rollback도 실제 DB로 확인했다. Alias cascade와 Fact restrict, Episode/Eval dependency, cross-project child 보존, 모든 dependent 명시 삭제 시 성공도 실제 FK DB로 고정했다.
+
+package persistence는 Project current revision을 다시 조회하지 않고 transaction에서 전달된 captured revision만 atomic write 성공 뒤 mark한다. 강화 test는 실제 Project/ProjectAttachment와 revision store를 사용한다. captured bundle title이 writer payload에 들어온 것을 writer 인자에서 확인하고, writer callback의 MemoryEntity insert가 revision 7→8을 만든 뒤 `markProjectExported(projectId, 7)`만 실행되는지 검증한다. Project select spy는 writer 전 재조회가 없고 mark validation 경계에서만 조회됨을 확인하며, 최종 `revision > exportedRevision`과 `listProjectsNeedingExport` dirty 판정이 유지된다. write/mark 실패 모두 성공 기록 없이 `sync:retry`를 예약한다.
+
+회귀는 `syncService.test.ts`의 공식 `package.json` harness와 동일한 `SKIP_DB_TEST_SETUP=1` 환경에서 `syncService.test.ts`와 `projectExportQueue.test.ts` 2 files/27 tests PASS다. env 없이 실행하면 syncService의 기존 hoisted DB mock이 전역 setup의 `client.delete`를 제공하지 않아 14 tests가 본문 전 실패하므로, Task 3 신규 실제 DB 증거는 별도의 focused Electron DB suite 3 files/14 tests에서 확보했다. 대상 ESLint와 `git diff --check`는 PASS다. 직접 `tsc6 --noEmit`은 Task 3 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 한 건만 유지한다. `pnpm run typecheck` wrapper는 pnpm 11.5.3 registry signature/version-switch 검증이 불가능해 compiler 진입 전 종료했다.
 
 ## 6. 제외 항목
 
