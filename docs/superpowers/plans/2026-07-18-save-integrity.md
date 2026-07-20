@@ -1940,7 +1940,7 @@ Actual (2026-07-20): core runner는 Electron Node ABI에서 production character
 
 ## Phase 20: SPA(Single Pattern Architecture) + 500 LOC 모듈화
 
-**Status:** 진행 중 — 20.1 Guardrail 완료, production batch 대기
+**Status:** 진행 중 — 20.1 Guardrail, 20.2 Locale trio 완료
 
 **Definition of Done:** 레이어별 정식 의존 패턴이 하나이고, hand-written production TS/TSX/CSS와 test TS/TSX가 파일당 500 LOC 이하이며, public API·IPC·DB·UI behavior 회귀가 없다. generated/vendor만 근거가 있는 예외로 허용한다.
 
@@ -1959,9 +1959,9 @@ Actual (2026-07-20): 커밋 `452ad1e7`의 line-terminator 기준으로 productio
 
 ### 20.2 Production Task batches — behavior-neutral responsibility split
 
-실행 시점 `check:source-loc` 재계수가 우선이지만 2026-07-20 production baseline은 9개다. 아래 7개를 원자 Task/commit 경계로 고정한다.
+실행 시점 `check:source-loc` 재계수가 우선이다. 2026-07-20 production baseline 9개 중 Locale trio 3개를 해소해 2026-07-21 현재 6개가 남았다. 아래 7개를 원자 Task/commit 경계로 고정한다.
 
-1. **Locale trio:** `settingsAdvanced.ts` en/ja/ko(538/538/572)를 같은 domain/key 경계로 함께 분리하고 i18n parity를 검증한다.
+1. [x] **Locale trio:** `settingsAdvanced.ts` en/ja/ko(538/538/572)를 같은 domain/key 경계로 함께 분리하고 i18n parity를 검증한다.
 2. **Editor CSS:** `styles/components/editor.css`(547)를 cascade 책임 단위로 분리한다. 사용자 dirty hunk와 겹치므로 소유권을 먼저 확인하고 다른 production batch와 섞지 않는다.
 3. **Analysis UI:** `AnalysisSection.tsx`(507)를 기존 `analysisSection/**` feature helper 패턴으로 분리한다.
 4. **Shared settings:** `settings.ts`(506)를 settings 계약 축으로 분리하고 기존 파일은 호환 barrel로 유지한다.
@@ -1970,6 +1970,8 @@ Actual (2026-07-20): 커밋 `452ad1e7`의 line-terminator 기준으로 productio
 7. **Project service:** `projectService.ts`(526)를 마지막에 분리하며 public class/singleton과 export queue facade를 유지한다.
 
 각 파일은 기존 인접 directory의 `index.ts`/facade/helper 패턴을 따른다. import 호환을 위해 원래 파일은 얇은 facade 또는 barrel로 유지하고, domain responsibility 단위로만 분리한다. 위 번호 하나마다 targeted characterization test → 최소 이동 → typecheck/lint/architecture check → 독립 review → 한 Task/한 커밋 순서를 지킨다.
+
+Actual (2026-07-21, Locale trio): LOC debt 항목을 먼저 제거해 `check-source-loc`가 ko/en/ja 572/538/538 LOC를 모두 거부하는 RED를 확인했다. 이미 존재하지만 연결되지 않았던 en/ja `settingsProjectTemplate.ts`를 재사용하고, ko에도 같은 domain 모듈을 만들었다. ja 분리본의 3개 오래된 문자열은 분리 전 실제 runtime dictionary 값을 정본으로 맞췄다. `settingsAdvanced.ts`의 public key shape는 유지되며 결과 LOC는 ko/en/ja 451/423/423(source gate 기준)다. source LOC gate와 전체 locale key parity가 PASS했다.
 
 ### 20.3 Test Task batches — behavior별 suite 분리
 

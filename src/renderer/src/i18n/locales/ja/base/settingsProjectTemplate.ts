@@ -9,9 +9,9 @@ export const jaBaseSettingsProjectTemplate = {
   },
   title: {
     blank: "空のプロジェクト (Blank)",
-    webNovel: "Web Novel Standard",
-    screenplay: "Screenplay",
-    essay: "Essay",
+    webNovel: "ウェブ小説（標準）",
+    screenplay: "ドラマ脚本",
+    essay: "エッセイ・随筆",
   },
   dialog: {
     selectPath: "プロジェクト保存先を選択",
