@@ -127,14 +127,14 @@ renderer API 접근
 
 ## 500 LOC 초과 Renderer 파일
 
-사실(2026-07-20): 현재 renderer에는 `check:source-loc` 기준 500 LOC 초과 hand-written source가 5개 있습니다. `global.css`는 현재 12 LOC(script 기준)로 예외가 아닙니다.
+사실(2026-07-20, 커밋 `452ad1e7`): renderer에는 `check:source-loc` 기준 500 LOC 초과 hand-written source가 5개 있습니다. `global.css`는 12 LOC(script 기준)로 예외가 아닙니다.
 
 | File                                                                | LOC | Phase 20 분리 기준                                  |
 | ------------------------------------------------------------------- | --: | --------------------------------------------------- |
 | `src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts`         | 572 | settings domain dictionary 조립 파일로 분리         |
 | `src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts`         | 538 | 한국어와 같은 key/domain 구조 유지                  |
 | `src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts`         | 538 | 한국어와 같은 key/domain 구조 유지                  |
-| `src/renderer/src/styles/components/editor.css`                     | 532 | 사용자 dirty hunk와 분리해 cascade 책임 단위로 분리 |
+| `src/renderer/src/styles/components/editor.css`                     | 547 | 사용자 dirty hunk와 분리해 cascade 책임 단위로 분리 |
 | `src/renderer/src/features/research/components/AnalysisSection.tsx` | 507 | feature component와 hook/view 책임 분리             |
 
 사실: `AnalysisSection.tsx`는 과거 Phase 2에서 237 LOC까지 분리됐으나 현재 507 LOC(script 기준)로 다시 기준을 넘었다.

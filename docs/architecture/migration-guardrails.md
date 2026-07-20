@@ -88,14 +88,14 @@ src/shared/
 
 사실(2026-07-20 기준):
 
-현재 `scripts/check-source-loc.mjs` 기준 hand-written production source를 재계수하면 `src` 9개, 별도 TS/TSX 계수 기준 `tests` 19개가 500 LOC를 초과합니다. 세부 경로와 batch는 `docs/superpowers/plans/2026-07-18-save-integrity.md`의 Phase 20이 실행 SSOT입니다. `src` 초과는 다음과 같습니다. script는 line terminator 기준이라 `wc -l`보다 1 크게 계산될 수 있으며 gate 수치를 정본으로 사용합니다.
+커밋 `452ad1e7` 기준 hand-written production source 9개와 test 19개가 500 LOC를 초과합니다. `scripts/check-source-loc.mjs`는 `src`와 `tests` 전체를 검사하고 `scripts/source-loc-debt.json`의 28개만 기록된 debt ceiling까지 허용합니다. 신규 초과, 기존 ceiling 증가, 500 이하 stale baseline, 삭제·이동된 baseline은 실패합니다. 세부 경로와 batch는 `docs/superpowers/plans/2026-07-18-save-integrity.md`의 Phase 20이 실행 SSOT입니다. script는 line terminator 기준이라 `wc -l`보다 1 크게 계산될 수 있으며 gate 수치를 정본으로 사용합니다.
 
 | 경로                                                                       | LOC |
 | -------------------------------------------------------------------------- | --: |
 | `src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts`                | 572 |
 | `src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts`                | 538 |
 | `src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts`                | 538 |
-| `src/renderer/src/styles/components/editor.css`                            | 532 |
+| `src/renderer/src/styles/components/editor.css`                            | 547 |
 | `src/main/services/features/project/projectService.ts`                     | 526 |
 | `src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.ts` | 524 |
 | `src/main/services/features/llm/modelRuntimeFactory.ts`                    | 510 |

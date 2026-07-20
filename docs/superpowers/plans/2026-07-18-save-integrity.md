@@ -1940,27 +1940,29 @@ Actual (2026-07-20): core runner는 Electron Node ABI에서 production character
 
 ## Phase 20: SPA(Single Pattern Architecture) + 500 LOC 모듈화
 
-**Status:** 마지막 Phase — Task 18/19 완료, 다음 작업부터 시작
+**Status:** 진행 중 — 20.1 Guardrail 완료, production batch 대기
 
 **Definition of Done:** 레이어별 정식 의존 패턴이 하나이고, hand-written production TS/TSX/CSS와 test TS/TSX가 파일당 500 LOC 이하이며, public API·IPC·DB·UI behavior 회귀가 없다. generated/vendor만 근거가 있는 예외로 허용한다.
 
 ### 20.1 Guardrail Task — 사실 baseline과 자동 gate
 
-- [ ] 기존 `pnpm run check:source-loc`의 `src` TS/TSX/CSS baseline과 `tests` TS/TSX baseline을 다시 계수하고 `docs/architecture/migration-guardrails.md`와 일치시킨다.
-- [ ] 신규/변경 hand-written source/test의 500 LOC 초과를 막는 repo check를 기존 `check:*` 패턴으로 확장한다.
-- [ ] 기존 초과 파일은 명시적 debt allowlist로 시작하되 각 분리 커밋에서 allowlist를 줄이고 최종 0으로 만든다.
-- [ ] SPA는 다음 하나의 흐름으로 고정한다.
+- [x] 기존 `pnpm run check:source-loc`의 `src` TS/TSX/CSS baseline과 `tests` TS/TSX baseline을 다시 계수하고 `docs/architecture/migration-guardrails.md`와 일치시킨다.
+- [x] 신규/변경 hand-written source/test의 500 LOC 초과를 막는 repo check를 기존 `check:*` 패턴으로 확장한다.
+- [x] 기존 초과 파일은 명시적 debt allowlist로 시작하되 각 분리 커밋에서 allowlist를 줄이고 최종 0으로 만든다.
+- [x] SPA는 다음 하나의 흐름으로 고정한다.
   - renderer: `domain component/hook/store → renderer domain adapter → @shared/api`
   - preload: `domain API module → safeInvoke → IPC channel`
   - main: `IPC handler → domain service → infra adapter(database/repository/FS/native)`
   - shared: cross-process `contract/schema/type/constant`만 소유
+
+Actual (2026-07-20): 커밋 `452ad1e7`의 line-terminator 기준으로 production 9개와 test 19개, 총 28개 debt ceiling을 `scripts/source-loc-debt.json`에 기록했다. `check-source-loc.mjs`는 `src`와 `tests` 전체를 순회한다. 새 501+ LOC 파일, 기존 debt ceiling 증가, 500 이하로 내려간 stale baseline, 삭제·이동돼 발견되지 않은 baseline을 모두 실패시키며 기존 debt는 기록된 ceiling 이하에서만 통과한다. black-box TDD는 신규 source/test 초과, `src/preload`·`src/types`의 500/501 경계, 기존 debt 증가, stale/missing baseline 7건을 RED/GREEN으로 고정했고 실제 저장소 check도 PASS했다. 사용자 dirty `editor.css` 축소 hunk는 수정하지 않았고 committed ceiling `547`을 기준으로 기록했다.
 
 ### 20.2 Production Task batches — behavior-neutral responsibility split
 
 실행 시점 `check:source-loc` 재계수가 우선이지만 2026-07-20 production baseline은 9개다. 아래 7개를 원자 Task/commit 경계로 고정한다.
 
 1. **Locale trio:** `settingsAdvanced.ts` en/ja/ko(538/538/572)를 같은 domain/key 경계로 함께 분리하고 i18n parity를 검증한다.
-2. **Editor CSS:** `styles/components/editor.css`(532)를 cascade 책임 단위로 분리한다. 사용자 dirty hunk와 겹치므로 소유권을 먼저 확인하고 다른 production batch와 섞지 않는다.
+2. **Editor CSS:** `styles/components/editor.css`(547)를 cascade 책임 단위로 분리한다. 사용자 dirty hunk와 겹치므로 소유권을 먼저 확인하고 다른 production batch와 섞지 않는다.
 3. **Analysis UI:** `AnalysisSection.tsx`(507)를 기존 `analysisSection/**` feature helper 패턴으로 분리한다.
 4. **Shared settings:** `settings.ts`(506)를 settings 계약 축으로 분리하고 기존 파일은 호환 barrel로 유지한다.
 5. **Memory benchmark:** `memoryWriterTaskBenchmark.ts`(524)를 scenario/measurement/reporting 책임으로 분리한다.

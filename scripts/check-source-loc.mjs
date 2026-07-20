@@ -1,10 +1,16 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
-const ROOTS = ["src/main", "src/renderer/src", "src/shared"];
+const ROOTS = ["src", "tests"];
 const EXTENSIONS = new Set([".ts", ".tsx", ".css"]);
 const MAX_LOC = 500;
-const ALLOWLIST = new Set(["src/renderer/src/styles/global.css"]);
+const DEBT_BASELINE_LOC = new Map(
+  Object.entries(
+    JSON.parse(
+      readFileSync(new URL("./source-loc-debt.json", import.meta.url), "utf8"),
+    ),
+  ),
+);
 
 const toPosixPath = (filePath) => filePath.split(path.sep).join("/");
 
@@ -23,17 +29,44 @@ function* walk(dir) {
 }
 
 const violations = [];
+const seenDebt = new Set();
 
 for (const root of ROOTS) {
   for (const filePath of walk(root)) {
     const relativePath = toPosixPath(path.relative(process.cwd(), filePath));
-    if (ALLOWLIST.has(relativePath)) continue;
-
     const source = readFileSync(filePath, "utf8");
     const loc = source.length === 0 ? 0 : source.split(/\r\n|\r|\n/).length;
-    if (loc > MAX_LOC) {
-      violations.push({ file: relativePath, loc });
+    const debtBaselineLoc = DEBT_BASELINE_LOC.get(relativePath);
+    if (debtBaselineLoc !== undefined) {
+      seenDebt.add(relativePath);
+      if (loc <= MAX_LOC) {
+        violations.push({
+          file: relativePath,
+          loc,
+          message: `remove its stale debt baseline (${loc} LOC)`,
+        });
+      } else if (loc > debtBaselineLoc) {
+        violations.push({
+          file: relativePath,
+          loc,
+          message: `grew from ${debtBaselineLoc} to ${loc} LOC`,
+        });
+      }
+      continue;
     }
+    if (loc > MAX_LOC) {
+      violations.push({ file: relativePath, loc, message: null });
+    }
+  }
+}
+
+for (const debtPath of DEBT_BASELINE_LOC.keys()) {
+  if (!seenDebt.has(debtPath)) {
+    violations.push({
+      file: debtPath,
+      loc: 0,
+      message: "missing debt baseline file",
+    });
   }
 }
 
@@ -43,10 +76,12 @@ violations.sort(
 
 if (violations.length > 0) {
   console.error(
-    `[check-source-loc] ${violations.length} file(s) exceed ${MAX_LOC} LOC`,
+    `[check-source-loc] ${violations.length} LOC policy violation(s) (max=${MAX_LOC})`,
   );
   for (const violation of violations) {
-    console.error(`  ${violation.loc} ${violation.file}`);
+    console.error(
+      `  ${violation.loc} ${violation.file}${violation.message ? ` — ${violation.message}` : ""}`,
+    );
   }
   process.exit(1);
 }
