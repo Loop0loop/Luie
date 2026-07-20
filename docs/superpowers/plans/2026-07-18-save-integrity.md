@@ -1938,6 +1938,34 @@ Actual (2026-07-20): core runner는 Electron Node ABI에서 production character
 
 ---
 
+### Task 19.1: IME 중 explicit save를 composition-end ACK로 보정
+
+**Status:** 구현·자동 검증 완료 — 실제 OS/IME release smoke pending (2026-07-21)
+
+**Goal:** 한·일 IME composition 중 `Cmd/Ctrl+S`와 종료 flush를 일반 저장 오류로 실패시키지 않고, 최종 DOM 값의 persistence ACK까지 기다린다.
+
+**Files:**
+
+- Modify: `src/shared/ui/BufferedInput.tsx`
+- Modify: `tests/dom/bufferedInputSavePolicy.test.tsx`
+- Modify: `docs/superpowers/specs/2026-07-18-save-integrity-design.md`
+- Modify: `docs/superpowers/plans/2026-07-18-save-integrity.md`
+
+- [x] 현행 explicit reject가 사용자 로그를 재현하고 관련 4 suites/27 tests가 기존 정책대로 PASS함을 확인한다.
+- [x] input/textarea composition 종료 전 barrier pending, 종료 후 최종값 ACK, 반복 flush 1회 저장, older in-flight 직렬화, unmount reject RED를 먼저 고정한다.
+- [x] component-local pending Promise만 추가하고 coordinator, shortcut, registry, 별도 timeout/UI 상태는 변경하지 않는다.
+- [x] focused/인접 회귀, lint/build와 독립 review를 통과한다. 전체 typecheck는 범위 밖 사용자 dirty 오류 1건만 유지한다.
+- [x] SSOT와 자동 검증 결과를 동기화한다.
+- [ ] 실제 Electron OS/IME matrix를 release QA에서 확인한다.
+
+실제 Electron matrix는 macOS 기본 한글 2벌식, Windows 11 Microsoft 한글/일본어 IME에서 composition 중 단축키 1회·3회, blur, 취소, 문서 전환, 종료를 확인한다. 합성 jsdom event는 상태 머신 회귀만 증명하며 OS/IME event ordering 인증으로 과장하지 않는다.
+
+Actual (2026-07-21): 현행 4 suites/27 tests가 explicit composition reject 정책대로 PASS하는 baseline을 확인했다. 정책을 composition-end ACK로 바꾼 RED는 focused 17건 중 4건이 기존 오류로 실패했고, unmount microtask와 non-IME in-flight/latest drain 경합도 각각 production 수정 전에 실패를 재현했다. 최소 구현은 buffer별 pending Promise를 공유하고 `compositionend.currentTarget.value`의 실제 `onSave` ACK 뒤 waiters를 완료한다. composition 중 unmount만 명시적으로 reject하며 일반 unmount의 기존 latest drain은 유지한다.
+
+최종 저장 회귀 9 files/77 tests, 대상 ESLint, build, source LOC gate, i18n parity, diff-check가 PASS했다. direct `tsc6 --noEmit`은 이번 변경 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102`의 기존 TS2322 한 건만 유지한다. 코드·표준·과설계 독립 재리뷰는 모두 GO이며 Critical/Important/Minor 0이다. 실제 OS/IME smoke 전에는 플랫폼 동작까지 인증 완료로 표현하지 않는다.
+
+---
+
 ## Phase 20: SPA(Single Pattern Architecture) + 500 LOC 모듈화
 
 **Status:** 진행 중 — 20.1 Guardrail, 20.2 Locale trio 완료

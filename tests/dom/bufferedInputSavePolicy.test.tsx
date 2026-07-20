@@ -156,7 +156,7 @@ describe("BufferedInput save policy", () => {
     expect(onSave).toHaveBeenCalledWith("김");
   });
 
-  it("rejects an explicit flush during IME composition", async () => {
+  it("waits for the final IME input value before resolving an explicit flush", async () => {
     const onSave = vi.fn();
     const { input } = mountInput(onSave);
 
@@ -169,20 +169,82 @@ describe("BufferedInput save policy", () => {
     });
     changeInput(input, "미완성");
 
-    await expect(flushSaveBuffers()).rejects.toThrow(/composition/i);
+    let settled = false;
+    const flush = flushSaveBuffers().then(() => {
+      settled = true;
+    });
+    await act(async () => Promise.resolve());
+
+    expect(settled).toBe(false);
     expect(onSave).not.toHaveBeenCalled();
+
+    act(() => {
+      setInputValue(input, "완성 값");
+      input.dispatchEvent(
+        new CompositionEvent("compositionend", {
+          bubbles: true,
+          data: "",
+        }),
+      );
+    });
+    await act(async () => flush);
+
+    expect(settled).toBe(true);
+    expect(onSave).toHaveBeenCalledOnce();
+    expect(onSave).toHaveBeenCalledWith("완성 값");
   });
 
-  it("flushes the latest dirty value once on unmount", () => {
-    vi.useFakeTimers();
+  it("coalesces repeated explicit flushes while a textarea is composing", async () => {
     const onSave = vi.fn();
-    const { input, unmount } = mountInput(onSave);
+    const { textarea } = mountTextArea(onSave);
 
-    changeInput(input, "퇴장 직전 값");
-    unmount();
+    act(() => {
+      textarea.dispatchEvent(
+        new CompositionEvent("compositionstart", { bubbles: true }),
+      );
+    });
+    changeTextArea(textarea, "작성 중");
+
+    const firstFlush = flushSaveBuffers();
+    const secondFlush = flushSaveBuffers();
+    await act(async () => Promise.resolve());
+    expect(onSave).not.toHaveBeenCalled();
+
+    act(() => {
+      setTextAreaValue(textarea, "작성 완료");
+      textarea.dispatchEvent(
+        new CompositionEvent("compositionend", {
+          bubbles: true,
+          data: "작성 완료",
+        }),
+      );
+    });
+    await act(async () => Promise.all([firstFlush, secondFlush]));
 
     expect(onSave).toHaveBeenCalledOnce();
-    expect(onSave).toHaveBeenCalledWith("퇴장 직전 값");
+    expect(onSave).toHaveBeenCalledWith("작성 완료");
+  });
+
+  it("drains the latest value after an older save is in-flight during unmount", async () => {
+    vi.useFakeTimers();
+    let resolveFirst: (() => void) | undefined;
+    const firstSave = new Promise<void>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const onSave = vi.fn((value: string) =>
+      value === "첫 값" ? firstSave : Promise.resolve(),
+    );
+    const { input, unmount } = mountInput(onSave);
+
+    changeInput(input, "첫 값");
+    await act(async () => vi.advanceTimersByTimeAsync(250));
+    changeInput(input, "퇴장 직전 값");
+    unmount();
+    const flush = flushSaveBuffers();
+    resolveFirst?.();
+    await act(async () => flush);
+
+    expect(onSave.mock.calls).toEqual([["첫 값"], ["퇴장 직전 값"]]);
   });
 
   it("flushes a dirty input before its debounce timer", async () => {
@@ -254,7 +316,7 @@ describe("BufferedInput save policy", () => {
     expect(onSave.mock.calls).toEqual([["첫 값"], ["최신 값"]]);
   });
 
-  it("preserves an explicit IME barrier behind an older in-flight save", async () => {
+  it("waits for the final IME value behind an older in-flight save", async () => {
     vi.useFakeTimers();
     let resolveFirst: (() => void) | undefined;
     const firstSave = new Promise<void>((resolve) => {
@@ -277,9 +339,47 @@ describe("BufferedInput save policy", () => {
       );
     });
 
+    let settled = false;
+    void flush.then(() => {
+      settled = true;
+    });
     resolveFirst?.();
-    await expect(flush).rejects.toThrow(/composition/i);
+    await act(async () => Promise.resolve());
+
+    expect(settled).toBe(false);
     expect(onSave.mock.calls).toEqual([["첫 값"]]);
+
+    act(() => {
+      setInputValue(input, "조합 완료 값");
+      input.dispatchEvent(
+        new CompositionEvent("compositionend", {
+          bubbles: true,
+          data: "조합 완료 값",
+        }),
+      );
+    });
+    await act(async () => flush);
+
+    expect(onSave.mock.calls).toEqual([["첫 값"], ["조합 완료 값"]]);
+  });
+
+  it("rejects a pending IME flush when the input unmounts", async () => {
+    const onSave = vi.fn();
+    const { input, unmount } = mountInput(onSave);
+
+    act(() => {
+      input.dispatchEvent(
+        new CompositionEvent("compositionstart", { bubbles: true }),
+      );
+    });
+    changeInput(input, "조합 중");
+
+    const flush = flushSaveBuffers();
+    const rejection = expect(flush).rejects.toThrow(/unmounted/i);
+    unmount();
+
+    await rejection;
+    expect(onSave).not.toHaveBeenCalled();
   });
 
   it("retries a textarea value after its async save rejects", async () => {
@@ -338,7 +438,7 @@ describe("BufferedInput save policy", () => {
     },
   );
 
-  it("consumes a composition-end rejection and retries the dirty textarea", async () => {
+  it("propagates a pending IME save failure and retries the dirty textarea", async () => {
     const onSave = vi
       .fn()
       .mockRejectedValueOnce(new Error("composition end failed"))
@@ -353,6 +453,7 @@ describe("BufferedInput save policy", () => {
       );
     });
     changeTextArea(textarea, "완성 값");
+    const flush = flushSaveBuffers();
     act(() => {
       setTextAreaValue(textarea, "완성 값");
       textarea.dispatchEvent(
@@ -362,7 +463,7 @@ describe("BufferedInput save policy", () => {
         }),
       );
     });
-    await act(async () => Promise.resolve());
+    await expect(flush).rejects.toThrow("composition end failed");
 
     await act(async () => flushSaveBuffers());
     expect(onSave.mock.calls).toEqual([["완성 값"], ["완성 값"]]);

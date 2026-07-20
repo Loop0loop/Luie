@@ -5,8 +5,24 @@ import {
   registerSaveBufferFlush,
 } from "./saveBufferRegistry";
 
-const COMPOSITION_FLUSH_ERROR =
-  "Cannot flush a save buffer while IME composition is active";
+const COMPOSITION_UNMOUNT_ERROR =
+  "Save buffer unmounted before IME composition completed";
+
+type PendingCompositionFlush = {
+  promise: Promise<void>;
+  resolve: () => void;
+  reject: (reason: unknown) => void;
+};
+
+const createPendingCompositionFlush = (): PendingCompositionFlush => {
+  let resolve: () => void = () => undefined;
+  let reject: (reason: unknown) => void = () => undefined;
+  const promise = new Promise<void>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+};
 
 const consumeBackgroundFlush = (result: void | Promise<unknown>): void => {
   void Promise.resolve(result).catch(() => undefined);
@@ -41,6 +57,8 @@ export function BufferedInput({
     value: string;
     promise: Promise<void>;
   } | null>(null);
+  const pendingCompositionFlush = useRef<PendingCompositionFlush | null>(null);
+  const compositionAborted = useRef(false);
 
   useEffect(() => {
     onSaveRef.current = onSave;
@@ -61,11 +79,16 @@ export function BufferedInput({
     explicit = false,
     value = latestValue.current,
   ): void | Promise<void> => {
+    if (compositionAborted.current) {
+      return explicit
+        ? Promise.reject(new Error(COMPOSITION_UNMOUNT_ERROR))
+        : undefined;
+    }
     cancelScheduledSave();
     if (isComposing.current) {
-      return explicit
-        ? Promise.reject(new Error(COMPOSITION_FLUSH_ERROR))
-        : undefined;
+      if (!explicit) return;
+      pendingCompositionFlush.current ??= createPendingCompositionFlush();
+      return pendingCompositionFlush.current.promise;
     }
     const inFlight = inFlightSave.current;
     if (inFlight) {
@@ -120,10 +143,19 @@ export function BufferedInput({
   useEffect(
     () => () => {
       cancelScheduledSave();
-      if (isComposing.current) return;
+      const pending = pendingCompositionFlush.current;
+      if (pending) {
+        pendingCompositionFlush.current = null;
+        pending.reject(new Error(COMPOSITION_UNMOUNT_ERROR));
+      }
+      if (isComposing.current) {
+        compositionAborted.current = true;
+        return;
+      }
       const value = latestValue.current;
       if (value === lastSavedValue.current && !inFlightSave.current) return;
-      preserveUnmountSave(flushRef.current(), () => onSaveRef.current(value));
+      const initial = flushRef.current();
+      preserveUnmountSave(initial, () => onSaveRef.current(value));
     },
     [],
   );
@@ -148,7 +180,17 @@ export function BufferedInput({
     isComposing.current = false;
     const next = e.currentTarget.value;
     setLocalValue(next);
-    scheduleSave(next);
+    latestValue.current = next;
+    const pending = pendingCompositionFlush.current;
+    if (!pending) {
+      scheduleSave(next);
+      return;
+    }
+    pendingCompositionFlush.current = null;
+    void Promise.resolve(flush(true, next)).then(
+      pending.resolve,
+      pending.reject,
+    );
   };
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -214,6 +256,8 @@ export function BufferedTextArea({
     value: string;
     promise: Promise<void>;
   } | null>(null);
+  const pendingCompositionFlush = useRef<PendingCompositionFlush | null>(null);
+  const compositionAborted = useRef(false);
 
   useEffect(() => {
     onSaveRef.current = onSave;
@@ -227,10 +271,15 @@ export function BufferedTextArea({
     explicit = false,
     value = latestValue.current,
   ): void | Promise<void> => {
-    if (isComposing.current) {
+    if (compositionAborted.current) {
       return explicit
-        ? Promise.reject(new Error(COMPOSITION_FLUSH_ERROR))
+        ? Promise.reject(new Error(COMPOSITION_UNMOUNT_ERROR))
         : undefined;
+    }
+    if (isComposing.current) {
+      if (!explicit) return;
+      pendingCompositionFlush.current ??= createPendingCompositionFlush();
+      return pendingCompositionFlush.current.promise;
     }
     const inFlight = inFlightSave.current;
     if (inFlight) {
@@ -275,10 +324,19 @@ export function BufferedTextArea({
 
   useEffect(
     () => () => {
-      if (isComposing.current) return;
+      const pending = pendingCompositionFlush.current;
+      if (pending) {
+        pendingCompositionFlush.current = null;
+        pending.reject(new Error(COMPOSITION_UNMOUNT_ERROR));
+      }
+      if (isComposing.current) {
+        compositionAborted.current = true;
+        return;
+      }
       const value = latestValue.current;
       if (value === lastSavedValue.current && !inFlightSave.current) return;
-      preserveUnmountSave(flushRef.current(), () => onSaveRef.current(value));
+      const initial = flushRef.current();
+      preserveUnmountSave(initial, () => onSaveRef.current(value));
     },
     [],
   );
@@ -298,7 +356,14 @@ export function BufferedTextArea({
     isComposing.current = false;
     latestValue.current = e.currentTarget.value;
     setLocalValue(e.currentTarget.value);
-    consumeBackgroundFlush(flush());
+    const pending = pendingCompositionFlush.current;
+    pendingCompositionFlush.current = null;
+    const result = flush(Boolean(pending), e.currentTarget.value);
+    if (!pending) {
+      consumeBackgroundFlush(result);
+      return;
+    }
+    void Promise.resolve(result).then(pending.resolve, pending.reject);
   };
 
   const handleFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {

@@ -127,8 +127,10 @@ result:     { name: "김철수" }
 ## 6. 입력 정책
 
 - 기본 debounce: 250ms
-- IME composition 중에는 저장하지 않는다.
-- composition 종료: 최신 값으로 debounce를 다시 예약한다.
+- IME composition 중에는 미완성 값을 저장하지 않는다.
+- composition 중 explicit/global flush는 실패시키지 않고 같은 pending Promise를 공유한다.
+- composition 종료: 최종 DOM 값을 즉시 저장하고 persistence ACK 뒤 pending flush를 완료한다. explicit flush가 없던 `BufferedInput`은 최신 값으로 debounce를 다시 예약한다.
+- composition 중 unmount되면 pending flush를 reject해 stale checkpoint 성공과 고립 Promise를 막는다.
 - blur, Enter, 프로젝트 전환, component unmount: 예약 타이머를 취소하고 즉시 flush한다.
 - blur와 예약 타이머가 같은 값을 중복 저장하지 않게 하나의 `flush()` 경로만 사용한다.
 - UI 값은 IPC 응답을 기다리지 않고 즉시 갱신한다.
@@ -274,7 +276,7 @@ renderer input flush
 - captured revision export와 stale attached project의 startup recovery 예약
 - manual-save IPC와 renderer/main quit handshake 기본 경로
 - manual save와 quit의 renderer buffer → world mutation 선행 flush
-- shared buffer의 실제 persistence ACK, IME 명시적 flush 차단, unmount 실패 payload 재시도
+- shared buffer의 실제 persistence ACK, IME composition-end 대기, unmount 실패 payload 재시도
 - Plot/Synopsis buffer의 timer 비의존 직접 persistence barrier
 - 실패한 world mutation payload 보존, latest merge, 다음 flush/enqueue 재시도
 - export `false`/throw dirty 보존, 다음 호출 재시도, manual/quit 실패 차단
@@ -371,13 +373,14 @@ buffer 또는 world queue flush가 실패하면 뒤 단계로 진행하지 않�
 - registry flush와 debounce timer가 경쟁해도 각 buffer의 기존 single-flush guard를 통과한다.
 - 같은 값의 in-flight 저장은 동일 Promise를 공유하고, 더 최신 값은 그 저장 뒤에 직렬화한다.
 - buffer는 비동기 저장 성공 뒤에만 clean으로 전환하며 실패한 최신 값은 다음 flush에서 재시도한다.
-- IME 조합 중 일반 debounce/event 저장은 억제하고 global flush는 reject해 manual save/quit 다음 단계를 차단한다.
+- IME 조합 중 일반 debounce/event 저장은 억제하고 global flush는 같은 pending Promise로 composition 종료를 기다린다.
+- composition 종료 시 최종 DOM 값을 즉시 저장하고 ACK 뒤 manual save/quit 다음 단계를 진행한다. 반복 global flush는 실제 저장을 중복 호출하지 않는다.
 - debounce, blur, Enter, composition-end의 background rejection은 consume하지만 dirty 상태를 유지한다.
 - unmount 저장이 실패하면 detached registry callback이 payload를 보유하고 다음 global flush에서 재시도한다.
 - 같은 entity의 여러 input callback은 기존 entity별 mutation queue가 직렬화한다.
 - [x] editor autosave는 동시에 `onSave`를 실행하지 않고 최신 pending draft 하나만 유지한다.
 - flush가 성공한 값은 뒤늦은 timer가 다시 저장하지 않는다.
-- shared input의 explicit flush 정책은 이전 in-flight 저장 뒤 latest drain에도 유지돼, 그 사이 IME composition이 시작되면 전체 barrier가 reject된다.
+- 이전 in-flight 저장 뒤 IME composition이 시작돼도 explicit drain은 composition 종료와 최종값 ACK까지 계속 pending이다.
 - Plot/Synopsis의 button mutation도 component-level registry callback이 동일 in-flight Promise를 공유한다. 실패 시 latest snapshot은 dirty로 남고 다음 global flush가 재시도한다.
 - Synopsis hydration은 project id와 attachment path가 바뀔 때만 실행한다. 같은 project의 description ACK rerender는 hydration/ref를 덮어쓰지 않는다.
 
@@ -388,6 +391,9 @@ buffer 또는 world queue flush가 실패하면 뒤 단계로 진행하지 않�
 - editor title/content 변경 직후 manual flush가 부모의 이전 값이 아닌 최신 draft를 저장한다.
 - buffer callback이 끝난 뒤 world mutation drain과 main checkpoint가 순서대로 실행된다.
 - buffer flush 실패 시 main checkpoint와 quit 완료 handshake가 호출되지 않는다.
+- IME composition 중 explicit flush는 종료 전 pending이고, 종료 후 최종값 ACK 뒤에만 완료된다.
+- 같은 composition 중 반복 explicit flush는 실제 `onSave`를 한 번만 호출한다.
+- composition 중 unmount는 pending flush를 reject하고 완료되지 않은 barrier를 남기지 않는다.
 - unmount한 buffer callback은 이후 global flush에서 호출되지 않는다.
 - 실패 payload를 가진 unmount buffer만 retry callback을 유지하며 성공 직후 registry에서 제거된다.
 
