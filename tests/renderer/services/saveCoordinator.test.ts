@@ -1,7 +1,7 @@
 // TEST_LEVEL: UNIT_MOCKED
 // PROVES: renderer buffers and mutation queues drain before main checkpoint
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocked = vi.hoisted(() => ({
   calls: [] as string[],
@@ -36,6 +36,10 @@ describe("saveProjectNow", () => {
       success: true,
       data: { success: true, exported: true },
     });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("flushes renderer buffers before world mutations and main checkpoint", async () => {
@@ -82,5 +86,41 @@ describe("saveProjectNow", () => {
 
     expect(mocked.calls).toEqual(["buffers", "world"]);
     expect(mocked.manualSave).not.toHaveBeenCalled();
+  });
+
+  it("records a success measure only after the full save succeeds", async () => {
+    const measure = vi.spyOn(performance, "measure");
+
+    await saveProjectNow("project-1");
+
+    expect(measure).toHaveBeenCalledWith(
+      "luie:project-save",
+      expect.objectContaining({ start: expect.any(Number), end: expect.any(Number) }),
+    );
+  });
+
+  it("records a distinct failure measure when the save rejects", async () => {
+    const measure = vi.spyOn(performance, "measure");
+    mocked.manualSave.mockResolvedValueOnce({
+      success: false,
+      error: { code: "DB_1001", message: "save failed" },
+    });
+
+    await expect(saveProjectNow("project-1")).rejects.toThrow("save failed");
+
+    expect(measure).toHaveBeenCalledWith(
+      "luie:project-save:error",
+      expect.objectContaining({ start: expect.any(Number), end: expect.any(Number) }),
+    );
+  });
+
+  it("keeps saving when the performance clock is unavailable", async () => {
+    vi.spyOn(performance, "now").mockImplementation(() => {
+      throw new Error("performance unavailable");
+    });
+
+    await expect(saveProjectNow("project-1")).resolves.toBeUndefined();
+
+    expect(mocked.manualSave).toHaveBeenCalledWith("project-1");
   });
 });

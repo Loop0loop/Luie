@@ -311,7 +311,7 @@ git diff --check
 # Task 11 오류 없음; 사용자 소유 dirty BinderSidebarPanelBody.tsx:102의 기존 ResearchPanelTab 오류 1건으로 exit 2
 ```
 
-이 결과는 정상 경로와 직접 seed한 stale-checkpoint recovery를 검증한다. 실제 export 실패 후 프로세스 재시작, debounce 중 shortcut/quit, IPC `success:false`/timeout, export `false`/throw는 아직 검증하지 않는다. 100회 burst 테스트는 mock 기반이며 SQLite 또는 latency P95를 측정하지 않는다. 기존 writing-loop에는 percentile 계산 인프라가 있지만 이번 저장 파이프라인의 P95 artifact와 95% 신뢰 근거는 없다.
+이 결과는 정상 경로와 직접 seed한 stale-checkpoint recovery를 검증한다. 당시 실제 export 실패 후 프로세스 재시작, debounce 중 shortcut/quit, IPC `success:false`/timeout, export `false`/throw는 아직 검증하지 않았다. 당시 100회 burst 테스트도 mock 기반이었고 SQLite 또는 latency P95를 측정하지 않았다. correctness 후속은 Task 18, latency artifact와 95% 신뢰 근거는 §24의 Task 19에서 해결했다.
 
 Task 10으로 active input 선행 flush와 renderer world mutation 실패 시 quit completion 차단은 해결됐다. 저장소 전체 `qa:core`는 이번 변경과 무관한 기존 baseline 문제로 아직 green이 아니다. 저장 정합성 완료 표시는 남은 P0 차단 항목과 해당 실패 주입 테스트가 해결된 뒤에만 복구한다.
 
@@ -615,7 +615,51 @@ TDD는 초기 정책 RED 3 files/38 tests 중 11 FAIL·27 PASS에서 시작했�
 순서는 고정한다.
 
 1. **Task 18 — world mutation bounded backoff:** 완료. 본 문서 22절의 제한 재시도와 export 무자동 재시도를 구현했다.
-2. **Task 19 — 저장 latency P95/95% 신뢰 인증:** 실제 SQLite ACK 경계와 manual flush 경계를 반복 측정하고 raw sample, percentile 계산, 환경 정보를 artifact로 남긴다. mock burst 통과를 latency 인증으로 대체하지 않는다.
+2. **Task 19 — 저장 latency P95/95% 신뢰 인증:** 완료. 실제 SQLite ACK, coordinator core barrier, 물리적 `Cmd/Ctrl+S` E2E 경계를 분리 측정하고 raw sample, 통계, provenance를 artifact로 남겼다.
 3. **Phase 20 — SPA + 500 LOC 모듈화:** 저장 로직 완료 뒤 behavior-neutral 구조 정리를 수행한다. 이 Phase에서 SPA는 runtime의 Single Page Application이 아니라 **Single Pattern Architecture**, 즉 레이어마다 하나의 정식 의존 흐름만 허용한다는 뜻으로 사용한다.
 
 Phase 20은 renderer `domain component/hook/store → domain adapter → @shared/api`, preload `domain API → safeInvoke/IPC channel`, main `IPC handler → domain service → infra adapter(database/repository/FS/native)`, shared `cross-process contract/schema/type/constant`라는 기존 target pattern을 보존한다. legacy 병렬 진입점이나 두 번째 queue/store 패턴을 만들지 않는다. hand-written production `.ts`/`.tsx`/`.css`와 test `.ts`/`.tsx`는 500 LOC 이하가 완료 조건이며 generated/vendor artifact만 생성 경로와 근거를 기록한 예외로 둔다. i18n dictionary와 CSS는 generated가 아니므로 locale/domain 및 cascade 책임 단위로 분리한다. 세부 실행 단위와 현재 초과 목록은 구현 계획과 `docs/architecture/migration-guardrails.md`를 SSOT로 삼는다.
+
+## 24. 저장 latency P95/95% 신뢰 인증
+
+### 24.1 측정 계약
+
+Task 19는 기존 `node:sqlite` 합성 benchmark나 mock world burst를 인증 표본으로 사용하지 않는다. core harness는 Electron Node ABI에서 production `characterStore → createLatestMutationQueue → characterService → better-sqlite3 transaction`을 연결한다. coordinator core barrier에는 pending chapter autosave, world mutation, 실제 `.luie` export를 포함하지만 preload/IPC는 동일 응답 계약의 in-process adapter이므로 `Cmd/Ctrl+S` E2E로 간주하지 않는다. 별도 Playwright harness는 실제 Electron 창에서 물리적 단축키로 저장을 발동하고 renderer `saveProjectNow` 진입부터 preload autosave queue, IPC, main flush, SQLite, package export ACK까지 한 clock으로 측정한다. 동기 start와 success/error terminal measure 수가 각각 단축키 한 번과 일치해야 하고, 계측 API 실패는 실제 저장을 바꾸지 않는다. OS keydown dispatch 자체는 측정 경계 밖이다.
+
+시나리오별 warm-up 30회는 통계에서 버리고 200개 순차 표본을 남긴다. 전체 raw 성공/실패 표본, P50/P95/P99/max, 실패율을 저장한다. percentile은 nearest-rank이고 P95의 95% CI는 고정 seed와 10,000회 circular moving-block bootstrap(block size 10)의 2.5/97.5 percentile로 구해 연속 표본의 자기상관을 보존한다. runner 자체를 독립 프로세스 3회 실행하고 각 raw artifact에 Git HEAD와 측정 source SHA-256을 기록한다. 표본이 하나라도 실패하거나 latest DB 값, chapter body, exported revision, package artifact가 수렴하지 않으면 인증은 실패한다.
+
+재현 명령과 추적 파일은 다음과 같다.
+
+```bash
+node scripts/certify-save-latency-repeat.mjs --out docs/quality/save-latency-certification.json
+node scripts/certify-save-latency-e2e-repeat.mjs --out docs/quality/save-latency-e2e-certification.json
+```
+
+package alias는 core와 E2E를 연속 실행하는 `pnpm run certify:save-latency`이며 개별 alias는 `certify:save-latency:core`, `certify:save-latency:e2e`다. 2026-07-20 checkout에서는 pnpm 11.5.3 wrapper가 child 실행 전 무출력 정지해 위 직접 Node 명령을 인증 명령으로 사용했다.
+
+- core summary/raw: `docs/quality/save-latency-certification.json`, `save-latency-certification-run-{1..3}.json`
+- shortcut E2E summary/raw: `docs/quality/save-latency-e2e-certification.json`, `save-latency-e2e-certification-run-{1..3}.json`
+- local review budget: `docs/quality/save-latency-budget.json`
+- 순수 통계: `src/shared/performance/saveLatencyStatistics.ts`
+- 통계 TDD: `tests/shared/performance/saveLatencyStatistics.test.ts`
+- real DB/FS harness: `tests/main/performance/saveLatencyCertification.test.ts`
+- physical shortcut harness: `tests/e2e/saveLatencyCertification.spec.ts`
+
+### 24.2 2026-07-20 인증 결과
+
+환경은 Apple M4/16GiB, darwin arm64, Electron 42.5.0(ABI 146), Node 24.17.0, better-sqlite3 12.11.1, SQLite 3.53.2, WAL, `synchronous=FULL`이다.
+
+| Scenario/run | P50 | P95 | P99 | P95 95% CI | 실패 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| world single ACK / run 1 | 0.156ms | 0.195ms | 0.258ms | 0.181~0.216ms | 0/200 |
+| world single ACK / run 2 | 0.161ms | 0.207ms | 0.238ms | 0.182~0.224ms | 0/200 |
+| world single ACK / run 3 | 0.156ms | 0.192ms | 0.229ms | 0.182~0.206ms | 0/200 |
+| world 100-burst / run 1~3 P95 | - | 0.477 / 0.451 / 0.451ms | - | upper max 0.552ms | 0/600 |
+| coordinator main-core / run 1~3 P95 | - | 8.449 / 8.968 / 8.879ms | - | upper max 10.533ms | 0/600 |
+| physical Cmd/Ctrl+S E2E / run 1 | 8.000ms | 12.400ms | 14.400ms | 11.300~13.300ms | 0/200 |
+| physical Cmd/Ctrl+S E2E / run 2 | 8.400ms | 12.600ms | 14.200ms | 11.900~13.300ms | 0/200 |
+| physical Cmd/Ctrl+S E2E / run 3 | 8.300ms | 12.700ms | 13.300ms | 11.800~13.200ms | 0/200 |
+
+총 2,400개 측정 표본의 실패율은 0이다. core 세 실행 모두 character `barrier-230`, chapter `chapter-230`, `revision === exportedRevision === 1385`, `.luie` 존재를 증명했고, E2E 세 실행 모두 latest chapter DB 본문과 package entry가 최종 입력에 수렴했다. core와 E2E percentile은 측정 경계가 다르므로 더하거나 서로 대체하지 않는다.
+
+절대 latency는 단일 Apple M4 호스트 관측값이므로 CI hard gate로 승격하지 않는다. 프로세스별 분산과 CI 비중첩도 숨기지 않고 raw run으로 보존한다. 세 실행 중 가장 큰 CI 상한을 바깥쪽 반올림한 local review budget만 별도 파일에 두며 초과는 실패가 아니라 재측정/회귀 조사 신호다. 자동 hard gate는 표본 계약, 실패율 0, raw/summary 일치, latest 값과 revision/export/package 수렴에만 적용한다.

@@ -6,7 +6,7 @@
 
 **Architecture:** renderer는 entity별 latest-patch queue로 입력을 직렬화하고 UI를 optimistic하게 갱신한다. main process는 entity mutation과 project revision 증가를 한 SQLite transaction으로 커밋한 뒤 즉시 ACK하고, 기존 `ProjectExportQueue`와 atomic `.luie` writer가 exported revision을 비동기로 따라간다.
 
-**Tech Stack:** Electron 40, React 19, TypeScript 5, Zustand, Drizzle ORM, better-sqlite3, Vitest, Testing Library
+**Tech Stack:** Electron 42, React 19, TypeScript 5, Zustand, Drizzle ORM, better-sqlite3, Vitest, Testing Library
 
 ## Global Constraints
 
@@ -1916,23 +1916,31 @@ Actual (2026-07-20): 초기 정책 RED는 3 files/38 tests 중 11 FAIL·27 PASS�
 
 ### Task 19: 저장 latency P95와 95% 신뢰 인증
 
-**Status:** Task 18 이후 대기
+**Status:** 완료 — 독립 최종 리뷰 Critical/Important/Minor 0 (2026-07-20)
 
 **Goal:** 저장 correctness와 별개로, 실제 SQLite commit ACK와 explicit save barrier의 latency를 반복 측정 가능한 artifact로 인증한다.
 
-- [ ] 환경, Electron/SQLite ABI, fixture 크기, warm-up, sample count를 고정한다.
-- [ ] 실제 DB write를 사용하며 mock timer/burst 결과를 latency sample로 세지 않는다.
-- [ ] 최소 30회 warm-up 뒤 독립 sample을 수집하고 raw values, P50/P95/P99, 실패율을 저장한다.
-- [ ] bootstrap 또는 percentile 기반 95% confidence interval을 산출하고 계산 script/test를 함께 둔다.
-- [ ] world 단건, 100-burst latest merge, Cmd/Ctrl+S 전체 barrier를 별도 시나리오로 측정한다.
-- [ ] CI/로컬 편차 때문에 hard gate가 부적절하면 regression budget과 인증 artifact를 분리해 문서화한다.
-- [ ] 독립 재실행에서 결과가 재현되고 SSOT/report가 일치한 뒤 한 Task/한 커밋으로 닫는다.
+- [x] 환경, Electron/SQLite ABI, fixture 크기, warm-up, sample count를 고정한다.
+- [x] 실제 DB write를 사용하며 mock timer/burst 결과를 latency sample로 세지 않는다.
+- [x] 최소 30회 warm-up 뒤 독립 sample을 수집하고 raw values, P50/P95/P99, 실패율을 저장한다.
+- [x] bootstrap 또는 percentile 기반 95% confidence interval을 산출하고 계산 script/test를 함께 둔다.
+- [x] world 단건, 100-burst latest merge, Cmd/Ctrl+S 전체 barrier를 별도 시나리오로 측정한다.
+- [x] CI/로컬 편차 때문에 hard gate가 부적절하면 regression budget과 인증 artifact를 분리해 문서화한다.
+- [x] 독립 재실행에서 결과가 재현되고 SSOT/report가 일치한 뒤 한 Task/한 커밋으로 닫는다.
+
+Actual (2026-07-20): core runner는 Electron Node ABI에서 production character store/queue를 real `characterService`와 SQLite `WAL + synchronous=FULL`에 연결한다. `coordinator-main-core-dirty-barrier`는 pending chapter autosave, world mutation, `saveProjectNow`, 실제 `.luie` export ACK를 포함하지만 preload/IPC는 in-process adapter이므로 단축키 전체 지연으로 부르지 않는다. 별도 E2E runner는 실제 Electron 창에서 물리적 `Cmd/Ctrl+S`로 저장을 발동하고, `saveProjectNow` 진입부터 pending preload autosave, renderer coordinator, IPC, main flush, SQLite와 package export ACK까지 하나의 `performance.measure`로 잰다. 동기 start와 success/error terminal measure가 단축키마다 정확히 하나인지 확인해 중복 handler와 실패 표본 오분류를 막는다. 계측 API 오류는 저장 동작에 영향을 주지 않는다. OS keydown dispatch에서 함수 진입까지는 측정값에 포함하지 않는다.
+
+각 runner는 독립 프로세스 3회, 시나리오마다 warm-up 30회 뒤 200개 순차 표본을 남겼다. nearest-rank P50/P95/P99와 circular moving-block bootstrap(block 10, seed 고정, 10,000회) P95 95% CI를 계산해 표본 내 자기상관을 IID로 가정하지 않는다. core 세 실행 P95는 단건 `0.195/0.207/0.192ms`, 100-burst `0.477/0.451/0.451ms`, core dirty barrier `8.449/8.968/8.879ms`다. 실제 단축키 E2E P95는 `12.400/12.600/12.700ms`다. 총 2,400개 측정 표본의 실패는 0건이며 core의 latest DB/원고 값과 revision/export, E2E의 latest DB/패키지 본문이 모두 수렴했다.
+
+세 실행의 raw artifact, Git HEAD, harness SHA-256을 보존했다. 프로세스별 분산은 관측값으로 인정하며 CI 중첩을 재현성 조건으로 과장하지 않는다. 단일 Apple M4 호스트의 절대 latency는 hard gate가 아니고 `docs/quality/save-latency-budget.json`은 세 실행 중 가장 큰 CI 상한을 바깥쪽 반올림한 local review 신호다. correctness gate만 표본 계약, 실패율 0, raw/summary 일치, latest DB 값, revision/export/package 수렴을 강제한다.
+
+최종 통계 TDD 12/12, coordinator 6/6, 인접 world 저장 회귀 44/44, core real SQLite/package 인증 3회, physical shortcut E2E 3회가 PASS했다. build, 대상 ESLint, diff-check도 PASS했고 변경 source/test는 모두 500 LOC 이하다. direct typecheck는 이번 변경 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102`의 기존 TS2322 한 건만 유지한다. 독립 코드·테스트와 artifact·SSOT 재리뷰는 모두 승인됐고 Critical/Important/Minor 0이다.
 
 ---
 
 ## Phase 20: SPA(Single Pattern Architecture) + 500 LOC 모듈화
 
-**Status:** 마지막 Phase — Task 18/19 완료 후 시작
+**Status:** 마지막 Phase — Task 18/19 완료, 다음 작업부터 시작
 
 **Definition of Done:** 레이어별 정식 의존 패턴이 하나이고, hand-written production TS/TSX/CSS와 test TS/TSX가 파일당 500 LOC 이하이며, public API·IPC·DB·UI behavior 회귀가 없다. generated/vendor만 근거가 있는 예외로 허용한다.
 

@@ -1,0 +1,310 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-20T05:17:04.483Z",
+  "runCount": 3,
+  "runs": [
+    {
+      "run": 1,
+      "artifact": "docs/quality/save-latency-certification-run-1.json",
+      "generatedAt": "2026-07-20T05:16:58.035Z",
+      "source": {
+        "gitHead": "c7ddf4b663fe2f75c37d6b1747e05fc119369af0",
+        "harnessSha256": "3110ec73d6fba01b49225531bd3d1f92f3301818feb5c1d61653315f7c334717"
+      },
+      "environment": {
+        "platform": "darwin",
+        "arch": "arm64",
+        "cpu": "Apple M4",
+        "logicalCpuCount": 10,
+        "totalMemoryBytes": 17179869184,
+        "electron": "42.5.0",
+        "node": "24.17.0",
+        "modulesAbi": "146",
+        "napi": "10",
+        "betterSqlite3": "12.11.1",
+        "sqlite": "3.53.2",
+        "pragmas": {
+          "journalMode": "wal",
+          "foreignKeys": 1,
+          "busyTimeout": 5000,
+          "synchronous": 2,
+          "walAutocheckpoint": 1000
+        }
+      },
+      "fixture": {
+        "projects": 1,
+        "chapters": 1,
+        "characters": 1,
+        "packagePath": "latency.luie",
+        "warmupCountPerScenario": 30,
+        "sampleCountPerScenario": 200,
+        "bootstrapIterations": 10000,
+        "bootstrapSeed": 20260720,
+        "bootstrapBlockSize": 10
+      },
+      "scenarios": [
+        {
+          "name": "world-single-commit-ack",
+          "sampleCount": 200,
+          "failureCount": 0,
+          "failureRate": 0,
+          "latencyMs": {
+            "p50Ms": 0.156,
+            "p95Ms": 0.195,
+            "p99Ms": 0.258,
+            "maxMs": 0.261,
+            "p95ConfidenceInterval": {
+              "lowerMs": 0.181,
+              "upperMs": 0.216
+            }
+          }
+        },
+        {
+          "name": "world-100-burst-latest-merge",
+          "sampleCount": 200,
+          "failureCount": 0,
+          "failureRate": 0,
+          "latencyMs": {
+            "p50Ms": 0.363,
+            "p95Ms": 0.477,
+            "p99Ms": 0.586,
+            "maxMs": 1.87,
+            "p95ConfidenceInterval": {
+              "lowerMs": 0.438,
+              "upperMs": 0.55
+            }
+          }
+        },
+        {
+          "name": "coordinator-main-core-dirty-barrier",
+          "sampleCount": 200,
+          "failureCount": 0,
+          "failureRate": 0,
+          "latencyMs": {
+            "p50Ms": 6.035,
+            "p95Ms": 8.449,
+            "p99Ms": 11.88,
+            "maxMs": 15.2,
+            "p95ConfidenceInterval": {
+              "lowerMs": 7.187,
+              "upperMs": 9.214
+            }
+          }
+        }
+      ],
+      "integrity": {
+        "persistedDescription": "barrier-230",
+        "expectedDescription": "barrier-230",
+        "persistedChapterContent": "chapter-230",
+        "expectedChapterContent": "chapter-230",
+        "revisionState": {
+          "revision": 1385,
+          "exportedRevision": 1385
+        },
+        "packageExists": true
+      }
+    },
+    {
+      "run": 2,
+      "artifact": "docs/quality/save-latency-certification-run-2.json",
+      "generatedAt": "2026-07-20T05:17:01.247Z",
+      "source": {
+        "gitHead": "c7ddf4b663fe2f75c37d6b1747e05fc119369af0",
+        "harnessSha256": "3110ec73d6fba01b49225531bd3d1f92f3301818feb5c1d61653315f7c334717"
+      },
+      "environment": {
+        "platform": "darwin",
+        "arch": "arm64",
+        "cpu": "Apple M4",
+        "logicalCpuCount": 10,
+        "totalMemoryBytes": 17179869184,
+        "electron": "42.5.0",
+        "node": "24.17.0",
+        "modulesAbi": "146",
+        "napi": "10",
+        "betterSqlite3": "12.11.1",
+        "sqlite": "3.53.2",
+        "pragmas": {
+          "journalMode": "wal",
+          "foreignKeys": 1,
+          "busyTimeout": 5000,
+          "synchronous": 2,
+          "walAutocheckpoint": 1000
+        }
+      },
+      "fixture": {
+        "projects": 1,
+        "chapters": 1,
+        "characters": 1,
+        "packagePath": "latency.luie",
+        "warmupCountPerScenario": 30,
+        "sampleCountPerScenario": 200,
+        "bootstrapIterations": 10000,
+        "bootstrapSeed": 20260720,
+        "bootstrapBlockSize": 10
+      },
+      "scenarios": [
+        {
+          "name": "world-single-commit-ack",
+          "sampleCount": 200,
+          "failureCount": 0,
+          "failureRate": 0,
+          "latencyMs": {
+            "p50Ms": 0.161,
+            "p95Ms": 0.207,
+            "p99Ms": 0.238,
+            "maxMs": 0.262,
+            "p95ConfidenceInterval": {
+              "lowerMs": 0.182,
+              "upperMs": 0.224
+            }
+          }
+        },
+        {
+          "name": "world-100-burst-latest-merge",
+          "sampleCount": 200,
+          "failureCount": 0,
+          "failureRate": 0,
+          "latencyMs": {
+            "p50Ms": 0.361,
+            "p95Ms": 0.451,
+            "p99Ms": 0.636,
+            "maxMs": 1.353,
+            "p95ConfidenceInterval": {
+              "lowerMs": 0.406,
+              "upperMs": 0.552
+            }
+          }
+        },
+        {
+          "name": "coordinator-main-core-dirty-barrier",
+          "sampleCount": 200,
+          "failureCount": 0,
+          "failureRate": 0,
+          "latencyMs": {
+            "p50Ms": 6.686,
+            "p95Ms": 8.968,
+            "p99Ms": 12.058,
+            "maxMs": 13.052,
+            "p95ConfidenceInterval": {
+              "lowerMs": 7.834,
+              "upperMs": 9.753
+            }
+          }
+        }
+      ],
+      "integrity": {
+        "persistedDescription": "barrier-230",
+        "expectedDescription": "barrier-230",
+        "persistedChapterContent": "chapter-230",
+        "expectedChapterContent": "chapter-230",
+        "revisionState": {
+          "revision": 1385,
+          "exportedRevision": 1385
+        },
+        "packageExists": true
+      }
+    },
+    {
+      "run": 3,
+      "artifact": "docs/quality/save-latency-certification-run-3.json",
+      "generatedAt": "2026-07-20T05:17:04.444Z",
+      "source": {
+        "gitHead": "c7ddf4b663fe2f75c37d6b1747e05fc119369af0",
+        "harnessSha256": "3110ec73d6fba01b49225531bd3d1f92f3301818feb5c1d61653315f7c334717"
+      },
+      "environment": {
+        "platform": "darwin",
+        "arch": "arm64",
+        "cpu": "Apple M4",
+        "logicalCpuCount": 10,
+        "totalMemoryBytes": 17179869184,
+        "electron": "42.5.0",
+        "node": "24.17.0",
+        "modulesAbi": "146",
+        "napi": "10",
+        "betterSqlite3": "12.11.1",
+        "sqlite": "3.53.2",
+        "pragmas": {
+          "journalMode": "wal",
+          "foreignKeys": 1,
+          "busyTimeout": 5000,
+          "synchronous": 2,
+          "walAutocheckpoint": 1000
+        }
+      },
+      "fixture": {
+        "projects": 1,
+        "chapters": 1,
+        "characters": 1,
+        "packagePath": "latency.luie",
+        "warmupCountPerScenario": 30,
+        "sampleCountPerScenario": 200,
+        "bootstrapIterations": 10000,
+        "bootstrapSeed": 20260720,
+        "bootstrapBlockSize": 10
+      },
+      "scenarios": [
+        {
+          "name": "world-single-commit-ack",
+          "sampleCount": 200,
+          "failureCount": 0,
+          "failureRate": 0,
+          "latencyMs": {
+            "p50Ms": 0.156,
+            "p95Ms": 0.192,
+            "p99Ms": 0.229,
+            "maxMs": 0.3,
+            "p95ConfidenceInterval": {
+              "lowerMs": 0.182,
+              "upperMs": 0.206
+            }
+          }
+        },
+        {
+          "name": "world-100-burst-latest-merge",
+          "sampleCount": 200,
+          "failureCount": 0,
+          "failureRate": 0,
+          "latencyMs": {
+            "p50Ms": 0.362,
+            "p95Ms": 0.451,
+            "p99Ms": 0.55,
+            "maxMs": 1.741,
+            "p95ConfidenceInterval": {
+              "lowerMs": 0.401,
+              "upperMs": 0.515
+            }
+          }
+        },
+        {
+          "name": "coordinator-main-core-dirty-barrier",
+          "sampleCount": 200,
+          "failureCount": 0,
+          "failureRate": 0,
+          "latencyMs": {
+            "p50Ms": 6.589,
+            "p95Ms": 8.879,
+            "p99Ms": 10.993,
+            "maxMs": 13.992,
+            "p95ConfidenceInterval": {
+              "lowerMs": 7.913,
+              "upperMs": 10.533
+            }
+          }
+        }
+      ],
+      "integrity": {
+        "persistedDescription": "barrier-230",
+        "expectedDescription": "barrier-230",
+        "persistedChapterContent": "chapter-230",
+        "expectedChapterContent": "chapter-230",
+        "revisionState": {
+          "revision": 1385,
+          "exportedRevision": 1385
+        },
+        "packageExists": true
+      }
+    }
+  ]
+}
