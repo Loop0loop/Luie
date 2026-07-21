@@ -1,4 +1,5 @@
 import { Calendar } from "lucide-react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import EventDetailView from "@renderer/features/research/components/event/EventDetailView";
 import { useEventManager } from "@renderer/features/research/components/event/useEventManager";
@@ -15,6 +16,7 @@ type EventManagerProps = {
   onViewModeChange?: (viewMode: EntityGalleryViewMode) => void;
   sortMode?: EntityGallerySortMode;
   onSortModeChange?: (sortMode: EntityGallerySortMode) => void;
+  tabs?: ReactNode;
 };
 
 export default function EventManager({
@@ -24,6 +26,7 @@ export default function EventManager({
   onViewModeChange,
   sortMode,
   onSortModeChange,
+  tabs,
 }: EventManagerProps) {
   const { t } = useTranslation();
   const {
@@ -56,6 +59,7 @@ export default function EventManager({
           onViewModeChange={onViewModeChange}
           sortMode={sortMode}
           onSortModeChange={onSortModeChange}
+          tabs={tabs}
         />
       )}
     </>

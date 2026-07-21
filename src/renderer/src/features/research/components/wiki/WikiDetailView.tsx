@@ -16,7 +16,6 @@ import { useEffectiveCharacterSections } from "./hooks/useEffectiveCharacterSect
 import {
   type CharacterViewMode,
   CHARACTER_VIEW_MODE_KEY,
-  CHARACTER_COLOR_PRESETS,
 } from "./types";
 
 const getViewModeStorageKey = (id?: string) =>
@@ -55,7 +54,7 @@ function AddTagInline({ onAdd, placeholder }: AddTagInlineProps) {
       <button
         type="button"
         onClick={() => setEditing(true)}
-        className="text-[12px] text-muted/50 hover:text-accent transition-colors px-1 bg-transparent border-none cursor-pointer"
+        className="text-[12px] text-muted/50 hover:text-fg transition-colors px-1 bg-transparent border-none cursor-pointer"
       >
         {placeholder}
       </button>
@@ -72,61 +71,9 @@ function AddTagInline({ onAdd, placeholder }: AddTagInlineProps) {
         if (e.key === "Escape") { setValue(""); setEditing(false); }
       }}
       onBlur={commit}
-      className="text-[12px] bg-transparent border-b border-accent/60 outline-none w-20 text-fg pb-0.5 placeholder:text-muted/40"
+      className="text-[12px] w-20 border-b border-border-active bg-transparent pb-0.5 text-fg outline-none placeholder:text-muted/40"
       placeholder="입력 후 Enter"
     />
-  );
-}
-
-// ── ColorDotPicker ──────────────────────────────────────────────────────────
-
-type ColorDotPickerProps = {
-  color: string;
-  onPick: (color: string) => void;
-};
-
-/** Header swatch that opens the preset palette — sets the character signature colour. */
-function ColorDotPicker({ color, onPick }: ColorDotPickerProps) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="relative shrink-0">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        title="캐릭터 색"
-        className="h-4 w-4 rounded-full ring-2 ring-app transition-transform hover:scale-110"
-        style={{ backgroundColor: color }}
-      />
-      {open && (
-        <>
-          <button
-            type="button"
-            aria-hidden
-            className="fixed inset-0 z-dropdown cursor-default border-none bg-transparent"
-            onClick={() => setOpen(false)}
-          />
-          <div className="absolute left-0 top-6 z-dropdown grid grid-cols-4 gap-1.5 rounded-control border border-border bg-panel p-2 shadow-panel">
-            {CHARACTER_COLOR_PRESETS.map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => {
-                  onPick(preset);
-                  setOpen(false);
-                }}
-                className="h-5 w-5 rounded-full transition-transform hover:scale-110"
-                style={{
-                  backgroundColor: preset,
-                  outline: preset === color ? "2px solid var(--text-primary)" : "none",
-                  outlineOffset: "1px",
-                }}
-              />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
   );
 }
 
@@ -269,10 +216,10 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
   // ── Render ──────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex-1 overflow-auto px-8 py-7 sm:px-6 sm:py-6 flex flex-col gap-5 bg-panel text-fg min-w-0">
+    <div className="flex flex-1 min-w-0 flex-col gap-5 overflow-auto bg-panel px-5 py-5 text-fg sm:px-6">
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-1.5 pb-2">
+      <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
           {onBack ? (
             <button
@@ -280,20 +227,42 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
               onClick={onBack}
               title={t("back", "뒤로가기")}
               aria-label={t("back", "뒤로가기")}
-              className="flex size-8 shrink-0 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="inline-flex h-10 shrink-0 items-center gap-1 rounded-control px-2.5 text-xs font-medium text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               <ChevronLeft className="icon-sm" aria-hidden="true" />
+              {t("back", "목록")}
             </button>
           ) : null}
-          <ColorDotPicker color={attrs.characterColor} onPick={attrs.setCharacterColor} />
           <BufferedInput
-            className="text-[22px] font-semibold text-fg leading-tight border-none bg-transparent flex-1 focus:outline-none min-w-0"
+            className="min-w-0 flex-1 border-none bg-transparent text-xl font-semibold leading-tight text-fg focus:outline-none"
             value={character.name}
             onSave={(val) => updateCharacter({ id: character.id, name: val })}
           />
 
-          {/* View mode toggle */}
-          <div className="flex items-center gap-0.5 shrink-0">
+          <button
+            type="button"
+            onClick={handleDeleteCharacter}
+            title={t("character.wiki.deleteCharacterTitle")}
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-control text-muted/70 transition-colors hover:bg-danger/10 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <div className="flex min-w-0 items-center gap-1.5 text-[12px] text-muted">
+            <span>{t("character.classificationLabel")}</span>
+            <span className="text-border/60">·</span>
+            <span className="text-fg/70">{t(currentTemplate.nameKey)}</span>
+            <span className="text-border/60">·</span>
+            <BufferedInput
+              className="inline min-w-[60px] bg-transparent p-0 text-fg/70 focus:rounded-sm focus:bg-active focus:px-1 focus:outline-none"
+              value={character.description || ""}
+              placeholder={t("character.uncategorized")}
+              onSave={(val) => updateCharacter({ id: character.id, description: val })}
+            />
+          </div>
+          <div className="flex shrink-0 items-center gap-0.5 rounded-control bg-surface-hover p-0.5">
             <button
               type="button"
               onClick={() => switchViewMode("wiki")}
@@ -323,28 +292,6 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
               문서
             </button>
           </div>
-
-          <button
-            type="button"
-            onClick={handleDeleteCharacter}
-            title={t("character.wiki.deleteCharacterTitle")}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-control text-muted/70 transition-colors hover:bg-danger/10 hover:text-danger"
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
-
-        <div className="flex items-center gap-1.5 text-[12px] text-muted">
-          <span>{t("character.classificationLabel")}</span>
-          <span className="text-border/60">·</span>
-          <span className="text-fg/70">{t(currentTemplate.nameKey)}</span>
-          <span className="text-border/60">·</span>
-          <BufferedInput
-            className="inline min-w-[60px] text-fg/70 bg-transparent border-none p-0 focus:outline-none focus:bg-active focus:rounded-sm focus:px-1 transition-all"
-            value={character.description || ""}
-            placeholder={t("character.uncategorized")}
-            onSave={(val) => updateCharacter({ id: character.id, description: val })}
-          />
         </div>
       </div>
 
@@ -367,10 +314,7 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
                   key={role}
                   className="group/tag inline-flex items-center gap-1 text-[12px] text-fg/70"
                 >
-                  <span
-                    className="h-1.5 w-1.5 rounded-full"
-                    style={{ backgroundColor: attrs.characterColor }}
-                  />
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted/60" />
                   {role}
                   <button
                     type="button"
@@ -416,15 +360,13 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
                     setSections: attrs.setSections,
                   }}
                   i18nPrefix="character"
-                  accentColor={attrs.characterColor}
                 />
               </div>
               <div className="w-full @min-[700px]:w-[280px] shrink-0 @min-[700px]:order-2 order-1">
                 <Infobox
                   title={character.name}
-                  image={<User size={48} color={attrs.characterColor} />}
+                  image={<User size={48} />}
                   imageUrl={attrs.generatedImage}
-                  color={attrs.characterColor}
                   rows={infoboxRows}
                   onAddField={addCustomField}
                 />
@@ -437,7 +379,6 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
         <CharacterDocumentView
           classification={t(currentTemplate.nameKey)}
           description={character.description || ""}
-          accentColor={attrs.characterColor}
           onDescriptionSave={(val) =>
             updateCharacter({ id: character.id, description: val })
           }

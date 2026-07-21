@@ -80,7 +80,6 @@ export function Infobox({
   title,
   image,
   imageUrl,
-  color,
   rows,
   onAddField,
 }: {
@@ -88,8 +87,6 @@ export function Infobox({
   image?: React.ReactNode;
   /** Generated portrait URL; falls back to `image` node when absent. */
   imageUrl?: string | null;
-  /** Character signature colour (hex). When set, the box renders as a tinted identity card. */
-  color?: string;
   rows: InfoboxRowProps[];
   onAddField: () => void;
 }) {
@@ -105,16 +102,9 @@ export function Infobox({
 
   const body = (
     <>
-      {(portrait || color) && (
+      {portrait && (
         <div className="flex items-center justify-center pb-3">
-          <div
-            className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full"
-            style={
-              color
-                ? { backgroundColor: `${color}1a`, border: `1px solid ${color}33` }
-                : undefined
-            }
-          >
+          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-element text-subtle">
             {portrait}
           </div>
         </div>
@@ -126,7 +116,7 @@ export function Infobox({
       </div>
       <button
         type="button"
-        className="mt-2 flex items-center gap-1 bg-transparent border-none text-[12px] text-subtle hover:text-accent transition-colors cursor-pointer p-0"
+        className="mt-2 flex items-center gap-1 bg-transparent border-none text-[12px] text-subtle hover:text-fg transition-colors cursor-pointer p-0"
         onClick={onAddField}
       >
         <Plus size={11} />
@@ -135,11 +125,9 @@ export function Infobox({
     </>
   );
 
-  // Character identity card (colour present); event/faction keep the plain box.
-  if (color) {
+  if (portrait) {
     return (
       <div className="w-full shrink-0 overflow-hidden rounded-panel border border-border bg-surface text-[13px] shadow-panel">
-        <div className="h-1" style={{ backgroundColor: color }} />
         <div className="p-4">{body}</div>
       </div>
     );

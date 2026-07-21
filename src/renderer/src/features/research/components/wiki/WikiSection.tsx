@@ -21,8 +21,6 @@ type WikiSectionProps = {
   id: string;
   label: string;
   content: string;
-  /** Character signature colour (hex) for the section marker. */
-  accentColor?: string;
   onRename: (next: string) => void;
   onUpdateContent: (next: string) => void;
   onDelete: () => void;
@@ -32,7 +30,6 @@ export function WikiSection({
   id,
   label,
   content,
-  accentColor,
   onRename,
   onUpdateContent,
   onDelete,
@@ -46,12 +43,6 @@ export function WikiSection({
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-1 items-center gap-2 min-w-0">
-          {accentColor && (
-            <span
-              className="h-4 w-1 shrink-0 rounded-full"
-              style={{ backgroundColor: accentColor }}
-            />
-          )}
           <BufferedInput
             value={label}
             className="flex-1 border-none bg-transparent text-[16px] font-semibold text-fg p-0 focus:outline-none leading-snug min-w-0"

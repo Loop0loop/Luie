@@ -1,6 +1,7 @@
 import React, { Fragment, Suspense } from "react";
 import { Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
+import { BookOpen, X } from "lucide-react";
 import { Editor } from "@renderer/domains/editor";
 import type { ResizablePanelData } from "@renderer/features/workspace/stores/uiStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
@@ -62,19 +63,31 @@ export function WorkspacePanels({
             }}
             className="min-w-0 bg-panel relative flex flex-col"
           >
-            {/* ponytail: pr-12 keeps the panel ✕ clear of MainLayout's floating
-                right toggle (absolute right-2 top-2, ~40px wide) on the rightmost panel. */}
-            <div className="flex justify-between items-center p-2 pr-12 border-b border-border bg-surface text-xs font-semibold text-muted">
-              <span className="uppercase">{panel.content.type}</span>
+            <div className="flex h-12 shrink-0 items-center border-b border-border bg-sidebar px-4 pr-12">
+              {panel.content.type === "research" ? (
+                <>
+                  <BookOpen className="icon-sm shrink-0 text-muted" aria-hidden="true" />
+                  <h1 className="ml-2 text-sm font-semibold text-fg">
+                    {t("sidebar.section.research", "자료")}
+                  </h1>
+                </>
+              ) : (
+                <span className="text-xs font-medium text-muted">
+                  {panel.content.type}
+                </span>
+              )}
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   setFocusedClosableTarget({ kind: "panel", id: panel.id });
                   removePanel(panel.id);
                 }}
-                className="hover:bg-surface-hover rounded p-1"
+                className="ml-auto flex size-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                aria-label={t("sidebar.toggle.close")}
+                title={t("sidebar.toggle.close")}
               >
-                ✕
+                <X className="icon-sm" aria-hidden="true" />
               </button>
             </div>
 

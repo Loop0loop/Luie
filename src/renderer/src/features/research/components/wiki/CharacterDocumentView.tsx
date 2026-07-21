@@ -15,8 +15,6 @@ type CharacterDocumentViewProps = {
   onDescriptionSave: (value: string) => void;
   properties: DocumentPropertyRow[];
   attrs: CharacterWikiAttrs;
-  /** Character signature colour (hex). */
-  accentColor?: string;
 };
 
 /**
@@ -30,7 +28,6 @@ export function CharacterDocumentView({
   onDescriptionSave,
   properties,
   attrs,
-  accentColor,
 }: CharacterDocumentViewProps) {
   const { t } = useTranslation();
 
@@ -50,18 +47,13 @@ export function CharacterDocumentView({
     ...properties,
   ];
 
-  const color = accentColor ?? attrs.characterColor;
-
   const pageHeader = (
     <div className="flex items-center gap-3">
-      <div
-        className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full"
-        style={{ backgroundColor: `${color}1a`, border: `1px solid ${color}33` }}
-      >
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-element text-subtle">
         {attrs.generatedImage ? (
           <img src={attrs.generatedImage} alt="" className="h-full w-full object-cover" />
         ) : (
-          <User size={22} color={color} />
+          <User size={22} />
         )}
       </div>
       <BufferedInput
@@ -81,7 +73,6 @@ export function CharacterDocumentView({
       setSections={attrs.setSections}
       setSectionContent={attrs.setSectionContent}
       header={pageHeader}
-      accentColor={color}
       bodyPlaceholder={t(
         "character.document.bodyPlaceholder",
         "이 섹션을 자유롭게 채워보세요…",

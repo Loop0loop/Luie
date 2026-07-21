@@ -1,4 +1,5 @@
 import { Shield } from "lucide-react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import FactionDetailView from "@renderer/features/research/components/faction/FactionDetailView";
 import { useFactionManager } from "@renderer/features/research/components/faction/useFactionManager";
@@ -15,6 +16,7 @@ type FactionManagerProps = {
   onViewModeChange?: (viewMode: EntityGalleryViewMode) => void;
   sortMode?: EntityGallerySortMode;
   onSortModeChange?: (sortMode: EntityGallerySortMode) => void;
+  tabs?: ReactNode;
 };
 
 export default function FactionManager({
@@ -24,6 +26,7 @@ export default function FactionManager({
   onViewModeChange,
   sortMode,
   onSortModeChange,
+  tabs,
 }: FactionManagerProps) {
   const { t } = useTranslation();
   const {
@@ -56,6 +59,7 @@ export default function FactionManager({
           onViewModeChange={onViewModeChange}
           sortMode={sortMode}
           onSortModeChange={onSortModeChange}
+          tabs={tabs}
         />
       )}
     </>

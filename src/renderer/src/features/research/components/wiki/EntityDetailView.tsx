@@ -184,25 +184,40 @@ export function EntityDetailView({
   };
 
   return (
-    <div className="flex-1 overflow-auto p-8 sm:p-6 flex flex-col gap-6 bg-panel text-fg min-w-0">
-      <div className="flex flex-col gap-2 pb-4 border-b border-border">
+    <div className="flex flex-1 min-w-0 flex-col gap-5 overflow-auto bg-panel px-5 py-5 text-fg sm:px-6">
+      <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
           {onBack ? (
             <button
               type="button"
               onClick={onBack}
-              className="flex size-8 shrink-0 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="inline-flex h-10 shrink-0 items-center gap-1 rounded-control px-2.5 text-xs font-medium text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               title={t("back", "뒤로가기")}
               aria-label={t("back", "뒤로가기")}
             >
               <ChevronLeft className="icon-sm" aria-hidden="true" />
+              {t("back", "목록")}
             </button>
           ) : null}
           <BufferedInput
-            className="text-[26px] font-extrabold text-fg leading-tight border-none bg-transparent flex-1 focus:outline-none min-w-0"
+            className="min-w-0 flex-1 border-none bg-transparent text-xl font-semibold leading-tight text-fg focus:outline-none"
             value={entity.name}
             onSave={(val) => handleUpdate("name", val)}
           />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <div className="flex min-w-0 items-center gap-1.5 text-[12px] text-muted">
+            <span className="font-medium">{t(`${prefix}.classificationLabel`, "Classification")}</span>
+            <span className="text-border/60">·</span>
+            <span className="text-fg/70">{t(`${prefix}.template.basic`, templateFallback)}</span>
+            <span className="text-border/60">·</span>
+            <BufferedInput
+              className="inline min-w-[60px] bg-transparent p-0 text-fg/70 focus:rounded-sm focus:bg-active focus:px-1 focus:outline-none"
+              value={entity.description || ""}
+              placeholder={t(`${prefix}.uncategorized`, "Uncategorized")}
+              onSave={(val) => handleUpdate("description", val)}
+            />
+          </div>
           <div className="flex items-center gap-1 p-0.5 rounded-panel bg-surface-hover border border-border/60 shrink-0">
             <button
               type="button"
@@ -225,19 +240,6 @@ export function EntityDetailView({
               <FileText size={12} /> {t("entityVisual.toggle.document", "문서")}
             </button>
           </div>
-        </div>
-
-        <div className="flex items-center gap-1.5 text-[12px] text-muted">
-          <span className="font-medium">{t(`${prefix}.classificationLabel`, "Classification")}</span>
-          <span className="text-border/60">·</span>
-          <span className="text-accent/80">{t(`${prefix}.template.basic`, templateFallback)}</span>
-          <span className="text-border/60">·</span>
-          <BufferedInput
-            className="inline min-w-[60px] font-medium text-accent/80 bg-transparent border-none p-0 focus:outline-none focus:bg-active focus:rounded-sm focus:px-1 transition-all"
-            value={entity.description || ""}
-            placeholder={t(`${prefix}.uncategorized`, "Uncategorized")}
-            onSave={(val) => handleUpdate("description", val)}
-          />
         </div>
       </div>
 

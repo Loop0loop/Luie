@@ -31,8 +31,6 @@ type NotionDocumentViewProps = {
   bodyPlaceholder: string;
   /** Optional page header (portrait + tagline) rendered above the properties. */
   header?: ReactNode;
-  /** Entity signature colour (hex) — tints the per-section heading markers. */
-  accentColor?: string;
 };
 
 const AUTOSAVE_DELAY_MS = 500;
@@ -56,7 +54,6 @@ export default function NotionDocumentView({
   setSectionContent,
   bodyPlaceholder,
   header,
-  accentColor,
 }: NotionDocumentViewProps) {
   // Compose into one markdown document — once per mount; the parent keys this
   // view by entity id (re-mount on switch).
@@ -112,7 +109,6 @@ export default function NotionDocumentView({
         <MarkdownDocumentEditor
           initialMarkdown={initialBody}
           placeholder={bodyPlaceholder}
-          accentColor={accentColor}
           onSave={saveBody}
         />
       </div>
@@ -146,12 +142,10 @@ function PropertyRow({
 function MarkdownDocumentEditor({
   initialMarkdown,
   placeholder,
-  accentColor,
   onSave,
 }: {
   initialMarkdown: string;
   placeholder: string;
-  accentColor?: string;
   onSave: (markdown: string) => void | Promise<unknown>;
 }) {
   const saveTimer = useRef<number | null>(null);
@@ -255,10 +249,7 @@ function MarkdownDocumentEditor({
   }, []);
 
   return (
-    <div
-      className="tiptap entity-document"
-      style={accentColor ? { ["--entity-accent" as string]: accentColor } : undefined}
-    >
+    <div className="tiptap entity-document">
       <EditorContent editor={editor} />
     </div>
   );

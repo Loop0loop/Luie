@@ -22,15 +22,12 @@ type WikiContentPanelProps = {
   /** i18n namespace: "character" | "event" | "faction". */
   i18nPrefix: string;
   newSectionFallback?: string;
-  /** Character signature colour (hex) for section markers. */
-  accentColor?: string;
 };
 
 export function WikiContentPanel({
   attrs,
   i18nPrefix,
   newSectionFallback,
-  accentColor,
 }: WikiContentPanelProps) {
   const { t } = useTranslation();
   const dialog = useDialog();
@@ -80,7 +77,7 @@ export function WikiContentPanel({
               <a
                 key={sec.id}
                 href={`#${sec.id}`}
-                className="text-muted no-underline hover:text-fg hover:underline transition-colors"
+                className="cursor-pointer text-muted no-underline transition-colors hover:text-fg hover:underline"
               >
                 {sec.label}
                 {i < sections.length - 1 && (
@@ -99,7 +96,6 @@ export function WikiContentPanel({
           id={sec.id}
           label={sec.label}
           content={attrs.getSectionContent(sec.id)}
-          accentColor={accentColor}
           onRename={(val) => renameSection(sec.id, val)}
           onUpdateContent={(val) => attrs.setSectionContent(sec.id, val)}
           onDelete={() => deleteSection(sec.id)}
@@ -110,7 +106,7 @@ export function WikiContentPanel({
       <button
         type="button"
         onClick={addSection}
-        className="self-start flex items-center gap-1.5 text-[13px] text-muted/50 hover:text-accent transition-colors cursor-pointer bg-transparent border-none pl-1"
+        className="self-start flex items-center gap-1.5 text-[13px] text-muted/50 hover:text-fg transition-colors cursor-pointer bg-transparent border-none pl-1"
       >
         <span className="text-[16px] leading-none">+</span>
         {t(`${i18nPrefix}.addSection`, "+ Add section")}

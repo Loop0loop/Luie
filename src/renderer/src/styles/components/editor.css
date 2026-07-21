@@ -493,27 +493,14 @@
     display: none;
 }
 
-/* Section headings (= wiki sections) read as distinct blocks:
-   denser than manuscript chapters + a character-coloured marker bar. */
+/* Section headings (= wiki sections) are distinct without entity colour. */
 .entity-document .ProseMirror h1 {
-    position: relative;
     font-size: 1.5rem;
     font-weight: 700;
     margin-top: 1.8em;
-    padding-left: 0.75rem;
 }
 .entity-document .ProseMirror h1:first-child {
     margin-top: 0;
-}
-.entity-document .ProseMirror h1::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0.18em;
-    bottom: 0.18em;
-    width: 3px;
-    border-radius: 9999px;
-    background: var(--entity-accent, var(--border-active));
 }
 
 /* Placeholder for the active empty block only. */
@@ -525,16 +512,14 @@
     pointer-events: none;
 }
 
-/* Callout block — markdown blockquotes (`> `) render as a tinted callout box
-   in the entity document. Native markdown so it round-trips on save; tinted
-   with the character accent for a Notion-style highlight. */
+/* Callout block — neutral so every entity shares the same reading hierarchy. */
 .entity-document .ProseMirror blockquote {
     margin: 1.25em 0;
     padding: 0.7rem 1rem 0.7rem 1.1rem;
     border: none;
-    border-left: 3px solid var(--entity-accent, var(--accent-bg));
+    border-left: 2px solid var(--border-active);
     border-radius: 8px;
-    background: color-mix(in srgb, var(--entity-accent, var(--accent-bg)) 7%, transparent);
+    background: var(--bg-surface-hover);
     color: var(--text-primary);
     font-style: normal;
 }

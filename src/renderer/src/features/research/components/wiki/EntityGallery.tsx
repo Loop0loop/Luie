@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   Grid2X2,
   List,
@@ -34,6 +34,7 @@ type EntityGalleryProps<T extends GalleryEntity> = {
   onViewModeChange?: (viewMode: EntityGalleryViewMode) => void;
   sortMode?: EntityGallerySortMode;
   onSortModeChange?: (sortMode: EntityGallerySortMode) => void;
+  tabs?: ReactNode;
 };
 
 export type EntityGalleryViewMode = "grid" | "list";
@@ -121,6 +122,7 @@ export function EntityGallery<T extends GalleryEntity>({
   onViewModeChange,
   sortMode: controlledSortMode,
   onSortModeChange,
+  tabs,
 }: EntityGalleryProps<T>) {
   const [uncontrolledQuery, setUncontrolledQuery] = useState("");
   const [uncontrolledViewMode, setUncontrolledViewMode] =
@@ -188,12 +190,20 @@ export function EntityGallery<T extends GalleryEntity>({
     >
       <header className="shrink-0 border-b border-border bg-sidebar/40">
         <div className="flex h-11 items-center gap-3 px-4">
-          <h2 className="min-w-0 truncate text-sm font-semibold text-fg">
-            {title}
-          </h2>
-          <span className="text-xs text-subtle">{entityCount}</span>
-          <span className="h-3.5 w-px bg-border" aria-hidden="true" />
-          <div className="flex items-center rounded-control bg-element p-0.5">
+          {tabs ? (
+            <>
+              {tabs}
+              <span className="text-xs tabular-nums text-subtle">{entityCount}</span>
+            </>
+          ) : (
+            <>
+              <h2 className="min-w-0 truncate text-sm font-semibold text-fg">
+                {title}
+              </h2>
+              <span className="text-xs tabular-nums text-subtle">{entityCount}</span>
+            </>
+          )}
+          <div className="ml-auto flex items-center rounded-control bg-element p-0.5">
             <button
               type="button"
               aria-label="Grid view"
@@ -226,7 +236,7 @@ export function EntityGallery<T extends GalleryEntity>({
               <button
                 type="button"
                 aria-label="정렬 옵션"
-                className="ml-auto flex size-7 items-center justify-center rounded-control text-subtle transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="ml-1 flex size-7 items-center justify-center rounded-control text-subtle transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <SlidersHorizontal className="icon-sm" aria-hidden="true" />
               </button>
@@ -259,7 +269,7 @@ export function EntityGallery<T extends GalleryEntity>({
           {onAdd ? (
             <button
               type="button"
-              className="inline-flex h-7 items-center gap-1.5 rounded-control bg-element px-2 text-xs font-medium text-fg transition-colors hover:bg-element-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="ml-1 inline-flex h-7 items-center gap-1.5 rounded-control bg-element px-2 text-xs font-medium text-fg transition-colors hover:bg-element-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               onClick={onAdd}
             >
               <Plus className="icon-xs" aria-hidden="true" />
@@ -272,6 +282,8 @@ export function EntityGallery<T extends GalleryEntity>({
           <input
             aria-label={`Search ${title}`}
             className="min-w-0 flex-1 bg-transparent text-xs text-fg outline-none placeholder:text-subtle"
+            autoComplete="off"
+            name="entity-search"
             onChange={(event) => setQuery(event.target.value)}
             placeholder="검색..."
             type="search"
@@ -333,7 +345,7 @@ export function EntityGallery<T extends GalleryEntity>({
               ) : (
                 <div className="space-y-1">
                   {entities.map((entity) => (
-                    <article key={entity.id} className="group flex items-center gap-3 rounded-[8px] px-2 py-2 transition-colors hover:bg-surface-hover">
+                    <article key={entity.id} className="group flex items-center gap-3 rounded-[8px] px-2 py-2 hover:bg-surface-hover">
                       <button
                         type="button"
                         data-entity-id={entity.id}

@@ -1,4 +1,5 @@
 import { LayoutTemplate, User } from "lucide-react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import WikiDetailView from "@renderer/features/research/components/wiki/WikiDetailView";
 import { useCharacterManager } from "@renderer/features/research/components/character/useCharacterManager";
@@ -17,6 +18,7 @@ type CharacterManagerProps = {
   onViewModeChange?: (viewMode: EntityGalleryViewMode) => void;
   sortMode?: EntityGallerySortMode;
   onSortModeChange?: (sortMode: EntityGallerySortMode) => void;
+  tabs?: ReactNode;
 };
 
 export default function CharacterManager({
@@ -26,6 +28,7 @@ export default function CharacterManager({
   onViewModeChange,
   sortMode,
   onSortModeChange,
+  tabs,
 }: CharacterManagerProps) {
   const { t } = useTranslation();
   const {
@@ -60,6 +63,7 @@ export default function CharacterManager({
           onViewModeChange={onViewModeChange}
           sortMode={sortMode}
           onSortModeChange={onSortModeChange}
+          tabs={tabs}
         />
       )}
       <Modal

@@ -101,36 +101,39 @@ export default function ResearchPanel({
       [tab]: { ...states[tab], ...patch },
     }));
   };
+  const galleryTabs = canSwitchPrimaryTabs ? (
+    <nav
+      className="flex h-full min-w-0 items-end gap-1"
+      aria-label={t("sidebar.section.research", "자료")}
+      role="tablist"
+    >
+      {primaryTabs.map((tab) => {
+        const isActive = visibleTab === tab.id;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => selectTab(tab.id)}
+            role="tab"
+            aria-selected={isActive}
+            className={cn(
+              "relative h-full px-2.5 pb-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
+              isActive ? "text-fg" : "text-muted hover:text-fg",
+            )}
+            title={tab.label}
+          >
+            {tab.label}
+            {isActive ? (
+              <span className="absolute inset-x-2.5 bottom-0 h-px bg-fg/70" />
+            ) : null}
+          </button>
+        );
+      })}
+    </nav>
+  ) : undefined;
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-sidebar">
-      {canSwitchPrimaryTabs ? (
-        <nav className="flex h-9 shrink-0 items-end gap-5 border-b border-border bg-app px-4" aria-label={t("research.title", "Research")}>
-          {primaryTabs.map((tab) => {
-            const isActive = visibleTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => selectTab(tab.id)}
-                className={cn(
-                  "relative h-full pb-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
-                  isActive
-                    ? "text-fg"
-                    : "text-muted hover:text-fg",
-                )}
-                title={tab.label}
-              >
-                {tab.label}
-                {isActive ? (
-                  <span className="absolute inset-x-0 bottom-0 h-px bg-accent" />
-                ) : null}
-              </button>
-            );
-          })}
-        </nav>
-      ) : null}
-
       <div className="relative flex flex-1 flex-col overflow-hidden bg-app">
         {visibleTab === "character" && (
           <FeatureErrorBoundary featureName="Characters">
@@ -145,6 +148,7 @@ export default function ResearchPanel({
               onSortModeChange={(sortMode) =>
                 updateGalleryState("character", { sortMode })
               }
+              tabs={galleryTabs}
             />
           </FeatureErrorBoundary>
         )}
@@ -161,6 +165,7 @@ export default function ResearchPanel({
               onSortModeChange={(sortMode) =>
                 updateGalleryState("event", { sortMode })
               }
+              tabs={galleryTabs}
             />
           </FeatureErrorBoundary>
         )}
@@ -177,6 +182,7 @@ export default function ResearchPanel({
               onSortModeChange={(sortMode) =>
                 updateGalleryState("faction", { sortMode })
               }
+              tabs={galleryTabs}
             />
           </FeatureErrorBoundary>
         )}

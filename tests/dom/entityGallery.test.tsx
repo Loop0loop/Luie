@@ -115,4 +115,25 @@ describe("EntityGallery", () => {
 
     expect(onViewModeChange).toHaveBeenCalledWith("list");
   });
+
+  it("keeps an entity button mounted while changing the view layout", () => {
+    const { container } = mountView(
+      <EntityGallery
+        groups={{ Main: [{ id: "event-1", name: "Opening" }] }}
+        title="Event Overview"
+        noDescriptionLabel="No Type"
+        icon={Calendar}
+        onSelect={vi.fn()}
+      />,
+    );
+    const before = container.querySelector('button[data-entity-id="event-1"]');
+
+    act(() => {
+      container
+        .querySelector('button[aria-label="List view"]')
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(container.querySelector('button[data-entity-id="event-1"]')).toBe(before);
+  });
 });

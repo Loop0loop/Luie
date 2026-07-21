@@ -1,4 +1,4 @@
-import { ChevronLeft, Pin, PinOff, X } from "lucide-react";
+import { BookOpen, ChevronLeft, Pin, PinOff, X } from "lucide-react";
 import React, { Suspense } from "react";
 import type { BinderTab } from "./binderSidebar.shared";
 import type { Snapshot } from "@shared/types";
@@ -45,16 +45,23 @@ export function BinderSidebarPanelBody(props: {
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
       {props.showHeader !== false ? (
-        <header className="flex h-9 shrink-0 items-center border-b border-border bg-sidebar px-3">
-          <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-subtle">
-            {isResearchEntityTab ? "Research" : props.activeTab}
-          </span>
-          <div className="ml-auto flex items-center gap-1">
+        <header className="flex h-12 shrink-0 items-center border-b border-border bg-sidebar px-4">
+          {isResearchEntityTab ? (
+            <>
+              <BookOpen className="icon-sm shrink-0 text-muted" aria-hidden="true" />
+              <h1 className="ml-2 text-sm font-semibold text-fg">
+                {props.t("sidebar.section.research")}
+              </h1>
+            </>
+          ) : (
+            <span className="text-xs font-medium text-fg">{props.activeTab}</span>
+          )}
+          <div className="ml-auto flex items-center gap-1 border-l border-border pl-2">
             <button
               type="button"
               onClick={props.onTogglePinned}
               disabled={props.pinLocked}
-              className="flex size-7 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="flex size-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               title={props.isPinned ? "Unpin" : "Pin"}
               aria-label={props.isPinned ? "Unpin" : "Pin"}
             >
@@ -63,7 +70,7 @@ export function BinderSidebarPanelBody(props: {
             <button
               type="button"
               onClick={props.onClose}
-              className="flex size-7 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="flex size-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               title={props.t("sidebar.toggle.close")}
               aria-label={props.t("sidebar.toggle.close")}
             >
@@ -76,7 +83,7 @@ export function BinderSidebarPanelBody(props: {
       {props.activeTab === "snapshot" && (
         <button
           onClick={props.onBackToSnapshotList}
-          className="absolute left-3 top-10 z-50 flex size-7 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="absolute left-3 top-14 z-50 flex size-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           title={props.t("back")}
           aria-label={props.t("back")}
         >
