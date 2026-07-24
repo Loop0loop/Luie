@@ -23,7 +23,10 @@ export type ResearchPanelTab =
   | "world"
   | "scrap"
   | "analysis"
-  | "synopsis";
+  | "synopsis"
+  | "canvas"
+  | "snapshot"
+  | "trash";
 
 interface ResearchPanelProps {
   activeTab: ResearchPanelTab;
@@ -103,7 +106,7 @@ export default function ResearchPanel({
   };
   const galleryTabs = canSwitchPrimaryTabs ? (
     <nav
-      className="flex h-full min-w-0 items-end gap-1"
+      className="flex h-full min-w-0 items-center gap-1"
       aria-label={t("sidebar.section.research", "자료")}
       role="tablist"
     >
@@ -117,15 +120,14 @@ export default function ResearchPanel({
             role="tab"
             aria-selected={isActive}
             className={cn(
-              "relative h-full px-2.5 pb-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
-              isActive ? "text-fg" : "text-muted hover:text-fg",
+              "relative flex h-7 items-center rounded-control px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+              isActive
+                ? "bg-element text-fg shadow-xs font-semibold"
+                : "text-muted hover:bg-surface-hover hover:text-fg",
             )}
             title={tab.label}
           >
             {tab.label}
-            {isActive ? (
-              <span className="absolute inset-x-2.5 bottom-0 h-px bg-fg/70" />
-            ) : null}
           </button>
         );
       })}
