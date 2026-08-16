@@ -17,6 +17,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useTranslation } from "react-i18next";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { useEditorStore } from "@renderer/domains/editor";
+import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@renderer/shared/constants/editorLayout";
 import {
   getLayoutSurfaceConfig,
   getLayoutSurfaceDefaultRatio,
@@ -39,6 +40,7 @@ import {
 import { createLogger } from "@shared/logger";
 
 const logger = createLogger("MainLayout");
+const isMacOS = navigator.userAgent.toLowerCase().includes("mac");
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -358,7 +360,23 @@ export default function MainLayout({
                 : ""
               }`}
           >
-            {shouldRenderSidebar ? sidebar : null}
+            {shouldRenderSidebar ? (
+              isCanvasMode && isMacOS ? (
+                <div className="flex h-full min-h-0 flex-col">
+                  <div
+                    aria-hidden="true"
+                    className="shrink-0"
+                    style={{
+                      height: EDITOR_WINDOW_BAR_HEIGHT_PX,
+                      WebkitAppRegion: "drag",
+                    } as CSSProperties}
+                  />
+                  <div className="flex min-h-0 flex-1 flex-col">{sidebar}</div>
+                </div>
+              ) : (
+                sidebar
+              )
+            ) : null}
           </Panel>
 
           {shouldRenderSidebar && (
@@ -389,8 +407,8 @@ export default function MainLayout({
                   id="main-primary-content"
                   defaultSize={toPercentSize(50)}
                   minSize={toPercentSize(20)}
-                  className={`relative flex min-w-0 flex-col ${isCanvasMode ? "bg-app" : "bg-sidebar"} ${
-                    shouldRenderContext && !isCanvasMode
+                  className={`relative flex min-w-0 flex-col bg-sidebar ${
+                    shouldRenderContext
                       ? "before:pointer-events-none before:absolute before:inset-y-0 before:right-0 before:w-6 before:bg-[#323232]"
                       : ""
                   }`}

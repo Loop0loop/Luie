@@ -36,7 +36,7 @@ export default function CanvasPane() {
 
   return (
     <div
-      className="relative flex h-full w-full flex-col bg-app"
+      className="relative flex h-full w-full flex-col overflow-hidden rounded-3xl border border-l-0 border-border bg-app"
       data-testid="canvas-pane"
     >
       <div className="relative min-h-0 flex-1 overflow-hidden">

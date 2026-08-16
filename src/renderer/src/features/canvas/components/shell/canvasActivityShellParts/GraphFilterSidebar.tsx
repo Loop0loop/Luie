@@ -35,7 +35,7 @@ export const GraphFilterSidebar = memo(() => {
   }, [startChapter]);
 
   return (
-    <div className="flex h-full w-full flex-col bg-sidebar text-fg border-r border-border/30 overflow-hidden select-none min-w-0">
+    <div className="flex h-full w-full min-w-0 flex-col overflow-hidden bg-sidebar text-fg select-none">
       <div className="flex h-10 items-center justify-between border-b border-border/20 px-3 shrink-0 bg-element/30">
         <span className="text-[11px] font-bold uppercase tracking-wider text-muted truncate">
           {t("canvas.graph.scenarioAnalysis", "Graph")}

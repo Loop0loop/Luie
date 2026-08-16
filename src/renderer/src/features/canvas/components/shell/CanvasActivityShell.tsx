@@ -110,7 +110,7 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
   }
 
   return (
-    <div className="flex h-full w-full flex-col bg-sidebar text-fg border-r border-border/30 overflow-hidden">
+    <div className="flex h-full w-full flex-col overflow-hidden bg-sidebar text-fg">
       <div className="flex h-11 items-center justify-between border-b border-border/10 px-3 shrink-0 select-none bg-transparent">
         <span className="text-[11px] font-bold uppercase tracking-wider text-muted truncate">
           {t("canvas.activity.explorer", "Explorer")}

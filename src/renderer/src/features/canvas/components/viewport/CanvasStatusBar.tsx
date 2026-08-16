@@ -30,7 +30,7 @@ export default function CanvasStatusBar({ projection }: CanvasStatusBarProps) {
 
   return (
     <div
-      className="flex shrink-0 items-center gap-3 border-t border-border/30 bg-sidebar/95 px-4 text-[10px] font-medium tracking-wide text-muted/75"
+      className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center gap-3 px-4 text-[10px] font-medium tracking-wide text-muted/75"
       style={{ height: CANVAS_STATUS_BAR_HEIGHT_PX }}
       data-testid="canvas-status-bar"
     >
