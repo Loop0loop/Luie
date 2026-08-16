@@ -17,7 +17,6 @@ import { useShallow } from "zustand/react/shallow";
 import { useTranslation } from "react-i18next";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { useEditorStore } from "@renderer/domains/editor";
-import StatusFooter from "@shared/ui/StatusFooter";
 import {
   getLayoutSurfaceConfig,
   getLayoutSurfaceDefaultRatio,
@@ -47,7 +46,6 @@ interface MainLayoutProps {
   contextPanel?: ReactNode;
   additionalPanels?: ReactNode;
   additionalPanelIds?: string[];
-  onOpenExport?: () => void;
   isCanvasMode?: boolean;
   onCloseCanvas?: () => void;
 }
@@ -58,7 +56,6 @@ export default function MainLayout({
   contextPanel: _contextPanel,
   additionalPanels,
   additionalPanelIds = [],
-  onOpenExport,
   isCanvasMode = false,
 }: MainLayoutProps) {
   const { t } = useTranslation();
@@ -369,14 +366,16 @@ export default function MainLayout({
               data-separator-feature={sidebarSurface}
               onKeyDown={() => markResizeSurface(sidebarSurface)}
               onPointerDown={() => markResizeSurface(sidebarSurface)}
-              className="w-1 bg-transparent hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative"
-            />
+              className="relative z-20 w-0 cursor-col-resize"
+            >
+              <div className="absolute inset-y-0 -left-1 -right-1" />
+            </PanelResizeHandle>
           )}
 
           <Panel
             id="main-content-panel"
             minSize={toPercentSize(10)}
-            className="flex-1 min-w-0 bg-app relative flex flex-col z-0"
+            className="relative z-0 flex min-w-0 flex-1 flex-col bg-app"
           >
             <EditorDropZones />
             <div className="flex-1 overflow-y-auto flex flex-col">
@@ -390,7 +389,11 @@ export default function MainLayout({
                   id="main-primary-content"
                   defaultSize={toPercentSize(50)}
                   minSize={toPercentSize(20)}
-                  className="min-w-0 bg-app relative flex flex-col"
+                  className={`relative flex min-w-0 flex-col ${isCanvasMode ? "bg-app" : "bg-sidebar"} ${
+                    shouldRenderContext && !isCanvasMode
+                      ? "before:pointer-events-none before:absolute before:inset-y-0 before:right-0 before:w-6 before:bg-[#323232]"
+                      : ""
+                  }`}
                 >
                   {children}
                 </Panel>
@@ -406,7 +409,6 @@ export default function MainLayout({
                 )}
               </PanelGroup>
             </div>
-            {!isCanvasMode && <StatusFooter onOpenExport={onOpenExport} />}
             {!isCanvasMode && (
               <button
                 onClick={toggleSidebar}
@@ -441,8 +443,10 @@ export default function MainLayout({
               data-separator-feature={contextSurface}
               onKeyDown={() => markResizeSurface(contextSurface)}
               onPointerDown={() => markResizeSurface(contextSurface)}
-              className="relative z-20 w-2.5 cursor-col-resize bg-transparent"
-            />
+              className="relative z-20 w-0 cursor-col-resize"
+            >
+              <div className="absolute inset-y-0 -left-1 -right-1" />
+            </PanelResizeHandle>
           )}
 
           <Panel
@@ -455,7 +459,7 @@ export default function MainLayout({
             defaultSize={isContextOpen ? contextDefaultSize : 0}
             minSize={mainContextSize.minSize}
             maxSize={mainContextSize.maxSize}
-            className={`relative z-10 flex flex-col overflow-hidden bg-sidebar ${enableAnimations
+            className={`relative z-10 flex flex-col overflow-hidden bg-[#323232] ${enableAnimations
                 ? isContextClosing
                   ? "animate-out slide-out-to-right fade-out duration-200"
                   : isContextOpen
@@ -465,13 +469,7 @@ export default function MainLayout({
               }`}
           >
             {shouldRenderContext ? (
-              <div className="flex h-full flex-col overflow-hidden bg-sidebar">
-                {!isCanvasMode && (
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-y-3 left-0 z-30 w-0.5 rounded-full bg-border/90"
-                  />
-                )}
+              <div className="flex h-full flex-col overflow-hidden bg-[#323232]">
                 <WebNovelAICoPilot
                   onClose={toggleContextPanel}
                   onMinimize={toggleContextPanel}

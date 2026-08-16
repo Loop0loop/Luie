@@ -91,10 +91,10 @@ export function WebNovelAICoPilot({
   }, [messages, isLoading]);
 
   return (
-    <div className="flex h-full flex-col bg-[#141416]/95 text-zinc-200 font-sans select-none overflow-hidden">
+    <div className="flex h-full flex-col bg-[#323232] text-zinc-200 font-sans select-none overflow-hidden">
       {/* 1. Header Bar: New Chat Dropdown, New Chat Button, Close (X) */}
       <div
-        className="flex h-11 shrink-0 items-center justify-between border-b border-white/5 bg-[#18181b]/80 px-3.5 backdrop-blur-xl"
+        className="flex h-11 shrink-0 items-center justify-between border-b border-white/5 bg-[#323232] px-3.5"
         style={{ WebkitAppRegion: "drag" } as CSSProperties}
       >
         <button
@@ -203,7 +203,7 @@ export function WebNovelAICoPilot({
       </div>
 
       {/* 3. Bottom Prompt Input Pill & Toolbar (Reference Image Matched) */}
-      <div className="shrink-0 p-3 bg-[#18181b]/95 border-t border-white/5 backdrop-blur-xl">
+      <div className="shrink-0 border-t border-white/5 bg-[#323232] p-3">
         {/* Main Pill Capsule Input */}
         <div className="relative flex h-11 items-center gap-2 rounded-full bg-[#2a2a2e] border border-white/8 px-2.5 shadow-inner focus-within:border-white/15 focus-within:bg-[#303035] transition-all">
           <button

@@ -338,7 +338,7 @@ export default function EditorRoot() {
         hideToolbar={
           uiMode === "docs" || uiMode === "scrivener" || uiMode === "editor"
         }
-        hideFooter={true}
+        hideFooter={uiMode !== "default"}
         hideTitle={
           uiMode === "docs" || uiMode === "scrivener" || uiMode === "editor"
         }
@@ -462,7 +462,6 @@ export default function EditorRoot() {
             }
             isCanvasMode={mainViewType === "canvas"}
             onCloseCanvas={handleCloseCanvas}
-            onOpenExport={handleQuickExport}
             additionalPanels={additionalPanelsComponent}
             additionalPanelIds={additionalPanelIds}
           >

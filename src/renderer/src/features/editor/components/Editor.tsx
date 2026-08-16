@@ -317,7 +317,10 @@ function Editor({
 
   return (
     <div
-      className="flex flex-col h-full w-full bg-transparent text-fg relative box-border overflow-hidden"
+      className={cn(
+        "relative box-border flex h-full w-full flex-col overflow-hidden bg-app text-fg",
+        !hideToolbar && !hideFooter && "rounded-3xl border border-l-0 border-border",
+      )}
       data-testid="editor"
       style={{
         "--entity-character-color": entityColors?.character ?? "#2563eb",
@@ -333,7 +336,7 @@ function Editor({
       } as React.CSSProperties}
     >
       {!hideToolbar && (
-        <div className="shrink-0 border-b border-border z-10">
+        <div className="shrink-0 z-10">
           {!readOnly && (
             <EditorToolbar
               editor={editor}
