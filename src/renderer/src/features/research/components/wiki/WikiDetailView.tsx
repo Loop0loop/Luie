@@ -83,6 +83,7 @@ interface WikiDetailViewProps {
 export default function WikiDetailView({ characterId, onBack }: WikiDetailViewProps) {
   const { t } = useTranslation();
   const dialog = useDialog();
+  const [isInfoboxOpen, setIsInfoboxOpen] = useState(true);
 
   const { character, loadCharacter, updateCharacter, deleteCharacter, setCurrent } =
     useCharacterStore(
@@ -329,8 +330,8 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
               <AddTagInline onAdd={attrs.addKeyword} placeholder="+ 태그" />
             </div>
           </div>
-          <div className="@container">
-            <div className="flex flex-col @min-[700px]:flex-row gap-8 items-start">
+          <div className="@container relative">
+            <div className="flex flex-col @min-[700px]:flex-row gap-6 items-start">
               <div className="flex-1 min-w-0 w-full @min-[700px]:order-1 order-2">
                 <WikiContentPanel
                   attrs={{
@@ -342,15 +343,43 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
                   i18nPrefix="character"
                 />
               </div>
-              <div className="w-full @min-[700px]:w-[280px] shrink-0 @min-[700px]:order-2 order-1">
-                <Infobox
-                  title={character.name}
-                  image={<User size={48} />}
-                  imageUrl={attrs.generatedImage}
-                  rows={infoboxRows}
-                  onAddField={addCustomField}
-                />
+
+              {/* Right Infobox Slide Panel */}
+              <div
+                className={cn(
+                  "@min-[700px]:order-2 order-1 shrink-0 transition-all duration-300 ease-in-out",
+                  isInfoboxOpen
+                    ? "w-full @min-[700px]:w-[280px] opacity-100 max-h-[2000px]"
+                    : "w-0 @min-[700px]:w-0 max-h-0 overflow-hidden opacity-0 pointer-events-none",
+                )}
+              >
+                <div className="w-full @min-[700px]:w-[280px]">
+                  <Infobox
+                    title={character.name}
+                    image={<User size={48} />}
+                    imageUrl={attrs.generatedImage}
+                    rows={infoboxRows}
+                    onAddField={addCustomField}
+                    onClose={() => setIsInfoboxOpen(false)}
+                  />
+                </div>
               </div>
+
+              {/* Collapsed side drawer toggle handle */}
+              {!isInfoboxOpen && (
+                <button
+                  type="button"
+                  onClick={() => setIsInfoboxOpen(true)}
+                  title={t("character.wiki.infoboxTitle", "프로필 요약 펼치기")}
+                  aria-label={t("character.wiki.infoboxTitle", "프로필 요약 펼치기")}
+                  className="fixed right-0 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center gap-1.5 rounded-l-panel border border-r-0 border-border/80 bg-surface/95 px-1 py-3.5 shadow-md backdrop-blur-sm transition-all hover:bg-surface hover:border-accent/60 hover:text-accent group cursor-pointer"
+                >
+                  <ChevronLeft size={14} className="text-muted group-hover:text-accent transition-colors" />
+                  <span className="text-[10px] font-medium text-muted [writing-mode:vertical-lr] select-none tracking-tight group-hover:text-accent transition-colors">
+                    {t("character.wiki.infoboxTitle", "프로필 요약")}
+                  </span>
+                </button>
+              )}
             </div>
           </div>
         </>

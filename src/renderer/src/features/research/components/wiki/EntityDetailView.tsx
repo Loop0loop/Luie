@@ -183,6 +183,8 @@ export function EntityDetailView({
     })();
   };
 
+  const [isInfoboxOpen, setIsInfoboxOpen] = useState(true);
+
   return (
     <div className="flex flex-1 min-w-0 flex-col gap-5 overflow-auto bg-panel px-5 py-5 text-fg sm:px-6">
       <div className="flex flex-col gap-3">
@@ -277,29 +279,57 @@ export function EntityDetailView({
           )}
         />
       ) : (
-        <div className="@container">
-          <div className="flex flex-col @min-[700px]:flex-row gap-8 items-start min-h-0">
+        <div className="@container relative">
+          <div className="flex flex-col @min-[700px]:flex-row gap-6 items-start min-h-0">
             <div className="flex-1 min-w-0 w-full @min-[700px]:order-1 order-2">
               <WikiContentPanel attrs={contentModel} i18nPrefix={prefix} />
             </div>
-            <div className="w-full @min-[700px]:w-[280px] shrink-0 @min-[700px]:order-2 order-1">
-              <Infobox
-                title={entity.name}
-                image={icon}
-                rows={customFields.map((field) => ({
-                  label: field.label,
-                  value: attributes[field.key] as string | undefined,
-                  placeholder: field.placeholder,
-                  type: field.type,
-                  options: field.options,
-                  isCustom: true,
-                  onSave: (value) => handleAttrUpdate(field.key, value),
-                  onLabelSave: (value) => updateCustomFieldLabel(field.key, value),
-                  onDelete: () => deleteCustomField(field.key),
-                }))}
-                onAddField={addCustomField}
-              />
+
+            {/* Right Infobox Slide Panel */}
+            <div
+              className={cn(
+                "@min-[700px]:order-2 order-1 shrink-0 transition-all duration-300 ease-in-out",
+                isInfoboxOpen
+                  ? "w-full @min-[700px]:w-[280px] opacity-100 max-h-[2000px]"
+                  : "w-0 @min-[700px]:w-0 max-h-0 overflow-hidden opacity-0 pointer-events-none",
+              )}
+            >
+              <div className="w-full @min-[700px]:w-[280px]">
+                <Infobox
+                  title={entity.name}
+                  image={icon}
+                  rows={customFields.map((field) => ({
+                    label: field.label,
+                    value: attributes[field.key] as string | undefined,
+                    placeholder: field.placeholder,
+                    type: field.type,
+                    options: field.options,
+                    isCustom: true,
+                    onSave: (value) => handleAttrUpdate(field.key, value),
+                    onLabelSave: (value) => updateCustomFieldLabel(field.key, value),
+                    onDelete: () => deleteCustomField(field.key),
+                  }))}
+                  onAddField={addCustomField}
+                  onClose={() => setIsInfoboxOpen(false)}
+                />
+              </div>
             </div>
+
+            {/* Collapsed side drawer toggle handle */}
+            {!isInfoboxOpen && (
+              <button
+                type="button"
+                onClick={() => setIsInfoboxOpen(true)}
+                title={t(`${prefix}.wiki.infoboxTitle`, "프로필 요약 펼치기")}
+                aria-label={t(`${prefix}.wiki.infoboxTitle`, "프로필 요약 펼치기")}
+                className="fixed right-0 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center gap-1.5 rounded-l-panel border border-r-0 border-border/80 bg-surface/95 px-1 py-3.5 shadow-md backdrop-blur-sm transition-all hover:bg-surface hover:border-accent/60 hover:text-accent group cursor-pointer"
+              >
+                <ChevronLeft size={14} className="text-muted group-hover:text-accent transition-colors" />
+                <span className="text-[10px] font-medium text-muted [writing-mode:vertical-lr] select-none tracking-tight group-hover:text-accent transition-colors">
+                  {t(`${prefix}.wiki.infoboxTitle`, "프로필 요약")}
+                </span>
+              </button>
+            )}
           </div>
         </div>
       )}

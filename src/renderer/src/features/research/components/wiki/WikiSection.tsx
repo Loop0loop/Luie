@@ -57,7 +57,7 @@ export function WikiSection({
       <BufferedTextArea
         value={content}
         placeholder={placeholder}
-        className="w-full min-h-[80px] bg-transparent border-none text-fg/90 text-[14px] leading-[1.9] resize-y placeholder:text-subtle focus:outline-none p-0"
+        className="w-full min-h-[72px] bg-transparent border-none text-fg/90 text-[14px] leading-[1.8] resize-none placeholder:text-subtle/50 focus:outline-none p-0"
         onSave={onUpdateContent}
       />
     </div>

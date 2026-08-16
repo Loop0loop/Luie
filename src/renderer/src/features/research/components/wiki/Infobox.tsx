@@ -1,8 +1,8 @@
-import { Plus, X } from "lucide-react";
+import { Plus, X, PanelRightClose } from "lucide-react";
 import { BufferedInput } from "@shared/ui/BufferedInput";
 import { useTranslation } from "react-i18next";
 
-type InfoboxRowProps = {
+export type InfoboxRowProps = {
   label: string;
   value?: string;
   onSave?: (v: string) => void;
@@ -42,7 +42,10 @@ export function InfoboxRow({
           <button
             type="button"
             className="opacity-0 group-hover/row:opacity-100 transition-opacity border-none bg-transparent text-muted cursor-pointer p-0.5 hover:text-danger shrink-0"
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
             title={t("character.wiki.fieldDeleteTitle")}
           >
             <X size={10} />
@@ -82,12 +85,14 @@ export function Infobox({
   imageUrl,
   rows,
   onAddField,
+  onClose,
 }: {
   title: string;
   image?: React.ReactNode;
   imageUrl?: string | null;
   rows: InfoboxRowProps[];
   onAddField: () => void;
+  onClose?: () => void;
 }) {
   const { t } = useTranslation();
 
@@ -99,14 +104,26 @@ export function Infobox({
 
   return (
     <div className="w-full shrink-0 overflow-hidden rounded-panel border border-border/70 bg-surface text-[13px] shadow-sm">
-      {/* Infobox Header */}
-      <div className="border-b border-border/50 bg-element/40 px-4 py-2.5 flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-muted uppercase tracking-wider">
-          {t("character.wiki.infoboxTitle", "프로필 요약")}
-        </span>
-        <span className="text-[11px] font-medium text-fg truncate max-w-[140px]">
-          {title}
-        </span>
+      {/* Infobox Header with Side Hide/Close button */}
+      <div className="border-b border-border/50 bg-element/40 px-3.5 py-2.5 flex items-center justify-between">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+            {t("character.wiki.infoboxTitle", "프로필 요약")}
+          </span>
+          <span className="text-[11px] font-medium text-fg truncate max-w-[120px]">
+            · {title}
+          </span>
+        </div>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            title={t("character.wiki.hideInfobox", "오른쪽으로 접기")}
+            className="flex items-center justify-center size-6 rounded text-muted hover:text-fg hover:bg-surface-hover transition-colors cursor-pointer"
+          >
+            <PanelRightClose size={14} />
+          </button>
+        )}
       </div>
 
       <div className="p-4">
@@ -136,3 +153,4 @@ export function Infobox({
     </div>
   );
 }
+
