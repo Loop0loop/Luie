@@ -1,4 +1,4 @@
-import { lazy, memo, Suspense, type ReactNode } from "react";
+import { lazy, memo, Suspense, type CSSProperties, type ReactNode } from "react";
 import { cn } from "@shared/types/utils";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import {
@@ -24,6 +24,7 @@ import {
   useSidebarLogic,
   type SidebarItem,
 } from "@renderer/features/manuscript/components/useSidebarLogic";
+import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@renderer/shared/constants/editorLayout";
 
 const SnapshotList = lazy(() =>
   import("@renderer/features/snapshot/components/SnapshotList").then(
@@ -37,6 +38,8 @@ const TrashList = lazy(() =>
     default: module.TrashList,
   })),
 );
+
+const isMacOS = navigator.userAgent.toLowerCase().includes("mac");
 
 interface SidebarProps {
   onOpenSettings: () => void;
@@ -349,6 +352,16 @@ function Sidebar({
 
   return (
     <div className="h-full flex flex-col select-none" data-testid="sidebar">
+      {isMacOS && (
+        <div
+          aria-hidden="true"
+          className="shrink-0"
+          style={{
+            height: EDITOR_WINDOW_BAR_HEIGHT_PX,
+            WebkitAppRegion: "drag",
+          } as CSSProperties}
+        />
+      )}
       {canvasContent ? (
         canvasContent
       ) : (

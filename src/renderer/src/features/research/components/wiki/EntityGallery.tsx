@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import {
   Grid2X2,
   List,
@@ -201,8 +201,14 @@ export function EntityGallery<T extends GalleryEntity>({
       className="flex h-full min-h-0 flex-1 flex-col bg-app"
       data-view-mode={viewMode}
     >
-      <header className="shrink-0 border-b border-border bg-sidebar/30 px-4">
-        <div className="flex h-11 items-center justify-between gap-3">
+      <header
+        className="shrink-0 border-b border-border bg-sidebar/30 px-4"
+        style={{ WebkitAppRegion: "drag" } as CSSProperties}
+      >
+        <div
+          className="flex h-11 items-center justify-between gap-3"
+          style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
+        >
           <div className="flex items-center gap-2 min-w-0">
             {tabs ? (
               tabs

@@ -151,15 +151,15 @@ export function PromptComposer({
       : t("analysis.composer.timelineCurrentOnly");
 
   return (
-    <div className="flex items-center gap-2 rounded-full bg-panel/40 dark:bg-panel/30 border border-border/30 backdrop-blur-2xl pl-3.5 pr-2 py-2 shadow-panel focus-within:border-accent/40 focus-within:ring-1 focus-within:ring-accent/15 transition-[colors,box-shadow,border-color] duration-200">
+    <div className="flex items-center gap-2 rounded-[12px] bg-white/6 border border-white/10 backdrop-blur-2xl pl-3 pr-2 py-1.5 shadow-sm focus-within:border-white/20 transition-all duration-150">
       <div className="relative shrink-0" ref={menuRef}>
         <button
           type="button"
           onClick={() => setShowMenu((prev) => !prev)}
-          className={`flex w-7.5 h-7.5 items-center justify-center rounded-full border transition-[colors,transform] duration-150 active:scale-90 ${
+          className={`flex size-6 items-center justify-center rounded-[6px] transition-colors duration-150 cursor-pointer ${
             showMenu
-              ? "bg-surface-hover border-border/40 text-fg"
-              : "border-border/10 text-muted hover:bg-surface-hover hover:text-fg"
+              ? "bg-white/15 text-white"
+              : "text-zinc-400 hover:bg-white/10 hover:text-white"
           }`}
           title={t("analysis.composer.options")}
           aria-label={t("analysis.composer.options")}

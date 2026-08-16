@@ -1,7 +1,5 @@
-import { type ReactNode, useCallback, useState, useEffect, useRef } from "react";
-import { AISidePanelHeader } from "@renderer/features/manuscript/components/aiSidePanel/AISidePanelHeader";
+import { type CSSProperties, type ReactNode, useCallback, useState, useEffect, useRef } from "react";
 import { WebNovelAICoPilot } from "@renderer/features/manuscript/components/aiSidePanel/WebNovelAICoPilot";
-import WindowBar from "@renderer/features/workspace/components/WindowBar";
 import {
   Bot,
   PanelLeftClose,
@@ -337,8 +335,6 @@ export default function MainLayout({
 
   return (
     <div className="flex flex-col h-screen bg-app text-fg">
-      <WindowBar />
-
       <div className="relative min-h-0 flex-1">
         <PanelGroup
           id="main-layout-group"
@@ -382,32 +378,6 @@ export default function MainLayout({
             minSize={toPercentSize(10)}
             className="flex-1 min-w-0 bg-app relative flex flex-col z-0"
           >
-            {!isCanvasMode && (
-              <button
-                onClick={toggleSidebar}
-                className="absolute left-2 top-2 z-40 flex h-8 w-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-active hover:text-fg cursor-pointer"
-                title={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
-                aria-label={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
-              >
-                {isSidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
-              </button>
-            )}
-            {!isCanvasMode && (
-              <button
-                onClick={toggleContextPanel}
-                className={`absolute right-2 top-2 z-40 flex h-8 items-center gap-1.5 rounded-control px-2.5 text-xs font-medium transition-all cursor-pointer ${
-                  isContextOpen
-                    ? "bg-accent text-accent-fg shadow-xs font-semibold"
-                    : "border border-border/80 bg-element text-fg hover:bg-surface-hover hover:text-accent shadow-xs"
-                }`}
-                title={isContextOpen ? t("ai.sidePanel.close") : t("ai.sidePanel.open")}
-                aria-label={isContextOpen ? t("ai.sidePanel.close") : t("ai.sidePanel.open")}
-              >
-                <Bot className="h-4 w-4" />
-                <span>{t("ai.sidePanel.view")}</span>
-              </button>
-            )}
-
             <EditorDropZones />
             <div className="flex-1 overflow-y-auto flex flex-col">
               <PanelGroup
@@ -437,6 +407,33 @@ export default function MainLayout({
               </PanelGroup>
             </div>
             {!isCanvasMode && <StatusFooter onOpenExport={onOpenExport} />}
+            {!isCanvasMode && (
+              <button
+                onClick={toggleSidebar}
+                className="absolute left-2 top-2 z-40 flex h-8 w-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-active hover:text-fg cursor-pointer"
+                style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
+                title={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
+                aria-label={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
+              >
+                {isSidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+              </button>
+            )}
+            {!isCanvasMode && (
+              <button
+                onClick={toggleContextPanel}
+                className={`absolute right-2 top-2 z-40 flex h-8 items-center gap-1.5 rounded-control px-2.5 text-xs font-medium transition-all cursor-pointer ${
+                  isContextOpen
+                    ? "bg-accent text-accent-fg shadow-xs font-semibold"
+                    : "border border-border/80 bg-element text-fg hover:bg-surface-hover hover:text-accent shadow-xs"
+                }`}
+                style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
+                title={isContextOpen ? t("ai.sidePanel.close") : t("ai.sidePanel.open")}
+                aria-label={isContextOpen ? t("ai.sidePanel.close") : t("ai.sidePanel.open")}
+              >
+                <Bot className="h-4 w-4" />
+                <span>{t("ai.sidePanel.view")}</span>
+              </button>
+            )}
           </Panel>
 
           {shouldRenderContext && (
@@ -444,7 +441,7 @@ export default function MainLayout({
               data-separator-feature={contextSurface}
               onKeyDown={() => markResizeSurface(contextSurface)}
               onPointerDown={() => markResizeSurface(contextSurface)}
-              className="w-1 bg-transparent hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-20 relative"
+              className="relative z-20 w-2.5 cursor-col-resize bg-transparent"
             />
           )}
 
@@ -458,7 +455,7 @@ export default function MainLayout({
             defaultSize={isContextOpen ? contextDefaultSize : 0}
             minSize={mainContextSize.minSize}
             maxSize={mainContextSize.maxSize}
-            className={`bg-panel border-l border-border overflow-hidden flex flex-col z-10 ${enableAnimations
+            className={`relative z-10 flex flex-col overflow-hidden bg-sidebar ${enableAnimations
                 ? isContextClosing
                   ? "animate-out slide-out-to-right fade-out duration-200"
                   : isContextOpen
@@ -469,21 +466,16 @@ export default function MainLayout({
           >
             {shouldRenderContext ? (
               <div className="flex h-full flex-col overflow-hidden bg-sidebar">
-                <AISidePanelHeader
-                  episodeTitle="회차 12: 배신의 속삭임"
-                  synopsis="카엘과 엘라라의 비밀 접선이 세드릭에게 목격되고, 두 사람 간의 갈등이 긴장감 있게 대치되는 회차."
-                  characters={[
-                    { id: "char-1", name: "카엘", role: "주인공" },
-                    { id: "char-2", name: "세드릭", role: "라이벌" },
-                    { id: "char-3", name: "엘라라", role: "조연" },
-                  ]}
-                  foreshadowingList={[
-                    { label: "깨진 맹세", isResolved: false },
-                    { label: "세드릭의 야망", isResolved: false },
-                    { label: "엘라라의 배신?", isResolved: false },
-                  ]}
+                {!isCanvasMode && (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-y-3 left-0 z-30 w-0.5 rounded-full bg-border/90"
+                  />
+                )}
+                <WebNovelAICoPilot
+                  onClose={toggleContextPanel}
+                  onMinimize={toggleContextPanel}
                 />
-                <WebNovelAICoPilot />
               </div>
             ) : null}
           </Panel>

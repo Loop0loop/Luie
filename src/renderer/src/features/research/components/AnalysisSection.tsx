@@ -269,7 +269,7 @@ export default function AnalysisSection() {
       narrativeSummaryStatusLoading: state.narrativeSummaryStatusLoading,
       narrativeSummaryStatusError: state.narrativeSummaryStatusError,
       loadNarrativeSummaryStatus: state.loadNarrativeSummaryStatus,
-    }))
+    })),
   );
 
   const runtime = useAnalysisRuntime();

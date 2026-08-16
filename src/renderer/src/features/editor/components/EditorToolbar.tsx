@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 import {
   Bold,
   Highlighter,
@@ -139,8 +139,14 @@ export default function EditorToolbar({
   );
 
   return (
-    <div className={cn("flex w-full select-none items-center justify-center overflow-x-auto no-scrollbar min-w-0 bg-sidebar px-2 py-1.5", className)}>
-      <div className="flex shrink-0 items-center gap-0.5">
+    <div
+      className={cn("flex w-full select-none items-center justify-center overflow-x-auto no-scrollbar min-w-0 bg-sidebar px-2 py-1.5", className)}
+      style={{ WebkitAppRegion: "drag" } as CSSProperties}
+    >
+      <div
+        className="flex shrink-0 items-center gap-0.5"
+        style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
+      >
         <div
           className={cn(
             "flex items-center gap-0.5",
