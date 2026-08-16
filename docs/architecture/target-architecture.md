@@ -242,4 +242,4 @@ pnpm run check:renderer-store-usage
 pnpm run check:core-complexity
 ```
 
-확실하지 않습니다: 현재 `AGENTS.md`는 bun 명령을 언급하지만 `package.json`은 `pnpm@11.5.0`과 `pnpm` scripts를 기준으로 합니다. 이 문서는 현재 `package.json` 사실에 맞춰 `pnpm` 검증 명령을 기록합니다.
+확실하지 않습니다: 현재 `AGENTS.md`는 bun 명령을 언급하지만 `package.json`은 `pnpm@11.21.0`과 `pnpm` scripts를 기준으로 합니다. 이 문서는 현재 `package.json` 사실에 맞춰 `pnpm` 검증 명령을 기록합니다.

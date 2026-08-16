@@ -31,7 +31,6 @@ export function DroppableZone({
         isOver && !disableOverlay && "relative z-50 ring-2 ring-accent ring-inset"
       )}
     >
-      {/* Visual Overlay when hovering */}
       {isOver && !disableOverlay && (
            <div className="absolute inset-0 bg-accent/5 pointer-events-none flex items-center justify-center z-50">
                <span className="text-accent font-bold text-sm bg-panel/90 px-3 py-1 rounded-full shadow-sm backdrop-blur border border-accent/20">

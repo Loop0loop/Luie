@@ -1,7 +1,3 @@
-/**
- * ChapterSummarySection — 챕터 AI 요약 섹션
- */
-
 import type { TFunction } from "i18next";
 import { Sparkles, RefreshCw } from "lucide-react";
 import { cn } from "@shared/types/utils";

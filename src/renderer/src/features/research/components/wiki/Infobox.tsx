@@ -85,53 +85,54 @@ export function Infobox({
 }: {
   title: string;
   image?: React.ReactNode;
-  /** Generated portrait URL; falls back to `image` node when absent. */
   imageUrl?: string | null;
   rows: InfoboxRowProps[];
   onAddField: () => void;
 }) {
   const { t } = useTranslation();
-  // ponytail: title is now shown in the page header; prop kept to avoid caller churn.
-  void title;
 
   const portrait = imageUrl ? (
-    <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+    <img src={imageUrl} alt={title} className="h-full w-full object-cover" />
   ) : (
     image
   );
 
-  const body = (
-    <>
-      {portrait && (
-        <div className="flex items-center justify-center pb-3">
-          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-element text-subtle">
-            {portrait}
+  return (
+    <div className="w-full shrink-0 overflow-hidden rounded-panel border border-border/70 bg-surface text-[13px] shadow-sm">
+      {/* Infobox Header */}
+      <div className="border-b border-border/50 bg-element/40 px-4 py-2.5 flex items-center justify-between">
+        <span className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+          {t("character.wiki.infoboxTitle", "프로필 요약")}
+        </span>
+        <span className="text-[11px] font-medium text-fg truncate max-w-[140px]">
+          {title}
+        </span>
+      </div>
+
+      <div className="p-4">
+        {portrait && (
+          <div className="flex items-center justify-center pb-3.5 mb-2 border-b border-border/30">
+            <div className="relative flex size-24 items-center justify-center overflow-hidden rounded-full bg-element text-subtle border-2 border-border/60 shadow-xs ring-4 ring-element/50">
+              {portrait}
+            </div>
           </div>
+        )}
+
+        <div className="flex flex-col">
+          {rows.map((row) => (
+            <InfoboxRow key={row.label + (row.isCustom ? "cust" : "fixed")} {...row} />
+          ))}
         </div>
-      )}
-      <div className="flex flex-col">
-        {rows.map((row) => (
-          <InfoboxRow key={row.label + (row.isCustom ? "cust" : "fixed")} {...row} />
-        ))}
+
+        <button
+          type="button"
+          className="mt-3.5 flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-border/80 py-1.5 text-xs font-medium text-subtle hover:border-accent hover:text-accent hover:bg-accent/5 transition-all cursor-pointer"
+          onClick={onAddField}
+        >
+          <Plus size={12} />
+          <span>{t("character.wiki.addField", "속성 추가")}</span>
+        </button>
       </div>
-      <button
-        type="button"
-        className="mt-2 flex items-center gap-1 bg-transparent border-none text-[12px] text-subtle hover:text-fg transition-colors cursor-pointer p-0"
-        onClick={onAddField}
-      >
-        <Plus size={11} />
-        <span>{t("character.wiki.addField")}</span>
-      </button>
-    </>
+    </div>
   );
-
-  if (portrait) {
-    return (
-      <div className="w-full shrink-0 overflow-hidden rounded-panel border border-border bg-surface text-[13px] shadow-panel">
-        <div className="p-4">{body}</div>
-      </div>
-    );
-  }
-
-  return <div className="w-full shrink-0 text-[13px]">{body}</div>;
 }

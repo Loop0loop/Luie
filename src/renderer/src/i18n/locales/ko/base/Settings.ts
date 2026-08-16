@@ -83,6 +83,16 @@ export const koBaseSettings = {
         neutral: "기본",
         warm: "따뜻함",
       },
+      accent: {
+        title: "강조색 (Accent Color)",
+        description: "버튼, 링크, 활성 상태에 적용되는 강조 색상을 선택합니다.",
+        blue: "블루",
+        emerald: "에메랄드",
+        violet: "바이올렛",
+        rose: "로즈",
+        amber: "앰버",
+        custom: "직접 지정",
+      },
     },
     view: {
       pc: "PC",

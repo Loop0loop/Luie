@@ -1,13 +1,3 @@
-/**
- * useCanvasLayoutPersist — wraps {@link useLayoutPersist} with the canvas
- * panel ids fixed to `canvas-activity` / `canvas-binder`.
- *
- * Same persistence model as ScrivenerLayout / MainLayout: react-resizable-panels
- * fires `onLayoutChanged` after each drag with stable percentages, which we
- * commit to `uiStore.layoutSurfaceRatios["canvas.activity" | "canvas.binder"]`.
- *
- * Caller wires the returned callback to `<PanelGroup onLayoutChanged={...}>`.
- */
 import {
   useLayoutPersist,
   type LayoutPersistEntry,

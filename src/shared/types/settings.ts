@@ -6,11 +6,13 @@ export type ThemeContrast = "soft" | "high";
 export type ThemeTemp = "cool" | "neutral" | "warm";
 export type ThemeAccent =
   | "blue"
+  | "emerald"
   | "violet"
-  | "green"
-  | "amber"
   | "rose"
-  | "slate";
+  | "amber"
+  | "green"
+  | "slate"
+  | (string & {});
 export type WindowMenuBarMode = "hidden" | "visible";
 export type RagSearchOptimizationMode =
   | "low-end"
@@ -345,7 +347,7 @@ export interface AppSettings {
   editor: EditorSettings;
   language?: "ko" | "en" | "ja";
   shortcuts?: ShortcutMap;
-  // Legacy machine-local path hint. New recent/opened state lives in ProjectLocalState.
+  /** Legacy machine-local path hint이며 새 최근 project 상태는 `ProjectLocalState`에 저장한다. */
   lastProjectPath?: string;
   autoSaveEnabled: boolean;
   autoSaveInterval: number;

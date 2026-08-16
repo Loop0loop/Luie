@@ -33,7 +33,7 @@ export const getActiveDocsRightTab = (
   if (!isRightPanelOpen) return null;
   const candidate = docsRightTab ?? fallbackTab;
   if (candidate === null) return null;
-  // canvas and other editor-only tabs are not valid DocsLayoutPanelTabs.
+  // NOTE: canvas 등 editor 전용 tab은 DocsLayoutPanelTabs에 포함하지 않는다.
   return isDocsLayoutPanelTab(candidate) ? candidate : (isDocsLayoutPanelTab(fallbackTab) ? fallbackTab : null);
 };
 

@@ -18,7 +18,6 @@ import { SmartLink } from "@renderer/features/editor/components/extensions/Smart
 import { DiffHighlight } from "@renderer/features/editor/components/extensions/DiffExtension";
 import { useTranslation } from "react-i18next";
 
-// Simple Callout Extension
 export const Callout = Node.create({
     name: "callout",
     group: "block",

@@ -1,4 +1,4 @@
-/* eslint-disable no-await-in-loop */
+/* eslint-disable no-await-in-loop -- streaming response는 chunk 순서대로 읽어야 한다. */
 import type {
   GenerateOptions,
   ModelRuntimeClient,
@@ -88,7 +88,8 @@ export class ExternalApiProvider implements ModelRuntimeClient {
 
   async isAvailable(): Promise<boolean> {
     if (this.config.supabaseProxy && this.config.baseUrl.includes("openai.com")) {
-      return true; // 번들 환경의 OpenAI라면 항상 프록시 가용하다고 봄
+      // NOTE: bundled OpenAI provider는 utility proxy를 통해서만 호출한다.
+      return true;
     }
     try {
       const response = await fetch(this.buildUrl("/models"), {
@@ -194,7 +195,7 @@ export class ExternalApiProvider implements ModelRuntimeClient {
               yield chunk;
             }
           } catch {
-            // ignore malformed SSE payload
+            // NOTE: malformed SSE chunk는 다음 chunk 처리에 영향을 주지 않는다.
           }
         }
       }

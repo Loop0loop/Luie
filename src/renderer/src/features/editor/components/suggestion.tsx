@@ -17,7 +17,6 @@ function replaceCurrentTextblock(editor: Editor, content: Content) {
   const { state } = editor;
   const { $from } = state.selection;
 
-  // Find nearest textblock depth (paragraph, detailsSummary, etc.)
   let depth = $from.depth;
   while (depth > 0 && !$from.node(depth).isTextblock) {
     depth -= 1;
@@ -37,7 +36,6 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
   char: "/",
 
   command: ({ editor, range, props }: { editor: Editor; range: SlashMenuActionProps["range"]; props: SlashMenuItem }) => {
-    // items()에서 만든 각 아이템의 action을 실행
     props.action({ editor, range });
   },
 
@@ -164,7 +162,7 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
         label: label.divider,
         action: ({ editor, range }: SlashMenuActionProps) => {
           editor.chain().focus().deleteRange(range).run();
-          // HR도 textblock 내부에서 삽입 시 보정될 수 있어, 현재 문단을 HR로 교체
+          // NOTE: textblock 안에서는 현재 paragraph를 HR로 교체해야 위치가 보정된다.
           replaceCurrentTextblock(editor, { type: "horizontalRule" });
         },
       },

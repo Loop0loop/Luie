@@ -97,7 +97,7 @@ export class UtilityProcessBridge {
         const healthy = await this.ping();
         if (!healthy) {
           logger.warn("Utility process did not pass health check", { pid: child.pid });
-          this.stop();
+          void this.stop();
           return false;
         }
         logger.info("Utility process health check passed", { pid: child.pid });
@@ -113,9 +113,9 @@ export class UtilityProcessBridge {
     return await this.startingPromise;
   }
 
-  stop(): void {
-    if (!this.utilityChild) return;
-    if (this.stoppingPromise) return;
+  stop(): Promise<void> {
+    if (!this.utilityChild) return Promise.resolve();
+    if (this.stoppingPromise) return this.stoppingPromise;
     try {
       const child = this.utilityChild;
       const stopRequestId = this.nextRequestId();
@@ -125,7 +125,7 @@ export class UtilityProcessBridge {
         method: "ragQa.stop",
       } satisfies UtilityInboundMessage);
       this.clearPendingRequests("Utility process is stopping");
-      this.stoppingPromise = new Promise<void>((resolve) => {
+      const stoppingPromise = new Promise<void>((resolve) => {
         const requestId = this.nextRequestId();
         const graceTimer = setTimeout(() => {
           child.postMessage({ type: "shutdown", requestId } satisfies UtilityInboundMessage);
@@ -168,10 +168,13 @@ export class UtilityProcessBridge {
         };
         child.on("message", onMessage);
       });
+      this.stoppingPromise = stoppingPromise;
+      return stoppingPromise;
     } catch (error) {
       logger.warn("Failed to stop utility process", { error });
       this.utilityChild = null;
       this.stoppingPromise = null;
+      return Promise.resolve();
     }
   }
 

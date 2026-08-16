@@ -1,5 +1,5 @@
 // TEST_LEVEL: UNIT_MOCKED
-// PROVES: startup recovery schedules only projects with stale attached checkpoints
+// PROVES: startup recovery가 오래된 attached checkpoint가 있는 project만 예약한다.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 

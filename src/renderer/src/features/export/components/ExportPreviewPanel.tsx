@@ -34,7 +34,7 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
   const [format, setFormat] = useState<ExportFormat>("hwp");
 
   const handleExport = () => {
-    // Placeholder for actual export logic
+    // TODO: export API와 연결해 선택한 format으로 실제 파일을 생성한다.
     const ext = format === "hwp" ? "hwp" : "docx";
     dialog.toast(t("exportPreview.alertExport", { ext }), "info");
   };
@@ -65,7 +65,6 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
 
   return (
     <div className="flex flex-col h-full bg-panel text-fg overflow-hidden relative border-l border-border">
-      {/* Header / Selection & Actions */}
       <div className="flex items-center justify-between px-4 py-3 bg-secondary border-b border-border shrink-0">
         <div className="flex items-center gap-2 bg-input/50 p-1 rounded-panel border border-border">
           <button
@@ -97,12 +96,9 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
         </button>
       </div>
 
-      {/* Emulated UI Area */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
         {format === "hwp" ? (
-          // HWP Style UI
           <div className="flex flex-col h-full bg-[#f0f0f0]">
-            {/* Title Bar Equivalent */}
             <div className="bg-[#3e81f6] text-white px-2 py-1 text-[10px] flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="font-bold">{t("exportPreview.hwp.appTitle")}</span>
@@ -116,14 +112,12 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
               </div>
             </div>
 
-            {/* Menu Bar */}
             <div className="bg-white border-b border-gray-300 flex text-[11px] text-gray-700">
               {hwpMenuItems.map((menu) => (
                 <div key={menu} className="px-3 py-1.5 hover:bg-gray-100 cursor-default">{menu}</div>
               ))}
             </div>
 
-            {/* Standard Toolbar */}
             <div className="bg-[#f0f0f0] border-b border-gray-300 p-1 flex items-center gap-1 shrink-0 overflow-x-auto whitespace-nowrap">
               <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-sm px-1 py-0.5">
                 <div className="w-3 h-3 bg-gray-400 rounded-sm opacity-50" />
@@ -162,7 +156,6 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
               </div>
             </div>
 
-            {/* Canvas Area */}
             <div className="flex-1 overflow-auto bg-[#d6d6d6] p-4 flex justify-center items-start">
               <div
                 className="bg-white shadow-lg text-black px-8 py-10 text-[10px] leading-relaxed relative"
@@ -174,7 +167,6 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
                   transformOrigin: "top center"
                 }}
               >
-                {/* Page Margin Guidelines (Corner) */}
                 <div className="absolute top-8 left-8 w-4 h-4 border-t border-l border-gray-300" />
                 <div className="absolute top-8 right-8 w-4 h-4 border-t border-r border-gray-300" />
                 <div className="absolute bottom-8 left-8 w-4 h-4 border-b border-l border-gray-300" />
@@ -190,7 +182,6 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
               </div>
             </div>
 
-            {/* Status Bar */}
             <div className="bg-[#f0f0f0] border-t border-gray-300 h-6 flex items-center px-2 text-[10px] text-gray-600 justify-between shrink-0">
               <div className="flex gap-3">
                 <span>{t("exportPreview.hwp.status.pageCount")}</span>
@@ -205,9 +196,7 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
             </div>
           </div>
         ) : (
-          // Word Style UI
           <div className="flex flex-col h-full bg-[#f3f4f6]">
-            {/* Word Header */}
             <div className="bg-[#185abd] text-white px-3 py-1.5 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="grid grid-cols-3 gap-0.5 w-4 h-4">
@@ -228,7 +217,6 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
               </div>
             </div>
 
-            {/* Ribbon Tabs */}
             <div className="bg-white border-b border-gray-200 px-2 flex text-[12px] text-gray-600">
               {wordTabs.map((menu) => (
                 <div
@@ -243,9 +231,7 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
               ))}
             </div>
 
-            {/* Ribbon Toolbar */}
             <div className="bg-[#f9f9f9] border-b border-gray-200 p-2 flex items-center gap-2 shrink-0 overflow-x-auto whitespace-nowrap h-20">
-              {/* Undo/Clipboard Group */}
               <div className="flex flex-col items-center gap-1 pr-2 border-r border-gray-300">
                 <div className="flex gap-1">
                   <Undo className="w-4 h-4 text-gray-600" />
@@ -254,7 +240,6 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
                 <span className="text-[10px] text-gray-500 mt-1">{t("exportPreview.word.undo")}</span>
               </div>
 
-              {/* Font Group */}
               <div className="flex flex-col gap-1 px-2 border-r border-gray-300">
                 <div className="flex items-center gap-1 mb-1">
                   <div className="bg-white border border-gray-300 px-1 py-0.5 rounded text-[11px] w-24 flex justify-between items-center">
@@ -273,7 +258,6 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
                 </div>
               </div>
 
-              {/* Paragraph Group */}
               <div className="flex flex-col gap-1 px-2 border-r border-gray-300">
                 <div className="flex items-center gap-1 text-gray-700 mb-1">
                   <span className="w-4 h-4 bg-gray-300 rounded-sm" />
@@ -286,7 +270,6 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
                 </div>
               </div>
 
-              {/* Styles Group */}
               <div className="flex items-center gap-1 px-2">
                 <div className="flex flex-col items-center bg-white border border-gray-300 rounded p-1 w-12 h-14 justify-center">
                   <span className="text-[16px] font-light">AaBbCc</span>
@@ -303,7 +286,6 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
               </div>
             </div>
 
-            {/* Canvas Area */}
             <div className="flex-1 overflow-auto bg-[#eaddd7] p-4 flex justify-center items-start">
               <div
                 className="bg-white shadow-lg text-black px-8 py-10 text-[11px] leading-relaxed relative"
@@ -325,7 +307,6 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
               </div>
             </div>
 
-            {/* Word Status Bar */}
             <div className="bg-[#185abd] text-white h-6 flex items-center px-4 text-[10px] justify-between shrink-0">
               <div className="flex gap-4">
                 <span>{t("exportPreview.word.status.pageInfo")}</span>

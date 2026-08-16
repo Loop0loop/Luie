@@ -68,18 +68,14 @@ export function useCollapsibleSidebar(
 
   const onResize = useCallback(
     (panelSize: PanelSize) => {
-      // Ignore resizes from a programmatic layout pass (mount, container
-      // resize, expand/collapse setLayout). Otherwise a transient onResize on
-      // reopen would flip the persisted collapsed state on its own.
+      // NOTE: programmatic layout의 resize를 저장하면 reopen 시 collapsed 상태가 뒤집힌다.
       if (isLayoutRestoring()) {
         return;
       }
       const collapsed =
         typeof panelSize.inPixels === "number" && panelSize.inPixels <= 0;
       if (collapsed) {
-        // Auto-collapse when the user drags to zero. Never auto-expand from a
-        // resize — expanding is the toggle button's job — so the saved hidden
-        // state is not clobbered.
+        // NOTE: 0까지 직접 drag한 경우만 접고 resize만으로 자동 확장하지 않는다.
         setCollapsedSidebar(feature, true);
       } else {
         baseOnResize(panelSize);

@@ -16,8 +16,7 @@ import {
 import { isAppPackaged } from "../../../utils/env/index.js";
 
 export function invalidateModelRuntimeCache(): void {
-  // Runtime clients are materialized in the utility process. This compatibility
-  // hook remains for settings-change call sites that invalidate route decisions.
+  // NOTE: runtime client는 utility process가 생성하며 이 hook은 설정 변경 시 route cache만 무효화한다.
 }
 
 type OllamaConfig = {
@@ -297,7 +296,7 @@ export async function resolveRuntimeRoutePlan(): Promise<RuntimeRoutePlanningRes
     preferred = llmSettings.preferredProvider ?? "auto";
     localLlm = settingsManager.getLocalLlmSettings();
   } catch {
-    // Settings may be unavailable during tests or early startup. Continue with defaults.
+    // NOTE: test와 초기 startup에서는 settings가 준비되지 않을 수 있어 defaults로 계속한다.
   }
 
   const geminiConfig = loadEnvGeminiConfig();
@@ -417,8 +416,7 @@ export async function resolveRuntimeModelConfig(
 ): Promise<RuntimeModelConfig> {
   const { resolved } = await resolveRuntimePlanDecision();
   if (resolved.kind === "sidecar") {
-    // 로컬 임베딩 모델(bge-m3)이 확보되어 있으면 그 식별자를 signature 로 사용한다.
-    // 이로써 embeddingProjector 가 임베딩 잡을 skip 하지 않고, 모델 변경 시 재임베딩한다.
+    // NOTE: local embedding model ID를 signature에 포함해야 model 변경 시 재임베딩한다.
     const embeddingModel = await resolveLocalEmbeddingModelId();
     return {
       providerHint: "externalapi",

@@ -51,7 +51,6 @@ export default function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
 
     if (!text) return;
 
-    // 선택된 텍스트를 웹소설 표준 대사 따옴표(" ")로 감쌈
     editor.chain().focus().insertContent(`"${text}"`).run();
   };
 

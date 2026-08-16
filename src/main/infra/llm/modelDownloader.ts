@@ -203,13 +203,13 @@ async function downloadToFile(
   try {
     fileHandle = await fsp.open(tmpPath, "w");
     for (;;) {
-      // eslint-disable-next-line no-await-in-loop -- Streaming download must consume chunks sequentially.
+      // eslint-disable-next-line no-await-in-loop -- streaming chunk 순서를 보존해야 한다.
       const { done, value } = await reader.read();
       if (done) break;
       if (!value) continue;
       const chunk = Buffer.from(value);
       receivedBytes += chunk.length;
-      // eslint-disable-next-line no-await-in-loop -- Streamed file writes must preserve chunk order.
+      // eslint-disable-next-line no-await-in-loop -- file write가 chunk 순서를 보존해야 한다.
       await fileHandle.write(chunk);
       onProgress(receivedBytes, totalBytes);
     }
@@ -337,7 +337,7 @@ export async function downloadGguf(input: {
     input.onProgress?.({ phase: "done", pct: 100, receivedBytes: 0, totalBytes: 0 });
     return destPath;
   } catch {
-    // Download below.
+    // NOTE: cache miss일 때만 원격 다운로드를 수행한다.
   }
 
   const url = `https://huggingface.co/${input.repo}/resolve/main/${input.filename}`;
@@ -376,7 +376,7 @@ export async function downloadLlamaServerBinary(input: {
     input.onProgress?.({ phase: "done", pct: 100, receivedBytes: 0, totalBytes: 0 });
     return destBinaryPath;
   } catch {
-    // Download below.
+    // NOTE: 설치된 binary가 없을 때만 archive를 다운로드한다.
   }
 
   const zipPath = path.join(input.destDir, "llama-server.zip");

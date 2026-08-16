@@ -1,5 +1,5 @@
 // TEST_LEVEL: REAL_DB_FS_INTEGRATION
-// PROVES: a stale attached checkpoint is exported and marked current on recovery
+// PROVES: recovery 시 오래된 attached checkpoint를 export하고 current로 표시한다.
 
 import os from "node:os";
 import path from "node:path";

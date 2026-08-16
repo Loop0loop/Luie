@@ -1,19 +1,3 @@
-/**
- * llmfitService — 하드웨어 맞춤 모델 추천 (llmfit 바이너리 1-shot 실행).
- *
- * 사용 방식(사용자 결정):
- *   바이너리를 실행해 JSON 을 받아 main 에서 파싱 → renderer 로 상위 ~10개만 전달.
- *
- * 격리 원칙(P6/R3.5):
- *   llmfit 의 부재/실패/타임아웃/깨진 출력 어떤 경우에도 throw 하지 않고
- *   `{ available: false, reason }` 을 반환한다. 추천 조회 외 앱 기능에 영향 0.
- *
- * 바이너리 해석 순서:
- *   1) env LUIE_LLMFIT_PATH
- *   2) 동봉 리소스(<resourcesPath>/bin/llmfit)
- *   3) PATH 상의 `llmfit`
- */
-
 import { execFile } from "node:child_process";
 import * as path from "node:path";
 import * as fs from "node:fs";
@@ -29,7 +13,7 @@ import { llmfitBinaryName } from "./llmfitConstants.js";
 const logger = createLogger("LlmfitService");
 
 const EXEC_TIMEOUT_MS = 15_000;
-const MAX_OUTPUT_BYTES = 4 * 1024 * 1024; // 4MB stdout 상한
+const MAX_OUTPUT_BYTES = 4 * 1024 * 1024;
 const DEFAULT_LIMIT = 10;
 
 /** llmfit recommend --json 의 단일 모델 행(필요 필드만, 나머지는 무시). */
@@ -114,28 +98,22 @@ function normalize(row: LlmfitModelRow): LlmfitRecommendation {
 }
 
 class LlmfitService {
-  /** 바이너리 경로를 해석한다(없으면 null). */
   private resolveBinaryPath(): string | null {
     const envPath = process.env.LUIE_LLMFIT_PATH?.trim();
     if (envPath && fs.existsSync(envPath)) return envPath;
 
     const exeName = llmfitBinaryName();
-    // 런타임 설치 위치(<userData>/bin/llmfit[.exe]) — llmfitInstaller 와 동일 경로.
     try {
       const installed = path.join(app.getPath("userData"), "bin", exeName);
       if (fs.existsSync(installed)) return installed;
     } catch {
-      // app 미가용(테스트 등) — 무시하고 PATH 폴백.
+      // NOTE: Electron app을 사용할 수 없는 test/runtime은 PATH 탐색으로 대체한다.
     }
 
-    // PATH 상의 llmfit 은 execFile 이 직접 해석하도록 이름만 반환.
     return exeName;
   }
 
-  /**
-   * llmfit JSON 출력을 파싱한다. 순수 함수로 테스트 가능.
-   * 파싱 실패 시 null 반환(throw 금지).
-   */
+  /** 잘못된 llmfit 출력은 호출 흐름을 중단하지 않고 null로 처리한다. */
   parseOutput(stdout: string, limit: number): LlmfitRecommendation[] | null {
     const trimmed = stdout.trim();
     if (trimmed.length === 0) return null;
@@ -167,6 +145,7 @@ class LlmfitService {
     });
   }
 
+  /** llmfit 부재·실패·timeout·잘못된 출력은 예외 대신 `available: false`로 반환한다. */
   async recommend(options: LlmfitRecommendOptions = {}): Promise<LlmfitResult> {
     const limit = Math.max(1, Math.min(options.limit ?? DEFAULT_LIMIT, 50));
     const binaryPath = this.resolveBinaryPath();

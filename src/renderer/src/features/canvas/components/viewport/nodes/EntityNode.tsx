@@ -1,15 +1,3 @@
-/**
- * EntityNode — modern, neutral Obsidian Canvas-style entity card.
- *
- * No kind colours inside the canvas block; all distinction comes from
- * typography and spacing. The inspector panel keeps colour coding.
- *
- * Design:
- *   - Top color strip per kind (from CANVAS_NODE_KIND_COLOUR tokens)
- *   - Header row: kind label (left) + connection count (right)
- *   - Body: label (bold) + description (muted, line-clamp-2)
- */
-
 import { memo, useCallback } from "react";
 import { Handle, Position, NodeToolbar, type NodeProps } from "reactflow";
 import { useTranslation } from "react-i18next";
@@ -60,10 +48,8 @@ function EntityNodeInner({ id, data, selected }: NodeProps<RFEntityNodeData>) {
       <Handle type="target" position={Position.Left} className={CANVAS_HANDLE_CLASS} />
       <Handle type="source" position={Position.Right} className={CANVAS_HANDLE_CLASS} />
 
-      {/* Push pin indicating node kind color */}
       <div className="node-push-pin" />
 
-      {/* Node context toolbar on selection - Obsidian style */}
       <NodeToolbar
         isVisible={selected}
         position={Position.Top}
@@ -100,7 +86,6 @@ function EntityNodeInner({ id, data, selected }: NodeProps<RFEntityNodeData>) {
         } as React.CSSProperties}
       >
         <div className="flex min-w-0 flex-1 flex-col px-4.5 py-4">
-          {/* Header: kind label + connection count */}
           <div className="flex items-center justify-between gap-2 text-canvas-node-meta text-muted font-sans">
             <span className="font-semibold uppercase tracking-wider opacity-70" translate="no">
               {t(`canvas.node.kind.${data.kind}`)}
@@ -110,12 +95,10 @@ function EntityNodeInner({ id, data, selected }: NodeProps<RFEntityNodeData>) {
             </span>
           </div>
 
-          {/* Label */}
           <span className="mt-2 line-clamp-1 text-canvas-node-label font-bold leading-tight text-fg font-serif">
             {data.label}
           </span>
 
-          {/* Description */}
           {data.description ? (
             <p className="mt-2 line-clamp-2 text-canvas-node-desc leading-5 text-muted font-serif">
               {data.description}

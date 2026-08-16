@@ -23,9 +23,7 @@ export interface DragData {
 
 interface GlobalDragContextProps {
   children: React.ReactNode;
-  /** 에디터 중앙에 드롭 시 호출 — uiMode별 핸들러를 App에서 전달 */
   onDropToCenter?: (data: DragData) => void;
-  /** 좌/우/하단 분할 영역에 드롭 시 호출 */
   onDropToSplit?: (data: DragData, side: "left" | "right" | "bottom") => void;
 }
 

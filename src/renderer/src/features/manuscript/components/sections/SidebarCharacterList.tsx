@@ -74,11 +74,6 @@ export default function SidebarCharacterList({
         description: t("character.uncategorized"),
         attributes: { templateId: template.id } as Record<string, unknown>,
       });
-      // createCharacter returns Promise<void> in interface but might return object in implementation?
-      // Actually checking store definition:
-      // createCharacter: async (input) => { await crudSlice.create(input); }
-      // crudSlice.create usually updates state but might not return the item.
-      // We rely on store update.
       setIsTemplateModalOpen(false);
     }
   };

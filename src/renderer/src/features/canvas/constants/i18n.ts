@@ -1,13 +1,4 @@
-/**
- * i18n.ts — canvas 피처 i18n 키 맵 및 목록.
- *
- * CanvasToolbar, CanvasStatusBar, CanvasControlPanel 에서 공유합니다.
- * 실제 번역 문자열은 src/renderer/src/i18n/locales/ 에 있습니다.
- */
-
 import type { CanvasLayer, CanvasMode, CanvasRange } from "../types/canvas.types";
-
-// ─── Mode ─────────────────────────────────────────────────────────────────────
 
 export const CANVAS_ALL_MODES: ReadonlyArray<CanvasMode> = [
   "flow-map",
@@ -17,7 +8,6 @@ export const CANVAS_ALL_MODES: ReadonlyArray<CanvasMode> = [
   "memory-map",
 ] as const;
 
-/** Modes that have a real implementation today. Other modes show "coming soon". */
 export const CANVAS_AVAILABLE_MODES = ["flow-map", "scene-board"] as const;
 
 export const DEFAULT_CANVAS_MODE: CanvasMode = "flow-map";
@@ -29,8 +19,6 @@ export const CANVAS_MODE_I18N: Record<CanvasMode, string> = {
   "character-map": "canvas.mode.characterMap.label",
   "memory-map":    "canvas.mode.memoryMap.label",
 } as const;
-
-// ─── Range ────────────────────────────────────────────────────────────────────
 
 export const CANVAS_ALL_RANGES: ReadonlyArray<CanvasRange> = [
   "current-chapter",
@@ -45,8 +33,6 @@ export const CANVAS_RANGE_I18N: Record<CanvasRange, string> = {
   "current-part":    "canvas.range.currentPart",
   "whole-project":   "canvas.range.wholeProject",
 } as const;
-
-// ─── Layer ────────────────────────────────────────────────────────────────────
 
 export const CANVAS_ALL_LAYERS: ReadonlyArray<CanvasLayer> = [
   "scene",
@@ -70,8 +56,6 @@ export const CANVAS_LAYER_I18N: Record<CanvasLayer, string> = {
   "memo":      "canvas.layer.memo",
   "ai-hint":   "canvas.layer.aiHint",
 } as const;
-
-// ─── Graph ────────────────────────────────────────────────────────────────────
 
 export const CANVAS_GRAPH_I18N = {
   scope: "canvas.graph.scope",

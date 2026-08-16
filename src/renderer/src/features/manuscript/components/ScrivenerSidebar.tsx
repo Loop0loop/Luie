@@ -49,13 +49,11 @@ export default function ScrivenerSidebar({
 
   return (
     <div className="flex flex-col h-full w-full bg-sidebar select-none overflow-hidden text-sm">
-      {/* Top Header - maybe "Explorer"? Optional. */}
       <div className="px-4 py-2 text-xs font-semibold text-muted bg-sidebar shadow-sm shrink-0 z-10">
         {t("sidebar.explorerTitle") || "Explorer"}
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-hide">
-        {/* MANUSCRIPT SECTION */}
         <CollapsibleSection
           id="manuscript"
           title={t("sidebar.section.manuscript")}
@@ -77,7 +75,6 @@ export default function ScrivenerSidebar({
           <DocsSidebar hideHeader={true} />
         </CollapsibleSection>
 
-        {/* CHARACTERS SECTION */}
         <CollapsibleSection
           id="characters"
           title={t("research.title.characters")}
@@ -105,7 +102,6 @@ export default function ScrivenerSidebar({
           <SidebarFactionList />
         </CollapsibleSection>
 
-        {/* WORLD SECTION */}
         <CollapsibleSection
           id="world"
           title={t("research.title.world")}
@@ -115,7 +111,6 @@ export default function ScrivenerSidebar({
           <SidebarWorldList />
         </CollapsibleSection>
 
-        {/* SCRAP SECTION */}
         <CollapsibleSection
           id="scrap"
           title={t("research.title.scrap")}
@@ -127,7 +122,6 @@ export default function ScrivenerSidebar({
           </div>
         </CollapsibleSection>
 
-        {/* SNAPSHOTS SECTION */}
         <CollapsibleSection
           id="snapshots"
           title={t("sidebar.section.snapshot")}
@@ -151,7 +145,6 @@ export default function ScrivenerSidebar({
           </div>
         </CollapsibleSection>
 
-        {/* ANALYSIS SECTION */}
         <CollapsibleSection
           id="analysis"
           title={t("research.title.analysis")}
@@ -168,11 +161,9 @@ export default function ScrivenerSidebar({
               <span className="w-1.5 h-1.5 rounded-full bg-purple-500/50"></span>
               {t("research.title.analysis")}
             </button>
-            {/* Could list recent analysis items here if store supports it */}
           </div>
         </CollapsibleSection>
 
-        {/* TRASH SECTION */}
         <CollapsibleSection
           id="trash"
           title={t("sidebar.section.trash")}

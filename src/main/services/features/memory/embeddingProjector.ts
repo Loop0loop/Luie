@@ -109,7 +109,7 @@ export class EmbeddingProjector {
     const claimedJobs: typeof jobs = [];
     const now = new Date().toISOString();
 
-    /* eslint-disable no-await-in-loop -- jobs are claimed sequentially to preserve retry/status ordering. */
+    /* eslint-disable no-await-in-loop -- retry/status 순서를 보존하려면 job을 순차 claim해야 한다. */
     for (const job of jobs) {
       const claimed = await claimMemoryBuildJob({ jobId: job.id, nowIso: now });
       if (!claimed.claimed) {
@@ -137,7 +137,7 @@ export class EmbeddingProjector {
       chunkRowsByJobId.set(job.id, []);
     }
 
-    /* eslint-disable no-await-in-loop -- chunk reads are sequenced per claimed job to keep job/chunk attribution explicit. */
+    /* eslint-disable no-await-in-loop -- job과 chunk의 대응을 유지하려면 claim한 job별로 읽어야 한다. */
     for (const job of claimedJobs) {
       const chunkRows = await client
         .select({
@@ -185,7 +185,7 @@ export class EmbeddingProjector {
       return { queued: jobs.length, processed: 0 };
     }
 
-    /* eslint-disable no-await-in-loop -- cancellation checkpoints are evaluated per claimed job to avoid completed-status overwrite. */
+    /* eslint-disable no-await-in-loop -- 완료 상태 덮어쓰기를 막으려면 job별로 취소를 확인해야 한다. */
     const readyJobsBeforeEmbedding = [];
     for (const job of readyJobs) {
       if (await isMemoryBuildJobCancellationRequested({ jobId: job.id })) {
@@ -248,7 +248,7 @@ export class EmbeddingProjector {
           input.projectId,
           changedChunks.map((chunk) => chunk.content),
         );
-        /* eslint-disable no-await-in-loop -- cancellation can be requested while the embedding provider is running. */
+        /* eslint-disable no-await-in-loop -- embedding provider 실행 중에도 취소 요청을 확인해야 한다. */
         const interruptedJobs = [];
         let cancellationRequestedAfterEmbedding = false;
         for (const job of readyJobs) {
@@ -334,7 +334,7 @@ export class EmbeddingProjector {
             `EMBEDDING_VECTOR_COUNT_MISMATCH:${vectors.length}/${changedChunks.length}`,
           );
         }
-        /* eslint-disable no-await-in-loop -- embedding upserts are sequenced to preserve chunk/vector pairing. */
+        /* eslint-disable no-await-in-loop -- chunk와 vector의 대응을 보존하려면 순차 upsert해야 한다. */
         for (let i = 0; i < changedChunks.length; i += 1) {
           const chunk = changedChunks[i];
           const vector = vectors[i];
@@ -379,7 +379,7 @@ export class EmbeddingProjector {
         .where(inArray(memoryBuildJob.id, completedJobIds));
       processed = completedJobIds.length;
     } catch (error) {
-      /* eslint-disable no-await-in-loop -- failed job status updates are sequenced for deterministic retry accounting. */
+      /* eslint-disable no-await-in-loop -- retry 집계를 결정적으로 유지하려면 실패 상태를 순차 반영해야 한다. */
       for (const job of readyJobs) {
         const attempts = job.attempts + 1;
         await client

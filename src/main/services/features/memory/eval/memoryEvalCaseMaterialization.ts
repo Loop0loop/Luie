@@ -68,7 +68,7 @@ export async function materializeMemoryEvalCasesFromEpisodeEvidence(input: {
 
   for (const row of rows) {
     const name = `episode evidence: ${row.episodeTitle}`;
-    // eslint-disable-next-line no-await-in-loop -- duplicate checks are scoped per generated fixture name.
+    // eslint-disable-next-line no-await-in-loop -- 생성된 fixture 이름별로 중복을 확인해야 한다.
     const existing = await client
       .select({ id: memoryEvalCase.id })
       .from(memoryEvalCase)
@@ -83,7 +83,7 @@ export async function materializeMemoryEvalCasesFromEpisodeEvidence(input: {
       skipped += 1;
       continue;
     }
-    // eslint-disable-next-line no-await-in-loop -- each eval fixture is inserted atomically with its evidence row.
+    // eslint-disable-next-line no-await-in-loop -- eval fixture와 evidence row를 같은 단위로 저장해야 한다.
     await insertEvalCaseFromEpisodeEvidence(row, name, nowIso);
     created += 1;
   }

@@ -2,8 +2,6 @@
   "src/main/services/features/llm/modelRuntimeFactory.ts": 510,
   "src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.ts": 524,
   "src/main/services/features/project/projectService.ts": 526,
-  "src/renderer/src/features/research/components/AnalysisSection.tsx": 507,
-  "src/renderer/src/styles/components/editor.css": 547,
   "src/shared/types/settings.ts": 506,
   "tests/dom/appOperationalScenarios.test.tsx": 702,
   "tests/dom/worldBufferedPersistence.test.tsx": 1170,

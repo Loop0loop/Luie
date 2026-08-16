@@ -1,7 +1,3 @@
-/**
- * Project service - 프로젝트 관리 비즈니스 로직
- */
-
 import { eq, and, isNull, asc } from "drizzle-orm";
 import { db } from "../../../infra/database/index.js";
 import * as schema from "../../../infra/database/index.js";

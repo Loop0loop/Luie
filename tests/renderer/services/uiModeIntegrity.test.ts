@@ -10,13 +10,17 @@ const baseEditorSettings: EditorSettings = {
   fontPreset: "inter",
   fontSize: 16,
   lineHeight: 1.8,
+  letterSpacing: 0,
+  wordSpacing: 0,
+  paragraphSpacing: 1,
   maxWidth: 920,
+  spellcheckEnabled: true,
   theme: "sepia",
   themeTemp: "warm",
   themeContrast: "high",
   themeAccent: "amber",
-  themeTexture: true,
   uiMode: "default",
+  enableAnimations: true,
 };
 
 const baseSnapshot = () =>
@@ -29,11 +33,11 @@ const baseSnapshot = () =>
       isSplitView: true,
       splitRatio: 0.55,
       splitSide: "right",
-      isSidebarOpen: true,
-      isContextOpen: true,
+      leftSidebarOpen: true,
+      rightPanelOpen: true,
       isManuscriptMenuOpen: false,
-      docsRightTab: "world",
-      isBinderBarOpen: true,
+      rightPanelActiveTab: "world",
+      rightRailOpen: false,
     },
     activeProjectId: "project-1",
     activeChapterId: "chapter-2",
@@ -56,18 +60,18 @@ describe("uiMode integrity snapshot", () => {
     const after = {
       ...before,
       uiMode: "editor" as const,
-      docsRightTab: "character" as const,
+      rightPanelActiveTab: "character" as const,
     };
 
     const violations = getUiModeIntegrityViolations(before, after);
-    expect(violations).toContain("docsRightTab");
+    expect(violations).toContain("rightPanelActiveTab");
   });
 
   it("ignores state diffs when mode did not change", () => {
     const before = baseSnapshot();
     const after = {
       ...before,
-      docsRightTab: "character" as const,
+      rightPanelActiveTab: "character" as const,
     };
 
     const violations = getUiModeIntegrityViolations(before, after);

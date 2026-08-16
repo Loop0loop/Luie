@@ -37,7 +37,7 @@ export const requestChapterNavigation = (payload: ChapterNavigationPayload): voi
       );
     }
   } catch {
-    // ignore session storage failures
+    // NOTE: sessionStorage 실패가 chapter 이동을 막으면 안 된다.
   }
 
   window.dispatchEvent(

@@ -9,8 +9,6 @@ import {
 import type { CharacterWikiAttrs } from "./hooks/useCharacterWikiAttrs";
 import { CHARACTER_COLOR_PRESETS } from "./types";
 
-// ── HeroImage ─────────────────────────────────────────────────────────────
-
 type HeroImageProps = {
   src: string | null;
   characterName: string;
@@ -34,7 +32,6 @@ function HeroImage({
   onRegenerate,
   onGenerate,
 }: HeroImageProps) {
-  // Loading state
   if (isLoading) {
     return (
       <div className="relative w-full aspect-video bg-surface-hover flex flex-col items-center justify-center gap-3">
@@ -44,7 +41,6 @@ function HeroImage({
     );
   }
 
-  // Image present
   if (src) {
     return (
       <div className="relative w-full aspect-video group/img overflow-hidden">
@@ -53,7 +49,6 @@ function HeroImage({
           alt={characterName}
           className="w-full h-full object-cover"
         />
-        {/* Bottom gradient overlay */}
         <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
         <button
           type="button"
@@ -68,7 +63,6 @@ function HeroImage({
     );
   }
 
-  // Empty state — integrated CTA when nothing generated yet
   if (!hasContent) {
     return (
       <button
@@ -106,7 +100,6 @@ function HeroImage({
     );
   }
 
-  // Image failed but other content exists
   return (
     <div className="w-full aspect-video bg-surface-hover flex flex-col items-center justify-center gap-3 border-b border-border/40">
       <ImageOff size={24} className="text-muted/40" />
@@ -121,8 +114,6 @@ function HeroImage({
     </div>
   );
 }
-
-// ── QuoteStrip ────────────────────────────────────────────────────────────
 
 type QuoteStripProps = {
   quote: string | null;
@@ -168,8 +159,6 @@ function QuoteStrip({ quote, characterColor, isLoading, error, onRegenerate }: Q
   );
 }
 
-// ── StatsCard ─────────────────────────────────────────────────────────────
-
 type StatsCardProps = {
   axes: CharacterWikiAttrs["radarAxes"];
   color: string;
@@ -182,7 +171,6 @@ type StatsCardProps = {
 function StatsCard({ axes, color, isAnalyzing, error, onAnalyze, onAxesChange }: StatsCardProps) {
   return (
     <div className="rounded-panel border border-border bg-surface overflow-hidden">
-      {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/50">
         <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">
           캐릭터 스탯
@@ -207,14 +195,12 @@ function StatsCard({ axes, color, isAnalyzing, error, onAnalyze, onAxesChange }:
         </button>
       </div>
 
-      {/* Error banner */}
       {error && (
         <div className="px-5 py-2.5 bg-danger/8 border-b border-danger/20">
           <p className="text-[12px] text-danger">{error}</p>
         </div>
       )}
 
-      {/* Radar + editors */}
       <div className="p-5">
         <RadarChart
           axes={axes}
@@ -227,8 +213,6 @@ function StatsCard({ axes, color, isAnalyzing, error, onAnalyze, onAxesChange }:
   );
 }
 
-// ── ColorTheme ────────────────────────────────────────────────────────────
-
 type ColorThemeProps = {
   value: string;
   onChange: (color: string) => void;
@@ -240,13 +224,11 @@ function ColorTheme({ value, onChange }: ColorThemeProps) {
       <span className="text-[11px] font-semibold text-muted uppercase tracking-widest shrink-0">
         테마 컬러
       </span>
-      {/* Active swatch */}
       <div
         className="w-5 h-5 rounded-full shrink-0 ring-2 ring-offset-2 ring-offset-surface"
         style={{ backgroundColor: value, outlineColor: value }}
       />
       <div className="w-px h-4 bg-border/50 shrink-0" />
-      {/* Presets */}
       <div className="flex items-center gap-2 flex-wrap">
         {CHARACTER_COLOR_PRESETS.map((preset) => (
           <button
@@ -260,7 +242,6 @@ function ColorTheme({ value, onChange }: ColorThemeProps) {
             )}
           />
         ))}
-        {/* Custom */}
         <label
           title="커스텀 색상"
           className="relative w-4 h-4 rounded-full border-2 border-dashed border-border/60 cursor-pointer hover:border-accent/60 transition-colors flex items-center justify-center overflow-hidden"
@@ -277,8 +258,6 @@ function ColorTheme({ value, onChange }: ColorThemeProps) {
     </div>
   );
 }
-
-// ── CharacterVisualPanel ──────────────────────────────────────────────────
 
 type CharacterVisualPanelProps = {
   characterId: string;
@@ -323,7 +302,6 @@ export function CharacterVisualPanel({ characterId, characterName, attrs }: Char
     generateStats,
   } = useCharacterAI(characterId);
 
-  /** All wiki sections bundled into one context object for AI calls. */
   const buildInput = (): CharacterAIInput => ({
     name:        characterName,
     tagline:     attrs.tagline || undefined,
@@ -347,7 +325,6 @@ export function CharacterVisualPanel({ characterId, characterName, attrs }: Char
   return (
     <div className="flex flex-col gap-4 max-w-[680px]">
 
-      {/* ── Hero card: image + quote ────────────────────────────────────── */}
       <div className="rounded-panel border border-border bg-surface overflow-hidden">
         <HeroImage
           src={generatedImage}
@@ -361,7 +338,6 @@ export function CharacterVisualPanel({ characterId, characterName, attrs }: Char
           onGenerate={() => generateAll(buildInput(), setGeneratedImage, setGeneratedQuote)}
         />
 
-        {/* Only show quote strip after first generation */}
         {hasContent && (
           <QuoteStrip
             quote={generatedQuote}
@@ -373,7 +349,6 @@ export function CharacterVisualPanel({ characterId, characterName, attrs }: Char
         )}
       </div>
 
-      {/* ── Generate CTA row — shown only when quote exists but no image (edge case) */}
       {hasContent && !generatedImage && !isGenerating && (
         <button
           type="button"
@@ -385,7 +360,6 @@ export function CharacterVisualPanel({ characterId, characterName, attrs }: Char
         </button>
       )}
 
-      {/* ── Stats card ──────────────────────────────────────────────────── */}
       <StatsCard
         axes={radarAxes}
         color={characterColor}
@@ -395,7 +369,6 @@ export function CharacterVisualPanel({ characterId, characterName, attrs }: Char
         onAxesChange={setRadarAxes}
       />
 
-      {/* ── Color theme ─────────────────────────────────────────────────── */}
       <ColorTheme value={characterColor} onChange={setCharacterColor} />
     </div>
   );

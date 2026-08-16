@@ -1,7 +1,3 @@
-/**
- * 프로젝트 초기화 및 로딩 로직
- */
-
 import { useEffect } from "react";
 import { api } from "@shared/api";
 import { createPerformanceTimer } from "@shared/logger";
@@ -19,7 +15,6 @@ export function useProjectInit(enabled = true) {
   const loadCharacters = useCharacterStore((state) => state.loadCharacters);
   const loadTerms = useTermStore((state) => state.loadTerms);
 
-  // 앱 시작 시 프로젝트 & 설정 로드
   useEffect(() => {
     if (!enabled) return;
     const timer = createPerformanceTimer({
@@ -44,7 +39,6 @@ export function useProjectInit(enabled = true) {
       });
   }, [enabled, loadProjects, loadSettings]);
 
-  // 현재 프로젝트 변경 시 챕터 로드
   useEffect(() => {
     if (!enabled || !currentProject) return;
     const timer = createPerformanceTimer({

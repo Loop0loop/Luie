@@ -85,18 +85,8 @@ export function SnapshotList({ chapterId, onOpenSnapshot }: SnapshotListProps) {
       if (res.success && res.data) {
         setSnapshots(res.data);
         setProcessing(true);
-        // Fallback to main thread if worker fails or for debugging
         setSnapshotItems(buildSnapshotItems(res.data));
         setProcessing(false);
-
-        /* Worker temporarily disabled for debugging reliability
-        if (workerRef.current) {
-          workerRef.current.postMessage({ snapshots: res.data });
-        } else {
-          setSnapshotItems(buildSnapshotItems(res.data));
-          setProcessing(false);
-        }
-        */
         return;
       }
       setError(res.error?.message ?? t("snapshot.list.loadFailed"));

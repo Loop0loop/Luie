@@ -18,10 +18,6 @@ const resolveDotTone = (
   return "text-success-fg";
 };
 
-/**
- * 런타임/디버그 정보를 평소엔 작은 상태 점으로만 노출하고,
- * 클릭 시 RuntimeStatusPanel 팝오버로 상세를 보여줍니다.
- */
 export function RuntimeStatusDot({
   runtimeInfo,
   sidecarStatus,

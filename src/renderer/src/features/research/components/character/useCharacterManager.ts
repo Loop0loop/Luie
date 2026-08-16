@@ -37,7 +37,7 @@ export function useCharacterManager(t: TFunction) {
       items,
       currentItem,
       loadAll,
-      // setCurrent은 handleViewAll 내부에서 null만 전달하므로 캐스팅 안전
+      // NOTE: handleViewAll은 null만 전달하므로 이 adapter의 cast 범위를 제한할 수 있다.
       setCurrent: setCurrent as (item: CharacterLike | null) => void,
     },
     uncategorizedKey: "character.uncategorized",

@@ -59,7 +59,7 @@ const readMemoSidebarWidthFromStorage = (): number | null => {
     return Math.round(v3.sidebarWidthPx);
   }
 
-  // v2 layout exists as percentage-based pair; skip conversion and use default width.
+  // NOTE: v2 layout은 percentage pair라 legacy pixel width로 변환하지 않고 기본값을 사용한다.
   if (localStorage.getItem(STORAGE_KEY_MEMO_SIDEBAR_LAYOUT_LEGACY)) {
     return null;
   }

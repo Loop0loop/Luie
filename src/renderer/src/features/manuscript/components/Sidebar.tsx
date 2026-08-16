@@ -45,12 +45,7 @@ interface SidebarProps {
     type: "character" | "event" | "faction" | "world" | "scrap" | "analysis",
   ) => void;
   onSplitView?: (type: "vertical" | "horizontal", contentId: string) => void;
-  /**
-   * When provided, replaces the manuscript sidebar contents with `canvasContent`.
-   * The outer shell (width/background/border/scroll) stays identical so the
-   * surrounding panel does not need to know about the canvas mode. Used by the
-   * canvas Activity Shell (P2). Falsy → renders the normal binder UI.
-   */
+  /** canvas mode에서도 같은 sidebar shell을 재사용하도록 내부 content만 교체한다. */
   canvasContent?: ReactNode;
 }
 
@@ -364,7 +359,6 @@ function Sidebar({
               onPointerDown={closeMenu}
             />
           )}
-          {/* Context Menu Popup */}
           {menuOpenId && (
             <div
               ref={menuRef}

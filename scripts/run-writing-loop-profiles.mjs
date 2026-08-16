@@ -68,7 +68,6 @@ for (const profile of selected) {
         queueDrainMs: parsed?.derivedStatus?.queueDrainMs ?? null,
       };
     } catch {
-      // no-op
     }
   }
 

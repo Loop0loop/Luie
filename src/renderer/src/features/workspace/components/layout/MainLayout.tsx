@@ -1,8 +1,9 @@
 import { type ReactNode, useCallback, useState, useEffect, useRef } from "react";
+import { AISidePanelHeader } from "@renderer/features/manuscript/components/aiSidePanel/AISidePanelHeader";
+import { WebNovelAICoPilot } from "@renderer/features/manuscript/components/aiSidePanel/WebNovelAICoPilot";
 import WindowBar from "@renderer/features/workspace/components/WindowBar";
 import {
-  PanelRightClose,
-  PanelRightOpen,
+  Bot,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
@@ -56,7 +57,7 @@ interface MainLayoutProps {
 export default function MainLayout({
   children,
   sidebar,
-  contextPanel,
+  contextPanel: _contextPanel,
   additionalPanels,
   additionalPanelIds = [],
   onOpenExport,
@@ -69,6 +70,7 @@ export default function MainLayout({
     layoutSurfaceRatios,
     toggleLeftSidebar,
     setRegionOpen,
+    openRightPanelTab,
     updatePanelSize,
   } = useUIStore(
     useShallow((state) => ({
@@ -77,6 +79,7 @@ export default function MainLayout({
       layoutSurfaceRatios: state.layoutSurfaceRatios,
       toggleLeftSidebar: state.toggleLeftSidebar,
       setRegionOpen: state.setRegionOpen,
+      openRightPanelTab: state.openRightPanelTab,
       updatePanelSize: state.updatePanelSize,
     })),
   );
@@ -108,7 +111,7 @@ export default function MainLayout({
   const persistContextLayoutChanged = useLayoutPersist([
     { id: "context-panel", index: 2, surface: contextSurface },
   ]);
-  // Disable panel flex transitions while a separator is being dragged.
+  // NOTE: separator drag 중에는 panel transition이 pointer를 뒤따라오지 못하므로 끈다.
   const [isResizing, setIsResizing] = useState(false);
 
   const markResizeSurface = useCallback((surface: MainLayoutResizeSurface) => {
@@ -191,9 +194,10 @@ export default function MainLayout({
   const toggleContextPanel = useCallback(() => {
     if (!isContextOpen) {
       markOpeningRegion("rightPanel");
+      openRightPanelTab("analysis");
     }
     setRegionOpen("rightPanel", !isContextOpen);
-  }, [isContextOpen, markOpeningRegion, setRegionOpen]);
+  }, [isContextOpen, markOpeningRegion, openRightPanelTab, setRegionOpen]);
 
   useEffect(
     () => () => {
@@ -319,7 +323,7 @@ export default function MainLayout({
     if (shouldRenderSidebar) return;
     const safeRatio =
       sidebarRatio < 5 ? getLayoutSurfaceDefaultRatio(sidebarSurface) : sidebarRatio;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 숨긴 panel의 다음 mount 기본값을 저장 ratio와 동기화한다.
     setSidebarDefaultSize(toPanelPercentSize(safeRatio));
   }, [shouldRenderSidebar, sidebarRatio, sidebarSurface]);
 
@@ -327,7 +331,7 @@ export default function MainLayout({
     if (shouldRenderContext) return;
     const safeRatio =
       contextRatio < 5 ? getLayoutSurfaceDefaultRatio(contextSurface) : contextRatio;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 숨긴 panel의 다음 mount 기본값을 저장 ratio와 동기화한다.
     setContextDefaultSize(toPanelPercentSize(safeRatio));
   }, [shouldRenderContext, contextRatio, contextSurface]);
 
@@ -373,14 +377,11 @@ export default function MainLayout({
             />
           )}
 
-          {/* Main Content */}
           <Panel
             id="main-content-panel"
             minSize={toPercentSize(10)}
             className="flex-1 min-w-0 bg-app relative flex flex-col z-0"
           >
-            {/* 패널 접기/펴기 토글 — 에디터 코너에 떠 있는 버튼. 일반 모드는 고스트,
-                캔버스 모드는 캔버스 위에 떠야 하므로 backdrop 칩 스타일. */}
             {!isCanvasMode && (
               <button
                 onClick={toggleSidebar}
@@ -394,11 +395,16 @@ export default function MainLayout({
             {!isCanvasMode && (
               <button
                 onClick={toggleContextPanel}
-                className="absolute right-2 top-2 z-40 flex h-8 w-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-active hover:text-fg cursor-pointer"
-                title={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
-                aria-label={isContextOpen ? t("mainLayout.tooltip.contextCollapse") : t("mainLayout.tooltip.contextExpand")}
+                className={`absolute right-2 top-2 z-40 flex h-8 items-center gap-1.5 rounded-control px-2.5 text-xs font-medium transition-all cursor-pointer ${
+                  isContextOpen
+                    ? "bg-accent text-accent-fg shadow-xs font-semibold"
+                    : "border border-border/80 bg-element text-fg hover:bg-surface-hover hover:text-accent shadow-xs"
+                }`}
+                title={isContextOpen ? t("ai.sidePanel.close") : t("ai.sidePanel.open")}
+                aria-label={isContextOpen ? t("ai.sidePanel.close") : t("ai.sidePanel.open")}
               >
-                {isContextOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+                <Bot className="h-4 w-4" />
+                <span>{t("ai.sidePanel.view")}</span>
               </button>
             )}
 
@@ -461,7 +467,25 @@ export default function MainLayout({
                 : ""
               }`}
           >
-            {shouldRenderContext ? contextPanel : null}
+            {shouldRenderContext ? (
+              <div className="flex h-full flex-col overflow-hidden bg-sidebar">
+                <AISidePanelHeader
+                  episodeTitle="회차 12: 배신의 속삭임"
+                  synopsis="카엘과 엘라라의 비밀 접선이 세드릭에게 목격되고, 두 사람 간의 갈등이 긴장감 있게 대치되는 회차."
+                  characters={[
+                    { id: "char-1", name: "카엘", role: "주인공" },
+                    { id: "char-2", name: "세드릭", role: "라이벌" },
+                    { id: "char-3", name: "엘라라", role: "조연" },
+                  ]}
+                  foreshadowingList={[
+                    { label: "깨진 맹세", isResolved: false },
+                    { label: "세드릭의 야망", isResolved: false },
+                    { label: "엘라라의 배신?", isResolved: false },
+                  ]}
+                />
+                <WebNovelAICoPilot />
+              </div>
+            ) : null}
           </Panel>
         </PanelGroup>
       </div>

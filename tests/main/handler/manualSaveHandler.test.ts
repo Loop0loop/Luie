@@ -1,5 +1,5 @@
 // TEST_LEVEL: UNIT_MOCKED
-// PROVES: manual save drains main autosaves before forcing the project checkpoint
+// PROVES: manual save가 project checkpoint 전에 main autosave를 모두 비운다.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IPC_CHANNELS } from "../../../src/shared/ipc/channels.js";

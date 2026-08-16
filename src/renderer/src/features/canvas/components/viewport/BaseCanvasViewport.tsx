@@ -1,26 +1,3 @@
-/**
- * BaseCanvasViewport — shared ReactFlow viewport base component.
- *
- * Extracts 80%+ duplicated logic from CanvasViewport and StaticCanvasViewport.
- * Both wrappers pass differing props (nodeTypes, edgeTypes, projection source, etc.).
- *
- * Differences handled via props:
- *   - nodeTypes / edgeTypes: passed from wrapper (dynamic vs static)
- *   - onNodesChange / onEdgesChange: optional (dynamic viewport has these)
- *   - projection: passed from wrapper (useCanvasProjection vs useStaticProjection)
- *   - nodesDraggable: configurable (false for dynamic, true for static)
- *   - persistPositions: persist node drag positions back to worldBuildingStore (main 동기화)
- *   - extraChildren: optional children rendered inside ReactFlow
- *   - bottomToolbar: optional toolbar rendered outside ReactFlow
- *   - wrapperClassName: outer div className customization
- *   - dataTestId: outer div data-testid customization
- *
- * 데이터 흐름(main 동기화):
- *   projection → buildFlowGraph → 내부 RF 노드 상태(useNodesState).
- *   노드 드래그 종료 시 onNodeDragStop → worldBuildingStore.updateGraphNodePosition →
- *   (world-entity는 IPC updatePosition + replica, 그 외는 canvas replica 문서)로 영속화.
- */
-
 import { useCallback, useEffect, useMemo } from "react";
 import ReactFlow, {
   Background,
@@ -54,8 +31,6 @@ const normalizeEntityType = (type: string): WorldEntitySourceType => {
   return (type.charAt(0).toUpperCase() + type.slice(1)) as WorldEntitySourceType;
 };
 
-// ─── static config (shared) ───────────────────────────────────────────────────
-
 const DEFAULT_EDGE_OPTIONS = {
   markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14 },
 } as const;
@@ -63,36 +38,21 @@ const DEFAULT_EDGE_OPTIONS = {
 const FIT_VIEW_OPTIONS = { padding: CANVAS_FIT_VIEW_PADDING } as const;
 const PRO_OPTIONS = { hideAttribution: true } as const;
 
-// ─── props ────────────────────────────────────────────────────────────────────
-
 interface BaseCanvasViewportProps {
-  /** Scope/mode-filtered projection from parent hook */
   projection: CanvasProjection;
-  /** Node type map from wrapper (dynamic or static) */
   nodeTypes: Record<string, React.ComponentType<NodeProps>>;
-  /** Edge type map from wrapper (dynamic or static) */
   edgeTypes: Record<string, React.ComponentType<EdgeProps>>;
-  /** Optional nodes change handler (dynamic viewport only) */
   onNodesChange?: (changes: NodeChange[]) => void;
-  /** Optional edges change handler (dynamic viewport only) */
   onEdgesChange?: (changes: EdgeChange[]) => void;
-  /** Whether nodes are draggable (static=true, dynamic=false) */
   nodesDraggable?: boolean;
-  /** Whether nodes can be connected to other nodes */
   nodesConnectable?: boolean;
-  /** 드래그 종료 시 노드 위치를 worldBuildingStore에 영속화할지 (기본 true) */
+  /** drag 종료 위치를 worldBuildingStore에 저장할지 여부. */
   persistPositions?: boolean;
-  /** Extra children inside ReactFlow (e.g., CanvasFloatingToolbar) */
   extraChildren?: React.ReactNode;
-  /** Toolbar outside ReactFlow (e.g., BottomCreateToolbar) */
   bottomToolbar?: React.ReactNode;
-  /** Outer wrapper className */
   wrapperClassName?: string;
-  /** Outer wrapper data-testid */
   dataTestId?: string;
 }
-
-// ─── component ────────────────────────────────────────────────────────────────
 
 export default function BaseCanvasViewport({
   projection,
@@ -124,7 +84,6 @@ export default function BaseCanvasViewport({
     [projection, selectedNodeId],
   );
 
-  // ReactFlow 내부 드래그를 지원하기 위해 controlled 상태로 보관한다.
   const [nodes, setNodes, onNodesChangeInternal] = useNodesState(
     flowGraph.nodes,
   );
@@ -132,8 +91,7 @@ export default function BaseCanvasViewport({
     flowGraph.edges,
   );
 
-  // projection / 선택 변화로 그래프가 갱신되면 내부 상태를 재동기화한다.
-  // 단, 드래그 중 사용자가 옮긴 위치와 선택 상태는 보존하기 위해 기존 정보를 계승한다.
+  // NOTE: projection 갱신 시에도 drag 위치와 선택 상태는 기존 ReactFlow state에서 계승한다.
   useEffect(() => {
     setNodes((prevNodes) => {
       const prevData = new Map(
@@ -212,7 +170,7 @@ export default function BaseCanvasViewport({
           relation: "belongs_to",
         });
       } catch {
-        // Connection creation failed — logged via worldBuildingStore
+        // NOTE: worldBuildingStore가 관계 생성 실패를 이미 기록한다.
       }
     },
     [currentProjectId, createRelation],

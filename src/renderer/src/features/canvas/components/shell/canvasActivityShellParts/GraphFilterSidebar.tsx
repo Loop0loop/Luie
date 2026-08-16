@@ -1,13 +1,3 @@
-/**
- * GraphFilterSidebar — Redesigned compact graph filter panel.
- *
- * Design decisions:
- *   - Single compact header with mode toggle
- *   - Chapter range as inline compact selector
- *   - Focus node as streamlined dropdown
- *   - Uses DESIGN.md tokens consistently
- */
-
 import { memo, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Calendar, ChevronDown, Users } from "lucide-react";
@@ -34,14 +24,6 @@ export const GraphFilterSidebar = memo(() => {
   const [startChapter, setStartChapter] = useState<number | "all">("all");
   const [endChapter, setEndChapter] = useState<number | "all">("all");
 
-  // 동적 챕터 목록 생성 (현재는 사용되지 않지만 향후 확장용)
-  // const chapterNumbers = useMemo(() => {
-  //   return chapters
-  //     .map((ch) => ch.order)
-  //     .filter((order): order is number => typeof order === "number")
-  //     .sort((a, b) => a - b);
-  // }, [chapters]);
-
   const handleStartChapterChange = useCallback((val: number) => {
     const currentEnd = typeof endChapter === "number" ? endChapter : 15;
     setStartChapter(Math.min(val, currentEnd));
@@ -54,13 +36,11 @@ export const GraphFilterSidebar = memo(() => {
 
   return (
     <div className="flex h-full w-full flex-col bg-sidebar text-fg border-r border-border/30 overflow-hidden select-none min-w-0">
-      {/* Compact header with mode toggle */}
       <div className="flex h-10 items-center justify-between border-b border-border/20 px-3 shrink-0 bg-element/30">
         <span className="text-[11px] font-bold uppercase tracking-wider text-muted truncate">
           {t("canvas.graph.scenarioAnalysis", "Graph")}
         </span>
 
-        {/* Mode toggle inline */}
         <div className="flex items-center gap-px p-0.5 rounded-control bg-element border border-border/20">
           <Button
             variant="ghost"
@@ -91,7 +71,6 @@ export const GraphFilterSidebar = memo(() => {
 
       <ScrollArea className="flex-1 py-2 px-2.5 min-w-0">
         <div className="flex flex-col gap-3 min-w-0">
-          {/* Chapter range — compact inline */}
           <div className="flex flex-col gap-1.5 min-w-0">
             <label className="text-[9px] uppercase font-bold tracking-wider text-muted/70 pl-0.5">
               {t("canvas.graph.chapterRange", "Chapter Range")}
@@ -135,7 +114,6 @@ export const GraphFilterSidebar = memo(() => {
             </div>
           </div>
 
-          {/* Focus node selector */}
           <div className="flex flex-col gap-1.5 min-w-0">
             <label className="text-[9px] uppercase font-bold tracking-wider text-muted/70 pl-0.5">
               {activeMode === "character"

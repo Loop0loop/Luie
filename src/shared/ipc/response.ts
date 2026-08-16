@@ -1,7 +1,3 @@
-/**
- * IPC Response types
- */
-
 import { APP_VERSION } from "../constants/app/index.js";
 
 export interface IPCResponse<T = unknown> {

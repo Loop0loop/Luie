@@ -170,7 +170,6 @@ export function CanvasMarkdownEditor({
       className="canvas-document-editor text-fg flex flex-col"
       style={{ fontFamily: fontFamilyCss }}
     >
-      {/* Notion-style Floating Bubble Menu */}
       {editor && (
         <BubbleMenu
           editor={editor}
@@ -238,7 +237,6 @@ export function CanvasMarkdownEditor({
         </BubbleMenu>
       )}
 
-      {/* 에디터 툴바 (맨 위에 노출 - 노션 스타일) */}
       {editor && (
         <div className="sticky top-0 z-20 w-full bg-panel border-b border-border/40">
           <EditorToolbar
@@ -249,10 +247,8 @@ export function CanvasMarkdownEditor({
         </div>
       )}
 
-      {/* 제목 및 속성 등의 상단 메타데이터 영역 */}
       {children}
 
-      {/* 에디터 본문 영역 */}
       <div className="mt-8">
         <EditorContent editor={editor} />
       </div>

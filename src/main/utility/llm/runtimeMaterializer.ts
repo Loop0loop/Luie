@@ -187,7 +187,7 @@ export async function resolveUtilityModelRuntimeClient(
         continue;
       }
       try {
-        // eslint-disable-next-line no-await-in-loop -- providers must be materialized in route priority order.
+        // eslint-disable-next-line no-await-in-loop -- route 우선순위대로 provider를 준비해야 한다.
         const { baseUrl } = await utilitySidecarSupervisor.ensureStarted(
           candidate.binaryPath,
           candidate.modelPath,
@@ -261,7 +261,7 @@ export async function resolveUtilityEmbeddingRuntimeClient(
       const embeddingModelPath = resolveUtilityEmbeddingModelPath();
       if (candidate && embeddingModelPath) {
         try {
-          // eslint-disable-next-line no-await-in-loop -- embedding providers follow route priority order.
+          // eslint-disable-next-line no-await-in-loop -- embedding provider도 route 우선순위를 따라야 한다.
           const { baseUrl } = await utilityEmbeddingSidecarSupervisor.ensureStarted(
             candidate.binaryPath,
             embeddingModelPath,

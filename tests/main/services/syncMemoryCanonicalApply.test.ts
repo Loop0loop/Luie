@@ -1,5 +1,5 @@
 // TEST_LEVEL: REAL_DB_INTEGRATION
-// PROVES: sync memory rows and project revision commit or roll back together
+// PROVES: sync memory row와 project revision이 함께 commit되거나 rollback된다.
 
 import { eq, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";

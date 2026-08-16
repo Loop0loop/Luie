@@ -61,7 +61,7 @@ export const emitOperationalLog = (
       void result.then(() => undefined, () => undefined);
     }
   } catch {
-    // Logging must not change app control flow.
+    // NOTE: logging 실패가 앱의 제어 흐름을 바꾸면 안 된다.
   }
 };
 

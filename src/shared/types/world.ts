@@ -319,11 +319,10 @@ export interface EntityRelationUpdateInput {
   relation?: RelationKind;
   attributes?: Record<string, unknown>;
 }
-// Graph node — renderer safe
 export interface WorldGraphNode {
   id: string;
-  entityType: WorldEntitySourceType; // "Character" | "Faction" | "Event" | "Term" | "WorldEntity"
-  subType?: WorldEntityType; // Place / Concept / Rule / Item
+  entityType: WorldEntitySourceType;
+  subType?: WorldEntityType;
   name: string;
   description?: string | null;
   firstAppearance?: string | null;

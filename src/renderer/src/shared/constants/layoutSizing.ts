@@ -1,7 +1,6 @@
 import { normalizeSidebarWidthInput } from "./sidebarSizing";
 import { CANVAS_ACTIVITY_LAYOUT_CONFIG, CANVAS_BINDER_LAYOUT_CONFIG } from "./canvasSizing";
 
-/** Minimum size (%) for each split panel in the workspace panel group. */
 export const SPLIT_PANEL_MIN_SIZE_PERCENT = 15;
 
 const clampNumber = (value: number, min: number, max: number): number =>
@@ -313,20 +312,11 @@ export const getResponsivePanelSize = (
 export const toPanelPixelSize = (value: number): string =>
   `${Math.max(0, Math.round(value))}px`;
 
-// ─── CompactBinder (EditorLayout overlay hover sidebar) ──────────────────────
-/** Width of the icon-only rail when no panel is expanded. */
 export const COMPACT_BINDER_RAIL_WIDTH_PX = 44;
-/** Minimum panel width when a tab is open — intentionally narrower than NESTED_MANAGER_PANEL_CONFIG.minPx (420). */
 export const COMPACT_BINDER_MIN_WIDTH_PX = 260;
-/** Maximum panel width when a tab is open. */
 export const COMPACT_BINDER_MAX_WIDTH_PX = 720;
-/** Width of the SnapshotViewer overlay that slides in to the left of the binder panel. */
 export const COMPACT_BINDER_SNAPSHOT_VIEWER_WIDTH_PX = 480;
 
-// ─── Canvas (CanvasPane viewport chrome + activity icon rail) ────────────────
-/** Width of the icon-only activity rail inside the canvas Sidebar. */
 export const CANVAS_ICON_RAIL_WIDTH_PX = 44;
-/** Height of the canvas viewport toolbar (mode/range/zoom). */
 export const CANVAS_TOOLBAR_HEIGHT_PX = 36;
-/** Height of the canvas viewport status bar (mode/chapter/counts). */
 export const CANVAS_STATUS_BAR_HEIGHT_PX = 28;

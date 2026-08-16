@@ -1,18 +1,3 @@
-/**
- * canvasFlowAdapter.ts
- *
- * Pure conversion: CanvasProjection → React-Flow Node[] / Edge[].
- *
- * Constraints:
- *   - No React, no store access, no IPC, no side-effects.
- *   - Input is CanvasProjection (scope/mode-filtered view-model),
- *     NOT raw WorldGraphData — so scope filtering is always applied.
- *
- * Maps:
- *   CanvasProjectionNode → Node<RFEntityNodeData>
- *   CanvasProjectionEdge → Edge<RFRelationEdgeData>
- */
-
 import type { Node, Edge } from "reactflow";
 import {
   CANVAS_RF_NODE_TYPE_ENTITY,
@@ -28,8 +13,6 @@ import {
 import type { CanvasProjection } from "../types/canvasProjection.types";
 import type { RFEntityNodeData, RFRelationEdgeData } from "../types/reactFlow.types";
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
-
 const hasPersistedPosition = (x: number, y: number): boolean =>
   x !== 0 || y !== 0;
 
@@ -41,8 +24,6 @@ function autoGridPosition(index: number): { x: number; y: number } {
     y: CANVAS_GRID_ORIGIN_Y_PX + row * CANVAS_GRID_GAP_Y_PX,
   };
 }
-
-// ─── nodes ────────────────────────────────────────────────────────────────────
 
 function buildNodes(
   projection: CanvasProjection,
@@ -77,8 +58,6 @@ function buildNodes(
   });
 }
 
-// ─── edges ────────────────────────────────────────────────────────────────────
-
 function buildEdges(
   projection: CanvasProjection,
   nodeIds: Set<string>,
@@ -98,19 +77,12 @@ function buildEdges(
     }));
 }
 
-// ─── public API ───────────────────────────────────────────────────────────────
-
 export interface CanvasFlowGraph {
   nodes: Node[];
   edges: Edge[];
 }
 
-/**
- * Pure conversion: CanvasProjection + selectedNodeId → React-Flow nodes/edges.
- *
- * Projection is already scope/mode-filtered by useCanvasProjection.
- * Memoize on (projection, selectedNodeId) at the call site.
- */
+/** scope/mode filtering이 끝난 projection만 ReactFlow node/edge로 변환한다. */
 export function buildFlowGraph(
   projection: CanvasProjection,
   selectedNodeId: string | null,

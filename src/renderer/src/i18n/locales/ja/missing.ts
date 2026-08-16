@@ -1,4 +1,4 @@
-// Keys referenced by components that lacked locale entries; deep-merged into common.
+// NOTE: common에 누락된 component key를 deep merge로 보완한다.
 export const jaMissing = {
   common: {
     close: "閉じる",
@@ -164,6 +164,13 @@ export const jaMissing = {
         degraded: "低下",
         disconnected: "切断",
       },
+    },
+  },
+  ai: {
+    sidePanel: {
+      open: "AIサイドパネルを開く",
+      close: "AIサイドパネルを閉じる",
+      view: "AIビュー",
     },
   },
 } as const;

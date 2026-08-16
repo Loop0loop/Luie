@@ -308,8 +308,7 @@ export const resolveProjectPackageUpdatedAt = (
   return new Date(latestTimestamp).toISOString();
 };
 
-// `graph` is a transport/view payload built from canonical world models.
-// It must not become an independent source-of-truth.
+// NOTE: graph는 canonical world model에서 만든 전송용 view이며 독립 저장소가 아니다.
 export const buildWorldGraph = (project: ProjectExportRecord): WorldGraphData => {
   const nodes: WorldGraphData["nodes"] = [
     ...project.characters.map((character) => ({

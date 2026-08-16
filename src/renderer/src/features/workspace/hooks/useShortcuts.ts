@@ -104,9 +104,7 @@ const ALLOW_IN_EDITORS = new Set<ShortcutAction>([
   "window.toggleFullscreen",
 ]);
 
-// Guardrail: destructive window/app actions must require Cmd/Ctrl.
-// This prevents accidental quits when a persisted shortcut becomes malformed
-// (e.g. plain "q" without modifiers).
+// WARNING: 저장 shortcut이 손상돼도 plain key로 앱이 종료되지 않도록 파괴적 동작에는 Cmd/Ctrl이 필요하다.
 const REQUIRE_PRIMARY_MODIFIER = new Set<ShortcutAction>([
   "app.closeWindow",
   "app.quit",

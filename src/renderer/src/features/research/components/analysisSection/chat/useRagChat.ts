@@ -57,7 +57,7 @@ export function useRagChat({
     try {
       await handleSend(projectId, chapterId, memoryScope);
     } catch {
-      // Error is handled in store
+      // NOTE: 사용자 오류 상태는 store가 기록하므로 여기서는 중복 처리하지 않는다.
     }
   }, [projectId, chapterId, memoryScope, handleSend]);
 

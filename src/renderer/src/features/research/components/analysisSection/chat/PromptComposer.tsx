@@ -152,7 +152,6 @@ export function PromptComposer({
 
   return (
     <div className="flex items-center gap-2 rounded-full bg-panel/40 dark:bg-panel/30 border border-border/30 backdrop-blur-2xl pl-3.5 pr-2 py-2 shadow-panel focus-within:border-accent/40 focus-within:ring-1 focus-within:ring-accent/15 transition-[colors,box-shadow,border-color] duration-200">
-      {/* + 메뉴 — 서사 요약 / LLM Route / Memory Scope 통합 */}
       <div className="relative shrink-0" ref={menuRef}>
         <button
           type="button"
@@ -292,7 +291,6 @@ export function PromptComposer({
         </div>
       )}
 
-      {/* 입력 */}
       <textarea
         aria-label={t("analysis.composer.placeholder")}
         className="flex-1 text-[13px] bg-transparent border-none resize-none text-fg/90 placeholder:text-muted/50 focus:outline-none min-h-[22px] max-h-[120px] py-1 px-1.5 align-middle custom-scrollbar leading-[1.5]"
@@ -304,10 +302,8 @@ export function PromptComposer({
         disabled={disabled}
       />
 
-      {/* 런타임 상태 점 */}
       <RuntimeStatusDot runtimeInfo={runtimeInfo} sidecarStatus={sidecarStatus} />
 
-      {/* 플로팅 창 컨트롤 */}
       {floating && (
         <>
           <button
@@ -333,7 +329,6 @@ export function PromptComposer({
         </>
       )}
 
-      {/* 전송 / 중단 */}
       <button
         type="button"
         onClick={isStreaming ? onStop : onSend}

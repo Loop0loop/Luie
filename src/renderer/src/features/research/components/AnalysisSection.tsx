@@ -115,7 +115,6 @@ function FloatingWrapper({
       const startX = e.clientX;
       const startY = e.clientY;
 
-      // 시작 시점의 화면상 좌상단 좌표
       const startLeft = window.innerWidth - startWidth - 24 + position.x;
       const startTop = window.innerHeight - startHeight - 96 + position.y;
 
@@ -197,7 +196,6 @@ function FloatingWrapper({
         {children}
       </div>
 
-      {/* 전방향 리사이즈 핸들 — 컴팩트(빈 상태)에서는 숨김 */}
       {!compact && (
         <>
           <div role="separator" aria-label={resizeHandleLabel} tabIndex={0} onPointerDown={handleResizeStart("n")} className="absolute top-0 left-3 right-3 h-1.5 cursor-ns-resize z-50" />
@@ -290,7 +288,6 @@ export default function AnalysisSection() {
   const disabled = !currentProject;
   const isEmpty = chat.messages.length === 0;
   const floating = viewMode === "floatingView";
-  // 플로팅 + 빈 상태: 프롬프트만 보이는 컴팩트 형태. 대화 시작하면 전체 채팅 창으로 확장.
   const floatingCompact = floating && isEmpty;
 
   const composer = (
@@ -338,10 +335,8 @@ export default function AnalysisSection() {
         floatingCompact ? "" : "h-full"
       } ${floating ? "bg-transparent" : "bg-panel"}`}
     >
-      {/* 탭 헤더 영역 — 컴팩트 뷰가 아닐 때 항상 노출 */}
       {!floatingCompact && (
         <div className="flex items-center justify-between px-5 py-3 border-b border-border/15 bg-element/5 select-none shrink-0 gap-2">
-          {/* 세련된 알약 형태 탭 버튼들 */}
           <div
             role="tablist"
             aria-label={t("analysis.title")}
@@ -375,7 +370,6 @@ export default function AnalysisSection() {
             </button>
           </div>
 
-          {/* 뷰 모드 전환 토글 (고정 뷰일 때만 보임) */}
           {viewMode === "fixView" && (
             <button
               data-testid="view-mode-toggle"
@@ -394,7 +388,6 @@ export default function AnalysisSection() {
         </div>
       )}
 
-      {/* 서사 요약 드로어 (상단 슬라이드 인) */}
       <SummaryDrawer
         open={showNarrativeSummaryStatus}
         loading={narrativeSummaryStatusLoading}
@@ -403,11 +396,9 @@ export default function AnalysisSection() {
         onClose={() => setShowNarrativeSummaryStatus(false)}
       />
 
-      {/* 본문 콘텐츠 — 탭 분기 */}
       {!floatingCompact && (
         <div data-no-drag className="flex-1 overflow-y-auto px-5 pt-4 min-h-0 cursor-auto custom-scrollbar">
           {sectionTab === "review" ? (
-            /* 설정 검토 탭: 서사 요약만 표시 */
             <div className="mb-4">
               <NarrativeSummaryStatusPanel
                 visible={showNarrativeSummaryStatus}
@@ -418,10 +409,8 @@ export default function AnalysisSection() {
               />
             </div>
           ) : (
-            /* 채팅 대화 탭: GPT/클로드 대화창 형식 */
             <div className="h-full flex flex-col min-h-0">
               {isEmpty ? (
-                /* 빈 상태: 가이드와 4가지 빠른 프롬프트 카드 */
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-6 select-none animate-[fadeIn_0.4s_ease-out]">
                   <div className="w-12 h-12 rounded-2xl bg-element/20 border border-border/10 flex items-center justify-center shadow-sm mb-5">
                     <Bot className="w-5 h-5 text-muted" />
@@ -472,7 +461,6 @@ export default function AnalysisSection() {
                   </div>
                 </div>
               ) : (
-                /* 메시지가 있을 때는 메시지 리스트 렌더링 */
                 <div className="space-y-6 pb-4">
                   <MessageList
                     messages={chat.messages}
@@ -486,7 +474,6 @@ export default function AnalysisSection() {
         </div>
       )}
 
-      {/* 입력창 — 채팅 탭이거나 플로팅 컴팩트 뷰일 때만 노출 */}
       {(sectionTab === "chat" || floatingCompact) && (
         <div className="px-3 pb-3 pt-2 shrink-0">{composer}</div>
       )}

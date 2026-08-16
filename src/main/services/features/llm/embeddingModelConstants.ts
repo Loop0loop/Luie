@@ -1,19 +1,7 @@
 /**
- * embeddingModelConstants — 전용 로컬 임베딩 모델(bge-m3) 정의.
- *
- * 선정: BAAI/bge-m3 (다국어, 한국어 양호, 8192 토큰, 출력 차원 1024).
- * 배포: gpustack/bge-m3-GGUF (llama-server `--embeddings` 호환 검증된 GGUF).
- * quant: Q4_K_M — 크기(~438MB)/품질 균형. 앱 설치 시 동봉(bundled)된다.
- *
- * 동봉 경로(런타임):
- *   packaged: <process.resourcesPath>/models/<filename>
- *   dev:      <repoRoot>/resources/models/<filename>  (prebuild 스크립트가 채움)
- *
- * 차원(1024)은 MemoryEmbedding.dimension 및 벡터검색 필터의 기준이 된다.
- * 모델 식별자(modelId)는 MemoryEmbedding.model signature 에 사용되어,
- * 모델 교체 시 자동 재임베딩을 트리거한다.
+ * 한국어 품질과 llama-server 호환성을 기준으로 선택한 동봉 임베딩 모델이다.
+ * `modelId`와 `dimension`은 embedding signature에 포함되므로 변경 시 재임베딩된다.
  */
-
 export const DEFAULT_EMBEDDING_MODEL = {
   /** 안정적 식별자 — embedding signature 및 설정 기록에 사용. */
   modelId: "bge-m3-q4_k_m",

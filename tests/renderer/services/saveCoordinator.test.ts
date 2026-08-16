@@ -1,5 +1,5 @@
 // TEST_LEVEL: UNIT_MOCKED
-// PROVES: renderer buffers and mutation queues drain before main checkpoint
+// PROVES: main checkpoint 전에 renderer buffer와 mutation queue를 모두 비운다.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 

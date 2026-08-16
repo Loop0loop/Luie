@@ -130,7 +130,6 @@ export default function WorldSection({
         </div>
       )}
 
-      {/* Floating Glassmorphic Pill for Graph Controls removed because mode was removed */}
 
       <div className="min-h-0 flex-1 overflow-hidden">
         {graphOnly ? (

@@ -80,6 +80,16 @@ export const enBaseSettings = {
         neutral: "Neutral",
         warm: "Warm",
       },
+      accent: {
+        title: "Accent Color",
+        description: "Choose the accent color used for buttons, links, and highlights.",
+        blue: "Blue",
+        emerald: "Emerald",
+        violet: "Violet",
+        rose: "Rose",
+        amber: "Amber",
+        custom: "Custom",
+      },
     },
     view: {
       pc: "PC",

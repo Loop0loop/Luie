@@ -23,6 +23,7 @@ import { syncAuthService } from "../sync/syncAuthService.js";
 const logger = createLogger("StartupReadinessService");
 
 const STARTUP_WIZARD_EVENT = "startup:wizard-completed";
+const STARTUP_SESSION_CHECK_TIMEOUT_MS = 5_000;
 
 const loadCacheDb = async () =>
   (await import("../../../infra/database/cache.js")).cacheDb;
@@ -339,6 +340,7 @@ class StartupReadinessService {
         `${supabaseConfig.url}/functions/v1/luieEnv`,
         {
           method: "GET",
+          signal: AbortSignal.timeout(STARTUP_SESSION_CHECK_TIMEOUT_MS),
           headers: {
             apikey: supabaseConfig.anonKey,
             Authorization: `Bearer ${access.token}`,

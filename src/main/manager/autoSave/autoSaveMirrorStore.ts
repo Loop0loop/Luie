@@ -220,7 +220,7 @@ export class AutoSaveMirrorStore {
             await fs.stat(latestPath);
             results.push(latestPath);
           } catch {
-            // ignore missing latest snapshot
+            // NOTE: chapter별 latest snapshot은 아직 생성되지 않았을 수 있다.
           }
         }
       }

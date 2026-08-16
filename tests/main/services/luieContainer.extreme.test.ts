@@ -1,6 +1,6 @@
 // TEST_LEVEL: REAL_FS_INTEGRATION
-// PROVES: actual SQLite-backed .luie write/read/reopen behavior on the filesystem
-// DOES_NOT_PROVE: app-wide release safety or UI/IPC orchestration
+// PROVES: filesystem에서 실제 SQLite 기반 .luie write/read/reopen 동작
+// DOES_NOT_PROVE: app 전체 release 안전성 또는 UI/IPC orchestration
 
 import os from "node:os";
 import path from "node:path";

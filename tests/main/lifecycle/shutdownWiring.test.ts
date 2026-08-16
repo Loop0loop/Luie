@@ -113,6 +113,12 @@ vi.mock("../../../src/main/infra/database/cache.js", () => ({
   },
 }));
 
+vi.mock("../../../src/main/lifecycle/shutdown/runtimeLifecycle.js", () => ({
+  pauseShutdownBackgroundWork: vi.fn(async () => undefined),
+  resumeShutdownBackgroundWork: vi.fn(),
+  stopShutdownRuntimeServices: vi.fn(async () => undefined),
+}));
+
 vi.mock("../../../src/main/domains/project/index.js", () => ({
   projectService: {
     flushPendingExports: mocked.flushPendingExports,

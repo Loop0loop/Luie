@@ -14,11 +14,13 @@ import {
 } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import type { LucideIcon } from "lucide-react";
+import { parseStructuredAttributes } from "@renderer/features/research/utils/parseStructuredAttributes";
 
 type GalleryEntity = {
   id: string;
   name: string;
   description?: string | null;
+  attributes?: unknown;
 };
 
 type EntityGalleryProps<T extends GalleryEntity> = {
@@ -104,11 +106,6 @@ function EntityActions({
   );
 }
 
-/**
- * Shared card/list surface for Characters, Factions, and Events. Grouping is
- * retained for scanability; controls are intentionally contained in the panel
- * header so the writing surface remains visually quiet.
- */
 export function EntityGallery<T extends GalleryEntity>({
   groups,
   title,
@@ -204,10 +201,8 @@ export function EntityGallery<T extends GalleryEntity>({
       className="flex h-full min-h-0 flex-1 flex-col bg-app"
       data-view-mode={viewMode}
     >
-      {/* 1단 통합 툴바 헤더 (Single-deck Unified Toolbar) */}
       <header className="shrink-0 border-b border-border bg-sidebar/30 px-4">
         <div className="flex h-11 items-center justify-between gap-3">
-          {/* Left: 서브 탭 & 카운트 */}
           <div className="flex items-center gap-2 min-w-0">
             {tabs ? (
               tabs
@@ -221,9 +216,7 @@ export function EntityGallery<T extends GalleryEntity>({
             </span>
           </div>
 
-          {/* Right: 검색 + 뷰 토글 + 정렬 + 추가 버튼 */}
           <div className="flex items-center gap-2">
-            {/* Inline Compact Search */}
             <div className="relative flex h-7 items-center rounded-control border border-border/80 bg-element px-2 transition-all focus-within:border-accent focus-within:ring-1 focus-within:ring-accent w-32 sm:w-44">
               <Search className="icon-xs text-subtle shrink-0 mr-1.5" aria-hidden="true" />
               <input
@@ -238,7 +231,6 @@ export function EntityGallery<T extends GalleryEntity>({
               />
             </div>
 
-            {/* View Mode Toggle */}
             <div className="flex items-center rounded-control bg-element p-0.5 border border-border/60">
               <button
                 type="button"
@@ -268,7 +260,6 @@ export function EntityGallery<T extends GalleryEntity>({
               </button>
             </div>
 
-            {/* Sort Menu */}
             <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>
                 <button
@@ -305,7 +296,6 @@ export function EntityGallery<T extends GalleryEntity>({
               </DropdownMenu.Portal>
             </DropdownMenu.Root>
 
-            {/* Primary Add Button */}
             {onAdd ? (
               <button
                 type="button"
@@ -320,7 +310,6 @@ export function EntityGallery<T extends GalleryEntity>({
         </div>
       </header>
 
-      {/* Main Responsive Grid & Content Canvas */}
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-6xl px-4 py-5 md:px-6 md:py-6">
           {displayGroups.length > 0 ? (
@@ -328,7 +317,6 @@ export function EntityGallery<T extends GalleryEntity>({
               const isCollapsed = collapsedGroups[label];
               return (
                 <section key={label} className="mb-8 last:mb-0">
-                  {/* Section Collapsible Header */}
                   <button
                     type="button"
                     onClick={() => toggleGroupCollapse(label)}
@@ -350,87 +338,182 @@ export function EntityGallery<T extends GalleryEntity>({
                   {!isCollapsed && (
                     <>
                       {viewMode === "grid" ? (
-                        <div className="grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-4">
-                          {entities.map((entity) => (
-                            <article
-                              key={entity.id}
-                              className="group relative overflow-hidden rounded-panel border border-border/70 bg-surface shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-border-active hover:shadow-md active:scale-[0.99] active:shadow-xs"
-                            >
-                              <button
-                                type="button"
-                                data-entity-id={entity.id}
-                                className="block w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
-                                onClick={(event) => {
-                                  event.currentTarget.blur();
-                                  onSelect(entity.id);
-                                }}
+                        <div className="grid grid-cols-[repeat(auto-fill,minmax(175px,190px))] gap-3">
+                          {entities.map((entity) => {
+                            const attrs = entity.attributes
+                              ? parseStructuredAttributes(entity.attributes)
+                              : {};
+                            const color = (attrs.characterColor as string) || undefined;
+                            const image = (attrs.generatedImage as string) || undefined;
+                            const roles = (attrs.roles as string[]) || [];
+
+                            return (
+                              <article
+                                key={entity.id}
+                                className="group relative overflow-hidden rounded-panel border border-border/80 bg-surface shadow-xs hover:border-border-active hover:shadow-md active:scale-[0.99] flex flex-col items-center p-3 transition-colors duration-150"
                               >
-                                {/* Card Aspect Banner & Initials Badge */}
-                                <div className="relative flex aspect-[16/9] items-center justify-center bg-gradient-to-br from-element via-surface-hover to-element/50 border-b border-border/40">
-                                  <div className="flex size-10 items-center justify-center rounded-full bg-surface/90 shadow-xs border border-border/40 text-accent transition-transform duration-200 group-hover:scale-105">
-                                    <Icon className="h-5 w-5" strokeWidth={1.5} aria-hidden="true" />
+                                <button
+                                  type="button"
+                                  data-entity-id={entity.id}
+                                  className="flex flex-col items-center w-full flex-1 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+                                  onClick={(event) => {
+                                    event.currentTarget.blur();
+                                    onSelect(entity.id);
+                                  }}
+                                >
+                                  {/* Profile Avatar Header */}
+                                  <div className="relative mb-2.5 flex items-center justify-center">
+                                    {image ? (
+                                      <div className="size-13 overflow-hidden rounded-full border-2 border-border/60 shadow-xs ring-2 ring-element">
+                                        <img
+                                          src={image}
+                                          alt={entity.name}
+                                          className="h-full w-full object-cover"
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div
+                                        className="flex size-13 items-center justify-center rounded-full bg-element border-2 shadow-xs text-muted transition-colors group-hover:text-accent"
+                                        style={{
+                                          borderColor: color ? `${color}60` : "var(--color-border)",
+                                        }}
+                                      >
+                                        <Icon className="size-6" strokeWidth={1.5} aria-hidden="true" />
+                                      </div>
+                                    )}
+
+                                    {color && (
+                                      <span
+                                        className="absolute bottom-0 right-0 size-2.5 rounded-full ring-2 ring-surface"
+                                        style={{ backgroundColor: color }}
+                                        title={`Theme: ${color}`}
+                                      />
+                                    )}
                                   </div>
-                                </div>
-                                <div className="p-3">
-                                  <span className="block truncate text-xs font-semibold text-fg group-hover:text-accent transition-colors">
+
+                                  {/* Name */}
+                                  <span className="block w-full truncate text-xs font-semibold text-fg group-hover:text-accent transition-colors">
                                     {entity.name}
                                   </span>
-                                  <span className="mt-1 block truncate text-[11px] text-subtle">
-                                    {entity.description || noDescriptionLabel}
+
+                                  {/* Role / Classification Badge */}
+                                  <div className="mt-1 flex items-center justify-center gap-1 flex-wrap w-full">
+                                    {roles.length > 0 ? (
+                                      roles.slice(0, 1).map((role) => (
+                                        <span
+                                          key={role}
+                                          className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-element border border-border/60 text-[10px] font-medium text-muted truncate max-w-full"
+                                        >
+                                          {role}
+                                        </span>
+                                      ))
+                                    ) : (
+                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-element/50 border border-border/40 text-[10px] text-subtle truncate max-w-full">
+                                        {entity.description || noDescriptionLabel}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Description (if role was displayed) */}
+                                  {roles.length > 0 && entity.description && (
+                                    <p className="mt-1.5 line-clamp-2 text-[10px] leading-relaxed text-subtle w-full">
+                                      {entity.description}
+                                    </p>
+                                  )}
+                                </button>
+
+                                {hasEntityActions ? (
+                                  <div className="absolute right-1.5 top-1.5 z-10">
+                                    <EntityActions
+                                      entity={entity}
+                                      onDelete={onDelete}
+                                      onEdit={onEdit}
+                                      onSelect={onSelect}
+                                    />
+                                  </div>
+                                ) : null}
+                              </article>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          {entities.map((entity) => {
+                            const attrs = entity.attributes
+                              ? parseStructuredAttributes(entity.attributes)
+                              : {};
+                            const color = (attrs.characterColor as string) || undefined;
+                            const image = (attrs.generatedImage as string) || undefined;
+                            const roles = (attrs.roles as string[]) || [];
+
+                            return (
+                              <article
+                                key={entity.id}
+                                className="group flex items-center gap-3.5 rounded-panel border border-border/60 bg-surface px-4 py-3 shadow-2xs hover:border-border-active hover:bg-surface hover:shadow-xs active:bg-surface-hover transition-colors duration-150"
+                              >
+                                <button
+                                  type="button"
+                                  data-entity-id={entity.id}
+                                  className="flex min-w-0 flex-1 items-center gap-3.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+                                  onClick={(event) => {
+                                    event.currentTarget.blur();
+                                    onSelect(entity.id);
+                                  }}
+                                >
+                                  {image ? (
+                                    <img
+                                      src={image}
+                                      alt=""
+                                      className="size-10 shrink-0 rounded-full object-cover border border-border/60"
+                                    />
+                                  ) : (
+                                    <span
+                                      className="flex size-10 shrink-0 items-center justify-center rounded-full bg-element shadow-2xs border text-muted transition-colors group-hover:text-accent"
+                                      style={{
+                                        borderColor: color ? `${color}50` : "var(--color-border)",
+                                      }}
+                                    >
+                                      <Icon
+                                        className="size-5"
+                                        strokeWidth={1.5}
+                                        aria-hidden="true"
+                                      />
+                                    </span>
+                                  )}
+
+                                  <span className="min-w-0 flex-1">
+                                    <span className="flex items-center gap-2">
+                                      <span className="block truncate text-xs font-semibold text-fg group-hover:text-accent transition-colors">
+                                        {entity.name}
+                                      </span>
+                                      {color && (
+                                        <span
+                                          className="size-1.5 rounded-full shrink-0"
+                                          style={{ backgroundColor: color }}
+                                        />
+                                      )}
+                                      {roles.length > 0 && (
+                                        <span className="hidden sm:inline-flex items-center px-1.5 py-0.2 rounded-full bg-element border border-border/60 text-[10px] font-medium text-muted">
+                                          {roles[0]}
+                                        </span>
+                                      )}
+                                    </span>
+                                    <span className="mt-0.5 block truncate text-[11px] text-subtle">
+                                      {entity.description || noDescriptionLabel}
+                                    </span>
                                   </span>
-                                </div>
-                              </button>
-                              {hasEntityActions ? (
-                                <div className="absolute right-1.5 top-1.5">
+                                </button>
+                                {hasEntityActions ? (
                                   <EntityActions
                                     entity={entity}
                                     onDelete={onDelete}
                                     onEdit={onEdit}
                                     onSelect={onSelect}
                                   />
-                                </div>
-                              ) : null}
-                            </article>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="space-y-1.5">
-                          {entities.map((entity) => (
-                            <article
-                              key={entity.id}
-                              className="group flex items-center gap-3 rounded-panel border border-transparent px-3 py-2 transition-colors hover:border-border/60 hover:bg-surface-hover hover:shadow-xs active:bg-surface-hover/80"
-                            >
-                              <button
-                                type="button"
-                                data-entity-id={entity.id}
-                                className="flex min-w-0 flex-1 items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
-                                onClick={(event) => {
-                                  event.currentTarget.blur();
-                                  onSelect(entity.id);
-                                }}
-                              >
-                                <span className="flex size-8 shrink-0 items-center justify-center rounded-control bg-element text-accent border border-border/40">
-                                  <Icon className="icon-sm" strokeWidth={1.5} aria-hidden="true" />
-                                </span>
-                                <span className="min-w-0 flex-1">
-                                  <span className="block truncate text-xs font-medium text-fg group-hover:text-accent transition-colors">
-                                    {entity.name}
-                                  </span>
-                                  <span className="mt-0.5 block truncate text-[11px] text-subtle">
-                                    {entity.description || noDescriptionLabel}
-                                  </span>
-                                </span>
-                              </button>
-                              {hasEntityActions ? (
-                                <EntityActions
-                                  entity={entity}
-                                  onDelete={onDelete}
-                                  onEdit={onEdit}
-                                  onSelect={onSelect}
-                                />
-                              ) : null}
-                            </article>
-                          ))}
+                                ) : null}
+                              </article>
+                            );
+                          })}
                         </div>
                       )}
                     </>
@@ -454,4 +537,3 @@ export function EntityGallery<T extends GalleryEntity>({
     </section>
   );
 }
-

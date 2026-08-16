@@ -48,13 +48,11 @@ export default function GraphSurface() {
     nodesRef.current = nodes;
   }, [nodes]);
 
-  // Zustand 전체 스토어 구독 결함 해결: 개별 Selector 분리 구독으로 불필요 리렌더링 0% 통제
   const focusId = useGraphStore((state) => state.focusId);
   const setFocusId = useGraphStore((state) => state.setFocusId);
   const hoverId = useGraphStore((state) => state.hoverId);
   const isRightPanelOpen = useUIStore((state) => state.regions?.rightPanel?.open ?? false);
 
-  // 1. Luie 관계 시나리오 필터 상태 구독 (Zustand 스토어 연동)
   const activeMode = useGraphStore((state) => state.activeMode);
   const selectedFocusNode = useGraphStore((state) => state.selectedFocusNode);
   const graphData = useWorldBuildingStore((state) => state.graphData);
@@ -65,13 +63,11 @@ export default function GraphSurface() {
 
   const isEmpty = sourceNodes.length === 0;
 
-  // hoverId에 대응하는 노드 데이터를 실시간 추적하여 호버 플로팅 카드에 공급
   const hoverNode = useMemo(() => {
     if (!hoverId) return null;
     return nodes.find((node) => node.id === hoverId) ?? null;
   }, [hoverId, nodes]);
 
-  // 2. 모드 및 필터 조건에 부합하는 동적 그래프 데이터 파이프라인 (Constellation Monotone Rule)
   const { filteredNodes, filteredEdges } = useGraphDataFiltering({
     sourceNodes,
     sourceEdges,
@@ -80,12 +76,11 @@ export default function GraphSurface() {
     focusId,
   });
 
-  // 3. 필터 변경 또는 마운트 시 Force Layout 기동 (모드별 중심점 및 물리력 분기 대응)
   useEffect(() => {
     const layoutCenter = activeMode === "character" ? LAYOUT_CENTER_CHARACTER : LAYOUT_CENTER_EVENT;
     const iterations = activeMode === "character" ? LAYOUT_ITERATIONS_CHARACTER : LAYOUT_ITERATIONS_EVENT;
 
-    // 이전 노드 위치 좌표를 그대로 물려받아 위치 튕김 현상을 완전히 0%로 소멸
+    // NOTE: filter 변경 시 기존 node 위치를 이어받아 layout jump를 막는다.
     const nodesWithPrevPositions = filteredNodes.map((node) => {
       const prevNode = nodesRef.current.find((n) => n.id === node.id);
       if (prevNode?.position) {
@@ -101,17 +96,15 @@ export default function GraphSurface() {
     
     setNodes(laidOutNodes);
     setEdges(filteredEdges);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- activeMode 변경은 filtered node/edge 변경으로 이미 반영된다.
   }, [filteredNodes, filteredEdges, setNodes, setEdges]);
 
-  // focusId 상태가 전역으로 변동될 때 노드 및 에지의 focus/강조 상태를 동기화
   useFocusSync({ focusId, setNodes, setEdges });
 
-  // 초기 로딩 시에만 fitView 적용 (노드 변경 시마다 리셋 방지)
   useEffect(() => {
     if (filteredNodes.length > 0 && !hasInitialFitView.current) {
       hasInitialFitView.current = true;
-      // 약간의 지연을 주어 노드 렌더링 완료 후 fitView 호출
+      // NOTE: node render가 끝난 뒤 최초 한 번만 fitView를 적용한다.
       const timeoutId = setTimeout(() => {
         fitView({ padding: 0.2, duration: 200 });
       }, 100);
@@ -123,7 +116,6 @@ export default function GraphSurface() {
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node<GraphNodeData>) => {
       setFocusId(node.id);
-      // 우측 설정 바인더 패널이 닫혀있다면 쑥 열어주기 (최상의 인터랙티브 UX 선사)
       useUIStore.getState().setRegionOpen("rightPanel", true);
     },
     [setFocusId]
@@ -167,7 +159,6 @@ export default function GraphSurface() {
 
   return (
     <div className="h-full w-full bg-app relative overflow-hidden select-none">
-      {/* React Flow Canvas */}
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -203,7 +194,6 @@ export default function GraphSurface() {
         />
       </ReactFlow>
 
-      {/* 2. ? 범례 보기 플로팅 버튼 */}
       <div className="absolute bottom-6 left-6 z-30">
         <button
           type="button"

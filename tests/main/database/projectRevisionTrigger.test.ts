@@ -1,5 +1,5 @@
 // TEST_LEVEL: REAL_DB_INTEGRATION
-// PROVES: canonical SQLite mutations atomically advance project revisions
+// PROVES: canonical SQLite mutation이 project revision을 atomic하게 증가시킨다.
 
 import * as fsPromises from "node:fs/promises";
 import * as os from "node:os";

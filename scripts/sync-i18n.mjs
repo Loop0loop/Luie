@@ -14,7 +14,6 @@ const localeFiles = {
 
 const moduleCache = new Map();
 
-// Helper to resolve TS module paths
 const resolveTsModule = (importSpecifier, fromFile) => {
   if (!importSpecifier.startsWith(".")) return null;
   const base = path.resolve(path.dirname(fromFile), importSpecifier);
@@ -35,7 +34,6 @@ const resolveTsModule = (importSpecifier, fromFile) => {
   throw new Error(`Unable to resolve module "${importSpecifier}" from ${fromFile}`);
 };
 
-// Helper to load and transpile TS module dynamically
 const loadTsModule = (filePath) => {
   const absPath = path.resolve(filePath);
   if (moduleCache.has(absPath)) return moduleCache.get(absPath).exports;
@@ -75,30 +73,24 @@ const loadTsModule = (filePath) => {
   return module.exports;
 };
 
-// List of all file pairs to sync
 const filesToSync = [
-  // base/ core files
   { ko: "src/renderer/src/i18n/locales/ko/base/core.ts", en: "src/renderer/src/i18n/locales/en/base/core.ts", ja: "src/renderer/src/i18n/locales/ja/base/core.ts", varPrefix: "BaseCore" },
   { ko: "src/renderer/src/i18n/locales/ko/base/Settings.ts", en: "src/renderer/src/i18n/locales/en/base/Settings.ts", ja: "src/renderer/src/i18n/locales/ja/base/Settings.ts", varPrefix: "BaseSettings" },
   { ko: "src/renderer/src/i18n/locales/ko/base/settingsAdvanced.ts", en: "src/renderer/src/i18n/locales/en/base/settingsAdvanced.ts", ja: "src/renderer/src/i18n/locales/ja/base/settingsAdvanced.ts", varPrefix: "BaseSettingsAdvanced" },
   { ko: "src/renderer/src/i18n/locales/ko/base/Research.ts", en: "src/renderer/src/i18n/locales/en/base/Research.ts", ja: "src/renderer/src/i18n/locales/ja/base/Research.ts", varPrefix: "BaseResearch" },
   { ko: "src/renderer/src/i18n/locales/ko/base/Editor.ts", en: "src/renderer/src/i18n/locales/en/base/Editor.ts", ja: "src/renderer/src/i18n/locales/ja/base/Editor.ts", varPrefix: "BaseEditor" },
   { ko: "src/renderer/src/i18n/locales/ko/base/Analysis.ts", en: "src/renderer/src/i18n/locales/en/base/Analysis.ts", ja: "src/renderer/src/i18n/locales/ja/base/Analysis.ts", varPrefix: "BaseAnalysis" },
-  // workspace files
   { ko: "src/renderer/src/i18n/locales/ko/workspace/World.ts", en: "src/renderer/src/i18n/locales/en/workspace/World.ts", ja: "src/renderer/src/i18n/locales/ja/workspace/World.ts", varPrefix: "WorkspaceWorld" },
   { ko: "src/renderer/src/i18n/locales/ko/workspace/writing.ts", en: "src/renderer/src/i18n/locales/en/workspace/writing.ts", ja: "src/renderer/src/i18n/locales/ja/workspace/writing.ts", varPrefix: "WorkspaceWriting" },
-  // root locales
   { ko: "src/renderer/src/i18n/locales/ko/export.ts", en: "src/renderer/src/i18n/locales/en/export.ts", ja: "src/renderer/src/i18n/locales/ja/export.ts", varPrefix: "Export" },
   { ko: "src/renderer/src/i18n/locales/ko/snapshot.ts", en: "src/renderer/src/i18n/locales/en/snapshot.ts", ja: "src/renderer/src/i18n/locales/ja/snapshot.ts", varPrefix: "Snapshot" },
   { ko: "src/renderer/src/i18n/locales/ko/scrivener.ts", en: "src/renderer/src/i18n/locales/en/scrivener.ts", ja: "src/renderer/src/i18n/locales/ja/scrivener.ts", varPrefix: "Scrivener" },
   { ko: "src/renderer/src/i18n/locales/ko/trash.ts", en: "src/renderer/src/i18n/locales/en/trash.ts", ja: "src/renderer/src/i18n/locales/ja/trash.ts", varPrefix: "Trash" },
   { ko: "src/renderer/src/i18n/locales/ko/misc.ts", en: "src/renderer/src/i18n/locales/en/misc.ts", ja: "src/renderer/src/i18n/locales/ja/misc.ts", varPrefix: "Misc" },
-  // modules
   { ko: "src/renderer/src/i18n/locales/ko/modules/worldGraph.ts", en: "src/renderer/src/i18n/locales/en/modules/worldGraph.ts", ja: "src/renderer/src/i18n/locales/ja/modules/worldGraph.ts", varPrefix: "WorldGraph" },
   { ko: "src/renderer/src/i18n/locales/ko/modules/canvas.ts", en: "src/renderer/src/i18n/locales/en/modules/canvas.ts", ja: "src/renderer/src/i18n/locales/ja/modules/canvas.ts", varPrefix: "Canvas" },
 ];
 
-// Predefined translation dictionary for specific missing keys to maximize quality
 const predefinedTranslations = {
   en: {
     "tabs": {
@@ -155,7 +147,6 @@ const predefinedTranslations = {
     "letterSpacing": "Letter Spacing",
     "lineHeight": "Line Height",
     "paragraphSpacing": "Paragraph Spacing",
-    // canvas additions
     "bookmark": "Bookmark",
     "newFile": "New File",
     "newFolder": "New Folder",
@@ -245,7 +236,6 @@ const predefinedTranslations = {
     "letterSpacing": "文字間隔",
     "lineHeight": "行間",
     "paragraphSpacing": "段落間隔",
-    // canvas additions
     "bookmark": "ブックマーク",
     "newFile": "新規ファイル",
     "newFolder": "新規フォルダ",
@@ -282,13 +272,11 @@ const predefinedTranslations = {
   }
 };
 
-// Find translations recursively from predefined mappings or fallback
 const findTranslation = (lang, keyPath, koVal) => {
   const dict = predefinedTranslations[lang];
   let current = dict;
   const parts = keyPath.split(".");
   
-  // Try to find in predefined dict using keyPath parts
   for (const part of parts) {
     if (current && typeof current === "object" && part in current) {
       current = current[part];
@@ -300,18 +288,15 @@ const findTranslation = (lang, keyPath, koVal) => {
 
   if (current !== undefined) return current;
 
-  // Fallback to last part if simple match
   const lastKey = parts[parts.length - 1];
   if (dict && lastKey in dict) {
     const val = dict[lastKey];
     if (typeof val === "string") return val;
   }
 
-  // Final fallback to KO value
   return koVal;
 };
 
-// Recursively align target object keys with template object
 const syncObjects = (template, target, lang, pathPrefix = "") => {
   const result = {};
 
@@ -324,9 +309,9 @@ const syncObjects = (template, target, lang, pathPrefix = "") => {
       result[key] = syncObjects(koVal, targetVal, lang, currentPath);
     } else {
       if (target && key in target) {
-        result[key] = target[key]; // Preserve existing translation
+        result[key] = target[key];
       } else {
-        result[key] = findTranslation(lang, currentPath, koVal); // Set translated or fallback
+        result[key] = findTranslation(lang, currentPath, koVal);
       }
     }
   }
@@ -334,12 +319,10 @@ const syncObjects = (template, target, lang, pathPrefix = "") => {
   return result;
 };
 
-// Beautiful formatting stringification helper
 const stringifyObj = (obj, indent = 2) => {
   const spaces = " ".repeat(indent);
   if (obj === null) return "null";
   if (typeof obj === "string") {
-    // Escape single/double quotes properly
     return JSON.stringify(obj);
   }
   if (typeof obj !== "object") return String(obj);
@@ -358,16 +341,13 @@ const stringifyObj = (obj, indent = 2) => {
   return `{\n${lines.join(",\n")},\n${spaces}}`;
 };
 
-// Sync process
 for (const entry of filesToSync) {
   console.log(`Syncing ${entry.ko} ...`);
 
-  // Load modules
   const koExports = loadTsModule(entry.ko);
   const enExports = fs.existsSync(entry.en) ? loadTsModule(entry.en) : {};
   const jaExports = fs.existsSync(entry.ja) ? loadTsModule(entry.ja) : {};
 
-  // Extract translation objects
   const koKeys = Object.keys(koExports);
   if (koKeys.length === 0) {
     console.error(`No exports found in ${entry.ko}`);
@@ -376,17 +356,14 @@ for (const entry of filesToSync) {
   const mainExportKeyKo = koKeys[0];
   const koObj = koExports[mainExportKeyKo];
 
-  // Align EN
   const enExportKey = `en${entry.varPrefix}`;
   const enObjRaw = enExports[enExportKey] || enExports.default || Object.values(enExports)[0] || {};
   const syncedEnObj = syncObjects(koObj, enObjRaw, "en");
 
-  // Align JA
   const jaExportKey = `ja${entry.varPrefix}`;
   const jaObjRaw = jaExports[jaExportKey] || jaExports.default || Object.values(jaExports)[0] || {};
   const syncedJaObj = syncObjects(koObj, jaObjRaw, "ja");
 
-  // Format and write back to files
   const formatFileContent = (varName, obj) => {
     return `export const ${varName} = ${stringifyObj(obj, 0)} as const;\n`;
   };

@@ -104,7 +104,7 @@ class MemoryProjectionService {
     let processed = 0;
     await jobs.reduce<Promise<void>>(async (prev, job) => {
       await prev;
-      // Keep each job atomic, but yield between jobs to avoid long sync stretches.
+      // NOTE: 각 job의 원자성은 유지하되 event loop 독점을 피하려고 job 사이에 양보한다.
       await new Promise<void>((resolve) => setImmediate(resolve));
       const now = new Date().toISOString();
       const claimed = await claimMemoryBuildJob({ jobId: job.id, nowIso: now });

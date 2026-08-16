@@ -62,7 +62,7 @@ const resolveImportProjectPath = async (title: string): Promise<string> => {
       `${safeTitle || "Recovered Snapshot"}-${timestamp}${LUIE_PACKAGE_EXTENSION}`,
     );
   } catch {
-    // keep first candidate when it does not exist
+    // NOTE: 첫 candidate가 아직 없으면 caller가 선택한 경로를 그대로 사용한다.
   }
 
   return projectPath;

@@ -1,6 +1,6 @@
 // TEST_LEVEL: UNIT_MOCKED
-// PROVES: project package IPC paths pass through approved FS boundary before service calls
-// DOES_NOT_PROVE: Electron ipcMain registration
+// PROVES: project package IPC path가 service 호출 전에 승인된 FS boundary를 통과한다.
+// DOES_NOT_PROVE: Electron ipcMain 등록
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IPC_CHANNELS } from "../../../src/shared/ipc/channels.js";

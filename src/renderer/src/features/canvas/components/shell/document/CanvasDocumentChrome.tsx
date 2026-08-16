@@ -23,7 +23,6 @@ export function DocumentShell({
     <div className="flex h-full min-h-0 w-full flex-col bg-app text-fg" data-testid="canvas-document-view">
       <div className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-panel px-3">
         <div className="flex min-w-0 items-center gap-2.5 text-xs">
-          {/* 좌측 사이드바 접기/펴기 버튼 */}
           <button
             type="button"
             onClick={toggleLeftSidebar}
@@ -42,7 +41,6 @@ export function DocumentShell({
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
-          {/* 우측 바인더 접기/펴기 버튼 */}
           <button
             type="button"
             onClick={() => setRegionOpen("rightPanel", !isContextOpen)}

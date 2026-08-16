@@ -1,6 +1,6 @@
 // TEST_LEVEL: UNIT_MOCKED
-// PROVES: snapshot service branch behavior, fallback handling, and mocked persistence policy
-// DOES_NOT_PROVE: real filesystem durability or end-to-end .luie persistence
+// PROVES: snapshot service 분기, fallback 처리, mock persistence policy
+// DOES_NOT_PROVE: 실제 filesystem durability 또는 end-to-end .luie persistence
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { makeMixedNarrativeText } from "../luieFixtures.js";

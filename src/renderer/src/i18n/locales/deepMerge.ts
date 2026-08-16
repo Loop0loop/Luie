@@ -1,7 +1,5 @@
-// ponytail: shallow-spread assembly can't extend an existing namespace (e.g.
-// adding canvas.node.delete without dropping the rest of canvas.node), so
-// supplemental key files are deep-merged in. Objects merge recursively; any
-// other value (string/array) from the source overrides the target.
+// ponytail: shallow spread는 기존 namespace를 덮어쓰므로 보충 locale만 재귀 병합한다.
+// NOTE: locale override를 허용하려고 object가 아닌 source 값은 target을 덮어쓴다.
 type Dict = Record<string, unknown>;
 
 const isPlainObject = (value: unknown): value is Dict =>

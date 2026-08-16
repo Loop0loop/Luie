@@ -19,7 +19,6 @@ export function useGraphDataFiltering({
   focusId,
 }: UseGraphDataFilteringParams) {
   return useMemo(() => {
-    // A. 에지 필터링 및 스타일 빌드
     const computedEdges = sourceEdges.map((edge) => {
       const strength = edge.data?.strength ?? 1;
       const isCharacterMode = activeMode === "character";
@@ -38,7 +37,6 @@ export function useGraphDataFiltering({
         edgeStyle.strokeDasharray = cfg.dasharray;
       }
 
-      // 엣지 라벨 스타일 정의 (다크 럭셔리 & 피그마 감성)
       const labelStyle: React.CSSProperties = {
         fill: "var(--text-secondary)",
         fontSize: 9,
@@ -76,7 +74,6 @@ export function useGraphDataFiltering({
       };
     });
 
-    // B. 노드 크기 및 별자리 발광 속성 동적 연산
     const computedNodes = sourceNodes.map((node): Node<GraphNodeData> => {
       const degree = computedEdges.filter(
         (edge) => edge.source === node.id || edge.target === node.id,
@@ -84,7 +81,6 @@ export function useGraphDataFiltering({
       const starGrade: "prime" | "major" | "minor" =
         degree >= 3 ? "prime" : degree >= 1 ? "major" : "minor";
 
-      // 특정 캐릭터/사건 빠른 필터 포커싱 시, 대상 노드가 아닌 것들은 감쇠 처리
       let filterFocusedOpacity = 1.0;
       if (selectedFocusNode !== "all") {
         if (node.id !== selectedFocusNode) {
@@ -98,7 +94,6 @@ export function useGraphDataFiltering({
         }
       }
 
-      // 캔버스 내 직접 클릭 포커스 격리 (Focus Isolation): 비관련 노드는 0% 투명화 소멸
       let canvasFocusedOpacity = 1.0;
       let isInteractivePointerEvents = true;
       if (focusId) {

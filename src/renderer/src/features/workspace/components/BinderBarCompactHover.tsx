@@ -90,7 +90,7 @@ export function BinderBarCompactHover({
 
   const setLayoutSurfaceRatio = useUIStore((state) => state.setLayoutSurfaceRatio);
 
-  // Subscribe to only the active tab's ratio — not the entire map
+  // NOTE: 전체 ratio map 대신 active tab만 구독해 무관한 resize render를 피한다.
   const activeTabRatio = useUIStore((state) => {
     if (!activeCompactTab) return 0;
     const surface = getEditorLayoutPanelSurface(activeCompactTab);
@@ -170,8 +170,7 @@ export function BinderBarCompactHover({
     dragStateRef.current = null;
   }, []);
 
-  // luie:close-compact-binder is dispatched by closeFocusedSurface (app.closeWindow / Cmd+W)
-  // Priority: close snapshot viewer first, then binder tab
+  // NOTE: closeFocusedSurface는 snapshot viewer를 먼저 닫고 그다음 binder tab을 닫는다.
   useEffect(() => {
     const handleClose = () => {
       if (selectedSnapshot !== null) {
@@ -194,7 +193,6 @@ export function BinderBarCompactHover({
       forceOpen={(isPinned && activeCompactTab !== null) || selectedSnapshot !== null}
     >
       <div className="h-full flex flex-row">
-        {/* Snapshot Viewer — rendered to the LEFT of the binder panel */}
         {selectedSnapshot !== null && (
           <div
             className="h-full shrink-0 border-l border-border/40 bg-panel overflow-hidden relative"
@@ -217,7 +215,6 @@ export function BinderBarCompactHover({
           </div>
         )}
 
-        {/* Binder panel — no backdrop-blur/shadow (FocusHoverSidebar owns the shadow) */}
         <div
           className="h-full border-l border-border/40 bg-panel overflow-hidden transition-[width] duration-150 ease-out"
           style={{

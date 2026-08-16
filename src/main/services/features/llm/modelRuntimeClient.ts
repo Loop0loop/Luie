@@ -16,9 +16,9 @@ export type RuntimeSupabaseProxyResolver = () => Promise<RuntimeSupabaseProxyCon
 export interface ModelRuntimeClient {
   readonly providerName: string;
   readonly generationMode?: GenerationMode;
-  /** True if the model file exists and the runtime can be used. Does NOT load the model. */
+  /** model을 load하지 않고 파일과 runtime의 사용 가능 여부만 확인한다. */
   isAvailable(): Promise<boolean>;
-  /** True if the model is already loaded in memory. Background jobs should skip when false. */
+  /** background job이 사용할 수 있도록 model이 memory에 load됐는지 반환한다. */
   isModelLoaded(): boolean;
   generate(prompt: string, options?: GenerateOptions): Promise<string>;
   generateStream(prompt: string, options?: GenerateOptions): AsyncIterable<string>;

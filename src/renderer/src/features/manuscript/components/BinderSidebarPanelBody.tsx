@@ -2,6 +2,8 @@ import { BookOpen, ChevronLeft, Pin, PinOff, X } from "lucide-react";
 import React, { Suspense } from "react";
 import type { BinderTab } from "./binderSidebar.shared";
 import type { Snapshot } from "@shared/types";
+import { AISidePanelHeader } from "./aiSidePanel/AISidePanelHeader";
+import { WebNovelAICoPilot } from "./aiSidePanel/WebNovelAICoPilot";
 
 const ResearchPanel = React.lazy(
   () => import("@renderer/features/research/components/ResearchPanel"),
@@ -119,7 +121,26 @@ export function BinderSidebarPanelBody(props: {
             <ResearchPanel activeTab="scrap" onClose={props.onClose} />
           )}
           {props.activeTab === "analysis" && (
-            <ResearchPanel activeTab="analysis" onClose={props.onClose} />
+            <div className="flex h-full flex-col overflow-hidden">
+              <AISidePanelHeader
+                episodeTitle="회차 12: 배신의 속삭임"
+                synopsis="카엘과 엘라라의 비밀 접선이 세드릭에게 목격되고, 두 사람 간의 갈등이 긴장감 있게 대치되는 회차."
+                characters={[
+                  { id: "char-1", name: "카엘", role: "주인공" },
+                  { id: "char-2", name: "세드릭", role: "라이벌" },
+                  { id: "char-3", name: "엘라라", role: "조연" },
+                ]}
+                foreshadowingList={[
+                  { label: "깨진 맹세", isResolved: false },
+                  { label: "세드릭의 야망", isResolved: false },
+                  { label: "엘라라의 배신?", isResolved: false },
+                ]}
+                onCharacterClick={() => {
+                  props.onResearchTabChange?.("character");
+                }}
+              />
+              <WebNovelAICoPilot />
+            </div>
           )}
           {props.activeTab === "snapshot" &&
             (props.activeChapterId ? (

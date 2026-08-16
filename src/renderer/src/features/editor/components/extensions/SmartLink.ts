@@ -18,7 +18,7 @@ export const SmartLink = Extension.create({
             return DecorationSet.empty;
           },
           apply(tr: Transaction, oldState: DecorationSet) {
-            // Optimization: Only re-scan if document changed or we forced a re-scan.
+            // NOTE: 문서가 바뀌거나 강제 요청된 경우에만 다시 scan한다.
             if (tr.docChanged || tr.getMeta("smartLinkUpdate")) {
                return smartLinkService.findSmartLinks(tr.doc);
             }
@@ -31,7 +31,6 @@ export const SmartLink = Extension.create({
           },
         },
         view: (editorView) => {
-             // Subscribe to stores to trigger updates
              const unsubChar = useCharacterStore.subscribe(() => {
                  const tr = editorView.state.tr.setMeta("smartLinkUpdate", true);
                  editorView.dispatch(tr);

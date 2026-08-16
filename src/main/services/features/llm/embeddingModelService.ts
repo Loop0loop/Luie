@@ -1,15 +1,3 @@
-/**
- * embeddingModelService — bge-m3 임베딩 모델의 경로 해석/다운로드/상태.
- *
- * 배포 정책(사용자 결정): 앱 설치 시 동봉(bundled).
- *   - packaged: <process.resourcesPath>/models/<filename>
- *   - dev:      <repoRoot>/resources/models/<filename>
- * 동봉 파일이 없을 때만(개발 환경/누락) Hugging Face 에서 다운로드 폴백한다.
- *
- * 해석된 경로는 settings(`defaultEmbeddingModelPath`/`defaultEmbeddingModelId`)에
- * 기록되어 modelRuntimeFactory 가 임베딩 런타임을 구성할 때 사용한다.
- */
-
 import * as path from "node:path";
 import * as fs from "node:fs";
 import { app } from "electron";
@@ -25,9 +13,7 @@ const logger = createLogger("EmbeddingModelService");
 export type EmbeddingModelStatus = {
   modelId: string;
   displayName: string;
-  /** 설치(가용) 여부. */
   installed: boolean;
-  /** 해석된 절대 경로(가용 시). */
   path: string | null;
   /** 출처: bundled | downloaded | none. */
   source: "bundled" | "downloaded" | "none";
@@ -35,7 +21,6 @@ export type EmbeddingModelStatus = {
 };
 
 class EmbeddingModelService {
-  /** 동봉 모델 후보 경로(packaged/dev). */
   private bundledCandidatePaths(): string[] {
     const filename = DEFAULT_EMBEDDING_MODEL.filename;
     const candidates: string[] = [];
@@ -49,7 +34,6 @@ class EmbeddingModelService {
     return candidates;
   }
 
-  /** 사용자 데이터 영역의 다운로드 모델 경로. */
   private downloadedPath(): string {
     return path.join(
       app.getPath("userData"),

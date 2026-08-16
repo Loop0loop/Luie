@@ -5,14 +5,7 @@ import type { Character, Term, Chapter } from "../../shared/types/index.js";
 
 const logger = createLogger("ManuscriptAnalyzer");
 
-/**
- * 원고 분석 엔진
- * NLP + Gemini API를 활용한 원고 분석
- */
 class ManuscriptAnalyzer {
-  /**
-   * 명사구 추출 (keywordExtractor 활용)
-   */
   extractNounPhrases(content: string): string[] {
     try {
       const nouns = keywordExtractor.extractNouns(content);
@@ -24,10 +17,6 @@ class ManuscriptAnalyzer {
     }
   }
 
-  /**
-   * 분석 컨텍스트 구성
-   * 캐릭터, Term, 원고 내용을 통합
-   */
   buildAnalysisContext(
     chapter: Pick<Chapter, "title" | "content">,
     characters: Array<Pick<Character, "name" | "description">>,

@@ -5,7 +5,6 @@ import { cn } from "@shared/types/utils";
 import type { GraphNodeData } from "../../types/graph";
 import { useGraphStore } from "../../stores/graph/graphStore";
 
-// 등급별 가변 크기 계산 (더 큰 크기로 상향 조정)
 const SIZE_CLASSES = {
   prime: "h-16 w-16", // 중심 거성 (64px) - 2배 증가
   major: "h-12 w-12", // 중간 조연/사건 (48px) - 2.6배 증가
@@ -18,7 +17,6 @@ function PensiveNode({ id, data, selected }: NodeProps<GraphNodeData>) {
   const isChapter = data.type === "chapter";
   const isFocused = selected || data.isFocused;
 
-  // 등급별 기하 형태 분기 (인물은 원형, 사건은 다이아몬드, 단체는 사각형, 챕터는 소형 큐브)
   const shapeClass = isChapter
     ? "rounded-lg"
     : data.type === "character"
@@ -27,7 +25,6 @@ function PensiveNode({ id, data, selected }: NodeProps<GraphNodeData>) {
         ? "rotate-45 rounded-lg"
         : "rounded-xl";
 
-  // 포커스 강조: 토큰 기반 링으로 톤다운
   const starGradeClass = isChapter
     ? isFocused
       ? "bg-fg ring-4 ring-accent/60 shadow-lg"
@@ -57,7 +54,6 @@ function PensiveNode({ id, data, selected }: NodeProps<GraphNodeData>) {
     >
       <Handle type="target" position={Position.Top} className="opacity-0" />
       
-      {/* 항상 표시되는 라벨 (노드 하단) */}
       <div className="absolute top-full mt-2 whitespace-nowrap pointer-events-none px-2 py-1 rounded-md bg-panel/90 border border-border/30 shadow-sm text-fg z-10">
         <span className="text-[11px] font-bold tracking-tight text-fg">{data.label}</span>
         {data.type && (
@@ -67,7 +63,6 @@ function PensiveNode({ id, data, selected }: NodeProps<GraphNodeData>) {
         )}
       </div>
 
-      {/* 호버 시 상세 정보는 GraphHoverCard에서 처리 */}
 
       <Handle type="source" position={Position.Bottom} className="opacity-0" />
     </div>

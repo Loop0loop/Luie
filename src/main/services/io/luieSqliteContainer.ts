@@ -283,7 +283,7 @@ export const writeLuieSqliteContainer = async (input: {
       try {
         await fsp.rm(tempPath, { force: true });
       } catch {
-        // best-effort cleanup only
+        // NOTE: 임시 파일 정리 실패가 원래 오류를 덮어쓰면 안 된다.
       }
       throw error;
     }

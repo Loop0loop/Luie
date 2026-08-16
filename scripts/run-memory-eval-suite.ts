@@ -202,7 +202,7 @@ async function main(): Promise<void> {
     if (options.out) {
       await writeFile(options.out, `${json}\n`, "utf8");
     } else {
-      // eslint-disable-next-line no-console -- CLI script output.
+      // eslint-disable-next-line no-console -- CLI 결과를 stdout으로 전달한다.
       console.log(json);
     }
     if (options.assertOptimizedRecall) {
@@ -218,7 +218,7 @@ async function main(): Promise<void> {
           `Memory eval optimization guard failed:\n${failures.join("\n")}`,
         );
       }
-      // eslint-disable-next-line no-console -- CLI script assertion output.
+      // eslint-disable-next-line no-console -- CLI 검증 실패를 stdout으로 전달한다.
       console.log("Memory eval optimization guard passed");
     }
   } finally {
@@ -232,7 +232,7 @@ async function main(): Promise<void> {
 }
 
 await main().catch((error) => {
-  // eslint-disable-next-line no-console -- CLI script error output.
+  // eslint-disable-next-line no-console -- CLI 오류를 stderr로 전달한다.
   console.error(
     JSON.stringify(
       { error: error instanceof Error ? error.message : String(error) },

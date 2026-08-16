@@ -160,7 +160,6 @@ index.ts
   -> argv deep link 처리
   -> registerAppReady
   -> app.whenReady().then(utilityProcessBridge.start)
-  -> before-quit utilityProcessBridge.stop
   -> registerShutdownHandlers
 ```
 
@@ -177,8 +176,9 @@ index.ts
 - Electron runtime의 `better-sqlite3` native binary는 `predev`/`postinstall`의 `rebuild:electron`에서 Electron ABI로 검증되어야 합니다. Node test용 rebuild 이후 stale `.forge-meta`만 믿고 건너뛰면 startup sqlite readiness가 실패합니다.
 - `.luie` package는 canonical storage이며 SQLite DB는 rebuild 가능한 cache로 취급됩니다.
 - FS 접근은 approved root, absolute path validation, restricted roots, `.luie` package permission 구분을 보존해야 합니다.
-- shutdown은 renderer flush, autosave critical flush, pending package export, derived worker/sidecar stop, snapshot pruning, DB checkpoint/disconnect 순서를 보존해야 합니다.
+- shutdown은 sync/deferred startup maintenance quiesce, renderer flush, autosave critical flush, pending package export, derived worker/sidecar/utility process stop, snapshot pruning, DB checkpoint/disconnect 순서를 보존해야 합니다. 종료가 취소되면 quiesce한 background scheduling을 복구합니다.
 - utility process message method와 request/response shape는 bridge와 utility entry가 함께 의존합니다.
+- startup readiness의 원격 Supabase session health check는 5초 timeout으로 제한하며 실패가 main window 생성을 무기한 막지 않아야 합니다.
 
 ## 500 LOC 초과 Main 파일
 

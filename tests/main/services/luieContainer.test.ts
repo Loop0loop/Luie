@@ -1,6 +1,6 @@
 // TEST_LEVEL: REAL_FS_INTEGRATION
-// PROVES: canonical container read/write behavior against real .luie files
-// DOES_NOT_PROVE: higher-level project or UI orchestration
+// PROVES: 실제 .luie file에서 canonical container read/write 동작
+// DOES_NOT_PROVE: 상위 project 또는 UI orchestration
 
 import os from "node:os";
 import path from "node:path";

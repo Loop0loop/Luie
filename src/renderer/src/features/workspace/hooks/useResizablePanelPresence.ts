@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/set-state-in-effect -- PanelGroup 등록 상태를 외부 layout과 동기화한다. */
 import { type RefObject, useEffect, useLayoutEffect, useState } from "react";
 import type { PanelImperativeHandle } from "react-resizable-panels";
 import { suppressLayoutPersistenceFor } from "./useLayoutPersist";
@@ -134,7 +134,6 @@ export function useResizablePanelPresence({
   useLayoutEffect(() => {
     if (!isOpen || !shouldRender) return undefined;
     const isCollapsed = safelyUsePanel(panelRef, (panel) => panel.isCollapsed());
-    // Skip if panel not yet registered or is already expanded
     if (isCollapsed !== true) return undefined;
     suppressLayoutPersistenceFor(durationMs + 160);
 

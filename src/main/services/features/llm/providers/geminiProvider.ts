@@ -1,4 +1,4 @@
-/* eslint-disable no-await-in-loop */
+/* eslint-disable no-await-in-loop -- streaming response와 fallback model을 순차 처리해야 한다. */
 import type {
   GenerateOptions,
   ModelRuntimeClient,
@@ -106,7 +106,8 @@ export class GeminiProvider implements ModelRuntimeClient {
 
   async isAvailable(): Promise<boolean> {
     if (this.config.supabaseProxy) {
-      return true; // 번들 환경에서는 항상 가용하다고 보고 프록시로 넘김
+      // NOTE: bundled Gemini provider는 utility proxy를 통해서만 호출한다.
+      return true;
     }
     try {
       const res = await fetch(this.buildGenerateUrl(this.config.model), {
@@ -272,7 +273,7 @@ export class GeminiProvider implements ModelRuntimeClient {
           const text =
             parsed.candidates?.[0]?.content?.parts?.map((part) => part.text ?? "").join("") ?? "";
           if (!text) continue;
-          // API마다 chunk가 delta/fulltext로 다를 수 있어, fulltext면 diff만 내보냅니다.
+          // NOTE: provider가 full text를 반환할 수 있어 이전 응답과의 diff만 전달한다.
           const delta = text.startsWith(assembled) ? text.slice(assembled.length) : text;
           if (delta.length > 0) {
             assembled = text.startsWith(assembled) ? text : `${assembled}${delta}`;

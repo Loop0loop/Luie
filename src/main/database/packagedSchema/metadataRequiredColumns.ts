@@ -1,6 +1,5 @@
 export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyArray<string>>> = {
-  // `projectPath` stays as a legacy compatibility column for now, but it is not
-  // a required canonical project field for bootstrap integrity checks.
+  // NOTE: projectPath는 legacy 호환용이므로 canonical bootstrap 필수 column에서 제외한다.
   Project: ["id", "title", "revision"],
   ProjectAttachment: ["projectId", "projectPath", "exportedRevision"],
   ProjectLocalState: ["projectId", "lastOpenedAt"],

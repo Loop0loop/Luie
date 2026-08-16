@@ -1,10 +1,3 @@
-/**
- * Identity card — declarative one-line summary of the entity.
- *
- * Shape: "<name>은(는) <identityLine>이다."
- * Particles come from i18n (so en/ja just render without Korean particles).
- */
-
 import { useTranslation } from "react-i18next";
 import { Sparkles } from "lucide-react";
 import { ENTITY_KIND_ICON, ENTITY_KIND_LABEL_KEY, ENTITY_KIND_TINT } from "./constants";

@@ -1,16 +1,8 @@
-/**
- * Pure geometry utilities for SVG radar charts.
- * No React, no side-effects — safe to test in isolation.
- */
-
 export type Point = { readonly x: number; readonly y: number };
 
 const TWO_PI = Math.PI * 2;
 const HALF_PI = Math.PI / 2;
 
-// ── Core math ─────────────────────────────────────────────────────────────
-
-/** Convert polar coordinates to Cartesian relative to a center point. */
 export const polarToCartesian = (
   angle: number,
   radius: number,
@@ -20,11 +12,9 @@ export const polarToCartesian = (
   y: center.y + radius * Math.sin(angle),
 });
 
-/** Angle (radians) for the n-th vertex of a regular polygon, starting at top. */
 const vertexAngle = (index: number, total: number): number =>
   (index / total) * TWO_PI - HALF_PI;
 
-/** Cartesian position of the n-th vertex on a circle. */
 export const getVertex = (
   index: number,
   total: number,
@@ -32,13 +22,9 @@ export const getVertex = (
   center: Point,
 ): Point => polarToCartesian(vertexAngle(index, total), radius, center);
 
-/** Serialize points to the SVG `polygon/polyline` `points` attribute format. */
 export const toSvgPoints = (points: Point[]): string =>
   points.map(({ x, y }) => `${x.toFixed(2)},${y.toFixed(2)}`).join(" ");
 
-// ── Derived builders ──────────────────────────────────────────────────────
-
-/** Build the SVG polygon string for a single grid level ring. */
 export const buildGridPolygon = (
   level: number,
   maxLevel: number,
@@ -54,7 +40,6 @@ export const buildGridPolygon = (
   );
 };
 
-/** Build the SVG polygon string from a list of axis values. */
 export const buildDataPolygon = (
   values: number[],
   maxValue: number,
@@ -67,10 +52,6 @@ export const buildDataPolygon = (
     ),
   );
 
-/**
- * Determine SVG `text-anchor` based on x position relative to center.
- * Used to anchor axis labels away from the chart.
- */
 export const getTextAnchor = (
   x: number,
   centerX: number,

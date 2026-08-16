@@ -1,5 +1,5 @@
 // TEST_LEVEL: REAL_DB_INTEGRATION
-// PROVES: snapshot import writes and marks one captured full-checkpoint revision
+// PROVES: snapshot import가 하나의 full-checkpoint revision을 기록하고 표시한다.
 
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";

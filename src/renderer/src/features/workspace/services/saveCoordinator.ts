@@ -18,7 +18,7 @@ export async function saveProjectNow(projectId: string): Promise<void> {
     });
   } catch {
     startedAt = null;
-    // Performance measurement must never change save behavior.
+    // NOTE: 성능 측정 실패가 save 동작을 바꾸면 안 된다.
   }
   let measureName = PROJECT_SAVE_FAILURE_PERFORMANCE_MEASURE;
   try {
@@ -37,7 +37,7 @@ export async function saveProjectNow(projectId: string): Promise<void> {
           end: performance.now(),
         });
       } catch {
-        // Performance measurement must never change save behavior.
+        // NOTE: 성능 측정 실패가 save 동작을 바꾸면 안 된다.
       }
     }
   }

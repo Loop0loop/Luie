@@ -13,7 +13,6 @@ export default function DocsSidebar({
   return (
     <div className="flex flex-col h-full bg-sidebar text-fg relative">
 
-      {/* Header */}
       {!hideHeader && (
         <div className="p-4 flex items-center justify-between shrink-0">
           <h2 className="font-semibold text-sm text-muted">{t("sidebar.title")}</h2>
@@ -29,7 +28,6 @@ export default function DocsSidebar({
 
       <SidebarChapterList />
 
-      {/* Add Button - Floating or subtle at bottom? Docs doesn't have "Add Chapter", but we need it. Keep it subtle. */}
       <button
         onClick={() => { void handleAddChapter(); }}
         className="flex items-center mx-4 mt-4 mb-4 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/10 rounded-full w-fit transition-colors shrink-0"

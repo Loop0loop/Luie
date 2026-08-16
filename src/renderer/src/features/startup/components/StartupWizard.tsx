@@ -43,7 +43,6 @@ export default function StartupWizard() {
   const [llmfitResult, setLlmfitResult] = useState<LlmfitResult | null>(null);
   const [llmfitLoading, setLlmfitLoading] = useState(false);
 
-  // 설치 단계 진입 시 임베딩 상태 + 하드웨어 추천을 로드(비차단).
   useEffect(() => {
     if (step !== "setup") return;
     void (async () => {
@@ -85,7 +84,6 @@ export default function StartupWizard() {
     }
   }, []);
 
-  // 완료: 기존 readiness/completeWizard 흐름으로 Main Window 전환을 트리거(R7.5).
   const finalize = useCallback(async () => {
     setStep("finalizing");
     setErrorMessage(null);
@@ -108,7 +106,6 @@ export default function StartupWizard() {
           throw new Error(`STARTUP_PENDING_CHECKS:${unresolved || "unknown"}`);
         }
       }
-      // 성공 시 메인 프로세스가 wizard 완료 이벤트로 Main Window 로 전환한다.
     } catch (error) {
       setStep("error");
       setErrorMessage(getErrorMessage(error));
@@ -164,7 +161,6 @@ export default function StartupWizard() {
               </p>
             </div>
 
-            {/* 임베딩 모델 상태 + 설치 */}
             <div className="rounded-control border border-border bg-surface p-3 space-y-2">
               <div className="flex items-center gap-1.5 text-xs font-medium text-fg-secondary">
                 <Sparkles className="h-3.5 w-3.5" />
@@ -217,7 +213,6 @@ export default function StartupWizard() {
               )}
             </div>
 
-            {/* 하드웨어 맞춤 추천 */}
             <div className="rounded-control border border-border bg-surface p-3 space-y-2">
               <div className="flex items-center gap-1.5 text-xs font-medium text-fg-secondary">
                 <Cpu className="h-3.5 w-3.5" />

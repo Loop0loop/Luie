@@ -1,7 +1,3 @@
-/**
- * Shared type definitions
- */
-
 export type {
   Project,
   ProjectAttachmentStatus,
@@ -275,7 +271,6 @@ export type {
   SnapshotRestoreCandidate,
 } from "./snapshot";
 
-// Analysis Types
 export type {
   AnalysisRequest,
   AnalysisItem,

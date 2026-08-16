@@ -1,7 +1,3 @@
-/**
- * 분할 뷰 관리
- */
-
 import { useCallback } from "react";
 import {
   useUIStore,
@@ -54,7 +50,7 @@ export function useSplitView() {
       if (!existingResearch) {
         addPanel({ type: "research", tab: type });
       } else if (existingResearch.content.tab !== type) {
-        // 다른 탭으로 교체 — research 패널은 항상 하나만 유지
+        // NOTE: research panel은 하나만 유지하고 선택 tab만 교체한다.
         const replaced = { ...existingResearch, content: { type: "research" as const, tab: type } };
         const next = panels.filter((p) => p.content.type !== "research").concat(replaced);
         const sizePerPanel = 100 / next.length;

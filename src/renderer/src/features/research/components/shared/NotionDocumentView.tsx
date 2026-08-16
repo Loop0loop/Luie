@@ -10,10 +10,9 @@ import {
 } from "@shared/ui/saveBufferRegistry";
 import type { WikiSectionData } from "@renderer/features/research/components/wiki/types";
 
-/** tiptap-markdown augments editor.storage at runtime; type it locally. */
+// NOTE: tiptap-markdown이 runtime에 확장하는 storage만 local type으로 제한한다.
 type MarkdownStorage = { markdown?: { getMarkdown?: () => string } };
 
-/** A property row shown in the document header. */
 export type DocumentPropertyRow = {
   label: string;
   value?: string;
@@ -29,7 +28,6 @@ type NotionDocumentViewProps = {
   setSections: (sections: WikiSectionData[]) => void | Promise<unknown>;
   setSectionContent: (id: string, value: string) => void | Promise<unknown>;
   bodyPlaceholder: string;
-  /** Optional page header (portrait + tagline) rendered above the properties. */
   header?: ReactNode;
 };
 
@@ -39,13 +37,7 @@ const consumeBackgroundSave = (result: void | Promise<unknown>): void => {
   void Promise.resolve(result).catch(() => undefined);
 };
 
-/**
- * Notion-style document view shared by all entity types. The header is a list
- * of property rows; the body is ONE Markdown document where each wiki section
- * is an `# h1` heading. h1 headings map 1:1 to wiki sections, so editing here
- * (rename/add/remove a heading, edit body) writes straight back to `sections`
- * + their content strings — the exact data the wiki view reads.
- */
+/** 최상위 `#` heading과 wiki section을 1:1로 동기화하는 document editor. */
 export default function NotionDocumentView({
   properties,
   sections,
@@ -55,11 +47,16 @@ export default function NotionDocumentView({
   bodyPlaceholder,
   header,
 }: NotionDocumentViewProps) {
-  // Compose into one markdown document — once per mount; the parent keys this
-  // view by entity id (re-mount on switch).
+  // NOTE: parent가 entity id로 remount하므로 초기 문서는 mount당 한 번만 조합한다.
+  // 빈 섹션이라도 헤딩 아래에 플레이스홀더 문단이 렌더링되도록 공백 문단을 유지한다.
   const [initialBody] = useState(() =>
     sections
-      .map((s) => `# ${s.label}\n\n${getSectionContent(s.id)}`.trim())
+      .map((s) => {
+        const content = getSectionContent(s.id);
+        return content && content.trim().length > 0
+          ? `# ${s.label}\n\n${content}`
+          : `# ${s.label}\n\n`;
+      })
       .join("\n\n"),
   );
 
@@ -86,18 +83,18 @@ export default function NotionDocumentView({
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto w-full max-w-[720px] px-2 py-2 flex flex-col gap-8">
-        {/* ── Page header (portrait + tagline) ───────────────────────── */}
+      <div className="mx-auto w-full max-w-[760px] px-3 py-3 flex flex-col gap-6">
         {header}
-        {/* ── Properties ─────────────────────────────────────────────── */}
-        <div className="flex flex-col">
+        
+        {/* Notion Style Properties Table */}
+        <div className="flex flex-col rounded-panel border border-border/60 bg-surface/40 p-2 shadow-2xs">
           {properties.map((row) => (
             <PropertyRow key={row.label} label={row.label} readonlyValue={row.readonlyValue}>
               {row.onSave ? (
                 <BufferedInput
-                  className="w-full bg-transparent border-none p-0 text-[14px] text-fg focus:outline-none placeholder:text-subtle"
+                  className="w-full bg-transparent border-none p-0 text-xs text-fg focus:outline-none placeholder:text-subtle/50"
                   value={row.value ?? ""}
-                  placeholder={row.placeholder ?? ""}
+                  placeholder={row.placeholder ?? "비어 있음"}
                   onSave={row.onSave}
                 />
               ) : null}
@@ -105,12 +102,14 @@ export default function NotionDocumentView({
           ))}
         </div>
 
-        {/* ── Body: one Markdown document; # headings = wiki sections ── */}
-        <MarkdownDocumentEditor
-          initialMarkdown={initialBody}
-          placeholder={bodyPlaceholder}
-          onSave={saveBody}
-        />
+        {/* Document Markdown Body */}
+        <div className="pt-2">
+          <MarkdownDocumentEditor
+            initialMarkdown={initialBody}
+            placeholder={bodyPlaceholder}
+            onSave={saveBody}
+          />
+        </div>
       </div>
     </div>
   );
@@ -126,11 +125,11 @@ function PropertyRow({
   readonlyValue?: string;
 }) {
   return (
-    <div className="flex items-start gap-3 -mx-2 rounded-control px-2 py-1.5 transition-colors hover:bg-surface-hover">
-      <span className="w-24 shrink-0 text-[12px] text-muted pt-1">{label}</span>
-      <div className="flex-1 min-w-0 pt-0.5">
+    <div className="grid grid-cols-[110px_1fr] items-center gap-2 px-2.5 py-1.5 rounded-control transition-colors hover:bg-surface-hover/80 border-b border-border/20 last:border-b-0">
+      <span className="text-xs font-medium text-muted truncate select-none">{label}</span>
+      <div className="min-w-0 flex items-center">
         {readonlyValue !== undefined ? (
-          <span className="text-[14px] text-fg">{readonlyValue || "—"}</span>
+          <span className="text-xs text-fg font-medium">{readonlyValue || "—"}</span>
         ) : (
           children
         )}
@@ -211,11 +210,7 @@ function MarkdownDocumentEditor({
     extensions: [
       StarterKit,
       Placeholder.configure({
-        // Hint on every empty block (not just the focused one) so each section
-        // reads as a fillable block instead of a void. Headings carry their own
-        // label, so they get no hint.
-        showOnlyCurrent: false,
-        includeChildren: true,
+        showOnlyCurrent: true,
         placeholder: ({ node }) =>
           node.type.name === "heading" ? "" : placeholder,
       }),
@@ -255,11 +250,7 @@ function MarkdownDocumentEditor({
   );
 }
 
-/**
- * Split a markdown document into wiki sections by top-level `#` headings.
- * Section ids are matched to the existing sections by order so wiki references
- * (and per-section content keys) are preserved across edits.
- */
+/** 최상위 `#` heading 기준으로 분리하며 기존 section id는 순서대로 보존한다. */
 function decomposeBody(
   markdown: string,
   oldSections: WikiSectionData[],
@@ -276,7 +267,6 @@ function decomposeBody(
     } else if (current) {
       current.content.push(line);
     }
-    // Text before the first heading has no section and is dropped.
   }
 
   const sections: WikiSectionData[] = parsed.map((p, index) => ({

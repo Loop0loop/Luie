@@ -1,12 +1,3 @@
-/**
- * RelationEdge — Obsidian Canvas 스타일 관계 엣지.
- *
- * stroke 색상만 런타임 동적값이므로 인라인 스타일로 유지합니다.
- * strokeWidth / opacity / transition은 상수 참조로 처리합니다.
- *
- * 선택 상태: Obsidian Canvas는 파랑 대신 기본 stroke를 진하게 유지.
- */
-
 import { memo } from "react";
 import {
   BaseEdge,
@@ -38,8 +29,7 @@ function RelationEdgeInner({
     targetPosition,
   });
 
-  // Obsidian Canvas: 선택 시 파랑 accent 대신 기본 색상 유지 + 진하기만 강조.
-  // data.color가 없으면 text-secondary 토큰 사용 (선택 여부와 무관).
+  // NOTE: 선택 상태에서도 색은 바꾸지 않고 stroke 강도만 높인다.
   const strokeColour = data?.color ?? "var(--text-secondary)";
 
   const edgeStyle = getEdgeStyle(selected ?? false, strokeColour);

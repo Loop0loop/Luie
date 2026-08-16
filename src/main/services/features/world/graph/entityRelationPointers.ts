@@ -10,7 +10,7 @@ export function buildCanonicalWorldEntityPointers(input: {
   sourceWorldEntityId: string | null;
   targetWorldEntityId: string | null;
 } {
-  // world-entity-backed 타입이면 sourceId/targetId는 WorldEntity.id여야 한다.
+  // NOTE: world-entity-backed type의 pointer는 반드시 WorldEntity.id를 사용한다.
   return {
     sourceWorldEntityId: isWorldEntityBackedType(input.sourceType)
       ? input.sourceId

@@ -146,5 +146,3 @@ export type UiStorePersistedState = z.infer<typeof uiStorePersistedStateSchema>;
 export type ProjectLayoutPersistedState = z.infer<
   typeof projectLayoutPersistedStateSchema
 >;
-
-// ─── World Building Schemas ─────────────────────────────────────────────────

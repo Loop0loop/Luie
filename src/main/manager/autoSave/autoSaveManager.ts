@@ -1,4 +1,4 @@
-/** Auto-save orchestration: debounce, mirror safety, snapshot scheduling, and shutdown flush. */
+/** debounce, crash mirror, snapshot scheduling과 shutdown flush를 조정한다. */
 
 import { EventEmitter } from "events";
 import { createLogger } from "../../../shared/logger/index.js";

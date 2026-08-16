@@ -22,10 +22,6 @@ interface BaseItem {
   projectId: string;
 }
 
-/**
- * 월드 엔티티(캐릭터/용어/사건/세력) CRUD 스토어의 공통 베이스 인터페이스.
- * createCRUDSlice가 제공하는 기본 CRUD 필드 + 메서드를 정의.
- */
 export interface WorldEntityCRUDBase<
   T extends BaseItem,
   CreateInput,
@@ -53,24 +49,13 @@ export interface CreateWorldEntityCRUDStoreOptions<
   },
   AliasesT,
 > {
-  /** API 클라이언트 (예: api.character, api.term 등) */
   apiClient: APIClient<T, CreateInput, UpdateInput>;
-  /** 엔티티 이름 (로깅용, 예: "Character", "Term") */
   entityName: "Character" | "Event" | "Faction" | "Term";
-  /** 별칭 메서드 접두사 (예: "Character", "Term") */
   methodPrefix: string;
-  /** items 별칭 키 (예: "characters", "terms") */
   aliasItemsKey: keyof AliasesT;
-  /** currentItem 별칭 키 (예: "currentCharacter", "currentTerm") */
   aliasCurrentKey: keyof AliasesT;
 }
 
-/**
- * 월드 엔티티 CRUD 스토어 팩토리.
- *
- * character/term/event/factionStore의 중복된 패턴(프로젝트 락, 그래프 동기화,
- * 별칭 메서드, 호환성 필드)을 단일 팩토리로 통합.
- */
 export function createWorldEntityCRUDStore<
   T extends BaseItem,
   CreateInput extends { projectId?: string },

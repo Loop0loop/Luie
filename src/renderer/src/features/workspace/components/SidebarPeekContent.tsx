@@ -1,4 +1,3 @@
-// no use
 import { Plus } from "lucide-react";
 
 type PeekItem = {
@@ -20,15 +19,6 @@ type SidebarPeekContentProps = {
   onAdd?: () => void;
 };
 
-/**
- * Condensed TOC-style list for the sidebar hover peek.
- *
- * Structure:
- *   [+ 추가 버튼]
- *   * 태그명
- *       1. 항목
- *       2. 항목
- */
 export function SidebarPeekContent({
   groups,
   selectedId,
@@ -38,7 +28,6 @@ export function SidebarPeekContent({
 }: SidebarPeekContentProps) {
   return (
     <div className="py-2 select-none">
-      {/* Add button */}
       {onAdd && (
         <button
           type="button"
@@ -50,10 +39,8 @@ export function SidebarPeekContent({
         </button>
       )}
 
-      {/* Groups */}
       {groups.map(({ name, items }, groupIdx) => (
         <div key={name} className={groupIdx > 0 ? "mt-2" : ""}>
-          {/* * 태그명 */}
           <div className="flex items-center gap-1 px-3 py-0.5">
             <span className="text-[10px] text-muted/40">*</span>
             <span className="text-[10px] font-semibold text-muted/60 truncate">
@@ -61,7 +48,6 @@ export function SidebarPeekContent({
             </span>
           </div>
 
-          {/* 1. 항목명 */}
           {items.map((item, i) => (
             <button
               key={item.id}

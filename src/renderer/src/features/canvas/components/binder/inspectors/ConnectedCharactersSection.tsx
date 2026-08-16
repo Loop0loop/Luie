@@ -1,7 +1,3 @@
-/**
- * ConnectedCharactersSection — 연결된 등장인물 섹션
- */
-
 import type { TFunction } from "i18next";
 import { User } from "lucide-react";
 import type { WorldGraphNode } from "@shared/types";

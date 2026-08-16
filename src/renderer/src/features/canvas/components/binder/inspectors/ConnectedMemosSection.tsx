@@ -1,7 +1,3 @@
-/**
- * ConnectedMemosSection — 연결된 메모/이벤트 섹션
- */
-
 import type { TFunction } from "i18next";
 import { HelpCircle } from "lucide-react";
 import type { WorldGraphNode } from "@shared/types";

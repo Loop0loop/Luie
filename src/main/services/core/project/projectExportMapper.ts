@@ -1,9 +1,4 @@
-/**
- * Export DTO mapper — converts Drizzle DB rows to ORM-independent export DTOs.
- *
- * Export types are pure data transfer objects and must NOT reference any ORM types
- * (Prisma or Drizzle). This mapper is the single conversion boundary.
- */
+// NOTE: export DTO는 ORM type에 의존하지 않으며 이 mapper만 DB row 변환을 담당한다.
 
 import type {
   ChapterExportRecord,
@@ -21,8 +16,6 @@ import type {
 import type * as schema from "../../../infra/database/index.js";
 import { buildCanonicalWorldEntityPointers } from "../../features/world/graph/entityRelationPointers.js";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
 function toDate(value: string | Date | number | null | undefined): Date {
   if (value === null || value === undefined) return new Date();
   if (value instanceof Date) return value;
@@ -38,8 +31,6 @@ function toNullableDate(value: string | Date | number | null | undefined): Date 
 function normalizeNullableString(value: string | null | undefined): string | null {
   return value ?? null;
 }
-
-// ─── Mappers ─────────────────────────────────────────────────────────────────
 
 export function toChapterExportDto(
   row: typeof schema.chapter.$inferSelect,

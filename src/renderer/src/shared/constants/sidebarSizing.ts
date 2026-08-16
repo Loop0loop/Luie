@@ -1,11 +1,3 @@
-/**
- * Feature-local sidebar sizing and legacy width migration.
- *
- * Layout-level surfaces (default/docs/editor/scrivener) now live in
- * `layoutSizing.ts` so manuscript sidebars, panel rails, and inspectors can
- * evolve independently per layout.
- */
-
 export type SidebarWidthFeature =
   | "mainSidebar"
   | "mainContext"
@@ -97,7 +89,7 @@ export const SIDEBAR_WIDTH_CONFIG: Record<
   editorSnapshot: { ...PANEL_WIDTH_CONFIG },
   editorTrash: { ...PANEL_WIDTH_CONFIG },
   editorCanvas: { ...PANEL_WIDTH_CONFIG },
-  // Legacy shared right-panel keys (read only for migration)
+  // NOTE: shared right-panel key는 legacy migration에서만 읽는다.
   character: { ...PANEL_WIDTH_CONFIG },
   event: { ...PANEL_WIDTH_CONFIG },
   faction: { ...PANEL_WIDTH_CONFIG },

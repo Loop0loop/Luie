@@ -1,8 +1,3 @@
-/**
- * Logger utility for Luie
- * Provides structured logging with different levels
- */
-
 export enum LogLevel {
   DEBUG = "DEBUG",
   INFO = "INFO",
@@ -39,6 +34,8 @@ const PATH_KEY_PATTERN =
 const ABSOLUTE_PATH_PATTERN = /^(?:\/|[a-zA-Z]:\\|[a-zA-Z]:\/).+/;
 const BEARER_PATTERN = /Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi;
 const JWT_PATTERN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+const SENSITIVE_URL_PARAM_PATTERN =
+  /([?&#](?:code|state|[a-z0-9_]*(?:token|verifier|secret))=)[^&#]*/gi;
 
 function redactStringValue(value: string, key?: string): string {
   if (SENSITIVE_KEY_PATTERN.test(key ?? "")) {
@@ -51,7 +48,9 @@ function redactStringValue(value: string, key?: string): string {
     return REDACTED_PATH;
   }
 
-  let next = value.replace(BEARER_PATTERN, "Bearer [REDACTED]");
+  let next = value
+    .replace(BEARER_PATTERN, "Bearer [REDACTED]")
+    .replace(SENSITIVE_URL_PARAM_PATTERN, `$1${REDACTED_SECRET}`);
   if (JWT_PATTERN.test(next)) {
     next = REDACTED_SECRET;
   }
@@ -288,7 +287,7 @@ async function writeLogToFile(entry: LogEntry): Promise<void> {
     const line = safeStringify(entry);
     await fs.appendFile(globalLoggerOptions.logFilePath, `${line}\n`, "utf8");
   } catch {
-    // ignore file logging errors to avoid crashing the app
+    // NOTE: 파일 logging 실패가 앱의 제어 흐름을 바꾸면 안 된다.
   }
 }
 

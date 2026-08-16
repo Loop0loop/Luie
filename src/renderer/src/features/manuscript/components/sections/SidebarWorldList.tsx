@@ -67,7 +67,6 @@ export default function SidebarWorldList() {
           </button>
         </div>
 
-        {/* Navigation Buttons */}
         <div className="grid grid-cols-2 gap-1 mt-1">
           <DraggableItem
             id="drag-synopsis"

@@ -31,7 +31,7 @@ export function useEditorAutosave({
     "idle" | "saving" | "saved" | "error" | "unsaved"
   >("idle");
 
-  // 🔐 Unmount guard — prevents setState after component is gone
+  // NOTE: unmount 이후 완료되는 save가 state를 갱신하지 않게 막는다.
   const isMountedRef = useRef(true);
   useEffect(() => {
     isMountedRef.current = true;
@@ -57,7 +57,6 @@ export function useEditorAutosave({
     onSaveRef.current = onSave;
   }, [onSave]);
 
-  // ✅ Separate timer refs so each can be individually cleared
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const idleResetTimerRef = useRef<NodeJS.Timeout | null>(null);
   const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -107,7 +106,6 @@ export function useEditorAutosave({
 
         setSaveStatus("saved");
 
-        // Removed idle reset logic so "saved" status stays visible
       } catch (error) {
         api.logger.error("Autosave failed", error);
 
@@ -133,7 +131,6 @@ export function useEditorAutosave({
               2000,
             );
 
-            // ✅ Track retry timer so we can cancel on unmount
             if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
             retryTimerRef.current = setTimeout(() => {
               if (!isMountedRef.current) {
@@ -171,7 +168,6 @@ export function useEditorAutosave({
     performSaveRef.current = performSave;
   }, [performSave]);
 
-  // Debounced save trigger
   useEffect(() => {
     const previousDraft = latestDraftRef.current;
     latestDraftRef.current = { title, content };
@@ -212,8 +208,7 @@ export function useEditorAutosave({
     for (;;) {
       const currentSave = currentSavePromiseRef.current;
       if (currentSave) {
-        // The flush barrier must drain each save cycle before observing the next.
-        // eslint-disable-next-line no-await-in-loop
+        // eslint-disable-next-line no-await-in-loop -- 다음 draft를 확인하기 전에 현재 save cycle을 끝내야 한다.
         await currentSave.catch(() => undefined);
         continue;
       }
@@ -235,8 +230,7 @@ export function useEditorAutosave({
 
       if (!onSaveRef.current) return;
 
-      // A newer draft may arrive while this save is in flight.
-      // eslint-disable-next-line no-await-in-loop
+      // eslint-disable-next-line no-await-in-loop -- save 중 들어온 최신 draft까지 순차 반영해야 한다.
       await performSaveRef.current?.(latest.title, latest.content);
     }
   }, []);
@@ -246,7 +240,6 @@ export function useEditorAutosave({
     [flushLatestDraft],
   );
 
-  // ✅ Full cleanup on unmount: cancel ALL pending timers + reset retry state
   useEffect(() => {
     return () => {
       clearTimerRef(debounceTimerRef);

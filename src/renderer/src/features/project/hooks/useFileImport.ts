@@ -1,7 +1,3 @@
-/**
- * .luie 파일 임포트 로직
- */
-
 import { useCallback, useEffect, useRef } from "react";
 import { z } from "zod";
 import { useShallow } from "zustand/react/shallow";
@@ -122,14 +118,13 @@ export function useFileImport(currentProject: Project | null) {
 
       const projectId = currentProject.id;
 
-      // 이미 임포트한 프로젝트면 스킵
       if (importedProjectIdRef.current === projectId) {
         return;
       }
 
       if (requestedLoadRef.current !== projectId) {
         requestedLoadRef.current = projectId;
-        // Ensure DB is loaded before deciding to import
+        // NOTE: 빈 DB인지 판단하기 전에 현재 project state를 모두 불러와야 한다.
         try {
           await Promise.all([
             loadChapters(projectId),
@@ -157,7 +152,6 @@ export function useFileImport(currentProject: Project | null) {
         return;
       }
 
-      // 이미 데이터가 있으면 임포트 안 함
       if (chapters.length > 0 || characters.length > 0 || terms.length > 0) {
         importedProjectIdRef.current = projectId;
         importRetryStateRef.current.delete(projectId);

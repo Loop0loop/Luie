@@ -1,6 +1,6 @@
 // TEST_LEVEL: HYBRID_INTEGRATION
-// PROVES: atomic file replacement rollback on real temp files with injected rename failures
-// DOES_NOT_PROVE: full unmocked filesystem crash resilience
+// PROVES: 실제 temp file과 주입한 rename 실패로 atomic file replacement rollback을 검증한다.
+// DOES_NOT_PROVE: mock 없는 전체 filesystem crash 복원력
 
 import os from "node:os";
 import path from "node:path";

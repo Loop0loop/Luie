@@ -23,7 +23,7 @@ export interface RagQaEvidence {
 }
 
 export type RagQaGroundingStatus =
-  /** Reserved for a later claim-level verifier; Phase 0 never emits this. */
+  /** 이후 claim-level verifier용 예약 값이며 Phase 0에서는 생성하지 않는다. */
   "confirmed" | "inferred" | "insufficient_evidence" | "conflicting";
 
 export interface RagQaGrounding {

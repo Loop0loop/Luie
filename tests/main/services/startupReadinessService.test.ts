@@ -161,6 +161,7 @@ describe("startupReadinessService", () => {
   });
 
   it("completes wizard only when all checks pass", async () => {
+    const timeoutSpy = vi.spyOn(AbortSignal, "timeout");
     mocked.supabaseConfig.current = {
       url: "https://example.supabase.co",
       anonKey: "anon-key-anon-key-anon-key",
@@ -185,7 +186,9 @@ describe("startupReadinessService", () => {
       "https://example.supabase.co/functions/v1/luieEnv",
       expect.objectContaining({
         method: "GET",
+        signal: expect.any(AbortSignal),
       }),
     );
+    expect(timeoutSpy).toHaveBeenCalledWith(5_000);
   });
 });

@@ -1,36 +1,10 @@
-/* ================================================================
-   LUIE EDITOR — WRITER-FIRST TYPOGRAPHY v2
-   ----------------------------------------------------------------
-   Philosophy : "작가가 흐름을 끊지 않고 계속 쓸 수 있는가?"
-   References : Obsidian (focus), Notion (rhythm), 노벨피아 (Korean
-                novel layout), Pensive / iA Writer (distraction-free)
-   ----------------------------------------------------------------
-   Rules:
-   1. CSS가 보이지 않을 때 잘 된 것이다 — 글자만 남아야 한다
-   2. 한국어 장문 기준으로 모든 수치를 결정한다
-   3. ProseMirror 내부 DOM은 Tailwind로 제어할 수 없다
-      → 이 파일이 에디터 타이포그래피의 유일한 진실(source of truth)
-   ================================================================ */
-
-/* ── Typewriter Scroll Padding ───────────────────────────────── */
+/* NOTE: Tailwind가 제어하지 못하는 ProseMirror 내부 typography는 이 파일을 source of truth로 사용한다. */
 [data-editor-scroll-container="true"] {
     scroll-padding-top: 42vh;
     scroll-padding-bottom: 42vh;
 }
 
-/* ================================================================
-   BASE — ProseMirror Root
-   ----------------------------------------------------------------
-   ❌ white-space: pre-wrap 은 절대 쓰지 않는다.
-      ProseMirror 텍스트 노드 렌더링에서 공백(스페이스)이 사라지는
-      원인이 된다. ProseMirror가 whitespace를 자체 처리한다.
-
-   한국어 장문 기준치:
-   - line-height  : 1.9   (노벨피아·문피아 본문 기준, 가독성 최대)
-   - letter-spacing: 0.02em (자연스러운 자간, 너무 넓으면 오히려 산만)
-   - word-spacing : 0.04em (스페이스 가시성 확보)
-   - word-break   : keep-all (한국어 단어 중간 줄바꿈 방지)
-   ================================================================ */
+/* WARNING: ProseMirror root에 `white-space: pre-wrap`을 적용하면 자체 whitespace 처리와 충돌한다. */
 .tiptap .ProseMirror {
     outline: none;
     flex: 1;
@@ -39,10 +13,7 @@
     width: 100%;
     color: var(--text-primary);
 
-    /* ── 타이포그래피 핵심 수치 ── */
-    /* font-size, line-height 는 editorProps.attributes.style (inline)로 주입.
-       letter-spacing, word-spacing 은 Editor 외부 컨테이너에서
-       CSS custom property로 주입 → store 변경 시 즉시 반영(reactive). */
+    /* NOTE: CSS variable로 주입해 store 변경을 editor 재생성 없이 반영한다. */
     font-size: 1rem;
     line-height: var(--editor-line-height, 1.9);
     letter-spacing: var(--editor-letter-spacing, 0.02em);
@@ -50,11 +21,9 @@
     word-break: keep-all;
     overflow-wrap: break-word;
 
-    /* 커서(caret)를 accent 색상으로 */
     caret-color: var(--accent-bg, #2563eb);
     text-size-adjust: 100%;
 
-    /* ── 렌더링 품질 ── */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -62,14 +31,12 @@
     font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
 }
 
-/* 타이프라이터 모드용 꼬리 공간 */
 .tiptap .ProseMirror::after {
     content: "";
     display: block;
     height: var(--editor-typewriter-tail-space, 42vh);
 }
 
-/* ── Placeholder ── */
 .tiptap .ProseMirror p.is-editor-empty:first-child::before {
     color: var(--text-tertiary);
     content: attr(data-placeholder);
@@ -78,31 +45,13 @@
     pointer-events: none;
 }
 
-/* ================================================================
-   PARAGRAPH
-   ----------------------------------------------------------------
-   Notion / iA Writer 기준:
-   - margin-top 제거 → 단락 시작을 명확히
-   - margin-bottom 1em → 단락 사이 "숨 한 번" 쉬는 간격
-   - 너무 좁으면 스크롤이 바빠지고 흐름이 끊긴다
-   ================================================================ */
 .tiptap .ProseMirror p {
     margin-top: 0;
     margin-bottom: var(--editor-paragraph-spacing, 1em);
-    /* --editor-line-height 는 Editor.tsx에서 ProseMirror root에 CSS var로 주입된다.
-       fallback 1.9 = 노벨피아·문피아 한국어 장문 본문 기준 (헤더 주석과 일치) */
     line-height: var(--editor-line-height, 1.9);
     min-height: calc(var(--editor-font-size, 1rem) * var(--editor-line-height, 1.9));
 }
 
-/* ================================================================
-   HEADINGS
-   ----------------------------------------------------------------
-   장편 소설 구조: 챕터 > 씬 > 소제목
-   - 제목은 "다음이 시작된다"는 신호여야 한다
-   - margin-top을 크게 → 이전 내용과 단절감 부여
-   - letter-spacing 약간 음수 → 제목은 조여져야 무게감이 생긴다
-   ================================================================ */
 .tiptap .ProseMirror h1,
 .tiptap .ProseMirror h2,
 .tiptap .ProseMirror h3,
@@ -115,21 +64,18 @@
     word-break: keep-all;
 }
 
-/* 챕터 제목 */
 .tiptap .ProseMirror h1 {
     font-size: 1.875rem;
     margin-top: 2.2em;
     font-weight: 800;
 }
 
-/* 씬 구분 */
 .tiptap .ProseMirror h2 {
     font-size: 1.5rem;
     font-weight: 700;
     margin-top: 1.8em;
 }
 
-/* 소제목 */
 .tiptap .ProseMirror h3 {
     font-size: 1.2rem;
     font-weight: 600;
@@ -144,20 +90,15 @@
     color: var(--text-secondary);
 }
 
-/* ── Divider (씬 전환선) ── */
 .tiptap .ProseMirror hr {
     border: none;
     border-top: 1px solid currentColor;
     opacity: 0.15;
     margin: 2.5em auto;
-    width: 40%;          /* 전체 너비가 아닌 중앙 단선 — 씬 전환 느낌 */
+    width: 40%;
 }
 
-/* ================================================================
-   LISTS
-   ----------------------------------------------------------------
-   Tailwind 기본 reset이 list-style을 제거하므로 명시적으로 복원.
-   ================================================================ */
+/* NOTE: Tailwind reset이 제거한 list marker를 editor 안에서 복원한다. */
 .tiptap .ProseMirror ul {
     list-style-type: disc;
     padding-left: 1.5em;
@@ -187,12 +128,10 @@
     line-height: 1.75;
 }
 
-/* Tiptap이 li 안에 p를 생성하는 경우 */
 .tiptap .ProseMirror li > p {
     margin: 0.05em 0;
 }
 
-/* ── Task List ── */
 .tiptap .ProseMirror ul[data-type="taskList"] {
     list-style: none;
     padding-left: 0;
@@ -237,15 +176,6 @@
     text-decoration: line-through;
 }
 
-/* ================================================================
-   BLOCKQUOTE — 회상 / 내면 독백 / 인용
-   ----------------------------------------------------------------
-   소설에서 인용부호(따옴표) 대신 들여쓰기 + 기울임으로
-   '다른 목소리'임을 표현하는 노벨피아·문피아 스타일.
-   - 배경색 없음 → 공간 단절 방지, 흐름 유지
-   - border-left 단색 → 악센트이되 방해 안 됨
-   - italic → 목소리의 질감 차이
-   ================================================================ */
 .tiptap .ProseMirror blockquote {
     border-left: 3px solid var(--accent-bg, #2563eb);
     padding: 0.1em 0 0.1em 1.25rem;
@@ -259,12 +189,6 @@
     margin: 0.35em 0;
 }
 
-/* ================================================================
-   CODE
-   ----------------------------------------------------------------
-   코드는 코드처럼 보여야 한다 — 단, 소설 에디터이므로
-   지나친 강조는 피한다. letter-spacing / word-spacing 은 0.
-   ================================================================ */
 .tiptap .ProseMirror code {
     background-color: var(--bg-active);
     padding: 0.15em 0.4em;
@@ -283,7 +207,7 @@
     margin: 1.5em 0;
     border: 1px solid var(--border-default);
     border-left: 3px solid var(--accent-bg, #2563eb);
-    white-space: pre-wrap;      /* code block 내부는 pre-wrap이 맞다 */
+    white-space: pre-wrap;
     word-break: break-all;
     overflow-wrap: break-word;
     overflow: visible;
@@ -302,9 +226,6 @@
     display: block;
 }
 
-/* ================================================================
-   CALLOUT
-   ================================================================ */
 .tiptap .ProseMirror .callout {
     padding: 0.85rem 1.1rem;
     background-color: var(--bg-secondary);
@@ -322,9 +243,6 @@
 .tiptap .ProseMirror .callout p:first-child { margin-top: 0; }
 .tiptap .ProseMirror .callout p:last-child  { margin-bottom: 0; }
 
-/* ================================================================
-   DETAILS / TOGGLE — 설정집, 설명 보조자료
-   ================================================================ */
 .tiptap .ProseMirror details {
     border: none;
     padding: 0;
@@ -380,13 +298,7 @@
     transform: rotate(90deg);
 }
 
-/* ================================================================
-   SMART LINK HIGHLIGHT — 프로젝트 고유 기능
-   ----------------------------------------------------------------
-   ⚠️  이 섹션은 수정하지 말 것.
-   캐릭터·사건·세력·용어 멘션 강조 표시.
-   색상은 Editor.tsx의 entityColors CSS 변수로 주입된다.
-   ================================================================ */
+/* WARNING: smart-link 색상은 Editor.tsx가 주입하는 entityColors CSS variable과 함께 변경해야 한다. */
 .tiptap .ProseMirror .smart-link-highlight {
     cursor: pointer;
     border-radius: 3px;
@@ -423,9 +335,6 @@
     background-color: color-mix(in srgb, currentColor 22%, transparent);
 }
 
-/* ================================================================
-   HYPERLINK
-   ================================================================ */
 .tiptap .ProseMirror a {
     color: var(--text-accent, #2563eb);
     text-decoration: underline;
@@ -440,10 +349,6 @@
     text-decoration-color: var(--text-accent, #2563eb);
 }
 
-/* ================================================================
-   TEXT MARKS
-   ================================================================ */
-/* 형광펜 하이라이트 */
 .tiptap .ProseMirror mark {
     background-color: color-mix(in srgb, var(--accent-bg, #2563eb) 18%, transparent);
     color: inherit;
@@ -451,20 +356,15 @@
     padding: 0.05em 0.1em;
 }
 
-/* 취소선 */
 .tiptap .ProseMirror s {
     color: var(--text-tertiary);
 }
 
-/* ── Text Selection ── */
 .tiptap .ProseMirror ::selection {
     background-color: var(--editor-selection, #bfdbfe);
     color: inherit;
 }
 
-/* ================================================================
-   SCROLLBAR
-   ================================================================ */
 .custom-scrollbar::-webkit-scrollbar        { width: 5px; height: 5px; }
 .custom-scrollbar::-webkit-scrollbar-track  { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb  {
@@ -475,17 +375,12 @@
     background-color: var(--text-tertiary);
 }
 
-/* ================================================================
-   ENTITY DOCUMENT VIEW (research "문서" mode)
-   ----------------------------------------------------------------
-   Reuses the .tiptap prose typography but drops the manuscript-only
-   typewriter tail and full-height stretch so it sits naturally in a
-   short entity panel.
-   ================================================================ */
+/* NOTE: 짧은 entity panel에서는 manuscript 전용 typewriter tail과 full-height를 제거한다. */
 .entity-document .ProseMirror {
-    min-height: 12rem;
+    min-height: 16rem;
     height: auto;
     flex: none;
+    line-height: 1.7;
 }
 .entity-document .ProseMirror::after {
     content: none;
@@ -493,26 +388,43 @@
     display: none;
 }
 
-/* Section headings (= wiki sections) are distinct without entity colour. */
 .entity-document .ProseMirror h1 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-top: 1.8em;
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+    margin-top: 3.5rem;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0;
+    border-bottom: none;
 }
 .entity-document .ProseMirror h1:first-child {
-    margin-top: 0;
+    margin-top: 0.5rem;
+}
+/* NOTE: 내용이 없어 연속된 헤딩 사이의 최소 섹션 간격 */
+.entity-document .ProseMirror h1 + h1 {
+    margin-top: 5rem;
 }
 
-/* Placeholder for the active empty block only. */
+/* NOTE: 본문 문단은 엔터 간격이 벌어지지 않도록 일반적인 텍스트 줄간격으로 유지 */
+.entity-document .ProseMirror p {
+    margin-top: 0;
+    margin-bottom: 0.35rem;
+    min-height: 1.5rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
 .entity-document .ProseMirror .is-empty::before {
     content: attr(data-placeholder);
     color: var(--text-tertiary);
     float: left;
     height: 0;
     pointer-events: none;
+    font-size: 0.9rem;
+    opacity: 0.6;
 }
 
-/* Callout block — neutral so every entity shares the same reading hierarchy. */
 .entity-document .ProseMirror blockquote {
     margin: 1.25em 0;
     padding: 0.7rem 1rem 0.7rem 1.1rem;

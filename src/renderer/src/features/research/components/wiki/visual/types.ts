@@ -1,7 +1,3 @@
-/**
- * Shared types for the read-only entity visualization (Character / Event / Faction).
- */
-
 export type EntityKind = "character" | "event" | "faction";
 
 export type RelatedItem = {

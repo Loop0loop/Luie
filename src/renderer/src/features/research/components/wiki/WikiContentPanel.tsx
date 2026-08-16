@@ -3,13 +3,6 @@ import { useDialog } from "@shared/ui/useDialog";
 import { WikiSection } from "./WikiSection";
 import type { WikiSectionData } from "./types";
 
-// ── WikiContentPanel ──────────────────────────────────────────────────────
-
-/**
- * Structural content model shared by the wiki view of every entity type.
- * Character passes its `CharacterWikiAttrs` directly (it already matches);
- * event/faction build an adapter over their `attributes` bag.
- */
 export type WikiContentModel = {
   sections: WikiSectionData[];
   getSectionContent: (id: string) => string;
@@ -19,7 +12,6 @@ export type WikiContentModel = {
 
 type WikiContentPanelProps = {
   attrs: WikiContentModel;
-  /** i18n namespace: "character" | "event" | "faction". */
   i18nPrefix: string;
   newSectionFallback?: string;
 };
@@ -33,8 +25,6 @@ export function WikiContentPanel({
   const dialog = useDialog();
 
   const sections = attrs.sections;
-
-  // ── Section CRUD ────────────────────────────────────────────────────────
 
   const addSection = () => {
     const id = `section_${Date.now()}`;
@@ -62,34 +52,32 @@ export function WikiContentPanel({
     })();
   };
 
-  // ── Render ──────────────────────────────────────────────────────────────
-
   return (
     <div className="flex flex-col gap-9">
-      {/* Table of Contents — inline */}
       {sections.length > 0 && (
-        <nav className="self-start flex items-center gap-2 flex-wrap">
-          <p className="text-[11px] font-medium text-muted/70 uppercase tracking-wider">
-            {t(`${i18nPrefix}.tocLabel`, "Contents")}
-          </p>
-          <div className="flex items-center gap-1.5 flex-wrap text-[12px]">
-            {sections.map((sec, i) => (
+        <nav className="w-full flex flex-col gap-2 rounded-panel border border-border/60 bg-surface/50 p-3 shadow-xs">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+              {t(`${i18nPrefix}.tocLabel`, "목차")}
+            </p>
+            <span className="text-[10px] text-subtle font-mono">
+              {sections.length} sections
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {sections.map((sec) => (
               <a
                 key={sec.id}
                 href={`#${sec.id}`}
-                className="cursor-pointer text-muted no-underline transition-colors hover:text-fg hover:underline"
+                className="inline-flex items-center px-2.5 py-1 rounded-control bg-surface border border-border/60 text-xs font-medium text-muted transition-all hover:border-accent hover:text-accent hover:bg-surface-hover hover:shadow-xs active:scale-95 no-underline"
               >
                 {sec.label}
-                {i < sections.length - 1 && (
-                  <span className="text-border/60 ml-1.5">·</span>
-                )}
               </a>
             ))}
           </div>
         </nav>
       )}
 
-      {/* Sections */}
       {sections.map((sec) => (
         <WikiSection
           key={sec.id}
@@ -102,7 +90,6 @@ export function WikiContentPanel({
         />
       ))}
 
-      {/* Add section */}
       <button
         type="button"
         onClick={addSection}

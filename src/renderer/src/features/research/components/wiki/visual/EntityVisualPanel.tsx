@@ -1,14 +1,3 @@
-/**
- * EntityVisualPanel — read-only visualization composer.
- *
- * Layout (vertical scroll):
- *   A. RelationGraph     — reactflow node graph (entity + connected items)
- *   B. IdentityCard      — declarative one-line summary
- *   C. RelatedEntities   — grouped grid of connected items
- *
- * Data is provided by `useEntityVisualData` through narrative memory query.
- */
-
 import { RelationGraph } from "./RelationGraph";
 import { IdentityCard } from "./IdentityCard";
 import { RelatedEntities } from "./RelatedEntities";

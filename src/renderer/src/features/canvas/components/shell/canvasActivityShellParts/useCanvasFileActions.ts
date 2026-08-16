@@ -95,7 +95,7 @@ export function useCanvasFileActions({
         useWorldBuildingStore.getState().graphData?.canvasFiles ?? canvasFiles;
       await setGraphCanvasFiles(update(currentFiles));
     },
-    [canvasFiles, currentProject?.id, loadGraph, setGraphCanvasFiles],
+    [canvasFiles, currentProject, loadGraph, setGraphCanvasFiles],
   );
 
   const createNode = useCallback(

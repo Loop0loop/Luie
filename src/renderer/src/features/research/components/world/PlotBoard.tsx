@@ -161,7 +161,7 @@ export function PlotBoard() {
     if (!element) return;
 
     const handleWheel = (event: WheelEvent) => {
-      // Keep natural trackpad scrolling unless user explicitly requests horizontal shift-scroll.
+      // NOTE: shift-scroll일 때만 가로 이동을 가로채 자연스러운 trackpad scroll을 보존한다.
       if (!event.shiftKey) return;
       if (event.deltaY === 0 && event.deltaX === 0) return;
       event.preventDefault();
@@ -345,7 +345,6 @@ export function PlotBoard() {
       disabled={editableScope !== projectScope}
       className="h-full min-w-0 m-0 p-0 border-0 flex flex-col bg-app overflow-hidden"
     >
-      {/* Horizontal Scroll Area */}
       <div
         className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar"
         ref={scrollContainerRef}
@@ -356,7 +355,6 @@ export function PlotBoard() {
               key={col.id}
               className="w-80 shrink-0 flex flex-col bg-sidebar border border-border rounded-panel shadow-sm max-h-full group/col"
             >
-              {/* Column Header */}
               <div className="p-3 flex items-center gap-2 border-b border-border bg-panel/50 rounded-t-xl">
                 <GripVertical className="text-muted cursor-grab hover:text-fg w-4 h-4" />
                 <BufferedInput
@@ -378,7 +376,6 @@ export function PlotBoard() {
                 </div>
               </div>
 
-              {/* Cards List - Vertical Scroll */}
               <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3 custom-scrollbar">
                 {col.cards.map((card) => (
                   <div
@@ -401,7 +398,6 @@ export function PlotBoard() {
                 ))}
               </div>
 
-              {/* Footer Action */}
               <button
                 className="m-3 p-2 flex items-center justify-center gap-2 rounded-panel border border-dashed border-border text-xs text-muted font-medium hover:text-accent hover:border-accent hover:bg-accent/5 transition-all"
                 onClick={() => addCard(col.id)}
@@ -411,7 +407,6 @@ export function PlotBoard() {
             </div>
           ))}
 
-          {/* Add Column Button */}
           <button
             type="button"
             className="w-16 shrink-0 flex items-center justify-center border-2 border-dashed border-border rounded-panel cursor-pointer hover:border-accent hover:bg-accent/5 transition-all group"
@@ -423,7 +418,6 @@ export function PlotBoard() {
         </div>
       </div>
 
-      {/* Visual Bar / Scroll Indicator Area (Optional polished look) */}
       <div className="h-4 bg-sidebar border-t border-border shrink-0" />
     </fieldset>
   );

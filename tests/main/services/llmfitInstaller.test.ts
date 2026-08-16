@@ -1,9 +1,3 @@
-/**
- * llmfitInstaller 순수 헬퍼 단위 테스트.
- *
- * 네트워크/파일시스템에 의존하지 않는 자산 선택·sha 파싱·플랫폼 매핑만 검증한다.
- * (다운로드/추출은 통합 검증에서 다룬다.)
- */
 import { describe, expect, it } from "vitest";
 import {
   selectLlmfitAsset,
@@ -17,7 +11,7 @@ import {
   LLMFIT_ASSET_TARGETS,
 } from "../../../src/main/infra/llm/llmfitConstants.js";
 
-// v0.9.29 실제 릴리스 자산 구조를 본뜬 픽스처.
+// NOTE: 실제 asset 선택 동작을 검증하려고 v0.9.29 release 구조를 재현한다.
 const VERSION = "v0.9.29";
 function makeAssets(): GithubReleaseAsset[] {
   const triples = [
@@ -111,7 +105,6 @@ describe("selectLlmfitAsset", () => {
         digest: null,
       },
     ];
-    // request arm64 mac → no aarch64-apple-darwin asset present
     expect(selectLlmfitAsset(assets, "darwin-arm64")).toBeNull();
   });
 

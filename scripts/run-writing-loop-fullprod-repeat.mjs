@@ -64,7 +64,6 @@ for (let i = 1; i <= runs; i += 1) {
         p99 < p99Limit &&
         run.status === 0;
     } catch {
-      // no-op
     }
   }
 

@@ -15,7 +15,7 @@ const detectInitialLanguage = (): SupportedLanguage => {
       return normalizeLanguage(stored);
     }
   } catch {
-    // Local storage may be unavailable in restricted renderer contexts.
+    // NOTE: 제한된 renderer context에서는 localStorage를 사용할 수 없을 수 있다.
   }
 
   return normalizeLanguage(navigator.language);
@@ -62,7 +62,7 @@ const loadSavedLanguagePreference = async (): Promise<void> => {
       await i18n.changeLanguage(savedLanguage);
     }
   } catch {
-    // Best effort; default language already active.
+    // NOTE: 저장 언어 조회에 실패해도 기본 언어는 이미 적용돼 있다.
   }
 };
 
@@ -103,7 +103,7 @@ export async function initI18n(): Promise<typeof i18n> {
       },
     })
     .then(() => {
-      // Stored language sync runs after the first paint path has already continued.
+      // NOTE: 저장 언어 동기화는 첫 paint를 막지 않는다.
       void loadSavedLanguagePreference();
       return i18n;
     })
@@ -124,7 +124,7 @@ export async function setLanguage(language: SupportedLanguage): Promise<void> {
   try {
     await api.settings.setLanguage({ language });
   } catch {
-    // Best effort; language still applied locally
+    // NOTE: 저장 실패와 관계없이 언어는 현재 renderer에 적용된다.
   }
 }
 

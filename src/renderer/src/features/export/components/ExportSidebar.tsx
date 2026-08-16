@@ -87,7 +87,6 @@ export function ExportSidebar({
 }: ExportSidebarProps) {
     return (
         <div className="w-[320px] bg-panel border-r border-border flex flex-col h-full overflow-y-auto custom-scrollbar">
-            {/* Header */}
             <div className="p-5 border-b border-border bg-panel sticky top-0 z-10">
                 <h1 className="text-xl font-bold text-fg flex items-center gap-2">
                     <Download className="w-5 h-5 text-accent" />
@@ -98,9 +97,7 @@ export function ExportSidebar({
                 </p>
             </div>
 
-            {/* Settings Content */}
             <div className="p-2 space-y-1">
-                {/* Format Selection */}
                 <div className="bg-idk rounded overflow-hidden">
                     <SectionHeader
                         id="format"
@@ -140,7 +137,6 @@ export function ExportSidebar({
                     )}
                 </div>
 
-                {/* Page Setup */}
                 <div className="bg-idk rounded overflow-hidden">
                     <SectionHeader
                         id="page"
@@ -151,7 +147,6 @@ export function ExportSidebar({
                     />
                     {expandedSections.page && (
                         <div className="p-4 space-y-4">
-                            {/* Paper Size */}
                             <div className="space-y-2">
                                 <label className="text-xs font-semibold text-muted uppercase tracking-wider">{t("exportWindow.page.paperSize")}</label>
                                 <select
@@ -165,7 +160,6 @@ export function ExportSidebar({
                                 </select>
                             </div>
 
-                            {/* Margins */}
                             <div className="space-y-3">
                                 <label className="text-xs font-semibold text-muted uppercase tracking-wider flex items-center justify-between">
                                     {t("exportWindow.page.margins")}
@@ -213,7 +207,6 @@ export function ExportSidebar({
                     )}
                 </div>
 
-                {/* Typography */}
                 <div className="bg-idk rounded overflow-hidden">
                     <SectionHeader
                         id="typography"
@@ -224,7 +217,6 @@ export function ExportSidebar({
                     />
                     {expandedSections.typography && (
                         <div className="p-4 space-y-4">
-                            {/* Font Family */}
                             <div className="space-y-2">
                                 <label className="text-xs font-semibold text-muted uppercase tracking-wider">{t("exportWindow.typography.font")}</label>
                                 <div className="space-y-1">
@@ -244,7 +236,6 @@ export function ExportSidebar({
                                 </div>
                             </div>
 
-                            {/* Line Height */}
                             <div className="space-y-2">
                                 <label className="text-xs font-semibold text-muted uppercase tracking-wider">{t("exportWindow.typography.lineHeight")}</label>
                                 <div className="flex bg-surface rounded p-1 border border-border">
@@ -297,7 +288,6 @@ export function ExportSidebar({
                     )}
                 </div>
 
-                {/* Header/Footer (Page Numbers) */}
                 <div className="bg-idk rounded overflow-hidden">
                     <SectionHeader
                         id="header"
@@ -334,7 +324,6 @@ export function ExportSidebar({
                 </div>
             </div>
 
-            {/* Export Button */}
             <div className="p-4 mt-auto border-t border-border bg-panel">
                 <button
                     onClick={handleExport}

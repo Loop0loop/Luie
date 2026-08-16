@@ -14,7 +14,7 @@ export const resolveUserDataPath = (): string => {
     const fromApp = electron.app?.getPath?.("userData");
     if (fromApp && fromApp.length > 0) return fromApp;
   } catch {
-    // ignore and fallback
+    // NOTE: Electron app을 사용할 수 없는 test/runtime은 cwd fallback을 사용한다.
   }
   return path.join(process.cwd(), ".luie-user-data");
 };

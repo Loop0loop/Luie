@@ -1,5 +1,5 @@
 // TEST_LEVEL: STORE_INTEGRATION
-// PROVES: one hundred same-entity patches preserve the final value
+// PROVES: 같은 entity에 대한 patch 100개가 마지막 값을 보존한다.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useCharacterStore } from "../../../src/renderer/src/features/research/stores/characterStore.js";

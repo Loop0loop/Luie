@@ -14,7 +14,7 @@ type FixedPanelSpec = {
   widthPx: number;
   minPx: number;
   maxPx: number;
-  /** When true, the panel is collapsed to 0% regardless of widthPx. */
+  /** true면 `widthPx`와 관계없이 0%로 접는다. */
   collapsed?: boolean;
 };
 
@@ -28,12 +28,7 @@ type UseFixedPixelPanelGroupLayoutOptions = {
 
 type FixedPixelPanelGroupLayoutState = {
   isLayoutReady: boolean;
-  /**
-   * Latches true the first time the layout becomes ready and never resets.
-   * Use this (not isLayoutReady) to gate "hide until laid out" so the panel
-   * does not flash hidden every time a container resize transiently
-   * invalidates isLayoutReady.
-   */
+  /** container resize 중 `isLayoutReady`가 잠시 false가 돼도 panel을 다시 숨기지 않는 latch. */
   hasCompletedInitialLayout: boolean;
 };
 

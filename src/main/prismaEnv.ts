@@ -1,4 +1,4 @@
-// TODO: Rename to dbEnv.ts in cleanup pass — the file function is still needed for env setup.
+// TODO: DB 환경 초기화 호출부를 정리한 뒤 파일명을 dbEnv.ts로 변경한다.
 import { app } from "electron";
 import path from "node:path";
 import { DB_NAME } from "../shared/constants/index.js";

@@ -24,15 +24,9 @@ interface EntitySidebarListProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   emptyDescriptionLabel: string;
-  /** Optional content rendered under the header (e.g. a search box). */
   belowHeader?: ReactNode;
 }
 
-/**
- * Shared list shell for Character / Event / Faction sidebars.
- * Quiet muted header (matching the Memo sidebar), accessible button rows,
- * fixed header + scrolling list. The owning manager injects grouped data.
- */
 export function EntitySidebarList({
   title,
   onViewAll,

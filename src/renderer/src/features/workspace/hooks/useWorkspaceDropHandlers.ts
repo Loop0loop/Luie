@@ -22,7 +22,6 @@ type ScrivenerMainView = {
   id?: string;
 };
 
-// UI Store actions expected
 interface DropHandlerDependencies {
   uiMode: EditorUiMode;
   handleSelectChapter: (id: string) => void;

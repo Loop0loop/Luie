@@ -79,10 +79,6 @@ const parseLuieJsonSafe = <T>(
   }
 };
 
-/**
- * 원고 분석 서비스
- * Gemini API를 활용한 실시간 스트리밍 분석
- */
 export class ManuscriptAnalysisService {
   private isAnalyzing = false;
   private currentWindow: BrowserWindow | null = null;
@@ -368,9 +364,6 @@ export class ManuscriptAnalysisService {
     }
   }
 
-  /**
-   * 분석 시작
-   */
   async startAnalysis(
     chapterId: string,
     projectId: string,
@@ -401,9 +394,6 @@ export class ManuscriptAnalysisService {
     void this.runAnalysis(chapterId, projectId, runId, controller.signal);
   }
 
-  /**
-   * 분석 중단
-   */
   stopAnalysis(): void {
     if (!this.activeRun) {
       logger.warn("No analysis in progress");
@@ -412,9 +402,6 @@ export class ManuscriptAnalysisService {
     this.cancelActiveRun("Analysis stopped by user");
   }
 
-  /**
-   * 분석 데이터 삭제 (보안)
-   */
   clearAnalysisData(): void {
     const activeWindow = this.activeRun?.window ?? this.currentWindow;
     logger.info("clearAnalysisData called", {
@@ -429,9 +416,6 @@ export class ManuscriptAnalysisService {
     logger.info("Analysis data cleared");
   }
 
-  /**
-   * Gemini API 스트리밍 호출
-   */
   private async streamAnalysisWithGemini(
     context: AnalysisContext,
     chapterId: string,
@@ -456,9 +440,6 @@ export class ManuscriptAnalysisService {
     });
   }
 
-  /**
-   * 분석 진행 여부 확인
-   */
   isAnalysisInProgress(): boolean {
     return this.isAnalyzing;
   }

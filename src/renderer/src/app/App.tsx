@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 
 import { useProjectStore } from "@renderer/domains/project";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
-import { useEditorStore } from "@renderer/domains/editor";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useProjectInit } from "@renderer/domains/project";
 import { useDataRecoveryStore } from "@renderer/features/workspace/stores/useDataRecoveryStore";
 import { useProjectTemplate } from "@renderer/domains/project";

@@ -417,8 +417,7 @@ export const buildWorldGraphDocument = (
   graphData: WorldGraphData,
   updatedAt = new Date().toISOString(),
 ): GraphDocumentPayload => {
-  // Always include canvas data even if empty, to ensure proper overwrite on save
-  // This prevents stale data from persisting when all canvas content is deleted
+  // NOTE: 빈 canvas도 저장해야 모든 content 삭제 후 이전 데이터가 남지 않는다.
   const nodes = dedupeByIdLastWins(graphData.nodes);
   const edges = dedupeByIdLastWins(graphData.edges);
   const canvasBlocks = normalizeCanvasBlocks(graphData.canvasBlocks);
@@ -446,7 +445,6 @@ export const buildWorldGraphDocument = (
         attributes: edge.attributes ?? null,
       }),
     ),
-    // Always include canvas data to properly overwrite stale data
     canvasBlocks,
     canvasEdges,
     canvasFiles,

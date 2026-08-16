@@ -1,7 +1,3 @@
-/**
- * Chapter service - 챕터/회차 관리 비즈니스 로직
- */
-
 import { eq, and, isNull, desc, asc, sql } from "drizzle-orm";
 import { db } from "../../../infra/database/index.js";
 import * as schema from "../../../infra/database/index.js";

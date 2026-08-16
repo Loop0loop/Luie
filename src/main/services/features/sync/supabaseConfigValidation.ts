@@ -17,7 +17,7 @@ export const normalizeSupabaseUrl = (value: string): string => {
   if (!trimmed) return trimmed;
   try {
     const parsed = new URL(trimmed);
-    // Supabase base URL must be project origin only.
+    // NOTE: function path가 중복되지 않도록 Supabase project origin만 허용한다.
     return parsed.origin;
   } catch {
     return trimmed.endsWith("/") ? trimmed.slice(0, -1) : trimmed;

@@ -19,7 +19,6 @@ export default function FocusLayout({
   const setUiMode = useEditorStore((state) => state.setUiMode);
   const [showUI, setShowUI] = useState(false);
 
-  // Stealth UI Logic: Show UI only when mouse moves
   useEffect(() => {
     let timeout: NodeJS.Timeout;
 
@@ -28,7 +27,7 @@ export default function FocusLayout({
       clearTimeout(timeout);
       timeout = setTimeout(() => {
         setShowUI(false);
-      }, 2000); // Hide after 2 seconds of inactivity
+      }, 2000);
     };
 
     window.addEventListener("mousemove", handleMouseMove);
@@ -45,7 +44,6 @@ export default function FocusLayout({
   return (
     <div className="w-full h-full bg-app text-fg relative flex flex-col overflow-hidden transition-colors duration-500">
       
-      {/* Top Bar (Stealth) */}
       <div 
         className={cn(
             "absolute top-0 left-0 right-0 h-16 flex items-center justify-between px-6 z-50 transition-opacity duration-300 pointer-events-none",
@@ -53,15 +51,10 @@ export default function FocusLayout({
         )}
       >
         <div className="text-sm font-medium text-muted/50">
-            {activeChapterTitle || "Untitled"}
+            {activeChapterTitle || t("project.defaults.untitled")}
         </div>
         
         <div className="flex items-center gap-4">
-             {/* Fullscreen Toggle (Optional, if OS supports it) */}
-             {/* <button className="text-muted/50 hover:text-fg transition-colors">
-                <Maximize2 className="w-5 h-5" />
-             </button> */}
-             
              <button 
                 onClick={handleExitFocus}
                 className="group flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface/70 hover:bg-surface-hover transition-all text-muted hover:text-fg backdrop-blur-sm"
@@ -74,14 +67,12 @@ export default function FocusLayout({
         </div>
       </div>
 
-      {/* Main Content Area - Centered & Max Width */}
       <div className="flex-1 overflow-hidden relative flex flex-col items-center justify-center">
           <div className="w-full h-full max-w-[700px] flex flex-col relative">
                {children}
           </div>
       </div>
 
-      {/* Bottom Bar (Stealth) - Stats */}
       <div 
         className={cn(
             "absolute bottom-0 left-0 right-0 h-12 flex items-center justify-center z-50 transition-opacity duration-300 pointer-events-none",

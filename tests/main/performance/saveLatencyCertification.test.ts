@@ -1,5 +1,5 @@
 // TEST_LEVEL: REAL_DB_FS_INTEGRATION
-// PROVES: production world queues and explicit save barriers ACK real SQLite/package writes
+// PROVES: production world queue와 명시적 save barrier가 실제 SQLite/package write를 확인한다.
 
 import os from "node:os";
 import path from "node:path";
@@ -119,9 +119,9 @@ async function measureScenario(input: {
   verify?: (index: number) => Promise<void>;
 }): Promise<ScenarioReport> {
   for (let index = 0; index < WARMUP_COUNT; index += 1) {
-    // eslint-disable-next-line no-await-in-loop -- benchmark samples must not overlap.
+    // eslint-disable-next-line no-await-in-loop -- benchmark sample이 겹치면 latency를 분리할 수 없다.
     await input.run(index - WARMUP_COUNT);
-    // eslint-disable-next-line no-await-in-loop -- verification belongs to the completed sample.
+    // eslint-disable-next-line no-await-in-loop -- 완료된 sample마다 검증을 끝내야 한다.
     await input.verify?.(index - WARMUP_COUNT);
   }
 
@@ -129,10 +129,10 @@ async function measureScenario(input: {
   for (let index = 0; index < SAMPLE_COUNT; index += 1) {
     const startedAt = performance.now();
     try {
-      // eslint-disable-next-line no-await-in-loop -- each latency sample is independent.
+      // eslint-disable-next-line no-await-in-loop -- latency sample을 서로 독립적으로 실행한다.
       await input.run(index);
       const elapsedMs = roundMs(performance.now() - startedAt);
-      // eslint-disable-next-line no-await-in-loop -- verification is excluded from measured latency.
+      // eslint-disable-next-line no-await-in-loop -- 검증 시간은 측정 latency에서 제외한다.
       await input.verify?.(index);
       rawSamples.push({
         index,

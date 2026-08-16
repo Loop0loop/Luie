@@ -240,7 +240,6 @@ export function SynopsisEditor() {
       disabled={editableScope !== projectScope}
       className="h-full min-w-0 m-0 p-0 border-0 flex flex-col bg-[#faf9f6]/50 dark:bg-zinc-900 overflow-hidden transition-colors duration-500"
     >
-      {/* Header - Minimalist */}
       <div
         className={cn(
           "flex items-center justify-between px-8 py-4 shrink-0 transition-opacity duration-300",
@@ -278,12 +277,9 @@ export function SynopsisEditor() {
         </div>
       </div>
 
-      {/* Editor Area - Document Style */}
       <div className="flex-1 overflow-y-auto relative group custom-scrollbar">
         <div className="max-w-3xl mx-auto px-12 py-16 min-h-full flex flex-col gap-12">
-          {/* Metadata Section - Clean, Field-like */}
           <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Top Row: Genre & Audience */}
             <div className="grid grid-cols-2 gap-12">
               <div className="group/field">
                 <label className="block text-[10px] font-bold text-muted uppercase tracking-widest mb-2 group-focus-within/field:text-accent transition-colors">
@@ -321,7 +317,6 @@ export function SynopsisEditor() {
               </div>
             </div>
 
-            {/* Logline - Featured */}
             <div className="group/field">
               <label className="flex items-center gap-2 text-[10px] font-bold text-muted uppercase tracking-widest mb-3 group-focus-within/field:text-accent transition-colors">
                 <Sparkles className="w-3 h-3" />{" "}
@@ -343,10 +338,8 @@ export function SynopsisEditor() {
             </div>
           </div>
 
-          {/* Divider */}
           <div className="w-16 h-1 bg-border/30 rounded-full mx-auto" />
 
-          {/* Main Content */}
           <div className="relative flex-1">
             <BufferedTextArea
               className={cn(

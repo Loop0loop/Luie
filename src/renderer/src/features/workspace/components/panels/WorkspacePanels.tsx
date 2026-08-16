@@ -9,7 +9,6 @@ import type { Chapter } from "@shared/types";
 import { toPercentSize } from "@renderer/shared/constants/sidebarSizing";
 import { SPLIT_PANEL_MIN_SIZE_PERCENT } from "@renderer/shared/constants/layoutSizing";
 
-// Lazy Loaded Panels
 const ResearchPanel = React.lazy(() =>
   import("@renderer/domains/world").then((module) => ({
     default: module.ResearchPanel,

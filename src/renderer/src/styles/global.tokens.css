@@ -1,5 +1,4 @@
 @theme {
-  /* Colors */
   --color-app: var(--bg-app);
   --color-sidebar: var(--bg-sidebar);
   --color-panel: var(--bg-panel);
@@ -18,7 +17,6 @@
   --color-bg-panel: var(--bg-panel);
   --color-editor-bg: var(--editor-bg);
 
-  /* Text Colors */
   --color-fg: var(--text-primary);
   --color-muted: var(--text-secondary);
   --color-subtle: var(--text-tertiary);
@@ -38,7 +36,6 @@
   --color-accent-foreground: var(--accent-fg);
   --color-destructive-foreground: var(--text-on-accent);
 
-  /* Semantic Colors */
   --color-primary: var(--accent-bg);
   --color-destructive: var(--danger-fg);
   --color-error: var(--danger-fg);
@@ -47,13 +44,11 @@
   --color-success-fg: var(--success-fg);
   --color-danger-fg: var(--danger-fg);
 
-  /* Borders */
   --color-border: var(--border-default);
   --color-border-active: var(--border-active);
   --color-border-focus: var(--border-focus);
 
-  /* Radius / Shadow / Spacing — migrated from the (dead, v4-unloaded)
-     tailwind.config.js. Only tokens actually used in the codebase are kept. */
+  /* NOTE: Tailwind v4에서 읽지 않는 config 대신 실제 사용 token만 이곳에 유지한다. */
   --radius-control: 0.625rem;
   --radius-panel: 0.875rem;
   --shadow-panel: 0 10px 28px rgba(15, 23, 42, 0.14);
@@ -62,28 +57,23 @@
   --spacing-panel-pad: 1.25rem;
   --spacing-panel-gap: 1rem;
 
-  /* Canvas document feature tokens — replaces repeated arbitrary values
-     (text-[40px], text-[15px], max-w-[900px], w-[190px]) in the canvas
-     document shell. Scoped naming keeps them discoverable. */
-  --text-canvas-doc-title: 2.5rem;          /* 40px — document title */
-  --text-canvas-doc-body: 0.9375rem;        /* 15px — property line body */
-  --container-canvas-doc: 56.25rem;         /* 900px — document column */
-  --spacing-canvas-doc-label: 11.875rem;    /* 190px — property label column */
+  /* NOTE: canvas document의 반복 arbitrary value를 scoped token으로 공유한다. */
+  --text-canvas-doc-title: 2.5rem;
+  --text-canvas-doc-body: 0.9375rem;
+  --container-canvas-doc: 56.25rem;
+  --spacing-canvas-doc-label: 11.875rem;
 
-  /* Canvas node/block feature tokens — Obsidian Canvas card typography.
-     Replaces repeated text-[10px]/[11px]/[15px] in EntityNode. */
-  --text-canvas-node-meta: 0.625rem;        /* 10px — kind label, connection count */
-  --text-canvas-node-desc: 0.6875rem;       /* 11px — description line */
-  --text-canvas-node-label: 0.9375rem;      /* 15px — node title */
-  --text-canvas-edge-label: 0.625rem;       /* 10px — edge label */
+  /* NOTE: canvas node의 반복 typography 값을 scoped token으로 공유한다. */
+  --text-canvas-node-meta: 0.625rem;
+  --text-canvas-node-desc: 0.6875rem;
+  --text-canvas-node-label: 0.9375rem;
+  --text-canvas-edge-label: 0.625rem;
 
-  /* Z-index layers — replaces ad-hoc z-[9999]/z-[9000]/z-[10000] escalation.
-     v4's z-* is functional (no theme namespace), so the named utilities are
-     defined via @utility below; these vars hold the single source of values. */
-  --z-index-dropdown: 50; /* context menus, popovers, tooltips, their backdrops */
-  --z-index-banner: 100; /* sticky top banners (offline) */
-  --z-index-toast: 150; /* transient notifications */
-  --z-index-modal: 1000; /* full-surface dialogs + floating panels */
+  /* NOTE: 임의 z-index 경쟁을 막으려고 named utility의 값을 한 곳에서 관리한다. */
+  --z-index-dropdown: 50;
+  --z-index-banner: 100;
+  --z-index-toast: 150;
+  --z-index-modal: 1000;
 }
 
 @utility z-dropdown {
@@ -100,64 +90,50 @@
 }
 
 @layer components {
-  /* Namuwiki & Global Components Priority Layer */
 }
 
 :root {
-  /* 
-    DESIGN TOKENS - ZINC SCALE (Neutral, Professional)
-    Using specific hex values to ensure consistency across themes
-  */
-
-  /* === LIGHT THEME (Default) === */
-  /* Backgrounds */
-  --bg-app: #ffffff; /* Main Canvas */
-  --bg-sidebar: #f4f4f5; /* Zinc-100 */
-  --bg-panel: #ffffff; /* Panel matches app */
+  --bg-app: #ffffff;
+  --bg-sidebar: #f4f4f5;
+  --bg-panel: #ffffff;
   --bg-surface: #ffffff;
-  --bg-surface-hover: rgba(0, 0, 0, 0.04); /* Vercel-style alpha hover */
+  --bg-surface-hover: rgba(0, 0, 0, 0.04);
   --bg-element: #ffffff;
   --bg-element-hover: rgba(0, 0, 0, 0.04);
-  --bg-active: rgba(0, 0, 0, 0.08); /* Zinc-200 equivalent alpha */
+  --bg-active: rgba(0, 0, 0, 0.08);
 
-  /* Text */
-  --text-primary: #18181b; /* Zinc-900 - Sharp, readable black */
-  --text-secondary: #71717a; /* Zinc-500 - Clear secondary info */
-  --text-tertiary: #a1a1aa; /* Zinc-400 - Placeholders */
-  --text-accent: #795d2b; /* Muted brass — interactive text, not decoration */
+  --text-primary: #18181b;
+  --text-secondary: #71717a;
+  --text-tertiary: #a1a1aa;
+  --text-accent: #2563eb;
   --text-on-accent: #ffffff;
 
-  /* Semantic UI */
-  --accent-bg: #806330; /* Muted brass — contrast-safe with white text */
-  --accent-bg-hover: #6d5428;
+  --accent-bg: #2563eb;
+  --accent-bg-hover: #1d4ed8;
   --accent-fg: #ffffff;
-  --success-fg: #16a34a; /* Green-600 */
-  --danger-fg: #ef4444; /* Red-500 */
+  --success-fg: #16a34a;
+  --danger-fg: #ef4444;
 
-  /* Aliases (legacy UI tokens) */
   --bg-primary: #ffffff;
   --bg-secondary: #f9fafb;
   --bg-hover: var(--bg-element-hover);
   --bg-canvas: #ffffff;
   --accent-primary: var(--accent-bg);
   --grid-line: #e5e7eb;
-  --danger-fg: #dc2626; /* Red-600 */
+  --danger-fg: #dc2626;
 
-  /* Borders */
-  --border-default: #e4e4e7; /* Zinc-200 */
-  --border-active: #d4d4d8; /* Zinc-300 */
-  --border-focus: #18181b; /* Zinc-900 */
+  --border-default: #e4e4e7;
+  --border-active: #d4d4d8;
+  --border-focus: #18181b;
 
-  /* Editor Specific (Can differ from UI) */
   --editor-bg: #ffffff;
   --editor-text: #18181b;
-  --editor-selection: #eadcbf; /* Warm paper selection */
+  --editor-selection: #eadcbf;
 
-  /* Dimensions */
   --header-height: 48px;
   --sidebar-width: 260px;
   --panel-width: 320px;
-  --collapsed-width: 0px; /* For animations */
+  --collapsed-width: 0px;
   --context-panel-section-padding: 16px;
   --context-panel-header-font-size: 12px;
   --context-panel-body-font-size: 13px;
@@ -193,10 +169,7 @@
   --character-relation-font-size: 12px;
   --character-relation-margin-bottom: 8px;
 
-  /* Wiki (formerly "Namuwiki") tokens — aliased to core tokens so the wiki
-     shares Luie's single accent/border/surface palette. Defined once here;
-     they cascade across themes because the core vars they reference are
-     redefined per [data-theme]. */
+  /* NOTE: wiki도 theme별 core variable을 참조해 같은 accent·border·surface palette를 사용한다. */
   --namu-blue: var(--accent-bg);
   --namu-border: var(--border-default);
   --namu-table-bg: var(--bg-sidebar);
@@ -210,7 +183,6 @@
   --editor-toolbar-plus-minus-font-size: 14px;
   --editor-toolbar-mobile-icon-size: 14px;
 
-  /* Typography */
   --font-sans:
     -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", Roboto, "Helvetica Neue",
     Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
@@ -220,12 +192,11 @@
     "D2Coding", "NanumGothicCoding", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
     "Courier New", monospace;
 
-  /* Backwards-compatible aliases */
+  /* NOTE: 제거되지 않은 legacy class가 core palette를 따르도록 alias를 유지한다. */
   --bg-primary: var(--bg-app);
   --bg-secondary: var(--bg-element-hover);
   --bg-hover: var(--bg-element-hover);
 
-  /* Elevations */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
@@ -241,85 +212,71 @@
   --font-weight-semibold: 600;
 }
 
-/* === DARK THEME (Linear/Vercel Inspired) === */
 [data-theme="dark"] {
-  /* Backgrounds — Notion/Linear-calibrated "recessed editor" model.
-     Editor is the dark focal surface; chrome (sidebar/toolbar/footer) sits one
-     calm step lighter as the frame. Subtle cool tint — pure greys read
-     drab/murky on screen, +2~3pt blue makes them clean. None pure-black. */
-  --bg-app: #1a1a1c; /* Editor — neutral dark focal surface (≈ Notion #191919) */
-  --bg-sidebar: #212123; /* Chrome frame — one step lighter (≈ Notion sidebar) */
-  --bg-panel: #28282b; /* Floating surface (modal/inspector/dropdown) */
+  /* NOTE: editor를 가장 어두운 초점 면으로 두고 chrome은 한 단계 밝게 분리한다. */
+  --bg-app: #1a1a1c;
+  --bg-sidebar: #212123;
+  --bg-panel: #28282b;
   --bg-surface: #28282b;
   --bg-panel-header: #28282b;
-  --bg-element: #313135; /* Inputs/controls — top of the stack */
+  --bg-element: #313135;
   --bg-element-hover: rgba(255, 255, 255, 0.08);
   --bg-active: rgba(255, 255, 255, 0.12);
 
-  /* Text */
-  --text-primary: #d7d7da; /* Clean neutral light grey (≈ Notion #D4D4D4), crisp not drab */
-  --text-secondary: #989aa2; /* Quieter secondary, clearly below primary */
-  --text-tertiary: #6c6e77; /* Placeholders — recede further */
-  --text-accent: #d0b178; /* Light brass for dark-surface interaction */
+  --text-primary: #d7d7da;
+  --text-secondary: #989aa2;
+  --text-tertiary: #6c6e77;
+  --text-accent: #60a5fa;
   --text-on-accent: #ffffff;
 
-  /* Semantic UI */
-  --accent-bg: #b79152; /* Brass — contrast-safe with dark foreground */
-  --accent-bg-hover: #c6a363;
-  --accent-fg: #211b11;
+  --accent-bg: #3b82f6;
+  --accent-bg-hover: #60a5fa;
+  --accent-fg: #ffffff;
   --success-fg: #22c55e;
   --danger-fg: #ef4444;
 
-  /* Aliases */
   --bg-primary: var(--bg-app);
   --bg-secondary: var(--bg-element);
   --bg-hover: var(--bg-element-hover);
   --bg-canvas: var(--bg-app);
   --accent-primary: var(--accent-bg);
 
-  /* Borders - The Key to "Clean" UI */
-  /* 8% opacity white for subtle separation, enough for definition but not "grid prison" */
+  /* NOTE: border는 8% white로 면을 구분하되 grid처럼 두드러지지 않게 한다. */
   --border-default: rgba(255, 255, 255, 0.08);
   --border-active: rgba(255, 255, 255, 0.16);
   --border-focus: #52525b;
 
   --grid-line: var(--border-default);
 
-  /* Editor */
-  --editor-bg: #1a1a1c; /* Matches bg-app — neutral dark writing surface */
-  --editor-text: #d0d0d4; /* Body text — clean, comfortable on the dark surface */
+  --editor-bg: #1a1a1c;
+  --editor-text: #d0d0d4;
   --editor-selection: #5d4829;
 }
 
-/* === DARK TONE (user-selectable color temperature) ===
-   Neutral = the base [data-theme="dark"] block above (no override).
-   Cool/Warm only re-tint the background ladder + text; structure unchanged. */
-/* Cool — Tokyo Night grounded (blue-leaning, calm night) */
+/* NOTE: color temperature는 layout 구조를 바꾸지 않고 background와 text tint만 덮어쓴다. */
 [data-theme="dark"][data-temp="cool"] {
-  --bg-app: #181a23; /* ≈ Tokyo Night editor #1a1b26 */
+  --bg-app: #181a23;
   --bg-sidebar: #1f2230;
   --bg-panel: #262a38;
   --bg-surface: #262a38;
   --bg-panel-header: #262a38;
   --bg-element: #2f3345;
   --editor-bg: #181a23;
-  --editor-text: #c7ccdb; /* ≈ Tokyo Night fg #c0caf5, dimmed */
+  --editor-text: #c7ccdb;
   --text-primary: #ccd2e2;
 }
-/* Warm — Gruvbox/Everforest grounded (amber-cream, retro groove) */
 [data-theme="dark"][data-temp="warm"] {
-  --bg-app: #1f1c17; /* warm dark ≈ Gruvbox bg0_hard #1d2021 warmed */
+  --bg-app: #1f1c17;
   --bg-sidebar: #29251e;
   --bg-panel: #322d24;
   --bg-surface: #322d24;
   --bg-panel-header: #322d24;
   --bg-element: #3d372c;
   --editor-bg: #1f1c17;
-  --editor-text: #ded5c2; /* ≈ Gruvbox cream #ebdbb2 / Everforest #d3c6aa */
+  --editor-text: #ded5c2;
   --text-primary: #e6ddca;
 }
 
-/* Light — cool (blue-grey paper, GitHub-light-leaning) */
 [data-theme="light"][data-temp="cool"] {
   --bg-app: #fbfcfd;
   --bg-sidebar: #eef1f4;
@@ -330,7 +287,6 @@
   --editor-text: #1b1e24;
   --text-primary: #1b1e24;
 }
-/* Light — warm (ivory cream, ≈ Solarized Light base3 #fdf6e3) */
 [data-theme="light"][data-temp="warm"] {
   --bg-app: #fdf9f0;
   --bg-sidebar: #f4ece0;
@@ -341,7 +297,6 @@
   --editor-text: #211d18;
   --text-primary: #211d18;
 }
-/* Sepia — cool (greyer, less amber paper) */
 [data-theme="sepia"][data-temp="cool"] {
   --bg-app: #f3eee1;
   --bg-sidebar: #e8e1d2;
@@ -352,7 +307,6 @@
   --editor-text: #4a4034;
   --text-primary: #4a4034;
 }
-/* Sepia — warm (deeper amber paper) */
 [data-theme="sepia"][data-temp="warm"] {
   --bg-app: #f9e9c4;
   --bg-sidebar: #f0dcae;
@@ -364,37 +318,31 @@
   --text-primary: #5a4528;
 }
 
-/* === SEPIA THEME (Writer Focused) === */
 [data-theme="sepia"] {
-  /* Backgrounds */
-  --bg-app: #fbf0d9; /* Warm Paper */
-  --bg-sidebar: #f5e6cc; /* Slightly darker paper */
-  --bg-panel: #fbf0d9; /* Panel matches app */
-  --bg-surface: #fffefb; /* Card/Input background */
-  --bg-surface-hover: rgba(95, 75, 50, 0.05); /* Sepia alpha hover */
+  --bg-app: #fbf0d9;
+  --bg-sidebar: #f5e6cc;
+  --bg-panel: #fbf0d9;
+  --bg-surface: #fffefb;
+  --bg-surface-hover: rgba(95, 75, 50, 0.05);
   --bg-element: #fffefb;
   --bg-element-hover: rgba(95, 75, 50, 0.05);
   --bg-active: rgba(95, 75, 50, 0.1);
 
-  /* Text */
-  --text-primary: #5f4b32; /* Dark brown */
+  --text-primary: #5f4b32;
   --text-secondary: #8c7b66;
   --text-tertiary: #b8aa9c;
-  --text-accent: #8a602e; /* Dark brass for warm paper */
+  --text-accent: #8a602e;
 
-  /* Borders */
   --border-default: #e6dac6;
   --border-active: #dcc8ae;
   --border-focus: #5f4b32;
 
-  /* Semantic UI */
   --accent-bg: #8a602e;
   --accent-bg-hover: #735026;
   --accent-fg: #fffefb;
   --success-fg: #2e7d32;
   --danger-fg: #b91c1c;
 
-  /* Aliases (legacy UI tokens) */
   --bg-primary: #fbf0d9;
   --bg-secondary: #efe4cb;
   --bg-hover: #efe4cb;
@@ -403,20 +351,138 @@
   --grid-line: #e6dcc6;
   --danger-fg: #b91c1c;
 
-  /* Editor */
   --editor-bg: #fbf0d9;
   --editor-text: #433422;
   --editor-selection: #e6dcc6;
 }
 
-/* === CONTRAST MODIFIERS === */
 [data-contrast="high"] {
   --text-primary: #000000;
   --text-secondary: #333333;
-  --border-default: #d4d4d8; /* Stronger border */
+  --border-default: #d4d4d8;
 }
 [data-theme="dark"][data-contrast="high"] {
   --text-primary: #ffffff;
   --text-secondary: #e4e4e7;
   --border-default: rgba(255, 255, 255, 0.2);
+}
+
+/* ==========================================================================
+   Accent Themes (Light)
+   ========================================================================== */
+[data-accent="blue"] {
+  --text-accent: #2563eb;
+  --text-on-accent: #ffffff;
+  --accent-bg: #2563eb;
+  --accent-bg-hover: #1d4ed8;
+  --accent-fg: #ffffff;
+}
+[data-accent="emerald"],
+[data-accent="green"] {
+  --text-accent: #059669;
+  --text-on-accent: #ffffff;
+  --accent-bg: #059669;
+  --accent-bg-hover: #047857;
+  --accent-fg: #ffffff;
+}
+[data-accent="violet"] {
+  --text-accent: #7c3aed;
+  --text-on-accent: #ffffff;
+  --accent-bg: #7c3aed;
+  --accent-bg-hover: #6d28d9;
+  --accent-fg: #ffffff;
+}
+[data-accent="rose"] {
+  --text-accent: #e11d48;
+  --text-on-accent: #ffffff;
+  --accent-bg: #e11d48;
+  --accent-bg-hover: #be123c;
+  --accent-fg: #ffffff;
+}
+[data-accent="amber"] {
+  --text-accent: #b45309;
+  --text-on-accent: #ffffff;
+  --accent-bg: #d97706;
+  --accent-bg-hover: #b45309;
+  --accent-fg: #ffffff;
+}
+
+/* ==========================================================================
+   Accent Themes (Dark)
+   ========================================================================== */
+[data-theme="dark"][data-accent="blue"] {
+  --text-accent: #60a5fa;
+  --text-on-accent: #ffffff;
+  --accent-bg: #3b82f6;
+  --accent-bg-hover: #60a5fa;
+  --accent-fg: #ffffff;
+}
+[data-theme="dark"][data-accent="emerald"],
+[data-theme="dark"][data-accent="green"] {
+  --text-accent: #34d399;
+  --text-on-accent: #ffffff;
+  --accent-bg: #10b981;
+  --accent-bg-hover: #34d399;
+  --accent-fg: #ffffff;
+}
+[data-theme="dark"][data-accent="violet"] {
+  --text-accent: #a78bfa;
+  --text-on-accent: #ffffff;
+  --accent-bg: #8b5cf6;
+  --accent-bg-hover: #a78bfa;
+  --accent-fg: #ffffff;
+}
+[data-theme="dark"][data-accent="rose"] {
+  --text-accent: #fb7185;
+  --text-on-accent: #ffffff;
+  --accent-bg: #f43f5e;
+  --accent-bg-hover: #fb7185;
+  --accent-fg: #ffffff;
+}
+[data-theme="dark"][data-accent="amber"] {
+  --text-accent: #fbbf24;
+  --text-on-accent: #ffffff;
+  --accent-bg: #f59e0b;
+  --accent-bg-hover: #fbbf24;
+  --accent-fg: #1c1917;
+}
+
+/* ==========================================================================
+   Accent Themes (Sepia)
+   ========================================================================== */
+[data-theme="sepia"][data-accent="blue"] {
+  --text-accent: #1d4ed8;
+  --text-on-accent: #ffffff;
+  --accent-bg: #2563eb;
+  --accent-bg-hover: #1e40af;
+  --accent-fg: #ffffff;
+}
+[data-theme="sepia"][data-accent="emerald"],
+[data-theme="sepia"][data-accent="green"] {
+  --text-accent: #047857;
+  --text-on-accent: #ffffff;
+  --accent-bg: #059669;
+  --accent-bg-hover: #065f46;
+  --accent-fg: #ffffff;
+}
+[data-theme="sepia"][data-accent="violet"] {
+  --text-accent: #6d28d9;
+  --text-on-accent: #ffffff;
+  --accent-bg: #7c3aed;
+  --accent-bg-hover: #5b21b6;
+  --accent-fg: #ffffff;
+}
+[data-theme="sepia"][data-accent="rose"] {
+  --text-accent: #be123c;
+  --text-on-accent: #ffffff;
+  --accent-bg: #e11d48;
+  --accent-bg-hover: #9f1239;
+  --accent-fg: #ffffff;
+}
+[data-theme="sepia"][data-accent="amber"] {
+  --text-accent: #8a602e;
+  --text-on-accent: #ffffff;
+  --accent-bg: #8a602e;
+  --accent-bg-hover: #735026;
+  --accent-fg: #ffffff;
 }

@@ -72,9 +72,9 @@ export const migrateLegacyLlmSettings = (
 ): void => {
   const llm = store.get("llm") as Record<string, unknown> | undefined;
   if (!llm) return;
-  // Already migrated — ollama key exists
+  // NOTE: ollama key가 있으면 현재 schema로 이미 migration된 설정이다.
   if ("ollama" in llm) return;
-  // Old llamacpp-era format detected. Preserve ragTemperature/ragMaxTokens; drop the rest.
+  // NOTE: llamacpp legacy 설정에서는 호환되는 RAG 조정값만 보존한다.
   const ragTemperature =
     typeof llm.ragTemperature === "number" ? llm.ragTemperature : undefined;
   const ragMaxTokens =

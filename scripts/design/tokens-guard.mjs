@@ -1,16 +1,12 @@
 #!/usr/bin/env node
-// Phase 0 — design-token violation guard.
-// Counts token-system violations across renderer code and fails if any
-// metric EXCEEDS its baseline. Baselines only ratchet down (edit below as
-// phases land). Run: node scripts/design/tokens-guard.mjs
+// NOTE: token 위반이 baseline을 초과할 때만 실패하며 baseline은 감소 방향으로만 갱신한다.
 import fs from "node:fs";
 import path from "node:path";
 
 const ROOT = path.resolve("src/renderer/src");
-const EXCLUDE = [path.join(ROOT, "components/ui")]; // shadcn primitive layer
+// NOTE: shadcn primitive layer는 Luie token migration 대상이 아니다.
+const EXCLUDE = [path.join(ROOT, "components/ui")];
 
-// Baselines captured on feat/design @ c3413545 (pre-Phase-1).
-// Lower these as phases reduce the numbers; CI fails if actual > baseline.
 const BASELINE = {
   rawHex: 313,
   rawColor: 197,

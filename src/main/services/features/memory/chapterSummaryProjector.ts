@@ -113,7 +113,7 @@ export class ChapterSummaryProjector {
       existingSummaries.map((row) => [row.chapterId, row.contentHash ?? ""]),
     );
     let processed = 0;
-    /* eslint-disable no-await-in-loop -- summary jobs are claimed and finalized sequentially to preserve retry/status ordering. */
+    /* eslint-disable no-await-in-loop -- retry/status 순서를 보존하려면 summary job을 순차 처리해야 한다. */
     for (const job of jobs) {
       const now = new Date().toISOString();
       const claimed = await claimMemoryBuildJob({ jobId: job.id, nowIso: now });

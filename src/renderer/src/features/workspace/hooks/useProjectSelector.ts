@@ -93,7 +93,6 @@ export function useProjectSelector(projects: Project[]): ProjectSelectorState & 
         };
     }, []);
 
-    // Dialog States
     const [renameDialog, setRenameDialog] = useState<{
         isOpen: boolean;
         projectId: string;
@@ -144,7 +143,6 @@ export function useProjectSelector(projects: Project[]): ProjectSelectorState & 
         setRenameError(null);
         setIsRenaming(true);
 
-        // Optimistic UI update
         setLocalProjects((prev) =>
             prev.map((p) => (p.id === projectId ? { ...p, title: nextTitle } : p)),
         );
@@ -153,7 +151,6 @@ export function useProjectSelector(projects: Project[]): ProjectSelectorState & 
             await updateProject(projectId, nextTitle);
             setRenameDialog((prev) => ({ ...prev, isOpen: false }));
         } catch (error) {
-            // Revert on failure
             setLocalProjects(projects);
             api.logger.error("Failed to update project", error);
             setRenameError(t("settings.projectTemplate.error.renameFailed"));

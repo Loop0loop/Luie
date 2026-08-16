@@ -125,10 +125,9 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
         const win = windowManager.getMainWindow();
         if (!win) return false;
         if (process.platform === "darwin") {
-          // macOS: Use simpleFullScreen for "borderless" feel without new space
+          // NOTE: macOS는 별도 Space 생성을 피하려고 simple fullscreen을 사용한다.
           win.setSimpleFullScreen(flag);
         } else {
-          // Windows/Linux: Standard fullscreen
           win.setFullScreen(flag);
         }
         win.focus();

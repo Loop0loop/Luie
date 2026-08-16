@@ -4,8 +4,5 @@
 @import "./global.tokens.css";
 @import "./global.behaviors.css";
 
-/* Drive `dark:` utilities from the in-app theme attribute (replaces the
-   `darkMode: ["selector", '[data-theme="dark"]']` setting from the removed
-   tailwind.config.js — Tailwind v4 has no @config here, so this is the
-   source of truth). */
+/* NOTE: Tailwind v4의 `dark:` variant는 app의 `data-theme`를 source of truth로 사용한다. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));

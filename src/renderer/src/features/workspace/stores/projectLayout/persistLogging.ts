@@ -21,7 +21,7 @@ export const resetPersistedProjectLayoutStorage = (
   try {
     localStorage.removeItem(STORAGE_KEY_PROJECT_LAYOUT);
   } catch {
-    // Best effort recovery only.
+    // NOTE: 복구 logging 실패가 layout 복구를 막으면 안 된다.
   }
 
   emitOperationalLog(

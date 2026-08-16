@@ -34,7 +34,6 @@ export function PrimarySidebar() {
 
   return (
     <div className="flex h-full w-full flex-col bg-background/50 text-foreground overflow-hidden">
-      {/* Obsidian-like minimal header */}
       <div className="flex shrink-0 items-center px-4 h-11 border-b border-border/40">
         <h2 className="text-[12px] font-medium text-foreground/80 tracking-wide select-none">
           {t(TAB_META[activeTab].titleKey, TAB_META[activeTab].fallbackTitle)}

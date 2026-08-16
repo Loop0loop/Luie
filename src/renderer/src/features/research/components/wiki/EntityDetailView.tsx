@@ -218,26 +218,30 @@ export function EntityDetailView({
               onSave={(val) => handleUpdate("description", val)}
             />
           </div>
-          <div className="flex items-center gap-1 p-0.5 rounded-panel bg-surface-hover border border-border/60 shrink-0">
+          <div className="flex shrink-0 items-center gap-0.5 rounded-panel bg-element/80 p-0.5 border border-border/60 shadow-xs">
             <button
               type="button"
               onClick={() => switchViewMode("wiki")}
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-control text-[12px] font-medium transition-colors",
-                viewMode === "wiki" ? "bg-surface text-fg shadow-sm" : "text-muted hover:text-fg",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-control text-xs font-medium transition-all",
+                viewMode === "wiki"
+                  ? "bg-surface text-fg shadow-xs border border-border/40"
+                  : "text-muted hover:text-fg hover:bg-surface-hover",
               )}
             >
-              <BookOpen size={12} /> {t("entityVisual.toggle.wiki")}
+              <BookOpen size={13} className={viewMode === "wiki" ? "text-accent" : undefined} /> {t("entityVisual.toggle.wiki")}
             </button>
             <button
               type="button"
               onClick={() => switchViewMode("document")}
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-control text-[12px] font-medium transition-colors",
-                viewMode === "document" ? "bg-surface text-fg shadow-sm" : "text-muted hover:text-fg",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-control text-xs font-medium transition-all",
+                viewMode === "document"
+                  ? "bg-surface text-fg shadow-xs border border-border/40"
+                  : "text-muted hover:text-fg hover:bg-surface-hover",
               )}
             >
-              <FileText size={12} /> {t("entityVisual.toggle.document", "문서")}
+              <FileText size={13} className={viewMode === "document" ? "text-accent" : undefined} /> {t("entityVisual.toggle.document", "문서")}
             </button>
           </div>
         </div>

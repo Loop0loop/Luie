@@ -1,7 +1,3 @@
-/**
- * EntityRelation service — 세계관 6종 관계 CRUD + 그래프 조회
- */
-
 import { asc, eq } from "drizzle-orm";
 import { createLogger } from "../../../../../shared/logger/index.js";
 import { ErrorCode } from "../../../../../shared/constants/index.js";
@@ -243,10 +239,6 @@ export class EntityRelationService {
     }
   }
 
-  /**
-   * 프로젝트 전체 세계관 그래프 데이터 조회
-   * Character / Faction / Event / Term / WorldEntity 를 한꺼번에 모아 WorldGraphNode 배열로 변환
-   */
   async getWorldGraph(projectId: string): Promise<WorldGraphData> {
     try {
       const client = await this.getClient();

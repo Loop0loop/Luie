@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // TEST_LEVEL: DOM_INTEGRATION
-// PROVES: chapter.save persists the editor before the project checkpoint
+// PROVES: chapter.save가 project checkpoint 전에 editor를 저장한다.
 
 import { act } from "react";
 import { createRoot } from "react-dom/client";

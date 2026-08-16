@@ -1,5 +1,5 @@
 // TEST_LEVEL: REAL_DB_INTEGRATION
-// PROVES: package hydration commits canonical rows and the matching exported revision atomically
+// PROVES: package hydration이 canonical row와 일치하는 exported revision을 atomic commit한다.
 
 import { createHash } from "node:crypto";
 import { eq } from "drizzle-orm";

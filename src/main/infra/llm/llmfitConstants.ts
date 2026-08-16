@@ -1,10 +1,4 @@
-/**
- * llmfitConstants — llmfit 런타임 설치 관련 상수와 플랫폼 매핑.
- *
- * llmfit 바이너리는 동봉하지 않고 GitHub releases 최신본에서 런타임 다운로드한다.
- * 버전은 `/repos/{repo}/releases/latest` 로 동적 해석한다(하드코딩 금지).
- */
-
+// NOTE: llmfit은 동봉하지 않으므로 runtime에 GitHub의 최신 release를 조회한다.
 export const LLMFIT_GITHUB_REPO = "AlexsJones/llmfit" as const;
 export const LLMFIT_LATEST_RELEASE_API =
   `https://api.github.com/repos/${LLMFIT_GITHUB_REPO}/releases/latest` as const;
@@ -34,7 +28,6 @@ export const LLMFIT_ASSET_TARGETS: Record<
   "linux-arm64": { triple: "aarch64-unknown-linux-gnu", ext: "tar.gz" },
 };
 
-/** 현재 프로세스의 플랫폼 키를 해석한다(미지원이면 null). */
 export function resolveLlmfitPlatformKey(
   platform: NodeJS.Platform = process.platform,
   arch: string = process.arch,
@@ -46,7 +39,6 @@ export function resolveLlmfitPlatformKey(
   return null;
 }
 
-/** 설치된 바이너리 파일명(플랫폼별). */
 export function llmfitBinaryName(platform: NodeJS.Platform = process.platform): string {
   return platform === "win32" ? "llmfit.exe" : "llmfit";
 }

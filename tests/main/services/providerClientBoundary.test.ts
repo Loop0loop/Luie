@@ -82,7 +82,7 @@ describe("provider client dependency boundary", () => {
       { userPrompt: "hello" },
       { maxTokens: 8 },
     )) {
-      // exhaust stream
+      // NOTE: request body 검증 전에 stream을 끝까지 소비한다.
     }
 
     const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
@@ -107,7 +107,7 @@ describe("provider client dependency boundary", () => {
       { userPrompt: "hello" },
       { maxTokens: 8 },
     )) {
-      // exhaust stream
+      // NOTE: request body 검증 전에 stream을 끝까지 소비한다.
     }
 
     const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));

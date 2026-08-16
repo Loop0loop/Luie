@@ -1,6 +1,6 @@
 // TEST_LEVEL: UNIT_MOCKED
-// PROVES: project package file deletion does not happen before durable DB deletion
-// DOES_NOT_PROVE: real database cascade behavior or filesystem deletion
+// PROVES: durable DB deletion 전에 project package file을 삭제하지 않는다.
+// DOES_NOT_PROVE: 실제 database cascade 동작 또는 filesystem 삭제
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 

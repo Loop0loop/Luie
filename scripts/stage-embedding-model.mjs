@@ -1,16 +1,6 @@
 #!/usr/bin/env node
-/**
- * stage-embedding-model.mjs
- *
- * 앱 패키징 전에 bge-m3 임베딩 GGUF 를 `resources/models/` 로 내려받아
- * electron-builder 의 extraResources(`resources/models` → `models`)로 동봉되게 한다.
- *
- * - 이미 존재하고 sha256 가 일치하면 다운로드를 건너뛴다(idempotent).
- * - 모델 파일은 git 에 커밋하지 않는다(.gitignore: resources/models/).
- * - 네트워크 실패 시 비-제로 종료로 빌드를 멈춘다(동봉 보장).
- *
- * 사용: node scripts/stage-embedding-model.mjs
- */
+// NOTE: sha256이 같은 기존 모델은 다시 받지 않고 electron-builder extraResources에 포함한다.
+// WARNING: 모델이 빠진 package를 만들지 않도록 download 실패는 build를 중단한다.
 
 import { createWriteStream } from "node:fs";
 import * as fsp from "node:fs/promises";
@@ -21,7 +11,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 
-// embeddingModelConstants.ts 와 값이 일치해야 한다(런타임 해석 기준).
+// WARNING: runtime이 같은 모델을 찾도록 embeddingModelConstants.ts와 값을 맞춰야 한다.
 const MODEL = {
   repo: "gpustack/bge-m3-GGUF",
   filename: "bge-m3-Q4_K_M.gguf",

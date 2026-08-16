@@ -1,10 +1,3 @@
-/**
- * Relation graph section — read-only reactflow canvas.
- *
- * Builds radial layout of related entities around the current entity.
- * No drag/connect/select; pan + pinch-zoom only.
- */
-
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import ReactFlow, { Background, type Edge, type Node } from "reactflow";

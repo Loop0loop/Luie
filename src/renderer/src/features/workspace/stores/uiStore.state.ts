@@ -411,13 +411,10 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
     setTransientFocusedClosableTarget(focusedClosableTarget);
   },
   closeFocusedSurface: () => {
-    // Capture kind before entering set() — will be used for side-effects after
     const focusedKind = getFocusedClosableTarget()?.kind;
 
-    // compact-binder state lives in BinderBarCompactHover (component-local).
-    // We can't mutate it from the store, so we bridge via a DOM custom event.
-    // The component listens for "luie:close-compact-binder" and handles priority
-    // (snapshot viewer → binder tab). This is intentional and not a store leak.
+    // NOTE: compact-binder는 component-local state라 DOM event로 닫기 요청을 전달한다.
+    // NOTE: snapshot viewer와 binder tab의 우선순위는 호출 component가 결정한다.
     if (focusedKind === "compact-binder") {
       clearFocusedClosableTarget();
       window.dispatchEvent(new CustomEvent("luie:close-compact-binder"));

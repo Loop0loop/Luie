@@ -61,7 +61,7 @@ export async function auditMemoryEvalCaseQuality(input: {
     ) {
       expectedAnswerUnsupported += 1;
       if (input.repairExpectedAnswers && !repairedCaseIds.has(row.caseId)) {
-        // eslint-disable-next-line no-await-in-loop -- quality repair updates are counted per eval case for traceable reports.
+        // eslint-disable-next-line no-await-in-loop -- 보고서가 추적 가능하도록 eval case별 복구 건수를 집계한다.
         await db
           .getClient()
           .update(memoryEvalCase)

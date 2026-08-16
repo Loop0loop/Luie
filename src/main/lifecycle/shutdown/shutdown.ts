@@ -18,26 +18,23 @@ import type {
   AppQuitPhase,
 } from "../../../shared/types/index.js";
 import { resolveProjectExportQuitDecision } from "./exportFlushDecision.js";
+import {
+  pauseShutdownBackgroundWork,
+  resumeShutdownBackgroundWork,
+  stopShutdownRuntimeServices,
+} from "./runtimeLifecycle.js";
 
 type Logger = ReturnType<typeof createLogger>;
-
 type RendererFlushAttempt = {
   acknowledged: boolean;
   hadQueuedAutoSaves: boolean;
   rendererDirty: boolean;
 };
-
 let rendererFlushRequestSequence = 0;
-
 const loadAutoSaveManager = async () =>
   (await import("../../domains/manuscript/index.js")).autoSaveManager;
-
 const loadCacheDb = async () =>
   (await import("../../infra/database/cache.js")).cacheDb;
-const loadDerivedJobWorker = async () =>
-  (await import("../../domains/manuscript/index.js")).derivedJobWorker;
-const loadSidecarManager = async () =>
-  (await import("../../domains/settings/llm.js")).sidecarManager;
 
 const sendQuitPhase = (
   targetWindow: BrowserWindow | null,
@@ -51,10 +48,9 @@ const sendQuitPhase = (
       message,
     });
   } catch {
-    // best effort
+    // NOTE: 종료 상태 UI 전송 실패가 실제 종료 절차를 막으면 안 된다.
   }
 };
-
 const showQuitDialog = async (
   mainWindow: BrowserWindow | null,
   options: Parameters<typeof dialog.showMessageBox>[0],
@@ -227,9 +223,16 @@ export const registerShutdownHandlers = (logger: Logger): void => {
   });
 
   app.on("before-quit", (event) => {
+    event.preventDefault();
     if (isQuitting) return;
     isQuitting = true;
-    event.preventDefault();
+    let backgroundWorkPaused = false;
+
+    const resumeBackgroundWork = (): void => {
+      if (!backgroundWorkPaused) return;
+      backgroundWorkPaused = false;
+      resumeShutdownBackgroundWork();
+    };
 
     void (async () => {
       logger.info("App is quitting");
@@ -241,6 +244,27 @@ export const registerShutdownHandlers = (logger: Logger): void => {
         "prepare",
         "데이터를 안전하게 정리하고 있습니다...",
       );
+
+      backgroundWorkPaused = true;
+      try {
+        await pauseShutdownBackgroundWork();
+      } catch (error) {
+        logger.error("Failed to pause background work during quit", error);
+        resumeBackgroundWork();
+        isQuitting = false;
+        sendQuitPhase(
+          mainWindow,
+          "aborted",
+          "백그라운드 작업을 정리하지 못해 종료를 취소했습니다.",
+        );
+        return;
+      }
+
+      const abortQuit = (message: string): void => {
+        resumeBackgroundWork();
+        isQuitting = false;
+        sendQuitPhase(mainWindow, "aborted", message);
+      };
 
       let rendererFlushed = false;
       let rendererHadQueued = false;
@@ -302,8 +326,7 @@ export const registerShutdownHandlers = (logger: Logger): void => {
 
           if (response.response === 2) {
             logger.info("Quit cancelled by user");
-            isQuitting = false;
-            sendQuitPhase(mainWindow, "aborted", "종료가 취소되었습니다.");
+            abortQuit("종료가 취소되었습니다.");
             return;
           }
 
@@ -320,8 +343,7 @@ export const registerShutdownHandlers = (logger: Logger): void => {
                 logger.info(
                   "Quit cancelled by user during renderer flush retry",
                 );
-                isQuitting = false;
-                sendQuitPhase(mainWindow, "aborted", "종료가 취소되었습니다.");
+                abortQuit("종료가 취소되었습니다.");
                 return;
               }
               skipRendererSave = rendererRetryDecision === "skip";
@@ -336,8 +358,7 @@ export const registerShutdownHandlers = (logger: Logger): void => {
               );
               if (mainSaveDecision === "cancel") {
                 logger.info("Quit cancelled by user during main save retry");
-                isQuitting = false;
-                sendQuitPhase(mainWindow, "aborted", "종료가 취소되었습니다.");
+                abortQuit("종료가 취소되었습니다.");
                 return;
               }
               skipMainSave = mainSaveDecision === "skip";
@@ -373,8 +394,7 @@ export const registerShutdownHandlers = (logger: Logger): void => {
         } catch (dialogError) {
           logger.error("Quit dialog failed", dialogError);
           logger.info("Quit cancelled because unsaved changes dialog failed");
-          isQuitting = false;
-          sendQuitPhase(mainWindow, "aborted", "종료가 취소되었습니다.");
+          abortQuit("종료가 취소되었습니다.");
           return;
         }
       } else {
@@ -400,24 +420,12 @@ export const registerShutdownHandlers = (logger: Logger): void => {
 
       if (exportDecision === "cancel") {
         logger.info("Quit cancelled by user during export flush");
-        isQuitting = false;
-        sendQuitPhase(mainWindow, "aborted", "종료가 취소되었습니다.");
+        abortQuit("종료가 취소되었습니다.");
         return;
       }
 
       sendQuitPhase(mainWindow, "finalize", "마무리 정리 중입니다...");
-      try {
-        const derivedJobWorker = await loadDerivedJobWorker();
-        await derivedJobWorker.stop();
-      } catch (error) {
-        logger.warn("Failed to stop derived job worker during quit", error);
-      }
-      try {
-        const sidecarManager = await loadSidecarManager();
-        await sidecarManager.stop();
-      } catch (error) {
-        logger.warn("Failed to stop local LLM sidecar during quit", error);
-      }
+      await stopShutdownRuntimeServices(logger);
       try {
         await snapshotService.pruneSnapshotsAllProjects();
       } catch (error) {
@@ -460,6 +468,7 @@ export const registerShutdownHandlers = (logger: Logger): void => {
       app.exit(0);
     })().catch((error) => {
       logger.error("Quit guard failed", error);
+      resumeBackgroundWork();
       isQuitting = false;
       const mainWindow = windowManager.getMainWindow();
       sendQuitPhase(

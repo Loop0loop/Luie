@@ -76,7 +76,7 @@ export async function rebuildMemoryChunks(input: {
   const now = new Date().toISOString();
   if (input.sourceType && input.sourceId) {
     for (const job of MEMORY_REBUILD_JOB_TYPES) {
-      // Keep each job type upsert sequential so duplicate detection observes the latest write.
+      // NOTE: duplicate 검사가 직전 write를 관찰해야 하므로 job type별 upsert를 순차 처리한다.
       // eslint-disable-next-line no-await-in-loop
       await upsertPendingMemoryBuildJob({
         client: input.client,

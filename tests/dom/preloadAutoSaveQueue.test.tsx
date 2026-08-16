@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // TEST_LEVEL: DOM_INTEGRATION
-// PROVES: preload autosave failures remain retryable and block false save acknowledgements
+// PROVES: preload autosave 실패는 retry 가능 상태를 유지하고 잘못된 save 확인을 막는다.
 
 import type { RendererApi } from "../../src/shared/api/index.js";
 import { IPC_CHANNELS } from "../../src/shared/ipc/channels.js";

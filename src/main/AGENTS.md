@@ -22,7 +22,7 @@ src/main/
 | Task                       | Location                                                 | Notes                                               |
 | -------------------------- | -------------------------------------------------------- | --------------------------------------------------- |
 | App bootstrap order        | `index.ts`                                               | Startup is lazy-loaded via `Promise.all` imports    |
-| Main window readiness      | `lifecycle/appReady.ts`                                  | Deferred maintenance + crash recovery + CSP wiring  |
+| Main window readiness      | `lifecycle/app-ready/appReady.ts`                        | Deferred maintenance + crash recovery + CSP wiring  |
 | Add IPC handler            | `handler/index.ts` + `handler/<domain>/`                 | Register in hub and keep channel contracts synced   |
 | Add domain service         | `services/{core,world,features,io}/`                     | Keep layer boundaries; avoid handler business logic |
 | DB init/migration behavior | `database/index.ts`                                      | Dev/test/prod schema paths diverge intentionally    |
@@ -34,12 +34,13 @@ src/main/
 - Keep IPC contracts source-of-truth in `src/shared/ipc/channels.ts` and mirror changes in handlers + preload.
 - Prefer lazy import for heavy startup modules in `index.ts` and lifecycle paths.
 - Use shared logger (`createLogger`) with structured context objects.
+- Follow `docs/conventions/comments.md`; keep only non-obvious reasons and constraints in comments.
 
 ## ANTI-PATTERNS
 
 - Don’t directly expose Node/Electron internals to renderer; route via preload contracts.
 - Don’t put schema/channel literals inline in handlers.
-- Don’t skip startup/deferred maintenance guards in `appReady.ts`.
+- Don’t skip startup/deferred maintenance guards in `app-ready/appReady.ts`.
 - Don’t add raw unsafe DB paths without `ensureSafeAbsolutePath` style checks.
 
 ## NOTES

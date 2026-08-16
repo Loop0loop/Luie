@@ -3,14 +3,7 @@ import { useTranslation } from "react-i18next";
 import { SUPPORTED_LANGUAGES, i18n } from "@renderer/i18n";
 import type { WikiSectionData } from "../types";
 
-/**
- * The effective character section list — single source of truth shared by the
- * wiki view and the document view so both render/sync the SAME sections.
- *
- * When the character has no stored sections yet, a default set is returned so a
- * fresh character still shows 개요/외관/성격/…; stored sections keep their ids
- * and (for auto-generated labels) follow the app locale.
- */
+/** 저장된 section id를 보존하면서 자동 생성 label만 현재 locale에 맞춘다. */
 export function useEffectiveCharacterSections(
   stored: WikiSectionData[],
 ): WikiSectionData[] {
@@ -48,7 +41,7 @@ export function useEffectiveCharacterSections(
     if (stored.length > 0) {
       return stored.map((sec) => {
         const defaultLabel = defaultLabelById[sec.id];
-        // Only override if the stored label was itself an auto-generated default.
+        // NOTE: 사용자가 바꾼 label은 덮어쓰지 않고 자동 생성된 기본 label만 번역한다.
         if (!defaultLabel || !defaultLabelSet.has(sec.label)) return sec;
         return { ...sec, label: defaultLabel };
       });

@@ -1,13 +1,5 @@
-/**
- * panel.ts — 사이드바 패널 및 아이콘 레일 구성 데이터.
- *
- * SidePanelRouter, CanvasIconRail에서 사용합니다.
- */
-
 import type { CanvasActivityPanel } from "../types/canvas.types";
 import type { CanvasRailIconName } from "../types/canvasPanel.types";
-
-// ─── SidePanelRouter ──────────────────────────────────────────────────────────
 
 export const CANVAS_PANEL_KEYS: ReadonlyArray<CanvasActivityPanel> = [
   "explorer",
@@ -17,11 +9,8 @@ export const CANVAS_PANEL_KEYS: ReadonlyArray<CanvasActivityPanel> = [
   "search",
 ] as const;
 
-// ─── CanvasIconRail ───────────────────────────────────────────────────────────
-
 export interface CanvasRailItem {
   readonly panel: CanvasActivityPanel;
-  /** `canvas.activity.${i18nKey}` 형태로 사용 */
   readonly i18nKey: string;
   readonly iconName: CanvasRailIconName;
 }
@@ -33,7 +22,5 @@ export const CANVAS_RAIL_ITEMS: ReadonlyArray<CanvasRailItem> = [
   { panel: "memory",    i18nKey: "memory",    iconName: "Brain"      },
   { panel: "search",    i18nKey: "search",    iconName: "Search"     },
 ] as const;
-
-// ─── Constants for Activity Panels ──────────────────────────────────────────
 
 export const GRAPH_RELATIONSHIP_FILTERS = ["등장", "대화", "갈등", "소속", "동맹", "떡밥"] as const;

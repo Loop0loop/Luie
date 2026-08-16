@@ -15,7 +15,6 @@ interface UseFocusSyncParams {
 
 export function useFocusSync({ focusId, setNodes, setEdges }: UseFocusSyncParams) {
   useEffect(() => {
-    // 1. 노드 포커스 갱신
     setNodes((prevNodes) =>
       prevNodes.map((node) => ({
         ...node,
@@ -26,11 +25,9 @@ export function useFocusSync({ focusId, setNodes, setEdges }: UseFocusSyncParams
       })),
     );
 
-    // 2. 에지 포커스 및 네온 라이팅 효과 동기화
     setEdges((prevEdges) =>
       prevEdges.map((edge) => {
         if (!focusId) {
-          // 포커스가 해제된 경우: 원래 스타일 복원
           return {
             ...edge,
             animated: edge.data?.animatedBackup ?? edge.animated,
@@ -55,10 +52,9 @@ export function useFocusSync({ focusId, setNodes, setEdges }: UseFocusSyncParams
           };
         }
 
-        // 특정 노드가 포커스된 경우
         const isRelated = edge.source === focusId || edge.target === focusId;
 
-        // 백업 상태 저장 (최초 1회)
+        // NOTE: focus 해제 시 원래 style을 복구할 수 있도록 최초 값만 보존한다.
         const opacityBackup =
           edge.data?.opacityBackup ?? edge.style?.opacity ?? EDGE_FALLBACK_OPACITY;
         const strokeWidthBackup =
@@ -72,7 +68,6 @@ export function useFocusSync({ focusId, setNodes, setEdges }: UseFocusSyncParams
 
         const relationColor = "var(--accent)";
 
-        // strokeWidthBackup이 숫자형인지 강제 안전 변환 및 NaN 방지 고도화
         const baseWidth =
           typeof strokeWidthBackup === "number"
             ? strokeWidthBackup
@@ -88,11 +83,9 @@ export function useFocusSync({ focusId, setNodes, setEdges }: UseFocusSyncParams
             animatedBackup,
             labelBgStrokeBackup,
           },
-          // 평형 다이어그램: 에지 애니메이션 미사용
           animated: false,
           style: {
             ...edge.style,
-            // 관련 에지는 선명하게, 관련 없는 에지는 시야에서 전면 투명 소거
             opacity: isRelated ? EDGE_FOCUS_OPACITY : 0,
             strokeWidth: isRelated ? baseWidth + 1.2 : baseWidth,
             stroke: isRelated ? relationColor : strokeBackup,

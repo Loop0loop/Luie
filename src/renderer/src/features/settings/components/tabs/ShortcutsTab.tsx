@@ -192,7 +192,6 @@ export const ShortcutsTab = memo(function ShortcutsTab({
     return () => window.clearTimeout(syncTimer);
   }, [shortcutValues]);
 
-  // 레코더: 전역 키다운 캡처. 한 번에 한 행만 녹음.
   useEffect(() => {
     if (!recordingId) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -202,7 +201,6 @@ export const ShortcutsTab = memo(function ShortcutsTab({
         setRecordingId(null);
         return;
       }
-      // 단독 수식어 키는 무시하고 본키 입력을 기다림
       if (MODIFIER_KEYS.has(e.key)) return;
 
       const parts: string[] = [];
@@ -222,7 +220,6 @@ export const ShortcutsTab = memo(function ShortcutsTab({
         return next;
       });
       setRecordingId(null);
-      // 즉시 커밋 (기존 onBlur 경로 재사용)
       onCommitShortcuts({ ...shortcutDraftsRef.current, [recordingId]: accelerator });
     };
     window.addEventListener("keydown", handleKeyDown, true);
@@ -237,7 +234,6 @@ export const ShortcutsTab = memo(function ShortcutsTab({
     });
   }, []);
 
-  // 충돌 검출: 다른 액션이 같은 조합을 쓰고 있으면 경고.
   const conflictMap = useMemo(() => {
     const map = new Map<string, string>();
     const entries = Object.entries(shortcutDrafts).filter(([, v]) => v);

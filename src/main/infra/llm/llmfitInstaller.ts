@@ -1,17 +1,3 @@
-/**
- * llmfitInstaller — GitHub releases 에서 llmfit 바이너리를 런타임 설치한다.
- *
- * 흐름:
- *   1) `/releases/latest` 조회 → 현재 OS/아키텍처 자산 선택.
- *   2) 아카이브(tar.gz/zip) + SHA256(.sha256 자산 또는 GitHub asset digest) 다운로드.
- *   3) SHA256 검증 → 불일치 시 중단·정리.
- *   4) 추출(tar.gz=시스템 tar, zip=yauzl) → `<userData>/bin/llmfit[.exe]`.
- *   5) POSIX 실행권한(chmod 0o755) 부여, 설치 버전 기록.
- *
- * 격리(P6/P7): 모든 단계는 throw 하지 않고 `{ installed:false, reason }` 로 귀결한다.
- * 멱등: 이미 설치되어 있고 버전 일치 시 재다운로드를 skip 한다.
- */
-
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import * as fsp from "node:fs/promises";
@@ -34,8 +20,6 @@ const logger = createLogger("LlmfitInstaller");
 const DOWNLOAD_TIMEOUT_MS = 60_000;
 const API_TIMEOUT_MS = 10_000;
 
-// ─── GitHub release 타입(필요 필드만) ──────────────────────────────────────────
-
 export type GithubReleaseAsset = {
   name: string;
   browser_download_url: string;
@@ -54,8 +38,6 @@ export type LlmfitInstallStatus = {
   version: string | null;
   reason?: string;
 };
-
-// ─── 순수 헬퍼(테스트 대상) ─────────────────────────────────────────────────────
 
 /**
  * 플랫폼에 맞는 아카이브 자산과 (가능하면) 동반 sha256 자산을 고른다.
@@ -95,8 +77,6 @@ export function parseDigestField(digest: string | null | undefined): string | nu
   return match ? match[1].toLowerCase() : null;
 }
 
-// ─── 설치기 ─────────────────────────────────────────────────────────────────
-
 class LlmfitInstaller {
   private binDir(): string {
     return path.join(app.getPath("userData"), "bin");
@@ -110,7 +90,6 @@ class LlmfitInstaller {
     return path.join(this.binDir(), ".llmfit-version");
   }
 
-  /** 현재 설치 상태를 조회한다. */
   async getStatus(): Promise<LlmfitInstallStatus> {
     const binPath = this.binaryPath();
     try {
@@ -122,13 +101,13 @@ class LlmfitInstaller {
     try {
       version = (await fsp.readFile(this.versionMarkerPath(), "utf8")).trim() || null;
     } catch {
-      // version marker 없음 — null 유지.
+      // NOTE: 이전 설치에는 version marker가 없을 수 있다.
     }
     return { installed: true, path: binPath, version };
   }
 
   /**
-   * llmfit 를 보장 설치한다. 이미 최신/설치 상태면 skip.
+   * llmfit을 보장 설치한다. 이미 최신 상태면 기존 설치를 반환한다.
    * 어떤 실패도 throw 하지 않고 상태로 반환한다(P6/P7).
    */
   async ensureInstalled(): Promise<LlmfitInstallStatus> {
@@ -151,7 +130,6 @@ class LlmfitInstaller {
           : { installed: false, path: null, version: null, reason: "RELEASE_FETCH_FAILED" };
       }
 
-      // 멱등: 이미 같은 버전이 설치되어 있으면 skip.
       const current = await this.getStatus();
       if (current.installed && current.version === release.tag_name) {
         return current;
@@ -186,7 +164,7 @@ class LlmfitInstaller {
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
       logger.warn("llmfit install failed; recommendations disabled", { reason });
-      // 설치 실패해도 기존 설치가 있으면 그걸 유지.
+      // NOTE: update 실패가 기존의 정상 설치까지 무효화하면 안 된다.
       const fallback = await this.getStatus();
       return fallback.installed
         ? fallback
@@ -224,11 +202,10 @@ class LlmfitInstaller {
     archive: GithubReleaseAsset,
     sha256Asset: GithubReleaseAsset | null,
   ): Promise<string | null> {
-    // 1) GitHub asset digest 우선(메타에 포함, 추가 요청 불필요).
+    // NOTE: metadata digest를 우선하면 별도의 checksum 요청을 피할 수 있다.
     const fromDigest = parseDigestField(archive.digest);
     if (fromDigest) return fromDigest;
 
-    // 2) 동반 .sha256 자산 본문.
     if (sha256Asset) {
       try {
         const response = await fetch(sha256Asset.browser_download_url, {
@@ -260,7 +237,6 @@ class LlmfitInstaller {
     await this.downloadToFile(archive.browser_download_url, archivePath);
 
     try {
-      // 무결성 검증.
       const expectedSha = await this.resolveExpectedSha256(archive, sha256Asset);
       if (expectedSha) {
         const actualSha = await this.sha256File(archivePath);
@@ -273,7 +249,6 @@ class LlmfitInstaller {
         logger.warn("llmfit sha256 unavailable; proceeding without verification");
       }
 
-      // 추출.
       const ext = LLMFIT_ASSET_TARGETS[platformKey].ext;
       const binaryName = llmfitBinaryName();
       const extractedPath =
@@ -281,7 +256,6 @@ class LlmfitInstaller {
           ? await this.extractBinaryFromZip(archivePath, binaryName, binDir)
           : await this.extractBinaryFromTarGz(archivePath, binaryName, binDir);
 
-      // 실행 권한(POSIX).
       if (process.platform !== "win32") {
         await fsp.chmod(extractedPath, 0o755);
       }
@@ -305,11 +279,11 @@ class LlmfitInstaller {
     try {
       handle = await fsp.open(tmpPath, "w");
       for (;;) {
-        // eslint-disable-next-line no-await-in-loop -- streamed download must be sequential
+        // eslint-disable-next-line no-await-in-loop -- stream chunk 순서를 보존해야 한다.
         const { done, value } = await reader.read();
         if (done) break;
         if (!value) continue;
-        // eslint-disable-next-line no-await-in-loop -- preserve write order
+        // eslint-disable-next-line no-await-in-loop -- file write 순서를 보존해야 한다.
         await handle.write(Buffer.from(value));
       }
       await handle.close();
@@ -335,7 +309,6 @@ class LlmfitInstaller {
     return hash.digest("hex");
   }
 
-  /** 시스템 tar 로 tar.gz 를 추출하고 llmfit 바이너리 경로를 반환한다. */
   private async extractBinaryFromTarGz(
     archivePath: string,
     binaryName: string,
@@ -360,7 +333,6 @@ class LlmfitInstaller {
     if (!found) {
       throw new Error(`LLMFIT_BINARY_NOT_FOUND_IN_ARCHIVE:${binaryName}`);
     }
-    // 평탄화: 하위 디렉토리에 있으면 binDir 루트로 이동.
     const finalPath = path.join(destDir, binaryName);
     if (found !== finalPath) {
       await fsp.rename(found, finalPath);
@@ -368,7 +340,6 @@ class LlmfitInstaller {
     return finalPath;
   }
 
-  /** yauzl 로 zip 을 추출하고 llmfit.exe 를 binDir 에 둔다. */
   private async extractBinaryFromZip(
     archivePath: string,
     binaryName: string,
@@ -432,7 +403,7 @@ class LlmfitInstaller {
         return full;
       }
     }
-    // 한 단계 하위까지만 탐색(릴리스 아카이브는 보통 평탄/1-depth).
+    // NOTE: 지원하는 release archive 구조는 root 또는 한 단계 하위로 제한한다.
     const subdirCandidates = entries
       .filter((entry) => entry.isDirectory())
       .map((entry) => path.join(dir, entry.name, binaryName));

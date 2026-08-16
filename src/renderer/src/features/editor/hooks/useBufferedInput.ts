@@ -1,12 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS } from "@shared/constants";
 
-/**
- * useBufferedInput
- * - Manages local state for immediate UI feedback (zero latency).
- * - Debounces updates to the global store/parent.
- * - Adds safety check for unsaved changes on unmount/reload.
- */
+/** 입력은 즉시 반영하되 parent update는 debounce하고 dirty 상태의 window 종료를 막는다. */
 export function useBufferedInput(
   initialValue: string,
   onUpdate: (value: string) => void,
@@ -41,7 +36,6 @@ export function useBufferedInput(
     [onUpdate, debounceMs]
   );
 
-  // Flush on unmount
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
@@ -53,7 +47,7 @@ export function useBufferedInput(
     };
   }, [isDirty, onUpdate]);
 
-  // Prevent accidental close if dirty
+  // NOTE: 아직 flush하지 않은 입력이 있으면 browser 종료를 막는다.
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isDirty) {

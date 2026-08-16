@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 import { api } from "@shared/api";
 import { cn } from "@shared/types/utils";
 
-// ScrivenerLayout as never 제거를 위해 Tab 타입을 명시적으로 export 노출
+// NOTE: ScrivenerLayout이 같은 tab union을 사용하도록 export한다.
 export type Tab = "synopsis" | "characters" | "terms" | "elements";
 
 type ContextItem = Character | Term;
@@ -87,8 +87,6 @@ function buildCharacterSummary(character: Character): string | null {
   return parts.join(" · ");
 }
 
-/* ─────────────────────────────────────────── CanvasSelectionWatcher Component */
-
 interface CanvasSelectionWatcherProps {
   handleTabChange: (tab: Tab) => void;
 }
@@ -101,7 +99,7 @@ const CanvasSelectionWatcher = memo(({
   const activePanel = useCanvasViewStore((state) => state.activePanel);
   const isGraphMode = activePanel === "graph";
 
-  // useRef를 사용하여 setState 호출로 인한 Cascading render 경고를 완전히 원천 회피
+  // NOTE: 이전 선택은 ref로 보존해 selection effect에서 별도 render를 만들지 않는다.
   const prevFocusIdRef = useRef<string | null>(null);
   const prevSelectionIdRef = useRef<string | null>(null);
 
@@ -114,7 +112,6 @@ const CanvasSelectionWatcher = memo(({
         prevFocusIdRef.current = null;
       }
     } else {
-      // selection 유니온 타입 { kind: "none" } 의 id 부재로 인한 TS 에러를 삼항 연산자 타입 가드로 깔끔하게 해결
       const nodeId = selection.kind === "node" ? selection.id : null;
       if (nodeId && nodeId !== prevSelectionIdRef.current) {
         handleTabChange("elements");
@@ -130,10 +127,7 @@ const CanvasSelectionWatcher = memo(({
 
 CanvasSelectionWatcher.displayName = "CanvasSelectionWatcher";
 
-/* ─────────────────────────────────────────── CanvasElementsTab Component */
-
 const CanvasElementsTab = memo(() => {
-  // prop 드릴링 제거: useTranslation 직접 사용
   const { t } = useTranslation();
   const selection = useCanvasViewStore((state) => state.selection);
   const focusId = useGraphStore((state) => state.focusId);
@@ -180,8 +174,6 @@ const CanvasElementsTab = memo(() => {
 });
 
 CanvasElementsTab.displayName = "CanvasElementsTab";
-
-/* ─────────────────────────────────────────── ContextPanel Component */
 
 interface ContextPanelProps {
   activeTab?: Tab;
@@ -258,12 +250,10 @@ function ContextPanel({
     });
   };
 
-  // elements 탭에서는 검색이 불필요하므로 검색창 조건부 노출
   const showSearch = !(isCanvasMode && currentTab === "elements");
 
   return (
     <div className="h-full flex flex-col relative overflow-hidden">
-      {/* Canvas 모드일 때만 비동기 감시 컴포넌트 마운트하여 ContextPanel의 구독 오버헤드 0% 완수 */}
       {isCanvasMode && (
         <CanvasSelectionWatcher
           handleTabChange={handleTabChange}

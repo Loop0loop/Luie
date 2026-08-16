@@ -1,11 +1,3 @@
-/**
- * Atomic file write utility
- * Crash-safe write: temp file → fsync → rename → dir fsync
- *
- * This pattern guarantees that either the old or new version of a file
- * exists on disk, even during OS-level crashes or power failures.
- */
-
 import { promises as fs } from "fs";
 import path from "path";
 import { promisify } from "node:util";
@@ -16,10 +8,7 @@ const logger = createLogger("AtomicWrite");
 const gzip = promisify(gzipCallback);
 const gunzip = promisify(gunzipCallback);
 
-/**
- * Write raw buffer to file atomically.
- * temp → fsync → rename → dir fsync
- */
+/** OS crash 이후에도 이전 파일이나 새 파일 중 하나가 온전히 남도록 기록한다. */
 export async function writeFileAtomic(
   targetPath: string,
   buffer: Buffer,
@@ -32,7 +21,7 @@ export async function writeFileAtomic(
 
   await fs.writeFile(tempPath, buffer);
 
-  // fsync the temp file to ensure it's on disk
+  // NOTE: rename 전에 임시 파일을 fsync해야 새 경로가 빈 파일을 가리키지 않는다.
   const handle = await fs.open(tempPath, "r+");
   try {
     await handle.sync();
@@ -40,10 +29,9 @@ export async function writeFileAtomic(
     await handle.close();
   }
 
-  // Atomic rename
   await fs.rename(tempPath, targetPath);
 
-  // fsync the directory to persist the rename
+  // NOTE: directory fsync가 없으면 전원 손실 후 rename 자체가 사라질 수 있다.
   try {
     const dirHandle = await fs.open(dir, "r");
     try {
@@ -56,9 +44,7 @@ export async function writeFileAtomic(
   }
 }
 
-/**
- * Write UTF-8 string to file atomically with gzip compression.
- */
+/** UTF-8 문자열을 gzip으로 압축해 원자적으로 기록한다. */
 export async function writeGzipAtomic(
   targetPath: string,
   payload: string,
@@ -67,10 +53,7 @@ export async function writeGzipAtomic(
   await writeFileAtomic(targetPath, buffer);
 }
 
-/**
- * Read a file that may or may not be gzip-compressed.
- * Auto-detects gzip magic bytes (0x1f 0x8b).
- */
+/** gzip magic byte를 기준으로 압축 여부를 판별해 UTF-8 문자열을 읽는다. */
 export async function readMaybeGzip(filePath: string): Promise<string> {
   const buffer = await fs.readFile(filePath);
   const isGzipped =

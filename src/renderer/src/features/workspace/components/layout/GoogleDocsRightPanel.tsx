@@ -199,13 +199,13 @@ export function GoogleDocsRightPanel({
 
   useEffect(() => {
     if (!activeRightTab || activeRightTab === renderedTab) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 닫기 transition 동안 이전 tab을 유지한 뒤 교체한다.
     setRenderedTab(activeRightTab);
   }, [activeRightTab, renderedTab]);
 
   useEffect(() => {
     if (shouldRenderPanel || !renderedTab) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 닫기 transition이 끝난 뒤 rendered tab을 비운다.
     setRenderedTab(null);
   }, [renderedTab, shouldRenderPanel]);
 

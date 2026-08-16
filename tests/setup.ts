@@ -62,7 +62,7 @@ beforeEach(async () => {
   try {
     await cacheClient.run(sql`DELETE FROM "ChapterSearchDocumentFts"`);
   } catch {
-    // FTS table may not exist in fresh databases
+    // NOTE: 새 database에는 FTS table이 아직 없을 수 있다.
   }
   await cacheClient.delete(cacheSchema.chapterSearchDocument).where(sql`1=1`);
   await cacheClient.delete(cacheSchema.termAppearance).where(sql`1=1`);

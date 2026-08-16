@@ -1,12 +1,3 @@
-/**
- * BottomInteractiveToolbar — 통합 플로팅 하단 툴바.
- * 
- * 기능:
- *   - Canvas Mode / Graph Mode에 따라 유동적인 3대 액션 배치
- *   - Figma 스타일의 세그먼트 모드 토글 ([ Canvas ] [ Graph ])
- *   - 에디터 모드로 신속히 빠져나가는 "에디터 복귀" 버튼 지원
- */
-
 import { Plus, FileText, Image, Layers, RefreshCw, Focus, ChevronLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useCanvasViewStore } from "../../stores";
@@ -25,7 +16,6 @@ export function BottomInteractiveToolbar() {
   const { t } = useTranslation();
   const { showToast } = useToast();
   
-  // Zustand Stores
   const activePanel = useCanvasViewStore((state) => state.activePanel);
   const setActivePanel = useCanvasViewStore((state) => state.setActivePanel);
   const setMainView = useUIStore((state) => state.setMainView);
@@ -44,7 +34,7 @@ export function BottomInteractiveToolbar() {
 
     switch (actionKey) {
       case "new-block": {
-        // TODO: Implement memo node creation when API is ready
+        // TODO: memo 생성 API가 준비되면 canvas memo node를 추가한다.
         showToast(t("canvas.toolbar.comingSoon"), "info");
         break;
       }
@@ -84,7 +74,6 @@ export function BottomInteractiveToolbar() {
     }
   };
 
-  // 애니메이션 클래스 헬퍼
   const transitionClass = enableAnimations
     ? "transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-300 ease-in-out"
     : "transition-none";
@@ -100,7 +89,6 @@ export function BottomInteractiveToolbar() {
         transitionClass
       )}>
 
-        {/* 1. 세그먼트 토글 (가장 좌측 배치) */}
         <div className={cn(
           "flex items-center gap-1 p-0.5 rounded-full shrink-0 h-8",
           "bg-element border border-border/40",
@@ -136,14 +124,11 @@ export function BottomInteractiveToolbar() {
           </Button>
         </div>
 
-        {/* 구분선 */}
         <div className="w-px h-5 bg-border/50" />
 
-        {/* 2. 모드별 동적 액션 목록 (중앙 배치 + 너비 308px 고정으로 Layout Shift 완전 방지) */}
         <div className="flex items-center gap-1 w-[308px] shrink-0 justify-center">
           {!isGraphMode ? (
             <>
-              {/* Canvas Mode 3대 액션 */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -191,7 +176,6 @@ export function BottomInteractiveToolbar() {
             </>
           ) : (
             <>
-              {/* Graph Mode 3대 액션 */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -240,10 +224,8 @@ export function BottomInteractiveToolbar() {
           )}
         </div>
 
-        {/* 구분선 */}
         <div className="w-px h-5 bg-border" />
 
-        {/* 3. 에디터 복귀 버튼 (우측 배치) */}
         <Button
           variant="ghost"
           size="sm"

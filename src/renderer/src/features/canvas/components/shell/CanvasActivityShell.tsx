@@ -1,13 +1,3 @@
-/**
- * CanvasActivityShell — Redesigned minimal sidebar for canvas explorer.
- *
- * Design decisions:
- *   - Single compact header (no tab bar — search/bookmark were stubs)
- *   - Toolbar actions integrated into header row
- *   - Cleaner file tree with better visual hierarchy
- *   - Graph mode renders GraphFilterSidebar (Phase 4 redesign)
- */
-
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -121,7 +111,6 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
 
   return (
     <div className="flex h-full w-full flex-col bg-sidebar text-fg border-r border-border/30 overflow-hidden">
-      {/* Compact header: title + actions in one row */}
       <div className="flex h-11 items-center justify-between border-b border-border/10 px-3 shrink-0 select-none bg-transparent">
         <span className="text-[11px] font-bold uppercase tracking-wider text-muted truncate">
           {t("canvas.activity.explorer", "Explorer")}

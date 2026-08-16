@@ -57,7 +57,6 @@ export function TemplateGrid({
               className="group flex flex-col gap-3 cursor-pointer"
               onClick={() => onSelectTemplate(template.id)}
             >
-              {/* Card Container */}
               <div
                 className="
               relative aspect-3/4 w-full
@@ -73,7 +72,6 @@ export function TemplateGrid({
               group-hover:bg-surface
             "
               >
-                {/* === BLANK TEMPLATE === */}
                 {template.type === "blank" && (
                   <div className="w-full h-full flex flex-col items-center justify-center p-6">
                     <div className="w-full h-full border-2 dashed border-[var(--border-subtle)] rounded-sm flex flex-col items-center justify-center gap-3 group-hover:border-accent/40 transition-colors">
@@ -82,7 +80,6 @@ export function TemplateGrid({
                   </div>
                 )}
 
-                {/* === NOVEL TEMPLATE (Serif, Book-like) === */}
                 {template.type === "novel" && (
                   <div className="w-full h-full bg-[var(--bg-secondary)] p-5 flex flex-col">
                     <div className="h-full bg-[var(--bg-tertiary)] mx-auto w-full flex flex-col p-3 shadow-inner">
@@ -105,7 +102,6 @@ export function TemplateGrid({
                   </div>
                 )}
 
-                {/* === SCRIPT TEMPLATE (Mono, Screenplay) === */}
                 {template.type === "script" && (
                   <div className="w-full h-full bg-[var(--bg-secondary)] p-5 font-mono text-[9px] text-[var(--text-secondary)] flex flex-col items-start leading-relaxed border-l-[6px] border-[var(--border-subtle)] group-hover:border-accent transition-colors">
                     <div className="flex w-full justify-between opacity-50 mb-4 tracking-widest uppercase">
@@ -135,7 +131,6 @@ export function TemplateGrid({
                   </div>
                 )}
 
-                {/* === DOC TEMPLATE (Academic/General) === */}
                 {template.type === "doc" && (
                   <div className="w-full h-full bg-surface p-5 flex flex-col items-center">
                     <div className="text-center w-full pb-4 border-b border-[var(--border-subtle)] mb-4">
@@ -156,7 +151,6 @@ export function TemplateGrid({
                   </div>
                 )}
 
-                {/* Overlay Highlight for unified feel */}
                 <div
                   className={cn(
                     "pointer-events-none absolute inset-0 bg-linear-to-t from-bg-app/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100",
@@ -164,7 +158,6 @@ export function TemplateGrid({
                 />
               </div>
 
-              {/* Label */}
               <div className="text-center group-hover:transform group-hover:-translate-y-0.5 transition-transform duration-300">
                 <span className="font-medium text-[13px] text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors tracking-wide">
                   {template.title}

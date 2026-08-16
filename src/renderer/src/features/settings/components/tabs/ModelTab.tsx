@@ -59,8 +59,7 @@ export function ModelTab({
 }: ModelTabProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // Resolve which assistant path is active from the stored preference, falling
-  // back to whatever is actually configured. This is honest signal, not a guess.
+  // NOTE: 저장 preference를 우선하되 실제 설정된 provider로 fallback해 잘못된 상태 표시를 피한다.
   const activePath: AssistantPath = (() => {
     if (preferredProvider === "sidecar") return "offline";
     if (preferredProvider === "openai" || preferredProvider === "gemini") return "cloud";
@@ -90,7 +89,6 @@ export function ModelTab({
 
   return (
     <div className="space-y-8 p-1">
-      {/* Section 1: AI writing assistant - pick how Luie helps you write */}
       <section className="space-y-3">
         <div className="space-y-1">
           <h3 className="flex items-center gap-1.5 text-sm font-semibold text-fg">
@@ -100,7 +98,6 @@ export function ModelTab({
           <p className="text-xs text-muted">{t("settings.localLlm.assistant.intro")}</p>
         </div>
 
-        {/* Status line */}
         <div
           className={`flex items-center gap-2 rounded-control border px-3 py-2 text-xs ${
             anyConnected
@@ -116,7 +113,6 @@ export function ModelTab({
           <span className="truncate">{activeLabel}</span>
         </div>
 
-        {/* Path: Cloud (recommended) */}
         <PathCard
           active={activePath === "cloud"}
           icon={<Cloud className="h-4 w-4" />}
@@ -137,7 +133,6 @@ export function ModelTab({
           />
         </PathCard>
 
-        {/* Path: Offline */}
         <PathCard
           active={activePath === "offline"}
           icon={<HardDrive className="h-4 w-4" />}
@@ -161,7 +156,6 @@ export function ModelTab({
         </PathCard>
       </section>
 
-      {/* Section 2: Manuscript understanding - embedding + memory as one story */}
       <section className="space-y-3">
         <div className="space-y-1">
           <h3 className="flex items-center gap-1.5 text-sm font-semibold text-fg">
@@ -204,7 +198,6 @@ export function ModelTab({
         </div>
       </section>
 
-      {/* Section 3: Advanced - everything technical lives here */}
       <section className="space-y-3">
         <button
           type="button"

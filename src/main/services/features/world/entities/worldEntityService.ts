@@ -1,7 +1,3 @@
-/**
- * WorldEntity service — 세계관 엔티티(Place/Concept/Rule/Item) CRUD
- */
-
 import { eq, asc, or, and, isNull } from "drizzle-orm";
 import { createLogger } from "../../../../../shared/logger/index.js";
 import { ErrorCode } from "../../../../../shared/constants/index.js";

@@ -28,7 +28,6 @@ export default tseslint.config(
         "warn",
         { allowConstantExport: true },
       ],
-      // Practical runtime-safety & consistency
       eqeqeq: ["error", "always"],
       "no-debugger": "error",
       "no-var": "error",
@@ -38,7 +37,7 @@ export default tseslint.config(
       "no-implied-eval": "error",
       "no-new-func": "error",
       "no-await-in-loop": "error",
-      // Allow console inside the shared logger, but discourage elsewhere
+      // NOTE: application logging은 shared logger로 모으되 logger 구현 자체의 console은 허용한다.
       "no-console": "error",
 
       "@typescript-eslint/no-explicit-any": "error",
@@ -59,7 +58,13 @@ export default tseslint.config(
     },
   },
   {
-    // Intentional sequential async sections (ordered IO / transaction semantics)
+    files: ["src/main/index.ts", "src/main/lifecycle/**/*.ts"],
+    rules: {
+      "spaced-comment": ["error", "always", { markers: ["/"] }],
+    },
+  },
+  {
+    // NOTE: 순서가 필요한 IO와 transaction 구간만 sequential await를 허용한다.
     files: [
       "src/main/handler/system/fsPathApproval.ts",
       "src/main/manager/autoSave/**/*.ts",

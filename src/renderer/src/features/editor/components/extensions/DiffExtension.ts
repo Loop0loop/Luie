@@ -18,7 +18,6 @@ declare module "@tiptap/core" {
   }
 }
 
-// Build linear text with mapping to document positions
 function getDocTextMap(doc: Node) {
   let text = "";
   const mapping: { nodePos: number; nodeSize: number; textPos: number }[] = [];

@@ -49,7 +49,7 @@ export const findProjectPathConflict = async (
         };
       }
     } catch {
-      // invalid legacy path can be skipped for conflict matching
+      // NOTE: 해석할 수 없는 legacy path는 conflict 비교 대상에서 제외한다.
     }
   }
 

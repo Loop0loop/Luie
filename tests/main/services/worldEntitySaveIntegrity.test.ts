@@ -1,5 +1,5 @@
 // TEST_LEVEL: REAL_DB_INTEGRATION
-// PROVES: world entity patches commit with project revision before package export
+// PROVES: package export 전에 world entity patch와 project revision을 함께 commit한다.
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "../../../src/main/database/index.js";

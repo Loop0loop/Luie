@@ -33,7 +33,7 @@ const editorSettingsShape = z.strictObject({
   themeContrast: z.enum(["soft", "high"]).optional().default("soft"),
   themeTemp: z.enum(["cool", "neutral", "warm"]).catch("neutral"),
   themeAccent: z
-    .enum(["blue", "violet", "green", "amber", "rose", "slate"])
+    .string()
     .optional()
     .default("blue"),
   uiMode: z
@@ -50,7 +50,7 @@ const editorSettingsShape = z.strictObject({
   }).optional(),
 });
 
-// Legacy stored settings may still include removed themeTemp/themeTexture keys.
+// NOTE: 저장된 legacy 설정에는 제거된 themeTemp/themeTexture key가 남아 있을 수 있다.
 export const editorSettingsSchema = z.preprocess((value) => {
   if (value && typeof value === "object") {
     const next = { ...(value as Record<string, unknown>) };

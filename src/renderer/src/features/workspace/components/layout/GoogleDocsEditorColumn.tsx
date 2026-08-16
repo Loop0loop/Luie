@@ -87,7 +87,6 @@ export function GoogleDocsEditorColumn({
           >
             <EditorDropZones />
             {isCanvasMode ? (
-              /* Canvas mode: full-height, no A4 page wrapper */
               <div className="flex flex-1 flex-col overflow-hidden">
                 {children}
               </div>

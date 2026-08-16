@@ -1,9 +1,3 @@
-/**
- * CharacterInspectorView — 캐릭터 노드 인스펙터 뷰
- * 
- * WikiDetailView를 재활용하여 캐릭터 상세 정보를 표시합니다.
- */
-
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { useCanvasViewStore } from "@renderer/features/canvas/stores";

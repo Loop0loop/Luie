@@ -1,6 +1,6 @@
 // TEST_LEVEL: UNIT_MOCKED
-// PROVES: immediate-export policy branching and retry decisions
-// DOES_NOT_PROVE: actual .luie file durability on disk
+// PROVES: immediate-export policy 분기와 retry 결정
+// DOES_NOT_PROVE: disk의 실제 .luie file durability
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 

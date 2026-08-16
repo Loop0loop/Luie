@@ -28,11 +28,11 @@ export const isPersistableLayoutRatio = (ratio: number): boolean =>
   Number.isFinite(ratio) && ratio > 0.1;
 
 export interface LayoutPersistEntry {
-  /** Must match the Panel's `id` prop */
+  /** `Panel.id`와 같은 값. */
   id: string;
-  /** Array layout index from react-resizable-panels when ids are not reported. */
+  /** react-resizable-panels가 id를 주지 않을 때 사용할 layout index. */
   index?: number;
-  /** uiStore key to save the resulting ratio to */
+  /** 계산한 ratio를 저장할 uiStore key. */
   surface: LayoutSurfaceId;
 }
 
@@ -93,12 +93,7 @@ export const getPanelRatioFromLayout = (
   return getPanelLayoutValue(layout, entry.id, entry.index ?? index);
 };
 
-/**
- * Hook that wires Group.onLayoutChanged to uiStore.setLayoutSurfaceRatio.
- * react-resizable-panels already reports stable percentages after each drag,
- * so layout-level surfaces can persist ratios directly and remain responsive
- * across different monitor widths.
- */
+/** PanelGroup의 drag 결과 비율을 저장해 monitor 너비가 달라도 같은 layout 비율을 유지한다. */
 export function useLayoutPersist(
   entries: LayoutPersistEntry[],
   options?: UseLayoutPersistOptions,

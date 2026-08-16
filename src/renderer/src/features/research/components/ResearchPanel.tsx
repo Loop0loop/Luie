@@ -68,7 +68,7 @@ export default function ResearchPanel({
       ? localTabState.tab
       : activeTab;
 
-  // 플로팅으로 전환되면 사이드바의 분석 패널은 닫는다 (플로팅 창으로 치환)
+  // NOTE: 같은 분석 화면이 중복되지 않도록 floating 전환 시 sidebar panel을 닫는다.
   React.useEffect(() => {
     if (visibleTab === "analysis" && viewMode === "floatingView") {
       onClose?.();

@@ -55,7 +55,6 @@ export default function InspectorPanel({
 
   return (
     <div className="flex flex-col h-full bg-panel border-l border-border/50 text-sm">
-      {/* 1. Header Tabs */}
       <div className="flex items-center justify-around border-b border-border/50 bg-surface/50 p-1">
         <InspectorTabButton
           icon={<FileText className="w-4 h-4" />}
@@ -83,12 +82,10 @@ export default function InspectorPanel({
         />
       </div>
 
-      {/* 2. Content Body */}
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         {activeTab === "synopsis" && (
           <div className="p-4 flex flex-col h-full">
             <div className="bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800/30 rounded-panel p-3 shadow-sm h-64 flex flex-col relative">
-              {/* Index Card Style Header */}
               <div className="border-b border-yellow-200 dark:border-yellow-800/30 pb-2 mb-2 font-bold text-center text-fg/80 truncate">
                 {activeChapter?.title || "Untitled"}
               </div>
@@ -116,7 +113,6 @@ export default function InspectorPanel({
 
         {activeTab === "metadata" && (
           <div className="p-4 space-y-6">
-            {/* General Info */}
             <div className="space-y-4">
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted">

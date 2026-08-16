@@ -1,7 +1,3 @@
-/**
- * Related entities section — 3-column read-only grid grouped by kind.
- */
-
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link2 } from "lucide-react";

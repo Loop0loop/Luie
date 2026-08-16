@@ -1,9 +1,3 @@
-/**
- * ChapterInspectorView — 챕터 노드 인스펙터 뷰
- * 
- * 챕터의 AI 요약, 등장인물, 복선/떡밥 정보를 표시합니다.
- */
-
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
@@ -29,7 +23,6 @@ export default function ChapterInspectorView({ nodeId, nodeName }: ChapterInspec
   const graphData = useWorldBuildingStore((state) => state.graphData);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 챕터 관련 데이터 추출
   const relations = graphData?.edges.filter(
     (e) => e.sourceId === nodeId || e.targetId === nodeId,
   ) ?? [];
@@ -47,12 +40,10 @@ export default function ChapterInspectorView({ nodeId, nodeName }: ChapterInspec
       (n.entityType.toLowerCase() === "memo" || n.entityType.toLowerCase() === "event"),
   ) ?? [];
 
-  // AI 요약 상태
   const [summary, setSummary] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // 컴포넌트 언마운트 시 setTimeout 클린업
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
@@ -61,7 +52,6 @@ export default function ChapterInspectorView({ nodeId, nodeName }: ChapterInspec
     };
   }, []);
 
-  // 저장된 요약 로드
   const loadSummary = useCallback(async () => {
     if (typeof window === "undefined" || !window.api || !window.api.memory) {
       return;
@@ -105,7 +95,7 @@ export default function ChapterInspectorView({ nodeId, nodeName }: ChapterInspec
         sourceId: nodeId,
       });
 
-      // 3초 후 요약본 재로드
+      // NOTE: background summary 생성이 반영될 시간을 둔 뒤 다시 불러온다.
       timeoutRef.current = setTimeout(async () => {
         await loadSummary();
         setGenerating(false);
@@ -131,7 +121,6 @@ export default function ChapterInspectorView({ nodeId, nodeName }: ChapterInspec
       </div>
 
       <div className="flex flex-col gap-4 p-4">
-        {/* 헤더 */}
         <div className="flex items-center gap-2 border-b border-border/40 pb-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/20">
             <span className="text-xs font-bold text-accent">CH</span>
@@ -142,7 +131,6 @@ export default function ChapterInspectorView({ nodeId, nodeName }: ChapterInspec
           </div>
         </div>
 
-        {/* AI 요약 섹션 */}
         <ChapterSummarySection
           loading={loading}
           summary={summary}
@@ -151,10 +139,8 @@ export default function ChapterInspectorView({ nodeId, nodeName }: ChapterInspec
           t={t}
         />
 
-        {/* 등장인물 리스트 */}
         <ConnectedCharactersSection characters={connectedCharacters} t={t} />
 
-        {/* 미해결 복선/남은 떡밥 */}
         <ConnectedMemosSection items={connectedMemosAndEvents} t={t} />
       </div>
     </div>

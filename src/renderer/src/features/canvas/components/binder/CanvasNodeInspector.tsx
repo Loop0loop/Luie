@@ -1,13 +1,3 @@
-/**
- * CanvasNodeInspector — BinderBar panel for the selected canvas node.
- * 
- * 분기 처리:
- *   - node.entityType === "Character" -> CharacterInspectorView
- *   - node.entityType === "Event" -> EventInspectorView
- *   - node.entityType === "Chapter" -> ChapterInspectorView
- *   - 기타 -> GenericEntityInspector
- */
-
 import { useTranslation } from "react-i18next";
 import { useCanvasViewStore } from "@renderer/features/canvas/stores";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
@@ -17,7 +7,6 @@ import {
 } from "@renderer/features/canvas/types";
 import type { CanvasNodeKind } from "@renderer/features/canvas/types";
 
-// 분할된 인스펙터 뷰
 import CharacterInspectorView from "./inspectors/CharacterInspectorView";
 import EventInspectorView from "./inspectors/EventInspectorView";
 import ChapterInspectorView from "./inspectors/ChapterInspectorView";
@@ -45,22 +34,18 @@ export default function CanvasNodeInspector({ nodeId }: CanvasNodeInspectorProps
 
   const normalizedType = node.entityType ? node.entityType.toLowerCase() : "";
 
-  // 캐릭터 위키 재활용
   if (normalizedType === "character") {
     return <CharacterInspectorView nodeId={node.id} />;
   }
 
-  // 사건 타임라인 상세 재활용
   if (normalizedType === "event") {
     return <EventInspectorView nodeId={node.id} />;
   }
 
-  // 챕터 전용 인스펙터
   if (normalizedType === "chapter") {
     return <ChapterInspectorView nodeId={node.id} nodeName={node.name} />;
   }
 
-  // 기타 엔티티 (Faction, Term, WorldEntity)
   const kind: CanvasNodeKind =
     ENTITY_TYPE_TO_NODE_KIND[node.entityType as keyof typeof ENTITY_TYPE_TO_NODE_KIND] ?? "world-entity";
   const kindColor = CANVAS_NODE_KIND_COLOUR[kind] ?? CANVAS_NODE_KIND_COLOUR["world-entity"];

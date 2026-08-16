@@ -11,7 +11,6 @@ import {
 } from "./analysisStore.actions";
 
 interface AnalysisStoreState {
-  // 기존 분석 상태
   items: AnalysisItem[];
   isAnalyzing: boolean;
   error: string | null;
@@ -20,13 +19,11 @@ interface AnalysisStoreState {
   floatingPosition: { x: number; y: number };
   floatingSize: { width: number; height: number };
 
-  // RAG 채팅 상태
   messages: Message[];
   input: string;
   ragRunId: string | null;
   isStreaming: boolean;
 
-  // 서사 요약 상태
   showNarrativeSummaryStatus: boolean;
   narrativeSummaryStatus: AnalysisNarrativeSummaryStatus | null;
   narrativeSummaryStatusLoading: boolean;
@@ -50,7 +47,6 @@ interface AnalysisStoreSyncActions {
 export type AnalysisStore = AnalysisStoreState & AnalysisStoreSyncActions & AnalysisActions;
 
 export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
-  // 기존 분석 상태 초기값
   items: [],
   isAnalyzing: false,
   error: null,
@@ -59,19 +55,16 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   floatingPosition: { x: 0, y: 0 },
   floatingSize: { width: 380, height: 520 },
 
-  // RAG 채팅 상태 초기값
   messages: [],
   input: "",
   ragRunId: null,
   isStreaming: false,
 
-  // 서사 요약 상태 초기값
   showNarrativeSummaryStatus: false,
   narrativeSummaryStatus: null,
   narrativeSummaryStatusLoading: false,
   narrativeSummaryStatusError: null,
 
-  // 동기 Actions
   setError: (error) => {
     set({ error, isAnalyzing: false });
   },
@@ -113,10 +106,8 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
     }));
   },
 
-  // 비동기 Actions 팩토리 결합
   ...createAnalysisActions(set, get),
 
-  // 리셋
   reset: () => {
     cleanUpRagStreamListeners();
     set({

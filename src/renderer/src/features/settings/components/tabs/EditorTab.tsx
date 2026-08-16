@@ -116,7 +116,6 @@ export const EditorTab = memo(function EditorTab({
     return q ? base.filter((f) => f.family.toLowerCase().includes(q)) : base;
   }, [systemFonts, fontSearch]);
 
-  // 라이브 프리뷰에 적용할 폰트 스택. 에디터 적용 로직과 동일하게 해석.
   const previewFontFamily = useMemo(() => {
     if (customFontFamily) return customFontFamily;
     if (fontPreset === "inter") return '"Inter Variable", "Inter", sans-serif';
@@ -361,7 +360,6 @@ export const EditorTab = memo(function EditorTab({
 
       <div className="h-px bg-border my-6" />
 
-      {/* 라이브 프리뷰 + 타이포그래피 슬라이더 */}
       <section className="space-y-6">
         <div className="space-y-3">
           <h3 className="text-base font-semibold text-fg">

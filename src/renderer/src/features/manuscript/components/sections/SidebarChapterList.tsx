@@ -81,7 +81,6 @@ export default function SidebarChapterList() {
 
     return (
         <div className="flex flex-col relative w-full h-full">
-            {/* Menu Overlay */}
             {menuOpenId && (
                 <div
                     className="fixed inset-0 z-dropdown bg-transparent"
@@ -89,7 +88,6 @@ export default function SidebarChapterList() {
                 />
             )}
 
-            {/* Context Menu Popup */}
             {menuOpenId && (
                 <div
                     ref={menuRef}
@@ -117,7 +115,6 @@ export default function SidebarChapterList() {
                 </div>
             )}
 
-            {/* Chapter List */}
             <div className="flex-1 overflow-y-auto px-2 space-y-0.5 custom-scrollbar pb-4">
                 {chapters.map((chapter) => {
                     const isActive = chapter.id === activeChapterId;
@@ -154,7 +151,6 @@ export default function SidebarChapterList() {
                                     <span className="truncate flex-1 leading-normal">{chapter.title || t("project.defaults.untitled")}</span>
                                 )}
 
-                                {/* Menu Button (Only show if not editing) */}
                                 {!isEditing && (
                                     <button
                                         onClick={(e) => {

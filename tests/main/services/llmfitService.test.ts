@@ -1,9 +1,3 @@
-/**
- * llmfitService.parseOutput 단위 테스트.
- *
- * llmfit JSON 출력의 다양한 envelope/결손/오류 케이스에서
- * 파서가 throw 없이 안전하게 동작하는지 검증한다(P6).
- */
 import { describe, expect, it } from "vitest";
 import { LlmfitService } from "../../../src/main/infra/llm/llmfitService.js";
 
@@ -89,7 +83,6 @@ describe("llmfitService.parseOutput", () => {
 
   it("returns null for JSON that does not match the schema", () => {
     expect(svc.parseOutput(JSON.stringify({ foo: "bar" }), 10)).toBeNull();
-    // models 항목에 name(string) 누락
     expect(
       svc.parseOutput(JSON.stringify({ models: [{ provider: "x" }] }), 10),
     ).toBeNull();

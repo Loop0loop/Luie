@@ -62,7 +62,7 @@ const resetPersistedUiStorage = (
   try {
     localStorage.removeItem(STORAGE_KEY_UI);
   } catch {
-    // Best effort recovery only.
+    // NOTE: 복구 실패는 기본 layout으로 대체한다.
   }
 
   emitOperationalLog(
@@ -207,8 +207,7 @@ export const buildUiStorePersistOptions = (): PersistOptions<
       typedPersisted.layoutSurfaceRatios ?? DEFAULT_LAYOUT_SURFACE_RATIOS,
       normalizedSidebarWidths,
     );
-    // Support reading legacy persisted fields for backward compatibility.
-    // Newer saves only contain `regions`; older saves may contain flat booleans.
+    // NOTE: 새 저장값은 `regions`만 쓰지만 legacy flat boolean도 읽어야 한다.
     const migratedRegions = buildRegionsFromLegacyState({
       isSidebarOpen:
         typeof typedPersisted.isSidebarOpen === "boolean"

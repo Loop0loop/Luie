@@ -1,6 +1,6 @@
 // TEST_LEVEL: REAL_DB_INTEGRATION
-// PROVES: project service behavior against real SQLite/Drizzle state and attached .luie files
-// DOES_NOT_PROVE: pure end-to-end app startup or renderer-side behavior
+// PROVES: 실제 SQLite/Drizzle state와 연결된 .luie file에서 project service 동작을 검증한다.
+// DOES_NOT_PROVE: 순수 end-to-end app startup 또는 renderer 동작
 
 import { describe, it, expect, vi, beforeAll } from "vitest";
 import path from "node:path";

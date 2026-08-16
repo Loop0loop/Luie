@@ -184,7 +184,7 @@ test("certifies real Cmd/Ctrl+S save latency through renderer and IPC @e2e", asy
 
     let warmupFailureCount = 0;
     for (let index = 0; index < WARMUP_COUNT; index += 1) {
-      // eslint-disable-next-line no-await-in-loop -- shortcut samples must not overlap.
+      // eslint-disable-next-line no-await-in-loop -- shortcut sample이 겹치면 latency를 분리할 수 없다.
       const result = await runSaveIteration(page, {
         chapterId,
         projectId,
@@ -200,7 +200,7 @@ test("certifies real Cmd/Ctrl+S save latency through renderer and IPC @e2e", asy
     let finalContent = "";
     for (let index = 0; index < SAMPLE_COUNT; index += 1) {
       finalContent = `latency-sample-${index}-${suffix}`;
-      // eslint-disable-next-line no-await-in-loop -- shortcut samples must not overlap.
+      // eslint-disable-next-line no-await-in-loop -- shortcut sample이 겹치면 latency를 분리할 수 없다.
       const result = await runSaveIteration(page, {
         chapterId,
         projectId,

@@ -15,11 +15,7 @@ const toGraphNodeType = (entityType: string): GraphNodeType => {
   return "world-entity";
 };
 
-/**
- * Build graph surface data from WorldGraphData.
- * Returns empty arrays when graphData is null/empty — no mock fallback.
- * Callers should handle the empty state (e.g., show empty state UI).
- */
+/** graphData가 없으면 mock 대신 빈 node/edge 배열을 반환한다. */
 export function buildGraphSurfaceData(
   graphData: WorldGraphData | null,
 ): GraphSurfaceData {

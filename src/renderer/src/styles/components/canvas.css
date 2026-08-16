@@ -27,14 +27,7 @@
     font-family: inherit !important;
 }
 
-/* Notion/Pensive style: contenteditable focus shows the caret only — no
-   colored outline/ring. The caret is the visible focus indicator, so this
-   satisfies "visible focus" without a loud blue ring on the writing surface. */
-
-/* Canvas node/edge — prefers-reduced-motion guard.
-   DESIGN.md §8 "the one gap to close": OS-level reduced-motion 지원.
-   canvas node hover/selected transition과 edge stroke transition을 비활성화.
-   Luie 자체 클래스라 !important 없이 specificity로 처리한다. */
+/* NOTE: OS의 reduced-motion 설정에서는 canvas transition과 animation을 제거한다. */
 @media (prefers-reduced-motion: reduce) {
   .canvas-entity-node,
   .canvas-node-handle,
@@ -185,7 +178,6 @@
     margin: 0.25rem 0;
 }
 
-/* Corkboard Background Override */
 .react-flow__background {
     background-color: var(--canvas-bg, #f3ece0) !important;
     transition: background-color 0.2s ease;
@@ -204,7 +196,6 @@
     stroke: var(--canvas-grid-dark, #2b231f) !important;
 }
 
-/* Index Card & Push-Pin Style */
 .canvas-entity-node-obsidian {
     width: 256px;
     height: 132px;
@@ -270,7 +261,6 @@
         0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
-/* Push-Pin detail */
 .node-push-pin {
     position: absolute;
     top: -8px;
@@ -289,7 +279,6 @@
     pointer-events: none;
 }
 
-/* Pin shadow line */
 .node-push-pin::after {
     content: '';
     position: absolute;
@@ -305,4 +294,3 @@
 [data-theme="dark"] .node-push-pin::after {
     background: rgba(0, 0, 0, 0.55);
 }
-

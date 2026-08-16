@@ -80,6 +80,16 @@ export const jaBaseSettings = {
         neutral: "標準",
         warm: "ウォーム",
       },
+      accent: {
+        title: "アクセントカラー (Accent Color)",
+        description: "ボタンやリンク、アクティブ表示に使用する強調色を選択します。",
+        blue: "ブルー",
+        emerald: "エメラルド",
+        violet: "バイオレット",
+        rose: "ローズ",
+        amber: "アンバー",
+        custom: "カスタム",
+      },
     },
     view: {
       pc: "PC",

@@ -1,12 +1,3 @@
-/**
- * MemoryChunkFts trigram 토크나이저 마이그레이션 테스트.
- *
- * - unicode61(레거시) → trigram 재생성 + 재색인 검증
- * - 한국어 부분 일치(3자+) 매칭 검증
- * - idempotent(이미 trigram 이면 no-op) 검증
- *
- * better-sqlite3 ABI 불일치 환경(node 버전 mismatch)에서는 자동 skip.
- */
 import { afterEach, describe, expect, it } from "vitest";
 import { createRequire } from "node:module";
 import * as os from "node:os";
@@ -43,11 +34,7 @@ function loadDatabaseSync(): DatabaseSyncConstructor | undefined {
 const DatabaseSync = loadDatabaseSync();
 const describeWithSqlite = DatabaseSync ? describe : describe.skip;
 
-/**
- * node:sqlite 인스턴스를 better-sqlite3 와 호환되는 표면으로 감싼다.
- * 마이그레이션 모듈은 `.transaction(fn)` (better-sqlite3) 을 사용하므로
- * 즉시 실행 트랜잭션 래퍼를 제공한다.
- */
+// NOTE: production migration과 같은 경로를 검증하려고 node:sqlite를 better-sqlite3 transaction surface로 감싼다.
 type MigrationDbLike = Parameters<typeof ensureMemoryChunkFtsTrigram>[0];
 
 function wrapAsBetterSqlite(db: DatabaseSyncInstance): MigrationDbLike {
@@ -126,7 +113,7 @@ describeWithSqlite("ensureMemoryChunkFtsTrigram", () => {
       try {
         fs.rmSync(path.dirname(p), { recursive: true, force: true });
       } catch {
-        /* noop */
+        // NOTE: 이미 제거된 temp fixture는 cleanup 결과에 영향을 주지 않는다.
       }
     }
   });
@@ -218,7 +205,6 @@ describeWithSqlite("ensureMemoryChunkFtsTrigram", () => {
       insertChunk(db, "c1", "p1", "진서가 마차를 습격했다");
       insertChunk(db, "c2", "p1", "세린은 그림자 길드의 첩보원이다");
 
-      // 레거시 unicode61 FTS 생성 + 색인
       db.exec(
         `CREATE VIRTUAL TABLE "MemoryChunkFts" USING fts5("chunkId" UNINDEXED, "projectId" UNINDEXED, "chapterId" UNINDEXED, "content", tokenize='unicode61');`,
       );
@@ -226,7 +212,6 @@ describeWithSqlite("ensureMemoryChunkFtsTrigram", () => {
         `INSERT INTO "MemoryChunkFts" ("chunkId","projectId","chapterId","content") SELECT "id","projectId","chapterId","content" FROM "MemoryChunk";`,
       );
 
-      // unicode61 에서는 부분 일치 "마차" 가 안 됨(전제 검증)
       const beforeRows = db
         .prepare(
           `SELECT "chunkId" FROM "MemoryChunkFts" WHERE "MemoryChunkFts" MATCH ?`,
@@ -238,7 +223,6 @@ describeWithSqlite("ensureMemoryChunkFtsTrigram", () => {
       expect(reindexed).toBe(2);
       expect(ftsTokenizer(db)).toMatch(/trigram/);
 
-      // trigram 에서는 부분 일치(3자+) 가 됨
       const afterRows = db
         .prepare(
           `SELECT "chunkId" FROM "MemoryChunkFts" WHERE "MemoryChunkFts" MATCH ?`,

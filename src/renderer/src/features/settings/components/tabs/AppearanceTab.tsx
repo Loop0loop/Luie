@@ -23,6 +23,7 @@ export const AppearanceTab = memo(function AppearanceTab({
         theme,
         themeContrast,
         themeTemp,
+        themeAccent,
         uiMode,
         enableAnimations,
         entityColors,
@@ -32,12 +33,21 @@ export const AppearanceTab = memo(function AppearanceTab({
             theme: state.theme,
             themeContrast: state.themeContrast,
             themeTemp: state.themeTemp,
+            themeAccent: state.themeAccent,
             uiMode: state.uiMode,
             enableAnimations: state.enableAnimations,
             entityColors: state.entityColors,
             updateSettings: state.updateSettings,
         }))
     );
+
+    const ACCENT_PRESETS = [
+        { id: "blue", labelKey: "settings.appearance.accent.blue", color: "#3b82f6", name: "블루" },
+        { id: "emerald", labelKey: "settings.appearance.accent.emerald", color: "#10b981", name: "에메랄드" },
+        { id: "violet", labelKey: "settings.appearance.accent.violet", color: "#8b5cf6", name: "바이올렛" },
+        { id: "rose", labelKey: "settings.appearance.accent.rose", color: "#f43f5e", name: "로즈" },
+        { id: "amber", labelKey: "settings.appearance.accent.amber", color: "#f59e0b", name: "앰버" },
+    ] as const;
 
     return (
         <div className="space-y-10 max-w-2xl">
@@ -84,6 +94,64 @@ export const AppearanceTab = memo(function AppearanceTab({
                             {enableAnimations ? t("settings.appearance.animations.on", "켜짐") : t("settings.appearance.animations.off", "꺼짐")}
                         </span>
                     </div>
+                </div>
+            </section>
+
+            <div className="h-px bg-border my-6" />
+            <section className="space-y-4">
+                <div>
+                    <h3 className="text-base font-semibold text-fg">{t("settings.appearance.accent.title", "강조색 (Accent Color)")}</h3>
+                    <p className="text-sm text-muted mt-1">{t("settings.appearance.accent.description", "버튼, 링크, 활성 상태에 적용되는 강조 색상을 선택합니다.")}</p>
+                </div>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                    {ACCENT_PRESETS.map((preset) => {
+                        const isSelected = (themeAccent || "blue") === preset.id;
+                        return (
+                            <button
+                                key={preset.id}
+                                type="button"
+                                onClick={() => onApplySettings({ themeAccent: preset.id })}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-panel border text-xs font-medium transition-all ${
+                                    isSelected
+                                        ? "border-accent bg-accent/10 text-fg shadow-xs ring-1 ring-accent"
+                                        : "border-border text-muted hover:text-fg hover:bg-surface-hover hover:border-border-active"
+                                }`}
+                            >
+                                <span
+                                    className="size-3.5 rounded-full shrink-0 shadow-xs flex items-center justify-center text-white"
+                                    style={{ backgroundColor: preset.color }}
+                                >
+                                    {isSelected && <Check className="size-2 stroke-[3]" />}
+                                </span>
+                                <span>{t(preset.labelKey, preset.name)}</span>
+                            </button>
+                        );
+                    })}
+
+                    <label
+                        className={`flex items-center gap-2 px-3 py-2 rounded-panel border text-xs font-medium cursor-pointer transition-all ${
+                            themeAccent?.startsWith("#")
+                                ? "border-accent bg-accent/10 text-fg shadow-xs ring-1 ring-accent"
+                                : "border-border text-muted hover:text-fg hover:bg-surface-hover hover:border-border-active"
+                        }`}
+                    >
+                        <div className="relative size-3.5 rounded-full shrink-0 overflow-hidden border border-black/10">
+                            <input
+                                type="color"
+                                value={themeAccent?.startsWith("#") ? themeAccent : "#3b82f6"}
+                                onChange={(e) => onApplySettings({ themeAccent: e.target.value })}
+                                className="absolute -top-2 -left-2 size-8 cursor-pointer border-0 p-0 m-0 opacity-0"
+                            />
+                            <div
+                                className="size-full"
+                                style={{
+                                    backgroundColor: themeAccent?.startsWith("#") ? themeAccent : "transparent",
+                                    backgroundImage: themeAccent?.startsWith("#") ? undefined : "conic-gradient(from 0deg, red, yellow, lime, aqua, blue, magenta, red)",
+                                }}
+                            />
+                        </div>
+                        <span>{t("settings.appearance.accent.custom", "직접 지정")}</span>
+                    </label>
                 </div>
             </section>
 

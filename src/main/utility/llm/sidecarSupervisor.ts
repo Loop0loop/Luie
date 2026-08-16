@@ -397,15 +397,15 @@ export class UtilitySidecarSupervisor {
     const deadline = Date.now() + HEALTH_POLL_TIMEOUT_MS;
     while (Date.now() < deadline) {
       try {
-        // eslint-disable-next-line no-await-in-loop -- sequential health polls
+        // eslint-disable-next-line no-await-in-loop -- health check 간격과 순서를 보존해야 한다.
         const response = await fetch(`http://127.0.0.1:${port}/health`, {
           signal: AbortSignal.timeout(2_000),
         });
         if (response.ok) return;
       } catch {
-        // starting
+        // NOTE: server가 startup 중이면 다음 health poll까지 기다린다.
       }
-      // eslint-disable-next-line no-await-in-loop
+      // eslint-disable-next-line no-await-in-loop -- health check 간격을 기다린 뒤 다시 확인해야 한다.
       await new Promise((resolve) => setTimeout(resolve, HEALTH_POLL_INTERVAL_MS));
     }
     throw new Error("llama-server health check timed out");

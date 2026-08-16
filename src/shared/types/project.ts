@@ -9,13 +9,13 @@ export interface Project {
   id: string;
   title: string;
   description?: string | null;
-  // Legacy attachment metadata. Not canonical project content.
+  /** Canonical project content가 아닌 legacy attachment metadata. */
   projectPath?: string | null;
-  // App-local metadata for recent/opened ordering.
+  /** 최근 project 정렬에만 사용하는 app-local metadata. */
   lastOpenedAt?: string | Date | null;
   attachmentStatus?: ProjectAttachmentStatus;
   attachmentContainerKind?: "sqlite-v2" | "legacy-package" | "unknown" | null;
-  // Legacy compatibility flag. Prefer attachmentStatus for new code.
+  /** Legacy 호환용이며 새 코드는 `attachmentStatus`를 사용한다. */
   pathMissing?: boolean;
   createdAt: string | Date;
   updatedAt: string | Date;

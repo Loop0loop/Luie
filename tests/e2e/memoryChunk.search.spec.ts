@@ -74,7 +74,7 @@ test("searches memory chunks and resolves backlink @stress", async () => {
     "memoryAdmin.rebuildChunks",
   );
 
-  // rebuildChunks only enqueues — wait for derivedJobWorker to process
+  // NOTE: rebuildChunks는 queue 적재만 하므로 derivedJobWorker 완료까지 기다린다.
   const waitStart = Date.now();
   while (Date.now() - waitStart < 15_000) {
     const status = await call(

@@ -1,4 +1,4 @@
-// TODO: Remove in Phase 7 — replaced by Drizzle migrate() baseline flow
+// TODO: Phase 7에서 Drizzle migrate() baseline 전환이 끝나면 제거한다.
 import { createRequire } from "node:module";
 import { createHash } from "node:crypto";
 import * as fs from "node:fs";
@@ -253,7 +253,7 @@ export function dropPackagedCacheOptionalFtsArtifacts(
     try {
       database.exec("PRAGMA trusted_schema = OFF;");
     } catch {
-      // `node:sqlite` fallback may not support this pragma on older runtimes.
+      // NOTE: 오래된 node:sqlite runtime은 이 pragma를 지원하지 않을 수 있다.
     }
     database.close();
   }

@@ -2,14 +2,14 @@ export type TemplateField = {
   key: string;
   labelKey: string;
   type: "text" | "textarea" | "select";
-  optionKeys?: string[]; // For select type
+  optionKeys?: string[];
   placeholderKey?: string;
 };
 
 export type CharacterTemplate = {
   id: string;
   nameKey: string;
-  icon: string; // Lucide icon name or emoji
+  icon: string;
   fields: TemplateField[];
 };
 

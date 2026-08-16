@@ -1,6 +1,3 @@
-/**
- * Canvas i18n 한국어 트리. PRD §6/§7/§8 기반으로 phase별 추가.
- */
 export const koCanvas = {
   workspace: {
     title: "캔버스",

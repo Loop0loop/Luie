@@ -151,7 +151,7 @@ export async function measureRerankCacheProbe(input: {
     }
 
     misses += 1;
-    // 동일 query 반복 시 실제 Map TTL cache의 hit/miss와 entry 증가를 측정해야 하므로 순차 처리한다.
+    // NOTE: 동일 query의 실제 TTL cache hit/miss를 측정해야 하므로 순차 처리한다.
     // eslint-disable-next-line no-await-in-loop
     const measurement = await measureCandidateCapSearch({
       projectId: input.projectId,

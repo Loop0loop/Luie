@@ -13,7 +13,7 @@ export function OfflineBanner() {
         const handleOnline = () => {
             if (!mounted) return;
             setIsOffline(false);
-            setDismissed(false); // Reset dismissal on reconnect
+            setDismissed(false);
         };
         const handleOffline = () => {
             if (!mounted) return;

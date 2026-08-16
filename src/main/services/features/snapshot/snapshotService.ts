@@ -1,7 +1,3 @@
-/**
- * Snapshot service - 버전 관리 스냅샷 비즈니스 로직
- */
-
 import { createHash, randomUUID } from "node:crypto";
 import { desc, eq } from "drizzle-orm";
 import { db } from "../../../infra/database/index.js";

@@ -58,7 +58,7 @@ async function main(): Promise<void> {
         ? await readLuieContainerEntry(projectPath, entryPath)
         : null;
 
-    // eslint-disable-next-line no-console -- CLI script output.
+    // eslint-disable-next-line no-console -- CLI 결과를 stdout으로 전달한다.
     console.log(
       JSON.stringify(
         {
@@ -79,7 +79,7 @@ async function main(): Promise<void> {
 }
 
 await main().catch((error) => {
-  // eslint-disable-next-line no-console -- CLI script error output.
+  // eslint-disable-next-line no-console -- CLI 오류를 stderr로 전달한다.
   console.error(
     JSON.stringify(
       { error: error instanceof Error ? error.message : String(error) },

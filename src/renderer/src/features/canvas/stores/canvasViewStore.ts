@@ -1,18 +1,4 @@
-/**
- * canvasViewStore — view-model state for the canvas viewport + activity sidebar.
- *
- * Persisted across sessions:
- *   - mode, scope, layers, focuses (range/preset memory)
- *   - zoom/pan (last viewport)
- *   - activePanel + isActivityCollapsed + isBinderCollapsed (P2 sidebar shell)
- *
- * NOT persisted:
- *   - selection (transient, reset between sessions)
- *
- * Layout RATIOS for canvas.activity / canvas.binder live in `uiStore.layoutSurfaceRatios`.
- * This store only owns logical view state.
- */
-
+// NOTE: selection은 session 간 유지하지 않고 panel ratio는 uiStore가 소유한다.
 import { create } from "zustand";
 import {
   createJSONStorage,
@@ -37,8 +23,6 @@ import {
   CANVAS_DEFAULT_LAYERS,
 } from "../constants";
 
-/* ─────────────────────────────────────────── constants */
-
 const STORAGE_KEY = "canvas_view_v2";
 const SCHEMA_VERSION = 2;
 
@@ -57,11 +41,7 @@ const createNoopStorage = (): StateStorage => ({
   removeItem: () => undefined,
 });
 
-/* ─────────────────────────────────────────── state shape */
-
 export interface CanvasViewState {
-
-  /* viewport ─────── */
   mode: CanvasMode;
   scope: CanvasScope | null;
   layers: CanvasLayer[];
@@ -71,12 +51,10 @@ export interface CanvasViewState {
   selection: CanvasSelection;
   entityPreview: CanvasEntityPreview | null;
 
-  /* sidebar ─────── */
   activePanel: CanvasActivityPanel;
   isActivityCollapsed: boolean;
   isBinderCollapsed: boolean;
 
-  /* actions: viewport */
   setMode: (mode: CanvasMode) => void;
   setScope: (scope: CanvasScope | null) => void;
   toggleLayer: (layer: CanvasLayer) => void;
@@ -90,15 +68,12 @@ export interface CanvasViewState {
   openEntityPreview: (preview: CanvasEntityPreview) => void;
   clearEntityPreview: () => void;
 
-  /* actions: sidebar */
   setActivePanel: (panel: CanvasActivityPanel) => void;
   toggleActivity: () => void;
   toggleBinder: () => void;
   setActivityCollapsed: (collapsed: boolean) => void;
   setBinderCollapsed: (collapsed: boolean) => void;
 }
-
-/* ─────────────────────────────────────────── store */
 
 export const useCanvasViewStore = create<CanvasViewState>()(
   persist(

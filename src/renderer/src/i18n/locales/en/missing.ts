@@ -1,4 +1,4 @@
-// Keys referenced by components that lacked locale entries; deep-merged into common.
+// NOTE: common에 누락된 component key를 deep merge로 보완한다.
 export const enMissing = {
   common: {
     close: "Close",
@@ -165,6 +165,13 @@ export const enMissing = {
         degraded: "Degraded",
         disconnected: "Disconnected",
       },
+    },
+  },
+  ai: {
+    sidePanel: {
+      open: "Open AI side panel",
+      close: "Close AI side panel",
+      view: "AI View",
     },
   },
 } as const;

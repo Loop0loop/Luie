@@ -125,7 +125,7 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
         await refreshMemoryBuildProgress();
       }
 
-      // 하드웨어 추천(llmfit)은 외부 바이너리 호출이라 느릴 수 있어 비차단으로 로드.
+      // NOTE: llmfit은 외부 binary 호출이라 settings load를 막지 않는다.
       setLlmfitLoading(true);
       const llmfitRes = await api.settings.getLlmfitRecommendations({ limit: 10 });
       if (llmfitRes.success && llmfitRes.data) {
@@ -399,7 +399,6 @@ export function useSettingsModel(activeTab: SettingsTabId, showToast: ShowToast)
     [showToast, t],
   );
 
-  // 의미 검색 게이트: 임베딩 모델 미설치=비활성, 임베딩 잡 진행 중=준비중, 그 외=준비됨.
   const pendingEmbeddings =
     (memoryEmbeddingStatus?.pendingCount ?? 0) +
     (memoryEmbeddingStatus?.runningCount ?? 0) +

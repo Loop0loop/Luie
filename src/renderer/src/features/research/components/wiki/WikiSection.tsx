@@ -2,10 +2,6 @@ import { Trash2 } from "lucide-react";
 import { BufferedInput, BufferedTextArea } from "@shared/ui/BufferedInput";
 import { useTranslation } from "react-i18next";
 
-/**
- * Section-specific writing prompts shown as placeholder text.
- * Guides the writer with targeted questions instead of a blank slate.
- */
 const SECTION_PROMPTS: Readonly<Record<string, string>> = {
   overview: "이 인물을 한 문장으로 소개한다면? 작가로서 이 캐릭터에게 끌린 이유는?",
   appearance:
@@ -40,7 +36,6 @@ export function WikiSection({
 
   return (
     <div id={id} className="group/section flex flex-col gap-3 scroll-mt-8">
-      {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-1 items-center gap-2 min-w-0">
           <BufferedInput
@@ -59,7 +54,6 @@ export function WikiSection({
         </button>
       </div>
 
-      {/* Writing area — borderless, document-like */}
       <BufferedTextArea
         value={content}
         placeholder={placeholder}

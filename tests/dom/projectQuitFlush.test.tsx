@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // TEST_LEVEL: DOM_INTEGRATION
-// PROVES: quit completes only after renderer save buffers and world mutations flush
+// PROVES: renderer save buffer와 world mutation을 flush한 뒤에만 quit가 완료된다.
 
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";

@@ -1,10 +1,3 @@
-/**
- * embeddingModelConstants 정합성 테스트.
- *
- * 런타임 상수(embeddingModelConstants.ts)와 빌드 스테이징 스크립트
- * (scripts/stage-embedding-model.mjs)의 모델 메타(repo/filename/sha256/size)가
- * 일치하는지 검증한다. 둘이 어긋나면 "동봉된 파일을 런타임이 못 찾는" 단절이 생긴다.
- */
 import { describe, expect, it } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -34,7 +27,7 @@ describe("embeddingModelConstants", () => {
     expect(script).toContain(DEFAULT_EMBEDDING_MODEL.repo);
     expect(script).toContain(DEFAULT_EMBEDDING_MODEL.filename);
     expect(script).toContain(DEFAULT_EMBEDDING_MODEL.sha256);
-    // size 는 숫자 리터럴에 _ 구분자가 있을 수 있어 정규화 후 비교.
+    // NOTE: size literal의 `_` 구분자는 값 비교 전에 제거한다.
     const normalized = script.replace(/_/g, "");
     expect(normalized).toContain(String(DEFAULT_EMBEDDING_MODEL.sizeBytes));
   });

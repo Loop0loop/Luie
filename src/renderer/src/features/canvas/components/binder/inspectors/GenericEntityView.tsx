@@ -1,7 +1,3 @@
-/**
- * GenericEntityView — 일반 엔티티(Faction, Term, WorldEntity) 인스펙터 뷰
- */
-
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import type { CanvasNodeKind } from "@renderer/features/canvas/types";
@@ -34,7 +30,6 @@ export default function GenericEntityView({
 
   return (
     <div className="h-full bg-panel overflow-y-auto">
-      {/* 헤더 */}
       <div className="sticky top-0 z-10 bg-panel border-b border-border/40 px-4 py-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -66,7 +61,6 @@ export default function GenericEntityView({
       </div>
 
       <div className="flex flex-col gap-4 p-4">
-        {/* 설명 */}
         {node.description && (
           <section>
             <h4 className="text-xs font-semibold text-fg/80 mb-2">
@@ -78,7 +72,6 @@ export default function GenericEntityView({
           </section>
         )}
 
-        {/* 연결 통계 */}
         <section>
           <h4 className="text-xs font-semibold text-fg/80 mb-2">
             {t("canvas.node.connections")}
@@ -95,7 +88,6 @@ export default function GenericEntityView({
           </div>
         </section>
 
-        {/* 연결된 노드 리스트 */}
         {connectedNodes.length > 0 && (
           <section>
             <h4 className="text-xs font-semibold text-fg/80 mb-2">

@@ -29,7 +29,6 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
 
   return (
     <div className="flex h-full flex-col bg-panel overflow-hidden">
-      {/* 바인더 내부 인스펙터 헤더 - Sidebar.tsx 디자인 통일성 */}
       <div className="flex items-center justify-between px-4.5 py-3.5 border-b border-border/20 bg-element/10 shrink-0">
         <div className="flex items-center gap-2">
           <Info className="h-3.5 w-3.5 text-accent" />
@@ -45,9 +44,7 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
         </button>
       </div>
 
-      {/* 인스펙터 스크롤 영역 */}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6.5 scrollbar-thin select-none">
-        {/* 인물 기본 요약 */}
         <div className="flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
             <h2 className="text-[18px] font-black tracking-tight text-fg">{activeNode.data.label}</h2>
@@ -64,7 +61,6 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
           )}
         </div>
 
-        {/* 캐릭터 관계 매핑 - 피그마 스타일 카드 개편 */}
         {activeNode.data.relationships && activeNode.data.relationships.length > 0 && (
           <div className="flex flex-col gap-3 pt-0.5">
             <div className="flex items-center gap-1.5 border-b border-border/15 pb-2">
@@ -98,7 +94,6 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
           </div>
         )}
 
-        {/* 연관 등장 회차 - 럭셔리 마이크로 발광 링 효과 */}
         {activeNode.data.relatedChapters && activeNode.data.relatedChapters.length > 0 && (
           <div className="flex flex-col gap-3 pt-0.5">
             <div className="flex items-center gap-1.5 border-b border-border/15 pb-2">
@@ -120,7 +115,6 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
           </div>
         )}
 
-        {/* 소설 원문 명대사 스크랩 - 초호화 인장 및 데코 적용 */}
         {activeNode.data.sourceTexts && activeNode.data.sourceTexts.length > 0 && (
           <div className="flex flex-col gap-3 border-t border-border/20 pt-4 mt-1">
             <div className="flex items-center gap-1.5 pb-1">

@@ -255,7 +255,7 @@ test("rag qa metrics snapshot @stress", async () => {
     failures: failedRuns.slice(0, 5).map((item) => item.errorMessage),
   };
 
-  // eslint-disable-next-line no-console
+  // eslint-disable-next-line no-console -- E2E 측정 결과를 terminal에 출력한다.
   console.log(`[RAG_METRICS] ${JSON.stringify(report)}`);
 
   await closeApp(app, testDbDir);

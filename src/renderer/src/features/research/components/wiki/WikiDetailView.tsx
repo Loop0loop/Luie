@@ -26,8 +26,6 @@ const readViewMode = (id?: string): CharacterViewMode => {
   return stored === "document" ? "document" : "wiki";
 };
 
-// ── AddTagInline ──────────────────────────────────────────────────────────
-
 type AddTagInlineProps = {
   onAdd: (tag: string) => void;
   placeholder: string;
@@ -77,8 +75,6 @@ function AddTagInline({ onAdd, placeholder }: AddTagInlineProps) {
   );
 }
 
-// ── WikiDetailView ────────────────────────────────────────────────────────
-
 interface WikiDetailViewProps {
   characterId?: string;
   onBack?: () => void;
@@ -88,7 +84,6 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
   const { t } = useTranslation();
   const dialog = useDialog();
 
-  // ── Store ───────────────────────────────────────────────────────────────
   const { character, loadCharacter, updateCharacter, deleteCharacter, setCurrent } =
     useCharacterStore(
       useShallow((s) => ({
@@ -104,12 +99,10 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
     useShallow((s) => ({ mainView: s.mainView, setMainView: s.setMainView })),
   );
 
-  // ── Attribute hook ──────────────────────────────────────────────────────
   const attrs = useCharacterWikiAttrs();
 
   const effectiveSections = useEffectiveCharacterSections(attrs.sections);
 
-  // ── View mode (persisted per character) ────────────────────────────────
   const currentViewModeStorageKey = getViewModeStorageKey(character?.id ?? characterId);
   const [viewModeState, setViewModeState] = useState<{
     storageKey: string;
@@ -128,18 +121,15 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
     localStorage.setItem(currentViewModeStorageKey, mode);
   };
 
-  // ── Character load ──────────────────────────────────────────────────────
   useEffect(() => {
     if (characterId) void loadCharacter(characterId);
   }, [characterId, loadCharacter]);
 
-  // ── Template resolution ─────────────────────────────────────────────────
   const currentTemplate = useMemo(() => {
     const templateId = attrs.getSectionContent("templateId") || "basic";
     return CHARACTER_TEMPLATES.find((tmpl) => tmpl.id === templateId) ?? CHARACTER_TEMPLATES[0];
   }, [attrs]);
 
-  // ── Custom field handlers ───────────────────────────────────────────────
   const addCustomField = () => {
     const key = `custom_${Date.now()}`;
     attrs.setCustomFields([
@@ -165,7 +155,6 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
     })();
   };
 
-  // ── Character delete ────────────────────────────────────────────────────
   const handleDeleteCharacter = () => {
     void (async () => {
       const confirmed = await dialog.confirm({
@@ -182,7 +171,6 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
     })();
   };
 
-  // ── Empty state ─────────────────────────────────────────────────────────
   if (!character) {
     return (
       <div className="flex items-center justify-center h-full text-muted">
@@ -191,7 +179,6 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
     );
   }
 
-  // ── Infobox rows ────────────────────────────────────────────────────────
   const allFields = [...currentTemplate.fields, ...attrs.customFields];
   const infoboxRows = allFields.map((field) => {
     const isCustom = attrs.customFields.some((cf) => cf.key === field.key);
@@ -213,12 +200,10 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
     };
   });
 
-  // ── Render ──────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-1 min-w-0 flex-col gap-5 overflow-auto bg-panel px-5 py-5 text-fg sm:px-6">
 
-      {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
           {onBack ? (
@@ -262,19 +247,19 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
               onSave={(val) => updateCharacter({ id: character.id, description: val })}
             />
           </div>
-          <div className="flex shrink-0 items-center gap-0.5 rounded-control bg-surface-hover p-0.5">
+          <div className="flex shrink-0 items-center gap-0.5 rounded-panel bg-element/80 p-0.5 border border-border/60 shadow-xs">
             <button
               type="button"
               onClick={() => switchViewMode("wiki")}
               title="위키 뷰"
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-control text-[12px] font-medium transition-colors",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-control text-xs font-medium transition-all",
                 viewMode === "wiki"
-                  ? "bg-surface-hover text-fg"
-                  : "text-muted hover:text-fg",
+                  ? "bg-surface text-fg shadow-xs border border-border/40"
+                  : "text-muted hover:text-fg hover:bg-surface-hover",
               )}
             >
-              <BookOpen size={12} />
+              <BookOpen size={13} className={viewMode === "wiki" ? "text-accent" : undefined} />
               위키
             </button>
             <button
@@ -282,73 +267,68 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
               onClick={() => switchViewMode("document")}
               title="문서 뷰"
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-control text-[12px] font-medium transition-colors",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-control text-xs font-medium transition-all",
                 viewMode === "document"
-                  ? "bg-surface-hover text-fg"
-                  : "text-muted hover:text-fg",
+                  ? "bg-surface text-fg shadow-xs border border-border/40"
+                  : "text-muted hover:text-fg hover:bg-surface-hover",
               )}
             >
-              <FileText size={12} />
+              <FileText size={13} className={viewMode === "document" ? "text-accent" : undefined} />
               문서
             </button>
           </div>
         </div>
       </div>
 
-      {/* ── Body ────────────────────────────────────────────────────────── */}
       {viewMode === "wiki" ? (
         <>
-          {/* Identity anchor — wiki only */}
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 rounded-panel border border-border/50 bg-surface/40 p-4 shadow-xs">
             <BufferedInput
-              className="text-[15px] italic text-fg/70 bg-transparent border-none w-full p-0 focus:outline-none placeholder:text-muted/35 leading-relaxed"
+              className="text-[15px] italic text-fg/85 bg-transparent border-none w-full p-0 focus:outline-none placeholder:text-muted/40 leading-relaxed font-serif"
               value={attrs.tagline}
               placeholder="이 인물을 한 마디로 표현한다면..."
               onSave={attrs.setTagline}
             />
-            {/* Roles */}
-            <div className="flex items-center flex-wrap gap-1.5 min-h-[22px]">
-              <span className="text-[11px] text-muted/60 font-medium w-6 shrink-0">역할</span>
+            <div className="flex items-center flex-wrap gap-2 pt-1 border-t border-border/30 min-h-[24px]">
+              <span className="text-[11px] text-muted/80 font-semibold w-7 shrink-0">역할</span>
               {attrs.roles.map((role) => (
                 <span
                   key={role}
-                  className="group/tag inline-flex items-center gap-1 text-[12px] text-fg/70"
+                  className="group/tag inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-element border border-border/60 text-xs font-medium text-fg/80 shadow-2xs"
                 >
-                  <span className="h-1.5 w-1.5 rounded-full bg-muted/60" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-accent" />
                   {role}
                   <button
                     type="button"
                     onClick={() => attrs.removeRole(role)}
-                    className="opacity-0 group-hover/tag:opacity-100 transition-opacity hover:text-danger"
+                    className="opacity-0 group-hover/tag:opacity-100 transition-opacity hover:text-danger ml-0.5"
                   >
-                    <X size={9} />
+                    <X size={10} />
                   </button>
                 </span>
               ))}
               <AddTagInline onAdd={attrs.addRole} placeholder="+ 역할" />
             </div>
-            {/* Keywords */}
-            <div className="flex items-center flex-wrap gap-1.5 min-h-[22px]">
-              <span className="text-[11px] text-muted/60 font-medium w-6 shrink-0">태그</span>
+            <div className="flex items-center flex-wrap gap-2 min-h-[24px]">
+              <span className="text-[11px] text-muted/80 font-semibold w-7 shrink-0">태그</span>
               {attrs.keywords.map((kw) => (
                 <span
                   key={kw}
-                  className="group/tag inline-flex items-center gap-0.5 text-[12px] text-muted"
+                  className="group/tag inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-hover border border-border/40 text-xs text-muted"
                 >
                   #{kw}
                   <button
                     type="button"
                     onClick={() => attrs.removeKeyword(kw)}
-                    className="opacity-0 group-hover/tag:opacity-100 transition-opacity hover:text-danger"
+                    className="opacity-0 group-hover/tag:opacity-100 transition-opacity hover:text-danger ml-0.5"
                   >
-                    <X size={9} />
+                    <X size={10} />
                   </button>
                 </span>
               ))}
               <AddTagInline onAdd={attrs.addKeyword} placeholder="+ 태그" />
             </div>
           </div>
-          {/* Two-column — sections left, Infobox right */}
           <div className="@container">
             <div className="flex flex-col @min-[700px]:flex-row gap-8 items-start">
               <div className="flex-1 min-w-0 w-full @min-[700px]:order-1 order-2">
@@ -375,7 +355,6 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
           </div>
         </>
       ) : (
-        /* Document: Notion-style view synced with the wiki data */
         <CharacterDocumentView
           classification={t(currentTemplate.nameKey)}
           description={character.description || ""}

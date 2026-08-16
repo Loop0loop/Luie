@@ -1,6 +1,6 @@
 // TEST_LEVEL: REAL_DB_INTEGRATION
-// PROVES: snapshot workflows through real DB, filesystem mirrors, and attached .luie persistence
-// DOES_NOT_PROVE: isolated service branches without timing/state coupling
+// PROVES: 실제 DB, filesystem mirror, 연결된 .luie persistence를 거치는 snapshot workflow
+// DOES_NOT_PROVE: timing/state 결합이 없는 독립 service branch
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import path from "node:path";

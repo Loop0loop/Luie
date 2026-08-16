@@ -8,7 +8,6 @@ import { useMindMapBoard } from "@renderer/features/research/components/world/us
 import type { MindMapNodeData } from "@renderer/features/research/components/world/MindMapNodeData";
 import { normalizeSafeMindMapImageUrl } from "@renderer/features/research/components/world/mindMapImageUrlSafety";
 
-// Custom Node for MindMap - Character Card Style
 const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
   const { t } = useTranslation();
   const { setNodes } = useReactFlow();
@@ -55,7 +54,6 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
     >
       <Handle type="target" position={Position.Top} className="bg-accent! w-3 h-3" />
 
-      {/* Image Area */}
       <div
         className="w-full aspect-square bg-element flex items-center justify-center relative overflow-hidden"
         style={{ display: (data.image || isEditingImage) ? "flex" : "block", height: (data.image || isEditingImage) ? "auto" : 40 }}
@@ -90,7 +88,6 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
           </div>
         )}
 
-        {/* Hover Image Edit Button */}
         {!isEditingImage && (
           <button
             className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/70 rounded text-white opacity-0 group-hover:opacity-100 transition-opacity"
@@ -105,7 +102,6 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
         )}
       </div>
 
-      {/* Label Area */}
       <div className="p-2 w-full bg-panel border-t border-border/50">
         {isEditingLabel ? (
           <input
@@ -198,7 +194,6 @@ export function MindMapBoard() {
       >
         <Background color="var(--grid-line)" gap={24} size={1} />
 
-        {/* Custom Controls */}
         <div className="absolute bottom-4 left-4 z-10 flex flex-col gap-2 bg-panel/90 backdrop-blur border border-border p-1.5 rounded-panel shadow-lg">
           <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.zoomIn()} title={t("world.mindmap.controls.zoomIn")}>+</button>
           <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.zoomOut()} title={t("world.mindmap.controls.zoomOut")}>-</button>

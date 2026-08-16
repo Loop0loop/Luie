@@ -28,9 +28,8 @@ export function SmartLinkTooltip({ isSettingsOpen }: { isSettingsOpen?: boolean 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
-  // ✅ Pass isSettingsOpen as dependency — when settings open, remove listeners immediately
+  // NOTE: settings가 열리면 listener를 즉시 제거해야 한다.
   useEffect(() => {
-    // Hide tooltip and suppress events while settings are open
     if (isSettingsOpen) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       const hideTimer = window.setTimeout(() => {
@@ -97,7 +96,6 @@ export function SmartLinkTooltip({ isSettingsOpen }: { isSettingsOpen?: boolean 
     document.addEventListener("click", handleClick);
 
     return () => {
-      // ✅ Always cancel pending timeout before removing listeners
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       document.removeEventListener("mouseover", handleMouseOver);
       document.removeEventListener("mouseout", handleMouseOut);
@@ -105,7 +103,6 @@ export function SmartLinkTooltip({ isSettingsOpen }: { isSettingsOpen?: boolean 
     };
   }, [isSettingsOpen]);
 
-  // ✅ Final cleanup on unmount — guarantee timeout is cleared
   useEffect(() => {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -156,7 +153,6 @@ export function SmartLinkTooltip({ isSettingsOpen }: { isSettingsOpen?: boolean 
       ref={tooltipRef}
       onMouseEnter={handleTooltipEnter}
       onMouseLeave={handleTooltipLeave}
-      // z-dropdown layer (context menus / tooltips), see global.tokens.css
       className="fixed z-dropdown bg-popover text-popover-foreground rounded-control shadow-panel border border-border p-3 w-[250px] animate-in fade-in zoom-in-95 duration-200 pointer-events-none"
       style={{
         left: state.x,

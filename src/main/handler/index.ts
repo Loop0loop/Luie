@@ -110,5 +110,5 @@ export async function registerAllIPCHandlers(): Promise<void> {
   logger.info("IPC handlers registered successfully");
 }
 
-// Backward compat
+// NOTE: 기존 import 경로와의 호환을 위해 alias를 유지한다.
 export const registerIPCHandlers = registerAllIPCHandlers;

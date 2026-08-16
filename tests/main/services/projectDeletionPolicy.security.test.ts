@@ -1,6 +1,6 @@
 // TEST_LEVEL: REAL_FS_INTEGRATION
-// PROVES: project package deletion requires an approved package path and only deletes files
-// DOES_NOT_PROVE: renderer confirmation UI behavior
+// PROVES: 승인된 package path만 project package file 삭제를 허용한다.
+// DOES_NOT_PROVE: renderer 확인 UI 동작
 
 import os from "node:os";
 import path from "node:path";

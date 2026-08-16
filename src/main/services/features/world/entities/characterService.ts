@@ -1,7 +1,3 @@
-/**
- * Character service - 캐릭터 관리 비즈니스 로직
- */
-
 import { eq, isNull, like, or, asc, and, inArray } from "drizzle-orm";
 import { db } from "../../../../infra/database/index.js";
 import { character, entityRelation } from "../../../../infra/database/index.js";

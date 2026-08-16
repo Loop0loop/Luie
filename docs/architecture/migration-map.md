@@ -156,7 +156,7 @@ src/shared/api/
 
 검증:
 
-현재 검증 명령은 `package.json`의 `packageManager: pnpm@11.5.0`과 `pnpm` scripts를 기준으로 기록합니다. `AGENTS.md`의 bun 지침과 충돌하는 경우, 실제 실행 전 현재 `package.json`을 우선 확인합니다.
+현재 검증 명령은 `package.json`의 `packageManager: pnpm@11.21.0`과 `pnpm` scripts를 기준으로 기록합니다. `AGENTS.md`의 bun 지침과 충돌하는 경우, 실제 실행 전 현재 `package.json`을 우선 확인합니다.
 
 ```bash
 pnpm run typecheck

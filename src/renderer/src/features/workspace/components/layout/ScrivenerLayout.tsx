@@ -253,10 +253,8 @@ export default function ScrivenerLayout({
 
   return (
     <div className="flex flex-col h-screen w-screen bg-app text-fg overflow-hidden relative border-t border-transparent">
-      {/* 1. WindowBar */}
       <WindowBar title={activeChapterTitle || "Luie Scrivener Mode"} />
 
-      {/* 2. Top Toolbar (Ribbon) - Full Width */}
       <div className="shrink-0 z-30 shadow-sm relative">
         <Ribbon
           editor={editor}
@@ -267,10 +265,8 @@ export default function ScrivenerLayout({
           isCanvasMode={mainView.type === "canvas"}
           onCloseCanvas={onCloseCanvas}
         />
-        {/* Scrivener-specific toolbar items could go here if separate */}
       </div>
 
-      {/* 3. Main 3-Pane Body using react-resizable-panels entirely */}
       <div className="flex-1 flex overflow-hidden relative">
         <PanelGroup
           orientation="horizontal"
@@ -280,7 +276,6 @@ export default function ScrivenerLayout({
           onLayoutChanged={onLayoutChanged}
         >
 
-          {/* Pane 1: Binder (Sidebar) */}
           {shouldRenderSidebar && (
             <>
               <Panel
@@ -319,16 +314,13 @@ export default function ScrivenerLayout({
             </>
           )}
 
-          {/* Pane 2: Editor (Center) */}
           <Panel
             id="main-editor"
             minSize={toPercentSize(30)}
             className="min-w-0 bg-app flex flex-col relative z-0"
           >
-            {/* Header / Title Bar of Editor Pane? (Like Scrivener Header) */}
             <div className="h-8 bg-surface border-b border-border flex items-center px-4 justify-between shrink-0">
               <div className="flex items-center gap-2 overflow-hidden">
-                {/* Floating Sidebar Toggle when closed */}
                 {!shouldRenderSidebar && (
                   <button
                     onClick={() => setRegionOpen("leftSidebar", true)}
@@ -355,7 +347,6 @@ export default function ScrivenerLayout({
               </div>
             </div>
 
-            {/* Editor Area */}
             <div className="flex-1 overflow-hidden relative flex flex-row">
               <PanelGroup
                 orientation="horizontal"
@@ -402,7 +393,6 @@ export default function ScrivenerLayout({
               </PanelGroup>
             </div>
 
-            {/* Scrivener Info Line */}
             <div className="h-6 bg-surface border-t border-border flex items-center px-3 text-xs text-muted shrink-0">
               <span>
                 {t("editor.status.charLabel")} {charCount}
@@ -412,7 +402,6 @@ export default function ScrivenerLayout({
             </div>
           </Panel>
 
-          {/* Pane 3: Inspector (Right) */}
           {shouldRenderInspector && (
             <>
               <PanelResizeHandle
@@ -446,7 +435,6 @@ export default function ScrivenerLayout({
                   : ""
                   }`}
               >
-                {/* Floating Toggle wrapper */}
                 <div className="flex items-center justify-between border-b border-border bg-surface px-2 shadow-sm min-h-[32px] shrink-0">
                   <span className="text-xs font-semibold uppercase tracking-wide text-muted ml-2">{t("scrivener.inspector.title")}</span>
                   <button
