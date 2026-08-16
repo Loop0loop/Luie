@@ -1,4 +1,4 @@
-// TODO: Remove in Phase 7 — replaced by Drizzle migrations in drizzle/main/
+// TODO: Phase 7에서 drizzle/main migration 전환이 끝나면 제거한다.
 import { ENTITY_RELATION_POINTER_TRIGGER_SQL } from "./entityRelationPointerSql.js";
 import {
   PACKAGED_SCHEMA_BOOTSTRAP_PROJECT_SQL,
@@ -6,10 +6,8 @@ import {
 import { PACKAGED_SCHEMA_BOOTSTRAP_MEMORY_SQL } from "./packagedSchema/memorySchema.sql.js";
 import { PACKAGED_SCHEMA_BOOTSTRAP_WORLD_SQL } from "./packagedSchema/worldAndIndexesSchema.sql.js";
 
-// Packaged SQLite bootstrap schema mirrors the current local runtime surface.
-// It includes canonical project tables, replica tables for detached/offline
-// editing, and app-local attachment metadata. `Project.projectPath` remains as
-// a legacy fallback column while attachment metadata moves to ProjectAttachment.
+// NOTE: packaged bootstrap은 offline replica를 포함한 현재 runtime schema와 같아야 한다.
+// NOTE: Project.projectPath는 ProjectAttachment 전환 중 legacy fallback으로 유지한다.
 export {
   PACKAGED_SCHEMA_COLUMN_PATCHES,
   PACKAGED_SCHEMA_INDEX_PATCHES,

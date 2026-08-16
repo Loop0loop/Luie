@@ -4,6 +4,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PromptComposer } from "../../src/renderer/src/features/research/components/analysisSection/chat/PromptComposer.js";
+import { writerFlowSyntheticNovel } from "../fixtures/writerFlowSyntheticNovel.js";
 
 const translations: Record<string, string> = {
   "analysis.composer.options": "옵션",
@@ -41,6 +42,7 @@ type MountedView = {
 const mountComposer = (
   memoryScope: "current-only" | "with-prior",
 ): MountedView => {
+  const [chapter11, chapter12] = writerFlowSyntheticNovel.chapters;
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
@@ -64,12 +66,12 @@ const mountComposer = (
         onChangeMemoryScope={vi.fn()}
         summaryActive={false}
         onToggleSummary={vi.fn()}
-        timelineChapter={{ order: 12, title: "약의 정체" }}
+        timelineChapter={{ order: chapter12.order, title: chapter12.title }}
         timelineChapters={[
-          { id: "chapter-11", order: 11, title: "전조" },
-          { id: "chapter-12", order: 12, title: "약의 정체" },
+          { id: chapter11.id, order: chapter11.order, title: chapter11.title },
+          { id: chapter12.id, order: chapter12.order, title: chapter12.title },
         ]}
-        timelineChapterId="chapter-12"
+        timelineChapterId={chapter12.id}
         onChangeTimelineChapter={vi.fn()}
       />,
     );
@@ -103,7 +105,7 @@ describe("PromptComposer timeline scope", () => {
     const view = mountComposer("current-only");
     mounted.push(view);
 
-    expect(view.container.textContent).toContain("12화 · 약의 정체 기준");
+    expect(view.container.textContent).toContain("12화 · 푸른 병의 이름 기준");
     expect(view.container.textContent).toContain("현재 회차 근거만");
   });
 
@@ -111,12 +113,13 @@ describe("PromptComposer timeline scope", () => {
     const view = mountComposer("with-prior");
     mounted.push(view);
 
-    expect(view.container.textContent).toContain("12화 · 약의 정체 기준");
+    expect(view.container.textContent).toContain("12화 · 푸른 병의 이름 기준");
     expect(view.container.textContent).toContain("이전 회차 포함");
   });
 
   it("lets the writer choose a different basis chapter", () => {
     const onChangeTimelineChapter = vi.fn();
+    const [chapter11, chapter12] = writerFlowSyntheticNovel.chapters;
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -142,12 +145,12 @@ describe("PromptComposer timeline scope", () => {
           onChangeMemoryScope={vi.fn()}
           summaryActive={false}
           onToggleSummary={vi.fn()}
-          timelineChapter={{ order: 12, title: "약의 정체" }}
+          timelineChapter={{ order: chapter12.order, title: chapter12.title }}
           timelineChapters={[
-            { id: "chapter-11", order: 11, title: "전조" },
-            { id: "chapter-12", order: 12, title: "약의 정체" },
+            { id: chapter11.id, order: chapter11.order, title: chapter11.title },
+            { id: chapter12.id, order: chapter12.order, title: chapter12.title },
           ]}
-          timelineChapterId="chapter-12"
+          timelineChapterId={chapter12.id}
           onChangeTimelineChapter={onChangeTimelineChapter}
         />,
       );
@@ -160,10 +163,10 @@ describe("PromptComposer timeline scope", () => {
 
     act(() => {
       if (!select) throw new Error("Timeline select missing");
-      select.value = "chapter-11";
+      select.value = chapter11.id;
       select.dispatchEvent(new Event("change", { bubbles: true }));
     });
 
-    expect(onChangeTimelineChapter).toHaveBeenCalledWith("chapter-11");
+    expect(onChangeTimelineChapter).toHaveBeenCalledWith(chapter11.id);
   });
 });

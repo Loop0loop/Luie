@@ -4,10 +4,9 @@ import type {
   EditorTheme,
   FontFamily,
   FontPreset,
-  ThemeTemperature,
   ThemeContrast,
+  ThemeTemp,
   ThemeAccent,
-  ThemeTexture,
   EditorUiMode,
 } from "@shared/types";
 export type { EditorSettings, EditorTheme, FontFamily, FontPreset };
@@ -22,7 +21,6 @@ import {
   DEFAULT_EDITOR_THEME_ACCENT,
   DEFAULT_EDITOR_THEME_CONTRAST,
   DEFAULT_EDITOR_THEME_TEMP,
-  DEFAULT_EDITOR_THEME_TEXTURE,
 } from "@shared/constants/app/configs";
 import { editorSettingsSchema } from "@shared/schemas";
 import { api } from "@shared/api";
@@ -49,10 +47,9 @@ const DEFAULT_SETTINGS: EditorSettings = {
   maxWidth: DEFAULT_EDITOR_MAX_WIDTH,
   spellcheckEnabled: true,
   theme: DEFAULT_EDITOR_THEME,
-  themeTemp: DEFAULT_EDITOR_THEME_TEMP as ThemeTemperature,
   themeContrast: DEFAULT_EDITOR_THEME_CONTRAST as ThemeContrast,
+  themeTemp: DEFAULT_EDITOR_THEME_TEMP as ThemeTemp,
   themeAccent: DEFAULT_EDITOR_THEME_ACCENT as ThemeAccent,
-  themeTexture: DEFAULT_EDITOR_THEME_TEXTURE as ThemeTexture,
   uiMode: "default",
   enableAnimations: true,
   entityColors: {
@@ -94,10 +91,9 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       wordSpacing: current.wordSpacing ?? DEFAULT_EDITOR_WORD_SPACING,
       paragraphSpacing: current.paragraphSpacing ?? DEFAULT_EDITOR_PARAGRAPH_SPACING,
       theme: current.theme,
-      themeTemp: current.themeTemp ?? DEFAULT_EDITOR_THEME_TEMP,
       themeContrast: current.themeContrast ?? DEFAULT_EDITOR_THEME_CONTRAST,
+      themeTemp: current.themeTemp ?? DEFAULT_EDITOR_THEME_TEMP,
       themeAccent: current.themeAccent ?? DEFAULT_EDITOR_THEME_ACCENT,
-      themeTexture: current.themeTexture ?? DEFAULT_EDITOR_THEME_TEXTURE,
       uiMode: current.uiMode ?? "default",
       enableAnimations: current.enableAnimations ?? true,
       entityColors: current.entityColors ?? DEFAULT_SETTINGS.entityColors,

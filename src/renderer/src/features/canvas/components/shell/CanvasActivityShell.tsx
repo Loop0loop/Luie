@@ -1,32 +1,29 @@
-/**
- * CanvasActivityShell — Obsidian 스타일 파일 탐색기 shell과 graph mode sidebar 분기.
- */
-
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowUpDown,
-  Bookmark,
   ChevronsUpDown,
   FilePlus,
-  Files,
   FolderPlus,
-  Search,
   X,
 } from "lucide-react";
 import { Button } from "@renderer/components/ui/button";
 import { ScrollArea } from "@renderer/components/ui/scroll-area";
-import { useToast } from "@shared/ui/ToastContext";
+import { api } from "@shared/api";
 
-import { mockExplorerData } from "../../__fixtures__/mockExplorerData";
-import type { FileNode } from "../../types/canvas.types";
 import { useCanvasViewStore } from "../../stores/canvasViewStore";
+import { useProjectStore } from "@renderer/features/project/stores/projectStore";
+import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
+import { useEventStore } from "@renderer/features/research/stores/eventStore";
+import { useFactionStore } from "@renderer/features/research/stores/factionStore";
+import { useMemoStore } from "@renderer/features/research/stores/memoStore";
+import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import {
   GraphFilterSidebar,
-  TAB_I18N_KEYS,
-  TOOLBAR_ACTION_KEYS,
   TreeNode,
   getAllFolderIds,
+  CATEGORY_FOLDERS,
+  useExplorerData,
+  useCanvasFileActions,
 } from "./canvasActivityShellParts";
 
 interface CanvasActivityShellProps {
@@ -35,53 +32,66 @@ interface CanvasActivityShellProps {
 
 export default function CanvasActivityShell({ onClose }: CanvasActivityShellProps) {
   const { t } = useTranslation();
-  const { showToast } = useToast();
 
   const activePanel = useCanvasViewStore((state) => state.activePanel);
   const isGraphMode = activePanel === "graph";
+  const currentProject = useProjectStore((state) => state.currentProject);
+  const characters = useCharacterStore((state) => state.items);
+  const events = useEventStore((state) => state.items);
+  const factions = useFactionStore((state) => state.items);
+  const notes = useMemoStore((state) => state.notes);
+  const graphData = useWorldBuildingStore((state) => state.graphData);
+  const loadGraph = useWorldBuildingStore((state) => state.loadGraph);
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({
-    "folder-luie": true,
-    "folder-feature": true,
+    [CATEGORY_FOLDERS.characters]: true,
+    [CATEGORY_FOLDERS.events]: true,
+    [CATEGORY_FOLDERS.scraps]: true,
+    [CATEGORY_FOLDERS.factions]: true,
   });
 
-  const toggleFolder = useCallback((folderId: string) => {
-    setExpandedFolders((prev) => ({
-      ...prev,
-      [folderId]: !prev[folderId],
-    }));
-  }, []);
+  const canvasFiles = graphData?.canvasFiles ?? [];
 
-  const handleNodeClick = useCallback((node: FileNode) => {
-    if (node.type === "folder") {
-      toggleFolder(node.id);
-    } else {
-      setSelectedNodeId(node.id);
-      showToast(
-        t("canvas.graph.demoNotImplemented", { actionName: node.name }),
-        "info",
-      );
-    }
-  }, [toggleFolder, t, showToast]);
+  useEffect(() => {
+    const projectId = currentProject?.id;
+    if (!projectId) return;
+    void useCharacterStore.getState().loadCharacters(projectId);
+    void useEventStore.getState().loadEvents(projectId);
+    void useFactionStore.getState().loadFactions(projectId);
+    void useMemoStore
+      .getState()
+      .loadNotes(projectId, currentProject.projectPath ?? null)
+      .catch((error) => {
+        void api.logger.warn("Failed to load Canvas memo project scope", {
+          projectId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
+    void loadGraph(projectId);
+  }, [currentProject?.id, currentProject?.projectPath, loadGraph]);
 
-  const handleTabChange = useCallback((tabKey: "explorer" | "search" | "bookmark") => {
-    showToast(
-      t("canvas.graph.demoNotImplemented", {
-        actionName: t(TAB_I18N_KEYS[tabKey]),
-      }),
-      "info",
-    );
-  }, [showToast, t]);
+  const explorerData = useExplorerData({
+    characters,
+    events,
+    factions,
+    notes,
+    canvasFiles,
+  });
 
-  const handleToolbarAction = useCallback((actionKey: "new-file" | "new-folder" | "sort") => {
-    showToast(
-      t("canvas.graph.demoNotImplemented", {
-        actionName: t(TOOLBAR_ACTION_KEYS[actionKey]),
-      }),
-      "info",
-    );
-  }, [t, showToast]);
+  const {
+    toggleFolder,
+    handleNodeClick,
+    handleToolbarAction,
+    handleRenameNode,
+    handleDeleteNode,
+  } = useCanvasFileActions({
+    explorerData,
+    selectedNodeId,
+    canvasFiles,
+    setSelectedNodeId,
+    setExpandedFolders,
+  });
 
   const toggleAllFolders = useCallback(() => {
     setExpandedFolders((prev) => {
@@ -90,64 +100,30 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
         return {};
       }
 
-      const allIds = getAllFolderIds(mockExplorerData);
+      const allIds = getAllFolderIds(explorerData);
       return allIds.reduce((acc, id) => ({ ...acc, [id]: true }), {});
     });
-  }, []);
+  }, [explorerData]);
 
   if (isGraphMode) {
     return <GraphFilterSidebar />;
   }
 
   return (
-    <div className="flex h-full w-full flex-col bg-sidebar text-foreground border-r border-border/30 overflow-hidden">
-      <div className="flex h-12 items-center justify-between border-b border-border/20 px-3 shrink-0 select-none">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => handleTabChange("explorer")}
-            className="flex items-center justify-center p-1.5 rounded-md bg-active text-foreground transition-all duration-150 relative border-none cursor-pointer"
-            title={t("canvas.activity.explorer")}
-          >
-            <Files className="h-[18px] w-[18px] text-accent" />
-            <span className="absolute -bottom-[9px] left-1/2 -translate-x-1/2 w-8 h-[2px] bg-accent" />
-          </button>
+    <div className="flex h-full w-full flex-col bg-sidebar text-fg border-r border-border/30 overflow-hidden">
+      <div className="flex h-11 items-center justify-between border-b border-border/10 px-3 shrink-0 select-none bg-transparent">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-muted truncate">
+          {t("canvas.activity.explorer", "Explorer")}
+        </span>
 
-          <button
-            onClick={() => handleTabChange("search")}
-            className="flex items-center justify-center p-1.5 rounded-md text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-all duration-150 border-none cursor-pointer bg-transparent"
-            title={t("canvas.activity.search")}
-          >
-            <Search className="h-[18px] w-[18px]" />
-          </button>
-
-          <button
-            onClick={() => handleTabChange("bookmark")}
-            className="flex items-center justify-center p-1.5 rounded-md text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-all duration-150 border-none cursor-pointer bg-transparent"
-            title={t("canvas.activity.bookmark")}
-          >
-            <Bookmark className="h-[18px] w-[18px]" />
-          </button>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => onClose?.()}
-            className="flex h-9 w-9 items-center justify-center rounded-md border-none bg-transparent p-2 text-muted-foreground hover:bg-active hover:text-foreground cursor-pointer transition-colors duration-150"
-            title={t("canvas.activity.closeCanvas")}
-          >
-            <X className="icon-xl" />
-          </button>
-        </div>
-      </div>
-
-      <div className="flex h-9 items-center justify-between border-b border-border/20 px-3 bg-muted/10 shrink-0 select-none">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <Button
             variant="ghost"
             size="icon-xs"
             onClick={() => handleToolbarAction("new-file")}
             title={t("canvas.activity.newFile")}
-            className="h-6 w-6 text-muted-foreground/75 hover:bg-muted/40 hover:text-foreground [&_svg]:h-3.5 [&_svg]:w-3.5"
+            aria-label={t("canvas.activity.newFile")}
+            className="h-6 w-6 text-muted/75 hover:bg-surface-hover hover:text-fg [&_svg]:h-3.5 [&_svg]:w-3.5 rounded-control transition-colors"
           >
             <FilePlus />
           </Button>
@@ -157,7 +133,8 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
             size="icon-xs"
             onClick={() => handleToolbarAction("new-folder")}
             title={t("canvas.activity.newFolder")}
-            className="h-6 w-6 text-muted-foreground/75 hover:bg-muted/40 hover:text-foreground [&_svg]:h-3.5 [&_svg]:w-3.5"
+            aria-label={t("canvas.activity.newFolder")}
+            className="h-6 w-6 text-muted/75 hover:bg-surface-hover hover:text-fg [&_svg]:h-3.5 [&_svg]:w-3.5 rounded-control transition-colors"
           >
             <FolderPlus />
           </Button>
@@ -165,28 +142,31 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
           <Button
             variant="ghost"
             size="icon-xs"
-            onClick={() => handleToolbarAction("sort")}
-            title={t("canvas.activity.sort")}
-            className="h-6 w-6 text-muted-foreground/75 hover:bg-muted/40 hover:text-foreground [&_svg]:h-3.5 [&_svg]:w-3.5"
+            onClick={toggleAllFolders}
+            title={t("canvas.activity.toggleAll", "Toggle all")}
+            aria-label={t("canvas.activity.toggleAll", "Toggle all")}
+            className="h-6 w-6 text-muted/75 hover:bg-surface-hover hover:text-fg [&_svg]:h-3.5 [&_svg]:w-3.5 rounded-control transition-colors"
           >
-            <ArrowUpDown />
+            <ChevronsUpDown />
           </Button>
-        </div>
 
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={toggleAllFolders}
-          title="모두 펼치기 / 접기"
-          className="h-6 w-6 text-muted-foreground/75 hover:bg-muted/40 hover:text-foreground [&_svg]:h-3.5 [&_svg]:w-3.5"
-        >
-          <ChevronsUpDown />
-        </Button>
+          <div className="w-px h-4 bg-border/20 mx-0.5" />
+
+          <button
+            type="button"
+            onClick={() => onClose?.()}
+            className="flex h-6 w-6 items-center justify-center rounded-control border-none bg-transparent text-muted hover:bg-surface-hover hover:text-fg cursor-pointer transition-colors duration-150"
+            title={t("canvas.activity.closeCanvas")}
+            aria-label={t("canvas.activity.closeCanvas")}
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
-      <ScrollArea className="flex-1 p-2">
-        <div className="flex flex-col gap-0.5">
-          {mockExplorerData.map((node) => (
+      <ScrollArea className="flex-1 py-1.5 px-1">
+        <div className="flex flex-col gap-px">
+          {explorerData.map((node) => (
             <TreeNode
               key={node.id}
               node={node}
@@ -195,6 +175,8 @@ export default function CanvasActivityShell({ onClose }: CanvasActivityShellProp
               selectedNodeId={selectedNodeId}
               toggleFolder={toggleFolder}
               handleNodeClick={handleNodeClick}
+              onRenameNode={handleRenameNode}
+              onDeleteNode={handleDeleteNode}
             />
           ))}
         </div>

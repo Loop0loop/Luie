@@ -19,7 +19,7 @@ vi.mock(
   }),
 );
 
-vi.mock("../../../src/main/services/llm/modelRuntimeFactory.js", () => ({
+vi.mock("../../../src/main/services/features/llm/modelRuntimeFactory.js", () => ({
   resolveRuntimeModelConfig: resolveRuntimeModelConfigMock,
 }));
 

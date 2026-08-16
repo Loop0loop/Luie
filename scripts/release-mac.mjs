@@ -102,7 +102,7 @@ async function ensureRelease({ owner, repo, tag, token, commitish }) {
       const parsed = body ? JSON.parse(body) : null;
       message = parsed?.message ?? body;
     } catch {
-      // keep raw body
+      // NOTE: JSON이 아닌 응답도 진단할 수 있도록 raw body를 보존한다.
     }
     throw new Error(`Failed to query release for ${tag}: ${existingResponse.status} ${message}`);
   }

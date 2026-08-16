@@ -27,7 +27,7 @@ export function NarrativeSummaryStatusPanel({
   const byTypeEntries = Object.entries(status?.byType ?? {});
 
   return (
-    <div className="rounded-xl border border-white/15 dark:border-white/5 bg-surface/30 dark:bg-surface/20 backdrop-blur-xl px-3.5 py-2.5 text-xs shadow-lg transition-all duration-300 hover:shadow-xl">
+    <div className="rounded-panel border border-border/30 bg-surface/40 dark:bg-surface/20 backdrop-blur-xl px-3.5 py-2.5 text-xs shadow-lg transition-[box-shadow,colors] duration-300 hover:shadow-xl">
       <button
         type="button"
         onClick={onToggle}
@@ -51,16 +51,16 @@ export function NarrativeSummaryStatusPanel({
               {t("analysis.review.summary.loading")}
             </div>
           ) : error ? (
-            <div className="text-danger flex items-center gap-1.5 py-1">⚠️ {error}</div>
+            <div role="alert" className="text-danger flex items-center gap-1.5 py-1">⚠️ {error}</div>
           ) : !status || status.totalCount === 0 ? (
             <div className="text-muted/80 py-1">{t("analysis.review.summary.empty")}</div>
           ) : (
             <>
-              <div className="flex flex-wrap gap-x-2 gap-y-1.5 text-neutral-400 font-medium select-none">
-                <span className="bg-neutral-800 text-neutral-300 px-2.5 py-0.5 rounded-full text-[9px]">{t("analysis.review.summary.allCount", { count: status.totalCount })}</span>
-                <span className="bg-neutral-850 text-neutral-400 px-2.5 py-0.5 rounded-full text-[9px] border border-white/5">{t("analysis.review.summary.staleCount", { count: status.staleCount })}</span>
+              <div className="flex flex-wrap gap-x-2 gap-y-1.5 text-muted font-medium select-none">
+                <span className="bg-element text-fg px-2.5 py-0.5 rounded-full text-[9px]">{t("analysis.review.summary.allCount", { count: status.totalCount })}</span>
+                <span className="bg-surface text-muted px-2.5 py-0.5 rounded-full text-[9px] border border-border/30">{t("analysis.review.summary.staleCount", { count: status.staleCount })}</span>
                 {byTypeEntries.map(([type, count]) => (
-                  <span key={type} className="bg-neutral-800 text-neutral-300 px-2.5 py-0.5 rounded-full text-[9px]">
+                  <span key={type} className="bg-element text-fg px-2.5 py-0.5 rounded-full text-[9px]">
                     {formatSummaryType(type)} {count}
                   </span>
                 ))}
@@ -69,14 +69,14 @@ export function NarrativeSummaryStatusPanel({
                 {summaries.map((summary) => (
                   <div
                     key={summary.id}
-                    className="rounded-lg border border-white/5 bg-neutral-900/20 p-3 transition-all duration-200 hover:bg-neutral-900/30"
+                    className="rounded-panel border border-border/20 bg-element/40 p-3 transition-colors duration-200 hover:bg-element-hover"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="font-semibold text-fg/80 truncate text-[11px]">
                           {summary.title}
                         </div>
-                        <div className="text-neutral-500 text-[9px] mt-0.5">
+                        <div className="text-muted text-[9px] mt-0.5">
                           {summary.scopeType}:{summary.scopeId ?? "global"} ·{" "}
                           {formatSummaryType(summary.summaryType)}
                         </div>
@@ -84,19 +84,19 @@ export function NarrativeSummaryStatusPanel({
                       <span
                         className={`shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded border ${
                           summary.isStale
-                            ? "bg-neutral-850 text-neutral-400 border-neutral-700/50"
-                            : "bg-neutral-800 text-neutral-300 border-neutral-700/30"
+                            ? "bg-surface text-muted border-border/40"
+                            : "bg-element text-fg border-border/30"
                         }`}
                       >
                         {summary.isStale ? "stale" : "fresh"}
                       </span>
                     </div>
-                    <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[9px] text-neutral-500 font-medium">
+                    <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[9px] text-muted font-medium">
                       <span>{t("analysis.review.summary.evidenceCount", { count: summary.sourceCount })}</span>
                       <span>{t("analysis.review.summary.confidence", { count: summary.confidence })}</span>
                       <span>{summary.status}</span>
                     </div>
-                    <div className="mt-2 text-[10px] leading-relaxed text-fg/70 border-t border-white/5 pt-2 font-normal">
+                    <div className="mt-2 text-[10px] leading-relaxed text-fg/70 border-t border-border/20 pt-2 font-normal">
                       {summary.summary}
                     </div>
                   </div>

@@ -1,4 +1,5 @@
-import { Cpu, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, Cpu, Loader2 } from "lucide-react";
 import type { LlmfitResult } from "@shared/types";
 
 import type { ModelTabProps } from "./types";
@@ -27,6 +28,8 @@ const fitBadgeClass = (
 };
 
 export function LlmfitCard({ t, llmfitResult, llmfitLoading }: LlmfitCardProps) {
+  const [showTech, setShowTech] = useState(false);
+
   return (
     <div className="rounded-control bg-surface border border-border p-3 space-y-3">
       <div className="flex items-start gap-2">
@@ -43,34 +46,49 @@ export function LlmfitCard({ t, llmfitResult, llmfitLoading }: LlmfitCardProps) 
 
       {llmfitLoading ? (
         <div className="flex items-center gap-1.5 text-xs text-muted">
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
           <span>{t("settings.localLlm.llmfit.loading")}</span>
         </div>
       ) : llmfitResult?.available ? (
         llmfitResult.recommendations.length > 0 ? (
-          <div className="max-h-64 divide-y divide-border overflow-y-auto rounded-control border border-border bg-panel">
-            {llmfitResult.recommendations.map((rec) => (
-              <div key={rec.name} className="space-y-1 px-3 py-2.5">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-xs font-medium text-fg">{rec.name}</span>
-                  <span
-                    className={`shrink-0 rounded-control px-2 py-0.5 text-[11px] ${fitBadgeClass(rec.fitLevel)}`}
-                  >
-                    {t(`settings.localLlm.llmfit.fit.${rec.fitLevel}`)}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted">
-                  {rec.paramsB !== null && <span>{rec.paramsB}B</span>}
-                  {rec.estimatedTps !== null && (
-                    <span>{t("settings.localLlm.llmfit.speed", { tps: rec.estimatedTps })}</span>
+          <div className="space-y-2">
+            <div className="divide-y divide-border overflow-hidden rounded-control border border-border bg-panel">
+              {llmfitResult.recommendations.map((rec) => (
+                <div key={rec.name} className="space-y-1 px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-xs font-medium text-fg">{rec.name}</span>
+                    <span
+                      className={`shrink-0 rounded-control px-2 py-0.5 text-[11px] ${fitBadgeClass(rec.fitLevel)}`}
+                    >
+                      {t(`settings.localLlm.llmfit.fit.${rec.fitLevel}`)}
+                    </span>
+                  </div>
+                  {showTech && (
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted">
+                      {rec.paramsB !== null && <span>{rec.paramsB}B</span>}
+                      {rec.estimatedTps !== null && (
+                        <span>{t("settings.localLlm.llmfit.speed", { tps: rec.estimatedTps })}</span>
+                      )}
+                      {rec.memoryRequiredGb !== null && (
+                        <span>{t("settings.localLlm.llmfit.memory", { gb: rec.memoryRequiredGb })}</span>
+                      )}
+                      {rec.bestQuant && <span>{rec.bestQuant}</span>}
+                    </div>
                   )}
-                  {rec.memoryRequiredGb !== null && (
-                    <span>{t("settings.localLlm.llmfit.memory", { gb: rec.memoryRequiredGb })}</span>
-                  )}
-                  {rec.bestQuant && <span>{rec.bestQuant}</span>}
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowTech((v) => !v)}
+              aria-expanded={showTech}
+              className="flex w-full items-center justify-center gap-1 text-[11px] text-muted hover:text-fg-secondary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-control py-0.5"
+            >
+              <span>{t("settings.localLlm.llmfit.techToggle")}</span>
+              <ChevronDown
+                className={`h-3 w-3 transition-transform ${showTech ? "rotate-180" : ""}`}
+              />
+            </button>
           </div>
         ) : (
           <p className="text-xs text-muted">{t("settings.localLlm.llmfit.noResults")}</p>

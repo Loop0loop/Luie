@@ -66,7 +66,6 @@ describe("Drizzle bootstrap migration", () => {
   it("applies baseline migration on existing Prisma database", async () => {
     const dbPath = await createTempDbPath();
 
-    // Simulate an existing Prisma database by creating the Project table manually
     const Database = (await import("better-sqlite3")).default;
     const preseedDb = new Database(dbPath);
     preseedDb.exec(`
@@ -80,12 +79,10 @@ describe("Drizzle bootstrap migration", () => {
     `);
     preseedDb.close();
 
-    // Now run the Drizzle bootstrap — should detect existing Prisma DB
     ensurePackagedSqliteSchema(dbPath, logger);
 
     const database = new Database(dbPath);
     try {
-      // Project table should still exist (not recreated)
       const hasProject = database
         .prepare(
           "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'Project' LIMIT 1;",
@@ -93,7 +90,6 @@ describe("Drizzle bootstrap migration", () => {
         .get();
       expect(hasProject).toBeTruthy();
 
-      // __drizzle_migrations should now exist with baseline entries
       const hasDrizzleMigrations = database
         .prepare(
           "SELECT name FROM sqlite_master WHERE type = 'table' AND name = '__drizzle_migrations' LIMIT 1;",
@@ -177,7 +173,6 @@ describe("Drizzle bootstrap migration", () => {
         .prepare("SELECT COUNT(*) as count FROM __drizzle_migrations")
         .get() as { count: number };
 
-      // Run again
       ensurePackagedSqliteSchema(dbPath, logger);
 
       const secondRun = database

@@ -1,10 +1,4 @@
-/**
- * IPC Channel definitions
- * Main과 Renderer 간 통신에 사용되는 채널 정의
- */
-
 export const IPC_CHANNELS = {
-  // Project Channels
   PROJECT_CREATE: "project:create",
   PROJECT_GET: "project:get",
   PROJECT_GET_ALL: "project:get-all",
@@ -16,7 +10,6 @@ export const IPC_CHANNELS = {
   PROJECT_ATTACH_LUIE: "project:attach-luie",
   PROJECT_MATERIALIZE_LUIE: "project:materialize-luie",
 
-  // Chapter Channels
   CHAPTER_CREATE: "chapter:create",
   CHAPTER_GET: "chapter:get",
   CHAPTER_GET_ALL: "chapter:get-all",
@@ -27,41 +20,35 @@ export const IPC_CHANNELS = {
   CHAPTER_PURGE: "chapter:purge",
   CHAPTER_REORDER: "chapter:reorder",
 
-  // Scene Channels
   SCENE_CREATE: "scene:create",
   SCENE_GET: "scene:get",
   SCENE_GET_ALL: "scene:get-all",
   SCENE_UPDATE: "scene:update",
   SCENE_DELETE: "scene:delete",
 
-  // Note Channels
   NOTE_CREATE: "note:create",
   NOTE_GET: "note:get",
   NOTE_GET_ALL: "note:get-all",
   NOTE_UPDATE: "note:update",
   NOTE_DELETE: "note:delete",
 
-  // Synopsis Channels
   SYNOPSIS_CREATE: "synopsis:create",
   SYNOPSIS_GET: "synopsis:get",
   SYNOPSIS_GET_ALL: "synopsis:get-all",
   SYNOPSIS_UPDATE: "synopsis:update",
   SYNOPSIS_DELETE: "synopsis:delete",
 
-  // Plot Channels
   PLOT_CREATE: "plot:create",
   PLOT_GET: "plot:get",
   PLOT_GET_ALL: "plot:get-all",
   PLOT_UPDATE: "plot:update",
   PLOT_DELETE: "plot:delete",
 
-  // Scrap memo channels
   SCRAP_MEMO_CREATE: "scrap-memo:create",
   SCRAP_MEMO_GET_ALL: "scrap-memo:get-all",
   SCRAP_MEMO_UPDATE: "scrap-memo:update",
   SCRAP_MEMO_DELETE: "scrap-memo:delete",
 
-  // Character Channels
   CHARACTER_CREATE: "character:create",
   CHARACTER_GET: "character:get",
   CHARACTER_GET_ALL: "character:get-all",
@@ -71,28 +58,24 @@ export const IPC_CHANNELS = {
   CHARACTER_GENERATE_QUOTE: "character:generate-quote",
   CHARACTER_GENERATE_STATS: "character:generate-stats",
 
-  // Event Channels
   EVENT_CREATE: "event:create",
   EVENT_GET: "event:get",
   EVENT_GET_ALL: "event:get-all",
   EVENT_UPDATE: "event:update",
   EVENT_DELETE: "event:delete",
 
-  // Faction Channels
   FACTION_CREATE: "faction:create",
   FACTION_GET: "faction:get",
   FACTION_GET_ALL: "faction:get-all",
   FACTION_UPDATE: "faction:update",
   FACTION_DELETE: "faction:delete",
 
-  // Term Channels
   TERM_CREATE: "term:create",
   TERM_GET: "term:get",
   TERM_GET_ALL: "term:get-all",
   TERM_UPDATE: "term:update",
   TERM_DELETE: "term:delete",
 
-  // Snapshot Channels
   SNAPSHOT_CREATE: "snapshot:create",
   SNAPSHOT_GET_ALL: "snapshot:get-all",
   SNAPSHOT_GET_BY_PROJECT: "snapshot:get-by-project",
@@ -102,11 +85,9 @@ export const IPC_CHANNELS = {
   SNAPSHOT_DELETE: "snapshot:delete",
   SNAPSHOT_IMPORT_FILE: "snapshot:import-file",
 
-  // Auto Save
   AUTO_SAVE: "auto-save",
   MANUAL_SAVE: "manual-save",
 
-  // Search
   SEARCH: "search",
   SEARCH_INDEX_STATUS: "search:index-status",
   SEARCH_REBUILD_INDEX: "search:rebuild-index",
@@ -118,26 +99,6 @@ export const IPC_CHANNELS = {
   MEMORY_RUN_EPISODE_CALIBRATION: "memory:run-episode-calibration",
   MEMORY_SEARCH_CHUNKS: "memory:search-chunks",
   MEMORY_QUERY_NARRATIVE: "memory:query-narrative",
-  MEMORY_REVIEW_BACKLOG: "memory:review-backlog",
-  MEMORY_GET_CONFLICT_QUEUE: "memory:get-conflict-queue",
-  MEMORY_EPISODE_REVIEW_QUEUE: "memory:episode-review-queue",
-  MEMORY_EPISODE_CONFIRM: "memory:episode-confirm",
-  MEMORY_EPISODE_REJECT: "memory:episode-reject",
-  MEMORY_FACT_REVIEW_QUEUE: "memory:fact-review-queue",
-  MEMORY_FACT_CONFIRM: "memory:fact-confirm",
-  MEMORY_FACT_REJECT: "memory:fact-reject",
-  MEMORY_CONFLICT_RESOLVE: "memory:conflict-resolve",
-  MEMORY_CONFLICT_REVIEW_ACTION: "memory:conflict-review-action",
-  MEMORY_ENTITY_ALIAS_REVIEW_QUEUE: "memory:entity-alias-review-queue",
-  MEMORY_ENTITY_REVIEW_QUEUE: "memory:entity-review-queue",
-  MEMORY_ENTITY_CONFIRM: "memory:entity-confirm",
-  MEMORY_ENTITY_REJECT: "memory:entity-reject",
-  MEMORY_ENTITY_ALIAS_CONFIRM: "memory:entity-alias-confirm",
-  MEMORY_ENTITY_ALIAS_REJECT: "memory:entity-alias-reject",
-  MEMORY_ENTITY_ALIAS_SPLIT: "memory:entity-alias-split",
-  MEMORY_ENTITY_MERGE: "memory:entity-merge",
-  MEMORY_STALE_EVIDENCE_REVIEW_ACTION: "memory:stale-evidence-review-action",
-  MEMORY_REPAIR_EVIDENCE_LINKS: "memory:repair-evidence-links",
   MEMORY_GET_CHUNK_BACKLINK: "memory:get-chunk-backlink",
   MEMORY_GET_CHUNK_WINDOW: "memory:get-chunk-window",
   MEMORY_GET_CHAPTER_SUMMARY: "memory:get-chapter-summary",
@@ -151,7 +112,6 @@ export const IPC_CHANNELS = {
   DB_RUN_INTEGRITY_CHECK: "db:run-integrity-check",
   DB_GET_MIGRATION_HEALTH: "db:get-migration-health",
 
-  // Analysis (원고 분석)
   ANALYSIS_START: "analysis:start",
   ANALYSIS_STREAM: "analysis:stream",
   ANALYSIS_ERROR: "analysis:error",
@@ -162,7 +122,6 @@ export const IPC_CHANNELS = {
   RAG_QA_STREAM: "rag-qa:stream",
   RAG_QA_ERROR: "rag-qa:error",
 
-  // File System
   FS_SELECT_DIRECTORY: "fs:select-directory",
   FS_SELECT_SAVE_LOCATION: "fs:select-save-location",
   FS_SELECT_FILE: "fs:select-file",
@@ -173,12 +132,10 @@ export const IPC_CHANNELS = {
 
   FS_READ_LUIE_ENTRY: "fs:read-luie-entry",
 
-  // Luie package directory (.luie)
   FS_CREATE_LUIE_PACKAGE: "fs:create-luie-package",
   FS_WRITE_PROJECT_FILE: "fs:write-project-file",
   FS_APPROVE_PROJECT_PATH: "fs:approve-project-path",
 
-  // Settings
   SETTINGS_GET_ALL: "settings:get-all",
   SETTINGS_GET_EDITOR: "settings:get-editor",
   SETTINGS_SET_EDITOR: "settings:set-editor",
@@ -218,11 +175,9 @@ export const IPC_CHANNELS = {
   EMBEDDING_MODEL_DOWNLOAD_PROGRESS: "embedding-model:download-progress",
   SETTINGS_RESET: "settings:reset",
 
-  // Recovery
   RECOVERY_DB_STATUS: "recovery:db-status",
   RECOVERY_DB_RUN: "recovery:db-run",
 
-  // Window
   WINDOW_MINIMIZE: "window:minimize",
   WINDOW_MAXIMIZE: "window:maximize",
   WINDOW_UNMAXIMIZE: "window:unmaximize",
@@ -233,7 +188,6 @@ export const IPC_CHANNELS = {
   WINDOW_OPEN_EXPORT: "window:open-export",
   WINDOW_OPEN_WORLD_GRAPH: "window:open-world-graph",
 
-  // App
   APP_GET_VERSION: "app:get-version",
   APP_CHECK_UPDATE: "app:check-update",
   APP_GET_UPDATE_STATE: "app:get-update-state",
@@ -245,19 +199,15 @@ export const IPC_CHANNELS = {
   APP_UPDATE_STATE_CHANGED: "app:update-state-changed",
   APP_QUIT: "app:quit",
 
-  // Export
   EXPORT_CREATE: "export:create",
 
-  // Logger
   LOGGER_LOG: "logger:log",
   LOGGER_LOG_BATCH: "logger:log-batch",
 
-  // App lifecycle (main ↔ renderer quit coordination)
   APP_BEFORE_QUIT: "app:before-quit",
   APP_FLUSH_COMPLETE: "app:flush-complete",
   APP_QUIT_PHASE: "app:quit-phase",
 
-  // Sync
   SYNC_GET_STATUS: "sync:get-status",
   SYNC_CONNECT_GOOGLE: "sync:connect-google",
   SYNC_DISCONNECT: "sync:disconnect",
@@ -270,11 +220,9 @@ export const IPC_CHANNELS = {
   SYNC_STATUS_CHANGED: "sync:status-changed",
   SYNC_AUTH_RESULT: "sync:auth-result",
 
-  // Startup Wizard
   STARTUP_GET_READINESS: "startup:get-readiness",
   STARTUP_COMPLETE_WIZARD: "startup:complete-wizard",
 
-  // World Entity Channels
   WORLD_ENTITY_CREATE: "world-entity:create",
   WORLD_ENTITY_GET: "world-entity:get",
   WORLD_ENTITY_GET_ALL: "world-entity:get-all",
@@ -282,23 +230,19 @@ export const IPC_CHANNELS = {
   WORLD_ENTITY_UPDATE_POSITION: "world-entity:update-position",
   WORLD_ENTITY_DELETE: "world-entity:delete",
 
-  // Entity Relation Channels
   ENTITY_RELATION_CREATE: "world:createRelation",
   ENTITY_RELATION_GET_ALL: "world:getRelations",
   ENTITY_RELATION_UPDATE: "world:updateRelation",
   ENTITY_RELATION_DELETE: "world:deleteRelation",
 
-  // World Graph
   WORLD_GRAPH_GET: "world:getGraph",
   WORLD_GRAPH_GET_MENTIONS: "world:getMentions",
 
-  // World replica storage
   WORLD_STORAGE_GET_DOCUMENT: "world-storage:get-document",
   WORLD_STORAGE_SET_DOCUMENT: "world-storage:set-document",
   WORLD_STORAGE_GET_SCRAP_MEMOS: "world-storage:get-scrap-memos",
   WORLD_STORAGE_SET_SCRAP_MEMOS: "world-storage:set-scrap-memos",
 
-  // Graph plugins
   PLUGIN_LIST_CATALOG: "plugin:list-catalog",
   PLUGIN_LIST_INSTALLED: "plugin:list-installed",
   PLUGIN_INSTALL: "plugin:install",

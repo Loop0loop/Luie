@@ -30,7 +30,7 @@ Luie/
 
 | Task                            | Location                                                                                 | Notes                                                                   |
 | ------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| App startup / lifecycle order   | `src/main/index.ts`, `src/main/lifecycle/appReady.ts`                                    | Main bootstrap uses deferred startup maintenance and deep-link handling |
+| App startup / lifecycle order   | `src/main/index.ts`, `src/main/lifecycle/app-ready/appReady.ts`                          | Main bootstrap uses deferred startup maintenance and deep-link handling |
 | IPC contract additions          | `src/shared/ipc/channels.ts`, `src/main/handler/**`, `src/preload/api/**`                | Add channel/type/schema together; keep main/preload/renderer aligned    |
 | Renderer feature changes        | `src/renderer/src/features/**`                                                           | Feature-first folders; world graph lives under `research`               |
 | Shared constants/types          | `src/shared/constants/**`, `src/shared/types/**`                                         | Cross-process safe only                                                 |
@@ -43,18 +43,19 @@ Luie/
 | ------------------------------ | -------------- | -------------------------------------------- | ------------------------------------------------------ |
 | `registerAllIPCHandlers`       | function       | `src/main/handler/index.ts`                  | Main IPC registration hub                              |
 | `db` (`DatabaseService`)       | singleton      | `src/main/database/index.ts`                 | DB init/migration/bootstrap + Drizzle client lifecycle |
-| `registerAppReady`             | lifecycle      | `src/main/lifecycle/appReady.ts`             | Main window flow + deferred maintenance                |
+| `registerAppReady`             | lifecycle      | `src/main/lifecycle/app-ready/appReady.ts`   | Main window flow + deferred maintenance                |
 | `createRendererApi` bridge     | module         | `src/preload/index.ts` + `src/preload/api/*` | Controlled renderer capability surface                 |
 | `IPC_CHANNELS`                 | constant map   | `src/shared/ipc/channels.ts`                 | Canonical channel registry                             |
 | `features/*` stores/components | domain modules | `src/renderer/src/features/**`               | UI/business domains (editor/research/workspace/etc.)   |
 
 ## CONVENTIONS (PROJECT-SPECIFIC)
 
-- Package manager is **pnpm** 
+- Package manager is **pnpm**
 - TypeScript strictness is tightened with `noUnusedLocals`, `noUnusedParameters`, `noImplicitReturns`, `noFallthroughCasesInSwitch`.
 - Aliases: `@renderer/* -> src/renderer/src/*`, `@shared/* -> src/shared/*`.
 - Build flow usually requires pre steps (`predev`, `postinstall` include Electron rebuild work).
 - Renderer DOM tests are split by glob to `jsdom` (`tests/dom/**/*.test.tsx`), default test env is `node`.
+- Comments follow `docs/conventions/comments.md`: explain non-obvious reasons and constraints, not code-visible behavior.
 
 ## ANTI-PATTERNS (THIS PROJECT)
 
@@ -88,6 +89,7 @@ pnpm run build:win:x64
 - Native module ABI mismatches can happen in local test envs; rebuild flows are already scripted.
 
 <!-- code-review-graph MCP tools -->
+
 ## MCP Tools: code-review-graph
 
 **IMPORTANT: This project has a knowledge graph. ALWAYS use the
@@ -108,16 +110,16 @@ Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need.
 
 ### Key Tools
 
-| Tool | Use when |
-| ------ | ---------- |
-| `detect_changes` | Reviewing code changes — gives risk-scored analysis |
-| `get_review_context` | Need source snippets for review — token-efficient |
-| `get_impact_radius` | Understanding blast radius of a change |
-| `get_affected_flows` | Finding which execution paths are impacted |
-| `query_graph` | Tracing callers, callees, imports, tests, dependencies |
-| `semantic_search_nodes` | Finding functions/classes by name or keyword |
-| `get_architecture_overview` | Understanding high-level codebase structure |
-| `refactor_tool` | Planning renames, finding dead code |
+| Tool                        | Use when                                               |
+| --------------------------- | ------------------------------------------------------ |
+| `detect_changes`            | Reviewing code changes — gives risk-scored analysis    |
+| `get_review_context`        | Need source snippets for review — token-efficient      |
+| `get_impact_radius`         | Understanding blast radius of a change                 |
+| `get_affected_flows`        | Finding which execution paths are impacted             |
+| `query_graph`               | Tracing callers, callees, imports, tests, dependencies |
+| `semantic_search_nodes`     | Finding functions/classes by name or keyword           |
+| `get_architecture_overview` | Understanding high-level codebase structure            |
+| `refactor_tool`             | Planning renames, finding dead code                    |
 
 ### Workflow
 

@@ -36,20 +36,6 @@ const mocked = vi.hoisted(() => {
   };
 });
 
-vi.mock("electron", () => ({
-  app: {
-    getPath: vi.fn(() => mocked.userDataPath),
-  },
-}));
-
-vi.mock("better-sqlite3", () => ({
-  default: mocked.BetterSqlite3,
-}));
-
-vi.mock("../../../src/main/database/index.js", () => ({
-  db: mocked.db,
-}));
-
 describe("DbRecoveryService", () => {
   let tempRoot = "";
 
@@ -90,6 +76,11 @@ describe("DbRecoveryService", () => {
     mocked.BetterSqlite3.mockImplementation(function MockDatabase() {
       return mocked.sqliteInstance;
     });
+    vi.doMock("electron", () => ({
+      app: { getPath: vi.fn(() => mocked.userDataPath) },
+    }));
+    vi.doMock("better-sqlite3", () => ({ default: mocked.BetterSqlite3 }));
+    vi.doMock("../../../src/main/database/index.js", () => ({ db: mocked.db }));
 
     tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "luie-db-recovery-"));
     mocked.userDataPath = tempRoot;

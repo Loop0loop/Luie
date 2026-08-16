@@ -32,7 +32,7 @@ test("measures write-loop stability on 1000x5000 dataset @stress", async () => {
   const chapters = toNumber(process.env.LUIE_STRESS_CHAPTERS, 200);
   const burstOps = toNumber(process.env.LUIE_STRESS_BURST_OPS, 400);
   const maxWaitMs = toNumber(process.env.LUIE_STRESS_MAX_WAIT_MS, 90000);
-  // Scale timeout: 300ms per operation (create + seed + burst) + queue drain + fixed overhead
+  // NOTE: create·seed·burst당 300ms와 queue drain·고정 overhead를 합쳐 timeout을 계산한다.
   const estimatedOps = chapters * 2 + burstOps;
   const defaultTimeoutMs = estimatedOps * 300 + maxWaitMs + 30_000;
   const testTimeoutMs = toNumber(process.env.LUIE_STRESS_TEST_TIMEOUT_MS, defaultTimeoutMs);

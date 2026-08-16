@@ -125,10 +125,9 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
         const win = windowManager.getMainWindow();
         if (!win) return false;
         if (process.platform === "darwin") {
-          // macOS: Use simpleFullScreen for "borderless" feel without new space
+          // NOTE: macOS는 별도 Space 생성을 피하려고 simple fullscreen을 사용한다.
           win.setSimpleFullScreen(flag);
         } else {
-          // Windows/Linux: Standard fullscreen
           win.setFullScreen(flag);
         }
         win.focus();
@@ -141,8 +140,6 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       failMessage: "Failed to open export window",
       argsSchema: windowOpenExportArgsSchema,
       handler: (chapterId: string) => {
-        logger.info("WINDOW_OPEN_EXPORT received", { chapterId });
-
         if (!chapterId) {
           logger.error("Invalid chapterId for export", {
             chapterId,
@@ -155,9 +152,7 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
           );
         }
 
-        logger.info("Creating export window", { chapterId });
         windowManager.createExportWindow(chapterId);
-        logger.info("Export window created successfully", { chapterId });
         return true;
       },
     },
@@ -166,11 +161,7 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       logTag: "WINDOW_OPEN_WORLD_GRAPH",
       failMessage: "Failed to open world graph window",
       handler: () => {
-        logger.info("WINDOW_OPEN_WORLD_GRAPH received");
-
-        logger.info("Creating world graph window");
         windowManager.createWorldGraphWindow();
-        logger.info("World graph window created successfully");
         return true;
       },
     },

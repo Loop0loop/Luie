@@ -1,6 +1,16 @@
 import type { ColumnPatch } from "./metadataTypes.js";
 export const PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
   {
+    table: "Project",
+    column: "revision",
+    sql: 'ALTER TABLE "Project" ADD COLUMN "revision" INTEGER NOT NULL DEFAULT 0;',
+  },
+  {
+    table: "ProjectAttachment",
+    column: "exportedRevision",
+    sql: 'ALTER TABLE "ProjectAttachment" ADD COLUMN "exportedRevision" INTEGER NOT NULL DEFAULT 0;',
+  },
+  {
     table: "Term",
     column: "order",
     sql: 'ALTER TABLE "Term" ADD COLUMN "order" INTEGER NOT NULL DEFAULT 0;',

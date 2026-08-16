@@ -1,6 +1,6 @@
 // TEST_LEVEL: REAL_DB_INTEGRATION
-// PROVES: project service behavior against real SQLite/Drizzle state and attached .luie files
-// DOES_NOT_PROVE: pure end-to-end app startup or renderer-side behavior
+// PROVES: 실제 SQLite/Drizzle state와 연결된 .luie file에서 project service 동작을 검증한다.
+// DOES_NOT_PROVE: 순수 end-to-end app startup 또는 renderer 동작
 
 import { describe, it, expect, vi, beforeAll } from "vitest";
 import path from "node:path";
@@ -10,7 +10,7 @@ import { eq } from "drizzle-orm";
 import {
   ProjectService,
   projectService,
-} from "../../../src/main/services/core/projectService.js";
+} from "../../../src/main/services/features/project/projectService.js";
 import { db } from "../../../src/main/database/index.js";
 import * as schema from "../../../src/main/database/schema/index.js";
 import { ErrorCode } from "../../../src/shared/constants/errors/index.js";
@@ -19,6 +19,7 @@ import {
   readLuieContainerEntry,
   writeLuieContainer,
 } from "../../../src/main/services/io/luieContainer.js";
+import * as projectRevisionStore from "../../../src/main/services/core/project/projectRevisionStore.js";
 import {
   makeExactMixedByteText,
   makeMixedNarrativeText,
@@ -94,10 +95,35 @@ describe("ProjectService", () => {
       description: "test",
       projectPath,
     });
+    const projectId = String(created.id);
+    const beforeRecovery = await projectRevisionStore.getProjectRevisionState(projectId);
+    const markSpy = vi.spyOn(projectRevisionStore, "markProjectExported");
+    const internalService = localProjectService as unknown as {
+      exportProjectPackageWithOptions: (
+        targetProjectId: string,
+        options: { targetPath?: string; worldSourcePath?: string | null },
+      ) => Promise<boolean>;
+    };
+    const exportProjectPackageWithOptions =
+      internalService.exportProjectPackageWithOptions.bind(localProjectService);
+    const exportSpy = vi
+      .spyOn(internalService, "exportProjectPackageWithOptions")
+      .mockImplementation(async (targetProjectId, options) => {
+        const now = new Date().toISOString();
+        await db.getClient().insert(schema.character).values({
+          id: `recovery-race-${projectId}`,
+          projectId,
+          name: "Recovery race",
+          createdAt: now,
+          updatedAt: now,
+        });
+        return await exportProjectPackageWithOptions(targetProjectId, options);
+      });
 
     await fs.writeFile(projectPath, "not-a-sqlite", "utf-8");
 
     const result = await localProjectService.openLuieProject(projectPath);
+    exportSpy.mockRestore();
     expect(result.recovery).toBe(true);
     expect(result.recoveryReason).toBe("corrupt");
     expect((result.project as { id: string }).id).toBe(created.id);
@@ -129,6 +155,14 @@ describe("ProjectService", () => {
       projectId: created.id,
       title: "Recovery Project",
     });
+    const revisionState = await projectRevisionStore.getProjectRevisionState(projectId);
+    expect(markSpy).toHaveBeenCalledWith(projectId, beforeRecovery.revision);
+    expect(revisionState).toEqual({
+      revision: beforeRecovery.revision + 1,
+      exportedRevision: beforeRecovery.revision,
+    });
+    await expect(projectRevisionStore.listProjectsNeedingExport()).resolves.toContain(projectId);
+    markSpy.mockRestore();
   });
 
   it("fails open when a legacy .luie directory package is attached without deleting existing db data", async () => {

@@ -58,7 +58,7 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
           setLeftMargin(newVal);
           notifyChange(newVal, rightMargin, firstLineIndent);
         } else if (draggingRef.current === "right") {
-          // Right margin: dragging right = less margin, dragging left = more margin
+          // NOTE: 오른쪽 handle은 우측 이동량과 margin 변화 방향이 반대다.
           const newVal = Math.max(
             EDITOR_RULER_MIN_MARGIN_PX,
             Math.min(EDITOR_A4_PAGE_WIDTH_PX - leftMargin - EDITOR_RULER_MIN_BODY_WIDTH_PX, startValueRef.current - delta),
@@ -66,7 +66,7 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
           setRightMargin(newVal);
           notifyChange(leftMargin, newVal, firstLineIndent);
         } else {
-          // firstLine is relative to leftMargin
+          // NOTE: firstLine 값은 leftMargin 기준의 상대 위치다.
           const maxFLI = EDITOR_A4_PAGE_WIDTH_PX - leftMargin - rightMargin - 48;
           const newVal = Math.max(
             -leftMargin + EDITOR_RULER_MIN_MARGIN_PX,
@@ -91,10 +91,9 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
     [leftMargin, rightMargin, firstLineIndent, notifyChange],
   );
 
-  // Ticks & Numbers
   const renderTicks = () => {
     const ticks: React.ReactNode[] = [];
-    const quarterInch = INCH_PX / 4; // 24px
+    const quarterInch = INCH_PX / 4;
 
     for (let px = 0; px <= EDITOR_A4_PAGE_WIDTH_PX; px += quarterInch) {
       const inchIdx = px / INCH_PX;
@@ -120,7 +119,6 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
         />,
       );
 
-      // Numbers at every inch (skip 0)
       if (isInch && px > 0 && px < EDITOR_A4_PAGE_WIDTH_PX) {
         const inchNum = Math.round(inchIdx);
         ticks.push(
@@ -152,10 +150,9 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
   return (
     <div
       ref={rulerRef}
-      className="relative bg-background select-none overflow-visible text-xs"
+      className="relative bg-app select-none overflow-visible text-xs"
       style={{ width: EDITOR_A4_PAGE_WIDTH_PX, height: EDITOR_RULER_HEIGHT_PX }}
     >
-      {/* Gray backgrounds for margins */}
       <div
         className="absolute top-0 bottom-0 left-0"
         style={{
@@ -174,12 +171,9 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
         }}
       />
 
-      {/* Ticks & Numbers */}
       {renderTicks()}
 
-      {/* === MARKERS === */}
 
-      {/* First Line Indent — Down-pointing triangle at top */}
       <div
         className="absolute z-20 cursor-ew-resize group"
         style={{ left: leftMargin + firstLineIndent, top: 0 }}
@@ -196,7 +190,6 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
         </div>
       </div>
 
-      {/* Left Indent — Up-pointing triangle + rectangle at bottom */}
       <div
         className="absolute z-10 cursor-ew-resize group"
         style={{ left: leftMargin, top: 0 }}
@@ -205,12 +198,10 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
       >
         <div className="absolute -left-[5px] top-[8px]">
           <svg width="10" height="16" viewBox="0 0 10 16" fill="none">
-            {/* Up triangle */}
             <path
               d="M0 8L5 0L10 8Z"
               className="fill-[#0b57d0] group-hover:fill-[#1a73e8] transition-colors"
             />
-            {/* Rectangle */}
             <path
               d="M2 10H8V16H2Z"
               className="fill-[#0b57d0] group-hover:fill-[#1a73e8] transition-colors"
@@ -219,7 +210,6 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
         </div>
       </div>
 
-      {/* Right Indent — Up-pointing triangle at bottom */}
       <div
         className="absolute z-10 cursor-ew-resize group"
         style={{ left: rightEdge, top: 0 }}

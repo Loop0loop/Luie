@@ -68,7 +68,7 @@ vi.mock("../../../src/main/database/index.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/core/projectService.js", () => ({
+vi.mock("../../../src/main/services/features/project/projectService.js", () => ({
   projectService: {
     touchProject: (projectId: string) => mocked.projectTouch(projectId),
     persistPackageAfterMutation: (projectId: string, reason: string) =>
@@ -76,7 +76,7 @@ vi.mock("../../../src/main/services/core/projectService.js", () => ({
   },
 }));
 
-import { EntityRelationService } from "../../../src/main/services/world/entityRelationService.js";
+import { EntityRelationService } from "../../../src/main/services/features/world/graph/entityRelationService.js";
 
 describe("EntityRelationService freshness", () => {
   beforeEach(() => {

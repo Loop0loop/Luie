@@ -18,7 +18,7 @@ describe("check-utility-process-boundary", () => {
 
   it("rejects utility imports of the main sidecar manager", () => {
     const findings = analyzeUtilityProcessBoundarySource(
-      'import { sidecarManager } from "../../services/llm/sidecarManager.js";',
+      'import { sidecarManager } from "../../infra/llm/sidecarManager.js";',
       "src/main/utility/llm/example.ts",
     );
 

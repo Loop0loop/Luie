@@ -1,7 +1,3 @@
-/**
- * 챕터 관리 (생성, 수정, 삭제, 선택)
- */
-
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useShallow } from "zustand/react/shallow";
@@ -94,7 +90,6 @@ export function useChapterManagement() {
       }
       setCurrentChapter(target);
 
-      // Persist active chapter selection
       upsertProjectLayout(currentProject.id, {
         editor: {
           activeChapterId: target.id,
@@ -150,7 +145,6 @@ export function useChapterManagement() {
       return;
     }
 
-    // Restore from persisted layout if available
     const savedLayout = getProjectLayout(currentProject.id);
     const persistedChapterId = savedLayout.editor.activeChapterId;
     let nextChapter: Chapter | null = null;

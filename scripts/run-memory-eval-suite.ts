@@ -4,14 +4,12 @@ import { writeFile } from "node:fs/promises";
 import { db } from "../src/main/database/main/databaseService.js";
 import { buildLayer3Evidence } from "../src/main/services/features/rag/internal/contextAssembler.layer3.js";
 import { buildRagGrounding } from "../src/main/services/features/rag/grounding.js";
-import {
-  runLiveMemoryEvalSuite,
-  summarizeMemoryEvalOptimizationFailures,
-} from "../src/main/services/features/memory/eval/index.js";
+import { runLiveMemoryEvalSuite } from "../src/main/services/features/memory/eval/memoryEvalRunner.js";
+import { summarizeMemoryEvalOptimizationFailures } from "../src/main/services/features/memory/eval/memoryEvalOptimizationGuard.js";
 import {
   MEMORY_WRITER_TASK_REAL_BETA_LABEL_PREFIX,
   buildMemoryWriterTaskBenchmarkRealBetaRunLabel,
-} from "../src/main/services/features/memory/benchmark/index.js";
+} from "../src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.js";
 import {
   resolveSearchOptimizationPolicy,
   type SearchOptimizationMode,
@@ -24,6 +22,8 @@ type CliOptions = {
   optimizationMode?: SearchOptimizationMode;
   out?: string;
   realBetaRunId?: string;
+  shadowBetaGenreScope: boolean;
+  shadowBetaChapterScope: boolean;
   assertOptimizedRecall: boolean;
   minRecall: number;
   maxP0Failures: number;
@@ -43,6 +43,8 @@ function parseArgs(argv: string[]): CliOptions {
     projectId: "",
     label: "headless-rag-eval",
     topK: 5,
+    shadowBetaGenreScope: false,
+    shadowBetaChapterScope: false,
     assertOptimizedRecall: false,
     minRecall: 0.98,
     maxP0Failures: 0,
@@ -77,6 +79,14 @@ function parseArgs(argv: string[]): CliOptions {
     if (arg === "--out" && next) {
       options.out = next;
       index += 1;
+      continue;
+    }
+    if (arg === "--shadow-beta-genre-scope") {
+      options.shadowBetaGenreScope = true;
+      continue;
+    }
+    if (arg === "--shadow-beta-chapter-scope") {
+      options.shadowBetaChapterScope = true;
       continue;
     }
     if (arg === "--optimization-mode" && next) {
@@ -115,6 +125,18 @@ function parseArgs(argv: string[]): CliOptions {
   return options;
 }
 
+function extractShadowBetaGenre(caseKey: string | undefined): string | null {
+  return caseKey?.match(/^shadow-beta:([^:]+):/u)?.[1] ?? null;
+}
+
+function buildShadowBetaChunkIdPrefix(input: {
+  projectId: string;
+  caseKey: string;
+}): string | undefined {
+  const genre = extractShadowBetaGenre(input.caseKey);
+  return genre ? `${input.projectId}:shadow-beta:${genre}:` : undefined;
+}
+
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   const runLabel = options.realBetaRunId
@@ -134,9 +156,29 @@ async function main(): Promise<void> {
       engineVersion: "headless-rag-context",
       topK: options.topK,
       answerer: async (evalCase) => {
+        if (
+          options.shadowBetaChapterScope &&
+          (evalCase.queryChapterOrder === undefined || evalCase.queryChapterOrder === null)
+        ) {
+          throw new Error(
+            `--shadow-beta-chapter-scope requires queryChapterOrder for ${evalCase.caseId}`,
+          );
+        }
         const layer3 = await buildLayer3Evidence(
           evalCase.projectId,
           evalCase.question,
+          undefined,
+          options.shadowBetaGenreScope || options.shadowBetaChapterScope
+            ? {
+                chunkIdPrefix: buildShadowBetaChunkIdPrefix({
+                  projectId: evalCase.projectId,
+                  caseKey: evalCase.caseId,
+                }),
+                maxShadowBetaChapter: options.shadowBetaChapterScope
+                  ? evalCase.queryChapterOrder
+                  : undefined,
+              }
+            : undefined,
         );
         const grounding = buildRagGrounding({
           evidence: layer3.evidence,
@@ -160,7 +202,7 @@ async function main(): Promise<void> {
     if (options.out) {
       await writeFile(options.out, `${json}\n`, "utf8");
     } else {
-      // eslint-disable-next-line no-console -- CLI script output.
+      // eslint-disable-next-line no-console -- CLI 결과를 stdout으로 전달한다.
       console.log(json);
     }
     if (options.assertOptimizedRecall) {
@@ -176,7 +218,7 @@ async function main(): Promise<void> {
           `Memory eval optimization guard failed:\n${failures.join("\n")}`,
         );
       }
-      // eslint-disable-next-line no-console -- CLI script assertion output.
+      // eslint-disable-next-line no-console -- CLI 검증 실패를 stdout으로 전달한다.
       console.log("Memory eval optimization guard passed");
     }
   } finally {
@@ -190,7 +232,7 @@ async function main(): Promise<void> {
 }
 
 await main().catch((error) => {
-  // eslint-disable-next-line no-console -- CLI script error output.
+  // eslint-disable-next-line no-console -- CLI 오류를 stderr로 전달한다.
   console.error(
     JSON.stringify(
       { error: error instanceof Error ? error.message : String(error) },

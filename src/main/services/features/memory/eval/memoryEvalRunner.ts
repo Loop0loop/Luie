@@ -98,18 +98,19 @@ export async function runLiveMemoryEvalSuite(
 
     for (const evalCase of cases) {
       const answerStartMs = performance.now();
-      // eslint-disable-next-line no-await-in-loop -- eval cases run sequentially so persisted answers match deterministic case order.
+      // eslint-disable-next-line no-await-in-loop -- 저장 답변이 고정된 case 순서와 일치하도록 순차 실행한다.
       const answer = await input.answerer({
         projectId: input.projectId,
         caseId: evalCase.id,
         question: evalCase.question,
         expectedAnswer: evalCase.expectedAnswer,
         caseType: evalCase.caseType,
+        queryChapterOrder: evalCase.queryChapterOrder,
       });
       responseTimeMsByCase.set(evalCase.id, performance.now() - answerStartMs);
       answersByCase.set(evalCase.id, answer.answer);
       if (input.answerJudge) {
-        // eslint-disable-next-line no-await-in-loop -- judge output is tied to the sequential answer for the same eval case.
+        // eslint-disable-next-line no-await-in-loop -- judge 결과를 같은 eval case의 답변과 대응시켜야 한다.
         const rawJudgeResult = await input.answerJudge({
           evalCase,
           answer: answer.answer,
@@ -176,7 +177,7 @@ export async function runLiveMemoryEvalSuite(
       });
 
     for (const result of suiteResult.results) {
-      // eslint-disable-next-line no-await-in-loop -- result rows are persisted one-by-one for traceable run records.
+      // eslint-disable-next-line no-await-in-loop -- 실행 기록을 추적할 수 있도록 결과를 row별로 저장한다.
       await db
         .getClient()
         .insert(memoryEvalResult)

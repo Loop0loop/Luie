@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
 import {
+  Bot,
   Calendar,
   Globe,
   History,
   LayoutGrid,
   Shield,
-  Sparkles,
   StickyNote,
   Trash2,
   User,
@@ -70,8 +70,8 @@ export function buildBinderTabItems(
     },
     {
       tab: "analysis",
-      icon: <Sparkles className="w-5 h-5" />,
-      title: t("research.title.analysis"),
+      icon: <Bot className="w-5 h-5" />,
+      title: "AI View (웹소설 코파일럿)",
       type: "analysis",
     },
     {

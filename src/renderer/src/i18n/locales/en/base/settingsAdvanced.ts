@@ -6,22 +6,69 @@ export const enBaseSettingsAdvanced = {
       title: "Sidecar Local AI (Offline)",
       desc: "Runs through the app-managed llama-server sidecar. Ollama is not required. Requires a one-time model download. (~1.9GB)",
       modelReady: "Model ready",
-      noModel:
-        "Sidecar model or executable not found. Install the model and llama-server below.",
+      noModel: "Sidecar model or executable not found. Install the model and llama-server below.",
       download: "Download AI model (~1.9GB)",
       downloading: "Downloading...",
       downloadingBinary: "Downloading binary",
       downloadingModel: "Downloading model",
       enabled: "Use Sidecar Local AI",
-      toggleHelp:
-        "You can enable this after both the model and llama-server are installed.",
+      toggleHelp: "You can enable this after both the model and llama-server are installed.",
       currentModel: "Current installed model",
       toggleSaveFailed: "Failed to save Local AI settings.",
       preferenceSwitchFailed: "Failed to switch LLM route.",
+      currentAi: {
+        title: "Current AI",
+        local: "Running on your PC",
+        cloud: "Cloud connected",
+        none: "Not connected",
+        noneHint: "Connect an AI below. Used for writing help, similar-scene search, and more.",
+      },
+      basic: {
+        title: "Connect AI",
+        desc: "Two options for novelists.",
+        local: {
+          title: "Run on your PC (offline)",
+          desc: "Your manuscript never leaves your device. A one-time model download is required.",
+        },
+        cloud: {
+          title: "Cloud (recommended)",
+          desc: "Use an OpenAI or Google API key. Fastest, highest quality.",
+        },
+      },
+      advanced: {
+        title: "Advanced",
+        desc: "Find a specific model or check what runs on your hardware.",
+        show: "Show advanced",
+        hide: "Hide advanced",
+      },
+      assistant: {
+        title: "AI Writing Assistant",
+        intro: "Pick how Luie helps you write. Cloud is fastest and highest quality.",
+        notConnected: "No AI connected yet. Choose an option below to start.",
+        connected: "Cloud AI connected",
+        connectedBadge: "Connected",
+        installedBadge: "Installed",
+        use: "Use this",
+        cloud: {
+          title: "Cloud (recommended)",
+          desc: "Use an OpenAI or Google API key. Fastest, highest quality. Nothing is installed locally.",
+          recommended: "Recommended",
+        },
+        offline: {
+          title: "Run on my PC (offline)",
+          desc: "Your manuscript never leaves this device. A one-time model download is required (~2GB).",
+        },
+      },
+      understand: {
+        title: "Help Luie Understand Your Novel",
+        intro:
+          "Luie needs two things to grasp the mood, situation, and characters of your manuscript.",
+        step1Label: "Step 1 · Understand scenes",
+        step2Label: "Step 2 · Re-read recent changes",
+      },
       modelLibrary: {
         title: "Find an Offline Writing Model",
-        description:
-          "Install a public local model so drafts stay on this device.",
+        description: "Install a public local model so drafts stay on this device.",
         placeholder: "e.g. Qwen, Gemma, Llama",
         searchBtn: "Search",
         searching: "Searching...",
@@ -39,9 +86,8 @@ export const enBaseSettingsAdvanced = {
         profileStandard: "Standard",
       },
       embedding: {
-        title: "Semantic Search (Embedding Model)",
-        description:
-          "A small embedding model (bge-m3) powers semantic search that understands your draft.",
+        title: "Find similar scenes in your novel",
+        description: "Searches your draft by mood and situation, not just keywords. Powered by the bge-m3 model (one-time install).",
         installed: "{{name}} installed",
         notInstalled: "No embedding model. Keyword search only.",
         download: "Download embedding model",
@@ -61,6 +107,7 @@ export const enBaseSettingsAdvanced = {
         noResults: "No recommendations found.",
         speed: "~{{tps}} tok/s",
         memory: "{{gb}}GB RAM",
+        techToggle: "Show technical details",
         fit: {
           perfect: "Perfect",
           good: "Good",
@@ -71,15 +118,17 @@ export const enBaseSettingsAdvanced = {
       },
       rebuildMemory: {
         title: "Rebuild Memory",
-        description:
-          "Run this if your draft is not reflected in RAG. It runs in the background.",
+        description: "Run this if your draft is not reflected in RAG. It runs in the background.",
+        details: {
+          show: "Show progress details",
+          hide: "Hide details",
+        },
         start: "Start memory rebuild",
         noProject: "No open project.",
         failed: "Failed to rebuild memory.",
         started: "Memory rebuild started. ({{count}} jobs queued)",
         progress: "{{done}}/{{total}} complete · {{percent}}%",
-        jobTypeProgress:
-          "{{done}}/{{total}} complete · {{active}} active · {{percent}}%",
+        jobTypeProgress: "{{done}}/{{total}} complete · {{active}} active · {{percent}}%",
         active: "Working",
         idle: "Idle",
         pause: "Pause",
@@ -140,11 +189,23 @@ export const enBaseSettingsAdvanced = {
         saveFailed: "Failed to save API Keys.",
         missingAlert: {
           title: "Missing AI Configuration",
-          message:
-            "The API Key or configuration required to run the selected AI model is missing. Would you like to go to the Model tab in Settings to complete the configuration?",
+          message: "The API Key or configuration required to run the selected AI model is missing. Would you like to go to the Model tab in Settings to complete the configuration?",
           confirm: "Go to Settings",
           cancel: "Cancel",
         },
+      },
+      ollama: {
+        title: "Other Endpoint (Ollama-compatible)",
+        desc: "Connect any OpenAI-compatible server such as Ollama or LM Studio running on this PC or nearby.",
+        baseUrl: "Server address",
+        chatModel: "Model name",
+        chatModelPlaceholder: "e.g. gemma3:4b",
+        apiKey: "API key (optional)",
+        apiKeyPlaceholder: "Leave empty if not required",
+        save: "Save",
+        saving: "Saving...",
+        saved: "Endpoint settings have been saved.",
+        saveFailed: "Failed to save endpoint settings.",
       },
     },
     shortcuts: {
@@ -152,6 +213,10 @@ export const enBaseSettingsAdvanced = {
       action: "Action",
       key: "Key",
       reset: "Reset to defaults",
+      recording: "Press keys…",
+      clear: "Clear",
+      empty: "Click to set",
+      conflict: "Already used by another action",
       openSettings: "Open settings",
       closeWindow: "Close window",
       quitApp: "Quit app",
@@ -219,14 +284,11 @@ export const enBaseSettingsAdvanced = {
       refresh: "Check again",
       steps: {
         safeTitle: "Create a safe backup first",
-        safeDescription:
-          "The current state is copied aside first, so Luie can restore it if anything goes wrong.",
+        safeDescription: "The current state is copied aside first, so Luie can restore it if anything goes wrong.",
         restoreTitle: "Bring back the latest saved changes",
-        restoreDescription:
-          "Luie applies recent saved changes that had not been merged into the main file yet.",
+        restoreDescription: "Luie applies recent saved changes that had not been merged into the main file yet.",
         rollbackTitle: "Roll back automatically if there is a problem",
-        rollbackDescription:
-          "If the integrity check fails, Luie restores the backup automatically.",
+        rollbackDescription: "If the integrity check fails, Luie restores the backup automatically.",
       },
       dryRun: "Create a safety backup first",
       run: "Recover recent saved changes",
@@ -234,8 +296,7 @@ export const enBaseSettingsAdvanced = {
       failed: "Recovery failed.",
       error: "Recovery encountered an error.",
       lastChecked: "Last checked",
-      unavailableHint:
-        "There is no recent saved change to recover right now. This usually means no .wal file was found.",
+      unavailableHint: "There is no recent saved change to recover right now. This usually means no .wal file was found.",
       file: {
         database: "Database",
         wal: "WAL Log",
@@ -246,42 +307,33 @@ export const enBaseSettingsAdvanced = {
       hero: {
         checkingBadge: "Checking",
         checkingTitle: "Looking for recoverable recent saved changes",
-        checkingDescription:
-          "Luie is checking whether there is a recoverable save trace left behind.",
+        checkingDescription: "Luie is checking whether there is a recoverable save trace left behind.",
         readyBadge: "Recovery available",
         readyTitle: "Recent saved changes can be brought back",
-        readyDescription:
-          "Luie found recent saved changes that were not merged into the main file yet. Press the recovery button below and Luie will handle the recovery flow for you.",
+        readyDescription: "Luie found recent saved changes that were not merged into the main file yet. Press the recovery button below and Luie will handle the recovery flow for you.",
         emptyBadge: "Nothing to recover right now",
         emptyTitle: "There is no recent saved change to recover right now",
-        emptyDescription:
-          "Luie could not find a recoverable .wal trace, so there is nothing to restore at the moment.",
+        emptyDescription: "Luie could not find a recoverable .wal trace, so there is nothing to restore at the moment.",
         blockedBadge: "Needs attention",
         dbMissingTitle: "The recovery target file could not be found",
-        dbMissingDescription:
-          "Luie needs the app database file to be present before it can attempt recovery.",
+        dbMissingDescription: "Luie needs the app database file to be present before it can attempt recovery.",
       },
       dialog: {
         checkingTitle: "Checking for recoverable recent saved changes",
-        checkingDescription:
-          "Luie is looking for the latest save trace left behind right before the app closed.",
+        checkingDescription: "Luie is looking for the latest save trace left behind right before the app closed.",
         readyTitle: "Unsaved writing can be brought back",
-        readyDescription:
-          "Luie found a save trace from right before the unexpected exit. If you recover now, Luie will restore that recent saved version for you.",
+        readyDescription: "Luie found a save trace from right before the unexpected exit. If you recover now, Luie will restore that recent saved version for you.",
         emptyTitle: "There is nothing to recover right now",
-        emptyDescription:
-          "Luie could not find a recent save trace to restore. You can check again if needed.",
+        emptyDescription: "Luie could not find a recent save trace to restore. You can check again if needed.",
         blockedTitle: "The files needed for recovery are missing",
-        blockedDescription:
-          "Luie needs the target data file to be present before recovery can run.",
+        blockedDescription: "Luie needs the target data file to be present before recovery can run.",
       },
       scope: {
         currentProject: "Currently open manuscript",
         noOpenProject: "No manuscript is open",
         library: "What this affects",
         projectCount: "{{count}} local manuscripts",
-        libraryDescription:
-          "This recovery affects Luie's local library on this device, not just the currently open project.",
+        libraryDescription: "This recovery affects Luie's local library on this device, not just the currently open project.",
         preview: "Manuscripts currently in that library",
         noProjects: "No local manuscript list is loaded right now.",
         moreProjects: "{{count}} more",
@@ -296,8 +348,7 @@ export const enBaseSettingsAdvanced = {
         unknownBackup: "Recoverable saved version",
       },
       actionTitle: "When you press recovery, Luie handles the difficult part",
-      actionDescription:
-        "You do not need to manage database files manually. Luie performs the following steps automatically and rolls back if needed.",
+      actionDescription: "You do not need to manage database files manually. Luie performs the following steps automatically and rolls back if needed.",
       actions: {
         ignore: "Ignore",
         restore: "Restore from backup",
@@ -306,8 +357,7 @@ export const enBaseSettingsAdvanced = {
       resultBackupOnly: "Safety backup created",
       resultApplied: "Recovery attempt finished",
       technicalTitle: "Technical details",
-      technicalDescription:
-        "Open this only if you want to inspect file paths, file sizes, or backup locations.",
+      technicalDescription: "Open this only if you want to inspect file paths, file sizes, or backup locations.",
       fields: {
         path: "Path",
         size: "Size",
@@ -320,22 +370,17 @@ export const enBaseSettingsAdvanced = {
         integrity: "Integrity check",
       },
       messages: {
-        backupCreated:
-          "A safety backup was created. You can now choose to run the actual recovery.",
-        recoveryCompleted:
-          "Recovery finished. Luie also completed its integrity check.",
-        walMissing:
-          "There is no recoverable recent saved change right now. Luie could not find a usable .wal file.",
-        walBusy:
-          "Another process is still using the recovery files. Fully quit Luie and try again.",
+        backupCreated: "A safety backup was created. You can now choose to run the actual recovery.",
+        recoveryCompleted: "Recovery finished. Luie also completed its integrity check.",
+        walMissing: "There is no recoverable recent saved change right now. Luie could not find a usable .wal file.",
+        walBusy: "Another process is still using the recovery files. Fully quit Luie and try again.",
         integrityFailed: "Integrity check reported a problem: {{detail}}",
         statusLoadFailed: "Failed to load recovery status.",
       },
     },
     sync: {
       title: "Sync & Connections",
-      description:
-        "Connect your Google account and sync project data with Supabase.",
+      description: "Connect your Google account and sync project data with Supabase.",
       connected: "Connected",
       disconnected: "Disconnected",
       fields: {
@@ -357,14 +402,12 @@ export const enBaseSettingsAdvanced = {
         disconnect: "Disconnect",
         syncNow: "Sync now",
       },
-      conflicts:
-        "Conflicts: {{total}} total (chapters {{chapters}} / scrap {{memos}})",
+      conflicts: "Conflicts: {{total}} total (chapters {{chapters}} / scrap {{memos}})",
       toast: {
         connectStarted: "Complete Google sign-in in your browser.",
         connected: "Google account connected successfully.",
         connectFailed: "Failed to connect Google.",
-        staleCallback:
-          "This login callback was already handled. Keeping the current connection.",
+        staleCallback: "This login callback was already handled. Keeping the current connection.",
         stateMismatch: "OAuth state validation failed. Please sign in again.",
         callbackExpired: "Login request expired. Please sign in again.",
         disconnectFailed: "Failed to disconnect.",

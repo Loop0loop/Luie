@@ -146,7 +146,7 @@ describe("FocusHoverSidebar", () => {
     const sidebar = Array.from(mountedView.container.querySelectorAll("div")).find(
       (node) =>
         node.className.includes("fixed z-50") &&
-        node.className.includes("bg-panel"),
+        node.className.includes("bg-sidebar"),
     ) as HTMLDivElement;
 
     expect(sidebar.className).toContain("-translate-x-full");
@@ -161,7 +161,7 @@ describe("FocusHoverSidebar", () => {
     const sidebar = Array.from(mountedView.container.querySelectorAll("div")).find(
       (node) =>
         node.className.includes("fixed z-50") &&
-        node.className.includes("bg-panel"),
+        node.className.includes("bg-sidebar"),
     ) as HTMLDivElement;
 
     dispatchMouseMove(100, 120);
@@ -187,7 +187,7 @@ describe("FocusHoverSidebar", () => {
     const sidebar = Array.from(mountedView.container.querySelectorAll("div")).find(
       (node) =>
         node.className.includes("fixed z-50") &&
-        node.className.includes("bg-panel"),
+        node.className.includes("bg-sidebar"),
     ) as HTMLDivElement;
 
     dispatchMouseMove(100, 120);

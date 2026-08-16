@@ -16,6 +16,7 @@ import { hydrateProjectsWithAttachmentPaths } from "../../core/project/projectAt
 const {
   project,
   chapter,
+  chapterBody,
   character,
   event,
   faction,
@@ -116,6 +117,20 @@ export const buildLocalBundleFromDatabase = async (input: {
       .orderBy(desc(worldDocument.updatedAt)),
   ]);
 
+  const chapterBodies =
+    chapters.length > 0
+      ? await store
+          .select({
+            chapterId: chapterBody.chapterId,
+            content: chapterBody.content,
+          })
+          .from(chapterBody)
+          .where(inArray(chapterBody.chapterId, chapters.map((ch) => ch.id)))
+      : [];
+  const bodyContentByChapterId = new Map(
+    chapterBodies.map((body) => [body.chapterId, body.content]),
+  );
+
   const chaptersByProject = new Map<string, ChapterRow[]>();
   for (const ch of chapters) {
     const list = chaptersByProject.get(ch.projectId) ?? [];
@@ -176,7 +191,10 @@ export const buildLocalBundleFromDatabase = async (input: {
 
   const projectsWithRelations: ProjectWithRelations[] = projects.map((p) => ({
     ...p,
-    chapters: chaptersByProject.get(p.id) ?? [],
+    chapters: (chaptersByProject.get(p.id) ?? []).map((ch) => ({
+      ...ch,
+      content: bodyContentByChapterId.get(ch.id) ?? ch.content,
+    })),
     characters: charactersByProject.get(p.id) ?? [],
     events: eventsByProject.get(p.id) ?? [],
     factions: factionsByProject.get(p.id) ?? [],

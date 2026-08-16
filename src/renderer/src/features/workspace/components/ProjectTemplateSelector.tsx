@@ -192,7 +192,7 @@ export default function ProjectTemplateSelector({
 
       {menuOpenId && (
         <div
-          className="fixed inset-0 z-dropdown bg-transparent"
+          className="fixed inset-0 z-50 bg-transparent"
           onPointerDown={closeMenu}
         />
       )}
@@ -211,7 +211,6 @@ export default function ProjectTemplateSelector({
         setDeleteDialog,
       })}
 
-      {/* Custom Dialogs */}
       <ProjectActionDialogs state={selectorState} actions={selectorState} />
       <RestoreBackupDialog
         isOpen={isRestoreDialogOpen}
@@ -245,8 +244,6 @@ export default function ProjectTemplateSelector({
             toggleMenuByElement={toggleMenuByElement}
             onConnectGoogle={async () => {
               try {
-                // api.sync.connectGoogle handles creating the browser intent
-                // We show a toast directly like useSettingsManager does to give visual feedback
                 const response = await api.sync.connectGoogle();
                 if (response.success && response.data) {
                   selectorState.setSyncStatus(response.data);
@@ -301,7 +298,7 @@ export default function ProjectTemplateSelector({
               <button
                 type="button"
                 onClick={() => setActiveCategory("all")}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-panel bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 {t("back", "Back")}

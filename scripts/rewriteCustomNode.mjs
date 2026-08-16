@@ -84,10 +84,8 @@ export const CustomEntityNode = memo(({ id, data, selected }: CustomEntityNodePr
         "group relative min-w-[260px] max-w-[340px] rounded-bl-3xl rounded-tr-xl rounded-tl-sm rounded-br-sm border border-amber-500/30 bg-amber-50 dark:bg-[#282215] p-0 shadow-lg shadow-amber-900/5 transition-all duration-300",
         selected ? "ring-2 ring-amber-500/40 shadow-amber-500/20 scale-[1.02]" : "hover:shadow-xl hover:-translate-y-0.5"
       )}>
-        {/* 상단 마스킹 테이프 UI */}
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-14 h-6 bg-white/40 dark:bg-white/10 rounded-sm backdrop-blur-md shadow-sm rotate-2 z-10 border border-white/20"></div>
         
-        {/* 메모지 접힌 느낌 (우측 하단) */}
         <div className="absolute bottom-0 left-0 w-4 h-4 bg-gradient-to-tr from-transparent via-amber-500/20 to-amber-500/5 dark:via-amber-500/10 rounded-tr-lg"></div>
 
         <div className="px-5 pt-6 pb-4">
@@ -120,7 +118,6 @@ export const CustomEntityNode = memo(({ id, data, selected }: CustomEntityNodePr
         <div className={cn("flex-1 flex flex-col rounded-2xl border bg-background/95 backdrop-blur-xl p-3.5 shadow-md transition-all relative overflow-hidden", selected ? "border-sky-500/60 ring-1 ring-sky-500/40 shadow-sky-500/20" : "border-border/60 hover:border-sky-500/40")}>
           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-sky-400 to-sky-600" />
           <div className="pl-3 relative">
-            {/* 연결선 UI (내부) */}
             <div className="absolute -left-[22px] top-1/2 w-[22px] h-[2px] bg-sky-500/30 -translate-y-1/2 -z-10" />
             
             {isEditing ? (

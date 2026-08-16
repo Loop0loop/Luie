@@ -1,11 +1,3 @@
-/**
- * canvasViewSchema — Zod schemas for canvas view persisted state.
- *
- * Replaces 100+ lines of manual sanitize functions with declarative validation.
- * The `sanitizePersistedState` function is the single entry point used by
- * zustand's `migrate` and `merge` options.
- */
-
 import { z } from "zod";
 import type {
   CanvasActivityPanel,
@@ -18,8 +10,6 @@ import {
   CANVAS_DEFAULT_LAYERS,
   DEFAULT_CANVAS_MODE,
 } from "../constants";
-
-/* ─────────────────────────────────────────── schemas */
 
 const CanvasScopeSchema: z.ZodType<CanvasScope> = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("single-chapter"), chapterId: z.string() }),
@@ -50,10 +40,7 @@ export const CanvasViewPersistedSchema = z.object({
 
 export type CanvasViewPersistedState = z.infer<typeof CanvasViewPersistedSchema>;
 
-/**
- * Sanitize unknown persisted input into a partial state object.
- * Returns `{}` when nothing is salvageable — zustand falls back to defaults.
- */
+/** 알 수 없는 저장값에서 유효한 canvas state만 복구하며 실패하면 기본값용 `{}`를 반환한다. */
 export function sanitizePersistedState(input: unknown): Partial<CanvasViewPersistedState> {
   const result = CanvasViewPersistedSchema.safeParse(input);
   if (!result.success) return {};

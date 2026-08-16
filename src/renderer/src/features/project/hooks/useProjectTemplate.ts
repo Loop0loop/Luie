@@ -1,7 +1,3 @@
-/**
- * 프로젝트 템플릿 선택 및 생성
- */
-
 import { useCallback } from "react";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";

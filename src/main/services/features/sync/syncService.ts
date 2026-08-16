@@ -47,6 +47,8 @@ export class SyncService {
   private inFlightPromise: Promise<SyncRunResult> | null = null;
   private queuedRun = false;
   private autoSyncTimer: NodeJS.Timeout | null = null;
+  private pausedForShutdown = false;
+  private resumeSyncAfterShutdownCancel = false;
 
   private applyAuthFailureState(
     message: string,
@@ -209,6 +211,8 @@ export class SyncService {
       this.autoSyncTimer = null;
     }
     this.queuedRun = false;
+    this.pausedForShutdown = false;
+    this.resumeSyncAfterShutdownCancel = false;
     const cleared = settingsManager.clearSyncSettings();
     this.updateStatus({
       ...toSyncStatusFromSettings(cleared, INITIAL_STATUS),
@@ -268,6 +272,10 @@ export class SyncService {
   }
 
   onLocalMutation(_reason?: string): void {
+    if (this.pausedForShutdown) {
+      this.resumeSyncAfterShutdownCancel = true;
+      return;
+    }
     if (!this.status.connected || !this.status.autoSync) {
       return;
     }
@@ -281,6 +289,16 @@ export class SyncService {
   }
 
   async runNow(reason = "manual"): Promise<SyncRunResult> {
+    if (this.pausedForShutdown) {
+      this.resumeSyncAfterShutdownCancel = true;
+      return {
+        success: false,
+        message: "SYNC_PAUSED_FOR_SHUTDOWN",
+        pulled: 0,
+        pushed: 0,
+        conflicts: this.status.conflicts,
+      };
+    }
     if (!this.status.connected) {
       return {
         success: false,
@@ -303,6 +321,29 @@ export class SyncService {
 
     this.inFlightPromise = runPromise;
     return runPromise;
+  }
+
+  async pauseForShutdown(): Promise<void> {
+    this.pausedForShutdown = true;
+    this.resumeSyncAfterShutdownCancel ||= Boolean(
+      this.autoSyncTimer || this.inFlightPromise || this.queuedRun,
+    );
+    if (this.autoSyncTimer) {
+      clearTimeout(this.autoSyncTimer);
+      this.autoSyncTimer = null;
+    }
+    this.queuedRun = false;
+    this.updateStatus({ queued: false });
+
+    const inFlight = this.inFlightPromise;
+    if (inFlight) await inFlight;
+  }
+
+  resumeAfterShutdownCancel(): void {
+    const shouldResume = this.resumeSyncAfterShutdownCancel;
+    this.pausedForShutdown = false;
+    this.resumeSyncAfterShutdownCancel = false;
+    if (shouldResume) this.onLocalMutation("shutdown-cancelled");
   }
 
   private async executeRun(reason: string): Promise<SyncRunResult> {

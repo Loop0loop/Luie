@@ -1,4 +1,4 @@
-/* eslint-disable no-await-in-loop -- Episode extraction claims and completes jobs sequentially to avoid duplicate job processing. */
+/* eslint-disable no-await-in-loop -- 중복 처리를 막으려고 episode extraction job을 순차 claim·완료한다. */
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import {
   db,

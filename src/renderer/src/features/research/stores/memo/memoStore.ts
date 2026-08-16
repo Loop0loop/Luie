@@ -40,6 +40,7 @@ const normalizeErrorMessage = (error: unknown): string =>
 export const useMemoStore = create<MemoStore>((set, get) => {
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
   let pendingSave: Promise<void> | null = null;
+  let hasPendingChanges = false;
 
   const clearSaveTimer = (): void => {
     if (!saveTimer) return;
@@ -49,7 +50,8 @@ export const useMemoStore = create<MemoStore>((set, get) => {
 
   const persistNotes = async (): Promise<void> => {
     const { activeProjectId, activeProjectPath, notes } = get();
-    if (!activeProjectId) return;
+    if (!activeProjectId || !hasPendingChanges) return;
+    hasPendingChanges = false;
 
     set((state) =>
       state.isSaving && state.error === null && state.saveError === null
@@ -66,6 +68,7 @@ export const useMemoStore = create<MemoStore>((set, get) => {
         },
       );
     } catch (error) {
+      hasPendingChanges = true;
       const message = normalizeErrorMessage(error);
       void api.logger.warn("Failed to save memo store state", {
         projectId: activeProjectId,
@@ -74,6 +77,7 @@ export const useMemoStore = create<MemoStore>((set, get) => {
       if (get().activeProjectId === activeProjectId) {
         set({ error: message, saveError: message });
       }
+      throw error;
     } finally {
       if (get().activeProjectId === activeProjectId) {
         set({ isSaving: false });
@@ -84,20 +88,38 @@ export const useMemoStore = create<MemoStore>((set, get) => {
   const schedulePersist = (): void => {
     const { activeProjectId } = get();
     if (!activeProjectId) return;
+    hasPendingChanges = true;
 
     clearSaveTimer();
     saveTimer = setTimeout(() => {
       saveTimer = null;
-      pendingSave = persistNotes();
-      void pendingSave;
+      void startSaveDrain().catch(() => undefined);
     }, DEFAULT_BUFFERED_INPUT_DEBOUNCE_MS);
+  };
+
+  const startSaveDrain = (): Promise<void> => {
+    const current = pendingSave;
+    if (current) {
+      return current.then(() =>
+        hasPendingChanges ? startSaveDrain() : undefined,
+      );
+    }
+    if (!hasPendingChanges) return Promise.resolve();
+
+    const drain = (): Promise<void> =>
+      hasPendingChanges ? persistNotes().then(drain) : Promise.resolve();
+    const save = drain();
+    pendingSave = save;
+    const clearPending = () => {
+      if (pendingSave === save) pendingSave = null;
+    };
+    void save.then(clearPending, clearPending);
+    return save;
   };
 
   const flushPendingSave = async (): Promise<void> => {
     clearSaveTimer();
-    await pendingSave;
-    pendingSave = persistNotes();
-    await pendingSave;
+    await startSaveDrain();
   };
 
   return {
@@ -276,6 +298,7 @@ export const useMemoStore = create<MemoStore>((set, get) => {
     reset: () => {
       clearSaveTimer();
       pendingSave = null;
+      hasPendingChanges = false;
       set({
         activeProjectId: null,
         activeProjectPath: null,

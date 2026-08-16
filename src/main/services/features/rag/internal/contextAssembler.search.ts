@@ -1,20 +1,13 @@
 import { performance } from "node:perf_hooks";
 import { asc, and, eq, or, sql } from "drizzle-orm";
 import { db } from "../../../../database/main/databaseService.js";
-import {
-  buildFtsQuery,
-  mergeWithRRF,
-  searchByShortTokens,
-  searchByVector,
-  shouldRunVectorSearch,
-} from "../../search/chunkSearch.js";
+import { searchHybridChunkRanks } from "../../search/chunkSearch.js";
 import { memoryChunk } from "../../../../database/schema/index.js";
 import type { MemoryChunkSearchResult } from "../../../../../shared/types/index.js";
 import { createLogger } from "../../../../../shared/logger/index.js";
 import type { RagEmbeddingProvider } from "./contextAssembler.types.js";
 import { resolveSearchOptimizationPolicy } from "../../search/searchOptimizationPolicy.js";
 
-type FtsRow = { chunkId: string };
 type ExactPhraseRow = { chunkId: string };
 type TokenOverlapRow = { chunkId: string; content: string; chunkIndex: number };
 type ChunkRow = {
@@ -40,11 +33,6 @@ type WindowChunkRow = {
   paragraphStartIndex: number;
   paragraphEndIndex: number;
 };
-type ScoredChunk = {
-  chunkId: string;
-  score: number;
-};
-
 export type RagSearchStageName =
   | "fts"
   | "exactPhrase"
@@ -66,6 +54,8 @@ type SearchInput = {
   projectId: string;
   query: string;
   limit: number;
+  chunkIdPrefix?: string;
+  maxShadowBetaChapter?: number | null;
   embedTexts?: RagEmbeddingProvider;
   parentWindow?: {
     before: number;
@@ -104,7 +94,7 @@ function extractQuoteLikeTokens(query: string): string[] {
             .trim()
             .toLowerCase()
             .replace(
-              /(으로만|에게만|에서는|으로는|에게는|으로|에게|에서|부터|까지|처럼|보다|과는|와는|에는|의|은|는|이|가|을|를|와|과|도|만|로)$/u,
+              /(으로만|에게만|에서는|으로는|에게는|으로|에게|에서|부터|까지|처럼|보다|과는|와는|에는|이랑|의|은|는|이|가|을|를|와|과|도|만|로)$/u,
               "",
             ),
         )
@@ -116,6 +106,14 @@ function extractQuoteLikeTokens(query: string): string[] {
 function countTokenOverlap(tokens: string[], content: string): number {
   const normalizedContent = content.toLowerCase();
   return tokens.filter((token) => normalizedContent.includes(token)).length;
+}
+
+function minTokenOverlapScore(query: string, tokens: string[]): number {
+  const baseline = Math.min(4, Math.ceil(tokens.length * 0.45));
+  if (/만난|만났|마주|처음|어디|챕터|회차/u.test(query) && tokens.length >= 2) {
+    return Math.min(baseline, 2);
+  }
+  return baseline;
 }
 
 function roundDuration(value: number): number {
@@ -137,6 +135,58 @@ function recordStage(
   });
 }
 
+function recordMeasuredStage(
+  input: SearchInput,
+  stage: Extract<RagSearchStageName, "fts" | "shortToken" | "vector" | "rrf">,
+  durationMs: number,
+  candidateCount: number,
+  skipped?: boolean,
+): void {
+  input.diagnostics?.stages.push({
+    stage,
+    durationMs,
+    candidateCount,
+    skipped,
+  });
+}
+
+function buildChunkIdScopeSql(input: SearchInput) {
+  if (!input.chunkIdPrefix) return sql``;
+  if (input.maxShadowBetaChapter === undefined || input.maxShadowBetaChapter === null) {
+    return sql`AND chunk."id" LIKE ${`${input.chunkIdPrefix}%`}`;
+  }
+  const chapters = Array.from(
+    { length: Math.max(0, input.maxShadowBetaChapter) },
+    (_, index) => index + 1,
+  );
+  if (chapters.length === 0) return sql`AND 0 = 1`;
+  return sql`AND (${sql.join(
+    chapters.map(
+      (chapterOrder) =>
+        sql`chunk."id" LIKE ${`${input.chunkIdPrefix}chapter-${chapterOrder}:%`}`,
+    ),
+    sql` OR `,
+  )})`;
+}
+
+function buildMemoryChunkIdScopePredicate(input: SearchInput) {
+  if (!input.chunkIdPrefix) return undefined;
+  if (input.maxShadowBetaChapter === undefined || input.maxShadowBetaChapter === null) {
+    return sql`${memoryChunk.id} LIKE ${`${input.chunkIdPrefix}%`}`;
+  }
+  const chapters = Array.from(
+    { length: Math.max(0, input.maxShadowBetaChapter) },
+    (_, index) => index + 1,
+  );
+  if (chapters.length === 0) return sql`0 = 1`;
+  return or(
+    ...chapters.map(
+      (chapterOrder) =>
+        sql`${memoryChunk.id} LIKE ${`${input.chunkIdPrefix}chapter-${chapterOrder}:%`}`,
+    ),
+  );
+}
+
 export async function searchMemoryChunksForRag(
   input: SearchInput,
 ): Promise<MemoryChunkSearchResult[]> {
@@ -149,28 +199,15 @@ export async function searchMemoryChunksForRag(
   const limit = searchPolicy.resultLimit;
   const candidateCap = searchPolicy.candidateCap;
   const client = db.getClient();
-  const ftsQuery = buildFtsQuery(normalizedQuery);
-  let stageStartedAt = performance.now();
-  const ftsRows: FtsRow[] =
-    ftsQuery.length > 0
-      ? client.all<{ chunkId: string }>(sql`
-      SELECT fts."chunkId" AS "chunkId"
-      FROM "MemoryChunkFts" fts
-      WHERE fts."projectId" = ${input.projectId}
-        AND "MemoryChunkFts" MATCH ${ftsQuery}
-      ORDER BY bm25("MemoryChunkFts"), fts."chunkId"
-      LIMIT ${candidateCap};
-    `)
-      : [];
-  recordStage(input, "fts", stageStartedAt, ftsRows.length, ftsQuery.length === 0);
   const exactPhraseCandidates = extractExactPhraseCandidates(normalizedQuery);
-  stageStartedAt = performance.now();
+  let stageStartedAt = performance.now();
   const exactPhraseRows: ExactPhraseRow[] =
     exactPhraseCandidates.length > 0
       ? client.all<ExactPhraseRow>(sql`
       SELECT chunk."id" AS "chunkId"
       FROM "MemoryChunk" chunk
       WHERE chunk."projectId" = ${input.projectId}
+        ${buildChunkIdScopeSql(input)}
         AND (${sql.join(
           exactPhraseCandidates.map(
             (candidate) => sql`instr(chunk."content", ${candidate}) > 0`,
@@ -199,6 +236,7 @@ export async function searchMemoryChunksForRag(
                    chunk."chunkIndex" AS "chunkIndex"
             FROM "MemoryChunk" chunk
             WHERE chunk."projectId" = ${input.projectId}
+              ${buildChunkIdScopeSql(input)}
               AND (${sql.join(
                 quoteLikeTokens.map(
                   (token) => sql`instr(lower(chunk."content"), ${token}) > 0`,
@@ -213,7 +251,7 @@ export async function searchMemoryChunksForRag(
             score: countTokenOverlap(quoteLikeTokens, row.content),
             chunkIndex: row.chunkIndex,
           }))
-          .filter((row) => row.score >= Math.min(4, Math.ceil(quoteLikeTokens.length * 0.45)))
+          .filter((row) => row.score >= minTokenOverlapScore(normalizedQuery, quoteLikeTokens))
           .sort((a, b) =>
             b.score === a.score ? a.chunkIndex - b.chunkIndex : b.score - a.score,
           )
@@ -227,58 +265,28 @@ export async function searchMemoryChunksForRag(
     quoteLikeTokens.length < 3,
   );
 
-  stageStartedAt = performance.now();
-  const lexicalRanks = await searchByShortTokens(
-    input.projectId,
+  const merged = await searchHybridChunkRanks({
+    projectId: input.projectId,
     normalizedQuery,
+    resultLimit: limit,
     candidateCap,
     logger,
-  );
-  recordStage(input, "shortToken", stageStartedAt, lexicalRanks.length);
-
-  let denseRanks: Array<{ chunkId: string; rank: number }> = [];
-  const embedTexts = input.embedTexts;
-  const vectorStartedAt = performance.now();
-  const vectorSkipped = !embedTexts || !shouldRunVectorSearch();
-  if (!vectorSkipped) {
-    try {
-      const vecs = await embedTexts(input.projectId, [normalizedQuery]);
-      const queryVector = vecs?.[0] ? new Float32Array(vecs[0]) : null;
-      if (queryVector && queryVector.length > 0) {
-        denseRanks = searchByVector(
-          input.projectId,
-          queryVector,
-          candidateCap,
-          logger,
-        );
-      }
-    } catch (error) {
-      logger.warn("RAG embedding unavailable; fallback to FTS only", {
-        projectId: input.projectId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
-  recordStage(input, "vector", vectorStartedAt, denseRanks.length, vectorSkipped);
-
-  stageStartedAt = performance.now();
-  const merged = mergeWithRRF(
-    [
-      ftsRows.map((row: FtsRow, index: number) => ({
-        chunkId: row.chunkId,
-        rank: index + 1,
-      })),
+    embedQuery: input.embedTexts,
+    scope: {
+      chunkIdPrefix: input.chunkIdPrefix,
+      maxShadowBetaChapter: input.maxShadowBetaChapter,
+    },
+    additionalRankSources: [
       exactPhraseRows.map((row: ExactPhraseRow, index: number) => ({
         chunkId: row.chunkId,
         rank: index + 1,
       })),
       tokenOverlapRows,
-      lexicalRanks,
-      denseRanks,
     ],
-    limit,
-  ) as ScoredChunk[];
-  recordStage(input, "rrf", stageStartedAt, merged.length);
+    vectorWarningMessage: "RAG embedding unavailable; fallback to FTS only",
+    onStage: (stage, durationMs, candidateCount, skipped) =>
+      recordMeasuredStage(input, stage, durationMs, candidateCount, skipped),
+  });
   if (merged.length === 0) return [];
 
   const chunkIds = merged.map((row) => row.chunkId);
@@ -342,6 +350,7 @@ export async function searchMemoryChunksForRag(
       eq(memoryChunk.sourceType, range.sourceType),
       eq(memoryChunk.sourceId, range.sourceId),
       sql`${memoryChunk.chunkIndex} BETWEEN ${range.minIndex} AND ${range.maxIndex}`,
+      buildMemoryChunkIdScopePredicate(input),
     ),
   );
   const windowRows: WindowChunkRow[] =

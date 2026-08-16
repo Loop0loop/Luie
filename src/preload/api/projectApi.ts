@@ -61,6 +61,24 @@ export function createProjectApi({
     (input: unknown) => safeInvoke(channel, input);
   const invokeProjectPayload = (channel: string) =>
     (projectId: string) => safeInvoke(channel, { projectId });
+  const onRunScopedChannel = (
+    channel: string,
+    callback: (payload: never) => void,
+    runId?: string,
+    requireRunId = true,
+  ) => {
+    const listener = (_event: unknown, payload: unknown) => {
+      const typed = payload as { runId?: string };
+      if (runId && (requireRunId || typed.runId) && typed.runId !== runId) {
+        return;
+      }
+      callback(payload as never);
+    };
+    ipcRenderer.on(channel, listener);
+    return () => {
+      ipcRenderer.removeListener(channel, listener);
+    };
+  };
   const createCrudApi = (
     channels: {
       create: string;
@@ -175,16 +193,17 @@ export function createProjectApi({
       delete: invokeOne(IPC_CHANNELS.SCRAP_MEMO_DELETE),
     },
     character: {
-      create: (input) => safeInvoke(IPC_CHANNELS.CHARACTER_CREATE, input),
-      get: (id) => safeInvoke(IPC_CHANNELS.CHARACTER_GET, id),
-      getAll: (projectId) =>
-        safeInvoke(IPC_CHANNELS.CHARACTER_GET_ALL, projectId),
-      update: (input) => safeInvoke(IPC_CHANNELS.CHARACTER_UPDATE, input),
-      delete: (id) => safeInvoke(IPC_CHANNELS.CHARACTER_DELETE, id),
+      ...createCrudApi({
+        create: IPC_CHANNELS.CHARACTER_CREATE,
+        get: IPC_CHANNELS.CHARACTER_GET,
+        getAll: IPC_CHANNELS.CHARACTER_GET_ALL,
+        update: IPC_CHANNELS.CHARACTER_UPDATE,
+        delete: IPC_CHANNELS.CHARACTER_DELETE,
+      }),
       generateImage: invokeOne(IPC_CHANNELS.CHARACTER_GENERATE_IMAGE),
       generateQuote: invokeOne(IPC_CHANNELS.CHARACTER_GENERATE_QUOTE),
       generateStats: invokeOne(IPC_CHANNELS.CHARACTER_GENERATE_STATS),
-    },
+    } as RendererApi["character"],
     event: createCrudApi({
       create: IPC_CHANNELS.EVENT_CREATE,
       get: IPC_CHANNELS.EVENT_GET,
@@ -298,26 +317,6 @@ export function createProjectApi({
     },
     memory: {
       queryNarrative: invokeOne(IPC_CHANNELS.MEMORY_QUERY_NARRATIVE),
-      getReviewBacklog: invokeOne(IPC_CHANNELS.MEMORY_REVIEW_BACKLOG),
-      getConflictQueue: invokeOne(IPC_CHANNELS.MEMORY_GET_CONFLICT_QUEUE),
-      getEpisodeReviewQueue: invokeOne(IPC_CHANNELS.MEMORY_EPISODE_REVIEW_QUEUE),
-      confirmEpisode: invokeOne(IPC_CHANNELS.MEMORY_EPISODE_CONFIRM),
-      rejectEpisode: invokeOne(IPC_CHANNELS.MEMORY_EPISODE_REJECT),
-      getFactReviewQueue: invokeOne(IPC_CHANNELS.MEMORY_FACT_REVIEW_QUEUE),
-      confirmFact: invokeOne(IPC_CHANNELS.MEMORY_FACT_CONFIRM),
-      rejectFact: invokeOne(IPC_CHANNELS.MEMORY_FACT_REJECT),
-      resolveFactConflict: invokeOne(IPC_CHANNELS.MEMORY_CONFLICT_RESOLVE),
-      reviewFactConflict: invokeOne(IPC_CHANNELS.MEMORY_CONFLICT_REVIEW_ACTION),
-      getEntityAliasReviewQueue: invokeOne(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_REVIEW_QUEUE),
-      getEntityReviewQueue: invokeOne(IPC_CHANNELS.MEMORY_ENTITY_REVIEW_QUEUE),
-      confirmEntity: invokeOne(IPC_CHANNELS.MEMORY_ENTITY_CONFIRM),
-      rejectEntity: invokeOne(IPC_CHANNELS.MEMORY_ENTITY_REJECT),
-      confirmEntityAlias: invokeOne(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_CONFIRM),
-      rejectEntityAlias: invokeOne(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_REJECT),
-      splitEntityAlias: invokeOne(IPC_CHANNELS.MEMORY_ENTITY_ALIAS_SPLIT),
-      mergeEntity: invokeOne(IPC_CHANNELS.MEMORY_ENTITY_MERGE),
-      reviewStaleEvidence: invokeOne(IPC_CHANNELS.MEMORY_STALE_EVIDENCE_REVIEW_ACTION),
-      repairEvidenceLinks: invokeOne(IPC_CHANNELS.MEMORY_REPAIR_EVIDENCE_LINKS),
       searchChunks: invokeOne(IPC_CHANNELS.MEMORY_SEARCH_CHUNKS),
       getChunkBacklink: invokeOne(IPC_CHANNELS.MEMORY_GET_CHUNK_BACKLINK),
       getChunkWindow: invokeOne(IPC_CHANNELS.MEMORY_GET_CHUNK_WINDOW),
@@ -334,28 +333,10 @@ export function createProjectApi({
     rag: {
       ask: (input) => safeInvoke(IPC_CHANNELS.RAG_QA_ASK, input),
       stop: (runId) => safeInvoke(IPC_CHANNELS.RAG_QA_STOP, { runId }),
-      onStream: (callback, runId) => {
-        const listener = (_event: unknown, payload: unknown) => {
-          const typed = payload as { runId?: string };
-          if (runId && typed.runId !== runId) return;
-          callback(payload as never);
-        };
-        ipcRenderer.on(IPC_CHANNELS.RAG_QA_STREAM, listener);
-        return () => {
-          ipcRenderer.removeListener(IPC_CHANNELS.RAG_QA_STREAM, listener);
-        };
-      },
-      onError: (callback, runId) => {
-        const listener = (_event: unknown, payload: unknown) => {
-          const typed = payload as { runId?: string };
-          if (runId && typed.runId && typed.runId !== runId) return;
-          callback(payload as never);
-        };
-        ipcRenderer.on(IPC_CHANNELS.RAG_QA_ERROR, listener);
-        return () => {
-          ipcRenderer.removeListener(IPC_CHANNELS.RAG_QA_ERROR, listener);
-        };
-      },
+      onStream: (callback, runId) =>
+        onRunScopedChannel(IPC_CHANNELS.RAG_QA_STREAM, callback, runId),
+      onError: (callback, runId) =>
+        onRunScopedChannel(IPC_CHANNELS.RAG_QA_ERROR, callback, runId, false),
     },
     autoSave: autoSave.autoSave,
   };

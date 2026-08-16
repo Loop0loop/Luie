@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/set-state-in-effect -- PanelGroup 등록 상태를 외부 layout과 동기화한다. */
 import { type RefObject, useEffect, useLayoutEffect, useState } from "react";
 import type { PanelImperativeHandle } from "react-resizable-panels";
 import { suppressLayoutPersistenceFor } from "./useLayoutPersist";
@@ -21,6 +21,7 @@ const isPanelRegistrationError = (error: unknown): boolean =>
   error instanceof Error &&
   (error.message.startsWith("Layout not found for Panel") ||
     error.message.startsWith("Panel constraints not found for Panel") ||
+    error.message.startsWith("Could not find data for Group with id") ||
     error.message.startsWith("Group ") && error.message.endsWith(" not found"));
 
 const safelyUsePanel = <T>(
@@ -68,6 +69,7 @@ export function useResizablePanelPresence({
     }
 
     if (!enableAnimations || durationMs <= 0) {
+      safelyUsePanel(panelRef, (panel) => panel.collapse());
       setShouldRender(false);
       setIsClosing(false);
       setIsOpening(false);
@@ -132,7 +134,6 @@ export function useResizablePanelPresence({
   useLayoutEffect(() => {
     if (!isOpen || !shouldRender) return undefined;
     const isCollapsed = safelyUsePanel(panelRef, (panel) => panel.isCollapsed());
-    // Skip if panel not yet registered or is already expanded
     if (isCollapsed !== true) return undefined;
     suppressLayoutPersistenceFor(durationMs + 160);
 

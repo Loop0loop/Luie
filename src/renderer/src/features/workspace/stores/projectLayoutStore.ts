@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { getPersistableSidebarWidths } from "@renderer/shared/constants/sidebarSizing";
 import {
   PROJECT_LAYOUT_SCHEMA_VERSION,
   STORAGE_KEY_PROJECT_LAYOUT,
@@ -73,7 +74,15 @@ export const useProjectLayoutStore = create<ProjectLayoutStore>()(
         migrateProjectLayoutPersistedState(persistedState, version),
       partialize: (state) => ({
         schemaVersion: PROJECT_LAYOUT_SCHEMA_VERSION,
-        byProject: state.byProject,
+        byProject: Object.fromEntries(
+          Object.entries(state.byProject).map(([projectId, layout]) => [
+            projectId,
+            {
+              ...layout,
+              sidebarWidths: getPersistableSidebarWidths(layout.sidebarWidths),
+            },
+          ]),
+        ),
       }),
       merge: (persistedState, currentState) => {
         if (!isRecord(persistedState)) {

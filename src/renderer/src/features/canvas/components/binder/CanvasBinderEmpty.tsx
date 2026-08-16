@@ -1,7 +1,3 @@
-/**
- * CanvasBinderEmpty — shown in the BinderSidebar canvas tab when no node
- * is selected.
- */
 import { useTranslation } from "react-i18next";
 import { MousePointerClick } from "lucide-react";
 

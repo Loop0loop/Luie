@@ -59,15 +59,14 @@ export const jaBaseResearch = {
         nodesCount: "{{count}} nodes",
         replicaOnly: "Replica only",
         refresh: "再読み込み",
-        replicaNotice:
-          "このプロジェクトには現在 `.luie` attachment がないため、graph canvas の変更は replica ストレージにのみ保持されます。",
+        replicaNotice: "このプロジェクトには現在 `.luie` attachment がないため、graph canvas の変更は replica ストレージにのみ保持されます。",
         loading: "グラフデータを読み込んでいます...",
       },
       canvas: {
         toolbar: {
           newEntityBlock: "新しいエンティティブロック",
           timelineBlock: "タイムラインブロック",
-          memoBlock: "メモブロック",
+          callout: "コールアウト",
         },
         controls: {
           zoomIn: "拡大",
@@ -108,9 +107,8 @@ export const jaBaseResearch = {
           placeholder: "出来事を記録...",
         },
         timelinePalette: {
-          searchPlaceholder:
-            "事件を検索するか、新しいタイムラインブロックを作成...",
-          noMatch: '"{{query}}" に一致する事件がありません。',
+          searchPlaceholder: "事件を検索するか、新しいタイムラインブロックを作成...",
+          noMatch: "\"{{query}}\" に一致する事件がありません。",
           createBlock: "新しいタイムラインブロックを作成",
           move: "移動",
           select: "選択",
@@ -124,8 +122,7 @@ export const jaBaseResearch = {
       },
       timeline: {
         undated: "日付未定",
-        emptyTimelineSelection:
-          "左サイドバーでタイムライントラックを選択するか、新しく作成してください。",
+        emptyTimelineSelection: "左サイドバーでタイムライントラックを選択するか、新しく作成してください。",
         move: "移動...",
         description: "分岐点を基準に出来事を整理します。",
         emptySegment: "このセグメントに割り当てられた出来事はありません。",
@@ -133,8 +130,7 @@ export const jaBaseResearch = {
       },
       notes: {
         defaultTitle: "新しいスクラップ",
-        noProject:
-          "プロジェクトを開くと、ここでスクラップノートを編集できます。",
+        noProject: "プロジェクトを開くと、ここでスクラップノートを編集できます。",
         loading: "ノートを読み込んでいます...",
         empty: "まだノートがありません。",
         createFirst: "最初のノートを作成",
@@ -145,8 +141,7 @@ export const jaBaseResearch = {
         titlePlaceholder: "ノートタイトル",
         tags: "Tags",
         tagsPlaceholder: "例: 伏線, シーズン1, 設定",
-        bodyPlaceholder:
-          "設定、メモ、シーンのアイデアを自由に記録してください。",
+        bodyPlaceholder: "設定、メモ、シーンのアイデアを自由に記録してください。",
       },
       library: {
         installedKicker: "Installed Plugins",

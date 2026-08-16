@@ -10,6 +10,7 @@ import type {
 import type { PreloadApiModuleContext } from "./types.js";
 
 export function createSystemApi({
+  autoSave,
   ipcRenderer,
   loggerApi,
   safeInvoke,
@@ -54,8 +55,13 @@ export function createSystemApi({
       onUpdateState: (callback) =>
         onChannel<AppUpdateState>(IPC_CHANNELS.APP_UPDATE_STATE_CHANGED, callback),
       quit: () => safeInvoke(IPC_CHANNELS.APP_QUIT),
-      manualSave: () =>
-        safeInvoke<{ success: boolean }>(IPC_CHANNELS.MANUAL_SAVE),
+      manualSave: async (projectId) => {
+        await autoSave.flushAutoSaves();
+        return await safeInvoke<{ success: boolean; exported: boolean }>(
+          IPC_CHANNELS.MANUAL_SAVE,
+          projectId,
+        );
+      },
     },
     logger: loggerApi,
     settings: {

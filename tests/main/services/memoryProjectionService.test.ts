@@ -1,12 +1,12 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { ProjectService } from "../../../src/main/services/core/projectService.js";
-import { ChapterService } from "../../../src/main/services/core/chapterService.js";
+import { ProjectService } from "../../../src/main/services/features/project/projectService.js";
+import { ChapterService } from "../../../src/main/services/features/manuscript/chapterService.js";
 import {
   chunkText,
   memoryProjectionService,
 } from "../../../src/main/services/features/memory/memoryProjectionService.js";
-import { searchService } from "../../../src/main/services/features/search/index.js";
-import { projectService } from "../../../src/main/services/core/projectService.js";
+import { searchService } from "../../../src/main/services/features/search/searchService.js";
+import { projectService } from "../../../src/main/services/features/project/projectService.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import type { ServiceError } from "../../../src/main/utils/error/index.js";
 import { ErrorCode } from "../../../src/shared/constants/errors/index.js";
@@ -16,10 +16,6 @@ import {
   memoryEpisodeExtractionJob,
 } from "../../../src/main/infra/database/index.js";
 import { eq } from "drizzle-orm";
-import {
-  buildMemoryChunkIndexText,
-  buildMemoryContextLabel,
-} from "../../../src/main/services/features/memory/projection/index.js";
 
 describe("memoryProjectionService", () => {
   const localProjectService = new ProjectService();
@@ -112,23 +108,6 @@ describe("memoryProjectionService", () => {
     const content = "   \n\n\t\t\n\n";
     const chunks = chunkText(content, 40, 5, 80);
     expect(chunks).toHaveLength(0);
-  });
-
-  it("builds index text from context label without changing raw content", () => {
-    const rawContent = "사절단은 조용히 문서를 접고 창밖의 비를 바라보았다.";
-    const contextLabel = buildMemoryContextLabel({
-      sourceType: "chapter",
-      title: "은하궁 회담",
-    });
-    const indexText = buildMemoryChunkIndexText({
-      contextLabel,
-      content: rawContent,
-    });
-
-    expect(contextLabel).toBe("chapter: 은하궁 회담");
-    expect(indexText).toContain("은하궁 회담");
-    expect(indexText).toContain(rawContent);
-    expect(rawContent).not.toContain("은하궁 회담");
   });
 
   it("rebuilds memory chunks and supports chunk search/backlink", async () => {

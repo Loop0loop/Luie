@@ -120,7 +120,7 @@ const decodeLegacySecret = (
         migratedCipher: encryptSecret(plain, scope),
       };
     } catch {
-      // Legacy payload may be plain base64 text.
+      // NOTE: legacy auth payload는 JSON wrapper 없이 base64 text일 수 있다.
       const plain = payload.toString("utf-8");
       return {
         plain,

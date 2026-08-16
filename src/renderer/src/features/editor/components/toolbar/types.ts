@@ -12,6 +12,8 @@ export interface EditorToolbarProps {
   onOpenPreview?: () => void;
   onOpenExport?: () => void;
   canOpenExport?: boolean;
+  hideCanvasToggle?: boolean;
+  className?: string;
 }
 
 export type ParagraphStyle = "paragraph" | "heading1" | "heading2" | "heading3";

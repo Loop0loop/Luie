@@ -1,4 +1,4 @@
-/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable react-refresh/only-export-components -- component와 variant를 함께 export한다. */
 
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"

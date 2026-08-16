@@ -1,14 +1,14 @@
 // TEST_LEVEL: REAL_DB_INTEGRATION
-// PROVES: snapshot workflows through real DB, filesystem mirrors, and attached .luie persistence
-// DOES_NOT_PROVE: isolated service branches without timing/state coupling
+// PROVES: 실제 DB, filesystem mirror, 연결된 .luie persistence를 거치는 snapshot workflow
+// DOES_NOT_PROVE: timing/state 결합이 없는 독립 service branch
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import path from "node:path";
 import { promises as fs } from "node:fs";
 import { app } from "electron";
 import { db } from "../../../src/main/database/index.js";
-import { projectService } from "../../../src/main/services/core/projectService.js";
-import { chapterService } from "../../../src/main/services/core/chapterService.js";
+import { projectService } from "../../../src/main/services/features/project/projectService.js";
+import { chapterService } from "../../../src/main/services/features/manuscript/chapterService.js";
 import { snapshotService } from "../../../src/main/services/features/snapshot/snapshotService.js";
 import { autoSaveManager } from "../../../src/main/manager/autoSave/index.js";
 import * as snapshotArtifacts from "../../../src/main/services/features/snapshot/snapshotArtifacts.js";

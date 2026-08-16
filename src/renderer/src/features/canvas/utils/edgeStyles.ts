@@ -1,10 +1,3 @@
-/**
- * edgeStyles.ts
- *
- * Edge style computation for canvas relation edges.
- * Extracted from RelationEdge to centralize stroke/opacity/transition logic.
- */
-
 import type { CSSProperties } from "react";
 import { CANVAS_RELATION_EDGE_DEFAULTS } from "../constants/edge";
 
@@ -21,13 +14,6 @@ export type EdgeStyle = Pick<
   "stroke" | "strokeWidth" | "opacity" | "transition"
 >;
 
-/**
- * Compute edge style object for a RelationEdge.
- *
- * @param selected — whether the edge is currently selected
- * @param strokeColour — resolved stroke color (CSS variable or literal)
- * @param defaults — edge defaults (defaults to CANVAS_RELATION_EDGE_DEFAULTS)
- */
 export function getEdgeStyle(
   selected: boolean,
   strokeColour: string,

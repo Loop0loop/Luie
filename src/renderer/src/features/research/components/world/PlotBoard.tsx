@@ -1,11 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, X, Trash2, GripVertical } from "lucide-react";
+import { api } from "@shared/api";
 import { BufferedTextArea, BufferedInput } from "@shared/ui/BufferedInput";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { worldPackageStorage } from "@renderer/features/research/services/worldPackageStorage";
 import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
 import { useToast } from "@shared/ui/ToastContext";
+import {
+  preserveUnmountSave,
+  registerSaveBufferFlush,
+} from "@shared/ui/saveBufferRegistry";
 
 interface PlotCard {
   id: string;
@@ -18,10 +23,17 @@ interface PlotColumn {
   cards: PlotCard[];
 }
 
+interface PendingPlotSave {
+  projectId: string;
+  projectPath: string | null;
+  columns: PlotColumn[];
+}
+
 export function PlotBoard() {
   const { t } = useTranslation();
   const { showToast } = useToast();
   const currentProject = useProjectStore((state) => state.currentItem);
+  const projectId = currentProject?.id;
   const luieAttachmentPath = getReadableLuieAttachmentPath(currentProject);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const defaultColumns = useMemo<PlotColumn[]>(
@@ -48,52 +60,108 @@ export function PlotBoard() {
     [t],
   );
   const [columns, setColumns] = useState<PlotColumn[]>(defaultColumns);
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [editableScope, setEditableScope] = useState<string | null>(null);
+  const columnsRef = useRef(columns);
+  const columnsByScopeRef = useRef(new Map<string, PlotColumn[]>());
+  const hydratedScopesRef = useRef(new Set<string>());
+  const mutationGenerationByScopeRef = useRef(new Map<string, number>());
+  const activeScopeRef = useRef<string | null>(null);
+  const pendingPlotSavesRef = useRef<PendingPlotSave[]>([]);
+  const saveInFlightRef = useRef<Promise<void> | null>(null);
+  const flushPlotRef = useRef<() => Promise<void>>(async () => undefined);
+  const projectScope = projectId
+    ? `${projectId}\0${luieAttachmentPath ?? ""}`
+    : null;
 
-  useEffect(() => {
-    if (!currentProject?.id) {
+  useLayoutEffect(() => {
+    if (!projectId || !projectScope) {
       return;
     }
 
     let cancelled = false;
+    const scopeChanged = activeScopeRef.current !== projectScope;
+    activeScopeRef.current = projectScope;
+    const pendingAtLoadStart = pendingPlotSavesRef.current.find(
+      (save) =>
+        save.projectId === projectId &&
+        save.projectPath === luieAttachmentPath,
+    );
+    if (scopeChanged) {
+      const cachedColumns = columnsByScopeRef.current.get(projectScope);
+      const transitionColumns =
+        pendingAtLoadStart?.columns ?? cachedColumns ?? defaultColumns;
+      if (pendingAtLoadStart || cachedColumns) {
+        hydratedScopesRef.current.add(projectScope);
+        setEditableScope(projectScope);
+      } else {
+        setEditableScope(null);
+      }
+      columnsRef.current = transitionColumns;
+      setColumns(transitionColumns);
+    }
+    const loadGeneration = mutationGenerationByScopeRef.current.get(
+      projectScope,
+    );
+    void flushPlotRef.current().catch(() => undefined);
     void (async () => {
       const loaded = await worldPackageStorage.loadPlot(
-        currentProject.id,
+        projectId,
         luieAttachmentPath,
       );
       if (cancelled) return;
-      setColumns(loaded.columns.length > 0 ? loaded.columns : defaultColumns);
-      setIsHydrated(true);
-    })();
+      if (
+        mutationGenerationByScopeRef.current.get(projectScope) !==
+        loadGeneration
+      ) {
+        return;
+      }
+      const pending = pendingPlotSavesRef.current.find(
+        (save) =>
+          save.projectId === projectId &&
+          save.projectPath === luieAttachmentPath,
+      );
+      const nextColumns = pending
+        ? pending.columns
+        : pendingAtLoadStart
+          ? pendingAtLoadStart.columns
+        : loaded.columns.length > 0
+          ? loaded.columns
+          : defaultColumns;
+      columnsByScopeRef.current.set(projectScope, nextColumns);
+      hydratedScopesRef.current.add(projectScope);
+      columnsRef.current = nextColumns;
+      setColumns(nextColumns);
+      if (activeScopeRef.current === projectScope) {
+        setEditableScope(projectScope);
+      }
+    })().catch((error: unknown) => {
+      if (!cancelled) {
+        void api.logger.warn("Failed to load plot project scope", {
+          projectId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        showToast(t("research.toast.worldSaveFailed"), "error");
+      }
+    });
 
     return () => {
       cancelled = true;
     };
-  }, [currentProject?.id, luieAttachmentPath, defaultColumns]);
-
-  useEffect(() => {
-    if (!currentProject?.id || !isHydrated) return;
-    const timer = window.setTimeout(() => {
-      void worldPackageStorage
-        .savePlot(currentProject.id, luieAttachmentPath, {
-          columns,
-        })
-        .catch(() => {
-          showToast(t("research.toast.worldSaveFailed"), "error");
-        });
-    }, 250);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [columns, currentProject?.id, isHydrated, luieAttachmentPath, showToast, t]);
+  }, [
+    projectId,
+    luieAttachmentPath,
+    defaultColumns,
+    projectScope,
+    showToast,
+    t,
+  ]);
 
   useEffect(() => {
     const element = scrollContainerRef.current;
     if (!element) return;
 
     const handleWheel = (event: WheelEvent) => {
-      // Keep natural trackpad scrolling unless user explicitly requests horizontal shift-scroll.
+      // NOTE: shift-scroll일 때만 가로 이동을 가로채 자연스러운 trackpad scroll을 보존한다.
       if (!event.shiftKey) return;
       if (event.deltaY === 0 && event.deltaX === 0) return;
       event.preventDefault();
@@ -107,32 +175,122 @@ export function PlotBoard() {
     };
   }, []);
 
+  const flushPlot = async (): Promise<void> => {
+    const inFlight = saveInFlightRef.current;
+    if (inFlight) {
+      await inFlight;
+      return flushPlotRef.current();
+    }
+    const snapshot = pendingPlotSavesRef.current[0];
+    if (!snapshot) return;
+
+    const save = worldPackageStorage
+      .savePlot(snapshot.projectId, snapshot.projectPath, {
+        columns: snapshot.columns,
+      })
+      .catch((error: unknown) => {
+        showToast(t("research.toast.worldSaveFailed"), "error");
+        throw error;
+      });
+    saveInFlightRef.current = save;
+    try {
+      await save;
+      if (pendingPlotSavesRef.current[0] === snapshot) {
+        pendingPlotSavesRef.current.shift();
+      }
+    } finally {
+      if (saveInFlightRef.current === save) saveInFlightRef.current = null;
+    }
+    return flushPlotRef.current();
+  };
+
+  useEffect(() => {
+    flushPlotRef.current = flushPlot;
+  });
+
+  useEffect(() => registerSaveBufferFlush(() => flushPlotRef.current()), []);
+
+  useEffect(
+    () => () => {
+      if (
+        pendingPlotSavesRef.current.length === 0 &&
+        !saveInFlightRef.current
+      ) {
+        return;
+      }
+      preserveUnmountSave(flushPlotRef.current(), () =>
+        flushPlotRef.current(),
+      );
+    },
+    [],
+  );
+
+  const commitColumns = (
+    update: (current: PlotColumn[]) => PlotColumn[],
+  ): Promise<void> => {
+    if (
+      !projectId ||
+      !projectScope ||
+      !hydratedScopesRef.current.has(projectScope)
+    ) {
+      return Promise.resolve();
+    }
+    const nextColumns = update(
+      columnsByScopeRef.current.get(projectScope) ?? columnsRef.current,
+    );
+    columnsByScopeRef.current.set(projectScope, nextColumns);
+    mutationGenerationByScopeRef.current.set(
+      projectScope,
+      (mutationGenerationByScopeRef.current.get(projectScope) ?? 0) + 1,
+    );
+    const pending: PendingPlotSave = {
+      projectId,
+      projectPath: luieAttachmentPath,
+      columns: nextColumns,
+    };
+    const pendingIndex = pendingPlotSavesRef.current.findIndex(
+      (save) =>
+        save.projectId === pending.projectId &&
+        save.projectPath === pending.projectPath,
+    );
+    if (pendingIndex === -1) pendingPlotSavesRef.current.push(pending);
+    else pendingPlotSavesRef.current[pendingIndex] = pending;
+    if (activeScopeRef.current === projectScope) {
+      columnsRef.current = nextColumns;
+      setColumns(nextColumns);
+    }
+    return flushPlot();
+  };
+
   const addColumn = () => {
-    const newId = `act-${Date.now()}`;
-    setColumns((prev) => [
-      ...prev,
-      {
-        id: newId,
-        title: `${t("world.plot.newAct")} ${prev.length + 1}`,
-        cards: [],
-      },
-    ]);
+    void commitColumns((prev) => {
+      const newId = `act-${Date.now()}`;
+      return [
+        ...prev,
+        {
+          id: newId,
+          title: `${t("world.plot.newAct")} ${prev.length + 1}`,
+          cards: [],
+        },
+      ];
+    }).catch(() => undefined);
   };
 
   const removeColumn = (colId: string) => {
-    setColumns((prev) => prev.filter((column) => column.id !== colId));
+    void commitColumns((prev) =>
+      prev.filter((column) => column.id !== colId),
+    ).catch(() => undefined);
   };
 
-  const updateColumnTitle = (colId: string, newTitle: string) => {
-    setColumns((prev) =>
+  const updateColumnTitle = (colId: string, newTitle: string): Promise<void> =>
+    commitColumns((prev) =>
       prev.map((column) =>
         column.id === colId ? { ...column, title: newTitle } : column,
       ),
     );
-  };
 
   const addCard = (colId: string) => {
-    setColumns((cols) =>
+    void commitColumns((cols) =>
       cols.map((col) => {
         if (col.id === colId) {
           return {
@@ -145,11 +303,15 @@ export function PlotBoard() {
         }
         return col;
       }),
-    );
+    ).catch(() => undefined);
   };
 
-  const updateCard = (colId: string, cardId: string, content: string) => {
-    setColumns((cols) =>
+  const updateCard = (
+    colId: string,
+    cardId: string,
+    content: string,
+  ): Promise<void> =>
+    commitColumns((cols) =>
       cols.map((col) => {
         if (col.id === colId) {
           return {
@@ -162,10 +324,9 @@ export function PlotBoard() {
         return col;
       }),
     );
-  };
 
   const deleteCard = (colId: string, cardId: string) => {
-    setColumns((cols) =>
+    void commitColumns((cols) =>
       cols.map((col) => {
         if (col.id === colId) {
           return {
@@ -175,12 +336,15 @@ export function PlotBoard() {
         }
         return col;
       }),
-    );
+    ).catch(() => undefined);
   };
 
   return (
-    <div className="h-full flex flex-col bg-app overflow-hidden">
-      {/* Horizontal Scroll Area */}
+    <fieldset
+      key={projectScope}
+      disabled={editableScope !== projectScope}
+      className="h-full min-w-0 m-0 p-0 border-0 flex flex-col bg-app overflow-hidden"
+    >
       <div
         className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar"
         ref={scrollContainerRef}
@@ -189,9 +353,8 @@ export function PlotBoard() {
           {columns.map((col) => (
             <div
               key={col.id}
-              className="w-80 shrink-0 flex flex-col bg-sidebar border border-border rounded-xl shadow-sm max-h-full group/col"
+              className="w-80 shrink-0 flex flex-col bg-sidebar border border-border rounded-panel shadow-sm max-h-full group/col"
             >
-              {/* Column Header */}
               <div className="p-3 flex items-center gap-2 border-b border-border bg-panel/50 rounded-t-xl">
                 <GripVertical className="text-muted cursor-grab hover:text-fg w-4 h-4" />
                 <BufferedInput
@@ -213,12 +376,11 @@ export function PlotBoard() {
                 </div>
               </div>
 
-              {/* Cards List - Vertical Scroll */}
               <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3 custom-scrollbar">
                 {col.cards.map((card) => (
                   <div
                     key={card.id}
-                    className="bg-panel border border-border rounded-lg p-3 shadow-sm relative group hover:border-active transition-all hover:shadow-md"
+                    className="bg-panel border border-border rounded-panel p-3 shadow-sm relative group hover:border-active transition-all hover:shadow-md"
                   >
                     <BufferedTextArea
                       className="w-full bg-transparent border-none resize-none text-sm text-fg leading-relaxed outline-none min-h-[60px]"
@@ -236,9 +398,8 @@ export function PlotBoard() {
                 ))}
               </div>
 
-              {/* Footer Action */}
               <button
-                className="m-3 p-2 flex items-center justify-center gap-2 rounded-lg border border-dashed border-border text-xs text-muted font-medium hover:text-accent hover:border-accent hover:bg-accent/5 transition-all"
+                className="m-3 p-2 flex items-center justify-center gap-2 rounded-panel border border-dashed border-border text-xs text-muted font-medium hover:text-accent hover:border-accent hover:bg-accent/5 transition-all"
                 onClick={() => addCard(col.id)}
               >
                 <Plus className="w-4 h-4" /> {t("world.plot.addBeat")}
@@ -246,19 +407,18 @@ export function PlotBoard() {
             </div>
           ))}
 
-          {/* Add Column Button */}
-          <div
-            className="w-16 shrink-0 flex items-center justify-center border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-accent hover:bg-accent/5 transition-all group"
+          <button
+            type="button"
+            className="w-16 shrink-0 flex items-center justify-center border-2 border-dashed border-border rounded-panel cursor-pointer hover:border-accent hover:bg-accent/5 transition-all group"
             onClick={addColumn}
             title={t("world.plot.addAct")}
           >
             <Plus className="w-8 h-8 text-muted group-hover:text-accent transition-colors" />
-          </div>
+          </button>
         </div>
       </div>
 
-      {/* Visual Bar / Scroll Indicator Area (Optional polished look) */}
       <div className="h-4 bg-sidebar border-t border-border shrink-0" />
-    </div>
+    </fieldset>
   );
 }

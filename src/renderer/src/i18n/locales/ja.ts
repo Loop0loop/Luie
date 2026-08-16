@@ -7,6 +7,8 @@ import { jaTrash } from "./ja/trash";
 import { jaMisc } from "./ja/misc";
 import { jaWorldGraph } from "./ja/modules/worldGraph";
 import { jaCanvas } from "./ja/modules/canvas";
+import { jaMissing } from "./ja/missing";
+import { deepMerge } from "./deepMerge";
 
 const jaWorkspaceWithWorldGraph = {
   ...jaWorkspace,
@@ -20,14 +22,17 @@ const jaWorkspaceWithWorldGraph = {
 } as const;
 
 export const ja = {
-  common: {
-    ...jaBase,
-    ...jaWorkspaceWithWorldGraph,
-    ...jaExport,
-    ...jaSnapshot,
-    ...jaScrivener,
-    ...jaTrash,
-    ...jaMisc,
-    canvas: jaCanvas,
-  },
+  common: deepMerge(
+    {
+      ...jaBase,
+      ...jaWorkspaceWithWorldGraph,
+      ...jaExport,
+      ...jaSnapshot,
+      ...jaScrivener,
+      ...jaTrash,
+      ...jaMisc,
+      canvas: jaCanvas,
+    },
+    jaMissing,
+  ),
 } as const;

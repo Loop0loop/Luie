@@ -51,7 +51,6 @@ export default function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
 
     if (!text) return;
 
-    // 선택된 텍스트를 웹소설 표준 대사 따옴표(" ")로 감쌈
     editor.chain().focus().insertContent(`"${text}"`).run();
   };
 
@@ -59,12 +58,12 @@ export default function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
     <BubbleMenu
       editor={editor}
       options={{ placement: "top" }}
-      className="flex items-center gap-1 bg-background text-foreground shadow-lg border border-border rounded-lg p-1.5"
+      className="flex items-center gap-1 bg-app text-fg shadow-lg border border-border rounded-panel p-1.5"
     >
       <button
         onClick={() => editor.chain().focus().toggleBold().run()}
         className={`p-1.5 rounded hover:bg-muted transition-colors ${
-          editor.isActive("bold") ? "bg-muted text-foreground" : "text-muted-foreground"
+          editor.isActive("bold") ? "bg-muted text-fg" : "text-muted"
         }`}
         title={t("editor.bubbleMenu.bold")}
         aria-label={t("editor.bubbleMenu.bold")}
@@ -75,7 +74,7 @@ export default function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
       <button
         onClick={() => editor.chain().focus().toggleItalic().run()}
         className={`p-1.5 rounded hover:bg-muted transition-colors ${
-          editor.isActive("italic") ? "bg-muted text-foreground" : "text-muted-foreground"
+          editor.isActive("italic") ? "bg-muted text-fg" : "text-muted"
         }`}
         title={t("editor.bubbleMenu.italic")}
         aria-label={t("editor.bubbleMenu.italic")}
@@ -86,7 +85,7 @@ export default function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
       <button
         onClick={() => editor.chain().focus().toggleUnderline().run()}
         className={`p-1.5 rounded hover:bg-muted transition-colors ${
-          editor.isActive("underline") ? "bg-muted text-foreground" : "text-muted-foreground"
+          editor.isActive("underline") ? "bg-muted text-fg" : "text-muted"
         }`}
         title={t("editor.bubbleMenu.underline")}
         aria-label={t("editor.bubbleMenu.underline")}
@@ -97,7 +96,7 @@ export default function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
       <button
         onClick={() => editor.chain().focus().toggleStrike().run()}
         className={`p-1.5 rounded hover:bg-muted transition-colors ${
-          editor.isActive("strike") ? "bg-muted text-foreground" : "text-muted-foreground"
+          editor.isActive("strike") ? "bg-muted text-fg" : "text-muted"
         }`}
         title={t("editor.bubbleMenu.strikethrough")}
         aria-label={t("editor.bubbleMenu.strikethrough")}
@@ -108,7 +107,7 @@ export default function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
       <button
         onClick={() => editor.chain().focus().toggleHighlight().run()}
         className={`p-1.5 rounded hover:bg-muted transition-colors ${
-          editor.isActive("highlight") ? "bg-muted text-foreground" : "text-muted-foreground"
+          editor.isActive("highlight") ? "bg-muted text-fg" : "text-muted"
         }`}
         title={t("editor.bubbleMenu.highlight")}
         aria-label={t("editor.bubbleMenu.highlight")}
@@ -117,7 +116,7 @@ export default function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
       </button>
 
       <label
-        className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground cursor-pointer flex items-center justify-center relative"
+        className="p-1.5 rounded hover:bg-muted transition-colors text-muted cursor-pointer flex items-center justify-center relative"
         title={t("editor.bubbleMenu.textColor")}
         aria-label={t("editor.bubbleMenu.textColor")}
       >
@@ -134,7 +133,7 @@ export default function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
 
       <button
         onClick={handleDialogue}
-        className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground"
+        className="p-1.5 rounded hover:bg-muted transition-colors text-muted"
         title={t("editor.bubbleMenu.quote")}
         aria-label={t("editor.bubbleMenu.quote")}
       >
@@ -143,7 +142,7 @@ export default function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
 
       <button
         onClick={handleAddTerm}
-        className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground"
+        className="p-1.5 rounded hover:bg-muted transition-colors text-muted"
         title={t("editor.bubbleMenu.addTerm")}
         aria-label={t("editor.bubbleMenu.addTerm")}
       >

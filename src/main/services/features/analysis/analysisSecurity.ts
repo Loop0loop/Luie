@@ -4,18 +4,10 @@ import { manuscriptAnalysisService } from "../analysis/manuscriptAnalysisService
 
 const logger = createLogger("AnalysisSecurity");
 
-/**
- * 보안 처리 유틸리티
- * - 윈도우 blur/close 시 자동 삭제
- * - 메모리 정리
- */
 class AnalysisSecurity {
   private readonly registeredWindowIds = new Set<number>();
 
-  /**
-   * 보안 리스너 등록
-   * 윈도우 close 시 분석 데이터 자동 삭제
-   */
+  /** window 종료 시 분석 결과가 메모리에 남지 않도록 정리 listener를 등록한다. */
   registerSecurityListeners(window: BrowserWindow): void {
     if (window.isDestroyed()) {
       logger.warn(
@@ -29,7 +21,6 @@ class AnalysisSecurity {
     }
     this.registeredWindowIds.add(window.id);
 
-    // 윈도우 close 이벤트
     window.once("close", () => {
       logger.info("Window close detected, clearing analysis data");
       manuscriptAnalysisService.stopAnalysis();
@@ -44,15 +35,12 @@ class AnalysisSecurity {
     logger.info("Security listeners registered", { windowId: window.id });
   }
 
-  /**
-   * 민감 데이터 정리
-   * 메모리에서 분석 결과 완전 삭제
-   */
+  /** 분석 결과를 메모리에서 제거하고 가능한 경우 즉시 GC한다. */
   clearSensitiveData(): void {
     try {
       manuscriptAnalysisService.clearAnalysisData();
 
-      // 강제 GC 요청 (Node.js --expose-gc 필요)
+      // NOTE: --expose-gc 환경에서만 분석 window memory를 즉시 회수한다.
       if (global.gc) {
         global.gc();
         logger.info("Forced garbage collection");

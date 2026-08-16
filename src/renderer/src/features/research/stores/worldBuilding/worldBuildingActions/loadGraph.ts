@@ -23,8 +23,7 @@ export const createLoadGraphAction = (
     isLoading: true,
     error: null,
     activeProjectId: projectId,
-    // Keep the current graph visible during same-project reloads so
-    // in-flight mutations can rebase against a real snapshot.
+    // NOTE: 같은 project를 다시 불러올 때 진행 중인 mutation이 실제 snapshot에 rebase되도록 현재 graph를 유지한다.
     graphData:
       state.activeProjectId === projectId ? state.graphData : null,
   }));

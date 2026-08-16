@@ -5,63 +5,22 @@ import {
   memoryChunkIdSchema,
   memoryChunkSearchSchema,
   memoryChunkWindowSchema,
-  memoryConflictQueueQuerySchema,
   memoryEmbeddingStatusSchema,
-  memoryEntityAliasConfirmSchema,
-  memoryEntityAliasRejectSchema,
-  memoryEntityAliasReviewQueueSchema,
-  memoryEntityAliasSplitSchema,
-  memoryEntityConfirmSchema,
-  memoryEntityMergeSchema,
-  memoryEntityRejectSchema,
-  memoryEntityReviewQueueSchema,
   memoryEpisodeCalibrationRunSchema,
-  memoryEpisodeConfirmSchema,
-  memoryEpisodeRejectSchema,
-  memoryEpisodeReviewQueueSchema,
   memoryEvalFeedbackRecordSchema,
   memoryEvalRunSchema,
-  memoryEvidenceRepairSchema,
   memoryIntentCalibrationRunSchema,
   memoryNarrativeSummaryStatusSchema,
-  memoryReviewBacklogSchema,
-  memoryStaleEvidenceReviewActionSchema,
   memorySummaryStatusSchema,
-  memoryTemporalFactConfirmSchema,
-  memoryTemporalFactConflictResolveSchema,
-  memoryTemporalFactConflictReviewSchema,
-  memoryTemporalFactRejectSchema,
-  memoryTemporalFactReviewQueueSchema,
   narrativeMemoryQuerySchema,
   projectIdSchema,
   rebuildMemoryChunksSchema,
 } from "../../../shared/schemas/index.js";
 import type {
   MemoryChunkWindowQuery,
-  MemoryConflictQueueInput,
-  MemoryEntityAliasConfirmInput,
-  MemoryEntityAliasRejectInput,
-  MemoryEntityAliasReviewQueueInput,
-  MemoryEntityAliasSplitInput,
-  MemoryEntityConfirmInput,
-  MemoryEntityMergeInput,
-  MemoryEntityRejectInput,
-  MemoryEntityReviewQueueInput,
   MemoryEpisodeCalibrationRequest,
-  MemoryEpisodeConfirmInput,
-  MemoryEpisodeRejectInput,
-  MemoryEpisodeReviewQueueInput,
   MemoryEvalFeedbackRecordRequest,
   MemoryEvalRunRequest,
-  MemoryEvidenceRepairInput,
-  MemoryEvidenceRepairResult,
-  MemoryReviewBacklogInput,
-  MemoryStaleEvidenceReviewActionInput,
-  MemoryTemporalFactConfirmInput,
-  MemoryTemporalFactConflictResolveInput,
-  MemoryTemporalFactConflictReviewInput,
-  MemoryTemporalFactRejectInput,
-  MemoryTemporalFactReviewQueueInput,
   NarrativeMemoryIntentCalibrationRequest,
   NarrativeMemoryQueryInput,
 } from "../../../shared/types/index.js";
@@ -70,17 +29,15 @@ import type {
   EmbeddingProjectorLike,
   MemoryChunkSearchServiceLike,
   MemoryMaintenanceServiceLike,
-  MemoryReviewMutationResult,
   NarrativeMemoryQueryServiceLike,
   NarrativeSummaryStatusServiceLike,
-  PackagePersistenceLike,
 } from "./types.js";
 import {
   cancelMemoryBuildJobs,
   getMemoryBuildJobProgress,
   pauseMemoryBuildJobs,
   resumeMemoryBuildJobs,
-} from "../../services/features/memory/index.js";
+} from "../../services/features/memory/jobControl.js";
 import { registerIpcHandlers } from "../core/ipcRegistrar.js";
 import type { LoggerLike } from "../core/types.js";
 import { z } from "zod";
@@ -93,44 +50,7 @@ export function registerMemoryIPCHandlers(
   embeddingProjector: EmbeddingProjectorLike,
   narrativeMemoryQueryService: NarrativeMemoryQueryServiceLike,
   narrativeSummaryStatusService?: NarrativeSummaryStatusServiceLike,
-  packagePersistence?: PackagePersistenceLike,
 ): void {
-  const persistAfterUpdatedReviewMutation = async (
-    projectId: string,
-    reason: string,
-    operation: () => Promise<unknown>,
-  ): Promise<unknown> => {
-    const result = (await operation()) as MemoryReviewMutationResult;
-    if (result?.updated === true) {
-      await packagePersistence?.persistPackageAfterMutation(projectId, reason);
-    }
-    return result;
-  };
-
-  const persistAfterRepairedEvidenceLinks = async (
-    projectId: string,
-    reason: string,
-    operation: () => Promise<unknown>,
-  ): Promise<unknown> => {
-    const result = (await operation()) as MemoryEvidenceRepairResult;
-    const repairedCount =
-      result.episodeEvidenceRepaired +
-      result.entityMentionRepaired +
-      result.evalEvidenceRepaired;
-    if (repairedCount > 0) {
-      await packagePersistence?.persistPackageAfterMutation(projectId, reason);
-    }
-    return result;
-  };
-
-  const persistedReviewHandler =
-    <TInput extends { projectId: string }>(
-      reason: string,
-      operation: (input: TInput) => Promise<unknown>,
-    ) =>
-    (input: TInput) =>
-      persistAfterUpdatedReviewMutation(input.projectId, reason, () => operation(input));
-
   registerIpcHandlers(logger, [
     {
       channel: IPC_CHANNELS.MEMORY_REBUILD_CHUNKS,
@@ -166,183 +86,6 @@ export function registerMemoryIPCHandlers(
       argsSchema: z.tuple([narrativeMemoryQuerySchema]),
       handler: (input: NarrativeMemoryQueryInput) =>
         narrativeMemoryQueryService.query(input),
-    },
-    {
-      channel: IPC_CHANNELS.MEMORY_REVIEW_BACKLOG,
-      logTag: "MEMORY_REVIEW_BACKLOG",
-      failMessage: "Failed to get memory review backlog",
-      argsSchema: z.tuple([memoryReviewBacklogSchema]),
-      handler: (input: MemoryReviewBacklogInput) =>
-        narrativeMemoryQueryService.getReviewBacklog(input),
-    },
-    {
-      channel: IPC_CHANNELS.MEMORY_GET_CONFLICT_QUEUE,
-      logTag: "MEMORY_GET_CONFLICT_QUEUE",
-      failMessage: "Failed to get conflict queue",
-      argsSchema: z.tuple([memoryConflictQueueQuerySchema]),
-      handler: (input: MemoryConflictQueueInput) =>
-        narrativeMemoryQueryService.getConflictQueue(input),
-    },
-    {
-      channel: IPC_CHANNELS.MEMORY_EPISODE_REVIEW_QUEUE,
-      logTag: "MEMORY_EPISODE_REVIEW_QUEUE",
-      failMessage: "Failed to get episode review queue",
-      argsSchema: z.tuple([memoryEpisodeReviewQueueSchema]),
-      handler: (input: MemoryEpisodeReviewQueueInput) =>
-        narrativeMemoryQueryService.listSuggestedEpisodes(input),
-    },
-    {
-      channel: IPC_CHANNELS.MEMORY_EPISODE_CONFIRM,
-      logTag: "MEMORY_EPISODE_CONFIRM",
-      failMessage: "Failed to confirm episode",
-      argsSchema: z.tuple([memoryEpisodeConfirmSchema]),
-      handler: persistedReviewHandler<MemoryEpisodeConfirmInput>("memory:episode-confirm", (input) =>
-        narrativeMemoryQueryService.confirmEpisode(input),
-      ),
-    },
-    {
-      channel: IPC_CHANNELS.MEMORY_EPISODE_REJECT,
-      logTag: "MEMORY_EPISODE_REJECT",
-      failMessage: "Failed to reject episode",
-      argsSchema: z.tuple([memoryEpisodeRejectSchema]),
-      handler: persistedReviewHandler<MemoryEpisodeRejectInput>("memory:episode-reject", (input) =>
-        narrativeMemoryQueryService.rejectEpisode(input),
-      ),
-    },
-    {
-      channel: IPC_CHANNELS.MEMORY_FACT_REVIEW_QUEUE,
-      logTag: "MEMORY_FACT_REVIEW_QUEUE",
-      failMessage: "Failed to get fact review queue",
-      argsSchema: z.tuple([memoryTemporalFactReviewQueueSchema]),
-      handler: (input: MemoryTemporalFactReviewQueueInput) =>
-        narrativeMemoryQueryService.listSuggestedFacts(input),
-    },
-    {
-      channel: IPC_CHANNELS.MEMORY_FACT_CONFIRM,
-      logTag: "MEMORY_FACT_CONFIRM",
-      failMessage: "Failed to confirm fact",
-      argsSchema: z.tuple([memoryTemporalFactConfirmSchema]),
-      handler: persistedReviewHandler<MemoryTemporalFactConfirmInput>("memory:fact-confirm", (input) =>
-        narrativeMemoryQueryService.confirmFact(input),
-      ),
-    },
-    {
-      channel: IPC_CHANNELS.MEMORY_FACT_REJECT,
-      logTag: "MEMORY_FACT_REJECT",
-      failMessage: "Failed to reject fact",
-      argsSchema: z.tuple([memoryTemporalFactRejectSchema]),
-      handler: persistedReviewHandler<MemoryTemporalFactRejectInput>("memory:fact-reject", (input) =>
-        narrativeMemoryQueryService.rejectFact(input),
-      ),
-    },
-    {
-      channel: IPC_CHANNELS.MEMORY_CONFLICT_RESOLVE,
-      logTag: "MEMORY_CONFLICT_RESOLVE",
-      failMessage: "Failed to resolve fact conflict",
-      argsSchema: z.tuple([memoryTemporalFactConflictResolveSchema]),
-      handler: persistedReviewHandler<MemoryTemporalFactConflictResolveInput>(
-        "memory:fact-conflict-resolve", (input) => narrativeMemoryQueryService.resolveFactConflict(input),
-      ),
-    },
-    {
-      channel: IPC_CHANNELS.MEMORY_CONFLICT_REVIEW_ACTION,
-      logTag: "MEMORY_CONFLICT_REVIEW_ACTION",
-      failMessage: "Failed to update fact conflict review",
-      argsSchema: z.tuple([memoryTemporalFactConflictReviewSchema]),
-      handler: persistedReviewHandler<MemoryTemporalFactConflictReviewInput>(
-        "memory:fact-conflict-review", (input) => narrativeMemoryQueryService.reviewFactConflict(input),
-      ),
-    },
-    {
-      channel: IPC_CHANNELS.MEMORY_ENTITY_ALIAS_REVIEW_QUEUE,
-      logTag: "MEMORY_ENTITY_ALIAS_REVIEW_QUEUE",
-      failMessage: "Failed to get entity alias review queue",
-      argsSchema: z.tuple([memoryEntityAliasReviewQueueSchema]),
-      handler: (input: MemoryEntityAliasReviewQueueInput) =>
-        narrativeMemoryQueryService.listSuggestedEntityAliases(input),
-    },
-    {
-      channel: IPC_CHANNELS.MEMORY_ENTITY_REVIEW_QUEUE,
-      logTag: "MEMORY_ENTITY_REVIEW_QUEUE",
-      failMessage: "Failed to get entity review queue",
-      argsSchema: z.tuple([memoryEntityReviewQueueSchema]),
-      handler: (input: MemoryEntityReviewQueueInput) =>
-        narrativeMemoryQueryService.listSuggestedEntities(input),
-    },
-    {
-      channel: IPC_CHANNELS.MEMORY_ENTITY_CONFIRM,
-      logTag: "MEMORY_ENTITY_CONFIRM",
-      failMessage: "Failed to confirm entity",
-      argsSchema: z.tuple([memoryEntityConfirmSchema]),
-      handler: persistedReviewHandler<MemoryEntityConfirmInput>("memory:entity-confirm", (input) =>
-        narrativeMemoryQueryService.confirmEntity(input),
-      ),
-    },
-    {
-      channel: IPC_CHANNELS.MEMORY_ENTITY_REJECT,
-      logTag: "MEMORY_ENTITY_REJECT",
-      failMessage: "Failed to reject entity",
-      argsSchema: z.tuple([memoryEntityRejectSchema]),
-      handler: persistedReviewHandler<MemoryEntityRejectInput>("memory:entity-reject", (input) =>
-        narrativeMemoryQueryService.rejectEntity(input),
-      ),
-    },
-    {
-      channel: IPC_CHANNELS.MEMORY_ENTITY_ALIAS_CONFIRM,
-      logTag: "MEMORY_ENTITY_ALIAS_CONFIRM",
-      failMessage: "Failed to confirm entity alias",
-      argsSchema: z.tuple([memoryEntityAliasConfirmSchema]),
-      handler: persistedReviewHandler<MemoryEntityAliasConfirmInput>(
-        "memory:entity-alias-confirm", (input) => narrativeMemoryQueryService.confirmEntityAlias(input),
-      ),
-    },
-    {
-      channel: IPC_CHANNELS.MEMORY_ENTITY_ALIAS_REJECT,
-      logTag: "MEMORY_ENTITY_ALIAS_REJECT",
-      failMessage: "Failed to reject entity alias",
-      argsSchema: z.tuple([memoryEntityAliasRejectSchema]),
-      handler: persistedReviewHandler<MemoryEntityAliasRejectInput>(
-        "memory:entity-alias-reject", (input) => narrativeMemoryQueryService.rejectEntityAlias(input),
-      ),
-    },
-    {
-      channel: IPC_CHANNELS.MEMORY_ENTITY_ALIAS_SPLIT,
-      logTag: "MEMORY_ENTITY_ALIAS_SPLIT",
-      failMessage: "Failed to split entity alias",
-      argsSchema: z.tuple([memoryEntityAliasSplitSchema]),
-      handler: persistedReviewHandler<MemoryEntityAliasSplitInput>(
-        "memory:entity-alias-split", (input) => narrativeMemoryQueryService.splitEntityAlias(input),
-      ),
-    },
-    {
-      channel: IPC_CHANNELS.MEMORY_ENTITY_MERGE,
-      logTag: "MEMORY_ENTITY_MERGE",
-      failMessage: "Failed to merge memory entity",
-      argsSchema: z.tuple([memoryEntityMergeSchema]),
-      handler: persistedReviewHandler<MemoryEntityMergeInput>("memory:entity-merge", (input) =>
-        narrativeMemoryQueryService.mergeEntity(input),
-      ),
-    },
-    {
-      channel: IPC_CHANNELS.MEMORY_STALE_EVIDENCE_REVIEW_ACTION,
-      logTag: "MEMORY_STALE_EVIDENCE_REVIEW_ACTION",
-      failMessage: "Failed to review stale evidence",
-      argsSchema: z.tuple([memoryStaleEvidenceReviewActionSchema]),
-      handler: persistedReviewHandler<MemoryStaleEvidenceReviewActionInput>(
-        "memory:stale-evidence-review-action", (input) => narrativeMemoryQueryService.reviewStaleEvidence(input),
-      ),
-    },
-    {
-      channel: IPC_CHANNELS.MEMORY_REPAIR_EVIDENCE_LINKS,
-      logTag: "MEMORY_REPAIR_EVIDENCE_LINKS",
-      failMessage: "Failed to repair memory evidence links",
-      argsSchema: z.tuple([memoryEvidenceRepairSchema]),
-      handler: (input: MemoryEvidenceRepairInput) =>
-        persistAfterRepairedEvidenceLinks(
-          input.projectId,
-          "memory:repair-evidence-links",
-          () => narrativeMemoryQueryService.repairEvidenceLinks(input),
-        ),
     },
     {
       channel: IPC_CHANNELS.MEMORY_RUN_EVAL_SUITE,

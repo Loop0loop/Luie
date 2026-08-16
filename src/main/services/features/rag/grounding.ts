@@ -1,5 +1,6 @@
 import type {
   NarrativeMemoryQueryResult,
+  RagQaAnswerMode,
   RagQaEvidence,
   RagQaGrounding,
   RagQaResult,
@@ -32,7 +33,7 @@ export function buildRagGrounding(input: {
 }
 
 export function buildGroundedRagQaResult(
-  input: Omit<RagQaResult, "grounding" | "safety"> & {
+  input: Omit<RagQaResult, "answerMode" | "grounding" | "safety"> & {
     p0Failures?: RagQaSafetyReason[];
   },
 ): RagQaResult {
@@ -40,14 +41,36 @@ export function buildGroundedRagQaResult(
     evidence: input.evidence,
     narrativeMemoryStatus: input.narrativeMemory?.status,
   });
+  const safety = buildRagAnswerSafety({
+    grounding,
+    p0Failures: input.p0Failures,
+  });
   return {
     ...input,
-    grounding,
-    safety: buildRagAnswerSafety({
-      grounding,
-      p0Failures: input.p0Failures,
+    answerMode: deriveRagAnswerMode({
+      question: input.question,
+      evidence: input.evidence,
+      safety,
     }),
+    grounding,
+    safety,
   };
+}
+
+export function deriveRagAnswerMode(input: {
+  question: string;
+  evidence: RagQaEvidence[];
+  safety: RagQaSafety;
+}): RagQaAnswerMode {
+  if (isAdvisoryQuestion(input.question)) return "ADVISORY";
+  if (input.evidence.length === 0 || input.safety.blocksConfirmedAnswer) return "INSUFFICIENT";
+  return "EVIDENCE";
+}
+
+function isAdvisoryQuestion(question: string): boolean {
+  return /어떻게|방법|보강|개선|추천|조언|아이디어|브레인스토밍|더 .*게|써야|쓰면|살리|각인|긴장감|무섭게/u.test(
+    question,
+  );
 }
 
 export function buildRagAnswerSafety(input: {

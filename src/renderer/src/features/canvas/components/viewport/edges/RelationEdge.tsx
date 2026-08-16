@@ -1,10 +1,3 @@
-/**
- * RelationEdge — Obsidian Canvas 스타일 관계 엣지.
- *
- * stroke 색상만 런타임 동적값이므로 인라인 스타일로 유지합니다.
- * strokeWidth / opacity / transition은 상수 참조로 처리합니다.
- */
-
 import { memo } from "react";
 import {
   BaseEdge,
@@ -36,9 +29,8 @@ function RelationEdgeInner({
     targetPosition,
   });
 
-  const strokeColour = selected
-    ? "var(--accent-bg)"
-    : (data?.color ?? "var(--text-secondary)");
+  // NOTE: 선택 상태에서도 색은 바꾸지 않고 stroke 강도만 높인다.
+  const strokeColour = data?.color ?? "var(--text-secondary)";
 
   const edgeStyle = getEdgeStyle(selected ?? false, strokeColour);
   const label = data?.label;
@@ -52,9 +44,8 @@ function RelationEdgeInner({
         style={edgeStyle}
       />
 
-      {/* color 없음 → EdgeLabel이 기본 muted 스타일 적용 */}
       {label && (
-        <EdgeLabel labelX={labelX} labelY={labelY}>
+        <EdgeLabel labelX={labelX} labelY={labelY} color={data?.color}>
           {label}
         </EdgeLabel>
       )}

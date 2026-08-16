@@ -2,8 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@shared/api";
 import type { RadarAxis } from "../types";
 
-// ── Types ─────────────────────────────────────────────────────────────────
-
 type AsyncStatus = "idle" | "loading" | "error";
 
 type AsyncState = {
@@ -33,22 +31,17 @@ export type UseCharacterAI = {
   ) => Promise<void>;
 };
 
-// ── State helpers ─────────────────────────────────────────────────────────
-
 const IDLE:   AsyncState = { status: "idle" };
 const LOADING: AsyncState = { status: "loading" };
 
 const failed = (msg: string): AsyncState => ({ status: "error", error: msg });
 
-/** Maps error message codes to user-facing Korean strings. */
 function toUserMessage(errorMessage: string, fallback: string): string {
   if (errorMessage.includes("RATE_LIMIT"))   return "요청이 너무 많습니다. 잠시 후 다시 시도해주세요.";
   if (errorMessage.includes("UNAUTHORIZED")) return "API 키가 유효하지 않습니다.";
   if (errorMessage.includes("SERVER_ERROR")) return "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
   return fallback;
 }
-
-// ── Hook ──────────────────────────────────────────────────────────────────
 
 export function useCharacterAI(scopeKey: string): UseCharacterAI {
   const [imageState, setImageState] = useState<ScopedAsyncState>({

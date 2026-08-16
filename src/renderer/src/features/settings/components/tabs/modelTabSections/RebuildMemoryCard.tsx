@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@renderer/components/ui/button";
 
 import type { ModelTabProps } from "./types";
@@ -27,6 +29,7 @@ export function RebuildMemoryCard({
   onCancelMemoryBuildJobs,
   memoryBuildProgress,
 }: RebuildMemoryCardProps) {
+  const [showDetails, setShowDetails] = useState(false);
   const progress = buildMemoryBuildProgressView(memoryBuildProgress);
   const statusItems = [
     ["pending", progress.pendingCount],
@@ -43,6 +46,14 @@ export function RebuildMemoryCard({
     progress.failedCount +
     progress.pausedCount +
     progress.runningCount;
+  const hasDetails =
+    statusItems.length > 0 ||
+    progress.attentionItems.length > 0 ||
+    progress.jobTypeItems.length > 0 ||
+    progress.targetTypeItems.length > 0 ||
+    progress.targetItems.length > 0 ||
+    Boolean(progress.latestError) ||
+    Boolean(progress.nextRetryAt);
 
   return (
     <div className="rounded-control bg-surface border border-border p-3 space-y-2">
@@ -66,117 +77,142 @@ export function RebuildMemoryCard({
               style={{ width: `${progress.percent}%` }}
             />
           </div>
-          {statusItems.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {statusItems.map(([status, count]) => (
-                <span
-                  key={status}
-                  className="rounded-control border border-border px-1.5 py-0.5 text-[11px] text-muted"
-                >
-                  {t(`settings.localLlm.rebuildMemory.status.${status}`, {
-                    defaultValue: getMemoryBuildStatusLabel(String(status)),
-                  })} {count}
+
+          {hasDetails && (
+            <>
+              <button
+                type="button"
+                onClick={() => setShowDetails((v) => !v)}
+                aria-expanded={showDetails}
+                className="flex w-full items-center justify-between pt-0.5 text-[11px] text-muted hover:text-fg-secondary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-control"
+              >
+                <span>
+                  {showDetails
+                    ? t("settings.localLlm.rebuildMemory.details.hide")
+                    : t("settings.localLlm.rebuildMemory.details.show")}
                 </span>
-              ))}
-            </div>
-          )}
-          {progress.attentionItems.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {progress.attentionItems.map((item) => (
-                <span
-                  key={item.key}
-                  className="rounded-control border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[11px] text-warning"
-                >
-                  {t(`settings.localLlm.rebuildMemory.attention.${item.key}`, {
-                    defaultValue: item.label,
-                  })} {item.count}
-                </span>
-              ))}
-            </div>
-          )}
-          {progress.latestError && (
-            <p className="truncate text-[11px] text-muted">
-              {t("settings.localLlm.rebuildMemory.latestError", {
-                error: progress.latestError,
-              })}
-            </p>
-          )}
-          {progress.nextRetryAt && (
-            <p className="truncate text-[11px] text-muted">
-              {t("settings.localLlm.rebuildMemory.nextRetryAt", {
-                time: progress.nextRetryAt,
-              })}
-            </p>
-          )}
-          {progress.jobTypeItems.length > 0 && (
-            <div className="space-y-1">
-              {progress.jobTypeItems.map((item) => (
-                <div
-                  key={item.jobType}
-                  className="flex items-center justify-between gap-2 text-[11px] text-muted"
-                >
-                  <span className="truncate">
-                    {t(`settings.localLlm.rebuildMemory.jobType.${item.jobType}`, {
-                      defaultValue: getMemoryBuildJobTypeLabel(item.jobType),
-                    })}
-                  </span>
-                  <span className="shrink-0">
-                    {t("settings.localLlm.rebuildMemory.jobTypeProgress", {
-                      active: item.activeCount,
-                      done: item.doneCount,
-                      total: item.total,
-                      percent: item.percent,
-                    })}
-                  </span>
+                <ChevronDown
+                  className={`h-3 w-3 transition-transform ${showDetails ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {showDetails && (
+                <div className="space-y-1.5">
+                  {statusItems.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {statusItems.map(([status, count]) => (
+                        <span
+                          key={status}
+                          className="rounded-control border border-border px-1.5 py-0.5 text-[11px] text-muted"
+                        >
+                          {t(`settings.localLlm.rebuildMemory.status.${status}`, {
+                            defaultValue: getMemoryBuildStatusLabel(String(status)),
+                          })} {count}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {progress.attentionItems.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {progress.attentionItems.map((item) => (
+                        <span
+                          key={item.key}
+                          className="rounded-control border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[11px] text-warning"
+                        >
+                          {t(`settings.localLlm.rebuildMemory.attention.${item.key}`, {
+                            defaultValue: item.label,
+                          })} {item.count}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {progress.latestError && (
+                    <p className="truncate text-[11px] text-muted">
+                      {t("settings.localLlm.rebuildMemory.latestError", {
+                        error: progress.latestError,
+                      })}
+                    </p>
+                  )}
+                  {progress.nextRetryAt && (
+                    <p className="truncate text-[11px] text-muted">
+                      {t("settings.localLlm.rebuildMemory.nextRetryAt", {
+                        time: progress.nextRetryAt,
+                      })}
+                    </p>
+                  )}
+                  {progress.jobTypeItems.length > 0 && (
+                    <div className="space-y-1">
+                      {progress.jobTypeItems.map((item) => (
+                        <div
+                          key={item.jobType}
+                          className="flex items-center justify-between gap-2 text-[11px] text-muted"
+                        >
+                          <span className="truncate">
+                            {t(`settings.localLlm.rebuildMemory.jobType.${item.jobType}`, {
+                              defaultValue: getMemoryBuildJobTypeLabel(item.jobType),
+                            })}
+                          </span>
+                          <span className="shrink-0">
+                            {t("settings.localLlm.rebuildMemory.jobTypeProgress", {
+                              active: item.activeCount,
+                              done: item.doneCount,
+                              total: item.total,
+                              percent: item.percent,
+                            })}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {progress.targetTypeItems.length > 0 && (
+                    <div className="space-y-1">
+                      {progress.targetTypeItems.map((item) => (
+                        <div
+                          key={item.targetType}
+                          className="flex items-center justify-between gap-2 text-[11px] text-muted"
+                        >
+                          <span className="truncate">
+                            {t(`settings.localLlm.rebuildMemory.targetType.${item.targetType}`, {
+                              defaultValue: getMemoryBuildTargetTypeLabel(item.targetType),
+                            })}
+                          </span>
+                          <span className="shrink-0">
+                            {t("settings.localLlm.rebuildMemory.jobTypeProgress", {
+                              active: item.activeCount,
+                              done: item.doneCount,
+                              total: item.total,
+                              percent: item.percent,
+                            })}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {progress.targetItems.length > 0 && (
+                    <div className="space-y-1">
+                      {progress.targetItems.map((item) => (
+                        <div
+                          key={item.targetKey}
+                          className="flex items-center justify-between gap-2 text-[11px] text-muted"
+                        >
+                          <span className="truncate">
+                            {item.label}
+                          </span>
+                          <span className="shrink-0">
+                            {t("settings.localLlm.rebuildMemory.jobTypeProgress", {
+                              active: item.activeCount,
+                              done: item.doneCount,
+                              total: item.total,
+                              percent: item.percent,
+                            })}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
-          {progress.targetTypeItems.length > 0 && (
-            <div className="space-y-1">
-              {progress.targetTypeItems.map((item) => (
-                <div
-                  key={item.targetType}
-                  className="flex items-center justify-between gap-2 text-[11px] text-muted"
-                >
-                  <span className="truncate">
-                    {t(`settings.localLlm.rebuildMemory.targetType.${item.targetType}`, {
-                      defaultValue: getMemoryBuildTargetTypeLabel(item.targetType),
-                    })}
-                  </span>
-                  <span className="shrink-0">
-                    {t("settings.localLlm.rebuildMemory.jobTypeProgress", {
-                      active: item.activeCount,
-                      done: item.doneCount,
-                      total: item.total,
-                      percent: item.percent,
-                    })}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-          {progress.targetItems.length > 0 && (
-            <div className="space-y-1">
-              {progress.targetItems.map((item) => (
-                <div
-                  key={item.targetKey}
-                  className="flex items-center justify-between gap-2 text-[11px] text-muted"
-                >
-                  <span className="truncate">
-                    {item.label}
-                  </span>
-                  <span className="shrink-0">
-                    {t("settings.localLlm.rebuildMemory.jobTypeProgress", {
-                      active: item.activeCount,
-                      done: item.doneCount,
-                      total: item.total,
-                      percent: item.percent,
-                    })}
-                  </span>
-                </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       )}

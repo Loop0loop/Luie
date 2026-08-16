@@ -65,8 +65,7 @@ export const memoryEvalEvidence = sqliteTable(
   ],
 );
 
-// Fixture storage for later entity/relation/temporal scorers. Phase 1 only
-// scores evidence recall and unsupported confirmed answers.
+// NOTE: Phase 1은 evidence recall과 unsupported answer만 평가하며 이후 scorer용 fixture를 함께 보존한다.
 export const memoryEvalEntity = sqliteTable(
   "MemoryEvalEntity",
   {

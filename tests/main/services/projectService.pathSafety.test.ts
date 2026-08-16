@@ -1,6 +1,6 @@
 // TEST_LEVEL: UNIT_MOCKED
-// PROVES: path-safety branching in project update logic with mocked DB/logger/settings dependencies
-// DOES_NOT_PROVE: real database persistence or filesystem durability
+// PROVES: mock DB/logger/settings에서 project update의 path-safety 분기
+// DOES_NOT_PROVE: 실제 database persistence 또는 filesystem durability
 
 import { promises as fs } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -71,7 +71,7 @@ describe("ProjectService path safety", () => {
     const renameSpy = vi.spyOn(fs, "rename");
 
     const { ProjectService } =
-      await import("../../../src/main/services/core/projectService.js");
+      await import("../../../src/main/services/features/project/projectService.js");
     const service = new ProjectService();
     const scheduleSpy = vi
       .spyOn(service, "schedulePackageExport")

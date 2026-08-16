@@ -1,11 +1,15 @@
 import type { IpcRendererEvent } from "electron";
 import { IPC_CHANNELS } from "../../shared/ipc/channels.js";
 import type { RendererApi } from "../../shared/api/index.js";
-import type { AppQuitPhasePayload } from "../../shared/types/index.js";
+import type {
+  AppBeforeQuitPayload,
+  AppQuitPhasePayload,
+} from "../../shared/types/index.js";
 import type { PreloadApiModuleContext } from "./types.js";
 
 export function createWindowApi({
   autoSave,
+  completeAppFlush,
   ipcRenderer,
   safeInvoke,
   safeInvokeCore,
@@ -15,6 +19,17 @@ export function createWindowApi({
       setDirty: (dirty) => {
         autoSave.setRendererDirty(Boolean(dirty));
       },
+      onBeforeQuit: (callback) => {
+        const listener = (
+          _event: IpcRendererEvent,
+          payload: AppBeforeQuitPayload,
+        ) => callback(payload);
+        ipcRenderer.on(IPC_CHANNELS.APP_BEFORE_QUIT, listener);
+        return () => {
+          ipcRenderer.removeListener(IPC_CHANNELS.APP_BEFORE_QUIT, listener);
+        };
+      },
+      completeFlush: (requestId) => completeAppFlush(requestId),
       onQuitPhase: (callback) => {
         const listener = (
           _event: IpcRendererEvent,

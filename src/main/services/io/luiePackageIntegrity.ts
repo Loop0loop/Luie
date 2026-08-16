@@ -22,7 +22,7 @@ export const parseObjectJson = (raw: string): Record<string, unknown> | null => 
       return parsed as Record<string, unknown>;
     }
   } catch {
-    // keep fallback
+    // NOTE: legacy package에는 integrity metadata가 없으므로 fallback 검증을 유지한다.
   }
   return null;
 };

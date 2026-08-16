@@ -17,7 +17,7 @@ vi.mock("../../../src/main/manager/settings/index.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/llm/sidecarManager.js", () => ({
+vi.mock("../../../src/main/infra/llm/sidecarManager.js", () => ({
   sidecarManager: {
     ensureStarted: mocked.ensureStarted,
   },
@@ -34,7 +34,7 @@ vi.mock("../../../src/main/services/features/sync/syncAccessToken.js", () => ({
 import {
   invalidateModelRuntimeCache,
   resolveRuntimeModelInfo,
-} from "../../../src/main/services/llm/modelRuntimeFactory.js";
+} from "../../../src/main/services/features/llm/modelRuntimeFactory.js";
 
 describe("modelRuntimeFactory sidecar", () => {
   beforeEach(() => {
@@ -44,6 +44,9 @@ describe("modelRuntimeFactory sidecar", () => {
     delete process.env.GOOGLE_GCP_API;
     delete process.env.GOOGLE_API_KEY;
     delete process.env.OPENAI_API_KEY;
+    delete process.env.GEMINI_MODEL;
+    delete process.env.ALTERNATIVE_GEMINI_MODEL;
+    delete process.env.OPENAI_MODEL;
     delete process.env.LUIE_APP_IS_PACKAGED;
     mocked.getLlmSettings.mockReturnValue({});
     mocked.getLocalLlmSettings.mockReturnValue(undefined);
@@ -165,7 +168,7 @@ describe("modelRuntimeFactory sidecar", () => {
     mocked.getLocalLlmSettings.mockReturnValue(undefined);
 
     const { plan } =
-      await import("../../../src/main/services/llm/modelRuntimeFactory.js").then(
+      await import("../../../src/main/services/features/llm/modelRuntimeFactory.js").then(
         (module) => module.resolveRuntimeRoutePlan(),
       );
 
@@ -203,7 +206,7 @@ describe("modelRuntimeFactory sidecar", () => {
     mocked.getLocalLlmSettings.mockReturnValue(undefined);
 
     const { plan } =
-      await import("../../../src/main/services/llm/modelRuntimeFactory.js").then(
+      await import("../../../src/main/services/features/llm/modelRuntimeFactory.js").then(
         (module) => module.resolveRuntimeRoutePlan(),
       );
 
@@ -220,5 +223,35 @@ describe("modelRuntimeFactory sidecar", () => {
       apiKey: "gemini-env-key",
     });
     expect(mocked.ensureSyncAccessToken).not.toHaveBeenCalled();
+  });
+
+  it("normalizes cloud model ids from environment variables", async () => {
+    process.env.LUIE_APP_IS_PACKAGED = "0";
+    process.env.OPENAI_API_KEY = "openai-env-key";
+    process.env.GEMINI_API_KEY = "gemini-env-key";
+    process.env.OPENAI_MODEL = "GPT-5.4-nano";
+    process.env.GEMINI_MODEL = "models/Gemini-2.5-Flash-Lite";
+    process.env.ALTERNATIVE_GEMINI_MODEL = "Gemini-3.5-Flash";
+    mocked.getLlmSettings.mockReturnValue({});
+    mocked.getLocalLlmSettings.mockReturnValue(undefined);
+
+    const { plan } =
+      await import("../../../src/main/services/features/llm/modelRuntimeFactory.js").then(
+        (module) => module.resolveRuntimeRoutePlan(),
+      );
+
+    expect(
+      plan.candidates.find((candidate) => candidate.kind === "openai"),
+    ).toMatchObject({
+      kind: "openai",
+      model: "gpt-5.4-nano",
+    });
+    expect(
+      plan.candidates.find((candidate) => candidate.kind === "gemini"),
+    ).toMatchObject({
+      kind: "gemini",
+      model: "gemini-2.5-flash-lite",
+      alternativeModel: "gemini-3.5-flash",
+    });
   });
 });

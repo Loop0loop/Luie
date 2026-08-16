@@ -127,121 +127,124 @@ renderer API 접근
 
 ## 500 LOC 초과 Renderer 파일
 
-사실:
+사실(2026-07-21): renderer에는 `check:source-loc` 기준 500 LOC 초과 hand-written source가 2개 있습니다. Locale trio는 project template domain 분리로 해소했고, `global.css`는 12 LOC(script 기준)로 예외가 아닙니다.
 
-- `src/renderer/src/styles/global.css` (정적 리소스 번들 예외)
+| File                                                                | LOC | Phase 20 분리 기준                                  |
+| ------------------------------------------------------------------- | --: | --------------------------------------------------- |
+| `src/renderer/src/styles/components/editor.css`                     | 547 | 사용자 dirty hunk와 분리해 cascade 책임 단위로 분리 |
+| `src/renderer/src/features/research/components/AnalysisSection.tsx` | 507 | feature component와 hook/view 책임 분리             |
 
-사실: `src/renderer/src/features/research/components/AnalysisSection.tsx`는 Phase 2에서 237 LOC로 분리되어 현재 500 LOC 초과 대상이 아닙니다.
+사실: `AnalysisSection.tsx`는 과거 Phase 2에서 237 LOC까지 분리됐으나 현재 507 LOC(script 기준)로 다시 기준을 넘었다.
 
 사실: `i18n` locale 파일은 base/workspace를 키 단위가 아니라 큰 locale 도메인 단위로 분해했습니다.  
-`src/renderer/src/i18n/locales/*/base.ts`, `.../workspace.ts`는 공통 번들 조립 파일로 유지되며, 실제 문자열 본문은 `base/core`, `base/settings`, `base/settingsAdvanced`, `base/research`, `base/editor`, `workspace/writing`, `workspace/world` 단위로 분리했습니다.
+`src/renderer/src/i18n/locales/*/base.ts`, `.../workspace.ts`는 공통 번들 조립 파일로 유지되며, 실제 문자열 본문은 `base/core`, `base/settings`, `base/settingsAdvanced`, `base/settingsProjectTemplate`, `base/research`, `base/editor`, `workspace/writing`, `workspace/world` 단위로 분리했습니다. `settingsAdvanced`는 project template 값을 같은 locale의 `settingsProjectTemplate`에서 조립하며 ko/en/ja가 동일한 key shape를 유지합니다.
 
 사실: `src/renderer/src/features/editor/components/EditorToolbar.tsx`는 editor toolbar shell과 TipTap command wiring만 유지하도록 축소되어 300 LOC입니다. 분리된 helper는 `editor/components/toolbar/index.ts` 배럴을 통해 제공합니다.
 
-| Editor toolbar helper | 책임 | LOC |
-| --- | --- | ---: |
-| `toolbar/MoreMenu.tsx` | export/alignment/select-all/clear-formatting more menu | 130 |
-| `toolbar/menus.tsx` | compact dropdown, color picker, typography slider popover | 272 |
-| `toolbar/primitives.tsx` | toolbar button/divider primitives | 38 |
-| `toolbar/useClickOutside.ts` | popover outside click hook | 20 |
-| `toolbar/editorState.ts` | paragraph style detection and ghost editor factory | 42 |
-| `toolbar/constants.ts` | font size/text color/highlight color options | 30 |
-| `toolbar/types.ts` | toolbar props and paragraph style types | 17 |
-| `toolbar/index.ts` | toolbar helper 배럴 export | 6 |
+| Editor toolbar helper        | 책임                                                      | LOC |
+| ---------------------------- | --------------------------------------------------------- | --: |
+| `toolbar/MoreMenu.tsx`       | export/alignment/select-all/clear-formatting more menu    | 130 |
+| `toolbar/menus.tsx`          | compact dropdown, color picker, typography slider popover | 272 |
+| `toolbar/primitives.tsx`     | toolbar button/divider primitives                         |  38 |
+| `toolbar/useClickOutside.ts` | popover outside click hook                                |  20 |
+| `toolbar/editorState.ts`     | paragraph style detection and ghost editor factory        |  42 |
+| `toolbar/constants.ts`       | font size/text color/highlight color options              |  30 |
+| `toolbar/types.ts`           | toolbar props and paragraph style types                   |  17 |
+| `toolbar/index.ts`           | toolbar helper 배럴 export                                |   6 |
 
 사실: `src/renderer/src/app/App.tsx`는 hash window mode, bootstrap/project gate, top-level screen routing, project open/restore, attachment toast 조정을 유지하도록 축소되어 472 LOC입니다. bootstrap gate UI, quit overlay, hash mode hook, theme DOM sync, dev-only UI mode integrity check는 `app/shell/index.ts` 배럴을 통해 제공합니다.
 
-| App shell helper | 책임 | LOC |
-| --- | --- | ---: |
-| `shell/BootstrapGate.tsx` | bootstrap loading/error/retry/quit gate UI | 57 |
-| `shell/QuitOverlay.tsx` | quit phase blocking overlay | 29 |
-| `shell/windowMode.ts` | hash 기반 window mode hook | 31 |
-| `shell/bootstrapStatus.ts` | bootstrap status schema parse helper | 7 |
-| `shell/useThemeAttributes.ts` | editor theme DOM attribute sync | 39 |
-| `shell/useUiModeIntegrityDevCheck.ts` | dev-only UI mode integrity logger | 60 |
-| `shell/index.ts` | app shell helper 배럴 export | 7 |
+| App shell helper                      | 책임                                       | LOC |
+| ------------------------------------- | ------------------------------------------ | --: |
+| `shell/BootstrapGate.tsx`             | bootstrap loading/error/retry/quit gate UI |  57 |
+| `shell/QuitOverlay.tsx`               | quit phase blocking overlay                |  29 |
+| `shell/windowMode.ts`                 | hash 기반 window mode hook                 |  31 |
+| `shell/bootstrapStatus.ts`            | bootstrap status schema parse helper       |   7 |
+| `shell/useThemeAttributes.ts`         | editor theme DOM attribute sync            |  39 |
+| `shell/useUiModeIntegrityDevCheck.ts` | dev-only UI mode integrity logger          |  60 |
+| `shell/index.ts`                      | app shell helper 배럴 export               |   7 |
 
 사실: `src/renderer/src/features/workspace/components/layout/EditorRoot.tsx`는 workspace layout shell orchestration만 유지하도록 축소되어 491 LOC입니다. lazy component registry와 layout fallback은 `layout/rootShell/index.ts` 배럴을 통해 제공합니다.
 
-| EditorRoot shell helper | 책임 | LOC |
-| --- | --- | ---: |
-| `rootShell/lazyComponents.tsx` | layout/sidebar/panel/banner lazy component registry | 62 |
-| `rootShell/fallback.tsx` | layout suspense fallback element | 1 |
-| `rootShell/index.ts` | EditorRoot shell helper 배럴 export | 19 |
+| EditorRoot shell helper        | 책임                                                | LOC |
+| ------------------------------ | --------------------------------------------------- | --: |
+| `rootShell/lazyComponents.tsx` | layout/sidebar/panel/banner lazy component registry |  62 |
+| `rootShell/fallback.tsx`       | layout suspense fallback element                    |   1 |
+| `rootShell/index.ts`           | EditorRoot shell helper 배럴 export                 |  19 |
 
 사실: `src/renderer/src/features/workspace/stores/projectLayoutStore.ts`는 Zustand persist store wiring과 기존 public export 호환 진입점만 유지하도록 축소되어 147 LOC입니다. persisted layout 타입/기본값/sanitize/migration/merge/logging helper는 `workspace/stores/projectLayout/index.ts` 배럴을 통해 제공합니다.
 
-| Project layout helper | 책임 | LOC |
-| --- | --- | ---: |
-| `projectLayout/types.ts` | persisted docs tab, layout state, patch, store 타입 | 80 |
-| `projectLayout/constants.ts` | persistable tab/section/panel size 상수 | 39 |
-| `projectLayout/defaults.ts` | default project layout state factory | 36 |
-| `projectLayout/sanitize.ts` | persisted layout/tab/panel normalization | 214 |
-| `projectLayout/merge.ts` | project layout patch merge policy | 88 |
-| `projectLayout/migration.ts` | persisted schema version migration | 61 |
-| `projectLayout/persistLogging.ts` | localStorage recovery/validation logging | 64 |
-| `projectLayout/index.ts` | project layout helper 배럴 export | 21 |
+| Project layout helper             | 책임                                                | LOC |
+| --------------------------------- | --------------------------------------------------- | --: |
+| `projectLayout/types.ts`          | persisted docs tab, layout state, patch, store 타입 |  80 |
+| `projectLayout/constants.ts`      | persistable tab/section/panel size 상수             |  39 |
+| `projectLayout/defaults.ts`       | default project layout state factory                |  36 |
+| `projectLayout/sanitize.ts`       | persisted layout/tab/panel normalization            | 214 |
+| `projectLayout/merge.ts`          | project layout patch merge policy                   |  88 |
+| `projectLayout/migration.ts`      | persisted schema version migration                  |  61 |
+| `projectLayout/persistLogging.ts` | localStorage recovery/validation logging            |  64 |
+| `projectLayout/index.ts`          | project layout helper 배럴 export                   |  21 |
 
 사실: `src/renderer/src/features/research/stores/worldBuildingStore.actions.ts`는 graph CRUD/action orchestration만 유지하도록 축소되어 453 LOC입니다. graph load queue와 graph document persistence queue는 `research/stores/worldBuildingActions/index.ts` 배럴을 통해 제공합니다.
 
-| World building action helper | 책임 | LOC |
-| --- | --- | ---: |
-| `worldBuildingActions/loadGraph.ts` | world graph base/replica load, timeout, stale request guard | 95 |
-| `worldBuildingActions/runtime.ts` | graph mutation version, persist queue, world graph document write | 93 |
-| `worldBuildingActions/types.ts` | action factory setter/getter/action pick 타입 | 27 |
-| `worldBuildingActions/index.ts` | world building action helper 배럴 export | 3 |
+| World building action helper        | 책임                                                              | LOC |
+| ----------------------------------- | ----------------------------------------------------------------- | --: |
+| `worldBuildingActions/loadGraph.ts` | world graph base/replica load, timeout, stale request guard       |  95 |
+| `worldBuildingActions/runtime.ts`   | graph mutation version, persist queue, world graph document write |  93 |
+| `worldBuildingActions/types.ts`     | action factory setter/getter/action pick 타입                     |  27 |
+| `worldBuildingActions/index.ts`     | world building action helper 배럴 export                          |   3 |
 
 사실: `src/renderer/src/features/research/services/worldPackageStorage.ts`는 world package load/save orchestration과 기존 public export 호환 진입점만 유지하도록 축소되어 440 LOC입니다. legacy localStorage bridge, `.luie` read/write queue, replica storage adapter, payload normalizer, scrap memo validation/recovery logging은 `research/services/worldPackageStorageHelpers/index.ts` 배럴을 통해 제공합니다.
 
-| World package storage helper | 책임 | LOC |
-| --- | --- | ---: |
-| `worldPackageStorageHelpers/defaults.ts` | world synopsis/plot/drawing/mindmap/scrap 기본 payload | 40 |
-| `worldPackageStorageHelpers/localStorage.ts` | legacy localStorage key/read/remove bridge | 38 |
-| `worldPackageStorageHelpers/luieStorage.ts` | `.luie` world entry read/write queue와 canonical save error mapping | 126 |
-| `worldPackageStorageHelpers/normalizers.ts` | synopsis/plot/drawing/mindmap payload normalization | 140 |
-| `worldPackageStorageHelpers/replicaStorage.ts` | world replica document/scrap memo load/save adapter | 98 |
-| `worldPackageStorageHelpers/scrapMemos.ts` | scrap memo schema validation, migration/recovery operational logging | 126 |
-| `worldPackageStorageHelpers/index.ts` | world package storage helper 배럴 export | 6 |
+| World package storage helper                   | 책임                                                                 | LOC |
+| ---------------------------------------------- | -------------------------------------------------------------------- | --: |
+| `worldPackageStorageHelpers/defaults.ts`       | world synopsis/plot/drawing/mindmap/scrap 기본 payload               |  40 |
+| `worldPackageStorageHelpers/localStorage.ts`   | legacy localStorage key/read/remove bridge                           |  38 |
+| `worldPackageStorageHelpers/luieStorage.ts`    | `.luie` world entry read/write queue와 canonical save error mapping  | 126 |
+| `worldPackageStorageHelpers/normalizers.ts`    | synopsis/plot/drawing/mindmap payload normalization                  | 140 |
+| `worldPackageStorageHelpers/replicaStorage.ts` | world replica document/scrap memo load/save adapter                  |  98 |
+| `worldPackageStorageHelpers/scrapMemos.ts`     | scrap memo schema validation, migration/recovery operational logging | 126 |
+| `worldPackageStorageHelpers/index.ts`          | world package storage helper 배럴 export                             |   6 |
 
 사실: `src/renderer/src/features/settings/components/tabs/ModelTab.tsx`는 settings model tab section orchestration만 유지하도록 축소되어 96 LOC입니다. local LLM toggle/download, HuggingFace model library, embedding model, llmfit recommendations, memory rebuild, API key input cards는 `settings/components/tabs/modelTabSections/index.ts` 배럴을 통해 제공합니다.
 
-| Model tab section | 책임 | LOC |
-| --- | --- | ---: |
-| `modelTabSections/LocalLlmCard.tsx` | local LLM enable toggle, installed model state, default download progress | 107 |
-| `modelTabSections/ModelLibraryCard.tsx` | HuggingFace model search, repo file selection, selected model download | 216 |
-| `modelTabSections/EmbeddingCard.tsx` | semantic search status and embedding model download | 105 |
-| `modelTabSections/LlmfitCard.tsx` | hardware fit recommendation list and fit badge rendering | 83 |
-| `modelTabSections/RebuildMemoryCard.tsx` | memory rebuild action card | 31 |
-| `modelTabSections/ApiKeysCard.tsx` | OpenAI/Gemini key inputs and save action | 115 |
-| `modelTabSections/format.ts` | byte/model/file label formatting helpers | 35 |
-| `modelTabSections/types.ts` | ModelTab prop/progress/semantic state types | 41 |
-| `modelTabSections/index.ts` | model tab section 배럴 export | 12 |
+| Model tab section                        | 책임                                                                      | LOC |
+| ---------------------------------------- | ------------------------------------------------------------------------- | --: |
+| `modelTabSections/LocalLlmCard.tsx`      | local LLM enable toggle, installed model state, default download progress | 107 |
+| `modelTabSections/ModelLibraryCard.tsx`  | HuggingFace model search, repo file selection, selected model download    | 216 |
+| `modelTabSections/EmbeddingCard.tsx`     | semantic search status and embedding model download                       | 105 |
+| `modelTabSections/LlmfitCard.tsx`        | hardware fit recommendation list and fit badge rendering                  |  83 |
+| `modelTabSections/RebuildMemoryCard.tsx` | memory rebuild action card                                                |  31 |
+| `modelTabSections/ApiKeysCard.tsx`       | OpenAI/Gemini key inputs and save action                                  | 115 |
+| `modelTabSections/format.ts`             | byte/model/file label formatting helpers                                  |  35 |
+| `modelTabSections/types.ts`              | ModelTab prop/progress/semantic state types                               |  41 |
+| `modelTabSections/index.ts`              | model tab section 배럴 export                                             |  12 |
 
 사실: `src/renderer/src/features/canvas/components/shell/CanvasActivityShell.tsx`는 canvas activity shell tab/toolbar/explorer orchestration과 graph mode 분기만 유지하도록 축소되어 204 LOC입니다. explorer tree node, graph filter sidebar, tab/toolbar key, folder traversal helper는 `canvas/components/shell/canvasActivityShellParts/index.ts` 배럴을 통해 제공합니다.
 
-| Canvas activity shell part | 책임 | LOC |
-| --- | --- | ---: |
+| Canvas activity shell part                        | 책임                                             | LOC |
+| ------------------------------------------------- | ------------------------------------------------ | --: |
 | `canvasActivityShellParts/GraphFilterSidebar.tsx` | graph mode scenario analysis sidebar and filters | 217 |
-| `canvasActivityShellParts/TreeNode.tsx` | Obsidian-style explorer tree recursive node | 107 |
-| `canvasActivityShellParts/constants.ts` | tab/toolbar i18n key maps | 11 |
-| `canvasActivityShellParts/explorerTree.ts` | folder id traversal for expand/collapse all | 17 |
-| `canvasActivityShellParts/index.ts` | canvas activity shell helper 배럴 export | 4 |
+| `canvasActivityShellParts/TreeNode.tsx`           | Obsidian-style explorer tree recursive node      | 107 |
+| `canvasActivityShellParts/constants.ts`           | tab/toolbar i18n key maps                        |  11 |
+| `canvasActivityShellParts/explorerTree.ts`        | folder id traversal for expand/collapse all      |  17 |
+| `canvasActivityShellParts/index.ts`               | canvas activity shell helper 배럴 export         |   4 |
 
 사실: `src/renderer/src/features/canvas/components/graph/GraphSurface.tsx`는 React Flow canvas orchestration, graph data pipeline, focus sync, node interaction만 유지하도록 축소되어 404 LOC입니다. overlay hover card, legend modal, layout/focus constants는 `canvas/components/graph/graphSurfaceParts/index.ts` 배럴을 통해 제공합니다.
 
-| Graph surface part | 책임 | LOC |
-| --- | --- | ---: |
-| `graphSurfaceParts/GraphHoverCard.tsx` | hovered node relationship/chapter detail overlay | 94 |
-| `graphSurfaceParts/GraphLegendModal.tsx` | graph legend modal content and close action | 88 |
-| `graphSurfaceParts/constants.ts` | React Flow options, layout constants, edge focus defaults | 13 |
-| `graphSurfaceParts/index.ts` | graph surface helper 배럴 export | 13 |
+| Graph surface part                       | 책임                                                      | LOC |
+| ---------------------------------------- | --------------------------------------------------------- | --: |
+| `graphSurfaceParts/GraphHoverCard.tsx`   | hovered node relationship/chapter detail overlay          |  94 |
+| `graphSurfaceParts/GraphLegendModal.tsx` | graph legend modal content and close action               |  88 |
+| `graphSurfaceParts/constants.ts`         | React Flow options, layout constants, edge focus defaults |  13 |
+| `graphSurfaceParts/index.ts`             | graph surface helper 배럴 export                          |  13 |
 
 사실: `src/renderer/src/features/project/hooks/useFileImport.ts`는 `.luie` import orchestration, retry, rollback, store coordination만 유지하도록 축소되어 407 LOC입니다. world character/term collection schema validation과 import input normalization은 `project/hooks/fileImport/index.ts` 배럴을 통해 제공합니다.
 
-| File import helper | 책임 | LOC |
-| --- | --- | ---: |
+| File import helper               | 책임                                                                                        | LOC |
+| -------------------------------- | ------------------------------------------------------------------------------------------- | --: |
 | `fileImport/worldCollections.ts` | `.luie` world character/term collection read, schema validation, import input normalization | 130 |
-| `fileImport/index.ts` | file import helper 배럴 export | 6 |
+| `fileImport/index.ts`            | file import helper 배럴 export                                                              |   6 |
 
 ## 위험 지점
 

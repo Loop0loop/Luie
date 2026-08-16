@@ -1,4 +1,4 @@
-// TODO: Remove in Phase 7 — replaced by Drizzle migrations in drizzle/cache/
+// TODO: Phase 7에서 drizzle/cache migration 전환이 끝나면 제거한다.
 export const CACHE_PACKAGED_SCHEMA_REQUIRED_TABLES = [
   "CharacterAppearance",
   "TermAppearance",

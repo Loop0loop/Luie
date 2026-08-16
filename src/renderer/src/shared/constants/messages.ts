@@ -1,7 +1,3 @@
-/**
- * User-facing labels, placeholders, and messages
- */
-
 export const DEFAULT_PROJECT_TITLE = 'Untitled Project'
 export const DEFAULT_NEW_PROJECT_TITLE = 'New Project'
 export const DEFAULT_CHAPTER_TITLE = 'Chapter 1'

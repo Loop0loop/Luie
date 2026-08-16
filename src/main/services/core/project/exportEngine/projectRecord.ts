@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, isNull } from "drizzle-orm";
 import { db } from "../../../../infra/database/index.js";
 import * as schema from "../../../../infra/database/index.js";
 import type { ProjectExportRecord } from "../../../../../shared/types/index.js";
@@ -13,7 +13,7 @@ import {
   toWorldEntityExportDto,
 } from "../projectExportMapper.js";
 
-const { project, chapter, character, term, faction, event, worldEntity, entityRelation, snapshot } = schema;
+const { project, chapter, chapterBody, character, term, faction, event, worldEntity, entityRelation, snapshot } = schema;
 
 export const getProjectForExport = async (
   projectId: string,
@@ -40,8 +40,12 @@ export const getProjectForExport = async (
     snapshotsRows,
   ] = await Promise.all([
     store
-      .select()
+      .select({
+        ...getTableColumns(chapter),
+        bodyContent: chapterBody.content,
+      })
       .from(chapter)
+      .leftJoin(chapterBody, eq(chapterBody.chapterId, chapter.id))
       .where(and(eq(chapter.projectId, projectId), isNull(chapter.deletedAt)))
       .orderBy(asc(chapter.order)),
     store
@@ -82,7 +86,12 @@ export const getProjectForExport = async (
     createdAt: new Date(proj.createdAt),
     updatedAt: new Date(proj.updatedAt),
     projectPath: proj.projectPath ?? null,
-    chapters: chapters.map(toChapterExportDto),
+    chapters: chapters.map(({ bodyContent, ...chapterRow }) =>
+      toChapterExportDto({
+        ...chapterRow,
+        content: bodyContent ?? chapterRow.content,
+      }),
+    ),
     characters: characters.map(toCharacterExportDto),
     terms: terms.map(toTermExportDto),
     events: eventsRows.map(toEventExportDto),

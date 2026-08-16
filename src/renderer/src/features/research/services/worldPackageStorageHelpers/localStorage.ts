@@ -33,6 +33,6 @@ export const removeLocalStorageJson = (projectId: string, key: string) => {
   try {
     localStorage.removeItem(buildLocalStorageKey(projectId, key));
   } catch {
-    // local fallback only
+    // NOTE: main storage를 사용할 수 없는 환경에서만 localStorage로 대체한다.
   }
 };

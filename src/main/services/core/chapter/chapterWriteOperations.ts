@@ -8,7 +8,7 @@ import type {
   ChapterUpdateInput,
 } from "../../../../shared/types/index.js";
 import { ServiceError } from "../../../utils/error/index.js";
-import { projectService } from "../projectService.js";
+import { projectService } from "../../features/project/projectService.js";
 import { applyChapterContentUpdate } from "./chapterContentValidation.js";
 import {
   hashChapterContent,
@@ -27,7 +27,8 @@ import {
 } from "./chapterRuntime.js";
 
 const loadChapterSearchCacheService = async () =>
-  (await import("../../features/search/index.js")).chapterSearchCacheService;
+  (await import("../../features/search/chapterSearchCacheService.js"))
+    .chapterSearchCacheService;
 
 type RunInWriteSerialQueue = <T>(task: () => Promise<T>) => Promise<T>;
 

@@ -11,12 +11,7 @@ interface DraggableItemProps {
   disabled?: boolean;
 }
 
-/**
- * Draggable item wrapper using dnd-kit.
- * Uses activationConstraint.distance to distinguish click from drag.
- * Applies listeners only to the root element for drag detection,
- * while preserving click handlers on child elements.
- */
+/** root에만 drag listener를 연결해 child의 click handler와 충돌하지 않게 한다. */
 export function DraggableItem({
   id,
   data,

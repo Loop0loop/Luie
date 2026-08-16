@@ -1,14 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-/**
- * Returns true after the component has mounted on the client.
- * Use this to avoid hydration mismatches when rendering client-only content.
- *
- * @example
- * const mounted = useMounted();
- * if (!mounted) return <Skeleton />;
- * return <ClientOnlyContent />;
- */
+/** 첫 client mount 이후에만 true를 반환해 client 전용 content의 hydration 불일치를 막는다. */
 export function useMounted(): boolean {
   return useSyncExternalStore(
     () => () => undefined,

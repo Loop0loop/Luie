@@ -209,6 +209,49 @@ describe("runLiveMemoryEvalSuite", () => {
     ]);
   });
 
+  it("passes stored query chapter order to the answerer", async () => {
+    const projectId = crypto.randomUUID();
+    const caseId = crypto.randomUUID();
+    const nowIso = "2026-06-30T00:00:00.000Z";
+
+    await db.getClient().insert(project).values({
+      id: projectId,
+      title: "Chapter Scoped Eval Runner",
+      description: null,
+      projectPath: null,
+      updatedAt: nowIso,
+    });
+    await db.getClient().insert(memoryEvalCase).values({
+      id: caseId,
+      projectId,
+      name: "10화 기준 질문",
+      question: "10화 기준으로 확정해도 돼?",
+      caseType: "qa",
+      expectedAnswer: "아직 확정하면 안 된다.",
+      temporalScopeStartChapterId: null,
+      temporalScopeEndChapterId: null,
+      queryChapterOrder: 10,
+      severity: "p0",
+      updatedAt: nowIso,
+    });
+
+    await runLiveMemoryEvalSuite({
+      projectId,
+      label: "chapter-scope-test-run",
+      engineVersion: "test-engine",
+      topK: 1,
+      nowIso,
+      answerer: async (input) => {
+        expect(input.queryChapterOrder).toBe(10);
+        return {
+          answer: "아직 확정하면 안 된다.",
+          groundingStatus: "confirmed",
+          evidence: [],
+        };
+      },
+    });
+  });
+
   it("persists invalid judge artifacts without creating confirmed memory", async () => {
     const projectId = crypto.randomUUID();
     const caseId = crypto.randomUUID();

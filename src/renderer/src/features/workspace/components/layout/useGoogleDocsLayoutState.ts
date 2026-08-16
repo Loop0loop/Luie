@@ -14,7 +14,8 @@ import {
 } from "@renderer/shared/constants/editorLayout";
 import type { DocsPageMargins } from "./googleDocsLayout.types";
 import {
-  buildDocsLayoutPersistEntries,
+  buildDocsRightLayoutPersistEntries,
+  buildDocsSidebarLayoutPersistEntries,
   getActiveDocsRightTab,
   getDocsLayoutSurfaceState,
 } from "../../utils/docsLayoutModel";
@@ -69,10 +70,15 @@ export function useGoogleDocsLayoutState(projectId?: string | null) {
   );
 
   const layoutEntries = useMemo(
-    () => buildDocsLayoutPersistEntries(activeRightTab),
+    () => buildDocsSidebarLayoutPersistEntries(),
+    [],
+  );
+  const rightLayoutEntries = useMemo(
+    () => buildDocsRightLayoutPersistEntries(activeRightTab),
     [activeRightTab],
   );
-  const onLayoutChanged = useLayoutPersist(layoutEntries, { projectId });
+  const onSidebarLayoutChanged = useLayoutPersist(layoutEntries, { projectId });
+  const onRightLayoutChanged = useLayoutPersist(rightLayoutEntries, { projectId });
 
   const setPanelRailOpen = useCallback(
     (open: boolean) => {
@@ -105,7 +111,8 @@ export function useGoogleDocsLayoutState(projectId?: string | null) {
     handleRightTabClick,
     isPanelRailOpen,
     isSidebarOpen,
-    onLayoutChanged,
+    onRightLayoutChanged,
+    onSidebarLayoutChanged,
     pageMargins,
     rightPanelConfig,
     rightPanelRatio,

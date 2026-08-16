@@ -6,22 +6,69 @@ export const jaBaseSettingsAdvanced = {
       title: "Sidecar ローカルAI（オフライン）",
       desc: "アプリが管理する llama-server sidecar で実行します。Ollama のインストールは不要です。初回のみモデルのダウンロードが必要です。（約1.9GB）",
       modelReady: "モデル準備完了",
-      noModel:
-        "Sidecar モデルまたは実行ファイルが見つかりません。以下からモデルと llama-server をインストールしてください。",
+      noModel: "Sidecar モデルまたは実行ファイルが見つかりません。以下からモデルと llama-server をインストールしてください。",
       download: "AIモデルをダウンロード（約1.9GB）",
       downloading: "ダウンロード中...",
       downloadingBinary: "バイナリをダウンロード中",
       downloadingModel: "モデルをダウンロード中",
       enabled: "Sidecar ローカルAIを使用",
-      toggleHelp:
-        "モデルと llama-server の両方をインストールした後に有効化できます。",
+      toggleHelp: "モデルと llama-server の両方をインストールした後に有効化できます。",
       currentModel: "現在のインストール済みモデル",
       toggleSaveFailed: "ローカルAI設定の保存に失敗しました。",
       preferenceSwitchFailed: "LLMルートの切り替えに失敗しました。",
+      currentAi: {
+        title: "現在のAI",
+        local: "PCで実行中",
+        cloud: "クラウド接続",
+        none: "未接続",
+        noneHint: "下でAIを接続してください。執筆支援や類似シーン検索などに使われます。",
+      },
+      basic: {
+        title: "AI接続",
+        desc: "Web小説作家のための2つの方法。",
+        local: {
+          title: "PCで実行（オフライン）",
+          desc: "原稿は端末から外に出ません。初回のみモデルのダウンロードが必要です。",
+        },
+        cloud: {
+          title: "クラウド（推奨）",
+          desc: "OpenAIまたはGoogleのAPIキーを使います。最も速く品質も高いです。",
+        },
+      },
+      advanced: {
+        title: "詳細設定",
+        desc: "モデルを直接探す、またはPCで動くモデルを確認します。",
+        show: "詳細を表示",
+        hide: "詳細を隠す",
+      },
+      assistant: {
+        title: "AI執筆アシスタント",
+        intro: "Luieが執筆を助ける方法を選んでください。クラウドが最も速く品質も高いです。",
+        notConnected: "接続されたAIがありません。下から一つ選んで始めてください。",
+        connected: "クラウドAI接続済み",
+        connectedBadge: "接続済み",
+        installedBadge: "インストール済み",
+        use: "これにする",
+        cloud: {
+          title: "クラウド（推奨）",
+          desc: "OpenAIまたはGoogleのAPIキーを使います。最も速く品質も高く、PCへのインストールは不要です。",
+          recommended: "推奨",
+        },
+        offline: {
+          title: "PCで実行（オフライン）",
+          desc: "原稿は端末から外に出ません。初回のみモデルのダウンロードが必要です（約2GB）。",
+        },
+      },
+      understand: {
+        title: "Luieがあなたの小説を理解する準備",
+        intro:
+          "Luieが原稿の雰囲気・状況・人物を把握するには、2つの準備が必要です。",
+        step1Label: "ステップ1 · シーンを理解する",
+        step2Label: "ステップ2 · 最近の変更を再読み込みする",
+      },
       modelLibrary: {
         title: "オフライン執筆モデルを探す",
-        description:
-          "原稿をこの端末内に保つため、公開ローカルモデルをインストールします。",
+        description: "原稿をこの端末内に保つため、公開ローカルモデルをインストールします。",
         placeholder: "例: Qwen, Gemma, Llama",
         searchBtn: "検索",
         searching: "検索中...",
@@ -32,20 +79,17 @@ export const jaBaseSettingsAdvanced = {
         noFiles: "インストール可能なファイルがありません。",
         popular: "人気",
         downloadSelected: "選択したモデルをダウンロード",
-        downloadStartFailed:
-          "ローカルAIモデルのダウンロード開始に失敗しました。",
+        downloadStartFailed: "ローカルAIモデルのダウンロード開始に失敗しました。",
         profileFast: "高速応答",
         profileBalanced: "バランス型",
         profileQuality: "品質優先",
         profileStandard: "標準",
       },
       embedding: {
-        title: "セマンティック検索 (埋め込みモデル)",
-        description:
-          "原稿の内容を理解するセマンティック検索のために小型の埋め込みモデル(bge-m3)を使用します。",
+        title: "作中の似ているシーンを探す",
+        description: "キーワードではなく「雰囲気・状況」で原稿を検索します。bge-m3モデルの1回のインストールで有効になります。",
         installed: "{{name}} インストール済み",
-        notInstalled:
-          "埋め込みモデルがありません。キーワード検索のみ動作します。",
+        notInstalled: "埋め込みモデルがありません。キーワード検索のみ動作します。",
         download: "埋め込みモデルをダウンロード",
         downloading: "埋め込みモデルをダウンロード中...",
         downloadFailed: "埋め込みモデルのダウンロードに失敗しました。",
@@ -63,6 +107,7 @@ export const jaBaseSettingsAdvanced = {
         noResults: "推奨結果がありません。",
         speed: "約 {{tps}} トークン/秒",
         memory: "メモリ {{gb}}GB",
+        techToggle: "技術情報を表示",
         fit: {
           perfect: "完璧",
           good: "良好",
@@ -73,15 +118,17 @@ export const jaBaseSettingsAdvanced = {
       },
       rebuildMemory: {
         title: "メモリー再構成",
-        description:
-          "原稿内容がRAGに反映されない場合に実行してください。バックグラウンドで処理されます。",
+        description: "原稿内容がRAGに反映されない場合に実行してください。バックグラウンドで処理されます。",
+        details: {
+          show: "進行の詳細を表示",
+          hide: "詳細を隠す",
+        },
         start: "メモリー再構成を開始",
         noProject: "開いているプロジェクトがありません。",
         failed: "メモリー再構成に失敗しました。",
         started: "メモリー再構成を開始しました。（{{count}}件のジョブを登録）",
         progress: "{{done}}/{{total}}件完了 · {{percent}}%",
-        jobTypeProgress:
-          "{{done}}/{{total}}件完了 · 処理中{{active}}件 · {{percent}}%",
+        jobTypeProgress: "{{done}}/{{total}}件完了 · 処理中{{active}}件 · {{percent}}%",
         active: "処理中",
         idle: "待機なし",
         pause: "一時停止",
@@ -142,11 +189,23 @@ export const jaBaseSettingsAdvanced = {
         saveFailed: "API Keyの保存に失敗しました。",
         missingAlert: {
           title: "AI設定不足の案内",
-          message:
-            "選択されたAIモデルを駆動するためのAPI Keyまたは必要な設定が不足しています。設定ページのモデルタブに移動して設定を完了しますか？",
+          message: "選択されたAIモデルを駆動するためのAPI Keyまたは必要な設定が不足しています。設定ページのモデルタブに移動して設定を完了しますか？",
           confirm: "設定へ移動",
           cancel: "キャンセル",
         },
+      },
+      ollama: {
+        title: "別のエンドポイント（Ollama互換）",
+        desc: "このPCや近くで動いているOllamaやLM Studioなど、OpenAI互換サーバーを接続します。",
+        baseUrl: "サーバーアドレス",
+        chatModel: "モデル名",
+        chatModelPlaceholder: "例: gemma3:4b",
+        apiKey: "APIキー（任意）",
+        apiKeyPlaceholder: "不要なら空欄のまま",
+        save: "保存",
+        saving: "保存中...",
+        saved: "エンドポイント設定を保存しました。",
+        saveFailed: "エンドポイント設定の保存に失敗しました。",
       },
     },
     shortcuts: {
@@ -154,6 +213,10 @@ export const jaBaseSettingsAdvanced = {
       action: "操作",
       key: "キー",
       reset: "既定に戻す",
+      recording: "キーを押してください…",
+      clear: "クリア",
+      empty: "クリックして設定",
+      conflict: "別の動作で既に使用中です",
       openSettings: "設定を開く",
       closeWindow: "ウィンドウを閉じる",
       quitApp: "アプリを終了",
@@ -221,14 +284,11 @@ export const jaBaseSettingsAdvanced = {
       refresh: "もう一度確認",
       steps: {
         safeTitle: "最初に安全なバックアップを作成します",
-        safeDescription:
-          "現在の状態を先に別保存するので、問題が起きても元に戻せます。",
+        safeDescription: "現在の状態を先に別保存するので、問題が起きても元に戻せます。",
         restoreTitle: "直近の保存内容を戻します",
-        restoreDescription:
-          "メインファイルにまだ反映されていなかった直近の保存内容を Luie が戻します。",
+        restoreDescription: "メインファイルにまだ反映されていなかった直近の保存内容を Luie が戻します。",
         rollbackTitle: "問題があれば自動で元に戻します",
-        rollbackDescription:
-          "整合性チェックに失敗した場合は、Luie が自動でバックアップを復元します。",
+        rollbackDescription: "整合性チェックに失敗した場合は、Luie が自動でバックアップを復元します。",
       },
       dryRun: "先に安全バックアップだけ作る",
       run: "直近の保存内容を復元する",
@@ -236,8 +296,7 @@ export const jaBaseSettingsAdvanced = {
       failed: "復元の実行に失敗しました。",
       error: "復元中にエラーが発生しました。",
       lastChecked: "最終確認",
-      unavailableHint:
-        "今は復元できる直近の保存内容が見つかっていません。通常は .wal ファイルがないときにこの表示になります。",
+      unavailableHint: "今は復元できる直近の保存内容が見つかっていません。通常は .wal ファイルがないときにこの表示になります。",
       file: {
         database: "データベース",
         wal: "WAL ログ",
@@ -248,42 +307,33 @@ export const jaBaseSettingsAdvanced = {
       hero: {
         checkingBadge: "確認中",
         checkingTitle: "復元できる直近の保存内容を確認しています",
-        checkingDescription:
-          "Luie が復元可能な保存痕跡が残っているかを自動で調べています。",
+        checkingDescription: "Luie が復元可能な保存痕跡が残っているかを自動で調べています。",
         readyBadge: "復元可能",
         readyTitle: "直近の保存内容を戻せます",
-        readyDescription:
-          "メインファイルへまだ反映されていない直近の保存内容が見つかりました。下の復元ボタンを押せば、Luie が安全に復元を試みます。",
+        readyDescription: "メインファイルへまだ反映されていない直近の保存内容が見つかりました。下の復元ボタンを押せば、Luie が安全に復元を試みます。",
         emptyBadge: "今は復元するものがありません",
         emptyTitle: "今は復元できる直近の保存内容が見つかっていません",
-        emptyDescription:
-          "復元可能な .wal の痕跡が見つからないため、今は戻せる内容がありません。",
+        emptyDescription: "復元可能な .wal の痕跡が見つからないため、今は戻せる内容がありません。",
         blockedBadge: "確認が必要",
         dbMissingTitle: "復元対象のファイルが見つかりません",
-        dbMissingDescription:
-          "復元を試す前に、アプリのデータベースファイルが存在している必要があります。",
+        dbMissingDescription: "復元を試す前に、アプリのデータベースファイルが存在している必要があります。",
       },
       dialog: {
         checkingTitle: "復元できる直近の保存内容を確認しています",
-        checkingDescription:
-          "Luie が異常終了の直前に残った保存痕跡を探しています。",
+        checkingDescription: "Luie が異常終了の直前に残った保存痕跡を探しています。",
         readyTitle: "未保存の原稿を戻せます",
-        readyDescription:
-          "Luie が異常終了の直前の保存痕跡を見つけました。今すぐ復元すれば、その直近の保存内容を戻せます。",
+        readyDescription: "Luie が異常終了の直前の保存痕跡を見つけました。今すぐ復元すれば、その直近の保存内容を戻せます。",
         emptyTitle: "今は復元できる内容がありません",
-        emptyDescription:
-          "Luie は復元できる直近の保存痕跡を見つけられませんでした。必要ならもう一度確認できます。",
+        emptyDescription: "Luie は復元できる直近の保存痕跡を見つけられませんでした。必要ならもう一度確認できます。",
         blockedTitle: "復元に必要なファイルが見つかりません",
-        blockedDescription:
-          "復元には対象データファイルが見えている必要があります。この状態では復元を実行しません。",
+        blockedDescription: "復元には対象データファイルが見えている必要があります。この状態では復元を実行しません。",
       },
       scope: {
         currentProject: "現在開いている原稿",
         noOpenProject: "開いている原稿はありません",
         library: "何が対象か",
         projectCount: "ローカル原稿 {{count}} 件",
-        libraryDescription:
-          "この復元は現在のプロジェクトだけでなく、この端末上の Luie ローカル保管庫全体に影響します。",
+        libraryDescription: "この復元は現在のプロジェクトだけでなく、この端末上の Luie ローカル保管庫全体に影響します。",
         preview: "その保管庫で確認できている原稿",
         noProjects: "ローカル原稿一覧はまだ読み込まれていません。",
         moreProjects: "ほか {{count}} 件",
@@ -298,8 +348,7 @@ export const jaBaseSettingsAdvanced = {
         unknownBackup: "復元できる保存内容",
       },
       actionTitle: "復元ボタンを押すと、難しい処理は Luie が行います",
-      actionDescription:
-        "データベースファイルを手作業で扱う必要はありません。Luie が自動で処理し、必要なら元に戻します。",
+      actionDescription: "データベースファイルを手作業で扱う必要はありません。Luie が自動で処理し、必要なら元に戻します。",
       actions: {
         ignore: "無視して閉じる",
         restore: "バックアップから復元",
@@ -308,8 +357,7 @@ export const jaBaseSettingsAdvanced = {
       resultBackupOnly: "安全バックアップ完了",
       resultApplied: "復元処理の完了",
       technicalTitle: "技術情報",
-      technicalDescription:
-        "パス、ファイルサイズ、バックアップ保存先などの詳細を見たいときだけ開いてください。",
+      technicalDescription: "パス、ファイルサイズ、バックアップ保存先などの詳細を見たいときだけ開いてください。",
       fields: {
         path: "パス",
         size: "サイズ",
@@ -322,22 +370,17 @@ export const jaBaseSettingsAdvanced = {
         integrity: "整合性チェック",
       },
       messages: {
-        backupCreated:
-          "安全バックアップを作成しました。必要ならこのまま実際の復元を実行できます。",
-        recoveryCompleted:
-          "復元が完了し、Luie が整合性チェックまで終えました。",
-        walMissing:
-          "今は復元できる直近の保存内容がありません。利用可能な .wal ファイルが見つかりませんでした。",
-        walBusy:
-          "別のプロセスがまだ復元ファイルを使用しています。Luie を完全に終了してからもう一度試してください。",
+        backupCreated: "安全バックアップを作成しました。必要ならこのまま実際の復元を実行できます。",
+        recoveryCompleted: "復元が完了し、Luie が整合性チェックまで終えました。",
+        walMissing: "今は復元できる直近の保存内容がありません。利用可能な .wal ファイルが見つかりませんでした。",
+        walBusy: "別のプロセスがまだ復元ファイルを使用しています。Luie を完全に終了してからもう一度試してください。",
         integrityFailed: "整合性チェックで問題が見つかりました: {{detail}}",
         statusLoadFailed: "復元状態の取得に失敗しました。",
       },
     },
     sync: {
       title: "同期と連携",
-      description:
-        "Google アカウントを接続し、Supabase とプロジェクトデータを同期します。",
+      description: "Google アカウントを接続し、Supabase とプロジェクトデータを同期します。",
       connected: "接続済み",
       disconnected: "未接続",
       fields: {
@@ -359,18 +402,14 @@ export const jaBaseSettingsAdvanced = {
         disconnect: "接続解除",
         syncNow: "今すぐ同期",
       },
-      conflicts:
-        "競合: 合計 {{total}} 件（原稿 {{chapters}} / スクラップ {{memos}}）",
+      conflicts: "競合: 合計 {{total}} 件（原稿 {{chapters}} / スクラップ {{memos}}）",
       toast: {
         connectStarted: "ブラウザで Google ログインを完了してください。",
         connected: "Google アカウントの接続が完了しました。",
         connectFailed: "Google 接続に失敗しました。",
-        staleCallback:
-          "このログインコールバックは既に処理済みです。現在の接続状態を維持します。",
-        stateMismatch:
-          "OAuth state の検証に失敗しました。再度ログインしてください。",
-        callbackExpired:
-          "ログイン要求の有効期限が切れました。再度ログインしてください。",
+        staleCallback: "このログインコールバックは既に処理済みです。現在の接続状態を維持します。",
+        stateMismatch: "OAuth state の検証に失敗しました。再度ログインしてください。",
+        callbackExpired: "ログイン要求の有効期限が切れました。再度ログインしてください。",
         disconnectFailed: "接続解除に失敗しました。",
         disconnected: "接続を解除しました。",
         syncFailed: "同期に失敗しました。",

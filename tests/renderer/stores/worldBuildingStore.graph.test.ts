@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { EntityRelation, WorldGraphData, WorldGraphNode } from "../../../src/shared/types";
+import type {
+  Character,
+  EntityRelation,
+  WorldGraphData,
+  WorldGraphNode,
+} from "../../../src/shared/types";
 import {
   appendNodeToGraph,
   appendRelationToGraph,
+  replaceEntityNodePreservingPosition,
 } from "../../../src/renderer/src/features/research/stores/worldBuildingStore.graph";
 
 describe("worldBuildingStore.graph", () => {
@@ -81,5 +87,46 @@ describe("worldBuildingStore.graph", () => {
       relation: "causes",
       createdAt: "2026-03-13T09:00:00.000Z",
     });
+  });
+
+  it("updates one entity node without moving it or replacing edges", () => {
+    const graphData: WorldGraphData = {
+      nodes: [
+        {
+          id: "char-1",
+          entityType: "Character",
+          name: "Old",
+          attributes: null,
+          positionX: 120,
+          positionY: 240,
+        },
+      ],
+      edges: [],
+    };
+    const updated: Character = {
+      id: "char-1",
+      projectId: "project-1",
+      name: "Hero",
+      description: "Lead",
+      attributes: JSON.stringify({ color: "red" }),
+      createdAt: new Date("2026-03-10T00:00:00.000Z"),
+      updatedAt: new Date("2026-03-10T00:01:00.000Z"),
+    };
+
+    const next = replaceEntityNodePreservingPosition(
+      graphData,
+      "Character",
+      updated,
+    );
+
+    expect(next?.nodes[0]).toMatchObject({
+      id: "char-1",
+      name: "Hero",
+      description: "Lead",
+      attributes: { color: "red" },
+      positionX: 120,
+      positionY: 240,
+    });
+    expect(next?.edges).toBe(graphData.edges);
   });
 });

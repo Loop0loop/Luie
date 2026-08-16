@@ -1,8 +1,10 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { writerFlowSyntheticNovel } from "../fixtures/writerFlowSyntheticNovel.js";
 
 const coverageDocPath = "docs/phase/phase-5-writer-workflow-coverage.md";
+const fixturePath = "tests/fixtures/writerFlowSyntheticNovel.ts";
 
 const workflowCoverage = [
   {
@@ -97,8 +99,18 @@ describe("Phase 5 writer workflow coverage", () => {
     expect(existsSync(docAbsolutePath)).toBe(true);
 
     const coverageDoc = readFileSync(docAbsolutePath, "utf8");
+    expect(coverageDoc).toContain(fixturePath);
+    expect(writerFlowSyntheticNovel.chapters).toHaveLength(3);
+    expect(writerFlowSyntheticNovel.flows.map((flow) => flow.title)).toEqual(
+      workflowCoverage.map((workflow) => workflow.title),
+    );
     for (const workflow of workflowCoverage) {
       expect(coverageDoc).toContain(workflow.title);
+      const fixtureFlow = writerFlowSyntheticNovel.flows.find(
+        (flow) => flow.title === workflow.title,
+      );
+      expect(fixtureFlow?.writerQuestion.length).toBeGreaterThan(0);
+      expect(fixtureFlow?.expectedCompanionBehavior.length).toBeGreaterThan(0);
       for (const file of workflow.files) {
         expect(coverageDoc).toContain(file.path);
         const source = readFileSync(resolve(process.cwd(), file.path), "utf8");

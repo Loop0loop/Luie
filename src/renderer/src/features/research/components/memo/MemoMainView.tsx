@@ -27,9 +27,9 @@ export default function MemoMainView() {
   return (
     <div className="h-full flex flex-col bg-panel overflow-hidden max-w-4xl mx-auto w-full p-8">
       <div className="flex items-center gap-2 mb-4">
-        <Tag className="w-4 h-4 text-muted-foreground" />
+        <Tag className="w-4 h-4 text-muted" />
         <input
-          className="bg-transparent border-none outline-none text-sm text-muted-foreground w-full placeholder:text-muted"
+          className="bg-transparent border-none outline-none text-sm text-muted w-full placeholder:text-muted"
           placeholder={t("memo.placeholder.tags")}
           value={activeNote.tags.join(", ")}
           onChange={(e) => {
@@ -46,7 +46,7 @@ export default function MemoMainView() {
         placeholder={t("memo.placeholder.title")}
       />
 
-      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-6">
+      <div className="flex items-center gap-2 text-xs text-muted mb-6">
         <Clock className="w-3 h-3" />
         <span suppressHydrationWarning>
           {new Date(activeNote.updatedAt).toLocaleString()}

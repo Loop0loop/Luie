@@ -118,8 +118,7 @@ export interface UIStore {
   scrivenerSections: ScrivenerSectionsState;
   hasHydrated: boolean;
   regions: UIRegionsState;
-  // Legacy compatibility fields. Keep synchronized with `regions` for tests and
-  // older selectors that still read flat state.
+  /** Test와 legacy selector가 읽는 flat state이며 `regions`와 동기화한다. */
   docsRightTab: DocsRightTab;
   isBinderBarOpen: boolean;
   sidebarWidths: Record<string, number>;

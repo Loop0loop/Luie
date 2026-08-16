@@ -135,6 +135,8 @@ export const appendNodeToGraph = (
   edges: graphData?.edges ?? [],
   canvasBlocks: graphData?.canvasBlocks ?? [],
   canvasEdges: graphData?.canvasEdges ?? [],
+  canvasFiles: graphData?.canvasFiles ?? [],
+  timelines: graphData?.timelines ?? [],
 });
 
 export const replaceNodeInGraph = (
@@ -148,6 +150,31 @@ export const replaceNodeInGraph = (
       currentNode.id === node.id ? node : currentNode,
     ),
   };
+};
+
+export const replaceEntityNodePreservingPosition = (
+  graphData: WorldGraphData | null,
+  entityType: "Character" | "Event" | "Faction" | "Term",
+  item: Character | Event | Faction | Term,
+): WorldGraphData | null => {
+  if (!graphData) return null;
+  const current = graphData.nodes.find((node) => node.id === item.id);
+  if (!current) return graphData;
+
+  const mapped =
+    entityType === "Character"
+      ? toCharacterNode(item as Character)
+      : entityType === "Event"
+        ? toEventNode(item as Event)
+        : entityType === "Faction"
+          ? toFactionNode(item as Faction)
+          : toTermNode(item as Term);
+
+  return replaceNodeInGraph(graphData, {
+    ...mapped,
+    positionX: current.positionX,
+    positionY: current.positionY,
+  });
 };
 
 export const updateNodePositionInGraph = (

@@ -146,7 +146,7 @@ export function TermManager({ termId }: TermManagerProps) {
         >
           <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4 pb-10">
             <div
-              className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border rounded-xl cursor-pointer text-muted hover:text-accent hover:border-accent hover:bg-element-hover transition-all text-sm font-medium group"
+              className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border rounded-panel cursor-pointer text-muted hover:text-accent hover:border-accent hover:bg-element-hover transition-all text-sm font-medium group"
               onClick={handleAddTerm}
               style={{ minHeight: "120px", height: "100%" }}
             >

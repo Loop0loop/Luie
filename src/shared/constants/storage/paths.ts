@@ -1,7 +1,3 @@
-/**
- * Storage, path, and filename constants
- */
-
 export const STORAGE_KEY_MEMOS_PREFIX = 'luie:memos:'
 export const STORAGE_KEY_MEMOS_NONE = 'luie:memos:none'
 export const STORAGE_KEY_MEMO_SIDEBAR_LAYOUT = 'memo-sidebar-layout-v3'
@@ -26,7 +22,7 @@ export const LUIE_PACKAGE_FILTER_NAME = 'Luie Project'
 export const DEFAULT_PROJECT_DIR_NAME = 'New Project'
 export const DEFAULT_PROJECT_FILE_BASENAME = 'project'
 export const DEFAULT_PROJECT_FILENAME = `New Project${LUIE_PACKAGE_EXTENSION}`
-// `.luie` is now a single-file SQLite container.
+// NOTE: `.luie`는 directory가 아니라 단일 SQLite container다.
 export const LUIE_PACKAGE_CONTAINER_DIR = 'sqlite'
 export const LUIE_PACKAGE_VERSION = 2
 export const LUIE_PACKAGE_META_FILENAME = 'meta.json'

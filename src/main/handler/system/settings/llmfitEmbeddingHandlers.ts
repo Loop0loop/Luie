@@ -53,7 +53,7 @@ export function createLlmfitEmbeddingHandlers(): IpcHandlerConfig[] {
           })
           .optional(),
       ]),
-      // llmfitService 는 실패 시에도 throw 하지 않고 { available:false } 를 반환한다(P6).
+      // NOTE: llmfitService 실패는 예외 대신 available=false 계약으로 전달한다.
       handler: async (options?: {
         limit?: number;
         useCase?: string;
@@ -65,7 +65,7 @@ export function createLlmfitEmbeddingHandlers(): IpcHandlerConfig[] {
       logTag: "LLMFIT_INSTALL",
       failMessage: "Failed to install llmfit",
       argsSchema: z.tuple([]),
-      // 설치기는 실패해도 throw 하지 않고 { installed:false, reason } 을 반환한다(P6/P7).
+      // NOTE: installer 실패는 예외 대신 installed=false 계약으로 전달한다.
       handler: async () => await llmfitInstaller.ensureInstalled(),
     },
     {
@@ -82,7 +82,7 @@ export function createLlmfitEmbeddingHandlers(): IpcHandlerConfig[] {
       argsSchema: z.tuple([]),
       handler: async () => {
         const status = embeddingModelService.getStatus();
-        // 렌더러에는 절대 경로를 노출하지 않는 안전 뷰만 전달.
+        // NOTE: renderer 경계에는 설치 binary의 절대 경로를 노출하지 않는다.
         return {
           modelId: status.modelId,
           displayName: status.displayName,
@@ -98,7 +98,7 @@ export function createLlmfitEmbeddingHandlers(): IpcHandlerConfig[] {
       failMessage: "Failed to download embedding model",
       argsSchema: z.tuple([]),
       handler: async () => {
-        // 동봉되어 있으면 즉시 완료, 아니면 백그라운드 다운로드(비차단).
+        // NOTE: 원격 설치는 settings 응답을 막지 않도록 background에서 실행한다.
         void (async () => {
           try {
             await embeddingModelService.ensureModel((progress) => {

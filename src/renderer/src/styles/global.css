@@ -3,3 +3,6 @@
 
 @import "./global.tokens.css";
 @import "./global.behaviors.css";
+
+/* NOTE: Tailwind v4의 `dark:` variant는 app의 `data-theme`를 source of truth로 사용한다. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));

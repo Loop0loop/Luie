@@ -56,7 +56,7 @@ export default function SidebarEventList() {
     <div className="flex flex-col h-full bg-sidebar/50">
       <div className="flex items-center justify-end px-2 py-1 gap-1 border-b border-border/20">
         <button
-          className="p-1 hover:bg-white/10 rounded text-muted-foreground hover:text-foreground transition-colors"
+          className="p-1 hover:bg-white/10 rounded text-muted hover:text-fg transition-colors"
           onClick={() => void handleAddEvent()}
           title={t("event.addTitle", "Add Event")}
         >
@@ -79,7 +79,7 @@ export default function SidebarEventList() {
           >
             <div
               className={cn(
-                "pl-4 pr-3 py-2 cursor-pointer text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors border-l-2 border-transparent",
+                "pl-4 pr-3 py-2 cursor-pointer text-sm text-muted hover:text-fg flex items-center gap-2 transition-colors border-l-2 border-transparent",
                 selectedEventId === event.id &&
                   "bg-accent/10 text-accent border-accent",
               )}

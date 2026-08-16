@@ -1,4 +1,4 @@
-import { BrowserWindow } from "electron";
+import electron from "electron";
 import { IPC_CHANNELS } from "../../../../../../shared/ipc/channels.js";
 import { ErrorCode } from "../../../../../../shared/constants/errors/index.js";
 import { createLogger } from "../../../../../../shared/logger/index.js";
@@ -18,6 +18,7 @@ import {
 } from "../protocol.js";
 
 const logger = createLogger("UtilityProcessBridgeEventHandler");
+const { BrowserWindow } = electron;
 
 export interface UtilityProcessBridgeEventHost {
   pendingRequests: Map<string, PendingRequest>;

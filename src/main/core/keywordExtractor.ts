@@ -1,7 +1,3 @@
-/**
- * Keyword extractor - 자동 키워드 추출
- */
-
 import { createLogger } from "../../shared/logger/index.js";
 
 const logger = createLogger("KeywordExtractor");

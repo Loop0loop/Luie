@@ -1,3 +1,5 @@
+import { koBaseSettingsProjectTemplate } from "./settingsProjectTemplate";
+
 export const koBaseSettingsAdvanced = {
   settings: {
     localLlm: {
@@ -15,6 +17,56 @@ export const koBaseSettingsAdvanced = {
       currentModel: "현재 설치 모델",
       toggleSaveFailed: "로컬 AI 설정 저장에 실패했습니다.",
       preferenceSwitchFailed: "LLM 경로 전환에 실패했습니다.",
+      currentAi: {
+        title: "현재 사용 중인 AI",
+        local: "내 PC에서 실행 중",
+        cloud: "클라우드 연결",
+        none: "연결되지 않음",
+        noneHint: "아래에서 AI를 연결하세요. 글쓰기 도움, 유사 장면 검색 등에 사용됩니다.",
+      },
+      basic: {
+        title: "AI 연결",
+        desc: "웹소설 작가를 위한 두 가지 방법입니다.",
+        local: {
+          title: "내 PC에서 실행 (오프라인)",
+          desc: "원고가 기기 밖으로 나가지 않습니다. 최초 1회 모델 다운로드가 필요해요.",
+        },
+        cloud: {
+          title: "클라우드 (권장)",
+          desc: "OpenAI 또는 Google API 키를 입력해 사용합니다. 가장 빠르고 품질이 좋아요.",
+        },
+      },
+      advanced: {
+        title: "고급",
+        desc: "원하는 모델을 직접 찾거나, 내 PC에 맞는 호환 모델을 확인합니다.",
+        show: "고급 펼치기",
+        hide: "고급 접기",
+      },
+      assistant: {
+        title: "AI 글쓰기 도우미",
+        intro: "Luie가 글을 도와주는 방식을 고르세요. 클라우드가 가장 빠르고 품질이 좋아요.",
+        notConnected: "연결된 AI가 없어요. 아래에서 하나 골라 시작하세요.",
+        connected: "클라우드 AI 연결됨",
+        connectedBadge: "연결됨",
+        installedBadge: "설치됨",
+        use: "이걸로 할래요",
+        cloud: {
+          title: "클라우드 (권장)",
+          desc: "OpenAI 또는 Google API 키를 사용해요. 가장 빠르고 품질이 좋으며, PC에 뭔가 설치할 필요가 없어요.",
+          recommended: "권장",
+        },
+        offline: {
+          title: "내 PC에서 실행 (오프라인)",
+          desc: "원고가 기기 밖으로 나가지 않아요. 최초 1회 모델 다운로드가 필요해요 (~2GB).",
+        },
+      },
+      understand: {
+        title: "Luie가 내 소설을 이해하도록 준비하기",
+        intro:
+          "Luie가 원고의 분위기·상황·인물을 파악하려면 두 가지 준비가 필요해요.",
+        step1Label: "1단계 · 장면 이해하기",
+        step2Label: "2단계 · 최근 변경사항 다시 읽기",
+      },
       modelLibrary: {
         title: "오프라인 집필 모델 찾기",
         description:
@@ -36,9 +88,9 @@ export const koBaseSettingsAdvanced = {
         profileStandard: "일반",
       },
       embedding: {
-        title: "의미 검색 (임베딩 모델)",
+        title: "내 소설에서 유사 장면 찾기",
         description:
-          "원고 내용을 이해하는 의미 검색을 위해 소형 임베딩 모델(bge-m3)을 사용합니다.",
+          "키워드가 아니라 '비슷한 분위기·상황'으로 원고를 찾아줘요. bge-m3 모델을 한 번 설치하면 켜집니다.",
         installed: "{{name}} 설치됨",
         notInstalled: "임베딩 모델이 없습니다. 키워드 검색만 동작합니다.",
         download: "임베딩 모델 다운로드",
@@ -58,6 +110,7 @@ export const koBaseSettingsAdvanced = {
         noResults: "추천 결과가 없습니다.",
         speed: "약 {{tps}} 토큰/초",
         memory: "메모리 {{gb}}GB",
+        techToggle: "기술 정보 표시",
         fit: {
           perfect: "완벽",
           good: "좋음",
@@ -70,6 +123,10 @@ export const koBaseSettingsAdvanced = {
         title: "메모리 재구성",
         description:
           "원고 내용이 RAG에 반영되지 않는 경우 실행하세요. 백그라운드로 처리됩니다.",
+        details: {
+          show: "진행 상세 보기",
+          hide: "상세 접기",
+        },
         start: "메모리 재구성 시작",
         noProject: "열린 프로젝트가 없습니다.",
         failed: "메모리 재구성에 실패했습니다.",
@@ -143,12 +200,29 @@ export const koBaseSettingsAdvanced = {
           cancel: "취소",
         },
       },
+      ollama: {
+        title: "다른 엔드포인트 (Ollama 호환)",
+        desc: "이 PC나 근처에서 실행 중인 Ollama, LM Studio 등 OpenAI 호환 서버를 연결해요.",
+        baseUrl: "서버 주소",
+        chatModel: "모델 이름",
+        chatModelPlaceholder: "예: gemma3:4b",
+        apiKey: "API 키 (선택)",
+        apiKeyPlaceholder: "필요 없으면 비워두세요",
+        save: "저장",
+        saving: "저장 중...",
+        saved: "엔드포인트 설정을 저장했습니다.",
+        saveFailed: "엔드포인트 설정 저장에 실패했습니다.",
+      },
     },
     shortcuts: {
       title: "단축키",
       action: "동작",
       key: "키",
       reset: "기본값으로 복원",
+      recording: "단축키를 누르세요…",
+      clear: "지우기",
+      empty: "클릭하여 설정",
+      conflict: "다른 동작에서 이미 사용 중입니다",
       openSettings: "설정 열기",
       closeWindow: "앱 창 닫기",
       quitApp: "앱 종료",
@@ -371,129 +445,6 @@ export const koBaseSettingsAdvanced = {
         autoSyncFailed: "자동 동기화 설정 변경에 실패했습니다.",
       },
     },
-    projectTemplate: {
-      sidebarTitle: "Start New Project",
-      recentTitle: "Recent Projects",
-      category: {
-        all: "전체 템플릿 (All)",
-        novel: "소설 (Novel)",
-        script: "시나리오/대본 (Script)",
-        general: "일반 (General)",
-      },
-      title: {
-        blank: "빈 프로젝트 (Blank)",
-        webNovel: "웹소설 표준 (Web Novel)",
-        screenplay: "드라마 대본 (Screenplay)",
-        essay: "에세이/수필 (Essay)",
-      },
-      dialog: {
-        selectPath: "프로젝트 저장 위치 선택",
-        repairPathTitle: ".luie 파일 다시 연결",
-        attachLuieTitle: "기존 .luie 연결",
-        materializeLuieTitle: "새 .luie 파일 만들기",
-        renameTitle: "프로젝트 이름 수정",
-        deleteTitle: "프로젝트 삭제",
-        removeMissingTitle: "목록에서 제거",
-      },
-      filter: {
-        markdown: "Markdown",
-        text: "Text",
-      },
-      context: {
-        open: "열기",
-        repairPath: "경로 복구",
-        attachLuie: ".luie 연결",
-        materializeLuie: ".luie 생성",
-        removeMissing: "목록에서 제거",
-        rename: "이름 수정",
-        delete: "삭제",
-      },
-      deleteConfirm:
-        '정말로 "{title}" 프로젝트를 삭제할까요? 이 작업은 되돌릴 수 없습니다.',
-      deleteFileOption: "디스크의 .luie 파일도 삭제",
-      deleteConfirmLabel: "삭제",
-      removeMissingConfirm: '"{title}" 항목을 목록에서 제거할까요?',
-      removeMissingConfirmLabel: "제거",
-      emptyPath: "로컬 연결 없음",
-      detachedBadge: "연결 안 됨",
-      detachedDescription: "이 기기에 연결된 로컬 .luie 파일이 없습니다",
-      missingAttachmentBadge: "파일 없음",
-      missingAttachmentDescription: "연결된 .luie 파일을 찾을 수 없습니다",
-      invalidAttachmentBadge: "경로 오류",
-      invalidAttachmentDescription:
-        "연결된 .luie 경로가 이 기기에서 유효하지 않습니다",
-      unsupportedLegacyBadge: "구형 형식",
-      unsupportedLegacyDescription:
-        "이 앱은 구형 package .luie를 더 이상 지원하지 않습니다",
-      sync: {
-        synced: "동기화됨",
-        pending: "동기화 대기",
-        localOnly: "로컬 전용",
-        syncError: "동기화 오류",
-      },
-      actions: {
-        cancel: "취소",
-        save: "저장",
-        saving: "저장 중...",
-        openLuie: ".luie 열기",
-        restore: "복원",
-      },
-      restoreDialog: {
-        title: "복원할 저장분 선택",
-        description:
-          "프로젝트 이름과 저장 시각을 보고 원하는 저장분을 고르세요. 확인 후 새 .luie로 바로 복원합니다.",
-        loading: "복원 가능한 저장분을 불러오는 중입니다...",
-        errorTitle: "복원 목록을 불러오지 못했습니다",
-        errorDescription: "잠시 후 다시 불러와 주세요.",
-        emptyTitle: "복원할 저장분이 없습니다",
-        emptyDescription: "이 기기에서 찾은 백업이 아직 없습니다.",
-        selectedLabel: "선택한 저장분",
-        projectLabel: "프로젝트",
-        savedAtLabel: "저장 시각",
-        chapterLabel: "기준 원고",
-        previewLabel: "미리보기",
-        noChapter: "원고 정보 없음",
-        noPreview: "미리볼 내용이 없습니다.",
-        prompt: "이 저장분을 새 .luie로 복원할까요?",
-        actions: {
-          refresh: "다시 불러오기",
-          close: "닫기",
-          restore: "이 저장분 복원",
-          restoring: "복원 중...",
-        },
-      },
-      toast: {
-        pathMissingBlocked:
-          "로컬 .luie 연결을 사용할 수 없어 바로 열 수 없습니다. 경로 복구를 먼저 진행해 주세요.",
-        pathRepaired: "프로젝트 경로를 복구했습니다.",
-        pathRepairFailed: "프로젝트 경로 복구에 실패했습니다.",
-        luieAttached: ".luie 파일을 연결했습니다.",
-        luieAttachFailed: ".luie 연결에 실패했습니다.",
-        luieMaterialized: "새 .luie 파일을 만들고 연결했습니다.",
-        luieMaterializeFailed: ".luie 파일 생성에 실패했습니다.",
-        restoreCompleted: "복원된 .luie를 바로 열었습니다.",
-        restoreFailed: "복원에 실패했습니다.",
-        legacyUnsupportedBlocked:
-          "현재 앱은 구형 package .luie를 지원하지 않습니다.",
-      },
-      error: {
-        notFound: "프로젝트를 찾을 수 없습니다.",
-        nameRequired: "프로젝트 이름을 입력해주세요.",
-        renameFailed: "프로젝트 이름 변경에 실패했습니다.",
-      },
-      preview: {
-        standardFormat: "Standard Format",
-        chapterOne: "Chapter 1",
-        script: {
-          int: "INT.",
-          day: "DAY",
-          character: "CHARACTER",
-          direction: "(pointing)",
-          dialogue: "This is the dialogue.",
-          another: "ANOTHER",
-          anotherLine: "Looks visible enough.",
-        },
-      },
-    },
+    projectTemplate: koBaseSettingsProjectTemplate,
   },
 } as const;

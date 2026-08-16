@@ -3,7 +3,7 @@
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { db } from "../src/main/database/main/databaseService.js";
-import { getMemoryReviewBacklogReport } from "../src/main/services/features/memory/review/index.js";
+import { getMemoryReviewBacklogReport } from "../src/main/services/features/memory/review/memoryReviewBacklogReport.js";
 
 type CliOptions = {
   projectId: string;
@@ -102,11 +102,11 @@ async function main(): Promise<void> {
     );
     if (options.outPath) {
       await writeFile(path.resolve(options.outPath), `${payload}\n`, "utf8");
-      // eslint-disable-next-line no-console -- CLI script output.
+      // eslint-disable-next-line no-console -- CLI 결과를 stdout으로 전달한다.
       console.log(JSON.stringify({ written: path.resolve(options.outPath) }, null, 2));
       return;
     }
-    // eslint-disable-next-line no-console -- CLI script output.
+    // eslint-disable-next-line no-console -- CLI 결과를 stdout으로 전달한다.
     console.log(payload);
   } finally {
     await db.disconnect();
@@ -114,7 +114,7 @@ async function main(): Promise<void> {
 }
 
 await main().catch((error) => {
-  // eslint-disable-next-line no-console -- CLI script error output.
+  // eslint-disable-next-line no-console -- CLI 오류를 stderr로 전달한다.
   console.error(
     JSON.stringify(
       { error: error instanceof Error ? error.message : String(error) },

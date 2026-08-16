@@ -1,9 +1,9 @@
-// no use
 import { useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 
-// Strip is wider when collapsed so "펼치기" label is readable
+// NOTE: 접힌 상태에서도 "펼치기" label이 보이도록 strip 너비를 유지한다.
 const STRIP_WIDTH_COLLAPSED = 22;
 const STRIP_WIDTH_EXPANDED = 10;
 const PEEK_WIDTH = 200;
@@ -20,6 +20,7 @@ export function SidebarCollapseStrip({
   children,
 }: SidebarCollapseStripProps) {
   const { t } = useTranslation();
+  const enableAnimations = useEditorStore((state) => state.enableAnimations);
   const [isPeeking, setIsPeeking] = useState(false);
 
   const openPeek = useCallback(() => {
@@ -28,9 +29,7 @@ export function SidebarCollapseStrip({
 
   const closePeek = useCallback(() => setIsPeeking(false), []);
 
-  // Strip click only toggles when peek is NOT visible.
-  // When peek is open, accidental strip clicks are ignored —
-  // only the explicit 펼치기 button inside the peek expands.
+  // NOTE: peek가 열렸을 때 strip click으로 sidebar가 닫히지 않게 한다.
   const handleStripClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -54,14 +53,16 @@ export function SidebarCollapseStrip({
 
   return (
     <>
-      {/* Strip — always in flex flow */}
       <div
         style={{ width: stripWidth }}
-        className="flex-shrink-0 h-full flex flex-col bg-sidebar border-r border-border/50 z-10 transition-[width] duration-150"
+        className={`flex-shrink-0 h-full flex flex-col bg-sidebar border-r border-border/50 z-10 ${
+          enableAnimations
+            ? "transition-[width] duration-150 motion-reduce:transition-none"
+            : "transition-none"
+        }`}
         onMouseEnter={openPeek}
         onMouseLeave={closePeek}
       >
-        {/* Toggle area — takes remaining height */}
         <button
           type="button"
           onClick={handleStripClick}
@@ -81,7 +82,6 @@ export function SidebarCollapseStrip({
           )}
         </button>
 
-        {/* Always-visible bottom toggle — shows 펼치기/접기 */}
         <button
           type="button"
           onClick={handleStripClick}
@@ -110,14 +110,18 @@ export function SidebarCollapseStrip({
         </button>
       </div>
 
-      {/* Peek panel — slides in on hover when collapsed */}
       <div
         onMouseEnter={() => isCollapsed && setIsPeeking(true)}
         onMouseLeave={closePeek}
-        className="absolute top-0 bottom-0 z-20 bg-sidebar/95 border-r border-border/30 shadow-2xl overflow-hidden transition-[width] duration-150 ease-out flex flex-col"
+        className={`absolute top-0 bottom-0 z-20 bg-sidebar/95 border-r border-border/30 shadow-panel overflow-hidden flex flex-col ${
+          enableAnimations
+            ? "transition-transform duration-150 ease-out motion-reduce:transition-none"
+            : "transition-none"
+        }`}
         style={{
           left: stripWidth,
-          width: peekVisible ? PEEK_WIDTH : 0,
+          width: PEEK_WIDTH,
+          transform: peekVisible ? "translateX(0)" : "translateX(-100%)",
           pointerEvents: peekVisible ? "auto" : "none",
         }}
       >
@@ -128,7 +132,6 @@ export function SidebarCollapseStrip({
           {children}
         </div>
 
-        {/* Explicit expand button inside peek — this is the ONLY way to expand from collapsed+peeking state */}
         <button
           type="button"
           onClick={handleExpandFromPeek}

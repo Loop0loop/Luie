@@ -10,8 +10,6 @@ import {
 import { z } from "zod";
 import type { LoggerLike } from "../core/types.js";
 
-// ── Shared schemas ────────────────────────────────────────────────────────
-
 const characterAIInputSchema = z.object({
   name:        z.string().min(1),
   tagline:     z.string().optional(),
@@ -33,8 +31,6 @@ const radarAxisSchema = z.object({
 const characterStatsInputSchema = characterAIInputSchema.extend({
   axes: z.array(radarAxisSchema).min(1).max(8),
 });
-
-// ── Registration ──────────────────────────────────────────────────────────
 
 export function registerCharacterAIIPCHandlers(logger: LoggerLike): void {
   registerIpcHandlers(logger, [

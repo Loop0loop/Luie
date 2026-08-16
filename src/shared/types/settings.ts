@@ -2,16 +2,17 @@ export type FontFamilyPreset = "system-ui" | "serif" | "mono";
 export type FontFamily = FontFamilyPreset | string;
 export type FontPreset = "inter";
 export type EditorTheme = "light" | "dark" | "sepia";
-export type ThemeTemperature = "neutral" | "warm" | "cool";
 export type ThemeContrast = "soft" | "high";
+export type ThemeTemp = "cool" | "neutral" | "warm";
 export type ThemeAccent =
   | "blue"
+  | "emerald"
   | "violet"
-  | "green"
-  | "amber"
   | "rose"
-  | "slate";
-export type ThemeTexture = boolean;
+  | "amber"
+  | "green"
+  | "slate"
+  | (string & {});
 export type WindowMenuBarMode = "hidden" | "visible";
 export type RagSearchOptimizationMode =
   | "low-end"
@@ -100,6 +101,15 @@ export type AppQuitPhase =
 export interface AppQuitPhasePayload {
   phase: AppQuitPhase;
   message?: string;
+}
+
+export interface AppBeforeQuitPayload {
+  requestId: string;
+}
+
+export interface AppFlushCompletePayload extends AppBeforeQuitPayload {
+  hadQueuedAutoSaves: boolean;
+  rendererDirty: boolean;
 }
 
 export interface DbRecoveryCheckpoint {
@@ -320,10 +330,9 @@ export interface EditorSettings {
   maxWidth: number;
   spellcheckEnabled: boolean;
   theme: EditorTheme;
-  themeTemp: "neutral" | "warm" | "cool";
   themeContrast: "soft" | "high";
+  themeTemp: ThemeTemp;
   themeAccent: ThemeAccent;
-  themeTexture: ThemeTexture;
   uiMode: EditorUiMode;
   enableAnimations: boolean;
   entityColors?: {
@@ -338,7 +347,7 @@ export interface AppSettings {
   editor: EditorSettings;
   language?: "ko" | "en" | "ja";
   shortcuts?: ShortcutMap;
-  // Legacy machine-local path hint. New recent/opened state lives in ProjectLocalState.
+  /** Legacy machine-local path hint이며 새 최근 project 상태는 `ProjectLocalState`에 저장한다. */
   lastProjectPath?: string;
   autoSaveEnabled: boolean;
   autoSaveInterval: number;

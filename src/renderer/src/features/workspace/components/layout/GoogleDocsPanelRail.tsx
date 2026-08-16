@@ -95,7 +95,7 @@ export function GoogleDocsPanelRail({
         type="button"
         onClick={() => onSelectTab(activeRightTab ?? "character")}
         className={cn(
-          "absolute right-2 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-border/50 bg-background text-muted-foreground shadow-sm hover:bg-surface-hover hover:text-fg",
+          "absolute right-2 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-border/50 bg-app text-muted shadow-sm hover:bg-surface-hover hover:text-fg",
           enableAnimations ? "transition-colors duration-150" : "transition-none",
         )}
         title={t("sidebar.toggle.open")}
@@ -108,7 +108,7 @@ export function GoogleDocsPanelRail({
   return (
     <div
       className={cn(
-        "z-10 flex h-full w-14 shrink-0 flex-col items-center gap-4 overflow-hidden border-l border-border bg-background py-4",
+        "z-10 flex h-full w-14 shrink-0 flex-col items-center gap-4 overflow-hidden border-l border-border bg-app py-4",
         enableAnimations
           ? "animate-in slide-in-from-right fade-in duration-180"
           : "transition-none",
@@ -119,7 +119,7 @@ export function GoogleDocsPanelRail({
         className="mb-2 flex h-8 w-full items-center justify-center border-b border-border/50 transition-colors hover:bg-surface-hover"
         title={t("sidebar.toggle.close")}
       >
-        <ChevronLeft className="h-4 w-4 rotate-180 text-muted-foreground" />
+        <ChevronLeft className="h-4 w-4 rotate-180 text-muted" />
       </button>
 
       {RAIL_TABS.map((tab) => {
@@ -135,7 +135,7 @@ export function GoogleDocsPanelRail({
             <button
               onClick={() => onSelectTab(tab.tab)}
               className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-hover hover:text-fg",
+                "flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover hover:text-fg",
                 activeRightTab === tab.tab && "bg-accent/15 text-accent",
               )}
               title={title}
@@ -148,10 +148,10 @@ export function GoogleDocsPanelRail({
 
       <div className="mt-auto">
         <button
-          className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-hover hover:text-fg"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover hover:text-fg"
           title={t("menu.extensions")}
         >
-          <Plus className="h-5 w-5 text-muted-foreground" />
+          <Plus className="h-5 w-5 text-muted" />
         </button>
       </div>
     </div>

@@ -1,11 +1,3 @@
-/**
- * Feature-local sidebar sizing and legacy width migration.
- *
- * Layout-level surfaces (default/docs/editor/scrivener) now live in
- * `layoutSizing.ts` so manuscript sidebars, panel rails, and inspectors can
- * evolve independently per layout.
- */
-
 export type SidebarWidthFeature =
   | "mainSidebar"
   | "mainContext"
@@ -97,7 +89,7 @@ export const SIDEBAR_WIDTH_CONFIG: Record<
   editorSnapshot: { ...PANEL_WIDTH_CONFIG },
   editorTrash: { ...PANEL_WIDTH_CONFIG },
   editorCanvas: { ...PANEL_WIDTH_CONFIG },
-  // Legacy shared right-panel keys (read only for migration)
+  // NOTE: shared right-panel key는 legacy migration에서만 읽는다.
   character: { ...PANEL_WIDTH_CONFIG },
   event: { ...PANEL_WIDTH_CONFIG },
   faction: { ...PANEL_WIDTH_CONFIG },
@@ -173,20 +165,24 @@ export const buildDefaultSidebarWidths = (): Record<
     ),
   ) as Record<SidebarWidthFeature, number>;
 
-const SIDEBAR_WIDTH_SYNC_GROUPS: SidebarWidthFeature[][] = [
-  ["mainSidebar", "docsBinder", "scrivenerBinder", "binder"],
-  ["mainContext", "scrivenerInspector", "context", "inspector"],
-  ["docsCharacter", "editorCharacter", "character"],
-  ["docsEvent", "editorEvent", "event"],
-  ["docsFaction", "editorFaction", "faction"],
-  ["docsWorld", "editorWorld", "world"],
-  ["docsScrap", "editorScrap", "scrap"],
-  ["docsAnalysis", "editorAnalysis", "analysis"],
-  ["docsSnapshot", "editorSnapshot", "snapshot"],
-  ["docsTrash", "editorTrash", "trash"],
-  ["docsEditor", "editor"],
-  ["docsExport", "export"],
-];
+const SIDEBAR_WIDTH_SYNC_GROUPS: SidebarWidthFeature[][] = [];
+
+const LEGACY_SIDEBAR_WIDTH_FEATURES = new Set<string>([
+  "character",
+  "event",
+  "faction",
+  "world",
+  "scrap",
+  "analysis",
+  "snapshot",
+  "trash",
+  "memo",
+  "editor",
+  "export",
+  "binder",
+  "context",
+  "inspector",
+]);
 
 export const getSynchronizedSidebarWidthFeatures = (
   feature: string,
@@ -320,6 +316,17 @@ export const normalizeSidebarWidthsWithMigrations = (
   applyLegacyRightWidthMigration(input, normalized);
 
   return normalized;
+};
+
+export const getPersistableSidebarWidths = (
+  input: unknown,
+): Record<string, number> => {
+  const normalized = normalizeSidebarWidthsWithMigrations(input);
+  return Object.fromEntries(
+    Object.entries(normalized).filter(
+      ([feature]) => !LEGACY_SIDEBAR_WIDTH_FEATURES.has(feature),
+    ),
+  );
 };
 
 export const toPxSize = (value: number): string =>

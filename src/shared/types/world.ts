@@ -165,6 +165,7 @@ export interface CharacterUpdateInput {
   description?: string;
   firstAppearance?: string;
   attributes?: Record<string, unknown>;
+  attributesPatch?: Record<string, unknown>;
 }
 export interface CharacterAppearanceInput {
   projectId: string;
@@ -209,6 +210,7 @@ export interface EventUpdateInput {
   description?: string;
   firstAppearance?: string;
   attributes?: Record<string, unknown>;
+  attributesPatch?: Record<string, unknown>;
 }
 export interface FactionCreateInput {
   projectId: string;
@@ -223,6 +225,7 @@ export interface FactionUpdateInput {
   description?: string;
   firstAppearance?: string;
   attributes?: Record<string, unknown>;
+  attributesPatch?: Record<string, unknown>;
 }
 export type WorldEntityType = "Place" | "Concept" | "Rule" | "Item";
 export type WorldEntitySourceType =
@@ -316,11 +319,10 @@ export interface EntityRelationUpdateInput {
   relation?: RelationKind;
   attributes?: Record<string, unknown>;
 }
-// Graph node — renderer safe
 export interface WorldGraphNode {
   id: string;
-  entityType: WorldEntitySourceType; // "Character" | "Faction" | "Event" | "Term" | "WorldEntity"
-  subType?: WorldEntityType; // Place / Concept / Rule / Item
+  entityType: WorldEntitySourceType;
+  subType?: WorldEntityType;
   name: string;
   description?: string | null;
   firstAppearance?: string | null;
@@ -353,6 +355,14 @@ export interface WorldGraphCanvasEdge {
   color?: string;
   direction?: WorldGraphCanvasEdgeDirection;
 }
+export type WorldGraphCanvasFileKind = "folder" | "canvas";
+export interface WorldGraphCanvasFile {
+  id: string;
+  kind: WorldGraphCanvasFileKind;
+  name: string;
+  parentId?: string | null;
+  updatedAt?: string;
+}
 export type WorldGraphCanvasBlock =
   | {
       id: string;
@@ -382,6 +392,7 @@ export interface WorldGraphData {
   edges: EntityRelation[];
   canvasBlocks?: WorldGraphCanvasBlock[];
   canvasEdges?: WorldGraphCanvasEdge[];
+  canvasFiles?: WorldGraphCanvasFile[];
   timelines?: WorldTimelineTrack[];
 }
 export interface WorldGraphMentionsQuery {

@@ -1,7 +1,3 @@
-/**
- * Snapshot service - 버전 관리 스냅샷 비즈니스 로직
- */
-
 import { createHash, randomUUID } from "node:crypto";
 import { desc, eq } from "drizzle-orm";
 import { db } from "../../../infra/database/index.js";
@@ -17,7 +13,7 @@ import {
   DEFAULT_PROJECT_SNAPSHOT_KEEP_COUNT,
 } from "../../../../shared/constants/index.js";
 import type { SnapshotCreateInput } from "../../../../shared/types/index.js";
-import { projectService } from "../../core/projectService.js";
+import { projectService } from "../project/projectService.js";
 import { ServiceError } from "../../../utils/error/index.js";
 import {
   cleanupOrphanSnapshotArtifacts,

@@ -11,6 +11,7 @@ import {
 import {
   normalizeCanvasBlocks,
   normalizeCanvasEdges,
+  normalizeCanvasFiles,
   normalizeTimelines,
 } from "../../../../shared/world/worldGraphDocument.js";
 import type { WorldScrapMemosData } from "../../../../shared/types/index.js";
@@ -231,6 +232,7 @@ export const normalizeGraphPayload = (
       edges: [],
       canvasBlocks: [],
       canvasEdges: [],
+      canvasFiles: [],
       timelines: [],
     };
   }
@@ -244,6 +246,7 @@ export const normalizeGraphPayload = (
   const edges = dedupeRecordArrayById(filterRecordArray(decoded.edges));
   const canvasBlocks = normalizeCanvasBlocks(decoded.canvasBlocks);
   const canvasEdges = normalizeCanvasEdges(decoded.canvasEdges);
+  const canvasFiles = normalizeCanvasFiles(decoded.canvasFiles);
   const timelines = normalizeTimelines(decoded.timelines);
 
   return {
@@ -251,6 +254,7 @@ export const normalizeGraphPayload = (
     edges,
     canvasBlocks,
     canvasEdges,
+    canvasFiles,
     timelines,
     updatedAt:
       typeof decoded.updatedAt === "string" ? decoded.updatedAt : undefined,

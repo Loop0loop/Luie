@@ -55,10 +55,10 @@ export function MoreMenu({
         <MoreHorizontal className="h-4 w-4" />
       </ToolbarButton>
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-lg border border-border bg-panel p-1 shadow-xl">
+        <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-panel border border-border bg-panel p-1 shadow-panel">
           <button
             type="button"
-            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs text-fg transition-colors hover:bg-hover disabled:opacity-40"
+            className="flex w-full items-center gap-2 rounded-control px-3 py-2 text-left text-xs text-fg transition-colors hover:bg-hover disabled:opacity-40"
             disabled={!canOpenExport || !onOpenExport}
             onClick={() => {
               onOpenExport?.();
@@ -96,7 +96,7 @@ export function MoreMenu({
             <button
               key={value}
               type="button"
-              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs text-fg transition-colors hover:bg-hover"
+              className="flex w-full items-center gap-2 rounded-control px-3 py-2 text-left text-xs text-fg transition-colors hover:bg-hover"
               onClick={() => {
                 editor.chain().focus().setTextAlign(value).run();
                 setOpen(false);
@@ -109,7 +109,7 @@ export function MoreMenu({
           <div className="my-1 h-px bg-border/60" />
           <button
             type="button"
-            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs text-fg transition-colors hover:bg-hover"
+            className="flex w-full items-center gap-2 rounded-control px-3 py-2 text-left text-xs text-fg transition-colors hover:bg-hover"
             onClick={selectAll}
           >
             <Pilcrow className="h-3.5 w-3.5 text-muted" />
@@ -117,7 +117,7 @@ export function MoreMenu({
           </button>
           <button
             type="button"
-            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs text-fg transition-colors hover:bg-hover"
+            className="flex w-full items-center gap-2 rounded-control px-3 py-2 text-left text-xs text-fg transition-colors hover:bg-hover"
             onClick={clearFormatting}
           >
             <Eraser className="h-3.5 w-3.5 text-muted" />

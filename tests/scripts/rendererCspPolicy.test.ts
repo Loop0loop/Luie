@@ -3,9 +3,16 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const repoRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../..",
+);
 const rendererIndexHtml = readFileSync(
   path.join(repoRoot, "src/renderer/index.html"),
+  "utf-8",
+);
+const appReadySource = readFileSync(
+  path.join(repoRoot, "src/main/lifecycle/app-ready/appReady.ts"),
   "utf-8",
 );
 
@@ -26,7 +33,9 @@ describe("renderer CSP policy", () => {
     expect(csp).toContain("base-uri 'self'");
     expect(csp).not.toMatch(/default-src[^;]*(?:https?:|data:|blob:|file:)/);
     expect(csp).not.toMatch(/script-src[^;]*(?:https?:|blob:|file:)/);
-    expect(csp).not.toMatch(/connect-src[^;]*(?:https:|wss:|http:(?!\/\/(?:localhost|127\.0\.0\.1):5173))/);
+    expect(csp).not.toMatch(
+      /connect-src[^;]*(?:https:|wss:|http:(?!\/\/(?:localhost|127\.0\.0\.1):5173))/,
+    );
   });
 
   it("allows only renderer-required image and dev-server sources", () => {
@@ -34,5 +43,16 @@ describe("renderer CSP policy", () => {
     expect(csp).toContain("http://localhost:5173");
     expect(csp).toContain("ws://localhost:5173");
     expect(csp).not.toMatch(/img-src[^;]*(?:blob:|file:)/);
+  });
+
+  it("applies the strict production header to packaged file responses", () => {
+    expect(appReadySource).toContain("if (cspPolicy) {");
+    expect(appReadySource).not.toContain("!isFileUrl(details.url)");
+    const prodPolicy = appReadySource.slice(
+      appReadySource.indexOf("const buildProdCspPolicy"),
+      appReadySource.indexOf("const buildDevCspPolicy"),
+    );
+    expect(prodPolicy).not.toContain("unsafe-eval");
+    expect(prodPolicy).toContain('"script-src \'self\'"');
   });
 });

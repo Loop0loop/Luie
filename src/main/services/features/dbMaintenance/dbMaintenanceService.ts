@@ -6,7 +6,7 @@ import {
   memoryEmbedding,
   searchDirtyQueue,
 } from "../../../infra/database/index.js";
-import { chapterSearchCacheService } from "../search/index.js";
+import { chapterSearchCacheService } from "../search/chapterSearchCacheService.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import { MEMORY_TARGET_TYPES } from "../memory/memoryJobConstants.js";
 import { getMigrationHealth } from "./dbMaintenanceHealth.js";

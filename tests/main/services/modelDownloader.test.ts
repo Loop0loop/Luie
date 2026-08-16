@@ -9,7 +9,7 @@ import {
   downloadLlamaServerBinary,
   getHfModelFiles,
   searchHfModels,
-} from "../../../src/main/services/llm/modelDownloader.js";
+} from "../../../src/main/infra/llm/modelDownloader.js";
 
 const tempDirs: string[] = [];
 

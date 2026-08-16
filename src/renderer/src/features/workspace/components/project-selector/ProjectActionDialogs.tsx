@@ -34,14 +34,14 @@ export function ProjectActionDialogs({ state, actions }: ProjectActionDialogsPro
                 footer={
                     <div className="flex justify-end gap-3 w-full">
                         <button
-                            className="px-4 py-2 bg-transparent border border-border rounded-md text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg"
+                            className="px-4 py-2 bg-transparent border border-border rounded-control text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg"
                             onClick={() => setRenameDialog((prev) => ({ ...prev, isOpen: false }))}
                             disabled={isRenaming}
                         >
                             {t("settings.projectTemplate.actions.cancel")}
                         </button>
                         <button
-                            className="px-4 py-2 bg-accent border-none rounded-md text-white text-[13px] font-medium cursor-pointer transition-all hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="px-4 py-2 bg-accent border-none rounded-control text-white text-[13px] font-medium cursor-pointer transition-all hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
                             type="submit"
                             form={renameFormId}
                             disabled={isRenaming}
@@ -60,7 +60,7 @@ export function ProjectActionDialogs({ state, actions }: ProjectActionDialogsPro
                         key={`${renameDialog.isOpen}-${renameDialog.currentTitle}`}
                         name="title"
                         defaultValue={renameDialog.currentTitle}
-                        className="w-full p-2.5 bg-input border border-border rounded-md text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+                        className="w-full p-2.5 bg-input border border-border rounded-control text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
                         autoFocus
                         disabled={isRenaming}
                     />
@@ -85,7 +85,7 @@ export function ProjectActionDialogs({ state, actions }: ProjectActionDialogsPro
                 footer={
                     <div className="flex justify-end gap-3 w-full">
                         <button
-                            className="px-4 py-2 bg-transparent border border-border rounded-md text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg"
+                            className="px-4 py-2 bg-transparent border border-border rounded-control text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg"
                             onClick={() =>
                                 setDeleteDialog((prev) => ({
                                     ...prev,
@@ -98,7 +98,7 @@ export function ProjectActionDialogs({ state, actions }: ProjectActionDialogsPro
                             {t("settings.projectTemplate.actions.cancel")}
                         </button>
                         <button
-                            className="px-4 py-2 bg-red-500 border-none rounded-md text-white text-[13px] font-medium cursor-pointer transition-all hover:bg-red-600"
+                            className="px-4 py-2 bg-red-500 border-none rounded-control text-white text-[13px] font-medium cursor-pointer transition-all hover:bg-red-600"
                             onClick={handleDeleteOrRemove}
                         >
                             {deleteDialog.mode === "removeMissing"

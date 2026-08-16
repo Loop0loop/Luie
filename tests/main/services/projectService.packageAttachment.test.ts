@@ -12,6 +12,8 @@ const mocked = vi.hoisted(() => ({
   getProjectAttachmentPath: vi.fn(),
   setProjectAttachmentPath: vi.fn(),
   readLuieContainerEntry: vi.fn(),
+  getProjectRevisionState: vi.fn(),
+  markProjectExported: vi.fn(),
   withProjectPathStatus: vi.fn(async (projects: unknown[]) => projects),
   normalizeLuiePackagePath: vi.fn((value: string) => value),
 }));
@@ -22,6 +24,7 @@ vi.mock("../../../src/main/database/index.js", () => ({
     disconnect: vi.fn(async () => undefined),
     getClient: () => ({
       select: vi.fn().mockReturnThis(),
+      delete: vi.fn().mockReturnThis(),
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       limit: vi.fn(async () => [{ id: "project-1" }]),
@@ -31,6 +34,7 @@ vi.mock("../../../src/main/database/index.js", () => ({
     }),
     getDrizzleClient: () => ({
       select: vi.fn().mockReturnThis(),
+      delete: vi.fn().mockReturnThis(),
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       limit: vi.fn(async () => [{ id: "project-1" }]),
@@ -40,6 +44,17 @@ vi.mock("../../../src/main/database/index.js", () => ({
     }),
   },
 }));
+
+vi.mock(
+  "../../../src/main/services/core/project/projectRevisionStore.js",
+  () => ({
+    getProjectRevisionState: (...args: unknown[]) =>
+      mocked.getProjectRevisionState(...args),
+    markProjectExported: (...args: unknown[]) =>
+      mocked.markProjectExported(...args),
+    listProjectsNeedingExport: vi.fn(async () => []),
+  }),
+);
 
 vi.mock(
   "../../../src/main/services/core/project/projectExportEngine.js",
@@ -125,7 +140,7 @@ vi.mock("../../../src/main/services/io/luieContainer.js", () => ({
     mocked.readLuieContainerEntry(...args),
 }));
 
-import { ProjectService } from "../../../src/main/services/core/projectService.js";
+import { ProjectService } from "../../../src/main/services/features/project/projectService.js";
 
 describe("ProjectService package attachment flows", () => {
   beforeEach(() => {
@@ -144,9 +159,21 @@ describe("ProjectService package attachment flows", () => {
         title: "Project 1",
       }),
     );
+    mocked.getProjectRevisionState.mockResolvedValue({
+      revision: 7,
+      exportedRevision: 3,
+    });
+    mocked.markProjectExported.mockResolvedValue(undefined);
   });
 
   it("attaches only when the selected .luie meta belongs to the same project", async () => {
+    mocked.exportProjectPackageWithOptions.mockImplementationOnce(async () => {
+      mocked.getProjectRevisionState.mockResolvedValue({
+        revision: 8,
+        exportedRevision: 3,
+      });
+      return true;
+    });
     const service = new ProjectService();
     vi.spyOn(service, "getProject").mockResolvedValue({
       id: "project-1",
@@ -181,6 +208,18 @@ describe("ProjectService package attachment flows", () => {
       "project-1",
       "/tmp/attached.luie",
     );
+    expect(mocked.markProjectExported).toHaveBeenCalledWith("project-1", 7);
+    expect(
+      mocked.getProjectRevisionState.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      mocked.exportProjectPackageWithOptions.mock.invocationCallOrder[0],
+    );
+    expect(
+      mocked.exportProjectPackageWithOptions.mock.invocationCallOrder[0],
+    ).toBeLessThan(mocked.setProjectAttachmentPath.mock.invocationCallOrder[0]);
+    expect(
+      mocked.setProjectAttachmentPath.mock.invocationCallOrder[0],
+    ).toBeLessThan(mocked.markProjectExported.mock.invocationCallOrder[0]);
     expect(attached).toMatchObject({
       id: "project-1",
       attachmentStatus: "attached",
@@ -239,10 +278,54 @@ describe("ProjectService package attachment flows", () => {
       "project-1",
       "/tmp/new-target.luie",
     );
+    expect(mocked.markProjectExported).toHaveBeenCalledWith("project-1", 7);
     expect(materialized).toMatchObject({
       id: "project-1",
       attachmentStatus: "attached",
     });
+  });
+
+  it.each([
+    ["export", mocked.exportProjectPackageWithOptions],
+    ["attachment", mocked.setProjectAttachmentPath],
+  ] as const)("does not mark attach as exported when %s fails", async (_, failing) => {
+    if (failing === mocked.exportProjectPackageWithOptions) {
+      failing.mockResolvedValueOnce(false);
+    } else {
+      failing.mockRejectedValueOnce(new Error("attachment failed"));
+    }
+
+    const service = new ProjectService();
+    await expect(
+      service.attachProjectPackage("project-1", "/tmp/attached.luie"),
+    ).rejects.toBeDefined();
+    expect(mocked.markProjectExported).not.toHaveBeenCalled();
+  });
+
+  it("rejects attach when the captured revision mark fails", async () => {
+    mocked.markProjectExported.mockRejectedValueOnce(new Error("mark failed"));
+
+    const service = new ProjectService();
+    await expect(
+      service.attachProjectPackage("project-1", "/tmp/attached.luie"),
+    ).rejects.toBeDefined();
+  });
+
+  it.each([
+    ["export", mocked.exportProjectPackageWithOptions],
+    ["attachment", mocked.setProjectAttachmentPath],
+  ] as const)("does not mark materialize as exported when %s fails", async (_, failing) => {
+    if (failing === mocked.exportProjectPackageWithOptions) {
+      failing.mockResolvedValueOnce(false);
+    } else {
+      failing.mockRejectedValueOnce(new Error("attachment failed"));
+    }
+
+    const service = new ProjectService();
+    await expect(
+      service.materializeProjectPackage("project-1", "/tmp/new-target.luie"),
+    ).rejects.toBeDefined();
+    expect(mocked.markProjectExported).not.toHaveBeenCalled();
   });
 
   it("propagates legacy container rejection when attaching an old package", async () => {

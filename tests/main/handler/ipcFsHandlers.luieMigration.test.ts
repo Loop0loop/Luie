@@ -1,6 +1,6 @@
 // TEST_LEVEL: HANDLER_INTEGRATION
-// PROVES: IPC handler behavior for SQLite-only .luie operations and explicit legacy rejection
-// DOES_NOT_PROVE: full Electron app runtime or renderer interaction
+// PROVES: SQLite 전용 .luie operation과 명시적 legacy 거부의 IPC handler 동작
+// DOES_NOT_PROVE: 전체 Electron app runtime 또는 renderer interaction
 
 import os from "node:os";
 import path from "node:path";

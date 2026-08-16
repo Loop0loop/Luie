@@ -95,7 +95,7 @@ async function main(): Promise<void> {
     const passes: Array<{ pass: number; queued: number; processed: number }> = [];
 
     for (let pass = 1; pass <= options.maxPasses; pass += 1) {
-      // eslint-disable-next-line no-await-in-loop -- chunk jobs are intentionally processed in bounded passes.
+      // eslint-disable-next-line no-await-in-loop -- chunk job을 bounded pass 단위로 순차 처리한다.
       const result = await memoryProjectionService.processPendingChunkJobs({
         projectId: options.projectId,
         limit: options.limit,
@@ -106,7 +106,7 @@ async function main(): Promise<void> {
     }
 
     const after = await readChunkHealth(options.projectId);
-    // eslint-disable-next-line no-console -- CLI script output.
+    // eslint-disable-next-line no-console -- CLI 결과를 stdout으로 전달한다.
     console.log(JSON.stringify({ projectId: options.projectId, queued, processed, passes, before, after }, null, 2));
   } finally {
     await db.disconnect();
@@ -114,7 +114,7 @@ async function main(): Promise<void> {
 }
 
 await main().catch((error) => {
-  // eslint-disable-next-line no-console -- CLI script error output.
+  // eslint-disable-next-line no-console -- CLI 오류를 stderr로 전달한다.
   console.error(
     JSON.stringify(
       { error: error instanceof Error ? error.message : String(error) },

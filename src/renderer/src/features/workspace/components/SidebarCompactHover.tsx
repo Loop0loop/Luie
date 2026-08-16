@@ -73,7 +73,6 @@ function CompactContent({
     [t],
   );
 
-  // Accordion state
   const [openSection, setOpenSection] = useState<"snapshot" | "trash" | null>(null);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [snapshotLoading, setSnapshotLoading] = useState(false);
@@ -155,10 +154,8 @@ function CompactContent({
 
   return (
     <div className="flex h-full flex-col text-[13px]">
-      {/* Scrollable content area */}
       <div className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-5">
 
-        {/* 원고 */}
         <section>
           <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-fg/50">
             <FileText size={11} />
@@ -191,7 +188,6 @@ function CompactContent({
           )}
         </section>
 
-        {/* 자료 */}
         <section>
           <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-fg/50">
             <FolderOpen size={11} />
@@ -218,7 +214,6 @@ function CompactContent({
           ))}
         </section>
 
-        {/* 버전 기록 */}
         <section>
           <div className="flex items-center gap-1">
             <button
@@ -280,7 +275,6 @@ function CompactContent({
           )}
         </section>
 
-        {/* 휴지통 */}
         <section>
           <div className="flex items-center gap-1">
             <button
@@ -341,7 +335,6 @@ function CompactContent({
 
       </div>
 
-      {/* 하단 펼치기 토글 */}
       <button
         type="button"
         onClick={() => setRegionOpen("leftSidebar", true)}

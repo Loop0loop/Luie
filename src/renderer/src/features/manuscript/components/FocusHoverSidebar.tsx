@@ -58,7 +58,6 @@ export default function FocusHoverSidebar({
     hoverOpenRef.current = isHoverOpen;
   }, [isHoverOpen]);
 
-  // 최종 열림 상태는 props와 내부 state의 조합
   const isOpen = forceOpen || isResizing || isHoverOpen;
 
   useEffect(() => {
@@ -152,8 +151,7 @@ export default function FocusHoverSidebar({
         return;
       }
 
-      // 드래그(마우스 버튼 down) 중에는 hover 토글을 막아
-      // 리사이즈/드래그 중 사이드바가 튀어나오는 UX를 방지한다.
+      // NOTE: mouse button이 눌린 동안 hover-open을 막아 drag 중 sidebar가 열리지 않게 한다.
       if (e.buttons !== 0) return;
 
       if (e.clientY < topOffset || e.clientY > window.innerHeight) {
@@ -231,7 +229,6 @@ export default function FocusHoverSidebar({
 
   return (
     <>
-      {/* 트리거 힌트 영역 */}
       <div
         className={cn(
           "fixed z-50",
@@ -242,11 +239,10 @@ export default function FocusHoverSidebar({
         style={{ top: topStyle, height: heightStyle, width: `${triggerWidthPx}px` }}
       />
 
-      {/* 사이드바 컨테이너 */}
       <div
         ref={sidebarRef}
         className={cn(
-          "fixed z-50 shadow-xl bg-panel will-change-transform [contain:layout_paint]",
+          "fixed z-50 shadow-panel bg-sidebar will-change-transform [contain:layout_paint]",
           enableAnimations
             ? "transition-transform duration-150 ease-out"
             : "transition-none",

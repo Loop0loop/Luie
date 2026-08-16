@@ -13,6 +13,7 @@ import {
   projectIdSchema,
 } from "../../../shared/schemas/index.js";
 import { z } from "zod";
+import { assertAllowedFsPath } from "../system/fs/fsPathApproval.js";
 
 type ProjectServiceLike = {
   createProject: (input: ProjectCreateInput) => Promise<unknown>;
@@ -44,15 +45,31 @@ export function registerProjectIPCHandlers(
       logTag: "PROJECT_OPEN_LUIE",
       failMessage: "Failed to open .luie package",
       argsSchema: z.tuple([z.string()]),
-      handler: (packagePath: string) => projectService.openLuieProject(packagePath),
+      handler: async (packagePath: string) => {
+        const safePackagePath = await assertAllowedFsPath(packagePath, {
+          fieldName: "packagePath",
+          mode: "read",
+          permission: "package",
+        });
+        return await projectService.openLuieProject(safePackagePath);
+      },
     },
     {
       channel: IPC_CHANNELS.PROJECT_ATTACH_LUIE,
       logTag: "PROJECT_ATTACH_LUIE",
       failMessage: "Failed to attach .luie package",
       argsSchema: z.tuple([projectIdSchema, z.string().min(1)]),
-      handler: (projectId: string, packagePath: string) =>
-        projectService.attachProjectPackage(projectId, packagePath),
+      handler: async (projectId: string, packagePath: string) => {
+        const safePackagePath = await assertAllowedFsPath(packagePath, {
+          fieldName: "packagePath",
+          mode: "write",
+          permission: "package",
+        });
+        return await projectService.attachProjectPackage(
+          projectId,
+          safePackagePath,
+        );
+      },
     },
     {
       channel: IPC_CHANNELS.PROJECT_MATERIALIZE_LUIE,
@@ -62,8 +79,17 @@ export function registerProjectIPCHandlers(
         projectIdSchema,
         z.string().min(1),
       ]),
-      handler: (projectId: string, targetPath: string) =>
-        projectService.materializeProjectPackage(projectId, targetPath),
+      handler: async (projectId: string, targetPath: string) => {
+        const safeTargetPath = await assertAllowedFsPath(targetPath, {
+          fieldName: "targetPath",
+          mode: "write",
+          permission: "package",
+        });
+        return await projectService.materializeProjectPackage(
+          projectId,
+          safeTargetPath,
+        );
+      },
     },
     {
       channel: IPC_CHANNELS.PROJECT_GET,

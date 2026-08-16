@@ -1,15 +1,35 @@
 import { Shield } from "lucide-react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import FactionDetailView from "@renderer/features/research/components/faction/FactionDetailView";
-import { FactionSidebarList } from "@renderer/features/research/components/faction/FactionSidebarList";
 import { useFactionManager } from "@renderer/features/research/components/faction/useFactionManager";
-import { EntityGallery } from "@renderer/features/research/components/wiki/EntityGallery";
-import { EntityManagerShell } from "@renderer/features/research/components/wiki/EntityManagerShell";
+import {
+  EntityGallery,
+  type EntityGallerySortMode,
+  type EntityGalleryViewMode,
+} from "@renderer/features/research/components/wiki/EntityGallery";
 
-export default function FactionManager() {
+type FactionManagerProps = {
+  query?: string;
+  onQueryChange?: (query: string) => void;
+  viewMode?: EntityGalleryViewMode;
+  onViewModeChange?: (viewMode: EntityGalleryViewMode) => void;
+  sortMode?: EntityGallerySortMode;
+  onSortModeChange?: (sortMode: EntityGallerySortMode) => void;
+  tabs?: ReactNode;
+};
+
+export default function FactionManager({
+  query,
+  onQueryChange,
+  viewMode,
+  onViewModeChange,
+  sortMode,
+  onSortModeChange,
+  tabs,
+}: FactionManagerProps) {
   const { t } = useTranslation();
   const {
-    selectedFactionId,
     setSelectedFactionId,
     handleAddFaction,
     handleViewAll,
@@ -18,35 +38,12 @@ export default function FactionManager() {
   } = useFactionManager(t);
 
   return (
-    <EntityManagerShell
-      sidebarFeature="factionSidebar"
-      peekGroups={Object.entries(groupedFactions).map(([name, factions]) => ({
-        name,
-        items: factions.map((faction) => ({
-          id: faction.id,
-          label: faction.name,
-          sublabel: faction.description ?? undefined,
-        })),
-      }))}
-      selectedId={selectedFactionId}
-      onSelect={setSelectedFactionId}
-      addLabel="세력 추가"
-      onAdd={handleAddFaction}
-      sidebar={
-        <FactionSidebarList
-          t={t}
-          selectedFactionId={selectedFactionId}
-          setSelectedFactionId={setSelectedFactionId}
-          onViewAll={handleViewAll}
-          handleAddFaction={handleAddFaction}
-          groupedFactions={groupedFactions}
-        />
-      }
-    >
+    <>
       {selectedFaction ? (
         <FactionDetailView
           key={selectedFaction.id}
           factionId={selectedFaction.id}
+          onBack={handleViewAll}
         />
       ) : (
         <EntityGallery
@@ -55,8 +52,16 @@ export default function FactionManager() {
           title={t("faction.galleryTitle", "Faction Overview")}
           noDescriptionLabel={t("faction.noRole", "No Type")}
           icon={Shield}
+          onAdd={handleAddFaction}
+          query={query}
+          onQueryChange={onQueryChange}
+          viewMode={viewMode}
+          onViewModeChange={onViewModeChange}
+          sortMode={sortMode}
+          onSortModeChange={onSortModeChange}
+          tabs={tabs}
         />
       )}
-    </EntityManagerShell>
+    </>
   );
 }

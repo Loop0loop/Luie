@@ -87,8 +87,8 @@ export function SyncConflictResolverModal({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-3xl bg-panel border border-border shadow-2xl rounded-xl flex flex-col max-h-[85vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="w-full max-w-3xl bg-panel border border-border shadow-panel rounded-panel flex flex-col max-h-[85vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         <div className="p-4 border-b border-border flex items-center justify-between bg-surface">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-warning/20 rounded-full text-warning-fg">
@@ -112,13 +112,13 @@ export function SyncConflictResolverModal({
           <button
             onClick={onClose}
             disabled={refreshDisabled}
-            className="p-2 rounded-md hover:bg-hover text-muted transition-colors disabled:opacity-50"
+            className="p-2 rounded-control hover:bg-hover text-muted transition-colors disabled:opacity-50"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 custom-scrollbar bg-canvas">
+        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 custom-scrollbar bg-app">
           {!hasConflicts ? (
             <div className="h-40 flex flex-col items-center justify-center gap-3 text-muted">
               <Check className="w-8 h-8 text-emerald-500" />
@@ -137,7 +137,7 @@ export function SyncConflictResolverModal({
                 return (
                   <div
                     key={itemKey}
-                    className="rounded-lg border border-border bg-surface [contain:content]"
+                    className="rounded-panel border border-border bg-surface [contain:content]"
                   >
                     <div className="px-4 py-2 border-b border-border text-sm font-semibold text-fg">
                       {item.type === "chapter"
@@ -148,7 +148,7 @@ export function SyncConflictResolverModal({
                       #{index + 1} - {item.title || item.id}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3">
-                      <div className="rounded-md border border-border p-3 bg-canvas">
+                      <div className="rounded-control border border-border p-3 bg-app">
                         <div
                           className="text-xs text-muted mb-2"
                           suppressHydrationWarning
@@ -162,7 +162,7 @@ export function SyncConflictResolverModal({
                         <button
                           onClick={() => handleResolve(item, "local")}
                           disabled={refreshDisabled}
-                          className="mt-3 w-full px-3 py-2 bg-accent/10 hover:bg-accent/20 text-accent text-sm font-medium rounded-md border border-accent/20 transition-colors disabled:opacity-50"
+                          className="mt-3 w-full px-3 py-2 bg-accent/10 hover:bg-accent/20 text-accent text-sm font-medium rounded-control border border-accent/20 transition-colors disabled:opacity-50"
                         >
                           {itemIsResolving
                             ? t("common.saving", "Saving...")
@@ -172,7 +172,7 @@ export function SyncConflictResolverModal({
                               )}
                         </button>
                       </div>
-                      <div className="rounded-md border border-border p-3 bg-canvas">
+                      <div className="rounded-control border border-border p-3 bg-app">
                         <div
                           className="text-xs text-muted mb-2"
                           suppressHydrationWarning
@@ -189,7 +189,7 @@ export function SyncConflictResolverModal({
                         <button
                           onClick={() => handleResolve(item, "remote")}
                           disabled={refreshDisabled}
-                          className="mt-3 w-full px-3 py-2 bg-element hover:bg-element-hover text-fg text-sm font-medium rounded-md border border-border transition-colors disabled:opacity-50"
+                          className="mt-3 w-full px-3 py-2 bg-element hover:bg-element-hover text-fg text-sm font-medium rounded-control border border-border transition-colors disabled:opacity-50"
                         >
                           {itemIsResolving
                             ? t("common.saving", "Saving...")
@@ -205,7 +205,7 @@ export function SyncConflictResolverModal({
               })}
             </>
           ) : (
-            <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm text-warning-fg space-y-2">
+            <div className="rounded-panel border border-warning/40 bg-warning/10 p-4 text-sm text-warning-fg space-y-2">
               <p className="m-0">
                 {t(
                   "settings.sync.conflicts.modalSummary",
@@ -219,15 +219,15 @@ export function SyncConflictResolverModal({
                 )}
               </p>
               <div className="grid grid-cols-3 gap-2 text-xs">
-                <div className="rounded-md bg-warning/10 px-2 py-1 border border-warning/30">
+                <div className="rounded-control bg-warning/10 px-2 py-1 border border-warning/30">
                   {t("settings.sync.conflicts.chapterCount", "Chapters")}:{" "}
                   {conflicts.chapters}
                 </div>
-                <div className="rounded-md bg-warning/10 px-2 py-1 border border-warning/30">
+                <div className="rounded-control bg-warning/10 px-2 py-1 border border-warning/30">
                   {t("settings.sync.conflicts.memoCount", "Memos")}:{" "}
                   {conflicts.memos}
                 </div>
-                <div className="rounded-md bg-warning/10 px-2 py-1 border border-warning/30">
+                <div className="rounded-control bg-warning/10 px-2 py-1 border border-warning/30">
                   {t("settings.sync.conflicts.totalCount", "Total")}:{" "}
                   {conflicts.total}
                 </div>
@@ -241,7 +241,7 @@ export function SyncConflictResolverModal({
             <button
               onClick={handleRefresh}
               disabled={refreshDisabled}
-              className="px-4 py-2 mr-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50 inline-flex items-center gap-2"
+              className="px-4 py-2 mr-2 bg-accent text-white rounded-panel text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50 inline-flex items-center gap-2"
             >
               <RefreshCcw className="w-4 h-4" />
               {isRefreshing
@@ -252,7 +252,7 @@ export function SyncConflictResolverModal({
           <button
             onClick={onClose}
             disabled={refreshDisabled}
-            className="px-4 py-2 bg-element hover:bg-element-hover border border-border rounded-lg text-sm font-medium text-fg transition-colors"
+            className="px-4 py-2 bg-element hover:bg-element-hover border border-border rounded-panel text-sm font-medium text-fg transition-colors"
           >
             {hasConflicts
               ? t("settings.sync.conflicts.resolveLater", "Resolve Later")

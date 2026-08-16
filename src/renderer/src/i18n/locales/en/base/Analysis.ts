@@ -1,12 +1,18 @@
 export const enBaseAnalysis = {
   analysis: {
     title: "Manuscript Analysis",
+    tabs: {
+      chat: "Chat",
+      review: "Review",
+    },
     viewMode: {
       switchToFloating: "Switch to floating view",
       switchToDock: "Switch to fixed view",
     },
+    resizeHandle: "Resize handle",
     emptyState: {
       title: "Ask anything about the manuscript",
+      subtitle: "Check character relationships, world-building consistency, unresolved foreshadowing, and more with AI.",
       summaryLabel: "Summary of this chapter",
       summaryPrompt: "Summarize this chapter in one paragraph.",
       relationLabel: "Character relations",
@@ -193,6 +199,15 @@ export const enBaseAnalysis = {
         blocked_p0: "Blocked",
         unknown: "Unknown",
       },
+    },
+    toast: {
+      error: "An error occurred during analysis.",
+      apiKeyMissing:
+        "Gemini API key is missing. Please check your environment variables.",
+      quotaExceeded: "Gemini API quota exceeded. Please try again later.",
+      networkError:
+        "A network error occurred. Please check your internet connection.",
+      unknown: "An unknown error occurred.",
     },
   },
 } as const;

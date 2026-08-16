@@ -9,17 +9,12 @@ import {
   MEMORY_TARGET_TYPES,
 } from "./memoryJobConstants.js";
 import { claimMemoryBuildJob } from "./jobControl.js";
+import { chunkText, sha256 } from "./projection/chunking.js";
 import {
   canRetryMemoryBuildJob,
-  buildMemoryChunkIndexText,
-  buildMemoryContextLabel,
-  chunkText,
-  collectMemorySourceRows,
-  estimateTokenCountFromChars,
   MAX_JOB_ATTEMPTS,
-  sha256,
-  yieldToEventLoop,
-} from "./projection/index.js";
+} from "./projection/jobPolicy.js";
+import { collectMemorySourceRows } from "./projection/sourceRows.js";
 
 const logger = createLogger("MemoryProjectionService");
 export { chunkText };
@@ -109,8 +104,8 @@ class MemoryProjectionService {
     let processed = 0;
     await jobs.reduce<Promise<void>>(async (prev, job) => {
       await prev;
-      // Keep each job atomic, but yield between jobs to avoid long sync stretches.
-      await yieldToEventLoop();
+      // NOTE: 각 job의 원자성은 유지하되 event loop 독점을 피하려고 job 사이에 양보한다.
+      await new Promise<void>((resolve) => setImmediate(resolve));
       const now = new Date().toISOString();
       const claimed = await claimMemoryBuildJob({ jobId: job.id, nowIso: now });
       if (!claimed.claimed) {
@@ -137,10 +132,8 @@ class MemoryProjectionService {
           source.bodyContent ?? source.content ?? "",
         );
         const sourceContentHash = sha256(sourceContent);
-        const contextLabel = buildMemoryContextLabel({
-          sourceType: job.targetType,
-          title: source.title,
-        });
+        const title = source.title?.trim();
+        const contextLabel = title ? `${job.targetType}: ${title}` : null;
         const chunks = chunkText(sourceContent);
 
         client.transaction((tx) => {
@@ -163,10 +156,9 @@ class MemoryProjectionService {
           for (let index = 0; index < chunks.length; index += 1) {
             const chunkItem = chunks[index];
             const chunkId = crypto.randomUUID();
-            const indexText = buildMemoryChunkIndexText({
-              contextLabel,
-              content: chunkItem.content,
-            });
+            const indexText = contextLabel
+              ? `[${contextLabel}]\n${chunkItem.content}`
+              : chunkItem.content;
             tx.insert(memoryChunk)
               .values({
                 id: chunkId,
@@ -186,7 +178,7 @@ class MemoryProjectionService {
                 endOffset: chunkItem.endOffset,
                 paragraphStartIndex: chunkItem.paragraphStartIndex,
                 paragraphEndIndex: chunkItem.paragraphEndIndex,
-                tokenCount: estimateTokenCountFromChars(chunkItem.content),
+                tokenCount: chunkItem.content.length,
                 createdAt: now,
                 updatedAt: now,
               })

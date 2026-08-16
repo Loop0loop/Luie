@@ -15,25 +15,6 @@ const mocked = vi.hoisted(() => {
   };
   const narrativeMemoryQueryService = {
     query: vi.fn(),
-    getReviewBacklog: vi.fn(),
-    getConflictQueue: vi.fn(),
-    listSuggestedEpisodes: vi.fn(),
-    rejectEpisode: vi.fn(),
-    listSuggestedFacts: vi.fn(),
-    confirmFact: vi.fn(),
-    rejectFact: vi.fn(),
-    resolveFactConflict: vi.fn(),
-    reviewFactConflict: vi.fn(),
-    listSuggestedEntityAliases: vi.fn(),
-    listSuggestedEntities: vi.fn(),
-    confirmEntity: vi.fn(),
-    rejectEntity: vi.fn(),
-    confirmEntityAlias: vi.fn(),
-    rejectEntityAlias: vi.fn(),
-    splitEntityAlias: vi.fn(),
-    mergeEntity: vi.fn(),
-    reviewStaleEvidence: vi.fn(),
-    repairEvidenceLinks: vi.fn(),
     runEvalSuite: vi.fn(),
     recordEvalFeedback: vi.fn(),
     runIntentCalibration: vi.fn(),
@@ -41,9 +22,6 @@ const mocked = vi.hoisted(() => {
   };
   const narrativeSummaryStatusService = {
     getStatus: vi.fn(),
-  };
-  const packagePersistence = {
-    persistPackageAfterMutation: vi.fn(),
   };
   const memoryJobControl = {
     pauseMemoryBuildJobs: vi.fn(),
@@ -58,7 +36,6 @@ const mocked = vi.hoisted(() => {
     syncService,
     narrativeMemoryQueryService,
     narrativeSummaryStatusService,
-    packagePersistence,
     memoryJobControl,
     get appIsPackaged() {
       return appIsPackaged;
@@ -138,13 +115,6 @@ vi.mock("../../../src/main/services/features/memory/jobControl.js", () => ({
   getMemoryBuildJobProgress: mocked.memoryJobControl.getMemoryBuildJobProgress,
 }));
 
-vi.mock("../../../src/main/services/features/memory/index.js", () => ({
-  pauseMemoryBuildJobs: mocked.memoryJobControl.pauseMemoryBuildJobs,
-  resumeMemoryBuildJobs: mocked.memoryJobControl.resumeMemoryBuildJobs,
-  cancelMemoryBuildJobs: mocked.memoryJobControl.cancelMemoryBuildJobs,
-  getMemoryBuildJobProgress: mocked.memoryJobControl.getMemoryBuildJobProgress,
-}));
-
 export const resetInputValidationMocks = () => {
   mocked.handlerMap.clear();
   mocked.syncService.getStatus.mockReset();
@@ -154,31 +124,11 @@ export const resetInputValidationMocks = () => {
   mocked.syncService.setAutoSync.mockReset();
   mocked.syncService.resolveConflict.mockReset();
   mocked.narrativeMemoryQueryService.query.mockReset();
-  mocked.narrativeMemoryQueryService.getReviewBacklog.mockReset();
-  mocked.narrativeMemoryQueryService.getConflictQueue.mockReset();
-  mocked.narrativeMemoryQueryService.listSuggestedEpisodes.mockReset();
-  mocked.narrativeMemoryQueryService.rejectEpisode.mockReset();
-  mocked.narrativeMemoryQueryService.listSuggestedFacts.mockReset();
-  mocked.narrativeMemoryQueryService.confirmFact.mockReset();
-  mocked.narrativeMemoryQueryService.rejectFact.mockReset();
-  mocked.narrativeMemoryQueryService.resolveFactConflict.mockReset();
-  mocked.narrativeMemoryQueryService.reviewFactConflict.mockReset();
-  mocked.narrativeMemoryQueryService.listSuggestedEntityAliases.mockReset();
-  mocked.narrativeMemoryQueryService.listSuggestedEntities.mockReset();
-  mocked.narrativeMemoryQueryService.confirmEntity.mockReset();
-  mocked.narrativeMemoryQueryService.rejectEntity.mockReset();
-  mocked.narrativeMemoryQueryService.confirmEntityAlias.mockReset();
-  mocked.narrativeMemoryQueryService.rejectEntityAlias.mockReset();
-  mocked.narrativeMemoryQueryService.splitEntityAlias.mockReset();
-  mocked.narrativeMemoryQueryService.mergeEntity.mockReset();
-  mocked.narrativeMemoryQueryService.reviewStaleEvidence.mockReset();
-  mocked.narrativeMemoryQueryService.repairEvidenceLinks.mockReset();
   mocked.narrativeMemoryQueryService.runEvalSuite.mockReset();
   mocked.narrativeMemoryQueryService.recordEvalFeedback.mockReset();
   mocked.narrativeMemoryQueryService.runIntentCalibration.mockReset();
   mocked.narrativeMemoryQueryService.runEpisodeCalibration.mockReset();
   mocked.narrativeSummaryStatusService.getStatus.mockReset();
-  mocked.packagePersistence.persistPackageAfterMutation.mockReset();
   mocked.memoryJobControl.pauseMemoryBuildJobs.mockReset();
   mocked.memoryJobControl.resumeMemoryBuildJobs.mockReset();
   mocked.memoryJobControl.cancelMemoryBuildJobs.mockReset();
@@ -194,31 +144,11 @@ export const resetInputValidationMocks = () => {
 export const registerSearchInputHandlers = async (
   narrativeMemoryQueryService: {
     query: unknown;
-    getReviewBacklog?: unknown;
-    getConflictQueue: unknown;
-    listSuggestedEpisodes?: unknown;
-    rejectEpisode?: unknown;
-    listSuggestedFacts?: unknown;
-    confirmFact?: unknown;
-    rejectFact?: unknown;
-    resolveFactConflict?: unknown;
-    reviewFactConflict?: unknown;
-    listSuggestedEntityAliases?: unknown;
-    listSuggestedEntities?: unknown;
-    confirmEntity?: unknown;
-    rejectEntity?: unknown;
-    confirmEntityAlias?: unknown;
-    rejectEntityAlias?: unknown;
-    splitEntityAlias?: unknown;
-    mergeEntity?: unknown;
-    reviewStaleEvidence?: unknown;
-    repairEvidenceLinks?: unknown;
     runEvalSuite?: unknown;
     recordEvalFeedback?: unknown;
     runIntentCalibration?: unknown;
     runEpisodeCalibration?: unknown;
   },
-  packagePersistence = mocked.packagePersistence,
 ) => {
   const { registerMemoryIPCHandlers } =
     await import("../../../src/main/handler/memory/ipcMemoryHandlers.js");
@@ -230,7 +160,6 @@ export const registerSearchInputHandlers = async (
     sharedEmbeddingStatusServices(),
     narrativeMemoryQueryService,
     mocked.narrativeSummaryStatusService,
-    packagePersistence,
   );
 };
 
@@ -268,7 +197,9 @@ export const registerAutoSaveInputHandlers = async (autoSaveManager: {
 }) => {
   const { registerAutoSaveIPCHandlers } =
     await import("../../../src/main/handler/writing/ipcAutoSaveHandlers.js");
-  registerAutoSaveIPCHandlers(mocked.logger, autoSaveManager);
+  registerAutoSaveIPCHandlers(mocked.logger, autoSaveManager, {
+    exportProjectPackageNow: async () => true,
+  });
 };
 
 export { mocked };

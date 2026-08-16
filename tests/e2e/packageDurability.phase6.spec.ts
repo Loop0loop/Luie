@@ -11,7 +11,7 @@ const waitForFile = async (
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeoutMs) {
     if (fs.existsSync(filePath)) return;
-    // eslint-disable-next-line no-await-in-loop -- polling waits for a marker file created by the Electron main process.
+    // eslint-disable-next-line no-await-in-loop -- Electron main process가 만드는 marker file을 순차 polling한다.
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   throw new Error(`Timed out waiting for file: ${filePath}`);

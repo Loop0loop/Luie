@@ -141,7 +141,7 @@ export const RecoveryTab = memo(function RecoveryTab({
           <button
             onClick={onRefreshRecoveryStatus}
             disabled={isRecovering || isRecoveryStatusLoading}
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium text-fg transition-colors hover:bg-element disabled:opacity-50"
+            className="inline-flex shrink-0 items-center gap-2 rounded-panel border border-border px-3 py-2 text-sm font-medium text-fg transition-colors hover:bg-element disabled:opacity-50"
           >
             <RefreshCcw
               className={`h-4 w-4 ${isRecoveryStatusLoading ? "animate-spin" : ""}`}
@@ -181,7 +181,7 @@ export const RecoveryTab = memo(function RecoveryTab({
               )}
             </div>
             {recoveryStatus?.preview?.excerpt && (
-              <div className="mt-4 rounded-2xl bg-app px-4 py-4 text-sm leading-7 text-fg">
+              <div className="mt-4 rounded-panel bg-app px-4 py-4 text-sm leading-7 text-fg">
                 <div className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-subtle">
                   {t("settings.recovery.summary.preview")}
                 </div>
@@ -193,7 +193,7 @@ export const RecoveryTab = memo(function RecoveryTab({
 
         {recoveryResult && (
           <div
-            className={`mt-6 rounded-2xl border px-4 py-3 text-sm leading-7 ${
+            className={`mt-6 rounded-panel border px-4 py-3 text-sm leading-7 ${
               recoveryResult.success
                 ? "border-success/30 bg-success/10 text-fg"
                 : "border-danger/30 bg-danger/10 text-danger-fg"
@@ -204,7 +204,7 @@ export const RecoveryTab = memo(function RecoveryTab({
         )}
 
         {recoveryStatusError && (
-          <div className="mt-4 rounded-2xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm leading-7 text-danger-fg">
+          <div className="mt-4 rounded-panel border border-danger/30 bg-danger/10 px-4 py-3 text-sm leading-7 text-danger-fg">
             {recoveryStatusError}
           </div>
         )}
@@ -214,7 +214,7 @@ export const RecoveryTab = memo(function RecoveryTab({
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <button
             onClick={onDismiss}
-            className="rounded-xl px-4 py-3 text-sm font-medium text-muted transition-colors hover:bg-element hover:text-fg"
+            className="rounded-panel px-4 py-3 text-sm font-medium text-muted transition-colors hover:bg-element hover:text-fg"
           >
             {t("settings.recovery.actions.ignore")}
           </button>
@@ -224,7 +224,7 @@ export const RecoveryTab = memo(function RecoveryTab({
             disabled={
               !recoveryAvailable || isRecovering || isRecoveryStatusLoading
             }
-            className="rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent/90 disabled:opacity-50"
+            className="rounded-panel bg-accent px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent/90 disabled:opacity-50"
           >
             {isRecovering
               ? t("settings.recovery.running")
@@ -253,7 +253,7 @@ export const RecoveryTab = memo(function RecoveryTab({
           </button>
 
           {showTechnicalDetails && (
-            <div className="mt-4 space-y-4 rounded-2xl border border-border bg-app/60 p-4">
+            <div className="mt-4 space-y-4 rounded-panel border border-border bg-app/60 p-4">
               <div className="text-sm text-muted">
                 {t("settings.recovery.scope.libraryDescription")}
               </div>
@@ -263,7 +263,7 @@ export const RecoveryTab = memo(function RecoveryTab({
                   <div className="text-xs font-semibold uppercase tracking-[0.14em] text-subtle">
                     {t("settings.recovery.fields.path")}
                   </div>
-                  <div className="mt-2 break-all rounded-xl bg-panel px-3 py-2 font-mono text-xs text-fg">
+                  <div className="mt-2 break-all rounded-panel bg-panel px-3 py-2 font-mono text-xs text-fg">
                     {recoveryStatus?.database.path ?? "-"}
                   </div>
                 </div>
@@ -271,7 +271,7 @@ export const RecoveryTab = memo(function RecoveryTab({
                   <div className="text-xs font-semibold uppercase tracking-[0.14em] text-subtle">
                     {t("settings.recovery.fields.backupRootDir")}
                   </div>
-                  <div className="mt-2 break-all rounded-xl bg-panel px-3 py-2 font-mono text-xs text-fg">
+                  <div className="mt-2 break-all rounded-panel bg-panel px-3 py-2 font-mono text-xs text-fg">
                     {recoveryStatus?.backupRootDir ?? "-"}
                   </div>
                 </div>
@@ -282,7 +282,7 @@ export const RecoveryTab = memo(function RecoveryTab({
                   <div className="text-xs font-semibold uppercase tracking-[0.14em] text-subtle">
                     {t("settings.recovery.fields.backupDir")}
                   </div>
-                  <div className="mt-2 break-all rounded-xl bg-panel px-3 py-2 font-mono text-xs text-fg">
+                  <div className="mt-2 break-all rounded-panel bg-panel px-3 py-2 font-mono text-xs text-fg">
                     {recoveryResult.backupDir}
                   </div>
                 </div>
@@ -293,7 +293,7 @@ export const RecoveryTab = memo(function RecoveryTab({
                 disabled={
                   !recoveryAvailable || isRecovering || isRecoveryStatusLoading
                 }
-                className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-fg transition-colors hover:bg-element disabled:opacity-50"
+                className="rounded-panel border border-border px-4 py-2.5 text-sm font-medium text-fg transition-colors hover:bg-element disabled:opacity-50"
               >
                 {t("settings.recovery.dryRun")}
               </button>

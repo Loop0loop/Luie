@@ -1,11 +1,11 @@
 export const enScrivener = {
-  "scrivener": {
-    "inspector": {
-      "title": "Inspector",
-      "open": "Open Inspector",
-      "close": "Close Inspector",
-      "loading": "Loading Inspector..."
+  scrivener: {
+    inspector: {
+      title: "Inspector",
+      open: "Open Inspector",
+      close: "Close Inspector",
+      loading: "Loading Inspector...",
     },
-    "target": "Target: {{count}} words"
-  }
+    target: "Target: {{count}} words",
+  },
 } as const;

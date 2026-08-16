@@ -1,7 +1,3 @@
-/**
- * Window Manager - BrowserWindow 관리
- */
-
 import { app, BrowserWindow, type BrowserWindowConstructorOptions } from "electron"
 import { join } from "path"
 import windowStateKeeper from "electron-window-state"

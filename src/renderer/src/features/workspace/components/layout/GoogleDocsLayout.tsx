@@ -21,6 +21,7 @@ import { useEditorStore } from "@renderer/domains/editor";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
 import { suppressLayoutPersistenceFor } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import { SidebarHoverStrip } from "@renderer/features/workspace/components/SidebarHoverStrip";
+import { shouldCloseDocsPanelOnResize } from "../../utils/googleDocsPanelResize";
 
 export default function GoogleDocsLayout({
   children,
@@ -48,7 +49,8 @@ export default function GoogleDocsLayout({
     handleRightTabClick,
     isPanelRailOpen,
     isSidebarOpen,
-    onLayoutChanged,
+    onRightLayoutChanged,
+    onSidebarLayoutChanged,
     pageMargins,
     rightPanelConfig,
     rightPanelRatio,
@@ -61,17 +63,20 @@ export default function GoogleDocsLayout({
   } = useGoogleDocsLayoutState(currentProjectId ?? null);
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
   const docsLayoutGroupRef = useRef<HTMLDivElement | null>(null);
+  const docsContentGroupRef = useRef<HTMLDivElement | null>(null);
   const docsSidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
   const docsLayoutGroupWidth = useElementWidth(docsLayoutGroupRef);
+  const docsContentGroupWidth = useElementWidth(docsContentGroupRef);
   const docsSidebarSize = getResponsivePanelSize(
     docsLayoutGroupWidth,
     docsSidebarConfig,
   );
   const rightPanelSize = rightPanelConfig
-    ? getResponsivePanelSize(docsLayoutGroupWidth, rightPanelConfig)
+    ? getResponsivePanelSize(docsContentGroupWidth, rightPanelConfig)
     : null;
   const {
     isClosing: isSidebarClosing,
+    isOpening: isSidebarOpening,
     shouldRender: shouldRenderSidebar,
   } = useResizablePanelPresence({
     enableAnimations,
@@ -80,17 +85,20 @@ export default function GoogleDocsLayout({
     panelRef: docsSidebarPanelRef,
   });
   const handleSidebarResize = (panelSize: PanelSize) => {
-    const isCollapsed =
-      panelSize.asPercentage <= 0.1 || panelSize.inPixels <= 1;
-    if (isCollapsed) {
+    if (
+      shouldCloseDocsPanelOnResize(
+        panelSize,
+        isSidebarOpening,
+        isSidebarClosing,
+      )
+    ) {
       suppressLayoutPersistenceFor(500);
       setDocsSidebarOpen(false);
     }
   };
-
   return (
-    <div className="flex h-screen flex-col bg-background font-sans text-foreground transition-colors duration-200">
-      <div className="bg-background transition-colors duration-200">
+    <div className="flex h-screen flex-col bg-app font-sans text-fg transition-colors duration-200">
+      <div className="bg-app transition-colors duration-200">
         <WindowBar />
       </div>
 
@@ -116,7 +124,7 @@ export default function GoogleDocsLayout({
           <div className="pointer-events-auto absolute left-4 top-4 z-50">
             <button
               onClick={() => setDocsSidebarOpen(true)}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-border/50 bg-background text-muted-foreground shadow-sm transition-colors duration-150 hover:bg-surface-hover"
+              className="flex h-10 w-10 items-center justify-center rounded-control border border-border bg-app text-muted shadow-sm transition-colors duration-150 hover:bg-surface-hover"
               title={t("sidebar.toggle.open")}
             >
               <Menu className="h-5 w-5" />
@@ -129,7 +137,7 @@ export default function GoogleDocsLayout({
           className="relative flex h-full w-full flex-1 overflow-hidden"
           id="docs-layout-group"
           elementRef={docsLayoutGroupRef}
-          onLayoutChanged={onLayoutChanged}
+          onLayoutChanged={onSidebarLayoutChanged}
         >
           {shouldRenderSidebar && (
             <>
@@ -143,7 +151,7 @@ export default function GoogleDocsLayout({
                 minSize={docsSidebarSize.minSize}
                 maxSize={docsSidebarSize.maxSize}
                 onResize={handleSidebarResize}
-                className={`flex min-w-0 shrink-0 flex-col overflow-hidden border-r border-border bg-background ${
+                className={`flex min-w-0 shrink-0 flex-col overflow-hidden border-r border-border bg-app ${
                   enableAnimations
                     ? isSidebarClosing
                       ? "animate-out slide-out-to-left fade-out duration-200"
@@ -156,44 +164,68 @@ export default function GoogleDocsLayout({
 
               <PanelResizeHandle
                 data-separator-feature="docs.sidebar"
-                className="relative z-20 w-1 shrink-0 cursor-col-resize bg-border/40 transition-colors hover:bg-blue-500/50 focus-visible:bg-blue-500/50"
+                className="relative z-20 w-1 shrink-0 cursor-col-resize bg-border/40 transition-colors hover:bg-accent/50 focus-visible:bg-accent/50"
               >
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
             </>
           )}
 
-          <GoogleDocsEditorColumn
-            additionalPanelIds={additionalPanelIds}
-            additionalPanels={additionalPanels}
-            editor={editor}
-            onOpenExport={onOpenExport}
-            onOpenWorldGraph={onOpenWorldGraph}
-            pageMargins={pageMargins}
-            setPageMargins={setPageMargins}
+          <Panel
+            id="docs-main-area"
+            minSize={0}
+            className="relative z-0 flex min-w-0 flex-1 overflow-hidden"
           >
-            {children}
-          </GoogleDocsEditorColumn>
+            <PanelGroup
+              orientation="horizontal"
+              className="relative flex h-full w-full flex-1 overflow-hidden"
+              id="docs-content-group"
+              elementRef={docsContentGroupRef}
+              onLayoutChanged={onRightLayoutChanged}
+            >
+              <GoogleDocsEditorColumn
+                additionalPanelIds={additionalPanelIds}
+                additionalPanels={additionalPanels}
+                editor={editor}
+                onOpenExport={onOpenExport}
+                onOpenWorldGraph={onOpenWorldGraph}
+                pageMargins={pageMargins}
+                setPageMargins={setPageMargins}
+              >
+                {children}
+              </GoogleDocsEditorColumn>
 
-          <GoogleDocsRightPanel
-            activeChapterContent={activeChapterContent}
-            activeChapterId={activeChapterId}
-            activeChapterTitle={activeChapterTitle}
-            activePanelSurface={activePanelSurface}
-            activeRightTab={activeRightTab}
-            closeRightPanel={closeRightPanel}
-            currentProjectId={currentProjectId}
-            onFocus={() => setFocusedClosableTarget({ kind: "docs-tab" })}
-            onRefreshTrash={() => setTrashRefreshKey((current) => current + 1)}
-            onSaveChapter={onSaveChapter}
-            rightPanelSize={rightPanelSize}
-            rightPanelRatio={rightPanelRatio ?? 0}
-            trashRefreshKey={trashRefreshKey}
-          />
+              <GoogleDocsRightPanel
+                activeChapterContent={activeChapterContent}
+                activeChapterId={activeChapterId}
+                activeChapterTitle={activeChapterTitle}
+                activePanelSurface={activePanelSurface}
+                activeRightTab={activeRightTab}
+                closeRightPanel={closeRightPanel}
+                currentProjectId={currentProjectId}
+                onFocus={() => setFocusedClosableTarget({ kind: "docs-tab" })}
+                onRefreshTrash={() => setTrashRefreshKey((current) => current + 1)}
+                onSaveChapter={onSaveChapter}
+                rightPanelSize={rightPanelSize}
+                rightPanelRatio={rightPanelRatio ?? 0}
+                trashRefreshKey={trashRefreshKey}
+              />
 
-          {!shouldRenderSidebar && !activeRightTab && (
+              {!activeRightTab && (
+                <Panel
+                  id="docs-right-placeholder"
+                  defaultSize={0}
+                  minSize={0}
+                  maxSize={0}
+                  className="pointer-events-none overflow-hidden opacity-0"
+                />
+              )}
+            </PanelGroup>
+          </Panel>
+
+          {!shouldRenderSidebar && (
             <Panel
-              id="docs-layout-placeholder"
+              id="docs-sidebar-placeholder"
               defaultSize={0}
               minSize={0}
               maxSize={0}

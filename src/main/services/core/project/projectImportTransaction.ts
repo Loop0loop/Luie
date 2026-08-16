@@ -19,10 +19,11 @@ import type {
 import {
   applyMemoryCanonicalPackagePayload,
   type MemoryCanonicalPackagePayload,
-} from "../../features/memory/persistence/index.js";
+} from "../../features/memory/persistence/memoryCanonicalPackage.js";
+import { hashChapterContent } from "../chapter/chapterContentStore.js";
 
 
-const { project, projectSettings, chapter, character, term, faction, event, worldEntity, entityRelation, snapshot: snapshotTable, worldDocument: worldDocumentTable, scrapMemo, projectAttachment } = schema;
+const { project, projectSettings, chapter, chapterBody, character, term, faction, event, worldEntity, entityRelation, snapshot: snapshotTable, worldDocument: worldDocumentTable, scrapMemo, projectAttachment } = schema;
 
 type ExistingProjectLookup = { id: string; updatedAt: Date } | null;
 
@@ -275,8 +276,6 @@ export const applyProjectImportTransaction = async (
       updatedAt: now,
     }).run();
 
-    const createdProject = tx.select().from(project).where(eq(project.id, resolvedProjectId)).get()!;
-
     tx.insert(projectSettings).values({
       id: resolvedProjectId,
       projectId: resolvedProjectId,
@@ -288,6 +287,12 @@ export const applyProjectImportTransaction = async (
       tx.insert(chapter).values(chaptersForCreate.map((c) => ({
         ...c,
         createdAt: now,
+        updatedAt: now,
+      }))).run();
+      tx.insert(chapterBody).values(chaptersForCreate.map((c) => ({
+        chapterId: c.id,
+        content: c.content,
+        contentHash: hashChapterContent(c.content),
         updatedAt: now,
       }))).run();
     }
@@ -352,16 +357,22 @@ export const applyProjectImportTransaction = async (
       validChapterIds: new Set(chaptersForCreate.map((chapterRow) => chapterRow.id)),
       payload: memoryCanonical,
     });
+    const createdProject = tx.select().from(project).where(eq(project.id, resolvedProjectId)).get()!;
     const normalizedProjectPath = resolvedPath || null;
     if (normalizedProjectPath) {
       const now2 = new Date().toISOString();
       tx.insert(projectAttachment).values({
         projectId: resolvedProjectId,
         projectPath: normalizedProjectPath,
+        exportedRevision: createdProject.revision,
         updatedAt: now2,
       }).onConflictDoUpdate({
         target: projectAttachment.projectId,
-        set: { projectPath: normalizedProjectPath, updatedAt: now2 },
+        set: {
+          projectPath: normalizedProjectPath,
+          exportedRevision: createdProject.revision,
+          updatedAt: now2,
+        },
       }).run();
     }
     return createdProject;

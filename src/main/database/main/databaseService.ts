@@ -1,7 +1,3 @@
-/**
- * Database service using Drizzle ORM
- */
-
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import BetterSqliteDatabase from "better-sqlite3";

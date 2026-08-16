@@ -1,5 +1,7 @@
 export { GraphHoverCard } from "./GraphHoverCard";
 export { GraphLegendModal } from "./GraphLegendModal";
+export { useGraphDataFiltering } from "./useGraphDataFiltering";
+export { useFocusSync } from "./useFocusSync";
 export {
   EDGE_FALLBACK_OPACITY,
   EDGE_FALLBACK_STROKE_WIDTH,

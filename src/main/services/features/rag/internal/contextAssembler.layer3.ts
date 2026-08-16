@@ -6,6 +6,7 @@ import {
   memoryBuildJob,
   memoryChunk,
 } from "../../../../database/schema/index.js";
+import { normalizeSearchTokens } from "../../search/tokenNormalization.js";
 import type {
   RagQaEvidence,
   MemoryChunkSearchResult,
@@ -36,36 +37,25 @@ type Layer3FallbackRow = {
   endOffset: number | null;
 };
 
-const KOREAN_SUFFIXES = [
-  "은",
-  "는",
-  "이",
-  "가",
-  "을",
-  "를",
-  "에",
-  "에서",
-  "에게",
-  "한테",
-  "께",
-  "와",
-  "과",
-  "으로",
-  "로",
-  "도",
-  "만",
-  "까지",
-  "부터",
-  "처럼",
-  "보다",
-  "의",
-  "랑",
-  "이라",
-  "라",
-  "야",
-  "요",
-  "다",
-];
+function buildShadowBetaChapterPredicate(options?: {
+  chunkIdPrefix?: string;
+  maxShadowBetaChapter?: number | null;
+}) {
+  if (!options?.chunkIdPrefix) return undefined;
+  if (options.maxShadowBetaChapter === undefined || options.maxShadowBetaChapter === null) {
+    return likeWithEscape(memoryChunk.id, `${options.chunkIdPrefix}%`);
+  }
+  const chapters = Array.from(
+    { length: Math.max(0, options.maxShadowBetaChapter) },
+    (_, index) => index + 1,
+  );
+  if (chapters.length === 0) return sql`0 = 1`;
+  return or(
+    ...chapters.map((chapterOrder) =>
+      likeWithEscape(memoryChunk.id, `${options.chunkIdPrefix}chapter-${chapterOrder}:%`),
+    ),
+  );
+}
 
 const logger = createLogger("RagContextAssembler");
 
@@ -77,17 +67,7 @@ function buildLexicalTokens(input: string, maxTokens: number): string[] {
     .filter((token) => token.length >= 2)
     .slice(0, maxTokens);
 
-  const expanded = new Set<string>();
-  for (const token of seeds) {
-    expanded.add(token);
-    for (const suffix of KOREAN_SUFFIXES) {
-      if (token.endsWith(suffix) && token.length - suffix.length >= 2) {
-        expanded.add(token.slice(0, token.length - suffix.length));
-      }
-    }
-  }
-
-  return [...expanded]
+  return normalizeSearchTokens(seeds.join(" "))
     .map((token) => token.trim())
     .filter((token) => token.length >= 2);
 }
@@ -141,11 +121,14 @@ export async function buildLayer3Evidence(
   projectId: string,
   question: string,
   embedTexts?: RagEmbeddingProvider,
+  options?: { chunkIdPrefix?: string; maxShadowBetaChapter?: number | null },
 ): Promise<Layer3Result> {
   let rows: MemoryChunkSearchResult[] = await searchMemoryChunksForRag({
     projectId,
     query: question,
     limit: 10,
+    chunkIdPrefix: options?.chunkIdPrefix,
+    maxShadowBetaChapter: options?.maxShadowBetaChapter,
     embedTexts,
     parentWindow: { before: 1, after: 1 },
   });
@@ -176,7 +159,13 @@ export async function buildLayer3Evidence(
             endOffset: memoryChunk.endOffset,
           })
           .from(memoryChunk)
-          .where(and(eq(memoryChunk.projectId, projectId), lexicalPredicate))
+          .where(
+            and(
+              eq(memoryChunk.projectId, projectId),
+              lexicalPredicate,
+              buildShadowBetaChapterPredicate(options),
+            ),
+          )
           .orderBy(desc(memoryChunk.updatedAt))
           .limit(10);
         rows = lexicalRows.map((row) => ({

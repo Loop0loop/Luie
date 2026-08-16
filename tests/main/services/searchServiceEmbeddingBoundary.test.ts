@@ -12,7 +12,7 @@ describe("searchService embedding process boundary", () => {
       "utf8",
     );
 
-    expect(source).toContain('from "./utility/utilityProcessBridge.js"');
+    expect(source).toContain('from "../utility/utilityProcessBridge.js"');
     expect(source).toContain("utilityProcessBridge.embed");
     expect(source).not.toContain("resolveEmbeddingRuntimeClient");
     expect(source).not.toContain("../llm/modelRuntimeFactory");

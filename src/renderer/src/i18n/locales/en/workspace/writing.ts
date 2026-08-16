@@ -58,6 +58,7 @@ export const enWorkspaceWriting = {
       alignLeft: "Align Left",
       alignCenter: "Align Center",
       alignRight: "Align Right",
+      alignJustify: "Justify Align",
       bulletList: "Bulleted list",
       orderedList: "Numbered list",
       addComment: "Add Comment",
@@ -65,6 +66,9 @@ export const enWorkspaceWriting = {
       openWorldGraph: "Open world graph",
       fontSizeIncrease: "Increase font size",
       fontSizeDecrease: "Decrease font size",
+      letterSpacing: "Letter Spacing",
+      lineHeight: "Line Height",
+      paragraphSpacing: "Paragraph Spacing",
       view: {
         mobile: "Mobile View",
         desktop: "PC View",
@@ -74,6 +78,20 @@ export const enWorkspaceWriting = {
       mobile: "Mobile",
       desktop: "Desktop",
       graph: "Graph",
+    },
+    typography: "Typography",
+    sceneDivider: "Scene Divider",
+    clearFormatting: "Clear Formatting",
+    selectAll: "Select All",
+    export: "Export",
+    more: "More",
+    paragraphStyle: "Paragraph Style",
+    fontSize: "Font Size",
+    paragraph: {
+      paragraph: "Paragraph",
+      heading1: "Heading 1",
+      heading2: "Heading 2",
+      heading3: "Heading 3",
     },
     layout: {
       default: "Default layout",
@@ -111,43 +129,6 @@ export const enWorkspaceWriting = {
       contextExpand: "Expand panel",
     },
   },
-  analysis: {
-    title: "Editor's Desk",
-    selectChapter: "Chapter to review",
-    startButton: "Get feedback",
-    analyzing: "Reading your manuscript...",
-    emptyState:
-      "Hello, writer.\nPlace the chapter you want reviewed on the desk.\nI will read it and share my thoughts.",
-    disclaimer:
-      "We analyze your manuscript using characters and terms.\nAnalysis results are not saved and are discarded when the session ends.",
-    disclaimerLink: "Learn more",
-    disclaimerDetailTitle: "Data processing policy",
-    disclaimerDetailBody:
-      "1. Purpose of use\n- Your manuscript data is used only for AI analysis.\n- It is not used for any other purpose.\n\n2. Storage and disposal\n- Data sent for analysis is not stored permanently.\n- It is processed in volatile memory and deleted when the session ends.\n\n3. No third-party sharing\n- Data is never shared with third parties or used for AI training without consent.\n\nFocus on writing with confidence.",
-    result: {
-      reaction: "Reader notes",
-      contradiction: "Review notes",
-      empty: "No feedback available.",
-    },
-    actions: {
-      reset: "Reset",
-      reanalyze: "Analyze again",
-      moveToContext: "Go to context",
-    },
-    toast: {
-      start: "Starting analysis...",
-      error: "An error occurred during analysis.",
-      apiKeyMissing:
-        "Gemini API key is missing. Please check your environment variables.",
-      quotaExceeded: "Gemini API quota exceeded. Please try again later.",
-      networkError:
-        "A network error occurred. Please check your internet connection.",
-      unknown: "An unknown error occurred.",
-      navigateChapter: 'Moving to "{title}".',
-      navigateFallback:
-        "Moving to the referenced context. (context: {contextId})",
-    },
-  },
   slashMenu: {
     header: "Basic blocks",
     description: {
@@ -176,5 +157,36 @@ export const enWorkspaceWriting = {
     },
     toggleTitle: "Toggle title",
     calloutContent: "Callout content",
+  },
+  editor: {
+    bubbleMenu: {
+      bold: "Bold",
+      italic: "Italic",
+      underline: "Underline",
+      strikethrough: "Strikethrough",
+      highlight: "Highlight",
+      textColor: "Text Color",
+      quote: "Quote",
+      addTerm: "Add Term",
+      emptySelection: "Empty Selection",
+      addTermSuccess: 'Added to glossary: "{{text}}"',
+    },
+    status: {
+      saving: "Saving...",
+      saved: "Saved",
+      unsaved: "Unsaved",
+      error: "Save failed",
+      charLabel: "Characters:",
+      separator: " | ",
+      wordLabel: "Words:",
+    },
+    placeholder: {
+      title: "Enter a title...",
+      body: "Write your story here...",
+    },
+    actions: {
+      quickExport: "Export",
+      quickExportTitle: "Quick export",
+    },
   },
 } as const;

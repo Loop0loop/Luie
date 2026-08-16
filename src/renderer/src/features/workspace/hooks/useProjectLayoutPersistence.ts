@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { EditorUiMode } from "@shared/types";
+import type { MainView } from "@renderer/features/workspace/stores/uiStore";
 import {
   normalizeLayoutSurfaceRatiosWithMigrations,
   type LayoutSurfaceId,
@@ -15,6 +16,25 @@ import {
 } from "@renderer/features/workspace/stores/projectLayoutStore";
 
 let layoutRestoringDepth = 0;
+
+type ProjectLayoutPersistenceMode = EditorUiMode | "canvas";
+type ProjectLayoutSizingPatch = Pick<
+  ProjectLayoutState,
+  "sidebarWidths" | "layoutSurfaceRatios" | "workspace"
+>;
+
+export const getProjectLayoutPersistenceMode = (
+  uiMode: EditorUiMode,
+  mainViewType: MainView["type"],
+): ProjectLayoutPersistenceMode =>
+  mainViewType === "canvas" ? "canvas" : uiMode;
+
+export const appendProjectLayoutSizingPatch = <T extends object>(
+  patch: T,
+  sizingPatch: ProjectLayoutSizingPatch,
+  hasLayoutSizingChanged: boolean,
+): T | (T & ProjectLayoutSizingPatch) =>
+  hasLayoutSizingChanged ? { ...patch, ...sizingPatch } : patch;
 
 export const beginLayoutRestoring = (): (() => void) => {
   if (typeof document === "undefined") return () => {};
@@ -34,7 +54,7 @@ export const beginLayoutRestoring = (): (() => void) => {
 
 export function useProjectLayoutPersistence(
   projectId: string | null | undefined,
-  uiMode: EditorUiMode,
+  uiMode: ProjectLayoutPersistenceMode,
 ): void {
   const hasHydrated = useUIStore((state) => state.hasHydrated);
   const isSidebarOpen = useUIStore((state) => state.regions.leftSidebar.open);
@@ -307,13 +327,19 @@ export function useProjectLayoutPersistence(
       ) {
         return;
       }
-      upsertProjectLayout(projectId, {
-        main: {
-          sidebarOpen: isSidebarOpen,
-          contextOpen: isContextOpen,
-        },
-        ...layoutPatch,
-      });
+      upsertProjectLayout(
+        projectId,
+        appendProjectLayoutSizingPatch(
+          {
+            main: {
+              sidebarOpen: isSidebarOpen,
+              contextOpen: isContextOpen,
+            },
+          },
+          layoutPatch,
+          hasLayoutSizingChanged,
+        ),
+      );
       return;
     }
 
@@ -327,14 +353,20 @@ export function useProjectLayoutPersistence(
       ) {
         return;
       }
-      upsertProjectLayout(projectId, {
-        docs: {
-          sidebarOpen: isSidebarOpen,
-          binderBarOpen: isBinderBarOpen,
-          rightTab: sanitizedTab,
-        },
-        ...layoutPatch,
-      });
+      upsertProjectLayout(
+        projectId,
+        appendProjectLayoutSizingPatch(
+          {
+            docs: {
+              sidebarOpen: isSidebarOpen,
+              binderBarOpen: isBinderBarOpen,
+              rightTab: sanitizedTab,
+            },
+          },
+          layoutPatch,
+          hasLayoutSizingChanged,
+        ),
+      );
       return;
     }
 
@@ -348,14 +380,20 @@ export function useProjectLayoutPersistence(
       ) {
         return;
       }
-      upsertProjectLayout(projectId, {
-        editor: {
-          sidebarOpen: isSidebarOpen,
-          binderRailOpen: isBinderBarOpen,
-          rightTab: sanitizedTab,
-        },
-        ...layoutPatch,
-      });
+      upsertProjectLayout(
+        projectId,
+        appendProjectLayoutSizingPatch(
+          {
+            editor: {
+              sidebarOpen: isSidebarOpen,
+              binderRailOpen: isBinderBarOpen,
+              rightTab: sanitizedTab,
+            },
+          },
+          layoutPatch,
+          hasLayoutSizingChanged,
+        ),
+      );
       return;
     }
 
@@ -368,14 +406,20 @@ export function useProjectLayoutPersistence(
       ) {
         return;
       }
-      upsertProjectLayout(projectId, {
-        scrivener: {
-          sidebarOpen: isSidebarOpen,
-          inspectorOpen: isContextOpen,
-          sections: scrivenerSections,
-        },
-        ...layoutPatch,
-      });
+      upsertProjectLayout(
+        projectId,
+        appendProjectLayoutSizingPatch(
+          {
+            scrivener: {
+              sidebarOpen: isSidebarOpen,
+              inspectorOpen: isContextOpen,
+              sections: scrivenerSections,
+            },
+          },
+          layoutPatch,
+          hasLayoutSizingChanged,
+        ),
+      );
     }
   }, [
     docsRightTab,

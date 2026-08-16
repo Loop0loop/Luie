@@ -54,13 +54,13 @@ export default function DataRecoveryBanner() {
             <div className="flex items-center gap-2">
                 <button
                     onClick={dismissRecovery}
-                    className="text-xs font-medium px-3 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-fg"
+                    className="text-xs font-medium px-3 py-1.5 rounded-control hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-fg"
                 >
                     {t("workspace.recovery.dismiss", "Dismiss")}
                 </button>
                 <button
                     onClick={dismissRecovery}
-                    className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-muted hover:text-fg"
+                    className="p-1.5 rounded-control hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-muted hover:text-fg"
                 >
                     <X className="w-4 h-4" />
                 </button>

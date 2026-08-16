@@ -15,8 +15,10 @@ import {
 import { sanitizeName } from "../../../../shared/utils/sanitize.js";
 import { writeLuieContainer } from "../../io/luieContainer.js";
 import { readFullSnapshotArtifact } from "./snapshotArtifacts.js";
+import { hashChapterContent } from "../../core/chapter/chapterContentStore.js";
+import { markProjectExported } from "../../core/project/projectRevisionStore.js";
 
-const { project, projectSettings, chapter, character, term } = schema;
+const { project, projectSettings, projectAttachment, chapter, chapterBody, character, term } = schema;
 
 type LoggerLike = {
   info: (message: string, data?: unknown) => void;
@@ -35,6 +37,7 @@ type ImportedProject = {
 
 type ImportTransactionResult = {
   created: ImportedProject;
+  capturedRevision: number;
   chapterIdMap: Map<string, string>;
   characterIdMap: Map<string, string>;
   termIdMap: Map<string, string>;
@@ -59,7 +62,7 @@ const resolveImportProjectPath = async (title: string): Promise<string> => {
       `${safeTitle || "Recovered Snapshot"}-${timestamp}${LUIE_PACKAGE_EXTENSION}`,
     );
   } catch {
-    // keep first candidate when it does not exist
+    // NOTE: 첫 candidate가 아직 없으면 caller가 선택한 경로를 그대로 사용한다.
   }
 
   return projectPath;
@@ -98,17 +101,10 @@ const createImportedProject = async (
         id: projectId,
         title: projectData.title || "Recovered Snapshot",
         description: projectData.description ?? undefined,
-        projectPath,
         createdAt: now,
         updatedAt: now,
       })
       .run();
-
-    const proj = tx
-      .select()
-      .from(project)
-      .where(eq(project.id, projectId))
-      .get();
 
     tx.insert(projectSettings)
       .values({
@@ -182,6 +178,16 @@ const createImportedProject = async (
 
     if (chaptersForCreate.length > 0) {
       tx.insert(chapter).values(chaptersForCreate).run();
+      tx.insert(chapterBody)
+        .values(
+          chaptersForCreate.map((chapterRow) => ({
+            chapterId: chapterRow.id,
+            content: chapterRow.content,
+            contentHash: hashChapterContent(chapterRow.content),
+            updatedAt: now,
+          })),
+        )
+        .run();
     }
 
     if (charactersForCreate.length > 0) {
@@ -191,6 +197,19 @@ const createImportedProject = async (
     if (termsForCreate.length > 0) {
       tx.insert(term).values(termsForCreate).run();
     }
+
+    tx.insert(projectAttachment).values({
+      projectId,
+      projectPath,
+      createdAt: now,
+      updatedAt: now,
+    }).run();
+
+    const proj = tx
+      .select()
+      .from(project)
+      .where(eq(project.id, projectId))
+      .get();
 
     if (!proj) {
       throw new Error("Failed to create project during import");
@@ -206,6 +225,7 @@ const createImportedProject = async (
 
     return {
       created,
+      capturedRevision: proj.revision,
       chapterIdMap,
       characterIdMap,
       termIdMap,
@@ -228,7 +248,7 @@ const buildPackageMeta = (created: ImportedProject) => ({
 
 const rollbackImportedProject = async (
   projectId: string,
-  filePath: string,
+  projectPath: string,
   logger: LoggerLike,
 ): Promise<void> => {
   try {
@@ -238,7 +258,7 @@ const rollbackImportedProject = async (
       "Failed to rollback project after snapshot .luie import failure",
       {
         projectId,
-        filePath,
+        projectPath,
         error: rollbackError,
       },
     );
@@ -254,8 +274,9 @@ export const importSnapshotFromFile = async (
     snapshot.data.project.title,
   );
   const imported = await createImportedProject(snapshot, projectPath);
-  const { created, chapterIdMap, characterIdMap, termIdMap } = imported;
+  const { created, capturedRevision, chapterIdMap, characterIdMap, termIdMap } = imported;
   const meta = buildPackageMeta(created);
+  let packageWritten = false;
 
   try {
     await writeLuieContainer({
@@ -293,8 +314,22 @@ export const importSnapshotFromFile = async (
       },
       logger,
     });
+    packageWritten = true;
+    await markProjectExported(created.id, capturedRevision);
   } catch (error) {
-    await rollbackImportedProject(created.id, filePath, logger);
+    if (packageWritten) {
+      logger.error(
+        "Snapshot revision mark failed; preserving written recovery artifact",
+        {
+          projectId: created.id,
+          projectPath,
+          sourceFilePath: filePath,
+          recoveryArtifactPreserved: true,
+          error,
+        },
+      );
+    }
+    await rollbackImportedProject(created.id, projectPath, logger);
     throw error;
   }
 

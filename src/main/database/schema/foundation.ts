@@ -14,6 +14,7 @@ export const project = sqliteTable("Project", {
   title: text("title").notNull(),
   description: text("description"),
   projectPath: text("projectPath"),
+  revision: integer("revision").notNull().default(0),
   createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updatedAt").notNull(),
 });
@@ -23,6 +24,7 @@ export const projectAttachment = sqliteTable(
   {
     projectId: text("projectId").notNull(),
     projectPath: text("projectPath"),
+    exportedRevision: integer("exportedRevision").notNull().default(0),
     createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updatedAt").notNull(),
   },

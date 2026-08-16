@@ -3,12 +3,12 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { db } from "../src/main/database/main/databaseService.js";
-import { projectService } from "../src/main/services/core/projectService.js";
+import { projectService } from "../src/main/services/features/project/projectService.js";
 import {
   applyMemoryReviewDecisions,
   validateMemoryReviewDecisionsAgainstDb,
   type MemoryReviewDecisionInput,
-} from "../src/main/services/features/memory/review/index.js";
+} from "../src/main/services/features/memory/review/memoryReviewDecisionApply.js";
 
 type CliOptions = {
   filePath: string;

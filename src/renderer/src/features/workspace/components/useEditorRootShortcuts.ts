@@ -1,4 +1,5 @@
 import { useEffect, useRef, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useShortcuts } from "@renderer/features/workspace/hooks/useShortcuts";
 import { emitShortcutCommand } from "@renderer/features/workspace/hooks/useShortcutCommand";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
@@ -10,11 +11,13 @@ import {
 import type { createLayoutModeActions } from "@renderer/features/workspace/services/layoutModeActions";
 import type { EditorUiMode } from "@shared/types";
 import type { WorldTab } from "@renderer/features/workspace/stores/uiStore";
+import { saveProjectNow } from "@renderer/features/workspace/services/saveCoordinator";
+import { useToast } from "@shared/ui/ToastContext";
 
 interface UseEditorRootShortcutsProps {
     setIsSettingsOpen: (open: boolean) => void;
     handleAddChapter: () => void;
-    handleSave: (title: string, content: string) => void;
+    currentProjectId: string | null;
     handleDeleteActiveChapter: () => void;
     openChapterByIndex: (index: number) => void;
     handleRenameProject: () => Promise<void>;
@@ -27,14 +30,12 @@ interface UseEditorRootShortcutsProps {
     fontSize: number;
     setUiMode: (mode: EditorUiMode) => void;
     uiMode: EditorUiMode;
-    activeChapterTitle: string;
-    content: string;
 }
 
 export function useEditorRootShortcuts({
     setIsSettingsOpen,
     handleAddChapter,
-    handleSave,
+    currentProjectId,
     handleDeleteActiveChapter,
     openChapterByIndex,
     handleRenameProject,
@@ -47,9 +48,9 @@ export function useEditorRootShortcuts({
     fontSize,
     setUiMode,
     uiMode,
-    activeChapterTitle,
-    content,
 }: UseEditorRootShortcutsProps) {
+    const { showToast } = useToast();
+    const { t } = useTranslation();
     const chapterChordRef = useRef<{ digits: string; timerId?: number }>({
         digits: "",
     });
@@ -100,7 +101,15 @@ export function useEditorRootShortcuts({
             },
             "app.quit": () => void api.app.quit(),
             "chapter.new": () => void handleAddChapter(),
-            "chapter.save": () => void handleSave(activeChapterTitle, content),
+            "chapter.save": async () => {
+                if (!currentProjectId) return;
+                try {
+                    await saveProjectNow(currentProjectId);
+                } catch (error) {
+                    void api.logger.error("Manual project save failed", { error });
+                    showToast(t("editor.status.error"), "error");
+                }
+            },
             "chapter.delete": () => void handleDeleteActiveChapter(),
             "chapter.open.1": () => openChapterByIndex(0),
             "chapter.open.2": () => openChapterByIndex(1),
@@ -152,10 +161,8 @@ export function useEditorRootShortcuts({
             "view.toggleFocusMode": () => void setUiMode(uiMode === "focus" ? "default" : "focus"),
         }),
         [
-            activeChapterTitle,
-            content,
             handleAddChapter,
-            handleSave,
+            currentProjectId,
             handleDeleteActiveChapter,
             closeFocusedSurface,
             isSidebarOpen,
@@ -170,6 +177,8 @@ export function useEditorRootShortcuts({
             uiMode,
             setUiMode,
             setIsSettingsOpen,
+            showToast,
+            t,
         ],
     );
 

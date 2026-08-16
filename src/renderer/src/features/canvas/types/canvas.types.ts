@@ -1,10 +1,3 @@
-/**
- * Canvas feature core types.
- *
- * Phase 1 surface — view-model only. Projection/IPC types arrive in P5/P7.
- */
-
-/** Visualization mode for the canvas viewport. */
 export type CanvasMode =
   | "flow-map"
   | "scene-board"
@@ -12,22 +5,20 @@ export type CanvasMode =
   | "character-map"
   | "memory-map";
 
-/** Modes that have a real implementation today. Other modes show "coming soon". */
 import type { CANVAS_AVAILABLE_MODES as _CANVAS_AVAILABLE_MODES } from "../constants/i18n";
+import type { MainView } from "@renderer/features/workspace/stores/uiStore.types";
 export { CANVAS_AVAILABLE_MODES } from "../constants/i18n";
 
 export type CanvasAvailableMode = (typeof _CANVAS_AVAILABLE_MODES)[number];
 
 
 
-/** Range of source data the canvas should render. */
 export type CanvasRange =
   | "current-chapter"
   | "three-chapters"
   | "current-part"
   | "whole-project";
 
-/** Layer toggles applied on top of the active mode/range. */
 export type CanvasLayer =
   | "scene"
   | "character"
@@ -35,7 +26,6 @@ export type CanvasLayer =
   | "memo"
   | "ai-hint";
 
-/** Activity panel currently shown inside the canvas Sidebar. */
 export type CanvasActivityPanel =
   | "explorer"
   | "graph"
@@ -43,36 +33,35 @@ export type CanvasActivityPanel =
   | "memory"
   | "search";
 
-/**
- * Scope describes which subset of the project feeds the canvas viewport.
- *
- * `null` means the user has not chosen a scope yet — typically right after
- * switching into canvas mode without selecting a chapter. The empty-state UI
- * is responsible for showing the scope picker.
- */
 export type CanvasScope =
   | { kind: "single-chapter"; chapterId: string }
   | { kind: "three-chapters"; centerChapterId: string }
   | { kind: "current-part"; partId: string }
   | { kind: "whole-project"; projectId: string };
 
-/** Viewport pan/zoom state. */
 export type CanvasViewport = {
   zoom: number;
   pan: { x: number; y: number };
 };
 
-/** Selected node/edge in the viewport. */
 export type CanvasSelection =
   | { kind: "none" }
   | { kind: "node"; id: string }
   | { kind: "edge"; id: string };
 
-/** Sidebar Obsidian style file explorer node type */
+export type CanvasEntityPreview =
+  | { kind: "character"; id: string }
+  | { kind: "event"; id: string }
+  | { kind: "faction"; id: string }
+  | { kind: "memo"; id: string };
+
 export interface FileNode {
   id: string;
   name: string;
   type: "file" | "canvas" | "folder";
   children?: FileNode[];
+  readOnly?: boolean;
+  focusIds?: string[];
+  canvasFileId?: string;
+  mainView?: MainView;
 }
-

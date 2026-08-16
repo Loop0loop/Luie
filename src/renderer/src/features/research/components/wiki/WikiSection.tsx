@@ -2,10 +2,6 @@ import { Trash2 } from "lucide-react";
 import { BufferedInput, BufferedTextArea } from "@shared/ui/BufferedInput";
 import { useTranslation } from "react-i18next";
 
-/**
- * Section-specific writing prompts shown as placeholder text.
- * Guides the writer with targeted questions instead of a blank slate.
- */
 const SECTION_PROMPTS: Readonly<Record<string, string>> = {
   overview: "이 인물을 한 문장으로 소개한다면? 작가로서 이 캐릭터에게 끌린 이유는?",
   appearance:
@@ -39,14 +35,12 @@ export function WikiSection({
     SECTION_PROMPTS[id] ?? t("character.wiki.sectionPlaceholder");
 
   return (
-    <div id={id} className="group/section flex flex-col gap-3">
-      {/* Header */}
+    <div id={id} className="group/section flex flex-col gap-3 scroll-mt-8">
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2.5 flex-1 min-w-0">
-          <div className="w-[3px] h-5 bg-accent rounded-full shrink-0" />
+        <div className="flex flex-1 items-center gap-2 min-w-0">
           <BufferedInput
             value={label}
-            className="flex-1 border-none bg-transparent text-[15px] font-semibold text-fg/80 p-0 focus:outline-none leading-snug min-w-0"
+            className="flex-1 border-none bg-transparent text-[16px] font-semibold text-fg p-0 focus:outline-none leading-snug min-w-0"
             onSave={onRename}
           />
         </div>
@@ -54,24 +48,18 @@ export function WikiSection({
           type="button"
           onClick={onDelete}
           title={t("character.wiki.sectionDeleteTitle")}
-          className="opacity-0 group-hover/section:opacity-100 transition-opacity p-1 rounded text-muted hover:text-destructive hover:bg-destructive/10 shrink-0"
+          className="opacity-0 group-hover/section:opacity-100 transition-opacity p-1 rounded text-muted hover:text-danger hover:bg-danger/10 shrink-0"
         >
           <Trash2 size={12} />
         </button>
       </div>
 
-      {/* Divider */}
-      <div className="h-px bg-border/40" />
-
-      {/* Writing area — borderless, accent margin line */}
-      <div className="pl-4 border-l-2 border-accent/20">
-        <BufferedTextArea
-          value={content}
-          placeholder={placeholder}
-          className="w-full min-h-[100px] bg-transparent border-none text-fg text-[14px] leading-[2.1] resize-y placeholder:text-muted/35 focus:outline-none p-0"
-          onSave={onUpdateContent}
-        />
-      </div>
+      <BufferedTextArea
+        value={content}
+        placeholder={placeholder}
+        className="w-full min-h-[80px] bg-transparent border-none text-fg/90 text-[14px] leading-[1.9] resize-y placeholder:text-subtle focus:outline-none p-0"
+        onSave={onUpdateContent}
+      />
     </div>
   );
 }

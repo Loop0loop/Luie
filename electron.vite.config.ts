@@ -44,11 +44,11 @@ const rendererManualChunks = (id: string): string | undefined => {
     ) {
       return "vendor-react";
     }
-    if (
-      id.includes("/@tiptap/") ||
-      id.includes("/prosemirror-")
-    ) {
-      return "vendor-editor";
+    if (id.includes("/@tiptap/")) {
+      return "vendor-tiptap";
+    }
+    if (id.includes("/prosemirror-")) {
+      return "vendor-prosemirror";
     }
     if (
       id.includes("/reactflow/") ||
@@ -93,8 +93,6 @@ export default defineConfig({
       sourcemap: isDebugProfileBuild,
       emptyOutDir: true,
       minify: isDebugProfileBuild ? false : true,
-      // V8 bytecode compilation for source code protection
-      // Note: bytecode feature requires electron-vite@2.0.0+
       rollupOptions: {
         input: {
           index: resolve("src/main/index.ts"),

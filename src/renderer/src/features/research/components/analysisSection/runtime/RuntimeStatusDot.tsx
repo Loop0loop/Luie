@@ -15,13 +15,9 @@ const resolveDotTone = (
 ): string => {
   if (runtimeInfo?.fallbackUsed) return "text-warning";
   if (sidecarStatus) return sidecarStatusTone(sidecarStatus.status);
-  return "text-emerald-500/80";
+  return "text-success-fg";
 };
 
-/**
- * 런타임/디버그 정보를 평소엔 작은 상태 점으로만 노출하고,
- * 클릭 시 RuntimeStatusPanel 팝오버로 상세를 보여줍니다.
- */
 export function RuntimeStatusDot({
   runtimeInfo,
   sidecarStatus,
@@ -45,14 +41,19 @@ export function RuntimeStatusDot({
 
   const tone = resolveDotTone(runtimeInfo, sidecarStatus);
 
+  const panelId = "runtime-status-panel";
+
   return (
     <div className="relative shrink-0" ref={ref}>
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex items-center justify-center w-6 h-6 rounded-full hover:bg-neutral-800/60 transition-colors"
+        className="flex items-center justify-center w-6 h-6 rounded-full hover:bg-surface-hover transition-colors"
         title={t("analysis.runtime.statusTitle")}
         aria-label={t("analysis.runtime.statusTitle")}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls={panelId}
       >
         <span
           className={`w-1.5 h-1.5 rounded-full bg-current ${tone} ${
@@ -62,7 +63,7 @@ export function RuntimeStatusDot({
       </button>
 
       {open && (
-        <div className="absolute bottom-9 right-0 w-64 z-dropdown animate-[fadeIn_0.15s_ease-out]">
+        <div id={panelId} role="dialog" aria-modal="false" className="absolute bottom-9 right-0 w-64 z-50 animate-[fadeIn_0.15s_ease-out]">
           <RuntimeStatusPanel
             runtimeInfo={runtimeInfo}
             sidecarStatus={sidecarStatus}

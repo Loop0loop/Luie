@@ -1,8 +1,3 @@
-/**
- * Export Service
- * DOCX와 HWPX 형식으로 문서를 내보내는 서비스
- */
-
 import { promises as fs } from "fs";
 import {
   Document,
@@ -17,102 +12,81 @@ import { ErrorCode } from "../../../../shared/constants/errors/index.js";
 import { hwpxExportService } from "../hwpx/hwpxExportService.js";
 import { prepareExportContent } from "../../../../shared/utils/exportContentNormalization.js";
 
-// ============================================================================
-// Types
-// ============================================================================
-
 export interface ExportOptions {
   projectId: string;
   chapterId: string;
   title: string;
-  content: string; // HTML content from TipTap editor
+  /** TipTap editor가 생성한 HTML. */
+  content: string;
   format: "DOCX" | "HWPX";
 
-  // Page settings
   paperSize?: "A4" | "Letter" | "B5";
-  marginTop?: number; // mm
-  marginBottom?: number; // mm
-  marginLeft?: number; // mm
-  marginRight?: number; // mm
+  /** mm 단위. */
+  marginTop?: number;
+  /** mm 단위. */
+  marginBottom?: number;
+  /** mm 단위. */
+  marginLeft?: number;
+  /** mm 단위. */
+  marginRight?: number;
 
-  // Typography
   fontFamily?: string;
-  fontSize?: number; // pt
-  lineHeight?: string; // "100%", "160%", "180%", "200%"
+  /** pt 단위. */
+  fontSize?: number;
+  /** 백분율 문자열. */
+  lineHeight?: string;
   normalizeLineSpacing?: boolean;
 
-  // Page numbers
   showPageNumbers?: boolean;
   startPageNumber?: number;
 
-  // Output
-  outputPath?: string; // If not provided, will prompt user
+  outputPath?: string;
 
-  // HWPX template (optional)
-  referenceHwpxPath?: string; // Absolute path to blank.hwpx or user template
+  /** blank.hwpx 또는 사용자 template의 절대 경로. */
+  referenceHwpxPath?: string;
 }
 
 export interface ExportResult {
   success: boolean;
   filePath?: string;
   error?: string;
-  message?: string; // 사용자에게 안내 메시지
+  message?: string;
 }
 
-// ============================================================================
-// Constants
-// ============================================================================
+const MM_TO_TWIPS = 56.7;
+const PT_TO_HALF_PT = 2;
 
-// Unit conversion
-const MM_TO_TWIPS = 56.7; // 1mm = 56.7 twips
-const PT_TO_HALF_PT = 2; // 10pt = 20 half-points
-
-// Paper sizes in mm
 const PAPER_SIZES = {
   A4: { width: 210, height: 297 },
   Letter: { width: 216, height: 279 },
   B5: { width: 176, height: 250 },
 } as const;
 
-// Default settings (한글 스타일)
 const DEFAULT_SETTINGS = {
   paperSize: "A4" as const,
-  marginTop: 20, // mm
-  marginBottom: 15, // mm
-  marginLeft: 20, // mm
-  marginRight: 20, // mm
+  marginTop: 20,
+  marginBottom: 15,
+  marginLeft: 20,
+  marginRight: 20,
   fontFamily: "Batang",
-  fontSize: 10, // pt
+  fontSize: 10,
   lineHeight: "160%",
   normalizeLineSpacing: false,
   showPageNumbers: true,
   startPageNumber: 1,
 };
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * mm를 Twips로 변환
- */
 function mmToTwips(mm: number): number {
   return Math.round(mm * MM_TO_TWIPS);
 }
 
-/**
- * pt를 Half-points로 변환
- */
 function ptToHalfPt(pt: number): number {
   return pt * PT_TO_HALF_PT;
 }
 
-/**
- * 줄간격 문자열을 docx LineRule 값으로 변환
- */
 function parseLineHeight(lineHeight: string): number {
   const percentage = parseInt(lineHeight.replace("%", ""));
-  // docx에서 lineSpacing 값은 240 = 100%
+  // NOTE: docx의 lineSpacing은 240을 100%로 해석한다.
   return Math.round((percentage / 100) * 240);
 }
 
@@ -132,10 +106,6 @@ function stripHtmlTags(text: string): string {
     .trim();
 }
 
-/**
- * HTML을 파싱하여 Paragraph 배열로 변환
- * 간단한 파서 (향후 개선 필요)
- */
 function htmlToParagraphs(
   html: string,
   options: Required<ExportOptions>,
@@ -270,17 +240,12 @@ function buildTitleParagraph(options: Required<ExportOptions>): Paragraph {
   });
 }
 
-// ============================================================================
-// Export Service Class
-// ============================================================================
-
 export class ExportService {
   /**
-   * 문서를 DOCX 또는 HWPX로 내보내기
+   * 문서를 지정한 DOCX 또는 HWPX 경로로 내보낸다.
    */
   async export(options: ExportOptions): Promise<ExportResult> {
     try {
-      // Merge with defaults
       const mergedOptions: Required<ExportOptions> = {
         ...DEFAULT_SETTINGS,
         ...options,
@@ -292,7 +257,6 @@ export class ExportService {
         referenceHwpxPath: options.referenceHwpxPath ?? "",
       };
 
-      // Validate
       if (!mergedOptions.title || !mergedOptions.content) {
         throw new ServiceError(
           ErrorCode.VALIDATION_FAILED,
@@ -300,7 +264,6 @@ export class ExportService {
         );
       }
 
-      // Export based on format
       if (mergedOptions.format === "DOCX") {
         return await this.exportDocx(mergedOptions);
       } else if (mergedOptions.format === "HWPX") {
@@ -319,9 +282,6 @@ export class ExportService {
     }
   }
 
-  /**
-   * DOCX 내보내기
-   */
   private async exportDocx(
     options: Required<ExportOptions>,
   ): Promise<ExportResult> {
@@ -338,7 +298,6 @@ export class ExportService {
         ? [buildTitleParagraph(options), ...htmlToParagraphs(bodyHtml, options)]
         : htmlToParagraphs(bodyHtml, options);
 
-      // Create document
       const doc = new Document({
         sections: [
           {
@@ -361,25 +320,20 @@ export class ExportService {
         ],
       });
 
-      // Generate buffer
       const buffer = await Packer.toBuffer(doc);
 
-      // Determine output path
       let outputPath = options.outputPath;
       if (!outputPath) {
-        // This will be handled by IPC handler (file dialog)
         throw new ServiceError(
           ErrorCode.VALIDATION_FAILED,
           "Output path is required",
         );
       }
 
-      // Ensure proper extension
       if (!outputPath.endsWith(".docx")) {
         outputPath = outputPath.replace(/\.[^.]*$/, "") + ".docx";
       }
 
-      // Write file
       await fs.writeFile(outputPath, buffer);
 
       return {
@@ -394,10 +348,6 @@ export class ExportService {
     }
   }
 
-  /**
-   * HWPX 내보내기 (BETA)
-   * 별도의 HWPX 전용 서비스 사용
-   */
   private async exportHwpx(
     options: Required<ExportOptions>,
   ): Promise<ExportResult> {
@@ -415,5 +365,4 @@ export class ExportService {
   }
 }
 
-// Singleton instance
 export const exportService = new ExportService();

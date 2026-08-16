@@ -2,9 +2,6 @@ import { z } from "zod";
 import { Type } from "@google/genai";
 import type { AnalysisContext } from "../../../../shared/types/analysis.js";
 
-/**
- * Gemini 분석 응답 스키마 (Zod)
- */
 export const AnalysisItemSchema = z.object({
   type: z.enum(["reaction", "suggestion", "intro", "outro"]),
   content: z.string(),
@@ -14,9 +11,6 @@ export const AnalysisItemSchema = z.object({
 
 export type AnalysisItemResult = z.infer<typeof AnalysisItemSchema>;
 
-/**
- * Gemini API Response Schema
- */
 export const GEMINI_ANALYSIS_RESPONSE_SCHEMA = {
   type: Type.ARRAY,
   items: {
@@ -36,9 +30,6 @@ export const GEMINI_ANALYSIS_RESPONSE_SCHEMA = {
   minItems: 4,
 } as const;
 
-/**
- * Few-shot Examples
- */
 export const ANALYSIS_FEW_SHOT_EXAMPLES = `
 예시 1 (독자 반응):
 입력: "그는 천천히 고개를 들었고, 거울 속의 자신과 눈이 마주쳤다."
@@ -71,9 +62,6 @@ export const ANALYSIS_FEW_SHOT_EXAMPLES = `
 }
 `.trim();
 
-/**
- * System Instruction (Gemini 페르소나)
- */
 export const ANALYSIS_SYSTEM_INSTRUCTION = `
 당신은 한국 문학 전문 편집자입니다.
 작가가 작성한 원고를 독자의 관점에서 분석하고, 건설적인 피드백을 제공하는 것이 목표입니다.
@@ -108,28 +96,22 @@ export const ANALYSIS_SYSTEM_INSTRUCTION = `
 - 근거가 부족하면 단정하지 말고, "본문 근거 부족"으로 명시
 `.trim();
 
-/**
- * Context Formatting Function
- * AnalysisContext를 Gemini Prompt로 변환
- */
+/** 원고 밖의 사실을 생성하지 않도록 제한한 Gemini 분석 prompt를 만든다. */
 export function formatAnalysisContext(context: AnalysisContext): string {
   const { manuscript } = context;
 
   let prompt = `# 원고 분석 요청\n\n`;
 
-  // 1. 원고 정보
   prompt += `## 원고\n`;
   prompt += `**제목**: ${manuscript.title}\n\n`;
   prompt += `**내용**:\n${manuscript.content}\n\n`;
 
-  // 2. 추출된 명사구 (원고 본문 기반 NLP 결과)
   if (manuscript.nounPhrases.length > 0) {
     prompt += `## 주요 명사구\n`;
     prompt += manuscript.nounPhrases.slice(0, 20).join(", ");
     prompt += `\n\n`;
   }
 
-  // 3. 분석 요청
   prompt += `## 분석 요청\n`;
   prompt += `위 원고 본문만 근거로 독자 관점에서 분석해주세요.\n`;
   prompt += `- 독자가 느낄 감정, 몰입도\n`;

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@shared/ui/ToastContext";
+import { registerSaveBufferFlush } from "@shared/ui/saveBufferRegistry";
 import { api } from "@shared/api";
 import { EDITOR_AUTOSAVE_DEBOUNCE_MS } from "@shared/constants";
 import { useEditorStatsStore } from "@renderer/features/editor/stores/editorStatsStore";
@@ -30,7 +31,7 @@ export function useEditorAutosave({
     "idle" | "saving" | "saved" | "error" | "unsaved"
   >("idle");
 
-  // 🔐 Unmount guard — prevents setState after component is gone
+  // NOTE: unmount 이후 완료되는 save가 state를 갱신하지 않게 막는다.
   const isMountedRef = useRef(true);
   useEffect(() => {
     isMountedRef.current = true;
@@ -47,27 +48,26 @@ export function useEditorAutosave({
   const pendingDraftRef = useRef<{ title: string; content: string } | null>(
     null,
   );
+  const currentSavePromiseRef = useRef<Promise<void> | null>(null);
+  const lastSaveErrorRef = useRef<unknown>(null);
+  const hasLastSaveErrorRef = useRef(false);
   const onSaveRef = useRef(onSave);
 
   useEffect(() => {
     onSaveRef.current = onSave;
   }, [onSave]);
 
-  // ✅ Separate timer refs so each can be individually cleared
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const idleResetTimerRef = useRef<NodeJS.Timeout | null>(null);
   const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const performSaveRef = useRef<
-    ((currentTitle: string, currentContent: string) => void) | null
+    ((currentTitle: string, currentContent: string) => Promise<void>) | null
   >(null);
 
-  /* eslint-disable react-hooks/preserve-manual-memoization -- keep the stable ref-backed save callback used by retry timers */
   const performSave = useCallback(
     async (currentTitle: string, currentContent: string) => {
       if (!onSave) return;
-      // Guard: don't update state if unmounted
-      if (!isMountedRef.current) return;
 
       if (isSaveInFlightRef.current) {
         pendingDraftRef.current = {
@@ -77,16 +77,24 @@ export function useEditorAutosave({
         return;
       }
 
+      if (
+        currentTitle === lastSavedRef.current.title &&
+        currentContent === lastSavedRef.current.content
+      ) {
+        return;
+      }
+
       isSaveInFlightRef.current = true;
 
-      setSaveStatus("saving");
+      if (isMountedRef.current) setSaveStatus("saving");
+      let savePromise: Promise<void> | null = null;
       try {
-        await Promise.resolve(onSave(currentTitle, currentContent));
-
-        if (!isMountedRef.current) return;
-
+        savePromise = Promise.resolve(onSave(currentTitle, currentContent));
+        currentSavePromiseRef.current = savePromise;
+        await savePromise;
+        lastSaveErrorRef.current = null;
+        hasLastSaveErrorRef.current = false;
         lastSavedRef.current = { title: currentTitle, content: currentContent };
-        setSaveStatus("saved");
         retryCount.current = 0;
         const latestDraft = latestDraftRef.current;
         const isLatestDraftSaved =
@@ -94,9 +102,21 @@ export function useEditorAutosave({
           latestDraft.content === currentContent;
         api.lifecycle?.setDirty?.(!isLatestDraftSaved);
 
-        // Removed idle reset logic so "saved" status stays visible
+        if (!isMountedRef.current) return;
+
+        setSaveStatus("saved");
+
       } catch (error) {
         api.logger.error("Autosave failed", error);
+
+        const latestDraft = latestDraftRef.current;
+        const stillLatestDraft =
+          latestDraft.title === currentTitle &&
+          latestDraft.content === currentContent;
+        if (stillLatestDraft) {
+          lastSaveErrorRef.current = error;
+          hasLastSaveErrorRef.current = true;
+        }
 
         if (!isMountedRef.current) return;
         setSaveStatus("error");
@@ -104,10 +124,6 @@ export function useEditorAutosave({
         if (retryCount.current < RETRY_DELAYS.length) {
           const delay = RETRY_DELAYS[retryCount.current];
           retryCount.current++;
-          const latestDraft = latestDraftRef.current;
-          const stillLatestDraft =
-            latestDraft.title === currentTitle &&
-            latestDraft.content === currentContent;
           if (stillLatestDraft) {
             showToast(
               t("editor.autosave.retryingIn", { seconds: delay / 1000 }),
@@ -115,7 +131,6 @@ export function useEditorAutosave({
               2000,
             );
 
-            // ✅ Track retry timer so we can cancel on unmount
             if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
             retryTimerRef.current = setTimeout(() => {
               if (!isMountedRef.current) {
@@ -129,6 +144,9 @@ export function useEditorAutosave({
           showToast(t("editor.autosave.failed"), "error");
         }
       } finally {
+        if (currentSavePromiseRef.current === savePromise) {
+          currentSavePromiseRef.current = null;
+        }
         isSaveInFlightRef.current = false;
 
         const pendingDraft = pendingDraftRef.current;
@@ -145,15 +163,18 @@ export function useEditorAutosave({
     },
     [onSave, showToast, t],
   );
-  /* eslint-enable react-hooks/preserve-manual-memoization */
 
   useEffect(() => {
     performSaveRef.current = performSave;
   }, [performSave]);
 
-  // Debounced save trigger
   useEffect(() => {
+    const previousDraft = latestDraftRef.current;
     latestDraftRef.current = { title, content };
+    if (title !== previousDraft.title || content !== previousDraft.content) {
+      lastSaveErrorRef.current = null;
+      hasLastSaveErrorRef.current = false;
+    }
 
     if (!onSave) return;
 
@@ -180,30 +201,60 @@ export function useEditorAutosave({
     };
   }, [title, content, onSave, performSave]);
 
-  // ✅ Full cleanup on unmount: cancel ALL pending timers + reset retry state
+  const flushLatestDraft = useCallback(async () => {
+    clearTimerRef(debounceTimerRef);
+    clearTimerRef(retryTimerRef);
+
+    for (;;) {
+      const currentSave = currentSavePromiseRef.current;
+      if (currentSave) {
+        // eslint-disable-next-line no-await-in-loop -- 다음 draft를 확인하기 전에 현재 save cycle을 끝내야 한다.
+        await currentSave.catch(() => undefined);
+        continue;
+      }
+
+      if (hasLastSaveErrorRef.current) {
+        clearTimerRef(retryTimerRef);
+        throw lastSaveErrorRef.current;
+      }
+
+      if (!isMountedRef.current) return;
+
+      const latest = latestDraftRef.current;
+      if (
+        latest.title === lastSavedRef.current.title &&
+        latest.content === lastSavedRef.current.content
+      ) {
+        return;
+      }
+
+      if (!onSaveRef.current) return;
+
+      // eslint-disable-next-line no-await-in-loop -- save 중 들어온 최신 draft까지 순차 반영해야 한다.
+      await performSaveRef.current?.(latest.title, latest.content);
+    }
+  }, []);
+
+  useEffect(
+    () => registerSaveBufferFlush(flushLatestDraft),
+    [flushLatestDraft],
+  );
+
   useEffect(() => {
     return () => {
       clearTimerRef(debounceTimerRef);
       clearTimerRef(idleResetTimerRef);
       clearTimerRef(retryTimerRef);
+      isMountedRef.current = false;
       const latestDraft = latestDraftRef.current;
-      const save = onSaveRef.current;
       if (
-        save &&
+        onSaveRef.current &&
         (latestDraft.title !== lastSavedRef.current.title ||
           latestDraft.content !== lastSavedRef.current.content)
       ) {
-        void Promise.resolve(save(latestDraft.title, latestDraft.content))
-          .then(() => {
-            lastSavedRef.current = latestDraft;
-            api.lifecycle?.setDirty?.(false);
-          })
-          .catch((error) => {
-            api.logger.error("Autosave flush on unmount failed", error);
-          });
+        void performSaveRef.current?.(latestDraft.title, latestDraft.content);
       }
       retryCount.current = 0;
-      isMountedRef.current = false;
     };
   }, []);
 

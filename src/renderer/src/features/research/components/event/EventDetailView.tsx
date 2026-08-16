@@ -13,9 +13,10 @@ const EVENT_SECTIONS = [
 
 interface EventDetailViewProps {
   eventId?: string;
+  onBack?: () => void;
 }
 
-export default function EventDetailView({ eventId }: EventDetailViewProps) {
+export default function EventDetailView({ eventId, onBack }: EventDetailViewProps) {
   const { currentItem, updateEvent, loadEvent } = useEventStore(
     useShallow((state) => ({
       currentItem: state.currentItem,
@@ -28,7 +29,6 @@ export default function EventDetailView({ eventId }: EventDetailViewProps) {
     <EntityDetailView
       entity={currentItem}
       entityId={eventId}
-      entityKind="event"
       icon={<Calendar size={80} color="var(--border-active)" />}
       loadEntity={loadEvent}
       updateEntity={updateEvent}
@@ -37,6 +37,7 @@ export default function EventDetailView({ eventId }: EventDetailViewProps) {
       storagePrefix="event-view-mode"
       noSelectionFallback="No Event Selected"
       templateFallback="Basic Event"
+      onBack={onBack}
     />
   );
 }

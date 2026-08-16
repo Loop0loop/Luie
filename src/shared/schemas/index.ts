@@ -1,7 +1,3 @@
-/**
- * Shared Zod schemas
- */
-
 export {
   projectIdSchema,
   chapterIdSchema,

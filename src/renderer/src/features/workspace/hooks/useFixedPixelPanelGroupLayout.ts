@@ -14,7 +14,7 @@ type FixedPanelSpec = {
   widthPx: number;
   minPx: number;
   maxPx: number;
-  /** When true, the panel is collapsed to 0% regardless of widthPx. */
+  /** true면 `widthPx`와 관계없이 0%로 접는다. */
   collapsed?: boolean;
 };
 
@@ -28,6 +28,8 @@ type UseFixedPixelPanelGroupLayoutOptions = {
 
 type FixedPixelPanelGroupLayoutState = {
   isLayoutReady: boolean;
+  /** container resize 중 `isLayoutReady`가 잠시 false가 돼도 panel을 다시 숨기지 않는 latch. */
+  hasCompletedInitialLayout: boolean;
 };
 
 const clampNumber = (value: number, min: number, max: number): number =>
@@ -209,5 +211,8 @@ export function useFixedPixelPanelGroupLayout({
     targetLayoutSignature,
   ]);
 
-  return { isLayoutReady: targetLayoutSignature !== null && readyLayoutSignature === targetLayoutSignature };
+  return {
+    isLayoutReady: targetLayoutSignature !== null && readyLayoutSignature === targetLayoutSignature,
+    hasCompletedInitialLayout: readyLayoutSignature !== null,
+  };
 }

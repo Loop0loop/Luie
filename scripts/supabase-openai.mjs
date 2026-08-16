@@ -28,7 +28,6 @@ const parseProjectRef = (...candidates) => {
         return normalized;
       }
     } catch {
-      // try next candidate
     }
   }
   return "";

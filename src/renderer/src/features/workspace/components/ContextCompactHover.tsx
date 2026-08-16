@@ -33,7 +33,6 @@ function CompactContent({ onExpandWithTab }: ContextCompactHoverProps) {
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto px-3 py-4 text-[11px]">
-      {/* 줄거리 */}
       <button
         type="button"
         className="w-full text-left font-semibold uppercase tracking-wider text-fg/80 transition-colors hover:text-fg"
@@ -42,7 +41,6 @@ function CompactContent({ onExpandWithTab }: ContextCompactHoverProps) {
         * {t("context.tab.synopsis")}
       </button>
 
-      {/* 등장인물 */}
       <section>
         <button
           type="button"
@@ -71,7 +69,6 @@ function CompactContent({ onExpandWithTab }: ContextCompactHoverProps) {
         )}
       </section>
 
-      {/* 용어 */}
       <section>
         <button
           type="button"

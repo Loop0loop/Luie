@@ -1,8 +1,3 @@
-/**
- * Export IPC Handlers
- * 문서 내보내기 IPC 통신 처리
- */
-
 import { dialog } from "electron";
 import { IPC_CHANNELS } from "../../../shared/ipc/channels.js";
 import { exportService, type ExportOptions, type ExportResult } from "../../domains/export/index.js";
@@ -13,9 +8,6 @@ import type { LoggerLike } from "../core/types.js";
 import { ServiceError } from "../../utils/error/index.js";
 import { ErrorCode } from "../../../shared/constants/errors/index.js";
 
-/**
- * Export request payload from renderer
- */
 export type ExportRequest = Omit<ExportOptions, "outputPath">;
 
 const buildDefaultPath = (request: ExportRequest): string => {
@@ -67,9 +59,6 @@ async function handleExportCreate(request: ExportRequest): Promise<ExportResult>
   return exportResult;
 }
 
-/**
- * Register export IPC handlers
- */
 export function registerExportHandlers(logger: LoggerLike): void {
   registerIpcHandlers(logger, [
     {

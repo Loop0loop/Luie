@@ -1,4 +1,4 @@
-/* eslint-disable no-await-in-loop -- Entity extraction writes are intentionally sequential to preserve candidate, alias, and mention ordering. */
+/* eslint-disable no-await-in-loop -- candidate, alias, mention 순서를 보존하려고 entity extraction을 순차 저장한다. */
 import crypto from "node:crypto";
 import { and, asc, eq } from "drizzle-orm";
 import {

@@ -7,6 +7,8 @@ import { enTrash } from "./en/trash";
 import { enMisc } from "./en/misc";
 import { enWorldGraph } from "./en/modules/worldGraph";
 import { enCanvas } from "./en/modules/canvas";
+import { enMissing } from "./en/missing";
+import { deepMerge } from "./deepMerge";
 
 const enWorkspaceWithWorldGraph = {
   ...enWorkspace,
@@ -20,14 +22,17 @@ const enWorkspaceWithWorldGraph = {
 } as const;
 
 export const en = {
-  common: {
-    ...enBase,
-    ...enWorkspaceWithWorldGraph,
-    ...enExport,
-    ...enSnapshot,
-    ...enScrivener,
-    ...enTrash,
-    ...enMisc,
-    canvas: enCanvas,
-  },
+  common: deepMerge(
+    {
+      ...enBase,
+      ...enWorkspaceWithWorldGraph,
+      ...enExport,
+      ...enSnapshot,
+      ...enScrivener,
+      ...enTrash,
+      ...enMisc,
+      canvas: enCanvas,
+    },
+    enMissing,
+  ),
 } as const;

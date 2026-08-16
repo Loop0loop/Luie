@@ -73,7 +73,7 @@ export async function measureRagSearchPath(input: {
   let resultCount = 0;
   for (let index = 0; index < input.iterations; index += 1) {
     const startedAt = performance.now();
-    // 순차 반복 질의의 warm latency 분포를 측정해야 하므로 병렬 실행하지 않는다.
+    // NOTE: 반복 query의 warm latency 분포를 보존해야 하므로 병렬 실행하지 않는다.
     // eslint-disable-next-line no-await-in-loop
     const rows = await searchMemoryChunksForRag({
       projectId: input.projectId,
@@ -154,7 +154,7 @@ async function materializeSyntheticBenchmarkEmbeddings(input: {
 
   for (const row of rows) {
     const vector = buildSyntheticBenchmarkVector(row.chunkIndex);
-    // 벤치마크 전용 synthetic embedding upsert는 chunk/vector pairing을 유지해야 하므로 순차 처리한다.
+    // NOTE: synthetic embedding의 chunk/vector pairing을 유지해야 하므로 순차 처리한다.
     // eslint-disable-next-line no-await-in-loop
     await db
       .getClient()
@@ -238,7 +238,7 @@ export async function measureLayer3EvidencePath(input: {
   let evidenceCount = 0;
   for (let index = 0; index < input.iterations; index += 1) {
     const startedAt = performance.now();
-    // 순차 반복 질의의 warm latency 분포를 측정해야 하므로 병렬 실행하지 않는다.
+    // NOTE: 반복 query의 warm latency 분포를 보존해야 하므로 병렬 실행하지 않는다.
     // eslint-disable-next-line no-await-in-loop
     const result = await buildLayer3Evidence(input.projectId, input.query);
     durations.push(performance.now() - startedAt);
@@ -261,7 +261,7 @@ export async function measureWriterFlowQuerySet(input: {
   const measurements: MemoryBenchmarkWriterFlowQueryMeasurement[] = [];
 
   for (const item of MEMORY_BENCHMARK_WRITER_FLOW_QUERIES) {
-    // writer-flow query별 cold/warm 분포를 독립적으로 남겨야 하므로 순차 측정한다.
+    // NOTE: writer-flow query별 cold/warm 분포를 분리하기 위해 순차 측정한다.
     // eslint-disable-next-line no-await-in-loop
     const ragSearchMeasurement = await measureRagSearchPath({
       projectId: input.projectId,

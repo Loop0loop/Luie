@@ -1,16 +1,4 @@
-/**
- * useCanvasPanelLayout — derives canvas activity / binder panel sizing.
- *
- * Mirrors the pattern used by ScrivenerLayout and MainLayout:
- *   - container width is observed via {@link useElementWidth}
- *   - persisted ratios live in `uiStore.layoutSurfaceRatios` for
- *     `canvas.activity` and `canvas.binder`
- *   - min/max constraints are converted to container-relative percentages
- *     via {@link getResponsivePanelSize}
- *
- * The returned `defaultSize` strings can be fed straight to react-resizable-panels
- * `<Panel defaultSize={...} minSize={...} maxSize={...}>`.
- */
+/** 저장 비율과 container 너비를 react-resizable-panels용 percentage로 변환한다. */
 import { type RefObject } from "react";
 import { useShallow } from "zustand/react/shallow";
 import {
@@ -24,11 +12,8 @@ import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 
 export interface CanvasPanelLayout {
-  /** Persisted ratio (0..100) for the activity sidebar. */
   activityRatio: number;
-  /** Persisted ratio (0..100) for the binder panel. */
   binderRatio: number;
-  /** Default size + min/max as percent strings, ready for `<Panel>`. */
   activitySize: ResponsivePanelSize & { defaultSize: string };
   binderSize: ResponsivePanelSize & { defaultSize: string };
 }

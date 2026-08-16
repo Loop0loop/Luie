@@ -112,12 +112,9 @@ export default function EditorLayout({
 
   return (
     <div className="flex flex-col h-screen w-screen bg-app text-fg overflow-hidden relative">
-      {/* 1. App Window Bar */}
       <WindowBar title={activeChapterTitle || t("editor.layoutTitle")} />
 
-      {/* 3. Main Area (Horizontal Flex) */}
       <div className="flex-1 overflow-hidden relative flex flex-row">
-        {/* LEFT: 원고 사이드바 (Overlay Hover) */}
         <FocusHoverSidebar
           side="left"
           topOffset={sidebarTopOffset}
@@ -126,24 +123,21 @@ export default function EditorLayout({
           suppressHoverOpen={isToolbarHoverZoneActive}
         >
           <div
-            className="h-full flex flex-col bg-panel border-r border-border"
+            className="h-full flex flex-col bg-sidebar border-r border-border"
             style={{ minWidth: SIDEBAR_WIDTH_CONFIG.mainSidebar.minPx }}
           >
             {sidebar}
           </div>
         </FocusHoverSidebar>
 
-        {/* CENTER: 메인 에디터 영역 */}
         <div className="flex-1 h-full overflow-hidden flex flex-row relative">
 
-          {/* Hover trigger strip — activates floating toolbar */}
           <div
             className="absolute inset-x-0 top-0 z-30 h-11 pointer-events-auto"
             onMouseEnter={handleToolbarEnter}
             onMouseLeave={scheduleHide}
           />
 
-          {/* Floating Toolbar Overlay */}
           <div
             className={cn(
               "absolute inset-x-0 top-0 z-40 transition-all duration-200 ease-out",
@@ -163,7 +157,6 @@ export default function EditorLayout({
             />
           </div>
 
-          {/* Editor Column Wrapper */}
           <PanelGroup
             orientation="horizontal"
             className="flex w-full h-full flex-1 overflow-hidden relative"
@@ -179,24 +172,20 @@ export default function EditorLayout({
               <div className="flex-1 h-full overflow-hidden flex flex-col relative">
                 <EditorDropZones />
 
-                {/* Scrollable Editor Area */}
                 <div
-                  className="flex-1 h-full overflow-y-scroll bg-background flex flex-col items-center custom-scrollbar shrink-0 relative"
+                  className="flex-1 h-full overflow-y-scroll bg-app flex flex-col items-center custom-scrollbar shrink-0 relative"
                   data-editor-scroll-container="true"
                 >
-                  {/* Editor Container (No Paper Shadow) */}
                   <div
                     className="min-h-full bg-transparent text-fg py-12 px-8 transition-all duration-150 ease-out shrink-0"
                     style={{ width: maxWidth ?? DEFAULT_EDITOR_MAX_WIDTH, maxWidth: "100%" }}
                   >
-                    {/* 챕터 제목 */}
                     {activeChapterTitle && (
                       <h1 className="text-3xl font-bold mb-8 pb-4 border-b border-border/50 text-fg break-all">
                         {activeChapterTitle}
                       </h1>
                     )}
 
-                    {/* 에디터 콘텐츠 */}
                     <div className="min-h-[500px] [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[400px] wrap-break-word">
                       {children}
                     </div>

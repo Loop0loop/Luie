@@ -65,7 +65,7 @@ export const isRelationAllowed = (
   _sourceType: WorldEntitySourceType,
   _targetType: WorldEntitySourceType,
 ): boolean => {
-  // Allow freeform connections to avoid disrupting the user's flow
+  // NOTE: 편집 흐름을 막지 않도록 정의되지 않은 관계도 허용한다.
   return true;
 };
 
@@ -86,7 +86,8 @@ export const getDefaultRelationForPair = (
       return kind;
     }
   }
-  return "belongs_to"; // Default fallback instead of returning null
+  // NOTE: 호출부의 null 분기를 피하려고 기본 관계를 반환한다.
+  return "belongs_to";
 };
 
 export const WORLD_RELATION_RULES = RELATION_RULES;

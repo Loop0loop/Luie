@@ -6,34 +6,47 @@ export function useThemeAttributes({
   themeAccent,
   themeContrast,
   themeTemp,
-  themeTexture,
 }: {
   enableAnimations: boolean;
   theme: string;
   themeAccent: string | null;
   themeContrast: string | null;
   themeTemp: string | null;
-  themeTexture: boolean;
 }) {
   useLayoutEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-    if (themeTemp)
-      document.documentElement.setAttribute("data-temp", themeTemp);
     if (themeContrast)
       document.documentElement.setAttribute("data-contrast", themeContrast);
-    if (themeAccent)
-      document.documentElement.setAttribute("data-accent", themeAccent);
-    document.documentElement.setAttribute("data-texture", String(themeTexture));
+    if (themeTemp)
+      document.documentElement.setAttribute("data-temp", themeTemp);
     document.documentElement.setAttribute(
       "data-animations",
       enableAnimations ? "on" : "off",
     );
+
+    if (themeAccent) {
+      if (themeAccent.startsWith("#")) {
+        document.documentElement.setAttribute("data-accent", "custom");
+        document.documentElement.style.setProperty("--text-accent", themeAccent);
+        document.documentElement.style.setProperty("--accent-bg", themeAccent);
+        document.documentElement.style.setProperty("--accent-bg-hover", themeAccent);
+      } else {
+        document.documentElement.setAttribute("data-accent", themeAccent);
+        document.documentElement.style.removeProperty("--text-accent");
+        document.documentElement.style.removeProperty("--accent-bg");
+        document.documentElement.style.removeProperty("--accent-bg-hover");
+      }
+    } else {
+      document.documentElement.removeAttribute("data-accent");
+      document.documentElement.style.removeProperty("--text-accent");
+      document.documentElement.style.removeProperty("--accent-bg");
+      document.documentElement.style.removeProperty("--accent-bg-hover");
+    }
   }, [
     theme,
-    themeTemp,
     themeContrast,
     themeAccent,
-    themeTexture,
+    themeTemp,
     enableAnimations,
   ]);
 }

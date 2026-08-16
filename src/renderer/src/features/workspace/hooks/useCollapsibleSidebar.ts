@@ -3,6 +3,7 @@ import type { PanelSize } from "react-resizable-panels";
 import type { SidebarWidthFeature } from "@renderer/shared/constants/sidebarSizing";
 import { toPxSize } from "@renderer/shared/constants/sidebarSizing";
 import { useCollapsedSidebarStore } from "./useCollapsedSidebarStore";
+import { isLayoutRestoring } from "./useSidebarResizeCommit";
 
 export type UseCollapsibleSidebarResult = {
   isCollapsed: boolean;
@@ -67,10 +68,16 @@ export function useCollapsibleSidebar(
 
   const onResize = useCallback(
     (panelSize: PanelSize) => {
+      // NOTE: programmatic layout의 resize를 저장하면 reopen 시 collapsed 상태가 뒤집힌다.
+      if (isLayoutRestoring()) {
+        return;
+      }
       const collapsed =
         typeof panelSize.inPixels === "number" && panelSize.inPixels <= 0;
-      setCollapsedSidebar(feature, collapsed);
-      if (!collapsed) {
+      if (collapsed) {
+        // NOTE: 0까지 직접 drag한 경우만 접고 resize만으로 자동 확장하지 않는다.
+        setCollapsedSidebar(feature, true);
+      } else {
         baseOnResize(panelSize);
       }
     },

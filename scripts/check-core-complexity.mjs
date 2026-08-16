@@ -5,7 +5,7 @@ import path from "node:path";
 
 const BLOCKING_TARGET_FILES = [
   "src/main/services/features/sync/syncService.ts",
-  "src/main/services/core/projectService.ts",
+  "src/main/services/features/project/projectService.ts",
   "src/renderer/src/features/workspace/components/ProjectTemplateSelector.tsx",
 ];
 
@@ -13,7 +13,7 @@ const ADVISORY_TARGET_FILES = [
   "src/main/database/index.ts",
   "src/main/manager/autoSave/autoSaveManager.ts",
   "src/main/manager/window/windowManager.ts",
-  "src/main/services/core/chapterService.ts",
+  "src/main/services/features/manuscript/chapterService.ts",
   "src/main/services/features/snapshot/snapshotService.ts",
   "src/main/services/features/sync/syncRepository.ts",
   "src/renderer/src/features/research/services/worldPackageStorage.ts",

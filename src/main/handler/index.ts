@@ -28,10 +28,8 @@ import {
   worldReplicaService,
 } from "../domains/world/index.js";
 import { utilityProcessBridge } from "../infra/utility-process/index.js";
-import {
-  getNarrativeSummaryStatus,
-  narrativeMemoryQueryService,
-} from "../services/features/memory/index.js";
+import { narrativeMemoryQueryService } from "../services/features/memory/query/narrativeMemoryQueryService.js";
+import { getNarrativeSummaryStatus } from "../services/features/memory/summary/memoryNarrativeSummaryStatus.js";
 import { registerMemoryHandlers } from "./memory/index.js";
 import { registerProjectHandlers } from "./project/index.js";
 import { registerSearchHandlers } from "./search/index.js";
@@ -72,6 +70,7 @@ export async function registerAllIPCHandlers(): Promise<void> {
   registerWritingHandlers({
     logger,
     autoSaveManager: await loadAutoSaveManager(),
+    projectService,
     snapshotService,
   });
 
@@ -91,7 +90,6 @@ export async function registerAllIPCHandlers(): Promise<void> {
     narrativeSummaryStatusService: {
       getStatus: getNarrativeSummaryStatus,
     },
-    packagePersistence: projectService,
   });
 
   registerSystemHandlers({
@@ -112,5 +110,5 @@ export async function registerAllIPCHandlers(): Promise<void> {
   logger.info("IPC handlers registered successfully");
 }
 
-// Backward compat
+// NOTE: 기존 import 경로와의 호환을 위해 alias를 유지한다.
 export const registerIPCHandlers = registerAllIPCHandlers;

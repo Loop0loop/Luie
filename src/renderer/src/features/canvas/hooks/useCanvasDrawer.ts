@@ -1,10 +1,4 @@
-/**
- * useCanvasDrawer — 캔버스 우측 Slide-out Drawer 및 Inspector 패널 제어용 전용 커스텀 훅.
- * 
- * SRP (Single Responsibility Principle) 준수 및 Side-effect 책임 일원화:
- *   - 캔버스 뷰포트 내부 노드 선택 상태와 우측 서랍(Drawer) 및 rightPanel 토글 상태를 단일 이펙트로 연동합니다.
- *   - Zustand 스토어의 selection 변경 시 우측 패널 개폐 및 탭 포커스 상태를 한곳에서 안전하게 동기화합니다.
- */
+/** canvas node selection과 rightPanel의 canvas tab을 동기화한다. */
 
 import { useCallback, useEffect } from "react";
 import { useShallow } from "zustand/react/shallow";
@@ -23,7 +17,7 @@ export function useCanvasDrawer() {
     })),
   );
 
-  // 노드 선택 시 우측 패널 오픈. deselect 시 닫지 않음 — 빈 상태 표시 유지.
+  // NOTE: deselect 시 panel은 닫지 않고 빈 inspector를 유지한다.
   useEffect(() => {
     if (selection.kind === "node" && !rightPanelOpen) {
       openRightPanelTab("canvas");

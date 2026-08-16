@@ -93,7 +93,7 @@ vi.mock("../../../src/main/services/core/project/projectImportOpen.js", () => ({
   openLuieProjectPackage: vi.fn(),
 }));
 
-import { ProjectService } from "../../../src/main/services/core/projectService.js";
+import { ProjectService } from "../../../src/main/services/features/project/projectService.js";
 
 describe("ProjectService validation errors", () => {
   beforeEach(() => {

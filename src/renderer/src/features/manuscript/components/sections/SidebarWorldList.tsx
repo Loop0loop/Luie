@@ -55,11 +55,11 @@ export default function SidebarWorldList() {
     <div className="flex flex-col h-full bg-sidebar/50">
       <div className="flex flex-col gap-1 border-b border-border/20 p-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <span className="text-xs font-semibold text-muted uppercase tracking-wider">
             {t("research.title.world")}
           </span>
           <button
-            className="p-1 hover:bg-white/10 rounded text-muted-foreground hover:text-foreground transition-colors"
+            className="p-1 hover:bg-white/10 rounded text-muted hover:text-fg transition-colors"
             onClick={handleAddTerm}
             title={t("world.term.addLabel")}
           >
@@ -67,7 +67,6 @@ export default function SidebarWorldList() {
           </button>
         </div>
 
-        {/* Navigation Buttons */}
         <div className="grid grid-cols-2 gap-1 mt-1">
           <DraggableItem
             id="drag-synopsis"
@@ -82,7 +81,7 @@ export default function SidebarWorldList() {
                 setMainView({ type: "world" });
                 setWorldTab("synopsis");
               }}
-              className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors truncate"
+              className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted hover:text-fg transition-colors truncate"
             >
               {t("sidebar.item.synopsis")}
             </button>
@@ -100,7 +99,7 @@ export default function SidebarWorldList() {
                 setMainView({ type: "world" });
                 setWorldTab("mindmap");
               }}
-              className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors truncate"
+              className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted hover:text-fg transition-colors truncate"
             >
               {t("world.tab.mindmap")}
             </button>
@@ -118,7 +117,7 @@ export default function SidebarWorldList() {
                 setMainView({ type: "world" });
                 setWorldTab("drawing");
               }}
-              className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors truncate"
+              className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted hover:text-fg transition-colors truncate"
             >
               {t("world.tab.drawing")}
             </button>
@@ -132,7 +131,7 @@ export default function SidebarWorldList() {
                 setMainView({ type: "world" });
                 setWorldTab("plot");
               }}
-              className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors truncate"
+              className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted hover:text-fg transition-colors truncate"
             >
               {t("world.tab.plot")}
             </button>
@@ -140,7 +139,7 @@ export default function SidebarWorldList() {
         </div>
       </div>
 
-      <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider bg-sidebar/30 mt-1">
+      <div className="px-2 py-1 text-[10px] font-bold text-muted uppercase tracking-wider bg-sidebar/30 mt-1">
         {t("world.tab.terms")}
       </div>
 
@@ -187,7 +186,7 @@ function SidebarTermItem({
       onClick={() => onSelect(term.id)}
     >
       <div className="font-medium text-sm truncate">{term.term}</div>
-      <div className="text-[10px] text-muted-foreground truncate">
+      <div className="text-[10px] text-muted truncate">
         {term.category}
       </div>
     </div>

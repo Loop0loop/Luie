@@ -92,7 +92,7 @@ pnpm run check:core-complexity
 - 기존 `@shared/types` 공개 타입 이름은 보존했습니다.
 - 기존 `@shared/schemas` 공개 schema 이름은 보존했습니다.
 - 기존 `@shared/api` 공개 export는 보존했습니다.
-- 모든 `src/shared/types/*.ts`, `src/shared/schemas/*.ts`, `src/shared/api/*.ts` 파일은 500 LOC 이하입니다.
+- `src/shared/types/settings.ts`(506, source LOC gate 기준)를 제외한 `src/shared/types/*.ts`, `src/shared/schemas/*.ts`, `src/shared/api/*.ts` 파일은 500 LOC 이하입니다. settings 계약은 Phase 20에서 호환 barrel을 유지한 채 도메인 축으로 분리합니다.
 - 2026-06-02 기준 `pnpm run typecheck` 통과.
 - 2026-06-02 기준 `pnpm run check:ipc-contract-map` 통과.
 - 2026-06-02 기준 `pnpm run check:ipc-handler-schemas` 통과.
@@ -156,7 +156,7 @@ src/shared/api/
 
 검증:
 
-현재 검증 명령은 `package.json`의 `packageManager: pnpm@11.5.0`과 `pnpm` scripts를 기준으로 기록합니다. `AGENTS.md`의 bun 지침과 충돌하는 경우, 실제 실행 전 현재 `package.json`을 우선 확인합니다.
+현재 검증 명령은 `package.json`의 `packageManager: pnpm@11.21.0`과 `pnpm` scripts를 기준으로 기록합니다. `AGENTS.md`의 bun 지침과 충돌하는 경우, 실제 실행 전 현재 `package.json`을 우선 확인합니다.
 
 ```bash
 pnpm run typecheck

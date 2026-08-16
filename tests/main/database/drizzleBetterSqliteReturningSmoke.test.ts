@@ -1,15 +1,5 @@
-/**
- * Drizzle returning() runtime smoke test — better-sqlite3 variant.
- *
- * Validates returning() behavior using the actual better-sqlite3
- * adapter that Drizzle uses at runtime.
- *
- * NOTE: Auto-skipped when better-sqlite3 has ABI mismatch in Node.js env.
- * The node:sqlite test (drizzleReturningSmoke.test.ts) covers CI/dev.
- *
- * Phase 6 blocker: Must pass from within Electron main process
- * before getClient() switches from Prisma to Drizzle.
- */
+// NOTE: better-sqlite3 ABI가 Node.js와 다르면 건너뛰며 CI/dev는 node:sqlite smoke test가 보완한다.
+// WARNING: Prisma에서 Drizzle로 전환하기 전에 Electron main process에서 통과해야 한다.
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";

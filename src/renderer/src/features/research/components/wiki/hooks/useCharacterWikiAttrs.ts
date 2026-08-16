@@ -10,43 +10,32 @@ import {
   DEFAULT_RADAR_AXES,
 } from "../types";
 
-// ── Public shape ──────────────────────────────────────────────────────────
-
 export type CharacterWikiAttrs = {
-  // Identity
   tagline: string;
   roles: string[];
   keywords: string[];
-  // Visual
   characterColor: string;
   generatedImage: string | null;
   generatedQuote: string | null;
   radarAxes: RadarAxis[];
-  // Sections
   sections: WikiSectionData[];
   customFields: CustomField[];
-  /** Read any attribute by key (including section content and template fields). */
   getSectionContent: (id: string) => string;
-  // Setters — identity
   setTagline: (v: string) => void;
   addRole: (role: string) => void;
   removeRole: (role: string) => void;
   addKeyword: (kw: string) => void;
   removeKeyword: (kw: string) => void;
-  // Setters — visual
   setCharacterColor: (v: string) => void;
   setGeneratedImage: (v: string) => void;
   setGeneratedQuote: (v: string) => void;
   setRadarAxes: (axes: RadarAxis[]) => void;
-  // Setters — sections
   setSectionContent: (id: string, content: string) => void;
   setSections: (sections: WikiSectionData[]) => void;
   setCustomFields: (fields: CustomField[]) => void;
-  /** Generic setter for any attribute key (e.g. template fields). */
   setAttr: (key: string, value: unknown) => void;
+  setManyAttrs: (updates: Record<string, unknown>) => void;
 };
-
-// ── Hook ──────────────────────────────────────────────────────────────────
 
 export function useCharacterWikiAttrs(): CharacterWikiAttrs {
   const { character, updateCharacter } = useCharacterStore(
@@ -61,11 +50,7 @@ export function useCharacterWikiAttrs(): CharacterWikiAttrs {
     [character?.attributes],
   );
 
-  /**
-   * Keep a ref so update callbacks don't list `attrs` as a dependency —
-   * this avoids re-creating every setter on each keystroke while still
-   * reading the latest attribute state at call time.
-   */
+  // NOTE: 최신 attrs는 ref로 읽어 keystroke마다 모든 setter가 다시 생성되지 않게 한다.
   const attrsRef = useRef(attrs);
   useEffect(() => {
     attrsRef.current = attrs;
@@ -76,13 +61,11 @@ export function useCharacterWikiAttrs(): CharacterWikiAttrs {
       if (!character) return;
       updateCharacter({
         id: character.id,
-        attributes: { ...attrsRef.current, [key]: value },
+        attributesPatch: { [key]: value },
       });
     },
     [character, updateCharacter],
   );
-
-  // ── Derived read values ───────────────────────────────────────────────
 
   const tagline = (attrs.tagline as string) ?? "";
   const roles = useMemo(() => (attrs.roles as string[]) ?? [], [attrs.roles]);
@@ -110,8 +93,6 @@ export function useCharacterWikiAttrs(): CharacterWikiAttrs {
     (id: string) => (attrsRef.current[id] as string) ?? "",
     [],
   );
-
-  // ── Setters ───────────────────────────────────────────────────────────
 
   const setTagline = useCallback((v: string) => update("tagline", v), [update]);
 
@@ -148,6 +129,17 @@ export function useCharacterWikiAttrs(): CharacterWikiAttrs {
   const setAttr = useCallback(
     (key: string, value: unknown) => update(key, value),
     [update],
+  );
+
+  const setManyAttrs = useCallback(
+    (updates: Record<string, unknown>) => {
+      if (!character) return;
+      updateCharacter({
+        id: character.id,
+        attributesPatch: updates,
+      });
+    },
+    [character, updateCharacter],
   );
 
   const addRole = useCallback(
@@ -203,5 +195,6 @@ export function useCharacterWikiAttrs(): CharacterWikiAttrs {
     setSections,
     setCustomFields,
     setAttr,
+    setManyAttrs,
   };
 }

@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
+import { api } from "@shared/api";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { BufferedTextArea, BufferedInput } from "@shared/ui/BufferedInput";
 import { cn } from "@shared/types/utils";
@@ -9,6 +10,16 @@ import { worldPackageStorage } from "@renderer/features/research/services/worldP
 import type { WorldSynopsisData, WorldSynopsisStatus } from "@shared/types";
 import { getReadableLuieAttachmentPath } from "@shared/projectAttachment";
 import { useToast } from "@shared/ui/ToastContext";
+import {
+  preserveUnmountSave,
+  registerSaveBufferFlush,
+} from "@shared/ui/saveBufferRegistry";
+
+interface PendingSynopsisSave {
+  projectId: string;
+  projectPath: string | null;
+  data: WorldSynopsisData;
+}
 
 export function SynopsisEditor() {
   const { t } = useTranslation();
@@ -26,55 +37,209 @@ export function SynopsisEditor() {
   const [genre, setGenre] = useState("");
   const [targetAudience, setTargetAudience] = useState("");
   const [logline, setLogline] = useState("");
+  const [editableScope, setEditableScope] = useState<string | null>(null);
+  const synopsisRef = useRef<WorldSynopsisData>({
+    synopsis: currentProject?.description ?? "",
+    status: "draft",
+    genre: "",
+    targetAudience: "",
+    logline: "",
+  });
+  const synopsisByScopeRef = useRef(new Map<string, WorldSynopsisData>());
+  const hydratedScopesRef = useRef(new Set<string>());
+  const mutationGenerationByScopeRef = useRef(new Map<string, number>());
+  const activeScopeRef = useRef<string | null>(null);
+  const pendingSynopsisSavesRef = useRef<PendingSynopsisSave[]>([]);
+  const saveInFlightRef = useRef<Promise<void> | null>(null);
+  const flushSynopsisRef = useRef<() => Promise<void>>(async () => undefined);
+  const descriptionRef = useRef(currentProject?.description ?? "");
+  const projectId = currentProject?.id;
+  const projectScope = projectId
+    ? `${projectId}\0${luieAttachmentPath ?? ""}`
+    : null;
 
-  useEffect(() => {
-    if (!currentProject?.id) return;
+  useLayoutEffect(() => {
+    descriptionRef.current = currentProject?.description ?? "";
+  }, [currentProject?.description]);
+
+  useLayoutEffect(() => {
+    if (!projectId || !projectScope) return;
     let cancelled = false;
+    const fallback = descriptionRef.current;
+    const applySynopsis = (
+      source: WorldSynopsisData,
+      cache = true,
+    ): void => {
+      const nextSynopsis: WorldSynopsisData = {
+        synopsis: source.synopsis ?? fallback,
+        status: source.status ?? "draft",
+        genre: source.genre ?? "",
+        targetAudience: source.targetAudience ?? "",
+        logline: source.logline ?? "",
+      };
+      setStatus(nextSynopsis.status ?? "draft");
+      setGenre(nextSynopsis.genre ?? "");
+      setTargetAudience(nextSynopsis.targetAudience ?? "");
+      setLogline(nextSynopsis.logline ?? "");
+      synopsisRef.current = nextSynopsis;
+      if (cache) synopsisByScopeRef.current.set(projectScope, nextSynopsis);
+    };
+    const scopeChanged = activeScopeRef.current !== projectScope;
+    activeScopeRef.current = projectScope;
+    const pendingAtLoadStart = pendingSynopsisSavesRef.current.find(
+      (save) =>
+        save.projectId === projectId &&
+        save.projectPath === luieAttachmentPath,
+    );
+    if (scopeChanged) {
+      const cachedSynopsis = synopsisByScopeRef.current.get(projectScope);
+      const transitionSynopsis = pendingAtLoadStart?.data ?? cachedSynopsis;
+      if (transitionSynopsis) {
+        hydratedScopesRef.current.add(projectScope);
+        setEditableScope(projectScope);
+        applySynopsis(transitionSynopsis);
+      } else {
+        setEditableScope(null);
+        applySynopsis({ synopsis: fallback, status: "draft" }, false);
+      }
+    }
+    const loadGeneration = mutationGenerationByScopeRef.current.get(
+      projectScope,
+    );
+    void flushSynopsisRef.current().catch(() => undefined);
 
     void (async () => {
       const loaded = await worldPackageStorage.loadSynopsis(
-        currentProject.id,
+        projectId,
         luieAttachmentPath,
-        currentProject.description ?? "",
+        fallback,
       );
       if (cancelled) return;
-      setStatus(loaded.status ?? "draft");
-      setGenre(loaded.genre ?? "");
-      setTargetAudience(loaded.targetAudience ?? "");
-      setLogline(loaded.logline ?? "");
-    })();
+      if (
+        mutationGenerationByScopeRef.current.get(projectScope) !==
+        loadGeneration
+      ) {
+        return;
+      }
+      const pending = pendingSynopsisSavesRef.current.find(
+        (save) =>
+          save.projectId === projectId &&
+          save.projectPath === luieAttachmentPath,
+      );
+      applySynopsis(pending?.data ?? pendingAtLoadStart?.data ?? loaded);
+      hydratedScopesRef.current.add(projectScope);
+      if (activeScopeRef.current === projectScope) {
+        setEditableScope(projectScope);
+      }
+    })().catch((error: unknown) => {
+      if (!cancelled) {
+        void api.logger.warn("Failed to load synopsis project scope", {
+          projectId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        showToast(t("research.toast.worldSaveFailed"), "error");
+      }
+    });
 
     return () => {
       cancelled = true;
     };
-  }, [
-    currentProject?.id,
-    luieAttachmentPath,
-    currentProject?.description,
-  ]);
+  }, [projectId, luieAttachmentPath, projectScope, showToast, t]);
 
-  const persistSynopsis = (overrides: Partial<WorldSynopsisData>) => {
-    if (!currentProject?.id) return;
-    const payload: WorldSynopsisData = {
-      synopsis: currentProject.description ?? "",
-      status,
-      genre,
-      targetAudience,
-      logline,
-      ...overrides,
-    };
-    void worldPackageStorage
-      .saveSynopsis(currentProject.id, luieAttachmentPath, payload)
-      .catch(() => {
+  const flushSynopsis = async (): Promise<void> => {
+    const inFlight = saveInFlightRef.current;
+    if (inFlight) {
+      await inFlight;
+      return flushSynopsisRef.current();
+    }
+    const snapshot = pendingSynopsisSavesRef.current[0];
+    if (!snapshot) return;
+
+    const save = worldPackageStorage
+      .saveSynopsis(snapshot.projectId, snapshot.projectPath, snapshot.data)
+      .catch((error: unknown) => {
         showToast(t("research.toast.worldSaveFailed"), "error");
+        throw error;
       });
+    saveInFlightRef.current = save;
+    try {
+      await save;
+      if (pendingSynopsisSavesRef.current[0] === snapshot) {
+        pendingSynopsisSavesRef.current.shift();
+      }
+    } finally {
+      if (saveInFlightRef.current === save) saveInFlightRef.current = null;
+    }
+    return flushSynopsisRef.current();
   };
 
-  if (!currentProject) return null;
+  useEffect(() => {
+    flushSynopsisRef.current = flushSynopsis;
+  });
+
+  useEffect(
+    () => registerSaveBufferFlush(() => flushSynopsisRef.current()),
+    [],
+  );
+
+  useEffect(
+    () => () => {
+      if (
+        pendingSynopsisSavesRef.current.length === 0 &&
+        !saveInFlightRef.current
+      ) {
+        return;
+      }
+      preserveUnmountSave(flushSynopsisRef.current(), () =>
+        flushSynopsisRef.current(),
+      );
+    },
+    [],
+  );
+
+  const persistSynopsis = (
+    overrides: Partial<WorldSynopsisData>,
+  ): Promise<void> => {
+    if (
+      !projectId ||
+      !projectScope ||
+      !hydratedScopesRef.current.has(projectScope)
+    ) {
+      return Promise.resolve();
+    }
+    const data = {
+      ...(synopsisByScopeRef.current.get(projectScope) ?? synopsisRef.current),
+      ...overrides,
+    };
+    synopsisByScopeRef.current.set(projectScope, data);
+    mutationGenerationByScopeRef.current.set(
+      projectScope,
+      (mutationGenerationByScopeRef.current.get(projectScope) ?? 0) + 1,
+    );
+    if (activeScopeRef.current === projectScope) synopsisRef.current = data;
+    const pending: PendingSynopsisSave = {
+      projectId,
+      projectPath: luieAttachmentPath,
+      data,
+    };
+    const pendingIndex = pendingSynopsisSavesRef.current.findIndex(
+      (save) =>
+        save.projectId === pending.projectId &&
+        save.projectPath === pending.projectPath,
+    );
+    if (pendingIndex === -1) pendingSynopsisSavesRef.current.push(pending);
+    else pendingSynopsisSavesRef.current[pendingIndex] = pending;
+    return flushSynopsis();
+  };
+
+  if (!currentProject || !projectId) return null;
 
   return (
-    <div className="h-full flex flex-col bg-[#faf9f6]/50 dark:bg-zinc-900 overflow-hidden transition-colors duration-500">
-      {/* Header - Minimalist */}
+    <fieldset
+      key={projectScope}
+      disabled={editableScope !== projectScope}
+      className="h-full min-w-0 m-0 p-0 border-0 flex flex-col bg-[#faf9f6]/50 dark:bg-zinc-900 overflow-hidden transition-colors duration-500"
+    >
       <div
         className={cn(
           "flex items-center justify-between px-8 py-4 shrink-0 transition-opacity duration-300",
@@ -94,7 +259,7 @@ export function SynopsisEditor() {
               key={s}
               onClick={() => {
                 setStatus(s);
-                persistSynopsis({ status: s });
+                void persistSynopsis({ status: s }).catch(() => undefined);
               }}
               className={cn(
                 "px-3 py-1 rounded-full text-[11px] font-bold transition-all flex items-center gap-1.5 border-none",
@@ -112,15 +277,12 @@ export function SynopsisEditor() {
         </div>
       </div>
 
-      {/* Editor Area - Document Style */}
       <div className="flex-1 overflow-y-auto relative group custom-scrollbar">
         <div className="max-w-3xl mx-auto px-12 py-16 min-h-full flex flex-col gap-12">
-          {/* Metadata Section - Clean, Field-like */}
           <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Top Row: Genre & Audience */}
             <div className="grid grid-cols-2 gap-12">
               <div className="group/field">
-                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 group-focus-within/field:text-accent transition-colors">
+                <label className="block text-[10px] font-bold text-muted uppercase tracking-widest mb-2 group-focus-within/field:text-accent transition-colors">
                   {t("world.synopsis.genre", "Genre")}
                 </label>
                 <BufferedInput
@@ -132,12 +294,12 @@ export function SynopsisEditor() {
                   value={genre}
                   onSave={(val) => {
                     setGenre(val);
-                    persistSynopsis({ genre: val });
+                    return persistSynopsis({ genre: val });
                   }}
                 />
               </div>
               <div className="group/field">
-                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 group-focus-within/field:text-accent transition-colors">
+                <label className="block text-[10px] font-bold text-muted uppercase tracking-widest mb-2 group-focus-within/field:text-accent transition-colors">
                   {t("world.synopsis.audience", "Target Audience")}
                 </label>
                 <BufferedInput
@@ -149,15 +311,14 @@ export function SynopsisEditor() {
                   value={targetAudience}
                   onSave={(val) => {
                     setTargetAudience(val);
-                    persistSynopsis({ targetAudience: val });
+                    return persistSynopsis({ targetAudience: val });
                   }}
                 />
               </div>
             </div>
 
-            {/* Logline - Featured */}
             <div className="group/field">
-              <label className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 group-focus-within/field:text-accent transition-colors">
+              <label className="flex items-center gap-2 text-[10px] font-bold text-muted uppercase tracking-widest mb-3 group-focus-within/field:text-accent transition-colors">
                 <Sparkles className="w-3 h-3" />{" "}
                 {t("world.synopsis.logline", "Logline")}
               </label>
@@ -170,17 +331,15 @@ export function SynopsisEditor() {
                 value={logline}
                 onSave={(val) => {
                   setLogline(val);
-                  persistSynopsis({ logline: val });
+                  return persistSynopsis({ logline: val });
                 }}
                 rows={2}
               />
             </div>
           </div>
 
-          {/* Divider */}
           <div className="w-16 h-1 bg-border/30 rounded-full mx-auto" />
 
-          {/* Main Content */}
           <div className="relative flex-1">
             <BufferedTextArea
               className={cn(
@@ -193,9 +352,13 @@ export function SynopsisEditor() {
               placeholder={t("world.synopsis.placeholder")}
               value={currentProject.description || ""}
               readOnly={status === "locked"}
-              onSave={(val) => {
-                void updateProject({ id: currentProject.id, description: val });
-                persistSynopsis({ synopsis: val });
+              onSave={async (val) => {
+                const [updated] = await Promise.all([
+                  updateProject({ id: projectId, description: val }),
+                  persistSynopsis({ synopsis: val }),
+                ]);
+                if (!updated)
+                  throw new Error("Failed to save project synopsis");
               }}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
@@ -204,6 +367,6 @@ export function SynopsisEditor() {
           </div>
         </div>
       </div>
-    </div>
+    </fieldset>
   );
 }

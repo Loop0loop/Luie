@@ -1,7 +1,9 @@
-import { ChevronLeft, Pin, PinOff, X } from "lucide-react";
+import { BookOpen, ChevronLeft, Pin, PinOff, X } from "lucide-react";
 import React, { Suspense } from "react";
 import type { BinderTab } from "./binderSidebar.shared";
 import type { Snapshot } from "@shared/types";
+import { AISidePanelHeader } from "./aiSidePanel/AISidePanelHeader";
+import { WebNovelAICoPilot } from "./aiSidePanel/WebNovelAICoPilot";
 
 const ResearchPanel = React.lazy(
   () => import("@renderer/features/research/components/ResearchPanel"),
@@ -33,50 +35,84 @@ export function BinderSidebarPanelBody(props: {
   isPinned: boolean;
   pinLocked?: boolean;
   onTogglePinned: () => void;
+  onResearchTabChange?: (tab: "character" | "event" | "faction") => void;
+  showHeader?: boolean;
   t: (key: string) => string;
 }) {
+  const isResearchEntityTab =
+    props.activeTab === "character" ||
+    props.activeTab === "event" ||
+    props.activeTab === "faction";
+
   return (
-    <div className="flex-1 h-full overflow-hidden relative min-w-0">
-      <button
-        onClick={props.onTogglePinned}
-        disabled={props.pinLocked}
-        className="absolute top-4 right-12 p-1.5 rounded-full bg-surface/90 border border-border/50 text-muted hover:text-fg hover:bg-surface disabled:opacity-60 disabled:cursor-default disabled:hover:text-muted disabled:hover:bg-surface/90 z-50 shadow-sm transition-colors duration-150"
-        title={props.isPinned ? "Unpin" : "Pin"}
-      >
-        {props.isPinned ? <Pin className="w-4 h-4" /> : <PinOff className="w-4 h-4" />}
-      </button>
-      <button
-        onClick={props.onClose}
-        className="absolute top-4 right-2 p-1.5 rounded-full bg-surface/90 border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-colors duration-150"
-        title={props.t("sidebar.toggle.close")}
-      >
-        <X className="w-4 h-4" />
-      </button>
+    <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
+      {props.showHeader !== false ? (
+        <header className="flex h-12 shrink-0 items-center border-b border-border bg-sidebar px-4">
+          {isResearchEntityTab ? (
+            <>
+              <BookOpen className="icon-sm shrink-0 text-muted" aria-hidden="true" />
+              <h1 className="ml-2 text-sm font-semibold text-fg">
+                {props.t("sidebar.section.research")}
+              </h1>
+            </>
+          ) : (
+            <span className="text-xs font-medium text-fg">{props.activeTab}</span>
+          )}
+          <div className="ml-auto flex items-center gap-1 border-l border-border pl-2">
+            <button
+              type="button"
+              onClick={props.onTogglePinned}
+              disabled={props.pinLocked}
+              className="flex size-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              title={props.isPinned ? "Unpin" : "Pin"}
+              aria-label={props.isPinned ? "Unpin" : "Pin"}
+            >
+              {props.isPinned ? <Pin className="icon-sm" /> : <PinOff className="icon-sm" />}
+            </button>
+            <button
+              type="button"
+              onClick={props.onClose}
+              className="flex size-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              title={props.t("sidebar.toggle.close")}
+              aria-label={props.t("sidebar.toggle.close")}
+            >
+              <X className="icon-sm" />
+            </button>
+          </div>
+        </header>
+      ) : null}
 
       {props.activeTab === "snapshot" && (
         <button
           onClick={props.onBackToSnapshotList}
-          className="absolute top-4 left-3 p-1.5 rounded-full bg-surface/90 border border-border/50 text-muted hover:text-fg hover:bg-surface z-50 shadow-sm transition-colors duration-150"
+          className="absolute left-3 top-14 z-50 flex size-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           title={props.t("back")}
+          aria-label={props.t("back")}
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="icon-sm" />
         </button>
       )}
 
-      <div className="flex-1 overflow-hidden pt-4 h-full">
+      <div className="min-h-0 flex-1 overflow-hidden">
         <Suspense
           fallback={
             <div className="p-4 text-sm text-muted">{props.t("loading")}</div>
           }
         >
-          {props.activeTab === "character" && (
-            <ResearchPanel activeTab="character" onClose={props.onClose} />
-          )}
-          {props.activeTab === "event" && (
-            <ResearchPanel activeTab="event" onClose={props.onClose} />
-          )}
-          {props.activeTab === "faction" && (
-            <ResearchPanel activeTab="faction" onClose={props.onClose} />
+          {isResearchEntityTab && (
+            <ResearchPanel
+              activeTab={props.activeTab}
+              onClose={props.onClose}
+              onTabChange={(tab) => {
+                if (
+                  tab === "character" ||
+                  tab === "event" ||
+                  tab === "faction"
+                ) {
+                  props.onResearchTabChange?.(tab);
+                }
+              }}
+            />
           )}
           {props.activeTab === "world" && (
             <WorldPanel onClose={props.onClose} />
@@ -85,7 +121,26 @@ export function BinderSidebarPanelBody(props: {
             <ResearchPanel activeTab="scrap" onClose={props.onClose} />
           )}
           {props.activeTab === "analysis" && (
-            <ResearchPanel activeTab="analysis" onClose={props.onClose} />
+            <div className="flex h-full flex-col overflow-hidden">
+              <AISidePanelHeader
+                episodeTitle="회차 12: 배신의 속삭임"
+                synopsis="카엘과 엘라라의 비밀 접선이 세드릭에게 목격되고, 두 사람 간의 갈등이 긴장감 있게 대치되는 회차."
+                characters={[
+                  { id: "char-1", name: "카엘", role: "주인공" },
+                  { id: "char-2", name: "세드릭", role: "라이벌" },
+                  { id: "char-3", name: "엘라라", role: "조연" },
+                ]}
+                foreshadowingList={[
+                  { label: "깨진 맹세", isResolved: false },
+                  { label: "세드릭의 야망", isResolved: false },
+                  { label: "엘라라의 배신?", isResolved: false },
+                ]}
+                onCharacterClick={() => {
+                  props.onResearchTabChange?.("character");
+                }}
+              />
+              <WebNovelAICoPilot />
+            </div>
           )}
           {props.activeTab === "snapshot" &&
             (props.activeChapterId ? (

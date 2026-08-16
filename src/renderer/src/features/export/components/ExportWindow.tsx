@@ -38,14 +38,12 @@ export default function ExportWindow() {
   } = useExportManager();
 
   return (
-    <div className="flex flex-col w-screen h-screen bg-canvas text-fg overflow-hidden select-none font-sans">
-      {/* Window Bar */}
+    <div className="flex flex-col w-screen h-screen bg-app text-fg overflow-hidden select-none font-sans">
       <div className="shrink-0 bg-panel border-b border-border">
         <WindowBar title={t("exportWindow.title")} />
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Panel: Settings Controls */}
         <ExportSidebar
           t={t}
           isExporting={isExporting}
@@ -75,7 +73,6 @@ export default function ExportWindow() {
           handleExport={handleExport}
         />
 
-        {/* Right Panel: Preview Area */}
         <ExportPreview
           t={t}
           chapter={chapter}

@@ -39,9 +39,9 @@ interface EditorProps {
   chapterId?: string;
   hideToolbar?: boolean;
   hideFooter?: boolean;
-  hideTitle?: boolean; // New prop
-  scrollable?: boolean; // New prop
-  focusMode?: boolean; // New prop for Focus Mode features
+  hideTitle?: boolean;
+  scrollable?: boolean;
+  focusMode?: boolean;
   onEditorReady?: (editor: TiptapEditor | null) => void;
   onOpenWorldGraph?: () => void;
 }
@@ -57,7 +57,7 @@ function Editor({
   hideToolbar = false,
   hideFooter = false,
   hideTitle = false, // Default false
-  scrollable = true, // Default true (for Default/Split layout)
+  scrollable = true,
   focusMode = false,
   onEditorReady,
   onOpenWorldGraph,
@@ -74,7 +74,6 @@ function Editor({
   const { value: title, onChange: handleTitleChange } = useBufferedInput(
     initialTitle,
     () => {
-      // autosave hook tracks title state
     },
   );
 
@@ -102,8 +101,6 @@ function Editor({
   });
 
   useEditorScrollRestoration(chapterId);
-
-  // Tiptap Extensions imported remotely
 
   const updateContentRef = useRef<number | null>(null);
 
@@ -205,7 +202,6 @@ function Editor({
     };
   }, [editor, onEditorReady]);
 
-  // Handle JUMP_TO_MENTION from World Graph
   useEffect(() => {
     if (!isUsableEditor(editor)) return undefined;
     const handleJump = (payload: { entityId: string }) => {
@@ -217,8 +213,7 @@ function Editor({
       const term = termStore.terms.find(
         (item: Term) => item.id === payload.entityId,
       );
-      // Note: Factions/Events/Places etc might need to be resolved via worldEntity store
-      // but for now characters and terms are the main searchable entities.
+      // TODO: worldEntity store를 연결해 Character/Term 외 entity mention도 이동시킨다.
       const name = char?.name || term?.term;
 
       if (name) {
@@ -233,7 +228,7 @@ function Editor({
         if (index >= 0) {
           editor.commands.focus();
           editor.commands.setTextSelection({
-            from: index + 1, // Tiptap ranges generally start around 1 for text depending on node structure, but we do our best estimate here.
+            from: index + 1,
             to: index + normalizedQuery.length + 1,
           });
           setTimeout(() => {
@@ -248,7 +243,6 @@ function Editor({
     return () => EditorSyncBus.off("JUMP_TO_MENTION", handleJump);
   }, [editor]);
 
-  // ... (Diff effect) ...
   useEffect(() => {
     if (!isUsableEditor(editor)) return;
     if (editor.commands.setDiff) {
@@ -274,7 +268,7 @@ function Editor({
       };
     }
     return undefined;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chapter 전환 때만 외부 content를 반영해 local edit 덮어쓰기를 막는다.
   }, [editor, chapterId]);
 
   useEffect(() => {
@@ -323,14 +317,14 @@ function Editor({
 
   return (
     <div
-      className="flex flex-col h-full w-full bg-transparent text-foreground relative box-border overflow-hidden"
+      className="flex flex-col h-full w-full bg-transparent text-fg relative box-border overflow-hidden"
       data-testid="editor"
       style={{
         "--entity-character-color": entityColors?.character ?? "#2563eb",
         "--entity-event-color": entityColors?.event ?? "#d97706",
         "--entity-faction-color": entityColors?.faction ?? "#059669",
         "--entity-term-color": entityColors?.term ?? "#7c3aed",
-        // 자간/어간: CSS custom property로 주입 → editorProps dep array 무관하게 reactive
+        // NOTE: letter/word spacing은 editor 재생성 없이 반영하도록 CSS variable로 전달한다.
         "--editor-letter-spacing": `${letterSpacing}em`,
         "--editor-word-spacing": `${wordSpacing}em`,
         "--editor-line-height": String(lineHeight),
@@ -354,7 +348,6 @@ function Editor({
         </div>
       )}
 
-      {/* Conditionally Scrollable Wrapper */}
       <div
         className={cn(
           "flex-1 flex flex-col items-center min-h-0",
@@ -367,7 +360,7 @@ function Editor({
             "w-full mx-auto flex flex-col flex-1 min-h-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] bg-transparent border-none shadow-none m-0",
             isMobileView &&
               "h-[95%] mx-auto my-5 border-8 border-[#2c2c2e] rounded-[48px] bg-editor-bg shadow-[0_0_0_2px_rgba(69,69,69,0.9),0_25px_50px_-12px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.05)] overflow-hidden relative",
-            // If not scrollable (Docs mode), we don't want h-full constraining it, we want it to check mobile view or just flow
+            // NOTE: Docs mode에서는 page content 높이를 고정하지 않는다.
             !scrollable && "h-auto",
           )}
           data-mobile={isMobileView}
@@ -376,17 +369,15 @@ function Editor({
             maxWidth: isMobileView ? "450px" : "var(--editor-page-width)",
           }}
         >
-          {/* Mobile Notch Simulation */}
           {isMobileView && (
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-30 h-8 bg-[#2c2c2e] rounded-b-2xl z-100 pointer-events-none" />
           )}
 
-          {/* Title - Conditionally Rendered */}
           {!hideTitle && (
             <input
               type="text"
               className={cn(
-                "w-full border-none bg-transparent pb-4 text-2xl font-bold text-foreground outline-none shrink-0 placeholder:text-muted-foreground",
+                "w-full border-none bg-transparent pb-4 text-2xl font-bold text-fg outline-none shrink-0 placeholder:text-muted",
                 isMobileView && "px-6",
                 readOnly && "pointer-events-none opacity-80",
               )}
@@ -399,7 +390,6 @@ function Editor({
             />
           )}
 
-          {/* Content */}
           <div
             className={cn(
               "flex flex-col relative flex-1",

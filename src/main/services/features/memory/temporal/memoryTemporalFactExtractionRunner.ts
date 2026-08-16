@@ -1,4 +1,4 @@
-/* eslint-disable no-await-in-loop -- Temporal fact candidates are inserted sequentially so duplicate suppression observes current DB state. */
+/* eslint-disable no-await-in-loop -- 중복 검사가 현재 DB 상태를 보도록 temporal fact 후보를 순차 저장한다. */
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   chapter,

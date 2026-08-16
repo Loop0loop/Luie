@@ -1,18 +1,4 @@
-/**
- * canvasViewStore — view-model state for the canvas viewport + activity sidebar.
- *
- * Persisted across sessions:
- *   - mode, scope, layers, focuses (range/preset memory)
- *   - zoom/pan (last viewport)
- *   - activePanel + isActivityCollapsed + isBinderCollapsed (P2 sidebar shell)
- *
- * NOT persisted:
- *   - selection (transient, reset between sessions)
- *
- * Layout RATIOS for canvas.activity / canvas.binder live in `uiStore.layoutSurfaceRatios`.
- * This store only owns logical view state.
- */
-
+// NOTE: selection은 session 간 유지하지 않고 panel ratio는 uiStore가 소유한다.
 import { create } from "zustand";
 import {
   createJSONStorage,
@@ -24,6 +10,7 @@ import type {
   CanvasLayer,
   CanvasMode,
   CanvasScope,
+  CanvasEntityPreview,
   CanvasSelection,
   CanvasViewport,
 } from "../types/canvas.types";
@@ -35,8 +22,6 @@ import {
   CANVAS_ALL_LAYERS,
   CANVAS_DEFAULT_LAYERS,
 } from "../constants";
-
-/* ─────────────────────────────────────────── constants */
 
 const STORAGE_KEY = "canvas_view_v2";
 const SCHEMA_VERSION = 2;
@@ -56,11 +41,7 @@ const createNoopStorage = (): StateStorage => ({
   removeItem: () => undefined,
 });
 
-/* ─────────────────────────────────────────── state shape */
-
 export interface CanvasViewState {
-
-  /* viewport ─────── */
   mode: CanvasMode;
   scope: CanvasScope | null;
   layers: CanvasLayer[];
@@ -68,13 +49,12 @@ export interface CanvasViewState {
   viewport: CanvasViewport;
   lastPreset: string | null;
   selection: CanvasSelection;
+  entityPreview: CanvasEntityPreview | null;
 
-  /* sidebar ─────── */
   activePanel: CanvasActivityPanel;
   isActivityCollapsed: boolean;
   isBinderCollapsed: boolean;
 
-  /* actions: viewport */
   setMode: (mode: CanvasMode) => void;
   setScope: (scope: CanvasScope | null) => void;
   toggleLayer: (layer: CanvasLayer) => void;
@@ -85,16 +65,15 @@ export interface CanvasViewState {
   selectNode: (nodeId: string | null) => void;
   selectEdge: (edgeId: string | null) => void;
   clearSelection: () => void;
+  openEntityPreview: (preview: CanvasEntityPreview) => void;
+  clearEntityPreview: () => void;
 
-  /* actions: sidebar */
   setActivePanel: (panel: CanvasActivityPanel) => void;
   toggleActivity: () => void;
   toggleBinder: () => void;
   setActivityCollapsed: (collapsed: boolean) => void;
   setBinderCollapsed: (collapsed: boolean) => void;
 }
-
-/* ─────────────────────────────────────────── store */
 
 export const useCanvasViewStore = create<CanvasViewState>()(
   persist(
@@ -106,6 +85,7 @@ export const useCanvasViewStore = create<CanvasViewState>()(
       viewport: { zoom: 1, pan: { x: 0, y: 0 } },
       lastPreset: null,
       selection: { kind: "none" },
+      entityPreview: null,
 
       activePanel: "explorer",
       isActivityCollapsed: false,
@@ -125,7 +105,7 @@ export const useCanvasViewStore = create<CanvasViewState>()(
         }),
       setFocuses: (focuses) =>
         set({
-          focuses: focuses.filter((id) => typeof id === "string"),
+          focuses: Array.from(new Set(focuses.filter((id) => typeof id === "string"))),
         }),
       setViewport: (next) =>
         set((state) => ({
@@ -149,16 +129,30 @@ export const useCanvasViewStore = create<CanvasViewState>()(
       setLastPreset: (lastPreset) => set({ lastPreset }),
       selectNode: (nodeId) =>
         set({
+          entityPreview: null,
           selection: nodeId ? { kind: "node", id: nodeId } : { kind: "none" },
         }),
       selectEdge: (edgeId) =>
         set({
+          entityPreview: null,
           selection: edgeId ? { kind: "edge", id: edgeId } : { kind: "none" },
         }),
       clearSelection: () => set({ selection: { kind: "none" } }),
+      openEntityPreview: (entityPreview) =>
+        set({
+          entityPreview,
+          selection: { kind: "none" },
+          activePanel: "canvas",
+          isActivityCollapsed: false,
+        }),
+      clearEntityPreview: () => set({ entityPreview: null }),
 
       setActivePanel: (activePanel) =>
-        set({ activePanel, isActivityCollapsed: false }),
+        set((state) => ({
+          activePanel,
+          entityPreview: activePanel === "graph" ? null : state.entityPreview,
+          isActivityCollapsed: false,
+        })),
       toggleActivity: () =>
         set((state) => ({ isActivityCollapsed: !state.isActivityCollapsed })),
       toggleBinder: () =>

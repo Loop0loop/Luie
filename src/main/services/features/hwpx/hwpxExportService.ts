@@ -1,11 +1,3 @@
-/**
- * HWPX Export Service (BETA)
- * 한글 문서(.hwpx) 내보내기 전용 서비스
- *
- * 참고: pypandoc-hwpx 구조 기반
- * https://github.com/msjang/pypandoc-hwpx
- */
-
 import { promises as fs } from "fs";
 import path from "path";
 import JSZip from "jszip";
@@ -113,7 +105,7 @@ export class HwpxExportService {
         await fs.access(candidate);
         return candidate;
       } catch {
-        // Try next candidate
+        // NOTE: optional template candidate가 없으면 다음 위치를 확인한다.
       }
     }
 

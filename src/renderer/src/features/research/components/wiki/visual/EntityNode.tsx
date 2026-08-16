@@ -1,10 +1,3 @@
-/**
- * Read-only custom node for the relation graph (reactflow).
- *
- * Memoized — reactflow re-renders nodes frequently during pan/zoom and we
- * don't want to re-render the inner DOM unless `data` actually changes.
- */
-
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Handle, Position, type NodeProps } from "reactflow";
@@ -28,7 +21,7 @@ function EntityNodeImpl({ data }: NodeProps<EntityNodeData>) {
   return (
     <div
       className={cn(
-        "rounded-lg border bg-surface text-center shadow-sm select-none",
+        "rounded-panel border bg-surface text-center shadow-sm select-none",
         isCenter
           ? "px-4 py-3 min-w-[150px] border-2"
           : "px-3 py-2 min-w-[110px] border-border/60",
@@ -68,4 +61,5 @@ function EntityNodeImpl({ data }: NodeProps<EntityNodeData>) {
   );
 }
 
+// NOTE: ReactFlow가 pan/zoom 중 node를 자주 render하므로 data가 같으면 내부 DOM을 재사용한다.
 export const EntityNode = memo(EntityNodeImpl);

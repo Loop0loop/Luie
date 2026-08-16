@@ -1,13 +1,12 @@
 import { describe, it, expect, vi, beforeAll } from "vitest";
-import { SearchService } from "../../../src/main/services/features/search/index.js";
-import { ChapterService } from "../../../src/main/services/core/chapterService.js";
-import { ProjectService } from "../../../src/main/services/core/projectService.js";
+import { searchService } from "../../../src/main/services/features/search/searchService.js";
+import { ChapterService } from "../../../src/main/services/features/manuscript/chapterService.js";
+import { ProjectService } from "../../../src/main/services/features/project/projectService.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
-import { projectService } from "../../../src/main/services/core/projectService.js";
+import { projectService } from "../../../src/main/services/features/project/projectService.js";
 import { cacheDb } from "../../../src/main/database/cache/index.js";
-import { chapterSearchCacheService } from "../../../src/main/services/features/search/index.js";
+import { chapterSearchCacheService } from "../../../src/main/services/features/search/chapterSearchCacheService.js";
 
-const searchService = new SearchService();
 const chapterService = new ChapterService();
 const localProjectService = new ProjectService();
 

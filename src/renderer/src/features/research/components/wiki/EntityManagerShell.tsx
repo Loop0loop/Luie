@@ -108,11 +108,14 @@ export function EntityManagerShell({
   const {
     isCollapsed,
     isHydrated: isCollapseHydrated,
-    onResize: handleSidebarResize,
+    onResize: rawHandleSidebarResize,
     toggle,
   } = useCollapsibleSidebar(sidebarFeature, baseOnResize);
+  const handleSidebarResize = (panelSize: { inPixels?: number; asPercentage?: number }) => {
+    rawHandleSidebarResize(panelSize as never);
+  };
 
-  const { isLayoutReady } = useFixedPixelPanelGroupLayout({
+  const { hasCompletedInitialLayout } = useFixedPixelPanelGroupLayout({
     containerRef,
     groupRef: panelGroupRef,
     fixedPanels: [
@@ -131,13 +134,13 @@ export function EntityManagerShell({
     enableAnimations,
     uiHasHydrated,
     projectLayoutHasHydrated,
-    isLayoutReady,
+    isLayoutReady: hasCompletedInitialLayout,
     isCollapseHydrated,
   });
 
   return (
     <div
-      className="relative flex w-full h-full bg-canvas overflow-hidden"
+      className="relative flex w-full h-full bg-app overflow-hidden"
       style={{
         visibility: shouldHideUntilLayoutReady ? "hidden" : undefined,
       }}

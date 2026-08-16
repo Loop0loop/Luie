@@ -73,7 +73,7 @@ test("phase5 rag qa ask -> done -> evidence @stress", async () => {
     "memory.rebuildChunks",
   );
 
-  // rebuildChunks는 큐 적재만 수행하므로 실제 처리 완료까지 대기한다.
+  // NOTE: rebuildChunks는 queue 적재만 하므로 실제 처리 완료까지 기다린다.
   const waitStart = Date.now();
   while (Date.now() - waitStart < 15_000) {
     const status = await call(

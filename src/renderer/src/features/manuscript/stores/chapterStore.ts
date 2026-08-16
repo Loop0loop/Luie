@@ -9,18 +9,15 @@ import type { CRUDStore } from "@renderer/shared/store/createCRUDStore";
 import type { ChapterCreateInput, ChapterUpdateInput } from "@shared/types";
 import { api } from "@shared/api";
 
-// Base CRUD Store 타입 정의
 type BaseChapterStore = CRUDStore<
   Chapter,
   ChapterCreateInput,
   ChapterUpdateInput
 >;
 
-// 확장된 Store 타입 정의
 interface ChapterStore extends BaseChapterStore {
   reorderChapters: (chapterIds: string[]) => Promise<void>;
 
-  // 호환성 필드
   chapters: Chapter[];
   currentChapter: Chapter | null;
 }
@@ -32,7 +29,6 @@ export const useChapterStore = create<ChapterStore>((set, get, store) => {
     "currentChapter",
   );
 
-  // Base CRUD Slice 생성
   const apiClient = withProjectScopedGetAll(api.chapter);
 
   const crudSlice = createCRUDSlice<
@@ -69,7 +65,6 @@ export const useChapterStore = create<ChapterStore>((set, get, store) => {
       }
     },
 
-    // 호환성 필드
     chapters: crudSlice.items,
     currentChapter: crudSlice.currentItem,
   };

@@ -6,8 +6,8 @@ export { dbMaintenanceService } from "../../services/features/dbMaintenance/inde
 export { embeddingProjector } from "../../services/features/memory/embeddingProjector.js";
 export { memoryProjectionService } from "../../services/features/memory/memoryProjectionService.js";
 export { normalizeCoreAnswer } from "../../services/features/rag/normalizeCoreAnswer.js";
-export { searchService } from "../../services/features/search/index.js";
+export { searchService } from "../../services/features/search/searchService.js";
 export {
   invalidateModelRuntimeCache,
   resolveRuntimeModelInfo,
-} from "../../services/llm/modelRuntimeFactory.js";
+} from "../../services/features/llm/index.js";

@@ -1,10 +1,19 @@
 import { z } from "zod";
 import { isRelationAllowed } from "../constants/world/relationRules";
 import { WORLD_SCRAP_MEMOS_SCHEMA_VERSION } from "../constants/storage/persistence";
-import { PATH_MAX_LENGTH, characterIdSchema, chapterIdSchema, projectIdSchema, termIdSchema } from "./common";
+import {
+  LARGE_TEXT_MAX_LENGTH,
+  PATH_MAX_LENGTH,
+  characterIdSchema,
+  chapterIdSchema,
+  eventIdSchema,
+  factionIdSchema,
+  projectIdSchema,
+  termIdSchema,
+} from "./common";
 
 export const characterCreateSchema = z.object({
-  projectId: z.string().uuid("Invalid project ID"),
+  projectId: projectIdSchema,
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   firstAppearance: z.string().optional(),
@@ -12,15 +21,16 @@ export const characterCreateSchema = z.object({
 });
 
 export const characterUpdateSchema = z.object({
-  id: z.string().uuid("Invalid character ID"),
+  id: characterIdSchema,
   name: z.string().min(1, "Name is required").optional(),
   description: z.string().optional(),
   firstAppearance: z.string().optional(),
   attributes: z.record(z.string(), z.unknown()).optional(),
+  attributesPatch: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const eventCreateSchema = z.object({
-  projectId: z.string().uuid("Invalid project ID"),
+  projectId: projectIdSchema,
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   firstAppearance: z.string().optional(),
@@ -28,15 +38,16 @@ export const eventCreateSchema = z.object({
 });
 
 export const eventUpdateSchema = z.object({
-  id: z.string().uuid("Invalid event ID"),
+  id: eventIdSchema,
   name: z.string().min(1, "Name is required").optional(),
   description: z.string().optional(),
   firstAppearance: z.string().optional(),
   attributes: z.record(z.string(), z.unknown()).optional(),
+  attributesPatch: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const factionCreateSchema = z.object({
-  projectId: z.string().uuid("Invalid project ID"),
+  projectId: projectIdSchema,
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   firstAppearance: z.string().optional(),
@@ -44,15 +55,16 @@ export const factionCreateSchema = z.object({
 });
 
 export const factionUpdateSchema = z.object({
-  id: z.string().uuid("Invalid faction ID"),
+  id: factionIdSchema,
   name: z.string().min(1, "Name is required").optional(),
   description: z.string().optional(),
   firstAppearance: z.string().optional(),
   attributes: z.record(z.string(), z.unknown()).optional(),
+  attributesPatch: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const termCreateSchema = z.object({
-  projectId: z.string().uuid("Invalid project ID"),
+  projectId: projectIdSchema,
   term: z.string().min(1, "Term is required"),
   definition: z.string().optional(),
   category: z.string().optional(),
@@ -60,7 +72,7 @@ export const termCreateSchema = z.object({
 });
 
 export const termUpdateSchema = z.object({
-  id: z.string().uuid("Invalid term ID"),
+  id: termIdSchema,
   term: z.string().min(1, "Term is required").optional(),
   definition: z.string().optional(),
   category: z.string().optional(),
@@ -114,11 +126,140 @@ export const worldReplicaDocumentGetSchema = z.strictObject({
   docType: replicaWorldDocumentTypeSchema,
 });
 
-export const worldReplicaDocumentSetSchema = z.strictObject({
-  projectId: projectIdSchema,
-  docType: replicaWorldDocumentTypeSchema,
-  payload: z.unknown(),
-});
+const worldReplicaRecordSchema = z.record(z.string(), z.unknown());
+
+const worldReplicaObjectPayloadSchema = z
+  .object({
+    updatedAt: z.string().optional(),
+  })
+  .passthrough();
+
+const worldReplicaSynopsisPayloadSchema = z
+  .object({
+    synopsis: z.string().max(LARGE_TEXT_MAX_LENGTH).optional(),
+    updatedAt: z.string().optional(),
+  })
+  .passthrough();
+
+const worldReplicaGraphPayloadSchema = z
+  .object({
+    nodes: z.array(worldReplicaRecordSchema).optional(),
+    edges: z.array(worldReplicaRecordSchema).optional(),
+    canvasBlocks: z.array(worldReplicaRecordSchema).optional(),
+    canvasEdges: z.array(worldReplicaRecordSchema).optional(),
+    canvasFiles: z.array(worldReplicaRecordSchema).optional(),
+    timelines: z.array(worldReplicaRecordSchema).optional(),
+    updatedAt: z.string().optional(),
+  })
+  .passthrough();
+
+const isJsonSerializableValue = (
+  value: unknown,
+  seen = new WeakSet<object>(),
+): boolean => {
+  if (value === null) return true;
+  const valueType = typeof value;
+  if (
+    valueType === "string" ||
+    valueType === "number" ||
+    valueType === "boolean"
+  ) {
+    return Number.isFinite(value as number) || valueType !== "number";
+  }
+  if (
+    valueType === "undefined" ||
+    valueType === "function" ||
+    valueType === "symbol" ||
+    valueType === "bigint"
+  ) {
+    return false;
+  }
+  if (valueType !== "object") return false;
+
+  const objectValue = value as object;
+  if (seen.has(objectValue)) return false;
+  seen.add(objectValue);
+
+  if (Array.isArray(value)) {
+    const isSerializable = value.every((item) =>
+      isJsonSerializableValue(item, seen),
+    );
+    seen.delete(objectValue);
+    return isSerializable;
+  }
+
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) {
+    seen.delete(objectValue);
+    return false;
+  }
+
+  const isSerializable = Object.values(
+    value as Record<string, unknown>,
+  ).every((item) => isJsonSerializableValue(item, seen));
+  seen.delete(objectValue);
+  return isSerializable;
+};
+
+const addWorldReplicaPayloadIssues = (
+  payload: unknown,
+  ctx: z.RefinementCtx,
+): void => {
+  if (!isJsonSerializableValue(payload)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Payload must be JSON serializable",
+      path: ["payload"],
+    });
+    return;
+  }
+
+  const serialized = JSON.stringify(payload);
+  if (serialized.length > LARGE_TEXT_MAX_LENGTH) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Payload is too large",
+      path: ["payload"],
+    });
+  }
+};
+
+export const worldReplicaDocumentSetSchema = z
+  .discriminatedUnion("docType", [
+    z.strictObject({
+      projectId: projectIdSchema,
+      docType: z.literal("synopsis"),
+      payload: worldReplicaSynopsisPayloadSchema,
+    }),
+    z.strictObject({
+      projectId: projectIdSchema,
+      docType: z.literal("plot"),
+      payload: worldReplicaObjectPayloadSchema,
+    }),
+    z.strictObject({
+      projectId: projectIdSchema,
+      docType: z.literal("drawing"),
+      payload: worldReplicaObjectPayloadSchema,
+    }),
+    z.strictObject({
+      projectId: projectIdSchema,
+      docType: z.literal("mindmap"),
+      payload: worldReplicaObjectPayloadSchema,
+    }),
+    z.strictObject({
+      projectId: projectIdSchema,
+      docType: z.literal("graph"),
+      payload: worldReplicaGraphPayloadSchema,
+    }),
+    z.strictObject({
+      projectId: projectIdSchema,
+      docType: z.literal("scrap"),
+      payload: worldScrapMemosDataSchema,
+    }),
+  ])
+  .superRefine((value, ctx) => {
+    addWorldReplicaPayloadIssues(value.payload, ctx);
+  });
 
 export const worldReplicaScrapMemosGetSchema = z.strictObject({
   projectId: projectIdSchema,
@@ -158,10 +299,8 @@ export const relationKindSchema = z.enum([
   "violates",
 ]);
 
-export const worldEntityIdSchema = z.string().uuid("Invalid world entity ID");
-export const entityRelationIdSchema = z
-  .string()
-  .uuid("Invalid entity relation ID");
+export const worldEntityIdSchema = z.string().min(1).max(256);
+export const entityRelationIdSchema = z.string().min(1).max(256);
 
 export const worldEntityCreateSchema = z.object({
   projectId: projectIdSchema,
@@ -194,9 +333,9 @@ export const worldEntityUpdatePositionSchema = z.object({
 export const entityRelationCreateSchema = z
   .object({
     projectId: projectIdSchema,
-    sourceId: z.string().uuid("Invalid source ID"),
+    sourceId: z.string().min(1).max(256),
     sourceType: entityRelationTypeSchema,
-    targetId: z.string().uuid("Invalid target ID"),
+    targetId: z.string().min(1).max(256),
     targetType: entityRelationTypeSchema,
     relation: relationKindSchema,
     attributes: z.record(z.string(), z.unknown()).optional(),
@@ -221,7 +360,7 @@ export const entityRelationUpdateSchema = z.object({
 
 export const worldGraphMentionsQuerySchema = z.object({
   projectId: projectIdSchema,
-  entityId: z.string().uuid("Invalid entity ID"),
+  entityId: z.string().min(1).max(256),
   entityType: entityRelationTypeSchema,
   limit: z.number().int().positive().max(500).optional(),
 });

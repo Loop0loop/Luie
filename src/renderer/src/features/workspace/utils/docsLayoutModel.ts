@@ -33,26 +33,26 @@ export const getActiveDocsRightTab = (
   if (!isRightPanelOpen) return null;
   const candidate = docsRightTab ?? fallbackTab;
   if (candidate === null) return null;
-  // canvas and other editor-only tabs are not valid DocsLayoutPanelTabs.
+  // NOTE: canvas 등 editor 전용 tab은 DocsLayoutPanelTabs에 포함하지 않는다.
   return isDocsLayoutPanelTab(candidate) ? candidate : (isDocsLayoutPanelTab(fallbackTab) ? fallbackTab : null);
 };
 
-export const buildDocsLayoutPersistEntries = (
+export const buildDocsSidebarLayoutPersistEntries = (): LayoutPersistEntry[] => [
+  { id: "left-sidebar", index: 0, surface: "docs.sidebar" },
+];
+
+export const buildDocsRightLayoutPersistEntries = (
   activeRightTab: DocsLayoutPanelTab | null,
-): LayoutPersistEntry[] => {
-  const entries: LayoutPersistEntry[] = [
-    { id: "left-sidebar", surface: "docs.sidebar" },
-  ];
-
-  if (activeRightTab) {
-    entries.push({
-      id: getDocsRightPanelId(activeRightTab),
-      surface: getDocsLayoutPanelSurface(activeRightTab),
-    });
-  }
-
-  return entries;
-};
+): LayoutPersistEntry[] =>
+  activeRightTab
+    ? [
+        {
+          id: getDocsRightPanelId(activeRightTab),
+          index: 1,
+          surface: getDocsLayoutPanelSurface(activeRightTab),
+        },
+      ]
+    : [];
 
 export const getDocsLayoutSurfaceState = (
   layoutSurfaceRatios: Record<LayoutSurfaceId, number>,

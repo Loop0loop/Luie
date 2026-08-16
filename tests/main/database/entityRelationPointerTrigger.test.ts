@@ -25,7 +25,8 @@ async function createBootstrappedDb(): Promise<{ dbPath: string; db: InstanceTyp
   const dbPath = path.join(tempDir, "test.sqlite");
   ensurePackagedSqliteSchema(dbPath, logger);
   const db = new Database(dbPath);
-  db.pragma("foreign_keys = OFF"); // triggers handle consistency; FK off avoids project/worldEntity deps
+  // NOTE: trigger 일관성만 격리하려고 project/worldEntity FK dependency를 끈다.
+  db.pragma("foreign_keys = OFF");
   return { dbPath, db };
 }
 
@@ -72,7 +73,6 @@ afterEach(async () => {
   );
 });
 
-// ─── Backfill (NORMALIZE_UPDATE_SQL) ─────────────────────────────────────────
 
 describe("ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_SQL (backfill)", () => {
   let db: InstanceType<typeof Database>;
@@ -155,7 +155,6 @@ describe("ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_SQL (backfill)", () => {
   });
 
   it("clears stale pointers for non-backed types (corrupted existing rows)", () => {
-    // Simulate corrupt rows that have pointers set for non-backed types
     insertRelation(db, {
       id: "er-stale-char",
       sourceId: "src-char",
@@ -185,7 +184,7 @@ describe("ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_SQL (backfill)", () => {
     });
 
     db.exec(ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_SQL);
-    db.exec(ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_SQL); // run twice
+    db.exec(ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_SQL);
 
     const row = getPointers(db, "er-correct");
     expect(row.sourceWorldEntityId).toBe("src-place");
@@ -193,15 +192,13 @@ describe("ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_SQL (backfill)", () => {
   });
 });
 
-// ─── INSERT trigger ───────────────────────────────────────────────────────────
 
 describe("EntityRelation_pointer_normalize_insert trigger", () => {
   let db: InstanceType<typeof Database>;
 
   beforeEach(async () => {
     ({ db } = await createBootstrappedDb());
-    // Bootstrap already installed triggers via enforceEntityRelationPointerConsistency;
-    // re-exec is idempotent (CREATE TRIGGER IF NOT EXISTS).
+    // NOTE: bootstrap이 이미 설치한 trigger를 다시 실행해 CREATE IF NOT EXISTS의 멱등성을 검증한다.
     db.exec(ENTITY_RELATION_POINTER_NORMALIZE_INSERT_TRIGGER_SQL);
   });
 
@@ -272,7 +269,6 @@ describe("EntityRelation_pointer_normalize_insert trigger", () => {
   });
 
   it("corrects wrong pointer value supplied at INSERT time", () => {
-    // Caller passes wrong sourceWorldEntityId — trigger must overwrite it
     insertRelation(db, {
       id: "er-ins-wrong-ptr",
       sourceId: "real-place-id",
@@ -288,7 +284,6 @@ describe("EntityRelation_pointer_normalize_insert trigger", () => {
   });
 });
 
-// ─── UPDATE trigger ───────────────────────────────────────────────────────────
 
 describe("EntityRelation_pointer_normalize_update trigger", () => {
   let db: InstanceType<typeof Database>;
@@ -374,8 +369,7 @@ describe("EntityRelation_pointer_normalize_update trigger", () => {
       targetType: "Character",
     });
 
-    // UPDATE "relation" column — trigger only fires on sourceId/sourceType/targetId/targetType
-    // This verifies the trigger's AFTER UPDATE OF clause is scoped correctly.
+    // NOTE: relation만 변경해 AFTER UPDATE OF 범위가 pointer column으로 제한되는지 검증한다.
     expect(() => {
       db.prepare(`UPDATE "EntityRelation" SET "relation" = 'mentions' WHERE "id" = ?`).run("er-upd-5");
     }).not.toThrow();
@@ -384,7 +378,6 @@ describe("EntityRelation_pointer_normalize_update trigger", () => {
   });
 });
 
-// ─── enforceEntityRelationPointerConsistency integration ─────────────────────
 
 describe("enforceEntityRelationPointerConsistency (bootstrap integration)", () => {
   it("triggers are installed after ensurePackagedSqliteSchema", async () => {
@@ -406,15 +399,12 @@ describe("enforceEntityRelationPointerConsistency (bootstrap integration)", () =
   });
 
   it("backfills mismatched rows in existing DB on bootstrap", async () => {
-    // Simulate an existing DB with bad pointer values (pre-trigger era)
     const tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "luie-er-bf-"));
     tempDirs.push(tempDir);
     const dbPath = path.join(tempDir, "backfill.sqlite");
 
-    // Bootstrap once (creates tables/triggers)
     ensurePackagedSqliteSchema(dbPath, logger);
 
-    // Directly insert corrupt rows bypassing triggers via raw SQL
     const db = new Database(dbPath);
     db.pragma("foreign_keys = OFF");
     const now = new Date().toISOString();
@@ -428,7 +418,6 @@ describe("enforceEntityRelationPointerConsistency (bootstrap integration)", () =
     `).run(now, now, now, now);
     db.close();
 
-    // Bootstrap again — enforceEntityRelationPointerConsistency should backfill
     ensurePackagedSqliteSchema(dbPath, logger);
 
     const db2 = new Database(dbPath);

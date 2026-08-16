@@ -1,4 +1,4 @@
-// TODO: Remove in Phase 7 — replaced by Drizzle migrate() baseline flow
+// TODO: Phase 7에서 Drizzle migrate() baseline 전환이 끝나면 제거한다.
 import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -15,6 +15,10 @@ import {
   ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_SQL,
   ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_TRIGGER_SQL,
 } from "./entityRelationPointerSql.js";
+import {
+  PROJECT_REVISION_TRIGGER_NAMES,
+  PROJECT_REVISION_TRIGGER_SQL,
+} from "./projectRevisionTriggerSql.js";
 import { resolveMigrationPathContext } from "../runtime/index.js";
 import {
   backfillMemoryChunkIndexText,
@@ -105,7 +109,7 @@ function enforceEntityRelationPointerConsistency(
     database,
     "EntityRelation_pointer_normalize_update",
   );
-  // Backfill once before triggers are installed (or when one is missing).
+  // NOTE: trigger 설치 전에 기존 pointer를 한 번 정규화해야 legacy row도 일관성을 갖는다.
   if (!hasInsertTrigger || !hasUpdateTrigger) {
     database.exec(ENTITY_RELATION_POINTER_NORMALIZE_UPDATE_SQL);
   }
@@ -114,11 +118,23 @@ function enforceEntityRelationPointerConsistency(
   logger.info("EntityRelation pointer consistency enforced");
 }
 
-/**
- * Marks all existing Drizzle migrations as already applied.
- * Used when migrating from a Prisma-managed database that already has
- * the full schema — prevents "table already exists" errors.
- */
+function ensureProjectRevisionTriggers(
+  database: InstanceType<typeof Database>,
+  logger: LoggerLike,
+): void {
+  const hasAllTriggers = PROJECT_REVISION_TRIGGER_NAMES.every((triggerName) =>
+    sqliteTriggerExists(database, triggerName),
+  );
+  if (hasAllTriggers) return;
+
+  database.transaction(() => {
+    database.exec(PROJECT_REVISION_TRIGGER_SQL);
+    database.exec(`UPDATE "Project" SET "revision" = "revision" + 1;`);
+  })();
+  logger.info("Project revision triggers installed and revisions backfilled");
+}
+
+/** 기존 Prisma schema를 Drizzle이 재생성하지 않도록 현재 migration을 baseline으로 표시한다. */
 function markInitialMigrationAsApplied(
   database: InstanceType<typeof Database>,
   migrationsFolder: string,
@@ -175,11 +191,7 @@ function markInitialMigrationAsApplied(
   });
 }
 
-/**
- * Runs Drizzle migrations on the given database path.
- * Detects whether this is an existing Prisma database (has tables but no
- * __drizzle_migrations) and applies a baseline migration in that case.
- */
+/** Prisma 관리 DB를 감지하면 baseline을 적용한 뒤 Drizzle migration을 실행한다. */
 export function ensurePackagedSqliteSchema(
   dbPath: string,
   logger: LoggerLike,
@@ -200,22 +212,13 @@ export function ensurePackagedSqliteSchema(
     const drizzleDb = drizzle(database);
 
     if (hasProjectTable && !hasDrizzleMigrations) {
-      // Existing Prisma DB: mark all current migrations as already applied
-      // so Drizzle doesn't try to create tables that already exist.
+      // NOTE: 기존 Prisma DB는 Drizzle이 같은 table을 재생성하지 않도록 baseline을 적용 완료로 표시한다.
       markInitialMigrationAsApplied(database, migrationsFolder, logger);
     }
 
-    // Run Drizzle migrate — applies only migrations not yet in __drizzle_migrations
     migrate(drizzleDb, { migrationsFolder });
 
-    // Safety net: run the full bootstrap SQL to create any tables that were skipped
-    // by the Prisma baseline path (markInitialMigrationAsApplied records migrations
-    // as applied without executing their SQL). All statements use CREATE TABLE IF NOT
-    // EXISTS / CREATE INDEX IF NOT EXISTS, so this is fully idempotent.
-    database.exec(PACKAGED_SCHEMA_BOOTSTRAP_SQL);
-
-    // Apply column patches for existing DBs that may be missing columns
-    // added after the initial schema was created (e.g. deletedAt on WorldEntity).
+    // NOTE: legacy column patch가 index bootstrap보다 먼저 실행돼야 누락 column 참조를 피할 수 있다.
     let patchedColumns = 0;
     for (const patch of PACKAGED_SCHEMA_COLUMN_PATCHES) {
       if (!sqliteTableExists(database, patch.table)) continue;
@@ -223,6 +226,10 @@ export function ensurePackagedSqliteSchema(
       database.exec(patch.sql);
       patchedColumns += 1;
     }
+
+    // NOTE: Prisma baseline은 migration SQL을 실행하지 않으므로 idempotent bootstrap으로 누락 table을 보완한다.
+    database.exec(PACKAGED_SCHEMA_BOOTSTRAP_SQL);
+
     let patchedIndexes = 0;
     for (const patch of PACKAGED_SCHEMA_INDEX_PATCHES) {
       if (!sqliteTableExists(database, patch.table)) continue;
@@ -244,9 +251,7 @@ export function ensurePackagedSqliteSchema(
       });
     }
 
-    // MemoryChunkFts 토크나이저를 trigram 으로 보장(레거시 unicode61 → 재색인).
-    // 한국어 부분 일치 검색 품질의 토대. CREATE ... IF NOT EXISTS 인덱스 패치는
-    // 기존 테이블의 토크나이저를 바꾸지 못하므로 별도 마이그레이션이 필요하다.
+    // NOTE: CREATE IF NOT EXISTS로 tokenizer를 바꿀 수 없어 legacy FTS는 별도 재색인이 필요하다.
     try {
       ensureMemoryChunkFtsTrigram(database, logger);
     } catch (error) {
@@ -257,6 +262,7 @@ export function ensurePackagedSqliteSchema(
 
     backfillChapterBody(database, logger);
     enforceEntityRelationPointerConsistency(database, logger);
+    ensureProjectRevisionTriggers(database, logger);
 
     logger.info("Packaged SQLite Drizzle migration ensured", {
       dbPath,

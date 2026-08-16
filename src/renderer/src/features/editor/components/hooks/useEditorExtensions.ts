@@ -18,8 +18,7 @@ import { SmartLink } from "@renderer/features/editor/components/extensions/Smart
 import { DiffHighlight } from "@renderer/features/editor/components/extensions/DiffExtension";
 import { useTranslation } from "react-i18next";
 
-// Simple Callout Extension
-const Callout = Node.create({
+export const Callout = Node.create({
     name: "callout",
     group: "block",
     content: "block+",
@@ -41,7 +40,7 @@ const Callout = Node.create({
     },
 });
 
-const SlashCommand = Extension.create({
+export const SlashCommand = Extension.create({
     name: "slashCommand",
     addProseMirrorPlugins() {
         return [

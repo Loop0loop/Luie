@@ -2,14 +2,11 @@ import { createLogger } from "../../../../shared/logger/index.js";
 
 const logger = createLogger("CharacterAIService");
 
-// ── Types ─────────────────────────────────────────────────────────────────
-
 export type CharacterAIInput = {
   name: string;
   tagline?: string;
   roles?: string[];
   keywords?: string[];
-  // Core wiki sections
   overview?: string;
   personality?: string;
   background?: string;
@@ -20,15 +17,14 @@ export type CharacterAIInput = {
 
 export type RadarAxis = {
   label: string;
-  value: number; // 0–10
+  /** 0~10 범위의 정수 점수. */
+  value: number;
 };
 
 export type CharacterStatsInput = CharacterAIInput & {
-  /** Axes to evaluate. Labels are preserved; only values are updated. */
+  /** 평가 항목의 label과 순서는 유지되며 value만 갱신된다. */
   axes: RadarAxis[];
 };
-
-// ── Error helpers ─────────────────────────────────────────────────────────
 
 function httpError(prefix: string, status: number): Error {
   if (status === 429) return new Error(`${prefix}_RATE_LIMIT`);
@@ -36,8 +32,6 @@ function httpError(prefix: string, status: number): Error {
   if (status >= 500) return new Error(`${prefix}_SERVER_ERROR:${status}`);
   return new Error(`${prefix}_FAILED:${status}`);
 }
-
-// ── Prompt builders ───────────────────────────────────────────────────────
 
 function buildImagePrompt(input: CharacterAIInput): string {
   const parts: string[] = [];
@@ -63,10 +57,6 @@ function buildQuoteContext(input: CharacterAIInput): string {
   return lines.join("\n");
 }
 
-/**
- * Builds the character context string used for RAG-based stats generation.
- * All written wiki sections are collected and passed as retrieval context.
- */
 function buildStatsContext(input: CharacterAIInput): string {
   const lines: string[] = [`캐릭터명: ${input.name}`];
   if (input.tagline) lines.push(`한 줄 소개: ${input.tagline}`);
@@ -84,8 +74,6 @@ function buildStatsContext(input: CharacterAIInput): string {
   if (input.notes) lines.push(`\n[메모]\n${input.notes.slice(0, 200)}`);
   return lines.join("\n");
 }
-
-// ── Generate Image ────────────────────────────────────────────────────────
 
 export const generateCharacterImage = async (
   input: CharacterAIInput,
@@ -130,8 +118,6 @@ export const generateCharacterImage = async (
   logger.info("Character image generated", { name: input.name });
   return `data:${prediction.mimeType ?? "image/png"};base64,${prediction.bytesBase64Encoded}`;
 };
-
-// ── Generate Quote ────────────────────────────────────────────────────────
 
 export const generateCharacterQuote = async (
   input: CharacterAIInput,
@@ -179,16 +165,9 @@ export const generateCharacterQuote = async (
   return quote;
 };
 
-// ── Generate Stats (RAG) ──────────────────────────────────────────────────
-
 /**
- * RAG-based character stats generation.
- *
- * Retrieval  — all written wiki sections for the character are collected
- *              and passed as context (no vector store needed at this scale).
- * Generation — GPT-4o-mini reads the context and scores each radar axis.
- *
- * The axes array is mutated only on value; labels and order are preserved.
+ * 캐릭터 위키 내용을 바탕으로 각 radar axis의 점수를 생성한다.
+ * label과 순서는 보존하고 value만 0~10 범위로 정규화한다.
  */
 export const generateCharacterStats = async (
   input: CharacterStatsInput,
@@ -251,7 +230,6 @@ export const generateCharacterStats = async (
   if (!Array.isArray(parsed.axes))
     throw new Error("STATS_GENERATION_INVALID_FORMAT");
 
-  // Merge: preserve original axis order/labels, clamp values to 0–10
   const result = axes.map((axis) => {
     const scored = parsed.axes!.find((s) => s.label === axis.label);
     if (!scored) return axis;

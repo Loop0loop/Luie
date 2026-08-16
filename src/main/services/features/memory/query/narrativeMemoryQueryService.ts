@@ -1,42 +1,7 @@
 import type {
-  MemoryConflictQueueInput,
   MemoryConflictQueueItem,
-  MemoryConflictQueueResult,
-  MemoryEvidenceRepairInput,
-  MemoryEvidenceRepairResult,
   MemoryEpisodeCalibrationRequest,
   MemoryEpisodeCalibrationResult,
-  MemoryEpisodeConfirmInput,
-  MemoryEntityAliasConfirmInput,
-  MemoryEntityAliasRejectInput,
-  MemoryEntityAliasReviewMutationResult,
-  MemoryEntityAliasReviewQueueInput,
-  MemoryEntityAliasReviewQueueResult,
-  MemoryEntityAliasSplitInput,
-  MemoryEntityAliasSplitResult,
-  MemoryEntityConfirmInput,
-  MemoryEntityMergeInput,
-  MemoryEntityMergeResult,
-  MemoryEntityRejectInput,
-  MemoryEntityReviewMutationResult,
-  MemoryEntityReviewQueueInput,
-  MemoryEntityReviewQueueResult,
-  MemoryEpisodeRejectInput,
-  MemoryEpisodeRejectResult,
-  MemoryEpisodeReviewMutationResult,
-  MemoryEpisodeReviewQueueInput,
-  MemoryEpisodeReviewQueueResult,
-  MemoryReviewBacklogInput,
-  MemoryReviewBacklogResult,
-  MemoryStaleEvidenceReviewActionInput,
-  MemoryStaleEvidenceReviewActionResult,
-  MemoryTemporalFactConfirmInput,
-  MemoryTemporalFactConflictReviewInput,
-  MemoryTemporalFactConflictResolveInput,
-  MemoryTemporalFactRejectInput,
-  MemoryTemporalFactReviewMutationResult,
-  MemoryTemporalFactReviewQueueInput,
-  MemoryTemporalFactReviewQueueResult,
   NarrativeMemoryIntentCalibrationRequest,
   NarrativeMemoryIntentCalibrationResult,
   NarrativeMemoryFactResult,
@@ -50,28 +15,6 @@ import type {
   MemoryEvalRunRequest,
 } from "../../../../../shared/types/memoryEval.js";
 import { createLogger } from "../../../../../shared/logger/index.js";
-import {
-  confirmMemoryEntity,
-  confirmMemoryEntityAlias,
-  listSuggestedMemoryEntities,
-  listSuggestedMemoryEntityAliases,
-  mergeMemoryEntities,
-  rejectMemoryEntity,
-  rejectMemoryEntityAlias,
-  splitMemoryEntityAlias,
-} from "../entity/memoryEntityReviewService.js";
-import {
-  confirmMemoryEpisode,
-  listSuggestedMemoryEpisodes,
-  rejectMemoryEpisode,
-} from "../episode/memoryEpisodeReviewService.js";
-import {
-  confirmMemoryTemporalFact,
-  listSuggestedMemoryTemporalFacts,
-  rejectMemoryTemporalFact,
-  reviewMemoryTemporalFactConflict,
-  resolveMemoryTemporalFactConflict,
-} from "../temporal/memoryTemporalFactReviewService.js";
 import {
   fetchConflictFactPairs,
   toNarrativeMemoryFactSummary,
@@ -90,19 +33,13 @@ import {
   fetchNarrativeSummaryFacts,
   fetchChapterSummaryFacts,
 } from "./internal/summaries.js";
-import {
-  resolveChapterOrder,
-  resolveChapterOrderByChapterId,
-} from "./internal/chapter.js";
+import { resolveChapterOrder } from "./internal/chapter.js";
 import { fetchTemporalFacts } from "./internal/temporal.js";
 import {
   loadEntityProfiles,
   resolveMemoryEntityIds,
 } from "./internal/entity.js";
 import {
-  getNarrativeMemoryReviewBacklog,
-  repairNarrativeMemoryEvidenceLinks,
-  reviewNarrativeMemoryStaleEvidence,
   runNarrativeMemoryEpisodeCalibration,
   runNarrativeMemoryEvalSuite,
   runNarrativeMemoryIntentCalibration,
@@ -299,142 +236,6 @@ export class NarrativeMemoryQueryService {
     input: MemoryEpisodeCalibrationRequest,
   ): Promise<MemoryEpisodeCalibrationResult> {
     return await runNarrativeMemoryEpisodeCalibration(input);
-  }
-
-  async getConflictQueue(
-    input: MemoryConflictQueueInput,
-  ): Promise<MemoryConflictQueueResult> {
-    const chapterOrder = await resolveChapterOrderByChapterId({
-      projectId: input.projectId,
-      chapterId: input.chapterId,
-    });
-
-    const items = await fetchConflictFactPairs({
-      projectId: input.projectId,
-      chapterOrder,
-      includePriorMemory: input.includePriorMemory ?? false,
-      reviewFilter: input.reviewFilter,
-      entityId: input.entityId,
-      entityName: input.entityName,
-      entityType: input.entityType,
-      limit: input.limit,
-    });
-
-    return { items };
-  }
-
-  async getReviewBacklog(
-    input: MemoryReviewBacklogInput,
-  ): Promise<MemoryReviewBacklogResult> {
-    return await getNarrativeMemoryReviewBacklog(input);
-  }
-
-  async repairEvidenceLinks(
-    input: MemoryEvidenceRepairInput,
-  ): Promise<MemoryEvidenceRepairResult> {
-    return repairNarrativeMemoryEvidenceLinks(input);
-  }
-
-  async listSuggestedEpisodes(
-    input: MemoryEpisodeReviewQueueInput,
-  ): Promise<MemoryEpisodeReviewQueueResult> {
-    return await listSuggestedMemoryEpisodes(input);
-  }
-
-  async confirmEpisode(
-    input: MemoryEpisodeConfirmInput,
-  ): Promise<MemoryEpisodeReviewMutationResult> {
-    return await confirmMemoryEpisode(input);
-  }
-
-  async rejectEpisode(
-    input: MemoryEpisodeRejectInput,
-  ): Promise<MemoryEpisodeRejectResult> {
-    return await rejectMemoryEpisode(input);
-  }
-
-  async listSuggestedFacts(
-    input: MemoryTemporalFactReviewQueueInput,
-  ): Promise<MemoryTemporalFactReviewQueueResult> {
-    return await listSuggestedMemoryTemporalFacts(input);
-  }
-
-  async confirmFact(
-    input: MemoryTemporalFactConfirmInput,
-  ): Promise<MemoryTemporalFactReviewMutationResult> {
-    return await confirmMemoryTemporalFact(input);
-  }
-
-  async rejectFact(
-    input: MemoryTemporalFactRejectInput,
-  ): Promise<MemoryTemporalFactReviewMutationResult> {
-    return await rejectMemoryTemporalFact(input);
-  }
-
-  async resolveFactConflict(
-    input: MemoryTemporalFactConflictResolveInput,
-  ): Promise<MemoryTemporalFactReviewMutationResult> {
-    return await resolveMemoryTemporalFactConflict(input);
-  }
-
-  async reviewFactConflict(
-    input: MemoryTemporalFactConflictReviewInput,
-  ): Promise<MemoryTemporalFactReviewMutationResult> {
-    return await reviewMemoryTemporalFactConflict(input);
-  }
-
-  async listSuggestedEntityAliases(
-    input: MemoryEntityAliasReviewQueueInput,
-  ): Promise<MemoryEntityAliasReviewQueueResult> {
-    return await listSuggestedMemoryEntityAliases(input);
-  }
-
-  async listSuggestedEntities(
-    input: MemoryEntityReviewQueueInput,
-  ): Promise<MemoryEntityReviewQueueResult> {
-    return await listSuggestedMemoryEntities(input);
-  }
-
-  async confirmEntity(
-    input: MemoryEntityConfirmInput,
-  ): Promise<MemoryEntityReviewMutationResult> {
-    return await confirmMemoryEntity(input);
-  }
-
-  async rejectEntity(
-    input: MemoryEntityRejectInput,
-  ): Promise<MemoryEntityReviewMutationResult> {
-    return await rejectMemoryEntity(input);
-  }
-
-  async confirmEntityAlias(
-    input: MemoryEntityAliasConfirmInput,
-  ): Promise<MemoryEntityAliasReviewMutationResult> {
-    return await confirmMemoryEntityAlias(input);
-  }
-
-  async rejectEntityAlias(
-    input: MemoryEntityAliasRejectInput,
-  ): Promise<MemoryEntityAliasReviewMutationResult> {
-    return await rejectMemoryEntityAlias(input);
-  }
-
-  async splitEntityAlias(
-    input: MemoryEntityAliasSplitInput,
-  ): Promise<MemoryEntityAliasSplitResult> {
-    return await splitMemoryEntityAlias(input);
-  }
-
-  async mergeEntity(
-    input: MemoryEntityMergeInput,
-  ): Promise<MemoryEntityMergeResult> {
-    return await mergeMemoryEntities(input);
-  }
-
-  async reviewStaleEvidence(
-    input: MemoryStaleEvidenceReviewActionInput,
-  ): Promise<MemoryStaleEvidenceReviewActionResult> {
-    return await reviewNarrativeMemoryStaleEvidence(input);
   }
 }
 

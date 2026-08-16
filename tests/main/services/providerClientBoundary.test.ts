@@ -1,19 +1,23 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
-import { ExternalApiProvider } from "../../../src/main/services/llm/providers/externalApiProvider.js";
-import { GeminiProvider } from "../../../src/main/services/llm/providers/geminiProvider.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { ExternalApiProvider } from "../../../src/main/services/features/llm/providers/externalApiProvider.js";
+import { GeminiProvider } from "../../../src/main/services/features/llm/providers/geminiProvider.js";
 
 const providerSource = (relativePath: string): string =>
   readFileSync(resolve(process.cwd(), relativePath), "utf8");
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("provider client dependency boundary", () => {
   it("keeps provider clients free of settings and sync token imports", () => {
     const externalApiProvider = providerSource(
-      "src/main/services/llm/providers/externalApiProvider.ts",
+      "src/main/services/features/llm/providers/externalApiProvider.ts",
     );
     const geminiProvider = providerSource(
-      "src/main/services/llm/providers/geminiProvider.ts",
+      "src/main/services/features/llm/providers/geminiProvider.ts",
     );
 
     for (const source of [externalApiProvider, geminiProvider]) {
@@ -61,6 +65,56 @@ describe("provider client dependency boundary", () => {
     ).toBe("streaming");
   });
 
+  it("uses max_completion_tokens for OpenAI chat completions", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("data: [DONE]\n\n", {
+        status: 200,
+        headers: { "Content-Type": "text/event-stream" },
+      }),
+    );
+    const provider = new ExternalApiProvider({
+      baseUrl: "https://api.openai.com/v1",
+      apiKey: "key",
+      chatModel: "gpt-5.4-mini",
+    });
+
+    for await (const _chunk of provider.generateChatStream(
+      { userPrompt: "hello" },
+      { maxTokens: 8 },
+    )) {
+      // NOTE: request body 검증 전에 stream을 끝까지 소비한다.
+    }
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(body.max_completion_tokens).toBe(8);
+    expect(body.max_tokens).toBeUndefined();
+  });
+
+  it("keeps max_tokens for non-OpenAI compatible runtimes", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("data: [DONE]\n\n", {
+        status: 200,
+        headers: { "Content-Type": "text/event-stream" },
+      }),
+    );
+    const provider = new ExternalApiProvider({
+      baseUrl: "http://127.0.0.1:11434/v1",
+      apiKey: "key",
+      chatModel: "local-test",
+    });
+
+    for await (const _chunk of provider.generateChatStream(
+      { userPrompt: "hello" },
+      { maxTokens: 8 },
+    )) {
+      // NOTE: request body 검증 전에 stream을 끝까지 소비한다.
+    }
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(body.max_tokens).toBe(8);
+    expect(body.max_completion_tokens).toBeUndefined();
+  });
+
   it("keeps RAG first-token timeout keyed by runtime generationMode", () => {
     const workerSource = providerSource("src/main/utility/rag/ragQaWorker.ts");
 
@@ -79,7 +133,7 @@ describe("provider client dependency boundary", () => {
     expect(materializerSource).not.toContain("ensureSyncAccessToken");
     expect(materializerSource).not.toContain("getSupabaseConfig");
     expect(materializerSource).not.toContain(
-      "../../services/llm/embeddingModelConstants",
+      "../../services/features/llm/embeddingModelConstants",
     );
     expect(materializerSource).toContain("proxyResolverForCandidate");
   });
@@ -90,7 +144,7 @@ describe("provider client dependency boundary", () => {
     );
 
     expect(supervisorSource).not.toContain(
-      "../../services/llm/embeddingModelConstants",
+      "../../services/features/llm/embeddingModelConstants",
     );
     expect(supervisorSource).toContain("./embeddingModelConstants");
   });
@@ -139,8 +193,10 @@ describe("provider client dependency boundary", () => {
     );
 
     expect(worldReplicaSource).not.toContain(
-      'import { projectService } from "../../core/projectService.js";',
+      'import { projectService } from "../project/projectService.js";',
     );
-    expect(worldReplicaSource).toContain("await import(\"../../core/projectService.js\")");
+    expect(worldReplicaSource).toContain(
+      'await import("../project/projectService.js")',
+    );
   });
 });

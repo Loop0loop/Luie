@@ -14,8 +14,7 @@ export type MainDrizzleClient = BetterSQLite3Database<typeof schema>;
 
 export type CacheDrizzleClient = BetterSQLite3Database<typeof cacheSchema>;
 
-// Common subset of Drizzle DB operations that works with both root client and transaction.
-// See: projectImportTransaction.ts tx as unknown as MainDrizzleClient — this type eliminates that cast.
+/** root client와 transaction이 공유하는 Drizzle 연산만 노출해 unsafe cast를 막는다. */
 export type DbLike = Pick<
   BetterSQLite3Database<typeof schema>,
   "select" | "insert" | "update" | "delete"

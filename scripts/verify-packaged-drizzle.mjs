@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-// Verifies that all Drizzle migration files are properly included in the packaged app.
-// Run after electron-builder packaging.
 
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -25,7 +23,6 @@ for (const relPath of REQUIRED_RESOURCE_PATHS) {
   if (!found) allFound = false;
 }
 
-// Check that at least one main migration SQL file exists
 const mainDir = path.join(resourcePath, "drizzle", "main");
 if (fs.existsSync(mainDir)) {
   const sqlFiles = fs.readdirSync(mainDir).filter(f => f.endsWith(".sql"));

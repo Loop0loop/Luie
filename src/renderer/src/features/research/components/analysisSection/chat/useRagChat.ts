@@ -7,7 +7,6 @@ import {
 import { useShallow } from "zustand/react/shallow";
 import { useAnalysisStore } from "@renderer/features/research/stores/analysisStore";
 import { requestChapterNavigation } from "@renderer/features/workspace/services/chapterNavigation";
-import { api } from "@shared/api";
 import type {
   MemoryScope,
 } from "../shared/types";
@@ -58,7 +57,7 @@ export function useRagChat({
     try {
       await handleSend(projectId, chapterId, memoryScope);
     } catch {
-      // Error is handled in store
+      // NOTE: 사용자 오류 상태는 store가 기록하므로 여기서는 중복 처리하지 않는다.
     }
   }, [projectId, chapterId, memoryScope, handleSend]);
 
@@ -77,7 +76,6 @@ export function useRagChat({
     if (!item.chapterId) {
       return;
     }
-    await api.memory.getChunkBacklink(item.chunkId);
     requestChapterNavigation({
       chapterId: item.chapterId,
       query: item.quote?.trim().slice(0, 48),

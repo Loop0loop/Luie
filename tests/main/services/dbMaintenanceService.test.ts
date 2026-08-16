@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import crypto from "node:crypto";
-import { ProjectService } from "../../../src/main/services/core/projectService.js";
-import { ChapterService } from "../../../src/main/services/core/chapterService.js";
+import { ProjectService } from "../../../src/main/services/features/project/projectService.js";
+import { ChapterService } from "../../../src/main/services/features/manuscript/chapterService.js";
 import { dbMaintenanceService } from "../../../src/main/services/features/dbMaintenance/index.js";
 import { db } from "../../../src/main/database/index.js";
 import {
@@ -9,7 +9,7 @@ import {
   searchDirtyQueue,
 } from "../../../src/main/database/schema/index.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
-import { projectService } from "../../../src/main/services/core/projectService.js";
+import { projectService } from "../../../src/main/services/features/project/projectService.js";
 import {
   MEMORY_JOB_TYPES,
   MEMORY_TARGET_TYPES,

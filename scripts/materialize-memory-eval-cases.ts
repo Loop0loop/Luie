@@ -2,14 +2,14 @@
 
 import { db } from "../src/main/database/main/databaseService.js";
 import {
-  auditMemoryEvalCaseQuality,
   countMemoryEvalCases,
   materializeMemoryEvalCasesFromEpisodeEvidence,
   materializeTemporalChapterEvalCasesFromChunks,
   materializeWriterPainPointEvalCasesFromChunks,
   repairLegacyEpisodeEvalCases,
   repairWriterPainPointTaxonomyEvalCases,
-} from "../src/main/services/features/memory/eval/index.js";
+} from "../src/main/services/features/memory/eval/memoryEvalCaseMaterialization.js";
+import { auditMemoryEvalCaseQuality } from "../src/main/services/features/memory/eval/memoryEvalQualityAudit.js";
 
 type CliOptions = {
   projectId: string;
@@ -123,7 +123,7 @@ async function main(): Promise<void> {
       });
     }
     const after = await countMemoryEvalCases({ projectId: options.projectId });
-    // eslint-disable-next-line no-console -- CLI script output.
+    // eslint-disable-next-line no-console -- CLI 결과를 stdout으로 전달한다.
     console.log(
       JSON.stringify({ projectId: options.projectId, before, result, after }, null, 2),
     );
@@ -133,7 +133,7 @@ async function main(): Promise<void> {
 }
 
 await main().catch((error) => {
-  // eslint-disable-next-line no-console -- CLI script error output.
+  // eslint-disable-next-line no-console -- CLI 오류를 stderr로 전달한다.
   console.error(
     JSON.stringify(
       { error: error instanceof Error ? error.message : String(error) },

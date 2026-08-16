@@ -5,7 +5,10 @@ import { describe, expect, it } from "vitest";
 describe("main embedding runtime boundary", () => {
   it("does not materialize the local embedding sidecar from modelRuntimeFactory", () => {
     const source = readFileSync(
-      resolve(process.cwd(), "src/main/services/llm/modelRuntimeFactory.ts"),
+      resolve(
+        process.cwd(),
+        "src/main/services/features/llm/modelRuntimeFactory.ts",
+      ),
       "utf8",
     );
 
@@ -21,13 +24,13 @@ describe("main embedding runtime boundary", () => {
       existsSync(
         resolve(
           process.cwd(),
-          "src/main/services/llm/embeddingSidecarManager.ts",
+          "src/main/services/features/llm/embeddingSidecarManager.ts",
         ),
       ),
     ).toBe(false);
 
     const barrelSource = readFileSync(
-      resolve(process.cwd(), "src/main/services/llm/index.ts"),
+      resolve(process.cwd(), "src/main/services/features/llm/index.ts"),
       "utf8",
     );
     const analysisDomainSource = readFileSync(

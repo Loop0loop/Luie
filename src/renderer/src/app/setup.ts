@@ -4,17 +4,12 @@ import {
   DEFAULT_EDITOR_THEME_ACCENT,
   DEFAULT_EDITOR_THEME_CONTRAST,
   DEFAULT_EDITOR_THEME_TEMP,
-  DEFAULT_EDITOR_THEME_TEXTURE,
 } from "@shared/constants/app/configs";
 import { editorSettingsSchema } from "@shared/schemas/index.js";
 import { api } from "@shared/api";
-import { useEditorStore } from "@renderer/domains/editor";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 
-/**
- * Register a global unhandledrejection listener so that Promise rejections
- * that are not caught anywhere are at least logged to the main process instead
- * of silently disappearing. This runs once when the renderer boots.
- */
+/** 처리되지 않은 Promise rejection이 유실되지 않도록 main logger로 전달한다. */
 function setupUnhandledRejectionHandler(): void {
   window.addEventListener(
     "unhandledrejection",
@@ -71,29 +66,36 @@ function setupResizeObserverWarningFilter(): void {
 type ThemeSeed = Pick<
   EditorSettings,
   | "theme"
-  | "themeTemp"
   | "themeContrast"
+  | "themeTemp"
   | "themeAccent"
-  | "themeTexture"
   | "enableAnimations"
 >;
 
 const DEFAULT_THEME_SEED: ThemeSeed = {
   theme: DEFAULT_EDITOR_THEME,
-  themeTemp: DEFAULT_EDITOR_THEME_TEMP,
   themeContrast: DEFAULT_EDITOR_THEME_CONTRAST,
+  themeTemp: DEFAULT_EDITOR_THEME_TEMP,
   themeAccent: DEFAULT_EDITOR_THEME_ACCENT,
-  themeTexture: DEFAULT_EDITOR_THEME_TEXTURE,
   enableAnimations: true,
 };
 
 const applyThemeSeed = (theme: ThemeSeed): void => {
   const root = document.documentElement;
   root.setAttribute("data-theme", theme.theme);
-  root.setAttribute("data-temp", theme.themeTemp);
   root.setAttribute("data-contrast", theme.themeContrast);
-  root.setAttribute("data-accent", theme.themeAccent);
-  root.setAttribute("data-texture", String(theme.themeTexture));
+  root.setAttribute("data-temp", theme.themeTemp);
+  if (theme.themeAccent?.startsWith("#")) {
+    root.setAttribute("data-accent", "custom");
+    root.style.setProperty("--text-accent", theme.themeAccent);
+    root.style.setProperty("--accent-bg", theme.themeAccent);
+    root.style.setProperty("--accent-bg-hover", theme.themeAccent);
+  } else {
+    root.setAttribute("data-accent", theme.themeAccent || DEFAULT_EDITOR_THEME_ACCENT);
+    root.style.removeProperty("--text-accent");
+    root.style.removeProperty("--accent-bg");
+    root.style.removeProperty("--accent-bg-hover");
+  }
   root.setAttribute(
     "data-animations",
     theme.enableAnimations ? "on" : "off",
@@ -102,15 +104,13 @@ const applyThemeSeed = (theme: ThemeSeed): void => {
 
 const toThemeSeed = (settings: EditorSettings): ThemeSeed => ({
   theme: settings.theme,
-  themeTemp: settings.themeTemp,
   themeContrast: settings.themeContrast,
+  themeTemp: settings.themeTemp,
   themeAccent: settings.themeAccent,
-  themeTexture: settings.themeTexture,
   enableAnimations: settings.enableAnimations,
 });
 
 export const setupRenderer = async (): Promise<void> => {
-  // ✅ Register global rejection handler before anything else
   setupUnhandledRejectionHandler();
   setupResizeObserverWarningFilter();
 
@@ -130,6 +130,6 @@ export const setupRenderer = async (): Promise<void> => {
     useEditorStore.setState(parsed.data);
     applyThemeSeed(toThemeSeed(parsed.data));
   } catch {
-    // Best-effort setup: defaults are already applied.
+    // NOTE: setup 실패 시에도 기본 설정은 이미 적용돼 있다.
   }
 };

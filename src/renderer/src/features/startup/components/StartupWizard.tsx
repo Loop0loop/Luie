@@ -43,7 +43,6 @@ export default function StartupWizard() {
   const [llmfitResult, setLlmfitResult] = useState<LlmfitResult | null>(null);
   const [llmfitLoading, setLlmfitLoading] = useState(false);
 
-  // 설치 단계 진입 시 임베딩 상태 + 하드웨어 추천을 로드(비차단).
   useEffect(() => {
     if (step !== "setup") return;
     void (async () => {
@@ -85,7 +84,6 @@ export default function StartupWizard() {
     }
   }, []);
 
-  // 완료: 기존 readiness/completeWizard 흐름으로 Main Window 전환을 트리거(R7.5).
   const finalize = useCallback(async () => {
     setStep("finalizing");
     setErrorMessage(null);
@@ -108,7 +106,6 @@ export default function StartupWizard() {
           throw new Error(`STARTUP_PENDING_CHECKS:${unresolved || "unknown"}`);
         }
       }
-      // 성공 시 메인 프로세스가 wizard 완료 이벤트로 Main Window 로 전환한다.
     } catch (error) {
       setStep("error");
       setErrorMessage(getErrorMessage(error));
@@ -131,10 +128,10 @@ export default function StartupWizard() {
 
   return (
     <div className="min-h-screen bg-app text-fg flex items-center justify-center px-6">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-panel shadow-xl p-8">
+      <div className="w-full max-w-md rounded-panel border border-border bg-panel shadow-panel p-8">
         {step === "intro" && (
           <div className="flex flex-col items-center gap-5 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+            <div className="flex h-14 w-14 items-center justify-center rounded-panel bg-accent/10 text-accent">
               <Sparkles className="h-7 w-7" />
             </div>
             <h1 className="text-xl font-semibold">
@@ -146,7 +143,7 @@ export default function StartupWizard() {
             <button
               type="button"
               onClick={() => setStep("setup")}
-              className="w-full rounded-lg bg-accent px-4 py-2 text-sm text-white hover:bg-accent/90"
+              className="w-full rounded-panel bg-accent px-4 py-2 text-sm text-white hover:bg-accent/90"
             >
               {t("startupWizard.onboarding.introNext")}
             </button>
@@ -164,7 +161,6 @@ export default function StartupWizard() {
               </p>
             </div>
 
-            {/* 임베딩 모델 상태 + 설치 */}
             <div className="rounded-control border border-border bg-surface p-3 space-y-2">
               <div className="flex items-center gap-1.5 text-xs font-medium text-fg-secondary">
                 <Sparkles className="h-3.5 w-3.5" />
@@ -208,7 +204,7 @@ export default function StartupWizard() {
                   type="button"
                   onClick={() => void handleDownloadEmbedding()}
                   disabled={embeddingDownloading}
-                  className="w-full rounded-lg border border-border bg-bg px-4 py-2 text-xs text-fg hover:bg-surface-hover disabled:opacity-50"
+                  className="w-full rounded-panel border border-border bg-bg px-4 py-2 text-xs text-fg hover:bg-surface-hover disabled:opacity-50"
                 >
                   {embeddingDownloading
                     ? t("settings.localLlm.embedding.downloading")
@@ -217,7 +213,6 @@ export default function StartupWizard() {
               )}
             </div>
 
-            {/* 하드웨어 맞춤 추천 */}
             <div className="rounded-control border border-border bg-surface p-3 space-y-2">
               <div className="flex items-center gap-1.5 text-xs font-medium text-fg-secondary">
                 <Cpu className="h-3.5 w-3.5" />
@@ -252,14 +247,14 @@ export default function StartupWizard() {
               <button
                 type="button"
                 onClick={() => void finalize()}
-                className="flex-1 rounded-lg border border-border bg-bg px-4 py-2 text-sm text-muted hover:bg-surface-hover"
+                className="flex-1 rounded-panel border border-border bg-bg px-4 py-2 text-sm text-muted hover:bg-surface-hover"
               >
                 {t("startupWizard.onboarding.skip")}
               </button>
               <button
                 type="button"
                 onClick={() => void finalize()}
-                className="flex-1 rounded-lg bg-accent px-4 py-2 text-sm text-white hover:bg-accent/90"
+                className="flex-1 rounded-panel bg-accent px-4 py-2 text-sm text-white hover:bg-accent/90"
               >
                 {t("startupWizard.onboarding.next")}
               </button>
@@ -289,7 +284,7 @@ export default function StartupWizard() {
                 <button
                   type="button"
                   onClick={() => setAttempt((prev) => prev + 1)}
-                  className="w-full rounded-lg bg-accent px-4 py-2 text-sm text-white hover:bg-accent/90"
+                  className="w-full rounded-panel bg-accent px-4 py-2 text-sm text-white hover:bg-accent/90"
                 >
                   {t("startupWizard.actions.retry")}
                 </button>

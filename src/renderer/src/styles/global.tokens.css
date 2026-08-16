@@ -1,5 +1,4 @@
 @theme {
-  /* Colors */
   --color-app: var(--bg-app);
   --color-sidebar: var(--bg-sidebar);
   --color-panel: var(--bg-panel);
@@ -8,19 +7,16 @@
   --color-element: var(--bg-element);
   --color-element-hover: var(--bg-element-hover);
   --color-active: var(--bg-active);
-  --color-canvas: var(--bg-canvas);
   --color-background: var(--bg-app);
   --color-card: var(--bg-surface);
   --color-popover: var(--bg-surface);
   --color-input: var(--bg-element);
   --color-ring: var(--ring-color, var(--accent-bg));
   --color-hover: var(--bg-hover);
-  --color-bg-primary: var(--bg-primary);
   --color-bg-secondary: var(--bg-secondary);
   --color-bg-panel: var(--bg-panel);
   --color-editor-bg: var(--editor-bg);
 
-  /* Text Colors */
   --color-fg: var(--text-primary);
   --color-muted: var(--text-secondary);
   --color-subtle: var(--text-tertiary);
@@ -40,7 +36,6 @@
   --color-accent-foreground: var(--accent-fg);
   --color-destructive-foreground: var(--text-on-accent);
 
-  /* Semantic Colors */
   --color-primary: var(--accent-bg);
   --color-destructive: var(--danger-fg);
   --color-error: var(--danger-fg);
@@ -49,71 +44,96 @@
   --color-success-fg: var(--success-fg);
   --color-danger-fg: var(--danger-fg);
 
-  /* Borders */
   --color-border: var(--border-default);
   --color-border-active: var(--border-active);
   --color-border-focus: var(--border-focus);
+
+  /* NOTE: Tailwind v4에서 읽지 않는 config 대신 실제 사용 token만 이곳에 유지한다. */
+  --radius-control: 0.625rem;
+  --radius-panel: 0.875rem;
+  --shadow-panel: 0 10px 28px rgba(15, 23, 42, 0.14);
+  --spacing-control-x: 0.75rem;
+  --spacing-control-y: 0.5rem;
+  --spacing-panel-pad: 1.25rem;
+  --spacing-panel-gap: 1rem;
+
+  /* NOTE: canvas document의 반복 arbitrary value를 scoped token으로 공유한다. */
+  --text-canvas-doc-title: 2.5rem;
+  --text-canvas-doc-body: 0.9375rem;
+  --container-canvas-doc: 56.25rem;
+  --spacing-canvas-doc-label: 11.875rem;
+
+  /* NOTE: canvas node의 반복 typography 값을 scoped token으로 공유한다. */
+  --text-canvas-node-meta: 0.625rem;
+  --text-canvas-node-desc: 0.6875rem;
+  --text-canvas-node-label: 0.9375rem;
+  --text-canvas-edge-label: 0.625rem;
+
+  /* NOTE: 임의 z-index 경쟁을 막으려고 named utility의 값을 한 곳에서 관리한다. */
+  --z-index-dropdown: 50;
+  --z-index-banner: 100;
+  --z-index-toast: 150;
+  --z-index-modal: 1000;
+}
+
+@utility z-dropdown {
+  z-index: var(--z-index-dropdown);
+}
+@utility z-banner {
+  z-index: var(--z-index-banner);
+}
+@utility z-toast {
+  z-index: var(--z-index-toast);
+}
+@utility z-modal {
+  z-index: var(--z-index-modal);
 }
 
 @layer components {
-  /* Namuwiki & Global Components Priority Layer */
 }
 
 :root {
-  /* 
-    DESIGN TOKENS - ZINC SCALE (Neutral, Professional)
-    Using specific hex values to ensure consistency across themes
-  */
-
-  /* === LIGHT THEME (Default) === */
-  /* Backgrounds */
-  --bg-app: #ffffff; /* Main Canvas */
-  --bg-sidebar: #f4f4f5; /* Zinc-100 */
-  --bg-panel: #ffffff; /* Panel matches app */
+  --bg-app: #ffffff;
+  --bg-sidebar: #f4f4f5;
+  --bg-panel: #ffffff;
   --bg-surface: #ffffff;
-  --bg-surface-hover: rgba(0, 0, 0, 0.04); /* Vercel-style alpha hover */
+  --bg-surface-hover: rgba(0, 0, 0, 0.04);
   --bg-element: #ffffff;
   --bg-element-hover: rgba(0, 0, 0, 0.04);
-  --bg-active: rgba(0, 0, 0, 0.08); /* Zinc-200 equivalent alpha */
+  --bg-active: rgba(0, 0, 0, 0.08);
 
-  /* Text */
-  --text-primary: #18181b; /* Zinc-900 - Sharp, readable black */
-  --text-secondary: #71717a; /* Zinc-500 - Clear secondary info */
-  --text-tertiary: #a1a1aa; /* Zinc-400 - Placeholders */
-  --text-accent: #2563eb; /* Blue-600 - Standard interaction blue */
+  --text-primary: #18181b;
+  --text-secondary: #71717a;
+  --text-tertiary: #a1a1aa;
+  --text-accent: #2563eb;
   --text-on-accent: #ffffff;
 
-  /* Semantic UI */
-  --accent-bg: #2563eb; /* Blue-600 */
-  --accent-bg-hover: #1d4ed8; /* Blue-700 */
+  --accent-bg: #2563eb;
+  --accent-bg-hover: #1d4ed8;
   --accent-fg: #ffffff;
-  --success-fg: #16a34a; /* Green-600 */
-  --danger-fg: #ef4444; /* Red-500 */
+  --success-fg: #16a34a;
+  --danger-fg: #ef4444;
 
-  /* Aliases (legacy UI tokens) */
   --bg-primary: #ffffff;
   --bg-secondary: #f9fafb;
   --bg-hover: var(--bg-element-hover);
   --bg-canvas: #ffffff;
-  --accent-primary: #2563eb;
+  --accent-primary: var(--accent-bg);
   --grid-line: #e5e7eb;
-  --danger-fg: #dc2626; /* Red-600 */
+  --danger-fg: #dc2626;
 
-  /* Borders */
-  --border-default: #e4e4e7; /* Zinc-200 */
-  --border-active: #d4d4d8; /* Zinc-300 */
-  --border-focus: #18181b; /* Zinc-900 */
+  --border-default: #e4e4e7;
+  --border-active: #d4d4d8;
+  --border-focus: #18181b;
 
-  /* Editor Specific (Can differ from UI) */
   --editor-bg: #ffffff;
   --editor-text: #18181b;
-  --editor-selection: #bfdbfe; /* Blue-200 */
+  --editor-selection: #eadcbf;
 
-  /* Dimensions */
   --header-height: 48px;
   --sidebar-width: 260px;
   --panel-width: 320px;
-  --collapsed-width: 0px; /* For animations */
+  --collapsed-width: 0px;
   --context-panel-section-padding: 16px;
   --context-panel-header-font-size: 12px;
   --context-panel-body-font-size: 13px;
@@ -149,21 +169,20 @@
   --character-relation-font-size: 12px;
   --character-relation-margin-bottom: 8px;
 
-  /* Namuwiki Theme Tokens (Light) */
-  --namu-blue: #00a2e8;
-  --namu-border: #cccccc;
-  --namu-table-bg: #f5f5f5;
-  --namu-table-label: #00a2e8;
-  --namu-hover-bg: #eef9fe;
-  --namu-header-text: #ffffff;
-  --namu-link: #0275d8;
+  /* NOTE: wiki도 theme별 core variable을 참조해 같은 accent·border·surface palette를 사용한다. */
+  --namu-blue: var(--accent-bg);
+  --namu-border: var(--border-default);
+  --namu-table-bg: var(--bg-sidebar);
+  --namu-table-label: var(--text-accent);
+  --namu-hover-bg: var(--bg-surface-hover);
+  --namu-header-text: var(--text-on-accent);
+  --namu-link: var(--text-accent);
 
   --editor-toolbar-icon-size: 16px;
   --editor-toolbar-dropdown-icon-size: 12px;
   --editor-toolbar-plus-minus-font-size: 14px;
   --editor-toolbar-mobile-icon-size: 14px;
 
-  /* Typography */
   --font-sans:
     -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", Roboto, "Helvetica Neue",
     Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
@@ -173,12 +192,11 @@
     "D2Coding", "NanumGothicCoding", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
     "Courier New", monospace;
 
-  /* Backwards-compatible aliases */
+  /* NOTE: 제거되지 않은 legacy class가 core palette를 따르도록 alias를 유지한다. */
   --bg-primary: var(--bg-app);
   --bg-secondary: var(--bg-element-hover);
   --bg-hover: var(--bg-element-hover);
 
-  /* Elevations */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
@@ -194,164 +212,277 @@
   --font-weight-semibold: 600;
 }
 
-/* === DARK THEME (Linear/Vercel Inspired) === */
 [data-theme="dark"] {
-  /* Backgrounds */
-  --bg-app: #09090b; /* Deepest Zinc (Main Canvas) */
-  --bg-sidebar: #09090b; /* Same as app for clean look */
-  --bg-panel: #18181b; /* Surface Color (Opaque) */
-  --bg-surface: #18181b; /* Added missing token for Modals/Cards */
-  --bg-panel-header: #18181b;
-  --bg-element: #27272a; /* Zinc-800 */
+  /* NOTE: editor를 가장 어두운 초점 면으로 두고 chrome은 한 단계 밝게 분리한다. */
+  --bg-app: #1a1a1c;
+  --bg-sidebar: #212123;
+  --bg-panel: #28282b;
+  --bg-surface: #28282b;
+  --bg-panel-header: #28282b;
+  --bg-element: #313135;
   --bg-element-hover: rgba(255, 255, 255, 0.08);
   --bg-active: rgba(255, 255, 255, 0.12);
 
-  /* Text */
-  --text-primary: #ffffff; /* Brighter for clear readability */
-  --text-secondary: #d4d4d8; /* Zinc-300 */
-  --text-tertiary: #a1a1aa; /* Zinc-400 */
-  --text-accent: #60a5fa; /* Blue-400 */
+  --text-primary: #d7d7da;
+  --text-secondary: #989aa2;
+  --text-tertiary: #6c6e77;
+  --text-accent: #60a5fa;
   --text-on-accent: #ffffff;
 
-  /* Semantic UI */
-  --accent-bg: #2563eb; /* Blue-600 (Slightly deeper for better contrast on dark) */
-  --accent-bg-hover: #3b82f6; /* Blue-500 */
+  --accent-bg: #3b82f6;
+  --accent-bg-hover: #60a5fa;
   --accent-fg: #ffffff;
   --success-fg: #22c55e;
   --danger-fg: #ef4444;
 
-  /* Aliases */
   --bg-primary: var(--bg-app);
   --bg-secondary: var(--bg-element);
   --bg-hover: var(--bg-element-hover);
   --bg-canvas: var(--bg-app);
   --accent-primary: var(--accent-bg);
 
-  /* Borders - The Key to "Clean" UI */
-  /* 8% opacity white for subtle separation, enough for definition but not "grid prison" */
+  /* NOTE: border는 8% white로 면을 구분하되 grid처럼 두드러지지 않게 한다. */
   --border-default: rgba(255, 255, 255, 0.08);
   --border-active: rgba(255, 255, 255, 0.16);
   --border-focus: #52525b;
 
   --grid-line: var(--border-default);
 
-  /* Editor */
-  --editor-bg: #09090b;
-  --editor-text: #ededed;
-  --editor-selection: #1e3a8a;
-
-  /* Namuwiki Theme Tokens (Dark) */
-  --namu-blue: #38bdf8;
-  --namu-border: var(--border-default);
-  --namu-table-bg: #18181b;
-  --namu-table-label: #0ea5e9;
-  --namu-hover-bg: #27272a;
-  --namu-header-text: #ffffff;
-  --namu-link: #60a5fa;
+  --editor-bg: #1a1a1c;
+  --editor-text: #d0d0d4;
+  --editor-selection: #5d4829;
 }
 
-/* === SEPIA THEME (Writer Focused) === */
+/* NOTE: color temperature는 layout 구조를 바꾸지 않고 background와 text tint만 덮어쓴다. */
+[data-theme="dark"][data-temp="cool"] {
+  --bg-app: #181a23;
+  --bg-sidebar: #1f2230;
+  --bg-panel: #262a38;
+  --bg-surface: #262a38;
+  --bg-panel-header: #262a38;
+  --bg-element: #2f3345;
+  --editor-bg: #181a23;
+  --editor-text: #c7ccdb;
+  --text-primary: #ccd2e2;
+}
+[data-theme="dark"][data-temp="warm"] {
+  --bg-app: #1f1c17;
+  --bg-sidebar: #29251e;
+  --bg-panel: #322d24;
+  --bg-surface: #322d24;
+  --bg-panel-header: #322d24;
+  --bg-element: #3d372c;
+  --editor-bg: #1f1c17;
+  --editor-text: #ded5c2;
+  --text-primary: #e6ddca;
+}
+
+[data-theme="light"][data-temp="cool"] {
+  --bg-app: #fbfcfd;
+  --bg-sidebar: #eef1f4;
+  --bg-panel: #fbfcfd;
+  --bg-surface: #fbfcfd;
+  --bg-element: #fbfcfd;
+  --editor-bg: #fbfcfd;
+  --editor-text: #1b1e24;
+  --text-primary: #1b1e24;
+}
+[data-theme="light"][data-temp="warm"] {
+  --bg-app: #fdf9f0;
+  --bg-sidebar: #f4ece0;
+  --bg-panel: #fdf9f0;
+  --bg-surface: #fdf9f0;
+  --bg-element: #fdf9f0;
+  --editor-bg: #fdf9f0;
+  --editor-text: #211d18;
+  --text-primary: #211d18;
+}
+[data-theme="sepia"][data-temp="cool"] {
+  --bg-app: #f3eee1;
+  --bg-sidebar: #e8e1d2;
+  --bg-panel: #f3eee1;
+  --bg-surface: #faf7f0;
+  --bg-element: #faf7f0;
+  --editor-bg: #f3eee1;
+  --editor-text: #4a4034;
+  --text-primary: #4a4034;
+}
+[data-theme="sepia"][data-temp="warm"] {
+  --bg-app: #f9e9c4;
+  --bg-sidebar: #f0dcae;
+  --bg-panel: #f9e9c4;
+  --bg-surface: #fdf6e6;
+  --bg-element: #fdf6e6;
+  --editor-bg: #f9e9c4;
+  --editor-text: #4a3a22;
+  --text-primary: #5a4528;
+}
+
 [data-theme="sepia"] {
-  /* Backgrounds */
-  --bg-app: #fbf0d9; /* Warm Paper */
-  --bg-sidebar: #f5e6cc; /* Slightly darker paper */
-  --bg-panel: #fbf0d9; /* Panel matches app */
-  --bg-surface: #fffefb; /* Card/Input background */
-  --bg-surface-hover: rgba(95, 75, 50, 0.05); /* Sepia alpha hover */
+  --bg-app: #fbf0d9;
+  --bg-sidebar: #f5e6cc;
+  --bg-panel: #fbf0d9;
+  --bg-surface: #fffefb;
+  --bg-surface-hover: rgba(95, 75, 50, 0.05);
   --bg-element: #fffefb;
   --bg-element-hover: rgba(95, 75, 50, 0.05);
   --bg-active: rgba(95, 75, 50, 0.1);
 
-  /* Text */
-  --text-primary: #5f4b32; /* Dark brown */
+  --text-primary: #5f4b32;
   --text-secondary: #8c7b66;
   --text-tertiary: #b8aa9c;
-  --text-accent: #cc7832; /* Warm Orange/Brown */
+  --text-accent: #8a602e;
 
-  /* Borders */
   --border-default: #e6dac6;
   --border-active: #dcc8ae;
   --border-focus: #5f4b32;
 
-  /* Semantic UI */
-  --accent-bg: #cc7832;
-  --accent-bg-hover: #b96725;
+  --accent-bg: #8a602e;
+  --accent-bg-hover: #735026;
   --accent-fg: #fffefb;
   --success-fg: #2e7d32;
   --danger-fg: #b91c1c;
 
-  /* Aliases (legacy UI tokens) */
   --bg-primary: #fbf0d9;
   --bg-secondary: #efe4cb;
   --bg-hover: #efe4cb;
   --bg-canvas: #fbf0d9;
-  --accent-primary: #cc7832;
+  --accent-primary: var(--accent-bg);
   --grid-line: #e6dcc6;
   --danger-fg: #b91c1c;
 
-  /* Editor */
   --editor-bg: #fbf0d9;
   --editor-text: #433422;
   --editor-selection: #e6dcc6;
-
-  /* Namuwiki Theme Tokens (Sepia) */
-  --namu-blue: #cc7832; /* Earthy Orange/Brown to match Sepia */
-  --namu-border: #dcc8ae;
-  --namu-table-bg: #efe4cb;
-  --namu-table-label: #5f4b32;
-  --namu-hover-bg: #e6dac6;
-  --namu-header-text: #fffefb;
-  --namu-link: #b96725;
 }
 
-/* === ATMOSPHERE MODIFIERS (Temperature) === */
-
-/* Warm (Emotion / Story) */
-[data-temp="warm"] {
-  --bg-app: #fffbf5; /* Warm white */
-}
-[data-theme="dark"][data-temp="warm"] {
-  --bg-app: #1c1917; /* Warm black (Stone-900) */
-  --bg-sidebar: #1c1917;
-  --bg-panel: #292524;
-  --bg-surface: #292524;
-  --text-primary: #f5f5f4;
-  --text-secondary: #a8a29e;
-}
-[data-theme="sepia"][data-temp="warm"] {
-  /* Sepia is already warm, just deepen it slightly */
-  --bg-app: #f5ebd6;
-}
-
-/* Cool (Analysis / Focus) */
-[data-temp="cool"] {
-  --bg-app: #f8fafc; /* Cool white (Slate-50) */
-  --bg-sidebar: #f1f5f9;
-}
-[data-theme="dark"][data-temp="cool"] {
-  --bg-app: #0f172a; /* Cool black (Slate-900) */
-  --bg-sidebar: #0f172a;
-  --bg-panel: #1e293b;
-  --bg-surface: #1e293b;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --border-default: rgba(148, 163, 184, 0.1);
-}
-[data-theme="sepia"][data-temp="cool"] {
-  /* Desaturate Sepia slightly for a cooler paper look */
-  --bg-app: #f0ebe4;
-  --bg-sidebar: #e8e2d9;
-  --text-primary: #5c554a;
-}
-
-/* === CONTRAST MODIFIERS === */
 [data-contrast="high"] {
   --text-primary: #000000;
   --text-secondary: #333333;
-  --border-default: #d4d4d8; /* Stronger border */
+  --border-default: #d4d4d8;
 }
 [data-theme="dark"][data-contrast="high"] {
   --text-primary: #ffffff;
   --text-secondary: #e4e4e7;
   --border-default: rgba(255, 255, 255, 0.2);
+}
+
+/* ==========================================================================
+   Accent Themes (Light)
+   ========================================================================== */
+[data-accent="blue"] {
+  --text-accent: #2563eb;
+  --text-on-accent: #ffffff;
+  --accent-bg: #2563eb;
+  --accent-bg-hover: #1d4ed8;
+  --accent-fg: #ffffff;
+}
+[data-accent="emerald"],
+[data-accent="green"] {
+  --text-accent: #059669;
+  --text-on-accent: #ffffff;
+  --accent-bg: #059669;
+  --accent-bg-hover: #047857;
+  --accent-fg: #ffffff;
+}
+[data-accent="violet"] {
+  --text-accent: #7c3aed;
+  --text-on-accent: #ffffff;
+  --accent-bg: #7c3aed;
+  --accent-bg-hover: #6d28d9;
+  --accent-fg: #ffffff;
+}
+[data-accent="rose"] {
+  --text-accent: #e11d48;
+  --text-on-accent: #ffffff;
+  --accent-bg: #e11d48;
+  --accent-bg-hover: #be123c;
+  --accent-fg: #ffffff;
+}
+[data-accent="amber"] {
+  --text-accent: #b45309;
+  --text-on-accent: #ffffff;
+  --accent-bg: #d97706;
+  --accent-bg-hover: #b45309;
+  --accent-fg: #ffffff;
+}
+
+/* ==========================================================================
+   Accent Themes (Dark)
+   ========================================================================== */
+[data-theme="dark"][data-accent="blue"] {
+  --text-accent: #60a5fa;
+  --text-on-accent: #ffffff;
+  --accent-bg: #3b82f6;
+  --accent-bg-hover: #60a5fa;
+  --accent-fg: #ffffff;
+}
+[data-theme="dark"][data-accent="emerald"],
+[data-theme="dark"][data-accent="green"] {
+  --text-accent: #34d399;
+  --text-on-accent: #ffffff;
+  --accent-bg: #10b981;
+  --accent-bg-hover: #34d399;
+  --accent-fg: #ffffff;
+}
+[data-theme="dark"][data-accent="violet"] {
+  --text-accent: #a78bfa;
+  --text-on-accent: #ffffff;
+  --accent-bg: #8b5cf6;
+  --accent-bg-hover: #a78bfa;
+  --accent-fg: #ffffff;
+}
+[data-theme="dark"][data-accent="rose"] {
+  --text-accent: #fb7185;
+  --text-on-accent: #ffffff;
+  --accent-bg: #f43f5e;
+  --accent-bg-hover: #fb7185;
+  --accent-fg: #ffffff;
+}
+[data-theme="dark"][data-accent="amber"] {
+  --text-accent: #fbbf24;
+  --text-on-accent: #ffffff;
+  --accent-bg: #f59e0b;
+  --accent-bg-hover: #fbbf24;
+  --accent-fg: #1c1917;
+}
+
+/* ==========================================================================
+   Accent Themes (Sepia)
+   ========================================================================== */
+[data-theme="sepia"][data-accent="blue"] {
+  --text-accent: #1d4ed8;
+  --text-on-accent: #ffffff;
+  --accent-bg: #2563eb;
+  --accent-bg-hover: #1e40af;
+  --accent-fg: #ffffff;
+}
+[data-theme="sepia"][data-accent="emerald"],
+[data-theme="sepia"][data-accent="green"] {
+  --text-accent: #047857;
+  --text-on-accent: #ffffff;
+  --accent-bg: #059669;
+  --accent-bg-hover: #065f46;
+  --accent-fg: #ffffff;
+}
+[data-theme="sepia"][data-accent="violet"] {
+  --text-accent: #6d28d9;
+  --text-on-accent: #ffffff;
+  --accent-bg: #7c3aed;
+  --accent-bg-hover: #5b21b6;
+  --accent-fg: #ffffff;
+}
+[data-theme="sepia"][data-accent="rose"] {
+  --text-accent: #be123c;
+  --text-on-accent: #ffffff;
+  --accent-bg: #e11d48;
+  --accent-bg-hover: #9f1239;
+  --accent-fg: #ffffff;
+}
+[data-theme="sepia"][data-accent="amber"] {
+  --text-accent: #8a602e;
+  --text-on-accent: #ffffff;
+  --accent-bg: #8a602e;
+  --accent-bg-hover: #735026;
+  --accent-fg: #ffffff;
 }

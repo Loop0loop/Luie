@@ -1,300 +1,533 @@
-# RAG + Memory Engine 현재 상태와 향후 계획
+# Luie 작업 정리 - 2026-06-29
 
 ## 한 줄 요약
 
-현재 RAG + Memory Engine은 웹소설 작가가 "내가 전에 쓴 설정/대사/관계의 근거가 어디 있었지?"라고 물었을 때, 현재 테스트 범위 안에서는 원문 근거를 찾아주는 수준까지 왔다.
+이번 작업은 Luie를 "편집자"가 아니라 "작품을 같이 기억하는 동반자"로 검증하기 위해, 상태관리 방침을 정리하고 Phase 문서를 재판정한 뒤, 합성 웹소설 기반 Phase 5 작가 플로우 테스트를 실제로 통과시키는 데 집중했다.
 
-아직 "작가 대신 완전히 안전하게 설정 판단을 끝내주는 조수"라고 말하기에는 이르다. 지금은 "원문 책갈피를 빠르게 찾아주는 조수 + 틀린 확정 답변 일부를 경고하는 검수자"에 가깝다.
+## 완료한 작업
 
-## 현재 진척도
+### 1. 상태관리 점검과 정책 문서화
 
-비유하면 지금 상태는 다음과 같다.
+- `docs/quality/state-management-policy.md` 추가
+  - Zustand를 기본 상태관리 기준으로 명시
+  - store 소유권, persist 허용 범위, 파생 상태, IPC/API 경계 규칙 정리
+  - 위험 지점과 변경 체크리스트 추가
+- `docs/quality/release-readiness.md`에 상태관리 정책 링크 추가
 
-```text
-자료 창고 만들기        ██████████ 100%
-원문 책갈피 찾기        ██████████ 100%   현재 eval 기준
-기억 오염 복구          █████████░ 90%
-작가 pain point 평가    ████████░░ 80%
-답변 검수               █████░░░░░ 50%
-대형 장편 검증          ██░░░░░░░░ 20%
-작가용 UI 경고          ██░░░░░░░░ 20%
+### 2. phase 문서 재검증
+
+- `docs/phase/00-overview.md`에 2026-06-28 기준 subagent 검증 결과 반영
+- `docs/phase/phase-3-memory-policy.md`의 오래된 conflict ledger 문구 정리
+- `docs/phase/phase-7-beta-validation.md`에 "실제 beta 데이터 대기" 상태 반영
+- `src/main/services/features/memory/status/memoryPhaseStatusReport.ts`
+  - Phase 7 상태에 `blocked-on-real-beta-data` 추가
+- `tests/main/services/memory/status/memoryPhaseStatusReport.test.ts`
+  - Phase 7 기대 상태 갱신
+
+판정:
+
+- Phase 1-6은 부분 완료 또는 근접 완료
+- Phase 7은 인프라만 있고 실제 beta 작가 데이터가 부족함
+- 전체 앱은 "작가 동반자 beta"에 가깝고, 아직 실사용 작가에게 완성품으로 말하기는 이르다
+
+### 3. 합성 웹소설 fixture 추가
+
+- `tests/fixtures/writerFlowSyntheticNovel.ts` 추가
+- 제목: `회귀한 탑 관리자는 엔딩을 숨긴다`
+- 실제 웹소설 플랫폼의 장르 관습만 참고하고, 특정 작품/문장/설정은 복제하지 않음
+- 포함한 작가 플로우:
+  - 설정 질문
+  - 집필 중 충돌 자동 감지
+  - 과거 회차 수정
+  - 초안 폐기
+  - 인물명/별칭 변경
+  - 회차 순서 변경
+
+### 4. Phase 5 작가 플로우 테스트 강화
+
+- `docs/phase/phase-5-writer-workflow-coverage.md`
+  - 합성 웹소설 fixture를 공식 테스트 근거로 추가
+- `tests/scripts/phase5WriterWorkflowCoverage.test.ts`
+  - 6개 writer workflow가 fixture와 coverage 문서에 모두 고정되도록 보강
+- DOM 테스트 3개를 같은 합성 작품 데이터로 맞춤
+  - `tests/dom/analysisMessageSafety.test.tsx`
+  - `tests/dom/conflictQueuePanelWriterFlow.test.tsx`
+  - `tests/dom/promptComposerTimelineScope.test.tsx`
+
+### 5. Vitest 설정 복구
+
+- `vitest.config.ts` 추가
+  - `@renderer`, `@shared` alias 설정
+  - `tests/setup.ts` 연결
+  - `tests/dom/**/*.test.tsx`를 jsdom 환경으로 매핑
+- 이 설정 누락 때문에 DOM 테스트 alias 해석과 DB service 테스트 setup이 깨지고 있었음
+
+### 6. Phase 5 E2E 실패 수정
+
+Phase 5 Electron E2E에서 실제 실패 2개를 잡았다.
+
+1. Electron named export 문제
+   - 실패: `electron` does not provide an export named `BrowserWindow`
+   - 수정:
+     - `src/main/services/features/utility/utilityProcessBridge/internal/core.ts`
+     - `src/main/services/features/utility/utilityProcessBridge/internal/eventHandlers.ts`
+   - Electron dynamic chunk에서 default import를 쓰도록 변경
+
+2. 테스트 환경에서 외부 OpenAI 호출 문제
+   - 실패: `GPT-5.4-nano` 모델 접근 불가
+   - 원인: `LUIE_LLM_PROVIDER_HINT=none`을 runtime factory가 무시하고 OpenAI env를 사용함
+   - 수정:
+     - `src/main/services/llm/modelRuntimeFactory.ts`
+     - `src/main/utility/rag/ragQaWorker.ts`
+     - `tests/main/services/modelRuntimeFactory.utilityBoundary.test.ts`
+   - `none` 또는 `deterministic` provider hint면 deterministic runtime을 강제
+   - RAG worker가 deterministic provider를 에러로 막지 않고 기존 generation path를 타게 변경
+
+## 검증 결과
+
+### 통과
+
+```bash
+pnpm vitest run \
+  tests/scripts/phase5WriterWorkflowCoverage.test.ts \
+  tests/dom/analysisMessageSafety.test.tsx \
+  tests/dom/promptComposerTimelineScope.test.tsx \
+  tests/dom/conflictQueuePanelWriterFlow.test.tsx \
+  tests/main/services/ragGrounding.test.ts \
+  tests/main/services/memory/memoryEvidenceChunkLinkRepair.test.ts \
+  tests/main/services/memory/review/memoryReviewBacklogReport.test.ts \
+  tests/main/services/memory/temporal/memoryTemporalFactReviewService.test.ts \
+  tests/main/services/memory/entity/memoryEntityReviewService.test.ts \
+  tests/main/services/memory/eval/memoryEvalRunner.test.ts \
+  tests/main/services/memory/eval/memoryEvalScoring.test.ts \
+  tests/main/services/modelRuntimeFactory.utilityBoundary.test.ts \
+  --reporter=verbose --no-file-parallelism
 ```
 
-주의: 위 퍼센트는 제품 완성률이 아니라 이해를 돕기 위한 비유다. 확인된 숫자는 아래 "검증된 사실"에 적었다.
+결과:
 
-## 지금까지 만든 것
+- 12 files passed
+- 63 tests passed
 
-## 1. 원문을 잘게 쪼개는 책갈피 창고
-
-웹소설 작가 입장으로 비유하면, 원고 전체를 사람이 찾기 좋게 포스트잇 단위로 잘라 둔 상태다.
-
-작가가 할 수 있는 일:
-
-- "3화쯤에서 주인공이 약속했던 말 어디 있었지?"
-- "아내가 아달린과 관련된 장면이 어디였지?"
-- "이 설정이 원문에 실제로 있었나?"
-
-현재 가능한 수준:
-
-- 원문을 `MemoryChunk`로 나누고 검색 대상으로 사용한다.
-- 현재 프로젝트 기준 chunk는 69개다.
-- chunk가 다시 만들어져도 evidence link를 복구할 수 있다.
-
-## 2. 인물/사건/설정 기억장
-
-웹소설 작가 입장으로 비유하면, 캐릭터 카드와 사건 카드, 설정 메모장을 따로 만들기 시작한 상태다.
-
-작가가 할 수 있는 일:
-
-- "이 인물은 확정된 캐릭터인가, 후보인가?"
-- "이 사건은 어떤 근거에서 나온 기억인가?"
-- "이 설정은 몇 화 근거가 있나?"
-
-현재 가능한 수준:
-
-- Entity memory가 있다.
-- Episode memory가 있다.
-- Temporal fact memory가 있다.
-- Narrative summary가 있다.
-
-현재 프로젝트 기준 확인된 수치:
-
-- entities: 10개
-- confirmed entities: 6개
-- rejected entities: 4개
-- facts: 1개
-- episodes: 1개
-- chapter summaries: 3개
-- narrative summaries: 3개
-
-## 3. RAG 근거 찾기
-
-웹소설 작가 입장으로 비유하면, "기억으로 대답하는 조수"가 아니라 "원문을 펼쳐서 해당 문단을 찾아오는 조수"에 가깝다.
-
-작가가 할 수 있는 일:
-
-- "이 인물이 백야회와 적대한다는 근거 찾아줘."
-- "이 장면에서 아내의 이름을 부르는 부분 찾아줘."
-- "이 떡밥이 실제 원문에 있었는지 확인해줘."
-
-현재 가능한 수준:
-
-- FTS 검색
-- 짧은 토큰 검색
-- quote-like token overlap 검색
-- exact quote 후보 검색
-- RRF 기반 검색 결과 병합
-
-쉽게 말하면, 문장이 HTML 태그나 줄바꿈 때문에 정확히 같지 않아도 핵심 단어가 겹치면 관련 chunk를 끌어올릴 수 있다.
-
-## 4. 끊어진 책갈피 복구
-
-웹소설 작가 입장으로 비유하면, 원고를 다시 저장하거나 문단이 밀려서 예전 책갈피가 다른 페이지를 가리켜도, 실제 문장을 보고 다시 맞는 페이지에 꽂는 기능이다.
-
-작가가 겪는 문제:
-
-- 원고 수정 후 예전 근거 링크가 엉뚱한 문단을 가리킴
-- chunk id는 살아 있는데 실제 quote가 그 chunk 안에 없음
-- HTML 태그/줄바꿈 때문에 원문 quote가 정확히 매칭되지 않음
-
-현재 가능한 수준:
-
-- chunk id가 사라진 evidence 복구
-- chunk id는 있지만 quote가 없는 evidence 복구
-- exact quote가 안 맞아도 핵심 token overlap으로 복구
-
-## 5. 웹소설 작가 pain point 평가셋
-
-웹소설 작가 입장으로 비유하면, "작가가 실제로 자주 터뜨리는 사고 목록"을 시험지로 만든 것이다.
-
-현재 평가하는 문제:
-
-- 인물/별칭/호칭 혼동
-- 타임라인 누수
-- 캐릭터가 아직 모르는 정보를 알고 있다고 처리하는 문제
-- 미회수 떡밥과 회수된 떡밥 혼동
-- 초안/폐기 설정을 정사로 섞는 문제
-- 관계 방향 뒤집기
-- 생존/위치/소속/능력/소유물 연속성 충돌
-
-현재 가능한 수준:
-
-- writer pain point 기반 eval case 50개 생성
-- legacy episode evidence case 1개 포함
-- 총 eval case 51개
-
-## 6. 답변 검수 장치
-
-웹소설 작가 입장으로 비유하면, 조수가 대답한 뒤 "이거 원문 근거 없는 말인데요?"라고 빨간펜을 드는 1차 검수자다.
-
-현재 잡을 수 있는 문제:
-
-- 근거가 없는데 확정 답변으로 말함
-- 기대 답변이 gold evidence로 뒷받침되지 않음
-- 답변에 근거 밖 내용을 섞음
-- draft/deleted fact를 확정 사실처럼 사용
-- 미래 회차 정보를 과거 시점 답변에 사용
-- 관계 방향을 반대로 말함
-
-아직 한계:
-
-- 모든 문학적 모순을 완벽하게 잡는 단계는 아니다.
-- 실제 LLM 장문 답변 전체를 의미 단위로 판정하는 judge는 아직 더 필요하다.
-
-## 검증된 사실
-
-현재 프로젝트 기준 마지막 확인 결과:
-
-```text
-Memory phase status: 9/9 ready
-전체 phase: 100%
-MemoryEvalCase: 51
-MemoryEvalEvidence: 51
-RAG eval caseCount: 51
-RAG averageContextRecallAtK: 1
-RAG totalP0FailureCount: 0
-canonical package sync: true
-DB rows / package rows: 118 / 118
+```bash
+pnpm run typecheck
 ```
 
-이 말은 현재 eval 시험지 51개 안에서는 RAG가 필요한 근거를 모두 top-k 안에서 찾았다는 뜻이다.
+결과:
 
-하지만 이 결과가 모든 장편 원고, 모든 실제 작가 질문, 모든 LLM 답변에서 그대로 유지된다는 뜻은 아니다. 그건 아직 근거가 부족하다.
+- passed
 
-## 현재 작가가 기대해도 되는 기준선
-
-## 가능하다
-
-웹소설 작가가 이런 식으로 물으면 현재 구조로 처리 가능하다.
-
-- "이 설정이 원문에 있었는지 근거 찾아줘."
-- "이 인물이 이 사실을 알고 있다고 봐도 되는지 근거 찾아줘."
-- "이 관계 방향이 맞는지 원문 근거로 확인해줘."
-- "이 장면이 미회수 떡밥인지, 이미 회수된 사실인지 근거부터 찾아줘."
-- "초안 설정이 정사에 섞였는지 확인해줘."
-- "예전 근거 링크가 깨졌는지 고쳐줘."
-
-## 부분적으로 가능하다
-
-이런 작업은 가능하지만 아직 완전 자동화라고 말하기 어렵다.
-
-- "전체 장편의 모든 모순을 찾아줘."
-- "캐릭터 감정선이 자연스러운지 판단해줘."
-- "작가가 까먹은 떡밥을 전부 뽑아줘."
-- "100화 뒤 설정과 3화 설정이 충돌하는지 전부 검수해줘."
-
-현재는 근거 후보를 찾고 일부 위험한 답변을 잡는 수준이다. 완전한 편집자급 검수는 다음 단계다.
-
-## 아직 어렵다
-
-이건 현재 상태에서 확정적으로 가능하다고 말할 수 없다.
-
-- 수백 화 장편 전체에서 항상 빠른 검색 보장
-- 실제 LLM 장문 답변의 모든 환각 차단
-- 암시/상징/복선 같은 문학적 의미의 완전 자동 판정
-- 작가 의도와 독자 해석의 차이까지 자동 판단
-
-## 향후 계획
-
-## 1단계: 시험지를 늘린다
-
-비유: 지금은 조수가 51문제짜리 모의고사를 만점 받은 상태다. 다음은 500문제, 1000문제짜리 실전 문제집을 풀게 해야 한다.
-
-명확한 작업:
-
-- eval case를 51개에서 수백 개 이상으로 확장
-- 회차별 지식 상태 case 추가
-- 인물 별명/본명/직함 case 추가
-- 소속 변경, 사망/부상, 위치 변경 case 추가
-- 미회수/회수 떡밥 case 추가
-- 폐기 설정/정사 설정 충돌 case 추가
-
-목표:
-
-- 작은 샘플이 아니라 웹소설 작업에서 자주 터지는 문제를 넓게 검증한다.
-
-## 2단계: 답변 검수자를 강화한다
-
-비유: 지금은 조수가 책갈피를 잘 찾아온다. 다음은 조수가 책갈피를 보고 엉뚱한 말을 하지 못하게 옆에 편집자를 붙이는 단계다.
-
-명확한 작업:
-
-- LLM answer judge 추가
-- groundedness 평가
-- contradiction 평가
-- temporal leakage 평가
-- unsupported claim 평가
-- omission 평가
-- writer usefulness 평가
-
-목표:
-
-- "근거를 찾았다"에서 끝내지 않고 "근거 안에서만 대답했다"까지 검증한다.
-
-## 3단계: Memory 저장 정책을 강화한다
-
-비유: 지금은 작가 노트에 메모를 넣을 수 있다. 다음은 낙서, 초안, 폐기 설정, 확정 설정을 다른 색 펜으로 구분하는 단계다.
-
-명확한 작업:
-
-- confirmed / suggested / rejected 정책 강화
-- evidence 없는 memory 저장 차단
-- conflict 발생 시 기존 fact 자동 덮어쓰기 금지
-- 정사/초안/폐기/추정 source type 분리
-- memory conflict ledger 추가
-
-목표:
-
-- Memory Engine이 오래 쓸수록 더러워지는 문제를 막는다.
-
-## 4단계: 대형 장편 스트레스 테스트
-
-비유: 지금은 단편 원고에서 조수가 잘 찾는지 확인했다. 다음은 300화짜리 장편 원고 더미를 책상에 올려놓고도 버티는지 보는 단계다.
-
-명확한 작업:
-
-- 1천 chunk 테스트
-- 1만 chunk 테스트
-- 100화/300화/500화급 프로젝트 테스트
-- cold start latency 측정
-- query latency 측정
-- memory usage 측정
-- package export/import 시간 측정
-
-목표:
-
-- "작은 프로젝트에서는 됨"이 아니라 "저사양 장편 작업에서도 쓸 수 있음"으로 올린다.
-
-## 5단계: 작가용 UI로 보여준다
-
-비유: 지금은 조수가 내부적으로 책갈피를 찾아온다. 다음은 작가 책상 위에 "근거 문장", "위험 표시", "충돌 표시"를 눈에 보이게 붙이는 단계다.
-
-명확한 작업:
-
-- 답변 옆 원문 quote 표시
-- 확정/추정/근거부족 라벨 표시
-- 미래 정보 사용 경고
-- 폐기 설정 감지 경고
-- 관계 방향 충돌 경고
-- 관련 회차로 바로 이동하는 링크
-
-목표:
-
-- 작가가 AI 답변을 믿어도 되는지 바로 판단할 수 있게 한다.
-
-## 최종 목표
-
-최종적으로 만들고 싶은 것은 "그럴듯하게 말하는 AI"가 아니다.
-
-웹소설 작가 기준의 목표는 다음이다.
-
-```text
-작가가 설정을 까먹음
-→ AI가 원문 근거를 찾음
-→ 현재 회차 기준으로 말해도 되는지 확인함
-→ 초안/폐기 설정을 걸러냄
-→ 충돌 가능성을 표시함
-→ 근거 문장과 함께 답함
+```bash
+pnpm run build
 ```
 
-즉 목표는 "말 잘하는 조수"가 아니라 "원문을 들고 확인하는 설정 담당 편집자"다.
+결과:
+
+- passed
+- 기존 chunk size warning은 남아 있음
+
+```bash
+node node_modules/@playwright/test/cli.js test --project=stress tests/e2e/phase5WriterWorkflow.spec.ts
+```
+
+결과:
+
+- 1 passed
+
+### 실행 중 필요했던 조치
+
+- DB/Vitest 실행 전 Node ABI용:
+
+```bash
+pnpm rebuild better-sqlite3
+```
+
+- Electron E2E 실행 전 Electron ABI용:
+
+```bash
+pnpm test:prepare
+```
+
+## 현재 리스크
+
+- `qa:core` 전체는 아직 이번 작업 후 실행하지 않았다.
+- `test:prepare`와 `pnpm rebuild better-sqlite3`가 ABI를 서로 바꾸므로, Vitest와 Electron E2E를 오갈 때 순서를 조심해야 한다.
+- Phase 5 E2E는 여전히 preload API 기반 긴 흐름이다. 실제 에디터 타이핑/버튼 클릭만으로 재현하는 순수 UI E2E는 아직 없다.
+- Phase 7은 실제 beta 작가 데이터가 없어서 완료로 볼 수 없다.
+- `bencium-claude-code-design-skill` submodule/외부 경로가 modified로 표시되지만 이번 작업 내용은 아니다.
+
+## 다음 추천 작업
+
+1. 현재 diff를 커밋 단위로 나누기
+   - 상태관리/phase 문서
+   - Phase 5 fixture/test
+   - Vitest 설정 복구
+   - RAG/E2E runtime fix
+
+2. `qa:core` 또는 최소 guard subset 실행
+
+3. Phase 5 순수 UI E2E 추가 여부 결정
+   - 실제 에디터 입력
+   - composer 질문
+   - evidence 표시
+   - conflict/defer UI
+
+4. Phase 7 beta 검증 준비
+   - 실제 웹소설 작가 작업 샘플
+   - 장편 원고 기준 latency/accuracy 측정
+   - 작가 질문 로그 기반 eval case 확대
+
+---
+
+# Luie Memory Engine MVP 작업 정리 - 2026-07-01
+
+## 한 줄 요약
+
+Memory Engine을 "AI가 기억하는 기능"이 아니라 "Luie 앱 안에 쌓이는 local-first 원고 context layer"로 재정의했고, AI 답변은 이 context를 읽는 보조 기능으로 제한하는 방향으로 MVP 기준을 다시 잡았다.
+
+## 완료한 작업
+
+### 1. Memory Engine 제품 정의 재정립
+
+- `docs/phase/novel/memory_engine_product_definition.md` 작성/갱신
+- 핵심 정의:
+  - Memory Engine은 AI가 아니라 Luie의 원고 context layer
+  - 원고, 챕터, 메모, 인물, 관계, 타임라인, 떡밥, 수정 이력, 폐기 설정을 근거로 묶는 시스템
+  - AI는 optional/subordinate
+  - 근거 없는 정사 답변은 하지 않음
+  - 일반 작법 조언은 가능하지만 정사처럼 말하지 않음
+- MVP 상태:
+  - Memory Engine infrastructure: 약 65%
+  - MVP product clarity: 약 70%
+  - MVP implementation confidence: 약 60~65%
+  - real writer validation: 아직 낮음, 실제 beta 필요
+
+### 2. Phase 7 Shadow Beta Novel Pack 정리
+
+- `novel/*/eval/answer_mode_v1.jsonl` 추가/정리
+  - `modern_fantasy`
+  - `romance_fantasy`
+  - `murim`
+  - `occult_mystery`
+- 총 32개 answer-mode case 구성
+  - `EVIDENCE`: 12
+  - `INSUFFICIENT`: 12
+  - `ADVISORY`: 8
+- shadow beta는 rehearsal 데이터일 뿐이며 real beta threshold 대체 불가로 명시
+
+### 3. Answer Mode 평가 하네스 추가
+
+- `scripts/run-answer-mode-eval.ts` 추가
+- Gemini 기반으로 세 가지 답변 모드 검증:
+  - `EVIDENCE`: 근거 있는 원고/정사 답변
+  - `INSUFFICIENT`: 근거 부족이면 미확정
+  - `ADVISORY`: 일반 조언/작법 답변
+- `docs/phase/novel/mvp_answer_mode_eval.md`에 실행 결과 기록
+
+실행 결과:
+
+```text
+run-001: 31/32
+failure: murim.answer_mode_v1.evidence.002
+원인: 모델 문제가 아니라 gold evidence quote가 질문을 직접 지지하지 못함
+
+evidence quote 보강 후:
+run-002: 32/32
+```
+
+중요한 판정:
+
+```text
+이 결과는 answer-mode leash가 작은 하네스에서 작동함을 보여준다.
+실제 작가 적합성이나 production threshold readiness를 증명하지 않는다.
+```
+
+### 4. Answer Mode product contract 연결
+
+- `src/shared/types/search/rag.ts`
+  - `RagQaAnswerMode = "EVIDENCE" | "INSUFFICIENT" | "ADVISORY"` 추가
+  - `RagQaResult.answerMode` 추가
+- `src/shared/types/index.ts`
+  - `RagQaAnswerMode` export 추가
+- `src/main/services/features/rag/grounding.ts`
+  - `deriveRagAnswerMode` 추가
+  - 답변 결과에 `answerMode` 산출
+- `src/renderer/src/features/research/stores/analysis/actions/ragChatActions.ts`
+  - RAG stream result의 `answerMode`를 chat message에 전달
+- `src/renderer/src/features/research/components/analysisSection/shared/types.ts`
+  - renderer `Message.answerMode` 추가
+
+현재 `ADVISORY` 판별은 작은 한국어 휴리스틱이다. 예외를 무한히 늘리는 방향은 금지하고, 실제 오분류가 많아질 때 명시적 작업 모드 버튼 또는 classifier로 교체한다.
+
+### 5. research/analysisSection UI 목줄 노출 완화
+
+사용자가 앱에서 `ㅎㅇ` 같은 일반 입력을 했을 때 다음 내부 정보가 그대로 보이는 문제가 확인됨:
+
+```text
+analysis.chat.evidenceCount
+offset 0
+chunk uuid
+근거 답변
+추정
+근거는 있지만 문장별 검증 전...
+```
+
+판정:
+
+```text
+research/analysisSection은 실제 RAG/Memory Engine 경로와 연결되어 있다.
+문제는 연결 부재가 아니라 내부 진단 UI를 사용자에게 너무 많이 노출한 것.
+```
+
+수정:
+
+- `src/renderer/src/features/research/components/analysisSection/chat/MessageList.tsx`
+  - `추정`, chunk UUID, offset 기본 숨김
+  - 근거 quote는 답변 위 노출이 아니라 `근거 보기 N` 접힘 영역으로 이동
+  - 이전 사용자 질문이 원고/정사/회차/인물/설정/떡밥/관계/충돌 같은 intent일 때만 Memory Engine chrome 표시
+  - `ADVISORY` 답변은 근거/추정/safety chrome 숨김
+  - 차단성 safety만 표시
+- `src/renderer/src/features/research/components/analysisSection/runtime/runtimeHelpers.ts`
+  - 사용하지 않는 `answerModeLabel` 제거
+- `tests/dom/analysisMessageSafety.test.tsx`
+  - evidence가 접힘으로 표시되는지
+  - offset/uuid가 기본 노출되지 않는지
+  - advisory/general 답변에 근거/추정 chrome이 붙지 않는지 테스트 갱신
+
+비유:
+
+```text
+이전 UI는 자동차 계기판에 정비사용 센서값을 전부 띄운 상태였다.
+수정 후에는 위험 경고등만 보이고, 근거는 필요할 때 열어보는 구조로 바꿨다.
+```
+
+### 6. MVP UI Audit 문서화
+
+- `docs/phase/novel/mvp_ui_memory_engine_audit.md` 추가/갱신
+- 현재 판정:
+
+```text
+Memory Engine UI path: partial but usable for MVP
+MVP blocker reduced: diagnostic chrome is hidden unless the user asks a manuscript/canon-style question
+Recommended next step: run the app and verify that casual input does not show offset/chunk/safety noise
+```
+
+## 검증 결과
+
+### 통과
+
+```bash
+node answer_mode_v1 quote validation
+```
+
+결과:
+
+```text
+answer_mode_v1 quote validation ok: 32 cases
+```
+
+```bash
+pnpm run typecheck
+```
+
+결과:
+
+```text
+passed
+```
+
+### 부분 실행/중단
+
+```bash
+SKIP_DB_TEST_SETUP=1 pnpm vitest run tests/main/services/ragGrounding.test.ts tests/dom/analysisMessageSafety.test.tsx
+```
+
+상태:
+
+```text
+이 로컬 환경에서 vitest가 출력 없이 대기하는 현상이 반복되어 중단.
+타입체크는 통과.
+```
+
+## 현재 MVP 상태
+
+```text
+Memory Engine MVP: 약 60~65%
+```
+
+통과권:
+
+- 로컬 원고/프로젝트 저장 기반 있음
+- 챕터 단위 chunk/indexing 있음
+- 근거 검색/RAG Layer 있음
+- shadow beta 원고 기반 테스트 데이터 있음
+- answer mode 32-case Gemini smoke 통과
+- RAG result contract에 answerMode 연결됨
+- chat UI에서 내부 진단 정보 기본 노출 완화
+
+아직 부족:
+
+- 앱에서 실제 수동 확인 필요
+  - casual input이 `추정`, UUID, offset을 보여주지 않는지
+  - 원고/정사 질문에서만 `근거 보기`가 필요한 만큼 보이는지
+  - 근거 부족/회차 불가/정사 아님 같은 위험 경고가 과하지 않게 보이는지
+- real writer beta 없음
+- shadow/synthetic 데이터만으로 threshold finalization 금지
+- `ADVISORY` 판별은 휴리스틱이라 장기적으로 명시적 작업 모드 버튼이 더 안전함
+
+## 다음 추천 작업
+
+1. 앱에서 `research/analysisSection` 수동 확인
+   - `ㅎㅇ`
+   - `이 장면 더 긴장감 있게 쓰려면?`
+   - `3화 기준으로 이 인물이 이 사실을 알아?`
+   - `이 설정 정사야 폐기야?`
+
+2. UI가 여전히 시끄러우면 예외 추가 금지
+   - `근거 확인`
+   - `설정 확인`
+   - `회차 기준 확인`
+   - `작법 조언`
+   같은 명시적 작업 모드 버튼으로 분리
+
+3. no-evidence / abstention case 추가
+
+4. local-first / AI optional 철학이 제품 화면에 보이는지 audit
+
+5. 실제 웹소설 작가 beta 준비
+   - synthetic 점수는 rehearsal로만 사용
+   - threshold finalization은 real beta label에서만 허용
+
+---
+
+# 추가 작업 기록 - 2026-07-01 14:45:20 KST
+
+## 요청
+
+```text
+memory / rag 중심으로 중복과 급조된 얇은 레이어를 계속 줄인다.
+기능/API를 깨지 않는 범위에서 barrel, dead facade, review queue 잔재를 제거한다.
+```
+
+## 이번 정리 기준
+
+- 동작 없이 `export *`만 하는 barrel 제거
+- 실제 소비처가 1~몇 개뿐인 재수출 파일은 직접 import로 변경
+- 이미 UI/API에서 제거된 memory review queue 계열 dead path 삭제
+- RAG/search/memory 경계에서 같은 기능을 감싼 얇은 wrapper 제거
+- canonical package처럼 internal 구현을 숨기는 실제 facade는 유지
+
+## 주요 변경
+
+### RAG / Search
+
+- chunk 검색 토큰 정규화 공통화
+  - `src/main/services/features/search/tokenNormalization.ts`
+  - 한국어 조사/어미 계열 suffix 기반 short-token 보정
+- hybrid chunk rank 로직 공통화
+  - `src/main/services/features/search/chunkSearch.ts`
+  - `chunkOperations`, `contextAssembler.layer3`, `contextAssembler.search` 중복 제거
+- `SearchService` class를 singleton object로 축소
+  - 미사용 `searchCharacters`, `searchTerms`, `searchChapters`, `getQuickAccess` service method 제거
+- `src/main/services/features/search/index.ts` 삭제
+  - 소비처는 `searchService.js`, `chapterSearchCacheService.js` 직접 import로 변경
+
+### Memory Review Queue 제거
+
+- renderer review queue UI/hook/action 삭제
+  - conflict / fact / episode / entity / alias / stale evidence queue 계열
+- shared IPC/API/schema/type에서 review queue 관련 채널과 contract 제거
+- main memory IPC handler에서 confirm/reject/merge/split/repair queue mutation 제거
+- `narrativeMemoryQueryService`와 application facade에서 dead review/repair method 제거
+
+### Memory Barrel / Thin Layer 제거
+
+삭제한 얇은 barrel:
+
+- `src/main/services/features/memory/persistence/index.ts`
+- `src/main/services/features/memory/summary/index.ts`
+- `src/main/services/features/memory/query/index.ts`
+- `src/main/services/features/memory/index.ts`
+- `src/main/services/features/search/index.ts`
+- `src/main/services/features/index.ts`
+- `src/main/services/index.ts`
+
+기존 import는 실제 소유 모듈로 변경:
+
+- `narrativeMemoryQueryService`
+  - `src/main/services/features/memory/query/narrativeMemoryQueryService.ts`
+- `getNarrativeSummaryStatus`
+  - `src/main/services/features/memory/summary/memoryNarrativeSummaryStatus.ts`
+- `chapterSearchCacheService`
+  - `src/main/services/features/search/chapterSearchCacheService.ts`
+- `searchService`
+  - `src/main/services/features/search/searchService.ts`
+- canonical package / sync / audit / policy
+  - 각 실제 persistence 파일 직접 import
+
+### Projection / Status / Benchmark 정리
+
+- projection helper와 index 제거
+  - `projection/index.ts`
+  - `projection/chunking.ts` 일부 helper
+  - `projection/jobPolicy.ts` 일부 helper
+- `sourceRows.ts`의 반복 `filter().map()` 패스를 `Map` grouping으로 축소
+- static roadmap/changelog성 status blob 제거
+  - `memoryPhaseStatusReport.ts`는 런타임 상태 리포트만 유지
+- `memoryBenchmarkLatencyRunner.ts`의 `export * from "./latency/types.js"` 제거
+  - 테스트는 `latency/types.js`에서 직접 type import
+
+## 현재 확인 결과
+
+```bash
+pnpm run typecheck
+```
+
+결과:
+
+```text
+passed
+```
+
+```bash
+SKIP_DB_TEST_SETUP=1 pnpm vitest tests/main/services/ragContextAssemblerSource.test.ts tests/scripts/memoryBenchmarkLatencyRunner.test.ts --reporter=verbose --no-file-parallelism
+```
+
+상태:
+
+```text
+90초 이상 출력 없이 대기하여 중단.
+중단 exit code: 130
+이 로컬 환경에서 vitest hang/ABI 문제가 반복됨.
+```
+
+## 현재 RAG / Memory 상태 평가
+
+```text
+Memory/RAG MVP: 약 60~65%
+```
+
+좋아진 점:
+
+- 근거 검색/RAG path의 중복 rank/search 코드가 줄어듦
+- memory review queue 같은 제품 표면에서 죽은 API가 제거됨
+- memory/rag/search feature 내부의 `index.ts` barrel이 사라짐
+- import 경로가 실제 소유 모듈을 가리켜 레이어가 더 명확해짐
+- 타입체크 기준 API 표면은 깨지지 않음
+
+아직 부족한 점:
+
+- 실제 앱에서 RAG 응답 UX 수동 확인 필요
+- vitest 일부가 로컬 환경에서 안정적으로 끝나지 않음
+- `KOREAN_SUFFIXES`는 지금 한국어 검색 보정용으로만 존재
+  - 다국어 형태소 레이어로 확장할지, 단순 휴리스틱으로 유지할지 제품 방향 필요
+- NotebookLM급 자료 인용/근거 탐색과 비교하면 아직 evidence UX, abstention, contradiction workflow가 약함
+- 웹소설 워드프로세서 기준으로는 “설정 확인/모순/캐릭터 지식 상태” 질문을 위해 temporal/fact/entity evidence 정확도 검증이 더 필요
+
+## 다음 추천 작업
+
+1. 남은 non-memory barrel은 건드리기 전에 실제 importers 0 여부만 확인하고 삭제
+2. RAG 질문 66~85번 계열을 shadow beta 원고로 회귀 테스트화
+3. `주인공이 지금 이 정보를 알고 있어도 되는지` 같은 temporal knowledge query를 우선 강화
+4. 앱 UI에서 evidence/no-evidence/abstention 노출이 작가 workflow에 맞는지 수동 점검
+5. vitest hang 원인을 별도 환경 문제로 분리해서 해결

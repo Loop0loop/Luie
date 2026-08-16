@@ -1,7 +1,3 @@
-/**
- * Export Service Tests
- * DOCX와 HWPX 내보내기 기능 테스트
- */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { promises as fs } from "fs";
@@ -18,12 +14,10 @@ describe("ExportService", () => {
 
   beforeEach(async () => {
     exportService = new ExportService();
-    // Create test output directory
     await fs.mkdir(testOutputDir, { recursive: true });
   });
 
   afterEach(async () => {
-    // Clean up test files
     try {
       const files = await fs.readdir(testOutputDir);
       await Promise.all(
@@ -31,7 +25,7 @@ describe("ExportService", () => {
       );
       await fs.rmdir(testOutputDir);
     } catch {
-      // Ignore cleanup errors
+      // NOTE: test assertion과 무관한 cleanup 실패는 무시한다.
     }
   });
 
@@ -51,7 +45,6 @@ describe("ExportService", () => {
       expect(result.success).toBe(true);
       expect(result.filePath).toBe(options.outputPath);
 
-      // Check file exists
       const stats = await fs.stat(options.outputPath!);
       expect(stats.isFile()).toBe(true);
       expect(stats.size).toBeGreaterThan(0);
@@ -199,7 +192,6 @@ describe("ExportService", () => {
       expect(result.success).toBe(true);
       expect(result.filePath).toBe(options.outputPath);
 
-      // Check file exists
       const stats = await fs.stat(options.outputPath!);
       expect(stats.isFile()).toBe(true);
       expect(stats.size).toBeGreaterThan(0);

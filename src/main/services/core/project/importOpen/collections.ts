@@ -448,13 +448,7 @@ export const readLuieImportCollections = async (
           updatedAt: parsedWorldScrapMemos.updatedAt,
         }
       : undefined,
-    graph: parsedGraph
-      ? {
-          nodes: parsedGraph.nodes ?? [],
-          edges: parsedGraph.edges ?? [],
-          updatedAt: parsedGraph.updatedAt,
-        }
-      : undefined,
+    graph: parsedGraph ?? undefined,
     memory: parsedMemory
       ? {
           schemaVersion: parsedMemory.schemaVersion ?? 1,

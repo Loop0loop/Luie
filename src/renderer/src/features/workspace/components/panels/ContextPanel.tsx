@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 import { api } from "@shared/api";
 import { cn } from "@shared/types/utils";
 
-// ScrivenerLayout as never 제거를 위해 Tab 타입을 명시적으로 export 노출
+// NOTE: ScrivenerLayout이 같은 tab union을 사용하도록 export한다.
 export type Tab = "synopsis" | "characters" | "terms" | "elements";
 
 type ContextItem = Character | Term;
@@ -87,8 +87,6 @@ function buildCharacterSummary(character: Character): string | null {
   return parts.join(" · ");
 }
 
-/* ─────────────────────────────────────────── CanvasSelectionWatcher Component */
-
 interface CanvasSelectionWatcherProps {
   handleTabChange: (tab: Tab) => void;
 }
@@ -101,7 +99,7 @@ const CanvasSelectionWatcher = memo(({
   const activePanel = useCanvasViewStore((state) => state.activePanel);
   const isGraphMode = activePanel === "graph";
 
-  // useRef를 사용하여 setState 호출로 인한 Cascading render 경고를 완전히 원천 회피
+  // NOTE: 이전 선택은 ref로 보존해 selection effect에서 별도 render를 만들지 않는다.
   const prevFocusIdRef = useRef<string | null>(null);
   const prevSelectionIdRef = useRef<string | null>(null);
 
@@ -114,7 +112,6 @@ const CanvasSelectionWatcher = memo(({
         prevFocusIdRef.current = null;
       }
     } else {
-      // selection 유니온 타입 { kind: "none" } 의 id 부재로 인한 TS 에러를 삼항 연산자 타입 가드로 깔끔하게 해결
       const nodeId = selection.kind === "node" ? selection.id : null;
       if (nodeId && nodeId !== prevSelectionIdRef.current) {
         handleTabChange("elements");
@@ -130,10 +127,7 @@ const CanvasSelectionWatcher = memo(({
 
 CanvasSelectionWatcher.displayName = "CanvasSelectionWatcher";
 
-/* ─────────────────────────────────────────── CanvasElementsTab Component */
-
 const CanvasElementsTab = memo(() => {
-  // prop 드릴링 제거: useTranslation 직접 사용
   const { t } = useTranslation();
   const selection = useCanvasViewStore((state) => state.selection);
   const focusId = useGraphStore((state) => state.focusId);
@@ -150,7 +144,7 @@ const CanvasElementsTab = memo(() => {
           <p className="text-xs font-semibold text-fg/60">
             {t("canvas.graph.details.emptyTitle", "설정 수사 정보")}
           </p>
-          <p className="text-[11px] text-muted-foreground leading-normal">
+          <p className="text-[11px] text-muted leading-normal">
             {t("canvas.graph.details.emptyDescription", "월드 그래프에서 인물이나 사건 노드를 클릭하면 큼직한 상세 설정 수사 메모가 이 바인더 패널에 활성화됩니다.")}
           </p>
         </div>
@@ -169,7 +163,7 @@ const CanvasElementsTab = memo(() => {
             <p className="text-xs font-semibold text-fg/60">
               {t("canvas.inspector.emptyTitle")}
             </p>
-            <p className="text-[11px] text-muted-foreground leading-normal">
+            <p className="text-[11px] text-muted leading-normal">
               {t("canvas.inspector.emptyDescription")}
             </p>
           </div>
@@ -180,8 +174,6 @@ const CanvasElementsTab = memo(() => {
 });
 
 CanvasElementsTab.displayName = "CanvasElementsTab";
-
-/* ─────────────────────────────────────────── ContextPanel Component */
 
 interface ContextPanelProps {
   activeTab?: Tab;
@@ -258,12 +250,10 @@ function ContextPanel({
     });
   };
 
-  // elements 탭에서는 검색이 불필요하므로 검색창 조건부 노출
   const showSearch = !(isCanvasMode && currentTab === "elements");
 
   return (
     <div className="h-full flex flex-col relative overflow-hidden">
-      {/* Canvas 모드일 때만 비동기 감시 컴포넌트 마운트하여 ContextPanel의 구독 오버헤드 0% 완수 */}
       {isCanvasMode && (
         <CanvasSelectionWatcher
           handleTabChange={handleTabChange}
@@ -301,7 +291,7 @@ function ContextPanel({
       )}
 
       <div className="flex items-center px-4 pt-3 shrink-0">
-        <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+        <span className="text-[11px] font-bold uppercase tracking-widest text-muted">
           {isCanvasMode
             ? activePanel === "graph"
               ? t("canvas.binder.graphHeader", "인물 관계 수사망")
@@ -395,7 +385,7 @@ function ContextPanel({
                   {t("context.synopsisHeader")}
                 </div>
                 <textarea
-                  className="w-full border border-border rounded-lg p-3 text-sm text-fg bg-element resize-none font-sans leading-relaxed min-h-50"
+                  className="w-full border border-border rounded-panel p-3 text-sm text-fg bg-element resize-none font-sans leading-relaxed min-h-50"
                   placeholder={t("context.placeholder.synopsis")}
                   value={currentProject?.description || ""}
                   readOnly
@@ -411,7 +401,7 @@ function ContextPanel({
                   return (
                     <div
                       key={item.id}
-                      className="bg-element border border-border rounded-lg p-3 mb-2 cursor-pointer transition-all hover:border-active hover:bg-element-hover"
+                      className="bg-element border border-border rounded-panel p-3 mb-2 cursor-pointer transition-all hover:border-active hover:bg-element-hover"
                       onClick={() => handleItemClick(item)}
                     >
                       <div className="flex flex-col gap-1">
@@ -430,7 +420,7 @@ function ContextPanel({
                 {filteredTerms.map((item) => (
                   <div
                     key={item.id}
-                    className="bg-element border border-border rounded-lg p-3 mb-2 cursor-pointer transition-all hover:border-active hover:bg-element-hover"
+                    className="bg-element border border-border rounded-panel p-3 mb-2 cursor-pointer transition-all hover:border-active hover:bg-element-hover"
                     onClick={() => handleItemClick(item)}
                   >
                     <div className="flex justify-between items-start mb-1">

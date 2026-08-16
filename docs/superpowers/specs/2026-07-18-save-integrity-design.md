@@ -1,0 +1,671 @@
+# Luie 로컬 우선 저장 정합성 설계
+
+**작성일:** 2026-07-18  
+**브랜치:** `feature/00-save-integrity`  
+**상태:** 부분 구현 — 정상 저장 경로 검증 통과, 데이터 무손실 차단 항목 보완 필요 (§16)
+
+## 1. 목적
+
+Luie의 사용자 입력을 즉시 화면에 반영하고, SQLite 커밋을 사용자 관점의 `저장됨` 경계로 정의한다. `.luie` 파일 생성, 그래프 갱신, 검색 인덱싱과 동기화는 저장 응답을 막지 않는 후속 작업으로 분리한다.
+
+이 설계가 보장해야 하는 핵심은 다음과 같다.
+
+- 저장이 진행 중이어도 다음 변경을 버리지 않는다.
+- `저장됨`으로 표시된 변경은 앱이 비정상 종료되어도 SQLite에서 복구된다.
+- `Cmd+S`와 `Ctrl+S`는 모든 대기 중 변경과 `.luie` 체크포인트를 강제로 완료한다.
+- `.luie` 체크포인트 실패를 SQLite 저장 실패처럼 취급하지 않되 사용자에게 숨기지 않는다.
+- 캐릭터 저장 개선을 공통 world entity 경계에서 해결해 용어, 사건, 세력에도 같은 정책을 적용한다.
+
+위 항목은 최종 목표 계약이다. 2026-07-18 1차 구현과 당시 재검증에서는 강제 input flush와 실패 payload 보존이 이 계약을 충족하지 못했다. 이후 Task 8~16에서 두 경로를 해결했고, project-wide revision은 [2026-07-19 SSOT](./2026-07-19-project-wide-revision-design.md)의 Task 1~4에서 해결했다.
+
+## 2. 현재 문제
+
+현재 캐릭터 입력은 다음 경로를 지난다.
+
+```text
+BufferedInput 500ms debounce
+  -> renderer CRUD store
+  -> character:update IPC
+  -> SQLite UPDATE
+  -> 전체 .luie package export
+  -> world graph + replica 전체 재조회
+  -> renderer store 갱신
+```
+
+이 경로에는 다음 정합성 문제가 있다.
+
+1. `runWithProjectLock`은 같은 프로젝트 저장이 진행 중이면 새 변경을 대기시키지 않고 `null`로 버린다.
+2. `BufferedInput`은 blur에서 즉시 저장하면서 기존 debounce 타이머를 취소하지 않아 동일 저장이 중복 실행될 수 있다.
+3. renderer는 IPC 성공 뒤에만 외부 상태를 갱신하므로 입력 UI가 저장 지연을 그대로 노출한다.
+4. 캐릭터 수정은 SQLite 커밋 후 전체 `.luie` export까지 기다려야 IPC 응답이 끝난다.
+5. 저장마다 world graph와 replica 문서를 전체 재조회하고, 이 시간 동안 프로젝트 락이 유지된다.
+6. 종료 flush와 dirty 추적이 원고 autosave 중심이라 world entity 변경을 포괄하지 않는다.
+7. 애플리케이션 전역 `Cmd+S` / `Ctrl+S` 저장 경계가 없다.
+
+## 3. 결정한 저장 경계
+
+### 3.1 원본과 파생 데이터
+
+- 실행 중 원본 데이터: main process의 SQLite
+- 이식 및 복구용 체크포인트: 연결된 `.luie` 파일
+- renderer Zustand 상태: 즉시 UI 반응을 위한 로컬 projection
+- world graph, 검색 인덱스, 키워드 appearance: SQLite 원본에서 재생성 가능한 projection
+- 향후 cloud sync: SQLite 커밋 이후 실행되는 별도 전달 계층
+
+`.luie`는 여전히 사용자가 소유하는 휴대 가능한 프로젝트 파일이지만, 매 키 입력의 동기 커밋 대상은 아니다.
+
+### 3.2 저장 완료 의미
+
+| 상태     | 의미                                                                                                                           |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `clean`  | renderer와 SQLite가 일치한다.                                                                                                  |
+| `dirty`  | renderer에만 반영된 변경이 있다.                                                                                               |
+| `saving` | SQLite mutation이 진행 중이다.                                                                                                 |
+| `saved`  | SQLite transaction이 커밋됐다.                                                                                                 |
+| `error`  | 커밋하지 못했으며 변경 payload를 유지해야 한다. 2026-07-18 1차 구현은 이 계약을 충족하지 못했으나 이후 Task 8~16에서 해결했다. |
+
+`.luie` 체크포인트 상태는 위 상태와 분리한다. SQLite 저장은 성공했지만 파일 export가 실패한 경우 `로컬 저장됨 · 프로젝트 파일 백업 실패`로 표현한다.
+
+## 4. 저장 아키텍처
+
+```text
+사용자 입력
+  -> renderer local state 즉시 반영
+  -> entity별 mutation queue에 patch 기록
+  -> 250ms idle 또는 flush 이벤트
+  -> 기존 IPC update 호출
+  -> main SQLite transaction
+       1. entity patch 적용
+       2. project revision 증가
+       3. updatedAt 갱신
+  -> commit ACK
+  -> renderer 상태 saved
+  -> background 후속 작업
+       - .luie checkpoint
+       - graph projection 갱신
+       - keyword/search derived job
+       - 향후 cloud sync
+```
+
+새 범용 저장 프레임워크를 만들지 않는다. 기존 `createWorldEntityCRUDStore`, IPC handler, entity service와 `ProjectExportQueue`를 수정해 한 경로로 수렴시킨다.
+
+## 5. Mutation Queue 정책
+
+### 5.1 단위
+
+큐 키는 `entityType + entityId`다. 프로젝트 단위의 단일 `Set` lock을 사용하지 않는다. 서로 다른 캐릭터 수정은 독립적으로 진행할 수 있다.
+
+### 5.2 병합
+
+한 mutation이 진행 중일 때 다음 변경이 오면 최신 pending patch에 병합한다.
+
+```text
+in-flight: { name: "김철수" }
+next:      { description: "주인공" }
+pending:   { description: "주인공" }
+```
+
+아직 전송하지 않은 동일 필드는 last-write-wins로 합친다.
+
+```text
+pending #1: { name: "김" }
+pending #2: { name: "김철수" }
+result:     { name: "김철수" }
+```
+
+`attributes`는 renderer가 오래된 전체 JSON을 덮어쓰지 않도록 key patch로 전달하고 main transaction 안에서 현재 값과 병합한다. 배열 값은 해당 attribute key 전체를 교체하는 하나의 값으로 취급한다.
+
+### 5.3 순서와 삭제
+
+- 동일 entity mutation은 생성 순서대로 한 번에 하나만 커밋한다.
+- 새 변경은 절대 조용히 폐기하지 않는다.
+- 삭제 요청은 해당 entity의 pending update를 먼저 drain한 뒤 실행한다.
+- 이미 삭제된 entity update는 main service에서 명시적으로 실패한다.
+
+2026-07-18 1차 구현은 성공 경로의 직렬화와 병합만 충족했다. 당시 CRUD IPC 실패 payload 제거는 Task 13에서, 삭제 전 pending update drain 누락은 Task 15에서 해결됐다.
+
+## 6. 입력 정책
+
+- 기본 debounce: 250ms
+- IME composition 중에는 미완성 값을 저장하지 않는다.
+- composition 중 explicit/global flush는 실패시키지 않고 같은 pending Promise를 공유한다.
+- composition 종료: 최종 DOM 값을 즉시 저장하고 persistence ACK 뒤 pending flush를 완료한다. explicit flush가 없던 `BufferedInput`은 최신 값으로 debounce를 다시 예약한다.
+- composition 중 unmount되면 pending flush를 reject해 stale checkpoint 성공과 고립 Promise를 막는다.
+- blur, Enter, 프로젝트 전환, component unmount: 예약 타이머를 취소하고 즉시 flush한다.
+- blur와 예약 타이머가 같은 값을 중복 저장하지 않게 하나의 `flush()` 경로만 사용한다.
+- UI 값은 IPC 응답을 기다리지 않고 즉시 갱신한다.
+
+## 7. `.luie` 체크포인트 정책
+
+### 7.1 Revision
+
+`Project`에는 체크포인트 대상 mutation의 단조 증가 `revision`을, `ProjectAttachment`에는 마지막으로 export된 `exportedRevision`을 저장한다.
+
+2026-07-18 1차 구현은 character, event, faction, term의 create/update/delete transaction에서만 데이터 변경과 `Project.revision + 1`을 함께 수행했다. exporter는 시작 시 revision을 캡처하고, 파일 교체가 성공한 뒤에만 해당 값을 `exportedRevision`으로 기록했다.
+
+따라서 당시 revision은 `.luie` 전체 payload의 freshness를 대표하지 못했다. 현재는 [2026-07-19 project-wide revision SSOT](./2026-07-19-project-wide-revision-design.md)의 Task 1~4가 canonical payload 전체와 queue 밖 writer checkpoint까지 해결했으며, 해당 문서를 현재 계약의 SSOT로 사용한다.
+
+export 도중 새 mutation이 발생하면 `revision > exportedRevision`이 유지되므로 다음 export가 예약된다.
+
+### 7.2 실행 시점
+
+- 자동 저장: 마지막 SQLite 커밋 후 1.5초 idle
+- `Cmd+S` / `Ctrl+S`: 즉시
+- 프로젝트 전환: 즉시
+- 정상 종료: 즉시, 완료 또는 명시적 사용자 결정까지 대기
+- 앱 시작 및 프로젝트 열기: `revision > exportedRevision`이면 복구 export 예약
+
+### 7.3 파일 쓰기
+
+`.luie`는 대상 경로에 직접 덮어쓰지 않는다. 같은 디렉터리의 임시 파일에 완성한 뒤 atomic replace한다. export 실패 시 기존 `.luie`는 유지하고 `exportedRevision`도 변경하지 않는다.
+
+## 8. `Cmd+S` / `Ctrl+S`
+
+전역 단축키의 목표 순서는 다음과 같다.
+
+```text
+renderer input flush
+  -> world entity mutation queue drain
+  -> 원고 autosave flush
+  -> SQLite ACK 확인
+  -> .luie checkpoint runNow
+  -> 결과 표시
+```
+
+현재 구현은 renderer save-buffer registry를 먼저 flush한 뒤 world entity mutation queue와 main checkpoint를 순서대로 실행한다. shortcut handler는 부모의 오래된 원고 값을 직접 저장하지 않고 이 공통 경계만 호출한다.
+
+성공 시 기존 toast를 짧게 사용하고, 자동 저장 성공은 조용히 처리한다. 실패는 사라지는 성공 toast로 덮지 않고 복구 가능한 오류 상태로 유지한다.
+
+## 9. 종료 및 복구
+
+정상 종료 시 renderer는 원고뿐 아니라 world entity queue의 dirty/in-flight 상태도 main process에 전달한다. main process는 다음 순서로 종료한다.
+
+1. renderer buffer flush 요청
+2. SQLite mutation queue drain
+3. 원고 mirror flush
+4. `.luie` export queue flush
+5. 실패 또는 timeout이면 저장 후 종료, 종료 취소, 저장 생략을 명확히 선택
+
+비정상 종료 후 SQLite WAL 복구가 끝나면 revision 차이를 확인해 `.luie`를 다시 생성한다. SQLite는 기존 `WAL`, `synchronous=FULL`, `foreign_keys=ON`, `busy_timeout=5000` 설정을 유지한다.
+
+현재 quit handshake는 renderer buffer 또는 world mutation flush가 실패하면 완료 신호를 보내지 않아 기존 main timeout/사용자 결정 경계로 이동한다. export flush의 `failed > 0`과 timeout도 main 사용자 결정 경계에서 종료를 차단한다.
+
+## 10. Projection 정책
+
+저장 성공 후 전체 world graph를 동기 재조회하지 않는다.
+
+- renderer의 entity list와 current entity는 ACK payload로 갱신한다.
+- graph에 직접 보이는 이름, 색상 등의 필드는 해당 node delta만 적용한다.
+- 관계 재계산이나 검색 인덱싱처럼 무거운 작업은 main background job으로 예약한다.
+- 전체 graph reload는 프로젝트 진입, 외부 sync 적용, 복구처럼 snapshot 재동기화가 필요한 경우에만 실행한다.
+
+## 11. 오류와 재시도
+
+- SQLite validation 오류: 재시도하지 않고 해당 필드 오류를 표시한다.
+- SQLite busy/일시 오류: 최신 pending patch를 유지하고 제한된 backoff로 재시도한다.
+- `.luie` export 오류: SQLite 저장 성공을 유지하고 export queue에 재시도 상태를 남긴다.
+- 앱 종료 timeout: 현재처럼 사용자에게 종료 취소를 기본 선택으로 제공한다.
+- 오류 로그에는 projectId, entityType, entityId, mutation 단계, elapsedMs를 기록하고 사용자 입력 전문은 기록하지 않는다.
+
+현재 구현은 SQLite/IPC 실패 payload와 export `false`/throw의 dirty retry 상태를 보존한다. 자동 backoff는 아직 적용하지 않고 다음 enqueue 또는 explicit flush에서 한 번 재시도한다.
+
+## 12. 데이터 불변식
+
+1. `saved` ACK를 받은 mutation은 같은 transaction의 project revision 증가와 함께 SQLite에 존재한다.
+2. in-flight mutation이 있어도 이후 mutation을 폐기하지 않는다.
+3. `exportedRevision`은 실제 파일 교체가 성공한 revision을 초과하지 않는다.
+4. `revision > exportedRevision`인 프로젝트는 export가 필요한 상태다.
+5. projection 실패는 canonical SQLite mutation을 rollback하지 않는다.
+6. sync는 backup이 아니며 `.luie` 체크포인트와 snapshot 정책을 대체하지 않는다.
+
+## 13. 1차 구현 범위
+
+포함:
+
+- `BufferedInput`의 단일 flush 경로와 250ms debounce
+- 공통 world entity mutation queue
+- 캐릭터, 용어, 사건, 세력 patch 저장
+- 저장 중 변경 드롭 제거
+- SQLite commit과 `.luie` export 분리
+- project/export revision 추적
+- 전체 graph reload 제거 및 최소 projection 갱신
+- `Cmd+S` / `Ctrl+S`
+- world entity dirty 상태를 포함한 종료 flush
+- 성공, 실패, crash recovery 테스트
+
+제외:
+
+- CRDT
+- 다중 사용자 실시간 공동 편집
+- cloud sync 프로토콜 재설계
+- 원고 autosave manager 전면 교체
+- 범용 event sourcing
+- 저장 상태 UI 전면 디자인 개편
+
+## 14. 목표 검증 기준
+
+아래 항목은 최종 acceptance criteria다. §16의 PASS는 현재 실제 테스트가 증명하는 범위로 제한해 해석한다.
+
+- 100회의 연속 캐릭터 field mutation에서 마지막 값이 SQLite와 renderer에 동일하다.
+- 한 mutation을 지연시킨 상태에서 두 번째 mutation을 보내도 두 번째 값이 유실되지 않는다.
+- blur 직전 입력은 한 번만 저장된다.
+- SQLite ACK는 `.luie` 전체 export 완료를 기다리지 않는다.
+- `Cmd+S` 완료 후 mutation queue가 비어 있고 `revision === exportedRevision`이다.
+- export 중 앱 종료 요청이 오면 flush하거나 사용자가 종료 취소를 선택할 수 있다.
+- export 실패 뒤 재시작하면 revision 차이를 감지해 체크포인트를 복구한다.
+- 캐릭터 저장 후 graph 전체 조회 IPC가 호출되지 않는다.
+- 기존 원고 autosave 및 snapshot resilience 테스트가 유지된다.
+
+## 15. 구현 순서
+
+1. 현재 손실 동작을 재현하는 공통 store 및 `BufferedInput` 테스트
+2. world entity mutation queue와 optimistic renderer state
+3. main transaction revision 및 patch merge
+4. `.luie` 비동기 체크포인트와 revision 복구
+5. graph delta와 파생 작업 분리
+6. 전역 강제 저장 및 종료 flush
+7. 통합 정합성·복구 검증
+
+## 16. 구현 및 검증 결과
+
+2026-07-19 기준 `feature/00-save-integrity`에는 다음 정상 경로가 구현돼 있다.
+
+- `BufferedInput` 250ms debounce와 blur, Enter, unmount 단일 flush
+- 동일 world entity의 성공 mutation 직렬화와 latest-patch 병합
+- character, event, faction, term create/update/delete의 transaction revision 증가
+- captured revision export와 stale attached project의 startup recovery 예약
+- manual-save IPC와 renderer/main quit handshake 기본 경로
+- manual save와 quit의 renderer buffer → world mutation 선행 flush
+- shared buffer의 실제 persistence ACK, IME composition-end 대기, unmount 실패 payload 재시도
+- Plot/Synopsis buffer의 timer 비의존 직접 persistence barrier
+- 실패한 world mutation payload 보존, latest merge, 다음 flush/enqueue 재시도
+- export `false`/throw dirty 보존, 다음 호출 재시도, manual/quit 실패 차단
+- package/snapshot import, attach/materialize, corrupt recovery의 captured revision checkpoint 수렴
+
+당시 재검증에서 다음 차단 항목을 확인했다. 두 항목은 후속 Task에서 해결됐다.
+
+- **P1 (Task 15 해결):** 삭제 전에 같은 entity의 pending update를 drain하지 않았다.
+- **P1 (Project-wide revision Task 1~4 해결):** revision이 world entity 4종에만 적용돼 `.luie` 전체 freshness를 대표하지 않았다.
+
+Fresh verification (2026-07-19):
+
+```bash
+SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/dom/bufferedInputSavePolicy.test.tsx tests/dom/projectSaveShortcut.test.tsx tests/renderer/services/saveCoordinator.test.ts tests/renderer/stores/worldEntityMutationQueue.test.ts tests/renderer/stores/worldEntitySaveBurst.test.ts tests/main/handler/manualSaveHandler.test.ts tests/main/services/projectCheckpointRecovery.test.ts tests/main/services/projectExportEngine.test.ts tests/main/services/projectExportQueue.test.ts
+# 9 files, 19 tests PASS
+
+ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron ./node_modules/vitest/vitest.mjs run --no-file-parallelism tests/main/services/projectRevisionStore.test.ts tests/main/services/worldEntitySaveIntegrity.test.ts tests/main/services/projectSaveRecovery.integration.test.ts
+# 3 files, 8 tests PASS
+
+SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism tests/renderer/services/saveCoordinator.test.ts tests/dom/projectSaveShortcut.test.tsx tests/dom/projectQuitFlush.test.tsx tests/dom/bufferedInputSavePolicy.test.tsx tests/dom/editorAutosaveManualFlush.test.tsx tests/renderer/stores/worldEntityMutationQueue.test.ts
+# 6 files, 26 tests PASS; stderr warning 없음
+# world flush 오류 전파 테스트는 오류를 삼키는 임시 production 변이에서 FAIL한 뒤 원본 복원 후 PASS
+
+SKIP_DB_TEST_SETUP=1 ./node_modules/.bin/vitest run --no-file-parallelism --reporter=verbose tests/renderer/services/saveCoordinator.test.ts tests/dom/projectSaveShortcut.test.tsx tests/dom/projectQuitFlush.test.tsx tests/dom/bufferedInputSavePolicy.test.tsx tests/dom/editorAutosaveManualFlush.test.tsx tests/renderer/stores/worldEntityMutationQueue.test.ts tests/dom/worldBufferedPersistence.test.tsx
+# Task 11 review follow-up 포함 7 files, 39 tests PASS; stderr warning/unhandled rejection 없음
+
+./node_modules/.bin/eslint src/shared/ui/BufferedInput.tsx src/renderer/src/features/research/components/world/PlotBoard.tsx src/renderer/src/features/research/components/world/SynopsisEditor.tsx tests/dom/bufferedInputSavePolicy.test.tsx tests/dom/worldBufferedPersistence.test.tsx
+# PASS
+
+git diff --check
+# PASS
+
+./node_modules/.bin/tsc6 --noEmit
+# Task 11 오류 없음; 사용자 소유 dirty BinderSidebarPanelBody.tsx:102의 기존 ResearchPanelTab 오류 1건으로 exit 2
+```
+
+이 결과는 정상 경로와 직접 seed한 stale-checkpoint recovery를 검증한다. 당시 실제 export 실패 후 프로세스 재시작, debounce 중 shortcut/quit, IPC `success:false`/timeout, export `false`/throw는 아직 검증하지 않았다. 당시 100회 burst 테스트도 mock 기반이었고 SQLite 또는 latency P95를 측정하지 않았다. correctness 후속은 Task 18, latency artifact와 95% 신뢰 근거는 §24의 Task 19에서 해결했다.
+
+Task 10으로 active input 선행 flush와 renderer world mutation 실패 시 quit completion 차단은 해결됐다. 저장소 전체 `qa:core`는 이번 변경과 무관한 기존 baseline 문제로 아직 green이 아니다. 저장 정합성 완료 표시는 남은 P0 차단 항목과 해당 실패 주입 테스트가 해결된 뒤에만 복구한다.
+
+## 17. Renderer save-buffer 강제 flush 설계
+
+### 17.1 결정
+
+manual save와 quit이 DOM focus나 개별 component 위치를 추측하지 않도록 renderer 전용 save-buffer registry를 사용한다. registry는 Node/Electron API가 없는 UI-safe module `src/shared/ui/saveBufferRegistry.ts`에 두어 shared input과 renderer hook이 같은 singleton을 사용한다. 새 상태 관리 dependency, 전역 DOM event, Zustand draft store는 추가하지 않는다.
+
+registry는 다음 두 기능만 제공한다.
+
+```ts
+type SaveBufferFlush = () => void | Promise<void>;
+
+registerSaveBufferFlush(flush: SaveBufferFlush): () => void;
+flushSaveBuffers(): Promise<void>;
+```
+
+- mounted buffer는 flush callback을 등록하고 unmount에서 해제한다.
+- `flushSaveBuffers()`는 호출 시점의 callback snapshot을 전부 실행하고 비동기 결과를 기다린다.
+- 하나가 실패해도 나머지 callback 실행은 끝까지 기다린 뒤 전체 flush를 실패로 반환한다.
+- registry는 저장 상태나 retry 정책을 소유하지 않는다. 각 buffer와 mutation queue가 기존 dirty 상태를 유지한다.
+
+### 17.2 등록 대상
+
+- [x] `BufferedInput`: 예약 timer를 취소하고 최신 dirty 값을 `onSave`에 전달한다.
+- [x] `BufferedTextArea`: focus가 남아 있어도 최신 dirty 값을 `onSave`에 전달한다.
+- [x] `useEditorAutosave`: dirty인 최신 title/content draft가 실제 `onSave`를 완료할 때까지 기다린다. 저장 중 새 draft가 들어오면 latest pending draft까지 drain한 뒤 resolve하고, clean editor instance는 아무 작업도 하지 않는다.
+
+editor autosave callback은 active draft를 직접 소유하므로 shortcut handler가 부모의 오래된 `activeChapterTitle`과 `content`를 다시 저장하지 않는다. manual save는 registry flush 결과만 사용해 최신 editor draft를 확정한다.
+
+### 17.3 저장 순서
+
+manual save:
+
+```text
+flushSaveBuffers()
+  -> flushWorldEntityMutations()
+  -> api.app.manualSave(projectId)
+  -> main autosave flush
+  -> .luie checkpoint
+```
+
+quit:
+
+```text
+APP_BEFORE_QUIT
+  -> flushSaveBuffers()
+  -> flushWorldEntityMutations()
+  -> completeFlush()
+```
+
+buffer 또는 world queue flush가 실패하면 뒤 단계로 진행하지 않는다. quit은 완료 handshake를 보내지 않아 main의 기존 timeout/사용자 결정 경계로 이동한다. export queue의 `failed > 0`과 timeout도 종료 취소가 기본인 main dialog 경계로 이동한다.
+
+### 17.4 동시성과 중복 방지
+
+- registry flush와 debounce timer가 경쟁해도 각 buffer의 기존 single-flush guard를 통과한다.
+- 같은 값의 in-flight 저장은 동일 Promise를 공유하고, 더 최신 값은 그 저장 뒤에 직렬화한다.
+- buffer는 비동기 저장 성공 뒤에만 clean으로 전환하며 실패한 최신 값은 다음 flush에서 재시도한다.
+- IME 조합 중 일반 debounce/event 저장은 억제하고 global flush는 같은 pending Promise로 composition 종료를 기다린다.
+- composition 종료 시 최종 DOM 값을 즉시 저장하고 ACK 뒤 manual save/quit 다음 단계를 진행한다. 반복 global flush는 실제 저장을 중복 호출하지 않는다.
+- debounce, blur, Enter, composition-end의 background rejection은 consume하지만 dirty 상태를 유지한다.
+- unmount 저장이 실패하면 detached registry callback이 payload를 보유하고 다음 global flush에서 재시도한다.
+- 같은 entity의 여러 input callback은 기존 entity별 mutation queue가 직렬화한다.
+- [x] editor autosave는 동시에 `onSave`를 실행하지 않고 최신 pending draft 하나만 유지한다.
+- flush가 성공한 값은 뒤늦은 timer가 다시 저장하지 않는다.
+- 이전 in-flight 저장 뒤 IME composition이 시작돼도 explicit drain은 composition 종료와 최종값 ACK까지 계속 pending이다.
+- Plot/Synopsis의 button mutation도 component-level registry callback이 동일 in-flight Promise를 공유한다. 실패 시 latest snapshot은 dirty로 남고 다음 global flush가 재시도한다.
+- Synopsis hydration은 project id와 attachment path가 바뀔 때만 실행한다. 같은 project의 description ACK rerender는 hydration/ref를 덮어쓰지 않는다.
+
+### 17.5 검증 기준
+
+- debounce timer를 진행하지 않은 `BufferedInput` 변경이 manual flush 직후 저장 callback에 한 번 전달된다.
+- focus된 `BufferedTextArea` 변경도 blur 없이 manual flush된다.
+- editor title/content 변경 직후 manual flush가 부모의 이전 값이 아닌 최신 draft를 저장한다.
+- buffer callback이 끝난 뒤 world mutation drain과 main checkpoint가 순서대로 실행된다.
+- buffer flush 실패 시 main checkpoint와 quit 완료 handshake가 호출되지 않는다.
+- IME composition 중 explicit flush는 종료 전 pending이고, 종료 후 최종값 ACK 뒤에만 완료된다.
+- 같은 composition 중 반복 explicit flush는 실제 `onSave`를 한 번만 호출한다.
+- composition 중 unmount는 pending flush를 reject하고 완료되지 않은 barrier를 남기지 않는다.
+- unmount한 buffer callback은 이후 global flush에서 호출되지 않는다.
+- 실패 payload를 가진 unmount buffer만 retry callback을 유지하며 성공 직후 registry에서 제거된다.
+
+### 17.7 Shared input callsite 감사와 후속 blocker
+
+2026-07-19 전체 callsite를 읽기 전용 감사했다.
+
+- 직접 ACK: `TermManager`, `WikiDetailView`의 world entity callback은 queue Promise를 반환한다.
+- 다음 단계 drain: dirty wiki/Infobox/Canvas entity title callback은 Promise를 반환하지 않지만 호출 중 `worldEntityMutationQueue`에 동기 enqueue되며 Task 10의 world flush가 drain한다.
+- Task 11 해결: `PlotBoard`는 state-only callback과 250ms effect를 제거하고 최신 snapshot을 `savePlot`에 직렬화한다. `SynopsisEditor`는 최신 draft snapshot을 직렬화하고 package save와 project description update를 await한다.
+- [x] Task 12 해결: `CanvasMarkdownEditor` timer, Canvas entity title/description/markdown, Canvas memo title/content를 registry와 실제 persistence ACK에 연결했다. memo persistence 실패는 barrier에 전파하고 dirty snapshot을 다음 flush에서 재시도한다.
+- 후속 blocker: dirty `NotionDocumentView` body는 아직 500ms timer에 의존한다. 사용자 dirty 파일이므로 Task 12에서 수정하지 않았다.
+
+Task 12는 Canvas 경로만 해결했다. `CanvasMarkdownEditor`는 최신 markdown snapshot과 in-flight Promise를 소유하고 registry callback에서 timer를 취소한 뒤 실제 `onSave` ACK까지 drain한다. timer와 barrier가 경쟁하면 같은 snapshot은 같은 Promise를 공유하고, 실패한 snapshot은 clean으로 승격하지 않아 다음 barrier에서 재시도한다.
+
+Canvas entity description은 plain textarea를 기존 `BufferedTextArea`로 교체한다. entity title/description/markdown callback은 `entityState.update` Promise를 반환해 Task 10의 buffer 단계가 ACK를 기다린다. Canvas memo title/content callback은 `updateNote` 직후 `flushSave()`를 반환한다. memo persistence 실패는 `saveError`와 dirty 상태를 유지하면서 explicit flush에 reject되고, 예약 저장 rejection은 consume돼 unhandled rejection을 만들지 않는다. dirty `NotionDocumentView` timer는 사용자 작업 범위이므로 후속 blocker로 유지한다.
+
+검증 결과는 focused 2 files/20 tests와 Task 8~12 저장 회귀 9 files/59 tests PASS이며 stderr warning/unhandled rejection 0이다. 변경 파일 ESLint와 `git diff --check`는 PASS다. 전체 `tsc6 --noEmit`은 Task 12 신규 오류 없이 사용자 소유 dirty `BinderSidebarPanelBody.tsx:102`의 기존 오류 1건만 유지한다.
+
+Task 12 review follow-up은 memo scheduled/explicit persistence를 하나의 직렬 drain으로 통합한다. in-flight snapshot이 settle하기 전에는 다음 `saveScrapMemos`를 시작하지 않고, 성공 뒤 dirty latest snapshot 하나만 이어서 저장한다. in-flight 실패는 dirty와 store error를 유지한 채 해당 explicit barrier에 reject하며, 다음 scheduled/explicit drain이 최신 snapshot을 재시도한다. cleanup과 UI project scope 전환의 fire-and-forget Promise는 callsite에서 rejection을 consume하고 context를 logging하되, store가 이전 scope와 `saveError`를 유지해 데이터 손실을 숨기지 않는다.
+
+follow-up 검증은 focused 2 files/17 tests와 Task 8~12 회귀 10 files/66 tests PASS이며 stderr warning/unhandled rejection 0이다. deferred P1이 pending인 동안 P2 timer를 경과시켜도 persistence 호출은 1회이고, P1 뒤 P2가 시작돼 P2 ACK 후 barrier가 완료된다. 실패 시 latest dirty retry와 scope 보존도 검증했다. 변경 파일 ESLint와 `git diff --check`는 PASS이며 전체 타입체크는 follow-up 신규 오류 없이 사용자 dirty baseline 1건만 유지한다.
+
+### 17.6 범위 제외
+
+- 실패한 world mutation의 자동 backoff
+- project-wide revision 확대 (당시 Task 12 범위 밖, 후속 Project-wide revision Task 1~4에서 해결)
+- renderer root 밖에서 quit listener를 소유하도록 lifecycle 구조 변경
+- 저장 상태 toast/UI 개편
+
+## 18. World entity mutation 실패 보존 정책
+
+### 18.1 내구성 경계
+
+queue execute의 throw와 CRUD `null` ACK는 둘 다 실패다. 해당 batch의 caller Promise는 원본 오류로 reject하여 input buffer가 clean으로 승격하지 않게 한다. 단, 실패 patch 자체는 queue의 retained pending으로 남긴다.
+
+### 18.2 latest merge와 retry
+
+- 실패 batch A 뒤에 대기 중인 newer batch B가 있으면 `merge(A, B)`로 재병합한다.
+- scalar와 동일 attribute key는 B가 이기고, A에만 있는 attribute key는 유지한다.
+- 실패를 관찰한 global flush는 같은 오류를 즉시 전파하고 같은 호출 안에서 재시도하지 않는다.
+- 실패가 settle된 뒤의 다음 enqueue 또는 다음 explicit global flush가 retained latest patch를 한 번 재시도한다.
+- 자동 backoff는 P1로 유지한다.
+
+### 18.3 상태와 정리
+
+retained patch에 waiter가 없어도 pending count와 global active queue에 포함한다. waiter 없는 global retry가 성공하면 CRUD ACK를 store와 graph에 적용한 뒤 entity queue map과 global registry를 둘 다 정리한다. retry 성공 후 pending count는 0이다.
+
+Task 13 검증에서 focused 2 files/9 tests와 Task 8~13 저장 회귀 12 files/72 tests가 stderr warning/unhandled rejection 없이 PASS했다. 테스트는 원본 오류 전파, 한 flush 내 재시도 0회, retained pending/active count, explicit flush/next enqueue 재시도, failed/newer scalar·attribute merge, CRUD `null` ACK의 store/graph retry 반영, 100-burst latest 회귀를 증명한다.
+
+### 18.4 retry ACK와 optimistic generation
+
+retained A의 retry가 in-flight인 동안 newer B가 들어오면 A ACK full entity가 B의 optimistic state를 최종 상태로 덮어쓰지 않아야 한다. world entity factory는 entity별 optimistic generation과 아직 ACK되지 않은 patch를 추적한다. execute 시작 시점의 generation까지는 해당 ACK가 커버한다. ACK 도착 후에 생긴 patch만 nested `attributesPatch`를 보존하는 latest merge로 store와 graph에 재합성한다. newer persist가 실패하면 재합성한 projection을 유지하고 payload도 queue에 남긴다. 최신 ACK가 성공해 queue가 idle이 되면 optimistic generation cache와 entity queue map을 모두 정리한다.
+
+Task 13 review follow-up은 focused 2 files/10 tests와 Task 8~13 저장 회귀 12 files/73 tests PASS로 최신 optimistic projection 보존을 검증했다.
+
+### 18.5 delete-before-update drain
+
+delete는 entity id별 deleting guard를 먼저 획득하고 같은 entity의 update queue만 flush한다. 이미 실패해 retained된 patch가 있으면 이 flush가 한 번 retry하며, ACK 성공 전에는 delete API를 호출하지 않는다. drain의 `false`/`null`/throw는 delete를 중단하고 retained payload와 optimistic projection을 유지한다.
+
+guard가 활성화된 동안 같은 entity의 새 update는 optimistic state 적용 전에 reject해 caller dirty 상태를 유지한다. delete 실패 또는 취소 뒤에는 guard를 해제해 update 재시도를 허용한다. delete 성공 뒤에는 해당 queue와 optimistic generation을 정리하고 graph node를 즉시 제거한 뒤 refresh로 삭제 상태를 확정한다. guard와 drain은 entity 단위이며 다른 entity queue나 project 전체 update를 기다리지 않는다.
+
+delete 성공 뒤 이미 obsolete된 component가 다시 update를 호출하면 entity가 store에 없으므로 기존 not-found 경계에서 persistence를 생략한다. 삭제된 entity를 복원하지 않는 것이 우선이며, 이 post-delete stale callback을 별도 hard error로 바꾸는 것은 이번 범위에 포함하지 않는다. Task 15 검증은 실제 character store 10 tests와 관련 queue/store 18 tests, Task 8~15 비-DB 저장 회귀 119 tests로 drain 순서, retained retry, guard 해제, entity 독립성, graph cleanup을 고정한다.
+
+## 19. Project export 실패와 종료 정책
+
+### 19.1 queue 실패 보존
+
+`runExport`가 `false`를 반환하거나 throw하면 실제 `.luie` 교체가 완료되지 않은 것이다. queue는 captured revision을 exported로 표시하지 않고 해당 project를 dirty registry에 유지한다. 실패를 관찰한 runLoop/flush는 같은 호출 안에서 즉시 재시도하지 않는다. 다음 schedule, runNow 또는 explicit flush가 retained project/revision을 한 번 재시도한다.
+
+성공 시에만 captured revision을 `markProjectExported`에 전달한다. export 중 더 최신 revision이 생기면 기존 계약대로 latest revision까지 직렬 drain한다. flush의 `flushed`는 성공 project만, `failed`는 완료된 `false`/throw project만 집계하고 timeout은 아직 완료되지 않은 job과 구분한다. scheduled 실패 Promise는 consume하되 dirty 상태와 실패 logging/stat을 유지한다.
+
+### 19.2 manual save 경계
+
+main autosave flush 뒤 강제 package export가 `false` 또는 throw로 끝나면 MANUAL_SAVE handler는 성공 payload를 만들지 않는다. IPC registrar의 기존 failure 변환을 통해 renderer coordinator가 reject되며 Cmd+S 성공으로 오인하지 않는다. `true`일 때만 `{ success: true, exported: true }`를 반환한다.
+
+### 19.3 quit 사용자 결정
+
+soft export flush의 `failed > 0` 또는 `timedOut`은 모두 종료 차단 상태다. 첫 dialog의 기본값은 종료 취소이며 사용자는 재시도, 종료 취소, 저장 생략 후 종료 중 하나를 명시적으로 선택한다. 재시도 hard flush도 실패 또는 timeout이면 두 번째 warning을 표시하고 기본값을 종료 취소로 둔다. hard flush 성공 또는 사용자의 명시적 skip에서만 finalize와 `app.exit`으로 진행한다.
+
+### 19.4 detached project 정상 skip
+
+export engine의 boolean은 실제 파일 쓰기 실패와 canonical `.luie` attachment 부재를 구분하지 않는다. engine 계약은 바꾸지 않고 `ProjectService`가 queue에 전달하는 adapter에서 attachment를 선검사한다. missing, non-`.luie`, unsafe/invalid path와 존재하지 않는 project의 attachment 조회 `null`은 supported detached 상태로 `skipped` 처리한다.
+
+`skipped`는 queue dirty와 registry를 정리하지만 `markProjectExported`, failed stat/log를 만들지 않는다. flush는 `total`에는 포함하되 `flushed`와 `failed` 모두 증가시키지 않는다. public `runNow`/`exportProjectPackageNow`는 SQLite local save 성공 의미로 `true`를 반환하므로 MANUAL_SAVE가 실패로 오인하지 않는다. 이후 유효한 attachment가 연결되고 새 mutation/schedule이 오면 실제 export를 수행한다. attachment가 유효한 상태에서 engine이 `false` 또는 throw한 경우에만 Task 14의 실패 보존과 다음 호출 재시도를 적용한다.
+
+skip eligibility는 project revision 조회보다 먼저 판정한다. generic queue는 optional resolver만 소유하고 canonical attachment 유효성은 `ProjectService`에 남긴다. resolver가 skip을 확정하면 revision 조회, export engine, exported revision mark를 모두 호출하지 않고 dirty와 예약 timer를 정리한다. async resolver 대기 중 같은 project schedule이 들어와도 detached skip 결과가 확정되면 해당 no-op work를 함께 정리해 registry leak을 만들지 않는다. resolver/attachment 조회 자체가 throw하면 정상 skip이 아니라 retry 가능한 실패로 보존한다.
+
+## 20. 프로젝트 전환과 renderer 종료 재시도
+
+### 20.1 project-bound pending snapshot
+
+Plot/Synopsis의 저장 단위는 payload만이 아니라 변경 당시의 `projectId`, readable `.luie` attachment path, payload를 묶은 immutable snapshot이다. retry는 현재 선택된 프로젝트를 다시 읽지 않고 캡처된 target을 사용한다. 프로젝트 A의 in-flight/failed snapshot이 남아 있을 때 B hydration은 A pending을 clean으로 만들거나 B target으로 바꾸지 않는다. 전환 시 A drain을 먼저 시도하되 실패하면 registry에 A snapshot을 보존하고 이후 explicit flush가 A target으로 재시도한다. B의 변경은 별도 scope의 latest snapshot으로 직렬화한다.
+
+### 20.2 quit renderer ACK 재시도
+
+첫 `APP_BEFORE_QUIT` handshake가 timeout되거나 renderer dirty를 보고하면 저장되지 않은 변경 dialog로 이동한다. 사용자가 `저장 후 종료`를 선택하면 main manuscript flush만 수행하는 것으로 충분하지 않다. main은 renderer에 `APP_BEFORE_QUIT`를 다시 보내 buffer와 world queue의 실제 ACK를 받아야 한다. 재시도 ACK가 없으면 export/finalize로 진행하지 않고 기본값이 `종료 취소`인 두 번째 dialog에서 재시도, 취소, 명시적 저장 생략 중 하나를 받는다. 저장 생략만 renderer ACK 없이 종료를 허용한다. 각 handshake attempt는 성공, timeout, throw 모든 경로에서 자체 IPC listener와 timer를 정리한다.
+
+### 20.3 manual save 결과 표시
+
+Cmd/Ctrl+S는 buffer → world queue → main manuscript/package ACK가 모두 성공했을 때만 성공이다. 어느 단계든 reject하면 logger 기록과 함께 renderer에서 사용자가 관찰 가능한 실패 상태를 표시한다. 앞선 editor chapter가 durable해졌더라도 package export 실패를 전체 저장 성공으로 표시하지 않는다.
+
+### 20.4 마일스톤 재검증 상태
+
+2026-07-19 Task 8~15 재검증은 비-DB 저장 회귀 17 files/119 tests, Electron DB recovery 2 files/2 tests, 변경 범위 ESLint와 diff-check가 PASS했다. 전체 타입체크는 저장 변경 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 1건으로 차단됐다. 독립 마일스톤 리뷰는 프로젝트 전환 교차 저장과 `저장 후 종료` renderer false-success를 Critical로 판정해 No-Go를 유지했고, 이 결과를 Task 16 입력으로 사용했다.
+
+### 20.5 review follow-up ACK 불변식
+
+프로젝트 scope는 component-level pending payload뿐 아니라 각 `BufferedInput`/`BufferedTextArea`의 latest dirty value까지 포함한다. A input이 blur/debounce되기 전에 B로 전환되면 A render의 callback과 A target으로만 drain하고 B callback에 전달하지 않는다. A/B scope가 같은 field id를 사용해도 input instance를 공유하지 않는다.
+
+비동기 hydration은 해당 scope의 mutation generation을 캡처한다. load 중 edit/save가 시작되거나 ACK된 경우 늦은 load 결과는 최신 ref/UI를 덮어쓰지 않는다. component가 unmount될 때 pending/in-flight save가 남으면 detached registry callback이 캡처한 project target과 payload를 성공 ACK까지 보유한다.
+
+renderer quit hook은 buffer와 world queue가 모두 성공한 뒤에만 `rendererDirty=false`로 내리고 requestId를 echo한다. 실패하면 true를 유지하고 완료 ACK를 보내지 않는다. preload autosave flush는 모든 IPC response의 `success`를 검사한다. `success:false` 또는 throw인 payload는 최신 concurrent payload와 병합해 queue에 보존하고 flush를 reject하며, `completeAppFlush`는 clean ACK를 보내지 않는다.
+
+main의 `autoSaveManager.flushAll()` reject 또는 timeout도 저장 성공이 아니다. `저장 후 종료` 뒤 이 단계가 실패하면 retry, 종료 취소, 명시적 저장 생략의 두 번째 결정 경계로 이동하며 기본값은 종료 취소다. 성공 ACK 또는 명시적 skip 전에는 export/finalize로 진행하지 않는다.
+
+renderer flush ACK는 활성 requestId 일치뿐 아니라 boolean payload 형식과 main window sender를 검증한다. stale request, malformed payload, 다른 sender의 ACK는 성공으로 처리하지 않는다.
+
+새 project scope에 cache 또는 pending full snapshot이 없으면 Plot/Synopsis native control은 hydration 성공 전까지 비활성화한다. 이는 기본/fallback payload로 아직 읽지 않은 기존 문서를 덮는 것보다 안전을 우선하는 정책이다. load 실패 시 잠금을 유지하고 log/toast를 남긴다. cache/pending scope 재진입은 즉시 편집할 수 있지만, load 시작 시 pending immutable snapshot과 mutation generation을 함께 캡처해 retry ACK 뒤 늦게 도착한 load도 최신 값을 되돌리지 못한다.
+
+preload autosave flush는 하나의 tail로 직렬화한다. 성공 batch 중 새 payload가 들어오면 같은 explicit barrier가 queue-empty까지 계속 drain한다. 실패 batch는 같은 호출에서 재시도하지 않고 reject하며 payload를 보존한다. 다음 explicit request만 retained payload를 재시도한다. 따라서 앞선 quit request가 in-flight인 동안 다음 request가 빈 queue를 보고 clean ACK하는 경로가 없다.
+
+### 20.6 Task 16 최종 검증
+
+Task 16 최종 root 회귀는 19 files/167 tests PASS이며, 실제 preload bridge/queue, 동일 field id project switch, pending retry ACK 뒤 late revisit load, component unmount detached retry, renderer late/foreign/malformed ACK, main reject/timeout 결정을 포함한다. Electron DB recovery 2 files/2 tests, 대상 ESLint와 diff-check도 PASS했다. 전체 타입체크는 Task 16 신규 오류 없이 사용자 dirty Binder baseline 1건만 남는다. 두 독립 재리뷰 verdict는 Production-ready, Critical/Important 0이다.
+
+Project-wide revision Task 4는 queue 밖 full writer도 `capture → atomic write → attachment → captured mark`로 수렴시켰다. package hydration은 final transaction revision을 attachment baseline으로 저장한다. snapshot writer 실패는 생성한 Project/Attachment를 rollback하고, write 성공 뒤 mark 실패도 DB state는 rollback하되 이미 작성한 `.luie`는 recovery artifact로 보존한다. 기존 파일일 가능성이 있어 자동 삭제하지 않는다. attach/materialize/corrupt recovery는 mark 실패를 성공으로 반환하지 않으며 capture 뒤 mutation은 더 높은 dirty revision으로 남는다. Task 4 계약 17 tests, Task 1~3 공유 focused 11 files/49 tests, Task 8~16 저장 회귀 19 files/167 tests가 PASS했다. exact Task 4 5-file 명령의 Task 4 관련 26 tests는 PASS이고 기존 대용량 world-entry baseline 5건만 남는다. 대상 ESLint/diff-check PASS, direct tsc6는 사용자 dirty Binder TS2322 한 건만 유지한다. 기준 commit은 Task 1 `8ae3d04c`, Task 2 `a028e5a7`, Task 3 `a171b90e`다.
+
+Task 16 당시 범위 밖이던 project-wide revision 확대는 후속 Task 1~4에서 해결됐다. 여전히 범위 밖인 항목은 사용자 dirty `NotionDocumentView` timer, world mutation 자동 backoff, 저장 latency P95 및 95% confidence 인증이다. 따라서 저장 무결성 전체 로드맵의 이 후속 항목까지 완료됐다고 주장하지 않는다.
+
+## 21. Notion 문서 본문 저장 경계
+
+### 21.1 latest snapshot과 explicit barrier
+
+`NotionDocumentView`의 markdown editor는 update 즉시 latest markdown ref를 갱신하고 500ms background timer를 예약한다. renderer global flush가 먼저 오면 timer를 취소하고 latest snapshot을 `saveBody`에 정확히 한 번 전달한다. 성공한 snapshot만 last-saved ref로 승격하므로 남은 timer나 다음 barrier가 같은 값을 중복 enqueue하지 않는다.
+
+### 21.2 경합, 실패, unmount
+
+동일 snapshot의 timer와 explicit flush는 하나의 in-flight Promise를 공유한다. in-flight 중 newer markdown이 생기고 barrier가 다시 들어오면 이전 enqueue 뒤 latest ref를 직렬 drain한다. 동기 throw나 Promise rejection은 clean 전환 전에 전파하며 background timer는 rejection만 consume한다. 따라서 다음 explicit flush가 같은 dirty snapshot을 재시도한다.
+
+dirty 또는 in-flight 상태에서 component가 unmount되면 공용 `preserveUnmountSave`가 initial drain과 캡처한 latest retry를 detached registry에 보존한다. 성공하면 unregister하고 실패하면 다음 global flush에서 재시도한다. 별도 component queue나 전역 상태는 만들지 않는다.
+
+### 21.3 downstream 저장 순서와 검증
+
+Notion `saveBody`는 `setSections`와 모든 `setSectionContent`를 첫 await 전에 순서대로 동기 호출한다. 각 setter의 `void | Promise<unknown>` 결과를 `Promise.allSettled`로 모두 기다린 뒤 첫 rejected reason을 다시 throw하므로, 한 setter가 먼저 실패해도 다른 parent callback ACK가 pending인 동안 buffer barrier와 in-flight를 해제하지 않는다. 기존 save coordinator는 이 enqueue 경계 뒤 `flushWorldEntityMutations()`를 실행하며 component는 별도 queue나 전역 상태를 만들지 않는다.
+
+Task 17 focused는 1 file/8 tests, Task 8~17 저장 회귀는 20 files/175 tests PASS다. 대상 ESLint와 diff-check도 PASS했고 typecheck 신규 오류는 없다. 사용자 dirty Binder TS2322 baseline만 유지한다. 이 검증은 automatic backoff, save latency P95 또는 95% confidence 인증을 포함하지 않는다.
+
+### 21.4 review follow-up ACK 검증
+
+timer가 첫 async setter ACK를 기다리는 동안 같은 snapshot의 explicit flush가 들어오면 기존 in-flight Promise를 공유하고 setter를 중복 호출하지 않는다. barrier는 ACK 전 pending이다. first snapshot의 sections/content 결과가 모두 settle되기 전에는 newer snapshot의 setter를 시작하지 않으며 실제 호출 순서는 `first sections → first content → second sections → second content`다.
+
+first snapshot in-flight 중 newer markdown을 받은 뒤 unmount되면 detached registry가 first ACK 뒤 latest를 한 번 시도한다. latest 실패는 clean으로 승격하지 않고 다음 global flush가 같은 latest snapshot을 재시도한다. 보강 RED 3건은 기존 sync-only callback 경계에서 실패했고 최소 ACK 보정 뒤 focused 6/6, 당시 저장 회귀 173/173이 PASS했다.
+
+### 21.5 partial rejection settle 경계
+
+같은 snapshot의 setter 중 하나가 reject하고 다른 하나가 pending이면 첫 오류만 보고 조기 종료하지 않는다. 모든 결과가 settle될 때까지 barrier와 in-flight를 유지하고 newer/retry setter를 시작하지 않는다. settle 완료 뒤 원래 첫 오류를 그대로 전파하며, 그 다음 explicit flush만 latest snapshot을 시작한다. 이 follow-up RED는 focused 7건 중 신규 1건만 실패했고 `allSettled` 보정 뒤 focused 7/7, 저장 회귀 174/174가 PASS했다.
+
+### 21.6 synchronous throw 수집
+
+앞선 setter가 pending Promise를 반환한 뒤 뒤 setter가 동기 throw해도 `saveBody`가 즉시 종료되지 않는다. local collector는 각 setter 호출 결과를 `Promise.resolve`로, 동기 오류를 `Promise.reject`로 같은 saves 배열에 수집한다. 모든 setter는 첫 await 전에 호출되며 `allSettled` 뒤 첫 오류를 전파한다. 따라서 앞선 ACK settle 전 barrier/overlap은 pending이고 newer setter는 0회다. 이 RED는 focused 8건 중 신규 1건만 실패했고 보정 뒤 focused 8/8, 저장 회귀 175/175가 PASS했다.
+
+## 22. World mutation 제한 재시도 정책
+
+### 22.1 적용 범위와 시간표
+
+자동 재시도는 renderer의 `createWorldEntityCRUDStore`가 소유한 character/event/faction/term **update queue**에만 적용한다. 이 경로는 main SQLite transaction 성공 뒤 package export를 debounce schedule하고 entity ACK를 먼저 반환하므로 mutation 실패와 export 실패가 한 응답으로 합쳐지지 않는다. graph document, scrap/replica document, Plot/Synopsis/Canvas/Notion buffer처럼 export 결과가 응답에 섞이거나 별도 저장 경계를 쓰는 경로는 이번 자동 backoff 대상이 아니다.
+
+최초 foreground 시도가 실패하면 같은 entity의 latest patch를 보존하고 `250ms → 500ms → 1000ms` 순서로 최대 3회 자동 재시도한다. 새 patch가 없는 한 background 자동 실행 상한은 3회다. 최초 시도까지 합치면 사용자 mutation generation 하나의 무인 실행 상한은 총 4회다.
+
+retry delay는 renderer world 저장 정책이므로 `src/renderer/src/shared/store` 경계 또는 해당 feature 정책 파일이 소유한다. main-only 또는 cross-process 계약이 아니므로 편의를 위해 `src/shared/constants`로 올리지 않는다. 새 dependency, 범용 retry framework, IPC 계약 변경은 만들지 않는다.
+
+### 22.2 latest patch와 ACK 의미
+
+- 실패한 batch는 waiter 유무와 관계없이 pending/active 상태로 남는다.
+- 같은 entity에 새 patch가 들어오면 retained patch와 기존 nested `attributesPatch` 규칙으로 병합하며 최신 scalar 값을 우선한다.
+- 실패를 관찰한 원래 `enqueue` 또는 explicit `flush` Promise는 즉시 reject한다. 자동 재시도 예약을 저장 성공 ACK로 오인하지 않는다.
+- timer retry는 background 작업이므로 rejection을 consume하되 payload와 pending count를 지우지 않는다.
+- 실제 CRUD ACK가 성공한 경우에만 retained 상태, retry index, timer, active queue를 정리하고 store/graph reconciliation을 적용한다.
+- `null` ACK와 thrown/rejected 오류는 현재 renderer에서 구조화된 transient 분류가 보존되지 않으므로 동일한 제한 재시도 대상으로 취급한다. validation/permission 오류도 무한 반복되지 않고 같은 총 4회 상한 안에서 멈춘다. 오류 taxonomy 확대는 별도 설계 없이는 이번 범위에 넣지 않는다.
+
+### 22.3 foreground interrupt 정책
+
+새 입력, `Cmd/Ctrl+S`, 종료 handshake, delete-before-update drain처럼 queue의 `enqueue` 또는 `flush`를 호출하는 foreground 경계는 예약된 retry timer를 먼저 취소하고 retained latest patch를 즉시 실행한다. timer와 foreground 호출이 경쟁해도 동일 entity에서 `execute`를 동시에 두 번 실행하지 않고 기존 in-flight Promise를 공유한다.
+
+foreground 즉시 실행이 다시 실패하면 해당 호출자는 오류를 그대로 받고 payload는 보존된다. 새 patch를 받은 enqueue만 새 mutation generation으로 간주해 자동 retry budget을 `250ms`부터 초기화한다. `Cmd/Ctrl+S`, 종료 handshake, delete drain을 포함한 explicit flush는 사용자 주도 즉시 시도일 뿐 자동 budget을 초기화하지 않는다. 취소한 timer가 있었다면 해당 retry index부터 다시 예약하며, 이미 자동 3회를 소진했다면 추가 timer 없이 retained 상태를 유지한다. 따라서 반복 shortcut이 자동 chain을 무한히 재생성하지 않는다.
+
+성공하면 이전 generation의 timer, retry index, retained 상태를 전부 정리한다. 자동 3회를 소진한 queue도 payload를 유지하므로 이후 explicit flush는 즉시 한 번 다시 시도할 수 있고, 이후 새 입력은 latest merge와 함께 새 bounded chain을 시작한다.
+
+global `flushWorldEntityMutations()`는 active queue를 queue-empty까지 drain하려 하지만, 한 foreground 호출 안에서 실패 batch를 반복 실행하지 않는다. 첫 실패를 caller에 전파한 뒤 background chain만 예약한다. 따라서 manual save와 quit은 실패를 사용자 결정 경계로 전달하면서도 다음 안전한 재시도 가능성을 유지한다.
+
+### 22.4 export 비적용
+
+`.luie` project export 오류는 권한, 경로, 디스크 부족, 손상된 attachment처럼 즉시 반복해도 회복되지 않을 수 있으므로 같은 세션에서 오류가 trigger가 되는 자동 timer 재시도를 하지 않는다. `ProjectExportQueue`는 `false`/throw 시 dirty project와 revision을 보존하고 다음 실제 mutation schedule, `runNow`, explicit flush 또는 사용자의 종료 재시도 결정에서만 다시 실행한다. 다음 앱 시작의 `scheduleStalePackageExports` 1회는 실패 직후 backoff가 아니라 persisted revision drift 복구 경계이므로 유지한다. 이 startup attempt도 실패하면 같은 세션에서 자체 timer chain을 만들지 않는다.
+
+현재 `ProjectService.attemptImmediatePackageExport`는 immediate export의 `false`/throw 뒤 `${reason}:retry` schedule을 추가해 자동 timer를 만든다. Task 18에서 이 schedule을 제거하고 오류 전파와 queue dirty 보존만 유지한다. 이미 SQLite mutation ACK에 package export error를 섞는 world replica/document 경로는 ACK 분리 전까지 entity backoff에 편입하지 않는다. export queue의 delay, dirty retention, manual/quit 결정 경계는 보존한다.
+
+### 22.5 TDD 검증 기준
+
+production 변경 전에 fake timer 기반 RED로 다음을 고정한다.
+
+1. 최초 실패 뒤 정확히 250ms, 500ms, 1000ms에 재시도하고 총 4회 뒤 멈추며 payload/pending count를 보존한다.
+2. 중간 ACK 성공은 남은 timer를 취소하고 pending/global active count를 0으로 만든다.
+3. 예약 중 새 enqueue는 timer를 취소하고 retained+newer latest patch를 즉시 한 번 실행하며 새 mutation generation의 budget만 초기화한다.
+4. explicit/global flush는 timer를 취소하고 즉시 실행하며 실패를 caller에 전파하되 자동 budget을 초기화하지 않는다.
+5. timer, enqueue, flush, delete drain 경합에서도 entity별 concurrent execute는 최대 1이다.
+6. waiter 없는 background ACK도 optimistic generation 이후 store/graph를 최신 patch 기준으로 reconcile하고 queue map을 정리한다.
+7. immediate export `false`/throw 뒤 retry schedule이 없고, timer만 진행시켜도 export 실행 횟수가 증가하지 않는다.
+8. graph/replica/document export 오류는 entity mutation queue 재실행을 만들지 않는다.
+
+Task 18은 focused RED/GREEN, Task 8~18 저장 회귀, 대상 ESLint, diff-check, typecheck baseline, 독립 코드/테스트 리뷰를 모두 통과한 뒤에만 완료로 기록한다.
+
+### 22.6 Task 18 구현 및 검증 결과
+
+`createLatestMutationQueue`는 opt-in `retryDelaysMs`와 retry timer/index를 소유한다. character/event/faction/term update factory만 `[250, 500, 1000]`을 전달하고 generic queue는 기존 foreground-only 동작을 유지한다. foreground enqueue는 retry timer를 취소하고 budget을 새 generation으로 초기화하지만 explicit flush는 budget을 초기화하지 않는다.
+
+foreground 요청은 batch 시작 시 소비한다. 실행 중 새 요청이 들어오고 현재 auto retry가 실패하면 다음 timer를 예약하지 않고 retained+newer patch를 즉시 단일-flight로 drain한다. 성공/실패 waiter continuation에서 enqueue가 재진입해도 pending을 놓치지 않는다. `flush()`는 `inFlight || pending`이 없어질 때까지 새 in-flight generation도 await하는 queue-empty barrier이며, 현재 attempt 실패는 즉시 throw하므로 같은 flush 호출에서 retained 실패 batch를 반복 실행하지 않는다.
+
+`ProjectService.attemptImmediatePackageExport`의 `false`/throw 뒤 `${reason}:retry` schedule은 제거했다. export queue dirty revision, explicit/manual/quit flush, 다음 앱 시작의 stale revision recovery 1회는 유지한다. 실제 graph `persistGraphDocument`와 replica scrap `saveReplicaScrapMemos`도 package export 오류 뒤 60초 timer 진행에서 재호출되지 않는다.
+
+TDD는 초기 정책 RED 3 files/38 tests 중 11 FAIL·27 PASS에서 시작했다. review follow-up은 성공 ACK continuation strand, 실패 catch continuation, in-flight auto retry 재실패 중 newer enqueue, 후속 ACK 전 flush 조기 완료를 각각 production 변경 전 단일 FAIL로 재현했다. 최종 focused는 4 files/44 tests, export/startup 포함 인접 회귀는 6 files/58 tests, Task 8~18 저장 회귀는 21 files/194 tests PASS다. 대상 ESLint와 diff-check도 PASS했다. direct `tsc6 --noEmit`은 Task 18 신규 오류 없이 사용자 dirty `BinderSidebarPanelBody.tsx:102` 기존 TS2322 한 건만 유지한다. 독립 코드·테스트 최종 재리뷰는 모두 Production-ready/Approved이며 Critical/Important/Minor 0이다.
+
+## 23. 남은 저장 무결성 로드맵
+
+순서는 고정한다.
+
+1. **Task 18 — world mutation bounded backoff:** 완료. 본 문서 22절의 제한 재시도와 export 무자동 재시도를 구현했다.
+2. **Task 19 — 저장 latency P95/95% 신뢰 인증:** 완료. 실제 SQLite ACK, coordinator core barrier, 물리적 `Cmd/Ctrl+S` E2E 경계를 분리 측정하고 raw sample, 통계, provenance를 artifact로 남겼다.
+3. **Phase 20 — SPA + 500 LOC 모듈화:** 저장 로직 완료 뒤 behavior-neutral 구조 정리를 수행한다. 이 Phase에서 SPA는 runtime의 Single Page Application이 아니라 **Single Pattern Architecture**, 즉 레이어마다 하나의 정식 의존 흐름만 허용한다는 뜻으로 사용한다.
+
+Phase 20은 renderer `domain component/hook/store → domain adapter → @shared/api`, preload `domain API → safeInvoke/IPC channel`, main `IPC handler → domain service → infra adapter(database/repository/FS/native)`, shared `cross-process contract/schema/type/constant`라는 기존 target pattern을 보존한다. legacy 병렬 진입점이나 두 번째 queue/store 패턴을 만들지 않는다. hand-written production `.ts`/`.tsx`/`.css`와 test `.ts`/`.tsx`는 500 LOC 이하가 완료 조건이며 generated/vendor artifact만 생성 경로와 근거를 기록한 예외로 둔다. i18n dictionary와 CSS는 generated가 아니므로 locale/domain 및 cascade 책임 단위로 분리한다. 세부 실행 단위와 현재 초과 목록은 구현 계획과 `docs/architecture/migration-guardrails.md`를 SSOT로 삼는다.
+
+## 24. 저장 latency P95/95% 신뢰 인증
+
+### 24.1 측정 계약
+
+Task 19는 기존 `node:sqlite` 합성 benchmark나 mock world burst를 인증 표본으로 사용하지 않는다. core harness는 Electron Node ABI에서 production `characterStore → createLatestMutationQueue → characterService → better-sqlite3 transaction`을 연결한다. coordinator core barrier에는 pending chapter autosave, world mutation, 실제 `.luie` export를 포함하지만 preload/IPC는 동일 응답 계약의 in-process adapter이므로 `Cmd/Ctrl+S` E2E로 간주하지 않는다. 별도 Playwright harness는 실제 Electron 창에서 물리적 단축키로 저장을 발동하고 renderer `saveProjectNow` 진입부터 preload autosave queue, IPC, main flush, SQLite, package export ACK까지 한 clock으로 측정한다. 동기 start와 success/error terminal measure 수가 각각 단축키 한 번과 일치해야 하고, 계측 API 실패는 실제 저장을 바꾸지 않는다. OS keydown dispatch 자체는 측정 경계 밖이다.
+
+시나리오별 warm-up 30회는 통계에서 버리고 200개 순차 표본을 남긴다. 전체 raw 성공/실패 표본, P50/P95/P99/max, 실패율을 저장한다. percentile은 nearest-rank이고 P95의 95% CI는 고정 seed와 10,000회 circular moving-block bootstrap(block size 10)의 2.5/97.5 percentile로 구해 연속 표본의 자기상관을 보존한다. runner 자체를 독립 프로세스 3회 실행하고 각 raw artifact에 Git HEAD와 측정 source SHA-256을 기록한다. 표본이 하나라도 실패하거나 latest DB 값, chapter body, exported revision, package artifact가 수렴하지 않으면 인증은 실패한다.
+
+재현 명령과 추적 파일은 다음과 같다.
+
+```bash
+node scripts/certify-save-latency-repeat.mjs --out docs/quality/save-latency-certification.json
+node scripts/certify-save-latency-e2e-repeat.mjs --out docs/quality/save-latency-e2e-certification.json
+```
+
+package alias는 core와 E2E를 연속 실행하는 `pnpm run certify:save-latency`이며 개별 alias는 `certify:save-latency:core`, `certify:save-latency:e2e`다. 2026-07-20 checkout에서는 pnpm 11.5.3 wrapper가 child 실행 전 무출력 정지해 위 직접 Node 명령을 인증 명령으로 사용했다.
+
+- core summary/raw: `docs/quality/save-latency-certification.json`, `save-latency-certification-run-{1..3}.json`
+- shortcut E2E summary/raw: `docs/quality/save-latency-e2e-certification.json`, `save-latency-e2e-certification-run-{1..3}.json`
+- local review budget: `docs/quality/save-latency-budget.json`
+- 순수 통계: `src/shared/performance/saveLatencyStatistics.ts`
+- 통계 TDD: `tests/shared/performance/saveLatencyStatistics.test.ts`
+- real DB/FS harness: `tests/main/performance/saveLatencyCertification.test.ts`
+- physical shortcut harness: `tests/e2e/saveLatencyCertification.spec.ts`
+
+### 24.2 2026-07-20 인증 결과
+
+환경은 Apple M4/16GiB, darwin arm64, Electron 42.5.0(ABI 146), Node 24.17.0, better-sqlite3 12.11.1, SQLite 3.53.2, WAL, `synchronous=FULL`이다.
+
+| Scenario/run | P50 | P95 | P99 | P95 95% CI | 실패 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| world single ACK / run 1 | 0.156ms | 0.195ms | 0.258ms | 0.181~0.216ms | 0/200 |
+| world single ACK / run 2 | 0.161ms | 0.207ms | 0.238ms | 0.182~0.224ms | 0/200 |
+| world single ACK / run 3 | 0.156ms | 0.192ms | 0.229ms | 0.182~0.206ms | 0/200 |
+| world 100-burst / run 1~3 P95 | - | 0.477 / 0.451 / 0.451ms | - | upper max 0.552ms | 0/600 |
+| coordinator main-core / run 1~3 P95 | - | 8.449 / 8.968 / 8.879ms | - | upper max 10.533ms | 0/600 |
+| physical Cmd/Ctrl+S E2E / run 1 | 8.000ms | 12.400ms | 14.400ms | 11.300~13.300ms | 0/200 |
+| physical Cmd/Ctrl+S E2E / run 2 | 8.400ms | 12.600ms | 14.200ms | 11.900~13.300ms | 0/200 |
+| physical Cmd/Ctrl+S E2E / run 3 | 8.300ms | 12.700ms | 13.300ms | 11.800~13.200ms | 0/200 |
+
+총 2,400개 측정 표본의 실패율은 0이다. core 세 실행 모두 character `barrier-230`, chapter `chapter-230`, `revision === exportedRevision === 1385`, `.luie` 존재를 증명했고, E2E 세 실행 모두 latest chapter DB 본문과 package entry가 최종 입력에 수렴했다. core와 E2E percentile은 측정 경계가 다르므로 더하거나 서로 대체하지 않는다.
+
+절대 latency는 단일 Apple M4 호스트 관측값이므로 CI hard gate로 승격하지 않는다. 프로세스별 분산과 CI 비중첩도 숨기지 않고 raw run으로 보존한다. 세 실행 중 가장 큰 CI 상한을 바깥쪽 반올림한 local review budget만 별도 파일에 두며 초과는 실패가 아니라 재측정/회귀 조사 신호다. 자동 hard gate는 표본 계약, 실패율 0, raw/summary 일치, latest 값과 revision/export/package 수렴에만 적용한다.

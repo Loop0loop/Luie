@@ -1,18 +1,3 @@
-/**
- * canvasFlowAdapter.ts
- *
- * Pure conversion: CanvasProjection → React-Flow Node[] / Edge[].
- *
- * Constraints:
- *   - No React, no store access, no IPC, no side-effects.
- *   - Input is CanvasProjection (scope/mode-filtered view-model),
- *     NOT raw WorldGraphData — so scope filtering is always applied.
- *
- * Maps:
- *   CanvasProjectionNode → Node<RFEntityNodeData>
- *   CanvasProjectionEdge → Edge<RFRelationEdgeData>
- */
-
 import type { Node, Edge } from "reactflow";
 import {
   CANVAS_RF_NODE_TYPE_ENTITY,
@@ -28,8 +13,6 @@ import {
 import type { CanvasProjection } from "../types/canvasProjection.types";
 import type { RFEntityNodeData, RFRelationEdgeData } from "../types/reactFlow.types";
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
-
 const hasPersistedPosition = (x: number, y: number): boolean =>
   x !== 0 || y !== 0;
 
@@ -42,13 +25,17 @@ function autoGridPosition(index: number): { x: number; y: number } {
   };
 }
 
-// ─── nodes ────────────────────────────────────────────────────────────────────
-
 function buildNodes(
   projection: CanvasProjection,
   selectedNodeId: string | null,
 ): Node<RFEntityNodeData>[] {
   let autoIndex = 0;
+  const connectionCounts = new Map<string, number>();
+  for (const edge of projection.edges) {
+    connectionCounts.set(edge.sourceId, (connectionCounts.get(edge.sourceId) ?? 0) + 1);
+    connectionCounts.set(edge.targetId, (connectionCounts.get(edge.targetId) ?? 0) + 1);
+  }
+
   return projection.nodes.map((node) => {
     const position = hasPersistedPosition(node.x, node.y)
       ? { x: node.x, y: node.y }
@@ -64,13 +51,12 @@ function buildNodes(
         kind: node.kind,
         label: node.label,
         description: node.description ?? null,
+        connectionCount: connectionCounts.get(node.id) ?? 0,
         isSelected: node.id === selectedNodeId,
       } satisfies RFEntityNodeData,
     };
   });
 }
-
-// ─── edges ────────────────────────────────────────────────────────────────────
 
 function buildEdges(
   projection: CanvasProjection,
@@ -91,19 +77,12 @@ function buildEdges(
     }));
 }
 
-// ─── public API ───────────────────────────────────────────────────────────────
-
 export interface CanvasFlowGraph {
   nodes: Node[];
   edges: Edge[];
 }
 
-/**
- * Pure conversion: CanvasProjection + selectedNodeId → React-Flow nodes/edges.
- *
- * Projection is already scope/mode-filtered by useCanvasProjection.
- * Memoize on (projection, selectedNodeId) at the call site.
- */
+/** scope/mode filtering이 끝난 projection만 ReactFlow node/edge로 변환한다. */
 export function buildFlowGraph(
   projection: CanvasProjection,
   selectedNodeId: string | null,

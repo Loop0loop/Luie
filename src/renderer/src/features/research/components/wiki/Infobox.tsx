@@ -27,34 +27,32 @@ export function InfoboxRow({
 }: InfoboxRowProps) {
   const { t } = useTranslation();
   return (
-    <div className="flex border-b border-(--namu-border) last:border-b-0 min-h-[40px] group/row hover:bg-(--namu-hover-bg) transition-colors">
-      <div className="w-[100px] bg-(--namu-table-bg) px-2 py-2 font-semibold text-(--namu-table-label) border-r border-(--namu-border) flex items-center justify-center text-center leading-tight shrink-0 relative text-[12px]">
+    <div className="flex flex-col gap-1 py-2 border-b border-border/40 last:border-b-0 group/row">
+      <div className="flex items-center justify-between gap-1">
         {isCustom ? (
-          <div className="flex items-center relative w-full justify-center">
-            <BufferedInput
-              className="border-none bg-transparent w-full color-inherit font-inherit p-1 text-center focus:outline-none focus:bg-active focus:rounded-sm text-[12px]"
-              value={label}
-              onSave={onLabelSave || (() => {})}
-            />
-            {onDelete && (
-              <button
-                type="button"
-                className="absolute -left-0.5 top-1/2 -translate-y-1/2 opacity-0 group-hover/row:opacity-100 transition-opacity border-none bg-transparent text-muted cursor-pointer p-0.5 hover:text-destructive"
-                onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                title={t("character.wiki.fieldDeleteTitle")}
-              >
-                <X size={10} />
-              </button>
-            )}
-          </div>
+          <BufferedInput
+            className="border-none bg-transparent w-full text-[11px] font-medium text-muted p-0 focus:outline-none focus:text-fg/80"
+            value={label}
+            onSave={onLabelSave || (() => {})}
+          />
         ) : (
-          label
+          <span className="text-[11px] font-medium text-muted">{label}</span>
+        )}
+        {onDelete && (
+          <button
+            type="button"
+            className="opacity-0 group-hover/row:opacity-100 transition-opacity border-none bg-transparent text-muted cursor-pointer p-0.5 hover:text-danger shrink-0"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            title={t("character.wiki.fieldDeleteTitle")}
+          >
+            <X size={10} />
+          </button>
         )}
       </div>
-      <div className="flex-1 px-2.5 py-1.5 flex items-center bg-surface text-fg text-[13px]">
+      <div className="flex items-center text-fg text-[13px]">
         {type === "select" ? (
           <select
-            className="border-none bg-transparent w-full text-fg text-[13px] p-0.5 focus:outline-none cursor-pointer"
+            className="border-none bg-transparent w-full text-fg text-[13px] p-0 focus:outline-none cursor-pointer"
             value={value || ""}
             onChange={(e) => onSave?.(e.target.value)}
           >
@@ -67,7 +65,7 @@ export function InfoboxRow({
           </select>
         ) : (
           <BufferedInput
-            className="border-none bg-transparent w-full text-fg text-[13px] p-0.5 focus:outline-none focus:bg-active focus:rounded-sm placeholder:text-muted/40"
+            className="border-none bg-transparent w-full text-fg text-[13px] p-0 focus:outline-none placeholder:text-muted/35"
             value={value || ""}
             placeholder={placeholder || t("character.wiki.valuePlaceholder")}
             onSave={onSave || (() => {})}
@@ -81,38 +79,60 @@ export function InfoboxRow({
 export function Infobox({
   title,
   image,
+  imageUrl,
   rows,
   onAddField,
 }: {
   title: string;
   image?: React.ReactNode;
+  imageUrl?: string | null;
   rows: InfoboxRowProps[];
   onAddField: () => void;
 }) {
   const { t } = useTranslation();
+
+  const portrait = imageUrl ? (
+    <img src={imageUrl} alt={title} className="h-full w-full object-cover" />
+  ) : (
+    image
+  );
+
   return (
-    <div className="w-full border border-(--namu-border) bg-surface rounded-lg overflow-hidden shrink-0 shadow-sm text-[13px]">
-      <div className="bg-accent text-white text-center px-3 py-2.5 font-bold text-[14px]">
-        {title}
+    <div className="w-full shrink-0 overflow-hidden rounded-panel border border-border/70 bg-surface text-[13px] shadow-sm">
+      {/* Infobox Header */}
+      <div className="border-b border-border/50 bg-element/40 px-4 py-2.5 flex items-center justify-between">
+        <span className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+          {t("character.wiki.infoboxTitle", "프로필 요약")}
+        </span>
+        <span className="text-[11px] font-medium text-fg truncate max-w-[140px]">
+          {title}
+        </span>
       </div>
-      {image && (
-        <div className="w-full bg-(--namu-table-bg) flex items-center justify-center border-b border-(--namu-border) py-6">
-          {image}
+
+      <div className="p-4">
+        {portrait && (
+          <div className="flex items-center justify-center pb-3.5 mb-2 border-b border-border/30">
+            <div className="relative flex size-24 items-center justify-center overflow-hidden rounded-full bg-element text-subtle border-2 border-border/60 shadow-xs ring-4 ring-element/50">
+              {portrait}
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col">
+          {rows.map((row) => (
+            <InfoboxRow key={row.label + (row.isCustom ? "cust" : "fixed")} {...row} />
+          ))}
         </div>
-      )}
-      <div className="flex flex-col">
-        {rows.map((row) => (
-          <InfoboxRow key={row.label + (row.isCustom ? "cust" : "fixed")} {...row} />
-        ))}
+
+        <button
+          type="button"
+          className="mt-3.5 flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-border/80 py-1.5 text-xs font-medium text-subtle hover:border-accent hover:text-accent hover:bg-accent/5 transition-all cursor-pointer"
+          onClick={onAddField}
+        >
+          <Plus size={12} />
+          <span>{t("character.wiki.addField", "속성 추가")}</span>
+        </button>
       </div>
-      <button
-        type="button"
-        className="w-full px-3 py-2.5 bg-surface border-none border-t border-(--namu-border) text-muted text-[12px] cursor-pointer flex items-center justify-center gap-1.5 hover:bg-(--namu-hover-bg) hover:text-fg transition-colors"
-        onClick={onAddField}
-      >
-        <Plus size={11} />
-        <span>{t("character.wiki.addField")}</span>
-      </button>
     </div>
   );
 }

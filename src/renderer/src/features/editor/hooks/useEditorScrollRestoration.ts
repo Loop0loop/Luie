@@ -15,20 +15,18 @@ export function useEditorScrollRestoration(chapterId?: string) {
     let scrollTimeout: NodeJS.Timeout | null = null;
     let cleanupListener: (() => void) | null = null;
 
-    // Use a short delay to ensure DOM is fully rendered before trying to query and scroll
+    // NOTE: DOM render 이후 scroll container를 찾도록 한 tick 늦춘다.
     const initTimer = setTimeout(() => {
-      // Find the scroll container in the DOM
       const container = document.querySelector('[data-editor-scroll-container="true"]');
       if (!container) return;
 
       const layout = getProjectLayout(currentProject.id);
       const savedScroll = layout.editor.scrollYByChapter[chapterId] ?? 0;
 
-      // Restore scroll position
       isRestoringRef.current = true;
       container.scrollTop = savedScroll;
 
-      // Wait a tick before allowing scroll saves to prevent saving the initial render shifts
+      // NOTE: 초기 layout shift를 저장하지 않도록 복원 다음 tick부터 scroll을 기록한다.
       setTimeout(() => {
         isRestoringRef.current = false;
       }, 100);

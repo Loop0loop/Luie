@@ -493,4 +493,42 @@ describe("worldPackageStorage", () => {
       expect.any(Object),
     );
   });
+
+  it("reports scrap memo package export failures from replica storage", async () => {
+    const warn = vi.fn().mockResolvedValue({ success: true });
+    const worldStorage = createWorldStorageApi({
+      setScrapMemos: vi.fn().mockResolvedValue({
+        success: true,
+        data: { packageExportError: "export failed" },
+      }),
+    });
+
+    setWindowApi({
+      fs: {
+        readLuieEntry: vi.fn(),
+        writeProjectFile: vi.fn(),
+      },
+      logger: { warn },
+      worldStorage,
+    });
+
+    const { saveReplicaScrapMemos } = await import(
+      "../../../src/renderer/src/features/research/services/worldPackageStorageHelpers/replicaStorage.js"
+    );
+
+    await expect(
+      saveReplicaScrapMemos("project-1", {
+        schemaVersion: 2,
+        memos: [],
+      }),
+    ).resolves.toBe(false);
+
+    expect(warn).toHaveBeenCalledWith(
+      "Failed to export world replica scrap memos",
+      {
+        projectId: "project-1",
+        error: "export failed",
+      },
+    );
+  });
 });

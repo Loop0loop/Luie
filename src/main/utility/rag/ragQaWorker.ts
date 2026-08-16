@@ -151,7 +151,7 @@ class RagQaWorker {
         maxTokens = this.clampMaxTokens(parsed.llm?.ragMaxTokens);
       }
     } catch {
-      // defaults/env만 사용
+      // NOTE: utility process에는 renderer 설정이 없으므로 defaults/env만 사용한다.
     }
     this.generationConfigCache = {
       expiresAt: now + RagQaWorker.GENERATION_CONFIG_TTL_MS,
@@ -250,16 +250,6 @@ class RagQaWorker {
         ...runtimeLogFieldsFromProvider(runtime.providerName),
         isModelLoaded: runtime.isModelLoaded(),
       });
-      if (runtime.providerName === "deterministic") {
-        this.emitError({
-          runId: run.runId,
-          code: ErrorCode.RAG_QA_FAILED,
-          message:
-            "LLM 모델이 설정되지 않았습니다. 설정 > AI 모델에서 모델을 구성해주세요.",
-        });
-        return;
-      }
-
       const generationConfig = await this.loadGenerationConfig();
       const { systemPrompt, userPrompt, evidence, narrativeMemory } =
         await assembleRagContext({
@@ -422,8 +412,7 @@ export async function embedTexts(input: {
   runtimePlan?: UtilityRagQaRequest["runtimePlan"];
 }): Promise<number[][] | null> {
   if (input.texts.length === 0) return [];
-  // 임베딩 전용 런타임(전용 임베딩 sidecar/클라우드 임베딩)을 사용한다.
-  // 생성 모델과 분리되어 메모리를 핀하지 않으며, 미가용 시 null → FTS 폴백.
+  // NOTE: embedding runtime을 생성 모델과 분리해 model memory를 고정하지 않으며 실패 시 FTS로 대체한다.
   const runtime = await resolveUtilityEmbeddingRuntimeClient(
     input.projectId,
     input.runtimePlan,

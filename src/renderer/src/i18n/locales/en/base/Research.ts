@@ -59,15 +59,14 @@ export const enBaseResearch = {
         nodesCount: "{{count}} nodes",
         replicaOnly: "Replica only",
         refresh: "Refresh",
-        replicaNotice:
-          "This project currently has no .luie attachment, so graph canvas changes are retained only in replica storage.",
+        replicaNotice: "This project currently has no .luie attachment, so graph canvas changes are retained only in replica storage.",
         loading: "Loading graph data...",
       },
       canvas: {
         toolbar: {
           newEntityBlock: "New entity block",
           timelineBlock: "Timeline block",
-          memoBlock: "Memo block",
+          callout: "Callout",
         },
         controls: {
           zoomIn: "Zoom In",
@@ -109,7 +108,7 @@ export const enBaseResearch = {
         },
         timelinePalette: {
           searchPlaceholder: "Search events or create a new timeline block...",
-          noMatch: 'No events match "{{query}}".',
+          noMatch: "No events match \"{{query}}\".",
           createBlock: "Create new timeline block",
           move: "Move",
           select: "Select",
@@ -123,8 +122,7 @@ export const enBaseResearch = {
       },
       timeline: {
         undated: "Undated",
-        emptyTimelineSelection:
-          "Select a timeline track from the left sidebar or create a new one.",
+        emptyTimelineSelection: "Select a timeline track from the left sidebar or create a new one.",
         move: "Move...",
         description: "Organize events by branch points.",
         emptySegment: "No events assigned to this segment.",
@@ -143,8 +141,7 @@ export const enBaseResearch = {
         titlePlaceholder: "Note title",
         tags: "Tags",
         tagsPlaceholder: "e.g. foreshadowing, season1, lore",
-        bodyPlaceholder:
-          "Write lore notes, references, and scene ideas freely.",
+        bodyPlaceholder: "Write lore notes, references, and scene ideas freely.",
       },
       library: {
         installedKicker: "Installed Plugins",

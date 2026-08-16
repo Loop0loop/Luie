@@ -13,19 +13,14 @@ vi.mock(
   }),
 );
 
-import { ProjectService } from "../../../src/main/services/core/projectService.js";
-import { ChapterService } from "../../../src/main/services/core/chapterService.js";
+import { ProjectService } from "../../../src/main/services/features/project/projectService.js";
+import { ChapterService } from "../../../src/main/services/features/manuscript/chapterService.js";
 import { memoryProjectionService } from "../../../src/main/services/features/memory/memoryProjectionService.js";
-import { searchService } from "../../../src/main/services/features/search/index.js";
-import { projectService } from "../../../src/main/services/core/projectService.js";
+import { searchService } from "../../../src/main/services/features/search/searchService.js";
+import { projectService } from "../../../src/main/services/features/project/projectService.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import { db } from "../../../src/main/database/index.js";
 
-/**
- * Property 2 (폴백 가용성): 임베딩이 미가용(embed null/예외)이어도 searchChunks 는
- * 항상 FTS(+LIKE) 결과를 반환하고 throw 하지 않는다.
- * Validates Requirements 1.2, 2.3.
- */
 describe("SearchService — embedding fallback invariant (P2)", () => {
   const localProjectService = new ProjectService();
   const chapterService = new ChapterService();
@@ -84,7 +79,6 @@ describe("SearchService — embedding fallback invariant (P2)", () => {
     return String(project.id);
   }
 
-  /** 벡터 검색 경로를 강제로 활성화한다(임베딩 호출이 실제로 일어나도록). */
   function forceVectorSearchPath(): void {
     process.env.LUIE_IS_UTILITY_PROCESS = "1";
     vi.spyOn(db, "isVectorSearchEnabled").mockReturnValue(true);

@@ -1,0 +1,3 @@
+{"id":"murim.rejected.001","questionId":"murim.setting_check.001","question":"전생 공개 이거 2화쯤엔 확정 아니었지?","rejectedAnswer":"백린 배신자은 정사 확정이다.","reason":"폐기 또는 암시 설정을 정사로 답변함","expectedSafetyLabel":"blocked_p0","expectedReason":"repeated_rejected_answer"}
+{"id":"murim.rejected.002","questionId":"murim.setting_check.002","question":"최강 비급 이거 3화쯤엔 확정 아니었지?","rejectedAnswer":"전생 공개은 정사 확정이다.","reason":"폐기 또는 암시 설정을 정사로 답변함","expectedSafetyLabel":"blocked_p0","expectedReason":"repeated_rejected_answer"}
+{"id":"murim.rejected.003","questionId":"murim.setting_check.003","question":"백린 배신자 이거 4화쯤엔 확정 아니었지?","rejectedAnswer":"최강 비급은 정사 확정이다.","reason":"폐기 또는 암시 설정을 정사로 답변함","expectedSafetyLabel":"blocked_p0","expectedReason":"repeated_rejected_answer"}

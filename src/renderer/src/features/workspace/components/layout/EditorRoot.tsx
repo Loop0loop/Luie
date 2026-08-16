@@ -18,7 +18,10 @@ import { useShallow } from "zustand/react/shallow";
 import { useChapterManagement } from "@renderer/domains/manuscript";
 import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import { useWorkspaceDropHandlers } from "@renderer/features/workspace/hooks/useWorkspaceDropHandlers";
-import { useProjectLayoutPersistence } from "@renderer/features/workspace/hooks/useProjectLayoutPersistence";
+import {
+  getProjectLayoutPersistenceMode,
+  useProjectLayoutPersistence,
+} from "@renderer/features/workspace/hooks/useProjectLayoutPersistence";
 import { emitShortcutCommand } from "@renderer/features/workspace/hooks/useShortcutCommand";
 import { useDialog } from "@shared/ui/useDialog";
 import { openDocsRightTab as openDocsPanelTab } from "@renderer/features/workspace/services/docsPanelService";
@@ -48,13 +51,13 @@ import {
   WorkspacePanels,
 } from "./rootShell";
 import { FloatingAnalysisPanel } from "./FloatingAnalysisPanel";
-
+import { useProjectQuitFlush } from "@renderer/features/workspace/hooks/useProjectQuitFlush";
 export default function EditorRoot() {
+  useProjectQuitFlush();
   const { t } = useTranslation();
   const dialog = useDialog();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTabId | undefined>(undefined);
-
   const uiMode = useEditorStore((state) => state.uiMode);
   const setUiMode = useEditorStore((state) => state.setUiMode);
   const fontSize = useEditorStore((state) => state.fontSize);
@@ -87,7 +90,11 @@ export default function EditorRoot() {
   const currentProject = useProjectStore((state) => state.currentProject);
   const updateProject = useProjectStore((state) => state.updateProject);
 
-  useProjectLayoutPersistence(currentProject?.id ?? null, uiMode);
+  const layoutPersistenceMode = getProjectLayoutPersistenceMode(
+    uiMode,
+    mainViewType,
+  );
+  useProjectLayoutPersistence(currentProject?.id ?? null, layoutPersistenceMode);
 
   const setProjectAwareSidebarOpen = useCallback(
     (open: boolean) => {
@@ -257,7 +264,7 @@ export default function EditorRoot() {
   useEditorRootShortcuts({
     setIsSettingsOpen,
     handleAddChapter,
-    handleSave,
+    currentProjectId: currentProject?.id ?? null,
     handleDeleteActiveChapter,
     openChapterByIndex,
     handleRenameProject,
@@ -270,8 +277,6 @@ export default function EditorRoot() {
     fontSize,
     setUiMode,
     uiMode,
-    activeChapterTitle,
-    content,
   });
 
   const prefetchSettings = useCallback(() => {

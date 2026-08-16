@@ -13,23 +13,9 @@ import {
   memoryFactEvidence,
   memoryNarrativeSummary,
 } from "../../../../infra/database/index.js";
-import { verifyMemoryCanonicalPackageSync } from "../persistence/index.js";
+import { verifyMemoryCanonicalPackageSync } from "../persistence/memoryCanonicalPackageSyncVerifier.js";
 
 type PhaseStatus = "ready" | "needs-review" | "missing" | "out-of-sync";
-type RoadmapPhaseStatus = "verified-with-known-gaps";
-type ArchitectureAlignmentStatus = "aligned";
-
-export type MemoryRoadmapPhaseStatus = {
-  phase: string;
-  label: string;
-  status: RoadmapPhaseStatus;
-  completed: string[];
-  remaining: string[];
-  architectureAlignment: {
-    status: ArchitectureAlignmentStatus;
-    notes: string[];
-  };
-};
 
 export type MemoryPhaseStatusReport = {
   projectId: string;
@@ -44,7 +30,6 @@ export type MemoryPhaseStatusReport = {
     status: PhaseStatus;
     evidence: Record<string, number | boolean | string | null>;
   }>;
-  roadmapPhases: MemoryRoadmapPhaseStatus[];
   counts: {
     chunks: number;
     entities: Record<string, number>;
@@ -72,72 +57,6 @@ export type MemoryPhaseStatusReport = {
     totalPackageRows: number;
   };
 };
-
-const MEMORY_ROADMAP_PHASE_STATUSES: MemoryRoadmapPhaseStatus[] = [
-  {
-    phase: "phase6-package-durability",
-    label: "Phase 6 package durability and portability",
-    status: "verified-with-known-gaps",
-    completed: [
-      "canonical sync source id mismatch reporting",
-      "canonical source id mismatch repair option",
-      "actual .luie memory canonical write/read roundtrip",
-      "schema version compatibility and unknown row field discard policy",
-      "schema version fixture matrix and legacy v1 normalization",
-      "unknown row field import warning and renderer notice",
-      "crash-safe package write cleanup and recovery coverage",
-      "corrupt .luie open recovery notice verification",
-      "renderer UI package durability E2E for corrupt package recovery",
-      "forced app shutdown crash-safe export E2E",
-    ],
-    remaining: [],
-    architectureAlignment: {
-      status: "aligned",
-      notes: [
-        "Package durability checks stay in the main memory/project domain boundary.",
-        "No IPC, preload API, DB schema, or .luie package format change is introduced by this status surface.",
-      ],
-    },
-  },
-  {
-    phase: "phase7-beta-validation",
-    label: "Phase 7 writer beta validation",
-    status: "verified-with-known-gaps",
-    completed: [
-      "writer task benchmark taxonomy and metric summary",
-      "live eval writer benchmark summary persistence",
-      "persisted writer benchmark threshold assessment CLI",
-      "persisted beta benchmark threshold candidate calibration",
-      "real beta threshold finalization guard",
-      "real beta threshold finalization manifest",
-      "real beta threshold finalization readiness assertion CLI",
-      "real beta benchmark run label provenance filter",
-      "real beta eval runner canonical label option",
-      "real beta label provenance required for finalization readiness assertion",
-      "writer feedback DB, IPC/preload API, UI buttons, and rejected-answer guard",
-      "helpful evidence feedback materialization",
-    ],
-    remaining: ["real writer beta data threshold finalization"],
-    architectureAlignment: {
-      status: "aligned",
-      notes: [
-        "Benchmark and feedback policy stays in the main memory domain, with renderer access through existing preload/API boundaries.",
-        "Threshold values remain unconfirmed until real writer beta data exists.",
-      ],
-    },
-  },
-];
-
-export const getMemoryRoadmapPhaseStatuses = (): MemoryRoadmapPhaseStatus[] =>
-  MEMORY_ROADMAP_PHASE_STATUSES.map((phase) => ({
-    ...phase,
-    completed: [...phase.completed],
-    remaining: [...phase.remaining],
-    architectureAlignment: {
-      ...phase.architectureAlignment,
-      notes: [...phase.architectureAlignment.notes],
-    },
-  }));
 
 type StatusCountTable =
   | typeof memoryEntity
@@ -332,7 +251,6 @@ export async function getMemoryPhaseStatusReport(input: {
       percent: Math.round((readyPhases / phases.length) * 100),
     },
     phases,
-    roadmapPhases: getMemoryRoadmapPhaseStatuses(),
     counts: {
       chunks,
       entities,

@@ -1,13 +1,13 @@
 // TEST_LEVEL: REAL_DB_INTEGRATION
-// PROVES: snapshot service create/restore behavior against the real test database with targeted policy spies
-// DOES_NOT_PROVE: fully unmocked persistence durability or UI/Electron orchestration
+// PROVES: 실제 test database와 제한된 policy spy에서 snapshot service create/restore 동작
+// DOES_NOT_PROVE: mock 없는 persistence durability 또는 UI/Electron orchestration
 
 import { describe, it, expect, vi, beforeAll } from "vitest";
 import { SnapshotService } from "../../../src/main/services/features/snapshot/snapshotService.js";
-import { ChapterService } from "../../../src/main/services/core/chapterService.js";
-import { ProjectService } from "../../../src/main/services/core/projectService.js";
+import { ChapterService } from "../../../src/main/services/features/manuscript/chapterService.js";
+import { ProjectService } from "../../../src/main/services/features/project/projectService.js";
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
-import { projectService } from "../../../src/main/services/core/projectService.js";
+import { projectService } from "../../../src/main/services/features/project/projectService.js";
 import { generateText } from "../../helpers/generateText";
 
 const snapshotService = new SnapshotService();

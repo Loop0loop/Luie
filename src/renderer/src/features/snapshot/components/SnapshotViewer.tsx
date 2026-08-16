@@ -34,7 +34,6 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
       if (response.success) {
         if (snapshot.projectId) {
           await reloadChapters(snapshot.projectId);
-          // Assuming App.tsx handles the snapshot panel closing upon successful reload/nav
         }
         dialog.toast(t("snapshot.viewer.restoreSuccess"), "success");
       } else {
@@ -133,7 +132,6 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
 
   return (
     <div className="flex flex-col h-full w-full bg-panel border-l border-border">
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-surface text-sm">
         <div className="flex items-center gap-2 text-muted-fg">
           <Calendar className="w-4 h-4" />
@@ -141,7 +139,7 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
         </div>
         <button
           onClick={handleRestore}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-medium"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-control bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-medium"
         >
           <RotateCcw className="w-3.5 h-3.5" />
           {t("snapshot.viewer.restoreButton")}
@@ -200,9 +198,7 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
         )}
       </div>
 
-      {/* Read-Only Editor */}
       <div className="flex-1 min-h-0 bg-yellow-50/5 dark:bg-yellow-900/10"> 
-        {/* Subtle background tint to distinguish from main editor */}
         <Editor
           key={snapshot.id} // Re-mount on snapshot change
           initialTitle={snapshot.description || ""}

@@ -1,15 +1,8 @@
-/**
- * Types and constants for the character wiki feature.
- * Single source of truth — imported by all wiki sub-modules.
- */
-
-// ── Domain types ──────────────────────────────────────────────────────────
-
-export type CharacterViewMode = "wiki" | "visual";
+export type CharacterViewMode = "wiki" | "document";
 
 export type RadarAxis = {
   label: string;
-  value: number; // 0–MAX_RADAR_VALUE
+  value: number;
 };
 
 export type WikiSectionData = {
@@ -25,19 +18,12 @@ export type CustomField = {
   placeholder?: string;
 };
 
-// ── Persistence keys ──────────────────────────────────────────────────────
-
 export const CHARACTER_VIEW_MODE_KEY = "character-view-mode" as const;
 
-// ── Color ─────────────────────────────────────────────────────────────────
-
-/** Fallback accent colour (mirrors CSS --accent in dark theme) */
+// NOTE: dark theme의 CSS `--accent`와 같은 fallback 색상을 사용한다.
 export const DEFAULT_CHARACTER_COLOR = "#60a5fa" as const;
 
-/**
- * Preset palette shown in the colour picker.
- * Stored as user data (hex), not design tokens.
- */
+// NOTE: 선택한 색은 design token이 아니라 사용자 데이터인 hex 값으로 저장된다.
 export const CHARACTER_COLOR_PRESETS = [
   "#60a5fa",
   "#f472b6",
@@ -48,8 +34,6 @@ export const CHARACTER_COLOR_PRESETS = [
   "#facc15",
   "#94a3b8",
 ] as const;
-
-// ── Radar chart ───────────────────────────────────────────────────────────
 
 export const MIN_RADAR_AXES = 3;
 export const MAX_RADAR_AXES = 8;

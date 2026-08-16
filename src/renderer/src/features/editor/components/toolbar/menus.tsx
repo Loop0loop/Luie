@@ -31,7 +31,7 @@ export function CompactDropdown<T extends string | number>({
     <div className={cn("relative", className)} ref={ref}>
       <button
         type="button"
-        className="flex h-8 w-full items-center gap-1 rounded-md border border-border/70 bg-background px-2 text-xs text-fg transition-colors hover:bg-hover"
+        className="flex h-8 w-full items-center gap-1 rounded-control border border-border/70 bg-app px-2 text-xs text-fg transition-colors hover:bg-hover"
         aria-label={ariaLabel}
         onClick={() => setOpen((v) => !v)}
       >
@@ -39,7 +39,7 @@ export function CompactDropdown<T extends string | number>({
         <ChevronDown className="h-3 w-3 shrink-0 opacity-50" />
       </button>
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 min-w-full overflow-y-auto rounded-md border border-border bg-panel py-1 shadow-xl" style={{ maxHeight: "13rem" }}>
+        <div className="absolute left-0 top-full z-50 mt-1 min-w-full overflow-y-auto rounded-control border border-border bg-panel py-1 shadow-panel" style={{ maxHeight: "13rem" }}>
           {options.map((option) => {
             const label = getLabel ? getLabel(option) : String(option);
             return (
@@ -101,7 +101,7 @@ export function ColorPickerMenu({
       <button
         type="button"
         className={cn(
-          "flex h-8 min-w-8 flex-col items-center justify-center gap-px rounded-md px-2 transition-colors hover:bg-hover",
+          "flex h-8 min-w-8 flex-col items-center justify-center gap-px rounded-control px-2 transition-colors hover:bg-hover",
           open && "bg-accent/15",
         )}
         title={label}
@@ -121,7 +121,7 @@ export function ColorPickerMenu({
       </button>
 
       {open && (
-        <div className="absolute left-1/2 top-full z-50 mt-1 -translate-x-1/2 rounded-xl border border-border bg-panel p-3.5 shadow-2xl" style={{ minWidth: "11rem" }}>
+        <div className="absolute left-1/2 top-full z-50 mt-1 -translate-x-1/2 rounded-panel border border-border bg-panel p-3.5 shadow-panel" style={{ minWidth: "11rem" }}>
           <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-muted">
             {label}
           </p>
@@ -138,7 +138,7 @@ export function ColorPickerMenu({
                   type="button"
                   title={colorLabel}
                   className={cn(
-                    "h-6 w-6 rounded-md shadow-sm transition-all duration-100",
+                    "h-6 w-6 rounded-control shadow-sm transition-all duration-100",
                     isSelected
                       ? "ring-2 ring-accent ring-offset-2 ring-offset-panel scale-110"
                       : "ring-1 ring-black/10 hover:scale-110 hover:ring-border",
@@ -153,7 +153,7 @@ export function ColorPickerMenu({
             })}
           </div>
 
-          <div className="mt-3 flex items-center gap-1.5 rounded-lg border border-border bg-background px-2 py-1.5">
+          <div className="mt-3 flex items-center gap-1.5 rounded-panel border border-border bg-app px-2 py-1.5">
             <div
               className="h-4 w-4 shrink-0 rounded-sm ring-1 ring-black/10"
               style={{
@@ -241,7 +241,7 @@ export function TypographyMenu({
       </ToolbarButton>
 
       {open && (
-        <div className="absolute left-1/2 top-full z-50 mt-1 w-56 -translate-x-1/2 rounded-lg border border-border bg-panel p-3.5 shadow-xl">
+        <div className="absolute left-1/2 top-full z-50 mt-1 w-56 -translate-x-1/2 rounded-panel border border-border bg-panel p-3.5 shadow-panel">
           <p className="mb-3 text-[10px] font-medium uppercase tracking-wide text-muted">
             {t("toolbar.typography", "타이포그래피")}
           </p>
@@ -249,7 +249,7 @@ export function TypographyMenu({
             <div key={label} className="mb-3.5 last:mb-0">
               <div className="mb-1.5 flex items-center justify-between">
                 <span className="text-xs text-muted">{label}</span>
-                <span className="min-w-[2.75rem] rounded-md bg-hover px-1.5 py-0.5 text-right text-[11px] font-medium tabular-nums text-fg">
+                <span className="min-w-[2.75rem] rounded-control bg-hover px-1.5 py-0.5 text-right text-[11px] font-medium tabular-nums text-fg">
                   {display}
                 </span>
               </div>

@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RuntimeRoutePlan } from "../../../src/shared/types/index.js";
-import { DEFAULT_EMBEDDING_MODEL } from "../../../src/main/services/llm/embeddingModelConstants.js";
+import { DEFAULT_EMBEDDING_MODEL } from "../../../src/main/services/features/llm/embeddingModelConstants.js";
 
 const mocked = vi.hoisted(() => ({
   ensureStarted: vi.fn(),

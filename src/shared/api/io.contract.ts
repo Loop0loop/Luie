@@ -126,66 +126,6 @@ export type IoRendererApi = {
     queryNarrative: (
       input: SharedTypes.NarrativeMemoryQueryInput,
     ) => Promise<IPCResponse<SharedTypes.NarrativeMemoryQueryResult>>;
-    getReviewBacklog: (
-      input: SharedTypes.MemoryReviewBacklogInput,
-    ) => Promise<IPCResponse<SharedTypes.MemoryReviewBacklogResult>>;
-    getConflictQueue: (
-      input: SharedTypes.MemoryConflictQueueInput,
-    ) => Promise<IPCResponse<SharedTypes.MemoryConflictQueueResult>>;
-    getEpisodeReviewQueue: (
-      input: SharedTypes.MemoryEpisodeReviewQueueInput,
-    ) => Promise<IPCResponse<SharedTypes.MemoryEpisodeReviewQueueResult>>;
-    confirmEpisode: (
-      input: SharedTypes.MemoryEpisodeConfirmInput,
-    ) => Promise<IPCResponse<SharedTypes.MemoryEpisodeReviewMutationResult>>;
-    rejectEpisode: (
-      input: SharedTypes.MemoryEpisodeRejectInput,
-    ) => Promise<IPCResponse<SharedTypes.MemoryEpisodeRejectResult>>;
-    getFactReviewQueue: (
-      input: SharedTypes.MemoryTemporalFactReviewQueueInput,
-    ) => Promise<IPCResponse<SharedTypes.MemoryTemporalFactReviewQueueResult>>;
-    confirmFact: (
-      input: SharedTypes.MemoryTemporalFactConfirmInput,
-    ) => Promise<IPCResponse<SharedTypes.MemoryTemporalFactReviewMutationResult>>;
-    rejectFact: (
-      input: SharedTypes.MemoryTemporalFactRejectInput,
-    ) => Promise<IPCResponse<SharedTypes.MemoryTemporalFactReviewMutationResult>>;
-    resolveFactConflict: (
-      input: SharedTypes.MemoryTemporalFactConflictResolveInput,
-    ) => Promise<IPCResponse<SharedTypes.MemoryTemporalFactReviewMutationResult>>;
-    reviewFactConflict: (
-      input: SharedTypes.MemoryTemporalFactConflictReviewInput,
-    ) => Promise<IPCResponse<SharedTypes.MemoryTemporalFactReviewMutationResult>>;
-    getEntityAliasReviewQueue: (
-      input: SharedTypes.MemoryEntityAliasReviewQueueInput,
-    ) => Promise<IPCResponse<SharedTypes.MemoryEntityAliasReviewQueueResult>>;
-    getEntityReviewQueue: (
-      input: SharedTypes.MemoryEntityReviewQueueInput,
-    ) => Promise<IPCResponse<SharedTypes.MemoryEntityReviewQueueResult>>;
-    confirmEntity: (
-      input: SharedTypes.MemoryEntityConfirmInput,
-    ) => Promise<IPCResponse<SharedTypes.MemoryEntityReviewMutationResult>>;
-    rejectEntity: (
-      input: SharedTypes.MemoryEntityRejectInput,
-    ) => Promise<IPCResponse<SharedTypes.MemoryEntityReviewMutationResult>>;
-    confirmEntityAlias: (
-      input: SharedTypes.MemoryEntityAliasConfirmInput,
-    ) => Promise<IPCResponse<SharedTypes.MemoryEntityAliasReviewMutationResult>>;
-    rejectEntityAlias: (
-      input: SharedTypes.MemoryEntityAliasRejectInput,
-    ) => Promise<IPCResponse<SharedTypes.MemoryEntityAliasReviewMutationResult>>;
-    splitEntityAlias: (
-      input: SharedTypes.MemoryEntityAliasSplitInput,
-    ) => Promise<IPCResponse<SharedTypes.MemoryEntityAliasSplitResult>>;
-    mergeEntity: (
-      input: SharedTypes.MemoryEntityMergeInput,
-    ) => Promise<IPCResponse<SharedTypes.MemoryEntityMergeResult>>;
-    reviewStaleEvidence: (
-      input: SharedTypes.MemoryStaleEvidenceReviewActionInput,
-    ) => Promise<IPCResponse<SharedTypes.MemoryStaleEvidenceReviewActionResult>>;
-    repairEvidenceLinks: (
-      input: SharedTypes.MemoryEvidenceRepairInput,
-    ) => Promise<IPCResponse<SharedTypes.MemoryEvidenceRepairResult>>;
     searchChunks: (
       input: SharedTypes.MemoryChunkSearchQuery,
     ) => Promise<IPCResponse<SharedTypes.MemoryChunkSearchResult[]>>;
@@ -229,6 +169,10 @@ export type IoRendererApi = {
   ) => Promise<IPCResponse<unknown>>;
   lifecycle: {
     setDirty: (dirty: boolean) => void;
+    onBeforeQuit: (
+      callback: (payload: SharedTypes.AppBeforeQuitPayload) => void,
+    ) => () => void;
+    completeFlush: (requestId: string) => Promise<void>;
     onQuitPhase: (
       callback: (payload: SharedTypes.AppQuitPhasePayload) => void,
     ) => () => void;

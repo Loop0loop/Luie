@@ -1,6 +1,3 @@
-/**
- * Canvas i18n — English tree. Keys grow per phase.
- */
 export const enCanvas = {
   workspace: {
     title: "Canvas",
@@ -151,9 +148,11 @@ export const enCanvas = {
     deselect: "Deselect",
     description: "Description",
     connections: "Connections",
+    connectionCount: "{{count}} links",
     fallbackTitle: "Untitled",
     fallbackMemo: "Memo",
     fallbackTimeline: "Timeline",
+    emptyDescription: "Canvas resource block",
     held: "Held",
     coreBadge: "CORE",
   },
@@ -173,6 +172,24 @@ export const enCanvas = {
     filterLayer: "Filter Layer",
     aiSync: "AI Sync",
     focusCenter: "Focus Center",
+    backToCanvas: "Back to canvas",
+  },
+  document: {
+    canvasResource: "Canvas resource",
+    firstAppearance: "First appearance",
+    updatedAt: "Modified",
+    titlePlaceholder: "Untitled",
+    description: "Writing summary",
+    descriptionPlaceholder: "Enter a short description…",
+    tags: "Search tags",
+    synced: "Synced",
+    noTags: "No tags",
+    loading: "Loading…",
+    emptySynced: "This resource is synced with the canvas. Jot down any writing notes below.",
+  },
+  preview: {
+    entityNotFound: "Document not found.",
+    memoNotFound: "Memo not found.",
   },
   type: {
     label: "Canvas type",

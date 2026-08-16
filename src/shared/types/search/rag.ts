@@ -23,7 +23,7 @@ export interface RagQaEvidence {
 }
 
 export type RagQaGroundingStatus =
-  /** Reserved for a later claim-level verifier; Phase 0 never emits this. */
+  /** 이후 claim-level verifier용 예약 값이며 Phase 0에서는 생성하지 않는다. */
   "confirmed" | "inferred" | "insufficient_evidence" | "conflicting";
 
 export interface RagQaGrounding {
@@ -39,6 +39,8 @@ export type RagQaSafetyLabel =
   | "blocked_p0"
   | "temporal_blocked"
   | "non_canonical_source";
+
+export type RagQaAnswerMode = "EVIDENCE" | "INSUFFICIENT" | "ADVISORY";
 
 export type RagQaSafetyReason =
   | RagQaGroundingStatus
@@ -64,6 +66,7 @@ export interface RagQaResult {
   projectId: string;
   question: string;
   answer: string;
+  answerMode: RagQaAnswerMode;
   evidence: RagQaEvidence[];
   grounding: RagQaGrounding;
   safety: RagQaSafety;

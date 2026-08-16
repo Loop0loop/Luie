@@ -1,7 +1,7 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
-import { loadLocaleResources } from "@renderer/i18n/resources";
+import { loadLocaleResources, type LocaleResources } from "@renderer/i18n/resources";
 import { api } from "@shared/api";
 
 export const SUPPORTED_LANGUAGES = ["ko", "en", "ja"] as const;
@@ -15,7 +15,7 @@ const detectInitialLanguage = (): SupportedLanguage => {
       return normalizeLanguage(stored);
     }
   } catch {
-    // Local storage may be unavailable in restricted renderer contexts.
+    // NOTE: 제한된 renderer context에서는 localStorage를 사용할 수 없을 수 있다.
   }
 
   return normalizeLanguage(navigator.language);
@@ -39,6 +39,17 @@ const ensureLanguageResources = async (
   i18n.addResourceBundle(language, "common", resources.common, true, true);
 };
 
+const loadAllLocaleResources = async (): Promise<
+  Record<SupportedLanguage, LocaleResources>
+> => {
+  const [ko, en, ja] = await Promise.all([
+    loadLocaleResources("ko"),
+    loadLocaleResources("en"),
+    loadLocaleResources("ja"),
+  ]);
+  return { ko, en, ja };
+};
+
 const loadSavedLanguagePreference = async (): Promise<void> => {
   try {
     const response = await api.settings.getLanguage();
@@ -51,7 +62,7 @@ const loadSavedLanguagePreference = async (): Promise<void> => {
       await i18n.changeLanguage(savedLanguage);
     }
   } catch {
-    // Best effort; default language already active.
+    // NOTE: 저장 언어 조회에 실패해도 기본 언어는 이미 적용돼 있다.
   }
 };
 
@@ -65,7 +76,7 @@ export async function initI18n(): Promise<typeof i18n> {
   }
 
   const initialLanguage = detectInitialLanguage();
-  const initialResources = await loadLocaleResources(initialLanguage);
+  const allResources = await loadAllLocaleResources();
 
   initPromise = i18n
     .use(initReactI18next)
@@ -73,7 +84,9 @@ export async function initI18n(): Promise<typeof i18n> {
     .init({
       lng: initialLanguage,
       resources: {
-        [initialLanguage]: initialResources,
+        ko: allResources.ko,
+        en: allResources.en,
+        ja: allResources.ja,
       },
       fallbackLng: "ko",
       supportedLngs: SUPPORTED_LANGUAGES,
@@ -90,7 +103,7 @@ export async function initI18n(): Promise<typeof i18n> {
       },
     })
     .then(() => {
-      // Stored language sync runs after the first paint path has already continued.
+      // NOTE: 저장 언어 동기화는 첫 paint를 막지 않는다.
       void loadSavedLanguagePreference();
       return i18n;
     })
@@ -111,7 +124,7 @@ export async function setLanguage(language: SupportedLanguage): Promise<void> {
   try {
     await api.settings.setLanguage({ language });
   } catch {
-    // Best effort; language still applied locally
+    // NOTE: 저장 실패와 관계없이 언어는 현재 renderer에 적용된다.
   }
 }
 

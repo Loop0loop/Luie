@@ -107,10 +107,10 @@ export async function repairMemoryEvidenceChunkLinks(input: {
   let evalEvidenceRepaired = 0;
 
   for (const row of episodeEvidenceRows) {
-    // eslint-disable-next-line no-await-in-loop -- repair updates are intentionally applied row-by-row for traceable counts.
+    // eslint-disable-next-line no-await-in-loop -- 복구 건수를 추적할 수 있도록 row별로 반영한다.
     const candidate = await findCurrentChunkForEvidence(row);
     if (!candidate) continue;
-    // eslint-disable-next-line no-await-in-loop -- repair updates are intentionally applied row-by-row for traceable counts.
+    // eslint-disable-next-line no-await-in-loop -- 복구 건수를 추적할 수 있도록 row별로 반영한다.
     await client.run(sql`
       UPDATE "MemoryEpisodeEvidence"
       SET
@@ -124,10 +124,10 @@ export async function repairMemoryEvidenceChunkLinks(input: {
   }
 
   for (const row of entityMentionRows) {
-    // eslint-disable-next-line no-await-in-loop -- repair updates are intentionally applied row-by-row for traceable counts.
+    // eslint-disable-next-line no-await-in-loop -- 복구 건수를 추적할 수 있도록 row별로 반영한다.
     const candidate = await findCurrentChunkForEvidence(row);
     if (!candidate) continue;
-    // eslint-disable-next-line no-await-in-loop -- repair updates are intentionally applied row-by-row for traceable counts.
+    // eslint-disable-next-line no-await-in-loop -- 복구 건수를 추적할 수 있도록 row별로 반영한다.
     await client.run(sql`
       UPDATE "MemoryEntityMention"
       SET
@@ -141,10 +141,10 @@ export async function repairMemoryEvidenceChunkLinks(input: {
   }
 
   for (const row of evalEvidenceRows) {
-    // eslint-disable-next-line no-await-in-loop -- repair updates are intentionally applied row-by-row for traceable counts.
+    // eslint-disable-next-line no-await-in-loop -- 복구 건수를 추적할 수 있도록 row별로 반영한다.
     const candidate = await findCurrentChunkForEvidence(row);
     if (!candidate) continue;
-    // eslint-disable-next-line no-await-in-loop -- repair updates are intentionally applied row-by-row for traceable counts.
+    // eslint-disable-next-line no-await-in-loop -- 복구 건수를 추적할 수 있도록 row별로 반영한다.
     await client.run(sql`
       UPDATE "MemoryEvalEvidence"
       SET

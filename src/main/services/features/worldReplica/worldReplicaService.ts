@@ -1,4 +1,4 @@
-import { eq, and, asc, desc } from "drizzle-orm";
+import { eq, and, asc, desc, isNull } from "drizzle-orm";
 import { WORLD_SCRAP_MEMOS_SCHEMA_VERSION } from "../../../../shared/constants/storage/persistence.js";
 import { ErrorCode } from "../../../../shared/constants/index.js";
 import { createLogger } from "../../../../shared/logger/index.js";
@@ -21,6 +21,10 @@ const logger = createLogger("WorldReplicaService");
 const toJsonString = (value: unknown): string => JSON.stringify(value ?? null);
 
 type WorldReplicaDocumentSetResult = {
+  packageExportError?: string;
+};
+
+type PackageExportFailureResult = {
   packageExportError?: string;
 };
 
@@ -47,6 +51,33 @@ const toIsoString = (
     return value.toISOString();
   }
   return value;
+};
+
+const attemptWorldReplicaPackageExport = async (
+  projectId: string,
+  docType: ReplicaWorldDocumentType,
+): Promise<PackageExportFailureResult> => {
+  const { projectService } = await import("../project/projectService.js");
+  const reason = `world-document:${docType}`;
+  const exportResult = await projectService.attemptImmediatePackageExport(
+    projectId,
+    reason,
+  );
+  if (exportResult.error || (!exportResult.exported && !exportResult.skipped)) {
+    const message =
+      exportResult.error instanceof Error
+        ? exportResult.error.message
+        : String(exportResult.error);
+    logger.warn("Replica world document saved but immediate .luie export failed", {
+      projectId,
+      docType,
+      error: exportResult.error,
+    });
+    return {
+      packageExportError: message,
+    };
+  }
+  return {};
 };
 
 export class WorldReplicaService {
@@ -153,31 +184,10 @@ export class WorldReplicaService {
           .run();
       });
 
-      if (input.docType === "graph") {
-        const { projectService } = await import("../../core/projectService.js");
-        const exportResult = await projectService.attemptImmediatePackageExport(
-          input.projectId,
-          "world-document:graph",
-        );
-        if (
-          exportResult.error ||
-          (!exportResult.exported && !exportResult.skipped)
-        ) {
-          const message =
-            exportResult.error instanceof Error
-              ? exportResult.error.message
-              : String(exportResult.error);
-          logger.warn("Graph replica saved but immediate .luie export failed", {
-            projectId: input.projectId,
-            error: exportResult.error,
-          });
-          return {
-            packageExportError: message,
-          };
-        }
-      }
-
-      return {};
+      return await attemptWorldReplicaPackageExport(
+        input.projectId,
+        input.docType,
+      );
     } catch (error) {
       logger.error("Failed to save replica world document", {
         ...input,
@@ -213,57 +223,53 @@ export class WorldReplicaService {
           .getClient()
           .select()
           .from(scrapMemo)
-          .where(eq(scrapMemo.projectId, projectId))
+          .where(and(eq(scrapMemo.projectId, projectId), isNull(scrapMemo.deletedAt)))
           .orderBy(asc(scrapMemo.sortOrder), desc(scrapMemo.updatedAt)),
       ]);
       const documentRow = documentRowResults[0];
 
-      if (documentRow) {
-        const payload = parseJsonSafely(documentRow.payload, {
-          projectId,
-          docType: "scrap",
-        });
-        if (payload && typeof payload === "object") {
-          return {
-            found: true,
-            data: payload as WorldScrapMemosData,
-          };
-        }
+      if (memoRows.length > 0) {
+        return {
+          found: true,
+          data: {
+            schemaVersion: WORLD_SCRAP_MEMOS_SCHEMA_VERSION,
+            memos: memoRows.map((row) => {
+              const parsedTags = parseJsonSafely(row.tags, {
+                projectId,
+                memoId: row.id,
+              });
+              return {
+                id: row.id,
+                title: row.title,
+                content: row.content,
+                tags: Array.isArray(parsedTags) ? (parsedTags as string[]) : [],
+                updatedAt: row.updatedAt,
+              };
+            }),
+            updatedAt: toIsoString(memoRows[0]?.updatedAt),
+          },
+        };
       }
 
-      if (memoRows.length === 0) {
-        return documentRow
-          ? {
-              found: true,
-              data: {
-                schemaVersion: WORLD_SCRAP_MEMOS_SCHEMA_VERSION,
-                memos: [],
-                updatedAt: toIsoString(documentRow.updatedAt),
-              },
-            }
-          : { found: false, data: null };
+      if (!documentRow) return { found: false, data: null };
+
+      const payload = parseJsonSafely(documentRow.payload, {
+        projectId,
+        docType: "scrap",
+      });
+      if (payload && typeof payload === "object") {
+        return {
+          found: true,
+          data: payload as WorldScrapMemosData,
+        };
       }
 
       return {
         found: true,
         data: {
           schemaVersion: WORLD_SCRAP_MEMOS_SCHEMA_VERSION,
-          memos: memoRows.map((row) => {
-            const parsedTags = parseJsonSafely(row.tags, {
-              projectId,
-              memoId: row.id,
-            });
-            return {
-              id: row.id,
-              title: row.title,
-              content: row.content,
-              tags: Array.isArray(parsedTags) ? (parsedTags as string[]) : [],
-              updatedAt: row.updatedAt,
-            };
-          }),
-          updatedAt:
-            toIsoString(documentRow?.updatedAt) ??
-            toIsoString(memoRows[0]?.updatedAt),
+          memos: [],
+          updatedAt: toIsoString(documentRow.updatedAt),
         },
       };
     } catch (error) {
@@ -283,7 +289,7 @@ export class WorldReplicaService {
   async setScrapMemos(input: {
     projectId: string;
     data: WorldScrapMemosData;
-  }): Promise<void> {
+  }): Promise<WorldReplicaDocumentSetResult> {
     try {
       await this.ensureDbReady();
       const payload: WorldScrapMemosData = {
@@ -361,6 +367,8 @@ export class WorldReplicaService {
           .where(eq(project.id, input.projectId))
           .run();
       });
+
+      return await attemptWorldReplicaPackageExport(input.projectId, "scrap");
     } catch (error) {
       logger.error("Failed to save replica scrap memos", {
         projectId: input.projectId,

@@ -1,5 +1,7 @@
 import type { LuiePackageExportData } from "../../io/luiePackageTypes.js";
+import { inArray } from "drizzle-orm";
 import { db } from "../../../infra/database/index.js";
+import { project } from "../../../infra/database/index.js";
 import {
   applyChapterTombstones,
   applyReplicaWorldState,
@@ -12,12 +14,14 @@ import {
   upsertProjects,
   upsertTerms,
 } from "./syncLocalApply.js";
+import { applyMemoryCanonicalSyncRows } from "./syncMemoryCanonicalApply.js";
 import {
   buildProjectPackagePayload as buildProjectPackagePayloadImpl,
   persistBundleToLuiePackages,
-  recoverDbCacheFromPersistedPackages,
 } from "./syncPackagePersistence.js";
 import type { SyncBundle } from "./syncMapper.js";
+
+export type SyncCapturedRevisions = ReadonlyMap<string, number>;
 
 type LoggerLike = {
   warn: (message: string, details?: unknown) => void;
@@ -74,18 +78,22 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
   }) => Promise<LuiePackageExportData | null>;
   logger: LoggerLike;
 }): Promise<void> => {
-  const persistedPackages = await persistBundleToLuiePackages({
-    bundle: input.bundle,
-    hydrateMissingWorldDocsFromPackage:
-      input.hydrateMissingWorldDocsFromPackage,
-    buildProjectPackagePayload: input.buildProjectPackagePayload,
-    logger: input.logger,
-  });
-
   const client = db.getClient();
   const deletedProjectIds = collectDeletedProjectIds(input.bundle);
+  const bundleProjectIds = input.bundle.projects.map((project) => project.id);
+  const activeProjectIds = [
+    ...new Set(
+      input.bundle.projects
+        .filter(
+          (project) =>
+            !project.deletedAt && !deletedProjectIds.has(project.id),
+        )
+        .map((project) => project.id),
+    ),
+  ];
+  let capturedRevisions: SyncCapturedRevisions;
   try {
-    client.transaction((tx) => {
+    capturedRevisions = client.transaction((tx) => {
       applyProjectDeletes(tx, deletedProjectIds);
       upsertProjects(tx, input.bundle.projects, deletedProjectIds);
 
@@ -100,30 +108,39 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
       upsertTerms(tx, input.bundle.terms, deletedProjectIds);
       applyReplicaWorldState(tx, input.bundle, deletedProjectIds);
       applyChapterTombstones(tx, input.bundle.tombstones, deletedProjectIds);
+      applyMemoryCanonicalSyncRows(tx, input.bundle, deletedProjectIds);
+
+      if (activeProjectIds.length === 0) return new Map();
+      const rows = tx
+        .select({ id: project.id, revision: project.revision })
+        .from(project)
+        .where(inArray(project.id, activeProjectIds))
+        .all();
+      if (rows.length !== activeProjectIds.length) {
+        throw new Error("SYNC_PROJECT_REVISION_CAPTURE_INCOMPLETE");
+      }
+      return new Map(rows.map((row) => [row.id, row.revision]));
     });
   } catch (error) {
-    const persistedProjectIds = persistedPackages.map((item) => item.projectId);
     input.logger.error(
-      "Failed to apply merged bundle to DB cache after .luie persistence",
+      "Failed to apply merged bundle to DB cache before .luie persistence",
       {
         error,
-        persistedProjectIds,
       },
     );
 
-    const failedRecoveryProjectIds = await recoverDbCacheFromPersistedPackages(
-      persistedPackages,
-      input.logger,
-    );
-    if (failedRecoveryProjectIds.length > 0) {
-      throw new Error(
-        `SYNC_DB_CACHE_APPLY_FAILED:${persistedProjectIds.join(",") || "none"};SYNC_DB_CACHE_RECOVERY_FAILED:${failedRecoveryProjectIds.join(",")}`,
-        { cause: error },
-      );
-    }
     throw new Error(
-      `SYNC_DB_CACHE_APPLY_FAILED:${persistedProjectIds.join(",") || "none"}`,
+      `SYNC_DB_CACHE_APPLY_FAILED:${bundleProjectIds.join(",") || "none"}`,
       { cause: error },
     );
   }
+
+  await persistBundleToLuiePackages({
+    bundle: input.bundle,
+    capturedRevisions,
+    hydrateMissingWorldDocsFromPackage:
+      input.hydrateMissingWorldDocsFromPackage,
+    buildProjectPackagePayload: input.buildProjectPackagePayload,
+    logger: input.logger,
+  });
 };

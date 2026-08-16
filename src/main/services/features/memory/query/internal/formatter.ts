@@ -39,6 +39,8 @@ export function formatNarrativeMemoryQueryResult(
               `${fact.subjectEntityId} ${fact.predicate} ${object}`,
               `related=${fact.relatedEntityName ?? fact.relatedEntityId ?? "unknown"}`,
               `status=${fact.status}`,
+              `provenance=${fact.provenanceKind}`,
+              `canon=${fact.canonStatus}`,
               `confidence=${fact.confidence}`,
               `evidence=${fact.evidenceCount}`,
               `valid=${fact.validFromChapterOrder}-${fact.validToChapterOrder ?? "open"}`,

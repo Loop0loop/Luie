@@ -1,5 +1,5 @@
 #!/usr/bin/env tsx
-/* eslint-disable no-console */
+/* eslint-disable no-console -- CLI 결과와 오류를 terminal에 직접 출력한다. */
 
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -17,7 +17,7 @@ import {
   selectMemoryWriterTaskBenchmarkFinalizationSummaries,
   summarizeMemoryWriterTaskBenchmarkFinalizationReadinessFailures,
   type MemoryWriterTaskBenchmarkThresholds,
-} from "../src/main/services/features/memory/benchmark/index.js";
+} from "../src/main/services/features/memory/benchmark/memoryWriterTaskBenchmark.js";
 import type { MemoryWriterTaskBenchmarkSummary } from "../src/shared/types/index.js";
 
 type CliOptions = {

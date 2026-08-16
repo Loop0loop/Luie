@@ -46,6 +46,7 @@ function sanitizeForIpc(value: unknown, seen = new WeakSet<object>()): unknown {
 
 const LONG_TIMEOUT_CHANNELS = new Set<string>([
   IPC_CHANNELS.CHAPTER_CREATE,
+  IPC_CHANNELS.MANUAL_SAVE,
   IPC_CHANNELS.SNAPSHOT_IMPORT_FILE,
   IPC_CHANNELS.EXPORT_CREATE,
   IPC_CHANNELS.PROJECT_OPEN_LUIE,
@@ -290,74 +291,120 @@ async function flushLogs() {
   if (logQueue.length > 0) scheduleLogFlush();
 }
 
-const createLoggerApi = (): RendererApi["logger"] => ({
-  debug: (message, data) => {
-    logQueue.push({ level: "debug", message, data: sanitizeForIpc(data) });
-    if (logQueue.length >= LOG_BATCH_SIZE) {
-      void flushLogs();
-    } else {
-      scheduleLogFlush();
-    }
-    return Promise.resolve({ success: true } as IPCResponse<never>);
-  },
-  info: (message, data) => {
-    logQueue.push({ level: "info", message, data: sanitizeForIpc(data) });
-    if (logQueue.length >= LOG_BATCH_SIZE) {
-      void flushLogs();
-    } else {
-      scheduleLogFlush();
-    }
-    return Promise.resolve({ success: true } as IPCResponse<never>);
-  },
-  warn: (message, data) => {
-    logQueue.push({ level: "warn", message, data: sanitizeForIpc(data) });
-    if (logQueue.length >= LOG_BATCH_SIZE) {
-      void flushLogs();
-    } else {
-      scheduleLogFlush();
-    }
-    return Promise.resolve({ success: true } as IPCResponse<never>);
-  },
-  error: (message, data) => {
-    logQueue.push({ level: "error", message, data: sanitizeForIpc(data) });
+const enqueueLoggerMessage = (
+  level: "debug" | "info" | "warn" | "error",
+  message: string,
+  data: unknown,
+) => {
+  logQueue.push({ level, message, data: sanitizeForIpc(data) });
+  if (level === "error" || logQueue.length >= LOG_BATCH_SIZE) {
     void flushLogs();
-    return Promise.resolve({ success: true } as IPCResponse<never>);
-  },
+  } else {
+    scheduleLogFlush();
+  }
+  return Promise.resolve({ success: true } as IPCResponse<never>);
+};
+
+const createLoggerApi = (): RendererApi["logger"] => ({
+  debug: (message, data) => enqueueLoggerMessage("debug", message, data),
+  info: (message, data) => enqueueLoggerMessage("info", message, data),
+  warn: (message, data) => enqueueLoggerMessage("warn", message, data),
+  error: (message, data) => enqueueLoggerMessage("error", message, data),
 });
 
 type AutoSavePayload = { chapterId: string; content: string; projectId: string };
 type AutoSavePending = {
   payload: AutoSavePayload;
+  sequence: number;
   resolvers: Array<(value: IPCResponse<never>) => void>;
+  rejectors: Array<(reason: Error) => void>;
 };
 
 const autoSaveQueue = new Map<string, AutoSavePending>();
+const latestAutoSaveSequence = new Map<string, number>();
+let autoSaveSequence = 0;
 let autoSaveFlushTimer: number | null = null;
+let autoSaveFlushTail: Promise<void> = Promise.resolve();
 let rendererDirty = false;
 
 const scheduleAutoSaveFlush = () => {
   if (autoSaveFlushTimer !== null) return;
   autoSaveFlushTimer = window.setTimeout(() => {
     autoSaveFlushTimer = null;
-    void flushAutoSaves();
+    void flushAutoSaves().catch(reportAutoSaveFlushFailure);
   }, AUTO_SAVE_FLUSH_MS);
 };
 
-async function flushAutoSaves() {
-  if (autoSaveQueue.size === 0) return;
-  const entries = Array.from(autoSaveQueue.entries());
-  autoSaveQueue.clear();
-  await Promise.all(
-    entries.map(async ([_key, pending]) => {
-      const response = await safeInvoke(
-        IPC_CHANNELS.AUTO_SAVE,
-        pending.payload.chapterId,
-        pending.payload.content,
-        pending.payload.projectId,
-      );
-      pending.resolvers.forEach((resolve) => resolve(response));
-    }),
-  );
+const toAutoSaveError = (error: unknown): Error => {
+  if (error instanceof Error) return error;
+  if (typeof error === "object" && error !== null && "error" in error) {
+    const responseError = (error as IPCResponse<never>).error;
+    if (responseError?.message) return new Error(responseError.message);
+  }
+  return new Error("Auto-save failed");
+};
+
+const reportAutoSaveFlushFailure = (error: unknown) => {
+  enqueueDiagnosticLog("error", "Preload auto-save flush failed", IPC_CHANNELS.AUTO_SAVE, {
+    kind: "flush_failed",
+    error: sanitizeForIpc(error),
+  });
+};
+
+const clearAutoSaveFlushTimer = () => {
+  if (autoSaveFlushTimer === null) return;
+  window.clearTimeout(autoSaveFlushTimer);
+  autoSaveFlushTimer = null;
+};
+
+async function drainAutoSaves(): Promise<void> {
+  while (autoSaveQueue.size > 0) {
+    clearAutoSaveFlushTimer();
+    const entries = Array.from(autoSaveQueue.entries());
+    autoSaveQueue.clear();
+    const errors = await Promise.all(
+      entries.map(async ([key, pending]) => {
+        try {
+          const response = await safeInvoke(
+            IPC_CHANNELS.AUTO_SAVE,
+            pending.payload.chapterId,
+            pending.payload.content,
+            pending.payload.projectId,
+          );
+          if (!response.success) throw response;
+          if (latestAutoSaveSequence.get(key) === pending.sequence) {
+            latestAutoSaveSequence.delete(key);
+          }
+          pending.resolvers.forEach((resolve) => resolve(response));
+          return null;
+        } catch (error) {
+          const saveError = toAutoSaveError(error);
+          if (
+            !autoSaveQueue.has(key) &&
+            latestAutoSaveSequence.get(key) === pending.sequence
+          ) {
+            autoSaveQueue.set(key, {
+              payload: pending.payload,
+              sequence: pending.sequence,
+              resolvers: [],
+              rejectors: [],
+            });
+          }
+          pending.rejectors.forEach((reject) => reject(saveError));
+          return saveError;
+        }
+      }),
+    );
+    const error = errors.find((entry): entry is Error => entry !== null);
+    if (error) throw error;
+  }
+}
+
+function flushAutoSaves(): Promise<void> {
+  clearAutoSaveFlushTimer();
+  const flush = autoSaveFlushTail.then(drainAutoSaves);
+  autoSaveFlushTail = flush.catch(() => undefined);
+  return flush;
 }
 
 const autoSave = (
@@ -365,20 +412,39 @@ const autoSave = (
   content: string,
   projectId: string,
 ): Promise<IPCResponse<never>> =>
-  new Promise((resolve) => {
+  new Promise((resolve, reject) => {
     const key = `${projectId}:${chapterId}`;
     const payload = { chapterId, content, projectId };
+    const sequence = ++autoSaveSequence;
+    latestAutoSaveSequence.set(key, sequence);
     const existing = autoSaveQueue.get(key);
     if (existing) {
       existing.payload = payload;
+      existing.sequence = sequence;
       existing.resolvers.push(resolve);
+      existing.rejectors.push(reject);
     } else {
-      autoSaveQueue.set(key, { payload, resolvers: [resolve] });
+      autoSaveQueue.set(key, {
+        payload,
+        sequence,
+        resolvers: [resolve],
+        rejectors: [reject],
+      });
     }
     scheduleAutoSaveFlush();
   });
 
 const loggerApi = createLoggerApi();
+const completeAppFlush = async (requestId: string): Promise<void> => {
+  const hadQueuedAutoSaves = autoSaveQueue.size > 0;
+  await flushAutoSaves();
+  await flushLogs();
+  ipcRenderer.send(IPC_CHANNELS.APP_FLUSH_COMPLETE, {
+    requestId,
+    hadQueuedAutoSaves,
+    rendererDirty,
+  });
+};
 const rendererApi = createRendererApi({
   autoSave: {
     autoSave,
@@ -393,24 +459,12 @@ const rendererApi = createRendererApi({
   safeInvokeCore,
   sanitizeForIpc,
   loggerApi,
+  completeAppFlush,
 });
 
 contextBridge.exposeInMainWorld("api", rendererApi);
 
-ipcRenderer.on(IPC_CHANNELS.APP_BEFORE_QUIT, async () => {
-  const hadQueuedAutoSaves = autoSaveQueue.size > 0;
-  try {
-    await flushAutoSaves();
-    await flushLogs();
-  } finally {
-    ipcRenderer.send(IPC_CHANNELS.APP_FLUSH_COMPLETE, {
-      hadQueuedAutoSaves,
-      rendererDirty,
-    });
-  }
-});
-
 window.addEventListener("beforeunload", () => {
-  void flushAutoSaves();
+  void flushAutoSaves().catch(reportAutoSaveFlushFailure);
   void flushLogs();
 });

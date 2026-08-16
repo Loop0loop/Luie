@@ -1,15 +1,35 @@
 import { Calendar } from "lucide-react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import EventDetailView from "@renderer/features/research/components/event/EventDetailView";
-import { EventSidebarList } from "@renderer/features/research/components/event/EventSidebarList";
 import { useEventManager } from "@renderer/features/research/components/event/useEventManager";
-import { EntityGallery } from "@renderer/features/research/components/wiki/EntityGallery";
-import { EntityManagerShell } from "@renderer/features/research/components/wiki/EntityManagerShell";
+import {
+  EntityGallery,
+  type EntityGallerySortMode,
+  type EntityGalleryViewMode,
+} from "@renderer/features/research/components/wiki/EntityGallery";
 
-export default function EventManager() {
+type EventManagerProps = {
+  query?: string;
+  onQueryChange?: (query: string) => void;
+  viewMode?: EntityGalleryViewMode;
+  onViewModeChange?: (viewMode: EntityGalleryViewMode) => void;
+  sortMode?: EntityGallerySortMode;
+  onSortModeChange?: (sortMode: EntityGallerySortMode) => void;
+  tabs?: ReactNode;
+};
+
+export default function EventManager({
+  query,
+  onQueryChange,
+  viewMode,
+  onViewModeChange,
+  sortMode,
+  onSortModeChange,
+  tabs,
+}: EventManagerProps) {
   const { t } = useTranslation();
   const {
-    selectedEventId,
     setSelectedEventId,
     handleAddEvent,
     handleViewAll,
@@ -18,33 +38,13 @@ export default function EventManager() {
   } = useEventManager(t);
 
   return (
-    <EntityManagerShell
-      sidebarFeature="eventSidebar"
-      peekGroups={Object.entries(groupedEvents).map(([name, events]) => ({
-        name,
-        items: events.map((event) => ({
-          id: event.id,
-          label: event.name,
-          sublabel: event.description ?? undefined,
-        })),
-      }))}
-      selectedId={selectedEventId}
-      onSelect={setSelectedEventId}
-      addLabel="사건 추가"
-      onAdd={handleAddEvent}
-      sidebar={
-        <EventSidebarList
-          t={t}
-          selectedEventId={selectedEventId}
-          setSelectedEventId={setSelectedEventId}
-          onViewAll={handleViewAll}
-          handleAddEvent={handleAddEvent}
-          groupedEvents={groupedEvents}
-        />
-      }
-    >
+    <>
       {selectedEvent ? (
-        <EventDetailView key={selectedEvent.id} eventId={selectedEvent.id} />
+        <EventDetailView
+          key={selectedEvent.id}
+          eventId={selectedEvent.id}
+          onBack={handleViewAll}
+        />
       ) : (
         <EntityGallery
           groups={groupedEvents}
@@ -52,8 +52,16 @@ export default function EventManager() {
           title={t("event.galleryTitle", "Event Overview")}
           noDescriptionLabel={t("event.noRole", "No Type")}
           icon={Calendar}
+          onAdd={handleAddEvent}
+          query={query}
+          onQueryChange={onQueryChange}
+          viewMode={viewMode}
+          onViewModeChange={onViewModeChange}
+          sortMode={sortMode}
+          onSortModeChange={onSortModeChange}
+          tabs={tabs}
         />
       )}
-    </EntityManagerShell>
+    </>
   );
 }

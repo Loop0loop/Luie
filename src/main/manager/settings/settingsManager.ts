@@ -1,7 +1,3 @@
-/**
- * Settings manager - electron-store를 통한 영구 설정 관리
- */
-
 import Store from "electron-store";
 import { resolveUserDataPath } from "../../utils/env/index.js";
 import { createLogger } from "../../../shared/logger/index.js";
@@ -60,9 +56,8 @@ export class SettingsManager {
     this.store = new Store<AppSettings>({
       name: SETTINGS_STORE_BASENAME,
       defaults: getDefaultSettings(),
-      // 저장 위치: userData/settings.json
       cwd: settingsPath,
-      encryptionKey: undefined, // 필요하다면 암호화 키 추가
+      encryptionKey: undefined,
       fileExtension: "json",
     });
 
@@ -88,12 +83,11 @@ export class SettingsManager {
     return SettingsManager.instance;
   }
 
-  // 전체 설정 가져오기
   getAll(): AppSettings {
     return this.store.store;
   }
 
-  // 렌더러 노출용 설정 (민감 Sync 시크릿 제거)
+  // NOTE: renderer 경계를 넘기기 전에 sync secret을 제거한다.
   getAllForRenderer(): AppSettings {
     const all = this.getAll();
     return {
@@ -102,7 +96,6 @@ export class SettingsManager {
     };
   }
 
-  // 전체 설정 저장
   setAll(settings: Partial<AppSettings>): void {
     const current = this.store.store;
     const merged: AppSettings = {
@@ -124,7 +117,6 @@ export class SettingsManager {
     logger.info("Settings updated", { settings: merged });
   }
 
-  // 에디터 설정
   getEditorSettings(): EditorSettings {
     return this.store.get("editor");
   }
@@ -134,7 +126,6 @@ export class SettingsManager {
     logger.info("Editor settings updated", { settings });
   }
 
-  // 개별 에디터 설정 편의 메서드
   setEditorTheme(theme: EditorSettings["theme"]): void {
     this.setEditorSettings({ theme });
   }
@@ -151,7 +142,6 @@ export class SettingsManager {
     this.setEditorSettings({ fontFamily });
   }
 
-  // 언어 설정
   getLanguage(): AppSettings["language"] {
     return this.store.get("language");
   }
@@ -160,7 +150,6 @@ export class SettingsManager {
     this.store.set("language", language);
   }
 
-  // 단축키 설정
   getShortcuts(): { shortcuts: ShortcutMap; defaults: ShortcutMap } {
     const stored = this.store.get("shortcuts") ?? {};
     const shortcuts = { ...DEFAULT_SHORTCUTS, ...(stored as Partial<ShortcutMap>) };
@@ -173,7 +162,6 @@ export class SettingsManager {
     return merged;
   }
 
-  // 프로젝트 경로
   getLastProjectPath(): string | undefined {
     return this.store.get("lastProjectPath");
   }
@@ -182,7 +170,6 @@ export class SettingsManager {
     this.store.set("lastProjectPath", path);
   }
 
-  // 자동 저장 설정
   getAutoSaveEnabled(): boolean {
     return this.store.get("autoSaveEnabled");
   }
@@ -199,7 +186,6 @@ export class SettingsManager {
     this.store.set("autoSaveInterval", interval);
   }
 
-  // 윈도우 상태
   getWindowBounds() {
     return this.store.get("windowBounds");
   }
@@ -482,13 +468,11 @@ export class SettingsManager {
     return this.setStartupSettings({ completedAt: undefined });
   }
 
-  // 설정 초기화
   resetToDefaults(): void {
     this.store.clear();
     logger.info("Settings reset to defaults");
   }
 
-  // 저장 경로 가져오기 (디버깅용)
   getSettingsPath(): string {
     return this.store.path;
   }

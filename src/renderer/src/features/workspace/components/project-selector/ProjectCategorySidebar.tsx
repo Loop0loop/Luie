@@ -28,7 +28,7 @@ export function ProjectCategorySidebar({
                 <div
                     key={cat.id}
                     className={`
-            px-4 py-3 rounded-lg text-sm transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] flex items-center gap-2.5
+            px-4 py-3 rounded-panel text-sm transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] flex items-center gap-2.5
             ${activeCategory === cat.id
                             ? "bg-accent text-accent-fg font-semibold shadow-md"
                             : "text-muted hover:bg-active hover:text-fg cursor-pointer"}

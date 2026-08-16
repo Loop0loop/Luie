@@ -13,9 +13,10 @@ const FACTION_SECTIONS = [
 
 interface FactionDetailViewProps {
   factionId?: string;
+  onBack?: () => void;
 }
 
-export default function FactionDetailView({ factionId }: FactionDetailViewProps) {
+export default function FactionDetailView({ factionId, onBack }: FactionDetailViewProps) {
   const { currentItem, updateFaction, loadFaction } = useFactionStore(
     useShallow((state) => ({
       currentItem: state.currentItem,
@@ -28,7 +29,6 @@ export default function FactionDetailView({ factionId }: FactionDetailViewProps)
     <EntityDetailView
       entity={currentItem}
       entityId={factionId}
-      entityKind="faction"
       icon={<Shield size={80} color="var(--border-active)" />}
       loadEntity={loadFaction}
       updateEntity={updateFaction}
@@ -37,6 +37,7 @@ export default function FactionDetailView({ factionId }: FactionDetailViewProps)
       storagePrefix="faction-view-mode"
       noSelectionFallback="No Faction Selected"
       templateFallback="Basic Faction"
+      onBack={onBack}
     />
   );
 }

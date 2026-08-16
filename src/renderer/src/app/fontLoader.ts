@@ -29,10 +29,7 @@ const loadFont = (fontKey: FontKey): Promise<void> => {
   return nextPromise;
 };
 
-/**
- * Load Inter font on demand when user selects it as optional preset.
- * System fonts are the default, so no fonts auto-load on startup.
- */
+/** startup 비용을 피하려고 사용자가 선택한 경우에만 Inter font를 불러온다. */
 export const loadInterFont = (): Promise<void> => {
   return loadFont("inter");
 };

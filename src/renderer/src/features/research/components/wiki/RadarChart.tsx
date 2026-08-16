@@ -16,7 +16,6 @@ import {
   MAX_RADAR_AXES,
 } from "./types";
 
-// ── EditableAxisLabel ─────────────────────────────────────────────────────
 
 type EditableAxisLabelProps = {
   label: string;
@@ -72,7 +71,6 @@ function EditableAxisLabel({ label, onCommit }: EditableAxisLabelProps) {
   );
 }
 
-// ── RadarChartSvg ─────────────────────────────────────────────────────────
 
 type RadarChartSvgProps = {
   axes: RadarAxis[];
@@ -100,7 +98,6 @@ function RadarChartSvg({ axes, color, size }: RadarChartSvgProps) {
       height={size}
       aria-hidden="true"
     >
-      {/* Grid rings */}
       {RADAR_GRID_LEVELS.map((level) => (
         <polygon
           key={level}
@@ -112,7 +109,6 @@ function RadarChartSvg({ axes, color, size }: RadarChartSvgProps) {
         />
       ))}
 
-      {/* Axis spokes */}
       {axes.map((_, i) => {
         const outer = getVertex(i, n, maxRadius, center);
         return (
@@ -129,7 +125,6 @@ function RadarChartSvg({ axes, color, size }: RadarChartSvgProps) {
         );
       })}
 
-      {/* Data fill */}
       <polygon
         points={dataPolygon}
         fill={color}
@@ -139,7 +134,6 @@ function RadarChartSvg({ axes, color, size }: RadarChartSvgProps) {
         strokeOpacity="0.85"
       />
 
-      {/* Data dots */}
       {axes.map((axis, i) => {
         const pt = getVertex(
           i,
@@ -152,7 +146,6 @@ function RadarChartSvg({ axes, color, size }: RadarChartSvgProps) {
         );
       })}
 
-      {/* Axis labels */}
       {axes.map((axis, i) => {
         const lp = getVertex(i, n, labelRadius, center);
         return (
@@ -175,7 +168,6 @@ function RadarChartSvg({ axes, color, size }: RadarChartSvgProps) {
   );
 }
 
-// ── AxisEditor ────────────────────────────────────────────────────────────
 
 type AxisEditorProps = {
   axes: RadarAxis[];
@@ -226,7 +218,7 @@ function AxisEditor({ axes, color, onChange }: AxisEditorProps) {
               "shrink-0 transition-opacity",
               axes.length <= MIN_RADAR_AXES
                 ? "opacity-0 pointer-events-none"
-                : "opacity-0 group-hover/axis:opacity-100 text-muted hover:text-destructive",
+                : "opacity-0 group-hover/axis:opacity-100 text-muted hover:text-danger",
             )}
           >
             <X size={10} />
@@ -248,7 +240,6 @@ function AxisEditor({ axes, color, onChange }: AxisEditorProps) {
   );
 }
 
-// ── Public component ──────────────────────────────────────────────────────
 
 export type { RadarAxis };
 
@@ -256,7 +247,6 @@ type RadarChartProps = {
   axes: RadarAxis[];
   color?: string;
   size?: number;
-  /** When provided, renders the axis editor below the chart. */
   onAxesChange?: (axes: RadarAxis[]) => void;
 };
 
@@ -276,5 +266,5 @@ export function RadarChart({
   );
 }
 
-// import kept at bottom to avoid circular — value comes from types.ts
+// NOTE: types.ts와의 circular dependency를 피하려고 value import를 선언부 아래에 둔다.
 import { DEFAULT_CHARACTER_COLOR } from "./types";

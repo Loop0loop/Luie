@@ -1,23 +1,32 @@
 import { z } from "zod";
-import { baseContentSchema, chapterIdSchema, projectIdSchema } from "./common";
+import {
+  baseContentSchema,
+  chapterIdSchema,
+  noteIdSchema,
+  plotIdSchema,
+  projectIdSchema,
+  sceneIdSchema,
+  scrapMemoIdSchema,
+  synopsisIdSchema,
+} from "./common";
 
 export const chapterCreateSchema = z.object({
-  projectId: z.string().uuid("Invalid project ID"),
+  projectId: projectIdSchema,
   title: z.string().min(1, "Title is required"),
   synopsis: z.string().optional(),
   clientMutationId: z.string().uuid("Invalid client mutation ID").optional(),
 });
 
 export const chapterUpdateSchema = z.object({
-  id: z.string().uuid("Invalid chapter ID"),
+  id: chapterIdSchema,
   title: z.string().min(1, "Title is required").optional(),
   content: baseContentSchema.optional(),
   synopsis: z.string().optional(),
 });
 
 export const sceneCreateSchema = z.object({
-  projectId: z.string().uuid("Invalid project ID"),
-  chapterId: z.string().uuid("Invalid chapter ID"),
+  projectId: projectIdSchema,
+  chapterId: chapterIdSchema,
   title: z.string().min(1, "Title is required"),
   body: baseContentSchema.optional(),
   startOffset: z.number().int().nonnegative().optional(),
@@ -26,8 +35,8 @@ export const sceneCreateSchema = z.object({
 });
 
 export const sceneUpdateSchema = z.object({
-  id: z.string().uuid("Invalid scene ID"),
-  chapterId: z.string().uuid("Invalid chapter ID").optional(),
+  id: sceneIdSchema,
+  chapterId: chapterIdSchema.optional(),
   title: z.string().min(1, "Title is required").optional(),
   body: baseContentSchema.optional(),
   startOffset: z.number().int().nonnegative().nullable().optional(),
@@ -36,54 +45,54 @@ export const sceneUpdateSchema = z.object({
 });
 
 export const noteCreateSchema = z.object({
-  projectId: z.string().uuid("Invalid project ID"),
-  chapterId: z.string().uuid("Invalid chapter ID").optional(),
+  projectId: projectIdSchema,
+  chapterId: chapterIdSchema.optional(),
   title: z.string().min(1, "Title is required"),
   body: baseContentSchema.optional(),
 });
 
 export const noteUpdateSchema = z.object({
-  id: z.string().uuid("Invalid note ID"),
-  chapterId: z.string().uuid("Invalid chapter ID").nullable().optional(),
+  id: noteIdSchema,
+  chapterId: chapterIdSchema.nullable().optional(),
   title: z.string().min(1, "Title is required").optional(),
   body: baseContentSchema.optional(),
 });
 
 export const synopsisCreateSchema = z.object({
-  projectId: z.string().uuid("Invalid project ID"),
-  chapterId: z.string().uuid("Invalid chapter ID").optional(),
+  projectId: projectIdSchema,
+  chapterId: chapterIdSchema.optional(),
   title: z.string().min(1, "Title is required"),
   body: baseContentSchema.optional(),
 });
 
 export const synopsisUpdateSchema = z.object({
-  id: z.string().uuid("Invalid synopsis ID"),
-  chapterId: z.string().uuid("Invalid chapter ID").nullable().optional(),
+  id: synopsisIdSchema,
+  chapterId: chapterIdSchema.nullable().optional(),
   title: z.string().min(1, "Title is required").optional(),
   body: baseContentSchema.optional(),
 });
 
 export const plotCreateSchema = z.object({
-  projectId: z.string().uuid("Invalid project ID"),
+  projectId: projectIdSchema,
   title: z.string().min(1, "Title is required"),
   body: baseContentSchema.optional(),
 });
 
 export const plotUpdateSchema = z.object({
-  id: z.string().uuid("Invalid plot ID"),
+  id: plotIdSchema,
   title: z.string().min(1, "Title is required").optional(),
   body: baseContentSchema.optional(),
 });
 
 export const scrapMemoCreateSchema = z.object({
-  projectId: z.string().uuid("Invalid project ID"),
+  projectId: projectIdSchema,
   title: z.string().min(1, "Title is required"),
   content: baseContentSchema,
   tags: z.array(z.string()).max(50).optional(),
 });
 
 export const scrapMemoUpdateSchema = z.object({
-  id: z.string().uuid("Invalid scrap memo ID"),
+  id: scrapMemoIdSchema,
   title: z.string().min(1, "Title is required").optional(),
   content: baseContentSchema.optional(),
   tags: z.array(z.string()).max(50).optional(),

@@ -28,9 +28,8 @@ export function SmartLinkTooltip({ isSettingsOpen }: { isSettingsOpen?: boolean 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
-  // ✅ Pass isSettingsOpen as dependency — when settings open, remove listeners immediately
+  // NOTE: settings가 열리면 listener를 즉시 제거해야 한다.
   useEffect(() => {
-    // Hide tooltip and suppress events while settings are open
     if (isSettingsOpen) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       const hideTimer = window.setTimeout(() => {
@@ -97,7 +96,6 @@ export function SmartLinkTooltip({ isSettingsOpen }: { isSettingsOpen?: boolean 
     document.addEventListener("click", handleClick);
 
     return () => {
-      // ✅ Always cancel pending timeout before removing listeners
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       document.removeEventListener("mouseover", handleMouseOver);
       document.removeEventListener("mouseout", handleMouseOut);
@@ -105,7 +103,6 @@ export function SmartLinkTooltip({ isSettingsOpen }: { isSettingsOpen?: boolean 
     };
   }, [isSettingsOpen]);
 
-  // ✅ Final cleanup on unmount — guarantee timeout is cleared
   useEffect(() => {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -156,8 +153,7 @@ export function SmartLinkTooltip({ isSettingsOpen }: { isSettingsOpen?: boolean 
       ref={tooltipRef}
       onMouseEnter={handleTooltipEnter}
       onMouseLeave={handleTooltipLeave}
-      // ✅ z-[9999] to match Tailwind's registered z-index scale
-      className="fixed z-[9999] bg-popover text-popover-foreground rounded-md shadow-xl border border-border p-3 w-[250px] animate-in fade-in zoom-in-95 duration-200 pointer-events-none"
+      className="fixed z-dropdown bg-popover text-popover-foreground rounded-control shadow-panel border border-border p-3 w-[250px] animate-in fade-in zoom-in-95 duration-200 pointer-events-none"
       style={{
         left: state.x,
         top: state.y,
@@ -165,11 +161,11 @@ export function SmartLinkTooltip({ isSettingsOpen }: { isSettingsOpen?: boolean 
     >
       <div className="flex items-center justify-between mb-1">
         <span className="font-bold text-sm">{content.title}</span>
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-sm">
+        <span className="text-[10px] uppercase tracking-wider text-muted bg-secondary px-1.5 py-0.5 rounded-sm">
           {content.meta}
         </span>
       </div>
-      <div className="text-xs text-muted-foreground line-clamp-3">
+      <div className="text-xs text-muted line-clamp-3">
         {content.desc}
       </div>
     </div>,

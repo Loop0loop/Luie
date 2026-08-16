@@ -22,15 +22,12 @@ export default function ResizableSplitPane({
   minRightWidth = RESIZABLE_PANE_MIN_RIGHT_WIDTH,
   maxRightWidth = RESIZABLE_PANE_MAX_RIGHT_WIDTH,
   isRightVisible,
-  // onCloseRight // Not used yet
 }: ResizableSplitPaneProps) {
   const [rightWidth, setRightWidth] = useState(initialRightWidth);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // ✅ P2 Fix: Store isDragging in a ref so the mousemove handler always reads
-  // the latest value without causing the resize callback to be recreated on every drag tick.
-  // This prevents the useEffect from repeatedly removing and re-adding window listeners.
+  // NOTE: drag 상태는 ref로 읽어 mousemove마다 listener가 재등록되지 않게 한다.
   const isDraggingRef = useRef(false);
 
   const startResizing = useCallback(() => {
@@ -43,7 +40,6 @@ export default function ResizableSplitPane({
     setIsDragging(false);
   }, []);
 
-  // ✅ resize no longer depends on isDragging state — reads ref instead
   const resize = useCallback(
     (mouseMoveEvent: MouseEvent) => {
       if (!isDraggingRef.current || !containerRef.current) return;
@@ -59,7 +55,6 @@ export default function ResizableSplitPane({
     [minRightWidth, maxRightWidth],
   );
 
-  // ✅ Now resize/stopResizing are stable references — listeners registered once
   useEffect(() => {
     window.addEventListener("mousemove", resize);
     window.addEventListener("mouseup", stopResizing);
@@ -74,15 +69,12 @@ export default function ResizableSplitPane({
       ref={containerRef}
       style={{ display: 'flex', width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}
     >
-      {/* LEFT PANE (Flexible) */}
       <div style={{ flex: 1, height: '100%', overflow: 'hidden', minWidth: 0 }}>
         {left}
       </div>
 
-      {/* RIGHT PANE (Fixed width / Resizable) */}
       {isRightVisible && (
         <>
-          {/* DRAG HANDLE */}
           <div
             onMouseDown={startResizing}
             style={{

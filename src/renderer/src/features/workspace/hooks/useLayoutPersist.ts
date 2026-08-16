@@ -24,10 +24,15 @@ export function suppressLayoutPersistenceFor(durationMs: number): void {
 const isLayoutPersistenceSuppressed = (): boolean =>
   layoutPersistenceSuppressionDepth > 0;
 
+export const isPersistableLayoutRatio = (ratio: number): boolean =>
+  Number.isFinite(ratio) && ratio > 0.1;
+
 export interface LayoutPersistEntry {
-  /** Must match the Panel's `id` prop */
+  /** `Panel.id`와 같은 값. */
   id: string;
-  /** uiStore key to save the resulting ratio to */
+  /** react-resizable-panels가 id를 주지 않을 때 사용할 layout index. */
+  index?: number;
+  /** 계산한 ratio를 저장할 uiStore key. */
   surface: LayoutSurfaceId;
 }
 
@@ -85,15 +90,10 @@ export const getPanelRatioFromLayout = (
   entry: LayoutPersistEntry,
   index: number,
 ): unknown => {
-  return getPanelLayoutValue(layout, entry.id, index);
+  return getPanelLayoutValue(layout, entry.id, entry.index ?? index);
 };
 
-/**
- * Hook that wires Group.onLayoutChanged to uiStore.setLayoutSurfaceRatio.
- * react-resizable-panels already reports stable percentages after each drag,
- * so layout-level surfaces can persist ratios directly and remain responsive
- * across different monitor widths.
- */
+/** PanelGroup의 drag 결과 비율을 저장해 monitor 너비가 달라도 같은 layout 비율을 유지한다. */
 export function useLayoutPersist(
   entries: LayoutPersistEntry[],
   options?: UseLayoutPersistOptions,
@@ -209,6 +209,9 @@ export function useLayoutPersist(
             continue;
           }
           warnedEntriesRef.current.delete(`${entry.surface}:${entry.id}`);
+          if (!isPersistableLayoutRatio(nextRatio)) {
+            continue;
+          }
 
           const previousCommit = lastCommitRef.current.get(entry.surface);
           if (
@@ -223,10 +226,6 @@ export function useLayoutPersist(
             continue;
           }
 
-          logger.debug(`[useLayoutPersist] Committing layout surface ratio`, {
-            surface: entry.surface,
-            nextRatio,
-          });
           lastCommitRef.current.set(entry.surface, {
             ratio: nextRatio,
             timestampMs: nowMs,
