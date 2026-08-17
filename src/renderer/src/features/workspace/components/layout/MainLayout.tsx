@@ -20,7 +20,10 @@ import { useShallow } from "zustand/react/shallow";
 import { useTranslation } from "react-i18next";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { useEditorStore } from "@renderer/domains/editor";
-import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@renderer/shared/constants/editorLayout";
+import {
+  EDITOR_MIN_PANEL_WIDTH_PX,
+  EDITOR_WINDOW_BAR_HEIGHT_PX,
+} from "@renderer/shared/constants/editorLayout";
 import {
   getLayoutSurfaceConfig,
   getLayoutSurfaceDefaultRatio,
@@ -422,7 +425,7 @@ export default function MainLayout({
 
           <Panel
             id="main-content-panel"
-            minSize={toPercentSize(10)}
+            minSize={`${EDITOR_MIN_PANEL_WIDTH_PX}px`}
             className="relative z-0 flex min-w-0 flex-1 flex-col bg-app"
           >
             <div
@@ -443,7 +446,7 @@ export default function MainLayout({
                 <Panel
                   id="main-primary-content"
                   defaultSize={toPercentSize(50)}
-                  minSize={toPercentSize(20)}
+                  minSize={`${EDITOR_MIN_PANEL_WIDTH_PX}px`}
                   className={`relative flex min-w-0 flex-col ${adjacentSurfaceClass}`}
                 >
                   {children}

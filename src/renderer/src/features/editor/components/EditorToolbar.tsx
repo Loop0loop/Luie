@@ -23,6 +23,7 @@ import { useTranslation } from "react-i18next";
 
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { EDITOR_TOOLBAR_MARKUP_COMPACT_WIDTH_PX } from "@renderer/shared/constants/editorLayout";
 import { cn } from "@shared/types/utils";
 import { FontSelector } from "./FontSelector";
 import {
@@ -78,13 +79,25 @@ export default function EditorToolbar({
   const hideNonToggleControls = canvasToggleOnly;
   const anchorRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const toolbarContentRef = useRef<HTMLDivElement>(null);
   const [toolbarHeight, setToolbarHeight] = useState(44);
   const [toolbarBounds, setToolbarBounds] = useState<{
     left: number;
     top: number;
     width: number;
   } | null>(null);
-  const isCompactToolbar = (toolbarBounds?.width ?? Infinity) < 1080;
+  const [fullToolbarWidth, setFullToolbarWidth] = useState<number | null>(
+    null,
+  );
+  const availableToolbarWidth = Math.max(
+    0,
+    (toolbarBounds?.width ?? Infinity) - 96,
+  );
+  const isCompactToolbar =
+    fullToolbarWidth !== null && fullToolbarWidth > availableToolbarWidth;
+  const isMarkupCompact =
+    (toolbarBounds?.width ?? Infinity) <=
+    EDITOR_TOOLBAR_MARKUP_COMPACT_WIDTH_PX;
 
   useLayoutEffect(() => {
     const anchor = anchorRef.current;
@@ -130,6 +143,28 @@ export default function EditorToolbar({
     observer?.observe(toolbar);
     return () => observer?.disconnect();
   }, [toolbarBounds?.width]);
+
+  useLayoutEffect(() => {
+    const content = toolbarContentRef.current;
+    if (!content || isCompactToolbar) return;
+
+    const syncFullWidth = () => {
+      const nextWidth = Math.ceil(content.getBoundingClientRect().width);
+      if (nextWidth > 0) {
+        setFullToolbarWidth((currentWidth) =>
+          Math.max(currentWidth ?? 0, nextWidth),
+        );
+      }
+    };
+
+    syncFullWidth();
+    const observer =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(syncFullWidth);
+    observer?.observe(content);
+    return () => observer?.disconnect();
+  }, [isCompactToolbar, toolbarBounds?.width]);
 
   if (!toolbarEditor) return null;
 
@@ -201,6 +236,39 @@ export default function EditorToolbar({
     </div>
   );
 
+  const markupControls = (
+    <>
+      <ToolbarButton
+        active={toolbarEditor.isActive("bold")}
+        label={t("toolbar.tooltip.bold", "굵게")}
+        onClick={() => toolbarEditor.chain().focus().toggleBold().run()}
+      >
+        <Bold className="h-4 w-4" />
+      </ToolbarButton>
+      <ToolbarButton
+        active={toolbarEditor.isActive("italic")}
+        label={t("toolbar.tooltip.italic", "기울임꼴")}
+        onClick={() => toolbarEditor.chain().focus().toggleItalic().run()}
+      >
+        <Italic className="h-4 w-4" />
+      </ToolbarButton>
+      <ToolbarButton
+        active={toolbarEditor.isActive("underline")}
+        label={t("toolbar.tooltip.underline", "밑줄")}
+        onClick={() => toolbarEditor.chain().focus().toggleUnderline().run()}
+      >
+        <Underline className="h-4 w-4" />
+      </ToolbarButton>
+      <ToolbarButton
+        active={toolbarEditor.isActive("strike")}
+        label={t("toolbar.tooltip.strikethrough", "취소선")}
+        onClick={() => toolbarEditor.chain().focus().toggleStrike().run()}
+      >
+        <Strikethrough className="h-4 w-4" />
+      </ToolbarButton>
+    </>
+  );
+
   const overflowControls = (
     <>
       <ColorPickerMenu
@@ -268,12 +336,13 @@ export default function EditorToolbar({
     <div
       ref={toolbarRef}
       className={cn(
-        "pointer-events-none flex w-full min-w-0 flex-nowrap select-none items-center justify-center overflow-visible bg-transparent px-2 py-1.5",
+        "pointer-events-none flex w-full min-w-0 flex-nowrap select-none items-center justify-center overflow-visible bg-transparent px-12 py-1.5",
         className,
       )}
     >
       <div
-        className="pointer-events-auto flex w-max max-w-full shrink-0 flex-nowrap items-center justify-center gap-0.5"
+        ref={toolbarContentRef}
+        className="pointer-events-auto flex w-max shrink-0 flex-nowrap items-center gap-0.5"
         style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
       >
         <div
@@ -319,38 +388,12 @@ export default function EditorToolbar({
             className="w-[4.5rem]"
           />
 
-          <Divider />
-
-          <ToolbarButton
-            active={toolbarEditor.isActive("bold")}
-            label={t("toolbar.tooltip.bold", "굵게")}
-            onClick={() => toolbarEditor.chain().focus().toggleBold().run()}
-          >
-            <Bold className="h-4 w-4" />
-          </ToolbarButton>
-          <ToolbarButton
-            active={toolbarEditor.isActive("italic")}
-            label={t("toolbar.tooltip.italic", "기울임꼴")}
-            onClick={() => toolbarEditor.chain().focus().toggleItalic().run()}
-          >
-            <Italic className="h-4 w-4" />
-          </ToolbarButton>
-          <ToolbarButton
-            active={toolbarEditor.isActive("underline")}
-            label={t("toolbar.tooltip.underline", "밑줄")}
-            onClick={() =>
-              toolbarEditor.chain().focus().toggleUnderline().run()
-            }
-          >
-            <Underline className="h-4 w-4" />
-          </ToolbarButton>
-          <ToolbarButton
-            active={toolbarEditor.isActive("strike")}
-            label={t("toolbar.tooltip.strikethrough", "취소선")}
-            onClick={() => toolbarEditor.chain().focus().toggleStrike().run()}
-          >
-            <Strikethrough className="h-4 w-4" />
-          </ToolbarButton>
+          {!isMarkupCompact && (
+            <>
+              <Divider />
+              {markupControls}
+            </>
+          )}
 
           {!isCompactToolbar && (
             <>
@@ -372,7 +415,16 @@ export default function EditorToolbar({
           <Divider />
           <MoreMenu
             canOpenExport={canOpenExport}
-            compactContent={isCompactToolbar ? overflowControls : undefined}
+            compactContent={
+              isCompactToolbar ? (
+                <>
+                  {isMarkupCompact && markupControls}
+                  {overflowControls}
+                </>
+              ) : isMarkupCompact ? (
+                markupControls
+              ) : undefined
+            }
             editor={toolbarEditor}
             onOpenExport={onOpenExport}
           />
@@ -391,7 +443,7 @@ export default function EditorToolbar({
       {toolbarBounds &&
         createPortal(
           <div
-            className="pointer-events-none fixed z-[100]"
+            className="pointer-events-none fixed z-toolbar"
             style={
               {
                 left: toolbarBounds.left,

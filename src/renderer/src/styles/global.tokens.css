@@ -74,6 +74,7 @@
   /* NOTE: 임의 z-index 경쟁을 막으려고 named utility의 값을 한 곳에서 관리한다. */
   --z-index-dropdown: 50;
   --z-index-banner: 100;
+  --z-index-toolbar: 120;
   --z-index-toast: 150;
   --z-index-modal: 1000;
 }
@@ -83,6 +84,9 @@
 }
 @utility z-banner {
   z-index: var(--z-index-banner);
+}
+@utility z-toolbar {
+  z-index: var(--z-index-toolbar);
 }
 @utility z-toast {
   z-index: var(--z-index-toast);
