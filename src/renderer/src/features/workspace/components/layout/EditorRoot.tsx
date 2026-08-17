@@ -1,13 +1,12 @@
-import {
-  useState,
-  Suspense,
-  useCallback,
-  useMemo,
-  useEffect,
-} from "react";
+import { useState, Suspense, useCallback, useMemo, useEffect } from "react";
 import { type Editor as TiptapEditor } from "@tiptap/react";
 import { useTranslation } from "react-i18next";
-import { Editor, SmartLinkTooltip, useEditorStatsStore, useEditorStore } from "@renderer/domains/editor";
+import {
+  Editor,
+  SmartLinkTooltip,
+  useEditorStatsStore,
+  useEditorStore,
+} from "@renderer/domains/editor";
 
 import { useProjectStore } from "@renderer/domains/project";
 import {
@@ -57,7 +56,9 @@ export default function EditorRoot() {
   const { t } = useTranslation();
   const dialog = useDialog();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTabId | undefined>(undefined);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<
+    SettingsTabId | undefined
+  >(undefined);
   const uiMode = useEditorStore((state) => state.uiMode);
   const setUiMode = useEditorStore((state) => state.setUiMode);
   const fontSize = useEditorStore((state) => state.fontSize);
@@ -94,7 +95,10 @@ export default function EditorRoot() {
     uiMode,
     mainViewType,
   );
-  useProjectLayoutPersistence(currentProject?.id ?? null, layoutPersistenceMode);
+  useProjectLayoutPersistence(
+    currentProject?.id ?? null,
+    layoutPersistenceMode,
+  );
 
   const setProjectAwareSidebarOpen = useCallback(
     (open: boolean) => {
@@ -360,6 +364,7 @@ export default function EditorRoot() {
       />
     </Suspense>
   );
+  const isResearchPanelAdjacent = panels[0]?.content.type === "research";
 
   return (
     <GlobalDragContext
@@ -464,6 +469,7 @@ export default function EditorRoot() {
             onCloseCanvas={handleCloseCanvas}
             additionalPanels={additionalPanelsComponent}
             additionalPanelIds={additionalPanelIds}
+            isResearchPanelAdjacent={isResearchPanelAdjacent}
           >
             {mainViewType === "canvas" ? (
               <Suspense fallback={layoutFallback}>

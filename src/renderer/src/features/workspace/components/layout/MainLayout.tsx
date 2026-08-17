@@ -1,10 +1,13 @@
-import { type CSSProperties, type ReactNode, useCallback, useState, useEffect, useRef } from "react";
-import { AIPanel } from "@renderer/features/ai";
 import {
-  Bot,
-  PanelLeftClose,
-  PanelLeftOpen,
-} from "lucide-react";
+  type CSSProperties,
+  type ReactNode,
+  useCallback,
+  useState,
+  useEffect,
+  useRef,
+} from "react";
+import { AIPanel } from "@renderer/features/ai";
+import { Bot, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import {
   Panel,
   Group as PanelGroup,
@@ -48,6 +51,7 @@ interface MainLayoutProps {
   contextPanel?: ReactNode;
   additionalPanels?: ReactNode;
   additionalPanelIds?: string[];
+  isResearchPanelAdjacent?: boolean;
   isCanvasMode?: boolean;
   onCloseCanvas?: () => void;
 }
@@ -58,6 +62,7 @@ export default function MainLayout({
   contextPanel: _contextPanel,
   additionalPanels,
   additionalPanelIds = [],
+  isResearchPanelAdjacent = false,
   isCanvasMode = false,
 }: MainLayoutProps) {
   const { t } = useTranslation();
@@ -168,18 +173,21 @@ export default function MainLayout({
     panelRef: sidebarPanelRef,
   });
 
-  const markOpeningRegion = useCallback((region: "leftSidebar" | "rightPanel") => {
-    openingRegionRef.current = region;
-    if (openingRegionTimerRef.current !== null) {
-      window.clearTimeout(openingRegionTimerRef.current);
-    }
-    openingRegionTimerRef.current = window.setTimeout(() => {
-      if (openingRegionRef.current === region) {
-        openingRegionRef.current = null;
+  const markOpeningRegion = useCallback(
+    (region: "leftSidebar" | "rightPanel") => {
+      openingRegionRef.current = region;
+      if (openingRegionTimerRef.current !== null) {
+        window.clearTimeout(openingRegionTimerRef.current);
       }
-      openingRegionTimerRef.current = null;
-    }, 360);
-  }, []);
+      openingRegionTimerRef.current = window.setTimeout(() => {
+        if (openingRegionRef.current === region) {
+          openingRegionRef.current = null;
+        }
+        openingRegionTimerRef.current = null;
+      }, 360);
+    },
+    [],
+  );
 
   const toggleSidebar = useCallback(() => {
     if (!isSidebarOpen) {
@@ -226,6 +234,16 @@ export default function MainLayout({
     openSize: contextDefaultSize,
     panelRef: contextPanelRef,
   });
+  const adjacentSurfaceClass = isResearchPanelAdjacent
+    ? "editor-adjacent-surface editor-research-surface"
+    : shouldRenderContext
+      ? "editor-adjacent-surface editor-ai-surface"
+      : "bg-sidebar";
+  const contentSurfaceClass = isResearchPanelAdjacent
+    ? "bg-research"
+    : shouldRenderContext
+      ? "bg-[var(--ai-panel-bg)]"
+      : "";
 
   const closeCollapsedRegionAfterMainLayoutChanged = useCallback(
     (layout: Layout, activeSurface: MainLayoutResizeSurface | null) => {
@@ -296,11 +314,14 @@ export default function MainLayout({
       persistSidebarLayoutChanged(layout);
       closeCollapsedRegionAfterMainLayoutChanged(layout, activeSurface);
       if (!shouldPersistMainLayoutContext(activeSurface)) {
-        logger.debug("Skipped context layout persistence during main sidebar resize", {
-          activeResizeSurface: activeSurface,
-          contextSurface,
-          layout,
-        });
+        logger.debug(
+          "Skipped context layout persistence during main sidebar resize",
+          {
+            activeResizeSurface: activeSurface,
+            contextSurface,
+            layout,
+          },
+        );
         scheduleResizeSurfaceClear(activeSurface);
         return;
       }
@@ -319,7 +340,9 @@ export default function MainLayout({
   useEffect(() => {
     if (shouldRenderSidebar) return;
     const safeRatio =
-      sidebarRatio < 5 ? getLayoutSurfaceDefaultRatio(sidebarSurface) : sidebarRatio;
+      sidebarRatio < 5
+        ? getLayoutSurfaceDefaultRatio(sidebarSurface)
+        : sidebarRatio;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 숨긴 panel의 다음 mount 기본값을 저장 ratio와 동기화한다.
     setSidebarDefaultSize(toPanelPercentSize(safeRatio));
   }, [shouldRenderSidebar, sidebarRatio, sidebarSurface]);
@@ -327,7 +350,9 @@ export default function MainLayout({
   useEffect(() => {
     if (shouldRenderContext) return;
     const safeRatio =
-      contextRatio < 5 ? getLayoutSurfaceDefaultRatio(contextSurface) : contextRatio;
+      contextRatio < 5
+        ? getLayoutSurfaceDefaultRatio(contextSurface)
+        : contextRatio;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 숨긴 panel의 다음 mount 기본값을 저장 ratio와 동기화한다.
     setContextDefaultSize(toPanelPercentSize(safeRatio));
   }, [shouldRenderContext, contextRatio, contextSurface]);
@@ -338,7 +363,9 @@ export default function MainLayout({
         <PanelGroup
           id="main-layout-group"
           orientation="horizontal"
-          className="flex flex-1 overflow-hidden relative w-full h-full"
+          className={`flex flex-1 overflow-hidden relative w-full h-full ${
+            isResearchPanelAdjacent && shouldRenderContext ? "bg-research" : ""
+          }`}
           elementRef={mainLayoutGroupRef}
           onLayoutChanged={onMainLayoutChanged}
         >
@@ -351,14 +378,15 @@ export default function MainLayout({
             defaultSize={isSidebarOpen ? sidebarDefaultSize : 0}
             minSize={mainSidebarSize.minSize}
             maxSize={mainSidebarSize.maxSize}
-            className={`bg-sidebar overflow-hidden flex flex-col z-10 ${enableAnimations
+            className={`bg-sidebar overflow-hidden flex flex-col z-10 ${
+              enableAnimations
                 ? isSidebarClosing
                   ? "animate-out slide-out-to-left fade-out duration-200"
                   : isSidebarOpen
                     ? "animate-in slide-in-from-left fade-in duration-200"
                     : ""
                 : ""
-              }`}
+            }`}
           >
             {shouldRenderSidebar ? (
               isCanvasMode && isMacOS ? (
@@ -366,10 +394,12 @@ export default function MainLayout({
                   <div
                     aria-hidden="true"
                     className="shrink-0"
-                    style={{
-                      height: EDITOR_WINDOW_BAR_HEIGHT_PX,
-                      WebkitAppRegion: "drag",
-                    } as CSSProperties}
+                    style={
+                      {
+                        height: EDITOR_WINDOW_BAR_HEIGHT_PX,
+                        WebkitAppRegion: "drag",
+                      } as CSSProperties
+                    }
                   />
                   <div className="flex min-h-0 flex-1 flex-col">{sidebar}</div>
                 </div>
@@ -402,9 +432,7 @@ export default function MainLayout({
             />
             <EditorDropZones />
             <div
-              className={`flex flex-1 flex-col overflow-y-auto ${
-                additionalPanelIds.length > 0 ? "bg-research" : ""
-              }`}
+              className={`flex flex-1 flex-col overflow-y-auto ${contentSurfaceClass}`}
             >
               <PanelGroup
                 id="main-layout-content-group"
@@ -416,11 +444,7 @@ export default function MainLayout({
                   id="main-primary-content"
                   defaultSize={toPercentSize(50)}
                   minSize={toPercentSize(20)}
-                  className={`relative flex min-w-0 flex-col ${
-                    additionalPanelIds.length > 0
-                      ? "editor-research-surface"
-                      : "bg-sidebar"
-                  }`}
+                  className={`relative flex min-w-0 flex-col ${adjacentSurfaceClass}`}
                 >
                   {children}
                 </Panel>
@@ -439,25 +463,47 @@ export default function MainLayout({
             {!isCanvasMode && (
               <button
                 onClick={toggleSidebar}
-                className="absolute left-2 top-2 z-40 flex h-8 w-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-active hover:text-fg cursor-pointer"
+                className={`absolute top-2 z-[110] flex h-8 w-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-active hover:text-fg cursor-pointer ${
+                  isMacOS && !isSidebarOpen ? "left-[92px]" : "left-2"
+                }`}
                 style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
-                title={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
-                aria-label={isSidebarOpen ? t("mainLayout.tooltip.sidebarCollapse") : t("mainLayout.tooltip.sidebarExpand")}
+                title={
+                  isSidebarOpen
+                    ? t("mainLayout.tooltip.sidebarCollapse")
+                    : t("mainLayout.tooltip.sidebarExpand")
+                }
+                aria-label={
+                  isSidebarOpen
+                    ? t("mainLayout.tooltip.sidebarCollapse")
+                    : t("mainLayout.tooltip.sidebarExpand")
+                }
               >
-                {isSidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+                {isSidebarOpen ? (
+                  <PanelLeftClose className="h-4 w-4" />
+                ) : (
+                  <PanelLeftOpen className="h-4 w-4" />
+                )}
               </button>
             )}
             {!isCanvasMode && (
               <button
                 onClick={toggleContextPanel}
-                className={`absolute right-2 top-2 z-40 flex h-8 items-center gap-1.5 rounded-control px-2.5 text-xs font-medium transition-all cursor-pointer ${
+                className={`absolute right-2 top-2 z-[110] flex h-8 items-center gap-1.5 rounded-control px-2.5 text-xs font-medium transition-all cursor-pointer ${
                   isContextOpen
                     ? "bg-accent text-accent-fg shadow-xs font-semibold"
                     : "border border-border/80 bg-element text-fg hover:bg-surface-hover hover:text-accent shadow-xs"
                 }`}
                 style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
-                title={isContextOpen ? t("ai.sidePanel.close") : t("ai.sidePanel.open")}
-                aria-label={isContextOpen ? t("ai.sidePanel.close") : t("ai.sidePanel.open")}
+                title={
+                  isContextOpen
+                    ? t("ai.sidePanel.close")
+                    : t("ai.sidePanel.open")
+                }
+                aria-label={
+                  isContextOpen
+                    ? t("ai.sidePanel.close")
+                    : t("ai.sidePanel.open")
+                }
               >
                 <Bot className="h-4 w-4" />
                 <span>{t("ai.sidePanel.view")}</span>
@@ -486,14 +532,19 @@ export default function MainLayout({
             defaultSize={isContextOpen ? contextDefaultSize : 0}
             minSize={mainContextSize.minSize}
             maxSize={mainContextSize.maxSize}
-            className={`relative z-10 flex flex-col overflow-hidden bg-[var(--ai-panel-bg)] ${enableAnimations
+            className={`relative z-10 flex flex-col overflow-hidden bg-[var(--ai-panel-bg)] ${
+              isResearchPanelAdjacent
+                ? "rounded-l-[var(--radius-editor-shell)]"
+                : ""
+            } ${
+              enableAnimations
                 ? isContextClosing
                   ? "animate-out slide-out-to-right fade-out duration-200"
                   : isContextOpen
                     ? "animate-in slide-in-from-right fade-in duration-200"
                     : ""
                 : ""
-              }`}
+            }`}
           >
             {shouldRenderContext ? (
               <div className="flex h-full flex-col overflow-hidden bg-[var(--ai-panel-bg)]">

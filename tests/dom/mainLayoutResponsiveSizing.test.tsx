@@ -82,6 +82,10 @@ vi.mock("@renderer/features/editor/stores/editorStore", () => ({
     selector({ enableAnimations: mockedEditorStore.enableAnimations }),
 }));
 
+vi.mock("@renderer/features/ai", () => ({
+  AIPanel: () => <div>AI Panel</div>,
+}));
+
 vi.mock("@renderer/features/workspace/components/WindowBar", () => ({
   default: () => <div>WindowBar</div>,
 }));

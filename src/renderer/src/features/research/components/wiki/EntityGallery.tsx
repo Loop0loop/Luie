@@ -201,11 +201,11 @@ export function EntityGallery<T extends GalleryEntity>({
 
   return (
     <section
-      className="flex h-full min-h-0 flex-1 flex-col bg-app"
+      className="flex h-full min-h-0 flex-1 flex-col bg-research"
       data-view-mode={viewMode}
     >
       <header
-        className="@container shrink-0 border-b border-border bg-sidebar/30 px-4"
+        className="@container shrink-0 bg-sidebar px-4"
         style={{ WebkitAppRegion: "drag" } as CSSProperties}
       >
         <div

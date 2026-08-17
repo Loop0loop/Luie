@@ -1,4 +1,10 @@
-import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import {
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { createPortal } from "react-dom";
 import {
   Bold,
@@ -58,7 +64,9 @@ export default function EditorToolbar({
   const fontSize = useEditorStore((state) => state.fontSize);
   const lineHeight = useEditorStore((state) => state.lineHeight);
   const letterSpacing = useEditorStore((state) => state.letterSpacing ?? 0.02);
-  const paragraphSpacing = useEditorStore((state) => state.paragraphSpacing ?? 1);
+  const paragraphSpacing = useEditorStore(
+    (state) => state.paragraphSpacing ?? 1,
+  );
   const setFontSize = useEditorStore((state) => state.setFontSize);
   const updateSettings = useEditorStore((state) => state.updateSettings);
   const ghostEditor = useMemo(() => createToolbarGhostEditor(), []);
@@ -259,8 +267,10 @@ export default function EditorToolbar({
   const toolbar = (
     <div
       ref={toolbarRef}
-      className={cn("pointer-events-none flex w-full min-w-0 flex-nowrap select-none items-center justify-center overflow-visible bg-transparent px-2 py-1.5", className)}
-      style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
+      className={cn(
+        "pointer-events-none flex w-full min-w-0 flex-nowrap select-none items-center justify-center overflow-visible bg-transparent px-2 py-1.5",
+        className,
+      )}
     >
       <div
         className="pointer-events-auto flex w-max max-w-full shrink-0 flex-nowrap items-center justify-center gap-0.5"
@@ -328,7 +338,9 @@ export default function EditorToolbar({
           <ToolbarButton
             active={toolbarEditor.isActive("underline")}
             label={t("toolbar.tooltip.underline", "밑줄")}
-            onClick={() => toolbarEditor.chain().focus().toggleUnderline().run()}
+            onClick={() =>
+              toolbarEditor.chain().focus().toggleUnderline().run()
+            }
           >
             <Underline className="h-4 w-4" />
           </ToolbarButton>
@@ -360,11 +372,7 @@ export default function EditorToolbar({
           <Divider />
           <MoreMenu
             canOpenExport={canOpenExport}
-            compactContent={
-              isCompactToolbar ? (
-                overflowControls
-              ) : undefined
-            }
+            compactContent={isCompactToolbar ? overflowControls : undefined}
             editor={toolbarEditor}
             onOpenExport={onOpenExport}
           />
@@ -384,12 +392,13 @@ export default function EditorToolbar({
         createPortal(
           <div
             className="pointer-events-none fixed z-[100]"
-            style={{
-              left: toolbarBounds.left,
-              top: toolbarBounds.top,
-              width: toolbarBounds.width,
-              WebkitAppRegion: "no-drag",
-            } as CSSProperties}
+            style={
+              {
+                left: toolbarBounds.left,
+                top: toolbarBounds.top,
+                width: toolbarBounds.width,
+              } as CSSProperties
+            }
           >
             {toolbar}
           </div>,

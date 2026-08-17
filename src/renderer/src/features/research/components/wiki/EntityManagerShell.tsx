@@ -140,7 +140,7 @@ export function EntityManagerShell({
 
   return (
     <div
-      className="relative flex w-full h-full bg-app overflow-hidden"
+      className="relative flex w-full h-full bg-research overflow-hidden"
       style={{
         visibility: shouldHideUntilLayoutReady ? "hidden" : undefined,
       }}

@@ -52,6 +52,7 @@
   /* NOTE: Tailwind v4에서 읽지 않는 config 대신 실제 사용 token만 이곳에 유지한다. */
   --radius-control: 0.625rem;
   --radius-panel: 0.875rem;
+  --radius-editor-shell: 1.5rem;
   --shadow-panel: 0 10px 28px rgba(15, 23, 42, 0.14);
   --spacing-control-x: 0.75rem;
   --spacing-control-y: 0.5rem;
@@ -91,26 +92,43 @@
 }
 
 /* NOTE: Research는 카드 구분 대신 하나의 연속된 작업 표면을 사용한다. */
-.research-surface,
-.research-surface :where(*) {
+.research-surface {
+  --bg-app: var(--bg-research);
+  --bg-sidebar: var(--bg-research);
+  --bg-panel: var(--bg-research);
+  --bg-surface: var(--bg-research);
+  --bg-element: var(--bg-research);
+  --border-default: transparent;
+  --border-active: transparent;
   background-color: var(--bg-research);
-  border-width: 0;
 }
 
-/* NOTE: Editor의 둥근 모서리 바깥은 좌측 Sidebar, 우측 Research 표면과 이어진다. */
-.editor-research-surface {
+/* NOTE: Editor의 둥근 모서리 바깥은 좌측 Sidebar, 우측 인접 패널 표면과 이어진다. */
+.editor-adjacent-surface {
   background: linear-gradient(
     to right,
-    var(--bg-sidebar) 0 1.5rem,
-    var(--bg-research) 1.5rem
+    var(--bg-sidebar) 0 var(--radius-editor-shell),
+    var(--editor-adjacent-surface) var(--radius-editor-shell)
   );
+}
+
+.editor-research-surface {
+  --editor-adjacent-surface: var(--bg-research);
+}
+
+.editor-research-surface .rounded-editor-shell {
+  border-right-width: 0;
+}
+
+.editor-ai-surface {
+  --editor-adjacent-surface: var(--ai-panel-bg);
 }
 
 :root {
   --bg-app: #ffffff;
   --bg-sidebar: #f5f5f7;
   --bg-panel: #ffffff;
-  --bg-research: var(--bg-panel);
+  --bg-research: #ffffff;
   --ai-panel-bg: #f8f8fa;
   --bg-surface: #ffffff;
   --bg-surface-hover: rgba(0, 0, 0, 0.04);
@@ -233,7 +251,7 @@
   --bg-app: #1a1a1c;
   --bg-sidebar: #212123;
   --bg-panel: #28282b;
-  --bg-research: #29292c;
+  --bg-research: #212123;
   /* NOTE: 기본 다크 톤의 AI View 표면은 현재 확정된 #323232을 유지한다. */
   --ai-panel-bg: #323232;
   --bg-surface: #28282b;
@@ -277,6 +295,7 @@
   --bg-app: #191b24;
   --bg-sidebar: #222636;
   --bg-panel: #2a3041;
+  --bg-research: #2a3041;
   --ai-panel-bg: #2d3346;
   --bg-surface: #2a3041;
   --bg-panel-header: #2a3041;
@@ -291,6 +310,7 @@
   --bg-app: #201d18;
   --bg-sidebar: #2a261f;
   --bg-panel: #322d24;
+  --bg-research: #322d24;
   --ai-panel-bg: #383125;
   --bg-surface: #322d24;
   --bg-panel-header: #322d24;
@@ -306,6 +326,7 @@
   --bg-app: #fbfcff;
   --bg-sidebar: #eff2f7;
   --bg-panel: #f8fafd;
+  --bg-research: #f8fafd;
   --ai-panel-bg: #f5f7fc;
   --bg-surface: #f8fafd;
   --bg-element: #ffffff;
@@ -322,6 +343,7 @@
   --bg-app: #fefbf5;
   --bg-sidebar: #f6eee2;
   --bg-panel: #fdf8ef;
+  --bg-research: #fdf8ef;
   --ai-panel-bg: #fbf4e9;
   --bg-surface: #fdf8ef;
   --bg-element: #fffdf8;
@@ -338,6 +360,7 @@
   --bg-app: #f4efe5;
   --bg-sidebar: #ebe2d2;
   --bg-panel: #f7f2e9;
+  --bg-research: #f7f2e9;
   --ai-panel-bg: #f0e9dd;
   --bg-surface: #f7f2e9;
   --bg-element: #fbf7ef;
@@ -354,6 +377,7 @@
   --bg-app: #faebcb;
   --bg-sidebar: #f2ddb0;
   --bg-panel: #f8e6c3;
+  --bg-research: #f8e6c3;
   --ai-panel-bg: #f7e3bc;
   --bg-surface: #f8e6c3;
   --bg-element: #fff4dc;
@@ -371,6 +395,7 @@
   --bg-app: #fbf2e2;
   --bg-sidebar: #f3e5cc;
   --bg-panel: #fcf5e7;
+  --bg-research: #fcf5e7;
   --ai-panel-bg: #f8ebd6;
   --bg-surface: #fcf5e7;
   --bg-surface-hover: rgba(95, 75, 50, 0.05);

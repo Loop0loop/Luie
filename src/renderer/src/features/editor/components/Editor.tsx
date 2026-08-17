@@ -319,7 +319,7 @@ function Editor({
     <div
       className={cn(
         "relative box-border flex h-full w-full flex-col overflow-hidden bg-app text-fg",
-        !hideToolbar && !hideFooter && "rounded-3xl border border-l-0 border-border",
+        !hideToolbar && !hideFooter && "rounded-editor-shell border border-l-0 border-border",
       )}
       data-testid="editor"
       style={{

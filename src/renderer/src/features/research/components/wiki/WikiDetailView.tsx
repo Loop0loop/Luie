@@ -203,7 +203,7 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
 
 
   return (
-    <div className="flex flex-1 min-w-0 flex-col gap-5 overflow-auto bg-panel px-5 py-5 text-fg sm:px-6">
+    <div className="flex flex-1 min-w-0 flex-col gap-5 overflow-auto bg-research px-5 py-5 text-fg sm:px-6">
 
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
