@@ -395,6 +395,11 @@ export default function MainLayout({
             minSize={toPercentSize(10)}
             className="relative z-0 flex min-w-0 flex-1 flex-col bg-app"
           >
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 z-30 h-11"
+              style={{ WebkitAppRegion: "drag" } as CSSProperties}
+            />
             <EditorDropZones />
             <div className="flex-1 overflow-y-auto flex flex-col">
               <PanelGroup

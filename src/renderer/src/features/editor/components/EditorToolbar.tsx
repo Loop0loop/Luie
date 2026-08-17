@@ -1,4 +1,5 @@
-import { useMemo, type CSSProperties } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import {
   Bold,
   Highlighter,
@@ -67,6 +68,37 @@ export default function EditorToolbar({
       ? ghostEditor
       : null;
   const hideNonToggleControls = canvasToggleOnly;
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const [toolbarBounds, setToolbarBounds] = useState<{
+    left: number;
+    top: number;
+    width: number;
+  } | null>(null);
+
+  useLayoutEffect(() => {
+    const anchor = anchorRef.current;
+    if (!anchor) return;
+
+    const syncBounds = () => {
+      const { left, top, width } = anchor.getBoundingClientRect();
+      setToolbarBounds({ left, top, width });
+    };
+
+    syncBounds();
+    const observer =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(syncBounds);
+    observer?.observe(anchor);
+    window.addEventListener("resize", syncBounds);
+    window.addEventListener("scroll", syncBounds, true);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", syncBounds);
+      window.removeEventListener("scroll", syncBounds, true);
+    };
+  }, []);
 
   if (!toolbarEditor) return null;
 
@@ -138,13 +170,13 @@ export default function EditorToolbar({
     </div>
   );
 
-  return (
+  const toolbar = (
     <div
-      className={cn("flex w-full select-none items-center justify-center overflow-x-auto no-scrollbar min-w-0 bg-transparent px-2 py-1.5", className)}
-      style={{ WebkitAppRegion: "drag" } as CSSProperties}
+      className={cn("pointer-events-none flex w-max max-w-full min-w-0 select-none items-center justify-center overflow-visible bg-transparent px-2 py-1.5", className)}
+      style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
     >
       <div
-        className="flex shrink-0 items-center gap-0.5"
+        className="pointer-events-auto flex shrink-0 items-center gap-0.5"
         style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
       >
         <div
@@ -309,5 +341,26 @@ export default function EditorToolbar({
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      <div ref={anchorRef} className="h-11 w-full shrink-0" />
+      {toolbarBounds &&
+        createPortal(
+          <div
+            className="pointer-events-none fixed z-[100]"
+            style={{
+              left: toolbarBounds.left + toolbarBounds.width / 2,
+              top: toolbarBounds.top,
+              transform: "translateX(-50%)",
+              WebkitAppRegion: "no-drag",
+            }}
+          >
+            {toolbar}
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
