@@ -23,8 +23,8 @@ export default function WorldPanel({ onClose }: WorldPanelProps) {
   ] as const;
 
   return (
-    <div className="flex flex-col h-full w-full bg-sidebar border-l border-border overflow-hidden">
-      <div className="flex items-center border-b border-border bg-app overflow-x-auto no-scrollbar shrink-0 h-12 px-2 gap-2">
+    <div className="research-surface flex h-full w-full flex-col overflow-hidden">
+      <div className="flex h-12 shrink-0 items-center gap-2 overflow-x-auto px-2 no-scrollbar">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -58,7 +58,7 @@ export default function WorldPanel({ onClose }: WorldPanelProps) {
         )}
       </div>
 
-      <div className="flex-1 flex flex-col overflow-hidden bg-app relative">
+      <div className="relative flex flex-1 flex-col overflow-hidden">
         {activeTab === "terms" && <WorldSection />}
         {activeTab === "synopsis" && <SynopsisSection />}
         {activeTab === "map" && <MindMapBoard />}

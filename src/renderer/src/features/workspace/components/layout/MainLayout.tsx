@@ -397,25 +397,29 @@ export default function MainLayout({
           >
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-x-0 top-0 z-30 h-11"
+              className="absolute inset-x-0 top-0 z-30 h-11"
               style={{ WebkitAppRegion: "drag" } as CSSProperties}
             />
             <EditorDropZones />
-            <div className="flex-1 overflow-y-auto flex flex-col">
+            <div
+              className={`flex flex-1 flex-col overflow-y-auto ${
+                additionalPanelIds.length > 0 ? "bg-research" : ""
+              }`}
+            >
               <PanelGroup
                 id="main-layout-content-group"
                 orientation="horizontal"
-                className="flex w-full h-full flex-1 overflow-hidden relative"
+                className="relative flex h-full w-full flex-1 overflow-hidden"
                 onLayoutChanged={onContentLayoutChanged}
               >
                 <Panel
                   id="main-primary-content"
                   defaultSize={toPercentSize(50)}
                   minSize={toPercentSize(20)}
-                  className={`relative flex min-w-0 flex-col bg-sidebar ${
-                    shouldRenderContext
-                      ? "before:pointer-events-none before:absolute before:inset-y-0 before:right-0 before:w-6 before:bg-[var(--ai-panel-bg)]"
-                      : ""
+                  className={`relative flex min-w-0 flex-col ${
+                    additionalPanelIds.length > 0
+                      ? "editor-research-surface"
+                      : "bg-sidebar"
                   }`}
                 >
                   {children}

@@ -205,14 +205,14 @@ export function EntityGallery<T extends GalleryEntity>({
       data-view-mode={viewMode}
     >
       <header
-        className="shrink-0 border-b border-border bg-sidebar/30 px-4"
+        className="@container shrink-0 border-b border-border bg-sidebar/30 px-4"
         style={{ WebkitAppRegion: "drag" } as CSSProperties}
       >
         <div
-          className="flex h-11 items-center justify-between gap-3"
+          className="flex min-h-11 flex-wrap items-center gap-2 py-2"
           style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
         >
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
             {tabs ? (
               tabs
             ) : (
@@ -225,8 +225,8 @@ export function EntityGallery<T extends GalleryEntity>({
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="relative flex h-7 items-center rounded-control border border-border/80 bg-element px-2 transition-all focus-within:border-accent focus-within:ring-1 focus-within:ring-accent w-32 sm:w-44">
+          <div className="flex max-w-full flex-wrap items-center justify-end gap-1.5">
+            <div className="relative flex h-7 w-28 min-w-0 items-center rounded-control border border-border/80 bg-element px-2 transition-all focus-within:border-accent focus-within:ring-1 focus-within:ring-accent sm:w-44">
               <Search className="icon-xs text-subtle shrink-0 mr-1.5" aria-hidden="true" />
               <input
                 aria-label={`Search ${title}`}

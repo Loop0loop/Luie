@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { BookOpen, ChevronLeft, History, Settings, Trash2 } from "lucide-react";
+import { BookOpen, History, Settings, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
 import type { DocsLayoutPanelTab } from "@renderer/shared/constants/layoutSizing";
@@ -8,11 +8,9 @@ type GoogleDocsHeaderProps = {
   activeChapterId?: string;
   activeChapterTitle?: string;
   activeRightTab: DocsLayoutPanelTab | null;
-  isSidebarOpen: boolean;
   onOpenSettings: () => void;
   onRenameChapter?: (id: string, title: string) => void;
   onRightTabClick: (tab: DocsLayoutPanelTab) => void;
-  onToggleSidebar: (open: boolean) => void;
 };
 
 function DocsHeaderIconButton(props: {
@@ -41,27 +39,15 @@ export function GoogleDocsHeader({
   activeChapterId,
   activeChapterTitle,
   activeRightTab,
-  isSidebarOpen,
   onOpenSettings,
   onRenameChapter,
   onRightTabClick,
-  onToggleSidebar,
 }: GoogleDocsHeaderProps) {
   const { t } = useTranslation();
 
   return (
     <header className="flex h-[64px] shrink-0 select-none items-center justify-between bg-app px-4 transition-colors duration-200">
       <div className="flex min-w-0 items-center gap-3">
-        {isSidebarOpen && (
-          <button
-            onClick={() => onToggleSidebar(false)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover"
-            title={t("sidebar.toggle.close")}
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-        )}
-
         <div
           className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-control text-accent transition-colors hover:bg-surface-hover"
           title={t("home")}

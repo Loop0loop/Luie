@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import {
   AlignCenter,
   AlignJustify,
@@ -17,10 +17,12 @@ import { useClickOutside } from "./useClickOutside";
 
 export function MoreMenu({
   canOpenExport,
+  compactContent,
   editor,
   onOpenExport,
 }: {
   canOpenExport: boolean;
+  compactContent?: ReactNode;
   editor: Editor;
   onOpenExport?: () => void;
 }) {
@@ -56,6 +58,14 @@ export function MoreMenu({
       </ToolbarButton>
       {open && (
         <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-panel border border-border bg-panel p-1 shadow-panel">
+          {compactContent && (
+            <>
+              <div className="flex flex-wrap items-center gap-1 p-1">
+                {compactContent}
+              </div>
+              <div className="my-1 h-px bg-border/60" />
+            </>
+          )}
           <button
             type="button"
             className="flex w-full items-center gap-2 rounded-control px-3 py-2 text-left text-xs text-fg transition-colors hover:bg-hover disabled:opacity-40"

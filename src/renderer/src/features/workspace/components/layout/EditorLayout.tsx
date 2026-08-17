@@ -130,7 +130,12 @@ export default function EditorLayout({
           </div>
         </FocusHoverSidebar>
 
-        <div className="flex-1 h-full overflow-hidden flex flex-row relative">
+        <div
+          className={cn(
+            "relative flex h-full flex-1 flex-row overflow-hidden",
+            additionalPanelIds.length > 0 && "bg-research",
+          )}
+        >
 
           <div
             className="absolute inset-x-0 top-0 z-30 h-11 pointer-events-auto"
@@ -159,7 +164,9 @@ export default function EditorLayout({
 
           <PanelGroup
             orientation="horizontal"
-            className="flex w-full h-full flex-1 overflow-hidden relative"
+            className={`relative flex h-full w-full flex-1 overflow-hidden ${
+              additionalPanelIds.length > 0 ? "bg-research" : ""
+            }`}
             id="editor-layout-group"
             elementRef={editorLayoutGroupRef}
             onLayoutChanged={handleEditorLayoutChanged}

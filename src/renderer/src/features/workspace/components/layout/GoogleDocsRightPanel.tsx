@@ -73,7 +73,7 @@ function SnapshotPanel({ activeChapterId }: { activeChapterId?: string }) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b border-border/50 bg-sidebar px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted">
+      <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted">
         {t("sidebar.section.snapshot")}
       </div>
       {activeChapterId ? (
@@ -105,7 +105,7 @@ function TrashPanel(props: {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 border-b border-border/50 bg-sidebar px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted">
+      <div className="flex items-center gap-2 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted">
         {t("sidebar.section.trash")}
         <button
           onClick={onRefreshTrash}
@@ -224,7 +224,7 @@ export function GoogleDocsRightPanel({
     <>
       <PanelResizeHandle
         data-separator-feature={activePanelSurface}
-        className={`relative z-20 w-1 shrink-0 cursor-col-resize bg-border/40 transition-colors hover:bg-accent/60 focus-visible:bg-accent/60 ${
+        className={`relative z-20 w-1 shrink-0 cursor-col-resize bg-transparent transition-colors hover:bg-accent/60 focus-visible:bg-accent/60 ${
           enableAnimations && isClosing
             ? "opacity-0 transition-opacity duration-200"
             : ""
@@ -246,7 +246,7 @@ export function GoogleDocsRightPanel({
         maxSize={rightPanelSize.maxSize}
         onResize={handlePanelResize}
         onMouseDownCapture={onFocus}
-        className={`flex min-w-0 shrink-0 flex-col overflow-hidden border-l border-border bg-app ${
+        className={`flex min-w-0 shrink-0 flex-col overflow-hidden bg-app ${
           enableAnimations
             ? isClosing
               ? "animate-out slide-out-to-right fade-out duration-200"

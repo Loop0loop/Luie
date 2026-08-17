@@ -20,7 +20,6 @@ import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWi
 import { useEditorStore } from "@renderer/domains/editor";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
 import { suppressLayoutPersistenceFor } from "@renderer/features/workspace/hooks/useLayoutPersist";
-import { SidebarHoverStrip } from "@renderer/features/workspace/components/SidebarHoverStrip";
 import { shouldCloseDocsPanelOnResize } from "../../utils/googleDocsPanelResize";
 
 export default function GoogleDocsLayout({
@@ -93,51 +92,14 @@ export default function GoogleDocsLayout({
     }
   };
   return (
-    <div className="flex h-screen flex-col bg-app font-sans text-fg transition-colors duration-200">
-      <div className="bg-app transition-colors duration-200">
-        <WindowBar />
-      </div>
-
-      <GoogleDocsHeader
-        activeChapterId={activeChapterId}
-        activeChapterTitle={activeChapterTitle}
-        activeRightTab={activeRightTab}
-        isSidebarOpen={isSidebarOpen}
-        onOpenSettings={onOpenSettings}
-        onRenameChapter={onRenameChapter}
-        onRightTabClick={handleRightTabClick}
-        onToggleSidebar={setDocsSidebarOpen}
-      />
-
-      <div className="relative flex flex-1 flex-row overflow-hidden">
-        {!shouldRenderSidebar && !activeRightTab && sidebar && (
-          <SidebarHoverStrip onExpand={() => setDocsSidebarOpen(true)}>
-            {sidebar}
-          </SidebarHoverStrip>
-        )}
-
-        {!isSidebarOpen && !shouldRenderSidebar && (
-          <div className="pointer-events-auto absolute left-4 top-4 z-50">
-            <button
-              onClick={() => setDocsSidebarOpen(true)}
-              className="flex h-10 w-10 items-center justify-center rounded-control border border-border bg-app text-muted shadow-sm transition-colors duration-150 hover:bg-surface-hover"
-              title={t("sidebar.toggle.open")}
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-          </div>
-        )}
-
-        <PanelGroup
-          orientation="horizontal"
-          className="relative flex h-full w-full flex-1 overflow-hidden"
-          id="docs-layout-group"
-          elementRef={docsLayoutGroupRef}
-          onLayoutChanged={(layout) => {
-            onSidebarLayoutChanged(layout);
-            onRightLayoutChanged(layout);
-          }}
-        >
+    <div className="flex h-screen bg-app font-sans text-fg transition-colors duration-200">
+      <PanelGroup
+        orientation="horizontal"
+        className="relative flex h-full w-full overflow-hidden"
+        id="docs-layout-group"
+        elementRef={docsLayoutGroupRef}
+        onLayoutChanged={onSidebarLayoutChanged}
+      >
           {shouldRenderSidebar && (
             <>
               <Panel
@@ -150,7 +112,7 @@ export default function GoogleDocsLayout({
                 minSize={docsSidebarSize.minSize}
                 maxSize={docsSidebarSize.maxSize}
                 onResize={handleSidebarResize}
-                className={`flex min-w-0 shrink-0 flex-col overflow-hidden border-r border-border bg-app ${
+                className={`flex min-w-0 shrink-0 flex-col bg-app ${
                   enableAnimations
                     ? isSidebarClosing
                       ? "animate-out slide-out-to-left fade-out duration-200"
@@ -158,55 +120,105 @@ export default function GoogleDocsLayout({
                     : ""
                 }`}
               >
-                {sidebar}
+                <div className="flex h-full flex-col overflow-hidden rounded-[24px] bg-sidebar">
+                  <WindowBar />
+                  <div className="flex h-16 shrink-0 items-center px-3">
+                    <button
+                      onClick={() => setDocsSidebarOpen(false)}
+                      className="flex h-10 w-10 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover"
+                      title={t("sidebar.toggle.close")}
+                    >
+                      <Menu className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <div className="min-h-0 flex-1">{sidebar}</div>
+                </div>
               </Panel>
 
               <PanelResizeHandle
                 data-separator-feature="docs.sidebar"
-                className="relative z-20 w-1 shrink-0 cursor-col-resize bg-border/40 transition-colors hover:bg-accent/50 focus-visible:bg-accent/50"
+                className="relative z-20 w-1 shrink-0 cursor-col-resize bg-transparent transition-colors hover:bg-accent/50 focus-visible:bg-accent/50"
               >
                 <div className="absolute inset-y-0 -left-1 -right-1" />
               </PanelResizeHandle>
             </>
           )}
 
-          <GoogleDocsEditorColumn
-            additionalPanelIds={additionalPanelIds}
-            additionalPanels={additionalPanels}
-            editor={editor}
-            onOpenExport={onOpenExport}
-            onOpenWorldGraph={onOpenWorldGraph}
-            pageMargins={pageMargins}
-            setPageMargins={setPageMargins}
-          >
-            {children}
-          </GoogleDocsEditorColumn>
-
-          <GoogleDocsRightPanel
-            activeChapterContent={activeChapterContent}
-            activeChapterId={activeChapterId}
-            activeChapterTitle={activeChapterTitle}
-            activePanelSurface={activePanelSurface}
-            activeRightTab={activeRightTab}
-            closeRightPanel={closeRightPanel}
-            currentProjectId={currentProjectId}
-            onFocus={() => setFocusedClosableTarget({ kind: "docs-tab" })}
-            onRefreshTrash={() => setTrashRefreshKey((current) => current + 1)}
-            onSaveChapter={onSaveChapter}
-            rightPanelSize={rightPanelSize}
-            rightPanelRatio={rightPanelRatio ?? 0}
-            trashRefreshKey={trashRefreshKey}
-          />
-
-          {!activeRightTab && (
-            <Panel
-              id="docs-right-placeholder"
-              defaultSize={0}
-              minSize={0}
-              maxSize={0}
-              className="pointer-events-none overflow-hidden opacity-0"
+          <Panel id="docs-main-shell" minSize={toPanelPercentSize(10)} className="flex min-w-0 flex-1 flex-col bg-app">
+            <WindowBar />
+            <GoogleDocsHeader
+              activeChapterId={activeChapterId}
+              activeChapterTitle={activeChapterTitle}
+              activeRightTab={activeRightTab}
+              onOpenSettings={onOpenSettings}
+              onRenameChapter={onRenameChapter}
+              onRightTabClick={handleRightTabClick}
             />
-          )}
+
+            <div className="relative flex min-h-0 flex-1 flex-row overflow-hidden">
+              {!isSidebarOpen && !shouldRenderSidebar && (
+                <div className="pointer-events-auto absolute left-4 top-4 z-50">
+                  <button
+                    onClick={() => setDocsSidebarOpen(true)}
+                    className="flex h-10 w-10 items-center justify-center rounded-control border border-border bg-app text-muted shadow-sm transition-colors duration-150 hover:bg-surface-hover"
+                    title={t("sidebar.toggle.open")}
+                  >
+                    <Menu className="h-5 w-5" />
+                  </button>
+                </div>
+              )}
+
+              <PanelGroup
+                orientation="horizontal"
+                className="relative flex h-full w-full flex-1 overflow-hidden"
+                id="docs-content-group"
+                onLayoutChanged={onRightLayoutChanged}
+              >
+                <GoogleDocsEditorColumn
+                  additionalPanelIds={additionalPanelIds}
+                  additionalPanels={additionalPanels}
+                  editor={editor}
+                  onOpenExport={onOpenExport}
+                  onOpenWorldGraph={onOpenWorldGraph}
+                  pageMargins={pageMargins}
+                  setPageMargins={setPageMargins}
+                >
+                  {children}
+                </GoogleDocsEditorColumn>
+
+                <GoogleDocsRightPanel
+                  activeChapterContent={activeChapterContent}
+                  activeChapterId={activeChapterId}
+                  activeChapterTitle={activeChapterTitle}
+                  activePanelSurface={activePanelSurface}
+                  activeRightTab={activeRightTab}
+                  closeRightPanel={closeRightPanel}
+                  currentProjectId={currentProjectId}
+                  onFocus={() => setFocusedClosableTarget({ kind: "docs-tab" })}
+                  onRefreshTrash={() => setTrashRefreshKey((current) => current + 1)}
+                  onSaveChapter={onSaveChapter}
+                  rightPanelSize={rightPanelSize}
+                  rightPanelRatio={rightPanelRatio ?? 0}
+                  trashRefreshKey={trashRefreshKey}
+                />
+
+                {!activeRightTab && (
+                  <Panel
+                    id="docs-right-placeholder"
+                    defaultSize={0}
+                    minSize={0}
+                    maxSize={0}
+                    className="pointer-events-none overflow-hidden opacity-0"
+                  />
+                )}
+              </PanelGroup>
+
+              <GoogleDocsPanelRail
+                activeRightTab={activeRightTab}
+                onSelectTab={handleRightTabClick}
+              />
+            </div>
+          </Panel>
 
           {!shouldRenderSidebar && (
             <Panel
@@ -217,13 +229,7 @@ export default function GoogleDocsLayout({
               className="pointer-events-none overflow-hidden opacity-0"
             />
           )}
-        </PanelGroup>
-
-        <GoogleDocsPanelRail
-          activeRightTab={activeRightTab}
-          onSelectTab={handleRightTabClick}
-        />
-      </div>
+      </PanelGroup>
     </div>
   );
 }

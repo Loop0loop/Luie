@@ -51,18 +51,28 @@ export function WorkspacePanels({
     <>
       {panels.map((panel) => (
         <Fragment key={panel.id}>
-          <PanelResizeHandle className="w-1 bg-border/40 hover:bg-accent/50 active:bg-accent/80 transition-colors cursor-col-resize z-50 relative" />
+          <PanelResizeHandle className="relative z-50 w-0 cursor-col-resize">
+            <div className="absolute inset-y-0 -left-1 -right-1" />
+          </PanelResizeHandle>
           <Panel
             id={panel.id}
             groupResizeBehavior="preserve-pixel-size"
             defaultSize={toPercentSize(panel.size)}
-            minSize={SPLIT_PANEL_MIN_SIZE_PERCENT}
+            minSize={panel.content.type === "research" ? "420px" : SPLIT_PANEL_MIN_SIZE_PERCENT}
             onMouseDownCapture={() => {
               setFocusedClosableTarget({ kind: "panel", id: panel.id });
             }}
-            className="min-w-0 bg-panel relative flex flex-col"
+            className={`min-w-0 relative flex flex-col ${
+              panel.content.type === "research" ? "bg-research" : "bg-panel"
+            }`}
           >
-            <div className="flex h-12 shrink-0 items-center border-b border-border bg-sidebar px-4 pr-12">
+            <div
+              className={`flex h-12 shrink-0 items-center px-4 pr-12 ${
+                panel.content.type === "research"
+                  ? "bg-research"
+                  : "border-b border-border bg-sidebar"
+              }`}
+            >
               {panel.content.type === "research" ? (
                 <>
                   <BookOpen className="icon-sm shrink-0 text-muted" aria-hidden="true" />

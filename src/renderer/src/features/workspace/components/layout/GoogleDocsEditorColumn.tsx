@@ -56,7 +56,7 @@ export function GoogleDocsEditorColumn({
     <Panel
       id="center-content"
       minSize={toPercentSize(10)}
-      className="relative z-0 m-2 flex min-w-0 flex-1 flex-col overflow-hidden rounded-panel border border-border bg-secondary/30 transition-colors duration-200"
+      className="relative z-0 flex min-w-0 flex-1 flex-col overflow-hidden bg-app transition-colors duration-200"
     >
       {(editor || isCanvasMode) && (
         <div className="relative z-40 flex w-full shrink-0">
@@ -92,17 +92,17 @@ export function GoogleDocsEditorColumn({
               </div>
             ) : (
               <main
-                className="custom-scrollbar relative flex flex-1 flex-col items-center overflow-y-scroll bg-sidebar"
+                className="custom-scrollbar relative flex flex-1 flex-col items-center overflow-y-scroll bg-app"
                 data-editor-scroll-container="true"
               >
-                <div className="sticky top-0 z-30 flex w-full shrink-0 justify-center bg-sidebar/95 pb-2 pt-4 select-none backdrop-blur-sm">
-                  <div className="border border-border bg-app shadow-sm">
+                <div className="sticky top-0 z-30 flex w-full shrink-0 justify-center bg-app/95 pb-2 pt-4 select-none backdrop-blur-sm">
+                  <div>
                     <EditorRuler onMarginsChange={setPageMargins} />
                   </div>
                 </div>
 
                 <div
-                  className="relative mb-8 box-border flex min-h-0 flex-col border border-border bg-app shadow-sm transition-shadow duration-150 ease-in-out"
+                  className="relative mb-8 box-border flex min-h-0 flex-col border border-border bg-transparent"
                   style={{
                     width: `${EDITOR_A4_PAGE_WIDTH_PX}px`,
                     minHeight: `${EDITOR_A4_PAGE_HEIGHT_PX}px`,

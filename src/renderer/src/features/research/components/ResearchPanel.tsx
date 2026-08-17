@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Globe, User, Sparkles, FileText, BookOpen, Calendar, Shield } from "lucide-react";
+import { Globe, User, Sparkles, FileText, BookOpen, Calendar, Menu, Shield } from "lucide-react";
+import { DropdownMenu } from "radix-ui";
 import CharacterManager from "@renderer/features/research/components/CharacterManager";
 import EventManager from "@renderer/features/research/components/event/EventManager";
 import FactionManager from "@renderer/features/research/components/faction/FactionManager";
@@ -105,38 +106,71 @@ export default function ResearchPanel({
     }));
   };
   const galleryTabs = canSwitchPrimaryTabs ? (
-    <nav
-      className="flex h-full min-w-0 items-center gap-1"
-      aria-label={t("sidebar.section.research", "자료")}
-      role="tablist"
-    >
-      {primaryTabs.map((tab) => {
-        const isActive = visibleTab === tab.id;
-        return (
+    <>
+      <nav
+        className="flex min-w-0 items-center gap-1 overflow-x-auto no-scrollbar @max-[680px]:hidden"
+        aria-label={t("sidebar.section.research", "자료")}
+        role="tablist"
+      >
+        {primaryTabs.map((tab) => {
+          const isActive = visibleTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => selectTab(tab.id)}
+              role="tab"
+              aria-selected={isActive}
+              className={cn(
+                "relative flex h-7 shrink-0 items-center whitespace-nowrap rounded-control px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                isActive
+                  ? "bg-element text-fg shadow-xs font-semibold"
+                  : "text-muted hover:bg-surface-hover hover:text-fg",
+              )}
+              title={tab.label}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </nav>
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger asChild>
           <button
-            key={tab.id}
             type="button"
-            onClick={() => selectTab(tab.id)}
-            role="tab"
-            aria-selected={isActive}
-            className={cn(
-              "relative flex h-7 items-center rounded-control px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-              isActive
-                ? "bg-element text-fg shadow-xs font-semibold"
-                : "text-muted hover:bg-surface-hover hover:text-fg",
-            )}
-            title={tab.label}
+            className="hidden size-7 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg @max-[680px]:flex"
+            aria-label={t("sidebar.section.research", "자료")}
           >
-            {tab.label}
+            <Menu className="icon-sm" aria-hidden="true" />
           </button>
-        );
-      })}
-    </nav>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Portal>
+          <DropdownMenu.Content
+            align="start"
+            className="z-dropdown min-w-32 rounded-panel border border-border bg-panel p-1 shadow-panel"
+            sideOffset={4}
+          >
+            {primaryTabs.map((tab) => (
+              <DropdownMenu.Item
+                key={tab.id}
+                className={cn(
+                  "cursor-pointer rounded-control px-2.5 py-2 text-xs outline-none hover:bg-surface-hover focus:bg-surface-hover",
+                  visibleTab === tab.id ? "text-accent" : "text-fg",
+                )}
+                onSelect={() => selectTab(tab.id)}
+              >
+                {tab.label}
+              </DropdownMenu.Item>
+            ))}
+          </DropdownMenu.Content>
+        </DropdownMenu.Portal>
+      </DropdownMenu.Root>
+    </>
   ) : undefined;
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-sidebar">
-      <div className="relative flex flex-1 flex-col overflow-hidden bg-app">
+    <div className="research-surface flex h-full w-full flex-col overflow-hidden">
+      <div className="relative flex flex-1 flex-col overflow-hidden">
         {visibleTab === "character" && (
           <FeatureErrorBoundary featureName="Characters">
             <CharacterManager

@@ -69,11 +69,14 @@ export default function EditorToolbar({
       : null;
   const hideNonToggleControls = canvasToggleOnly;
   const anchorRef = useRef<HTMLDivElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const [toolbarHeight, setToolbarHeight] = useState(44);
   const [toolbarBounds, setToolbarBounds] = useState<{
     left: number;
     top: number;
     width: number;
   } | null>(null);
+  const isCompactToolbar = (toolbarBounds?.width ?? Infinity) < 1080;
 
   useLayoutEffect(() => {
     const anchor = anchorRef.current;
@@ -99,6 +102,26 @@ export default function EditorToolbar({
       window.removeEventListener("scroll", syncBounds, true);
     };
   }, []);
+
+  useLayoutEffect(() => {
+    const toolbar = toolbarRef.current;
+    if (!toolbar) return;
+
+    const syncHeight = () => {
+      const nextHeight = Math.ceil(toolbar.getBoundingClientRect().height);
+      setToolbarHeight((currentHeight) =>
+        currentHeight === nextHeight ? currentHeight : nextHeight,
+      );
+    };
+
+    syncHeight();
+    const observer =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(syncHeight);
+    observer?.observe(toolbar);
+    return () => observer?.disconnect();
+  }, [toolbarBounds?.width]);
 
   if (!toolbarEditor) return null;
 
@@ -170,18 +193,82 @@ export default function EditorToolbar({
     </div>
   );
 
+  const overflowControls = (
+    <>
+      <ColorPickerMenu
+        colors={TEXT_COLORS}
+        value={textColor}
+        onChange={(hex) => toolbarEditor.chain().focus().setColor(hex).run()}
+        icon={<Palette className="h-4 w-4" />}
+        label={t("toolbar.tooltip.textColor", "글자 색")}
+      />
+      <ColorPickerMenu
+        colors={HIGHLIGHT_COLORS}
+        value={highlightColor}
+        onChange={(hex) =>
+          toolbarEditor.chain().focus().setHighlight({ color: hex }).run()
+        }
+        icon={<Highlighter className="h-4 w-4" />}
+        label={t("toolbar.tooltip.highlight", "형광펜")}
+        columns={4}
+      />
+      <TypographyMenu
+        letterSpacing={letterSpacing}
+        lineHeight={lineHeight}
+        paragraphSpacing={paragraphSpacing}
+        onLetterSpacingChange={(v) =>
+          void updateSettings({ letterSpacing: Number(v.toFixed(2)) })
+        }
+        onLineHeightChange={(v) =>
+          void updateSettings({ lineHeight: Number(v.toFixed(2)) })
+        }
+        onParagraphSpacingChange={(v) =>
+          void updateSettings({ paragraphSpacing: Number(v.toFixed(1)) })
+        }
+      />
+      <ToolbarButton
+        label={t("toolbar.sceneDivider", "장면 구분")}
+        className="gap-1.5"
+        onClick={() => toolbarEditor.chain().focus().setHorizontalRule().run()}
+      >
+        <Minus className="h-4 w-4" />
+        <span>{t("toolbar.sceneDivider", "장면 구분")}</span>
+      </ToolbarButton>
+      {onToggleMobileView && (
+        <ToolbarButton
+          active={isMobileView}
+          label={t("toolbar.tooltip.toggleMobileView", "화면 보기 전환")}
+          className="gap-1.5"
+          onClick={onToggleMobileView}
+        >
+          {isMobileView ? (
+            <Smartphone className="h-4 w-4" />
+          ) : (
+            <Monitor className="h-4 w-4" />
+          )}
+          <span>
+            {isMobileView
+              ? t("toolbar.view.mobile", "모바일")
+              : t("toolbar.view.desktop", "PC")}
+          </span>
+        </ToolbarButton>
+      )}
+    </>
+  );
+
   const toolbar = (
     <div
-      className={cn("pointer-events-none flex w-max max-w-full min-w-0 select-none items-center justify-center overflow-visible bg-transparent px-2 py-1.5", className)}
+      ref={toolbarRef}
+      className={cn("pointer-events-none flex w-full min-w-0 flex-nowrap select-none items-center justify-center overflow-visible bg-transparent px-2 py-1.5", className)}
       style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
     >
       <div
-        className="pointer-events-auto flex shrink-0 items-center gap-0.5"
+        className="pointer-events-auto flex w-max max-w-full shrink-0 flex-nowrap items-center justify-center gap-0.5"
         style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
       >
         <div
           className={cn(
-            "flex items-center gap-0.5",
+            "flex flex-nowrap items-center justify-center gap-0.5",
             hideNonToggleControls && "invisible pointer-events-none",
           )}
           aria-hidden={hideNonToggleControls}
@@ -200,7 +287,6 @@ export default function EditorToolbar({
           >
             <Redo2 className="h-4 w-4" />
           </ToolbarButton>
-
           <Divider />
 
           <CompactDropdown<ParagraphStyle>
@@ -254,72 +340,11 @@ export default function EditorToolbar({
             <Strikethrough className="h-4 w-4" />
           </ToolbarButton>
 
-          <Divider />
-
-          <ColorPickerMenu
-            colors={TEXT_COLORS}
-            value={textColor}
-            onChange={(hex) => toolbarEditor.chain().focus().setColor(hex).run()}
-            icon={<Palette className="h-4 w-4" />}
-            label={t("toolbar.tooltip.textColor", "글자 색")}
-          />
-          <ColorPickerMenu
-            colors={HIGHLIGHT_COLORS}
-            value={highlightColor}
-            onChange={(hex) =>
-              toolbarEditor.chain().focus().setHighlight({ color: hex }).run()
-            }
-            icon={<Highlighter className="h-4 w-4" />}
-            label={t("toolbar.tooltip.highlight", "형광펜")}
-            columns={4}
-          />
-
-          <Divider />
-
-          <TypographyMenu
-            letterSpacing={letterSpacing}
-            lineHeight={lineHeight}
-            paragraphSpacing={paragraphSpacing}
-            onLetterSpacingChange={(v) =>
-              void updateSettings({ letterSpacing: Number(v.toFixed(2)) })
-            }
-            onLineHeightChange={(v) =>
-              void updateSettings({ lineHeight: Number(v.toFixed(2)) })
-            }
-            onParagraphSpacingChange={(v) =>
-              void updateSettings({ paragraphSpacing: Number(v.toFixed(1)) })
-            }
-          />
-
-          <Divider />
-
-          <ToolbarButton
-            label={t("toolbar.sceneDivider", "장면 구분")}
-            className="gap-1.5"
-            onClick={() => toolbarEditor.chain().focus().setHorizontalRule().run()}
-          >
-            <Minus className="h-4 w-4" />
-            <span>{t("toolbar.sceneDivider", "장면 구분")}</span>
-          </ToolbarButton>
-
-          {onToggleMobileView && (
-            <ToolbarButton
-              active={isMobileView}
-              label={t("toolbar.tooltip.toggleMobileView", "화면 보기 전환")}
-              className="gap-1.5"
-              onClick={onToggleMobileView}
-            >
-              {isMobileView ? (
-                <Smartphone className="h-4 w-4" />
-              ) : (
-                <Monitor className="h-4 w-4" />
-              )}
-              <span>
-                {isMobileView
-                  ? t("toolbar.view.mobile", "모바일")
-                  : t("toolbar.view.desktop", "PC")}
-              </span>
-            </ToolbarButton>
+          {!isCompactToolbar && (
+            <>
+              <Divider />
+              {overflowControls}
+            </>
           )}
         </div>
 
@@ -335,6 +360,11 @@ export default function EditorToolbar({
           <Divider />
           <MoreMenu
             canOpenExport={canOpenExport}
+            compactContent={
+              isCompactToolbar ? (
+                overflowControls
+              ) : undefined
+            }
             editor={toolbarEditor}
             onOpenExport={onOpenExport}
           />
@@ -345,17 +375,21 @@ export default function EditorToolbar({
 
   return (
     <>
-      <div ref={anchorRef} className="h-11 w-full shrink-0" />
+      <div
+        ref={anchorRef}
+        className="w-full shrink-0"
+        style={{ height: toolbarHeight }}
+      />
       {toolbarBounds &&
         createPortal(
           <div
             className="pointer-events-none fixed z-[100]"
             style={{
-              left: toolbarBounds.left + toolbarBounds.width / 2,
+              left: toolbarBounds.left,
               top: toolbarBounds.top,
-              transform: "translateX(-50%)",
+              width: toolbarBounds.width,
               WebkitAppRegion: "no-drag",
-            }}
+            } as CSSProperties}
           >
             {toolbar}
           </div>,
