@@ -78,14 +78,12 @@ html[data-layout-restoring="true"] *::after {
   transition-duration: 0ms !important;
 }
 
-html[data-animations="on"] [data-panel][data-panel-animated="true"] {
-  transition-duration: 200ms;
-  transition-property: flex-basis, flex-grow, width, max-width;
-  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+/* NOTE: resizable-panels는 flex-grow만 갱신한다. 같은 행의 모든 panel을 함께 보간해야 한쪽만 늦게 따라가는 현상이 없다. */
+html[data-animations="on"] #main-layout-group:has(> [data-panel][data-panel-animated="true"]) > [data-panel] {
+  transition: flex-grow 200ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-/* NOTE: 드래그 중에는 패널의 실측 크기를 즉시 반영해 포인터 지연을 막고, 열기·닫기 전환만 유지한다. */
-html[data-animations="on"]:has([data-separator="active"]) [data-panel][data-panel-animated="true"] {
+html[data-animations="on"] #main-layout-group:has(> [data-separator="active"]) > [data-panel] {
   transition-duration: 0ms;
 }
 
