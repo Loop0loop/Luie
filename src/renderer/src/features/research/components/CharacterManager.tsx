@@ -19,6 +19,7 @@ type CharacterManagerProps = {
   sortMode?: EntityGallerySortMode;
   onSortModeChange?: (sortMode: EntityGallerySortMode) => void;
   tabs?: ReactNode;
+  onClose?: () => void;
 };
 
 export default function CharacterManager({
@@ -29,6 +30,7 @@ export default function CharacterManager({
   sortMode,
   onSortModeChange,
   tabs,
+  onClose,
 }: CharacterManagerProps) {
   const { t } = useTranslation();
   const {
@@ -64,6 +66,7 @@ export default function CharacterManager({
           sortMode={sortMode}
           onSortModeChange={onSortModeChange}
           tabs={tabs}
+          onClose={onClose}
         />
       )}
       <Modal

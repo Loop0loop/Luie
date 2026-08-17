@@ -47,7 +47,6 @@ export default function GoogleDocsLayout({
     docsSidebarConfig,
     docsSidebarRatio,
     handleRightTabClick,
-    isPanelRailOpen,
     isSidebarOpen,
     onRightLayoutChanged,
     onSidebarLayoutChanged,
@@ -57,22 +56,19 @@ export default function GoogleDocsLayout({
     setDocsSidebarOpen,
     setFocusedClosableTarget,
     setPageMargins,
-    setPanelRailOpen,
     setTrashRefreshKey,
     trashRefreshKey,
   } = useGoogleDocsLayoutState(currentProjectId ?? null);
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
   const docsLayoutGroupRef = useRef<HTMLDivElement | null>(null);
-  const docsContentGroupRef = useRef<HTMLDivElement | null>(null);
   const docsSidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
   const docsLayoutGroupWidth = useElementWidth(docsLayoutGroupRef);
-  const docsContentGroupWidth = useElementWidth(docsContentGroupRef);
   const docsSidebarSize = getResponsivePanelSize(
     docsLayoutGroupWidth,
     docsSidebarConfig,
   );
   const rightPanelSize = rightPanelConfig
-    ? getResponsivePanelSize(docsContentGroupWidth, rightPanelConfig)
+    ? getResponsivePanelSize(docsLayoutGroupWidth, rightPanelConfig)
     : null;
   const {
     isClosing: isSidebarClosing,
@@ -114,7 +110,7 @@ export default function GoogleDocsLayout({
       />
 
       <div className="relative flex flex-1 flex-row overflow-hidden">
-        {!shouldRenderSidebar && !isPanelRailOpen && !activeRightTab && sidebar && (
+        {!shouldRenderSidebar && !activeRightTab && sidebar && (
           <SidebarHoverStrip onExpand={() => setDocsSidebarOpen(true)}>
             {sidebar}
           </SidebarHoverStrip>
@@ -137,7 +133,10 @@ export default function GoogleDocsLayout({
           className="relative flex h-full w-full flex-1 overflow-hidden"
           id="docs-layout-group"
           elementRef={docsLayoutGroupRef}
-          onLayoutChanged={onSidebarLayoutChanged}
+          onLayoutChanged={(layout) => {
+            onSidebarLayoutChanged(layout);
+            onRightLayoutChanged(layout);
+          }}
         >
           {shouldRenderSidebar && (
             <>
@@ -171,57 +170,43 @@ export default function GoogleDocsLayout({
             </>
           )}
 
-          <Panel
-            id="docs-main-area"
-            minSize={0}
-            className="relative z-0 flex min-w-0 flex-1 overflow-hidden"
+          <GoogleDocsEditorColumn
+            additionalPanelIds={additionalPanelIds}
+            additionalPanels={additionalPanels}
+            editor={editor}
+            onOpenExport={onOpenExport}
+            onOpenWorldGraph={onOpenWorldGraph}
+            pageMargins={pageMargins}
+            setPageMargins={setPageMargins}
           >
-            <PanelGroup
-              orientation="horizontal"
-              className="relative flex h-full w-full flex-1 overflow-hidden"
-              id="docs-content-group"
-              elementRef={docsContentGroupRef}
-              onLayoutChanged={onRightLayoutChanged}
-            >
-              <GoogleDocsEditorColumn
-                additionalPanelIds={additionalPanelIds}
-                additionalPanels={additionalPanels}
-                editor={editor}
-                onOpenExport={onOpenExport}
-                onOpenWorldGraph={onOpenWorldGraph}
-                pageMargins={pageMargins}
-                setPageMargins={setPageMargins}
-              >
-                {children}
-              </GoogleDocsEditorColumn>
+            {children}
+          </GoogleDocsEditorColumn>
 
-              <GoogleDocsRightPanel
-                activeChapterContent={activeChapterContent}
-                activeChapterId={activeChapterId}
-                activeChapterTitle={activeChapterTitle}
-                activePanelSurface={activePanelSurface}
-                activeRightTab={activeRightTab}
-                closeRightPanel={closeRightPanel}
-                currentProjectId={currentProjectId}
-                onFocus={() => setFocusedClosableTarget({ kind: "docs-tab" })}
-                onRefreshTrash={() => setTrashRefreshKey((current) => current + 1)}
-                onSaveChapter={onSaveChapter}
-                rightPanelSize={rightPanelSize}
-                rightPanelRatio={rightPanelRatio ?? 0}
-                trashRefreshKey={trashRefreshKey}
-              />
+          <GoogleDocsRightPanel
+            activeChapterContent={activeChapterContent}
+            activeChapterId={activeChapterId}
+            activeChapterTitle={activeChapterTitle}
+            activePanelSurface={activePanelSurface}
+            activeRightTab={activeRightTab}
+            closeRightPanel={closeRightPanel}
+            currentProjectId={currentProjectId}
+            onFocus={() => setFocusedClosableTarget({ kind: "docs-tab" })}
+            onRefreshTrash={() => setTrashRefreshKey((current) => current + 1)}
+            onSaveChapter={onSaveChapter}
+            rightPanelSize={rightPanelSize}
+            rightPanelRatio={rightPanelRatio ?? 0}
+            trashRefreshKey={trashRefreshKey}
+          />
 
-              {!activeRightTab && (
-                <Panel
-                  id="docs-right-placeholder"
-                  defaultSize={0}
-                  minSize={0}
-                  maxSize={0}
-                  className="pointer-events-none overflow-hidden opacity-0"
-                />
-              )}
-            </PanelGroup>
-          </Panel>
+          {!activeRightTab && (
+            <Panel
+              id="docs-right-placeholder"
+              defaultSize={0}
+              minSize={0}
+              maxSize={0}
+              className="pointer-events-none overflow-hidden opacity-0"
+            />
+          )}
 
           {!shouldRenderSidebar && (
             <Panel
@@ -236,9 +221,7 @@ export default function GoogleDocsLayout({
 
         <GoogleDocsPanelRail
           activeRightTab={activeRightTab}
-          isOpen={isPanelRailOpen}
           onSelectTab={handleRightTabClick}
-          onToggleOpen={setPanelRailOpen}
         />
       </div>
     </div>

@@ -17,6 +17,7 @@ type FactionManagerProps = {
   sortMode?: EntityGallerySortMode;
   onSortModeChange?: (sortMode: EntityGallerySortMode) => void;
   tabs?: ReactNode;
+  onClose?: () => void;
 };
 
 export default function FactionManager({
@@ -27,6 +28,7 @@ export default function FactionManager({
   sortMode,
   onSortModeChange,
   tabs,
+  onClose,
 }: FactionManagerProps) {
   const { t } = useTranslation();
   const {
@@ -60,6 +62,7 @@ export default function FactionManager({
           sortMode={sortMode}
           onSortModeChange={onSortModeChange}
           tabs={tabs}
+          onClose={onClose}
         />
       )}
     </>

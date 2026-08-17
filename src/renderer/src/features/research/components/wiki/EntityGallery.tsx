@@ -11,6 +11,7 @@ import {
   Trash2,
   ChevronDown,
   ChevronRight,
+  X,
 } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import type { LucideIcon } from "lucide-react";
@@ -39,6 +40,7 @@ type EntityGalleryProps<T extends GalleryEntity> = {
   sortMode?: EntityGallerySortMode;
   onSortModeChange?: (sortMode: EntityGallerySortMode) => void;
   tabs?: ReactNode;
+  onClose?: () => void;
 };
 
 export type EntityGalleryViewMode = "grid" | "list";
@@ -122,6 +124,7 @@ export function EntityGallery<T extends GalleryEntity>({
   sortMode: controlledSortMode,
   onSortModeChange,
   tabs,
+  onClose,
 }: EntityGalleryProps<T>) {
   const [uncontrolledQuery, setUncontrolledQuery] = useState("");
   const [uncontrolledViewMode, setUncontrolledViewMode] =
@@ -310,6 +313,17 @@ export function EntityGallery<T extends GalleryEntity>({
               >
                 <Plus className="icon-xs" aria-hidden="true" />
                 <span>추가</span>
+              </button>
+            ) : null}
+            {onClose ? (
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex size-7 items-center justify-center rounded-control text-subtle transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                aria-label="닫기"
+                title="닫기"
+              >
+                <X className="icon-xs" />
               </button>
             ) : null}
           </div>

@@ -115,20 +115,20 @@ export default function SettingsModal({ onClose, initialTab }: SettingsModalProp
 
   return (
     <div
-      className="fixed inset-0 z-modal flex items-center justify-center bg-black/60 animate-in fade-in duration-100"
+      className="fixed inset-0 z-modal flex items-center justify-center bg-black/60 p-6 animate-in fade-in duration-100"
       onClick={onClose}
     >
       <div
-        className="w-[1000px] h-[80vh] max-h-[850px] bg-panel border border-border shadow-full rounded-panel flex overflow-hidden animate-in zoom-in-95 duration-150"
+        className="flex h-full w-full max-h-[850px] max-w-[1000px] overflow-hidden rounded-3xl bg-sidebar shadow-full animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="w-64 bg-sidebar border-r border-border flex flex-col pt-3">
+        <div className="flex w-64 flex-col bg-sidebar pt-3">
           <div className="p-6 pb-4">
             <h2 className="text-lg font-bold text-fg px-2">
               {t("settings.title")}
             </h2>
           </div>
-          <nav className="flex-1 px-4 space-y-1">
+          <nav className="flex-1 space-y-1 px-6">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -148,7 +148,7 @@ export default function SettingsModal({ onClose, initialTab }: SettingsModalProp
           </nav>
         </div>
 
-        <div className="flex-1 bg-panel flex flex-col relative min-w-0">
+        <div className="relative z-10 flex min-w-0 flex-1 flex-col rounded-3xl border border-l-0 border-border bg-panel">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 text-subtle hover:text-fg hover:bg-active rounded-panel transition-colors z-10"
@@ -156,7 +156,7 @@ export default function SettingsModal({ onClose, initialTab }: SettingsModalProp
             <X className="w-5 h-5" />
           </button>
 
-          <div className="flex-1 overflow-y-auto p-10 scrollbar-hide [contain:content]">
+          <div className="flex-1 overflow-y-auto p-6 scrollbar-hide [contain:content]">
             <Suspense fallback={settingsTabFallback}>
               {activeTab === "appearance" && (
                 <AppearanceTab

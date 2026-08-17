@@ -2,7 +2,7 @@ import { BookOpen, ChevronLeft, Pin, PinOff, X } from "lucide-react";
 import React, { Suspense } from "react";
 import type { BinderTab } from "./binderSidebar.shared";
 import type { Snapshot } from "@shared/types";
-import { WebNovelAICoPilot } from "./aiSidePanel/WebNovelAICoPilot";
+import { AIPanel } from "@renderer/features/ai";
 
 const ResearchPanel = React.lazy(
   () => import("@renderer/features/research/components/ResearchPanel"),
@@ -120,7 +120,7 @@ export function BinderSidebarPanelBody(props: {
             <ResearchPanel activeTab="scrap" onClose={props.onClose} />
           )}
           {props.activeTab === "analysis" && (
-            <WebNovelAICoPilot onClose={props.onClose} />
+            <AIPanel onClose={props.onClose} />
           )}
           {props.activeTab === "snapshot" &&
             (props.activeChapterId ? (

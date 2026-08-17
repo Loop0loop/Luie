@@ -94,17 +94,18 @@
 
 :root {
   --bg-app: #ffffff;
-  --bg-sidebar: #f4f4f5;
+  --bg-sidebar: #f5f5f7;
   --bg-panel: #ffffff;
+  --ai-panel-bg: #f8f8fa;
   --bg-surface: #ffffff;
   --bg-surface-hover: rgba(0, 0, 0, 0.04);
   --bg-element: #ffffff;
   --bg-element-hover: rgba(0, 0, 0, 0.04);
   --bg-active: rgba(0, 0, 0, 0.08);
 
-  --text-primary: #18181b;
-  --text-secondary: #71717a;
-  --text-tertiary: #a1a1aa;
+  --text-primary: #1c1c1e;
+  --text-secondary: #62626a;
+  --text-tertiary: #8c8c94;
   --text-accent: #2563eb;
   --text-on-accent: #ffffff;
 
@@ -122,9 +123,9 @@
   --grid-line: #e5e7eb;
   --danger-fg: #dc2626;
 
-  --border-default: #e4e4e7;
-  --border-active: #d4d4d8;
-  --border-focus: #18181b;
+  --border-default: #e5e5ea;
+  --border-active: #d1d1d6;
+  --border-focus: #636366;
 
   --editor-bg: #ffffff;
   --editor-text: #18181b;
@@ -217,6 +218,8 @@
   --bg-app: #1a1a1c;
   --bg-sidebar: #212123;
   --bg-panel: #28282b;
+  /* NOTE: 기본 다크 톤의 AI View 표면은 현재 확정된 #323232을 유지한다. */
+  --ai-panel-bg: #323232;
   --bg-surface: #28282b;
   --bg-panel-header: #28282b;
   --bg-element: #313135;
@@ -255,87 +258,118 @@
 
 /* NOTE: color temperature는 layout 구조를 바꾸지 않고 background와 text tint만 덮어쓴다. */
 [data-theme="dark"][data-temp="cool"] {
-  --bg-app: #181a23;
-  --bg-sidebar: #1f2230;
-  --bg-panel: #262a38;
-  --bg-surface: #262a38;
-  --bg-panel-header: #262a38;
-  --bg-element: #2f3345;
-  --editor-bg: #181a23;
-  --editor-text: #c7ccdb;
-  --text-primary: #ccd2e2;
+  --bg-app: #191b24;
+  --bg-sidebar: #222636;
+  --bg-panel: #2a3041;
+  --ai-panel-bg: #2d3346;
+  --bg-surface: #2a3041;
+  --bg-panel-header: #2a3041;
+  --bg-element: #363e54;
+  --editor-bg: #191b24;
+  --editor-text: #d2d8e8;
+  --text-primary: #d2d8e8;
+  --text-secondary: #abb5cc;
+  --text-tertiary: #78829a;
 }
 [data-theme="dark"][data-temp="warm"] {
-  --bg-app: #1f1c17;
-  --bg-sidebar: #29251e;
+  --bg-app: #201d18;
+  --bg-sidebar: #2a261f;
   --bg-panel: #322d24;
+  --ai-panel-bg: #383125;
   --bg-surface: #322d24;
   --bg-panel-header: #322d24;
-  --bg-element: #3d372c;
-  --editor-bg: #1f1c17;
-  --editor-text: #ded5c2;
-  --text-primary: #e6ddca;
+  --bg-element: #443b2d;
+  --editor-bg: #201d18;
+  --editor-text: #e7ddcb;
+  --text-primary: #e7ddcb;
+  --text-secondary: #c3b59f;
+  --text-tertiary: #92836d;
 }
 
 [data-theme="light"][data-temp="cool"] {
-  --bg-app: #fbfcfd;
-  --bg-sidebar: #eef1f4;
-  --bg-panel: #fbfcfd;
-  --bg-surface: #fbfcfd;
-  --bg-element: #fbfcfd;
-  --editor-bg: #fbfcfd;
-  --editor-text: #1b1e24;
-  --text-primary: #1b1e24;
+  --bg-app: #fbfcff;
+  --bg-sidebar: #eff2f7;
+  --bg-panel: #f8fafd;
+  --ai-panel-bg: #f5f7fc;
+  --bg-surface: #f8fafd;
+  --bg-element: #ffffff;
+  --editor-bg: #fbfcff;
+  --editor-text: #1d2330;
+  --text-primary: #1d2330;
+  --text-secondary: #566070;
+  --text-tertiary: #7e8795;
+  --border-default: #dde3ec;
+  --border-active: #c7d0de;
+  --border-focus: #566070;
 }
 [data-theme="light"][data-temp="warm"] {
-  --bg-app: #fdf9f0;
-  --bg-sidebar: #f4ece0;
-  --bg-panel: #fdf9f0;
-  --bg-surface: #fdf9f0;
-  --bg-element: #fdf9f0;
-  --editor-bg: #fdf9f0;
-  --editor-text: #211d18;
-  --text-primary: #211d18;
+  --bg-app: #fefbf5;
+  --bg-sidebar: #f6eee2;
+  --bg-panel: #fdf8ef;
+  --ai-panel-bg: #fbf4e9;
+  --bg-surface: #fdf8ef;
+  --bg-element: #fffdf8;
+  --editor-bg: #fefbf5;
+  --editor-text: #262016;
+  --text-primary: #262016;
+  --text-secondary: #6b5e4d;
+  --text-tertiary: #968574;
+  --border-default: #e8dccb;
+  --border-active: #d8c7b1;
+  --border-focus: #6b5e4d;
 }
 [data-theme="sepia"][data-temp="cool"] {
-  --bg-app: #f3eee1;
-  --bg-sidebar: #e8e1d2;
-  --bg-panel: #f3eee1;
-  --bg-surface: #faf7f0;
-  --bg-element: #faf7f0;
-  --editor-bg: #f3eee1;
-  --editor-text: #4a4034;
-  --text-primary: #4a4034;
+  --bg-app: #f4efe5;
+  --bg-sidebar: #ebe2d2;
+  --bg-panel: #f7f2e9;
+  --ai-panel-bg: #f0e9dd;
+  --bg-surface: #f7f2e9;
+  --bg-element: #fbf7ef;
+  --editor-bg: #f4efe5;
+  --editor-text: #4a4237;
+  --text-primary: #4a4237;
+  --text-secondary: #71685b;
+  --text-tertiary: #9c9283;
+  --border-default: #ddd3c4;
+  --border-active: #cfc2af;
+  --border-focus: #71685b;
 }
 [data-theme="sepia"][data-temp="warm"] {
-  --bg-app: #f9e9c4;
-  --bg-sidebar: #f0dcae;
-  --bg-panel: #f9e9c4;
-  --bg-surface: #fdf6e6;
-  --bg-element: #fdf6e6;
-  --editor-bg: #f9e9c4;
-  --editor-text: #4a3a22;
-  --text-primary: #5a4528;
+  --bg-app: #faebcb;
+  --bg-sidebar: #f2ddb0;
+  --bg-panel: #f8e6c3;
+  --ai-panel-bg: #f7e3bc;
+  --bg-surface: #f8e6c3;
+  --bg-element: #fff4dc;
+  --editor-bg: #faebcb;
+  --editor-text: #4a3820;
+  --text-primary: #4a3820;
+  --text-secondary: #705b3c;
+  --text-tertiary: #9b8057;
+  --border-default: #dfc797;
+  --border-active: #cdae77;
+  --border-focus: #705b3c;
 }
 
 [data-theme="sepia"] {
-  --bg-app: #fbf0d9;
-  --bg-sidebar: #f5e6cc;
-  --bg-panel: #fbf0d9;
-  --bg-surface: #fffefb;
+  --bg-app: #fbf2e2;
+  --bg-sidebar: #f3e5cc;
+  --bg-panel: #fcf5e7;
+  --ai-panel-bg: #f8ebd6;
+  --bg-surface: #fcf5e7;
   --bg-surface-hover: rgba(95, 75, 50, 0.05);
-  --bg-element: #fffefb;
+  --bg-element: #fff9ed;
   --bg-element-hover: rgba(95, 75, 50, 0.05);
   --bg-active: rgba(95, 75, 50, 0.1);
 
-  --text-primary: #5f4b32;
-  --text-secondary: #8c7b66;
-  --text-tertiary: #b8aa9c;
+  --text-primary: #4f3e2a;
+  --text-secondary: #77644f;
+  --text-tertiary: #a48e75;
   --text-accent: #8a602e;
 
-  --border-default: #e6dac6;
-  --border-active: #dcc8ae;
-  --border-focus: #5f4b32;
+  --border-default: #e4d2b4;
+  --border-active: #d3bd9a;
+  --border-focus: #77644f;
 
   --accent-bg: #8a602e;
   --accent-bg-hover: #735026;
@@ -343,17 +377,17 @@
   --success-fg: #2e7d32;
   --danger-fg: #b91c1c;
 
-  --bg-primary: #fbf0d9;
-  --bg-secondary: #efe4cb;
-  --bg-hover: #efe4cb;
-  --bg-canvas: #fbf0d9;
+  --bg-primary: #fbf2e2;
+  --bg-secondary: #f0e1c8;
+  --bg-hover: #f0e1c8;
+  --bg-canvas: #fbf2e2;
   --accent-primary: var(--accent-bg);
-  --grid-line: #e6dcc6;
+  --grid-line: #e5d6bd;
   --danger-fg: #b91c1c;
 
-  --editor-bg: #fbf0d9;
-  --editor-text: #433422;
-  --editor-selection: #e6dcc6;
+  --editor-bg: #fbf2e2;
+  --editor-text: #4f3e2a;
+  --editor-selection: #e5d6bd;
 }
 
 [data-contrast="high"] {

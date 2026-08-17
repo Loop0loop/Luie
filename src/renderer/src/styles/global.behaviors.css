@@ -84,6 +84,11 @@ html[data-animations="on"] [data-panel][data-panel-animated="true"] {
   transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
 }
 
+/* NOTE: 드래그 중에는 패널의 실측 크기를 즉시 반영해 포인터 지연을 막고, 열기·닫기 전환만 유지한다. */
+html[data-animations="on"]:has([data-separator="active"]) [data-panel][data-panel-animated="true"] {
+  transition-duration: 0ms;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

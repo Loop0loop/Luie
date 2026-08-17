@@ -151,6 +151,7 @@ export default function ResearchPanel({
                 updateGalleryState("character", { sortMode })
               }
               tabs={galleryTabs}
+              onClose={onClose}
             />
           </FeatureErrorBoundary>
         )}
@@ -168,6 +169,7 @@ export default function ResearchPanel({
                 updateGalleryState("event", { sortMode })
               }
               tabs={galleryTabs}
+              onClose={onClose}
             />
           </FeatureErrorBoundary>
         )}
@@ -185,6 +187,7 @@ export default function ResearchPanel({
                 updateGalleryState("faction", { sortMode })
               }
               tabs={galleryTabs}
+              onClose={onClose}
             />
           </FeatureErrorBoundary>
         )}

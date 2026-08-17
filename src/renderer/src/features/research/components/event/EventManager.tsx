@@ -17,6 +17,7 @@ type EventManagerProps = {
   sortMode?: EntityGallerySortMode;
   onSortModeChange?: (sortMode: EntityGallerySortMode) => void;
   tabs?: ReactNode;
+  onClose?: () => void;
 };
 
 export default function EventManager({
@@ -27,6 +28,7 @@ export default function EventManager({
   sortMode,
   onSortModeChange,
   tabs,
+  onClose,
 }: EventManagerProps) {
   const { t } = useTranslation();
   const {
@@ -60,6 +62,7 @@ export default function EventManager({
           sortMode={sortMode}
           onSortModeChange={onSortModeChange}
           tabs={tabs}
+          onClose={onClose}
         />
       )}
     </>

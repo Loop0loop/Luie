@@ -57,6 +57,7 @@ export function BinderBarCompactHover({
   const { t } = useTranslation();
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
   const [isPinned, setIsPinned] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
   const [selectedSnapshot, setSelectedSnapshot] = useState<Snapshot | null>(null);
   const rightRailOpen = useUIStore((state) => state.regions.rightRail.open);
   const rightPanelActiveTab = useUIStore(
@@ -140,6 +141,7 @@ export function BinderBarCompactHover({
         startX: event.clientX,
         startRatio: activeTabRatio,
       };
+      setIsResizing(true);
       event.currentTarget.setPointerCapture(event.pointerId);
       event.preventDefault();
     },
@@ -168,6 +170,7 @@ export function BinderBarCompactHover({
 
   const endResize = useCallback(() => {
     dragStateRef.current = null;
+    setIsResizing(false);
   }, []);
 
   // NOTE: closeFocusedSurface는 snapshot viewer를 먼저 닫고 그다음 binder tab을 닫는다.
@@ -216,7 +219,10 @@ export function BinderBarCompactHover({
         )}
 
         <div
-          className="h-full border-l border-border/40 bg-panel overflow-hidden transition-[width] duration-150 ease-out"
+          className={cn(
+            "h-full border-l border-border/40 bg-panel overflow-hidden",
+            !isResizing && "transition-[width] duration-150 ease-out",
+          )}
           style={{
             width: activeCompactTab !== null ? activeContentWidth : COMPACT_BINDER_RAIL_WIDTH_PX,
           }}
@@ -259,6 +265,7 @@ export function BinderBarCompactHover({
                   onPointerMove={handleResizePointerMove}
                   onPointerUp={endResize}
                   onPointerCancel={endResize}
+                  onLostPointerCapture={endResize}
                 />
                 <div className="shrink-0 h-10 px-3 border-b border-border/50 flex items-center justify-between text-xs font-medium text-fg/80">
                   <span className="truncate">

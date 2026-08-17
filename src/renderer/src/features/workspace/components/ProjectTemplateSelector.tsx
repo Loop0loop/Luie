@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useState, type RefObject } from "react";
-import WindowBar from "@renderer/features/workspace/components/WindowBar";
+import { useCallback, useEffect, useState, type CSSProperties, type RefObject } from "react";
 import type { Project, SnapshotRestoreCandidate } from "@shared/types";
 import { api } from "@shared/api";
 import { useTranslation } from "react-i18next";
@@ -103,6 +102,7 @@ export default function ProjectTemplateSelector({
   onRestoreBackup,
 }: ProjectTemplateSelectorProps) {
   const { t } = useTranslation();
+  const isMacOS = navigator.platform.toLowerCase().includes("mac");
   const { showToast } = useToast();
   const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false);
   const [restoreCandidates, setRestoreCandidates] = useState<
@@ -185,11 +185,9 @@ export default function ProjectTemplateSelector({
 
   return (
     <div
-      className="flex flex-col w-screen h-screen bg-app text-fg font-sans overflow-hidden"
+      className="flex flex-col w-screen h-screen bg-sidebar text-fg font-sans overflow-hidden"
       data-testid="template-selector"
     >
-      <WindowBar />
-
       {menuOpenId && (
         <div
           className="fixed inset-0 z-50 bg-transparent"
@@ -225,86 +223,94 @@ export default function ProjectTemplateSelector({
         onRestore={handleRestoreCandidate}
       />
 
-      <div className="flex-1 flex h-[calc(100vh-32px)]">
+      <div className="flex h-full min-h-0">
         <ProjectCategorySidebar
           activeCategory={activeCategory}
           onSelectCategory={setActiveCategory}
         />
 
-        <div className="flex-1 p-12 overflow-y-auto bg-app min-w-0">
-          <RecentProjectsSection
-            localProjects={localProjects}
-            syncStatus={selectorState.syncStatus}
-            getProjectSyncBadge={selectorState.getProjectSyncBadge}
-            onOpenProject={onOpenProject}
-            onOpenLuieFile={onOpenLuieFile}
-            onOpenRestoreDialog={() => {
-              setIsRestoreDialogOpen(true);
-            }}
-            toggleMenuByElement={toggleMenuByElement}
-            onConnectGoogle={async () => {
-              try {
-                const response = await api.sync.connectGoogle();
-                if (response.success && response.data) {
-                  selectorState.setSyncStatus(response.data);
-                  showToast(
-                    t(
-                      "settings.sync.toast.connected",
-                      "Google 계정 연결이 완료되었습니다.",
-                    ),
-                    "success",
-                  );
-                } else {
-                  api.logger.error("Failed to connect google", response.error);
+        <div className="flex flex-1 min-w-0 flex-col overflow-hidden bg-app border border-border rounded-[24px]">
+          {isMacOS && (
+            <div
+              className="h-10 shrink-0"
+              style={{ WebkitAppRegion: "drag" } as CSSProperties}
+            />
+          )}
+          <div className="min-h-0 flex-1 overflow-y-auto p-12">
+            <RecentProjectsSection
+              localProjects={localProjects}
+              syncStatus={selectorState.syncStatus}
+              getProjectSyncBadge={selectorState.getProjectSyncBadge}
+              onOpenProject={onOpenProject}
+              onOpenLuieFile={onOpenLuieFile}
+              onOpenRestoreDialog={() => {
+                setIsRestoreDialogOpen(true);
+              }}
+              toggleMenuByElement={toggleMenuByElement}
+              onConnectGoogle={async () => {
+                try {
+                  const response = await api.sync.connectGoogle();
+                  if (response.success && response.data) {
+                    selectorState.setSyncStatus(response.data);
+                    showToast(
+                      t(
+                        "settings.sync.toast.connected",
+                        "Google 계정 연결이 완료되었습니다.",
+                      ),
+                      "success",
+                    );
+                  } else {
+                    api.logger.error("Failed to connect google", response.error);
+                    showToast(
+                      t("settings.sync.toast.connectFailed", "연결 실패: ") +
+                        " " +
+                        String(response.error),
+                      "error",
+                    );
+                  }
+                } catch (error: unknown) {
+                  const msg =
+                    error instanceof Error ? error.message : String(error);
+                  api.logger.error("Error during connect google", error);
                   showToast(
                     t("settings.sync.toast.connectFailed", "연결 실패: ") +
                       " " +
-                      String(response.error),
+                      msg,
                     "error",
                   );
                 }
-              } catch (error: unknown) {
-                const msg =
-                  error instanceof Error ? error.message : String(error);
-                api.logger.error("Error during connect google", error);
-                showToast(
-                  t("settings.sync.toast.connectFailed", "연결 실패: ") +
-                    " " +
-                    msg,
-                  "error",
-                );
-              }
-            }}
-            onDisconnectGoogle={async () => {
-              try {
-                const response = await api.sync.disconnect();
-                if (response.success && response.data) {
-                  selectorState.setSyncStatus(response.data);
+              }}
+              onDisconnectGoogle={async () => {
+                try {
+                  const response = await api.sync.disconnect();
+                  if (response.success && response.data) {
+                    selectorState.setSyncStatus(response.data);
+                  }
+                } catch (error) {
+                  api.logger.error("Failed to disconnect google", error);
                 }
-              } catch (error) {
-                api.logger.error("Failed to disconnect google", error);
+              }}
+            />
+            <TemplateGrid
+              activeCategory={activeCategory}
+              onSelectTemplate={(tid) =>
+                selectorState.handleSelectTemplate(tid, onSelectProject)
               }
-            }}
-          />
-          <TemplateGrid
-            activeCategory={activeCategory}
-            onSelectTemplate={(tid) =>
-              selectorState.handleSelectTemplate(tid, onSelectProject)
-            }
-          />
+            />
 
-          {activeCategory !== "all" && (
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-              <button
-                type="button"
-                onClick={() => setActiveCategory("all")}
-                className="flex items-center gap-2 px-4 py-2 rounded-panel bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                {t("back", "Back")}
-              </button>
-            </div>
-          )}
+            {activeCategory !== "all" && (
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
+                <button
+                  type="button"
+                  onClick={() => setActiveCategory("all")}
+                  className="flex items-center gap-2 px-4 py-2 rounded-panel bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  {t("back", "Back")}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

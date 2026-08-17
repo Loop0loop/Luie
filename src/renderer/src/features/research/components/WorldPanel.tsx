@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Globe, FileText, Map, Kanban } from "lucide-react";
+import { Globe, FileText, Map, Kanban, X } from "lucide-react";
 import { cn } from "@shared/types/utils";
 import WorldSection from "@renderer/features/research/components/WorldSection";
 import SynopsisSection from "@renderer/features/research/components/SynopsisSection";
@@ -11,7 +11,7 @@ interface WorldPanelProps {
   onClose?: () => void;
 }
 
-export default function WorldPanel(_props: WorldPanelProps) {
+export default function WorldPanel({ onClose }: WorldPanelProps) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"terms" | "synopsis" | "map" | "plot">("terms");
 
@@ -45,7 +45,17 @@ export default function WorldPanel(_props: WorldPanelProps) {
             </button>
           );
         })}
-
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="ml-auto flex size-8 shrink-0 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            aria-label={t("sidebar.toggle.close")}
+            title={t("sidebar.toggle.close")}
+          >
+            <X className="icon-sm" />
+          </button>
+        )}
       </div>
 
       <div className="flex-1 flex flex-col overflow-hidden bg-app relative">

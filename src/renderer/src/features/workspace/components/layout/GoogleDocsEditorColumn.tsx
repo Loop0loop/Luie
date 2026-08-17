@@ -56,7 +56,7 @@ export function GoogleDocsEditorColumn({
     <Panel
       id="center-content"
       minSize={toPercentSize(10)}
-      className="relative z-0 flex min-w-0 flex-1 flex-col bg-secondary/30 transition-colors duration-200"
+      className="relative z-0 m-2 flex min-w-0 flex-1 flex-col overflow-hidden rounded-panel border border-border bg-secondary/30 transition-colors duration-200"
     >
       {(editor || isCanvasMode) && (
         <div className="relative z-40 flex w-full shrink-0">

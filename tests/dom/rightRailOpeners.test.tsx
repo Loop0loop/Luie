@@ -96,15 +96,12 @@ describe("right rail openers", () => {
     document.body.innerHTML = "";
   });
 
-  it("opens the default docs tab when the Google Docs rail is closed without an active tab", async () => {
+  it("opens the selected docs tab directly from the always-visible rail", async () => {
     const onSelectTab = vi.fn();
-    const onToggleOpen = vi.fn();
     const view = await mountView(
       <GoogleDocsPanelRail
         activeRightTab={null}
-        isOpen={false}
         onSelectTab={onSelectTab}
-        onToggleOpen={onToggleOpen}
       />,
     );
     mountedViews.push(view);
@@ -114,7 +111,6 @@ describe("right rail openers", () => {
     });
 
     expect(onSelectTab).toHaveBeenCalledWith("character");
-    expect(onToggleOpen).not.toHaveBeenCalled();
   });
 
   it("opens the default editor tab when the editor rail is closed without an active tab", async () => {

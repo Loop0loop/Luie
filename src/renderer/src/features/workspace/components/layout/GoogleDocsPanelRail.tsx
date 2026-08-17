@@ -1,9 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Calendar,
-  ChevronLeft,
   Globe,
-  PanelRightOpen,
   Plus,
   Shield,
   Sparkles,
@@ -75,35 +73,15 @@ const RAIL_TABS: RailTabConfig[] = [
 
 type GoogleDocsPanelRailProps = {
   activeRightTab: DocsLayoutPanelTab | null;
-  isOpen: boolean;
   onSelectTab: (tab: DocsLayoutPanelTab) => void;
-  onToggleOpen: (open: boolean) => void;
 };
 
 export function GoogleDocsPanelRail({
   activeRightTab,
-  isOpen,
   onSelectTab,
-  onToggleOpen,
 }: GoogleDocsPanelRailProps) {
   const { t } = useTranslation();
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
-
-  if (!isOpen) {
-    return (
-      <button
-        type="button"
-        onClick={() => onSelectTab(activeRightTab ?? "character")}
-        className={cn(
-          "absolute right-2 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-border/50 bg-app text-muted shadow-sm hover:bg-surface-hover hover:text-fg",
-          enableAnimations ? "transition-colors duration-150" : "transition-none",
-        )}
-        title={t("sidebar.toggle.open")}
-      >
-        <PanelRightOpen className="h-5 w-5" />
-      </button>
-    );
-  }
 
   return (
     <div
@@ -114,14 +92,6 @@ export function GoogleDocsPanelRail({
           : "transition-none",
       )}
     >
-      <button
-        onClick={() => onToggleOpen(false)}
-        className="mb-2 flex h-8 w-full items-center justify-center border-b border-border/50 transition-colors hover:bg-surface-hover"
-        title={t("sidebar.toggle.close")}
-      >
-        <ChevronLeft className="h-4 w-4 rotate-180 text-muted" />
-      </button>
-
       {RAIL_TABS.map((tab) => {
         const title = tab.titleFallback
           ? t(tab.titleKey, tab.titleFallback)
@@ -138,6 +108,7 @@ export function GoogleDocsPanelRail({
                 "flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover hover:text-fg",
                 activeRightTab === tab.tab && "bg-accent/15 text-accent",
               )}
+              aria-label={title}
               title={title}
             >
               <tab.icon className="h-5 w-5" />
@@ -149,6 +120,7 @@ export function GoogleDocsPanelRail({
       <div className="mt-auto">
         <button
           className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover hover:text-fg"
+          aria-label={t("menu.extensions")}
           title={t("menu.extensions")}
         >
           <Plus className="h-5 w-5 text-muted" />

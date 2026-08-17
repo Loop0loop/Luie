@@ -1,3 +1,4 @@
+import { type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { Book, FileText, FileType } from "lucide-react";
 
@@ -11,6 +12,7 @@ export function ProjectCategorySidebar({
     onSelectCategory
 }: ProjectCategorySidebarProps) {
     const { t } = useTranslation();
+    const isMacOS = navigator.platform.toLowerCase().includes("mac");
 
     const categories = [
         { id: "all", label: t("settings.projectTemplate.category.all"), icon: <Book className="w-4 h-4" /> },
@@ -20,25 +22,33 @@ export function ProjectCategorySidebar({
     ];
 
     return (
-        <div className="w-60 bg-sidebar py-8 px-4 flex flex-col gap-2 border-r border-border">
-            <div className="text-[11px] font-bold text-muted mb-4 pl-3 uppercase tracking-widest">
-                {t("settings.projectTemplate.sidebarTitle")}
-            </div>
-            {categories.map((cat) => (
+        <div className="w-60 bg-sidebar flex flex-col">
+            {isMacOS && (
                 <div
-                    key={cat.id}
-                    className={`
+                    className="h-10 shrink-0"
+                    style={{ WebkitAppRegion: "drag" } as CSSProperties}
+                />
+            )}
+            <div className="px-4 py-8 flex flex-col gap-2">
+                <div className="text-[11px] font-bold text-muted mb-4 pl-3 uppercase tracking-widest">
+                    {t("settings.projectTemplate.sidebarTitle")}
+                </div>
+                {categories.map((cat) => (
+                    <div
+                        key={cat.id}
+                        className={`
             px-4 py-3 rounded-panel text-sm transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] flex items-center gap-2.5
             ${activeCategory === cat.id
                             ? "bg-accent text-accent-fg font-semibold shadow-md"
                             : "text-muted hover:bg-active hover:text-fg cursor-pointer"}
           `}
-                    onClick={() => onSelectCategory(cat.id)}
-                >
-                    {cat.icon}
-                    {cat.label}
-                </div>
-            ))}
+                        onClick={() => onSelectCategory(cat.id)}
+                    >
+                        {cat.icon}
+                        {cat.label}
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }

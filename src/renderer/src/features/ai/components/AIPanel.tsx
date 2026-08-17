@@ -20,16 +20,16 @@ interface Message {
   content: string;
 }
 
-interface WebNovelAICoPilotProps {
+interface AIPanelProps {
   onMenuToggle?: () => void;
   onMinimize?: () => void;
   onClose?: () => void;
 }
 
-export function WebNovelAICoPilot({
+export function AIPanel({
   onMenuToggle,
   onClose,
-}: WebNovelAICoPilotProps) {
+}: AIPanelProps) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -91,20 +91,20 @@ export function WebNovelAICoPilot({
   }, [messages, isLoading]);
 
   return (
-    <div className="flex h-full flex-col bg-[#323232] text-zinc-200 font-sans select-none overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden bg-[var(--ai-panel-bg)] font-sans text-fg select-none">
       {/* 1. Header Bar: New Chat Dropdown, New Chat Button, Close (X) */}
       <div
-        className="flex h-11 shrink-0 items-center justify-between border-b border-white/5 bg-[#323232] px-3.5"
+        className="flex h-11 shrink-0 items-center justify-between border-b border-border bg-[var(--ai-panel-bg)] px-3.5"
         style={{ WebkitAppRegion: "drag" } as CSSProperties}
       >
         <button
           type="button"
           onClick={onMenuToggle}
-          className="flex items-center gap-1.5 rounded-[8px] px-2 py-1 text-xs font-semibold text-zinc-200 hover:bg-white/10 transition-colors cursor-pointer"
+          className="flex cursor-pointer items-center gap-1.5 rounded-[8px] px-2 py-1 text-xs font-semibold text-fg transition-colors hover:bg-surface-hover"
           style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
         >
           <span>New chat</span>
-          <ChevronDown className="size-3.5 text-zinc-400" />
+          <ChevronDown className="size-3.5 text-muted" />
         </button>
 
         <div
@@ -114,7 +114,7 @@ export function WebNovelAICoPilot({
           <button
             type="button"
             onClick={() => setMessages([])}
-            className="flex size-7 items-center justify-center rounded-[6px] text-zinc-400 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+            className="flex size-7 cursor-pointer items-center justify-center rounded-[6px] text-muted transition-colors hover:bg-surface-hover hover:text-fg"
             style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
             title="새 대화"
             aria-label="새 대화"
@@ -124,7 +124,7 @@ export function WebNovelAICoPilot({
           <button
             type="button"
             onClick={onClose}
-            className="flex size-7 items-center justify-center rounded-[6px] text-zinc-400 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+            className="flex size-7 cursor-pointer items-center justify-center rounded-[6px] text-muted transition-colors hover:bg-surface-hover hover:text-fg"
             style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
             title="닫기"
             aria-label="닫기"
@@ -138,8 +138,8 @@ export function WebNovelAICoPilot({
       <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center text-center p-4 opacity-70">
-            <p className="text-xs font-medium text-zinc-300">프롬프트 뷰</p>
-            <p className="text-[11px] text-zinc-500 mt-1 max-w-[200px] leading-relaxed">
+            <p className="text-xs font-medium text-fg">프롬프트 뷰</p>
+            <p className="mt-1 max-w-[200px] text-[11px] leading-relaxed text-muted">
               원고 분석이나 작문 어시스턴트 프롬프트를 입력하세요.
             </p>
           </div>
@@ -151,7 +151,7 @@ export function WebNovelAICoPilot({
                 msg.role === "user" ? "items-end" : "items-start"
               }`}
             >
-              <div className="flex items-center gap-1 mb-1 text-[10px] text-zinc-400 px-1">
+              <div className="mb-1 flex items-center gap-1 px-1 text-[10px] text-muted">
                 {msg.role === "user" ? (
                   <>
                     <span>프롬프트</span>
@@ -159,7 +159,7 @@ export function WebNovelAICoPilot({
                   </>
                 ) : (
                   <>
-                    <Sparkles className="size-3 text-zinc-300" />
+                    <Sparkles className="size-3 text-fg" />
                     <span>AI 어시스턴트</span>
                   </>
                 )}
@@ -167,8 +167,8 @@ export function WebNovelAICoPilot({
               <div
                 className={`max-w-[92%] rounded-panel px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap ${
                   msg.role === "user"
-                    ? "bg-white/12 text-white border border-white/10"
-                    : "bg-[#222225] text-zinc-200 border border-white/5 shadow-xs"
+                    ? "border border-border bg-active text-fg"
+                    : "border border-border bg-element text-fg shadow-xs"
                 }`}
               >
                 {msg.content}
@@ -178,7 +178,7 @@ export function WebNovelAICoPilot({
                   <button
                     type="button"
                     onClick={() => handleCopy(msg.id, msg.content)}
-                    className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                    className="flex cursor-pointer items-center gap-1 text-[10px] text-muted transition-colors hover:text-fg"
                   >
                     {isCopied === msg.id ? (
                       <Check className="size-3 text-emerald-400" />
@@ -194,7 +194,7 @@ export function WebNovelAICoPilot({
         )}
 
         {isLoading && (
-          <div className="flex items-center gap-2 text-xs text-zinc-400 p-2">
+          <div className="flex items-center gap-2 p-2 text-xs text-muted">
             <span className="size-2 rounded-full bg-accent animate-pulse" />
             <span>분석 중...</span>
           </div>
@@ -203,12 +203,12 @@ export function WebNovelAICoPilot({
       </div>
 
       {/* 3. Bottom Prompt Input Pill & Toolbar (Reference Image Matched) */}
-      <div className="shrink-0 border-t border-white/5 bg-[#323232] p-3">
+      <div className="shrink-0 border-t border-border bg-[var(--ai-panel-bg)] p-3">
         {/* Main Pill Capsule Input */}
-        <div className="relative flex h-11 items-center gap-2 rounded-full bg-[#2a2a2e] border border-white/8 px-2.5 shadow-inner focus-within:border-white/15 focus-within:bg-[#303035] transition-all">
+        <div className="relative flex h-11 items-center gap-2 rounded-full border border-border bg-element px-2.5 shadow-inner transition-all focus-within:border-border-active focus-within:bg-element-hover">
           <button
             type="button"
-            className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-zinc-300 hover:bg-white/20 hover:text-white transition-colors cursor-pointer"
+            className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-active text-fg transition-colors hover:bg-surface-hover"
             title="추가"
             aria-label="추가"
           >
@@ -222,13 +222,13 @@ export function WebNovelAICoPilot({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask AI a task, @ for context"
-            className="w-full bg-transparent text-xs text-white placeholder:text-zinc-500 focus:outline-none leading-none px-1"
+            className="w-full bg-transparent px-1 text-xs leading-none text-fg placeholder:text-muted focus:outline-none"
           />
 
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
-              className="flex size-6 items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+              className="flex size-6 cursor-pointer items-center justify-center text-muted transition-colors hover:text-fg"
               title="음성 입력"
               aria-label="음성 입력"
             >
@@ -239,7 +239,7 @@ export function WebNovelAICoPilot({
               type="button"
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
-              className="flex size-7 items-center justify-center rounded-full bg-zinc-600/80 text-zinc-200 hover:bg-white hover:text-black disabled:opacity-40 disabled:hover:bg-zinc-600/80 disabled:hover:text-zinc-200 transition-all active:scale-95 cursor-pointer shadow-xs"
+              className="flex size-7 cursor-pointer items-center justify-center rounded-full bg-element text-fg shadow-xs transition-all hover:bg-surface-hover disabled:opacity-40 disabled:hover:bg-element disabled:hover:text-fg active:scale-95"
               aria-label="전송"
             >
               <ArrowUp className="size-3.5 stroke-[2.5]" />
@@ -248,22 +248,22 @@ export function WebNovelAICoPilot({
         </div>
 
         {/* Bottom Sub-toolbar Row */}
-        <div className="flex items-center justify-between px-2 pt-2.5 text-[11px] text-zinc-400 font-medium select-none">
+        <div className="flex select-none items-center justify-between px-2 pt-2.5 text-[11px] font-medium text-muted">
           {/* Left Actions */}
           <div className="flex items-center gap-3">
             <button
               type="button"
-              className="flex items-center gap-1 hover:text-zinc-200 transition-colors cursor-pointer"
+              className="flex cursor-pointer items-center gap-1 transition-colors hover:text-fg"
             >
               <Layers className="size-3.5" />
-              <ChevronDown className="size-3 text-zinc-500" />
+              <ChevronDown className="size-3 text-muted" />
             </button>
             <button
               type="button"
-              className="flex items-center gap-1 hover:text-zinc-200 transition-colors cursor-pointer"
+              className="flex cursor-pointer items-center gap-1 transition-colors hover:text-fg"
             >
               <ShieldCheck className="size-3.5" />
-              <ChevronDown className="size-3 text-zinc-500" />
+              <ChevronDown className="size-3 text-muted" />
             </button>
           </div>
 
@@ -271,18 +271,18 @@ export function WebNovelAICoPilot({
           <div className="flex items-center gap-3">
             <button
               type="button"
-              className="flex items-center gap-1 hover:text-zinc-200 transition-colors cursor-pointer"
+              className="flex cursor-pointer items-center gap-1 transition-colors hover:text-fg"
             >
-              <Sparkles className="size-3 text-zinc-300" />
+              <Sparkles className="size-3 text-fg" />
               <span>GPT-5.6 Terra</span>
-              <ChevronDown className="size-3 text-zinc-500" />
+              <ChevronDown className="size-3 text-muted" />
             </button>
             <button
               type="button"
-              className="flex items-center gap-1 hover:text-zinc-200 transition-colors cursor-pointer"
+              className="flex cursor-pointer items-center gap-1 transition-colors hover:text-fg"
             >
               <span>High</span>
-              <ChevronDown className="size-3 text-zinc-500" />
+              <ChevronDown className="size-3 text-muted" />
             </button>
           </div>
         </div>

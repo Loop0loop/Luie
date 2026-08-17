@@ -1,5 +1,5 @@
 import { type CSSProperties, type ReactNode, useCallback, useState, useEffect, useRef } from "react";
-import { WebNovelAICoPilot } from "@renderer/features/manuscript/components/aiSidePanel/WebNovelAICoPilot";
+import { AIPanel } from "@renderer/features/ai";
 import {
   Bot,
   PanelLeftClose,
@@ -409,7 +409,7 @@ export default function MainLayout({
                   minSize={toPercentSize(20)}
                   className={`relative flex min-w-0 flex-col bg-sidebar ${
                     shouldRenderContext
-                      ? "before:pointer-events-none before:absolute before:inset-y-0 before:right-0 before:w-6 before:bg-[#323232]"
+                      ? "before:pointer-events-none before:absolute before:inset-y-0 before:right-0 before:w-6 before:bg-[var(--ai-panel-bg)]"
                       : ""
                   }`}
                 >
@@ -477,7 +477,7 @@ export default function MainLayout({
             defaultSize={isContextOpen ? contextDefaultSize : 0}
             minSize={mainContextSize.minSize}
             maxSize={mainContextSize.maxSize}
-            className={`relative z-10 flex flex-col overflow-hidden bg-[#323232] ${enableAnimations
+            className={`relative z-10 flex flex-col overflow-hidden bg-[var(--ai-panel-bg)] ${enableAnimations
                 ? isContextClosing
                   ? "animate-out slide-out-to-right fade-out duration-200"
                   : isContextOpen
@@ -487,8 +487,8 @@ export default function MainLayout({
               }`}
           >
             {shouldRenderContext ? (
-              <div className="flex h-full flex-col overflow-hidden bg-[#323232]">
-                <WebNovelAICoPilot
+              <div className="flex h-full flex-col overflow-hidden bg-[var(--ai-panel-bg)]">
+                <AIPanel
                   onClose={toggleContextPanel}
                   onMinimize={toggleContextPanel}
                 />
