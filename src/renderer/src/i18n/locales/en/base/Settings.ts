@@ -36,10 +36,14 @@ export const enBaseSettings = {
       spellcheck: "Spell Check",
       fontSize: "Font Size",
       lineHeight: "Line Height",
+      typewriterMode: "Typewriter Mode",
       theme: "Theme",
       uiMode: "UI Mode (Laboratory)",
       language: "Language",
       menuBar: "Menu Bar",
+    },
+    typewriterMode: {
+      description: "Keep the writing position near the center of the viewport.",
     },
     customFont: {
       description: "Enter the font-family name of a font installed on your system.",

@@ -52,6 +52,7 @@ const DEFAULT_SETTINGS: EditorSettings = {
   themeAccent: DEFAULT_EDITOR_THEME_ACCENT as ThemeAccent,
   uiMode: "default",
   enableAnimations: true,
+  typewriterMode: false,
   entityColors: {
     character: "#2563eb", // blue-600
     event: "#d97706", // amber-600
@@ -96,6 +97,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       themeAccent: current.themeAccent ?? DEFAULT_EDITOR_THEME_ACCENT,
       uiMode: current.uiMode ?? "default",
       enableAnimations: current.enableAnimations ?? true,
+      typewriterMode: current.typewriterMode ?? false,
       entityColors: current.entityColors ?? DEFAULT_SETTINGS.entityColors,
       ...newSettings,
     };

@@ -24,9 +24,9 @@ const editorSettingsShape = z.strictObject({
   customFontFamily: z.string().max(200).optional(),
   fontSize: z.number().int().positive(),
   lineHeight: z.number().positive(),
-  letterSpacing: z.number().min(0).max(0.3).optional().default(0.05),
-  wordSpacing: z.number().min(0).max(0.2).optional().default(0.06),
-  paragraphSpacing: z.number().min(0).max(3).optional().default(1.0),
+  letterSpacing: z.number().min(0).max(0.3).optional().default(0),
+  wordSpacing: z.number().min(0).max(0.2).optional().default(0),
+  paragraphSpacing: z.number().min(0).max(3).optional().default(0.8),
   maxWidth: z.number().int().positive(),
   spellcheckEnabled: z.boolean().optional().default(true),
   theme: z.enum(["light", "dark", "sepia"]),
@@ -42,6 +42,7 @@ const editorSettingsShape = z.strictObject({
     .pipe(z.enum(["default", "docs", "editor", "scrivener"]))
     .catch("default"),
   enableAnimations: z.boolean().optional().default(true),
+  typewriterMode: z.boolean().optional().default(false),
   entityColors: z.object({
     character: z.string(),
     event: z.string(),

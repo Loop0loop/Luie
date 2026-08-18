@@ -36,10 +36,14 @@ export const jaBaseSettings = {
       spellcheck: "スペルチェック",
       fontSize: "文字サイズ",
       lineHeight: "行間",
+      typewriterMode: "タイプライターモード",
       theme: "テーマ (Theme)",
       uiMode: "UIモード (Laboratory)",
       language: "言語",
       menuBar: "メニューバー",
+    },
+    typewriterMode: {
+      description: "入力位置を画面中央付近に保ちます。",
     },
     customFont: {
       description: "システムにインストールされたフォントのfont-family名を入力してください。",

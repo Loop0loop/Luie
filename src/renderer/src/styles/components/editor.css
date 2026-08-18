@@ -1,7 +1,7 @@
 /* NOTE: Tailwind가 제어하지 못하는 ProseMirror 내부 typography는 이 파일을 source of truth로 사용한다. */
 [data-editor-scroll-container="true"] {
-    scroll-padding-top: 42vh;
-    scroll-padding-bottom: 42vh;
+    scroll-padding-top: var(--editor-scroll-padding, 120px);
+    scroll-padding-bottom: var(--editor-scroll-padding, 120px);
 }
 
 /* WARNING: ProseMirror root에 `white-space: pre-wrap`을 적용하면 자체 whitespace 처리와 충돌한다. */
@@ -15,9 +15,9 @@
 
     /* NOTE: CSS variable로 주입해 store 변경을 editor 재생성 없이 반영한다. */
     font-size: 1rem;
-    line-height: var(--editor-line-height, 1.9);
-    letter-spacing: var(--editor-letter-spacing, 0.02em);
-    word-spacing: var(--editor-word-spacing, 0.04em);
+    line-height: var(--editor-line-height, 1.6);
+    letter-spacing: var(--editor-letter-spacing, 0);
+    word-spacing: var(--editor-word-spacing, 0);
     word-break: keep-all;
     overflow-wrap: break-word;
 
@@ -47,9 +47,9 @@
 
 .tiptap .ProseMirror p {
     margin-top: 0;
-    margin-bottom: var(--editor-paragraph-spacing, 1em);
-    line-height: var(--editor-line-height, 1.9);
-    min-height: calc(var(--editor-font-size, 1rem) * var(--editor-line-height, 1.9));
+    margin-bottom: var(--editor-paragraph-spacing, 0.8em);
+    line-height: var(--editor-line-height, 1.6);
+    min-height: calc(var(--editor-font-size, 1rem) * var(--editor-line-height, 1.6));
 }
 
 .tiptap .ProseMirror h1,

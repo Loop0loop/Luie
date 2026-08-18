@@ -7,9 +7,9 @@ export function useSettingsEditorPreferences() {
     useShallow((state) => ({
       fontSize: state.fontSize,
       lineHeight: state.lineHeight,
-      letterSpacing: state.letterSpacing ?? 0.05,
-      wordSpacing: state.wordSpacing ?? 0.06,
-      paragraphSpacing: state.paragraphSpacing ?? 1.0,
+      letterSpacing: state.letterSpacing ?? 0,
+      wordSpacing: state.wordSpacing ?? 0,
+      paragraphSpacing: state.paragraphSpacing ?? 0.8,
     })),
   );
 

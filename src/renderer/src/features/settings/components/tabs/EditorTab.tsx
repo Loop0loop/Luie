@@ -90,6 +90,7 @@ export const EditorTab = memo(function EditorTab({
     fontPreset,
     customFontFamily,
     spellcheckEnabled,
+    typewriterMode,
     updateSettings: onApplySettings,
   } = useEditorStore(
     useShallow((state) => ({
@@ -97,6 +98,7 @@ export const EditorTab = memo(function EditorTab({
       fontPreset: state.fontPreset,
       customFontFamily: state.customFontFamily,
       spellcheckEnabled: state.spellcheckEnabled,
+      typewriterMode: state.typewriterMode ?? false,
       updateSettings: state.updateSettings,
     })),
   );
@@ -441,6 +443,37 @@ export const EditorTab = memo(function EditorTab({
             onApplySettings({ paragraphSpacing: Number(v.toFixed(1)) });
           }}
         />
+        <div className="flex items-center justify-between gap-4 rounded-panel border border-border bg-surface p-4">
+          <div>
+            <h3 className="text-sm font-medium text-fg">
+              {t("settings.section.typewriterMode", "타자기 모드")}
+            </h3>
+            <p className="mt-0.5 text-xs text-muted">
+              {t(
+                "settings.typewriterMode.description",
+                "입력 위치를 화면 중앙 부근에 유지합니다.",
+              )}
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={typewriterMode}
+            aria-label={t("settings.section.typewriterMode", "타자기 모드")}
+            onClick={() =>
+              void onApplySettings({ typewriterMode: !typewriterMode })
+            }
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
+              typewriterMode ? "bg-accent" : "bg-border"
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${
+                typewriterMode ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+        </div>
       </section>
     </div>
   );

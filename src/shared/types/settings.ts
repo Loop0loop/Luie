@@ -335,6 +335,7 @@ export interface EditorSettings {
   themeAccent: ThemeAccent;
   uiMode: EditorUiMode;
   enableAnimations: boolean;
+  typewriterMode?: boolean;
   entityColors?: {
     character: string;
     event: string;

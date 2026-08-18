@@ -68,6 +68,9 @@ function Editor({
     useEditorConfig();
   const entityColors = useEditorStore((state) => state.entityColors);
   const maxWidth = useEditorStore((state) => state.maxWidth);
+  const typewriterMode = useEditorStore(
+    (state) => state.typewriterMode ?? false,
+  );
   const { updateStats } = useEditorStats();
   const [isMobileView, setIsMobileView] = useState(false);
 
@@ -180,7 +183,7 @@ function Editor({
       },
       editorProps: {
         attributes: {
-          class: "tiptap flex-1 flex flex-col outline-none h-full",
+          class: "tiptap outline-none",
           style: `font-family: ${fontFamilyCss}; font-size: ${fontSize}px; line-height: ${lineHeight};`,
         },
         handleClick: handleSmartLinkClick,
@@ -189,7 +192,7 @@ function Editor({
     [extensions, fontFamilyCss, fontSize, lineHeight],
   );
 
-  useTypewriterScroll(editor, !readOnly);
+  useTypewriterScroll(editor, !readOnly && typewriterMode);
 
   useEffect(() => {
     if (onEditorReady) {
@@ -333,6 +336,8 @@ function Editor({
         "--editor-line-height": String(lineHeight),
         "--editor-paragraph-spacing": `${paragraphSpacing}em`,
         "--editor-page-width": `${maxWidth ?? 800}px`,
+        "--editor-scroll-padding": typewriterMode ? "25vh" : "120px",
+        "--editor-typewriter-tail-space": typewriterMode ? "25vh" : "0px",
       } as React.CSSProperties}
     >
       {!hideToolbar && (

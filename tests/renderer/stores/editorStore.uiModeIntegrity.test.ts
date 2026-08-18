@@ -42,6 +42,7 @@ const BASE_SETTINGS: EditorSettings = {
   themeAccent: "violet",
   uiMode: "default",
   enableAnimations: true,
+  typewriterMode: false,
   entityColors: {
     character: "#2563eb",
     event: "#d97706",
@@ -69,6 +70,7 @@ function readEditorSettings(): EditorSettings {
     themeAccent: state.themeAccent,
     uiMode: state.uiMode,
     enableAnimations: state.enableAnimations,
+    typewriterMode: state.typewriterMode,
     entityColors: state.entityColors,
   };
 }

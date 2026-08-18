@@ -3,13 +3,14 @@
 }
 
 .canvas-node-handle {
-    width: 0.625rem;
-    height: 0.625rem;
-    border-width: 2px;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-width: 1.5px;
     border-style: solid;
-    border-color: var(--bg-panel);
-    border-radius: var(--radius-control);
-    background: var(--border-active);
+    border-color: rgba(255, 255, 255, 0.4);
+    border-radius: 9999px;
+    background: var(--border-active, #71717a);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
 .canvas-document-editor .ProseMirror {
@@ -178,119 +179,74 @@
     margin: 0.25rem 0;
 }
 
+:root {
+    --canvas-bg: #121212;
+    --canvas-bg-dark: #121212;
+    --canvas-grid: rgba(255, 255, 255, 0.05);
+    --canvas-grid-dark: rgba(255, 255, 255, 0.06);
+}
+
 .react-flow__background {
-    background-color: var(--canvas-bg, #f3ece0) !important;
+    background-color: var(--canvas-bg, #121212) !important;
     transition: background-color 0.2s ease;
 }
 
 [data-theme="dark"] .react-flow__background {
-    background-color: var(--canvas-bg-dark, #1c1816) !important;
+    background-color: var(--canvas-bg-dark, #121212) !important;
 }
 
 .react-flow__background-pattern {
-    stroke: var(--canvas-grid, #e2d6bf) !important;
+    stroke: var(--canvas-grid, rgba(255, 255, 255, 0.05)) !important;
     stroke-width: 0.8 !important;
 }
 
 [data-theme="dark"] .react-flow__background-pattern {
-    stroke: var(--canvas-grid-dark, #2b231f) !important;
+    stroke: var(--canvas-grid-dark, rgba(255, 255, 255, 0.06)) !important;
 }
 
-.canvas-entity-node-obsidian {
-    width: 256px;
-    height: 132px;
-    border-style: solid;
-    color: var(--text-primary);
+/* macOS 24px Liquid Glass Node */
+.canvas-glass-node {
+    width: 260px;
+    min-height: 124px;
+    border-radius: 24px;
     position: relative;
+    color: var(--text-primary);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
 .canvas-node-normal {
-    border-width: 1px;
-    border-color: var(--border-default, rgba(0, 0, 0, 0.08));
-    background-color: var(--node-bg, #fffefc);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    background-color: rgba(24, 24, 27, 0.72);
     box-shadow: 
-        0 1px 3px rgba(0, 0, 0, 0.05), 
-        0 4px 12px rgba(0, 0, 0, 0.02),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.6);
-    border-radius: 6px;
-    transform: rotate(-0.5deg);
-    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-}
-
-[data-theme="dark"] .canvas-node-normal {
-    background-color: var(--node-bg-dark, #25201e);
-    border-color: var(--border-default, rgba(255, 255, 255, 0.06));
-    box-shadow: 
-        0 1px 3px rgba(0, 0, 0, 0.25), 
-        0 4px 12px rgba(0, 0, 0, 0.15),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        0 8px 32px 0 rgba(0, 0, 0, 0.36),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+    transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                background-color 0.2s ease;
 }
 
 .canvas-node-normal:hover {
-    transform: translateY(-2px) rotate(0.2deg);
+    transform: translateY(-2px);
+    background-color: rgba(30, 30, 34, 0.82);
+    border-color: color-mix(in srgb, var(--node-color) 45%, rgba(255, 255, 255, 0.2));
     box-shadow: 
-        0 6px 16px rgba(0, 0, 0, 0.08), 
-        0 2px 4px rgba(0, 0, 0, 0.03),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.8);
-    border-color: color-mix(in srgb, var(--node-color) 30%, var(--border-default));
-}
-
-[data-theme="dark"] .canvas-node-normal:hover {
-    box-shadow: 
-        0 6px 16px rgba(0, 0, 0, 0.35), 
-        0 2px 4px rgba(0, 0, 0, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        0 14px 36px 0 rgba(0, 0, 0, 0.45),
+        0 0 20px -2px color-mix(in srgb, var(--node-color) 20%, transparent),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
 }
 
 .canvas-node-selected {
-    border-width: 1px;
-    border-color: color-mix(in srgb, var(--node-color) 80%, var(--border-default));
-    background-color: var(--node-bg, #fffefc);
+    background-color: rgba(32, 32, 38, 0.88);
+    border: 1px solid var(--node-color);
     box-shadow: 
-        0 0 0 3px color-mix(in srgb, var(--node-color) 18%, transparent), 
-        0 8px 24px rgba(0, 0, 0, 0.12);
-    transform: scale(1.02) rotate(0deg);
-    border-radius: 6px;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-}
-
-[data-theme="dark"] .canvas-node-selected {
-    background-color: var(--node-bg-dark, #25201e);
-    box-shadow: 
-        0 0 0 3px color-mix(in srgb, var(--node-color) 15%, transparent), 
-        0 8px 24px rgba(0, 0, 0, 0.35);
-}
-
-.node-push-pin {
-    position: absolute;
-    top: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background-color: var(--node-color);
-    box-shadow: 
-        0 1px 3px rgba(0, 0, 0, 0.3), 
-        0 3px 6px color-mix(in srgb, var(--node-color) 45%, transparent),
-        inset 0 -2px 3px rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    z-index: 20;
-    pointer-events: none;
-}
-
-.node-push-pin::after {
-    content: '';
-    position: absolute;
-    top: 7px;
-    left: 6px;
-    width: 1.5px;
-    height: 5px;
-    background: rgba(0, 0, 0, 0.35);
-    transform: rotate(20deg);
-    transform-origin: top left;
-}
-
-[data-theme="dark"] .node-push-pin::after {
-    background: rgba(0, 0, 0, 0.55);
+        0 0 0 1.5px var(--node-color),
+        0 16px 40px -4px color-mix(in srgb, var(--node-color) 28%, rgba(0, 0, 0, 0.6)),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.25);
+    transform: scale(1.015);
+    transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                background-color 0.2s ease;
 }

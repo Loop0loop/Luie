@@ -33,9 +33,16 @@ export function useTypewriterScroll(
         const coords = editor.view.coordsAtPos(selection.from);
         const containerRect = scrollContainer.getBoundingClientRect();
         const targetTop = containerRect.top + containerRect.height * 0.42;
-        const delta = coords.top - targetTop;
-
-        if (Math.abs(delta) <= 18) return;
+        const deadband = Math.max(48, (coords.bottom - coords.top) * 2);
+        const safeTop = targetTop - deadband;
+        const safeBottom = targetTop + deadband;
+        const delta =
+          coords.top < safeTop
+            ? coords.top - safeTop
+            : coords.bottom > safeBottom
+              ? coords.bottom - safeBottom
+              : 0;
+        if (delta === 0) return;
 
         const maxScrollTop =
           scrollContainer.scrollHeight - scrollContainer.clientHeight;
@@ -50,10 +57,7 @@ export function useTypewriterScroll(
           return;
         }
 
-        scrollContainer.scrollTo({
-          top: nextScrollTop,
-          behavior: "smooth",
-        });
+        scrollContainer.scrollTo({ top: nextScrollTop, behavior: "auto" });
       });
     };
 

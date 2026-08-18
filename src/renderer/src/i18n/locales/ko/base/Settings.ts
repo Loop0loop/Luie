@@ -36,10 +36,14 @@ export const koBaseSettings = {
       spellcheck: "맞춤법 검사",
       fontSize: "글자 크기",
       lineHeight: "줄 간격",
+      typewriterMode: "타자기 모드",
       theme: "테마 (Theme)",
       uiMode: "UI 모드 (Laboratory)",
       language: "언어",
       menuBar: "메뉴바",
+    },
+    typewriterMode: {
+      description: "입력 위치를 화면 중앙 부근에 유지합니다.",
     },
     customFont: {
       description: "시스템에 설치된 폰트의 font-family 이름을 입력하세요.",

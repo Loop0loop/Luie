@@ -232,4 +232,13 @@ describe("Editor onEditorReady lifecycle", () => {
 
     expect(onEditorReady).toHaveBeenLastCalledWith(null);
   });
+
+  it("keeps ProseMirror content in normal block flow", () => {
+    act(() => {
+      root.render(<Editor initialContent="<p>Hello</p>" />);
+    });
+
+    const options = mocked.useEditor.mock.calls[0]?.[0];
+    expect(options?.editorProps?.attributes?.class).toBe("tiptap outline-none");
+  });
 });

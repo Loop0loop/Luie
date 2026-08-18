@@ -48,66 +48,73 @@ function EntityNodeInner({ id, data, selected }: NodeProps<RFEntityNodeData>) {
       <Handle type="target" position={Position.Left} className={CANVAS_HANDLE_CLASS} />
       <Handle type="source" position={Position.Right} className={CANVAS_HANDLE_CLASS} />
 
-      <div className="node-push-pin" />
-
       <NodeToolbar
         isVisible={selected}
         position={Position.Top}
-        className="flex items-center gap-0.5 rounded-control border border-border bg-panel p-0.5 shadow-md z-dropdown animate-in fade-in slide-in-from-bottom-1 duration-150"
+        className="flex items-center gap-1 rounded-full border border-border/40 bg-panel/90 backdrop-blur-md px-1.5 py-1 shadow-panel z-dropdown animate-in fade-in slide-in-from-bottom-1 duration-150"
       >
         <button
           type="button"
           onClick={handleOpenInspector}
-          className="flex h-7 w-7 items-center justify-center rounded-control hover:bg-surface-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+          className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-surface-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
           title={t("canvas.node.openInspector", "상세 정보")}
           aria-label={t("canvas.node.openInspector", "상세 정보")}
         >
-          <BookOpen className="h-4 w-4" />
+          <BookOpen className="h-3.5 w-3.5" />
         </button>
-        <div className="w-[1px] h-3.5 bg-border/80 mx-0.5" />
+        <div className="w-[1px] h-3 bg-border/60" />
         <button
           type="button"
           onClick={handleDelete}
-          className="flex h-7 w-7 items-center justify-center rounded-control hover:bg-danger-fg/10 text-muted hover:text-danger-fg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger-fg/50 cursor-pointer"
+          className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-danger-fg/15 text-muted hover:text-danger-fg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger-fg/50 cursor-pointer"
           title={t("canvas.node.delete", "노드 삭제")}
           aria-label={t("canvas.node.delete", "노드 삭제")}
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-3.5 w-3.5" />
         </button>
       </NodeToolbar>
 
       <div
         className={cn(
-          "canvas-entity-node-obsidian flex h-full w-full flex-col overflow-hidden bg-panel transition-[border-color,box-shadow,transform] duration-150",
+          "canvas-glass-node flex h-full w-full flex-col overflow-hidden transition-[border-color,box-shadow,transform,background-color] duration-200 select-none",
           data.isSelected ? "canvas-node-selected" : "canvas-node-normal"
         )}
         style={{
           "--node-color": kindColor,
         } as React.CSSProperties}
       >
-        <div className="flex min-w-0 flex-1 flex-col px-4.5 py-4">
-          <div className="flex items-center justify-between gap-2 text-canvas-node-meta text-muted font-sans">
-            <span className="font-semibold uppercase tracking-wider opacity-70" translate="no">
-              {t(`canvas.node.kind.${data.kind}`)}
-            </span>
-            <span className="shrink-0 tabular-nums text-[10px] opacity-50">
+        <div className="flex min-w-0 flex-1 flex-col p-4 justify-between">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-border/40 bg-element/60 backdrop-blur-sm">
+              <span
+                className="h-1.5 w-1.5 rounded-full shrink-0 shadow-sm"
+                style={{ backgroundColor: kindColor }}
+              />
+              <span className="text-[10px] font-semibold tracking-wide text-fg/90 uppercase" translate="no">
+                {t(`canvas.node.kind.${data.kind}`)}
+              </span>
+            </div>
+
+            <span className="shrink-0 tabular-nums text-[10px] font-medium text-muted/60">
               {t("canvas.node.connectionCount", { count: data.connectionCount })}
             </span>
           </div>
 
-          <span className="mt-2 line-clamp-1 text-canvas-node-label font-bold leading-tight text-fg font-serif">
-            {data.label}
-          </span>
+          <div className="mt-2.5 min-w-0 flex-1">
+            <span className="line-clamp-1 text-[13px] font-semibold leading-snug tracking-tight text-fg font-sans">
+              {data.label}
+            </span>
 
-          {data.description ? (
-            <p className="mt-2 line-clamp-2 text-canvas-node-desc leading-5 text-muted font-serif">
-              {data.description}
-            </p>
-          ) : (
-            <p className="mt-2 text-canvas-node-desc leading-5 text-subtle italic font-serif">
-              {t("canvas.node.emptyDescription")}
-            </p>
-          )}
+            {data.description ? (
+              <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted font-sans">
+                {data.description}
+              </p>
+            ) : (
+              <p className="mt-1 text-[11px] leading-relaxed text-subtle/70 italic font-sans">
+                {t("canvas.node.emptyDescription")}
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>
