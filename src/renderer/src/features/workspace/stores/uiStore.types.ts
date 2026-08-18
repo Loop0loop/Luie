@@ -3,7 +3,6 @@ import type { SidebarWidthFeature } from "@renderer/shared/constants/sidebarSizi
 import type { Snapshot } from "@shared/types";
 import type { FocusedClosableTarget } from "./closableFocusStore";
 
-export type ContextTab = "synopsis" | "characters" | "terms";
 export type ResearchTab =
   | "character"
   | "world"
@@ -111,7 +110,6 @@ export type MainView = {
 
 export interface UIStore {
   view: "template" | "editor" | "corkboard" | "outliner";
-  contextTab: ContextTab;
   worldTab: WorldTab;
   panels: ResizablePanelData[];
   isManuscriptMenuOpen: boolean;
@@ -125,7 +123,6 @@ export interface UIStore {
   layoutSurfaceRatios: Record<LayoutSurfaceId, number>;
   mainView: MainView;
   setView: (view: UIStore["view"]) => void;
-  setContextTab: (tab: ContextTab) => void;
   setWorldTab: (tab: WorldTab) => void;
   addPanel: (
     content: RightPanelContent,

@@ -315,8 +315,7 @@ export type EditorUiMode =
   | "default"
   | "docs"
   | "editor"
-  | "scrivener"
-  | "focus";
+  | "scrivener";
 
 export interface EditorSettings {
   fontFamily: FontFamily;
@@ -502,7 +501,6 @@ export type ShortcutAction =
   | "split.swapSides"
   | "editor.fontSize.increase"
   | "editor.fontSize.decrease"
-  | "window.toggleFullscreen"
-  | "view.toggleFocusMode";
+  | "window.toggleFullscreen";
 
 export type ShortcutMap = Record<ShortcutAction, string>;

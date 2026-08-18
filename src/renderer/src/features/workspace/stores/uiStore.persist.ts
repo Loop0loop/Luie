@@ -143,7 +143,9 @@ const migrateUiPersistedState = (
   }
 
   return {
-    ...(persistedState as UiStorePersistedState),
+    ...Object.fromEntries(
+      Object.entries(persistedState).filter(([key]) => key !== "contextTab"),
+    ),
     schemaVersion: UI_STORE_SCHEMA_VERSION,
   };
 };
@@ -160,7 +162,6 @@ export const buildUiStorePersistOptions = (): PersistOptions<
   partialize: (state) => ({
     schemaVersion: UI_STORE_SCHEMA_VERSION,
     view: state.view,
-    contextTab: state.contextTab,
     worldTab: state.worldTab,
     isManuscriptMenuOpen: state.isManuscriptMenuOpen,
     scrivenerSections: state.scrivenerSections,
@@ -237,7 +238,6 @@ export const buildUiStorePersistOptions = (): PersistOptions<
     return {
       ...currentState,
       view: typedPersisted.view ?? currentState.view,
-      contextTab: typedPersisted.contextTab ?? currentState.contextTab,
       worldTab: typedPersisted.worldTab ?? currentState.worldTab,
       isManuscriptMenuOpen: typedPersisted.isManuscriptMenuOpen ?? currentState.isManuscriptMenuOpen,
       scrivenerSections:

@@ -57,7 +57,6 @@ export const enBaseSettings = {
       docs: "Google Docs Style",
       editor: "Editor Mode",
       scrivener: "Scrivener Style",
-      focus: "Focus Mode",
     },
     menuBar: {
       description: "On macOS, hide mode switches the window into immersive fullscreen.",

@@ -168,6 +168,9 @@ export const jaBaseCore = {
     },
   },
   toolbar: {
+    customColor: "カスタムカラー",
+    resetTextColor: "標準の文字色",
+    resetHighlight: "ハイライトを削除",
     tooltip: {
       undo: "元に戻す",
       redo: "やり直す",

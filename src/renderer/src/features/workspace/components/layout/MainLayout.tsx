@@ -51,7 +51,6 @@ const isMacOS = navigator.userAgent.toLowerCase().includes("mac");
 interface MainLayoutProps {
   children: ReactNode;
   sidebar?: ReactNode;
-  contextPanel?: ReactNode;
   additionalPanels?: ReactNode;
   additionalPanelIds?: string[];
   isResearchPanelAdjacent?: boolean;
@@ -62,7 +61,6 @@ interface MainLayoutProps {
 export default function MainLayout({
   children,
   sidebar,
-  contextPanel: _contextPanel,
   additionalPanels,
   additionalPanelIds = [],
   isResearchPanelAdjacent = false,

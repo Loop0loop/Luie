@@ -204,7 +204,6 @@ describe("MainLayout responsive panel sizing", () => {
   it("computes different percent constraints for different container widths", async () => {
     const view = await mountView(
       <MainLayout
-        contextPanel={<div>Context</div>}
         sidebar={<div>Sidebar</div>}
       >
         <div>Main</div>
@@ -236,7 +235,6 @@ describe("MainLayout responsive panel sizing", () => {
     containerWidth = 1920;
     const secondView = await mountView(
       <MainLayout
-        contextPanel={<div>Context</div>}
         sidebar={<div>Sidebar</div>}
       >
         <div>Main</div>

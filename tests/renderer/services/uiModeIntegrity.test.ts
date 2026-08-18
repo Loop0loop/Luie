@@ -28,7 +28,6 @@ const baseSnapshot = () =>
     editor: baseEditorSettings,
     ui: {
       view: "editor",
-      contextTab: "synopsis",
       worldTab: "terms",
       isSplitView: true,
       splitRatio: 0.55,

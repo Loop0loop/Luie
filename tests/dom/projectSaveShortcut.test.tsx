@@ -87,8 +87,6 @@ describe("project save shortcut", () => {
         setWorldTab: noOp,
         setFontSize: noOp,
         fontSize: 16,
-        setUiMode: noOp,
-        uiMode: "default",
       });
       return null;
     };
@@ -133,8 +131,6 @@ describe("project save shortcut", () => {
         setWorldTab: noOp,
         setFontSize: noOp,
         fontSize: 16,
-        setUiMode: noOp,
-        uiMode: "default",
       });
       return null;
     };

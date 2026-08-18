@@ -97,7 +97,6 @@ export const koWorkspaceWriting = {
       default: "기본 레이아웃",
       scrivener: "스크리브너 (3분할)",
       docs: "구글 닥스 스타일",
-      focus: "집중 모드",
     },
   },
   textEditor: {

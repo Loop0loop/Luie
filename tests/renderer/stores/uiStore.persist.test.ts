@@ -89,8 +89,9 @@ describe("uiStore persist rehydrate", () => {
   it("falls back to defaults when persisted payload is malformed", async () => {
     const { module, warn } = await loadUiStore({
       view: "editor",
+      contextTab: "characters",
       extra: true,
-    });
+    }, 3);
 
     expect(module.useUIStore.getState().view).toBe(DEFAULT_UI_VIEW);
     expect(warn).toHaveBeenCalledTimes(1);
@@ -99,7 +100,6 @@ describe("uiStore persist rehydrate", () => {
   it("rehydrates valid persisted state", async () => {
     const { module, warn } = await loadUiStore({
       view: "editor",
-      contextTab: "characters",
       docsRightTab: "world",
       sidebarWidths: {
         mainSidebar: 288,
@@ -145,7 +145,6 @@ describe("uiStore persist rehydrate", () => {
 
     const state = module.useUIStore.getState();
     expect(state.view).toBe("editor");
-    expect(state.contextTab).toBe("characters");
     expect(state.regions.leftSidebar.widthPx).toBe(288);
     expect(state.regions.rightPanel.activeTab).toBe("world");
     expect(state.scrivenerSections.events).toBe(true);

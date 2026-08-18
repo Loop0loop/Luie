@@ -1,8 +1,5 @@
 import type { StateCreator } from "zustand";
-import {
-  DEFAULT_UI_CONTEXT_TAB,
-  DEFAULT_UI_VIEW,
-} from "@renderer/features/workspace/constants/uiDefaults";
+import { DEFAULT_UI_VIEW } from "@renderer/features/workspace/constants/uiDefaults";
 import {
   buildDefaultLayoutSurfaceRatios,
   normalizeLayoutSurfaceRatiosWithMigrations,
@@ -29,7 +26,6 @@ import {
 } from "./uiStore.regions";
 import { DEFAULT_SCRIVENER_SECTIONS } from "./uiStore.types";
 import type {
-  ContextTab,
   MainView,
   RightPanelContent,
   ResizablePanelData,
@@ -70,7 +66,6 @@ export const buildStablePanelId = (content: RightPanelContent): string => {
 
 export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) => ({
   view: DEFAULT_UI_VIEW as UIStore["view"],
-  contextTab: DEFAULT_UI_CONTEXT_TAB as ContextTab,
   worldTab: "terms",
   panels: [],
   isManuscriptMenuOpen: false,
@@ -84,8 +79,6 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
 
   setView: (view) =>
     set((state) => (state.view === view ? state : { view })),
-  setContextTab: (contextTab) =>
-    set((state) => (state.contextTab === contextTab ? state : { contextTab })),
   setWorldTab: (worldTab) =>
     set((state) => (state.worldTab === worldTab ? state : { worldTab })),
 

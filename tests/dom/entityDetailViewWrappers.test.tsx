@@ -27,13 +27,15 @@ vi.mock("@renderer/features/research/stores/eventStore", () => ({
     }),
 }));
 
+const factionStoreState = {
+  currentItem: null as { id: string; name: string; description: string } | null,
+  updateFaction: vi.fn(),
+  loadFaction: vi.fn(),
+};
+
 vi.mock("@renderer/features/research/stores/factionStore", () => ({
   useFactionStore: (selector: (state: unknown) => unknown) =>
-    selector({
-      currentItem: null,
-      updateFaction: vi.fn(),
-      loadFaction: vi.fn(),
-    }),
+    selector(factionStoreState),
 }));
 
 type MountedView = {
@@ -75,5 +77,20 @@ describe("entity detail wrappers", () => {
     const { container } = mountView(<FactionDetailView />);
 
     expect(container.textContent).toContain("No Faction Selected");
+  });
+
+  it("keeps Hook order when a faction loads after the empty state", () => {
+    const { container, root } = mountView(<FactionDetailView factionId="faction-1" />);
+
+    factionStoreState.currentItem = {
+      id: "faction-1",
+      name: "The Guild",
+      description: "Alliance",
+    };
+    act(() => {
+      root.render(<FactionDetailView factionId="faction-1" />);
+    });
+
+    expect(container.textContent).toContain("The Guild");
   });
 });

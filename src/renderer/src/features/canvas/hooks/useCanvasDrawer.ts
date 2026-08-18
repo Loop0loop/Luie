@@ -17,9 +17,9 @@ export function useCanvasDrawer() {
     })),
   );
 
-  // NOTE: deselect 시 panel은 닫지 않고 빈 inspector를 유지한다.
+  // NOTE: 노드 선택 시 rightPanel이 닫혀있으면 자동으로 열지 않는다.
   useEffect(() => {
-    if (selection.kind === "node" && !rightPanelOpen) {
+    if (selection.kind === "node" && rightPanelOpen) {
       openRightPanelTab("canvas");
     }
   }, [selection.kind, rightPanelOpen, openRightPanelTab]);

@@ -28,7 +28,6 @@ export function useUiModeIntegrityDevCheck() {
     }
     const integrityUiState: UiModeIntegrityUiState = {
       view: uiState.view,
-      contextTab: uiState.contextTab,
       worldTab: uiState.worldTab,
       isSplitView: false,
       splitRatio: 0.5,

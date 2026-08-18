@@ -166,7 +166,7 @@
 
   --editor-bg: #ffffff;
   --editor-text: #18181b;
-  --editor-selection: #eadcbf;
+  --editor-selection: #bfdbfe;
 
   --header-height: 48px;
   --sidebar-width: 260px;
@@ -291,7 +291,7 @@
 
   --editor-bg: #1a1a1c;
   --editor-text: #d0d0d4;
-  --editor-selection: #5d4829;
+  --editor-selection: #1e4f91;
 }
 
 /* NOTE: color temperature는 layout 구조를 바꾸지 않고 background와 text tint만 덮어쓴다. */
@@ -432,7 +432,7 @@
 
   --editor-bg: #fbf2e2;
   --editor-text: #4f3e2a;
-  --editor-selection: #e5d6bd;
+  --editor-selection: #b7d5f5;
 }
 
 [data-contrast="high"] {

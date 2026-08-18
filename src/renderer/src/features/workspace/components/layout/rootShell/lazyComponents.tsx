@@ -12,9 +12,6 @@ export const GoogleDocsLayout = lazy(
   () =>
     import("@renderer/features/workspace/components/layout/GoogleDocsLayout"),
 );
-export const FocusLayout = lazy(
-  () => import("@renderer/features/workspace/components/layout/FocusLayout"),
-);
 export const EditorLayout = lazy(
   () => import("@renderer/features/workspace/components/layout/EditorLayout"),
 );
@@ -47,9 +44,6 @@ export const CanvasPane = lazy(
   () => import("@renderer/domains/canvas").then((module) => ({
     default: module.CanvasPane,
   })),
-);
-export const ContextPanel = lazy(() =>
-  import("@renderer/features/workspace/components/panels/ContextPanel")
 );
 export const WorkspacePanels = lazy(() =>
   import("@renderer/features/workspace/components/panels/WorkspacePanels").then(

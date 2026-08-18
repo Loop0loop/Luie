@@ -1,5 +1,5 @@
 import { memo, useCallback } from "react";
-import { Handle, Position, NodeToolbar, type NodeProps } from "reactflow";
+import { Handle, Position, type NodeProps } from "reactflow";
 import { useTranslation } from "react-i18next";
 import { Trash2, BookOpen } from "lucide-react";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
@@ -13,7 +13,7 @@ import {
 } from "../../../constants";
 import { CANVAS_NODE_KIND_COLOUR } from "../../../types/canvasTokens";
 
-function EntityNodeInner({ id, data, selected }: NodeProps<RFEntityNodeData>) {
+function EntityNodeInner({ id, data, selected, dragging }: NodeProps<RFEntityNodeData>) {
   const { t } = useTranslation();
   const deleteGraphNode = useWorldBuildingStore((s) => s.deleteGraphNode);
   const selectNode = useCanvasViewStore((s) => s.selectNode);
@@ -48,31 +48,31 @@ function EntityNodeInner({ id, data, selected }: NodeProps<RFEntityNodeData>) {
       <Handle type="target" position={Position.Left} className={CANVAS_HANDLE_CLASS} />
       <Handle type="source" position={Position.Right} className={CANVAS_HANDLE_CLASS} />
 
-      <NodeToolbar
-        isVisible={selected}
-        position={Position.Top}
-        className="flex items-center gap-1 rounded-full border border-border/40 bg-panel/90 backdrop-blur-md px-1.5 py-1 shadow-panel z-dropdown animate-in fade-in slide-in-from-bottom-1 duration-150"
-      >
-        <button
-          type="button"
-          onClick={handleOpenInspector}
-          className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-surface-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
-          title={t("canvas.node.openInspector", "상세 정보")}
-          aria-label={t("canvas.node.openInspector", "상세 정보")}
+      {selected && !dragging && (
+        <div
+          className="pointer-events-auto absolute -top-11 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 rounded-full border border-border/40 bg-panel/95 backdrop-blur-md px-1.5 py-1 shadow-panel"
         >
-          <BookOpen className="h-3.5 w-3.5" />
-        </button>
-        <div className="w-[1px] h-3 bg-border/60" />
-        <button
-          type="button"
-          onClick={handleDelete}
-          className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-danger-fg/15 text-muted hover:text-danger-fg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger-fg/50 cursor-pointer"
-          title={t("canvas.node.delete", "노드 삭제")}
-          aria-label={t("canvas.node.delete", "노드 삭제")}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
-      </NodeToolbar>
+          <button
+            type="button"
+            onClick={handleOpenInspector}
+            className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-surface-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+            title={t("canvas.node.openInspector", "상세 정보")}
+            aria-label={t("canvas.node.openInspector", "상세 정보")}
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+          </button>
+          <div className="w-[1px] h-3 bg-border/60" />
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-danger-fg/15 text-muted hover:text-danger-fg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger-fg/50 cursor-pointer"
+            title={t("canvas.node.delete", "노드 삭제")}
+            aria-label={t("canvas.node.delete", "노드 삭제")}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
 
       <div
         className={cn(

@@ -57,7 +57,6 @@ export const jaBaseSettings = {
       docs: "Google Docs スタイル",
       editor: "エディターモード",
       scrivener: "Scrivener スタイル",
-      focus: "フォーカスモード",
     },
     menuBar: {
       description: "macOS では「隠す」を選ぶと没入型フルスクリーンに切り替わります。",

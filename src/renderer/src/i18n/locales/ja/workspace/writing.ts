@@ -97,7 +97,6 @@ export const jaWorkspaceWriting = {
       default: "デフォルトレイアウト",
       scrivener: "スクリブナー（3分割）",
       docs: "Google Docsスタイル",
-      focus: "フォーカスモード",
     },
   },
   textEditor: {

@@ -58,7 +58,6 @@ export const koBaseSettings = {
       docs: "Google Docs 스타일",
       editor: "에디터 모드",
       scrivener: "Scrivener 스타일",
-      focus: "집중 모드",
     },
     menuBar: {
       description:

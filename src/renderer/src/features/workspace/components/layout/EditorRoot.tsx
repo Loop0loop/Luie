@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import {
   Editor,
   SmartLinkTooltip,
-  useEditorStatsStore,
   useEditorStore,
 } from "@renderer/domains/editor";
 
@@ -33,11 +32,9 @@ import type { SettingsTabId } from "@renderer/domains/settings";
 import {
   CanvasActivityShell,
   CanvasPane,
-  ContextPanel,
   DataRecoveryBanner,
   DocsSidebar,
   EditorLayout,
-  FocusLayout,
   GoogleDocsLayout,
   layoutFallback,
   MainLayout,
@@ -60,11 +57,9 @@ export default function EditorRoot() {
     SettingsTabId | undefined
   >(undefined);
   const uiMode = useEditorStore((state) => state.uiMode);
-  const setUiMode = useEditorStore((state) => state.setUiMode);
   const fontSize = useEditorStore((state) => state.fontSize);
   const setFontSize = useEditorStore((state) => state.setFontSize);
 
-  const wordCount = useEditorStatsStore((state) => state.wordCount);
   const isDocsMode = uiMode === "docs";
 
   const {
@@ -158,8 +153,6 @@ export default function EditorRoot() {
 
   const {
     panels,
-    contextTab,
-    setContextTab,
     addPanel,
     removePanel,
     handleSelectResearchItem,
@@ -279,8 +272,6 @@ export default function EditorRoot() {
     setWorldTab,
     setFontSize,
     fontSize,
-    setUiMode,
-    uiMode,
   });
 
   const prefetchSettings = useCallback(() => {
@@ -299,35 +290,6 @@ export default function EditorRoot() {
       window.removeEventListener("luie:open-settings", handleOpenSettings);
     };
   }, []);
-
-  if (uiMode === "focus") {
-    return (
-      <Suspense fallback={layoutFallback}>
-        <>
-          <FocusLayout
-            activeChapterTitle={activeChapterTitle}
-            wordCount={wordCount}
-          >
-            <FeatureErrorBoundary featureName="Editor">
-              <Editor
-                key={activeChapterId ?? "focus-editor"}
-                chapterId={activeChapterId ?? undefined}
-                initialTitle={activeChapterTitle}
-                initialContent={content}
-                onSave={handleSave}
-                focusMode={true}
-                hideToolbar={true}
-                hideFooter={true}
-                hideTitle={true}
-                scrollable={true}
-              />
-            </FeatureErrorBoundary>
-          </FocusLayout>
-          <SmartLinkTooltip />
-        </>
-      </Suspense>
-    );
-  }
 
   const sharedEditor = (
     <FeatureErrorBoundary featureName="Editor">
@@ -450,19 +412,6 @@ export default function EditorRoot() {
                     onSplitView={handleSplitView}
                   />
                 )}
-              </Suspense>
-            }
-            contextPanel={
-              <Suspense fallback={null}>
-                <ContextPanel
-                  activeTab={contextTab}
-                  onTabChange={(tab) => {
-                    if (tab !== "elements") {
-                      setContextTab(tab);
-                    }
-                  }}
-                  isCanvasMode={mainViewType === "canvas"}
-                />
               </Suspense>
             }
             isCanvasMode={mainViewType === "canvas"}

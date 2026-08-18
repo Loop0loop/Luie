@@ -1,16 +1,14 @@
 import {
   type ReactNode,
-  Suspense,
   useCallback,
   useEffect,
   useRef,
-  useState,
-  lazy,
 } from "react";
 import { type Editor } from "@tiptap/react";
 import { useTranslation } from "react-i18next";
 import WindowBar from "@renderer/features/workspace/components/WindowBar";
 import { InspectorPanel, Ribbon, useEditorStatsStore, useEditorStore } from "@renderer/domains/editor";
+import { AIPanel } from "@renderer/features/ai";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useShallow } from "zustand/react/shallow";
 import { CanvasPane } from "@renderer/domains/canvas";
@@ -53,12 +51,6 @@ import {
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
 
-import type { Tab } from "@renderer/features/workspace/components/panels/ContextPanel";
-
-const ContextPanel = lazy(
-  () => import("@renderer/features/workspace/components/panels/ContextPanel")
-);
-
 interface ScrivenerLayoutProps {
   children?: ReactNode;
   sidebar?: ReactNode;
@@ -85,7 +77,6 @@ export default function ScrivenerLayout({
   additionalPanels,
 }: ScrivenerLayoutProps) {
   const { t } = useTranslation();
-  const [contextTab, setContextTab] = useState<Tab>("synopsis");
   const {
     mainView,
     panels,
@@ -447,17 +438,14 @@ export default function ScrivenerLayout({
                 </div>
 
                 <div className="flex-1 overflow-hidden flex flex-col">
-                  <Suspense fallback={<div className="p-4 text-xs">{t("scrivener.inspector.loading")}</div>}>
-                    {mainView.type === "canvas" ? (
-                      <ContextPanel
-                        activeTab={contextTab}
-                        onTabChange={setContextTab}
-                        isCanvasMode={true}
-                      />
-                    ) : (
-                      <InspectorPanel key={activeChapterId} activeChapterId={activeChapterId} />
-                    )}
-                  </Suspense>
+                  {mainView.type === "canvas" ? (
+                    <AIPanel
+                      onClose={() => setRegionOpen("rightPanel", false)}
+                      onMinimize={() => setRegionOpen("rightPanel", false)}
+                    />
+                  ) : (
+                    <InspectorPanel key={activeChapterId} activeChapterId={activeChapterId} />
+                  )}
                 </div>
               </Panel>
             </>

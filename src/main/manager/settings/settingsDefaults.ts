@@ -115,7 +115,6 @@ const getDefaultShortcuts = (platform: NodeJS.Platform): ShortcutMap => {
     "editor.fontSize.increase": "",
     "editor.fontSize.decrease": "",
     "window.toggleFullscreen": "F11",
-    "view.toggleFocusMode": "Shift+F11",
   };
 };
 

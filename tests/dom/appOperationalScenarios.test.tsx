@@ -33,7 +33,6 @@ const mocked = vi.hoisted(() => {
   const uiState = {
     view: "template" as const,
     setView: vi.fn(),
-    contextTab: "synopsis" as const,
     worldTab: "terms" as const,
     isSidebarOpen: true,
     isContextOpen: true,

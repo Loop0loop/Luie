@@ -73,6 +73,8 @@ export function EntityDetailView({
 }: EntityDetailViewProps) {
   const { t } = useTranslation();
   const dialog = useDialog();
+  // 선택 항목이 비동기로 로드돼도 모든 render에서 Hook 순서를 고정한다.
+  const [isInfoboxOpen, setIsInfoboxOpen] = useState(true);
 
   useEffect(() => {
     if (entityId) {
@@ -182,8 +184,6 @@ export function EntityDetailView({
       );
     })();
   };
-
-  const [isInfoboxOpen, setIsInfoboxOpen] = useState(true);
 
   return (
     <div className="flex flex-1 min-w-0 flex-col gap-5 overflow-auto bg-research px-5 py-5 text-fg sm:px-6">

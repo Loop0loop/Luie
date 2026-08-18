@@ -1,11 +1,9 @@
 export {
   CanvasActivityShell,
   CanvasPane,
-  ContextPanel,
   DataRecoveryBanner,
   DocsSidebar,
   EditorLayout,
-  FocusLayout,
   GoogleDocsLayout,
   MainLayout,
   OfflineBanner,

@@ -68,7 +68,6 @@ export const uiStorePersistedStateSchema = z.strictObject({
     .max(UI_STORE_SCHEMA_VERSION)
     .optional(),
   view: z.enum(["template", "editor", "corkboard", "outliner"]).optional(),
-  contextTab: z.enum(["synopsis", "characters", "terms"]).optional(),
   worldTab: z
     .enum(["synopsis", "terms", "mindmap", "drawing", "plot", "graph"])
     .optional(),

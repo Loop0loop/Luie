@@ -5,7 +5,6 @@ import { createUIStoreState } from "./uiStore.state";
 import type { UIStore } from "./uiStore.types";
 
 export type {
-  ContextTab,
   DocsRightTab,
   MainView,
   RegionId,

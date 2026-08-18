@@ -1,18 +1,12 @@
 export const FONT_SIZE_OPTIONS = [10, 11, 12, 14, 16, 18, 20, 24, 28, 32] as const;
 
 export const TEXT_COLORS = [
-  { label: "검정", hex: "#111827" },
-  { label: "진회색", hex: "#374151" },
-  { label: "회색", hex: "#6B7280" },
-  { label: "연회색", hex: "#D1D5DB" },
-  { label: "흰색", hex: "#FFFFFF" },
+  { label: "검정", hex: "#18181B" },
+  { label: "흰색", hex: "#D7D7DA" },
   { label: "빨강", hex: "#EF4444" },
-  { label: "분홍", hex: "#EC4899" },
   { label: "주황", hex: "#F97316" },
   { label: "노랑", hex: "#CA8A04" },
-  { label: "갈색", hex: "#92400E" },
   { label: "파랑", hex: "#2563EB" },
-  { label: "남색", hex: "#4F46E5" },
   { label: "보라", hex: "#9333EA" },
   { label: "청록", hex: "#0D9488" },
   { label: "초록", hex: "#16A34A" },

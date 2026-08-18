@@ -3,7 +3,6 @@
 import {
   Profiler,
   act,
-  type ComponentProps,
   type ProfilerOnRenderCallback,
   type ReactNode,
 } from "react";
@@ -12,7 +11,6 @@ import { createRoot, type Root } from "react-dom/client";
 import SidebarCharacterList from "../../src/renderer/src/features/manuscript/components/sections/SidebarCharacterList.js";
 import SidebarMemoList from "../../src/renderer/src/features/manuscript/components/sections/SidebarMemoList.js";
 import MemoMainView from "../../src/renderer/src/features/research/components/memo/MemoMainView.js";
-import ContextPanel from "../../src/renderer/src/features/workspace/components/panels/ContextPanel.js";
 import { useProjectStore } from "../../src/renderer/src/features/project/stores/projectStore.js";
 import { useCharacterStore } from "../../src/renderer/src/features/research/stores/characterStore.js";
 import { useTermStore } from "../../src/renderer/src/features/research/stores/termStore.js";
@@ -214,82 +212,6 @@ describe("renderer rerender regression", () => {
 
     expect(view.getCommitCount()).toBeGreaterThan(initialCommitCount);
     expect(view.container.textContent).toContain("Rival");
-  });
-
-  it("ContextPanel ignores unrelated character store fields", () => {
-    act(() => {
-      useProjectStore.setState({
-        currentItem: null,
-        currentProject: null,
-      });
-      useCharacterStore.setState({
-        items: [
-          {
-            id: "char-1",
-            projectId: "project-1",
-            name: "Guide",
-            description: "Mentor",
-            firstAppearance: null,
-            attributes: {},
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        ],
-        characters: [
-          {
-            id: "char-1",
-            projectId: "project-1",
-            name: "Guide",
-            description: "Mentor",
-            firstAppearance: null,
-            attributes: {},
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        ],
-        error: null,
-      });
-      useTermStore.setState({
-        items: [],
-        terms: [],
-      });
-    });
-
-    const props: ComponentProps<typeof ContextPanel> = {
-      activeTab: "characters",
-      onTabChange: () => undefined,
-    };
-    const view = mountWithProfiler(<ContextPanel {...props} />);
-    mountedViews.push(view);
-    const initialCommitCount = view.getCommitCount();
-
-    act(() => {
-      useCharacterStore.setState({
-        error: "still-ignored",
-      });
-    });
-
-    expect(view.getCommitCount()).toBe(initialCommitCount);
-
-    act(() => {
-      const nextCharacter = {
-        id: "char-2",
-        projectId: "project-1",
-        name: "Scout",
-        description: "Explorer",
-        firstAppearance: null,
-        attributes: {},
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      useCharacterStore.setState((state) => ({
-        items: [...state.items, nextCharacter],
-        characters: [...state.characters, nextCharacter],
-      }));
-    });
-
-    expect(view.getCommitCount()).toBeGreaterThan(initialCommitCount);
-    expect(view.container.textContent).toContain("Scout");
   });
 
   it("MemoMainView ignores unrelated memo store fields", () => {

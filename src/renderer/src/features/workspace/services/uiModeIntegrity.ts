@@ -1,10 +1,9 @@
 import type { EditorSettings, EditorUiMode } from '@shared/types';
-import type { ContextTab, DocsRightTab, WorldTab } from "../stores/uiStore";
+import type { DocsRightTab, WorldTab } from "../stores/uiStore";
 type SplitSide = "left" | "right" | "bottom";
 
 export type UiModeIntegrityUiState = {
   view: "template" | "editor" | "corkboard" | "outliner";
-  contextTab: ContextTab;
   worldTab: WorldTab;
   isSplitView: boolean;
   splitRatio: number;
@@ -19,7 +18,6 @@ export type UiModeIntegrityUiState = {
 export type UiModeIntegritySnapshot = {
   uiMode: EditorUiMode;
   view: UiModeIntegrityUiState["view"];
-  contextTab: ContextTab;
   worldTab: WorldTab;
   isSplitView: boolean;
   splitRatio: number;
@@ -50,7 +48,6 @@ export function captureUiModeIntegritySnapshot(input: {
   return {
     uiMode: input.editor.uiMode,
     view: input.ui.view,
-    contextTab: input.ui.contextTab,
     worldTab: input.ui.worldTab,
     isSplitView: input.ui.isSplitView,
     splitRatio: input.ui.splitRatio,
@@ -75,7 +72,6 @@ export function captureUiModeIntegritySnapshot(input: {
 
 const NON_LAYOUT_KEYS: Array<keyof Omit<UiModeIntegritySnapshot, "uiMode">> = [
   "view",
-  "contextTab",
   "worldTab",
   "isSplitView",
   "splitRatio",

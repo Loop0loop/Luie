@@ -9,7 +9,6 @@ import {
     EDITOR_TOOLBAR_FONT_STEP,
 } from "@renderer/shared/constants/editorLayout";
 import type { createLayoutModeActions } from "@renderer/features/workspace/services/layoutModeActions";
-import type { EditorUiMode } from "@shared/types";
 import type { WorldTab } from "@renderer/features/workspace/stores/uiStore";
 import { saveProjectNow } from "@renderer/features/workspace/services/saveCoordinator";
 import { useToast } from "@shared/ui/ToastContext";
@@ -28,8 +27,6 @@ interface UseEditorRootShortcutsProps {
     setWorldTab: (tab: WorldTab) => void;
     setFontSize: (size: number) => void;
     fontSize: number;
-    setUiMode: (mode: EditorUiMode) => void;
-    uiMode: EditorUiMode;
 }
 
 export function useEditorRootShortcuts({
@@ -46,8 +43,6 @@ export function useEditorRootShortcuts({
     setWorldTab,
     setFontSize,
     fontSize,
-    setUiMode,
-    uiMode,
 }: UseEditorRootShortcutsProps) {
     const { showToast } = useToast();
     const { t } = useTranslation();
@@ -158,7 +153,6 @@ export function useEditorRootShortcuts({
             "editor.fontSize.increase": () => void setFontSize(fontSize + EDITOR_TOOLBAR_FONT_STEP),
             "editor.fontSize.decrease": () => void setFontSize(Math.max(EDITOR_TOOLBAR_FONT_MIN, fontSize - EDITOR_TOOLBAR_FONT_STEP)),
             "window.toggleFullscreen": () => void api.window.toggleFullscreen(),
-            "view.toggleFocusMode": () => void setUiMode(uiMode === "focus" ? "default" : "focus"),
         }),
         [
             handleAddChapter,
@@ -174,8 +168,6 @@ export function useEditorRootShortcuts({
             setFontSize,
             fontSize,
             setSidebarOpen,
-            uiMode,
-            setUiMode,
             setIsSettingsOpen,
             showToast,
             t,

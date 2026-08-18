@@ -275,6 +275,8 @@ export default function EditorToolbar({
         colors={TEXT_COLORS}
         value={textColor}
         onChange={(hex) => toolbarEditor.chain().focus().setColor(hex).run()}
+        onClear={() => toolbarEditor.chain().focus().unsetColor().run()}
+        clearLabel={t("toolbar.resetTextColor", "기본 글자색")}
         icon={<Palette className="h-4 w-4" />}
         label={t("toolbar.tooltip.textColor", "글자 색")}
       />
@@ -284,6 +286,8 @@ export default function EditorToolbar({
         onChange={(hex) =>
           toolbarEditor.chain().focus().setHighlight({ color: hex }).run()
         }
+        onClear={() => toolbarEditor.chain().focus().unsetHighlight().run()}
+        clearLabel={t("toolbar.resetHighlight", "형광펜 지우기")}
         icon={<Highlighter className="h-4 w-4" />}
         label={t("toolbar.tooltip.highlight", "형광펜")}
         columns={4}

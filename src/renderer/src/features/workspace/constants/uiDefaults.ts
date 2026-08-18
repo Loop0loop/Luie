@@ -1,5 +1,4 @@
 export const DEFAULT_UI_VIEW = "template";
-export const DEFAULT_UI_CONTEXT_TAB = "synopsis";
 export const DEFAULT_UI_RESEARCH_TAB = "character";
 export const DEFAULT_UI_RIGHT_PANEL_TYPE = "research";
 export const DEFAULT_UI_SPLIT_RATIO = 0.62;

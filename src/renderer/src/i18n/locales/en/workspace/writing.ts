@@ -97,7 +97,6 @@ export const enWorkspaceWriting = {
       default: "Default layout",
       scrivener: "Scrivener (3-pane)",
       docs: "Google Docs style",
-      focus: "Focus mode",
     },
   },
   textEditor: {

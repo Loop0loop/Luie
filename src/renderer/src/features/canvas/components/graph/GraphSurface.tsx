@@ -116,7 +116,6 @@ export default function GraphSurface() {
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node<GraphNodeData>) => {
       setFocusId(node.id);
-      useUIStore.getState().setRegionOpen("rightPanel", true);
     },
     [setFocusId]
   );

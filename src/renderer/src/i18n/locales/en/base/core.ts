@@ -168,6 +168,9 @@ export const enBaseCore = {
     },
   },
   toolbar: {
+    customColor: "Custom color",
+    resetTextColor: "Default text color",
+    resetHighlight: "Clear highlight",
     tooltip: {
       undo: "실행 취소",
       redo: "다시 실행",
