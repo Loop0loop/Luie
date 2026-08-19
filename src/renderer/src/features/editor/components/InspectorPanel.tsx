@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FileText, Tags, StickyNote, History, AlertCircle } from "lucide-react";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
@@ -29,6 +29,12 @@ export default function InspectorPanel({
   const activeChapter = chapters.find((c) => c.id === activeChapterId);
 
   const [synopsis, setSynopsis] = useState(activeChapter?.synopsis || "");
+
+  useEffect(() => {
+    // 외부 chapter store가 비동기로 채워지는 경우에도 Inspector 입력값을 현재 장과 맞춘다.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 외부 store 동기화에 필요한 단방향 반영이다.
+    setSynopsis(activeChapter?.synopsis || "");
+  }, [activeChapter?.synopsis, activeChapterId]);
 
   const handleSynopsisChange = (val: string) => {
     setSynopsis(val);

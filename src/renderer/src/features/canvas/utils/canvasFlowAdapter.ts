@@ -48,11 +48,13 @@ function buildNodes(
       width: CANVAS_ENTITY_NODE_WIDTH_PX,
       height: CANVAS_ENTITY_NODE_HEIGHT_PX,
       data: {
+        rawId: node.id,
         kind: node.kind,
         label: node.label,
         description: node.description ?? null,
         connectionCount: connectionCounts.get(node.id) ?? 0,
         isSelected: node.id === selectedNodeId,
+        color: node.color,
       } satisfies RFEntityNodeData,
     };
   });
@@ -70,9 +72,10 @@ function buildEdges(
       source: e.sourceId,
       target: e.targetId,
       data: {
+        rawId: e.id,
         label: e.label ?? "",
-        color: undefined,
-        direction: "unidirectional",
+        color: e.color,
+        direction: e.direction ?? "unidirectional",
       } satisfies RFRelationEdgeData,
     }));
 }

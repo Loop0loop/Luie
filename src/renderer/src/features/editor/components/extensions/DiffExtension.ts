@@ -92,8 +92,8 @@ export const DiffHighlight = Extension.create<DiffOptions>({
                
                if (part.added) {
                   const className = mode === "current" 
-                    ? "bg-green-500/20 text-green-800 dark:text-green-300 rounded-sm decoration-clone" 
-                    : "bg-red-500/20 text-red-800 dark:text-red-300 rounded-sm decoration-clone";
+                    ? "diff-highlight-added bg-success-fg/20 text-success-fg decoration-success-fg rounded-sm decoration-clone"
+                    : "diff-highlight-removed bg-danger-fg/20 text-danger-fg decoration-danger-fg rounded-sm decoration-clone";
                   
                   const startTextPos = currentTextPos;
                   const endTextPos = currentTextPos + partLen;

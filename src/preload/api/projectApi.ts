@@ -1,4 +1,7 @@
 import { IPC_CHANNELS } from "../../shared/ipc/channels.js";
+import type {
+  ChapterSaveProtectedPayload,
+} from "../../shared/types/index.js";
 import type { RendererApi } from "../../shared/api/index.js";
 import type { PreloadApiModuleContext } from "./types.js";
 
@@ -157,6 +160,19 @@ export function createProjectApi({
       purge: (id) => safeInvoke(IPC_CHANNELS.CHAPTER_PURGE, id),
       reorder: (projectId, chapterIds) =>
         safeInvoke(IPC_CHANNELS.CHAPTER_REORDER, projectId, chapterIds),
+      onSaveProtected: (callback) => {
+        const listener = (
+          _event: unknown,
+          payload: ChapterSaveProtectedPayload,
+        ) => callback(payload);
+        ipcRenderer.on(IPC_CHANNELS.CHAPTER_SAVE_PROTECTED, listener);
+        return () => {
+          ipcRenderer.removeListener(
+            IPC_CHANNELS.CHAPTER_SAVE_PROTECTED,
+            listener,
+          );
+        };
+      },
     },
     scene: createCrudApi({
       create: IPC_CHANNELS.SCENE_CREATE,

@@ -14,6 +14,7 @@ import {
   type ProjectLayoutState,
   useProjectLayoutStore,
 } from "@renderer/features/workspace/stores/projectLayoutStore";
+import { buildLegacyUiProjectLayoutPatch } from "@renderer/features/workspace/stores/projectLayout/legacyUiMigration";
 
 let layoutRestoringDepth = 0;
 
@@ -76,6 +77,9 @@ export function useProjectLayoutPersistence(
 
   const projectLayoutHasHydrated = useProjectLayoutStore(
     (state) => state.hasHydrated,
+  );
+  const hasProjectLayout = useProjectLayoutStore((state) =>
+    projectId ? Boolean(state.byProject[projectId]) : false,
   );
   const upsertProjectLayout = useProjectLayoutStore((state) => state.upsertProjectLayout);
   const getProjectLayout = useProjectLayoutStore((state) => state.getProjectLayout);
@@ -189,7 +193,58 @@ export function useProjectLayoutPersistence(
   };
 
   useLayoutEffect(() => {
-    if (!projectId || !hasHydrated || !projectLayoutHasHydrated || !isSupportedMode) {
+    if (
+      !projectId ||
+      !hasHydrated ||
+      !projectLayoutHasHydrated ||
+      !isSupportedMode ||
+      hasProjectLayout
+    ) {
+      return;
+    }
+
+    // uiStore v4의 전역 layout을 현재 프로젝트로 한 번만 승격한다.
+    // 이후 uiStore persist에는 layout 필드를 쓰지 않아 두 저장소가 다시 갈라지지 않는다.
+    upsertProjectLayout(
+      projectId,
+      buildLegacyUiProjectLayoutPatch(uiMode, {
+        leftSidebarOpen: isSidebarOpen,
+        rightPanelOpen: isContextOpen,
+        rightRailOpen: isBinderBarOpen,
+        rightPanelTab: sanitizePersistedDocsRightTab(docsRightTab),
+        scrivenerSections,
+        sidebarWidths: normalizeSidebarWidthsWithMigrations(sidebarWidths),
+        layoutSurfaceRatios: normalizeLayoutSurfaceRatiosWithMigrations(
+          layoutSurfaceRatios,
+          sidebarWidths,
+        ) as Record<LayoutSurfaceId, number>,
+      }),
+    );
+  }, [
+    docsRightTab,
+    hasHydrated,
+    hasProjectLayout,
+    isBinderBarOpen,
+    isContextOpen,
+    isSidebarOpen,
+    isSupportedMode,
+    layoutSurfaceRatios,
+    projectId,
+    projectLayoutHasHydrated,
+    scrivenerSections,
+    sidebarWidths,
+    uiMode,
+    upsertProjectLayout,
+  ]);
+
+  useLayoutEffect(() => {
+    if (
+      !projectId ||
+      !hasHydrated ||
+      !projectLayoutHasHydrated ||
+      !isSupportedMode ||
+      !hasProjectLayout
+    ) {
       return;
     }
 
@@ -260,6 +315,7 @@ export function useProjectLayoutPersistence(
     };
   }, [
     getProjectLayout,
+    hasProjectLayout,
     projectId,
     setRegionOpen,
     openRightPanelTab,

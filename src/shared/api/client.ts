@@ -12,6 +12,7 @@ const EVENT_SUBSCRIPTION_METHODS = new Set([
   "onStatusChanged",
   "onAuthResult",
   "onQuitPhase",
+  "onSaveProtected",
 ]);
 const VOID_METHODS = new Set(["setDirty"]);
 

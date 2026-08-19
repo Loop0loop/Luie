@@ -11,14 +11,14 @@ describe("AnalysisSection narrative summary status UI", () => {
     const panelSource = readFileSync(
       resolve(
         process.cwd(),
-        "src/renderer/src/features/research/components/analysisSection/NarrativeSummaryStatusPanel.tsx",
+        "src/renderer/src/features/research/components/analysisSection/review/summary/NarrativeSummaryStatusPanel.tsx",
       ),
       "utf8",
     );
 
     expect(analysisSource).toContain("NarrativeSummaryStatusPanel");
-    expect(analysisSource).toContain("api.memory.getNarrativeSummaryStatus");
-    expect(panelSource).toContain("서사 요약");
+    expect(analysisSource).toContain("loadNarrativeSummaryStatus");
+    expect(panelSource).toContain("analysis.review.summary.title");
     expect(panelSource).toContain("staleCount");
     expect(panelSource).toContain("summary.summary");
   });

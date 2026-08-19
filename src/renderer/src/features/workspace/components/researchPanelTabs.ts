@@ -3,11 +3,13 @@ import { Bot, Calendar, Globe, Shield, StickyNote, User } from "lucide-react";
 import type { DragItemType } from "@shared/ui/GlobalDragContext";
 import type { ResearchTab } from "@renderer/features/workspace/stores/uiStore";
 
+type LegacyResearchTab = Exclude<ResearchTab, "plotboard" | "untitled">;
+
 export type ResearchPanelTab = {
   dataType: DragItemType;
   icon: LucideIcon;
   id: string;
-  tab: ResearchTab;
+  tab: LegacyResearchTab;
   titleKey: string;
 };
 

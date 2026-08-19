@@ -84,14 +84,13 @@ export function BottomInteractiveToolbar() {
       data-testid="bottom-interactive-toolbar"
     >
       <div className={cn(
-        "flex h-11 items-center gap-2 rounded-full border shadow-panel px-3 py-1",
-        "bg-panel/95 backdrop-blur-md border-border/60 text-fg",
+        "canvas-floating-toolbar flex h-11 items-center gap-2 rounded-full px-3 py-1 text-fg",
         transitionClass
       )}>
 
         <div className={cn(
-          "flex items-center gap-1 p-0.5 rounded-full shrink-0 h-8",
-          "bg-element border border-border/40",
+          "flex items-center gap-0.5 p-0.5 rounded-full shrink-0 h-8",
+          "bg-white/[0.05] border border-white/[0.08]",
           transitionClass
         )}>
           <Button
@@ -102,8 +101,8 @@ export function BottomInteractiveToolbar() {
               "rounded-full text-[11px] font-bold h-7 px-3.5 border-none cursor-pointer",
               transitionClass,
               !isGraphMode
-                ? "bg-accent text-on-accent hover:bg-accent-bg-hover"
-                : "text-muted hover:bg-surface-hover hover:text-fg bg-transparent"
+                ? "bg-white/15 text-fg shadow-sm border border-white/20 hover:bg-white/20"
+                : "text-muted hover:bg-white/[0.06] hover:text-fg bg-transparent"
             )}
           >
             {t("canvas.activity.canvas")}
@@ -116,15 +115,15 @@ export function BottomInteractiveToolbar() {
               "rounded-full text-[11px] font-bold h-7 px-3.5 border-none cursor-pointer",
               transitionClass,
               isGraphMode
-                ? "bg-accent text-on-accent hover:bg-accent-bg-hover"
-                : "text-muted hover:bg-surface-hover hover:text-fg bg-transparent"
+                ? "bg-white/15 text-fg shadow-sm border border-white/20 hover:bg-white/20"
+                : "text-muted hover:bg-white/[0.06] hover:text-fg bg-transparent"
             )}
           >
             {t("canvas.activity.graph")}
           </Button>
         </div>
 
-        <div className="w-px h-5 bg-border/50" />
+        <div className="w-px h-4 bg-white/10" />
 
         <div className="flex items-center gap-1 w-[308px] shrink-0 justify-center">
           {!isGraphMode ? (
@@ -224,7 +223,7 @@ export function BottomInteractiveToolbar() {
           )}
         </div>
 
-        <div className="w-px h-5 bg-border" />
+        <div className="w-px h-4 bg-white/10" />
 
         <Button
           variant="ghost"

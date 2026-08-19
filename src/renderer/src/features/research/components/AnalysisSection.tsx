@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
-import { BookOpen, Bot, Maximize2, Scale, Search, Users } from "lucide-react";
+import { BookOpen, Bot, Maximize2, Scale, Search, Users, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
@@ -212,7 +212,16 @@ function FloatingWrapper({
   );
 }
 
-export default function AnalysisSection() {
+interface AnalysisSectionProps {
+  /** AIPanel 내부에서는 floating 상태를 무시하고 패널 안에 고정한다. */
+  forceDocked?: boolean;
+  onClose?: () => void;
+}
+
+export default function AnalysisSection({
+  forceDocked = false,
+  onClose,
+}: AnalysisSectionProps = {}) {
   const { t } = useTranslation();
   const [sectionTab, setSectionTab] = useState<"chat" | "review">("chat");
   const { currentItem: currentChapter, items: chapters } = useChapterStore(
@@ -287,7 +296,7 @@ export default function AnalysisSection() {
 
   const disabled = !currentProject;
   const isEmpty = chat.messages.length === 0;
-  const floating = viewMode === "floatingView";
+  const floating = !forceDocked && viewMode === "floatingView";
   const floatingCompact = floating && isEmpty;
 
   const composer = (
@@ -370,21 +379,34 @@ export default function AnalysisSection() {
             </button>
           </div>
 
-          {viewMode === "fixView" && (
-            <button
-              data-testid="view-mode-toggle"
-              type="button"
-              onClick={() => {
-                setViewMode("floatingView");
-                setMinimized(false);
-              }}
-              className="p-1.5 rounded-full hover:bg-surface-hover text-muted hover:text-fg transition-[colors,transform] duration-150 active:scale-90 shrink-0"
-              title={t("analysis.viewMode.switchToFloating")}
-              aria-label={t("analysis.viewMode.switchToFloating")}
-            >
-              <Maximize2 className="w-3.5 h-3.5" />
-            </button>
-          )}
+          <div className="flex items-center gap-1">
+            {viewMode === "fixView" && !forceDocked && (
+              <button
+                data-testid="view-mode-toggle"
+                type="button"
+                onClick={() => {
+                  setViewMode("floatingView");
+                  setMinimized(false);
+                }}
+                className="p-1.5 rounded-full hover:bg-surface-hover text-muted hover:text-fg transition-[colors,transform] duration-150 active:scale-90 shrink-0"
+                title={t("analysis.viewMode.switchToFloating")}
+                aria-label={t("analysis.viewMode.switchToFloating")}
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-1.5 rounded-full hover:bg-surface-hover text-muted hover:text-fg transition-colors shrink-0"
+                title={t("sidebar.toggle.close")}
+                aria-label={t("sidebar.toggle.close")}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
       )}
 

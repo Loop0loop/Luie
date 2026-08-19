@@ -114,7 +114,26 @@ export const sanitizeWorkspacePanels = (
     }
   }
 
-  return panels.slice(0, 3);
+  const lastExclusivePanel = [...panels]
+    .reverse()
+    .find(
+      (panel) =>
+        panel.content.type === "research" || panel.content.type === "editor",
+    );
+  const exclusiveType = lastExclusivePanel?.content.type;
+  const compatiblePanels =
+    exclusiveType === "research" || exclusiveType === "editor"
+      ? panels.filter(
+          (panel) =>
+            (panel.content.type !== "research" &&
+              panel.content.type !== "editor") ||
+            (panel.content.type === exclusiveType &&
+              (exclusiveType !== "editor" ||
+                panel.id === lastExclusivePanel?.id)),
+        )
+      : panels;
+
+  return compatiblePanels.slice(0, 3);
 };
 
 export const sanitizePersistedDocsRightTab = (

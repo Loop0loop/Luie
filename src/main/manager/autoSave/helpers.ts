@@ -18,7 +18,6 @@ export {
   createAutoSaveRuntimeCounters,
   getAutoSaveRuntimeStats,
 } from "./autoSaveRuntimeStats.js";
-export { writeValidationBlockedSafetySnapshot } from "./autoSaveSafetySnapshot.js";
 export { maybeEnqueueSnapshotJob } from "./autoSaveSnapshotGate.js";
 export {
   maybeCreateEmergencySnapshot,

@@ -111,6 +111,36 @@ describe("uiStore persist rehydrate", () => {
     expect(store.getState().panels).toBe(panelsBefore);
   });
 
+  it("keeps research and DnD editor panels mutually exclusive", async () => {
+    const { module } = await loadUiStore();
+    const store = module.useUIStore;
+
+    store.getState().addPanel({ type: "research", tab: "character" });
+    store.getState().addPanel({ type: "editor", id: "chapter-1" });
+    expect(store.getState().panels.map((panel) => panel.content.type)).toEqual([
+      "editor",
+    ]);
+
+    store.getState().addPanel({ type: "research", tab: "event" });
+    expect(store.getState().panels.map((panel) => panel.content.type)).toEqual([
+      "research",
+    ]);
+  });
+
+  it("replaces the existing DnD editor panel", async () => {
+    const { module } = await loadUiStore();
+    const store = module.useUIStore;
+
+    store.getState().addPanel({ type: "editor", id: "chapter-1" });
+    store.getState().addPanel({ type: "editor", id: "chapter-2" });
+
+    expect(store.getState().panels).toHaveLength(1);
+    expect(store.getState().panels[0]?.content).toMatchObject({
+      type: "editor",
+      id: "chapter-2",
+    });
+  });
+
   it("rehydrates valid persisted state", async () => {
     const { module, warn } = await loadUiStore({
       view: "editor",
@@ -218,5 +248,41 @@ describe("uiStore persist rehydrate", () => {
     expect(state.docsRightTab).toBe("character");
     expect(state.regions.rightRail.open).toBe(false);
     expect(state.isBinderBarOpen).toBe(false);
+  });
+
+  it("stops writing project-owned layout fields after the ownership migration", async () => {
+    const { module } = await loadUiStore({
+      view: "editor",
+      sidebarWidths: { mainSidebar: 288 },
+      layoutSurfaceRatios: { "docs.sidebar": 19 },
+      scrivenerSections: {
+        manuscript: true,
+        characters: false,
+        events: true,
+        factions: false,
+        world: false,
+        scrap: false,
+        snapshots: false,
+        analysis: false,
+        trash: false,
+      },
+      regions: {
+        leftSidebar: { open: false, widthPx: 288 },
+        rightPanel: {
+          open: true,
+          activeTab: "world",
+          widthByTab: { world: 360 },
+        },
+        rightRail: { open: true },
+      },
+    });
+
+    module.useUIStore.getState().setView("corkboard");
+    const saved = JSON.parse(memoryStorage.getItem(STORAGE_KEY_UI) ?? "{}");
+
+    expect(saved.state).not.toHaveProperty("sidebarWidths");
+    expect(saved.state).not.toHaveProperty("layoutSurfaceRatios");
+    expect(saved.state).not.toHaveProperty("regions");
+    expect(saved.state).not.toHaveProperty("scrivenerSections");
   });
 });

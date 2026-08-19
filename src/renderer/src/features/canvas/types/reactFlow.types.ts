@@ -4,11 +4,13 @@ import type {
 } from "@shared/types";
 
 export interface RFEntityNodeData {
+  readonly rawId?: string;
   readonly kind: CanvasNodeKind;
   readonly label: string;
   readonly description?: string | null;
   readonly connectionCount: number;
   readonly isSelected: boolean;
+  readonly color?: string;
 }
 
 export interface RFMemoNodeData {
@@ -25,6 +27,7 @@ export interface RFTimelineNodeData {
 }
 
 export interface RFRelationEdgeData {
+  readonly rawId?: string;
   readonly label: string;
   readonly color?: string;
   readonly direction: WorldGraphCanvasEdgeDirection;

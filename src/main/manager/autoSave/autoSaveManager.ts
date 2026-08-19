@@ -28,7 +28,6 @@ import {
   queueLatestMirrorWrite,
   startAutoSaveCleanupInterval,
   verifyChapterProject,
-  writeValidationBlockedSafetySnapshot,
   type AutoSaveConfig,
   type AutoSaveRuntimeCounters,
   type AutoSaveRuntimeStats,
@@ -249,32 +248,8 @@ export class AutoSaveManager extends EventEmitter {
       queueMirrorWrite: (pending) => this.queueMirrorWrite(pending),
       maybeEnqueueSnapshot: (projectId, targetChapterId, content) =>
         this.maybeEnqueueSnapshot(projectId, targetChapterId, content),
-      writeValidationBlockedSafetySnapshot: (pending) =>
-        writeValidationBlockedSafetySnapshot({
-          pending,
-          loadSnapshotService,
-          writeLatestMirror: (projectId, targetChapterId, targetContent) =>
-            this.mirrorStore.writeLatestMirror(
-              projectId,
-              targetChapterId,
-              targetContent,
-            ),
-          writeTimestampedMirror: (
-            projectId,
-            targetChapterId,
-            targetContent,
-          ) =>
-            this.mirrorStore.writeTimestampedMirror(
-              projectId,
-              targetChapterId,
-              targetContent,
-            ),
-          logger,
-        }),
       emitSaved: (targetChapterId) =>
         this.emit("saved", { chapterId: targetChapterId }),
-      emitSaveBlocked: (targetChapterId, error) =>
-        this.emit("save-blocked", { chapterId: targetChapterId, error }),
       emitError: (targetChapterId, error) =>
         this.emit("error", { chapterId: targetChapterId, error }),
       canEmitError: () => this.listenerCount("error") > 0,

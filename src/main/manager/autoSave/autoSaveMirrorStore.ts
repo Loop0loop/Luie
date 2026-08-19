@@ -21,6 +21,26 @@ type MirrorPayload = {
   updatedAt: string | null;
 };
 
+// NOTE: 미러를 스냅샷으로 승격할지 결정한다. 미러 내용이 이미 DB에 저장돼 있으면(동일하거나
+// DB가 더 새면) 승격은 중복이고, 스냅샷 목록을 무의미한 항목으로 오염시킨다.
+// 미러가 DB보다 새고 내용이 다를 때만(저장이 완료되지 못한 크래시 케이스) 승격한다.
+export const shouldPromoteMirrorToSnapshot = (input: {
+  mirrorContent: string;
+  mirrorUpdatedAtMs: number;
+  chapterContent: string | null;
+  chapterUpdatedAtMs: number;
+}): boolean => {
+  if (input.mirrorContent === (input.chapterContent ?? "")) return false;
+  if (
+    input.mirrorUpdatedAtMs > 0 &&
+    input.chapterUpdatedAtMs > 0 &&
+    input.mirrorUpdatedAtMs <= input.chapterUpdatedAtMs
+  ) {
+    return false;
+  }
+  return true;
+};
+
 export class AutoSaveMirrorStore {
   constructor(private readonly logger: LoggerLike) {}
 
@@ -111,6 +131,7 @@ export class AutoSaveMirrorStore {
           id: chapterTable.id,
           projectId: chapterTable.projectId,
           deletedAt: chapterTable.deletedAt,
+          updatedAt: chapterTable.updatedAt,
         }).from(chapterTable).where(eq(chapterTable.id, payload.chapterId)).limit(1);
         const chapter = rows[0] ?? null;
 
@@ -168,6 +189,36 @@ export class AutoSaveMirrorStore {
           : 0;
 
         if (mirrorAt && mirrorAt <= latestAt) {
+          continue;
+        }
+
+        const { readChapterContent } = await import(
+          "../../services/core/chapter/chapterContentStore.js"
+        );
+        const chapterContent = await readChapterContent(payload.chapterId);
+        const chapterUpdatedAtMs = (() => {
+          const value = (chapter as { updatedAt?: unknown }).updatedAt;
+          if (!value) return 0;
+          const parsed = new Date(String(value)).getTime();
+          return Number.isFinite(parsed) ? parsed : 0;
+        })();
+
+        if (
+          !shouldPromoteMirrorToSnapshot({
+            mirrorContent: payload.content,
+            mirrorUpdatedAtMs: mirrorAt,
+            chapterContent,
+            chapterUpdatedAtMs,
+          })
+        ) {
+          this.logger.info(
+            "Mirror snapshot skipped (mirror already persisted or stale)",
+            {
+              chapterId: payload.chapterId,
+              mirrorAt,
+              chapterUpdatedAtMs,
+            },
+          );
           continue;
         }
 

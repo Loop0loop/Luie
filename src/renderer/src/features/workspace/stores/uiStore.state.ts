@@ -104,15 +104,59 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
         }
       }
 
-      const existing = state.panels.find((panel) =>
+      const incompatiblePanelType =
+        content.type === "research"
+          ? "editor"
+          : content.type === "editor"
+            ? "research"
+            : null;
+      const compatiblePanels = incompatiblePanelType
+        ? state.panels.filter(
+            (panel) => panel.content.type !== incompatiblePanelType,
+          )
+        : state.panels;
+      const removedIncompatiblePanel =
+        compatiblePanels.length !== state.panels.length;
+
+      if (content.type === "editor") {
+        const existingEditorIndex = compatiblePanels.findIndex(
+          (panel) => panel.content.type === "editor",
+        );
+        if (existingEditorIndex >= 0) {
+          const existingEditor = compatiblePanels[existingEditorIndex];
+          if (
+            existingEditor.content.id === content.id &&
+            !removedIncompatiblePanel
+          ) {
+            return state;
+          }
+          const nextPanels = [...compatiblePanels];
+          nextPanels[existingEditorIndex] = {
+            ...existingEditor,
+            id: buildStablePanelId(content),
+            content,
+          };
+          nextFocusedPanelId = nextPanels[existingEditorIndex].id;
+          return { panels: nextPanels };
+        }
+      }
+
+      const existing = compatiblePanels.find((panel) =>
         panel.content.type === content.type &&
         (content.type === "snapshot"
           ? panel.content.snapshot?.id === content.snapshot?.id
           : panel.content.id === content.id &&
             panel.content.tab === content.tab),
       );
-      if (existing || state.panels.length >= 3) {
-        return state;
+      if (existing || compatiblePanels.length >= 3) {
+        if (!removedIncompatiblePanel) return state;
+        const sizePerPanel = 100 / compatiblePanels.length;
+        return {
+          panels: compatiblePanels.map((panel) => ({
+            ...panel,
+            size: sizePerPanel,
+          })),
+        };
       }
 
       const newPanel: ResizablePanelData = {
@@ -121,11 +165,11 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
         size:
           typeof initialSize === "number" && Number.isFinite(initialSize)
             ? Math.min(90, Math.max(15, initialSize))
-            : state.panels.length === 0
+            : compatiblePanels.length === 0
               ? 100
               : 50,
       };
-      const newPanels = [...state.panels];
+      const newPanels = [...compatiblePanels];
       if (insertAt !== undefined && insertAt >= 0 && insertAt <= newPanels.length) {
         newPanels.splice(insertAt, 0, newPanel);
       } else {

@@ -13,7 +13,7 @@ import {
   type DocsRightTab,
 } from "@renderer/features/workspace/stores/uiStore";
 import { useShallow } from "zustand/react/shallow";
-import { useChapterManagement } from "@renderer/domains/manuscript";
+import { useChapterManagement, useChapterStore } from "@renderer/domains/manuscript";
 import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import { useWorkspaceDropHandlers } from "@renderer/features/workspace/hooks/useWorkspaceDropHandlers";
 import {
@@ -115,6 +115,10 @@ export default function EditorRoot() {
     () => chapters.find((c) => c.id === activeChapterId),
     [chapters, activeChapterId],
   );
+  // NOTE: 스냅샷 복원 시 같은 챕터의 본문이 바뀌므로 리비전을 key에 넣어 Editor를 리마운트한다.
+  const contentRevision = useChapterStore(
+    (state) => state.contentRevision,
+  );
 
   const [docEditor, setDocEditor] = useState<TiptapEditor | null>(null);
 
@@ -148,9 +152,10 @@ export default function EditorRoot() {
     addPanel,
     removePanel,
     handleSelectResearchItem,
+    handleOpenSnapshot,
     handleSplitView,
     handleOpenExport,
-  } = useSplitView();
+  } = useSplitView(activeChapterId ?? undefined);
   const additionalPanelIds = useMemo(
     () => panels.map((panel) => panel.id),
     [panels],
@@ -170,6 +175,7 @@ export default function EditorRoot() {
     setMainView,
     setWorldTab,
     addPanel,
+    handleOpenSnapshot,
   });
 
   const openDocsRightTab = useCallback((tab: Exclude<DocsRightTab, null>) => {
@@ -290,7 +296,7 @@ export default function EditorRoot() {
   const sharedEditor = (
     <FeatureErrorBoundary featureName="Editor">
       <Editor
-        key={activeChapterId}
+        key={`editor-${activeChapterId ?? "none"}-${contentRevision}`}
         initialTitle={activeChapter ? activeChapter.title : ""}
         initialContent={activeChapter ? activeChapter.content : ""}
         onSave={handleSave}
@@ -322,7 +328,11 @@ export default function EditorRoot() {
       />
     </Suspense>
   );
-  const isResearchPanelAdjacent = panels[0]?.content.type === "research";
+  // Snapshot/Research가 AI View와 맞닿을 때만 rounded 경계를 사용한다.
+  const isResearchPanelAdjacent = ["research", "snapshot"].includes(
+    panels[0]?.content.type ?? "",
+  );
+  const isEditorPanelAdjacent = panels[0]?.content.type === "editor";
 
   return (
     <GlobalDragContext
@@ -347,6 +357,7 @@ export default function EditorRoot() {
           activeChapterContent={content}
           currentProjectId={currentProject?.id}
           isResearchPanelAdjacent={isResearchPanelAdjacent}
+          isEditorPanelAdjacent={isEditorPanelAdjacent}
           onOpenSettings={handleOpenSettings}
           onPrefetchSettings={prefetchSettings}
           onSelectResearchItem={handleSelectResearchItem}

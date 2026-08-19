@@ -343,7 +343,7 @@ export function PlotBoard() {
     <fieldset
       key={projectScope}
       disabled={editableScope !== projectScope}
-      className="h-full min-w-0 m-0 p-0 border-0 flex flex-col bg-app overflow-hidden"
+      className="research-surface h-full min-w-0 m-0 p-0 border-0 outline-none flex flex-col overflow-hidden"
     >
       <div
         className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar"
@@ -418,7 +418,7 @@ export function PlotBoard() {
         </div>
       </div>
 
-      <div className="h-4 bg-sidebar border-t border-border shrink-0" />
+      <div className="h-4 research-surface border-0 shrink-0" />
     </fieldset>
   );
 }

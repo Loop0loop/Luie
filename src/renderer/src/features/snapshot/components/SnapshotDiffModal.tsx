@@ -38,7 +38,7 @@ export function SnapshotDiffModal({
       title={t("snapshot.diff.title")}
       width="640px"
     >
-      <div className="flex flex-col h-[70vh]">
+      <div className="research-surface -m-5 flex h-[70vh] flex-col border-0 outline-none">
         <div className="flex items-center justify-between px-4 py-2 bg-panel border-b border-border shrink-0">
           <div className="flex items-center gap-4 text-sm">
             <div className="flex flex-col">
@@ -74,9 +74,9 @@ export function SnapshotDiffModal({
         <div className="flex-1 overflow-auto p-4 bg-app font-mono text-sm leading-relaxed whitespace-pre-wrap [contain:content]">
           {diffs.map((part, index) => {
             const color = part.added
-              ? "bg-success-fg/20 text-success-fg"
+              ? "bg-success-fg/20 text-success-fg decoration-success-fg"
               : part.removed
-                ? "bg-danger-fg/20 text-danger-fg decoration-slice line-through opacity-70"
+                ? "bg-danger-fg/20 text-danger-fg decoration-danger-fg decoration-slice line-through opacity-70"
                 : "text-fg";
             const stableKey = `${index}-${part.value.length}-${part.added ? "a" : part.removed ? "r" : "k"}`;
 

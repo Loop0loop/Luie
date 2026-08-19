@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { History } from "lucide-react";
 import { Editor, useEditorStore } from "@renderer/domains/editor";
+import { useChapterStore } from "@renderer/domains/manuscript";
+import { AIPanel } from "@renderer/features/ai";
 import { useTranslation } from "react-i18next";
 import {
   Panel,
@@ -140,6 +142,10 @@ function ResearchContent(props: {
   activeTab: "analysis" | "character" | "event" | "faction" | "scrap";
   onClose: () => void;
 }) {
+  if (props.activeTab === "analysis") {
+    return <AIPanel onClose={props.onClose} />;
+  }
+
   return (
     <Suspense fallback={<LoadingFallback />}>
       <div className="h-full">
@@ -165,6 +171,10 @@ export function GoogleDocsRightPanel({
   trashRefreshKey,
 }: GoogleDocsRightPanelProps) {
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
+  // NOTE: 스냅샷 복원 시 같은 챕터의 본문이 바뀌므로 리비전을 key에 넣어 Editor를 리마운트한다.
+  const contentRevision = useChapterStore(
+    (state) => state.contentRevision,
+  );
   const [renderedTab, setRenderedTab] = useState(activeRightTab);
   const restoreFrameRef = useRef<number | null>(null);
   const panelRef = useRef<PanelImperativeHandle | null>(null);
@@ -280,7 +290,7 @@ export function GoogleDocsRightPanel({
           {renderedTab === "editor" && (
             <div className="h-full">
               <Editor
-                key={`docs-side-editor-${activeChapterId ?? "none"}`}
+                key={`docs-side-editor-${activeChapterId ?? "none"}-${contentRevision}`}
                 chapterId={activeChapterId ?? undefined}
                 initialTitle={activeChapterTitle ?? ""}
                 initialContent={activeChapterContent ?? ""}

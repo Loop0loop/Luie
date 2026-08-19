@@ -101,7 +101,14 @@ class SmartLinkService {
     const uiStore = useUIStore.getState();
     const uiMode = useEditorStore.getState().uiMode;
 
-    if (uiMode === "docs" || uiMode === "editor") {
+    if (uiMode === "scrivener") {
+      if (type === "character") {
+        uiStore.setMainView({ type: "character", id });
+      } else {
+        uiStore.setWorldTab("terms");
+        uiStore.setMainView({ type: "world", id });
+      }
+    } else if (uiMode === "docs" || uiMode === "editor") {
       const openRightTab =
         uiMode === "editor" ? openEditorBinderTab : openDocsRightTab;
       if (type === "character") {

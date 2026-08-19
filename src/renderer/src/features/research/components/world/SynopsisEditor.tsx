@@ -238,7 +238,7 @@ export function SynopsisEditor() {
     <fieldset
       key={projectScope}
       disabled={editableScope !== projectScope}
-      className="h-full min-w-0 m-0 p-0 border-0 flex flex-col bg-[#faf9f6]/50 dark:bg-zinc-900 overflow-hidden transition-colors duration-500"
+      className="research-surface h-full min-w-0 m-0 p-0 border-0 outline-none flex flex-col overflow-hidden transition-colors duration-500"
     >
       <div
         className={cn(

@@ -7,7 +7,19 @@ export const koBaseResearch = {
       world: "세계관",
       scrap: "자료 스크랩",
       analysis: "분석",
+      plotBoard: "플롯보드",
+      untitled: "스토리 라인",
       default: "연구",
+    },
+    catalog: {
+      terms: "용어",
+      memo: "메모",
+      synopsis: "시놉시스",
+      plot: "플롯보드",
+      mindmap: "인물 관계도",
+      drawing: "스토리 흐름도",
+      graph: "그래프",
+      empty: "하위 화면을 선택하세요.",
     },
     graph: {
       tabs: {

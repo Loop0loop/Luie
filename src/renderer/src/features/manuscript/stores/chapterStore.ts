@@ -20,6 +20,9 @@ interface ChapterStore extends BaseChapterStore {
 
   chapters: Chapter[];
   currentChapter: Chapter | null;
+  // NOTE: 스냅샷 복원 등 외부에서 챕터 본문이 바뀔 때 Editor를 리마운트시키기 위한 리비전.
+  contentRevision: number;
+  bumpContentRevision: () => void;
 }
 
 export const useChapterStore = create<ChapterStore>((set, get, store) => {
@@ -67,5 +70,8 @@ export const useChapterStore = create<ChapterStore>((set, get, store) => {
 
     chapters: crudSlice.items,
     currentChapter: crudSlice.currentItem,
+    contentRevision: 0,
+    bumpContentRevision: () =>
+      set((state) => ({ contentRevision: state.contentRevision + 1 })),
   };
 });

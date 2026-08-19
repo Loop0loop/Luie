@@ -9,7 +9,9 @@ export type ResearchTab =
   | "event"
   | "faction"
   | "scrap"
-  | "analysis";
+  | "analysis"
+  | "plotboard"
+  | "untitled";
 export type WorldTab =
   | "synopsis"
   | "terms"

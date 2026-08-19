@@ -216,7 +216,7 @@ function MemoSectionInner({
   return (
     <div
       ref={containerRef}
-      className="flex flex-col h-full bg-sidebar/30"
+      className="research-surface flex flex-col h-full overflow-hidden"
       style={{
         visibility: shouldHideUntilLayoutReady ? "hidden" : undefined,
       }}
@@ -257,7 +257,7 @@ function MemoSectionInner({
           className="min-w-0"
         >
           {activeNote ? (
-            <div className="h-full flex flex-col bg-panel overflow-hidden">
+            <div className="research-surface h-full flex flex-col overflow-hidden">
               <div className="px-6 pt-3 flex items-center gap-2">
                 <Tag className="icon-sm" color="var(--text-tertiary)" />
                 <input
@@ -294,7 +294,7 @@ function MemoSectionInner({
               />
             </div>
           ) : (
-            <div className="h-full flex items-center justify-center text-tertiary">
+            <div className="research-surface h-full flex items-center justify-center text-tertiary">
               {t("memo.empty")}
             </div>
           )}

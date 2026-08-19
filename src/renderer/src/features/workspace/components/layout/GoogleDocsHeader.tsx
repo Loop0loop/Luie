@@ -11,6 +11,7 @@ type GoogleDocsHeaderProps = {
   onOpenSettings: () => void;
   onRenameChapter?: (id: string, title: string) => void;
   onRightTabClick: (tab: DocsLayoutPanelTab) => void;
+  offsetChapterTitle?: boolean;
 };
 
 function DocsHeaderIconButton(props: {
@@ -42,12 +43,18 @@ export function GoogleDocsHeader({
   onOpenSettings,
   onRenameChapter,
   onRightTabClick,
+  offsetChapterTitle = false,
 }: GoogleDocsHeaderProps) {
   const { t } = useTranslation();
 
   return (
     <header className="flex h-[64px] shrink-0 select-none items-center justify-between bg-app px-4 transition-colors duration-200">
-      <div className="flex min-w-0 items-center gap-3">
+      <div
+        className={cn(
+          "-translate-y-2 flex min-w-0 items-center gap-1",
+          offsetChapterTitle && "ml-[70px]",
+        )}
+      >
         <div
           className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-control text-accent transition-colors hover:bg-surface-hover"
           title={t("home")}
@@ -64,7 +71,7 @@ export function GoogleDocsHeader({
             }
           }}
           placeholder={t("project.defaults.untitled")}
-          className="max-w-[400px] min-w-[150px] truncate rounded-[4px] border border-transparent bg-transparent px-2 py-0.5 text-[18px] text-fg transition-colors duration-150 hover:bg-surface-hover focus:bg-app focus:outline-none focus:ring-2 focus:ring-accent"
+          className="max-w-[400px] min-w-[150px] truncate rounded-[4px] border border-transparent bg-transparent px-1 py-0.5 text-[18px] text-fg transition-colors duration-150 hover:bg-surface-hover focus:bg-app focus:outline-none focus:ring-2 focus:ring-accent"
         />
       </div>
 

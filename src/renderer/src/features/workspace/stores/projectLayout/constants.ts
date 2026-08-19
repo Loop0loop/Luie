@@ -33,6 +33,8 @@ export const PERSISTABLE_RESEARCH_TABS = new Set<ResearchTab>([
   "faction",
   "scrap",
   "analysis",
+  "plotboard",
+  "untitled",
 ]);
 
 export const WORKSPACE_PANEL_MIN_SIZE = 15;

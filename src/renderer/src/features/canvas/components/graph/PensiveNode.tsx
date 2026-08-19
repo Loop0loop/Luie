@@ -3,7 +3,6 @@ import { Handle, Position, type NodeProps } from "reactflow";
 import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
 import type { GraphNodeData } from "../../types/graph";
-import { useGraphStore } from "../../stores/graph/graphStore";
 
 const SIZE_CLASSES = {
   prime: "h-16 w-16", // 중심 거성 (64px) - 2배 증가
@@ -11,9 +10,8 @@ const SIZE_CLASSES = {
   minor: "h-9 w-9", // 주변 노드 (36px) - 3.6배 증가
 } as const;
 
-function PensiveNode({ id, data, selected }: NodeProps<GraphNodeData>) {
+function PensiveNode({ data, selected }: NodeProps<GraphNodeData>) {
   const { t } = useTranslation();
-  const setHoverId = useGraphStore((state) => state.setHoverId);
   const isChapter = data.type === "chapter";
   const isFocused = selected || data.isFocused;
 
@@ -42,10 +40,8 @@ function PensiveNode({ id, data, selected }: NodeProps<GraphNodeData>) {
   return (
     <div
       style={{ opacity: data.opacity ?? 1.0 }}
-      onMouseEnter={() => setHoverId(id)}
-      onMouseLeave={() => setHoverId(null)}
       className={cn(
-        "group relative flex items-center justify-center transition-[background-color,border-color,box-shadow,opacity] duration-200 cursor-pointer",
+        "group relative flex items-center justify-center transition-[background-color,border-color,box-shadow,opacity] duration-200 cursor-default",
         shapeClass,
         SIZE_CLASSES[data.starGrade ?? "minor"],
         starGradeClass,

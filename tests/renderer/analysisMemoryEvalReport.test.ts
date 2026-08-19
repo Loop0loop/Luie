@@ -23,8 +23,7 @@ describe("AnalysisSection memory eval report UI", () => {
       "utf8",
     );
 
-    expect(analysisSource).toContain("MemoryEvalReportPanel");
-    expect(analysisSource).toContain("useMemoryEvalPanel");
+    expect(analysisSource).toContain("NarrativeSummaryStatusPanel");
     expect(hookSource).toContain("api.memoryAdmin.runEvalSuite");
     expect(hookSource).toContain("api.memoryAdmin.runIntentCalibration");
     expect(hookSource).toContain("api.memoryAdmin.runEpisodeCalibration");

@@ -58,6 +58,8 @@ export const jaMissing = {
     autosave: {
       failed: "自動保存に失敗しました",
       retryingIn: "{{seconds}}秒後に再試行します",
+      largeDeletionProtected:
+        "大量削除が検出されました。削除前の状態をスナップショットとして保存しました",
     },
     errors: {
       exportNoChapter: "エクスポートする章がありません",

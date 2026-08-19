@@ -5,6 +5,8 @@ export const INCH_PX = 96;
 export const EDITOR_A4_PAGE_WIDTH_PX = 794;
 export const EDITOR_A4_PAGE_HEIGHT_PX = 1123;
 export const EDITOR_MIN_PANEL_WIDTH_PX = 640;
+// DnD로 추가된 에디터는 AI View와 나란히 놓일 수 있어 좁은 패널도 허용한다.
+export const EDITOR_DND_MIN_PANEL_WIDTH_PX = 320;
 export const EDITOR_TOOLBAR_MARKUP_COMPACT_WIDTH_PX = 720;
 export const EDITOR_RULER_HEIGHT_PX = 24;
 export const EDITOR_RULER_DEFAULT_MARGIN_LEFT_PX = INCH_PX;

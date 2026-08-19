@@ -1,13 +1,16 @@
 import { useCallback } from "react";
 import type { DragData } from "@shared/ui/GlobalDragContext";
 import type { EditorUiMode } from "@shared/types";
+import type { Snapshot } from "@shared/types";
 import { openDocsRightTab } from "@renderer/features/workspace/services/docsPanelService";
 import { openEditorBinderTab } from "@renderer/features/workspace/services/layoutRegionActions";
 import type {
   DocsRightTab,
+  ResearchTab,
   ResizablePanelData,
   WorldTab,
 } from "@renderer/features/workspace/stores/uiStore";
+import { getChapterDropMainView } from "@renderer/features/workspace/utils/workspaceDropRouting";
 
 type ScrivenerMainView = {
   type:
@@ -26,7 +29,7 @@ interface DropHandlerDependencies {
   uiMode: EditorUiMode;
   handleSelectChapter: (id: string) => void;
   handleSelectResearchItem: (
-    type: "character" | "event" | "faction" | "world" | "scrap" | "analysis",
+    type: ResearchTab,
   ) => void;
   setMainView: (view: ScrivenerMainView) => void;
   setWorldTab: (tab: WorldTab) => void;
@@ -34,6 +37,7 @@ interface DropHandlerDependencies {
     panelInfo: ResizablePanelData["content"],
     insertAt?: number,
   ) => void;
+  handleOpenSnapshot: (snapshot: Snapshot) => void;
 }
 
 export function useWorkspaceDropHandlers({
@@ -43,6 +47,7 @@ export function useWorkspaceDropHandlers({
   setMainView,
   setWorldTab,
   addPanel,
+  handleOpenSnapshot,
 }: DropHandlerDependencies) {
   const isDocsLikeMode = uiMode === "docs" || uiMode === "editor";
   const getDocsTabByDragType = useCallback((type: DragData["type"]) => {
@@ -58,6 +63,7 @@ export function useWorkspaceDropHandlers({
       case "plot":
       case "drawing":
       case "synopsis":
+      case "graph":
         return "world" as const;
       case "memo":
         return "scrap" as const;
@@ -86,6 +92,16 @@ export function useWorkspaceDropHandlers({
     (data: DragData) => {
       if (data.type === "chapter") {
         handleSelectChapter(data.id);
+        const mainView = getChapterDropMainView(uiMode, data.type);
+        if (mainView) setMainView(mainView);
+        return;
+      }
+
+      if (data.type === "snapshot") {
+        const snapshot = data.snapshot;
+        if (snapshot && typeof snapshot === "object") {
+          handleOpenSnapshot(snapshot as Snapshot);
+        }
         return;
       }
 
@@ -128,6 +144,10 @@ export function useWorkspaceDropHandlers({
             setWorldTab("synopsis");
             setMainView({ type: "world", id: data.id });
             break;
+          case "graph":
+            setWorldTab("graph");
+            setMainView({ type: "world", id: data.id });
+            break;
           case "memo":
             setMainView({ type: "memo", id: data.id });
             break;
@@ -150,11 +170,16 @@ export function useWorkspaceDropHandlers({
             handleSelectResearchItem("faction");
             break;
           case "world":
-          case "mindmap":
+            handleSelectResearchItem("scrap");
+            break;
           case "plot":
-          case "drawing":
           case "synopsis":
-            handleSelectResearchItem("world");
+            handleSelectResearchItem("plotboard");
+            break;
+          case "mindmap":
+          case "drawing":
+          case "graph":
+            handleSelectResearchItem("untitled");
             break;
           case "memo":
             handleSelectResearchItem("scrap");
@@ -167,6 +192,7 @@ export function useWorkspaceDropHandlers({
     },
     [
       getDocsTabByDragType,
+      handleOpenSnapshot,
       handleSelectChapter,
       handleSelectResearchItem,
       isDocsLikeMode,
@@ -179,6 +205,14 @@ export function useWorkspaceDropHandlers({
 
   const handleDropToSplit = useCallback(
     (data: DragData, side?: "left" | "right" | "bottom") => {
+      if (data.type === "snapshot") {
+        const snapshot = data.snapshot;
+        if (snapshot && typeof snapshot === "object") {
+          handleOpenSnapshot(snapshot as Snapshot);
+        }
+        return;
+      }
+
       if (isDocsLikeMode) {
         const docsTab = getDocsTabByDragType(data.type);
         if (docsTab) {
@@ -207,11 +241,16 @@ export function useWorkspaceDropHandlers({
           addPanel({ type: "research", tab: "faction", id: data.id }, insertAt);
           break;
         case "world":
-        case "mindmap":
+          addPanel({ type: "research", tab: "scrap", id: data.id }, insertAt);
+          break;
         case "plot":
-        case "drawing":
         case "synopsis":
-          addPanel({ type: "research", tab: "world", id: data.id }, insertAt);
+          addPanel({ type: "research", tab: "plotboard", id: data.id }, insertAt);
+          break;
+        case "mindmap":
+        case "drawing":
+        case "graph":
+          addPanel({ type: "research", tab: "untitled", id: data.id }, insertAt);
           break;
         case "memo":
           addPanel({ type: "research", tab: "scrap", id: data.id }, insertAt);
@@ -224,7 +263,13 @@ export function useWorkspaceDropHandlers({
           break;
       }
     },
-    [addPanel, getDocsTabByDragType, isDocsLikeMode, openModeRightTab],
+    [
+      addPanel,
+      getDocsTabByDragType,
+      handleOpenSnapshot,
+      isDocsLikeMode,
+      openModeRightTab,
+    ],
   );
 
   return {

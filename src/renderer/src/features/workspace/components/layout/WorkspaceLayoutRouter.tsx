@@ -27,6 +27,7 @@ type WorkspaceLayoutRouterProps = {
   activeChapterContent: string;
   currentProjectId?: string;
   isResearchPanelAdjacent: boolean;
+  isEditorPanelAdjacent: boolean;
   onOpenSettings: () => void;
   onPrefetchSettings: () => void;
   onSelectResearchItem: (tab: ResearchTab) => void;
@@ -51,6 +52,7 @@ export function WorkspaceLayoutRouter({
   activeChapterContent,
   currentProjectId,
   isResearchPanelAdjacent,
+  isEditorPanelAdjacent,
   onOpenSettings,
   onPrefetchSettings,
   onSelectResearchItem,
@@ -141,6 +143,7 @@ export function WorkspaceLayoutRouter({
       additionalPanels={additionalPanels}
       additionalPanelIds={additionalPanelIds}
       isResearchPanelAdjacent={isResearchPanelAdjacent}
+      isEditorPanelAdjacent={isEditorPanelAdjacent}
     >
       {mainViewType === "canvas" ? (
         <Suspense fallback={layoutFallback}><CanvasPane /></Suspense>

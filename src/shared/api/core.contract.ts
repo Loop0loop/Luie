@@ -56,6 +56,11 @@ export type CoreRendererApi = {
       projectId: string,
       chapterIds: string[],
     ) => Promise<IPCResponse<unknown>>;
+    onSaveProtected: (
+      callback: (
+        payload: SharedTypes.ChapterSaveProtectedPayload,
+      ) => void,
+    ) => () => void;
   };
   scene: {
     create: (input: SharedTypes.SceneCreateInput) => Promise<IPCResponse<SharedTypes.Scene>>;

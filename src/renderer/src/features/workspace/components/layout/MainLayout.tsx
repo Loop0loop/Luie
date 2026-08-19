@@ -54,6 +54,7 @@ interface MainLayoutProps {
   additionalPanels?: ReactNode;
   additionalPanelIds?: string[];
   isResearchPanelAdjacent?: boolean;
+  isEditorPanelAdjacent?: boolean;
   isCanvasMode?: boolean;
   onCloseCanvas?: () => void;
 }
@@ -64,6 +65,7 @@ export default function MainLayout({
   additionalPanels,
   additionalPanelIds = [],
   isResearchPanelAdjacent = false,
+  isEditorPanelAdjacent = false,
   isCanvasMode = false,
 }: MainLayoutProps) {
   const { t } = useTranslation();
@@ -235,16 +237,19 @@ export default function MainLayout({
     openSize: contextDefaultSize,
     panelRef: contextPanelRef,
   });
-  const adjacentSurfaceClass = isResearchPanelAdjacent
+  const hasCustomAdjacentSurface =
+    isResearchPanelAdjacent || isEditorPanelAdjacent;
+  const adjacentSurfaceClass = hasCustomAdjacentSurface
     ? "editor-adjacent-surface editor-research-surface"
     : shouldRenderContext
       ? "editor-adjacent-surface editor-ai-surface"
       : "bg-sidebar";
-  const contentSurfaceClass = isResearchPanelAdjacent
-    ? "bg-research"
+  const contentSurfaceClass = hasCustomAdjacentSurface
+    ? "bg-research border-0 outline-none"
     : shouldRenderContext
       ? "bg-[var(--ai-panel-bg)]"
       : "";
+  const layoutGapSurfaceClass = contentSurfaceClass;
 
   const closeCollapsedRegionAfterMainLayoutChanged = useCallback(
     (layout: Layout, activeSurface: MainLayoutResizeSurface | null) => {
@@ -359,14 +364,12 @@ export default function MainLayout({
   }, [shouldRenderContext, contextRatio, contextSurface]);
 
   return (
-    <div className="flex flex-col h-screen bg-app text-fg">
-      <div className="relative min-h-0 flex-1">
+    <div className="relative flex flex-col h-screen bg-app text-fg">
+      <div className={`relative min-h-0 flex-1 ${layoutGapSurfaceClass}`}>
         <PanelGroup
           id="main-layout-group"
           orientation="horizontal"
-          className={`flex flex-1 overflow-hidden relative w-full h-full ${
-            isResearchPanelAdjacent && shouldRenderContext ? "bg-research" : ""
-          }`}
+          className={`flex flex-1 overflow-hidden relative w-full h-full ${layoutGapSurfaceClass}`}
           elementRef={mainLayoutGroupRef}
           onLayoutChanged={onMainLayoutChanged}
         >
@@ -424,7 +427,9 @@ export default function MainLayout({
           <Panel
             id="main-content-panel"
             minSize={`${EDITOR_MIN_PANEL_WIDTH_PX}px`}
-            className="relative z-0 flex min-w-0 flex-1 flex-col bg-app"
+            className={`relative z-0 flex min-w-0 flex-1 flex-col ${
+              layoutGapSurfaceClass || "bg-app"
+            }`}
           >
             <div
               aria-hidden="true"
@@ -461,31 +466,33 @@ export default function MainLayout({
                 )}
               </PanelGroup>
             </div>
-            {!isCanvasMode && (
-              <button
-                onClick={toggleSidebar}
-                className={`absolute top-2 z-[110] flex h-8 w-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-active hover:text-fg cursor-pointer ${
-                  isMacOS && !isSidebarOpen ? "left-[92px]" : "left-2"
-                }`}
-                style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
-                title={
-                  isSidebarOpen
-                    ? t("mainLayout.tooltip.sidebarCollapse")
-                    : t("mainLayout.tooltip.sidebarExpand")
-                }
-                aria-label={
-                  isSidebarOpen
-                    ? t("mainLayout.tooltip.sidebarCollapse")
-                    : t("mainLayout.tooltip.sidebarExpand")
-                }
-              >
-                {isSidebarOpen ? (
-                  <PanelLeftClose className="h-4 w-4" />
-                ) : (
-                  <PanelLeftOpen className="h-4 w-4" />
-                )}
-              </button>
-            )}
+            <button
+              onClick={toggleSidebar}
+              className={`absolute top-2 z-[110] flex h-8 w-8 items-center justify-center transition-all cursor-pointer ${
+                isCanvasMode
+                  ? "canvas-floating-toolbar text-muted hover:text-fg rounded-full"
+                  : "rounded-control text-muted hover:bg-active hover:text-fg"
+              } ${
+                isMacOS && !isSidebarOpen ? "left-[92px]" : "left-2"
+              }`}
+              style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
+              title={
+                isSidebarOpen
+                  ? t("mainLayout.tooltip.sidebarCollapse")
+                  : t("mainLayout.tooltip.sidebarExpand")
+              }
+              aria-label={
+                isSidebarOpen
+                  ? t("mainLayout.tooltip.sidebarCollapse")
+                  : t("mainLayout.tooltip.sidebarExpand")
+              }
+            >
+              {isSidebarOpen ? (
+                <PanelLeftClose className="h-4 w-4" />
+              ) : (
+                <PanelLeftOpen className="h-4 w-4" />
+              )}
+            </button>
             {!isCanvasMode && (
               <button
                 onClick={toggleContextPanel}
@@ -534,7 +541,7 @@ export default function MainLayout({
             minSize={mainContextSize.minSize}
             maxSize={mainContextSize.maxSize}
             className={`relative z-10 flex flex-col overflow-hidden bg-[var(--ai-panel-bg)] ${
-              isResearchPanelAdjacent
+              shouldRenderContext
                 ? "rounded-l-[var(--radius-editor-shell)]"
                 : ""
             } ${

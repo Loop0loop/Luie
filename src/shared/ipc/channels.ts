@@ -19,6 +19,7 @@ export const IPC_CHANNELS = {
   CHAPTER_RESTORE: "chapter:restore",
   CHAPTER_PURGE: "chapter:purge",
   CHAPTER_REORDER: "chapter:reorder",
+  CHAPTER_SAVE_PROTECTED: "chapter:save-protected",
 
   SCENE_CREATE: "scene:create",
   SCENE_GET: "scene:get",

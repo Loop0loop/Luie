@@ -9,6 +9,7 @@ import { useDialog } from "@shared/ui/useDialog";
 import { useShortcutCommand } from "@renderer/features/workspace/hooks/useShortcutCommand";
 import type { ShortcutCommand } from "@renderer/features/workspace/hooks/useShortcutCommand";
 import { api } from "@shared/api";
+import type { ResearchTab } from "@renderer/features/workspace/stores/uiStore";
 
 export interface Chapter {
   id: string;
@@ -23,7 +24,7 @@ export type SidebarItem =
   | { type: "research-header" }
   | {
       type: "research-item";
-      id: "character" | "event" | "faction" | "world" | "scrap" | "analysis";
+      id: ResearchTab;
     }
   | { type: "snapshot-header" }
   | { type: "snapshot-list"; chapterId: string }
@@ -174,9 +175,9 @@ export function useSidebarLogic({
       items.push({ type: "research-item", id: "character" });
       items.push({ type: "research-item", id: "event" });
       items.push({ type: "research-item", id: "faction" });
-      items.push({ type: "research-item", id: "world" });
       items.push({ type: "research-item", id: "scrap" });
-      items.push({ type: "research-item", id: "analysis" });
+      items.push({ type: "research-item", id: "plotboard" });
+      items.push({ type: "research-item", id: "untitled" });
     }
 
     items.push({ type: "snapshot-header" });

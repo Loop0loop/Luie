@@ -20,14 +20,9 @@ import type { Chapter, Snapshot } from "@shared/types";
 import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@renderer/shared/constants/editorLayout";
 import { SIDEBAR_WIDTH_CONFIG } from "@renderer/shared/constants/sidebarSizing";
 import { useDialog } from "@shared/ui/useDialog";
+import type { ResearchTab } from "@renderer/features/workspace/stores/uiStore";
 
-type ResearchItemType =
-  | "character"
-  | "event"
-  | "faction"
-  | "world"
-  | "scrap"
-  | "analysis";
+type ResearchItemType = ResearchTab;
 
 export type SidebarCompactHoverProps = {
   onSelectChapter: (id: string) => void;
@@ -66,9 +61,9 @@ function CompactContent({
       { id: "character", label: t("sidebar.item.characters") },
       { id: "event", label: t("research.title.events", "Events") },
       { id: "faction", label: t("research.title.factions", "Factions") },
-      { id: "world", label: t("sidebar.item.world") },
       { id: "scrap", label: t("sidebar.item.scrap") },
-      { id: "analysis", label: t("research.title.analysis") },
+      { id: "plotboard", label: t("research.title.plotBoard", "플롯 보드") },
+      { id: "untitled", label: t("research.title.untitled", "스토리 라인") },
     ],
     [t],
   );

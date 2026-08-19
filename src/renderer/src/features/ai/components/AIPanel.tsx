@@ -26,10 +26,7 @@ interface AIPanelProps {
   onClose?: () => void;
 }
 
-export function AIPanel({
-  onMenuToggle,
-  onClose,
-}: AIPanelProps) {
+export function AIPanel({ onMenuToggle, onClose }: AIPanelProps) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -92,7 +89,7 @@ export function AIPanel({
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[var(--ai-panel-bg)] font-sans text-fg select-none">
-      {/* 1. Header Bar: New Chat Dropdown, New Chat Button, Close (X) */}
+      {/* 1. Header Bar: New Chat Dropdown and New Chat Button */}
       <div
         className="flex h-11 shrink-0 items-center justify-between bg-[var(--ai-panel-bg)] px-3.5"
         style={{ WebkitAppRegion: "drag" } as CSSProperties}
@@ -121,16 +118,17 @@ export function AIPanel({
           >
             <SquarePen className="size-3.5" />
           </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex size-7 cursor-pointer items-center justify-center rounded-[6px] text-muted transition-colors hover:bg-surface-hover hover:text-fg"
-            style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
-            title="닫기"
-            aria-label="닫기"
-          >
-            <X className="size-3.5" />
-          </button>
+          {onClose ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex size-7 cursor-pointer items-center justify-center rounded-[6px] text-muted transition-colors hover:bg-surface-hover hover:text-fg"
+              title="AI View 닫기"
+              aria-label="AI View 닫기"
+            >
+              <X className="size-3.5" />
+            </button>
+          ) : null}
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-import type { WorldEntitySourceType } from "@shared/types";
+import type { WorldEntitySourceType, WorldGraphCanvasEdgeDirection } from "@shared/types";
 
 export type CanvasNodeKind =
   | "chapter"
@@ -15,6 +15,7 @@ export interface CanvasProjectionNode {
   x: number;
   y: number;
   description?: string | null;
+  color?: string;
 }
 
 export type CanvasEdgeStyle = "solid" | "dashed";
@@ -25,6 +26,8 @@ export interface CanvasProjectionEdge {
   targetId: string;
   label?: string;
   style: CanvasEdgeStyle;
+  color?: string;
+  direction?: WorldGraphCanvasEdgeDirection;
 }
 
 export interface CanvasProjection {

@@ -13,7 +13,7 @@ import {
 } from "@renderer/shared/constants/layoutSizing";
 
 
-export function useSplitView() {
+export function useSplitView(activeChapterId?: string) {
   const panels = useUIStore((state) => state.panels);
   const addPanelBase = useUIStore((state) => state.addPanel);
   const removePanel = useUIStore((state) => state.removePanel);
@@ -23,6 +23,12 @@ export function useSplitView() {
 
   const addPanel = useCallback(
     (content: RightPanelContent, insertAt?: number) => {
+      if (
+        content.type === "editor" &&
+        content.id === activeChapterId
+      ) {
+        return;
+      }
       const projectLayout = currentProjectId
         ? getProjectLayout(currentProjectId)
         : null;
@@ -37,7 +43,7 @@ export function useSplitView() {
             : undefined;
       addPanelBase(content, insertAt, initialSize);
     },
-    [addPanelBase, currentProjectId, getProjectLayout],
+    [activeChapterId, addPanelBase, currentProjectId, getProjectLayout],
   );
 
   const handleSelectResearchItem = useCallback(
@@ -47,9 +53,15 @@ export function useSplitView() {
       if (!existingResearch) {
         addPanel({ type: "research", tab: type });
       } else if (existingResearch.content.tab !== type) {
-        // NOTE: research panel은 하나만 유지하고 선택 tab만 교체한다.
+        // NOTE: research panel은 하나만 유지하고 DnD 원고와 함께 열지 않는다.
         const replaced = { ...existingResearch, content: { type: "research" as const, tab: type } };
-        const next = panels.filter((p) => p.content.type !== "research").concat(replaced);
+        const next = panels
+          .filter(
+            (panel) =>
+              panel.content.type !== "research" &&
+              panel.content.type !== "editor",
+          )
+          .concat(replaced);
         const sizePerPanel = 100 / next.length;
         setPanels(next.map((p) => ({ ...p, size: sizePerPanel })));
       }

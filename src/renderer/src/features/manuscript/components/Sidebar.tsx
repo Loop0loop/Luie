@@ -18,6 +18,8 @@ import {
   RotateCcw,
   History,
   Sparkles,
+  GitBranch,
+  Workflow,
 } from "lucide-react";
 import type { DragData } from "@shared/ui/GlobalDragContext";
 import {
@@ -25,6 +27,7 @@ import {
   type SidebarItem,
 } from "@renderer/features/manuscript/components/useSidebarLogic";
 import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@renderer/shared/constants/editorLayout";
+import type { ResearchTab } from "@renderer/features/workspace/stores/uiStore";
 
 const SnapshotList = lazy(() =>
   import("@renderer/features/snapshot/components/SnapshotList").then(
@@ -45,7 +48,7 @@ interface SidebarProps {
   onOpenSettings: () => void;
   onPrefetchSettings?: () => void;
   onSelectResearchItem: (
-    type: "character" | "event" | "faction" | "world" | "scrap" | "analysis",
+    type: ResearchTab,
   ) => void;
   onSplitView?: (type: "vertical" | "horizontal", contentId: string) => void;
   /** canvas mode에서도 같은 sidebar shell을 재사용하도록 내부 content만 교체한다. */
@@ -187,7 +190,12 @@ function Sidebar({
     }
 
     if (item.type === "research-item") {
-      const dragType: DragData["type"] = item.id === "scrap" ? "memo" : item.id;
+      const dragType: DragData["type"] =
+        item.id === "scrap"
+          ? "memo"
+          : item.id === "plotboard" || item.id === "untitled"
+            ? "world"
+            : item.id;
       const meta = {
         character: {
           label: t("sidebar.item.characters"),
@@ -213,6 +221,16 @@ function Sidebar({
           label: t("sidebar.item.scrap"),
           icon: <BookOpen className="mr-2 text-muted icon-sm" />,
           hoverId: "res-scrap",
+        },
+        plotboard: {
+          label: t("research.title.plotBoard", "플롯 보드"),
+          icon: <GitBranch className="mr-2 text-muted icon-sm" />,
+          hoverId: "res-plotboard",
+        },
+        untitled: {
+          label: t("research.title.untitled", "스토리 라인"),
+          icon: <Workflow className="mr-2 text-muted icon-sm" />,
+          hoverId: "res-untitled",
         },
         analysis: {
           label: t("research.title.analysis"),

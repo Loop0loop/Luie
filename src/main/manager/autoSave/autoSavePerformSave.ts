@@ -1,5 +1,3 @@
-import { ErrorCode } from "../../../shared/constants/index.js";
-import { isServiceError } from "../../utils/error/index.js";
 import type {
   AutoSaveRuntimeCounters,
   PendingSave,
@@ -39,9 +37,7 @@ export async function performAutoSave(input: {
     chapterId: string,
     content: string,
   ) => void;
-  writeValidationBlockedSafetySnapshot: (pending: PendingSave) => Promise<void>;
   emitSaved: (chapterId: string) => void;
-  emitSaveBlocked: (chapterId: string, error: unknown) => void;
   emitError: (chapterId: string, error: unknown) => void;
   canEmitError: () => boolean;
   logger: LoggerLike;
@@ -82,27 +78,6 @@ export async function performAutoSave(input: {
     input.stats.saveSucceeded += 1;
     recordSaveDuration(input.stats, saveStartedAt);
   } catch (error) {
-    if (isServiceError(error) && error.code === ErrorCode.VALIDATION_FAILED) {
-      input.stats.validationBlocked += 1;
-      input.logger.warn(
-        "Auto-save blocked by validation; writing safety snapshot",
-        {
-          chapterId: input.chapterId,
-          error,
-        },
-      );
-
-      await input.writeValidationBlockedSafetySnapshot(pending);
-      input.pendingSaves.delete(input.chapterId);
-      input.saveTimers.delete(input.chapterId);
-      input.lastSaveAt.delete(input.chapterId);
-      input.firstQueuedAt.delete(input.chapterId);
-      input.emitSaveBlocked(input.chapterId, error);
-      input.stats.saveFailed += 1;
-      recordSaveDuration(input.stats, saveStartedAt);
-      return;
-    }
-
     input.stats.saveFailed += 1;
     recordSaveDuration(input.stats, saveStartedAt);
     input.logger.error("Auto-save failed", error);

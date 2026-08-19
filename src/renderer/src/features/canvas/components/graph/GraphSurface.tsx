@@ -50,7 +50,6 @@ export default function GraphSurface() {
 
   const focusId = useGraphStore((state) => state.focusId);
   const setFocusId = useGraphStore((state) => state.setFocusId);
-  const hoverId = useGraphStore((state) => state.hoverId);
   const isRightPanelOpen = useUIStore((state) => state.regions?.rightPanel?.open ?? false);
 
   const activeMode = useGraphStore((state) => state.activeMode);
@@ -63,10 +62,10 @@ export default function GraphSurface() {
 
   const isEmpty = sourceNodes.length === 0;
 
-  const hoverNode = useMemo(() => {
-    if (!hoverId) return null;
-    return nodes.find((node) => node.id === hoverId) ?? null;
-  }, [hoverId, nodes]);
+  const focusedNode = useMemo(() => {
+    if (!focusId) return null;
+    return nodes.find((node) => node.id === focusId) ?? null;
+  }, [focusId, nodes]);
 
   const { filteredNodes, filteredEdges } = useGraphDataFiltering({
     sourceNodes,
@@ -206,7 +205,7 @@ export default function GraphSurface() {
       </div>
 
       <GraphHoverCard
-        hoverNode={hoverNode}
+        hoverNode={focusedNode}
         isRightPanelOpen={isRightPanelOpen}
         t={t}
       />

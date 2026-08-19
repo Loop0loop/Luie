@@ -1,5 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type * as ProjectLayoutStoreModule from "../../../src/renderer/src/features/workspace/stores/projectLayoutStore.js";
+import { buildLegacyUiProjectLayoutPatch } from "../../../src/renderer/src/features/workspace/stores/projectLayout/legacyUiMigration.js";
+import type { LayoutSurfaceId } from "../../../src/renderer/src/shared/constants/layoutSizing.js";
 
 type StorageLike = {
   getItem: (key: string) => string | null;
@@ -59,6 +61,50 @@ beforeEach(() => {
 });
 
 describe("projectLayoutStore", () => {
+  it("promotes legacy global layout values into the active project mode", () => {
+    const patch = buildLegacyUiProjectLayoutPatch("scrivener", {
+      leftSidebarOpen: false,
+      rightPanelOpen: true,
+      rightRailOpen: false,
+      rightPanelTab: "analysis",
+      scrivenerSections: {
+        manuscript: true,
+        characters: true,
+        events: false,
+        factions: false,
+        world: true,
+        scrap: false,
+        snapshots: true,
+        analysis: false,
+        trash: false,
+      },
+      sidebarWidths: { mainSidebar: 288 },
+      layoutSurfaceRatios: {
+        "scrivener.sidebar": 22,
+      } as Record<LayoutSurfaceId, number>,
+    });
+
+    expect(patch).toEqual({
+      sidebarWidths: { mainSidebar: 288 },
+      layoutSurfaceRatios: { "scrivener.sidebar": 22 },
+      scrivener: {
+        sidebarOpen: false,
+        inspectorOpen: true,
+        sections: {
+          manuscript: true,
+          characters: true,
+          events: false,
+          factions: false,
+          world: true,
+          scrap: false,
+          snapshots: true,
+          analysis: false,
+          trash: false,
+        },
+      },
+    });
+  });
+
   it("sanitizes docs tabs and keeps supported values", () => {
     expect(projectLayoutModule.sanitizePersistedDocsRightTab("character")).toBe("character");
     expect(projectLayoutModule.sanitizePersistedDocsRightTab("snapshot")).toBe("snapshot");

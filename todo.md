@@ -1,0 +1,9 @@
+  - Snapshot diff UI 색상·설명·rounded 세부 조정
+  - 자료 링크 반응형 색상
+  - Google Docs/Editor 패널 rounded 및 토글 위치
+  - Scrivener A4 최소 편집 폭
+  - Inspector 실제 애니메이션 UX 최종 확인
+  - 스크랩 영역 폭과 전체 시각 polish
+  - 전체 lint의 기존 오류 20개 정리
+  - 실제 Electron 실행 환경에서 레이아웃 회귀 확인
+  - AI View UI는 사용자 수정본을 기준으로 유지한다. 공통 chrome·아이콘·위치·스타일을 임의로 변경하지 말고, 필요한 경우 기능 연결과 상태 흐름만 수정한다.
