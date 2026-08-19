@@ -7,6 +7,7 @@ import {
   type LayoutSurfaceId,
 } from "@renderer/shared/constants/layoutSizing";
 import { createLogger } from "@shared/logger";
+import { SIDEBAR_RESIZE_COMMIT_IDLE_MS } from "@renderer/features/workspace/constants/uiDefaults";
 
 const logger = createLogger("useLayoutPersist");
 let layoutPersistenceSuppressionDepth = 0;
@@ -149,11 +150,14 @@ export function useLayoutPersist(
   }, [setLayoutSurfaceRatio, upsertProjectLayout]);
 
   const scheduleCommitFlush = useCallback(() => {
-    if (flushTimeoutRef.current !== null) return;
+    if (flushTimeoutRef.current !== null) {
+      clearTimeout(flushTimeoutRef.current);
+    }
+    // NOTE: drag 중에는 중간 비율을 저장하지 않고, 포인터가 잠시 멈춘 최종 비율만 커밋한다.
     flushTimeoutRef.current = setTimeout(() => {
       flushTimeoutRef.current = null;
       flushPendingCommits();
-    }, 0);
+    }, SIDEBAR_RESIZE_COMMIT_IDLE_MS);
   }, [flushPendingCommits]);
 
   useEffect(

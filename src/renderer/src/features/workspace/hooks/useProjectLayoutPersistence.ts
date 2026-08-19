@@ -90,7 +90,8 @@ export function useProjectLayoutPersistence(
     uiMode === "default" ||
     uiMode === "docs" ||
     uiMode === "editor" ||
-    uiMode === "scrivener";
+    uiMode === "scrivener" ||
+    uiMode === "canvas";
 
   const areScrivenerSectionsEqual = (
     left: ProjectLayoutState["scrivener"]["sections"],
@@ -420,6 +421,12 @@ export function useProjectLayoutPersistence(
           hasLayoutSizingChanged,
         ),
       );
+      return;
+    }
+
+    if (uiMode === "canvas" && hasLayoutSizingChanged) {
+      // Canvas는 MainLayout surface를 재사용하지만, 이전 편집 모드의 열림 상태를 덮어쓰면 안 된다.
+      upsertProjectLayout(projectId, layoutPatch);
     }
   }, [
     docsRightTab,

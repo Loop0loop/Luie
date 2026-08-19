@@ -164,11 +164,17 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
     }
   },
   updatePanelSize: (id, size) =>
-    set((state) => ({
-      panels: state.panels.map((panel) =>
-        panel.id === id ? { ...panel, size } : panel,
-      ),
-    })),
+    set((state) => {
+      if (!Number.isFinite(size)) return state;
+      const panel = state.panels.find((item) => item.id === id);
+      // PanelGroup은 같은 layout도 다시 emit한다. 동일한 size를 저장하면 재계산 루프가 된다.
+      if (!panel || Math.abs(panel.size - size) < 0.1) return state;
+      return {
+        panels: state.panels.map((item) =>
+          item.id === id ? { ...item, size } : item,
+        ),
+      };
+    }),
   setPanels: (panels) => set({ panels }),
 
   setManuscriptMenuOpen: (isManuscriptMenuOpen) =>

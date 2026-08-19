@@ -1,75 +1,10 @@
-import type { LucideIcon } from "lucide-react";
-import {
-  Calendar,
-  Globe,
-  Plus,
-  Shield,
-  Sparkles,
-  StickyNote,
-  User,
-} from "lucide-react";
+import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import type { DocsLayoutPanelTab } from "@renderer/shared/constants/layoutSizing";
-import type { DragItemType } from "@shared/ui/GlobalDragContext";
 import { useEditorStore } from "@renderer/domains/editor";
-
-type RailTabConfig = {
-  dataType: DragItemType;
-  icon: LucideIcon;
-  id: string;
-  titleKey: string;
-  titleFallback?: string;
-  tab: DocsLayoutPanelTab;
-};
-
-const RAIL_TABS: RailTabConfig[] = [
-  {
-    dataType: "character",
-    icon: User,
-    id: "binder-character",
-    titleKey: "research.title.characters",
-    tab: "character",
-  },
-  {
-    dataType: "world",
-    icon: Globe,
-    id: "binder-world",
-    titleKey: "research.title.world",
-    tab: "world",
-  },
-  {
-    dataType: "event",
-    icon: Calendar,
-    id: "binder-event",
-    titleKey: "research.title.events",
-    titleFallback: "Events",
-    tab: "event",
-  },
-  {
-    dataType: "faction",
-    icon: Shield,
-    id: "binder-faction",
-    titleKey: "research.title.factions",
-    titleFallback: "Factions",
-    tab: "faction",
-  },
-  {
-    dataType: "memo",
-    icon: StickyNote,
-    id: "binder-memo",
-    titleKey: "research.title.scrap",
-    tab: "scrap",
-  },
-  {
-    dataType: "analysis",
-    icon: Sparkles,
-    id: "binder-analysis",
-    titleKey: "research.title.analysis",
-    tab: "analysis",
-  },
-];
+import { RESEARCH_PANEL_TABS } from "@renderer/features/workspace/components/researchPanelTabs";
 
 type GoogleDocsPanelRailProps = {
   activeRightTab: DocsLayoutPanelTab | null;
@@ -92,10 +27,8 @@ export function GoogleDocsPanelRail({
           : "transition-none",
       )}
     >
-      {RAIL_TABS.map((tab) => {
-        const title = tab.titleFallback
-          ? t(tab.titleKey, tab.titleFallback)
-          : t(tab.titleKey);
+      {RESEARCH_PANEL_TABS.map((tab) => {
+        const title = t(tab.titleKey);
         return (
           <DraggableItem
             key={tab.id}
@@ -103,7 +36,7 @@ export function GoogleDocsPanelRail({
             data={{ type: tab.dataType, id: tab.id, title }}
           >
             <button
-              onClick={() => onSelectTab(tab.tab)}
+              onClick={() => onSelectTab(tab.tab as DocsLayoutPanelTab)}
               className={cn(
                 "flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover hover:text-fg",
                 activeRightTab === tab.tab && "bg-accent/15 text-accent",

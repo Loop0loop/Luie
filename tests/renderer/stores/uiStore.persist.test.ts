@@ -97,6 +97,20 @@ describe("uiStore persist rehydrate", () => {
     expect(warn).toHaveBeenCalledTimes(1);
   });
 
+  it("does not replace panels when PanelGroup re-emits the same size", async () => {
+    const { module } = await loadUiStore();
+    const store = module.useUIStore;
+
+    store.getState().addPanel({ type: "research", tab: "character" });
+    const panelsBefore = store.getState().panels;
+    const panel = panelsBefore[0];
+    expect(panel).toBeDefined();
+
+    store.getState().updatePanelSize(panel!.id, panel!.size);
+
+    expect(store.getState().panels).toBe(panelsBefore);
+  });
+
   it("rehydrates valid persisted state", async () => {
     const { module, warn } = await loadUiStore({
       view: "editor",
