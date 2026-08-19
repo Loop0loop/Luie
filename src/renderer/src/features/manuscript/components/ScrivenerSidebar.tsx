@@ -104,11 +104,11 @@ export default function ScrivenerSidebar({
 
         <CollapsibleSection
           id="world"
-          title={t("research.title.world")}
+          title={t("research.title.plotBoard")}
           isOpen={scrivenerSections.world}
           onToggle={() => toggleSection("world")}
         >
-          <SidebarWorldList />
+          <SidebarWorldList mode="plotboard" />
         </CollapsibleSection>
 
         <CollapsibleSection
@@ -117,7 +117,10 @@ export default function ScrivenerSidebar({
           isOpen={scrivenerSections.scrap}
           onToggle={() => toggleSection("scrap")}
         >
-          <div className="h-64 border-b border-border/10">
+          <div className="max-h-80 border-b border-border/10">
+            <SidebarWorldList mode="scrap" />
+          </div>
+          <div className="max-h-80 border-b border-border/10">
             <SidebarMemoList />
           </div>
         </CollapsibleSection>
@@ -147,21 +150,11 @@ export default function ScrivenerSidebar({
 
         <CollapsibleSection
           id="analysis"
-          title={t("research.title.analysis")}
+          title={t("research.title.untitled")}
           isOpen={scrivenerSections.analysis}
           onToggle={() => toggleSection("analysis")}
         >
-          <div className="flex flex-col h-full bg-sidebar/50">
-            <button
-              onClick={() =>
-                useUIStore.getState().setMainView({ type: "analysis" })
-              }
-              className="px-3 py-2 text-xs text-left hover:bg-white/5 text-muted hover:text-fg transition-colors flex items-center gap-2"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-500/50"></span>
-              {t("research.title.analysis")}
-            </button>
-          </div>
+          <SidebarWorldList mode="untitled" />
         </CollapsibleSection>
 
         <CollapsibleSection

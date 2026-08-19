@@ -7,10 +7,8 @@ import {
 } from "react";
 import { type Editor } from "@tiptap/react";
 import { Panel, Group as PanelGroup, type Layout } from "react-resizable-panels";
-import { useTranslation } from "react-i18next";
 import { Ribbon, useEditorStore } from "@renderer/domains/editor";
 import { FocusHoverSidebar } from "@renderer/domains/manuscript";
-import WindowBar from "@renderer/features/workspace/components/WindowBar";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { BinderBarCompactHover } from "@renderer/features/workspace/components/BinderBarCompactHover";
@@ -50,8 +48,6 @@ export default function EditorLayout({
   additionalPanels,
   additionalPanelIds = [],
 }: EditorLayoutProps) {
-  const { t } = useTranslation();
-
   const maxWidth = useEditorStore((state) => state.maxWidth);
   const updatePanelSize = useUIStore((state) => state.updatePanelSize);
 
@@ -112,8 +108,6 @@ export default function EditorLayout({
 
   return (
     <div className="flex flex-col h-screen w-screen bg-app text-fg overflow-hidden relative">
-      <WindowBar title={activeChapterTitle || t("editor.layoutTitle")} />
-
       <div className="flex-1 overflow-hidden relative flex flex-row">
         <FocusHoverSidebar
           side="left"

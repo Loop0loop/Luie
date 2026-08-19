@@ -79,11 +79,11 @@ html[data-layout-restoring="true"] *::after {
 }
 
 /* NOTE: resizable-panels는 flex-grow만 갱신한다. 같은 행의 모든 panel을 함께 보간해야 한쪽만 늦게 따라가는 현상이 없다. */
-html[data-animations="on"] #main-layout-group:has(> [data-panel][data-panel-animated="true"]) > [data-panel] {
+html[data-animations="on"] :is(#main-layout-group, #docs-layout-group):has(> [data-panel][data-panel-animated="true"]) > [data-panel] {
   transition: flex-grow 200ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-html[data-animations="on"] #main-layout-group:has(> [data-separator="active"]) > [data-panel] {
+html[data-animations="on"] :is(#main-layout-group, #docs-layout-group):has(> [data-separator="active"]) > [data-panel] {
   transition-duration: 0ms;
 }
 

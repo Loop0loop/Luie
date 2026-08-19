@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Clock, RotateCcw, GitCompare, Loader2 } from "lucide-react";
 import { Virtuoso } from "react-virtuoso";
@@ -19,13 +19,11 @@ export function SnapshotList({ chapterId, onOpenSnapshot }: SnapshotListProps) {
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [processing, setProcessing] = useState(false);
   const [snapshotItems, setSnapshotItems] = useState<
     Array<{ snapshot: Snapshot; formattedDate: string }>
   >([]);
   const { t } = useTranslation();
   const dialog = useDialog();
-  const workerRef = useRef<Worker | null>(null);
 
   const { handleOpenSnapshot } = useSplitView();
   const { loadAll: reloadChapters, items: chapters } = useChapterStore(
@@ -45,31 +43,6 @@ export function SnapshotList({ chapterId, onOpenSnapshot }: SnapshotListProps) {
     }));
   }, []);
 
-  useEffect(() => {
-    const worker = new Worker(
-      new URL("../workers/snapshotList.worker.ts", import.meta.url),
-      { type: "module" },
-    );
-    workerRef.current = worker;
-    worker.onmessage = (
-      event: MessageEvent<{
-        items: Array<{ snapshot: Snapshot; formattedDate: string }>;
-      }>,
-    ) => {
-      setSnapshotItems(event.data?.items ?? []);
-      setProcessing(false);
-    };
-    worker.onerror = () => {
-      workerRef.current = null;
-      setProcessing(false);
-    };
-
-    return () => {
-      worker.terminate();
-      workerRef.current = null;
-    };
-  }, []);
-
   const loadSnapshots = useCallback(async () => {
     if (!chapterId) {
       api.logger.info("SnapshotList: No chapterId provided");
@@ -84,9 +57,7 @@ export function SnapshotList({ chapterId, onOpenSnapshot }: SnapshotListProps) {
       const res = await api.snapshot.getByChapter(chapterId);
       if (res.success && res.data) {
         setSnapshots(res.data);
-        setProcessing(true);
         setSnapshotItems(buildSnapshotItems(res.data));
-        setProcessing(false);
         return;
       }
       setError(res.error?.message ?? t("snapshot.list.loadFailed"));
@@ -136,6 +107,8 @@ export function SnapshotList({ chapterId, onOpenSnapshot }: SnapshotListProps) {
       if (response.success && snapshot.projectId) {
         await reloadChapters(snapshot.projectId);
       }
+      // NOTE: 같은 챕터의 본문이 바뀌므로 Editor key 리비전을 올려 리마운트시킨다.
+      useChapterStore.getState().bumpContentRevision();
       dialog.toast(t("snapshot.list.restoreSuccess"), "success");
     } catch (error) {
       api.logger.error("Snapshot restore failed", error);
@@ -176,7 +149,7 @@ export function SnapshotList({ chapterId, onOpenSnapshot }: SnapshotListProps) {
     }
   };
 
-  if (loading || processing) {
+  if (loading) {
     return (
       <div className="p-4 text-xs text-muted flex items-center gap-2">
         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -211,10 +184,10 @@ export function SnapshotList({ chapterId, onOpenSnapshot }: SnapshotListProps) {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="p-3 border-b border-border bg-surface/60">
+      <div className="p-2">
         <button
           onClick={handleManualSnapshot}
-          className="text-xs px-2 py-1 rounded bg-accent/20 text-accent hover:bg-accent/30 transition-colors"
+          className="rounded-[24px] border border-border px-3 py-1.5 text-xs text-accent transition-colors hover:border-accent hover:text-fg"
         >
           {t("snapshot.list.manualButton")}
         </button>
@@ -228,15 +201,14 @@ export function SnapshotList({ chapterId, onOpenSnapshot }: SnapshotListProps) {
               key={item.snapshot.id}
               id={`snapshot-${item.snapshot.id}`}
               data={{
-                type: "chapter",
+                type: "snapshot",
                 id: item.snapshot.id,
                 title: `Snapshot: ${item.formattedDate}`,
-                isSnapshot: true,
-                content: item.snapshot.content,
+                snapshot: item.snapshot,
               }}
             >
-              <div className="p-3 border-b border-border hover:bg-surface-hover transition-colors group relative">
-                <div className="flex items-center justify-between mb-1">
+              <div className="group relative m-2 rounded-panel bg-surface/50 p-2 transition-colors hover:bg-surface-hover">
+                <div className="flex items-center justify-between mb-0.5">
                   <span
                     className="text-xs font-semibold text-fg"
                     suppressHydrationWarning
@@ -271,7 +243,7 @@ export function SnapshotList({ chapterId, onOpenSnapshot }: SnapshotListProps) {
                     </button>
                   </div>
                 </div>
-                <div className="text-[11px] text-muted line-clamp-2">
+                <div className="text-[11px] text-muted line-clamp-1">
                   {item.snapshot.description ||
                     t("snapshot.list.autoDescription")}
                 </div>

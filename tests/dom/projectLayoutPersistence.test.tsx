@@ -12,18 +12,18 @@ type MountedView = {
   root: Root;
 };
 
-function PersistenceHarness() {
-  useProjectLayoutPersistence("project-a", "default");
+function PersistenceHarness({ mode = "default" }: { mode?: "default" | "canvas" }) {
+  useProjectLayoutPersistence("project-a", mode);
   return <div>layout persistence</div>;
 }
 
-const mountView = (): MountedView => {
+const mountView = (mode?: "default" | "canvas"): MountedView => {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
 
   act(() => {
-    root.render(<PersistenceHarness />);
+    root.render(<PersistenceHarness mode={mode} />);
   });
 
   return { container, root };
@@ -102,5 +102,28 @@ describe("useProjectLayoutPersistence", () => {
       useProjectLayoutStore.getState().getProjectLayout("project-a").main
         .sidebarOpen,
     ).toBe(false);
+  });
+
+  it("persists Canvas surface ratios without overwriting the default layout state", async () => {
+    mountedView = mountView("canvas");
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+      await Promise.resolve();
+    });
+
+    act(() => {
+      useUIStore.getState().setLayoutSurfaceRatio("canvas.activity", 31);
+    });
+
+    expect(
+      useProjectLayoutStore
+        .getState()
+        .getProjectLayout("project-a").layoutSurfaceRatios["canvas.activity"],
+    ).toBe(31);
+    expect(
+      useProjectLayoutStore.getState().getProjectLayout("project-a").main
+        .contextOpen,
+    ).toBe(true);
   });
 });

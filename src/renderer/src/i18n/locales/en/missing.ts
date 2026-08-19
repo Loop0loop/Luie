@@ -58,6 +58,8 @@ export const enMissing = {
     autosave: {
       failed: "Autosave failed",
       retryingIn: "Retrying in {{seconds}}s",
+      largeDeletionProtected:
+        "Large deletion detected. The previous state was saved as a snapshot",
     },
     errors: {
       exportNoChapter: "No chapter to export",

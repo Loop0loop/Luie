@@ -35,6 +35,8 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
         if (snapshot.projectId) {
           await reloadChapters(snapshot.projectId);
         }
+        // NOTE: 같은 챕터의 본문이 바뀌므로 Editor key 리비전을 올려 리마운트시킨다.
+        useChapterStore.getState().bumpContentRevision();
         dialog.toast(t("snapshot.viewer.restoreSuccess"), "success");
       } else {
         api.logger.error("Snapshot restore failed", response.error);
@@ -131,8 +133,8 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
   );
 
   return (
-    <div className="flex flex-col h-full w-full bg-panel border-l border-border">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-surface text-sm">
+    <div className="research-surface flex h-full w-full flex-col overflow-hidden border-0 outline-none">
+      <div className="flex items-center justify-between bg-surface/70 px-4 py-2 text-sm">
         <div className="flex items-center gap-2 text-muted-fg">
           <Calendar className="w-4 h-4" />
           <span className="font-medium">{t("snapshot.viewer.header", { date: formattedDate })}</span>
@@ -146,7 +148,7 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
         </button>
       </div>
 
-      <div className="border-b border-border bg-panel">
+      <div className="bg-panel/80">
         <div className="flex items-center justify-between px-4 py-2 text-xs text-muted-fg">
           <span>{t("snapshot.viewer.changesHeader")}</span>
           <button
@@ -198,12 +200,14 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
         )}
       </div>
 
-      <div className="flex-1 min-h-0 bg-yellow-50/5 dark:bg-yellow-900/10"> 
+      <div className="research-surface flex-1 min-h-0 border-0 outline-none">
         <Editor
           key={snapshot.id} // Re-mount on snapshot change
           initialTitle={snapshot.description || ""}
           initialContent={snapshot.content}
           readOnly={true}
+          hideToolbar={true}
+          hideFooter={true}
           comparisonContent={diffEnabled ? currentContent : undefined}
           diffMode={diffEnabled ? "snapshot" : undefined}
         />

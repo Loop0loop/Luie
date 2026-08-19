@@ -135,14 +135,21 @@ describe("Snapshot resilience", () => {
       expect(stat.isFile()).toBe(true);
     }
 
-    await expect(
-      chapterService.updateChapter({
-        id: chapters[0].id,
-        content: "",
-      }),
-    ).rejects.toMatchObject({
-      code: "VAL_3001",
+    // NOTE: 전체 삭제는 이제 차단되지 않고, 삭제 직전 내용이 스냅샷으로 보존된다.
+    const updated = await chapterService.updateChapter({
+      id: chapters[0].id,
+      content: "",
     });
+    expect(updated).toMatchObject({ id: chapters[0].id, content: "" });
+
+    const snapshots = await snapshotService.getSnapshotsByProject(project.id);
+    const preDeletionSnapshot = snapshots.find(
+      (snapshot) => snapshot.chapterId === chapters[0].id,
+    );
+    expect(preDeletionSnapshot?.description).toContain("대량 삭제 전 백업");
+    expect(preDeletionSnapshot?.content).toBe(
+      makeMixedNarrativeText(chapters[0].len, chapters[0].len),
+    );
   });
 
   it("flushCritical writes mirrors and snapshots on forced quit", async () => {

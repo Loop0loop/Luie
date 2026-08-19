@@ -6,14 +6,12 @@ import {
 } from "react";
 import { type Editor } from "@tiptap/react";
 import { useTranslation } from "react-i18next";
-import WindowBar from "@renderer/features/workspace/components/WindowBar";
 import { InspectorPanel, Ribbon, useEditorStatsStore, useEditorStore } from "@renderer/domains/editor";
 import { AIPanel } from "@renderer/features/ai";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useShallow } from "zustand/react/shallow";
 import { CanvasPane } from "@renderer/domains/canvas";
 import {
-  AnalysisSection,
   EventDetailView,
   FactionDetailView,
   MemoMainView,
@@ -84,6 +82,7 @@ export default function ScrivenerLayout({
     isSidebarOpen,
     isInspectorOpen,
     setRegionOpen,
+    setMainView,
     updatePanelSize,
   } = useUIStore(
     useShallow((state) => ({
@@ -93,6 +92,7 @@ export default function ScrivenerLayout({
       isSidebarOpen: state.regions.leftSidebar.open,
       isInspectorOpen: state.regions.rightPanel.open,
       setRegionOpen: state.setRegionOpen,
+      setMainView: state.setMainView,
       updatePanelSize: state.updatePanelSize,
     }))
   );
@@ -233,7 +233,8 @@ export default function ScrivenerLayout({
       case "memo":
         return <MemoMainView />;
       case "analysis":
-        return <AnalysisSection />;
+        // Legacy analysis routes now use the same docked AI runtime as every other entry point.
+        return <AIPanel onClose={() => setMainView({ type: "editor" })} />;
       case "canvas":
         return <CanvasPane />;
       case "editor":
@@ -244,8 +245,6 @@ export default function ScrivenerLayout({
 
   return (
     <div className="flex flex-col h-screen w-screen bg-app text-fg overflow-hidden relative border-t border-transparent">
-      <WindowBar title={activeChapterTitle || "Luie Scrivener Mode"} />
-
       <div className="shrink-0 z-30 shadow-sm relative">
         <Ribbon
           editor={editor}

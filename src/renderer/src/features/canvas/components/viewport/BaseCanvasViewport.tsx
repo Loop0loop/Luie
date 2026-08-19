@@ -4,9 +4,11 @@ import ReactFlow, {
   BackgroundVariant,
   MarkerType,
   PanOnScrollMode,
+  SelectionMode,
   useNodesState,
   useEdgesState,
   type Node,
+  type Edge,
   type NodeChange,
   type EdgeChange,
   type OnSelectionChangeParams,
@@ -176,6 +178,24 @@ export default function BaseCanvasViewport({
     [currentProjectId, createRelation],
   );
 
+  const deleteGraphNode = useWorldBuildingStore((s) => s.deleteGraphNode);
+  const deleteRelation = useWorldBuildingStore((s) => s.deleteRelation);
+
+  const onNodesDelete = useCallback(
+    async (deletedNodes: Node[]) => {
+      await Promise.all(deletedNodes.map((node) => deleteGraphNode(node.id)));
+      clearSelection();
+    },
+    [deleteGraphNode, clearSelection],
+  );
+
+  const onEdgesDelete = useCallback(
+    async (deletedEdges: Edge[]) => {
+      await Promise.all(deletedEdges.map((edge) => deleteRelation(edge.id)));
+    },
+    [deleteRelation],
+  );
+
   return (
     <div className={wrapperClassName} data-testid={dataTestId}>
       <ReactFlow
@@ -194,12 +214,16 @@ export default function BaseCanvasViewport({
         onEdgesChange={handleEdgesChange}
         onNodeDragStop={onNodeDragStop}
         onConnect={onConnect}
+        onNodesDelete={onNodesDelete}
+        onEdgesDelete={onEdgesDelete}
         nodesDraggable={nodesDraggable}
         nodesConnectable={nodesConnectable}
         elementsSelectable
-        deleteKeyCode={null}
-        multiSelectionKeyCode="Shift"
-        selectionKeyCode="Shift"
+        selectionOnDrag
+        selectionMode={SelectionMode.Partial}
+        panOnDrag={[1, 2]}
+        deleteKeyCode={["Backspace", "Delete"]}
+        multiSelectionKeyCode={["Shift", "Meta", "Control"]}
         panOnScroll
         panOnScrollMode={PanOnScrollMode.Free}
         zoomOnScroll

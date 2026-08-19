@@ -13,7 +13,7 @@ import {
   type DocsRightTab,
 } from "@renderer/features/workspace/stores/uiStore";
 import { useShallow } from "zustand/react/shallow";
-import { useChapterManagement } from "@renderer/domains/manuscript";
+import { useChapterManagement, useChapterStore } from "@renderer/domains/manuscript";
 import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import { useWorkspaceDropHandlers } from "@renderer/features/workspace/hooks/useWorkspaceDropHandlers";
 import {
@@ -30,24 +30,16 @@ import { useEditorRootShortcuts } from "@renderer/features/workspace/components/
 import { FeatureErrorBoundary } from "@renderer/shared/error-boundaries/FeatureErrorBoundary";
 import type { SettingsTabId } from "@renderer/domains/settings";
 import {
-  CanvasActivityShell,
-  CanvasPane,
   DataRecoveryBanner,
-  DocsSidebar,
-  EditorLayout,
-  GoogleDocsLayout,
   layoutFallback,
-  MainLayout,
   OfflineBanner,
-  ScrivenerLayout,
-  ScrivenerSidebar,
   SettingsModal,
-  Sidebar,
   UpdaterNotification,
   WorkspacePanels,
 } from "./rootShell";
 import { FloatingAnalysisPanel } from "./FloatingAnalysisPanel";
 import { useProjectQuitFlush } from "@renderer/features/workspace/hooks/useProjectQuitFlush";
+import { WorkspaceLayoutRouter } from "./WorkspaceLayoutRouter";
 export default function EditorRoot() {
   useProjectQuitFlush();
   const { t } = useTranslation();
@@ -123,6 +115,10 @@ export default function EditorRoot() {
     () => chapters.find((c) => c.id === activeChapterId),
     [chapters, activeChapterId],
   );
+  // NOTE: 스냅샷 복원 시 같은 챕터의 본문이 바뀌므로 리비전을 key에 넣어 Editor를 리마운트한다.
+  const contentRevision = useChapterStore(
+    (state) => state.contentRevision,
+  );
 
   const [docEditor, setDocEditor] = useState<TiptapEditor | null>(null);
 
@@ -156,9 +152,10 @@ export default function EditorRoot() {
     addPanel,
     removePanel,
     handleSelectResearchItem,
+    handleOpenSnapshot,
     handleSplitView,
     handleOpenExport,
-  } = useSplitView();
+  } = useSplitView(activeChapterId ?? undefined);
   const additionalPanelIds = useMemo(
     () => panels.map((panel) => panel.id),
     [panels],
@@ -178,6 +175,7 @@ export default function EditorRoot() {
     setMainView,
     setWorldTab,
     addPanel,
+    handleOpenSnapshot,
   });
 
   const openDocsRightTab = useCallback((tab: Exclude<DocsRightTab, null>) => {
@@ -278,6 +276,10 @@ export default function EditorRoot() {
     void import("@renderer/domains/settings");
   }, []);
 
+  const handleOpenSettings = useCallback(() => {
+    setIsSettingsOpen(true);
+  }, []);
+
   useEffect(() => {
     const handleOpenSettings = (e: Event) => {
       const customEvent = e as CustomEvent<{ tab?: SettingsTabId }>;
@@ -294,7 +296,7 @@ export default function EditorRoot() {
   const sharedEditor = (
     <FeatureErrorBoundary featureName="Editor">
       <Editor
-        key={activeChapterId}
+        key={`editor-${activeChapterId ?? "none"}-${contentRevision}`}
         initialTitle={activeChapter ? activeChapter.title : ""}
         initialContent={activeChapter ? activeChapter.content : ""}
         onSave={handleSave}
@@ -326,7 +328,11 @@ export default function EditorRoot() {
       />
     </Suspense>
   );
-  const isResearchPanelAdjacent = panels[0]?.content.type === "research";
+  // Snapshot/Research가 AI View와 맞닿을 때만 rounded 경계를 사용한다.
+  const isResearchPanelAdjacent = ["research", "snapshot"].includes(
+    panels[0]?.content.type ?? "",
+  );
+  const isEditorPanelAdjacent = panels[0]?.content.type === "editor";
 
   return (
     <GlobalDragContext
@@ -339,96 +345,29 @@ export default function EditorRoot() {
         <UpdaterNotification />
       </Suspense>
       <Suspense fallback={layoutFallback}>
-        {uiMode === "docs" && mainViewType !== "canvas" ? (
-          <GoogleDocsLayout
-            sidebar={
-              <Suspense fallback={null}>
-                <DocsSidebar />
-              </Suspense>
-            }
-            activeChapterId={activeChapterId ?? undefined}
-            activeChapterTitle={activeChapterTitle}
-            activeChapterContent={content}
-            currentProjectId={currentProject?.id}
-            editor={docEditor}
-            onOpenSettings={() => setIsSettingsOpen(true)}
-            onRenameChapter={handleRenameChapter}
-            onSaveChapter={handleSave}
-            onOpenExport={handleQuickExport}
-            onOpenWorldGraph={handleOpenWorldGraph}
-            additionalPanels={additionalPanelsComponent}
-            additionalPanelIds={additionalPanelIds}
-          >
-            {sharedEditor}
-          </GoogleDocsLayout>
-        ) : uiMode === "editor" && mainViewType !== "canvas" ? (
-          <EditorLayout
-            sidebar={
-              <Suspense fallback={null}>
-                <DocsSidebar />
-              </Suspense>
-            }
-            activeChapterId={activeChapterId ?? undefined}
-            activeChapterTitle={activeChapterTitle}
-            currentProjectId={currentProject?.id}
-            editor={docEditor}
-            onOpenSettings={() => setIsSettingsOpen(true)}
-            onOpenExport={handleQuickExport}
-            onOpenWorldGraph={handleOpenWorldGraph}
-            additionalPanels={additionalPanelsComponent}
-            additionalPanelIds={additionalPanelIds}
-          >
-            {sharedEditor}
-          </EditorLayout>
-        ) : uiMode === "scrivener" && mainViewType !== "canvas" ? (
-          <ScrivenerLayout
-            sidebar={
-              <Suspense fallback={null}>
-                <ScrivenerSidebar />
-              </Suspense>
-            }
-            activeChapterId={activeChapterId ?? undefined}
-            activeChapterTitle={activeChapterTitle}
-            editor={docEditor}
-            onOpenSettings={() => setIsSettingsOpen(true)}
-            onOpenExport={handleQuickExport}
-            onOpenWorldGraph={handleOpenWorldGraph}
-            onCloseCanvas={handleCloseCanvas}
-            additionalPanels={additionalPanelsComponent}
-          >
-            {sharedEditor}
-          </ScrivenerLayout>
-        ) : (
-          <MainLayout
-            sidebar={
-              <Suspense fallback={null}>
-                {mainViewType === "canvas" ? (
-                  <CanvasActivityShell onClose={handleCloseCanvas} />
-                ) : (
-                  <Sidebar
-                    onOpenSettings={() => setIsSettingsOpen(true)}
-                    onPrefetchSettings={prefetchSettings}
-                    onSelectResearchItem={handleSelectResearchItem}
-                    onSplitView={handleSplitView}
-                  />
-                )}
-              </Suspense>
-            }
-            isCanvasMode={mainViewType === "canvas"}
-            onCloseCanvas={handleCloseCanvas}
-            additionalPanels={additionalPanelsComponent}
-            additionalPanelIds={additionalPanelIds}
-            isResearchPanelAdjacent={isResearchPanelAdjacent}
-          >
-            {mainViewType === "canvas" ? (
-              <Suspense fallback={layoutFallback}>
-                <CanvasPane />
-              </Suspense>
-            ) : (
-              sharedEditor
-            )}
-          </MainLayout>
-        )}
+        <WorkspaceLayoutRouter
+          uiMode={uiMode}
+          mainViewType={mainViewType}
+          editor={docEditor}
+          sharedEditor={sharedEditor}
+          additionalPanels={additionalPanelsComponent}
+          additionalPanelIds={additionalPanelIds}
+          activeChapterId={activeChapterId ?? undefined}
+          activeChapterTitle={activeChapterTitle}
+          activeChapterContent={content}
+          currentProjectId={currentProject?.id}
+          isResearchPanelAdjacent={isResearchPanelAdjacent}
+          isEditorPanelAdjacent={isEditorPanelAdjacent}
+          onOpenSettings={handleOpenSettings}
+          onPrefetchSettings={prefetchSettings}
+          onSelectResearchItem={handleSelectResearchItem}
+          onSplitView={handleSplitView}
+          onRenameChapter={handleRenameChapter}
+          onSaveChapter={handleSave}
+          onOpenExport={handleQuickExport}
+          onOpenWorldGraph={handleOpenWorldGraph}
+          onCloseCanvas={handleCloseCanvas}
+        />
       </Suspense>
 
       {isSettingsOpen && (

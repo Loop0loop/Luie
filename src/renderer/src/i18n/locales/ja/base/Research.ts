@@ -7,7 +7,19 @@ export const jaBaseResearch = {
       world: "世界観",
       scrap: "資料スクラップ",
       analysis: "分析",
+      plotBoard: "プロットボード",
+      untitled: "ストーリーライン",
       default: "リサーチ",
+    },
+    catalog: {
+      terms: "用語",
+      memo: "メモ",
+      synopsis: "シノプシス",
+      plot: "プロットボード",
+      mindmap: "人物相関図",
+      drawing: "ストーリー フロー",
+      graph: "グラフ",
+      empty: "サブビューを選択してください。",
     },
     graph: {
       tabs: {

@@ -37,6 +37,14 @@ export interface DerivedSyncState {
   memory: "queued" | "synced" | "failed";
 }
 
+export interface ChapterSaveProtectedPayload {
+  chapterId: string;
+  projectId: string;
+  reason: "empty-wipe" | "large-deletion";
+  oldLength: number;
+  newLength: number;
+}
+
 export interface ChapterSaveResult extends Chapter {
   saveState: {
     type: ChapterSaveStateType;

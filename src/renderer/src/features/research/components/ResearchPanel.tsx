@@ -1,17 +1,21 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Globe, User, Sparkles, FileText, BookOpen, Calendar, Menu, Shield } from "lucide-react";
+import { User, Calendar, Menu, Shield, BookOpen, GitBranch, Workflow } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import CharacterManager from "@renderer/features/research/components/CharacterManager";
 import EventManager from "@renderer/features/research/components/event/EventManager";
 import FactionManager from "@renderer/features/research/components/faction/FactionManager";
-import MemoSection from "@renderer/features/research/components/MemoSection";
-import WorldSection from "@renderer/features/research/components/WorldSection";
-import AnalysisSection from "@renderer/features/research/components/AnalysisSection";
-import SynopsisSection from "@renderer/features/research/components/SynopsisSection";
+import {
+  ResearchPlotboardPanel,
+  ResearchScrapPanel,
+  UntitledResearchPanel,
+} from "@renderer/features/research/components/ResearchCatalogPanels";
 import { cn } from "@shared/types/utils";
 import { FeatureErrorBoundary } from "@renderer/shared/error-boundaries/FeatureErrorBoundary";
-import { useAnalysisStore } from "@renderer/features/research/stores/analysisStore";
+import {
+  RESEARCH_CATALOG_ITEMS,
+  type ResearchCatalogId,
+} from "@renderer/features/workspace/constants/researchInformationArchitecture";
 import type {
   EntityGallerySortMode,
   EntityGalleryViewMode,
@@ -25,6 +29,8 @@ export type ResearchPanelTab =
   | "scrap"
   | "analysis"
   | "synopsis"
+  | "plotboard"
+  | "untitled"
   | "canvas"
   | "snapshot"
   | "trash";
@@ -49,13 +55,21 @@ const INITIAL_GALLERY_STATES: Record<PrimaryResearchTab, GalleryState> = {
   event: { query: "", viewMode: "grid", sortMode: "group" },
 };
 
+const RESEARCH_TAB_ICONS: Record<ResearchCatalogId, React.ElementType> = {
+  character: User,
+  event: Calendar,
+  faction: Shield,
+  scrap: BookOpen,
+  plotboard: GitBranch,
+  untitled: Workflow,
+};
+
 export default function ResearchPanel({
   activeTab,
   onClose,
   onTabChange,
 }: ResearchPanelProps) {
   const { t } = useTranslation();
-  const viewMode = useAnalysisStore((state) => state.viewMode);
   const [localTabState, setLocalTabState] = React.useState({
     sourceTab: activeTab,
     tab: activeTab,
@@ -63,28 +77,25 @@ export default function ResearchPanel({
   const [galleryStates, setGalleryStates] = React.useState(
     INITIAL_GALLERY_STATES,
   );
+  const normalizeTab = (tab: ResearchPanelTab): ResearchPanelTab => {
+    if (tab === "world") return "scrap";
+    if (tab === "synopsis") return "plotboard";
+    if (tab === "analysis") return "untitled";
+    return tab;
+  };
+  const normalizedActiveTab = normalizeTab(activeTab);
+  const normalizedLocalTab = normalizeTab(localTabState.tab);
   const visibleTab = onTabChange
-    ? activeTab
+    ? normalizedActiveTab
     : localTabState.sourceTab === activeTab
-      ? localTabState.tab
-      : activeTab;
+      ? normalizedLocalTab
+      : normalizedActiveTab;
 
-  // NOTE: 같은 분석 화면이 중복되지 않도록 floating 전환 시 sidebar panel을 닫는다.
-  React.useEffect(() => {
-    if (visibleTab === "analysis" && viewMode === "floatingView") {
-      onClose?.();
-    }
-  }, [visibleTab, viewMode, onClose]);
-
-  const tabs: { id: "character" | "event" | "faction" | "world" | "synopsis" | "scrap" | "analysis"; icon: React.ElementType; label: string }[] = [
-    { id: 'character', label: t("research.title.characters", "Characters"), icon: User },
-    { id: 'event', label: t("research.title.events", "Events"), icon: Calendar },
-    { id: 'faction', label: t("research.title.factions", "Factions"), icon: Shield },
-    { id: 'world', label: t("research.title.world", "World"), icon: Globe },
-    { id: 'synopsis', label: t("sidebar.item.synopsis", "Synopsis"), icon: FileText },
-    { id: 'scrap', label: t("research.title.scrap", "Scrap"), icon: BookOpen },
-    { id: 'analysis', label: t("research.title.analysis", "Analysis"), icon: Sparkles }
-  ];
+  const tabs = RESEARCH_CATALOG_ITEMS.map((item) => ({
+    id: item.id,
+    label: t(item.titleKey),
+    icon: RESEARCH_TAB_ICONS[item.id],
+  }));
   const primaryTabs = tabs.filter(
     (tab) => tab.id === "character" || tab.id === "faction" || tab.id === "event",
   );
@@ -225,14 +236,9 @@ export default function ResearchPanel({
             />
           </FeatureErrorBoundary>
         )}
-        {visibleTab === "world" && <FeatureErrorBoundary featureName="World"><WorldSection /></FeatureErrorBoundary>}
-        {visibleTab === "scrap" && <FeatureErrorBoundary featureName="Scrap"><MemoSection /></FeatureErrorBoundary>}
-        {visibleTab === "analysis" && viewMode === "fixView" && (
-          <FeatureErrorBoundary featureName="Analysis">
-            <AnalysisSection />
-          </FeatureErrorBoundary>
-        )}
-        {visibleTab === "synopsis" && <FeatureErrorBoundary featureName="Synopsis"><SynopsisSection /></FeatureErrorBoundary>}
+        {visibleTab === "scrap" && <FeatureErrorBoundary featureName="Scrap"><ResearchScrapPanel /></FeatureErrorBoundary>}
+        {visibleTab === "plotboard" && <FeatureErrorBoundary featureName="Plotboard"><ResearchPlotboardPanel /></FeatureErrorBoundary>}
+        {visibleTab === "untitled" && <FeatureErrorBoundary featureName="Story Line"><UntitledResearchPanel /></FeatureErrorBoundary>}
       </div>
     </div>
   );

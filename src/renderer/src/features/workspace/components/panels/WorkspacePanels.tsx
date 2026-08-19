@@ -3,10 +3,12 @@ import { Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
 import { BookOpen, X } from "lucide-react";
 import { Editor } from "@renderer/domains/editor";
+import { useChapterStore } from "@renderer/domains/manuscript";
 import type { ResizablePanelData } from "@renderer/features/workspace/stores/uiStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import type { Chapter } from "@shared/types";
 import { toPercentSize } from "@renderer/shared/constants/sidebarSizing";
+import { EDITOR_DND_MIN_PANEL_WIDTH_PX } from "@renderer/shared/constants/editorLayout";
 import { SPLIT_PANEL_MIN_SIZE_PERCENT } from "@renderer/shared/constants/layoutSizing";
 
 const ResearchPanel = React.lazy(() =>
@@ -46,11 +48,16 @@ export function WorkspacePanels({
   const setFocusedClosableTarget = useUIStore(
     (state) => state.setFocusedClosableTarget,
   );
+  // NOTE: 스냅샷 복원 시 같은 챕터의 본문이 바뀌므로 리비전을 key에 넣어 Editor를 리마운트한다.
+  const contentRevision = useChapterStore(
+    (state) => state.contentRevision,
+  );
 
   return (
     <>
       {panels.map((panel) => {
         const isResearchPanel = panel.content.type === "research";
+        const isEditorPanel = panel.content.type === "editor";
         const snapshot =
           panel.content.type === "snapshot"
             ? panel.content.snapshot
@@ -62,6 +69,10 @@ export function WorkspacePanels({
                 chapter.id === snapshot.chapterId,
             )
           : undefined;
+        const editorChapter =
+          panel.content.type === "editor"
+            ? chapters.find((chapter) => chapter.id === panel.content.id)
+            : undefined;
 
         return (
           <Fragment key={panel.id}>
@@ -72,18 +83,26 @@ export function WorkspacePanels({
               id={panel.id}
               groupResizeBehavior="preserve-pixel-size"
               defaultSize={toPercentSize(panel.size)}
-              minSize={isResearchPanel ? "420px" : SPLIT_PANEL_MIN_SIZE_PERCENT}
+              minSize={
+                isResearchPanel
+                  ? "420px"
+                  : isEditorPanel
+                    ? `${EDITOR_DND_MIN_PANEL_WIDTH_PX}px`
+                    : SPLIT_PANEL_MIN_SIZE_PERCENT
+              }
               onMouseDownCapture={() => {
                 setFocusedClosableTarget({ kind: "panel", id: panel.id });
               }}
               className={`min-w-0 relative flex flex-col ${
-                isResearchPanel ? "bg-research" : "bg-panel"
+                isResearchPanel || panel.content.type === "snapshot" || isEditorPanel
+                  ? "bg-research border-0 outline-none"
+                  : "bg-panel"
               }`}
             >
               <div
                 className={`flex h-12 shrink-0 items-center px-4 pr-12 ${
-                  isResearchPanel
-                    ? "bg-research"
+                  isResearchPanel || panel.content.type === "snapshot" || isEditorPanel
+                    ? "bg-research border-0 outline-none"
                     : "border-b border-border bg-sidebar"
                 }`}
               >
@@ -102,7 +121,7 @@ export function WorkspacePanels({
                     {panel.content.type}
                   </span>
                 )}
-                {!isResearchPanel && (
+                {!isResearchPanel && !isEditorPanel && (
                   <button
                     type="button"
                     onClick={(e) => {
@@ -145,18 +164,22 @@ export function WorkspacePanels({
                     <ExportPreviewPanel title={activeChapterTitle} />
                   ) : (
                     <div
-                      style={{
-                        height: "100%",
-                        overflow: "hidden",
-                        background: "var(--bg-primary)",
-                      }}
+                      className="research-surface h-full overflow-hidden border-0 outline-none"
                     >
                       <Editor
-                        initialTitle={
-                          chapters.find((c) => c.id === panel.content.id)?.title
+                        key={`dnd-editor-${editorChapter?.id ?? panel.id}-${contentRevision}`}
+                        initialTitle={editorChapter?.title ?? ""}
+                        initialContent={editorChapter?.content ?? ""}
+                        chapterId={editorChapter?.id}
+                        readOnly={false}
+                        hideToolbar={true}
+                        hideFooter={true}
+                        onSave={
+                          editorChapter
+                            ? (title, content) =>
+                                onSave(title, content, editorChapter.id)
+                            : undefined
                         }
-                        initialContent=""
-                        readOnly={true}
                       />
                     </div>
                   )}

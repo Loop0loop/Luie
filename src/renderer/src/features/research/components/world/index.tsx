@@ -4,6 +4,7 @@ import {
   useUIStore,
   type WorldTab,
 } from "@renderer/features/workspace/stores/uiStore";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import EditorToolbar from "@renderer/features/editor/components/EditorToolbar";
 
 import TabButton from "@shared/ui/TabButton";
@@ -14,7 +15,6 @@ import { MindMapBoard } from "@renderer/features/research/components/world/MindM
 import { DrawingCanvas } from "@renderer/features/research/components/world/DrawingCanvas";
 import { PlotBoard } from "@renderer/features/research/components/world/PlotBoard";
 import { CanvasPane } from "@renderer/features/canvas";
-import WindowBar from "@renderer/features/workspace/components/WindowBar";
 
 interface WorldSectionProps {
   worldId?: string;
@@ -44,6 +44,7 @@ export default function WorldSection({
   const { t } = useTranslation();
   const worldTab = useUIStore((state) => state.worldTab);
   const setWorldTab = useUIStore((state) => state.setWorldTab);
+  const uiMode = useEditorStore((state) => state.uiMode);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   useEffect(() => {
@@ -104,8 +105,7 @@ export default function WorldSection({
 
   return (
     <div className="relative flex h-full min-h-0 flex-col bg-app">
-      {graphOnly && <WindowBar />}
-      {shouldShowCanvasToggleBar && (
+      {shouldShowCanvasToggleBar && uiMode !== "scrivener" && (
         <EditorToolbar
           editor={null}
           canvasToggleOnly

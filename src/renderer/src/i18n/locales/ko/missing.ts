@@ -58,6 +58,8 @@ export const koMissing = {
     autosave: {
       failed: "자동 저장에 실패했습니다",
       retryingIn: "{{seconds}}초 후 다시 시도합니다",
+      largeDeletionProtected:
+        "대량 삭제가 감지되었습니다. 삭제 전 상태를 스냅샷으로 저장했습니다",
     },
     errors: {
       exportNoChapter: "내보낼 챕터가 없습니다",

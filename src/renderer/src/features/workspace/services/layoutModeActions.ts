@@ -20,7 +20,12 @@ type LayoutModeActionsOptions = {
 
 const RESEARCH_TAB_TO_DOCS_TAB: Record<
   ResearchTab,
-  "character" | "world" | "event" | "faction" | "scrap" | "analysis"
+  | "character"
+  | "world"
+  | "event"
+  | "faction"
+  | "scrap"
+  | "analysis"
 > = {
   character: "character",
   world: "world",
@@ -28,6 +33,9 @@ const RESEARCH_TAB_TO_DOCS_TAB: Record<
   faction: "faction",
   scrap: "scrap",
   analysis: "analysis",
+  // Docs 우측 패널은 legacy surface를 계속 사용하므로 신규 항목을 기존 화면에 매핑한다.
+  plotboard: "world",
+  untitled: "analysis",
 };
 
 export function createLayoutModeActions(options: LayoutModeActionsOptions) {

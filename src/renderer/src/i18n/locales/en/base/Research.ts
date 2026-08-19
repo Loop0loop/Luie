@@ -7,7 +7,19 @@ export const enBaseResearch = {
       world: "World",
       scrap: "Scrap",
       analysis: "Analysis",
+      plotBoard: "Plot Board",
+      untitled: "Story Line",
       default: "Research",
+    },
+    catalog: {
+      terms: "Terms",
+      memo: "Memo",
+      synopsis: "Synopsis",
+      plot: "Plot Board",
+      mindmap: "Character Map",
+      drawing: "Story Flow",
+      graph: "Graph",
+      empty: "Select a subview.",
     },
     graph: {
       tabs: {

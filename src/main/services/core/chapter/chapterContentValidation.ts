@@ -1,16 +1,9 @@
-import * as fs from "fs/promises";
-import path from "path";
-import { eq } from "drizzle-orm";
-import { db } from "../../../infra/database/index.js";
-import { project } from "../../../infra/database/index.js";
-import {
-  ErrorCode,
-  SNAPSHOT_BACKUP_DIR,
-} from "../../../../shared/constants/index.js";
-import type { ChapterUpdateInput } from "../../../../shared/types/index.js";
-import { sanitizeName } from "../../../../shared/utils/sanitize.js";
-import { ServiceError } from "../../../utils/error/index.js";
-import { isTestEnv, resolveUserDataPath } from "../../../utils/env/index.js";
+import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
+import type {
+  ChapterSaveProtectedPayload,
+  ChapterUpdateInput,
+} from "../../../../shared/types/index.js";
+import { isTestEnv } from "../../../utils/env/index.js";
 import { autoExtractService } from "../../features/autoExtract/autoExtractService.js";
 import { trackKeywordAppearances } from "../../features/manuscript/chapterKeywords.js";
 import {
@@ -19,43 +12,24 @@ import {
   SKIP_NONCRITICAL_DERIVED_ON_STRESS,
 } from "./chapterRuntime.js";
 
-const resolveProjectTitle = async (
-  projectId: string | undefined,
-): Promise<string> => {
-  if (!projectId) return "Unknown";
-  const rows = await db.getClient()
-    .select({ title: project.title })
-    .from(project)
-    .where(eq(project.id, projectId))
-    .limit(1);
-  return rows.length > 0 && typeof rows[0].title === "string"
-    ? rows[0].title
-    : "Unknown";
-};
+const loadSnapshotService = async () =>
+  (await import("../../../domains/recovery/index.js")).snapshotService;
 
-const writeSuspiciousContentDump = async (input: {
-  projectId: string | undefined;
-  chapterId: string;
-  filePrefix: string;
-  content: string;
-}): Promise<string | undefined> => {
-  if (isTestEnv()) return undefined;
-  const projectTitle = await resolveProjectTitle(input.projectId);
-  const safeTitle = sanitizeName(projectTitle, "Unknown");
-  const dumpDir = path.join(
-    resolveUserDataPath(),
-    SNAPSHOT_BACKUP_DIR,
-    safeTitle || "Unknown",
-    "_suspicious",
-  );
-  await fs.mkdir(dumpDir, { recursive: true });
-  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const dumpPath = path.join(
-    dumpDir,
-    `${input.filePrefix}-${input.chapterId}-${timestamp}.txt`,
-  );
-  await fs.writeFile(dumpPath, input.content, "utf8");
-  return dumpPath;
+const broadcastSaveProtected = async (
+  payload: ChapterSaveProtectedPayload,
+): Promise<void> => {
+  try {
+    const { BrowserWindow } = await import("electron");
+    for (const window of BrowserWindow.getAllWindows()) {
+      if (window.isDestroyed()) continue;
+      window.webContents.send(IPC_CHANNELS.CHAPTER_SAVE_PROTECTED, payload);
+    }
+  } catch (error) {
+    // NOTE: 알림 전파 실패가 저장 진행을 방해하지 않는다(테스트 electron mock도 여기서 무시된다).
+    chapterLogger.warn("Failed to broadcast chapter save protection notice", {
+      error,
+    });
+  }
 };
 
 export const applyChapterContentUpdate = async (
@@ -72,43 +46,39 @@ export const applyChapterContentUpdate = async (
   const projectId =
     typeof current?.projectId === "string" ? current.projectId : undefined;
 
-  if (oldLen > 0 && newLen === 0) {
-    const dumpPath = await writeSuspiciousContentDump({
-      projectId,
-      chapterId: input.id,
-      filePrefix: "dump-empty",
-      content: oldContent,
-    });
-    chapterLogger.warn("Empty content save blocked.", {
-      chapterId: input.id,
-      oldLen,
-      dumpPath,
-    });
-    throw new ServiceError(
-      ErrorCode.VALIDATION_FAILED,
-      "Empty content save blocked",
-      { chapterId: input.id, oldLen },
-    );
-  }
-
-  if (!isTestEnv() && oldLen > 1000 && newLen < oldLen * 0.1) {
-    const dumpPath = await writeSuspiciousContentDump({
-      projectId,
-      chapterId: input.id,
-      filePrefix: "dump",
-      content: input.content,
-    });
-    chapterLogger.warn("Suspicious large deletion detected. Save blocked.", {
+  const isFullWipe = oldLen > 0 && newLen === 0;
+  const isLargeDeletion = !isTestEnv() && oldLen > 1000 && newLen < oldLen * 0.1;
+  if ((isFullWipe || isLargeDeletion) && projectId) {
+    // NOTE: 사용자 의도(전체/대량 삭제)를 차단하지 않는다. 삭제 직전 내용을 스냅샷으로
+    // 보존해 복구 지점만 남기고 저장을 진행한다. 이전에는 저장을 throw로 막아
+    // "저장됐는데 이전 상태로 렌더링"되는 혼란을 만들었다.
+    try {
+      const snapshotService = await loadSnapshotService();
+      await snapshotService.createSnapshot({
+        projectId,
+        chapterId: input.id,
+        content: oldContent,
+        description: `대량 삭제 전 백업 ${new Date().toLocaleString()}`,
+      });
+    } catch (error) {
+      chapterLogger.warn("Pre-deletion snapshot failed; saving anyway", {
+        chapterId: input.id,
+        oldLen,
+        error,
+      });
+    }
+    chapterLogger.warn("Large deletion detected; pre-deletion snapshot saved", {
       chapterId: input.id,
       oldLen,
       newLen,
-      dumpPath,
     });
-    throw new ServiceError(
-      ErrorCode.VALIDATION_FAILED,
-      "Suspicious large deletion detected; save blocked",
-      { chapterId: input.id, oldLen, newLen },
-    );
+    void broadcastSaveProtected({
+      chapterId: input.id,
+      projectId,
+      reason: isFullWipe ? "empty-wipe" : "large-deletion",
+      oldLength: oldLen,
+      newLength: newLen,
+    });
   }
 
   updateData.content = input.content;

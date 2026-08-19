@@ -10,6 +10,7 @@ export type {
 export type {
   Chapter,
   ChapterCreateInput,
+  ChapterSaveProtectedPayload,
   ChapterSaveResult,
   ChapterSaveStateType,
   ChapterUpdateInput,

@@ -353,6 +353,15 @@
     background-color: color-mix(in srgb, currentColor 22%, transparent);
 }
 
+/* NOTE: Diff decoration은 링크 밑줄보다 우선해 변경 종류를 같은 색으로 설명한다. */
+.tiptap .ProseMirror .diff-highlight-added {
+    text-decoration-color: var(--success-fg);
+}
+
+.tiptap .ProseMirror .diff-highlight-removed {
+    text-decoration-color: var(--danger-fg);
+}
+
 .tiptap .ProseMirror a {
     color: var(--text-accent, #2563eb);
     text-decoration: underline;

@@ -115,6 +115,18 @@ export default function App() {
     return unsubscribe;
   }, [refreshBootstrapStatus]);
 
+  useEffect(() => {
+    // NOTE: 대량 삭제 감지 시 main이 보내는 보호 알림. 저장은 정상 진행되며
+    // 삭제 전 상태가 스냅샷으로 보존됐음을 사용자에게만 알린다.
+    // 부분 api mock(dom 테스트)에서도 App이 깨지지 않게 옵셔널로 구독한다.
+    const unsubscribe = api.chapter?.onSaveProtected?.(() => {
+      showToast(t("editor.autosave.largeDeletionProtected"), "info");
+    });
+    return () => {
+      unsubscribe?.();
+    };
+  }, [showToast, t]);
+
   const { currentProject } = useProjectInit(bootstrapStatus.isReady);
 
   useEffect(() => {

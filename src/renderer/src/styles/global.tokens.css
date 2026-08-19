@@ -102,8 +102,27 @@
   --bg-panel: var(--bg-research);
   --bg-surface: var(--bg-research);
   --bg-element: var(--bg-research);
+  --bg-secondary: var(--bg-research);
   --border-default: transparent;
   --border-active: transparent;
+  /* NOTE: Tailwind v4의 @theme 색상은 계산된 값을 상속하므로 surface 안에서 다시 연결한다. */
+  --color-app: var(--bg-research);
+  --color-sidebar: var(--bg-research);
+  --color-panel: var(--bg-research);
+  --color-research: var(--bg-research);
+  --color-surface: var(--bg-research);
+  --color-element: var(--bg-research);
+  --color-background: var(--bg-research);
+  --color-card: var(--bg-research);
+  --color-popover: var(--bg-research);
+  --color-input: var(--bg-research);
+  --color-secondary: var(--bg-research);
+  --color-bg-secondary: var(--bg-research);
+  --color-bg-panel: var(--bg-research);
+  --color-editor-bg: var(--bg-research);
+  --color-border: transparent;
+  --color-border-active: transparent;
+  --color-border-focus: transparent;
   background-color: var(--bg-research);
 }
 
@@ -125,6 +144,7 @@
 }
 
 .editor-ai-surface {
+  /* rounded editor shell 바깥은 맞닿은 AI View 표면과 이어진다. */
   --editor-adjacent-surface: var(--ai-panel-bg);
 }
 

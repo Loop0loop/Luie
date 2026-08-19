@@ -1,17 +1,12 @@
 import type { ReactNode } from "react";
 import {
-  Bot,
-  Calendar,
-  Globe,
   History,
   LayoutGrid,
-  Shield,
-  StickyNote,
   Trash2,
-  User,
 } from "lucide-react";
 import type { DragItemType } from "@shared/ui/GlobalDragContext";
 import type { EditorLayoutPanelTab } from "@renderer/shared/constants/layoutSizing";
+import { RESEARCH_PANEL_TABS } from "@renderer/features/workspace/components/researchPanelTabs";
 
 export type BinderTab = EditorLayoutPanelTab;
 
@@ -38,42 +33,12 @@ export function buildBinderTabItems(
   t: (key: string) => string,
 ): BinderTabItem[] {
   return [
-    {
-      tab: "character",
-      icon: <User className="w-5 h-5" />,
-      title: t("research.title.characters"),
-      type: "character",
-    },
-    {
-      tab: "event",
-      icon: <Calendar className="w-5 h-5" />,
-      title: t("research.title.events"),
-      type: "event",
-    },
-    {
-      tab: "faction",
-      icon: <Shield className="w-5 h-5" />,
-      title: t("research.title.factions"),
-      type: "faction",
-    },
-    {
-      tab: "world",
-      icon: <Globe className="w-5 h-5" />,
-      title: t("research.title.world"),
-      type: "world",
-    },
-    {
-      tab: "scrap",
-      icon: <StickyNote className="w-5 h-5" />,
-      title: t("research.title.scrap"),
-      type: "memo",
-    },
-    {
-      tab: "analysis",
-      icon: <Bot className="w-5 h-5" />,
-      title: "AI View (웹소설 코파일럿)",
-      type: "analysis",
-    },
+    ...RESEARCH_PANEL_TABS.map((item) => ({
+      tab: item.tab,
+      icon: <item.icon className="w-5 h-5" />,
+      title: t(item.titleKey),
+      type: item.dataType,
+    })),
     {
       tab: "snapshot",
       icon: <History className="w-5 h-5" />,
