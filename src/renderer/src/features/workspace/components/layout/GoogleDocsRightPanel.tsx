@@ -243,6 +243,7 @@ export function GoogleDocsRightPanel({
 
   const {
     isClosing,
+    isOpening,
     shouldRender: shouldRenderPanel,
   } = useResizablePanelPresence({
     enableAnimations,
@@ -302,7 +303,9 @@ export function GoogleDocsRightPanel({
         key={renderedTab}
         id={`right-context-panel-${renderedTab}`}
         panelRef={panelRef}
-        data-panel-animated="true"
+        collapsible
+        collapsedSize={0}
+        data-panel-animated={isOpening || isClosing ? "true" : undefined}
         groupResizeBehavior="preserve-pixel-size"
         defaultSize={toPanelPercentSize(safeRatio)}
         minSize={rightPanelSize.minSize}
@@ -310,7 +313,7 @@ export function GoogleDocsRightPanel({
         onMouseDownCapture={onFocus}
         className={`flex min-w-0 shrink-0 flex-col overflow-hidden ${
           renderedTab === "analysis"
-            ? "bg-[var(--ai-panel-bg,#323232)]"
+            ? "rounded-r-[24px] bg-[var(--ai-panel-bg,#323232)]"
             : isResearchTab
               ? "research-surface bg-[#212123]"
               : "bg-[#212123]"

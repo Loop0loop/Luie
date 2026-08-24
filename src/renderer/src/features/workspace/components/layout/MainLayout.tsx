@@ -116,12 +116,8 @@ export default function MainLayout({
   const persistContextLayoutChanged = useLayoutPersist([
     { id: "context-panel", index: 2, surface: contextSurface },
   ]);
-  // NOTE: separator drag 중에는 panel transition이 pointer를 뒤따라오지 못하므로 끈다.
-  const [isResizing, setIsResizing] = useState(false);
-
   const markResizeSurface = useCallback((surface: MainLayoutResizeSurface) => {
     activeResizeSurfaceRef.current = surface;
-    setIsResizing(true);
   }, []);
   const scheduleResizeSurfaceClear = useCallback(
     (surface: MainLayoutResizeSurface | null) => {
@@ -134,7 +130,6 @@ export default function MainLayout({
           activeResizeSurfaceRef.current = null;
         }
         activeResizeClearTimerRef.current = null;
-        setIsResizing(false);
       }, 180);
     },
     [],
@@ -218,15 +213,6 @@ export default function MainLayout({
     },
     [],
   );
-  useEffect(() => {
-    const stopResizing = () => setIsResizing(false);
-    window.addEventListener("pointerup", stopResizing);
-    window.addEventListener("pointercancel", stopResizing);
-    return () => {
-      window.removeEventListener("pointerup", stopResizing);
-      window.removeEventListener("pointercancel", stopResizing);
-    };
-  }, []);
   const {
     isClosing: isContextClosing,
     isOpening: isContextOpening,
@@ -378,7 +364,9 @@ export default function MainLayout({
             panelRef={sidebarPanelRef}
             collapsible
             collapsedSize={0}
-            data-panel-animated={isResizing ? undefined : "true"}
+            data-panel-animated={
+              isSidebarOpening || isSidebarClosing ? "true" : undefined
+            }
             defaultSize={isSidebarOpen ? sidebarDefaultSize : 0}
             minSize={mainSidebarSize.minSize}
             maxSize={mainSidebarSize.maxSize}
@@ -535,7 +523,9 @@ export default function MainLayout({
             panelRef={contextPanelRef}
             collapsible
             collapsedSize={0}
-            data-panel-animated={isResizing ? undefined : "true"}
+            data-panel-animated={
+              isContextOpening || isContextClosing ? "true" : undefined
+            }
             groupResizeBehavior="preserve-pixel-size"
             defaultSize={isContextOpen ? contextDefaultSize : 0}
             minSize={mainContextSize.minSize}

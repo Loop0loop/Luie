@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import {
   Group as PanelGroup,
   Panel,
@@ -64,7 +64,6 @@ export function GoogleDocsLayout({
     trashRefreshKey,
   } = useGoogleDocsLayoutState(currentProjectId ?? null);
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
-  const [isSidebarResizing, setIsSidebarResizing] = useState(false);
   const docsLayoutGroupRef = useRef<HTMLDivElement | null>(null);
   const docsSidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
   const docsLayoutGroupWidth = useElementWidth(docsLayoutGroupRef);
@@ -83,6 +82,7 @@ export function GoogleDocsLayout({
       : getLayoutSurfaceDefaultRatio("docs.sidebar");
   const {
     isClosing: isSidebarClosing,
+    isOpening: isSidebarOpening,
     shouldRender: shouldRenderSidebar,
   } = useResizablePanelPresence({
     enableAnimations,
@@ -90,18 +90,6 @@ export function GoogleDocsLayout({
     openSize: toPanelPercentSize(safeDocsSidebarRatio),
     panelRef: docsSidebarPanelRef,
   });
-
-  useEffect(() => {
-    if (!isSidebarResizing) return;
-
-    const stopSidebarResize = () => setIsSidebarResizing(false);
-    window.addEventListener("pointerup", stopSidebarResize);
-    window.addEventListener("pointercancel", stopSidebarResize);
-    return () => {
-      window.removeEventListener("pointerup", stopSidebarResize);
-      window.removeEventListener("pointercancel", stopSidebarResize);
-    };
-  }, [isSidebarResizing]);
 
   return (
     <div className="relative flex h-screen bg-app font-sans text-fg transition-colors duration-200">
@@ -117,7 +105,9 @@ export function GoogleDocsLayout({
           panelRef={docsSidebarPanelRef}
           collapsible
           collapsedSize={0}
-          data-panel-animated={isSidebarResizing ? undefined : "true"}
+          data-panel-animated={
+            isSidebarOpening || isSidebarClosing ? "true" : undefined
+          }
           defaultSize={
             isSidebarOpen ? toPanelPercentSize(safeDocsSidebarRatio) : 0
           }
@@ -152,7 +142,6 @@ export function GoogleDocsLayout({
         {shouldRenderSidebar && (
           <PanelResizeHandle
             data-separator-feature="docs.sidebar"
-            onPointerDown={() => setIsSidebarResizing(true)}
             className="relative z-20 w-1 shrink-0 cursor-col-resize bg-sidebar"
           >
             <div className="absolute inset-y-0 -left-1 -right-1" />

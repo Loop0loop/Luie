@@ -1,5 +1,4 @@
-import type { ComponentType } from "react";
-import { BookOpen, History, Settings, Sparkles, Trash2 } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
 import type { DocsLayoutPanelTab } from "@renderer/shared/constants/layoutSizing";
@@ -16,11 +15,10 @@ type GoogleDocsHeaderProps = {
 
 function DocsHeaderMenuButton(props: {
   active?: boolean;
-  icon: ComponentType<{ className?: string }>;
   onClick: () => void;
   label: string;
 }) {
-  const { active = false, icon: Icon, onClick, label } = props;
+  const { active = false, onClick, label } = props;
 
   return (
     <button
@@ -34,7 +32,6 @@ function DocsHeaderMenuButton(props: {
       )}
       title={label}
     >
-      <Icon className="h-4 w-4" aria-hidden="true" />
       <span>{label}</span>
     </button>
   );
@@ -85,24 +82,20 @@ export function GoogleDocsHeader({
           >
             <DocsHeaderMenuButton
               active={activeRightTab === "snapshot"}
-              icon={History}
               onClick={() => onRightTabClick("snapshot")}
               label={t("sidebar.section.snapshot")}
             />
             <DocsHeaderMenuButton
               active={activeRightTab === "trash"}
-              icon={Trash2}
               onClick={() => onRightTabClick("trash")}
               label={t("sidebar.section.trash")}
             />
             <DocsHeaderMenuButton
               active={activeRightTab === "analysis"}
-              icon={Sparkles}
               onClick={() => onRightTabClick("analysis")}
               label={t("ai.sidePanel.view")}
             />
             <DocsHeaderMenuButton
-              icon={Settings}
               onClick={onOpenSettings}
               label={t("sidebar.section.settings")}
             />

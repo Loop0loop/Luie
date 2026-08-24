@@ -160,6 +160,7 @@ export default function ScrivenerLayout({
     getLayoutSurfaceDefaultRatio("scrivener.inspector");
   const {
     isClosing: isSidebarClosing,
+    isOpening: isSidebarOpening,
     shouldRender: shouldRenderSidebar,
   } = useResizablePanelPresence({
     enableAnimations,
@@ -169,6 +170,7 @@ export default function ScrivenerLayout({
   });
   const {
     isClosing: isInspectorClosing,
+    isOpening: isInspectorOpening,
     shouldRender: shouldRenderInspector,
   } = useResizablePanelPresence({
     enableAnimations,
@@ -273,7 +275,9 @@ export default function ScrivenerLayout({
                 panelRef={sidebarPanelRef}
                 collapsible
                 collapsedSize={0}
-                data-panel-animated="true"
+                data-panel-animated={
+                  isSidebarOpening || isSidebarClosing ? "true" : undefined
+                }
                 groupResizeBehavior="preserve-pixel-size"
                 defaultSize={toPanelPercentSize(binderRatio)}
                 minSize={binderSize.minSize}
@@ -413,7 +417,9 @@ export default function ScrivenerLayout({
                 panelRef={inspectorPanelRef}
                 collapsible
                 collapsedSize={0}
-                data-panel-animated="true"
+                data-panel-animated={
+                  isInspectorOpening || isInspectorClosing ? "true" : undefined
+                }
                 groupResizeBehavior="preserve-pixel-size"
                 defaultSize={toPanelPercentSize(inspectorRatio)}
                 minSize={inspectorSize.minSize}
