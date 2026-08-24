@@ -1,12 +1,16 @@
 import type { ResearchTab, ScrivenerSectionsState } from "../uiStore";
 import type { PersistedDocsRightTab } from "./types";
 
-export const PERSISTABLE_DOCS_TABS = new Set<Exclude<PersistedDocsRightTab, null>>([
+export const PERSISTABLE_DOCS_TABS = new Set<
+  Exclude<PersistedDocsRightTab, null>
+>([
   "character",
   "event",
   "faction",
   "world",
   "scrap",
+  "plotboard",
+  "untitled",
   "analysis",
   "snapshot",
   "trash",

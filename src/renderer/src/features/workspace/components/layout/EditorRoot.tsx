@@ -48,6 +48,7 @@ export default function EditorRoot() {
   const [settingsInitialTab, setSettingsInitialTab] = useState<
     SettingsTabId | undefined
   >(undefined);
+  const [isDocsMobileView, setIsDocsMobileView] = useState(false);
   const uiMode = useEditorStore((state) => state.uiMode);
   const fontSize = useEditorStore((state) => state.fontSize);
   const setFontSize = useEditorStore((state) => state.setFontSize);
@@ -303,6 +304,7 @@ export default function EditorRoot() {
         readOnly={!activeChapterId}
         chapterId={activeChapterId || undefined}
         onOpenWorldGraph={handleOpenWorldGraph}
+        mobileView={isDocsMode ? isDocsMobileView : undefined}
         hideToolbar={
           uiMode === "docs" || uiMode === "scrivener" || uiMode === "editor"
         }
@@ -358,6 +360,10 @@ export default function EditorRoot() {
           currentProjectId={currentProject?.id}
           isResearchPanelAdjacent={isResearchPanelAdjacent}
           isEditorPanelAdjacent={isEditorPanelAdjacent}
+          isDocsMobileView={isDocsMobileView}
+          onToggleDocsMobileView={() =>
+            setIsDocsMobileView((current) => !current)
+          }
           onOpenSettings={handleOpenSettings}
           onPrefetchSettings={prefetchSettings}
           onSelectResearchItem={handleSelectResearchItem}

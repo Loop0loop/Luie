@@ -17,6 +17,7 @@ import type { DocsPageMargins } from "./googleDocsLayout.types";
 type GoogleDocsEditorColumnProps = {
   additionalPanelIds: string[];
   additionalPanels?: ReactNode;
+  activeChapterId?: string;
   children: ReactNode;
   editor?: TiptapEditor | null;
   onOpenExport?: () => void;
@@ -24,6 +25,8 @@ type GoogleDocsEditorColumnProps = {
   onOpenCanvas?: () => void;
   onCloseCanvas?: () => void;
   isCanvasMode?: boolean;
+  isMobileView?: boolean;
+  onToggleMobileView?: () => void;
   pageMargins: DocsPageMargins;
   setPageMargins: (margins: DocsPageMargins) => void;
 };
@@ -31,6 +34,7 @@ type GoogleDocsEditorColumnProps = {
 export function GoogleDocsEditorColumn({
   additionalPanelIds,
   additionalPanels,
+  activeChapterId,
   children,
   editor,
   onOpenExport,
@@ -38,6 +42,8 @@ export function GoogleDocsEditorColumn({
   onOpenCanvas,
   onCloseCanvas,
   isCanvasMode = false,
+  isMobileView = false,
+  onToggleMobileView,
   pageMargins,
   setPageMargins,
 }: GoogleDocsEditorColumnProps) {
@@ -64,7 +70,9 @@ export function GoogleDocsEditorColumn({
             editor={editor ?? null}
             onOpenPreview={onOpenExport}
             onOpenExport={onOpenExport}
-            canOpenExport={Boolean(onOpenExport)}
+            canOpenExport={Boolean(activeChapterId)}
+            isMobileView={isMobileView}
+            onToggleMobileView={onToggleMobileView}
             onOpenWorldGraph={onOpenWorldGraph}
             onOpenCanvas={onOpenCanvas}
             onCloseCanvas={onCloseCanvas}
@@ -92,7 +100,7 @@ export function GoogleDocsEditorColumn({
               </div>
             ) : (
               <main
-                className="custom-scrollbar relative flex flex-1 flex-col items-center overflow-y-scroll bg-app"
+                className="custom-scrollbar relative flex min-h-0 flex-1 flex-col items-center overflow-y-auto bg-app"
                 data-editor-scroll-container="true"
               >
                 <div className="sticky top-0 z-30 flex w-full shrink-0 justify-center bg-app/95 pb-2 pt-4 select-none backdrop-blur-sm">
@@ -102,14 +110,25 @@ export function GoogleDocsEditorColumn({
                 </div>
 
                 <div
-                  className="relative mb-8 box-border flex min-h-0 flex-col border border-border bg-transparent"
+                  className={`relative mb-8 box-border flex min-h-0 flex-col border border-border bg-transparent ${
+                    isMobileView
+                      ? "h-[95%] shrink-0 overflow-hidden border-0"
+                      : ""
+                  }`}
                   style={{
-                    width: `${EDITOR_A4_PAGE_WIDTH_PX}px`,
-                    minHeight: `${EDITOR_A4_PAGE_HEIGHT_PX}px`,
-                    paddingTop: `${EDITOR_PAGE_VERTICAL_PADDING_PX}px`,
-                    paddingBottom: `${EDITOR_PAGE_VERTICAL_PADDING_PX}px`,
-                    paddingLeft: `${pageMargins.left}px`,
-                    paddingRight: `${pageMargins.right}px`,
+                    width: `${isMobileView ? 450 : EDITOR_A4_PAGE_WIDTH_PX}px`,
+                    maxWidth: isMobileView ? "450px" : undefined,
+                    minHeight: isMobileView
+                      ? undefined
+                      : `${EDITOR_A4_PAGE_HEIGHT_PX}px`,
+                    paddingTop: isMobileView
+                      ? 0
+                      : `${EDITOR_PAGE_VERTICAL_PADDING_PX}px`,
+                    paddingBottom: isMobileView
+                      ? 0
+                      : `${EDITOR_PAGE_VERTICAL_PADDING_PX}px`,
+                    paddingLeft: isMobileView ? 0 : `${pageMargins.left}px`,
+                    paddingRight: isMobileView ? 0 : `${pageMargins.right}px`,
                     color: "var(--editor-text, var(--text-primary))",
                   }}
                 >

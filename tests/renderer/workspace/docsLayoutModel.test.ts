@@ -3,9 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock(
   "@renderer/shared/constants/layoutSizing",
   async () =>
-    await import(
-      "../../../src/renderer/src/shared/constants/layoutSizing.js"
-    ),
+    await import("../../../src/renderer/src/shared/constants/layoutSizing.js"),
 );
 
 import {
@@ -19,8 +17,14 @@ import { buildDefaultLayoutSurfaceRatios } from "../../../src/renderer/src/share
 
 describe("docsLayoutModel", () => {
   it("keeps docs right tab, panel id, and persisted surface aligned", () => {
-    expect(getDocsRightPanelId("analysis")).toBe("right-context-panel-analysis");
+    expect(getDocsRightPanelId("analysis")).toBe(
+      "right-context-panel-analysis",
+    );
+    expect(getDocsRightPanelId("plotboard")).toBe(
+      "right-context-panel-plotboard",
+    );
     expect(getActiveDocsRightTab(true, "analysis", "world")).toBe("analysis");
+    expect(getActiveDocsRightTab(true, "plotboard", "world")).toBe("plotboard");
     expect(getActiveDocsRightTab(true, null, "world")).toBe("world");
     expect(getActiveDocsRightTab(false, "analysis", "world")).toBeNull();
 
@@ -28,7 +32,11 @@ describe("docsLayoutModel", () => {
       { id: "left-sidebar", index: 0, surface: "docs.sidebar" },
     ]);
     expect(buildDocsRightLayoutPersistEntries("analysis")).toEqual([
-      { id: "right-context-panel-analysis", index: 1, surface: "docs.panel.analysis" },
+      {
+        id: "right-context-panel-analysis",
+        index: 1,
+        surface: "docs.panel.analysis",
+      },
     ]);
   });
 

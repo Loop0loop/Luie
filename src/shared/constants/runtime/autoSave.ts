@@ -1,6 +1,8 @@
 export const AUTO_SAVE_INTERVAL = 30000;
 export const DEFAULT_AUTO_SAVE_INTERVAL_MS = AUTO_SAVE_INTERVAL;
-export const DEFAULT_AUTO_SAVE_DEBOUNCE_MS = 1000;
+// NOTE: renderer debounce(EDITOR_AUTOSAVE_DEBOUNCE_MS)와 합쳐 타이핑 멈춤 후
+// 약 0.5초 내 DB 저장을 목표로 한다. 매 키스트로크 IPC를 막는 최소 coalescing 창.
+export const DEFAULT_AUTO_SAVE_DEBOUNCE_MS = 200;
 export const DEFAULT_PROJECT_AUTO_SAVE_INTERVAL_SECONDS = 30;
 export const DEFAULT_AUTO_SAVE_ENABLED = true;
 export const AUTO_SAVE_STALE_THRESHOLD_MS = 5 * 60 * 1000;

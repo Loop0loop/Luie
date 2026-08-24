@@ -85,7 +85,7 @@ export function WorkspacePanels({
               defaultSize={toPercentSize(panel.size)}
               minSize={
                 isResearchPanel
-                  ? "420px"
+                  ? "470px"
                   : isEditorPanel
                     ? `${EDITOR_DND_MIN_PANEL_WIDTH_PX}px`
                     : SPLIT_PANEL_MIN_SIZE_PERCENT

@@ -88,7 +88,7 @@ export function AIPanel({ onMenuToggle, onClose }: AIPanelProps) {
   }, [messages, isLoading]);
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[var(--ai-panel-bg)] font-sans text-fg select-none">
+    <div className="flex h-full flex-col overflow-hidden bg-[var(--ai-panel-bg)] font-sans text-fg select-none pt-[40px]">
       {/* 1. Header Bar: New Chat Dropdown and New Chat Button */}
       <div
         className="flex h-11 shrink-0 items-center justify-between bg-[var(--ai-panel-bg)] px-3.5"

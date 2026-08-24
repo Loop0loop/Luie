@@ -62,18 +62,31 @@ export const getDocsLayoutSurfaceState = (
     ? getDocsLayoutPanelSurface(activeRightTab)
     : null;
 
+  const rawSidebarRatio = layoutSurfaceRatios["docs.sidebar"];
+  const defaultSidebarRatio = getLayoutSurfaceDefaultRatio("docs.sidebar");
+  const docsSidebarRatio =
+    typeof rawSidebarRatio === "number" && rawSidebarRatio >= 5
+      ? rawSidebarRatio
+      : defaultSidebarRatio;
+
+  const rawRightRatio = activePanelSurface
+    ? layoutSurfaceRatios[activePanelSurface]
+    : null;
+  const defaultRightRatio = activePanelSurface
+    ? getLayoutSurfaceDefaultRatio(activePanelSurface)
+    : null;
+  const rightPanelRatio =
+    typeof rawRightRatio === "number" && rawRightRatio >= 5
+      ? rawRightRatio
+      : defaultRightRatio;
+
   return {
     activePanelSurface,
     docsSidebarConfig: getLayoutSurfaceConfig("docs.sidebar"),
-    docsSidebarRatio:
-      layoutSurfaceRatios["docs.sidebar"] ||
-      getLayoutSurfaceDefaultRatio("docs.sidebar"),
+    docsSidebarRatio,
     rightPanelConfig: activePanelSurface
       ? getLayoutSurfaceConfig(activePanelSurface)
       : null,
-    rightPanelRatio: activePanelSurface
-      ? layoutSurfaceRatios[activePanelSurface] ||
-        getLayoutSurfaceDefaultRatio(activePanelSurface)
-      : null,
+    rightPanelRatio,
   };
 };

@@ -1,4 +1,5 @@
 import type { DocsRightTab, ResearchTab } from "../stores/uiStore";
+import type { DocsLayoutPanelTab } from "@renderer/shared/constants/layoutSizing";
 
 type SidebarSection = "snapshot" | "trash";
 
@@ -11,31 +12,26 @@ type LayoutModeActionsOptions = {
   closeRightPanel: () => void;
   toggleLeftSidebar: () => void;
   setContextOpen: (isOpen: boolean) => void;
-  addPanel: (content: { type: "editor" | "research" | "export"; id?: string; tab?: ResearchTab }) => void;
+  addPanel: (content: {
+    type: "editor" | "research" | "export";
+    id?: string;
+    tab?: ResearchTab;
+  }) => void;
   handleSelectResearchItem: (tab: ResearchTab) => void;
   handleOpenExport: () => void;
   onToggleManuscriptLegacy: () => void;
   onOpenSidebarSectionLegacy: (section: SidebarSection) => void;
 };
 
-const RESEARCH_TAB_TO_DOCS_TAB: Record<
-  ResearchTab,
-  | "character"
-  | "world"
-  | "event"
-  | "faction"
-  | "scrap"
-  | "analysis"
-> = {
+const RESEARCH_TAB_TO_DOCS_TAB: Record<ResearchTab, DocsLayoutPanelTab> = {
   character: "character",
   world: "world",
   event: "event",
   faction: "faction",
   scrap: "scrap",
   analysis: "analysis",
-  // Docs 우측 패널은 legacy surface를 계속 사용하므로 신규 항목을 기존 화면에 매핑한다.
-  plotboard: "world",
-  untitled: "analysis",
+  plotboard: "plotboard",
+  untitled: "untitled",
 };
 
 export function createLayoutModeActions(options: LayoutModeActionsOptions) {

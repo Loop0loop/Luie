@@ -26,6 +26,8 @@ export type DocsRightTab =
   | "faction"
   | "world"
   | "scrap"
+  | "plotboard"
+  | "untitled"
   | "analysis"
   | "snapshot"
   | "trash"

@@ -12,6 +12,8 @@ export type PersistedDocsRightTab =
   | "faction"
   | "world"
   | "scrap"
+  | "plotboard"
+  | "untitled"
   | "analysis"
   | "snapshot"
   | "trash"
@@ -64,10 +66,7 @@ export type ProjectLayoutPatch = {
 export interface ProjectLayoutStore {
   hasHydrated: boolean;
   byProject: Record<string, ProjectLayoutState>;
-  upsertProjectLayout: (
-    projectId: string,
-    patch: ProjectLayoutPatch,
-  ) => void;
+  upsertProjectLayout: (projectId: string, patch: ProjectLayoutPatch) => void;
   getProjectLayout: (projectId: string) => ProjectLayoutState;
   clearProjectLayout: (projectId: string) => void;
   setHasHydrated: (value: boolean) => void;

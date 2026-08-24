@@ -1,5 +1,8 @@
 import { normalizeSidebarWidthInput } from "./sidebarSizing";
-import { CANVAS_ACTIVITY_LAYOUT_CONFIG, CANVAS_BINDER_LAYOUT_CONFIG } from "./canvasSizing";
+import {
+  CANVAS_ACTIVITY_LAYOUT_CONFIG,
+  CANVAS_BINDER_LAYOUT_CONFIG,
+} from "./canvasSizing";
 
 export const SPLIT_PANEL_MIN_SIZE_PERCENT = 15;
 
@@ -22,6 +25,8 @@ export const DOCS_LAYOUT_PANEL_SURFACE_MAP = {
   faction: "docs.panel.faction",
   world: "docs.panel.world",
   scrap: "docs.panel.scrap",
+  plotboard: "docs.panel.plotboard",
+  untitled: "docs.panel.untitled",
   analysis: "docs.panel.analysis",
   snapshot: "docs.panel.snapshot",
   trash: "docs.panel.trash",
@@ -83,8 +88,8 @@ const DEFAULT_PANEL_CONFIG: LayoutSurfaceConfig = {
 const NESTED_MANAGER_PANEL_CONFIG: LayoutSurfaceConfig = {
   role: "panel",
   defaultRatio: 36,
-  minPx: 420,
-  maxPx: 960,
+  minPx: 370,
+  maxPx: 560,
 };
 
 const DEFAULT_BINDER_CONFIG: LayoutSurfaceConfig = {
@@ -113,6 +118,8 @@ export const LAYOUT_SURFACE_CONFIG: Record<
   "docs.panel.faction": { ...NESTED_MANAGER_PANEL_CONFIG },
   "docs.panel.world": { ...NESTED_MANAGER_PANEL_CONFIG },
   "docs.panel.scrap": { ...NESTED_MANAGER_PANEL_CONFIG },
+  "docs.panel.plotboard": { ...NESTED_MANAGER_PANEL_CONFIG },
+  "docs.panel.untitled": { ...NESTED_MANAGER_PANEL_CONFIG },
   "docs.panel.analysis": { ...NESTED_MANAGER_PANEL_CONFIG },
   "docs.panel.snapshot": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 26 },
   "docs.panel.trash": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 26 },
@@ -145,6 +152,8 @@ const LEGACY_WIDTH_KEYS_BY_LAYOUT_SURFACE: Record<LayoutSurfaceId, string[]> = {
   "docs.panel.faction": ["docsFaction", "faction"],
   "docs.panel.world": ["docsWorld", "world"],
   "docs.panel.scrap": ["docsScrap", "scrap"],
+  "docs.panel.plotboard": ["docsPlotboard", "plotboard"],
+  "docs.panel.untitled": ["docsUntitled", "untitled"],
   "docs.panel.analysis": ["docsAnalysis", "analysis"],
   "docs.panel.snapshot": ["docsSnapshot", "snapshot"],
   "docs.panel.trash": ["docsTrash", "trash"],

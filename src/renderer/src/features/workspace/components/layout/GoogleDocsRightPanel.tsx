@@ -1,5 +1,12 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { History } from "lucide-react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { History, X } from "lucide-react";
 import { Editor, useEditorStore } from "@renderer/domains/editor";
 import { useChapterStore } from "@renderer/domains/manuscript";
 import { AIPanel } from "@renderer/features/ai";
@@ -8,26 +15,24 @@ import {
   Panel,
   Separator as PanelResizeHandle,
   type PanelImperativeHandle,
-  type PanelSize,
 } from "react-resizable-panels";
 import {
+  getLayoutSurfaceDefaultRatio,
   type ResponsivePanelSize,
   toPanelPercentSize,
   type DocsLayoutPanelTab,
+  type LayoutSurfaceId,
 } from "@renderer/shared/constants/layoutSizing";
 import { beginLayoutRestoring } from "@renderer/features/workspace/hooks/useProjectLayoutPersistence";
-import { getDocsRightPanelId } from "../../utils/docsLayoutModel";
-import { shouldCloseDocsRightPanelOnResize } from "../../utils/googleDocsPanelResize";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
-import { suppressLayoutPersistenceFor } from "@renderer/features/workspace/hooks/useLayoutPersist";
 
-const ResearchPanel = lazy(
-  () => import("@renderer/domains/world").then((module) => ({
+const ResearchPanel = lazy(() =>
+  import("@renderer/domains/world").then((module) => ({
     default: module.ResearchPanel,
   })),
 );
-const WorldPanel = lazy(
-  () => import("@renderer/domains/world").then((module) => ({
+const WorldPanel = lazy(() =>
+  import("@renderer/domains/world").then((module) => ({
     default: module.WorldPanel,
   })),
 );
@@ -43,8 +48,8 @@ const TrashList = lazy(() =>
     default: module.TrashList,
   })),
 );
-const ExportPreviewPanel = lazy(
-  () => import("@renderer/domains/export").then((module) => ({
+const ExportPreviewPanel = lazy(() =>
+  import("@renderer/domains/export").then((module) => ({
     default: module.ExportPreviewPanel,
   })),
 );
@@ -53,7 +58,7 @@ type GoogleDocsRightPanelProps = {
   activeChapterContent?: string;
   activeChapterId?: string;
   activeChapterTitle?: string;
-  activePanelSurface: string | null;
+  activePanelSurface: LayoutSurfaceId | null;
   activeRightTab: DocsLayoutPanelTab | null;
   closeRightPanel: () => void;
   currentProjectId?: string;
@@ -70,13 +75,32 @@ function LoadingFallback() {
   return <div className="p-4 text-sm text-muted">{t("loading")}</div>;
 }
 
-function SnapshotPanel({ activeChapterId }: { activeChapterId?: string }) {
+function SnapshotPanel({
+  activeChapterId,
+  onClose,
+}: {
+  activeChapterId?: string;
+  onClose?: () => void;
+}) {
   const { t } = useTranslation();
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted">
-        {t("sidebar.section.snapshot")}
+    <div className="flex h-full flex-col pt-2">
+      <div className="flex h-11 shrink-0 items-center justify-between px-4">
+        <div className="text-xs font-semibold uppercase tracking-wider text-muted">
+          {t("sidebar.section.snapshot")}
+        </div>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex size-7 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg"
+            title={t("sidebar.toggle.close")}
+            aria-label={t("sidebar.toggle.close")}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
       {activeChapterId ? (
         <Suspense
@@ -101,20 +125,39 @@ function TrashPanel(props: {
   currentProjectId?: string;
   onRefreshTrash: () => void;
   trashRefreshKey: number;
+  onClose?: () => void;
 }) {
-  const { currentProjectId, onRefreshTrash, trashRefreshKey } = props;
+  const { currentProjectId, onRefreshTrash, trashRefreshKey, onClose } = props;
   const { t } = useTranslation();
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted">
-        {t("sidebar.section.trash")}
-        <button
-          onClick={onRefreshTrash}
-          className="ml-auto rounded p-1 hover:bg-surface-hover"
-        >
-          <History className="h-3 w-3 text-muted" />
-        </button>
+    <div className="flex h-full flex-col pt-2">
+      <div className="flex h-11 shrink-0 items-center gap-2 px-4">
+        <div className="text-xs font-semibold uppercase tracking-wider text-muted">
+          {t("sidebar.section.trash")}
+        </div>
+        <div className="ml-auto flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onRefreshTrash}
+            className="flex size-7 items-center justify-center rounded p-1 text-muted transition-colors hover:bg-surface-hover hover:text-fg"
+            title="새로고침"
+            aria-label="새로고침"
+          >
+            <History className="h-3.5 w-3.5" />
+          </button>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex size-7 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg"
+              title={t("sidebar.toggle.close")}
+              aria-label={t("sidebar.toggle.close")}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
       {currentProjectId ? (
         <Suspense
@@ -139,7 +182,14 @@ function TrashPanel(props: {
 }
 
 function ResearchContent(props: {
-  activeTab: "analysis" | "character" | "event" | "faction" | "scrap";
+  activeTab:
+    | "analysis"
+    | "character"
+    | "event"
+    | "faction"
+    | "scrap"
+    | "plotboard"
+    | "untitled";
   onClose: () => void;
 }) {
   if (props.activeTab === "analysis") {
@@ -172,20 +222,32 @@ export function GoogleDocsRightPanel({
 }: GoogleDocsRightPanelProps) {
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
   // NOTE: 스냅샷 복원 시 같은 챕터의 본문이 바뀌므로 리비전을 key에 넣어 Editor를 리마운트한다.
-  const contentRevision = useChapterStore(
-    (state) => state.contentRevision,
-  );
+  const contentRevision = useChapterStore((state) => state.contentRevision);
   const [renderedTab, setRenderedTab] = useState(activeRightTab);
+  const isResearchTab = [
+    "character",
+    "event",
+    "faction",
+    "scrap",
+    "plotboard",
+    "untitled",
+  ].includes(renderedTab ?? "");
   const restoreFrameRef = useRef<number | null>(null);
   const panelRef = useRef<PanelImperativeHandle | null>(null);
+  const safeRatio =
+    typeof rightPanelRatio === "number" &&
+    Number.isFinite(rightPanelRatio) &&
+    rightPanelRatio >= 5
+      ? rightPanelRatio
+      : (activePanelSurface ? getLayoutSurfaceDefaultRatio(activePanelSurface) : 36);
+
   const {
     isClosing,
-    isOpening,
     shouldRender: shouldRenderPanel,
   } = useResizablePanelPresence({
     enableAnimations,
     isOpen: Boolean(activeRightTab),
-    openSize: toPanelPercentSize(rightPanelRatio),
+    openSize: toPanelPercentSize(safeRatio),
     panelRef,
   });
 
@@ -205,7 +267,7 @@ export function GoogleDocsRightPanel({
       }
       endRestoring();
     };
-  }, [activeRightTab, rightPanelRatio]);
+  }, [activeRightTab, safeRatio]);
 
   useEffect(() => {
     if (!activeRightTab || activeRightTab === renderedTab) return;
@@ -219,13 +281,6 @@ export function GoogleDocsRightPanel({
     setRenderedTab(null);
   }, [renderedTab, shouldRenderPanel]);
 
-  const handlePanelResize = (panelSize: PanelSize) => {
-    if (shouldCloseDocsRightPanelOnResize(panelSize, isOpening, isClosing)) {
-      suppressLayoutPersistenceFor(500);
-      closeRightPanel();
-    }
-  };
-
   if (!shouldRenderPanel || !renderedTab || !rightPanelSize) {
     return null;
   }
@@ -234,7 +289,7 @@ export function GoogleDocsRightPanel({
     <>
       <PanelResizeHandle
         data-separator-feature={activePanelSurface}
-        className={`relative z-20 w-1 shrink-0 cursor-col-resize bg-transparent transition-colors hover:bg-accent/60 focus-visible:bg-accent/60 ${
+        className={`relative z-20 w-1 shrink-0 cursor-col-resize bg-transparent ${
           enableAnimations && isClosing
             ? "opacity-0 transition-opacity duration-200"
             : ""
@@ -244,19 +299,22 @@ export function GoogleDocsRightPanel({
       </PanelResizeHandle>
 
       <Panel
-        key={getDocsRightPanelId(renderedTab)}
-        id={getDocsRightPanelId(renderedTab)}
+        key={renderedTab}
+        id={`right-context-panel-${renderedTab}`}
         panelRef={panelRef}
-        collapsible
-        collapsedSize={0}
         data-panel-animated="true"
         groupResizeBehavior="preserve-pixel-size"
-        defaultSize={toPanelPercentSize(rightPanelRatio)}
+        defaultSize={toPanelPercentSize(safeRatio)}
         minSize={rightPanelSize.minSize}
         maxSize={rightPanelSize.maxSize}
-        onResize={handlePanelResize}
         onMouseDownCapture={onFocus}
-        className={`flex min-w-0 shrink-0 flex-col overflow-hidden bg-app ${
+        className={`flex min-w-0 shrink-0 flex-col overflow-hidden ${
+          renderedTab === "analysis"
+            ? "bg-[var(--ai-panel-bg,#323232)]"
+            : isResearchTab
+              ? "research-surface bg-[#212123]"
+              : "bg-[#212123]"
+        } ${
           enableAnimations
             ? isClosing
               ? "animate-out slide-out-to-right fade-out duration-200"
@@ -264,62 +322,78 @@ export function GoogleDocsRightPanel({
             : ""
         }`}
       >
-        <div className="flex h-full flex-col">
-          {renderedTab === "character" && (
-            <ResearchContent activeTab="character" onClose={closeRightPanel} />
-          )}
-          {renderedTab === "world" && (
-            <Suspense fallback={<LoadingFallback />}>
+        {shouldRenderPanel && renderedTab && (
+          <div
+            className={`flex h-full flex-col ${
+              isResearchTab || renderedTab === "world" ? "pt-[40px]" : ""
+            }`}
+          >
+            {renderedTab === "character" && (
+              <ResearchContent activeTab="character" onClose={closeRightPanel} />
+            )}
+            {renderedTab === "world" && (
+              <Suspense fallback={<LoadingFallback />}>
+                <div className="h-full">
+                  <WorldPanel onClose={closeRightPanel} />
+                </div>
+              </Suspense>
+            )}
+            {renderedTab === "event" && (
+              <ResearchContent activeTab="event" onClose={closeRightPanel} />
+            )}
+            {renderedTab === "faction" && (
+              <ResearchContent activeTab="faction" onClose={closeRightPanel} />
+            )}
+            {renderedTab === "scrap" && (
+              <ResearchContent activeTab="scrap" onClose={closeRightPanel} />
+            )}
+            {renderedTab === "plotboard" && (
+              <ResearchContent activeTab="plotboard" onClose={closeRightPanel} />
+            )}
+            {renderedTab === "untitled" && (
+              <ResearchContent activeTab="untitled" onClose={closeRightPanel} />
+            )}
+            {renderedTab === "analysis" && (
+              <ResearchContent activeTab="analysis" onClose={closeRightPanel} />
+            )}
+            {renderedTab === "editor" && (
               <div className="h-full">
-                <WorldPanel onClose={closeRightPanel} />
+                <Editor
+                  key={`docs-side-editor-${activeChapterId ?? "none"}-${contentRevision}`}
+                  chapterId={activeChapterId ?? undefined}
+                  initialTitle={activeChapterTitle ?? ""}
+                  initialContent={activeChapterContent ?? ""}
+                  onSave={onSaveChapter}
+                  hideFooter
+                  hideToolbar
+                  hideTitle
+                  scrollable
+                />
               </div>
-            </Suspense>
-          )}
-          {renderedTab === "event" && (
-            <ResearchContent activeTab="event" onClose={closeRightPanel} />
-          )}
-          {renderedTab === "faction" && (
-            <ResearchContent activeTab="faction" onClose={closeRightPanel} />
-          )}
-          {renderedTab === "scrap" && (
-            <ResearchContent activeTab="scrap" onClose={closeRightPanel} />
-          )}
-          {renderedTab === "analysis" && (
-            <ResearchContent activeTab="analysis" onClose={closeRightPanel} />
-          )}
-          {renderedTab === "editor" && (
-            <div className="h-full">
-              <Editor
-                key={`docs-side-editor-${activeChapterId ?? "none"}-${contentRevision}`}
-                chapterId={activeChapterId ?? undefined}
-                initialTitle={activeChapterTitle ?? ""}
-                initialContent={activeChapterContent ?? ""}
-                onSave={onSaveChapter}
-                hideFooter
-                hideToolbar
-                hideTitle
-                scrollable
+            )}
+            {renderedTab === "export" && (
+              <Suspense fallback={<LoadingFallback />}>
+                <div className="h-full">
+                  <ExportPreviewPanel title={activeChapterTitle} />
+                </div>
+              </Suspense>
+            )}
+            {renderedTab === "snapshot" && (
+              <SnapshotPanel
+                activeChapterId={activeChapterId}
+                onClose={closeRightPanel}
               />
-            </div>
-          )}
-          {renderedTab === "export" && (
-            <Suspense fallback={<LoadingFallback />}>
-              <div className="h-full">
-                <ExportPreviewPanel title={activeChapterTitle} />
-              </div>
-            </Suspense>
-          )}
-          {renderedTab === "snapshot" && (
-            <SnapshotPanel activeChapterId={activeChapterId} />
-          )}
-          {renderedTab === "trash" && (
-            <TrashPanel
-              currentProjectId={currentProjectId}
-              onRefreshTrash={onRefreshTrash}
-              trashRefreshKey={trashRefreshKey}
-            />
-          )}
-        </div>
+            )}
+            {renderedTab === "trash" && (
+              <TrashPanel
+                currentProjectId={currentProjectId}
+                onRefreshTrash={onRefreshTrash}
+                trashRefreshKey={trashRefreshKey}
+                onClose={closeRightPanel}
+              />
+            )}
+          </div>
+        )}
       </Panel>
     </>
   );

@@ -27,7 +27,9 @@ type WorkspaceLayoutRouterProps = {
   activeChapterContent: string;
   currentProjectId?: string;
   isResearchPanelAdjacent: boolean;
-  isEditorPanelAdjacent: boolean;
+  isEditorPanelAdjacent?: boolean;
+  isDocsMobileView?: boolean;
+  onToggleDocsMobileView?: () => void;
   onOpenSettings: () => void;
   onPrefetchSettings: () => void;
   onSelectResearchItem: (tab: ResearchTab) => void;
@@ -52,7 +54,9 @@ export function WorkspaceLayoutRouter({
   activeChapterContent,
   currentProjectId,
   isResearchPanelAdjacent,
-  isEditorPanelAdjacent,
+  isEditorPanelAdjacent = false,
+  isDocsMobileView = false,
+  onToggleDocsMobileView,
   onOpenSettings,
   onPrefetchSettings,
   onSelectResearchItem,
@@ -79,6 +83,8 @@ export function WorkspaceLayoutRouter({
         onOpenWorldGraph={onOpenWorldGraph}
         additionalPanels={additionalPanels}
         additionalPanelIds={additionalPanelIds}
+        isMobileView={isDocsMobileView}
+        onToggleMobileView={onToggleDocsMobileView}
       >
         {sharedEditor}
       </GoogleDocsLayout>

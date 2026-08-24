@@ -1,10 +1,62 @@
-import { Plus } from "lucide-react";
+import {
+  Calendar,
+  GitBranch,
+  Shield,
+  StickyNote,
+  User,
+  Workflow,
+  type LucideIcon,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
 import { DraggableItem } from "@shared/ui/DraggableItem";
+import type { DragItemType } from "@shared/ui/GlobalDragContext";
 import type { DocsLayoutPanelTab } from "@renderer/shared/constants/layoutSizing";
 import { useEditorStore } from "@renderer/domains/editor";
-import { RESEARCH_PANEL_TABS } from "@renderer/features/workspace/components/researchPanelTabs";
+
+const RESEARCH_RAIL_TABS = [
+  {
+    dataType: "character",
+    icon: User,
+    tab: "character",
+    titleKey: "research.title.characters",
+  },
+  {
+    dataType: "event",
+    icon: Calendar,
+    tab: "event",
+    titleKey: "research.title.events",
+  },
+  {
+    dataType: "faction",
+    icon: Shield,
+    tab: "faction",
+    titleKey: "research.title.factions",
+  },
+  {
+    dataType: "memo",
+    icon: StickyNote,
+    tab: "scrap",
+    titleKey: "research.title.scrap",
+  },
+  {
+    dataType: "plot",
+    icon: GitBranch,
+    tab: "plotboard",
+    titleKey: "research.title.plotBoard",
+  },
+  {
+    dataType: "mindmap",
+    icon: Workflow,
+    tab: "untitled",
+    titleKey: "research.title.untitled",
+  },
+] as const satisfies ReadonlyArray<{
+  dataType: DragItemType;
+  icon: LucideIcon;
+  tab: DocsLayoutPanelTab;
+  titleKey: string;
+}>;
 
 type GoogleDocsPanelRailProps = {
   activeRightTab: DocsLayoutPanelTab | null;
@@ -21,22 +73,22 @@ export function GoogleDocsPanelRail({
   return (
     <div
       className={cn(
-        "z-10 flex h-full w-14 shrink-0 flex-col items-center gap-4 overflow-hidden bg-app py-4",
+        "z-10 flex h-full w-14 shrink-0 flex-col items-center gap-4 overflow-hidden bg-[#212123] pb-4 pt-28",
         enableAnimations
           ? "animate-in slide-in-from-right fade-in duration-180"
           : "transition-none",
       )}
     >
-      {RESEARCH_PANEL_TABS.map((tab) => {
+      {RESEARCH_RAIL_TABS.map((tab) => {
         const title = t(tab.titleKey);
         return (
           <DraggableItem
-            key={tab.id}
-            id={`binder-icon-${tab.tab}`}
-            data={{ type: tab.dataType, id: tab.id, title }}
+            key={tab.tab}
+            id={`docs-rail-${tab.tab}`}
+            data={{ type: tab.dataType, id: tab.tab, title }}
           >
             <button
-              onClick={() => onSelectTab(tab.tab as DocsLayoutPanelTab)}
+              onClick={() => onSelectTab(tab.tab)}
               className={cn(
                 "flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover hover:text-fg",
                 activeRightTab === tab.tab && "bg-accent/15 text-accent",
@@ -49,16 +101,6 @@ export function GoogleDocsPanelRail({
           </DraggableItem>
         );
       })}
-
-      <div className="mt-auto">
-        <button
-          className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover hover:text-fg"
-          aria-label={t("menu.extensions")}
-          title={t("menu.extensions")}
-        >
-          <Plus className="h-5 w-5 text-muted" />
-        </button>
-      </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { BookOpen, History, Settings, Trash2 } from "lucide-react";
+import { BookOpen, History, Settings, Sparkles, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
 import type { DocsLayoutPanelTab } from "@renderer/shared/constants/layoutSizing";
@@ -11,27 +11,31 @@ type GoogleDocsHeaderProps = {
   onOpenSettings: () => void;
   onRenameChapter?: (id: string, title: string) => void;
   onRightTabClick: (tab: DocsLayoutPanelTab) => void;
-  offsetChapterTitle?: boolean;
+  reserveTrafficLightsSpace?: boolean;
 };
 
-function DocsHeaderIconButton(props: {
+function DocsHeaderMenuButton(props: {
   active?: boolean;
   icon: ComponentType<{ className?: string }>;
   onClick: () => void;
-  title: string;
+  label: string;
 }) {
-  const { active = false, icon: Icon, onClick, title } = props;
+  const { active = false, icon: Icon, onClick, label } = props;
 
   return (
     <button
+      type="button"
       onClick={onClick}
+      aria-label={label}
+      aria-pressed={active || undefined}
       className={cn(
-        "flex h-10 w-10 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover",
-        active && "bg-accent/10 text-accent",
+        "flex h-8 items-center gap-1.5 rounded-control px-2 text-xs font-medium text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+        active && "text-accent",
       )}
-      title={title}
+      title={label}
     >
-      <Icon className="h-5 w-5" />
+      <Icon className="h-4 w-4" aria-hidden="true" />
+      <span>{label}</span>
     </button>
   );
 }
@@ -43,16 +47,16 @@ export function GoogleDocsHeader({
   onOpenSettings,
   onRenameChapter,
   onRightTabClick,
-  offsetChapterTitle = false,
+  reserveTrafficLightsSpace = false,
 }: GoogleDocsHeaderProps) {
   const { t } = useTranslation();
 
   return (
-    <header className="flex h-[64px] shrink-0 select-none items-center justify-between bg-app px-4 transition-colors duration-200">
+    <header className="flex min-h-[88px] shrink-0 select-none items-center bg-app px-4 py-2 transition-colors duration-200">
       <div
         className={cn(
-          "-translate-y-2 flex min-w-0 items-center gap-1",
-          offsetChapterTitle && "ml-[70px]",
+          "-translate-y-1 flex min-w-0 items-start gap-1",
+          reserveTrafficLightsSpace && "ml-[70px]",
         )}
       >
         <div
@@ -62,37 +66,48 @@ export function GoogleDocsHeader({
           <BookOpen className="h-5 w-5" />
         </div>
 
-        <input
-          type="text"
-          value={activeChapterTitle || ""}
-          onChange={(event) => {
-            if (activeChapterId && onRenameChapter) {
-              onRenameChapter(activeChapterId, event.target.value);
-            }
-          }}
-          placeholder={t("project.defaults.untitled")}
-          className="max-w-[400px] min-w-[150px] truncate rounded-[4px] border border-transparent bg-transparent px-1 py-0.5 text-[18px] text-fg transition-colors duration-150 hover:bg-surface-hover focus:bg-app focus:outline-none focus:ring-2 focus:ring-accent"
-        />
-      </div>
+        <div className="min-w-0">
+          <input
+            type="text"
+            value={activeChapterTitle || ""}
+            onChange={(event) => {
+              if (activeChapterId && onRenameChapter) {
+                onRenameChapter(activeChapterId, event.target.value);
+              }
+            }}
+            placeholder={t("project.defaults.untitled")}
+            className="max-w-[400px] min-w-[150px] truncate rounded-[4px] border border-transparent bg-transparent px-1 py-0.5 text-[18px] text-fg transition-colors duration-150 hover:bg-surface-hover focus:bg-app focus:outline-none focus:ring-2 focus:ring-accent"
+          />
 
-      <div className="flex shrink-0 items-center gap-2">
-        <DocsHeaderIconButton
-          active={activeRightTab === "snapshot"}
-          icon={History}
-          onClick={() => onRightTabClick("snapshot")}
-          title={t("sidebar.section.snapshot")}
-        />
-        <DocsHeaderIconButton
-          active={activeRightTab === "trash"}
-          icon={Trash2}
-          onClick={() => onRightTabClick("trash")}
-          title={t("sidebar.section.trash")}
-        />
-        <DocsHeaderIconButton
-          icon={Settings}
-          onClick={onOpenSettings}
-          title={t("sidebar.section.settings")}
-        />
+          <nav
+            aria-label={t("project.defaults.untitled")}
+            className="mt-1 flex items-center gap-1"
+          >
+            <DocsHeaderMenuButton
+              active={activeRightTab === "snapshot"}
+              icon={History}
+              onClick={() => onRightTabClick("snapshot")}
+              label={t("sidebar.section.snapshot")}
+            />
+            <DocsHeaderMenuButton
+              active={activeRightTab === "trash"}
+              icon={Trash2}
+              onClick={() => onRightTabClick("trash")}
+              label={t("sidebar.section.trash")}
+            />
+            <DocsHeaderMenuButton
+              active={activeRightTab === "analysis"}
+              icon={Sparkles}
+              onClick={() => onRightTabClick("analysis")}
+              label={t("ai.sidePanel.view")}
+            />
+            <DocsHeaderMenuButton
+              icon={Settings}
+              onClick={onOpenSettings}
+              label={t("sidebar.section.settings")}
+            />
+          </nav>
+        </div>
       </div>
     </header>
   );

@@ -14,6 +14,8 @@ export interface GoogleDocsLayoutProps {
   onSaveChapter?: (title: string, content: string) => void | Promise<void>;
   additionalPanels?: ReactNode;
   additionalPanelIds?: string[];
+  isMobileView?: boolean;
+  onToggleMobileView?: () => void;
   onOpenExport?: () => void;
   onOpenWorldGraph?: () => void;
 }

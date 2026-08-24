@@ -42,6 +42,7 @@ interface EditorProps {
   hideTitle?: boolean;
   scrollable?: boolean;
   focusMode?: boolean;
+  mobileView?: boolean;
   onEditorReady?: (editor: TiptapEditor | null) => void;
   onOpenWorldGraph?: () => void;
 }
@@ -59,6 +60,7 @@ function Editor({
   hideTitle = false, // Default false
   scrollable = true,
   focusMode = false,
+  mobileView,
   onEditorReady,
   onOpenWorldGraph,
 }: EditorProps) {
@@ -72,7 +74,8 @@ function Editor({
     (state) => state.typewriterMode ?? false,
   );
   const { updateStats } = useEditorStats();
-  const [isMobileView, setIsMobileView] = useState(false);
+  const [localMobileView, setLocalMobileView] = useState(false);
+  const isMobileView = mobileView ?? localMobileView;
 
   const { value: title, onChange: handleTitleChange } = useBufferedInput(
     initialTitle,
@@ -346,7 +349,7 @@ function Editor({
             <EditorToolbar
               editor={editor}
               isMobileView={isMobileView}
-              onToggleMobileView={() => setIsMobileView(!isMobileView)}
+              onToggleMobileView={() => setLocalMobileView((current) => !current)}
               onOpenPreview={handleOpenExport}
               onOpenExport={handleOpenExport}
               canOpenExport={Boolean(chapterId)}
@@ -368,8 +371,8 @@ function Editor({
             "w-full mx-auto flex flex-col flex-1 min-h-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] bg-transparent border-none shadow-none m-0",
             isMobileView &&
               "h-[95%] mx-auto my-5 border-8 border-[#2c2c2e] rounded-[48px] bg-editor-bg shadow-[0_0_0_2px_rgba(69,69,69,0.9),0_25px_50px_-12px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.05)] overflow-hidden relative",
-            // NOTE: Docs mode에서는 page content 높이를 고정하지 않는다.
-            !scrollable && "h-auto",
+            // NOTE: Docs desktop만 자연 높이를 사용한다. 모바일 프레임은 내부 스크롤을 위해 고정 높이가 필요하다.
+            !scrollable && !isMobileView && "h-auto",
           )}
           data-mobile={isMobileView}
           style={{
@@ -401,7 +404,7 @@ function Editor({
           <div
             className={cn(
               "flex flex-col relative flex-1",
-              isMobileView && "pt-8 h-full overflow-hidden px-6",
+              isMobileView && "h-full overflow-y-auto px-6 pt-8",
             )}
             style={{
               fontFamily: getFontFamily(),
