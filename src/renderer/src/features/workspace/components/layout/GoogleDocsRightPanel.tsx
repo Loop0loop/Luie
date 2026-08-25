@@ -6,7 +6,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { History, X } from "lucide-react";
+import { ChevronLeft, History, X } from "lucide-react";
+import type { Snapshot } from "@shared/types";
 import { Editor, useEditorStore } from "@renderer/domains/editor";
 import { useChapterStore } from "@renderer/domains/manuscript";
 import { AIPanel } from "@renderer/features/ai";
@@ -40,6 +41,13 @@ const SnapshotList = lazy(() =>
   import("@renderer/features/snapshot/components/SnapshotList").then(
     (module) => ({
       default: module.SnapshotList,
+    }),
+  ),
+);
+const SnapshotViewer = lazy(() =>
+  import("@renderer/features/snapshot/components/SnapshotViewer").then(
+    (module) => ({
+      default: module.default,
     }),
   ),
 );
@@ -77,15 +85,37 @@ function LoadingFallback() {
 
 function SnapshotPanel({
   activeChapterId,
+  activeChapterContent,
+  activeChapterTitle,
+  onSaveChapter,
   onClose,
 }: {
   activeChapterId?: string;
+  activeChapterContent?: string;
+  activeChapterTitle?: string;
+  onSaveChapter?: (title: string, content: string) => void | Promise<void>;
   onClose?: () => void;
 }) {
   const { t } = useTranslation();
+  // NOTE: 목록 → diff 전환을 우측 패널 덮어쓰기로 처리한다. 분할 패널로 띄우면
+  // 공간이 부족해 diff 가독성이 떨어진다(GoogleDocs 레이아웃 한정 UX).
+  const [selectedSnapshot, setSelectedSnapshot] = useState<Snapshot | null>(
+    null,
+  );
 
   return (
-    <div className="flex h-full flex-col pt-2">
+    <div className="relative flex h-full flex-col pt-2">
+      {selectedSnapshot && (
+        <button
+          type="button"
+          onClick={() => setSelectedSnapshot(null)}
+          className="absolute left-2 top-1/2 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-panel text-muted shadow-sm transition-colors hover:bg-surface-hover hover:text-fg"
+          title={t("back", "뒤로가기")}
+          aria-label={t("back", "뒤로가기")}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+      )}
       <div className="flex h-11 shrink-0 items-center justify-between px-4">
         <div className="text-xs font-semibold uppercase tracking-wider text-muted">
           {t("sidebar.section.snapshot")}
@@ -103,15 +133,34 @@ function SnapshotPanel({
         )}
       </div>
       {activeChapterId ? (
-        <Suspense
-          fallback={
-            <div className="px-4 py-4 text-center text-xs italic text-muted">
-              {t("loading")}
-            </div>
-          }
-        >
-          <SnapshotList chapterId={activeChapterId} />
-        </Suspense>
+        selectedSnapshot ? (
+          <div className="flex min-h-0 flex-1 flex-col">
+            <Suspense fallback={<LoadingFallback />}>
+              <SnapshotViewer
+                key={selectedSnapshot.id}
+                snapshot={selectedSnapshot}
+                currentContent={activeChapterContent ?? ""}
+                onApplySnapshotText={async (nextContent) => {
+                  if (!onSaveChapter) return;
+                  await onSaveChapter(activeChapterTitle ?? "", nextContent);
+                }}
+              />
+            </Suspense>
+          </div>
+        ) : (
+          <Suspense
+            fallback={
+              <div className="px-4 py-4 text-center text-xs italic text-muted">
+                {t("loading")}
+              </div>
+            }
+          >
+            <SnapshotList
+              chapterId={activeChapterId}
+              onOpenSnapshot={setSelectedSnapshot}
+            />
+          </Suspense>
+        )
       ) : (
         <div className="px-4 py-4 text-center text-xs italic text-muted">
           {t("snapshot.list.selectChapter")}
@@ -383,7 +432,11 @@ export function GoogleDocsRightPanel({
             )}
             {renderedTab === "snapshot" && (
               <SnapshotPanel
+                key={activeChapterId ?? "none"}
                 activeChapterId={activeChapterId}
+                activeChapterContent={activeChapterContent}
+                activeChapterTitle={activeChapterTitle}
+                onSaveChapter={onSaveChapter}
                 onClose={closeRightPanel}
               />
             )}

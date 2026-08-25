@@ -41,6 +41,7 @@ interface EditorProps {
   hideFooter?: boolean;
   hideTitle?: boolean;
   scrollable?: boolean;
+  autoHeight?: boolean;
   focusMode?: boolean;
   mobileView?: boolean;
   onEditorReady?: (editor: TiptapEditor | null) => void;
@@ -59,6 +60,7 @@ function Editor({
   hideFooter = false,
   hideTitle = false, // Default false
   scrollable = true,
+  autoHeight = false,
   focusMode = false,
   mobileView,
   onEditorReady,
@@ -324,7 +326,8 @@ function Editor({
   return (
     <div
       className={cn(
-        "relative box-border flex h-full w-full flex-col overflow-hidden bg-app text-fg",
+        "relative box-border flex w-full flex-col bg-app text-fg",
+        autoHeight ? "h-auto overflow-visible" : "h-full overflow-hidden",
         !hideToolbar && !hideFooter && "rounded-editor-shell border border-l-0 border-border",
       )}
       data-testid="editor"
@@ -361,14 +364,17 @@ function Editor({
 
       <div
         className={cn(
-          "flex-1 flex flex-col items-center min-h-0",
+          autoHeight
+            ? "flex w-full flex-col items-center"
+            : "flex-1 flex min-h-0 flex-col items-center",
           scrollable ? "overflow-y-scroll px-10 py-5" : "",
         )}
         data-editor-scroll-container={scrollable ? "true" : undefined}
       >
         <div
           className={cn(
-            "w-full mx-auto flex flex-col flex-1 min-h-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] bg-transparent border-none shadow-none m-0",
+            "mx-auto flex w-full flex-col bg-transparent m-0 border-none shadow-none transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)]",
+            !autoHeight && "flex-1 min-h-0",
             isMobileView &&
               "h-[95%] mx-auto my-5 border-8 border-[#2c2c2e] rounded-[48px] bg-editor-bg shadow-[0_0_0_2px_rgba(69,69,69,0.9),0_25px_50px_-12px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.05)] overflow-hidden relative",
             // NOTE: Docs desktop만 자연 높이를 사용한다. 모바일 프레임은 내부 스크롤을 위해 고정 높이가 필요하다.
@@ -403,7 +409,7 @@ function Editor({
 
           <div
             className={cn(
-              "flex flex-col relative flex-1",
+              autoHeight ? "relative flex flex-none flex-col" : "relative flex flex-1 flex-col",
               isMobileView && "h-full overflow-y-auto px-6 pt-8",
             )}
             style={{

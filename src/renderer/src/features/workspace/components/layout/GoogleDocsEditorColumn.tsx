@@ -109,8 +109,10 @@ export function GoogleDocsEditorColumn({
                   </div>
                 </div>
 
+                {/* NOTE: shrink-0 필수 — flex 자식이라 수축하면 minHeight(1123px)이 상한처럼 동작해
+                    긴 본문이 아웃라인 아래로 새어 나간다. */}
                 <div
-                  className={`relative mb-8 box-border flex min-h-0 flex-col border border-border bg-transparent ${
+                  className={`relative mb-8 box-border block shrink-0 border border-border bg-transparent ${
                     isMobileView
                       ? "h-[95%] shrink-0 overflow-hidden border-0"
                       : ""

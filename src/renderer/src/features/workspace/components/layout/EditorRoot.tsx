@@ -313,6 +313,7 @@ export default function EditorRoot() {
           uiMode === "docs" || uiMode === "scrivener" || uiMode === "editor"
         }
         scrollable={uiMode === "scrivener" || uiMode === "default"}
+        autoHeight={uiMode === "docs"}
         onEditorReady={setDocEditor}
       />
     </FeatureErrorBoundary>
