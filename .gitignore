@@ -107,6 +107,6 @@ dist/
 study
 
 
-# webnovel
+# Local comparison repository and generated knowledge graph
 webnovel-writer/
-.understand-anything
+.understand-anything/

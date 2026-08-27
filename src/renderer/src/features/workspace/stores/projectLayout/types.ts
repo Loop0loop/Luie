@@ -21,9 +21,15 @@ export type PersistedDocsRightTab =
   | "export"
   | null;
 
-export type ProjectWorkspaceLayoutState = {
+export type ProjectWorkspacePanelState = {
   panels: ResizablePanelData[];
   researchPanelSizes: Partial<Record<ResearchTab, number>>;
+};
+
+export type ProjectWorkspaceLayoutState = ProjectWorkspacePanelState & {
+  byLayout: {
+    default: ProjectWorkspacePanelState;
+  };
 };
 
 export type ProjectLayoutState = {

@@ -199,15 +199,16 @@ function Editor({
 
   useTypewriterScroll(editor, !readOnly && typewriterMode);
 
+  // NOTE: ready 리포트는 "새 인스턴스 확정" 시점에만 수행하고 언마운트 시 무효화를
+  // 되돌려주지 않는다. 캔버스 진입처럼 라우트 교체로 언마운트 → 마운트가 이어질 때
+  // 이전 Editor의 null 되돌려주기가 새 Editor의 ready보다 나중에 커밋되면
+  // EditorRoot.docEditor가 영구 stale/null로 남는다(hover 시 빈 막대만 뜨던 증상).
+  // 유효성은 소비자(EditorToolbar의 isUsableEditor)가 항상 검사하므로 여기서는
+  // 절대 파괴적 write-back을 하지 않는다.
   useEffect(() => {
-    if (onEditorReady) {
-      onEditorReady(isUsableEditor(editor) ? editor : null);
-    }
-    return () => {
-      if (onEditorReady) {
-        onEditorReady(null);
-      }
-    };
+    if (!onEditorReady) return undefined;
+    onEditorReady(isUsableEditor(editor) ? editor : null);
+    return undefined;
   }, [editor, onEditorReady]);
 
   useEffect(() => {

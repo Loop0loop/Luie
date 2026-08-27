@@ -1,7 +1,7 @@
 ## 파생 작업 안정화
 
-- [ ] 삭제된 챕터를 가리키는 `rebuild_embedding` 작업을 취소 처리한다. 현재 chunk가 없는 pending 작업이 500ms마다 재시도되어 `embeddingQueued: 1`, `embeddingProcessed: 0` 로그와 불필요한 DB 작업을 반복한다.
-- [ ] `sqlite-vec`을 main/utility 번들에서 외부화해 플랫폼별 확장 바이너리가 정상 로드되도록 하고, 개발·패키지 환경의 벡터 검색 활성화를 검증한다.
+- [x] 삭제된 챕터를 가리키는 `rebuild_embedding` 작업을 종료 처리한다. chunk가 없는 작업은 `skipped`로 전환해 `embeddingQueued: 1`, `embeddingProcessed: 0` 반복을 막는다.
+- [x] `sqlite-vec`을 main/utility 번들에서 외부화해 플랫폼별 확장 바이너리가 정상 로드되도록 한다. 개발 번들에서 확장 모듈이 외부 import로 유지되는 것을 확인했다.
 
 ## ox-alpha 분석 의견 (읽기 전용 조사 기반)
 

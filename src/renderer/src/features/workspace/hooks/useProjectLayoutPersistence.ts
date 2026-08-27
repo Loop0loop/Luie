@@ -11,6 +11,7 @@ import type { ResizablePanelData } from "@renderer/features/workspace/stores/uiS
 import {
   sanitizePersistedDocsRightTab,
   sanitizeWorkspacePanels,
+  type ProjectLayoutPatch,
   type ProjectLayoutState,
   useProjectLayoutStore,
 } from "@renderer/features/workspace/stores/projectLayoutStore";
@@ -20,7 +21,7 @@ let layoutRestoringDepth = 0;
 
 type ProjectLayoutPersistenceMode = EditorUiMode | "canvas";
 type ProjectLayoutSizingPatch = Pick<
-  ProjectLayoutState,
+  ProjectLayoutPatch,
   "sidebarWidths" | "layoutSurfaceRatios" | "workspace"
 >;
 
@@ -61,7 +62,9 @@ export function useProjectLayoutPersistence(
   const isSidebarOpen = useUIStore((state) => state.regions.leftSidebar.open);
   const isContextOpen = useUIStore((state) => state.regions.rightPanel.open);
   const isBinderBarOpen = useUIStore((state) => state.regions.rightRail.open);
-  const docsRightTab = useUIStore((state) => state.regions.rightPanel.activeTab);
+  const docsRightTab = useUIStore(
+    (state) => state.regions.rightPanel.activeTab,
+  );
   const scrivenerSections = useUIStore((state) => state.scrivenerSections);
   const sidebarWidths = useUIStore((state) => state.sidebarWidths);
   const layoutSurfaceRatios = useUIStore((state) => state.layoutSurfaceRatios);
@@ -70,9 +73,13 @@ export function useProjectLayoutPersistence(
   const setRegionOpen = useUIStore((state) => state.setRegionOpen);
   const openRightPanelTab = useUIStore((state) => state.openRightPanelTab);
   const closeRightPanel = useUIStore((state) => state.closeRightPanel);
-  const setScrivenerSections = useUIStore((state) => state.setScrivenerSections);
+  const setScrivenerSections = useUIStore(
+    (state) => state.setScrivenerSections,
+  );
   const setSidebarWidths = useUIStore((state) => state.setSidebarWidths);
-  const setLayoutSurfaceRatios = useUIStore((state) => state.setLayoutSurfaceRatios);
+  const setLayoutSurfaceRatios = useUIStore(
+    (state) => state.setLayoutSurfaceRatios,
+  );
   const setPanels = useUIStore((state) => state.setPanels);
 
   const projectLayoutHasHydrated = useProjectLayoutStore(
@@ -81,8 +88,12 @@ export function useProjectLayoutPersistence(
   const hasProjectLayout = useProjectLayoutStore((state) =>
     projectId ? Boolean(state.byProject[projectId]) : false,
   );
-  const upsertProjectLayout = useProjectLayoutStore((state) => state.upsertProjectLayout);
-  const getProjectLayout = useProjectLayoutStore((state) => state.getProjectLayout);
+  const upsertProjectLayout = useProjectLayoutStore(
+    (state) => state.upsertProjectLayout,
+  );
+  const getProjectLayout = useProjectLayoutStore(
+    (state) => state.getProjectLayout,
+  );
 
   const isRestoringRef = useRef(false);
   const restoreTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -147,9 +158,9 @@ export function useProjectLayoutPersistence(
     );
 
   const buildResearchPanelSizes = (
-    saved: ProjectLayoutState["workspace"]["researchPanelSizes"],
+    saved: ProjectLayoutState["workspace"]["byLayout"]["default"]["researchPanelSizes"],
     inputPanels: ResizablePanelData[],
-  ): ProjectLayoutState["workspace"]["researchPanelSizes"] => {
+  ): ProjectLayoutState["workspace"]["byLayout"]["default"]["researchPanelSizes"] => {
     const next = { ...saved };
     for (const panel of inputPanels) {
       if (panel.content.type !== "research" || !panel.content.tab) continue;
@@ -180,12 +191,17 @@ export function useProjectLayoutPersistence(
   };
 
   const areResearchPanelSizesEqual = (
-    left: ProjectLayoutState["workspace"]["researchPanelSizes"],
-    right: ProjectLayoutState["workspace"]["researchPanelSizes"],
+    left: ProjectLayoutState["workspace"]["byLayout"]["default"]["researchPanelSizes"],
+    right: ProjectLayoutState["workspace"]["byLayout"]["default"]["researchPanelSizes"],
   ): boolean => {
     const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
     for (const key of keys) {
-      if (Math.abs((left[key as keyof typeof left] ?? 0) - (right[key as keyof typeof right] ?? 0)) >= 0.1) {
+      if (
+        Math.abs(
+          (left[key as keyof typeof left] ?? 0) -
+            (right[key as keyof typeof right] ?? 0),
+        ) >= 0.1
+      ) {
         return false;
       }
     }
@@ -254,9 +270,15 @@ export function useProjectLayoutPersistence(
     endLayoutRestoringRef.current = beginLayoutRestoring();
     setSidebarWidths(saved.sidebarWidths);
     setLayoutSurfaceRatios(saved.layoutSurfaceRatios);
-    setPanels(saved.workspace.panels);
+    setPanels(
+      uiMode === "default"
+        ? saved.workspace.byLayout.default.panels
+        : saved.workspace.panels,
+    );
 
-    const restoreTab = (savedTab: ReturnType<typeof sanitizePersistedDocsRightTab>) => {
+    const restoreTab = (
+      savedTab: ReturnType<typeof sanitizePersistedDocsRightTab>,
+    ) => {
       if (savedTab !== null) {
         openRightPanelTab(savedTab);
       } else {
@@ -342,27 +364,41 @@ export function useProjectLayoutPersistence(
     }
 
     const saved = getProjectLayout(projectId);
-    const normalizedSidebarWidths = normalizeSidebarWidthsWithMigrations(sidebarWidths);
-    const normalizedLayoutSurfaceRatios = normalizeLayoutSurfaceRatiosWithMigrations(
-      layoutSurfaceRatios,
-      normalizedSidebarWidths,
-    );
+    const normalizedSidebarWidths =
+      normalizeSidebarWidthsWithMigrations(sidebarWidths);
+    const normalizedLayoutSurfaceRatios =
+      normalizeLayoutSurfaceRatiosWithMigrations(
+        layoutSurfaceRatios,
+        normalizedSidebarWidths,
+      );
+    const savedWorkspace =
+      uiMode === "default" ? saved.workspace.byLayout.default : saved.workspace;
     const workspacePanels = serializeWorkspacePanels(panels);
     const researchPanelSizes = buildResearchPanelSizes(
-      saved.workspace.researchPanelSizes,
+      savedWorkspace.researchPanelSizes,
       workspacePanels,
     );
-    const layoutPatch: Pick<
-      ProjectLayoutState,
-      "sidebarWidths" | "layoutSurfaceRatios" | "workspace"
-    > = {
+    const workspacePatch: NonNullable<ProjectLayoutPatch["workspace"]> =
+      uiMode === "default"
+        ? {
+            byLayout: {
+              default: {
+                panels: workspacePanels,
+                researchPanelSizes,
+              },
+            },
+          }
+        : {
+            panels: workspacePanels,
+            researchPanelSizes,
+          };
+    const layoutPatch: ProjectLayoutSizingPatch = {
       sidebarWidths: normalizedSidebarWidths,
-      layoutSurfaceRatios:
-        normalizedLayoutSurfaceRatios as Record<LayoutSurfaceId, number>,
-      workspace: {
-        panels: workspacePanels,
-        researchPanelSizes,
-      },
+      layoutSurfaceRatios: normalizedLayoutSurfaceRatios as Record<
+        LayoutSurfaceId,
+        number
+      >,
+      workspace: workspacePatch,
     };
     const hasLayoutSizingChanged =
       !areNumberRecordsEqual(saved.sidebarWidths, normalizedSidebarWidths) ||
@@ -370,9 +406,9 @@ export function useProjectLayoutPersistence(
         saved.layoutSurfaceRatios,
         normalizedLayoutSurfaceRatios,
       ) ||
-      !areWorkspacePanelsEqual(saved.workspace.panels, workspacePanels) ||
+      !areWorkspacePanelsEqual(savedWorkspace.panels, workspacePanels) ||
       !areResearchPanelSizesEqual(
-        saved.workspace.researchPanelSizes,
+        savedWorkspace.researchPanelSizes,
         researchPanelSizes,
       );
 
@@ -458,7 +494,10 @@ export function useProjectLayoutPersistence(
       if (
         saved.scrivener.sidebarOpen === isSidebarOpen &&
         saved.scrivener.inspectorOpen === isContextOpen &&
-        areScrivenerSectionsEqual(saved.scrivener.sections, scrivenerSections) &&
+        areScrivenerSectionsEqual(
+          saved.scrivener.sections,
+          scrivenerSections,
+        ) &&
         !hasLayoutSizingChanged
       ) {
         return;

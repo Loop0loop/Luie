@@ -1,6 +1,4 @@
-import {
-  buildDefaultLayoutSurfaceRatios,
-} from "@renderer/shared/constants/layoutSizing";
+import { buildDefaultLayoutSurfaceRatios } from "@renderer/shared/constants/layoutSizing";
 import { buildDefaultSidebarWidths } from "@renderer/shared/constants/sidebarSizing";
 import { DEFAULT_SCRIVENER_SECTIONS } from "./constants";
 import type { ProjectLayoutState } from "./types";
@@ -30,6 +28,12 @@ export const createDefaultProjectLayoutState = (): ProjectLayoutState => ({
   workspace: {
     panels: [],
     researchPanelSizes: {},
+    byLayout: {
+      default: {
+        panels: [],
+        researchPanelSizes: {},
+      },
+    },
   },
   sidebarWidths: buildDefaultSidebarWidths(),
   layoutSurfaceRatios: buildDefaultLayoutSurfaceRatios(),

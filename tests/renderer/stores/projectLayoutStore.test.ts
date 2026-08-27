@@ -50,9 +50,8 @@ beforeAll(async () => {
     writable: true,
   });
 
-  projectLayoutModule = await import(
-    "../../../src/renderer/src/features/workspace/stores/projectLayoutStore.js"
-  );
+  projectLayoutModule =
+    await import("../../../src/renderer/src/features/workspace/stores/projectLayoutStore.js");
 });
 
 beforeEach(() => {
@@ -106,9 +105,15 @@ describe("projectLayoutStore", () => {
   });
 
   it("sanitizes docs tabs and keeps supported values", () => {
-    expect(projectLayoutModule.sanitizePersistedDocsRightTab("character")).toBe("character");
-    expect(projectLayoutModule.sanitizePersistedDocsRightTab("snapshot")).toBe("snapshot");
-    expect(projectLayoutModule.sanitizePersistedDocsRightTab("trash")).toBe("trash");
+    expect(projectLayoutModule.sanitizePersistedDocsRightTab("character")).toBe(
+      "character",
+    );
+    expect(projectLayoutModule.sanitizePersistedDocsRightTab("snapshot")).toBe(
+      "snapshot",
+    );
+    expect(projectLayoutModule.sanitizePersistedDocsRightTab("trash")).toBe(
+      "trash",
+    );
     expect(projectLayoutModule.sanitizePersistedDocsRightTab(null)).toBeNull();
   });
 
@@ -131,8 +136,12 @@ describe("projectLayoutStore", () => {
       },
     });
 
-    const a = projectLayoutModule.useProjectLayoutStore.getState().getProjectLayout("project-a");
-    const b = projectLayoutModule.useProjectLayoutStore.getState().getProjectLayout("project-b");
+    const a = projectLayoutModule.useProjectLayoutStore
+      .getState()
+      .getProjectLayout("project-a");
+    const b = projectLayoutModule.useProjectLayoutStore
+      .getState()
+      .getProjectLayout("project-b");
 
     expect(a.docs.rightTab).toBe("analysis");
     expect(a.docs.binderBarOpen).toBe(false);
@@ -151,7 +160,9 @@ describe("projectLayoutStore", () => {
       },
     });
 
-    const saved = projectLayoutModule.useProjectLayoutStore.getState().getProjectLayout("project-a");
+    const saved = projectLayoutModule.useProjectLayoutStore
+      .getState()
+      .getProjectLayout("project-a");
     expect(saved.docs.rightTab).toBe("snapshot");
   });
 
@@ -264,6 +275,22 @@ describe("projectLayoutStore", () => {
           event: 48,
           faction: 37.5,
         },
+        byLayout: {
+          default: {
+            panels: [
+              {
+                id: "research-character",
+                content: { type: "research", tab: "character" },
+                size: 62.5,
+              },
+            ],
+            researchPanelSizes: {
+              character: 62.5,
+              event: 48,
+              faction: 37.5,
+            },
+          },
+        },
       },
     });
 
@@ -284,6 +311,11 @@ describe("projectLayoutStore", () => {
       },
     ]);
     expect(saved.workspace.researchPanelSizes).toEqual({
+      character: 62.5,
+      event: 48,
+      faction: 37.5,
+    });
+    expect(saved.workspace.byLayout.default.researchPanelSizes).toEqual({
       character: 62.5,
       event: 48,
       faction: 37.5,

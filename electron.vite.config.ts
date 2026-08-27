@@ -29,6 +29,7 @@ const mainExternal = [
   "electron",
   /^drizzle-orm(?:\/.*)?$/,
   /^better-sqlite3(?:\/.*)?$/,
+  /^sqlite-vec(?:\/.*)?$/,
 ];
 
 const isNodeModule = (id: string): boolean => id.includes("/node_modules/");

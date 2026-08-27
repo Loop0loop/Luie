@@ -85,6 +85,28 @@ export const uiStorePersistedStateSchema = z.strictObject({
   mainView: uiMainViewSchema.optional(),
 });
 
+const workspacePanelStateSchema = z.strictObject({
+  panels: z.array(
+    z.strictObject({
+      id: z.string().min(1),
+      content: z.strictObject({
+        type: z.enum(["research", "editor", "export"]),
+        id: z.string().optional(),
+        tab: z
+          .enum(["character", "world", "event", "faction", "scrap", "analysis"])
+          .optional(),
+      }),
+      size: z.number().finite(),
+    }),
+  ),
+  researchPanelSizes: z
+    .partialRecord(
+      z.enum(["character", "world", "event", "faction", "scrap", "analysis"]),
+      z.number().finite(),
+    )
+    .optional(),
+});
+
 const projectLayoutStateSchema = z.strictObject({
   main: z.strictObject({
     sidebarOpen: z.boolean(),
@@ -100,34 +122,24 @@ const projectLayoutStateSchema = z.strictObject({
     inspectorOpen: z.boolean(),
     sections: uiScrivenerSectionsSchema,
   }),
-  editor: z.strictObject({
-    sidebarOpen: z.boolean().optional(),
-    binderRailOpen: z.boolean().optional(),
-    rightTab: uiRightPanelTabSchema.nullable().optional(),
-    activeChapterId: z.string().nullable(),
-    scrollYByChapter: z.record(z.string(), z.number()),
-  }).optional(),
-  workspace: z.strictObject({
-    panels: z.array(
-      z.strictObject({
-        id: z.string().min(1),
-        content: z.strictObject({
-          type: z.enum(["research", "editor", "export"]),
-          id: z.string().optional(),
-          tab: z
-            .enum(["character", "world", "event", "faction", "scrap", "analysis"])
-            .optional(),
-        }),
-        size: z.number().finite(),
-      }),
-    ),
-    researchPanelSizes: z
-      .partialRecord(
-        z.enum(["character", "world", "event", "faction", "scrap", "analysis"]),
-        z.number().finite(),
-      )
-      .optional(),
-  }).optional(),
+  editor: z
+    .strictObject({
+      sidebarOpen: z.boolean().optional(),
+      binderRailOpen: z.boolean().optional(),
+      rightTab: uiRightPanelTabSchema.nullable().optional(),
+      activeChapterId: z.string().nullable(),
+      scrollYByChapter: z.record(z.string(), z.number()),
+    })
+    .optional(),
+  workspace: workspacePanelStateSchema
+    .extend({
+      byLayout: z
+        .strictObject({
+          default: workspacePanelStateSchema.optional(),
+        })
+        .optional(),
+    })
+    .optional(),
   sidebarWidths: z.record(z.string(), z.number().finite()).optional(),
   layoutSurfaceRatios: z.record(z.string(), z.number().finite()).optional(),
 });

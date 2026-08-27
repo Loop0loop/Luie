@@ -211,7 +211,7 @@ describe("Editor onEditorReady lifecycle", () => {
     document.body.innerHTML = "";
   });
 
-  it("clears the parent editor reference on unmount", () => {
+  it("keeps the parent reference intact on unmount (no stale null write-back)", () => {
     const onEditorReady = vi.fn();
 
     act(() => {
@@ -230,7 +230,12 @@ describe("Editor onEditorReady lifecycle", () => {
       root.unmount();
     });
 
-    expect(onEditorReady).toHaveBeenLastCalledWith(null);
+    // NOTE: 캔버스 왕복처럼 언마운트 → 마운트가 이어질 때 이전 Editor의 null
+    // 되돌려주기가 새 Editor의 ready 리포트보다 나중에 커밋되면 docEditor가
+    // 영구 stale/null로 남는다(툴바 빈 막대 증상). 따라서 언마운트 시 무효화를
+    // 하지 않는 것이 계약이고, 유효성은 소비자(isUsableEditor)가 검사한다.
+    expect(onEditorReady).toHaveBeenCalledTimes(1);
+    expect(onEditorReady).toHaveBeenLastCalledWith(mocked.editor);
   });
 
   it("keeps ProseMirror content in normal block flow", () => {

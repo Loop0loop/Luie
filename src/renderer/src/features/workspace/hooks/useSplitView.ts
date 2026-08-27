@@ -11,7 +11,7 @@ import {
   getEditorLayoutPanelSurface,
   getLayoutSurfaceDefaultRatio,
 } from "@renderer/shared/constants/layoutSizing";
-
+import { useEditorStore } from "@renderer/domains/editor";
 
 export function useSplitView(activeChapterId?: string) {
   const panels = useUIStore((state) => state.panels);
@@ -19,42 +19,60 @@ export function useSplitView(activeChapterId?: string) {
   const removePanel = useUIStore((state) => state.removePanel);
   const setPanels = useUIStore((state) => state.setPanels);
   const currentProjectId = useProjectStore((state) => state.currentItem?.id);
-  const getProjectLayout = useProjectLayoutStore((state) => state.getProjectLayout);
+  const getProjectLayout = useProjectLayoutStore(
+    (state) => state.getProjectLayout,
+  );
+  const uiMode = useEditorStore((state) => state.uiMode);
 
   const addPanel = useCallback(
     (content: RightPanelContent, insertAt?: number) => {
-      if (
-        content.type === "editor" &&
-        content.id === activeChapterId
-      ) {
+      if (content.type === "editor" && content.id === activeChapterId) {
         return;
       }
       const projectLayout = currentProjectId
         ? getProjectLayout(currentProjectId)
         : null;
-      const savedResearchPanelSizes = projectLayout?.workspace.researchPanelSizes;
+      const savedResearchPanelSizes =
+        uiMode === "default"
+          ? projectLayout?.workspace.byLayout.default.researchPanelSizes
+          : projectLayout?.workspace.researchPanelSizes;
       const initialSize =
         content.type === "research" && content.tab
-          ? (currentProjectId
-              ? savedResearchPanelSizes?.[content.tab]
-              : undefined)
+          ? currentProjectId
+            ? savedResearchPanelSizes?.[content.tab]
+            : undefined
           : content.type === "snapshot"
-            ? getLayoutSurfaceDefaultRatio(getEditorLayoutPanelSurface("snapshot"))
+            ? getLayoutSurfaceDefaultRatio(
+                getEditorLayoutPanelSurface("snapshot"),
+              )
             : undefined;
       addPanelBase(content, insertAt, initialSize);
     },
-    [activeChapterId, addPanelBase, currentProjectId, getProjectLayout],
+    [activeChapterId, addPanelBase, currentProjectId, getProjectLayout, uiMode],
   );
 
   const handleSelectResearchItem = useCallback(
     (type: ResearchTab) => {
-      const existingResearch = panels.find((p) => p.content.type === "research");
+      const existingResearch = panels.find(
+        (p) => p.content.type === "research",
+      );
 
       if (!existingResearch) {
         addPanel({ type: "research", tab: type });
       } else if (existingResearch.content.tab !== type) {
         // NOTE: research panel은 하나만 유지하고 DnD 원고와 함께 열지 않는다.
-        const replaced = { ...existingResearch, content: { type: "research" as const, tab: type } };
+        const projectLayout = currentProjectId
+          ? getProjectLayout(currentProjectId)
+          : null;
+        const savedSize =
+          uiMode === "default"
+            ? projectLayout?.workspace.byLayout.default.researchPanelSizes[type]
+            : projectLayout?.workspace.researchPanelSizes[type];
+        const replaced = {
+          ...existingResearch,
+          content: { type: "research" as const, tab: type },
+          size: savedSize ?? existingResearch.size,
+        };
         const next = panels
           .filter(
             (panel) =>
@@ -62,12 +80,10 @@ export function useSplitView(activeChapterId?: string) {
               panel.content.type !== "editor",
           )
           .concat(replaced);
-        const sizePerPanel = 100 / next.length;
-        setPanels(next.map((p) => ({ ...p, size: sizePerPanel })));
+        setPanels(next);
       }
-
     },
-    [addPanel, panels, setPanels],
+    [addPanel, currentProjectId, getProjectLayout, panels, setPanels, uiMode],
   );
 
   const handleSplitView = useCallback(

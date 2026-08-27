@@ -1,13 +1,30 @@
-import {
-  normalizeLayoutSurfaceRatiosWithMigrations,
-} from "@renderer/shared/constants/layoutSizing";
+import { normalizeLayoutSurfaceRatiosWithMigrations } from "@renderer/shared/constants/layoutSizing";
 import { normalizeSidebarWidthsWithMigrations } from "@renderer/shared/constants/sidebarSizing";
 import {
   sanitizePersistedDocsRightTab,
   sanitizeResearchPanelSizes,
   sanitizeWorkspacePanels,
 } from "./sanitize";
-import type { ProjectLayoutPatch, ProjectLayoutState } from "./types";
+import type {
+  ProjectLayoutPatch,
+  ProjectLayoutState,
+  ProjectWorkspacePanelState,
+} from "./types";
+
+const mergeWorkspacePanelState = (
+  previous: ProjectWorkspacePanelState,
+  patch: Partial<ProjectWorkspacePanelState>,
+): ProjectWorkspacePanelState => ({
+  panels: patch.panels
+    ? sanitizeWorkspacePanels(patch.panels)
+    : previous.panels,
+  researchPanelSizes: patch.researchPanelSizes
+    ? {
+        ...previous.researchPanelSizes,
+        ...sanitizeResearchPanelSizes(patch.researchPanelSizes),
+      }
+    : previous.researchPanelSizes,
+});
 
 export const mergeProjectLayoutState = (
   previous: ProjectLayoutState,
@@ -55,18 +72,18 @@ export const mergeProjectLayoutState = (
     },
     workspace: patch.workspace
       ? {
-          ...previous.workspace,
-          panels: patch.workspace.panels
-            ? sanitizeWorkspacePanels(patch.workspace.panels)
-            : previous.workspace.panels,
-          researchPanelSizes: patch.workspace.researchPanelSizes
+          ...mergeWorkspacePanelState(previous.workspace, patch.workspace),
+          byLayout: patch.workspace.byLayout
             ? {
-                ...previous.workspace.researchPanelSizes,
-                ...sanitizeResearchPanelSizes(
-                  patch.workspace.researchPanelSizes,
-                ),
+                ...previous.workspace.byLayout,
+                default: patch.workspace.byLayout.default
+                  ? mergeWorkspacePanelState(
+                      previous.workspace.byLayout.default,
+                      patch.workspace.byLayout.default,
+                    )
+                  : previous.workspace.byLayout.default,
               }
-            : previous.workspace.researchPanelSizes,
+            : previous.workspace.byLayout,
         }
       : previous.workspace,
     sidebarWidths: patch.sidebarWidths

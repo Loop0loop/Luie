@@ -12,7 +12,11 @@ type MountedView = {
   root: Root;
 };
 
-function PersistenceHarness({ mode = "default" }: { mode?: "default" | "canvas" }) {
+function PersistenceHarness({
+  mode = "default",
+}: {
+  mode?: "default" | "canvas";
+}) {
   useProjectLayoutPersistence("project-a", mode);
   return <div>layout persistence</div>;
 }
@@ -104,6 +108,48 @@ describe("useProjectLayoutPersistence", () => {
     ).toBe(false);
   });
 
+  it("restores and persists default research panel sizes independently", async () => {
+    useProjectLayoutStore.getState().upsertProjectLayout("project-a", {
+      workspace: {
+        panels: [],
+        researchPanelSizes: {},
+        byLayout: {
+          default: {
+            panels: [
+              {
+                id: "research-character",
+                content: { type: "research", tab: "character" },
+                size: 56,
+              },
+            ],
+            researchPanelSizes: { character: 56 },
+          },
+        },
+      },
+    });
+    mountedView = mountView();
+
+    expect(useUIStore.getState().panels).toEqual([
+      {
+        id: "research-character",
+        content: { type: "research", tab: "character" },
+        size: 56,
+      },
+    ]);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+      useUIStore.getState().updatePanelSize("research-character", 63);
+      await Promise.resolve();
+    });
+
+    const workspace = useProjectLayoutStore
+      .getState()
+      .getProjectLayout("project-a").workspace;
+    expect(workspace.byLayout.default.researchPanelSizes.character).toBe(63);
+    expect(workspace.researchPanelSizes.character).toBeUndefined();
+  });
+
   it("persists Canvas surface ratios without overwriting the default layout state", async () => {
     mountedView = mountView("canvas");
 
@@ -117,9 +163,8 @@ describe("useProjectLayoutPersistence", () => {
     });
 
     expect(
-      useProjectLayoutStore
-        .getState()
-        .getProjectLayout("project-a").layoutSurfaceRatios["canvas.activity"],
+      useProjectLayoutStore.getState().getProjectLayout("project-a")
+        .layoutSurfaceRatios["canvas.activity"],
     ).toBe(31);
     expect(
       useProjectLayoutStore.getState().getProjectLayout("project-a").main

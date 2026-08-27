@@ -73,17 +73,17 @@ export default function EditorToolbar({
   );
   const setFontSize = useEditorStore((state) => state.setFontSize);
   const updateSettings = useEditorStore((state) => state.updateSettings);
-  // NOTE: ghost 에디터는 TipTap 인스턴스라 생성 비용이 크다. 실제로 필요할 때만 만든다.
-  const needsGhostEditor = canvasToggleOnly && !isUsableEditor(editor);
+  // NOTE: editor가 아직 준비되지 않은 구간에도 툴바를 계속 그린다. 캔버스 왕복 직후처럼
+  // 상위(EditorRoot.docEditor)가 일시적 null/stale인 동안 여기서 return null 하면
+  // hover 밴드는 뜨는데 컨트롤이 하나 없는 '빈 막대'만 노출된다. ghost editor는
+  // 모든 커맨드를 no-op으로 흡수하는 모형이라 생성 비용이 무시할 수준이고,
+  // 실제 에디터가 ready로 보고되면 같은 렌더 경로에서 즉시 교체된다.
+  const isEditorUsable = isUsableEditor(editor);
   const ghostEditor = useMemo(
-    () => (needsGhostEditor ? createToolbarGhostEditor() : null),
-    [needsGhostEditor],
+    () => (isEditorUsable ? null : createToolbarGhostEditor()),
+    [isEditorUsable],
   );
-  const toolbarEditor = isUsableEditor(editor)
-    ? editor
-    : canvasToggleOnly
-      ? ghostEditor
-      : null;
+  const toolbarEditor = isEditorUsable ? editor : ghostEditor;
   const hideNonToggleControls = canvasToggleOnly;
   const anchorRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -179,6 +179,8 @@ export default function EditorToolbar({
     return () => observer?.disconnect();
   }, [isCompactToolbar, toolbarBounds?.width]);
 
+  // NOTE: 위에서 ghost 폴백으로 항상 채우므로 런타임에 null일 수 없지만,
+  // 타입 좁히기(editor prop이 Editor | null)를 위해 방어적으로 남긴다.
   if (!toolbarEditor) return null;
 
   const paragraphStyle = getParagraphStyle(toolbarEditor);

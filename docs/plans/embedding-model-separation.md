@@ -1,5 +1,9 @@
 # Plan: Embedding Model Separation (RAM 절감 Phase 1)
 
+> **대체됨:** 이 문서는 과거 in-process 전환 계획이다. 현재 구현과 후속 작업의 기준은
+> [Narrative Memory · RAG 실행 계획 SSOT](./narrative-memory-rag-plan.md)와
+> [Narrative Memory · RAG SSOT](../architecture/narrative-memory-rag-ssot.md)다.
+
 ## 배경 / 문제
 
 LLM 구동 시 Electron utility helper 프로세스가 6GB+ RAM을 점유하고 유지된다.

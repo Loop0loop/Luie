@@ -164,10 +164,12 @@ export class EmbeddingProjector {
       (job) => (chunkRowsByJobId.get(job.id)?.length ?? 0) === 0,
     );
     if (jobsWithoutChunks.length > 0) {
+      // NOTE: chunk 작업이 끝난 뒤에도 chunk가 없으면 빈/삭제된 source라 embedding을 만들 수 없다.
       await client
         .update(memoryBuildJob)
         .set({
-          status: "pending",
+          status: "skipped",
+          error: "NO_MEMORY_CHUNKS",
           updatedAt: now,
         })
         .where(

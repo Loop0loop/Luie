@@ -1,6 +1,4 @@
-import {
-  normalizeLayoutSurfaceRatiosWithMigrations,
-} from "@renderer/shared/constants/layoutSizing";
+import { normalizeLayoutSurfaceRatiosWithMigrations } from "@renderer/shared/constants/layoutSizing";
 import { normalizeSidebarWidthsWithMigrations } from "@renderer/shared/constants/sidebarSizing";
 import type {
   ResearchTab,
@@ -20,6 +18,7 @@ import type {
   DocsRightTabInput,
   PersistedDocsRightTab,
   ProjectLayoutState,
+  ProjectWorkspacePanelState,
 } from "./types";
 
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -29,11 +28,13 @@ const sanitizeScrivenerSections = (input: unknown): ScrivenerSectionsState => {
   const next = { ...DEFAULT_SCRIVENER_SECTIONS };
   if (!isRecord(input)) return next;
 
-  (Object.keys(DEFAULT_SCRIVENER_SECTIONS) as ScrivenerSectionId[]).forEach((section) => {
-    if (typeof input[section] === "boolean") {
-      next[section] = input[section] as boolean;
-    }
-  });
+  (Object.keys(DEFAULT_SCRIVENER_SECTIONS) as ScrivenerSectionId[]).forEach(
+    (section) => {
+      if (typeof input[section] === "boolean") {
+        next[section] = input[section] as boolean;
+      }
+    },
+  );
   return next;
 };
 
@@ -78,7 +79,10 @@ export const sanitizeWorkspacePanels = (
     const content = isRecord(candidate.content) ? candidate.content : {};
     if (content.type === "research") {
       const tab = content.tab;
-      if (typeof tab !== "string" || !PERSISTABLE_RESEARCH_TABS.has(tab as ResearchTab)) {
+      if (
+        typeof tab !== "string" ||
+        !PERSISTABLE_RESEARCH_TABS.has(tab as ResearchTab)
+      ) {
         continue;
       }
       panels.push({
@@ -145,7 +149,26 @@ export const sanitizePersistedDocsRightTab = (
     : null;
 };
 
-export const sanitizeProjectLayoutState = (input: unknown): ProjectLayoutState => {
+const sanitizeWorkspacePanelState = (
+  input: unknown,
+  fallback: ProjectWorkspacePanelState,
+): ProjectWorkspacePanelState => {
+  const value = isRecord(input) ? input : {};
+  return {
+    panels:
+      value.panels === undefined
+        ? fallback.panels
+        : sanitizeWorkspacePanels(value.panels),
+    researchPanelSizes:
+      value.researchPanelSizes === undefined
+        ? fallback.researchPanelSizes
+        : sanitizeResearchPanelSizes(value.researchPanelSizes),
+  };
+};
+
+export const sanitizeProjectLayoutState = (
+  input: unknown,
+): ProjectLayoutState => {
   const defaults = createDefaultProjectLayoutState();
   if (!isRecord(input)) return defaults;
 
@@ -154,6 +177,13 @@ export const sanitizeProjectLayoutState = (input: unknown): ProjectLayoutState =
   const scrivenerInput = isRecord(input.scrivener) ? input.scrivener : {};
   const editorInput = isRecord(input.editor) ? input.editor : {};
   const workspaceInput = isRecord(input.workspace) ? input.workspace : {};
+  const workspace = sanitizeWorkspacePanelState(workspaceInput, {
+    panels: [],
+    researchPanelSizes: {},
+  });
+  const workspaceLayoutsInput = isRecord(workspaceInput.byLayout)
+    ? workspaceInput.byLayout
+    : {};
   const docsSidebarOpen =
     typeof docsInput.sidebarOpen === "boolean"
       ? docsInput.sidebarOpen
@@ -209,20 +239,27 @@ export const sanitizeProjectLayoutState = (input: unknown): ProjectLayoutState =
               editorInput.rightTab as DocsRightTabInput,
             ),
       activeChapterId:
-        typeof editorInput.activeChapterId === "string" || editorInput.activeChapterId === null
+        typeof editorInput.activeChapterId === "string" ||
+        editorInput.activeChapterId === null
           ? editorInput.activeChapterId
           : defaults.editor.activeChapterId,
       scrollYByChapter: isRecord(editorInput.scrollYByChapter)
         ? (Object.fromEntries(
-            Object.entries(editorInput.scrollYByChapter).filter(([, v]) => typeof v === "number")
+            Object.entries(editorInput.scrollYByChapter).filter(
+              ([, v]) => typeof v === "number",
+            ),
           ) as Record<string, number>)
         : defaults.editor.scrollYByChapter,
     },
     workspace: {
-      panels: sanitizeWorkspacePanels(workspaceInput.panels),
-      researchPanelSizes: sanitizeResearchPanelSizes(
-        workspaceInput.researchPanelSizes,
-      ),
+      ...workspace,
+      byLayout: {
+        // NOTE: 기존 공용 workspace 값은 default 레이아웃의 최초 분리값으로 승계한다.
+        default: sanitizeWorkspacePanelState(
+          workspaceLayoutsInput.default,
+          workspace,
+        ),
+      },
     },
     sidebarWidths: normalizeSidebarWidthsWithMigrations(input.sidebarWidths),
     layoutSurfaceRatios: normalizeLayoutSurfaceRatiosWithMigrations(

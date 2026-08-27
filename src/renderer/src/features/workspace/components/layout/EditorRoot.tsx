@@ -75,7 +75,7 @@ export default function EditorRoot() {
       isManuscriptMenuOpen: state.isManuscriptMenuOpen,
       mainViewType: state.mainView.type,
     })),
-  );
+  );  
   const currentProject = useProjectStore((state) => state.currentProject);
   const updateProject = useProjectStore((state) => state.updateProject);
 

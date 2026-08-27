@@ -70,7 +70,10 @@ const loadProjectLayoutStore = async (
   if (persistedState !== undefined) {
     memoryStorage.setItem(
       STORAGE_KEY_PROJECT_LAYOUT,
-      JSON.stringify({ state: persistedState, version: persistedStorageVersion }),
+      JSON.stringify({
+        state: persistedState,
+        version: persistedStorageVersion,
+      }),
     );
   }
 
@@ -245,6 +248,12 @@ describe("projectLayoutStore persist rehydrate", () => {
       scrap: 46,
       analysis: 59,
     });
+    expect(state.workspace.byLayout.default.panels).toEqual(
+      state.workspace.panels,
+    );
+    expect(state.workspace.byLayout.default.researchPanelSizes).toEqual(
+      state.workspace.researchPanelSizes,
+    );
     expect(warn).not.toHaveBeenCalled();
   });
 

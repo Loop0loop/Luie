@@ -207,17 +207,14 @@ export default function EditorLayout({
             >
               {/* NOTE: 툴바(hover 존)를 에디터 Panel 안으로 스코프해 portal 툴바가
                   research 패널 위까지 덮지 않게 한다.
-                  ⚠️ WebkitAppRegion: "drag"는 마우스 이벤트를 흡수하므로 툴바 표시 전에는
-                  절대 걸면 안 된다(enter 이벤트 죽음). 사용자 요구대로 툴바가 보인 뒤에만
-                  이 밴드를 드래그 영역으로 전환한다. */}
+                  ⚠️ 이 밴드에 WebkitAppRegion: "drag"를 동적으로 걸지 않는다. drag 영역은
+                  공식 문서 기준 모든 pointer 이벤트를 흡수하고(mouseenter 포함), 캔버스
+                  진입처럼 툴바가 보인 상태에서 라우트가 교체되면 흡수 상태가 상단 스트립에
+                  남아 복귀 후 hover가 죽는 원인이 된다. 창 드래그는 좌우 고정 그립으로만
+                  제공한다(사용자 요구: 툴바 버튼은 DnD 무관, 빈 공간만 DnD). */}
               <div
                 aria-hidden="true"
                 className="absolute inset-x-0 top-0 z-30 h-11 pointer-events-auto"
-                style={
-                  isToolbarVisible
-                    ? ({ WebkitAppRegion: "drag" } as CSSProperties)
-                    : undefined
-                }
                 onMouseEnter={handleToolbarEnter}
                 onMouseLeave={scheduleHide}
               />
@@ -225,8 +222,7 @@ export default function EditorLayout({
               {/* NOTE: 리본(밴드+portal 컨트롤)은 항상 마운트 유지한다. 매 hover마다
                   Ribbon/EditorToolbar를 remount하면 ResizeObserver·ghost 에디터 같은
                   무거운 리소스가 재생성되고 fade-out을 낼 수 없다. portal 컨트롤은 DOM상
-                  자식이 아니므로 isVisible 플래그로 같이 전환한다. 드래그 그립도 표시 중에만
-                  활성화한다(user 요구: 표시 후 DnD).
+                  자식이 아니므로 isVisible 플래그로 같이 전환한다.
                   ⚠️ 이 래퍼에 translate를 걸면 portal 좌표(anchor getBoundingClientRect)가
                   밀려 툴바가 위로 굳는다. opacity/pointer-events 전용으로 전환한다. */}
               <div
@@ -241,22 +237,12 @@ export default function EditorLayout({
                 <div
                   aria-hidden="true"
                   className="absolute inset-y-0 left-0 w-10"
-                  style={
-                    isToolbarVisible
-                      ? ({ WebkitAppRegion: "drag" } as CSSProperties)
-                      : undefined
-                  }
-                  onPointerDown={showToolbar}
+                  style={{ WebkitAppRegion: "drag" } as CSSProperties}
                 />
                 <div
                   aria-hidden="true"
                   className="absolute inset-y-0 right-0 w-10"
-                  style={
-                    isToolbarVisible
-                      ? ({ WebkitAppRegion: "drag" } as CSSProperties)
-                      : undefined
-                  }
-                  onPointerDown={showToolbar}
+                  style={{ WebkitAppRegion: "drag" } as CSSProperties}
                 />
                 <Ribbon
                   editor={editor}

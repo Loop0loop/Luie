@@ -21,6 +21,7 @@ import {
 } from "./projectLayout";
 import type {
   PersistedDocsRightTab,
+  ProjectLayoutPatch,
   ProjectLayoutState,
   ProjectLayoutStore,
   ProjectWorkspaceLayoutState,
@@ -28,6 +29,7 @@ import type {
 
 export type {
   PersistedDocsRightTab,
+  ProjectLayoutPatch,
   ProjectLayoutState,
   ProjectWorkspaceLayoutState,
 };
@@ -41,7 +43,8 @@ export const useProjectLayoutStore = create<ProjectLayoutStore>()(
       upsertProjectLayout: (projectId, patch) =>
         set((state) => {
           if (!projectId) return state;
-          const previous = state.byProject[projectId] ?? createDefaultProjectLayoutState();
+          const previous =
+            state.byProject[projectId] ?? createDefaultProjectLayoutState();
           const next = mergeProjectLayoutState(previous, patch);
           return {
             byProject: {
@@ -93,7 +96,8 @@ export const useProjectLayoutStore = create<ProjectLayoutStore>()(
           return currentState;
         }
 
-        const parsedPersisted = projectLayoutPersistedStateSchema.safeParse(persistedState);
+        const parsedPersisted =
+          projectLayoutPersistedStateSchema.safeParse(persistedState);
         if (!parsedPersisted.success) {
           const version =
             typeof persistedState.schemaVersion === "number"
@@ -113,9 +117,11 @@ export const useProjectLayoutStore = create<ProjectLayoutStore>()(
         }
 
         const normalizedByProject: Record<string, ProjectLayoutState> = {};
-        Object.entries(parsedPersisted.data.byProject).forEach(([projectId, value]) => {
-          normalizedByProject[projectId] = sanitizeProjectLayoutState(value);
-        });
+        Object.entries(parsedPersisted.data.byProject).forEach(
+          ([projectId, value]) => {
+            normalizedByProject[projectId] = sanitizeProjectLayoutState(value);
+          },
+        );
 
         return {
           ...currentState,

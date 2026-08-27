@@ -53,19 +53,6 @@ vi.mock(
   }),
 );
 
-const createDestroyedEditor = (): Editor =>
-  ({
-    isDestroyed: true,
-    isActive: vi.fn(() => false),
-    getAttributes: vi.fn(() => ({})),
-    chain: vi.fn(() => {
-      throw new TypeError("Cannot read properties of null (reading 'commands')");
-    }),
-    can: vi.fn(() => {
-      throw new TypeError("Cannot read properties of null (reading 'commands')");
-    }),
-  }) as unknown as Editor;
-
 describe("EditorToolbar destroyed editor handling", () => {
   let container: HTMLDivElement;
   let root: Root;
@@ -87,8 +74,24 @@ describe("EditorToolbar destroyed editor handling", () => {
     document.body.innerHTML = "";
   });
 
-  it("does not call TipTap commands on a destroyed editor", () => {
-    const destroyedEditor = createDestroyedEditor();
+  it("renders controls via ghost fallback without touching a destroyed editor", () => {
+    const chain = vi.fn(() => {
+      throw new TypeError(
+        "Cannot read properties of null (reading 'commands')",
+      );
+    });
+    const can = vi.fn(() => {
+      throw new TypeError(
+        "Cannot read properties of null (reading 'commands')",
+      );
+    });
+    const destroyedEditor = {
+      isDestroyed: true,
+      isActive: vi.fn(() => false),
+      getAttributes: vi.fn(() => ({})),
+      chain,
+      can,
+    } as unknown as Editor;
 
     expect(() => {
       act(() => {
@@ -96,6 +99,17 @@ describe("EditorToolbar destroyed editor handling", () => {
       });
     }).not.toThrow();
 
-    expect(container.textContent).toBe("");
+    // 파괴된 인스턴스의 커맨드 패널 조회는 절대 호출하지 않는다(ghost 폴백이 흡수).
+    expect(chain).not.toHaveBeenCalled();
+    expect(can).not.toHaveBeenCalled();
+
+    // 툴바는 빈 막대가 아니라 실제 컨트롤을 렌더링해야 한다. portal 컨텐츠는
+    // document.body에 부착되므로 layer에서 찾는다(캔버스 복귀 직후 docEditor가
+    // 일시적 stale인 구간도 포함한 보장이다).
+    const layer = document.body.querySelector(
+      '[data-editor-toolbar-layer="true"]',
+    );
+    expect(layer).not.toBeNull();
+    expect(layer?.querySelector('[data-testid="font-selector"]')).not.toBeNull();
   });
 });

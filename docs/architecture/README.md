@@ -17,8 +17,13 @@
 - [target-architecture.md](./target-architecture.md): 목표 Electron 아키텍처
 - [constants.md](./constants.md): shared/domain/feature 상수 배치 기준
 - [utility-process-llm-runtime.md](./utility-process-llm-runtime.md): utility process와 LLM runtime/sidecar 목표 경계
+- [narrative-memory-rag-ssot.md](./narrative-memory-rag-ssot.md): 장편소설 memory/RAG 현재 구현, 비교 분석, BGE-M3 실측의 단일 기준
 - [migration-map.md](./migration-map.md): 현재 구조에서 목표 구조로 가는 매핑
 - [migration-guardrails.md](./migration-guardrails.md): 무손실 이전 금지/허용 규칙
+
+## 실행 계획
+
+- [narrative-memory-rag-plan.md](../plans/narrative-memory-rag-plan.md): 100화·50명·복수 세계선 대응 구현 및 검증 순서
 
 ## 현재 전체 구조
 
