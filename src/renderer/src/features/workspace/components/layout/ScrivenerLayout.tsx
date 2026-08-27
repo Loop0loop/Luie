@@ -1,8 +1,11 @@
 import {
+  type CSSProperties,
   type ReactNode,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
+  useState,
 } from "react";
 import { type Editor } from "@tiptap/react";
 import { useTranslation } from "react-i18next";
@@ -48,6 +51,7 @@ import {
 } from "@renderer/features/workspace/utils/scrivenerLayoutResize";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
+import { DEFAULT_EDITOR_MAX_WIDTH } from "@shared/constants/app/configs";
 
 interface ScrivenerLayoutProps {
   children?: ReactNode;
@@ -158,6 +162,11 @@ export default function ScrivenerLayout({
   const inspectorRatio =
     layoutSurfaceRatios["scrivener.inspector"] ||
     getLayoutSurfaceDefaultRatio("scrivener.inspector");
+  // NOTE: 원지(용지) 폭은 사용자 설정을 따르되 컨테이너를 넘지 않게 100%로 캡한다.
+  const paperWidthStyle = {
+    width: maxWidth ?? DEFAULT_EDITOR_MAX_WIDTH,
+    maxWidth: "100%",
+  } as CSSProperties;
   const {
     isClosing: isSidebarClosing,
     isOpening: isSidebarOpening,
@@ -179,6 +188,28 @@ export default function ScrivenerLayout({
     panelRef: inspectorPanelRef,
   });
   const scrivenerLayoutGroupWidth = useElementWidth(scrivenerLayoutGroupRef);
+
+  // NOTE: 리본을 overlay 밴드로 띄워 사이드바/인스펙터 표면이 화면 상단까지 확장된다.
+  // 콘텐츠는 측정된 밴드 높이 아래에 유지한다(표면 확장과 내용 위치를 분리).
+  const headerRef = useRef<HTMLDivElement | null>(null);
+  const [headerHeight, setHeaderHeight] = useState(48);
+  useLayoutEffect(() => {
+    const headerEl = headerRef.current;
+    if (!headerEl) return undefined;
+    const syncHeaderHeight = () => {
+      const nextHeight = Math.ceil(headerEl.offsetHeight);
+      setHeaderHeight((current) =>
+        current === nextHeight ? current : nextHeight,
+      );
+    };
+    syncHeaderHeight();
+    const observer =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(syncHeaderHeight);
+    observer?.observe(headerEl);
+    return () => observer?.disconnect();
+  }, []);
   const binderSize = getResponsivePanelSize(
     scrivenerLayoutGroupWidth,
     binderConfig,
@@ -246,8 +277,15 @@ export default function ScrivenerLayout({
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-app text-fg overflow-hidden relative border-t border-transparent">
-      <div className="shrink-0 z-30 shadow-sm relative">
+    <div className="relative h-screen w-screen bg-app text-fg overflow-hidden">
+      {/* NOTE: 리본은 overlay 밴드. 빈 공간은 창 드래그(DnD)이고 툴바 버튼 컨텐츠는
+          no-drag라 기능이 유지된다. 사이드바/인스펙터 표면은 이 밴드 아래까지 확장되고
+          각 패널은 headerHeight 만큼 내용 오프셋을 둔다. */}
+      <div
+        ref={headerRef}
+        className="absolute inset-x-0 top-0 z-40 select-none"
+        style={{ WebkitAppRegion: "drag" } as CSSProperties}
+      >
         <Ribbon
           editor={editor}
           onOpenSettings={onOpenSettings}
@@ -259,14 +297,13 @@ export default function ScrivenerLayout({
         />
       </div>
 
-      <div className="flex-1 flex overflow-hidden relative">
-        <PanelGroup
-          orientation="horizontal"
-          className="flex w-full h-full flex-1 overflow-hidden relative"
-          id="scrivener-layout-group"
-          elementRef={scrivenerLayoutGroupRef}
-          onLayoutChanged={onLayoutChanged}
-        >
+      <PanelGroup
+        orientation="horizontal"
+        className="flex w-full h-full flex-1 overflow-hidden relative"
+        id="scrivener-layout-group"
+        elementRef={scrivenerLayoutGroupRef}
+        onLayoutChanged={onLayoutChanged}
+      >
 
           {shouldRenderSidebar && (
             <>
@@ -289,6 +326,7 @@ export default function ScrivenerLayout({
                   : ""
                   }`}
               >
+                <div className="shrink-0" style={{ height: headerHeight }} aria-hidden="true" />
                 {sidebar}
               </Panel>
 
@@ -298,7 +336,7 @@ export default function ScrivenerLayout({
                 onPointerDownCapture={() => markResizeSurface("scrivener.binder")}
                 onKeyDown={() => markResizeSurface("scrivener.binder")}
                 onPointerDown={() => markResizeSurface("scrivener.binder")}
-                className={`w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative ${enableAnimations && isSidebarClosing
+                className={`w-1 shrink-0 bg-transparent hover:bg-transparent focus-visible:bg-transparent cursor-col-resize z-10 relative ${enableAnimations && isSidebarClosing
                 ? "opacity-0 transition-opacity duration-200"
                 : ""
                 }`}
@@ -313,8 +351,17 @@ export default function ScrivenerLayout({
             minSize={toPercentSize(30)}
             className="min-w-0 bg-app flex flex-col relative z-0"
           >
-            <div className="h-8 bg-surface border-b border-border flex items-center px-4 justify-between shrink-0">
-              <div className="flex items-center gap-2 overflow-hidden">
+            <div className="shrink-0" style={{ height: headerHeight }} aria-hidden="true" />
+
+            {/* NOTE: 타이틀바 자체가 창 드래그(DnD) 영역. 좌우 버튼 묶음은 no-drag라 기능이 유지된다. */}
+            <div
+              className="h-8 bg-surface border-b border-border flex items-center px-4 justify-between shrink-0"
+              style={{ WebkitAppRegion: "drag" } as CSSProperties}
+            >
+              <div
+                className="flex items-center gap-2 overflow-hidden"
+                style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
+              >
                 {!shouldRenderSidebar && (
                   <button
                     onClick={() => setRegionOpen("leftSidebar", true)}
@@ -328,7 +375,10 @@ export default function ScrivenerLayout({
                   {activeChapterTitle || t("project.defaults.untitled")}
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div
+                className="flex items-center gap-2"
+                style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
+              >
                 {!shouldRenderInspector && (
                   <button
                     onClick={() => setRegionOpen("rightPanel", true)}
@@ -365,12 +415,26 @@ export default function ScrivenerLayout({
                       className="h-full w-full overflow-y-scroll custom-scrollbar p-8 bg-panel text-fg"
                       data-editor-scroll-container="true"
                     >
-                      <div
-                        className="mx-auto min-h-[500px] w-full"
-                        style={{ maxWidth: `${maxWidth ?? 800}px` }}
-                      >
-                        {renderMainContent()}
-                      </div>
+                      {/* NOTE: 스크리브너식 원고 영역은 가용 높이를 항상 채운다.
+                          min-h-full 래퍼만 두면 Editor 루트의 h-full이 auto로 무너져
+                          빈 챕터에서 원고가 minHeight(400px)에 고정된다. Editor는
+                          scrollable 모드라 내부 스크롤을 담당하므로 h-definite를 준다.
+                          원고 외 상세 뷰(등장인물·사건 등)는 자연 성장 + 외부 스크롤을 유지한다. */}
+                      {mainView.type === "editor" ? (
+                        <div
+                          className="mx-auto h-full bg-transparent text-fg transition-all duration-150 ease-out"
+                          style={paperWidthStyle}
+                        >
+                          {renderMainContent()}
+                        </div>
+                      ) : (
+                        <div
+                          className="min-h-full bg-transparent text-fg transition-all duration-150 ease-out"
+                          style={paperWidthStyle}
+                        >
+                          {renderMainContent()}
+                        </div>
+                      )}
                     </div>
                   )}
                 </Panel>
@@ -404,7 +468,7 @@ export default function ScrivenerLayout({
                 onPointerDownCapture={() => markResizeSurface("scrivener.inspector")}
                 onKeyDown={() => markResizeSurface("scrivener.inspector")}
                 onPointerDown={() => markResizeSurface("scrivener.inspector")}
-                className={`w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative ${enableAnimations && isInspectorClosing
+                className={`w-1 shrink-0 bg-transparent hover:bg-transparent focus-visible:bg-transparent cursor-col-resize z-10 relative ${enableAnimations && isInspectorClosing
                 ? "opacity-0 transition-opacity duration-200"
                 : ""
                 }`}
@@ -431,6 +495,7 @@ export default function ScrivenerLayout({
                   : ""
                   }`}
               >
+                <div className="shrink-0" style={{ height: headerHeight }} aria-hidden="true" />
                 <div className="flex items-center justify-between border-b border-border bg-surface px-2 shadow-sm min-h-[32px] shrink-0">
                   <span className="text-xs font-semibold uppercase tracking-wide text-muted ml-2">{t("scrivener.inspector.title")}</span>
                   <button
@@ -467,7 +532,6 @@ export default function ScrivenerLayout({
           )}
 
         </PanelGroup>
-      </div>
     </div>
   );
 }

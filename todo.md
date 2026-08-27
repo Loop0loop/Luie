@@ -1,16 +1,11 @@
-  - Snapshot diff UI 색상·설명·rounded 세부 조정
-  - 자료 링크 반응형 색상
-  - Google Docs/Editor 패널 rounded 및 토글 위치
-  - Scrivener A4 최소 편집 폭
-  - Inspector 실제 애니메이션 UX 최종 확인
-  - 스크랩 영역 폭과 전체 시각 polish
-  - 전체 lint의 기존 오류 20개 정리
-  - 실제 Electron 실행 환경에서 레이아웃 회귀 확인
-  - AI View UI는 사용자 수정본을 기준으로 유지한다. 공통 chrome·아이콘·위치·스타일을 임의로 변경하지 말고, 필요한 경우 기능 연결과 상태 흐름만 수정한다.
+## 파생 작업 안정화
+
+- [ ] 삭제된 챕터를 가리키는 `rebuild_embedding` 작업을 취소 처리한다. 현재 chunk가 없는 pending 작업이 500ms마다 재시도되어 `embeddingQueued: 1`, `embeddingProcessed: 0` 로그와 불필요한 DB 작업을 반복한다.
+- [ ] `sqlite-vec`을 main/utility 번들에서 외부화해 플랫폼별 확장 바이너리가 정상 로드되도록 하고, 개발·패키지 환경의 벡터 검색 활성화를 검증한다.
 
 ## ox-alpha 분석 의견 (읽기 전용 조사 기반)
 
-### 🔴 버그 우선 3종 (사용자 체감 손상)
+### 버그 우선 3종 (사용자 체감 손상)
 1. 원고 DnD 미동작 — 드래그 source의 data.type과 드롭 핸들러 기대 type 불일치 의심 (`DraggableItem` vs `EditorDropZones`). 재현 경로 필요.
 2. research ↔ 에디터 툴바 겹침 — 툴바 z-40(`GoogleDocsEditorColumn:68`)이라 뷰 전환 시 겹침. canvas 모드처럼 뷰 타입별 조건부 렌더(hide) 필요.
 3. research 링크 클릭 무반응 — `useSmartLinkClickHandler`가 밑줄 mark + 이름 퍼지 매칭 실패 시 조용히 false 반환. store 미로딩/이름 불일치 케이스 로깅 추가 후 원인 특정.

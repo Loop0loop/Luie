@@ -55,6 +55,9 @@ export default function EditorToolbar({
   canOpenExport = true,
   hideCanvasToggle = false,
   className,
+  onControlsEnter,
+  onControlsLeave,
+  toolbarVisible,
 }: EditorToolbarProps) {
   const { t } = useTranslation();
 
@@ -70,7 +73,12 @@ export default function EditorToolbar({
   );
   const setFontSize = useEditorStore((state) => state.setFontSize);
   const updateSettings = useEditorStore((state) => state.updateSettings);
-  const ghostEditor = useMemo(() => createToolbarGhostEditor(), []);
+  // NOTE: ghost 에디터는 TipTap 인스턴스라 생성 비용이 크다. 실제로 필요할 때만 만든다.
+  const needsGhostEditor = canvasToggleOnly && !isUsableEditor(editor);
+  const ghostEditor = useMemo(
+    () => (needsGhostEditor ? createToolbarGhostEditor() : null),
+    [needsGhostEditor],
+  );
   const toolbarEditor = isUsableEditor(editor)
     ? editor
     : canvasToggleOnly
@@ -114,6 +122,11 @@ export default function EditorToolbar({
         ? null
         : new ResizeObserver(syncBounds);
     observer?.observe(anchor);
+    // NOTE: 패널 추가/제거는 anchor 크기를 바꾸지 않고 x 위치만 옮긴다(research 복귀 시
+    // 툴바가 왼쪽으로 치우치는 원인). 부모 폭 변화를 함께 관찰해 좌표를 재계산한다.
+    if (anchor.parentElement) {
+      observer?.observe(anchor.parentElement);
+    }
     window.addEventListener("resize", syncBounds);
     window.addEventListener("scroll", syncBounds, true);
 
@@ -346,7 +359,13 @@ export default function EditorToolbar({
     >
       <div
         ref={toolbarContentRef}
-        className="pointer-events-auto flex w-max shrink-0 flex-nowrap items-center gap-0.5"
+        onMouseEnter={onControlsEnter}
+        onMouseLeave={onControlsLeave}
+        className={cn(
+          "pointer-events-auto flex w-max shrink-0 flex-nowrap items-center gap-0.5",
+          // NOTE: portal은 DOM 부모의 pointer-events-none을 우회하므로 숨김 시 직접 차단한다.
+          toolbarVisible === false && "pointer-events-none",
+        )}
         style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
       >
         <div
@@ -446,8 +465,15 @@ export default function EditorToolbar({
       />
       {toolbarBounds &&
         createPortal(
+          // NOTE: portal은 DOM 부모의 transform/opacity 트랜지션을 받지 못하므로
+          // 레이아웃의 toolbarVisible을 opacity 전용으로 반영한다(translate는 좌표
+          // 측정 기준과 어긋나 툴바가 위로 굳는 원인이 된다).
           <div
-            className="pointer-events-none fixed z-toolbar"
+            data-editor-toolbar-layer="true"
+            className={cn(
+              "pointer-events-none fixed z-toolbar transition-opacity duration-150 ease-out",
+              toolbarVisible === false ? "opacity-0" : "opacity-100",
+            )}
             style={
               {
                 left: toolbarBounds.left,

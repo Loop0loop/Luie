@@ -17,7 +17,7 @@ import {
   type BinderTab,
   useChapterStore,
 } from "@renderer/domains/manuscript";
-import { X } from "lucide-react";
+import { ChevronLeft, X } from "lucide-react";
 import { useEditorStore } from "@renderer/domains/editor";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { api } from "@shared/api";
@@ -30,7 +30,6 @@ import {
   COMPACT_BINDER_RAIL_WIDTH_PX,
   COMPACT_BINDER_MIN_WIDTH_PX,
   COMPACT_BINDER_MAX_WIDTH_PX,
-  COMPACT_BINDER_SNAPSHOT_VIEWER_WIDTH_PX,
 } from "@renderer/shared/constants/layoutSizing";
 
 const SnapshotViewer = lazy(
@@ -187,37 +186,19 @@ export function BinderBarCompactHover({
   }, [closeCompactTab, selectedSnapshot]);
 
   return (
+    // NOTE: 레일 표면도 research 사이드바와 동일하게 화면 상단(traffic lights 끝)까지
+    // 확장한다. 내용은 기존 오프셋 아래에 유지한다.
     <FocusHoverSidebar
       side="right"
-      topOffset={sidebarTopOffset}
+      topOffset={0}
       activationWidthPx={COMPACT_BINDER_RAIL_WIDTH_PX}
       closeDelayMs={180}
       suppressHoverOpen={suppressHoverOpen}
       forceOpen={(isPinned && activeCompactTab !== null) || selectedSnapshot !== null}
     >
-      <div className="h-full flex flex-row">
-        {selectedSnapshot !== null && (
-          <div
-            className="h-full shrink-0 border-l border-border/40 bg-panel overflow-hidden relative"
-            style={{ width: COMPACT_BINDER_SNAPSHOT_VIEWER_WIDTH_PX }}
-          >
-            <button
-              type="button"
-              onClick={() => setSelectedSnapshot(null)}
-              className="absolute top-2 right-2 z-10 w-6 h-6 flex items-center justify-center rounded text-muted hover:text-fg hover:bg-surface-hover transition-colors"
-              aria-label={t("snapshot.close")}
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-            <Suspense fallback={<div className="p-4 text-sm text-muted">{t("loading")}</div>}>
-              <SnapshotViewer
-                snapshot={selectedSnapshot}
-                currentContent={activeChapterContent}
-              />
-            </Suspense>
-          </div>
-        )}
-
+      {/* NOTE: traffic lights 공간만큼 상단 여백을 줘 내용이 표면 확장에 따라 올라가지 않게 한다. */}
+      <div style={{ height: sidebarTopOffset }} aria-hidden="true" className="shrink-0" />
+      <div className="flex-1 min-h-0 flex flex-row">
         <div
           className={cn(
             "h-full border-l border-border/40 bg-panel overflow-hidden",
@@ -267,34 +248,60 @@ export function BinderBarCompactHover({
                   onPointerCancel={endResize}
                   onLostPointerCapture={endResize}
                 />
-                <div className="shrink-0 h-10 px-3 border-b border-border/50 flex items-center justify-between text-xs font-medium text-fg/80">
-                  <span className="truncate">
-                    {tabItems.find((item) => item.tab === activeCompactTab)?.title ?? ""}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={closeCompactTab}
-                    className="ml-2 shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted hover:text-fg hover:bg-surface-hover transition-colors"
-                    aria-label={t("snapshot.close")}
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <div className="flex-1 min-h-0 overflow-hidden">
-                  <BinderSidebarPanelBody
-                    activeChapterId={activeChapterId}
-                    activeTab={activeCompactTab}
-                    currentProjectId={currentProjectId}
-                    onBackToSnapshotList={() => openCompactTab("snapshot")}
-                    onClose={closeCompactTab}
-                    onOpenSnapshot={setSelectedSnapshot}
-                    isPinned={isPinned}
-                    onTogglePinned={() => setIsPinned((prev) => !prev)}
-                    onResearchTabChange={openRightPanelTab}
-                    showHeader={false}
-                    t={t}
-                  />
-                </div>
+                {/* NOTE: 목록→diff 전환은 탭 내용을 덮어쓰는 방식(GoogleDocs 스냅샷 UX).
+                    분할로 옆에 띄우면 레일 폭이 부족해 diff 가독성이 떨어진다. */}
+                {selectedSnapshot !== null ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedSnapshot(null)}
+                      className="absolute left-2 top-1/2 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-panel text-muted shadow-sm transition-colors hover:bg-surface-hover hover:text-fg"
+                      aria-label={t("back", "뒤로가기")}
+                      title={t("back", "뒤로가기")}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <div className="flex-1 min-h-0">
+                      <Suspense fallback={<div className="p-4 text-sm text-muted">{t("loading")}</div>}>
+                        <SnapshotViewer
+                          snapshot={selectedSnapshot}
+                          currentContent={activeChapterContent}
+                        />
+                      </Suspense>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="shrink-0 h-10 px-3 border-b border-border/50 flex items-center justify-between text-xs font-medium text-fg/80">
+                      <span className="truncate">
+                        {tabItems.find((item) => item.tab === activeCompactTab)?.title ?? ""}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={closeCompactTab}
+                        className="ml-2 shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted hover:text-fg hover:bg-surface-hover transition-colors"
+                        aria-label={t("snapshot.close")}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                      <BinderSidebarPanelBody
+                        activeChapterId={activeChapterId}
+                        activeTab={activeCompactTab}
+                        currentProjectId={currentProjectId}
+                        onBackToSnapshotList={() => openCompactTab("snapshot")}
+                        onClose={closeCompactTab}
+                        onOpenSnapshot={setSelectedSnapshot}
+                        isPinned={isPinned}
+                        onTogglePinned={() => setIsPinned((prev) => !prev)}
+                        onResearchTabChange={openRightPanelTab}
+                        showHeader={false}
+                        t={t}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>

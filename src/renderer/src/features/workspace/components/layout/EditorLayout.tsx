@@ -1,4 +1,5 @@
 import {
+  type CSSProperties,
   type ReactNode,
   useRef,
   useEffect,
@@ -64,6 +65,58 @@ export default function EditorLayout({
     setIsToolbarVisible(true);
   }, []);
 
+  // NOTE: leave 이벤트가 드래그 그립/drag 영역/portal 경계에서 누락·오발되면 툴바가
+  // 스스로 사라진다(idle 자기소멸, DnD 중 소멸). pointermove로 클러스터 내부 여부를
+  // 항상 추적하고, hide 예약 발화 시점에 "실제로 밖인지" 재검증해 판정한다.
+  const isPointerInToolbarCluster = useCallback(
+    (target: EventTarget | null): boolean => {
+      if (!(target instanceof Element)) return false;
+      return Boolean(
+        target.closest(
+          '[data-editor-toolbar-band="true"], [data-editor-toolbar-layer="true"]',
+        ),
+      );
+    },
+    [],
+  );
+  // NOTE: 최신 포인터 위치 기준의 클러스터 내부 여부. leave 누락/오발 시에도
+  // 실제 위치로 재판정하기 위한 값이다.
+  const pointerInClusterRef = useRef(false);
+
+  // NOTE: 창 드래그 중에는 포인터 이벤트가 OS에 흡수되고, 놓은 뒤에는 경계 이벤트 없이
+  // target이 점프한다. leave 이벤트만으로는 arm이 누락되므로(move/over/down 전부)
+  // 어떤 활동이든 들어오면 최신 위치로 판정값을 갱신하고, 밖이면 예약된 숨김을 유지한다.
+  const syncPointerCluster = useCallback(
+    (event: PointerEvent) => {
+      pointerInClusterRef.current = isPointerInToolbarCluster(event.target);
+    },
+    [isPointerInToolbarCluster],
+  );
+
+  useEffect(() => {
+    const options = { passive: true } as const;
+    window.addEventListener("pointermove", syncPointerCluster, options);
+    window.addEventListener("pointerover", syncPointerCluster, options);
+    window.addEventListener("pointerdown", syncPointerCluster, options);
+    return () => {
+      window.removeEventListener("pointermove", syncPointerCluster);
+      window.removeEventListener("pointerover", syncPointerCluster);
+      window.removeEventListener("pointerdown", syncPointerCluster);
+    };
+  }, [syncPointerCluster]);
+
+  // NOTE: 수렴 보장용 watchdog. 이벤트 조합이 어떻게 꼬여도(arm 누락 등) 표시 상태에서
+  // 주기적으로 실측 플래그를 확인해 밖이면 숨긴다. 내부면 유지(DnD 중 요구사항).
+  useEffect(() => {
+    if (!isToolbarVisible) return undefined;
+    const id = window.setInterval(() => {
+      if (!pointerInClusterRef.current) {
+        setIsToolbarVisible(false);
+      }
+    }, 400);
+    return () => window.clearInterval(id);
+  }, [isToolbarVisible]);
+
   const scheduleHide = useCallback(() => {
     if (toolbarHideTimerRef.current !== null) {
       clearTimeout(toolbarHideTimerRef.current);
@@ -72,6 +125,8 @@ export default function EditorLayout({
     setIsToolbarHoverZoneActive(false);
     toolbarHideTimerRef.current = setTimeout(() => {
       toolbarHideTimerRef.current = null;
+      // NOTE: 발화 시점에 포인터가 여전히 클러스터 안이면(leave 오발 보정) 숨기지 않는다.
+      if (pointerInClusterRef.current) return;
       setIsToolbarVisible(false);
     }, 220);
   }, []);
@@ -105,13 +160,16 @@ export default function EditorLayout({
   );
 
   const sidebarTopOffset = IS_MACOS ? EDITOR_WINDOW_BAR_HEIGHT_PX : 0;
+  // NOTE: research 사이드바/레일의 표면(배경)은 traffic lights 끝까지 확장하고,
+  // 실제 콘텐츠는 기존 오프셋 아래에 유지한다. 표면 확장과 내용 위치를 분리한다.
+  const sidebarSurfaceTopOffset = 0;
 
   return (
     <div className="flex flex-col h-screen w-screen bg-app text-fg overflow-hidden relative">
       <div className="flex-1 overflow-hidden relative flex flex-row">
         <FocusHoverSidebar
           side="left"
-          topOffset={sidebarTopOffset}
+          topOffset={sidebarSurfaceTopOffset}
           activationWidthPx={SIDEBAR_WIDTH_CONFIG.mainSidebar.minPx}
           closeDelayMs={180}
           suppressHoverOpen={isToolbarHoverZoneActive}
@@ -120,7 +178,9 @@ export default function EditorLayout({
             className="h-full flex flex-col bg-sidebar border-r border-border"
             style={{ minWidth: SIDEBAR_WIDTH_CONFIG.mainSidebar.minPx }}
           >
-            {sidebar}
+            {/* NOTE: traffic lights 공간만큼 상단 여백을 줘 내용이 표면 확장에 따라 올라가지 않게 한다. */}
+            <div className="shrink-0" style={{ height: sidebarTopOffset }} aria-hidden="true" />
+            <div className="flex-1 min-h-0 flex flex-col">{sidebar}</div>
           </div>
         </FocusHoverSidebar>
 
@@ -130,31 +190,6 @@ export default function EditorLayout({
             additionalPanelIds.length > 0 && "bg-research",
           )}
         >
-
-          <div
-            className="absolute inset-x-0 top-0 z-30 h-11 pointer-events-auto"
-            onMouseEnter={handleToolbarEnter}
-            onMouseLeave={scheduleHide}
-          />
-
-          <div
-            className={cn(
-              "absolute inset-x-0 top-0 z-40 transition-all duration-200 ease-out",
-              isToolbarVisible
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 -translate-y-2 pointer-events-none",
-            )}
-            onMouseEnter={handleToolbarEnter}
-            onMouseLeave={scheduleHide}
-          >
-            <Ribbon
-              editor={editor}
-              onOpenSettings={onOpenSettings}
-              activeChapterId={activeChapterId}
-              onOpenExportPreview={onOpenExport}
-              onOpenWorldGraph={onOpenWorldGraph}
-            />
-          </div>
 
           <PanelGroup
             orientation="horizontal"
@@ -170,6 +205,71 @@ export default function EditorLayout({
               minSize={toPercentSize(10)}
               className="min-w-0 bg-transparent relative flex flex-col"
             >
+              {/* NOTE: 툴바(hover 존)를 에디터 Panel 안으로 스코프해 portal 툴바가
+                  research 패널 위까지 덮지 않게 한다.
+                  ⚠️ WebkitAppRegion: "drag"는 마우스 이벤트를 흡수하므로 툴바 표시 전에는
+                  절대 걸면 안 된다(enter 이벤트 죽음). 사용자 요구대로 툴바가 보인 뒤에만
+                  이 밴드를 드래그 영역으로 전환한다. */}
+              <div
+                aria-hidden="true"
+                className="absolute inset-x-0 top-0 z-30 h-11 pointer-events-auto"
+                style={
+                  isToolbarVisible
+                    ? ({ WebkitAppRegion: "drag" } as CSSProperties)
+                    : undefined
+                }
+                onMouseEnter={handleToolbarEnter}
+                onMouseLeave={scheduleHide}
+              />
+
+              {/* NOTE: 리본(밴드+portal 컨트롤)은 항상 마운트 유지한다. 매 hover마다
+                  Ribbon/EditorToolbar를 remount하면 ResizeObserver·ghost 에디터 같은
+                  무거운 리소스가 재생성되고 fade-out을 낼 수 없다. portal 컨트롤은 DOM상
+                  자식이 아니므로 isVisible 플래그로 같이 전환한다. 드래그 그립도 표시 중에만
+                  활성화한다(user 요구: 표시 후 DnD).
+                  ⚠️ 이 래퍼에 translate를 걸면 portal 좌표(anchor getBoundingClientRect)가
+                  밀려 툴바가 위로 굳는다. opacity/pointer-events 전용으로 전환한다. */}
+              <div
+                data-editor-toolbar-band="true"
+                className={cn(
+                  "absolute inset-x-0 top-0 z-40 transition-opacity duration-150 ease-out",
+                  isToolbarVisible ? "opacity-100" : "opacity-0 pointer-events-none",
+                )}
+                onMouseEnter={handleToolbarEnter}
+                onMouseLeave={scheduleHide}
+              >
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-y-0 left-0 w-10"
+                  style={
+                    isToolbarVisible
+                      ? ({ WebkitAppRegion: "drag" } as CSSProperties)
+                      : undefined
+                  }
+                  onPointerDown={showToolbar}
+                />
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-y-0 right-0 w-10"
+                  style={
+                    isToolbarVisible
+                      ? ({ WebkitAppRegion: "drag" } as CSSProperties)
+                      : undefined
+                  }
+                  onPointerDown={showToolbar}
+                />
+                <Ribbon
+                  editor={editor}
+                  onOpenSettings={onOpenSettings}
+                  activeChapterId={activeChapterId}
+                  onOpenExportPreview={onOpenExport}
+                  onOpenWorldGraph={onOpenWorldGraph}
+                  toolbarVisible={isToolbarVisible}
+                  onControlsEnter={showToolbar}
+                  onControlsLeave={scheduleHide}
+                />
+              </div>
+
               <div className="flex-1 h-full overflow-hidden flex flex-col relative">
                 <EditorDropZones />
 

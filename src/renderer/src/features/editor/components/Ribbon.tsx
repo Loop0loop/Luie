@@ -12,6 +12,10 @@ interface RibbonProps {
   onOpenCanvas?: () => void;
   onCloseCanvas?: () => void;
   isCanvasMode?: boolean;
+  /** portal 컨트롤 진입/이탈 — 레이아웃의 hover 유지 로직 연결용 */
+  onControlsEnter?: () => void;
+  onControlsLeave?: () => void;
+  toolbarVisible?: boolean;
 }
 
 export default function Ribbon({
@@ -22,6 +26,9 @@ export default function Ribbon({
   onOpenCanvas,
   onCloseCanvas,
   isCanvasMode = false,
+  onControlsEnter,
+  onControlsLeave,
+  toolbarVisible,
 }: RibbonProps) {
   const maxWidth = useEditorStore((state) => state.maxWidth);
   const updateSettings = useEditorStore((state) => state.updateSettings);
@@ -42,6 +49,9 @@ export default function Ribbon({
         onOpenCanvas={onOpenCanvas}
         onCloseCanvas={onCloseCanvas}
         isCanvasMode={isCanvasMode}
+        onControlsEnter={onControlsEnter}
+        onControlsLeave={onControlsLeave}
+        toolbarVisible={toolbarVisible}
       />
     </div>
   );
