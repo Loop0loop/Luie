@@ -71,9 +71,15 @@ export function validateCausality(
       addIssue(ctx, "Effect event continuity mismatch", [...path, "continuityId"]);
     }
     for (const evidenceId of edge.evidenceIds) {
-      if (!evidenceById.has(evidenceId)) {
+      const evidence = evidenceById.get(evidenceId);
+      if (!evidence) {
         addIssue(ctx, `Unknown causal evidence: ${evidenceId}`, [
           ...path, "evidenceIds",
+        ]);
+      } else if (evidence.continuityId !== edge.continuityId) {
+        addIssue(ctx, `Causal evidence continuity mismatch: ${evidenceId}`, [
+          ...path,
+          "evidenceIds",
         ]);
       }
     }

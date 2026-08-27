@@ -85,11 +85,23 @@ export function createValidationState(
     sourceDocuments,
     continuityById: indexBy(corpus.continuities, (item) => item.continuityId),
     characterById: indexBy(corpus.characters, (item) => item.characterId),
+    aliasById: indexBy(
+      corpus.characters.flatMap((character) => character.aliases),
+      (item) => item.aliasId,
+    ),
     propositionById: indexBy(corpus.propositions, (item) => item.propositionId),
     eventById: indexBy(corpus.events, (item) => item.eventId),
     relationshipStateById: indexBy(
       corpus.relationshipStates,
       (item) => item.relationshipStateId,
+    ),
+    relationshipTransitionById: indexBy(
+      corpus.relationshipTransitions,
+      (item) => item.transitionId,
+    ),
+    knowledgeStateById: indexBy(
+      corpus.knowledgeStates,
+      (item) => item.knowledgeStateId,
     ),
     chapterById: indexBy(corpus.chapters, (item) => item.chapterId),
     sceneById: indexBy(corpus.scenes, (item) => item.sceneId),
@@ -99,3 +111,33 @@ export function createValidationState(
 }
 
 export type ValidationState = ReturnType<typeof createValidationState>;
+
+export function findOverlappingIntervals<T>(
+  items: T[],
+  key: (item: T) => string,
+  from: (item: T) => number,
+  to: (item: T) => number | null,
+): Array<[T, T]> {
+  const groups = new Map<string, T[]>();
+  for (const item of items) {
+    const groupKey = key(item);
+    const group = groups.get(groupKey) ?? [];
+    group.push(item);
+    groups.set(groupKey, group);
+  }
+
+  const overlaps: Array<[T, T]> = [];
+  for (const group of groups.values()) {
+    const sorted = [...group].sort((left, right) => from(left) - from(right));
+    for (let index = 0; index < sorted.length; index += 1) {
+      const left = sorted[index];
+      const leftEnd = to(left) ?? Number.POSITIVE_INFINITY;
+      for (let nextIndex = index + 1; nextIndex < sorted.length; nextIndex += 1) {
+        const right = sorted[nextIndex];
+        if (from(right) > leftEnd) break;
+        overlaps.push([left, right]);
+      }
+    }
+  }
+  return overlaps;
+}

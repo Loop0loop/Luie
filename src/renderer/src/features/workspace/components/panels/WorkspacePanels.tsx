@@ -7,7 +7,12 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Panel, Separator as PanelResizeHandle, type PanelImperativeHandle } from "react-resizable-panels";
+import {
+  Panel,
+  Separator as PanelResizeHandle,
+  type PanelImperativeHandle,
+  type PanelSize,
+} from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
 import { BookOpen, X } from "lucide-react";
 import { Editor, useEditorStore } from "@renderer/domains/editor";
@@ -15,11 +20,16 @@ import { useChapterStore } from "@renderer/domains/manuscript";
 import type { ResizablePanelData } from "@renderer/features/workspace/stores/uiStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import type { Chapter } from "@shared/types";
-import { toPercentSize } from "@renderer/shared/constants/sidebarSizing";
+import { toPercentSize, toPxSize } from "@renderer/shared/constants/sidebarSizing";
 import { EDITOR_DND_MIN_PANEL_WIDTH_PX } from "@renderer/shared/constants/editorLayout";
 import { SPLIT_PANEL_MIN_SIZE_PERCENT } from "@renderer/shared/constants/layoutSizing";
 import { WORKSPACE_PANEL_CLOSE_ANIMATION_MS } from "@renderer/features/workspace/constants/uiDefaults";
-import { suppressLayoutPersistenceFor } from "@renderer/features/workspace/hooks/useLayoutPersist";
+import {
+  isProgrammaticLayoutChange,
+  suppressLayoutPersistenceFor,
+} from "@renderer/features/workspace/hooks/useLayoutPersist";
+import { useProjectLayoutStore } from "@renderer/features/workspace/stores/projectLayoutStore";
+import { RESEARCH_PANEL_MIN_WIDTH_PX } from "@renderer/features/workspace/stores/projectLayout/constants";
 
 const ResearchPanel = React.lazy(() =>
   import("@renderer/domains/world").then((module) => ({
@@ -140,6 +150,125 @@ export function WorkspacePanels({
     [],
   );
 
+  const currentProjectIdRef = useRef(currentProjectId);
+  useEffect(() => {
+    currentProjectIdRef.current = currentProjectId;
+  }, [currentProjectId]);
+
+  // NOTE: `hasHydrated`와 `upsertProjectLayout`은 커밋 콜백에서만 쓴다. 구독하면 hydration이
+  // 끝나는 순간 이 subtree(research 패널 전체)가 리렌더되고, 콜백 identity가 바뀌어 아래
+  // window listener까지 재등록된다. 호출 시점에 읽는다.
+  const researchPanelWidthPx = useProjectLayoutStore((state) =>
+    currentProjectId
+      ? state.byProject[currentProjectId]?.workspace.byLayout.default
+          .researchPanelWidthPx
+      : undefined,
+  );
+
+  // NOTE: research 패널 폭은 px로 저장한다. minSize가 px 제약인데 %로 저장하면 내부 group 폭이
+  // 바뀔 때 저장값이 px 바닥보다 작아지고, PanelGroup이 min으로 클램프한 값이 다시 저장되어
+  // min에 고착된다. 실제 drag만 커밋하도록 idle 후 flush하고 프로그램적 resize는 건너뛴다.
+  const pendingWidthPxRef = useRef<number | null>(null);
+  const widthFlushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const commitResearchWidthPx = useCallback(() => {
+    const widthPx = pendingWidthPxRef.current;
+    pendingWidthPxRef.current = null;
+    const projectId = currentProjectIdRef.current;
+    if (widthPx === null || !projectId) return;
+    const { hasHydrated, upsertProjectLayout } =
+      useProjectLayoutStore.getState();
+    if (!hasHydrated) return;
+    upsertProjectLayout(projectId, {
+      workspace: { byLayout: { default: { researchPanelWidthPx: widthPx } } },
+    });
+  }, []);
+
+  // NOTE: Panel.onResize는 mount와 프로그램적 resize에서도 호출된다. 그 값을 저장하면 패널이
+  // min으로 뜬 순간의 폭이 기록되어 min에 고착된다. `useSidebarResizeCommit`과 동일하게 실제
+  // 포인터/키보드 조작 중에만 기록하고, 조작이 끝날 때 커밋한다.
+  const isResizingResearchRef = useRef(false);
+
+  const beginResearchResize = useCallback(() => {
+    isResizingResearchRef.current = true;
+  }, []);
+
+  const endResearchResize = useCallback(() => {
+    if (!isResizingResearchRef.current) return;
+    isResizingResearchRef.current = false;
+    if (widthFlushTimerRef.current !== null) {
+      clearTimeout(widthFlushTimerRef.current);
+      widthFlushTimerRef.current = null;
+    }
+    commitResearchWidthPx();
+  }, [commitResearchWidthPx]);
+
+  /** group이 마지막으로 보고한 실제 폭. 복원 적용이 필요한지 판단하는 기준이다. */
+  const liveWidthPxRef = useRef<number | null>(null);
+  const researchPanelRef = useRef<PanelImperativeHandle | null>(null);
+
+  const handleResearchPanelResize = useCallback((panelSize: PanelSize) => {
+    const widthPx = panelSize.inPixels;
+    if (typeof widthPx !== "number" || !Number.isFinite(widthPx)) return;
+    liveWidthPxRef.current = widthPx;
+    if (!isResizingResearchRef.current) return;
+    if (isProgrammaticLayoutChange()) return;
+    if (widthPx < RESEARCH_PANEL_MIN_WIDTH_PX) return;
+    pendingWidthPxRef.current = Math.round(widthPx);
+  }, []);
+
+  // NOTE: PanelGroup은 layout을 panel id 조합별로 캐싱하고(`mutableState.layouts[ids]`) 그 캐시가
+  // `defaultSize`보다 우선한다. 또 `defaultSize`는 mount 시점에만 읽힌다. 그래서 저장 폭을
+  // panel handle로 직접 적용해야 재오픈/재시작 후에도 그 폭으로 서빙된다.
+  // 사용자 drag가 만든 폭은 이미 반영돼 있으므로 실제 폭과 다를 때만 적용한다.
+  const hasResearchPanel = panels.some(
+    (panel) => panel.content.type === "research",
+  );
+  useEffect(() => {
+    if (!hasResearchPanel || researchPanelWidthPx === undefined) return;
+    if (isResizingResearchRef.current) return;
+
+    const liveWidthPx = liveWidthPxRef.current;
+    if (liveWidthPx !== null && Math.abs(liveWidthPx - researchPanelWidthPx) < 2) {
+      return;
+    }
+
+    const frameId = requestAnimationFrame(() => {
+      const panel = researchPanelRef.current;
+      if (!panel) return;
+      try {
+        panel.resize(toPxSize(researchPanelWidthPx));
+      } catch {
+        // Panel이 group layout에 아직 등록되지 않으면 throw한다. 다음 layout 변화에서 재시도된다.
+      }
+    });
+    return () => cancelAnimationFrame(frameId);
+  }, [hasResearchPanel, researchPanelWidthPx]);
+
+  // NOTE: handler를 ref로 넘겨 listener를 mount당 한 번만 등록한다. deps에 콜백을 넣으면
+  // 콜백 identity가 바뀔 때마다 전역 listener가 해제/재등록된다.
+  const endResearchResizeRef = useRef(endResearchResize);
+  useEffect(() => {
+    endResearchResizeRef.current = endResearchResize;
+  }, [endResearchResize]);
+
+  useEffect(() => {
+    const handlePointerEnd = () => {
+      endResearchResizeRef.current();
+    };
+    window.addEventListener("pointerup", handlePointerEnd);
+    window.addEventListener("pointercancel", handlePointerEnd);
+    return () => {
+      window.removeEventListener("pointerup", handlePointerEnd);
+      window.removeEventListener("pointercancel", handlePointerEnd);
+      if (widthFlushTimerRef.current !== null) {
+        clearTimeout(widthFlushTimerRef.current);
+        widthFlushTimerRef.current = null;
+      }
+      endResearchResizeRef.current();
+    };
+  }, []);
+
   return (
     <>
       {panels.map((panel) => {
@@ -163,17 +292,36 @@ export function WorkspacePanels({
 
         return (
           <Fragment key={panel.id}>
-            <PanelResizeHandle className="relative z-50 w-0 cursor-col-resize">
+            <PanelResizeHandle
+              className="relative z-50 w-0 cursor-col-resize"
+              onPointerDown={isResearchPanel ? beginResearchResize : undefined}
+              onPointerUp={isResearchPanel ? endResearchResize : undefined}
+              onPointerCancel={isResearchPanel ? endResearchResize : undefined}
+              onBlur={isResearchPanel ? endResearchResize : undefined}
+              onKeyDown={isResearchPanel ? beginResearchResize : undefined}
+              onKeyUp={isResearchPanel ? endResearchResize : undefined}
+            >
               <div className="absolute inset-y-0 -left-1 -right-1" />
             </PanelResizeHandle>
             <Panel
               id={panel.id}
-              panelRef={closingPanelId === panel.id ? closingPanelRef : undefined}
+              panelRef={
+                closingPanelId === panel.id
+                  ? closingPanelRef
+                  : isResearchPanel
+                    ? researchPanelRef
+                    : undefined
+              }
               data-panel-animated={
                 closingPanelId === panel.id ? "true" : undefined
               }
               groupResizeBehavior="preserve-pixel-size"
-              defaultSize={toPercentSize(panel.size)}
+              defaultSize={
+                isResearchPanel && researchPanelWidthPx !== undefined
+                  ? toPxSize(researchPanelWidthPx)
+                  : toPercentSize(panel.size)
+              }
+              onResize={isResearchPanel ? handleResearchPanelResize : undefined}
               minSize={
                 closingPanelId === panel.id
                   ? "0%"

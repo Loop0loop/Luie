@@ -8,6 +8,8 @@ import type {
 } from "../uiStore";
 import {
   DEFAULT_SCRIVENER_SECTIONS,
+  RESEARCH_PANEL_MAX_WIDTH_PX,
+  RESEARCH_PANEL_MIN_WIDTH_PX,
   PERSISTABLE_DOCS_TABS,
   PERSISTABLE_RESEARCH_TABS,
   WORKSPACE_PANEL_MAX_SIZE,
@@ -64,6 +66,15 @@ export const sanitizeResearchPanelSizes = (
 
 export const sanitizeResearchPanelSize = (input: unknown): number | undefined =>
   normalizeWorkspacePanelSize(input) ?? undefined;
+
+export const sanitizeResearchPanelWidthPx = (
+  input: unknown,
+): number | undefined => {
+  if (typeof input !== "number" || !Number.isFinite(input)) return undefined;
+  return Math.round(
+    Math.min(RESEARCH_PANEL_MAX_WIDTH_PX, Math.max(RESEARCH_PANEL_MIN_WIDTH_PX, input)),
+  );
+};
 
 /**
  * 탭별 폭을 쓰던 payload를 단일 폭으로 승계한다. 사용자가 어느 탭에서든 넓게 잡아둔 폭보다
@@ -199,6 +210,7 @@ const sanitizeDefaultWorkspacePanelState = (
     // 탭별 폭만 있던 기존 payload는 최대값으로 승계한다.
     researchPanelSize:
       explicitSize ?? deriveResearchPanelSizeFromTabSizes(base.researchPanelSizes),
+    researchPanelWidthPx: sanitizeResearchPanelWidthPx(value.researchPanelWidthPx),
   };
 };
 

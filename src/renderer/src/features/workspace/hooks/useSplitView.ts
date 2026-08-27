@@ -56,7 +56,10 @@ export function useSplitView(activeChapterId?: string) {
 
   const handleSelectResearchItem = useCallback(
     (type: ResearchTab) => {
-      const existingResearch = panels.find(
+      // NOTE: `panels`를 closure로 잡으면 패널 크기가 바뀔 때마다 이 콜백이 재생성되어
+      // 사이드바 아이템 전체가 리렌더된다. 호출 시점에 읽는다.
+      const currentPanels = useUIStore.getState().panels;
+      const existingResearch = currentPanels.find(
         (p) => p.content.type === "research",
       );
 
@@ -79,7 +82,7 @@ export function useSplitView(activeChapterId?: string) {
           content: { type: "research" as const, tab: type },
           size: savedSize ?? existingResearch.size,
         };
-        const next = panels
+        const next = currentPanels
           .filter(
             (panel) =>
               panel.content.type !== "research" &&
@@ -89,7 +92,7 @@ export function useSplitView(activeChapterId?: string) {
         setPanels(next);
       }
     },
-    [addPanel, currentProjectId, getProjectLayout, panels, setPanels, uiMode],
+    [addPanel, currentProjectId, getProjectLayout, setPanels, uiMode],
   );
 
   const handleSplitView = useCallback(

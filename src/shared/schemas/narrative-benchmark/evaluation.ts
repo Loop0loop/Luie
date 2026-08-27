@@ -33,8 +33,23 @@ const narrativeQueryBaseSchema = z.strictObject({
   revision: narrativeSha256Schema,
 });
 
+export const narrativeRetrievalGoldSchema = z.discriminatedUnion("answerKind", [
+  z.strictObject({
+    answerKind: z.literal("entity"),
+    characterIds: z.array(narrativeIdSchema).min(1).max(100),
+    aliasIds: z.array(narrativeIdSchema).max(100),
+    mentionEvidenceIds: z.array(narrativeIdSchema).min(1).max(100),
+  }),
+  z.strictObject({
+    answerKind: z.literal("fact"),
+    propositionIds: z.array(narrativeIdSchema).min(1).max(100),
+  }),
+  z.strictObject({ answerKind: z.literal("evidence") }),
+]);
+
 export const narrativeRetrievalQuerySchema = narrativeQueryBaseSchema.extend({
   benchmarkLayer: z.literal("retrieval"),
+  expectedAnswer: narrativeRetrievalGoldSchema,
   expectedEvidenceIds: z.array(narrativeIdSchema).min(1).max(100),
 });
 
@@ -52,6 +67,20 @@ export const narrativeGoldAnswerSchema = z.discriminatedUnion("answerKind", [
   z.strictObject({
     answerKind: z.literal("state"),
     value: narrativeBoundedTextSchema,
+    validAtChapter: narrativeChapterNumberSchema,
+  }),
+  z.strictObject({
+    answerKind: z.literal("relationship_state"),
+    relationshipStateIds: z.array(narrativeIdSchema).min(1).max(100),
+    validAtChapter: narrativeChapterNumberSchema,
+  }),
+  z.strictObject({
+    answerKind: z.literal("relationship_change"),
+    relationshipTransitionIds: z.array(narrativeIdSchema).min(1).max(100),
+  }),
+  z.strictObject({
+    answerKind: z.literal("knowledge_state"),
+    knowledgeStateIds: z.array(narrativeIdSchema).min(1).max(100),
     validAtChapter: narrativeChapterNumberSchema,
   }),
   z.strictObject({
@@ -76,6 +105,7 @@ export const narrativeReasoningQuerySchema = narrativeQueryBaseSchema.extend({
 });
 
 export type NarrativeQueryScope = z.infer<typeof narrativeQueryScopeSchema>;
+export type NarrativeRetrievalGold = z.infer<typeof narrativeRetrievalGoldSchema>;
 export type NarrativeRetrievalQuery = z.infer<
   typeof narrativeRetrievalQuerySchema
 >;

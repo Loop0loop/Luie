@@ -20,53 +20,6 @@ function validateSourceDocuments(
   });
 }
 
-function validateChaptersAndScenes(
-  state: ValidationState,
-  ctx: ValidationContext,
-): void {
-  const { corpus, characterById, continuityById, eventById, chapterById, sourceById } = state;
-  corpus.chapters.forEach((chapter, index) => {
-    const path = ["corpus", "chapters", index];
-    if (!continuityById.has(chapter.continuityId)) {
-      addIssue(ctx, "Unknown chapter continuity", [...path, "continuityId"]);
-    }
-    for (const eventId of chapter.eventIds) {
-      if (!eventById.has(eventId)) {
-        addIssue(ctx, `Unknown chapter event: ${eventId}`, [...path, "eventIds"]);
-      }
-    }
-    const source = sourceById.get(chapter.sourceId);
-    if (!source) {
-      addIssue(ctx, "Missing chapter source document", [...path, "sourceId"]);
-    } else if (source.chapterId !== chapter.chapterId) {
-      addIssue(ctx, "Source document chapter mismatch", [...path, "sourceId"]);
-    }
-  });
-
-  corpus.scenes.forEach((scene, index) => {
-    const path = ["corpus", "scenes", index];
-    const chapter = chapterById.get(scene.chapterId);
-    if (!chapter) {
-      addIssue(ctx, "Unknown scene chapter", [...path, "chapterId"]);
-    } else if (chapter.continuityId !== scene.continuityId) {
-      addIssue(ctx, "Scene continuity must match chapter", [...path, "continuityId"]);
-    }
-    for (const eventId of scene.eventIds) {
-      if (!eventById.has(eventId)) {
-        addIssue(ctx, `Unknown scene event: ${eventId}`, [...path, "eventIds"]);
-      }
-    }
-    for (const participantId of scene.participantIds) {
-      if (!characterById.has(participantId)) {
-        addIssue(ctx, `Unknown scene participant: ${participantId}`, [
-          ...path,
-          "participantIds",
-        ]);
-      }
-    }
-  });
-}
-
 function validateEvidenceRows(
   state: ValidationState,
   ctx: ValidationContext,
@@ -82,6 +35,9 @@ function validateEvidenceRows(
     if (!scene) addIssue(ctx, "Unknown evidence scene", [...path, "sceneId"]);
     if (scene && scene.chapterId !== evidence.chapterId) {
       addIssue(ctx, "Evidence scene belongs to another chapter", [...path, "sceneId"]);
+    }
+    if (scene && scene.continuityId !== evidence.continuityId) {
+      addIssue(ctx, "Evidence continuity must match scene", [...path, "continuityId"]);
     }
     if (chapter && chapter.continuityId !== evidence.continuityId) {
       addIssue(ctx, "Evidence continuity must match chapter", [...path, "continuityId"]);
@@ -166,7 +122,6 @@ export function validateEvidence(
   ctx: ValidationContext,
 ): void {
   validateSourceDocuments(state, ctx);
-  validateChaptersAndScenes(state, ctx);
   validateEvidenceRows(state, ctx);
   validateForeshadowing(state, ctx);
 }

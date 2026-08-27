@@ -22,6 +22,12 @@ function validateUniqueIds(state: ValidationState, ctx: ValidationContext): void
   const { corpus, sourceDocuments } = state;
   checkUniqueIds(corpus.continuities, (item) => item.continuityId, "continuities", ctx);
   checkUniqueIds(corpus.characters, (item) => item.characterId, "characters", ctx);
+  checkUniqueIds(
+    corpus.characters.flatMap((character) => character.aliases),
+    (item) => item.aliasId,
+    "aliases",
+    ctx,
+  );
   checkUniqueIds(corpus.goals, (item) => item.goalId, "goals", ctx);
   checkUniqueIds(corpus.conflicts, (item) => item.conflictId, "conflicts", ctx);
   checkUniqueIds(corpus.propositions, (item) => item.propositionId, "propositions", ctx);
@@ -155,12 +161,6 @@ function validateContinuities(
 function validateAliases(state: ValidationState, ctx: ValidationContext): void {
   const { corpus, continuityById } = state;
   corpus.characters.forEach((character, characterIndex) => {
-    checkUniqueIds(
-      character.aliases,
-      (item) => item.aliasId,
-      `characters.${characterIndex}.aliases`,
-      ctx,
-    );
     character.aliases.forEach((alias, aliasIndex) => {
       const path = [
         "corpus",

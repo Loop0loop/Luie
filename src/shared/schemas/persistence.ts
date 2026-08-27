@@ -117,6 +117,7 @@ const workspacePanelStateSchema = z.strictObject({
     .optional(),
   // default 레이아웃은 research 탭이 패널 하나를 공유하므로 폭을 하나만 저장한다.
   researchPanelSize: z.number().finite().optional(),
+  researchPanelWidthPx: z.number().finite().optional(),
 });
 
 const projectLayoutStateSchema = z.strictObject({

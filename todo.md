@@ -27,3 +27,17 @@
 - workspace 수정 시 반드시 **GoogleDocsLayout에만 영향**이 가는지 확인할 것. 레이아웃은 4개(default/docs/scrivener/editor)이고 관리 주체는 workspace다.
 - 완료: A4 페이지 세로 overflow 수정(GoogleDocsEditorColumn shrink-0), docs 스냅샷 diff 패널 덮어쓰기 전환 + 좌측 중앙 돌아가기 토글.
 - 완료: docs 레이아웃 우측 패널 min/max 조율 — research(420/780)/AI(480/900)/버전기록-snapshot(380/860) docs 전용 config 신설(layoutSizing.ts). **`collapsible` 제거** → 드래그로 min 아래로 내려가 collapse(0px) 되는 것 방지, X 닫기로만 닫힘. 최초엔 `onResize`→`closeRightPanel` sync를 시도했으나 드래그 도중 패널 unmount가 `setPointerCapture`/`toFixed(undefined)` 크래시를 유발해서 제거. 다른 3개 레이아웃 editor.panel/scrivener/canvas에는 영향 없음.
+
+
+  1. 현대 로맨스 S에서 사용할 최소 gold 계약 보강
+  2. chapter/scene/event/evidence 정합성 검증
+  3. relationship/knowledge 전용 invalid 테스트
+  4. review 충돌 및 stage-target 검증
+  5. 4.2 디렉터리 구조 생성
+  6. 원고가 아닌 현대 로맨스 blueprint 작성
+  7. blueprint 사람 검수
+  8. 통과한 구조에서 chapter/scene plan 작성
+  9. 그다음에만 20화 이하 원고 생성
+  10. evidence alignment와 query/gold 작성
+  11. manuscript/query 사람 검수
+  12. Retrieval → Oracle → End-to-end 평가

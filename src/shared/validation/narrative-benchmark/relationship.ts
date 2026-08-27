@@ -1,6 +1,7 @@
 import {
   addIssue,
   checkInterval,
+  findOverlappingIntervals,
   type ValidationContext,
   type ValidationState,
 } from "./context";
@@ -33,13 +34,33 @@ export function validateRelationships(
     }
     checkInterval(record.validFromChapter, record.validToChapter, path, ctx);
     for (const evidenceId of record.evidenceIds) {
-      if (!evidenceById.has(evidenceId)) {
+      const evidence = evidenceById.get(evidenceId);
+      if (!evidence) {
         addIssue(ctx, `Unknown relationship evidence: ${evidenceId}`, [
           ...path, "evidenceIds",
+        ]);
+      } else if (evidence.continuityId !== record.continuityId) {
+        addIssue(ctx, `Relationship evidence continuity mismatch: ${evidenceId}`, [
+          ...path,
+          "evidenceIds",
         ]);
       }
     }
   });
+
+  for (const [left, right] of findOverlappingIntervals(
+    corpus.relationshipStates,
+    (record) =>
+      `${record.sourceCharacterId}:${record.targetCharacterId}:${record.dimension}:${record.continuityId}`,
+    (record) => record.validFromChapter,
+    (record) => record.validToChapter,
+  )) {
+    addIssue(
+      ctx,
+      `Relationship state intervals overlap: ${left.relationshipStateId}, ${right.relationshipStateId}`,
+      ["corpus", "relationshipStates"],
+    );
+  }
 
   corpus.relationshipTransitions.forEach((transition, index) => {
     const path = ["corpus", "relationshipTransitions", index];
@@ -84,10 +105,18 @@ export function validateRelationships(
         addIssue(ctx, `Unknown transition event: ${eventId}`, [
           ...path, "triggerEventIds",
         ]);
-      } else if (event.firstNarratedChapter > transition.validFromChapter) {
-        addIssue(ctx, "Transition trigger occurs after the transition", [
-          ...path, "triggerEventIds",
-        ]);
+      } else {
+        if (event.continuityId !== transition.continuityId) {
+          addIssue(ctx, `Transition event continuity mismatch: ${eventId}`, [
+            ...path,
+            "triggerEventIds",
+          ]);
+        }
+        if (event.firstNarratedChapter > transition.validFromChapter) {
+          addIssue(ctx, "Transition trigger occurs after the transition", [
+            ...path, "triggerEventIds",
+          ]);
+        }
       }
     }
   });

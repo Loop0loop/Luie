@@ -48,3 +48,7 @@ export const WORKSPACE_PANEL_MAX_SIZE = 90;
 // (100/panels.length)에 맡기면 패널 하나일 때 100%가 잡혀 원고가 minSize까지 밀린다.
 // docs 레이아웃의 research 패널 기본 비율과 같은 값을 명시적으로 쓴다.
 export const DEFAULT_RESEARCH_PANEL_SIZE = 40;
+
+/** research 패널 px 폭의 저장 허용 범위. minSize(470px)보다 좁은 값은 저장하지 않는다. */
+export const RESEARCH_PANEL_MIN_WIDTH_PX = 470;
+export const RESEARCH_PANEL_MAX_WIDTH_PX = 2000;

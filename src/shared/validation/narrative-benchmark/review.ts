@@ -1,3 +1,4 @@
+import { resolveApprovedGoodTargets } from "./review-decision";
 import {
   addIssue,
   type ValidationContext,
@@ -97,10 +98,43 @@ function validateEligibility(
     ]);
   }
 
-  const approvedGoodTargets = new Set(
-    corpus.humanReviews
-      .filter((review) => review.label === "GOOD" && review.status === "approved")
-      .map((review) => `${review.stage}:${review.targetType}:${review.targetId}`),
+  if (
+    corpus.manifest.genres.includes("contemporary") &&
+    corpus.manifest.genres.includes("romance")
+  ) {
+    const retrievalTaxonomies = new Set(
+      corpus.retrievalQueries.map((query) => query.taxonomy),
+    );
+    const reasoningTaxonomies = new Set(
+      corpus.reasoningQueries.map((query) => query.taxonomy),
+    );
+    for (const taxonomy of ["entity_retrieval", "fact_retrieval"] as const) {
+      if (!retrievalTaxonomies.has(taxonomy)) {
+        addIssue(ctx, `Eligible contemporary romance pack lacks retrieval taxonomy: ${taxonomy}`, [
+          "corpus",
+          "retrievalQueries",
+        ]);
+      }
+    }
+    for (const taxonomy of [
+      "relationship_state",
+      "relationship_change",
+      "character_knowledge",
+    ] as const) {
+      if (!reasoningTaxonomies.has(taxonomy)) {
+        addIssue(ctx, `Eligible contemporary romance pack lacks reasoning taxonomy: ${taxonomy}`, [
+          "corpus",
+          "reasoningQueries",
+        ]);
+      }
+    }
+  }
+
+  const targetRevisions = buildReviewTargets(state);
+  const approvedGoodTargets = resolveApprovedGoodTargets(
+    corpus.humanReviews,
+    targetRevisions,
+    ctx,
   );
   if (!approvedGoodTargets.has(`blueprint:world:${corpus.world.worldId}`)) {
     addIssue(ctx, "Eligible benchmark lacks approved GOOD blueprint review", [

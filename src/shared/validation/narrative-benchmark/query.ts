@@ -7,6 +7,8 @@ import {
   type ValidationContext,
   type ValidationState,
 } from "./context";
+import { validateReasoningGold } from "./reasoning-gold";
+import { validateRetrievalGold } from "./retrieval-gold";
 
 type Query = NarrativeRetrievalQuery | NarrativeReasoningQuery;
 
@@ -22,6 +24,12 @@ function validateQueryScope(
   const path = ["corpus", collection, index];
   const allowed = new Set(query.scope.allowedContinuityIds);
   const forbidden = new Set(query.scope.forbiddenContinuityIds);
+  if (!state.corpus.manifest.genres.includes(query.genre)) {
+    addIssue(ctx, `Query genre is not declared in manifest: ${query.genre}`, [
+      ...path,
+      "genre",
+    ]);
+  }
   for (const continuityId of [...allowed, ...forbidden]) {
     if (!continuityById.has(continuityId)) {
       addIssue(ctx, `Unknown query continuity: ${continuityId}`, [...path, "scope"]);
@@ -76,7 +84,7 @@ export function validateQueries(
   state: ValidationState,
   ctx: ValidationContext,
 ): void {
-  const { corpus, characterById, eventById, propositionById } = state;
+  const { corpus, propositionById } = state;
   corpus.retrievalQueries.forEach((query, index) => {
     validateQueryScope(
       query,
@@ -86,6 +94,7 @@ export function validateQueries(
       state,
       ctx,
     );
+    validateRetrievalGold(query, index, state, ctx);
   });
 
   corpus.reasoningQueries.forEach((query, index) => {
@@ -97,34 +106,7 @@ export function validateQueries(
       state,
       ctx,
     );
-    const answer = query.expectedAnswer;
-    if (answer.answerKind === "entity") {
-      for (const entityId of answer.entityIds) {
-        if (!characterById.has(entityId)) {
-          addIssue(ctx, `Unknown answer entity: ${entityId}`, [
-            "corpus",
-            "reasoningQueries",
-            index,
-            "expectedAnswer",
-          ]);
-        }
-      }
-    }
-    if (
-      answer.answerKind === "ordered_events" ||
-      answer.answerKind === "causal_chain"
-    ) {
-      for (const eventId of answer.eventIds) {
-        if (!eventById.has(eventId)) {
-          addIssue(ctx, `Unknown answer event: ${eventId}`, [
-            "corpus",
-            "reasoningQueries",
-            index,
-            "expectedAnswer",
-          ]);
-        }
-      }
-    }
+    validateReasoningGold(query, index, state, ctx);
     for (const claimId of query.forbiddenClaimIds) {
       if (!propositionById.has(claimId)) {
         addIssue(ctx, `Unknown forbidden claim: ${claimId}`, [

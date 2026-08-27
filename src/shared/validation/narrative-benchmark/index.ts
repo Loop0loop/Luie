@@ -5,6 +5,7 @@ import {
 import { createValidationState } from "./context";
 import { validateEvidence } from "./evidence";
 import { validateIdentity } from "./identity";
+import { validateManuscript } from "./manuscript";
 import { validateNarrativeRecords } from "./narrative";
 import { validateQueries } from "./query";
 import { validateReviews } from "./review";
@@ -14,6 +15,7 @@ export const narrativeBenchmarkCorpusSchema =
     const state = createValidationState(input.corpus, input.sourceDocuments);
     validateIdentity(state, ctx);
     validateNarrativeRecords(state, ctx);
+    validateManuscript(state, ctx);
     validateEvidence(state, ctx);
     validateQueries(state, ctx);
     validateReviews(state, ctx);

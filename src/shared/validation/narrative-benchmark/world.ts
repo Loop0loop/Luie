@@ -9,7 +9,7 @@ export function validateWorldRecords(
   state: ValidationState,
   ctx: ValidationContext,
 ): void {
-  const { corpus, characterById, continuityById } = state;
+  const { corpus, characterById, continuityById, evidenceById } = state;
   corpus.goals.forEach((goal, index) => {
     if (!characterById.has(goal.characterId)) {
       addIssue(ctx, "Unknown goal character", ["corpus", "goals", index, "characterId"]);
@@ -60,5 +60,23 @@ export function validateWorldRecords(
       ["corpus", "propositions", index],
       ctx,
     );
+    for (const evidenceId of proposition.evidenceIds) {
+      const evidence = evidenceById.get(evidenceId);
+      if (!evidence) {
+        addIssue(ctx, `Unknown proposition evidence: ${evidenceId}`, [
+          "corpus",
+          "propositions",
+          index,
+          "evidenceIds",
+        ]);
+      } else if (evidence.continuityId !== proposition.continuityId) {
+        addIssue(ctx, `Proposition evidence continuity mismatch: ${evidenceId}`, [
+          "corpus",
+          "propositions",
+          index,
+          "evidenceIds",
+        ]);
+      }
+    }
   });
 }

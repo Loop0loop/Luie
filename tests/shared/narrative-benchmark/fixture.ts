@@ -64,12 +64,22 @@ export function createValidInput(): NarrativeBenchmarkValidationInput {
         description: "기록 출처 공개를 두고 충돌한다.", introducedChapter: 1,
         resolvedChapter: null, continuityId: "prime",
       }],
-      propositions: [{
-        propositionId: "prop-source-is-private",
-        statement: "해준이 사용한 기록 번호는 비공개 번호다.",
-        canonicalStatus: "confirmed", continuityId: "prime",
-        validFromChapter: 1, validToChapter: null,
-      }],
+      propositions: [
+        {
+          propositionId: "prop-source-is-private",
+          statement: "해준이 사용한 기록 번호는 비공개 번호다.",
+          canonicalStatus: "confirmed", continuityId: "prime",
+          validFromChapter: 1, validToChapter: null,
+          evidenceIds: ["evidence-private-number"],
+        },
+        {
+          propositionId: "prop-haejun-hid-source",
+          statement: "해준은 기록의 출처를 숨겼다.",
+          canonicalStatus: "confirmed", continuityId: "prime",
+          validFromChapter: 1, validToChapter: null,
+          evidenceIds: ["evidence-hidden-source"],
+        },
+      ],
       events: [
         {
           eventId: "event-hidden-source", continuityId: "prime",
@@ -182,12 +192,15 @@ export function createValidInput(): NarrativeBenchmarkValidationInput {
       retrievalQueries: [{
         queryId: "query-find-hidden-source", taxonomy: "fact_retrieval",
         secondaryTaxonomies: ["entity_retrieval"],
-        question: "해준이 기록 출처를 숨긴 장면은 어디인가?", genre: "mystery",
+        question: "해준은 기록의 출처를 어떻게 했는가?", genre: "mystery",
         difficulty: "single_hop", scope: {
           allowedUntilChapter: 1, includeFuture: false,
           allowedContinuityIds: ["prime"], forbiddenContinuityIds: [],
         },
         revision: retrievalRevision, benchmarkLayer: "retrieval",
+        expectedAnswer: {
+          answerKind: "fact", propositionIds: ["prop-haejun-hid-source"],
+        },
         expectedEvidenceIds: ["evidence-hidden-source"],
       }],
       reasoningQueries: [{
@@ -201,8 +214,8 @@ export function createValidInput(): NarrativeBenchmarkValidationInput {
         revision: reasoningRevision, benchmarkLayer: "reasoning",
         modes: ["oracle_context", "end_to_end"],
         expectedAnswer: {
-          answerKind: "causal_chain",
-          eventIds: ["event-hidden-source", "event-private-number-found"],
+          answerKind: "relationship_change",
+          relationshipTransitionIds: ["transition-trust-collapse"],
         },
         requiredEvidenceIds: ["evidence-hidden-source", "evidence-private-number"],
         forbiddenClaimIds: [],

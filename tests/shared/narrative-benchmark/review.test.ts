@@ -48,4 +48,77 @@ describe("narrative benchmark review lifecycle", () => {
       "Eligible benchmark requires at least one reasoning query",
     );
   });
+
+  it("blocks conflicting reviews without an adjudicator decision", () => {
+    const input = createValidInput();
+    const approved = input.corpus.humanReviews.find(
+      (review) => review.targetType === "reasoning_query",
+    );
+    if (!approved) throw new Error("Missing reasoning review fixture");
+    input.corpus.humanReviews.push({
+      ...approved,
+      reviewId: "review-reasoning-conflict",
+      reviewerId: "reviewer-conflict",
+      reviewerRole: "benchmark",
+      label: "BAD",
+      status: "rejected",
+      reasonCodes: ["UNSUPPORTED_ANSWER"],
+    });
+
+    const messages = issueMessages(input);
+    expect(messages).toContain(
+      "Conflicting reviews require adjudication: query_gold:reasoning_query:query-why-trust-collapsed",
+    );
+    expect(messages).toContain(
+      "Eligible reasoning query lacks approved GOOD review: query-why-trust-collapsed",
+    );
+  });
+
+  it("uses a single adjudicator decision to resolve conflicting reviews", () => {
+    const input = createValidInput();
+    const approved = input.corpus.humanReviews.find(
+      (review) => review.targetType === "reasoning_query",
+    );
+    if (!approved) throw new Error("Missing reasoning review fixture");
+    input.corpus.humanReviews.push(
+      {
+        ...approved,
+        reviewId: "review-reasoning-conflict",
+        reviewerId: "reviewer-conflict",
+        reviewerRole: "benchmark",
+        label: "BAD",
+        status: "rejected",
+        reasonCodes: ["UNSUPPORTED_ANSWER"],
+      },
+      {
+        ...approved,
+        reviewId: "review-reasoning-adjudication",
+        reviewerId: "reviewer-adjudicator",
+        reviewerRole: "adjudicator",
+      },
+    );
+
+    expect(issueMessages(input)).toEqual([]);
+  });
+
+  it("blocks eligibility when the adjudicator rejects the target", () => {
+    const input = createValidInput();
+    const approved = input.corpus.humanReviews.find(
+      (review) => review.targetType === "reasoning_query",
+    );
+    if (!approved) throw new Error("Missing reasoning review fixture");
+    input.corpus.humanReviews.push({
+      ...approved,
+      reviewId: "review-reasoning-adjudication-bad",
+      reviewerId: "reviewer-adjudicator",
+      reviewerRole: "adjudicator",
+      label: "BAD",
+      status: "rejected",
+      reasonCodes: ["UNSUPPORTED_ANSWER"],
+    });
+
+    expect(issueMessages(input)).toContain(
+      "Eligible reasoning query lacks approved GOOD review: query-why-trust-collapsed",
+    );
+  });
 });

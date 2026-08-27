@@ -1,6 +1,7 @@
 import {
   addIssue,
   checkInterval,
+  findOverlappingIntervals,
   type ValidationContext,
   type ValidationState,
 } from "./context";
@@ -30,12 +31,15 @@ export function validateKnowledgeAndTimeline(
         ...path, "acquiredByEventId",
       ]);
     }
-    if (
-      ["known", "believed", "misinformed"].includes(record.state) &&
-      record.acquiredByEventId === null
-    ) {
+    if (record.state !== "unknown" && record.acquiredByEventId === null) {
       addIssue(ctx, `${record.state} knowledge requires acquisition event`, [
         ...path, "acquiredByEventId",
+      ]);
+    }
+    if (record.state !== "unknown" && record.evidenceIds.length === 0) {
+      addIssue(ctx, `${record.state} knowledge requires evidence`, [
+        ...path,
+        "evidenceIds",
       ]);
     }
     if (record.acquiredByEventId !== null) {
@@ -58,13 +62,33 @@ export function validateKnowledgeAndTimeline(
       }
     }
     for (const evidenceId of record.evidenceIds) {
-      if (!evidenceById.has(evidenceId)) {
+      const evidence = evidenceById.get(evidenceId);
+      if (!evidence) {
         addIssue(ctx, `Unknown knowledge evidence: ${evidenceId}`, [
           ...path, "evidenceIds",
+        ]);
+      } else if (evidence.continuityId !== record.continuityId) {
+        addIssue(ctx, `Knowledge evidence continuity mismatch: ${evidenceId}`, [
+          ...path,
+          "evidenceIds",
         ]);
       }
     }
   });
+
+  for (const [left, right] of findOverlappingIntervals(
+    corpus.knowledgeStates,
+    (record) =>
+      `${record.characterId}:${record.propositionId}:${record.continuityId}`,
+    (record) => record.validFromChapter,
+    (record) => record.validToChapter,
+  )) {
+    addIssue(
+      ctx,
+      `Knowledge state intervals overlap: ${left.knowledgeStateId}, ${right.knowledgeStateId}`,
+      ["corpus", "knowledgeStates"],
+    );
+  }
 
   corpus.timeline.forEach((entry, index) => {
     const path = ["corpus", "timeline", index];

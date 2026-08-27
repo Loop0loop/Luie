@@ -7,6 +7,7 @@ import {
   type LayoutSurfaceId,
 } from "@renderer/shared/constants/layoutSizing";
 import { createLogger } from "@shared/logger";
+import { isLayoutRestoring } from "./useSidebarResizeCommit";
 import { SIDEBAR_RESIZE_COMMIT_IDLE_MS } from "@renderer/features/workspace/constants/uiDefaults";
 
 const logger = createLogger("useLayoutPersist");
@@ -25,9 +26,16 @@ export function suppressLayoutPersistenceFor(durationMs: number): void {
 const isLayoutPersistenceSuppressed = (): boolean =>
   layoutPersistenceSuppressionDepth > 0;
 
-/** 닫기 애니메이션처럼 프로그램이 만든 layout 변화를 저장에서 제외할지 여부. */
-export const isLayoutPersistenceSuppressedNow = (): boolean =>
-  isLayoutPersistenceSuppressed();
+/**
+ * 프로그램이 만든 layout 변화인지 판정하는 단일 진입점.
+ *
+ * 억제 신호가 두 갈래로 존재한다. `suppressLayoutPersistenceFor`가 올리는 module counter와
+ * `beginLayoutRestoring`이 세팅하는 `data-layout-restoring` DOM 속성이다. 저장 경로가 둘 중
+ * 하나만 확인하면 다른 경로로 들어온 프로그램적 resize가 사용자 값으로 오인되어 저장된다.
+ * 새 저장 경로는 개별 신호가 아니라 이 함수를 쓴다.
+ */
+export const isProgrammaticLayoutChange = (): boolean =>
+  isLayoutRestoring() || isLayoutPersistenceSuppressed();
 
 export const isPersistableLayoutRatio = (ratio: number): boolean =>
   Number.isFinite(ratio) && ratio > 0.1;
@@ -106,16 +114,8 @@ export function useLayoutPersist(
   const setLayoutSurfaceRatio = useUIStore(
     (state) => state.setLayoutSurfaceRatio,
   );
-  const uiHasHydrated = useUIStore((state) => state.hasHydrated);
-  const projectLayoutHasHydrated = useProjectLayoutStore(
-    (state) => state.hasHydrated,
-  );
-  const upsertProjectLayout = useProjectLayoutStore(
-    (state) => state.upsertProjectLayout,
-  );
   const entriesRef = useRef(entries);
   const projectIdRef = useRef(options?.projectId ?? null);
-  const canPersistProjectRef = useRef(false);
   const lastCommitRef = useRef(
     new Map<LayoutSurfaceId, { ratio: number; timestampMs: number }>(),
   );
@@ -130,9 +130,10 @@ export function useLayoutPersist(
 
   useEffect(() => {
     projectIdRef.current = options?.projectId ?? null;
-    canPersistProjectRef.current = uiHasHydrated && projectLayoutHasHydrated;
-  }, [options?.projectId, projectLayoutHasHydrated, uiHasHydrated]);
+  }, [options?.projectId]);
 
+  // NOTE: hydration 플래그와 store action은 렌더에서 쓰지 않는다. 구독하면 hydration이
+  // 끝나는 순간 이 hook을 쓰는 모든 layout이 리렌더된다. 호출 시점에 읽는다.
   const flushPendingCommits = useCallback(() => {
     const pendingEntries = Array.from(pendingCommitRef.current.entries());
     pendingCommitRef.current.clear();
@@ -142,16 +143,19 @@ export function useLayoutPersist(
       projectPatch[surface] = ratio;
     }
     const projectId = projectIdRef.current;
+    const { hasHydrated: projectLayoutHasHydrated, upsertProjectLayout } =
+      useProjectLayoutStore.getState();
     if (
       projectId &&
-      canPersistProjectRef.current &&
+      useUIStore.getState().hasHydrated &&
+      projectLayoutHasHydrated &&
       Object.keys(projectPatch).length > 0
     ) {
       upsertProjectLayout(projectId, {
         layoutSurfaceRatios: projectPatch as Record<LayoutSurfaceId, number>,
       });
     }
-  }, [setLayoutSurfaceRatio, upsertProjectLayout]);
+  }, [setLayoutSurfaceRatio]);
 
   const scheduleCommitFlush = useCallback(() => {
     if (flushTimeoutRef.current !== null) {

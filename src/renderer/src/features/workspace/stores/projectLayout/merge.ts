@@ -3,6 +3,7 @@ import { normalizeSidebarWidthsWithMigrations } from "@renderer/shared/constants
 import {
   sanitizePersistedDocsRightTab,
   sanitizeResearchPanelSize,
+  sanitizeResearchPanelWidthPx,
   sanitizeResearchPanelSizes,
   sanitizeWorkspacePanels,
 } from "./sanitize";
@@ -37,6 +38,10 @@ const mergeDefaultWorkspacePanelState = (
     patch.researchPanelSize === undefined
       ? previous.researchPanelSize
       : sanitizeResearchPanelSize(patch.researchPanelSize),
+  researchPanelWidthPx:
+    patch.researchPanelWidthPx === undefined
+      ? previous.researchPanelWidthPx
+      : sanitizeResearchPanelWidthPx(patch.researchPanelWidthPx),
 });
 
 export const mergeProjectLayoutState = (

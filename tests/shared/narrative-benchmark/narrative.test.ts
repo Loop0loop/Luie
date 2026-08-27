@@ -47,10 +47,46 @@ describe("narrative benchmark narrative invariants", () => {
     expect(issueMessages(input)).toContain("Continuity parent graph must be acyclic");
   });
 
+  it("rejects relationship transitions across different dimensions", () => {
+    const input = createValidInput();
+    input.corpus.relationshipStates[1].dimension = "hostility";
+    expect(issueMessages(input)).toContain(
+      "Relationship transition states must describe the same directed dimension",
+    );
+  });
+
+  it("rejects relationship transitions without a value change", () => {
+    const input = createValidInput();
+    input.corpus.relationshipStates[1].value =
+      input.corpus.relationshipStates[0].value;
+    expect(issueMessages(input)).toContain(
+      "Relationship transition must change value",
+    );
+  });
+
+  it("requires an acquisition event for suspected knowledge", () => {
+    const input = createValidInput();
+    input.corpus.knowledgeStates[0].state = "suspected";
+    input.corpus.knowledgeStates[0].acquiredByEventId = null;
+    expect(issueMessages(input)).toContain(
+      "suspected knowledge requires acquisition event",
+    );
+  });
+
+  it("requires evidence for non-unknown knowledge", () => {
+    const input = createValidInput();
+    input.corpus.knowledgeStates[0].evidenceIds = [];
+    expect(issueMessages(input)).toContain("known knowledge requires evidence");
+  });
+
   it("allows a cause to be revealed after its effect", () => {
     const input = createValidInput();
     input.corpus.events[0].firstNarratedChapter = 2;
     input.corpus.events[1].firstNarratedChapter = 1;
+    input.corpus.chapters[0].eventIds = ["event-private-number-found"];
+    input.corpus.chapters[1].eventIds = ["event-hidden-source"];
+    input.corpus.scenes[0].eventIds = ["event-private-number-found"];
+    input.corpus.scenes[1].eventIds = ["event-hidden-source"];
 
     expect(issueMessages(input)).toEqual([]);
   });

@@ -84,6 +84,7 @@ export const narrativePropositionSchema = z.strictObject({
   continuityId: narrativeIdSchema,
   validFromChapter: narrativeChapterNumberSchema,
   validToChapter: narrativeChapterNumberSchema.nullable(),
+  evidenceIds: z.array(narrativeIdSchema).min(1).max(100),
 });
 
 export type NarrativeBenchmarkManifest = z.infer<

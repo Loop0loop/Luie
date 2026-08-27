@@ -32,7 +32,7 @@ import {
 import { toPercentSize } from "@renderer/shared/constants/sidebarSizing";
 import {
   getPanelLayoutValue,
-  isLayoutPersistenceSuppressedNow,
+  isProgrammaticLayoutChange,
   suppressLayoutPersistenceFor,
   useLayoutPersist,
 } from "@renderer/features/workspace/hooks/useLayoutPersist";
@@ -48,6 +48,9 @@ import { createLogger } from "@shared/logger";
 
 const logger = createLogger("MainLayout");
 const isMacOS = navigator.userAgent.toLowerCase().includes("mac");
+// NOTE: 기본값을 inline `[]`로 두면 매 render마다 새 배열이 되어 이 값을 dependency로 쓰는
+// `onContentLayoutChanged`가 계속 재생성되고 PanelGroup의 handler prop이 매번 교체된다.
+const EMPTY_PANEL_IDS: readonly string[] = [];
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -64,7 +67,7 @@ export default function MainLayout({
   children,
   sidebar,
   additionalPanels,
-  additionalPanelIds = [],
+  additionalPanelIds = EMPTY_PANEL_IDS as string[],
   isResearchPanelAdjacent = false,
   isEditorPanelAdjacent = false,
   isCanvasMode = false,
@@ -142,7 +145,7 @@ export default function MainLayout({
       // NOTE: 패널 close 애니메이션은 `resize("0%")`를 호출하지만 PanelGroup이 minSize(470px)로
       // 클램프해 min 비율을 emit한다. 그 값을 저장하면 사용자가 넓혀둔 폭이 min으로 고착된다.
       // WorkspacePanels가 닫기 직전 억제를 걸어두므로 여기서 함께 존중한다.
-      if (isLayoutPersistenceSuppressedNow()) return;
+      if (isProgrammaticLayoutChange()) return;
       additionalPanelIds.forEach((panelId, panelIndex) => {
         const rawSize = getPanelLayoutValue(layout, panelId, panelIndex + 1);
         if (typeof rawSize !== "number" || !Number.isFinite(rawSize)) return;
@@ -344,6 +347,9 @@ export default function MainLayout({
       sidebarSurface,
     ],
   );
+  // NOTE: PanelGroup은 `onLayoutChanged`를 내부 ref에 보관하고 안정된 wrapper를 쓴다.
+  // 그래서 이 callback identity가 바뀌어도 재등록 비용은 없다. dependency를 줄이려고
+  // 아래 애니메이션 상태 boolean들을 ref로 옮기는 최적화는 이득이 없으니 하지 말 것.
   const onMainLayoutChanged = useCallback(
     (layout: Layout) => {
       const activeSurface = activeResizeSurfaceRef.current;

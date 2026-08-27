@@ -22,6 +22,7 @@ export type {
   NarrativeReasoningQuery,
   NarrativeRelationshipState,
   NarrativeRelationshipTransition,
+  NarrativeRetrievalGold,
   NarrativeRetrievalQuery,
   NarrativeReviewStage,
   NarrativeReviewStatus,
