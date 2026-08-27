@@ -50,9 +50,12 @@ export function GoogleDocsHeader({
 
   return (
     <header className="flex min-h-[88px] shrink-0 select-none items-center bg-app px-4 py-2 transition-colors duration-200">
+      {/* NOTE: traffic lights 예약 마진은 사이드바 slide transition(200ms)과 함께
+          보간되어야 헤더가 왼쪽 끝에서 튀지 않는다. 애니메이션 off 시 전역 CSS가
+          transition을 무효화한다. */}
       <div
         className={cn(
-          "-translate-y-1 flex min-w-0 items-start gap-1",
+          "-translate-y-1 flex min-w-0 items-start gap-1 transition-[margin-left] duration-200 ease-[cubic-bezier(0.2,0,0,1)]",
           reserveTrafficLightsSpace && "ml-[70px]",
         )}
       >

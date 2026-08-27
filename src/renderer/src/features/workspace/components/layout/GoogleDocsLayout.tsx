@@ -100,52 +100,56 @@ export function GoogleDocsLayout({
         elementRef={docsLayoutGroupRef}
         onLayoutChanged={onSidebarLayoutChanged}
       >
-        <Panel
-          id="left-sidebar"
-          panelRef={docsSidebarPanelRef}
-          collapsible
-          collapsedSize={0}
-          data-panel-animated={
-            isSidebarOpening || isSidebarClosing ? "true" : undefined
-          }
-          defaultSize={
-            isSidebarOpen ? toPanelPercentSize(safeDocsSidebarRatio) : 0
-          }
-          minSize={docsSidebarSize.minSize}
-          maxSize={docsSidebarSize.maxSize}
-          className={`flex min-w-0 shrink-0 flex-col bg-sidebar ${
-            enableAnimations
-              ? isSidebarClosing
-                ? "animate-out slide-out-to-left fade-out duration-200"
-                : isSidebarOpen
-                  ? "animate-in slide-in-from-left fade-in duration-200"
-                  : ""
-              : ""
-          }`}
-        >
-          {shouldRenderSidebar ? (
-            <div className="flex h-full flex-col overflow-hidden bg-sidebar">
-              <div className="mt-10 flex h-16 shrink-0 items-center px-3">
-                <button
-                  onClick={() => setDocsSidebarOpen(false)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover"
-                  title={t("sidebar.toggle.close")}
-                >
-                  <Menu className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="min-h-0 flex-1">{sidebar}</div>
-            </div>
-          ) : null}
-        </Panel>
-
+        {/* NOTE: collapsible Panel은 drag로 minSize 밑으로 줄면 collapsedSize로 스냅되어
+            사이드바가 숨겨진다. minPx를 하드 플로어로 유지하려면 우측 패널과 동일하게
+            collapsible 없이 열림 상태로 조건부 렌더링한다. 열림/닫힘 transition 중에만
+            minSize를 완화(0%)해 flex-grow가 0까지 보간되게 한다. */}
         {shouldRenderSidebar && (
-          <PanelResizeHandle
-            data-separator-feature="docs.sidebar"
-            className="relative z-20 w-1 shrink-0 cursor-col-resize bg-sidebar"
-          >
-            <div className="absolute inset-y-0 -left-1 -right-1" />
-          </PanelResizeHandle>
+          <>
+            <Panel
+              id="left-sidebar"
+              panelRef={docsSidebarPanelRef}
+              data-panel-animated={
+                isSidebarOpening || isSidebarClosing ? "true" : undefined
+              }
+              defaultSize={toPanelPercentSize(safeDocsSidebarRatio)}
+              minSize={
+                isSidebarOpening || isSidebarClosing
+                  ? "0%"
+                  : docsSidebarSize.minSize
+              }
+              maxSize={docsSidebarSize.maxSize}
+              className={`flex min-w-0 shrink-0 flex-col bg-sidebar ${
+                enableAnimations
+                  ? isSidebarClosing
+                    ? "animate-out slide-out-to-left fade-out duration-200"
+                    : isSidebarOpen
+                      ? "animate-in slide-in-from-left fade-in duration-200"
+                      : ""
+                  : ""
+              }`}
+            >
+              <div className="flex h-full flex-col overflow-hidden bg-sidebar">
+                <div className="mt-10 flex h-16 shrink-0 items-center px-3">
+                  <button
+                    onClick={() => setDocsSidebarOpen(false)}
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover"
+                    title={t("sidebar.toggle.close")}
+                  >
+                    <Menu className="h-5 w-5" />
+                  </button>
+                </div>
+                <div className="min-h-0 flex-1">{sidebar}</div>
+              </div>
+            </Panel>
+
+            <PanelResizeHandle
+              data-separator-feature="docs.sidebar"
+              className="relative z-20 w-1 shrink-0 cursor-col-resize bg-sidebar"
+            >
+              <div className="absolute inset-y-0 -left-1 -right-1" />
+            </PanelResizeHandle>
+          </>
         )}
 
         <Panel

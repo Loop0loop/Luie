@@ -41,6 +41,19 @@ const safelyUsePanel = <T>(
   }
 };
 
+// NOTE: collapsible이 아닌 패널은 collapse()가 no-op이라 닫기 transition이 발동하지 않는다.
+// 크기 0으로 직접 resize해 같은 flex-grow transition 경로를 타게 한다.
+// (minSize에 걸려 0까지 줄지 않는 경우는 호출측에서 애니메이션 중 minSize를 완화한다.)
+const collapsePanelToZero = (
+  panelRef: RefObject<PanelImperativeHandle | null>,
+) =>
+  safelyUsePanel(panelRef, (panel) => {
+    panel.collapse();
+    if (!panel.isCollapsed()) {
+      panel.resize("0%");
+    }
+  });
+
 export function useResizablePanelPresence({
   durationMs = 200,
   enableAnimations,
@@ -69,7 +82,7 @@ export function useResizablePanelPresence({
     }
 
     if (!enableAnimations || durationMs <= 0) {
-      safelyUsePanel(panelRef, (panel) => panel.collapse());
+      collapsePanelToZero(panelRef);
       setShouldRender(false);
       setIsClosing(false);
       setIsOpening(false);
@@ -80,7 +93,7 @@ export function useResizablePanelPresence({
     setIsClosing(true);
     suppressLayoutPersistenceFor(durationMs + 160);
     const frameId = window.requestAnimationFrame(() => {
-      safelyUsePanel(panelRef, (panel) => panel.collapse());
+      collapsePanelToZero(panelRef);
     });
     const timer = window.setTimeout(() => {
       setShouldRender(false);
