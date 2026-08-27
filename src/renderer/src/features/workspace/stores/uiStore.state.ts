@@ -46,11 +46,11 @@ const isSameMainView = (left: MainView, right: MainView): boolean =>
   left.type === right.type && left.id === right.id;
 
 export const buildStablePanelId = (content: RightPanelContent): string => {
+  // NOTE: research 패널은 탭을 바꿔도 같은 패널 하나다. id에 tab을 넣으면 PanelGroup이
+  // layout을 panel id 조합별로 캐싱(`mutableState.layouts[ids.join(",")]`)하기 때문에
+  // 탭마다 폭이 따로 기억되고, 그 캐시가 defaultSize보다 우선해 공용 폭을 덮어쓴다.
   if (content.type === "research" && content.tab) {
-    if (content.id) {
-      return `research-${content.tab}-${content.id}`;
-    }
-    return `research-${content.tab}`;
+    return "research";
   }
   if (content.type === "editor" && content.id) {
     return `editor-${content.id}`;
@@ -194,13 +194,11 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set, 
   removePanel: (id) => {
     const focusedTarget = getFocusedClosableTarget();
     set((state) => {
+      // NOTE: 남은 패널 크기를 100/n으로 재분배하면 안 된다. 이 패널들은 원고 패널
+      // (`main-primary-content`)과 같은 group을 공유하지만 그 패널은 `panels`에 없어서
+      // 100/n이 애초에 group 비율과 무관하다. 재분배하면 사용자가 조정한 폭이 파괴되고
+      // 그 값이 그대로 저장된다. PanelGroup이 남은 값을 정규화하므로 그대로 두면 된다.
       const newPanels = state.panels.filter((panel) => panel.id !== id);
-      if (newPanels.length > 0) {
-        const sizePerPanel = 100 / newPanels.length;
-        return {
-          panels: newPanels.map((panel) => ({ ...panel, size: sizePerPanel })),
-        };
-      }
       return { panels: newPanels };
     });
     if (focusedTarget?.kind === "panel" && focusedTarget.id === id) {

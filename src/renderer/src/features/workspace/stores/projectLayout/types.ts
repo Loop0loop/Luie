@@ -26,9 +26,16 @@ export type ProjectWorkspacePanelState = {
   researchPanelSizes: Partial<Record<ResearchTab, number>>;
 };
 
+// NOTE: default 레이아웃은 research 탭이 패널 하나를 공유한다(useSplitView가 research 패널을
+// 하나만 유지하고 tab만 교체). 그래서 폭도 탭별이 아니라 하나만 저장한다. 다른 레이아웃은
+// 기존 탭별 맵(`researchPanelSizes`)을 계속 쓴다.
+export type ProjectDefaultWorkspacePanelState = ProjectWorkspacePanelState & {
+  researchPanelSize?: number;
+};
+
 export type ProjectWorkspaceLayoutState = ProjectWorkspacePanelState & {
   byLayout: {
-    default: ProjectWorkspacePanelState;
+    default: ProjectDefaultWorkspacePanelState;
   };
 };
 
@@ -66,7 +73,9 @@ export type ProjectLayoutPatch = {
   editor?: Partial<ProjectLayoutState["editor"]>;
   sidebarWidths?: ProjectLayoutState["sidebarWidths"];
   layoutSurfaceRatios?: ProjectLayoutState["layoutSurfaceRatios"];
-  workspace?: Partial<ProjectWorkspaceLayoutState>;
+  workspace?: Partial<ProjectWorkspacePanelState> & {
+    byLayout?: { default?: Partial<ProjectDefaultWorkspacePanelState> };
+  };
 };
 
 export interface ProjectLayoutStore {

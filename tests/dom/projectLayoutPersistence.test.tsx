@@ -108,7 +108,7 @@ describe("useProjectLayoutPersistence", () => {
     ).toBe(false);
   });
 
-  it("restores and persists default research panel sizes independently", async () => {
+  it("restores and persists the default layout's shared research panel width", async () => {
     useProjectLayoutStore.getState().upsertProjectLayout("project-a", {
       workspace: {
         panels: [],
@@ -122,7 +122,7 @@ describe("useProjectLayoutPersistence", () => {
                 size: 56,
               },
             ],
-            researchPanelSizes: { character: 56 },
+            researchPanelSize: 56,
           },
         },
       },
@@ -146,7 +146,8 @@ describe("useProjectLayoutPersistence", () => {
     const workspace = useProjectLayoutStore
       .getState()
       .getProjectLayout("project-a").workspace;
-    expect(workspace.byLayout.default.researchPanelSizes.character).toBe(63);
+    expect(workspace.byLayout.default.researchPanelSize).toBe(63);
+    // 다른 레이아웃이 쓰는 공용 버킷으로 새지 않아야 한다.
     expect(workspace.researchPanelSizes.character).toBeUndefined();
   });
 

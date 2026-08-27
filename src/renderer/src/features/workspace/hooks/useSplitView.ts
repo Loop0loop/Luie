@@ -12,6 +12,8 @@ import {
   getLayoutSurfaceDefaultRatio,
 } from "@renderer/shared/constants/layoutSizing";
 import { useEditorStore } from "@renderer/domains/editor";
+import { buildStablePanelId } from "@renderer/features/workspace/stores/uiStore.state";
+import { DEFAULT_RESEARCH_PANEL_SIZE } from "@renderer/features/workspace/stores/projectLayout/constants";
 
 export function useSplitView(activeChapterId?: string) {
   const panels = useUIStore((state) => state.panels);
@@ -32,15 +34,16 @@ export function useSplitView(activeChapterId?: string) {
       const projectLayout = currentProjectId
         ? getProjectLayout(currentProjectId)
         : null;
-      const savedResearchPanelSizes =
+      // default 레이아웃은 research 탭이 패널 하나를 공유하므로 폭도 하나만 읽는다.
+      const savedResearchSize =
         uiMode === "default"
-          ? projectLayout?.workspace.byLayout.default.researchPanelSizes
-          : projectLayout?.workspace.researchPanelSizes;
+          ? projectLayout?.workspace.byLayout.default.researchPanelSize
+          : content.type === "research" && content.tab
+            ? projectLayout?.workspace.researchPanelSizes[content.tab]
+            : undefined;
       const initialSize =
         content.type === "research" && content.tab
-          ? currentProjectId
-            ? savedResearchPanelSizes?.[content.tab]
-            : undefined
+          ? (savedResearchSize ?? DEFAULT_RESEARCH_PANEL_SIZE)
           : content.type === "snapshot"
             ? getLayoutSurfaceDefaultRatio(
                 getEditorLayoutPanelSurface("snapshot"),
@@ -61,15 +64,18 @@ export function useSplitView(activeChapterId?: string) {
         addPanel({ type: "research", tab: type });
       } else if (existingResearch.content.tab !== type) {
         // NOTE: research panel은 하나만 유지하고 DnD 원고와 함께 열지 않는다.
+        // default 레이아웃은 탭을 바꿔도 같은 패널이므로 폭을 그대로 유지한다.
         const projectLayout = currentProjectId
           ? getProjectLayout(currentProjectId)
           : null;
         const savedSize =
           uiMode === "default"
-            ? projectLayout?.workspace.byLayout.default.researchPanelSizes[type]
+            ? existingResearch.size
             : projectLayout?.workspace.researchPanelSizes[type];
         const replaced = {
           ...existingResearch,
+          // 이전 버전이 저장한 tab별 id(`research-character` 등)를 공용 id로 정규화한다.
+          id: buildStablePanelId({ type: "research", tab: type }),
           content: { type: "research" as const, tab: type },
           size: savedSize ?? existingResearch.size,
         };

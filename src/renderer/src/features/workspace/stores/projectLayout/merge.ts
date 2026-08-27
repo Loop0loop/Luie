@@ -2,10 +2,12 @@ import { normalizeLayoutSurfaceRatiosWithMigrations } from "@renderer/shared/con
 import { normalizeSidebarWidthsWithMigrations } from "@renderer/shared/constants/sidebarSizing";
 import {
   sanitizePersistedDocsRightTab,
+  sanitizeResearchPanelSize,
   sanitizeResearchPanelSizes,
   sanitizeWorkspacePanels,
 } from "./sanitize";
 import type {
+  ProjectDefaultWorkspacePanelState,
   ProjectLayoutPatch,
   ProjectLayoutState,
   ProjectWorkspacePanelState,
@@ -24,6 +26,17 @@ const mergeWorkspacePanelState = (
         ...sanitizeResearchPanelSizes(patch.researchPanelSizes),
       }
     : previous.researchPanelSizes,
+});
+
+const mergeDefaultWorkspacePanelState = (
+  previous: ProjectDefaultWorkspacePanelState,
+  patch: Partial<ProjectDefaultWorkspacePanelState>,
+): ProjectDefaultWorkspacePanelState => ({
+  ...mergeWorkspacePanelState(previous, patch),
+  researchPanelSize:
+    patch.researchPanelSize === undefined
+      ? previous.researchPanelSize
+      : sanitizeResearchPanelSize(patch.researchPanelSize),
 });
 
 export const mergeProjectLayoutState = (
@@ -77,7 +90,7 @@ export const mergeProjectLayoutState = (
             ? {
                 ...previous.workspace.byLayout,
                 default: patch.workspace.byLayout.default
-                  ? mergeWorkspacePanelState(
+                  ? mergeDefaultWorkspacePanelState(
                       previous.workspace.byLayout.default,
                       patch.workspace.byLayout.default,
                     )

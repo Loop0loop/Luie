@@ -17,6 +17,7 @@ import { createDefaultProjectLayoutState } from "./defaults";
 import type {
   DocsRightTabInput,
   PersistedDocsRightTab,
+  ProjectDefaultWorkspacePanelState,
   ProjectLayoutState,
   ProjectWorkspacePanelState,
 } from "./types";
@@ -59,6 +60,26 @@ export const sanitizeResearchPanelSizes = (
     }
   }
   return sizes;
+};
+
+export const sanitizeResearchPanelSize = (input: unknown): number | undefined =>
+  normalizeWorkspacePanelSize(input) ?? undefined;
+
+/**
+ * 탭별 폭을 쓰던 payload를 단일 폭으로 승계한다. 사용자가 어느 탭에서든 넓게 잡아둔 폭보다
+ * 좁아지지 않도록 최대값을 택한다.
+ */
+export const deriveResearchPanelSizeFromTabSizes = (
+  sizes: Partial<Record<ResearchTab, number>>,
+): number | undefined => {
+  let widest: number | undefined;
+  for (const size of Object.values(sizes)) {
+    if (typeof size !== "number") continue;
+    if (widest === undefined || size > widest) {
+      widest = size;
+    }
+  }
+  return widest;
 };
 
 export const sanitizeWorkspacePanels = (
@@ -166,6 +187,21 @@ const sanitizeWorkspacePanelState = (
   };
 };
 
+const sanitizeDefaultWorkspacePanelState = (
+  input: unknown,
+  fallback: ProjectWorkspacePanelState,
+): ProjectDefaultWorkspacePanelState => {
+  const base = sanitizeWorkspacePanelState(input, fallback);
+  const value = isRecord(input) ? input : {};
+  const explicitSize = sanitizeResearchPanelSize(value.researchPanelSize);
+  return {
+    ...base,
+    // 탭별 폭만 있던 기존 payload는 최대값으로 승계한다.
+    researchPanelSize:
+      explicitSize ?? deriveResearchPanelSizeFromTabSizes(base.researchPanelSizes),
+  };
+};
+
 export const sanitizeProjectLayoutState = (
   input: unknown,
 ): ProjectLayoutState => {
@@ -255,7 +291,7 @@ export const sanitizeProjectLayoutState = (
       ...workspace,
       byLayout: {
         // NOTE: 기존 공용 workspace 값은 default 레이아웃의 최초 분리값으로 승계한다.
-        default: sanitizeWorkspacePanelState(
+        default: sanitizeDefaultWorkspacePanelState(
           workspaceLayoutsInput.default,
           workspace,
         ),

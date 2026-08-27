@@ -24,3 +24,4 @@ export * from "./app";
 export * from "./sync";
 export * from "./settings";
 export * from "./persistence";
+export * from "./narrativeBenchmark";

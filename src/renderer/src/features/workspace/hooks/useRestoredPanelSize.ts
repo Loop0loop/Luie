@@ -29,7 +29,12 @@ type UseRestoredPanelSizeOptions = {
  * 사용자 drag가 만든 ratio는 이미 panel에 반영되어 있어 다시 적용하면 drag를 되돌린다. 그래서
  * group이 마지막으로 보고한 실제 비율과 목표 비율이 다를 때만 적용한다.
  *
+ * `ratio`는 effect dependency에서 뺄 수 없다. 복원값은 mount 이후 다른 dependency 변화 없이
+ * 도착하므로, `isSettled` 전이만 보면 재시작 후 저장 크기를 놓친다. drag 중에는 dependency가
+ * 자주 바뀌지만 위 비교로 즉시 early return한다.
+ *
  * @returns `PanelGroup.onLayoutChanged`에서 호출할 실제 비율 기록 함수.
+ *   `onLayoutChanged` callback이 매 layout 변화마다 재생성되지 않도록 참조가 안정적이어야 한다.
  */
 export function useRestoredPanelSize({
   panelId,

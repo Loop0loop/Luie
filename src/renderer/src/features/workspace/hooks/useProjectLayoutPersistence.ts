@@ -7,15 +7,22 @@ import {
 } from "@renderer/shared/constants/layoutSizing";
 import { normalizeSidebarWidthsWithMigrations } from "@renderer/shared/constants/sidebarSizing";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
-import type { ResizablePanelData } from "@renderer/features/workspace/stores/uiStore";
 import {
   sanitizePersistedDocsRightTab,
-  sanitizeWorkspacePanels,
   type ProjectLayoutPatch,
-  type ProjectLayoutState,
   useProjectLayoutStore,
 } from "@renderer/features/workspace/stores/projectLayoutStore";
 import { buildLegacyUiProjectLayoutPatch } from "@renderer/features/workspace/stores/projectLayout/legacyUiMigration";
+import {
+  areNumberRecordsEqual,
+  areResearchPanelSizeEqual,
+  areResearchPanelSizesEqual,
+  areScrivenerSectionsEqual,
+  areWorkspacePanelsEqual,
+  buildResearchPanelSize,
+  buildResearchPanelSizes,
+  serializeWorkspacePanels,
+} from "./useProjectLayoutPersistence.snapshot";
 
 let layoutRestoringDepth = 0;
 
@@ -107,106 +114,6 @@ export function useProjectLayoutPersistence(
     uiMode === "editor" ||
     uiMode === "scrivener" ||
     uiMode === "canvas";
-
-  const areScrivenerSectionsEqual = (
-    left: ProjectLayoutState["scrivener"]["sections"],
-    right: ProjectLayoutState["scrivener"]["sections"],
-  ): boolean =>
-    left.manuscript === right.manuscript &&
-    left.characters === right.characters &&
-    left.events === right.events &&
-    left.factions === right.factions &&
-    left.world === right.world &&
-    left.scrap === right.scrap &&
-    left.snapshots === right.snapshots &&
-    left.analysis === right.analysis &&
-    left.trash === right.trash;
-
-  const areNumberRecordsEqual = (
-    left: Record<string, number>,
-    right: Record<string, number>,
-  ): boolean => {
-    const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
-    for (const key of keys) {
-      if (Math.abs((left[key] ?? 0) - (right[key] ?? 0)) >= 0.1) {
-        return false;
-      }
-    }
-    return true;
-  };
-
-  const serializeWorkspacePanels = (
-    inputPanels: ResizablePanelData[],
-  ): ResizablePanelData[] =>
-    sanitizeWorkspacePanels(
-      inputPanels.map((panel) => ({
-        id: panel.id,
-        content:
-          panel.content.type === "research"
-            ? {
-                type: "research",
-                id: panel.content.id,
-                tab: panel.content.tab,
-              }
-            : panel.content.type === "editor"
-              ? { type: "editor", id: panel.content.id }
-              : panel.content.type === "export"
-                ? { type: "export" }
-                : { type: panel.content.type },
-        size: panel.size,
-      })),
-    );
-
-  const buildResearchPanelSizes = (
-    saved: ProjectLayoutState["workspace"]["byLayout"]["default"]["researchPanelSizes"],
-    inputPanels: ResizablePanelData[],
-  ): ProjectLayoutState["workspace"]["byLayout"]["default"]["researchPanelSizes"] => {
-    const next = { ...saved };
-    for (const panel of inputPanels) {
-      if (panel.content.type !== "research" || !panel.content.tab) continue;
-      if (typeof panel.size !== "number" || !Number.isFinite(panel.size)) {
-        continue;
-      }
-      next[panel.content.tab] = panel.size;
-    }
-    return next;
-  };
-
-  const areWorkspacePanelsEqual = (
-    left: ResizablePanelData[],
-    right: ResizablePanelData[],
-  ): boolean => {
-    if (left.length !== right.length) return false;
-    return left.every((leftPanel, index) => {
-      const rightPanel = right[index];
-      return (
-        rightPanel !== undefined &&
-        leftPanel.id === rightPanel.id &&
-        leftPanel.content.type === rightPanel.content.type &&
-        leftPanel.content.id === rightPanel.content.id &&
-        leftPanel.content.tab === rightPanel.content.tab &&
-        Math.abs(leftPanel.size - rightPanel.size) < 0.1
-      );
-    });
-  };
-
-  const areResearchPanelSizesEqual = (
-    left: ProjectLayoutState["workspace"]["byLayout"]["default"]["researchPanelSizes"],
-    right: ProjectLayoutState["workspace"]["byLayout"]["default"]["researchPanelSizes"],
-  ): boolean => {
-    const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
-    for (const key of keys) {
-      if (
-        Math.abs(
-          (left[key as keyof typeof left] ?? 0) -
-            (right[key as keyof typeof right] ?? 0),
-        ) >= 0.1
-      ) {
-        return false;
-      }
-    }
-    return true;
-  };
 
   useLayoutEffect(() => {
     if (
@@ -374,17 +281,26 @@ export function useProjectLayoutPersistence(
     const savedWorkspace =
       uiMode === "default" ? saved.workspace.byLayout.default : saved.workspace;
     const workspacePanels = serializeWorkspacePanels(panels);
-    const researchPanelSizes = buildResearchPanelSizes(
-      savedWorkspace.researchPanelSizes,
-      workspacePanels,
-    );
+    const isDefaultLayout = uiMode === "default";
+    const researchPanelSize = isDefaultLayout
+      ? buildResearchPanelSize(
+          saved.workspace.byLayout.default.researchPanelSize,
+          workspacePanels,
+        )
+      : undefined;
+    const researchPanelSizes = isDefaultLayout
+      ? savedWorkspace.researchPanelSizes
+      : buildResearchPanelSizes(
+          savedWorkspace.researchPanelSizes,
+          workspacePanels,
+        );
     const workspacePatch: NonNullable<ProjectLayoutPatch["workspace"]> =
-      uiMode === "default"
+      isDefaultLayout
         ? {
             byLayout: {
               default: {
                 panels: workspacePanels,
-                researchPanelSizes,
+                researchPanelSize,
               },
             },
           }
@@ -407,10 +323,15 @@ export function useProjectLayoutPersistence(
         normalizedLayoutSurfaceRatios,
       ) ||
       !areWorkspacePanelsEqual(savedWorkspace.panels, workspacePanels) ||
-      !areResearchPanelSizesEqual(
-        savedWorkspace.researchPanelSizes,
-        researchPanelSizes,
-      );
+      (isDefaultLayout
+        ? !areResearchPanelSizeEqual(
+            saved.workspace.byLayout.default.researchPanelSize,
+            researchPanelSize,
+          )
+        : !areResearchPanelSizesEqual(
+            savedWorkspace.researchPanelSizes,
+            researchPanelSizes,
+          ));
 
     if (uiMode === "default") {
       if (
