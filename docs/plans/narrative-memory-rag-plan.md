@@ -2,13 +2,15 @@
 
 > 상태: **실행 중**  
 > 기준일: 2026-08-27  
-> 아키텍처 기준: [narrative-memory-rag-ssot.md](../architecture/narrative-memory-rag-ssot.md)
+> 아키텍처 기준: [narrative-memory-rag-ssot.md](../architecture/narrative-memory-rag-ssot.md)  
+> 평가 기준: [narrative-rag-benchmark-ssot.md](../architecture/narrative-rag-benchmark-ssot.md)  
+> 쉬운 실행 가이드: [narrative-rag-benchmark-workflow.md](../guides/narrative-rag-benchmark-workflow.md)
 
 ## 목표
 
-한 작품 100화 이상, 회차당 약 5,000자, 인물 50명 이상, 복잡한 연애·혈연·적대·동맹 관계, 과거·현재·미래·회상·예고·IF/회귀 세계선을 한·영·일 모든 장르에서 다루는 local-first memory/RAG를 만든다.
+한 작품의 긴 서사에서 인물·사실·관계·시간·인과·지식·복선·충돌·세계선을 Luie가 얼마나 정확히 회수하고 근거 있게 추론하는지 측정 가능한 local-first memory/RAG를 만든다.
 
-완료의 의미는 “임베딩이 된다”가 아니다. 특정 집필 시점과 세계선 안에서 정확한 원문 evidence를 찾아 관계와 상태를 설명하고, 미래/타 세계선 정보를 누출하지 않으며, 파생 데이터를 언제든 재구축할 수 있어야 한다.
+완료의 의미는 “임베딩이 된다”거나 “120화 원고를 생성했다”가 아니다. Retrieval benchmark는 evidence 후보 회수 성능을, RAG reasoning benchmark는 oracle/end-to-end 추론 성능을 별도로 보고해야 한다. 데이터 규모는 S(20화 이하) → M → ML → L → XL 순으로 앞 단계 통과 후에만 확장한다. 세부 기준은 [Narrative RAG Benchmark SSOT](../architecture/narrative-rag-benchmark-ssot.md)를 따른다.
 
 ## 현재 상태
 
@@ -81,25 +83,31 @@
 - worker 재시작 후 중복 row 없이 재개된다.
 - source hash 변경 시 관련 projection만 stale/rebuild 된다.
 
-### P0-4. 100화 acceptance corpus를 만든다
+### P0-4. Narrative benchmark 계약과 S 단계 corpus를 만든다
 
-CC BY-SA 현대 웹 연작 5편은 실제 문체와 연속 사건 smoke test에는 적합하지만 100화·대규모 인물·IF/회귀 세계선을 충분히 포함하지 않는다. 따라서 제품 합격 시험은 직접 작성한 synthetic novel을 정본으로 둔다.
+신규 원고를 생성하기 전에 [Narrative RAG Benchmark SSOT](../architecture/narrative-rag-benchmark-ssot.md)의 평가 계약과 schema를 구현한다. 기존 `luie-korean-narrative-gold-120-v1`은 정식 acceptance가 아니라 legacy stress/noise fixture다.
 
-최소 구성:
+실행 순서:
 
-- 120화 × 회차당 약 5,000자
-- 인물 60명과 alias/동명이인
-- 관계 유형 30개 이상, 삼각관계·가족·사제·적대·비밀동맹 포함
-- 현재, 회상, 예고, 시간 도약, 회귀 전/후, IF 세계선 3개
-- 사건 인과, 비밀 인지 주체, 관계 변화마다 exact evidence와 정답 시점 기록
-- 판타지/현대/로맨스/미스터리/SF 요소를 섞고 장르별 router를 만들지 않음
+1. Retrieval과 RAG reasoning case/schema/scorer를 분리한다.
+2. 10개 narrative taxonomy와 전역 future/worldline guard를 타입으로 고정한다.
+3. event, causal edge, relationship transition, character knowledge, foreshadowing schema를 작성한다.
+4. `GOOD/BAD/AMBIGUOUS/NOISE` 데이터 자격과 human review 기록 형식을 만든다.
+5. 1작품·20화 이하·10~15명인 S 단계 blueprint를 먼저 검수한다.
+6. 구조 → chapter plan → manuscript 순서로 생성하고 구조 라벨을 원문에 직접 노출하지 않는다.
+7. dense-only/lexical/hybrid/full retrieval, oracle reasoning, end-to-end RAG를 각각 실행한다.
+8. S 단계 통과 후에만 다음 장르 또는 M 단계로 확장한다.
 
 합격 기준:
 
-- 100개 이상 gold query에서 evidence Recall@10 ≥ 90%.
-- 인물/관계/상태 답변 exact-match 또는 judge pass ≥ 85%.
-- 미래 및 타 세계선 누출 0건.
-- 장문 원문을 요구하지 않은 답변의 비근거 원문 재현 0건.
+- 모든 source/evidence offset/hash와 graph 참조가 유효하다.
+- scored case는 사람 검수된 `GOOD`만 포함한다.
+- Retrieval과 reasoning 결과가 별도 보고서로 생성된다.
+- 미래 회차 및 금지 세계선 누출은 0건이다.
+- taxonomy별 실패 원인이 기록된다.
+- 정확도 임계값은 S 실측과 사람 검수 전에는 provisional 상태를 유지한다.
+
+규모 단계는 S(≤20화) → M(≤40화) → ML(≤60화) → L(≤100화) → XL(≥120화)다. 로맨스·판타지·현대물·추리·회귀·무협·SF·스릴러는 같은 scorer를 사용하며, 각 장르가 S 단계를 통과한 뒤에만 해당 장르를 확대한다.
 
 ### P1-1. `continuity/worldline`을 정식 데이터 축으로 추가한다
 

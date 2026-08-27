@@ -1,0 +1,228 @@
+{
+  "corpusId": "luie-korean-narrative-gold-120-v1",
+  "validatedAt": "2026-08-27T14:25:10.320Z",
+  "status": "pass",
+  "summary": {
+    "total": 43,
+    "passed": 43,
+    "failed": 0,
+    "warnings": 0
+  },
+  "checks": [
+    {
+      "name": "root_exists",
+      "pass": true,
+      "detail": "Root directory: /Users/user/Luie/novel/narrative_memory_gold_120"
+    },
+    {
+      "name": "manuscript_dir_exists",
+      "pass": true,
+      "detail": "/Users/user/Luie/novel/narrative_memory_gold_120/manuscript"
+    },
+    {
+      "name": "structure_dir_exists",
+      "pass": true,
+      "detail": "/Users/user/Luie/novel/narrative_memory_gold_120/structure"
+    },
+    {
+      "name": "gold_dir_exists",
+      "pass": true,
+      "detail": "/Users/user/Luie/novel/narrative_memory_gold_120/gold"
+    },
+    {
+      "name": "manifest_exists",
+      "pass": true,
+      "detail": "corpus_manifest.json"
+    },
+    {
+      "name": "rights_exists",
+      "pass": true,
+      "detail": "rights.json"
+    },
+    {
+      "name": "readme_exists",
+      "pass": true,
+      "detail": "README.md"
+    },
+    {
+      "name": "manifest_human_review_status",
+      "pass": true,
+      "detail": "Expected 'unreviewed', got 'unreviewed'"
+    },
+    {
+      "name": "manifest_cannot_finalize_thresholds",
+      "pass": true,
+      "detail": "Expected false, got false"
+    },
+    {
+      "name": "manifest_cannot_replace_writer_beta",
+      "pass": true,
+      "detail": "Expected false, got false"
+    },
+    {
+      "name": "manifest_is_legacy_fixture",
+      "pass": true,
+      "detail": "Expected legacy_stress_noise_fixture, got datasetKind=legacy_stress_noise_fixture, fixtureRole=legacy_stress_noise_fixture"
+    },
+    {
+      "name": "manifest_not_benchmark_eligible",
+      "pass": true,
+      "detail": "Expected false, got false"
+    },
+    {
+      "name": "manifest_noise_quality",
+      "pass": true,
+      "detail": "Expected NOISE, got NOISE"
+    },
+    {
+      "name": "rights_no_external_sources",
+      "pass": true,
+      "detail": "externalSourcesUsed should be false"
+    },
+    {
+      "name": "rights_no_parallel_fiction",
+      "pass": true,
+      "detail": "parallelFictionUsed should be false"
+    },
+    {
+      "name": "rights_no_commercial_novel",
+      "pass": true,
+      "detail": "commercialNovelUsed should be false"
+    },
+    {
+      "name": "chapter_count",
+      "pass": true,
+      "detail": "Expected 120 chapters, found 120"
+    },
+    {
+      "name": "chapter_sequential",
+      "pass": true,
+      "detail": "All sequential"
+    },
+    {
+      "name": "chapter_char_counts",
+      "pass": true,
+      "detail": "All chapters in 4500~6500 range"
+    },
+    {
+      "name": "characters_count",
+      "pass": true,
+      "detail": "Expected 60, got 60"
+    },
+    {
+      "name": "continuities_count",
+      "pass": true,
+      "detail": "Expected 3, got 3"
+    },
+    {
+      "name": "relation_types_count",
+      "pass": true,
+      "detail": "Expected >= 30, got 35"
+    },
+    {
+      "name": "prose_has_no_particle_markers",
+      "pass": true,
+      "detail": "No unresolved Korean particle markers"
+    },
+    {
+      "name": "fact_semantic_coherence",
+      "pass": true,
+      "detail": "All factType/predicate pairs satisfy the contract"
+    },
+    {
+      "name": "fact_no_self_reference",
+      "pass": true,
+      "detail": "No invalid self-referential facts"
+    },
+    {
+      "name": "death_reports_remain_unconfirmed",
+      "pass": true,
+      "detail": "Generated death reports remain explicitly unconfirmed"
+    },
+    {
+      "name": "continuity_chapter_alignment",
+      "pass": true,
+      "detail": "All facts and relations stay inside their continuity ranges"
+    },
+    {
+      "name": "fact_statement_in_canonical_prose",
+      "pass": true,
+      "detail": "Every structured fact has an exact statement in canonical prose"
+    },
+    {
+      "name": "chapter_hash_match",
+      "pass": true,
+      "detail": "All chapter hashes match"
+    },
+    {
+      "name": "scene_offset_hash",
+      "pass": true,
+      "detail": "All scene offsets and hashes match"
+    },
+    {
+      "name": "query_count",
+      "pass": true,
+      "detail": "Expected >= 120, got 150"
+    },
+    {
+      "name": "taxonomy_coverage",
+      "pass": true,
+      "detail": "All taxonomy types have >= 10 queries"
+    },
+    {
+      "name": "query_no_duplicate_questions",
+      "pass": true,
+      "detail": "All gold question texts are unique"
+    },
+    {
+      "name": "query_difficulty_coverage",
+      "pass": true,
+      "detail": "Found difficulty levels: easy, hard, medium"
+    },
+    {
+      "name": "query_expected_facts_exist",
+      "pass": true,
+      "detail": "All expected fact references exist"
+    },
+    {
+      "name": "evidence_quote_offset",
+      "pass": true,
+      "detail": "All evidence quotes match offsets"
+    },
+    {
+      "name": "evidence_matches_expected_fact",
+      "pass": true,
+      "detail": "Every evidence quote exactly supports and is linked from its expected fact"
+    },
+    {
+      "name": "evidence_chapter_hash",
+      "pass": true,
+      "detail": "All evidence chapter hashes match"
+    },
+    {
+      "name": "evidence_within_allowed_chapter",
+      "pass": true,
+      "detail": "All evidence within allowed chapter range"
+    },
+    {
+      "name": "evidence_continuity_scope",
+      "pass": true,
+      "detail": "No forbidden continuity violations"
+    },
+    {
+      "name": "future_leakage_guard_exists",
+      "pass": true,
+      "detail": "Found 15 future leakage guard queries"
+    },
+    {
+      "name": "no_external_sources_in_generator",
+      "pass": true,
+      "detail": "No external source references found in generator"
+    },
+    {
+      "name": "corpus_fingerprint_computed",
+      "pass": true,
+      "detail": "Corpus fingerprint: 358fd19b2df4d08b..."
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{"characterId":"char-001","name":"한세연","aliases":["한세연","기록감응사 한세연","세연","기록감응사"],"role":"기록감응사","organization":"잔향연구소","isCore":true,"introducedChapter":1}
+{"characterId":"char-002","name":"윤해준","aliases":["윤해준","수석연구원 윤해준","해준","수석"],"role":"수석연구원","organization":"백야관측소","isCore":true,"introducedChapter":1}
+{"characterId":"char-003","name":"권하린","aliases":["권하린","잔향분석관 권하린","전 잔향분석관 권하린","동부경비대 소속 권하린","권하○"],"role":"잔향분석관","organization":"중앙기록관","isCore":true,"introducedChapter":12}
+{"characterId":"char-004","name":"문서윤","aliases":["문서윤","관측소장 문서윤","전 관측소장 문서윤","서부의료원 소속 문서윤","문서○"],"role":"관측소장","organization":"관측소비밀실험팀","isCore":true,"introducedChapter":15}
+{"characterId":"char-005","name":"문윤서","aliases":["문윤서","경비대장 문윤서","문윤○"],"role":"경비대장","organization":"백야관측소","isCore":true,"introducedChapter":11}
+{"characterId":"char-006","name":"곽유진","aliases":["곽유진","정보부원 곽유진","곽유○"],"role":"정보부원","organization":"북부정비소","isCore":true,"introducedChapter":11}
+{"characterId":"char-007","name":"박세연","aliases":["박세연","의료관 박세연","박세○"],"role":"의료관","organization":"동부경비대","isCore":true,"introducedChapter":2}
+{"characterId":"char-008","name":"문나윤","aliases":["문나윤","구조대원 문나윤","문나○"],"role":"구조대원","organization":"서부의료원","isCore":true,"introducedChapter":2}
+{"characterId":"char-009","name":"장태민","aliases":["장태민","기술장교 장태민","장태○"],"role":"기술장교","organization":"남부통신국","isCore":true,"introducedChapter":16}
+{"characterId":"char-010","name":"곽누리","aliases":["곽누리","통신관 곽누리","곽누○"],"role":"통신관","organization":"잔향수집부","isCore":true,"introducedChapter":14}
+{"characterId":"char-011","name":"문지환","aliases":["문지환","시민대표 문지환","문지○"],"role":"시민대표","organization":"명월시청","isCore":true,"introducedChapter":4}
+{"characterId":"char-012","name":"조현우","aliases":["조현우","상인 조현우","조현○"],"role":"상인","organization":"백야관측소","isCore":true,"introducedChapter":7}
+{"characterId":"char-013","name":"김민하","aliases":["김민하","김민○"],"role":"교사","organization":"잔향연구소","isCore":false,"introducedChapter":75}
+{"characterId":"char-014","name":"이다현","aliases":["이다현","이다○"],"role":"학생","organization":"시민자치회","isCore":false,"introducedChapter":5}
+{"characterId":"char-015","name":"문서진","aliases":["문서진","문서○"],"role":"기자","organization":"기억보존회","isCore":false,"introducedChapter":7}
+{"characterId":"char-016","name":"이소희","aliases":["이소희","이소○"],"role":"예술가","organization":"도시재건위원회","isCore":false,"introducedChapter":23}
+{"characterId":"char-017","name":"배재민","aliases":["배재민","배재○"],"role":"경찰관","organization":"중앙기록관","isCore":false,"introducedChapter":21}
+{"characterId":"char-018","name":"배민재","aliases":["배민재","배민○"],"role":"사서","organization":"잔향수집부","isCore":false,"introducedChapter":49}
+{"characterId":"char-019","name":"문민서","aliases":["문민서","문민○"],"role":"건축가","organization":"남부통신국","isCore":false,"introducedChapter":94}
+{"characterId":"char-020","name":"문태현","aliases":["문태현","문태○"],"role":"정비사","organization":"서부의료원","isCore":false,"introducedChapter":71}
+{"characterId":"char-021","name":"성승현","aliases":["성승현","성승○"],"role":"요리사","organization":"동부경비대","isCore":false,"introducedChapter":9}
+{"characterId":"char-022","name":"김예은","aliases":["김예은","김예○"],"role":"운전사","organization":"기억보존회","isCore":false,"introducedChapter":99}
+{"characterId":"char-023","name":"류예린","aliases":["류예린","류예○"],"role":"음악가","organization":"명월시청","isCore":false,"introducedChapter":39}
+{"characterId":"char-024","name":"노해준","aliases":["노해준","노해○"],"role":"철학자","organization":"백야관측소","isCore":false,"introducedChapter":2}
+{"characterId":"char-025","name":"배서현","aliases":["배서현","배서○"],"role":"식물학자","organization":"잔향수집부","isCore":false,"introducedChapter":61}
+{"characterId":"char-026","name":"하하린","aliases":["하하린","하하○"],"role":"기상관측사","organization":"명월시청","isCore":false,"introducedChapter":96}
+{"characterId":"char-027","name":"권한결","aliases":["권한결","권한○"],"role":"고고학자","organization":"잔향수집부","isCore":false,"introducedChapter":79}
+{"characterId":"char-028","name":"차유나","aliases":["차유나","차유○"],"role":"번역가","organization":"북부정비소","isCore":false,"introducedChapter":55}
+{"characterId":"char-029","name":"류태현","aliases":["류태현","류태○"],"role":"심리상담사","organization":"북부정비소","isCore":false,"introducedChapter":72}
+{"characterId":"char-030","name":"정다현","aliases":["정다현","정다○"],"role":"방송인","organization":"백야관측소","isCore":false,"introducedChapter":16}
+{"characterId":"char-031","name":"최채원","aliases":["최채원","최채○"],"role":"기록감응사","organization":"북부정비소","isCore":false,"introducedChapter":94}
+{"characterId":"char-032","name":"노민하","aliases":["노민하","노민○"],"role":"수석연구원","organization":"시민자치회","isCore":false,"introducedChapter":86}
+{"characterId":"char-033","name":"박윤서","aliases":["박윤서","박윤○"],"role":"잔향분석관","organization":"잔향연구소","isCore":false,"introducedChapter":3}
+{"characterId":"char-034","name":"오보겸","aliases":["오보겸","오보○"],"role":"관측소장","organization":"잔향연구소","isCore":false,"introducedChapter":82}
+{"characterId":"char-035","name":"홍하은","aliases":["홍하은","홍하○"],"role":"경비대장","organization":"백야관측소","isCore":false,"introducedChapter":50}
+{"characterId":"char-036","name":"강서현","aliases":["강서현","강서○"],"role":"정보부원","organization":"잔향연구소","isCore":false,"introducedChapter":94}
+{"characterId":"char-037","name":"정세연","aliases":["정세연","정세○"],"role":"의료관","organization":"명월시청","isCore":false,"introducedChapter":86}
+{"characterId":"char-038","name":"오승민","aliases":["오승민","오승○"],"role":"구조대원","organization":"기억보존회","isCore":false,"introducedChapter":39}
+{"characterId":"char-039","name":"류태민","aliases":["류태민","류태○"],"role":"기술장교","organization":"서부의료원","isCore":false,"introducedChapter":33}
+{"characterId":"char-040","name":"노윤서","aliases":["노윤서","노윤○"],"role":"통신관","organization":"동부경비대","isCore":false,"introducedChapter":98}
+{"characterId":"char-041","name":"김서영","aliases":["김서영","김서○"],"role":"시민대표","organization":"관측소비밀실험팀","isCore":false,"introducedChapter":52}
+{"characterId":"char-042","name":"전은채","aliases":["전은채","전은○"],"role":"상인","organization":"잔향연구소","isCore":false,"introducedChapter":34}
+{"characterId":"char-043","name":"강준서","aliases":["강준서","강준○"],"role":"교사","organization":"백야관측소","isCore":false,"introducedChapter":79}
+{"characterId":"char-044","name":"김시현","aliases":["김시현","김시○"],"role":"학생","organization":"북부정비소","isCore":false,"introducedChapter":94}
+{"characterId":"char-045","name":"차누리","aliases":["차누리","차누○"],"role":"기자","organization":"동부경비대","isCore":false,"introducedChapter":52}
+{"characterId":"char-046","name":"박린","aliases":["박린","박린"],"role":"예술가","organization":"북부정비소","isCore":false,"introducedChapter":56}
+{"characterId":"char-047","name":"양이안","aliases":["양이안","양이○"],"role":"경찰관","organization":"중앙기록관","isCore":false,"introducedChapter":55}
+{"characterId":"char-048","name":"하채원","aliases":["하채원","하채○"],"role":"사서","organization":"북부정비소","isCore":false,"introducedChapter":68}
+{"characterId":"char-049","name":"전준서","aliases":["전준서","전준○"],"role":"건축가","organization":"기억보존회","isCore":false,"introducedChapter":54}
+{"characterId":"char-050","name":"김서윤","aliases":["김서윤","김서○"],"role":"정비사","organization":"시민자치회","isCore":false,"introducedChapter":50}
+{"characterId":"char-051","name":"이준서","aliases":["이준서","이준○"],"role":"요리사","organization":"백야관측소","isCore":false,"introducedChapter":17}
+{"characterId":"char-052","name":"김서윤","aliases":["김서윤","김서○"],"role":"운전사","organization":"도시외곽조사단","isCore":false,"introducedChapter":58}
+{"characterId":"char-053","name":"이준서","aliases":["이준서","이준○"],"role":"음악가","organization":"백야관측소","isCore":false,"introducedChapter":68}
+{"characterId":"char-054","name":"임린","aliases":["임린","임린"],"role":"철학자","organization":"백야관측소","isCore":false,"introducedChapter":43}
+{"characterId":"char-055","name":"곽예서","aliases":["곽예서","곽예○"],"role":"식물학자","organization":"동부경비대","isCore":false,"introducedChapter":98}
+{"characterId":"char-056","name":"한하은","aliases":["한하은","한하○"],"role":"기상관측사","organization":"잔향연구소","isCore":false,"introducedChapter":94}
+{"characterId":"char-057","name":"김온","aliases":["김온","김온"],"role":"고고학자","organization":"서부의료원","isCore":false,"introducedChapter":66}
+{"characterId":"char-058","name":"하지원","aliases":["하지원","하지○"],"role":"번역가","organization":"도시외곽조사단","isCore":false,"introducedChapter":57}
+{"characterId":"char-059","name":"전유진","aliases":["전유진","전유○"],"role":"심리상담사","organization":"남부통신국","isCore":false,"introducedChapter":10}
+{"characterId":"char-060","name":"이담","aliases":["이담","이담"],"role":"방송인","organization":"관측소비밀실험팀","isCore":false,"introducedChapter":24}

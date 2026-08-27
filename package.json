@@ -76,6 +76,8 @@
     "check:writing-loop-regression": "node scripts/check-writing-loop-regression.mjs",
     "check:writing-loop-profiles-regression": "node scripts/check-writing-loop-profiles-regression.mjs",
     "check:derived-db-bench": "node scripts/benchmark-derived-db.mjs --assert --json-out tests/.tmp/derived-db-bench.json",
+    "corpus:legacy:generate": "node scripts/generate-korean-narrative-gold-corpus.mjs",
+    "corpus:legacy:validate": "node scripts/validate-korean-narrative-gold-corpus.mjs --verify-regen",
     "memory:calibrate": "tsx scripts/run-memory-production-calibration.ts",
     "memory:rebuild-chunks": "tsx scripts/rebuild-memory-chunks.ts",
     "memory:process-entities": "tsx scripts/process-memory-entities.ts",

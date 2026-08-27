@@ -2,7 +2,6 @@ import {
   type CSSProperties,
   type ReactNode,
   useCallback,
-  useState,
   useEffect,
   useRef,
 } from "react";
@@ -37,6 +36,7 @@ import {
   useLayoutPersist,
 } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
+import { useRestoredPanelSize } from "@renderer/features/workspace/hooks/useRestoredPanelSize";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
 import {
   shouldCloseMainLayoutPanelOnResize,
@@ -158,12 +158,18 @@ export default function MainLayout({
     layoutSurfaceRatios[contextSurface] ||
     getLayoutSurfaceDefaultRatio(contextSurface);
 
-  const [sidebarDefaultSize, setSidebarDefaultSize] = useState(() =>
-    toPanelPercentSize(sidebarRatio),
-  );
-  const [contextDefaultSize, setContextDefaultSize] = useState(() =>
-    toPanelPercentSize(contextRatio),
-  );
+  // NOTE: 저장 ratio를 state로 스냅샷하면 mount 이후 도착하는 project layout restore가
+  // 반영되지 않아 앱 재시작 후 기본 크기로 서빙된다. 항상 저장 ratio에서 파생한다.
+  const safeSidebarRatio =
+    sidebarRatio < 5
+      ? getLayoutSurfaceDefaultRatio(sidebarSurface)
+      : sidebarRatio;
+  const safeContextRatio =
+    contextRatio < 5
+      ? getLayoutSurfaceDefaultRatio(contextSurface)
+      : contextRatio;
+  const sidebarDefaultSize = toPanelPercentSize(safeSidebarRatio);
+  const contextDefaultSize = toPanelPercentSize(safeContextRatio);
   const {
     isClosing: isSidebarClosing,
     isOpening: isSidebarOpening,
@@ -241,6 +247,21 @@ export default function MainLayout({
       : "";
   const layoutGapSurfaceClass = contentSurfaceClass;
 
+  const recordSidebarLiveRatio = useRestoredPanelSize({
+    panelId: "sidebar-panel",
+    panelIndex: 0,
+    panelRef: sidebarPanelRef,
+    ratio: safeSidebarRatio,
+    isSettled: shouldRenderSidebar && !isSidebarOpening && !isSidebarClosing,
+  });
+  const recordContextLiveRatio = useRestoredPanelSize({
+    panelId: "context-panel",
+    panelIndex: 2,
+    panelRef: contextPanelRef,
+    ratio: safeContextRatio,
+    isSettled: shouldRenderContext && !isContextOpening && !isContextClosing,
+  });
+
   const closeCollapsedRegionAfterMainLayoutChanged = useCallback(
     (layout: Layout, activeSurface: MainLayoutResizeSurface | null) => {
       if (
@@ -307,6 +328,8 @@ export default function MainLayout({
   const onMainLayoutChanged = useCallback(
     (layout: Layout) => {
       const activeSurface = activeResizeSurfaceRef.current;
+      recordSidebarLiveRatio(layout);
+      recordContextLiveRatio(layout);
       persistSidebarLayoutChanged(layout);
       closeCollapsedRegionAfterMainLayoutChanged(layout, activeSurface);
       if (!shouldPersistMainLayoutContext(activeSurface)) {
@@ -329,29 +352,11 @@ export default function MainLayout({
       contextSurface,
       persistContextLayoutChanged,
       persistSidebarLayoutChanged,
+      recordContextLiveRatio,
+      recordSidebarLiveRatio,
       scheduleResizeSurfaceClear,
     ],
   );
-
-  useEffect(() => {
-    if (shouldRenderSidebar) return;
-    const safeRatio =
-      sidebarRatio < 5
-        ? getLayoutSurfaceDefaultRatio(sidebarSurface)
-        : sidebarRatio;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- 숨긴 panel의 다음 mount 기본값을 저장 ratio와 동기화한다.
-    setSidebarDefaultSize(toPanelPercentSize(safeRatio));
-  }, [shouldRenderSidebar, sidebarRatio, sidebarSurface]);
-
-  useEffect(() => {
-    if (shouldRenderContext) return;
-    const safeRatio =
-      contextRatio < 5
-        ? getLayoutSurfaceDefaultRatio(contextSurface)
-        : contextRatio;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- 숨긴 panel의 다음 mount 기본값을 저장 ratio와 동기화한다.
-    setContextDefaultSize(toPanelPercentSize(safeRatio));
-  }, [shouldRenderContext, contextRatio, contextSurface]);
 
   return (
     <div className="relative flex flex-col h-screen bg-app text-fg">

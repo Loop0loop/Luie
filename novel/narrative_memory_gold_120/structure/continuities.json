@@ -1,0 +1,42 @@
+[
+  {
+    "continuityId": "prime",
+    "label": "최초 진행 세계선",
+    "parentContinuityId": null,
+    "divergenceChapter": null,
+    "chapterRanges": [
+      [
+        1,
+        60
+      ]
+    ]
+  },
+  {
+    "continuityId": "return",
+    "label": "회귀 세계선",
+    "parentContinuityId": "prime",
+    "divergenceChapter": 18,
+    "chapterRanges": [
+      [
+        61,
+        90
+      ],
+      [
+        106,
+        120
+      ]
+    ]
+  },
+  {
+    "continuityId": "if",
+    "label": "IF 관측 세계선",
+    "parentContinuityId": "prime",
+    "divergenceChapter": 40,
+    "chapterRanges": [
+      [
+        91,
+        105
+      ]
+    ]
+  }
+]

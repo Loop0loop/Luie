@@ -1,0 +1,37 @@
+{
+  "corpusId": "luie-korean-narrative-gold-120-v1",
+  "title": "잔향도시의 세 번째 기록",
+  "seed": "luie-korean-narrative-gold-120-v1",
+  "language": "ko-KR",
+  "datasetKind": "legacy_stress_noise_fixture",
+  "fixtureRole": "legacy_stress_noise_fixture",
+  "benchmarkEligibility": false,
+  "generatorVersion": "1.1.0",
+  "generatedAt": "2026-08-27T00:00:00+09:00",
+  "totalChapters": 120,
+  "totalCharacters": 60,
+  "totalContinuities": 3,
+  "totalRelationTypes": 35,
+  "totalQueries": 150,
+  "taxonomyCoverage": {
+    "fact_recall": 15,
+    "relationship_state": 15,
+    "knowledge_state": 15,
+    "event_causality": 15,
+    "temporal_order": 15,
+    "worldline_isolation": 15,
+    "future_leakage_guard": 15,
+    "alias_disambiguation": 15,
+    "forecast_status": 15,
+    "draft_canon_conflict": 15
+  },
+  "chapterCharCountRange": {
+    "min": 4500,
+    "max": 6500
+  },
+  "humanReviewStatus": "unreviewed",
+  "canFinalizeProductThresholds": false,
+  "canReplaceRealWriterBeta": false,
+  "quality": "noise-heavy",
+  "dataQualityLabel": "NOISE"
+}

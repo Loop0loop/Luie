@@ -4,12 +4,27 @@ import {
   UI_STORE_SCHEMA_VERSION,
 } from "../constants/storage/persistence";
 
+// NOTE: PERSISTABLE_RESEARCH_TABS / PERSISTABLE_DOCS_TABS가 허용하는 값과 반드시 일치해야 한다.
+// 좁으면 strictObject 검증이 실패해 project layout 전체 payload가 폐기된다.
+const persistedResearchTabs = [
+  "character",
+  "world",
+  "event",
+  "faction",
+  "scrap",
+  "analysis",
+  "plotboard",
+  "untitled",
+] as const;
+
 const uiRightPanelTabSchema = z.enum([
   "character",
   "event",
   "faction",
   "world",
   "scrap",
+  "plotboard",
+  "untitled",
   "analysis",
   "snapshot",
   "trash",
@@ -92,18 +107,13 @@ const workspacePanelStateSchema = z.strictObject({
       content: z.strictObject({
         type: z.enum(["research", "editor", "export"]),
         id: z.string().optional(),
-        tab: z
-          .enum(["character", "world", "event", "faction", "scrap", "analysis"])
-          .optional(),
+        tab: z.enum(persistedResearchTabs).optional(),
       }),
       size: z.number().finite(),
     }),
   ),
   researchPanelSizes: z
-    .partialRecord(
-      z.enum(["character", "world", "event", "faction", "scrap", "analysis"]),
-      z.number().finite(),
-    )
+    .partialRecord(z.enum(persistedResearchTabs), z.number().finite())
     .optional(),
 });
 

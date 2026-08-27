@@ -108,5 +108,6 @@ study
 
 
 # Local comparison repository and generated knowledge graph
-webnovel-writer/
+webnovel-writer
 .understand-anything/
+ParallelFiction-Ja_En-100k

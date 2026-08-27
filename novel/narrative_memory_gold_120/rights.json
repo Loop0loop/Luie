@@ -1,0 +1,16 @@
+{
+  "corpusId": "luie-korean-narrative-gold-120-v1",
+  "ownership": "Luie Project",
+  "generatedBy": "scripts/generate-korean-narrative-gold-corpus.mjs",
+  "seed": "luie-korean-narrative-gold-120-v1",
+  "externalSourcesUsed": false,
+  "parallelFictionUsed": false,
+  "commercialNovelUsed": false,
+  "restrictions": [
+    "외부 웹소설 본문, 번역문, 인물명, 고유 설정, 장면 배열을 입력이나 템플릿으로 사용하지 않음",
+    "장르 관습과 일반적인 한국어 문법만 사용",
+    "사람 검수 전 제품 정확도 임계값 확정에 사용하지 않음"
+  ],
+  "humanReviewStatus": "unreviewed",
+  "canFinalizeProductThresholds": false
+}

@@ -4,9 +4,10 @@
 > 기준일: 2026-08-27  
 > Luie 기준 커밋: `001b21fa` + 현재 working tree  
 > 비교 대상: `webnovel-writer` `2041aba`  
-> 실행 계획: [narrative-memory-rag-plan.md](../plans/narrative-memory-rag-plan.md)
+> 실행 계획: [narrative-memory-rag-plan.md](../plans/narrative-memory-rag-plan.md)  
+> 평가 데이터 기준: [narrative-rag-benchmark-ssot.md](./narrative-rag-benchmark-ssot.md)
 
-이 문서는 Luie의 장편소설 memory/RAG/utility-process 실제 구현, `webnovel-writer`와의 차이, BGE-M3 선택과 실측 결과를 고정한다. 다른 문서와 충돌하면 **현재 코드 → 이 문서 → 실행 계획 → 과거 계획** 순으로 판단한다.
+이 문서는 Luie의 장편소설 memory/RAG/utility-process 실제 구현, `webnovel-writer`와의 차이, BGE-M3 선택과 실측 결과를 고정한다. 평가 목적·taxonomy·narrative schema·규모/장르 gate는 별도 benchmark SSOT를 따른다. 다른 문서와 충돌하면 **현재 코드 → 이 문서(제품 아키텍처) / benchmark SSOT(평가 데이터) → 실행 계획 → 과거 계획** 순으로 판단한다.
 
 ## 제품 요구사항과 불변조건
 
@@ -186,7 +187,7 @@ query
 | 한국어 | 《항밈학과 같은 건 없다》       | [한국어 공식 번역 허브](https://scpko.wikidot.com/antimemetics-division-hub), 대응 5편  | 원저자·역자 표시, CC BY-SA 3.0 |
 | 일본어 | 《反ミーム部門は存在しない》    | [일본어 공식 번역 허브](https://scp-jp.wikidot.com/antimemetics-division-hub), 대응 5편 | 원저자·역자 표시, CC BY-SA 3.0 |
 
-세 판본은 동일한 현대 연작을 서로 다른 언어로 비교할 수 있다는 장점이 있다. 다만 5편 smoke set이므로 100화·60인물 acceptance는 P0-4 synthetic corpus가 담당한다.
+세 판본은 동일한 현대 연작을 서로 다른 언어로 비교할 수 있다는 장점이 있다. 다만 5편 smoke set이므로 장편 narrative acceptance를 대표하지 않는다. 신규 acceptance는 benchmark SSOT의 S(20화 이하)부터 단계적으로 구축한다. 기존 120화 synthetic corpus는 반복·대용량 stress/noise fixture로만 사용한다.
 
 ### 고전 장편 — runtime 호환성 보조
 
@@ -212,7 +213,10 @@ query
 4. raw source/evidence가 정본이며, embedding/summary/graph는 projection이다.
 5. 장편 정확도는 dense-only가 아니라 lexical + dense + graph + temporal + rerank 조합으로 달성한다.
 6. 서버 구독은 선택형 고성능 reranker/embedding tier로 제공할 수 있지만 local-first fallback을 제거하지 않는다.
-7. `webnovel-writer` 코드는 GPL-3.0이므로 복사하지 않는다.
+7. Retrieval benchmark와 RAG reasoning benchmark를 분리하고 reasoning은 oracle/end-to-end를 모두 실행한다.
+8. 신규 synthetic corpus는 S(20화 이하)부터 gate를 통과한 뒤에만 확장한다.
+9. 기존 120화 corpus는 정식 gold가 아니라 legacy stress/noise fixture다.
+10. `webnovel-writer` 코드는 GPL-3.0이므로 복사하지 않는다.
 
 ## 아직 사실로 주장하면 안 되는 것
 

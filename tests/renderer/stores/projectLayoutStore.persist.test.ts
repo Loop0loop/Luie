@@ -370,6 +370,85 @@ describe("projectLayoutStore persist rehydrate", () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
+  it("keeps default layout ratios when plotboard/untitled research panels are persisted", async () => {
+    const { module, warn } = await loadProjectLayoutStore({
+      byProject: {
+        "project-1": {
+          main: {
+            sidebarOpen: true,
+            contextOpen: true,
+          },
+          docs: {
+            sidebarOpen: true,
+            binderBarOpen: true,
+            rightTab: "plotboard",
+          },
+          scrivener: {
+            sidebarOpen: true,
+            inspectorOpen: true,
+            sections: {
+              manuscript: true,
+              characters: true,
+              events: false,
+              factions: false,
+              world: false,
+              scrap: false,
+              snapshots: false,
+              analysis: false,
+              trash: false,
+            },
+          },
+          editor: {
+            rightTab: "untitled",
+            activeChapterId: null,
+            scrollYByChapter: {},
+          },
+          workspace: {
+            panels: [],
+            researchPanelSizes: {},
+            byLayout: {
+              default: {
+                panels: [
+                  {
+                    id: "research-plotboard",
+                    content: {
+                      type: "research",
+                      tab: "plotboard",
+                    },
+                    size: 40,
+                  },
+                ],
+                researchPanelSizes: {
+                  plotboard: 40,
+                  untitled: 38,
+                },
+              },
+            },
+          },
+          sidebarWidths: {},
+          layoutSurfaceRatios: {
+            "default.sidebar": 30,
+            "default.panel": 38,
+          },
+        },
+      },
+    });
+
+    const state = module.useProjectLayoutStore
+      .getState()
+      .getProjectLayout("project-1");
+    // plotboard/untitled가 schema에서 빠지면 payload 전체가 폐기되어 두 ratio가 기본값으로 돌아간다.
+    expect(state.layoutSurfaceRatios["default.sidebar"]).toBe(30);
+    expect(state.layoutSurfaceRatios["default.panel"]).toBe(38);
+    expect(state.docs.rightTab).toBe("plotboard");
+    expect(state.editor.rightTab).toBe("untitled");
+    expect(state.workspace.byLayout.default.researchPanelSizes).toEqual({
+      plotboard: 40,
+      untitled: 38,
+    });
+    expect(warn).not.toHaveBeenCalled();
+  });
+
   it("falls back to defaults when persisted payload comes from a future version", async () => {
     const { module, warn } = await loadProjectLayoutStore(
       {
