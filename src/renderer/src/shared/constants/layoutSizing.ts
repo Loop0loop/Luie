@@ -92,6 +92,29 @@ const NESTED_MANAGER_PANEL_CONFIG: LayoutSurfaceConfig = {
   maxPx: 560,
 };
 
+// NOTE: Google Docs 레이아웃 전용 panel 크기. 사용자가 resize 로 panel 을 닫으려 해도
+// minPx 가 하드 플로어로 작용해 더 줄어들지 않는다(research/AI/버전기록 컨텐츠 가독성+열림 상태 일관성 유지).
+const DOCS_RESEARCH_PANEL_CONFIG: LayoutSurfaceConfig = {
+  role: "panel",
+  defaultRatio: 40,
+  minPx: 420,
+  maxPx: 780,
+};
+
+const DOCS_AI_PANEL_CONFIG: LayoutSurfaceConfig = {
+  role: "panel",
+  defaultRatio: 44,
+  minPx: 480,
+  maxPx: 900,
+};
+
+const DOCS_SNAPSHOT_PANEL_CONFIG: LayoutSurfaceConfig = {
+  role: "panel",
+  defaultRatio: 30,
+  minPx: 380,
+  maxPx: 860,
+};
+
 const DEFAULT_BINDER_CONFIG: LayoutSurfaceConfig = {
   role: "binder",
   defaultRatio: 19,
@@ -113,17 +136,17 @@ export const LAYOUT_SURFACE_CONFIG: Record<
   "default.sidebar": { ...DEFAULT_SIDEBAR_CONFIG },
   "default.panel": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 24 },
   "docs.sidebar": { ...DEFAULT_SIDEBAR_CONFIG, defaultRatio: 17 },
-  "docs.panel.character": { ...NESTED_MANAGER_PANEL_CONFIG },
-  "docs.panel.event": { ...NESTED_MANAGER_PANEL_CONFIG },
-  "docs.panel.faction": { ...NESTED_MANAGER_PANEL_CONFIG },
-  "docs.panel.world": { ...NESTED_MANAGER_PANEL_CONFIG },
-  "docs.panel.scrap": { ...NESTED_MANAGER_PANEL_CONFIG },
-  "docs.panel.plotboard": { ...NESTED_MANAGER_PANEL_CONFIG },
-  "docs.panel.untitled": { ...NESTED_MANAGER_PANEL_CONFIG },
-  "docs.panel.analysis": { ...NESTED_MANAGER_PANEL_CONFIG },
-  "docs.panel.snapshot": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 26 },
+  "docs.panel.character": { ...DOCS_RESEARCH_PANEL_CONFIG },
+  "docs.panel.event": { ...DOCS_RESEARCH_PANEL_CONFIG },
+  "docs.panel.faction": { ...DOCS_RESEARCH_PANEL_CONFIG },
+  "docs.panel.world": { ...DOCS_RESEARCH_PANEL_CONFIG },
+  "docs.panel.scrap": { ...DOCS_RESEARCH_PANEL_CONFIG },
+  "docs.panel.plotboard": { ...DOCS_RESEARCH_PANEL_CONFIG },
+  "docs.panel.untitled": { ...DOCS_RESEARCH_PANEL_CONFIG },
+  "docs.panel.analysis": { ...DOCS_AI_PANEL_CONFIG },
+  "docs.panel.snapshot": { ...DOCS_SNAPSHOT_PANEL_CONFIG },
   "docs.panel.trash": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 26 },
-  "docs.panel.editor": { ...NESTED_MANAGER_PANEL_CONFIG, defaultRatio: 34 },
+  "docs.panel.editor": { ...DOCS_RESEARCH_PANEL_CONFIG, defaultRatio: 34 },
   "docs.panel.export": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 30 },
   "editor.panel.character": {
     ...NESTED_MANAGER_PANEL_CONFIG,

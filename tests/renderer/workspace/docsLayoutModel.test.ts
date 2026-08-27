@@ -58,9 +58,9 @@ describe("docsLayoutModel", () => {
       docsSidebarRatio: 19,
       rightPanelConfig: {
         role: "panel",
-        defaultRatio: 26,
-        minPx: 320,
-        maxPx: 760,
+        defaultRatio: 30,
+        minPx: 380,
+        maxPx: 860,
       },
       rightPanelRatio: 31,
     });

@@ -352,8 +352,6 @@ export function GoogleDocsRightPanel({
         key={renderedTab}
         id={`right-context-panel-${renderedTab}`}
         panelRef={panelRef}
-        collapsible
-        collapsedSize={0}
         data-panel-animated={isOpening || isClosing ? "true" : undefined}
         groupResizeBehavior="preserve-pixel-size"
         defaultSize={toPanelPercentSize(safeRatio)}
