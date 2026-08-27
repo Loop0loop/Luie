@@ -1,8 +1,16 @@
-import React, { Fragment, Suspense } from "react";
-import { Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
+import React, {
+  Fragment,
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { Panel, Separator as PanelResizeHandle, type PanelImperativeHandle } from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
 import { BookOpen, X } from "lucide-react";
-import { Editor } from "@renderer/domains/editor";
+import { Editor, useEditorStore } from "@renderer/domains/editor";
 import { useChapterStore } from "@renderer/domains/manuscript";
 import type { ResizablePanelData } from "@renderer/features/workspace/stores/uiStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
@@ -10,6 +18,8 @@ import type { Chapter } from "@shared/types";
 import { toPercentSize } from "@renderer/shared/constants/sidebarSizing";
 import { EDITOR_DND_MIN_PANEL_WIDTH_PX } from "@renderer/shared/constants/editorLayout";
 import { SPLIT_PANEL_MIN_SIZE_PERCENT } from "@renderer/shared/constants/layoutSizing";
+import { WORKSPACE_PANEL_CLOSE_ANIMATION_MS } from "@renderer/features/workspace/constants/uiDefaults";
+import { suppressLayoutPersistenceFor } from "@renderer/features/workspace/hooks/useLayoutPersist";
 
 const ResearchPanel = React.lazy(() =>
   import("@renderer/domains/world").then((module) => ({
@@ -52,6 +62,83 @@ export function WorkspacePanels({
   const contentRevision = useChapterStore(
     (state) => state.contentRevision,
   );
+  const enableAnimations = useEditorStore((state) => state.enableAnimations);
+  const uiMode = useEditorStore((state) => state.uiMode);
+  // NOTE: close 애니메이션은 default 레이아웃의 분할 패널 전용. docs 등 다른 레이아웃의
+  // 패널 동작을 바꾸지 않도록 게이트한다.
+  const enableCloseAnimation = enableAnimations && uiMode === "default";
+  const closingPanelRef = useRef<PanelImperativeHandle | null>(null);
+  const [closingPanelId, setClosingPanelId] = useState<string | null>(null);
+  const closingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // NOTE: removePanel은 즉시 unmount시키므로, 애니메이션이 켜져 있으면 축소 transition을
+  // 보여준 뒤 실제 제거한다. 0% 커밋이 researchPanelSizes에 저장되지 않게 지속화도 억제한다.
+  const removePanelWithAnimation = useCallback(
+    (panelId: string) => {
+      if (!enableCloseAnimation) {
+        removePanel(panelId);
+        return;
+      }
+      setClosingPanelId(panelId);
+      suppressLayoutPersistenceFor(WORKSPACE_PANEL_CLOSE_ANIMATION_MS + 160);
+      if (closingTimerRef.current !== null) {
+        clearTimeout(closingTimerRef.current);
+      }
+      closingTimerRef.current = setTimeout(() => {
+        closingTimerRef.current = null;
+        setClosingPanelId(null);
+        removePanel(panelId);
+      }, WORKSPACE_PANEL_CLOSE_ANIMATION_MS);
+    },
+    [enableCloseAnimation, removePanel],
+  );
+
+  // NOTE: data-panel-animated와 minSize 완화가 DOM에 커밋된 뒤에 resize해야 flex-grow
+  // 변경이 transition과 만난다. 클릭 핸들러에서 동기로 resize하면 속성 적용 전이라
+  // transition 없이 스냅된다.
+  useLayoutEffect(() => {
+    if (!closingPanelId) return undefined;
+    const frameId = requestAnimationFrame(() => {
+      closingPanelRef.current?.resize("0%");
+    });
+    return () => {
+      cancelAnimationFrame(frameId);
+    };
+  }, [closingPanelId]);
+
+  // NOTE: cmd+W(closeFocusedSurface)로 닫는 분할 패널도 X 닫기와 동일한 close 애니메이션
+  // 경로를 탄다. uiStore는 패널 애니메이션을 모르므로 이벤트로 위임받는다.
+  // panels를 ref로 읽어 패널 목록이 바뀌어도 리스너를 재등록하지 않는다.
+  const panelsRef = useRef(panels);
+  useEffect(() => {
+    panelsRef.current = panels;
+  }, [panels]);
+  useEffect(() => {
+    const handleCloseWorkspacePanel = (event: Event) => {
+      const panelId = (event as CustomEvent<{ panelId?: string }>).detail
+        ?.panelId;
+      if (!panelId || !panelsRef.current.some((panel) => panel.id === panelId)) {
+        return;
+      }
+      removePanelWithAnimation(panelId);
+    };
+    window.addEventListener("luie:close-workspace-panel", handleCloseWorkspacePanel);
+    return () => {
+      window.removeEventListener(
+        "luie:close-workspace-panel",
+        handleCloseWorkspacePanel,
+      );
+    };
+  }, [removePanelWithAnimation]);
+
+  useEffect(
+    () => () => {
+      if (closingTimerRef.current !== null) {
+        clearTimeout(closingTimerRef.current);
+      }
+    },
+    [],
+  );
 
   return (
     <>
@@ -81,14 +168,20 @@ export function WorkspacePanels({
             </PanelResizeHandle>
             <Panel
               id={panel.id}
+              panelRef={closingPanelId === panel.id ? closingPanelRef : undefined}
+              data-panel-animated={
+                closingPanelId === panel.id ? "true" : undefined
+              }
               groupResizeBehavior="preserve-pixel-size"
               defaultSize={toPercentSize(panel.size)}
               minSize={
-                isResearchPanel
-                  ? "470px"
-                  : isEditorPanel
-                    ? `${EDITOR_DND_MIN_PANEL_WIDTH_PX}px`
-                    : SPLIT_PANEL_MIN_SIZE_PERCENT
+                closingPanelId === panel.id
+                  ? "0%"
+                  : isResearchPanel
+                    ? "470px"
+                    : isEditorPanel
+                      ? `${EDITOR_DND_MIN_PANEL_WIDTH_PX}px`
+                      : SPLIT_PANEL_MIN_SIZE_PERCENT
               }
               onMouseDownCapture={() => {
                 setFocusedClosableTarget({ kind: "panel", id: panel.id });
@@ -127,7 +220,7 @@ export function WorkspacePanels({
                     onClick={(e) => {
                       e.stopPropagation();
                       setFocusedClosableTarget({ kind: "panel", id: panel.id });
-                      removePanel(panel.id);
+                      removePanelWithAnimation(panel.id);
                     }}
                     className="ml-auto flex size-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                     aria-label={t("sidebar.toggle.close")}
@@ -145,7 +238,7 @@ export function WorkspacePanels({
                   {isResearchPanel ? (
                     <ResearchPanel
                       activeTab={panel.content.tab || "character"}
-                      onClose={() => removePanel(panel.id)}
+                      onClose={() => removePanelWithAnimation(panel.id)}
                     />
                   ) : snapshot ? (
                     <SnapshotViewer

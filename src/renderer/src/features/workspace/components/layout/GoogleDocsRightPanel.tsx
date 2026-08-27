@@ -301,8 +301,22 @@ export function GoogleDocsRightPanel({
     panelRef,
   });
 
+  const hasRenderedTabRef = useRef(false);
   useLayoutEffect(() => {
-    if (!activeRightTab) return;
+    if (!activeRightTab) {
+      // NOTE: 패널이 완전히 닫혔다. 다음 등장을 다시 첫 렌더로 취급해 open transition이
+      // 살아나게 한다(리셋하지 않으면 재오픈마다 restoring이 transition을 죽인다).
+      hasRenderedTabRef.current = false;
+      return;
+    }
+    // NOTE: 최초 등장이 아니라(탭 전환) persisted ratio로 되돌리는 시점에는 애니메이션을
+    // 끄고 즉시 반영한다. 다만 첫 등장(open transition 중)에 restoring을 켜면 전역 CSS가
+    // transition을 0ms로 강제해 slide-in이 죽는다. 첫 등장은 defaultSize가 이미 저장된
+    // ratio를 쓰므로 restoring이 필요 없다.
+    if (!hasRenderedTabRef.current) {
+      hasRenderedTabRef.current = true;
+      return;
+    }
     const endRestoring = beginLayoutRestoring();
     restoreFrameRef.current = requestAnimationFrame(() => {
       restoreFrameRef.current = requestAnimationFrame(() => {
@@ -319,6 +333,17 @@ export function GoogleDocsRightPanel({
     };
   }, [activeRightTab, safeRatio]);
 
+  // NOTE: close 시 activeRightTab이 null이 되면 부모가 계산하는 rightPanelSize도 null이
+  // 되는데, null 반환으로 즉시 unmount하면 close transition이 죽는다. 마지막 유효 크기로
+  // transition 동안 패널을 유지한다(탭 전환 시엔 새 크기로 즉시 교체된다).
+  // render 중 조건부 setState는 "이전 prop을 기억하는" 공식 패턴으로, effect를 거치면
+  // prop마다 렌더가 두 번 발생한다.
+  const [lastRightPanelSize, setLastRightPanelSize] = useState(rightPanelSize);
+  if (rightPanelSize && rightPanelSize !== lastRightPanelSize) {
+    setLastRightPanelSize(rightPanelSize);
+  }
+  const effectiveRightPanelSize = rightPanelSize ?? lastRightPanelSize;
+
   useEffect(() => {
     if (!activeRightTab || activeRightTab === renderedTab) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 닫기 transition 동안 이전 tab을 유지한 뒤 교체한다.
@@ -331,7 +356,7 @@ export function GoogleDocsRightPanel({
     setRenderedTab(null);
   }, [renderedTab, shouldRenderPanel]);
 
-  if (!shouldRenderPanel || !renderedTab || !rightPanelSize) {
+  if (!shouldRenderPanel || !renderedTab || !effectiveRightPanelSize) {
     return null;
   }
 
@@ -348,6 +373,8 @@ export function GoogleDocsRightPanel({
         <div className="absolute inset-y-0 -left-1 -right-1" />
       </PanelResizeHandle>
 
+      {/* NOTE: open/close transition 중에만 minSize를 완화(0%)해 flex-grow가 0까지
+          보간되게 한다. drag 시에는 minPx 플로어가 유지된다. */}
       <Panel
         key={renderedTab}
         id={`right-context-panel-${renderedTab}`}
@@ -355,8 +382,8 @@ export function GoogleDocsRightPanel({
         data-panel-animated={isOpening || isClosing ? "true" : undefined}
         groupResizeBehavior="preserve-pixel-size"
         defaultSize={toPanelPercentSize(safeRatio)}
-        minSize={rightPanelSize.minSize}
-        maxSize={rightPanelSize.maxSize}
+        minSize={isOpening || isClosing ? "0%" : effectiveRightPanelSize.minSize}
+        maxSize={effectiveRightPanelSize.maxSize}
         onMouseDownCapture={onFocus}
         className={`flex min-w-0 shrink-0 flex-col overflow-hidden ${
           renderedTab === "analysis"

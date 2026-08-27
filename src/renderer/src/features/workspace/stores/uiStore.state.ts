@@ -64,7 +64,7 @@ export const buildStablePanelId = (content: RightPanelContent): string => {
   return `panel-${content.type}`;
 };
 
-export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) => ({
+export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set, get) => ({
   view: DEFAULT_UI_VIEW as UIStore["view"],
   worldTab: "terms",
   panels: [],
@@ -464,27 +464,34 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
       return true;
     }
 
+    const focusedTarget = getFocusedClosableTarget();
+    const currentState = get();
+    const isRightPanelOpen = currentState.regions.rightPanel.open;
+
+    // NOTE: 분할 패널 닫기(cmd+W 포함)는 state에서 직접 제거하지 않고 WorkspacePanels에
+    // 위임한다. X 닫기와 동일한 close 애니메이션 경로를 타야 하기 때문이다.
+    // 우측 패널이 열려 있으면 우측 패널이 우선이므로 패널 제거로 넘어가지 않는다.
+    const targetPanelId =
+      focusedTarget?.kind === "panel" &&
+      currentState.panels.some((panel) => panel.id === focusedTarget.id)
+        ? focusedTarget.id
+        : !isRightPanelOpen && currentState.panels.length > 0
+          ? currentState.panels[currentState.panels.length - 1]?.id
+          : undefined;
+
+    if (targetPanelId) {
+      clearFocusedClosableTarget();
+      window.dispatchEvent(
+        new CustomEvent("luie:close-workspace-panel", {
+          detail: { panelId: targetPanelId },
+        }),
+      );
+      return true;
+    }
+
     let handled = false;
     set((state) => {
-      const normalizePanelSizes = (panels: ResizablePanelData[]): ResizablePanelData[] => {
-        if (panels.length === 0) return [];
-        const sizePerPanel = 100 / panels.length;
-        return panels.map((panel) => ({ ...panel, size: sizePerPanel }));
-      };
       const focusedTarget = getFocusedClosableTarget();
-
-      if (
-        focusedTarget?.kind === "panel" &&
-        state.panels.some((panel) => panel.id === focusedTarget.id)
-      ) {
-        handled = true;
-        const nextPanels = normalizePanelSizes(
-          state.panels.filter((panel) => panel.id !== focusedTarget.id),
-        );
-        return {
-          panels: nextPanels,
-        };
-      }
 
       if (focusedTarget?.kind === "docs-tab" && state.regions.rightPanel.open) {
         handled = true;
@@ -500,14 +507,6 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set) 
         nextRegions.rightPanel.open = false;
         nextRegions.rightPanel.activeTab = null;
         return { regions: nextRegions, ...buildLegacyRegionFields(nextRegions) };
-      }
-
-      if (state.panels.length > 0) {
-        handled = true;
-        const nextPanels = normalizePanelSizes(state.panels.slice(0, -1));
-        return {
-          panels: nextPanels,
-        };
       }
 
       return state;

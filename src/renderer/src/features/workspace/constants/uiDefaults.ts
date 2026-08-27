@@ -11,3 +11,7 @@ export const RESIZABLE_PANE_MAX_RIGHT_WIDTH = 800;
 export const RESIZABLE_PANE_DEFAULT_RIGHT_WIDTH = 400;
 
 export const SIDEBAR_RESIZE_COMMIT_IDLE_MS = 140;
+
+// NOTE: research 분할 패널 close 애니메이션 길이. 표준 레이아웃 transition(200ms)보다
+// 빠르게 들어가야 해서 별도 값으로 둔다.
+export const WORKSPACE_PANEL_CLOSE_ANIMATION_MS = 150;

@@ -171,8 +171,23 @@ export function GoogleDocsLayout({
             <Panel
               id="docs-center-shell"
               minSize={toPanelPercentSize(10)}
-              className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-[24px] bg-app"
+              className="relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-[24px] bg-app"
             >
+              {/* NOTE: 열기 버튼은 사이드바 닫기 버튼(패널 좌측 상단 px-3, mt-10+h-16 중앙 =
+                  12px, 52px)과 같은 자리에 둬야 토글 시 버튼이 점프하지 않는다. 이 Panel은
+                  헤더보다 상위 레벨이므로 헤더 높이(88px)만큼의 오프셋 없이 배치할 수 있다. */}
+              {!isSidebarOpen && (
+                <div className="pointer-events-auto absolute left-3 top-[52px] z-50 animate-in fade-in duration-200">
+                  <button
+                    onClick={() => setDocsSidebarOpen(true)}
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover"
+                    title={t("sidebar.toggle.open")}
+                  >
+                    <Menu className="h-5 w-5" />
+                  </button>
+                </div>
+              )}
+
               <GoogleDocsHeader
                 activeChapterId={activeChapterId}
                 activeChapterTitle={activeChapterTitle}
@@ -184,18 +199,6 @@ export function GoogleDocsLayout({
               />
 
               <div className="relative flex min-h-0 flex-1 overflow-hidden">
-                {!isSidebarOpen && (
-                  <div className="pointer-events-auto absolute left-4 top-4 z-50 animate-in fade-in duration-200">
-                    <button
-                      onClick={() => setDocsSidebarOpen(true)}
-                      className="flex h-10 w-10 items-center justify-center rounded-control border border-border bg-app text-muted shadow-sm transition-colors duration-150 hover:bg-surface-hover"
-                      title={t("sidebar.toggle.open")}
-                    >
-                      <Menu className="h-5 w-5" />
-                    </button>
-                  </div>
-                )}
-
                 <GoogleDocsEditorColumn
                   additionalPanelIds={additionalPanelIds}
                   additionalPanels={additionalPanels}

@@ -139,6 +139,10 @@ export default function MainLayout({
       additionalPanelIds.forEach((panelId, panelIndex) => {
         const rawSize = getPanelLayoutValue(layout, panelId, panelIndex + 1);
         if (typeof rawSize !== "number" || !Number.isFinite(rawSize)) return;
+        // NOTE: 패널 close 애니메이션이 0%로 축소하는 순간의 layout 커밋을 저장하면
+        // researchPanelSizes에 0이 남아 재오픈 시 크기가 깨진다. 실제 패널은 minSize
+        // 플로어 때문에 0에 도달할 수 없으므로 근사 0은 스킵한다.
+        if (rawSize <= 0.1) return;
         updatePanelSize(panelId, rawSize);
       });
     },
@@ -359,57 +363,63 @@ export default function MainLayout({
           elementRef={mainLayoutGroupRef}
           onLayoutChanged={onMainLayoutChanged}
         >
-          <Panel
-            id="sidebar-panel"
-            panelRef={sidebarPanelRef}
-            collapsible
-            collapsedSize={0}
-            data-panel-animated={
-              isSidebarOpening || isSidebarClosing ? "true" : undefined
-            }
-            defaultSize={isSidebarOpen ? sidebarDefaultSize : 0}
-            minSize={mainSidebarSize.minSize}
-            maxSize={mainSidebarSize.maxSize}
-            className={`bg-sidebar overflow-hidden flex flex-col z-10 ${
-              enableAnimations
-                ? isSidebarClosing
-                  ? "animate-out slide-out-to-left fade-out duration-200"
-                  : isSidebarOpen
-                    ? "animate-in slide-in-from-left fade-in duration-200"
-                    : ""
-                : ""
-            }`}
-          >
-            {shouldRenderSidebar ? (
-              isCanvasMode && isMacOS ? (
-                <div className="flex h-full min-h-0 flex-col">
-                  <div
-                    aria-hidden="true"
-                    className="shrink-0"
-                    style={
-                      {
-                        height: EDITOR_WINDOW_BAR_HEIGHT_PX,
-                        WebkitAppRegion: "drag",
-                      } as CSSProperties
-                    }
-                  />
-                  <div className="flex min-h-0 flex-1 flex-col">{sidebar}</div>
-                </div>
-              ) : (
-                sidebar
-              )
-            ) : null}
-          </Panel>
-
+          {/* NOTE: collapsible Panel은 drag로 minSize 밑으로 줄면 collapsedSize로 스냅되어
+              사이드바가 닫혀버린다. minPx를 하드 플로어로 유지하려면 열림 상태로 조건부
+              렌더링한다. 열림/닫힘 transition 중에만 minSize를 완화(0%)해 flex-grow가
+              0까지 보간되게 한다. */}
           {shouldRenderSidebar && (
-            <PanelResizeHandle
-              data-separator-feature={sidebarSurface}
-              onKeyDown={() => markResizeSurface(sidebarSurface)}
-              onPointerDown={() => markResizeSurface(sidebarSurface)}
-              className="relative z-20 w-0 cursor-col-resize"
-            >
-              <div className="absolute inset-y-0 -left-1 -right-1" />
-            </PanelResizeHandle>
+            <>
+              <Panel
+                id="sidebar-panel"
+                panelRef={sidebarPanelRef}
+                data-panel-animated={
+                  isSidebarOpening || isSidebarClosing ? "true" : undefined
+                }
+                defaultSize={sidebarDefaultSize}
+                minSize={
+                  isSidebarOpening || isSidebarClosing
+                    ? "0%"
+                    : mainSidebarSize.minSize
+                }
+                maxSize={mainSidebarSize.maxSize}
+                className={`bg-sidebar overflow-hidden flex flex-col z-10 ${
+                  enableAnimations
+                    ? isSidebarClosing
+                      ? "animate-out slide-out-to-left fade-out duration-200"
+                      : isSidebarOpen
+                        ? "animate-in slide-in-from-left fade-in duration-200"
+                        : ""
+                    : ""
+                }`}
+              >
+                {isCanvasMode && isMacOS ? (
+                  <div className="flex h-full min-h-0 flex-col">
+                    <div
+                      aria-hidden="true"
+                      className="shrink-0"
+                      style={
+                        {
+                          height: EDITOR_WINDOW_BAR_HEIGHT_PX,
+                          WebkitAppRegion: "drag",
+                        } as CSSProperties
+                      }
+                    />
+                    <div className="flex min-h-0 flex-1 flex-col">{sidebar}</div>
+                  </div>
+                ) : (
+                  sidebar
+                )}
+              </Panel>
+
+              <PanelResizeHandle
+                data-separator-feature={sidebarSurface}
+                onKeyDown={() => markResizeSurface(sidebarSurface)}
+                onPointerDown={() => markResizeSurface(sidebarSurface)}
+                className="relative z-20 w-0 cursor-col-resize"
+              >
+                <div className="absolute inset-y-0 -left-1 -right-1" />
+              </PanelResizeHandle>
+            </>
           )}
 
           <Panel

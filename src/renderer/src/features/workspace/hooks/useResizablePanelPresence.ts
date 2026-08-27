@@ -146,6 +146,11 @@ export function useResizablePanelPresence({
 
   useLayoutEffect(() => {
     if (!isOpen || !shouldRender) return undefined;
+    // NOTE: open/close transition 중에는 opening 브랜치(0%→openSize 보간)가 크기를 제어한다.
+    // 이 브랜치가 같은 프레임에 isOpening을 해제하며 resize하면 transition 활성 속성
+    // (data-panel-animated)이 먼저 사라져 패널이 스냅된다. 따라서 이 브랜치는 열림 상태에서
+    // 외부 요인으로 collapse된 패널을 복구할 때만 동작한다.
+    if (isOpening || isClosing) return undefined;
     const isCollapsed = safelyUsePanel(panelRef, (panel) => panel.isCollapsed());
     if (isCollapsed !== true) return undefined;
     suppressLayoutPersistenceFor(durationMs + 160);
@@ -163,7 +168,15 @@ export function useResizablePanelPresence({
         window.cancelAnimationFrame(frameId);
       }
     };
-  }, [durationMs, isOpen, openSize, panelRef, shouldRender]);
+  }, [
+    durationMs,
+    isClosing,
+    isOpen,
+    isOpening,
+    openSize,
+    panelRef,
+    shouldRender,
+  ]);
 
   return { isClosing, isOpening, shouldRender: isOpen || shouldRender };
 }

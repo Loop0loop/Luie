@@ -87,6 +87,11 @@ html[data-animations="on"] :is(#main-layout-group, #main-layout-content-group, #
   transition-duration: 0ms;
 }
 
+/* NOTE: research 분할 패널의 close는 표준 레이아웃 전환보다 빠르게 들어간다. */
+html[data-animations="on"] #main-layout-content-group:has(> [data-panel][data-panel-animated="true"]) > [data-panel] {
+  transition-duration: 150ms;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

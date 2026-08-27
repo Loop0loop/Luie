@@ -97,15 +97,15 @@ const NESTED_MANAGER_PANEL_CONFIG: LayoutSurfaceConfig = {
 const DOCS_RESEARCH_PANEL_CONFIG: LayoutSurfaceConfig = {
   role: "panel",
   defaultRatio: 40,
-  minPx: 420,
+  minPx: 320,
   maxPx: 780,
 };
 
 const DOCS_AI_PANEL_CONFIG: LayoutSurfaceConfig = {
   role: "panel",
   defaultRatio: 44,
-  minPx: 480,
-  maxPx: 900,
+  minPx: 180,
+  maxPx: 500,
 };
 
 const DOCS_SNAPSHOT_PANEL_CONFIG: LayoutSurfaceConfig = {
