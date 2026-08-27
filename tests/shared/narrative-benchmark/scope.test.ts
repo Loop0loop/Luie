@@ -26,4 +26,18 @@ describe("narrative benchmark scope and evidence", () => {
     expect(messages).toContain("Evidence source hash mismatch");
     expect(messages).toContain("Evidence quote does not match code-point offsets");
   });
+
+  it("rejects a source hash that does not match its actual content", () => {
+    const input = createValidInput();
+    const forgedHash = sha("forged source");
+    input.sourceDocuments[0].sha256 = forgedHash;
+    input.corpus.evidence[0].sourceSha256 = forgedHash;
+    const review = input.corpus.humanReviews.find(
+      (record) => record.targetId === "source-chapter-one",
+    );
+    if (!review) throw new Error("Missing source review fixture");
+    review.reviewedRevision = forgedHash;
+
+    expect(issueMessages(input)).toContain("Source document content hash mismatch");
+  });
 });

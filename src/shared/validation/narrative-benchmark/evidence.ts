@@ -1,8 +1,24 @@
+import { sha256Utf8 } from "../../utils/sha256";
 import {
   addIssue,
   type ValidationContext,
   type ValidationState,
 } from "./context";
+
+function validateSourceDocuments(
+  state: ValidationState,
+  ctx: ValidationContext,
+): void {
+  state.sourceDocuments.forEach((source, index) => {
+    if (sha256Utf8(source.content) !== source.sha256) {
+      addIssue(ctx, "Source document content hash mismatch", [
+        "sourceDocuments",
+        index,
+        "sha256",
+      ]);
+    }
+  });
+}
 
 function validateChaptersAndScenes(
   state: ValidationState,
@@ -149,6 +165,7 @@ export function validateEvidence(
   state: ValidationState,
   ctx: ValidationContext,
 ): void {
+  validateSourceDocuments(state, ctx);
   validateChaptersAndScenes(state, ctx);
   validateEvidenceRows(state, ctx);
   validateForeshadowing(state, ctx);

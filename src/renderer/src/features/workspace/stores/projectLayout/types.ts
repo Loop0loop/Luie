@@ -31,6 +31,12 @@ export type ProjectWorkspacePanelState = {
 // 기존 탭별 맵(`researchPanelSizes`)을 계속 쓴다.
 export type ProjectDefaultWorkspacePanelState = ProjectWorkspacePanelState & {
   researchPanelSize?: number;
+  /**
+   * research 패널 폭(px). `minSize`가 px 제약이고 내부 group 폭은 사이드바/AI 패널 상태에
+   * 따라 바뀌므로, %로 저장하면 재적용 시 px 바닥보다 작아져 min으로 클램프되고 그 min이
+   * 다시 저장되어 고착된다. px로 저장해 제약과 단위를 일치시킨다.
+   */
+  researchPanelWidthPx?: number;
 };
 
 export type ProjectWorkspaceLayoutState = ProjectWorkspacePanelState & {

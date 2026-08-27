@@ -87,26 +87,39 @@ World
 → Manuscript
 ```
 
-가장 중요한 세 축:
+첫 S pack에서 가장 중요한 축:
 
 ```text
-Character Knowledge
+원문 속 발화·행동·사실
+→ Character Knowledge와 오해
+→ Relationship State
 → Relationship Change
-→ Long-range Causality
 ```
 
 ### Step 3. 첫 S 단계 Blueprint를 만든다
 
 처음부터 20화를 모두 채우지 않는다. 필요한 만큼만 사용하고 20화를 상한으로 둔다.
 
-- 장르: 추리
+- 장르: 현대 로맨스
+- manifest: `genres: ["contemporary", "romance"]`
 - 규모: 20화 이하
-- 인물: 10~15명
-- 핵심 관계: 3~5개
-- 주요 사건: 20~30개
-- 세계선: 1개
+- 인물: 핵심 인물부터 시작하고 불필요한 인원 padding을 하지 않음
+- 핵심 관계: 감정 관계와 공식 관계를 구분한 3~5개
+- 주요 사건: 지식·오해·선택·관계 변화에 필요한 사건만 작성
+- 세계선: `prime` 1개
+- 핵심 taxonomy: `relationship_state`, `relationship_change`, `character_knowledge`
+- 기본 retrieval: `entity_retrieval`, `fact_retrieval`
 
-이 단계에서는 원고가 아니라 사건·관계·지식 변화 구조만 작성한다.
+첫 S에서는 10개 taxonomy를 모두 채우지 않는다. `temporal_order`와 `event_causality`는 위 기본 흐름에서 자연스럽게 파생될 때만 추가하고, 복선·모순·세계선 분리는 후속 pack으로 미룬다.
+
+이 단계에서는 원고가 아니라 다음 구조만 작성한다.
+
+```text
+누가 무엇을 말하거나 행동했는가
+→ 각 인물은 무엇을 알고 무엇을 오해했는가
+→ 그 시점의 감정 관계와 공식 관계는 무엇인가
+→ 어떤 사건으로 관계가 어떻게 변했는가
+```
 
 ### Step 4. Blueprint를 사람이 검수한다
 
@@ -116,18 +129,18 @@ Character Knowledge
 
 금지 예:
 
-> 한세연은 윤해준이 정보를 숨겼기 때문에 그를 불신했다.
+> 서윤은 민재가 자신을 피한 이유를 오해했기 때문에 그를 불신하게 됐다.
 
 허용 예:
 
 ```text
-3화: 윤해준이 기록 출처를 거짓말한다.
-7화: 한세연이 비공개 기록 번호를 발견한다.
-12화: 한세연이 윤해준의 제안을 거절한다.
-18화: 대화와 행동으로 신뢰 붕괴가 드러난다.
+2화: 민재가 약속 장소를 떠나는 장면을 서윤이 목격한다.
+5화: 서윤은 답장이 없는 메시지를 보고 의도적인 회피라고 믿는다.
+8화: 독자는 민재가 가족 문제로 자리를 비웠다는 근거를 확인한다.
+12화: 서윤은 사실을 알게 되고 업무상 관계와 감정 상태가 각각 변한다.
 ```
 
-정답을 한 문장에 노출하지 않고 여러 장면에 분산한다.
+정답을 한 문장에 노출하지 않는다. 발화·행동·사실과 인물별 지식 상태를 여러 장면에 분산하고, 감정 관계와 공식 관계를 따로 판정할 수 있게 한다.
 
 ### Step 6. Query와 Gold를 만든다
 
@@ -167,11 +180,12 @@ Character Knowledge
 ### Step 9. 장르를 하나씩 추가한다
 
 ```text
-추리 → 회귀 → 로맨스 → 판타지 → 스릴러
-→ 현대물 → 무협 → SF
+현대 로맨스(contemporary + romance)
+→ 추리 → 회귀 → 판타지 → 스릴러
+→ 무협 → SF
 ```
 
-각 장르는 먼저 S 단계에서 검증한다. 해당 장르가 S를 통과하기 전에 M 이상으로 키우지 않는다.
+첫 현대 로맨스 pack부터 S 단계에서 검증한다. 어떤 장르도 S를 통과하기 전에 M 이상으로 키우지 않는다. 일반 혼합 장르는 각 baseline이 확보된 뒤에만 추가한다.
 
 ### Step 10. 크기를 한 단계씩 늘린다
 
@@ -248,6 +262,6 @@ S 단계는 규모가 작으므로 scored query를 전수 검수한다. 원고 r
 
 지금 바로 해야 할 일은 원고 작성이 아니다.
 
-> **10개 taxonomy, Narrative Schema, Retrieval/Reasoning Query, Human Review Record를 JSON Schema 또는 Zod로 구현한다.**
+> **현대 로맨스 S pack의 `Relationship State`, `Relationship Change`, `Character Knowledge` blueprint와 이를 지지할 `Entity/Fact Retrieval` 계약을 먼저 확정한다.**
 
-이 schema와 validator가 통과한 뒤에만 첫 추리 S 단계 blueprint를 만든다.
+10개 taxonomy와 Narrative Schema, Retrieval/Reasoning Query, Human Review Record의 기본 구현은 마련돼 있다. 먼저 기본 무결성 validator의 남은 구멍을 막고, `genres: ["contemporary", "romance"]`, `prime` 단일 세계선, 20화 이하인 첫 blueprint를 사람 검수한다. 그 blueprint가 통과한 뒤에만 원고를 만든다.

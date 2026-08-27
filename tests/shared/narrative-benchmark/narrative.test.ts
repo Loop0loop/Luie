@@ -46,4 +46,12 @@ describe("narrative benchmark narrative invariants", () => {
     );
     expect(issueMessages(input)).toContain("Continuity parent graph must be acyclic");
   });
+
+  it("allows a cause to be revealed after its effect", () => {
+    const input = createValidInput();
+    input.corpus.events[0].firstNarratedChapter = 2;
+    input.corpus.events[1].firstNarratedChapter = 1;
+
+    expect(issueMessages(input)).toEqual([]);
+  });
 });

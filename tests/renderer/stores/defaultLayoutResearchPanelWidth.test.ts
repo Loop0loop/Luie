@@ -5,6 +5,7 @@ import {
   sanitizeProjectLayoutState,
 } from "../../../src/renderer/src/features/workspace/stores/projectLayout/index.js";
 import { projectLayoutPersistedStateSchema } from "../../../src/shared/schemas/index.js";
+import { buildStablePanelId } from "../../../src/renderer/src/features/workspace/stores/uiStore.state.js";
 
 const buildStoredDefaultWorkspace = (
   byLayoutDefault: Record<string, unknown>,
@@ -152,5 +153,28 @@ describe("default layout shared research panel width", () => {
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it("uses one panel id for every research tab", () => {
+    // PanelGroup은 layout을 panel id 조합별로 캐싱하고(mutableState.layouts[ids.join(",")])
+    // 그 캐시가 defaultSize보다 우선한다. id에 tab이 들어가면 탭마다 폭이 따로 기억되어
+    // 공용 폭이 무시되고, 탭을 닫았다 다른 탭을 열면 그 탭이 마지막에 가졌던 폭이 나온다.
+    const tabs = [
+      "character",
+      "world",
+      "event",
+      "faction",
+      "scrap",
+      "analysis",
+      "plotboard",
+      "untitled",
+    ] as const;
+
+    const ids = new Set(
+      tabs.map((tab) => buildStablePanelId({ type: "research", tab })),
+    );
+
+    expect(ids.size).toBe(1);
+    expect([...ids][0]).toBe("research");
   });
 });

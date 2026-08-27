@@ -70,9 +70,6 @@ export function validateCausality(
     if (effect && effect.continuityId !== edge.continuityId) {
       addIssue(ctx, "Effect event continuity mismatch", [...path, "continuityId"]);
     }
-    if (cause && effect && cause.firstNarratedChapter > effect.firstNarratedChapter) {
-      addIssue(ctx, "Cause cannot be first narrated after its effect", path);
-    }
     for (const evidenceId of edge.evidenceIds) {
       if (!evidenceById.has(evidenceId)) {
         addIssue(ctx, `Unknown causal evidence: ${evidenceId}`, [

@@ -45,6 +45,15 @@ const buildLegacyRegionFields = (regions: UIStore["regions"]) => ({
 const isSameMainView = (left: MainView, right: MainView): boolean =>
   left.type === right.type && left.id === right.id;
 
+/** workspace 분할 패널의 저장 가능 범위. `projectLayout/constants`와 같은 값이어야 한다. */
+const WORKSPACE_PANEL_MIN_SIZE = 15;
+const WORKSPACE_PANEL_MAX_SIZE = 90;
+// NOTE: 새 패널은 원고 패널과 group을 공유한다. 100/n 균등분할을 쓰면 패널 하나일 때 100%가
+// 잡혀 원고가 minSize까지 밀린다. 또한 기존 패널 크기를 100/n으로 덮어쓰면 사용자가 조정한
+// 폭이 파괴되고 그 값이 그대로 저장된다. PanelGroup이 남은 값을 정규화하므로 새 패널에만
+// 명시적 기본값을 주고 기존 패널은 건드리지 않는다.
+const DEFAULT_WORKSPACE_PANEL_SIZE = 40;
+
 export const buildStablePanelId = (content: RightPanelContent): string => {
   // NOTE: research 패널은 탭을 바꿔도 같은 패널 하나다. id에 tab을 넣으면 PanelGroup이
   // layout을 panel id 조합별로 캐싱(`mutableState.layouts[ids.join(",")]`)하기 때문에
@@ -150,13 +159,8 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set, 
       );
       if (existing || compatiblePanels.length >= 3) {
         if (!removedIncompatiblePanel) return state;
-        const sizePerPanel = 100 / compatiblePanels.length;
-        return {
-          panels: compatiblePanels.map((panel) => ({
-            ...panel,
-            size: sizePerPanel,
-          })),
-        };
+        // NOTE: 100/n 재분배는 하지 않는다. 아래 newPanel 주석 참고.
+        return { panels: compatiblePanels };
       }
 
       const newPanel: ResizablePanelData = {
@@ -164,22 +168,17 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set, 
         content,
         size:
           typeof initialSize === "number" && Number.isFinite(initialSize)
-            ? Math.min(90, Math.max(15, initialSize))
-            : compatiblePanels.length === 0
-              ? 100
-              : 50,
+            ? Math.min(
+                WORKSPACE_PANEL_MAX_SIZE,
+                Math.max(WORKSPACE_PANEL_MIN_SIZE, initialSize),
+              )
+            : DEFAULT_WORKSPACE_PANEL_SIZE,
       };
       const newPanels = [...compatiblePanels];
       if (insertAt !== undefined && insertAt >= 0 && insertAt <= newPanels.length) {
         newPanels.splice(insertAt, 0, newPanel);
       } else {
         newPanels.push(newPanel);
-      }
-      if (initialSize === undefined || !Number.isFinite(initialSize)) {
-        const sizePerPanel = 100 / newPanels.length;
-        for (let index = 0; index < newPanels.length; index += 1) {
-          newPanels[index] = { ...newPanels[index], size: sizePerPanel };
-        }
       }
       nextFocusedPanelId = newPanel.id;
       return {

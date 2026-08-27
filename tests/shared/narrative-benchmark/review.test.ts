@@ -29,4 +29,23 @@ describe("narrative benchmark review lifecycle", () => {
       "Eligible source document lacks approved GOOD manuscript review: source-chapter-two",
     );
   });
+
+  it("requires both retrieval and reasoning queries for eligibility", () => {
+    const input = createValidInput();
+    input.corpus.retrievalQueries = [];
+    input.corpus.reasoningQueries = [];
+    input.corpus.humanReviews = input.corpus.humanReviews.filter(
+      (review) =>
+        review.targetType !== "retrieval_query" &&
+        review.targetType !== "reasoning_query",
+    );
+
+    const messages = issueMessages(input);
+    expect(messages).toContain(
+      "Eligible benchmark requires at least one retrieval query",
+    );
+    expect(messages).toContain(
+      "Eligible benchmark requires at least one reasoning query",
+    );
+  });
 });

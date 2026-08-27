@@ -335,25 +335,44 @@ Recall@K나 answer accuracy 숫자는 S benchmark와 human review가 완료된 �
 
 ### 7.1 확장 순서
 
-- Core 1차: `mystery`, `regression`, `romance`, `fantasy`, `thriller`
-- Core 통과 후: `contemporary`, `murim`, `scifi`
-- 각 장르는 먼저 독립된 S pack으로 검증한다.
-- 한 장르가 S를 통과하지 못하면 그 장르를 M 이상으로 확대하지 않는다.
-- 혼합 장르는 단일 장르 baseline이 확보된 뒤 교차 효과를 측정할 때만 추가한다.
+- 첫 baseline은 `contemporary` + `romance`를 함께 사용하는 **현대 로맨스 S pack**이다.
+- manifest의 장르는 `genres: ["contemporary", "romance"]`로 기록한다. 새 `contemporary_romance` 장르 ID를 만들지 않는다.
+- 현대 로맨스는 첫 baseline으로 명시한 조합이며, 임의의 혼합 장르 확장을 허용한다는 뜻이 아니다.
+- 다음 장르는 현대 로맨스 S가 통과한 뒤 `mystery` → `regression` → `fantasy` → `thriller` 순으로 각각 S pack을 검증한다.
+- 이후 `murim`, `scifi`를 S pack으로 검증한다.
+- 어떤 장르도 S를 통과하기 전에 M 이상으로 확대하지 않는다.
+- 일반 혼합 장르는 각 단일 장르 baseline이 확보된 뒤 교차 효과를 측정할 때만 추가한다.
 - 모든 장르는 동일 taxonomy와 scorer를 사용한다. 장르별 예외 정답 규칙을 만들지 않는다.
 
 ### 7.2 장르 × taxonomy coverage
 
-모든 장르가 10개 taxonomy를 같은 비율로 가질 필요는 없다. 대신 manifest에 의도된 coverage와 제외 이유를 기록한다.
+10개 taxonomy의 ID와 query 분류 계약은 공통으로 유지하지만, 첫 S pack에서 10개를 모두 억지로 채우지 않는다. 각 pack은 의도한 coverage와 제외 이유를 기록한다.
 
-- 추리: `character_knowledge`, `event_causality`, `foreshadowing` 필수
-- 회귀: `temporal_order`, `character_knowledge`, `worldline_isolation` 필수
-- 로맨스: `relationship_state`, `relationship_change` 필수
-- 판타지: `entity_retrieval`, `fact_retrieval`, `contradiction` 필수
-- 스릴러: `character_knowledge`, `contradiction`, `event_causality` 필수
-- 현대물: `relationship_change`, `character_knowledge` 필수
-- 무협: `entity_retrieval`, `relationship_state`, `relationship_change` 필수
-- SF: `temporal_order`, `fact_retrieval`, `worldline_isolation` 필수
+첫 현대 로맨스 S pack의 범위는 다음과 같다.
+
+- 핵심 reasoning taxonomy: `relationship_state`, `relationship_change`, `character_knowledge`
+- 기본 retrieval taxonomy: `entity_retrieval`, `fact_retrieval`
+- 파생 검증 후보: `temporal_order`, `event_causality`
+- 첫 S에서 강제하지 않음: `foreshadowing`, `contradiction`, `worldline_isolation`
+- 세계선은 `prime` 하나만 사용한다. 첫 S의 목적은 분기 구조가 아니라 기본 관계·지식·근거 흐름 검증이다.
+
+핵심 검증 축은 다음과 같다.
+
+```text
+원문 속 발화·행동·사실
+  → 각 인물이 그 시점에 아는 것과 오해하는 것
+  → 감정 관계와 공식 관계의 현재 상태
+  → 사건 이후 관계 상태의 변화
+```
+
+이후 장르별 필수 taxonomy는 다음을 기본값으로 삼되, 실제 S blueprint 검수에서 확정한다.
+
+- 추리: `character_knowledge`, `event_causality`, `foreshadowing`
+- 회귀: `temporal_order`, `character_knowledge`, `worldline_isolation`
+- 판타지: `entity_retrieval`, `fact_retrieval`, `contradiction`
+- 스릴러: `character_knowledge`, `contradiction`, `event_causality`
+- 무협: `entity_retrieval`, `relationship_state`, `relationship_change`
+- SF: `temporal_order`, `fact_retrieval`, `worldline_isolation`
 
 장르 지원은 “해당 장르 원고를 생성했다”가 아니라 해당 S pack의 필수 taxonomy가 retrieval·oracle reasoning·end-to-end 평가를 통과했음을 뜻한다.
 
@@ -385,11 +404,11 @@ S 단계는 scored case 전부를 사람 검수한다. 이후 단계의 검수 �
 ## 10. 즉시 실행 순서
 
 ```text
-STOP: 추가 원고 생성
-  → 이 SSOT 승인
-  → taxonomy별 query/evidence 계약 확정
-  → narrative schema JSON Schema 작성
-  → S 단계 1작품 blueprint 작성
+DONE: 목적과 Retrieval/Reasoning 분리 확정
+  → DONE: 10개 taxonomy와 query/evidence 기본 계약 구현
+  → DONE: Narrative Benchmark v1 Zod schema와 validator 골격 구현
+  → NOW: source hash·query 최소 조건·시간 의미 등 기본 무결성 보강
+  → 현대 로맨스 S 단계 1작품 blueprint 작성
   → blueprint 사람 검수
   → 구조에서 20화 이하 원고 생성
   → GOOD/BAD/AMBIGUOUS/NOISE 분류
@@ -401,4 +420,4 @@ STOP: 추가 원고 생성
   → 모든 선행 gate 통과 후에만 규모 확장
 ```
 
-첫 신규 benchmark의 기본 후보는 `mystery` S pack이다. `Character Knowledge State → Relationship Change → Long-range Causality`를 하나의 연결된 난이도 축으로 검증하기 가장 적합하기 때문이다. 실제 원고 생성은 schema와 query 계약이 승인된 뒤에만 시작한다.
+첫 신규 benchmark는 `contemporary` + `romance` 현대 로맨스 S pack으로 고정한다. `원문 속 발화·행동·사실 → Character Knowledge State → Relationship State → Relationship Change`를 하나의 연결된 기본 축으로 검증한다. 첫 pack은 `prime` 단일 세계선과 20화 이하 범위만 사용하며, 실제 원고 생성은 기본 validator와 query 계약이 승인된 뒤에만 시작한다.

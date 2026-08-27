@@ -84,6 +84,19 @@ function validateEligibility(
     ]);
   }
 
+  if (corpus.retrievalQueries.length === 0) {
+    addIssue(ctx, "Eligible benchmark requires at least one retrieval query", [
+      "corpus",
+      "retrievalQueries",
+    ]);
+  }
+  if (corpus.reasoningQueries.length === 0) {
+    addIssue(ctx, "Eligible benchmark requires at least one reasoning query", [
+      "corpus",
+      "reasoningQueries",
+    ]);
+  }
+
   const approvedGoodTargets = new Set(
     corpus.humanReviews
       .filter((review) => review.label === "GOOD" && review.status === "approved")

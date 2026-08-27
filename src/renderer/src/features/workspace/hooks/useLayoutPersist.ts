@@ -25,6 +25,10 @@ export function suppressLayoutPersistenceFor(durationMs: number): void {
 const isLayoutPersistenceSuppressed = (): boolean =>
   layoutPersistenceSuppressionDepth > 0;
 
+/** 닫기 애니메이션처럼 프로그램이 만든 layout 변화를 저장에서 제외할지 여부. */
+export const isLayoutPersistenceSuppressedNow = (): boolean =>
+  isLayoutPersistenceSuppressed();
+
 export const isPersistableLayoutRatio = (ratio: number): boolean =>
   Number.isFinite(ratio) && ratio > 0.1;
 

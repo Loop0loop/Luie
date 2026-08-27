@@ -32,6 +32,7 @@ import {
 import { toPercentSize } from "@renderer/shared/constants/sidebarSizing";
 import {
   getPanelLayoutValue,
+  isLayoutPersistenceSuppressedNow,
   suppressLayoutPersistenceFor,
   useLayoutPersist,
 } from "@renderer/features/workspace/hooks/useLayoutPersist";
@@ -77,6 +78,7 @@ export default function MainLayout({
     setRegionOpen,
     openRightPanelTab,
     updatePanelSize,
+    panels,
   } = useUIStore(
     useShallow((state) => ({
       isSidebarOpen: state.regions.leftSidebar.open,
@@ -86,6 +88,7 @@ export default function MainLayout({
       setRegionOpen: state.setRegionOpen,
       openRightPanelTab: state.openRightPanelTab,
       updatePanelSize: state.updatePanelSize,
+      panels: state.panels,
     })),
   );
 
@@ -136,11 +139,15 @@ export default function MainLayout({
   );
   const onContentLayoutChanged = useCallback(
     (layout: Layout) => {
+      // NOTE: 패널 close 애니메이션은 `resize("0%")`를 호출하지만 PanelGroup이 minSize(470px)로
+      // 클램프해 min 비율을 emit한다. 그 값을 저장하면 사용자가 넓혀둔 폭이 min으로 고착된다.
+      // WorkspacePanels가 닫기 직전 억제를 걸어두므로 여기서 함께 존중한다.
+      if (isLayoutPersistenceSuppressedNow()) return;
       additionalPanelIds.forEach((panelId, panelIndex) => {
         const rawSize = getPanelLayoutValue(layout, panelId, panelIndex + 1);
         if (typeof rawSize !== "number" || !Number.isFinite(rawSize)) return;
         // NOTE: 패널 close 애니메이션이 0%로 축소하는 순간의 layout 커밋을 저장하면
-        // researchPanelSizes에 0이 남아 재오픈 시 크기가 깨진다. 실제 패널은 minSize
+        // researchPanelSize에 0이 남아 재오픈 시 크기가 깨진다. 실제 패널은 minSize
         // 플로어 때문에 0에 도달할 수 없으므로 근사 0은 스킵한다.
         if (rawSize <= 0.1) return;
         updatePanelSize(panelId, rawSize);
@@ -150,6 +157,18 @@ export default function MainLayout({
   );
 
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
+
+  // NOTE: PanelGroup은 layout 합을 100으로 정규화한다(`100/합계*값`). 원고 패널 크기를 50%로
+  // 고정하면 저장된 분할 패널 비율이 정규화에 휩쓸려 복원값이 저장값과 달라진다. 나머지 비율을
+  // 원고 패널에 주어 합이 100이 되게 해야 저장한 폭이 그대로 재현된다.
+  const additionalPanelsTotalSize = panels.reduce(
+    (total, panel) =>
+      additionalPanelIds.includes(panel.id) ? total + panel.size : total,
+    0,
+  );
+  const primaryContentDefaultSize = toPercentSize(
+    Math.max(10, 100 - additionalPanelsTotalSize),
+  );
 
   const sidebarRatio =
     layoutSurfaceRatios[sidebarSurface] ||
@@ -451,7 +470,7 @@ export default function MainLayout({
               >
                 <Panel
                   id="main-primary-content"
-                  defaultSize={toPercentSize(50)}
+                  defaultSize={primaryContentDefaultSize}
                   minSize={`${EDITOR_MIN_PANEL_WIDTH_PX}px`}
                   className={`relative flex min-w-0 flex-col ${adjacentSurfaceClass}`}
                 >
