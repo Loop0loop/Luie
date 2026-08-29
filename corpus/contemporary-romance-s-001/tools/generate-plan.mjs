@@ -203,31 +203,52 @@ function planEvidence(chapterId, slug, note) {
 // validFromChapter reflects when the proposition becomes true in-world.
 // ---------------------------------------------------------------------------
 const propositions = [
+  // EVIDENCE RULE: a proposition that carries a scored question should be grounded in
+  // more than one chapter, so answering it requires combining chapters instead of
+  // copying one sentence. Chapter distance is deliberate: prop-process-breach and
+  // prop-past-exit-reason span ~10 chapters (SSOT 4.4 long_range).
   { propositionId: "prop-past-edit",
     statement: "유건은 대학 프로젝트 제출 직전 서린의 동의 없이 핵심 설명과 발표자 표기를 수정했다.",
     canonicalStatus: "confirmed", continuityId: CONTINUITY, validFromChapter: 1, validToChapter: null,
-    evidenceIds: [planEvidence("chapter-02", "past-edit-mention", "역할표 작성 중 과거 수정 언급")] },
+    evidenceIds: [
+      planEvidence("chapter-02", "past-edit-mention", "역할표 작성 중 과거 수정 언급"),
+      planEvidence("chapter-11", "past-edit-detail", "서린이 당시 수정 범위를 구체적으로 말함"),
+    ] },
   { propositionId: "prop-past-exit-reason",
     statement: "서린이 팀을 떠난 결정적 이유는 취업 제안이 아니라 반복될 수 있는 일방 수정이었다.",
     canonicalStatus: "confirmed", continuityId: CONTINUITY, validFromChapter: 1, validToChapter: null,
-    evidenceIds: [planEvidence("chapter-11", "exit-reason-told", "서린이 떠난 진짜 이유를 직접 말함")] },
+    evidenceIds: [
+      planEvidence("chapter-02", "exit-reason-hint", "공동 확인 규칙을 먼저 요구하는 행동"),
+      planEvidence("chapter-11", "exit-reason-told", "서린이 떠난 진짜 이유를 직접 말함"),
+    ] },
   { propositionId: "prop-power-risk",
     statement: "수리 작업대의 기존 배선은 동시 사용 시 안전 기준을 넘는다.",
     canonicalStatus: "confirmed", continuityId: CONTINUITY, validFromChapter: 6, validToChapter: null,
-    evidenceIds: [planEvidence("chapter-06", "load-measure", "나리의 부하 계측 기록")] },
+    evidenceIds: [
+      planEvidence("chapter-06", "load-measure", "나리의 부하 계측 기록"),
+      planEvidence("chapter-10", "power-log-detail", "전력 로그의 초과 구간"),
+    ] },
   { propositionId: "prop-halt-cause",
     statement: "시험 운영의 즉시 중단 원인은 실제 전력 위험이다.",
     canonicalStatus: "confirmed", continuityId: CONTINUITY, validFromChapter: 7, validToChapter: null,
-    evidenceIds: [planEvidence("chapter-10", "power-log", "전력 로그로 중단 원인 확인")] },
+    evidenceIds: [
+      planEvidence("chapter-06", "halt-trigger", "중단을 요구한 계측 경고"),
+      planEvidence("chapter-07", "halt-notice-text", "중단 공지에 적힌 사유"),
+      planEvidence("chapter-10", "power-log", "전력 로그로 중단 원인 확인"),
+    ] },
   { propositionId: "prop-sponsor-plan",
     statement: "후원사는 중단 기간에 완제품 증정 행사로 홍보를 대체하려 한다.",
     canonicalStatus: "confirmed", continuityId: CONTINUITY, validFromChapter: 5, validToChapter: null,
-    evidenceIds: [planEvidence("chapter-05", "sponsor-demand", "태수의 완제품 증정 전환 요구")] },
+    evidenceIds: [
+      planEvidence("chapter-05", "sponsor-demand", "태수의 완제품 증정 전환 요구"),
+      planEvidence("chapter-10", "sponsor-record", "재단 회의록의 홍보 대체 논의"),
+    ] },
   { propositionId: "prop-permanent-replacement-status",
     statement: "운영 중단 시점에 서린의 설계를 삭제하는 영구 대체안은 승인되지 않았다.",
     canonicalStatus: "confirmed", continuityId: CONTINUITY, validFromChapter: 5, validToChapter: null,
     evidenceIds: [
       planEvidence("chapter-05", "refusal-action", "유건이 영구 대체안을 거절하는 행동"),
+      planEvidence("chapter-08", "draft-without-name", "이름이 빠진 대체 시안 자체"),
       planEvidence("chapter-10", "meeting-record", "재단 회의록의 미승인 상태"),
     ] },
   { propositionId: "prop-process-breach",
@@ -236,15 +257,22 @@ const propositions = [
     evidenceIds: [
       planEvidence("chapter-02", "role-table", "역할표의 공동 확인 규칙"),
       planEvidence("chapter-07", "solo-notice", "단독 발송된 전체 중단 공지"),
+      planEvidence("chapter-12", "breach-admission", "절차 위반을 먼저 인정하는 발화"),
     ] },
   { propositionId: "prop-seorin-overclaim",
     statement: "서린은 전체 기록을 확인하기 전에 유건이 프로그램을 팔아넘겼다고 공개 회의에서 단정했다.",
     canonicalStatus: "confirmed", continuityId: CONTINUITY, validFromChapter: 9, validToChapter: null,
-    evidenceIds: [planEvidence("chapter-09", "public-claim", "회의에서의 공개 단정 발화")] },
+    evidenceIds: [
+      planEvidence("chapter-09", "public-claim", "회의에서의 공개 단정 발화"),
+      planEvidence("chapter-13", "claim-correction", "공개 단정을 정정하는 발화"),
+    ] },
   { propositionId: "prop-reopen-condition",
     statement: "축소 재개는 전력 제한, 비전기 품목 우선, 공동 서명 공지를 조건으로 안전하다.",
     canonicalStatus: "confirmed", continuityId: CONTINUITY, validFromChapter: 14, validToChapter: null,
-    evidenceIds: [planEvidence("chapter-14", "reopen-terms", "축소 재개 조건과 공동 서명 공지")] },
+    evidenceIds: [
+      planEvidence("chapter-14", "reopen-terms", "축소 재개 조건과 공동 서명 공지"),
+      planEvidence("chapter-15", "reopen-terms-settled", "정산 자리에서 확인되는 재개 조건 이행"),
+    ] },
 ];
 
 // ---------------------------------------------------------------------------
@@ -441,41 +469,82 @@ const relationshipTransitions = transitionDefs.map(
 // require it after manuscript.
 // ---------------------------------------------------------------------------
 const knowledgeDefs = [
+  // COVERAGE RULE: for every declared (character, proposition) pair the states must
+  // cover [proposition.validFromChapter .. last chapter] with NO gap. A missing
+  // interval means a character_knowledge query at that chapter has no gold answer.
+  // Pre-story baselines (a belief held before chapter 1) are anchored to the
+  // chapter-1 event, following the existing yugeon/exit-reason precedent.
+  // Optional 9th element declares EXTRA evidence affordances so an answer needs
+  // more than one chapter (SSOT 4.4 multi_evidence / long_range).
+  //
   // Seorin on halt-cause: misinformed (ch7 sees notice, no cause) -> known (ch10 record-review)
-  ["knowledge-seorin-halt-misinformed", "char-jeong-seorin", "prop-halt-cause", "misinformed", 0.6, "event-unilateral-notice", 7, 9],
-  ["knowledge-seorin-halt-known", "char-jeong-seorin", "prop-halt-cause", "known", 0.9, "event-record-review", 10, null],
+  ["knowledge-seorin-halt-misinformed", "char-jeong-seorin", "prop-halt-cause", "misinformed", 0.6, "event-unilateral-notice", 7, 9,
+    [[9, "halt-wrong-premise", "잘못된 전제로 회의에서 원인을 단정"]]],
+  ["knowledge-seorin-halt-known", "char-jeong-seorin", "prop-halt-cause", "known", 0.9, "event-record-review", 10, null,
+    [[13, "halt-justified-conceded", "중단 자체는 정당했다고 인정하는 발화"]]],
+  // Yugeon on halt-cause: he issued the halt, so he knows the real cause from ch7.
+  // Contrast with seorin's misinformed state over the same chapters (knowledge asymmetry).
+  ["knowledge-yugeon-halt-known", "char-han-yugeon", "prop-halt-cause", "known", 1.0, "event-unilateral-notice", 7, null,
+    [[12, "halt-cause-restated", "책임 인정 자리에서 중단 사유를 다시 진술"]]],
   // Seorin on permanent-replacement-status: misinformed (ch8) -> known (ch10)
+  // Seorin on permanent-replacement-status: the proposition exists from ch5 (sponsor
+  // pressure) but she only meets the question at ch8, so ch5-7 is an explicit unknown.
+  ["knowledge-seorin-replace-unknown", "char-jeong-seorin", "prop-permanent-replacement-status", "unknown", 0.0, null, 5, 7],
   ["knowledge-seorin-replace-misinformed", "char-jeong-seorin", "prop-permanent-replacement-status", "misinformed", 0.7, "event-replacement-draft", 8, 9],
   ["knowledge-seorin-replace-known", "char-jeong-seorin", "prop-permanent-replacement-status", "known", 0.9, "event-record-review", 10, null],
+  // Yugeon on permanent-replacement-status: he refused it at ch5, so he knows it was
+  // never approved while seorin misreads the ch8 draft.
+  ["knowledge-yugeon-replace-known", "char-han-yugeon", "prop-permanent-replacement-status", "known", 0.9, "event-sponsor-pressure", 5, null],
   // Seorin on power-risk: unknown -> known at ch10 (record-review, power logs)
   ["knowledge-seorin-powerrisk-unknown", "char-jeong-seorin", "prop-power-risk", "unknown", 0.0, null, 1, 9],
   ["knowledge-seorin-powerrisk-known", "char-jeong-seorin", "prop-power-risk", "known", 0.9, "event-record-review", 10, null],
   // Yugeon on past-exit-reason: misinformed (believes job offer) -> known at ch11 (past-meaning)
-  ["knowledge-yugeon-exit-misinformed", "char-han-yugeon", "prop-past-exit-reason", "misinformed", 0.7, "event-blind-selection", 1, 10],
-  ["knowledge-yugeon-exit-known", "char-han-yugeon", "prop-past-exit-reason", "known", 0.9, "event-past-meaning", 11, null],
+  ["knowledge-yugeon-exit-misinformed", "char-han-yugeon", "prop-past-exit-reason", "misinformed", 0.7, "event-blind-selection", 1, 10,
+    [[4, "exit-reason-wrong-belief", "취업 제안 때문이었다고 말하는 발화"]]],
+  ["knowledge-yugeon-exit-known", "char-han-yugeon", "prop-past-exit-reason", "known", 0.9, "event-past-meaning", 11, null,
+    [[12, "exit-reason-acted-on", "반복 패턴을 전제로 책임을 인정하는 발화"]]],
+  // Seorin on past-exit-reason: it is her own reason, held from before ch1.
+  ["knowledge-seorin-exit-known", "char-jeong-seorin", "prop-past-exit-reason", "known", 1.0, "event-blind-selection", 1, null,
+    [[2, "exit-reason-condition", "역할표에 공동 확인 조건을 요구하는 이유"]]],
   // Yugeon on power-risk: known from ch6 (power-warning)
   ["knowledge-yugeon-powerrisk-known", "char-han-yugeon", "prop-power-risk", "known", 0.9, "event-power-warning", 6, null],
   // Nari on power-risk: known from ch6
   ["knowledge-nari-powerrisk-known", "char-choi-nari", "prop-power-risk", "known", 1.0, "event-power-warning", 6, null],
-  // Seorin on process-breach: suspected (ch9) -> known (ch12 accountability)
-  ["knowledge-seorin-breach-suspected", "char-jeong-seorin", "prop-process-breach", "suspected", 0.6, "event-public-rupture", 9, 11],
-  ["knowledge-seorin-breach-known", "char-jeong-seorin", "prop-process-breach", "known", 0.9, "event-accountability", 12, null],
-  // Yugeon on process-breach: known from ch12 (self-recognition)
-  ["knowledge-yugeon-breach-known", "char-han-yugeon", "prop-process-breach", "known", 0.9, "event-accountability", 12, null],
+  // Seorin on process-breach: unknown (ch7-8, she has not connected the notice to the
+  // role table) -> suspected (ch9) -> known (ch12 accountability)
+  ["knowledge-seorin-breach-unknown", "char-jeong-seorin", "prop-process-breach", "unknown", 0.0, null, 7, 8],
+  ["knowledge-seorin-breach-suspected", "char-jeong-seorin", "prop-process-breach", "suspected", 0.6, "event-public-rupture", 9, 11,
+    [[11, "breach-still-asked", "과거 이야기 중에도 절차 문제를 다시 묻는 발화"]]],
+  ["knowledge-seorin-breach-known", "char-jeong-seorin", "prop-process-breach", "known", 0.9, "event-accountability", 12, null,
+    [[13, "breach-kept-after-correction", "공개 단정은 정정하면서도 절차 문제는 접지 않음"]]],
+  // Yugeon on process-breach: ch7-11 he believes the emergency justified skipping joint
+  // confirmation, so he does NOT recognize the breach. This is the core evaluation
+  // contract: the halt was right AND the follow-up procedure was wrong.
+  ["knowledge-yugeon-breach-misinformed", "char-han-yugeon", "prop-process-breach", "misinformed", 0.6, "event-unilateral-notice", 7, 11,
+    [[9, "breach-self-justify", "긴급성으로 단독 공지를 정당화하는 반박"]]],
+  ["knowledge-yugeon-breach-known", "char-han-yugeon", "prop-process-breach", "known", 0.9, "event-accountability", 12, null,
+    [[14, "breach-fixed-by-cosign", "재개 공지를 공동 서명으로 처리하는 행동"]]],
   // Seorin on sponsor-plan: unknown -> known at ch10
   ["knowledge-seorin-sponsor-unknown", "char-jeong-seorin", "prop-sponsor-plan", "unknown", 0.0, null, 1, 9],
   ["knowledge-seorin-sponsor-known", "char-jeong-seorin", "prop-sponsor-plan", "known", 0.8, "event-record-review", 10, null],
+  // Yugeon on sponsor-plan: he heard the demand directly at ch5.
+  ["knowledge-yugeon-sponsor-known", "char-han-yugeon", "prop-sponsor-plan", "known", 1.0, "event-sponsor-pressure", 5, null],
 ];
 const knowledgeStates = knowledgeDefs.map(
-  ([knowledgeStateId, characterId, propositionId, state, confidence, acquiredByEventId, validFromChapter, validToChapter]) => {
+  ([knowledgeStateId, characterId, propositionId, state, confidence, acquiredByEventId, validFromChapter, validToChapter, extraEvidence]) => {
     // unknown states carry no evidence (schema allows empty; nothing is observed yet).
-    // non-unknown states declare a planned affordance ID at the acquisition chapter.
+    // non-unknown states declare a planned affordance ID at the acquisition chapter,
+    // plus any extra affordance so the answer is not a single-sentence lookup.
     const evidenceIds =
       state === "unknown"
         ? []
-        : [planEvidence(`chapter-${String(validFromChapter).padStart(2, "0")}`,
-            `know-${knowledgeStateId.replace(/^knowledge-/, "")}`,
-            `${knowledgeStateId} 지식 취득 근거`)];
+        : [
+            planEvidence(`chapter-${String(validFromChapter).padStart(2, "0")}`,
+              `know-${knowledgeStateId.replace(/^knowledge-/, "")}`,
+              `${knowledgeStateId} 지식 취득 근거`),
+            ...(extraEvidence ?? []).map(([chapterNumber, slug, note]) =>
+              planEvidence(`chapter-${String(chapterNumber).padStart(2, "0")}`, slug, note)),
+          ];
     return withRevision({
       knowledgeStateId, characterId, propositionId, state, confidence,
       acquiredByEventId, validFromChapter, validToChapter, continuityId: CONTINUITY, evidenceIds,

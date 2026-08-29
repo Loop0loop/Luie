@@ -66,7 +66,7 @@ premise
 
 - corpus ID: `contemporary-romance-s-001`
 - review stage: `plan` (SSOT 워크플로 gate B)
-- plan revision digest: `86cd74936e630f3a761b374940828ce28440e3b18dde1abacccf9d6ec12e9668`
+- plan revision digest: `85b04eaa73a04e1c91ebe148c2e9d47da63fe8fde3afe91d517bd68e792e4c53`
 - decision: `PENDING` — 자동 구조 검증은 통과했으나 사람 검수(gate B)는 미완료
 - gate result: manuscript 생성은 계속 금지
 
@@ -88,12 +88,57 @@ plan을 다시 확인하면서 자동 검증이 잡지 못한 관계 구간 공�
 - 검수자가 확인할 서사 판단: 12화 accountability 이후 유건의 감정이 "보호 명목의 통제"
   왜곡에서 벗어나되 계약 종료(15화) 전까지 표현을 보류한다는 해석이 타당한지.
 
+## 2026-08-29 2차 보강 — 지식 커버리지와 근거 분산
+
+승인된 사건 16개·인과 edge 16개·관계 구조는 변경하지 않았다. gate A 재검수 대상이 아니다.
+
+지식 커버리지 규칙을 확정했다. 선언된 모든 (인물, 명제) 쌍은
+`[proposition.validFromChapter … 마지막 화]`를 공백 없이 덮는다. 취득 이전 구간은 명시
+`unknown`으로 선언하고, 이야기 시작 전부터 가진 믿음은 1화 사건을 취득 anchor로 삼는다
+(기존 `knowledge-yugeon-exit-misinformed` 선례).
+
+추가한 지식 상태 7개 (15개 → 22개, 선언된 13개 쌍 모두 공백 0):
+
+- `yugeon|process-breach misinformed[7-11]` — 핵심. 긴급 중단은 정당하다고 믿으면서
+  공동 확인 생략은 위반이 아니라고 오인하는 구간. 이제 `정당한 판단 + 잘못된 절차`
+  계약을 유건 시점에서도 질문으로 만들 수 있다.
+- `yugeon|halt-cause known[7-]`, `yugeon|permanent-replacement-status known[5-]`,
+  `yugeon|sponsor-plan known[5-]` — 서린의 오인 구간과 대비되는 지식 비대칭.
+- `seorin|process-breach unknown[7-8]`, `seorin|permanent-replacement-status unknown[5-7]`
+  — 명제는 성립했으나 아직 접하지 못한 구간의 명시.
+- `seorin|past-exit-reason known[1-]` — 기존 `yugeon|past-exit-reason misinformed[1-10]`과
+  짝을 이루는 지식 비대칭.
+
+근거 분산 (planned evidence 61개 → 86개):
+
+- 명제 9개 중 8개를 2~3개 회차에 분산했다. `prop-process-breach`는 2·7·12화(span 10),
+  `prop-past-exit-reason`과 `prop-past-edit`은 2·11화로 `long_range` 구간을 만든다.
+- 핵심 지식 상태 5개에 확인 근거를 추가했다. 예: `seorin|process-breach known`은
+  12화 취득과 13화 "정정하되 절차 문제는 접지 않음"으로 판정된다.
+- truth 그룹 27개 중 19개(70%)가 근거 2건 이상이다.
+
+`temporal_order`는 이 pack 범위에서 제외했다. 사건 `eventTime`과 서술 회차가 완전히 같은
+순서이고 timeline이 전부 `present`이므로 시간 순서 질문은 회차 번호 비교로 답이 나온다.
+SSOT 7.2가 첫 S에서 강제하지 않는 항목이며 비선형 시간은 `regression`·`scifi` pack에서
+검증한다. 이 pack에서 `temporal_order` query를 만들지 않는다.
+
+자동 검증 추가: plan 테스트가 지식 커버리지 공백과 근거 분산 하한(multi_evidence 60%
+이상, long_range 3건 이상)을 검사한다. 공유 validator로 올리지 않은 이유는 명제 schema에
+"언제부터 알 수 있는 사실인가" 필드가 없어서다. 이 필드 추가는 별도 결정 사항이다.
+
+검수자가 확인할 서사 판단:
+
+- 유건이 7~11화 동안 절차 위반을 위반으로 인식하지 못하는 것이 개연적인지, 12화 인정이
+  갑작스럽지 않은지.
+- 서린이 5~7화에 대체안 논의를 전혀 접하지 못하는 배치가 자연스러운지.
+- 추가된 확인 근거들이 원고에서 정답 문장 반복이 되지 않고 행동·발화로 표현 가능한지.
+
 ## 자동 구조 검증 결과 (사람 검수 아님)
 
 `tests/shared/narrative-benchmark/plan-contemporary-romance-s-001.test.ts`가 실제
 acceptance validator(identity/world/causality/relationship/knowledge/manuscript)를
-plan-stage 입력에 적용했다. 결과: 5/5 통과, `structuralIssues=0`, `relaxedIssues=0`.
-전체 narrative-benchmark 스위트 72/72 통과.
+plan-stage 입력에 적용했다. 결과: 7/7 통과, `structuralIssues=0`, `relaxedIssues=0`.
+전체 narrative-benchmark 스위트 74/74 통과.
 
 - 사건 16개, 인과 edge 16개, 인과 그래프 비순환.
 - blueprint §8 필수 인과 spine 유지: `power-warning→unilateral-notice→public-rupture`,
@@ -101,11 +146,14 @@ plan-stage 입력에 적용했다. 결과: 5/5 통과, `structuralIssues=0`, `re
 - 관계 상태 21개, 전이 15개. 각 전이의 after 상태 시작 화 = 전이 화, before 상태 종료 화
   = 전이 화 − 1(구간 공백 없음), trigger event가 전이 화 이전에 서술됨, 동일 방향·dimension
   유지, 값 변화 존재, 구간 비중첩. 6개 방향×차원 모두 구간 연속.
-- 지식 상태 15개. 비-unknown 상태는 acquisition event 이후에만 시작, unknown은
-  acquisition event 없음. 서린 `prop-halt-cause` misinformed(7화)→known(10화),
-  `prop-process-breach` suspected(9화)→known(12화)로 분리 유지.
+- 지식 상태 22개. 비-unknown 상태는 acquisition event 이후에만 시작, unknown은
+  acquisition event 없음. 선언된 (인물, 명제) 쌍 13개 모두 명제 성립 회차부터 끝까지
+  구간 공백 0. 서린 `prop-halt-cause` misinformed(7화)→known(10화),
+  `prop-process-breach` unknown(7~8화)→suspected(9화)→known(12화), 유건
+  `prop-process-breach` misinformed(7~11화)→known(12화)로 분리 유지.
 - timeline 16개가 event/chapter와 정합, scene 32개의 event가 chapter plan에 포함.
-- planned_evidence 61개가 모든 truth의 evidenceId 참조를 해소(오탈자·미선언 없음).
+- planned_evidence 86개가 모든 truth의 evidenceId 참조를 해소(오탈자·미선언 없음).
+  truth 그룹 27개 중 19개가 근거 2건 이상, long_range(span>=8) 3건.
 - plan revision digest 재현성이 테스트로 고정됨(무단 수정 시 실패).
 
 ## 사람 검수가 확인해야 할 항목 (gate B, 미완료)
@@ -118,12 +166,9 @@ plan-stage 입력에 적용했다. 결과: 5/5 통과, `structuralIssues=0`, `re
 4. relationship transition마다 trigger event가 충분한가 (특히 9화 파열, 12화 회복).
 5. 16화에서 padding 없이 완결되는가.
 6. 감정(affection)과 공식(official_status)·신뢰(trust) 관계를 각각 판정 가능한가.
-7. **지식 baseline 규칙을 확정한다.** `power-risk`, `sponsor-plan`은 `unknown[1-…]`을
-   명시하지만 `halt-cause`, `process-breach`는 사건 이후부터만 선언한다. 특히
-   `han-yugeon`의 `process-breach`는 7~11화가 비어 있어 "본인이 절차 위반을 인지했는가"
-   질문에 그 구간의 gold가 없다. 선택지는 (a) 명시 baseline 상태를 추가한다,
-   (b) "선언 없음 = unknown"을 SSOT 규칙으로 명문화하고 그 구간 query를 만들지 않는다.
-   어느 쪽이든 명제가 사건으로 생성되는 시점과 잠재 사실인 시점을 구분해 기술한다.
+7. 지식 baseline 규칙은 "선언된 (인물, 명제) 쌍은 명제 성립 회차부터 공백 없이 덮는다"로
+   확정하고 상태 7개를 추가했다(위 2차 보강 절). 검수자는 규칙 자체가 아니라 추가된
+   오인·미인지 구간이 개연적인지 판단한다.
 
 이 항목들에 사람 검수 합의가 기록되기 전에는 `manuscript/chapter_*.txt`를 만들지 않는다.
 

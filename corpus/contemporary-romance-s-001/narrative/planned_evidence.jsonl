@@ -1,14 +1,24 @@
 {"evidenceId":"evidence-chapter-02-past-edit-mention","plannedChapterId":"chapter-02","plannedSceneId":"scene-chapter-02-01","continuityId":"prime","affordanceNote":"역할표 작성 중 과거 수정 언급"}
+{"evidenceId":"evidence-chapter-11-past-edit-detail","plannedChapterId":"chapter-11","plannedSceneId":"scene-chapter-11-01","continuityId":"prime","affordanceNote":"서린이 당시 수정 범위를 구체적으로 말함"}
+{"evidenceId":"evidence-chapter-02-exit-reason-hint","plannedChapterId":"chapter-02","plannedSceneId":"scene-chapter-02-01","continuityId":"prime","affordanceNote":"공동 확인 규칙을 먼저 요구하는 행동"}
 {"evidenceId":"evidence-chapter-11-exit-reason-told","plannedChapterId":"chapter-11","plannedSceneId":"scene-chapter-11-01","continuityId":"prime","affordanceNote":"서린이 떠난 진짜 이유를 직접 말함"}
 {"evidenceId":"evidence-chapter-06-load-measure","plannedChapterId":"chapter-06","plannedSceneId":"scene-chapter-06-01","continuityId":"prime","affordanceNote":"나리의 부하 계측 기록"}
+{"evidenceId":"evidence-chapter-10-power-log-detail","plannedChapterId":"chapter-10","plannedSceneId":"scene-chapter-10-01","continuityId":"prime","affordanceNote":"전력 로그의 초과 구간"}
+{"evidenceId":"evidence-chapter-06-halt-trigger","plannedChapterId":"chapter-06","plannedSceneId":"scene-chapter-06-01","continuityId":"prime","affordanceNote":"중단을 요구한 계측 경고"}
+{"evidenceId":"evidence-chapter-07-halt-notice-text","plannedChapterId":"chapter-07","plannedSceneId":"scene-chapter-07-01","continuityId":"prime","affordanceNote":"중단 공지에 적힌 사유"}
 {"evidenceId":"evidence-chapter-10-power-log","plannedChapterId":"chapter-10","plannedSceneId":"scene-chapter-10-01","continuityId":"prime","affordanceNote":"전력 로그로 중단 원인 확인"}
 {"evidenceId":"evidence-chapter-05-sponsor-demand","plannedChapterId":"chapter-05","plannedSceneId":"scene-chapter-05-01","continuityId":"prime","affordanceNote":"태수의 완제품 증정 전환 요구"}
+{"evidenceId":"evidence-chapter-10-sponsor-record","plannedChapterId":"chapter-10","plannedSceneId":"scene-chapter-10-01","continuityId":"prime","affordanceNote":"재단 회의록의 홍보 대체 논의"}
 {"evidenceId":"evidence-chapter-05-refusal-action","plannedChapterId":"chapter-05","plannedSceneId":"scene-chapter-05-01","continuityId":"prime","affordanceNote":"유건이 영구 대체안을 거절하는 행동"}
+{"evidenceId":"evidence-chapter-08-draft-without-name","plannedChapterId":"chapter-08","plannedSceneId":"scene-chapter-08-01","continuityId":"prime","affordanceNote":"이름이 빠진 대체 시안 자체"}
 {"evidenceId":"evidence-chapter-10-meeting-record","plannedChapterId":"chapter-10","plannedSceneId":"scene-chapter-10-01","continuityId":"prime","affordanceNote":"재단 회의록의 미승인 상태"}
 {"evidenceId":"evidence-chapter-02-role-table","plannedChapterId":"chapter-02","plannedSceneId":"scene-chapter-02-01","continuityId":"prime","affordanceNote":"역할표의 공동 확인 규칙"}
 {"evidenceId":"evidence-chapter-07-solo-notice","plannedChapterId":"chapter-07","plannedSceneId":"scene-chapter-07-01","continuityId":"prime","affordanceNote":"단독 발송된 전체 중단 공지"}
+{"evidenceId":"evidence-chapter-12-breach-admission","plannedChapterId":"chapter-12","plannedSceneId":"scene-chapter-12-01","continuityId":"prime","affordanceNote":"절차 위반을 먼저 인정하는 발화"}
 {"evidenceId":"evidence-chapter-09-public-claim","plannedChapterId":"chapter-09","plannedSceneId":"scene-chapter-09-01","continuityId":"prime","affordanceNote":"회의에서의 공개 단정 발화"}
+{"evidenceId":"evidence-chapter-13-claim-correction","plannedChapterId":"chapter-13","plannedSceneId":"scene-chapter-13-01","continuityId":"prime","affordanceNote":"공개 단정을 정정하는 발화"}
 {"evidenceId":"evidence-chapter-14-reopen-terms","plannedChapterId":"chapter-14","plannedSceneId":"scene-chapter-14-01","continuityId":"prime","affordanceNote":"축소 재개 조건과 공동 서명 공지"}
+{"evidenceId":"evidence-chapter-15-reopen-terms-settled","plannedChapterId":"chapter-15","plannedSceneId":"scene-chapter-15-01","continuityId":"prime","affordanceNote":"정산 자리에서 확인되는 재개 조건 이행"}
 {"evidenceId":"evidence-chapter-07-cause-power-warning","plannedChapterId":"chapter-07","plannedSceneId":"scene-chapter-07-01","continuityId":"prime","affordanceNote":"event-power-warning → event-unilateral-notice 인과 근거"}
 {"evidenceId":"evidence-chapter-09-cause-unilateral-notice","plannedChapterId":"chapter-09","plannedSceneId":"scene-chapter-09-01","continuityId":"prime","affordanceNote":"event-unilateral-notice → event-public-rupture 인과 근거"}
 {"evidenceId":"evidence-chapter-09-cause-replacement-draft","plannedChapterId":"chapter-09","plannedSceneId":"scene-chapter-09-01","continuityId":"prime","affordanceNote":"event-replacement-draft → event-public-rupture 인과 근거"}
@@ -47,15 +57,30 @@
 {"evidenceId":"evidence-chapter-10-rel-seorin-nari-02","plannedChapterId":"chapter-10","plannedSceneId":"scene-chapter-10-01","continuityId":"prime","affordanceNote":"rel-seorin-nari-02 관계 상태 근거"}
 {"evidenceId":"evidence-chapter-13-rel-seorin-nari-03","plannedChapterId":"chapter-13","plannedSceneId":"scene-chapter-13-01","continuityId":"prime","affordanceNote":"rel-seorin-nari-03 관계 상태 근거"}
 {"evidenceId":"evidence-chapter-07-know-seorin-halt-misinformed","plannedChapterId":"chapter-07","plannedSceneId":"scene-chapter-07-01","continuityId":"prime","affordanceNote":"knowledge-seorin-halt-misinformed 지식 취득 근거"}
+{"evidenceId":"evidence-chapter-09-halt-wrong-premise","plannedChapterId":"chapter-09","plannedSceneId":"scene-chapter-09-01","continuityId":"prime","affordanceNote":"잘못된 전제로 회의에서 원인을 단정"}
 {"evidenceId":"evidence-chapter-10-know-seorin-halt-known","plannedChapterId":"chapter-10","plannedSceneId":"scene-chapter-10-01","continuityId":"prime","affordanceNote":"knowledge-seorin-halt-known 지식 취득 근거"}
+{"evidenceId":"evidence-chapter-13-halt-justified-conceded","plannedChapterId":"chapter-13","plannedSceneId":"scene-chapter-13-01","continuityId":"prime","affordanceNote":"중단 자체는 정당했다고 인정하는 발화"}
+{"evidenceId":"evidence-chapter-07-know-yugeon-halt-known","plannedChapterId":"chapter-07","plannedSceneId":"scene-chapter-07-01","continuityId":"prime","affordanceNote":"knowledge-yugeon-halt-known 지식 취득 근거"}
+{"evidenceId":"evidence-chapter-12-halt-cause-restated","plannedChapterId":"chapter-12","plannedSceneId":"scene-chapter-12-01","continuityId":"prime","affordanceNote":"책임 인정 자리에서 중단 사유를 다시 진술"}
 {"evidenceId":"evidence-chapter-08-know-seorin-replace-misinformed","plannedChapterId":"chapter-08","plannedSceneId":"scene-chapter-08-01","continuityId":"prime","affordanceNote":"knowledge-seorin-replace-misinformed 지식 취득 근거"}
 {"evidenceId":"evidence-chapter-10-know-seorin-replace-known","plannedChapterId":"chapter-10","plannedSceneId":"scene-chapter-10-01","continuityId":"prime","affordanceNote":"knowledge-seorin-replace-known 지식 취득 근거"}
+{"evidenceId":"evidence-chapter-05-know-yugeon-replace-known","plannedChapterId":"chapter-05","plannedSceneId":"scene-chapter-05-01","continuityId":"prime","affordanceNote":"knowledge-yugeon-replace-known 지식 취득 근거"}
 {"evidenceId":"evidence-chapter-10-know-seorin-powerrisk-known","plannedChapterId":"chapter-10","plannedSceneId":"scene-chapter-10-01","continuityId":"prime","affordanceNote":"knowledge-seorin-powerrisk-known 지식 취득 근거"}
 {"evidenceId":"evidence-chapter-01-know-yugeon-exit-misinformed","plannedChapterId":"chapter-01","plannedSceneId":"scene-chapter-01-01","continuityId":"prime","affordanceNote":"knowledge-yugeon-exit-misinformed 지식 취득 근거"}
+{"evidenceId":"evidence-chapter-04-exit-reason-wrong-belief","plannedChapterId":"chapter-04","plannedSceneId":"scene-chapter-04-01","continuityId":"prime","affordanceNote":"취업 제안 때문이었다고 말하는 발화"}
 {"evidenceId":"evidence-chapter-11-know-yugeon-exit-known","plannedChapterId":"chapter-11","plannedSceneId":"scene-chapter-11-01","continuityId":"prime","affordanceNote":"knowledge-yugeon-exit-known 지식 취득 근거"}
+{"evidenceId":"evidence-chapter-12-exit-reason-acted-on","plannedChapterId":"chapter-12","plannedSceneId":"scene-chapter-12-01","continuityId":"prime","affordanceNote":"반복 패턴을 전제로 책임을 인정하는 발화"}
+{"evidenceId":"evidence-chapter-01-know-seorin-exit-known","plannedChapterId":"chapter-01","plannedSceneId":"scene-chapter-01-01","continuityId":"prime","affordanceNote":"knowledge-seorin-exit-known 지식 취득 근거"}
+{"evidenceId":"evidence-chapter-02-exit-reason-condition","plannedChapterId":"chapter-02","plannedSceneId":"scene-chapter-02-01","continuityId":"prime","affordanceNote":"역할표에 공동 확인 조건을 요구하는 이유"}
 {"evidenceId":"evidence-chapter-06-know-yugeon-powerrisk-known","plannedChapterId":"chapter-06","plannedSceneId":"scene-chapter-06-01","continuityId":"prime","affordanceNote":"knowledge-yugeon-powerrisk-known 지식 취득 근거"}
 {"evidenceId":"evidence-chapter-06-know-nari-powerrisk-known","plannedChapterId":"chapter-06","plannedSceneId":"scene-chapter-06-01","continuityId":"prime","affordanceNote":"knowledge-nari-powerrisk-known 지식 취득 근거"}
 {"evidenceId":"evidence-chapter-09-know-seorin-breach-suspected","plannedChapterId":"chapter-09","plannedSceneId":"scene-chapter-09-01","continuityId":"prime","affordanceNote":"knowledge-seorin-breach-suspected 지식 취득 근거"}
+{"evidenceId":"evidence-chapter-11-breach-still-asked","plannedChapterId":"chapter-11","plannedSceneId":"scene-chapter-11-01","continuityId":"prime","affordanceNote":"과거 이야기 중에도 절차 문제를 다시 묻는 발화"}
 {"evidenceId":"evidence-chapter-12-know-seorin-breach-known","plannedChapterId":"chapter-12","plannedSceneId":"scene-chapter-12-01","continuityId":"prime","affordanceNote":"knowledge-seorin-breach-known 지식 취득 근거"}
+{"evidenceId":"evidence-chapter-13-breach-kept-after-correction","plannedChapterId":"chapter-13","plannedSceneId":"scene-chapter-13-01","continuityId":"prime","affordanceNote":"공개 단정은 정정하면서도 절차 문제는 접지 않음"}
+{"evidenceId":"evidence-chapter-07-know-yugeon-breach-misinformed","plannedChapterId":"chapter-07","plannedSceneId":"scene-chapter-07-01","continuityId":"prime","affordanceNote":"knowledge-yugeon-breach-misinformed 지식 취득 근거"}
+{"evidenceId":"evidence-chapter-09-breach-self-justify","plannedChapterId":"chapter-09","plannedSceneId":"scene-chapter-09-01","continuityId":"prime","affordanceNote":"긴급성으로 단독 공지를 정당화하는 반박"}
 {"evidenceId":"evidence-chapter-12-know-yugeon-breach-known","plannedChapterId":"chapter-12","plannedSceneId":"scene-chapter-12-01","continuityId":"prime","affordanceNote":"knowledge-yugeon-breach-known 지식 취득 근거"}
+{"evidenceId":"evidence-chapter-14-breach-fixed-by-cosign","plannedChapterId":"chapter-14","plannedSceneId":"scene-chapter-14-01","continuityId":"prime","affordanceNote":"재개 공지를 공동 서명으로 처리하는 행동"}
 {"evidenceId":"evidence-chapter-10-know-seorin-sponsor-known","plannedChapterId":"chapter-10","plannedSceneId":"scene-chapter-10-01","continuityId":"prime","affordanceNote":"knowledge-seorin-sponsor-known 지식 취득 근거"}
+{"evidenceId":"evidence-chapter-05-know-yugeon-sponsor-known","plannedChapterId":"chapter-05","plannedSceneId":"scene-chapter-05-01","continuityId":"prime","affordanceNote":"knowledge-yugeon-sponsor-known 지식 취득 근거"}

@@ -12,11 +12,11 @@
 
 `manifest.json`의 `benchmarkEligibility`는 아직 `false`이고 `humanReviewStatus`는 `approved`다. 이 승인은 blueprint 조건부 GOOD 기준이며, chapter/scene plan 진입만 허용한다. plan 자체의 사람 검수(gate B)는 아직 통과하지 않았고, 원고 생성과 benchmark 편입은 여전히 금지다. `revision`은 검수 의견을 반영한 현재 `narrative/blueprint.md` 파일의 SHA-256이다.
 
-- plan revision digest: `86cd74936e630f3a761b374940828ce28440e3b18dde1abacccf9d6ec12e9668`
+- plan revision digest: `85b04eaa73a04e1c91ebe148c2e9d47da63fe8fde3afe91d517bd68e792e4c53`
   - `narrative/`의 구조화된 truth 15개 산출물을 `continuities → world → characters → goals → conflicts → propositions → events → causal_edges → relations → relationship_transitions → knowledge_states → timeline → chapter_plans → scenes → planned_evidence` 순서로 이어붙인 SHA-256.
   - 이 digest는 `tests/shared/narrative-benchmark/plan-contemporary-romance-s-001.test.ts`에서 자동 검증한다. plan을 수정하면 테스트가 먼저 실패하므로 문서의 digest도 함께 갱신해야 한다.
 - 재생성: `node tools/generate-plan.mjs`
-- 구조 검증: `SKIP_DB_TEST_SETUP=1 pnpm vitest run tests/shared/narrative-benchmark/plan-contemporary-romance-s-001.test.ts` (5/5 통과, structuralIssues=0)
+- 구조 검증: `SKIP_DB_TEST_SETUP=1 pnpm vitest run tests/shared/narrative-benchmark/plan-contemporary-romance-s-001.test.ts` (7/7 통과, structuralIssues=0)
 
 ## SSOT 4.2 구조 상태
 
@@ -38,11 +38,11 @@ corpus/contemporary-romance-s-001/
     causal_edges.jsonl              # 16개 인과 edge (비순환)
     relations.jsonl                 # 21개 관계 상태 구간 (방향×차원별 구간 연속)
     relationship_transitions.jsonl  # 15개 관계 전이
-    knowledge_states.jsonl          # 15개 지식 상태
+    knowledge_states.jsonl          # 22개 지식 상태 (인물×명제 쌍별 구간 연속)
     timeline.jsonl                  # 16개 (present, event별 1개)
     chapter_plans.jsonl             # 16화 (S<=20)
     scenes.jsonl                    # 32개 (화당 2 scene)
-    planned_evidence.jsonl          # 61개 evidence affordance 계획 (실제 evidence 아님)
+    planned_evidence.jsonl          # 86개 evidence affordance 계획 (실제 evidence 아님)
   tools/generate-plan.mjs           # 결정적 truth/plan 생성기
   evaluation/.gitkeep               # evidence/query/gold는 원고 이후
   review/.gitkeep                   # formal target review는 plan 검수 뒤

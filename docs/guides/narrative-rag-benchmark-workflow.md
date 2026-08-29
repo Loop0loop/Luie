@@ -56,8 +56,10 @@
 - blueprint 검수: 조건부 `GOOD`, `60/100`; schema와 Story Instance 분리 및 truth type 보강 반영 완료
 - manifest: `humanReviewStatus: "approved"`, `benchmarkEligibility: false`
 - 현재 미생성: 원고, 실제 evidence/query/gold, 평가 결과
-- 구조화 완료: `narrative/`의 world/characters/goals/conflicts/propositions/events/causal_edges/relations/relationship_transitions/knowledge_states/timeline/chapter_plans/scenes/planned_evidence, plan revision digest `86cd74936e630f3a761b374940828ce28440e3b18dde1abacccf9d6ec12e9668`, 구조 validator 통과(72/72)
-- 2026-08-29 재검증에서 `유건 → 서린` affection의 12~15화 구간 공백을 발견해 관계 상태를 신설하고, validator에 "전이 직전 구간 인접성" 검사를 추가했다. 이 때문에 plan digest가 갱신됐다.
+- 구조화 완료: `narrative/`의 world/characters/goals/conflicts/propositions/events/causal_edges/relations/relationship_transitions/knowledge_states/timeline/chapter_plans/scenes/planned_evidence, plan revision digest `85b04eaa73a04e1c91ebe148c2e9d47da63fe8fde3afe91d517bd68e792e4c53`, 구조 validator 통과(74/74)
+- 2026-08-29 재검증에서 `유건 → 서린` affection의 12~15화 구간 공백을 발견해 관계 상태를 신설하고, validator에 "전이 직전 구간 인접성" 검사를 추가했다.
+- 2026-08-29 2차 보강: 지식 상태 15개 → 22개(선언된 인물×명제 쌍 13개 모두 구간 공백 0), planned evidence 61개 → 86개(truth 그룹의 70%가 근거 2건 이상, long_range 3건). `temporal_order`는 이 pack 범위에서 제외했다. 승인된 사건 16개와 인과 구조는 변경하지 않았다.
+- 위 변경 때문에 plan digest가 두 번 갱신됐다. 현재 값은 `85b04eaa…`이며 plan 테스트가 이 값을 고정한다.
 - 다음 작업: plan 사람 검수(gate B) 뒤 통과 시에만 원고 생성
 
 ### Step 1. 평가 계약을 코드로 만든다
@@ -307,10 +309,10 @@ S 단계는 규모가 작으므로 scored query를 전수 검수한다. 원고 r
 
 지금 바로 해야 할 일은 원고 작성이 아니다.
 
-> **작성된 `contemporary-romance-s-001` chapter/scene plan(plan revision digest `86cd74936e630f3a761b374940828ce28440e3b18dde1abacccf9d6ec12e9668`)을 gate B 기준으로 사람이 검수한다.**
+> **작성된 `contemporary-romance-s-001` chapter/scene plan(plan revision digest `85b04eaa73a04e1c91ebe148c2e9d47da63fe8fde3afe91d517bd68e792e4c53`)을 gate B 기준으로 사람이 검수한다.**
 
 구조화된 truth와 16화 plan은 이미 작성돼 구조 validator(identity/world/causality/relationship/knowledge/manuscript)를 `structuralIssues=0`으로 통과했다. 이제 확인할 것은 자동 검증이 판정하지 못하는 개연성이다: `정당한 긴급 판단 + 잘못된 후속 절차`가 서로 다른 planned evidence로 분리 판정 가능한지, 각 인물의 정보 취득 시점(서린의 halt-cause/replacement 10화 취득)이 그 이전 행동의 근거로 오용되지 않는지, 관계 전이(9화 파열, 11~12화 회복)의 trigger가 충분한지, 16화에서 padding 없이 완결되는지.
 
-함께 판단해야 할 항목이 하나 더 있다. `knowledge_states`의 취득 이전 baseline이 명제별로 일관되지 않다. `power-risk`, `sponsor-plan`은 `unknown`을 1화부터 명시하지만 `halt-cause`, `process-breach`는 사건 이후부터만 선언한다. 특히 `유건`의 `process-breach`는 7~11화가 비어 있어 그 구간의 `character_knowledge` 질문에 gold가 없다. 명시 baseline을 추가할지 "선언 없음 = unknown" 규칙을 문서화할지 결정해야 한다.
+함께 확인해야 할 항목이 하나 더 있다. 지식 baseline은 "선언된 모든 (인물, 명제) 쌍이 명제 성립 회차부터 마지막 화까지 공백 없이 덮는다"로 확정하고 상태 7개를 추가했다. 특히 유건의 `process-breach`를 7~11화 `misinformed`로 명시해, 긴급 중단은 정당하다고 믿으면서 공동 확인 생략은 위반이 아니라고 오인하는 구간이 질문 대상이 됐다. 검수자는 이 오인이 유건의 성격과 상황에서 개연적인지, 12화 인정이 너무 갑작스럽지 않은지 판단해야 한다.
 
 이 gate B 검수가 통과하기 전에는 `manuscript/chapter_*.txt`를 만들지 않는다. `benchmarkEligibility`도 계속 `false`로 유지한다.

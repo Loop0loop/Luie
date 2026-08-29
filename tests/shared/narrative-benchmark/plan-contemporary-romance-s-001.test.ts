@@ -235,8 +235,60 @@ describe("plan-stage structure: contemporary-romance-s-001", () => {
       hash.update(readFileSync(resolve(NARRATIVE_DIR, name)));
     }
     expect(hash.digest("hex")).toBe(
-      "86cd74936e630f3a761b374940828ce28440e3b18dde1abacccf9d6ec12e9668",
+      "85b04eaa73a04e1c91ebe148c2e9d47da63fe8fde3afe91d517bd68e792e4c53",
     );
+  });
+
+  // The shared validator checks that a knowledge state never starts before its
+  // acquisition event, but it cannot check COVERAGE: a missing interval means a
+  // character_knowledge query at that chapter has no gold answer. Expressing this in
+  // the shared validator would need a new "knowable from" field on the proposition
+  // schema, so the rule lives here, where the plan convention is defined.
+  it("covers every declared character/proposition pair without a gap", () => {
+    const propositionById = new Map(propositions.map((p) => [p.propositionId, p]));
+    const byPair = new Map<string, typeof knowledgeStates>();
+    for (const state of knowledgeStates) {
+      const key = `${state.characterId}|${state.propositionId}`;
+      byPair.set(key, [...(byPair.get(key) ?? []), state]);
+    }
+
+    const defects: string[] = [];
+    for (const [key, states] of byPair) {
+      const sorted = [...states].sort((a, b) => a.validFromChapter - b.validFromChapter);
+      const proposition = propositionById.get(sorted[0].propositionId);
+      const windowStart = proposition?.validFromChapter ?? 1;
+      if (sorted[0].validFromChapter > windowStart) {
+        defects.push(`${key}: starts at ch${sorted[0].validFromChapter}, proposition exists from ch${windowStart}`);
+      }
+      for (let i = 0; i < sorted.length - 1; i += 1) {
+        const end = sorted[i].validToChapter;
+        if (end === null || sorted[i + 1].validFromChapter !== end + 1) {
+          defects.push(`${key}: gap between ch${end} and ch${sorted[i + 1].validFromChapter}`);
+        }
+      }
+      if (sorted[sorted.length - 1].validToChapter !== null) {
+        defects.push(`${key}: last interval ends at ch${sorted[sorted.length - 1].validToChapter}`);
+      }
+    }
+    expect(defects).toEqual([]);
+  });
+
+  // SSOT 4.4: a benchmark where every answer needs exactly one quote only measures
+  // single-hop lookup. These thresholds are the plan-stage floor for multi_evidence
+  // and long_range affordance; they are not accuracy targets.
+  it("plans multi-chapter evidence affordance", () => {
+    const chapterOf = new Map(
+      plannedEvidence.map((p) => [p.evidenceId, Number(p.plannedChapterId.replace("chapter-", ""))]),
+    );
+    const groups = [
+      ...propositions.map((p) => p.evidenceIds),
+      ...knowledgeStates.filter((k) => k.state !== "unknown").map((k) => k.evidenceIds),
+    ].map((ids) => ids.map((id) => chapterOf.get(id) ?? 0).sort((a, b) => a - b));
+
+    const multiEvidence = groups.filter((g) => g.length >= 2).length;
+    const longRange = groups.filter((g) => g[g.length - 1] - g[0] >= 8).length;
+    expect(multiEvidence / groups.length).toBeGreaterThanOrEqual(0.6);
+    expect(longRange).toBeGreaterThanOrEqual(3);
   });
 
   it("resolves every referenced evidence ID to a declared planned affordance", () => {
