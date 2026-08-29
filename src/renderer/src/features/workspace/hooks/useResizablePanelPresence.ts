@@ -26,7 +26,6 @@ type ResizablePanelPresenceState = {
  */
 const INSTANT_CLOSE_SUPPRESS_MS = 200;
 
-
 const isPanelRegistrationError = (error: unknown): boolean =>
   error instanceof Error &&
   (error.message.startsWith("Layout not found for Panel") ||

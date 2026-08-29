@@ -47,14 +47,6 @@ type UseRestoredPanelSizeOptions = {
   ratio: number;
   /** panel이 열려 있고 open/close transition 중이 아닐 때만 true. */
   isSettled: boolean;
-  /**
-   * 현재 적용 중인 min/max 제약을 나타내는 값. 변하면 저장 ratio를 다시 적용한다.
-   *
-   * min/max는 px 상수를 컨테이너 폭으로 나눠 만든다. 그런데 첫 렌더에서는 컨테이너 폭이 아직
-   * 0이라 viewport 폭으로 대체되므로, 실제 폭이 도착하기 전까지 밴드가 틀리다. 그 틀린 밴드에
-   * 걸려 클램프된 폭은 밴드가 정정된 뒤 다시 적용해야 저장 폭으로 돌아온다.
-   */
-  constraintsKey?: string;
 };
 
 /**
@@ -78,7 +70,6 @@ export function useRestoredPanelSize({
   panelRef,
   ratio,
   isSettled,
-  constraintsKey,
 }: UseRestoredPanelSizeOptions): (layout: Layout) => void {
   const liveRatioRef = useRef<number | null>(null);
 
@@ -109,7 +100,7 @@ export function useRestoredPanelSize({
         error,
       });
     }
-  }, [constraintsKey, isSettled, panelId, panelRef, ratio]);
+  }, [isSettled, panelId, panelRef, ratio]);
 
   return useCallback(
     (layout: Layout) => {
