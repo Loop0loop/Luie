@@ -25,7 +25,7 @@ import { EDITOR_DND_MIN_PANEL_WIDTH_PX } from "@renderer/shared/constants/editor
 import { SPLIT_PANEL_MIN_SIZE_PERCENT } from "@renderer/shared/constants/layoutSizing";
 import { WORKSPACE_PANEL_CLOSE_ANIMATION_MS } from "@renderer/features/workspace/constants/uiDefaults";
 import {
-  isProgrammaticLayoutChange,
+  isLayoutPersistenceSuppressed,
   suppressLayoutPersistenceFor,
 } from "@renderer/features/workspace/hooks/useLayoutPersist";
 import { useProjectLayoutStore } from "@renderer/features/workspace/stores/projectLayoutStore";
@@ -212,7 +212,7 @@ export function WorkspacePanels({
     if (typeof widthPx !== "number" || !Number.isFinite(widthPx)) return;
     liveWidthPxRef.current = widthPx;
     if (!isResizingResearchRef.current) return;
-    if (isProgrammaticLayoutChange()) return;
+    if (isLayoutPersistenceSuppressed()) return;
     if (widthPx < RESEARCH_PANEL_MIN_WIDTH_PX) return;
     pendingWidthPxRef.current = Math.round(widthPx);
   }, []);

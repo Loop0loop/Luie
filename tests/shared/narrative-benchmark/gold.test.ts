@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createValidInput, issueMessages, revision } from "./fixture";
+import {
+  createValidInput,
+  issueMessages,
+  refreshQueryRevision,
+  revision,
+} from "./fixture";
 
 describe("narrative benchmark typed gold", () => {
   it("accepts entity, fact, relationship state/change, and knowledge gold", () => {
@@ -86,6 +91,12 @@ describe("narrative benchmark typed gold", () => {
       },
     );
 
+    for (const query of [
+      ...input.corpus.retrievalQueries.slice(1),
+      ...input.corpus.reasoningQueries.slice(1),
+    ]) {
+      refreshQueryRevision(query);
+    }
     expect(issueMessages(input)).toEqual([]);
   });
 

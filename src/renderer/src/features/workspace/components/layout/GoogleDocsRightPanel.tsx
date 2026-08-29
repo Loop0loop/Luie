@@ -26,6 +26,7 @@ import {
 } from "@renderer/shared/constants/layoutSizing";
 import { beginLayoutRestoring } from "@renderer/features/workspace/hooks/useProjectLayoutPersistence";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
+import { getDocsRightPanelId } from "@renderer/features/workspace/utils/docsLayoutModel";
 
 const ResearchPanel = lazy(() =>
   import("@renderer/domains/world").then((module) => ({
@@ -377,7 +378,7 @@ export function GoogleDocsRightPanel({
           보간되게 한다. drag 시에는 minPx 플로어가 유지된다. */}
       <Panel
         key={renderedTab}
-        id={`right-context-panel-${renderedTab}`}
+        id={getDocsRightPanelId(renderedTab)}
         panelRef={panelRef}
         data-panel-animated={isOpening || isClosing ? "true" : undefined}
         groupResizeBehavior="preserve-pixel-size"

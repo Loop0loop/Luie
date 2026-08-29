@@ -9,6 +9,34 @@ const logger = createLogger("useRestoredPanelSize");
 /** 이 폭 안이면 목표 비율이 이미 panel에 반영된 것으로 본다. */
 const LIVE_RATIO_TOLERANCE = 0.5;
 
+// NOTE: 저장 폭 적용은 사용자 제스처 중에 절대 일어나면 안 된다. drag 중에도
+// `useLayoutPersist`가 멈춤마다 ratio를 커밋하므로, 그 값으로 되돌리면 패널이 특정 px에
+// 붙어 있는 것처럼 보인다. 포인터가 눌려 있는 동안에는 적용을 미룬다.
+let pointerDownDepth = 0;
+
+const isPointerDown = (): boolean => pointerDownDepth > 0;
+
+if (typeof window !== "undefined") {
+  window.addEventListener(
+    "pointerdown",
+    () => {
+      pointerDownDepth += 1;
+    },
+    { capture: true, passive: true },
+  );
+  const releasePointer = () => {
+    pointerDownDepth = 0;
+  };
+  window.addEventListener("pointerup", releasePointer, {
+    capture: true,
+    passive: true,
+  });
+  window.addEventListener("pointercancel", releasePointer, {
+    capture: true,
+    passive: true,
+  });
+}
+
 type UseRestoredPanelSizeOptions = {
   /** `Panel.id`와 같은 값. */
   panelId: string;
@@ -19,6 +47,14 @@ type UseRestoredPanelSizeOptions = {
   ratio: number;
   /** panel이 열려 있고 open/close transition 중이 아닐 때만 true. */
   isSettled: boolean;
+  /**
+   * 현재 적용 중인 min/max 제약을 나타내는 값. 변하면 저장 ratio를 다시 적용한다.
+   *
+   * min/max는 px 상수를 컨테이너 폭으로 나눠 만든다. 그런데 첫 렌더에서는 컨테이너 폭이 아직
+   * 0이라 viewport 폭으로 대체되므로, 실제 폭이 도착하기 전까지 밴드가 틀리다. 그 틀린 밴드에
+   * 걸려 클램프된 폭은 밴드가 정정된 뒤 다시 적용해야 저장 폭으로 돌아온다.
+   */
+  constraintsKey?: string;
 };
 
 /**
@@ -42,11 +78,13 @@ export function useRestoredPanelSize({
   panelRef,
   ratio,
   isSettled,
+  constraintsKey,
 }: UseRestoredPanelSizeOptions): (layout: Layout) => void {
   const liveRatioRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!isSettled) return;
+    if (isPointerDown()) return;
 
     const liveRatio = liveRatioRef.current;
     if (
@@ -71,7 +109,7 @@ export function useRestoredPanelSize({
         error,
       });
     }
-  }, [isSettled, panelId, panelRef, ratio]);
+  }, [constraintsKey, isSettled, panelId, panelRef, ratio]);
 
   return useCallback(
     (layout: Layout) => {

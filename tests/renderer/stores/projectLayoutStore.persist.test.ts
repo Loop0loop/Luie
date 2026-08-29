@@ -219,9 +219,9 @@ describe("projectLayoutStore persist rehydrate", () => {
     expect(state.sidebarWidths.characterSidebar).toBe(336);
     expect(state.sidebarWidths.docsBinder).toBe(312);
     expect(state.sidebarWidths.factionSidebar).toBe(348);
-    expect(state.layoutSurfaceRatios["docs.panel.character"]).toBe(39);
-    expect(state.layoutSurfaceRatios["docs.panel.faction"]).toBe(41);
-    expect(state.layoutSurfaceRatios["docs.panel.world"]).toBe(42);
+    // docs research 탭은 패널 하나를 공유한다. 탭별로 저장돼 있던 39/41/42는 가장 넓은
+    // 값으로 승계되어야 한다(사용자가 잡아둔 폭보다 좁아지지 않게).
+    expect(state.layoutSurfaceRatios["docs.panel.research"]).toBe(42);
     expect(state.workspace.panels).toEqual([
       {
         id: "research-character",

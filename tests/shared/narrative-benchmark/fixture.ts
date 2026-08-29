@@ -3,12 +3,37 @@ import {
   NARRATIVE_BENCHMARK_SCHEMA_VERSION,
   type NarrativeBenchmarkValidationInput,
 } from "../../../src/shared/schemas/narrativeBenchmark";
+import { canonicalRevision } from "../../../src/shared/utils/canonicalRevision";
 import { validateNarrativeBenchmark } from "../../../src/shared/validation/narrativeBenchmark";
 
 export const sha = (value: string): string =>
   createHash("sha256").update(value, "utf8").digest("hex");
 
 export const revision = (value: string): string => sha(`revision:${value}`);
+
+type BenchmarkQuery =
+  | NarrativeBenchmarkValidationInput["corpus"]["retrievalQueries"][number]
+  | NarrativeBenchmarkValidationInput["corpus"]["reasoningQueries"][number];
+
+export function refreshQueryRevision(query: BenchmarkQuery): string {
+  query.revision = canonicalRevision(query);
+  return query.revision;
+}
+
+export function refreshQueryAndReview(
+  input: NarrativeBenchmarkValidationInput,
+  query: BenchmarkQuery,
+): string {
+  const queryType =
+    query.benchmarkLayer === "retrieval" ? "retrieval_query" : "reasoning_query";
+  const queryRevision = refreshQueryRevision(query);
+  for (const review of input.corpus.humanReviews) {
+    if (review.targetType === queryType && review.targetId === query.queryId) {
+      review.reviewedRevision = queryRevision;
+    }
+  }
+  return queryRevision;
+}
 
 function evidenceRange(content: string, quote: string) {
   const utf16Index = content.indexOf(quote);
@@ -25,7 +50,7 @@ export function createValidInput(): NarrativeBenchmarkValidationInput {
   const retrievalRevision = revision("retrieval-query");
   const reasoningRevision = revision("reasoning-query");
 
-  return {
+  const input: NarrativeBenchmarkValidationInput = {
     corpus: {
       manifest: {
         schemaVersion: NARRATIVE_BENCHMARK_SCHEMA_VERSION,
@@ -272,6 +297,14 @@ export function createValidInput(): NarrativeBenchmarkValidationInput {
       },
     ],
   };
+
+  for (const query of [
+    ...input.corpus.retrievalQueries,
+    ...input.corpus.reasoningQueries,
+  ]) {
+    refreshQueryAndReview(input, query);
+  }
+  return input;
 }
 
 export function issueMessages(input: NarrativeBenchmarkValidationInput): string[] {

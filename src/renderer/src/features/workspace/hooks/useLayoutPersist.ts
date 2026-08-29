@@ -7,7 +7,6 @@ import {
   type LayoutSurfaceId,
 } from "@renderer/shared/constants/layoutSizing";
 import { createLogger } from "@shared/logger";
-import { isLayoutRestoring } from "./useSidebarResizeCommit";
 import { SIDEBAR_RESIZE_COMMIT_IDLE_MS } from "@renderer/features/workspace/constants/uiDefaults";
 
 const logger = createLogger("useLayoutPersist");
@@ -23,19 +22,24 @@ export function suppressLayoutPersistenceFor(durationMs: number): void {
   }, durationMs);
 }
 
-const isLayoutPersistenceSuppressed = (): boolean =>
-  layoutPersistenceSuppressionDepth > 0;
-
 /**
- * 프로그램이 만든 layout 변화인지 판정하는 단일 진입점.
+ * 저장을 건너뛸지 여부.
  *
- * 억제 신호가 두 갈래로 존재한다. `suppressLayoutPersistenceFor`가 올리는 module counter와
- * `beginLayoutRestoring`이 세팅하는 `data-layout-restoring` DOM 속성이다. 저장 경로가 둘 중
- * 하나만 확인하면 다른 경로로 들어온 프로그램적 resize가 사용자 값으로 오인되어 저장된다.
- * 새 저장 경로는 개별 신호가 아니라 이 함수를 쓴다.
+ * 비슷해 보이는 신호가 하나 더 있다. `beginLayoutRestoring()`이 세팅하는
+ * `data-layout-restoring` DOM 속성이다. 하지만 두 신호는 **교환 가능하지 않다.**
+ *
+ * - 이 counter: `suppressLayoutPersistenceFor()`로 "지금 의도적인 프로그램적 resize가
+ *   진행 중"임을 알린다. 저장 억제 신호로 정확하다.
+ * - `data-layout-restoring`: 컴포넌트가 고정 layout을 적용하는 중임을 전역 CSS에 알리는
+ *   신호다. `useFixedPixelPanelGroupLayout`이 ResizeObserver로 컨테이너 폭이 바뀔 때마다
+ *   재적용하므로, **다른 패널을 드래그하는 동안에도 계속 켜진다.** 이걸 저장 억제에 쓰면
+ *   무관한 컴포넌트가 서로의 저장을 막는다(실제로 docs 사이드바 폭이 저장되지 않았다).
+ *
+ * 그래서 저장 경로는 counter만 본다. DOM 속성은 실제 포인터 조작으로 사용자 의도가 이미
+ * 확인된 곳(`useSidebarResizeCommit`)에서만 보조 가드로 쓴다.
  */
-export const isProgrammaticLayoutChange = (): boolean =>
-  isLayoutRestoring() || isLayoutPersistenceSuppressed();
+export const isLayoutPersistenceSuppressed = (): boolean =>
+  layoutPersistenceSuppressionDepth > 0;
 
 export const isPersistableLayoutRatio = (ratio: number): boolean =>
   Number.isFinite(ratio) && ratio > 0.1;

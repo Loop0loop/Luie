@@ -232,7 +232,7 @@ describe("projectLayoutStore", () => {
         characterSidebar: 330,
       },
       layoutSurfaceRatios: {
-        "docs.panel.character": 38,
+        "docs.panel.research": 38,
       },
     });
     store.upsertProjectLayout("project-a", {
@@ -240,7 +240,7 @@ describe("projectLayoutStore", () => {
         factionSidebar: 350,
       },
       layoutSurfaceRatios: {
-        "docs.panel.faction": 41,
+        "docs.panel.analysis": 41,
       },
     });
 
@@ -249,8 +249,9 @@ describe("projectLayoutStore", () => {
       .getProjectLayout("project-a");
     expect(saved.sidebarWidths.characterSidebar).toBe(330);
     expect(saved.sidebarWidths.factionSidebar).toBe(350);
-    expect(saved.layoutSurfaceRatios["docs.panel.character"]).toBe(38);
-    expect(saved.layoutSurfaceRatios["docs.panel.faction"]).toBe(41);
+    // 두 번째 patch가 첫 번째 surface 값을 지우지 않아야 한다.
+    expect(saved.layoutSurfaceRatios["docs.panel.research"]).toBe(38);
+    expect(saved.layoutSurfaceRatios["docs.panel.analysis"]).toBe(41);
   });
 
   it("stores workspace research panel layout with its last split size", () => {

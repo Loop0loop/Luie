@@ -1,3 +1,4 @@
+import { canonicalRevision } from "../../utils/canonicalRevision";
 import type {
   NarrativeReasoningQuery,
   NarrativeRetrievalQuery,
@@ -22,6 +23,12 @@ function validateQueryScope(
 ): void {
   const { continuityById, evidenceById, chapterById } = state;
   const path = ["corpus", collection, index];
+  if (canonicalRevision(query) !== query.revision) {
+    addIssue(ctx, "Query revision does not match canonical payload", [
+      ...path,
+      "revision",
+    ]);
+  }
   const allowed = new Set(query.scope.allowedContinuityIds);
   const forbidden = new Set(query.scope.forbiddenContinuityIds);
   if (!state.corpus.manifest.genres.includes(query.genre)) {
@@ -106,6 +113,26 @@ export function validateQueries(
       state,
       ctx,
     );
+    if (new Set(query.modes).size !== query.modes.length) {
+      addIssue(ctx, "Reasoning query modes must be unique", [
+        "corpus",
+        "reasoningQueries",
+        index,
+        "modes",
+      ]);
+    }
+    if (
+      corpus.manifest.benchmarkEligibility &&
+      (!query.modes.includes("oracle_context") ||
+        !query.modes.includes("end_to_end"))
+    ) {
+      addIssue(ctx, "Eligible reasoning query requires both evaluation modes", [
+        "corpus",
+        "reasoningQueries",
+        index,
+        "modes",
+      ]);
+    }
     validateReasoningGold(query, index, state, ctx);
     for (const claimId of query.forbiddenClaimIds) {
       if (!propositionById.has(claimId)) {

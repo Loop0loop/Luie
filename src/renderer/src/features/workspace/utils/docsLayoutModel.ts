@@ -18,8 +18,15 @@ export type DocsLayoutSurfaceState = {
   rightPanelRatio: number | null;
 };
 
+/**
+ * 우측 패널의 `Panel.id`. surface와 같은 단위로 묶어야 한다.
+ *
+ * PanelGroup은 layout을 panel id 조합별로 캐싱하고(`mutableState.layouts[ids.join(",")]`)
+ * 그 캐시가 `defaultSize`보다 우선한다. id를 탭별로 두면 공용 폭을 저장해도 탭마다 폭이
+ * 따로 기억되어, 탭을 닫았다 다른 탭을 열면 그 탭이 마지막에 가졌던 폭이 나온다.
+ */
 export const getDocsRightPanelId = (tab: DocsLayoutPanelTab): string =>
-  `right-context-panel-${tab}`;
+  `right-context-panel-${getDocsLayoutPanelSurface(tab).replace("docs.panel.", "")}`;
 
 const isDocsLayoutPanelTab = (tab: DocsRightTab): tab is DocsLayoutPanelTab =>
   tab !== null &&

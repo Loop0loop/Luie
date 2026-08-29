@@ -36,7 +36,7 @@
   5. 4.2 디렉터리 구조 생성
   6. 원고가 아닌 현대 로맨스 blueprint 작성
   7. blueprint 사람 검수
-  8. 통과한 구조에서 chapter/scene plan 작성
+  8. 통과한 구조에서 chapter/scene plan 작성 [현재 단계]
   9. 그다음에만 20화 이하 원고 생성
   10. evidence alignment와 query/gold 작성
   11. manuscript/query 사람 검수

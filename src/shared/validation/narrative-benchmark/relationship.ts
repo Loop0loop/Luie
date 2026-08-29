@@ -95,6 +95,19 @@ export function validateRelationships(
           ...path, "validFromChapter",
         ]);
       }
+      // Overlap alone is not enough: a directed dimension must have exactly one
+      // defined state at every chapter between its first and last state. If the
+      // before state ends earlier than the transition chapter, the chapters in
+      // between have NO relationship state, so a relationship_state query at
+      // time T inside that hole would have no gold answer.
+      if (
+        before.validToChapter === null ||
+        before.validToChapter !== transition.validFromChapter - 1
+      ) {
+        addIssue(ctx, "Before state must end immediately before the transition chapter", [
+          ...path, "beforeStateId",
+        ]);
+      }
     }
     if (!continuityById.has(transition.continuityId)) {
       addIssue(ctx, "Unknown transition continuity", [...path, "continuityId"]);

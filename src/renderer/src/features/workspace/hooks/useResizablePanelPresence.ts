@@ -17,6 +17,16 @@ type ResizablePanelPresenceState = {
   shouldRender: boolean;
 };
 
+/**
+ * 애니메이션이 꺼진 닫기 경로의 저장 억제 창.
+ *
+ * 이 경로는 transition이 없어 즉시 collapse+unmount한다. 억제가 필요한 구간은 collapse가
+ * 유발하는 layout emit과 그에 이어지는 unmount 커밋뿐이므로 짧게 잡는다. 억제 counter는
+ * 모듈 전역이라 길게 잡으면 무관한 패널의 사용자 resize까지 삼킨다.
+ */
+const INSTANT_CLOSE_SUPPRESS_MS = 200;
+
+
 const isPanelRegistrationError = (error: unknown): boolean =>
   error instanceof Error &&
   (error.message.startsWith("Layout not found for Panel") ||
@@ -82,6 +92,10 @@ export function useResizablePanelPresence({
     }
 
     if (!enableAnimations || durationMs <= 0) {
+      // NOTE: 억제 없이 collapse하면 안 된다. 이 경로는 minSize를 완화하는 렌더를 거치지
+      // 않으므로 `resize("0%")`가 minSize로 클램프되고, PanelGroup이 그 min 비율을 emit한다.
+      // 저장 경로가 그 값을 사용자 폭으로 오인해 커밋하면 저장 폭이 min에 고착된다.
+      suppressLayoutPersistenceFor(INSTANT_CLOSE_SUPPRESS_MS);
       collapsePanelToZero(panelRef);
       setShouldRender(false);
       setIsClosing(false);

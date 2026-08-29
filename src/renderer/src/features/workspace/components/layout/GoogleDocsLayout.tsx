@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import {
   Group as PanelGroup,
   Panel,
@@ -12,6 +12,10 @@ import {
   getResponsivePanelSize,
   toPanelPercentSize,
 } from "@renderer/shared/constants/layoutSizing";
+import {
+  getSidebarWidthConfig,
+  toPxSize,
+} from "@renderer/shared/constants/sidebarSizing";
 import { GoogleDocsEditorColumn } from "./GoogleDocsEditorColumn";
 import { GoogleDocsHeader } from "./GoogleDocsHeader";
 import { GoogleDocsPanelRail } from "./GoogleDocsPanelRail";
@@ -21,6 +25,7 @@ import { useGoogleDocsLayoutState } from "./useGoogleDocsLayoutState";
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 import { useEditorStore } from "@renderer/domains/editor";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
+import { beginLayoutRestoring } from "@renderer/features/workspace/hooks/useProjectLayoutPersistence";
 import { cn } from "@shared/types/utils";
 
 const isMacOS = navigator.userAgent.toLowerCase().includes("mac");
@@ -48,15 +53,14 @@ export function GoogleDocsLayout({
     activePanelSurface,
     activeRightTab,
     closeRightPanel,
-    docsSidebarConfig,
-    docsSidebarRatio,
     handleRightTabClick,
+    docsSidebarWidthPx,
     isSidebarOpen,
     onRightLayoutChanged,
-    onSidebarLayoutChanged,
     pageMargins,
     rightPanelConfig,
     rightPanelRatio,
+    sidebarResize,
     setDocsSidebarOpen,
     setFocusedClosableTarget,
     setPageMargins,
@@ -67,19 +71,13 @@ export function GoogleDocsLayout({
   const docsLayoutGroupRef = useRef<HTMLDivElement | null>(null);
   const docsSidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
   const docsLayoutGroupWidth = useElementWidth(docsLayoutGroupRef);
-  const docsSidebarSize = getResponsivePanelSize(
-    docsLayoutGroupWidth,
-    docsSidebarConfig,
-  );
   const rightPanelSize = rightPanelConfig
     ? getResponsivePanelSize(docsLayoutGroupWidth, rightPanelConfig)
     : null;
-  const safeDocsSidebarRatio =
-    typeof docsSidebarRatio === "number" &&
-    Number.isFinite(docsSidebarRatio) &&
-    docsSidebarRatio >= 5
-      ? docsSidebarRatio
-      : getLayoutSurfaceDefaultRatio("docs.sidebar");
+  // NOTE: min/max/기본값 모두 px 상수에서 그대로 온다. react-resizable-panels는 px 문자열을
+  // 네이티브로 해석하므로(`ie()`의 "px" 분기) ratio로 변환할 이유가 없다.
+  const docsSidebarWidthConfig = getSidebarWidthConfig("docsBinder");
+  const docsSidebarOpenSize = toPxSize(docsSidebarWidthPx);
   const {
     isClosing: isSidebarClosing,
     isOpening: isSidebarOpening,
@@ -87,9 +85,38 @@ export function GoogleDocsLayout({
   } = useResizablePanelPresence({
     enableAnimations,
     isOpen: isSidebarOpen,
-    openSize: toPanelPercentSize(safeDocsSidebarRatio),
+    openSize: docsSidebarOpenSize,
     panelRef: docsSidebarPanelRef,
   });
+
+  // NOTE: 닫았다 열면 Panel이 remount되어 `defaultSize`가 저장 px으로 다시 읽힌다. 하지만
+  // 새로고침/재시작 경로는 그것만으로 부족하다. project layout restore가 이 컴포넌트 mount
+  // 뒤에 저장 px을 채우고, 이미 mount된 Panel은 `defaultSize` 변경을 읽지 않기 때문이다.
+  // 그래서 열려 있고 transition 중이 아닐 때는 panel handle로도 저장 px을 적용한다.
+  // `beginLayoutRestoring()`으로 감싸야 이 프로그램적 resize가 저장 폭으로 커밋되지 않는다.
+  const isSidebarSettled =
+    shouldRenderSidebar && !isSidebarOpening && !isSidebarClosing;
+  useEffect(() => {
+    if (!isSidebarSettled) return undefined;
+    const panel = docsSidebarPanelRef.current;
+    if (!panel) return undefined;
+
+    const endRestoring = beginLayoutRestoring();
+    const frameId = requestAnimationFrame(() => {
+      try {
+        panel.resize(docsSidebarOpenSize);
+      } catch {
+        // Panel이 아직 group layout에 등록되지 않은 프레임에서는 resize가 throw한다.
+        // 이 시점에는 mount 시 defaultSize가 같은 값이므로 무시한다.
+      }
+      endRestoring();
+    });
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      endRestoring();
+    };
+  }, [docsSidebarOpenSize, isSidebarSettled]);
 
   return (
     <div className="relative flex h-screen bg-app font-sans text-fg transition-colors duration-200">
@@ -98,27 +125,30 @@ export function GoogleDocsLayout({
         className="relative flex h-full w-full overflow-hidden bg-sidebar"
         id="docs-layout-group"
         elementRef={docsLayoutGroupRef}
-        onLayoutChanged={onSidebarLayoutChanged}
       >
         {/* NOTE: collapsible Panel은 drag로 minSize 밑으로 줄면 collapsedSize로 스냅되어
             사이드바가 숨겨진다. minPx를 하드 플로어로 유지하려면 우측 패널과 동일하게
             collapsible 없이 열림 상태로 조건부 렌더링한다. 열림/닫힘 transition 중에만
-            minSize를 완화(0%)해 flex-grow가 0까지 보간되게 한다. */}
+            minSize를 완화(0px)해 flex-grow가 0까지 보간되게 한다.
+            `preserve-pixel-size`는 창 폭이 바뀌어도 사이드바 px을 유지시킨다. 그룹에 상대
+            크기 패널이 최소 하나 필요한데 `docs-main-shell`이 그 역할을 한다. */}
         {shouldRenderSidebar && (
           <>
             <Panel
               id="left-sidebar"
               panelRef={docsSidebarPanelRef}
+              groupResizeBehavior="preserve-pixel-size"
+              onResize={sidebarResize.onResize}
               data-panel-animated={
                 isSidebarOpening || isSidebarClosing ? "true" : undefined
               }
-              defaultSize={toPanelPercentSize(safeDocsSidebarRatio)}
+              defaultSize={docsSidebarOpenSize}
               minSize={
                 isSidebarOpening || isSidebarClosing
-                  ? "0%"
-                  : docsSidebarSize.minSize
+                  ? "0px"
+                  : toPxSize(docsSidebarWidthConfig.minPx)
               }
-              maxSize={docsSidebarSize.maxSize}
+              maxSize={toPxSize(docsSidebarWidthConfig.maxPx)}
               className={`flex min-w-0 shrink-0 flex-col bg-sidebar ${
                 enableAnimations
                   ? isSidebarClosing
@@ -143,8 +173,12 @@ export function GoogleDocsLayout({
               </div>
             </Panel>
 
+            {/* NOTE: `resizeHandleProps`가 "사용자가 핸들을 잡았다"는 신호를 만든다. 이게
+                없으면 `useSidebarResizeCommit`이 모든 resize를 프로그램적 변화로 보고 아무
+                폭도 저장하지 않는다. */}
             <PanelResizeHandle
               data-separator-feature="docs.sidebar"
+              {...sidebarResize.resizeHandleProps}
               className="relative z-20 w-1 shrink-0 cursor-col-resize bg-sidebar"
             >
               <div className="absolute inset-y-0 -left-1 -right-1" />

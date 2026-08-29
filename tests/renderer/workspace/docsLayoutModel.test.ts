@@ -20,9 +20,25 @@ describe("docsLayoutModel", () => {
     expect(getDocsRightPanelId("analysis")).toBe(
       "right-context-panel-analysis",
     );
-    expect(getDocsRightPanelId("plotboard")).toBe(
-      "right-context-panel-plotboard",
-    );
+    // research 계열 탭은 패널 하나를 공유하므로 id/surface도 하나여야 한다.
+    for (const tab of [
+      "character",
+      "event",
+      "faction",
+      "world",
+      "scrap",
+      "plotboard",
+      "untitled",
+    ] as const) {
+      expect(getDocsRightPanelId(tab)).toBe("right-context-panel-research");
+      expect(buildDocsRightLayoutPersistEntries(tab)).toEqual([
+        {
+          id: "right-context-panel-research",
+          index: 1,
+          surface: "docs.panel.research",
+        },
+      ]);
+    }
     expect(getActiveDocsRightTab(true, "analysis", "world")).toBe("analysis");
     expect(getActiveDocsRightTab(true, "plotboard", "world")).toBe("plotboard");
     expect(getActiveDocsRightTab(true, null, "world")).toBe("world");

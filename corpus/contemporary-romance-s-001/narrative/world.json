@@ -1,0 +1,31 @@
+{
+  "worldId": "world-dasi-room",
+  "name": "다시쓰는 방",
+  "rules": [
+    {
+      "ruleId": "rule-safe-bench",
+      "statement": "전기 제품은 안전 점검을 통과한 작업대에서만 다룬다."
+    },
+    {
+      "ruleId": "rule-consent-promo",
+      "statement": "참여자의 물건과 사연은 홍보에 쓰기 전에 별도 동의를 받는다."
+    },
+    {
+      "ruleId": "rule-role-split",
+      "statement": "정서린은 프로그램 설계와 수리 교육을, 한유건은 예산·공간·주민 조정을 책임진다."
+    },
+    {
+      "ruleId": "rule-cobyline",
+      "statement": "두 공동 책임자의 이름과 역할은 모든 외부 문서에 병기한다."
+    },
+    {
+      "ruleId": "rule-joint-notice",
+      "statement": "긴급 안전 조치는 누구나 시작할 수 있지만 후속 공지와 재개안은 공동 확인한다."
+    },
+    {
+      "ruleId": "rule-romance-after-contract",
+      "statement": "로맨스의 최종 선택은 재단의 계약 평가와 대금 정산이 끝난 뒤 이뤄진다."
+    }
+  ],
+  "revision": "8bc8de5c6a907cef181a84e66089252568e0fc9203c6614e99f2551f7588030e"
+}

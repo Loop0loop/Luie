@@ -8,7 +8,7 @@ import {
 
 describe("layoutSizing", () => {
   it("accepts only declared layout surface ids", () => {
-    const validSurface: LayoutSurfaceId = "docs.panel.world";
+    const validSurface: LayoutSurfaceId = "docs.panel.research";
 
     expect(isLayoutSurfaceId(validSurface)).toBe(true);
     expect(isLayoutSurfaceId("toString")).toBe(false);

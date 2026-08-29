@@ -64,6 +64,18 @@ describe("narrative benchmark narrative invariants", () => {
     );
   });
 
+  it("rejects relationship transitions that leave an undefined interval", () => {
+    const input = createValidInput();
+    // before state ends at ch1, transition is at ch2; pulling the end back to
+    // ch0 is impossible, so instead push the transition (and after state) to ch3,
+    // leaving chapter 2 with no defined state for that directed dimension.
+    input.corpus.relationshipStates[1].validFromChapter = 3;
+    input.corpus.relationshipTransitions[0].validFromChapter = 3;
+    expect(issueMessages(input)).toContain(
+      "Before state must end immediately before the transition chapter",
+    );
+  });
+
   it("requires an acquisition event for suspected knowledge", () => {
     const input = createValidInput();
     input.corpus.knowledgeStates[0].state = "suspected";
@@ -87,6 +99,8 @@ describe("narrative benchmark narrative invariants", () => {
     input.corpus.chapters[1].eventIds = ["event-hidden-source"];
     input.corpus.scenes[0].eventIds = ["event-private-number-found"];
     input.corpus.scenes[1].eventIds = ["event-hidden-source"];
+    input.corpus.timeline[0].narrativeChapter = 2;
+    input.corpus.timeline[1].narrativeChapter = 1;
 
     expect(issueMessages(input)).toEqual([]);
   });

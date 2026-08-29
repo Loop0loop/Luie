@@ -19,14 +19,17 @@ export const DEFAULT_LAYOUT_PANEL_SURFACE_MAP = {
   context: "default.panel",
 } as const;
 
+// NOTE: docs 레이아웃의 우측 패널은 물리적으로 하나이고 탭만 교체된다(GoogleDocsRightPanel).
+// research 계열 탭은 사이징 정책(min/max)이 동일하므로 폭도 하나만 저장한다. AI 분석과
+// 스냅샷/휴지통/에디터/내보내기는 min/max가 달라 각자 surface를 유지한다.
 export const DOCS_LAYOUT_PANEL_SURFACE_MAP = {
-  character: "docs.panel.character",
-  event: "docs.panel.event",
-  faction: "docs.panel.faction",
-  world: "docs.panel.world",
-  scrap: "docs.panel.scrap",
-  plotboard: "docs.panel.plotboard",
-  untitled: "docs.panel.untitled",
+  character: "docs.panel.research",
+  event: "docs.panel.research",
+  faction: "docs.panel.research",
+  world: "docs.panel.research",
+  scrap: "docs.panel.research",
+  plotboard: "docs.panel.research",
+  untitled: "docs.panel.research",
   analysis: "docs.panel.analysis",
   snapshot: "docs.panel.snapshot",
   trash: "docs.panel.trash",
@@ -136,13 +139,7 @@ export const LAYOUT_SURFACE_CONFIG: Record<
   "default.sidebar": { ...DEFAULT_SIDEBAR_CONFIG },
   "default.panel": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 24 },
   "docs.sidebar": { ...DEFAULT_SIDEBAR_CONFIG, defaultRatio: 17 },
-  "docs.panel.character": { ...DOCS_RESEARCH_PANEL_CONFIG },
-  "docs.panel.event": { ...DOCS_RESEARCH_PANEL_CONFIG },
-  "docs.panel.faction": { ...DOCS_RESEARCH_PANEL_CONFIG },
-  "docs.panel.world": { ...DOCS_RESEARCH_PANEL_CONFIG },
-  "docs.panel.scrap": { ...DOCS_RESEARCH_PANEL_CONFIG },
-  "docs.panel.plotboard": { ...DOCS_RESEARCH_PANEL_CONFIG },
-  "docs.panel.untitled": { ...DOCS_RESEARCH_PANEL_CONFIG },
+  "docs.panel.research": { ...DOCS_RESEARCH_PANEL_CONFIG },
   "docs.panel.analysis": { ...DOCS_AI_PANEL_CONFIG },
   "docs.panel.snapshot": { ...DOCS_SNAPSHOT_PANEL_CONFIG },
   "docs.panel.trash": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 26 },
@@ -170,13 +167,7 @@ const LEGACY_WIDTH_KEYS_BY_LAYOUT_SURFACE: Record<LayoutSurfaceId, string[]> = {
   "default.sidebar": ["mainSidebar"],
   "default.panel": ["mainContext"],
   "docs.sidebar": ["docsBinder"],
-  "docs.panel.character": ["docsCharacter", "character"],
-  "docs.panel.event": ["docsEvent", "event"],
-  "docs.panel.faction": ["docsFaction", "faction"],
-  "docs.panel.world": ["docsWorld", "world"],
-  "docs.panel.scrap": ["docsScrap", "scrap"],
-  "docs.panel.plotboard": ["docsPlotboard", "plotboard"],
-  "docs.panel.untitled": ["docsUntitled", "untitled"],
+  "docs.panel.research": ["docsCharacter", "character"],
   "docs.panel.analysis": ["docsAnalysis", "analysis"],
   "docs.panel.snapshot": ["docsSnapshot", "snapshot"],
   "docs.panel.trash": ["docsTrash", "trash"],
@@ -275,6 +266,36 @@ const deriveLegacyLayoutSurfaceRatio = (
   return null;
 };
 
+/**
+ * 탭별 `docs.panel.*` ratio만 있던 payload를 공용 `docs.panel.research`로 승계한다.
+ * 사용자가 어느 탭에서든 넓게 잡아둔 폭보다 좁아지지 않도록 최대값을 택한다.
+ */
+const LEGACY_DOCS_RESEARCH_RATIO_KEYS = [
+  "docs.panel.character",
+  "docs.panel.event",
+  "docs.panel.faction",
+  "docs.panel.world",
+  "docs.panel.scrap",
+  "docs.panel.plotboard",
+  "docs.panel.untitled",
+] as const;
+
+const deriveLegacyDocsResearchRatio = (
+  explicitInput: Record<string, unknown> | null,
+): number | null => {
+  if (!explicitInput) return null;
+  let widest: number | null = null;
+  for (const legacyKey of LEGACY_DOCS_RESEARCH_RATIO_KEYS) {
+    const ratio = normalizeLayoutSurfaceRatioInput(
+      "docs.panel.research",
+      explicitInput[legacyKey],
+    );
+    if (ratio === null) continue;
+    if (widest === null || ratio > widest) widest = ratio;
+  }
+  return widest;
+};
+
 export const normalizeLayoutSurfaceRatiosWithMigrations = (
   input: unknown,
   legacySidebarWidths?: unknown,
@@ -291,6 +312,14 @@ export const normalizeLayoutSurfaceRatiosWithMigrations = (
     if (explicitRatio !== null) {
       normalized[surface] = explicitRatio;
       continue;
+    }
+
+    if (surface === "docs.panel.research") {
+      const legacyDocsResearchRatio = deriveLegacyDocsResearchRatio(explicitInput);
+      if (legacyDocsResearchRatio !== null) {
+        normalized[surface] = legacyDocsResearchRatio;
+        continue;
+      }
     }
 
     const legacyRatio = deriveLegacyLayoutSurfaceRatio(

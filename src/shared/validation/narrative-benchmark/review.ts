@@ -5,6 +5,19 @@ import {
   type ValidationState,
 } from "./context";
 
+const REVIEW_STAGE_TARGETS: Record<string, readonly string[]> = {
+  blueprint: [
+    "world",
+    "character",
+    "event",
+    "relationship_transition",
+    "knowledge_state",
+    "foreshadowing",
+  ],
+  manuscript: ["source_document"],
+  query_gold: ["retrieval_query", "reasoning_query"],
+};
+
 function buildReviewTargets(state: ValidationState): Map<string, string> {
   const { corpus, sourceDocuments } = state;
   const targets = new Map<string, string>();
@@ -41,6 +54,12 @@ function validateReviewRecords(
   const targets = buildReviewTargets(state);
   state.corpus.humanReviews.forEach((review, index) => {
     const path = ["corpus", "humanReviews", index];
+    if (!REVIEW_STAGE_TARGETS[review.stage]?.includes(review.targetType)) {
+      addIssue(ctx, "Review stage does not allow target type", [
+        ...path,
+        "targetType",
+      ]);
+    }
     const targetRevision = targets.get(`${review.targetType}:${review.targetId}`);
     if (!targetRevision) {
       addIssue(ctx, "Unknown human review target", [...path, "targetId"]);

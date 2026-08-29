@@ -365,6 +365,56 @@ Recall@K나 answer accuracy 숫자는 S benchmark와 human review가 완료된 �
   → 사건 이후 관계 상태의 변화
 ```
 
+### 7.3 첫 현대 로맨스 S pack 현재 상태
+
+2026-08-28 기준 canonical 작업 경로는 `corpus/contemporary-romance-s-001/`이다.
+
+- 작업 제목: `마감 뒤에 남는 사람`
+- manifest: `genres: ["contemporary", "romance"]`, `scaleTier: "S"`, `prime` 단일 세계선
+- blueprint revision: `a99c5ed0d76aa518e36a7d643f329fa71f83a7044f87a172239e8ca6e83e7cd2`
+- 사람 검수: 조건부 `GOOD`, 완성도 메모 `60/100`
+- manifest 상태: `humanReviewStatus: "approved"`, `benchmarkEligibility: false`
+- 승인 범위: 구조화된 truth와 20화 이하 chapter/scene plan 작성까지
+- 금지 범위: plan 검수 전 manuscript 생성, 원고 전 evidence alignment와 query/gold 생성, benchmark 편입
+
+현재 blueprint는 재사용 가능한 Narrative Schema와 첫 Story Instance를 분리한다. 핵심 평가 계약은 수리·안전이라는 소재가 아니라 다음의 부분 정합성이다.
+
+```text
+긴급 중단 판단은 정당함
++ 공동 확인 없는 후속 공지는 절차 위반임
++ 제한된 정보를 가진 상대의 의심은 설명 가능함
++ 확인 전 공개 단정은 과잉임
+```
+
+따라서 Event, Canonical Fact/Proposition, Interpretation, Character Knowledge, Relationship State를 별도 truth type으로 유지한다. 기존 16개 사건의 인과 spine과 `contract-close → mutual-choice`는 승인 revision에서 유지한다.
+
+아직 생성하지 않은 항목:
+
+- `manuscript/chapter_*.txt`
+- evidence alignment(실제 offset/hash evidence), retrieval/reasoning query, gold answer
+- retrieval, oracle, end-to-end 평가 결과
+
+2026-08-28 갱신: 승인된 blueprint를 구조화된 truth와 chapter/scene plan으로 변환했다.
+
+- 생성 위치: `corpus/contemporary-romance-s-001/narrative/`
+- 산출물: `world.json`, `continuities.json`, `characters.jsonl`(5), `goals.jsonl`(7), `conflicts.jsonl`(4), `propositions.jsonl`(9), `events.jsonl`(16), `causal_edges.jsonl`(16), `relations.jsonl`(21), `relationship_transitions.jsonl`(15), `knowledge_states.jsonl`(15), `timeline.jsonl`(16), `chapter_plans.jsonl`(16화, S<=20), `scenes.jsonl`(32), `planned_evidence.jsonl`(61)
+- plan revision digest: `86cd74936e630f3a761b374940828ce28440e3b18dde1abacccf9d6ec12e9668`
+  - 계산 규칙: `continuities.json`, `world.json`, `characters.jsonl`, `goals.jsonl`, `conflicts.jsonl`, `propositions.jsonl`, `events.jsonl`, `causal_edges.jsonl`, `relations.jsonl`, `relationship_transitions.jsonl`, `knowledge_states.jsonl`, `timeline.jsonl`, `chapter_plans.jsonl`, `scenes.jsonl`, `planned_evidence.jsonl`을 이 순서로 이어붙인 SHA-256. 사람 검수는 digest에 묶이므로 plan을 수정하면 digest도 반드시 갱신한다.
+- 결정적 생성기: `corpus/contemporary-romance-s-001/tools/generate-plan.mjs`
+- 구조 검증: `tests/shared/narrative-benchmark/plan-contemporary-romance-s-001.test.ts`가 실제 acceptance validator(identity/world/causality/relationship/knowledge/manuscript)를 plan 입력에 적용해 `structuralIssues=0`으로 통과. 이 테스트는 plan revision digest 재현성도 함께 고정한다. narrative-benchmark 스위트 72/72 통과.
+- `planned_evidence.jsonl`은 실제 evidence 행이 아니라 affordance 계획이다. `propositions/relations/causal_edges`의 `evidenceIds`와 비-unknown `knowledge_states`의 `evidenceIds`는 이 planned ID를 참조하며, 실제 offset/hash evidence는 원고 뒤 step 10에서 구현한다.
+
+2026-08-29 재검증: plan을 재확인하는 과정에서 관계 상태 구간에 검증되지 않던 공백을 발견해 수정했다.
+
+- 발견: `han-yugeon → jeong-seorin`의 `affection`이 11화에서 끝나고 다음 상태가 16화에서 시작해 12~15화에 정의된 관계 상태가 없었다. 기존 validator는 구간 **중첩**만 검사했고 **공백**은 검사하지 않았다.
+- 영향: 13화 시점 `relationship_state` query에 gold 상태가 존재하지 않는다. 이 pack의 핵심 taxonomy에 직접 해당하는 결함이다.
+- validator 보강: `relationship.ts`에 "전이의 before 상태는 전이 회차 직전 화에서 끝나야 한다"를 추가했다. 열린 구간(`validToChapter: null`)을 before 상태로 쓰는 것도 거부한다. negative 테스트를 `narrative.test.ts`에 추가했다.
+- plan 수정: `rel-yugeon-seorin-aff-03`(12~15화, 0.3, "통제를 내려놓았으나 계약 중 표현 보류")을 신설하고 16화 상태를 `-04`로 이동했으며, 12화 전이 `transition-yugeon-aff-undistort`(trigger `event-accountability`)를 추가했다. 관계 상태 21개, 전이 15개, planned evidence 61개가 됐고 6개 방향×차원 모두 구간이 연속이다.
+
+남은 gate B 판단 항목: `knowledge_states`의 취득 이전 baseline 규칙이 명제별로 일관되지 않다. `power-risk`, `sponsor-plan`은 `unknown[1-…]`을 명시하지만 `halt-cause`, `process-breach`는 사건 이후부터만 선언한다. 특히 `han-yugeon`의 `process-breach`는 7~11화가 비어 있어 "본인이 절차 위반을 인지했는가"라는 핵심 질문에 그 구간의 gold가 없다. 명시 baseline을 추가할지, "선언 없음 = unknown" 규칙을 SSOT에 명문화할지는 서사 판단이 필요하므로 사람 검수에서 결정한다.
+
+다음 gate는 이 plan의 사건 밀도·지식 취득 시점·관계 전이·evidence affordance를 사람이 검수(gate B)하는 것이다. 자동 구조 검증은 통과했으나 사람 검수는 아직 열려 있고, 이 검수가 통과하기 전에는 원고를 만들지 않는다. `benchmarkEligibility`는 계속 `false`다.
+
 이후 장르별 필수 taxonomy는 다음을 기본값으로 삼되, 실제 S blueprint 검수에서 확정한다.
 
 - 추리: `character_knowledge`, `event_causality`, `foreshadowing`
@@ -406,12 +456,17 @@ S 단계는 scored case 전부를 사람 검수한다. 이후 단계의 검수 �
 ```text
 DONE: 목적과 Retrieval/Reasoning 분리 확정
   → DONE: 10개 taxonomy와 query/evidence 기본 계약 구현
-  → DONE: Narrative Benchmark v1 Zod schema와 validator 골격 구현
-  → NOW: source hash·query 최소 조건·시간 의미 등 기본 무결성 보강
-  → 현대 로맨스 S 단계 1작품 blueprint 작성
-  → blueprint 사람 검수
-  → 구조에서 20화 이하 원고 생성
-  → GOOD/BAD/AMBIGUOUS/NOISE 분류
+  → DONE: Narrative Benchmark v1 schema와 acceptance validator 구현·회귀 검증
+  → DONE: source hash, canonical query revision, timeline/manuscript 정합성, review 결정표, reasoning mode guardrail
+  → DONE: SSOT 4.2 디렉터리와 현대 로맨스 시장·작업 방식 조사 기록 생성
+  → DONE: 현대 로맨스 S 1작품 blueprint 작성
+  → DONE: blueprint 조건부 GOOD 사람 검수와 피드백 반영
+  → DONE: world/character/event/proposition/knowledge/relationship truth 구조화
+  → DONE: 20화 이하 chapter/scene plan 작성 (16화, 구조 validator 통과)
+  → NOW: plan 인과·지식·관계·evidence affordance 사람 검수
+  → 통과한 plan에서만 20화 이하 원고 생성
+  → evidence alignment와 retrieval/reasoning query·gold 작성
+  → manuscript/query 사람 검수와 GOOD/BAD/AMBIGUOUS/NOISE 분류
   → Retrieval benchmark
   → Oracle reasoning benchmark
   → End-to-end RAG benchmark
@@ -420,4 +475,4 @@ DONE: 목적과 Retrieval/Reasoning 분리 확정
   → 모든 선행 gate 통과 후에만 규모 확장
 ```
 
-첫 신규 benchmark는 `contemporary` + `romance` 현대 로맨스 S pack으로 고정한다. `원문 속 발화·행동·사실 → Character Knowledge State → Relationship State → Relationship Change`를 하나의 연결된 기본 축으로 검증한다. 첫 pack은 `prime` 단일 세계선과 20화 이하 범위만 사용하며, 실제 원고 생성은 기본 validator와 query 계약이 승인된 뒤에만 시작한다.
+첫 신규 benchmark는 `contemporary` + `romance` 현대 로맨스 S pack으로 고정한다. `contemporary-romance-s-001` blueprint revision `a99c5ed0d76aa518e36a7d643f329fa71f83a7044f87a172239e8ca6e83e7cd2`가 조건부 GOOD을 받았고, 이를 근거로 구조화된 truth와 16화 chapter/scene plan(plan revision digest `86cd74936e630f3a761b374940828ce28440e3b18dde1abacccf9d6ec12e9668`)을 작성해 구조 validator를 통과시켰다. `benchmarkEligibility`는 계속 `false`다. 다음 gate는 plan 사람 검수(gate B)이며, 이 검수 전에는 실제 원고를 생성하지 않는다.

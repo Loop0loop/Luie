@@ -32,7 +32,7 @@ import {
 import { toPercentSize } from "@renderer/shared/constants/sidebarSizing";
 import {
   getPanelLayoutValue,
-  isProgrammaticLayoutChange,
+  isLayoutPersistenceSuppressed,
   suppressLayoutPersistenceFor,
   useLayoutPersist,
 } from "@renderer/features/workspace/hooks/useLayoutPersist";
@@ -145,7 +145,7 @@ export default function MainLayout({
       // NOTE: 패널 close 애니메이션은 `resize("0%")`를 호출하지만 PanelGroup이 minSize(470px)로
       // 클램프해 min 비율을 emit한다. 그 값을 저장하면 사용자가 넓혀둔 폭이 min으로 고착된다.
       // WorkspacePanels가 닫기 직전 억제를 걸어두므로 여기서 함께 존중한다.
-      if (isProgrammaticLayoutChange()) return;
+      if (isLayoutPersistenceSuppressed()) return;
       additionalPanelIds.forEach((panelId, panelIndex) => {
         const rawSize = getPanelLayoutValue(layout, panelId, panelIndex + 1);
         if (typeof rawSize !== "number" || !Number.isFinite(rawSize)) return;

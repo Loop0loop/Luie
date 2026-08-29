@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createValidInput, issueMessages, revision } from "./fixture";
+import {
+  createValidInput,
+  issueMessages,
+  refreshQueryAndReview,
+  refreshQueryRevision,
+  revision,
+} from "./fixture";
 
 function addApprovedQueryReview(
   input: ReturnType<typeof createValidInput>,
@@ -50,11 +56,14 @@ function addModernRomanceCoverage(
     },
     expectedEvidenceIds: ["evidence-hidden-source"],
   });
+  const canonicalEntityRevision = refreshQueryRevision(
+    input.corpus.retrievalQueries[input.corpus.retrievalQueries.length - 1],
+  );
   addApprovedQueryReview(
     input,
     "retrieval_query",
     "query-modern-romance-entity",
-    entityRevision,
+    canonicalEntityRevision,
   );
 
   const stateRevision = revision("modern-romance-relationship-state");
@@ -82,11 +91,14 @@ function addModernRomanceCoverage(
     requiredEvidenceIds: ["evidence-hidden-source"],
     forbiddenClaimIds: [],
   });
+  const canonicalStateRevision = refreshQueryRevision(
+    input.corpus.reasoningQueries[input.corpus.reasoningQueries.length - 1],
+  );
   addApprovedQueryReview(
     input,
     "reasoning_query",
     "query-modern-romance-relationship-state",
-    stateRevision,
+    canonicalStateRevision,
   );
 
   const knowledgeRevision = revision("modern-romance-knowledge");
@@ -114,11 +126,14 @@ function addModernRomanceCoverage(
     requiredEvidenceIds: ["evidence-private-number"],
     forbiddenClaimIds: [],
   });
+  const canonicalKnowledgeRevision = refreshQueryRevision(
+    input.corpus.reasoningQueries[input.corpus.reasoningQueries.length - 1],
+  );
   addApprovedQueryReview(
     input,
     "reasoning_query",
     "query-modern-romance-knowledge",
-    knowledgeRevision,
+    canonicalKnowledgeRevision,
   );
 }
 
@@ -128,6 +143,8 @@ describe("modern romance taxonomy coverage", () => {
     input.corpus.manifest.genres = ["contemporary", "romance"];
     input.corpus.retrievalQueries[0].genre = "contemporary";
     input.corpus.reasoningQueries[0].genre = "romance";
+    refreshQueryAndReview(input, input.corpus.retrievalQueries[0]);
+    refreshQueryAndReview(input, input.corpus.reasoningQueries[0]);
 
     const messages = issueMessages(input);
     expect(messages).toContain(
@@ -146,6 +163,8 @@ describe("modern romance taxonomy coverage", () => {
     input.corpus.manifest.genres = ["contemporary", "romance"];
     input.corpus.retrievalQueries[0].genre = "contemporary";
     input.corpus.reasoningQueries[0].genre = "romance";
+    refreshQueryAndReview(input, input.corpus.retrievalQueries[0]);
+    refreshQueryAndReview(input, input.corpus.reasoningQueries[0]);
     addModernRomanceCoverage(input);
 
     expect(issueMessages(input)).toEqual([]);

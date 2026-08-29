@@ -90,6 +90,7 @@ export function validateKnowledgeAndTimeline(
     );
   }
 
+  const timelineByEvent = new Map<string, typeof corpus.timeline>();
   corpus.timeline.forEach((entry, index) => {
     const path = ["corpus", "timeline", index];
     const event = eventById.get(entry.eventId);
@@ -99,6 +100,39 @@ export function validateKnowledgeAndTimeline(
     }
     if (event && event.continuityId !== entry.continuityId) {
       addIssue(ctx, "Timeline continuity mismatch", [...path, "continuityId"]);
+    }
+    if (event && event.eventTime !== entry.eventTime) {
+      addIssue(ctx, "Timeline eventTime must match event", [...path, "eventTime"]);
+    }
+    const chapter = corpus.chapters.find(
+      (candidate) => candidate.chapterNumber === entry.narrativeChapter,
+    );
+    if (!chapter || !chapter.eventIds.includes(entry.eventId)) {
+      addIssue(ctx, "Timeline narrativeChapter must contain the event", [
+        ...path,
+        "narrativeChapter",
+      ]);
+    }
+    const entries = timelineByEvent.get(entry.eventId) ?? [];
+    entries.push(entry);
+    timelineByEvent.set(entry.eventId, entries);
+  });
+
+  corpus.events.forEach((event, index) => {
+    const entries = timelineByEvent.get(event.eventId) ?? [];
+    if (
+      !entries.some(
+        (entry) =>
+          entry.narrativeChapter === event.firstNarratedChapter &&
+          entry.eventTime === event.eventTime,
+      )
+    ) {
+      addIssue(ctx, "Event lacks matching first timeline entry", [
+        "corpus",
+        "events",
+        index,
+        "firstNarratedChapter",
+      ]);
     }
   });
 }

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "narrative-benchmark/v1",
+  "corpusId": "contemporary-romance-s-001",
+  "title": "마감 뒤에 남는 사람",
+  "language": "ko-KR",
+  "scaleTier": "S",
+  "genres": ["contemporary", "romance"],
+  "seed": "contemporary-romance-s-001-blueprint-v1",
+  "revision": "a99c5ed0d76aa518e36a7d643f329fa71f83a7044f87a172239e8ca6e83e7cd2",
+  "benchmarkEligibility": false,
+  "humanReviewStatus": "approved"
+}

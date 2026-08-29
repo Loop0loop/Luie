@@ -1,0 +1,14 @@
+{
+  "corpusId": "contemporary-romance-s-001",
+  "status": "internal-blueprint-only",
+  "origin": "original-synthetic-blueprint",
+  "thirdPartyTextIncluded": false,
+  "marketResearchUsedAsCorpus": false,
+  "commercialWorkImitationAllowed": false,
+  "publicationApproved": false,
+  "notes": [
+    "Public ranking and workflow sources are cited only in research.md.",
+    "No source synopsis, sentence, character, or proprietary manuscript is included as benchmark content.",
+    "Human originality and rights review is required before manuscript generation."
+  ]
+}
