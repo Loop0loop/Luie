@@ -248,13 +248,20 @@ export function BinderBarCompactHover({
       closeDelayMs={180}
       suppressHoverOpen={suppressHoverOpen}
       forceOpen={(isPinned && activeCompactTab !== null) || selectedSnapshot !== null}
+      // NOTE: 리사이즈 중에는 hover-close를 잠근다. 이게 없으면 드래그 중 포인터가
+      // activation zone을 벗어나는 순간 flyout이 자동으로 닫히기 시작해, 다른 레이아웃의
+      // 도킹형 패널과 달리 리사이즈 가능한 영역이 좁게 제한된다.
+      isResizing={isResizing}
     >
       {/* NOTE: traffic lights 공간만큼 상단 여백을 줘 내용이 표면 확장에 따라 올라가지 않게 한다. */}
       <div style={{ height: sidebarTopOffset }} aria-hidden="true" className="shrink-0" />
       <div className="flex-1 min-h-0 flex flex-row">
         <div
           className={cn(
-            "h-full border-l border-border/40 bg-panel overflow-hidden",
+            // NOTE: 레일(아이콘)과 콘텐츠(연구/스냅샷 등) 표면 색을 하나로 통일한다.
+            // bg-panel(#28282b)을 쓰면 GoogleDocsPanelRail/RightPanel(#212123, bg-sidebar와
+            // 동일 값)과 색이 갈라져 보인다.
+            "h-full border-l border-border/40 bg-sidebar overflow-hidden",
             !isResizing && "transition-[width] duration-150 ease-out",
           )}
           style={{
@@ -294,7 +301,9 @@ export function BinderBarCompactHover({
                 <div
                   role="separator"
                   aria-orientation="vertical"
-                  className="absolute left-0 top-0 bottom-0 z-20 w-2 cursor-col-resize bg-transparent hover:bg-accent/20"
+                  // NOTE: 다른 레이아웃(GoogleDocsLayout/MainLayout)의 separator는 항상
+                  // 무색이다. hover 시 색이 뜨는 건 이 컴포넌트만의 차이였으므로 제거한다.
+                  className="absolute left-0 top-0 bottom-0 z-20 w-2 cursor-col-resize bg-transparent"
                   onPointerDown={handleResizePointerDown}
                   onPointerMove={handleResizePointerMove}
                   onPointerUp={endResize}
