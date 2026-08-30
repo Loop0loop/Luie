@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useId } from "react";
 import { X } from "lucide-react";
+import { Dialog } from "radix-ui";
 import { cn } from "@shared/types/utils";
 import { useTranslation } from "react-i18next";
 
@@ -13,6 +14,19 @@ interface ModalProps {
   width?: string;
 }
 
+/**
+ * NOTE: Radix Dialog를 쓰는 이유는 두 가지 실제 버그 때문이다.
+ *
+ * 1. stacking context. 이전에는 `fixed inset-0 z-9999`를 호출 위치에 그대로 렌더했다.
+ *    `MainLayout`의 main-content-panel이 `relative z-0`으로 stacking context를 만들기
+ *    때문에 z-9999가 그 안에 갇혀, 형제인 sidebar-panel(z-10)과 body로 portal되는
+ *    editor toolbar(z-toolbar 120)가 모달 위에 그려지고 클릭까지 됐다.
+ * 2. focus. modal 밖으로 Tab이 빠져나가고 Escape·focus 복원이 없었다.
+ *
+ * Dialog.Portal이 body로 빼내 stacking context를 벗어나고, Dialog.Content가 focus
+ * trap·Escape·focus 복원·`aria-modal`을 담당한다. portal은 `.research-surface`의
+ * token 평탄화 범위에서도 벗어나므로 Research 안에서 열린 모달의 표면·경계가 살아난다.
+ */
 export function Modal({
   isOpen,
   onClose,
@@ -21,25 +35,53 @@ export function Modal({
   footer,
   width,
 }: ModalProps) {
-  if (!isOpen) return null;
+  const { t } = useTranslation();
 
   return (
-    <div className="fixed inset-0 z-9999 bg-black/60 backdrop-blur-xs flex items-center justify-center animate-in fade-in duration-200" onMouseDown={onClose}>
-      <div
-        className={cn("bg-panel border border-border rounded-shell shadow-modal w-full flex flex-col overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-2 duration-200", !width && "max-w-md")}
-        style={{ width: width || undefined, maxWidth: width ? '90vw' : undefined }}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-secondary">
-          <div className="text-[15px] font-semibold text-fg">{title}</div>
-          <button className="bg-transparent border-none text-muted cursor-pointer p-1 rounded flex hover:bg-hover hover:text-fg transition-colors" onClick={onClose}>
-            <X className="icon-lg" />
-          </button>
-        </div>
-        <div className="p-5 text-sm leading-relaxed text-muted">{children}</div>
-        {footer && <div className="px-5 py-4 border-t border-border bg-secondary">{footer}</div>}
-      </div>
-    </div>
+    <Dialog.Root
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-modal bg-black/60 backdrop-blur-xs" />
+        <Dialog.Content
+          // NOTE: Dialog.Description을 쓰지 않으므로 Radix의 describedby 경고를 끈다.
+          aria-describedby={undefined}
+          className={cn(
+            "fixed left-1/2 top-1/2 z-modal flex w-full -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-panel border border-border bg-panel shadow-panel",
+            !width && "max-w-md",
+          )}
+          style={{
+            width: width || undefined,
+            maxWidth: width ? "90vw" : undefined,
+          }}
+        >
+          <div className="flex items-center justify-between border-b border-border bg-secondary px-5 py-4">
+            <Dialog.Title className="text-[15px] font-semibold text-fg">
+              {title}
+            </Dialog.Title>
+            <Dialog.Close asChild>
+              <button
+                type="button"
+                aria-label={t("common.close")}
+                title={t("common.close")}
+                className="flex cursor-pointer rounded border-none bg-transparent p-1 text-muted transition-colors hover:bg-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <X className="icon-lg" />
+              </button>
+            </Dialog.Close>
+          </div>
+          <div className="p-5 text-sm leading-relaxed text-muted">{children}</div>
+          {footer && (
+            <div className="border-t border-border bg-secondary px-5 py-4">
+              {footer}
+            </div>
+          )}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 
@@ -74,13 +116,18 @@ export function ConfirmDialog({
       title={title}
       footer={
         <div className="flex justify-end gap-3 w-full">
-          <button className="px-4 py-2 bg-transparent border border-border rounded-control text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg" onClick={onCancel}>
+          <button
+            type="button"
+            className="px-4 py-2 bg-transparent border border-border rounded-control text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            onClick={onCancel}
+          >
             {effectiveCancelLabel}
           </button>
           <button
+            type="button"
             className={cn(
-              "px-4 py-2 border-none rounded-control text-white text-[13px] font-medium cursor-pointer transition-all hover:brightness-110",
-              isDestructive ? "bg-red-500 hover:bg-red-600" : "bg-accent"
+              "px-4 py-2 border-none rounded-control text-on-accent text-[13px] font-medium cursor-pointer transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+              isDestructive ? "bg-destructive" : "bg-accent",
             )}
             onClick={onConfirm}
           >
@@ -134,16 +181,27 @@ export function PromptDialog({
       title={title}
       footer={
         <div className="flex justify-end gap-3 w-full">
-          <button className="px-4 py-2 bg-transparent border border-border rounded-control text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg" onClick={onCancel}>
+          <button
+            type="button"
+            className="px-4 py-2 bg-transparent border border-border rounded-control text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            onClick={onCancel}
+          >
             {effectiveCancelLabel}
           </button>
-          <button className="px-4 py-2 bg-accent border-none rounded-control text-white text-[13px] font-medium cursor-pointer transition-all hover:brightness-110" onClick={handleSubmit}>
+          <button
+            type="button"
+            className="px-4 py-2 bg-accent border-none rounded-control text-on-accent text-[13px] font-medium cursor-pointer transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            onClick={handleSubmit}
+          >
             {effectiveConfirmLabel}
           </button>
         </div>
       }
     >
       {message && <div className="mb-3 text-muted">{message}</div>}
+      <label className="sr-only" htmlFor={inputId}>
+        {title}
+      </label>
       <input
         key={`${isOpen}-${defaultValue}`}
         id={inputId}
@@ -152,8 +210,9 @@ export function PromptDialog({
         placeholder={placeholder}
         autoFocus
         onKeyDown={(e) => {
+          // NOTE: Escape는 Dialog.Content가 처리한다. 여기서 또 onCancel을 부르면
+          // 같은 키 입력에 취소가 두 번 실행된다.
           if (e.key === "Enter") handleSubmit();
-          if (e.key === "Escape") onCancel();
         }}
       />
     </Modal>

@@ -12,7 +12,7 @@
   --color-card: var(--bg-surface);
   --color-popover: var(--bg-surface);
   --color-input: var(--bg-element);
-  --color-ring: var(--ring-color, var(--accent-bg));
+  --color-ring: var(--accent-bg);
   --color-hover: var(--bg-hover);
   --color-bg-secondary: var(--bg-secondary);
   --color-bg-panel: var(--bg-panel);
@@ -45,8 +45,14 @@
   --color-success-fg: var(--success-fg);
   --color-danger-fg: var(--danger-fg);
 
+  /* NOTE: border는 세 역할로 나뉜다.
+     - `border`: 면을 나누는 장식선. 3:1까지 올리면 grid prison이 된다.
+     - `border-active`: hover/선택 시 한 단계 강해지는 선.
+     - `border-strong`: input·toggle·checkbox처럼 WCAG 1.4.11이 3:1을 요구하는
+       실제 UI 경계. 장식선과 값을 공유하면 두 요구를 동시에 만족할 수 없다. */
   --color-border: var(--border-default);
   --color-border-active: var(--border-active);
+  --color-border-strong: var(--border-strong);
   --color-border-focus: var(--border-focus);
 
   /* NOTE: canvas의 floating chrome은 반투명 유리 위에 control을 올린다. 일반 surface
@@ -161,7 +167,11 @@
   --bg-app: #ffffff;
   --bg-sidebar: #f5f5f7;
   --bg-panel: #ffffff;
-  --bg-research: #ffffff;
+  /* NOTE: Research는 부유 표면이 아니라 chrome이다. editor(`--bg-app`)를 따라가면
+     초점 면과 작업대가 같은 색이 되고, `--bg-panel`을 따라가면 editor보다 밝아져
+     떠 보인다. sidebar와 같은 단계에 두어야 "editor는 초점, chrome은 한 단계 물러남"
+     모델이 성립한다. theme마다 literal을 두면 이 규칙이 다시 깨지므로 alias로 묶는다. */
+  --bg-research: var(--bg-sidebar);
   --ai-panel-bg: #f8f8fa;
   --bg-surface: #ffffff;
   --bg-surface-hover: rgba(0, 0, 0, 0.04);
@@ -179,22 +189,23 @@
   --accent-bg-hover: #1d4ed8;
   --accent-fg: #ffffff;
   --success-fg: #16a34a;
-  --danger-fg: #ef4444;
+  --danger-fg: #dc2626;
 
-  --bg-primary: #ffffff;
-  --bg-secondary: #f9fafb;
-  --bg-hover: var(--bg-element-hover);
-  --bg-canvas: #ffffff;
   --accent-primary: var(--accent-bg);
   --grid-line: #e5e7eb;
-  --danger-fg: #dc2626;
 
   --border-default: #e5e5ea;
   --border-active: #d1d1d6;
+  /* NOTE: 3.25:1 on #ffffff. WCAG 1.4.11의 UI 경계 3:1을 넘기는 최소 톤으로 잡았다. */
+  --border-strong: #8e8e96;
   --border-focus: #636366;
 
-  --editor-bg: #ffffff;
-  --editor-text: #18181b;
+  /* NOTE: editor의 종이와 잉크는 theme 표면·본문색과 갈라질 수 있는 별도 역할이지만
+     현재 값은 모든 theme·temperature 조합에서 동일하다. literal을 9번 복제하면
+     한쪽만 수정되는 drift가 생기므로 alias로 두고, 갈라져야 할 때 theme 블록에서
+     덮어쓴다. */
+  --editor-bg: var(--bg-app);
+  --editor-text: var(--text-primary);
   --editor-selection: #bfdbfe;
   /* NOTE: 형광펜 기본색. 정의가 없어 canvas markdown editor의 형광펜 버튼이 아무
      배경도 칠하지 못했다. mark 위 글자가 --text-primary를 그대로 쓰므로 theme별로
@@ -231,7 +242,6 @@
   --world-draw-text-font-size: 14px;
   --world-draw-text-font-weight: 700;
 
-  --character-color-fallback: #ccc;
   --character-icon-back-size: 16px;
   --character-avatar-icon-size: 32px;
   --character-add-icon-size: 24px;
@@ -239,15 +249,6 @@
   --character-relation-min-height: 200px;
   --character-relation-font-size: 12px;
   --character-relation-margin-bottom: 8px;
-
-  /* NOTE: wiki도 theme별 core variable을 참조해 같은 accent·border·surface palette를 사용한다. */
-  --namu-blue: var(--accent-bg);
-  --namu-border: var(--border-default);
-  --namu-table-bg: var(--bg-sidebar);
-  --namu-table-label: var(--text-accent);
-  --namu-hover-bg: var(--bg-surface-hover);
-  --namu-header-text: var(--text-on-accent);
-  --namu-link: var(--text-accent);
 
   --editor-toolbar-icon-size: 16px;
   --editor-toolbar-dropdown-icon-size: 12px;
@@ -264,7 +265,6 @@
     "Courier New", monospace;
 
   /* NOTE: 제거되지 않은 legacy class가 core palette를 따르도록 alias를 유지한다. */
-  --bg-primary: var(--bg-app);
   --bg-secondary: var(--bg-element-hover);
   --bg-hover: var(--bg-element-hover);
 
@@ -288,11 +288,9 @@
   --bg-app: #1a1a1c;
   --bg-sidebar: #212123;
   --bg-panel: #28282b;
-  --bg-research: #212123;
   /* NOTE: 기본 다크 톤의 AI View 표면은 현재 확정된 #323232을 유지한다. */
   --ai-panel-bg: #323232;
   --bg-surface: #28282b;
-  --bg-panel-header: #28282b;
   /* NOTE: 이 값이 없으면 light의 rgba(0,0,0,0.04)를 상속해 dark에서 hover가 표면보다
      어두워진다. hover는 항상 표면을 밝히는 방향이어야 한다. */
   --bg-surface-hover: rgba(255, 255, 255, 0.06);
@@ -312,21 +310,20 @@
   --success-fg: #22c55e;
   --danger-fg: #ef4444;
 
-  --bg-primary: var(--bg-app);
   --bg-secondary: var(--bg-element);
   --bg-hover: var(--bg-element-hover);
-  --bg-canvas: var(--bg-app);
   --accent-primary: var(--accent-bg);
 
   /* NOTE: border는 8% white로 면을 구분하되 grid처럼 두드러지지 않게 한다. */
   --border-default: rgba(255, 255, 255, 0.08);
   --border-active: rgba(255, 255, 255, 0.16);
+  /* NOTE: 36% white. 가장 밝은 표면(--bg-element #313135) 위에서 3.07:1로,
+     8%/16%로는 도달할 수 없는 UI 경계 요구를 만족한다. */
+  --border-strong: rgba(255, 255, 255, 0.36);
   --border-focus: #52525b;
 
   --grid-line: var(--border-default);
 
-  --editor-bg: #1a1a1c;
-  --editor-text: #d0d0d4;
   --editor-selection: #1e4f91;
   --highlight-default: rgba(250, 204, 21, 0.32);
 }
@@ -336,13 +333,9 @@
   --bg-app: #191b24;
   --bg-sidebar: #222636;
   --bg-panel: #2a3041;
-  --bg-research: #2a3041;
   --ai-panel-bg: #2d3346;
   --bg-surface: #2a3041;
-  --bg-panel-header: #2a3041;
   --bg-element: #363e54;
-  --editor-bg: #191b24;
-  --editor-text: #d2d8e8;
   --text-primary: #d2d8e8;
   --text-secondary: #abb5cc;
   --text-tertiary: #78829a;
@@ -351,13 +344,9 @@
   --bg-app: #201d18;
   --bg-sidebar: #2a261f;
   --bg-panel: #322d24;
-  --bg-research: #322d24;
   --ai-panel-bg: #383125;
   --bg-surface: #322d24;
-  --bg-panel-header: #322d24;
   --bg-element: #443b2d;
-  --editor-bg: #201d18;
-  --editor-text: #e7ddcb;
   --text-primary: #e7ddcb;
   --text-secondary: #c3b59f;
   --text-tertiary: #92836d;
@@ -367,68 +356,64 @@
   --bg-app: #fbfcff;
   --bg-sidebar: #eff2f7;
   --bg-panel: #f8fafd;
-  --bg-research: #f8fafd;
   --ai-panel-bg: #f5f7fc;
   --bg-surface: #f8fafd;
   --bg-element: #ffffff;
-  --editor-bg: #fbfcff;
-  --editor-text: #1d2330;
   --text-primary: #1d2330;
   --text-secondary: #566070;
   --text-tertiary: #7e8795;
   --border-default: #dde3ec;
   --border-active: #c7d0de;
+  /* NOTE: 3.24:1 on #ffffff(이 조합의 가장 밝은 표면). */
+  --border-strong: #8a8f9b;
   --border-focus: #566070;
 }
 [data-theme="light"][data-temp="warm"] {
   --bg-app: #fefbf5;
   --bg-sidebar: #f6eee2;
   --bg-panel: #fdf8ef;
-  --bg-research: #fdf8ef;
   --ai-panel-bg: #fbf4e9;
   --bg-surface: #fdf8ef;
   --bg-element: #fffdf8;
-  --editor-bg: #fefbf5;
-  --editor-text: #262016;
   --text-primary: #262016;
   --text-secondary: #6b5e4d;
   --text-tertiary: #968574;
   --border-default: #e8dccb;
   --border-active: #d8c7b1;
+  /* NOTE: 3.33:1 on #fffdf8. */
+  --border-strong: #918b7e;
   --border-focus: #6b5e4d;
 }
 [data-theme="sepia"][data-temp="cool"] {
   --bg-app: #f4efe5;
   --bg-sidebar: #ebe2d2;
   --bg-panel: #f7f2e9;
-  --bg-research: #f7f2e9;
   --ai-panel-bg: #f0e9dd;
   --bg-surface: #f7f2e9;
   --bg-element: #fbf7ef;
-  --editor-bg: #f4efe5;
-  --editor-text: #4a4237;
   --text-primary: #4a4237;
   --text-secondary: #71685b;
   --text-tertiary: #9c9283;
   --border-default: #ddd3c4;
   --border-active: #cfc2af;
+  /* NOTE: 3.18:1 on #fbf7ef. */
+  --border-strong: #948a7b;
   --border-focus: #71685b;
 }
 [data-theme="sepia"][data-temp="warm"] {
   --bg-app: #faebcb;
   --bg-sidebar: #f2ddb0;
   --bg-panel: #f8e6c3;
-  --bg-research: #f8e6c3;
   --ai-panel-bg: #f7e3bc;
   --bg-surface: #f8e6c3;
   --bg-element: #fff4dc;
-  --editor-bg: #faebcb;
-  --editor-text: #4a3820;
   --text-primary: #4a3820;
   --text-secondary: #705b3c;
   --text-tertiary: #9b8057;
   --border-default: #dfc797;
   --border-active: #cdae77;
+  /* NOTE: 3.34:1 on #fff4dc. */
+  --border-strong: #9a8356;
   --border-focus: #705b3c;
 }
 
@@ -436,7 +421,6 @@
   --bg-app: #fbf2e2;
   --bg-sidebar: #f3e5cc;
   --bg-panel: #fcf5e7;
-  --bg-research: #fcf5e7;
   --ai-panel-bg: #f8ebd6;
   --bg-surface: #fcf5e7;
   --bg-surface-hover: rgba(95, 75, 50, 0.05);
@@ -451,6 +435,8 @@
 
   --border-default: #e4d2b4;
   --border-active: #d3bd9a;
+  /* NOTE: 3.39:1 on #fff9ed(가장 밝은 표면). 종이 톤을 유지한 채 UI 경계 기준을 넘긴다. */
+  --border-strong: #9d8462;
   --border-focus: #77644f;
 
   --accent-bg: #8a602e;
@@ -459,16 +445,11 @@
   --success-fg: #2e7d32;
   --danger-fg: #b91c1c;
 
-  --bg-primary: #fbf2e2;
   --bg-secondary: #f0e1c8;
   --bg-hover: #f0e1c8;
-  --bg-canvas: #fbf2e2;
   --accent-primary: var(--accent-bg);
   --grid-line: #e5d6bd;
-  --danger-fg: #b91c1c;
 
-  --editor-bg: #fbf2e2;
-  --editor-text: #4f3e2a;
   --editor-selection: #b7d5f5;
   --highlight-default: #f2e2a6;
 }

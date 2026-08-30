@@ -29,7 +29,10 @@
     min-height: 100%;
     height: auto;
     width: 100%;
-    color: var(--text-primary);
+    /* NOTE: 본문 잉크는 UI 글자색과 갈라질 수 있는 별도 역할이다. `--editor-text`가
+       기본적으로 `--text-primary`를 alias하므로 값은 같고, theme에서 갈라질 때만
+       달라진다. 여기서 `--text-primary`를 직접 쓰면 role token이 죽는다. */
+    color: var(--editor-text, var(--text-primary));
 
     /* NOTE: CSS variable로 주입해 store 변경을 editor 재생성 없이 반영한다. */
     font-size: 1rem;

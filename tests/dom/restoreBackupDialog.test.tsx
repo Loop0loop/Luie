@@ -120,23 +120,25 @@ describe("RestoreBackupDialog", () => {
     );
     mountedViews.push(view);
 
-    expect(view.container.textContent).toContain("Morning Draft");
-    expect(view.container.textContent).toContain("Night Draft");
+    // NOTE: Modal이 Dialog.Portal로 document.body에 렌더하므로 mount container 안에는
+    // dialog 내용이 없다. 조회 기준을 body로 둔다.
+    const dialog = document.body;
+
+    expect(dialog.textContent).toContain("Morning Draft");
+    expect(dialog.textContent).toContain("Night Draft");
 
     await clickElement(
-      view.container.querySelector(
-        '[data-testid="restore-candidate-snapshot-2"]',
-      ),
+      dialog.querySelector('[data-testid="restore-candidate-snapshot-2"]'),
     );
 
-    expect(view.container.textContent).toContain("Chapter 9");
-    expect(view.container.textContent).toContain(
+    expect(dialog.textContent).toContain("Chapter 9");
+    expect(dialog.textContent).toContain(
       "Latest paragraph from the night draft",
     );
 
-    const restoreButton = Array.from(
-      view.container.querySelectorAll("button"),
-    ).find((button) => button.textContent?.includes("Restore this version"));
+    const restoreButton = Array.from(dialog.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("Restore this version"),
+    );
     await clickElement(restoreButton ?? null);
 
     expect(onRestore).toHaveBeenCalledWith(
