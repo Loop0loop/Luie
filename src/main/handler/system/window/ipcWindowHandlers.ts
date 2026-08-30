@@ -1,5 +1,6 @@
 import { app } from "electron";
 import { windowManager } from "../../../app/windows/index.js";
+import { applyTrafficLightPosition } from "../../../manager/window/windowChrome.js";
 import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
 import { registerIpcHandlers } from "../../core/ipcRegistrar.js";
 import type { LoggerLike } from "../../core/types.js";
@@ -147,6 +148,9 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
         const win = windowManager.getMainWindow();
         if (!win) return false;
         win.setWindowButtonVisibility(visible);
+        // NOTE: 가시성 토글은 생성 시 trafficLightPosition을 무효화한다. 좌표를 다시
+        // 적용하지 않으면 hover로 버튼이 돌아올 때마다 기본 위치로 어긋난다.
+        applyTrafficLightPosition(win);
         return true;
       },
     },

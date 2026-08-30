@@ -230,7 +230,7 @@ export default function GraphSurface() {
           variant={BackgroundVariant.Dots}
           gap={20}
           size={1.5}
-          color="var(--border-default)"
+          color="var(--canvas-grid)"
           className="opacity-70"
         />
       </ReactFlow>

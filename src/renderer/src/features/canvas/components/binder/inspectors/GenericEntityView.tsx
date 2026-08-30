@@ -37,7 +37,7 @@ export default function GenericEntityView({
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
               style={{ backgroundColor: kindColor }}
             >
-              <span className="text-xs font-bold text-white">
+              <span className="text-xs font-bold text-canvas-kind-chip">
                 {kind.charAt(0).toUpperCase()}
               </span>
             </div>
@@ -111,7 +111,7 @@ export default function GenericEntityView({
                       className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
                       style={{ backgroundColor: connectedColor }}
                     >
-                      <span className="text-[10px] font-bold text-white">
+                      <span className="text-[10px] font-bold text-canvas-kind-chip">
                         {connectedKind.charAt(0).toUpperCase()}
                       </span>
                     </div>

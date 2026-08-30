@@ -100,7 +100,9 @@ export function useFocusSync({
         const labelBgStrokeBackup =
           edge.data?.labelBgStrokeBackup ?? edge.labelBgStyle?.stroke;
 
-        const relationColor = "var(--accent)";
+        // NOTE: `--accent`는 정의된 token이 아니다. 그대로 두면 stroke가 계산 시점에
+        // 무효가 되어 focus한 관계선이 기본 검정으로 그려진다.
+        const relationColor = "var(--accent-bg)";
 
         const baseWidth =
           typeof strokeWidthBackup === "number"

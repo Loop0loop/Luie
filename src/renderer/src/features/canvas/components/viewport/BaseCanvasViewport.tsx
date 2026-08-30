@@ -237,8 +237,7 @@ export default function BaseCanvasViewport({
           variant={BackgroundVariant.Dots}
           gap={20}
           size={1.5}
-          color="currentColor"
-          className="text-muted/25 dark:text-muted/35"
+          color="var(--canvas-grid)"
         />
         {extraChildren}
       </ReactFlow>

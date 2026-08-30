@@ -48,6 +48,25 @@ export const getTitleBarOptions = (): Partial<BrowserWindowConstructorOptions> =
   }
 }
 
+/**
+ * 커스텀 트래픽 라이트 좌표를 다시 못박는다.
+ *
+ * `trafficLightPosition`은 창 생성 시점 옵션일 뿐이라, macOS가 타이틀바 컨테이너를 다시
+ * 배치하면 유지되지 않는다. `setWindowButtonVisibility(false)`로 버튼을 숨기는 순간 좌표가
+ * 시스템 기본값으로 리셋되고, 다시 노출하면 의도한 (16,16) 대신 기본 위치(더 위·더 오른쪽)에
+ * 나타난다. 같은 계열의 리셋이 setRepresentedFilename/documentEdited/미니마이즈 복귀에서도
+ * 보고돼 있다(electron/electron#48463, #34822, #30564).
+ *
+ * 따라서 버튼 가시성을 토글하는 경로는 토글 직후 반드시 이 함수로 좌표를 재적용해야 한다.
+ */
+export const applyTrafficLightPosition = (win: BrowserWindow): void => {
+  if (process.platform !== "darwin") return
+  win.setWindowButtonPosition({
+    x: WINDOW_TRAFFIC_LIGHT_X,
+    y: WINDOW_TRAFFIC_LIGHT_Y,
+  })
+}
+
 export const shouldShowMenuBar = (menuBarMode: string): boolean => {
   if (process.platform !== "darwin") {
     return false

@@ -7,10 +7,10 @@
     height: 0.5rem;
     border-width: 1.5px;
     border-style: solid;
-    border-color: rgba(255, 255, 255, 0.4);
+    border-color: var(--canvas-handle-border);
     border-radius: 9999px;
-    background: var(--border-active, #71717a);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    background: var(--canvas-handle-bg);
+    box-shadow: var(--shadow-sm);
 }
 
 .canvas-document-editor .ProseMirror {
@@ -179,29 +179,16 @@
     margin: 0.25rem 0;
 }
 
-:root {
-    --canvas-bg: #121212;
-    --canvas-bg-dark: #121212;
-    --canvas-grid: rgba(255, 255, 255, 0.05);
-    --canvas-grid-dark: rgba(255, 255, 255, 0.06);
-}
-
+/* NOTE: 이전에는 여기서 `--canvas-bg: #121212`를 재선언해 모든 theme에서 canvas가
+   고정 dark로 보였다. 값은 global.tokens.css의 Canvas 섹션이 theme별로 정의한다. */
 .react-flow .react-flow__background {
-    background-color: var(--canvas-bg, #121212);
+    background-color: var(--canvas-bg);
     transition: background-color 0.2s ease;
 }
 
-[data-theme="dark"] .react-flow .react-flow__background {
-    background-color: var(--canvas-bg-dark, #121212);
-}
-
 .react-flow .react-flow__background-pattern {
-    stroke: var(--canvas-grid, rgba(255, 255, 255, 0.05));
+    stroke: var(--canvas-grid);
     stroke-width: 0.8;
-}
-
-[data-theme="dark"] .react-flow .react-flow__background-pattern {
-    stroke: var(--canvas-grid-dark, rgba(255, 255, 255, 0.06));
 }
 
 /* Canvas Mouse Cursor - Default */
@@ -229,11 +216,11 @@
 }
 
 .canvas-node-normal {
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background-color: rgba(24, 24, 27, 0.72);
-    box-shadow: 
-        0 8px 32px 0 rgba(0, 0, 0, 0.36),
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--canvas-node-border);
+    background-color: var(--canvas-node-bg);
+    box-shadow:
+        var(--canvas-shadow-rest),
+        inset 0 1px 0 0 var(--canvas-inset-highlight);
     transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
                 box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
                 transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
@@ -242,19 +229,19 @@
 
 .canvas-node-normal:hover {
     transform: translateY(-2px);
-    background-color: rgba(30, 30, 34, 0.82);
-    border-color: rgba(255, 255, 255, 0.22);
-    box-shadow: 
-        0 14px 36px 0 rgba(0, 0, 0, 0.45),
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+    background-color: var(--canvas-node-bg-hover);
+    border-color: var(--canvas-node-border-hover);
+    box-shadow:
+        var(--canvas-shadow-hover),
+        inset 0 1px 0 0 var(--canvas-inset-highlight);
 }
 
 .canvas-node-selected {
-    background-color: rgba(32, 32, 38, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.38);
-    box-shadow: 
-        0 16px 40px -4px rgba(0, 0, 0, 0.55),
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.28);
+    background-color: var(--canvas-node-bg-selected);
+    border: 1px solid var(--canvas-node-border-selected);
+    box-shadow:
+        var(--canvas-shadow-active),
+        inset 0 1px 0 0 var(--canvas-inset-highlight);
     transform: scale(1.01);
     transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
                 box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
@@ -262,23 +249,23 @@
                 background-color 0.2s ease;
 }
 
-/* macOS Liquid Glass Floating Toolbar & Popover */
+/* Liquid Glass Floating Toolbar & Popover */
 .canvas-floating-toolbar {
-    background-color: rgba(26, 26, 30, 0.76);
+    background-color: var(--canvas-chrome-bg);
     backdrop-filter: blur(24px) saturate(190%);
     -webkit-backdrop-filter: blur(24px) saturate(190%);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 
-        0 12px 36px 0 rgba(0, 0, 0, 0.45),
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
+    border: 1px solid var(--canvas-chrome-border);
+    box-shadow:
+        var(--canvas-shadow-hover),
+        inset 0 1px 0 0 var(--canvas-inset-highlight);
 }
 
 .canvas-floating-popover {
-    background-color: rgba(30, 30, 36, 0.88);
+    background-color: var(--canvas-popover-bg);
     backdrop-filter: blur(24px) saturate(190%);
     -webkit-backdrop-filter: blur(24px) saturate(190%);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 
-        0 16px 42px 0 rgba(0, 0, 0, 0.6),
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--canvas-popover-border);
+    box-shadow:
+        var(--canvas-shadow-active),
+        inset 0 1px 0 0 var(--canvas-inset-highlight);
 }

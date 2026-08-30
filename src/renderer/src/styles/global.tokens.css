@@ -49,6 +49,15 @@
   --color-border-active: var(--border-active);
   --color-border-focus: var(--border-focus);
 
+  /* NOTE: canvas의 floating chrome은 반투명 유리 위에 control을 올린다. 일반 surface
+     token으로는 대비가 부족해 canvas 전용 상태 색을 utility로 노출한다. */
+  --color-canvas-control-hover: var(--canvas-control-hover);
+  --color-canvas-control-active: var(--canvas-control-active);
+  --color-canvas-control-active-border: var(--canvas-control-active-border);
+  --color-canvas-divider: var(--canvas-divider);
+  --color-canvas-chrome-border: var(--canvas-chrome-border);
+  --color-canvas-kind-chip: var(--canvas-kind-chip-fg);
+
   /* NOTE: Tailwind v4에서 읽지 않는 config 대신 실제 사용 token만 이곳에 유지한다. */
   --radius-control: 0.625rem;
   --radius-panel: 0.875rem;
@@ -187,6 +196,10 @@
   --editor-bg: #ffffff;
   --editor-text: #18181b;
   --editor-selection: #bfdbfe;
+  /* NOTE: 형광펜 기본색. 정의가 없어 canvas markdown editor의 형광펜 버튼이 아무
+     배경도 칠하지 못했다. mark 위 글자가 --text-primary를 그대로 쓰므로 theme별로
+     본문 글자와 대비가 남는 값을 쓴다. */
+  --highlight-default: #fef08a;
 
   --header-height: 48px;
   --sidebar-width: 260px;
@@ -280,6 +293,9 @@
   --ai-panel-bg: #323232;
   --bg-surface: #28282b;
   --bg-panel-header: #28282b;
+  /* NOTE: 이 값이 없으면 light의 rgba(0,0,0,0.04)를 상속해 dark에서 hover가 표면보다
+     어두워진다. hover는 항상 표면을 밝히는 방향이어야 한다. */
+  --bg-surface-hover: rgba(255, 255, 255, 0.06);
   --bg-element: #313135;
   --bg-element-hover: rgba(255, 255, 255, 0.08);
   --bg-active: rgba(255, 255, 255, 0.12);
@@ -312,6 +328,7 @@
   --editor-bg: #1a1a1c;
   --editor-text: #d0d0d4;
   --editor-selection: #1e4f91;
+  --highlight-default: rgba(250, 204, 21, 0.32);
 }
 
 /* NOTE: color temperature는 layout 구조를 바꾸지 않고 background와 text tint만 덮어쓴다. */
@@ -453,6 +470,7 @@
   --editor-bg: #fbf2e2;
   --editor-text: #4f3e2a;
   --editor-selection: #b7d5f5;
+  --highlight-default: #f2e2a6;
 }
 
 [data-contrast="high"] {
@@ -584,4 +602,103 @@
   --accent-bg: #8a602e;
   --accent-bg-hover: #735026;
   --accent-fg: #ffffff;
+}
+
+/* ==========================================================================
+   Canvas / Graph
+   --------------------------------------------------------------------------
+   canvas의 유리 표면은 기존 surface token에서 투명도만 파생한다. 그래야 theme,
+   color temperature, contrast, accent(custom hex 포함) 조합이 늘어나도 canvas가
+   따로 관리되지 않는다.
+
+   theme별로 실제 다른 값은 세 종류뿐이다.
+   - inset highlight: dark는 위쪽에 밝은 선, light/sepia는 어두운 선
+   - shadow 강도: light 표면에서 dark용 그림자는 얼룩처럼 보인다
+   - grid dot 대비
+   ========================================================================== */
+:root {
+  --canvas-bg: var(--bg-app);
+  --canvas-grid: var(--border-active);
+
+  /* NOTE: backdrop-filter를 쓰므로 표면 token을 그대로 못 쓴다. 불투명 표면 token에서
+     알파만 깎아 theme을 따라가게 한다. */
+  --canvas-node-bg: color-mix(in srgb, var(--bg-panel) 82%, transparent);
+  --canvas-node-bg-hover: color-mix(in srgb, var(--bg-panel) 90%, transparent);
+  --canvas-node-bg-selected: color-mix(in srgb, var(--bg-panel) 96%, transparent);
+  --canvas-node-border: var(--border-default);
+  --canvas-node-border-hover: var(--border-active);
+  --canvas-node-border-selected: color-mix(in srgb, var(--accent-bg) 70%, transparent);
+
+  --canvas-chrome-bg: color-mix(in srgb, var(--bg-panel) 86%, transparent);
+  --canvas-chrome-border: var(--border-default);
+  --canvas-popover-bg: color-mix(in srgb, var(--bg-panel) 94%, transparent);
+  --canvas-popover-border: var(--border-active);
+
+  /* NOTE: floating chrome 위의 control은 chrome이 이미 반투명이라 표면 hover token을
+     그대로 쓰면 대비가 부족하다. 한 단계 강한 element hover를 쓴다. */
+  --canvas-control-hover: var(--bg-element-hover);
+  --canvas-control-active: var(--bg-active);
+  --canvas-control-active-border: var(--border-active);
+  --canvas-divider: var(--border-default);
+
+  --canvas-handle-bg: var(--border-focus);
+  --canvas-handle-border: var(--bg-panel);
+
+  --canvas-inset-highlight: rgba(0, 0, 0, 0.04);
+  --canvas-shadow-rest: 0 6px 20px -6px rgba(15, 23, 42, 0.14);
+  --canvas-shadow-hover: 0 12px 28px -8px rgba(15, 23, 42, 0.2);
+  --canvas-shadow-active: 0 16px 34px -10px rgba(15, 23, 42, 0.26);
+
+  /* NOTE: entity 종류 색은 의미 색이라 theme마다 유지하되, 배경 명도에 맞춰 조정할 수
+     있도록 token으로 노출한다. canvasTokens.ts가 이 이름을 참조한다. */
+  --canvas-node-chapter: #9333ea;
+  --canvas-node-character: #2563eb;
+  --canvas-node-event: #ea580c;
+  --canvas-node-faction: #15803d;
+  --canvas-node-term: #0891b2;
+  --canvas-node-world-entity: #a16207;
+
+  /* NOTE: kind 색을 채운 chip 위의 글자색. light/sepia의 kind 색은 어두워 흰 글자가
+     맞지만, dark의 kind 색은 밝은 파스텔이라 흰 글자가 읽히지 않는다. */
+  --canvas-kind-chip-fg: #ffffff;
+}
+
+[data-theme="dark"] {
+  --canvas-inset-highlight: rgba(255, 255, 255, 0.12);
+  --canvas-shadow-rest: 0 8px 32px -4px rgba(0, 0, 0, 0.36);
+  --canvas-shadow-hover: 0 14px 36px -6px rgba(0, 0, 0, 0.45);
+  --canvas-shadow-active: 0 16px 40px -4px rgba(0, 0, 0, 0.55);
+
+  --canvas-node-chapter: #bf5af2;
+  --canvas-node-character: #0a84ff;
+  --canvas-node-event: #ff9f0a;
+  --canvas-node-faction: #30d158;
+  --canvas-node-term: #64d2ff;
+  --canvas-node-world-entity: #ffd60a;
+  --canvas-kind-chip-fg: rgba(0, 0, 0, 0.82);
+}
+
+[data-theme="sepia"] {
+  --canvas-inset-highlight: rgba(95, 75, 50, 0.08);
+  --canvas-shadow-rest: 0 6px 20px -6px rgba(95, 75, 50, 0.18);
+  --canvas-shadow-hover: 0 12px 28px -8px rgba(95, 75, 50, 0.24);
+  --canvas-shadow-active: 0 16px 34px -10px rgba(95, 75, 50, 0.3);
+
+  --canvas-node-chapter: #7e3f9d;
+  --canvas-node-character: #2f5f9e;
+  --canvas-node-event: #a85a1c;
+  --canvas-node-faction: #3d6b3a;
+  --canvas-node-term: #2b6f7d;
+  --canvas-node-world-entity: #8a602e;
+}
+
+/* NOTE: 고대비에서는 유리 효과가 대비를 깎으므로 표면을 거의 불투명하게 올린다. */
+[data-contrast="high"] {
+  --canvas-node-bg: var(--bg-panel);
+  --canvas-node-bg-hover: var(--bg-panel);
+  --canvas-node-bg-selected: var(--bg-panel);
+  --canvas-chrome-bg: var(--bg-panel);
+  --canvas-popover-bg: var(--bg-panel);
+  --canvas-node-border: var(--border-active);
+  --canvas-node-border-selected: var(--accent-bg);
 }

@@ -143,7 +143,7 @@ function EntityNodeInner({ id, data, selected, dragging }: NodeProps<RFEntityNod
                 e.stopPropagation();
                 setIsColorPickerOpen((prev) => !prev);
               }}
-              className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-white/10 text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+              className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-canvas-control-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
               title={t("canvas.node.changeColor", "색상 변경")}
             >
               <Palette className="h-3.5 w-3.5" style={{ color: nodeColor }} />
@@ -158,7 +158,7 @@ function EntityNodeInner({ id, data, selected, dragging }: NodeProps<RFEntityNod
                 <button
                   type="button"
                   onClick={(e) => handleColorChange(undefined, e)}
-                  className="h-4 w-4 rounded-full border border-white/30 bg-transparent hover:scale-110 transition-transform cursor-pointer"
+                  className="h-4 w-4 rounded-full border border-border-active bg-transparent hover:scale-110 transition-transform cursor-pointer"
                   title={t("canvas.color.default", "기본")}
                 />
                 {CANVAS_COLOR_PALETTE.map((c) => (
@@ -183,7 +183,7 @@ function EntityNodeInner({ id, data, selected, dragging }: NodeProps<RFEntityNod
               setIsEditingName(true);
               setDraftName(data.label);
             }}
-            className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-white/10 text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+            className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-canvas-control-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
             title={t("canvas.node.editName", "적기")}
           >
             <Type className="h-3.5 w-3.5" />
@@ -193,14 +193,14 @@ function EntityNodeInner({ id, data, selected, dragging }: NodeProps<RFEntityNod
           <button
             type="button"
             onClick={handleOpenInspector}
-            className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-white/10 text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+            className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-canvas-control-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
             title={t("canvas.node.openInspector", "상세 정보")}
             aria-label={t("canvas.node.openInspector", "상세 정보")}
           >
             <BookOpen className="h-3.5 w-3.5" />
           </button>
 
-          <div className="w-[1px] h-3 bg-white/15" />
+          <div className="w-[1px] h-3 bg-canvas-divider" />
 
           {/* 삭제 버튼 */}
           <button

@@ -90,7 +90,7 @@ export function BottomInteractiveToolbar() {
 
         <div className={cn(
           "flex items-center gap-0.5 p-0.5 rounded-full shrink-0 h-8",
-          "bg-white/[0.05] border border-white/[0.08]",
+          "bg-canvas-control-hover border border-canvas-chrome-border",
           transitionClass
         )}>
           <Button
@@ -101,8 +101,8 @@ export function BottomInteractiveToolbar() {
               "rounded-full text-[11px] font-bold h-7 px-3.5 border-none cursor-pointer",
               transitionClass,
               !isGraphMode
-                ? "bg-white/15 text-fg shadow-sm border border-white/20 hover:bg-white/20"
-                : "text-muted hover:bg-white/[0.06] hover:text-fg bg-transparent"
+                ? "bg-canvas-control-active text-fg shadow-xs border border-canvas-control-active-border"
+                : "text-muted hover:bg-canvas-control-hover hover:text-fg bg-transparent"
             )}
           >
             {t("canvas.activity.canvas")}
@@ -115,15 +115,15 @@ export function BottomInteractiveToolbar() {
               "rounded-full text-[11px] font-bold h-7 px-3.5 border-none cursor-pointer",
               transitionClass,
               isGraphMode
-                ? "bg-white/15 text-fg shadow-sm border border-white/20 hover:bg-white/20"
-                : "text-muted hover:bg-white/[0.06] hover:text-fg bg-transparent"
+                ? "bg-canvas-control-active text-fg shadow-xs border border-canvas-control-active-border"
+                : "text-muted hover:bg-canvas-control-hover hover:text-fg bg-transparent"
             )}
           >
             {t("canvas.activity.graph")}
           </Button>
         </div>
 
-        <div className="w-px h-4 bg-white/10" />
+        <div className="w-px h-4 bg-canvas-divider" />
 
         <div className="flex items-center gap-1 w-[308px] shrink-0 justify-center">
           {!isGraphMode ? (
@@ -223,7 +223,7 @@ export function BottomInteractiveToolbar() {
           )}
         </div>
 
-        <div className="w-px h-4 bg-white/10" />
+        <div className="w-px h-4 bg-canvas-divider" />
 
         <Button
           variant="ghost"

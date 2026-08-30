@@ -189,7 +189,7 @@ function RelationEdgeInner({
             <button
               type="button"
               onClick={handleDirectionCycle}
-              className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-white/10 text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+              className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-canvas-control-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
               title={
                 direction === "none"
                   ? t("canvas.edge.direction.none", "무방향")
@@ -215,7 +215,7 @@ function RelationEdgeInner({
                   e.stopPropagation();
                   setIsColorPickerOpen((prev) => !prev);
                 }}
-                className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-white/10 text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+                className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-canvas-control-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
                 title={t("canvas.edge.changeColor", "색상 변경")}
               >
                 <Palette className="h-3.5 w-3.5" style={{ color: data?.color }} />
@@ -230,7 +230,7 @@ function RelationEdgeInner({
                   <button
                     type="button"
                     onClick={(e) => handleColorChange(undefined, e)}
-                    className="h-4 w-4 rounded-full border border-white/30 bg-transparent hover:scale-110 transition-transform cursor-pointer"
+                    className="h-4 w-4 rounded-full border border-border-active bg-transparent hover:scale-110 transition-transform cursor-pointer"
                     title={t("canvas.color.default", "기본")}
                   />
                   {CANVAS_COLOR_PALETTE.map((c) => (
@@ -255,13 +255,13 @@ function RelationEdgeInner({
                 setIsEditing(true);
                 setDraftLabel(labelText);
               }}
-              className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-white/10 text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+              className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-canvas-control-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
               title={t("canvas.edge.editLabel", "글자 적기")}
             >
               <Type className="h-3.5 w-3.5" />
             </button>
 
-            <div className="w-[1px] h-3 bg-white/15" />
+            <div className="w-[1px] h-3 bg-canvas-divider" />
 
             {/* 삭제 버튼 */}
             <button
