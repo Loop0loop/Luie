@@ -1,10 +1,14 @@
-import type { PanelSize } from "react-resizable-panels";
+import { useMemo } from "react";
 import {
   getEditorLayoutPanelSurface,
   type LayoutSurfaceId,
 } from "@renderer/shared/constants/layoutSizing";
+// NOTE: type-only import라 번들에 남지 않는다. feature 경계는 배럴(계약)을 통해 넘는다.
 import type { BinderTab } from "@renderer/domains/manuscript";
-import { useLayoutSurfaceResizeCommit } from "./useLayoutSurfaceResizeCommit";
+import {
+  useLayoutSurfaceResizeCommit,
+  type LayoutSurfaceResizeCommitController,
+} from "./useLayoutSurfaceResizeCommit";
 
 type LayoutSurfaceRatioSetter = (surface: LayoutSurfaceId, ratio: number) => void;
 type LayoutSurfaceRatioCommitter = (surface: LayoutSurfaceId, ratio: number) => void;
@@ -19,7 +23,7 @@ type LayoutSurfaceRatioCommitter = (surface: LayoutSurfaceId, ratio: number) => 
 export function useEditorBinderResizeHandlers(
   setLayoutSurfaceRatio: LayoutSurfaceRatioSetter,
   onCommit?: LayoutSurfaceRatioCommitter,
-): Record<BinderTab, (panelSize: PanelSize) => void> {
+): Record<BinderTab, LayoutSurfaceResizeCommitController> {
   const researchHandler = useLayoutSurfaceResizeCommit(
     getEditorLayoutPanelSurface("character"),
     setLayoutSurfaceRatio,
@@ -46,15 +50,26 @@ export function useEditorBinderResizeHandlers(
     { onCommit },
   );
 
-  return {
-    character: researchHandler,
-    event: researchHandler,
-    faction: researchHandler,
-    world: researchHandler,
-    scrap: researchHandler,
-    analysis: analysisHandler,
-    snapshot: snapshotHandler,
-    trash: trashHandler,
-    canvas: canvasHandler,
-  };
+  // NOTE: controller들이 stable하므로 이 map도 stable하게 유지한다. 매 렌더 새 객체를
+  // 돌려주면 이걸 dependency로 쓰는 호출부의 useCallback이 전부 무효화된다.
+  return useMemo(
+    () => ({
+      character: researchHandler,
+      event: researchHandler,
+      faction: researchHandler,
+      world: researchHandler,
+      scrap: researchHandler,
+      analysis: analysisHandler,
+      snapshot: snapshotHandler,
+      trash: trashHandler,
+      canvas: canvasHandler,
+    }),
+    [
+      analysisHandler,
+      canvasHandler,
+      researchHandler,
+      snapshotHandler,
+      trashHandler,
+    ],
+  );
 }

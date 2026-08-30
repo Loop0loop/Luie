@@ -1,4 +1,4 @@
-import { memo, useCallback, useState, useRef, useEffect } from "react";
+import { memo, useCallback, useMemo, useState, useRef, useEffect } from "react";
 import {
   BaseEdge,
   EdgeLabelRenderer,
@@ -46,9 +46,16 @@ function RelationEdgeInner({
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const currentAttrs = (typeof currentRelation?.attributes === "object" && currentRelation?.attributes !== null)
-    ? currentRelation.attributes as Record<string, unknown>
-    : {};
+  // NOTE: 매 render마다 새 객체를 만들면 이 값을 dependency로 쓰는 아래 콜백들이 전부
+  // 재생성되어 memo된 edge 렌더 비교가 무의미해진다.
+  const currentAttrs = useMemo(
+    () =>
+      typeof currentRelation?.attributes === "object" &&
+      currentRelation?.attributes !== null
+        ? (currentRelation.attributes as Record<string, unknown>)
+        : {},
+    [currentRelation],
+  );
 
   const direction: WorldGraphCanvasEdgeDirection =
     data?.direction ?? (currentAttrs.direction as WorldGraphCanvasEdgeDirection) ?? "unidirectional";

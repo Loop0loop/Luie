@@ -13,22 +13,49 @@ export function calculateForceLayout(
   const layoutNodes = nodes.map((node, index) => {
     const isPrime = node.data?.starGrade === "prime";
     const isMajor = node.data?.starGrade === "major";
-    
+
     // NOTE: 같은 입력은 같은 layout을 만들도록 index로 초기 궤도 각도를 정한다.
     const angle = (index / nodes.length) * Math.PI * 2;
     const radius = isPrime ? 0 : isMajor ? 140 : 260;
-    
+
+    // NOTE: 저장된 위치가 없는 node의 좌표는 0이지 undefined가 아니다. nullish 병합으로
+    // 궤도 초기화를 걸면 절대 적용되지 않고 모든 node가 (0,0)에 겹친다. 겹친 상태에서는
+    // 두 node의 거리가 0이라 repulsion 방향 벡터가 0이 되어 아래 반복이 아무 일도 하지
+    // 않는다. canvasFlowAdapter와 같은 기준(0,0 = 미저장)으로 판정한다.
+    const hasPersistedPosition =
+      Number.isFinite(node.position?.x) &&
+      Number.isFinite(node.position?.y) &&
+      (node.position.x !== 0 || node.position.y !== 0);
+
     return {
       ...node,
-      position: {
-        x: node.position?.x ?? (center.x + Math.cos(angle) * radius),
-        y: node.position?.y ?? (center.y + Math.sin(angle) * radius),
-      },
+      position: hasPersistedPosition
+        ? { x: node.position.x, y: node.position.y }
+        : {
+            x: center.x + Math.cos(angle) * radius,
+            y: center.y + Math.sin(angle) * radius,
+          },
     };
   });
 
   const k = 220;
   let cooling = 1.0;
+
+  // NOTE: 엣지마다 findIndex로 노드를 찾으면 반복 횟수 × 엣지 수 × 노드 수가 되어
+  // 노드가 조금만 늘어도 layout이 프레임을 잡아먹는다. index는 반복 중 불변이므로
+  // 루프 밖에서 한 번만 만든다.
+  const indexById = new Map<string, number>();
+  layoutNodes.forEach((node, index) => {
+    indexById.set(node.id, index);
+  });
+
+  const edgePairs: { sourceIdx: number; targetIdx: number }[] = [];
+  for (const edge of edges) {
+    const sourceIdx = indexById.get(edge.source);
+    const targetIdx = indexById.get(edge.target);
+    if (sourceIdx === undefined || targetIdx === undefined) continue;
+    edgePairs.push({ sourceIdx, targetIdx });
+  }
 
   for (let iter = 0; iter < iterations; iter++) {
     const disp = layoutNodes.map(() => ({ x: 0, y: 0 }));
@@ -55,11 +82,7 @@ export function calculateForceLayout(
       }
     }
 
-    for (const edge of edges) {
-      const sourceIdx = layoutNodes.findIndex((n) => n.id === edge.source);
-      const targetIdx = layoutNodes.findIndex((n) => n.id === edge.target);
-      if (sourceIdx === -1 || targetIdx === -1) continue;
-
+    for (const { sourceIdx, targetIdx } of edgePairs) {
       const dx = layoutNodes[sourceIdx].position.x - layoutNodes[targetIdx].position.x;
       const dy = layoutNodes[sourceIdx].position.y - layoutNodes[targetIdx].position.y;
       const dist = Math.sqrt(dx * dx + dy * dy) || 1;

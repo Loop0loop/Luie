@@ -2,6 +2,11 @@ export { buildFlowGraph } from "./canvasFlowAdapter";
 export type { CanvasFlowGraph } from "./canvasFlowAdapter";
 export { buildProjection } from "./canvasProjectionAdapter";
 export { handleSelectionChange, handlePaneClick } from "./selectionHandlers";
+export { resolveRelationConnection } from "./connectionGuards";
+export type {
+  RelationConnectionRejection,
+  RelationConnectionResult,
+} from "./connectionGuards";
 export { CANVAS_NODE_KIND_COLOUR } from "./nodeStyles";
 export { getEdgeStyle } from "./edgeStyles";
 export type { EdgeDefaults, EdgeStyle } from "./edgeStyles";

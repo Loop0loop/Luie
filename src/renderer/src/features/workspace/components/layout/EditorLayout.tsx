@@ -11,6 +11,7 @@ import { Panel, Group as PanelGroup, type Layout } from "react-resizable-panels"
 import { Ribbon, useEditorStore } from "@renderer/domains/editor";
 import { FocusHoverSidebar } from "@renderer/domains/manuscript";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { api } from "@shared/api";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { BinderBarCompactHover } from "@renderer/features/workspace/components/BinderBarCompactHover";
 import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@renderer/shared/constants/editorLayout";
@@ -21,6 +22,23 @@ import { getPanelLayoutValue } from "@renderer/features/workspace/hooks/useLayou
 import { cn } from "@shared/types/utils";
 
 const IS_MACOS = navigator.userAgent.toLowerCase().includes("mac");
+// NOTE: 기본값을 inline `[]`로 두면 매 render마다 새 배열이 되어 이 값을 dependency로 쓰는
+// `handleEditorLayoutChanged`가 계속 재생성된다(MainLayout과 동일한 이유).
+const EMPTY_PANEL_IDS: readonly string[] = [];
+
+/**
+ * 트래픽 라이트 표시를 요청한다. 없으면 조용히 건너뛴다.
+ *
+ * preload는 렌더러와 별개 번들이라 dev HMR로 갱신되지 않는다. 메서드를 새로 추가한 직후
+ * 앱을 재시작하기 전까지 실행 중인 preload에는 그 메서드가 없고, 그대로 호출하면 effect에서
+ * TypeError가 나 EditorLayout 전체가 error boundary로 떨어진다. 창 크롬 장식은 실패해도
+ * 편집을 막을 이유가 없으므로 capability 유무를 확인하고 넘어간다.
+ * (타입상으로는 항상 존재하므로 이 가드는 런타임 버전 스큐 전용이다.)
+ */
+const applyTrafficLightVisibility = (visible: boolean): void => {
+  if (typeof api.window.setTrafficLightVisibility !== "function") return;
+  void api.window.setTrafficLightVisibility(visible);
+};
 
 interface EditorLayoutProps {
   children?: ReactNode;
@@ -47,7 +65,7 @@ export default function EditorLayout({
   onOpenExport,
   onOpenWorldGraph,
   additionalPanels,
-  additionalPanelIds = [],
+  additionalPanelIds = EMPTY_PANEL_IDS as string[],
 }: EditorLayoutProps) {
   const maxWidth = useEditorStore((state) => state.maxWidth);
   const updatePanelSize = useUIStore((state) => state.updatePanelSize);
@@ -159,6 +177,32 @@ export default function EditorLayout({
     [],
   );
 
+  // NOTE: 드래그 밴드 위에서는 pointer 이벤트가 끊기므로, 그 상태로 창 포커스를 잃으면
+  // 클러스터 판정이 "내부"로 고착돼 툴바가 남는다. blur를 명시적 이탈로 취급한다.
+  useEffect(() => {
+    const handleWindowBlur = () => {
+      pointerInClusterRef.current = false;
+      setIsToolbarVisible(false);
+    };
+    window.addEventListener("blur", handleWindowBlur);
+    return () => window.removeEventListener("blur", handleWindowBlur);
+  }, []);
+
+  // NOTE: 트래픽 라이트는 창 전역 상태다. macOS에서만 툴바 hover에 맞춰 켜고 끈다.
+  useEffect(() => {
+    if (!IS_MACOS) return;
+    applyTrafficLightVisibility(isToolbarVisible);
+  }, [isToolbarVisible]);
+
+  // NOTE: 이 레이아웃을 벗어날 때(uiMode 전환·캔버스 진입으로 unmount) 반드시 되돌린다.
+  // 안 되돌리면 다른 레이아웃에서 트래픽 라이트가 영구히 사라진다.
+  useEffect(() => {
+    if (!IS_MACOS) return undefined;
+    return () => {
+      applyTrafficLightVisibility(true);
+    };
+  }, []);
+
   const sidebarTopOffset = IS_MACOS ? EDITOR_WINDOW_BAR_HEIGHT_PX : 0;
   // NOTE: research 사이드바/레일의 표면(배경)은 traffic lights 끝까지 확장하고,
   // 실제 콘텐츠는 기존 오프셋 아래에 유지한다. 표면 확장과 내용 위치를 분리한다.
@@ -207,13 +251,15 @@ export default function EditorLayout({
             >
               {/* NOTE: 툴바(hover 존)를 에디터 Panel 안으로 스코프해 portal 툴바가
                   research 패널 위까지 덮지 않게 한다.
-                  ⚠️ 이 밴드에 WebkitAppRegion: "drag"를 동적으로 걸지 않는다. drag 영역은
-                  공식 문서 기준 모든 pointer 이벤트를 흡수하고(mouseenter 포함), 캔버스
-                  진입처럼 툴바가 보인 상태에서 라우트가 교체되면 흡수 상태가 상단 스트립에
-                  남아 복귀 후 hover가 죽는 원인이 된다. 창 드래그는 좌우 고정 그립으로만
-                  제공한다(사용자 요구: 툴바 버튼은 DnD 무관, 빈 공간만 DnD). */}
+                  이 센티넬은 반드시 no-drag로 남겨야 한다. Electron 공식 문서 기준 드래그
+                  영역은 모든 pointer 이벤트를 무시하므로(mouseenter 포함), 숨김 상태에서
+                  drag를 걸면 툴바를 띄울 hover를 감지할 수 없다.
+                  `data-editor-toolbar-band`를 붙여 클러스터 판정에 포함시킨다. 툴바가 뜬 뒤
+                  밴드가 drag로 바뀌면 그 위에서 이벤트가 끊기는데, 마지막 판정이 "내부"로
+                  남아 있어야 watchdog이 툴바를 곧바로 내려버리지 않는다. */}
               <div
                 aria-hidden="true"
+                data-editor-toolbar-band="true"
                 className="absolute inset-x-0 top-0 z-30 h-11 pointer-events-auto"
                 onMouseEnter={handleToolbarEnter}
                 onMouseLeave={scheduleHide}
@@ -225,6 +271,12 @@ export default function EditorLayout({
                   자식이 아니므로 isVisible 플래그로 같이 전환한다.
                   ⚠️ 이 래퍼에 translate를 걸면 portal 좌표(anchor getBoundingClientRect)가
                   밀려 툴바가 위로 굳는다. opacity/pointer-events 전용으로 전환한다. */}
+              {/* NOTE: 헤더 = 툴바 영역이 곧 창 드래그 영역이다. 툴바가 보일 때만 drag로
+                  전환하고, 숨김 상태에서는 no-drag로 둬야 위 센티넬의 hover가 살아 있다.
+                  app-region은 상속되므로(문서의 body/button 예시) 밴드에 drag를 주면 하위가
+                  전부 draggable이 되고, EditorToolbar의 컨트롤 클러스터가 no-drag로 스스로를
+                  제외해 클릭이 드래그보다 우선한다. 문서 권고대로 이 밴드에는 커스텀 컨텍스트
+                  메뉴를 붙이지 않고 select-none(Ribbon)을 유지한다. */}
               <div
                 data-editor-toolbar-band="true"
                 className={cn(
@@ -233,17 +285,12 @@ export default function EditorLayout({
                 )}
                 onMouseEnter={handleToolbarEnter}
                 onMouseLeave={scheduleHide}
+                style={
+                  {
+                    WebkitAppRegion: isToolbarVisible ? "drag" : "no-drag",
+                  } as CSSProperties
+                }
               >
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-y-0 left-0 w-10"
-                  style={{ WebkitAppRegion: "drag" } as CSSProperties}
-                />
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-y-0 right-0 w-10"
-                  style={{ WebkitAppRegion: "drag" } as CSSProperties}
-                />
                 <Ribbon
                   editor={editor}
                   onOpenSettings={onOpenSettings}

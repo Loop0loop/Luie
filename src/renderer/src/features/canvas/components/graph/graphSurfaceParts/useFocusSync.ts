@@ -9,21 +9,55 @@ import {
 
 interface UseFocusSyncParams {
   focusId: string | null;
+  adjacency: Map<string, Set<string>>;
+  /**
+   * node/edge 구성이 바뀌면 layout effect가 focus가 반영되지 않은 node를 다시 넣는다.
+   * 그때 focus 시각화를 다시 입히려면 이 값도 dependency여야 한다.
+   */
+  topologySignature: string;
   setNodes: (updater: (prev: Node<GraphNodeData>[]) => Node<GraphNodeData>[]) => void;
   setEdges: (updater: (prev: Edge[]) => Edge[]) => void;
 }
 
-export function useFocusSync({ focusId, setNodes, setEdges }: UseFocusSyncParams) {
+export function useFocusSync({
+  focusId,
+  adjacency,
+  topologySignature,
+  setNodes,
+  setEdges,
+}: UseFocusSyncParams) {
   useEffect(() => {
-    setNodes((prevNodes) =>
-      prevNodes.map((node) => ({
-        ...node,
-        data: {
-          ...node.data,
-          isFocused: node.id === focusId,
-        },
-      })),
-    );
+    setNodes((prevNodes) => {
+      const neighbours = focusId ? adjacency.get(focusId) : undefined;
+      let changed = false;
+
+      const nextNodes = prevNodes.map((node) => {
+        const baseOpacity = node.data.baseOpacity ?? 1;
+        const isFocused = node.id === focusId;
+        const isNeighbour = isFocused || (neighbours?.has(node.id) ?? false);
+
+        // NOTE: focus가 없으면 필터 드롭다운이 정한 기본 투명도로 되돌린다.
+        const focusOpacity = !focusId ? 1 : isNeighbour ? 0.95 : 0;
+        const opacity = baseOpacity * focusOpacity;
+        const isInteractive = !focusId || isNeighbour;
+
+        if (
+          node.data.isFocused === isFocused &&
+          node.data.opacity === opacity &&
+          node.data.isInteractive === isInteractive
+        ) {
+          return node;
+        }
+
+        changed = true;
+        return {
+          ...node,
+          data: { ...node.data, isFocused, opacity, isInteractive },
+        };
+      });
+
+      return changed ? nextNodes : prevNodes;
+    });
 
     setEdges((prevEdges) =>
       prevEdges.map((edge) => {
@@ -103,5 +137,5 @@ export function useFocusSync({ focusId, setNodes, setEdges }: UseFocusSyncParams
         };
       }),
     );
-  }, [focusId, setNodes, setEdges]);
+  }, [adjacency, focusId, setEdges, setNodes, topologySignature]);
 }

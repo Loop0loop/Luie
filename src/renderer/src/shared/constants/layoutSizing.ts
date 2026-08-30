@@ -99,12 +99,21 @@ const NESTED_MANAGER_PANEL_CONFIG: LayoutSurfaceConfig = {
   maxPx: 560,
 };
 
-// NOTE: Google Docs 레이아웃 전용 panel 크기. 사용자가 resize 로 panel 을 닫으려 해도
-// minPx 가 하드 플로어로 작용해 더 줄어들지 않는다(research/AI/버전기록 컨텐츠 가독성+열림 상태 일관성 유지).
-const DOCS_RESEARCH_PANEL_CONFIG: LayoutSurfaceConfig = {
+// NOTE: research 패널 크기 정책. 사용자가 resize 로 panel 을 닫으려 해도 minPx 가 하드
+// 플로어로 작용해 더 줄어들지 않는다(research/AI/버전기록 컨텐츠 가독성+열림 상태 일관성 유지).
+// docs/editor 레이아웃이 같은 정책을 공유한다. 과거 editor 는 370~560px 라는 좁은 밴드를
+// 따로 썼는데, 같은 research 패널인데도 조절 가능한 폭이 190px 뿐이어서 "resize 가 거의
+// 안 움직인다"는 체감 차이를 만들었다.
+//
+// minPx 는 EntityGallery 그리드에서 역산한 값이다. 카드가
+// `repeat(auto-fill, minmax(175px, 190px))` + `gap-3` 이라 2열 콘텐츠 폭이 175*2+12=362px,
+// 그리드 컨테이너 패딩이 `md:px-6`(좌우 48px), 스크롤바가 약 10px 이다. 그래서 420px 미만이면
+// 1열로 떨어지는데, auto-fill 상한이 190px 이라 카드가 늘어나지 못하고 오른쪽에 빈 공간이
+// 남는다. 이 플로어를 내리려면 그리드를 `minmax(175px, 1fr)` 로 바꿔야 한다.
+const RESEARCH_PANEL_CONFIG: LayoutSurfaceConfig = {
   role: "panel",
   defaultRatio: 40,
-  minPx: 320,
+  minPx: 420,
   maxPx: 780,
 };
 
@@ -143,13 +152,15 @@ export const LAYOUT_SURFACE_CONFIG: Record<
   "default.sidebar": { ...DEFAULT_SIDEBAR_CONFIG },
   "default.panel": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 24 },
   "docs.sidebar": { ...DEFAULT_SIDEBAR_CONFIG, defaultRatio: 17 },
-  "docs.panel.research": { ...DOCS_RESEARCH_PANEL_CONFIG },
+  "docs.panel.research": { ...RESEARCH_PANEL_CONFIG },
   "docs.panel.analysis": { ...DOCS_AI_PANEL_CONFIG },
   "docs.panel.snapshot": { ...DOCS_SNAPSHOT_PANEL_CONFIG },
   "docs.panel.trash": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 26 },
-  "docs.panel.editor": { ...DOCS_RESEARCH_PANEL_CONFIG, defaultRatio: 34 },
+  // NOTE: 분할 에디터 패널은 gallery 그리드가 없어 research 의 420px 플로어를 물려받을
+  // 이유가 없다. 기존 하한(320px)을 유지한다.
+  "docs.panel.editor": { ...RESEARCH_PANEL_CONFIG, defaultRatio: 34, minPx: 320 },
   "docs.panel.export": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 30 },
-  "editor.panel.research": { ...NESTED_MANAGER_PANEL_CONFIG, defaultRatio: 38 },
+  "editor.panel.research": { ...RESEARCH_PANEL_CONFIG, defaultRatio: 38 },
   "editor.panel.analysis": { ...NESTED_MANAGER_PANEL_CONFIG, defaultRatio: 38 },
   "editor.panel.snapshot": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 26 },
   "editor.panel.trash": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 26 },
@@ -411,8 +422,8 @@ export const toPanelPixelSize = (value: number): string =>
   `${Math.max(0, Math.round(value))}px`;
 
 export const COMPACT_BINDER_RAIL_WIDTH_PX = 44;
-export const COMPACT_BINDER_MIN_WIDTH_PX = 260;
-export const COMPACT_BINDER_MAX_WIDTH_PX = 720;
+// NOTE: compact binder의 폭 min/max는 여기 두지 않는다. 탭별 `LAYOUT_SURFACE_CONFIG`가
+// 유일한 출처여야 드래그 범위와 저장 정책이 갈라지지 않는다.
 export const COMPACT_BINDER_SNAPSHOT_VIEWER_WIDTH_PX = 480;
 
 export const CANVAS_ICON_RAIL_WIDTH_PX = 44;

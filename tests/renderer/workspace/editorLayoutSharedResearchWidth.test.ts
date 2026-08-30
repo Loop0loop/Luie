@@ -28,6 +28,36 @@ describe("editor layout shares one research panel width", () => {
     expect([...surfaces][0]).toBe("editor.panel.research");
   });
 
+  // NOTE: editor research 패널이 좁은 전용 밴드(과거 370~560px)를 쓰면 조절 가능한 폭이
+  // 190px뿐이어서 "resize가 거의 안 움직인다"는 체감 차이가 생긴다. docs와 같은 정책을 쓴다.
+  it("shares the docs research width policy", () => {
+    const editorConfig = getLayoutSurfaceConfig("editor.panel.research");
+    const docsConfig = getLayoutSurfaceConfig("docs.panel.research");
+
+    expect(editorConfig.minPx).toBe(docsConfig.minPx);
+    expect(editorConfig.maxPx).toBe(docsConfig.maxPx);
+  });
+
+  // NOTE: EntityGallery 그리드가 `minmax(175px, 190px)` + `gap-3`이라 2열 콘텐츠 폭이
+  // 175*2+12=362px, 컨테이너 패딩 `md:px-6`(48px), 스크롤바 약 10px → 420px가 하한이다.
+  // 이 아래로 내려가면 1열로 떨어지고 auto-fill 상한(190px) 때문에 카드가 늘어나지 못해
+  // 오른쪽에 빈 공간이 남는다.
+  it("keeps the gallery two-column floor", () => {
+    const GALLERY_TWO_COLUMN_FLOOR_PX = 175 * 2 + 12 + 48 + 10;
+
+    expect(getLayoutSurfaceConfig("editor.panel.research").minPx).toBeGreaterThanOrEqual(
+      GALLERY_TWO_COLUMN_FLOOR_PX,
+    );
+    expect(getLayoutSurfaceConfig("docs.panel.research").minPx).toBeGreaterThanOrEqual(
+      GALLERY_TWO_COLUMN_FLOOR_PX,
+    );
+  });
+
+  // NOTE: 분할 에디터 패널은 gallery가 없으므로 research 플로어를 물려받지 않는다.
+  it("does not push the split editor panel to the gallery floor", () => {
+    expect(getLayoutSurfaceConfig("docs.panel.editor").minPx).toBe(320);
+  });
+
   it("keeps analysis, snapshot, trash and canvas on their own surfaces", () => {
     expect(getEditorLayoutPanelSurface("analysis")).toBe(
       "editor.panel.analysis",

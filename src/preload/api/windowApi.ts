@@ -49,6 +49,8 @@ export function createWindowApi({
       toggleFullscreen: () => safeInvoke(IPC_CHANNELS.WINDOW_TOGGLE_FULLSCREEN),
       setFullscreen: (flag) =>
         safeInvoke(IPC_CHANNELS.WINDOW_SET_FULLSCREEN, flag),
+      setTrafficLightVisibility: (visible) =>
+        safeInvoke(IPC_CHANNELS.WINDOW_SET_TRAFFIC_LIGHT_VISIBILITY, visible),
       openExport: (chapterId) =>
         safeInvokeCore(
           "window.openExport",

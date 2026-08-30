@@ -1,4 +1,4 @@
-import { memo, useCallback, useState, useRef, useEffect } from "react";
+import { memo, useCallback, useMemo, useState, useRef, useEffect } from "react";
 import { Handle, Position, type NodeProps } from "reactflow";
 import { useTranslation } from "react-i18next";
 import { Trash2, BookOpen, Palette, Type } from "lucide-react";
@@ -39,9 +39,15 @@ function EntityNodeInner({ id, data, selected, dragging }: NodeProps<RFEntityNod
   const inputRef = useRef<HTMLInputElement>(null);
 
   const entityType: WorldEntitySourceType = currentNode?.entityType ?? normalizeEntityType(data.kind);
-  const currentAttrs = (typeof currentNode?.attributes === "object" && currentNode?.attributes !== null)
-    ? currentNode.attributes as Record<string, unknown>
-    : {};
+  // NOTE: 매 render마다 새 객체를 만들면 이 값을 dependency로 쓰는 아래 콜백들이 전부
+  // 재생성되어 memo된 자식과 이벤트 핸들러 비교가 무의미해진다.
+  const currentAttrs = useMemo(
+    () =>
+      typeof currentNode?.attributes === "object" && currentNode?.attributes !== null
+        ? (currentNode.attributes as Record<string, unknown>)
+        : {},
+    [currentNode],
+  );
 
   const defaultKindColor = CANVAS_NODE_KIND_COLOUR[data.kind] ?? CANVAS_NODE_KIND_COLOUR["world-entity"];
   const nodeColor = data.color || (currentAttrs.color as string | undefined) || defaultKindColor;
@@ -213,7 +219,7 @@ function EntityNodeInner({ id, data, selected, dragging }: NodeProps<RFEntityNod
       <div
         className={cn(
           "canvas-glass-node flex h-full w-full flex-col overflow-hidden transition-[border-color,box-shadow,transform,background-color] duration-200 select-none",
-          data.isSelected ? "canvas-node-selected" : "canvas-node-normal"
+          selected ? "canvas-node-selected" : "canvas-node-normal"
         )}
         style={{
           "--node-color": nodeColor,

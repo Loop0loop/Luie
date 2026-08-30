@@ -99,23 +99,20 @@ export default function FocusHoverSidebar({
     }, enableAnimations ? closeDelayMs : 0);
   }, [closeDelayMs, closeHoverSidebar, enableAnimations, forceOpen, isResizing]);
 
-  useEffect(() => {
-    const updateSidebarMetrics = () => {
-      sidebarRectRef.current = sidebarRef.current?.getBoundingClientRect() ?? null;
-      sidebarWidthRef.current = sidebarRef.current?.offsetWidth ?? 0;
-    };
+  const updateSidebarMetrics = useCallback(() => {
+    sidebarRectRef.current = sidebarRef.current?.getBoundingClientRect() ?? null;
+    sidebarWidthRef.current = sidebarRef.current?.offsetWidth ?? 0;
+  }, []);
 
+  useEffect(() => {
     updateSidebarMetrics();
 
+    const element = sidebarRef.current;
     const resizeObserver =
-      sidebarRef.current === null
-        ? null
-        : new ResizeObserver(() => {
-            updateSidebarMetrics();
-          });
+      element === null ? null : new ResizeObserver(updateSidebarMetrics);
 
-    if (sidebarRef.current && resizeObserver) {
-      resizeObserver.observe(sidebarRef.current);
+    if (element && resizeObserver) {
+      resizeObserver.observe(element);
     }
 
     window.addEventListener("resize", updateSidebarMetrics);
@@ -124,7 +121,31 @@ export default function FocusHoverSidebar({
       resizeObserver?.disconnect();
       window.removeEventListener("resize", updateSidebarMetrics);
     };
-  }, []);
+  }, [updateSidebarMetrics]);
+
+  // NOTE: 열림/닫힘은 transform으로만 바뀌는데 `getBoundingClientRect()`는 transform을
+  // 반영한다. ResizeObserver는 "크기" 변화만 감지하므로 transform 이동은 잡지 못한다.
+  // 그래서 이 갱신이 없으면, 넓은 패널이 닫힌 상태로 mount되는 경로(프로젝트 레이아웃 복원)에서
+  // 캐시된 rect가 닫힌 위치(left ≈ innerWidth)에 영구 고정된다. 그 상태로 hover 오픈하면
+  // `isInsideSidebar` 판정이 화면 오른쪽 끝 몇 px로 좁아져, 패널 안으로 마우스를 옮기는 순간
+  // hover-close가 걸린다(레일 폭 판정처럼 동작). transition 종료 시점까지 재측정해 교정한다.
+  useEffect(() => {
+    const element = sidebarRef.current;
+    if (element === null) return undefined;
+
+    updateSidebarMetrics();
+    const frameId = window.requestAnimationFrame(updateSidebarMetrics);
+    const handleTransitionEnd = (event: TransitionEvent) => {
+      if (event.propertyName !== "transform") return;
+      updateSidebarMetrics();
+    };
+
+    element.addEventListener("transitionend", handleTransitionEnd);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      element.removeEventListener("transitionend", handleTransitionEnd);
+    };
+  }, [isOpen, updateSidebarMetrics]);
 
   useEffect(() => {
     if (!forceOpen && !isResizing) {
@@ -242,7 +263,13 @@ export default function FocusHoverSidebar({
       <div
         ref={sidebarRef}
         className={cn(
-          "fixed z-50 shadow-panel bg-sidebar will-change-transform [contain:layout_paint]",
+          // NOTE: `flex flex-col`은 이 컴포넌트의 레이아웃 규약이다. 컨테이너만 definite
+          // height(`calc(100vh - topOffset)`)를 갖기 때문에, children이 spacer + 본문처럼
+          // 둘 이상이면 flex 분배 없이는 높이 체인이 끊긴다(`flex-1`/`shrink-0`/`min-h-0`은
+          // flex 아이템 속성이라 block 부모 아래에서 전부 무효). 실제로 그 상태에서는
+          // 배경만 100vh로 칠해지고 콘텐츠 박스는 짧아, 꽉 찬 것처럼 보이지만 hit 영역이
+          // 콘텐츠 높이로 제한됐다.
+          "fixed z-50 flex flex-col shadow-panel bg-sidebar will-change-transform [contain:layout_paint]",
           enableAnimations
             ? "transition-transform duration-150 ease-out"
             : "transition-none",

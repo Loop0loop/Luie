@@ -4,23 +4,6 @@ import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mockedBinderSidebarState = vi.hoisted(() => ({
-  setActiveRightTab: vi.fn(),
-  setRailOpen: vi.fn(),
-  state: {
-    activeRightTab: null,
-    isPanelRailOpen: false,
-    isRightRailOpen: false,
-    savedRatio: 19,
-    widthConfig: {
-      role: "binder" as const,
-      defaultRatio: 19,
-      minPx: 220,
-      maxPx: 420,
-    },
-  },
-}));
-
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key,
@@ -32,28 +15,6 @@ vi.mock("@renderer/features/editor/stores/editorStore", () => ({
     selector({ enableAnimations: false }),
 }));
 
-vi.mock(
-  "../../src/renderer/src/features/manuscript/components/useBinderSidebarState.js",
-  () => ({
-    useBinderSidebarState: () => ({
-      ...mockedBinderSidebarState.state,
-      handleResize: vi.fn(),
-      handleRightTabClick: vi.fn(),
-      setActiveRightTab: mockedBinderSidebarState.setActiveRightTab,
-      setFocusedClosableTarget: vi.fn(),
-      setRailOpen: mockedBinderSidebarState.setRailOpen,
-    }),
-  }),
-);
-
-vi.mock(
-  "../../src/renderer/src/features/manuscript/components/BinderSidebarTabs.js",
-  () => ({
-    BinderSidebarTabs: () => <div>Tabs</div>,
-  }),
-);
-
-import { BinderSidebarRail } from "../../src/renderer/src/features/manuscript/components/BinderSidebar.js";
 import { GoogleDocsPanelRail } from "../../src/renderer/src/features/workspace/components/layout/GoogleDocsPanelRail.js";
 
 type MountedView = {
@@ -79,10 +40,6 @@ describe("right rail openers", () => {
     Object.assign(globalThis, {
       IS_REACT_ACT_ENVIRONMENT: true,
     });
-    mockedBinderSidebarState.setActiveRightTab.mockClear();
-    mockedBinderSidebarState.setRailOpen.mockClear();
-    mockedBinderSidebarState.state.activeRightTab = null;
-    mockedBinderSidebarState.state.isRightRailOpen = false;
     document.body.innerHTML = "";
   });
 
@@ -111,21 +68,5 @@ describe("right rail openers", () => {
     });
 
     expect(onSelectTab).toHaveBeenCalledWith("character");
-  });
-
-  it("opens the default editor tab when the editor rail is closed without an active tab", async () => {
-    const view = await mountView(
-      <BinderSidebarRail currentProjectId="project-1" sidebarTopOffset={64} />,
-    );
-    mountedViews.push(view);
-
-    await act(async () => {
-      view.container.querySelector("button")?.click();
-    });
-
-    expect(mockedBinderSidebarState.setActiveRightTab).toHaveBeenCalledWith(
-      "character",
-    );
-    expect(mockedBinderSidebarState.setRailOpen).not.toHaveBeenCalled();
   });
 });

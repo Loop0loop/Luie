@@ -9,7 +9,6 @@ export interface RFEntityNodeData {
   readonly label: string;
   readonly description?: string | null;
   readonly connectionCount: number;
-  readonly isSelected: boolean;
   readonly color?: string;
 }
 

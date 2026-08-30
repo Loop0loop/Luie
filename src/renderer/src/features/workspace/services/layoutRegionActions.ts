@@ -24,10 +24,6 @@ export function closeDocsBinderPanel(): void {
   useUIStore.getState().closeRightPanel();
 }
 
-export function setEditorBinderRailOpen(open: boolean): void {
-  useUIStore.getState().setRegionOpen("rightRail", open);
-}
-
 export function openEditorBinderTab(tab: RightPanelTab): void {
   const uiStore = useUIStore.getState();
   uiStore.setRegionOpen("rightRail", true);

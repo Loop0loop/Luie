@@ -81,6 +81,8 @@ describe("canvas adapters", () => {
         targetId: "event-1",
         label: "involved_in",
         style: "solid",
+        color: undefined,
+        direction: "unidirectional",
       },
     ]);
   });
@@ -90,7 +92,7 @@ describe("canvas adapters", () => {
       kind: "whole-project",
       projectId: "project-1",
     });
-    const flowGraph = buildFlowGraph(projection, "character-1");
+    const flowGraph = buildFlowGraph(projection);
 
     expect(flowGraph.nodes).toHaveLength(2);
     expect(flowGraph.nodes[0]).toMatchObject({
@@ -100,16 +102,19 @@ describe("canvas adapters", () => {
         kind: "character",
         label: "Hero",
         description: "Lead",
-        isSelected: true,
       },
     });
+    // 선택 상태는 ReactFlow의 node.selected가 관리하므로 data에 굽지 않는다.
+    expect(flowGraph.nodes[0]?.data).not.toHaveProperty("isSelected");
     expect(flowGraph.nodes[1]?.position).not.toEqual({ x: 0, y: 0 });
     expect(flowGraph.edges).toEqual([
       expect.objectContaining({
         id: "rel-rel-1",
+        type: "relation",
         source: "character-1",
         target: "event-1",
         data: {
+          rawId: "rel-1",
           label: "involved_in",
           color: undefined,
           direction: "unidirectional",

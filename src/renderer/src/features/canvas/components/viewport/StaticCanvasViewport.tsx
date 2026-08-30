@@ -2,7 +2,6 @@ import {
   CANVAS_RF_EDGE_TYPE_RELATION,
   CANVAS_RF_NODE_TYPE_ENTITY,
 } from "@renderer/shared/constants/canvasSizing";
-import { useStaticProjection } from "../../hooks/useStaticProjection";
 import type { CanvasProjection } from "../../types/canvasProjection.types";
 import { RelationEdge } from "./edges/RelationEdge";
 import { EntityNode } from "./nodes/EntityNode";
@@ -17,16 +16,17 @@ const EDGE_TYPES = {
 } as const;
 
 interface StaticCanvasViewportProps {
-  /** 생략하면 자체적으로 static projection을 구독한다. */
-  projection?: CanvasProjection;
+  /**
+   * projection은 호출자가 만들어 넘긴다. 여기서 `useStaticProjection`을 다시 부르면
+   * CanvasPane과 같은 store 구독·변환이 한 번 더 돌아 매 graphData 갱신마다 두 번
+   * 계산된다.
+   */
+  projection: CanvasProjection;
 }
 
 export default function StaticCanvasViewport({
-  projection: injectedProjection,
-}: StaticCanvasViewportProps = {}) {
-  const fallbackProjection = useStaticProjection();
-  const projection = injectedProjection ?? fallbackProjection;
-
+  projection,
+}: StaticCanvasViewportProps) {
   return (
     <BaseCanvasViewport
       projection={projection}

@@ -21,17 +21,8 @@ import { useCanvasViewStore } from "../../stores";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { type CanvasProjection } from "../../types";
 import { buildFlowGraph } from "../../utils";
-import { useCanvasSelection } from "../../hooks/useCanvasView";
+import { resolveRelationConnection } from "../../utils/connectionGuards";
 import { handleSelectionChange, handlePaneClick } from "../../utils/selectionHandlers";
-import type { WorldEntitySourceType } from "@shared/types";
-
-const normalizeEntityType = (type: string): WorldEntitySourceType => {
-  const t = type.toLowerCase();
-  if (t === "place" || t === "concept" || t === "rule" || t === "item" || t === "worldentity") {
-    return "WorldEntity";
-  }
-  return (type.charAt(0).toUpperCase() + type.slice(1)) as WorldEntitySourceType;
-};
 
 const DEFAULT_EDGE_OPTIONS = {
   markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14 },
@@ -70,7 +61,6 @@ export default function BaseCanvasViewport({
   wrapperClassName = "h-full w-full",
   dataTestId = "canvas-viewport",
 }: BaseCanvasViewportProps) {
-  const { selection } = useCanvasSelection();
   const selectNode = useCanvasViewStore((s) => s.selectNode);
   const clearSelection = useCanvasViewStore((s) => s.clearSelection);
   const updateGraphNodePosition = useWorldBuildingStore(
@@ -79,12 +69,9 @@ export default function BaseCanvasViewport({
   const createRelation = useWorldBuildingStore((s) => s.createRelation);
   const currentProjectId = useWorldBuildingStore((s) => s.activeProjectId);
 
-  const selectedNodeId = selection.kind === "node" ? selection.id : null;
-
-  const flowGraph = useMemo(
-    () => buildFlowGraph(projection, selectedNodeId),
-    [projection, selectedNodeId],
-  );
+  // NOTE: 선택 상태는 ReactFlow가 node의 `selected`로 관리한다. 여기서 flowGraph를
+  // 선택 id에 의존시키면 노드를 고를 때마다 전체 node/edge 배열이 새로 만들어졌다.
+  const flowGraph = useMemo(() => buildFlowGraph(projection), [projection]);
 
   const [nodes, setNodes, onNodesChangeInternal] = useNodesState(
     flowGraph.nodes,
@@ -154,21 +141,23 @@ export default function BaseCanvasViewport({
 
   const onConnect = useCallback(
     async (connection: Connection) => {
-      if (!connection.source || !connection.target || !currentProjectId) return;
+      if (!currentProjectId) return;
 
-      const graphNodes = useWorldBuildingStore.getState().graphData?.nodes ?? [];
-      const sourceNode = graphNodes.find((n) => n.id === connection.source);
-      const targetNode = graphNodes.find((n) => n.id === connection.target);
-
-      if (!sourceNode || !targetNode) return;
+      const resolved = resolveRelationConnection(
+        connection,
+        useWorldBuildingStore.getState().graphData,
+      );
+      if (!resolved.ok) return;
 
       try {
         await createRelation({
           projectId: currentProjectId,
-          sourceId: connection.source,
-          sourceType: normalizeEntityType(sourceNode.entityType),
-          targetId: connection.target,
-          targetType: normalizeEntityType(targetNode.entityType),
+          sourceId: resolved.source.id,
+          // NOTE: graphData의 entityType은 이미 WorldEntitySourceType이다. 문자열을
+          // 다시 대문자화해 캐스팅하면 신규 entityType이 생길 때 조용히 깨진다.
+          sourceType: resolved.source.entityType,
+          targetId: resolved.target.id,
+          targetType: resolved.target.entityType,
           relation: "belongs_to",
         });
       } catch {
@@ -181,9 +170,15 @@ export default function BaseCanvasViewport({
   const deleteGraphNode = useWorldBuildingStore((s) => s.deleteGraphNode);
   const deleteRelation = useWorldBuildingStore((s) => s.deleteRelation);
 
+  // NOTE: 두 삭제 모두 프로젝트 그래프 문서를 통째로 다시 쓴다(persistGraphDocument).
+  // 병렬로 실행하면 각 호출이 자기 시점의 스냅샷을 저장해 마지막 것만 남는다.
+  // reduce로 chain을 만들어 loop 안 await 없이 순차 실행을 보장한다.
   const onNodesDelete = useCallback(
     async (deletedNodes: Node[]) => {
-      await Promise.all(deletedNodes.map((node) => deleteGraphNode(node.id)));
+      await deletedNodes.reduce<Promise<unknown>>(
+        (chain, node) => chain.then(() => deleteGraphNode(node.id)),
+        Promise.resolve(),
+      );
       clearSelection();
     },
     [deleteGraphNode, clearSelection],
@@ -191,7 +186,13 @@ export default function BaseCanvasViewport({
 
   const onEdgesDelete = useCallback(
     async (deletedEdges: Edge[]) => {
-      await Promise.all(deletedEdges.map((edge) => deleteRelation(edge.id)));
+      // NOTE: canvasFlowAdapter가 edge id에 `rel-` 접두사를 붙인다. 그대로 넘기면
+      // 존재하지 않는 id로 삭제를 시도해 캔버스에서만 사라지고 저장은 남는다.
+      await deletedEdges.reduce<Promise<unknown>>(
+        (chain, edge) =>
+          chain.then(() => deleteRelation(edge.data?.rawId ?? edge.id)),
+        Promise.resolve(),
+      );
     },
     [deleteRelation],
   );

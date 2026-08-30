@@ -27,11 +27,10 @@ import { cn } from "@shared/types/utils";
 import type { Snapshot } from "@shared/types";
 import {
   getEditorLayoutPanelSurface,
+  getLayoutSurfaceConfig,
   getLayoutSurfaceDefaultRatio,
   normalizeLayoutSurfaceRatioInput,
   COMPACT_BINDER_RAIL_WIDTH_PX,
-  COMPACT_BINDER_MIN_WIDTH_PX,
-  COMPACT_BINDER_MAX_WIDTH_PX,
   type LayoutSurfaceId,
 } from "@renderer/shared/constants/layoutSizing";
 
@@ -44,7 +43,6 @@ type BinderBarCompactHoverProps = {
   currentProjectId?: string;
   sidebarTopOffset: number;
   suppressHoverOpen?: boolean;
-  onServingStateChange?: (serving: boolean) => void;
   containerWidthPx: number;
 };
 
@@ -53,18 +51,12 @@ export function BinderBarCompactHover({
   currentProjectId,
   sidebarTopOffset,
   suppressHoverOpen = false,
-  onServingStateChange,
   containerWidthPx,
 }: BinderBarCompactHoverProps) {
   const { t } = useTranslation();
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
   const [isPinned, setIsPinned] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
-  // NOTE: 드래그 중 즉시 시각 반영을 위한 로컬 ratio. 다른 레이아웃(GoogleDocsLayout 등)은
-  // react-resizable-panels의 Panel이 store와 독립적으로 시각 크기를 담당하지만, 이 flyout은
-  // Panel을 쓰지 않고 폭을 store ratio로부터 직접 계산하므로 이 값이 그 역할을 대신한다.
-  // store 커밋은 drag 종료 시 1회만 일어나(아래 endResize) 매 픽셀 write를 피한다.
-  const [dragRatio, setDragRatio] = useState<number | null>(null);
   const [selectedSnapshot, setSelectedSnapshot] = useState<Snapshot | null>(null);
   const rightRailOpen = useUIStore((state) => state.regions.rightRail.open);
   const rightPanelActiveTab = useUIStore(
@@ -86,32 +78,31 @@ export function BinderBarCompactHover({
   const activeChapterContent = useChapterStore(
     (state) => activeChapterId ? state.items.find((c) => c.id === activeChapterId)?.content : undefined,
   );
-  const onServingStateChangeRef = useRef(onServingStateChange);
-  useEffect(() => {
-    onServingStateChangeRef.current = onServingStateChange;
-  });
   const dragStateRef = useRef<{
     surface: ReturnType<typeof getEditorLayoutPanelSurface>;
     startX: number;
-    startRatio: number;
+    startWidth: number;
   } | null>(null);
+  // NOTE: 드래그 중 폭은 React state가 아니라 이 element에 직접 쓴다. state로 두면
+  // pointermove마다 flyout 서브트리(ResearchPanel/SnapshotViewer/BinderSidebarPanelBody)가
+  // 전부 리렌더된다.
+  const panelElementRef = useRef<HTMLDivElement | null>(null);
 
   const setLayoutSurfaceRatio = useUIStore((state) => state.setLayoutSurfaceRatio);
-  const projectLayoutHasHydrated = useProjectLayoutStore(
-    (state) => state.hasHydrated,
-  );
-  const uiHasHydrated = useUIStore((state) => state.hasHydrated);
-  const upsertProjectLayout = useProjectLayoutStore(
-    (state) => state.upsertProjectLayout,
-  );
   const persistLayoutSurfaceRatio = useCallback(
     (surface: LayoutSurfaceId, ratio: number) => {
-      if (!currentProjectId || !uiHasHydrated || !projectLayoutHasHydrated) return;
+      if (!currentProjectId) return;
+      // NOTE: hydration 플래그와 store action은 렌더에서 쓰지 않는다. 구독하면 hydration이
+      // 끝나는 순간 이 컴포넌트가 리렌더된다. 호출 시점에 읽는다(useLayoutPersist와 동일 정책).
+      if (!useUIStore.getState().hasHydrated) return;
+      const { hasHydrated: projectLayoutHasHydrated, upsertProjectLayout } =
+        useProjectLayoutStore.getState();
+      if (!projectLayoutHasHydrated) return;
       upsertProjectLayout(currentProjectId, {
         layoutSurfaceRatios: { [surface]: ratio } as Record<LayoutSurfaceId, number>,
       });
     },
-    [currentProjectId, projectLayoutHasHydrated, uiHasHydrated, upsertProjectLayout],
+    [currentProjectId],
   );
   // NOTE: 다른 레이아웃(GoogleDocsLayout 등)과 동일한 idle-debounce 커밋 정책을 공유한다.
   // 과거에는 pointer move마다 store를 직접 write했는데, 이 hook은 실제 사용자 드래그의
@@ -127,9 +118,6 @@ export function BinderBarCompactHover({
     const surface = getEditorLayoutPanelSurface(activeCompactTab);
     return state.layoutSurfaceRatios[surface] ?? getLayoutSurfaceDefaultRatio(surface);
   });
-  // NOTE: 드래그 중에는 store가 아직 커밋되지 않았으므로(idle-debounce 대기 중) 로컬 값으로
-  // 즉시 폭을 반영한다. 드래그가 끝나면(activeTabRatio가 커밋되어 갈아치우므로) null로 되돌린다.
-  const effectiveTabRatio = dragRatio ?? activeTabRatio;
 
   const tabItems = useMemo(() => buildBinderTabItems(t), [t]);
 
@@ -147,23 +135,27 @@ export function BinderBarCompactHover({
     closeRightPanel();
   }, [closeRightPanel, setRegionOpen]);
 
-  useEffect(() => {
-    onServingStateChangeRef.current?.(activeCompactTab !== null);
-    void api.logger.debug("compact-binder.serving-state", {
-      activeCompactTab,
-      serving: activeCompactTab !== null,
-    });
-  }, [activeCompactTab]);
+  // NOTE: 드래그 클램프와 저장 정책은 같은 소스(활성 탭의 surface config)를 써야 한다.
+  // 과거에는 COMPACT_BINDER_MIN/MAX_WIDTH_PX 라는 별개 상수로 클램프해서, surface 정책과
+  // 실제 조절 범위가 어긋났다.
+  const activeSurfaceConfig = activeCompactTab
+    ? getLayoutSurfaceConfig(getEditorLayoutPanelSurface(activeCompactTab))
+    : null;
 
   const activeContentWidth = useMemo(() => {
-    if (activeCompactTab === null) return COMPACT_BINDER_RAIL_WIDTH_PX;
+    if (activeCompactTab === null || activeSurfaceConfig === null) {
+      return COMPACT_BINDER_RAIL_WIDTH_PX;
+    }
     const referenceWidth =
       Number.isFinite(containerWidthPx) && containerWidthPx > 0
         ? containerWidthPx
         : window.innerWidth;
-    const widthByRatio = Math.round((referenceWidth * effectiveTabRatio) / 100);
-    return Math.max(COMPACT_BINDER_MIN_WIDTH_PX, Math.min(COMPACT_BINDER_MAX_WIDTH_PX, widthByRatio));
-  }, [activeCompactTab, containerWidthPx, effectiveTabRatio]);
+    const widthByRatio = Math.round((referenceWidth * activeTabRatio) / 100);
+    return Math.max(
+      activeSurfaceConfig.minPx,
+      Math.min(activeSurfaceConfig.maxPx, widthByRatio),
+    );
+  }, [activeCompactTab, activeSurfaceConfig, containerWidthPx, activeTabRatio]);
 
   const handleResizePointerDown = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -172,58 +164,62 @@ export function BinderBarCompactHover({
       dragStateRef.current = {
         surface,
         startX: event.clientX,
-        startRatio: activeTabRatio,
+        // NOTE: 기준은 store ratio가 아니라 실측 폭이다. store ratio는 min/max 클램프 이전
+        // 값이라 표시 폭과 다를 수 있고, 그 차이만큼 드래그 첫 프레임에 패널이 튀었다.
+        startWidth:
+          panelElementRef.current?.getBoundingClientRect().width ??
+          activeContentWidth,
       };
       setIsResizing(true);
+      // NOTE: pointer capture로 포인터가 separator를 벗어나도 이 요소가 계속 move/up 이벤트를
+      // 받는다. 덕분에 창 어디까지 끌어도 드래그가 유지된다.
       event.currentTarget.setPointerCapture(event.pointerId);
       event.preventDefault();
     },
-    [activeCompactTab, activeTabRatio],
+    [activeCompactTab, activeContentWidth],
   );
 
-  // NOTE: 매 pointer move는 시각 반영용 로컬 state만 갱신한다. store 커밋은
-  // resizeHandlers(useLayoutSurfaceResizeCommit)가 idle-debounce로 처리하므로 여기서
-  // 직접 setLayoutSurfaceRatio를 부르지 않는다(다른 레이아웃과 동일 정책).
+  // NOTE: 폭은 DOM에 직접 쓰고 state는 건드리지 않는다(드래그 중 리렌더 0회). store 커밋은
+  // resizeHandlers가 idle-debounce로 처리한다.
   const handleResizePointerMove = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
       const dragState = dragStateRef.current;
-      if (!activeCompactTab || !dragState) return;
+      if (!activeCompactTab || !dragState || activeSurfaceConfig === null) return;
       const referenceWidth =
         Number.isFinite(containerWidthPx) && containerWidthPx > 0
           ? containerWidthPx
           : window.innerWidth;
       if (!(referenceWidth > 0)) return;
       const delta = dragState.startX - event.clientX;
-      const startWidth = (referenceWidth * dragState.startRatio) / 100;
-      const nextWidth = Math.max(COMPACT_BINDER_MIN_WIDTH_PX, Math.min(COMPACT_BINDER_MAX_WIDTH_PX, startWidth + delta));
+      const nextWidth = Math.max(
+        activeSurfaceConfig.minPx,
+        Math.min(activeSurfaceConfig.maxPx, dragState.startWidth + delta),
+      );
       const nextRatioRaw = (nextWidth / referenceWidth) * 100;
       const nextRatio = normalizeLayoutSurfaceRatioInput(dragState.surface, nextRatioRaw);
       if (nextRatio === null) return;
-      setDragRatio(nextRatio);
-      resizeHandlers[activeCompactTab]({
+      const panelElement = panelElementRef.current;
+      if (panelElement) {
+        panelElement.style.width = `${nextWidth}px`;
+      }
+      resizeHandlers[activeCompactTab].onResize({
         asPercentage: nextRatio,
         inPixels: nextWidth,
       });
     },
-    [activeCompactTab, containerWidthPx, resizeHandlers],
+    [activeCompactTab, activeSurfaceConfig, containerWidthPx, resizeHandlers],
   );
 
   const endResize = useCallback(() => {
+    if (dragStateRef.current === null) return;
     dragStateRef.current = null;
-    setIsResizing(false);
-    // NOTE: dragRatio는 여기서 바로 지우지 않는다. store 커밋은 idle-debounce(약 140ms) 뒤에
-    // 반영되므로 즉시 null로 되돌리면 activeTabRatio가 따라잡기 전까지 폭이 잠깐 튄다.
-    // 아래 effect가 store 값이 드래그 최종값에 도달하면 정리한다.
-  }, []);
-
-  // NOTE: store가 드래그 최종 ratio를 따라잡으면(idle-debounce 커밋 완료) 로컬 오버라이드를
-  // 정리한다. 그 전에 지우면 activeTabRatio(구 값)로 잠깐 되돌아가는 시각적 튐이 생긴다.
-  useEffect(() => {
-    if (dragRatio === null || dragStateRef.current !== null) return;
-    if (Math.abs(activeTabRatio - dragRatio) < 0.5) {
-      setDragRatio(null);
+    // NOTE: 대기 중인 커밋을 같은 tick에 확정한다. 이게 없으면 idle-debounce가 끝나기 전에
+    // 리렌더가 일어나 예전 ratio로 폭이 계산되고, DOM에 써둔 폭이 한 프레임 되돌아간다.
+    if (activeCompactTab) {
+      resizeHandlers[activeCompactTab].endInteraction();
     }
-  }, [activeTabRatio, dragRatio]);
+    setIsResizing(false);
+  }, [activeCompactTab, resizeHandlers]);
 
   // NOTE: closeFocusedSurface는 snapshot viewer를 먼저 닫고 그다음 binder tab을 닫는다.
   useEffect(() => {
@@ -248,15 +244,33 @@ export function BinderBarCompactHover({
       closeDelayMs={180}
       suppressHoverOpen={suppressHoverOpen}
       forceOpen={(isPinned && activeCompactTab !== null) || selectedSnapshot !== null}
-      // NOTE: 리사이즈 중에는 hover-close를 잠근다. 이게 없으면 드래그 중 포인터가
-      // activation zone을 벗어나는 순간 flyout이 자동으로 닫히기 시작해, 다른 레이아웃의
-      // 도킹형 패널과 달리 리사이즈 가능한 영역이 좁게 제한된다.
-      isResizing={isResizing}
+      // NOTE: `isResizing`은 넘기지 않는다. FocusHoverSidebar는 이미 `buttons !== 0`으로
+      // 버튼을 누른 동안 hover-close를 건너뛰므로 드래그 중 닫힘은 원래부터 막혀 있다.
+      // 반대로 이 prop을 켜면 내부 effect가 hover 상태를 false로 내려버려서, 드래그를 놓는
+      // 순간 `forceOpen || isResizing || isHoverOpen`이 모두 false가 되어 패널이 닫혔다.
     >
+      {/* NOTE: resize 핸들은 flyout 최상위에 둔다. 과거에는 콘텐츠 wrapper 안에 있어서
+          그 wrapper 높이만큼만 잡혔고, 상단 여백(spacer) 구간에서는 드래그가 안 됐다.
+          FocusHoverSidebar의 컨테이너가 `position: fixed`라 absolute 기준이 되며,
+          `left-0`는 flyout(=패널) 왼쪽 경계, `inset-y-0`는 전체 높이를 뜻한다.
+          out-of-flow라 shrink-to-fit 폭 계산에도 영향을 주지 않는다. */}
+      {activeCompactTab !== null && (
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          className="absolute inset-y-0 left-0 z-30 w-2 cursor-col-resize bg-transparent"
+          onPointerDown={handleResizePointerDown}
+          onPointerMove={handleResizePointerMove}
+          onPointerUp={endResize}
+          onPointerCancel={endResize}
+          onLostPointerCapture={endResize}
+        />
+      )}
       {/* NOTE: traffic lights 공간만큼 상단 여백을 줘 내용이 표면 확장에 따라 올라가지 않게 한다. */}
       <div style={{ height: sidebarTopOffset }} aria-hidden="true" className="shrink-0" />
       <div className="flex-1 min-h-0 flex flex-row">
         <div
+          ref={panelElementRef}
           className={cn(
             // NOTE: 레일(아이콘)과 콘텐츠(연구/스냅샷 등) 표면 색을 하나로 통일한다.
             // bg-panel(#28282b)을 쓰면 GoogleDocsPanelRail/RightPanel(#212123, bg-sidebar와
@@ -298,18 +312,6 @@ export function BinderBarCompactHover({
                   enableAnimations && "animate-in fade-in duration-150",
                 )}
               >
-                <div
-                  role="separator"
-                  aria-orientation="vertical"
-                  // NOTE: 다른 레이아웃(GoogleDocsLayout/MainLayout)의 separator는 항상
-                  // 무색이다. hover 시 색이 뜨는 건 이 컴포넌트만의 차이였으므로 제거한다.
-                  className="absolute left-0 top-0 bottom-0 z-20 w-2 cursor-col-resize bg-transparent"
-                  onPointerDown={handleResizePointerDown}
-                  onPointerMove={handleResizePointerMove}
-                  onPointerUp={endResize}
-                  onPointerCancel={endResize}
-                  onLostPointerCapture={endResize}
-                />
                 {/* NOTE: 목록→diff 전환은 탭 내용을 덮어쓰는 방식(GoogleDocs 스냅샷 UX).
                     분할로 옆에 띄우면 레일 폭이 부족해 diff 가독성이 떨어진다. */}
                 {selectedSnapshot !== null ? (

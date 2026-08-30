@@ -183,6 +183,10 @@ export type SettingsRendererApi = {
     close: () => Promise<IPCResponse<unknown>>;
     toggleFullscreen: () => Promise<IPCResponse<unknown>>;
     setFullscreen: (flag: boolean) => Promise<IPCResponse<unknown>>;
+    /** macOS 전용. 다른 플랫폼에서는 no-op으로 응답한다. */
+    setTrafficLightVisibility: (
+      visible: boolean,
+    ) => Promise<IPCResponse<unknown>>;
     openExport: (chapterId: string) => Promise<IPCResponse<boolean>>;
 
     openWorldGraph: () => Promise<IPCResponse<unknown>>;

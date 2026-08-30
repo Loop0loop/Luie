@@ -13,6 +13,7 @@ import { appUpdateService } from "../../../app/startup/index.js";
 import {
   windowOpenExportArgsSchema,
   windowSetFullscreenArgsSchema,
+  windowSetTrafficLightVisibilityArgsSchema,
 } from "../../../../shared/schemas/index.js";
 
 export function registerWindowIPCHandlers(logger: LoggerLike): void {
@@ -131,6 +132,21 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
           win.setFullScreen(flag);
         }
         win.focus();
+        return true;
+      },
+    },
+    {
+      channel: IPC_CHANNELS.WINDOW_SET_TRAFFIC_LIGHT_VISIBILITY,
+      logTag: "WINDOW_SET_TRAFFIC_LIGHT_VISIBILITY",
+      failMessage: "Failed to set traffic light visibility",
+      argsSchema: windowSetTrafficLightVisibilityArgsSchema,
+      handler: (visible: boolean) => {
+        // NOTE: setWindowButtonVisibility는 macOS 전용 API다(Electron BrowserWindow 문서).
+        // 다른 플랫폼에서는 트래픽 라이트 개념이 없어 no-op으로 응답한다.
+        if (process.platform !== "darwin") return false;
+        const win = windowManager.getMainWindow();
+        if (!win) return false;
+        win.setWindowButtonVisibility(visible);
         return true;
       },
     },

@@ -27,7 +27,6 @@ function autoGridPosition(index: number): { x: number; y: number } {
 
 function buildNodes(
   projection: CanvasProjection,
-  selectedNodeId: string | null,
 ): Node<RFEntityNodeData>[] {
   let autoIndex = 0;
   const connectionCounts = new Map<string, number>();
@@ -53,7 +52,6 @@ function buildNodes(
         label: node.label,
         description: node.description ?? null,
         connectionCount: connectionCounts.get(node.id) ?? 0,
-        isSelected: node.id === selectedNodeId,
         color: node.color,
       } satisfies RFEntityNodeData,
     };
@@ -85,12 +83,16 @@ export interface CanvasFlowGraph {
   edges: Edge[];
 }
 
-/** scope/mode filtering이 끝난 projection만 ReactFlow node/edge로 변환한다. */
+/**
+ * scope/mode filtering이 끝난 projection만 ReactFlow node/edge로 변환한다.
+ *
+ * 선택 상태는 여기서 굽지 않는다. ReactFlow가 이미 node의 `selected`를 관리하는데
+ * data에도 넣으면 노드를 고를 때마다 전체 node/edge 배열을 새로 만들어야 했다.
+ */
 export function buildFlowGraph(
   projection: CanvasProjection,
-  selectedNodeId: string | null,
 ): CanvasFlowGraph {
-  const nodes = buildNodes(projection, selectedNodeId);
+  const nodes = buildNodes(projection);
   const nodeIds = new Set(nodes.map((n) => n.id));
   const edges = buildEdges(projection, nodeIds);
   return { nodes, edges };

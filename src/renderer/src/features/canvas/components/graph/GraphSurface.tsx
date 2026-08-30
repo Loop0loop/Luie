@@ -67,38 +67,81 @@ export default function GraphSurface() {
     return nodes.find((node) => node.id === focusId) ?? null;
   }, [focusId, nodes]);
 
-  const { filteredNodes, filteredEdges } = useGraphDataFiltering({
-    sourceNodes,
-    sourceEdges,
-    activeMode,
-    selectedFocusNode,
-    focusId,
-  });
-
-  useEffect(() => {
-    const layoutCenter = activeMode === "character" ? LAYOUT_CENTER_CHARACTER : LAYOUT_CENTER_EVENT;
-    const iterations = activeMode === "character" ? LAYOUT_ITERATIONS_CHARACTER : LAYOUT_ITERATIONS_EVENT;
-
-    // NOTE: filter 변경 시 기존 node 위치를 이어받아 layout jump를 막는다.
-    const nodesWithPrevPositions = filteredNodes.map((node) => {
-      const prevNode = nodesRef.current.find((n) => n.id === node.id);
-      if (prevNode?.position) {
-        return {
-          ...node,
-          position: { ...prevNode.position },
-        };
-      }
-      return node;
+  const { filteredNodes, filteredEdges, adjacency, topologySignature } =
+    useGraphDataFiltering({
+      sourceNodes,
+      sourceEdges,
+      activeMode,
+      selectedFocusNode,
     });
 
-    const laidOutNodes = calculateForceLayout(nodesWithPrevPositions, filteredEdges, iterations, layoutCenter);
-    
-    setNodes(laidOutNodes);
-    setEdges(filteredEdges);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- activeMode 변경은 filtered node/edge 변경으로 이미 반영된다.
-  }, [filteredNodes, filteredEdges, setNodes, setEdges]);
+  // NOTE: force layout은 반복 횟수 × 노드² 비용이다. node를 클릭할 때(focusId 변경)까지
+  // 다시 돌면 큰 그래프에서 클릭이 수백 ms 멈춘다. 구성이 실제로 바뀔 때만 계산하고,
+  // 최신 node/edge는 ref로 읽어 dependency에서 뺀다. 이 effect는 아래 layout effect보다
+  // 먼저 선언돼 있어야 같은 commit에서 최신 값이 먼저 반영된다.
+  const graphDataRef = useRef({ filteredNodes, filteredEdges });
+  useEffect(() => {
+    graphDataRef.current = { filteredNodes, filteredEdges };
+  }, [filteredNodes, filteredEdges]);
 
-  useFocusSync({ focusId, setNodes, setEdges });
+  useEffect(() => {
+    const { filteredNodes: latestNodes, filteredEdges: latestEdges } =
+      graphDataRef.current;
+    const isCharacterMode = activeMode === "character";
+    const layoutCenter = isCharacterMode ? LAYOUT_CENTER_CHARACTER : LAYOUT_CENTER_EVENT;
+    const iterations = isCharacterMode ? LAYOUT_ITERATIONS_CHARACTER : LAYOUT_ITERATIONS_EVENT;
+
+    // NOTE: filter 변경 시 기존 node 위치를 이어받아 layout jump를 막는다.
+    const prevPositions = new Map(
+      nodesRef.current.map((node) => [node.id, node.position]),
+    );
+    const nodesWithPrevPositions = latestNodes.map((node) => {
+      const prevPosition = prevPositions.get(node.id);
+      return prevPosition ? { ...node, position: { ...prevPosition } } : node;
+    });
+
+    const laidOutNodes = calculateForceLayout(nodesWithPrevPositions, latestEdges, iterations, layoutCenter);
+
+    setNodes(laidOutNodes);
+    setEdges(latestEdges);
+    // NOTE: activeMode는 topologySignature에 이미 포함되어 함께만 바뀐다. layout 상수를
+    // 고르려고 값만 읽는다.
+  }, [activeMode, topologySignature, setNodes, setEdges]);
+
+  // NOTE: 구성(id 집합)은 그대로인데 node data만 바뀐 경우 — 별 등급, 필터 투명도.
+  // force layout을 다시 돌리지 않고 위치를 유지한 채 data만 갈아끼운다. 실제로 바뀐 게
+  // 없으면 같은 배열을 돌려 리렌더를 막는다.
+  useEffect(() => {
+    setNodes((prevNodes) => {
+      const nextDataById = new Map(
+        filteredNodes.map((node) => [node.id, node.data]),
+      );
+      let changed = false;
+      const nextNodes = prevNodes.map((node) => {
+        const nextData = nextDataById.get(node.id);
+        if (!nextData || nextData === node.data) return node;
+        changed = true;
+        return { ...node, data: nextData };
+      });
+      return changed ? nextNodes : prevNodes;
+    });
+  }, [filteredNodes, setNodes]);
+
+  // NOTE: edge 내용(관계명 등)이 바뀌면 갈아끼운다. node data 갱신과 분리해야 하는 이유는
+  // edge를 교체하면 focus로 입혀둔 style이 지워지기 때문이다. edge가 바뀔 때는 adjacency
+  // identity도 함께 바뀌어 아래 useFocusSync가 같은 commit에서 다시 입히지만, 필터만
+  // 바뀐 경우에는 useFocusSync가 재실행되지 않으므로 edge를 건드리면 안 된다.
+  useEffect(() => {
+    setEdges(filteredEdges);
+  }, [filteredEdges, setEdges]);
+
+  useFocusSync({
+    focusId,
+    adjacency,
+    topologySignature,
+    setNodes,
+    setEdges,
+  });
 
   useEffect(() => {
     if (filteredNodes.length > 0 && !hasInitialFitView.current) {

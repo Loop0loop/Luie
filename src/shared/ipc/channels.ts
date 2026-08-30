@@ -186,6 +186,7 @@ export const IPC_CHANNELS = {
   WINDOW_TOGGLE_DEV_TOOLS: "window:toggle-dev-tools",
   WINDOW_TOGGLE_FULLSCREEN: "window:toggle-fullscreen",
   WINDOW_SET_FULLSCREEN: "window:set-fullscreen",
+  WINDOW_SET_TRAFFIC_LIGHT_VISIBILITY: "window:set-traffic-light-visibility",
   WINDOW_OPEN_EXPORT: "window:open-export",
   WINDOW_OPEN_WORLD_GRAPH: "window:open-world-graph",
 
