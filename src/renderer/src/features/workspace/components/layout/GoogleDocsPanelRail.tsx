@@ -81,6 +81,7 @@ export function GoogleDocsPanelRail({
     >
       {RESEARCH_RAIL_TABS.map((tab) => {
         const title = t(tab.titleKey);
+        const isActive = activeRightTab === tab.tab;
         return (
           <DraggableItem
             key={tab.tab}
@@ -90,13 +91,22 @@ export function GoogleDocsPanelRail({
             <button
               onClick={() => onSelectTab(tab.tab)}
               className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover hover:text-fg",
-                activeRightTab === tab.tab && "bg-accent/15 text-accent",
+                "relative flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover hover:text-fg",
+                isActive && "bg-accent/15 text-accent",
               )}
               aria-label={title}
+              aria-pressed={isActive}
               title={title}
             >
-              <tab.icon className="h-5 w-5" />
+              {/* NOTE: 색상만으로 활성 상태를 표시하지 않는다. 아이콘 두께 변화 + 좌측
+                  인디케이터 바로 형태 신호를 함께 준다. */}
+              <tab.icon className="h-5 w-5" strokeWidth={isActive ? 2.25 : 1.75} />
+              {isActive && (
+                <span
+                  aria-hidden="true"
+                  className="absolute -left-1 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-accent"
+                />
+              )}
             </button>
           </DraggableItem>
         );

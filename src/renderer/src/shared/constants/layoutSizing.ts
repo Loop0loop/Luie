@@ -37,12 +37,16 @@ export const DOCS_LAYOUT_PANEL_SURFACE_MAP = {
   export: "docs.panel.export",
 } as const;
 
+// NOTE: editor 레이아웃의 research 계열 탭(등장인물/사건/세력/세계관/스크랩)은 docs
+// 레이아웃과 동일하게 물리적으로 하나의 패널을 공유하고 탭만 교체된다(BinderBarCompactHover).
+// 탭마다 별도 surface를 쓰면 탭을 바꿀 때마다 폭이 저장된 값으로 되돌아가 동기화가 깨지므로
+// 공용 surface 하나로 묶는다.
 export const EDITOR_LAYOUT_PANEL_SURFACE_MAP = {
-  character: "editor.panel.character",
-  event: "editor.panel.event",
-  faction: "editor.panel.faction",
-  world: "editor.panel.world",
-  scrap: "editor.panel.scrap",
+  character: "editor.panel.research",
+  event: "editor.panel.research",
+  faction: "editor.panel.research",
+  world: "editor.panel.research",
+  scrap: "editor.panel.research",
   analysis: "editor.panel.analysis",
   snapshot: "editor.panel.snapshot",
   trash: "editor.panel.trash",
@@ -145,14 +149,7 @@ export const LAYOUT_SURFACE_CONFIG: Record<
   "docs.panel.trash": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 26 },
   "docs.panel.editor": { ...DOCS_RESEARCH_PANEL_CONFIG, defaultRatio: 34 },
   "docs.panel.export": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 30 },
-  "editor.panel.character": {
-    ...NESTED_MANAGER_PANEL_CONFIG,
-    defaultRatio: 38,
-  },
-  "editor.panel.event": { ...NESTED_MANAGER_PANEL_CONFIG, defaultRatio: 38 },
-  "editor.panel.faction": { ...NESTED_MANAGER_PANEL_CONFIG, defaultRatio: 38 },
-  "editor.panel.world": { ...NESTED_MANAGER_PANEL_CONFIG, defaultRatio: 38 },
-  "editor.panel.scrap": { ...NESTED_MANAGER_PANEL_CONFIG, defaultRatio: 38 },
+  "editor.panel.research": { ...NESTED_MANAGER_PANEL_CONFIG, defaultRatio: 38 },
   "editor.panel.analysis": { ...NESTED_MANAGER_PANEL_CONFIG, defaultRatio: 38 },
   "editor.panel.snapshot": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 26 },
   "editor.panel.trash": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 26 },
@@ -173,11 +170,14 @@ const LEGACY_WIDTH_KEYS_BY_LAYOUT_SURFACE: Record<LayoutSurfaceId, string[]> = {
   "docs.panel.trash": ["docsTrash", "trash"],
   "docs.panel.editor": ["docsEditor", "editor"],
   "docs.panel.export": ["docsExport", "export"],
-  "editor.panel.character": ["editorCharacter", "character"],
-  "editor.panel.event": ["editorEvent", "event"],
-  "editor.panel.faction": ["editorFaction", "faction"],
-  "editor.panel.world": ["editorWorld", "world"],
-  "editor.panel.scrap": ["editorScrap", "scrap"],
+  "editor.panel.research": [
+    "editorCharacter",
+    "editorEvent",
+    "editorFaction",
+    "editorWorld",
+    "editorScrap",
+    "character",
+  ],
   "editor.panel.analysis": ["editorAnalysis", "analysis"],
   "editor.panel.snapshot": ["editorSnapshot", "snapshot"],
   "editor.panel.trash": ["editorTrash", "trash"],
@@ -296,6 +296,34 @@ const deriveLegacyDocsResearchRatio = (
   return widest;
 };
 
+/**
+ * 탭별 `editor.panel.*` ratio만 있던 payload를 공용 `editor.panel.research`로 승계한다.
+ * docs 승계와 동일한 정책(가장 넓게 잡아둔 값 유지)을 따른다.
+ */
+const LEGACY_EDITOR_RESEARCH_RATIO_KEYS = [
+  "editor.panel.character",
+  "editor.panel.event",
+  "editor.panel.faction",
+  "editor.panel.world",
+  "editor.panel.scrap",
+] as const;
+
+const deriveLegacyEditorResearchRatio = (
+  explicitInput: Record<string, unknown> | null,
+): number | null => {
+  if (!explicitInput) return null;
+  let widest: number | null = null;
+  for (const legacyKey of LEGACY_EDITOR_RESEARCH_RATIO_KEYS) {
+    const ratio = normalizeLayoutSurfaceRatioInput(
+      "editor.panel.research",
+      explicitInput[legacyKey],
+    );
+    if (ratio === null) continue;
+    if (widest === null || ratio > widest) widest = ratio;
+  }
+  return widest;
+};
+
 export const normalizeLayoutSurfaceRatiosWithMigrations = (
   input: unknown,
   legacySidebarWidths?: unknown,
@@ -318,6 +346,15 @@ export const normalizeLayoutSurfaceRatiosWithMigrations = (
       const legacyDocsResearchRatio = deriveLegacyDocsResearchRatio(explicitInput);
       if (legacyDocsResearchRatio !== null) {
         normalized[surface] = legacyDocsResearchRatio;
+        continue;
+      }
+    }
+
+    if (surface === "editor.panel.research") {
+      const legacyEditorResearchRatio =
+        deriveLegacyEditorResearchRatio(explicitInput);
+      if (legacyEditorResearchRatio !== null) {
+        normalized[surface] = legacyEditorResearchRatio;
         continue;
       }
     }

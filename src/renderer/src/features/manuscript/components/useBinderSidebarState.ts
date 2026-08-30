@@ -7,7 +7,7 @@ import {
   getLayoutSurfaceDefaultRatio,
   type LayoutSurfaceId,
 } from "@renderer/shared/constants/layoutSizing";
-import { useLayoutSurfaceResizeCommit } from "@renderer/features/workspace/hooks/useLayoutSurfaceResizeCommit";
+import { useEditorBinderResizeHandlers } from "@renderer/features/workspace/hooks/useEditorBinderResizeHandlers";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useProjectLayoutStore } from "@renderer/features/workspace/stores/projectLayoutStore";
 import { BINDER_VALID_TABS, type BinderTab } from "./binderSidebar.shared";
@@ -83,53 +83,10 @@ export function useBinderSidebarState(projectId?: string | null) {
     [],
   );
 
-  const resizeHandlers = {
-    character: useLayoutSurfaceResizeCommit(
-      getEditorLayoutPanelSurface("character"),
-      setLayoutSurfaceRatio,
-      { onCommit: persistLayoutSurfaceRatio },
-    ),
-    event: useLayoutSurfaceResizeCommit(
-      getEditorLayoutPanelSurface("event"),
-      setLayoutSurfaceRatio,
-      { onCommit: persistLayoutSurfaceRatio },
-    ),
-    faction: useLayoutSurfaceResizeCommit(
-      getEditorLayoutPanelSurface("faction"),
-      setLayoutSurfaceRatio,
-      { onCommit: persistLayoutSurfaceRatio },
-    ),
-    world: useLayoutSurfaceResizeCommit(
-      getEditorLayoutPanelSurface("world"),
-      setLayoutSurfaceRatio,
-      { onCommit: persistLayoutSurfaceRatio },
-    ),
-    scrap: useLayoutSurfaceResizeCommit(
-      getEditorLayoutPanelSurface("scrap"),
-      setLayoutSurfaceRatio,
-      { onCommit: persistLayoutSurfaceRatio },
-    ),
-    analysis: useLayoutSurfaceResizeCommit(
-      getEditorLayoutPanelSurface("analysis"),
-      setLayoutSurfaceRatio,
-      { onCommit: persistLayoutSurfaceRatio },
-    ),
-    snapshot: useLayoutSurfaceResizeCommit(
-      getEditorLayoutPanelSurface("snapshot"),
-      setLayoutSurfaceRatio,
-      { onCommit: persistLayoutSurfaceRatio },
-    ),
-    trash: useLayoutSurfaceResizeCommit(
-      getEditorLayoutPanelSurface("trash"),
-      setLayoutSurfaceRatio,
-      { onCommit: persistLayoutSurfaceRatio },
-    ),
-    canvas: useLayoutSurfaceResizeCommit(
-      getEditorLayoutPanelSurface("canvas"),
-      setLayoutSurfaceRatio,
-      { onCommit: persistLayoutSurfaceRatio },
-    ),
-  } satisfies Record<BinderTab, (panelSize: PanelSize) => void>;
+  const resizeHandlers = useEditorBinderResizeHandlers(
+    setLayoutSurfaceRatio,
+    persistLayoutSurfaceRatio,
+  );
 
   const handleRightTabClick = useCallback(
     (tab: BinderTab) => {

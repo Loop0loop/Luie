@@ -20,6 +20,8 @@ import {
 import { ChevronLeft, X } from "lucide-react";
 import { useEditorStore } from "@renderer/domains/editor";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { useProjectLayoutStore } from "@renderer/features/workspace/stores/projectLayoutStore";
+import { useEditorBinderResizeHandlers } from "@renderer/features/workspace/hooks/useEditorBinderResizeHandlers";
 import { api } from "@shared/api";
 import { cn } from "@shared/types/utils";
 import type { Snapshot } from "@shared/types";
@@ -30,6 +32,7 @@ import {
   COMPACT_BINDER_RAIL_WIDTH_PX,
   COMPACT_BINDER_MIN_WIDTH_PX,
   COMPACT_BINDER_MAX_WIDTH_PX,
+  type LayoutSurfaceId,
 } from "@renderer/shared/constants/layoutSizing";
 
 const SnapshotViewer = lazy(
@@ -57,6 +60,11 @@ export function BinderBarCompactHover({
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
   const [isPinned, setIsPinned] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
+  // NOTE: 드래그 중 즉시 시각 반영을 위한 로컬 ratio. 다른 레이아웃(GoogleDocsLayout 등)은
+  // react-resizable-panels의 Panel이 store와 독립적으로 시각 크기를 담당하지만, 이 flyout은
+  // Panel을 쓰지 않고 폭을 store ratio로부터 직접 계산하므로 이 값이 그 역할을 대신한다.
+  // store 커밋은 drag 종료 시 1회만 일어나(아래 endResize) 매 픽셀 write를 피한다.
+  const [dragRatio, setDragRatio] = useState<number | null>(null);
   const [selectedSnapshot, setSelectedSnapshot] = useState<Snapshot | null>(null);
   const rightRailOpen = useUIStore((state) => state.regions.rightRail.open);
   const rightPanelActiveTab = useUIStore(
@@ -89,6 +97,29 @@ export function BinderBarCompactHover({
   } | null>(null);
 
   const setLayoutSurfaceRatio = useUIStore((state) => state.setLayoutSurfaceRatio);
+  const projectLayoutHasHydrated = useProjectLayoutStore(
+    (state) => state.hasHydrated,
+  );
+  const uiHasHydrated = useUIStore((state) => state.hasHydrated);
+  const upsertProjectLayout = useProjectLayoutStore(
+    (state) => state.upsertProjectLayout,
+  );
+  const persistLayoutSurfaceRatio = useCallback(
+    (surface: LayoutSurfaceId, ratio: number) => {
+      if (!currentProjectId || !uiHasHydrated || !projectLayoutHasHydrated) return;
+      upsertProjectLayout(currentProjectId, {
+        layoutSurfaceRatios: { [surface]: ratio } as Record<LayoutSurfaceId, number>,
+      });
+    },
+    [currentProjectId, projectLayoutHasHydrated, uiHasHydrated, upsertProjectLayout],
+  );
+  // NOTE: 다른 레이아웃(GoogleDocsLayout 등)과 동일한 idle-debounce 커밋 정책을 공유한다.
+  // 과거에는 pointer move마다 store를 직접 write했는데, 이 hook은 실제 사용자 드래그의
+  // 최종 비율만 idle 후 한 번 커밋한다.
+  const resizeHandlers = useEditorBinderResizeHandlers(
+    setLayoutSurfaceRatio,
+    persistLayoutSurfaceRatio,
+  );
 
   // NOTE: 전체 ratio map 대신 active tab만 구독해 무관한 resize render를 피한다.
   const activeTabRatio = useUIStore((state) => {
@@ -96,6 +127,9 @@ export function BinderBarCompactHover({
     const surface = getEditorLayoutPanelSurface(activeCompactTab);
     return state.layoutSurfaceRatios[surface] ?? getLayoutSurfaceDefaultRatio(surface);
   });
+  // NOTE: 드래그 중에는 store가 아직 커밋되지 않았으므로(idle-debounce 대기 중) 로컬 값으로
+  // 즉시 폭을 반영한다. 드래그가 끝나면(activeTabRatio가 커밋되어 갈아치우므로) null로 되돌린다.
+  const effectiveTabRatio = dragRatio ?? activeTabRatio;
 
   const tabItems = useMemo(() => buildBinderTabItems(t), [t]);
 
@@ -127,9 +161,9 @@ export function BinderBarCompactHover({
       Number.isFinite(containerWidthPx) && containerWidthPx > 0
         ? containerWidthPx
         : window.innerWidth;
-    const widthByRatio = Math.round((referenceWidth * activeTabRatio) / 100);
+    const widthByRatio = Math.round((referenceWidth * effectiveTabRatio) / 100);
     return Math.max(COMPACT_BINDER_MIN_WIDTH_PX, Math.min(COMPACT_BINDER_MAX_WIDTH_PX, widthByRatio));
-  }, [activeCompactTab, containerWidthPx, activeTabRatio]);
+  }, [activeCompactTab, containerWidthPx, effectiveTabRatio]);
 
   const handleResizePointerDown = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -147,10 +181,13 @@ export function BinderBarCompactHover({
     [activeCompactTab, activeTabRatio],
   );
 
+  // NOTE: 매 pointer move는 시각 반영용 로컬 state만 갱신한다. store 커밋은
+  // resizeHandlers(useLayoutSurfaceResizeCommit)가 idle-debounce로 처리하므로 여기서
+  // 직접 setLayoutSurfaceRatio를 부르지 않는다(다른 레이아웃과 동일 정책).
   const handleResizePointerMove = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
       const dragState = dragStateRef.current;
-      if (!dragState) return;
+      if (!activeCompactTab || !dragState) return;
       const referenceWidth =
         Number.isFinite(containerWidthPx) && containerWidthPx > 0
           ? containerWidthPx
@@ -162,15 +199,31 @@ export function BinderBarCompactHover({
       const nextRatioRaw = (nextWidth / referenceWidth) * 100;
       const nextRatio = normalizeLayoutSurfaceRatioInput(dragState.surface, nextRatioRaw);
       if (nextRatio === null) return;
-      setLayoutSurfaceRatio(dragState.surface, nextRatio);
+      setDragRatio(nextRatio);
+      resizeHandlers[activeCompactTab]({
+        asPercentage: nextRatio,
+        inPixels: nextWidth,
+      });
     },
-    [containerWidthPx, setLayoutSurfaceRatio],
+    [activeCompactTab, containerWidthPx, resizeHandlers],
   );
 
   const endResize = useCallback(() => {
     dragStateRef.current = null;
     setIsResizing(false);
+    // NOTE: dragRatio는 여기서 바로 지우지 않는다. store 커밋은 idle-debounce(약 140ms) 뒤에
+    // 반영되므로 즉시 null로 되돌리면 activeTabRatio가 따라잡기 전까지 폭이 잠깐 튄다.
+    // 아래 effect가 store 값이 드래그 최종값에 도달하면 정리한다.
   }, []);
+
+  // NOTE: store가 드래그 최종 ratio를 따라잡으면(idle-debounce 커밋 완료) 로컬 오버라이드를
+  // 정리한다. 그 전에 지우면 activeTabRatio(구 값)로 잠깐 되돌아가는 시각적 튐이 생긴다.
+  useEffect(() => {
+    if (dragRatio === null || dragStateRef.current !== null) return;
+    if (Math.abs(activeTabRatio - dragRatio) < 0.5) {
+      setDragRatio(null);
+    }
+  }, [activeTabRatio, dragRatio]);
 
   // NOTE: closeFocusedSurface는 snapshot viewer를 먼저 닫고 그다음 binder tab을 닫는다.
   useEffect(() => {
