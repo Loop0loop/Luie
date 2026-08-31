@@ -170,7 +170,7 @@ export const SyncTab = memo(function SyncTab({
           </div>
           {status.conflicts.total > 0 && (
             <button
-              className="px-3 py-1.5 bg-warning hover:bg-warning/90 text-warning-fg text-xs font-semibold rounded-control shadow-sm transition-colors disabled:opacity-50"
+              className="px-3 py-1.5 bg-warning hover:bg-warning/90 text-app text-xs font-semibold rounded-control shadow-control transition-colors disabled:opacity-50"
               onClick={() => setIsResolving(true)}
               disabled={isBusy}
             >

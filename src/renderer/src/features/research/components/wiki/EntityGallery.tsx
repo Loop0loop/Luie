@@ -370,7 +370,11 @@ export function EntityGallery<T extends GalleryEntity>({
                             return (
                               <article
                                 key={entity.id}
-                                className="group relative flex flex-col items-center overflow-hidden rounded-panel border border-transparent bg-surface p-3 shadow-xs transition-colors duration-150 hover:border-[#575760] hover:shadow-md active:scale-[0.99]"
+                                /* NOTE: rest에 장식선, hover에 상태선을 쓰는 정규 카드 패턴이다.
+                                   이전에는 어두운 hex를 하드코딩해 light·sepia에서 검은 outline이
+                                   떴다. `.research-surface`가 border token을 더는 평탄화하지
+                                   않으므로 token이 그대로 동작한다. */
+                                className="group relative flex flex-col items-center overflow-hidden rounded-panel border border-border bg-surface p-3 shadow-xs transition-colors duration-150 hover:border-border-active hover:shadow-md active:scale-[0.99]"
                               >
                                 <button
                                   type="button"

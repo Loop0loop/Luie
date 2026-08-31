@@ -284,10 +284,15 @@ export default function EditorLayout({
                   `data-editor-toolbar-band`를 붙여 클러스터 판정에 포함시킨다. 툴바가 뜬 뒤
                   밴드가 drag로 바뀌면 그 위에서 이벤트가 끊기는데, 마지막 판정이 "내부"로
                   남아 있어야 watchdog이 툴바를 곧바로 내려버리지 않는다. */}
+              {/* NOTE: 배경이 필요하다. 이 센티넬은 아래 `overflow-y-scroll` 컨테이너 위에
+                  겹쳐 있어서, 투명하면 스크롤된 본문 글자가 상단 44px에 비쳐 보인다. 그 위로
+                  `z-40` 리본 밴드(`bg-panel`)가 opacity로 토글되며 비친 글자를 덮었다 열었다
+                  해서 Sepia처럼 panel/app 대비가 좁은 theme에서 띠가 점멸했다.
+                  스크롤 표면과 같은 `bg-app`을 줘야 이음선 없이 가려진다. */}
               <div
                 aria-hidden="true"
                 data-editor-toolbar-band="true"
-                className="absolute inset-x-0 top-0 z-30 h-11 pointer-events-auto"
+                className="absolute inset-x-0 top-0 z-30 h-11 bg-app pointer-events-auto"
                 onMouseEnter={handleToolbarEnter}
                 onMouseLeave={scheduleHide}
               />
