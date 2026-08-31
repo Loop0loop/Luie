@@ -16,7 +16,6 @@ import {
   FocusHoverSidebar,
   type BinderTab,
 } from "@renderer/domains/manuscript";
-import { useChapterContent } from "@renderer/features/manuscript/hooks/useChapterContent";
 import { ChevronLeft, X } from "lucide-react";
 import { useEditorStore } from "@renderer/domains/editor";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
@@ -81,12 +80,6 @@ export function BinderBarCompactHover({
     activeCompactTab === "event" ||
     activeCompactTab === "faction";
 
-  // NOTE: 본문은 스냅샷 뷰어가 열렸을 때만 쓰인다. 목록(items)에서 본문 전체를 상시
-  // 구독하면 자동 저장마다 이 컴포넌트가 리렌더되고 대형 문자열이 hover 경로에 묶인다.
-  // 뷰어가 열린 동안만 본문 캐시를 구독한다.
-  const { content: activeChapterContent } = useChapterContent(
-    selectedSnapshot !== null ? activeChapterId : undefined,
-  );
   const dragStateRef = useRef<{
     surface: ReturnType<typeof getEditorLayoutPanelSurface>;
     startX: number;
@@ -338,7 +331,6 @@ export function BinderBarCompactHover({
                       <Suspense fallback={<div className="p-4 text-sm text-muted">{t("loading")}</div>}>
                         <SnapshotViewer
                           snapshot={selectedSnapshot}
-                          currentContent={activeChapterContent}
                         />
                       </Suspense>
                     </div>

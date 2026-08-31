@@ -9,6 +9,7 @@ import {
 import { ChevronLeft, History, X } from "lucide-react";
 import type { Snapshot } from "@shared/types";
 import { Editor, useEditorStore } from "@renderer/domains/editor";
+import { useChapterContent } from "@renderer/features/manuscript/hooks/useChapterContent";
 import { useChapterStore } from "@renderer/domains/manuscript";
 import { AIPanel } from "@renderer/features/ai";
 import { useTranslation } from "react-i18next";
@@ -64,7 +65,6 @@ const ExportPreviewPanel = lazy(() =>
 );
 
 type GoogleDocsRightPanelProps = {
-  activeChapterContent?: string;
   activeChapterId?: string;
   activeChapterTitle?: string;
   activePanelSurface: LayoutSurfaceId | null;
@@ -84,15 +84,52 @@ function LoadingFallback() {
   return <div className="p-4 text-sm text-muted">{t("loading")}</div>;
 }
 
+/**
+ * docs 우측 패널의 분할 에디터.
+ *
+ * NOTE: 본문 구독을 이 컴포넌트로 좁힌다. 부모(우측 패널)가 본문을 prop으로 받으면 본문
+ * 변경마다 패널 전체가 리렌더된다. 또한 본문이 아직 도착하지 않은 상태로 Editor를 마운트하면
+ * 빈 본문으로 시작해 자동 저장(`onSave`)이 원본을 덮어쓰므로 로딩 중에는 마운트하지 않는다.
+ */
+function DocsSideEditor({
+  activeChapterId,
+  activeChapterTitle,
+  contentRevision,
+  onSaveChapter,
+}: {
+  activeChapterId?: string;
+  activeChapterTitle?: string;
+  contentRevision: number;
+  onSaveChapter?: (title: string, content: string) => void | Promise<void>;
+}) {
+  const { content, isLoaded } = useChapterContent(activeChapterId);
+
+  if (activeChapterId && !isLoaded) {
+    return <LoadingFallback />;
+  }
+
+  return (
+    <Editor
+      key={`docs-side-editor-${activeChapterId ?? "none"}-${contentRevision}`}
+      chapterId={activeChapterId ?? undefined}
+      initialTitle={activeChapterTitle ?? ""}
+      initialContent={content}
+      onSave={onSaveChapter}
+      hideFooter
+      hideToolbar
+      hideTitle
+      scrollable
+    />
+  );
+}
+
 function SnapshotPanel({
   activeChapterId,
-  activeChapterContent,
   activeChapterTitle,
   onSaveChapter,
   onClose,
 }: {
   activeChapterId?: string;
-  activeChapterContent?: string;
   activeChapterTitle?: string;
   onSaveChapter?: (title: string, content: string) => void | Promise<void>;
   onClose?: () => void;
@@ -140,7 +177,6 @@ function SnapshotPanel({
               <SnapshotViewer
                 key={selectedSnapshot.id}
                 snapshot={selectedSnapshot}
-                currentContent={activeChapterContent ?? ""}
                 onApplySnapshotText={async (nextContent) => {
                   if (!onSaveChapter) return;
                   await onSaveChapter(activeChapterTitle ?? "", nextContent);
@@ -256,7 +292,6 @@ function ResearchContent(props: {
 }
 
 export function GoogleDocsRightPanel({
-  activeChapterContent,
   activeChapterId,
   activeChapterTitle,
   activePanelSurface,
@@ -440,16 +475,11 @@ export function GoogleDocsRightPanel({
             )}
             {renderedTab === "editor" && (
               <div className="h-full">
-                <Editor
-                  key={`docs-side-editor-${activeChapterId ?? "none"}-${contentRevision}`}
-                  chapterId={activeChapterId ?? undefined}
-                  initialTitle={activeChapterTitle ?? ""}
-                  initialContent={activeChapterContent ?? ""}
-                  onSave={onSaveChapter}
-                  hideFooter
-                  hideToolbar
-                  hideTitle
-                  scrollable
+                <DocsSideEditor
+                  activeChapterId={activeChapterId}
+                  activeChapterTitle={activeChapterTitle}
+                  contentRevision={contentRevision}
+                  onSaveChapter={onSaveChapter}
                 />
               </div>
             )}
@@ -464,7 +494,6 @@ export function GoogleDocsRightPanel({
               <SnapshotPanel
                 key={activeChapterId ?? "none"}
                 activeChapterId={activeChapterId}
-                activeChapterContent={activeChapterContent}
                 activeChapterTitle={activeChapterTitle}
                 onSaveChapter={onSaveChapter}
                 onClose={closeRightPanel}

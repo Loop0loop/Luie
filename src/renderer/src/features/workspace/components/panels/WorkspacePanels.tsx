@@ -391,7 +391,6 @@ export function WorkspacePanels({
                   ) : snapshot ? (
                     <SnapshotViewer
                       snapshot={snapshot}
-                      currentContent={snapshotChapter?.content ?? ""}
                       onApplySnapshotText={async (nextContent: string) => {
                         const targetChapterId =
                           snapshotChapter?.id ?? activeChapterId;

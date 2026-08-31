@@ -35,7 +35,6 @@ export function GoogleDocsLayout({
   sidebar,
   activeChapterId,
   activeChapterTitle,
-  activeChapterContent,
   currentProjectId,
   editor,
   onOpenSettings,
@@ -253,7 +252,6 @@ export function GoogleDocsLayout({
             </Panel>
 
             <GoogleDocsRightPanel
-              activeChapterContent={activeChapterContent}
               activeChapterId={activeChapterId}
               activeChapterTitle={activeChapterTitle}
               activePanelSurface={activePanelSurface}

@@ -7,6 +7,8 @@ import { DraggableItem } from "@shared/ui/DraggableItem";
 import type { Snapshot } from "@shared/types";
 import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
+import { useChapterContent } from "@renderer/features/manuscript/hooks/useChapterContent";
+import { setChapterContent } from "@renderer/features/manuscript/stores/chapterContentStore";
 import { useDialog } from "@shared/ui/useDialog";
 import { useShallow } from "zustand/react/shallow";
 
@@ -33,6 +35,11 @@ export function SnapshotList({ chapterId, onOpenSnapshot }: SnapshotListProps) {
     })),
   );
   const currentChapter = chapters.find((chapter) => chapter.id === chapterId);
+  // NOTE: 수동 스냅샷은 현재 본문을 필요로 한다. 목록(items)이 아니라 본문 캐시에서 받는다.
+  const {
+    content: currentChapterContent,
+    isLoaded: isCurrentChapterContentLoaded,
+  } = useChapterContent(chapterId);
 
   const buildSnapshotItems = useCallback((items: Snapshot[]) => {
     return items.map((snapshot) => ({
@@ -107,6 +114,14 @@ export function SnapshotList({ chapterId, onOpenSnapshot }: SnapshotListProps) {
       if (response.success && snapshot.projectId) {
         await reloadChapters(snapshot.projectId);
       }
+      // NOTE: SnapshotViewer와 같은 이유로 복원 본문을 캐시에 직접 채운다. 재조회를 기다리면
+      // 에디터가 게이트에 걸려 깜빡이고, 그 사이 언마운트/재마운트가 한 번 더 발생한다.
+      if (response.success && snapshot.chapterId) {
+        setChapterContent(
+          snapshot.chapterId,
+          typeof snapshot.content === "string" ? snapshot.content : "",
+        );
+      }
       // NOTE: 같은 챕터의 본문이 바뀌므로 Editor key 리비전을 올려 리마운트시킨다.
       useChapterStore.getState().bumpContentRevision();
       dialog.toast(t("snapshot.list.restoreSuccess"), "success");
@@ -122,6 +137,13 @@ export function SnapshotList({ chapterId, onOpenSnapshot }: SnapshotListProps) {
       return;
     }
 
+    // NOTE: 본문이 아직 캐시에 도착하지 않았으면 빈 본문으로 스냅샷이 만들어진다.
+    // 스냅샷은 복구 대상이므로 빈 값으로 남기면 안 된다.
+    if (!isCurrentChapterContentLoaded) {
+      dialog.toast(t("loading"), "error");
+      return;
+    }
+
     const memo = await dialog.prompt({
       title: t("snapshot.list.manualButton"),
       message: t("snapshot.list.memoPrompt"),
@@ -134,7 +156,7 @@ export function SnapshotList({ chapterId, onOpenSnapshot }: SnapshotListProps) {
       const response = await api.snapshot.create({
         projectId: currentChapter.projectId,
         chapterId: currentChapter.id,
-        content: currentChapter.content ?? "",
+        content: currentChapterContent,
         description: memo.trim() || t("snapshot.list.manualDescription"),
         type: "MANUAL",
       });

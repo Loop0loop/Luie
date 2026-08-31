@@ -24,7 +24,6 @@ type WorkspaceLayoutRouterProps = {
   additionalPanelIds: string[];
   activeChapterId?: string;
   activeChapterTitle?: string;
-  activeChapterContent: string;
   currentProjectId?: string;
   isResearchPanelAdjacent: boolean;
   isEditorPanelAdjacent?: boolean;
@@ -51,7 +50,6 @@ export function WorkspaceLayoutRouter({
   additionalPanelIds,
   activeChapterId,
   activeChapterTitle,
-  activeChapterContent,
   currentProjectId,
   isResearchPanelAdjacent,
   isEditorPanelAdjacent = false,
@@ -73,7 +71,6 @@ export function WorkspaceLayoutRouter({
         sidebar={<Suspense fallback={null}><DocsSidebar /></Suspense>}
         activeChapterId={activeChapterId}
         activeChapterTitle={activeChapterTitle}
-        activeChapterContent={activeChapterContent}
         currentProjectId={currentProjectId}
         editor={editor}
         onOpenSettings={onOpenSettings}

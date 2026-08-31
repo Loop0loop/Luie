@@ -4,6 +4,8 @@ import { RotateCcw, Calendar } from "lucide-react";
 import * as Diff from "diff";
 import { api } from "@shared/api";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
+import { useChapterContent } from "@renderer/features/manuscript/hooks/useChapterContent";
+import { setChapterContent } from "@renderer/features/manuscript/stores/chapterContentStore";
 import type { Snapshot } from '@shared/types';
 import Editor from "@renderer/features/editor/components/Editor";
 import { useDialog } from "@shared/ui/useDialog";
@@ -11,15 +13,21 @@ import { htmlToPlainText } from "@shared/utils/htmlText";
 
 interface SnapshotViewerProps {
   snapshot: Snapshot;
-  currentContent?: string;
   onApplySnapshotText?: (content: string) => void | Promise<void>;
 }
-function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: SnapshotViewerProps) {
+function SnapshotViewer({ snapshot, onApplySnapshotText }: SnapshotViewerProps) {
   const reloadChapters = useChapterStore((state) => state.loadAll);
+  // NOTE: 비교 대상인 현재 본문은 이 컴포넌트가 직접 조회한다. 부모가 목록(items)에서 넘겨주면
+  // (1) 부모가 본문 변경마다 리렌더되고 (2) 본문이 아직 없을 때 빈 문자열이 넘어와 "전부 삭제됨"
+  // 처럼 보이는 잘못된 diff가 나온다. 로딩 중에는 아래에서 diff 자체를 끈다.
+  const { content: currentContent, isLoaded: isCurrentContentLoaded } =
+    useChapterContent(snapshot.chapterId);
   const [selectedAdditions, setSelectedAdditions] = useState<Set<number>>(new Set());
   const { t } = useTranslation();
   const dialog = useDialog();
-  const diffEnabled = (currentContent?.length ?? 0) + (snapshot.content?.length ?? 0) <= 50000;
+  const diffEnabled =
+    isCurrentContentLoaded &&
+    currentContent.length + (snapshot.content?.length ?? 0) <= 50000;
 
   const handleRestore = async () => {
     const confirmed = await dialog.confirm({
@@ -34,6 +42,15 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
       if (response.success) {
         if (snapshot.projectId) {
           await reloadChapters(snapshot.projectId);
+        }
+        // NOTE: 복원 본문은 이미 손에 있다. reloadChapters가 비운 캐시를 재조회 없이 여기서
+        // 채워야 에디터가 게이트를 거치지 않는다(깜빡임 제거 + 언마운트/재마운트 1회 감소).
+        // main의 restoreSnapshot이 쓰는 값과 동일한 정규화를 적용한다.
+        if (snapshot.chapterId) {
+          setChapterContent(
+            snapshot.chapterId,
+            typeof snapshot.content === "string" ? snapshot.content : "",
+          );
         }
         // NOTE: 같은 챕터의 본문이 바뀌므로 Editor key 리비전을 올려 리마운트시킨다.
         useChapterStore.getState().bumpContentRevision();
@@ -52,7 +69,7 @@ function SnapshotViewer({ snapshot, currentContent, onApplySnapshotText }: Snaps
     ? new Date(snapshot.createdAt).toLocaleString() 
     : t("snapshot.viewer.unknownDate");
 
-  const currentHtml = useMemo(() => currentContent ?? "", [currentContent]);
+  const currentHtml = useMemo(() => currentContent, [currentContent]);
   const snapshotHtml = useMemo(() => snapshot.content ?? "", [snapshot.content]);
 
   const diffParts = useMemo(() => {

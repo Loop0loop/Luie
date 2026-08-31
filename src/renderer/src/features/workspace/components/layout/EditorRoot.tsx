@@ -366,7 +366,6 @@ export default function EditorRoot() {
           additionalPanelIds={additionalPanelIds}
           activeChapterId={activeChapterId ?? undefined}
           activeChapterTitle={activeChapterTitle}
-          activeChapterContent={content}
           currentProjectId={currentProject?.id}
           isResearchPanelAdjacent={isResearchPanelAdjacent}
           isEditorPanelAdjacent={isEditorPanelAdjacent}

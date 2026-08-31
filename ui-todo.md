@@ -6,9 +6,11 @@
 
 ## 진단 요약
 
+> **이 절의 수치는 착수 시점(기준 커밋 `9e2ad0ef`) 값이다.** §1-A·§2·§3에서 팔레트를 다시 잡았으므로 현재 값과 다르다. 왜 이 작업을 시작했는지에 대한 기록으로 남긴다. 현재 값은 각 절의 "확정값"·"검증" 블록과 아래 **현재 상태** 표를 본다.
+
 나열된 증상 대부분이 하나의 원인에서 나온다. **Light/Sepia의 표면 계단(surface ladder)이 붕괴했고 border가 사실상 보이지 않는다.**
 
-### 표면 분리 대비 실측
+### 표면 분리 대비 실측 (착수 시점)
 
 | 표면 쌍 | Light | Sepia | Dark |
 | --- | --- | --- | --- |
@@ -33,6 +35,40 @@ Light는 `--bg-app`·`--bg-panel`·`--bg-surface`·`--bg-element`·`--bg-researc
 ### 텍스트 대비
 
 `--text-tertiary`가 Sepia 2.82:1(실패), Light 3.34:1 / Dark 3.42:1(본문 4.5:1 미달). placeholder·3차 텍스트에 사용됨.
+
+---
+
+## 현재 상태 (2026-08-31 기준)
+
+### 표면 계단 — 해소됨
+
+인접 단계가 light/sepia 모두 1.04 → 1.07로 단조 증가한다(panel > app > ai > sidebar > element).
+
+| 인접 | light | sepia |
+| --- | --- | --- |
+| panel / app | 1.054 | 1.043 |
+| app / ai | 1.045 | 1.044 |
+| ai / sidebar | 1.055 | 1.054 |
+| sidebar / element | 1.067 | 1.065 |
+| **app / research** (editor ↔ chrome) | **1.102** | **1.100** |
+
+### 역할별 하한 — 가장 불리한 표면(`--bg-element`) 기준
+
+| 항목 | light | sepia | 판정 |
+| --- | --- | --- | --- |
+| `--text-secondary` | 4.88 | 4.91 | AA 통과 |
+| `--text-tertiary` | 4.01 | 4.01 | 의도된 4:1 정렬 (완전 준수는 `data-contrast="high"`) |
+| `--border-strong` | 3.03 | 3.05 | WCAG 1.4.11 통과 |
+| accent 텍스트 | 4.17 | 4.25 | **AA 미달** — 남은 항목 |
+
+`--border-default` 1.44 / `--border-active` 2.00은 장식선·상태선이라 3:1을 목표로 하지 않는다(§2 확정).
+
+### 남은 팔레트 부채
+
+- accent를 `--bg-element` 위 본문 텍스트로 쓰면 4.17/4.25로 AA 미달
+- dark `--text-tertiary` 2.55~2.98 (의도된 선택, §2 기록)
+- sepia 전용 `[data-contrast="high"]` 블록 부재 — 고대비를 켜면 따뜻한 종이 위에 중성 회색이 얹힌다 (§1에서 롤백한 부채)
+- `[data-contrast="high"]`가 특이도 1이라 `[data-theme][data-temp]` 4개 조합(light/sepia × cool/warm)에서 아예 걸리지 않는다 (§1 기록)
 
 ---
 
@@ -461,43 +497,169 @@ border 대비: 장식선 1.26 → **1.45**, 상태선 1.52 → **2.00**, UI 경�
 
 - [ ] border 알파 방언 수렴 — 현재 `/40 /50 /60 /70 /80` + 무알파 혼재
 - [ ] divider 3종(`bg-border/70`, `bg-border/60`, `bg-border`) → 단일 규칙
-- [ ] Tailwind 기본 검정 그림자(`shadow-sm`/`shadow-xs`) → `--shadow-panel` 계열. 종이색 위에서 얼룩으로 보인다. 대상: `EditorToolbar.tsx:229,247`, `MainLayout.tsx:529,530`, `ScrivenerLayout.tsx:499`, `menus.tsx:250`
+- [x] Tailwind 기본 검정 그림자(`shadow-sm`/`shadow-xs`) → theme tint 계열. 아래 상세
 - [ ] `--radius-editor-shell` 중복 하드코딩 제거 — `GoogleDocsLayout.tsx:210` `rounded-[24px]`, `Editor.tsx:381` `rounded-[48px]`
 - [ ] `focus-visible` ring을 3:1 이상으로 통일 (WCAG 2.2)
 - [ ] **형광펜 대비가 전 theme에서 약하다** (§3에서 이관). `--highlight-default`가 종이 대비 light **1.104** · sepia **1.166** · dark는 `rgba(250,204,21,0.32)` 알파. 형광펜은 은은해야 하지만 1.1은 거의 안 보이는 수준이다. 세 theme 공통 목표(~1.35)를 정하고 함께 조정한다
 
+#### 검정 그림자 → `--shadow-control` 신설 (2026-08-31)
+
+`--shadow-panel`은 `0 10px 28px`이라 control 크기에 그대로 쓸 수 없다. 같은 tint 계열의 control 크기 token을 새로 만들었다.
+
+```
+@theme  --shadow-control: 0 1px 3px 0 var(--elevation-tint), 0 1px 2px -1px var(--elevation-tint)
+:root              --elevation-tint: rgba(15, 23, 42, 0.1)
+[data-theme=dark]  --elevation-tint: rgba(0, 0, 0, 0.28)
+[data-theme=sepia] --elevation-tint: rgba(95, 75, 50, 0.14)
+```
+
+**핵심 제약**: tint를 `var()`로 참조해야 한다. Tailwind v4는 `@theme` 값의 텍스트를 그대로 인라인하므로, 리터럴 rgba를 적으면 theme 블록에서 `--shadow-control`을 덮어써도 utility에 반영되지 않는다. 빌드 산출 CSS에서 확인했다 — `.shadow-control{--tw-shadow:0 1px 3px 0 var(--tw-shadow-color,var(--elevation-tint)), …}`.
+
+알파 비율은 canvas 그림자(`--canvas-shadow-*`)가 이미 쓰는 light 0.14 → dark 0.36 → sepia 0.18 관계에 맞췄다.
+
+적용 6곳: `EditorToolbar.tsx`(2) · `MainLayout.tsx`(2) · `ScrivenerLayout.tsx`(1) · `menus.tsx`(1).
+
 ### 5. Toolbar 표면 / 상태 확정
 
-- [ ] Toolbar 막대가 `bg-transparent` + border/shadow 없음 (`EditorToolbar.tsx:358`). 게다가 `createPortal`로 `document.body`에 붙어 `Ribbon.tsx:37`의 `bg-panel`이 도달하지 못한다. **툴바가 떠 있는 chrome으로 보일 근거가 토큰에 없다**
-- [ ] 참조 패턴은 프로젝트 안에 이미 있다 — `EditorBubbleMenu.tsx:67`의 `border border-border bg-surface shadow-panel`
-- [ ] `bg-muted/*` 오용 제거. `--color-muted`는 `--text-secondary`(글자색)다. 대상: `EditorToolbar.tsx:213`, `ScrivenerLayout.tsx:368,385,503`, `EditorRuler.tsx:160,169`
-- [ ] `EditorRuler.tsx`의 Google Docs 브랜드 블루 `#0b57d0`/`#1a73e8` 4곳 → accent 토큰. 현재 Sepia에서도 파란 핸들이 뜬다
-- [ ] `EditorToolbar.tsx:188,190`의 `#111827`/`#FEF08A` 하드코딩 → 토큰/상수 참조
+- [~] Toolbar 막대에 표면 부여 — **사용자 결정으로 won't-do.** 아래 참조
+- [~] 참조 패턴 `EditorBubbleMenu.tsx:67` — 위 항목이 won't-do가 되어 적용 대상 없음
+- [x] `bg-muted/*` 오용 제거 — `EditorToolbar.tsx`(1) · `ScrivenerLayout.tsx`(3) · `EditorRuler.tsx`(2)
+- [x] `EditorRuler.tsx`의 Google Docs 브랜드 블루 4곳 → accent 토큰
+- [x] `EditorToolbar.tsx`의 텍스트색·형광펜 fallback 하드코딩 → 팔레트 상수 참조
 - [ ] 버튼 상태 일관화 — `bg-accent/15`(ToolbarButton) vs `bg-active`(ColorPickerMenu) 불일치, `aria-pressed`/`:active` 스타일 부재
+
+#### Toolbar 무배경은 의도다 — won't-do (2026-08-31)
+
+`toolbarContentRef`(`w-max` 내용 폭)에 `rounded-control border border-border bg-surface p-1 shadow-panel`을 부여했다가 **전량 롤백**했다. 툴바에 배경을 넣지 않은 것은 의도된 설계다.
+
+따라서 §6의 `h-11` drag 스트립 문제도 "리본 밴드(`Ribbon.tsx:37` `bg-panel`)를 없애는" 방향이 아니라 **밴드를 의도된 백드롭으로 인정하고 스트립만 불투명화하는** 방향으로 처리했다.
+
+#### `bg-muted/*` 오용 (2026-08-31)
+
+`--color-muted`는 `--text-secondary`(글자색)다. 교정 방향은 대상마다 갈렸다.
+
+| 위치 | 이전 | 이후 | 근거 |
+| --- | --- | --- | --- |
+| `EditorRuler` 여백 음영 2곳 | inline `backgroundColor: var(--color-muted, …)` + `opacity: 0.3` | `bg-element` | 폴백이 가리키던 밝은 회색이 원래 의도였고 `--bg-element`가 그 값에 일치한다. 짙은 회색 띠가 그려지던 것이 버그 |
+| `EditorToolbar` 세그먼트 토글 트랙 | `bg-muted/20` | `bg-element` | 활성 세그먼트가 `bg-panel`이므로 트랙은 파인 면이어야 한다 |
+| `ScrivenerLayout` 아이콘 버튼 3곳 | `hover:bg-muted/40` | `hover:bg-surface-hover` | `DESIGN.md`의 "solid hover 금지, 알파 오버레이 사용" |
+
+#### 브랜드 블루 제거 + `--color-accent-bg-hover` 신설 (2026-08-31)
+
+`fill-[#0b57d0] group-hover:fill-[#1a73e8]` 4곳 → `fill-accent-bg group-hover:fill-accent-bg-hover`.
+
+이를 위해 `@theme`에 `--color-accent-bg-hover: var(--accent-bg-hover)`를 추가했다. **부수 효과가 본래 목적보다 크다** — `hover:bg-accent-bg-hover`가 이미 3곳(`PromptComposer:336` · `EntityGallery:311` · `EditorTab:315`)에서 쓰이는데 매핑이 없어 CSS가 전혀 생성되지 않는 dead class였다. 함께 살아났다.
+
+실측: rest 4.90 → hover 6.36(light) · 4.98 → 6.51(sepia). hover가 대비를 올리는 방향이다.
+
+#### 색상 fallback은 token이 아니라 상수여야 한다 (2026-08-31)
+
+`ColorPickerMenu`가 값을 `hexToHsv(value)`로 파싱하므로 **CSS variable을 넣을 수 없다.** 그래서 theme token이 아니라 팔레트 상수를 단일 출처로 참조한다.
+
+```
+toolbar/constants.ts
+  DEFAULT_TEXT_COLOR      = TEXT_COLORS[0].hex
+  DEFAULT_HIGHLIGHT_COLOR = HIGHLIGHT_COLORS[0].hex
+```
+
+목록에 없던 `EditorBubbleMenu.tsx:130`도 같은 매직값을 쓰고 있어 함께 정리했다. 이전 값은 어느 스와치와도 맞지 않아 "색 없음" 상태의 표시색이 실제 팔레트와 어긋나 있었다.
 
 ### 6. Editor Layout 인접 표면 정리
 
-- [ ] `.editor-adjacent-surface` 그라디언트 — Light는 양끝이 `#ffffff`/`#f5f5f7`라 둥근 모서리와 border가 붕 뜨고, Sepia는 세 값이 달라 경계가 띠로 보인다
-- [ ] `--editor-adjacent-surface` 폴백 부재 (`editor-research-surface`/`editor-ai-surface` 미부착 시 무효값)
-- [ ] `bg-[var(--ai-panel-bg)]` arbitrary value → `bg-ai-panel` 유틸 (`MainLayout.tsx:268,573,588`)
-- [ ] `h-11` WebkitAppRegion drag 스트립이 배경 없음 — Sepia에서 툴바 hover마다 상단 띠가 점멸한다
-- [ ] `GoogleDocsEditorColumn.tsx:115`의 A4 페이지가 `bg-transparent` — 종이면이 자기 배경을 갖지 않는다
+- [ ] `.editor-adjacent-surface` 그라디언트 — Light는 양끝이 `#ffffff`/`#f5f5f7`라 둥근 모서리와 border가 붕 뜨고, Sepia는 세 값이 달라 경계가 띠로 보인다 *(진단 수치는 §2·§3 이전 값. §1-A 부수 효과로 일부 해소돼 재측정 필요)*
+- [x] `--editor-adjacent-surface` 폴백 부재 → `var(--editor-adjacent-surface, var(--bg-sidebar))`
+- [ ] `bg-[var(--ai-panel-bg)]` arbitrary value → `bg-ai-panel` 유틸 (`MainLayout.tsx:268,573,588` + §7에서 `GoogleDocsLayout` 1곳 추가)
+- [x] `h-11` WebkitAppRegion drag 스트립 배경 부재 → `bg-app`. 아래 상세
+- [x] `GoogleDocsEditorColumn.tsx`의 A4 페이지 `bg-transparent` → `bg-editor-bg`
 - [ ] 모바일 프레임의 하드코딩 정리 — `Editor.tsx:381`의 `rounded-[48px]`(`--radius-editor-shell` 중복)·`border-[#2c2c2e]`·`shadow-[0_0_0_2px_rgba(...)]`. 기기 외형 표현이라 theme을 따르지 않는 건 의도된 것이므로 **토큰화가 아니라 의도를 명시한 scoped token으로 이동**
+
+#### `--editor-adjacent-surface` 폴백 (2026-08-31)
+
+`.editor-research-surface`/`.editor-ai-surface` 둘 중 아무것도 붙지 않으면 `var()`가 무효값이 되어 **`background` 선언 전체가 버려지고 스트립이 투명해진다.** 폴백을 `--bg-sidebar`로 둔 이유는 `MainLayout`의 else 분기가 `bg-sidebar`라서 의도가 같기 때문이다(그라디언트가 단색으로 평탄해진다).
+
+현재 호출처는 `MainLayout` 한 곳이고 항상 짝이 붙으므로 잠재 버그였다.
+
+#### `h-11` drag 스트립 — 원인은 "비침"이었다 (2026-08-31)
+
+앱이 프레임리스(`windowChrome.ts:46` `titleBarStyle: "hiddenInset"`)라 창을 잡아 옮길 영역을 직접 만든다. 그 스트립이 투명해서 아래 `overflow-y-scroll` 컨테이너의 **본문 글자가 상단 44px에 비쳐 보였다.** 그 위로 `z-40` 리본 밴드(`bg-panel`)가 opacity로 토글되며 비친 글자를 덮었다 열었다 해서 Sepia처럼 panel/app 대비가 좁은 theme에서 띠가 점멸했다.
+
+`EditorLayout.tsx`의 스트립에 스크롤 표면과 같은 `bg-app`을 줘서 이음선 없이 가린다. `MainLayout.tsx:464`에도 같은 구조의 스트립이 있으나 그쪽은 `Ribbon`을 쓰지 않아 토글되는 밴드가 없어 점멸이 없다 — 손대지 않았다.
+
+#### A4 페이지 배경 (2026-08-31)
+
+`--editor-bg`는 현재 `--bg-app` alias라 **렌더 결과는 동일하다.** 종이 역할이 표면에서 갈라질 때 이 지점이 함께 따라가도록 한 것이고, 뒤의 스크롤 표면이 비치던 구조를 없앤 것이 실질 이득이다.
 
 ### 7. Research 카드 / 링크 / active 규칙 수렴
 
-- [ ] `.research-surface`(`global.tokens.css:121`)의 평탄화 범위 축소. 현재 `--bg-surface`/`--bg-element`/`--bg-panel`을 `--bg-research`로 덮고 `--border-default: transparent`까지 만들어서 **Research 안에서는 카드에 배경·테두리를 주는 것이 물리적으로 불가능하다**
-- [ ] `EntityGallery.tsx:373`의 `border-black/0 → hover:border-black/70` 제거
+- [x] `.research-surface` 평탄화 범위 축소 — **배경만 평탄화, 테두리는 복구.** 아래 상세
+- [x] `EntityGallery.tsx`의 하드코딩 hover 테두리 제거 → `border-border` / `hover:border-border-active`
 - [ ] 캐릭터 템플릿 카드가 `CharacterManager.tsx:81-89`와 `character/CharacterSidebarList.tsx:68-78`에 거의 그대로 복사돼 있다 — 컴포넌트 추출 후보 (§1-B로 표면 문제는 해소됨)
-- [ ] active/selected 표현 4개 방언 → 1개로 수렴
+- [ ] active/selected 표현 4개 방언 → 1개로 수렴 *(테두리가 복구됐으므로 테두리를 쓰는 방언도 이제 성립한다)*
   - `bg-active + border-l-accent + text-accent` (`EntitySidebarList.tsx:126`)
   - `bg-active + border-l-accent` (`MemoSidebarList.tsx:57`)
   - `bg-element + text-fg` (`ResearchPanel.tsx:135`)
   - `bg-accent/15 + text-accent` (`WorldPanel.tsx:38`)
-- [ ] Link 성격 요소 hover/active 규칙 정의. Research에 `<a>`가 0개이고 `hover:underline`도 0건 — 색 전환만으로 처리되고 있다
-- [ ] `TermCard.tsx:24`의 기본 상태 `border-accent/60` → hover에서 `/40`으로 흐려지는 역전 교정
+- [ ] Link 성격 요소 hover/active 규칙 정의. Research에 `<a>`가 1개(`WikiContentPanel.tsx:69` 목차 앵커)뿐이고 `hover:underline`도 0건 — 색 전환만으로 처리되고 있다. 그 앵커에는 `focus-visible`도 없다
+- [x] `TermCard.tsx`의 hover 역전 교정 → `hover:border-accent`
 - [ ] `ENTITY_KIND_TINT`(`wiki/visual/constants.ts:5`) 3색 → 테마 토큰화. `${tint}18` 문자열 조합 4곳도 함께
-- [ ] `GoogleDocsRightPanel.tsx:393`의 `research-surface bg-[#212123]` 하드코딩 제거
+- [x] Google Docs 레이아웃의 dark literal 하드코딩 제거 — 3곳. 아래 상세
+
+#### `.research-surface`는 배경만 평탄화한다 (2026-08-31)
+
+**사용자 결정**: 카드에는 테두리를 주는 게 맞고, Editor와 Research가 맞닿는 **바깥 경계**는 선을 주지 않는 현재 형태가 맞다.
+
+제거한 5줄 — `--border-default` · `--border-active` · `--color-border` · `--color-border-active` · `--color-border-focus`의 `transparent` 덮어쓰기. 배경 평탄화(`--bg-*`, `--color-*`)는 그대로 유지한다.
+
+바깥 경계는 token이 아니라 **컴포넌트가 명시한 `border-0`**이 담당하므로 token을 되살려도 선이 생기지 않는다 — `MainLayout` `contentSurfaceClass`, `PlotBoard`·`SynopsisEditor`·`WorkspacePanels`·`SnapshotViewer` 루트, 그리고 `.editor-research-surface .rounded-editor-shell`의 `border-right-width: 0`.
+
+되살아난 선 (Research 전역):
+
+| 화면 | 복구된 것 |
+| --- | --- |
+| 엔티티/메모 목록 | 그룹 헤더 아래 선, 항목 간 구분선 |
+| 세계관 탭바 | 탭바 하단선, 탭 그룹 외곽선, 활성 탭 테두리 |
+| 플롯 보드 | 컬럼 카드 테두리, 컬럼 헤더 하단선, 플롯 카드 테두리 + hover |
+| 시놉시스 | 모드 전환 pill 외곽선, 입력 밑줄 + **focus 밑줄** |
+| 용어 관리 | 헤더 하단선, 입력 3곳 테두리 + **focus 표시**, 점선 드롭존 |
+| 위키 상세 | 목차 nav 외곽선, 앵커 칩 테두리 |
+
+**접근성 이득이 핵심이다.** `TermManager`·`SynopsisEditor` 입력의 `focus:border-*`까지 투명해져서 키보드 포커스 위치를 알 수 없었다.
+
+Research 표면 위 선 대비 (복구 후):
+
+| | rest (`border`) | hover (`border-active`) | `border-strong` | `border-focus` |
+| --- | --- | --- | --- | --- |
+| light | 1.24 | 1.71 | 3.23 | 5.15 |
+| sepia | 1.26 | 1.75 | 3.24 | 4.62 |
+| dark | 1.27 | 1.68 | 3.30 | 2.08 |
+
+> 미결: hover 1.71이 약하다고 판단되면 카드 hover를 `border-border-strong`(3.23)으로 한 단계 올린다. 반대로 선이 너무 많으면 `--border-default`를 낮추는 게 아니라 지울 곳을 `border-0`로 명시한다.
+
+#### `EntityGallery` 카드 — 검은 outline 제거 (2026-08-31)
+
+이전에 이 갤러리가 하드코딩으로 도망간 이유가 §1 진단의 그 항목이다. hover에 어두운 hex를 직접 박아 light·sepia에서 **검은 outline(6.15:1)** 이 떴다.
+
+rest `border-border` → hover `border-border-active`로 정규 카드 패턴을 쓴다. 테두리 평탄화가 사라졌으므로 token이 그대로 동작한다.
+
+#### `TermCard` hover 역전 (2026-08-31)
+
+rest `border-accent/60` → hover `border-accent`. 실측 rest 2.29 → hover **4.17**(light) / 2.22 → **4.25**(sepia). 이전에는 hover가 1.72로 rest보다 약했다.
+
+#### Google Docs 레이아웃 dark literal — 목록보다 2곳 많았다 (2026-08-31)
+
+`#212123`은 dark theme `--bg-sidebar`의 리터럴이다. theme 분기가 없어 light·sepia 종이 옆에 near-black 패널이 붙고, 자식이 쓰는 `bg-panel`이 그 위에 얹혀 대비가 뒤집혔다.
+
+| 파일 | 이전 → 이후 |
+| --- | --- |
+| `GoogleDocsRightPanel.tsx` | `research-surface bg-[#212123]` → `research-surface bg-research` / `bg-[#212123]` → `bg-sidebar` |
+| `GoogleDocsPanelRail.tsx` | `bg-[#212123]` → `bg-sidebar` |
+| `GoogleDocsLayout.tsx` | `to-[#323232]` → `to-[var(--ai-panel-bg)]` · `to-[#212123]` → `to-research` |
+
+목록에는 `GoogleDocsRightPanel` 한 곳만 있었지만 **하나만 고치면 패널 레일이 여전히 near-black으로 남는다.**
+
+dark `--bg-sidebar`가 정확히 `#212123`이라 **dark 렌더는 변하지 않는다.** light `text-muted` 대비 2.66 → **5.20**, sepia 2.52 → **5.22**.
+
+`to-[var(--ai-panel-bg)]`는 `--color-ai-panel` 매핑이 아직 없어 var 형태로 남겼다(§6의 `bg-ai-panel` 유틸 항목에서 함께 처리).
 
 ### 8. 회귀 방어
 
@@ -505,4 +667,71 @@ border 대비: 장식선 1.26 → **1.45**, 상태선 1.52 → **2.00**, UI 경�
 - [ ] 테마별 대비 임계값 정적 검사 추가 (표면 계단 / border / 텍스트)
 - [ ] 하드코딩 색 guard script 추가 (`scripts/check-*` 패턴) — 현재 Tailwind 기본 팔레트 직접 사용 86건, 그중 75건이 `ExportPreviewPanel.tsx` 한 파일
 - [ ] `src/renderer/src/styles/components/editor.css.bak` 정리
-- [ ] `global.tokens.css` 모듈 분할 (파일 상단에 `/* 모둘화 필요 */` 주석 존재, 764줄)
+- [ ] `global.tokens.css` 모듈 분할 (파일 상단에 `/* 모둘화 필요 */` 주석 존재, 795줄)
+- [ ] **`scripts/design/tokens-guard.mjs`가 신호를 못 낸다.** `rawHex 407 / baseline 313`인데 407 중 **249가 `global.tokens.css` 자신**이다. 토큰 정의 파일을 위반으로 세고 있어서 실제 진척이 수치에 나타나지 않는다 — `rawColor`는 105 → 99로 줄었는데 `rawHex`는 컴포넌트에서 16건을 없애고 토큰을 9건 추가해 오히려 올라간 것처럼 보인다. 토큰 파일을 `EXCLUDE`에 넣고 baseline을 실측값으로 재설정할 것
+
+---
+
+### 9. 목록 외 발견 및 처리 (2026-08-31)
+
+§4~§7 작업 중 발견해 함께 처리한 항목이다. 원래 이 문서에 없었으므로 근거를 남긴다.
+
+#### 9-1. `warning` / `danger` 토큰 미정의 — 죽은 클래스 94곳
+
+`@theme`에 `--color-warning` · `--color-warning-fg` · `--color-danger`가 없어서 **CSS가 전혀 생성되지 않았다.** `--color-danger-fg`만 존재해 `text-danger-fg`(14회)만 살아 있었다.
+
+```
+text-danger 26회 · bg-danger/10 12회 · bg-warning/10 8회 · border-warning/30 8회
+text-warning 7회 · text-warning-fg 6회 · ... 총 20종 94회 / 29개 파일
+```
+
+즉 경고·오류 UI가 **배경과 테두리를 잃고 기본 글자색으로만 렌더됐다.** 영향 화면: 설정→동기화(degraded/오류/충돌 박스), 동기화 충돌 모달, 오프라인 알림, 설정→모델 카드(로컬 LLM·임베딩·llmfit·메모리 재구축), 시작 위저드, Research 분석 패널, 위키 상세, 에러 바운더리.
+
+- [x] `--warning-fg` 3테마 신설 — light `#b45309` · dark `#f59e0b` · sepia `#9a4c04`
+- [x] `@theme`에 `--color-warning` · `--color-warning-fg` · `--color-danger` · `--color-success` 매핑
+
+**매핑 원칙**: base와 fg를 같은 값에 연결한다. 이 코드베이스의 실제 사용 패턴이 "전체 강도로 글자, 낮은 알파로 배경·테두리"이기 때문이다(살아 있던 `bg-danger-fg/20`·`border-danger-fg/50`이 그 증거).
+
+**값 근거**: 기존 `--danger-fg`와 같은 대비 대역에 맞췄다(light 5.02 : danger 4.83 / sepia 5.78 : 6.07). red와의 색거리를 최대화해 `SyncTab`처럼 경고 박스와 오류 박스가 나란히 놓일 때 구분되게 했다. dark는 amber-400이 8.8~10.4로 본문색보다 밝아 글레어가 되므로 한 단계 낮췄다.
+
+**부작용 1건 처리**: `SyncTab.tsx`의 "해결" 버튼이 `bg-warning` + `text-warning-fg`라 **토큰이 살아나면 amber-on-amber로 글자가 사라진다.** `text-app`으로 교정(light 4.76 · dark 8.09 · sepia 5.54 — `text-on-accent`는 dark에서 2.15로 실패).
+
+#### 9-2. Inspector 색인 카드가 sepia에서 보이지 않았다
+
+Scrivener Inspector → 시놉시스 탭의 노란 메모지다. `bg-yellow-50 dark:bg-yellow-900/10`으로 `dark:` 분기만 있어서 **sepia가 light 값을 그대로 받았다.** sepia panel이 이미 크림색이라 카드와 배경이 같은 색이 됐다(1.030).
+
+노란 메모지 표현은 의도이므로 일반 surface token을 따르지 않는다. 대신 Tailwind palette 직접 사용을 걷어내고 역할 token으로 노출했다.
+
+- [x] `--index-card-bg` / `--index-card-border` 3테마 + `@theme` 매핑
+
+| | 값 | panel 대비 |
+| --- | --- | --- |
+| light | `#fefce8` / `#fde68a` | 1.034 (기존 렌더 유지 — 구분 신호는 명도가 아니라 hue) |
+| sepia | `#f6e9b8` / `#e0c884` | 1.030 → **1.141** |
+| dark | `#423022` / `#644519` | 알파 tint(거의 안 보임) → **1.174** |
+
+#### 9-3. 오프라인 배너 → 팝업, 의미색 제거
+
+- [x] `w-full` 상단 배너 → 좌하단 `z-toast` 팝업
+
+배너는 레이아웃을 밀어 집필 화면을 흔들고, 존재를 색으로 알리려면 표면 전체를 물들여야 한다. 좌하단인 이유는 우하단이 `UpdaterNotification`(bottom-4)·`FloatingAnalysisPanel`(bottom-6)·`AnalysisSection`(bottom-24)으로 이미 점유돼 있기 때문이다.
+
+**결정: 의미색을 쓰지 않고 theme 표면 token만 쓴다.** amber를 썼더니 light·sepia 값이 둘 다 갈색 계열이어서 theme을 바꿔도 계속 "sepia 톤"으로 읽혔다. 차가운 색으로 구분을 만드는 방향은 sepia에서 `--editor-selection`을 파란색에서 brass로 바꾼 기존 결정과 반대다. 오프라인은 경고가 아니라 상태이고 의미는 아이콘과 문구가 전달한다. 근거는 컴포넌트 주석에도 남겼다.
+
+함께 정리: 죽은 `animate-in slide-in-from-top-2 fade-in` 제거 · 하드코딩 `hover:bg-black/5 dark:hover:bg-white/5` → `hover:bg-surface-hover` · `shadow-sm` → `shadow-panel` · `z-banner` → `z-toast` · `role="status"`/`aria-live="polite"` 추가 · 닫기 버튼 `aria-label`과 `focus-visible:ring` 추가 · `w-[360px]` → `w-90`(같은 360px인데 `arbitraryPx`를 늘리지 않는다).
+
+#### 9-4. Google Docs 눈금자가 세 theme 모두 안 보였다
+
+원인은 `--color-foreground`(본문 글자색)에 `opacity 0.2/0.4`를 곱해 눈금을 그린 것이다. **opacity를 곱하면 theme마다 결과가 예측 불가능해진다.**
+
+- [x] 눈금 → `bg-border-strong`(본문) / `bg-border-active`(여백), 숫자 → `text-muted` / `text-subtle`. opacity 곱 제거
+
+| | 본문 눈금 | 본문 숫자 | 여백 숫자 |
+| --- | --- | --- | --- |
+| light | 2.45 → **3.56** | 3.05 → **5.73** | 1.48 → **4.01** |
+| sepia | 2.06 → **3.57** | 3.06 → **5.74** | 1.49 → **4.01** |
+| dark | 3.03 → **3.32** | 3.72 → **6.19** | 1.62 → 2.55 |
+
+**롤백한 것**: 숫자를 `z-30` + 구간별 표면색 knockout으로 만들어 여백 핸들 위로 올렸다가 **사용자 결정으로 되돌렸다.** 기본 여백이 `INCH_PX`(96px) = 정확히 1인치라서 좌측 여백 핸들(`z-10`)이 숫자 "1" 위에 겹치는 것은 **알고도 남긴 상태**다.
+
+> 남은 부채: 여백 음영 띠가 `bg-element`로 바뀌면서 1.52 → 1.175로 옅어졌다. 눈금과 숫자가 선명해져 상쇄됐지만, 띠 구분을 더 원하면 표면을 어둡게 하는 게 아니라 여백 경계에 선을 넣는 방향이 맞다.

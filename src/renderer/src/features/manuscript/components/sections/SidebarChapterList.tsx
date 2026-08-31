@@ -8,6 +8,7 @@ import { useFloatingMenu } from "@renderer/shared/hooks/useFloatingMenu";
 import { useDialog } from "@shared/ui/useDialog";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useChapterManagement } from "@renderer/features/manuscript/hooks/useChapterManagement";
+import { ensureChapterContent } from "@renderer/features/manuscript/stores/chapterContentStore";
 
 type ChapterAction = "rename" | "duplicate" | "delete";
 
@@ -141,6 +142,13 @@ export default function SidebarChapterList() {
                                     "group flex items-center justify-between px-3 py-2 rounded-control transition-colors cursor-pointer text-sm select-none min-h-[36px]",
                                     isActive ? "bg-accent/10 text-accent font-medium" : "text-muted hover:bg-surface-hover hover:text-fg"
                                 )}
+                                // NOTE: click보다 먼저 발화하는 pointerdown에서 본문을 미리 받는다.
+                                // 사람의 down→up 간격(수십 ms) 동안 로컬 조회가 끝나므로 전환 시
+                                // 로딩 게이트가 화면에 드러나지 않는다. hover 프리페치는 리스트를
+                                // 훑기만 해도 조회가 쏟아지므로 쓰지 않는다.
+                                onPointerDown={() => {
+                                    void ensureChapterContent(chapter.id);
+                                }}
                                 onClick={() => {
                                     handleSelectChapter(chapter.id);
                                     useUIStore.getState().setMainView({ type: "editor" });

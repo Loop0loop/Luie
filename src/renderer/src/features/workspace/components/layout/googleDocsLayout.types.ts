@@ -6,7 +6,6 @@ export interface GoogleDocsLayoutProps {
   sidebar?: ReactNode;
   activeChapterId?: string;
   activeChapterTitle?: string;
-  activeChapterContent?: string;
   currentProjectId?: string;
   editor?: TiptapEditor | null;
   onOpenSettings: () => void;

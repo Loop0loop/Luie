@@ -27,6 +27,7 @@ import {
   type SidebarItem,
 } from "@renderer/features/manuscript/components/useSidebarLogic";
 import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@renderer/shared/constants/editorLayout";
+import { ensureChapterContent } from "@renderer/features/manuscript/stores/chapterContentStore";
 import type { ResearchTab } from "@renderer/features/workspace/stores/uiStore";
 
 const SnapshotList = lazy(() =>
@@ -133,6 +134,11 @@ function Sidebar({
                 ? "bg-active text-fg font-medium border-l-[3px] border-accent"
                 : "text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg",
             )}
+            // NOTE: click보다 먼저 발화하는 pointerdown에서 본문을 미리 받아 전환 시
+            // 로딩 게이트가 드러나지 않게 한다(SidebarChapterList와 같은 정책).
+            onPointerDown={() => {
+              void ensureChapterContent(chapter.id);
+            }}
             onClick={() => handleSelectChapter(chapter.id)}
             onMouseEnter={() => setHoveredItemId(chapter.id)}
             onMouseLeave={() => setHoveredItemId(null)}

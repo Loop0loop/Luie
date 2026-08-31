@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
+import {
+  ensureChapterContent,
+  peekChapterContent,
+  setChapterContent,
+} from "@renderer/features/manuscript/stores/chapterContentStore";
 import { useShallow } from "zustand/react/shallow";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { api } from "@shared/api";
@@ -61,7 +66,9 @@ export function useChapterManagement() {
 
   const activeChapterId = activeChapter?.id ?? null;
 
-  const content = activeChapter?.content ?? "";
+  // NOTE: 본문은 여기서 반환하지 않는다. 이 훅은 사이드바를 포함해 20곳 이상에서 쓰이는데
+  // 본문을 반환하면 목록만 그리는 컴포넌트까지 본문 변경에 리렌더된다. 본문이 필요한
+  // 화면은 `useChapterContent(chapterId)`로 직접 구독한다.
 
   const handleSelectChapter = useCallback(
     (id: string) => {
@@ -206,8 +213,13 @@ export function useChapterManagement() {
         title: `${source.title} Copy`,
       });
 
-      if (created?.id && source.content) {
-        await updateChapter({ id: created.id, content: source.content });
+      // NOTE: 복제는 원본 본문을 필요로 하므로 캐시를 채운 뒤 읽는다. items 폴백은 목록에서
+      // 본문을 제거하는 단계에서 사라진다.
+      await ensureChapterContent(source.id);
+      const sourceContent = peekChapterContent(source.id) ?? source.content ?? "";
+
+      if (created?.id && sourceContent) {
+        await updateChapter({ id: created.id, content: sourceContent });
       }
 
       if (created) {
@@ -280,7 +292,10 @@ export function useChapterManagement() {
 
       const normalizedTitle = title.trim() || fallbackTitle;
       const previousTitle = chapterForSave?.title ?? "";
-      const previousContent = chapterForSave?.content ?? "";
+      // NOTE: 변경 감지용 값이므로 캐시를 우선 본다. 캐시에 없으면(아직 로딩 전) items의
+      // 본문으로 폴백한다 — 이 폴백은 목록에서 본문을 제거하는 단계에서 사라진다.
+      const previousContent =
+        peekChapterContent(chapterId) ?? chapterForSave?.content ?? "";
       const lastSaved = lastSavedRef.current;
       if (
         lastSaved &&
@@ -292,6 +307,9 @@ export function useChapterManagement() {
       }
 
       if (normalizedTitle !== previousTitle || newContent !== previousContent) {
+        // NOTE: 캐시가 화면이 읽는 본문의 출처이므로 optimistic 갱신에 반드시 포함한다.
+        // 빠지면 저장 직후 다른 챕터를 갔다 돌아왔을 때 이전 본문이 보인다.
+        setChapterContent(chapterId, newContent);
         useChapterStore.setState((state) => {
           const nextItems = state.items.map((item) =>
             item.id === chapterId
@@ -367,7 +385,6 @@ export function useChapterManagement() {
   return {
     chapters,
     activeChapterId,
-    content,
     activeChapterTitle,
     handleSelectChapter,
     handleAddChapter,
