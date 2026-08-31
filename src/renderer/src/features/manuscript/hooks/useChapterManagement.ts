@@ -8,7 +8,7 @@ import {
 import { useShallow } from "zustand/react/shallow";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { api } from "@shared/api";
-import type { Chapter } from "@shared/types";
+import type { ChapterListItem } from "@shared/types";
 import {
   consumePendingChapterNavigation,
   onChapterNavigationRequest,
@@ -30,6 +30,7 @@ export function useChapterManagement() {
     create: createChapter,
     update: updateChapter,
     delete: deleteChapter,
+    applyOptimisticTitle,
   } = useChapterStore(
     useShallow((state) => ({
       items: state.items,
@@ -38,6 +39,7 @@ export function useChapterManagement() {
       create: state.create,
       update: state.update,
       delete: state.delete,
+      applyOptimisticTitle: state.applyOptimisticTitle,
     })),
   );
 
@@ -154,7 +156,7 @@ export function useChapterManagement() {
 
     const savedLayout = getProjectLayout(currentProject.id);
     const persistedChapterId = savedLayout.editor.activeChapterId;
-    let nextChapter: Chapter | null = null;
+    let nextChapter: ChapterListItem | null = null;
     
     if (persistedChapterId) {
       nextChapter = chapters.find((chapter) => chapter.projectId === currentProject.id && chapter.id === persistedChapterId) ?? null;
@@ -213,12 +215,11 @@ export function useChapterManagement() {
         title: `${source.title} Copy`,
       });
 
-      // NOTE: 복제는 원본 본문을 필요로 하므로 캐시를 채운 뒤 읽는다. 캐시 조회가 실패하면
-      // items의 본문으로 폴백한다.
-      // TODO: `chapterStore.items`를 `ChapterListItem`(본문 없는 목록 타입)으로 전환하면
-      // items 폴백을 제거한다.
+      // NOTE: 복제는 원본 본문을 필요로 하므로 캐시를 채운 뒤 읽는다. 목록에는 본문이 없어
+      // 폴백할 곳이 없다 — 조회가 실패하면 본문 없이 복제하고, 사용자가 원본을 다시 열면
+      // 캐시가 채워진다. 빈 본문으로 원본을 덮어쓰는 경로는 없다(새로 만든 챕터에만 쓴다).
       await ensureChapterContent(source.id);
-      const sourceContent = peekChapterContent(source.id) ?? source.content ?? "";
+      const sourceContent = peekChapterContent(source.id) ?? "";
 
       if (created?.id && sourceContent) {
         await updateChapter({ id: created.id, content: sourceContent });
@@ -294,12 +295,10 @@ export function useChapterManagement() {
 
       const normalizedTitle = title.trim() || fallbackTitle;
       const previousTitle = chapterForSave?.title ?? "";
-      // NOTE: 변경 감지용 값이므로 캐시를 우선 본다. 캐시에 없으면(아직 로딩 전) items의
-      // 본문으로 폴백한다.
-      // TODO: `chapterStore.items`를 `ChapterListItem`(본문 없는 목록 타입)으로 전환하면
-      // 이 폴백을 제거한다.
-      const previousContent =
-        peekChapterContent(chapterId) ?? chapterForSave?.content ?? "";
+      // NOTE: 변경 감지 기준은 본문 캐시다. 목록에는 본문이 없으므로 캐시가 유일한 출처다.
+      // 캐시가 비어 있으면(아직 로딩 전) 빈 문자열과 비교되는데, 이때 Editor는 로딩 게이트에
+      // 걸려 마운트되지 않으므로 저장이 발화하지 않는다.
+      const previousContent = peekChapterContent(chapterId) ?? "";
       const lastSaved = lastSavedRef.current;
       if (
         lastSaved &&
@@ -310,37 +309,17 @@ export function useChapterManagement() {
         return;
       }
 
-      if (normalizedTitle !== previousTitle || newContent !== previousContent) {
+      if (newContent !== previousContent) {
         // NOTE: 캐시가 화면이 읽는 본문의 출처이므로 optimistic 갱신에 반드시 포함한다.
         // 빠지면 저장 직후 다른 챕터를 갔다 돌아왔을 때 이전 본문이 보인다.
+        //
+        // WARNING: 본문을 목록 store(`items`)에도 쓰면 안 된다. 자동 저장마다 items 배열
+        // 참조가 바뀌어 사이드바를 포함한 모든 목록 구독자가 리렌더된다(O2).
         setChapterContent(chapterId, newContent);
-        useChapterStore.setState((state) => {
-          const nextItems = state.items.map((item) =>
-            item.id === chapterId
-              ? {
-                  ...item,
-                  title: normalizedTitle,
-                  content: newContent,
-                }
-              : item,
-          );
+      }
 
-          const nextCurrent =
-            state.currentItem?.id === chapterId
-              ? {
-                  ...state.currentItem,
-                  title: normalizedTitle,
-                  content: newContent,
-                }
-              : state.currentItem;
-
-          return {
-            items: nextItems,
-            currentItem: nextCurrent,
-            chapters: nextItems,
-            currentChapter: nextCurrent,
-          };
-        });
+      if (normalizedTitle !== previousTitle) {
+        applyOptimisticTitle(chapterId, normalizedTitle);
       }
 
       if (normalizedTitle !== previousTitle) {
@@ -381,6 +360,7 @@ export function useChapterManagement() {
       updateChapter,
       currentProject,
       chapters,
+      applyOptimisticTitle,
     ],
   );
 

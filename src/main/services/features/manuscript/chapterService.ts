@@ -1,9 +1,10 @@
-import { eq, and, isNull, desc, asc, inArray, sql } from "drizzle-orm";
+import { eq, and, isNull, desc, asc, sql } from "drizzle-orm";
 import { db } from "../../../infra/database/index.js";
 import * as schema from "../../../infra/database/index.js";
 import { ErrorCode } from "../../../../shared/constants/index.js";
 import type {
   ChapterCreateInput,
+  ChapterListItem,
   ChapterUpdateInput,
 } from "../../../../shared/types/index.js";
 import { projectService } from "../project/projectService.js";
@@ -16,7 +17,7 @@ import {
 } from "../../core/chapter/chapterWriteOperations.js";
 import { chapterLogger as logger } from "../../core/chapter/chapterRuntime.js";
 
-const { chapter, chapterBody } = schema;
+const { chapter } = schema;
 
 const loadAutoSaveManager = async () =>
   (await import("../../../manager/autoSave/index.js")).autoSaveManager;
@@ -86,15 +87,24 @@ export class ChapterService {
     }
   }
 
-  async getAllChapters(projectId: string) {
+  /**
+   * 프로젝트의 챕터 목록을 조회한다. 본문(`content`)은 포함하지 않는다.
+   *
+   * NOTE: 목록 UI는 제목/순서만 그리는데 본문까지 실어 보내면 프로젝트의 모든 본문이
+   * IPC 직렬화를 거쳐 렌더러 힙에 상주한다. 본문이 필요한 화면은 `getChapter`(단건)로
+   * 받는다. 이 경계 덕분에 body 테이블을 조회할 이유가 없어 왕복은 select 1회다.
+   *
+   * WARNING: 반환 타입에 `content`를 되살리면 위 경계가 무너진다. 목록 응답에 본문이
+   * 필요해 보이면 호출부가 단건 조회를 쓰도록 고쳐야 한다.
+   */
+  async getAllChapters(projectId: string): Promise<ChapterListItem[]> {
     try {
       const store = db.getClient();
-      const chapters = await store
+      return await store
         .select({
           id: chapter.id,
           projectId: chapter.projectId,
           title: chapter.title,
-          content: chapter.content,
           synopsis: chapter.synopsis,
           order: chapter.order,
           wordCount: chapter.wordCount,
@@ -105,45 +115,6 @@ export class ChapterService {
         .from(chapter)
         .where(and(eq(chapter.projectId, projectId), isNull(chapter.deletedAt)))
         .orderBy(asc(chapter.order));
-
-      // NOTE: 빈 IN 절을 만들지 않기 위한 조기 반환. 챕터가 없으면 body 조회도 불필요하다.
-      if (chapters.length === 0) {
-        return [];
-      }
-
-      // NOTE: 과거에는 챕터마다 readChapterContent를 호출해 목록 조회가 N+1 쿼리였다
-      // (chapterBody 조회 N회 + legacy fallback 최대 N회). 200챕터 프로젝트를 열 때마다
-      // 최대 401회 왕복이 나갔다. body를 한 번에 읽고 Map으로 합쳐 왕복을 2회로 고정한다.
-      // 해석 규칙은 readChapterContent와 동일하게 유지한다:
-      //   chapterBody.content(문자열, 빈 문자열 포함) → chapter.content → "".
-      const bodyRows = await store
-        .select({
-          chapterId: chapterBody.chapterId,
-          content: chapterBody.content,
-        })
-        .from(chapterBody)
-        .where(
-          inArray(
-            chapterBody.chapterId,
-            chapters.map((item) => String(item.id)),
-          ),
-        );
-
-      const bodyByChapterId = new Map<string, string>();
-      for (const row of bodyRows) {
-        // NOTE: 스키마상 notNull이지만 마이그레이션 이전 행을 대비해 readChapterContent와
-        // 같은 런타임 가드를 둔다. 문자열이 아니면 legacy 컬럼으로 폴백한다.
-        if (typeof row.content !== "string") continue;
-        bodyByChapterId.set(row.chapterId, row.content);
-      }
-
-      return chapters.map((item) => {
-        const body = bodyByChapterId.get(String(item.id));
-        return {
-          ...item,
-          content: body ?? String(item.content ?? ""),
-        };
-      });
     } catch (error) {
       logger.error("Failed to get all chapters", error);
       throw new ServiceError(

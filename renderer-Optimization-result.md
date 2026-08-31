@@ -2,7 +2,7 @@
 
 조사 대상: `src/renderer/**` (사이드바 렌더링 · RAM/메모리)
 기준 문서: `.kiro/skills/vercel-react-best-practices/rules/*.md`, `src/renderer/AGENTS.md`
-상태: **초기 감사 + 2026-08-31 구현/검증 동기화 + 3차 정밀 재감사. O1-a, O1-b1, O3는 반영됐고 O1-b2/O2는 미완료다. 3차 재감사에서 신규 항목(N1~N8)과 문서 자체의 오류 2건을 찾았다(§7).**
+상태: **초기 감사 + 2026-08-31 구현/검증 동기화 + 3차 정밀 재감사. O1-a, O1-b1, O1-b2, O2, O3 완료. O4~O12는 미착수다. 3차 재감사에서 신규 항목(N1~N8)과 문서 자체의 오류 2건을 찾았고 N1·N2·N3를 반영했다(§7).**
 
 ---
 
@@ -26,12 +26,12 @@
 | --- | --- | --- |
 | O1-a: main 목록 조회 N+1 제거 | **완료** | `chapterBody` 배치 조회 + `Map` 병합. 20챕터 기준 select 21회 → 2회. |
 | O1-b1: renderer 본문 전용 캐시/구독 경로 | **완료** | LRU 4, 동시 요청 dedup, retain 보호, reset 세대 가드, 로딩 게이트 구현. |
-| O1-b2: 목록 IPC/store에서 본문 제거 | **미완료** | `getAllChapters()`가 아직 `content`를 반환하고 `chapterStore.items` 타입도 `Chapter`다. 따라서 전체 본문 IPC 전송·힙 상주는 남아 있다. |
-| O2: autosave 목록 리렌더 제거 | **부분 완료** | 본문 소비자는 전용 캐시로 좁혔지만 저장 시 `items.map()`과 `content: newContent` 갱신이 남아 있어 목록 구독자의 배열 참조 변경은 계속된다. |
+| O1-b2: 목록 IPC/store에서 본문 제거 | **완료** | `getAllChapters()`가 `ChapterListItem[]`을 반환하고 `chapterStore.items`도 같은 타입이다. body 조회가 사라져 목록 왕복은 select 1회다. store 경계에서 create/update/get 응답의 본문을 투영해 되살아나는 경로도 막았다. |
+| O2: autosave 목록 리렌더 제거 | **완료** | 본문은 `chapterContentStore`만 갱신한다. 제목이 바뀔 때만 `applyOptimisticTitle`이 해당 항목을 교체하고, 그 외에는 `items` 배열 참조를 유지한다. |
 | O3: 상시 Binder 본문 구독 제거 | **완료** | `BinderBarCompactHover`의 본문 구독/prop 전달을 제거하고 `SnapshotViewer`가 필요할 때 직접 구독한다. |
 | 복원 안전성/깜빡임 | **완료·회귀 가드 있음** | 캐시 reset 즉시 무효화, stale response 차단, 복원 본문 seed, Editor 로딩 게이트, pointer-down 프리페치 적용. |
 | O4~O12 | **미착수** | 이 문서의 분석/수정안 상태 유지. 3차 재감사에서 9건 전부 잔존 확인(줄번호 동일). |
-| N1~N8 (3차 신규) | **N1·N3 완료, 나머지 미착수** | §7에 근거와 수정안. N1은 `SplitViewEditor.tsx`로 분리 + 로딩 게이트 적용, 회귀 테스트 6개. |
+| N1~N8 (3차 신규) | **N1·N2·N3 완료, 나머지 미착수** | §7에 근거와 수정안. N1은 `SplitViewEditor.tsx` 분리 + 로딩 게이트, N2는 O1-b2에서 `ChapterListItem` 채택으로 해소. |
 | Tailwind 미정의 유틸 30건 | **보류(사용자 결정)** | §7-N8에 근거만 기록. 이번 회차 작업 범위에서 제외. |
 
 > 중요: O1-b1의 캐시가 구현됐다는 사실만으로 O1이 해결된 것은 아니다. 현재 목록 응답과 `chapterStore.items`에도 본문이 남아 있어 같은 문자열이 목록 store와 전용 캐시에 동시에 존재할 수 있다. 실제 renderer 힙 감소는 O1-b2 이후에 발생한다.
@@ -66,19 +66,13 @@ src/renderer/src/features/manuscript/hooks/useChapterManagement.ts
 4. **복원/전환 안전성**  
    `chapterStore.loadAll()`은 조회 전에 캐시를 reset한다. Editor는 `isLoaded=false`일 때 마운트하지 않아 빈 본문 autosave 덮어쓰기를 막는다. 스냅샷 복원은 이미 알고 있는 `snapshot.content`를 loadAll 후 seed해 재조회·깜빡임을 피한다. 챕터 선택은 hover가 아니라 `onPointerDown`에서만 프리페치한다.
 
-**아직 남은 O1-b2** — `getAllChapters()`의 IPC 계약을 summary-only로 바꾸고 `chapterStore.items`를 본문 없는 타입으로 전환해야 한다. 이 단계 전에는 “전 챕터 본문이 renderer 힙에서 제거됐다”고 말할 수 없다.
+**완료된 O1-b2** — `getAllChapters()`가 `ChapterListItem[]`을 반환한다. 목록이 본문을 나르지 않으므로 `chapterBody` 배치 조회 자체가 불필요해져 O1-a에서 2회로 줄인 왕복이 **select 1회**가 됐다. `chapterStore.items`도 `ChapterListItem`이다.
 
-전환 대상 타입은 **`ChapterListItem`**이다. 새로 만들 필요가 없다 — `src/shared/types/manuscript.ts:23`에 `Omit<Chapter, "content">`로 이미 선언돼 있고 `src/shared/types/index.ts:13`으로 배럴 수출까지 됐다(소비자는 아직 0건, N2 참조). 이 문서가 이전에 제안한 `ChapterSummary`는 쓰지 않는다 — 같은 파일 `:21`이 “`ChapterSummaryResult`/`ChapterSummaryStatus`는 AI 메모리 요약이라 별개 개념”이라고 경고하고 있어 이름이 충돌한다.
+타입명은 새로 만들지 않고 `src/shared/types/manuscript.ts:23`에 이미 있던 **`ChapterListItem`**을 채택했다. 이전에 이 문서가 제안한 `ChapterSummary`는 쓰지 않았다 — 같은 파일 `:21`이 “`ChapterSummaryResult`/`ChapterSummaryStatus`는 AI 메모리 요약이라 별개 개념”이라고 경고하고 있어 이름이 충돌한다.
 
-남은 `item.content` 소비자는 두 곳이다.
+경계가 조용히 무너지는 경로를 하나 더 막았다. `api.chapter.create`/`update`/`get` 응답은 본문을 포함한 전체 `Chapter`이고(`ChapterSaveResult extends Chapter`) 그대로 items에 들어가면 **저장이나 이름 변경을 한 번 거친 챕터부터 본문이 목록에 되살아난다.** `chapterStore`의 `withListOnlyItems`가 목록 필드만 명시적으로 투영해 이를 차단한다.
 
-```
-src/renderer/src/features/manuscript/hooks/useChapterManagement.ts:219  복제 fallback (캐시 우선, items 폴백)
-src/renderer/src/features/manuscript/hooks/useChapterManagement.ts:298  저장 변경감지 fallback (캐시 우선, items 폴백)
-src/renderer/src/features/workspace/components/panels/WorkspacePanels.tsx:412  분할 editor (캐시 미경유, 게이트 없음) → N1
-```
-
-`useExportManager`는 차단 요소가 **아니다**. 이전 서술은 틀렸다 — 이 훅은 `api.chapter.get(chapterId)`로 단건 조회하므로 `chapterStore.items`를 참조하지 않는다.
+`useExportManager`는 차단 요소가 **아니었다**. 이전 서술은 틀렸다 — 이 훅은 `api.chapter.get(chapterId)`로 단건 조회하므로 `chapterStore.items`를 참조하지 않는다.
 
 **왜 문제인가** — 사이드바는 제목/순서만 필요하지만 현재도 모든 본문이 IPC 직렬화를 거쳐 목록 store에 들어온다. 전용 캐시가 추가돼 활성/최근 본문은 한 번 더 잡힐 수 있으므로, O1-b1은 안전한 이관 기반이지 메모리 절감 완료 단계가 아니다.
 
@@ -88,26 +82,25 @@ src/renderer/src/features/workspace/components/panels/WorkspacePanels.tsx:412  �
 
 **확신도** — DB 왕복 감소와 캐시 상태전이: 테스트 확인. O1-b2 전후 실제 힙 MB: 측정 필요.
 
-### O2. autosave가 `items` 배열 참조를 교체해 챕터 사이드바가 리렌더 — HIGH (**부분 완료**)
+### O2. autosave가 `items` 배열 참조를 교체해 챕터 사이드바가 리렌더 — HIGH (**완료**)
 
-**현재 근거**
+**현재 상태**
 
 ```
 src/renderer/src/features/manuscript/hooks/useChapterManagement.ts
-  setChapterContent(chapterId, newContent)              ← 전용 캐시는 함께 갱신
-  const nextItems = state.items.map(...)                ← 배열 참조 교체는 잔존
-  content: newContent                                   ← 목록 item 본문 갱신도 잔존
+  본문이 바뀌면 setChapterContent(chapterId, newContent)만 호출한다
+  제목이 바뀔 때만 applyOptimisticTitle(chapterId, normalizedTitle)
+src/renderer/src/features/manuscript/stores/chapterStore.ts
+  applyOptimisticTitle이 제목 변화가 없으면 items 참조를 그대로 반환
 ```
 
-`useChapterManagement()`는 더 이상 `content`를 반환하지 않고, 본문이 필요한 화면은 `useChapterContent(chapterId)`로 직접 구독한다. 이 때문에 **다른 챕터의 캐시 본문 변경은 현재 챕터 본문 소비자를 리렌더하지 않는다.** React Profiler 기반 DOM 테스트로 commit 수 불변을 확인했다.
+`useChapterManagement()`는 `content`를 반환하지 않고, 본문이 필요한 화면은 `useChapterContent(chapterId)`로 직접 구독한다. 저장 경로에서 `items.map()`과 `content: newContent` 갱신을 제거했으므로 **본문만 바뀌는 자동 저장은 목록 store에 아무 write도 하지 않는다.** 제목이 바뀔 때만 해당 항목 하나가 새 객체로 교체되고 나머지 항목은 같은 객체를 유지해 행 단위 memo가 살아남는다.
 
-그러나 사이드바를 포함한 `useChapterManagement` 호출부는 여전히 `state.items` 배열을 구독한다. autosave가 `.map()`으로 새 배열을 쓰므로 목록 구독자의 리렌더 원인은 아직 남아 있다. 즉 소비자 구독 범위는 개선됐지만 O2의 핵심 결함은 O1-b2와 함께 해결해야 한다.
+`useChapterStore.setState` 직접 호출로 `chapters`/`currentChapter` 별칭을 수동 동기화하던 우회도 함께 제거했다. 이제 `createAliasSetter`를 쓰는 store 액션(`applyOptimisticTitle`) 하나만 그 일을 한다.
 
-**규칙 매칭** — `rerender-derived-state` **원리 적용**. 목록은 본문이 없는 summary selector/store만 구독해야 한다.
+**규칙 매칭** — `rerender-derived-state` **원리 적용**. 목록은 본문이 없는 summary store만 구독한다.
 
-**다음 수정** — O1-b2에서 `items`를 `ChapterSummary[]`로 만들고 본문 optimistic 갱신을 `chapterContentStore`에만 수행한다. 제목 변경 때만 summary item을 교체하도록 분리한 뒤, 사이드바 React Profiler 회귀 테스트를 추가한다.
-
-**확신도** — 캐시 구독 격리: Profiler 테스트 확인. 사이드바 autosave commit 제거: 미완료.
+**확신도** — 참조 동일성: `chapterListBoundary.test.ts` 7개로 확인. 캐시 구독 격리: Profiler 테스트 확인. 사이드바 실제 프레임 수: 측정 필요.
 
 ### O3. 상시 마운트 컴포넌트가 활성 챕터 본문 전체를 구독 — MEDIUM (**완료**)
 
@@ -379,12 +372,13 @@ ScrivenerLayout.tsx:116   updatePanelSize(panel.id, rawSize)
 | 완료 | O1-a | 목록 DB 조회 20챕터 21회 → 2회, 10개 테스트 통과. |
 | 완료 | O1-b1 + 복원 안전성 | 본문 캐시·구독 게이트·세대 가드·retain 보호·복원 seed·pointer-down 프리페치, 관련 26개 테스트 통과. |
 | 완료 | O3 | Binder 상시 본문 구독 및 prop chain 제거. |
-| **다음** | **N1 (분할뷰 Editor 이관)** | O1-b2의 선행조건. 미이관 상태로 목록에서 본문을 빼면 빈 본문 autosave로 원본이 덮어써진다. |
-| 이후 | **O1-b2 + O2** | 목록 IPC/store를 `ChapterListItem[]`로 전환하고 autosave의 `items.content` 갱신을 제거한다. 같은 데이터 경계를 건드리므로 한 단계로 처리하되 테스트로 세분한다. N2가 함께 해소된다. |
-| 이후 | N3 · N7 (주석·배럴) | 파일 경계가 좁고 런타임 영향이 없다. |
+| 완료 | N1 (분할뷰 Editor 이관) | O1-b2의 선행조건이었다. `SplitViewEditor`로 분리해 캐시 구독 + 로딩 게이트 적용, 회귀 테스트 6개. |
+| 완료 | **O1-b2 + O2** | 목록 IPC/store를 `ChapterListItem[]`로 전환, 목록 왕복 select 1회, autosave의 목록 write 제거. N2도 함께 해소. 테스트 18개(main 11 + renderer 7). |
+| **다음** | N3 잔여 · N7 (주석·배럴) | 영어 WHAT 주석 3건과 `domains/manuscript` 배럴에 `useChapterContent` 누락. 런타임 영향이 없다. |
 | 이후 | O5 · O10 · O11 · O12 · N4 · N5 | 사이드바·트리·갤러리 국소 수정. 위험이 낮다. |
 | 이후 | O6 · O9 | 미적용 최적화. 측정과 함께 효과 확인. |
 | 이후 | O4 | 에디터 런타임 변경이라 단독 처리 권장. |
+| 이후 | O8 | `reorderChapters`의 O(n²) find. O1-b2에서 타입만 바꾸고 알고리즘은 그대로 뒀다. |
 | 별도 | O7 | 저장 포맷 변경 + 기존 데이터 마이그레이션 필요. |
 | 별도 | N6 (사이드바 일관성) | 활성 스타일·위험색·portal 정책 통일. 시각 회귀 확인이 필요하다. |
 | 보류 | N8 Tailwind 미정의 유틸 30건 | 사용자 결정으로 이번 회차 제외. |
@@ -395,7 +389,7 @@ ScrivenerLayout.tsx:116   updatePanelSize(panel.id, rawSize)
 
 기준 문서는 이 파일 하나만 참조했고, 판정은 전부 실코드를 열어 줄번호를 확인했다. 서브에이전트 3트랙(성능/일관성/주석)의 보고도 재확인을 거쳤고 그 과정에서 오탐 2건을 제거했다(§7.5).
 
-### N1. 분할뷰 Editor만 본문 캐시로 이관되지 않음 — HIGH (데이터 안전)
+### N1. 분할뷰 Editor만 본문 캐시로 이관되지 않음 — HIGH (데이터 안전) (**완료**)
 
 Editor 마운트 지점은 3곳인데 2곳만 이관됐다.
 
@@ -410,20 +404,28 @@ WorkspacePanels.tsx:412         initialContent={editorChapter?.content ?? ""}  �
 
 **수정안** — `DocsSideEditor`(`GoogleDocsRightPanel.tsx:96`) 선례와 동일하게 자식 컴포넌트로 추출해 `useChapterContent`를 호출하고 `isLoaded`로 게이트한다. `.map()` 콜백 안에서는 훅을 호출할 수 없으므로 컴포넌트 추출이 필수다.
 
-**확신도** — 코드 확인.
+**반영 결과** — `panels/SplitViewEditor.tsx`로 분리했다. `WorkspacePanels`가 434 LOC로 이미 300 LOC 가이드를 넘겨 있었고, 별도 모듈이어야 패널 machinery 없이 테스트할 수 있어 파일을 나눴다. `WorkspacePanels`는 `chapterId`/`chapterTitle`만 넘기므로 O1-b2 이후에도 계약이 유지된다.
 
-### N2. `ChapterListItem`이 선언·수출됐으나 소비자 0 — HIGH
+**확신도** — 코드 확인 + `splitViewEditorContentGate.test.tsx` 6개.
 
-`shared/types/manuscript.ts:23`의 `ChapterListItem = Omit<Chapter, "content">`는 `types/index.ts:13`으로 배럴 수출까지 됐는데 전 코드베이스 소비자가 0건이다. 그 TSDoc은 "목록 경계에서는 본문을 나르지 않는다"를 규범으로 선언하지만 코드는 반대로 동작한다. shared 계약 타입에 남은 미실현 약속이며, O1-b2에서 이 타입을 채택하는 것이 곧 해소다.
+### N2. `ChapterListItem`이 선언·수출됐으나 소비자 0 — HIGH (**완료**)
 
-### N3. 코드와 어긋난 주석 2건 — HIGH (주석 규약 4항)
+`shared/types/manuscript.ts:23`의 `ChapterListItem = Omit<Chapter, "content">`는 `types/index.ts:13`으로 배럴 수출까지 됐는데 소비자가 0건이었다. TSDoc은 "목록 경계에서는 본문을 나르지 않는다"를 규범으로 선언하지만 코드는 반대로 동작했다 — shared 계약 타입에 남은 미실현 약속이었다.
+
+O1-b2에서 이 타입을 목록 IPC 계약(`core.contract.ts`의 `chapter.getAll`), main 서비스(`getAllChapters`), renderer store(`chapterStore`)가 모두 채택해 해소했다.
+
+### N3. 코드와 어긋난 주석 2건 — HIGH (주석 규약 4항) (**완료**)
 
 ```
 useChapterManagement.ts:216-217  "items 폴백은 목록에서 본문을 제거하는 단계에서 사라진다"
 useChapterManagement.ts:295-296  동일 문구
 ```
 
-`Chapter.content`(`manuscript.ts:5`)는 그대로이고, 같은 파일 `:313`은 오히려 `items`에 `content`를 계속 쓴다. 미래 약속형 주석이며 실현 시점이 불명확하다. `TODO:`로 완료조건을 명시하거나 현재 사실만 남긴다.
+`Chapter.content`가 그대로였고, 같은 파일의 저장 경로가 오히려 `items`에 `content`를 계속 쓰고 있었다. 미래 약속형 주석이었다.
+
+O1-b2에서 폴백 자체가 사라져 주석도 함께 제거됐다. 남은 것은 현재 사실만 기술한다 — 복제는 "목록에 본문이 없어 폴백할 곳이 없다", 저장은 "변경 감지 기준은 본문 캐시가 유일한 출처다".
+
+**남은 주석 항목** — 영어 WHAT 주석 3건(`SnapshotViewer.tsx:222`, `Editor.tsx:61`, `ExportPreview.tsx:109`)과 지역 컴포넌트 TSDoc 1건(`GoogleDocsRightPanel.tsx:96-102`)은 미착수다.
 
 ### N4. `memo`된 `TreeNode`가 재귀 prop으로 전멸 — MEDIUM
 
@@ -486,6 +488,36 @@ parseStructuredAttributes.ts:3-6             문자열이면 JSON.parse
 ---
 
 ## 8. 구현 후 검증 기록 (2026-08-31)
+
+### O1-b2 + O2 검증 (3차)
+
+| 범위 | 결과 | 확인한 계약 |
+| --- | --- | --- |
+| `chapterListContentResolution.test.ts` (재작성) | **11 passed** | 목록 응답에 `content` 키 부재, 왕복 select 1회 고정(0/1/20 경계), order asc·soft delete 제외, 본문 저장 후에도 목록 계약 불변. 본문 해석(body→legacy→"") 커버리지는 SUT를 `getChapter`로 옮겨 보존했다. |
+| `chapterListBoundary.test.ts` (신규) | **7 passed** | `loadAll` 항목의 본문 부재, create/update 응답 본문이 items로 새지 않음, 제목 무변화 시 `items` 참조 유지, 제목 변화 시 해당 항목만 교체(나머지 객체 동일성 유지), `chapters`/`currentChapter` 별칭 참조 일치. |
+| `splitViewEditorContentGate.test.tsx` (신규, N1) | **6 passed** | 로딩 중 Editor 미마운트, 도착 후 캐시 본문 전달, 빈 본문도 loaded 판정, chapterId 없으면 즉시 마운트, 캐시 reset 시 게이트 재진입. |
+| 기존 캐시 3스위트 + 휴지통 매트릭스 | **31 passed** | 회귀 없음. |
+| 합계 | **7 files / 55 passed** | |
+| TypeScript / ESLint | **0 errors / exit 0** | |
+| `check:renderer-store-usage`, `check:core-complexity`, `check:ipc-contract-map` | **PASS** | 계약 맵은 재생성 후 통과(221 channels). |
+
+**결함 검출력 확인**
+
+- `SplitViewEditor`의 `isLoaded` 게이트 무력화 → 로딩 중 미마운트/캐시 reset 테스트 2건 실패.
+- `chapterStore`의 `withListOnlyItems` 투영 제거 → create/update 본문 누출 테스트 2건 실패.
+
+**이 변경으로 확인되지 않은 것**
+
+- 200챕터 heap snapshot 실측. 코드 경계는 닫혔지만 실제 MB 감소 수치는 여전히 측정 항목이다(§5-1).
+- 사이드바 autosave당 실제 프레임/커밋 수. 참조 동일성은 단위 테스트로 고정했으나 Profiler 기반 사이드바 측정은 하지 않았다.
+
+**환경 관련 알려진 사항**
+
+- `better-sqlite3`는 Electron ABI와 Node ABI를 오간다. main 프로세스 스위트를 vitest로 돌리려면 `pnpm rebuild better-sqlite3`가 필요하고, 앱을 다시 띄우려면 `pnpm rebuild:electron`이 필요하다.
+- `check:persist-contracts`는 `graphStore.ts:24`(canvas)에서 실패한다. 워킹트리 변경이 없는 커밋된 기존 결함이며 이 변경과 무관하다.
+- `check:main-service-boundaries`는 `spawnSync rg ENOENT`로 실패한다. ripgrep 미설치 환경 문제다.
+
+### O1-a / O1-b1 / O3 검증 기록 (2차)
 
 ### 자동 테스트
 

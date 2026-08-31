@@ -20,7 +20,7 @@ import { useChapterStore } from "@renderer/domains/manuscript";
 import { SplitViewEditor } from "@renderer/features/workspace/components/panels/SplitViewEditor";
 import type { ResizablePanelData } from "@renderer/features/workspace/stores/uiStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
-import type { Chapter } from "@shared/types";
+import type { ChapterListItem } from "@shared/types";
 import { toPercentSize, toPxSize } from "@renderer/shared/constants/sidebarSizing";
 import { EDITOR_DND_MIN_PANEL_WIDTH_PX } from "@renderer/shared/constants/editorLayout";
 import { SPLIT_PANEL_MIN_SIZE_PERCENT } from "@renderer/shared/constants/layoutSizing";
@@ -49,7 +49,7 @@ const ExportPreviewPanel = React.lazy(() =>
 interface WorkspacePanelsProps {
   panels: ResizablePanelData[];
   removePanel: (id: string) => void;
-  chapters: Chapter[];
+  chapters: ChapterListItem[];
   currentProjectId?: string;
   activeChapterId?: string;
   activeChapterTitle: string;

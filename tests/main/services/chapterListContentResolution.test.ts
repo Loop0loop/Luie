@@ -7,12 +7,19 @@ import { projectService } from "../../../src/main/services/features/project/proj
 import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 
 /**
- * SUT: ChapterService.getAllChapters — 목록 조회의 본문 해석 경로.
+ * SUT: ChapterService.getAllChapters(목록 경계) + ChapterService.getChapter(본문 해석).
  *
- * 테스트 베이시스: renderer-Optimization-result.md O1.
- * 변경 전에는 챕터마다 readChapterContent를 호출해 왕복이 1 + N*(1~2)회였다. 본 스위트는
- * (a) 본문 해석 결과가 변경 전과 동일한지(등가분할·경계값), (b) 왕복 횟수가 챕터 수와
- * 무관하게 2회로 고정되는지(효율성)를 함께 고정한다.
+ * 테스트 베이시스: renderer-Optimization-result.md O1-a / O1-b2.
+ * O1-a는 목록 조회의 N+1을 배치 조회로 없앴고, O1-b2는 목록 응답에서 본문 자체를 뺐다.
+ * 그래서 이 스위트는 두 계약을 나눠 고정한다.
+ *   - 목록: 본문 필드가 없고, chapterBody를 조회하지 않으며(select 1회), order/삭제 필터가
+ *     유지된다.
+ *   - 단건: body → legacy → "" 해석 규칙이 그대로 살아 있다. 본문을 목록에서 뺀 뒤 이
+ *     규칙의 유일한 소비자가 getChapter이므로 커버리지를 여기로 옮겼다.
+ *
+ * PROVES: 목록 응답의 본문 부재, 목록 왕복 1회 고정(챕터 수 무관), order asc·soft delete
+ *         제외, 단건 본문 해석 3분기와 빈 문자열 경계, 본문 저장이 목록 계약을 바꾸지 않음.
+ * DOES_NOT_PROVE: IPC 직렬화 크기, 렌더러 힙 실측, autoSave 경로.
  *
  * 쓰기 경로(updateChapter)와의 결합을 끊기 위해 픽스처는 DB에 직접 insert한다. 그래야
  * chapterBody가 없는 legacy 상태처럼 서비스 API로는 만들 수 없는 조건을 재현할 수 있다.
@@ -101,7 +108,7 @@ const insertChapterBodyRow = async (row: {
   content: string;
 }): Promise<void> => insertChapterBodyRows([row]);
 
-/** getAllChapters 실행 중 발생한 select 왕복 횟수를 센다. */
+/** 대상 호출 중 발생한 select 왕복 횟수를 센다. */
 const countSelectsDuring = async <T>(
   run: () => Promise<T>,
 ): Promise<{ result: T; selectCount: number }> => {
@@ -115,77 +122,37 @@ const countSelectsDuring = async <T>(
   }
 };
 
-describe("getAllChapters 본문 해석 (등가분할)", () => {
-  it("EP1: chapterBody가 있으면 body 값을 반환한다", async () => {
-    const projectId = await createProject("ep1");
+describe("getAllChapters 목록 경계 (본문 미포함)", () => {
+  it("응답 항목에 content 키 자체가 없다", async () => {
+    const projectId = await createProject("boundary-no-content");
     await insertChapterRow({
-      id: "ep1-ch1",
+      id: "nc-ch1",
       projectId,
       title: "Chapter 1",
       order: 1,
-      legacyContent: "LEGACY",
+      legacyContent: "LEGACY_SHOULD_NOT_LEAK",
     });
-    await insertChapterBodyRow({ chapterId: "ep1-ch1", content: "BODY" });
-
-    const chapters = await chapterService.getAllChapters(projectId);
-
-    expect(chapters).toHaveLength(1);
-    expect(chapters[0].content).toBe("BODY");
-  });
-
-  it("EP2: chapterBody가 없으면 legacy chapter.content로 폴백한다", async () => {
-    const projectId = await createProject("ep2");
-    await insertChapterRow({
-      id: "ep2-ch1",
-      projectId,
-      title: "Chapter 1",
-      order: 1,
-      legacyContent: "LEGACY_ONLY",
+    await insertChapterBodyRow({
+      chapterId: "nc-ch1",
+      content: "BODY_SHOULD_NOT_LEAK",
     });
 
     const chapters = await chapterService.getAllChapters(projectId);
 
     expect(chapters).toHaveLength(1);
-    expect(chapters[0].content).toBe("LEGACY_ONLY");
-  });
-
-  it("EP3: 양쪽 모두 빈 값이면 빈 문자열을 반환한다", async () => {
-    const projectId = await createProject("ep3");
-    await insertChapterRow({
-      id: "ep3-ch1",
-      projectId,
+    expect(Object.prototype.hasOwnProperty.call(chapters[0], "content")).toBe(
+      false,
+    );
+    // 목록이 실제로 그리는 필드는 유지돼야 한다.
+    expect(chapters[0]).toMatchObject({
+      id: "nc-ch1",
       title: "Chapter 1",
       order: 1,
-      legacyContent: "",
     });
-
-    const chapters = await chapterService.getAllChapters(projectId);
-
-    expect(chapters[0].content).toBe("");
-  });
-});
-
-describe("getAllChapters 본문 해석 (경계값)", () => {
-  // 변경 전 readChapterContent는 `typeof content === "string"`으로 판정했으므로 빈 문자열
-  // body도 유효한 값이다. `||` 폴백으로 잘못 구현하면 legacy 값이 되살아난다.
-  it("BVA1: body가 빈 문자열이면 legacy로 폴백하지 않는다", async () => {
-    const projectId = await createProject("bva1");
-    await insertChapterRow({
-      id: "bva1-ch1",
-      projectId,
-      title: "Chapter 1",
-      order: 1,
-      legacyContent: "LEGACY_SHOULD_NOT_APPEAR",
-    });
-    await insertChapterBodyRow({ chapterId: "bva1-ch1", content: "" });
-
-    const chapters = await chapterService.getAllChapters(projectId);
-
-    expect(chapters[0].content).toBe("");
   });
 
-  it("BVA2: 챕터 0개면 빈 배열을 반환하고 body 조회를 하지 않는다", async () => {
-    const projectId = await createProject("bva2");
+  it("BVA: 챕터 0개면 빈 배열이고 왕복은 1회다", async () => {
+    const projectId = await createProject("boundary-empty");
 
     const { result, selectCount } = await countSelectsDuring(() =>
       chapterService.getAllChapters(projectId),
@@ -195,52 +162,88 @@ describe("getAllChapters 본문 해석 (경계값)", () => {
     expect(selectCount).toBe(1);
   });
 
-  it("BVA3: 챕터 1개도 왕복 2회로 처리한다", async () => {
-    const projectId = await createProject("bva3");
+  it("BVA: 챕터 1개도 왕복 1회다", async () => {
+    const projectId = await createProject("boundary-one");
     await insertChapterRow({
-      id: "bva3-ch1",
+      id: "one-ch1",
       projectId,
       title: "Chapter 1",
       order: 1,
       legacyContent: "L",
     });
-    await insertChapterBodyRow({ chapterId: "bva3-ch1", content: "B" });
+    await insertChapterBodyRow({ chapterId: "one-ch1", content: "B" });
 
     const { result, selectCount } = await countSelectsDuring(() =>
       chapterService.getAllChapters(projectId),
     );
 
     expect(result).toHaveLength(1);
-    expect(selectCount).toBe(2);
+    expect(selectCount).toBe(1);
   });
-});
 
-describe("getAllChapters 목록 계약", () => {
+  it("챕터 20개에서도 왕복이 1회로 고정된다", async () => {
+    const projectId = await createProject("boundary-twenty");
+    const chapterCount = 20;
+    const indexes = Array.from(
+      { length: chapterCount },
+      (_unused, offset) => offset + 1,
+    );
+
+    await insertChapterRows(
+      indexes.map((index) => ({
+        id: `twenty-ch${index}`,
+        projectId,
+        title: `Chapter ${index}`,
+        order: index,
+        legacyContent: `LEGACY_${index}`,
+      })),
+    );
+    await insertChapterBodyRows(
+      indexes.map((index) => ({
+        chapterId: `twenty-ch${index}`,
+        content: `BODY_${index}`,
+      })),
+    );
+
+    const { result, selectCount } = await countSelectsDuring(() =>
+      chapterService.getAllChapters(projectId),
+    );
+
+    expect(result).toHaveLength(chapterCount);
+    expect(
+      result.every(
+        (item) => !Object.prototype.hasOwnProperty.call(item, "content"),
+      ),
+    ).toBe(true);
+    // O1-a에서 2회로 줄인 왕복이 O1-b2에서 1회가 된다. body를 볼 이유가 없어졌다.
+    expect(selectCount).toBe(1);
+  });
+
   it("order 오름차순을 유지하고 삭제된 챕터를 제외한다", async () => {
-    const projectId = await createProject("contract");
+    const projectId = await createProject("boundary-order");
     await insertChapterRow({
-      id: "c-ch3",
+      id: "o-ch3",
       projectId,
       title: "Third",
       order: 3,
       legacyContent: "3",
     });
     await insertChapterRow({
-      id: "c-ch1",
+      id: "o-ch1",
       projectId,
       title: "First",
       order: 1,
       legacyContent: "1",
     });
     await insertChapterRow({
-      id: "c-ch2",
+      id: "o-ch2",
       projectId,
       title: "Second",
       order: 2,
       legacyContent: "2",
     });
     await insertChapterRow({
-      id: "c-deleted",
+      id: "o-deleted",
       projectId,
       title: "Deleted",
       order: 4,
@@ -255,6 +258,74 @@ describe("getAllChapters 목록 계약", () => {
       "Second",
       "Third",
     ]);
+  });
+});
+
+describe("getChapter 본문 해석 (등가분할)", () => {
+  it("EP1: chapterBody가 있으면 body 값을 반환한다", async () => {
+    const projectId = await createProject("ep1");
+    await insertChapterRow({
+      id: "ep1-ch1",
+      projectId,
+      title: "Chapter 1",
+      order: 1,
+      legacyContent: "LEGACY",
+    });
+    await insertChapterBodyRow({ chapterId: "ep1-ch1", content: "BODY" });
+
+    const found = await chapterService.getChapter("ep1-ch1");
+
+    expect(found.content).toBe("BODY");
+  });
+
+  it("EP2: chapterBody가 없으면 legacy chapter.content로 폴백한다", async () => {
+    const projectId = await createProject("ep2");
+    await insertChapterRow({
+      id: "ep2-ch1",
+      projectId,
+      title: "Chapter 1",
+      order: 1,
+      legacyContent: "LEGACY_ONLY",
+    });
+
+    const found = await chapterService.getChapter("ep2-ch1");
+
+    expect(found.content).toBe("LEGACY_ONLY");
+  });
+
+  it("EP3: 양쪽 모두 빈 값이면 빈 문자열을 반환한다", async () => {
+    const projectId = await createProject("ep3");
+    await insertChapterRow({
+      id: "ep3-ch1",
+      projectId,
+      title: "Chapter 1",
+      order: 1,
+      legacyContent: "",
+    });
+
+    const found = await chapterService.getChapter("ep3-ch1");
+
+    expect(found.content).toBe("");
+  });
+});
+
+describe("getChapter 본문 해석 (경계값)", () => {
+  // 해석은 `typeof content === "string"`이므로 빈 문자열 body도 유효한 값이다.
+  // `||` 폴백으로 잘못 구현하면 legacy 값이 되살아난다.
+  it("BVA: body가 빈 문자열이면 legacy로 폴백하지 않는다", async () => {
+    const projectId = await createProject("bva-empty-body");
+    await insertChapterRow({
+      id: "bva-ch1",
+      projectId,
+      title: "Chapter 1",
+      order: 1,
+      legacyContent: "LEGACY_SHOULD_NOT_APPEAR",
+    });
+    await insertChapterBodyRow({ chapterId: "bva-ch1", content: "" });
+
+    const found = await chapterService.getChapter("bva-ch1");
+
+    expect(found.content).toBe("");
   });
 
   it("body와 legacy가 섞여 있어도 챕터별로 올바른 본문을 짝짓는다", async () => {
@@ -280,9 +351,14 @@ describe("getAllChapters 목록 계약", () => {
         })),
     );
 
-    const chapters = await chapterService.getAllChapters(projectId);
+    const resolved = await Promise.all(
+      indexes.map(async (index) => {
+        const found = await chapterService.getChapter(`mixed-ch${index}`);
+        return found.content;
+      }),
+    );
 
-    expect(chapters.map((item) => item.content)).toEqual([
+    expect(resolved).toEqual([
       "LEGACY_1",
       "BODY_2",
       "LEGACY_3",
@@ -293,45 +369,8 @@ describe("getAllChapters 목록 계약", () => {
   });
 });
 
-describe("getAllChapters 효율성", () => {
-  // 변경 전: 1 + N*(1~2)회. N=20이면 21~41회.
-  // 변경 후: 챕터 수와 무관하게 2회.
-  it("챕터 20개에서도 select 왕복이 2회로 고정된다", async () => {
-    const projectId = await createProject("efficiency");
-    const chapterCount = 20;
-    const indexes = Array.from(
-      { length: chapterCount },
-      (_unused, offset) => offset + 1,
-    );
-
-    await insertChapterRows(
-      indexes.map((index) => ({
-        id: `eff-ch${index}`,
-        projectId,
-        title: `Chapter ${index}`,
-        order: index,
-        legacyContent: `LEGACY_${index}`,
-      })),
-    );
-    await insertChapterBodyRows(
-      indexes.map((index) => ({
-        chapterId: `eff-ch${index}`,
-        content: `BODY_${index}`,
-      })),
-    );
-
-    const { result, selectCount } = await countSelectsDuring(() =>
-      chapterService.getAllChapters(projectId),
-    );
-
-    expect(result).toHaveLength(chapterCount);
-    expect(result.every((item) => item.content.startsWith("BODY_"))).toBe(true);
-    expect(selectCount).toBe(2);
-  });
-});
-
-describe("getAllChapters 상태전이", () => {
-  it("본문 저장 후 재조회하면 최신 본문을 반환한다", async () => {
+describe("본문 저장의 상태전이", () => {
+  it("본문을 저장해도 목록 계약은 바뀌지 않고 단건 조회가 최신 본문을 준다", async () => {
     const projectId = await createProject("transition");
     const created = await chapterService.createChapter({
       projectId,
@@ -339,17 +378,24 @@ describe("getAllChapters 상태전이", () => {
     });
     const chapterId = String(created.id);
 
-    const before = await chapterService.getAllChapters(projectId);
-    expect(before.find((item) => item.id === chapterId)?.content).toBe("");
+    expect(await chapterService.getChapter(chapterId)).toMatchObject({
+      content: "",
+    });
 
     await chapterService.updateChapter({
       id: chapterId,
       content: "UPDATED_BODY",
     });
 
-    const after = await chapterService.getAllChapters(projectId);
-    expect(after.find((item) => item.id === chapterId)?.content).toBe(
-      "UPDATED_BODY",
-    );
+    const listed = await chapterService.getAllChapters(projectId);
+    const listedChapter = listed.find((item) => item.id === chapterId);
+    expect(listedChapter).toBeDefined();
+    // 저장 후에도 목록은 본문을 나르지 않는다.
+    expect(
+      Object.prototype.hasOwnProperty.call(listedChapter!, "content"),
+    ).toBe(false);
+
+    const fetched = await chapterService.getChapter(chapterId);
+    expect(fetched.content).toBe("UPDATED_BODY");
   });
 });

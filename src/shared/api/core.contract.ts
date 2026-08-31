@@ -41,7 +41,11 @@ export type CoreRendererApi = {
       clientMutationId?: string;
     }) => Promise<IPCResponse<SharedTypes.Chapter>>;
     get: (id: string) => Promise<IPCResponse<SharedTypes.Chapter>>;
-    getAll: (projectId: string) => Promise<IPCResponse<SharedTypes.Chapter[]>>;
+    // NOTE: 목록은 본문을 나르지 않는다(`ChapterListItem`). 본문이 필요하면 `get`을 쓴다.
+    // 이 타입을 `Chapter[]`로 되돌리면 프로젝트의 모든 본문이 렌더러 힙에 상주한다.
+    getAll: (
+      projectId: string,
+    ) => Promise<IPCResponse<SharedTypes.ChapterListItem[]>>;
     getDeleted: (projectId: string) => Promise<IPCResponse<SharedTypes.Chapter[]>>;
     update: (input: {
       id: string;
