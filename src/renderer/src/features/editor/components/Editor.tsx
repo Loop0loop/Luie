@@ -58,7 +58,7 @@ function Editor({
   chapterId,
   hideToolbar = false,
   hideFooter = false,
-  hideTitle = false, // Default false
+  hideTitle = false,
   scrollable = true,
   autoHeight = false,
   focusMode = false,

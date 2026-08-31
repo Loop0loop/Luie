@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { Editor } from "@renderer/domains/editor";
-import { useChapterContent } from "@renderer/features/manuscript/hooks/useChapterContent";
+import { useChapterContent } from "@renderer/domains/manuscript";
 
 type SplitViewEditorProps = {
   chapterId?: string;

@@ -9,8 +9,7 @@ import {
 import { ChevronLeft, History, X } from "lucide-react";
 import type { Snapshot } from "@shared/types";
 import { Editor, useEditorStore } from "@renderer/domains/editor";
-import { useChapterContent } from "@renderer/features/manuscript/hooks/useChapterContent";
-import { useChapterStore } from "@renderer/domains/manuscript";
+import { useChapterContent, useChapterStore } from "@renderer/domains/manuscript";
 import { AIPanel } from "@renderer/features/ai";
 import { useTranslation } from "react-i18next";
 import {

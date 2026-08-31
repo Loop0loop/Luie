@@ -374,8 +374,8 @@ ScrivenerLayout.tsx:116   updatePanelSize(panel.id, rawSize)
 | 완료 | O3 | Binder 상시 본문 구독 및 prop chain 제거. |
 | 완료 | N1 (분할뷰 Editor 이관) | O1-b2의 선행조건이었다. `SplitViewEditor`로 분리해 캐시 구독 + 로딩 게이트 적용, 회귀 테스트 6개. |
 | 완료 | **O1-b2 + O2** | 목록 IPC/store를 `ChapterListItem[]`로 전환, 목록 왕복 select 1회, autosave의 목록 write 제거. N2도 함께 해소. 테스트 18개(main 11 + renderer 7). |
-| **다음** | N3 잔여 · N7 (주석·배럴) | 영어 WHAT 주석 3건과 `domains/manuscript` 배럴에 `useChapterContent` 누락. 런타임 영향이 없다. |
-| 이후 | O5 · O10 · O11 · O12 · N4 · N5 | 사이드바·트리·갤러리 국소 수정. 위험이 낮다. |
+| 완료 | N3 · N7 (주석·배럴) | 영어 WHAT 주석 3건 한국어 WHY/삭제, `useChapterContent`를 배럴에 노출하고 소비자 5곳 통일. |
+| **다음** | O5 · O10 · O11 · O12 · N4 · N5 | 사이드바·트리·갤러리 국소 수정. 위험이 낮다. |
 | 이후 | O6 · O9 | 미적용 최적화. 측정과 함께 효과 확인. |
 | 이후 | O4 | 에디터 런타임 변경이라 단독 처리 권장. |
 | 이후 | O8 | `reorderChapters`의 O(n²) find. O1-b2에서 타입만 바꾸고 알고리즘은 그대로 뒀다. |
@@ -425,7 +425,7 @@ useChapterManagement.ts:295-296  동일 문구
 
 O1-b2에서 폴백 자체가 사라져 주석도 함께 제거됐다. 남은 것은 현재 사실만 기술한다 — 복제는 "목록에 본문이 없어 폴백할 곳이 없다", 저장은 "변경 감지 기준은 본문 캐시가 유일한 출처다".
 
-**남은 주석 항목** — 영어 WHAT 주석 3건(`SnapshotViewer.tsx:222`, `Editor.tsx:61`, `ExportPreview.tsx:109`)과 지역 컴포넌트 TSDoc 1건(`GoogleDocsRightPanel.tsx:96-102`)은 미착수다.
+**남은 주석 항목** — 없음. 영어 WHAT 주석 3건도 처리했다: `SnapshotViewer.tsx`(리마운트 이유를 한국어 WHY로), `Editor.tsx`(`// Default false` 삭제), `ExportPreview.tsx`(부분 높이 이유를 한국어 WHY로). 지역 컴포넌트 TSDoc(`GoogleDocsRightPanel.tsx:96-102`)은 내용이 WHY라 LOW로 남긴다.
 
 ### N10. 분할 editor 패널이 재오픈/재시작 시 min 폭으로 뜸 — MEDIUM (**완료**)
 
@@ -509,9 +509,13 @@ parseStructuredAttributes.ts:3-6             문자열이면 JSON.parse
 | 위험색 | `SidebarChapterList.tsx:119` `text-red-500`(raw 팔레트) / `TermCard.tsx:50` `text-danger` / `PlotBoard.tsx:392` `text-error` / `Sidebar.tsx:435` 무효 inline. 토큰 층에서 `--color-destructive`·`--color-error`·`--color-danger`·`--color-danger-fg`가 모두 같은 `--danger-fg`를 가리켜(`global.tokens.css:41,42,50,59`) 동의어 4개가 불일치를 구조적으로 유발한다. |
 | 컨텍스트 메뉴 | `SidebarChapterList.tsx:100` `createPortal`(클리핑 회피 이유 주석 명시) vs `Sidebar.tsx:373-437` portal 없는 fixed 인라인. |
 
-### N7. 배럴이 신규 훅을 노출하지 않아 import 경로가 혼용 — MEDIUM
+### N7. 배럴이 신규 훅을 노출하지 않아 import 경로가 혼용 — MEDIUM (**완료**)
 
-`domains/manuscript/index.ts`는 `useChapterManagement`·`useChapterStore`를 수출하지만 `useChapterContent`가 빠졌다. 그래서 `EditorRoot.tsx:16`은 배럴에서, 바로 다음 `:17`은 features 직접 경로에서 import한다. **O1-b1 작업이 만든 불일치다.** 배럴 자체도 `../../features/…` 상대경로를 쓰는데 renderer AGENTS.md는 "Avoid fragile relative paths across domains"를 요구한다.
+`domains/manuscript/index.ts`는 `useChapterManagement`·`useChapterStore`를 수출하지만 `useChapterContent`가 빠져 있었다. 그래서 `EditorRoot.tsx:16`은 배럴에서, `:17`은 features 직접 경로에서 import하는 혼용이 O1-b1 작업으로 생겼다.
+
+배럴에 `useChapterContent`(+ `ChapterContentState` 타입)를 추가하고, cross-domain 소비자 5곳(`SplitViewEditor`, `EditorRoot`, `GoogleDocsRightPanel`, `SnapshotViewer`, `SnapshotList`)을 모두 배럴 경로로 통일했다. `EditorRoot`·`GoogleDocsRightPanel`의 중복 import 라인도 하나로 합쳤다.
+
+배럴 자체의 `../../features/…` 상대경로는 파일 전체가 그 스타일이라 이번엔 건드리지 않았다(별도 정리 대상).
 
 ### N8. 기타 확인 항목 (이번 회차 보류 포함)
 

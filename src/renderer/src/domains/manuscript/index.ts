@@ -9,4 +9,8 @@ export { default as FocusHoverSidebar } from "../../features/manuscript/componen
 export { default as ScrivenerSidebar } from "../../features/manuscript/components/ScrivenerSidebar";
 export { default as Sidebar } from "../../features/manuscript/components/Sidebar";
 export { useChapterManagement } from "../../features/manuscript/hooks/useChapterManagement";
+export {
+  useChapterContent,
+  type ChapterContentState,
+} from "../../features/manuscript/hooks/useChapterContent";
 export { useChapterStore } from "../../features/manuscript/stores/chapterStore";

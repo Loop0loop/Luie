@@ -13,8 +13,11 @@ import {
   type DocsRightTab,
 } from "@renderer/features/workspace/stores/uiStore";
 import { useShallow } from "zustand/react/shallow";
-import { useChapterManagement, useChapterStore } from "@renderer/domains/manuscript";
-import { useChapterContent } from "@renderer/features/manuscript/hooks/useChapterContent";
+import {
+  useChapterContent,
+  useChapterManagement,
+  useChapterStore,
+} from "@renderer/domains/manuscript";
 import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import { useWorkspaceDropHandlers } from "@renderer/features/workspace/hooks/useWorkspaceDropHandlers";
 import {

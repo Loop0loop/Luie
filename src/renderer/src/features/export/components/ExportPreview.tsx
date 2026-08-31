@@ -106,7 +106,8 @@ export function ExportPreview({
                     className="bg-[#fcfcfc]/80 shadow-[0_0_15px_rgba(0,0,0,0.1)] relative shrink-0 opacity-50 pointer-events-none ring-1 ring-border/20 rounded-sm"
                     style={{
                         width: paperSize === "A4" ? "210mm" : paperSize === "Letter" ? "216mm" : "176mm",
-                        height: "100mm", // Just a partial view
+                        // NOTE: 다음 페이지가 이어짐을 암시하는 미리보기용 부분 높이다(전체 페이지가 아님).
+                        height: "100mm",
                         background: "linear-gradient(to bottom, #ffffff 0%, #e0e0e0 100%)"
                     }}
                 >

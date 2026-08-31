@@ -4,7 +4,7 @@ import { RotateCcw, Calendar } from "lucide-react";
 import * as Diff from "diff";
 import { api } from "@shared/api";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
-import { useChapterContent } from "@renderer/features/manuscript/hooks/useChapterContent";
+import { useChapterContent } from "@renderer/domains/manuscript";
 import { setChapterContent } from "@renderer/features/manuscript/stores/chapterContentStore";
 import type { Snapshot } from '@shared/types';
 import Editor from "@renderer/features/editor/components/Editor";
@@ -219,7 +219,8 @@ function SnapshotViewer({ snapshot, onApplySnapshotText }: SnapshotViewerProps) 
 
       <div className="research-surface flex-1 min-h-0 border-0 outline-hidden">
         <Editor
-          key={snapshot.id} // Re-mount on snapshot change
+          // NOTE: 스냅샷이 바뀌면 Editor 내부 상태(문서·selection)를 버리려고 리마운트한다.
+          key={snapshot.id}
           initialTitle={snapshot.description || ""}
           initialContent={snapshot.content}
           readOnly={true}

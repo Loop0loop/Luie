@@ -7,7 +7,7 @@ import { DraggableItem } from "@shared/ui/DraggableItem";
 import type { Snapshot } from "@shared/types";
 import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
-import { useChapterContent } from "@renderer/features/manuscript/hooks/useChapterContent";
+import { useChapterContent } from "@renderer/domains/manuscript";
 import { setChapterContent } from "@renderer/features/manuscript/stores/chapterContentStore";
 import { useDialog } from "@shared/ui/useDialog";
 import { useShallow } from "zustand/react/shallow";
