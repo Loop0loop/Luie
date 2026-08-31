@@ -42,7 +42,7 @@ export function DrawingCanvas() {
       />
 
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 p-2 bg-panel/90 backdrop-blur-md border border-border rounded-panel shadow-lg">
-        <div className="flex flex-col gap-2 border-b border-border/50 pb-2">
+        <div className="flex flex-col gap-2 border-b border-border pb-2">
           <button
             className={cn("w-10 h-10 flex items-center justify-center rounded-panel hover:bg-hover hover:text-fg transition-colors", tool === "pen" && "bg-accent text-accent-fg")}
             onClick={() => setTool("pen")}
@@ -67,7 +67,7 @@ export function DrawingCanvas() {
         </div>
 
         {tool === "icon" && (
-          <div className="flex flex-col gap-2 border-b border-border/50 pb-2 animate-in slide-in-from-left-2 fade-in">
+          <div className="flex flex-col gap-2 border-b border-border pb-2 animate-in slide-in-from-left-2 fade-in">
             <button onClick={() => setIconType("mountain")} className={cn("w-10 h-10 flex items-center justify-center rounded-panel hover:bg-hover", iconType === "mountain" && "bg-active/20 text-active")}>
               <Mountain className="w-5 h-5" />
             </button>
@@ -91,7 +91,7 @@ export function DrawingCanvas() {
           ))}
         </div>
 
-        <div className="flex flex-col gap-2 items-center py-2 border-t border-border/50 mt-1">
+        <div className="flex flex-col gap-2 items-center py-2 border-t border-border mt-1">
           {widths.map((w) => (
             <div
               key={w}
@@ -103,7 +103,7 @@ export function DrawingCanvas() {
           ))}
         </div>
 
-        <div className="flex flex-col gap-2 pt-2 border-t border-border/50">
+        <div className="flex flex-col gap-2 pt-2 border-t border-border">
           <button className="w-10 h-10 flex items-center justify-center rounded-panel text-muted hover:text-error hover:bg-error/10" onClick={undo} title={t("undo")}>
             <Navigation className="w-5 h-5 -rotate-90" />
           </button>

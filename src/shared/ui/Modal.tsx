@@ -67,7 +67,7 @@ export function Modal({
                 type="button"
                 aria-label={t("common.close")}
                 title={t("common.close")}
-                className="flex cursor-pointer rounded border-none bg-transparent p-1 text-muted transition-colors hover:bg-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="flex cursor-pointer rounded border-none bg-transparent p-1 text-muted transition-colors hover:bg-hover hover:text-fg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <X className="icon-lg" />
               </button>
@@ -118,7 +118,7 @@ export function ConfirmDialog({
         <div className="flex justify-end gap-3 w-full">
           <button
             type="button"
-            className="px-4 py-2 bg-transparent border border-border rounded-control text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="px-4 py-2 bg-transparent border border-border rounded-control text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
             onClick={onCancel}
           >
             {effectiveCancelLabel}
@@ -126,7 +126,7 @@ export function ConfirmDialog({
           <button
             type="button"
             className={cn(
-              "px-4 py-2 border-none rounded-control text-on-accent text-[13px] font-medium cursor-pointer transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+              "px-4 py-2 border-none rounded-control text-on-accent text-[13px] font-medium cursor-pointer transition-all hover:brightness-110 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
               isDestructive ? "bg-destructive" : "bg-accent",
             )}
             onClick={onConfirm}
@@ -183,14 +183,14 @@ export function PromptDialog({
         <div className="flex justify-end gap-3 w-full">
           <button
             type="button"
-            className="px-4 py-2 bg-transparent border border-border rounded-control text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="px-4 py-2 bg-transparent border border-border rounded-control text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
             onClick={onCancel}
           >
             {effectiveCancelLabel}
           </button>
           <button
             type="button"
-            className="px-4 py-2 bg-accent border-none rounded-control text-on-accent text-[13px] font-medium cursor-pointer transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="px-4 py-2 bg-accent border-none rounded-control text-on-accent text-[13px] font-medium cursor-pointer transition-all hover:brightness-110 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
             onClick={handleSubmit}
           >
             {effectiveConfirmLabel}
@@ -205,7 +205,7 @@ export function PromptDialog({
       <input
         key={`${isOpen}-${defaultValue}`}
         id={inputId}
-        className="w-full p-2.5 bg-input border border-border rounded-control text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+        className="w-full p-2.5 bg-input border border-border rounded-control text-sm outline-hidden transition-colors focus:border-accent focus:ring-2 focus:ring-ring"
         defaultValue={defaultValue}
         placeholder={placeholder}
         autoFocus

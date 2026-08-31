@@ -121,7 +121,7 @@ export default function ChapterInspectorView({ nodeId, nodeName }: ChapterInspec
       </div>
 
       <div className="flex flex-col gap-4 p-4">
-        <div className="flex items-center gap-2 border-b border-border/40 pb-3">
+        <div className="flex items-center gap-2 border-b border-border pb-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/20">
             <span className="text-xs font-bold text-accent">CH</span>
           </div>

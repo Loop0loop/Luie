@@ -179,7 +179,7 @@ export function EntityManagerShell({
 
           <PanelResizeHandle
             {...resizeHandleProps}
-            className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative"
+            className="w-1 shrink-0 bg-border hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize z-10 relative"
           />
 
           <Panel id="main" minSize={toPercentSize(20)}>

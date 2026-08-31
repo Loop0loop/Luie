@@ -221,7 +221,7 @@ export function CanvasMarkdownEditor({
             <Strikethrough className="h-4 w-4" />
           </button>
 
-          <div className="w-[1px] h-3.5 bg-border/80 mx-0.5" />
+          <div className="w-[1px] h-3.5 bg-border mx-0.5" />
 
           <button
             type="button"
@@ -238,7 +238,7 @@ export function CanvasMarkdownEditor({
       )}
 
       {editor && (
-        <div className="sticky top-0 z-20 w-full bg-panel border-b border-border/40">
+        <div className="sticky top-0 z-20 w-full bg-panel border-b border-border">
           <EditorToolbar
             editor={editor}
             hideCanvasToggle={true}

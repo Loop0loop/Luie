@@ -239,7 +239,7 @@ export default function GraphSurface() {
         <button
           type="button"
           onClick={() => setIsGuideModalOpen(true)}
-          className="h-9 w-9 rounded-full bg-panel hover:bg-panel border border-border/40 hover:border-border/80 flex items-center justify-center text-muted hover:text-fg shadow-panel transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="h-9 w-9 rounded-full bg-panel hover:bg-panel border border-border hover:border-border-active flex items-center justify-center text-muted hover:text-fg shadow-panel transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
           title={t("canvas.graph.legend.open", "그래프 범례 보기")}
           aria-label={t("canvas.graph.legend.open", "그래프 범례 보기")}
         >

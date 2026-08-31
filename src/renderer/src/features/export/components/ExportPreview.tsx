@@ -61,7 +61,7 @@ export function ExportPreview({
                     }}
                 >
                     <div
-                        className="w-full h-full whitespace-pre-wrap outline-none"
+                        className="w-full h-full whitespace-pre-wrap outline-hidden"
                         style={{
                             color: "#1f1f1f",
                             fontFamily: fontFamily.includes("Batang") ? "Batang, serif" : fontFamily,

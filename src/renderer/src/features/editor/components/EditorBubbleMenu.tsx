@@ -65,7 +65,7 @@ export default function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
     >
       <button
         onClick={() => editor.chain().focus().toggleBold().run()}
-        className={`rounded p-1.5 transition-colors hover:bg-element-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+        className={`rounded p-1.5 transition-colors hover:bg-element-hover focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring ${
           editor.isActive("bold") ? "bg-active text-fg" : "text-muted"
         }`}
         title={t("editor.bubbleMenu.bold")}
@@ -77,7 +77,7 @@ export default function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
 
       <button
         onClick={() => editor.chain().focus().toggleItalic().run()}
-        className={`rounded p-1.5 transition-colors hover:bg-element-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+        className={`rounded p-1.5 transition-colors hover:bg-element-hover focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring ${
           editor.isActive("italic") ? "bg-active text-fg" : "text-muted"
         }`}
         title={t("editor.bubbleMenu.italic")}
@@ -89,7 +89,7 @@ export default function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
 
       <button
         onClick={() => editor.chain().focus().toggleUnderline().run()}
-        className={`rounded p-1.5 transition-colors hover:bg-element-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+        className={`rounded p-1.5 transition-colors hover:bg-element-hover focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring ${
           editor.isActive("underline") ? "bg-active text-fg" : "text-muted"
         }`}
         title={t("editor.bubbleMenu.underline")}
@@ -101,7 +101,7 @@ export default function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
 
       <button
         onClick={() => editor.chain().focus().toggleStrike().run()}
-        className={`rounded p-1.5 transition-colors hover:bg-element-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+        className={`rounded p-1.5 transition-colors hover:bg-element-hover focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring ${
           editor.isActive("strike") ? "bg-active text-fg" : "text-muted"
         }`}
         title={t("editor.bubbleMenu.strikethrough")}
@@ -113,7 +113,7 @@ export default function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
 
       <button
         onClick={() => editor.chain().focus().toggleHighlight().run()}
-        className={`rounded p-1.5 transition-colors hover:bg-element-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+        className={`rounded p-1.5 transition-colors hover:bg-element-hover focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring ${
           editor.isActive("highlight") ? "bg-active text-fg" : "text-muted"
         }`}
         title={t("editor.bubbleMenu.highlight")}
@@ -137,7 +137,7 @@ export default function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
 
       <button
         onClick={handleDialogue}
-        className="rounded p-1.5 text-muted transition-colors hover:bg-element-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="rounded p-1.5 text-muted transition-colors hover:bg-element-hover focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
         title={t("editor.bubbleMenu.quote")}
         aria-label={t("editor.bubbleMenu.quote")}
       >
@@ -146,7 +146,7 @@ export default function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
 
       <button
         onClick={handleAddTerm}
-        className="rounded p-1.5 text-muted transition-colors hover:bg-element-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="rounded p-1.5 text-muted transition-colors hover:bg-element-hover focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
         title={t("editor.bubbleMenu.addTerm")}
         aria-label={t("editor.bubbleMenu.addTerm")}
       >

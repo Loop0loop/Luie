@@ -76,7 +76,7 @@ export default function SidebarWorldList({
 
   return (
     <div className="flex flex-col h-full bg-sidebar/50">
-      <div className="flex flex-col gap-1 border-b border-border/20 p-2">
+      <div className="flex flex-col gap-1 border-b border-border p-2">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-muted uppercase tracking-wider">
             {t(
@@ -175,7 +175,7 @@ function SidebarTermItem({
 }) {
   return (
     <div
-      className="px-3 py-2 bg-sidebar-surface border border-border/50 rounded cursor-pointer hover:border-accent/50 hover:bg-accent/5 transition-colors flex flex-col gap-0.5"
+      className="px-3 py-2 bg-sidebar-surface border border-border rounded cursor-pointer hover:border-accent/50 hover:bg-accent/5 transition-colors flex flex-col gap-0.5"
       onClick={() => onSelect(term.id)}
     >
       <div className="font-medium text-sm truncate">{term.term}</div>

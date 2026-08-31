@@ -220,7 +220,7 @@ export function AIPanel({ onMenuToggle, onClose }: AIPanelProps) {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask AI a task, @ for context"
-            className="w-full bg-transparent px-1 text-xs leading-none text-fg placeholder:text-muted focus:outline-none"
+            className="w-full bg-transparent px-1 text-xs leading-none text-fg placeholder:text-muted focus:outline-hidden"
           />
 
           <div className="flex items-center gap-1.5 shrink-0">

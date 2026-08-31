@@ -62,7 +62,7 @@ export function BinderSidebarPanelBody(props: {
               type="button"
               onClick={props.onTogglePinned}
               disabled={props.pinLocked}
-              className="flex size-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="flex size-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-muted focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
               title={props.isPinned ? "Unpin" : "Pin"}
               aria-label={props.isPinned ? "Unpin" : "Pin"}
             >
@@ -71,7 +71,7 @@ export function BinderSidebarPanelBody(props: {
             <button
               type="button"
               onClick={props.onClose}
-              className="flex size-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="flex size-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
               title={props.t("sidebar.toggle.close")}
               aria-label={props.t("sidebar.toggle.close")}
             >
@@ -84,7 +84,7 @@ export function BinderSidebarPanelBody(props: {
       {props.activeTab === "snapshot" && (
         <button
           onClick={props.onBackToSnapshotList}
-          className="absolute left-3 top-14 z-50 flex size-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="absolute left-3 top-14 z-50 flex size-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
           title={props.t("back")}
           aria-label={props.t("back")}
         >

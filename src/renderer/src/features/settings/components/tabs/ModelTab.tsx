@@ -202,7 +202,7 @@ export function ModelTab({
         <button
           type="button"
           onClick={() => setShowAdvanced((v) => !v)}
-          className="flex w-full items-center justify-between gap-3 rounded-control border border-border bg-surface px-3 py-2.5 text-left transition-colors hover:bg-surface-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="flex w-full items-center justify-between gap-3 rounded-control border border-border bg-surface px-3 py-2.5 text-left transition-colors hover:bg-surface-hover focus:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
           aria-expanded={showAdvanced}
         >
           <span className="min-w-0">
@@ -302,7 +302,7 @@ function PathCard({
           <button
             type="button"
             onClick={onActivate}
-            className="shrink-0 rounded-control border border-border bg-panel px-2.5 py-1 text-[11px] font-medium text-fg-secondary hover:border-accent hover:text-accent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="shrink-0 rounded-control border border-border bg-panel px-2.5 py-1 text-[11px] font-medium text-fg-secondary hover:border-accent hover:text-accent transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
           >
             {activateLabel}
           </button>

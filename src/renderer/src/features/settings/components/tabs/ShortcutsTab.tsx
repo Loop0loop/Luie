@@ -107,7 +107,7 @@ const ShortcutRow = memo(function ShortcutRow({
             disabled={disabled}
             onClick={() => onRecordStart(actionId)}
             aria-label={label}
-            className={`min-w-[8.5rem] rounded-control border px-3 py-1.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+            className={`min-w-[8.5rem] rounded-control border px-3 py-1.5 text-sm transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-ring ${
               isRecording
                 ? "border-accent bg-accent/10 text-accent animate-pulse"
                 : value
@@ -142,7 +142,7 @@ const ShortcutRow = memo(function ShortcutRow({
               }}
               aria-label={t("settings.shortcuts.clear")}
               title={t("settings.shortcuts.clear")}
-              className="p-1 text-subtle hover:text-danger rounded-control transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50"
+              className="p-1 text-subtle hover:text-danger rounded-control transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -268,7 +268,7 @@ export const ShortcutsTab = memo(function ShortcutsTab({
         return (
           actions.length > 0 && (
             <div key={groupKey} className="space-y-3">
-              <div className="flex items-center gap-2 text-muted pb-1 border-b border-border/50">
+              <div className="flex items-center gap-2 text-muted pb-1 border-b border-border">
                 <Icon className="w-4 h-4" />
                 <h4 className="text-sm font-semibold uppercase tracking-wider">
                   {getShortcutGroupLabel(groupKey)}

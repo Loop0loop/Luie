@@ -27,7 +27,7 @@ export function NarrativeSummaryStatusPanel({
   const byTypeEntries = Object.entries(status?.byType ?? {});
 
   return (
-    <div className="rounded-panel border border-border/30 bg-surface/40 dark:bg-surface/20 backdrop-blur-xl px-3.5 py-2.5 text-xs shadow-lg transition-[box-shadow,colors] duration-300 hover:shadow-xl">
+    <div className="rounded-panel border border-border bg-surface/40 dark:bg-surface/20 backdrop-blur-xl px-3.5 py-2.5 text-xs shadow-lg transition-[box-shadow,colors] duration-300 hover:shadow-xl">
       <button
         type="button"
         onClick={onToggle}
@@ -58,7 +58,7 @@ export function NarrativeSummaryStatusPanel({
             <>
               <div className="flex flex-wrap gap-x-2 gap-y-1.5 text-muted font-medium select-none">
                 <span className="bg-element text-fg px-2.5 py-0.5 rounded-full text-[9px]">{t("analysis.review.summary.allCount", { count: status.totalCount })}</span>
-                <span className="bg-surface text-muted px-2.5 py-0.5 rounded-full text-[9px] border border-border/30">{t("analysis.review.summary.staleCount", { count: status.staleCount })}</span>
+                <span className="bg-surface text-muted px-2.5 py-0.5 rounded-full text-[9px] border border-border">{t("analysis.review.summary.staleCount", { count: status.staleCount })}</span>
                 {byTypeEntries.map(([type, count]) => (
                   <span key={type} className="bg-element text-fg px-2.5 py-0.5 rounded-full text-[9px]">
                     {formatSummaryType(type)} {count}
@@ -69,7 +69,7 @@ export function NarrativeSummaryStatusPanel({
                 {summaries.map((summary) => (
                   <div
                     key={summary.id}
-                    className="rounded-panel border border-border/20 bg-element/40 p-3 transition-colors duration-200 hover:bg-element-hover"
+                    className="rounded-panel border border-border bg-element/40 p-3 transition-colors duration-200 hover:bg-element-hover"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -84,8 +84,8 @@ export function NarrativeSummaryStatusPanel({
                       <span
                         className={`shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded border ${
                           summary.isStale
-                            ? "bg-surface text-muted border-border/40"
-                            : "bg-element text-fg border-border/30"
+                            ? "bg-surface text-muted border-border"
+                            : "bg-element text-fg border-border"
                         }`}
                       >
                         {summary.isStale ? "stale" : "fresh"}
@@ -96,7 +96,7 @@ export function NarrativeSummaryStatusPanel({
                       <span>{t("analysis.review.summary.confidence", { count: summary.confidence })}</span>
                       <span>{summary.status}</span>
                     </div>
-                    <div className="mt-2 text-[10px] leading-relaxed text-fg/70 border-t border-border/20 pt-2 font-normal">
+                    <div className="mt-2 text-[10px] leading-relaxed text-fg/70 border-t border-border pt-2 font-normal">
                       {summary.summary}
                     </div>
                   </div>

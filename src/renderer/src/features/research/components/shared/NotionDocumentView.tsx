@@ -87,12 +87,12 @@ export default function NotionDocumentView({
         {header}
         
         {/* Notion Style Properties Table */}
-        <div className="flex flex-col rounded-panel border border-border/60 bg-surface/40 p-2 shadow-2xs">
+        <div className="flex flex-col rounded-panel border border-border bg-surface/40 p-2 shadow-2xs">
           {properties.map((row) => (
             <PropertyRow key={row.label} label={row.label} readonlyValue={row.readonlyValue}>
               {row.onSave ? (
                 <BufferedInput
-                  className="w-full bg-transparent border-none p-0 text-xs text-fg focus:outline-none placeholder:text-subtle/50"
+                  className="w-full bg-transparent border-none p-0 text-xs text-fg focus:outline-hidden placeholder:text-subtle/50"
                   value={row.value ?? ""}
                   placeholder={row.placeholder ?? "비어 있음"}
                   onSave={row.onSave}
@@ -125,7 +125,7 @@ function PropertyRow({
   readonlyValue?: string;
 }) {
   return (
-    <div className="grid grid-cols-[110px_1fr] items-center gap-2 px-2.5 py-1.5 rounded-control transition-colors hover:bg-surface-hover/80 border-b border-border/20 last:border-b-0">
+    <div className="grid grid-cols-[110px_1fr] items-center gap-2 px-2.5 py-1.5 rounded-control transition-colors hover:bg-surface-hover/80 border-b border-border last:border-b-0">
       <span className="text-xs font-medium text-muted truncate select-none">{label}</span>
       <div className="min-w-0 flex items-center">
         {readonlyValue !== undefined ? (
@@ -217,7 +217,7 @@ function MarkdownDocumentEditor({
       Markdown.configure({ html: false }),
     ],
     content: initialMarkdown,
-    editorProps: { attributes: { class: "ProseMirror focus:outline-none" } },
+    editorProps: { attributes: { class: "ProseMirror focus:outline-hidden" } },
     onUpdate: ({ editor }) => {
       const markdown =
         (editor.storage as MarkdownStorage).markdown?.getMarkdown?.() ??

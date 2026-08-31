@@ -44,7 +44,7 @@ export function CharacterDocumentView({
 
   const pageHeader = (
     <div className="flex items-center gap-3.5 pb-1">
-      <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-panel bg-element text-muted border border-border/70 shadow-2xs">
+      <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-panel bg-element text-muted border border-border shadow-2xs">
         {attrs.generatedImage ? (
           <img src={attrs.generatedImage} alt="" className="h-full w-full object-cover" />
         ) : (
@@ -55,7 +55,7 @@ export function CharacterDocumentView({
         value={attrs.tagline}
         placeholder="이 인물을 한 마디로 표현한다면..."
         onSave={attrs.setTagline}
-        className="flex-1 min-w-0 border-none bg-transparent p-0 text-sm font-medium italic text-fg/80 focus:outline-none placeholder:text-muted/40 font-serif"
+        className="flex-1 min-w-0 border-none bg-transparent p-0 text-sm font-medium italic text-fg/80 focus:outline-hidden placeholder:text-muted/40 font-serif"
       />
     </div>
   );

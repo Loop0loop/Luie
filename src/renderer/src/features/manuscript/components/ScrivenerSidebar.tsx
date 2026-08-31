@@ -117,10 +117,10 @@ export default function ScrivenerSidebar({
           isOpen={scrivenerSections.scrap}
           onToggle={() => toggleSection("scrap")}
         >
-          <div className="max-h-80 border-b border-border/10">
+          <div className="max-h-80 border-b border-border">
             <SidebarWorldList mode="scrap" />
           </div>
-          <div className="max-h-80 border-b border-border/10">
+          <div className="max-h-80 border-b border-border">
             <SidebarMemoList />
           </div>
         </CollapsibleSection>
@@ -131,7 +131,7 @@ export default function ScrivenerSidebar({
           isOpen={scrivenerSections.snapshots}
           onToggle={() => toggleSection("snapshots")}
         >
-          <div className="h-64 border-b border-border/10">
+          <div className="h-64 border-b border-border">
             {activeChapterId ? (
               <Suspense
                 fallback={
@@ -193,7 +193,7 @@ function CollapsibleSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col border-b border-border/20">
+    <div className="flex flex-col border-b border-border">
       <div
         className="flex items-center px-1 py-1 cursor-pointer hover:bg-white/5 transition-colors group"
         onClick={onToggle}

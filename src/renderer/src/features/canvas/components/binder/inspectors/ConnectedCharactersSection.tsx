@@ -28,7 +28,7 @@ export function ConnectedCharactersSection({
           {characters.map((char) => (
             <span
               key={char.id}
-              className="rounded border border-border/40 bg-surface px-2 py-0.5 text-xs text-fg/80"
+              className="rounded border border-border bg-surface px-2 py-0.5 text-xs text-fg/80"
             >
               {char.name}
             </span>

@@ -71,7 +71,7 @@ function HeroImage({
         onClick={onGenerate}
         className={cn(
           "w-full aspect-video flex flex-col items-center justify-center gap-4 transition-colors",
-          "border-b border-border/40",
+          "border-b border-border",
           isGenerating
             ? "cursor-not-allowed"
             : "hover:bg-surface-hover cursor-pointer group/cta",
@@ -101,7 +101,7 @@ function HeroImage({
   }
 
   return (
-    <div className="w-full aspect-video bg-surface-hover flex flex-col items-center justify-center gap-3 border-b border-border/40">
+    <div className="w-full aspect-video bg-surface-hover flex flex-col items-center justify-center gap-3 border-b border-border">
       <ImageOff size={24} className="text-muted/40" />
       <button
         type="button"
@@ -171,7 +171,7 @@ type StatsCardProps = {
 function StatsCard({ axes, color, isAnalyzing, error, onAnalyze, onAxesChange }: StatsCardProps) {
   return (
     <div className="rounded-panel border border-border bg-surface overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/50">
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
         <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">
           캐릭터 스탯
         </span>
@@ -182,8 +182,8 @@ function StatsCard({ axes, color, isAnalyzing, error, onAnalyze, onAxesChange }:
           className={cn(
             "flex items-center gap-1.5 px-3 py-1.5 rounded-panel text-[12px] font-medium transition-all border",
             isAnalyzing
-              ? "border-border/30 text-muted/40 cursor-not-allowed"
-              : "border-border/60 text-muted hover:border-accent/60 hover:text-accent hover:bg-accent/5 cursor-pointer",
+              ? "border-border text-muted/40 cursor-not-allowed"
+              : "border-border text-muted hover:border-accent/60 hover:text-accent hover:bg-accent/5 cursor-pointer",
           )}
         >
           {isAnalyzing ? (
@@ -228,7 +228,7 @@ function ColorTheme({ value, onChange }: ColorThemeProps) {
         className="w-5 h-5 rounded-full shrink-0 ring-2 ring-offset-2 ring-offset-surface"
         style={{ backgroundColor: value, outlineColor: value }}
       />
-      <div className="w-px h-4 bg-border/50 shrink-0" />
+      <div className="w-px h-4 bg-border shrink-0" />
       <div className="flex items-center gap-2 flex-wrap">
         {CHARACTER_COLOR_PRESETS.map((preset) => (
           <button
@@ -244,7 +244,7 @@ function ColorTheme({ value, onChange }: ColorThemeProps) {
         ))}
         <label
           title="커스텀 색상"
-          className="relative w-4 h-4 rounded-full border-2 border-dashed border-border/60 cursor-pointer hover:border-accent/60 transition-colors flex items-center justify-center overflow-hidden"
+          className="relative w-4 h-4 rounded-full border-2 border-dashed border-border cursor-pointer hover:border-accent/60 transition-colors flex items-center justify-center overflow-hidden"
         >
           <input
             type="color"

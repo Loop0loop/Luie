@@ -57,7 +57,7 @@ export function CompactDropdown<T extends string | number>({
     <div className={cn("relative", className)} ref={ref}>
       <button
         type="button"
-        className="flex h-8 w-full items-center gap-1 rounded-control border border-border/70 bg-app px-2 text-xs text-fg transition-colors hover:bg-hover"
+        className="flex h-8 w-full items-center gap-1 rounded-control border border-border bg-app px-2 text-xs text-fg transition-colors hover:bg-hover"
         aria-label={ariaLabel}
         onClick={() => setOpen((v) => !v)}
       >
@@ -212,10 +212,10 @@ export function ColorPickerMenu({
                   aria-label={colorLabel}
                   aria-pressed={isSelected}
                   className={cn(
-                    "h-8 w-8 rounded-control border transition-[filter,border-color,box-shadow] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    "h-8 w-8 rounded-control border transition-[filter,border-color,box-shadow] hover:brightness-110 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
                     isSelected
                       ? "border-accent shadow-[inset_0_0_0_1px_var(--accent-bg)]"
-                      : "border-border/60",
+                      : "border-border",
                   )}
                   style={{ backgroundColor: hex }}
                   onClick={() => {
@@ -262,12 +262,12 @@ export function ColorPickerMenu({
               onPointerUp={commitCustomColor}
               onKeyUp={commitCustomColor}
             />
-            <div className="mt-3 flex h-8 items-center gap-2 rounded-control border border-border/70 bg-app px-2.5">
+            <div className="mt-3 flex h-8 items-center gap-2 rounded-control border border-border bg-app px-2.5">
               <span className="text-[10px] font-medium text-muted">HEX</span>
               <input
                 value={hexInput}
                 maxLength={7}
-                className="min-w-0 flex-1 bg-transparent text-xs text-fg outline-none"
+                className="min-w-0 flex-1 bg-transparent text-xs text-fg outline-hidden"
                 onChange={(event) => setHexInput(event.currentTarget.value)}
                 onBlur={() => {
                   if (isHexColor(hexInput)) updateCustomColor(hexToHsv(hexInput), true);

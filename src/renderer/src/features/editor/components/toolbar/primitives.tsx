@@ -35,4 +35,4 @@ export const ToolbarButton = ({
   </button>
 );
 
-export const Divider = () => <div className="mx-1 h-5 w-px shrink-0 bg-border/70" />;
+export const Divider = () => <div className="mx-1 h-5 w-px shrink-0 bg-border" />;

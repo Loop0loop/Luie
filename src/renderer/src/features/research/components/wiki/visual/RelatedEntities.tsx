@@ -28,7 +28,7 @@ function RelatedColumn({ title, emptyLabel, items }: RelatedColumnProps) {
             return (
               <li
                 key={`${item.kind}-${item.name}`}
-                className="rounded-panel border border-border/50 bg-surface-hover/50 px-3 py-2 flex items-center gap-2.5 hover:border-border transition-colors"
+                className="rounded-panel border border-border bg-surface-hover/50 px-3 py-2 flex items-center gap-2.5 hover:border-border transition-colors"
               >
                 <div
                   className="shrink-0 w-7 h-7 rounded-control flex items-center justify-center"
@@ -70,7 +70,7 @@ export function RelatedEntities({ related }: RelatedEntitiesProps) {
 
   return (
     <section className="rounded-panel border border-border bg-surface overflow-hidden">
-      <header className="px-5 py-3.5 border-b border-border/50 flex items-center gap-2">
+      <header className="px-5 py-3.5 border-b border-border flex items-center gap-2">
         <Link2 size={12} className="text-muted" />
         <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">
           {t("entityVisual.related.title")}

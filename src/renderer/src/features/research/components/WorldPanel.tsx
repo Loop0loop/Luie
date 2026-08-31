@@ -49,7 +49,7 @@ export default function WorldPanel({ onClose }: WorldPanelProps) {
           <button
             type="button"
             onClick={onClose}
-            className="ml-auto flex size-8 shrink-0 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="ml-auto flex size-8 shrink-0 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
             aria-label={t("sidebar.toggle.close")}
             title={t("sidebar.toggle.close")}
           >

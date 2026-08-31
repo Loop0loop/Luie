@@ -152,7 +152,7 @@ export function ExportSidebar({
                                 <select
                                     value={paperSize}
                                     onChange={(e) => setPaperSize(e.target.value)}
-                                    className="w-full h-9 bg-surface border border-border rounded px-3 text-sm text-fg focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                                    className="w-full h-9 bg-surface border border-border rounded px-3 text-sm text-fg focus:border-accent focus:outline-hidden focus:ring-2 focus:ring-ring"
                                 >
                                     <option value="A4">{t("exportWindow.page.paperOptions.a4")}</option>
                                     <option value="Letter">{t("exportWindow.page.paperOptions.letter")}</option>
@@ -171,7 +171,7 @@ export function ExportSidebar({
                                             type="number"
                                             value={marginTop}
                                             onChange={(e) => setMarginTop(Number(e.target.value))}
-                                            className="w-full h-8 bg-surface border border-border rounded px-2 text-sm text-center text-fg focus:border-accent focus:outline-none"
+                                            className="w-full h-8 bg-surface border border-border rounded px-2 text-sm text-center text-fg focus:border-accent focus:outline-hidden focus:ring-2 focus:ring-ring"
                                         />
                                     </div>
                                     <div className="space-y-1">
@@ -180,7 +180,7 @@ export function ExportSidebar({
                                             type="number"
                                             value={marginBottom}
                                             onChange={(e) => setMarginBottom(Number(e.target.value))}
-                                            className="w-full h-8 bg-surface border border-border rounded px-2 text-sm text-center text-fg focus:border-accent focus:outline-none"
+                                            className="w-full h-8 bg-surface border border-border rounded px-2 text-sm text-center text-fg focus:border-accent focus:outline-hidden focus:ring-2 focus:ring-ring"
                                         />
                                     </div>
                                     <div className="space-y-1">
@@ -189,7 +189,7 @@ export function ExportSidebar({
                                             type="number"
                                             value={marginLeft}
                                             onChange={(e) => setMarginLeft(Number(e.target.value))}
-                                            className="w-full h-8 bg-surface border border-border rounded px-2 text-sm text-center text-fg focus:border-accent focus:outline-none"
+                                            className="w-full h-8 bg-surface border border-border rounded px-2 text-sm text-center text-fg focus:border-accent focus:outline-hidden focus:ring-2 focus:ring-ring"
                                         />
                                     </div>
                                     <div className="space-y-1">
@@ -198,7 +198,7 @@ export function ExportSidebar({
                                             type="number"
                                             value={marginLeft}
                                             onChange={(e) => setMarginLeft(Number(e.target.value))}
-                                            className="w-full h-8 bg-surface border border-border rounded px-2 text-sm text-center text-fg focus:border-accent focus:outline-none"
+                                            className="w-full h-8 bg-surface border border-border rounded px-2 text-sm text-center text-fg focus:border-accent focus:outline-hidden focus:ring-2 focus:ring-ring"
                                         />
                                     </div>
                                 </div>
@@ -223,7 +223,7 @@ export function ExportSidebar({
                                     <select
                                         value={fontFamily}
                                         onChange={(e) => setFontFamily(e.target.value)}
-                                        className="w-full h-9 bg-surface border border-border rounded px-3 text-sm text-fg focus:border-accent focus:outline-none"
+                                        className="w-full h-9 bg-surface border border-border rounded px-3 text-sm text-fg focus:border-accent focus:outline-hidden focus:ring-2 focus:ring-ring"
                                     >
                                         <option value="Batang">{t("exportWindow.typography.fontOptions.batang")}</option>
                                         <option value="Malgun Gothic">{t("exportWindow.typography.fontOptions.malgun")}</option>
@@ -270,7 +270,7 @@ export function ExportSidebar({
                                         type="button"
                                         onClick={() => setNormalizeLineSpacing(!normalizeLineSpacing)}
                                         className={cn(
-                                            "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2",
+                                            "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-surface",
                                             normalizeLineSpacing ? "bg-accent" : "bg-border",
                                         )}
                                         aria-pressed={normalizeLineSpacing}
@@ -304,7 +304,7 @@ export function ExportSidebar({
                                     type="checkbox"
                                     checked={showPageNumbers}
                                     onChange={(e) => setShowPageNumbers(e.target.checked)}
-                                    className="w-4 h-4 rounded border-border bg-surface text-accent focus:ring-accent"
+                                    className="w-4 h-4 rounded border-border bg-surface text-accent focus:ring-ring"
                                 />
                             </div>
                             {showPageNumbers && (
@@ -315,7 +315,7 @@ export function ExportSidebar({
                                         min="1"
                                         value={startPageNumber}
                                         onChange={(e) => setStartPageNumber(Number(e.target.value))}
-                                        className="w-16 h-7 bg-surface border border-border rounded px-2 text-sm text-center text-fg focus:border-accent focus:outline-none"
+                                        className="w-16 h-7 bg-surface border border-border rounded px-2 text-sm text-center text-fg focus:border-accent focus:outline-hidden focus:ring-2 focus:ring-ring"
                                     />
                                 </div>
                             )}

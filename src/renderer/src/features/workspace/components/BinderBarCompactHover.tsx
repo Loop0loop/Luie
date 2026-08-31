@@ -277,7 +277,7 @@ export function BinderBarCompactHover({
             // NOTE: 레일(아이콘)과 콘텐츠(연구/스냅샷 등) 표면 색을 하나로 통일한다.
             // bg-panel(#28282b)을 쓰면 GoogleDocsPanelRail/RightPanel(#212123, bg-sidebar와
             // 동일 값)과 색이 갈라져 보인다.
-            "h-full border-l border-border/40 bg-sidebar overflow-hidden",
+            "h-full border-l border-border bg-sidebar overflow-hidden",
             !isResizing && "transition-[width] duration-150 ease-out",
           )}
           style={{
@@ -338,7 +338,7 @@ export function BinderBarCompactHover({
                 ) : (
                   <>
                     {!hasOwnPanelHeader && (
-                      <div className="shrink-0 h-10 px-3 border-b border-border/50 flex items-center justify-between text-xs font-medium text-fg/80">
+                      <div className="shrink-0 h-10 px-3 border-b border-border flex items-center justify-between text-xs font-medium text-fg/80">
                         <span className="truncate">
                           {tabItems.find((item) => item.tab === activeCompactTab)?.title ?? ""}
                         </span>

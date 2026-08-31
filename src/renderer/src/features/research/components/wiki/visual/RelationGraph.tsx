@@ -69,7 +69,7 @@ export function RelationGraph({ centerName, centerKind, related }: RelationGraph
 
   return (
     <section className="rounded-panel border border-border bg-surface overflow-hidden">
-      <header className="px-5 py-3.5 border-b border-border/50 flex items-center gap-2">
+      <header className="px-5 py-3.5 border-b border-border flex items-center gap-2">
         <Network size={12} className="text-muted" />
         <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">
           {t("entityVisual.graph.title")}

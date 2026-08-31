@@ -248,7 +248,7 @@ function MemoSectionInner({
 
         <PanelResizeHandle
           {...resizeHandleProps}
-          className="w-1 shrink-0 bg-border/40 hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize flex flex-col items-center justify-center -my-4 z-10 relative"
+          className="w-1 shrink-0 bg-border hover:bg-accent focus-visible:bg-accent transition-colors cursor-col-resize flex flex-col items-center justify-center -my-4 z-10 relative"
         ></PanelResizeHandle>
 
         <Panel
@@ -281,13 +281,13 @@ function MemoSectionInner({
               </div>
 
               <input
-                className="px-6 pt-5 pb-3 text-xl font-bold border-none bg-transparent outline-none text-fg placeholder:text-muted"
+                className="px-6 pt-5 pb-3 text-xl font-bold border-none bg-transparent outline-hidden text-fg placeholder:text-muted"
                 value={activeNote.title}
                 onChange={(e) => updateActiveNote({ title: e.target.value })}
                 placeholder={t("memo.placeholder.title")}
               />
               <textarea
-                className="flex-1 px-6 pb-6 border-none bg-transparent resize-none outline-none leading-relaxed text-[15px] text-muted placeholder:text-muted"
+                className="flex-1 px-6 pb-6 border-none bg-transparent resize-none outline-hidden leading-relaxed text-[15px] text-muted placeholder:text-muted"
                 value={activeNote.content}
                 onChange={(e) => updateActiveNote({ content: e.target.value })}
                 placeholder={t("memo.placeholder.body")}

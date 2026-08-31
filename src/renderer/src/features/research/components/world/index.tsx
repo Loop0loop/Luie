@@ -114,8 +114,8 @@ export default function WorldSection({
       )}
 
       {!graphOnly && worldTab !== "graph" && (
-        <div className="flex w-full items-center justify-between shrink-0 select-none border-b border-border/40 bg-sidebar/30 backdrop-blur-xl px-4 py-1.5 text-muted z-20">
-          <div className="flex items-center gap-1 bg-element/80 rounded-panel p-1 border border-border/40">
+        <div className="flex w-full items-center justify-between shrink-0 select-none border-b border-border bg-sidebar/30 backdrop-blur-xl px-4 py-1.5 text-muted z-20">
+          <div className="flex items-center gap-1 bg-element/80 rounded-panel p-1 border border-border">
             {WORLD_TAB_ITEMS.map((item) => (
               <TabButton
                 key={item.key}
@@ -123,7 +123,7 @@ export default function WorldSection({
                 active={worldTab === item.key}
                 onClick={() => setWorldTab(item.key)}
                 className="flex-1 cursor-pointer px-4 py-1 rounded-control text-center text-[11px] font-medium transition-all duration-200 hover:text-fg"
-                activeClassName="bg-sidebar text-fg shadow-sm border border-border/40 font-semibold"
+                activeClassName="bg-sidebar text-fg shadow-sm border border-border font-semibold"
               />
             ))}
           </div>
@@ -167,7 +167,7 @@ export default function WorldSection({
               <li>{t("world.graph.help.step3")}</li>
               <li>{t("world.graph.help.step4")}</li>
             </ul>
-            <div className="mt-4 rounded-control border border-border/70 bg-element px-3 py-2 text-xs text-muted">
+            <div className="mt-4 rounded-control border border-border bg-element px-3 py-2 text-xs text-muted">
               {t("world.graph.help.shortcuts")}
             </div>
           </div>

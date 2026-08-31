@@ -102,10 +102,10 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
         )}
       </div>
 
-      <div className="p-2 w-full bg-panel border-t border-border/50">
+      <div className="p-2 w-full bg-panel border-t border-border">
         {isEditingLabel ? (
           <input
-            className="w-full text-center border-none bg-transparent outline-none font-bold text-sm text-fg p-0"
+            className="w-full text-center border-none bg-transparent outline-hidden font-bold text-sm text-fg p-0"
             value={draft ?? data.label}
             onChange={(e) => setDraft(e.target.value)}
             onBlur={commitLabel}
@@ -147,7 +147,7 @@ export function MindMapBoard() {
 
   return (
     <div
-      className="w-full h-full bg-app overflow-hidden outline-none relative"
+      className="w-full h-full bg-app overflow-hidden outline-hidden relative"
       tabIndex={0}
       onKeyDown={handleKeyDown}
       onDoubleClick={onPaneDoubleClick}

@@ -333,7 +333,7 @@ function CompactContent({
       <button
         type="button"
         onClick={() => setRegionOpen("leftSidebar", true)}
-        className="shrink-0 flex items-center justify-center gap-1.5 h-9 border-t border-border/40 text-[12px] text-muted hover:text-fg hover:bg-surface-hover transition-colors"
+        className="shrink-0 flex items-center justify-center gap-1.5 h-9 border-t border-border text-[12px] text-muted hover:text-fg hover:bg-surface-hover transition-colors"
       >
         <ChevronsRight size={13} />
         <span>{t("sidebar.expand")}</span>
@@ -351,7 +351,7 @@ export function SidebarCompactHover(props: SidebarCompactHoverProps) {
       className="bg-transparent shadow-none"
     >
       <div
-        className="h-full border-r border-border/40 bg-sidebar/75 shadow-lg backdrop-blur-sm"
+        className="h-full border-r border-border bg-sidebar/75 shadow-lg backdrop-blur-sm"
         style={{ width: COMPACT_WIDTH_PX }}
       >
         <CompactContent {...props} />

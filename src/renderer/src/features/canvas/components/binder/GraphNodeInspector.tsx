@@ -29,7 +29,7 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
 
   return (
     <div className="flex h-full flex-col bg-panel overflow-hidden">
-      <div className="flex items-center justify-between px-4.5 py-3.5 border-b border-border/20 bg-element/10 shrink-0">
+      <div className="flex items-center justify-between px-4.5 py-3.5 border-b border-border bg-element/10 shrink-0">
         <div className="flex items-center gap-2">
           <Info className="h-3.5 w-3.5 text-accent" />
           <span className="text-[11px] font-black tracking-widest text-fg uppercase">
@@ -38,7 +38,7 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
         </div>
         <button 
           onClick={() => setFocusId(null)}
-          className="text-[10px] text-muted hover:text-fg font-extrabold tracking-tight bg-element border border-border/40 hover:border-border/80 px-2.5 py-1 rounded-control transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="text-[10px] text-muted hover:text-fg font-extrabold tracking-tight bg-element border border-border hover:border-border-active px-2.5 py-1 rounded-control transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
         >
           {t("canvas.graph.details.deselect", "해제")}
         </button>
@@ -55,7 +55,7 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
             )}
           </div>
           {activeNode.data.description && (
-            <p className="text-[11.5px] leading-relaxed text-muted break-keep bg-element/20 p-3.5 rounded-panel border border-border/25 shadow-inner select-text">
+            <p className="text-[11.5px] leading-relaxed text-muted break-keep bg-element/20 p-3.5 rounded-panel border border-border shadow-inner select-text">
               {activeNode.data.description}
             </p>
           )}
@@ -63,7 +63,7 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
 
         {activeNode.data.relationships && activeNode.data.relationships.length > 0 && (
           <div className="flex flex-col gap-3 pt-0.5">
-            <div className="flex items-center gap-1.5 border-b border-border/15 pb-2">
+            <div className="flex items-center gap-1.5 border-b border-border pb-2">
               <Users className="h-3.5 w-3.5 text-muted" />
               <span className="text-[10px] font-black uppercase tracking-widest text-muted">
                 {t("canvas.graph.details.relationships", "얽힌 인물 관계")}
@@ -73,18 +73,18 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
               {activeNode.data.relationships.map((rel, index) => (
                 <div 
                   key={index} 
-                  className="flex flex-col gap-2 p-3 rounded-panel bg-element/10 border border-border/20 hover:border-border/40 hover:bg-element/20 transition-colors duration-200"
+                  className="flex flex-col gap-2 p-3 rounded-panel bg-element/10 border border-border hover:border-border-active hover:bg-element/20 transition-colors duration-200"
                 >
                   <div className="flex items-center justify-between text-[11px] font-extrabold text-fg">
                     <span className="text-fg">{activeNode.data.label}</span>
-                    <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-panel text-[9.5px] text-muted border border-border/20 shrink-0 font-bold">
+                    <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-panel text-[9.5px] text-muted border border-border shrink-0 font-bold">
                       <span>{rel.type}</span>
                       <ArrowRight className="h-2.5 w-2.5 text-accent/60" />
                     </div>
                     <span className="text-fg">{rel.targetName}</span>
                   </div>
                   {rel.details && (
-                    <span className="text-[9.5px] text-muted pl-2 border-l border-border/20 break-keep font-medium leading-normal">
+                    <span className="text-[9.5px] text-muted pl-2 border-l border-border break-keep font-medium leading-normal">
                       {rel.details}
                     </span>
                   )}
@@ -96,7 +96,7 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
 
         {activeNode.data.relatedChapters && activeNode.data.relatedChapters.length > 0 && (
           <div className="flex flex-col gap-3 pt-0.5">
-            <div className="flex items-center gap-1.5 border-b border-border/15 pb-2">
+            <div className="flex items-center gap-1.5 border-b border-border pb-2">
               <BookOpen className="h-3.5 w-3.5 text-muted" />
               <span className="text-[10px] font-black uppercase tracking-widest text-muted">
                 {t("canvas.graph.details.chapters", "연관 등장 챕터")}
@@ -106,7 +106,7 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
               {activeNode.data.relatedChapters.map((chapter, index) => (
                 <span 
                   key={index}
-                  className="text-[9.5px] font-bold text-fg bg-element/40 border border-border/20 px-2.5 py-1 rounded-full hover:bg-element cursor-default transition-colors duration-200"
+                  className="text-[9.5px] font-bold text-fg bg-element/40 border border-border px-2.5 py-1 rounded-full hover:bg-element cursor-default transition-colors duration-200"
                 >
                   {chapter}
                 </span>
@@ -116,7 +116,7 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
         )}
 
         {activeNode.data.sourceTexts && activeNode.data.sourceTexts.length > 0 && (
-          <div className="flex flex-col gap-3 border-t border-border/20 pt-4 mt-1">
+          <div className="flex flex-col gap-3 border-t border-border pt-4 mt-1">
             <div className="flex items-center gap-1.5 pb-1">
               <Quote className="h-3.5 w-3.5 text-muted" />
               <span className="text-[10px] font-black uppercase tracking-widest text-muted">
@@ -127,7 +127,7 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
               {activeNode.data.sourceTexts.map((text, index) => (
                 <div
                   key={index}
-                  className="relative p-4.5 rounded-panel border border-border/20 bg-element/20 text-fg/90 flex flex-col gap-2 overflow-hidden"
+                  className="relative p-4.5 rounded-panel border border-border bg-element/20 text-fg/90 flex flex-col gap-2 overflow-hidden"
                 >
                   <div className="absolute top-0 left-0 bottom-0 w-1 bg-accent/40" />
                   <p className="text-[10.5px] leading-relaxed italic font-semibold break-keep pl-1.5 select-text relative z-10 text-fg">

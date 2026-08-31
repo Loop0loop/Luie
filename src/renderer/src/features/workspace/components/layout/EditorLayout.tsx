@@ -348,12 +348,12 @@ export default function EditorLayout({
                     style={{ width: maxWidth ?? DEFAULT_EDITOR_MAX_WIDTH, maxWidth: "100%" }}
                   >
                     {activeChapterTitle && (
-                      <h1 className="text-3xl font-bold mb-8 pb-4 border-b border-border/50 text-fg break-all">
+                      <h1 className="text-3xl font-bold mb-8 pb-4 border-b border-border text-fg break-all">
                         {activeChapterTitle}
                       </h1>
                     )}
 
-                    <div className="min-h-[500px] [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[400px] wrap-break-word">
+                    <div className="min-h-[500px] [&_.ProseMirror]:outline-hidden [&_.ProseMirror]:min-h-[400px] wrap-break-word">
                       {children}
                     </div>
                   </div>

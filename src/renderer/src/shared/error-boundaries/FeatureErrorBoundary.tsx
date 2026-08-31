@@ -65,7 +65,7 @@ export class FeatureErrorBoundary extends Component<Props, State> {
       if (fallback) return fallback;
 
       return (
-        <div className="flex flex-col items-center justify-center gap-4 p-8 text-center h-full min-h-[160px] bg-panel rounded-panel border border-border/50">
+        <div className="flex flex-col items-center justify-center gap-4 p-8 text-center h-full min-h-[160px] bg-panel rounded-panel border border-border">
           <div className="flex items-center justify-center w-10 h-10 rounded-full bg-danger/10 text-danger shrink-0">
             <AlertCircle className="w-5 h-5" />
           </div>

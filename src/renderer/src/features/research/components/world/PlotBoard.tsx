@@ -343,7 +343,7 @@ export function PlotBoard() {
     <fieldset
       key={projectScope}
       disabled={editableScope !== projectScope}
-      className="research-surface h-full min-w-0 m-0 p-0 border-0 outline-none flex flex-col overflow-hidden"
+      className="research-surface h-full min-w-0 m-0 p-0 border-0 outline-hidden flex flex-col overflow-hidden"
     >
       <div
         className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar"
@@ -358,7 +358,7 @@ export function PlotBoard() {
               <div className="p-3 flex items-center gap-2 border-b border-border bg-panel/50 rounded-t-xl">
                 <GripVertical className="text-muted cursor-grab hover:text-fg w-4 h-4" />
                 <BufferedInput
-                  className="flex-1 bg-transparent border-none outline-none font-bold text-sm text-fg uppercase tracking-wide"
+                  className="flex-1 bg-transparent border-none outline-hidden font-bold text-sm text-fg uppercase tracking-wide"
                   value={col.title}
                   onSave={(val) => updateColumnTitle(col.id, val)}
                 />
@@ -383,7 +383,7 @@ export function PlotBoard() {
                     className="bg-panel border border-border rounded-panel p-3 shadow-sm relative group hover:border-active transition-all hover:shadow-md"
                   >
                     <BufferedTextArea
-                      className="w-full bg-transparent border-none resize-none text-sm text-fg leading-relaxed outline-none min-h-[60px]"
+                      className="w-full bg-transparent border-none resize-none text-sm text-fg leading-relaxed outline-hidden min-h-[60px]"
                       value={card.content}
                       onSave={(val) => updateCard(col.id, card.id, val)}
                       rows={3}

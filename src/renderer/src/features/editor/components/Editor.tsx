@@ -188,7 +188,7 @@ function Editor({
       },
       editorProps: {
         attributes: {
-          class: "tiptap outline-none",
+          class: "tiptap outline-hidden",
           style: `font-family: ${fontFamilyCss}; font-size: ${fontSize}px; line-height: ${lineHeight};`,
         },
         handleClick: handleSmartLinkClick,
@@ -395,7 +395,7 @@ function Editor({
             <input
               type="text"
               className={cn(
-                "w-full border-none bg-transparent pb-4 text-2xl font-bold text-fg outline-none shrink-0 placeholder:text-muted",
+                "w-full border-none bg-transparent pb-4 text-2xl font-bold text-fg outline-hidden shrink-0 placeholder:text-muted",
                 isMobileView && "px-6",
                 readOnly && "pointer-events-none opacity-80",
               )}
@@ -428,7 +428,7 @@ function Editor({
             <EditorContent
               editor={editor}
               className={cn(
-                "tiptap w-full outline-none",
+                "tiptap w-full outline-hidden",
                 scrollable || isMobileView
                   ? "flex h-full flex-1 flex-col"
                   : "block h-auto",

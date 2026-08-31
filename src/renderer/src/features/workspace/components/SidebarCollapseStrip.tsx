@@ -55,7 +55,7 @@ export function SidebarCollapseStrip({
     <>
       <div
         style={{ width: stripWidth }}
-        className={`flex-shrink-0 h-full flex flex-col bg-sidebar border-r border-border/50 z-10 ${
+        className={`flex-shrink-0 h-full flex flex-col bg-sidebar border-r border-border z-10 ${
           enableAnimations
             ? "transition-[width] duration-150 motion-reduce:transition-none"
             : "transition-none"
@@ -86,7 +86,7 @@ export function SidebarCollapseStrip({
           type="button"
           onClick={handleStripClick}
           title={isCollapsed ? t("sidebar.expand") : t("mainLayout.tooltip.sidebarCollapse")}
-          className="shrink-0 h-9 flex flex-col items-center justify-center gap-0.5 border-t border-border/40 hover:bg-accent/15 transition-colors cursor-pointer group"
+          className="shrink-0 h-9 flex flex-col items-center justify-center gap-0.5 border-t border-border hover:bg-accent/15 transition-colors cursor-pointer group"
         >
           {isCollapsed ? (
             <>
@@ -113,7 +113,7 @@ export function SidebarCollapseStrip({
       <div
         onMouseEnter={() => isCollapsed && setIsPeeking(true)}
         onMouseLeave={closePeek}
-        className={`absolute top-0 bottom-0 z-20 bg-sidebar/95 border-r border-border/30 shadow-panel overflow-hidden flex flex-col ${
+        className={`absolute top-0 bottom-0 z-20 bg-sidebar/95 border-r border-border shadow-panel overflow-hidden flex flex-col ${
           enableAnimations
             ? "transition-transform duration-150 ease-out motion-reduce:transition-none"
             : "transition-none"
@@ -136,7 +136,7 @@ export function SidebarCollapseStrip({
           type="button"
           onClick={handleExpandFromPeek}
           style={{ width: PEEK_WIDTH }}
-          className="shrink-0 flex items-center justify-center gap-1.5 h-8 border-t border-border/50 text-xs text-muted hover:text-fg hover:bg-surface-hover transition-colors"
+          className="shrink-0 flex items-center justify-center gap-1.5 h-8 border-t border-border text-xs text-muted hover:text-fg hover:bg-surface-hover transition-colors"
         >
           <ChevronsRight size={11} />
           {t("sidebar.expand")}

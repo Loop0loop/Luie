@@ -50,7 +50,7 @@ export function MemoryEvalReportPanel({
 }: MemoryEvalReportPanelProps) {
   const { t } = useTranslation();
   return (
-    <div className="rounded-panel border border-border/40 bg-surface/40 dark:bg-surface/20 backdrop-blur-md px-3.5 py-2.5 text-xs shadow-sm">
+    <div className="rounded-panel border border-border bg-surface/40 dark:bg-surface/20 backdrop-blur-md px-3.5 py-2.5 text-xs shadow-sm">
       <div className="flex items-center justify-between gap-2">
         <button
           type="button"
@@ -65,7 +65,7 @@ export function MemoryEvalReportPanel({
           type="button"
           onClick={onRun}
           disabled={loading}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/40 text-muted hover:text-fg hover:bg-surface-hover active:scale-95 transition-[colors,transform] duration-150 disabled:opacity-50"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted hover:text-fg hover:bg-surface-hover active:scale-95 transition-[colors,transform] duration-150 disabled:opacity-50"
           title={t("analysis.review.evaluation.runEval")}
           aria-label={t("analysis.review.evaluation.runEval")}
         >
@@ -75,7 +75,7 @@ export function MemoryEvalReportPanel({
           type="button"
           onClick={onRunIntentCalibration}
           disabled={loading}
-          className="inline-flex h-7 items-center justify-center rounded-control border border-border/40 px-2 text-[11px] text-muted hover:text-fg hover:bg-surface-hover active:scale-95 transition-[colors,transform] duration-150 disabled:opacity-50"
+          className="inline-flex h-7 items-center justify-center rounded-control border border-border px-2 text-[11px] text-muted hover:text-fg hover:bg-surface-hover active:scale-95 transition-[colors,transform] duration-150 disabled:opacity-50"
           title={t("analysis.review.evaluation.intentCalibration")}
           aria-label={t("analysis.review.evaluation.intentCalibration")}
         >
@@ -85,7 +85,7 @@ export function MemoryEvalReportPanel({
           type="button"
           onClick={onRunEpisodeCalibration}
           disabled={loading}
-          className="inline-flex h-7 items-center justify-center rounded-control border border-border/40 px-2 text-[11px] text-muted hover:text-fg hover:bg-surface-hover active:scale-95 transition-[colors,transform] duration-150 disabled:opacity-50"
+          className="inline-flex h-7 items-center justify-center rounded-control border border-border px-2 text-[11px] text-muted hover:text-fg hover:bg-surface-hover active:scale-95 transition-[colors,transform] duration-150 disabled:opacity-50"
           title={t("analysis.review.evaluation.episodeCalibration")}
           aria-label={t("analysis.review.evaluation.episodeCalibration")}
         >
@@ -114,9 +114,9 @@ export function MemoryEvalReportPanel({
                   <div className="text-fg">{report.totalP0FailureCount}</div>
                 </div>
               </div>
-              <div className="max-h-28 overflow-auto rounded-control border border-border/40 bg-element/40">
+              <div className="max-h-28 overflow-auto rounded-control border border-border bg-element/40">
                 {report.results.map((item) => (
-                  <div key={item.caseId} className="border-b border-border/60 px-2 py-1 last:border-b-0">
+                  <div key={item.caseId} className="border-b border-border px-2 py-1 last:border-b-0">
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate">{item.caseId}</span>
                       <span className="truncate font-mono text-[11px] text-muted">{item.caseId}</span>
@@ -126,7 +126,7 @@ export function MemoryEvalReportPanel({
                           type="button"
                           onClick={() => onRecordAnswerWrong(item)}
                           disabled={pendingFeedbackKey !== null}
-                          className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-border/40 text-muted hover:border-danger/30 hover:bg-danger/10 disabled:opacity-50 transition-[colors,transform] duration-150 active:scale-90"
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-border text-muted hover:border-danger/30 hover:bg-danger/10 disabled:opacity-50 transition-[colors,transform] duration-150 active:scale-90"
                           title={t("analysis.review.evaluation.answerWrong")}
                           aria-label={t("analysis.review.evaluation.answerWrong")}
                         >
@@ -136,7 +136,7 @@ export function MemoryEvalReportPanel({
                           type="button"
                           onClick={() => onRecordEvidenceHelpful(item)}
                           disabled={pendingFeedbackKey !== null}
-                          className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-border/40 text-muted hover:border-fg hover:bg-surface-hover disabled:opacity-50 transition-[colors,transform] duration-150 active:scale-90"
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-border text-muted hover:border-fg hover:bg-surface-hover disabled:opacity-50 transition-[colors,transform] duration-150 active:scale-90"
                           title={t("analysis.review.evaluation.evidenceHelpful")}
                           aria-label={t("analysis.review.evaluation.evidenceHelpful")}
                         >
@@ -155,7 +155,7 @@ export function MemoryEvalReportPanel({
             <div className="text-muted">{t("analysis.review.evaluation.empty")}</div>
           )}
           {intentCalibrationReport && (
-            <div className="rounded-control border border-border/40 bg-element/40 px-2 py-1.5">
+            <div className="rounded-control border border-border bg-element/40 px-2 py-1.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="font-medium">LLM intent calibration</span>
                 <span>
@@ -175,7 +175,7 @@ export function MemoryEvalReportPanel({
             </div>
           )}
           {episodeCalibrationReport && (
-            <div className="rounded-control border border-border/40 bg-element/40 px-2 py-1.5">
+            <div className="rounded-control border border-border bg-element/40 px-2 py-1.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="font-medium">LLM episode calibration</span>
                 <span>

@@ -55,7 +55,7 @@ export function WikiContentPanel({
   return (
     <div className="flex flex-col gap-9">
       {sections.length > 0 && (
-        <nav className="w-full flex flex-col gap-2 rounded-panel border border-border/60 bg-surface/50 p-3 shadow-xs">
+        <nav className="w-full flex flex-col gap-2 rounded-panel border border-border bg-surface/50 p-3 shadow-xs">
           <div className="flex items-center justify-between">
             <p className="text-[11px] font-semibold text-muted uppercase tracking-wider">
               {t(`${i18nPrefix}.tocLabel`, "목차")}
@@ -69,7 +69,7 @@ export function WikiContentPanel({
               <a
                 key={sec.id}
                 href={`#${sec.id}`}
-                className="inline-flex items-center px-2.5 py-1 rounded-control bg-surface border border-border/60 text-xs font-medium text-muted transition-all hover:border-accent hover:text-accent hover:bg-surface-hover hover:shadow-xs active:scale-95 no-underline"
+                className="inline-flex items-center px-2.5 py-1 rounded-control bg-surface border border-border text-xs font-medium text-muted transition-all hover:border-accent hover:text-accent hover:bg-surface-hover hover:shadow-xs active:scale-95 no-underline"
               >
                 {sec.label}
               </a>

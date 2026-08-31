@@ -133,7 +133,7 @@ export default function ResearchPanel({
               role="tab"
               aria-selected={isActive}
               className={cn(
-                "relative flex h-7 shrink-0 items-center whitespace-nowrap rounded-control px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                "relative flex h-7 shrink-0 items-center whitespace-nowrap rounded-control px-2.5 text-xs font-medium transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
                 isActive
                   ? "bg-element text-fg shadow-xs font-semibold"
                   : "text-muted hover:bg-surface-hover hover:text-fg",
@@ -165,7 +165,7 @@ export default function ResearchPanel({
               <DropdownMenu.Item
                 key={tab.id}
                 className={cn(
-                  "cursor-pointer rounded-control px-2.5 py-2 text-xs outline-none hover:bg-surface-hover focus:bg-surface-hover",
+                  "cursor-pointer rounded-control px-2.5 py-2 text-xs outline-hidden hover:bg-surface-hover focus:bg-surface-hover",
                   visibleTab === tab.id ? "text-accent" : "text-fg",
                 )}
                 onSelect={() => selectTab(tab.id)}

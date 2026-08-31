@@ -29,7 +29,7 @@ export default function MemoMainView() {
       <div className="flex items-center gap-2 mb-4">
         <Tag className="w-4 h-4 text-muted" />
         <input
-          className="bg-transparent border-none outline-none text-sm text-muted w-full placeholder:text-muted"
+          className="bg-transparent border-none outline-hidden text-sm text-muted w-full placeholder:text-muted"
           placeholder={t("memo.placeholder.tags")}
           value={activeNote.tags.join(", ")}
           onChange={(e) => {
@@ -40,7 +40,7 @@ export default function MemoMainView() {
       </div>
 
       <input
-        className="w-full pt-2 pb-4 text-3xl font-extrabold border-none bg-transparent outline-none text-fg placeholder:text-muted"
+        className="w-full pt-2 pb-4 text-3xl font-extrabold border-none bg-transparent outline-hidden text-fg placeholder:text-muted"
         value={activeNote.title}
         onChange={(e) => updateNote(activeNote.id, { title: e.target.value })}
         placeholder={t("memo.placeholder.title")}
@@ -54,7 +54,7 @@ export default function MemoMainView() {
       </div>
 
       <textarea
-        className="flex-1 w-full border-none bg-transparent resize-none outline-none leading-relaxed text-lg text-fg/90 placeholder:text-fg/40 font-serif"
+        className="flex-1 w-full border-none bg-transparent resize-none outline-hidden leading-relaxed text-lg text-fg/90 placeholder:text-fg/40 font-serif"
         value={activeNote.content}
         onChange={(e) => updateNote(activeNote.id, { content: e.target.value })}
         placeholder={t("memo.placeholder.body")}

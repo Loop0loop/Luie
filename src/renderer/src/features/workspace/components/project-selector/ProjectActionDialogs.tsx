@@ -60,7 +60,7 @@ export function ProjectActionDialogs({ state, actions }: ProjectActionDialogsPro
                         key={`${renameDialog.isOpen}-${renameDialog.currentTitle}`}
                         name="title"
                         defaultValue={renameDialog.currentTitle}
-                        className="w-full p-2.5 bg-input border border-border rounded-control text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+                        className="w-full p-2.5 bg-input border border-border rounded-control text-sm outline-hidden transition-colors focus:border-accent focus:ring-2 focus:ring-ring"
                         autoFocus
                         disabled={isRenaming}
                     />

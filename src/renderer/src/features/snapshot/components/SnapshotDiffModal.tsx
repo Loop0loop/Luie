@@ -38,7 +38,7 @@ export function SnapshotDiffModal({
       title={t("snapshot.diff.title")}
       width="640px"
     >
-      <div className="research-surface -m-5 flex h-[70vh] flex-col border-0 outline-none">
+      <div className="research-surface -m-5 flex h-[70vh] flex-col border-0 outline-hidden">
         <div className="flex items-center justify-between px-4 py-2 bg-panel border-b border-border shrink-0">
           <div className="flex items-center gap-4 text-sm">
             <div className="flex flex-col">

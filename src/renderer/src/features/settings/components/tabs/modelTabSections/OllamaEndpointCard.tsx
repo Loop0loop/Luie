@@ -48,7 +48,7 @@ export function OllamaEndpointCard({
             value={baseUrl}
             onChange={(e) => setBaseUrl(e.target.value)}
             placeholder="http://localhost:11434"
-            className="w-full rounded-control border border-border bg-panel px-control-x py-control-y text-xs text-fg placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full rounded-control border border-border bg-panel px-control-x py-control-y text-xs text-fg placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-ring"
           />
         </div>
 
@@ -62,7 +62,7 @@ export function OllamaEndpointCard({
             value={chatModel}
             onChange={(e) => setChatModel(e.target.value)}
             placeholder={t("settings.localLlm.ollama.chatModelPlaceholder")}
-            className="w-full rounded-control border border-border bg-panel px-control-x py-control-y text-xs text-fg placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full rounded-control border border-border bg-panel px-control-x py-control-y text-xs text-fg placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-ring"
           />
         </div>
 
@@ -77,12 +77,12 @@ export function OllamaEndpointCard({
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder={t("settings.localLlm.ollama.apiKeyPlaceholder")}
-              className="w-full rounded-control border border-border bg-panel pl-control-x pr-10 py-control-y text-xs text-fg placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-full rounded-control border border-border bg-panel pl-control-x pr-10 py-control-y text-xs text-fg placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-ring"
             />
             <button
               type="button"
               onClick={() => setShowKey(!showKey)}
-              className="absolute right-2 text-muted hover:text-fg-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-control"
+              className="absolute right-2 text-muted hover:text-fg-secondary focus:outline-hidden focus-visible:ring-2 focus-visible:ring-ring rounded-control"
               aria-label={t("settings.localLlm.ollama.apiKey")}
             >
               {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

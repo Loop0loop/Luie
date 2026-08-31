@@ -79,14 +79,14 @@ function EntityActions({
           sideOffset={4}
         >
           <DropdownMenu.Item
-            className="flex cursor-pointer items-center gap-2 rounded-control px-2.5 py-2 text-xs text-fg outline-none hover:bg-surface-hover focus:bg-surface-hover"
+            className="flex cursor-pointer items-center gap-2 rounded-control px-2.5 py-2 text-xs text-fg outline-hidden hover:bg-surface-hover focus:bg-surface-hover"
             onSelect={() => onSelect(entity.id)}
           >
             열기
           </DropdownMenu.Item>
           {onEdit ? (
             <DropdownMenu.Item
-              className="flex cursor-pointer items-center gap-2 rounded-control px-2.5 py-2 text-xs text-fg outline-none hover:bg-surface-hover focus:bg-surface-hover"
+              className="flex cursor-pointer items-center gap-2 rounded-control px-2.5 py-2 text-xs text-fg outline-hidden hover:bg-surface-hover focus:bg-surface-hover"
               onSelect={() => onEdit(entity.id)}
             >
               <Pencil className="icon-xs text-muted" aria-hidden="true" />
@@ -95,7 +95,7 @@ function EntityActions({
           ) : null}
           {onDelete ? (
             <DropdownMenu.Item
-              className="flex cursor-pointer items-center gap-2 rounded-control px-2.5 py-2 text-xs text-danger outline-none hover:bg-danger/10 focus:bg-danger/10"
+              className="flex cursor-pointer items-center gap-2 rounded-control px-2.5 py-2 text-xs text-danger outline-hidden hover:bg-danger/10 focus:bg-danger/10"
               onSelect={() => onDelete(entity.id)}
             >
               <Trash2 className="icon-xs" aria-hidden="true" />
@@ -226,11 +226,11 @@ export function EntityGallery<T extends GalleryEntity>({
           </div>
 
           <div className="flex max-w-full flex-wrap items-center justify-end gap-1.5">
-            <div className="relative flex h-7 w-28 min-w-0 items-center rounded-control border border-border/80 bg-element px-2 transition-all focus-within:border-accent focus-within:ring-1 focus-within:ring-accent sm:w-44">
+            <div className="relative flex h-7 w-28 min-w-0 items-center rounded-control border border-border bg-element px-2 transition-all focus-within:border-accent focus-within:ring-1 focus-within:ring-accent sm:w-44">
               <Search className="icon-xs text-subtle shrink-0 mr-1.5" aria-hidden="true" />
               <input
                 aria-label={`Search ${title}`}
-                className="w-full bg-transparent text-xs text-fg outline-none placeholder:text-subtle"
+                className="w-full bg-transparent text-xs text-fg outline-hidden placeholder:text-subtle"
                 autoComplete="off"
                 name="entity-search"
                 onChange={(event) => setQuery(event.target.value)}
@@ -240,12 +240,12 @@ export function EntityGallery<T extends GalleryEntity>({
               />
             </div>
 
-            <div className="flex items-center rounded-control bg-element p-0.5 border border-border/60">
+            <div className="flex items-center rounded-control bg-element p-0.5 border border-border">
               <button
                 type="button"
                 aria-label="Grid view"
                 aria-pressed={viewMode === "grid"}
-                className={`flex size-6 items-center justify-center rounded-[5px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                className={`flex size-6 items-center justify-center rounded-[5px] transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring ${
                   viewMode === "grid"
                     ? "bg-surface text-fg shadow-xs"
                     : "text-subtle hover:text-fg"
@@ -258,7 +258,7 @@ export function EntityGallery<T extends GalleryEntity>({
                 type="button"
                 aria-label="List view"
                 aria-pressed={viewMode === "list"}
-                className={`flex size-6 items-center justify-center rounded-[5px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                className={`flex size-6 items-center justify-center rounded-[5px] transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring ${
                   viewMode === "list"
                     ? "bg-surface text-fg shadow-xs"
                     : "text-subtle hover:text-fg"
@@ -274,7 +274,7 @@ export function EntityGallery<T extends GalleryEntity>({
                 <button
                   type="button"
                   aria-label="정렬 옵션"
-                  className="flex size-7 items-center justify-center rounded-control text-subtle transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  className="flex size-7 items-center justify-center rounded-control text-subtle transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <SlidersHorizontal className="icon-xs" aria-hidden="true" />
                 </button>
@@ -291,7 +291,7 @@ export function EntityGallery<T extends GalleryEntity>({
                   ].map(([mode, label]) => (
                     <DropdownMenu.Item
                       key={mode}
-                      className="flex cursor-pointer items-center gap-2 rounded-control px-2.5 py-2 text-xs text-fg outline-none hover:bg-surface-hover focus:bg-surface-hover"
+                      className="flex cursor-pointer items-center gap-2 rounded-control px-2.5 py-2 text-xs text-fg outline-hidden hover:bg-surface-hover focus:bg-surface-hover"
                       onSelect={() => setSortMode(mode as EntityGallerySortMode)}
                     >
                       <Check
@@ -308,7 +308,7 @@ export function EntityGallery<T extends GalleryEntity>({
             {onAdd ? (
               <button
                 type="button"
-                className="inline-flex h-7 items-center gap-1 rounded-control bg-accent px-2.5 text-xs font-medium text-accent-fg transition-colors hover:bg-accent-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent shadow-xs"
+                className="inline-flex h-7 items-center gap-1 rounded-control bg-accent px-2.5 text-xs font-medium text-accent-fg transition-colors hover:bg-accent-bg-hover focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring shadow-xs"
                 onClick={onAdd}
               >
                 <Plus className="icon-xs" aria-hidden="true" />
@@ -319,7 +319,7 @@ export function EntityGallery<T extends GalleryEntity>({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex size-7 items-center justify-center rounded-control text-subtle transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="flex size-7 items-center justify-center rounded-control text-subtle transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="닫기"
                 title="닫기"
               >
@@ -340,7 +340,7 @@ export function EntityGallery<T extends GalleryEntity>({
                   <button
                     type="button"
                     onClick={() => toggleGroupCollapse(label)}
-                    className="group mb-3.5 flex items-center gap-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-control py-0.5 px-1 -ml-1 transition-colors hover:bg-surface-hover"
+                    className="group mb-3.5 flex items-center gap-2 text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring rounded-control py-0.5 px-1 -ml-1 transition-colors hover:bg-surface-hover"
                   >
                     {isCollapsed ? (
                       <ChevronRight className="icon-xs text-subtle transition-transform group-hover:text-fg" aria-hidden="true" />
@@ -379,7 +379,7 @@ export function EntityGallery<T extends GalleryEntity>({
                                 <button
                                   type="button"
                                   data-entity-id={entity.id}
-                                  className="flex flex-col items-center w-full flex-1 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+                                  className="flex flex-col items-center w-full flex-1 text-center focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                                   onClick={(event) => {
                                     event.currentTarget.blur();
                                     onSelect(entity.id);
@@ -388,7 +388,7 @@ export function EntityGallery<T extends GalleryEntity>({
                                   {/* Profile Avatar Header */}
                                   <div className="relative mb-2.5 flex items-center justify-center">
                                     {image ? (
-                                      <div className="size-13 overflow-hidden rounded-full border-2 border-border/60 shadow-xs ring-2 ring-element">
+                                      <div className="size-13 overflow-hidden rounded-full border-2 border-border shadow-xs ring-2 ring-element">
                                         <img
                                           src={image}
                                           alt={entity.name}
@@ -426,13 +426,13 @@ export function EntityGallery<T extends GalleryEntity>({
                                       roles.slice(0, 1).map((role) => (
                                         <span
                                           key={role}
-                                          className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-element border border-border/60 text-[10px] font-medium text-muted truncate max-w-full"
+                                          className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-element border border-border text-[10px] font-medium text-muted truncate max-w-full"
                                         >
                                           {role}
                                         </span>
                                       ))
                                     ) : (
-                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-element/50 border border-border/40 text-[10px] text-subtle truncate max-w-full">
+                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-element/50 border border-border text-[10px] text-subtle truncate max-w-full">
                                         {entity.description || noDescriptionLabel}
                                       </span>
                                     )}
@@ -473,12 +473,12 @@ export function EntityGallery<T extends GalleryEntity>({
                             return (
                               <article
                                 key={entity.id}
-                                className="group flex items-center gap-3.5 rounded-panel border border-border/60 bg-surface px-4 py-3 shadow-2xs hover:border-border-active hover:bg-surface hover:shadow-xs active:bg-surface-hover transition-colors duration-150"
+                                className="group flex items-center gap-3.5 rounded-panel border border-border bg-surface px-4 py-3 shadow-2xs hover:border-border-active hover:bg-surface hover:shadow-xs active:bg-surface-hover transition-colors duration-150"
                               >
                                 <button
                                   type="button"
                                   data-entity-id={entity.id}
-                                  className="flex min-w-0 flex-1 items-center gap-3.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+                                  className="flex min-w-0 flex-1 items-center gap-3.5 text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                                   onClick={(event) => {
                                     event.currentTarget.blur();
                                     onSelect(entity.id);
@@ -488,7 +488,7 @@ export function EntityGallery<T extends GalleryEntity>({
                                     <img
                                       src={image}
                                       alt=""
-                                      className="size-10 shrink-0 rounded-full object-cover border border-border/60"
+                                      className="size-10 shrink-0 rounded-full object-cover border border-border"
                                     />
                                   ) : (
                                     <span
@@ -517,7 +517,7 @@ export function EntityGallery<T extends GalleryEntity>({
                                         />
                                       )}
                                       {roles.length > 0 && (
-                                        <span className="hidden sm:inline-flex items-center px-1.5 py-0.2 rounded-full bg-element border border-border/60 text-[10px] font-medium text-muted">
+                                        <span className="hidden sm:inline-flex items-center px-1.5 py-0.2 rounded-full bg-element border border-border text-[10px] font-medium text-muted">
                                           {roles[0]}
                                         </span>
                                       )}

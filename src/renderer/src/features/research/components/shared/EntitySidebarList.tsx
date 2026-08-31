@@ -46,7 +46,7 @@ export function EntitySidebarList({
           type="button"
           onClick={onViewAll}
           aria-label={viewAllLabel}
-          className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted hover:text-fg transition-colors rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted hover:text-fg transition-colors rounded-control focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Home size={14} aria-hidden="true" />
           <span>{title}</span>
@@ -56,7 +56,7 @@ export function EntitySidebarList({
           type="button"
           onClick={onAdd}
           aria-label={addLabel}
-          className="p-0.5 text-muted hover:text-fg transition-colors rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="p-0.5 text-muted hover:text-fg transition-colors rounded-control focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Plus size={16} aria-hidden="true" />
         </button>
@@ -98,7 +98,7 @@ function EntityGroupSection({
         type="button"
         aria-expanded={isOpen}
         onClick={() => setIsOpen((open) => !open)}
-        className="w-full px-4 py-2 text-xs font-bold text-muted bg-surface border-b border-border flex items-center gap-2 select-none hover:bg-surface-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+        className="w-full px-4 py-2 text-xs font-bold text-muted bg-surface border-b border-border flex items-center gap-2 select-none hover:bg-surface-hover transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
       >
         {isOpen ? (
           <ChevronDown size={12} aria-hidden="true" />
@@ -121,7 +121,7 @@ function EntityGroupSection({
                 aria-current={isSelected ? "true" : undefined}
                 onClick={() => onSelect(item.id)}
                 className={cn(
-                  "w-full text-left px-4 py-2.5 border-b border-border text-sm text-fg flex flex-col transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
+                  "w-full text-left px-4 py-2.5 border-b border-border text-sm text-fg flex flex-col transition-colors hover:bg-surface-hover focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                   isSelected &&
                     "bg-active border-l-[3px] border-l-accent text-accent",
                 )}

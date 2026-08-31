@@ -84,7 +84,7 @@ export function RebuildMemoryCard({
                 type="button"
                 onClick={() => setShowDetails((v) => !v)}
                 aria-expanded={showDetails}
-                className="flex w-full items-center justify-between pt-0.5 text-[11px] text-muted hover:text-fg-secondary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-control"
+                className="flex w-full items-center justify-between pt-0.5 text-[11px] text-muted hover:text-fg-secondary transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-ring rounded-control"
               >
                 <span>
                   {showDetails

@@ -238,7 +238,7 @@ export function SynopsisEditor() {
     <fieldset
       key={projectScope}
       disabled={editableScope !== projectScope}
-      className="research-surface h-full min-w-0 m-0 p-0 border-0 outline-none flex flex-col overflow-hidden transition-colors duration-500"
+      className="research-surface h-full min-w-0 m-0 p-0 border-0 outline-hidden flex flex-col overflow-hidden transition-colors duration-500"
     >
       <div
         className={cn(
@@ -286,7 +286,7 @@ export function SynopsisEditor() {
                   {t("world.synopsis.genre", "Genre")}
                 </label>
                 <BufferedInput
-                  className="w-full bg-transparent border-b border-border/50 py-1 text-base font-serif text-fg placeholder:text-muted/20 focus:border-accent focus:outline-none transition-colors rounded-none"
+                  className="w-full bg-transparent border-b border-border py-1 text-base font-serif text-fg placeholder:text-muted/20 focus:border-accent focus:outline-hidden transition-colors rounded-none"
                   placeholder={t(
                     "world.synopsis.genrePlaceholder",
                     "e.g. Dark Fantasy",
@@ -303,7 +303,7 @@ export function SynopsisEditor() {
                   {t("world.synopsis.audience", "Target Audience")}
                 </label>
                 <BufferedInput
-                  className="w-full bg-transparent border-b border-border/50 py-1 text-base font-serif text-fg placeholder:text-muted/20 focus:border-accent focus:outline-none transition-colors rounded-none"
+                  className="w-full bg-transparent border-b border-border py-1 text-base font-serif text-fg placeholder:text-muted/20 focus:border-accent focus:outline-hidden transition-colors rounded-none"
                   placeholder={t(
                     "world.synopsis.audiencePlaceholder",
                     "e.g. Young Adult",
@@ -323,7 +323,7 @@ export function SynopsisEditor() {
                 {t("world.synopsis.logline", "Logline")}
               </label>
               <BufferedTextArea
-                className="w-full bg-transparent border-none p-0 resize-none text-2xl font-serif italic text-fg placeholder:text-muted/10 leading-relaxed focus:outline-none"
+                className="w-full bg-transparent border-none p-0 resize-none text-2xl font-serif italic text-fg placeholder:text-muted/10 leading-relaxed focus:outline-hidden"
                 placeholder={t(
                   "world.synopsis.loglinePlaceholder",
                   "One sentence summary of your story...",
@@ -338,12 +338,12 @@ export function SynopsisEditor() {
             </div>
           </div>
 
-          <div className="w-16 h-1 bg-border/30 rounded-full mx-auto" />
+          <div className="w-16 h-1 bg-border rounded-full mx-auto" />
 
           <div className="relative flex-1">
             <BufferedTextArea
               className={cn(
-                "w-full h-full bg-transparent border-none outline-none resize-none transition-all placeholder:text-muted/10 focus:placeholder:text-muted/20",
+                "w-full h-full bg-transparent border-none outline-hidden resize-none transition-all placeholder:text-muted/10 focus:placeholder:text-muted/20",
                 "text-lg leading-loose font-serif text-fg focus:ring-0",
                 status === "locked" &&
                   "opacity-70 cursor-not-allowed select-none",

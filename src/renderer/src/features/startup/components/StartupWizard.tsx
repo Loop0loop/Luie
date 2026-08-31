@@ -265,7 +265,7 @@ export default function StartupWizard() {
         {(step === "finalizing" || step === "error") && (
           <div className="flex flex-col items-center gap-4 text-center">
             <div className="relative h-14 w-14">
-              <div className="absolute inset-0 rounded-full border-4 border-border/60" />
+              <div className="absolute inset-0 rounded-full border-4 border-border" />
               <div
                 className={`absolute inset-0 rounded-full border-4 border-transparent border-t-accent ${
                   isSpinning ? "animate-spin" : ""

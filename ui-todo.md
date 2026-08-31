@@ -495,12 +495,116 @@ border 대비: 장식선 1.26 → **1.45**, 상태선 1.52 → **2.00**, UI 경�
 
 ### 4. border / outline / shadow 규칙 통일
 
-- [ ] border 알파 방언 수렴 — 현재 `/40 /50 /60 /70 /80` + 무알파 혼재
-- [ ] divider 3종(`bg-border/70`, `bg-border/60`, `bg-border`) → 단일 규칙
+- [x] **focus 표시 통일** (WCAG 2.2 SC 2.4.11/2.4.13). 알파 ring 제거 · `outline-none` → `outline-hidden` · `ring-offset` 색 지정 · dark `--border-focus` 교정. 아래 상세
+- [x] border 알파 방언 수렴 — `/5 /10 /15 /20 /25 /30 /40 /50 /60 /70 /80` 11종 → 무알파 `border-border`. 아래 상세
+- [x] divider 알파 방언 수렴 — `bg-border/{20,30,40,50,60,70,80}` 7종 → `bg-border`. 아래 상세
 - [x] Tailwind 기본 검정 그림자(`shadow-sm`/`shadow-xs`) → theme tint 계열. 아래 상세
-- [ ] `--radius-editor-shell` 중복 하드코딩 제거 — `GoogleDocsLayout.tsx:210` `rounded-[24px]`, `Editor.tsx:381` `rounded-[48px]`
-- [ ] `focus-visible` ring을 3:1 이상으로 통일 (WCAG 2.2)
-- [ ] **형광펜 대비가 전 theme에서 약하다** (§3에서 이관). `--highlight-default`가 종이 대비 light **1.104** · sepia **1.166** · dark는 `rgba(250,204,21,0.32)` 알파. 형광펜은 은은해야 하지만 1.1은 거의 안 보이는 수준이다. 세 theme 공통 목표(~1.35)를 정하고 함께 조정한다
+- [ ] `--radius-editor-shell` 중복 하드코딩 제거 — `rounded-[24px]` **3곳**(`GoogleDocsLayout.tsx:209` · `SnapshotList.tsx:212` · `ProjectTemplateSelector.tsx:232`), `Editor.tsx:380` `rounded-[48px]`
+- [ ] **형광펜 대비가 전 theme에서 약하다** (§3에서 이관). `--highlight-default`가 종이 대비 light **1.104** · sepia **1.166** · dark는 `rgba(250,204,21,0.32)` 알파. 형광펜은 은은해야 하지만 1.1은 거의 안 보이는 수준이다. 세 theme 공통 목표를 정하고 함께 조정한다
+  - 조사 결과 **규범이 없다.** WCAG 1.4.11은 장식 배경에 대비를 요구하지 않고, 요구하는 것은 "그 위 글자가 4.5:1"뿐이다. 따라서 이전에 적었던 목표 `~1.35`는 근거 없는 숫자다. 값을 정하기 전에 **현재 형광펜 위 본문 글자 대비가 얼마나 남는지** 먼저 측정하고, 그 여유 안에서 형광펜을 진하게 하는 순서로 간다
+
+#### focus / border / divider 규칙 확정 (2026-08-31)
+
+##### 근거로 삼은 외부 규범
+
+| 출처 | 내용 |
+| --- | --- |
+| [Radix Colors — Understanding the scale](https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale) | step **6** = 비대화형 컴포넌트의 subtle border·**separator**(사이드바·헤더·카드·alert) / step **7** = 대화형 컴포넌트의 subtle border / step **8** = 대화형 컴포넌트의 강한 border + **focus ring** |
+| Material 3 `outline` vs `outline-variant` | 양식·대화형 경계는 `outline`, 장식 divider는 `outline-variant`. Angular이 divider에 `outline`을 쓴 것이 "섹션이 예상보다 두드러진다"로 버그 리포트됨 ([angular/components#29494](https://github.com/angular/components/issues/29494)) |
+| [WCAG 2.2 SC 2.4.13 Focus Appearance](https://www.w3.org/WAI/WCAG22/Understanding/focus-appearance) | focus 표시는 **2 CSS px 두께 이상 + 3:1** |
+| [W3C Technique C40](https://www.w3.org/WAI/WCAG21/Techniques/css/C40) | 2색 지시자의 두 색이 서로 9:1 이상이면 **어떤 단색 배경에서도** 최소 한쪽이 3:1을 보장한다. 또한 "`outline: none`으로 `box-shadow`만 쓰지 말 것 — 사용자 에이전트가 forced-colors에서 box-shadow를 억제한다"고 경고 |
+| [Tailwind v4 outline-style](https://tailwindcss.com/docs/outline-style) | `outline-none` = `outline-style: none` / `outline-hidden` = forced-colors에서 `outline: 2px solid transparent` 보존. **v3와 의미가 반대로 바뀐 이름이다** |
+
+Luie의 3계층은 Radix 6/7/8과 값 순서로 정확히 대응한다.
+
+| Luie | Radix | 역할 | 실측(최악 표면) |
+| --- | --- | --- | --- |
+| `--border-default` | 6 | 비대화 카드·헤더·**구분선** | 1.12~1.25 |
+| `--border-active` | 7 | 대화형 rest / hover 승격 대상 | 1.54~1.65 |
+| `--border-strong` | 8 | input·toggle 등 WCAG 1.4.11 UI 경계 | 3.03~3.09 |
+
+##### 실측 — focus ring 알파는 3:1을 만들 수 없다
+
+5개 표면(`app`·`sidebar`·`panel`·`ai`·`element`) × 9개 theme 조합의 **최저값**이다.
+
+| ring 방언 | 사용처 | 최저 대비 | 판정 |
+| --- | --- | --- | --- |
+| `ring-ring` 불투명 (`--accent-bg`) | 8곳 | **3.47** | 통과 |
+| `ring-accent` 불투명 (`--text-accent`) | 70곳 | **3.93** | 통과 |
+| `ring-ring/50` | 9곳 | **1.86** | 실패 |
+| `ring-accent/50` | 11곳 | **1.89** | 실패 |
+| `ring-ring/40` | 3곳 | 1.7 내외 | 실패 |
+| `ring-destructive/20`·`/40` | 8곳 | 2 미만 | 실패 |
+
+**새 값을 만들 필요가 없었다** — 알파만 걷어내면 기존 토큰이 전 조합에서 통과한다. `ring-destructive`(=`--danger-fg`) 불투명도 3.39~4.97로 통과한다.
+
+##### 확정한 canonical 패턴
+
+```
+focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring
+```
+
+- **색은 `ring-ring`.** `DESIGN.md`가 focus를 `--color-ring`에 연결하고 있고, `--color-accent`는 글자색(`--text-accent`)이다. 배경/글자 토큰을 ring·border 색으로 쓰는 것은 §5에서 교정한 `bg-muted` 오용과 같은 범주 오류다
+- **알파 금지.** 위 실측 근거
+- **두께 최소 2.** WCAG 2.4.11
+- **`outline-none` 금지, `outline-hidden` 사용.** v4에서 `outline-none`은 forced-colors 보존을 하지 않는다
+- full-bleed 목록 행은 `focus-visible:ring-inset` 추가
+- 솔리드로 채워지는 control(토글)은 `ring-offset-2` + **`ring-offset-<surface>` 필수**
+- 파괴적 동작은 `ring-danger-fg` / `ring-destructive`
+- 박스형 입력은 `focus:border-accent focus:ring-2 focus:ring-ring`. **밑줄형(`border-b`) 입력은 테두리 색 전환이 표시**이므로 ring을 붙이지 않는다
+
+##### 적용 내역
+
+| 항목 | 건수 |
+| --- | --- |
+| `outline-none` → `outline-hidden` | **154** (`focus-visible:` 52 · `focus:` 52 · bare 49 · `[&_.ProseMirror]:` 1) |
+| focus ring 색 → `ring-ring` | `focus-visible:ring-ring` 67 · `focus:ring-ring` 24 |
+| focus ring 두께 `ring-1` → `ring-2` | 10 |
+| `border-border/N` → `border-border` | **403**(무알파 총계). 알파로 만든 rest→hover 진행 5곳은 `hover:border-border-active`로 승격(총 10) |
+| `bg-border/N` → `bg-border` | **48**(총계) |
+| `ring-offset-2`에 offset 색 지정 | 4 |
+
+##### 실측 — border 알파 방언은 시각적으로 존재하지 않았다
+
+`border-border`가 light `--bg-element` 위에서 만드는 대비다.
+
+```
+/5  1.01   /30 1.05   /60 1.10   /100 1.16
+/10 1.02   /40 1.06   /70 1.11
+/20 1.03   /50 1.08   /80 1.13
+```
+
+**11종 전 구간이 1.01~1.16에 몰려 있고 무알파와의 최대 차이가 0.15다.** 즉 통일은 취향 주장이 아니라 "구분되지 않으므로 방언을 유지할 이유가 없다"는 결론이고, 동시에 **화면이 거의 바뀌지 않는다**는 뜻이다.
+
+알파로 만들었던 rest→hover 진행(`border-border/40` → `hover:border-border/80`)도 Δ0.07로 실재하지 않았다. `border-border`(1.16) → `hover:border-border-active`(1.61)로 승격해 **처음으로 실제 진행이 생겼다.** §7에서 `EntityGallery`·`TermCard`에 적용한 패턴과 같다.
+
+##### 교정한 개별 버그
+
+- **`ring-offset-2`가 dark에서 흰 링을 만들었다.** Tailwind 기본 `--tw-ring-offset-color: #fff`다. 토글 4곳(`EditorTab` 2 · `AppearanceTab` 1 · `ExportSidebar` 1)이 offset 색을 지정하지 않아 어두운 표면에 흰 간격이 그려졌다. `ring-offset-surface`로 지정 — `--bg-panel`과 `--bg-surface`는 전 theme에서 같은 값이고 `SettingsModal` 본문이 `bg-panel`이라 일치한다. 정답 패턴이 이미 `CharacterVisualPanel.tsx:228`에 있었다
+- **`focus:border-active` / `focus:ring-active`는 배경 토큰 오용이었다.** `--color-active`는 `--bg-active`(알파 오버레이)다. 테두리·ring 색으로 쓰면 거의 보이지 않는다. `TermManager` 3곳 → `focus:border-accent focus:ring-2 focus:ring-ring`
+- **`focus:ring-blue-500`** (`SynopsisSection.tsx:21`) — focus ring에 Tailwind 기본 팔레트 직접 사용 → `ring-ring`
+- **`ExportSidebar`의 박스형 입력 8곳에 ring이 없었다.** `focus:border-accent focus:outline-hidden`만 있어 밑줄형과 박스형이 같은 표시를 썼다. ring 보강
+- **shadcn 프리미티브가 별도 방언을 유지했다.** `button`·`badge`·`scroll-area`: `ring-3`/`ring-[3px]` → `ring-2`, `ring-ring/50` → `ring-ring`, `ring-destructive/20|40` → `ring-destructive`, 불투명화로 무의미해진 `dark:focus-visible:ring-destructive/*` 제거, `outline-hidden`과 충돌하는 `focus-visible:outline-1` 제거. `focus-visible:border-ring`은 C40의 2색 지시자에 해당하므로 유지
+- **dark `--border-focus`가 1.65:1로 실패했다.** 가장 밝은 dark 표면(`--ai-panel-bg`) 위에서 `--border-strong`(3.04)보다도 약했다. 유일한 소비처인 canvas resize handle은 WCAG 1.4.11의 graphical object라 3:1이 필요하다. axis(`b−r`) 9를 유지하고 명도만 올려 **3.73~5.08** 확보. `--text-secondary`보다는 어두워 테두리가 글자보다 밝아지는 역전은 없다
+
+##### 검증
+
+- `pnpm run typecheck` 통과 · `pnpm run build` 통과 · `canvasThemeTokens.test.ts` 6/6
+- 빌드 산출 CSS에서 확인: `.outline-hidden{--tw-outline-style:none;outline-style:none}` + `@media (forced-colors:active){.outline-hidden{outline-offset:2px;outline:2px solid #0000}}` — **forced-colors 보존이 실제로 생성됐다**
+- `focus-visible\:ring-ring:focus-visible{--tw-ring-color:var(--color-ring)}` · `.ring-offset-surface{--tw-ring-offset-color:var(--color-surface)}` 생성 확인
+- 제거 대상 0건 확인: `outline-none` · `border-border/N` · `bg-border/N` · `focus:ring-accent` · `ring-ring/N` · `focus:border-active` · `focus:ring-blue-500` · `focus:ring-1`
+- `tokens-guard` 수치 변화 없음(`rawHex` 407 유지) — 토큰 1개 교체이므로 net 0
+
+##### 남은 부채 (이번에 범위 밖으로 둔 것)
+
+- **bare 입력 20여 곳에 focus 대체 표시가 없다.** `outline-hidden`만 있고 ring·border 전환이 없다 — `DESIGN.md` §297("`outline-none` without a `focus-visible` replacement") 위반이다. `MemoSection:284,290` · `MindMapBoard:108` · `PlotBoard:361,386` · `EntityGallery:233` · `MemoMainView:32` 등. 대부분 "평범한 텍스트처럼 보이는" 제목 입력이라 ring을 붙이면 무게가 달라진다 → **표시 방식을 결정한 뒤** 일괄 적용한다
+- `focus:ring-0` 2곳(`SynopsisEditor:347` 본문 · `InspectorPanel:99` 노트)은 **의도된 예외**다. 전면 집필 표면에서는 캐럿이 focus를 알린다. 기록만 남긴다
+- **토글 off 상태가 `bg-border` 트랙이라 대비 1.16이다.** 켜짐(`bg-accent`)과 꺼짐의 구분은 되지만 트랙 자체가 표면과 거의 붙는다. Radix 모델에서는 트랙이 대화형 표면(step 3~5)이지 border가 아니다 — §5의 "버튼 상태 일관화"와 함께 다룬다
+- **`--border-focus`의 이름과 역할이 어긋난다.** focus 표시는 accent ring이 담당하도록 확정했으므로 이 토큰의 소비처는 `--canvas-handle-bg` 하나뿐이다. 실제 역할은 "neutral 계단의 최강 단계"다. `DESIGN.md:344`의 border 치트시트(`border  border-active  border-focus`)도 `--border-strong` 신설 이후로 낡았다 → 이름 정리는 `DESIGN.md` 갱신과 함께
+- **Tailwind v4가 문서·스킬 마크다운을 소스로 스캔한다.** 빌드 CSS에 `focus:outline-none`·`focus:ring-blue-500`·`focus:ring-4`가 남아 있는데 출처가 앱 코드가 아니라 `.kiro/skills/**/*.md`·`.agents/skills/**/*.md`의 예제 코드다(git 추적 대상이라 자동 소스 감지에 걸린다). 죽은 CSS가 실려 있고 §8의 guard 신호도 흐려진다 → `@source not` 또는 `.gitignore` 정리 필요
+
+---
+
 
 #### 검정 그림자 → `--shadow-control` 신설 (2026-08-31)
 
@@ -735,3 +839,40 @@ Scrivener Inspector → 시놉시스 탭의 노란 메모지다. `bg-yellow-50 d
 **롤백한 것**: 숫자를 `z-30` + 구간별 표면색 knockout으로 만들어 여백 핸들 위로 올렸다가 **사용자 결정으로 되돌렸다.** 기본 여백이 `INCH_PX`(96px) = 정확히 1인치라서 좌측 여백 핸들(`z-10`)이 숫자 "1" 위에 겹치는 것은 **알고도 남긴 상태**다.
 
 > 남은 부채: 여백 음영 띠가 `bg-element`로 바뀌면서 1.52 → 1.175로 옅어졌다. 눈금과 숫자가 선명해져 상쇄됐지만, 띠 구분을 더 원하면 표면을 어둡게 하는 게 아니라 여백 경계에 선을 넣는 방향이 맞다.
+
+---
+
+## UI 확인 요청 — §4 1~3단계 (2026-08-31)
+
+키보드 `Tab`으로 이동하며 확인한다. **마우스 클릭은 `focus-visible`을 발화시키지 않으므로 링이 안 보이는 게 정상이다.**
+
+### 1. 반드시 봐야 하는 것 — 눈에 띄게 달라진 곳
+
+- [ ] **shadcn Button·Badge의 focus 링.** `ring-3`(3px) + 50% 반투명 헤일로 → `ring-2`(2px) **불투명**으로 바뀌었다. 부드러운 후광에서 선명한 테두리로 인상이 달라진다. 설정 화면 전반. 인상이 과하면 `border-ring`(내부 1px)만 남기고 ring을 1단계 줄이는 선택지가 있다
+- [ ] **토글 focus 링의 흰 간격이 사라졌는지.** dark theme에서 설정 → 에디터의 맞춤법/타이프라이터 토글, 설정 → 모양의 애니메이션 토글, 내보내기 사이드바의 줄간격 정규화 토글. 이전에는 링과 토글 사이에 **흰 띠**가 있었다
+- [ ] **dark theme에서 링 색이 조금 차분해졌는지.** `--text-accent`(`#60a5fa`) → `--accent-bg`(`#3b82f6`). 대비는 5.04 → 3.47로 내려가지만 3:1은 통과한다. 너무 어두워 보이면 `--color-ring`을 `--text-accent`로 돌리는 선택지가 있다 (DESIGN.md 규범은 유지됨)
+
+### 2. 이제 처음 보이는 것 — 없던 표시가 생긴 곳
+
+- [ ] **용어 관리(Research → 용어) 입력 3곳의 focus.** 이전에는 `focus:border-active`/`focus:ring-active`가 **배경 토큰**이라 거의 안 보였다. 지금은 accent 테두리 + accent 링
+- [ ] **내보내기 사이드바 박스 입력 8곳의 focus 링.** 이전에는 테두리 색만 바뀌었다
+- [ ] **canvas 노드 resize handle이 dark에서 보이는지.** `--border-focus` 1.65 → 3.73. 이전에는 어두운 표면에서 핸들을 찾을 수 없었다
+- [ ] **카드 hover 진행.** `border-border` → `hover:border-border-active`(1.16 → 1.61)로 승격된 5곳: canvas RelationEdge 라벨 · GraphNodeInspector · GraphSurface 버튼 · GraphHoverCard. 이전에는 알파 진행이 Δ0.07로 사실상 없었다
+
+### 3. 거의 안 바뀌어야 하는 것 — 바뀌었으면 회귀다
+
+- [ ] **테두리가 전체적으로 진해지지 않았는지.** 알파 11종(403건)을 무알파로 합쳤다. 실측 최대 차이는 대비 0.15이므로 **체감 변화가 없어야 정상**이다. 특정 화면에서 "선이 많아졌다"고 느껴지면 그 지점은 알파를 되살리는 게 아니라 `border-0`으로 지울 곳을 명시한다(§7 규칙)
+- [ ] **구분선 두께·진하기.** 툴바 세로 구분선(`primitives.tsx`), 더보기 메뉴 구분선 3개, Inspector 세로선, canvas 툴바 구분선. 알파 7종 → `bg-border` 단일
+- [ ] **메모/엔티티 목록의 리사이즈 핸들**(`w-1` 세로 막대)이 너무 도드라지지 않는지. `bg-border/40` → `bg-border`
+- [ ] **에디터 본문 클릭 시 파란 outline이 생기지 않는지.** `[&_.ProseMirror]:outline-none` → `outline-hidden`. 일반 모드에서는 완전히 동일해야 한다
+
+### 4. 세 theme × 색온도로 볼 것
+
+focus 링은 light / sepia / dark **각각의 cool·warm 변형까지** 9개 조합에서 3:1을 실측 통과했지만, 실제 인상은 따로 본다.
+
+- [ ] sepia에서 brass 링(`#8a602e`)이 종이 위에서 탁하게 보이지 않는지
+- [ ] dark+warm에서 파란 링이 따뜻한 표면과 충돌하지 않는지
+
+### 판단이 필요한 지점
+
+- [ ] **bare 입력 20여 곳에 focus 표시를 어떻게 줄 것인가.** `MemoSection` 제목·본문, `MindMapBoard` 노드 라벨, `PlotBoard` 컬럼 제목·카드 본문, `EntityGallery` 검색, `MemoMainView` 등이다. 전부 "평범한 텍스트처럼 보이는" 입력이라 ring을 붙이면 무게가 달라진다. 후보: ① 밑줄만(`focus:border-b-accent`) ② 배경 전환(`focus:bg-element`) ③ 얇은 ring. **이건 값 문제가 아니라 표현 결정이라 UI를 보고 정해야 한다**

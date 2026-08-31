@@ -193,7 +193,7 @@ export function EntityDetailView({
             <button
               type="button"
               onClick={onBack}
-              className="inline-flex h-10 shrink-0 items-center gap-1 rounded-control px-2.5 text-xs font-medium text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="inline-flex h-10 shrink-0 items-center gap-1 rounded-control px-2.5 text-xs font-medium text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
               title={t("back", "뒤로가기")}
               aria-label={t("back", "뒤로가기")}
             >
@@ -202,7 +202,7 @@ export function EntityDetailView({
             </button>
           ) : null}
           <BufferedInput
-            className="min-w-0 flex-1 border-none bg-transparent text-xl font-semibold leading-tight text-fg focus:outline-none"
+            className="min-w-0 flex-1 border-none bg-transparent text-xl font-semibold leading-tight text-fg focus:outline-hidden"
             value={entity.name}
             onSave={(val) => handleUpdate("name", val)}
           />
@@ -214,20 +214,20 @@ export function EntityDetailView({
             <span className="text-fg/70">{t(`${prefix}.template.basic`, templateFallback)}</span>
             <span className="text-border/60">·</span>
             <BufferedInput
-              className="inline min-w-[60px] bg-transparent p-0 text-fg/70 focus:rounded-sm focus:bg-active focus:px-1 focus:outline-none"
+              className="inline min-w-[60px] bg-transparent p-0 text-fg/70 focus:rounded-sm focus:bg-active focus:px-1 focus:outline-hidden"
               value={entity.description || ""}
               placeholder={t(`${prefix}.uncategorized`, "Uncategorized")}
               onSave={(val) => handleUpdate("description", val)}
             />
           </div>
-          <div className="flex shrink-0 items-center gap-0.5 rounded-panel bg-element/80 p-0.5 border border-border/60 shadow-xs">
+          <div className="flex shrink-0 items-center gap-0.5 rounded-panel bg-element/80 p-0.5 border border-border shadow-xs">
             <button
               type="button"
               onClick={() => switchViewMode("wiki")}
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-control text-xs font-medium transition-all",
                 viewMode === "wiki"
-                  ? "bg-surface text-fg shadow-xs border border-border/40"
+                  ? "bg-surface text-fg shadow-xs border border-border"
                   : "text-muted hover:text-fg hover:bg-surface-hover",
               )}
             >
@@ -239,7 +239,7 @@ export function EntityDetailView({
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-control text-xs font-medium transition-all",
                 viewMode === "document"
-                  ? "bg-surface text-fg shadow-xs border border-border/40"
+                  ? "bg-surface text-fg shadow-xs border border-border"
                   : "text-muted hover:text-fg hover:bg-surface-hover",
               )}
             >
@@ -322,7 +322,7 @@ export function EntityDetailView({
                 onClick={() => setIsInfoboxOpen(true)}
                 title={t(`${prefix}.wiki.infoboxTitle`, "프로필 요약 펼치기")}
                 aria-label={t(`${prefix}.wiki.infoboxTitle`, "프로필 요약 펼치기")}
-                className="fixed right-0 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center gap-1.5 rounded-l-panel border border-r-0 border-border/80 bg-surface/95 px-1 py-3.5 shadow-md backdrop-blur-sm transition-all hover:bg-surface hover:border-accent/60 hover:text-accent group cursor-pointer"
+                className="fixed right-0 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center gap-1.5 rounded-l-panel border border-r-0 border-border bg-surface/95 px-1 py-3.5 shadow-md backdrop-blur-sm transition-all hover:bg-surface hover:border-accent/60 hover:text-accent group cursor-pointer"
               >
                 <ChevronLeft size={14} className="text-muted group-hover:text-accent transition-colors" />
                 <span className="text-[10px] font-medium text-muted [writing-mode:vertical-lr] select-none tracking-tight group-hover:text-accent transition-colors">

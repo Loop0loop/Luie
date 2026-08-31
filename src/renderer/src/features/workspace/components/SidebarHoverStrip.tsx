@@ -32,7 +32,7 @@ export function SidebarHoverStrip({
       <button
         type="button"
         aria-label="사이드바 열기"
-        className="flex h-full shrink-0 cursor-pointer items-center justify-center border-r border-border/50 bg-sidebar/80 text-muted transition-colors hover:border-accent/40 hover:bg-accent/15 hover:text-accent"
+        className="flex h-full shrink-0 cursor-pointer items-center justify-center border-r border-border bg-sidebar/80 text-muted transition-colors hover:border-accent/40 hover:bg-accent/15 hover:text-accent"
         style={{ width: STRIP_WIDTH }}
         onClick={handleExpand}
         onMouseEnter={() => setIsPeeking(true)}

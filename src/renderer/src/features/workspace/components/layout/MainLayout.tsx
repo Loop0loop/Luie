@@ -263,7 +263,7 @@ export default function MainLayout({
       ? "editor-adjacent-surface editor-ai-surface"
       : "bg-sidebar";
   const contentSurfaceClass = hasCustomAdjacentSurface
-    ? "bg-research border-0 outline-none"
+    ? "bg-research border-0 outline-hidden"
     : shouldRenderContext
       ? "bg-[var(--ai-panel-bg)]"
       : "";
@@ -527,7 +527,7 @@ export default function MainLayout({
                 className={`absolute right-2 top-2 z-[110] flex h-8 items-center gap-1.5 rounded-control px-2.5 text-xs font-medium transition-all cursor-pointer ${
                   isContextOpen
                     ? "bg-accent text-accent-fg shadow-control font-semibold"
-                    : "border border-border/80 bg-element text-fg hover:bg-surface-hover hover:text-accent shadow-control"
+                    : "border border-border bg-element text-fg hover:bg-surface-hover hover:text-accent shadow-control"
                 }`}
                 style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
                 title={

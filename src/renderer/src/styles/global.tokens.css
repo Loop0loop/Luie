@@ -404,7 +404,13 @@
   /* NOTE: 36% white. 가장 밝은 표면(--bg-element #313135) 위에서 3.07:1로,
      8%/16%로는 도달할 수 없는 UI 경계 요구를 만족한다. */
   --border-strong: rgba(255, 255, 255, 0.36);
-  --border-focus: #52525b;
+  /* NOTE: 이전 값은 가장 밝은 dark 표면(`--ai-panel-bg`) 위에서 1.65:1로
+     `--border-strong`(3.04)보다도 약했다. 이 토큰의 유일한 소비처인 canvas resize
+     handle은 WCAG 1.4.11의 graphical object라 3:1이 필요하다. axis(b−r)는 9를
+     유지하고 명도만 올려 3.73~5.08을 확보했다 — `--text-secondary`보다 어두우므로
+     테두리가 글자보다 밝아지는 역전은 생기지 않는다.
+     focus 표시 자체는 이 토큰이 아니라 accent ring이 담당한다(DESIGN.md `--color-ring`). */
+  --border-focus: #8a8a93;
 
   --grid-line: var(--border-default);
 

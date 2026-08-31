@@ -150,7 +150,7 @@ function SnapshotViewer({ snapshot, onApplySnapshotText }: SnapshotViewerProps) 
   );
 
   return (
-    <div className="research-surface flex h-full w-full flex-col overflow-hidden border-0 outline-none">
+    <div className="research-surface flex h-full w-full flex-col overflow-hidden border-0 outline-hidden">
       <div className="flex items-center justify-between bg-surface/70 px-4 py-2 text-sm">
         <div className="flex items-center gap-2 text-muted-fg">
           <Calendar className="w-4 h-4" />
@@ -217,7 +217,7 @@ function SnapshotViewer({ snapshot, onApplySnapshotText }: SnapshotViewerProps) 
         )}
       </div>
 
-      <div className="research-surface flex-1 min-h-0 border-0 outline-none">
+      <div className="research-surface flex-1 min-h-0 border-0 outline-hidden">
         <Editor
           key={snapshot.id} // Re-mount on snapshot change
           initialTitle={snapshot.description || ""}

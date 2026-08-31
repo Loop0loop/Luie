@@ -73,7 +73,7 @@ export function OfflineBanner() {
                 </div>
                 <button
                     onClick={() => setDismissed(true)}
-                    className="shrink-0 rounded-control p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    className="shrink-0 rounded-control p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                     aria-label={t("common.dismiss", "Dismiss")}
                     title={t("common.dismiss", "Dismiss")}
                 >

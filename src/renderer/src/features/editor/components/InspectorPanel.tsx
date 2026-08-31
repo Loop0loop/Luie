@@ -60,8 +60,8 @@ export default function InspectorPanel({
   }
 
   return (
-    <div className="flex flex-col h-full bg-panel border-l border-border/50 text-sm">
-      <div className="flex items-center justify-around border-b border-border/50 bg-surface/50 p-1">
+    <div className="flex flex-col h-full bg-panel border-l border-border text-sm">
+      <div className="flex items-center justify-around border-b border-border bg-surface/50 p-1">
         <InspectorTabButton
           icon={<FileText className="w-4 h-4" />}
           isActive={activeTab === "synopsis"}
@@ -108,7 +108,7 @@ export default function InspectorPanel({
               <h3 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">
                 {t("inspector.section.image")}
               </h3>
-              <div className="aspect-video bg-surface/50 border border-border/50 rounded-panel flex items-center justify-center text-muted border-dashed">
+              <div className="aspect-video bg-surface/50 border border-border rounded-panel flex items-center justify-center text-muted border-dashed">
                 <span className="text-xs">
                   {t("inspector.image.placeholder")}
                 </span>
@@ -150,12 +150,12 @@ export default function InspectorPanel({
               </div>
             </div>
 
-            <div className="border-t border-border/50 pt-4 space-y-4">
+            <div className="border-t border-border pt-4 space-y-4">
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted">
                   {t("inspector.meta.label")}
                 </label>
-                <select className="w-full bg-surface border border-border rounded px-2 py-1 text-sm focus:ring-1 focus:ring-accent">
+                <select className="w-full bg-surface border border-border rounded px-2 py-1 text-sm focus:ring-2 focus:ring-ring">
                   <option>{t("inspector.label.none")}</option>
                   <option>{t("inspector.label.concept")}</option>
                   <option>{t("inspector.label.draft")}</option>
@@ -165,7 +165,7 @@ export default function InspectorPanel({
                 <label className="text-xs font-medium text-muted">
                   {t("inspector.meta.status")}
                 </label>
-                <select className="w-full bg-surface border border-border rounded px-2 py-1 text-sm focus:ring-1 focus:ring-accent">
+                <select className="w-full bg-surface border border-border rounded px-2 py-1 text-sm focus:ring-2 focus:ring-ring">
                   <option>{t("inspector.status.todo")}</option>
                   <option>{t("inspector.status.inprogress")}</option>
                   <option>{t("inspector.status.done")}</option>
@@ -177,7 +177,7 @@ export default function InspectorPanel({
 
         {activeTab === "notes" && (
           <div className="p-0 h-full flex flex-col">
-            <div className="px-4 py-2 bg-surface/50 border-b border-border/50 text-xs font-medium text-muted">
+            <div className="px-4 py-2 bg-surface/50 border-b border-border text-xs font-medium text-muted">
               {t("inspector.notes.document")}
             </div>
             <div className="p-4 text-xs text-muted flex flex-col items-center justify-center h-full opacity-60">

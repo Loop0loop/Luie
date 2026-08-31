@@ -143,7 +143,7 @@ function EntityNodeInner({ id, data, selected, dragging }: NodeProps<RFEntityNod
                 e.stopPropagation();
                 setIsColorPickerOpen((prev) => !prev);
               }}
-              className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-canvas-control-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+              className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-canvas-control-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
               title={t("canvas.node.changeColor", "색상 변경")}
             >
               <Palette className="h-3.5 w-3.5" style={{ color: nodeColor }} />
@@ -183,7 +183,7 @@ function EntityNodeInner({ id, data, selected, dragging }: NodeProps<RFEntityNod
               setIsEditingName(true);
               setDraftName(data.label);
             }}
-            className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-canvas-control-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+            className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-canvas-control-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
             title={t("canvas.node.editName", "적기")}
           >
             <Type className="h-3.5 w-3.5" />
@@ -193,7 +193,7 @@ function EntityNodeInner({ id, data, selected, dragging }: NodeProps<RFEntityNod
           <button
             type="button"
             onClick={handleOpenInspector}
-            className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-canvas-control-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+            className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-canvas-control-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
             title={t("canvas.node.openInspector", "상세 정보")}
             aria-label={t("canvas.node.openInspector", "상세 정보")}
           >
@@ -206,7 +206,7 @@ function EntityNodeInner({ id, data, selected, dragging }: NodeProps<RFEntityNod
           <button
             type="button"
             onClick={handleDelete}
-            className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-danger-fg/20 text-muted hover:text-danger-fg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger-fg/50 cursor-pointer"
+            className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-danger-fg/20 text-muted hover:text-danger-fg transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-danger-fg cursor-pointer"
             title={t("canvas.node.delete", "노드 삭제")}
             aria-label={t("canvas.node.delete", "노드 삭제")}
           >
@@ -227,7 +227,7 @@ function EntityNodeInner({ id, data, selected, dragging }: NodeProps<RFEntityNod
       >
         <div className="flex min-w-0 flex-1 flex-col p-4 justify-between">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-border/40 bg-element/60 backdrop-blur-sm">
+            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-border bg-element/60 backdrop-blur-sm">
               <span
                 className="h-1.5 w-1.5 rounded-full shrink-0 shadow-sm"
                 style={{ backgroundColor: nodeColor }}
@@ -251,7 +251,7 @@ function EntityNodeInner({ id, data, selected, dragging }: NodeProps<RFEntityNod
                 onChange={(e) => setDraftName(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onBlur={handleSaveName}
-                className="w-full rounded-md border border-border/80 bg-panel px-2 py-0.5 text-[13px] font-semibold leading-snug tracking-tight text-fg shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+                className="w-full rounded-md border border-border bg-panel px-2 py-0.5 text-[13px] font-semibold leading-snug tracking-tight text-fg shadow-sm outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                 placeholder={t("canvas.node.namePlaceholder", "이름 입력")}
               />
             ) : (

@@ -52,7 +52,7 @@ export function MessageList({ messages, onJumpEvidence }: MessageListProps) {
             className={`flex gap-3 items-start ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             {msg.role === "assistant" && (
-              <div className="w-7 h-7 rounded-full bg-element/60 border border-border/40 flex items-center justify-center shrink-0 shadow-sm">
+              <div className="w-7 h-7 rounded-full bg-element/60 border border-border flex items-center justify-center shrink-0 shadow-sm">
                 <Bot aria-hidden="true" className="w-3.5 h-3.5 text-muted" />
               </div>
             )}
@@ -62,7 +62,7 @@ export function MessageList({ messages, onJumpEvidence }: MessageListProps) {
               <div
                 className={`text-[13px] leading-[1.6] whitespace-pre-wrap ${
                   msg.role === "user"
-                    ? "bg-element/60 border border-border/40 text-fg/90 px-4 py-2.5 rounded-panel rounded-tr-none shadow-sm"
+                    ? "bg-element/60 border border-border text-fg/90 px-4 py-2.5 rounded-panel rounded-tr-none shadow-sm"
                     : "text-fg/90 py-1 px-1"
                 }`}
               >
@@ -108,7 +108,7 @@ export function MessageList({ messages, onJumpEvidence }: MessageListProps) {
                       <button
                         key={ev.chunkId}
                         onClick={() => void onJumpEvidence(ev)}
-                        className="block w-full rounded-control border border-border/40 bg-element/20 px-2.5 py-1.5 text-left text-[11px] text-muted/80 transition-colors duration-150 hover:border-accent/30 hover:bg-element-hover hover:text-accent"
+                        className="block w-full rounded-control border border-border bg-element/20 px-2.5 py-1.5 text-left text-[11px] text-muted/80 transition-colors duration-150 hover:border-accent/30 hover:bg-element-hover hover:text-accent"
                         title={ev.quote}
                       >
                         <span className="mb-1 inline-flex items-center gap-1.5 text-[10px] text-muted/60">
@@ -128,7 +128,7 @@ export function MessageList({ messages, onJumpEvidence }: MessageListProps) {
                     <button
                       key={ev.chunkId}
                       onClick={() => void onJumpEvidence(ev)}
-                      className="inline-flex items-center gap-1.5 text-[10px] text-muted/60 hover:text-accent bg-element/20 hover:bg-element-hover border border-border/40 rounded-full px-2.5 py-0.5 transition-colors duration-150"
+                      className="inline-flex items-center gap-1.5 text-[10px] text-muted/60 hover:text-accent bg-element/20 hover:bg-element-hover border border-border rounded-full px-2.5 py-0.5 transition-colors duration-150"
                       title={ev.quote}
                     >
                       <BookOpen aria-hidden="true" className="w-3 h-3 shrink-0" />
@@ -140,7 +140,7 @@ export function MessageList({ messages, onJumpEvidence }: MessageListProps) {
             </div>
 
             {msg.role === "user" && (
-              <div className="w-7 h-7 rounded-full bg-element/30 border border-border/40 flex items-center justify-center shrink-0 shadow-sm">
+              <div className="w-7 h-7 rounded-full bg-element/30 border border-border flex items-center justify-center shrink-0 shadow-sm">
                 <User aria-hidden="true" className="w-3.5 h-3.5 text-muted" />
               </div>
             )}

@@ -28,7 +28,7 @@ export function IdentityCard({ kind, name, identityLine, profile }: IdentityCard
 
   return (
     <section className="rounded-panel border border-border bg-surface overflow-hidden">
-      <header className="px-5 py-3.5 border-b border-border/50 flex items-center gap-2">
+      <header className="px-5 py-3.5 border-b border-border flex items-center gap-2">
         <Sparkles size={12} className="text-muted" />
         <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">
           {t("entityVisual.identity.title")}
@@ -54,13 +54,13 @@ export function IdentityCard({ kind, name, identityLine, profile }: IdentityCard
           {profile ? (
             <div className="mt-4 flex flex-col gap-3">
               <div className="flex flex-wrap gap-2">
-                <span className="rounded-control border border-border/70 bg-panel px-2 py-1 text-[11px] text-muted">
+                <span className="rounded-control border border-border bg-panel px-2 py-1 text-[11px] text-muted">
                   {profile.status}
                 </span>
-                <span className="rounded-control border border-border/70 bg-panel px-2 py-1 text-[11px] text-muted">
+                <span className="rounded-control border border-border bg-panel px-2 py-1 text-[11px] text-muted">
                   출현 {profile.mentionCount}회
                 </span>
-                <span className="rounded-control border border-border/70 bg-panel px-2 py-1 text-[11px] text-muted">
+                <span className="rounded-control border border-border bg-panel px-2 py-1 text-[11px] text-muted">
                   {formatMentionRange(profile)}
                 </span>
               </div>

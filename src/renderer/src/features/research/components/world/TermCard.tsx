@@ -35,7 +35,7 @@ export const TermCard = ({
         </div>
 
         {item.category && (
-          <span className="inline-flex self-start items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-active text-fg/80 border border-border/50">
+          <span className="inline-flex self-start items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-active text-fg/80 border border-border">
             {item.category}
           </span>
         )}

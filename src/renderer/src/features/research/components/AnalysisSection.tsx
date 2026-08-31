@@ -174,7 +174,7 @@ function FloatingWrapper({
       data-testid="analysis-floating-container"
       role="dialog"
       aria-label={t("analysis.title")}
-      className={`group fixed bottom-24 right-6 rounded-3xl border border-border/30 bg-panel/80 dark:bg-panel/70 backdrop-blur-xl shadow-panel z-modal flex flex-col overflow-hidden cursor-grab active:cursor-grabbing ${
+      className={`group fixed bottom-24 right-6 rounded-3xl border border-border bg-panel/80 dark:bg-panel/70 backdrop-blur-xl shadow-panel z-modal flex flex-col overflow-hidden cursor-grab active:cursor-grabbing ${
         isDraggingState ? "transition-none select-none" : "transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
       }`}
       style={{
@@ -345,11 +345,11 @@ export default function AnalysisSection({
       } ${floating ? "bg-transparent" : "bg-panel"}`}
     >
       {!floatingCompact && (
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border/15 bg-element/5 select-none shrink-0 gap-2">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-element/5 select-none shrink-0 gap-2">
           <div
             role="tablist"
             aria-label={t("analysis.title")}
-            className="flex items-center gap-0.5 bg-element/10 border border-border/15 p-0.5 rounded-full text-[11px] font-medium tracking-tight text-muted"
+            className="flex items-center gap-0.5 bg-element/10 border border-border p-0.5 rounded-full text-[11px] font-medium tracking-tight text-muted"
           >
             <button
               type="button"
@@ -434,7 +434,7 @@ export default function AnalysisSection({
             <div className="h-full flex flex-col min-h-0">
               {isEmpty ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-6 select-none animate-[fadeIn_0.4s_ease-out]">
-                  <div className="w-12 h-12 rounded-2xl bg-element/20 border border-border/10 flex items-center justify-center shadow-sm mb-5">
+                  <div className="w-12 h-12 rounded-2xl bg-element/20 border border-border flex items-center justify-center shadow-sm mb-5">
                     <Bot className="w-5 h-5 text-muted" />
                   </div>
                   <h3 className="text-[13px] font-semibold text-fg/90 mb-2 tracking-tight">
@@ -447,7 +447,7 @@ export default function AnalysisSection({
                     <button
                       type="button"
                       onClick={() => chat.setInput(t("analysis.emptyState.summaryPrompt"))}
-                      className="rounded-2xl border border-border/5 hover:border-accent/20 bg-element/5 hover:bg-element/10 p-4 text-left text-xs transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 active:scale-98 group"
+                      className="rounded-2xl border border-border hover:border-accent/20 bg-element/5 hover:bg-element/10 p-4 text-left text-xs transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 active:scale-98 group"
                     >
                       <BookOpen className="w-3.5 h-3.5 text-muted group-hover:text-accent mb-2 transition-colors" />
                       <div className="font-semibold mb-1 text-fg/80">{t("analysis.emptyState.summaryLabel")}</div>
@@ -456,7 +456,7 @@ export default function AnalysisSection({
                     <button
                       type="button"
                       onClick={() => chat.setInput(t("analysis.emptyState.relationPrompt"))}
-                      className="rounded-2xl border border-border/5 hover:border-accent/20 bg-element/5 hover:bg-element/10 p-4 text-left text-xs transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 active:scale-98 group"
+                      className="rounded-2xl border border-border hover:border-accent/20 bg-element/5 hover:bg-element/10 p-4 text-left text-xs transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 active:scale-98 group"
                     >
                       <Users className="w-3.5 h-3.5 text-muted group-hover:text-accent mb-2 transition-colors" />
                       <div className="font-semibold mb-1 text-fg/80">{t("analysis.emptyState.relationLabel")}</div>
@@ -465,7 +465,7 @@ export default function AnalysisSection({
                     <button
                       type="button"
                       onClick={() => chat.setInput(t("analysis.emptyState.conflictPrompt"))}
-                      className="rounded-2xl border border-border/5 hover:border-accent/20 bg-element/5 hover:bg-element/10 p-4 text-left text-xs transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 active:scale-98 group"
+                      className="rounded-2xl border border-border hover:border-accent/20 bg-element/5 hover:bg-element/10 p-4 text-left text-xs transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 active:scale-98 group"
                     >
                       <Scale className="w-3.5 h-3.5 text-muted group-hover:text-accent mb-2 transition-colors" />
                       <div className="font-semibold mb-1 text-fg/80">{t("analysis.emptyState.conflictLabel")}</div>
@@ -474,7 +474,7 @@ export default function AnalysisSection({
                     <button
                       type="button"
                       onClick={() => chat.setInput(t("analysis.emptyState.foreshadowPrompt"))}
-                      className="rounded-2xl border border-border/5 hover:border-accent/20 bg-element/5 hover:bg-element/10 p-4 text-left text-xs transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 active:scale-98 group"
+                      className="rounded-2xl border border-border hover:border-accent/20 bg-element/5 hover:bg-element/10 p-4 text-left text-xs transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 active:scale-98 group"
                     >
                       <Search className="w-3.5 h-3.5 text-muted group-hover:text-accent mb-2 transition-colors" />
                       <div className="font-semibold mb-1 text-fg/80">{t("analysis.emptyState.foreshadowLabel")}</div>

@@ -75,7 +75,7 @@ export function MoreMenu({
               <div className="flex flex-wrap items-center gap-1 p-1">
                 {compactContent}
               </div>
-              <div className="my-1 h-px bg-border/60" />
+              <div className="my-1 h-px bg-border" />
             </>
           )}
           <button
@@ -90,7 +90,7 @@ export function MoreMenu({
             <FileOutput className="h-3.5 w-3.5 text-muted" />
             <span>{t("toolbar.export", "내보내기")}</span>
           </button>
-          <div className="my-1 h-px bg-border/60" />
+          <div className="my-1 h-px bg-border" />
           {(
             [
               {
@@ -128,7 +128,7 @@ export function MoreMenu({
               <span>{label}</span>
             </button>
           ))}
-          <div className="my-1 h-px bg-border/60" />
+          <div className="my-1 h-px bg-border" />
           <button
             type="button"
             className="flex w-full items-center gap-2 rounded-control px-3 py-2 text-left text-xs text-fg transition-colors hover:bg-hover"

@@ -80,7 +80,7 @@ export default function CharacterManager({
             <button
               type="button"
               key={template.id}
-              className="flex flex-col items-center justify-center gap-2 rounded-panel border border-border p-4 text-sm font-semibold transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="flex flex-col items-center justify-center gap-2 rounded-panel border border-border p-4 text-sm font-semibold transition-colors hover:bg-surface-hover focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => handleAddCharacter(template.id)}
             >
               <LayoutTemplate className="icon-md text-muted" aria-hidden="true" />

@@ -337,14 +337,14 @@ export function WorkspacePanels({
               }}
               className={`min-w-0 relative flex flex-col ${
                 isResearchPanel || panel.content.type === "snapshot" || isEditorPanel
-                  ? "bg-research border-0 outline-none"
+                  ? "bg-research border-0 outline-hidden"
                   : "bg-panel"
               }`}
             >
               <div
                 className={`flex h-12 shrink-0 items-center px-4 pr-12 ${
                   isResearchPanel || panel.content.type === "snapshot" || isEditorPanel
-                    ? "bg-research border-0 outline-none"
+                    ? "bg-research border-0 outline-hidden"
                     : "border-b border-border bg-sidebar"
                 }`}
               >
@@ -371,7 +371,7 @@ export function WorkspacePanels({
                       setFocusedClosableTarget({ kind: "panel", id: panel.id });
                       removePanelWithAnimation(panel.id);
                     }}
-                    className="ml-auto flex size-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    className="ml-auto flex size-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                     aria-label={t("sidebar.toggle.close")}
                     title={t("sidebar.toggle.close")}
                   >
@@ -405,7 +405,7 @@ export function WorkspacePanels({
                     <ExportPreviewPanel title={activeChapterTitle} />
                   ) : (
                     <div
-                      className="research-surface h-full overflow-hidden border-0 outline-none"
+                      className="research-surface h-full overflow-hidden border-0 outline-hidden"
                     >
                       <SplitViewEditor
                         chapterId={editorChapter?.id}

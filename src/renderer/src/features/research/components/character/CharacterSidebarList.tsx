@@ -67,7 +67,7 @@ export function CharacterSidebarList({
             <button
               type="button"
               key={template.id}
-              className="flex flex-col items-center justify-center p-4 border border-border rounded-panel cursor-pointer hover:bg-surface-hover transition-colors gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="flex flex-col items-center justify-center p-4 border border-border rounded-panel cursor-pointer hover:bg-surface-hover transition-colors gap-2 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => handleAddCharacter(template.id)}
             >
               <div className="p-3 bg-surface rounded-full shadow-sm">

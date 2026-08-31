@@ -233,7 +233,7 @@ export const EditorTab = memo(function EditorTab({
                     value={fontSearch}
                     onChange={(e) => setFontSearch(e.target.value)}
                     placeholder={t("settings.systemFonts.search", "폰트 검색…")}
-                    className="w-full pl-8 pr-3 py-2 text-sm border border-border rounded-panel bg-surface text-fg focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-full pl-8 pr-3 py-2 text-sm border border-border rounded-panel bg-surface text-fg focus:outline-hidden focus:ring-2 focus:ring-ring"
                   />
                 </div>
                 <div className="max-h-52 overflow-y-auto rounded-panel border border-border divide-y divide-border scrollbar-hide">
@@ -302,7 +302,7 @@ export const EditorTab = memo(function EditorTab({
             value={customInput}
             onChange={(e) => setCustomInput(e.target.value)}
             placeholder={t("settings.customFont.placeholder")}
-            className="flex-1 px-3 py-2 border border-border rounded-panel bg-surface text-fg text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+            className="flex-1 px-3 py-2 border border-border rounded-panel bg-surface text-fg text-sm focus:outline-hidden focus:ring-2 focus:ring-ring"
           />
           <button
             onClick={() => {
@@ -343,7 +343,7 @@ export const EditorTab = memo(function EditorTab({
                 onApplySettings({ spellcheckEnabled: !spellcheckEnabled })
               }
               aria-pressed={spellcheckEnabled}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${
                 spellcheckEnabled ? "bg-accent" : "bg-border"
               }`}
             >
@@ -463,7 +463,7 @@ export const EditorTab = memo(function EditorTab({
             onClick={() =>
               void onApplySettings({ typewriterMode: !typewriterMode })
             }
-            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-surface ${
               typewriterMode ? "bg-accent" : "bg-border"
             }`}
           >

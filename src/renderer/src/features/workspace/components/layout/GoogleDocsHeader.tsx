@@ -27,7 +27,7 @@ function DocsHeaderMenuButton(props: {
       aria-label={label}
       aria-pressed={active || undefined}
       className={cn(
-        "flex h-8 items-center gap-1.5 rounded-control px-2 text-xs font-medium text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+        "flex h-8 items-center gap-1.5 rounded-control px-2 text-xs font-medium text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
         active && "text-accent",
       )}
       title={label}
@@ -76,7 +76,7 @@ export function GoogleDocsHeader({
               }
             }}
             placeholder={t("project.defaults.untitled")}
-            className="max-w-[400px] min-w-[150px] truncate rounded-[4px] border border-transparent bg-transparent px-1 py-0.5 text-[18px] text-fg transition-colors duration-150 hover:bg-surface-hover focus:bg-app focus:outline-none focus:ring-2 focus:ring-accent"
+            className="max-w-[400px] min-w-[150px] truncate rounded-[4px] border border-transparent bg-transparent px-1 py-0.5 text-[18px] text-fg transition-colors duration-150 hover:bg-surface-hover focus:bg-app focus:outline-hidden focus:ring-2 focus:ring-ring"
           />
 
           <nav

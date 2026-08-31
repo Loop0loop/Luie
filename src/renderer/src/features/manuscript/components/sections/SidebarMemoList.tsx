@@ -43,7 +43,7 @@ export default function SidebarMemoList() {
 
   return (
     <div className="flex flex-col h-full bg-sidebar/50">
-      <div className="flex items-center justify-end px-2 py-1 gap-1 border-b border-border/20">
+      <div className="flex items-center justify-end px-2 py-1 gap-1 border-b border-border">
         <button
           className="p-1 hover:bg-white/10 rounded text-muted hover:text-fg transition-colors"
           onClick={handleAddNote}
@@ -71,7 +71,7 @@ export default function SidebarMemoList() {
           >
             <div
               className={cn(
-                "px-3 py-2 border-b border-border/20 cursor-pointer hover:bg-white/5 transition-colors",
+                "px-3 py-2 border-b border-border cursor-pointer hover:bg-white/5 transition-colors",
                 note.id === activeNoteId &&
                   "bg-white/10 text-accent font-medium",
               )}

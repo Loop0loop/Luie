@@ -270,7 +270,7 @@ export function PromptComposer({
               aria-label={t("analysis.composer.timelineChapterSelect")}
               value={timelineChapterId}
               onChange={(event) => onChangeTimelineChapter(event.target.value)}
-              className="mt-1 w-full truncate rounded-control border border-border/20 bg-element/30 hover:bg-element/50 px-2 py-0.5 text-[9px] leading-tight text-muted/95 focus:outline-none focus:ring-1 focus:ring-accent/20 transition-colors duration-150 select-none cursor-pointer"
+              className="mt-1 w-full truncate rounded-control border border-border bg-element/30 hover:bg-element/50 px-2 py-0.5 text-[9px] leading-tight text-muted/95 focus:outline-hidden focus:ring-2 focus:ring-ring transition-colors duration-150 select-none cursor-pointer"
             >
               {timelineChapters.map((chapter) => (
                 <option key={chapter.id} value={chapter.id}>
@@ -293,7 +293,7 @@ export function PromptComposer({
 
       <textarea
         aria-label={t("analysis.composer.placeholder")}
-        className="flex-1 text-[13px] bg-transparent border-none resize-none text-fg/90 placeholder:text-muted/50 focus:outline-none min-h-[22px] max-h-[120px] py-1 px-1.5 align-middle custom-scrollbar leading-[1.5]"
+        className="flex-1 text-[13px] bg-transparent border-none resize-none text-fg/90 placeholder:text-muted/50 focus:outline-hidden min-h-[22px] max-h-[120px] py-1 px-1.5 align-middle custom-scrollbar leading-[1.5]"
         placeholder={t("analysis.composer.placeholder")}
         value={input}
         onChange={(event) => setInput(event.target.value)}

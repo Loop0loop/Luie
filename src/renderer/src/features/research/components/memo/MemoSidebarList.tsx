@@ -32,7 +32,7 @@ export function MemoSidebarList({
           type="button"
           onClick={handleAddNote}
           aria-label={t("memo.addTitle", "Add memo")}
-          className="p-0.5 text-muted hover:text-fg transition-colors rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="p-0.5 text-muted hover:text-fg transition-colors rounded-control focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Plus className="icon-sm" aria-hidden="true" />
         </button>
@@ -56,7 +56,7 @@ export function MemoSidebarList({
               type="button"
               aria-current={activeNoteId === note.id ? "true" : undefined}
               className={cn(
-                "flex flex-col text-left px-4 py-3 border-b border-border cursor-pointer transition-colors hover:bg-element-hover overflow-hidden w-full box-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
+                "flex flex-col text-left px-4 py-3 border-b border-border cursor-pointer transition-colors hover:bg-element-hover overflow-hidden w-full box-border focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                 activeNoteId === note.id &&
                   "bg-active border-l-[3px] border-l-accent pl-3.25",
               )}

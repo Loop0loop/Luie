@@ -97,7 +97,7 @@ export function TermManager({ termId }: TermManagerProps) {
           </div>
           <div className="min-w-0">
             <BufferedInput
-              className="w-full p-2 bg-element border border-border rounded text-sm text-fg outline-none focus:border-active focus:ring-1 focus:ring-active transition-all"
+              className="w-full p-2 bg-element border border-border rounded text-sm text-fg outline-hidden focus:border-accent focus:ring-2 focus:ring-ring transition-all"
               value={currentTerm.term}
               onSave={(val) => updateTerm({ id: currentTerm.id, term: val })}
             />
@@ -107,7 +107,7 @@ export function TermManager({ termId }: TermManagerProps) {
           </div>
           <div className="min-w-0">
             <BufferedTextArea
-              className="w-full p-2 bg-element border border-border rounded text-sm text-fg outline-none focus:border-active focus:ring-1 focus:ring-active transition-all font-sans leading-relaxed"
+              className="w-full p-2 bg-element border border-border rounded text-sm text-fg outline-hidden focus:border-accent focus:ring-2 focus:ring-ring transition-all font-sans leading-relaxed"
               value={currentTerm.definition || ""}
               onSave={(val) =>
                 updateTerm({ id: currentTerm.id, definition: val })
@@ -120,7 +120,7 @@ export function TermManager({ termId }: TermManagerProps) {
           </div>
           <div className="min-w-0">
             <BufferedInput
-              className="w-full p-2 bg-element border border-border rounded text-sm text-fg outline-none focus:border-active focus:ring-1 focus:ring-active transition-all"
+              className="w-full p-2 bg-element border border-border rounded text-sm text-fg outline-hidden focus:border-accent focus:ring-2 focus:ring-ring transition-all"
               value={currentTerm.category || ""}
               onSave={(val) =>
                 updateTerm({ id: currentTerm.id, category: val })

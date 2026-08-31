@@ -27,11 +27,11 @@ export function InfoboxRow({
 }: InfoboxRowProps) {
   const { t } = useTranslation();
   return (
-    <div className="flex flex-col gap-1 py-2 border-b border-border/40 last:border-b-0 group/row">
+    <div className="flex flex-col gap-1 py-2 border-b border-border last:border-b-0 group/row">
       <div className="flex items-center justify-between gap-1">
         {isCustom ? (
           <BufferedInput
-            className="border-none bg-transparent w-full text-[11px] font-medium text-muted p-0 focus:outline-none focus:text-fg/80"
+            className="border-none bg-transparent w-full text-[11px] font-medium text-muted p-0 focus:outline-hidden focus:text-fg/80"
             value={label}
             onSave={onLabelSave || (() => {})}
           />
@@ -55,7 +55,7 @@ export function InfoboxRow({
       <div className="flex items-center text-fg text-[13px]">
         {type === "select" ? (
           <select
-            className="border-none bg-transparent w-full text-fg text-[13px] p-0 focus:outline-none cursor-pointer"
+            className="border-none bg-transparent w-full text-fg text-[13px] p-0 focus:outline-hidden cursor-pointer"
             value={value || ""}
             onChange={(e) => onSave?.(e.target.value)}
           >
@@ -68,7 +68,7 @@ export function InfoboxRow({
           </select>
         ) : (
           <BufferedInput
-            className="border-none bg-transparent w-full text-fg text-[13px] p-0 focus:outline-none placeholder:text-muted/35"
+            className="border-none bg-transparent w-full text-fg text-[13px] p-0 focus:outline-hidden placeholder:text-muted/35"
             value={value || ""}
             placeholder={placeholder || t("character.wiki.valuePlaceholder")}
             onSave={onSave || (() => {})}
@@ -103,9 +103,9 @@ export function Infobox({
   );
 
   return (
-    <div className="w-full shrink-0 overflow-hidden rounded-panel border border-border/70 bg-surface text-[13px] shadow-sm">
+    <div className="w-full shrink-0 overflow-hidden rounded-panel border border-border bg-surface text-[13px] shadow-sm">
       {/* Infobox Header with Side Hide/Close button */}
-      <div className="border-b border-border/50 bg-element/40 px-3.5 py-2.5 flex items-center justify-between">
+      <div className="border-b border-border bg-element/40 px-3.5 py-2.5 flex items-center justify-between">
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-[11px] font-semibold text-muted uppercase tracking-wider">
             {t("character.wiki.infoboxTitle", "프로필 요약")}
@@ -128,8 +128,8 @@ export function Infobox({
 
       <div className="p-4">
         {portrait && (
-          <div className="flex items-center justify-center pb-3.5 mb-2 border-b border-border/30">
-            <div className="relative flex size-24 items-center justify-center overflow-hidden rounded-full bg-element text-subtle border-2 border-border/60 shadow-xs ring-4 ring-element/50">
+          <div className="flex items-center justify-center pb-3.5 mb-2 border-b border-border">
+            <div className="relative flex size-24 items-center justify-center overflow-hidden rounded-full bg-element text-subtle border-2 border-border shadow-xs ring-4 ring-element/50">
               {portrait}
             </div>
           </div>
@@ -143,7 +143,7 @@ export function Infobox({
 
         <button
           type="button"
-          className="mt-3.5 flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-border/80 py-1.5 text-xs font-medium text-subtle hover:border-accent hover:text-accent hover:bg-accent/5 transition-all cursor-pointer"
+          className="mt-3.5 flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-border py-1.5 text-xs font-medium text-subtle hover:border-accent hover:text-accent hover:bg-accent/5 transition-all cursor-pointer"
           onClick={onAddField}
         >
           <Plus size={12} />

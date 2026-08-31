@@ -48,12 +48,12 @@ export function ApiKeysCard({
               value={inputOpenaiApiKey}
               onChange={(e) => setInputOpenaiApiKey(e.target.value)}
               placeholder={t("settings.localLlm.apiKeys.placeholder")}
-              className="w-full rounded-control border border-border bg-panel pl-control-x pr-10 py-control-y text-xs text-fg placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-full rounded-control border border-border bg-panel pl-control-x pr-10 py-control-y text-xs text-fg placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-ring"
             />
             <button
               type="button"
               onClick={() => setShowOpenaiKey(!showOpenaiKey)}
-              className="absolute right-2 text-muted hover:text-fg-secondary focus:outline-none"
+              className="absolute right-2 text-muted hover:text-fg-secondary focus:outline-hidden"
             >
               {showOpenaiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -71,12 +71,12 @@ export function ApiKeysCard({
               value={inputGeminiApiKey}
               onChange={(e) => setInputGeminiApiKey(e.target.value)}
               placeholder={t("settings.localLlm.apiKeys.placeholder")}
-              className="w-full rounded-control border border-border bg-panel pl-control-x pr-10 py-control-y text-xs text-fg placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-full rounded-control border border-border bg-panel pl-control-x pr-10 py-control-y text-xs text-fg placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-ring"
             />
             <button
               type="button"
               onClick={() => setShowGeminiKey(!showGeminiKey)}
-              className="absolute right-2 text-muted hover:text-fg-secondary focus:outline-none"
+              className="absolute right-2 text-muted hover:text-fg-secondary focus:outline-hidden"
             >
               {showGeminiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>

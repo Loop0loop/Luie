@@ -82,7 +82,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => onApplySettings({ enableAnimations: !enableAnimations })}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${enableAnimations ? "bg-accent" : "bg-border"
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-surface ${enableAnimations ? "bg-accent" : "bg-border"
                                 }`}
                         >
                             <span
@@ -239,7 +239,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                     {(["character", "event", "faction", "term"] as const).map((type) => (
                         <div key={type} className="flex flex-col items-center gap-2 p-3 rounded-panel border border-border bg-surface hover:bg-surface-hover transition-colors">
                             <span className="text-sm font-medium text-fg capitalize">{t(`research.graph.entity.${type}`, type)}</span>
-                            <div className="relative w-8 h-8 rounded-full overflow-hidden border border-border/50 ring-2 ring-transparent focus-within:ring-accent transition-all cursor-pointer">
+                            <div className="relative w-8 h-8 rounded-full overflow-hidden border border-border ring-2 ring-transparent focus-within:ring-accent transition-all cursor-pointer">
                                 <input
                                     type="color"
                                     value={entityColors?.[type as keyof typeof entityColors] ?? "#000000"}

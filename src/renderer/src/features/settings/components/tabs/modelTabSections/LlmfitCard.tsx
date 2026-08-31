@@ -82,7 +82,7 @@ export function LlmfitCard({ t, llmfitResult, llmfitLoading }: LlmfitCardProps) 
               type="button"
               onClick={() => setShowTech((v) => !v)}
               aria-expanded={showTech}
-              className="flex w-full items-center justify-center gap-1 text-[11px] text-muted hover:text-fg-secondary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-control py-0.5"
+              className="flex w-full items-center justify-center gap-1 text-[11px] text-muted hover:text-fg-secondary transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-ring rounded-control py-0.5"
             >
               <span>{t("settings.localLlm.llmfit.techToggle")}</span>
               <ChevronDown

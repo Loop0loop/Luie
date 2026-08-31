@@ -86,14 +86,14 @@ function EntityDocumentView({
         >
           <div className="mt-4">
             <BufferedInput
-              className="mt-5 w-full border-none bg-transparent p-0 text-[36px] font-extrabold leading-tight tracking-tight text-fg outline-none placeholder:text-subtle focus-visible:bg-surface-hover"
+              className="mt-5 w-full border-none bg-transparent p-0 text-[36px] font-extrabold leading-tight tracking-tight text-fg outline-hidden placeholder:text-subtle focus-visible:bg-surface-hover"
               style={{ fontFamily: fontFamilyCss }}
               value={entity.name}
               placeholder={t("canvas.document.titlePlaceholder", "제목 없음")}
               onSave={(name) => update({ id: entity.id, name })}
             />
 
-            <div className="mt-6 flex flex-col gap-3 border-b border-border/40 pb-6 text-sm">
+            <div className="mt-6 flex flex-col gap-3 border-b border-border pb-6 text-sm">
               <PropertyLine
                 icon={<AlignLeft className="h-4 w-4" />}
                 label={t("canvas.document.description", "집필 요약")}
@@ -104,7 +104,7 @@ function EntityDocumentView({
                     update({ id: entity.id, description })
                   }
                   style={{ fontFamily: fontFamilyCss }}
-                  className="min-h-7 w-full resize-none border-none bg-transparent p-0 text-[15px] leading-7 text-fg outline-none placeholder:text-subtle focus-visible:bg-surface-hover"
+                  className="min-h-7 w-full resize-none border-none bg-transparent p-0 text-[15px] leading-7 text-fg outline-hidden placeholder:text-subtle focus-visible:bg-surface-hover"
                   placeholder={t("canvas.document.descriptionPlaceholder", "짧은 설명을 입력하세요.")}
                 />
               </PropertyLine>
@@ -159,7 +159,7 @@ function MemoDocumentView({
         >
           <div className="mt-4">
             <BufferedInput
-              className="mt-5 w-full border-none bg-transparent p-0 text-[36px] font-extrabold leading-tight tracking-tight text-fg outline-none placeholder:text-subtle focus-visible:bg-surface-hover"
+              className="mt-5 w-full border-none bg-transparent p-0 text-[36px] font-extrabold leading-tight tracking-tight text-fg outline-hidden placeholder:text-subtle focus-visible:bg-surface-hover"
               style={{ fontFamily: fontFamilyCss }}
               value={note.title}
               placeholder={t("project.defaults.noteTitle")}
@@ -168,7 +168,7 @@ function MemoDocumentView({
                 return flushSave();
               }}
             />
-            <div className="mt-6 flex flex-col gap-3 border-b border-border/40 pb-6 text-sm">
+            <div className="mt-6 flex flex-col gap-3 border-b border-border pb-6 text-sm">
               <PropertyLine icon={<FileText className="h-4 w-4" />} label={scrapLabel}>
                 <span>{t("canvas.document.synced", "동기화됨")}</span>
               </PropertyLine>

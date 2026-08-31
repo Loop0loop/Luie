@@ -40,7 +40,7 @@ export function WikiSection({
         <div className="flex flex-1 items-center gap-2 min-w-0">
           <BufferedInput
             value={label}
-            className="flex-1 border-none bg-transparent text-[16px] font-semibold text-fg p-0 focus:outline-none leading-snug min-w-0"
+            className="flex-1 border-none bg-transparent text-[16px] font-semibold text-fg p-0 focus:outline-hidden leading-snug min-w-0"
             onSave={onRename}
           />
         </div>
@@ -57,7 +57,7 @@ export function WikiSection({
       <BufferedTextArea
         value={content}
         placeholder={placeholder}
-        className="w-full min-h-[72px] bg-transparent border-none text-fg/90 text-[14px] leading-[1.8] resize-none placeholder:text-subtle/50 focus:outline-none p-0"
+        className="w-full min-h-[72px] bg-transparent border-none text-fg/90 text-[14px] leading-[1.8] resize-none placeholder:text-subtle/50 focus:outline-hidden p-0"
         onSave={onUpdateContent}
       />
     </div>

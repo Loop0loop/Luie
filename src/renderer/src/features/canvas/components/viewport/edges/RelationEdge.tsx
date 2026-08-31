@@ -189,7 +189,7 @@ function RelationEdgeInner({
             <button
               type="button"
               onClick={handleDirectionCycle}
-              className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-canvas-control-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+              className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-canvas-control-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
               title={
                 direction === "none"
                   ? t("canvas.edge.direction.none", "무방향")
@@ -215,7 +215,7 @@ function RelationEdgeInner({
                   e.stopPropagation();
                   setIsColorPickerOpen((prev) => !prev);
                 }}
-                className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-canvas-control-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+                className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-canvas-control-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                 title={t("canvas.edge.changeColor", "색상 변경")}
               >
                 <Palette className="h-3.5 w-3.5" style={{ color: data?.color }} />
@@ -255,7 +255,7 @@ function RelationEdgeInner({
                 setIsEditing(true);
                 setDraftLabel(labelText);
               }}
-              className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-canvas-control-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+              className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-canvas-control-hover text-muted hover:text-fg transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
               title={t("canvas.edge.editLabel", "글자 적기")}
             >
               <Type className="h-3.5 w-3.5" />
@@ -267,7 +267,7 @@ function RelationEdgeInner({
             <button
               type="button"
               onClick={handleDelete}
-              className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-danger-fg/20 text-muted hover:text-danger-fg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger-fg/50 cursor-pointer"
+              className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-danger-fg/20 text-muted hover:text-danger-fg transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-danger-fg cursor-pointer"
               title={t("canvas.edge.delete", "관계선 삭제")}
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -292,7 +292,7 @@ function RelationEdgeInner({
               onChange={(e) => setDraftLabel(e.target.value)}
               onKeyDown={handleKeyDown}
               onBlur={handleSaveLabel}
-              className="h-6 min-w-[70px] max-w-[160px] rounded-full border border-border/80 bg-panel px-2.5 py-0.5 text-center text-[11px] font-medium text-fg shadow-panel outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+              className="h-6 min-w-[70px] max-w-[160px] rounded-full border border-border bg-panel px-2.5 py-0.5 text-center text-[11px] font-medium text-fg shadow-panel outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
               placeholder={t("canvas.edge.labelPlaceholder", "관계 입력")}
             />
           ) : labelText ? (
@@ -306,7 +306,7 @@ function RelationEdgeInner({
                 color: strokeColour !== "var(--text-secondary)" ? strokeColour : undefined,
                 borderColor: strokeColour !== "var(--text-secondary)" ? `${strokeColour}40` : undefined,
               }}
-              className="rounded-full border border-border/40 bg-panel/90 px-2.5 py-0.5 text-[11px] font-medium text-muted shadow-sm backdrop-blur-sm transition-colors hover:border-border/80 hover:text-fg cursor-default"
+              className="rounded-full border border-border bg-panel/90 px-2.5 py-0.5 text-[11px] font-medium text-muted shadow-sm backdrop-blur-sm transition-colors hover:border-border-active hover:text-fg cursor-default"
               title={t("canvas.edge.doubleClickToEdit", "더블 클릭하여 수정")}
             >
               {labelText}

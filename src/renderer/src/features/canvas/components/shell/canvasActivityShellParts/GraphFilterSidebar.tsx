@@ -36,12 +36,12 @@ export const GraphFilterSidebar = memo(() => {
 
   return (
     <div className="flex h-full w-full min-w-0 flex-col overflow-hidden bg-sidebar text-fg select-none">
-      <div className="flex h-10 items-center justify-between border-b border-border/20 px-3 shrink-0 bg-element/30">
+      <div className="flex h-10 items-center justify-between border-b border-border px-3 shrink-0 bg-element/30">
         <span className="text-[11px] font-bold uppercase tracking-wider text-muted truncate">
           {t("canvas.graph.scenarioAnalysis", "Graph")}
         </span>
 
-        <div className="flex items-center gap-px p-0.5 rounded-control bg-element border border-border/20">
+        <div className="flex items-center gap-px p-0.5 rounded-control bg-element border border-border">
           <Button
             variant="ghost"
             size="xs"
@@ -81,7 +81,7 @@ export const GraphFilterSidebar = memo(() => {
                   value={startChapter}
                   onChange={(e) => handleStartChapterChange(Number(e.target.value))}
                   aria-label={t("canvas.graph.startChapter", "시작 챕터")}
-                  className="w-full rounded-control border border-border/30 pl-2.5 pr-6 py-1.5 text-[10px] font-bold cursor-pointer outline-none bg-element text-fg hover:bg-element-hover/80 transition-colors appearance-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+                  className="w-full rounded-control border border-border pl-2.5 pr-6 py-1.5 text-[10px] font-bold cursor-pointer outline-hidden bg-element text-fg hover:bg-element-hover/80 transition-colors appearance-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <option value={12}>12{t("canvas.graph.chapterUnit", "화")}</option>
                   <option value={13}>13{t("canvas.graph.chapterUnit", "화")}</option>
@@ -100,7 +100,7 @@ export const GraphFilterSidebar = memo(() => {
                   value={endChapter}
                   onChange={(e) => handleEndChapterChange(Number(e.target.value))}
                   aria-label={t("canvas.graph.endChapter", "끝 챕터")}
-                  className="w-full rounded-control border border-border/30 pl-2.5 pr-6 py-1.5 text-[10px] font-bold cursor-pointer outline-none bg-element text-fg hover:bg-element-hover/80 transition-colors appearance-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+                  className="w-full rounded-control border border-border pl-2.5 pr-6 py-1.5 text-[10px] font-bold cursor-pointer outline-hidden bg-element text-fg hover:bg-element-hover/80 transition-colors appearance-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <option value={12}>12{t("canvas.graph.chapterUnit", "화")}</option>
                   <option value={13}>13{t("canvas.graph.chapterUnit", "화")}</option>
@@ -129,7 +129,7 @@ export const GraphFilterSidebar = memo(() => {
                     ? t("canvas.graph.characterFocus", "Focus Character")
                     : t("canvas.graph.eventFocus", "Focus Event")
                 }
-                className="w-full rounded-control border border-border/30 pl-2.5 pr-7 py-1.5 text-[10px] font-bold cursor-pointer outline-none bg-element text-fg hover:bg-element-hover/80 transition-colors appearance-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+                className="w-full rounded-control border border-border pl-2.5 pr-7 py-1.5 text-[10px] font-bold cursor-pointer outline-hidden bg-element text-fg hover:bg-element-hover/80 transition-colors appearance-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <option value="all">{t("canvas.graph.viewAllNetwork", "All")}</option>
                 {focusOptions.map((node) => (

@@ -24,7 +24,7 @@ function EntityNodeImpl({ data }: NodeProps<EntityNodeData>) {
         "rounded-panel border bg-surface text-center shadow-sm select-none",
         isCenter
           ? "px-4 py-3 min-w-[150px] border-2"
-          : "px-3 py-2 min-w-[110px] border-border/60",
+          : "px-3 py-2 min-w-[110px] border-border",
       )}
       style={
         isCenter
