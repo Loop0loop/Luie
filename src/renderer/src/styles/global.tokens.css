@@ -449,61 +449,72 @@
   --border-strong: #847e74;
   --border-focus: #6b5e4d;
 }
+/* NOTE: 두 변형은 neutral과 명도를 맞추고 축만 ±9 옮긴다(app: cool −16 · neutral −25 ·
+   warm −34). light 계열에서 확정한 ±8~10과 같은 폭이다. */
 [data-theme="sepia"][data-temp="cool"] {
-  --bg-app: #f4efe5;
-  --bg-sidebar: #ebe2d2;
-  --bg-panel: #f7f2e9;
-  --ai-panel-bg: #f0e9dd;
-  --bg-surface: #f7f2e9;
-  --bg-element: #fbf7ef;
+  --bg-app: #f8f2e8;
+  --bg-sidebar: #f0e7d8;
+  --bg-panel: #fbf7f1;
+  --ai-panel-bg: #f4ede0;
+  --bg-surface: #fbf7f1;
+  --bg-element: #eae0ce;
   --text-primary: #4a4237;
-  --text-secondary: #635b4f;
-  --text-tertiary: #746d61;
-  --border-default: #ddd3c4;
-  --border-active: #cfc2af;
-  /* NOTE: 3.18:1 on #fbf7ef. */
-  --border-strong: #948a7b;
+  --text-secondary: #665e51;
+  --text-tertiary: #726c60;
+  --border-default: #d8cfc0;
+  --border-active: #bcb09f;
+  /* NOTE: 3.05:1 on #eae0ce. */
+  --border-strong: #887e71;
   --border-focus: #71685b;
 }
 [data-theme="sepia"][data-temp="warm"] {
-  --bg-app: #faebcb;
-  --bg-sidebar: #f2ddb0;
-  --bg-panel: #f8e6c3;
-  --ai-panel-bg: #f7e3bc;
-  --bg-surface: #f8e6c3;
-  --bg-element: #fff4dc;
+  --bg-app: #fef2dc;
+  --bg-sidebar: #f7e6c7;
+  --bg-panel: #fff7e9;
+  --ai-panel-bg: #fbecd1;
+  --bg-surface: #fff7e9;
+  --bg-element: #f3dfbb;
   --text-primary: #4a3820;
-  --text-secondary: #665336;
-  --text-tertiary: #7d6846;
-  --border-default: #dfc797;
+  --text-secondary: #715c3c;
+  --text-tertiary: #7f6947;
+  --border-default: #e6cd9c;
   --border-active: #cdae77;
-  /* NOTE: 3.34:1 on #fff4dc. */
-  --border-strong: #9a8356;
+  /* NOTE: 3.05:1 on #f3dfbb. */
+  --border-strong: #927d52;
   --border-focus: #705b3c;
 }
 
+/* NOTE: sepia의 계단이 뒤집혀 있었다. `--bg-element`(#fff9ed)가 가장 밝은 표면이어서
+   "파인 control"이 아니라 가장 떠 있는 면이었고, 그 결과 축(`b − r`)도 역할 순서와
+   어긋났다(panel −21 · app −25 · ai −34 · sidebar −39 · element −18). element가 가장
+   덜 따뜻했던 이유가 바로 계단 역전이다.
+
+   순서를 panel > app > ai > sidebar > element로 바로잡으면 축도 자연스럽게 정렬된다.
+   light 계열과 같은 원리로, 흰색에 가까운 면은 chroma 여유가 적고 어두운 면일수록 커진다.
+   종이색 `--bg-app: #fbf2e2`는 시그니처라 고정하고 나머지를 목표 대비로 역산했다
+   (panel/app 1.04 · app/ai 1.045 · ai/sidebar 1.055 · sidebar/element 1.065).
+   lean은 sepia의 성격인 노란 종이(g가 r쪽에 가까움)를 유지한다. */
 [data-theme="sepia"] {
   --bg-app: #fbf2e2;
-  --bg-sidebar: #f3e5cc;
-  --bg-panel: #fcf5e7;
-  --ai-panel-bg: #f8ebd6;
-  --bg-surface: #fcf5e7;
+  --bg-sidebar: #f4e7d0;
+  --bg-panel: #fdf7ed;
+  --ai-panel-bg: #f8edd9;
+  --bg-surface: #fdf7ed;
   --bg-surface-hover: rgba(95, 75, 50, 0.05);
-  --bg-element: #fff9ed;
+  --bg-element: #efe0c5;
   --bg-element-hover: rgba(95, 75, 50, 0.05);
   --bg-active: rgba(95, 75, 50, 0.1);
 
   --text-primary: #4f3e2a;
-  --text-secondary: #6c5b48;
-  /* NOTE: sepia는 element(#fff9ed)가 가장 밝은 표면이라 최악 배경이 sidebar다.
-     §3에서 sepia 표면 계단을 다시 잡을 때 이 기준도 재검증해야 한다. */
-  --text-tertiary: #7e6d5a;
+  --text-secondary: #6e5c49;
+  --text-tertiary: #7a6a57;
   --text-accent: #8a602e;
 
-  --border-default: #e4d2b4;
-  --border-active: #d3bd9a;
-  /* NOTE: 3.39:1 on #fff9ed(가장 밝은 표면). 종이 톤을 유지한 채 UI 경계 기준을 넘긴다. */
-  --border-strong: #9d8462;
+  --border-default: #dfceb0;
+  --border-active: #c3af8f;
+  /* NOTE: 3.05:1 on #efe0c5. 계단을 바로잡아 element가 가장 어두운 표면이 됐으므로
+     UI 경계 기준도 그쪽으로 옮겼다. */
+  --border-strong: #947c5c;
   --border-focus: #77644f;
 
   --accent-bg: #8a602e;
@@ -512,12 +523,16 @@
   --success-fg: #2e7d32;
   --danger-fg: #b91c1c;
 
-  --bg-secondary: #f0e1c8;
-  --bg-hover: #f0e1c8;
+  --bg-secondary: var(--bg-element);
+  --bg-hover: var(--bg-element);
   --accent-primary: var(--accent-bg);
-  --grid-line: #e5d6bd;
+  --grid-line: var(--border-default);
 
-  --editor-selection: #b7d5f5;
+  /* NOTE: 이전 값 #b7d5f5는 축 +62의 완전한 파랑이었다. accent가 brass(#8a602e)인
+     theme에서 선택 영역만 파랗게 떴다. light가 파란 accent에 맞춰 파란 선택색을 쓰는
+     것과 같은 원리로 brass 계열에 맞췄다. 종이 대비 1.426(light의 1.421과 같은 수준),
+     본문 글자 대비 6.45로 선택 중에도 읽힌다. */
+  --editor-selection: #e2cb9c;
   --highlight-default: #f2e2a6;
 }
 

@@ -382,24 +382,79 @@ border 대비: 장식선 1.26 → **1.45**, 상태선 1.52 → **2.00**, UI 경�
 
 > §3에서 sepia 표면 계단을 다시 잡을 때 sepia tertiary의 기준 배경(`--bg-sidebar`)이 바뀌므로 **재검증 필요**. light 계열을 살짝 따뜻한 쪽으로 옮겼으므로 **sepia와 light+warm의 구분**도 함께 봐야 한다.
 
-### 3. Sepia 팔레트 재조정
+### 3. Sepia 팔레트 재조정 — 완료
 
-종이색(`--bg-app: #fbf2e2`)은 시그니처라 유지한다.
+종이색 `--bg-app: #fbf2e2`는 시그니처라 **정확히 고정**하고 나머지를 역산했다.
 
-검증된 후보값:
+- [x] 표면 계단 재정의 — 계단이 **뒤집혀 있었다**
+- [x] `--text-tertiary` 대비 확보 (4.0:1)
+- [x] `--editor-selection` brass 계열로 교정
+- [x] `data-temp` cool/warm 변형 동기화
+- [x] 대비 실측 재검증 · light/dark 무영향 확인
+- [~] `--highlight-default` — **측정 오류였다.** 아래 참조
 
-```
-app #fbf2e2(종이 유지) · sidebar #efe1c5 · research #f6ecd7
-surface/panel #fefaf0(종이보다 밝게 = 떠 있음) · element #f4e9d3(오목)
-border #dcc6a0 (1.33 → 1.60:1) · text-tertiary #8d7454 (2.82 → 3.97:1)
-```
+#### 계단 역전이 근본 원인이었다
 
-- [ ] 표면 계단 재정의
-- [ ] `--text-tertiary` 대비 확보
-- [ ] `--editor-selection: #b7d5f5`(파란 선택색) → brass accent 계열로 교정
-- [ ] `--highlight-default: #f2e2a6`가 종이 위에서 1.06:1 — 형광펜이 안 보인다
-- [ ] `data-temp` cool/warm 변형 동기화
-- [ ] 대비 실측 재검증
+`--bg-element`(`#fff9ed`)가 **가장 밝은 표면**이어서 "파인 control"이 아니라 가장 떠 있는 면이었다. 그 결과 축(`b − r`)도 역할 순서와 어긋났다.
+
+| | 실제 명도 순 |
+| --- | --- |
+| sepia (이전) | element > panel > app > ai > sidebar |
+| sepia+warm (이전) | element > **app > panel** > ai > sidebar |
+| **확정** | panel > app > ai > sidebar > element |
+
+축이 흔들린 것도 여기서 나왔다 — 이전 `panel −21 · app −25 · ai −34 · sidebar −39 · element **−18**`. element가 가장 덜 따뜻했던 이유가 계단 역전이다. 순서를 바로잡으면 축이 자연스럽게 정렬된다(light 계열과 같은 원리: 흰색에 가까운 면은 chroma 여유가 적고 어두운 면일수록 커진다).
+
+#### 확정값
+
+| 역할 | sepia | sepia + cool | sepia + warm |
+| --- | --- | --- | --- |
+| `--bg-panel` / `--bg-surface` | `#fcf5e7` → **`#fdf7ed`** | `#f7f2e9` → **`#fbf7f1`** | `#f8e6c3` → **`#fff7e9`** |
+| `--bg-app` (종이) | **`#fbf2e2` 고정** | `#f4efe5` → **`#f8f2e8`** | `#faebcb` → **`#fef2dc`** |
+| `--ai-panel-bg` | `#f8ebd6` → **`#f8edd9`** | `#f0e9dd` → **`#f4ede0`** | `#f7e3bc` → **`#fbecd1`** |
+| `--bg-sidebar` / `--bg-research` | `#f3e5cc` → **`#f4e7d0`** | `#ebe2d2` → **`#f0e7d8`** | `#f2ddb0` → **`#f7e6c7`** |
+| `--bg-element` | `#fff9ed` → **`#efe0c5`** | `#fbf7ef` → **`#eae0ce`** | `#fff4dc` → **`#f3dfbb`** |
+| `--text-secondary` | `#6c5b48` → **`#6e5c49`** | `#635b4f` → **`#665e51`** | `#665336` → **`#715c3c`** |
+| `--text-tertiary` | `#7e6d5a` → **`#7a6a57`** | `#746d61` → **`#726c60`** | `#7d6846` → **`#7f6947`** |
+| `--border-default` | `#e4d2b4` → **`#dfceb0`** | `#ddd3c4` → **`#d8cfc0`** | `#dfc797` → **`#e6cd9c`** |
+| `--border-active` | `#d3bd9a` → **`#c3af8f`** | `#cfc2af` → **`#bcb09f`** | **`#cdae77`** 유지 |
+| `--border-strong` | `#9d8462` → **`#947c5c`** | `#948a7b` → **`#887e71`** | `#9a8356` → **`#927d52`** |
+
+축은 `app: cool −16 · neutral −25 · warm −34`로 ±9 대칭이다. light 계열에서 확정한 ±8~10과 같은 폭이다.
+
+**인접 단계** (목표 panel/app 1.04 · app/ai 1.045 · ai/sidebar 1.055 · sidebar/element 1.065)
+
+| | panel/app | app/ai | ai/sidebar | sidebar/element | editor↔Research |
+| --- | --- | --- | --- | --- | --- |
+| sepia | 1.042 | 1.044 | 1.053 | 1.065 | **1.100** |
+| sepia + cool | 1.043 | 1.046 | 1.053 | 1.067 | **1.101** |
+| sepia + warm | 1.041 | 1.051 | 1.054 | 1.063 | **1.108** |
+
+#### `--editor-selection` 교정
+
+이전 값 `#b7d5f5`는 **축 +62의 완전한 파랑**이었다. accent가 brass(`#8a602e`)인 theme에서 선택 영역만 파랗게 떴다. light가 파란 accent에 맞춰 파란 선택색을 쓰는 것과 같은 원리로 brass 계열에 맞췄다.
+
+`#b7d5f5` → **`#e2cb9c`** (축 −70) · 종이 대비 **1.426** (light의 `#bfdbfe` 1.421과 같은 수준) · 본문 글자 대비 6.45로 선택 중에도 읽힌다.
+
+#### 정리한 부수 항목
+
+- `--bg-secondary` / `--bg-hover`: 솔리드 `#f0e1c8` → `var(--bg-element)`. 계단을 따라가게 함
+- `--grid-line`: `#e5d6bd` → `var(--border-default)`. dark의 패턴과 통일
+
+#### 기록 정정: `--highlight-default`는 문제가 아니었다
+
+§1 진단에서 "sepia의 형광펜이 종이 위에서 1.06:1"이라고 적었는데 **측정 오류였다.** 실측값은 **1.166**이고, light의 `#fef08a`는 **1.104**로 오히려 더 약하다. 잘못된 전제였으므로 값을 바꾸지 않았다.
+
+다만 **형광펜 대비가 모든 theme에서 약한 것은 사실이다**(light 1.104 · sepia 1.166 · dark는 알파 32%). 이건 sepia만의 문제가 아니라 전 theme 공통 항목이므로 §4로 옮긴다.
+
+#### 검증
+
+- 3변형 전부 명도 순서 정상 · 인접 단계 목표 충족 · editor↔Research ≥1.10
+- 텍스트: primary 7.55~8.57 · secondary 4.88~4.91 · tertiary 3.98~4.01 (전 표면 최저)
+- border: 장식선 1.446~1.453 · 상태선 1.990~2.001 · UI 경계 3.05
+- 색온도 명도 일치: 역할별 편차 0.3~0.6%
+- **light 0종 · dark 0종 변화** (sepia 47종)
+- sepia ↔ light+warm 축 거리 11~16으로 구분 유지
 
 ### 4. border / outline / shadow 규칙 통일
 
@@ -408,6 +463,7 @@ border #dcc6a0 (1.33 → 1.60:1) · text-tertiary #8d7454 (2.82 → 3.97:1)
 - [ ] Tailwind 기본 검정 그림자(`shadow-sm`/`shadow-xs`) → `--shadow-panel` 계열. 종이색 위에서 얼룩으로 보인다. 대상: `EditorToolbar.tsx:229,247`, `MainLayout.tsx:529,530`, `ScrivenerLayout.tsx:499`, `menus.tsx:250`
 - [ ] `--radius-editor-shell` 중복 하드코딩 제거 — `GoogleDocsLayout.tsx:210` `rounded-[24px]`, `Editor.tsx:381` `rounded-[48px]`
 - [ ] `focus-visible` ring을 3:1 이상으로 통일 (WCAG 2.2)
+- [ ] **형광펜 대비가 전 theme에서 약하다** (§3에서 이관). `--highlight-default`가 종이 대비 light **1.104** · sepia **1.166** · dark는 `rgba(250,204,21,0.32)` 알파. 형광펜은 은은해야 하지만 1.1은 거의 안 보이는 수준이다. 세 theme 공통 목표(~1.35)를 정하고 함께 조정한다
 
 ### 5. Toolbar 표면 / 상태 확정
 
