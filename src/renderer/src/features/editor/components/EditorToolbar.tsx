@@ -30,6 +30,8 @@ import {
   ColorPickerMenu,
   CompactDropdown,
   createToolbarGhostEditor,
+  DEFAULT_HIGHLIGHT_COLOR,
+  DEFAULT_TEXT_COLOR,
   Divider,
   FONT_SIZE_OPTIONS,
   getParagraphStyle,
@@ -186,9 +188,11 @@ export default function EditorToolbar({
 
   const paragraphStyle = getParagraphStyle(toolbarEditor);
   const textColor =
-    (toolbarEditor.getAttributes("textStyle").color as string) || "#111827";
+    (toolbarEditor.getAttributes("textStyle").color as string) ||
+    DEFAULT_TEXT_COLOR;
   const highlightColor =
-    (toolbarEditor.getAttributes("highlight").color as string) || "#FEF08A";
+    (toolbarEditor.getAttributes("highlight").color as string) ||
+    DEFAULT_HIGHLIGHT_COLOR;
 
   const applyParagraphStyle = (style: ParagraphStyle) => {
     const chain = toolbarEditor.chain().focus();
@@ -211,7 +215,7 @@ export default function EditorToolbar({
   };
 
   const renderEditorCanvasToggle = () => (
-    <div className="flex h-7 items-center rounded-control border border-border bg-muted/20 p-0.5 text-xs font-medium">
+    <div className="flex h-7 items-center rounded-control border border-border bg-element p-0.5 text-xs font-medium">
       <button
         type="button"
         onClick={() => {
@@ -225,7 +229,7 @@ export default function EditorToolbar({
         className={cn(
           "flex h-full items-center rounded px-2.5 transition-colors",
           !isCanvasOpen && !isCanvasMode
-            ? "bg-panel text-fg shadow-sm"
+            ? "bg-panel text-fg shadow-control"
             : "text-muted hover:text-fg",
         )}
       >
@@ -243,7 +247,7 @@ export default function EditorToolbar({
         className={cn(
           "flex h-full items-center rounded px-2.5 transition-colors",
           isCanvasOpen || isCanvasMode
-            ? "bg-panel text-fg shadow-sm"
+            ? "bg-panel text-fg shadow-control"
             : "text-muted hover:text-fg",
         )}
       >

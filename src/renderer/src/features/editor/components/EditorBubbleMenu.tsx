@@ -14,7 +14,7 @@ import { useTermStore } from "@renderer/features/research/stores/termStore";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 import { useToast } from "@shared/ui/ToastContext";
 import { useTranslation } from "react-i18next";
-import { TEXT_COLORS } from "./toolbar/constants";
+import { DEFAULT_TEXT_COLOR, TEXT_COLORS } from "./toolbar/constants";
 import { ColorPickerMenu } from "./toolbar/menus";
 
 interface EditorBubbleMenuProps {
@@ -127,7 +127,7 @@ export default function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
         colors={TEXT_COLORS}
         icon={<Palette size={16} />}
         label={t("editor.bubbleMenu.textColor")}
-        value={editor.getAttributes("textStyle").color || "#111827"}
+        value={editor.getAttributes("textStyle").color || DEFAULT_TEXT_COLOR}
         onChange={(hex) => editor.chain().focus().setColor(hex).run()}
         onClear={() => editor.chain().focus().unsetColor().run()}
         clearLabel={t("toolbar.resetTextColor", "기본 글자색")}

@@ -14,6 +14,7 @@ import {
 } from "@renderer/features/workspace/stores/uiStore";
 import { useShallow } from "zustand/react/shallow";
 import { useChapterManagement, useChapterStore } from "@renderer/domains/manuscript";
+import { useChapterContent } from "@renderer/features/manuscript/hooks/useChapterContent";
 import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import { useWorkspaceDropHandlers } from "@renderer/features/workspace/hooks/useWorkspaceDropHandlers";
 import {
@@ -103,7 +104,6 @@ export default function EditorRoot() {
   const {
     chapters,
     activeChapterId,
-    content,
     activeChapterTitle,
     handleSelectChapter,
     handleAddChapter,
@@ -111,6 +111,12 @@ export default function EditorRoot() {
     handleDeleteChapter,
     handleSave,
   } = useChapterManagement();
+
+  // NOTE: 본문은 목록이 아니라 본문 캐시에서 받는다. `isLoaded`가 false인 동안 Editor를
+  // 마운트하면 빈 본문으로 시작하고, 그 상태에서 자동 저장이 발화하면 원본 본문을 덮어쓴다.
+  // 그래서 아래에서 로딩이 끝날 때까지 에디터 자리를 비워 둔다.
+  const { content, isLoaded: isChapterContentLoaded } =
+    useChapterContent(activeChapterId);
 
   const activeChapter = useMemo(
     () => chapters.find((c) => c.id === activeChapterId),
@@ -294,12 +300,15 @@ export default function EditorRoot() {
     };
   }, []);
 
-  const sharedEditor = (
-    <FeatureErrorBoundary featureName="Editor">
-      <Editor
-        key={`editor-${activeChapterId ?? "none"}-${contentRevision}`}
-        initialTitle={activeChapter ? activeChapter.title : ""}
-        initialContent={activeChapter ? activeChapter.content : ""}
+  const sharedEditor =
+    activeChapterId !== null && !isChapterContentLoaded ? (
+      layoutFallback
+    ) : (
+      <FeatureErrorBoundary featureName="Editor">
+        <Editor
+          key={`editor-${activeChapterId ?? "none"}-${contentRevision}`}
+          initialTitle={activeChapter ? activeChapter.title : ""}
+          initialContent={content}
         onSave={handleSave}
         readOnly={!activeChapterId}
         chapterId={activeChapterId || undefined}
@@ -317,7 +326,7 @@ export default function EditorRoot() {
         onEditorReady={setDocEditor}
       />
     </FeatureErrorBoundary>
-  );
+    );
   const additionalPanelsComponent = (
     <Suspense fallback={null}>
       <WorkspacePanels

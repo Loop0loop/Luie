@@ -73,7 +73,7 @@ export function GoogleDocsPanelRail({
   return (
     <div
       className={cn(
-        "z-10 flex h-full w-14 shrink-0 flex-col items-center gap-4 overflow-hidden bg-[#212123] pb-4 pt-28",
+        "z-10 flex h-full w-14 shrink-0 flex-col items-center gap-4 overflow-hidden bg-sidebar pb-4 pt-28",
         enableAnimations
           ? "animate-in slide-in-from-right fade-in duration-180"
           : "transition-none",

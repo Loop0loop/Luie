@@ -195,9 +195,11 @@ export function GoogleDocsLayout({
             orientation="horizontal"
             className={cn(
               "relative flex h-full min-w-0 flex-1 overflow-hidden transition-colors duration-150",
+              // NOTE: 이전에는 dark token 값을 literal로 복제해 light·sepia에서도 우측
+              // 절반이 dark로 남았다. 우측 stop은 그 자리에 오는 패널 표면을 따라간다.
               activeRightTab === "analysis"
-                ? "bg-gradient-to-r from-sidebar from-50% to-[#323232] to-50%"
-                : "bg-gradient-to-r from-sidebar from-50% to-[#212123] to-50%",
+                ? "bg-gradient-to-r from-sidebar from-50% to-[var(--ai-panel-bg)] to-50%"
+                : "bg-gradient-to-r from-sidebar from-50% to-research to-50%",
             )}
             id="docs-content-group"
             onLayoutChanged={onRightLayoutChanged}

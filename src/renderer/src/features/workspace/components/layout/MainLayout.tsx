@@ -526,8 +526,8 @@ export default function MainLayout({
                 onClick={toggleContextPanel}
                 className={`absolute right-2 top-2 z-[110] flex h-8 items-center gap-1.5 rounded-control px-2.5 text-xs font-medium transition-all cursor-pointer ${
                   isContextOpen
-                    ? "bg-accent text-accent-fg shadow-xs font-semibold"
-                    : "border border-border/80 bg-element text-fg hover:bg-surface-hover hover:text-accent shadow-xs"
+                    ? "bg-accent text-accent-fg shadow-control font-semibold"
+                    : "border border-border/80 bg-element text-fg hover:bg-surface-hover hover:text-accent shadow-control"
                 }`}
                 style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
                 title={

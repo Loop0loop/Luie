@@ -365,7 +365,7 @@ export default function ScrivenerLayout({
                 {!shouldRenderSidebar && (
                   <button
                     onClick={() => setRegionOpen("leftSidebar", true)}
-                    className="p-1 rounded hover:bg-muted/40 text-muted transition-colors mr-2 shrink-0"
+                    className="p-1 rounded hover:bg-surface-hover text-muted transition-colors mr-2 shrink-0"
                     title={t("sidebar.toggle.open")}
                   >
                     <Menu className="w-4 h-4" />
@@ -382,7 +382,7 @@ export default function ScrivenerLayout({
                 {!shouldRenderInspector && (
                   <button
                     onClick={() => setRegionOpen("rightPanel", true)}
-                    className="p-1 rounded hover:bg-muted/40 text-muted transition-colors shrink-0"
+                    className="p-1 rounded hover:bg-surface-hover text-muted transition-colors shrink-0"
                     title={t("scrivener.inspector.open")}
                   >
                     <Menu className="w-4 h-4" />
@@ -496,11 +496,11 @@ export default function ScrivenerLayout({
                   }`}
               >
                 <div className="shrink-0" style={{ height: headerHeight }} aria-hidden="true" />
-                <div className="flex items-center justify-between border-b border-border bg-surface px-2 shadow-sm min-h-[32px] shrink-0">
+                <div className="flex items-center justify-between border-b border-border bg-surface px-2 shadow-control min-h-[32px] shrink-0">
                   <span className="text-xs font-semibold uppercase tracking-wide text-muted ml-2">{t("scrivener.inspector.title")}</span>
                   <button
                     onClick={() => setRegionOpen("rightPanel", false)}
-                    className="p-1.5 rounded hover:bg-muted/40 text-muted transition-colors"
+                    className="p-1.5 rounded hover:bg-surface-hover text-muted transition-colors"
                     title={t("scrivener.inspector.close")}
                   >
                     <ChevronRight className="w-4 h-4" />

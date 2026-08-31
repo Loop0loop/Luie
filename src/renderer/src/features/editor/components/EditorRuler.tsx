@@ -153,21 +153,18 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
       className="relative bg-app select-none overflow-visible text-xs"
       style={{ width: EDITOR_A4_PAGE_WIDTH_PX, height: EDITOR_RULER_HEIGHT_PX }}
     >
+      {/* NOTE: 여백 음영은 "본문이 들어갈 수 없는 파인 면"이므로 `--bg-element`를 쓴다.
+          이전에는 `--color-muted`(= `--text-secondary`, 글자색)를 배경으로 써서, 폴백이
+          가리키던 밝은 회색이 아니라 짙은 회색 띠가 그려졌다. */}
       <div
-        className="absolute top-0 bottom-0 left-0"
-        style={{
-          width: leftMargin,
-          backgroundColor: "var(--color-muted, #e0e0e0)",
-          opacity: 0.3,
-        }}
+        className="absolute top-0 bottom-0 left-0 bg-element"
+        style={{ width: leftMargin }}
       />
       <div
-        className="absolute top-0 bottom-0"
+        className="absolute top-0 bottom-0 bg-element"
         style={{
           left: rightEdge,
           width: rightMargin,
-          backgroundColor: "var(--color-muted, #e0e0e0)",
-          opacity: 0.3,
         }}
       />
 
@@ -184,7 +181,7 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
           <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
             <path
               d="M0 0H10L5 8Z"
-              className="fill-[#0b57d0] group-hover:fill-[#1a73e8] transition-colors"
+              className="fill-accent-bg group-hover:fill-accent-bg-hover transition-colors"
             />
           </svg>
         </div>
@@ -200,11 +197,11 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
           <svg width="10" height="16" viewBox="0 0 10 16" fill="none">
             <path
               d="M0 8L5 0L10 8Z"
-              className="fill-[#0b57d0] group-hover:fill-[#1a73e8] transition-colors"
+              className="fill-accent-bg group-hover:fill-accent-bg-hover transition-colors"
             />
             <path
               d="M2 10H8V16H2Z"
-              className="fill-[#0b57d0] group-hover:fill-[#1a73e8] transition-colors"
+              className="fill-accent-bg group-hover:fill-accent-bg-hover transition-colors"
             />
           </svg>
         </div>
@@ -220,7 +217,7 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
           <svg width="10" height="12" viewBox="0 0 10 12" fill="none">
             <path
               d="M0 12L5 0L10 12Z"
-              className="fill-[#0b57d0] group-hover:fill-[#1a73e8] transition-colors"
+              className="fill-accent-bg group-hover:fill-accent-bg-hover transition-colors"
             />
           </svg>
         </div>

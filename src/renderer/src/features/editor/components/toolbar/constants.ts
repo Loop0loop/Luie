@@ -22,3 +22,10 @@ export const HIGHLIGHT_COLORS = [
   { label: "빨강", hex: "#FCA5A5" },
   { label: "민트", hex: "#A7F3D0" },
 ] as const;
+
+/* NOTE: ColorPickerMenu는 값을 `hexToHsv()`로 파싱하므로 CSS variable을 넣을 수 없다.
+   그래서 theme 토큰이 아니라 팔레트 상수를 단일 출처로 참조한다. 이전에는 어느 스와치와도
+   맞지 않는 hex가 EditorToolbar·EditorBubbleMenu에 각각 하드코딩돼 있어서 "색 없음" 상태의
+   표시색이 실제 팔레트와 어긋났다. */
+export const DEFAULT_TEXT_COLOR = TEXT_COLORS[0].hex;
+export const DEFAULT_HIGHLIGHT_COLOR = HIGHLIGHT_COLORS[0].hex;

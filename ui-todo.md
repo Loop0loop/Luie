@@ -27,6 +27,7 @@ Light는 `--bg-app`·`--bg-panel`·`--bg-surface`·`--bg-element`·`--bg-researc
 | `--border-default` | 1.26:1 | 1.33:1 | 실패 |
 | `--border-active` | 1.52:1 | 1.64:1 | 실패 |
 
+
 표면 차이도 없고 테두리도 안 보인다 → 컴포넌트가 토큰을 포기하고 하드코딩으로 도망간다 (`EntityGallery.tsx:373`의 `border-black/0 → hover:border-black/70`).
 
 ### 텍스트 대비

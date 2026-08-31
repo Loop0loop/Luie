@@ -1,4 +1,10 @@
-export { FONT_SIZE_OPTIONS, HIGHLIGHT_COLORS, TEXT_COLORS } from "./constants";
+export {
+  DEFAULT_HIGHLIGHT_COLOR,
+  DEFAULT_TEXT_COLOR,
+  FONT_SIZE_OPTIONS,
+  HIGHLIGHT_COLORS,
+  TEXT_COLORS,
+} from "./constants";
 export {
   createToolbarGhostEditor,
   getParagraphStyle,

@@ -110,9 +110,13 @@ export function GoogleDocsEditorColumn({
                 </div>
 
                 {/* NOTE: shrink-0 필수 — flex 자식이라 수축하면 minHeight(1123px)이 상한처럼 동작해
-                    긴 본문이 아웃라인 아래로 새어 나간다. */}
+                    긴 본문이 아웃라인 아래로 새어 나간다.
+                    배경은 `bg-transparent`가 아니라 종이 역할 토큰을 쓴다. A4 면이 자기 배경을
+                    갖지 않으면 뒤의 스크롤 표면이 그대로 비쳐, 종이와 작업대가 같은 면이 된다.
+                    `--editor-bg`는 현재 `--bg-app` alias라 렌더 결과는 같고, 종이색이 표면에서
+                    갈라질 때 이 지점이 함께 따라간다. */}
                 <div
-                  className={`relative mb-8 box-border block shrink-0 border border-border bg-transparent ${
+                  className={`relative mb-8 box-border block shrink-0 border border-border bg-editor-bg ${
                     isMobileView
                       ? "h-[95%] shrink-0 overflow-hidden border-0"
                       : ""

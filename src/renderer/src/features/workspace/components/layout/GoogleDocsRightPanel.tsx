@@ -386,12 +386,16 @@ export function GoogleDocsRightPanel({
         minSize={isOpening || isClosing ? "0%" : effectiveRightPanelSize.minSize}
         maxSize={effectiveRightPanelSize.maxSize}
         onMouseDownCapture={onFocus}
+        /* NOTE: 이전 값은 dark theme `--bg-sidebar`의 리터럴이었다. theme 분기가 없어
+           light·sepia 종이 옆에 near-black 패널이 붙고, 자식이 쓰는 `bg-panel`(light에서
+           가장 밝은 표면)이 그 위에 얹혀 대비가 뒤집혔다. 이 패널은 우측 chrome이므로
+           sidebar 계단을 따른다 — dark에서는 값이 같아 렌더 결과가 바뀌지 않는다. */
         className={`flex min-w-0 shrink-0 flex-col overflow-hidden ${
           renderedTab === "analysis"
             ? "rounded-r-[24px] bg-[var(--ai-panel-bg,#323232)]"
             : isResearchTab
-              ? "research-surface bg-[#212123]"
-              : "bg-[#212123]"
+              ? "research-surface bg-research"
+              : "bg-sidebar"
         } ${
           enableAnimations
             ? isClosing

@@ -247,7 +247,7 @@ export function ColorPickerMenu({
               <div className="pointer-events-none absolute inset-0 bg-linear-to-r from-white to-transparent" />
               <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black to-transparent" />
               <span
-                className="pointer-events-none absolute h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm"
+                className="pointer-events-none absolute h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-control"
                 style={{ left: `${customColor.s}%`, top: `${100 - customColor.v}%` }}
               />
             </div>

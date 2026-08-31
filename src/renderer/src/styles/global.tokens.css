@@ -41,6 +41,10 @@
   --color-destructive: var(--danger-fg);
   --color-error: var(--danger-fg);
   --color-accent-bg: var(--accent-bg);
+  /* NOTE: `hover:bg-accent-bg-hover`가 이미 3곳(PromptComposer·EntityGallery·EditorTab)에서
+     쓰이는데 매핑이 없어 아무 CSS도 생성되지 않았다. accent의 hover 방향은 theme마다
+     다르므로(light·sepia는 어둡게, dark는 밝게) 이 값을 직접 참조해야 한다. */
+  --color-accent-bg-hover: var(--accent-bg-hover);
   --color-accent-fg: var(--accent-fg);
   --color-success-fg: var(--success-fg);
   --color-danger-fg: var(--danger-fg);
@@ -69,6 +73,12 @@
   --radius-panel: 0.875rem;
   --radius-editor-shell: 1.5rem;
   --shadow-panel: 0 10px 28px rgba(15, 23, 42, 0.14);
+  /* NOTE: Tailwind 기본 `shadow-sm`/`shadow-xs`는 검정 그림자라 light·sepia의 종이
+     표면 위에서 회색 얼룩으로 보인다. control 크기의 그림자도 panel과 같이 theme
+     tint를 따르게 한다.
+     tint를 `var()`로 참조하는 것이 핵심이다 — Tailwind는 @theme 값의 텍스트를 그대로
+     인라인하므로, 리터럴로 적으면 theme 블록에서 덮어쓸 수 없다. */
+  --shadow-control: 0 1px 3px 0 var(--elevation-tint), 0 1px 2px -1px var(--elevation-tint);
   --spacing-control-x: 0.75rem;
   --spacing-control-y: 0.5rem;
   --spacing-panel-pad: 1.25rem;
@@ -141,12 +151,16 @@
   background-color: var(--bg-research);
 }
 
-/* NOTE: Editor의 둥근 모서리 바깥은 좌측 Sidebar, 우측 인접 패널 표면과 이어진다. */
+/* NOTE: Editor의 둥근 모서리 바깥은 좌측 Sidebar, 우측 인접 패널 표면과 이어진다.
+   `--editor-adjacent-surface`는 `.editor-research-surface`/`.editor-ai-surface`가 주입한다.
+   둘 중 아무것도 붙지 않으면 var()가 무효값이 되어 `background` 선언 전체가 버려지고
+   스트립이 투명해진다. 미부착 시의 의도는 "인접 표면이 따로 없다"이고 그때 MainLayout이
+   쓰는 값이 `bg-sidebar`이므로 같은 값을 폴백으로 둔다(그라디언트가 단색으로 평탄해진다). */
 .editor-adjacent-surface {
   background: linear-gradient(
     to right,
     var(--bg-sidebar) 0 var(--radius-editor-shell),
-    var(--editor-adjacent-surface) var(--radius-editor-shell)
+    var(--editor-adjacent-surface, var(--bg-sidebar)) var(--radius-editor-shell)
   );
 }
 
@@ -294,6 +308,11 @@
   --bg-secondary: var(--bg-element-hover);
   --bg-hover: var(--bg-element-hover);
 
+  /* NOTE: control 그림자의 theme tint. canvas 그림자(`--canvas-shadow-*`)가 이미 쓰는
+     색상 축과 같다 — light은 slate, sepia는 갈색, dark는 순검정. 종이 표면 위에서
+     순검정 그림자는 채도 없는 얼룩으로 읽히므로 light도 중성 검정을 쓰지 않는다. */
+  --elevation-tint: rgba(15, 23, 42, 0.1);
+
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
@@ -356,6 +375,9 @@
 
   --editor-selection: #1e4f91;
   --highlight-default: rgba(250, 204, 21, 0.32);
+  /* NOTE: canvas 그림자가 light 0.14 → dark 0.36으로 약 2.6배를 쓰는 비율에 맞췄다.
+     어두운 표면에서는 같은 알파가 거의 보이지 않는다. */
+  --elevation-tint: rgba(0, 0, 0, 0.28);
 }
 
 /* NOTE: color temperature는 layout 구조를 바꾸지 않고 background와 text tint만 덮어쓴다. */
@@ -534,6 +556,9 @@
      본문 글자 대비 6.45로 선택 중에도 읽힌다. */
   --editor-selection: #e2cb9c;
   --highlight-default: #f2e2a6;
+  /* NOTE: canvas 그림자와 같은 갈색 축. 검정 그림자는 따뜻한 종이 위에서 죽은 회색
+     얼룩이 된다. light 0.1 대비 0.14는 canvas의 light 0.14 → sepia 0.18과 같은 폭이다. */
+  --elevation-tint: rgba(95, 75, 50, 0.14);
 }
 
 [data-contrast="high"] {
