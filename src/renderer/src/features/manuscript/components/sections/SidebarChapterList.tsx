@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { cn } from "@shared/types/utils";
 import { DraggableItem } from "@shared/ui/DraggableItem";
@@ -81,39 +82,48 @@ export default function SidebarChapterList() {
 
     return (
         <div className="flex flex-col relative w-full h-full">
-            {menuOpenId && (
+            {menuOpenId !== null ? (
                 <div
                     className="fixed inset-0 z-dropdown bg-transparent"
                     onPointerDown={closeMenu}
                 />
-            )}
+            ) : null}
 
-            {menuOpenId && (
-                <div
-                    ref={menuRef}
-                    className="fixed z-dropdown bg-panel border border-border rounded-panel shadow-lg min-w-[160px] p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col text-fg"
-                    style={{ top: menuPosition.y, left: menuPosition.x }}
-                >
+            {/* NOTE: 이 메뉴는 반드시 body로 portal한다. editor 레이아웃의 사이드바는
+                FocusHoverSidebar의 `will-change-transform [contain:layout_paint]` 안에
+                들어가는데, transform/contain은 `position: fixed` 자손의 containing block이
+                되고 paint까지 클리핑한다. 그래서 inline으로 두면 z-index를 아무리 올려도
+                메뉴가 사이드바 박스 안에 갇히고, 버튼 오른쪽(rect.right + 8) 좌표가
+                사이드바 기준으로 재해석돼 잘려 보인다. */}
+            {menuOpenId !== null
+                ? createPortal(
                     <div
-                        className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-control transition-all hover:bg-surface-hover hover:text-fg"
-                        onClick={(e) => void handleAction("rename", menuOpenId, e)}
+                        ref={menuRef}
+                        className="fixed z-dropdown bg-panel border border-border rounded-panel shadow-lg min-w-[160px] p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col text-fg"
+                        style={{ top: menuPosition.y, left: menuPosition.x }}
                     >
-                        <Edit2 className="w-3.5 h-3.5" /> {t("sidebar.menu.rename")}
-                    </div>
-                    <div
-                        className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-control transition-all hover:bg-surface-hover hover:text-fg"
-                        onClick={(e) => void handleAction("duplicate", menuOpenId, e)}
-                    >
-                        <Copy className="w-3.5 h-3.5" /> {t("sidebar.menu.duplicate")}
-                    </div>
-                    <div
-                        className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-control transition-all hover:bg-surface-hover hover:text-red-600 text-red-500"
-                        onClick={(e) => void handleAction("delete", menuOpenId, e)}
-                    >
-                        <Trash2 className="w-3.5 h-3.5" /> {t("sidebar.menu.delete")}
-                    </div>
-                </div>
-            )}
+                        <div
+                            className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-control transition-all hover:bg-surface-hover hover:text-fg"
+                            onClick={(e) => void handleAction("rename", menuOpenId, e)}
+                        >
+                            <Edit2 className="w-3.5 h-3.5" /> {t("sidebar.menu.rename")}
+                        </div>
+                        <div
+                            className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-control transition-all hover:bg-surface-hover hover:text-fg"
+                            onClick={(e) => void handleAction("duplicate", menuOpenId, e)}
+                        >
+                            <Copy className="w-3.5 h-3.5" /> {t("sidebar.menu.duplicate")}
+                        </div>
+                        <div
+                            className="flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer rounded-control transition-all hover:bg-surface-hover hover:text-red-600 text-red-500"
+                            onClick={(e) => void handleAction("delete", menuOpenId, e)}
+                        >
+                            <Trash2 className="w-3.5 h-3.5" /> {t("sidebar.menu.delete")}
+                        </div>
+                    </div>,
+                    document.body,
+                )
+                : null}
 
             <div className="flex-1 overflow-y-auto px-2 space-y-0.5 custom-scrollbar pb-4">
                 {chapters.map((chapter) => {
