@@ -120,12 +120,17 @@ export const useChapterStore = create<ChapterStore>((set, get, store) => {
           chapterIds,
         );
         if (response.success) {
-          set((state) => ({
-            items: chapterIds
-              .map((id) => state.items.find((ch) => ch.id === id))
-              .filter((ch): ch is ChapterListItem => ch !== undefined)
-              .map((ch, index) => ({ ...ch, order: index + 1 })),
-          }));
+          set((state) => {
+            // NOTE: chapterIds마다 items.find를 돌면 O(n²)다(200챕터면 최대 4만 회 비교).
+            // id→item Map을 한 번 만들고 조회한다.
+            const itemById = new Map(state.items.map((ch) => [ch.id, ch]));
+            return {
+              items: chapterIds
+                .map((id) => itemById.get(id))
+                .filter((ch): ch is ChapterListItem => ch !== undefined)
+                .map((ch, index) => ({ ...ch, order: index + 1 })),
+            };
+          });
         }
       } catch (error) {
         api.logger.error("Failed to reorder chapters:", error);

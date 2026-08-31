@@ -190,4 +190,57 @@ describe("chapterStore 본문 분리 경계", () => {
     expect(renamed.currentChapter).toBe(renamed.currentItem);
     expect(renamed.currentChapter?.title).toBe("둘째 장 수정");
   });
+
+  describe("reorderChapters (O8: Map 조회)", () => {
+    const loadThree = async () => {
+      mocked.getAll.mockResolvedValue({
+        success: true,
+        data: [
+          listItem("c1", "첫 장", 1),
+          listItem("c2", "둘째 장", 2),
+          listItem("c3", "셋째 장", 3),
+        ],
+      });
+      await storeModule.useChapterStore.getState().loadAll("p1");
+    };
+
+    it("전달된 순서대로 재배열하고 order를 1부터 다시 매긴다", async () => {
+      await loadThree();
+      mocked.reorder.mockResolvedValue({ success: true });
+
+      await storeModule.useChapterStore
+        .getState()
+        .reorderChapters(["c3", "c1", "c2"]);
+
+      const { items } = storeModule.useChapterStore.getState();
+      expect(items.map((ch) => ch.id)).toEqual(["c3", "c1", "c2"]);
+      expect(items.map((ch) => ch.order)).toEqual([1, 2, 3]);
+    });
+
+    it("응답 id 목록에 없는 항목은 제외한다", async () => {
+      await loadThree();
+      mocked.reorder.mockResolvedValue({ success: true });
+
+      // c2가 빠진 순서. Map 조회가 누락 id를 안전하게 건너뛰어야 한다.
+      await storeModule.useChapterStore
+        .getState()
+        .reorderChapters(["c3", "c1"]);
+
+      const { items } = storeModule.useChapterStore.getState();
+      expect(items.map((ch) => ch.id)).toEqual(["c3", "c1"]);
+      expect(items.map((ch) => ch.order)).toEqual([1, 2]);
+    });
+
+    it("실패 응답이면 순서를 바꾸지 않는다", async () => {
+      await loadThree();
+      mocked.reorder.mockResolvedValue({ success: false });
+
+      await storeModule.useChapterStore
+        .getState()
+        .reorderChapters(["c3", "c2", "c1"]);
+
+      const { items } = storeModule.useChapterStore.getState();
+      expect(items.map((ch) => ch.id)).toEqual(["c1", "c2", "c3"]);
+    });
+  });
 });

@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
@@ -51,8 +51,11 @@ export default function SidebarWorldList({
         ? ["mindmap", "drawing", "graph"]
         : [];
 
-  const orderedTerms = [...terms].sort(
-    (a: Term, b: Term) => (a.order || 0) - (b.order || 0),
+  // NOTE: 렌더마다 새 배열을 정렬하면 하위 map이 전부 재조정된다. terms 참조가 바뀔 때만
+  // 정렬한다. lib target이 ES2022라 toSorted 대신 복사본을 정렬해 원본 변형을 피한다.
+  const orderedTerms = useMemo(
+    () => [...terms].sort((a: Term, b: Term) => (a.order || 0) - (b.order || 0)),
+    [terms],
   );
 
   useEffect(() => {

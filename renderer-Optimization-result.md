@@ -204,7 +204,7 @@ src/renderer/src/features/research/components/wiki/hooks/useCharacterWikiAttrs.t
 
 ---
 
-### O8. 챕터 순서 변경이 O(n²) — LOW-MEDIUM
+### O8. 챕터 순서 변경이 O(n²) — LOW-MEDIUM (**완료**)
 
 **근거**
 
@@ -217,6 +217,8 @@ src/renderer/src/features/manuscript/stores/chapterStore.ts:60-61
 **왜 문제인가** — 같은 키로 `.find()`를 n번 반복한다. 200챕터면 최대 40,000회 비교. 드래그 종료 시 1회이므로 체감은 작다.
 
 **규칙 매칭** — `js-index-maps` **직접 적용**. 스킬 선언 impact **LOW-MEDIUM**.
+
+**반영** — `chapterIds`마다 `items.find`를 돌던 것을 `new Map(items.map(...))` 한 번 만들고 조회하도록 바꿨다. `chapterListBoundary.test.ts`에 reorder 정확성 3케이스(재배열+order 재부여, 누락 id 제외, 실패 시 순서 불변)를 추가했다.
 
 **수정안** — `new Map(state.items.map((ch) => [ch.id, ch]))`를 만들고 조회.
 
@@ -266,7 +268,7 @@ src/renderer/src/features/manuscript/components/Sidebar.tsx:199
 
 ---
 
-### O11. 렌더 본문에서 정렬 — LOW
+### O11. 렌더 본문에서 정렬 — LOW (**완료**)
 
 **근거**
 
@@ -277,15 +279,15 @@ src/renderer/src/features/manuscript/components/sections/SidebarWorldList.tsx:54
 
 **왜 문제인가** — 렌더마다 얕은 복사 + 정렬로 새 배열이 만들어져 하위 `map`이 전부 재조정된다. terms 규모를 측정하지 않았으므로 심각도는 LOW로 둔다(1차 보고의 MEDIUM에서 하향).
 
-**규칙 매칭** — `js-tosorted-immutable` **직접 적용**(`terms.toSorted(...)`). 재계산 방지는 `rerender-memo` **원리 적용**.
+**규칙 매칭** — `js-tosorted-immutable` **직접 적용**이지만 lib target이 ES2022라 `toSorted`를 쓸 수 없다. 재계산 방지는 `rerender-memo` **원리 적용**.
 
-**수정안** — `useMemo(() => terms.toSorted(...), [terms])`.
+**반영** — `useMemo(() => [...terms].sort(...), [terms])`. `toSorted` 대신 복사본을 정렬해 불변성을 지키면서 `terms` 참조가 바뀔 때만 재정렬한다. lib를 ES2023으로 올리는 건 범위 밖이라 하지 않았다.
 
 **확신도** — 코드 확인.
 
 ---
 
-### O12. 구독자 없는 이벤트를 매 선택마다 emit — LOW
+### O12. 구독자 없는 이벤트를 매 선택마다 emit — LOW (**완료**)
 
 **근거**
 
@@ -298,9 +300,9 @@ src/renderer/src/features/editor/components/Editor.tsx:251-252    EditorSyncBus.
 
 **규칙 매칭** — **매칭 없음**. 죽은 코드다. `off`가 정상 호출되므로 버스 자체의 누수는 없다.
 
-**수정안** — 구독처를 붙일 때까지 emit 제거.
+**반영** — `onSelectionUpdate` 핸들러 전체를 제거했다. 이 핸들러의 유일한 목적이 `FOCUS_ENTITY` emit이었고 구독자가 0이라, 선택마다 텍스트 샘플링 + 캐릭터/용어 `.find()`를 도는 것 자체가 순수 낭비였다. 함께 죽은 `selectionAnalyzeTimerRef`·`lastSelectionSampleRef`·`lastSelectionEmitAtRef`와 그 cleanup도 제거했다. `Character`/`Term` 타입과 store import는 `JUMP_TO_MENTION` 핸들러가 계속 쓰므로 유지했다.
 
-**확신도** — 코드 확인.
+**확신도** — 코드 확인(구독자 0을 전수 grep으로 확정, typecheck로 미사용 잔여 없음 확인).
 
 ---
 
@@ -375,7 +377,8 @@ ScrivenerLayout.tsx:116   updatePanelSize(panel.id, rawSize)
 | 완료 | N1 (분할뷰 Editor 이관) | O1-b2의 선행조건이었다. `SplitViewEditor`로 분리해 캐시 구독 + 로딩 게이트 적용, 회귀 테스트 6개. |
 | 완료 | **O1-b2 + O2** | 목록 IPC/store를 `ChapterListItem[]`로 전환, 목록 왕복 select 1회, autosave의 목록 write 제거. N2도 함께 해소. 테스트 18개(main 11 + renderer 7). |
 | 완료 | N3 · N7 (주석·배럴) | 영어 WHAT 주석 3건 한국어 WHY/삭제, `useChapterContent`를 배럴에 노출하고 소비자 5곳 통일. |
-| **다음** | O5 · O10 · O11 · O12 · N4 · N5 | 사이드바·트리·갤러리 국소 수정. 위험이 낮다. |
+| 완료 | O8 · O11 · O12 | reorder Map 조회, terms 정렬 useMemo, 죽은 FOCUS_ENTITY 핸들러 제거. |
+| **다음** | O5 · O10 · N4 · N5 | 사이드바 hover CSS화·meta 상수화, TreeNode store화, EntityGallery 카드 memo. |
 | 이후 | O6 · O9 | 미적용 최적화. 측정과 함께 효과 확인. |
 | 이후 | O4 | 에디터 런타임 변경이라 단독 처리 권장. |
 | 이후 | O8 | `reorderChapters`의 O(n²) find. O1-b2에서 타입만 바꾸고 알고리즘은 그대로 뒀다. |

@@ -94,9 +94,6 @@ function Editor({
 
   const [content, setContent] = useState(initialContent);
   const updateStatsRef = useRef(updateStats);
-  const selectionAnalyzeTimerRef = useRef<number | null>(null);
-  const lastSelectionSampleRef = useRef("");
-  const lastSelectionEmitAtRef = useRef(0);
 
   useEffect(() => {
     updateStatsRef.current = updateStats;
@@ -116,9 +113,6 @@ function Editor({
     return () => {
       if (updateContentRef.current) {
         window.clearTimeout(updateContentRef.current);
-      }
-      if (selectionAnalyzeTimerRef.current) {
-        window.clearTimeout(selectionAnalyzeTimerRef.current);
       }
     };
   }, []);
@@ -141,50 +135,6 @@ function Editor({
           updateStatsRef.current(text);
           updateContentRef.current = null;
         }, 900);
-      },
-      onSelectionUpdate: ({ editor }) => {
-        if (selectionAnalyzeTimerRef.current) {
-          window.clearTimeout(selectionAnalyzeTimerRef.current);
-        }
-        selectionAnalyzeTimerRef.current = window.setTimeout(() => {
-          const { from } = editor.state.selection;
-          const $pos = editor.state.doc.resolve(from);
-          const node = $pos.nodeAfter || $pos.nodeBefore || $pos.parent;
-          if (!(node && (node.isText || node.textContent))) {
-            return;
-          }
-
-          const text = node.textContent || "";
-          if (text.length < 2) {
-            return;
-          }
-          const now = Date.now();
-          if (
-            text === lastSelectionSampleRef.current &&
-            now - lastSelectionEmitAtRef.current < 800
-          ) {
-            return;
-          }
-          lastSelectionSampleRef.current = text;
-          lastSelectionEmitAtRef.current = now;
-
-          const charStore = useCharacterStore.getState();
-          const termStore = useTermStore.getState();
-
-          const char = charStore.characters.find((c: Character) =>
-            text.includes(c.name),
-          );
-          if (char) {
-            EditorSyncBus.emit("FOCUS_ENTITY", { entityId: char.id });
-            return;
-          }
-          const term = termStore.terms.find((termItem: Term) =>
-            text.includes(termItem.term),
-          );
-          if (term) {
-            EditorSyncBus.emit("FOCUS_ENTITY", { entityId: term.id });
-          }
-        }, 120);
       },
       editorProps: {
         attributes: {
