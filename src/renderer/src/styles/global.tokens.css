@@ -48,6 +48,23 @@
   --color-accent-fg: var(--accent-fg);
   --color-success-fg: var(--success-fg);
   --color-danger-fg: var(--danger-fg);
+  /* NOTE: 의미색은 "전체 강도로 글자, 낮은 알파로 배경·테두리"가 이 코드베이스의 실제
+     사용 패턴이다(`bg-danger-fg/20`, `border-danger-fg/50`처럼). 그래서 base와 fg를 같은
+     값에 연결한다.
+     이 매핑이 없어서 `bg-warning/10`·`text-warning`·`bg-danger/10`·`ring-danger` 같은
+     클래스 94곳이 CSS를 전혀 생성하지 못했다 — 경고·오류 UI가 배경과 테두리를 잃고
+     기본 글자색으로만 렌더됐다. `--color-danger-fg`만 존재해 `text-danger-fg`만 살아 있었다. */
+  --color-warning: var(--warning-fg);
+  --color-warning-fg: var(--warning-fg);
+  --color-danger: var(--danger-fg);
+  --color-success: var(--success-fg);
+
+  /* NOTE: Scrivener Inspector의 시놉시스 "색인 카드"는 노란 메모지 표현이 의도다. 그래서
+     일반 surface token을 따르지 않는다. 단 theme마다 값이 갈려야 한다 — sepia는 panel이
+     이미 크림색이라 light의 yellow-50을 그대로 쓰면 카드와 배경이 같은 색이 됐다(1.030).
+     Tailwind palette를 컴포넌트에 직접 쓰는 대신 역할 token으로 노출한다. */
+  --color-index-card: var(--index-card-bg);
+  --color-index-card-border: var(--index-card-border);
 
   /* NOTE: border는 세 역할로 나뉜다.
      - `border`: 면을 나누는 장식선. 3:1까지 올리면 grid prison이 된다.
@@ -120,7 +137,16 @@
   z-index: var(--z-index-modal);
 }
 
-/* NOTE: Research는 카드 구분 대신 하나의 연속된 작업 표면을 사용한다. */
+/* NOTE: Research는 하나의 연속된 작업 표면을 쓴다. 평탄화 대상은 **배경뿐**이다.
+   이전에는 border token까지 transparent로 덮었는데, 그러면 Research 안에서 카드에
+   테두리를 주는 것이 물리적으로 불가능해진다. 배경이 전부 한 색인 표면에서는 테두리가
+   유일한 구분 수단이라 결과가 반대로 나왔다 — 목록 항목 구분선, PlotBoard 카드와 그
+   hover, 그리고 TermManager 입력의 `focus:border-*`까지 사라져 키보드 포커스 위치를
+   알 수 없었다.
+   Editor와 Research가 맞닿는 **바깥 경계**는 여기서 처리하지 않는다. 그 경계는 컴포넌트가
+   명시한 `border-0`(MainLayout `contentSurfaceClass`, PlotBoard·SynopsisEditor·
+   WorkspacePanels·SnapshotViewer 루트)과 `.editor-research-surface .rounded-editor-shell`의
+   `border-right-width: 0`이 담당하므로, token을 되살려도 선이 생기지 않는다. */
 .research-surface {
   --bg-app: var(--bg-research);
   --bg-sidebar: var(--bg-research);
@@ -128,8 +154,6 @@
   --bg-surface: var(--bg-research);
   --bg-element: var(--bg-research);
   --bg-secondary: var(--bg-research);
-  --border-default: transparent;
-  --border-active: transparent;
   /* NOTE: Tailwind v4의 @theme 색상은 계산된 값을 상속하므로 surface 안에서 다시 연결한다. */
   --color-app: var(--bg-research);
   --color-sidebar: var(--bg-research);
@@ -145,9 +169,6 @@
   --color-bg-secondary: var(--bg-research);
   --color-bg-panel: var(--bg-research);
   --color-editor-bg: var(--bg-research);
-  --color-border: transparent;
-  --color-border-active: transparent;
-  --color-border-focus: transparent;
   background-color: var(--bg-research);
 }
 
@@ -226,6 +247,13 @@
   --accent-fg: #ffffff;
   --success-fg: #16a34a;
   --danger-fg: #dc2626;
+  /* NOTE: danger와 같은 대비 대역에 맞춘 amber다(panel 5.02 : danger 4.83). red와의 색거리
+     114로 SyncTab처럼 경고 박스와 오류 박스가 나란히 놓일 때 구분된다. */
+  --warning-fg: #b45309;
+  /* NOTE: light는 기존 렌더(yellow-50 / yellow-200)를 그대로 유지한다. 흰 panel 위에서
+     명도차는 1.03뿐이지만 구분 신호는 명도가 아니라 hue다. */
+  --index-card-bg: #fefce8;
+  --index-card-border: #fde68a;
 
   --accent-primary: var(--accent-bg);
   --grid-line: #e5e7eb;
@@ -358,6 +386,13 @@
   --accent-fg: #ffffff;
   --success-fg: #22c55e;
   --danger-fg: #ef4444;
+  /* NOTE: amber-400(#fbbf24)은 dark 표면에서 8.8~10.4로 본문색보다 밝아 글레어가 된다.
+     이 theme의 "muted를 밝히지 않는다" 규칙에 맞춰 한 단계 낮춘 amber-500을 쓴다. */
+  --warning-fg: #f59e0b;
+  /* NOTE: dark는 알파 tint(`yellow-900/10`)로는 panel과 구분되지 않았다. 불투명값으로
+     고정해 1.174 확보. 밝히는 방향이 아니라 어두운 amber라 글레어가 없다. */
+  --index-card-bg: #423022;
+  --index-card-border: #644519;
 
   --bg-secondary: var(--bg-element);
   --bg-hover: var(--bg-element-hover);
@@ -544,6 +579,13 @@
   --accent-fg: #fffefb;
   --success-fg: #2e7d32;
   --danger-fg: #b91c1c;
+  /* NOTE: sepia의 accent가 brass라 amber 계열이 accent와 붙는다. 후보 중 red와의 색거리가
+     가장 먼 값(103)을 골라 경고/오류 구분을 우선했다. brass와는 채도로 갈린다. */
+  --warning-fg: #9a4c04;
+  /* NOTE: sepia panel이 이미 크림색이라 hue 신호가 없다. 채도를 올려 노란 메모지로 읽히게
+     하고 명도차도 확보했다(1.030 → 1.141). 본문 `text-fg/80` 대비 5.00 유지. */
+  --index-card-bg: #f6e9b8;
+  --index-card-border: #e0c884;
 
   --bg-secondary: var(--bg-element);
   --bg-hover: var(--bg-element);

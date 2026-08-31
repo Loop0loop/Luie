@@ -91,8 +91,8 @@ export default function InspectorPanel({
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         {activeTab === "synopsis" && (
           <div className="p-4 flex flex-col h-full">
-            <div className="bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800/30 rounded-panel p-3 shadow-sm h-64 flex flex-col relative">
-              <div className="border-b border-yellow-200 dark:border-yellow-800/30 pb-2 mb-2 font-bold text-center text-fg/80 truncate">
+            <div className="bg-index-card border border-index-card-border rounded-panel p-3 shadow-control h-64 flex flex-col relative">
+              <div className="border-b border-index-card-border pb-2 mb-2 font-bold text-center text-fg/80 truncate">
                 {activeChapter?.title || "Untitled"}
               </div>
               <textarea

@@ -106,15 +106,20 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
       ticks.push(
         <div
           key={`t-${px}`}
-          className="absolute bottom-0 pointer-events-none"
+          // NOTE: 이전에는 `--color-foreground`(본문 글자색)에 opacity 0.2/0.4를 곱해
+          // 눈금을 그렸다. 세피아에서 2.06:1까지 떨어져 눈금이 사실상 보이지 않았다.
+          // 눈금은 측정용 UI 경계이므로 3:1을 만족하는 `border-strong`을, 여백 구간은
+          // 한 단계 약한 `border-active`를 쓴다. opacity를 곱하지 않아야 theme마다
+          // 예측 가능한 값이 나온다.
+          className={
+            isInMargin
+              ? "absolute bottom-0 pointer-events-none bg-border-active"
+              : "absolute bottom-0 pointer-events-none bg-border-strong"
+          }
           style={{
             left: px,
             height,
             width: 1,
-            backgroundColor: isInMargin
-              ? "var(--color-foreground, #444)" // margin ticks dimmer
-              : "var(--color-foreground, #444)",
-            opacity: isInMargin ? 0.2 : 0.4,
           }}
         />,
       );
@@ -124,17 +129,17 @@ export const EditorRuler = ({ onMarginsChange }: EditorRulerProps) => {
         ticks.push(
           <div
             key={`n-${px}`}
-            className="absolute select-none pointer-events-none"
+            className={
+              isInMargin
+                ? "absolute select-none pointer-events-none text-subtle"
+                : "absolute select-none pointer-events-none text-muted"
+            }
             style={{
               left: px,
               top: 1,
               fontSize: 9,
               lineHeight: "12px",
               transform: "translateX(-50%)",
-              color: isInMargin
-                ? "var(--color-muted-foreground, #999)"
-                : "var(--color-muted-foreground, #666)",
-              opacity: isInMargin ? 0.3 : 0.7,
             }}
           >
             {inchNum}
