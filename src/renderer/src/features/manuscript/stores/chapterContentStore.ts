@@ -78,10 +78,14 @@ const evictOverflow = (
 
   const nextContent = { ...contentByChapterId };
   const nextOrder = [...accessOrder];
+  // NOTE: 방금 저장한 항목(가장 최근 접근 = 배열 끝)은 축출 후보에서 제외한다. 호출부는
+  // `ensureContent` 직후 `peekChapterContent`로 바로 읽는데(복제 경로), 구독 항목이 상한을
+  // 가득 채운 상태에서 이걸 버리면 빈 본문을 읽어 사본이 본문 없이 만들어진다.
+  const protectedIndex = nextOrder.length - 1;
   // 오래된 순으로 훑되 구독 중인 항목은 건너뛴다. 전부 구독 중이면 상한을 넘겨서라도 유지한다.
   for (
     let index = 0;
-    index < nextOrder.length && nextOrder.length > CHAPTER_CONTENT_CACHE_LIMIT;
+    index < protectedIndex && nextOrder.length > CHAPTER_CONTENT_CACHE_LIMIT;
 
   ) {
     const candidate = nextOrder[index];

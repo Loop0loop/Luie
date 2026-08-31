@@ -427,6 +427,28 @@ O1-b2에서 폴백 자체가 사라져 주석도 함께 제거됐다. 남은 것
 
 **남은 주석 항목** — 영어 WHAT 주석 3건(`SnapshotViewer.tsx:222`, `Editor.tsx:61`, `ExportPreview.tsx:109`)과 지역 컴포넌트 TSDoc 1건(`GoogleDocsRightPanel.tsx:96-102`)은 미착수다.
 
+### N9. 구독이 상한을 채우면 방금 받은 본문이 즉시 축출됨 — HIGH (**완료**)
+
+O1-b2에서 `useChapterManagement`의 items 본문 폴백을 제거한 뒤 도달 가능해진 결함이다. 폴백이 있던 동안에는 캐시가 비어도 목록 본문으로 메울 수 있었다.
+
+**근거**
+
+```
+src/renderer/src/features/manuscript/stores/chapterContentStore.ts
+  evictOverflow가 오래된 순으로 훑되 retained를 건너뛴다
+  → 상한(4)을 구독 항목이 모두 채우면 마지막 후보가 "방금 넣은 항목"이 된다
+src/renderer/src/features/manuscript/hooks/useChapterManagement.ts
+  handleDuplicateChapter: ensureChapterContent(source.id) 직후 peekChapterContent(source.id)
+```
+
+**왜 문제인가** — 복제는 화면에 없는 원본 본문을 받아 곧바로 읽는다. 구독자가 상한을 가득 채운 상태(메인 에디터 + 분할 에디터 2개 + 스냅샷 뷰어)에서는 받아온 본문이 저장 즉시 버려져 `peek`이 `undefined`를 반환하고, **사본이 본문 없이 만들어진다.** 원본은 손상되지 않는다.
+
+**수정** — `evictOverflow`가 가장 최근 접근 항목(배열 끝 = 방금 저장한 항목)을 축출 후보에서 제외한다. 구독 항목을 지킬 수 없으면 상한을 일시적으로 넘긴다.
+
+**검증** — `chapterContentRetainPressure.test.ts` 5개. 수정 전 3개 실패(복제 경로가 `''`를 읽음), 수정 후 전부 통과. 기존 `chapterContentStore.test.ts`의 BVA3~BVA5(정상 축출·retain 보호·release 후 축출)는 그대로 통과해 의도한 축출 동작이 유지됨을 확인했다.
+
+**확신도** — 코드 및 테스트 확인. 실제 UI에서 동시 구독 4개가 발생하는 빈도는 미측정.
+
 ### N4. `memo`된 `TreeNode`가 재귀 prop으로 전멸 — MEDIUM
 
 ```
@@ -488,6 +510,25 @@ parseStructuredAttributes.ts:3-6             문자열이면 JSON.parse
 ---
 
 ## 8. 구현 후 검증 기록 (2026-08-31)
+
+### 추가 검증 (O1-b2 이후 위험 구간)
+
+O1-b2로 items 폴백이 사라지면서 새로 생긴 위험 구간을 ISTQB 기법으로 훑었고, 그 과정에서 N9를 찾아 고쳤다.
+
+| 범위 | 결과 | 확인한 계약 |
+| --- | --- | --- |
+| `chapterContentRetainPressure.test.ts` (신규) | **5 passed** | 구독 수를 등가분할(상한-1 / 상한 / 상한 초과)해 축출 판정을 고정. 복제 경로(ensure→peek)가 빈 본문을 읽지 않음. 구독 해제 후 정상 축출 복귀. **적용 전 3 failed로 N9를 검출했다.** |
+| `chapterListRerenderBoundary.test.tsx` (신규) | **4 passed** | 사이드바와 같은 구독(`useShallow`+memo 행)에서 본문 저장 20회 반복 시 Profiler 커밋·행 렌더 수 불변, 같은 제목 재적용 시 커밋 불변, 제목 변경 시 바뀐 행만 리렌더. |
+
+**결함 검출력 확인**
+
+- `evictOverflow`의 최근 항목 보호를 제거 → 복제 경로 포함 3건 실패.
+- `applyOptimisticTitle`을 O2 이전 동작(항상 `items.map()`)으로 되돌림 → 커밋 수 불변 테스트 실패.
+
+**여전히 미검증**
+
+- `handleSave` 결정표. 캐시 miss × 빈 `newContent` 조합에서 `api.autoSave`가 무조건 호출되는 경로가 남아 있다. Editor 로딩 게이트가 빈 마운트를 막으므로 현재는 도달하지 않지만, 게이트를 우회하는 진입점이 생기면 위험하다. 훅 전체를 마운트해야 해서 이번 회차에서는 다루지 않았다.
+- 200챕터 heap snapshot, 실제 프레임 드랍.
 
 ### O1-b2 + O2 검증 (3차)
 
