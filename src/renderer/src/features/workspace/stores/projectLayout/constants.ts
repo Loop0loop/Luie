@@ -52,3 +52,12 @@ export const DEFAULT_RESEARCH_PANEL_SIZE = 40;
 /** research 패널 px 폭의 저장 허용 범위. minSize(470px)보다 좁은 값은 저장하지 않는다. */
 export const RESEARCH_PANEL_MIN_WIDTH_PX = 470;
 export const RESEARCH_PANEL_MAX_WIDTH_PX = 2000;
+
+/**
+ * 분할 editor 패널 px 폭의 저장 허용 범위.
+ *
+ * NOTE: 하한은 `EDITOR_DND_MIN_PANEL_WIDTH_PX`(320)와 같아야 한다. 그보다 좁은 값을 저장하면
+ * PanelGroup이 min으로 클램프한 폭이 다시 저장되어 min에 고착된다.
+ */
+export const EDITOR_PANEL_MIN_WIDTH_PX = 320;
+export const EDITOR_PANEL_MAX_WIDTH_PX = 2000;

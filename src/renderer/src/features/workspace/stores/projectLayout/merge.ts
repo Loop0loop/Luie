@@ -1,6 +1,7 @@
 import { normalizeLayoutSurfaceRatiosWithMigrations } from "@renderer/shared/constants/layoutSizing";
 import { normalizeSidebarWidthsWithMigrations } from "@renderer/shared/constants/sidebarSizing";
 import {
+  sanitizeEditorPanelWidthPx,
   sanitizePersistedDocsRightTab,
   sanitizeResearchPanelSize,
   sanitizeResearchPanelWidthPx,
@@ -42,6 +43,10 @@ const mergeDefaultWorkspacePanelState = (
     patch.researchPanelWidthPx === undefined
       ? previous.researchPanelWidthPx
       : sanitizeResearchPanelWidthPx(patch.researchPanelWidthPx),
+  editorPanelWidthPx:
+    patch.editorPanelWidthPx === undefined
+      ? previous.editorPanelWidthPx
+      : sanitizeEditorPanelWidthPx(patch.editorPanelWidthPx),
 });
 
 export const mergeProjectLayoutState = (

@@ -427,6 +427,37 @@ O1-b2에서 폴백 자체가 사라져 주석도 함께 제거됐다. 남은 것
 
 **남은 주석 항목** — 영어 WHAT 주석 3건(`SnapshotViewer.tsx:222`, `Editor.tsx:61`, `ExportPreview.tsx:109`)과 지역 컴포넌트 TSDoc 1건(`GoogleDocsRightPanel.tsx:96-102`)은 미착수다.
 
+### N10. 분할 editor 패널이 재오픈/재시작 시 min 폭으로 뜸 — MEDIUM (**완료**)
+
+사용자 보고. DnD로 연 sub editor가 "마지막에 닫은 폭"이 아니라 항상 min 폭으로 렌더된다.
+
+**근거**
+
+```
+src/renderer/src/features/workspace/components/panels/WorkspacePanels.tsx
+  research 패널: editorPanelWidthPx 저장 + onResize + handle.resize 복원  ✓
+  editor 패널:   onResize={undefined}, 복원 effect 없음                    ✗ (수정 전)
+src/renderer/src/features/workspace/stores/uiStore.state.ts
+  addPanel은 이전 폭을 기억하지 않는다 → 항상 DEFAULT_WORKSPACE_PANEL_SIZE(40%)
+```
+
+**왜 문제인가** — 코드베이스가 이미 두 NOTE로 원인을 적어 뒀다. `MainLayout.tsx:146`은 "close 애니메이션의 `resize("0%")`를 PanelGroup이 minSize로 클램프해 min 비율을 emit한다", `uiStore.state.ts:58`은 "PanelGroup이 layout을 panel id 조합별로 캐싱하며 그 캐시가 `defaultSize`보다 우선한다". `isLayoutPersistenceSuppressed()`는 store write만 막고 PanelGroup 내부 캐시는 막지 못한다. research 패널은 이걸 이기려고 px 저장 + 마운트 후 handle `resize` 강제 복원을 갖췄는데 editor 패널에는 그 세트가 없었다.
+
+**수정** — research 패널과 동일한 메커니즘을 editor 패널에 미러링했다. 두 패널은 상호 배타적이지만(editor 추가 시 research 제거) 저장 키와 min 폭이 달라(320 vs 470) 세트를 나눴다.
+
+```
+projectLayout/types.ts        editorPanelWidthPx 필드
+projectLayout/constants.ts    EDITOR_PANEL_MIN/MAX_WIDTH_PX (320/2000)
+projectLayout/sanitize.ts     sanitizeEditorPanelWidthPx + default 투영
+projectLayout/merge.ts        patch 병합
+shared/schemas/persistence.ts strictObject에 필드 추가(없으면 payload 전체 폐기)
+WorkspacePanels.tsx           px 저장(실제 drag만) + handle.resize 복원 + Panel 결선
+```
+
+**검증** — `defaultLayoutEditorPanelWidthPx.test.ts` 7개(merge/sanitize/schema 왕복, research와 독립성), `editorPanelWidthCapture.test.tsx` 4개(mount-time min 무시, 실제 drag 저장, snap-back 무시, handle 복원). onResize 결선 제거 시 2건 실패로 검출력 확인. research 기존 테스트 회귀 없음.
+
+**확신도** — 지속화·캡처·복원 경로는 테스트 확인. 실제 PanelGroup 레이아웃 계산과 시각 결과는 수동 검증 영역.
+
 ### N9. 구독이 상한을 채우면 방금 받은 본문이 즉시 축출됨 — HIGH (**완료**)
 
 O1-b2에서 `useChapterManagement`의 items 본문 폴백을 제거한 뒤 도달 가능해진 결함이다. 폴백이 있던 동안에는 캐시가 비어도 목록 본문으로 메울 수 있었다.

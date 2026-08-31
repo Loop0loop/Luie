@@ -8,6 +8,8 @@ import type {
 } from "../uiStore";
 import {
   DEFAULT_SCRIVENER_SECTIONS,
+  EDITOR_PANEL_MAX_WIDTH_PX,
+  EDITOR_PANEL_MIN_WIDTH_PX,
   RESEARCH_PANEL_MAX_WIDTH_PX,
   RESEARCH_PANEL_MIN_WIDTH_PX,
   PERSISTABLE_DOCS_TABS,
@@ -73,6 +75,15 @@ export const sanitizeResearchPanelWidthPx = (
   if (typeof input !== "number" || !Number.isFinite(input)) return undefined;
   return Math.round(
     Math.min(RESEARCH_PANEL_MAX_WIDTH_PX, Math.max(RESEARCH_PANEL_MIN_WIDTH_PX, input)),
+  );
+};
+
+export const sanitizeEditorPanelWidthPx = (
+  input: unknown,
+): number | undefined => {
+  if (typeof input !== "number" || !Number.isFinite(input)) return undefined;
+  return Math.round(
+    Math.min(EDITOR_PANEL_MAX_WIDTH_PX, Math.max(EDITOR_PANEL_MIN_WIDTH_PX, input)),
   );
 };
 
@@ -211,6 +222,7 @@ const sanitizeDefaultWorkspacePanelState = (
     researchPanelSize:
       explicitSize ?? deriveResearchPanelSizeFromTabSizes(base.researchPanelSizes),
     researchPanelWidthPx: sanitizeResearchPanelWidthPx(value.researchPanelWidthPx),
+    editorPanelWidthPx: sanitizeEditorPanelWidthPx(value.editorPanelWidthPx),
   };
 };
 

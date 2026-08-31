@@ -37,6 +37,14 @@ export type ProjectDefaultWorkspacePanelState = ProjectWorkspacePanelState & {
    * 다시 저장되어 고착된다. px로 저장해 제약과 단위를 일치시킨다.
    */
   researchPanelWidthPx?: number;
+  /**
+   * 분할 editor 패널 폭(px). `researchPanelWidthPx`와 같은 이유로 px다.
+   *
+   * NOTE: 챕터별로 나누지 않는다. 분할 editor는 한 번에 하나만 존재하고(`addPanel`이 기존
+   * editor 패널의 id/content만 교체한다) 사용자가 기대하는 것도 "그 패널의 폭"이다.
+   * 챕터별로 저장하면 챕터를 바꿀 때마다 폭이 튄다.
+   */
+  editorPanelWidthPx?: number;
 };
 
 export type ProjectWorkspaceLayoutState = ProjectWorkspacePanelState & {

@@ -270,6 +270,97 @@ export function WorkspacePanels({
     };
   }, []);
 
+  // NOTE: 분할 editor 패널도 research 패널과 같은 문제를 겪는다 — PanelGroup의 layout 캐시가
+  // `defaultSize`를 이기고, `addPanel`은 재오픈 시 기본 폭(40%)으로 새로 만든다. research와
+  // 동일하게 px로 저장하고 handle로 직접 복원한다. 두 패널은 상호 배타적이라(editor 추가 시
+  // research 제거) 동시에 존재하지 않지만, 저장 키와 min 폭(320 vs 470)이 달라 세트를 나눈다.
+  const editorPanelWidthPx = useProjectLayoutStore((state) =>
+    currentProjectId
+      ? state.byProject[currentProjectId]?.workspace.byLayout.default
+          .editorPanelWidthPx
+      : undefined,
+  );
+
+  const pendingEditorWidthPxRef = useRef<number | null>(null);
+  const isResizingEditorRef = useRef(false);
+  const liveEditorWidthPxRef = useRef<number | null>(null);
+  const editorPanelRef = useRef<PanelImperativeHandle | null>(null);
+
+  const commitEditorWidthPx = useCallback(() => {
+    const widthPx = pendingEditorWidthPxRef.current;
+    pendingEditorWidthPxRef.current = null;
+    const projectId = currentProjectIdRef.current;
+    if (widthPx === null || !projectId) return;
+    const { hasHydrated, upsertProjectLayout } =
+      useProjectLayoutStore.getState();
+    if (!hasHydrated) return;
+    upsertProjectLayout(projectId, {
+      workspace: { byLayout: { default: { editorPanelWidthPx: widthPx } } },
+    });
+  }, []);
+
+  const beginEditorResize = useCallback(() => {
+    isResizingEditorRef.current = true;
+  }, []);
+
+  const endEditorResize = useCallback(() => {
+    if (!isResizingEditorRef.current) return;
+    isResizingEditorRef.current = false;
+    commitEditorWidthPx();
+  }, [commitEditorWidthPx]);
+
+  const handleEditorPanelResize = useCallback((panelSize: PanelSize) => {
+    const widthPx = panelSize.inPixels;
+    if (typeof widthPx !== "number" || !Number.isFinite(widthPx)) return;
+    liveEditorWidthPxRef.current = widthPx;
+    if (!isResizingEditorRef.current) return;
+    if (isLayoutPersistenceSuppressed()) return;
+    if (widthPx < EDITOR_DND_MIN_PANEL_WIDTH_PX) return;
+    pendingEditorWidthPxRef.current = Math.round(widthPx);
+  }, []);
+
+  const hasEditorPanel = panels.some(
+    (panel) => panel.content.type === "editor",
+  );
+  useEffect(() => {
+    if (!hasEditorPanel || editorPanelWidthPx === undefined) return;
+    if (isResizingEditorRef.current) return;
+
+    const liveWidthPx = liveEditorWidthPxRef.current;
+    if (liveWidthPx !== null && Math.abs(liveWidthPx - editorPanelWidthPx) < 2) {
+      return;
+    }
+
+    const frameId = requestAnimationFrame(() => {
+      const panel = editorPanelRef.current;
+      if (!panel) return;
+      try {
+        panel.resize(toPxSize(editorPanelWidthPx));
+      } catch {
+        // Panel이 group layout에 아직 등록되지 않으면 throw한다. 다음 layout 변화에서 재시도된다.
+      }
+    });
+    return () => cancelAnimationFrame(frameId);
+  }, [hasEditorPanel, editorPanelWidthPx]);
+
+  const endEditorResizeRef = useRef(endEditorResize);
+  useEffect(() => {
+    endEditorResizeRef.current = endEditorResize;
+  }, [endEditorResize]);
+
+  useEffect(() => {
+    const handlePointerEnd = () => {
+      endEditorResizeRef.current();
+    };
+    window.addEventListener("pointerup", handlePointerEnd);
+    window.addEventListener("pointercancel", handlePointerEnd);
+    return () => {
+      window.removeEventListener("pointerup", handlePointerEnd);
+      window.removeEventListener("pointercancel", handlePointerEnd);
+      endEditorResizeRef.current();
+    };
+  }, []);
+
   return (
     <>
       {panels.map((panel) => {
@@ -295,12 +386,48 @@ export function WorkspacePanels({
           <Fragment key={panel.id}>
             <PanelResizeHandle
               className="relative z-50 w-0 cursor-col-resize"
-              onPointerDown={isResearchPanel ? beginResearchResize : undefined}
-              onPointerUp={isResearchPanel ? endResearchResize : undefined}
-              onPointerCancel={isResearchPanel ? endResearchResize : undefined}
-              onBlur={isResearchPanel ? endResearchResize : undefined}
-              onKeyDown={isResearchPanel ? beginResearchResize : undefined}
-              onKeyUp={isResearchPanel ? endResearchResize : undefined}
+              onPointerDown={
+                isResearchPanel
+                  ? beginResearchResize
+                  : isEditorPanel
+                    ? beginEditorResize
+                    : undefined
+              }
+              onPointerUp={
+                isResearchPanel
+                  ? endResearchResize
+                  : isEditorPanel
+                    ? endEditorResize
+                    : undefined
+              }
+              onPointerCancel={
+                isResearchPanel
+                  ? endResearchResize
+                  : isEditorPanel
+                    ? endEditorResize
+                    : undefined
+              }
+              onBlur={
+                isResearchPanel
+                  ? endResearchResize
+                  : isEditorPanel
+                    ? endEditorResize
+                    : undefined
+              }
+              onKeyDown={
+                isResearchPanel
+                  ? beginResearchResize
+                  : isEditorPanel
+                    ? beginEditorResize
+                    : undefined
+              }
+              onKeyUp={
+                isResearchPanel
+                  ? endResearchResize
+                  : isEditorPanel
+                    ? endEditorResize
+                    : undefined
+              }
             >
               <div className="absolute inset-y-0 -left-1 -right-1" />
             </PanelResizeHandle>
@@ -311,7 +438,9 @@ export function WorkspacePanels({
                   ? closingPanelRef
                   : isResearchPanel
                     ? researchPanelRef
-                    : undefined
+                    : isEditorPanel
+                      ? editorPanelRef
+                      : undefined
               }
               data-panel-animated={
                 closingPanelId === panel.id ? "true" : undefined
@@ -320,9 +449,17 @@ export function WorkspacePanels({
               defaultSize={
                 isResearchPanel && researchPanelWidthPx !== undefined
                   ? toPxSize(researchPanelWidthPx)
-                  : toPercentSize(panel.size)
+                  : isEditorPanel && editorPanelWidthPx !== undefined
+                    ? toPxSize(editorPanelWidthPx)
+                    : toPercentSize(panel.size)
               }
-              onResize={isResearchPanel ? handleResearchPanelResize : undefined}
+              onResize={
+                isResearchPanel
+                  ? handleResearchPanelResize
+                  : isEditorPanel
+                    ? handleEditorPanelResize
+                    : undefined
+              }
               minSize={
                 closingPanelId === panel.id
                   ? "0%"
