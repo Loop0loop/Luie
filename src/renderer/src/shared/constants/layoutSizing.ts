@@ -101,18 +101,29 @@ const NESTED_MANAGER_PANEL_CONFIG: LayoutSurfaceConfig = {
 
 // NOTE: research 패널 크기 정책. 사용자가 resize 로 panel 을 닫으려 해도 minPx 가 하드
 // 플로어로 작용해 더 줄어들지 않는다(research/AI/버전기록 컨텐츠 가독성+열림 상태 일관성 유지).
-// docs/editor 레이아웃이 같은 정책을 공유한다. 과거 editor 는 370~560px 라는 좁은 밴드를
-// 따로 썼는데, 같은 research 패널인데도 조절 가능한 폭이 190px 뿐이어서 "resize 가 거의
-// 안 움직인다"는 체감 차이를 만들었다.
 //
-// minPx 는 EntityGallery 그리드에서 역산한 값이다. 카드가
+// EntityGallery 그리드에서 역산한 2열 하한은 420px 이다. 카드가
 // `repeat(auto-fill, minmax(175px, 190px))` + `gap-3` 이라 2열 콘텐츠 폭이 175*2+12=362px,
 // 그리드 컨테이너 패딩이 `md:px-6`(좌우 48px), 스크롤바가 약 10px 이다. 그래서 420px 미만이면
 // 1열로 떨어지는데, auto-fill 상한이 190px 이라 카드가 늘어나지 못하고 오른쪽에 빈 공간이
-// 남는다. 이 플로어를 내리려면 그리드를 `minmax(175px, 1fr)` 로 바꿔야 한다.
-const RESEARCH_PANEL_CONFIG: LayoutSurfaceConfig = {
+// 남는다. 그 빈 공간까지 없애려면 그리드를 `minmax(175px, 1fr)` 로 바꿔야 한다.
+//
+// docs 는 우측 패널을 더 좁게 접을 수 있어야 한다는 요구가 2열 유지보다 우선이라 320px 를
+// 쓴다(1열 허용). editor 는 아래 전용 config 로 2열 하한을 유지한다.
+const DOCS_RESEARCH_PANEL_CONFIG: LayoutSurfaceConfig = {
   role: "panel",
   defaultRatio: 40,
+  minPx: 320,
+  maxPx: 780,
+};
+
+// NOTE: editor 전용 research 정책. docs 와 최소 폭 요구가 갈라져 값을 분리했다.
+// maxPx 는 docs 와 같게 유지한다. 과거 editor 가 370~560px 라는 좁은 밴드를 따로 쓰던
+// 시절에는 조절 가능한 폭이 190px 뿐이어서 "resize 가 거의 안 움직인다"는 체감 차이를
+// 만들었고, 그 상태로 되돌아가지 않기 위한 것이다.
+const EDITOR_RESEARCH_PANEL_CONFIG: LayoutSurfaceConfig = {
+  role: "panel",
+  defaultRatio: 38,
   minPx: 420,
   maxPx: 780,
 };
@@ -152,15 +163,19 @@ export const LAYOUT_SURFACE_CONFIG: Record<
   "default.sidebar": { ...DEFAULT_SIDEBAR_CONFIG },
   "default.panel": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 24 },
   "docs.sidebar": { ...DEFAULT_SIDEBAR_CONFIG, defaultRatio: 17 },
-  "docs.panel.research": { ...RESEARCH_PANEL_CONFIG },
+  "docs.panel.research": { ...DOCS_RESEARCH_PANEL_CONFIG },
   "docs.panel.analysis": { ...DOCS_AI_PANEL_CONFIG },
   "docs.panel.snapshot": { ...DOCS_SNAPSHOT_PANEL_CONFIG },
   "docs.panel.trash": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 26 },
-  // NOTE: 분할 에디터 패널은 gallery 그리드가 없어 research 의 420px 플로어를 물려받을
-  // 이유가 없다. 기존 하한(320px)을 유지한다.
-  "docs.panel.editor": { ...RESEARCH_PANEL_CONFIG, defaultRatio: 34, minPx: 320 },
+  // NOTE: 분할 에디터 패널은 gallery 그리드가 없어 research 의 열 하한과 무관하다. docs
+  // research 가 다시 올라가도 따라 올라가지 않도록 하한을 명시해 둔다.
+  "docs.panel.editor": {
+    ...DOCS_RESEARCH_PANEL_CONFIG,
+    defaultRatio: 34,
+    minPx: 320,
+  },
   "docs.panel.export": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 30 },
-  "editor.panel.research": { ...RESEARCH_PANEL_CONFIG, defaultRatio: 38 },
+  "editor.panel.research": { ...EDITOR_RESEARCH_PANEL_CONFIG },
   "editor.panel.analysis": { ...NESTED_MANAGER_PANEL_CONFIG, defaultRatio: 38 },
   "editor.panel.snapshot": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 26 },
   "editor.panel.trash": { ...DEFAULT_PANEL_CONFIG, defaultRatio: 26 },
