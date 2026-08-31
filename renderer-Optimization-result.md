@@ -248,7 +248,7 @@ src/renderer/src/features/research/components/wiki/EntityGallery.tsx:236   onCha
 
 ---
 
-### O10. 사이드바 research 항목이 매 렌더 8키 메타 객체 + 아이콘 JSX를 재생성 — LOW
+### O10. 사이드바 research 항목이 매 렌더 8키 메타 객체 + 아이콘 JSX를 재생성 — LOW (**완료**)
 
 **근거**
 
@@ -262,9 +262,9 @@ src/renderer/src/features/manuscript/components/Sidebar.tsx:199
 
 **규칙 매칭** — `rendering-hoist-jsx` **직접 적용**. 스킬 선언 impact **LOW**.
 
-**수정안** — 아이콘/hoverId는 컴포넌트 밖 상수 테이블로, `label`은 `t` 의존이라 `useMemo([t])`.
+**반영** — 아이콘 컴포넌트·hoverId·labelKey를 모듈 상수 `RESEARCH_ITEM_META`로 올렸다. 렌더 시점에는 `t(labelKey)`로 label만 계산하고 `<meta.Icon/>`으로 아이콘을 그린다. 매 렌더 8키 객체 + JSX 8개 생성이 상수 조회 1회로 바뀌었다.
 
-**확신도** — 코드 확인.
+**확신도** — 코드 확인. 순수 구조 리팩터라 출력 JSX는 동일(typecheck로 8개 id 매핑·타입 확인).
 
 ---
 
@@ -378,7 +378,8 @@ ScrivenerLayout.tsx:116   updatePanelSize(panel.id, rawSize)
 | 완료 | **O1-b2 + O2** | 목록 IPC/store를 `ChapterListItem[]`로 전환, 목록 왕복 select 1회, autosave의 목록 write 제거. N2도 함께 해소. 테스트 18개(main 11 + renderer 7). |
 | 완료 | N3 · N7 (주석·배럴) | 영어 WHAT 주석 3건 한국어 WHY/삭제, `useChapterContent`를 배럴에 노출하고 소비자 5곳 통일. |
 | 완료 | O8 · O11 · O12 | reorder Map 조회, terms 정렬 useMemo, 죽은 FOCUS_ENTITY 핸들러 제거. |
-| **다음** | O5 · O10 · N4 · N5 | 사이드바 hover CSS화·meta 상수화, TreeNode store화, EntityGallery 카드 memo. |
+| 완료 | O10 | research-item meta를 모듈 상수 테이블로 hoist. |
+| **다음** | O5 · N4 · N5 | 사이드바 hover CSS화(선례 있음), TreeNode store화, EntityGallery 카드 memo. |
 | 이후 | O6 · O9 | 미적용 최적화. 측정과 함께 효과 확인. |
 | 이후 | O4 | 에디터 런타임 변경이라 단독 처리 권장. |
 | 이후 | O8 | `reorderChapters`의 O(n²) find. O1-b2에서 타입만 바꾸고 알고리즘은 그대로 뒀다. |

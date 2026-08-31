@@ -45,6 +45,38 @@ const TrashList = lazy(() =>
 
 const isMacOS = navigator.userAgent.toLowerCase().includes("mac");
 
+// NOTE: research-item의 아이콘/hoverId/label 키는 정적이다. 렌더 본문에서 매번 8키 객체와
+// 아이콘 JSX를 새로 만들면 사이드바 리렌더마다 낭비가 생기므로 모듈 상수로 올린다. label만
+// i18n `t`에 의존하므로 labelKey/labelFallback로 보관하고 렌더 시점에 번역한다.
+const RESEARCH_ITEM_META: Record<
+  string,
+  {
+    Icon: typeof FolderOpen;
+    hoverId: string;
+    labelKey: string;
+    labelFallback?: string;
+  }
+> = {
+  character: { Icon: FolderOpen, hoverId: "res-char", labelKey: "sidebar.item.characters" },
+  event: { Icon: FolderOpen, hoverId: "res-event", labelKey: "research.title.events" },
+  faction: { Icon: FolderOpen, hoverId: "res-faction", labelKey: "research.title.factions" },
+  world: { Icon: FolderOpen, hoverId: "res-world", labelKey: "sidebar.item.world" },
+  scrap: { Icon: BookOpen, hoverId: "res-scrap", labelKey: "sidebar.item.scrap" },
+  plotboard: {
+    Icon: GitBranch,
+    hoverId: "res-plotboard",
+    labelKey: "research.title.plotBoard",
+    labelFallback: "플롯 보드",
+  },
+  untitled: {
+    Icon: Workflow,
+    hoverId: "res-untitled",
+    labelKey: "research.title.untitled",
+    labelFallback: "스토리 라인",
+  },
+  analysis: { Icon: Sparkles, hoverId: "res-analysis", labelKey: "research.title.analysis" },
+};
+
 interface SidebarProps {
   onOpenSettings: () => void;
   onPrefetchSettings?: () => void;
@@ -202,48 +234,14 @@ function Sidebar({
           : item.id === "plotboard" || item.id === "untitled"
             ? "world"
             : item.id;
+      const entry = RESEARCH_ITEM_META[item.id];
       const meta = {
-        character: {
-          label: t("sidebar.item.characters"),
-          icon: <FolderOpen className="mr-2 text-muted icon-sm" />,
-          hoverId: "res-char",
-        },
-        event: {
-          label: t("research.title.events"),
-          icon: <FolderOpen className="mr-2 text-muted icon-sm" />,
-          hoverId: "res-event",
-        },
-        faction: {
-          label: t("research.title.factions"),
-          icon: <FolderOpen className="mr-2 text-muted icon-sm" />,
-          hoverId: "res-faction",
-        },
-        world: {
-          label: t("sidebar.item.world"),
-          icon: <FolderOpen className="mr-2 text-muted icon-sm" />,
-          hoverId: "res-world",
-        },
-        scrap: {
-          label: t("sidebar.item.scrap"),
-          icon: <BookOpen className="mr-2 text-muted icon-sm" />,
-          hoverId: "res-scrap",
-        },
-        plotboard: {
-          label: t("research.title.plotBoard", "플롯 보드"),
-          icon: <GitBranch className="mr-2 text-muted icon-sm" />,
-          hoverId: "res-plotboard",
-        },
-        untitled: {
-          label: t("research.title.untitled", "스토리 라인"),
-          icon: <Workflow className="mr-2 text-muted icon-sm" />,
-          hoverId: "res-untitled",
-        },
-        analysis: {
-          label: t("research.title.analysis"),
-          icon: <Sparkles className="mr-2 text-muted icon-sm" />,
-          hoverId: "res-analysis",
-        },
-      }[item.id];
+        label: entry.labelFallback
+          ? t(entry.labelKey, entry.labelFallback)
+          : t(entry.labelKey),
+        Icon: entry.Icon,
+        hoverId: entry.hoverId,
+      };
 
       return (
         <DraggableItem
@@ -262,7 +260,7 @@ function Sidebar({
             onMouseEnter={() => setHoveredItemId(meta.hoverId)}
             onMouseLeave={() => setHoveredItemId(null)}
           >
-            {meta.icon}
+            <meta.Icon className="mr-2 text-muted icon-sm" />
             <span>{meta.label}</span>
             {(hoveredItemId === meta.hoverId ||
               menuOpenId === meta.hoverId) && (
