@@ -6,7 +6,7 @@
 
 - **완료**: O1-a, O1-b1, O1-b2, O2, O3, O8, O10, O11, O12 / N1, N2, N3, N6은 미착수, N7, N9, N10, N11
 - **부분 완료**: O5 (목록에 박힌 무거운 서브트리 memo. 챕터 행 memo 추출은 잔여)
-- **미착수**: O4, O6, O7, N4, N5, N6
+- **미착수**: O4, O6, O7, O9, N4, N5, N6, N13, N15 (N14는 서드파티 경계로 의도적 유지)
 - **미측정**: 200챕터 heap snapshot(O1의 원래 목표 수치), 실제 프레임 드랍 — §5
 - **알려진 위험 1건**: `handleSave`의 캐시 미스 + 빈 본문 조합 — §8 "남은 위험"
 
@@ -39,7 +39,7 @@
 | O5: 사이드바 hover 리렌더 | **부분 완료** | 목록에 박힌 `SnapshotList`·`TrashList`에 memo(UI/UX 무변경). 챕터 행 memo 추출은 잔여. |
 | O8 · O10 · O11 · O12 | **완료** | reorder Map 조회, meta 상수 hoist, terms 정렬 memo, 죽은 `FOCUS_ENTITY` 핸들러 제거. |
 | O4 · O6 · O7 · O9 | **미착수** | 이 문서의 분석/수정안 상태 유지. |
-| N1~N11 (3·4차 신규) | **9건 완료, N4·N5 보류, N6 미착수** | §7에 근거. N2는 O1-b2에서 `ChapterListItem` 채택으로 해소. |
+| N1~N15 (3·4·5차 신규) | **10건 완료, N4·N5 보류, N6·N13·N15 미착수, N14는 변경 안 함** | §7에 근거. N12는 N10에서 만든 자기 회귀. N13~N15는 5차(composition-patterns + 미검사 Vercel 규칙) 신규. |
 | Tailwind 미정의 유틸 30건 | **보류(사용자 결정)** | §7-N8에 근거만 기록. 이후 사용자가 Tailwind v4 마이그레이션을 별도 진행. |
 
 > 경계 요약: 목록(`getAllChapters`·`getDeletedChapters`)은 본문을 나르지 않고, 본문은 단건 조회(`getChapter`)와 `chapterContentStore` 캐시만이 공급한다. store 경계에서 create/update/get 응답의 본문을 투영해 되살아나는 경로도 막았다. 다만 **실제 힙 감소 MB는 아직 측정하지 않았다**(§5-1).
@@ -442,6 +442,80 @@ useChapterManagement.ts:295-296  동일 문구
 O1-b2에서 폴백 자체가 사라져 주석도 함께 제거됐다. 남은 것은 현재 사실만 기술한다 — 복제는 "목록에 본문이 없어 폴백할 곳이 없다", 저장은 "변경 감지 기준은 본문 캐시가 유일한 출처다".
 
 **남은 주석 항목** — 없음. 영어 WHAT 주석 3건도 처리했다: `SnapshotViewer.tsx`(리마운트 이유를 한국어 WHY로), `Editor.tsx`(`// Default false` 삭제), `ExportPreview.tsx`(부분 높이 이유를 한국어 WHY로). 지역 컴포넌트 TSDoc(`GoogleDocsRightPanel.tsx:96-102`)은 내용이 WHY라 LOW로 남긴다.
+
+### N12. 같은 컴포넌트가 전역 `pointerup`을 두 번 등록 — LOW (**완료 · 자기 회귀**)
+
+N10(패널 폭 저장)을 넣을 때 제가 만든 회귀다. research용 listener effect를 복사해 editor용을 따로 등록했다.
+
+**근거(수정 전)**
+
+```
+src/renderer/src/features/workspace/components/panels/WorkspacePanels.tsx:260  window.addEventListener("pointerup", ...)  ← research
+src/renderer/src/features/workspace/components/panels/WorkspacePanels.tsx:355  window.addEventListener("pointerup", ...)  ← editor (중복)
+```
+
+한 컴포넌트에서 같은 이벤트를 두 번 등록하면 포인터를 뗄 때마다 핸들러가 두 번 실행된다. 두 `end*Resize`가 각자 자기 resize 플래그를 확인해 조기 반환하므로 기능 결함은 없었지만, 규칙상 명확한 위반이고 앞으로 패널 종류가 늘면 선형으로 증가한다.
+
+**수정** — 하나의 effect로 합쳐 두 `end*Resize`를 함께 호출한다. 두 패널은 상호 배타적이고 각 함수가 자기 플래그로 가드하므로 안전하다.
+
+**규칙 매칭** — `client-event-listeners` **직접 적용**.
+
+**검증** — `pointerup` 등록 1건으로 확인. `editorPanelWidthCapture` + `researchPanelWidthCapture` 9개 통과(폭 캡처·복원 회귀 없음).
+
+### N13. `Editor`가 boolean prop 8개로 모드를 표현 — MEDIUM (**미착수 · 범위 큼**)
+
+`vercel-composition-patterns` 규칙집으로 처음 검사한 항목이다(이전 라운드는 이 규칙집을 쓰지 않았다).
+
+**근거**
+
+```
+src/renderer/src/features/editor/components/Editor.tsx:32-48
+  readOnly, hideToolbar, hideFooter, hideTitle, scrollable, autoHeight, focusMode, mobileView
+src/renderer/src/features/workspace/components/layout/EditorRoot.tsx:316-328
+  hideToolbar={uiMode === "docs" || uiMode === "scrivener" || uiMode === "editor"}
+  hideFooter={uiMode !== "default"}
+  scrollable={uiMode === "scrivener" || uiMode === "default"}
+  autoHeight={uiMode === "docs"}
+```
+
+**호출부 조합**
+
+| 호출부 | readOnly | hideToolbar | hideFooter | hideTitle | scrollable | autoHeight |
+| --- | --- | --- | --- | --- | --- | --- |
+| `EditorRoot` (메인) | `!activeChapterId` | uiMode 조건 | uiMode 조건 | uiMode 조건 | uiMode 조건 | `uiMode === "docs"` |
+| `GoogleDocsRightPanel` | — | ✓ | ✓ | ✓ | ✓ | — |
+| `SplitViewEditor` | false | ✓ | ✓ | — | — | — |
+| `SnapshotViewer` | ✓ | ✓ | ✓ | — | — | — |
+
+**왜 문제인가** — 4개 호출부 중 3개가 "chrome 없이 본문만" 이라는 같은 의도를 boolean 조합으로 반복한다. 메인만 `uiMode`에서 boolean을 파생시키는데, 이는 규칙이 지적하는 "모드 enum → boolean 다발" 패턴이다. 조합이 늘면 유효하지 않은 조합(예: `hideTitle` + `autoHeight`)도 타입상 표현 가능해진다.
+
+**규칙 매칭** — `architecture-avoid-boolean-props` **직접 적용**, `patterns-explicit-variants` **직접 적용**.
+
+**수정 범위(주의)** — `Editor.tsx`는 약 440 LOC이고 autosave가 그 안에 있다. 전면 compound-component 리팩터는 이 세션에서 다룬 어떤 변경보다 크고, 데이터 손실 경로를 건드린다. 낮은 위험으로 얻을 수 있는 부분은 **3개 임베드 호출부가 공유하는 `EmbeddedEditor` 변형 추출**이다(`SplitViewEditor`가 이미 그 형태다). 메인의 `uiMode` 파생은 그대로 두는 편이 안전하다.
+
+**확신도** — 조합표는 코드 확인. 리팩터 이득은 유지보수성이고 성능 이득은 없다.
+
+### N14. `forwardRef` 사용 — LOW (**변경하지 않음 · 근거 있음**)
+
+```
+src/renderer/src/features/editor/components/SlashMenu.tsx:1,52  forwardRef + useImperativeHandle
+```
+
+React 19.2.7이라 `react19-no-forwardref`가 **직접 적용**되는 형태이긴 하다. 그러나 이 컴포넌트는 TipTap `ReactRenderer`(@tiptap/react 3.27.1)가 마운트하고 `suggestion.tsx:234`가 `suggestionRef?.onKeyDown?.()`로 인스턴스를 읽는 **서드파티 통합 경계**다. ref 전달 방식이 TipTap 내부 구현에 달려 있어, 바꾸면 슬래시 메뉴 키보드 조작이 조용히 깨질 수 있다.
+
+`forwardRef`는 React 19에서 제거되지 않았고 신규 코드에 권장하지 않을 뿐이다. 이득(스타일 정합)보다 위험(사용자 조작 회귀)이 커서 유지한다. renderer의 `useContext` 사용은 2건뿐이고(`shared/ui/useDialog.ts:5`, `shared/ui/ToastContext.tsx:13`) 둘 다 provider 훅 내부라 `use()` 전환 이득이 미미하다.
+
+### N15. capture scroll listener에 `passive` 누락 — LOW (**미착수**)
+
+```
+src/renderer/src/features/editor/components/EditorToolbar.tsx:134  window.addEventListener("scroll", syncBounds, true)
+```
+
+3번째 인자가 `true`(capture)라 옵션 객체가 아니어서 `passive`를 줄 수 없는 형태다. `{ capture: true, passive: true }`로 바꾸면 된다. 같은 파일 `:133`의 `resize`는 passive 대상이 아니다.
+
+**규칙 매칭** — `client-passive-event-listeners` **직접 적용**. 프로젝트에 선례가 있다(`useEditorScrollRestoration.ts:52`가 `{ passive: true }` 사용).
+
+**확신도** — 코드 확인. 체감 효과는 툴바 bounds 동기화 빈도에 달려 측정 필요.
 
 ### N11. 휴지통 조회가 본문을 계속 실어 보냄 — LOW-MEDIUM (**완료**)
 

@@ -253,23 +253,6 @@ export function WorkspacePanels({
     endResearchResizeRef.current = endResearchResize;
   }, [endResearchResize]);
 
-  useEffect(() => {
-    const handlePointerEnd = () => {
-      endResearchResizeRef.current();
-    };
-    window.addEventListener("pointerup", handlePointerEnd);
-    window.addEventListener("pointercancel", handlePointerEnd);
-    return () => {
-      window.removeEventListener("pointerup", handlePointerEnd);
-      window.removeEventListener("pointercancel", handlePointerEnd);
-      if (widthFlushTimerRef.current !== null) {
-        clearTimeout(widthFlushTimerRef.current);
-        widthFlushTimerRef.current = null;
-      }
-      endResearchResizeRef.current();
-    };
-  }, []);
-
   // NOTE: 분할 editor 패널도 research 패널과 같은 문제를 겪는다 — PanelGroup의 layout 캐시가
   // `defaultSize`를 이기고, `addPanel`은 재오픈 시 기본 폭(40%)으로 새로 만든다. research와
   // 동일하게 px로 저장하고 handle로 직접 복원한다. 두 패널은 상호 배타적이라(editor 추가 시
@@ -348,8 +331,13 @@ export function WorkspacePanels({
     endEditorResizeRef.current = endEditorResize;
   }, [endEditorResize]);
 
+  // NOTE: research/editor 두 패널의 drag 종료를 하나의 전역 listener로 처리한다. 패널 종류별로
+  // 따로 등록하면 같은 `pointerup`이 두 번 걸려 이벤트당 핸들러가 중복 실행된다
+  // (client-event-listeners). 두 패널은 상호 배타적이고 각 `end*Resize`는 자기 resize 플래그가
+  // 켜져 있을 때만 커밋하므로, 한 곳에서 둘 다 불러도 안전하다.
   useEffect(() => {
     const handlePointerEnd = () => {
+      endResearchResizeRef.current();
       endEditorResizeRef.current();
     };
     window.addEventListener("pointerup", handlePointerEnd);
@@ -357,6 +345,11 @@ export function WorkspacePanels({
     return () => {
       window.removeEventListener("pointerup", handlePointerEnd);
       window.removeEventListener("pointercancel", handlePointerEnd);
+      if (widthFlushTimerRef.current !== null) {
+        clearTimeout(widthFlushTimerRef.current);
+        widthFlushTimerRef.current = null;
+      }
+      endResearchResizeRef.current();
       endEditorResizeRef.current();
     };
   }, []);
