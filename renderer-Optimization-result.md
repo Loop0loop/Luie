@@ -2,7 +2,7 @@
 
 조사 대상: `src/renderer/**` (사이드바 렌더링 · RAM/메모리)
 기준 문서: `.kiro/skills/vercel-react-best-practices/rules/*.md`, `src/renderer/AGENTS.md`
-상태: **초기 감사 + 2026-08-31 구현/검증 동기화. O1-a, O1-b1, O3는 반영됐고 O1-b2/O2는 미완료다.**
+상태: **초기 감사 + 2026-08-31 구현/검증 동기화 + 3차 정밀 재감사. O1-a, O1-b1, O3는 반영됐고 O1-b2/O2는 미완료다. 3차 재감사에서 신규 항목(N1~N8)과 문서 자체의 오류 2건을 찾았다(§7).**
 
 ---
 
@@ -30,7 +30,9 @@
 | O2: autosave 목록 리렌더 제거 | **부분 완료** | 본문 소비자는 전용 캐시로 좁혔지만 저장 시 `items.map()`과 `content: newContent` 갱신이 남아 있어 목록 구독자의 배열 참조 변경은 계속된다. |
 | O3: 상시 Binder 본문 구독 제거 | **완료** | `BinderBarCompactHover`의 본문 구독/prop 전달을 제거하고 `SnapshotViewer`가 필요할 때 직접 구독한다. |
 | 복원 안전성/깜빡임 | **완료·회귀 가드 있음** | 캐시 reset 즉시 무효화, stale response 차단, 복원 본문 seed, Editor 로딩 게이트, pointer-down 프리페치 적용. |
-| O4~O12 | **미착수** | 이 문서의 분석/수정안 상태 유지. |
+| O4~O12 | **미착수** | 이 문서의 분석/수정안 상태 유지. 3차 재감사에서 9건 전부 잔존 확인(줄번호 동일). |
+| N1~N8 (3차 신규) | **N1·N3 완료, 나머지 미착수** | §7에 근거와 수정안. N1은 `SplitViewEditor.tsx`로 분리 + 로딩 게이트 적용, 회귀 테스트 6개. |
+| Tailwind 미정의 유틸 30건 | **보류(사용자 결정)** | §7-N8에 근거만 기록. 이번 회차 작업 범위에서 제외. |
 
 > 중요: O1-b1의 캐시가 구현됐다는 사실만으로 O1이 해결된 것은 아니다. 현재 목록 응답과 `chapterStore.items`에도 본문이 남아 있어 같은 문자열이 목록 store와 전용 캐시에 동시에 존재할 수 있다. 실제 renderer 힙 감소는 O1-b2 이후에 발생한다.
 
@@ -64,7 +66,19 @@ src/renderer/src/features/manuscript/hooks/useChapterManagement.ts
 4. **복원/전환 안전성**  
    `chapterStore.loadAll()`은 조회 전에 캐시를 reset한다. Editor는 `isLoaded=false`일 때 마운트하지 않아 빈 본문 autosave 덮어쓰기를 막는다. 스냅샷 복원은 이미 알고 있는 `snapshot.content`를 loadAll 후 seed해 재조회·깜빡임을 피한다. 챕터 선택은 hover가 아니라 `onPointerDown`에서만 프리페치한다.
 
-**아직 남은 O1-b2** — `getAllChapters()`의 IPC 계약을 summary-only로 바꾸고 `chapterStore.items`를 `ChapterSummary[]`로 전환해야 한다. 현재 `useChapterManagement`의 복제/저장 fallback과 `WorkspacePanels`의 분할 editor가 `item.content`를 읽으므로 이 소비자들을 먼저 전용 캐시 경로로 옮겨야 한다. 이 단계 전에는 “전 챕터 본문이 renderer 힙에서 제거됐다”고 말할 수 없다.
+**아직 남은 O1-b2** — `getAllChapters()`의 IPC 계약을 summary-only로 바꾸고 `chapterStore.items`를 본문 없는 타입으로 전환해야 한다. 이 단계 전에는 “전 챕터 본문이 renderer 힙에서 제거됐다”고 말할 수 없다.
+
+전환 대상 타입은 **`ChapterListItem`**이다. 새로 만들 필요가 없다 — `src/shared/types/manuscript.ts:23`에 `Omit<Chapter, "content">`로 이미 선언돼 있고 `src/shared/types/index.ts:13`으로 배럴 수출까지 됐다(소비자는 아직 0건, N2 참조). 이 문서가 이전에 제안한 `ChapterSummary`는 쓰지 않는다 — 같은 파일 `:21`이 “`ChapterSummaryResult`/`ChapterSummaryStatus`는 AI 메모리 요약이라 별개 개념”이라고 경고하고 있어 이름이 충돌한다.
+
+남은 `item.content` 소비자는 두 곳이다.
+
+```
+src/renderer/src/features/manuscript/hooks/useChapterManagement.ts:219  복제 fallback (캐시 우선, items 폴백)
+src/renderer/src/features/manuscript/hooks/useChapterManagement.ts:298  저장 변경감지 fallback (캐시 우선, items 폴백)
+src/renderer/src/features/workspace/components/panels/WorkspacePanels.tsx:412  분할 editor (캐시 미경유, 게이트 없음) → N1
+```
+
+`useExportManager`는 차단 요소가 **아니다**. 이전 서술은 틀렸다 — 이 훅은 `api.chapter.get(chapterId)`로 단건 조회하므로 `chapterStore.items`를 참조하지 않는다.
 
 **왜 문제인가** — 사이드바는 제목/순서만 필요하지만 현재도 모든 본문이 IPC 직렬화를 거쳐 목록 store에 들어온다. 전용 캐시가 추가돼 활성/최근 본문은 한 번 더 잡힐 수 있으므로, O1-b1은 안전한 이관 기반이지 메모리 절감 완료 단계가 아니다.
 
@@ -365,15 +379,113 @@ ScrivenerLayout.tsx:116   updatePanelSize(panel.id, rawSize)
 | 완료 | O1-a | 목록 DB 조회 20챕터 21회 → 2회, 10개 테스트 통과. |
 | 완료 | O1-b1 + 복원 안전성 | 본문 캐시·구독 게이트·세대 가드·retain 보호·복원 seed·pointer-down 프리페치, 관련 26개 테스트 통과. |
 | 완료 | O3 | Binder 상시 본문 구독 및 prop chain 제거. |
-| **다음** | **O1-b2 + O2** | 목록 IPC/store를 `ChapterSummary[]`로 전환하고 autosave의 `items.content` 갱신을 제거한다. 같은 데이터 경계를 건드리므로 한 단계로 처리하되 테스트로 세분한다. |
-| 이후 | O5 · O10 · O11 · O12 | 사이드바 국소 수정. 파일 경계가 좁고 위험이 낮다. |
+| **다음** | **N1 (분할뷰 Editor 이관)** | O1-b2의 선행조건. 미이관 상태로 목록에서 본문을 빼면 빈 본문 autosave로 원본이 덮어써진다. |
+| 이후 | **O1-b2 + O2** | 목록 IPC/store를 `ChapterListItem[]`로 전환하고 autosave의 `items.content` 갱신을 제거한다. 같은 데이터 경계를 건드리므로 한 단계로 처리하되 테스트로 세분한다. N2가 함께 해소된다. |
+| 이후 | N3 · N7 (주석·배럴) | 파일 경계가 좁고 런타임 영향이 없다. |
+| 이후 | O5 · O10 · O11 · O12 · N4 · N5 | 사이드바·트리·갤러리 국소 수정. 위험이 낮다. |
 | 이후 | O6 · O9 | 미적용 최적화. 측정과 함께 효과 확인. |
 | 이후 | O4 | 에디터 런타임 변경이라 단독 처리 권장. |
 | 별도 | O7 | 저장 포맷 변경 + 기존 데이터 마이그레이션 필요. |
+| 별도 | N6 (사이드바 일관성) | 활성 스타일·위험색·portal 정책 통일. 시각 회귀 확인이 필요하다. |
+| 보류 | N8 Tailwind 미정의 유틸 30건 | 사용자 결정으로 이번 회차 제외. |
 
 ---
 
-## 7. 구현 후 검증 기록 (2026-08-31)
+## 7. 3차 정밀 재감사 신규 항목 (2026-08-31)
+
+기준 문서는 이 파일 하나만 참조했고, 판정은 전부 실코드를 열어 줄번호를 확인했다. 서브에이전트 3트랙(성능/일관성/주석)의 보고도 재확인을 거쳤고 그 과정에서 오탐 2건을 제거했다(§7.5).
+
+### N1. 분할뷰 Editor만 본문 캐시로 이관되지 않음 — HIGH (데이터 안전)
+
+Editor 마운트 지점은 3곳인데 2곳만 이관됐다.
+
+```
+EditorRoot.tsx:118              useChapterContent + isLoaded 게이트   ✓
+GoogleDocsRightPanel.tsx:105    useChapterContent + isLoaded 게이트   ✓
+WorkspacePanels.tsx:288-290     chapters.find(...) → items의 content  ✗
+WorkspacePanels.tsx:412         initialContent={editorChapter?.content ?? ""}  ← 게이트 없음
+```
+
+**왜 문제인가** — 오늘은 `items`에 본문이 있어 동작한다. 그러나 O1-b2로 목록에서 본문을 빼면 이 경로만 빈 문자열로 Editor를 열고, autosave(`onSave`)가 원본을 덮어쓴다. O1-b1의 "본문 소비자 이관 완료" 판정과 모순되며, **O1-b2보다 먼저 처리해야 하는 선행조건**이다.
+
+**수정안** — `DocsSideEditor`(`GoogleDocsRightPanel.tsx:96`) 선례와 동일하게 자식 컴포넌트로 추출해 `useChapterContent`를 호출하고 `isLoaded`로 게이트한다. `.map()` 콜백 안에서는 훅을 호출할 수 없으므로 컴포넌트 추출이 필수다.
+
+**확신도** — 코드 확인.
+
+### N2. `ChapterListItem`이 선언·수출됐으나 소비자 0 — HIGH
+
+`shared/types/manuscript.ts:23`의 `ChapterListItem = Omit<Chapter, "content">`는 `types/index.ts:13`으로 배럴 수출까지 됐는데 전 코드베이스 소비자가 0건이다. 그 TSDoc은 "목록 경계에서는 본문을 나르지 않는다"를 규범으로 선언하지만 코드는 반대로 동작한다. shared 계약 타입에 남은 미실현 약속이며, O1-b2에서 이 타입을 채택하는 것이 곧 해소다.
+
+### N3. 코드와 어긋난 주석 2건 — HIGH (주석 규약 4항)
+
+```
+useChapterManagement.ts:216-217  "items 폴백은 목록에서 본문을 제거하는 단계에서 사라진다"
+useChapterManagement.ts:295-296  동일 문구
+```
+
+`Chapter.content`(`manuscript.ts:5`)는 그대로이고, 같은 파일 `:313`은 오히려 `items`에 `content`를 계속 쓴다. 미래 약속형 주석이며 실현 시점이 불명확하다. `TODO:`로 완료조건을 명시하거나 현재 사실만 남긴다.
+
+### N4. `memo`된 `TreeNode`가 재귀 prop으로 전멸 — MEDIUM
+
+```
+TreeNode.tsx:29        export const TreeNode = memo(...)
+TreeNode.tsx:22-23     expandedFolders: Record<string, boolean>; selectedNodeId: string | null;
+TreeNode.tsx:131-132   자식에 두 prop을 그대로 재귀 전달
+```
+
+폴더 하나만 토글해도 `expandedFolders` 객체 참조가 바뀌어 트리 전체 memo가 무효화된다. `isExpanded`/`isSelected` boolean만 내리면 해소된다.
+
+**규칙 매칭** — `rerender-memo` 원리 적용. **확신도** — 코드 확인. 리렌더 폭은 노드 수 의존이라 측정 필요.
+
+### N5. `EntityGallery`가 카드마다 `JSON.parse` — LOW-MEDIUM
+
+```
+EntityGallery.tsx:364 (grid) / :467 (list)   parseStructuredAttributes(entity.attributes)
+parseStructuredAttributes.ts:3-6             문자열이면 JSON.parse
+```
+
+필터를 통과한 전 엔티티를 렌더 본문에서 매번 재파싱한다. O9(입력 우선순위)와 원인이 다르다. 카드를 memo 컴포넌트로 추출하고 내부에서 `useMemo([entity.attributes])`.
+
+### N6. 사이드바 구현 불일치 — MEDIUM (코드 일관성)
+
+| 갈래 | 근거 |
+| --- | --- |
+| 활성 행 스타일 | `Sidebar.tsx:134` `bg-active … border-l-[3px] border-accent` vs `SidebarChapterList.tsx:143` `bg-accent/10 text-accent`. 후자가 지배 관행이다 — `SidebarEventList:84`, `SidebarCharacterList:194`, `SidebarFactionList:84`, `EditorTab:258`, `ModelTab:279`, `ShortcutsTab:112`, `InspectorPanel:225`, `StartupWizard:134`. `Sidebar.tsx`만 예외이고 `border-l-[3px]`은 arbitrary 값이다. |
+| 위험색 | `SidebarChapterList.tsx:119` `text-red-500`(raw 팔레트) / `TermCard.tsx:50` `text-danger` / `PlotBoard.tsx:392` `text-error` / `Sidebar.tsx:435` 무효 inline. 토큰 층에서 `--color-destructive`·`--color-error`·`--color-danger`·`--color-danger-fg`가 모두 같은 `--danger-fg`를 가리켜(`global.tokens.css:41,42,50,59`) 동의어 4개가 불일치를 구조적으로 유발한다. |
+| 컨텍스트 메뉴 | `SidebarChapterList.tsx:100` `createPortal`(클리핑 회피 이유 주석 명시) vs `Sidebar.tsx:373-437` portal 없는 fixed 인라인. |
+
+### N7. 배럴이 신규 훅을 노출하지 않아 import 경로가 혼용 — MEDIUM
+
+`domains/manuscript/index.ts`는 `useChapterManagement`·`useChapterStore`를 수출하지만 `useChapterContent`가 빠졌다. 그래서 `EditorRoot.tsx:16`은 배럴에서, 바로 다음 `:17`은 features 직접 경로에서 import한다. **O1-b1 작업이 만든 불일치다.** 배럴 자체도 `../../features/…` 상대경로를 쓰는데 renderer AGENTS.md는 "Avoid fragile relative paths across domains"를 요구한다.
+
+### N8. 기타 확인 항목 (이번 회차 보류 포함)
+
+- **Tailwind 미정의 유틸 30건 — 보류(사용자 결정).** `global.tokens.css`의 `@theme` 블록은 1~122행이고 그 안의 `--color-*` 60개만 색상 유틸을 만든다. 정의 목록과 renderer 전체 사용을 대조한 결과 7종 30건이 CSS를 생성하지 못한다: `text-fg-secondary` 23건(설정 9파일), `hover:bg-bg-active` 2건(`Sidebar.tsx:158,270`), `from-bg-app/40`(`TemplateGrid.tsx:156`), `hover:bg-accent-hover`(`ExportSidebar.tsx:331`), `bg-overlay`(`GraphLegendModal.tsx:18`), `text-primary-fg`(`GlobalErrorBoundary.tsx:85`), `bg-sidebar-surface`(`SidebarWorldList.tsx:178`), `text-tertiary`(`MemoSection.tsx:297`). 같은 파일이 이미 두 차례 같은 버그를 일괄 수정한 이력을 주석으로 남겼다(`:41-45` 3곳, `:51-57` 94곳) — 이건 3차 잔존분이다.
+- **무효 색 함수 — 보류(같은 토큰 계열).** `Sidebar.tsx:435` `style={{ color: "hsl(var(--destructive))" }}`. raw `--destructive`는 없고 `--color-destructive`는 hex를 가리켜 `hsl()` 포장이 무효다. 삭제 메뉴가 위험색을 잃는다.
+- **`editor.css.bak`가 git 추적 중.** `styles/components/editor.css.bak`(401행)은 `editor.css`(473행)의 리팩터 이전 스냅샷이고 어디서도 import되지 않는다. 실제로 이번 감사에서 오탐(`z-index: 10`)을 유발했다.
+- **임의 z-index 2곳.** `QuitOverlay.tsx:22` `z-[9999]`, `MainLayout.tsx:499,527` `z-[110]`. `global.tokens.css:116`이 "임의 z-index 경쟁을 막으려고 named utility의 값을 한 곳에서 관리한다"며 dropdown 50 / banner 100 / toolbar 120 / toast 150을 선언한다. `z-[110]`은 banner와 toolbar 사이에 끼운 값이다.
+- **a11y 2건.** `ApiKeysCard.tsx:56,79` 아이콘 전용 눈 토글에 `focus:outline-none`만 있고 ring·`aria-label`·`title`이 없다. 형제 파일 `OllamaEndpointCard.tsx:85-86`은 `focus-visible:ring-2` + `aria-label`을 갖췄다.
+- **`setState` 우회 1곳.** `useChapterManagement.ts:313`이 `createAliasSetter`를 거치지 않고 `chapters`/`currentChapter` 별칭을 수동 동기화한다. chapterStore에서 이 우회는 이곳뿐이다.
+- **영어 WHAT 주석 3건.** `SnapshotViewer.tsx:222`, `Editor.tsx:61`, `ExportPreview.tsx:109`.
+- **정적 값 inline style 2곳.** `Sidebar.tsx:174`, `:368`. `text-subtle` 유틸이 있고 className의 `text-muted`와 색을 이중 지정한다.
+- **300 LOC 초과**(AGENTS.md "where practical" 연성 규칙): MainLayout 600, EntityGallery 563, ScrivenerLayout 537, uiStore.state 516, GoogleDocsRightPanel 515, AnalysisSection 515, EditorToolbar 499, App 497, Sidebar 483.
+- **`memo` 행에 인라인 함수** — `ShortcutsTab.tsx:287,289`. 행 수가 적어 LOW.
+
+### 7.5. 3차 재감사에서 걸러낸 오탐
+
+| 대상 | 판정 |
+| --- | --- |
+| `text-canvas-doc-body`, `text-canvas-edge-label` | **정상.** `--text-canvas-doc-body: 0.9375rem`(`global.tokens.css:106`), `--text-canvas-edge-label: 0.625rem`(`:114`)로 `@theme` 안에 있는 font-size 유틸이다. 색상 유틸로 오인해 미정의 후보에 올랐다가 제외했다. |
+| `border-text-tertiary` (`AppearanceTab.tsx:66`) | **정상.** `--color-text-tertiary`가 존재한다. |
+| `contentRevision` | **죽은 코드 아님.** `SnapshotViewer.tsx:56`/`SnapshotList.tsx:126`에서 bump하고 3개 Editor 마운트 지점이 remount key로 소비한다. |
+| `useExportManager`의 `chapter.content` | **O1-b2 차단 아님.** `api.chapter.get(chapterId)` 단건 조회이고 `items`를 참조하지 않는다. |
+| `DraggableItem`에 인라인 `data={{…}}` | **결함 아님.** `DraggableItem`은 `memo`가 아니므로 깨질 memo가 없다. §5의 미확인 항목 6번에 대한 답이다. |
+| zustand 객체 셀렉터 `useShallow` 누락 | **신규 없음.** 감싸지 않은 2곳(`BinderBarCompactHover.tsx:118`, `CanvasStatusBar.tsx:17`)은 primitive 반환이라 불필요하다. |
+| renderer `console.*` / `!important` / 동적 Tailwind 조립 | **각 0건.** |
+
+---
+
+## 8. 구현 후 검증 기록 (2026-08-31)
 
 ### 자동 테스트
 

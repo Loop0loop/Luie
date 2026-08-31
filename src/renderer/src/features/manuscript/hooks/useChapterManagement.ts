@@ -213,8 +213,10 @@ export function useChapterManagement() {
         title: `${source.title} Copy`,
       });
 
-      // NOTE: 복제는 원본 본문을 필요로 하므로 캐시를 채운 뒤 읽는다. items 폴백은 목록에서
-      // 본문을 제거하는 단계에서 사라진다.
+      // NOTE: 복제는 원본 본문을 필요로 하므로 캐시를 채운 뒤 읽는다. 캐시 조회가 실패하면
+      // items의 본문으로 폴백한다.
+      // TODO: `chapterStore.items`를 `ChapterListItem`(본문 없는 목록 타입)으로 전환하면
+      // items 폴백을 제거한다.
       await ensureChapterContent(source.id);
       const sourceContent = peekChapterContent(source.id) ?? source.content ?? "";
 
@@ -293,7 +295,9 @@ export function useChapterManagement() {
       const normalizedTitle = title.trim() || fallbackTitle;
       const previousTitle = chapterForSave?.title ?? "";
       // NOTE: 변경 감지용 값이므로 캐시를 우선 본다. 캐시에 없으면(아직 로딩 전) items의
-      // 본문으로 폴백한다 — 이 폴백은 목록에서 본문을 제거하는 단계에서 사라진다.
+      // 본문으로 폴백한다.
+      // TODO: `chapterStore.items`를 `ChapterListItem`(본문 없는 목록 타입)으로 전환하면
+      // 이 폴백을 제거한다.
       const previousContent =
         peekChapterContent(chapterId) ?? chapterForSave?.content ?? "";
       const lastSaved = lastSavedRef.current;

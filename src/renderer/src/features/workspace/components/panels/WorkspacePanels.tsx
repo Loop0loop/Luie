@@ -15,8 +15,9 @@ import {
 } from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
 import { BookOpen, X } from "lucide-react";
-import { Editor, useEditorStore } from "@renderer/domains/editor";
+import { useEditorStore } from "@renderer/domains/editor";
 import { useChapterStore } from "@renderer/domains/manuscript";
+import { SplitViewEditor } from "@renderer/features/workspace/components/panels/SplitViewEditor";
 import type { ResizablePanelData } from "@renderer/features/workspace/stores/uiStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import type { Chapter } from "@shared/types";
@@ -406,20 +407,12 @@ export function WorkspacePanels({
                     <div
                       className="research-surface h-full overflow-hidden border-0 outline-none"
                     >
-                      <Editor
-                        key={`dnd-editor-${editorChapter?.id ?? panel.id}-${contentRevision}`}
-                        initialTitle={editorChapter?.title ?? ""}
-                        initialContent={editorChapter?.content ?? ""}
+                      <SplitViewEditor
                         chapterId={editorChapter?.id}
-                        readOnly={false}
-                        hideToolbar={true}
-                        hideFooter={true}
-                        onSave={
-                          editorChapter
-                            ? (title, content) =>
-                                onSave(title, content, editorChapter.id)
-                            : undefined
-                        }
+                        chapterTitle={editorChapter?.title}
+                        panelId={panel.id}
+                        contentRevision={contentRevision}
+                        onSave={onSave}
                       />
                     </div>
                   )}
