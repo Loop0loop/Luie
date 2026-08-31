@@ -28,29 +28,30 @@ describe("editor layout shares one research panel width", () => {
     expect([...surfaces][0]).toBe("editor.panel.research");
   });
 
-  // NOTE: editor research 패널이 좁은 전용 밴드(과거 370~560px)를 쓰면 조절 가능한 폭이
-  // 190px뿐이어서 "resize가 거의 안 움직인다"는 체감 차이가 생긴다. docs와 같은 정책을 쓴다.
-  it("shares the docs research width policy", () => {
+  // NOTE: editor 는 docs 와 최소 폭 요구가 갈라져 전용 config 를 쓴다. docs 우측 패널은
+  // 320px 까지 접히지만 editor 는 gallery 2열 하한을 유지한다. maxPx 는 계속 공유한다 —
+  // 과거 editor 전용 밴드(370~560px)처럼 조절 가능한 폭이 좁아지는 상태로 되돌아가지 않기
+  // 위한 것이다.
+  it("keeps its own minimum width while sharing the docs maximum", () => {
     const editorConfig = getLayoutSurfaceConfig("editor.panel.research");
     const docsConfig = getLayoutSurfaceConfig("docs.panel.research");
 
-    expect(editorConfig.minPx).toBe(docsConfig.minPx);
+    expect(editorConfig.minPx).toBeGreaterThan(docsConfig.minPx);
     expect(editorConfig.maxPx).toBe(docsConfig.maxPx);
   });
 
   // NOTE: EntityGallery 그리드가 `minmax(175px, 190px)` + `gap-3`이라 2열 콘텐츠 폭이
   // 175*2+12=362px, 컨테이너 패딩 `md:px-6`(48px), 스크롤바 약 10px → 420px가 하한이다.
   // 이 아래로 내려가면 1열로 떨어지고 auto-fill 상한(190px) 때문에 카드가 늘어나지 못해
-  // 오른쪽에 빈 공간이 남는다.
-  it("keeps the gallery two-column floor", () => {
+  // 오른쪽에 빈 공간이 남는다. editor 는 이 하한을 지키고, docs 는 더 좁게 접는 요구가
+  // 우선이라 1열을 의도적으로 허용한다(값 드리프트가 아님을 함께 고정한다).
+  it("keeps the gallery two-column floor for the editor layout only", () => {
     const GALLERY_TWO_COLUMN_FLOOR_PX = 175 * 2 + 12 + 48 + 10;
 
     expect(getLayoutSurfaceConfig("editor.panel.research").minPx).toBeGreaterThanOrEqual(
       GALLERY_TWO_COLUMN_FLOOR_PX,
     );
-    expect(getLayoutSurfaceConfig("docs.panel.research").minPx).toBeGreaterThanOrEqual(
-      GALLERY_TWO_COLUMN_FLOOR_PX,
-    );
+    expect(getLayoutSurfaceConfig("docs.panel.research").minPx).toBe(320);
   });
 
   // NOTE: 분할 에디터 패널은 gallery가 없으므로 research 플로어를 물려받지 않는다.

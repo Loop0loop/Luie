@@ -69,11 +69,19 @@ export default function EditorLayout({
 }: EditorLayoutProps) {
   const maxWidth = useEditorStore((state) => state.maxWidth);
   const updatePanelSize = useUIStore((state) => state.updatePanelSize);
+  // NOTE: 챕터 ⋮ 메뉴는 body로 portal되어 사이드바 rect 밖에 뜬다. 메뉴로 포인터를 옮기는
+  // 순간 hover-close가 걸리면 메뉴를 조작할 수 없으므로 열려 있는 동안 닫기를 잠근다.
+  const isManuscriptMenuOpen = useUIStore((state) => state.isManuscriptMenuOpen);
 
   const editorLayoutGroupRef = useRef<HTMLDivElement>(null);
   const [isToolbarVisible, setIsToolbarVisible] = useState(false);
   const [isToolbarHoverZoneActive, setIsToolbarHoverZoneActive] = useState(false);
   const toolbarHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // NOTE: 툴바 메뉴("...")는 툴바 레이어 안에 렌더되므로 툴바가 숨으면 메뉴까지 사라진다.
+  // 열려 있는 동안은 포인터가 클러스터를 벗어나도 툴바를 유지한다. state가 아니라 ref인
+  // 이유는 hover 판정이 timer/interval 안에서 최신값만 읽으면 되고, 리렌더가 필요 없기
+  // 때문이다.
+  const toolbarMenuOpenRef = useRef(false);
 
   const showToolbar = useCallback(() => {
     if (toolbarHideTimerRef.current !== null) {
@@ -123,17 +131,24 @@ export default function EditorLayout({
     };
   }, [syncPointerCluster]);
 
+  // NOTE: 툴바를 유지할 근거는 두 가지다 — 포인터가 클러스터 안이거나, 툴바 메뉴가 열려
+  // 있는 경우. 숨김 경로(예약 timeout / watchdog)가 모두 같은 판정을 쓰게 한 곳에 둔다.
+  const shouldKeepToolbarVisible = useCallback(
+    () => pointerInClusterRef.current || toolbarMenuOpenRef.current,
+    [],
+  );
+
   // NOTE: 수렴 보장용 watchdog. 이벤트 조합이 어떻게 꼬여도(arm 누락 등) 표시 상태에서
   // 주기적으로 실측 플래그를 확인해 밖이면 숨긴다. 내부면 유지(DnD 중 요구사항).
   useEffect(() => {
     if (!isToolbarVisible) return undefined;
     const id = window.setInterval(() => {
-      if (!pointerInClusterRef.current) {
+      if (!shouldKeepToolbarVisible()) {
         setIsToolbarVisible(false);
       }
     }, 400);
     return () => window.clearInterval(id);
-  }, [isToolbarVisible]);
+  }, [isToolbarVisible, shouldKeepToolbarVisible]);
 
   const scheduleHide = useCallback(() => {
     if (toolbarHideTimerRef.current !== null) {
@@ -144,10 +159,21 @@ export default function EditorLayout({
     toolbarHideTimerRef.current = setTimeout(() => {
       toolbarHideTimerRef.current = null;
       // NOTE: 발화 시점에 포인터가 여전히 클러스터 안이면(leave 오발 보정) 숨기지 않는다.
-      if (pointerInClusterRef.current) return;
+      if (shouldKeepToolbarVisible()) return;
       setIsToolbarVisible(false);
     }, 220);
-  }, []);
+  }, [shouldKeepToolbarVisible]);
+
+  // NOTE: 메뉴가 열리는 순간 예약된 숨김이 남아 있을 수 있으므로 showToolbar로 취소한다.
+  const handleToolbarMenuOpenChange = useCallback(
+    (open: boolean) => {
+      toolbarMenuOpenRef.current = open;
+      if (open) {
+        showToolbar();
+      }
+    },
+    [showToolbar],
+  );
 
   const handleToolbarEnter = useCallback(() => {
     setIsToolbarHoverZoneActive(true);
@@ -217,6 +243,7 @@ export default function EditorLayout({
           activationWidthPx={SIDEBAR_WIDTH_CONFIG.mainSidebar.minPx}
           closeDelayMs={180}
           suppressHoverOpen={isToolbarHoverZoneActive}
+          suppressHoverClose={isManuscriptMenuOpen}
         >
           <div
             className="h-full flex flex-col bg-sidebar border-r border-border"
@@ -300,6 +327,7 @@ export default function EditorLayout({
                   toolbarVisible={isToolbarVisible}
                   onControlsEnter={showToolbar}
                   onControlsLeave={scheduleHide}
+                  onMenuOpenChange={handleToolbarMenuOpenChange}
                 />
               </div>
 

@@ -169,16 +169,171 @@ UI 확인 결과 대비가 과해서 **HEAD 상태로 전량 롤백**했다. 아
 - [x] 대비 실측 재검증 · dark/sepia 무영향 확인 (18조합 전수 비교에서 light 외 변화 0건)
 - [x] **텍스트 램프 전 theme 정렬** (선택지 A, 목표는 낮춘 값으로 — 아래)
 
-#### 적용값
+#### 확정한 light 표면 계단
 
-| | element | border-default | border-active | border-strong |
-| --- | --- | --- | --- | --- |
-| light | `#ffffff` → **`#f0f0f3`** | `#e5e5ea` → **`#d6d6da`** | `#d1d1d6` → **`#b7b7bb`** | `#8e8e96` → **`#898991`** |
-| light + cool | `#ffffff` → **`#ebeff5`** | `#dde3ec` → **`#cdd2db`** | `#c7d0de` → **`#acb4c0`** | `#8a8f9b` → **`#848994`** |
-| light + warm | `#fffdf8` → **`#f2ebdd`** | `#e8dccb` → **`#dbcfbf`** | `#d8c7b1` → **`#bfb09d`** | `#918b7e` → **`#8c867a`** |
+UI 확인 후 두 가지 지적을 반영해 계단 전체를 한 칸 내렸다.
 
-표면 분리 대비 (light neutral): `surface/element` **1.000 → 1.137**, `app/element` **1.000 → 1.137**.
+1. **에디터 본문이 순백(`#ffffff`)이라 눈에 부담** → `--bg-app`을 내린다
+2. **차가움이 기본과 구분되지 않는다** → 색편차를 두 배로
+
+`--bg-app`을 내리면 부수 효과로 **`--bg-panel`(`#ffffff`)이 app보다 밝아져 modal·dropdown 같은 부유 표면이 실제로 떠 보인다.** 이전에는 `panel/app`이 1.000:1로 붙어 있었다.
+
+| 역할 | light | light + cool | light + warm |
+| --- | --- | --- | --- |
+| `--bg-panel` / `--bg-surface` (부유·카드) | **`#ffffff`** | `#f8fafd` → **`#fdfeff`** | `#fdf8ef` → **`#fffdfa`** |
+| `--bg-app` (editor 종이) | `#ffffff` → **`#f9f9f7`** | `#fbfcff` → **`#f7f9fd`** | `#fefbf5` → **`#faf7f0`** |
+| `--ai-panel-bg` | `#f8f8fa` → **`#f4f4f2`** | `#f5f7fc` → **`#f2f5fa`** | `#fbf4e9` → **`#f5f0e5`** |
+| `--bg-sidebar` / `--bg-research` (chrome) | `#f5f5f7` → **`#eeeeec`** | `#eff2f7` → **`#eaeef5`** | `#f6eee2` → **`#efe9db`** |
+| `--bg-element` (파인 control) | `#ffffff` → **`#e7e7e4`** | `#ffffff` → **`#e2e7ef`** | `#fffdf8` → **`#e8e0cd`** |
+| `--border-default` | `#e5e5ea` → **`#d7d7d3`** | `#dde3ec` → **`#d1d6df`** | `#e8dccb` → **`#e0d3c3`** |
+| `--border-active` | `#d1d1d6` → **`#b8b8b3`** | `#c7d0de` → **`#b0b7c3`** | `#d8c7b1` → **`#c3b4a0`** |
+| `--border-strong` | **`#84847f`** | **`#7e828d`** | **`#847e74`** |
+| `--text-tertiary` | `#8c8c94` → **`#70706c`** | `#7e8795` → **`#6a707c`** | `#968574` → **`#766a5d`** |
+
+`--bg-app`은 순백 대비 **`#f9f9f7`** — b를 2단위 낮춘 살짝 따뜻한 off-white다. 순수 회색(`#f9f9f9`)이나 차가운 쪽(`#fafafb`)이 아니라 이 방향을 고른 이유는 위 색온도 규칙에 있다.
+
+**인접 단계 목표와 실측** (panel → app → ai → sidebar → element)
+
+| | panel/app | app/ai | ai/sidebar | sidebar/element | **app/sidebar** (editor↔Research) |
+| --- | --- | --- | --- | --- | --- |
+| 목표 | 1.04 | 1.04 | 1.05 | 1.055 | ≥1.09 |
+| light | 1.054 | 1.045 | 1.055 | 1.067 | **1.102** |
+| light + cool | 1.044 | 1.037 | 1.065 | 1.067 | **1.104** |
+| light + warm | 1.054 | 1.062 | 1.065 | 1.086 | **1.131** |
+
+editor↔Research 분리는 이전(1.089/1.094/1.114)보다 **넓어졌다.**
+
+#### 규칙: 색온도는 chroma 크기가 아니라 **방향**으로 구분한다
+
+이 항목은 한 번 틀렸다가 UI 확인으로 교정했다. 기록해 다시 반복하지 않는다.
+
+- 첫 시도에서 cool/warm의 색편차(chroma)를 두 배로 올렸다 → "은은하게 다른 느낌"이 아니라 **"색이 깊어져 껄끄러운"** 결과가 됐다
+- 색온도는 세게 바꾸는 축이 아니다. **살짝만 달라졌는데 다른 느낌을 주는** 것이 목적이다
+- 해법: **neutral을 아주 약하게 따뜻한 쪽(`b < r`, 편차 2~3)에 둔다.** 그러면 cool은 chroma를 키우지 않고도 방향이 반대라 체감 차이가 커진다
+- dark가 약한 cool tint를 쓰는 것과 light가 약한 warm tint를 쓰는 것이 대칭이고, 집필 표면을 종이처럼 읽히게 한다
+
+**절대 색편차는 낮게 유지, 체감 차이는 두 배**
+
+| | 절대 색편차 (app / sidebar / element) | neutral과의 축 거리 (app / sidebar) |
+| --- | --- | --- |
+| cool — HEAD | 4 / 8 / 10 | 4 / 6 |
+| cool — 과했던 시도 | ~~8 / 17 / 22~~ | ~~7 / 14~~ |
+| **cool — 확정** | **6 / 11 / 13** | **8 / 13** |
+| warm — HEAD | 9 / 20 / 21 | 9 / 22 |
+| **warm — 확정** | **10 / 20 / 27** | **8 / 18** |
+
+즉 각 변형의 절대 chroma는 HEAD 수준으로 은은한데, neutral이 반대 방향으로 옮겨간 덕에 cool의 체감 구분은 두 배가 됐다.
+
+**측정 지표 주의** — 색온도 구분을 대비율로 재면 안 된다. 같은 역할끼리 명도를 맞추는 게 설계이므로 대비는 항상 1.0 근처다. 색편차(chroma)와 따뜻↔차가움 축(`b − r`) 거리로 본다.
+
+#### dark 색온도 재설계 (같은 규칙 적용)
+
+dark의 cool/warm은 **원래부터** 색편차가 과했다(내가 만든 값이 아니다). 그래서 "더 전으로 롤백"할 대상이 없고 다시 잡아야 했다.
+
+| 역할 | neutral | cool 이전 → 이후 | warm 이전 → 이후 |
+| --- | --- | --- | --- |
+| app | 2 | 11 → **8** | 8 → **8** |
+| sidebar | 2 | 20 → **12** | 11 → **12** |
+| panel / surface | 3 | 23 → **14** | 14 → **14** |
+| ai-panel | 0 | 25 → **14** | 19 → **14** |
+| element | 4 | 30 → **18** | 23 → **18** |
+| **`--text-primary`** | 3 | **22 → 6** | **28 → 6** |
+| `--text-secondary` | 10 | 33 → **14** | 36 → **14** |
+| `--text-tertiary` | 11 | 34 → **14** | 37 → **14** |
+
+**"editor 본문 괴리감"의 직접 원인은 본문 글자색이었다.** `--text-primary` 색편차가 neutral 3 → cool 22 / warm 28이라 글자 자체가 파랗거나 노랬다. 글자는 읽히는 것이 우선이므로 거의 중성으로 되돌렸다.
+
+두 번째 원인은 **계단 폭이 neutral보다 넓었던 것**이다.
+
+| | neutral | cool 이전 → 이후 | warm 이전 → 이후 |
+| --- | --- | --- | --- |
+| app/sidebar | 1.081 | 1.143 → **1.079** | 1.116 → **1.074** |
+| app/panel | 1.182 | 1.306 → **1.177** | 1.229 → **1.175** |
+| app/element | 1.342 | **1.613 → 1.330** | 1.527 → **1.339** |
+
+**방법**: neutral의 명도를 목표로 고정하고 축(`b − r`)만 목표치에 맞춰 역산했다. 결과적으로 역할별 명도 편차 0.2~2.8%, 계단 폭 편차 0.3~0.8%로 neutral과 사실상 동일하고, 텍스트 대비도 neutral과 같다(primary 9.0 · secondary 4.6 · tertiary 2.55).
+
+무드는 채도가 아니라 방향으로 만든다 — cool은 "어두운 방에 모니터 빛만 흘러올 때"의 냉기, warm은 램프 빛의 온기를 같은 강도로 반대 방향에 둔다.
+
+#### 추가 규칙: 축(`b − r`)은 역할 전체에서 일정해야 한다
+
+1차 조정 후에도 dark+cool의 sidebar 톤이 어긋난다는 지적이 나왔다. 원인은 **내가 색편차에 기울기를 넣었기 때문**이다.
+
+| | app | sidebar | panel | ai | element | 범위 |
+| --- | --- | --- | --- | --- | --- | --- |
+| neutral | +2 | +2 | +3 | 0 | +4 | **4** |
+| cool — 1차 | +8 | **+12** | +14 | +14 | +18 | **10** |
+| **cool — 확정** | +8 | **+8** | +10 | +10 | +10 | **2** |
+
+neutral은 app과 sidebar가 **같은 축**을 쓴다. 1차 조정은 sidebar를 app보다 +4 더 파랗게 만들었고, 그러면 "한 단계 밝은 같은 색"이 아니라 **"다른 색"**으로 읽혀 톤이 어긋난다. 축을 일정하게 맞추면 해소된다.
+
+**웹 조사 결과** (참고용, 라이선스 준수를 위해 내용 재구성)
+
+- [Tokyo Night](https://marketplace.visualstudio.com/items?itemName=nishantg96.tokyo-night-pure): editor `#1a1b26`(축 +12) · bars/menus `#16161e`(축 +8) — **sidebar가 editor보다 어둡고 덜 파랗다.** Luie는 chrome을 밝히는 반대 모델이다
+- [Nord Polar Night](https://github.com/luke-beep/awesome-nord): `#2e3440`(+18) → `#3b4252`(+23) → `#434c5e`(+27) → `#4c566a`(+30) — 밝아질수록 축이 커지는 기울기를 쓴다. 즉 기울기 자체가 금기는 아니지만 Nord는 절대 채도가 훨씬 높은 팔레트다
+- [JetBrains IntelliJ Platform](https://plugins.jetbrains.com/docs/intellij/supporting-islands-theme.html): dark에서 프레임을 editor·tool window보다 밝게, light에서는 어둡게. **최소 대비 1.20:1** 권장
+
+Luie의 dark chrome 계단은 1.08로 JetBrains 권장(1.20)보다 좁다. 계단이 좁을수록 축 불일치가 상대적으로 크게 드러나므로 축 일정성이 더 중요하다.
+
+> 미결 논점: Tokyo Night처럼 **chrome을 editor보다 어둡게** 두는 모델이 "chrome recedes"에 더 충실할 수 있다. 이는 `DESIGN.md`의 dark 모델("editor를 가장 어두운 초점 면, chrome은 한 단계 밝게")을 뒤집는 변경이라 별도 결정 사항으로 남긴다.
+
+#### 규칙: warm은 cool의 반전이 아니다 (지각적 비대칭)
+
+warm을 cool의 단순 반전(축 부호만 바꾸기)으로 만든 것도 틀렸다. **파랑은 저조도에서도 "어두운 파랑"으로 읽히지만, 주황은 저조도에서 갈색·탁함이 된다.**
+
+그래서 호평받는 warm dark theme들은 **가장 어두운 면을 중성에 가깝게 두고 온기를 밝은 면에 싣는다.**
+
+| 참조 | 값 | 축 |
+| --- | --- | --- |
+| [Gruvbox](https://gist.github.com/edgarcosta/93884f3325b64ef443b05f0ee58f403f) `bg0` | `#282828` | **0 (순회색)** |
+| Gruvbox `bg0_soft` | `#32302f` | −3 |
+| Gruvbox `bg1` | `#3c3836` | −6 |
+| Gruvbox `bg2` | `#504945` | −11 |
+| Gruvbox `bg3` | `#665c54` | −18 |
+| [Everforest](https://gist.github.com/Lanny/04704c7860704aef5067491f5332005d) `bg-dim` | `#232a2e` | **+11 (차가움)** |
+| Everforest `bg0` | `#2d353b` | **+14 (차가움)** |
+
+Everforest는 "warm and soft"를 표방하지만 **배경은 차가운 청록**이고 온기는 전경색에만 있다. 즉 warm dark 배경 자체가 까다로운 영역이다.
+
+**적용한 두 가지**
+
+1. **축을 명도에 비례시킨다** — `app −3 → sidebar −5 → panel −8 → element −11`. 인접 단계 Δ가 2~3이라 cool에서 문제가 됐던 톤 점프가 없다
+2. **hue lean을 주황 쪽으로** — `g`를 `b`쪽에 가깝게(`r−g : g−b ≈ 2:1`). 정확한 중간값은 같은 명도에서 탁한 갈색으로 보인다
+
+결과적으로 같은 명도대의 Gruvbox 값과 lean이 일치한다.
+
+| 역할 | 값 | 축 / lean | 대응 Gruvbox |
+| --- | --- | --- | --- |
+| app | `#1c1a19` | −3 / (2,1) | `bg0_soft` −3 / (2,1) |
+| sidebar | `#24211f` | −5 / (3,2) | `bg1` −6 / (4,2) |
+| panel | `#2c2724` | −8 / (5,3) | −9 / (5,4) |
+| element / ai | `#37302c` / `#38312d` | −11 / (7,4) | `bg2` −11 / (7,4) |
+
+해석: **따뜻한 광원이 표면에 닿고 가장 깊은 면은 그림자에 남는다.** cool은 이 문제가 없어 축을 일정하게 두는 것이 맞고, 이 비대칭은 의도된 것이다.
+
+**확정값**
+
+```
+dark + cool   app #171b1f · sidebar/research #1e2226 · panel/surface #24292e
+              ai #2e3338 · element #2d3237
+              primary #d6d8da · secondary #969ba0 · tertiary #6a6f74
+              축 일정: 8 / 8 / 10 / 10 / 10
+
+dark + warm   app #1c1a19 · sidebar/research #24211f · panel/surface #2c2724
+              ai #38312d · element #37302c
+              primary #dad7d6 · secondary #9e9996 · tertiary #736d6a
+              축 비례: 3 / 5 / 8 / 11 / 11
+```
+
+**검증**: 계단 폭 neutral과 편차 0.2~0.6% · 텍스트 대비 neutral과 동일(primary 9.05 · secondary 4.59 · tertiary 2.54) · 인접 축 Δ 최대 3
+
+#### dark + cool 텍스트 램프는 롤백
+
+§2에서 `--text-secondary`/`--text-tertiary`를 조정했다가 되돌렸다. 대비 수치만 보면 tertiary 2.77:1이 낮지만, 실제 화면에서 조정값이 차가운 톤을 과하게 밝혀 색온도의 은은함을 깨뜨렸다. **색온도 변형에서는 대비 최적화보다 톤 유지가 우선이다.** 토큰 주석에도 남겼다.
+
 border 대비: 장식선 1.26 → **1.45**, 상태선 1.52 → **2.00**, UI 경계 **3.05** (가장 어두운 표면 기준). 고대비 모드의 3:1과는 다른 층이다.
+
+**검증**: 3개 조합 전부 인접 단계·텍스트 램프·border 3단 기준 통과. HEAD 대비 변화 64건 전부 light 계열이며 **dark·sepia는 0건**.
 
 #### 텍스트 램프 — 전 theme 정렬 (선택지 A)
 
@@ -203,25 +358,29 @@ border 대비: 장식선 1.26 → **1.45**, 상태선 1.52 → **2.00**, UI 경�
 
 완전 준수(4.5:1)는 `data-contrast="high"`가 담당한다. 그게 그 모드의 존재 이유다.
 
-**적용값** (9개 조합)
+**적용 범위 — dark는 전량 롤백했다**
 
-| 조합 | secondary | tertiary |
-| --- | --- | --- |
-| light | 유지 `#62626a` | `#8c8c94` → **`#75757c`** |
-| light + cool | 유지 `#566070` | `#7e8795` → **`#6e7582`** |
-| light + warm | 유지 `#6b5e4d` | `#968574` → **`#7f7162`** |
-| dark | `#989aa2` → **`#a3a5ae`** | `#6c6e77` → **`#8c8f9a`** |
-| dark + cool | `#abb5cc` → **`#a6afc6`** | `#78829a` → **`#929fbc`** |
-| dark + warm | `#c3b59f` → **`#b7aa96`** | `#92836d` → **`#ab9a80`** |
-| sepia | `#77644f` → **`#6c5b48`** | `#a48e75` → **`#7e6d5a`** |
-| sepia + cool | `#71685b` → **`#635b4f`** | `#9c9283` → **`#746d61`** |
-| sepia + warm | `#705b3c` → **`#665336`** | `#9b8057` → **`#7d6846`** |
+처음 9개 조합 전부에 적용했으나 UI 확인에서 dark가 반려됐다. **dark에서 muted 텍스트를 밝히면 글레어와 노이즈가 생겨 "차분한 집필 표면"이 깨진다.** light는 반대로 어둡게 가는 방향이라 같은 조정이 문제가 없다. 방향이 다르므로 규칙도 갈라진다.
 
-**검증**: 9조합 전 표면 최저 대비 — primary 7.46~14.96, secondary 4.82~5.51, tertiary 3.98~4.02. 위계 p/s 1.48~2.82x, s/t 1.20~1.38x. 전부 기준 통과.
+| 조합 | secondary | tertiary | 상태 |
+| --- | --- | --- | --- |
+| light | 유지 `#62626a` | `#8c8c94` → **`#70706c`** | 적용 |
+| light + cool | 유지 `#566070` | `#7e8795` → **`#6a707c`** | 적용 |
+| light + warm | 유지 `#6b5e4d` | `#968574` → **`#766a5d`** | 적용 |
+| dark | `#989aa2` | `#6c6e77` | **롤백** |
+| dark + cool | `#abb5cc` | `#78829a` | **롤백** |
+| dark + warm | `#c3b59f` | `#92836d` | **롤백** |
+| sepia | `#77644f` → **`#6c5b48`** | `#a48e75` → **`#7e6d5a`** | 적용 (§3에서 재검증) |
+| sepia + cool | `#71685b` → **`#635b4f`** | `#9c9283` → **`#746d61`** | 적용 (§3에서 재검증) |
+| sepia + warm | `#705b3c` → **`#665336`** | `#9b8057` → **`#7d6846`** | 적용 (§3에서 재검증) |
 
-`dark+cool`/`dark+warm`의 secondary는 6.39/6.79에서 **내려갔다**(과했음). 나머지는 올라갔다.
+처음에는 dark+cool만 롤백했는데 **그게 오히려 괴리감을 키웠다** — 기본은 밝혀놓고 차가움만 되돌려서 색온도를 전환할 때 muted 텍스트 밝기가 튀었다. 세 변형을 함께 되돌려야 일관된다.
 
-> §3에서 sepia 표면 계단을 다시 잡을 때 sepia tertiary의 기준 배경(`--bg-sidebar`)이 바뀌므로 **재검증 필요**. 토큰 주석에도 남겼다.
+**결과**: dark 계열은 `da414bf2` 대비 변화 0종(완전 원복). light는 tertiary 4.00~4.01 확보.
+
+**남는 부채**: dark의 tertiary는 2.55~2.98:1로 WCAG AA 미달이다. 의도된 선택이며 완전 준수는 `data-contrast="high"`가 담당한다. 토큰 주석에 근거를 남겼다.
+
+> §3에서 sepia 표면 계단을 다시 잡을 때 sepia tertiary의 기준 배경(`--bg-sidebar`)이 바뀌므로 **재검증 필요**. light 계열을 살짝 따뜻한 쪽으로 옮겼으므로 **sepia와 light+warm의 구분**도 함께 봐야 한다.
 
 ### 3. Sepia 팔레트 재조정
 

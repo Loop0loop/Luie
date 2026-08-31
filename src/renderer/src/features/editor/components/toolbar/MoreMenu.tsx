@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   AlignCenter,
   AlignJustify,
@@ -20,16 +20,28 @@ export function MoreMenu({
   compactContent,
   editor,
   onOpenExport,
+  onOpenChange,
 }: {
   canOpenExport: boolean;
   compactContent?: ReactNode;
   editor: Editor;
   onOpenExport?: () => void;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useClickOutside(ref, () => setOpen(false));
+
+  // NOTE: 이 메뉴는 툴바 레이어 안에 렌더되므로 레이아웃이 툴바를 숨기면 함께 사라진다.
+  // 열림 상태를 레이아웃에 알려 메뉴가 열려 있는 동안 auto-hide를 잠근다. unmount 시
+  // 잠금이 남지 않도록 cleanup에서 반드시 해제한다.
+  useEffect(() => {
+    onOpenChange?.(open);
+    return () => {
+      onOpenChange?.(false);
+    };
+  }, [open, onOpenChange]);
 
   const clearFormatting = () => {
     editor

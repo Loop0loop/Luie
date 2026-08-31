@@ -211,4 +211,59 @@ describe("FocusHoverSidebar", () => {
 
     expect(sidebar.className).toContain("-translate-x-full");
   });
+
+  // 챕터 ⋮ 메뉴는 body로 portal되어 사이드바 rect 밖에 뜬다. 메뉴를 조작하는 동안 사이드바가
+  // 닫히면 안 되고, 잠금이 풀린 뒤에는 다시 정상적으로 닫혀야 한다.
+  it("keeps the sidebar open while hover close is suppressed", async () => {
+    mountedView = mountView();
+    const sidebar = Array.from(mountedView.container.querySelectorAll("div")).find(
+      (node) =>
+        node.className.includes("fixed z-50") &&
+        node.className.includes("bg-sidebar"),
+    ) as HTMLDivElement;
+
+    dispatchMouseMove(100, 120);
+    expect(sidebar.className).toContain("translate-x-0");
+
+    act(() => {
+      mountedView?.root.render(
+        <FocusHoverSidebar
+          side="left"
+          topOffset={40}
+          activationWidthPx={120}
+          closeDelayMs={200}
+          suppressHoverClose
+        >
+          <div>sidebar body</div>
+        </FocusHoverSidebar>,
+      );
+    });
+
+    dispatchMouseMove(420, 120);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(400);
+      await Promise.resolve();
+    });
+    expect(sidebar.className).toContain("translate-x-0");
+
+    act(() => {
+      mountedView?.root.render(
+        <FocusHoverSidebar
+          side="left"
+          topOffset={40}
+          activationWidthPx={120}
+          closeDelayMs={200}
+        >
+          <div>sidebar body</div>
+        </FocusHoverSidebar>,
+      );
+    });
+
+    dispatchMouseMove(420, 120);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(220);
+      await Promise.resolve();
+    });
+    expect(sidebar.className).toContain("-translate-x-full");
+  });
 });

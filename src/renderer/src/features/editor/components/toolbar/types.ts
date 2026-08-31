@@ -26,6 +26,11 @@ export interface EditorToolbarProps {
    * 레이아웃의 표시 상태를 받아 같은 CSS 토글을 적용한다(미전달 시 항상 표시).
    */
   toolbarVisible?: boolean;
+  /**
+   * NOTE: 툴바 메뉴("...")는 툴바 레이어 안에 렌더된다. 레이아웃이 hover 판정으로 툴바를
+   * 숨기면 열려 있던 메뉴까지 같이 사라지므로, 열림 상태를 올려보내 auto-hide를 잠근다.
+   */
+  onMenuOpenChange?: (open: boolean) => void;
 }
 
 export type ParagraphStyle = "paragraph" | "heading1" | "heading2" | "heading3";

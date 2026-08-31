@@ -16,6 +16,8 @@ interface RibbonProps {
   onControlsEnter?: () => void;
   onControlsLeave?: () => void;
   toolbarVisible?: boolean;
+  /** 툴바 메뉴("...") 열림 상태 — 레이아웃의 auto-hide 잠금용 */
+  onMenuOpenChange?: (open: boolean) => void;
 }
 
 export default function Ribbon({
@@ -29,6 +31,7 @@ export default function Ribbon({
   onControlsEnter,
   onControlsLeave,
   toolbarVisible,
+  onMenuOpenChange,
 }: RibbonProps) {
   const maxWidth = useEditorStore((state) => state.maxWidth);
   const updateSettings = useEditorStore((state) => state.updateSettings);
@@ -52,6 +55,7 @@ export default function Ribbon({
         onControlsEnter={onControlsEnter}
         onControlsLeave={onControlsLeave}
         toolbarVisible={toolbarVisible}
+        onMenuOpenChange={onMenuOpenChange}
       />
     </div>
   );

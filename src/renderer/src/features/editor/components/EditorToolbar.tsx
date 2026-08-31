@@ -58,6 +58,7 @@ export default function EditorToolbar({
   onControlsEnter,
   onControlsLeave,
   toolbarVisible,
+  onMenuOpenChange,
 }: EditorToolbarProps) {
   const { t } = useTranslation();
 
@@ -440,6 +441,7 @@ export default function EditorToolbar({
           <Divider />
           <MoreMenu
             canOpenExport={canOpenExport}
+            onOpenChange={onMenuOpenChange}
             compactContent={
               isCompactToolbar ? (
                 <>

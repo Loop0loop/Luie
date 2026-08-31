@@ -23,6 +23,12 @@ interface FocusHoverSidebarProps {
   closeDelayMs?: number;
   /** 강제로 hover-open을 막습니다. explicit close 직후 재개방 방지용입니다. */
   suppressHoverOpen?: boolean;
+  /**
+   * true인 동안 hover-close를 잠급니다. 사이드바 밖으로 벗어나는 floating menu(챕터 ⋮ 등)를
+   * 조작하는 동안 사이드바가 닫히지 않게 하기 위한 것입니다. `forceOpen`과 달리 hover 상태를
+   * 덮어쓰지 않으므로, 잠금이 풀린 뒤 포인터가 실제로 벗어날 때 정상적으로 닫힙니다.
+   */
+  suppressHoverClose?: boolean;
   /** hover-open 상태가 바뀔 때 호출합니다. */
   onOpenChange?: (isOpen: boolean) => void;
 }
@@ -39,12 +45,14 @@ export default function FocusHoverSidebar({
   closeTolerancePx = 12,
   closeDelayMs = 220,
   suppressHoverOpen = false,
+  suppressHoverClose = false,
   onOpenChange,
 }: FocusHoverSidebarProps) {
   const [isHoverOpen, setIsHoverOpen] = useState(false);
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const hoverOpenRef = useRef(false);
+  const suppressHoverCloseRef = useRef(suppressHoverClose);
   const sidebarRectRef = useRef<DOMRect | null>(null);
   const sidebarWidthRef = useRef(0);
   const mouseFrameRef = useRef<number | null>(null);
@@ -57,6 +65,12 @@ export default function FocusHoverSidebar({
   useEffect(() => {
     hoverOpenRef.current = isHoverOpen;
   }, [isHoverOpen]);
+
+  // NOTE: ref로 읽는다. mousemove 리스너 effect의 dependency에 넣으면 메뉴를 열고 닫을 때마다
+  // window 리스너가 재등록된다(hover hot path).
+  useEffect(() => {
+    suppressHoverCloseRef.current = suppressHoverClose;
+  }, [suppressHoverClose]);
 
   const isOpen = forceOpen || isResizing || isHoverOpen;
 
@@ -72,6 +86,11 @@ export default function FocusHoverSidebar({
   }, []);
 
   const closeHoverSidebar = useCallback(() => {
+    // NOTE: 모든 hover-close 경로(포인터 이탈 / window leave / 예약된 timeout)가 이 함수를
+    // 지나므로 잠금 판정을 여기 한 곳에 둔다. 예약된 timeout은 발화해도 여기서 흡수된다.
+    if (suppressHoverCloseRef.current) {
+      return;
+    }
     clearPendingClose();
     if (!hoverOpenRef.current) {
       return;

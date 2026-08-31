@@ -164,23 +164,33 @@
 }
 
 :root {
-  --bg-app: #ffffff;
-  --bg-sidebar: #f5f5f7;
+  /* NOTE: light 표면 계단은 위에서 아래로 panel → app → ai → sidebar → element다.
+     `--bg-app`(=editor 종이)을 순백에서 한 칸 내린 이유는 두 가지다.
+     1. 장시간 집필 표면으로 #ffffff는 눈에 부담이 크다.
+     2. 순백일 때는 `--bg-panel`이 더 밝아질 수 없어 modal·dropdown 같은 부유 표면이
+        app과 같은 색이 됐다(1.000:1). app을 내리면 부유 표면이 실제로 떠 보인다.
+
+     그리고 light 계열은 b를 r·g보다 낮춰 아주 약하게 따뜻한 쪽에 둔다(편차 2~3).
+     dark가 약한 cool tint를 쓰는 것과 대칭이고, 집필 표면을 종이처럼 읽히게 한다.
+     부수 효과가 중요하다. neutral이 따뜻한 쪽에 있으면 `cool` 변형은 chroma를 올리지
+     않아도 방향이 반대라 체감 차이가 커진다. 색온도는 세게 바꾸는 것이 아니라 은은하게
+     다른 느낌을 주는 축이므로, 구분은 chroma 크기가 아니라 방향으로 만든다. */
+  --bg-app: #f9f9f7;
+  --bg-sidebar: #eeeeec;
   --bg-panel: #ffffff;
   /* NOTE: Research는 부유 표면이 아니라 chrome이다. editor(`--bg-app`)를 따라가면
      초점 면과 작업대가 같은 색이 되고, `--bg-panel`을 따라가면 editor보다 밝아져
      떠 보인다. sidebar와 같은 단계에 두어야 "editor는 초점, chrome은 한 단계 물러남"
      모델이 성립한다. theme마다 literal을 두면 이 규칙이 다시 깨지므로 alias로 묶는다. */
   --bg-research: var(--bg-sidebar);
-  --ai-panel-bg: #f8f8fa;
+  --ai-panel-bg: #f4f4f2;
   --bg-surface: #ffffff;
   --bg-surface-hover: rgba(0, 0, 0, 0.04);
-  /* NOTE: light에서는 종이(#ffffff)보다 밝아질 수 없다. input·chip 같은 top-of-stack
-     control은 "떠 있는 면"이 아니라 "파인 면"으로 표현해야 카드·패널과 구분된다.
-     dark는 반대로 `--bg-element`가 표면보다 밝다. 방향이 theme마다 다른 것이 정상이고
-     그게 이 token이 존재하는 이유다. 이전에는 app·panel·surface·element가 모두
-     #ffffff여서 어떤 조합도 서로 구분되지 않았다. */
-  --bg-element: #f0f0f3;
+  /* NOTE: input·chip 같은 top-of-stack control은 light에서 "떠 있는 면"이 아니라
+     "파인 면"으로 표현한다. panel(#ffffff)보다 밝아질 수 없기 때문이다. dark는 반대로
+     `--bg-element`가 표면보다 밝다. 방향이 theme마다 다른 것이 정상이고 그게 이 token이
+     존재하는 이유다. 이전에는 app·panel·surface·element가 모두 #ffffff였다. */
+  --bg-element: #e7e7e4;
   --bg-element-hover: rgba(0, 0, 0, 0.04);
   --bg-active: rgba(0, 0, 0, 0.08);
 
@@ -193,7 +203,7 @@
      무너지므로 4:1로 정렬하고, 완전 준수는 `data-contrast="high"`가 담당한다. */
   --text-primary: #1c1c1e;
   --text-secondary: #62626a;
-  --text-tertiary: #75757c;
+  --text-tertiary: #70706c;
   --text-accent: #2563eb;
   --text-on-accent: #ffffff;
 
@@ -209,11 +219,11 @@
   /* NOTE: 이전 값(#e5e5ea 1.26:1 / #d1d1d6 1.52:1)은 흰 표면 위에서 사실상 보이지
      않아 컴포넌트가 token을 포기하고 `border-black/70` 같은 하드코딩으로 도망갔다.
      장식선 1.45:1 / 상태선 2.0:1로 올린다. 고대비 모드의 3:1과는 다른 층이다. */
-  --border-default: #d6d6da;
-  --border-active: #b7b7bb;
-  /* NOTE: 3.05:1 on #f0f0f3. 가장 어두운 light 표면인 `--bg-element` 기준으로 잡아야
+  --border-default: #d7d7d3;
+  --border-active: #b8b8b3;
+  /* NOTE: 3.03:1 on #e7e7e4. 가장 어두운 light 표면인 `--bg-element` 기준으로 잡아야
      input 테두리가 fill과 부모 표면 양쪽에 대해 WCAG 1.4.11의 3:1을 만족한다. */
-  --border-strong: #898991;
+  --border-strong: #84847f;
   --border-focus: #636366;
 
   /* NOTE: editor의 종이와 잉크는 theme 표면·본문색과 갈라질 수 있는 별도 역할이지만
@@ -314,9 +324,13 @@
   --bg-element-hover: rgba(255, 255, 255, 0.08);
   --bg-active: rgba(255, 255, 255, 0.12);
 
+  /* NOTE: dark의 텍스트 램프는 §2에서 tertiary를 4:1로 올렸다가 전량 롤백했다.
+     수치상 tertiary 2.55:1은 낮지만, dark에서 muted 텍스트를 밝히면 글레어와 노이즈가
+     생겨 "차분한 집필 표면"이 깨진다. light는 반대로 어둡게 가는 방향이라 올려도 문제가
+     없어 그쪽만 4:1로 정렬했다. 완전 준수는 `data-contrast="high"`가 담당한다. */
   --text-primary: #d7d7da;
-  --text-secondary: #a3a5ae;
-  --text-tertiary: #8c8f9a;
+  --text-secondary: #989aa2;
+  --text-tertiary: #6c6e77;
   --text-accent: #60a5fa;
   --text-on-accent: #ffffff;
 
@@ -345,62 +359,94 @@
 }
 
 /* NOTE: color temperature는 layout 구조를 바꾸지 않고 background와 text tint만 덮어쓴다. */
+/* NOTE: dark 색온도는 neutral의 명도 계단을 그대로 쓰고 색편차만 얹는다. 이전 값은
+   색편차가 neutral의 5.5~25배(app 11 · sidebar 20 · panel 23 · ai 25 · element 30)여서
+   "은은한 냉기"가 아니라 파란 표면이 됐고, 계단 폭까지 넓어졌다(app/element 1.342 →
+   1.613). 특히 본문 글자(`--text-primary` 색편차 22)가 파랗게 물들어 editor 본문에서
+   괴리감이 가장 컸다.
+
+   목표 무드는 "어두운 방에 모니터 빛만 흘러올 때"의 냉기다. 그건 채도가 아니라 방향의
+   문제이므로 색편차를 줄이고 명도는 neutral과 1.005 이내로 일치시켰다. 글자는 읽히는
+   것이 우선이라 거의 중성으로 둔다.
+
+   그리고 축(`b − r`)은 역할 전체에서 일정해야 한다. neutral이 app +2 / sidebar +2로
+   같은 축을 쓰는데 여기서 app +8 / sidebar +12로 두면 sidebar가 "한 단계 밝은 같은 색"이
+   아니라 "다른 색"으로 읽혀 톤이 어긋난다. 참고로 JetBrains는 dark에서 프레임을 editor·
+   tool window보다 밝게 두고 최소 대비 1.20:1을 권하지만, Luie는 chrome을 한 단계만
+   밝히는 더 좁은 계단(1.08)을 쓰므로 축 불일치가 더 크게 드러난다. */
 [data-theme="dark"][data-temp="cool"] {
-  --bg-app: #191b24;
-  --bg-sidebar: #222636;
-  --bg-panel: #2a3041;
-  --ai-panel-bg: #2d3346;
-  --bg-surface: #2a3041;
-  --bg-element: #363e54;
-  --text-primary: #d2d8e8;
-  --text-secondary: #a6afc6;
-  --text-tertiary: #929fbc;
+  --bg-app: #171b1f;
+  --bg-sidebar: #1e2226;
+  --bg-panel: #24292e;
+  --ai-panel-bg: #2e3338;
+  --bg-surface: #24292e;
+  --bg-element: #2d3237;
+  --text-primary: #d6d8da;
+  --text-secondary: #969ba0;
+  --text-tertiary: #6a6f74;
 }
+/* NOTE: warm은 cool의 단순 반전이 아니다. 지각적으로 비대칭이기 때문이다. 파랑은 저조도
+   에서도 "어두운 파랑"으로 읽히지만, 주황은 저조도에서 갈색·탁함이 된다. 그래서 호평받는
+   warm dark theme들은 가장 어두운 면을 중성에 가깝게 두고 온기를 밝은 면에 싣는다.
+   Gruvbox dark가 대표적이다 — bg0가 #282828(축 0, 순회색)이고 bg1 -6, bg2 -11로
+   명도에 비례해 온기가 커진다. Everforest는 "warm and soft"를 표방하지만 배경은 오히려
+   차가운 청록(bg0 축 +14)이고 온기는 전경색에만 있다.
+
+   그래서 여기서는 두 가지를 Gruvbox에 맞췄다.
+   1. 축을 명도에 비례시킨다: app -3 → sidebar -5 → panel -8 → element -11.
+      인접 단계 Δ가 2~3이라 cool에서 문제가 됐던 톤 점프가 없다.
+   2. hue lean을 주황 쪽으로 둔다(g를 b쪽에 가깝게, r-g : g-b ≈ 2:1). 정확한 중간값은
+      같은 명도에서 탁한 갈색으로 보인다. 이 값들의 lean은 같은 명도대 Gruvbox와 일치한다
+      (element (7,4) = Gruvbox bg2 (7,4)).
+
+   해석하면 "따뜻한 광원이 표면에 닿고, 가장 깊은 면은 그림자에 남는다"는 구조다. */
 [data-theme="dark"][data-temp="warm"] {
-  --bg-app: #201d18;
-  --bg-sidebar: #2a261f;
-  --bg-panel: #322d24;
-  --ai-panel-bg: #383125;
-  --bg-surface: #322d24;
-  --bg-element: #443b2d;
-  --text-primary: #e7ddcb;
-  --text-secondary: #b7aa96;
-  --text-tertiary: #ab9a80;
+  --bg-app: #1c1a19;
+  --bg-sidebar: #24211f;
+  --bg-panel: #2c2724;
+  --ai-panel-bg: #38312d;
+  --bg-surface: #2c2724;
+  --bg-element: #37302c;
+  --text-primary: #dad7d6;
+  --text-secondary: #9e9996;
+  --text-tertiary: #736d6a;
 }
 
+/* NOTE: 색온도 변형은 같은 역할끼리 명도를 맞추고 색편차(chroma)로만 구분한다. 단
+   chroma를 키우는 방향은 틀렸다. 색편차를 두 배로 올려봤더니 "은은하게 다른 느낌"이
+   아니라 "색이 깊어져 껄끄러운" 결과가 됐다. 구분은 chroma 크기가 아니라 **방향**으로
+   만든다 — neutral이 살짝 따뜻한 쪽(b<r)에 있으므로 cool은 은은한 chroma만으로도
+   반대 방향이라 충분히 구분된다. 절대 색편차는 app 5 / sidebar 11 수준으로 낮게 둔다. */
 [data-theme="light"][data-temp="cool"] {
-  --bg-app: #fbfcff;
-  --bg-sidebar: #eff2f7;
-  --bg-panel: #f8fafd;
-  --ai-panel-bg: #f5f7fc;
-  --bg-surface: #f8fafd;
-  /* NOTE: 이 조합은 element가 #ffffff로 가장 밝아 surface(#f8fafd)보다 떠 있었다.
-     light 계열의 control 방향(파인 면)에 맞춰 내린다. */
-  --bg-element: #ebeff5;
+  --bg-app: #f7f9fd;
+  --bg-sidebar: #eaeef5;
+  --bg-panel: #fdfeff;
+  --ai-panel-bg: #f2f5fa;
+  --bg-surface: #fdfeff;
+  --bg-element: #e2e7ef;
   --text-primary: #1d2330;
   --text-secondary: #566070;
-  --text-tertiary: #6e7582;
-  --border-default: #cdd2db;
-  --border-active: #acb4c0;
-  /* NOTE: 3.04:1 on #ebeff5. */
-  --border-strong: #848994;
+  --text-tertiary: #6a707c;
+  --border-default: #d1d6df;
+  --border-active: #b0b7c3;
+  /* NOTE: 3.09:1 on #e2e7ef. */
+  --border-strong: #7e828d;
   --border-focus: #566070;
 }
 [data-theme="light"][data-temp="warm"] {
-  --bg-app: #fefbf5;
-  --bg-sidebar: #f6eee2;
-  --bg-panel: #fdf8ef;
-  --ai-panel-bg: #fbf4e9;
-  --bg-surface: #fdf8ef;
-  /* NOTE: cool과 같은 이유로 element를 내린다(이전 #fffdf8은 surface보다 밝았다). */
-  --bg-element: #f2ebdd;
+  --bg-app: #faf7f0;
+  --bg-sidebar: #efe9db;
+  --bg-panel: #fffdfa;
+  --ai-panel-bg: #f5f0e5;
+  --bg-surface: #fffdfa;
+  --bg-element: #e8e0cd;
   --text-primary: #262016;
   --text-secondary: #6b5e4d;
-  --text-tertiary: #7f7162;
-  --border-default: #dbcfbf;
-  --border-active: #bfb09d;
-  /* NOTE: 3.05:1 on #f2ebdd. */
-  --border-strong: #8c867a;
+  --text-tertiary: #766a5d;
+  --border-default: #e0d3c3;
+  --border-active: #c3b4a0;
+  /* NOTE: 3.06:1 on #e8e0cd. */
+  --border-strong: #847e74;
   --border-focus: #6b5e4d;
 }
 [data-theme="sepia"][data-temp="cool"] {
