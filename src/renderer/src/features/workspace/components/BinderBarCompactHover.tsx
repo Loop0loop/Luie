@@ -74,6 +74,12 @@ export function BinderBarCompactHover({
     BINDER_VALID_TABS.includes(rightPanelActiveTab as BinderTab)
       ? (rightPanelActiveTab as BinderTab)
       : null;
+  // NOTE: character/event/faction 패널(EntityGallery)은 제목·탭·검색·닫기를 포함한 자체
+  // 헤더를 렌더한다. 레일 쪽 제목 스트립까지 같이 두면 헤더가 두 줄로 겹친다.
+  const hasOwnPanelHeader =
+    activeCompactTab === "character" ||
+    activeCompactTab === "event" ||
+    activeCompactTab === "faction";
 
   const activeChapterContent = useChapterStore(
     (state) => activeChapterId ? state.items.find((c) => c.id === activeChapterId)?.content : undefined,
@@ -336,19 +342,21 @@ export function BinderBarCompactHover({
                   </>
                 ) : (
                   <>
-                    <div className="shrink-0 h-10 px-3 border-b border-border/50 flex items-center justify-between text-xs font-medium text-fg/80">
-                      <span className="truncate">
-                        {tabItems.find((item) => item.tab === activeCompactTab)?.title ?? ""}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={closeCompactTab}
-                        className="ml-2 shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted hover:text-fg hover:bg-surface-hover transition-colors"
-                        aria-label={t("snapshot.close")}
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                    {!hasOwnPanelHeader && (
+                      <div className="shrink-0 h-10 px-3 border-b border-border/50 flex items-center justify-between text-xs font-medium text-fg/80">
+                        <span className="truncate">
+                          {tabItems.find((item) => item.tab === activeCompactTab)?.title ?? ""}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={closeCompactTab}
+                          className="ml-2 shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted hover:text-fg hover:bg-surface-hover transition-colors"
+                          aria-label={t("snapshot.close")}
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
                     <div className="flex-1 min-h-0 overflow-hidden">
                       <BinderSidebarPanelBody
                         activeChapterId={activeChapterId}

@@ -175,13 +175,25 @@
   --ai-panel-bg: #f8f8fa;
   --bg-surface: #ffffff;
   --bg-surface-hover: rgba(0, 0, 0, 0.04);
-  --bg-element: #ffffff;
+  /* NOTE: light에서는 종이(#ffffff)보다 밝아질 수 없다. input·chip 같은 top-of-stack
+     control은 "떠 있는 면"이 아니라 "파인 면"으로 표현해야 카드·패널과 구분된다.
+     dark는 반대로 `--bg-element`가 표면보다 밝다. 방향이 theme마다 다른 것이 정상이고
+     그게 이 token이 존재하는 이유다. 이전에는 app·panel·surface·element가 모두
+     #ffffff여서 어떤 조합도 서로 구분되지 않았다. */
+  --bg-element: #f0f0f3;
   --bg-element-hover: rgba(0, 0, 0, 0.04);
   --bg-active: rgba(0, 0, 0, 0.08);
 
+  /* NOTE: 텍스트 램프는 세 theme을 같은 규칙으로 맞춘다.
+     - secondary: chrome(`--bg-panel`) 위 6:1. light 계열은 이미 그 값이라 유지한다.
+     - tertiary: 해당 조합의 가장 대비가 나쁜 표면 위 4:1. light/sepia는 가장 어두운
+       표면, dark는 가장 밝은 표면이 기준이다.
+     이전에는 tertiary가 light 2.93 / dark 2.55 / sepia 2.52로 placeholder가 거의
+     읽히지 않았다. 4.5(WCAG AA)까지 올리면 secondary와 1.18배로 붙어 3단 위계가
+     무너지므로 4:1로 정렬하고, 완전 준수는 `data-contrast="high"`가 담당한다. */
   --text-primary: #1c1c1e;
   --text-secondary: #62626a;
-  --text-tertiary: #8c8c94;
+  --text-tertiary: #75757c;
   --text-accent: #2563eb;
   --text-on-accent: #ffffff;
 
@@ -194,10 +206,14 @@
   --accent-primary: var(--accent-bg);
   --grid-line: #e5e7eb;
 
-  --border-default: #e5e5ea;
-  --border-active: #d1d1d6;
-  /* NOTE: 3.25:1 on #ffffff. WCAG 1.4.11의 UI 경계 3:1을 넘기는 최소 톤으로 잡았다. */
-  --border-strong: #8e8e96;
+  /* NOTE: 이전 값(#e5e5ea 1.26:1 / #d1d1d6 1.52:1)은 흰 표면 위에서 사실상 보이지
+     않아 컴포넌트가 token을 포기하고 `border-black/70` 같은 하드코딩으로 도망갔다.
+     장식선 1.45:1 / 상태선 2.0:1로 올린다. 고대비 모드의 3:1과는 다른 층이다. */
+  --border-default: #d6d6da;
+  --border-active: #b7b7bb;
+  /* NOTE: 3.05:1 on #f0f0f3. 가장 어두운 light 표면인 `--bg-element` 기준으로 잡아야
+     input 테두리가 fill과 부모 표면 양쪽에 대해 WCAG 1.4.11의 3:1을 만족한다. */
+  --border-strong: #898991;
   --border-focus: #636366;
 
   /* NOTE: editor의 종이와 잉크는 theme 표면·본문색과 갈라질 수 있는 별도 역할이지만
@@ -299,8 +315,8 @@
   --bg-active: rgba(255, 255, 255, 0.12);
 
   --text-primary: #d7d7da;
-  --text-secondary: #989aa2;
-  --text-tertiary: #6c6e77;
+  --text-secondary: #a3a5ae;
+  --text-tertiary: #8c8f9a;
   --text-accent: #60a5fa;
   --text-on-accent: #ffffff;
 
@@ -337,8 +353,8 @@
   --bg-surface: #2a3041;
   --bg-element: #363e54;
   --text-primary: #d2d8e8;
-  --text-secondary: #abb5cc;
-  --text-tertiary: #78829a;
+  --text-secondary: #a6afc6;
+  --text-tertiary: #929fbc;
 }
 [data-theme="dark"][data-temp="warm"] {
   --bg-app: #201d18;
@@ -348,8 +364,8 @@
   --bg-surface: #322d24;
   --bg-element: #443b2d;
   --text-primary: #e7ddcb;
-  --text-secondary: #c3b59f;
-  --text-tertiary: #92836d;
+  --text-secondary: #b7aa96;
+  --text-tertiary: #ab9a80;
 }
 
 [data-theme="light"][data-temp="cool"] {
@@ -358,14 +374,16 @@
   --bg-panel: #f8fafd;
   --ai-panel-bg: #f5f7fc;
   --bg-surface: #f8fafd;
-  --bg-element: #ffffff;
+  /* NOTE: 이 조합은 element가 #ffffff로 가장 밝아 surface(#f8fafd)보다 떠 있었다.
+     light 계열의 control 방향(파인 면)에 맞춰 내린다. */
+  --bg-element: #ebeff5;
   --text-primary: #1d2330;
   --text-secondary: #566070;
-  --text-tertiary: #7e8795;
-  --border-default: #dde3ec;
-  --border-active: #c7d0de;
-  /* NOTE: 3.24:1 on #ffffff(이 조합의 가장 밝은 표면). */
-  --border-strong: #8a8f9b;
+  --text-tertiary: #6e7582;
+  --border-default: #cdd2db;
+  --border-active: #acb4c0;
+  /* NOTE: 3.04:1 on #ebeff5. */
+  --border-strong: #848994;
   --border-focus: #566070;
 }
 [data-theme="light"][data-temp="warm"] {
@@ -374,14 +392,15 @@
   --bg-panel: #fdf8ef;
   --ai-panel-bg: #fbf4e9;
   --bg-surface: #fdf8ef;
-  --bg-element: #fffdf8;
+  /* NOTE: cool과 같은 이유로 element를 내린다(이전 #fffdf8은 surface보다 밝았다). */
+  --bg-element: #f2ebdd;
   --text-primary: #262016;
   --text-secondary: #6b5e4d;
-  --text-tertiary: #968574;
-  --border-default: #e8dccb;
-  --border-active: #d8c7b1;
-  /* NOTE: 3.33:1 on #fffdf8. */
-  --border-strong: #918b7e;
+  --text-tertiary: #7f7162;
+  --border-default: #dbcfbf;
+  --border-active: #bfb09d;
+  /* NOTE: 3.05:1 on #f2ebdd. */
+  --border-strong: #8c867a;
   --border-focus: #6b5e4d;
 }
 [data-theme="sepia"][data-temp="cool"] {
@@ -392,8 +411,8 @@
   --bg-surface: #f7f2e9;
   --bg-element: #fbf7ef;
   --text-primary: #4a4237;
-  --text-secondary: #71685b;
-  --text-tertiary: #9c9283;
+  --text-secondary: #635b4f;
+  --text-tertiary: #746d61;
   --border-default: #ddd3c4;
   --border-active: #cfc2af;
   /* NOTE: 3.18:1 on #fbf7ef. */
@@ -408,8 +427,8 @@
   --bg-surface: #f8e6c3;
   --bg-element: #fff4dc;
   --text-primary: #4a3820;
-  --text-secondary: #705b3c;
-  --text-tertiary: #9b8057;
+  --text-secondary: #665336;
+  --text-tertiary: #7d6846;
   --border-default: #dfc797;
   --border-active: #cdae77;
   /* NOTE: 3.34:1 on #fff4dc. */
@@ -429,8 +448,10 @@
   --bg-active: rgba(95, 75, 50, 0.1);
 
   --text-primary: #4f3e2a;
-  --text-secondary: #77644f;
-  --text-tertiary: #a48e75;
+  --text-secondary: #6c5b48;
+  /* NOTE: sepia는 element(#fff9ed)가 가장 밝은 표면이라 최악 배경이 sidebar다.
+     §3에서 sepia 표면 계단을 다시 잡을 때 이 기준도 재검증해야 한다. */
+  --text-tertiary: #7e6d5a;
   --text-accent: #8a602e;
 
   --border-default: #e4d2b4;

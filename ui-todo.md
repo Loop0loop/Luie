@@ -156,23 +156,72 @@ UI 확인 결과 대비가 과해서 **HEAD 상태로 전량 롤백**했다. 아
 
 ---
 
-### 2. Light 팔레트 재조정
+### 2. Light 팔레트 재조정 — 표면·border 완료 / 텍스트 램프 결정 대기
 
-흰색이 틀린 게 아니라 **카드와 컨테이너가 둘 다 흰색인 게 틀렸다.** 컨테이너는 내려가고 콘텐츠 면은 올라간다. 입력·칩은 Light/Sepia에서 오목하게, Dark에서 볼록하게 — 방향이 테마마다 다른 것이 정상이다.
+흰색이 틀린 게 아니라 **카드와 컨테이너가 둘 다 흰색인 게 틀렸다.** light에서는 종이(`#ffffff`)보다 밝아질 수 없으니 control은 "떠 있는 면"이 아니라 **"파인 면"**으로 표현한다. dark는 반대로 element가 표면보다 밝다 — 방향이 theme마다 다른 것이 정상이고 그게 token이 존재하는 이유다.
 
-검증된 후보값:
+`--bg-app`·`--bg-sidebar`·`--bg-panel`·`--bg-surface`·`--ai-panel-bg`는 **건드리지 않았다.** §1-A 이후 editor/Research 분리가 확인됐으므로 그 관계를 유지한다.
 
-```
-app #ffffff(에디터 종이) · sidebar #f1f1f4 · research #f6f6f8
-surface/panel #ffffff(카드 = research 위에서 1.08:1 + 테두리) · element #f5f5f8(오목한 입력)
-border #dcdce2 · text-tertiary #75757e (3.34 → 4.56:1)
-```
+- [x] `--bg-element` 오목화 — 이전에 app·panel·surface·element가 **전부 `#ffffff`**여서 어떤 조합도 구분되지 않았다
+- [x] border 3단계 값 확정
+- [x] `--border-strong` 재조정 — §1에서 `#ffffff` 기준으로 잡았으나, element가 어두워지면서 input 테두리가 fill·부모 양쪽에 대해 3:1을 만족해야 하므로 가장 어두운 표면 기준으로 다시 계산
+- [x] `data-temp` cool/warm 동기화 — 두 변형은 element가 `#ffffff`/`#fffdf8`로 **surface보다 밝아 방향이 반대**였다
+- [x] 대비 실측 재검증 · dark/sepia 무영향 확인 (18조합 전수 비교에서 light 외 변화 0건)
+- [x] **텍스트 램프 전 theme 정렬** (선택지 A, 목표는 낮춘 값으로 — 아래)
 
-- [ ] 표면 계단 재정의 (app / sidebar / research / panel / surface / element / ai-panel)
-- [ ] `--text-tertiary` 4.5:1 확보
-- [ ] border 3단계 값 확정
-- [ ] `data-temp` cool/warm 변형 동기화
-- [ ] 대비 실측 재검증
+#### 적용값
+
+| | element | border-default | border-active | border-strong |
+| --- | --- | --- | --- | --- |
+| light | `#ffffff` → **`#f0f0f3`** | `#e5e5ea` → **`#d6d6da`** | `#d1d1d6` → **`#b7b7bb`** | `#8e8e96` → **`#898991`** |
+| light + cool | `#ffffff` → **`#ebeff5`** | `#dde3ec` → **`#cdd2db`** | `#c7d0de` → **`#acb4c0`** | `#8a8f9b` → **`#848994`** |
+| light + warm | `#fffdf8` → **`#f2ebdd`** | `#e8dccb` → **`#dbcfbf`** | `#d8c7b1` → **`#bfb09d`** | `#918b7e` → **`#8c867a`** |
+
+표면 분리 대비 (light neutral): `surface/element` **1.000 → 1.137**, `app/element` **1.000 → 1.137**.
+border 대비: 장식선 1.26 → **1.45**, 상태선 1.52 → **2.00**, UI 경계 **3.05** (가장 어두운 표면 기준). 고대비 모드의 3:1과는 다른 층이다.
+
+#### 텍스트 램프 — 전 theme 정렬 (선택지 A)
+
+**문제**: tertiary가 최악 배경에서 light 2.93 / dark 2.55 / sepia 2.52로 placeholder가 거의 읽히지 않았다.
+
+**4.5:1(WCAG AA)로 올리면 안 되는 이유** (측정 결과)
+
+- light tertiary를 4.5로 올리면 **secondary와 간격이 1.18배**만 남아 3단 위계가 무너진다
+- dark의 램프 비율(1.81x)을 유지하며 4.5를 고정하면 **secondary가 8.14:1**까지 가서 앱 전체가 무거워진다
+- dark 자신의 tertiary가 2.55:1이므로 light만 올리면 두 theme이 극단적으로 어긋난다
+- 고대비 모드를 "대비를 낮추자"로 롤백한 방향과 충돌한다
+
+**확정한 규칙**
+
+| 역할 | 기준 배경 | 목표 |
+| --- | --- | --- |
+| `--text-primary` | — | **변경하지 않는다.** 낮추면 본문 가독성이 떨어진다 |
+| `--text-secondary` | chrome (`--bg-panel`) | 6:1. light 계열은 이미 5.95~6.08이라 **유지** |
+| `--text-tertiary` | 해당 조합의 최악 배경 | 4:1 |
+
+최악 배경은 theme마다 다르다 — light은 가장 어두운 표면(`--bg-element`), dark는 가장 밝은 표면(`--bg-element`), sepia는 element가 가장 밝으므로 `--bg-sidebar`다.
+
+완전 준수(4.5:1)는 `data-contrast="high"`가 담당한다. 그게 그 모드의 존재 이유다.
+
+**적용값** (9개 조합)
+
+| 조합 | secondary | tertiary |
+| --- | --- | --- |
+| light | 유지 `#62626a` | `#8c8c94` → **`#75757c`** |
+| light + cool | 유지 `#566070` | `#7e8795` → **`#6e7582`** |
+| light + warm | 유지 `#6b5e4d` | `#968574` → **`#7f7162`** |
+| dark | `#989aa2` → **`#a3a5ae`** | `#6c6e77` → **`#8c8f9a`** |
+| dark + cool | `#abb5cc` → **`#a6afc6`** | `#78829a` → **`#929fbc`** |
+| dark + warm | `#c3b59f` → **`#b7aa96`** | `#92836d` → **`#ab9a80`** |
+| sepia | `#77644f` → **`#6c5b48`** | `#a48e75` → **`#7e6d5a`** |
+| sepia + cool | `#71685b` → **`#635b4f`** | `#9c9283` → **`#746d61`** |
+| sepia + warm | `#705b3c` → **`#665336`** | `#9b8057` → **`#7d6846`** |
+
+**검증**: 9조합 전 표면 최저 대비 — primary 7.46~14.96, secondary 4.82~5.51, tertiary 3.98~4.02. 위계 p/s 1.48~2.82x, s/t 1.20~1.38x. 전부 기준 통과.
+
+`dark+cool`/`dark+warm`의 secondary는 6.39/6.79에서 **내려갔다**(과했음). 나머지는 올라갔다.
+
+> §3에서 sepia 표면 계단을 다시 잡을 때 sepia tertiary의 기준 배경(`--bg-sidebar`)이 바뀌므로 **재검증 필요**. 토큰 주석에도 남겼다.
 
 ### 3. Sepia 팔레트 재조정
 

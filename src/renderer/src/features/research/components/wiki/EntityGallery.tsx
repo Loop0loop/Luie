@@ -370,7 +370,7 @@ export function EntityGallery<T extends GalleryEntity>({
                             return (
                               <article
                                 key={entity.id}
-                                className="group relative flex flex-col items-center overflow-hidden rounded-panel border border-black/0 bg-surface p-3 shadow-xs transition-colors duration-150 hover:border-black/70 hover:shadow-md active:scale-[0.99]"
+                                className="group relative flex flex-col items-center overflow-hidden rounded-panel border border-transparent bg-surface p-3 shadow-xs transition-colors duration-150 hover:border-[#575760] hover:shadow-md active:scale-[0.99]"
                               >
                                 <button
                                   type="button"
