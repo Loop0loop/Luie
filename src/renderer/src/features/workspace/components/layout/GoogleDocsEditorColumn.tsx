@@ -103,7 +103,7 @@ export function GoogleDocsEditorColumn({
                 className="custom-scrollbar relative flex min-h-0 flex-1 flex-col items-center overflow-y-auto bg-app"
                 data-editor-scroll-container="true"
               >
-                <div className="sticky top-0 z-30 flex w-full shrink-0 justify-center bg-app/95 pb-2 pt-4 select-none backdrop-blur-sm">
+                <div className="sticky top-0 z-30 flex w-full shrink-0 justify-center bg-app/95 pb-2 pt-4 select-none backdrop-blur-xs">
                   <div>
                     <EditorRuler onMarginsChange={setPageMargins} />
                   </div>

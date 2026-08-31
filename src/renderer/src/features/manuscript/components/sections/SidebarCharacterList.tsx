@@ -134,7 +134,7 @@ export default function SidebarCharacterList({
               className="flex flex-col items-center justify-center p-4 border border-border rounded-panel cursor-pointer hover:bg-surface-hover transition-colors gap-2"
               onClick={() => handleAddCharacter(template.id)}
             >
-              <div className="p-3 bg-surface rounded-full shadow-sm">
+              <div className="p-3 bg-surface rounded-full shadow-control">
                 <LayoutTemplate size={24} />
               </div>
               <div className="font-semibold text-sm">{t(template.nameKey)}</div>

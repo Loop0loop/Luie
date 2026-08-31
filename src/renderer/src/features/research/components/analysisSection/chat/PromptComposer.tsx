@@ -151,7 +151,7 @@ export function PromptComposer({
       : t("analysis.composer.timelineCurrentOnly");
 
   return (
-    <div className="flex items-center gap-2 rounded-[12px] bg-white/6 border border-white/10 backdrop-blur-2xl pl-3 pr-2 py-1.5 shadow-sm focus-within:border-white/20 transition-all duration-150">
+    <div className="flex items-center gap-2 rounded-[12px] bg-white/6 border border-white/10 backdrop-blur-2xl pl-3 pr-2 py-1.5 shadow-control focus-within:border-white/20 transition-all duration-150">
       <div className="relative shrink-0" ref={menuRef}>
         <button
           type="button"
@@ -270,7 +270,7 @@ export function PromptComposer({
               aria-label={t("analysis.composer.timelineChapterSelect")}
               value={timelineChapterId}
               onChange={(event) => onChangeTimelineChapter(event.target.value)}
-              className="mt-1 w-full truncate rounded-control border border-border bg-element/30 hover:bg-element/50 px-2 py-0.5 text-[9px] leading-tight text-muted/95 focus:outline-hidden focus:ring-2 focus:ring-ring transition-colors duration-150 select-none cursor-pointer"
+              className="mt-1 w-full truncate rounded-control border border-border-strong bg-element/30 hover:bg-element/50 px-2 py-0.5 text-[9px] leading-tight text-muted/95 focus:outline-hidden focus:ring-2 focus:ring-ring transition-colors duration-150 select-none cursor-pointer"
             >
               {timelineChapters.map((chapter) => (
                 <option key={chapter.id} value={chapter.id}>

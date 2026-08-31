@@ -52,7 +52,7 @@ export function GraphLegendModal({
                 <span>{t("canvas.graph.legend.node.major", "조연 / 연관 세력")}</span>
               </div>
               <div className="flex items-center gap-2.5 text-[11px] text-fg font-semibold bg-surface/40 p-2 rounded-panel border border-border">
-                <span className="h-2.5 w-2.5 rounded-sm bg-muted/60 border border-border" />
+                <span className="h-2.5 w-2.5 rounded-xs bg-muted/60 border border-border" />
                 <span>{t("canvas.graph.legend.node.chapter", "집필 회차 (챕터)")}</span>
               </div>
             </div>

@@ -238,7 +238,7 @@ function RelationEdgeInner({
                       key={c.value}
                       type="button"
                       onClick={(e) => handleColorChange(c.value, e)}
-                      className="h-4 w-4 rounded-full hover:scale-110 transition-transform cursor-pointer shadow-sm"
+                      className="h-4 w-4 rounded-full hover:scale-110 transition-transform cursor-pointer shadow-control"
                       style={{ backgroundColor: c.value }}
                       title={c.label}
                     />
@@ -292,7 +292,7 @@ function RelationEdgeInner({
               onChange={(e) => setDraftLabel(e.target.value)}
               onKeyDown={handleKeyDown}
               onBlur={handleSaveLabel}
-              className="h-6 min-w-[70px] max-w-[160px] rounded-full border border-border bg-panel px-2.5 py-0.5 text-center text-[11px] font-medium text-fg shadow-panel outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-6 min-w-[70px] max-w-[160px] rounded-full border border-border-strong bg-panel px-2.5 py-0.5 text-center text-[11px] font-medium text-fg shadow-panel outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
               placeholder={t("canvas.edge.labelPlaceholder", "관계 입력")}
             />
           ) : labelText ? (
@@ -306,7 +306,7 @@ function RelationEdgeInner({
                 color: strokeColour !== "var(--text-secondary)" ? strokeColour : undefined,
                 borderColor: strokeColour !== "var(--text-secondary)" ? `${strokeColour}40` : undefined,
               }}
-              className="rounded-full border border-border bg-panel/90 px-2.5 py-0.5 text-[11px] font-medium text-muted shadow-sm backdrop-blur-sm transition-colors hover:border-border-active hover:text-fg cursor-default"
+              className="rounded-full border border-border bg-panel/90 px-2.5 py-0.5 text-[11px] font-medium text-muted shadow-control backdrop-blur-xs transition-colors hover:border-border-active hover:text-fg cursor-default"
               title={t("canvas.edge.doubleClickToEdit", "더블 클릭하여 수정")}
             >
               {labelText}

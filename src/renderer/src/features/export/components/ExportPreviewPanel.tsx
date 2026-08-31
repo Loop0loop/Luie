@@ -70,7 +70,7 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
           <button
             className={cn(
               "px-3 py-1.5 rounded-control text-xs font-medium transition-all flex items-center gap-1.5",
-              format === "hwp" ? "bg-surface text-accent shadow-sm" : "text-muted hover:text-fg"
+              format === "hwp" ? "bg-surface text-accent shadow-control" : "text-muted hover:text-fg"
             )}
             onClick={() => setFormat("hwp")}
           >
@@ -79,7 +79,7 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
           <button
             className={cn(
               "px-3 py-1.5 rounded-control text-xs font-medium transition-all flex items-center gap-1.5",
-              format === "word" ? "bg-surface text-accent shadow-sm" : "text-muted hover:text-fg"
+              format === "word" ? "bg-surface text-accent shadow-control" : "text-muted hover:text-fg"
             )}
             onClick={() => setFormat("word")}
           >
@@ -88,7 +88,7 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
         </div>
 
         <button
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white rounded-control text-xs font-medium hover:brightness-110 transition-all shadow-sm"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white rounded-control text-xs font-medium hover:brightness-110 transition-all shadow-control"
           onClick={handleExport}
         >
           <Download className="w-3.5 h-3.5" />
@@ -119,19 +119,19 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
             </div>
 
             <div className="bg-[#f0f0f0] border-b border-gray-300 p-1 flex items-center gap-1 shrink-0 overflow-x-auto whitespace-nowrap">
-              <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-sm px-1 py-0.5">
-                <div className="w-3 h-3 bg-gray-400 rounded-sm opacity-50" />
+              <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-xs px-1 py-0.5">
+                <div className="w-3 h-3 bg-gray-400 rounded-xs opacity-50" />
                 <span className="text-[11px] font-medium text-gray-800 px-1 min-w-12.5">{t("exportPreview.hwp.toolbar.baseStyle")}</span>
                 <ChevronDown className="w-3 h-3 text-gray-500" />
               </div>
               <div className="w-px h-4 bg-gray-300 mx-1" />
 
-              <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-sm px-1 py-0.5">
+              <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-xs px-1 py-0.5">
                 <span className="text-[11px] font-medium text-gray-800 px-1 min-w-17.5">{t("exportPreview.hwp.toolbar.fontName")}</span>
                 <ChevronDown className="w-3 h-3 text-gray-500" />
               </div>
 
-              <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-sm px-1 py-0.5 ml-1">
+              <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-xs px-1 py-0.5 ml-1">
                 <span className="text-[11px] font-medium text-gray-800 px-1 min-w-6">{t("exportPreview.hwp.toolbar.fontSize")}</span>
                 <div className="flex flex-col -gap-1">
                   <ChevronDown className="w-2 h-2 text-gray-500 rotate-180" />
@@ -260,8 +260,8 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
 
               <div className="flex flex-col gap-1 px-2 border-r border-gray-300">
                 <div className="flex items-center gap-1 text-gray-700 mb-1">
-                  <span className="w-4 h-4 bg-gray-300 rounded-sm" />
-                  <span className="w-4 h-4 bg-gray-300 rounded-sm" />
+                  <span className="w-4 h-4 bg-gray-300 rounded-xs" />
+                  <span className="w-4 h-4 bg-gray-300 rounded-xs" />
                 </div>
                 <div className="flex items-center gap-1 text-gray-700">
                   <AlignLeft className="w-4 h-4 p-0.5 rounded bg-gray-200" />

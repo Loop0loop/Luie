@@ -123,7 +123,7 @@ export default function WorldSection({
                 active={worldTab === item.key}
                 onClick={() => setWorldTab(item.key)}
                 className="flex-1 cursor-pointer px-4 py-1 rounded-control text-center text-[11px] font-medium transition-all duration-200 hover:text-fg"
-                activeClassName="bg-sidebar text-fg shadow-sm border border-border font-semibold"
+                activeClassName="bg-sidebar text-fg shadow-control border border-border font-semibold"
               />
             ))}
           </div>

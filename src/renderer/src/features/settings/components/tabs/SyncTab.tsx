@@ -147,14 +147,14 @@ export const SyncTab = memo(function SyncTab({
           <button
             onClick={() => onToggleAutoSync(!status.autoSync)}
             disabled={isBusy || !status.connected}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden ${
-              status.autoSync ? "bg-accent" : "bg-border"
+            className={`relative inline-flex h-6 w-11 items-center rounded-full border border-border-strong transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${
+              status.autoSync ? "bg-accent" : "bg-element"
             } ${isBusy || !status.connected ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             <span
               className={`${
                 status.autoSync ? "translate-x-6" : "translate-x-1"
-              } inline-block h-4 w-4 transform rounded-full bg-surface shadow-sm transition-transform`}
+              } inline-block h-4 w-4 transform rounded-full bg-on-accent shadow-control transition-transform`}
             />
           </button>
         </div>

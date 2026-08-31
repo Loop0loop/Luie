@@ -33,7 +33,7 @@ export function DroppableZone({
     >
       {isOver && !disableOverlay && (
            <div className="absolute inset-0 bg-accent/5 pointer-events-none flex items-center justify-center z-50">
-               <span className="text-accent font-bold text-sm bg-panel/90 px-3 py-1 rounded-full shadow-sm backdrop-blur border border-accent/20">
+               <span className="text-accent font-bold text-sm bg-panel/90 px-3 py-1 rounded-full shadow-control backdrop-blur border border-accent/20">
                    Drop to Open
                </span>
            </div>

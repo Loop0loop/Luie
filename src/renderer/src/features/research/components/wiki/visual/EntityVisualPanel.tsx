@@ -45,7 +45,7 @@ export function EntityVisualPanel({
             onChange={(e) =>
               setMemoryScope(e.target.value as "current-only" | "with-prior")
             }
-            className="h-6 rounded border border-border bg-surface px-2 text-xs text-fg"
+            className="h-6 rounded border border-border-strong bg-surface px-2 text-xs text-fg"
           >
             <option value="current-only">현재 챕터만</option>
             <option value="with-prior">현재+과거</option>

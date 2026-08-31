@@ -176,7 +176,7 @@ export default function SidebarChapterList() {
                                             toggleMenuByElement(chapter.id, e.currentTarget);
                                         }}
                                         className={cn(
-                                            "opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-sm hover:bg-app/50",
+                                            "opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-xs hover:bg-app/50",
                                             (menuOpenId === chapter.id) && "opacity-100"
                                         )}
                                     >

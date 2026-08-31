@@ -10,7 +10,7 @@
     border-color: var(--canvas-handle-border);
     border-radius: 9999px;
     background: var(--canvas-handle-bg);
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-control);
 }
 
 .canvas-document-editor .ProseMirror {

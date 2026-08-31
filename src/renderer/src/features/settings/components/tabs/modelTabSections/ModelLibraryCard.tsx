@@ -108,7 +108,7 @@ export function ModelLibraryCard({
             if (e.key === "Enter") void handleHfSearch();
           }}
           placeholder={t("settings.localLlm.modelLibrary.placeholder")}
-          className="min-w-0 flex-1 rounded-control border border-border bg-panel px-control-x py-control-y text-sm text-fg placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-ring"
+          className="min-w-0 flex-1 rounded-control border border-border-strong bg-panel px-control-x py-control-y text-sm text-fg placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-ring"
         />
         <Button
           type="button"

@@ -166,7 +166,7 @@ function EntityNodeInner({ id, data, selected, dragging }: NodeProps<RFEntityNod
                     key={c.value}
                     type="button"
                     onClick={(e) => handleColorChange(c.value, e)}
-                    className="h-4 w-4 rounded-full hover:scale-110 transition-transform cursor-pointer shadow-sm"
+                    className="h-4 w-4 rounded-full hover:scale-110 transition-transform cursor-pointer shadow-control"
                     style={{ backgroundColor: c.value }}
                     title={c.label}
                   />
@@ -227,9 +227,9 @@ function EntityNodeInner({ id, data, selected, dragging }: NodeProps<RFEntityNod
       >
         <div className="flex min-w-0 flex-1 flex-col p-4 justify-between">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-border bg-element/60 backdrop-blur-sm">
+            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-border bg-element/60 backdrop-blur-xs">
               <span
-                className="h-1.5 w-1.5 rounded-full shrink-0 shadow-sm"
+                className="h-1.5 w-1.5 rounded-full shrink-0 shadow-control"
                 style={{ backgroundColor: nodeColor }}
               />
               <span className="text-[10px] font-semibold tracking-wide text-fg/90 uppercase" translate="no">
@@ -251,7 +251,7 @@ function EntityNodeInner({ id, data, selected, dragging }: NodeProps<RFEntityNod
                 onChange={(e) => setDraftName(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onBlur={handleSaveName}
-                className="w-full rounded-md border border-border bg-panel px-2 py-0.5 text-[13px] font-semibold leading-snug tracking-tight text-fg shadow-sm outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+                className="w-full rounded-md border border-border-strong bg-panel px-2 py-0.5 text-[13px] font-semibold leading-snug tracking-tight text-fg shadow-control outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                 placeholder={t("canvas.node.namePlaceholder", "이름 입력")}
               />
             ) : (

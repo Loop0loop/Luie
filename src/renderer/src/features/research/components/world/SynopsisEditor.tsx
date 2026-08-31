@@ -264,7 +264,7 @@ export function SynopsisEditor() {
               className={cn(
                 "px-3 py-1 rounded-full text-[11px] font-bold transition-all flex items-center gap-1.5 border-none",
                 status === s
-                  ? "bg-accent text-accent-fg shadow-sm"
+                  ? "bg-accent text-accent-fg shadow-control"
                   : "text-subtle bg-transparent hover:text-fg hover:bg-surface-hover",
               )}
             >

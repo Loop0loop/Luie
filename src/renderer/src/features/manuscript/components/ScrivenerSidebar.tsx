@@ -49,7 +49,7 @@ export default function ScrivenerSidebar({
 
   return (
     <div className="flex flex-col h-full w-full bg-sidebar select-none overflow-hidden text-sm">
-      <div className="px-4 py-2 text-xs font-semibold text-muted bg-sidebar shadow-sm shrink-0 z-10">
+      <div className="px-4 py-2 text-xs font-semibold text-muted bg-sidebar shadow-control shrink-0 z-10">
         {t("sidebar.explorerTitle") || "Explorer"}
       </div>
 

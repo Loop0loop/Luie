@@ -62,7 +62,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                             key={mode}
                             onClick={() => onApplySettings({ theme: mode })}
                             className={`flex items-center justify-center px-4 py-3 rounded-panel border text-sm font-medium transition-colors duration-150 ${theme === mode
-                                ? "border-accent text-accent bg-accent/5 ring-1 ring-accent shadow-sm"
+                                ? "border-accent text-accent bg-accent/5 ring-1 ring-accent shadow-control"
                                 : "border-border text-muted hover:border-text-tertiary hover:bg-surface-hover"
                                 }`}
                         >
@@ -82,12 +82,12 @@ export const AppearanceTab = memo(function AppearanceTab({
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => onApplySettings({ enableAnimations: !enableAnimations })}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-surface ${enableAnimations ? "bg-accent" : "bg-border"
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full border border-border-strong transition-colors focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-surface ${enableAnimations ? "bg-accent" : "bg-element"
                                 }`}
                         >
                             <span
                                 className={`${enableAnimations ? "translate-x-6" : "translate-x-1"
-                                    } inline-block h-4 w-4 transform rounded-full bg-surface shadow-sm transition-transform`}
+                                    } inline-block h-4 w-4 transform rounded-full bg-on-accent shadow-control transition-transform`}
                             />
                         </button>
                         <span className="text-sm font-medium text-fg w-8">
@@ -213,7 +213,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                             key={mode}
                             onClick={() => onApplySettings({ uiMode: mode })}
                             className={`px-4 py-3 rounded-panel border text-sm font-medium transition-colors duration-150 text-left ${(uiMode || "default") === mode
-                                ? "border-accent text-accent bg-accent/5 ring-1 ring-accent shadow-sm"
+                                ? "border-accent text-accent bg-accent/5 ring-1 ring-accent shadow-control"
                                 : "border-border text-muted hover:border-text-tertiary hover:bg-surface-hover"
                                 }`}
                         >

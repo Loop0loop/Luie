@@ -50,7 +50,7 @@ export function MemoryEvalReportPanel({
 }: MemoryEvalReportPanelProps) {
   const { t } = useTranslation();
   return (
-    <div className="rounded-panel border border-border bg-surface/40 dark:bg-surface/20 backdrop-blur-md px-3.5 py-2.5 text-xs shadow-sm">
+    <div className="rounded-panel border border-border bg-surface/40 dark:bg-surface/20 backdrop-blur-md px-3.5 py-2.5 text-xs shadow-control">
       <div className="flex items-center justify-between gap-2">
         <button
           type="button"

@@ -91,7 +91,7 @@ export function RecentProjectsSection({
           {syncStatus.connected ? (
             <div className="flex items-center gap-3 pl-1">
               <div className="flex items-center gap-1.5 opacity-80">
-                <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center border border-gray-200 shadow-sm shrink-0">
+                <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center border border-gray-200 shadow-control shrink-0">
                   <svg className="w-3 h-3" viewBox="0 0 24 24">
                     <path
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -130,7 +130,7 @@ export function RecentProjectsSection({
           ) : (
             <button
               type="button"
-              className="px-4 py-1.5 text-xs font-medium rounded-control bg-[var(--accent-bg)] text-[var(--accent-fg)] hover:bg-[var(--accent-bg-hover)] border border-[var(--accent-border)] transition-colors shadow-sm flex items-center gap-2"
+              className="px-4 py-1.5 text-xs font-medium rounded-control bg-[var(--accent-bg)] text-[var(--accent-fg)] hover:bg-[var(--accent-bg-hover)] border border-[var(--accent-border)] transition-colors shadow-control flex items-center gap-2"
               onClick={() => onConnectGoogle?.()}
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">

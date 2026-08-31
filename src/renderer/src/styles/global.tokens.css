@@ -261,11 +261,17 @@
   /* NOTE: 이전 값(#e5e5ea 1.26:1 / #d1d1d6 1.52:1)은 흰 표면 위에서 사실상 보이지
      않아 컴포넌트가 token을 포기하고 `border-black/70` 같은 하드코딩으로 도망갔다.
      장식선 1.45:1 / 상태선 2.0:1로 올린다. 고대비 모드의 3:1과는 다른 층이다. */
-  --border-default: #d7d7d3;
+  /* soft 기본. 고대비값 #d7d7d3은 §4 Task 2에서 [data-contrast=high] 블록으로 이동 예정. */
+  --border-default: #e4e4e1;
   --border-active: #b8b8b3;
-  /* NOTE: 3.03:1 on #e7e7e4. 가장 어두운 light 표면인 `--bg-element` 기준으로 잡아야
-     input 테두리가 fill과 부모 표면 양쪽에 대해 WCAG 1.4.11의 3:1을 만족한다. */
-  --border-strong: #84847f;
+  /* NOTE: 기준면을 `--bg-element`에서 `--bg-panel`로 옮겼다. §1·§2는 가장 어두운
+     light 표면을 기준으로 3:1을 맞췄는데, 실제 input·select·토글은 카드(`--bg-panel`
+     = `--bg-surface`) 위에 놓이고 fill도 같은 값이라 그 면에서 3.76:1까지 넘쳤다. panel 목표를 3.3으로 두어 컨트롤 경계를 조금 더 세운다.
+     WCAG 1.4.11은 "인접 색" 대비를 요구하므로 컨트롤이 실제로 맞닿는 면에서 3:1을
+     만족하면 된다. 넘치는 만큼은 선이 과하게 읽힌다.
+     대가: `--bg-element`를 fill로 쓰는 컨트롤에서는 2.46으로 3:1에 미달한다.
+     그 경로는 전역 확장 때 개별 판단한다. */
+  --border-strong: #8e8e89;
   --border-focus: #636366;
 
   /* NOTE: editor의 종이와 잉크는 theme 표면·본문색과 갈라질 수 있는 별도 역할이지만
@@ -341,9 +347,6 @@
      순검정 그림자는 채도 없는 얼룩으로 읽히므로 light도 중성 검정을 쓰지 않는다. */
   --elevation-tint: rgba(15, 23, 42, 0.1);
 
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 
   --icon-size-xs: 12px;
   --icon-size-sm: 14px;
@@ -490,10 +493,11 @@
   --text-primary: #1d2330;
   --text-secondary: #566070;
   --text-tertiary: #6a707c;
-  --border-default: #d1d6df;
+  /* soft 기본. 고대비값 #d1d6df은 §4 Task 2에서 [data-contrast=high] 블록으로 이동 예정. */
+  --border-default: #dfe3e9;
   --border-active: #b0b7c3;
-  /* NOTE: 3.09:1 on #e2e7ef. */
-  --border-strong: #7e828d;
+  /* NOTE: 3.30:1 on `--bg-panel`. 기준면 이동은 위 neutral 블록 참조. */
+  --border-strong: #898d97;
   --border-focus: #566070;
 }
 [data-theme="light"][data-temp="warm"] {
@@ -506,10 +510,11 @@
   --text-primary: #262016;
   --text-secondary: #6b5e4d;
   --text-tertiary: #766a5d;
-  --border-default: #e0d3c3;
+  /* soft 기본. 고대비값 #e0d3c3은 §4 Task 2에서 [data-contrast=high] 블록으로 이동 예정. */
+  --border-default: #eae1d5;
   --border-active: #c3b4a0;
-  /* NOTE: 3.06:1 on #e8e0cd. */
-  --border-strong: #847e74;
+  /* NOTE: 3.30:1 on `--bg-panel`. */
+  --border-strong: #918c82;
   --border-focus: #6b5e4d;
 }
 /* NOTE: 두 변형은 neutral과 명도를 맞추고 축만 ±9 옮긴다(app: cool −16 · neutral −25 ·
@@ -524,10 +529,11 @@
   --text-primary: #4a4237;
   --text-secondary: #665e51;
   --text-tertiary: #726c60;
-  --border-default: #d8cfc0;
+  /* soft 기본. 고대비값 #d8cfc0은 §4 Task 2에서 [data-contrast=high] 블록으로 이동 예정. */
+  --border-default: #e3dccf;
   --border-active: #bcb09f;
-  /* NOTE: 3.05:1 on #eae0ce. */
-  --border-strong: #887e71;
+  /* NOTE: 3.30:1 on `--bg-panel`. */
+  --border-strong: #91877b;
   --border-focus: #71685b;
 }
 [data-theme="sepia"][data-temp="warm"] {
@@ -540,10 +546,11 @@
   --text-primary: #4a3820;
   --text-secondary: #715c3c;
   --text-tertiary: #7f6947;
-  --border-default: #e6cd9c;
+  /* soft 기본. 고대비값 #e6cd9c은 §4 Task 2에서 [data-contrast=high] 블록으로 이동 예정. */
+  --border-default: #eedbb6;
   --border-active: #cdae77;
-  /* NOTE: 3.05:1 on #f3dfbb. */
-  --border-strong: #927d52;
+  /* NOTE: 3.32:1 on `--bg-panel`. */
+  --border-strong: #9a865d;
   --border-focus: #705b3c;
 }
 
@@ -573,11 +580,11 @@
   --text-tertiary: #7a6a57;
   --text-accent: #8a602e;
 
-  --border-default: #dfceb0;
+  /* soft 기본. 고대비값 #dfceb0은 §4 Task 2에서 [data-contrast=high] 블록으로 이동 예정. */
+  --border-default: #e9dbc4;
   --border-active: #c3af8f;
-  /* NOTE: 3.05:1 on #efe0c5. 계단을 바로잡아 element가 가장 어두운 표면이 됐으므로
-     UI 경계 기준도 그쪽으로 옮겼다. */
-  --border-strong: #947c5c;
+  /* NOTE: 3.30:1 on `--bg-panel`. */
+  --border-strong: #9c8567;
   --border-focus: #77644f;
 
   --accent-bg: #8a602e;
@@ -609,14 +616,60 @@
   --elevation-tint: rgba(95, 75, 50, 0.14);
 }
 
+/* NOTE: 고대비는 theme별로 분기해야 한다. 두 가지 이유가 있다.
+   1) 특이도 — `[data-contrast="high"]`는 (0,1,0)이고 `[data-theme][data-temp]`는 (0,2,0)이다.
+      색온도 변형 4개(light/sepia × cool/warm)에서는 색온도 블록이 이겨서 고대비가 **아예
+      걸리지 않았다**. 그래서 아래 변형 블록은 (0,3,0)으로 둔다.
+   2) 색조 — 이전에는 순검정(#000)·중성 회색(#333)을 얹어서 sepia의 따뜻한 종이 위에
+      회색 글자가 그려졌고 대비도 과했다. 각 theme의 축(`b − r`)을 그대로 두고 명도만
+      내린다(채널 균등 감산). 그러면 lean도 보존된다.
+   목표: primary 12:1 · secondary 7:1 · tertiary **4.5:1**(AA 완전 준수 — 기본 모드는
+   4.0:1로 정렬돼 있고, 그 격차를 메우는 것이 이 모드의 존재 이유다). 기준면은 각 조합에서 어두운 글자에 가장 불리한 표면, 즉 가장 어두운 표면이다
+   — §3에서 sepia 계단을 바로잡은 뒤로는 sepia도 `--bg-element`가 그 면이다. border는 3:1이 아니라 기본 soft보다 한 단계 진한 수준(1.44)으로
+   두어 §1에서 "과했다"고 롤백한 방향을 피한다. */
 [data-contrast="high"] {
-  --text-primary: #000000;
-  --text-secondary: #333333;
-  --border-default: #d4d4d8;
+  --text-primary: #1c1c1e;
+  --text-secondary: #4b4b53;
+  --text-tertiary: #686864;
+  --border-default: #d7d7d3;
 }
+[data-theme="light"][data-temp="cool"][data-contrast="high"] {
+  --text-primary: #1d2330;
+  --text-secondary: #424c5c;
+  --text-tertiary: #626874;
+  --border-default: #d1d6df;
+}
+[data-theme="light"][data-temp="warm"][data-contrast="high"] {
+  --text-primary: #262016;
+  --text-secondary: #534635;
+  --text-tertiary: #6e6255;
+  --border-default: #e0d3c3;
+}
+[data-theme="sepia"][data-contrast="high"] {
+  --text-primary: #362511;
+  --text-secondary: #574532;
+  --text-tertiary: #72624f;
+  --border-default: #dfceb0;
+}
+[data-theme="sepia"][data-temp="cool"][data-contrast="high"] {
+  --text-primary: #2f271c;
+  --text-secondary: #4e4639;
+  --text-tertiary: #696357;
+  --border-default: #d8cfc0;
+}
+[data-theme="sepia"][data-temp="warm"][data-contrast="high"] {
+  --text-primary: #37250d;
+  --text-secondary: #594424;
+  --text-tertiary: #77613f;
+  --border-default: #e6cd9c;
+}
+/* NOTE: dark는 (0,2,0)이라 dark+cool/warm(0,2,0)을 뒤 선언으로 이긴다. 분기 불필요.
+   tertiary는 dark에서 muted를 밝히면 글레어가 생기는 §2 규칙 때문에 기본 모드에서
+   2.55로 뒀고, 이 모드에서만 4.5:1로 올린다. */
 [data-theme="dark"][data-contrast="high"] {
   --text-primary: #ffffff;
   --text-secondary: #e4e4e7;
+  --text-tertiary: #a1a1aa;
   --border-default: rgba(255, 255, 255, 0.2);
 }
 

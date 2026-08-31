@@ -65,7 +65,7 @@ export function TemplateGrid({
               rounded-control 
               overflow-hidden 
               transition-all duration-300 
-              shadow-sm
+              shadow-control
               group-hover:-translate-y-1.5 
               group-hover:shadow-xl 
               group-hover:border-white/10
@@ -74,7 +74,7 @@ export function TemplateGrid({
               >
                 {template.type === "blank" && (
                   <div className="w-full h-full flex flex-col items-center justify-center p-6">
-                    <div className="w-full h-full border-2 dashed border-[var(--border-subtle)] rounded-sm flex flex-col items-center justify-center gap-3 group-hover:border-accent/40 transition-colors">
+                    <div className="w-full h-full border-2 dashed border-[var(--border-subtle)] rounded-xs flex flex-col items-center justify-center gap-3 group-hover:border-accent/40 transition-colors">
                       <Plus className="w-8 h-8 text-[var(--text-tertiary)] group-hover:text-accent transition-colors" />
                     </div>
                   </div>
@@ -137,7 +137,7 @@ export function TemplateGrid({
                       <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
                         <FileType className="h-5 w-5 text-accent" />
                       </div>
-                      <div className="h-2 w-16 bg-[var(--text-tertiary)] mx-auto rounded-sm" />
+                      <div className="h-2 w-16 bg-[var(--text-tertiary)] mx-auto rounded-xs" />
                     </div>
                     <div className="w-full space-y-2 opacity-30">
                       <div className="flex gap-2">

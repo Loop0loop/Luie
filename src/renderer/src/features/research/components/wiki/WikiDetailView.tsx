@@ -242,7 +242,7 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
             <span className="text-fg/70">{t(currentTemplate.nameKey)}</span>
             <span className="text-border/60">·</span>
             <BufferedInput
-              className="inline min-w-[60px] bg-transparent p-0 text-fg/70 focus:rounded-sm focus:bg-active focus:px-1 focus:outline-hidden"
+              className="inline min-w-[60px] bg-transparent p-0 text-fg/70 focus:rounded-xs focus:bg-active focus:px-1 focus:outline-hidden"
               value={character.description || ""}
               placeholder={t("character.uncategorized")}
               onSave={(val) => updateCharacter({ id: character.id, description: val })}
@@ -372,7 +372,7 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
                   onClick={() => setIsInfoboxOpen(true)}
                   title={t("character.wiki.infoboxTitle", "프로필 요약 펼치기")}
                   aria-label={t("character.wiki.infoboxTitle", "프로필 요약 펼치기")}
-                  className="fixed right-0 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center gap-1.5 rounded-l-panel border border-r-0 border-border bg-surface/95 px-1 py-3.5 shadow-md backdrop-blur-sm transition-all hover:bg-surface hover:border-accent/60 hover:text-accent group cursor-pointer"
+                  className="fixed right-0 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center gap-1.5 rounded-l-panel border border-r-0 border-border bg-surface/95 px-1 py-3.5 shadow-md backdrop-blur-xs transition-all hover:bg-surface hover:border-accent/60 hover:text-accent group cursor-pointer"
                 >
                   <ChevronLeft size={14} className="text-muted group-hover:text-accent transition-colors" />
                   <span className="text-[10px] font-medium text-muted [writing-mode:vertical-lr] select-none tracking-tight group-hover:text-accent transition-colors">

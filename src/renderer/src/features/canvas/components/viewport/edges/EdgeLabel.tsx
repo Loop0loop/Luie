@@ -26,8 +26,8 @@ export function EdgeLabel({ labelX, labelY, color, children }: EdgeLabelProps) {
         }}
         className={
           safeColor
-            ? "nodrag nopan rounded-control border bg-panel/95 px-2.5 py-0.5 text-canvas-edge-label font-medium shadow-sm backdrop-blur-sm"
-            : "nodrag nopan rounded-control border border-border bg-panel/95 px-2.5 py-0.5 text-canvas-edge-label text-muted shadow-sm backdrop-blur-sm"
+            ? "nodrag nopan rounded-control border bg-panel/95 px-2.5 py-0.5 text-canvas-edge-label font-medium shadow-control backdrop-blur-xs"
+            : "nodrag nopan rounded-control border border-border bg-panel/95 px-2.5 py-0.5 text-canvas-edge-label text-muted shadow-control backdrop-blur-xs"
         }
       >
         {children}

@@ -149,7 +149,7 @@ export default function UpdaterNotification() {
             <button
               onClick={() => void handleDownload()}
               disabled={busy}
-              className="px-3 py-1.5 text-xs font-medium rounded bg-accent text-white hover:bg-accent/90 shadow-sm transition-colors disabled:opacity-60"
+              className="px-3 py-1.5 text-xs font-medium rounded bg-accent text-white hover:bg-accent/90 shadow-control transition-colors disabled:opacity-60"
             >
               {t("updater.action.download", "업데이트 다운로드")}
             </button>
@@ -168,7 +168,7 @@ export default function UpdaterNotification() {
             <button
               onClick={() => void handleApply()}
               disabled={busy}
-              className="px-3 py-1.5 text-xs font-medium rounded bg-accent text-white hover:bg-accent/90 shadow-sm transition-colors disabled:opacity-60"
+              className="px-3 py-1.5 text-xs font-medium rounded bg-accent text-white hover:bg-accent/90 shadow-control transition-colors disabled:opacity-60"
             >
               {t("updater.action.restart", "지금 업데이트")}
             </button>
@@ -180,7 +180,7 @@ export default function UpdaterNotification() {
             <button
               onClick={() => void handleRetryCheck()}
               disabled={busy}
-              className="px-3 py-1.5 text-xs font-medium rounded bg-accent text-white hover:bg-accent/90 shadow-sm transition-colors disabled:opacity-60"
+              className="px-3 py-1.5 text-xs font-medium rounded bg-accent text-white hover:bg-accent/90 shadow-control transition-colors disabled:opacity-60"
             >
               {t("updater.action.retry", "다시 확인")}
             </button>

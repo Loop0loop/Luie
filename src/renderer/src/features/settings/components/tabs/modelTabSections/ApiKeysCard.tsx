@@ -48,7 +48,7 @@ export function ApiKeysCard({
               value={inputOpenaiApiKey}
               onChange={(e) => setInputOpenaiApiKey(e.target.value)}
               placeholder={t("settings.localLlm.apiKeys.placeholder")}
-              className="w-full rounded-control border border-border bg-panel pl-control-x pr-10 py-control-y text-xs text-fg placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-ring"
+              className="w-full rounded-control border border-border-strong bg-panel pl-control-x pr-10 py-control-y text-xs text-fg placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-ring"
             />
             <button
               type="button"
@@ -71,7 +71,7 @@ export function ApiKeysCard({
               value={inputGeminiApiKey}
               onChange={(e) => setInputGeminiApiKey(e.target.value)}
               placeholder={t("settings.localLlm.apiKeys.placeholder")}
-              className="w-full rounded-control border border-border bg-panel pl-control-x pr-10 py-control-y text-xs text-fg placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-ring"
+              className="w-full rounded-control border border-border-strong bg-panel pl-control-x pr-10 py-control-y text-xs text-fg placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-ring"
             />
             <button
               type="button"

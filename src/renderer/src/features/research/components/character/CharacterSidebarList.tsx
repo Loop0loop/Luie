@@ -70,7 +70,7 @@ export function CharacterSidebarList({
               className="flex flex-col items-center justify-center p-4 border border-border rounded-panel cursor-pointer hover:bg-surface-hover transition-colors gap-2 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => handleAddCharacter(template.id)}
             >
-              <div className="p-3 bg-surface rounded-full shadow-sm">
+              <div className="p-3 bg-surface rounded-full shadow-control">
                 <LayoutTemplate size={24} aria-hidden="true" />
               </div>
               <div className="font-semibold text-sm">{t(template.nameKey)}</div>

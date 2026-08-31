@@ -226,7 +226,7 @@ export function EntityGallery<T extends GalleryEntity>({
           </div>
 
           <div className="flex max-w-full flex-wrap items-center justify-end gap-1.5">
-            <div className="relative flex h-7 w-28 min-w-0 items-center rounded-control border border-border bg-element px-2 transition-all focus-within:border-accent focus-within:ring-1 focus-within:ring-accent sm:w-44">
+            <div className="relative flex h-7 w-28 min-w-0 items-center rounded-control border border-border-strong bg-element px-2 transition-all focus-within:border-accent focus-within:ring-2 focus-within:ring-accent sm:w-44">
               <Search className="icon-xs text-subtle shrink-0 mr-1.5" aria-hidden="true" />
               <input
                 aria-label={`Search ${title}`}

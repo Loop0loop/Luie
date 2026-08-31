@@ -48,7 +48,7 @@ export function OllamaEndpointCard({
             value={baseUrl}
             onChange={(e) => setBaseUrl(e.target.value)}
             placeholder="http://localhost:11434"
-            className="w-full rounded-control border border-border bg-panel px-control-x py-control-y text-xs text-fg placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-ring"
+            className="w-full rounded-control border border-border-strong bg-panel px-control-x py-control-y text-xs text-fg placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-ring"
           />
         </div>
 
@@ -62,7 +62,7 @@ export function OllamaEndpointCard({
             value={chatModel}
             onChange={(e) => setChatModel(e.target.value)}
             placeholder={t("settings.localLlm.ollama.chatModelPlaceholder")}
-            className="w-full rounded-control border border-border bg-panel px-control-x py-control-y text-xs text-fg placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-ring"
+            className="w-full rounded-control border border-border-strong bg-panel px-control-x py-control-y text-xs text-fg placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-ring"
           />
         </div>
 
@@ -77,7 +77,7 @@ export function OllamaEndpointCard({
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder={t("settings.localLlm.ollama.apiKeyPlaceholder")}
-              className="w-full rounded-control border border-border bg-panel pl-control-x pr-10 py-control-y text-xs text-fg placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-ring"
+              className="w-full rounded-control border border-border-strong bg-panel pl-control-x pr-10 py-control-y text-xs text-fg placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-ring"
             />
             <button
               type="button"

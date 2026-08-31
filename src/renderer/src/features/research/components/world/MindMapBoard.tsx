@@ -42,7 +42,7 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
 
   return (
     <div
-      className="group bg-panel border-2 border-border hover:border-accent rounded-panel shadow-sm hover:shadow-lg transition-all overflow-hidden flex flex-col items-center min-w-[120px]"
+      className="group bg-panel border-2 border-border hover:border-accent rounded-panel shadow-control hover:shadow-lg transition-all overflow-hidden flex flex-col items-center min-w-[120px]"
       style={{
         width: (data.image || isEditingImage) ? 160 : "auto",
       }}
@@ -61,7 +61,7 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
         {isEditingImage ? (
           <div className="w-full h-full flex flex-col items-center justify-center p-2 bg-panel">
             <input
-              className="w-full text-xs p-1 border border-border rounded mb-1 bg-element text-fg"
+              className="w-full text-xs p-1 border border-border-strong rounded mb-1 bg-element text-fg"
               placeholder={t("world.mindmap.urlPlaceholder")}
               autoFocus
               onKeyDown={(e) => {

@@ -161,7 +161,7 @@ export function SmartLinkTooltip({ isSettingsOpen }: { isSettingsOpen?: boolean 
     >
       <div className="flex items-center justify-between mb-1">
         <span className="font-bold text-sm">{content.title}</span>
-        <span className="text-[10px] uppercase tracking-wider text-muted bg-secondary px-1.5 py-0.5 rounded-sm">
+        <span className="text-[10px] uppercase tracking-wider text-muted bg-secondary px-1.5 py-0.5 rounded-xs">
           {content.meta}
         </span>
       </div>

@@ -48,7 +48,7 @@ export function ExportPreview({
 
             <div className="flex-1 overflow-y-auto p-8 flex flex-col items-center gap-8 custom-scrollbar bg-app">
                 <div
-                    className="bg-[#fcfcfc] shadow-[0_0_15px_rgba(0,0,0,0.1)] transition-all duration-300 relative shrink-0 ring-1 ring-border/20 rounded-sm"
+                    className="bg-[#fcfcfc] shadow-[0_0_15px_rgba(0,0,0,0.1)] transition-all duration-300 relative shrink-0 ring-1 ring-border/20 rounded-xs"
                     style={{
                         width: paperSize === "A4" ? "210mm" : paperSize === "Letter" ? "216mm" : "176mm",
                         minHeight: paperSize === "A4" ? "297mm" : paperSize === "Letter" ? "279mm" : "250mm",
@@ -103,7 +103,7 @@ export function ExportPreview({
                 </div>
 
                 <div
-                    className="bg-[#fcfcfc]/80 shadow-[0_0_15px_rgba(0,0,0,0.1)] relative shrink-0 opacity-50 pointer-events-none ring-1 ring-border/20 rounded-sm"
+                    className="bg-[#fcfcfc]/80 shadow-[0_0_15px_rgba(0,0,0,0.1)] relative shrink-0 opacity-50 pointer-events-none ring-1 ring-border/20 rounded-xs"
                     style={{
                         width: paperSize === "A4" ? "210mm" : paperSize === "Letter" ? "216mm" : "176mm",
                         // NOTE: 다음 페이지가 이어짐을 암시하는 미리보기용 부분 높이다(전체 페이지가 아님).

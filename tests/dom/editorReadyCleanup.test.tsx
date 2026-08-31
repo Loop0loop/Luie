@@ -244,6 +244,10 @@ describe("Editor onEditorReady lifecycle", () => {
     });
 
     const options = mocked.useEditor.mock.calls[0]?.[0];
-    expect(options?.editorProps?.attributes?.class).toBe("tiptap outline-none");
+    // NOTE: `outline-none`이 아니라 `outline-hidden`이다. Tailwind v4에서 두 이름의
+    // 의미가 갈렸다 — `outline-none`은 `outline-style: none`이라 forced-colors 모드에서
+    // 포커스 표시가 사라지고, `outline-hidden`만 transparent outline을 보존한다.
+    // 일반 모드의 렌더 결과는 동일하다.
+    expect(options?.editorProps?.attributes?.class).toBe("tiptap outline-hidden");
   });
 });

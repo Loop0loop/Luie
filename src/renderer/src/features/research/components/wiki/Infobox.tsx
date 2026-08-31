@@ -103,7 +103,7 @@ export function Infobox({
   );
 
   return (
-    <div className="w-full shrink-0 overflow-hidden rounded-panel border border-border bg-surface text-[13px] shadow-sm">
+    <div className="w-full shrink-0 overflow-hidden rounded-panel border border-border bg-surface text-[13px] shadow-control">
       {/* Infobox Header with Side Hide/Close button */}
       <div className="border-b border-border bg-element/40 px-3.5 py-2.5 flex items-center justify-between">
         <div className="flex items-center gap-1.5 min-w-0">

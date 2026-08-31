@@ -146,7 +146,7 @@ function SnapshotPanel({
         <button
           type="button"
           onClick={() => setSelectedSnapshot(null)}
-          className="absolute left-2 top-1/2 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-panel text-muted shadow-sm transition-colors hover:bg-surface-hover hover:text-fg"
+          className="absolute left-2 top-1/2 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-panel text-muted shadow-control transition-colors hover:bg-surface-hover hover:text-fg"
           title={t("back", "뒤로가기")}
           aria-label={t("back", "뒤로가기")}
         >

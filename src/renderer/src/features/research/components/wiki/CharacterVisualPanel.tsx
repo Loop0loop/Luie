@@ -54,7 +54,7 @@ function HeroImage({
           type="button"
           onClick={onRegenerate}
           title="이미지 재생성"
-          className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-panel bg-black/50 text-white/70 hover:bg-black/70 hover:text-white transition-all backdrop-blur-sm text-[12px] opacity-0 group-hover/img:opacity-100"
+          className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-panel bg-black/50 text-white/70 hover:bg-black/70 hover:text-white transition-all backdrop-blur-xs text-[12px] opacity-0 group-hover/img:opacity-100"
         >
           <RefreshCw size={11} />
           재생성

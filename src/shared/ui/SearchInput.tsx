@@ -42,7 +42,7 @@ export default function SearchInput({
     <div className="relative">
       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none icon-sm" />
       <input
-        className="w-full bg-element border border-border rounded-control py-2 px-3 pl-8 text-[13px] text-fg outline-hidden transition-all focus:border-accent focus:ring-2 focus:ring-ring"
+        className="w-full bg-element border border-border-strong rounded-control py-2 px-3 pl-8 text-[13px] text-fg outline-hidden transition-all focus:border-accent focus:ring-2 focus:ring-ring"
         placeholder={placeholder}
         value={value}
         onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}

@@ -45,7 +45,7 @@ export function Modal({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-modal bg-black/60 backdrop-blur-xs" />
+        <Dialog.Overlay className="fixed inset-0 z-modal bg-black/60 backdrop-blur-sm" />
         <Dialog.Content
           // NOTE: Dialog.Description을 쓰지 않으므로 Radix의 describedby 경고를 끈다.
           aria-describedby={undefined}
@@ -205,7 +205,7 @@ export function PromptDialog({
       <input
         key={`${isOpen}-${defaultValue}`}
         id={inputId}
-        className="w-full p-2.5 bg-input border border-border rounded-control text-sm outline-hidden transition-colors focus:border-accent focus:ring-2 focus:ring-ring"
+        className="w-full p-2.5 bg-input border border-border-strong rounded-control text-sm outline-hidden transition-colors focus:border-accent focus:ring-2 focus:ring-ring"
         defaultValue={defaultValue}
         placeholder={placeholder}
         autoFocus

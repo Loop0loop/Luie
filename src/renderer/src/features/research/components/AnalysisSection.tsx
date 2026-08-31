@@ -358,7 +358,7 @@ export default function AnalysisSection({
               onClick={() => setSectionTab("chat")}
               className={`rounded-full px-3.5 py-1 transition-colors duration-200 active:scale-95 ${
                 sectionTab === "chat"
-                  ? "bg-surface text-fg shadow-sm font-semibold"
+                  ? "bg-surface text-fg shadow-control font-semibold"
                   : "hover:text-fg"
               }`}
             >
@@ -371,7 +371,7 @@ export default function AnalysisSection({
               onClick={() => setSectionTab("review")}
               className={`rounded-full px-3.5 py-1 flex items-center transition-colors duration-200 active:scale-95 ${
                 sectionTab === "review"
-                  ? "bg-surface text-fg shadow-sm font-semibold"
+                  ? "bg-surface text-fg shadow-control font-semibold"
                   : "hover:text-fg"
               }`}
             >
@@ -434,7 +434,7 @@ export default function AnalysisSection({
             <div className="h-full flex flex-col min-h-0">
               {isEmpty ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-6 select-none animate-[fadeIn_0.4s_ease-out]">
-                  <div className="w-12 h-12 rounded-2xl bg-element/20 border border-border flex items-center justify-center shadow-sm mb-5">
+                  <div className="w-12 h-12 rounded-2xl bg-element/20 border border-border flex items-center justify-center shadow-control mb-5">
                     <Bot className="w-5 h-5 text-muted" />
                   </div>
                   <h3 className="text-[13px] font-semibold text-fg/90 mb-2 tracking-tight">
@@ -447,7 +447,7 @@ export default function AnalysisSection({
                     <button
                       type="button"
                       onClick={() => chat.setInput(t("analysis.emptyState.summaryPrompt"))}
-                      className="rounded-2xl border border-border hover:border-accent/20 bg-element/5 hover:bg-element/10 p-4 text-left text-xs transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 active:scale-98 group"
+                      className="rounded-2xl border border-border hover:border-accent/20 bg-element/5 hover:bg-element/10 p-4 text-left text-xs transition-all duration-200 hover:shadow-control hover:-translate-y-0.5 active:scale-98 group"
                     >
                       <BookOpen className="w-3.5 h-3.5 text-muted group-hover:text-accent mb-2 transition-colors" />
                       <div className="font-semibold mb-1 text-fg/80">{t("analysis.emptyState.summaryLabel")}</div>
@@ -456,7 +456,7 @@ export default function AnalysisSection({
                     <button
                       type="button"
                       onClick={() => chat.setInput(t("analysis.emptyState.relationPrompt"))}
-                      className="rounded-2xl border border-border hover:border-accent/20 bg-element/5 hover:bg-element/10 p-4 text-left text-xs transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 active:scale-98 group"
+                      className="rounded-2xl border border-border hover:border-accent/20 bg-element/5 hover:bg-element/10 p-4 text-left text-xs transition-all duration-200 hover:shadow-control hover:-translate-y-0.5 active:scale-98 group"
                     >
                       <Users className="w-3.5 h-3.5 text-muted group-hover:text-accent mb-2 transition-colors" />
                       <div className="font-semibold mb-1 text-fg/80">{t("analysis.emptyState.relationLabel")}</div>
@@ -465,7 +465,7 @@ export default function AnalysisSection({
                     <button
                       type="button"
                       onClick={() => chat.setInput(t("analysis.emptyState.conflictPrompt"))}
-                      className="rounded-2xl border border-border hover:border-accent/20 bg-element/5 hover:bg-element/10 p-4 text-left text-xs transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 active:scale-98 group"
+                      className="rounded-2xl border border-border hover:border-accent/20 bg-element/5 hover:bg-element/10 p-4 text-left text-xs transition-all duration-200 hover:shadow-control hover:-translate-y-0.5 active:scale-98 group"
                     >
                       <Scale className="w-3.5 h-3.5 text-muted group-hover:text-accent mb-2 transition-colors" />
                       <div className="font-semibold mb-1 text-fg/80">{t("analysis.emptyState.conflictLabel")}</div>
@@ -474,7 +474,7 @@ export default function AnalysisSection({
                     <button
                       type="button"
                       onClick={() => chat.setInput(t("analysis.emptyState.foreshadowPrompt"))}
-                      className="rounded-2xl border border-border hover:border-accent/20 bg-element/5 hover:bg-element/10 p-4 text-left text-xs transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 active:scale-98 group"
+                      className="rounded-2xl border border-border hover:border-accent/20 bg-element/5 hover:bg-element/10 p-4 text-left text-xs transition-all duration-200 hover:shadow-control hover:-translate-y-0.5 active:scale-98 group"
                     >
                       <Search className="w-3.5 h-3.5 text-muted group-hover:text-accent mb-2 transition-colors" />
                       <div className="font-semibold mb-1 text-fg/80">{t("analysis.emptyState.foreshadowLabel")}</div>

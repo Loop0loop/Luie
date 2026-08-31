@@ -155,7 +155,7 @@ export default function InspectorPanel({
                 <label className="text-xs font-medium text-muted">
                   {t("inspector.meta.label")}
                 </label>
-                <select className="w-full bg-surface border border-border rounded px-2 py-1 text-sm focus:ring-2 focus:ring-ring">
+                <select className="w-full bg-surface border border-border-strong rounded px-2 py-1 text-sm focus:ring-2 focus:ring-ring">
                   <option>{t("inspector.label.none")}</option>
                   <option>{t("inspector.label.concept")}</option>
                   <option>{t("inspector.label.draft")}</option>
@@ -165,7 +165,7 @@ export default function InspectorPanel({
                 <label className="text-xs font-medium text-muted">
                   {t("inspector.meta.status")}
                 </label>
-                <select className="w-full bg-surface border border-border rounded px-2 py-1 text-sm focus:ring-2 focus:ring-ring">
+                <select className="w-full bg-surface border border-border-strong rounded px-2 py-1 text-sm focus:ring-2 focus:ring-ring">
                   <option>{t("inspector.status.todo")}</option>
                   <option>{t("inspector.status.inprogress")}</option>
                   <option>{t("inspector.status.done")}</option>

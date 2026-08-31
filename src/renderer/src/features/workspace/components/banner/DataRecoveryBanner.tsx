@@ -29,7 +29,7 @@ export default function DataRecoveryBanner() {
     if (!hasRecovered) return null;
 
     return (
-        <div className="w-full bg-accent/15 border-b border-accent/20 px-4 py-3 flex items-center justify-between shadow-sm relative z-50">
+        <div className="w-full bg-accent/15 border-b border-accent/20 px-4 py-3 flex items-center justify-between shadow-control relative z-50">
             <div className="flex items-center gap-3">
                 <div className="p-1.5 bg-accent/20 rounded-full">
                     {recoveryReason === "corrupt" ? (
