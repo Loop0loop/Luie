@@ -46,7 +46,9 @@ export type CoreRendererApi = {
     getAll: (
       projectId: string,
     ) => Promise<IPCResponse<SharedTypes.ChapterListItem[]>>;
-    getDeleted: (projectId: string) => Promise<IPCResponse<SharedTypes.Chapter[]>>;
+    getDeleted: (
+      projectId: string,
+    ) => Promise<IPCResponse<SharedTypes.ChapterListItem[]>>;
     update: (input: {
       id: string;
       title?: string;

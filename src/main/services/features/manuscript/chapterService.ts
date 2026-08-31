@@ -189,11 +189,30 @@ export class ChapterService {
     }
   }
 
-  async getDeletedChapters(projectId: string) {
+  /**
+   * 휴지통(soft delete) 챕터 목록. 본문(`content`)은 포함하지 않는다.
+   *
+   * NOTE: `getAllChapters`와 같은 경계다. 이전에는 `.select()`로 전 컬럼을 가져와 legacy
+   * `chapter.content`까지 실어 보냈다. 휴지통 UI는 제목/삭제시각만 그리고(`TrashList`는
+   * content를 참조하지 않는다) 복원은 `restoreChapter`가 따로 처리하므로 본문이 필요 없다.
+   * 마이그레이션 이전 프로젝트는 legacy 컬럼에 본문이 남아 있어 그대로 두면 삭제 챕터 수만큼
+   * 본문이 렌더러 힙에 올라온다.
+   */
+  async getDeletedChapters(projectId: string): Promise<ChapterListItem[]> {
     try {
       return await db
         .getClient()
-        .select()
+        .select({
+          id: chapter.id,
+          projectId: chapter.projectId,
+          title: chapter.title,
+          synopsis: chapter.synopsis,
+          order: chapter.order,
+          wordCount: chapter.wordCount,
+          createdAt: chapter.createdAt,
+          updatedAt: chapter.updatedAt,
+          deletedAt: chapter.deletedAt,
+        })
         .from(chapter)
         .where(
           and(

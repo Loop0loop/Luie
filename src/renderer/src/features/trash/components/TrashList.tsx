@@ -3,7 +3,7 @@ import { RotateCcw, Trash2, Clock } from "lucide-react";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import { api } from "@shared/api";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
-import type { Chapter } from "@shared/types";
+import type { ChapterListItem } from "@shared/types";
 import { useTranslation } from "react-i18next";
 import { useDialog } from "@shared/ui/useDialog";
 
@@ -13,7 +13,9 @@ interface TrashListProps {
   onRestoreChapter?: (id: string) => void;
 }
 
-type TrashItem = Chapter & { deletedAt?: string | Date | null };
+// NOTE: `Chapter`가 아니라 `ChapterListItem` 기반이다. `getDeleted`는 본문을 나르지 않으므로
+// 여기서 `content`를 읽을 수 있는 타입을 쓰면 런타임에 undefined를 만난다.
+type TrashItem = ChapterListItem & { deletedAt?: string | Date | null };
 
 /**
  * 휴지통 챕터 목록.
@@ -56,7 +58,7 @@ export const TrashList = memo(function TrashList({
         return;
       }
       if (response.success && response.data) {
-        setItems(response.data as TrashItem[]);
+        setItems(response.data);
       } else {
         setItems([]);
       }

@@ -39,6 +39,12 @@ beforeAll(() => {
   vi.spyOn(localProjectService, "schedulePackageExport").mockImplementation(
     () => {},
   );
+  // NOTE: 픽스처의 `/tmp/*.luie`는 실제 canonical 패키지가 아니므로 DB mutation 뒤 export가
+  // FS_2002로 실패한다. 이 스위트의 관심사는 조회 계약이라 패키지 IO를 격리한다
+  // (`chapterTrashRestoreMatrix`와 같은 처리).
+  vi.spyOn(projectService, "persistPackageAfterMutation").mockResolvedValue(
+    undefined as never,
+  );
 });
 
 const createProject = async (title: string): Promise<string> => {
@@ -261,8 +267,97 @@ describe("getAllChapters 목록 경계 (본문 미포함)", () => {
   });
 });
 
-describe("getChapter 본문 해석 (등가분할)", () => {
-  it("EP1: chapterBody가 있으면 body 값을 반환한다", async () => {
+describe("getDeletedChapters 목록 경계 (본문 미포함)", () => {
+  /**
+   * N11. 목록 경계는 O1-b2에서 `getAllChapters`만 고쳤고 휴지통 경로는 `.select()`로 전
+   * 컬럼(legacy `chapter.content` 포함)을 계속 실어 보냈다. `TrashList`는 content를
+   * 참조하지 않고 복원은 `restoreChapter`가 따로 처리하므로 본문이 필요 없다.
+   */
+  it("삭제된 챕터 응답에 content 키가 없다", async () => {
+    const projectId = await createProject("trash-no-content");
+    await insertChapterRow({
+      id: "tnc-ch1",
+      projectId,
+      title: "삭제됨",
+      order: 1,
+      legacyContent: "LEGACY_SHOULD_NOT_LEAK",
+      deletedAt: new Date().toISOString(),
+    });
+
+    const deleted = await chapterService.getDeletedChapters(projectId);
+
+    expect(deleted).toHaveLength(1);
+    expect(Object.prototype.hasOwnProperty.call(deleted[0], "content")).toBe(
+      false,
+    );
+    expect(deleted[0]).toMatchObject({ id: "tnc-ch1", title: "삭제됨" });
+    expect(deleted[0].deletedAt).not.toBeNull();
+  });
+
+  it("삭제되지 않은 챕터는 포함하지 않는다", async () => {
+    const projectId = await createProject("trash-filter");
+    await insertChapterRows([
+      {
+        id: "tf-live",
+        projectId,
+        title: "살아있음",
+        order: 1,
+        legacyContent: "a",
+      },
+      {
+        id: "tf-dead",
+        projectId,
+        title: "삭제됨",
+        order: 2,
+        legacyContent: "b",
+        deletedAt: new Date().toISOString(),
+      },
+    ]);
+
+    const deleted = await chapterService.getDeletedChapters(projectId);
+
+    expect(deleted.map((item) => item.id)).toEqual(["tf-dead"]);
+  });
+
+  it("BVA: 삭제된 챕터가 없으면 빈 배열이다", async () => {
+    const projectId = await createProject("trash-empty");
+
+    expect(await chapterService.getDeletedChapters(projectId)).toEqual([]);
+  });
+
+  it("본문 없이 목록을 받아도 복원 후 단건 조회가 본문을 준다", async () => {
+    // 휴지통에서 본문을 빼도 복원 경로가 깨지지 않는다는 계약.
+    const projectId = await createProject("trash-restore");
+    const created = await chapterService.createChapter({
+      projectId,
+      title: "복원 대상",
+    });
+    const chapterId = String(created.id);
+    await chapterService.updateChapter({
+      id: chapterId,
+      content: "RESTORE_BODY",
+    });
+
+    await chapterService.deleteChapter(chapterId);
+    const deleted = await chapterService.getDeletedChapters(projectId);
+    expect(deleted.map((item) => item.id)).toContain(chapterId);
+    expect(
+      Object.prototype.hasOwnProperty.call(
+        deleted.find((item) => item.id === chapterId)!,
+        "content",
+      ),
+    ).toBe(false);
+
+    await chapterService.restoreChapter(chapterId);
+
+    const restored = await chapterService.getChapter(chapterId);
+    expect(restored.content).toBe("RESTORE_BODY");
+    const listed = await chapterService.getAllChapters(projectId);
+    expect(listed.map((item) => item.id)).toContain(chapterId);
+  });
+});
+
+describe("getChapter 본문 해석 (등가분할)", () => {  it("EP1: chapterBody가 있으면 body 값을 반환한다", async () => {
     const projectId = await createProject("ep1");
     await insertChapterRow({
       id: "ep1-ch1",

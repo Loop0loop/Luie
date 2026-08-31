@@ -2,7 +2,13 @@
 
 조사 대상: `src/renderer/**` (사이드바 렌더링 · RAM/메모리)
 기준 문서: `.kiro/skills/vercel-react-best-practices/rules/*.md`, `src/renderer/AGENTS.md`
-상태: **초기 감사 + 2026-08-31 구현/검증 동기화 + 3차 정밀 재감사. O1-a, O1-b1, O1-b2, O2, O3 완료. O4~O12는 미착수다. 3차 재감사에서 신규 항목(N1~N8)과 문서 자체의 오류 2건을 찾았고 N1·N2·N3를 반영했다(§7).**
+상태: **초기 감사 → 2차 구현/검증 → 3차 정밀 재감사 → 4차 ISTQB 라운드(사용자 수동 검증 통과 이후).**
+
+- **완료**: O1-a, O1-b1, O1-b2, O2, O3, O8, O10, O11, O12 / N1, N2, N3, N6은 미착수, N7, N9, N10, N11
+- **부분 완료**: O5 (목록에 박힌 무거운 서브트리 memo. 챕터 행 memo 추출은 잔여)
+- **미착수**: O4, O6, O7, N4, N5, N6
+- **미측정**: 200챕터 heap snapshot(O1의 원래 목표 수치), 실제 프레임 드랍 — §5
+- **알려진 위험 1건**: `handleSave`의 캐시 미스 + 빈 본문 조합 — §8 "남은 위험"
 
 ---
 
@@ -24,35 +30,37 @@
 
 | 범위 | 상태 | 현재 근거 |
 | --- | --- | --- |
-| O1-a: main 목록 조회 N+1 제거 | **완료** | `chapterBody` 배치 조회 + `Map` 병합. 20챕터 기준 select 21회 → 2회. |
+| O1-a: main 목록 조회 N+1 제거 | **완료·이후 대체됨** | 당시 `chapterBody` 배치 조회로 20챕터 select 21회 → 2회. O1-b2가 목록에서 본문을 빼면서 body 조회 자체가 불필요해져 **현재는 1회**다. |
 | O1-b1: renderer 본문 전용 캐시/구독 경로 | **완료** | LRU 4, 동시 요청 dedup, retain 보호, reset 세대 가드, 로딩 게이트 구현. |
 | O1-b2: 목록 IPC/store에서 본문 제거 | **완료** | `getAllChapters()`가 `ChapterListItem[]`을 반환하고 `chapterStore.items`도 같은 타입이다. body 조회가 사라져 목록 왕복은 select 1회다. store 경계에서 create/update/get 응답의 본문을 투영해 되살아나는 경로도 막았다. |
 | O2: autosave 목록 리렌더 제거 | **완료** | 본문은 `chapterContentStore`만 갱신한다. 제목이 바뀔 때만 `applyOptimisticTitle`이 해당 항목을 교체하고, 그 외에는 `items` 배열 참조를 유지한다. |
 | O3: 상시 Binder 본문 구독 제거 | **완료** | `BinderBarCompactHover`의 본문 구독/prop 전달을 제거하고 `SnapshotViewer`가 필요할 때 직접 구독한다. |
 | 복원 안전성/깜빡임 | **완료·회귀 가드 있음** | 캐시 reset 즉시 무효화, stale response 차단, 복원 본문 seed, Editor 로딩 게이트, pointer-down 프리페치 적용. |
-| O4~O12 | **미착수** | 이 문서의 분석/수정안 상태 유지. 3차 재감사에서 9건 전부 잔존 확인(줄번호 동일). |
-| N1~N8 (3차 신규) | **N1·N2·N3 완료, 나머지 미착수** | §7에 근거와 수정안. N1은 `SplitViewEditor.tsx` 분리 + 로딩 게이트, N2는 O1-b2에서 `ChapterListItem` 채택으로 해소. |
-| Tailwind 미정의 유틸 30건 | **보류(사용자 결정)** | §7-N8에 근거만 기록. 이번 회차 작업 범위에서 제외. |
+| O5: 사이드바 hover 리렌더 | **부분 완료** | 목록에 박힌 `SnapshotList`·`TrashList`에 memo(UI/UX 무변경). 챕터 행 memo 추출은 잔여. |
+| O8 · O10 · O11 · O12 | **완료** | reorder Map 조회, meta 상수 hoist, terms 정렬 memo, 죽은 `FOCUS_ENTITY` 핸들러 제거. |
+| O4 · O6 · O7 · O9 | **미착수** | 이 문서의 분석/수정안 상태 유지. |
+| N1~N11 (3·4차 신규) | **9건 완료, N4·N5 보류, N6 미착수** | §7에 근거. N2는 O1-b2에서 `ChapterListItem` 채택으로 해소. |
+| Tailwind 미정의 유틸 30건 | **보류(사용자 결정)** | §7-N8에 근거만 기록. 이후 사용자가 Tailwind v4 마이그레이션을 별도 진행. |
 
-> 중요: O1-b1의 캐시가 구현됐다는 사실만으로 O1이 해결된 것은 아니다. 현재 목록 응답과 `chapterStore.items`에도 본문이 남아 있어 같은 문자열이 목록 store와 전용 캐시에 동시에 존재할 수 있다. 실제 renderer 힙 감소는 O1-b2 이후에 발생한다.
+> 경계 요약: 목록(`getAllChapters`·`getDeletedChapters`)은 본문을 나르지 않고, 본문은 단건 조회(`getChapter`)와 `chapterContentStore` 캐시만이 공급한다. store 경계에서 create/update/get 응답의 본문을 투영해 되살아나는 경로도 막았다. 다만 **실제 힙 감소 MB는 아직 측정하지 않았다**(§5-1).
 
 ---
 
 ## 1. 확인된 항목
 
-### O1. 프로젝트를 열면 전 챕터 본문이 렌더러 힙에 상주 — HIGH (**부분 완료**)
+### O1. 프로젝트를 열면 전 챕터 본문이 렌더러 힙에 상주 — HIGH (**완료 · 힙 수치는 미측정**)
 
-**현재 근거**
+**현재 상태**
 
 ```
 src/main/services/features/manuscript/chapterService.ts
-  getAllChapters()가 chapter + chapterBody를 2회 배치 조회하지만 최종 결과에 content를 병합해 반환
+  getAllChapters() → ChapterListItem[]  (본문 미포함, select 1회)
+  getDeletedChapters() → ChapterListItem[]  (N11에서 함께 정리)
 src/renderer/src/features/manuscript/stores/chapterStore.ts
-  BaseChapterStore = CRUDStore<Chapter, ...>                         ← items가 아직 본문 포함 Chapter
-src/renderer/src/shared/store/createCRUDStore.ts
-  loadAll 응답 data를 items에 저장                                  ← 전 챕터 본문 상주
+  BaseChapterStore = CRUDStore<ChapterListItem, ...>
+  withListOnlyItems가 create/update/get 응답의 본문을 투영해 차단
 src/renderer/src/features/manuscript/hooks/useChapterManagement.ts
-  저장 시 state.items.map(... content: newContent)                  ← 목록 store 본문도 계속 갱신
+  저장 시 본문은 chapterContentStore만 갱신, 목록은 제목 변경 시에만 write
 ```
 
 **완료된 하위 작업**
@@ -74,7 +82,7 @@ src/renderer/src/features/manuscript/hooks/useChapterManagement.ts
 
 `useExportManager`는 차단 요소가 **아니었다**. 이전 서술은 틀렸다 — 이 훅은 `api.chapter.get(chapterId)`로 단건 조회하므로 `chapterStore.items`를 참조하지 않는다.
 
-**왜 문제인가** — 사이드바는 제목/순서만 필요하지만 현재도 모든 본문이 IPC 직렬화를 거쳐 목록 store에 들어온다. 전용 캐시가 추가돼 활성/최근 본문은 한 번 더 잡힐 수 있으므로, O1-b1은 안전한 이관 기반이지 메모리 절감 완료 단계가 아니다.
+**왜 문제였는가** — 사이드바는 제목/순서만 필요한데 프로젝트를 열 때 모든 챕터 본문이 IPC 직렬화를 거쳐 목록 store에 들어왔다. 이제 목록 경계에서 본문이 빠졌고, 본문은 요청된 것만 상한 있는 캐시에 담긴다. **다만 코드 경계가 닫힌 것과 실제 힙이 줄어든 것은 별개이며 후자는 아직 측정하지 않았다.**
 
 **규칙 매칭** — `server-serialization` **원리 적용**. 규칙 원문은 RSC 경계 전용이지만 “경계를 넘는 데이터는 실제 소비 필드만”이라는 원리가 Electron main↔renderer IPC에도 성립한다.
 
@@ -387,7 +395,6 @@ ScrivenerLayout.tsx:116   updatePanelSize(panel.id, rawSize)
 | 보류 | N5 | `EntityGallery.tsx`에 미커밋 className 작업이 섞여 있어, 그것이 커밋된 뒤 진행. |
 | 이후 | O6 · O9 | 미적용 최적화. 측정과 함께 효과 확인. |
 | 이후 | O4 | 에디터 런타임 변경이라 단독 처리 권장. |
-| 이후 | O8 | `reorderChapters`의 O(n²) find. O1-b2에서 타입만 바꾸고 알고리즘은 그대로 뒀다. |
 | 별도 | O7 | 저장 포맷 변경 + 기존 데이터 마이그레이션 필요. |
 | 별도 | N6 (사이드바 일관성) | 활성 스타일·위험색·portal 정책 통일. 시각 회귀 확인이 필요하다. |
 | 보류 | N8 Tailwind 미정의 유틸 30건 | 사용자 결정으로 이번 회차 제외. |
@@ -435,6 +442,29 @@ useChapterManagement.ts:295-296  동일 문구
 O1-b2에서 폴백 자체가 사라져 주석도 함께 제거됐다. 남은 것은 현재 사실만 기술한다 — 복제는 "목록에 본문이 없어 폴백할 곳이 없다", 저장은 "변경 감지 기준은 본문 캐시가 유일한 출처다".
 
 **남은 주석 항목** — 없음. 영어 WHAT 주석 3건도 처리했다: `SnapshotViewer.tsx`(리마운트 이유를 한국어 WHY로), `Editor.tsx`(`// Default false` 삭제), `ExportPreview.tsx`(부분 높이 이유를 한국어 WHY로). 지역 컴포넌트 TSDoc(`GoogleDocsRightPanel.tsx:96-102`)은 내용이 WHY라 LOW로 남긴다.
+
+### N11. 휴지통 조회가 본문을 계속 실어 보냄 — LOW-MEDIUM (**완료**)
+
+O1-b2는 `getAllChapters`만 고쳤고 휴지통 경로는 놓쳤다. ISTQB 재감사에서 찾았다.
+
+**근거(수정 전)**
+
+```
+src/main/services/features/manuscript/chapterService.ts
+  getDeletedChapters가 .select()로 전 컬럼(legacy chapter.content 포함) 조회
+src/shared/api/core.contract.ts
+  getDeleted 반환이 Chapter[]
+src/renderer/src/features/trash/components/TrashList.tsx
+  setItems(response.data as TrashItem[])   ← 캐스팅으로 타입 검사 우회
+```
+
+**왜 문제인가** — `TrashList`는 `content`를 **한 번도 참조하지 않고**(전수 grep 0건) 복원은 `restoreChapter`가 따로 처리하므로 본문이 필요 없다. 그런데 삭제 챕터 수만큼 legacy 본문이 IPC를 건너 렌더러 힙에 올라왔다. 신규 데이터는 `chapter.content`가 `""`라(본문은 `chapterBody`에 쓴다) 실피해가 작지만, 마이그레이션 이전 프로젝트는 실제 본문이 그대로 남아 있다. 무엇보다 **목록 경계가 한쪽만 닫혀 있던 불일치**다.
+
+`as TrashItem[]` 캐스팅이 타입 검사를 우회하고 있어서, 나중에 누가 `item.content`를 읽으면 런타임에 `undefined`를 만나는 함정도 있었다.
+
+**수정** — `getDeletedChapters`를 `getAllChapters`와 같은 명시 컬럼 목록으로 바꿨다(`ChapterListItem[]` 반환). 계약 타입, `TrashItem` 기반 타입(`Chapter` → `ChapterListItem`), `SidebarCompactHover`의 `trashItems` 상태를 함께 전환하고 캐스팅을 제거했다.
+
+**검증** — `chapterListContentResolution.test.ts`에 4케이스 추가(본문 키 부재, 미삭제 챕터 제외, 빈 목록 BVA, 삭제→복원 후 단건 조회가 본문 반환). `.select()`로 되돌리면 2건 실패로 검출력 확인.
 
 ### N10. 분할 editor 패널이 재오픈/재시작 시 min 폭으로 뜸 — MEDIUM (**완료**)
 
@@ -554,6 +584,32 @@ parseStructuredAttributes.ts:3-6             문자열이면 JSON.parse
 ---
 
 ## 8. 구현 후 검증 기록 (2026-08-31)
+
+### ISTQB 정밀 재감사 라운드 (2026-08-31, 사용자 수동 검증 통과 이후)
+
+수동 검증이 전부 통과한 뒤 한 번 더 훑었고, 그 과정에서 N11을 찾아 고쳤다.
+
+| 범위 | 결과 | 확인한 계약 |
+| --- | --- | --- |
+| `chapterListContentResolution.test.ts` (확장) | **15 passed** | 기존 11 + 휴지통 경계 4(본문 키 부재·미삭제 제외·빈 목록 BVA·삭제→복원 후 본문 반환). |
+| `handleSaveDecisionTable.test.tsx` (신규) | **7 passed** | 저장 경로 결정표. stale 프로젝트 차단, dedupe, 본문/제목 변경별 분기, 본문만 바뀔 때 `items` 참조 유지, 빈 제목 대체, 본문 전체 삭제, **캐시 미스 + 빈 본문의 현재 동작**. |
+| 전체 chapter 관련 renderer/dom 11스위트 | **71 passed** | 회귀 없음. |
+| main 2스위트 | **20 passed** | |
+| TypeScript / ESLint | **0 errors / exit 0** | |
+
+**결함 검출력 확인**
+
+- `getDeletedChapters`를 `.select()`로 되돌림 → 휴지통 경계 2건 실패.
+- `handleSave`의 stale 프로젝트 가드 제거 → R3 실패.
+- `applyOptimisticTitle`을 무조건 호출로 바꿔도 결정표는 통과했다. store 액션 자체에 제목 무변화 가드가 있어(2중 방어) hook 조건이 없어도 `items` 참조가 유지되기 때문이다. 그 store 가드는 `chapterListBoundary.test.ts`가 따로 고정한다.
+
+**남은 위험 1건 (가드 미적용, 의도적으로 현재 동작을 고정만 함)**
+
+`handleSave`는 `api.autoSave`를 조건과 무관하게 호출한다. 그래서 **캐시 미스(해당 챕터에 마운트된 Editor 없음) + 빈 `newContent`** 조합에서는 본문 변경이 감지되지 않아 캐시에는 쓰지 않지만 **빈 본문이 저장 큐에는 들어간다.**
+
+현재 도달하지 않는다 — Editor는 `isLoaded` 게이트로 빈 본문 마운트를 막고, 마운트된 챕터는 `retainChapterContent`로 축출되지 않아 캐시가 항상 채워져 있다. 즉 안전은 **게이트가 보장하고 `handleSave` 자체에는 가드가 없다.** 게이트를 우회하는 진입점이 생기면 데이터 손실 경로가 열린다.
+
+가드를 넣지 않은 이유는 정당한 흐름을 막을 수 있어서다(예: 캐시가 없는 챕터에 스냅샷 본문을 적용하는 경로). `handleSaveDecisionTable.test.tsx`의 마지막 케이스가 이 동작을 명시적으로 고정하므로, 가드를 추가하면 그 기대값을 함께 바꿔야 한다.
 
 ### 추가 검증 (O1-b2 이후 위험 구간)
 

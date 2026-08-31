@@ -16,7 +16,7 @@ import { FocusHoverSidebar, useChapterStore } from "@renderer/domains/manuscript
 import { useProjectStore } from "@renderer/domains/project";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { api } from "@shared/api";
-import type { Chapter, Snapshot } from "@shared/types";
+import type { ChapterListItem, Snapshot } from "@shared/types";
 import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@renderer/shared/constants/editorLayout";
 import { SIDEBAR_WIDTH_CONFIG } from "@renderer/shared/constants/sidebarSizing";
 import { useDialog } from "@shared/ui/useDialog";
@@ -71,7 +71,7 @@ function CompactContent({
   const [openSection, setOpenSection] = useState<"snapshot" | "trash" | null>(null);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [snapshotLoading, setSnapshotLoading] = useState(false);
-  const [trashItems, setTrashItems] = useState<Chapter[]>([]);
+  const [trashItems, setTrashItems] = useState<ChapterListItem[]>([]);
   const [trashLoading, setTrashLoading] = useState(false);
 
   const toggleSection = useCallback(
@@ -351,7 +351,7 @@ export function SidebarCompactHover(props: SidebarCompactHoverProps) {
       className="bg-transparent shadow-none"
     >
       <div
-        className="h-full border-r border-border bg-sidebar/75 shadow-lg backdrop-blur-sm"
+        className="h-full border-r border-border bg-sidebar/75 shadow-lg backdrop-blur-xs"
         style={{ width: COMPACT_WIDTH_PX }}
       >
         <CompactContent {...props} />
