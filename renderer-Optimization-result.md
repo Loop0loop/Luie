@@ -139,26 +139,28 @@ src/renderer/src/features/editor/components/Editor.tsx:197
 
 ---
 
-### O5. default 사이드바가 hover를 JS 상태로 처리해 리스트 전체 리렌더 — MEDIUM
+### O5. default 사이드바가 hover를 JS 상태로 처리해 리스트 전체 리렌더 — MEDIUM (**부분 완료**)
 
-**근거**
+**정정된 진단** — 1차 보고는 "챕터 행 전체 리렌더"를 비용으로 봤지만, 재조사에서 더 비싼 것이 확인됐다. `sidebarItems`에는 **`SnapshotList`와 `TrashList`가 항목으로 들어간다**(`Sidebar.tsx:304`, `:355`). 둘 다 `memo`가 아니었고, `SnapshotList`는 `useChapterContent`로 본문까지 구독한다. 그래서 마우스가 항목 하나를 지날 때마다 이 두 리스트 서브트리가 통째로 다시 그려졌다. 실제로 바뀌는 출력은 케밥 버튼 2개뿐이다.
 
-```
-src/renderer/src/features/manuscript/components/useSidebarLogic.ts:74   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null)
-src/renderer/src/features/manuscript/components/Sidebar.tsx:137         onMouseEnter={() => setHoveredItemId(chapter.id)}
-src/renderer/src/features/manuscript/components/Sidebar.tsx:256         onMouseEnter={() => setHoveredItemId(meta.hoverId)}
-src/renderer/src/features/manuscript/components/Sidebar.tsx:150         {(hoveredItemId === chapter.id || menuOpenId === chapter.id) && ...}
-src/renderer/src/features/manuscript/components/Sidebar.tsx:456         {sidebarItems.map((item, index) => (
-src/renderer/src/features/manuscript/components/Sidebar.tsx:477         export default memo(Sidebar);
-```
+`sidebarItems` 자체는 `useMemo`이고 hover가 deps에 없어 배열 재생성은 없다. 순수 렌더 낭비였다.
 
-**왜 문제인가** — 항목 위로 마우스를 옮길 때마다 `Sidebar` 자신이 리렌더되고 `sidebarItems.map`이 전 항목을 다시 만든다. `memo(Sidebar)`는 내부 state 변경을 막아주지 못한다. 같은 기능을 `SidebarChapterList`는 `group-hover` CSS로 처리한다 — **레이아웃별 최적화 불일치**다.
+**반영: `SnapshotList`·`TrashList`에 `memo`** — prop이 원시값뿐이라(`chapterId` / `projectId`+`refreshKey`, 콜백은 미전달) memo가 그대로 실효한다. **UI·UX·이벤트는 전혀 바뀌지 않는다** — 케밥의 조건부 마운트, `hoveredItemId` 상태, DOM 구조, 핸들러가 모두 그대로다.
 
-**규칙 매칭** — `rerender-memo` **직접 적용**(행을 memo된 하위 컴포넌트로 추출해 hover가 해당 행만 리렌더). `rerender-use-ref-transient-values`는 **적용 불가**로 판단했다 — hover 값이 실제 UI 표시를 좌우하므로 ref로 대체하면 렌더가 갱신되지 않는다.
+**CSS hover 전환은 하지 않았다.** 문서의 원래 수정안(`group-hover`)은 동작 동일성을 보장할 수 없다.
 
-**수정안** — 프로젝트 선례(`SidebarChapterList`의 `group-hover:opacity-100`)에 맞춰 CSS hover로 전환하고 `hoveredItemId`를 제거하는 쪽이 가장 작다. 상태를 유지해야 한다면 행을 memo 컴포넌트로 추출.
+- 케밥이 항상 마운트되므로 hover하지 않은 상태에서도 제목의 가용 폭이 줄어 **말줄임 시작 지점이 바뀐다**(현재는 조건부 마운트).
+- `opacity-0` 요소도 포인터 이벤트를 받아 `pointer-events-none`이 필요하고, 스크린리더에 항상 노출된다.
 
-**확신도** — 코드 확인. 챕터 수별 프레임 비용: 측정 필요.
+`hoveredItemId` 제거로 얻는 잔여 이득(챕터 행 JSX 재생성)은 행을 memo 컴포넌트로 추출하면 UI 변경 없이 얻을 수 있다. 그쪽이 남은 작업이다.
+
+**규칙 매칭** — `rerender-memo` **직접 적용**.
+
+**검증** — `sidebarHoverSubtreeIsolation.test.tsx` 2개. 실제 `Sidebar`를 `ToastProvider`+`DialogProvider`로 마운트해 hover를 발화시키고 두 리스트의 렌더 횟수 불변을 확인, 그리고 실모듈이 memo인지 `importActual`로 고정한다.
+
+> 주의: 이 스위트를 처음 작성했을 때 `vi.mock`이 테스트 파일의 import까지 가로채 **대역을 검사하는 무효 테스트**가 됐다(실코드에서 memo를 떼도 통과했다). `importActual`로 실모듈을 가져오도록 고쳐 검출력을 확인했다.
+
+**확신도** — 리렌더 격리: 테스트 확인. 챕터 수별 실제 프레임 비용: 여전히 측정 필요.
 
 ---
 
@@ -379,7 +381,10 @@ ScrivenerLayout.tsx:116   updatePanelSize(panel.id, rawSize)
 | 완료 | N3 · N7 (주석·배럴) | 영어 WHAT 주석 3건 한국어 WHY/삭제, `useChapterContent`를 배럴에 노출하고 소비자 5곳 통일. |
 | 완료 | O8 · O11 · O12 | reorder Map 조회, terms 정렬 useMemo, 죽은 FOCUS_ENTITY 핸들러 제거. |
 | 완료 | O10 | research-item meta를 모듈 상수 테이블로 hoist. |
-| **다음** | O5 · N4 · N5 | 사이드바 hover CSS화(선례 있음), TreeNode store화, EntityGallery 카드 memo. |
+| 부분 완료 | O5 | `SnapshotList`·`TrashList`에 memo. UI/UX 무변경. 챕터 행 memo 추출은 잔여. CSS hover 전환은 말줄임·포인터 이벤트가 달라져 채택하지 않음. |
+| **다음** | 측정 (§5) · O6 | O1의 목표였던 힙 절감 수치가 미측정이다. O6는 스킬 impact HIGH인데 현재 적용 위치가 잘못돼 무효다. |
+| 보류 | N4 | canvas 확장/선택 상태를 store로 옮기는 중간 규모 리팩터가 필요. 집필 핫패스가 아니라 투입 대비 이득이 낮다. |
+| 보류 | N5 | `EntityGallery.tsx`에 미커밋 className 작업이 섞여 있어, 그것이 커밋된 뒤 진행. |
 | 이후 | O6 · O9 | 미적용 최적화. 측정과 함께 효과 확인. |
 | 이후 | O4 | 에디터 런타임 변경이라 단독 처리 권장. |
 | 이후 | O8 | `reorderChapters`의 O(n²) find. O1-b2에서 타입만 바꾸고 알고리즘은 그대로 뒀다. |

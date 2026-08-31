@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RotateCcw, Trash2, Clock } from "lucide-react";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import { api } from "@shared/api";
@@ -15,7 +15,14 @@ interface TrashListProps {
 
 type TrashItem = Chapter & { deletedAt?: string | Date | null };
 
-export function TrashList({
+/**
+ * 휴지통 챕터 목록.
+ *
+ * NOTE: `memo`인 이유는 `SnapshotList`와 같다. 이 컴포넌트는 사이드바 항목 목록의 한 항목으로
+ * 렌더되고(`Sidebar.tsx`의 `sidebarItems.map`), 사이드바는 hover 상태를 JS로 들고 있어 마우스가
+ * 항목을 지날 때마다 리렌더된다. prop이 `projectId`/`refreshKey` 원시값뿐이라 memo가 실효한다.
+ */
+export const TrashList = memo(function TrashList({
   projectId,
   refreshKey,
   onRestoreChapter,
@@ -217,4 +224,4 @@ export function TrashList({
       })}
     </div>
   );
-}
+});

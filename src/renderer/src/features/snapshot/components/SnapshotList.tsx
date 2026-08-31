@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Clock, RotateCcw, GitCompare, Loader2 } from "lucide-react";
 import { Virtuoso } from "react-virtuoso";
@@ -17,7 +17,18 @@ interface SnapshotListProps {
   onOpenSnapshot?: (snapshot: Snapshot) => void;
 }
 
-export function SnapshotList({ chapterId, onOpenSnapshot }: SnapshotListProps) {
+/**
+ * 챕터 스냅샷 목록.
+ *
+ * NOTE: `memo`인 이유는 이 컴포넌트가 사이드바 항목 목록의 한 항목으로 렌더되기 때문이다
+ * (`Sidebar.tsx`의 `sidebarItems.map`). 사이드바는 hover 상태를 JS로 들고 있어 마우스가
+ * 항목을 지날 때마다 리렌더되는데, 그때 이 서브트리까지 함께 다시 그리면 낭비가 크다
+ * (이 컴포넌트는 본문 캐시도 구독한다). prop이 `chapterId` 원시값뿐이라 memo가 실효한다.
+ */
+export const SnapshotList = memo(function SnapshotList({
+  chapterId,
+  onOpenSnapshot,
+}: SnapshotListProps) {
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -276,4 +287,4 @@ export function SnapshotList({ chapterId, onOpenSnapshot }: SnapshotListProps) {
       </div>
     </div>
   );
-}
+});
