@@ -24,9 +24,11 @@ import {
 } from "./windowRouting.js"
 import {
   createExportBrowserWindow,
-  createStartupWizardBrowserWindow,
   createWorldGraphBrowserWindow,
 } from "./windowSecondaryWindows.js"
+import {
+  createStartupWizardBrowserWindow,
+} from "./windowStartupWizard.js"
 
 const logger = createLogger("WindowManager")
 

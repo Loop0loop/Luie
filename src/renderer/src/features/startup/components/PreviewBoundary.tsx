@@ -10,6 +10,10 @@ export class PreviewBoundary extends Component<
     return { failed: true };
   }
 
+  componentDidCatch(error: unknown, errorInfo: unknown) {
+    console.error("[PreviewBoundary error]", error, errorInfo);
+  }
+
   render() {
     return this.state.failed ? this.props.fallback : this.props.children;
   }

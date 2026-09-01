@@ -116,6 +116,18 @@ vi.mock("electron", () => ({
     getPath: () => path.join(process.cwd(), "drizzle", ".tmp", "window-manager-test"),
   },
   BrowserWindow: MockBrowserWindow,
+  screen: {
+    getPrimaryDisplay: vi.fn(() => ({
+      workArea: { x: 0, y: 0, width: 1440, height: 900 },
+    })),
+    getDisplayMatching: vi.fn(() => ({
+      workArea: { x: 0, y: 0, width: 1440, height: 900 },
+    })),
+    getDisplayNearestPoint: vi.fn(() => ({
+      workArea: { x: 0, y: 0, width: 1440, height: 900 },
+    })),
+    getCursorScreenPoint: vi.fn(() => ({ x: 0, y: 0 })),
+  },
 }));
 
 vi.mock("electron-window-state", () => ({
@@ -173,5 +185,129 @@ describe("WindowManager security webPreferences", () => {
     expect(webPreferences?.nodeIntegration).toBe(false);
     expect(webPreferences?.spellcheck).toBe(true);
     expect(webPreferences?.preload).toMatch(/preload[\\/]+index\.cjs$/);
+  });
+
+  describe("calculateStartupWizardInitialBounds", () => {
+    it("calculates bounds for various display resolutions with clamp", async () => {
+      const { calculateStartupWizardInitialBounds } = await import(
+        "../../../src/main/manager/window/windowStartupWizard.js"
+      );
+      const { screen } = await import("electron");
+
+      const setMock = (width: number, height: number, x = 0, y = 0) => {
+        const display = {
+          workArea: { x, y, width, height },
+        } as unknown as Electron.Display;
+        vi.spyOn(screen, "getPrimaryDisplay").mockReturnValue(display);
+        vi.spyOn(screen, "getDisplayNearestPoint").mockReturnValue(display);
+      };
+
+      // 1280x720 (minimum clamp: 420x600)
+      setMock(1280, 720);
+      const minBounds = calculateStartupWizardInitialBounds();
+      expect(minBounds.width).toBe(420);
+      expect(minBounds.height).toBe(600);
+      expect(minBounds.x).toBe(Math.round((1280 - 420) / 2));
+      expect(minBounds.y).toBe(Math.round((720 - 600) / 2));
+
+      // 1728x1117 (scaled: 484x726)
+      setMock(1728, 1117);
+      const macBounds = calculateStartupWizardInitialBounds();
+      expect(macBounds.width).toBe(484);
+      expect(macBounds.height).toBe(726);
+
+      // 1920x1080 (FHD: 538x702)
+      setMock(1920, 1080);
+      const fhdBounds = calculateStartupWizardInitialBounds();
+      expect(fhdBounds.width).toBe(538);
+      expect(fhdBounds.height).toBe(702);
+
+      // 3840x2160 (4K clamp: 560x820)
+      setMock(3840, 2160);
+      const uhdBounds = calculateStartupWizardInitialBounds();
+      expect(uhdBounds.width).toBe(560);
+      expect(uhdBounds.height).toBe(820);
+    });
+
+    it("calculates expanded bounds for horizontal preview with clamp", async () => {
+      const { calculateStartupWizardExpandedBounds } = await import(
+        "../../../src/main/manager/window/windowStartupWizard.js"
+      );
+      const { screen } = await import("electron");
+
+      const setMock = (width: number, height: number, x = 0, y = 0) => {
+        const display = {
+          workArea: { x, y, width, height },
+        } as unknown as Electron.Display;
+        vi.spyOn(screen, "getPrimaryDisplay").mockReturnValue(display);
+        vi.spyOn(screen, "getDisplayNearestPoint").mockReturnValue(display);
+      };
+
+      // 1280x720 (82% -> 1050x590 -> height clamp 680)
+      setMock(1280, 720);
+      const minBounds = calculateStartupWizardExpandedBounds();
+      expect(minBounds.width).toBe(1050);
+      expect(minBounds.height).toBe(680);
+
+      // 1920x1080 (FHD: 82% -> 1574x886)
+      setMock(1920, 1080);
+      const fhdBounds = calculateStartupWizardExpandedBounds();
+      expect(fhdBounds.width).toBe(1574);
+      expect(fhdBounds.height).toBe(886);
+
+      // 3840x2160 (4K clamp: 1600x1000)
+      setMock(3840, 2160);
+      const uhdBounds = calculateStartupWizardExpandedBounds();
+      expect(uhdBounds.width).toBe(1600);
+      expect(uhdBounds.height).toBe(1000);
+    });
+
+    it("verifies safe editor width and ratio across all target resolutions", async () => {
+      const { calculateStartupWizardExpandedBounds } = await import(
+        "../../../src/main/manager/window/windowStartupWizard.js"
+      );
+      const { screen } = await import("electron");
+
+      const targetDisplays = [
+        { name: "HD (1280x720)", w: 1280, h: 720 },
+        { name: "Laptop (1366x768)", w: 1366, h: 768 },
+        { name: "MacBook Air 13 (1440x900)", w: 1440, h: 900 },
+        { name: "MacBook Pro 16 (1728x1117)", w: 1728, h: 1117 },
+        { name: "FHD (1920x1080)", w: 1920, h: 1080 },
+        { name: "QHD (2560x1440)", w: 2560, h: 1440 },
+        { name: "4K UHD (3840x2160)", w: 3840, h: 2160 },
+      ];
+
+      const SIDEBAR_PX = 210;
+      const INSPECTOR_PX = 260;
+
+      for (const res of targetDisplays) {
+        const display = {
+          workArea: { x: 0, y: 0, width: res.w, height: res.h },
+        } as unknown as Electron.Display;
+        vi.spyOn(screen, "getPrimaryDisplay").mockReturnValue(display);
+        vi.spyOn(screen, "getDisplayNearestPoint").mockReturnValue(display);
+
+        const bounds = calculateStartupWizardExpandedBounds();
+
+        // 1. 창 크기 안전 범위 검증
+        expect(bounds.width).toBeGreaterThanOrEqual(1000);
+        expect(bounds.width).toBeLessThanOrEqual(1600);
+        expect(bounds.height).toBeGreaterThanOrEqual(680);
+        expect(bounds.height).toBeLessThanOrEqual(1000);
+
+        // 2. 기본/Docs/Editor 레이아웃(사이드바 210px): 본문 점유율 >= 78%, 본문 폭 >= 790px
+        const singleSidebarEditorWidth = bounds.width - SIDEBAR_PX;
+        const singleSidebarRatio = (singleSidebarEditorWidth / bounds.width) * 100;
+        expect(singleSidebarEditorWidth).toBeGreaterThanOrEqual(790);
+        expect(singleSidebarRatio).toBeGreaterThanOrEqual(78);
+
+        // 3. Scrivener 3단 레이아웃(바인더 210px + 인스펙터 260px): 본문 점유율 >= 52%, 본문 폭 >= 530px
+        const scrivenerEditorWidth = bounds.width - (SIDEBAR_PX + INSPECTOR_PX);
+        const scrivenerRatio = (scrivenerEditorWidth / bounds.width) * 100;
+        expect(scrivenerEditorWidth).toBeGreaterThanOrEqual(530);
+        expect(scrivenerRatio).toBeGreaterThanOrEqual(52);
+      }
+    });
   });
 });
