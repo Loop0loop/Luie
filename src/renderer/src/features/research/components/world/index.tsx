@@ -147,7 +147,7 @@ export default function WorldSection({
       </div>
 
       {graphOnly && isGuideOpen && (
-        <div className="absolute inset-0 z-40 bg-black/40 backdrop-blur-sm flex items-center justify-center p-6">
+        <div className="absolute inset-0 z-40 bg-overlay backdrop-blur-sm flex items-center justify-center p-6">
           <div className="w-full max-w-xl rounded-panel border border-border bg-panel p-5 shadow-panel">
             <div className="flex items-center justify-between gap-3 mb-4">
               <h2 className="text-base font-semibold text-fg">

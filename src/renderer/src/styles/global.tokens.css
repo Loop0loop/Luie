@@ -111,6 +111,11 @@
   --color-canvas-chrome-border: var(--canvas-chrome-border);
   --color-canvas-kind-chip: var(--canvas-kind-chip-fg);
 
+  /* NOTE: 모달·오버레이는 theme에 관계없이 일관된 어두운 배경을 깐다.
+     rgba(0,0,0,0.6)은 light·sepia·dark 전부에서 콘텐츠를 뒤로 밀어내는
+     역할을 하므로 palette tint를 따르지 않는다. */
+  --color-overlay: rgba(0, 0, 0, 0.6);
+
   /* NOTE: Tailwind v4에서 읽지 않는 config 대신 실제 사용 token만 이곳에 유지한다. */
   --radius-control: 0.625rem;
   --radius-panel: 0.875rem;

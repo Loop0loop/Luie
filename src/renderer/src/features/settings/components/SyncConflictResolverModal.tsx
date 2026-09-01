@@ -87,7 +87,7 @@ export function SyncConflictResolverModal({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-modal flex items-center justify-center bg-overlay backdrop-blur-sm p-4">
       <div className="w-full max-w-3xl bg-panel border border-border shadow-panel rounded-panel flex flex-col max-h-[85vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         <div className="p-4 border-b border-border flex items-center justify-between bg-surface">
           <div className="flex items-center gap-3">

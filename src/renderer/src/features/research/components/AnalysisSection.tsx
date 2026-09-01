@@ -174,7 +174,7 @@ function FloatingWrapper({
       data-testid="analysis-floating-container"
       role="dialog"
       aria-label={t("analysis.title")}
-      className={`group fixed bottom-24 right-6 rounded-3xl border border-border bg-panel/80 dark:bg-panel/70 backdrop-blur-xl shadow-panel z-modal flex flex-col overflow-hidden cursor-grab active:cursor-grabbing ${
+      className={`group fixed bottom-24 right-6 rounded-editor-shell border border-border bg-panel/80 dark:bg-panel/70 backdrop-blur-xl shadow-panel z-modal flex flex-col overflow-hidden cursor-grab active:cursor-grabbing ${
         isDraggingState ? "transition-none select-none" : "transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
       }`}
       style={{

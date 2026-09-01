@@ -45,7 +45,7 @@ export function Modal({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-modal bg-black/60 backdrop-blur-sm" />
+        <Dialog.Overlay className="fixed inset-0 z-modal bg-overlay backdrop-blur-sm" />
         <Dialog.Content
           // NOTE: Dialog.Description을 쓰지 않으므로 Radix의 describedby 경고를 끈다.
           aria-describedby={undefined}
