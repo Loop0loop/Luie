@@ -11,6 +11,7 @@ export { default as Sidebar } from "../../features/manuscript/components/Sidebar
 export { useChapterManagement } from "../../features/manuscript/hooks/useChapterManagement";
 export {
   useChapterContent,
+  useChapterContentStatus,
   type ChapterContentState,
 } from "../../features/manuscript/hooks/useChapterContent";
 export { useChapterStore } from "../../features/manuscript/stores/chapterStore";

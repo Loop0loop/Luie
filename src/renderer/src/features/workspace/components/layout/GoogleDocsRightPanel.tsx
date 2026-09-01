@@ -9,7 +9,11 @@ import {
 import { ChevronLeft, History, X } from "lucide-react";
 import type { Snapshot } from "@shared/types";
 import { Editor, useEditorStore } from "@renderer/domains/editor";
-import { useChapterContent, useChapterStore } from "@renderer/domains/manuscript";
+import {
+  useChapterContentStatus,
+  useChapterStore,
+} from "@renderer/domains/manuscript";
+import { peekChapterContent } from "@renderer/features/manuscript/stores/chapterContentStore";
 import { AIPanel } from "@renderer/features/ai";
 import { useTranslation } from "react-i18next";
 import {
@@ -28,15 +32,13 @@ import { beginLayoutRestoring } from "@renderer/features/workspace/hooks/useProj
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
 import { getDocsRightPanelId } from "@renderer/features/workspace/utils/docsLayoutModel";
 
-const ResearchPanel = lazy(() =>
-  import("@renderer/domains/world").then((module) => ({
-    default: module.ResearchPanel,
-  })),
+// NOTE: barrel(@renderer/domains/world) 경유 시 reactflow/canvas/analysis가 동반 로드됐다.
+// 파일 직접 참조로 탭별 청크를 분리한다.
+const ResearchPanel = lazy(
+  () => import("@renderer/features/research/components/ResearchPanel"),
 );
-const WorldPanel = lazy(() =>
-  import("@renderer/domains/world").then((module) => ({
-    default: module.WorldPanel,
-  })),
+const WorldPanel = lazy(
+  () => import("@renderer/features/research/components/WorldPanel"),
 );
 const SnapshotList = lazy(() =>
   import("@renderer/features/snapshot/components/SnapshotList").then(
@@ -87,8 +89,8 @@ function LoadingFallback() {
  * docs 우측 패널의 분할 에디터.
  *
  * NOTE: 본문 구독을 이 컴포넌트로 좁힌다. 부모(우측 패널)가 본문을 prop으로 받으면 본문
- * 변경마다 패널 전체가 리렌더된다. 또한 본문이 아직 도착하지 않은 상태로 Editor를 마운트하면
- * 빈 본문으로 시작해 자동 저장(`onSave`)이 원본을 덮어쓰므로 로딩 중에는 마운트하지 않는다.
+ * 변경마다 패널 전체가 리렌더된다. 로딩 창의 저장 억제는 Editor의 `contentReady` 게이트가
+ * 담당하므로 패널 쪽 게이트/리마운트는 필요 없다.
  */
 function DocsSideEditor({
   activeChapterId,
@@ -101,18 +103,18 @@ function DocsSideEditor({
   contentRevision: number;
   onSaveChapter?: (title: string, content: string) => void | Promise<void>;
 }) {
-  const { content, isLoaded } = useChapterContent(activeChapterId);
-
-  if (activeChapterId && !isLoaded) {
-    return <LoadingFallback />;
-  }
+  const { isLoaded } = useChapterContentStatus(activeChapterId);
+  const content = isLoaded ? peekChapterContent(activeChapterId) ?? "" : "";
 
   return (
     <Editor
-      key={`docs-side-editor-${activeChapterId ?? "none"}-${contentRevision}`}
+      // NOTE: key에서 chapterId를 뺀다. 챕터 전환은 setContent 스왑으로 처리하고
+      // 리마운트는 스냅샷 복원 리비전에만 쓴다. 로딩 창 억제는 Editor의 contentReady다.
+      key={`docs-side-editor-rev-${contentRevision}`}
       chapterId={activeChapterId ?? undefined}
       initialTitle={activeChapterTitle ?? ""}
       initialContent={content}
+      contentReady={activeChapterId ? isLoaded : true}
       onSave={onSaveChapter}
       hideFooter
       hideToolbar
@@ -347,13 +349,15 @@ export function GoogleDocsRightPanel({
     // NOTE: 최초 등장이 아니라(탭 전환) persisted ratio로 되돌리는 시점에는 애니메이션을
     // 끄고 즉시 반영한다. 다만 첫 등장(open transition 중)에 restoring을 켜면 전역 CSS가
     // transition을 0ms로 강제해 slide-in이 죽는다. 첫 등장은 defaultSize가 이미 저장된
-    // ratio를 쓰므로 restoring이 필요 없다.
+    // ratio를 쓰므로 restoring이 필요 없다. 탭 전환 비율은 Panel을 리마운트하는 대신
+    // imperative resize로 적용한다(defaultSize는 마운트 시 1회만 읽힌다).
     if (!hasRenderedTabRef.current) {
       hasRenderedTabRef.current = true;
       return;
     }
     const endRestoring = beginLayoutRestoring();
     restoreFrameRef.current = requestAnimationFrame(() => {
+      panelRef.current?.resize(toPanelPercentSize(safeRatio));
       restoreFrameRef.current = requestAnimationFrame(() => {
         restoreFrameRef.current = null;
         endRestoring();
@@ -409,9 +413,10 @@ export function GoogleDocsRightPanel({
       </PanelResizeHandle>
 
       {/* NOTE: open/close transition 중에만 minSize를 완화(0%)해 flex-grow가 0까지
-          보간되게 한다. drag 시에는 minPx 플로어가 유지된다. */}
+          보간되게 한다. drag 시에는 minPx 플로어가 유지된다. key를 넣지 않는다 —
+          탭 전환마다 Panel과 하위 Suspense 트리 전체가 파괴/재생성되는 리마운트를
+          막고, 탭별 id로 라이브러리 레이아웃 슬롯만 분리한다. */}
       <Panel
-        key={renderedTab}
         id={getDocsRightPanelId(renderedTab)}
         panelRef={panelRef}
         data-panel-animated={isOpening || isClosing ? "true" : undefined}

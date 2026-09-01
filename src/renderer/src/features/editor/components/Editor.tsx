@@ -32,7 +32,17 @@ import type { Character, Term } from "@shared/types";
 interface EditorProps {
   initialTitle?: string;
   initialContent?: string;
-  onSave?: (title: string, content: string) => void | Promise<void>;
+  /**
+   * initialContent가 "현재 chapterId의 유효한 본문"인지. false면 전환 창으로
+   * 보고 (1) 본문 스왑과 (2) 자동 저장을 모두 보류한다. 기본 true — 스냅샷 뷰어처럼
+   * 단일 본문으로 태어나는 마운트는 게이팅이 필요 없다.
+   */
+  contentReady?: boolean;
+  onSave?: (
+    title: string,
+    content: string,
+    chapterId?: string,
+  ) => void | Promise<void>;
   readOnly?: boolean;
   comparisonContent?: string;
   diffMode?: "current" | "snapshot";
@@ -51,6 +61,7 @@ interface EditorProps {
 function Editor({
   initialTitle = "",
   initialContent = "",
+  contentReady = true,
   onSave,
   readOnly = false,
   comparisonContent,
@@ -79,7 +90,8 @@ function Editor({
   const [localMobileView, setLocalMobileView] = useState(false);
   const isMobileView = mobileView ?? localMobileView;
 
-  const { value: title, onChange: handleTitleChange } = useBufferedInput(
+  const { value: title, onChange: handleTitleChange, reset: resetTitle } =
+    useBufferedInput(
     initialTitle,
     () => {
     },
@@ -103,7 +115,19 @@ function Editor({
     onSave: readOnly ? undefined : onSave,
     title,
     content,
+    chapterId,
+    // 챕터 전환 창(새 본문 미도착)에는 저장을 억제한다 — 옛 본문이 새 챕터를
+    // 덮어쓰는 데이터 손실 경로다.
+    suppressed: !contentReady,
   });
+
+  // NOTE: useEditorAutosave의 전환 flush(직전 챕터 저장)보다 나중에 실행돼야 한다.
+  // 훅 호출 순서가 effect 실행 순서라, 이 위치에서 버퍼된 제목 편집을 폐기하고 새
+  // 챕터 제목으로 되돌린다.
+  useEffect(() => {
+    resetTitle(initialTitle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 챕터 전환 시점에만 리셋한다
+  }, [chapterId]);
 
   useEditorScrollRestoration(chapterId);
 
@@ -225,6 +249,8 @@ function Editor({
 
   useEffect(() => {
     if (!isUsableEditor(editor)) return;
+    // 전환 창: 새 챕터 본문이 아직 없다. 옛 본문을 그대로 보여주고 스왑을 보류한다.
+    if (!contentReady) return;
     const current = editor.getHTML();
     if (current !== initialContent) {
       let cancelled = false;
@@ -233,13 +259,18 @@ function Editor({
         if (cancelled) return;
         setContent(initialContent);
       });
+      // NOTE: 통계는 인스턴스 생성 시(onCreate)에만 계산된다. 리마운트 없이 본문을
+      // 스왑하는 이 경로에서는 여기서 다시 계산해야 StatusFooter가 새 챕터 기준이 된다.
+      if (!readOnly) {
+        updateStatsRef.current(editor.getText());
+      }
       return () => {
         cancelled = true;
       };
     }
     return undefined;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- chapter 전환 때만 외부 content를 반영해 local edit 덮어쓰기를 막는다.
-  }, [editor, chapterId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chapter 전환/도착 때만 외부 content를 반영해 local edit 덮어쓰기를 막는다.
+  }, [editor, chapterId, contentReady]);
 
   useEffect(() => {
     if (!isUsableEditor(editor) || !chapterId) return;

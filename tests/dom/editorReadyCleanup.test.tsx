@@ -65,6 +65,7 @@ vi.mock(
     useBufferedInput: (initialValue: string) => ({
       value: initialValue,
       onChange: vi.fn(),
+      reset: vi.fn(),
     }),
   }),
 );

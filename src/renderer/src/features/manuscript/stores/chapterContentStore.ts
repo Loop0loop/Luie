@@ -20,6 +20,8 @@ const CHAPTER_CONTENT_CACHE_LIMIT = 4;
 type ChapterContentState = {
   /** chapterId → 본문. 키 존재 여부가 "로딩 완료"를 의미한다(빈 본문도 유효한 값이다). */
   contentByChapterId: Record<string, string>;
+  /** chapterId → 마지막 조회 실패 사유. 성공 시 지워진다. */
+  loadFailures: Record<string, string>;
   /** LRU 판정용 접근 순서. 앞쪽이 오래된 항목이다. */
   accessOrder: readonly string[];
   ensureContent: (chapterId: string) => Promise<void>;
@@ -103,6 +105,7 @@ const evictOverflow = (
 
 export const useChapterContentStore = create<ChapterContentState>((set, get) => ({
   contentByChapterId: {},
+  loadFailures: {},
   accessOrder: [],
 
   ensureContent: async (chapterId: string) => {
@@ -133,13 +136,29 @@ export const useChapterContentStore = create<ChapterContentState>((set, get) => 
           return;
         }
         if (!response.success || !response.data) {
+          const reason =
+            response.error?.message ?? "chapter fetch failed";
           api.logger.warn("ensureContent: chapter fetch failed", { chapterId });
+          // NOTE: 실패를 상태로 남긴다. 기록하지 않으면 isLoaded가 영원히 false라
+          // 재시도 경로도 없고 UI는 "무반응"과 구분할 수 없다.
+          set((state) => ({
+            loadFailures: { ...state.loadFailures, [chapterId]: reason },
+          }));
           return;
         }
         const chapter = response.data as Chapter;
         get().setContent(chapterId, chapter.content ?? "");
       } catch (error) {
         api.logger.error("ensureContent: chapter fetch threw", error);
+        if (requestGeneration !== cacheGeneration) {
+          return;
+        }
+        set((state) => ({
+          loadFailures: {
+            ...state.loadFailures,
+            [chapterId]: (error as Error)?.message ?? "chapter fetch threw",
+          },
+        }));
       }
     })();
 
@@ -158,10 +177,17 @@ export const useChapterContentStore = create<ChapterContentState>((set, get) => 
     if (!chapterId) return;
     set((state) => {
       const accessOrder = withAccessOrder(state.accessOrder, chapterId);
-      return evictOverflow(
+      const next = evictOverflow(
         { ...state.contentByChapterId, [chapterId]: content },
         accessOrder,
       );
+      // 본문이 채워졌으니 이전 조회 실패 기록은 해제한다.
+      if (!(chapterId in state.loadFailures)) {
+        return next;
+      }
+      const loadFailures = { ...state.loadFailures };
+      delete loadFailures[chapterId];
+      return { ...next, loadFailures };
     });
   },
 
@@ -187,7 +213,7 @@ export const useChapterContentStore = create<ChapterContentState>((set, get) => 
   reset: () => {
     cacheGeneration += 1;
     inFlightByChapterId.clear();
-    set({ contentByChapterId: {}, accessOrder: [] });
+    set({ contentByChapterId: {}, accessOrder: [], loadFailures: {} });
   },
 }));
 
@@ -201,6 +227,14 @@ export const peekChapterContent = (
 
 export const setChapterContent = (chapterId: string, content: string): void => {
   useChapterContentStore.getState().setContent(chapterId, content);
+};
+
+/** 렌더 밖(클릭 핸들러 등)에서 "이 챕터 조회가 실패한 적 있는가"를 확인한다. */
+export const hasChapterContentLoadFailure = (
+  chapterId: string | null | undefined,
+): boolean => {
+  if (!chapterId) return false;
+  return chapterId in useChapterContentStore.getState().loadFailures;
 };
 
 export const ensureChapterContent = async (chapterId: string): Promise<void> => {

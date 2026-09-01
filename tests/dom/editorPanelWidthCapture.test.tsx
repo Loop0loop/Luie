@@ -69,6 +69,7 @@ vi.mock("@renderer/domains/editor", () => ({
 }));
 vi.mock("@renderer/features/manuscript/hooks/useChapterContent", () => ({
   useChapterContent: () => ({ content: "<p>body</p>", isLoaded: true }),
+  useChapterContentStatus: () => ({ isLoaded: true, error: null }),
 }));
 vi.mock("@renderer/domains/world", () => ({
   ResearchPanel: () => <div>ResearchPanel</div>,

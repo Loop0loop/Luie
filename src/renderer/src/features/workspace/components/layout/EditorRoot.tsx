@@ -14,10 +14,14 @@ import {
 } from "@renderer/features/workspace/stores/uiStore";
 import { useShallow } from "zustand/react/shallow";
 import {
-  useChapterContent,
+  useChapterContentStatus,
   useChapterManagement,
   useChapterStore,
 } from "@renderer/domains/manuscript";
+import {
+  ensureChapterContent,
+  peekChapterContent,
+} from "@renderer/features/manuscript/stores/chapterContentStore";
 import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import { useWorkspaceDropHandlers } from "@renderer/features/workspace/hooks/useWorkspaceDropHandlers";
 import {
@@ -113,11 +117,14 @@ export default function EditorRoot() {
     handleSave,
   } = useChapterManagement();
 
-  // NOTE: 본문은 목록이 아니라 본문 캐시에서 받는다. `isLoaded`가 false인 동안 Editor를
-  // 마운트하면 빈 본문으로 시작하고, 그 상태에서 자동 저장이 발화하면 원본 본문을 덮어쓴다.
-  // 그래서 아래에서 로딩이 끝날 때까지 에디터 자리를 비워 둔다.
-  const { content, isLoaded: isChapterContentLoaded } =
-    useChapterContent(activeChapterId);
+  // NOTE: 루트는 본문 "문자열"을 구독하지 않는다. 자동 저장이 캐시에 쓸 때마다 이 컴포넌트
+  // 아래 워크스페이스 트리 전체가 리렌더됐던 구조다. 상태(원시값)만 구독하고, 본문은 로드
+  // 완료 시점에 1회 peek해 Editor에 넘긴다 — 이후 캐시 갱신은 Editor 내부 상태가 출처다.
+  const { isLoaded: isChapterContentLoaded, error: chapterLoadError } =
+    useChapterContentStatus(activeChapterId);
+  const content = isChapterContentLoaded
+    ? peekChapterContent(activeChapterId) ?? ""
+    : "";
 
   const activeChapter = useMemo(
     () => chapters.find((c) => c.id === activeChapterId),
@@ -325,14 +332,37 @@ export default function EditorRoot() {
   }, []);
 
   const sharedEditor =
-    activeChapterId !== null && !isChapterContentLoaded ? (
-      layoutFallback
+    activeChapterId !== null && chapterLoadError ? (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-app p-8 text-center">
+        <p className="text-sm text-muted">
+          {t("editor.chapterLoadFailed", {
+            message: chapterLoadError,
+            defaultValue: `본문을 불러오지 못했습니다: ${chapterLoadError}`,
+          })}
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            if (activeChapterId) {
+              void ensureChapterContent(activeChapterId);
+            }
+          }}
+          className="rounded-control border border-border px-3 py-1.5 text-xs text-fg transition-colors hover:bg-surface-hover"
+        >
+          {t("common.retry", { defaultValue: "다시 시도" })}
+        </button>
+      </div>
     ) : (
       <FeatureErrorBoundary featureName="Editor">
         <Editor
-          key={`editor-${activeChapterId ?? "none"}-${contentRevision}`}
+          // NOTE: key에 activeChapterId를 넣지 않는다. 챕터 전환은 Editor 내부의
+          // setContent 스왑으로 처리하고, 리마운트는 스냅샷 복원 리비전에만 쓴다.
+          // 리마운트 = TipTap 18개 확장 재구축 + 전체 문서 동기 파스라 전환이 1초 가까이
+          // 끊겼던 주원인이다.
+          key={`editor-rev-${contentRevision}`}
           initialTitle={activeChapter ? activeChapter.title : ""}
           initialContent={content}
+          contentReady={isChapterContentLoaded}
         onSave={handleSave}
         readOnly={!activeChapterId}
         chapterId={activeChapterId || undefined}

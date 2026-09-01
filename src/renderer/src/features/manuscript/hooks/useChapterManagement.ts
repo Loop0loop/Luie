@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import {
   ensureChapterContent,
+  hasChapterContentLoadFailure,
   peekChapterContent,
   setChapterContent,
 } from "@renderer/features/manuscript/stores/chapterContentStore";
@@ -95,6 +96,11 @@ export function useChapterManagement() {
 
       pendingChapterIdRef.current = null;
       if (currentChapter?.id === target.id) {
+        // 같은 챕터 재클릭은 무시하되, 직전 본문 조회가 실패했었다면 재시도한다.
+        // 기록 없이 무시하면 "조회 실패 → 재클릭 무반응"이 영구 고정된다.
+        if (hasChapterContentLoadFailure(target.id)) {
+          void ensureChapterContent(target.id);
+        }
         return;
       }
       setCurrentChapter(target);

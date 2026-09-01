@@ -71,5 +71,17 @@ export function useBufferedInput(
         setIsDirty(false);
       }
     },
+    // NOTE: 미커밋 버퍼를 폐기하고 외부 값으로 되돌린다. 챕터 전환처럼 "이 입력이
+    // 더 이상 현재 대상의 것이 아닌" 시점에 쓴다. flush와 달리 onUpdate를 발화하지
+    // 않는다 — 옛 대상의 편집은 옛 대상으로 이미 저장됐거나 폐기돼야 한다.
+    reset: (nextValue: string) => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      setIsDirty(false);
+      setValue(nextValue);
+      latestValueRef.current = nextValue;
+    },
   };
 }
