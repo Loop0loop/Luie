@@ -5,6 +5,8 @@ import { useProjectStore } from "@renderer/features/project/stores/projectStore"
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
+import { useEventStore } from "@renderer/features/research/stores/eventStore";
+import { useFactionStore } from "@renderer/features/research/stores/factionStore";
 import { useTermStore } from "@renderer/features/research/stores/termStore";
 
 export function useProjectInit(enabled = true) {
@@ -13,6 +15,8 @@ export function useProjectInit(enabled = true) {
   const loadChapters = useChapterStore((state) => state.loadAll);
   const loadSettings = useEditorStore((state) => state.loadSettings);
   const loadCharacters = useCharacterStore((state) => state.loadCharacters);
+  const loadEvents = useEventStore((state) => state.loadEvents);
+  const loadFactions = useFactionStore((state) => state.loadFactions);
   const loadTerms = useTermStore((state) => state.loadTerms);
 
   useEffect(() => {
@@ -49,9 +53,14 @@ export function useProjectInit(enabled = true) {
       },
     });
 
+    // NOTE: 네 종류를 전부 여기서 로드한다. 세력·사건은 Scrivener 사이드바 섹션이나
+    // 캔버스 진입 시에만 로드됐는데, 에디터 스마트링크는 이 네 스토어 전부를 데이터
+    // 소스로 삼으므로 레이아웃에 따라 하이라이트 대상이 달라지는 문제가 있었다.
     void Promise.allSettled([
       loadChapters(currentProject.id),
       loadCharacters(currentProject.id),
+      loadEvents(currentProject.id),
+      loadFactions(currentProject.id),
       loadTerms(currentProject.id),
     ]).then((results) => {
       const rejected = results.filter((result) => result.status === "rejected");
@@ -69,7 +78,7 @@ export function useProjectInit(enabled = true) {
         rejectedCount: 0,
       });
     });
-  }, [enabled, currentProject, loadChapters, loadCharacters, loadTerms]);
+  }, [enabled, currentProject, loadChapters, loadCharacters, loadEvents, loadFactions, loadTerms]);
 
   return { currentProject };
 }

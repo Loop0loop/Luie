@@ -122,6 +122,12 @@ function Editor({
       extensions,
       editable: !readOnly,
       content: initialContent,
+      // NOTE: 에디터가 기존 본문으로 (재)생성되는 시점(앱 시작, 원고 전환, 스냅샷 복원
+      // 리마운트)에는 onUpdate가 발화하지 않는다. 여기서 초기 통계를 계산하지 않으면
+      // StatusFooter가 첫 타이핑 전까지 0 | 0(또는 이전 원고 값)으로 남는다.
+      onCreate: ({ editor: createdEditor }) => {
+        updateStatsRef.current(createdEditor.getText());
+      },
       onUpdate: ({ editor }) => {
         if (updateContentRef.current) {
           window.clearTimeout(updateContentRef.current);
