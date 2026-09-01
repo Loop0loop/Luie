@@ -48,7 +48,7 @@ export function ExportPreview({
 
             <div className="flex-1 overflow-y-auto p-8 flex flex-col items-center gap-8 custom-scrollbar bg-app">
                 <div
-                    className="bg-[#fcfcfc] shadow-[0_0_15px_rgba(0,0,0,0.1)] transition-all duration-300 relative shrink-0 ring-1 ring-border/20 rounded-xs"
+                    className="bg-[var(--paper-bg)] shadow-[0_0_15px_rgba(0,0,0,0.1)] transition-all duration-300 relative shrink-0 ring-1 ring-border/20 rounded-xs"
                     style={{
                         width: paperSize === "A4" ? "210mm" : paperSize === "Letter" ? "216mm" : "176mm",
                         minHeight: paperSize === "A4" ? "297mm" : paperSize === "Letter" ? "279mm" : "250mm",
@@ -63,7 +63,7 @@ export function ExportPreview({
                     <div
                         className="w-full h-full whitespace-pre-wrap outline-hidden"
                         style={{
-                            color: "#1f1f1f",
+                            color: "var(--paper-text)",
                             fontFamily: fontFamily.includes("Batang") ? "Batang, serif" : fontFamily,
                             fontSize: "10.5pt",
                             lineHeight,
@@ -76,7 +76,7 @@ export function ExportPreview({
                             </div>
                         ) : chapter ? (
                             <>
-                                <h1 className="text-2xl font-bold text-center mb-10 text-[#1f1f1f]">{chapter.title}</h1>
+                                <h1 className="text-2xl font-bold text-center mb-10 text-[var(--paper-text)]">{chapter.title}</h1>
                                 <div
                                     dangerouslySetInnerHTML={{ __html: sanitizedPreviewContent }}
                                     className="tiptap"
@@ -91,7 +91,7 @@ export function ExportPreview({
 
                     {showPageNumbers && (
                         <div
-                            className="absolute bottom-0 left-0 w-full flex items-center justify-center text-[10pt] text-[#6b6b6b] pointer-events-none"
+                            className="absolute bottom-0 left-0 w-full flex items-center justify-center text-[10pt] text-[var(--paper-text-muted)] pointer-events-none"
                             style={{
                                 height: `${marginBottom}mm`,
                                 fontFamily: fontFamily.includes("Batang") ? "Batang, serif" : fontFamily,
@@ -103,12 +103,12 @@ export function ExportPreview({
                 </div>
 
                 <div
-                    className="bg-[#fcfcfc]/80 shadow-[0_0_15px_rgba(0,0,0,0.1)] relative shrink-0 opacity-50 pointer-events-none ring-1 ring-border/20 rounded-xs"
+                    className="bg-[var(--paper-bg)]/80 shadow-[0_0_15px_rgba(0,0,0,0.1)] relative shrink-0 opacity-50 pointer-events-none ring-1 ring-border/20 rounded-xs"
                     style={{
                         width: paperSize === "A4" ? "210mm" : paperSize === "Letter" ? "216mm" : "176mm",
                         // NOTE: 다음 페이지가 이어짐을 암시하는 미리보기용 부분 높이다(전체 페이지가 아님).
                         height: "100mm",
-                        background: "linear-gradient(to bottom, #ffffff 0%, #e0e0e0 100%)"
+                        background: "linear-gradient(to bottom, var(--paper-footer-start) 0%, var(--paper-footer-end) 100%)"
                     }}
                 >
                     {showPageNumbers && (

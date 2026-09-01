@@ -130,6 +130,60 @@
   --spacing-control-y: 0.5rem;
   --spacing-panel-pad: 1.25rem;
   --spacing-panel-gap: 1rem;
+/* ==========================================================================
+     Emulation tokens — 외부 앱·기기 목업 전용
+     ==========================================================================
+     NOTE: HWP/Word UI 모사, 종이 미리보기, 모바일 기기 프레임, 드로잉 캔버스는
+     외부 앱의 고정 색을 따라야 하므로 theme token을 쓸 수 없다. 이 값을
+     컴포넌트에 직접 쓰면 DESIGN.md 골든룰("절대 하드코딩")을 위반하므로,
+     이 블록에서 정의하고 소비처가 `var()`로 참조한다. */
+
+  /* --- HWP 모사 (ExportPreviewPanel) --- */
+  --hwp-titlebar-bg: #3e81f6;
+  --hwp-titlebar-text: #ffffff;
+  --hwp-menubar-bg: #ffffff;
+  --hwp-menubar-text: #374151;
+  --hwp-menubar-border: #d1d5db;
+  --hwp-menubar-hover: #f3f4f6;
+  --hwp-toolbar-bg: #f0f0f0;
+  --hwp-toolbar-border: #d1d5db;
+  --hwp-toolbar-control-bg: #ffffff;
+  --hwp-toolbar-control-text: #374151;
+  --hwp-toolbar-icon: #6b7280;
+  --hwp-toolbar-button-hover: #e5e7eb;
+  --hwp-statusbar-bg: #f0f0f0;
+  --hwp-statusbar-text: #4b5563;
+  --hwp-app-section-bg: #d6d6d6;
+  --hwp-paper-shadow-tint: #d1d5db;
+
+  /* --- Word 모사 (ExportPreviewPanel) --- */
+  --word-titlebar-bg: #185abd;
+  --word-titlebar-text: #ffffff;
+  --word-ribbon-bg: #f3f4f6;
+  --word-tab-text: #4b5563;
+  --word-tab-hover-bg: #f9fafb;
+  --word-tab-active-border: #2563eb;
+  --word-tab-active-text: #2563eb;
+  --word-tab-accent: #1d4ed8;
+  --word-style-text: #2563eb;
+  --word-premium-badge-bg: #f97316;
+  --word-user-avatar-bg: #93c5fd;
+  --word-user-avatar-text: #1e3a5f;
+
+  /* --- 종이 미리보기 (ExportPreview) --- */
+  --paper-bg: #fcfcfc;
+  --paper-text: #1f1f1f;
+  --paper-text-muted: #6b6b6b;
+  --paper-footer-start: #ffffff;
+  --paper-footer-end: #e0e0e0;
+
+  /* --- 모바일 기기 프레임 (Editor) --- */
+  --device-frame-bg: #2c2c2e;
+  --device-notch-bg: #2c2c2e;
+
+  /* --- 드로잉 캔버스 (DrawingCanvas) --- */
+  --drawing-paper-bg: #f4f1ea;
+  --drawing-ink-signature: #8B4513;
 
   /* NOTE: canvas document의 반복 arbitrary value를 scoped token으로 공유한다. */
   --text-canvas-doc-title: 2.5rem;
@@ -248,7 +302,7 @@
      다른 느낌을 주는 축이므로, 구분은 chroma 크기가 아니라 방향으로 만든다. */
   --bg-app: #f9f9f7;
   --bg-sidebar: #eeeeec;
-  --bg-panel: #ffffff;
+  --bg-panel: #fafafa;
   /* NOTE: Research는 부유 표면이 아니라 chrome이다. editor(`--bg-app`)를 따라가면
      초점 면과 작업대가 같은 색이 되고, `--bg-panel`을 따라가면 editor보다 밝아져
      떠 보인다. sidebar와 같은 단계에 두어야 "editor는 초점, chrome은 한 단계 물러남"
@@ -260,7 +314,7 @@
   /* NOTE: input·chip 같은 top-of-stack control은 light에서 "떠 있는 면"이 아니라
      "파인 면"으로 표현한다. panel(#ffffff)보다 밝아질 수 없기 때문이다. dark는 반대로
      `--bg-element`가 표면보다 밝다. 방향이 theme마다 다른 것이 정상이고 그게 이 token이
-     존재하는 이유다. 이전에는 app·panel·surface·element가 모두 #ffffff였다. */
+     존재하는 이유다. 이전에는 app·panel·surface·element가 모두 #ffffff. */
   --bg-element: #e7e7e4;
   --bg-element-hover: rgba(0, 0, 0, 0.04);
   --bg-active: rgba(0, 0, 0, 0.08);
@@ -369,7 +423,7 @@
      자동 파생되고, 종이 색조를 물려받아 색온도도 미세하게 따라간다(§2의 "살짝만 달라졌는데
      다른 느낌"과 같은 강도). hue는 anchor가 지키므로 "노랑"이 연두로 읽히지 않는다.
 
-     레퍼런스: Notion이 같은 구조다 — light는 종이에서 어두워지는 방향(Yellow `#FFFFFF`
+     레퍼런스: Notion이 같은 구조다 — light는 종이에서 어두워지는 방향(Yellow `#ffffff`
      → `#FAF3DD`), dark는 밝아지는 방향(`#191919` → `#372E20`). 아래 dark 산출값
      `#352f18`(yellow) · `#18323f`(sky) · `#361f21`(red)이 Notion의 `#372E20` ·
      `#1F282D` · `#332523`과 거의 일치한다 — 독립적으로 도출해 수렴했다.
@@ -493,11 +547,11 @@
   --text-secondary: #989aa2;
   --text-tertiary: #6c6e77;
   --text-accent: #60a5fa;
-  --text-on-accent: #ffffff;
+  --text-on-accent: #fafafa;
 
   --accent-bg: #3b82f6;
   --accent-bg-hover: #60a5fa;
-  --accent-fg: #ffffff;
+  --accent-fg: #fafafa;
   --success-fg: #22c55e;
   --danger-fg: #ef4444;
   /* NOTE: amber-400(#fbbf24)은 dark 표면에서 8.8~10.4로 본문색보다 밝아 글레어가 된다.
@@ -786,7 +840,7 @@
    tertiary는 dark에서 muted를 밝히면 글레어가 생기는 §2 규칙 때문에 기본 모드에서
    2.55로 뒀고, 이 모드에서만 4.5:1로 올린다. */
 [data-theme="dark"][data-contrast="high"] {
-  --text-primary: #ffffff;
+  --text-primary: #fafafa;
   --text-secondary: #e4e4e7;
   --text-tertiary: #a1a1aa;
   --border-default: rgba(255, 255, 255, 0.2);
@@ -797,39 +851,39 @@
    ========================================================================== */
 [data-accent="blue"] {
   --text-accent: #2563eb;
-  --text-on-accent: #ffffff;
+  --text-on-accent: #fafafa;
   --accent-bg: #2563eb;
   --accent-bg-hover: #1d4ed8;
-  --accent-fg: #ffffff;
+  --accent-fg: #fafafa;
 }
 [data-accent="emerald"],
 [data-accent="green"] {
   --text-accent: #059669;
-  --text-on-accent: #ffffff;
+  --text-on-accent: #fafafa;
   --accent-bg: #059669;
   --accent-bg-hover: #047857;
-  --accent-fg: #ffffff;
+  --accent-fg: #fafafa;
 }
 [data-accent="violet"] {
   --text-accent: #7c3aed;
-  --text-on-accent: #ffffff;
+  --text-on-accent: #fafafa;
   --accent-bg: #7c3aed;
   --accent-bg-hover: #6d28d9;
-  --accent-fg: #ffffff;
+  --accent-fg: #fafafa;
 }
 [data-accent="rose"] {
   --text-accent: #e11d48;
-  --text-on-accent: #ffffff;
+  --text-on-accent: #fafafa;
   --accent-bg: #e11d48;
   --accent-bg-hover: #be123c;
-  --accent-fg: #ffffff;
+  --accent-fg: #fafafa;
 }
 [data-accent="amber"] {
   --text-accent: #b45309;
-  --text-on-accent: #ffffff;
+  --text-on-accent: #fafafa;
   --accent-bg: #d97706;
   --accent-bg-hover: #b45309;
-  --accent-fg: #ffffff;
+  --accent-fg: #fafafa;
 }
 
 /* ==========================================================================
@@ -837,22 +891,22 @@
    ========================================================================== */
 [data-theme="dark"][data-accent="blue"] {
   --text-accent: #60a5fa;
-  --text-on-accent: #ffffff;
+  --text-on-accent: #fafafa;
   --accent-bg: #3b82f6;
   --accent-bg-hover: #60a5fa;
-  --accent-fg: #ffffff;
+  --accent-fg: #fafafa;
 }
 [data-theme="dark"][data-accent="emerald"],
 [data-theme="dark"][data-accent="green"] {
   --text-accent: #34d399;
-  --text-on-accent: #ffffff;
+  --text-on-accent: #fafafa;
   --accent-bg: #10b981;
   --accent-bg-hover: #34d399;
-  --accent-fg: #ffffff;
+  --accent-fg: #fafafa;
 }
 [data-theme="dark"][data-accent="violet"] {
   --text-accent: #a78bfa;
-  --text-on-accent: #ffffff;
+  --text-on-accent: #fafafa;
   --accent-bg: #8b5cf6;
   --accent-bg-hover: #a78bfa;
   --accent-fg: #ffffff;

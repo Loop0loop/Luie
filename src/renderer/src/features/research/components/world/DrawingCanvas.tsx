@@ -48,7 +48,7 @@ export function DrawingCanvas() {
   } = useDrawingCanvas({ canvasRef });
 
   return (
-    <div className="h-full flex flex-col bg-[#f4f1ea] dark:bg-zinc-900 relative overflow-hidden transition-colors duration-500">
+    <div className="h-full flex flex-col bg-[var(--drawing-paper-bg)] dark:bg-zinc-900 relative overflow-hidden transition-colors duration-500">
       <div className="absolute inset-0 pointer-events-none opacity-50 dark:opacity-20 dark:invert"
         style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.1'/%3E%3C/svg%3E")` }}
       />
@@ -262,7 +262,7 @@ export function DrawingCanvas() {
         </svg>
       </div>
 
-      <div className="absolute bottom-4 right-4 text-[10px] text-[#8B4513] opacity-50 font-serif select-none pointer-events-none">
+      <div className="absolute bottom-4 right-4 text-[10px] text-[var(--drawing-ink-signature)] opacity-50 font-serif select-none pointer-events-none">
         {t("world.drawing.mapMakerMode")}
       </div>
     </div>

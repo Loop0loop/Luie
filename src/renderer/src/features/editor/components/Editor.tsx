@@ -327,7 +327,7 @@ function Editor({
             "mx-auto flex w-full flex-col bg-transparent m-0 border-none shadow-none transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)]",
             !autoHeight && "flex-1 min-h-0",
             isMobileView &&
-              "h-[95%] mx-auto my-5 border-8 border-[#2c2c2e] rounded-[48px] bg-editor-bg shadow-[0_0_0_2px_rgba(69,69,69,0.9),0_25px_50px_-12px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.05)] overflow-hidden relative",
+              "h-[95%] mx-auto my-5 border-8 border-[var(--device-frame-bg)] rounded-[48px] bg-editor-bg shadow-[0_0_0_2px_rgba(69,69,69,0.9),0_25px_50px_-12px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.05)] overflow-hidden relative",
             // NOTE: Docs desktop만 자연 높이를 사용한다. 모바일 프레임은 내부 스크롤을 위해 고정 높이가 필요하다.
             !scrollable && !isMobileView && "h-auto",
           )}
@@ -338,7 +338,7 @@ function Editor({
           }}
         >
           {isMobileView && (
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-30 h-8 bg-[#2c2c2e] rounded-b-2xl z-100 pointer-events-none" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-30 h-8 bg-[var(--device-notch-bg)] rounded-b-2xl z-100 pointer-events-none" />
           )}
 
           {!hideTitle && (

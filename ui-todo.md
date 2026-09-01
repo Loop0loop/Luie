@@ -17,10 +17,10 @@
 
 | 지표 | 감사 직후 | P2 이후 (작업 트리) | baseline | 판정 |
 | --- | --- | --- | --- | --- |
-| `rawHex` | 143 | 149 | 143 | ⬆ 병행 세션 변경(`StartupWizard.tsx`) — **내 작업 아님** (P2-3은 스와치 색값 변경이라 hex 수 불변) |
-| `rawColor` | 98 | 88 | 98 | ✓ **↓10 (P0 raw 색 제거)** |
-| `arbitraryPx` | 414 | 429 | 414 | ⬆ 병행 세션 변경(StartupWizard) — **내 작업 아님** |
-| `roundedBig` | 155 | 155 | 155 | ✓ (내 P2-1 −9지만 병행 세션 +9 상쇄) |
+| `rawHex` | 143 | 128 | 143 | ✓ **↓15 (P3 emulation token화)** |
+| `rawColor` | 98 | 19 | 98 | ✓ **↓79 — 거의 전멸** (잔여 19건: ExportSidebar 1·AI 3·RecentProjectsSection 2·RestoreDialog 1·canvas 2·editor 3·settings 5차 등 — 대부분 P3 대상에 포함되지 않은 accent/entity 팔레트 + `text-red-600`/`text-gray-400` 등 CSS 폴백) |
+| `arbitraryPx` | 414 | 432 | 414 | ⬆ 병행 세션(StartupWizard) |
+| `roundedBig` | 155 | 165 | 155 | ⬆ 병행 세션 |
 | `shadowBig` | 21 | 11 | 21 | ✓ **↓10 (P2-2 그림자 tint화)** |
 | `shadcnVocab` | 0 | 0 | 0 | ✓ |
 
@@ -137,17 +137,18 @@ accent 색상이 사용자 지정(`--accent-bg` 변환)될 때 하드코딩 흰 
 
 ---
 
-## P3 — 시뮬레이션/모의 표면 → scoped emulation token
+## P3 — 시뮬레이션/모의 표면 → scoped emulation token ✅ 완료 (2026-09-01)
 
-외부 앱 목업(HWP/Word), 종이 시뮬레이션, 기기 프레임은 **의도적 하드코딩**이다. DESIGN.md 골든룰("절대 하드코딩 금지")과
-충돌하므로 `global.tokens.css`에 **역할 토큰**으로 정의하고 소비처는 토큰을 참조하게 한다.
+외부 앱 목업(HWP/Word), 종이 시뮬레이션, 기기 프레임, 드로잉 캔버스의 고정 색을
+`global.tokens.css`에 **역할 토큰**(35개 신설)으로 정의하고, 소비처는 `var()`로 참조.
 
-- [ ] `features/export/components/ExportPreviewPanel.tsx` (rawColor 70건 / hex 10건) — `--hwp-titlebar-bg`,`--hwp-toolbar-bg`,`--hwp-menu-fg`, `--sim-tool-border` 등 emulation token 신설
-- [ ] `features/export/components/ExportPreview.tsx` (hex 7건) — `--paper-bg`, `--paper-text` 토큰
-- [ ] `features/editor/components/Editor.tsx:330` — 모바일 프레임 `border-[#2c2c2e]`/`rounded-[48px]`/`shadow-[...]` → `--device-frame-bg`, `--device-frame-radius`, `--device-frame-shadow`
-- [ ] `features/research/components/world/DrawingCanvas.tsx:51` — `bg-[#f4f1ea] dark:bg-zinc-900` → `--drawing-bg` (theme별 값)
-- [ ] 잉크 팔레트 hex 8건은 색상 선택 데이터이므로 anchor로 분류 (예외 유지)
-- [ ] 결과 `rawHex` 143 → ~105, `rawColor` 98 → ~28 목표
+- [x] `features/export/components/ExportPreviewPanel.tsx` — HWP/Word 목업 rawColor 70건 + hex 10건 → **0건** (var 참조로 교체)
+- [x] `features/export/components/ExportPreview.tsx` — hex 7건 → `--paper-*` 4개 토큰으로 교체
+- [x] `features/editor/components/Editor.tsx:330` — `border-[#2c2c2e]` 2건 → `--device-frame-bg`/`--device-notch-bg`
+- [x] `features/research/components/world/DrawingCanvas.tsx:51` — `bg-[#f4f1ea]`/`text-[#8B4513]` → `--drawing-*-*`
+- [x] 잉크 팔레트 hex 6건(`colors.ts`) + wiki entity 색 9건(`types.ts`) — 사용자 선택 데이터(anchor)로 예외 유지
+- [x] **발견**: `global.tokens.css:305` `--bg-panel: fafafa(# 생략)` — 테스트 비활성 원인 수정
+- [x] 결과: `rawHex` 143→**128**, `rawColor` 98→**19** (guard 전 baseline 통과)
 
 ---
 
