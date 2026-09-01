@@ -16,7 +16,7 @@ import {
   getTitleBarOptions,
   resolveWindowIconPath,
   shouldShowMenuBar,
-  WINDOW_BACKGROUND_COLOR,
+  resolveWindowBackgroundColor,
   withWindowIcon,
 } from "./windowChrome.js"
 import {
@@ -180,7 +180,7 @@ class WindowManager {
       minHeight: WINDOW_MIN_HEIGHT,
       title: APP_NAME,
       show: false,
-      backgroundColor: WINDOW_BACKGROUND_COLOR,
+      backgroundColor: resolveWindowBackgroundColor(),
       ...withWindowIcon(windowIconPath),
       ...getTitleBarOptions(),
       ...(process.platform !== "darwin"

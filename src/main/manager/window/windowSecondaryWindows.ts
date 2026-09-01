@@ -7,7 +7,7 @@ import {
   getTitleBarOptions,
   resolveWindowIconPath,
   shouldShowMenuBar,
-  WINDOW_BACKGROUND_COLOR,
+  resolveWindowBackgroundColor,
   withWindowIcon,
 } from "./windowChrome.js"
 import {
@@ -80,7 +80,7 @@ export const createExportBrowserWindow = (
     minWidth: 1000,
     minHeight: 700,
     title: "내보내기 및 인쇄 미리보기",
-    backgroundColor: WINDOW_BACKGROUND_COLOR,
+    backgroundColor: resolveWindowBackgroundColor(),
     ...withWindowIcon(resolveWindowIconPath()),
     ...getTitleBarOptions(),
     ...secondaryWindowMenuOptions(menuBarMode),
@@ -112,7 +112,7 @@ export const createWorldGraphBrowserWindow = (
     minWidth: 1000,
     minHeight: 600,
     title: "세계관 그래프",
-    backgroundColor: WINDOW_BACKGROUND_COLOR,
+    backgroundColor: resolveWindowBackgroundColor(),
     ...withWindowIcon(resolveWindowIconPath()),
     ...getTitleBarOptions(),
     ...secondaryWindowMenuOptions(menuBarMode),

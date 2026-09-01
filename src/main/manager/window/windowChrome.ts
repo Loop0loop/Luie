@@ -6,8 +6,29 @@ import {
   WINDOW_TRAFFIC_LIGHT_X,
   WINDOW_TRAFFIC_LIGHT_Y,
 } from "../../../shared/constants/index.js"
+import { settingsManager } from "../settings/index.js"
 
-export const WINDOW_BACKGROUND_COLOR = "#f4f4f5"
+/**
+ * 테마·색온도별 네이티브 창 배경색. 값은 `src/renderer/src/styles/global.tokens.css`의
+ * `--bg-app` literal과 쌍으로 유지해야 한다 — 창은 렌더러 CSS가 적용되기 전에 이 색으로
+ * 먼저 페인트되고, 같은 값이어야 첫 전환 없이 이어진다. 어긋나면 시작 시 밝은/어두운
+ * 플래시가 다시 생긴다.
+ */
+const WINDOW_BACKGROUND_BY_THEME = {
+  light: { cool: "#f7f9fd", neutral: "#f9f9f7", warm: "#faf7f0" },
+  dark: { cool: "#171b1f", neutral: "#1a1a1c", warm: "#1c1a19" },
+  sepia: { cool: "#f8f2e8", neutral: "#fbf2e2", warm: "#fef2dc" },
+} as const
+
+export const resolveWindowBackgroundColor = (): string => {
+  try {
+    const editor = settingsManager.getEditorSettings()
+    const theme = WINDOW_BACKGROUND_BY_THEME[editor.theme] ?? WINDOW_BACKGROUND_BY_THEME.light
+    return theme[editor.themeTemp ?? "neutral"] ?? theme.neutral
+  } catch {
+    return WINDOW_BACKGROUND_BY_THEME.light.neutral
+  }
+}
 
 export const resolveWindowIconPath = (): string | undefined => {
   const packagedCandidates =

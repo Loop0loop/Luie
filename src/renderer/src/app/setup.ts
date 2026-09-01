@@ -8,6 +8,11 @@ import {
 import { editorSettingsSchema } from "@shared/schemas/index.js";
 import { api } from "@shared/api";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
+import {
+  loadCachedThemeSeed,
+  saveThemeSeed,
+  type ThemeSeed,
+} from "@renderer/app/shell/themeSeedCache";
 
 /** 처리되지 않은 Promise rejection이 유실되지 않도록 main logger로 전달한다. */
 function setupUnhandledRejectionHandler(): void {
@@ -63,15 +68,6 @@ function setupResizeObserverWarningFilter(): void {
   );
 }
 
-type ThemeSeed = Pick<
-  EditorSettings,
-  | "theme"
-  | "themeContrast"
-  | "themeTemp"
-  | "themeAccent"
-  | "enableAnimations"
->;
-
 const DEFAULT_THEME_SEED: ThemeSeed = {
   theme: DEFAULT_EDITOR_THEME,
   themeContrast: DEFAULT_EDITOR_THEME_CONTRAST,
@@ -114,7 +110,9 @@ export const setupRenderer = async (): Promise<void> => {
   setupUnhandledRejectionHandler();
   setupResizeObserverWarningFilter();
 
-  applyThemeSeed(DEFAULT_THEME_SEED);
+  // NOTE: 설정 IPC보다 먼저 그리는 첫 페인트를 지난 세션 테마로 칠한다.
+  // 캐시가 없으면(최초 실행) 기본 light 시드가 쓰인다.
+  applyThemeSeed(loadCachedThemeSeed() ?? DEFAULT_THEME_SEED);
 
   try {
     const response = await api.settings.getEditor();
@@ -129,6 +127,7 @@ export const setupRenderer = async (): Promise<void> => {
 
     useEditorStore.setState(parsed.data);
     applyThemeSeed(toThemeSeed(parsed.data));
+    saveThemeSeed(toThemeSeed(parsed.data));
   } catch {
     // NOTE: setup 실패 시에도 기본 설정은 이미 적용돼 있다.
   }
