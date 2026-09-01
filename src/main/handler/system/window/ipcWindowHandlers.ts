@@ -1,4 +1,4 @@
-import { app } from "electron";
+import { app, screen } from "electron";
 import { windowManager } from "../../../app/windows/index.js";
 import { applyTrafficLightPosition } from "../../../manager/window/windowChrome.js";
 import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
@@ -17,6 +17,66 @@ import {
   windowSetStartupWizardSizeArgsSchema,
   windowSetTrafficLightVisibilityArgsSchema,
 } from "../../../../shared/schemas/index.js";
+import type { BrowserWindow } from "electron";
+
+// 위저드 단계 전환(A 인트로 → B 테마)의 창 확장 애니메이션. 창이 커지는 동안 내용물이
+// 재배치되는 걸 따라갈 수 있도록 여유 있는 길이로 보간하고(easeOutCubic), 프레임마다
+// 시작 중심점 기준으로 bounds를 잡아 폭이 커질 때 창이 한쪽으로 늘어나 보이지 않게 한다.
+const WIZARD_RESIZE_ANIMATION_MS = 800;
+const WIZARD_RESIZE_TICK_MS = 16;
+
+let wizardResizeTimer: ReturnType<typeof setTimeout> | null = null;
+
+// 작은 디스플레이에서 확장 크기(1300×800)가 화면을 넘지 않게 한다.
+const clampWizardSize = (
+  win: BrowserWindow,
+  width: number,
+  height: number,
+): [number, number] => {
+  const workArea = screen.getDisplayMatching(win.getBounds()).workArea;
+  return [
+    Math.min(width, workArea.width - 40),
+    Math.min(height, workArea.height - 40),
+  ];
+};
+
+const animateWizardResize = (
+  win: BrowserWindow,
+  targetWidth: number,
+  targetHeight: number,
+): void => {
+  if (wizardResizeTimer) clearTimeout(wizardResizeTimer);
+
+  const [startWidth, startHeight] = win.getSize();
+  const [startX, startY] = win.getPosition();
+  const centerX = startX + startWidth / 2;
+  const centerY = startY + startHeight / 2;
+  const startedAt = Date.now();
+
+  const tick = () => {
+    const progress = Math.min(
+      1,
+      (Date.now() - startedAt) / WIZARD_RESIZE_ANIMATION_MS,
+    );
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const width = Math.round(startWidth + (targetWidth - startWidth) * eased);
+    const height = Math.round(
+      startHeight + (targetHeight - startHeight) * eased,
+    );
+    win.setBounds({
+      x: Math.round(centerX - width / 2),
+      y: Math.round(centerY - height / 2),
+      width,
+      height,
+    });
+    if (progress < 1) {
+      wizardResizeTimer = setTimeout(tick, WIZARD_RESIZE_TICK_MS);
+    } else {
+      wizardResizeTimer = null;
+    }
+  };
+  tick();
+};
 
 export function registerWindowIPCHandlers(logger: LoggerLike): void {
   registerIpcHandlers(logger, [
@@ -191,14 +251,28 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       logTag: "WINDOW_SET_STARTUP_WIZARD_SIZE",
       failMessage: "Failed to resize startup wizard window",
       argsSchema: windowSetStartupWizardSizeArgsSchema,
-      handler: (width: number, height: number) => {
+      handler: (width: number, height: number, animate: boolean) => {
         // NOTE: 위저드 단계 전환(A 인트로 → B 테마)에 맞춘 리사이즈다. 메인 창이
-        // 아니라 위저드 창을 움직여야 하므로 전용 접근자를 쓴다. 폭이 커진 만큼
-        // 화면 안에서 자연스럽게 읽히도록 중앙에 재배치한다.
+        // 아니라 위저드 창을 움직여야 하므로 전용 접근자를 쓴다. 애니메이션은
+        // renderer의 enableAnimations(및 OS reduced-motion) 판정을 그대로 받는다.
         const win = windowManager.getStartupWizardWindow();
         if (!win) return false;
-        win.setSize(width, height);
-        win.center();
+        if (!animate) {
+          if (wizardResizeTimer) {
+            clearTimeout(wizardResizeTimer);
+            wizardResizeTimer = null;
+          }
+          const [clampedWidth, clampedHeight] = clampWizardSize(
+            win,
+            width,
+            height,
+          );
+          win.setSize(clampedWidth, clampedHeight);
+          win.center();
+          return true;
+        }
+        const [clampedWidth, clampedHeight] = clampWizardSize(win, width, height);
+        animateWizardResize(win, clampedWidth, clampedHeight);
         return true;
       },
     },

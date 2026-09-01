@@ -35,6 +35,7 @@ export const windowSetFullscreenArgsSchema = z.tuple([z.boolean()]);
 export const windowSetStartupWizardSizeArgsSchema = z.tuple([
   z.number(),
   z.number(),
+  z.boolean(),
 ]);
 
 export const windowSetTrafficLightVisibilityArgsSchema = z.tuple([z.boolean()]);

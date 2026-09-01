@@ -71,11 +71,12 @@ export const createStartupWizardBrowserWindow = (
   input: SecondaryWindowInput,
 ): BrowserWindow => {
   const window = input.createBrowserWindow({
-    // NOTE: bootstrap(A) 단계는 테마 확정 전이라 높이가 더 큰 세로형으로 뜬다.
-    // 테마 단계로 넘어가면 WINDOW_SET_STARTUP_WIZARD_SIZE로 가로형으로 확장한다.
-    width: 420,
+    // NOTE: bootstrap(A) 단계는 테마 확정 전이라 폭이 좁고 높이가 큰 세로형으로
+    // 뜬다(로고+환영 문구+CTA). 테마 단계로 넘어가면 WINDOW_SET_STARTUP_WIZARD_SIZE로
+    // 넓은 가로형으로 확장한다.
+    width: 430,
     height: 640,
-    minWidth: 380,
+    minWidth: 390,
     minHeight: 560,
     show: true,
     title: `${APP_NAME} Setup`,

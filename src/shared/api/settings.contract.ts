@@ -190,10 +190,12 @@ export type SettingsRendererApi = {
     openExport: (chapterId: string) => Promise<IPCResponse<boolean>>;
 
     openWorldGraph: () => Promise<IPCResponse<unknown>>;
-    /** 시작 위저드 창의 크기를 단계 전환에 맞춰 바꾼다. 위저드 창이 없으면 no-op한다. */
+    /** 시작 위저드 창의 크기를 단계 전환에 맞춰 바꾼다. 위저드 창이 없으면 no-op한다.
+        animate는 renderer의 enableAnimations(및 OS reduced-motion) 판정을 전달한다. */
     setStartupWizardSize: (
       width: number,
       height: number,
+      animate: boolean,
     ) => Promise<IPCResponse<unknown>>;
   };
   logger: {

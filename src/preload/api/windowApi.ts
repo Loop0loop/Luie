@@ -58,8 +58,13 @@ export function createWindowApi({
           chapterId,
         ),
       openWorldGraph: () => safeInvoke(IPC_CHANNELS.WINDOW_OPEN_WORLD_GRAPH),
-      setStartupWizardSize: (width, height) =>
-        safeInvoke(IPC_CHANNELS.WINDOW_SET_STARTUP_WIZARD_SIZE, width, height),
+      setStartupWizardSize: (width, height, animate) =>
+        safeInvoke(
+          IPC_CHANNELS.WINDOW_SET_STARTUP_WIZARD_SIZE,
+          width,
+          height,
+          animate,
+        ),
     },
   };
 }

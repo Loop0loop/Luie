@@ -185,6 +185,20 @@
   --drawing-paper-bg: #f4f1ea;
   --drawing-ink-signature: #8B4513;
 
+  /* --- 위저드 테마 카드 (StartupWizard Theme Cards) --- */
+  --wizard-card-light-app: #f9f9f7;
+  --wizard-card-light-sidebar: #eeeeec;
+  --wizard-card-light-bar: rgba(26, 26, 28, 0.16);
+  --wizard-card-light-hairline: rgba(26, 26, 28, 0.08);
+  --wizard-card-dark-app: #1a1a1c;
+  --wizard-card-dark-sidebar: #212123;
+  --wizard-card-dark-bar: rgba(249, 249, 247, 0.18);
+  --wizard-card-dark-hairline: rgba(249, 249, 247, 0.08);
+  --wizard-card-sepia-app: #fbf2e2;
+  --wizard-card-sepia-sidebar: #f4e7d0;
+  --wizard-card-sepia-bar: rgba(91, 70, 54, 0.18);
+  --wizard-card-sepia-hairline: rgba(91, 70, 54, 0.1);
+
   /* NOTE: canvas document의 반복 arbitrary value를 scoped token으로 공유한다. */
   --text-canvas-doc-title: 2.5rem;
   --text-canvas-doc-body: 0.9375rem;
