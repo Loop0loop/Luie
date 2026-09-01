@@ -16,6 +16,22 @@ import {
 } from "@renderer/features/workspace/services/chapterNavigation";
 import { useProjectLayoutStore } from "@renderer/features/workspace/stores/projectLayoutStore";
 
+/**
+ * 생성할 챕터의 첫 미사용 번호를 찾는다.
+ *
+ * NOTE: 예전 구현은 `Chapter ${챕터 수 + 1}`로 번호를 붙여 삭제 후 재생성 때 기존
+ * 챕터와 이름이 겹쳤다(1,2 중 1 삭제 → "Chapter 2" 재발급). 기존 제목 집합에서 첫
+ * 빈 번호를 찾아 중복을 원천 차단한다.
+ */
+export const nextChapterTitle = (existingTitles: Iterable<string>): string => {
+  const taken = new Set(existingTitles);
+  let number = 1;
+  while (taken.has(`Chapter ${number}`)) {
+    number += 1;
+  }
+  return `Chapter ${number}`;
+};
+
 export function useChapterManagement() {
   const pendingChapterIdRef = useRef<string | null>(null);
   const lastSavedRef = useRef<{
@@ -177,6 +193,7 @@ export function useChapterManagement() {
     }
   }, [chapters, currentChapter, currentProject, setCurrentChapter, getProjectLayout]);
 
+
   const handleAddChapter = useCallback(async () => {
     if (!currentProject) {
       api.logger.error("No project selected");
@@ -185,7 +202,7 @@ export function useChapterManagement() {
 
     const created = await createChapter({
       projectId: currentProject.id,
-      title: `Chapter ${projectChapters.length + 1}`,
+      title: nextChapterTitle(projectChapters.map((chapter) => chapter.title)),
     });
     if (created) {
       setCurrentChapter(created);
@@ -193,7 +210,7 @@ export function useChapterManagement() {
   }, [
     currentProject,
     createChapter,
-    projectChapters.length,
+    projectChapters,
     setCurrentChapter,
   ]);
 
