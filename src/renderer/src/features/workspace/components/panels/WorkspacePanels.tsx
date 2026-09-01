@@ -82,7 +82,6 @@ export function WorkspacePanels({
   // 닫힘 상태는 uiStore가 소유한다. 애니메이션 창 안에 같은 패널을 다시 여는(addPanel)
   // 순간 cancelPanelClose가 닫힘을 되돌리므로, 이 컴포넌트는 표식만 구독해 시각 상태를
   // 맞춘다. 컴포넌트 로컬 타이머였을 때는 재오픈이 예약된 removePanel과 경합했다.
-  const closingPanelIds = useUIStore((state) => state.closingPanelIds);
   const closingPanelRefs = useRef(new Map<string, PanelImperativeHandle>());
   const setClosingPanelRef = useCallback(
     (panelId: string) => (handle: PanelImperativeHandle | null) => {
@@ -94,6 +93,66 @@ export function WorkspacePanels({
     },
     [],
   );
+
+  // NOTE: snapshot/export 패널은 research/editor와 달리 저장 폭 복원 경로가 없었다.
+  // 닫힘 애니메이션이 0%로 줄인 값이 PanelGroup의 id 조합 캐시에 남아, 같은 스냅샷을
+  // 다시 열면(같은 panel id) 오염된 캐시가 그대로 서빙돼 최소 폭으로 열렸다.
+  // 마운트마다 저장 size를 handle로 1회 재적용해 상쇄한다.
+  const restorablePanelRefs = useRef(
+    new Map<string, { current: PanelImperativeHandle | null }>(),
+  );
+  const sizedRestorableIdsRef = useRef(new Set<string>());
+  const getRestorablePanelRef = useCallback(
+    (panelId: string) => {
+      let ref = restorablePanelRefs.current.get(panelId);
+      if (!ref) {
+        ref = { current: null };
+        restorablePanelRefs.current.set(panelId, ref);
+      }
+      return ref;
+    },
+    [],
+  );
+  const closingPanelIds = useUIStore((state) => state.closingPanelIds);
+  const restorablePanelKey = panels
+    .filter(
+      (panel) =>
+        panel.content.type === "snapshot" || panel.content.type === "export",
+    )
+    .map((panel) => `${panel.id}:${panel.size}`)
+    .join(",");
+  useEffect(() => {
+    if (restorablePanelKey === "") {
+      sizedRestorableIdsRef.current.clear();
+      return;
+    }
+    const liveIds = new Set(
+      restorablePanelKey.split(",").map((entry) => entry.split(":")[0]),
+    );
+    for (const id of [...sizedRestorableIdsRef.current]) {
+      if (!liveIds.has(id)) sizedRestorableIdsRef.current.delete(id);
+    }
+    for (const panel of panels) {
+      if (panel.content.type !== "snapshot" && panel.content.type !== "export") {
+        continue;
+      }
+      if (closingPanelIds.includes(panel.id)) continue;
+      if (sizedRestorableIdsRef.current.has(panel.id)) continue;
+      const handle = getRestorablePanelRef(panel.id).current;
+      if (!handle) continue;
+      sizedRestorableIdsRef.current.add(panel.id);
+      const storedSize = toPercentSize(panel.size);
+      requestAnimationFrame(() => {
+        try {
+          handle.resize(storedSize);
+        } catch {
+          // group layout에 아직 등록 전이면 throw한다. 다음 실행에서 재시도된다.
+          sizedRestorableIdsRef.current.delete(panel.id);
+        }
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- panels/closingPanelIds는 key로 요약해 추적한다
+  }, [restorablePanelKey, closingPanelIds]);
 
   // NOTE: removePanel은 즉시 unmount시키므로, 애니메이션이 켜져 있으면 축소 transition을
   // 보여준 뒤 실제 제거한다. 0% 커밋이 researchPanelSizes에 저장되지 않게 지속화도 억제한다.
@@ -437,7 +496,10 @@ export function WorkspacePanels({
                     ? researchPanelRef
                     : isEditorPanel
                       ? editorPanelRef
-                      : undefined
+                      : panel.content.type === "snapshot" ||
+                          panel.content.type === "export"
+                        ? getRestorablePanelRef(panel.id)
+                        : undefined
               }
               data-panel-animated={
                 closingPanelIds.includes(panel.id) ? "true" : undefined
