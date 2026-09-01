@@ -71,13 +71,17 @@ export const createStartupWizardBrowserWindow = (
   input: SecondaryWindowInput,
 ): BrowserWindow => {
   const window = input.createBrowserWindow({
-    width: 980,
-    height: 720,
-    minWidth: 860,
-    minHeight: 620,
+    // NOTE: bootstrap(A) 단계는 테마 확정 전이라 높이가 더 큰 세로형으로 뜬다.
+    // 테마 단계로 넘어가면 WINDOW_SET_STARTUP_WIZARD_SIZE로 가로형으로 확장한다.
+    width: 420,
+    height: 640,
+    minWidth: 380,
+    minHeight: 560,
     show: true,
     title: `${APP_NAME} Setup`,
-    backgroundColor: "#0b1020",
+    // NOTE: CSS 렌더 전 네이티브 flash를 막는 배경. --color-wizard-bootstrap(#212123,
+    // dark의 --bg-sidebar 기준선)과 같은 값이라 A 단계 화면과 이어진다.
+    backgroundColor: "#212123",
     ...withWindowIcon(resolveWindowIconPath()),
     ...getTitleBarOptions(),
     ...(process.platform !== "darwin" ? { autoHideMenuBar: true } : {}),

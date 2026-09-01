@@ -189,6 +189,7 @@ export const IPC_CHANNELS = {
   WINDOW_SET_TRAFFIC_LIGHT_VISIBILITY: "window:set-traffic-light-visibility",
   WINDOW_OPEN_EXPORT: "window:open-export",
   WINDOW_OPEN_WORLD_GRAPH: "window:open-world-graph",
+  WINDOW_SET_STARTUP_WIZARD_SIZE: "window:set-startup-wizard-size",
 
   APP_GET_VERSION: "app:get-version",
   APP_CHECK_UPDATE: "app:check-update",

@@ -12,6 +12,7 @@ import type {
   StartupReadiness,
 } from "../../../../shared/types/index.js";
 import { db } from "../../../infra/database/index.js";
+import { isStartupWizardForced } from "../../../utils/env/environment.js";
 import { settingsManager } from "../../../domains/settings/index.js";
 import { dbRecoveryService } from "../recovery/index.js";
 import {
@@ -52,7 +53,10 @@ class StartupReadinessService {
       .filter((check) => check.blocking && !check.ok)
       .map((check) => check.key);
     const completedAt = settingsManager.getStartupSettings().completedAt;
-    const mustRunWizard = !completedAt || reasons.length > 0;
+    // LUIE_FORCE_STARTUP_WIZARD=1이면 completedAt·검사 결과와 무관하게 위저드를
+    // 먼저 띄운다. UI 개편 작업용 dev 진입점이라 패키지 빌드 흐름도 전부 통과시킨다.
+    const mustRunWizard =
+      isStartupWizardForced() || !completedAt || reasons.length > 0;
     return {
       mustRunWizard,
       checks,
@@ -62,6 +66,18 @@ class StartupReadinessService {
   }
 
   async completeWizard(): Promise<StartupReadiness> {
+    // 강제 모드에서는 completedAt을 쓰지 않는다. 상태를 더럽히지 않아야 다음
+    // dev:wizard 실행마다 위저드가 다시 뜬다. 대신 mustRunWizard를 false로 내려
+    // appReady의 wizard-completed 리스너가 위저드 창을 닫고 메인 흐름을 시작하게 한다.
+    if (isStartupWizardForced()) {
+      const readiness = await this.getReadiness();
+      const result: StartupReadiness = {
+        ...readiness,
+        mustRunWizard: false,
+      };
+      this.events.emit(STARTUP_WIZARD_EVENT, result);
+      return result;
+    }
     const before = await this.getReadiness();
     if (before.reasons.length > 0) {
       return before;

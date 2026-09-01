@@ -119,7 +119,7 @@ export const RecoveryTab = memo(function RecoveryTab({
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-3xl items-start justify-center py-8">
-      <section className="w-full rounded-[28px] border border-border bg-surface px-8 py-7 shadow-full">
+      <section className="w-full rounded-[28px] border border-border bg-surface px-8 py-7 shadow-panel">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-sm font-semibold text-fg">

@@ -177,11 +177,11 @@ export function RecentProjectsSection({
                   <span
                     className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
                       syncBadge === "synced"
-                        ? "bg-emerald-500/15 text-emerald-300"
+                        ? "bg-success/15 text-success"
                         : syncBadge === "pending"
-                          ? "bg-amber-500/15 text-amber-300"
+                          ? "bg-warning/15 text-warning"
                           : syncBadge === "syncError"
-                            ? "bg-red-500/15 text-red-300"
+                            ? "bg-danger/15 text-danger"
                             : "bg-muted/15 text-muted"
                     }`}
                   >
@@ -194,8 +194,8 @@ export function RecentProjectsSection({
                           ? "bg-muted/15 text-muted"
                           : p.attachmentStatus ===
                               "unsupported-legacy-container"
-                            ? "bg-amber-500/15 text-amber-300"
-                            : "bg-red-500/15 text-red-300"
+                            ? "bg-warning/15 text-warning"
+                            : "bg-danger/15 text-danger"
                       }`}
                     >
                       {t(`settings.projectTemplate.${attachmentBadgeKey}`)}

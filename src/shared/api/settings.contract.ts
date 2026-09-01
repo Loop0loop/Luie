@@ -190,6 +190,11 @@ export type SettingsRendererApi = {
     openExport: (chapterId: string) => Promise<IPCResponse<boolean>>;
 
     openWorldGraph: () => Promise<IPCResponse<unknown>>;
+    /** 시작 위저드 창의 크기를 단계 전환에 맞춰 바꾼다. 위저드 창이 없으면 no-op한다. */
+    setStartupWizardSize: (
+      width: number,
+      height: number,
+    ) => Promise<IPCResponse<unknown>>;
   };
   logger: {
     debug: (message: string, data?: unknown) => Promise<IPCResponse<unknown>>;

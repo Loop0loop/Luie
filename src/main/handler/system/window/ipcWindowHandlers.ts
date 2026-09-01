@@ -14,6 +14,7 @@ import { appUpdateService } from "../../../app/startup/index.js";
 import {
   windowOpenExportArgsSchema,
   windowSetFullscreenArgsSchema,
+  windowSetStartupWizardSizeArgsSchema,
   windowSetTrafficLightVisibilityArgsSchema,
 } from "../../../../shared/schemas/index.js";
 
@@ -182,6 +183,22 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       failMessage: "Failed to open world graph window",
       handler: () => {
         windowManager.createWorldGraphWindow();
+        return true;
+      },
+    },
+    {
+      channel: IPC_CHANNELS.WINDOW_SET_STARTUP_WIZARD_SIZE,
+      logTag: "WINDOW_SET_STARTUP_WIZARD_SIZE",
+      failMessage: "Failed to resize startup wizard window",
+      argsSchema: windowSetStartupWizardSizeArgsSchema,
+      handler: (width: number, height: number) => {
+        // NOTE: 위저드 단계 전환(A 인트로 → B 테마)에 맞춘 리사이즈다. 메인 창이
+        // 아니라 위저드 창을 움직여야 하므로 전용 접근자를 쓴다. 폭이 커진 만큼
+        // 화면 안에서 자연스럽게 읽히도록 중앙에 재배치한다.
+        const win = windowManager.getStartupWizardWindow();
+        if (!win) return false;
+        win.setSize(width, height);
+        win.center();
         return true;
       },
     },

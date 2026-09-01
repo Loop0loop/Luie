@@ -32,5 +32,10 @@ export const fsApproveProjectPathArgsSchema = z.tuple([basePathSchema]);
 
 export const windowSetFullscreenArgsSchema = z.tuple([z.boolean()]);
 
+export const windowSetStartupWizardSizeArgsSchema = z.tuple([
+  z.number(),
+  z.number(),
+]);
+
 export const windowSetTrafficLightVisibilityArgsSchema = z.tuple([z.boolean()]);
 export const windowOpenExportArgsSchema = z.tuple([chapterIdSchema]);

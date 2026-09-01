@@ -119,7 +119,7 @@ export default function SettingsModal({ onClose, initialTab }: SettingsModalProp
       onClick={onClose}
     >
       <div
-        className="flex h-full w-full max-h-[850px] max-w-[1000px] overflow-hidden rounded-3xl bg-sidebar shadow-full animate-in zoom-in-95 duration-150"
+        className="flex h-full w-full max-h-[850px] max-w-[1000px] overflow-hidden rounded-3xl bg-sidebar shadow-panel animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex w-64 flex-col bg-sidebar pt-3">

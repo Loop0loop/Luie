@@ -20,6 +20,11 @@
   --color-bg-secondary: var(--bg-secondary);
   --color-bg-panel: var(--bg-panel);
   --color-editor-bg: var(--editor-bg);
+  /* NOTE: 시작 위저드의 bootstrap(A) 단계는 테마 확정 전이라 theme token을 따르지
+     않는 고정 다크 chrome으로 뜬다. 값은 dark의 --bg-sidebar(#212123)과 같은 기준선이고,
+     B 단계에서 테마가 documentElement에 반영되면 bg-app 계열로 넘어간다.
+     네이티브 창 backgroundColor도 같은 값을 쓴다(windowSecondaryWindows 참조). */
+  --color-wizard-bootstrap: #212123;
 
   --color-fg: var(--text-primary);
   --color-muted: var(--text-secondary);
