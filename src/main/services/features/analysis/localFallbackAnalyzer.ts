@@ -1,6 +1,5 @@
 import type { AnalysisContext } from "../../../../shared/types/analysis.js";
 import type { AnalysisItemResult } from "./analysisPrompt.js";
-import type { GeminiResult } from "../autoExtract/autoExtractPrompt.js";
 
 const toCollapsedText = (value: string): string =>
   value.replace(/\s+/g, " ").trim();
@@ -62,41 +61,4 @@ export const buildDeterministicAnalysisItems = (
         "로컬 분석 기준으로는 전체 흐름이 안정적입니다. 위 두 지점을 다듬으면 독자 체감 완성도가 더 올라갈 수 있습니다.",
     },
   ];
-};
-
-const inferEntityType = (
-  name: string,
-  contexts: string[],
-): GeminiResult["entityType"] => {
-  const joined = `${name} ${contexts.join(" ")}`;
-  if (/(길드|협회|조직|단체|학교|대학|회사|연맹)/.test(joined))
-    return "organization";
-  if (/(성|탑|궁|마을|도시|숲|산|강|거리|던전)/.test(joined)) return "location";
-  if (/(검|창|방패|반지|목걸이|무기|유물|artifact|아이템)/i.test(joined))
-    return "item";
-  if (/(님|씨|군|양|왕|황제|공주|기사|마법사|선생|대장)/.test(joined))
-    return "character";
-  return "concept";
-};
-
-export const buildDeterministicGeminiResult = (
-  name: string,
-  contexts: string[],
-): GeminiResult => {
-  const entityType = inferEntityType(name, contexts);
-  const importance: GeminiResult["importance"] =
-    contexts.length >= 3
-      ? "main"
-      : contexts.length >= 2
-        ? "supporting"
-        : "minor";
-  return {
-    name,
-    entityType,
-    importance,
-    summary: `${name}와(과) 관련된 ${entityType} 요소로 추정됩니다. 문맥 기반 로컬 분류 결과입니다.`,
-    confidence: contexts.length >= 2 ? 0.58 : 0.42,
-    reasoning:
-      "Edge/원격 모델 호출 실패로 로컬 규칙 기반 추정치를 사용했습니다.",
-  };
 };

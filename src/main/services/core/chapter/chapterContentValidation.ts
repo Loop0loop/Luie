@@ -4,7 +4,6 @@ import type {
   ChapterUpdateInput,
 } from "../../../../shared/types/index.js";
 import { isTestEnv } from "../../../utils/env/index.js";
-import { autoExtractService } from "../../features/autoExtract/autoExtractService.js";
 import { trackKeywordAppearances } from "../../features/manuscript/chapterKeywords.js";
 import {
   chapterLogger,
@@ -89,5 +88,4 @@ export const applyChapterContentUpdate = async (
     trackKeywordAppearances(input.id, input.content, projectId),
     "chapter:update:track-keyword-appearances",
   );
-  autoExtractService.scheduleAnalysis(input.id, projectId, input.content);
 };
