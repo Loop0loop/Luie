@@ -1501,7 +1501,13 @@ mark{background-color:var(--luie-mark,color-mix(in srgb, var(--accent-bg,#2563eb
 
 즉 **글자색·형광펜은 DOCX/HWPX에 애초에 반영되지 않는다.** 따라서 저장 형식을 `var()`로 바꿔도 Export가 깨질 수 없다.
 
-- [ ] **별개 버그: 취소선이 Export에서 사라진다.** `strong`·`em`·`u`는 살렸는데 `s`만 화이트리스트에서 빠졌다. 의도된 누락으로 보이지 않는다
+- [ ] **정정 (2026-09-01): 취소선만의 문제가 아니었다.** 저비용 항목으로 잡았다가 조사해보니 화이트리스트에 `s`를 넣어도 아무것도 고쳐지지 않는다.
+
+  `exportService.ts:103`의 `stripHtmlTags()`가 `text.replace(/<[^>]+>/g, " ")`로 **모든 인라인 태그를 제거한다.** 그리고 `htmlToParagraphs()`가 문단 단위로 이 함수를 통과시킨다. 즉 `exportContentNormalization`이 화이트리스트로 살려둔 `strong`·`em`·`u`도 **DOCX 생성 단계에서 전부 벗겨진다.** `TextRun`에 `bold`를 지정하는 곳은 `buildTitleParagraph`(제목) 한 군데뿐이고 본문 서식 경로가 없다. HWPX도 인라인 서식 처리가 없다.
+
+  따라서 **DOCX/HWPX에는 굵게·기울임·밑줄·취소선·글자색·형광펜이 하나도 반영되지 않는다.** `exportContentNormalization`의 화이트리스트는 문단 구조(`p`·`h1~3`·`ul`/`ol`/`li`·`blockquote`)만 실효가 있다.
+
+  이건 클래스 치환이 아니라 `htmlToParagraphs`를 **TextRun 단위 파싱으로 다시 쓰는** 작업이다(HWPX는 별도). §11 범위 밖으로 옮기고 Export 기능 항목으로 분리한다 — 사용자에게 "굵게가 내보내기에 안 나온다"로 체감되는 항목이므로 우선도는 낮지 않다
 
 #### 11-4. Toolbar 드롭다운 3개가 종이 위에서 보이지 않는다
 
@@ -1514,7 +1520,8 @@ mark{background-color:var(--luie-mark,color-mix(in srgb, var(--accent-bg,#2563eb
 
 §4 Task 1이 input·select·토글·checkbox 32곳을 `border-border-strong`으로 옮겼는데 **이 3개(문단 스타일·글꼴·크기)가 빠졌다.** select 역할이므로 규범 대상이다.
 
-- [ ] `CompactDropdown` 경계 → `border-border-strong`. `FontSelector`도 같은 성격인지 확인
+- [x] `CompactDropdown` · **`FontSelector`** 경계 → `border-border-strong` (2026-09-01). 둘 다 select 역할이고 fill이 `bg-app`이다. `FontSelector`는 목록에 없었는데 같은 성격이라 함께 옮겼다. `rounded` bare도 `rounded-control`로 바꿨다. 두 컨트롤에 `focus-visible:ring-2 ring-ring`도 없어 함께 보강했다
+  - `menus.tsx:247`의 `border border-border`는 커스텀 색 미리보기 스와치라 **장식선이 맞다.** §4 결정대로 soft 유지
 
 #### 11-5. `CompactDropdown`이 ARIA 없는 커스텀 select다
 
@@ -1525,17 +1532,18 @@ mark{background-color:var(--luie-mark,color-mix(in srgb, var(--accent-bg,#2563eb
 - [ ] 항목이 `<div onClick>`이고 `role="listbox"`/`option`/`aria-selected`/`aria-activedescendant`가 없다. 화살표 이동은 Suggestion 플러그인이 처리하지만 **보조기술에는 선택 위치가 전달되지 않는다**
 - [ ] 선택 항목이 `bg-active`(알파 오버레이) — 대비 약 1.05로 어느 항목이 선택됐는지 알기 어렵다
 - [ ] 아이콘 박스가 `w-11 h-11`(44px)로 시각적으로 무겁다. 메뉴 높이가 항목당 60px를 넘어 8개가 화면을 채운다
-- [ ] `rounded` bare · `z-50` 하드코딩(`z-dropdown` 있음) · `descriptions`에 없는 id는 빈 문자열
+- [x] `rounded` bare → `rounded-control` (아이콘 박스·항목 행) · `z-50` → `z-dropdown` · `descriptions`에 없는 id는 **빈 줄을 그리지 않는다**(이전에는 빈 `<div>`가 항목 높이만 차지했다). 2026-09-01
 
 #### 11-7. 메뉴 3개 전부 Escape로 닫히지 않는다
 
-- [ ] `ColorPickerMenu` · `TypographyMenu` · `CompactDropdown`이 `useClickOutside`만 쓴다. 열어놓고 키보드로 빠져나올 방법이 없다
+- [x] **Escape로 닫힌다 (2026-09-01).** `useClickOutside`에 Escape 처리를 통합했다. 소비처 5곳(`ColorPickerMenu` · `TypographyMenu` · `CompactDropdown` · `MoreMenu` · **`FontSelector`**)이 한 훅을 쓴다 — `FontSelector`는 바깥 클릭을 자체 `useEffect`로 구현하고 있어 훅으로 통합했다
+  - **훅에 `open` 인자를 추가한 이유**: Escape는 `stopPropagation`을 해야 상위 모달이 같이 닫히지 않는다. 그런데 메뉴가 닫혀 있을 때도 리스너가 붙어 있으면 **에디터의 Escape를 앱 전역에서 삼킨다.** 그래서 열려 있는 동안만 등록한다. capture 단계에서 받는 것은 ProseMirror가 Escape를 먼저 소비하는 것을 막기 위해서다
 
 #### 11-8. Typography 메뉴에 단위가 없다
 
-- [ ] 자간 `0.02` · 줄간격 `1.70` · 문단간격 `1.0`이 숫자만 나온다. 무엇의 단위인지 알 수 없고 `aria-valuetext`도 없다
+- [x] 단위 표기 추가 (2026-09-01). 자간 `0.02em` · 줄간격 `1.70×` · 문단간격 `1.0em`. `aria-valuetext`로 보조기술에도 같은 문자열을 전달한다 — 네이티브 range는 값을 숫자로만 읽어준다
 - [ ] 기본값 복원 수단이 없다
-- [ ] `accent-[var(--accent-bg)]` arbitrary value → `accent-accent-bg`
+- [x] `accent-[var(--accent-bg)]` → `accent-accent-bg` (매핑이 이미 있었다)
 
 ---
 
@@ -1608,5 +1616,9 @@ mark{background-color:var(--luie-mark,color-mix(in srgb, var(--accent-bg,#2563eb
 
 - [x] **제목 입력의 focus 밑줄** — 챕터 제목 · 메모 제목 · 마인드맵 노드 이름에 `border-b-2 border-transparent focus:border-accent`를 넣었다. 제목 서체 무게와 어울리는지가 판단 지점이었고 이상 없었다
 - [x] `AIPanel` 컴포저 · `menus.tsx` HEX 입력의 focus ring 신설
+
+### 5. 형광펜·글자색 팔레트 전환 (§11, 2026-09-01)
+
+- [x] **사용자 확인 완료.** dark에서 형광펜을 칠했을 때 글자가 읽히는지, 기존 문서의 옛 hex가 `parseHTML`로 복원되는지, 글자색 팔레트가 8색이 되고 "기본 글자색"으로 해제되는지 — 이상 없음
 
 ---

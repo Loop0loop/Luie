@@ -31,7 +31,7 @@ export function MoreMenu({
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  useClickOutside(ref, () => setOpen(false));
+  useClickOutside(ref, () => setOpen(false), open);
 
   // NOTE: 이 메뉴는 툴바 레이어 안에 렌더되므로 레이아웃이 툴바를 숨기면 함께 사라진다.
   // 열림 상태를 레이아웃에 알려 메뉴가 열려 있는 동안 auto-hide를 잠근다. unmount 시

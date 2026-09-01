@@ -50,16 +50,21 @@ export function CompactDropdown<T extends string | number>({
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  useClickOutside(ref, () => setOpen(false));
+  useClickOutside(ref, () => setOpen(false), open);
 
   const displayLabel = getLabel ? getLabel(value) : String(value);
 
   return (
     <div className={cn("relative", className)} ref={ref}>
+      {/* NOTE: 경계가 `border-border`(soft)였는데 fill이 `bg-app`(종이색)이고 툴바가
+          무배경이라 종이 위에서 대비 1.21로 사실상 보이지 않았다. select 역할이므로 §4가
+          확정한 대화형 컨트롤 규범(`--border-strong`, 3:1)이 적용된다 — light 3.12 · sepia 3.17.
+          §4 Task 1이 input·select·토글 32곳을 옮길 때 툴바 드롭다운 3개가 빠져 있었다. */}
       <button
         type="button"
-        className="flex h-8 w-full items-center gap-1 rounded-control border border-border bg-app px-2 text-xs text-fg transition-colors hover:bg-hover"
+        className="flex h-8 w-full items-center gap-1 rounded-control border border-border-strong bg-app px-2 text-xs text-fg transition-colors hover:bg-hover focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
         aria-label={ariaLabel}
+        aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
         <span className="flex-1 truncate text-left">{displayLabel}</span>
@@ -125,7 +130,7 @@ export function ColorPickerMenu({
   const [hexInput, setHexInput] = useState(() => resolveHex(value));
   const customColorRef = useRef(customColor);
   const ref = useRef<HTMLDivElement>(null);
-  useClickOutside(ref, () => setOpen(false));
+  useClickOutside(ref, () => setOpen(false), open);
 
   const customHex = hsvToHex(customColor);
 
@@ -313,7 +318,7 @@ export function TypographyMenu({
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  useClickOutside(ref, () => setOpen(false));
+  useClickOutside(ref, () => setOpen(false), open);
 
   const sliders = [
     {
@@ -321,21 +326,23 @@ export function TypographyMenu({
       min: 0, max: 0.3, step: 0.01,
       value: letterSpacing,
       onChange: onLetterSpacingChange,
-      display: letterSpacing.toFixed(2),
+      // NOTE: 이전에는 `0.02`처럼 숫자만 나와 무엇의 단위인지 알 수 없었다. 자간과
+      // 문단간격은 em, 줄간격은 배수다.
+      display: `${letterSpacing.toFixed(2)}em`,
     },
     {
       label: t("toolbar.tooltip.lineHeight", "줄간격"),
       min: 1, max: 2.4, step: 0.05,
       value: lineHeight,
       onChange: onLineHeightChange,
-      display: lineHeight.toFixed(2),
+      display: `${lineHeight.toFixed(2)}\u00d7`,
     },
     {
       label: t("toolbar.tooltip.paragraphSpacing", "문단간격"),
       min: 0, max: 3, step: 0.1,
       value: paragraphSpacing,
       onChange: onParagraphSpacingChange,
-      display: paragraphSpacing.toFixed(1),
+      display: `${paragraphSpacing.toFixed(1)}em`,
     },
   ];
 
@@ -368,8 +375,11 @@ export function TypographyMenu({
                 max={max}
                 step={step}
                 value={value}
-                className="w-full accent-[var(--accent-bg)]"
+                className="w-full accent-accent-bg"
                 aria-label={label}
+                // NOTE: 네이티브 range는 값을 숫자로만 읽어준다. 단위를 붙여 무엇의 값인지
+                // 보조기술에도 전달한다.
+                aria-valuetext={display}
                 onChange={(e) => onChange(Number(e.target.value))}
               />
             </div>

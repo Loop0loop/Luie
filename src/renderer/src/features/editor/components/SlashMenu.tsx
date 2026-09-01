@@ -131,7 +131,7 @@ const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(function SlashMenu
 
   return (
     <div
-      className="absolute w-75 max-h-80 bg-panel border border-border rounded-control shadow-panel z-50 overflow-y-auto flex flex-col font-sans"
+      className="absolute w-75 max-h-80 bg-panel border border-border rounded-control shadow-panel z-dropdown overflow-y-auto flex flex-col font-sans"
       onMouseDown={(e) => {
         // NOTE: pointer interaction이 editor focus를 빼앗아 Suggestion이 닫히지 않게 한다.
         e.preventDefault();
@@ -145,7 +145,7 @@ const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(function SlashMenu
           <div
             key={item.id}
             className={cn(
-              "flex items-center px-2 py-1.5 rounded cursor-pointer transition-colors gap-2.5",
+              "flex items-center px-2 py-1.5 rounded-control cursor-pointer transition-colors gap-2.5",
               index === effectiveSelectedIndex ? "bg-active" : "hover:bg-hover"
             )}
             onClick={() => selectItem(index)}
@@ -154,12 +154,16 @@ const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(function SlashMenu
               itemRefs.current[index] = node;
             }}
           >
-            <div className="flex items-center justify-center w-11 h-11 border border-border rounded bg-panel text-fg shrink-0">
+            <div className="flex items-center justify-center w-11 h-11 border border-border rounded-control bg-panel text-fg shrink-0">
               {ICONS[item.id]}
             </div>
             <div className="flex-1 overflow-hidden">
               <div className="text-sm font-medium text-fg mb-0.5">{item.label}</div>
-              <div className="text-[11px] text-muted truncate">{descriptions[item.id] || ""}</div>
+              {/* NOTE: `descriptions`에 없는 id는 이전에 빈 줄을 남겨 항목 높이만 차지했다.
+                  설명이 없으면 줄 자체를 그리지 않는다. */}
+              {descriptions[item.id] && (
+                <div className="text-[11px] text-muted truncate">{descriptions[item.id]}</div>
+              )}
             </div>
           </div>
         ))}
