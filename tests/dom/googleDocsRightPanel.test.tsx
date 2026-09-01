@@ -63,7 +63,7 @@ vi.mock("@renderer/features/editor/stores/editorStore", () => ({
 }));
 
 vi.mock("@renderer/features/research/components/ResearchPanel", () => ({
-  default: () => {
+  default: function MockResearchPanel() {
     useEffect(() => {
       mountCounts.research += 1;
     }, []);
@@ -72,7 +72,7 @@ vi.mock("@renderer/features/research/components/ResearchPanel", () => ({
 }));
 
 vi.mock("@renderer/features/research/components/WorldPanel", () => ({
-  default: () => {
+  default: function MockWorldPanel() {
     useEffect(() => {
       mountCounts.world += 1;
     }, []);
@@ -211,12 +211,13 @@ describe("GoogleDocsRightPanel", () => {
     ).toBe("38%");
   });
 
-  it("keeps the Panel element mounted when switching tabs and applies the new ratio via resize", async () => {
+  it("keeps the Panel element mounted when switching tabs and lets the group cache own widths", async () => {
     // ISTQB 근거 설명:
     // 리스크 = 탭 전환마다 <Panel key={renderedTab}>이 react-resizable-panels Panel과
     // 하위 Suspense 트리 전체를 파괴/재생성해 전환 비용이 커지고 폭이 튄다.
-    // 증명 = (1) 탭을 3번 바꿔도 Panel 마운트 카운트는 1이고, (2) 탭별 비율은
-    // imperative resize 호출로 적용되며, (3) Panel id는 탭별 레이아웃 슬롯을 유지한다.
+    // 증명 = (1) 탭을 3번 바꿔도 Panel 마운트 카운트는 1이고, (2) 폭은 PanelGroup의
+    // id 조합 캐시가 소유하므로 imperative resize 호출이 없어야 하며, (3) Panel id는
+    // 표면 슬롯을 따른다.
     const view = await mountView(
       <GoogleDocsRightPanel
         {...baseProps}
@@ -251,8 +252,9 @@ describe("GoogleDocsRightPanel", () => {
 
     // (1) 탭 3번 전환 동안 Panel은 리마운트되지 않는다.
     expect(mountCounts.panel).toBe(1);
-    // (2) 탭 전환 비율은 imperative resize로 적용된다(마지막 전환 비율 34%).
-    expect(resizeCalls[resizeCalls.length - 1]).toBe("34%");
+    // (2) resize로 폭을 덮어쓰지 않는다 — id 조합 캐시(마지막 폭)가 우선해야
+    //     "탭별 폭 기억"이 유지된다(스냅샷 폭 회귀 회귀 방지).
+    expect(resizeCalls).toEqual([]);
     // (3) research 계열 탭(character/world/faction)은 모두 같은 표면 슬롯을 쓴다 —
     // 탭 전환과 무관하게 Panel id가 불변이라 라이브러리 레이아웃 캐시도 안정적이다.
     const observedIds = new Set(

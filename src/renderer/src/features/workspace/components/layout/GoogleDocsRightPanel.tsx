@@ -346,18 +346,16 @@ export function GoogleDocsRightPanel({
       hasRenderedTabRef.current = false;
       return;
     }
-    // NOTE: 최초 등장이 아니라(탭 전환) persisted ratio로 되돌리는 시점에는 애니메이션을
-    // 끄고 즉시 반영한다. 다만 첫 등장(open transition 중)에 restoring을 켜면 전역 CSS가
-    // transition을 0ms로 강제해 slide-in이 죽는다. 첫 등장은 defaultSize가 이미 저장된
-    // ratio를 쓰므로 restoring이 필요 없다. 탭 전환 비율은 Panel을 리마운트하는 대신
-    // imperative resize로 적용한다(defaultSize는 마운트 시 1회만 읽힌다).
+    // NOTE: 최초 등장이 아니라(탭 전환) restoring 구간을 잡는 유지 보조다. 탭 전환 비율은
+    // 여기서 resize하지 않는다 — Panel id가 표면 슬롯으로 바뀌면 PanelGroup이 id 조합별
+    // layout 캐시(마지막 폭)를 적용하고, 캐시가 없는 조합만 defaultSize를 쓴다. imperative
+    // resize는 이 캐시를 덮어써서 "탭별 폭 기억"을 깬다(2026-09 스냅샷 폭 회귀).
     if (!hasRenderedTabRef.current) {
       hasRenderedTabRef.current = true;
       return;
     }
     const endRestoring = beginLayoutRestoring();
     restoreFrameRef.current = requestAnimationFrame(() => {
-      panelRef.current?.resize(toPanelPercentSize(safeRatio));
       restoreFrameRef.current = requestAnimationFrame(() => {
         restoreFrameRef.current = null;
         endRestoring();
