@@ -1,4 +1,4 @@
-import type { DocsRightTab, ResearchTab } from "../stores/uiStore";
+import type { DocsRightTab, ResearchTab, ResizablePanelData } from "../stores/uiStore";
 import type { DocsLayoutPanelTab } from "@renderer/shared/constants/layoutSizing";
 
 type SidebarSection = "snapshot" | "trash";
@@ -17,10 +17,14 @@ type LayoutModeActionsOptions = {
     id?: string;
     tab?: ResearchTab;
   }) => void;
+  /** 비-docs 모드에서 열린 split panel 목록. 토글 판정에 쓴다. */
+  panels: ResizablePanelData[];
+  removePanel: (id: string) => void;
   handleSelectResearchItem: (tab: ResearchTab) => void;
   handleOpenExport: () => void;
   onToggleManuscriptLegacy: () => void;
   onOpenSidebarSectionLegacy: (section: SidebarSection) => void;
+  onToggleSidebarSectionLegacy: (section: SidebarSection) => void;
 };
 
 const RESEARCH_TAB_TO_DOCS_TAB: Record<ResearchTab, DocsLayoutPanelTab> = {
@@ -43,6 +47,36 @@ export function createLayoutModeActions(options: LayoutModeActionsOptions) {
     openResearchTab(tab: ResearchTab) {
       if (options.isDocsMode) {
         openDocsTab(RESEARCH_TAB_TO_DOCS_TAB[tab]);
+        return;
+      }
+
+      options.addPanel({ type: "research", tab });
+    },
+
+    /**
+     * 같은 탭이 이미 열려 있으면 닫는다.
+     *
+     * WHY `openResearchTab`을 남겨두는가: `world.tab.graph`처럼 '열고 나서 하위 탭을
+     * 바꾸는' 흐름은 토글이면 방금 연 패널을 닫아버린다. 열기 의도와 토글 의도를
+     * 분리해 둔다.
+     *
+     * 선례: `toggleContextPanel`이 `docsRightTab`을 보고 닫기/열기를 가른다.
+     */
+    toggleResearchTab(tab: ResearchTab) {
+      if (options.isDocsMode) {
+        if (options.docsRightTab === RESEARCH_TAB_TO_DOCS_TAB[tab]) {
+          closeDocsPanel();
+          return;
+        }
+        openDocsTab(RESEARCH_TAB_TO_DOCS_TAB[tab]);
+        return;
+      }
+
+      const openPanel = options.panels.find(
+        (panel) => panel.content.type === "research" && panel.content.tab === tab,
+      );
+      if (openPanel) {
+        options.removePanel(openPanel.id);
         return;
       }
 
@@ -122,6 +156,25 @@ export function createLayoutModeActions(options: LayoutModeActionsOptions) {
       }
 
       options.onOpenSidebarSectionLegacy(section);
+    },
+
+    /**
+     * 같은 섹션이 이미 열려 있으면 닫는다.
+     *
+     * 레거시(비-docs) 경로는 `useSidebarLogic`이 이미 `sidebar.section.toggle` 커맨드를
+     * 지원하므로 그것을 그대로 쓴다.
+     */
+    toggleSidebarSection(section: SidebarSection) {
+      if (options.isDocsMode) {
+        if (options.docsRightTab === section) {
+          closeDocsPanel();
+          return;
+        }
+        openDocsTab(section);
+        return;
+      }
+
+      options.onToggleSidebarSectionLegacy(section);
     },
   };
 }

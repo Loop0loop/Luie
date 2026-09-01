@@ -6,7 +6,6 @@ import { describe, it, expect, vi, beforeAll } from "vitest";
 import { SnapshotService } from "../../../src/main/services/features/snapshot/snapshotService.js";
 import { ChapterService } from "../../../src/main/services/features/manuscript/chapterService.js";
 import { ProjectService } from "../../../src/main/services/features/project/projectService.js";
-import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import { projectService } from "../../../src/main/services/features/project/projectService.js";
 import { generateText } from "../../helpers/generateText";
 
@@ -15,7 +14,6 @@ const chapterService = new ChapterService();
 const localProjectService = new ProjectService();
 
 beforeAll(() => {
-  vi.spyOn(autoExtractService, "scheduleAnalysis").mockImplementation(() => {});
   vi.spyOn(projectService, "schedulePackageExport").mockImplementation(
     () => {},
   );

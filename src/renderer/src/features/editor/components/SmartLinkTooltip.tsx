@@ -1,15 +1,20 @@
 import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
+import { useEventStore } from "@renderer/features/research/stores/eventStore";
+import { useFactionStore } from "@renderer/features/research/stores/factionStore";
 import { useTermStore } from "@renderer/features/research/stores/termStore";
-import type { Character, Term } from "@shared/types";
+import type { Character, Event, Faction, Term } from "@shared/types";
 import { smartLinkService } from "@renderer/features/editor/services/smartLinkService";
+
+/** 스마트링크가 다루는 종류. editor.css의 data-type 규칙과 짝이 맞아야 한다. */
+type SmartLinkTooltipType = "character" | "event" | "faction" | "term";
 
 type TooltipState = {
   visible: boolean;
   x: number;
   y: number;
-  type: "character" | "term";
+  type: SmartLinkTooltipType;
   id: string;
 };
 
@@ -23,6 +28,8 @@ export function SmartLinkTooltip({ isSettingsOpen }: { isSettingsOpen?: boolean 
   });
 
   const characters = useCharacterStore((state) => state.items);
+  const events = useEventStore((state) => state.items);
+  const factions = useFactionStore((state) => state.items);
   const terms = useTermStore((state) => state.items);
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -45,7 +52,7 @@ export function SmartLinkTooltip({ isSettingsOpen }: { isSettingsOpen?: boolean 
       const link = target.closest(".smart-link-highlight");
 
       if (link) {
-        const type = link.getAttribute("data-type") as "character" | "term";
+        const type = link.getAttribute("data-type") as SmartLinkTooltipType;
         const id = link.getAttribute("data-id");
 
         if (type && id) {
@@ -83,7 +90,7 @@ export function SmartLinkTooltip({ isSettingsOpen }: { isSettingsOpen?: boolean 
       const target = e.target as HTMLElement;
       const link = target.closest(".smart-link-highlight");
       if (link) {
-        const type = link.getAttribute("data-type") as "character" | "term";
+        const type = link.getAttribute("data-type") as SmartLinkTooltipType;
         const id = link.getAttribute("data-id");
         if (type && id) {
           smartLinkService.openItem(id, type);
@@ -133,6 +140,24 @@ export function SmartLinkTooltip({ isSettingsOpen }: { isSettingsOpen?: boolean 
         title: char.name,
         desc: char.description || "No description",
         meta: "Character",
+      };
+    }
+  } else if (state.type === "event") {
+    const event = (events as Event[]).find((e) => e.id === state.id);
+    if (event) {
+      content = {
+        title: event.name,
+        desc: event.description || "No description",
+        meta: "Event",
+      };
+    }
+  } else if (state.type === "faction") {
+    const faction = (factions as Faction[]).find((f) => f.id === state.id);
+    if (faction) {
+      content = {
+        title: faction.name,
+        desc: faction.description || "No description",
+        meta: "Faction",
       };
     }
   } else if (state.type === "term") {

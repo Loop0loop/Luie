@@ -322,7 +322,11 @@
 /* WARNING: smart-link 색상은 Editor.tsx가 주입하는 entityColors CSS variable과 함께 변경해야 한다. */
 .tiptap .ProseMirror .smart-link-highlight {
     cursor: pointer;
-    border-radius: 3px;
+    border-radius: var(--radius-control);
+    /* WHY clone인가: inline decoration이라 하이라이트가 줄바꿈에서 조각으로 쪼개진다.
+       기본값(slice)이면 잘린 면이 각지게 남아 둥근 모서리가 깨져 보인다. */
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
     padding: 0.05em 0.28em;
     background-color: color-mix(in srgb, currentColor 12%, transparent);
     font-weight: 500;

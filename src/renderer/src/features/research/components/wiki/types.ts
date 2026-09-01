@@ -20,6 +20,9 @@ export type CustomField = {
 
 export const CHARACTER_VIEW_MODE_KEY = "character-view-mode" as const;
 
+/** 프로필 요약(Infobox) 열림 상태 저장 키. viewMode와 슬롯이 겹치지 않게 분리한다. */
+export const CHARACTER_INFOBOX_KEY = "character-infobox" as const;
+
 // NOTE: dark theme의 CSS `--accent`와 같은 fallback 색상을 사용한다.
 export const DEFAULT_CHARACTER_COLOR = "#60a5fa" as const;
 

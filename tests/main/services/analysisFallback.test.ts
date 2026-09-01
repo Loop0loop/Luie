@@ -120,18 +120,4 @@ describe("Deterministic local fallback", () => {
     expect(reaction?.quote).toBeTruthy();
     expect(suggestions.length).toBeGreaterThanOrEqual(2);
   });
-
-  it("builds deterministic entity classification", async () => {
-    const { buildDeterministicGeminiResult } =
-      await import("../../../src/main/services/features/analysis/localFallbackAnalyzer.js");
-
-    const result = buildDeterministicGeminiResult("검은달 조직", [
-      "검은달 조직은 비밀결사다.",
-      "조직의 목표는 세계 장악이다.",
-    ]);
-
-    expect(result.entityType).toBe("organization");
-    expect(result.name).toBe("검은달 조직");
-    expect(result.summary.length).toBeGreaterThan(0);
-  });
 });

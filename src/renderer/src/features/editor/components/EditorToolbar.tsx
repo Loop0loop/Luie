@@ -76,6 +76,27 @@ export default function EditorToolbar({
   );
   const setFontSize = useEditorStore((state) => state.setFontSize);
   const updateSettings = useEditorStore((state) => state.updateSettings);
+
+  /**
+   * 폰트 크기 적용.
+   *
+   * 선택 영역이 있으면 그 구간에만 `textStyle` mark로 적용하고, 없으면 전역 설정을 바꾼다.
+   * 전역 설정은 저장돼 다음 실행에도 유지되지만, 선택 영역 크기는 본문에 남는 서식이다.
+   *
+   * WHY 전역 설정을 함께 바꾸지 않는가: 일부 문장만 키우려고 한 조작이 문서 전체 기본
+   * 크기까지 바꾸면 되돌리기 어렵다.
+   */
+  const applyFontSize = (nextSize: number) => {
+    const selection = editor?.state.selection;
+    const hasSelection = Boolean(selection && !selection.empty);
+
+    if (hasSelection && editor) {
+      editor.chain().focus().setFontSize(`${nextSize}px`).run();
+      return;
+    }
+
+    void setFontSize(nextSize);
+  };
   // NOTE: editor가 아직 준비되지 않은 구간에도 툴바를 계속 그린다. 캔버스 왕복 직후처럼
   // 상위(EditorRoot.docEditor)가 일시적 null/stale인 동안 여기서 return null 하면
   // hover 밴드는 뜨는데 컨트롤이 하나 없는 '빈 막대'만 노출된다. ghost editor는
@@ -412,7 +433,7 @@ export default function EditorToolbar({
           <CompactDropdown<number>
             options={FONT_SIZE_OPTIONS}
             value={fontSize}
-            onChange={(v) => void setFontSize(v)}
+            onChange={(v) => applyFontSize(v)}
             getLabel={(v) => `${v}pt`}
             aria-label={t("toolbar.fontSize", "크기")}
             className="w-[4.5rem]"

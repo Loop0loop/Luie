@@ -2,20 +2,24 @@
 
 조사 대상: `src/renderer/**` (사이드바 렌더링 · RAM/메모리)
 기준 문서: `.kiro/skills/vercel-react-best-practices/rules/*.md`, `src/renderer/AGENTS.md`
-상태: **초기 감사 → 2차 구현/검증 → 3차 정밀 재감사 → 4차 ISTQB 라운드(사용자 수동 검증 통과 이후) → 5차 composition-patterns 라운드.**
+상태: **초기 감사 → 2차 구현/검증 → 3차 정밀 재감사 → 4차 ISTQB 라운드(사용자 수동 검증 통과 이후) → 5차 composition-patterns 라운드 → 6차 미검사 규칙 전수 라운드(Vercel 70규칙 중 54건이 미검사였음) + 단축키 결함 3건 수정.**
 
-- **완료**: O1(a·b1·b2), O2, O3, O8, O10, O11, O12 / N1, N2, N3, N7, N9, N10, N11, N12
+- **완료**: O1(a·b1·b2), O2, O3, O8, O10, O11, O12 / N1, N2, N3, N7, N9, N10, N11, N12, **N16, N17, N18, N19, N20, N21**
 - **부분 완료**: O5 — 목록에 박힌 무거운 서브트리(`SnapshotList`·`TrashList`)에 memo. 챕터 행 memo 추출은 잔여
-- **미착수**: O4, O6, O7, O9 / N4, N5, N6, N13, N15
+- **미착수**: O4, O6, O7, O9 / N4, N5, N6, N13, N15, **N22~N28**
 - **의도적 미변경**: N14 (`forwardRef` — TipTap `ReactRenderer` 통합 경계), N8 (Tailwind 미정의 유틸 30건 — 사용자 결정으로 보류)
-- **미측정**: 200챕터 heap snapshot(O1의 원래 목표 수치), 실제 프레임 드랍 — §5
+- **미측정**: 200챕터 heap snapshot(O1의 원래 목표 수치), 실제 프레임 드랍, 단축키 핫패스의 keypress→paint — §5
 - **알려진 위험 1건**: `handleSave`의 캐시 미스 + 빈 본문 조합 — §8 "남은 위험"
+
+> 6차에서 확인된 감사 범위 정정: 5차까지 `vercel-react-best-practices`의 **70개 규칙 중 16개만 검사**됐고 54개가 미검사였다. CRITICAL 등급인 `async-*` 6건과 `bundle-*` 5건이 전부 미검사 상태였다. 6차에서 54건을 전수 대조했다(§7-6차).
 
 ---
 
 ## 0. 검증 절차와 표기 규약
 
 1차로 서브에이전트 2트랙(사이드바 렌더링 / 메모리)을 병렬 실행했고, 보고된 모든 항목을 **스킬 규칙 원문과 실제 코드로 재검증**했다. 1차 보고에는 오판이 있었고(§4) 이 문서에는 재검증을 통과한 항목만 남겼다.
+
+6차도 같은 절차를 따랐다. 서브에이전트 4트랙(async·server / bundle·rendering / rerender·advanced / js)으로 미검사 54건을 나눠 훑고, 보고된 항목을 전부 파일을 열어 줄번호로 재검증했다. 그 과정에서 오보 5건을 정정했다(§7-6차.2). 6차부터는 결함 검출력 확인을 `scripts/mutation-audit-fixes.mjs`로 자동화해, 수정을 되돌렸을 때 테스트가 실제로 실패하는지를 변이 단위로 측정한다.
 
 규칙 매칭은 세 등급으로 구분한다. 이 구분이 없으면 규칙을 실제 적용 범위를 넘어 끌어다 쓰게 된다.
 
@@ -27,7 +31,7 @@
 
 확신도는 `코드 확인`(파일:줄로 확인) / `측정 필요`(코드로는 구조만 확인 가능)로 나눈다. 심각도는 스킬이 선언한 impact와 다를 수 있어 둘을 따로 적었다.
 
-### 현재 구현 상태 요약 (2026-08-31)
+### 현재 구현 상태 요약 (2026-09-01)
 
 | 범위 | 상태 | 현재 근거 |
 | --- | --- | --- |
@@ -41,7 +45,10 @@
 | O8 · O10 · O11 · O12 | **완료** | reorder Map 조회, meta 상수 hoist, terms 정렬 memo, 죽은 `FOCUS_ENTITY` 핸들러 제거. |
 | O4 · O6 · O7 · O9 | **미착수** | 이 문서의 분석/수정안 상태 유지. |
 | N1~N15 (3·4·5차 신규) | **10건 완료, N4·N5 보류, N6·N13·N15 미착수, N14는 변경 안 함** | §7에 근거. N12는 N10에서 만든 자기 회귀. N13~N15는 5차(composition-patterns + 미검사 Vercel 규칙) 신규. |
-| Tailwind 미정의 유틸 30건 | **보류(사용자 결정)** | §7-N8에 근거만 기록. 이후 사용자가 Tailwind v4 마이그레이션을 별도 진행. |
+| N16~N19 (6차 단축키) | **완료** | 전역 keydown 핫패스, 무수정자 인쇄문자 바인딩(사용자 검증 결함), accelerator canonical 부재, `+` 키 파싱 소실. §7-6차. |
+| N20 · N21 (6차 수정) | **완료** | smartLink 매치별 선형 탐색 → Map, wiki viewMode 영속화의 렌더 중 throw 차단. §7-6차. |
+| N22~N28 (6차 미착수) | **미착수** | 54건 전수 대조에서 나온 잔여 위반. 전부 LOW~LOW-MEDIUM. §7-6차. |
+| Tailwind 미정의 유틸 30건 | **보류(사용자 결정)** | §7-N8에 근거만 기록. 이후 사용자가 Tailwind v4 마이그레이션을 별도 진행. 6차 재확인(2026-09-01)에도 8종 30건 동일. |
 
 > 경계 요약: 목록(`getAllChapters`·`getDeletedChapters`)은 본문을 나르지 않고, 본문은 단건 조회(`getChapter`)와 `chapterContentStore` 캐시만이 공급한다. store 경계에서 create/update/get 응답의 본문을 투영해 되살아나는 경로도 막았다. 다만 **실제 힙 감소 MB는 아직 측정하지 않았다**(§5-1).
 
@@ -376,6 +383,10 @@ ScrivenerLayout.tsx:116   updatePanelSize(panel.id, rawSize)
 7. 탭 반복 전환 시 detached DOM/ProseMirror 인스턴스 누적 — 코드상 정리는 정상, 실측 필요.
 8. lucide-react 배럴 import의 번들 영향 — 번들 분석 필요.
 9. N15(capture scroll listener passive)의 체감 효과 — 툴바 bounds 동기화 빈도 의존.
+10. **N16 단축키 핫패스의 실제 keypress→paint 지연.** 구조는 테스트로 정량화했다(키 입력 1회당 accelerator 재파싱이 단축키 수만큼, DOM 읽기도 액션 수만큼). 다만 할당 하나는 마이크로초 단위라 실제 영향은 입력 지연보다 장시간 집필 중 GC 압력 쪽일 가능성이 높다. 기존 `bench:writing-loop:profiles` 하네스에 heap 지표가 없어(§5-1) 여기에 붙이는 것이 자연스럽다.
+11. N20(smartLinkService `.find()`)의 실제 비용 — 엔티티 규모 미측정.
+12. N22(animate-spin 18건)의 합성 이득 — 스피너가 소형이라 미미할 수 있다.
+13. N27(bundle-preload 미적용 2곳)의 첫 진입 지연 — `EditorRoot`→tiptap 청크, `GraphWorkspace`→reactflow 청크.
 
 ---
 
@@ -396,6 +407,11 @@ ScrivenerLayout.tsx:116   updatePanelSize(panel.id, rawSize)
 | `2304c2a1` | O5(부분) | `SnapshotList`·`TrashList`에 memo. UI/UX 무변경. |
 | `32cc7c2c` | **N11** + 저장 결정표 | 휴지통 조회에서 본문 제거, `handleSave` 결정표 7케이스 고정. |
 | `0e243c92` | **N12** | 전역 `pointerup` 중복 등록 병합(N10에서 만든 자기 회귀). |
+| `b7a59adc` | **N16·N17·N18·N19** (기반) | `shared/utils/shortcutAccelerator.ts` 신설(단일 해석 지점) + 테스트 4스위트 + 변이 스크립트. |
+| `6eafc9d1` | N17 (i18n) | `settings.shortcuts.needsModifier` ko/en 추가. |
+| `a0453d20` | **N16·N17·N18** (적용) | `useShortcuts` 핫패스·리스너 수정, `ShortcutsTab` 기록 검증·canonical 충돌 감지, ja i18n. 사용자의 UI 토큰 작업과 함께 담겼다. |
+| (미커밋) | N18 (기본값) | `settingsDefaults`를 canonical 표기로 전환 + 기능키 표시 보정 + 기본값 계약 테스트. |
+| (미커밋) | **N20 · N21** | smartLink `entityByText` Map 도입, `wikiViewModeStorage` 신설 + 두 상세 뷰 배선. 변이 스크립트를 `mutation-audit-fixes.mjs`로 일반화. |
 
 ### 남은 항목
 
@@ -405,6 +421,11 @@ ScrivenerLayout.tsx:116   updatePanelSize(panel.id, rawSize)
 | 다음 | O4 | `--editor-font-size`/`--editor-line-height`가 **이미 세팅돼 있다**(`Editor.tsx:370`, `:293`). `editor.css:38`이 `font-size: 1rem`을 하드코딩해 CSS 변수를 무시하는 게 문제다. 같은 스타일이 세 경로로 중복 적용되고 그중 `useEditor` deps 경로만 재생성을 유발한다. 자체 완결적이고 같은 파일에 letter/word spacing 선례가 있다. |
 | 이후 | O9 · N5 | 둘 다 `EntityGallery.tsx`다. 한 번에 처리하는 편이 효율적이다. |
 | 이후 | N15 | `EditorToolbar.tsx:134` capture scroll listener에 `{ capture: true, passive: true }`. 한 줄. |
+| 이후 | **N24 · N25** | 각각 두 줄·한 줄 수정이다. 함께 처리하는 편이 효율적이다. |
+| 이후 | **N23** | `useDrawingCanvas.ts:100`에 라운딩 추가. 선례는 `radarGeometry.ts`의 `toFixed(2)`. 저장 포맷이 바뀌므로 기존 드로잉과의 호환은 유지된다(문자열 파싱 아님). |
+| 이후 | **N22** | 18건 기계적 반복이지만 스피너 시각 회귀를 눈으로 확인해야 한다. 선례는 `NarrativeSummaryStatusPanel.tsx:50`. |
+| 보류 | **N26 · N28** | N26은 dev 한정이고 로드가 멱등하다. N28은 전부 부수 패널이고 집필 핫패스에는 이 패턴이 없다. |
+| 보류 | **N27** | 측정(§5-13) 후 판단. 선례는 `EditorRoot.tsx:285-286`의 `prefetchSettings`. |
 | 보류 | O6 | 스킬 impact는 HIGH지만 현재 적용 위치가 감싸는 것은 값싼 챕터 행 + `SnapshotList`(Virtuoso 가상화)다. 항목 단위로 옮기면 Virtuoso 측정과 충돌할 위험이 있다. 이득이 큰 곳은 가상화가 없는 `EntityGallery`·`SidebarChapterList`다. 측정 후 판단. |
 | 보류 | N4 | canvas 확장/선택 상태를 store로 옮기는 중간 규모 리팩터가 필요하다. boolean prop만 내리는 우회는 자식이 여전히 맵을 필요로 해 성립하지 않는다. 집필 핫패스가 아니다. |
 | 보류 | N13 | `Editor.tsx`(440 LOC, autosave 포함)의 전면 리팩터는 이 세션의 어떤 변경보다 크다. 낮은 위험 부분은 3개 임베드 호출부가 공유하는 `EmbeddedEditor` 추출이다. 성능 이득은 없고 유지보수성 개선. |
@@ -420,9 +441,11 @@ git tag pre-o5-20260831      # O5 착수 전 (ed942419)
 git revert <sha>             # 항목별 개별 롤백 — 위 표의 커밋 단위로 가능
 ```
 
+6차 단축키 작업은 `b7a59adc`(기반·테스트) → `a0453d20`(적용) 순서라, 되돌릴 때는 적용을 먼저 revert해야 한다. `a0453d20`은 사용자의 UI 토큰 작업이 함께 담겨 있어 통째 revert하면 그쪽까지 되돌아간다 — 단축키만 되돌리려면 `useShortcuts.ts`·`ShortcutsTab.tsx` 두 파일만 골라 `git checkout ff00968a -- <path>`를 쓴다.
+
 ---
 
-## 7. 3~5차 재감사 신규 항목 (N1~N15)
+## 7. 3~6차 재감사 신규 항목 (N1~N28)
 
 기준 문서는 이 파일 하나만 참조했고, 판정은 전부 실코드를 열어 줄번호를 확인했다. 서브에이전트 3트랙(성능/일관성/주석)의 보고도 재확인을 거쳤고 그 과정에서 오탐 2건을 제거했다(§7.5).
 
@@ -708,30 +731,303 @@ src/renderer/src/features/editor/components/EditorToolbar.tsx:134  window.addEve
 
 ---
 
+## 7-6차. 미검사 규칙 전수 라운드 (N16~N28)
+
+### 감사 범위 정정
+
+5차를 "composition-patterns + 미검사 Vercel 규칙" 라운드로 기록했으나, 실제로 `vercel-react-best-practices`의 **70개 규칙 중 16개만** 검사됐고 **54개가 미검사**였다. 미검사분에는 스킬이 CRITICAL로 선언한 `async-*` 6건과 `bundle-*` 5건이 전부 포함돼 있었다. 6차에서 54건을 전수 대조했다.
+
+방법: 서브에이전트 4트랙(async·server / bundle·rendering / rerender·advanced / js)을 병렬 실행하고, **보고된 모든 항목을 규칙 원문과 실코드로 재검증**했다. 그 과정에서 서브에이전트 오보 5건을 정정했다(§7-6차 말미).
+
+---
+
+### N16. 단축키 시스템이 집필 타이핑 핫패스에 있음 — MEDIUM (**완료**)
+
+이전 5차까지 전혀 검사되지 않은 영역이다. 사슬이 세 단계로 이어졌다.
+
+**근거(수정 전)**
+
+```
+useEditorRootShortcuts.ts:87    useMemo(약 60개 핸들러 맵)
+  └ 의존성에 isSidebarOpen(:162), fontSize(:168)
+useShortcuts.ts:137             useEffect 의존성 [handlers, shortcuts, enabled]
+useShortcuts.ts:135-136         window keydown add/removeEventListener
+useShortcuts.ts:120             Object.entries(shortcuts) — keydown마다 배열 재할당
+useShortcuts.ts:123             isEditableTarget(event) — 루프 안에서 DOM 프로퍼티 반복 읽기
+useShortcuts.ts:127             matchShortcut → parseAccelerator(:15) — keydown마다 재파싱
+```
+
+**왜 문제였는가** — 사이드바를 토글하거나 폰트 크기를 바꾸면 핸들러 맵 전체가 재생성되고, 그것이 전역 keydown 리스너 해제·재등록으로 전파됐다. 더 중요한 건 keydown 내부다. accelerator는 `shortcuts`가 바뀔 때만 변하는 정적 값인데 키 입력마다 다시 파싱했고, `ALLOW_IN_EDITORS`(42개)를 통과하는 액션마다 `split`+`map`×2+`filter`+`new Set()`이 반복됐다.
+
+**정량화** — `shortcutHotPathCost.test.tsx`가 계측으로 고정했다. 단축키 10개 등록 상태에서 키 입력 20회 → **accelerator 값 읽기 200회**(입력당 10회), **DOM 읽기 10회/입력**, 핸들러 맵 재생성 5회 → **리스너 재등록 5회**.
+
+**반영** — accelerator를 `useMemo(..., [shortcuts])`로 미리 파싱, `isEditableTarget`을 루프 밖으로 호이스트, `handlers`를 ref로 옮겨 effect 의존성에서 제거. ref 갱신은 리포 관례(`Editor.tsx:98`, `useLayoutSurfaceResizeCommit.ts:44`)를 따라 `useEffect`를 썼다.
+
+**규칙 매칭** — `js-cache-function-results` **원리 적용** + `js-index-maps` **원리 적용** + `client-event-listeners` **원리 적용**. 근인은 `rerender-functional-setstate` **직접 적용**.
+
+**근인에 대한 메모** — `uiStore.state.ts:421`에 이미 함수형 `toggleLeftSidebar`가 있고 `BottomInteractiveToolbar.tsx:48`이 `getState()`로 구독 없이 호출한다. 그런데 `EditorRoot.tsx:102-104`가 `!isSidebarOpen`로 다시 파생하고 `useEditorRootShortcuts.ts:119`가 세 번째로 또 파생한다. **이 중복 파생 자체는 아직 정리하지 않았다** — ref 도입으로 리스너 재등록은 끊었지만 핸들러 맵 재생성은 남아 있다. `setFontSize`는 zustand 액션 `(size: number) => Promise<void>`(`editorStore.ts:31,115`)라 함수형 업데이트를 지원하지 않으므로, 정리하려면 `getState()` 읽기나 `adjustFontSize(delta)` 액션 추가가 필요하다.
+
+**확신도** — 구조·계측: 테스트 확인. 실제 keypress→paint: 측정 필요(§5-10).
+
+---
+
+### N17. 수정자 없는 인쇄 문자 바인딩이 집필을 침해 — HIGH (**완료 · 사용자 검증 결함**)
+
+사용자가 "설정 단축키 오류"로 보고했고 수동 검증까지 마친 결함이다.
+
+**근거(수정 전)**
+
+```
+ShortcutsTab.tsx:207-216   기록 핸들러가 수정자 없는 단일 문자를 그대로 저장
+shared/schemas/settings.ts:78   z.record(z.string(), z.string()) — 형식 미검증
+useShortcuts.ts:63         ALLOW_IN_EDITORS에 app.openSettings 포함(42개 중 하나)
+useShortcuts.ts:27-30      REQUIRE_PRIMARY_MODIFIER는 app.closeWindow·app.quit 2개만
+```
+
+**왜 문제였는가** — 설정 화면에서 콤마만 눌러 기록하면 `"comma"`가 영속화된다. `app.openSettings`는 편집 중 허용 액션이면서 primary modifier 요구 목록에는 없으므로, **집필 중 본문에 콤마를 칠 때마다 설정 모달이 열렸다.** 스키마도 형식을 검증하지 않아 이 값이 그대로 통과했다.
+
+이 결함 계열은 이미 인지돼 있었다. `useShortcuts.ts:26`의 기존 주석이 "WARNING: 저장 shortcut이 손상돼도 plain key로 앱이 종료되지 않도록 파괴적 동작에는 Cmd/Ctrl이 필요하다"고 적고 있다. 즉 가드는 있었으나 42개 중 2개만 덮었다.
+
+**반영 — 2층 방어**
+
+- **기록 층**(`ShortcutsTab`): `validateAccelerator`로 거부하고 기록 모드를 유지해 즉시 재시도할 수 있게 한다. 거부 이유를 `role="alert"`로 표시하고 3개 로케일에 문구를 추가했다.
+- **매칭 층**(`useShortcuts`): 이미 저장된 무효 값도 걸러낸다. **기록 검증만으로는 사용자의 현재 깨진 설정 파일을 되돌릴 수 없으므로** 이 층이 자기 치유를 담당한다.
+
+**핵심 설계 판단** — 무수정자 바인딩을 일괄 금지하지 **않았다.** F11·Escape·화살표는 수정자 없이 정당하다. 금지 대상을 "인쇄 가능한 단일 문자"로 한정했고, canonical 토큰에서 이름 있는 키는 모두 두 글자 이상이라는 성질을 판정에 썼다(`isPrintableShortcutKey`). 이 경계는 `shortcutModifierSafety` R5와 `shortcutRecordingValidation` S4가 고정한다. `alt`·`shift` 단독도 거부한다 — macOS에서 Alt+문자는 인쇄 문자를 만들고 Shift+문자는 대문자를 만들어 본문 입력과 구분되지 않는다.
+
+**확신도** — 코드 및 테스트 확인. RED 단계에서 R1이 `called 1 times`로 실패해 사용자 검증과 일치했다.
+
+---
+
+### N18. accelerator canonical 표기 부재로 충돌 감지가 실패 — MEDIUM (**완료**)
+
+**근거(수정 전)**
+
+```
+settingsDefaults.ts:67      "app.openSettings": `${mod}+,`      → "Cmd+,"
+ShortcutsTab.tsx:212        else if (key === ",") key = "comma"  → "cmd+comma"
+ShortcutsTab.tsx:237-250    conflictMap이 valA === valB (원시 문자열 비교)
+useShortcuts.ts:7           MODIFIER_KEYS에 "meta" 없음
+```
+
+**왜 문제였는가** — main이 만드는 기본값과 설정 화면이 기록하는 값이 서로 다른 표기였다. 매칭은 양쪽 모두 우연히 성공했지만(`normalizeKey`가 둘 다 `comma`로 접었다) **충돌 감지가 문자열을 비교해 같은 물리 조합을 놓쳤다.** 두 액션이 같은 키를 물고 있어도 경고가 없고, `Object.entries` 순서가 빠른 쪽만 발화하며 나머지는 조용히 죽는다. 수정자 순서(`shift+cmd+b` vs `cmd+shift+b`)도 같은 문제를 만든다.
+
+`MODIFIER_KEYS`에 `meta`가 없던 것도 같은 계열이다. `"Meta+K"`가 저장되면 `meta`가 수정자로 인식되지 않고 키로 오인돼 **수정자가 사라지고 평문 `k`로 강등**된다. 그러면 N17의 경로가 열린다.
+
+**반영** — `shared/utils/shortcutAccelerator.ts`를 신설해 main·기록·매칭 세 곳이 각자 하던 해석을 단일 지점으로 모았다.
+
+```
+parseAccelerator        수정자 별칭(cmd/command/meta, ctrl/control, alt/option) 인식
+normalizeShortcutKey    `,`↔`comma`, ` `↔`space`, `+`↔`plus` 양방향 접기
+canonicalizeAccelerator 수정자 순서 고정(cmd→ctrl→alt→shift), 멱등
+findAcceleratorConflicts canonical 값으로 그룹핑
+validateAccelerator     N17의 안전성 규칙
+settingsDefaults.ts     기본값을 canonical 표기로 전환
+ShortcutsTab formatPart 기능키 대문자 표시 보정(canonical은 소문자)
+```
+
+기존 사용자 데이터는 안전하다. `settingsManager.ts:155`가 `{ ...DEFAULT_SHORTCUTS, ...stored }`로 병합해 저장값이 우선하고, 매칭 층이 구 표기도 canonical로 접는다.
+
+**표기 규약을 코드로 강제할 수 없어** `settingsShortcutDefaults.test.ts`(49 케이스)가 기본값 표 전체를 전수 검사한다 — canonical 여부, 안전성, 기본값 간 충돌 없음, 대문자·리터럴 콤마 부재.
+
+**확신도** — 코드 및 테스트 확인.
+
+---
+
+### N19. `+` 키 바인딩이 파싱에서 소실 — LOW-MEDIUM (**완료**)
+
+**근거(수정 전)** — `useShortcuts.ts:16-19`가 `accelerator.split("+").filter(Boolean)`을 썼다. `"cmd++"`(Cmd와 `+`)는 `["cmd","",""]`로 쪼개진 뒤 빈 조각이 걸러져 키가 사라지고, `matchShortcut`의 `if (!key) return false`에서 **영구히 죽는다.**
+
+**왜 문제인가** — `editor.fontSize.increase`는 사용자가 `Cmd+=`/`Cmd++`로 바인딩하기 쉬운 액션이다. UI도 `splitParts`가 같은 필터를 써서 칩이 `⌘`만 표시되는 깨진 모습이 된다.
+
+**반영** — `split` 대신 앞에서 수정자만 걷어내고 남은 문자열을 키로 그대로 둔다. `separator <= 0`이면 남은 것이 `+` 자체라 더 걷어내지 않는다.
+
+**확신도** — 코드 및 테스트 확인(R7, 계약 테스트).
+
+---
+
+### N20. 스마트링크가 매치마다 엔티티 배열을 선형 탐색 — LOW-MEDIUM (**완료**)
+
+**근거(수정 전)** — `smartLinkService.ts:83`이 `doc.descendants` × `while(pattern.exec)` 이중 루프 안에서 `this.entities.find(item => item.text === matchedText)`를 호출했다. 매치 1건마다 엔티티 배열을 훑으므로 비용이 (매치 수 × 엔티티 수)로 늘어난다. 이 함수는 에디터 데코레이션 계산 경로이고 본문이 바뀔 때마다 재실행된다.
+
+**반영** — `ensureCache`가 `entityByText: Map<string, SmartLinkEntity>`를 함께 만들고 조회를 O(1)로 바꿨다. 이미 같은 자리에서 `uniqueNames` Set을 만들고 있어 추가 순회가 생기지 않는다.
+
+**보존해야 했던 것** — `entities`는 text 길이 내림차순으로 정렬돼 있고 캐릭터가 용어보다 앞이다. 그래서 이름이 겹칠 때 `.find()`는 **정렬된 배열의 첫 항목**을 돌려줬다. Map을 채울 때 `if (!has(text))`로 먼저 넣은 항목을 지켜 같은 우선순위를 유지했다. 이 규칙이 깨지면 캐릭터와 동명인 용어가 캐릭터를 덮는다.
+
+**검증** — `smartLinkEntityLookup.test.ts` 9개. 정확성 8개(캐릭터/용어/혼합, 반복 매치, 엔티티 0개, 매치 0건, 긴 이름 우선, 이름 중복 우선순위)로 기준선을 먼저 고정한 뒤 계측 1개를 추가했다. 계측은 캐시를 채운 후 `Array.prototype.find` 호출 수를 세며, 수정 전 매치 10건에서 **10회** 호출됨을 확인했고 수정 후 0회다.
+
+**규칙 매칭** — `js-set-map-lookups` **원리 적용**.
+
+**확신도** — 구조·정확성: 테스트 확인. 엔티티 규모별 실제 비용: 측정 필요(§5-11).
+
+---
+
+### N21. wiki/entity 상세 뷰가 렌더 중 localStorage를 try/catch 없이 읽음 — MEDIUM (**완료**)
+
+**근거(수정 전)**
+
+```
+EntityDetailView.tsx:119-127   useState 초기화 함수 안에서 localStorage.getItem
+WikiDetailView.tsx:22-26       모듈 스코프 readViewMode — 렌더 본문(:118)에서 호출
+shared/schemas 없음            키에 버전 프리픽스 없음
+```
+
+**왜 문제였는가** — localStorage는 프라이빗 브라우징·용량 초과·비활성 환경에서 throw한다. 두 호출 모두 **렌더 경로**에 있어 예외가 에러 바운더리까지 올라가고, 사용자에게는 캐릭터/세력 문서가 열리지 않는 것으로 보인다. 규칙 원문이 "Always wrap in try-catch"를 명시한다. 같은 로직이 두 파일에 중복돼 있어 한쪽만 고치면 다른 쪽이 남는 구조이기도 했다.
+
+**반영** — `wiki/wikiViewModeStorage.ts`를 신설해 두 뷰가 공용 경로를 쓴다. 읽기·쓰기 모두 try/catch로 감싸고, 키에 `v1` 버전을 붙이면서 **legacy 키 폴백**을 함께 뒀다. 버전만 도입하면 기존 사용자의 표시 모드 선택이 전부 초기화되는데, 폴백을 두면 사용자 비용이 0이다. `WikiDetailView`의 죽은 `getViewModeStorageKey`·`readViewMode`도 제거했다.
+
+id가 없는 경우는 legacy 폴백에서 제외했다 — 그 상태는 '선택된 엔티티 없음' 화면이고 표시 모드를 쓰지 않는데, 과거 두 뷰가 서로 다른 키 모양(`prefix:` vs `prefix`)을 써서 양쪽을 다 뒤져야 하기 때문이다. 이 결정은 코드 주석에 남겼다.
+
+**검증** — `wikiViewModePreference.test.tsx` 21개. 결정표(versioned × legacy) 4개, 동등분할 8개, 경계값 5개, 예외 경로 3개, 배선 1개다. 배선 테스트는 `EntityDetailView`를 실제로 마운트해 localStorage가 throw하는 환경에서도 살아남는지 본다 — helper만 테스트하면 컴포넌트가 여전히 직접 호출하는 회귀를 놓친다.
+
+**규칙 매칭** — `client-localstorage-schema` **직접 적용**.
+
+**확신도** — 코드 및 테스트 확인.
+
+---
+
+### N22~N28. 54건 전수 대조에서 나온 미착수 위반
+
+전부 재검증을 통과한 항목만 적는다. 심각도는 스킬 선언 impact와 내 판단을 함께 둔다.
+
+| ID | 규칙 · 판정 | 근거 | 심각도 |
+| --- | --- | --- | --- |
+| **N20** | `js-set-map-lookups` 원리 적용 | **완료** — 위 N20 절 참조. | — |
+| **N21** | `client-localstorage-schema` 직접 적용 | **완료** — 위 N21 절 참조. | — |
+| **N22** | `rendering-animate-svg-wrapper` 직접 적용 | lucide 아이콘이 `<svg>`를 루트로 렌더하므로 `<Loader2 className="animate-spin"/>`가 SVG에 직접 걸린다. **18건**. 래퍼를 쓴 정상 사례는 `NarrativeSummaryStatusPanel.tsx:50` 1건뿐. | 스킬 LOW / 내 판단 LOW |
+| **N23** | `rendering-svg-precision` 직접 적용 | `useDrawingCanvas.ts:100`의 `getCoords`가 `e.clientX - rect.left`를 라운딩 없이 반환하고, `:152`·`:158`이 그 부동소수점 좌표를 SVG path 문자열에 누적해 `.luie`에 영속화한다. 선례: `radarGeometry.ts`의 `toFixed(2)`. | LOW-MEDIUM (획 수 의존) |
+| **N24** | `async-parallel` 원리 적용 | `chapterService.ts:170-171`, `:322-323` — 독립적인 캐시 clear 2건을 순차 await한다. 바로 위(`:166-169`)에서 같은 두 서비스를 `Promise.all`로 로드해 놓고 clear만 순차다. | 스킬 CRITICAL / 내 판단 LOW (저빈도 mutation) |
+| **N25** | `rerender-simple-expression-in-memo` 직접 적용 | `SnapshotViewer.tsx:72` `useMemo(() => currentContent, [currentContent])` 순수 항등 패스스루. | LOW |
+| **N26** | `advanced-init-once` 원리 적용 | `useProjectInit.ts:18` 효과가 `main.tsx:53` StrictMode로 dev에서 2회 실행. 다만 `Promise.allSettled([loadProjects(), loadSettings()])`는 이미 병렬이고 멱등하다. | LOW (dev 한정) |
+| **N27** | `bundle-preload` 원리 적용 | 무거운 lazy 청크에 intent 프리페치가 없다 — `App.tsx:48` `EditorRoot`(→vendor-tiptap), `CanvasPane.tsx:14` `GraphWorkspace`(→vendor-graph). 선례: `EditorRoot.tsx:285-286` `prefetchSettings`. | LOW (측정 후 판단) |
+| **N28** | `rendering-usetransition-loading` 직접 적용 | `useTransition` 사용 0건. 수동 `useState(false)`+토글 로딩이 `SnapshotList:33,69,86`, `TrashList:35,54,73`, `AIPanel:32,49,69` 등 다수. **집필 핫패스에는 이 패턴이 없다**(autosave는 O2에서 캐시 경로로 정리됨) — 전부 부수 패널이다. | LOW |
+
+---
+
+### 7-6차.1. 위반 0건으로 확정한 것
+
+54건 중 위반이 없다고 판정한 근거를 남긴다. 다음 라운드에서 같은 규칙을 다시 훑지 않기 위한 기록이다.
+
+| 대상 | 판정 |
+| --- | --- |
+| `rendering-conditional-render` | **위반 0건.** `&&` 조건부 렌더 157건 전수 확인. `.length &&` **0건**, 숫자 누출 위험형 0건. 전부 boolean 또는 string이다. 코드베이스가 numeric footgun을 일관되게 회피한다. |
+| `js-hoist-regexp` | **위반 0건.** 정규식이 전부 모듈 상수 또는 `ensureCache` 캐시다. `exportContentNormalization`·`sanitizeHtml`도 모듈 상수. |
+| `server-no-shared-module-state` | **위반 0건.** 가변 모듈 상태 3건(`luiePackageWriter.ts:5` packageWriteQueue, `ragPromptConfig.ts:24` configCache, `jobControl.ts:31` progressSnapshotCache) 전부 올바르게 키잉된 캐시/락으로 규칙이 명시한 안전 예외다. |
+| `bundle-dynamic-imports` · `bundle-conditional` | **이미 준수.** `lazy()` 50건 이상 + `electron.vite.config.ts:46-72` manualChunks가 tiptap/prosemirror/graph/data를 분리. 초기 entry 청크에 무거운 라이브러리 없음. |
+| `bundle-analyzable-paths` | **매칭 없음.** 동적 변수 경로 `import(variable)` 0건. |
+| `rendering-hydration-no-flicker` · `hydration-suppress-warning` · `script-defer-async` | **매칭 없음** (Electron, SSR 없음). 다만 `setup.ts:112`가 React 마운트 전 동기로 테마를 적용해 no-flicker 원리를 이미 구현하고 있다. |
+| `rendering-activity` | **매칭 없음.** React `<Activity>` 0건. 검색 매치는 전부 "CanvasActivity" 도메인 식별자. |
+| `async-defer-await` · `async-cheap-condition-before-await` · `async-api-routes` · `server-auth-actions` · `server-cache-react` · `server-dedup-props` | **매칭 없음.** 로컬 Electron 앱이라 feature-flag gate·Next route·서버 인증 경계·RSC 직렬화가 없다. |
+| `server-parallel-fetching` · `server-parallel-nested-fetching` | **위반 0건.** export/import 핫패스가 이미 `Promise.all`이다(`importOpen/collections.ts` 10엔트리, `exportEngine/projectRecord.ts` 8컬렉션, `worldPayload.ts` 6문서). |
+| `server-after-nonblocking` | **매칭 없음.** 단 `handleSave`의 `void api.autoSave(...)` fire-and-forget이 동일 원리를 이미 구현 중이다. |
+| `rerender-derived-state-no-effect` | **명백한 위반 0건.** renderer AGENTS.md 규범(`useEffect`는 외부 동기화 전용)이 지켜지고 있다. |
+| `rerender-lazy-state-init` · `rerender-move-effect-to-event` · `rerender-transitions` · `advanced-effect-event-deps` | **매칭 없음.** lazy init 준수, 데이터 로딩 effect만, 고빈도 setState는 ref+rAF 처리, `useEffectEvent` 0건. |
+| `advanced-event-handler-refs` · `advanced-use-latest` | **이미 준수.** `useEffectEvent`를 쓰지 않는 대신 `handlerRef.current` 패턴을 수동 구현했다. |
+| `client-swr-dedup` | **원리 이미 구현.** SWR 미사용이지만 `chapterContentStore.ts:32,113-139`의 inFlight dedup이 같은 일을 한다. |
+| `js-batch-dom-css` · `js-min-max-loop` · `js-cache-storage` · `js-early-exit` · `js-cache-property-access` · `js-length-check-first` · `js-cache-function-results` · `js-request-idle-callback` | **위반 0건.** 연속 style 쓰기는 레이아웃 읽기 인터리브가 없어 규칙의 OK 케이스, `.sort()` 9파일 전부 정렬 결과 전체 사용, storage는 lazy init 1회. |
+| `js-combine-iterations` · `js-flatmap-filter` | **LOW 미만.** `EntityGallery.tsx:167`·`termDragDropUtils.ts:29-35`·`useEntityVisualData.ts:60-78`이 해당하나 대상 배열이 한 자릿수거나 호출이 1회성이라 지적하지 않는다. |
+
+### 7-6차.2. 6차에서 걸러낸 오보·오탐
+
+서브에이전트 보고를 재검증하는 과정에서 정정한 것이다. **재검증 없이 그대로 기록했다면 문서에 잘못된 줄번호와 불가능한 수정안이 들어갔다.**
+
+| 보고 내용 | 재검증 결과 |
+| --- | --- |
+| `hooks/useEditorRootShortcuts.ts` | 실제 경로는 `components/useEditorRootShortcuts.ts` |
+| purgeChapter의 순차 clearChapter가 `:335-336` | 실제 **`:322-323`** |
+| `useDrawingCanvas`가 `:157`·`:163` | 실제 **`:152`·`:158`**(getCoords는 `:100`) |
+| animate-svg-wrapper "15+건" | 실제 **18건** |
+| "`setFontSize`를 함수형 업데이트로 전환" | **불가능.** zustand 액션 `(size: number) => Promise<void>`라 함수형 미지원. `getState()` 읽기나 `adjustFontSize(delta)` 액션이 필요하다. |
+| `view.toggleContextPanel` 수정자 순서 테스트 실패 | **내 테스트 설계 오류.** 비편집 대상을 `<input>`으로 만들었는데 `isEditableTarget`이 input을 편집 대상으로 판정해, ALLOW_IN_EDITORS 비소속 액션이 정당하게 차단된 것이었다. |
+| `isEditableTarget` DOM 읽기 1회 (통과) | **무효 테스트였다.** 핸들러를 1개만 등록해 `if (!handlers[action]) continue`에서 루프가 조기 종료됐다. 전 액션에 핸들러를 등록하자 10회로 검출됐다. |
+| localStorage throw 시뮬레이션 (예외 경로 4개 통과) | **전부 무효 테스트였다.** `vi.spyOn(window.localStorage, "getItem")`이 이 jsdom 설정에서 **조용히 무시된다**(진단 결과 실제 getItem이 호출됨). `not.toThrow()` 단정이라 결함과 무관하게 통과했다. `Storage.prototype`에 걸어야 하고, 각 테스트에 스파이 유효성 가드를 넣어 고정했다. |
+| "빈 문자열 id는 id 없음과 다른 슬롯을 쓴다" | **내 단정이 과했다.** 기존 구현도 `${entityId ?? ""}`로 두 경우를 같은 키에 모았다. 구현을 바꾸는 대신 기존 동작을 명시적으로 고정하는 테스트로 바꿨다. |
+| `invalidate`의 Map 초기화 생존 변이 | **등가 변이였다.** 커버리지 공백이 아니다. 근거는 §8 6차 절. |
+
+---
+
 ## 8. 검증 기록
 
-### 최종 집계 (2026-09-01)
+### 최종 집계 (2026-09-01, 6차 포함)
 
-| 범위 | 스위트 | 테스트 |
+| 범위 | 스위트 | 테스트 | 이 세션 실행 |
+| --- | --- | --- | --- |
+| 6차 신규 (단축키 + N20 + N21) | 7 | **180 passed** | 실행 확인 |
+| chapter·panel 관련 renderer + dom | 8 | **45 passed** | 실행 확인 (회귀 없음) |
+| chapter 관련 main 서비스 | 2 | 20 passed (이전 라운드 값) | **미실행** — `better-sqlite3` ABI |
+| TypeScript | — | **0 errors** | 실행 확인 |
+| ESLint (변경 파일) | — | **exit 0** | 실행 확인 |
+| i18n parity | — | **PASS** | 실행 확인 |
+| 변이 점수 (6차 수정) | 26 변이 | **26/26 = 100%** | 실행 확인 |
+
+전체 `tests/dom` + `tests/renderer` 실행은 **727 passed / 5 failed**이며, 실패 5건은 아래 "환경 관련"의 기존 실패 3파일이다. 이 3파일이 6차 변경 모듈을 참조하는 건수는 각 0건으로 확인했다.
+
+> main 서비스 2스위트를 이 세션에서 돌리지 않은 이유: `better-sqlite3`가 현재 Electron ABI로 빌드돼 있어 vitest에서 `ERR_DLOPEN_FAILED`가 난다. `pnpm rebuild better-sqlite3`로 전환할 수 있지만 그러면 앱을 띄울 수 없어, 사용자가 UI 작업을 진행 중인 동안에는 바꾸지 않았다. 6차 변경 중 main에 닿는 것은 `settingsDefaults.ts` 하나이고, 그 계약은 `settingsShortcutDefaults.test.ts`(49 passed, DB 불필요)가 덮는다.
+
+### 6차 라운드 검증 (2026-09-01, N16~N21)
+
+**신규 스위트 7개 / 180 케이스**
+
+| 스위트 | 케이스 | ISTQB 기법 | 대상 |
+| --- | --- | --- | --- |
+| `shortcutModifierSafety` (dom) | 13 | 결정표, 동등분할, 경계값 | 매칭 층 안전성 — 집필 침해 방지 |
+| `shortcutRecordingValidation` (dom) | 17 | 상태전이, 동등분할 | 기록 층 예방 + 충돌 표시 + 표시 표기 |
+| `shortcutAcceleratorContract` (node) | 67 | 동등분할, 경계값, 결정표, 페어와이즈 | accelerator 해석 계약 |
+| `shortcutHotPathCost` (dom) | 4 | 계측 기반 | 키 입력당 비용, 리스너 생애주기 |
+| `settingsShortcutDefaults` (main) | 49 | 전수 + 동등분할 | 기본값 표기 규약 |
+| `wikiViewModePreference` (dom) | 21 | 결정표, 동등분할, 경계값, 예외 경로 | viewMode 영속화 + 배선 |
+| `smartLinkEntityLookup` (node) | 9 | 동등분할, 경계값, 계측 | 엔티티 조회 정확성 + 매치당 비용 |
+| 합계 | **180** | | |
+
+**RED → GREEN 기록** — 착수 시 스위트가 실제로 실패했다. `shortcutModifierSafety` 3 failed / 10 passed(R1이 `called 1 times`로 실패해 사용자 검증과 일치), `shortcutHotPathCost` 3 failed / 1 passed(재파싱 200회, DOM 읽기 10회/입력, 리스너 재등록 5회), `smartLinkEntityLookup` 1 failed(매치 10건에 `.find()` 10회), `wikiViewModePreference` 1 failed(`EntityDetailView`가 `SecurityError`를 던짐). 수정 후 전부 통과.
+
+**결함 검출력 — 변이 테스트 26/26 = 100%**
+
+`scripts/mutation-audit-fixes.mjs`가 각 수정을 되돌려 대응 테스트가 실제로 잡는지 확인한다. 스크립트는 변이 대상 문자열을 찾지 못하면 `INVALID`로 처리해 **거짓 "생존"을 막는다**. 기준선(변이 없음) 통과를 먼저 확인한 뒤 진행한다.
+
+| 변이 | 검출 강도 | 되돌린 동작 |
 | --- | --- | --- |
-| main (`tests/main/services/**`) | 2 | **20 passed** |
-| renderer + dom (chapter·panel 관련) | 13 | **82 passed** |
-| 합계 | **15** | **102 passed** |
-| TypeScript | — | **0 errors** |
-| ESLint (변경 파일) | — | **exit 0** |
+| M3 | 실패 15건 | 무수정자 인쇄문자 거부 규칙 (N17 핵심) |
+| M5 | 실패 20건 | `isPrintableShortcutKey` 항상 false |
+| M4 | 실패 17건 | `isPrintableShortcutKey` 항상 true (기능키까지 거부) |
+| M16 | 실패 22건 | 기본값 수정자를 대문자로 (표기 혼재 복원) |
+| M1·M2 | 3건·10건 | `+`→plus / `,`→comma 정규화 |
+| M6~M9 | 3·3·2·4건 | canonical 순서, meta 별칭, shift 비교, 수정자만 거부 |
+| M10~M13 | 2·1·1·1건 | 저장값 검증, 리스너 재등록, 루프 내 DOM 읽기, keydown 재파싱 |
+| M14·M15 | 5건·5건 | 기록 단계 검증, canonical 충돌 감지 |
+| M17~M20 | 3·2·1·1건 | 리터럴 콤마 기본값, 안전성 위반 주입, 기능키/comma 표시 |
+| M21~M23 | 3·1·2건 | viewMode 읽기/쓰기 try/catch, legacy 키 폴백 (N21) |
+| M24 | 1건 | `EntityDetailView`의 localStorage 직접 호출 복원 (배선 회귀) |
+| M25·M26 | 1건·1건 | 매치별 선형 탐색 복원, Map first-wins 규칙 (N20) |
 
-이 세션에서 추가한 스위트 7개: `chapterContentRetainPressure`(5), `chapterListBoundary`(10), `defaultLayoutEditorPanelWidthPx`(7), `splitViewEditorContentGate`(6), `chapterListRerenderBoundary`(4), `editorPanelWidthCapture`(4), `sidebarHoverSubtreeIsolation`(2), `handleSaveDecisionTable`(7). 기존 `chapterListContentResolution`은 계약 변경에 맞춰 재작성했다(10 → 15).
+생존 변이 0건, 무효 변이 0건.
 
-**모든 신규 스위트는 결함 검출력을 확인했다** — 대응 수정을 되돌리면 해당 테스트가 실패하는 것을 실제로 실행해 검증했다. 검출력 확인 목록은 각 회차 절에 있다.
+**제외한 등가 변이 1건** — `invalidate()`에서 `this.entityByText = new Map()`을 지우는 변이는 처음 생존했으나, 재조사 결과 **등가 변이**로 확정해 제외했다. `entityByText`는 `findSmartLinks` 한 곳에서만 읽히고 그 메서드는 `ensureCache()`를 먼저 호출한다. `invalidate`가 `pattern = null`로 만들므로 `ensureCache`의 early-return이 성립하지 않아 항상 재빌드되고 그 과정에서 Map이 재할당된다. 즉 테스트가 못 잡는 게 아니라 잡을 것이 없다. 그 줄은 세 캐시 필드가 한 묶음이라는 불변을 남기려고 유지했고, 이유를 주석에 적었다.
 
-### 테스트 작성 중 잡은 무효 테스트 1건
+**첫 실행에서 커버리지 공백 1건을 발견했다** — 충돌 감지(M15)를 지키는 테스트가 없었다. `shortcutRecordingValidation` S9~S12와 계약 테스트 6건을 추가해 메웠다.
+
+**테스트 작성 중 잡은 무효 테스트 4건** — §7-6차.2에 기록. 전부 결함이 있어도 통과하는 형태였다. 특히 `vi.spyOn(window.localStorage, "getItem")`이 이 jsdom 설정에서 **조용히 무시된다**는 것을 진단으로 확인했고(`Storage.prototype`에 걸어야 한다), 그 결과 예외 경로 테스트 4개가 전부 무효였다. 고친 뒤에는 각 테스트에 **스파이 유효성 가드**(`expect(() => localStorage.getItem("probe")).toThrow()`)를 넣어 같은 함정으로 되돌아가지 않게 했다.
+
+**사전 존재 실패의 오귀인 방지** — `ipcSettingsHandlers.security.test.ts` 3건 실패를 `DEFAULT_SHORTCUTS` 변경 탓으로 의심했으나 두 가지로 무관함을 확정했다. (1) 그 테스트는 `getShortcuts`를 `{ shortcuts: {}, defaults: {} }`로 모킹해(`:56`) 실제 기본값이 단정에 도달하지 않는다. (2) `settingsDefaults` 변경을 일시 되돌려 재실행했을 때도 동일하게 3건 실패했다. 원인은 `electron` mock에 `default` export가 없는 문제다(`eventHandlers.ts:21`).
+
+**6차에서 해소된 기존 지적** — `editor.css.bak`이 git 추적에서 제거됐다(§7-N8 항목 중 1건 해소). N8의 Tailwind 미정의 유틸은 재확인 결과 8종 30건 그대로이고, 임의 z-index 3건도 그대로다.
+
+### 2~5차 신규 스위트 목록
+
+`chapterContentRetainPressure`(5), `chapterListBoundary`(10), `defaultLayoutEditorPanelWidthPx`(7), `splitViewEditorContentGate`(6), `chapterListRerenderBoundary`(4), `editorPanelWidthCapture`(4), `sidebarHoverSubtreeIsolation`(2), `handleSaveDecisionTable`(7). 기존 `chapterListContentResolution`은 계약 변경에 맞춰 재작성했다(10 → 14).
+
+**모든 신규 스위트는 결함 검출력을 확인했다** — 대응 수정을 되돌리면 해당 테스트가 실패하는 것을 실제로 실행해 검증했다. 검출력 확인 목록은 각 회차 절에 있다. 6차에서는 이를 `scripts/mutation-audit-fixes.mjs`로 자동화했다.
+
+### 테스트 작성 중 잡은 무효 테스트 1건 (5차)
 
 `sidebarHoverSubtreeIsolation` 초안은 `vi.mock`이 **테스트 파일 자신의 import까지 가로채** 실코드가 아니라 대역(memo로 감싼)을 검사했다. 실코드에서 `memo`를 떼도 초록으로 통과했다. `vi.importActual`로 실모듈을 가져오도록 고쳐 검출력을 확보했다. 검출력 확인을 생략했다면 그냥 넘어갔을 함정이다.
 
 ### 환경 관련 (반복 발생)
 
-- `better-sqlite3`가 Electron ABI ↔ Node ABI를 오간다. main 스위트를 vitest로 돌리려면 `pnpm rebuild better-sqlite3`, 앱을 띄우려면 `pnpm rebuild:electron`이 필요하다. 세션 중 여러 번 전환됐다.
+- `better-sqlite3`가 Electron ABI ↔ Node ABI를 오간다. main 스위트를 vitest로 돌리려면 `pnpm rebuild better-sqlite3`, 앱을 띄우려면 `pnpm rebuild:electron`이 필요하다. 세션 중 여러 번 전환됐다. **6차에서는 사용자가 앱으로 UI 작업을 진행 중이라 전환하지 않았고, 그래서 main 서비스 2스위트를 실행하지 못했다**(§8 최종 집계 각주).
 - 이 변경과 무관한 기존 실패: `check:persist-contracts`(`graphStore.ts:24` persist 옵션 누락), `check:main-service-boundaries`(`rg` 미설치), `chapterKeywords.ts` lint 5건(`no-await-in-loop`). 셋 다 워킹트리 변경이 없는 커밋된 상태의 결함이다.
+- 6차 추가 확인된 기존 실패: `tests/dom/rebuildMemoryCardWriterFlow`(3), `tests/renderer/hooks/projectTemplateInitialization`(1), `tests/renderer/hooks/useSidebarResizeCommit`(1) — 전체 renderer/dom 실행의 실패 5건이다. `tests/main/handler/ipcSettingsHandlers.security`(3)는 `SKIP_DB_TEST_SETUP=1`에서 `electron` mock에 `default` export가 없어 실패한다(`eventHandlers.ts:21`). 넷 다 6차 변경과 무관함을 확인했다.
+- `check:source-loc`와 `check:no-escape-hatches`도 비0으로 종료하지만 위반 목록에 6차 변경 파일이 없다(전자는 500 LOC 초과 9건, 6차 최대 파일은 `ShortcutsTab.tsx` 325).
 
 ### ISTQB 정밀 재감사 라운드 (2026-08-31, 사용자 수동 검증 통과 이후)
 

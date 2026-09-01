@@ -4,6 +4,7 @@ import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import Placeholder from "@tiptap/extension-placeholder";
 import { TextStyle } from "@tiptap/extension-text-style";
+import { FontSize } from "@tiptap/extension-text-style/font-size";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import { Details, DetailsSummary, DetailsContent } from "@tiptap/extension-details";
@@ -75,6 +76,8 @@ export function useEditorExtensions({
             }),
             ThemedHighlight,
             TextStyle,
+            // 선택 영역에만 크기를 적용할 때 쓰는 textStyle 속성. 전역 설정은 별도 경로다.
+            FontSize,
             ThemedColor.configure({
                 types: ["textStyle"],
             }),

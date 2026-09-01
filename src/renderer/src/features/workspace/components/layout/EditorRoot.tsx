@@ -66,7 +66,6 @@ export default function EditorRoot() {
     setWorldTab,
     docsRightTab,
     closeRightPanel,
-    isManuscriptMenuOpen,
     mainViewType,
   } = useUIStore(
     useShallow((state) => ({
@@ -76,7 +75,6 @@ export default function EditorRoot() {
       setWorldTab: state.setWorldTab,
       docsRightTab: state.regions.rightPanel.activeTab,
       closeRightPanel: state.closeRightPanel,
-      isManuscriptMenuOpen: state.isManuscriptMenuOpen,
       mainViewType: state.mainView.type,
     })),
   );  
@@ -145,8 +143,24 @@ export default function EditorRoot() {
     [chapters, handleSelectChapter],
   );
 
+  /**
+   * 원고 삭제 단축키.
+   *
+   * WHY `isManuscriptMenuOpen` 가드를 뺐는가: 그 가드는 사이드바 항목의 컨텍스트 메뉴가
+   * 열려 있을 때만 통과해서, 일반 집필 중에는 단축키가 항상 조기 반환했다. 사용자에게는
+   * 완전 무동작으로 보였다.
+   *
+   * WHY 여기서 편집 여부를 따지지 않는가: 편집 영역 판정은 `useShortcuts`가 이벤트
+   * 시점에 이미 한다. `chapter.delete`를 `ALLOW_IN_EDITORS`에서 빼두면 에디터에 포커스가
+   * 있을 때 이 핸들러가 호출되지 않고 macOS의 '줄 시작까지 삭제'가 그대로 동작한다.
+   * 그래서 이 함수는 '에디터 밖에서 눌렸다'는 전제 하에 활성 원고를 지운다.
+   *
+   * NOTE: 사용자 요청은 '사이드바에서 원고를 마우스로 겨냥한 동안'이었다. 그 hover 상태는
+   * `useSidebarLogic`의 로컬 state라 store로 올려야 접근 가능한데, 그러면 hover마다 store
+   * write가 생겨 사이드바 리렌더 비용이 되살아난다. 포커스 기준이 같은 의도를 만족하면서
+   * 그 비용을 만들지 않는다.
+   */
   const handleDeleteActiveChapter = useCallback(async () => {
-    if (!isManuscriptMenuOpen) return;
     if (!activeChapterId) return;
     const confirmed = await dialog.confirm({
       title: t("sidebar.menu.delete"),
@@ -155,7 +169,7 @@ export default function EditorRoot() {
     });
     if (!confirmed) return;
     await handleDeleteChapter(activeChapterId);
-  }, [activeChapterId, dialog, handleDeleteChapter, isManuscriptMenuOpen, t]);
+  }, [activeChapterId, dialog, handleDeleteChapter, t]);
 
   const {
     panels,
@@ -209,6 +223,8 @@ export default function EditorRoot() {
         toggleLeftSidebar: toggleProjectAwareSidebar,
         setContextOpen,
         addPanel,
+        panels,
+        removePanel,
         handleSelectResearchItem,
         handleOpenExport,
         onToggleManuscriptLegacy: () =>
@@ -218,6 +234,8 @@ export default function EditorRoot() {
           }),
         onOpenSidebarSectionLegacy: (section: "snapshot" | "trash") =>
           emitShortcutCommand({ type: "sidebar.section.open", section }),
+        onToggleSidebarSectionLegacy: (section: "snapshot" | "trash") =>
+          emitShortcutCommand({ type: "sidebar.section.toggle", section }),
       }),
     [
       activeChapterId,
@@ -229,6 +247,8 @@ export default function EditorRoot() {
       toggleProjectAwareSidebar,
       setContextOpen,
       addPanel,
+      panels,
+      removePanel,
       handleSelectResearchItem,
       handleOpenExport,
     ],
@@ -280,6 +300,7 @@ export default function EditorRoot() {
     setWorldTab,
     setFontSize,
     fontSize,
+    editor: docEditor,
   });
 
   const prefetchSettings = useCallback(() => {

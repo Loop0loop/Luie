@@ -3,6 +3,8 @@ import { Plugin, PluginKey } from "@tiptap/pm/state";
 import type { Transaction, EditorState } from "@tiptap/pm/state";
 import { DecorationSet } from "@tiptap/pm/view";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
+import { useEventStore } from "@renderer/features/research/stores/eventStore";
+import { useFactionStore } from "@renderer/features/research/stores/factionStore";
 import { useTermStore } from "@renderer/features/research/stores/termStore";
 import { smartLinkService } from "@renderer/features/editor/services/smartLinkService";
 
@@ -31,19 +33,27 @@ export const SmartLink = Extension.create({
           },
         },
         view: (editorView) => {
-             const unsubChar = useCharacterStore.subscribe(() => {
+             /**
+              * 자료가 바뀌면 데코레이션을 다시 계산하게 만든다.
+              *
+              * WARNING: 스마트링크가 다루는 종류를 늘리면 여기에도 구독을 추가해야 한다.
+              * 빠뜨리면 그 종류는 앱을 다시 띄울 때까지 하이라이트되지 않는다.
+              */
+             const requestRescan = () => {
                  const tr = editorView.state.tr.setMeta("smartLinkUpdate", true);
                  editorView.dispatch(tr);
-             });
-             const unsubTerm = useTermStore.subscribe(() => {
-                 const tr = editorView.state.tr.setMeta("smartLinkUpdate", true);
-                 editorView.dispatch(tr);
-             });
+             };
+
+             const unsubscribers = [
+                 useCharacterStore.subscribe(requestRescan),
+                 useEventStore.subscribe(requestRescan),
+                 useFactionStore.subscribe(requestRescan),
+                 useTermStore.subscribe(requestRescan),
+             ];
 
              return {
                  destroy() {
-                     unsubChar();
-                     unsubTerm();
+                     unsubscribers.forEach((unsubscribe) => unsubscribe());
                  }
              };
         }

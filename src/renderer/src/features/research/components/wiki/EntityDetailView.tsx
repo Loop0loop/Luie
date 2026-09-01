@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { BookOpen, ChevronLeft, FileText } from "lucide-react";
 import { BufferedInput } from "@shared/ui/BufferedInput";
@@ -10,6 +10,13 @@ import NotionDocumentView, {
 } from "@renderer/features/research/components/shared/NotionDocumentView";
 import { Infobox } from "./Infobox";
 import { WikiContentPanel, type WikiContentModel } from "./WikiContentPanel";
+import {
+  readInfoboxOpen,
+  readWikiViewMode,
+  writeInfoboxOpen,
+  writeWikiViewMode,
+  type WikiViewMode,
+} from "./wikiViewPreferences";
 
 type WikiSectionData = {
   id: string;
@@ -74,7 +81,23 @@ export function EntityDetailView({
   const { t } = useTranslation();
   const dialog = useDialog();
   // 선택 항목이 비동기로 로드돼도 모든 render에서 Hook 순서를 고정한다.
-  const [isInfoboxOpen, setIsInfoboxOpen] = useState(true);
+  /**
+   * 프로필 요약 열림 상태의 저장 슬롯.
+   *
+   * WHY viewMode 키에서 파생하는가: 호출부(`FactionDetailView`·`EventDetailView`)가 이미
+   * `storagePrefix`를 넘기고 있어 prop을 추가하지 않아도 된다. 접미사로 슬롯만 분리한다.
+   */
+  /** 뷰 전환 시 스크롤을 되돌리기 위한 스크롤 컨테이너 참조. */
+  const surfaceRef = useRef<HTMLDivElement>(null);
+  const infoboxStorageKey = `${storagePrefix}-infobox`;
+  const [isInfoboxOpen, setIsInfoboxOpen] = useState(() =>
+    readInfoboxOpen(infoboxStorageKey, entityId),
+  );
+  /** 상태와 저장을 함께 옮긴다. 저장을 빼먹으면 재방문 시 초기화된다. */
+  const applyInfoboxOpen = (isOpen: boolean) => {
+    setIsInfoboxOpen(isOpen);
+    writeInfoboxOpen(infoboxStorageKey, entityId, isOpen);
+  };
 
   useEffect(() => {
     if (entityId) {
@@ -116,14 +139,18 @@ export function EntityDetailView({
     return (attributes.customFields as CustomField[]) || [];
   }, [attributes.customFields]);
 
-  const storageKey = `${storagePrefix}:${entityId ?? ""}`;
-  const [viewMode, setViewMode] = useState<"wiki" | "document">(() => {
-    const stored = localStorage.getItem(storageKey);
-    return stored === "document" ? "document" : "wiki";
-  });
-  const switchViewMode = (mode: "wiki" | "document") => {
+  const [viewMode, setViewMode] = useState<WikiViewMode>(() =>
+    readWikiViewMode(storagePrefix, entityId),
+  );
+  const switchViewMode = (mode: WikiViewMode) => {
     setViewMode(mode);
-    localStorage.setItem(storageKey, mode);
+    writeWikiViewMode(storagePrefix, entityId, mode);
+    /**
+     * WHY 스크롤을 되돌리는가: 전환 버튼이 이 스크롤 컨테이너 안에 있고 두 뷰의 콘텐츠
+     * 높이가 크게 다르다. 스크롤한 상태로 전환하면 브라우저가 무효해진 스크롤 위치를
+     * 보정하면서 본문이 튀어 보인다. 맨 위로 고정하면 착지 지점이 예측 가능해진다.
+     */
+    surfaceRef.current?.scrollTo({ top: 0 });
   };
 
   if (!entity) {
@@ -186,7 +213,10 @@ export function EntityDetailView({
   };
 
   return (
-    <div className="flex flex-1 min-w-0 flex-col gap-5 overflow-auto bg-research px-5 py-5 text-fg sm:px-6">
+    <div
+      ref={surfaceRef}
+      className="flex flex-1 min-w-0 flex-col gap-5 overflow-auto bg-research px-5 py-5 text-fg sm:px-6"
+    >
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
           {onBack ? (
@@ -288,7 +318,7 @@ export function EntityDetailView({
             {/* Right Infobox Slide Panel */}
             <div
               className={cn(
-                "@min-[700px]:order-2 order-1 shrink-0 transition-all duration-300 ease-in-out",
+                "@min-[700px]:order-2 order-1 shrink-0 transition-[opacity,width] duration-300 ease-in-out",
                 isInfoboxOpen
                   ? "w-full @min-[700px]:w-[280px] opacity-100 max-h-[2000px]"
                   : "w-0 @min-[700px]:w-0 max-h-0 overflow-hidden opacity-0 pointer-events-none",
@@ -310,7 +340,7 @@ export function EntityDetailView({
                     onDelete: () => deleteCustomField(field.key),
                   }))}
                   onAddField={addCustomField}
-                  onClose={() => setIsInfoboxOpen(false)}
+                  onClose={() => applyInfoboxOpen(false)}
                 />
               </div>
             </div>
@@ -319,7 +349,7 @@ export function EntityDetailView({
             {!isInfoboxOpen && (
               <button
                 type="button"
-                onClick={() => setIsInfoboxOpen(true)}
+                onClick={() => applyInfoboxOpen(true)}
                 title={t(`${prefix}.wiki.infoboxTitle`, "프로필 요약 펼치기")}
                 aria-label={t(`${prefix}.wiki.infoboxTitle`, "프로필 요약 펼치기")}
                 className="fixed right-0 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center gap-1.5 rounded-l-panel border border-r-0 border-border bg-surface/95 px-1 py-3.5 shadow-md backdrop-blur-xs transition-all hover:bg-surface hover:border-accent/60 hover:text-accent group cursor-pointer"

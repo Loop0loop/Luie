@@ -5,6 +5,7 @@ import {
   GitBranch,
   StickyNote,
   Tag,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import MemoSection from "@renderer/features/research/components/MemoSection";
@@ -19,11 +20,14 @@ type SubTab = {
   icon: LucideIcon;
 };
 
-function SubTabs({ tabs, activeTab, onChange }: {
+function SubTabs({ tabs, activeTab, onChange, onClose }: {
   tabs: SubTab[];
   activeTab: string;
   onChange: (tab: string) => void;
+  /** 있으면 탭 줄 우측 끝에 닫기 버튼을 그린다. 관례는 `WorldPanel`을 따른다. */
+  onClose?: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <nav className="flex h-11 shrink-0 items-center gap-1 overflow-x-auto border-0 px-3 no-scrollbar" role="tablist">
       {tabs.map((tab) => {
@@ -46,11 +50,22 @@ function SubTabs({ tabs, activeTab, onChange }: {
           </button>
         );
       })}
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="ml-auto flex size-8 shrink-0 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label={t("sidebar.toggle.close")}
+          title={t("sidebar.toggle.close")}
+        >
+          <X className="icon-sm" />
+        </button>
+      )}
     </nav>
   );
 }
 
-export function ResearchScrapPanel() {
+export function ResearchScrapPanel({ onClose }: { onClose?: () => void } = {}) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"terms" | "memo">("terms");
   const tabs: SubTab[] = [
@@ -60,7 +75,7 @@ export function ResearchScrapPanel() {
 
   return (
     <div className="research-surface flex h-full min-h-0 flex-col overflow-hidden">
-      <SubTabs tabs={tabs} activeTab={activeTab} onChange={(tab) => setActiveTab(tab as "terms" | "memo")} />
+      <SubTabs tabs={tabs} activeTab={activeTab} onChange={(tab) => setActiveTab(tab as "terms" | "memo")} onClose={onClose} />
       <div className="min-h-0 flex-1 overflow-hidden">
         {activeTab === "terms" ? <TermManager /> : <MemoSection />}
       </div>
@@ -68,7 +83,7 @@ export function ResearchScrapPanel() {
   );
 }
 
-export function ResearchPlotboardPanel() {
+export function ResearchPlotboardPanel({ onClose }: { onClose?: () => void } = {}) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"synopsis" | "plot">("synopsis");
   const tabs: SubTab[] = [
@@ -78,7 +93,7 @@ export function ResearchPlotboardPanel() {
 
   return (
     <div className="research-surface flex h-full min-h-0 flex-col overflow-hidden">
-      <SubTabs tabs={tabs} activeTab={activeTab} onChange={(tab) => setActiveTab(tab as "synopsis" | "plot")} />
+      <SubTabs tabs={tabs} activeTab={activeTab} onChange={(tab) => setActiveTab(tab as "synopsis" | "plot")} onClose={onClose} />
       <div className="min-h-0 flex-1 overflow-hidden">
         {activeTab === "synopsis" ? <SynopsisEditor /> : <PlotBoard />}
       </div>
@@ -88,5 +103,6 @@ export function ResearchPlotboardPanel() {
 
 export function UntitledResearchPanel() {
   // 스토리 라인은 후속 콘텐츠가 정해질 때까지 빈 작업 surface만 유지한다.
+  // NOTE: 탭 줄이 없어 닫기 버튼을 걸 자리가 없다. 콘텐츠가 생기면 SubTabs와 함께 붙인다.
   return <div className="research-surface h-full min-h-0" />;
 }

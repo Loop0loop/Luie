@@ -50,7 +50,10 @@ export type AcceleratorRejection =
 export const normalizeShortcutKey = (key: string): string => {
   if (key === ",") return "comma";
   if (key === " ") return "space";
-  if (key === "+") return "plus";
+  // WHY `=`도 plus로 접는가: `=`와 `+`는 같은 물리 키다(Shift 여부만 다름). 폰트 확대처럼
+  // 관례상 '플러스'로 인식되는 조작에서 사용자가 `+`를 눌렀다고 생각한 것이 실제로는
+  // Shift 없는 `=`로 저장돼, 저장값과 표시가 어긋나 보였다.
+  if (key === "+" || key === "=") return "plus";
   return key.toLowerCase();
 };
 

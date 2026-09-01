@@ -7,7 +7,6 @@ import {
 } from "../../../src/main/services/features/memory/memoryProjectionService.js";
 import { searchService } from "../../../src/main/services/features/search/searchService.js";
 import { projectService } from "../../../src/main/services/features/project/projectService.js";
-import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import type { ServiceError } from "../../../src/main/utils/error/index.js";
 import { ErrorCode } from "../../../src/shared/constants/errors/index.js";
 import {
@@ -22,9 +21,6 @@ describe("memoryProjectionService", () => {
   const chapterService = new ChapterService();
 
   beforeAll(() => {
-    vi.spyOn(autoExtractService, "scheduleAnalysis").mockImplementation(
-      () => {},
-    );
     vi.spyOn(projectService, "schedulePackageExport").mockImplementation(
       () => {},
     );

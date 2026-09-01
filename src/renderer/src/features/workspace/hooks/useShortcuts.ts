@@ -24,7 +24,9 @@ const ALLOW_IN_EDITORS = new Set<ShortcutAction>([
   "app.quit",
   "chapter.new",
   "chapter.save",
-  "chapter.delete",
+  // NOTE: `chapter.delete`는 의도적으로 제외했다. macOS에서 Cmd+Backspace는 편집 영역의
+  // '줄 시작까지 삭제'이고, 집필 중 그 입력이 원고 삭제 모달을 띄우면 파괴적이다.
+  // 에디터 밖(사이드바 등)에서 눌렸을 때만 원고 삭제로 해석한다.
   "chapter.open.1",
   "chapter.open.2",
   "chapter.open.3",

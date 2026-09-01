@@ -7,7 +7,6 @@ import {
 import { characterService } from "../../../src/main/services/features/world/entities/characterService.js";
 import { eventService } from "../../../src/main/services/features/world/entities/eventService.js";
 import { factionService } from "../../../src/main/services/features/world/entities/factionService.js";
-import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import { generateText } from "../../helpers/generateText";
 import { ErrorCode } from "../../../src/shared/constants/errors";
 
@@ -239,7 +238,6 @@ const collectContentMismatches = async (
 };
 
 beforeAll(() => {
-  vi.spyOn(autoExtractService, "scheduleAnalysis").mockImplementation(() => {});
   vi.spyOn(projectService, "schedulePackageExport").mockImplementation(() => {});
   vi.spyOn(projectService, "attemptImmediatePackageExport").mockResolvedValue({
     exported: false,

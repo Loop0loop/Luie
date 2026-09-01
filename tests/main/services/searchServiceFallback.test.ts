@@ -18,7 +18,6 @@ import { ChapterService } from "../../../src/main/services/features/manuscript/c
 import { memoryProjectionService } from "../../../src/main/services/features/memory/memoryProjectionService.js";
 import { searchService } from "../../../src/main/services/features/search/searchService.js";
 import { projectService } from "../../../src/main/services/features/project/projectService.js";
-import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import { db } from "../../../src/main/database/index.js";
 
 describe("SearchService — embedding fallback invariant (P2)", () => {
@@ -26,9 +25,6 @@ describe("SearchService — embedding fallback invariant (P2)", () => {
   const chapterService = new ChapterService();
 
   beforeAll(() => {
-    vi.spyOn(autoExtractService, "scheduleAnalysis").mockImplementation(
-      () => {},
-    );
     vi.spyOn(projectService, "schedulePackageExport").mockImplementation(
       () => {},
     );

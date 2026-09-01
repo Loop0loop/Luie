@@ -82,6 +82,14 @@ export default tseslint.config(
       "src/main/services/world/entityRelationService.ts",
       "src/preload/index.ts",
       "src/renderer/src/features/project/hooks/useFileImport.ts",
+      /**
+       * 부하·지연 측정 spec은 순차 실행이 측정의 전제다. 병렬화하면 각 작업의 지연을
+       * 분리해 잴 수 없어 측정 자체가 무의미해진다.
+       *
+       * NOTE: 이 항목을 넣기 전에도 `writingLoop.stress.spec.ts`가 같은 규칙으로 5건
+       * 실패하고 있었다. 규칙이 이 파일 부류에 맞지 않는 것을 예외로 명시한 것이다.
+       */
+      "tests/e2e/**/*.spec.ts",
     ],
     rules: {
       "no-await-in-loop": "off",

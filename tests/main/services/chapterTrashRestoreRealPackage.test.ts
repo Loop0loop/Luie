@@ -7,7 +7,6 @@ import { ChapterService } from "../../../src/main/services/features/manuscript/c
 import { projectService } from "../../../src/main/services/features/project/projectService.js";
 import { db } from "../../../src/main/database/index.js";
 import * as schema from "../../../src/main/database/schema/index.js";
-import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import {
   probeLuieContainer,
   readLuieContainerEntry,
@@ -168,7 +167,6 @@ const readPackageMeta = async (packagePath: string): Promise<PackageMeta> => {
 let temporaryDirectory: string | null = null;
 
 beforeAll(() => {
-  vi.spyOn(autoExtractService, "scheduleAnalysis").mockImplementation(() => {});
 });
 
 afterEach(async () => {

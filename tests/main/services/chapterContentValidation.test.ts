@@ -7,7 +7,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mocked = vi.hoisted(() => ({
   createSnapshot: vi.fn(async () => undefined),
   broadcast: vi.fn(),
-  scheduleAnalysis: vi.fn(),
   trackKeywordAppearances: vi.fn(),
   // NOTE: 기본 true(테스트 환경) — large-deletion 분기 검증 시 false로 전환한다.
   isTestEnv: vi.fn(() => true),
@@ -32,10 +31,6 @@ vi.mock("../../../src/main/utils/env/index.js", async (importOriginal) => {
 
 vi.mock("../../../src/main/domains/recovery/index.js", () => ({
   snapshotService: { createSnapshot: mocked.createSnapshot },
-}));
-
-vi.mock("../../../src/main/services/features/autoExtract/autoExtractService.js", () => ({
-  autoExtractService: { scheduleAnalysis: mocked.scheduleAnalysis },
 }));
 
 vi.mock("../../../src/main/services/features/manuscript/chapterKeywords.js", () => ({

@@ -236,8 +236,8 @@ export default function ResearchPanel({
             />
           </FeatureErrorBoundary>
         )}
-        {visibleTab === "scrap" && <FeatureErrorBoundary featureName="Scrap"><ResearchScrapPanel /></FeatureErrorBoundary>}
-        {visibleTab === "plotboard" && <FeatureErrorBoundary featureName="Plotboard"><ResearchPlotboardPanel /></FeatureErrorBoundary>}
+        {visibleTab === "scrap" && <FeatureErrorBoundary featureName="Scrap"><ResearchScrapPanel onClose={onClose} /></FeatureErrorBoundary>}
+        {visibleTab === "plotboard" && <FeatureErrorBoundary featureName="Plotboard"><ResearchPlotboardPanel onClose={onClose} /></FeatureErrorBoundary>}
         {visibleTab === "untitled" && <FeatureErrorBoundary featureName="Story Line"><UntitledResearchPanel /></FeatureErrorBoundary>}
       </div>
     </div>

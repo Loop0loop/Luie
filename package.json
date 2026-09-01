@@ -66,6 +66,7 @@
     "bench:writing-loop:profiles:all": "node scripts/run-writing-loop-profiles.mjs --include-500",
     "bench:writing-loop:repeat": "node scripts/run-writing-loop-repeat.mjs",
     "bench:writing-loop:fullprod": "node node_modules/@playwright/test/cli.js test --project=stress tests/e2e/writingLoop.fullprod.spec.ts",
+    "bench:writing-loop:extreme": "node node_modules/@playwright/test/cli.js test --project=stress tests/e2e/writingLoop.extreme.spec.ts",
     "bench:writing-loop:fullprod:repeat": "node scripts/run-writing-loop-fullprod-repeat.mjs",
     "certify:save-latency": "node scripts/certify-save-latency-repeat.mjs && node scripts/certify-save-latency-e2e-repeat.mjs",
     "certify:save-latency:core": "node scripts/certify-save-latency-repeat.mjs",

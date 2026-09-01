@@ -4,7 +4,6 @@ import * as schema from "../../../src/main/database/schema/index.js";
 import { ChapterService } from "../../../src/main/services/features/manuscript/chapterService.js";
 import { ProjectService } from "../../../src/main/services/features/project/projectService.js";
 import { projectService } from "../../../src/main/services/features/project/projectService.js";
-import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 
 /**
  * SUT: ChapterService.getAllChapters(목록 경계) + ChapterService.getChapter(본문 해석).
@@ -31,7 +30,6 @@ const localProjectService = new ProjectService();
 const { chapter, chapterBody } = schema;
 
 beforeAll(() => {
-  vi.spyOn(autoExtractService, "scheduleAnalysis").mockImplementation(() => {});
   vi.spyOn(projectService, "schedulePackageExport").mockImplementation(() => {});
   vi.spyOn(projectService, "attemptImmediatePackageExport").mockResolvedValue({
     exported: false,

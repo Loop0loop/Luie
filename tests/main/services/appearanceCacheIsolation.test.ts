@@ -4,7 +4,6 @@ import {
   ProjectService,
   projectService,
 } from "../../../src/main/services/features/project/projectService.js";
-import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import { cacheDb } from "../../../src/main/database/cache/index.js";
 import { CharacterService } from "../../../src/main/services/features/world/entities/characterService.js";
 import { TermService } from "../../../src/main/services/features/world/entities/termService.js";
@@ -16,7 +15,6 @@ const termService = new TermService();
 const localProjectService = new ProjectService();
 
 beforeAll(() => {
-  vi.spyOn(autoExtractService, "scheduleAnalysis").mockImplementation(() => {});
   vi.spyOn(projectService, "schedulePackageExport").mockImplementation(
     () => {},
   );

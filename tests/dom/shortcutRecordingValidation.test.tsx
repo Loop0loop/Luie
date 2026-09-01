@@ -192,6 +192,20 @@ describe("ShortcutsTab 기록 검증 — 상태전이", () => {
 
     expect(onCommitShortcuts).not.toHaveBeenCalled();
   });
+
+  it("S8b: `=` 키 기록이 plus 토큰으로 저장된다", () => {
+    // macOS에서 Shift 없이 `=`/`+` 물리 키를 누르면 e.key가 "="다. 사용자는 "+"로
+    // 인식하므로 저장 표기를 하나로 모아야 표시와 어긋나지 않는다.
+    renderTab({ "app.openSettings": "cmd+comma", "window.toggleFullscreen": "f11" });
+    startRecording("settings.shortcuts.openSettings");
+
+    pressKey("=", { meta: true });
+
+    expect(onCommitShortcuts).toHaveBeenCalledTimes(1);
+    expect(onCommitShortcuts.mock.calls[0][0]).toMatchObject({
+      "app.openSettings": "cmd+plus",
+    });
+  });
 });
 
 describe("ShortcutsTab 충돌 감지 — 표기가 달라도 같은 조합을 잡는다", () => {
@@ -224,5 +238,54 @@ describe("ShortcutsTab 충돌 감지 — 표기가 달라도 같은 조합을 �
     renderTab({ "app.openSettings": "", "window.toggleFullscreen": "" });
 
     expect(container.textContent ?? "").not.toContain("settings.shortcuts.conflict");
+  });
+});
+
+describe("ShortcutsTab 표시 — canonical 표기를 사람이 읽는 형태로 되돌린다", () => {
+  /**
+   * WHY 이 블록이 필요한가: 기본값을 canonical(소문자·이름 토큰)로 바꾸면 표시 계층이
+   * 그대로 `f11`·`comma`를 노출할 위험이 있다. 저장 표기와 표시 표기를 분리해 고정한다.
+   */
+  const kbdTexts = () =>
+    [...container.querySelectorAll("kbd")].map((node) => node.textContent ?? "");
+
+  it("D1: 기능키는 대문자로 표시된다 (f11 → F11)", () => {
+    renderTab({ "app.openSettings": "cmd+comma", "window.toggleFullscreen": "f11" });
+
+    expect(kbdTexts()).toContain("F11");
+    expect(kbdTexts()).not.toContain("f11");
+  });
+
+  it("D2: 콤마 토큰은 구두점으로 표시된다 (comma → ,)", () => {
+    renderTab({ "app.openSettings": "cmd+comma", "window.toggleFullscreen": "f11" });
+
+    expect(kbdTexts()).toContain(",");
+    expect(kbdTexts()).not.toContain("comma");
+  });
+
+  it("D3: 이름 있는 키는 기호로 표시된다 (backspace → ⌫)", () => {
+    renderTab({ "app.openSettings": "cmd+backspace", "window.toggleFullscreen": "f11" });
+
+    expect(kbdTexts()).toContain("⌫");
+    expect(kbdTexts()).not.toContain("backspace");
+  });
+
+  it("D4: 단일 문자 키는 대문자로 표시된다 (b → B)", () => {
+    renderTab({ "app.openSettings": "cmd+b", "window.toggleFullscreen": "f11" });
+
+    expect(kbdTexts()).toContain("B");
+  });
+
+  it("D5: 빈 값은 안내 문구를 보여준다", () => {
+    renderTab({ "app.openSettings": "", "window.toggleFullscreen": "f11" });
+
+    expect(container.textContent ?? "").toContain("settings.shortcuts.empty");
+  });
+
+  it("D6: plus 토큰은 `+`로 표시된다 (저장 표기 노출 방지)", () => {
+    renderTab({ "app.openSettings": "cmd+plus", "window.toggleFullscreen": "f11" });
+
+    expect(kbdTexts()).toContain("+");
+    expect(kbdTexts()).not.toContain("plus");
   });
 });

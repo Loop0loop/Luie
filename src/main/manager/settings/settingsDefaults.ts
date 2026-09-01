@@ -60,16 +60,28 @@ export const sanitizeSyncSettingsForRenderer = (
   };
 };
 
+/**
+ * 기본 단축키.
+ *
+ * WHY 소문자 canonical 표기인가: 저장되는 값은 설정 화면의 기록 결과와 같은 표기여야
+ * 한다. 과거에는 이 표가 `Cmd+,`를 만들고 기록은 `cmd+comma`를 만들어, 같은 물리
+ * 조합이 두 문자열로 공존했다. 그 결과 충돌 감지가 두 액션이 같은 키를 물고 있는
+ * 상황을 놓쳤고 등록 순서가 빠른 한쪽만 발화했다.
+ *
+ * 표기 규칙은 `shared/utils/shortcutAccelerator.ts`가 정한다. 수정자 순서는
+ * cmd → ctrl → alt → shift, 구두점은 이름 토큰(`comma`)을 쓴다.
+ * `settingsShortcutDefaults.test.ts`가 이 표의 모든 값이 canonical·유효함을 고정한다.
+ */
 const getDefaultShortcuts = (platform: NodeJS.Platform): ShortcutMap => {
-  const mod = platform === "darwin" ? "Cmd" : "Ctrl";
+  const mod = platform === "darwin" ? "cmd" : "ctrl";
 
   return {
-    "app.openSettings": `${mod}+,`,
-    "app.closeWindow": `${mod}+W`,
-    "app.quit": `${mod}+Q`,
-    "chapter.new": `${mod}+N`,
-    "chapter.save": `${mod}+S`,
-    "chapter.delete": `${mod}+Backspace`,
+    "app.openSettings": `${mod}+comma`,
+    "app.closeWindow": `${mod}+w`,
+    "app.quit": `${mod}+q`,
+    "chapter.new": `${mod}+n`,
+    "chapter.save": `${mod}+s`,
+    "chapter.delete": `${mod}+backspace`,
     "chapter.open.1": `${mod}+1`,
     "chapter.open.2": `${mod}+2`,
     "chapter.open.3": `${mod}+3`,
@@ -80,17 +92,17 @@ const getDefaultShortcuts = (platform: NodeJS.Platform): ShortcutMap => {
     "chapter.open.8": `${mod}+8`,
     "chapter.open.9": `${mod}+9`,
     "chapter.open.0": `${mod}+0`,
-    "view.toggleSidebar": `${mod}+B`,
+    "view.toggleSidebar": `${mod}+b`,
     "view.sidebar.open": "",
     "view.sidebar.close": "",
-    "view.toggleContextPanel": `${mod}+Shift+B`,
+    "view.toggleContextPanel": `${mod}+shift+b`,
     "view.context.open": "",
     "view.context.close": "",
     "sidebar.section.manuscript.toggle": "",
     "sidebar.section.snapshot.open": "",
     "sidebar.section.trash.open": "",
     "project.rename": "",
-    "research.open.character": `${mod}+T`,
+    "research.open.character": `${mod}+t`,
     "research.open.world": "",
     "research.open.scrap": "",
     "research.open.analysis": "",
@@ -104,7 +116,7 @@ const getDefaultShortcuts = (platform: NodeJS.Platform): ShortcutMap => {
     "world.tab.mindmap": "",
     "world.tab.drawing": "",
     "world.tab.plot": "",
-    "world.tab.graph": `${mod}+Shift+G`,
+    "world.tab.graph": `${mod}+shift+g`,
     "world.addTerm": "",
     "scrap.addMemo": "",
     "export.openPreview": "",
@@ -114,7 +126,7 @@ const getDefaultShortcuts = (platform: NodeJS.Platform): ShortcutMap => {
     "split.swapSides": "",
     "editor.fontSize.increase": "",
     "editor.fontSize.decrease": "",
-    "window.toggleFullscreen": "F11",
+    "window.toggleFullscreen": "f11",
   };
 };
 

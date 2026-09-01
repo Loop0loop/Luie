@@ -5,6 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import type { ShortcutGroupMap } from "@renderer/features/settings/components/tabs/types";
 import {
   findAcceleratorConflicts,
+  normalizeShortcutKey,
   validateAccelerator,
   type AcceleratorRejection,
 } from "@shared/utils/shortcutAccelerator";
@@ -14,6 +15,9 @@ const MODIFIER_KEYS = new Set(["Shift", "Control", "Alt", "Meta"]);
 const isMac =
   typeof navigator !== "undefined" &&
   /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+
+/** 기능키(f1~f24) 판정. WHY 모듈 상수인가: formatPart가 표시할 조각마다 호출된다. */
+const FUNCTION_KEY_PATTERN = /^f([1-9]|1[0-9]|2[0-4])$/;
 
 const formatPart = (part: string): string => {
   switch (part) {
@@ -32,6 +36,8 @@ const formatPart = (part: string): string => {
       return "Space";
     case "comma":
       return ",";
+    case "plus":
+      return "+";
     case "arrowup":
       return "↑";
     case "arrowdown":
@@ -49,6 +55,8 @@ const formatPart = (part: string): string => {
     case "tab":
       return "⇥";
     default:
+      // canonical 표기는 소문자다. 기능키는 관례상 대문자로 보여준다.
+      if (FUNCTION_KEY_PATTERN.test(part)) return part.toUpperCase();
       return part.length === 1 ? part.toUpperCase() : part;
   }
 };
@@ -224,10 +232,12 @@ export const ShortcutsTab = memo(function ShortcutsTab({
       if (e.ctrlKey) parts.push("ctrl");
       if (e.altKey) parts.push("alt");
       if (e.shiftKey) parts.push("shift");
-      let key = e.key;
-      if (key === " ") key = "space";
-      else if (key === ",") key = "comma";
-      parts.push(key.toLowerCase());
+      /**
+       * WHY 공용 정규화를 쓰는가: 기록 단계가 자체 로직으로 `,`만 접고 `+`/`=`는 그대로
+       * 두면, 매칭 단계의 canonical 표기와 어긋나 같은 키가 두 문자열로 저장된다.
+       * 해석 규약은 `shortcutAccelerator`가 단독으로 정한다.
+       */
+      parts.push(normalizeShortcutKey(e.key));
 
       const accelerator = parts.join("+");
 

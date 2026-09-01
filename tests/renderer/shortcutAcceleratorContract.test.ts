@@ -48,6 +48,7 @@ describe("normalizeShortcutKey — 물리 키를 canonical 토큰으로 접는�
     ["space", "space"],
     ["+", "plus"],
     ["plus", "plus"],
+    ["=", "plus"],
     ["B", "b"],
     ["F11", "f11"],
     ["ArrowUp", "arrowup"],
@@ -60,6 +61,13 @@ describe("normalizeShortcutKey — 물리 키를 canonical 토큰으로 접는�
     expect(normalizeShortcutKey(",")).toBe(normalizeShortcutKey("comma"));
     expect(normalizeShortcutKey("+")).toBe(normalizeShortcutKey("plus"));
     expect(normalizeShortcutKey(" ")).toBe(normalizeShortcutKey("space"));
+  });
+
+  it("`=`와 `+`는 같은 물리 키라 같은 토큰이 된다", () => {
+    // macOS에서 Shift 없이 그 키를 누르면 e.key가 "="다. 사용자는 "+"를 눌렀다고
+    // 인식하므로, 두 표기를 갈라두면 저장값과 표시가 어긋난다.
+    expect(normalizeShortcutKey("=")).toBe(normalizeShortcutKey("+"));
+    expect(canonicalizeAccelerator("cmd+=")).toBe(canonicalizeAccelerator("cmd++"));
   });
 });
 

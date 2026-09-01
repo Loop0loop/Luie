@@ -3,7 +3,6 @@ import { and, eq } from "drizzle-orm";
 import { ProjectService } from "../../../src/main/services/features/project/projectService.js";
 import { ChapterService } from "../../../src/main/services/features/manuscript/chapterService.js";
 import { chapterSummaryProjector } from "../../../src/main/services/features/memory/chapterSummaryProjector.js";
-import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import { projectService } from "../../../src/main/services/features/project/projectService.js";
 import { utilityProcessBridge } from "../../../src/main/services/features/utility/utilityProcessBridge.js";
 import {
@@ -21,9 +20,6 @@ describe("chapterSummaryProjector", () => {
   const chapterService = new ChapterService();
 
   beforeAll(() => {
-    vi.spyOn(autoExtractService, "scheduleAnalysis").mockImplementation(
-      () => {},
-    );
     vi.spyOn(projectService, "schedulePackageExport").mockImplementation(
       () => {},
     );
@@ -43,9 +39,6 @@ describe("chapterSummaryProjector", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.restoreAllMocks();
-    vi.spyOn(autoExtractService, "scheduleAnalysis").mockImplementation(
-      () => {},
-    );
     vi.spyOn(projectService, "schedulePackageExport").mockImplementation(
       () => {},
     );

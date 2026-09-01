@@ -8,7 +8,6 @@ import {
   memoryBuildJob,
   searchDirtyQueue,
 } from "../../../src/main/database/schema/index.js";
-import { autoExtractService } from "../../../src/main/services/features/autoExtract/autoExtractService.js";
 import { projectService } from "../../../src/main/services/features/project/projectService.js";
 import {
   MEMORY_JOB_TYPES,
@@ -20,9 +19,6 @@ describe("dbMaintenanceService", () => {
   const chapterService = new ChapterService();
 
   beforeAll(() => {
-    vi.spyOn(autoExtractService, "scheduleAnalysis").mockImplementation(
-      () => {},
-    );
     vi.spyOn(projectService, "schedulePackageExport").mockImplementation(
       () => {},
     );
