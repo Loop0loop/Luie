@@ -127,7 +127,7 @@ export const enExport = {
       startPage: "Start number",
     },
     button: {
-      export: "Export ({format})",
+      export: "Export ({{format}})",
       exporting: "Exporting...",
     },
     preview: {

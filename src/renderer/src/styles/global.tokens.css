@@ -176,11 +176,12 @@
   --word-user-avatar-text: #1e3a5f;
 
   /* --- 종이 미리보기 (ExportPreview) --- */
-  --paper-bg: #fcfcfc;
-  --paper-text: #1f1f1f;
-  --paper-text-muted: #6b6b6b;
-  --paper-footer-start: #ffffff;
-  --paper-footer-end: #e0e0e0;
+  --color-paper: var(--paper-bg);
+  --color-paper-text: var(--paper-text);
+  --color-paper-muted: var(--paper-text-muted);
+  --shadow-paper: var(--paper-shadow);
+  --color-paper-footer-start: var(--paper-footer-start);
+  --color-paper-footer-end: var(--paper-footer-end);
 
   /* --- 모바일 기기 프레임 (Editor) --- */
   --device-frame-bg: #2c2c2e;
@@ -541,6 +542,14 @@
   --icon-size-xxxl: 32px;
 
   --font-weight-semibold: 600;
+
+  /* --- 종이 미리보기 (ExportPreview) --- */
+  --paper-bg: #ffffff;
+  --paper-text: #18181b;
+  --paper-text-muted: #71717a;
+  --paper-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.06);
+  --paper-footer-start: #ffffff;
+  --paper-footer-end: rgba(255, 255, 255, 0.2);
 }
 
 [data-theme="dark"] {
@@ -551,12 +560,18 @@
   /* NOTE: 기본 다크 톤의 AI View 표면은 현재 확정된 #323232을 유지한다. */
   --ai-panel-bg: #323232;
   --bg-surface: #28282b;
-  /* NOTE: 이 값이 없으면 light의 rgba(0,0,0,0.04)를 상속해 dark에서 hover가 표면보다
-     어두워진다. hover는 항상 표면을 밝히는 방향이어야 한다. */
   --bg-surface-hover: rgba(255, 255, 255, 0.06);
   --bg-element: #313135;
   --bg-element-hover: rgba(255, 255, 255, 0.08);
   --bg-active: rgba(255, 255, 255, 0.12);
+
+  /* --- 종이 미리보기 (ExportPreview) --- */
+  --paper-bg: #1c1c1e;
+  --paper-text: #f4f4f5;
+  --paper-text-muted: #a1a1aa;
+  --paper-shadow: 0 8px 30px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.2);
+  --paper-footer-start: #1c1c1e;
+  --paper-footer-end: rgba(28, 28, 30, 0.2);
 
   /* NOTE: dark의 텍스트 램프는 §2에서 tertiary를 4:1로 올렸다가 전량 롤백했다.
      수치상 tertiary 2.55:1은 낮지만, dark에서 muted 텍스트를 밝히면 글레어와 노이즈가
@@ -769,6 +784,14 @@
   --text-secondary: #6e5c49;
   --text-tertiary: #7a6a57;
   --text-accent: #8a602e;
+
+  /* --- 종이 미리보기 (ExportPreview) --- */
+  --paper-bg: #fdf8f0;
+  --paper-text: #2c251e;
+  --paper-text-muted: #8b7e72;
+  --paper-shadow: 0 8px 30px rgba(91, 70, 54, 0.14), 0 1px 3px rgba(91, 70, 54, 0.08);
+  --paper-footer-start: #fdf8f0;
+  --paper-footer-end: rgba(253, 248, 240, 0.2);
 
   /* soft 기본. 고대비값 #dfceb0은 §4 Task 2에서
      `[data-theme="sepia"][data-contrast="high"]`로 옮겼다. */

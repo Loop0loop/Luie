@@ -127,7 +127,7 @@ export const jaExport = {
       startPage: "開始番号",
     },
     button: {
-      export: "書き出し ({format})",
+      export: "書き出し ({{format}})",
       exporting: "書き出し中...",
     },
     preview: {

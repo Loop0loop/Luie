@@ -127,7 +127,7 @@ export const koExport = {
       "startPage": "시작 번호"
     },
     "button": {
-      "export": "내보내기 ({format})",
+      "export": "내보내기 ({{format}})",
       "exporting": "내보내는 중..."
     },
     "preview": {
