@@ -1,8 +1,15 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { GitBranch, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatDate, getString, getStringArray, getTagValues } from "./canvasDocumentModel";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+
+const isMacOS = navigator.userAgent.toLowerCase().includes("mac");
+/**
+ * MainLayout 좌측 토글 버튼이 사이드바 닫힐 때 `left-[92px]`로 이동한다.
+ * 이 헤더도 같은 위치에 맞추기 위해 px-3(12px)를 뺀 80px을 marginLeft로 준다.
+ */
+const TRAFFIC_LIGHT_CONTENT_OFFSET_PX = 80;
 
 export function DocumentShell({
   children,
@@ -19,10 +26,23 @@ export function DocumentShell({
   const toggleLeftSidebar = useUIStore((state) => state.toggleLeftSidebar);
   const setRegionOpen = useUIStore((state) => state.setRegionOpen);
 
+  // NOTE: macOS hiddenInset 타이틀바에서 사이드바가 닫히면 콘텐츠 영역이
+  // 창 왼쪽 끝까지 확장되어 트래픽 라이트 버튼(16,16 / 너비 ~52px)과 겹친다.
+  // 사이드바 슬라이드 transition(200ms)과 동기화된 margin-left로 보간한다.
+  const reserveTrafficLightsSpace = isMacOS && !isSidebarOpen;
+
   return (
     <div className="flex h-full min-h-0 w-full flex-col bg-app text-fg" data-testid="canvas-document-view">
-      <div className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-panel px-3">
-        <div className="flex min-w-0 items-center gap-2.5 text-xs">
+      {/* NOTE: MainLayout content panel의 drag region overlay(z-30, h-11)가 헤더를 덮어
+          버튼이 동작하지 않는다. z-30 이상 + no-drag로 버튼을 보호한다. */}
+      <div
+        className="relative z-30 flex h-12 shrink-0 items-center justify-between border-b border-border bg-panel px-3"
+        style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
+      >
+        <div
+          className="flex min-w-0 items-center gap-2.5 text-xs transition-[margin-left] duration-200 ease-[cubic-bezier(0.2,0,0,1)]"
+          style={{ marginLeft: reserveTrafficLightsSpace ? TRAFFIC_LIGHT_CONTENT_OFFSET_PX : undefined }}
+        >
           <button
             type="button"
             onClick={toggleLeftSidebar}

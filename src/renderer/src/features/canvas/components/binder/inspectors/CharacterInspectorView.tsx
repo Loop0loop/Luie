@@ -24,7 +24,7 @@ export default function CharacterInspectorView({ nodeId }: CharacterInspectorVie
           <X className="h-4 w-4" />
         </button>
       </div>
-      <WikiDetailView characterId={nodeId} />
+      <WikiDetailView characterId={nodeId} inCanvas />
     </div>
   );
 }

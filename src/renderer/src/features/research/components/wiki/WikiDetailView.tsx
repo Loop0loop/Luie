@@ -77,9 +77,12 @@ function AddTagInline({ onAdd, placeholder }: AddTagInlineProps) {
 interface WikiDetailViewProps {
   characterId?: string;
   onBack?: () => void;
+  /** canvas 위키뷰(CharacterInspectorView)에서 렌더링될 때 true.
+   *  ReactFlow의 capture phase pointerdown 이벤트로 인한 DnD 간섭을 방지한다. */
+  inCanvas?: boolean;
 }
 
-export default function WikiDetailView({ characterId, onBack }: WikiDetailViewProps) {
+export default function WikiDetailView({ characterId, onBack, inCanvas }: WikiDetailViewProps) {
   const { t } = useTranslation();
   const dialog = useDialog();
   const [isInfoboxOpen, setIsInfoboxOpen] = useState(() =>
@@ -90,6 +93,20 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
     setIsInfoboxOpen(isOpen);
     writeInfoboxOpen(CHARACTER_INFOBOX_KEY, character?.id ?? characterId, isOpen);
   };
+
+  const toggleRef = useRef<HTMLButtonElement>(null);
+
+  // NOTE: ReactFlow는 capture phase로 pointerdown을 잡아 panOnDrag를 시작한다.
+  // capture phase 리스너로 먼저 가로채서 ReactFlow에 이벤트가 도달하지 않게 한다.
+  useEffect(() => {
+    const el = toggleRef.current;
+    if (!el || !inCanvas) return;
+    const handler = (e: PointerEvent) => {
+      e.stopPropagation();
+    };
+    el.addEventListener("pointerdown", handler, { capture: true });
+    return () => el.removeEventListener("pointerdown", handler, { capture: true });
+  }, [inCanvas]);
 
   const { character, loadCharacter, updateCharacter, deleteCharacter, setCurrent } =
     useCharacterStore(
@@ -385,6 +402,7 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
               {/* Collapsed side drawer toggle handle */}
               {!isInfoboxOpen && (
                 <button
+                  ref={toggleRef}
                   type="button"
                   onClick={() => applyInfoboxOpen(true)}
                   title={t("character.wiki.infoboxTitle", "프로필 요약 펼치기")}
@@ -392,7 +410,7 @@ export default function WikiDetailView({ characterId, onBack }: WikiDetailViewPr
                   className="fixed right-0 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center gap-1.5 rounded-l-panel border border-r-0 border-border bg-surface/95 px-1 py-3.5 shadow-md backdrop-blur-xs transition-all hover:bg-surface hover:border-accent/60 hover:text-accent group cursor-pointer"
                 >
                   <ChevronLeft size={14} className="text-muted group-hover:text-accent transition-colors" />
-                  <span className="text-[10px] font-medium text-muted [writing-mode:vertical-lr] select-none tracking-tight group-hover:text-accent transition-colors">
+                  <span className="text-2xs font-medium text-muted [writing-mode:vertical-lr] select-none tracking-tight group-hover:text-accent transition-colors">
                     {t("character.wiki.infoboxTitle", "프로필 요약")}
                   </span>
                 </button>
