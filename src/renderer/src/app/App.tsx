@@ -57,6 +57,7 @@ const WorldSection = lazy(
 const StartupWizard = lazy(
   () => import("@renderer/features/startup/components/StartupWizard"),
 );
+import { PREVIEW_PROJECT_ID } from "@renderer/features/startup/constants/previewData";
 
 export default function App() {
   const { t } = useTranslation();
@@ -131,7 +132,7 @@ export default function App() {
 
   useEffect(() => {
     const projectId = currentProject?.id;
-    if (!projectId) {
+    if (!projectId || projectId === PREVIEW_PROJECT_ID) {
       return;
     }
 

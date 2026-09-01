@@ -1,10 +1,18 @@
-import { Suspense, useState } from "react";
+import {
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { Editor as TiptapEditor } from "@tiptap/react";
 import { useEditorStore } from "@renderer/domains/editor";
 import { useProjectStore } from "@renderer/domains/project";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { setChapterContent } from "@renderer/features/manuscript/stores/chapterContentStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { useShortcuts } from "@renderer/features/workspace/hooks/useShortcuts";
 import {
   DocsSidebar,
   EditorLayout,
@@ -13,6 +21,8 @@ import {
   ScrivenerLayout,
   Sidebar,
 } from "@renderer/features/workspace/components/layout/rootShell";
+import { WorkspacePanels } from "@renderer/features/workspace/components/panels/WorkspacePanels";
+import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import {
   PREVIEW_ACTIVE_CHAPTER_ID,
   PREVIEW_CHAPTERS,
@@ -26,6 +36,10 @@ import { WizardEditor } from "./WizardEditor";
 const noop = () => {};
 
 let isPreviewWorkspaceSeeded = false;
+
+export const resetPreviewWorkspaceState = (): void => {
+  isPreviewWorkspaceSeeded = false;
+};
 
 // 위저드 프리뷰에 최적화된 컴팩트 사이드바 및 패널 규격 (사이드바 16~18%, 패널 20~25%로 본문 공간 75%+ 확보)
 const WIZARD_PREVIEW_SIDEBAR_WIDTHS: Record<string, number> = {
@@ -148,22 +162,6 @@ const syncPreviewWorkspace = (uiMode: LayoutChoice): void => {
     });
   }
 
-  // 스크리브너 모드일 때는 3단 뷰(인스펙터)를 열고, 다른 레이아웃은 본문 집중을 위해 닫는다.
-  const isScrivener = uiMode === "scrivener";
-  if (useUIStore.getState().regions.rightPanel.open !== isScrivener) {
-    useUIStore.setState((state) => ({
-      regions: {
-        ...state.regions,
-        rightPanel: {
-          ...state.regions.rightPanel,
-          open: isScrivener,
-        },
-      },
-    }));
-  }
-
-  // EditorDropZones처럼 스토어의 uiMode를 직접 읽는 컴포넌트가 미리 보기 모드를
-  // 따르게 한다. editorStore는 persist가 없어 메모리에만 반영된다.
   if (useEditorStore.getState().uiMode !== uiMode) {
     useEditorStore.setState({ uiMode });
   }
@@ -177,9 +175,90 @@ interface LayoutLivePreviewProps {
  * 박스에 넣으면 하단이 잘리므로 창 전체를 차지하게 마운트한다(WorkspaceLayoutRouter와
  * 같은 조합: 레이아웃 셸 + 실제 사이드바/바인더 + 진짜 Editor). */
 export function LayoutLivePreview({ uiMode }: LayoutLivePreviewProps) {
-  syncPreviewWorkspace(uiMode);
   const [docEditor, setDocEditor] = useState<TiptapEditor | null>(null);
   const activeChapter = PREVIEW_CHAPTERS[0];
+  const lastSyncedUiModeRef = useRef<LayoutChoice | null>(null);
+
+  const { panels, removePanel, handleSelectResearchItem } = useSplitView(
+    activeChapter?.id,
+  );
+  const additionalPanelIds = useMemo(
+    () => panels.map((panel) => panel.id),
+    [panels],
+  );
+
+  const additionalPanelsComponent = useMemo(
+    () => (
+      <Suspense fallback={null}>
+        <WorkspacePanels
+          panels={panels}
+          removePanel={removePanel}
+          chapters={PREVIEW_CHAPTERS}
+          currentProjectId={PREVIEW_PROJECT_ID}
+          activeChapterId={activeChapter?.id}
+          activeChapterTitle={activeChapter?.title ?? ""}
+          onSave={async () => {}}
+        />
+      </Suspense>
+    ),
+    [activeChapter?.id, activeChapter?.title, panels, removePanel],
+  );
+
+  useLayoutEffect(() => {
+    syncPreviewWorkspace(uiMode);
+    if (lastSyncedUiModeRef.current !== uiMode) {
+      lastSyncedUiModeRef.current = uiMode;
+      const isScrivener = uiMode === "scrivener";
+      useUIStore.setState((state) => ({
+        regions: {
+          ...state.regions,
+          rightPanel: {
+            ...state.regions.rightPanel,
+            open: isScrivener,
+          },
+        },
+      }));
+    }
+  }, [uiMode]);
+
+  const closeFocusedSurface = useUIStore((state) => state.closeFocusedSurface);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const isMod = event.metaKey || event.ctrlKey;
+      if (isMod && (event.key === "w" || event.key === "W")) {
+        event.preventDefault();
+        event.stopPropagation();
+        const closed = closeFocusedSurface();
+        if (!closed) {
+          const isRightPanelOpen = useUIStore.getState().regions.rightPanel.open;
+          if (isRightPanelOpen) {
+            useUIStore.getState().closeRightPanel();
+          }
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [closeFocusedSurface]);
+
+  const shortcutHandlers = useMemo(
+    () => ({
+      "app.closeWindow": () => {
+        // Cmd+W / Ctrl+W: 프리뷰에서 열려 있는 포커스된 패널/서피스 닫기
+        const closed = closeFocusedSurface();
+        if (!closed) {
+          const isRightPanelOpen = useUIStore.getState().regions.rightPanel.open;
+          if (isRightPanelOpen) {
+            useUIStore.getState().closeRightPanel();
+          }
+        }
+      },
+    }),
+    [closeFocusedSurface],
+  );
+  useShortcuts(shortcutHandlers);
 
   if (uiMode === "docs") {
     return (
@@ -238,9 +317,14 @@ export function LayoutLivePreview({ uiMode }: LayoutLivePreviewProps) {
     <MainLayout
       sidebar={
         <Suspense fallback={null}>
-          <Sidebar onOpenSettings={noop} onSelectResearchItem={noop} />
+          <Sidebar
+            onOpenSettings={noop}
+            onSelectResearchItem={handleSelectResearchItem}
+          />
         </Suspense>
       }
+      additionalPanels={additionalPanelsComponent}
+      additionalPanelIds={additionalPanelIds}
     >
       <WizardEditor uiMode="default" onReady={setDocEditor} />
     </MainLayout>

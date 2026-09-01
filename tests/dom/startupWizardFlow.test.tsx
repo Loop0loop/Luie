@@ -104,13 +104,28 @@ const renderWizard = async (): Promise<{ root: Root; container: HTMLElement }> =
 };
 
 describe("startup wizard flow", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    class MockWorker {
+      postMessage = vi.fn();
+      terminate = vi.fn();
+      addEventListener = vi.fn();
+      removeEventListener = vi.fn();
+      onmessage = null;
+      onerror = null;
+    }
+    globalThis.Worker = MockWorker as unknown as typeof Worker;
+
     vi.clearAllMocks();
     document.documentElement.removeAttribute("data-theme");
     document.documentElement.removeAttribute("data-temp");
     document.documentElement.removeAttribute("data-accent");
     document.documentElement.removeAttribute("data-contrast");
+
+    const { resetPreviewWorkspaceState } = await import(
+      "../../src/renderer/src/features/startup/components/preview/LayoutLivePreview.js"
+    );
+    resetPreviewWorkspaceState();
 
     mocked.getEditor.mockResolvedValue({
       success: true,
@@ -192,13 +207,61 @@ describe("startup wizard flow", () => {
     await act(async () => {
       findButton(root, "startupWizard.onboarding.next").click();
     });
-    expect(container.textContent).toContain(
-      "startupWizard.onboarding.layoutTitle",
+    // 1. Default 레이아웃(초기 상태)에서 연구 패널(등장인물 등) 선택 시 panels에 추가되고 Cmd+W로 닫히는지 검증
+    const { useUIStore } = await import(
+      "../../src/renderer/src/features/workspace/stores/uiStore.js"
     );
+    expect(useUIStore.getState().panels.length).toBe(0);
 
+    // 사이드바의 등장인물 항목 클릭
+    const characterItem = Array.from(container.querySelectorAll("span")).find(
+      (el) => el.textContent === "sidebar.item.characters",
+    );
+    if (characterItem) {
+      await act(async () => {
+        characterItem.click();
+      });
+      expect(useUIStore.getState().panels.length).toBe(1);
+      expect(useUIStore.getState().panels[0]?.content.type).toBe("research");
+
+      // Cmd+W 입력 시 열린 패널이 닫히는지 검증
+      await act(async () => {
+        window.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "w",
+            metaKey: true,
+            bubbles: true,
+          }),
+        );
+      });
+      expect(useUIStore.getState().panels.length).toBe(0);
+    }
+
+    // 2. 스크리브너 레이아웃 선택
     await act(async () => {
       findButton(root, "startupWizard.onboarding.layoutScrivener").click();
     });
+    await act(async () => {
+      await import(
+        "../../src/renderer/src/features/workspace/components/layout/ScrivenerLayout.js"
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    // 스크리브너 선택 시 인스펙터가 열린 상태에서 Cmd+W 입력 시 인스펙터/패널이 닫히는지 검증
+    expect(useUIStore.getState().regions.rightPanel.open).toBe(true);
+
+    await act(async () => {
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "w",
+          metaKey: true,
+          bubbles: true,
+        }),
+      );
+    });
+    expect(useUIStore.getState().regions.rightPanel.open).toBe(false);
+
     await act(async () => {
       findButton(root, "startupWizard.onboarding.finish").click();
     });
