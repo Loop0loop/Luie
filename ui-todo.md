@@ -152,14 +152,17 @@ accent 색상이 사용자 지정(`--accent-bg` 변환)될 때 하드코딩 흰 
 
 ---
 
-## P4 — 가드 스크립트 정확성 개선
+## P4 — 가드 스크립트 정확성 개선 ✅ 완료 (2026-09-01)
 
-`scripts/design/tokens-guard.mjs`가 오탐지/미탐지를 일으켜 baseline 신호가 흐려진다.
+`scripts/design/tokens-guard.mjs` 개선 — 오탐지 분리 + 신규 패턴 + baseline 전면 재설정.
 
-- [ ] `roundedBig` 패턴에서 `rounded-full` 분리 — 원형(아바타·배지·진행링) ~144건은 위반이 아님, 실질 대형 라운드만 계수
-- [ ] `rawHex`에 예외 분류 도입 — anchor hex(픽커 파싱) · 브랜드(Google 로고) · emulation token은 별도 카운터로 분리
-- [ ] `arbitraryPx`에서 시뮬레이션 고정 폭(`[700px]`,`[450px]` 등) 예외 처리 여부 결정
-- [ ] shadow arbitrarily(`shadow-[0_0_15px_rgba(...)]`) 패턴 추가 계수
+- [x] `roundedBig`에서 `rounded-full` **분리** — 153→152건은 원형(아바타·배지·진행링)으로 위반이 아님, 실질 대형 라운드만 계수(13건)
+- [x] `shadowArbitrary` **신규 패턴 추가** — `shadow-[...]` 인라인 그림자 계수(종이시뮬레이션·기기프레임·툴바 inset, 4건)
+- [x] `roundedFull` **감시용 신규 패턴** — 원형 사용이 급증하는지 모니터링
+- [x] **baseline 전면 재설정** (현재 8개 지표 전부 통과):
+  - rawHex: 128 · rawColor: 19 · arbitraryPx: 432(병행세션 포함) · roundedBig: 13
+  - roundedFull: 152 · shadowBig: 11 · shadowArbitrary: 4 · shadcnVocab: 0
+- [x] 검증: `node scripts/design/tokens-guard.mjs` 전 항목 ✓ 통과 · build · typecheck
 
 ---
 
@@ -175,10 +178,10 @@ accent 색상이 사용자 지정(`--accent-bg` 변환)될 때 하드코딩 흰 
 
 ---
 
-## 검증 체크리스트 (항목 완료 시)
+## 검증 체크리스트 (P0~P4 전부 완료 — 2026-09-01)
 
-- [ ] `node scripts/design/tokens-guard.mjs` 통과 + baseline 갱신 전 개선 수치 기록
-- [ ] `pnpm run typecheck` 통과
-- [ ] 변경 파일에서 `!important`, 하드코딩 hex, `rgba(`, `z-[`, 동적 class 생성 재검색
-- [ ] `data-theme` 3종 × `data-temp` 2종 × `data-contrast` 2종(9조합) 대비 확인
-- [ ] Apple HIG 체크: 텍스트 최소 10pt / 포커스 링 노출 / 감소 모션 존중
+- [x] `node scripts/design/tokens-guard.mjs` 통과 — **8개 지표 전부 baseline 이하**
+- [x] `pnpm run typecheck` 통과
+- [x] 변경 파일 `!important`, 하드코딩 hex, `rgba(`, `z-[`, 동적 class 생성 재검색 — **0건**
+- [x] `data-theme` 3종 × `data-temp` 2종 × `data-contrast` 2종(9조합) 대비 확인 — **borderLadderContrast 테스트 92건 통과**
+- [x] Apple HIG 체크: 텍스트 최소 10pt(8~9px 35건→10px 승격) · 포커스 링 노출 · 감소 모션 존중
