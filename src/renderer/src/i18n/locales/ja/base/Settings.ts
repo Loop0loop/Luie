@@ -36,6 +36,12 @@ export const jaBaseSettings = {
       spellcheck: "スペルチェック",
       fontSize: "文字サイズ",
       lineHeight: "行間",
+      letterSpacing: "字間",
+      wordSpacing: "語間",
+      paragraphSpacing: "段落間隔",
+      typography: "タイポグラフィ調整",
+      advancedTypography: "詳細調整 (字間・語間・段落間隔)",
+      writingEnvironment: "執筆環境",
       typewriterMode: "タイプライターモード",
       theme: "テーマ (Theme)",
       uiMode: "UIモード (Laboratory)",
@@ -102,10 +108,35 @@ export const jaBaseSettings = {
       systemUi: "システムUI",
       serif: "明朝体",
       mono: "モノ",
+      group: {
+        presets: "おすすめ標準フォント",
+        popularKo: "よく使う韓国語フォント",
+        popularEn: "Popular English Fonts",
+        popularJa: "よく使う日本語フォント",
+        popularAll: "おすすめシステムフォント",
+        otherCount: "その他のシステムフォント ({{count}}個)",
+        expand: "確認する",
+        collapse: "閉じる",
+      },
+      lang: {
+        all: "全体",
+        ko: "韓国語",
+        en: "English",
+        ja: "日本語",
+      },
+      searchPlaceholder: "フォント名を検索...",
       helper: {
         primary: "既定ではシステムフォントを使用します。Inter は選択可能な内蔵フォントです。",
         optional: "インストール済みフォントのみ適用されます。未インストールの場合は既定フォントにフォールバックします。",
       },
+    },
+    preview: {
+      title: "プレビュー",
+      reset: "初期値にリセット",
+      body1:
+        "古い書斎の片隅に座り、埃をかぶった原稿の束を開いた。窓の外には雨が降っており、登場人物たちの声が次第にはっきりとしてきた。",
+      body2:
+        "文章とは結局、人の声を宿す器である。今日も一文、また一文と書き進めていく。",
     },
     optionalFont: {
       inter: "Inter Variable",
@@ -117,7 +148,7 @@ export const jaBaseSettings = {
       },
     },
     spellcheck: {
-      description: "Electron 内蔵のスペルチェック下線と候補表示を切り替えます。",
+      description: "入力中のスペル誤りに下線を引き、右クリックで修正候補を表示します。",
       on: "オン",
       off: "オフ",
     },

@@ -1,17 +1,60 @@
-import { memo, useMemo, useState } from "react";
-import { Check, Loader2, Search } from "lucide-react";
+import { memo, useCallback, useDeferredValue, useMemo, useState } from "react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Loader2,
+  Minus,
+  Plus,
+  RotateCcw,
+  Search,
+} from "lucide-react";
 import type { TFunction } from "i18next";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import { useShallow } from "zustand/react/shallow";
 import { useSystemFonts } from "@renderer/features/editor/hooks/useSystemFonts";
 import type { FontFamilyPreset } from "@shared/types";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@renderer/components/ui/select";
+import { Slider } from "@renderer/components/ui/slider";
+import { Virtuoso } from "react-virtuoso";
+import {
+  curateSystemFonts,
+  type FontLanguageFilter,
+} from "@renderer/features/settings/utils/fontCuration";
 
-const FONT_FAMILIES: Array<{ id: FontFamilyPreset; label: string }> = [
-  { id: "system-ui", label: "System UI" },
-  { id: "serif", label: "Serif" },
-  { id: "mono", label: "Mono" },
+const PRESETS: Array<{ id: FontFamilyPreset; labelKey: string; preview: string }> = [
+  { id: "system-ui", labelKey: "settings.font.systemUi", preview: "system-ui" },
+  { id: "serif", labelKey: "settings.font.serif", preview: "serif" },
+  { id: "mono", labelKey: "settings.font.mono", preview: "monospace" },
 ];
-const PRESET_IDS = new Set(FONT_FAMILIES.map((f) => f.id));
+const PRESET_IDS = new Set(PRESETS.map((f) => f.id));
+
+const FONT_SIZE_PRESETS = [14, 16, 18, 20, 24];
+const LINE_HEIGHT_PRESETS = [1.4, 1.6, 1.8, 2.0, 2.2];
+
+const LETTER_SPACING_PRESETS = [-0.02, 0, 0.05, 0.1];
+const WORD_SPACING_PRESETS = [0, 0.05, 0.1, 0.15];
+const PARAGRAPH_SPACING_PRESETS = [0.5, 1.0, 1.5, 2.0];
+
+const LANG_FILTER_KEYS: Array<{ id: FontLanguageFilter; labelKey: string; defaultLabel: string }> = [
+  { id: "all", labelKey: "settings.font.lang.all", defaultLabel: "전체" },
+  { id: "ko", labelKey: "settings.font.lang.ko", defaultLabel: "한국어" },
+  { id: "en", labelKey: "settings.font.lang.en", defaultLabel: "English" },
+  { id: "ja", labelKey: "settings.font.lang.ja", defaultLabel: "日本語" },
+];
+
+const formatPx = (p: number) => `${p}px`;
+const formatFixed1 = (p: number) => p.toFixed(1);
+const formatPercent = (p: number) => `${(p * 100).toFixed(0)}%`;
+const formatEm = (p: number) => `${p.toFixed(1)}em`;
 
 interface EditorTabProps {
   t: TFunction;
@@ -27,50 +70,156 @@ interface EditorTabProps {
   onSetLocalParagraphSpacing: (value: number) => void;
 }
 
-interface TypographyControlProps {
-  label: string;
-  description?: string;
-  value: number;
-  display: string;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (value: number) => void;
-}
-
-function TypographyControl({
+/**
+ * Apple HIG / macOS 스타일의 글래스모피즘 타이포그래피 슬라이더 컨트롤
+ */
+const TypographySliderRow = memo(function TypographySliderRow({
   label,
-  description,
   value,
   display,
   min,
   max,
   step,
+  presets,
+  formatPreset = (p) => String(p),
   onChange,
-}: TypographyControlProps) {
+  decreaseAriaLabel,
+  increaseAriaLabel,
+}: {
+  label: string;
+  value: number;
+  display: string;
+  min: number;
+  max: number;
+  step: number;
+  presets?: number[];
+  formatPreset?: (p: number) => string;
+  onChange: (v: number) => void;
+  decreaseAriaLabel?: string;
+  increaseAriaLabel?: string;
+}) {
+  const increase = useCallback(
+    () => onChange(Math.min(max, Number((value + step).toFixed(2)))),
+    [max, onChange, step, value],
+  );
+  const decrease = useCallback(
+    () => onChange(Math.max(min, Number((value - step).toFixed(2)))),
+    [min, onChange, step, value],
+  );
+  const handleSliderChange = useCallback(
+    ([val]: number[]) => onChange(val),
+    [onChange],
+  );
+
   return (
-    <div className="space-y-2">
-      <div className="flex items-baseline justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="text-sm font-medium text-fg">{label}</h3>
-          {description && <p className="mt-0.5 text-xs text-muted">{description}</p>}
+    <div className="rounded-panel border border-border/70 bg-surface/60 backdrop-blur-md p-4 space-y-3 shadow-xs hover:border-border transition-all">
+      {/* Header: Label, Value Badge, Integrated Stepper */}
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-fg tracking-tight">{label}</span>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex min-w-14 items-center justify-center rounded-control bg-element/80 backdrop-blur-xs px-2.5 py-0.5 font-mono text-xs font-semibold tabular-nums text-fg border border-border/40 shadow-2xs">
+            {display}
+          </span>
+          <div className="inline-flex items-center rounded-control border border-border/60 bg-element/70 backdrop-blur-xs p-0.5 shadow-2xs">
+            <button
+              type="button"
+              onClick={decrease}
+              disabled={value <= min}
+              className="flex h-6 w-6 items-center justify-center rounded-[6px] text-muted hover:bg-surface/90 hover:text-fg disabled:opacity-30 disabled:pointer-events-none transition-colors"
+              aria-label={decreaseAriaLabel ?? `${label} 감소`}
+            >
+              <Minus className="h-3 w-3" />
+            </button>
+            <div className="h-3.5 w-px bg-border/50" />
+            <button
+              type="button"
+              onClick={increase}
+              disabled={value >= max}
+              className="flex h-6 w-6 items-center justify-center rounded-[6px] text-muted hover:bg-surface/90 hover:text-fg disabled:opacity-30 disabled:pointer-events-none transition-colors"
+              aria-label={increaseAriaLabel ?? `${label} 증가`}
+            >
+              <Plus className="h-3 w-3" />
+            </button>
+          </div>
         </div>
-        <span className="shrink-0 text-sm font-medium text-fg tabular-nums w-16 text-right">
-          {display}
-        </span>
       </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-accent cursor-pointer"
-      />
+
+      {/* Preset Segmented Control */}
+      {presets && presets.length > 0 ? (
+        <div className="flex w-full items-center rounded-control bg-element/70 backdrop-blur-xs p-0.5 border border-border/40 shadow-inner">
+          {presets.map((p) => {
+            const isSelected = Math.abs(value - p) < 0.001;
+            return (
+              <button
+                key={p}
+                type="button"
+                onClick={() => onChange(p)}
+                className={`flex-1 py-1 rounded-[6px] text-xs font-medium transition-all ${
+                  isSelected
+                    ? "bg-surface text-accent font-semibold shadow-xs ring-1 ring-border/50"
+                    : "text-muted hover:text-fg hover:bg-surface/40"
+                }`}
+              >
+                {formatPreset(p)}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {/* Slider */}
+      <div className="pt-1 px-0.5">
+        <Slider
+          value={[value]}
+          min={min}
+          max={max}
+          step={step}
+          onValueChange={handleSliderChange}
+          aria-label={label}
+        />
+      </div>
     </div>
   );
-}
+});
+
+const ToggleCard = memo(function ToggleCard({
+  label,
+  description,
+  checked,
+  onChange,
+  ariaLabel,
+}: {
+  label: string;
+  description: string;
+  checked: boolean;
+  onChange: () => void;
+  ariaLabel: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-panel border border-border/70 bg-surface/60 backdrop-blur-md p-4 shadow-xs hover:border-border transition-all">
+      <div className="min-w-0">
+        <h3 className="text-sm font-medium text-fg">{label}</h3>
+        <p className="mt-0.5 text-xs text-muted leading-relaxed">{description}</p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={ariaLabel}
+        onClick={onChange}
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-border-strong transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${
+          checked ? "bg-accent" : "bg-element"
+        }`}
+      >
+        <span
+          className={`inline-block h-4 w-4 rounded-full bg-on-accent shadow-control transition-transform ${
+            checked ? "translate-x-6" : "translate-x-1"
+          }`}
+        />
+      </button>
+    </div>
+  );
+});
 
 export const EditorTab = memo(function EditorTab({
   t,
@@ -103,20 +252,32 @@ export const EditorTab = memo(function EditorTab({
     })),
   );
 
-  const [customInput, setCustomInput] = useState(customFontFamily ?? "");
-  const [fontSearch, setFontSearch] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [langFilter, setLangFilter] = useState<FontLanguageFilter>("all");
+  const [showAllOtherFonts, setShowAllOtherFonts] = useState(false);
+  const [fontSearchQuery, setFontSearchQuery] = useState("");
+  const deferredFontSearchQuery = useDeferredValue(fontSearchQuery);
 
   const {
     fonts: systemFonts,
     isLoading: isLoadingSystemFonts,
-    isSupported: isSystemFontsSupported,
   } = useSystemFonts();
 
-  const filteredFonts = useMemo(() => {
-    const base = systemFonts.filter((f) => !PRESET_IDS.has(f.family as FontFamilyPreset));
-    const q = fontSearch.trim().toLowerCase();
-    return q ? base.filter((f) => f.family.toLowerCase().includes(q)) : base;
-  }, [systemFonts, fontSearch]);
+  // 시스템 폰트 중 프리셋 제외 및 언어별/인기 폰트 큐레이션 (지연 평가로 입력 반응성 보장)
+  const { popularFonts, otherFonts } = useMemo(() => {
+    const rawFiltered = systemFonts.filter(
+      (f) => !PRESET_IDS.has(f.family as FontFamilyPreset),
+    );
+    const { popular, others } = curateSystemFonts(
+      rawFiltered,
+      langFilter,
+      deferredFontSearchQuery,
+    );
+    return {
+      popularFonts: popular,
+      otherFonts: others,
+    };
+  }, [systemFonts, langFilter, deferredFontSearchQuery]);
 
   const previewFontFamily = useMemo(() => {
     if (customFontFamily) return customFontFamily;
@@ -127,353 +288,461 @@ export const EditorTab = memo(function EditorTab({
     return fontFamily;
   }, [customFontFamily, fontPreset, fontFamily]);
 
-  const previewStyle = {
-    fontFamily: previewFontFamily,
-    fontSize: `${localFontSize}px`,
-    lineHeight: localLineHeight,
-    letterSpacing: `${localLetterSpacing}em`,
-    wordSpacing: `${localWordSpacing}em`,
-  } as const;
+  const previewStyle = useMemo(
+    () =>
+      ({
+        fontFamily: previewFontFamily,
+        fontSize: `${localFontSize}px`,
+        lineHeight: localLineHeight,
+        letterSpacing: `${localLetterSpacing}em`,
+        wordSpacing: `${localWordSpacing}em`,
+      }) as const,
+    [previewFontFamily, localFontSize, localLineHeight, localLetterSpacing, localWordSpacing],
+  );
+
+  const currentFontValue = useMemo(() => {
+    if (fontPreset === "inter") return "inter";
+    if (customFontFamily) return `custom:${customFontFamily}`;
+    if (PRESET_IDS.has(fontFamily as FontFamilyPreset)) return fontFamily;
+    return `system:${fontFamily}`;
+  }, [fontPreset, customFontFamily, fontFamily]);
+
+  const handleFontSelect = useCallback(
+    (value: string) => {
+      if (value === "inter") {
+        onApplySettings({ fontPreset: "inter", customFontFamily: undefined });
+        return;
+      }
+      if (value.startsWith("custom:")) {
+        onApplySettings({ customFontFamily: value.slice(7), fontPreset: undefined });
+        return;
+      }
+      if (value.startsWith("system:")) {
+        onApplySettings({
+          fontFamily: value.slice(7) as FontFamilyPreset,
+          fontPreset: undefined,
+          customFontFamily: undefined,
+        });
+        return;
+      }
+      onApplySettings({
+        fontFamily: value as FontFamilyPreset,
+        fontPreset: undefined,
+        customFontFamily: undefined,
+      });
+    },
+    [onApplySettings],
+  );
+
+  const handleReset = useCallback(() => {
+    onSetLocalFontSize(16);
+    onSetLocalLineHeight(1.6);
+    onSetLocalLetterSpacing(0);
+    onSetLocalWordSpacing(0);
+    onSetLocalParagraphSpacing(1.0);
+    onApplySettings({
+      fontSize: 16,
+      lineHeight: 1.6,
+      letterSpacing: 0,
+      wordSpacing: 0,
+      paragraphSpacing: 1.0,
+    });
+  }, [
+    onSetLocalFontSize,
+    onSetLocalLineHeight,
+    onSetLocalLetterSpacing,
+    onSetLocalWordSpacing,
+    onSetLocalParagraphSpacing,
+    onApplySettings,
+  ]);
+
+  const handleToggleSpellcheck = useCallback(() => {
+    onApplySettings({ spellcheckEnabled: !spellcheckEnabled });
+  }, [onApplySettings, spellcheckEnabled]);
+
+  const handleToggleTypewriter = useCallback(() => {
+    void onApplySettings({ typewriterMode: !typewriterMode });
+  }, [onApplySettings, typewriterMode]);
 
   return (
     <div className="space-y-8 max-w-2xl">
-      <section className="space-y-4">
-        <h3 className="text-base font-semibold text-fg">
-          {t("settings.section.font")}
-        </h3>
-        <div className="grid grid-cols-3 gap-3">
-          {FONT_FAMILIES.map((f) => (
-            <button
-              key={f.id}
-              onClick={() =>
-                onApplySettings({
-                  fontFamily: f.id,
-                  fontPreset: undefined,
-                  customFontFamily: undefined,
-                })
-              }
-              className={`p-4 rounded-panel border text-left transition-colors duration-150 ${
-                fontFamily === f.id && !fontPreset && !customFontFamily
-                  ? "border-accent ring-1 ring-accent bg-accent/5"
-                  : "border-border hover:bg-surface-hover"
-              }`}
-            >
-              <span
-                className="text-2xl block mb-2"
-                style={{
-                  fontFamily:
-                    f.id === "serif"
-                      ? "serif"
-                      : f.id === "mono"
-                        ? "monospace"
-                        : "system-ui",
-                }}
-              >
-                Aa
-              </span>
-              <span className="text-sm font-medium text-fg">{f.label}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <div className="h-px bg-border my-6" />
-
-      <section className="space-y-4">
-        <h3 className="text-base font-semibold text-fg">
-          {t("settings.section.optionalFont")}
-        </h3>
-        <button
-          onClick={() =>
-            onApplySettings({
-              fontPreset: fontPreset === "inter" ? undefined : "inter",
-              customFontFamily: undefined,
-            })
-          }
-          className={`w-full p-4 rounded-panel border text-left transition-colors duration-150 ${
-            fontPreset === "inter"
-              ? "border-accent ring-1 ring-accent bg-accent/5"
-              : "border-border hover:bg-surface-hover"
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <span
-              className="text-2xl"
-              style={{ fontFamily: '"Inter Variable", "Inter", sans-serif' }}
-            >
-              Aa
-            </span>
-            <div>
-              <div className="text-sm font-medium text-fg">Inter</div>
-              <div className="text-xs text-subtle">Bundled UI font</div>
-            </div>
-          </div>
-        </button>
-      </section>
-
-      {isSystemFontsSupported && (
-        <>
-          <div className="h-px bg-border my-6" />
-
-          <section className="space-y-3">
-            <h3 className="text-base font-semibold text-fg">
-              {t("settings.section.systemFonts", "System Fonts")}
-            </h3>
-            {isLoadingSystemFonts ? (
-              <div className="flex items-center gap-2 py-4 text-sm text-muted">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>{t("loading")}</span>
-              </div>
-            ) : systemFonts.length > 0 ? (
-              <div className="space-y-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
-                  <input
-                    type="text"
-                    value={fontSearch}
-                    onChange={(e) => setFontSearch(e.target.value)}
-                    placeholder={t("settings.systemFonts.search", "폰트 검색…")}
-                    className="w-full pl-8 pr-3 py-2 text-sm border border-border-strong rounded-panel bg-surface text-fg focus:outline-hidden focus:ring-2 focus:ring-ring"
-                  />
-                </div>
-                <div className="max-h-52 overflow-y-auto rounded-panel border border-border divide-y divide-border scrollbar-hide">
-                  {filteredFonts.length > 0 ? (
-                    filteredFonts.map((font) => {
-                      const isSelected =
-                        fontFamily === font.family &&
-                        !fontPreset &&
-                        !customFontFamily;
-                      return (
-                        <button
-                          key={font.family}
-                          onClick={() =>
-                            onApplySettings({
-                              fontFamily: font.family,
-                              fontPreset: undefined,
-                              customFontFamily: undefined,
-                            })
-                          }
-                          className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-colors duration-100 ${
-                            isSelected
-                              ? "bg-accent/10 text-accent"
-                              : "hover:bg-surface-hover text-fg"
-                          }`}
-                        >
-                          <span
-                            className="text-sm truncate"
-                            style={{ fontFamily: font.family }}
-                          >
-                            {font.family}
-                          </span>
-                          {isSelected && (
-                            <Check className="w-3.5 h-3.5 shrink-0 ml-2 text-accent" />
-                          )}
-                        </button>
-                      );
-                    })
-                  ) : (
-                    <div className="py-6 text-center text-sm text-muted">
-                      {t("settings.systemFonts.noResults", "검색 결과가 없습니다")}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="text-sm text-muted">
-                {t("settings.systemFonts.none", "No system fonts available")}
-              </div>
-            )}
-          </section>
-        </>
-      )}
-
-      <div className="h-px bg-border my-6" />
-
-      <section className="space-y-4">
-        <h3 className="text-base font-semibold text-fg">
-          {t("settings.section.customFont")}
-        </h3>
-        <p className="text-sm text-muted">
-          {t("settings.customFont.description")}
-        </p>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={customInput}
-            onChange={(e) => setCustomInput(e.target.value)}
-            placeholder={t("settings.customFont.placeholder")}
-            className="flex-1 px-3 py-2 border border-border-strong rounded-panel bg-surface text-fg text-sm focus:outline-hidden focus:ring-2 focus:ring-ring"
-          />
-          <button
-            onClick={() => {
-              const trimmed = customInput.trim();
-              onApplySettings({
-                customFontFamily: trimmed || undefined,
-                fontPreset: undefined,
-              });
-            }}
-            className="px-4 py-2 bg-accent text-accent-fg rounded-panel text-sm font-medium hover:bg-accent-bg-hover transition-colors"
-          >
-            {t("settings.customFont.apply")}
-          </button>
-        </div>
-        {customFontFamily && (
-          <div className="text-xs text-muted">
-            {t("settings.customFont.active")}:{" "}
-            <span className="font-mono">{customFontFamily}</span>
-          </div>
-        )}
-      </section>
-
-      <div className="h-px bg-border my-6" />
-
-      <section className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
+      {/* ---- Section 1: 폰트 선택 & 언어별 큐레이션 ---- */}
+      <section className="space-y-3.5">
+        <div className="flex items-center justify-between">
           <div>
             <h3 className="text-base font-semibold text-fg">
-              {t("settings.section.spellcheck")}
+              {t("settings.section.font")}
             </h3>
-            <p className="mt-1 text-sm text-muted">
-              {t("settings.spellcheck.description")}
+            <p className="text-xs text-muted mt-0.5">
+              {t("settings.font.helper.primary", "에디터 본문에 적용할 서체를 선택합니다.")}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() =>
-                onApplySettings({ spellcheckEnabled: !spellcheckEnabled })
-              }
-              aria-pressed={spellcheckEnabled}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full border border-border-strong transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${
-                spellcheckEnabled ? "bg-accent" : "bg-element"
-              }`}
-            >
-              <span
-                className={`${spellcheckEnabled ? "translate-x-6" : "translate-x-1"} inline-block h-4 w-4 transform rounded-full bg-on-accent shadow-control transition-transform`}
-              />
-            </button>
-            <span className="w-12 text-right text-sm font-medium text-fg">
-              {spellcheckEnabled
-                ? t("settings.spellcheck.on")
-                : t("settings.spellcheck.off")}
-            </span>
+
+          {/* 언어별 1차 필터 세그먼트 컨트롤 */}
+          <div className="inline-flex items-center rounded-control bg-element/70 backdrop-blur-xs p-0.5 border border-border/40 shadow-inner">
+            {LANG_FILTER_KEYS.map((lang) => (
+              <button
+                key={lang.id}
+                type="button"
+                onClick={() => {
+                  setLangFilter(lang.id);
+                  setShowAllOtherFonts(false);
+                }}
+                className={`px-2.5 py-1 rounded-[6px] text-xs font-medium transition-all ${
+                  langFilter === lang.id
+                    ? "bg-surface text-accent font-semibold shadow-xs ring-1 ring-border/50"
+                    : "text-muted hover:text-fg hover:bg-surface/40"
+                }`}
+              >
+                {t(lang.labelKey, lang.defaultLabel)}
+              </button>
+            ))}
           </div>
+        </div>
+
+        {/* 폰트 선택 드롭다운 */}
+        <Select value={currentFontValue} onValueChange={handleFontSelect}>
+          <SelectTrigger className="w-full bg-surface/70 backdrop-blur-md border-border/70 shadow-xs hover:border-border">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="max-h-[360px] bg-panel/95 backdrop-blur-xl border-border shadow-modal">
+            {/* 기본 및 내장 추천 폰트 */}
+            <SelectGroup>
+              <SelectLabel>{t("settings.font.group.presets", "기본 추천 서체")}</SelectLabel>
+              {PRESETS.map((f) => (
+                <SelectItem key={f.id} value={f.id}>
+                  <span
+                    className="mr-2.5 inline-flex h-5 w-5 items-center justify-center rounded text-base font-medium opacity-80"
+                    style={{ fontFamily: f.preview }}
+                  >
+                    Aa
+                  </span>
+                  {t(f.labelKey)}
+                </SelectItem>
+              ))}
+              <SelectItem value="inter">
+                <span
+                  className="mr-2.5 inline-flex h-5 w-5 items-center justify-center rounded text-base font-medium opacity-80"
+                  style={{ fontFamily: '"Inter Variable", "Inter", sans-serif' }}
+                >
+                  Aa
+                </span>
+                Inter Variable
+              </SelectItem>
+            </SelectGroup>
+
+            {/* 2차 필터: 많이 쓰는 인기 서체 */}
+            {popularFonts.length > 0 ? (
+              <>
+                <SelectSeparator />
+                <SelectGroup>
+                  <SelectLabel>
+                    {langFilter === "ko"
+                      ? t("settings.font.group.popularKo", "자주 쓰는 한국어 서체")
+                      : langFilter === "en"
+                        ? t("settings.font.group.popularEn", "Popular English Fonts")
+                        : langFilter === "ja"
+                          ? t("settings.font.group.popularJa", "よく使う日本語フォント")
+                          : t("settings.font.group.popularAll", "자주 쓰는 추천 시스템 서체")}
+                  </SelectLabel>
+                  {popularFonts.map((f) => (
+                    <SelectItem key={f.family} value={`system:${f.family}`}>
+                      <span
+                        className="mr-2.5 inline-flex h-5 w-5 items-center justify-center rounded text-base font-medium opacity-80"
+                        style={{ fontFamily: f.family }}
+                      >
+                        Aa
+                      </span>
+                      {f.family}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </>
+            ) : null}
+
+            {/* 로딩 상태 */}
+            {isLoadingSystemFonts ? (
+              <>
+                <SelectSeparator />
+                <div className="flex items-center justify-center py-4 text-xs text-muted">
+                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin text-accent" />
+                  {t("settings.optionalFont.action.installing", "시스템 서체 검색 중...")}
+                </div>
+              </>
+            ) : null}
+
+            {/* 현재 커스텀 폰트 항목 */}
+            {customFontFamily ? (
+              <>
+                <SelectSeparator />
+                <SelectItem value={`custom:${customFontFamily}`}>
+                  <span className="mr-2.5 inline-flex h-5 w-5 items-center justify-center rounded text-xs font-mono font-medium opacity-80">
+                    Aa
+                  </span>
+                  {customFontFamily}
+                </SelectItem>
+              </>
+            ) : null}
+
+            {/* 맨 끝자락: 기타 모든 시스템 폰트 (Virtuoso 고성능 가상화 렌더링) */}
+            {!isLoadingSystemFonts && otherFonts.length > 0 ? (
+              <>
+                <SelectSeparator />
+                <div className="p-1">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowAllOtherFonts((prev) => !prev);
+                    }}
+                    className="flex w-full items-center justify-between px-2 py-1.5 rounded-control text-xs font-medium text-muted hover:text-fg hover:bg-surface-hover transition-colors"
+                  >
+                    <span>
+                      {t("settings.font.group.otherCount", {
+                        count: otherFonts.length,
+                        defaultValue: `기타 시스템 서체 (${otherFonts.length}개)`,
+                      })}
+                    </span>
+                    <span className="text-[11px] text-accent">
+                      {showAllOtherFonts
+                        ? t("settings.font.group.collapse", "접기")
+                        : t("settings.font.group.expand", "확인하기")}
+                    </span>
+                  </button>
+
+                  {showAllOtherFonts ? (
+                    <div
+                      className="mt-1 border-t border-border/40 pt-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="px-1 py-1 mb-1">
+                        <div className="relative flex items-center">
+                          <Search className="absolute left-2 h-3 w-3 text-muted pointer-events-none" />
+                          <input
+                            type="text"
+                            placeholder={t("settings.font.searchPlaceholder", "폰트명 검색...")}
+                            value={fontSearchQuery}
+                            onChange={(e) => setFontSearchQuery(e.target.value)}
+                            className="h-7 w-full rounded-control border border-border/60 bg-element/80 pl-6 pr-2 text-xs text-fg placeholder:text-subtle focus:outline-hidden focus:border-accent"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="h-[200px] w-full">
+                        <Virtuoso
+                          style={{ height: "200px" }}
+                          totalCount={otherFonts.length}
+                          itemContent={(index) => {
+                            const f = otherFonts[index];
+                            if (!f) return null;
+                            return (
+                              <div className="py-0.5" key={f.family}>
+                                <SelectItem value={`system:${f.family}`}>
+                                  <span
+                                    className="mr-2.5 inline-flex h-5 w-5 items-center justify-center rounded text-base font-medium opacity-80"
+                                    style={{ fontFamily: f.family }}
+                                  >
+                                    Aa
+                                  </span>
+                                  <span className="truncate">{f.family}</span>
+                                </SelectItem>
+                              </div>
+                            );
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              </>
+            ) : null}
+          </SelectContent>
+        </Select>
+      </section>
+
+      {/* ---- Section 2: 실시간 미리보기 ---- */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-semibold text-fg">
+            {t("settings.preview.title", "미리보기")}
+          </h3>
+          <button
+            type="button"
+            onClick={handleReset}
+            className="flex items-center gap-1.5 rounded-control px-2.5 py-1 text-xs text-muted hover:bg-surface/80 hover:text-fg border border-transparent hover:border-border/60 transition-all shadow-2xs"
+          >
+            <RotateCcw className="h-3 w-3" />
+            {t("settings.preview.reset", "기본값으로 초기화")}
+          </button>
+        </div>
+        <div className="rounded-panel border border-border/60 bg-surface/40 backdrop-blur-md p-5 shadow-xs">
+          <p style={previewStyle} className="text-fg transition-all">
+            {t(
+              "settings.preview.body1",
+              "그는 오래된 서재 한편에 앉아, 먼지 앉은 원고 뭉치를 펼쳤다. 창밖엔 비가 내리고 있었고, 등장인물들의 목소리가 점차 또렷해졌다.",
+            )}
+          </p>
+          <p
+            style={{ ...previewStyle, marginTop: `${localParagraphSpacing}em` }}
+            className="text-fg transition-all"
+          >
+            {t(
+              "settings.preview.body2",
+              "글이란 결국 사람의 목소리를 담는 그릇이다. 오늘도 한 문장, 한 문장씩 써 내려간다.",
+            )}
+          </p>
         </div>
       </section>
 
-      <div className="h-px bg-border my-6" />
+      {/* ---- Section 3: 주요 타이포그래피 컨트롤 ---- */}
+      <section className="space-y-4">
+        <h3 className="text-base font-semibold text-fg">
+          {t("settings.section.typography", "타이포그래피 조절")}
+        </h3>
 
-      <section className="space-y-6">
-        <div className="space-y-3">
-          <h3 className="text-base font-semibold text-fg">
-            {t("settings.section.fontSize")}
-          </h3>
-          <div className="rounded-panel border border-border bg-surface p-5">
-            <p style={previewStyle} className="text-fg">
-              {t("settings.preview.body1", "그는 오래된 서재 한편에 앉아, 먼지 앉은 원고 뭉치를 펼쳤다. 창밖엔 비가 내리고 있었고, 등장인물들의 목소리가 점차 또렷해졌다.")}
-            </p>
-            <p
-              style={{ ...previewStyle, marginTop: `${localParagraphSpacing}em` }}
-              className="text-fg"
-            >
-              {t("settings.preview.body2", "글이란 결국 사람의 목소리를 담는 그릇이다. 오늘도 한 문장, 한 문장씩 써 내려간다.")}
-            </p>
-          </div>
-        </div>
-
-        <TypographyControl
-          label={t("settings.section.fontSize")}
+        {/* 글자 크기 */}
+        <TypographySliderRow
+          label={t("settings.section.fontSize", "글자 크기")}
           value={localFontSize}
           display={`${localFontSize}px`}
           min={12}
           max={32}
           step={1}
+          presets={FONT_SIZE_PRESETS}
+          formatPreset={formatPx}
           onChange={(v) => {
             onSetLocalFontSize(v);
             onApplySettings({ fontSize: v });
           }}
+          decreaseAriaLabel={`${t("settings.section.fontSize", "글자 크기")} 감소`}
+          increaseAriaLabel={`${t("settings.section.fontSize", "글자 크기")} 증가`}
         />
-        <TypographyControl
-          label={t("settings.section.lineHeight")}
+
+        {/* 줄 간격 */}
+        <TypographySliderRow
+          label={t("settings.section.lineHeight", "줄 간격")}
           value={localLineHeight}
           display={localLineHeight.toFixed(1)}
           min={1.2}
           max={2.4}
           step={0.1}
+          presets={LINE_HEIGHT_PRESETS}
+          formatPreset={formatFixed1}
           onChange={(v) => {
-            onSetLocalLineHeight(v);
-            onApplySettings({ lineHeight: Number(v.toFixed(1)) });
+            const rounded = Number(v.toFixed(1));
+            onSetLocalLineHeight(rounded);
+            onApplySettings({ lineHeight: rounded });
           }}
+          decreaseAriaLabel={`${t("settings.section.lineHeight", "줄 간격")} 감소`}
+          increaseAriaLabel={`${t("settings.section.lineHeight", "줄 간격")} 증가`}
         />
-        <TypographyControl
-          label={t("settings.section.letterSpacing", "자간")}
-          description={t("settings.letterSpacing.description", "글자 사이 간격을 조절합니다")}
-          value={localLetterSpacing}
-          display={`${localLetterSpacing.toFixed(2)}em`}
-          min={0}
-          max={0.3}
-          step={0.01}
-          onChange={(v) => {
-            onSetLocalLetterSpacing(v);
-            onApplySettings({ letterSpacing: Number(v.toFixed(2)) });
-          }}
-        />
-        <TypographyControl
-          label={t("settings.section.wordSpacing", "어간")}
-          description={t("settings.wordSpacing.description", "단어 사이 간격을 조절합니다")}
-          value={localWordSpacing}
-          display={`${localWordSpacing.toFixed(2)}em`}
-          min={0}
-          max={0.2}
-          step={0.01}
-          onChange={(v) => {
-            onSetLocalWordSpacing(v);
-            onApplySettings({ wordSpacing: Number(v.toFixed(2)) });
-          }}
-        />
-        <TypographyControl
-          label={t("settings.section.paragraphSpacing", "문단 간격")}
-          description={t("settings.paragraphSpacing.description", "엔터 후 문단 사이 간격을 조절합니다")}
-          value={localParagraphSpacing}
-          display={`${localParagraphSpacing.toFixed(1)}em`}
-          min={0}
-          max={3.0}
-          step={0.1}
-          onChange={(v) => {
-            onSetLocalParagraphSpacing(v);
-            onApplySettings({ paragraphSpacing: Number(v.toFixed(1)) });
-          }}
-        />
-        <div className="flex items-center justify-between gap-4 rounded-panel border border-border bg-surface p-4">
-          <div>
-            <h3 className="text-sm font-medium text-fg">
-              {t("settings.section.typewriterMode", "타자기 모드")}
-            </h3>
-            <p className="mt-0.5 text-xs text-muted">
-              {t(
-                "settings.typewriterMode.description",
-                "입력 위치를 화면 중앙 부근에 유지합니다.",
-              )}
-            </p>
-          </div>
+
+        {/* ---- 세부 조절 (아코디언) ---- */}
+        <div className="rounded-panel border border-border/70 bg-surface/50 backdrop-blur-md overflow-hidden transition-all shadow-xs">
           <button
             type="button"
-            role="switch"
-            aria-checked={typewriterMode}
-            aria-label={t("settings.section.typewriterMode", "타자기 모드")}
-            onClick={() =>
-              void onApplySettings({ typewriterMode: !typewriterMode })
-            }
-            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-border-strong transition-colors focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-surface ${
-              typewriterMode ? "bg-accent" : "bg-element"
-            }`}
+            onClick={() => setShowAdvanced((prev) => !prev)}
+            className="flex w-full items-center justify-between p-3.5 text-sm font-medium text-muted hover:text-fg hover:bg-surface/60 transition-colors"
           >
-            <span
-              className={`inline-block h-4 w-4 rounded-full bg-on-accent shadow-control transition-transform ${
-                typewriterMode ? "translate-x-6" : "translate-x-1"
-              }`}
-            />
+            <span className="flex items-center gap-2">
+              {showAdvanced ? (
+                <ChevronDown className="h-4 w-4 text-accent" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-muted" />
+              )}
+              {t("settings.section.advancedTypography", "세부 조절 (자간, 어간, 문단 간격)")}
+            </span>
+            <span className="text-xs text-subtle">
+              {showAdvanced
+                ? t("common.collapse", "접기")
+                : t("common.expand", "펼치기")}
+            </span>
           </button>
+
+          {showAdvanced ? (
+            <div className="space-y-3 p-4 pt-1 border-t border-border/60 bg-surface/70 backdrop-blur-md">
+              <TypographySliderRow
+                label={t("settings.section.letterSpacing", "자간")}
+                value={localLetterSpacing}
+                display={`${(localLetterSpacing * 100).toFixed(0)}%`}
+                min={-0.05}
+                max={0.3}
+                step={0.01}
+                presets={LETTER_SPACING_PRESETS}
+                formatPreset={formatPercent}
+                onChange={(v) => {
+                  const rounded = Number(v.toFixed(2));
+                  onSetLocalLetterSpacing(rounded);
+                  onApplySettings({ letterSpacing: rounded });
+                }}
+                decreaseAriaLabel={`${t("settings.section.letterSpacing", "자간")} 감소`}
+                increaseAriaLabel={`${t("settings.section.letterSpacing", "자간")} 증가`}
+              />
+              <TypographySliderRow
+                label={t("settings.section.wordSpacing", "어간")}
+                value={localWordSpacing}
+                display={`${(localWordSpacing * 100).toFixed(0)}%`}
+                min={0}
+                max={0.2}
+                step={0.01}
+                presets={WORD_SPACING_PRESETS}
+                formatPreset={formatPercent}
+                onChange={(v) => {
+                  const rounded = Number(v.toFixed(2));
+                  onSetLocalWordSpacing(rounded);
+                  onApplySettings({ wordSpacing: rounded });
+                }}
+                decreaseAriaLabel={`${t("settings.section.wordSpacing", "어간")} 감소`}
+                increaseAriaLabel={`${t("settings.section.wordSpacing", "어간")} 증가`}
+              />
+              <TypographySliderRow
+                label={t("settings.section.paragraphSpacing", "문단 간격")}
+                value={localParagraphSpacing}
+                display={`${localParagraphSpacing.toFixed(1)}em`}
+                min={0}
+                max={3.0}
+                step={0.1}
+                presets={PARAGRAPH_SPACING_PRESETS}
+                formatPreset={formatEm}
+                onChange={(v) => {
+                  const rounded = Number(v.toFixed(1));
+                  onSetLocalParagraphSpacing(rounded);
+                  onApplySettings({ paragraphSpacing: rounded });
+                }}
+                decreaseAriaLabel={`${t("settings.section.paragraphSpacing", "문단 간격")} 감소`}
+                increaseAriaLabel={`${t("settings.section.paragraphSpacing", "문단 간격")} 증가`}
+              />
+            </div>
+          ) : null}
         </div>
+      </section>
+
+      {/* ---- Section 4: 집필 환경 ---- */}
+      <section className="space-y-3">
+        <h3 className="text-base font-semibold text-fg">
+          {t("settings.section.writingEnvironment", "집필 환경")}
+        </h3>
+        <ToggleCard
+          label={t("settings.section.spellcheck", "맞춤법 검사")}
+          description={t(
+            "settings.spellcheck.description",
+            "작성 중인 텍스트의 맞춤법 오류를 밑줄로 표시하고, 우클릭 시 교정 제안을 제공합니다.",
+          )}
+          checked={spellcheckEnabled}
+          onChange={handleToggleSpellcheck}
+          ariaLabel={t("settings.section.spellcheck", "맞춤법 검사")}
+        />
+        <ToggleCard
+          label={t("settings.section.typewriterMode", "타자기 모드")}
+          description={t(
+            "settings.typewriterMode.description",
+            "입력 위치를 화면 중앙 부근에 유지합니다.",
+          )}
+          checked={typewriterMode}
+          onChange={handleToggleTypewriter}
+          ariaLabel={t("settings.section.typewriterMode", "타자기 모드")}
+        />
       </section>
     </div>
   );

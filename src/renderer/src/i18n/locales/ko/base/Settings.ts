@@ -36,6 +36,12 @@ export const koBaseSettings = {
       spellcheck: "맞춤법 검사",
       fontSize: "글자 크기",
       lineHeight: "줄 간격",
+      letterSpacing: "자간",
+      wordSpacing: "어간",
+      paragraphSpacing: "문단 간격",
+      typography: "타이포그래피 조절",
+      advancedTypography: "세부 조절 (자간, 어간, 문단 간격)",
+      writingEnvironment: "집필 환경",
       typewriterMode: "타자기 모드",
       theme: "테마 (Theme)",
       uiMode: "UI 모드 (Laboratory)",
@@ -105,12 +111,37 @@ export const koBaseSettings = {
       systemUi: "고딕체 (기본)",
       serif: "명조체 (Serif)",
       mono: "고정폭 (Mono)",
+      group: {
+        presets: "기본 추천 서체",
+        popularKo: "자주 쓰는 한국어 서체",
+        popularEn: "Popular English Fonts",
+        popularJa: "よく使う日本語フォント",
+        popularAll: "자주 쓰는 추천 시스템 서체",
+        otherCount: "기타 시스템 서체 ({{count}}개)",
+        expand: "확인하기",
+        collapse: "접기",
+      },
+      lang: {
+        all: "전체",
+        ko: "한국어",
+        en: "English",
+        ja: "日本語",
+      },
+      searchPlaceholder: "폰트명 검색...",
       helper: {
         primary:
           "기본적으로 시스템 폰트를 사용합니다. Inter는 선택 가능한 내장 폰트입니다.",
         optional:
           "설치된 폰트만 적용됩니다. 설치하지 않으면 기본 폰트로 자동 폴백됩니다.",
       },
+    },
+    preview: {
+      title: "미리보기",
+      reset: "기본값으로 초기화",
+      body1:
+        "그는 오래된 서재 한편에 앉아, 먼지 앉은 원고 뭉치를 펼쳤다. 창밖엔 비가 내리고 있었고, 등장인물들의 목소리가 점차 또렷해졌다.",
+      body2:
+        "글이란 결국 사람의 목소리를 담는 그릇이다. 오늘도 한 문장, 한 문장씩 써 내려간다.",
     },
     optionalFont: {
       inter: "Inter Variable",
@@ -122,7 +153,7 @@ export const koBaseSettings = {
       },
     },
     spellcheck: {
-      description: "Electron 내장 맞춤법 검사 밑줄과 제안을 켜거나 끕니다.",
+      description: "작성 중인 텍스트의 맞춤법 오류를 밑줄로 표시하고, 우클릭 시 교정 제안을 제공합니다.",
       on: "켜짐",
       off: "꺼짐",
     },

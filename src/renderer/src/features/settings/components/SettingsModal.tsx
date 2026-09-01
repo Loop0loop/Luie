@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo } from "react";
+import { lazy, Suspense, useEffect, useMemo } from "react";
 import { X } from "lucide-react";
 import { SETTINGS_TABS } from "@renderer/features/settings/components/SettingsModalConfig";
 import { useSettingsManager } from "@renderer/features/settings/hooks/useSettingsManager";
@@ -112,6 +112,16 @@ export default function SettingsModal({ onClose, initialTab }: SettingsModalProp
       })),
     [t],
   );
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !e.defaultPrevented) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   return (
     <div
