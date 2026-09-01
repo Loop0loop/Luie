@@ -77,6 +77,24 @@
   --color-border: var(--border-default);
   --color-border-active: var(--border-active);
   --color-border-strong: var(--border-strong);
+  /* NOTE: 툴바 드롭다운처럼 **무배경 툴바 위에 종이색 fill로 놓이는 컨트롤**의 경계다.
+     기본은 `--border-active`, `data-contrast="high"`에서 `--border-strong`으로 승격한다.
+
+     WHY 별도 토큰인가: 카드(`--bg-panel`) 위에 놓이는 입력 32곳은 §4 Task 1에서
+     `--border-strong`(3.30)으로 확정했고 그 강도는 승인됐다. 그런데 툴바는 무배경이라
+     컨트롤이 종이에 바로 놓이고, 문단·글꼴·크기 드롭다운 3개와 FontSelector가 한 줄에
+     나란히 서므로 같은 3.1이 훨씬 무겁게 읽힌다(사용자 판단). 그 4곳만 낮추려면
+     `border-border-active`를 직접 쓰면 되지만, 그러면 고대비 모드에서도 1.89에 머문다.
+
+     WHY `[data-contrast="high"]` 한 블록으로 충분한가: theme·색온도 블록이 이 토큰을
+     선언하지 않으므로 §4가 겪은 특이도 충돌((0,2,0)이 (0,1,0)을 이기는 문제)이 없다.
+     `:root`(0,1,0) → `[data-contrast="high"]`(0,1,0, 뒤 선언)로 9조합 전부 승격된다.
+
+     대가: soft에서 1.64~1.92로 WCAG 1.4.11의 3:1에 미달한다. §4 플랜의 리스크 표가
+     "과하면 `--border-active`로 한 단계 낮추는 선택지를 남긴다 — 단 1.4.11 미달을
+     감수하는 결정이 된다"로 미리 적어둔 지점이고, 그 선택을 했다. 완전 준수는 고대비
+     모드가 담당한다 — 텍스트 램프를 4.0/4.5로 가른 것과 같은 구조다. */
+  --color-border-control: var(--border-control);
   --color-border-focus: var(--border-focus);
 
   /* NOTE: canvas의 floating chrome은 반투명 유리 위에 control을 올린다. 일반 surface
@@ -275,6 +293,18 @@
      대가: `--bg-element`를 fill로 쓰는 컨트롤에서는 2.46으로 3:1에 미달한다.
      그 경로는 전역 확장 때 개별 판단한다. */
   --border-strong: #8e8e89;
+  /* NOTE: 무배경 툴바 위 컨트롤 경계. `@theme`의 `--color-border-control` NOTE 참조.
+     theme·색온도 블록에서 재선언하지 않는다 — mix가 각 theme의 default·active를 참조하므로
+     자동으로 반영되고, 특이도 충돌 없이 `[data-contrast="high"]` 한 블록으로 승격된다.
+
+     값은 default(1.21)와 active(1.89) 사이의 40%다. active를 그대로 썼다가 사용자
+     UI 확인에서 두 번째로 "아직 강하다"는 판단이 나왔다 — 툴바가 무배경이고 컨트롤
+     4개가 한 줄에 나란히 서므로 카드 위 입력과 체감이 다르다. 종이 위 1.43 / 1.46 / 1.39. */
+  --border-control: color-mix(
+    in srgb,
+    var(--border-active) 40%,
+    var(--border-default)
+  );
   --border-focus: #636366;
 
   /* NOTE: editor의 종이와 잉크는 theme 표면·본문색과 갈라질 수 있는 별도 역할이지만
@@ -283,7 +313,21 @@
      덮어쓴다. */
   --editor-bg: var(--bg-app);
   --editor-text: var(--text-primary);
-  --editor-selection: #bfdbfe;
+  /* NOTE: 선택 영역은 **accent에서 파생한다**(§11). 이전에는 theme별 리터럴 3개였고
+     `[data-accent="*"]` 축이 빠져 있어서, accent를 amber로 두면 사이드바 focus ring은
+     주황인데 에디터 선택 영역만 파랗게 떴다(dark `#1e4f91`). §3이 "accent가 brass인
+     theme에서 선택 영역만 파랗게 떴다"며 sepia를 고쳤는데, 같은 버그의 다른 축이 남아
+     있었다 — 그때는 theme 축만 봤다.
+
+     형광펜(`--editor-mark-*`)과 같은 구조다 — 종이에 accent를 28% 섞는다. 종이가
+     바뀌면 결과가 따라가고 accent가 바뀌면 색조가 따라간다. 대비가 구조적으로 보장되므로
+     theme × accent = 3 × 5 조합에 리터럴을 두지 않는다.
+
+     실측(3 theme × 5 accent + sepia brass): 종이 대비 1.32~1.56(이전 light 1.348 ·
+     sepia 1.426과 같은 대역) · 선택 중 본문 글자 대비 최저 **5.96**(§3이 확보한 6.45와
+     같은 수준). */
+  --editor-selection: color-mix(in srgb, var(--accent-bg) 28%, var(--bg-app));
+
   /* NOTE: 형광펜 기본색. 정의가 없어 canvas markdown editor의 형광펜 버튼이 아무
      배경도 칠하지 못했다. 이제 팔레트의 노랑과 같은 값을 쓴다 — 이전에는 theme별
      리터럴 3개(light `#fef08a` · dark `rgba(250,204,21,.32)` · sepia `#f2e2a6`)로
@@ -465,7 +509,6 @@
 
   --grid-line: var(--border-default);
 
-  --editor-selection: #1e4f91;
   /* NOTE: `--highlight-default`의 dark 리터럴을 제거했다(§11). 팔레트가
      `color-mix(anchor, var(--bg-app))` 구조라 종이가 어두워지면 결과도 어두워지므로
      theme 분기가 필요 없다. 이전 `rgba(250,204,21,0.32)`는 알파로 눌러 글자를
@@ -661,11 +704,9 @@
   --accent-primary: var(--accent-bg);
   --grid-line: var(--border-default);
 
-  /* NOTE: 이전 값 #b7d5f5는 축 +62의 완전한 파랑이었다. accent가 brass(#8a602e)인
-     theme에서 선택 영역만 파랗게 떴다. light가 파란 accent에 맞춰 파란 선택색을 쓰는
-     것과 같은 원리로 brass 계열에 맞췄다. 종이 대비 1.426(light의 1.421과 같은 수준),
-     본문 글자 대비 6.45로 선택 중에도 읽힌다. */
-  --editor-selection: #e2cb9c;
+  /* NOTE: sepia 리터럴 `#e2cb9c`를 제거했다. §3이 파란 선택색을 brass로 고친 판단은
+     맞았지만 값을 고정한 방식이 accent 축을 놓쳤다. 이제 `:root`의 파생식이
+     `var(--accent-bg)`(sepia는 brass `#8a602e`)와 종이를 참조하므로 같은 결과가 나온다. */
   /* NOTE: canvas 그림자와 같은 갈색 축. 검정 그림자는 따뜻한 종이 위에서 죽은 회색
      얼룩이 된다. light 0.1 대비 0.14는 canvas의 light 0.14 → sepia 0.18과 같은 폭이다. */
   --elevation-tint: rgba(95, 75, 50, 0.14);
@@ -687,6 +728,10 @@
   --text-secondary: #4b4b53;
   --text-tertiary: #686864;
   --border-default: #d7d7d3;
+  /* NOTE: 툴바 컨트롤 경계를 soft(1.64~1.92) → strong(3.07~3.34)으로 승격해 WCAG
+     1.4.11을 만족시킨다. theme·색온도 블록이 `--border-control`을 선언하지 않으므로
+     이 한 블록이 9조합 전부에 걸린다. */
+  --border-control: var(--border-strong);
 }
 [data-theme="light"][data-temp="cool"][data-contrast="high"] {
   --text-primary: #1d2330;

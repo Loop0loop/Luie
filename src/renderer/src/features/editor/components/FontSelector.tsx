@@ -30,7 +30,7 @@ export function FontSelector() {
   return (
     <div className="relative" ref={ref}>
       <button
-        className="flex items-center gap-1 px-2 h-8 rounded-control bg-app border border-border-strong text-fg text-xs cursor-pointer hover:bg-hover w-24 justify-between shadow-control focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex items-center gap-1 px-2 h-8 rounded-control bg-app border border-border-control text-fg text-xs cursor-pointer hover:bg-hover w-24 justify-between shadow-control focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
         onClick={() => setIsOpen(!isOpen)}
         title={t("settings.section.font")}
       >

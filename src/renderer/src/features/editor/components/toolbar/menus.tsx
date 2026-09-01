@@ -1,4 +1,10 @@
-import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -50,45 +56,121 @@ export function CompactDropdown<T extends string | number>({
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const listboxId = useId();
   useClickOutside(ref, () => setOpen(false), open);
 
   const displayLabel = getLabel ? getLabel(value) : String(value);
+  const selectedIndex = Math.max(0, options.indexOf(value));
+  // NOTE: 이 컨트롤은 네이티브 `<select>`가 아니라 button + div로 만든 커스텀 select였고
+  // role·화살표 키 이동이 전혀 없어 스크린리더와 키보드에 아무것도 전달되지 않았다.
+  // ARIA APG의 select-only combobox 패턴을 따른다 — 포커스는 combobox에 남고 활성 항목은
+  // `aria-activedescendant`로 알린다. 그래서 옵션을 button이 아니라 `role="option"`으로 둔다.
+  const [activeIndex, setActiveIndex] = useState(selectedIndex);
+
+  const optionId = (index: number) => `${listboxId}-option-${index}`;
+
+  const commit = (index: number) => {
+    const next = options[index];
+    if (next !== undefined) onChange(next);
+    setOpen(false);
+  };
+
+  const openWith = (index: number) => {
+    setActiveIndex(index);
+    setOpen(true);
+  };
+
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    const last = options.length - 1;
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        if (!open) openWith(selectedIndex);
+        else setActiveIndex((i) => Math.min(last, i + 1));
+        return;
+      case "ArrowUp":
+        event.preventDefault();
+        if (!open) openWith(selectedIndex);
+        else setActiveIndex((i) => Math.max(0, i - 1));
+        return;
+      case "Home":
+        if (!open) return;
+        event.preventDefault();
+        setActiveIndex(0);
+        return;
+      case "End":
+        if (!open) return;
+        event.preventDefault();
+        setActiveIndex(last);
+        return;
+      case "Enter":
+      case " ":
+        event.preventDefault();
+        if (!open) openWith(selectedIndex);
+        else commit(activeIndex);
+        return;
+      case "Tab":
+        // NOTE: Escape는 useClickOutside가 처리한다. Tab은 막지 않고 닫기만 한다.
+        if (open) setOpen(false);
+        return;
+      default:
+        return;
+    }
+  };
 
   return (
     <div className={cn("relative", className)} ref={ref}>
       {/* NOTE: 경계가 `border-border`(soft)였는데 fill이 `bg-app`(종이색)이고 툴바가
-          무배경이라 종이 위에서 대비 1.21로 사실상 보이지 않았다. select 역할이므로 §4가
-          확정한 대화형 컨트롤 규범(`--border-strong`, 3:1)이 적용된다 — light 3.12 · sepia 3.17.
-          §4 Task 1이 input·select·토글 32곳을 옮길 때 툴바 드롭다운 3개가 빠져 있었다. */}
+          무배경이라 종이 위에서 대비 1.21로 사실상 보이지 않았다. 처음 `--border-strong`
+          (3.12)으로 올렸다가 **사용자 판단으로 `--border-control`로 낮췄다** — 이 드롭다운
+          3개와 FontSelector가 한 줄에 나란히 서므로 같은 강도가 카드 위 입력보다 훨씬 무겁게
+          읽힌다. soft 1.89 / 고대비 3.12다. 근거는 `global.tokens.css`의
+          `--color-border-control` NOTE 참조. */}
       <button
         type="button"
-        className="flex h-8 w-full items-center gap-1 rounded-control border border-border-strong bg-app px-2 text-xs text-fg transition-colors hover:bg-hover focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+        role="combobox"
+        className="flex h-8 w-full items-center gap-1 rounded-control border border-border-control bg-app px-2 text-xs text-fg transition-colors hover:bg-hover focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
         aria-label={ariaLabel}
+        aria-haspopup="listbox"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        aria-controls={listboxId}
+        aria-activedescendant={open ? optionId(activeIndex) : undefined}
+        onClick={() => (open ? setOpen(false) : openWith(selectedIndex))}
+        onKeyDown={handleKeyDown}
       >
         <span className="flex-1 truncate text-left">{displayLabel}</span>
         <ChevronDown className="h-3 w-3 shrink-0 opacity-50" />
       </button>
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 min-w-full overflow-y-auto rounded-control border border-border bg-panel py-1 shadow-panel" style={{ maxHeight: "13rem" }}>
-          {options.map((option) => {
+        <div
+          id={listboxId}
+          role="listbox"
+          aria-label={ariaLabel}
+          className="absolute left-0 top-full z-dropdown mt-1 min-w-full overflow-y-auto rounded-control border border-border bg-panel py-1 shadow-panel"
+          style={{ maxHeight: "13rem" }}
+        >
+          {options.map((option, index) => {
             const label = getLabel ? getLabel(option) : String(option);
+            const isSelected = option === value;
+            const isActive = index === activeIndex;
             return (
-              <button
+              <div
                 key={String(option)}
-                type="button"
+                id={optionId(index)}
+                role="option"
+                aria-selected={isSelected}
+                // NOTE: 활성 항목을 `bg-active`(알파 오버레이, 대비 1.05)로만 표시하면
+                // 어느 항목에 커서가 있는지 알기 어렵다. `bg-element`로 면을 갈라 준다.
                 className={cn(
-                  "flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-hover",
-                  option === value ? "font-medium text-accent" : "text-fg",
+                  "flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors",
+                  isActive ? "bg-element" : "hover:bg-hover",
+                  isSelected ? "font-medium text-accent" : "text-fg",
                 )}
-                onClick={() => {
-                  onChange(option);
-                  setOpen(false);
-                }}
+                onMouseEnter={() => setActiveIndex(index)}
+                onClick={() => commit(index)}
               >
                 {label}
-              </button>
+              </div>
             );
           })}
         </div>

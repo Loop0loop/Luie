@@ -1520,17 +1520,64 @@ mark{background-color:var(--luie-mark,color-mix(in srgb, var(--accent-bg,#2563eb
 
 §4 Task 1이 input·select·토글·checkbox 32곳을 `border-border-strong`으로 옮겼는데 **이 3개(문단 스타일·글꼴·크기)가 빠졌다.** select 역할이므로 규범 대상이다.
 
-- [x] `CompactDropdown` · **`FontSelector`** 경계 → `border-border-strong` (2026-09-01). 둘 다 select 역할이고 fill이 `bg-app`이다. `FontSelector`는 목록에 없었는데 같은 성격이라 함께 옮겼다. `rounded` bare도 `rounded-control`로 바꿨다. 두 컨트롤에 `focus-visible:ring-2 ring-ring`도 없어 함께 보강했다
+- [x] `CompactDropdown` · **`FontSelector`** 경계 이관 (2026-09-01). 둘 다 select 역할이고 fill이 `bg-app`이다. `FontSelector`는 목록에 없었는데 같은 성격이라 함께 옮겼다. `rounded` bare도 `rounded-control`로 바꿨다. 두 컨트롤에 `focus-visible:ring-2 ring-ring`도 없어 함께 보강했다
   - `menus.tsx:247`의 `border border-border`는 커스텀 색 미리보기 스와치라 **장식선이 맞다.** §4 결정대로 soft 유지
+  - **강도 정정 (사용자 UI 확인).** 처음 `border-border-strong`(종이 위 3.12)으로 올렸으나 **"너무 크다"**는 판단이 나왔다. 원인은 맥락이다 — 카드 위 입력 32곳과 달리 툴바는 무배경이라 컨트롤이 종이에 바로 놓이고, 드롭다운 3개 + FontSelector가 **한 줄에 나란히** 서므로 같은 강도가 훨씬 무겁게 읽힌다
+  - **`--border-control` 신설.** soft는 **`color-mix(--border-active 40%, --border-default)`**(종이 위 **1.43 / 1.46 / 1.39**), `data-contrast="high"`에서 `--border-strong`(3.12~3.34)으로 승격한다. §4가 `--border-default`를 soft/high로 가른 것과 같은 구조다
+    - **강도를 두 번 내렸다.** 3.12(strong) → 1.89(active) → **1.43**(mix 40%). 사용자 UI 확인이 두 번 "강하다"였다. `--border-default`(1.21)까지 내리면 §11-4가 "보이지 않는다"고 진단한 값으로 되돌아가므로 그 사이를 잡았다
+    - **`[data-contrast="high"]` 한 블록으로 9조합 전부 걸린다.** theme·색온도 블록이 이 토큰을 선언하지 않으므로 §4가 겪은 특이도 충돌((0,2,0)이 (0,1,0)을 이기는 문제)이 없다. 새 블록 5개를 만들 필요가 없었다
+    - **대가**: soft에서 WCAG 1.4.11의 3:1에 미달한다. §4 플랜 리스크 표가 *"과하면 `--border-active`로 한 단계 낮추는 선택지를 남긴다 — 단 1.4.11 미달을 감수하는 결정이 된다"*로 미리 적어둔 지점이고 그 선택을 했다. 완전 준수는 고대비 모드가 담당한다 — 텍스트 램프를 4.0/4.5로 가른 것과 같다
+    - 카드 위 입력 32곳의 `--border-strong`(3.30)은 **건드리지 않았다.** 그 강도는 이미 승인됐고 맥락이 다르다
+  - **회귀 방어**: `borderLadderContrast.test.ts`에 27 케이스 추가(65 → **92**). soft가 default·active 사이인지 · default < control < strong 단조 · 고대비 승격과 3:1을 9조합 전수 검사한다. **RED 2종 확인** — 승격 선언 제거 → 9 failed · 특이도 2 블록(`[data-theme="sepia"][data-temp="warm"]`)이 승격을 가로채도록 만들기 → 1 failed(정확히 그 조합만)
+  - **테스트 resolver에 `color-mix` 해석을 추가했다.** 팔레트가 값을 고정하지 않고 파생시키는 방향으로 갔으므로(§11의 `--editor-mark-*` · `--border-control` · `--editor-selection`), 파생 토큰을 못 읽으면 회귀 방어에 구멍이 생긴다. 알파도 함께 섞는다 — dark border가 white alpha라 그 단계가 없으면 틀린다
+
+#### 11-9. focus 색이 두 체계로 갈려 있었다 (사용자 UI 확인에서 발견)
+
+**증상**: accent를 amber로 두면 사이드바 항목 focus ring은 주황인데 **에디터 선택 영역만 파랗게** 뜬다.
+
+**원인**: `--color-ring: var(--accent-bg)`라 ring은 accent를 따라가는데, `--editor-selection`은 theme별 리터럴 3개(light `#bfdbfe` · dark `#1e4f91` · sepia `#e2cb9c`)로 고정돼 있고 **`[data-accent="*"]` 블록이 이 토큰을 갈지 않는다.** accent 5종 × theme 3종 중 파란 accent만 우연히 맞았다.
+
+**§3이 같은 버그를 절반만 고쳤다.** 그때 *"이전 값 `#b7d5f5`는 축 +62의 완전한 파랑이었다. accent가 brass인 theme에서 선택 영역만 파랗게 떴다"*로 진단하고 sepia를 brass로 바꿨다. 진단은 맞았지만 **값을 고정하는 방식이라 theme 축만 덮었고 accent 축이 남았다.**
+
+- [x] **해소 (2026-09-01).** 형광펜과 같은 구조로 파생시킨다 — `color-mix(in srgb, var(--accent-bg) 28%, var(--bg-app))`. 종이가 바뀌면 결과가 따라가고 accent가 바뀌면 색조가 따라간다. theme 3 × accent 5 = 15조합에 리터럴을 두지 않는다
+  - 실측: 종이 대비 **1.32~1.56**(이전 light 1.348 · sepia 1.426과 같은 대역) · 선택 중 본문 글자 대비 최저 **5.96**(§3이 확보한 6.45와 같은 수준)
+  - theme별 리터럴 3개 전부 제거. sepia의 brass도 `var(--accent-bg)`가 brass(`#8a602e`)라 같은 결과가 나온다
+
+##### 미결: 목록 행의 focus 표시를 ring으로 둘 것인가
+
+사용자 지적 — 사이드바 목록 행에 2px accent ring이 박히는 것이 "안 예쁘다".
+
+**레퍼런스가 명확히 반대한다.**
+
+| 출처 | 내용 |
+| --- | --- |
+| Apple HIG `focus-and-selection.md` (설치된 `apple-design-skill`) | *"In general, **use a focus ring for a text or search field, but use a highlight in a list or collection.** Although you can use a focus ring to draw attention to an item that fills a cell, like a photo, it's usually easier for people to view lists and collections when an entire row is highlighted."* 그리고 *"the system draws focused list items using white text and a background highlight that matches the app's accent color"* |
+| [Accor Welcome Design System — Focus](https://design.accor.com/latest/foundations/focus-TNKg3gdf) | **geometry(두께·offset·style)는 브랜드 공통, 색만 테마별.** 진단이 Luie와 같다 — *"the ring color, thickness, and offset drifted across components and themes. The new tokens fix that: one source of truth for the focus ring, themed per brand."* 그리고 기본 focus 색이 배경에서 3:1을 못 만들 때 쓰는 **`focus-fallback`**(브랜드 무관 고대비 magenta)을 따로 둔다 — *"when contrast fails, we prefer a recognizable escape hatch over per-brand variation"* |
+
+즉 **텍스트 입력에는 ring, 목록 행에는 highlight**가 규범이다. Luie는 §4에서 focus를 ring 하나로 통일했는데 그때 이 구분을 두지 않았다.
+
+- [ ] **결정 필요**: 목록 행(사이드바·엔티티·메모 목록)의 focus를 highlight로 바꿀 것인가
+  - highlight만으로는 WCAG 2.4.13을 못 채운다 — `--bg-active`가 대비 1.05다. **§7의 active 방언이 이미 답을 갖고 있다**: `bg-active + border-l-[3px] border-l-accent`. 좌측 3px accent 바는 면적·대비 요건을 만족하고, 목록에서 이미 쓰는 시각 언어다
+  - 그러면 focus와 selected가 같은 표현이 되는 문제가 생긴다 → focus는 바 + 배경, selected는 바 + 배경 + `text-accent`처럼 갈라야 한다
+  - Accor의 `focus-fallback`은 지금 당장 필요 없다(accent ring이 5개 accent × 9 theme에서 3:1을 넘는지 §4에서 측정해 통과했다). 다만 **목록 행 highlight로 가면 재측정이 필요하다**
 
 #### 11-5. `CompactDropdown`이 ARIA 없는 커스텀 select다
 
-- [ ] `role="listbox"`/`role="option"`·`aria-expanded`·`aria-activedescendant`·화살표 키 이동·Escape 전부 없다. 네이티브 `<select>`가 아니므로 스크린리더와 키보드에 아무것도 전달되지 않는다
+- [x] **해소 (2026-09-01).** ARIA APG의 **select-only combobox** 패턴을 적용했다. 포커스는 combobox에 남고 활성 항목은 `aria-activedescendant`로 알린다 — 그래서 옵션을 `<button>`이 아니라 `role="option"`으로 바꿨다(button 목록은 포커스가 옵션으로 옮겨가 combobox 계약과 어긋난다).
+  - `role="combobox"` · `aria-haspopup="listbox"` · `aria-expanded` · `aria-controls` · `aria-activedescendant`
+  - listbox에 `role="listbox"` + `id`, 옵션에 `role="option"` + `aria-selected` + `id`
+  - 키보드: ArrowDown/ArrowUp(경계에서 멈춤) · Home/End · Enter·Space 확정 · Tab 닫기. Escape는 `useClickOutside`가 담당
+  - `z-50` → `z-dropdown`
+  - **활성 항목 표시를 `bg-active`(대비 1.05)에서 `bg-element`로 올렸다.** 알파 오버레이만으로는 커서 위치를 알 수 없었다
+- [x] **회귀 방어: `tests/dom/toolbarDropdownAria.test.tsx` 7 케이스.** role·관계 속성·키보드·Escape 게이팅을 계약으로 고정했다. **RED 검증 3종 전부 검출 확인** — `aria-activedescendant` 제거 → 2 failed · `role="option"` 제거 → 2 failed · `useClickOutside`의 `open` 게이팅 제거(Escape 전역 삼킴) → 1 failed
 
 #### 11-6. Slash 메뉴 — 선택 표시가 1.05이고 ARIA가 없다
 
-- [ ] 항목이 `<div onClick>`이고 `role="listbox"`/`option`/`aria-selected`/`aria-activedescendant`가 없다. 화살표 이동은 Suggestion 플러그인이 처리하지만 **보조기술에는 선택 위치가 전달되지 않는다**
-- [ ] 선택 항목이 `bg-active`(알파 오버레이) — 대비 약 1.05로 어느 항목이 선택됐는지 알기 어렵다
+- [x] **해소 (2026-09-01).** 컨테이너에 `role="listbox"` + `id`, 항목에 `role="option"` + `aria-selected` + `id`를 붙였다.
+  - **`aria-activedescendant`는 팝업이 아니라 편집 영역에 붙여야 한다.** 메뉴가 열려 있는 동안 포커스는 ProseMirror contenteditable에 남으므로, 팝업에 붙이면 보조기술이 읽지 않는다. `SlashMenu`가 활성 항목 id를 `onActiveOptionChange`로 올리고 `suggestion.tsx`가 `props.editor.view.dom`에 반영한다. `onExit`·Escape·언마운트에서 떼어낸다 — 남으면 없는 요소를 가리킨다
+  - **`aria-expanded`는 붙이지 않았다.** contenteditable은 `role=textbox`로 매핑되고 `aria-expanded`는 textbox가 지원하는 속성이 아니다. `role=combobox`로 바꾸면 편집 영역 자체의 성격이 달라지므로 하지 않았다. 전역 속성인 `aria-controls`와 textbox가 지원하는 `aria-activedescendant`만 쓴다
+  - id 상수는 `constants/suggestion.ts`로 옮겼다 — 컴포넌트 파일에서 값을 export하면 `react-refresh/only-export-components`가 경고한다
+- [x] **선택 항목 표시를 `bg-active`(대비 1.05) → `bg-element`로 올렸다.** 알파 오버레이만으로는 어느 항목이 선택됐는지 알기 어려웠다
 - [ ] 아이콘 박스가 `w-11 h-11`(44px)로 시각적으로 무겁다. 메뉴 높이가 항목당 60px를 넘어 8개가 화면을 채운다
 - [x] `rounded` bare → `rounded-control` (아이콘 박스·항목 행) · `z-50` → `z-dropdown` · `descriptions`에 없는 id는 **빈 줄을 그리지 않는다**(이전에는 빈 `<div>`가 항목 높이만 차지했다). 2026-09-01
 

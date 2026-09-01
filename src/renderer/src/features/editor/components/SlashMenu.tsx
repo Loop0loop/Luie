@@ -16,6 +16,11 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import {
+  SLASH_MENU_LISTBOX_ID,
+  slashMenuOptionId,
+} from "@renderer/features/editor/constants/suggestion";
+
 export interface SlashMenuActionProps {
   editor: Editor;
   range: Range;
@@ -34,6 +39,13 @@ export interface SlashMenuHandle {
 interface SlashMenuProps {
   items: SlashMenuItem[];
   command: (item: SlashMenuItem) => void;
+  /**
+   * NOTE: 이 메뉴가 열려 있는 동안 포커스는 편집 영역(ProseMirror contenteditable)에
+   * 남는다. 그래서 `aria-activedescendant`를 여기 붙여도 의미가 없다 — 포커스된 요소에
+   * 붙어야 보조기술이 읽는다. 활성 항목 id를 위로 올려 `suggestion.tsx`가 편집 영역
+   * DOM에 반영한다.
+   */
+  onActiveOptionChange?: (optionId: string | null) => void;
 }
 
 const ICONS: Record<string, ReactElement> = {
@@ -50,7 +62,7 @@ const ICONS: Record<string, ReactElement> = {
 };
 
 const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(function SlashMenu(
-  { items, command }: SlashMenuProps,
+  { items, command, onActiveOptionChange }: SlashMenuProps,
   ref,
 ) {
   const { t } = useTranslation();
@@ -101,6 +113,15 @@ const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(function SlashMenu
     }
   }, [effectiveSelectedIndex]);
 
+  // NOTE: 포커스가 편집 영역에 남으므로 활성 항목 id를 그쪽으로 올린다. 언마운트 시
+  // null을 보내 편집 영역의 속성을 지운다(메뉴가 닫힌 뒤에도 남으면 없는 요소를 가리킨다).
+  useEffect(() => {
+    if (!items.length) return;
+    onActiveOptionChange?.(slashMenuOptionId(effectiveSelectedIndex));
+  }, [effectiveSelectedIndex, items.length, onActiveOptionChange]);
+
+  useEffect(() => () => onActiveOptionChange?.(null), [onActiveOptionChange]);
+
   useImperativeHandle(ref, () => ({
     onKeyDown: ({ event }: { event: KeyboardEvent }) => {
       if (event.key === "ArrowUp") {
@@ -140,13 +161,19 @@ const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(function SlashMenu
       <div className="px-3 py-2 text-[11px] font-semibold text-muted uppercase tracking-wider bg-bg-secondary border-b border-border">
         {t("slashMenu.header")}
       </div>
-      <div className="p-1">
+      {/* NOTE: 항목이 `<div onClick>`이고 role이 없어 화살표로 옮겨도 보조기술에는 선택
+          위치가 전달되지 않았다. listbox/option으로 노출하고, 포커스가 편집 영역에 남으므로
+          `aria-activedescendant`는 그쪽에 붙인다(위 `onActiveOptionChange` 참조). */}
+      <div className="p-1" id={SLASH_MENU_LISTBOX_ID} role="listbox" aria-label={t("slashMenu.header")}>
         {items.map((item, index) => (
           <div
             key={item.id}
+            id={slashMenuOptionId(index)}
+            role="option"
+            aria-selected={index === effectiveSelectedIndex}
             className={cn(
               "flex items-center px-2 py-1.5 rounded-control cursor-pointer transition-colors gap-2.5",
-              index === effectiveSelectedIndex ? "bg-active" : "hover:bg-hover"
+              index === effectiveSelectedIndex ? "bg-element" : "hover:bg-hover"
             )}
             onClick={() => selectItem(index)}
             onMouseEnter={() => setSelectedIndex(index)}

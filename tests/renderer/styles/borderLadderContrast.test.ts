@@ -117,8 +117,35 @@ const resolveColor = (attrs: Attrs, token: string, depth = 0): string => {
   if (depth > 10) throw new Error(`${token} alias 순환`);
   const value = rawValue(attrs, token);
   if (value === null) throw new Error(`${token} 미정의 (${JSON.stringify(attrs)})`);
+  return resolveValue(attrs, value, depth);
+};
+
+/**
+ * 값 표현식을 실제 색으로 접는다. `var()` alias와 `color-mix()`를 따라간다.
+ *
+ * NOTE: `color-mix` 지원이 필요한 이유 — 팔레트가 값을 고정하지 않고 다른 토큰에서
+ * 파생시키는 방향으로 갔다(§11의 `--editor-mark-*`, `--border-control`). 파생 토큰을
+ * 검사하지 못하면 회귀 방어에 구멍이 생긴다.
+ */
+const resolveValue = (attrs: Attrs, value: string, depth = 0): string => {
+  if (depth > 10) throw new Error(`값 해석 순환: ${value}`);
+
   const alias = value.match(/^var\(\s*--([\w-]+)\s*\)$/);
   if (alias) return resolveColor(attrs, alias[1], depth + 1);
+
+  const mix = value.match(
+    /^color-mix\(\s*in\s+srgb\s*,\s*(.+?)\s+([\d.]+)%\s*,\s*(.+?)\s*\)$/,
+  );
+  if (mix) {
+    const ratio = Number(mix[2]) / 100;
+    const a = parseColor(resolveValue(attrs, mix[1].trim(), depth + 1));
+    const b = parseColor(resolveValue(attrs, mix[3].trim(), depth + 1));
+    // NOTE: 알파도 함께 섞는다. dark의 border는 white alpha라 이 단계가 없으면 틀린다.
+    const rgb = a.rgb.map((c, i) => c * ratio + b.rgb[i] * (1 - ratio));
+    const alpha = a.alpha * ratio + b.alpha * (1 - ratio);
+    return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
+  }
+
   return value;
 };
 
@@ -214,6 +241,62 @@ describe("border 3단 계단", () => {
         resolveColor(attrs, CONTROL_SURFACE),
       );
       expect(ratio).toBeLessThan(THRESHOLD.decorativeMax);
+    },
+  );
+});
+
+/* NOTE: `--border-control`은 무배경 툴바 위 컨트롤(문단·글꼴·크기 드롭다운 + FontSelector)의
+   경계다. 카드 위 입력이 쓰는 `--border-strong`(3.30)이 툴바에서는 과하게 읽혀 한 단계
+   낮췄고, 완전 준수는 고대비 모드가 담당한다. **soft에서 의도적으로 3:1 미달**이므로
+   "실수로 낮아진 것"과 구분되도록 계약을 명시한다. */
+describe("--border-control (툴바 컨트롤 경계)", () => {
+  const TOOLBAR_SURFACE = "bg-app"; // 툴바는 무배경이라 컨트롤 fill이 종이색이다
+
+  it.each(combos)(
+    "$name — soft가 default와 active 사이에 있다",
+    ({ attrs }) => {
+      // NOTE: 값이 `color-mix(active 40%, default)`라 두 경계 사이에 놓인다. 정확한
+      // 비율은 UI 판단으로 바뀔 수 있으므로 대비의 순서만 계약으로 고정한다.
+      const surface = resolveColor(attrs, TOOLBAR_SURFACE);
+      const soft = contrast(resolveColor(attrs, "border-control"), surface);
+      expect(soft).toBeGreaterThan(
+        contrast(resolveColor(attrs, "border-default"), surface),
+      );
+      expect(soft).toBeLessThan(
+        contrast(resolveColor(attrs, "border-active"), surface),
+      );
+    },
+  );
+
+  it.each(combos)(
+    "$name — soft는 default보다 진하고 strong보다 옅다",
+    ({ attrs }) => {
+      const surface = resolveColor(attrs, TOOLBAR_SURFACE);
+      const soft = contrast(resolveColor(attrs, "border-control"), surface);
+      expect(soft).toBeGreaterThan(
+        contrast(resolveColor(attrs, "border-default"), surface),
+      );
+      expect(soft).toBeLessThan(
+        contrast(resolveColor(attrs, "border-strong"), surface),
+      );
+    },
+  );
+
+  it.each(combos)(
+    "$name — 고대비에서 strong으로 승격해 3:1을 만족한다",
+    ({ attrs }) => {
+      // WHY: theme·색온도 블록이 `--border-control`을 선언하지 않으므로
+      // `[data-contrast="high"]` 한 블록이 9조합 전부에 걸려야 한다. 어느 theme 블록에
+      // 이 토큰을 추가하면 특이도 (0,2,0)이 (0,1,0)을 이겨 승격이 조용히 깨진다.
+      const high = withHigh(attrs);
+      expect(resolveColor(high, "border-control")).toBe(
+        resolveColor(high, "border-strong"),
+      );
+      const ratio = contrast(
+        resolveColor(high, "border-control"),
+        resolveColor(high, TOOLBAR_SURFACE),
+      );
+      expect(ratio).toBeGreaterThanOrEqual(THRESHOLD.uiBoundary);
     },
   );
 });
