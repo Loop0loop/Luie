@@ -7,7 +7,7 @@ import { PREVIEW_PROJECT_ID } from "@renderer/features/startup/constants/preview
 export interface EntityManagerStore<T> {
   items: T[];
   currentItem: T | null;
-  loadAll: (projectId: string) => Promise<void>;
+  ensureLoaded: (projectId: string) => Promise<void>;
   setCurrent: (item: T | null) => void;
 }
 
@@ -22,7 +22,12 @@ export interface UseEntityManagerOptions<
 export function useEntityManager<
   T extends { id: string; description?: string | null },
 >({ store, uncategorizedKey, t }: UseEntityManagerOptions<T>) {
-  const { items, currentItem: currentItemFromStore, loadAll, setCurrent } = store;
+  const {
+    items,
+    currentItem: currentItemFromStore,
+    ensureLoaded,
+    setCurrent,
+  } = store;
 
   const currentProject = useProjectStore((state) => state.currentItem);
 
@@ -48,9 +53,11 @@ export function useEntityManager<
 
   useEffect(() => {
     if (currentProject && currentProject.id !== PREVIEW_PROJECT_ID) {
-      void loadAll(currentProject.id);
+      // NOTE: 패널을 열 때마다 전체 목록 IPC를 다시 치는 워터폴을 끊는다.
+      // 같은 프로젝트 스코프를 이미 로드했다면 캐시 히트로 즉시 반환된다.
+      void ensureLoaded(currentProject.id);
     }
-  }, [currentProject, loadAll]);
+  }, [currentProject, ensureLoaded]);
 
   // NOTE: store 갱신 직후 다음 tick에서 선택을 해제해 화면 깜빡임을 막는다.
   useEffect(() => {

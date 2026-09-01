@@ -13,12 +13,12 @@ export type CharacterLike = {
 };
 
 export function useCharacterManager(t: TFunction) {
-  const { items, currentItem, loadAll, create, update, setCurrent } =
+  const { items, currentItem, ensureLoaded, create, update, setCurrent } =
     useCharacterStore(
       useShallow((state) => ({
         items: state.items as CharacterLike[],
         currentItem: state.currentItem,
-        loadAll: state.loadAll,
+        ensureLoaded: state.ensureLoaded,
         create: state.create,
         update: state.update,
         setCurrent: state.setCurrent,
@@ -36,7 +36,7 @@ export function useCharacterManager(t: TFunction) {
     store: {
       items,
       currentItem,
-      loadAll,
+      ensureLoaded,
       // NOTE: handleViewAll은 null만 전달하므로 이 adapter의 cast 범위를 제한할 수 있다.
       setCurrent: setCurrent as (item: CharacterLike | null) => void,
     },

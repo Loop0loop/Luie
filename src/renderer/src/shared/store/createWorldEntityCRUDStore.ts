@@ -33,6 +33,7 @@ export interface WorldEntityCRUDBase<
   error: string | null;
 
   loadAll: (parentId?: string) => Promise<void>;
+  ensureLoaded: (parentId?: string) => Promise<void>;
   loadOne: (id: string) => Promise<void>;
   create: (input: CreateInput) => Promise<T | null>;
   update: (input: UpdateInput) => Promise<T | null>;

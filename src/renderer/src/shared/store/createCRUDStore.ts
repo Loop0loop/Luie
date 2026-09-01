@@ -13,6 +13,7 @@ export interface CRUDStore<T extends BaseItem, CreateInput, UpdateInput> {
   error: string | null;
 
   loadAll: (parentId?: string) => Promise<void>;
+  ensureLoaded: (parentId?: string) => Promise<void>;
   loadOne: (id: string) => Promise<void>;
   create: (input: CreateInput) => Promise<T | null>;
   update: (input: UpdateInput) => Promise<T | null>;
@@ -91,6 +92,9 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
   const createInFlight = new Set<string>();
   let loadAllRequestId = 0;
   let loadOneRequestId = 0;
+  // 마지막으로 성공한 loadAll의 프로젝트 스코프. null은 "아직 아무 것도 로드한 적 없음/실패함".
+  let loadedScope: string | null = null;
+  let inFlightEnsure: { scope: string; promise: Promise<void> } | null = null;
 
   const getCreateLockKey = (input: CreateInput): string => {
     if (input && typeof input === "object" && "projectId" in input) {
@@ -123,14 +127,18 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
           return;
         }
         if (response.success && response.data) {
+          loadedScope = parentId ?? "";
           set({ items: response.data });
         } else {
+          // 실패한 스코프는 캐시에서 제외한다. 그래야 다음 ensureLoaded가 재시도한다.
+          loadedScope = null;
           set({ items: [], error: response.error?.message });
         }
       } catch (error) {
         if (requestId !== loadAllRequestId) {
           return;
         }
+        loadedScope = null;
         api.logger.error(`Failed to load ${name}s:`, error);
         set({ items: [], error: (error as Error).message });
       } finally {
@@ -138,6 +146,35 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
           set({ isLoading: false });
         }
       }
+    },
+
+    ensureLoaded: async (parentId?: string) => {
+      // 위저드 프리뷰는 loadAll과 동일하게 인메모리 시딩 데이터를 보존한다.
+      if (parentId === "wizard-preview-project") {
+        set({ isLoading: false, error: null });
+        return;
+      }
+      const scope = parentId ?? "";
+      // 같은 프로젝트 스코프를 성공적으로 로드한 적이 있으면 IPC 없이 재사용한다.
+      // 패널/사이드바가 열릴 때마다 전체 목록을 다시 가져오는 워터폴을 끊는 용도이며,
+      // create/update/delete는 items를 증분 갱신하므로 캐시가 DB 스냅샷보다 최신이다.
+      // 프로젝트 전환/복원/임포트처럼 외부 쓰기 가능성이 있는 흐름은 계속 loadAll을
+      // 통과하므로(재조회 신호) 그 경로의 신선도 요건은 그대로 유지된다.
+      if (loadedScope === scope) {
+        return;
+      }
+      if (inFlightEnsure && inFlightEnsure.scope === scope) {
+        return inFlightEnsure.promise;
+      }
+      const promise = get()
+        .loadAll(parentId)
+        .finally(() => {
+          if (inFlightEnsure?.scope === scope) {
+            inFlightEnsure = null;
+          }
+        });
+      inFlightEnsure = { scope, promise };
+      return promise;
     },
 
     loadOne: async (id: string) => {

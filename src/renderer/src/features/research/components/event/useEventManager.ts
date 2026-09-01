@@ -12,12 +12,12 @@ export type EventLike = {
 };
 
 export function useEventManager(t: TFunction) {
-  const { items, currentItem, loadAll, create, update, setCurrent } =
+  const { items, currentItem, ensureLoaded, create, update, setCurrent } =
     useEventStore(
       useShallow((state) => ({
         items: state.items as EventLike[],
         currentItem: state.currentItem,
-        loadAll: state.loadAll,
+        ensureLoaded: state.ensureLoaded,
         create: state.create,
         update: state.update,
         setCurrent: state.setCurrent,
@@ -35,7 +35,7 @@ export function useEventManager(t: TFunction) {
     store: {
       items,
       currentItem,
-      loadAll,
+      ensureLoaded,
       setCurrent: setCurrent as (item: EventLike | null) => void,
     },
     uncategorizedKey: "event.uncategorized",

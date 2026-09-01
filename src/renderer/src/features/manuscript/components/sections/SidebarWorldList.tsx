@@ -31,13 +31,13 @@ export default function SidebarWorldList({
   const {
     items: terms,
     setCurrent: setCurrentTerm,
-    loadAll: loadTerms,
+    ensureLoaded: loadTerms,
     create: createTerm,
   } = useTermStore(
     useShallow((state) => ({
       items: state.items,
       setCurrent: state.setCurrent,
-      loadAll: state.loadAll,
+      ensureLoaded: state.ensureLoaded,
       create: state.create,
     })),
   );

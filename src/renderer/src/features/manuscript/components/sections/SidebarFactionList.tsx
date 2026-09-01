@@ -19,12 +19,12 @@ export default function SidebarFactionList() {
   const currentProject = useProjectStore((state) => state.currentItem);
   const {
     items: factions,
-    loadAll: loadFactions,
+    ensureLoaded: loadFactions,
     create: createFaction,
   } = useFactionStore(
     useShallow((state) => ({
       items: state.items,
-      loadAll: state.loadAll,
+      ensureLoaded: state.ensureLoaded,
       create: state.create,
     })),
   );

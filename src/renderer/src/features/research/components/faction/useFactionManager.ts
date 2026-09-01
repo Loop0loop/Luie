@@ -12,12 +12,12 @@ export type FactionLike = {
 };
 
 export function useFactionManager(t: TFunction) {
-  const { items, currentItem, loadAll, create, update, setCurrent } =
+  const { items, currentItem, ensureLoaded, create, update, setCurrent } =
     useFactionStore(
       useShallow((state) => ({
         items: state.items as FactionLike[],
         currentItem: state.currentItem,
-        loadAll: state.loadAll,
+        ensureLoaded: state.ensureLoaded,
         create: state.create,
         update: state.update,
         setCurrent: state.setCurrent,
@@ -35,7 +35,7 @@ export function useFactionManager(t: TFunction) {
     store: {
       items,
       currentItem,
-      loadAll,
+      ensureLoaded,
       setCurrent: setCurrent as (item: FactionLike | null) => void,
     },
     uncategorizedKey: "faction.uncategorized",

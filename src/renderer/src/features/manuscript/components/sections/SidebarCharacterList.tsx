@@ -34,12 +34,12 @@ export default function SidebarCharacterList({
   const currentProject = useProjectStore((state) => state.currentItem);
   const {
     items: characters,
-    loadAll: loadCharacters,
+    ensureLoaded: loadCharacters,
     create: createCharacter,
   } = useCharacterStore(
     useShallow((state) => ({
       items: state.items,
-      loadAll: state.loadAll,
+      ensureLoaded: state.ensureLoaded,
       create: state.create,
     })),
   );

@@ -19,12 +19,12 @@ export default function SidebarEventList() {
   const currentProject = useProjectStore((state) => state.currentItem);
   const {
     items: events,
-    loadAll: loadEvents,
+    ensureLoaded: loadEvents,
     create: createEvent,
   } = useEventStore(
     useShallow((state) => ({
       items: state.items,
-      loadAll: state.loadAll,
+      ensureLoaded: state.ensureLoaded,
       create: state.create,
     })),
   );
