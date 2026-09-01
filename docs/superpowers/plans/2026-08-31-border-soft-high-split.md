@@ -1,6 +1,8 @@
 # Border soft / high 2단 분리 Implementation Plan
 
-> **상태: 승인 대기.** 사용자 approve 전에는 어떤 Task도 실행하지 않는다.
+> **상태: Task 1~4 완료 (2026-09-01).** SSOT는 `ui-todo.md` §4다. 이 문서는 실행 기록으로 남긴다.
+>
+> 실행 순서는 사용자 승인으로 **Task 1 전역 → Task 3(soft) → Task 2(고대비) → Task 4(회귀 방어)**로 바꿨다. soft가 기본 모드 인상을 결정하므로 먼저 확인받았다.
 
 **Goal:** `--border-default`를 soft(기본) / high(`data-contrast="high"`) 2단으로 분리해, §4 알파 수렴으로 과해진 light·sepia 테두리를 dark가 이미 쓰던 강도에 맞춘다. 알파 방언 제거라는 성과는 되돌리지 않는다.
 
@@ -88,7 +90,7 @@ soft 적용의 **선행 조건**이다. 이 Task 없이 Task 3을 하면 입력 
 - [x] `--border-strong` 기준면 이동 6개 조합 (사용자 "과하다" 판단 반영)
 - [x] `typecheck` · `build` · 빌드 CSS 확인 · `tests/renderer/styles` 6/6 · `tests/dom` 210/213(잔여 3건은 §1-B가 기록한 기존 실패)
 - [x] `editorReadyCleanup.test.tsx:247` 클래스 계약 단정을 `outline-hidden`으로 갱신
-- [ ] **사용자 UI 재확인 — 완화된 강도가 적절한지**
+- [x] **사용자 UI 재확인** — 3.05가 약하다는 판단으로 **3.30으로 상향**. 3.76(과함) → 3.05 → 3.30으로 수렴
 
 **Task 1 전역 확장 — 완료 (파일럿 승인 후)**
 
@@ -98,7 +100,7 @@ soft 적용의 **선행 조건**이다. 이 Task 없이 Task 3을 하면 입력 
 - [x] **ring 두께** — EntityGallery `focus-within:ring-1` → `ring-2`
 - [x] **`bg-element` fill 컨트롤 판단** — MindMapBoard·PromptComposer는 부모가 `bg-panel`이라 바깥 경계 3:1 만족. GraphFilterSidebar·SearchInput·SynopsisSection·EntityGallery는 fill·부모 모두 element라 경계 대비 2.35~2.51(3:1 미달)이지만 이전 1.16보다 크게 개선. fill을 올리면 §2의 "파인 면" 설계와 충돌하므로 **경계 강도 우선으로 두고 기록만 남긴다**
 - [x] **검증** — `typecheck` · `lint`(export/research/canvas/shared) · `build` · 빌드 CSS 확인 · `tests/renderer/styles` 6/6 · `tests/dom` 210/213(잔여 3건 §1-B 기존 실패). 20개 파일 순수 클래스 치환(WorkspacePanels는 다른 세션 것이라 미포함)
-- [ ] **사용자 UI 확인** — 전역 입력·토글 강도가 파일럿과 일관된지
+- [x] **사용자 UI 확인** — 강도 승인됨
 
 ---
 
@@ -171,8 +173,8 @@ Task 3에서 `--border-default`를 high 경로에 실으므로, 그 경로가 �
 - border는 3:1이 아니라 기본 soft보다 한 단계 진한 수준(1.44)이다. §1의 "테두리는 `--border-strong`이 아니라 `--border-active` 수준으로" 방향을 따른다
 - dark `--text-tertiary`는 §2에서 "muted를 밝히면 글레어"라는 이유로 기본 모드 2.55를 유지했다. 그 격차를 이 모드가 메운다
 
-- [ ] **Step 5: SSOT 동기화** — `ui-todo.md` §1 "고대비 — 롤백함" 항목 해소, §4 "현재 상태" 표, `DESIGN.md` `data-contrast` 설명
-- [ ] **Step 6: 사용자 UI 확인** — 설정에서 고대비를 켜고 **9개 조합 전부** 확인. ① 4개 색온도 변형에서 고대비가 실제로 걸리는지 ② sepia에서 회색이 아니라 따뜻한 색조가 유지되는지 ③ §1에서 "과했다"던 강도가 완화됐는지. 승인 후 커밋
+- [x] **Step 5: SSOT 동기화** — `ui-todo.md` §1 "고대비 — 롤백함" 항목 해소 표기, §4 "현재 상태" 표 갱신, `DESIGN.md` reduced-motion·치트시트 갱신
+- [x] **Step 6: 사용자 UI 확인** — "된듯 과하진않는듯"으로 승인됨
 
 ---
 
@@ -221,14 +223,14 @@ Task 3에서 `--border-default`를 high 경로에 실으므로, 그 경로가 �
 
 - [x] **Step 1: 값 재실측** — soft 6개 값이 panel 대비 1.274~1.280, element 위 1.016~1.048 확인 완료
 - [x] **Step 2: soft 적용** — 6개 조합 `--border-default` soft 교체. 고대비값 보존을 NOTE로 남김
-- [ ] **Step 3: high 블록에 현재 값 이동** — Task 2에서 처리 (블록 신설과 함께). 현재 `[data-contrast="high"]`의 base light `#d4d4d8` · dark 20%는 유지되어 기본 모드만 soft로 내려간 상태
+- [x] **Step 3: high 블록에 현재 값 이동** — Task 2의 블록 5개 신설과 함께 처리. 기존 base의 중성 회색 `#d4d4d8`은 theme별 값으로 대체
 - [x] **Step 4: 대비 실측** — 3단 계단 default 1.27 < active 1.99 < strong 3.29~3.32 단조 확인. dark 3종 `#ffffff14`(8%) 불변 확인
 - [x] **Step 5: 검증** — `typecheck` · `build` · `canvasThemeTokens` 6/6 · 빌드 CSS 6개 조합 반영 확인
-- [ ] **Step 6: SSOT 동기화** — `ui-todo.md` §4·"현재 상태" 표, `DESIGN.md` 치트시트 (Task 2 완료 후 일괄)
-- [ ] **Step 7: 사용자 UI 확인** — ① 흰 카드 위 테두리가 §4 이전 인상으로 완화됐는지 ② 입력 테두리는 여전히 선명한지 ③ canvas 그리드가 너무 옅어지지 않았는지
-- [ ] **Step 5: 검증** — `typecheck` · `build` · `canvasThemeTokens.test.ts` · `tokens-guard` 수치 비교(교체이므로 net 0이어야 함) · 빌드 CSS에서 6개 조합 값 반영 확인
-- [ ] **Step 6: SSOT 동기화** — `ui-todo.md` §4 항목을 `[x]`로, "현재 상태" 표의 border 행 갱신, `DESIGN.md:344` 치트시트에 `border-strong` 반영 및 soft/high 명시
-- [ ] **Step 7: 사용자 UI 확인** — ① 흰 카드 위 테두리가 §4 이전 인상으로 돌아왔는지 ② 입력 테두리는 Task 1 때문에 여전히 선명한지 ③ 세 theme의 기본 테두리 강도가 같게 느껴지는지 ④ canvas 그리드가 너무 옅어지지 않았는지. 승인 후 커밋
+- [x] **Step 6: SSOT 동기화** — 완료
+- [x] **Step 7: 사용자 UI 확인** — 승인됨. **canvas 그리드가 soft를 따라 옅어진 것은 미확인 항목으로 남아 있다**
+- [x] **Step 5: 검증** — 완료
+- [x] **Step 6: SSOT 동기화** — 완료. 치트시트 BORDER 행에 soft/strong/고대비 명시
+- [x] **Step 7: 사용자 UI 확인** — 승인됨. 남은 미확인: canvas 그리드가 soft를 따라 옅어진 것
 
 ---
 
@@ -263,8 +265,10 @@ Task 3에서 `--border-default`를 high 경로에 실으므로, 그 경로가 �
 - [x] **Step 1: RED** — 4종 회귀를 인위적으로 만들어 전부 검출됨 확인. ① light+warm 고대비 블록 제거 → 4 failed ② `border-strong` 3:1 위반 → 2 failed ③ `border-default` 상한 초과 → 3 failed ④ 계단 역전 → 1 failed
 - [x] **Step 2: GREEN** — 65/65 통과
 - [x] **Step 3: 회귀 확인** — `tests/renderer/styles` + `tests/dom` **279/282**(잔여 3건 §1-B 기존 실패) · `typecheck` · `lint` · `build` 통과
-- [ ] **Step 4: SSOT 동기화** — `ui-todo.md` §8 항목 갱신
-- [ ] **Step 5: 사용자 승인 후 커밋**
+- [x] **Step 4: SSOT 동기화** — §8의 "대비 임계값 정적 검사"·"guard script 연결"·"tokens-guard 결함" 3건 해소
+- [x] **커밋** — `global.tokens.css`와 `borderLadderContrast.test.ts`는 `72eb33f8 feat:tailwind v4 syntax migration`에 들어갔다. *2026-09-01 확인: 이 항목이 "아직 커밋하지 않았다"로 남아 있었으나 낡은 기록이었다.*
+
+> **아직 커밋되지 않은 것 (2026-09-01)**: `global.animations.css`(untracked) · `global.css`(+1 import) · `canvas.css`(중복 reduced-motion 제거) · `DESIGN.md` · `ui-todo.md` · 이 문서. **세 파일은 하나로 묶여야 한다** — `global.css`의 import가 빠지면 파일이 있어도 로드되지 않고, HEAD 상태로 돌아가면 21개 파일 90건의 `animate-in`/`slide-*`/`fade-*`가 다시 죽은 클래스가 된다.
 
 #### 이 테스트가 실제로 잡아낸 버그 (작성 중 발견)
 

@@ -38,7 +38,7 @@ Light는 `--bg-app`·`--bg-panel`·`--bg-surface`·`--bg-element`·`--bg-researc
 
 ---
 
-## 현재 상태 (2026-08-31 기준)
+## 현재 상태 (2026-09-01 기준)
 
 ### 표면 계단 — 해소됨
 
@@ -52,23 +52,50 @@ Light는 `--bg-app`·`--bg-panel`·`--bg-surface`·`--bg-element`·`--bg-researc
 | sidebar / element | 1.067 | 1.065 |
 | **app / research** (editor ↔ chrome) | **1.102** | **1.100** |
 
+### border 3단 계단 — 해소됨 (§4)
+
+기준면은 **컨트롤이 실제로 놓이는 `--bg-panel`**이다. §1·§2가 `--bg-element` 기준으로 잡았던 것을 §4에서 바로잡았다 — WCAG 1.4.11은 "인접 색" 대비를 요구하므로 컨트롤이 맞닿는 면이 기준이다.
+
+| 역할 | 소비처 | light | sepia | dark |
+| --- | --- | --- | --- | --- |
+| `--border-default` (soft) | 카드 · 구분선 · 목록 행 | 1.27 | 1.28 | 1.28 |
+| `--border-active` | hover 승격 | 1.99 | 2.00 | 1.67 |
+| `--border-strong` | **input · select · 토글 · checkbox** | **3.29** | **3.30** | **3.07** |
+| `data-contrast="high"`의 default | 고대비 시 카드·구분선 | 1.44 | 1.45 | 1.89 |
+
+Radix Colors step 6/7/8과 M3 `outline`/`outline-variant`에 대응한다. `--border-default`·`--border-active`는 장식선·상태선이라 3:1을 목표로 하지 않는다.
+
 ### 역할별 하한 — 가장 불리한 표면(`--bg-element`) 기준
 
 | 항목 | light | sepia | 판정 |
 | --- | --- | --- | --- |
 | `--text-secondary` | 4.88 | 4.91 | AA 통과 |
-| `--text-tertiary` | 4.01 | 4.01 | 의도된 4:1 정렬 (완전 준수는 `data-contrast="high"`) |
-| `--border-strong` | 3.03 | 3.05 | WCAG 1.4.11 통과 |
+| `--text-tertiary` | 4.01 | 4.01 | 의도된 4:1 정렬 |
 | accent 텍스트 | 4.17 | 4.25 | **AA 미달** — 남은 항목 |
 
-`--border-default` 1.44 / `--border-active` 2.00은 장식선·상태선이라 3:1을 목표로 하지 않는다(§2 확정).
+### 고대비 모드 — 해소됨 (§4 Task 2)
+
+9개 조합 **전부** 적용된다. 이전에는 색온도 변형 4개에서 특이도 때문에 아예 걸리지 않았다.
+
+| | light 계열 | sepia 계열 | dark 계열 |
+| --- | --- | --- | --- |
+| `--text-primary` | 12.28~13.73 (유지) | 8.06~9.11 → **11.9~12.0** | 유지 |
+| `--text-secondary` | 4.8~5.1 → **6.96~6.99** | 6.5 → **7.01~7.11** | 유지 |
+| `--text-tertiary` | 4.01 → **4.52** | 4.25 → **4.51~4.56** | 2.55 → **5.00** |
+
+축(`b − r`)이 전 조합에서 보존되므로 sepia에 중성 회색이 얹히지 않는다. 순검정 `#000`·`#333`은 제거했다.
+
+### 회귀 방어 — 가동 중 (§8)
+
+- `tests/renderer/styles/borderLadderContrast.test.ts` **65 케이스** — 계단 단조·3:1·특이도·base 폴백·색조 보존·dark 상속
+- `pnpm run check:design-tokens`가 `qa:core` 게이트에 연결됨. 이전에는 어떤 스크립트에도 없어 수동 실행뿐이었다
 
 ### 남은 팔레트 부채
 
 - accent를 `--bg-element` 위 본문 텍스트로 쓰면 4.17/4.25로 AA 미달
-- dark `--text-tertiary` 2.55~2.98 (의도된 선택, §2 기록)
-- sepia 전용 `[data-contrast="high"]` 블록 부재 — 고대비를 켜면 따뜻한 종이 위에 중성 회색이 얹힌다 (§1에서 롤백한 부채)
-- `[data-contrast="high"]`가 특이도 1이라 `[data-theme][data-temp]` 4개 조합(light/sepia × cool/warm)에서 아예 걸리지 않는다 (§1 기록)
+- dark `--text-tertiary` 기본 모드 2.55~2.98 (의도된 선택, §2 기록. 고대비가 5.00으로 메운다)
+- `--bg-element`를 fill로 쓰는 컨트롤 4곳(`GraphFilterSidebar`·`SearchInput`·`SynopsisEditor`·`EntityGallery`)은 경계 대비 2.54~2.71로 3:1 미달. 이전 1.16보다는 크게 개선. fill을 올리면 §2의 "파인 면" 설계와 충돌하므로 경계 강도 우선으로 두고 기록만 남긴다
+- `--border-focus`의 이름과 역할이 어긋난다 — focus 표시는 accent ring이 담당하므로 이 토큰의 소비처는 `--canvas-handle-bg` 하나뿐이고 실제 역할은 "neutral 계단의 최강 단계"다
 
 ---
 
@@ -85,7 +112,7 @@ Light는 `--bg-app`·`--bg-panel`·`--bg-surface`·`--bg-element`·`--bg-researc
 - [x] `:root` 중복 선언 정리 — `--danger-fg`(`#ef4444`→`#dc2626`), `--bg-secondary`(`#f9fafb`), `--bg-hover`. 뒤 선언이 이기고 있었으므로 렌더 결과 유지하고 죽은 앞쪽만 제거
 - [x] `--ring-color` 죽은 간접참조 제거 → `--color-ring: var(--accent-bg)`
 - [x] `--border-strong` 신설 + `@theme` 매핑 `--color-border-strong`. 7개 테마 조합 전부 정의, 모두 3:1 이상 실측
-- [~] `[data-contrast="high"]` — 교정 3건을 넣었다가 **사용자 결정으로 전량 롤백**(대비가 과했음). 아래 상세 참조
+- [x] `[data-contrast="high"]` — 교정 3건을 넣었다가 **사용자 결정으로 전량 롤백**(대비가 과했음). **§4 Task 2에서 낮은 강도 + theme별 분기로 해소.** 아래 상세 참조
 - [x] `--editor-bg` / `--editor-text` alias 전환 — 테마 변형 리터럴 18개 제거, `editor.css:35`가 `var(--editor-text, …)`를 실제로 읽게 함
 
 #### `--border-strong` 실측값
@@ -102,14 +129,16 @@ Light는 `--bg-app`·`--bg-panel`·`--bg-surface`·`--bg-element`·`--bg-researc
 
 dark는 기존 8%/16% 알파로는 3:1에 물리적으로 도달할 수 없어 36%가 필요했다. **소비처는 아직 0** — §4·§5에서 입력·토글에 연결할 기반이다.
 
-#### 고대비 — 롤백함 (미해결 부채로 남김)
+#### 고대비 — 롤백했다가 §4 Task 2에서 해소
 
-UI 확인 결과 대비가 과해서 **HEAD 상태로 전량 롤백**했다. 아래 두 버그는 알고도 남겨둔 것이며, 나중에 **더 낮은 강도**로 다시 다룬다.
+UI 확인 결과 대비가 과해서 **HEAD 상태로 전량 롤백**했다. 아래 두 버그는 알고도 남겨둔 것이었다.
 
 - **sepia 고대비에 중성 회색이 얹힌다.** `[data-theme="sepia"]`와 `[data-contrast="high"]`가 특이도 1:1이고 후자가 뒤에 와서 이긴다 → 따뜻한 종이 위에 `#333` 글자, `#d4d4d8` 테두리
 - **light+cool·light+warm·sepia+cool·sepia+warm에서 고대비가 아예 안 걸린다.** `[data-contrast="high"]`는 특이도 1, `[data-theme][data-temp]`는 2라서 색조 변형이 이긴다. dark는 특이도 2 블록이 있어 영향 없음
 
-재시도 시 방향: 테두리는 `--border-strong`(3:1)이 아니라 `--border-active` 수준으로, 글자는 순검정 대신 theme 색조를 유지한 한 단계 진한 값으로. 특이도 문제는 theme별 분기를 두어야 해결된다.
+당시 기록한 재시도 방향: *"테두리는 `--border-strong`(3:1)이 아니라 `--border-active` 수준으로, 글자는 순검정 대신 theme 색조를 유지한 한 단계 진한 값으로. 특이도 문제는 theme별 분기를 두어야 해결된다."*
+
+> **해소됨 (2026-08-31, §4 Task 2).** 위 방향 그대로 처리했다. theme별 분기 블록 5개를 신설해 특이도를 (0,2,0)·(0,3,0)으로 올렸고, 글자는 **채널 균등 감산**으로 축(`b − r`)을 보존했다(명도 스케일은 sepia 축을 −37 → −23으로 압축해 폐기). 테두리는 3:1이 아니라 soft보다 한 단계 진한 1.44~1.89다. 9개 조합 전수 실효값 비교로 검증했고, `tests/renderer/styles/borderLadderContrast.test.ts`가 재발을 막는다. 상세는 §4 참조.
 
 #### 검증
 
@@ -181,15 +210,68 @@ UI 확인 결과 대비가 과해서 **HEAD 상태로 전량 롤백**했다. 아
 
 **검증**: typecheck 통과 · eslint 통과 · `tests/dom` 39/40 파일 통과 · `tests/renderer` 59/61 통과. `restoreBackupDialog.test.tsx`는 portal 구조에 맞게 조회 기준을 `document.body`로 갱신했다. 남은 실패 5건(`rebuildMemoryCardWriterFlow` 3, `projectTemplateInitialization` 1, `useSidebarResizeCommit` 1)은 **Modal을 원복해도 동일하게 실패하는 기존 문제**로 확인했다.
 
-#### 발견: `tailwindcss-animate`가 설치돼 있지 않다
+#### 발견: `tailwindcss-animate`가 설치돼 있지 않다 — 해소됨
 
 빌드 CSS에서 `animate-in`·`fade-in`·`zoom-in`·`slide-in-from`이 **전부 0건**이다. 패키지가 `package.json`에 없고 `global.css`에 import도 없고 `@utility`/`@keyframes` 정의도 없다.
 
 **즉 20개 파일에 흩어진 `animate-in` / `slide-in-from-left` / `slide-out-to-right` / `fade-in` / `zoom-in-95`가 모두 죽은 클래스다.** `DESIGN.md` §8은 "Enter/exit slides use `tailwindcss-animate`"라고 적고 있는데 사실이 아니다. `global.behaviors.css`의 `flex-grow` transition은 정상 동작하므로 패널 리사이즈 보간만 살아 있고, **열기/닫기 슬라이드·페이드는 실제로 실행되지 않는다.**
 
-- [ ] 결정 필요: `tw-animate-css` 도입 vs 필요한 keyframes만 `@utility`로 직접 정의 vs 클래스 전량 제거
-- [ ] 결정 후 `DESIGN.md` §8 수정
-- [ ] 어느 쪽이든 `data-animations="off"` / `prefers-reduced-motion` 정책과 함께 설계
+- [x] **결정: `tw-animate-css` 도입이 아니라 `@utility`로 직접 정의** — `styles/global.animations.css` 신설. 아래 상세
+- [x] `DESIGN.md` §8 수정 — `tailwindcss-animate` 서술 제거, 치트시트의 BORDER·SHADOW·MOTION 행 갱신
+- [x] `data-animations="off"` / `prefers-reduced-motion` 정책과 함께 설계
+
+#### 결정: 외부 패키지 대신 직접 정의 (2026-08-31)
+
+**왜 `tw-animate-css`(v4용 공식 대체)를 쓰지 않았나.** 처음에는 그쪽을 추천했으나 근거가 "shadcn이 쓴다"는 관성이었다. 실측해보니 판단이 뒤집혔다.
+
+```
+.duration-200{--tw-duration:.2s;transition-duration:.2s}
+.ease-out{--tw-ease:var(--ease-out);transition-timing-function:var(--ease-out)}
+```
+
+**v4의 `duration-*`·`ease-*`가 `--tw-duration`·`--tw-ease`를 노출한다.** v3에는 없던 것이고, `tailwindcss-animate`라는 플러그인이 존재했던 주된 이유가 바로 이 배관이다. `animation-duration: var(--tw-duration, …)`로 읽으면 **컴포넌트에 이미 붙어 있는 `duration-100`~`duration-700`이 그대로 동작한다** — 클래스 이름을 하나도 바꾸지 않았다.
+
+세 가지 근거로 직접 정의를 골랐다.
+
+1. 필요한 프리미티브가 10개뿐이다. 외부 패키지는 수십 개를 싣는다
+2. 이 프로젝트는 이미 `200ms cubic-bezier(0.2,0,0,1)`을 모션 규범으로 쓴다. 외부 패키지는 자기 기본값을 가져오므로 **모션 규범이 두 개**가 된다. 직접 정의하면 프로젝트 값을 기본으로 상속시킬 수 있다
+3. `--shadow-control`·`--elevation-tint`를 직접 만든 것과 같은 결정이다. 외부 `--tw-enter-*` 대신 `--luie-*` 이름 규칙을 유지한다
+
+**의존성 0 · 컴포넌트 변경 0.**
+
+##### 수집한 기존 로직 (구현 전 전수 조사)
+
+| 항목 | 실측 |
+| --- | --- |
+| 사용처 | 21개 파일 / 클래스 90건 / **고유 조합 20종** |
+| 필요 프리미티브 | `animate-in`·`animate-out`·`fade-in`·`fade-out`·`zoom-in-95`·`slide-in-from-{left,right,bottom}`·`slide-out-to-{left,right}` + 접미사(`-2`·`-4`·`-5`·`-full`) |
+| duration | `100`·`150`·`180`·`200`·`300`·`700` (기존 `duration-*` 유틸 그대로) |
+| **게이팅 있음** | 레이아웃 패널 **6곳** — `enableAnimations && (isClosing ? animate-out … : animate-in …)` |
+| **게이팅 없음** | 모달·툴팁·드롭다운·토스트·canvas 부유 요소 **13곳** — 항상 적용 |
+| exit 기계 | `useResizablePanelPresence`가 `durationMs`(200ms) 동안 마운트를 유지하고 `isClosing`을 준다 → **CSS만 있으면 exit도 동작한다.** 구조는 이미 올바르게 만들어져 있었다 |
+| 억제 층 1 | `data-animations="off"` / `data-layout-restoring="true"` → `global.behaviors.css`가 `animation-duration: 0ms !important`. **이미 animation을 포함**하므로 추가 작업 없음 |
+| 억제 층 2 | OS `prefers-reduced-motion` → `canvas.css`에만 있어 canvas 밖은 미적용이었다. **전역으로 옮겼다** |
+| Radix `data-state` 기반 | **0건.** 전부 조건부 렌더링/플래그 방식이라 `data-[state=open]:` 변형이 필요 없다 |
+
+##### 구현
+
+`@keyframes luie-enter`/`luie-exit` 2개 + `@utility` 20개(정적 13 + 숫자 접미사 함수형 8). `animate-in`/`animate-out`이 keyframe을 걸고 `fade-*`·`zoom-*`·`slide-*`는 그 keyframe이 읽는 `--luie-*` 변수만 설정한다. 설정되지 않은 축은 "변화 없음" 기본값으로 남으므로 조합이 자유롭다.
+
+- 기본 duration/easing은 `@theme`의 `--animate-enter-exit-duration: 200ms` · `--animate-enter-exit-ease: cubic-bezier(0.2,0,0,1)`
+- 숫자 접미사는 `--value(integer) * var(--spacing)`으로 Tailwind spacing 스케일을 따른다 → `slide-in-from-bottom-4` = 1rem (`mb-4`와 같은 값)
+- 접미사 없는 `slide-in-from-left`는 100%(자기 폭). 패널은 폭 0에서 열리므로 이게 맞다
+- `animation-fill-mode: both` — 시작 프레임을 첫 페인트부터 적용해 마운트 직후 깜빡임을 막는다
+- `canvas.css`의 중복 reduced-motion 블록 제거
+
+##### 검증
+
+- 빌드 CSS에서 `@keyframes luie-enter`·`luie-exit` 생성, 사용 유틸 13종 전부 생성 확인
+- `duration-100`~`duration-700`이 모두 `--tw-duration`을 세팅하는 것 확인 → 배관 동작
+- 전역 `@media (prefers-reduced-motion:reduce)` 블록 생성 확인
+- `typecheck` · `lint` · `build` 통과 · 테스트 288/291(잔여 3건 §1-B 기존 실패) · `check:design-tokens` 통과
+
+> **UI 확인 필요**: 지금까지 움직이지 않았으므로 사이드바·Research 패널·Inspector 열고 닫기, 모달, 토스트, 툴팁, canvas 부유 컨트롤의 인상이 처음으로 달라진다. 특히 패널은 `flex-grow` 폭 보간(200ms)이 이미 동작하는데 거기에 `slide-out-to-left`가 겹치므로 **중복으로 보이면 slide를 빼고 fade만 남기는 선택지**가 있다.
+
 
 ---
 
@@ -502,10 +584,11 @@ border 대비: 장식선 1.26 → **1.45**, 상태선 1.52 → **2.00**, UI 경�
 - [x] **focus 표시 통일** (WCAG 2.2 SC 2.4.11/2.4.13). 알파 ring 제거 · `outline-none` → `outline-hidden` · `ring-offset` 색 지정 · dark `--border-focus` 교정. 아래 상세
 - [x] border 알파 방언 수렴 — `/5 /10 /15 /20 /25 /30 /40 /50 /60 /70 /80` 11종 → 무알파 `border-border`. 아래 상세
 - [x] divider 알파 방언 수렴 — `bg-border/{20,30,40,50,60,70,80}` 7종 → `bg-border`. 아래 상세
-- [ ] **`--border-default`를 soft(기본) / high(`data-contrast="high"`) 2단으로 분리** — 위 수렴으로 light·sepia 테두리가 과해졌다. 값을 되돌리는 게 아니라 강도 축을 하나 만든다. 아래 상세
+- [x] **`--border-default`를 soft(기본) / high(`data-contrast="high"`) 2단으로 분리** — 위 수렴으로 light·sepia 테두리가 과해졌다. 값을 되돌린 게 아니라 강도 축을 하나 만들었다. 아래 상세
+- [x] **`--border-strong`을 대화형 control 경계에 연결** — 소비처가 0이던 토큰을 input·select·토글·checkbox 32곳에 연결하고 기준면을 `--bg-element` → `--bg-panel`로 교정했다. 아래 상세
 - [x] Tailwind 기본 검정 그림자(`shadow-sm`/`shadow-xs`) → theme tint 계열. 아래 상세
 - [x] **v3 → v4 클래스 이름 이동 잔재 정리** — v4로 올릴 때 config만 옮기고 클래스 이름을 안 바꿔서, 같은 이름이 다른 값으로 조용히 렌더되고 있었다. 아래 상세
-- [ ] `--radius-editor-shell` 중복 하드코딩 제거 — `rounded-[24px]` **3곳**(`GoogleDocsLayout.tsx:209` · `SnapshotList.tsx:212` · `ProjectTemplateSelector.tsx:232`), `Editor.tsx:380` `rounded-[48px]`
+- [ ] `--radius-editor-shell` 중복 하드코딩 제거 — `rounded-[24px]` **3곳**(`GoogleDocsLayout.tsx:209` · `SnapshotList.tsx:223` · `ProjectTemplateSelector.tsx:232`), `Editor.tsx:330` `rounded-[48px]`
 - [ ] **형광펜 대비가 전 theme에서 약하다** (§3에서 이관). `--highlight-default`가 종이 대비 light **1.104** · sepia **1.166** · dark는 `rgba(250,204,21,0.32)` 알파. 형광펜은 은은해야 하지만 1.1은 거의 안 보이는 수준이다. 세 theme 공통 목표를 정하고 함께 조정한다
   - 조사 결과 **규범이 없다.** WCAG 1.4.11은 장식 배경에 대비를 요구하지 않고, 요구하는 것은 "그 위 글자가 4.5:1"뿐이다. 따라서 이전에 적었던 목표 `~1.35`는 근거 없는 숫자다. 값을 정하기 전에 **현재 형광펜 위 본문 글자 대비가 얼마나 남는지** 먼저 측정하고, 그 여유 안에서 형광펜을 진하게 하는 순서로 간다
 
@@ -603,9 +686,9 @@ focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring
 - 제거 대상 0건 확인: `outline-none` · `border-border/N` · `bg-border/N` · `focus:ring-accent` · `ring-ring/N` · `focus:border-active` · `focus:ring-blue-500` · `focus:ring-1`
 - `tokens-guard` 수치 변화 없음(`rawHex` 407 유지) — 토큰 1개 교체이므로 net 0
 
-##### `--border-default` soft / high 2단 분리 — 설계 확정, 구현 대기
+##### `--border-default` soft / high 2단 분리 — 완료
 
-> 구현 플랜: [`docs/superpowers/plans/2026-08-31-border-soft-high-split.md`](docs/superpowers/plans/2026-08-31-border-soft-high-split.md) — **승인 대기 상태.**
+> 구현 플랜: [`docs/superpowers/plans/2026-08-31-border-soft-high-split.md`](docs/superpowers/plans/2026-08-31-border-soft-high-split.md) — **Task 1~4 전부 완료.** 실행 순서는 사용자 승인으로 Task 1 전역 → Task 3(soft) → Task 2(고대비) → Task 4(회귀 방어)로 바꿨다. soft가 기본 모드 인상을 결정하므로 먼저 확인받았다.
 
 **배경.** 위 알파 수렴으로 light·sepia 테두리가 과해졌다. 알파 183건의 가중 평균이 **39.6%**였는데(`/5`:4 · `/10`:10 · `/15`:9 · `/20`:27 · `/25`:1 · `/30`:16 · `/40`:46 · `/50`:33 · `/60`:21 · `/70`:8 · `/80`:8) 그게 100%로 올라갔다. panel 위 실측으로 **대비 1.24 → 1.44, RGB 색거리 29~37**이다. 색거리 3 미만이 "구분 어려움"의 기준이므로 이건 인지되는 변화다.
 
@@ -674,9 +757,20 @@ WCAG 1.4.11은 "인접 색(adjacent colors)" 대비를 요구하므로 **컨트�
 
 **dark 3종은 변경하지 않았다.** 알파(36% white)라 어두운 면일수록 대비가 커지므로 가장 밝은 면(`--ai-panel-bg`)이 최악이고 그 값이 3.04~3.07이다. 이미 컨트롤이 놓인 면에서 3:1 근처다.
 
-3단 계단 단조성 유지: panel 위에서 default 1.44~1.45 < active 1.99~2.00 < strong 3.05~3.07.
+**이후 사용자 판단으로 3.05 → 3.30으로 상향했다** ("대비 좀 더 줘도 될 듯"). 3.76(과함) → 3.05(약간 약함) → **3.30**으로 수렴했다. element-fill 컨트롤도 2.35~2.51 → **2.54~2.71**로 함께 개선됐다.
 
-**대가**: `--bg-element`를 fill로 쓰는 컨트롤(`TermManager` 등)에서는 2.35~2.51로 3:1에 미달한다. 그 경로는 전역 확장 때 개별 판단한다 — fill을 카드색으로 올릴지, 그 지점만 다른 토큰을 쓸지.
+| 조합 | 최종값 | panel | element |
+| --- | --- | --- | --- |
+| light | **`#8e8e89`** | 3.29 | 2.66 |
+| light + cool | **`#898d97`** | 3.29 | 2.68 |
+| light + warm | **`#918c82`** | 3.29 | 2.54 |
+| sepia | **`#9c8567`** | 3.30 | 2.71 |
+| sepia + cool | **`#91877b`** | 3.30 | 2.70 |
+| sepia + warm | **`#9a865d`** | 3.32 | 2.71 |
+
+3단 계단 단조성 유지: panel 위에서 default 1.27~1.28 < active 1.99~2.00 < strong 3.29~3.32.
+
+**대가**: `--bg-element`를 fill로 쓰는 컨트롤에서는 2.54~2.71로 3:1에 미달한다. 전역 확장에서 개별 판단했다 — 아래 참조.
 
 ###### 토글에서 발견한 별개 버그 (파일럿에서 함께 교정)
 
@@ -685,7 +779,7 @@ WCAG 1.4.11은 "인접 색(adjacent colors)" 대비를 요구하므로 **컨트�
 - **`SyncTab:150` 토글에 focus ring이 없었다.** `focus:outline-hidden`만 있어 §4 sweep에서 놓쳤다. canonical 패턴 적용
 - `shadow-sm` → `shadow-control`(theme tint) 4곳
 
-###### 전역 확장 전 남은 판단
+###### soft 값의 한계와 그 대응
 
 soft 값은 **`--bg-element`(파인 control) 위에서 대비 1.016~1.048로 사실상 보이지 않는다**(high는 1.119~1.187).
 
@@ -727,17 +821,17 @@ soft 값은 **`--bg-element`(파인 control) 위에서 대비 1.016~1.048로 사
 
 해법은 §1이 이미 적어둔 대로 **theme별 분기**다. `[data-theme][data-temp][data-contrast="high"]`(0,3,0) 블록 4개 + `[data-theme="sepia"][data-contrast="high"]`(0,2,0) 1개를 추가하고, light 기본은 기존 `[data-contrast="high"]`가 담당하게 둔다. 총 5개 블록 신설이다.
 
-###### 구현 순서
+###### 실행 순서 — 실제로 이렇게 갔다
 
-1. `--border-strong`을 input·select·toggle·checkbox 경계에 연결 (§5 "버튼 상태 일관화"와 겹침)
-2. theme별 `[data-contrast="high"]` 블록 5개 신설 — 특이도 해결 + sepia 중성 회색 제거
-3. 6개 조합의 `--border-default`를 soft 값으로 교체, 현재 값은 high 블록으로 이동
-4. 9개 조합 × soft/high × 5개 표면 대비 전수 실측, 3단 계단 단조성 확인
+1. **Task 1** `--border-strong`을 input·select·토글·checkbox 경계에 연결. Settings 파일럿 → 강도 조정 2회 → 전역 확장
+2. **Task 3** 6개 조합의 `--border-default`를 soft로 교체 *(사용자 승인으로 Task 2보다 먼저. soft가 기본 모드 인상을 결정하므로 먼저 확인받았다)*
+3. **Task 2** theme별 `[data-contrast="high"]` 블록 5개 신설 — 특이도 해결 + sepia 중성 회색 제거
+4. **Task 4** 회귀 방어 정적 검사 — `borderLadderContrast.test.ts` 65 케이스
 
-###### 미결 논점
+###### 결정 기록
 
-- `data-contrast`는 접근성 토글인데 여기에 "테두리 강도"를 실으면 두 축이 섞인다. 별도 축(`data-border="soft|normal"`)을 두는 편이 개념적으로 깨끗하지만 설정 UI·persist·i18n이 함께 늘어난다. **일단 `data-contrast`에 얹고, 사용자 요구가 갈리면 분리한다**
-- soft를 도입하면 `--grid-line`(= `var(--border-default)`)도 함께 옅어진다. canvas 그리드가 의도보다 약해지면 `--grid-line`을 high 값에 고정하는 분기가 필요하다
+- **`data-contrast`에 "테두리 강도"를 얹었다.** 접근성 토글과 강도 축이 섞이는 문제가 있다. 별도 축(`data-border="soft|normal"`)이 개념적으로 깨끗하지만 설정 UI·persist·i18n이 함께 늘어난다. 일단 `data-contrast`에 얹고 사용자 요구가 갈리면 분리한다
+- **`--grid-line`(= `var(--border-default)`)이 soft를 따라 옅어졌다.** canvas 그리드가 의도보다 약하다고 판단되면 `--grid-line`을 high 값에 고정하는 분기를 둔다 — **UI 확인 항목으로 남겨둔 상태**
 
 ---
 
@@ -748,6 +842,7 @@ soft 값은 **`--bg-element`(파인 control) 위에서 대비 1.016~1.048로 사
 - **토글 off 상태가 `bg-border` 트랙이라 대비 1.16이다.** 켜짐(`bg-accent`)과 꺼짐의 구분은 되지만 트랙 자체가 표면과 거의 붙는다. Radix 모델에서는 트랙이 대화형 표면(step 3~5)이지 border가 아니다 — §5의 "버튼 상태 일관화"와 함께 다룬다
 - **`--border-focus`의 이름과 역할이 어긋난다.** focus 표시는 accent ring이 담당하도록 확정했으므로 이 토큰의 소비처는 `--canvas-handle-bg` 하나뿐이다. 실제 역할은 "neutral 계단의 최강 단계"다. `DESIGN.md:344`의 border 치트시트(`border  border-active  border-focus`)도 `--border-strong` 신설 이후로 낡았다 → 이름 정리는 `DESIGN.md` 갱신과 함께
 - **Tailwind v4가 문서·스킬 마크다운을 소스로 스캔한다.** 빌드 CSS에 `focus:outline-none`·`focus:ring-blue-500`·`focus:ring-4`가 남아 있는데 출처가 앱 코드가 아니라 `.kiro/skills/**/*.md`·`.agents/skills/**/*.md`의 예제 코드다(git 추적 대상이라 자동 소스 감지에 걸린다). 죽은 CSS가 실려 있고 §8의 guard 신호도 흐려진다 → `@source not` 또는 `.gitignore` 정리 필요
+  - **2026-09-01 추가 증거**: `rounded-sm`을 앱 코드에서 0건으로 만든 뒤에도 `.rounded-sm` 유틸이 계속 생성된다. 출처는 `docs/superpowers/plans/*.md`와 **`ui-todo.md` 자신**이다. 즉 이 문서가 클래스 이름을 기록하는 행위 자체가 빌드 CSS를 늘린다. md 유래로 확인된 것: `focus:outline-none` 27파일 · `focus:ring-blue-500` 16파일 · `focus:ring-4` 12파일. **`@source not "**/*.md"`가 가장 단순한 해법이다**
 
 ---
 
@@ -778,9 +873,11 @@ v3 의도를 복원하려면 `shadow-xs`인데 **그건 여전히 검정 그림�
 - [x] `canvas.css:13` resize handle `var(--shadow-sm)` → `var(--shadow-control)`
 - [x] `:root`의 v3 리터럴 `--shadow-sm` · `--shadow-md` · `--shadow-lg` 3개 제거. 소비처가 canvas handle 하나뿐이었고 그것을 옮겼으므로 안전하다
 
-##### `rounded-sm` → `rounded-xs` (18건)
+##### `rounded-sm` → `rounded-xs` (20건)
 
 사용처가 전부 소형 요소(`h-3` · `w-4` · `w-2.5` · `p-1`)다. 12px 요소에서 반경 2px → 4px는 모서리가 1/3까지 둥글어지는 눈에 보이는 변화다. `--radius-xs: .125rem`이 빌드 CSS에 생성되는 것을 확인했다.
+
+> **정정 (2026-09-01)**: 처음 18건으로 세고 전환했으나 **`DiffExtension.ts:95,96` 2건을 빠뜨렸다.** 스냅샷 diff 하이라이트는 "UI 확인 대상"에는 적어놓고 실제 전환은 안 한 상태였다. `.ts` 파일의 문자열 상수로 클래스를 조립하는 경로라 `.tsx` 위주 조사에서 새어 나갔다. 전환 완료 후 `rounded-sm` 전역 잔여 0건 · `rounded-xs` 20건.
 
 ##### `backdrop-blur` — 역할별로 갈랐다
 
@@ -838,6 +935,7 @@ v3 의도를 복원하려면 `shadow-xs`인데 **그건 여전히 검정 그림�
 - [x] `bg-muted/*` 오용 제거 — `EditorToolbar.tsx`(1) · `ScrivenerLayout.tsx`(3) · `EditorRuler.tsx`(2)
 - [x] `EditorRuler.tsx`의 Google Docs 브랜드 블루 4곳 → accent 토큰
 - [x] `EditorToolbar.tsx`의 텍스트색·형광펜 fallback 하드코딩 → 팔레트 상수 참조
+- [x] **토글 6곳 트랙·노브 교정** (§4 Task 1에서 처리) — 트랙 `bg-border`(선 색을 면 색으로 쓴 오용) → `bg-element` + `border-border-strong`, 노브 `bg-white`/`bg-surface` → `bg-on-accent`(dark에서 대비 1.28 → 11.51로 노브가 보이게), `shadow-sm` → `shadow-control`. `SyncTab`·`LocalLlmCard`는 focus ring 자체가 없어 함께 보강
 - [ ] 버튼 상태 일관화 — `bg-accent/15`(ToolbarButton) vs `bg-active`(ColorPickerMenu) 불일치, `aria-pressed`/`:active` 스타일 부재
 
 #### Toolbar 무배경은 의도다 — won't-do (2026-08-31)
@@ -880,10 +978,10 @@ toolbar/constants.ts
 
 - [ ] `.editor-adjacent-surface` 그라디언트 — Light는 양끝이 `#ffffff`/`#f5f5f7`라 둥근 모서리와 border가 붕 뜨고, Sepia는 세 값이 달라 경계가 띠로 보인다 *(진단 수치는 §2·§3 이전 값. §1-A 부수 효과로 일부 해소돼 재측정 필요)*
 - [x] `--editor-adjacent-surface` 폴백 부재 → `var(--editor-adjacent-surface, var(--bg-sidebar))`
-- [ ] `bg-[var(--ai-panel-bg)]` arbitrary value → `bg-ai-panel` 유틸 (`MainLayout.tsx:268,573,588` + §7에서 `GoogleDocsLayout` 1곳 추가)
-- [x] `h-11` WebkitAppRegion drag 스트립 배경 부재 → `bg-app`. 아래 상세
+- [ ] `bg-[var(--ai-panel-bg)]` arbitrary value → `bg-ai-panel` 유틸. **7곳** — `MainLayout.tsx:268,573,588` · `AIPanel.tsx:91,94,204` · `GoogleDocsLayout.tsx:200`(`to-[var(--ai-panel-bg)]`). *2026-09-01 재조사: 이전 기록은 `AIPanel` 3곳을 빠뜨려 4곳으로 적혀 있었다*
+- [x] `h-11` WebkitAppRegion drag 스트립 배경 부재 → `bg-app` (`workspace/components/layout/EditorLayout.tsx:295`). 아래 상세
 - [x] `GoogleDocsEditorColumn.tsx`의 A4 페이지 `bg-transparent` → `bg-editor-bg`
-- [ ] 모바일 프레임의 하드코딩 정리 — `Editor.tsx:381`의 `rounded-[48px]`(`--radius-editor-shell` 중복)·`border-[#2c2c2e]`·`shadow-[0_0_0_2px_rgba(...)]`. 기기 외형 표현이라 theme을 따르지 않는 건 의도된 것이므로 **토큰화가 아니라 의도를 명시한 scoped token으로 이동**
+- [ ] 모바일 프레임의 하드코딩 정리 — `Editor.tsx:330`의 `rounded-[48px]`(`--radius-editor-shell` 중복)·`border-[#2c2c2e]`·`shadow-[0_0_0_2px_rgba(...)]`. 기기 외형 표현이라 theme을 따르지 않는 건 의도된 것이므로 **토큰화가 아니라 의도를 명시한 scoped token으로 이동**
 
 #### `--editor-adjacent-surface` 폴백 (2026-08-31)
 
@@ -906,12 +1004,13 @@ toolbar/constants.ts
 - [x] `.research-surface` 평탄화 범위 축소 — **배경만 평탄화, 테두리는 복구.** 아래 상세
 - [x] `EntityGallery.tsx`의 하드코딩 hover 테두리 제거 → `border-border` / `hover:border-border-active`
 - [ ] 캐릭터 템플릿 카드가 `CharacterManager.tsx:81-89`와 `character/CharacterSidebarList.tsx:68-78`에 거의 그대로 복사돼 있다 — 컴포넌트 추출 후보 (§1-B로 표면 문제는 해소됨)
-- [ ] active/selected 표현 4개 방언 → 1개로 수렴 *(테두리가 복구됐으므로 테두리를 쓰는 방언도 이제 성립한다)*
-  - `bg-active + border-l-accent + text-accent` (`EntitySidebarList.tsx:126`)
-  - `bg-active + border-l-accent` (`MemoSidebarList.tsx:57`)
-  - `bg-element + text-fg` (`ResearchPanel.tsx:135`)
-  - `bg-accent/15 + text-accent` (`WorldPanel.tsx:38`)
-- [ ] Link 성격 요소 hover/active 규칙 정의. Research에 `<a>`가 1개(`WikiContentPanel.tsx:69` 목차 앵커)뿐이고 `hover:underline`도 0건 — 색 전환만으로 처리되고 있다. 그 앵커에는 `focus-visible`도 없다
+- [ ] active/selected **5개** 방언 → 1개로 수렴 *(테두리가 복구됐으므로 테두리를 쓰는 방언도 이제 성립한다)*
+  - `bg-active + border-l-accent + text-accent` (`research/components/shared/EntitySidebarList.tsx:126`)
+  - `bg-active + border-l-accent` (`research/components/memo/MemoSidebarList.tsx:61`)
+  - `bg-active + border-accent + text-fg + font-medium` (`manuscript/components/Sidebar.tsx:166`) — *2026-09-01 추가 발견. `border-l-accent`가 아니라 `border-accent`를 쓰는 6번째 변형이기도 하다*
+  - `bg-element + text-fg + shadow-xs` (`research/components/ResearchPanel.tsx:138`)
+  - `bg-accent/15 + text-accent` (`research/components/WorldPanel.tsx:38`) — 같은 방언이 `toolbar/primitives.tsx:27` · `GoogleDocsPanelRail.tsx:95` · `StartupWizard.tsx:19` · `LlmfitCard.tsx:20`에도 있어 사실상 최다수다
+- [ ] Link 성격 요소 hover/active 규칙 정의. Research에 `<a>`가 1개(`WikiContentPanel.tsx:71` 목차 앵커)뿐이고 `hover:underline`도 0건 — 색 전환만으로 처리되고 있다. 그 앵커에는 `focus-visible`도 없다
 - [x] `TermCard.tsx`의 hover 역전 교정 → `hover:border-accent`
 - [ ] `ENTITY_KIND_TINT`(`wiki/visual/constants.ts:5`) 3색 → 테마 토큰화. `${tint}18` 문자열 조합 4곳도 함께
 - [x] Google Docs 레이아웃의 dark literal 하드코딩 제거 — 3곳. 아래 상세
@@ -979,8 +1078,8 @@ dark `--bg-sidebar`가 정확히 `#212123`이라 **dark 렌더는 변하지 않�
 - [x] **테마별 대비 임계값 정적 검사 추가** — `tests/renderer/styles/borderLadderContrast.test.ts` 신설(65 케이스). border 계단·고대비 경로를 담당한다. 아래 상세
 - [x] **하드코딩 색 guard script 연결** — 스크립트는 있었지만 **어떤 npm script·CI에도 연결돼 있지 않아 수동 실행뿐이었다.** `check:design-tokens`로 노출하고 `qa:core` 게이트에 넣었다
 - [x] **`scripts/design/tokens-guard.mjs` 결함 3건 수정** — 아래 상세
-- [ ] `src/renderer/src/styles/components/editor.css.bak` 정리
-- [ ] `global.tokens.css` 모듈 분할 (파일 상단에 `/* 모둘화 필요 */` 주석 존재, 현재 **약 900줄**)
+- [x] `src/renderer/src/styles/components/editor.css.bak` 정리 — **삭제 (2026-09-01).** git 추적 파일이라 이력에서 복구 가능하고, `editor.css`와 389줄 차이로 이미 낡았다. import 참조 0건. 부수 이득: Tailwind v4 자동 소스 감지가 git 추적 파일을 훑으므로 이 파일의 낡은 클래스가 빌드 CSS에 실리던 경로도 함께 사라진다 (아래 `@source not` 항목과 같은 범주)
+- [ ] `global.tokens.css` 모듈 분할 (파일 상단에 `/* 모둘화 필요 */` 주석 존재, 현재 **893줄**)
 
 #### 대비 임계값 정적 검사 (2026-08-31)
 
@@ -1018,14 +1117,14 @@ dark `--bg-sidebar`가 정확히 `#212123`이라 **dark 렌더는 변하지 않�
 | `rawColor` | 99 / 197 ✓ | 99 / 99 ✓ |
 | `arbitraryPx` | 417 / 403 ✗ | **417 / 417** ✓ |
 | `roundedBig` | 155 / 157 ✓ | 155 / 155 ✓ |
-| `shadowBig` | 22 / 41 ✓ | 21 / 22 ✓ (↓1 개선) |
+| `shadowBig` | 22 / 41 ✓ | 21 / 21 ✓ (2026-09-01 baseline 하향) |
 
 토큰 정의 파일을 게이트에서 뺀 것은 검사를 포기한 게 아니다. 그 파일의 값 정합성은 위 `borderLadderContrast`·`canvasThemeTokens`가 **대비·계단·특이도로** 검증하므로 개수를 세는 것보다 강한 보호가 걸려 있다.
 
 **게이트 동작 검증**: 컴포넌트 코드에 hex 추가 → 146/145 REGRESSION + exit 1 · 주석에 hex 추가 → 무변화(주석 제거 동작 증거) · 토큰 정의 파일에 hex 추가 → 게이트 무영향, 참고 수치만 262 → 263.
 
 - [ ] **`arbitraryPx` 417은 실제 부채다.** 왜곡이 아니라 컴포넌트의 진짜 arbitrary px다. 별도 정리 대상 (§4의 `rounded-[24px]`·`rounded-[48px]`가 그 일부)
-- [ ] 여유가 생긴 `shadowBig` baseline을 21로 낮춘다 (감소 방향 갱신)
+- [x] 여유가 생긴 `shadowBig` baseline을 21로 낮췄다 (2026-09-01, 감소 방향 갱신). guard가 스스로 권고 출력하던 항목이다
 
 ---
 
@@ -1095,38 +1194,104 @@ Scrivener Inspector → 시놉시스 탭의 노란 메모지다. `bg-yellow-50 d
 
 ---
 
-## UI 확인 요청 — §4 1~3단계 (2026-08-31)
+### 10. v3 → v4 미착수본 전수 조사 (2026-09-01)
 
-키보드 `Tab`으로 이동하며 확인한다. **마우스 클릭은 `focus-visible`을 발화시키지 않으므로 링이 안 보이는 게 정상이다.**
+§4의 "v3 → v4 클래스 이름 이동 잔재"는 `shadow-sm`·`rounded-sm`·`backdrop-blur-sm` 3종만 다뤘다. v4 upgrade guide의 파괴적 변경 전체를 기준으로 다시 훑어 **미착수 4건 + 오탐 배제 6건**을 확정한다.
 
-### 1. 반드시 봐야 하는 것 — 눈에 띄게 달라진 곳
+#### 10-1. `--border-subtle`이 정의돼 있지 않다 — 6곳
 
-- [ ] **shadcn Button·Badge의 focus 링.** `ring-3`(3px) + 50% 반투명 헤일로 → `ring-2`(2px) **불투명**으로 바뀌었다. 부드러운 후광에서 선명한 테두리로 인상이 달라진다. 설정 화면 전반. 인상이 과하면 `border-ring`(내부 1px)만 남기고 ring을 1단계 줄이는 선택지가 있다
-- [ ] **토글 focus 링의 흰 간격이 사라졌는지.** dark theme에서 설정 → 에디터의 맞춤법/타이프라이터 토글, 설정 → 모양의 애니메이션 토글, 내보내기 사이드바의 줄간격 정규화 토글. 이전에는 링과 토글 사이에 **흰 띠**가 있었다
-- [ ] **dark theme에서 링 색이 조금 차분해졌는지.** `--text-accent`(`#60a5fa`) → `--accent-bg`(`#3b82f6`). 대비는 5.04 → 3.47로 내려가지만 3:1은 통과한다. 너무 어두워 보이면 `--color-ring`을 `--text-accent`로 돌리는 선택지가 있다 (DESIGN.md 규범은 유지됨)
+**v3 → v4 기본 테두리색 변경에 정확히 걸린 케이스다.** v3의 `border-color` 기본값은 `gray-200`이고 v4는 `currentColor`다. `border-[var(--border-subtle)]`는 토큰이 없으므로 `var()`가 무효값이 되어 `border-color` 선언이 버려지고, **v4에서는 그 자리에 글자색이 그려진다.** v3에서는 옅은 회색으로 떨어져 눈에 띄지 않았다.
 
-### 2. 이제 처음 보이는 것 — 없던 표시가 생긴 곳
+`--bg-secondary`(4) · `--accent-fg`(18) · `--text-primary`(16)은 정의돼 있고 `--border-subtle`만 **0건**이다.
 
-- [ ] **용어 관리(Research → 용어) 입력 3곳의 focus.** 이전에는 `focus:border-active`/`focus:ring-active`가 **배경 토큰**이라 거의 안 보였다. 지금은 accent 테두리 + accent 링
-- [ ] **내보내기 사이드바 박스 입력 8곳의 focus 링.** 이전에는 테두리 색만 바뀌었다
-- [ ] **canvas 노드 resize handle이 dark에서 보이는지.** `--border-focus` 1.65 → 3.73. 이전에는 어두운 표면에서 핸들을 찾을 수 없었다
-- [ ] **카드 hover 진행.** `border-border` → `hover:border-border-active`(1.16 → 1.61)로 승격된 5곳: canvas RelationEdge 라벨 · GraphNodeInspector · GraphSurface 버튼 · GraphHoverCard. 이전에는 알파 진행이 Δ0.07로 사실상 없었다
+| 파일 | 위치 |
+| --- | --- |
+| `project-selector/TemplateGrid.tsx` | 77(`border-2 dashed`) · 89 · 106(`border-l-[6px]`) · 136 |
+| `project-selector/RecentProjectsSection.tsx` | 123 |
+| `workspace/components/ProjectTemplateSelector.tsx` | 306 |
 
-### 3. 거의 안 바뀌어야 하는 것 — 바뀌었으면 회귀다
+- [ ] `--border-subtle` 6곳 → 역할 판정 후 `border-border`(카드·구분선) 또는 `border-border-strong`(대화형)으로 이관. 같은 파일들이 `bg-[var(--bg-secondary)]`·`text-[var(--text-primary)]` arbitrary value도 쓰고 있어 **`@theme` 매핑 유틸로 함께 옮기는 것이 맞다** — 프로젝트 선택 화면 전체가 토큰 마이그레이션에서 빠져 있다
 
-- [ ] **테두리가 과하게 진해진 곳이 어디인지.** 알파 11종(183건, 가중 평균 39.6%)을 무알파로 합쳤다. **흰 카드·패널 위에서 대비 1.24 → 1.44, RGB 색거리 29~37로 인지되는 변화다** — 이전에 이 문서가 "차이 0.15"라고 적었던 것은 가장 어두운 표면에서만 측정한 오류였다. 과하다고 판단되면 값을 되돌리는 게 아니라 §4의 **soft / high 2단 분리**로 간다(설계 확정, 구현 대기). 지금은 **어느 화면이 특히 과한지**만 봐두면 된다
-- [ ] 위와 별개로, 특정 화면에서 "선의 개수가 많아졌다"고 느껴지면 그건 강도가 아니라 배치 문제다. 그 지점은 `border-0`으로 지울 곳을 명시한다(§7 규칙)
-- [ ] **구분선 두께·진하기.** 툴바 세로 구분선(`primitives.tsx`), 더보기 메뉴 구분선 3개, Inspector 세로선, canvas 툴바 구분선. 알파 7종 → `bg-border` 단일
-- [ ] **메모/엔티티 목록의 리사이즈 핸들**(`w-1` 세로 막대)이 너무 도드라지지 않는지. `bg-border/40` → `bg-border`
-- [ ] **에디터 본문 클릭 시 파란 outline이 생기지 않는지.** `[&_.ProseMirror]:outline-none` → `outline-hidden`. 일반 모드에서는 완전히 동일해야 한다
+#### 10-2. prefix important가 v4에서 동작하지 않는다 — 2곳
 
-### 4. 세 theme × 색온도로 볼 것
+v3는 `!opacity-0`, v4는 후치 `opacity-0!`다. `wiki/visual/EntityNode.tsx:38,58`의 React Flow `Handle`에 `!opacity-0 !pointer-events-none`이 붙어 있어 **핸들 숨김이 실패한다** — 보이고 포인터 이벤트도 잡는다.
 
-focus 링은 light / sepia / dark **각각의 cool·warm 변형까지** 9개 조합에서 3:1을 실측 통과했지만, 실제 인상은 따로 본다.
+- [ ] `!opacity-0 !pointer-events-none` → `opacity-0! pointer-events-none!` (2곳)
 
-- [ ] sepia에서 brass 링(`#8a602e`)이 종이 위에서 탁하게 보이지 않는지
-- [ ] dark+warm에서 파란 링이 따뜻한 표면과 충돌하지 않는지
+#### 10-3. 검정 그림자 잔여 71건 — §4 체크박스가 실제보다 넓게 적혀 있었다
 
-### 판단이 필요한 지점
+§4는 "Tailwind 기본 검정 그림자(`shadow-sm`/`shadow-xs`) → theme tint 계열 [x]"로 적었으나 **`shadow-sm` 52건만 처리됐다.**
 
-- [ ] **bare 입력 20여 곳에 focus 표시를 어떻게 줄 것인가.** `MemoSection` 제목·본문, `MindMapBoard` 노드 라벨, `PlotBoard` 컬럼 제목·카드 본문, `EntityGallery` 검색, `MemoMainView` 등이다. 전부 "평범한 텍스트처럼 보이는" 입력이라 ring을 붙이면 무게가 달라진다. 후보: ① 밑줄만(`focus:border-b-accent`) ② 배경 전환(`focus:bg-element`) ③ 얇은 ring. **이건 값 문제가 아니라 표현 결정이라 UI를 보고 정해야 한다**
+| 클래스 | 건수 | 성질 |
+| --- | --- | --- |
+| `shadow-control` | 61 | theme tint (`--elevation-tint`) |
+| `shadow-panel` | 27 | theme tint |
+| `shadow-xs` | 26 | **검정** |
+| `shadow-lg` | 20 | **검정** — `roundedBig`/`shadowBig` guard 대상 |
+| `shadow-md` | 16 | **검정** |
+| `shadow-2xs` | 5 | **검정** |
+| `shadow-xl` | 4 | **검정** |
+
+- [ ] `shadow-xs`(26) · `shadow-2xs`(5) → `shadow-control`로 수렴 검토. v4 `shadow-xs`는 v3 `shadow-sm`(`0 1px 2px 0 rgb(0 0 0/.05)`)이라 `--shadow-control`보다 한 단계 약하다. 같은 tint 계열의 더 약한 token을 하나 더 만들 것인지, `shadow-control`로 합칠 것인지 결정이 필요하다
+- [ ] `shadow-md`(16) · `shadow-lg`(20) · `shadow-xl`(4) → `--shadow-panel`(`0 10px 28px`)과 크기가 겹치는 것만 수렴. 전부 옮기면 부유 표면 위계가 무너진다
+
+#### 10-4. `bg-gradient-to-*` → `bg-linear-to-*` — 3곳
+
+v4에서 이름이 바뀌었고 구 이름은 deprecated 상태로 아직 동작한다. 우선순위 낮음.
+
+- [ ] `CharacterVisualPanel.tsx:52` · `GoogleDocsLayout.tsx:200,201`
+
+#### 10-5. dark 전용 가정 잔재 — light·sepia에서 hover가 사라진다
+
+v3/v4와 무관한 팔레트 부채지만 같은 조사에서 나왔다. `bg-white/N` 33 · `text-white` 29 · `bg-black/N` 11 · `text-black` 2.
+
+- [ ] **`hover:bg-white/5|10`이 light·sepia에서 무효다.** `manuscript/components/sections/` 6파일(`SidebarWorldList` · `SidebarEventList` · `SidebarMemoList` · `SidebarCharacterList` · `SidebarFactionList`) + `ScrivenerSidebar.tsx:64,198`. §5에서 확정한 `hover:bg-surface-hover`로 수렴한다
+- [ ] `PromptComposer.tsx:154,161,162`의 `bg-white/6` · `border-white/10` · `text-zinc-400` 글래스가 dark 전용이다
+- [ ] `ExportSidebar.tsx:122` `bg-accent text-white` → `text-on-accent` (§1-B에서 `Modal`만 처리했다)
+- [ ] `AppearanceTab.tsx:138` `border-black/10` — §1 진단이 지목한 `EntityGallery`와 별개로 남아 있던 1건
+
+#### 배제한 오탐 (조사해서 문제 없음을 확인)
+
+이 6종은 다시 조사하지 않기 위해 기록한다.
+
+| 항목 | 결과 |
+| --- | --- |
+| bare `ring` (v3 3px blue → v4 1px currentColor) | **0건.** §4 기록과 일치 |
+| 색 미지정 `border`/`border-2` | 32건 검출되나 **실제 위험 0.** 전부 inline `style.borderColor`(`EdgeLabel` · `EntityNode` · `EntityGallery` · `CharacterVisualPanel`) 또는 `cn()` 조건부 `border-accent`/`border-border`/`border-transparent`가 붙는다. `border-0`(테두리 제거) 오탐도 포함 |
+| `divide-x`/`divide-y` (v4 currentColor) | 3건 전부 `divide-border` 색 지정됨 (`EditorTab:239` · `LlmfitCard:55` · `StartupWizard:227`) |
+| `blur-*` (v3→v4 값 2배 이동) | 2건은 `window.addEventListener("blur")` 오탐. 실제 `blur-*` 유틸 사용 0건 |
+| `max-w-screen-*` · `overflow-ellipsis` · `bg-opacity-*` 계열 | 0건 |
+| `theme()` CSS 함수 · `bg-[--var]` 대괄호 shorthand | 0건. v4는 `bg-(--var)` 소괄호를 요구한다 |
+
+`flex-shrink-0`(1) · `flex-grow`(5) · `decoration-slice`(1)은 §4에서 이미 "죽은 클래스가 아니다"로 정정한 항목이다.
+
+---
+
+## UI 확인 — 남은 미확인 항목 (2026-09-01)
+
+§4 1~4단계와 §1-B animate는 사용자 확인을 거쳐 승인됐다. 이 절에는 **아직 확인되지 않은 것만** 남긴다.
+
+### 1. 애니메이션 — 이번에 처음 움직인다
+
+`global.animations.css` 신설로 21개 파일 90건이 죽은 클래스에서 살아났다. **지금까지 아무 움직임이 없었으므로 전부 새로운 인상이다.**
+
+- [ ] **패널 열고 닫기의 slide 중복.** `flex-grow` 폭 보간(200ms)이 이미 동작하는데 거기에 `slide-out-to-left`가 겹친다. 폭이 줄면서 동시에 옆으로 밀려나가는 이중 움직임이 과하면 **slide를 빼고 `fade`만 남기는 선택지**가 있다. 대상: 사이드바 · Research 패널 · Scrivener Inspector · GoogleDocs 우측 패널
+- [ ] 설정 모달 · 동기화 충돌 모달 (`fade-in` + `zoom-in-95`)
+- [ ] 토스트 (`slide-in-from-right-full duration-300`) · 업데이트 알림 (`slide-in-from-bottom-5`)
+- [ ] 스마트링크 툴팁 · canvas 부유 컨트롤 · 그래프 범례
+- [ ] 시놉시스 에디터의 `duration-700` — 유일하게 700ms다. 다른 곳(100~300ms)과 어긋나 보이면 규범(200ms)에 맞춘다
+- [ ] 설정 → 모양 → 애니메이션을 **끈 상태**에서 모든 움직임이 즉시 사라지는지
+- [ ] OS 손쉬운 사용 → 동작 줄이기를 켠 상태에서도 사라지는지 (이전에는 canvas 밖이 미적용이었다)
+
+### 2. border soft 도입의 부수 영향
+
+- [ ] **canvas 그리드가 너무 옅어지지 않았는지.** `--grid-line`이 `var(--border-default)`라 soft(1.27)를 따라갔다. 옅으면 `--grid-line`만 high 값에 고정하는 분기를 넣는다
+- [ ] `--bg-element`를 fill로 쓰는 컨트롤 4곳이 다른 입력보다 경계가 약해 보이는지 — 그래프 필터 드롭다운 · 검색창 · 시놉시스 입력 · 위키 검색 (경계 대비 2.54~2.71 vs 다른 입력 3.30)
+
+### 3. v3 잔재 정리의 시각 영향
+
+- [ ] **`rounded-sm` → `rounded-xs`** (18곳, 반경 4px → 2px). 스냅샷 diff 하이라이트 · 그래프 범례 스와치 · 작은 칩. 너무 각져 보이는지
+- [ ] **`backdrop-blur` 역할 분기.** 전면 오버레이 8px 유지 / 소형 부유 요소 4px. canvas 엣지 라벨과 위키 사이드 레일이 대상
+- [ ] **`shadow-sm` → `shadow-control`** (52곳). 검정 그림자가 theme tint로 바뀌었다. sepia 종이 위에서 회색 얼룩이 사라졌는지
+
+---

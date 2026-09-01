@@ -76,8 +76,8 @@ changes across temperatures — only the background ladder and text.
 
 > **External alignment:** the Vercel _Web Interface Guidelines_ require honoring
 > contrast and reduced-motion. Luie implements both as first-class user controls
-> (`data-contrast="high"`, `data-animations="off"`) rather than relying only on
-> OS media queries — see §8 for the reduced-motion gap to close.
+> (`data-contrast="high"`, `data-animations="off"`) **and** honors the OS
+> `prefers-reduced-motion` media query globally (`global.animations.css`).
 
 ---
 
@@ -253,20 +253,31 @@ Motion is **globally gated by attributes**, not scattered media queries
   transitions **only** `flex-basis, flex-grow, width, max-width` over `200ms`
   `cubic-bezier(0.2,0,0,1)`. Critically, `data-panel-animated` is gated so it is
   **off during an active separator drag** (otherwise the eased flex writes make
-  the opposite panel visibly drift). Enter/exit slides use
-  `tailwindcss-animate` (`animate-in slide-in-from-left`, `slide-out-to-right`),
+  the opposite panel visibly drift). Enter/exit slides use the project's own
+  `animate-in` / `animate-out` utilities
+  ([`global.animations.css`](src/renderer/src/styles/global.animations.css)),
   applied only during the opening/closing window.
 
 **Standard duration: 200ms.** Standard easing: `cubic-bezier(0.2,0,0,1)`
 (decelerate). Match these.
 
-> **External alignment & the one gap to close:** the Vercel guidelines say
-> *animate `transform`/`opacity` only*, *never `transition: all`*, *honor
-> `prefers-reduced-motion`*. Luie already lists properties explicitly (never
-> `all`) and has a master off-switch — **but it keys off the in-app
-> `data-animations` flag, not the OS `prefers-reduced-motion` media query.**
-> When adding motion, also respect `@media (prefers-reduced-motion: reduce)` so
-> OS-level users are covered without toggling the in-app setting.
+**Enter/exit utilities are defined in-repo, not by a plugin.** These class names
+(`animate-in`, `fade-in`, `zoom-in-95`, `slide-in-from-*`, `slide-out-to-*`) look
+like `tailwindcss-animate`, and this document previously claimed that plugin was
+in use — **it never was.** The package was absent, no `@utility`/`@keyframes`
+defined it, and the built CSS emitted zero matching rules, so ~90 usages across
+21 files were dead classes. They are now implemented directly because Tailwind v4
+exposes `--tw-duration` / `--tw-ease` from `duration-*` / `ease-*` (the main
+plumbing a plugin used to provide), so the existing class names work unchanged and
+default to the 200ms / `cubic-bezier(0.2,0,0,1)` convention above instead of a
+third-party default.
+
+> **External alignment:** the Vercel guidelines say *animate `transform`/`opacity`
+> only*, *never `transition: all`*, *honor `prefers-reduced-motion`*. Luie lists
+> properties explicitly (never `all`), has the in-app `data-animations` master
+> switch, **and now also honors the OS `@media (prefers-reduced-motion: reduce)`
+> globally** (`global.animations.css`). Previously that media query existed only
+> in `canvas.css`, so elements outside the canvas were not covered.
 
 ---
 
@@ -341,11 +352,13 @@ SURFACES   bg-app  bg-sidebar  bg-panel  bg-surface  bg-element
 OVERLAYS   bg-surface-hover  bg-active            (alpha, compose over surfaces)
 TEXT       text-fg  text-muted  text-subtle  text-accent  text-on-accent
 BRAND      accent (muted brass; theme-adaptive)  success  danger
-BORDER     border  border-active  border-focus
+BORDER     border (soft)  border-active  border-strong (UI 경계 3:1)  border-focus
+           · data-contrast="high" 는 border 를 한 단계 진하게
 RADIUS     rounded-control (10px)  rounded-panel (14px)
-SHADOW     shadow-sm/md/lg  shadow-panel
+SHADOW     shadow-control (theme tint)  shadow-panel  · Tailwind 기본 검정 그림자 금지
 Z-INDEX    z-dropdown 50 · z-banner 100 · z-toast 150 · z-modal 1000
-MOTION     200ms  cubic-bezier(0.2,0,0,1)  · gated by data-animations / data-layout-restoring
+MOTION     200ms  cubic-bezier(0.2,0,0,1)  · gated by data-animations / data-layout-restoring / prefers-reduced-motion
+           · animate-in|out + fade|zoom|slide 는 global.animations.css 정의
 FONTS      --font-sans (KR-first) · --font-serif (writing) · --font-mono
 THEME ATTRS data-theme · data-temp · data-contrast · data-animations
 ```

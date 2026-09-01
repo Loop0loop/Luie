@@ -1,0 +1,245 @@
+/* ==========================================================================
+   Enter / Exit Animations
+   ==========================================================================
+
+   `animate-in` · `animate-out` 계열 유틸리티를 프로젝트 안에서 직접 정의한다.
+
+   왜 직접 정의하는가
+   ------------------
+   이 클래스들은 21개 파일에 90건 쓰이고 있었지만 **어디에도 정의가 없어 전부 죽은
+   클래스였다.** `package.json`에 animate 패키지가 없고 `@plugin`/`@utility` 정의도 없어
+   빌드 산출 CSS에 `.animate-in` 규칙이 0건이었다. `DESIGN.md`가 "Enter/exit slides use
+   `tailwindcss-animate`"라고 적고 있었지만 사실이 아니었다.
+
+   외부 패키지(`tw-animate-css`)를 넣지 않고 직접 정의한 이유는 세 가지다.
+     1. Tailwind v4의 `duration-*`·`ease-*`가 `--tw-duration`·`--tw-ease` 변수를 노출한다.
+        v3에는 없던 것이고, 플러그인이 존재했던 주된 이유가 이 배관이었다. 아래에서 그
+        변수를 읽으므로 **컴포넌트에 이미 붙어 있는 `duration-100`~`duration-700`이 그대로
+        동작한다.** 클래스 이름을 바꿀 필요가 없었다.
+     2. 실제로 필요한 프리미티브가 10개뿐이다. 외부 패키지는 수십 개를 싣는다.
+     3. 이 프로젝트는 이미 `200ms cubic-bezier(0.2,0,0,1)`을 모션 규범으로 쓴다
+        (`global.behaviors.css`의 패널 전환, `DESIGN.md` 치트시트). 외부 패키지는 자기
+        기본값을 가져오므로 모션 규범이 두 개가 된다. 직접 정의하면 프로젝트 값을 기본으로
+        상속시킬 수 있다.
+
+   합성 방식
+   ---------
+   `animate-in`/`animate-out`이 keyframe을 걸고, `fade-*`·`zoom-*`·`slide-*`는 그 keyframe이
+   읽는 변수만 설정한다. 그래서 `animate-in fade-in zoom-in-95`처럼 조합이 가능하다.
+   변수를 설정하지 않은 축은 기본값(변화 없음)으로 남는다.
+
+   억제 경로
+   ---------
+   두 층이 이미 존재하며 이 파일은 그 규칙을 그대로 따른다.
+     - `data-animations="off"` / `data-layout-restoring="true"` → `global.behaviors.css`가
+       `animation-duration: 0ms !important`로 끈다. 여기서 따로 처리하지 않는다.
+     - OS `prefers-reduced-motion` → 아래 블록에서 전역으로 끈다. 이전에는
+       `canvas.css`에만 있어서 `DESIGN.md`가 요구하는 범위를 못 채우고 있었다.
+   ========================================================================== */
+
+@theme {
+  /* NOTE: 패널 전환(`global.behaviors.css`)이 쓰는 값과 같은 곡선·시간이다.
+     `duration-*`/`ease-*`를 붙이지 않은 사용처는 이 값으로 움직인다. */
+  --animate-enter-exit-duration: 200ms;
+  --animate-enter-exit-ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* --------------------------------------------------------------------------
+   keyframes
+
+   NOTE: `from`만 정의하고 `to`를 비워 두면 요소의 최종 상태(변수 기본값)로 수렴한다.
+   `animation-fill-mode: both`와 함께 써서 시작 프레임이 첫 페인트부터 적용되게 한다.
+   그래야 마운트 직후 한 프레임 깜빡이지 않는다.
+   -------------------------------------------------------------------------- */
+
+@keyframes luie-enter {
+  from {
+    opacity: var(--luie-enter-opacity, 1);
+    transform: translate3d(
+        var(--luie-enter-translate-x, 0),
+        var(--luie-enter-translate-y, 0),
+        0
+      )
+      scale3d(
+        var(--luie-enter-scale, 1),
+        var(--luie-enter-scale, 1),
+        var(--luie-enter-scale, 1)
+      );
+  }
+}
+
+@keyframes luie-exit {
+  to {
+    opacity: var(--luie-exit-opacity, 1);
+    transform: translate3d(
+        var(--luie-exit-translate-x, 0),
+        var(--luie-exit-translate-y, 0),
+        0
+      )
+      scale3d(
+        var(--luie-exit-scale, 1),
+        var(--luie-exit-scale, 1),
+        var(--luie-exit-scale, 1)
+      );
+  }
+}
+
+/* --------------------------------------------------------------------------
+   진입점 유틸리티
+   -------------------------------------------------------------------------- */
+
+@utility animate-in {
+  animation-name: luie-enter;
+  animation-duration: var(
+    --tw-duration,
+    var(--animate-enter-exit-duration)
+  );
+  animation-timing-function: var(--tw-ease, var(--animate-enter-exit-ease));
+  animation-fill-mode: both;
+}
+
+@utility animate-out {
+  animation-name: luie-exit;
+  animation-duration: var(
+    --tw-duration,
+    var(--animate-enter-exit-duration)
+  );
+  animation-timing-function: var(--tw-ease, var(--animate-enter-exit-ease));
+  animation-fill-mode: both;
+}
+
+/* --------------------------------------------------------------------------
+   opacity 축
+   -------------------------------------------------------------------------- */
+
+@utility fade-in {
+  --luie-enter-opacity: 0;
+}
+
+@utility fade-out {
+  --luie-exit-opacity: 0;
+}
+
+/* --------------------------------------------------------------------------
+   scale 축
+
+   NOTE: 사용처는 `zoom-in-95` 하나뿐이지만(9건), 대칭을 위해 out도 정의한다.
+   `-95`는 95% 크기에서 시작한다는 뜻이다.
+   -------------------------------------------------------------------------- */
+
+@utility zoom-in-95 {
+  --luie-enter-scale: 0.95;
+}
+
+@utility zoom-out-95 {
+  --luie-exit-scale: 0.95;
+}
+
+/* --------------------------------------------------------------------------
+   translate 축
+
+   NOTE: 접미사 없는 `slide-in-from-left`는 100%(자기 폭만큼) 밖에서 들어온다. 레이아웃
+   패널이 이 형태를 쓴다 — 패널은 폭이 0에서 열리므로 100%가 자연스럽다.
+   숫자 접미사는 Tailwind spacing 스케일(0.25rem 단위)이다: `-2` = 0.5rem, `-4` = 1rem,
+   `-5` = 1.25rem. 작은 부유 요소가 짧은 거리로 들어올 때 쓴다.
+   `-full`은 100%로 접미사 없는 것과 같지만, 의도를 드러내려고 별도로 쓰인 곳이 있다
+   (`Toast`의 `slide-in-from-right-full`).
+   -------------------------------------------------------------------------- */
+
+@utility slide-in-from-left {
+  --luie-enter-translate-x: -100%;
+}
+
+@utility slide-in-from-right {
+  --luie-enter-translate-x: 100%;
+}
+
+@utility slide-in-from-top {
+  --luie-enter-translate-y: -100%;
+}
+
+@utility slide-in-from-bottom {
+  --luie-enter-translate-y: 100%;
+}
+
+@utility slide-in-from-left-full {
+  --luie-enter-translate-x: -100%;
+}
+
+@utility slide-in-from-right-full {
+  --luie-enter-translate-x: 100%;
+}
+
+@utility slide-out-to-left {
+  --luie-exit-translate-x: -100%;
+}
+
+@utility slide-out-to-right {
+  --luie-exit-translate-x: 100%;
+}
+
+@utility slide-out-to-top {
+  --luie-exit-translate-y: -100%;
+}
+
+@utility slide-out-to-bottom {
+  --luie-exit-translate-y: 100%;
+}
+
+/* NOTE: 숫자 접미사 변형. `--value(integer)`로 임의 값을 받되 spacing 스케일을 곱한다.
+   그래야 `slide-in-from-bottom-4`가 Tailwind의 `mb-4`와 같은 1rem을 뜻한다. */
+@utility slide-in-from-left-* {
+  --luie-enter-translate-x: calc(--value(integer) * var(--spacing) * -1);
+}
+
+@utility slide-in-from-right-* {
+  --luie-enter-translate-x: calc(--value(integer) * var(--spacing));
+}
+
+@utility slide-in-from-top-* {
+  --luie-enter-translate-y: calc(--value(integer) * var(--spacing) * -1);
+}
+
+@utility slide-in-from-bottom-* {
+  --luie-enter-translate-y: calc(--value(integer) * var(--spacing));
+}
+
+@utility slide-out-to-left-* {
+  --luie-exit-translate-x: calc(--value(integer) * var(--spacing) * -1);
+}
+
+@utility slide-out-to-right-* {
+  --luie-exit-translate-x: calc(--value(integer) * var(--spacing));
+}
+
+@utility slide-out-to-top-* {
+  --luie-exit-translate-y: calc(--value(integer) * var(--spacing) * -1);
+}
+
+@utility slide-out-to-bottom-* {
+  --luie-exit-translate-y: calc(--value(integer) * var(--spacing));
+}
+
+/* --------------------------------------------------------------------------
+   OS reduced-motion
+
+   NOTE: `DESIGN.md`가 "모션을 추가할 때 `prefers-reduced-motion`을 함께 존중하라"고
+   요구하는데 이전에는 `canvas.css`에만 있어 canvas 밖 요소는 대상이 아니었다.
+   `data-animations`는 앱 내부 설정이고 이건 OS 설정이라 별개의 층이다.
+
+   전이(transition)까지 함께 끄는 이유: enter/exit를 끄면서 패널 폭 보간
+   (`transition: flex-grow 200ms`)만 남기면 움직임이 반쯤 살아 있어 의도가 어긋난다.
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-delay: 0ms !important;
+    animation-duration: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-delay: 0ms !important;
+    transition-duration: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}

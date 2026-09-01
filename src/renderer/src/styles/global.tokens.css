@@ -261,7 +261,7 @@
   /* NOTE: 이전 값(#e5e5ea 1.26:1 / #d1d1d6 1.52:1)은 흰 표면 위에서 사실상 보이지
      않아 컴포넌트가 token을 포기하고 `border-black/70` 같은 하드코딩으로 도망갔다.
      장식선 1.45:1 / 상태선 2.0:1로 올린다. 고대비 모드의 3:1과는 다른 층이다. */
-  /* soft 기본. 고대비값 #d7d7d3은 §4 Task 2에서 [data-contrast=high] 블록으로 이동 예정. */
+  /* soft 기본. 고대비값 #d7d7d3은 §4 Task 2에서 아래 `[data-contrast="high"]` 블록으로 옮겼다. */
   --border-default: #e4e4e1;
   --border-active: #b8b8b3;
   /* NOTE: 기준면을 `--bg-element`에서 `--bg-panel`로 옮겼다. §1·§2는 가장 어두운
@@ -493,7 +493,8 @@
   --text-primary: #1d2330;
   --text-secondary: #566070;
   --text-tertiary: #6a707c;
-  /* soft 기본. 고대비값 #d1d6df은 §4 Task 2에서 [data-contrast=high] 블록으로 이동 예정. */
+  /* soft 기본. 고대비값 #d1d6df은 §4 Task 2에서
+     `[data-theme="light"][data-temp="cool"][data-contrast="high"]`로 옮겼다. */
   --border-default: #dfe3e9;
   --border-active: #b0b7c3;
   /* NOTE: 3.30:1 on `--bg-panel`. 기준면 이동은 위 neutral 블록 참조. */
@@ -510,7 +511,8 @@
   --text-primary: #262016;
   --text-secondary: #6b5e4d;
   --text-tertiary: #766a5d;
-  /* soft 기본. 고대비값 #e0d3c3은 §4 Task 2에서 [data-contrast=high] 블록으로 이동 예정. */
+  /* soft 기본. 고대비값 #e0d3c3은 §4 Task 2에서
+     `[data-theme="light"][data-temp="warm"][data-contrast="high"]`로 옮겼다. */
   --border-default: #eae1d5;
   --border-active: #c3b4a0;
   /* NOTE: 3.30:1 on `--bg-panel`. */
@@ -529,7 +531,8 @@
   --text-primary: #4a4237;
   --text-secondary: #665e51;
   --text-tertiary: #726c60;
-  /* soft 기본. 고대비값 #d8cfc0은 §4 Task 2에서 [data-contrast=high] 블록으로 이동 예정. */
+  /* soft 기본. 고대비값 #d8cfc0은 §4 Task 2에서
+     `[data-theme="sepia"][data-temp="cool"][data-contrast="high"]`로 옮겼다. */
   --border-default: #e3dccf;
   --border-active: #bcb09f;
   /* NOTE: 3.30:1 on `--bg-panel`. */
@@ -546,7 +549,8 @@
   --text-primary: #4a3820;
   --text-secondary: #715c3c;
   --text-tertiary: #7f6947;
-  /* soft 기본. 고대비값 #e6cd9c은 §4 Task 2에서 [data-contrast=high] 블록으로 이동 예정. */
+  /* soft 기본. 고대비값 #e6cd9c은 §4 Task 2에서
+     `[data-theme="sepia"][data-temp="warm"][data-contrast="high"]`로 옮겼다. */
   --border-default: #eedbb6;
   --border-active: #cdae77;
   /* NOTE: 3.32:1 on `--bg-panel`. */
@@ -580,7 +584,8 @@
   --text-tertiary: #7a6a57;
   --text-accent: #8a602e;
 
-  /* soft 기본. 고대비값 #dfceb0은 §4 Task 2에서 [data-contrast=high] 블록으로 이동 예정. */
+  /* soft 기본. 고대비값 #dfceb0은 §4 Task 2에서
+     `[data-theme="sepia"][data-contrast="high"]`로 옮겼다. */
   --border-default: #e9dbc4;
   --border-active: #c3af8f;
   /* NOTE: 3.30:1 on `--bg-panel`. */
