@@ -18,6 +18,7 @@ import {
   windowSetTrafficLightVisibilityArgsSchema,
 } from "../../../../shared/schemas/index.js";
 import type { BrowserWindow } from "electron";
+import { calculateStartupWizardExpandedBounds } from "../../../manager/window/windowStartupWizard.js";
 
 // 위저드 단계 전환(A 인트로 → B 테마)의 창 확장 애니메이션. 창이 커지는 동안 내용물이
 // 재배치되는 걸 따라갈 수 있도록 여유 있는 길이로 보간하고(easeOutCubic), 프레임마다
@@ -28,18 +29,17 @@ const WIZARD_RESIZE_TICK_MS = 16;
 let wizardResizeTimer: ReturnType<typeof setTimeout> | null = null;
 
 // 디스플레이 작업 영역(workArea) 내에서 대상 영역을 계산한다.
-// 최대 크기(workArea 이상)를 요청하면 여백 없이 workArea 전체를 꽉 채우고,
-// 가로형(1300×800) 등 일반 크기는 workArea 내 중앙 정렬한다.
+// 1. 최대 크기(4000 이상 또는 workArea 이상): 여백 없이 workArea 100% 채움
+// 2. 가로형 확장 프리뷰(1200 이상): 화면 82% 비율 + clamp 기반 동적 bounds 적용
+// 3. 기타 크기: workArea 내 중앙 정렬
 const getTargetWizardBounds = (
   win: BrowserWindow,
   width: number,
   height: number,
 ): { x: number; y: number; width: number; height: number } => {
   const workArea = screen.getDisplayMatching(win.getBounds()).workArea;
-  const clampedWidth = Math.min(width, workArea.width);
-  const clampedHeight = Math.min(height, workArea.height);
 
-  if (width >= workArea.width && height >= workArea.height) {
+  if (width >= 4000 || (width >= workArea.width && height >= workArea.height)) {
     return {
       x: workArea.x,
       y: workArea.y,
@@ -47,6 +47,13 @@ const getTargetWizardBounds = (
       height: workArea.height,
     };
   }
+
+  if (width >= 1200 || (width === 0 && height === 0)) {
+    return calculateStartupWizardExpandedBounds(win);
+  }
+
+  const clampedWidth = Math.min(width, workArea.width);
+  const clampedHeight = Math.min(height, workArea.height);
 
   return {
     x: Math.round(workArea.x + (workArea.width - clampedWidth) / 2),
