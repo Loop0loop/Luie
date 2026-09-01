@@ -1,6 +1,44 @@
 
 /* NOTE: 제품 accent를 하나로 유지하려고 `--accent-bg`만 source of truth로 사용한다. */
 
+/* NOTE: focus 표시의 baseline이다(§11-9).
+
+   문제: 포커스 가능 요소 374개 중 **270개(72%)에 focus 스타일이 없었다.** 그런 요소는
+   Chromium/OS 기본 focus ring을 받는데, 그 색은 앱 토큰이 아니라 **OS 시스템 accent**를
+   따른다. 그래서 Luie accent를 blue로 두고도 링이 주황으로 뜨고(사용자 macOS accent),
+   Luie accent를 바꿔도 따라오지 않으며, Luie 표면에 대한 대비를 측정할 수도 없다 —
+   WCAG 2.4.13의 3:1을 보장할 수 없는 색이다.
+
+   왜 270곳을 고치지 않고 전역 규칙인가: 개별 클래스로 흩뿌리면 §4가 겪은 drift가 그대로
+   재발한다. Accor Welcome Design System이 같은 문제를 *"the ring color, thickness, and
+   offset drifted across components and themes"*로 진단하고 **geometry는 공통, 색만
+   테마별인 단일 출처**로 해결했다. 앞으로 만드는 컴포넌트도 자동으로 덮인다.
+
+   왜 이중 표시가 안 생기는가: §4가 canonical 패턴을 `focus-visible:outline-hidden
+   ring-2 ring-ring`으로 확정해서, ring을 가진 곳은 이미 `outline-style: none`이다 →
+   이 규칙이 자동으로 억제된다. 반대로 `outline-hidden`이 없는 곳은 ring도 없다.
+
+   `outline`을 쓰는 이유: Tailwind `ring`은 `box-shadow`라 `overflow: hidden` 조상에
+   잘리고 레이아웃에 영향을 준다. `outline`은 잘리지 않고, forced-colors 모드에서
+   사용자 에이전트가 억제하지 않는다(W3C Technique C40이 box-shadow만 쓰는 것을 경고한다).
+
+   `outline-offset`이 음수인 이유: 처음 `2px`(바깥)로 뒀더니 **요소 자체 테두리 + 띄운
+   outline이 두 줄로 읽혔다**(사용자 지적 "이중 링"). 안쪽으로 넣으면 테두리를 덮어 한 줄로
+   보인다. Slash 메뉴·Research 목록 행에서 `ring-inset`이 좋다고 판단된 것과 같은 이유다.
+   Accor는 대비를 주변 배경에서 재려고 바깥 3px offset을 권하지만, Luie의 ring 색은
+   accent(전 표면에서 3.47 이상)라 인접색이 요소 테두리든 배경이든 3:1을 넘는다. */
+:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: -2px;
+}
+
+/* NOTE: 전면 집필 표면은 캐럿이 focus를 알린다(§4가 `SynopsisEditor`·`InspectorPanel`을
+   의도된 예외로 남긴 것과 같은 판단). ProseMirror는 `editor.css`에서 `outline: none`을
+   쓰지만 그것은 `:focus-visible`보다 특이도가 낮아 이 규칙이 이겨버리므로 여기서 뺀다. */
+.tiptap .ProseMirror:focus-visible {
+  outline: none;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--bg-app);

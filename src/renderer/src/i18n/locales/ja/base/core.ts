@@ -170,6 +170,7 @@ export const jaBaseCore = {
   toolbar: {
     customColor: "カスタムカラー",
     resetTextColor: "標準の文字色",
+    resetTypography: "既定値に戻す",
     resetHighlight: "ハイライトを削除",
     tooltip: {
       undo: "元に戻す",

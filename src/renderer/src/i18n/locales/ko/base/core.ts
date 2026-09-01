@@ -173,6 +173,7 @@ export const koBaseCore = {
   toolbar: {
     customColor: "사용자 지정 색상",
     resetTextColor: "기본 글자색",
+    resetTypography: "기본값으로",
     resetHighlight: "형광펜 지우기",
     tooltip: {
       undo: "실행 취소",

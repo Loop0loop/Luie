@@ -304,7 +304,7 @@ export function ExportSidebar({
                                     type="checkbox"
                                     checked={showPageNumbers}
                                     onChange={(e) => setShowPageNumbers(e.target.checked)}
-                                    className="w-4 h-4 rounded border border-border-strong bg-surface text-accent focus:ring-2 focus:ring-ring"
+                                    className="w-4 h-4 rounded border border-border-strong bg-surface text-accent focus:outline-hidden focus:ring-2 focus:ring-ring"
                                 />
                             </div>
                             {showPageNumbers && (

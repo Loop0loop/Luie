@@ -9,6 +9,11 @@ import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { cn } from "@shared/types/utils";
+import {
+  DEFAULT_EDITOR_LETTER_SPACING,
+  DEFAULT_EDITOR_LINE_HEIGHT,
+  DEFAULT_EDITOR_PARAGRAPH_SPACING,
+} from "@shared/constants/editor/defaults";
 import type { EditorPaletteEntry } from "./constants";
 import { ToolbarButton } from "./primitives";
 import { useClickOutside } from "./useClickOutside";
@@ -439,10 +444,26 @@ export function TypographyMenu({
       </ToolbarButton>
 
       {open && (
-        <div className="absolute left-1/2 top-full z-50 mt-1 w-56 -translate-x-1/2 rounded-panel border border-border bg-panel p-3.5 shadow-panel">
-          <p className="mb-3 text-[10px] font-medium uppercase tracking-wide text-muted">
-            {t("toolbar.typography", "타이포그래피")}
-          </p>
+        <div className="absolute left-1/2 top-full z-dropdown mt-1 w-56 -translate-x-1/2 rounded-panel border border-border bg-panel p-3.5 shadow-panel">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted">
+              {t("toolbar.typography", "타이포그래피")}
+            </p>
+            {/* NOTE: 슬라이더 3개를 만진 뒤 기본값으로 돌릴 수단이 없었다. 값을 기억해
+                손으로 되돌리는 것은 불가능에 가깝다. 기본값은 `shared/constants/editor`가
+                단일 출처다 — 여기서 리터럴을 쓰면 store 기본값과 갈라진다. */}
+            <button
+              type="button"
+              className="rounded-control px-1.5 py-0.5 text-xs text-muted transition-colors hover:bg-hover hover:text-fg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() => {
+                onLetterSpacingChange(DEFAULT_EDITOR_LETTER_SPACING);
+                onLineHeightChange(DEFAULT_EDITOR_LINE_HEIGHT);
+                onParagraphSpacingChange(DEFAULT_EDITOR_PARAGRAPH_SPACING);
+              }}
+            >
+              {t("toolbar.resetTypography", "기본값으로")}
+            </button>
+          </div>
           {sliders.map(({ label, min, max, step, value, onChange, display }) => (
             <div key={label} className="mb-3.5 last:mb-0">
               <div className="mb-1.5 flex items-center justify-between">

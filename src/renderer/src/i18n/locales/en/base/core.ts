@@ -170,6 +170,7 @@ export const enBaseCore = {
   toolbar: {
     customColor: "Custom color",
     resetTextColor: "Default text color",
+    resetTypography: "Reset to defaults",
     resetHighlight: "Clear highlight",
     tooltip: {
       undo: "실행 취소",

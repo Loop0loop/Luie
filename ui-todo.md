@@ -850,7 +850,12 @@ soft 값은 **`--bg-element`(파인 control) 위에서 대비 1.016~1.048로 사
   | **의도된 예외 (2, 무변경)** | `MemoSection:289` · `MemoMainView:56` 전면 집필 textarea. §4가 `SynopsisEditor:347`·`InspectorPanel:99`를 예외로 남긴 것과 같은 범주 — 전면 집필 표면에서는 캐럿이 focus를 알린다 |
 
   재스캔 결과 남은 6곳은 전부 위 표의 "래퍼 담당 4 + 의도된 예외 2"다.
-- [ ] **`DrawingCanvas` 접근성 — 별도 항목으로 분리 (2026-09-01).** `aria-pressed`만 붙이면 이득이 거의 없다. ① 선 굵기·색 선택이 `<div onClick>`이라 **키보드로 도달할 수 없다** ② 아이콘 전용 버튼(mountain·castle·village)에 `title`도 `aria-label`도 없어 접근 이름이 아예 없다 ③ 상호배타 선택이므로 `aria-pressed`보다 radio 의미가 맞다. 컴포넌트 단위로 다뤄야 하고 i18n 키 신설이 따른다
+- [x] **해소 (2026-09-01).** 세 문제를 함께 고쳤다.
+  - **`<div onClick>` → `<button>`**: 색 6개·굵기 4개가 키보드로 도달할 수 없었다
+  - **접근 이름 신설**: 아이콘 종류(산·성·마을)에 `title`도 `aria-label`도 없어 스크린리더가 이름 없는 버튼으로 읽었다. 색·굵기도 이름이 없었다 → i18n 키 **14개 × 3언어** 추가(`groupTool`·`groupIcon`·`groupColor`·`groupWidth`·`icon*`·`color*`·`widthValue`)
+  - **상호배타 관계 노출**: 네 그룹에 `role="group"` + `aria-label`, 모든 옵션에 `aria-pressed`. 전 버튼에 `focus-visible:ring`
+  - `role="radiogroup"`/`radio`가 의미상 더 정확하지만 단일 tab stop + 화살표 이동을 요구한다. 도구 팔레트는 각 버튼에 개별 접근하는 편이 실사용에 맞아 `group` + `aria-pressed`로 뒀다 — 그래픽 편집기 툴바의 통상 패턴이다
+  - 색 배열을 `{ hex, key }`로 바꿔 hex와 라벨을 한곳에 뒀다. 이전에는 hex 배열 + 주석으로만 의미가 적혀 있었다
 - `focus:ring-0` 2곳(`SynopsisEditor:347` 본문 · `InspectorPanel:99` 노트)은 **의도된 예외**다. 전면 집필 표면에서는 캐럿이 focus를 알린다. 기록만 남긴다
 - **토글 off 상태가 `bg-border` 트랙이라 대비 1.16이다.** 켜짐(`bg-accent`)과 꺼짐의 구분은 되지만 트랙 자체가 표면과 거의 붙는다. Radix 모델에서는 트랙이 대화형 표면(step 3~5)이지 border가 아니다 — §5의 "버튼 상태 일관화"와 함께 다룬다
 - **`--border-focus`의 이름과 역할이 어긋난다.** focus 표시는 accent ring이 담당하도록 확정했으므로 이 토큰의 소비처는 `--canvas-handle-bg` 하나뿐이다. 실제 역할은 "neutral 계단의 최강 단계"다. `DESIGN.md:344`의 border 치트시트(`border  border-active  border-focus`)도 `--border-strong` 신설 이후로 낡았다 → 이름 정리는 `DESIGN.md` 갱신과 함께
@@ -1556,10 +1561,46 @@ mark{background-color:var(--luie-mark,color-mix(in srgb, var(--accent-bg,#2563eb
 
 즉 **텍스트 입력에는 ring, 목록 행에는 highlight**가 규범이다. Luie는 §4에서 focus를 ring 하나로 통일했는데 그때 이 구분을 두지 않았다.
 
-- [ ] **결정 필요**: 목록 행(사이드바·엔티티·메모 목록)의 focus를 highlight로 바꿀 것인가
-  - highlight만으로는 WCAG 2.4.13을 못 채운다 — `--bg-active`가 대비 1.05다. **§7의 active 방언이 이미 답을 갖고 있다**: `bg-active + border-l-[3px] border-l-accent`. 좌측 3px accent 바는 면적·대비 요건을 만족하고, 목록에서 이미 쓰는 시각 언어다
-  - 그러면 focus와 selected가 같은 표현이 되는 문제가 생긴다 → focus는 바 + 배경, selected는 바 + 배경 + `text-accent`처럼 갈라야 한다
-  - Accor의 `focus-fallback`은 지금 당장 필요 없다(accent ring이 5개 accent × 9 theme에서 3:1을 넘는지 §4에서 측정해 통과했다). 다만 **목록 행 highlight로 가면 재측정이 필요하다**
+- [x] **해소 (2026-09-01).** 원인이 예상과 달랐다 — **Luie의 ring이 아니라 Chromium/OS 기본 focus ring**이었다. 주황은 사용자 macOS 시스템 accent이고, Luie ring(`--color-ring` = `--accent-bg`)은 기본 accent가 파랑이다. 즉 파랑이 정상이고 주황이 "스타일이 없어 OS가 대신 그린 것"이었다.
+
+  **실측: 포커스 가능 요소 374개 중 270개(72%)에 focus 스타일이 없었다.**
+
+  ##### 해법 1 — 전역 baseline 규칙 (270곳을 고치지 않는다)
+
+  개별 클래스로 흩뿌리면 §4가 겪은 drift가 재발한다. [Accor Welcome](https://design.accor.com/latest/foundations/focus-TNKg3gdf)이 같은 문제를 *"the ring color, thickness, and offset drifted across components and themes"*로 진단하고 **geometry 공통 + 색만 테마별인 단일 출처**로 해결한 것이 이 상황이다.
+
+  ```css
+  /* global.behaviors.css */
+  :focus-visible { outline: 2px solid var(--color-ring); outline-offset: -2px; }
+  .tiptap .ProseMirror:focus-visible { outline: none; }
+  ```
+
+  - **이중 표시가 안 생긴다.** §4가 canonical 패턴을 `focus-visible:outline-hidden ring-2 ring-ring`으로 확정해둔 덕에, ring을 가진 곳은 이미 `outline-style: none`이라 이 규칙이 자동 억제된다. `ring`은 있는데 `outline-hidden`이 없는 곳은 **4곳뿐**이라 그것만 맞췄다(`InspectorPanel` select 2 · `ExportSidebar` checkbox 1 · shadcn `badge`는 프리미티브 레이어라 제외)
+  - **`outline-offset`이 음수인 이유**: 처음 `2px`(바깥)로 뒀더니 **요소 자체 테두리 + 띄운 outline이 두 줄로 읽혔다**(사용자 지적). 안쪽으로 넣으면 테두리를 덮어 한 줄이 된다. Accor는 대비를 주변 배경에서 재려고 바깥 3px을 권하지만, Luie ring은 accent(전 표면 3.47 이상)라 인접색이 테두리든 배경이든 3:1을 넘는다
+  - **`box-shadow`(ring)가 아니라 `outline`인 이유**: ring은 `overflow: hidden` 조상에 잘리고 레이아웃에 영향을 준다. outline은 잘리지 않고 forced-colors에서 억제되지 않는다(W3C Technique C40이 box-shadow만 쓰는 것을 경고한다)
+  - **의도된 예외 복구**: §4가 `focus:ring-0`으로 남긴 전면 집필 표면 2곳 중 `InspectorPanel:98`이 이 규칙에 깨졌다 → `outline-hidden` 추가. `SynopsisEditor:347`은 이미 갖고 있었다
+  - 이 규칙 하나로 사용자가 지목한 것이 전부 덮인다 — 설정·내보내기·휴지통·버전기록(`MoreMenu:83`의 focus 없는 `<button>`), 사이드바 축소 토글, AI view, 마크다운 아이콘, 에디터│캔버스 햄버거, 프로젝트 수정 아이콘
+
+  ##### 해법 2 — 2중 tab은 ring이 아니라 tab 순서 문제였다
+
+  > **판단 정정.** 처음 `DraggableItem`에 `ring-inset`을 넣었다가 **되돌렸다.** 존재하면 안 되는 focus stop을 예쁘게 칠한 것이었다.
+
+  결정적 사실: **`GlobalDragContext`가 `PointerSensor`만 등록한다 — `KeyboardSensor`가 없다.** 그런데 dnd-kit `attributes`는 `role="button"` + `tabIndex={0}`을 붙인다. 그 tabIndex로 할 수 있는 일이 없다. 게다가 dnd-kit은 키보드 활성화 핸들러를 붙이지 않고 `role="button"`인 `<div>`는 Enter로 click이 합성되지 않으므로, **focus는 가는데 조작은 안 되는 stop**이다.
+
+  소비처 12곳 실태:
+
+  | | 개수 | 상태 |
+  | --- | --- | --- |
+  | 내부에 진짜 `<button>` | 5 | **tab 2중**(`SidebarChapterList`·`SidebarWorldList`·`SnapshotList`·`TrashList`·`GoogleDocsPanelRail`) |
+  | 내부가 `<div onClick>` | 7 | focus는 가지만 Enter 무효 |
+
+  - [x] `attributes` 스프레드 제거 — **1줄로 12개 stop이 사라진다.** `role="button"`이 함께 없어지는 것도 정확하다(활성화되지 않는데 "버튼"이라 알리는 것은 오정보였다)
+  - [x] **회귀 방어**: `tests/dom/draggableItemFocus.test.tsx` 4 케이스 — `tabindex` 없음 · `role` 없음 · 내부에 button이 있어도 tab stop 1개 · className 보존. **RED 확인**: `{...attributes}`를 되살리면 3 failed
+  - [ ] **남은 부채: `<div onClick>` 7곳을 `<button>`으로.** 그 행들은 키보드로 도달할 수 없다 — 다만 **이 변경으로 생긴 손실이 아니다**(이전에도 Enter가 무효였다). 사용자 판단으로 미룬다: *"tab 한 번 더 눌렀다고 컴플레인하는 사람은 없다"*. 마우스로 조작되고 Research 패널에 같은 목록이 버튼으로 있어 대안 경로도 있다. 키보드 드래그를 넣게 되면 `KeyboardSensor` 등록과 함께 재검토한다
+
+  ##### HIG의 "목록은 highlight" 권고는 적용하지 않았다
+
+  사용자 불만은 *떠 있는 OS 링*이었고 위 두 해법으로 해소된다. highlight로 가려면 selected 표현(`bg-active + border-l-accent + text-accent`)과 겹쳐 selected를 다시 설계해야 하고, §7에서 won't-do로 닫은 "active 방언 수렴"이 되살아난다. 비용 대비 이득이 맞지 않아 **현재 형태로 확정한다**
 
 #### 11-5. `CompactDropdown`이 ARIA 없는 커스텀 select다
 
@@ -1589,7 +1630,8 @@ mark{background-color:var(--luie-mark,color-mix(in srgb, var(--accent-bg,#2563eb
 #### 11-8. Typography 메뉴에 단위가 없다
 
 - [x] 단위 표기 추가 (2026-09-01). 자간 `0.02em` · 줄간격 `1.70×` · 문단간격 `1.0em`. `aria-valuetext`로 보조기술에도 같은 문자열을 전달한다 — 네이티브 range는 값을 숫자로만 읽어준다
-- [ ] 기본값 복원 수단이 없다
+- [x] 기본값 복원 추가 (2026-09-01). 슬라이더 3개를 만진 뒤 되돌릴 수단이 없었다 — 값을 기억해 손으로 맞추는 것은 불가능에 가깝다. `shared/constants/editor/defaults.ts`를 단일 출처로 참조한다(리터럴을 쓰면 store 기본값과 갈라진다). 라벨은 i18n 키 `toolbar.resetTypography` 3언어 신설
+- [x] `z-50` → `z-dropdown`도 함께
 - [x] `accent-[var(--accent-bg)]` → `accent-accent-bg` (매핑이 이미 있었다)
 
 ---

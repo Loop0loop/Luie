@@ -95,8 +95,12 @@ export default function InspectorPanel({
               <div className="border-b border-index-card-border pb-2 mb-2 font-bold text-center text-fg/80 truncate">
                 {activeChapter?.title || "Untitled"}
               </div>
+              {/* NOTE: `focus:ring-0`은 §4가 남긴 의도된 예외다 — 전면 집필 표면에서는
+                  캐럿이 focus를 알린다. §11-9에서 전역 `:focus-visible` outline을 도입하면서
+                  이 예외가 깨졌으므로 `outline-hidden`을 함께 둔다(`SynopsisEditor:347`는
+                  이미 갖고 있었다). */}
               <textarea
-                className="flex-1 w-full bg-transparent border-none resize-none focus:ring-0 text-sm p-0 leading-relaxed placeholder:text-muted/50"
+                className="flex-1 w-full bg-transparent border-none resize-none outline-hidden focus:ring-0 text-sm p-0 leading-relaxed placeholder:text-muted/50"
                 placeholder={t("inspector.synopsis.placeholder")}
                 value={synopsis}
                 onChange={(e) => handleSynopsisChange(e.target.value)}
@@ -155,7 +159,7 @@ export default function InspectorPanel({
                 <label className="text-xs font-medium text-muted">
                   {t("inspector.meta.label")}
                 </label>
-                <select className="w-full bg-surface border border-border-strong rounded px-2 py-1 text-sm focus:ring-2 focus:ring-ring">
+                <select className="w-full bg-surface border border-border-strong rounded px-2 py-1 text-sm focus:outline-hidden focus:ring-2 focus:ring-ring">
                   <option>{t("inspector.label.none")}</option>
                   <option>{t("inspector.label.concept")}</option>
                   <option>{t("inspector.label.draft")}</option>
@@ -165,7 +169,7 @@ export default function InspectorPanel({
                 <label className="text-xs font-medium text-muted">
                   {t("inspector.meta.status")}
                 </label>
-                <select className="w-full bg-surface border border-border-strong rounded px-2 py-1 text-sm focus:ring-2 focus:ring-ring">
+                <select className="w-full bg-surface border border-border-strong rounded px-2 py-1 text-sm focus:outline-hidden focus:ring-2 focus:ring-ring">
                   <option>{t("inspector.status.todo")}</option>
                   <option>{t("inspector.status.inprogress")}</option>
                   <option>{t("inspector.status.done")}</option>
