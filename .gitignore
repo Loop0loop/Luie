@@ -4,6 +4,9 @@ node_modules/
 dist/mac-arm64
 dist/mac-universal-arm64-temp
 dist/mac-universal-x64-temp
+__pycache__/
+*.pyc
+*.bak
 
 
 # Build outputs
