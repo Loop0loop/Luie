@@ -119,7 +119,7 @@ export function EntityDetailView({
   );
 
   const sections: WikiSectionData[] = useMemo(() => {
-    if (attributes.sections) {
+    if (Array.isArray(attributes.sections)) {
       return attributes.sections as WikiSectionData[];
     }
     return sectionConfig.map(({ id }, index) => ({

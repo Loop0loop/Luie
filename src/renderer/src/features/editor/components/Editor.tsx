@@ -125,8 +125,13 @@ function Editor({
       // NOTE: 에디터가 기존 본문으로 (재)생성되는 시점(앱 시작, 원고 전환, 스냅샷 복원
       // 리마운트)에는 onUpdate가 발화하지 않는다. 여기서 초기 통계를 계산하지 않으면
       // StatusFooter가 첫 타이핑 전까지 0 | 0(또는 이전 원고 값)으로 남는다.
+      // WARNING: readOnly 에디터(스냅샷 뷰어 등)는 배제한다. 통계 스토어는 에디터 간
+      // 공유라서, readonly 뷰가 마운트만으로 본문 푸터의 카운트를 자기 내용으로
+      // 덮어써 버린다. readOnly는 원래 통계를 쓰지 않던(타이핑 불가) 라이터다.
       onCreate: ({ editor: createdEditor }) => {
-        updateStatsRef.current(createdEditor.getText());
+        if (!readOnly) {
+          updateStatsRef.current(createdEditor.getText());
+        }
       },
       onUpdate: ({ editor }) => {
         if (updateContentRef.current) {
