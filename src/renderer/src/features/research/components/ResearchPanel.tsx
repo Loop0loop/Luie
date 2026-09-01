@@ -14,7 +14,6 @@ import { cn } from "@shared/types/utils";
 import { FeatureErrorBoundary } from "@renderer/shared/error-boundaries/FeatureErrorBoundary";
 import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import {
-  RESEARCH_CATALOG_IDS,
   RESEARCH_CATALOG_ITEMS,
   type ResearchCatalogId,
 } from "@renderer/features/workspace/constants/researchInformationArchitecture";
@@ -22,6 +21,12 @@ import type {
   EntityGallerySortMode,
   EntityGalleryViewMode,
 } from "@renderer/features/research/components/wiki/EntityGallery";
+
+// NOTE: 탭 컨텐츠 전환. 항상 오른쪽에서 스르륵 들어온다. duration-700은 transition-duration만
+// 바꾸므로 animate-in(기본 150ms)에 효과가 없다 — animation-duration/timing-function을
+// 임의 속성으로 직접 지정해 부드러운 감속 이징을 준다.
+const TAB_ENTER_ANIMATION =
+  "animate-in slide-in-from-right-4 fade-in [animation-duration:700ms] [animation-timing-function:cubic-bezier(0.16,1,0.3,1)]";
 
 export type ResearchPanelTab =
   | "character"
@@ -93,25 +98,6 @@ export default function ResearchPanel({
       ? normalizedLocalTab
       : normalizedActiveTab;
   const enableAnimations = useEditorStore((state) => state.enableAnimations);
-
-  // NOTE: 탭 전환 방향. 뒤 탭으로 가면 새 컨텐츠가 오른쪽에서, 앞 탭으로 가면 왼쪽에서
-  // 슬라이드 인한다("옷장에 옷을 갈아끼우는" 전환). 이전 탭 추적은 prop 변경 시 상태를
-  // 조정하는 공식 렌더 패턴(GoogleDocsRightPanel의 lastRightPanelSize와 동일)으로 한다.
-  const [tabTransition, setTabTransition] = React.useState<{
-    tab: ResearchPanelTab;
-    direction: "right" | "left";
-  }>({ tab: visibleTab, direction: "right" });
-  let slideDirection: "right" | "left" = tabTransition.direction;
-  if (tabTransition.tab !== visibleTab) {
-    const from = RESEARCH_CATALOG_IDS.indexOf(
-      tabTransition.tab as (typeof RESEARCH_CATALOG_IDS)[number],
-    );
-    const to = RESEARCH_CATALOG_IDS.indexOf(
-      visibleTab as (typeof RESEARCH_CATALOG_IDS)[number],
-    );
-    slideDirection = to >= from ? "right" : "left";
-    setTabTransition({ tab: visibleTab, direction: slideDirection });
-  }
 
   const tabs = RESEARCH_CATALOG_ITEMS.map((item) => ({
     id: item.id,
@@ -209,10 +195,7 @@ export default function ResearchPanel({
           data-testid="research-tab-content"
           className={cn(
             "flex min-h-0 flex-1 flex-col",
-            enableAnimations &&
-              (slideDirection === "right"
-                ? "animate-in slide-in-from-right-4 fade-in duration-700"
-                : "animate-in slide-in-from-left-4 fade-in duration-700"),
+            enableAnimations && TAB_ENTER_ANIMATION,
           )}
         >
         {visibleTab === "character" && (

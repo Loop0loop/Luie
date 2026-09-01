@@ -113,15 +113,29 @@ describe("ResearchPanel 탭 전환 애니메이션", () => {
     expect(contentWrapper(container)?.textContent).toBe("events");
   });
 
-  it("앞 순서로 돌아가면 왼쪽에서 슬라이드 인한다", async () => {
+  it("탭 순서와 무관하게 항상 오른쪽에서 슬라이드 인한다", async () => {
     const container = await renderPanel("event");
 
-    // event(1) → character(0): 앞 탭 = 왼쪽 진입.
+    // event → character: 순서가 앞으로 가도 진입은 항상 오른쪽이다.
     await rerenderPanel(container, "character");
 
     expect(
       contentWrapper(container)?.className,
-    ).toContain("slide-in-from-left-4");
+    ).toContain("slide-in-from-right-4");
+    expect(
+      contentWrapper(container)?.className,
+    ).not.toContain("slide-in-from-left");
+  });
+
+  it("전환 애니메이션 시간과 감속 이징이 직접 지정된다", async () => {
+    // 근거: duration-*는 transition-duration만 바꿔 animate-in(기본 150ms)에 무효였다.
+    const container = await renderPanel("character");
+
+    const className = contentWrapper(container)?.className ?? "";
+    expect(className).toContain("[animation-duration:700ms]");
+    expect(className).toContain(
+      "[animation-timing-function:cubic-bezier(0.16,1,0.3,1)]",
+    );
   });
 
   it("애니메이션이 꺼져 있으면 전환 클래스를 붙이지 않는다", async () => {
