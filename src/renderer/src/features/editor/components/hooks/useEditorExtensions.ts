@@ -9,7 +9,7 @@ import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import { Details, DetailsSummary, DetailsContent } from "@tiptap/extension-details";
 import Focus from "@tiptap/extension-focus";
-import { Extension, Node, mergeAttributes } from "@tiptap/core";
+import { Extension } from "@tiptap/core";
 import Suggestion from "@tiptap/suggestion";
 
 import { slashSuggestion } from "@renderer/features/editor/components/suggestion";
@@ -21,27 +21,9 @@ import {
 } from "@renderer/features/editor/components/extensions/ThemedTextColor";
 import { useTranslation } from "react-i18next";
 
-export const Callout = Node.create({
-    name: "callout",
-    group: "block",
-    content: "block+",
-    defining: true,
+import { Callout } from "@renderer/features/editor/components/extensions/CalloutExtension";
 
-    parseHTML() {
-        return [{ tag: 'div[data-type="callout"]' }];
-    },
-
-    renderHTML({ HTMLAttributes }) {
-        return [
-            "div",
-            mergeAttributes(HTMLAttributes, {
-                "data-type": "callout",
-                class: "callout",
-            }),
-            0,
-        ];
-    },
-});
+export { Callout };
 
 export const SlashCommand = Extension.create({
     name: "slashCommand",

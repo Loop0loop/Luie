@@ -130,6 +130,11 @@ export const enWorkspaceWriting = {
   },
   slashMenu: {
     header: "Basic blocks",
+    category: {
+      headings: "Headings",
+      lists: "Lists",
+      blocks: "Blocks & Formatting",
+    },
     description: {
       h1: "Chapter or major section",
       h2: "Mid-level section",

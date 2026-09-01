@@ -130,6 +130,11 @@ export const koWorkspaceWriting = {
   },
   slashMenu: {
     header: "기본 블록",
+    category: {
+      headings: "제목",
+      lists: "목록",
+      blocks: "블록 & 서식",
+    },
     description: {
       h1: "장(章) 또는 큰 섹션",
       h2: "중간 섹션",

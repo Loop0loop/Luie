@@ -26,9 +26,13 @@ export interface SlashMenuActionProps {
   range: Range;
 }
 
+export type SlashMenuCategory = "headings" | "lists" | "blocks";
+
 export interface SlashMenuItem {
   id: string;
   label: string;
+  category: SlashMenuCategory;
+  hint?: string;
   action: (props: SlashMenuActionProps) => void;
 }
 
@@ -49,16 +53,16 @@ interface SlashMenuProps {
 }
 
 const ICONS: Record<string, ReactElement> = {
-  h1: <Heading1 className="icon-lg" />,
-  h2: <Heading2 className="icon-lg" />,
-  h3: <Heading3 className="icon-lg" />,
-  bullet: <List className="icon-lg" />,
-  number: <ListOrdered className="icon-lg" />,
-  check: <CheckSquare className="icon-lg" />,
-  toggle: <ChevronRight className="icon-lg" />,
-  quote: <Quote className="icon-lg" />,
-  callout: <MessageSquare className="icon-lg" />,
-  divider: <Minus className="icon-lg" />,
+  h1: <Heading1 className="w-4 h-4 stroke-[2.2]" />,
+  h2: <Heading2 className="w-4 h-4 stroke-[2.2]" />,
+  h3: <Heading3 className="w-4 h-4 stroke-[2.2]" />,
+  bullet: <List className="w-4 h-4 stroke-[2.2]" />,
+  number: <ListOrdered className="w-4 h-4 stroke-[2.2]" />,
+  check: <CheckSquare className="w-4 h-4 stroke-[2.2]" />,
+  toggle: <ChevronRight className="w-4 h-4 stroke-[2.2]" />,
+  quote: <Quote className="w-4 h-4 stroke-[2.2]" />,
+  callout: <MessageSquare className="w-4 h-4 stroke-[2.2]" />,
+  divider: <Minus className="w-4 h-4 stroke-[2.2]" />,
 };
 
 const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(function SlashMenu(
@@ -80,6 +84,15 @@ const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(function SlashMenu
       quote: t("slashMenu.description.quote"),
       callout: t("slashMenu.description.callout"),
       divider: t("slashMenu.description.divider"),
+    }),
+    [t],
+  );
+
+  const categoryTitles = useMemo<Record<SlashMenuCategory, string>>(
+    () => ({
+      headings: t("slashMenu.category.headings"),
+      lists: t("slashMenu.category.lists"),
+      blocks: t("slashMenu.category.blocks"),
     }),
     [t],
   );
@@ -152,48 +165,95 @@ const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(function SlashMenu
 
   return (
     <div
-      className="absolute w-75 max-h-80 bg-panel border border-border rounded-control shadow-panel z-dropdown overflow-y-auto flex flex-col font-sans"
+      className="w-72 sm:w-80 max-h-[380px] bg-panel/95 backdrop-blur-xl border border-border rounded-panel shadow-modal z-dropdown overflow-hidden flex flex-col font-sans select-none"
       onMouseDown={(e) => {
         // NOTE: pointer interaction이 editor focus를 빼앗아 Suggestion이 닫히지 않게 한다.
         e.preventDefault();
       }}
     >
-      <div className="px-3 py-2 text-[11px] font-semibold text-muted uppercase tracking-wider bg-bg-secondary border-b border-border">
-        {t("slashMenu.header")}
+      <div className="px-3 py-2 text-[11px] font-semibold text-muted uppercase tracking-wider bg-bg-secondary/60 border-b border-border flex items-center justify-between">
+        <span>{t("slashMenu.header")}</span>
+        <span className="text-[10px] font-normal text-subtle lowercase">esc to close</span>
       </div>
-      {/* NOTE: 항목이 `<div onClick>`이고 role이 없어 화살표로 옮겨도 보조기술에는 선택
-          위치가 전달되지 않았다. listbox/option으로 노출하고, 포커스가 편집 영역에 남으므로
-          `aria-activedescendant`는 그쪽에 붙인다(위 `onActiveOptionChange` 참조). */}
-      <div className="p-1" id={SLASH_MENU_LISTBOX_ID} role="listbox" aria-label={t("slashMenu.header")}>
-        {items.map((item, index) => (
-          <div
-            key={item.id}
-            id={slashMenuOptionId(index)}
-            role="option"
-            aria-selected={index === effectiveSelectedIndex}
-            className={cn(
-              "flex items-center px-2 py-1.5 rounded-control cursor-pointer transition-colors gap-2.5",
-              index === effectiveSelectedIndex ? "bg-element" : "hover:bg-hover"
-            )}
-            onClick={() => selectItem(index)}
-            onMouseEnter={() => setSelectedIndex(index)}
-            ref={(node) => {
-              itemRefs.current[index] = node;
-            }}
-          >
-            <div className="flex items-center justify-center w-11 h-11 border border-border rounded-control bg-panel text-fg shrink-0">
-              {ICONS[item.id]}
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <div className="text-sm font-medium text-fg mb-0.5">{item.label}</div>
-              {/* NOTE: `descriptions`에 없는 id는 이전에 빈 줄을 남겨 항목 높이만 차지했다.
-                  설명이 없으면 줄 자체를 그리지 않는다. */}
-              {descriptions[item.id] && (
-                <div className="text-[11px] text-muted truncate">{descriptions[item.id]}</div>
+
+      <div
+        className="p-1.5 overflow-y-auto max-h-[320px] flex flex-col gap-0.5"
+        id={SLASH_MENU_LISTBOX_ID}
+        role="listbox"
+        aria-label={t("slashMenu.header")}
+      >
+        {items.map((item, index) => {
+          const isSelected = index === effectiveSelectedIndex;
+          const prevItem = items[index - 1];
+          const showCategoryHeader = !prevItem || prevItem.category !== item.category;
+
+          return (
+            <div key={item.id} className="flex flex-col">
+              {showCategoryHeader && item.category && (
+                <div
+                  className={cn(
+                    "px-2.5 py-1 text-[10px] font-bold text-muted/70 uppercase tracking-wider",
+                    index > 0 && "mt-1.5 pt-1 border-t border-border/50",
+                  )}
+                  aria-hidden="true"
+                >
+                  {categoryTitles[item.category] || item.category}
+                </div>
               )}
+              <div
+                id={slashMenuOptionId(index)}
+                role="option"
+                aria-selected={isSelected}
+                className={cn(
+                  "group flex items-center px-2 py-1.5 rounded-control cursor-pointer transition-all duration-75 gap-2.5",
+                  isSelected
+                    ? "bg-element text-fg shadow-xs"
+                    : "hover:bg-surface-hover/80 text-fg",
+                )}
+                onClick={() => selectItem(index)}
+                onMouseEnter={() => setSelectedIndex(index)}
+                ref={(node) => {
+                  itemRefs.current[index] = node;
+                }}
+              >
+                <div
+                  className={cn(
+                    "flex items-center justify-center w-7.5 h-7.5 rounded-md border text-fg shrink-0 transition-colors",
+                    isSelected
+                      ? "bg-surface border-border-strong text-accent shadow-xs"
+                      : "bg-element/50 border-border/50 text-muted group-hover:text-fg group-hover:bg-element",
+                  )}
+                >
+                  {ICONS[item.id]}
+                </div>
+                <div className="flex-1 min-w-0 pr-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-xs font-semibold text-fg truncate">
+                      {item.label}
+                    </span>
+                    {item.hint && (
+                      <kbd
+                        className={cn(
+                          "shrink-0 px-1.5 py-0.5 text-[10px] font-mono rounded border transition-colors",
+                          isSelected
+                            ? "bg-surface text-fg border-border-strong"
+                            : "bg-element/40 text-muted/80 border-border/40",
+                        )}
+                      >
+                        {item.hint}
+                      </kbd>
+                    )}
+                  </div>
+                  {descriptions[item.id] && (
+                    <div className="text-[11px] text-muted truncate mt-0.5">
+                      {descriptions[item.id]}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

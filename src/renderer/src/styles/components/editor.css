@@ -80,73 +80,79 @@
     color: var(--text-primary);
     font-weight: 700;
     line-height: 1.35;
-    letter-spacing: -0.015em;
-    margin-bottom: 0.5em;
     word-break: keep-all;
 }
 
 .tiptap .ProseMirror h1 {
     font-size: 1.875rem;
-    margin-top: 2.2em;
     font-weight: 800;
+    letter-spacing: -0.025em;
+    margin-top: 2.2em;
+    margin-bottom: 0.6em;
 }
 
 .tiptap .ProseMirror h2 {
-    font-size: 1.5rem;
+    font-size: 1.45rem;
     font-weight: 700;
+    letter-spacing: -0.02em;
     margin-top: 1.8em;
+    margin-bottom: 0.5em;
 }
 
 .tiptap .ProseMirror h3 {
     font-size: 1.2rem;
     font-weight: 600;
-    margin-top: 1.5em;
-    color: var(--text-secondary);
+    letter-spacing: -0.015em;
+    margin-top: 1.4em;
+    margin-bottom: 0.4em;
+    color: var(--text-primary);
 }
 
 .tiptap .ProseMirror h4 {
-    font-size: 1rem;
+    font-size: 1.05rem;
     font-weight: 600;
-    margin-top: 1.2em;
+    letter-spacing: -0.01em;
+    margin-top: 1.1em;
+    margin-bottom: 0.3em;
     color: var(--text-secondary);
 }
 
 .tiptap .ProseMirror hr {
     border: none;
-    border-top: 1px solid currentColor;
-    opacity: 0.15;
-    margin: 2.5em auto;
-    width: 40%;
+    border-top: 1.5px solid var(--border-strong);
+    margin: 2.5em 0;
+    width: 100%;
+    opacity: 1;
 }
 
 /* NOTE: Tailwind reset이 제거한 list marker를 editor 안에서 복원한다. */
 .tiptap .ProseMirror ul {
     list-style-type: disc;
-    padding-left: 1.5em;
+    padding-left: 1.4em;
     margin: 0.5em 0 1em;
 }
 
 .tiptap .ProseMirror ol {
     list-style-type: decimal;
-    padding-left: 1.5em;
+    padding-left: 1.4em;
     margin: 0.5em 0 1em;
 }
 
 .tiptap .ProseMirror ul ul,
 .tiptap .ProseMirror ol ul {
     list-style-type: circle;
-    margin: 0.1em 0;
+    margin: 0.15em 0;
 }
 
 .tiptap .ProseMirror ol ol,
 .tiptap .ProseMirror ul ol {
     list-style-type: lower-alpha;
-    margin: 0.1em 0;
+    margin: 0.15em 0;
 }
 
 .tiptap .ProseMirror li {
-    margin: 0.2em 0;
-    line-height: 1.75;
+    margin: 0.25em 0;
+    line-height: 1.7;
 }
 
 .tiptap .ProseMirror li > p {
@@ -154,92 +160,116 @@
 }
 
 .tiptap .ProseMirror ul[data-type="taskList"] {
-    list-style: none;
-    padding-left: 0;
-    margin: 0.5em 0 1em;
+    list-style: none !important;
+    padding-left: 0 !important;
+    margin: 0.4em 0 0.8em !important;
 }
 
+.tiptap .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"],
 .tiptap .ProseMirror li[data-type="taskItem"] {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.55rem;
-    margin: 0.25rem 0;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 0.4rem !important;
+    margin: 0.2rem 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+    line-height: 1.5;
 }
 
-.tiptap .ProseMirror li[data-type="taskItem"] label {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    width: 18px;
-    height: 18px;
-    margin-top: 0.18em;
+.tiptap .ProseMirror li[data-type="taskItem"] > label {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 auto !important;
+    width: 1rem;
+    height: 1.5em; /* 텍스트의 line-height(1.5)와 일치시켜 첫 줄 세로 중앙에 완벽 배치 */
     user-select: none;
     cursor: pointer;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
-.tiptap .ProseMirror li[data-type="taskItem"] input[type="checkbox"] {
-    appearance: auto;
-    width: 15px;
-    height: 15px;
+.tiptap .ProseMirror li[data-type="taskItem"] > label > input[type="checkbox"] {
     cursor: pointer;
-    margin: 0;
+    width: 0.95rem;
+    height: 0.95rem;
+    margin: 0 !important;
+    padding: 0 !important;
     accent-color: var(--accent-bg, #2563eb);
 }
 
-.tiptap .ProseMirror li[data-type="taskItem"] div {
-    flex: 1;
-    margin: 0;
+.tiptap .ProseMirror li[data-type="taskItem"] > div {
+    flex: 1 1 auto !important;
+    min-width: 0;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
-.tiptap .ProseMirror li[data-type="taskItem"][data-checked="true"] div {
+.tiptap .ProseMirror li[data-type="taskItem"] > div > p {
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 0 !important;
+    line-height: 1.5 !important;
+}
+
+.tiptap .ProseMirror li[data-type="taskItem"][data-checked="true"] > div,
+.tiptap .ProseMirror li[data-type="taskItem"][data-checked="true"] > div > p {
     color: var(--text-tertiary);
     text-decoration: line-through;
 }
 
 .tiptap .ProseMirror blockquote {
-    border-left: 3px solid var(--accent-bg, #2563eb);
-    padding: 0.1em 0 0.1em 1.25rem;
-    margin: 1.5em 0;
+    border-left: 3px solid var(--border-strong);
+    background-color: color-mix(in srgb, var(--bg-secondary) 50%, transparent);
+    padding: 0.6rem 1.15rem;
+    margin: 1.6em 0;
+    border-radius: 0 var(--radius-control) var(--radius-control) 0;
     color: var(--text-secondary);
-    font-style: italic;
-    background: transparent;
+    font-style: normal;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .tiptap .ProseMirror blockquote p {
-    margin: 0.35em 0;
+    margin: 0.25em 0;
+    line-height: 1.7;
 }
 
+.tiptap .ProseMirror blockquote p:first-child { margin-top: 0; }
+.tiptap .ProseMirror blockquote p:last-child { margin-bottom: 0; }
+
 .tiptap .ProseMirror code {
-    background-color: var(--bg-active);
-    padding: 0.15em 0.4em;
-    border-radius: 4px;
-    font-family: var(--font-mono);
-    font-size: 0.875em;
-    color: var(--text-accent, #2563eb);
+    background-color: color-mix(in srgb, var(--bg-secondary) 85%, transparent);
+    padding: 0.15em 0.38em;
+    border-radius: 5px;
+    border: 1px solid var(--border-default);
+    font-family: var(--font-mono, monospace);
+    font-size: 0.88em;
+    color: var(--text-primary);
     letter-spacing: 0;
     word-spacing: 0;
 }
 
 .tiptap .ProseMirror pre {
     background-color: var(--bg-secondary);
-    border-radius: 6px;
-    padding: 1em 1.2em;
-    margin: 1.5em 0;
+    border-radius: var(--radius-control);
+    padding: 1.1rem 1.3rem;
+    margin: 1.6em 0;
     border: 1px solid var(--border-default);
-    border-left: 3px solid var(--accent-bg, #2563eb);
     white-space: pre-wrap;
     word-break: break-all;
     overflow-wrap: break-word;
     overflow: visible;
+    box-shadow: var(--shadow-control);
 }
 
 .tiptap .ProseMirror pre code {
     background-color: transparent;
     padding: 0;
-    font-size: 0.875em;
-    font-family: var(--font-mono);
-    color: var(--text-accent, #2563eb);
+    border: none;
+    font-size: 0.88em;
+    font-family: var(--font-mono, monospace);
+    color: var(--text-primary);
     letter-spacing: 0;
     word-spacing: 0;
     white-space: pre-wrap;
@@ -247,76 +277,76 @@
     display: block;
 }
 
-.tiptap .ProseMirror .callout {
-    padding: 0.85rem 1.1rem;
-    background-color: var(--bg-secondary);
-    border-radius: 6px;
-    border: 1px solid var(--border-default);
-    border-left: 3px solid var(--accent-bg, #2563eb);
-    margin: 1.5em 0;
-    color: var(--text-primary);
+/* NOTE: Notion 스타일 Callout 내부 텍스트 완벽한 상하 중앙 정렬 */
+.tiptap .ProseMirror .callout .callout-content,
+.tiptap .ProseMirror .callout-content {
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
-.tiptap .ProseMirror .callout p {
-    margin: 0.35em 0;
+.tiptap .ProseMirror .callout .callout-content p,
+.tiptap .ProseMirror .callout-content p {
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 0 !important;
+    line-height: 1.5 !important;
 }
 
-.tiptap .ProseMirror .callout p:first-child { margin-top: 0; }
-.tiptap .ProseMirror .callout p:last-child  { margin-bottom: 0; }
-
-.tiptap .ProseMirror details {
-    border: none;
-    padding: 0;
-    margin: 0.5em 0;
-    background: transparent;
-}
-
-.tiptap .ProseMirror summary {
-    cursor: pointer;
-    list-style: none;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    color: var(--text-primary);
-    padding: 0.2rem 0.4rem;
-    border-radius: 4px;
-    transition: background-color 0.15s ease;
-    user-select: none;
-}
-
-.tiptap .ProseMirror summary:hover {
-    background-color: var(--bg-hover, rgba(0, 0, 0, 0.05));
-}
-
-.tiptap .ProseMirror summary::-webkit-details-marker {
-    display: none;
+.tiptap .ProseMirror .callout .callout-content p + p,
+.tiptap .ProseMirror .callout-content p + p {
+    margin-top: 0.35em !important;
 }
 
 .tiptap .ProseMirror details.toggle {
     background: transparent;
     border: none;
     padding: 0;
-    margin: 0.5em 0;
+    margin: 0.6em 0;
 }
 
-.tiptap .ProseMirror details.toggle > div {
-    padding-left: 1.4rem;
-    margin-top: 0.15rem;
-    color: var(--text-secondary);
+.tiptap .ProseMirror details.toggle summary {
+    cursor: pointer;
+    list-style: none;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    color: var(--text-primary);
+    padding: 0.3rem 0.5rem;
+    border-radius: var(--radius-control);
+    transition: background-color 0.15s ease;
+    user-select: none;
+}
+
+.tiptap .ProseMirror details.toggle summary:hover {
+    background-color: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+}
+
+.tiptap .ProseMirror details.toggle summary::-webkit-details-marker {
+    display: none;
 }
 
 .tiptap .ProseMirror details.toggle summary::before {
     content: "▸";
     display: inline-block;
-    margin-right: 0.45rem;
+    margin-right: 0.5rem;
+    font-size: 0.85rem;
     transform-origin: center;
-    transition: transform 0.15s ease;
-    color: var(--text-secondary);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    color: var(--text-tertiary);
     font-style: normal;
 }
 
 .tiptap .ProseMirror details.toggle[open] summary::before {
     transform: rotate(90deg);
+    color: var(--text-secondary);
+}
+
+.tiptap .ProseMirror details.toggle > div {
+    padding-left: 1.4rem;
+    margin-top: 0.25rem;
+    margin-left: 0.65rem;
+    border-left: 1.5px solid color-mix(in srgb, var(--border-default) 60%, transparent);
+    color: var(--text-primary);
 }
 
 /* WARNING: smart-link 색상은 Editor.tsx가 주입하는 entityColors CSS variable과 함께 변경해야 한다. */

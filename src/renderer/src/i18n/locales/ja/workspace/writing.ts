@@ -130,6 +130,11 @@ export const jaWorkspaceWriting = {
   },
   slashMenu: {
     header: "基本ブロック",
+    category: {
+      headings: "見出し",
+      lists: "リスト",
+      blocks: "ブロック＆書式",
+    },
     description: {
       h1: "章または大きなセクション",
       h2: "中間セクション",

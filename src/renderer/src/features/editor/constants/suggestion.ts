@@ -1,5 +1,5 @@
 export const SUGGESTION_MAX_ITEMS = 10;
-export const SUGGESTION_POPUP_Z_INDEX = 1000;
+export const SUGGESTION_POPUP_Z_INDEX = 50;
 
 /* NOTE: Slash 메뉴가 열려 있는 동안 포커스는 편집 영역(ProseMirror contenteditable)에
    남는다. `aria-activedescendant`는 **포커스된 요소**에 붙어야 보조기술이 읽으므로,

@@ -11,7 +11,11 @@ import type {
   SuggestionProps,
 } from "@tiptap/suggestion";
 import SlashMenu from "@renderer/features/editor/components/SlashMenu";
-import type { SlashMenuActionProps, SlashMenuItem } from "@renderer/features/editor/components/SlashMenu";
+import type {
+  SlashMenuActionProps,
+  SlashMenuItem,
+  SlashMenuCategory,
+} from "@renderer/features/editor/components/SlashMenu";
 import { i18n } from "@renderer/i18n";
 
 function replaceCurrentTextblock(editor: Editor, content: Content) {
@@ -33,6 +37,148 @@ function replaceCurrentTextblock(editor: Editor, content: Content) {
   editor.commands.insertContentAt({ from, to }, content);
 }
 
+type SlashMenuItemTemplate = {
+  id: string;
+  category: SlashMenuCategory;
+  hint: string;
+  labelKey: string;
+  action: (props: SlashMenuActionProps) => void;
+};
+
+const SLASH_ITEM_TEMPLATES: SlashMenuItemTemplate[] = [
+  {
+    id: "h1",
+    category: "headings",
+    hint: "#",
+    labelKey: "slashMenu.label.h1",
+    action: ({ editor, range }: SlashMenuActionProps) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .toggleHeading({ level: 1 })
+        .run();
+    },
+  },
+  {
+    id: "h2",
+    category: "headings",
+    hint: "##",
+    labelKey: "slashMenu.label.h2",
+    action: ({ editor, range }: SlashMenuActionProps) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .toggleHeading({ level: 2 })
+        .run();
+    },
+  },
+  {
+    id: "h3",
+    category: "headings",
+    hint: "###",
+    labelKey: "slashMenu.label.h3",
+    action: ({ editor, range }: SlashMenuActionProps) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .toggleHeading({ level: 3 })
+        .run();
+    },
+  },
+  {
+    id: "bullet",
+    category: "lists",
+    hint: "-",
+    labelKey: "slashMenu.label.bullet",
+    action: ({ editor, range }: SlashMenuActionProps) => {
+      editor.chain().focus().deleteRange(range).toggleBulletList().run();
+    },
+  },
+  {
+    id: "number",
+    category: "lists",
+    hint: "1.",
+    labelKey: "slashMenu.label.number",
+    action: ({ editor, range }: SlashMenuActionProps) => {
+      editor.chain().focus().deleteRange(range).toggleOrderedList().run();
+    },
+  },
+  {
+    id: "check",
+    category: "lists",
+    hint: "[ ]",
+    labelKey: "slashMenu.label.check",
+    action: ({ editor, range }: SlashMenuActionProps) => {
+      editor.chain().focus().deleteRange(range).toggleTaskList().run();
+    },
+  },
+  {
+    id: "toggle",
+    category: "lists",
+    hint: ">",
+    labelKey: "slashMenu.label.toggle",
+    action: ({ editor, range }: SlashMenuActionProps) => {
+      editor.chain().focus().deleteRange(range).run();
+
+      replaceCurrentTextblock(editor, {
+        type: "details",
+        content: [
+          {
+            type: "detailsSummary",
+            content: [{ type: "text", text: i18n.t("slashMenu.toggleTitle") }],
+          },
+          {
+            type: "detailsContent",
+            content: [{ type: "paragraph" }],
+          },
+        ],
+      });
+    },
+  },
+  {
+    id: "quote",
+    category: "blocks",
+    hint: '"',
+    labelKey: "slashMenu.label.quote",
+    action: ({ editor, range }: SlashMenuActionProps) => {
+      editor.chain().focus().deleteRange(range).toggleBlockquote().run();
+    },
+  },
+  {
+    id: "callout",
+    category: "blocks",
+    hint: "::",
+    labelKey: "slashMenu.label.callout",
+    action: ({ editor, range }: SlashMenuActionProps) => {
+      editor.chain().focus().deleteRange(range).run();
+
+      replaceCurrentTextblock(editor, {
+        type: "callout",
+        content: [
+          {
+            type: "paragraph",
+            content: [{ type: "text", text: i18n.t("slashMenu.calloutContent") }],
+          },
+        ],
+      });
+    },
+  },
+  {
+    id: "divider",
+    category: "blocks",
+    hint: "---",
+    labelKey: "slashMenu.label.divider",
+    action: ({ editor, range }: SlashMenuActionProps) => {
+      editor.chain().focus().deleteRange(range).run();
+      // NOTE: textblock 안에서는 현재 paragraph를 HR로 교체해야 위치가 보정된다.
+      replaceCurrentTextblock(editor, { type: "horizontalRule" });
+    },
+  },
+];
+
 export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuItem>, "editor"> = {
   char: "/",
 
@@ -41,136 +187,28 @@ export const slashSuggestion: Omit<SuggestionOptions<SlashMenuItem, SlashMenuIte
   },
 
   items: ({ query }: { query: string }): SlashMenuItem[] => {
-    const label = {
-      h1: i18n.t("slashMenu.label.h1"),
-      h2: i18n.t("slashMenu.label.h2"),
-      h3: i18n.t("slashMenu.label.h3"),
-      bullet: i18n.t("slashMenu.label.bullet"),
-      number: i18n.t("slashMenu.label.number"),
-      check: i18n.t("slashMenu.label.check"),
-      toggle: i18n.t("slashMenu.label.toggle"),
-      quote: i18n.t("slashMenu.label.quote"),
-      callout: i18n.t("slashMenu.label.callout"),
-      divider: i18n.t("slashMenu.label.divider"),
-    };
-    const toggleTitle = i18n.t("slashMenu.toggleTitle");
-    const calloutContent = i18n.t("slashMenu.calloutContent");
-    const items: SlashMenuItem[] = [
-      {
-        id: "h1",
-        label: label.h1,
-        action: ({ editor, range }: SlashMenuActionProps) => {
-          editor
-            .chain()
-            .focus()
-            .deleteRange(range)
-            .toggleHeading({ level: 1 })
-            .run();
-        },
-      },
-      {
-        id: "h2",
-        label: label.h2,
-        action: ({ editor, range }: SlashMenuActionProps) => {
-          editor
-            .chain()
-            .focus()
-            .deleteRange(range)
-            .toggleHeading({ level: 2 })
-            .run();
-        },
-      },
-      {
-        id: "h3",
-        label: label.h3,
-        action: ({ editor, range }: SlashMenuActionProps) => {
-          editor
-            .chain()
-            .focus()
-            .deleteRange(range)
-            .toggleHeading({ level: 3 })
-            .run();
-        },
-      },
-      {
-        id: "bullet",
-        label: label.bullet,
-        action: ({ editor, range }: SlashMenuActionProps) => {
-          editor.chain().focus().deleteRange(range).toggleBulletList().run();
-        },
-      },
-      {
-        id: "number",
-        label: label.number,
-        action: ({ editor, range }: SlashMenuActionProps) => {
-          editor.chain().focus().deleteRange(range).toggleOrderedList().run();
-        },
-      },
-      {
-        id: "check",
-        label: label.check,
-        action: ({ editor, range }: SlashMenuActionProps) => {
-          editor.chain().focus().deleteRange(range).toggleTaskList().run();
-        },
-      },
-      {
-        id: "toggle",
-        label: label.toggle,
-        action: ({ editor, range }: SlashMenuActionProps) => {
-          editor.chain().focus().deleteRange(range).run();
+    const q = query.toLowerCase().trim();
 
-          replaceCurrentTextblock(editor, {
-            type: "details",
-            content: [
-              {
-                type: "detailsSummary",
-                content: [{ type: "text", text: toggleTitle }],
-              },
-              {
-                type: "detailsContent",
-                content: [{ type: "paragraph" }],
-              },
-            ],
-          });
-        },
-      },
-      {
-        id: "quote",
-        label: label.quote,
-        action: ({ editor, range }: SlashMenuActionProps) => {
-          editor.chain().focus().deleteRange(range).toggleBlockquote().run();
-        },
-      },
-      {
-        id: "callout",
-        label: label.callout,
-        action: ({ editor, range }: SlashMenuActionProps) => {
-          editor.chain().focus().deleteRange(range).run();
+    const items: SlashMenuItem[] = SLASH_ITEM_TEMPLATES.map((tpl) => ({
+      id: tpl.id,
+      label: i18n.t(tpl.labelKey),
+      category: tpl.category,
+      hint: tpl.hint,
+      action: tpl.action,
+    }));
 
-          replaceCurrentTextblock(editor, {
-            type: "callout",
-            content: [
-              {
-                type: "paragraph",
-                content: [{ type: "text", text: calloutContent }],
-              },
-            ],
-          });
-        },
-      },
-      {
-        id: "divider",
-        label: label.divider,
-        action: ({ editor, range }: SlashMenuActionProps) => {
-          editor.chain().focus().deleteRange(range).run();
-          // NOTE: textblock 안에서는 현재 paragraph를 HR로 교체해야 위치가 보정된다.
-          replaceCurrentTextblock(editor, { type: "horizontalRule" });
-        },
-      },
-    ];
+    if (!q) {
+      return items.slice(0, SUGGESTION_MAX_ITEMS);
+    }
 
     return items
-      .filter((item) => item.label.toLowerCase().includes(query.toLowerCase()))
+      .filter((item) => {
+        return (
+          item.label.toLowerCase().includes(q) ||
+          item.id.toLowerCase().includes(q) ||
+          (item.hint && item.hint.toLowerCase().includes(q))
+        );
+      })
       .slice(0, SUGGESTION_MAX_ITEMS);
   },
 
