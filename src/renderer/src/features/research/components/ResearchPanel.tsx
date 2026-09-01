@@ -108,6 +108,18 @@ export default function ResearchPanel({
     (tab) => tab.id === "character" || tab.id === "faction" || tab.id === "event",
   );
   const canSwitchPrimaryTabs = primaryTabs.some((tab) => tab.id === visibleTab);
+
+  // NOTE: primary 탭(등장인물/사건/세력)은 keep-alive다. 탭 전환마다 매니저를
+  // 해체/재마운트하면 수백 개 DOM 노드 재생성이 전환 애니메이션 도중 메인 스레드를
+  // 점유해 슬라이드가 끊기고, 그 창의 클릭이 유실됐다. 한 번 연 탭은 마운트 유지하고
+  // 표시만 전환한다(숨긴 패널은 display:none이라 레이아웃 비용 없음).
+  const [visitedPrimaryTabs, setVisitedPrimaryTabs] = React.useState<
+    ReadonlySet<string>
+  >(() => new Set(canSwitchPrimaryTabs ? [visibleTab] : []));
+  if (canSwitchPrimaryTabs && !visitedPrimaryTabs.has(visibleTab)) {
+    setVisitedPrimaryTabs(new Set([...visitedPrimaryTabs, visibleTab]));
+  }
+
   const selectTab = (tab: ResearchPanelTab) => {
     if (onTabChange) {
       onTabChange(tab);
@@ -202,69 +214,114 @@ export default function ResearchPanel({
         </div>
       )}
       <div className="relative flex flex-1 flex-col overflow-hidden">
-        <div
-          key={visibleTab}
-          data-testid="research-tab-content"
-          className={cn(
-            "flex min-h-0 flex-1 flex-col",
-            enableAnimations && TAB_ENTER_ANIMATION,
-          )}
-        >
-        {visibleTab === "character" && (
-          <FeatureErrorBoundary featureName="Characters">
-            <CharacterManager
-              query={galleryStates.character.query}
-              onQueryChange={(query) => updateGalleryState("character", { query })}
-              viewMode={galleryStates.character.viewMode}
-              onViewModeChange={(viewMode) =>
-                updateGalleryState("character", { viewMode })
-              }
-              sortMode={galleryStates.character.sortMode}
-              onSortModeChange={(sortMode) =>
-                updateGalleryState("character", { sortMode })
-              }
-              onClose={onClose}
-            />
-          </FeatureErrorBoundary>
+        {visitedPrimaryTabs.has("character") && (
+          <div
+            data-testid="research-tab-content-character"
+            className={cn(
+              "min-h-0 flex-1 flex-col",
+              visibleTab === "character" ? "flex" : "hidden",
+              visibleTab === "character" &&
+                enableAnimations &&
+                TAB_ENTER_ANIMATION,
+            )}
+          >
+            <FeatureErrorBoundary featureName="Characters">
+              <CharacterManager
+                query={galleryStates.character.query}
+                onQueryChange={(query) => updateGalleryState("character", { query })}
+                viewMode={galleryStates.character.viewMode}
+                onViewModeChange={(viewMode) =>
+                  updateGalleryState("character", { viewMode })
+                }
+                sortMode={galleryStates.character.sortMode}
+                onSortModeChange={(sortMode) =>
+                  updateGalleryState("character", { sortMode })
+                }
+                onClose={onClose}
+              />
+            </FeatureErrorBoundary>
+          </div>
         )}
-        {visibleTab === "event" && (
-          <FeatureErrorBoundary featureName="Events">
-            <EventManager
-              query={galleryStates.event.query}
-              onQueryChange={(query) => updateGalleryState("event", { query })}
-              viewMode={galleryStates.event.viewMode}
-              onViewModeChange={(viewMode) =>
-                updateGalleryState("event", { viewMode })
-              }
-              sortMode={galleryStates.event.sortMode}
-              onSortModeChange={(sortMode) =>
-                updateGalleryState("event", { sortMode })
-              }
-              onClose={onClose}
-            />
-          </FeatureErrorBoundary>
+        {visitedPrimaryTabs.has("event") && (
+          <div
+            data-testid="research-tab-content-event"
+            className={cn(
+              "min-h-0 flex-1 flex-col",
+              visibleTab === "event" ? "flex" : "hidden",
+              visibleTab === "event" &&
+                enableAnimations &&
+                TAB_ENTER_ANIMATION,
+            )}
+          >
+            <FeatureErrorBoundary featureName="Events">
+              <EventManager
+                query={galleryStates.event.query}
+                onQueryChange={(query) => updateGalleryState("event", { query })}
+                viewMode={galleryStates.event.viewMode}
+                onViewModeChange={(viewMode) =>
+                  updateGalleryState("event", { viewMode })
+                }
+                sortMode={galleryStates.event.sortMode}
+                onSortModeChange={(sortMode) =>
+                  updateGalleryState("event", { sortMode })
+                }
+                onClose={onClose}
+              />
+            </FeatureErrorBoundary>
+          </div>
         )}
-        {visibleTab === "faction" && (
-          <FeatureErrorBoundary featureName="Factions">
-            <FactionManager
-              query={galleryStates.faction.query}
-              onQueryChange={(query) => updateGalleryState("faction", { query })}
-              viewMode={galleryStates.faction.viewMode}
-              onViewModeChange={(viewMode) =>
-                updateGalleryState("faction", { viewMode })
-              }
-              sortMode={galleryStates.faction.sortMode}
-              onSortModeChange={(sortMode) =>
-                updateGalleryState("faction", { sortMode })
-              }
-              onClose={onClose}
-            />
-          </FeatureErrorBoundary>
+        {visitedPrimaryTabs.has("faction") && (
+          <div
+            data-testid="research-tab-content-faction"
+            className={cn(
+              "min-h-0 flex-1 flex-col",
+              visibleTab === "faction" ? "flex" : "hidden",
+              visibleTab === "faction" &&
+                enableAnimations &&
+                TAB_ENTER_ANIMATION,
+            )}
+          >
+            <FeatureErrorBoundary featureName="Factions">
+              <FactionManager
+                query={galleryStates.faction.query}
+                onQueryChange={(query) => updateGalleryState("faction", { query })}
+                viewMode={galleryStates.faction.viewMode}
+                onViewModeChange={(viewMode) =>
+                  updateGalleryState("faction", { viewMode })
+                }
+                sortMode={galleryStates.faction.sortMode}
+                onSortModeChange={(sortMode) =>
+                  updateGalleryState("faction", { sortMode })
+                }
+                onClose={onClose}
+              />
+            </FeatureErrorBoundary>
+          </div>
         )}
-        {visibleTab === "scrap" && <FeatureErrorBoundary featureName="Scrap"><ResearchScrapPanel onClose={onClose} /></FeatureErrorBoundary>}
-        {visibleTab === "plotboard" && <FeatureErrorBoundary featureName="Plotboard"><ResearchPlotboardPanel onClose={onClose} /></FeatureErrorBoundary>}
-        {visibleTab === "untitled" && <FeatureErrorBoundary featureName="Story Line"><UntitledResearchPanel /></FeatureErrorBoundary>}
-        </div>
+        {visibleTab === "scrap" && (
+          <div
+            data-testid="research-tab-content-scrap"
+            className={cn("flex min-h-0 flex-1 flex-col", enableAnimations && TAB_ENTER_ANIMATION)}
+          >
+            <FeatureErrorBoundary featureName="Scrap"><ResearchScrapPanel onClose={onClose} /></FeatureErrorBoundary>
+          </div>
+        )}
+        {visibleTab === "plotboard" && (
+          <div
+            data-testid="research-tab-content-plotboard"
+            className={cn("flex min-h-0 flex-1 flex-col", enableAnimations && TAB_ENTER_ANIMATION)}
+          >
+            <FeatureErrorBoundary featureName="Plotboard"><ResearchPlotboardPanel onClose={onClose} /></FeatureErrorBoundary>
+          </div>
+        )}
+        {visibleTab === "untitled" && (
+          <div
+            data-testid="research-tab-content-untitled"
+            className={cn("flex min-h-0 flex-1 flex-col", enableAnimations && TAB_ENTER_ANIMATION)}
+          >
+            <FeatureErrorBoundary featureName="Story Line"><UntitledResearchPanel /></FeatureErrorBoundary>
+          </div>
+        )}
       </div>
     </div>
   );

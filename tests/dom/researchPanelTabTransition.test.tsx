@@ -5,19 +5,21 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * SUT: ResearchPanel 탭 전환 애니메이션.
+ * SUT: ResearchPanel — primary 탭(등장인물/사건/세력) keep-alive + 탭 전환 애니메이션.
  *
- * 사용자 보고: research 탭(캐릭터/사건/세력…)이 아무 전환 피드백 없이 즉시 바뀌어
- * "바뀐 줄 모른다". 전 컨텐츠가 좌우로 스르륵 바뀌는 애니메이션을 요구했다.
+ * 사용자 보고: 캐릭터/사건/세력을 오갈 때 전환이 끊기고("되다 만" 느낌) 가끔 클릭이
+ * 유실됐다. 원인은 탭 전환마다 매니저(갤러리 수백 개 DOM 노드)를 해체/재마운트한 것 —
+ * 재마운트가 전환 애니메이션 도중 메인 스레드를 점유해 슬라이드가 끊기고, 그 창의
+ * 클릭이 증발했다. 지금은 한 번 연 탭을 마운트 유지하고 표시만 전환한다.
  *
- * PROVES: (1) 뒤 탭으로 전환하면 새 컨텐츠가 오른쪽에서 슬라이드 인한다.
- *         (2) 앞 탭으로 돌아가면 왼쪽에서 슬라이드 인한다.
- *         (3) enableAnimations=false면 애니메이션 클래스가 붙지 않는다.
- * DOES_NOT_PROVE: 실제 프레임 렌더링/거리감 — 클래스 부착 계약만 고정한다.
+ * PROVES: (1) 재방문한 매니저는 리마운트되지 않는다(마운트 카운트 불변). (2) 표시
+ *         전환 시 진입 애니메이션(항상 오른쪽, 700ms)이 붙는다. (3) 애니메이션 off면
+ *         클래스가 없다. (4) 탭 바 DOM은 불변.
+ * DOES_NOT_PROVE: 실제 프레임 시간, EntityGallery 내부 렌더 비용.
  */
 
-const mocked = vi.hoisted(() => ({
-  enableAnimations: true,
+const hoisted = vi.hoisted(() => ({
+  state: { enableAnimations: true },
 }));
 
 vi.mock("react-i18next", () => ({
@@ -26,26 +28,24 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("@renderer/features/editor/stores/editorStore", () => ({
   useEditorStore: (selector: (state: { enableAnimations: boolean }) => unknown) =>
-    selector({ enableAnimations: mocked.enableAnimations }),
+    selector({ enableAnimations: hoisted.state.enableAnimations }),
 }));
 
-const { managerStub } = vi.hoisted(() => ({
-  managerStub: (name: string) => () => <div>{name}</div>,
-}));
-
+// 각 매니저는 고정 data-testid를 가진 노드를 렌더한다. DOM 노드 동일성으로
+// 리마운트 여부를 직접 관측한다.
 vi.mock("@renderer/features/research/components/CharacterManager", () => ({
-  default: managerStub("characters"),
+  default: () => <div data-testid="manager-characters" />,
 }));
 vi.mock("@renderer/features/research/components/event/EventManager", () => ({
-  default: managerStub("events"),
+  default: () => <div data-testid="manager-events" />,
 }));
 vi.mock("@renderer/features/research/components/faction/FactionManager", () => ({
-  default: managerStub("factions"),
+  default: () => <div data-testid="manager-factions" />,
 }));
 vi.mock("@renderer/features/research/components/ResearchCatalogPanels", () => ({
-  ResearchPlotboardPanel: managerStub("plotboard"),
-  ResearchScrapPanel: managerStub("scrap"),
-  UntitledResearchPanel: managerStub("untitled"),
+  ResearchPlotboardPanel: () => <div>plotboard</div>,
+  ResearchScrapPanel: () => <div>scrap</div>,
+  UntitledResearchPanel: () => <div>untitled</div>,
 }));
 
 import ResearchPanel from "../../src/renderer/src/features/research/components/ResearchPanel.js";
@@ -88,80 +88,73 @@ const rerenderPanel = async (container: HTMLDivElement, activeTab: string) => {
   });
 };
 
-const contentWrapper = (container: HTMLDivElement) =>
-  container.querySelector("[data-testid='research-tab-content']");
+const contentWrapper = (container: HTMLDivElement, tab: string) =>
+  container.querySelector(`[data-testid='research-tab-content-${tab}']`);
 
-describe("ResearchPanel 탭 전환 애니메이션", () => {
+describe("ResearchPanel primary 탭 keep-alive 전환", () => {
   beforeEach(() => {
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-    mocked.enableAnimations = true;
+    hoisted.state.enableAnimations = true;
     document.body.innerHTML = "";
   });
 
-  it("앞 순서 탭으로 전환하면 오른쪽에서 슬라이드 인한다", async () => {
+  it("재방문한 매니저는 리마운트되지 않고 표시만 전환된다", async () => {
     const container = await renderPanel("character");
-    expect(contentWrapper(container)?.className).toContain(
-      "slide-in-from-right",
+    await rerenderPanel(container, "event");
+    const eventNode = container.querySelector(
+      "[data-testid='manager-events']",
     );
+    expect(eventNode).not.toBeNull();
 
-    // character(0) → event(1): 뒤 탭 = 오른쪽 진입.
+    // character 재방문 후 event 재방문.
+    await rerenderPanel(container, "character");
     await rerenderPanel(container, "event");
 
-    expect(
-      contentWrapper(container)?.className,
-    ).toContain("slide-in-from-right-4");
-    expect(contentWrapper(container)?.textContent).toBe("events");
-  });
-
-  it("탭 순서와 무관하게 항상 오른쪽에서 슬라이드 인한다", async () => {
-    const container = await renderPanel("event");
-
-    // event → character: 순서가 앞으로 가도 진입은 항상 오른쪽이다.
-    await rerenderPanel(container, "character");
-
-    expect(
-      contentWrapper(container)?.className,
-    ).toContain("slide-in-from-right-4");
-    expect(
-      contentWrapper(container)?.className,
-    ).not.toContain("slide-in-from-left");
-  });
-
-  it("전환 애니메이션 시간과 감속 이징이 직접 지정된다", async () => {
-    // 근거: duration-*는 transition-duration만 바꿔 animate-in(기본 150ms)에 무효였다.
-    const container = await renderPanel("character");
-
-    const className = contentWrapper(container)?.className ?? "";
-    expect(className).toContain("[animation-duration:700ms]");
-    expect(className).toContain(
-      "[animation-timing-function:cubic-bezier(0.16,1,0.3,1)]",
+    // 근거: 같은 DOM 노드 = event 매니저가 재마운트되지 않았다(keep-alive).
+    expect(container.querySelector("[data-testid='manager-events']")).toBe(
+      eventNode,
+    );
+    // 표시 상태는 정반대로 토글된다.
+    expect(contentWrapper(container, "event")?.className).toContain("flex");
+    expect(contentWrapper(container, "character")?.className).toContain(
+      "hidden",
     );
   });
 
-  it("애니메이션이 꺼져 있으면 전환 클래스를 붙이지 않는다", async () => {
-    mocked.enableAnimations = false;
+  it("표시로 전환된 탭은 진입 애니메이션(항상 오른쪽, 700ms)이 붙는다", async () => {
     const container = await renderPanel("character");
-    await rerenderPanel(container, "faction");
+    await rerenderPanel(container, "event");
 
-    expect(contentWrapper(container)?.className).not.toContain("animate-in");
+    const className = contentWrapper(container, "event")?.className ?? "";
+    expect(className).toContain("slide-in-from-right-4");
+    expect(className).toContain("[animation-duration:700ms]");
+    // 숨겨진 쪽에는 애니메이션 클래스가 없다.
+    expect(contentWrapper(container, "character")?.className).not.toContain(
+      "animate-in",
+    );
   });
 
-  it("keeps the tab bar DOM node across switches so rapid clicks are never lost", async () => {
+  it("애니메이션이 꺼져 있으면 진입 클래스를 붙이지 않는다", async () => {
+    hoisted.state.enableAnimations = false;
+    const container = await renderPanel("character");
+    await rerenderPanel(container, "event");
+
+    expect(contentWrapper(container, "event")?.className).not.toContain(
+      "animate-in",
+    );
+  });
+
+  it("탭 바 DOM 노드는 전환과 무관하게 유지된다", async () => {
     const container = await renderPanel("character");
     const navBefore = container.querySelector(
       "[data-testid='research-tab-nav']",
     );
-    expect(navBefore).not.toBeNull();
 
     await rerenderPanel(container, "event");
     await rerenderPanel(container, "faction");
 
-    // 근거: 같은 DOM 노드 = 탭 바가 리마운트되지 않는다. 매니저 내부에 탭 바가 있던
-    // 구조에서는 전환마다 해체돼 재생성 창의 클릭이 유실됐다.
-    const navAfter = container.querySelector(
-      "[data-testid='research-tab-nav']",
-    );
-    expect(navAfter).toBe(navBefore);
+    expect(
+      container.querySelector("[data-testid='research-tab-nav']"),
+    ).toBe(navBefore);
   });
 });
-
