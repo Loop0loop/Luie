@@ -145,4 +145,23 @@ describe("ResearchPanel 탭 전환 애니메이션", () => {
 
     expect(contentWrapper(container)?.className).not.toContain("animate-in");
   });
+
+  it("keeps the tab bar DOM node across switches so rapid clicks are never lost", async () => {
+    const container = await renderPanel("character");
+    const navBefore = container.querySelector(
+      "[data-testid='research-tab-nav']",
+    );
+    expect(navBefore).not.toBeNull();
+
+    await rerenderPanel(container, "event");
+    await rerenderPanel(container, "faction");
+
+    // 근거: 같은 DOM 노드 = 탭 바가 리마운트되지 않는다. 매니저 내부에 탭 바가 있던
+    // 구조에서는 전환마다 해체돼 재생성 창의 클릭이 유실됐다.
+    const navAfter = container.querySelector(
+      "[data-testid='research-tab-nav']",
+    );
+    expect(navAfter).toBe(navBefore);
+  });
 });
+

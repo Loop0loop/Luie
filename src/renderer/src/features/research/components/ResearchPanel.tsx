@@ -124,9 +124,13 @@ export default function ResearchPanel({
       [tab]: { ...states[tab], ...patch },
     }));
   };
-  const galleryTabs = canSwitchPrimaryTabs ? (
+  // NOTE: 탭 바는 매니저(gallery) 내부에 두면 탭 전환마다 매니저 리마운트와 함께
+  // 해체·재생성된다 → 헤더가 깜빡이고("되다 만" 느낌) 재생성 도중의 클릭이 유실됐다.
+  // ResearchPanel 레벨에 고정 행으로 올려 절대 리마운트되지 않게 한다.
+  const primaryTabsNav = canSwitchPrimaryTabs ? (
     <>
       <nav
+        data-testid="research-tab-nav"
         className="flex min-w-0 items-center gap-1 overflow-x-auto no-scrollbar @max-[680px]:hidden"
         aria-label={t("sidebar.section.research", "자료")}
         role="tablist"
@@ -189,6 +193,14 @@ export default function ResearchPanel({
 
   return (
     <div className="research-surface flex h-full w-full flex-col overflow-hidden">
+      {canSwitchPrimaryTabs && (
+        <div
+          className="flex shrink-0 items-center gap-2 bg-sidebar px-4 py-1.5"
+          style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+        >
+          {primaryTabsNav}
+        </div>
+      )}
       <div className="relative flex flex-1 flex-col overflow-hidden">
         <div
           key={visibleTab}
@@ -211,7 +223,6 @@ export default function ResearchPanel({
               onSortModeChange={(sortMode) =>
                 updateGalleryState("character", { sortMode })
               }
-              tabs={galleryTabs}
               onClose={onClose}
             />
           </FeatureErrorBoundary>
@@ -229,7 +240,6 @@ export default function ResearchPanel({
               onSortModeChange={(sortMode) =>
                 updateGalleryState("event", { sortMode })
               }
-              tabs={galleryTabs}
               onClose={onClose}
             />
           </FeatureErrorBoundary>
@@ -247,7 +257,6 @@ export default function ResearchPanel({
               onSortModeChange={(sortMode) =>
                 updateGalleryState("faction", { sortMode })
               }
-              tabs={galleryTabs}
               onClose={onClose}
             />
           </FeatureErrorBoundary>
