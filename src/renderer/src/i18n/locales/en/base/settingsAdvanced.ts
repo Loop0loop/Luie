@@ -217,6 +217,7 @@ export const enBaseSettingsAdvanced = {
       clear: "Clear",
       empty: "Click to set",
       conflict: "Already used by another action",
+      needsModifier: "Hold Cmd or Ctrl. A bare character key collides with typing in the editor",
       openSettings: "Open settings",
       closeWindow: "Close window",
       quitApp: "Quit app",

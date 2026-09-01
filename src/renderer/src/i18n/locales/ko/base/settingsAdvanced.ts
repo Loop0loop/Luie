@@ -223,6 +223,7 @@ export const koBaseSettingsAdvanced = {
       clear: "지우기",
       empty: "클릭하여 설정",
       conflict: "다른 동작에서 이미 사용 중입니다",
+      needsModifier: "Cmd 또는 Ctrl과 함께 눌러주세요. 문자 키만 지정하면 집필 중 입력과 겹칩니다",
       openSettings: "설정 열기",
       closeWindow: "앱 창 닫기",
       quitApp: "앱 종료",
