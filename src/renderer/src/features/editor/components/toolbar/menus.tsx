@@ -3,6 +3,7 @@ import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { cn } from "@shared/types/utils";
+import type { EditorPaletteEntry } from "./constants";
 import { ToolbarButton } from "./primitives";
 import { useClickOutside } from "./useClickOutside";
 
@@ -101,24 +102,31 @@ export function ColorPickerMenu({
   value,
   columns = 5,
 }: {
-  colors: readonly { label: string; hex: string }[];
+  colors: readonly EditorPaletteEntry[];
   icon: React.ReactNode;
   label: string;
   clearLabel?: string;
   onClear?: () => void;
-  onChange: (hex: string) => void;
+  onChange: (color: string) => void;
   value: string;
   columns?: number;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const [customColor, setCustomColor] = useState<HsvColor>(() => hexToHsv(value));
-  const [hexInput, setHexInput] = useState(value);
+  // NOTE: 팔레트 값은 `var(--editor-ink-*)` 같은 토큰 참조라 `hexToHsv()`로 파싱할 수 없다.
+  // 픽커를 열 때 현재 값이 팔레트 항목이면 그 항목의 anchor hex를 초기값으로 쓴다.
+  const resolveHex = (raw: string): string =>
+    isHexColor(raw)
+      ? raw
+      : (colors.find((entry) => entry.token === raw)?.anchor ?? "#2563eb");
+  const [customColor, setCustomColor] = useState<HsvColor>(() =>
+    hexToHsv(resolveHex(value)),
+  );
+  const [hexInput, setHexInput] = useState(() => resolveHex(value));
   const customColorRef = useRef(customColor);
   const ref = useRef<HTMLDivElement>(null);
   useClickOutside(ref, () => setOpen(false));
 
-  const normalizedValue = value.toLowerCase();
   const customHex = hsvToHex(customColor);
 
   const updateCustomColor = (next: HsvColor, commit = false) => {
@@ -142,10 +150,11 @@ export function ColorPickerMenu({
 
   const toggleMenu = () => {
     if (!open) {
-      const next = hexToHsv(value);
+      const hex = resolveHex(value);
+      const next = hexToHsv(hex);
       customColorRef.current = next;
       setCustomColor(next);
-      setHexInput(value);
+      setHexInput(hex);
     }
     setOpen((isOpen) => !isOpen);
   };
@@ -164,12 +173,12 @@ export function ColorPickerMenu({
         onClick={toggleMenu}
       >
         <span className="text-muted">{icon}</span>
+        {/* NOTE: 이전에는 `#ffffff`일 때 `--text-secondary`로 바꾸는 특수 처리가 있었으나
+            팔레트에 `#ffffff`가 없어 죽은 코드였다. 이제 값이 토큰 참조라 그대로 칠하면
+            theme을 따라간다. */}
         <span
           className="h-[3px] w-4 rounded-full"
-          style={{
-            backgroundColor:
-              normalizedValue === "#ffffff" ? "var(--text-secondary)" : value,
-          }}
+          style={{ backgroundColor: value }}
         />
       </button>
 
@@ -202,11 +211,11 @@ export function ColorPickerMenu({
             className="grid gap-2.5"
             style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
           >
-            {colors.map(({ label: colorLabel, hex }) => {
-              const isSelected = normalizedValue === hex.toLowerCase();
+            {colors.map(({ label: colorLabel, token }) => {
+              const isSelected = value === token;
               return (
                 <button
-                  key={hex}
+                  key={token}
                   type="button"
                   title={colorLabel}
                   aria-label={colorLabel}
@@ -217,9 +226,9 @@ export function ColorPickerMenu({
                       ? "border-accent shadow-[inset_0_0_0_1px_var(--accent-bg)]"
                       : "border-border",
                   )}
-                  style={{ backgroundColor: hex }}
+                  style={{ backgroundColor: token }}
                   onClick={() => {
-                    onChange(hex);
+                    onChange(token);
                     setOpen(false);
                   }}
                 />

@@ -27,8 +27,10 @@ const TOKEN_DEFINITION_FILES = [path.join(ROOT, "styles/global.tokens.css")];
 // 2026-09-01 §10 A그룹으로 rawHex 145 → 144(`#323232` 폴백 제거) · rawColor 99 → 98
 // (`text-zinc-400` 제거) · arbitraryPx 417 → 414(`rounded-[24px]` 3 + `rounded-r-[24px]` 1이
 // `rounded-editor-shell`로, 대신 `rounded-[12px]` 1건은 남아 net −3).
+// 2026-09-01 §11 형광펜·글자색 팔레트를 토큰으로 옮겨 rawHex 144 → 143.
+// `constants.ts`에 남은 16개는 커스텀 픽커 초기값용 anchor hex다(픽커가 hex를 파싱한다).
 const BASELINE = {
-  rawHex: 144,
+  rawHex: 143,
   rawColor: 98,
   arbitraryPx: 414,
   roundedBig: 155,

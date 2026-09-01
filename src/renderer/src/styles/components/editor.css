@@ -379,11 +379,24 @@
     text-decoration-color: var(--text-accent, #2563eb);
 }
 
+/* NOTE: 형광펜·글자색은 인라인 스타일이 아니라 커스텀 프로퍼티로 전달된다(§11).
+   `ThemedHighlight`/`ThemedColor`가 `--luie-mark`/`--luie-ink`만 세우므로 인라인
+   `background-color`/`color` 선언이 없고, 따라서 여기서 `!important` 없이 그릴 수 있다.
+
+   폴백은 색을 고르지 않은 mark(예: 옛 문서의 무색 mark)를 위한 것이다. accent 18%는
+   이전 규칙이 쓰던 값을 유지한다. */
 .tiptap .ProseMirror mark {
-    background-color: color-mix(in srgb, var(--accent-bg, #2563eb) 18%, transparent);
+    background-color: var(
+        --luie-mark,
+        color-mix(in srgb, var(--accent-bg, #2563eb) 18%, transparent)
+    );
     color: inherit;
     border-radius: 2px;
     padding: 0.05em 0.1em;
+}
+
+.tiptap .ProseMirror [style*="--luie-ink"] {
+    color: var(--luie-ink);
 }
 
 .tiptap .ProseMirror s {

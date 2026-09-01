@@ -3,9 +3,7 @@ import StarterKit from "@tiptap/starter-kit";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import Placeholder from "@tiptap/extension-placeholder";
-import Highlight from "@tiptap/extension-highlight";
 import { TextStyle } from "@tiptap/extension-text-style";
-import { Color } from "@tiptap/extension-color";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import { Details, DetailsSummary, DetailsContent } from "@tiptap/extension-details";
@@ -16,6 +14,10 @@ import Suggestion from "@tiptap/suggestion";
 import { slashSuggestion } from "@renderer/features/editor/components/suggestion";
 import { SmartLink } from "@renderer/features/editor/components/extensions/SmartLink";
 import { DiffHighlight } from "@renderer/features/editor/components/extensions/DiffExtension";
+import {
+  ThemedColor,
+  ThemedHighlight,
+} from "@renderer/features/editor/components/extensions/ThemedTextColor";
 import { useTranslation } from "react-i18next";
 
 export const Callout = Node.create({
@@ -71,9 +73,9 @@ export function useEditorExtensions({
             StarterKit.configure({
                 underline: false,
             }),
-            Highlight,
+            ThemedHighlight,
             TextStyle,
-            Color.configure({
+            ThemedColor.configure({
                 types: ["textStyle"],
             }),
             Underline,

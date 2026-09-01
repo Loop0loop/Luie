@@ -285,9 +285,54 @@
   --editor-text: var(--text-primary);
   --editor-selection: #bfdbfe;
   /* NOTE: 형광펜 기본색. 정의가 없어 canvas markdown editor의 형광펜 버튼이 아무
-     배경도 칠하지 못했다. mark 위 글자가 --text-primary를 그대로 쓰므로 theme별로
-     본문 글자와 대비가 남는 값을 쓴다. */
-  --highlight-default: #fef08a;
+     배경도 칠하지 못했다. 이제 팔레트의 노랑과 같은 값을 쓴다 — 이전에는 theme별
+     리터럴 3개(light `#fef08a` · dark `rgba(250,204,21,.32)` · sepia `#f2e2a6`)로
+     흩어져 있어 툴바 형광펜과 canvas 형광펜이 서로 다른 색을 칠했다. */
+  --highlight-default: var(--editor-mark-yellow);
+
+  /* NOTE: 형광펜·글자색 팔레트 (§11). 이전에는 `constants.ts`에 theme 무관 고정 hex가
+     박혀 있어 **dark에서 형광펜을 칠하면 글자가 사라졌다**(글자 대비 1.01~1.50). 글자색도
+     9색 중 light/sepia 본문 4.5:1을 넘는 것이 2색뿐이었고, "검정"은 dark에서 1.04,
+     "흰색"은 light에서 1.36으로 각각 절반의 theme에서 무용지물이었다.
+
+     단일 고정 hex로 3 theme을 만족하는 것은 물리적으로 불가능하다 — light에서 4.5:1을
+     맞추면 dark 종이에서 3:1도 안 된다(`#2563eb`가 4.90 → 3.29). 그래서 값을 고정하지 않고
+     **종이/본문색에서 hue 방향으로 이동시킨다.** 두 팔레트가 대칭이다.
+
+       형광펜 = 종이(`--bg-app`)에서 조금 이동   → 배경이므로 종이 근처에 머물러 글자를 안 가린다
+       글자색 = 본문색(`--text-primary`)에서 많이 이동 → 글자이므로 종이에서 멀어져 읽힌다
+
+     대비가 구조적으로 보장되므로 theme별 분기가 필요 없다. 1세트로 9조합(theme×색온도)이
+     자동 파생되고, 종이 색조를 물려받아 색온도도 미세하게 따라간다(§2의 "살짝만 달라졌는데
+     다른 느낌"과 같은 강도). hue는 anchor가 지키므로 "노랑"이 연두로 읽히지 않는다.
+
+     레퍼런스: Notion이 같은 구조다 — light는 종이에서 어두워지는 방향(Yellow `#FFFFFF`
+     → `#FAF3DD`), dark는 밝아지는 방향(`#191919` → `#372E20`). 아래 dark 산출값
+     `#352f18`(yellow) · `#18323f`(sky) · `#361f21`(red)이 Notion의 `#372E20` ·
+     `#1F282D` · `#332523`과 거의 일치한다 — 독립적으로 도출해 수렴했다.
+
+     실측(9조합 전수): 형광펜 가시성 1.135~1.448 · 그 위 글자 대비 최저 **7.82**
+                       글자색 종이 대비 **4.70~8.37** (전부 AA 통과)
+     비율은 hue별로 다르다. 각 hue의 명도가 달라 같은 비율이면 대비가 어긋난다.
+     노랑 anchor만 `#facc15`가 아니라 `#b49004`다 — 밝아서 light 종이에서 목표 가시성을
+     만들려면 41%가 필요했고, 그 비율을 dark에 쓰면 글자 대비가 4.09로 떨어졌다. */
+  --editor-mark-yellow: color-mix(in srgb, #b49004 17%, var(--bg-app));
+  --editor-mark-green: color-mix(in srgb, #22c55e 20%, var(--bg-app));
+  --editor-mark-sky: color-mix(in srgb, #0ea5e9 17%, var(--bg-app));
+  --editor-mark-pink: color-mix(in srgb, #ec4899 14%, var(--bg-app));
+  --editor-mark-orange: color-mix(in srgb, #f97316 17%, var(--bg-app));
+  --editor-mark-purple: color-mix(in srgb, #a855f7 14%, var(--bg-app));
+  --editor-mark-red: color-mix(in srgb, #ef4444 13%, var(--bg-app));
+  --editor-mark-mint: color-mix(in srgb, #14b8a6 19%, var(--bg-app));
+
+  --editor-ink-red: color-mix(in srgb, #dc2626 69%, var(--text-primary));
+  --editor-ink-orange: color-mix(in srgb, #ea580c 64%, var(--text-primary));
+  --editor-ink-yellow: color-mix(in srgb, #ca8a04 51%, var(--text-primary));
+  --editor-ink-green: color-mix(in srgb, #16a34a 60%, var(--text-primary));
+  --editor-ink-teal: color-mix(in srgb, #0d9488 68%, var(--text-primary));
+  --editor-ink-blue: color-mix(in srgb, #2563eb 73%, var(--text-primary));
+  --editor-ink-purple: color-mix(in srgb, #9333ea 68%, var(--text-primary));
+  --editor-ink-pink: color-mix(in srgb, #db2777 73%, var(--text-primary));
 
   --header-height: 48px;
   --sidebar-width: 260px;
@@ -421,7 +466,10 @@
   --grid-line: var(--border-default);
 
   --editor-selection: #1e4f91;
-  --highlight-default: rgba(250, 204, 21, 0.32);
+  /* NOTE: `--highlight-default`의 dark 리터럴을 제거했다(§11). 팔레트가
+     `color-mix(anchor, var(--bg-app))` 구조라 종이가 어두워지면 결과도 어두워지므로
+     theme 분기가 필요 없다. 이전 `rgba(250,204,21,0.32)`는 알파로 눌러 글자를
+     살리려던 우회였고, 툴바에서 고른 팔레트 색에는 적용되지 않아 반쪽이었다. */
   /* NOTE: canvas 그림자가 light 0.14 → dark 0.36으로 약 2.6배를 쓰는 비율에 맞췄다.
      어두운 표면에서는 같은 알파가 거의 보이지 않는다. */
   --elevation-tint: rgba(0, 0, 0, 0.28);
@@ -618,7 +666,6 @@
      것과 같은 원리로 brass 계열에 맞췄다. 종이 대비 1.426(light의 1.421과 같은 수준),
      본문 글자 대비 6.45로 선택 중에도 읽힌다. */
   --editor-selection: #e2cb9c;
-  --highlight-default: #f2e2a6;
   /* NOTE: canvas 그림자와 같은 갈색 축. 검정 그림자는 따뜻한 종이 위에서 죽은 회색
      얼룩이 된다. light 0.1 대비 0.14는 canvas의 light 0.14 → sepia 0.18과 같은 폭이다. */
   --elevation-tint: rgba(95, 75, 50, 0.14);

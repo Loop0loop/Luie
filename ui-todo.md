@@ -1289,6 +1289,256 @@ v3/v4와 무관한 팔레트 부채지만 같은 조사에서 나왔다. `bg-whi
 
 ---
 
+### 11. Editor Toolbar · 형광펜 · 글자색 · Typography · Slash 메뉴 (2026-09-01 착수)
+
+사용자 지시로 새로 연 묶음이다. **착수 전 전수 실측 결과, 미관 문제가 아니라 기능이 깨져 있는 곳이 둘 있다.**
+
+#### 11-1. 형광펜이 dark 테마에서 글자를 지운다 — 심각
+
+`HIGHLIGHT_COLORS` 8색이 전부 **theme 무관 고정 hex**다. Tiptap `Highlight`가 `<mark style="background-color:#FEF08A">`로 인라인 스타일을 넣어 `editor.css:382`의 theme-aware 규칙(`color-mix(accent 18%, transparent)`)을 덮는다. 글자색은 `color: inherit`로 `--text-primary`를 그대로 쓰므로, dark에서 **거의 흰 글자 + 밝은 파스텔 배경**이 된다.
+
+| 색 | hex | light | sepia | **dark** |
+| --- | --- | --- | --- | --- |
+| 노랑 | `#FEF08A` | 14.62 | 11.20 | **1.09** |
+| 초록 | `#BBF7D0` | 14.04 | 10.75 | **1.05** |
+| 하늘 | `#BAE6FD` | 12.82 | 9.82 | **1.05** |
+| 분홍 | `#FBCFE8` | 12.31 | 9.43 | **1.09** |
+| 주황 | `#FED7AA` | 12.57 | 9.63 | **1.07** |
+| 보라 | `#E9D5FF` | 12.50 | 9.57 | **1.07** |
+| 빨강 | `#FCA5A5` | 8.96 | 6.87 | **1.50** |
+| 민트 | `#A7F3D0` | 13.27 | 10.16 | **1.01** |
+
+**같은 파일의 다른 경로는 이미 올바르다.** `CanvasMarkdownEditor`는 `toggleHighlight({ color: "var(--highlight-default)" })`로 **토큰 참조를 값에 넣어** theme을 따라간다. EditorToolbar만 hex를 넣는다.
+
+**alpha 조절로는 풀리지 않는다.** 3테마 전수 측정:
+
+| alpha | 글자 최저(3테마) | 형광펜 가시성 최저 |
+| --- | --- | --- |
+| 0.30 | 5.37 | 1.016 |
+| **0.35** | **4.57** (AA 통과 경계) | 1.019 |
+| 0.45 | 3.37 ✗ | 1.022 |
+
+theme별로 보면 방향이 반대다.
+
+- **light/sepia**: alpha를 1.0까지 올려도 형광펜 가시성이 **1.05~1.10**에 머문다. 파스텔 8색이 밝은 종이와 명도가 거의 같기 때문이다
+- **dark**: alpha 0.35를 넘으면 글자가 4.5:1 미달. 현재 `--highlight-default`의 0.32가 맞는 값이었다
+
+##### 레퍼런스 조사 (2026-09-01) — 위 진단 중 하나를 뒤집었다
+
+| 출처 | 방식 |
+| --- | --- |
+| [Notion](https://matthiasfrank.de/en/notion-colors/) | **theme별 불투명 hex 2세트.** 글자·배경·아이콘 hex를 각각 따로 둔다("Text colors, background colors, and icon colors each have their own set of hex codes"). dark에서는 배경을 **밝은 파스텔이 아니라 어두운 틴트로 뒤집는다** — Yellow `#FAF3DD` → `#372E20`, Blue `#E9F3F7` → `#1F282D`. 글자색은 `#D4D4D4`를 그대로 쓴다 |
+| [Obsidian](https://forum.obsidian.md/t/compatible-highlighting-with-more-colors-and-fast/19378) | **알파 기반 + theme 분기.** `--text-highlight-bg-yellow: rgba(255,242,0,0.4)`이고 `.theme-dark { --text-highlight-bg: … }`로 갈린다. callout은 `--callout-blend-mode`까지 theme별로 다르다 |
+
+**둘 다 theme별로 갈랐다. 단일 고정 hex를 쓰는 곳은 없다.** 진단은 맞았다.
+
+그런데 **형광펜 가시성 목표는 내가 과하게 잡았다.** Notion 자체 값을 실측하면 이렇다.
+
+| | light 펜 가시성 | light 글자 | dark 펜 가시성 | dark 글자 |
+| --- | --- | --- | --- | --- |
+| Notion Yellow | 1.109 | 11.04 | 1.318 | 9.00 |
+| Notion Green | 1.124 | 10.90 | 1.213 | 9.78 |
+| Notion Blue | 1.127 | 10.87 | 1.172 | 10.12 |
+| Notion Red | 1.149 | 10.66 | 1.197 | 9.91 |
+| Notion Orange | 1.163 | 10.53 | 1.251 | 9.48 |
+| **Luie 현재 (light)** | **1.039~1.224** | 8.96~14.62 | — | — |
+
+**Luie의 light/sepia 형광펜은 이미 Notion과 같은 대역이다.** §4가 "형광펜 대비가 전 theme에서 약하다"고 적은 것은 레퍼런스 없이 판단한 것이었고, 실제로는 **업계 관행 범위 안**이다. 형광펜은 글자를 가리지 않는 것이 우선이므로 은은한 것이 정상이다.
+
+> **기록 정정**: 이 절의 이전 서술("light/sepia 8색을 한 단계 진하게 다시 잡는다, 목표 1.25~1.40")은 **폐기한다.** 근거 없이 잡은 숫자였고 레퍼런스가 반대를 가리킨다. §4의 형광펜 항목도 won't-do를 유지한다 — 닫은 판단이 맞았다.
+
+**남는 문제는 dark뿐이다.** Notion dark 값을 Luie 종이(`#1c1c1e`)에 그대로 얹어보면 바로 쓸 수 있다.
+
+| Notion dark | 펜 가시성 (Luie 종이) | 글자 대비 (`--text-primary`) |
+| --- | --- | --- |
+| Yellow `#372E20` | 1.275 | **10.51** |
+| Orange `#36291F` | 1.210 | 11.08 |
+| Green `#242B26` | 1.174 | 11.43 |
+| Red `#332523` | 1.158 | 11.58 |
+| Blue `#1F282D` | 1.134 | 11.82 |
+| Purple `#2A2430` | 1.129 | 11.88 |
+
+현재 dark 글자 대비 1.01~1.50이 **10.5~11.9로 올라간다.**
+
+- [x] ~~light/sepia 8색을 진하게 다시 잡는다~~ — **레퍼런스 조사로 폐기.** 현재 값이 Notion과 같은 대역이다
+- [x] **해소 (2026-09-01).** 값을 theme별로 3세트 잡는 대신 **`color-mix(anchor, var(--bg-app))` 1세트**로 만들어 9조합이 자동 파생되게 했다. 대비가 구조적으로 보장되므로 분기가 필요 없다. 아래 확정값·검증 참조
+- [x] 저장 형식을 토큰 참조로 전환 — 11-3-A 참조
+
+##### 확정: 형광펜 = 종이에서 hue 방향으로 이동
+
+사용자 결정은 "3세트"였으나 **실제로는 1세트로 3세트(정확히는 9조합) 효과가 나온다.** 종이(`--bg-app`)를 `var()`로 참조하므로 theme이 바뀌면 결과가 따라간다.
+
+```
+--editor-mark-yellow: color-mix(in srgb, #b49004 17%, var(--bg-app));
+--editor-mark-green:  color-mix(in srgb, #22c55e 20%, var(--bg-app));
+--editor-mark-sky:    color-mix(in srgb, #0ea5e9 17%, var(--bg-app));
+--editor-mark-pink:   color-mix(in srgb, #ec4899 14%, var(--bg-app));
+--editor-mark-orange: color-mix(in srgb, #f97316 17%, var(--bg-app));
+--editor-mark-purple: color-mix(in srgb, #a855f7 14%, var(--bg-app));
+--editor-mark-red:    color-mix(in srgb, #ef4444 13%, var(--bg-app));
+--editor-mark-mint:   color-mix(in srgb, #14b8a6 19%, var(--bg-app));
+```
+
+**비율은 hue별로 다르다.** 각 hue의 명도가 달라 같은 비율이면 대비가 어긋난다. 노랑 anchor만 `#facc15`가 아니라 **`#b49004`**다 — 밝아서 light 종이에서 목표 가시성을 만들려면 41%가 필요했고, 그 비율을 dark에 쓰면 글자 대비가 4.09로 떨어졌다. anchor를 어둡게 해 17%로 내렸다.
+
+**9조합 전수 실측**
+
+| 조합 | 펜 가시성 | 그 위 글자 대비 |
+| --- | --- | --- |
+| light / +cool / +warm | 1.177~1.181 | 12.63~13.69 |
+| sepia / +cool / +warm | 1.169~1.178 | 7.82~8.01 |
+| dark / +cool / +warm | 1.135~1.448 | 8.37~10.67 |
+
+**최저 글자 대비 7.82** — 이전 1.01~1.50에서 올라왔다. 펜 가시성은 Notion 대역(light 1.10~1.16 · dark 1.17~1.32)과 정합한다.
+
+**dark 산출값이 레퍼런스와 수렴했다.** 독립적으로 도출했는데 Notion과 거의 같은 값이 나온 것이 검증이다.
+
+| | Luie 산출 | Notion |
+| --- | --- | --- |
+| yellow | `#352f18` | `#372E20` |
+| sky/blue | `#18323f` | `#1F282D` |
+| red | `#361f21` | `#332523` |
+
+**색온도는 미세하게 따라간다.** 종이 색조를 물려받기 때문이다. hue는 anchor가 지키므로 "노랑"이 연두로 읽히지 않고, 폭은 §2가 확정한 "살짝만 달라졌는데 다른 느낌"과 같다. 명시적으로 9세트를 잡지 않아도 같은 결과가 나오므로 유지비가 최소다.
+
+- [x] `--highlight-default`의 theme별 리터럴 3개 제거 → `var(--editor-mark-yellow)` alias. 이전에는 light `#fef08a` · dark `rgba(250,204,21,.32)` · sepia `#f2e2a6`로 흩어져 **툴바 형광펜과 canvas 형광펜이 서로 다른 색을 칠했다**
+
+##### 미결: 색온도(cool/warm)를 따라갈 것인가
+
+Luie는 theme 3 × 색온도 3 = 9조합이다. Notion·Obsidian에는 색온도 축이 없어 레퍼런스가 없다.
+
+**제안: theme(3)만 갈고 색온도는 따라가지 않는다.** 근거 3개.
+
+1. **형광펜 hue는 사용자가 고른 의미색이다.** 종이 축(`b − r`)이 ±8~10 움직인다고 형광펜 hue를 같이 밀면 "노랑"이 연두나 주황으로 읽힐 수 있다. §7에서 `ENTITY_KIND_TINT`를 won't-do로 닫은 논리와 같다
+2. **§2가 확정한 "축은 역할 전체에서 일정해야 한다"를 형광펜에는 적용할 수 없다.** 표면 토큰은 무채색이라 하나의 축으로 정렬되지만, 형광펜은 서로 다른 8개 hue라 정렬 대상이 아니다
+3. **§2가 확정한 "절대 색편차는 낮게 유지"** 때문에 색온도의 축 이동은 작다(±8~10). 채도 있는 형광펜 위에서는 그 정도로 인지되지 않는다
+
+- [x] **결정: theme(3)만 갈고 색온도는 명시적으로 잡지 않는다** (사용자 승인). 결과적으로 `color-mix(anchor, var(--bg-app))` 구조가 색온도까지 자동으로 미세 반영하므로 9조합이 모두 성립한다 — 명시적 24색을 잡지 않고 8색으로 끝났다
+
+#### 11-3-A. 저장 형식 전환 방법 — `!important`는 필요 없다 (2026-09-01 정정)
+
+> **기록 정정**: 이 문서의 이전 서술("렌더링 시점 보정에는 `!important`가 필요하다")은 **CSS만으로 인라인 스타일을 이기려 할 때만 맞다.** Tiptap 확장 층에서 처리하면 필요 없다. 3개 선택지(신규만 토큰 / 문서 일괄 치환 / 렌더 보정)를 놓고 고민할 필요도 없었다 — 하나로 전부 해결된다.
+
+`Highlight`(그리고 `Color`)를 `.extend()`해서 `renderHTML`·`parseHTML`을 갈면 된다. `@tiptap/extension-highlight` 3.27.1이라 지원한다.
+
+- `renderHTML`이 `background-color` 대신 **커스텀 프로퍼티**를 세운다 → `style="--luie-mark:#FEF08A"`
+- CSS가 그것을 소비한다 → `mark { background-color: color-mix(in srgb, var(--luie-mark) var(--luie-mark-alpha) , transparent) }`. `--luie-mark-alpha`는 theme별로 갈린다. **인라인 스타일이 `background-color`를 직접 세우지 않으므로 CSS가 이긴다 — `!important` 불필요**
+- `parseHTML`이 **옛 형식도 읽는다** → `el.style.getPropertyValue("--luie-mark") || el.style.backgroundColor`
+
+이 세 줄로 얻는 것:
+
+| | 결과 |
+| --- | --- |
+| 기존 문서 | 옛 `background-color` hex를 parseHTML이 읽어 attribute로 복원하고, renderHTML이 새 형식으로 그린다 → **렌더 시점에 즉시 고쳐진다** |
+| 저장 | 다음 저장에서 `editor.getHTML()`이 새 형식을 내보낸다 → **마이그레이션 스크립트 없이 자연히 이행된다** |
+| 스냅샷·동기화 | 문서를 일괄 변환하지 않으므로 영향 없다 |
+| 커스텀 픽커 색 | 팔레트 밖 색도 같은 경로를 타므로 함께 보정된다 |
+| Export | 11-3에서 확인한 대로 `<mark>`·`<span>`이 애초에 제거되므로 무관 |
+
+- [x] `Highlight.extend()` · `Color.extend()`로 `renderHTML`/`parseHTML` 오버라이드 — `extensions/ThemedTextColor.ts` 신설(`ThemedHighlight` · `ThemedColor`)
+- [x] `editor.css:382`의 `mark` 규칙을 `--luie-mark` 소비 형태로 교체 + `--luie-ink` 규칙 신설
+
+**빌드 CSS 확인** (`editor-*.css` 별도 청크다 — `Editor.tsx`·`ExportPreview.tsx`가 직접 import한다)
+
+```
+mark{background-color:var(--luie-mark,color-mix(in srgb, var(--accent-bg,#2563eb) 18%, transparent));…}
+.tiptap .ProseMirror [style*=--luie-ink]{color:var(--luie-ink)}
+```
+
+`!important` 0건. 인라인 스타일이 `background-color`/`color`를 세우지 않으므로 필요 없다.
+
+토큰은 Lightning CSS가 `color-mix` 미지원 폴백까지 함께 생성했다 — `:root{--editor-mark-yellow:#b49004}` + `@supports (color:color-mix(…)){…}`. Electron 40은 `color-mix`를 지원하므로 혼합값이 적용된다.
+
+#### 11-2. 글자색 팔레트 9색 중 쓸 수 있는 것이 2색뿐이다
+
+같은 원인(고정 hex)이다. 종이 대비 실측:
+
+| 색 | hex | light | sepia | dark | 판정 |
+| --- | --- | --- | --- | --- | --- |
+| 검정 | `#18181B` | 16.81 | 15.95 | **1.04** | dark에서 안 보임 |
+| 흰색 | `#D7D7DA` | **1.36** | **1.29** | 11.85 | light·sepia에서 안 보임 |
+| 파랑 | `#2563EB` | 4.90 | 4.65 | 3.29 | light·sepia AA 통과 |
+| 보라 | `#9333EA` | 5.11 | 4.84 | 3.16 | light·sepia AA 통과 |
+| 빨강 | `#EF4444` | 3.57 | 3.39 | 4.52 | 본문 미달 |
+| 청록 | `#0D9488` | 3.55 | 3.37 | 4.54 | 본문 미달 |
+| 초록 | `#16A34A` | 3.13 | 2.97 | 5.16 | 본문 미달 |
+| 노랑 | `#CA8A04` | 2.79 | 2.64 | 5.79 | 본문 미달 |
+| 주황 | `#F97316` | 2.66 | 2.52 | 6.07 | 본문 미달 |
+
+**단일 고정 hex로 3테마를 만족하는 것은 물리적으로 불가능하다.** light에서 4.5:1을 맞추려면 어두워야 하고, 그러면 dark 종이에서 3:1도 안 된다. `#2563EB`가 그 증거다(4.90 → 3.29).
+
+- [x] **해소 (2026-09-01).** 형광펜과 **대칭 구조**로 잡았다 — 형광펜이 종이에서 hue 방향으로 조금 움직이는 것과 반대로, 글자색은 **본문색(`--text-primary`)에서 hue 방향으로 많이** 움직인다. 배경은 종이 근처에 머물러야 글자를 안 가리고, 글자는 종이에서 멀어져야 읽히기 때문이다. 대비가 구조적으로 보장된다
+
+```
+--editor-ink-red:    color-mix(in srgb, #dc2626 69%, var(--text-primary));
+--editor-ink-orange: color-mix(in srgb, #ea580c 64%, var(--text-primary));
+--editor-ink-yellow: color-mix(in srgb, #ca8a04 51%, var(--text-primary));
+--editor-ink-green:  color-mix(in srgb, #16a34a 60%, var(--text-primary));
+--editor-ink-teal:   color-mix(in srgb, #0d9488 68%, var(--text-primary));
+--editor-ink-blue:   color-mix(in srgb, #2563eb 73%, var(--text-primary));
+--editor-ink-purple: color-mix(in srgb, #9333ea 68%, var(--text-primary));
+--editor-ink-pink:   color-mix(in srgb, #db2777 73%, var(--text-primary));
+```
+
+비율은 hue별로 **9조합 전부에서 4.7:1을 넘는 최대값**을 골랐다. 채도를 최대한 남기면서 AA를 보장하는 값이다. 노랑이 51%로 가장 낮다 — 명도가 높아 여유가 적다.
+
+| 조합 | 종이 대비 |
+| --- | --- |
+| light / +cool / +warm | 5.61~7.74 |
+| sepia / +cool / +warm | 4.70~6.34 |
+| dark / +cool / +warm | 4.71~8.37 |
+
+**최저 4.70 — 8색 × 9조합 = 72칸 전부 AA 통과.** 이전에는 9색 중 2색만 통과했다.
+
+- [x] "검정"·"흰색"을 팔레트에서 뺐다. 그 둘이 원하는 결과는 "theme의 본문색"이고, 그 역할은 팔레트가 아니라 `clearLabel`("기본 글자색")이 담당한다 → **8색**
+- [x] `DEFAULT_TEXT_COLOR`를 `var(--text-primary)`로 바꿨다. 이전에는 팔레트 첫 항목이었고 그게 우연히 "검정"이라 맞았는데, 검정을 뺀 뒤로는 첫 항목이 빨강이라 **색을 안 칠했는데 빨간 밑줄이 뜨게 된다**
+- [x] `menus.tsx`의 `normalizedValue === "#ffffff"` 죽은 코드 제거
+- [x] `ColorPickerMenu`가 토큰 값을 다루게 했다. 팔레트 항목이 `token`(저장·표시값)과 `anchor`(커스텀 픽커 초기값 hex)를 함께 갖는다 — 픽커가 값을 `hexToHsv()`로 파싱하므로 토큰 참조를 넣을 수 없다
+
+#### 11-3. Export는 색·형광펜·취소선을 이미 버리고 있다 — 위 전환의 리스크가 0인 근거
+
+`exportContentNormalization.ts`의 화이트리스트가 `p br h1 h2 h3 ul ol li blockquote strong em u`다. `<span>`은 69행에서 **명시적으로 제거**되고 `<mark>`·`<s>`는 화이트리스트에 없어 76~90행에서 떨어진다.
+
+즉 **글자색·형광펜은 DOCX/HWPX에 애초에 반영되지 않는다.** 따라서 저장 형식을 `var()`로 바꿔도 Export가 깨질 수 없다.
+
+- [ ] **별개 버그: 취소선이 Export에서 사라진다.** `strong`·`em`·`u`는 살렸는데 `s`만 화이트리스트에서 빠졌다. 의도된 누락으로 보이지 않는다
+
+#### 11-4. Toolbar 드롭다운 3개가 종이 위에서 보이지 않는다
+
+`CompactDropdown`이 fill `bg-app`(= 종이색) + `border-border`(soft)다. 툴바가 무배경(§5 won't-do)이라 컨트롤이 종이 위에 바로 놓인다.
+
+| | soft (현재) | strong (§4 규범) |
+| --- | --- | --- |
+| light | **1.209** | 3.122 |
+| sepia | **1.228** | 3.169 |
+
+§4 Task 1이 input·select·토글·checkbox 32곳을 `border-border-strong`으로 옮겼는데 **이 3개(문단 스타일·글꼴·크기)가 빠졌다.** select 역할이므로 규범 대상이다.
+
+- [ ] `CompactDropdown` 경계 → `border-border-strong`. `FontSelector`도 같은 성격인지 확인
+
+#### 11-5. `CompactDropdown`이 ARIA 없는 커스텀 select다
+
+- [ ] `role="listbox"`/`role="option"`·`aria-expanded`·`aria-activedescendant`·화살표 키 이동·Escape 전부 없다. 네이티브 `<select>`가 아니므로 스크린리더와 키보드에 아무것도 전달되지 않는다
+
+#### 11-6. Slash 메뉴 — 선택 표시가 1.05이고 ARIA가 없다
+
+- [ ] 항목이 `<div onClick>`이고 `role="listbox"`/`option`/`aria-selected`/`aria-activedescendant`가 없다. 화살표 이동은 Suggestion 플러그인이 처리하지만 **보조기술에는 선택 위치가 전달되지 않는다**
+- [ ] 선택 항목이 `bg-active`(알파 오버레이) — 대비 약 1.05로 어느 항목이 선택됐는지 알기 어렵다
+- [ ] 아이콘 박스가 `w-11 h-11`(44px)로 시각적으로 무겁다. 메뉴 높이가 항목당 60px를 넘어 8개가 화면을 채운다
+- [ ] `rounded` bare · `z-50` 하드코딩(`z-dropdown` 있음) · `descriptions`에 없는 id는 빈 문자열
+
+#### 11-7. 메뉴 3개 전부 Escape로 닫히지 않는다
+
+- [ ] `ColorPickerMenu` · `TypographyMenu` · `CompactDropdown`이 `useClickOutside`만 쓴다. 열어놓고 키보드로 빠져나올 방법이 없다
+
+#### 11-8. Typography 메뉴에 단위가 없다
+
+- [ ] 자간 `0.02` · 줄간격 `1.70` · 문단간격 `1.0`이 숫자만 나온다. 무엇의 단위인지 알 수 없고 `aria-valuetext`도 없다
+- [ ] 기본값 복원 수단이 없다
+- [ ] `accent-[var(--accent-bg)]` arbitrary value → `accent-accent-bg`
+
+---
+
 ## 종결 — 하지 않기로 한 것 (2026-09-01)
 
 **사용자 결정.** 아래 항목은 "하면 얻는 것이 있지만 굳이 할 필요가 없다"로 판단해 닫는다. 다시 열 근거가 생기면 그때 판단하고, 그때까지는 **미착수가 아니라 종결**로 읽는다. §5 Toolbar 무배경을 won't-do로 남긴 것과 같은 방식이다.
@@ -1325,31 +1575,38 @@ v3/v4와 무관한 팔레트 부채지만 같은 조사에서 나왔다. `bg-whi
 
 ---
 
-## UI 확인 — 남은 미확인 항목 (2026-09-01)
+## UI 확인 — 완료 (2026-09-01)
 
-§4 1~4단계와 §1-B animate는 사용자 확인을 거쳐 승인됐다. 이 절에는 **아직 확인되지 않은 것만** 남긴다.
+> **사용자 확인 결과: 이상 없음.** 아래 항목 전부 승인됐다.
+>
+> 확인 방식은 **항목별 실측이 아니라 전체 인상 확인**이었다("특히 이상하다고 느낀 건 없다"). 나중에 특정 항목에서 문제가 드러나면 이 기록의 정밀도를 감안해야 하므로 그대로 남긴다.
 
-### 1. 애니메이션 — 이번에 처음 움직인다
+### 1. 애니메이션 — 이번에 처음 움직였다
 
-`global.animations.css` 신설로 21개 파일 90건이 죽은 클래스에서 살아났다. **지금까지 아무 움직임이 없었으므로 전부 새로운 인상이다.**
+`global.animations.css` 신설로 21개 파일 90건이 죽은 클래스에서 살아났다. **확인 전까지 아무 움직임이 없었으므로 전부 새로운 인상이었다.**
 
-- [ ] **패널 열고 닫기의 slide 중복.** `flex-grow` 폭 보간(200ms)이 이미 동작하는데 거기에 `slide-out-to-left`가 겹친다. 폭이 줄면서 동시에 옆으로 밀려나가는 이중 움직임이 과하면 **slide를 빼고 `fade`만 남기는 선택지**가 있다. 대상: 사이드바 · Research 패널 · Scrivener Inspector · GoogleDocs 우측 패널
-- [ ] 설정 모달 · 동기화 충돌 모달 (`fade-in` + `zoom-in-95`)
-- [ ] 토스트 (`slide-in-from-right-full duration-300`) · 업데이트 알림 (`slide-in-from-bottom-5`)
-- [ ] 스마트링크 툴팁 · canvas 부유 컨트롤 · 그래프 범례
-- [ ] 시놉시스 에디터의 `duration-700` — 유일하게 700ms다. 다른 곳(100~300ms)과 어긋나 보이면 규범(200ms)에 맞춘다
-- [ ] 설정 → 모양 → 애니메이션을 **끈 상태**에서 모든 움직임이 즉시 사라지는지
-- [ ] OS 손쉬운 사용 → 동작 줄이기를 켠 상태에서도 사라지는지 (이전에는 canvas 밖이 미적용이었다)
+- [x] **패널 열고 닫기의 slide 중복** — 이중 움직임이 과하지 않다고 판단됐다. `flex-grow` 폭 보간(200ms)과 `slide-out-to-left`를 함께 두는 현재 형태를 유지한다. *fade만 남기는 선택지는 쓰지 않았다*
+- [x] 설정 모달 · 동기화 충돌 모달 (`fade-in` + `zoom-in-95`)
+- [x] 토스트 (`slide-in-from-right-full duration-300`) · 업데이트 알림 (`slide-in-from-bottom-5`)
+- [x] 스마트링크 툴팁 · canvas 부유 컨트롤 · 그래프 범례
+- [x] 시놉시스 에디터의 `duration-700` — 유일하게 700ms인데 어긋나 보이지 않았다. **규범(200ms)에 맞추지 않고 유지한다**
+- [x] 설정 → 모양 → 애니메이션을 끈 상태에서 움직임이 즉시 사라진다
+- [x] OS 손쉬운 사용 → 동작 줄이기를 켠 상태에서도 사라진다 (이전에는 canvas 밖이 미적용이었으므로 처음 검증된 경로다)
 
 ### 2. border soft 도입의 부수 영향
 
-- [ ] **canvas 그리드가 너무 옅어지지 않았는지.** `--grid-line`이 `var(--border-default)`라 soft(1.27)를 따라갔다. 옅으면 `--grid-line`만 high 값에 고정하는 분기를 넣는다
-- [ ] `--bg-element`를 fill로 쓰는 컨트롤 4곳이 다른 입력보다 경계가 약해 보이는지 — 그래프 필터 드롭다운 · 검색창 · 시놉시스 입력 · 위키 검색 (경계 대비 2.54~2.71 vs 다른 입력 3.30)
+- [x] **canvas 그리드가 옅어진 것이 문제되지 않았다.** `--grid-line`이 `var(--border-default)`라 soft(1.27)를 따라갔는데 그대로 둔다. *`--grid-line`만 고대비 값에 고정하는 분기는 넣지 않았다*
+- [x] `--bg-element`를 fill로 쓰는 컨트롤 4곳(그래프 필터 드롭다운 · 검색창 · 시놉시스 입력 · 위키 검색)의 경계 대비 2.54~2.71이 다른 입력(3.30)보다 약해 보이지 않았다. §2의 "파인 면" 설계를 유지한다
 
 ### 3. v3 잔재 정리의 시각 영향
 
-- [ ] **`rounded-sm` → `rounded-xs`** (20곳, 반경 4px → 2px). 스냅샷 diff 하이라이트 · 그래프 범례 스와치 · 작은 칩. 너무 각져 보이는지
-- [ ] **`backdrop-blur` 역할 분기.** 전면 오버레이 8px 유지 / 소형 부유 요소 4px. canvas 엣지 라벨과 위키 사이드 레일이 대상
-- [ ] **`shadow-sm` → `shadow-control`** (52곳). 검정 그림자가 theme tint로 바뀌었다. sepia 종이 위에서 회색 얼룩이 사라졌는지
+- [x] **`rounded-sm` → `rounded-xs`** (20곳, 반경 4px → 2px). 각져 보이지 않았다
+- [x] **`backdrop-blur` 역할 분기.** 전면 오버레이 8px / 소형 부유 요소 4px
+- [x] **`shadow-sm` → `shadow-control`** (52곳). 검정 그림자가 theme tint로 바뀐 결과
+
+### 4. 접근성 라운드의 시각 영향 (2026-09-01 추가분)
+
+- [x] **제목 입력의 focus 밑줄** — 챕터 제목 · 메모 제목 · 마인드맵 노드 이름에 `border-b-2 border-transparent focus:border-accent`를 넣었다. 제목 서체 무게와 어울리는지가 판단 지점이었고 이상 없었다
+- [x] `AIPanel` 컴포저 · `menus.tsx` HEX 입력의 focus ring 신설
 
 ---
