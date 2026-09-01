@@ -12,7 +12,9 @@ import {
 } from "@renderer/features/research/components/ResearchCatalogPanels";
 import { cn } from "@shared/types/utils";
 import { FeatureErrorBoundary } from "@renderer/shared/error-boundaries/FeatureErrorBoundary";
+import { useEditorStore } from "@renderer/features/editor/stores/editorStore";
 import {
+  RESEARCH_CATALOG_IDS,
   RESEARCH_CATALOG_ITEMS,
   type ResearchCatalogId,
 } from "@renderer/features/workspace/constants/researchInformationArchitecture";
@@ -90,6 +92,26 @@ export default function ResearchPanel({
     : localTabState.sourceTab === activeTab
       ? normalizedLocalTab
       : normalizedActiveTab;
+  const enableAnimations = useEditorStore((state) => state.enableAnimations);
+
+  // NOTE: 탭 전환 방향. 뒤 탭으로 가면 새 컨텐츠가 오른쪽에서, 앞 탭으로 가면 왼쪽에서
+  // 슬라이드 인한다("옷장에 옷을 갈아끼우는" 전환). 이전 탭 추적은 prop 변경 시 상태를
+  // 조정하는 공식 렌더 패턴(GoogleDocsRightPanel의 lastRightPanelSize와 동일)으로 한다.
+  const [tabTransition, setTabTransition] = React.useState<{
+    tab: ResearchPanelTab;
+    direction: "right" | "left";
+  }>({ tab: visibleTab, direction: "right" });
+  let slideDirection: "right" | "left" = tabTransition.direction;
+  if (tabTransition.tab !== visibleTab) {
+    const from = RESEARCH_CATALOG_IDS.indexOf(
+      tabTransition.tab as (typeof RESEARCH_CATALOG_IDS)[number],
+    );
+    const to = RESEARCH_CATALOG_IDS.indexOf(
+      visibleTab as (typeof RESEARCH_CATALOG_IDS)[number],
+    );
+    slideDirection = to >= from ? "right" : "left";
+    setTabTransition({ tab: visibleTab, direction: slideDirection });
+  }
 
   const tabs = RESEARCH_CATALOG_ITEMS.map((item) => ({
     id: item.id,
@@ -182,6 +204,17 @@ export default function ResearchPanel({
   return (
     <div className="research-surface flex h-full w-full flex-col overflow-hidden">
       <div className="relative flex flex-1 flex-col overflow-hidden">
+        <div
+          key={visibleTab}
+          data-testid="research-tab-content"
+          className={cn(
+            "flex min-h-0 flex-1 flex-col",
+            enableAnimations &&
+              (slideDirection === "right"
+                ? "animate-in slide-in-from-right-4 fade-in duration-200"
+                : "animate-in slide-in-from-left-4 fade-in duration-200"),
+          )}
+        >
         {visibleTab === "character" && (
           <FeatureErrorBoundary featureName="Characters">
             <CharacterManager
@@ -239,6 +272,7 @@ export default function ResearchPanel({
         {visibleTab === "scrap" && <FeatureErrorBoundary featureName="Scrap"><ResearchScrapPanel onClose={onClose} /></FeatureErrorBoundary>}
         {visibleTab === "plotboard" && <FeatureErrorBoundary featureName="Plotboard"><ResearchPlotboardPanel onClose={onClose} /></FeatureErrorBoundary>}
         {visibleTab === "untitled" && <FeatureErrorBoundary featureName="Story Line"><UntitledResearchPanel /></FeatureErrorBoundary>}
+        </div>
       </div>
     </div>
   );
