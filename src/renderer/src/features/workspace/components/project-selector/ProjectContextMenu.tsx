@@ -41,7 +41,7 @@ export function ProjectContextMenu({
     return (
         <div
             ref={menuRef as React.Ref<HTMLDivElement>}
-            className="fixed z-dropdown min-w-35 bg-surface border border-border rounded-[10px] p-1.5 shadow-lg"
+            className="fixed z-dropdown min-w-35 bg-surface border border-border rounded-[10px] p-1.5 shadow-panel"
             style={{ top: menuPosition.y, left: menuPosition.x }}
             onClick={(e) => e.stopPropagation()}
         >

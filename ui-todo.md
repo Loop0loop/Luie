@@ -15,13 +15,13 @@
 
 `node scripts/design/tokens-guard.mjs` — 전 항목 baseline 이하(통과)이나 **개선 여지가 있음**.
 
-| 지표 | 감사 직후 | P1 이후 (작업 트리) | baseline | 판정 |
+| 지표 | 감사 직후 | P2 이후 (작업 트리) | baseline | 판정 |
 | --- | --- | --- | --- | --- |
-| `rawHex` | 143 | 152 | 143 | ⬆ 병행 세션 변경(`StartupWizard.tsx` 테마 프리뷰 hex) — **내 작업 아님** |
+| `rawHex` | 143 | 149 | 143 | ⬆ 병행 세션 변경(`StartupWizard.tsx`) — **내 작업 아님** (P2-3은 스와치 색값 변경이라 hex 수 불변) |
 | `rawColor` | 98 | 88 | 98 | ✓ **↓10 (P0 raw 색 제거)** |
-| `arbitraryPx` | 414 | 428 | 414 | ⬆ 병행 세션 변경(StartupWizard 리워크) — **내 작업 아님** (P1 치환은 형식 유지라 총수 불변) |
-| `roundedBig` | 155 | 155 | 155 | ✓ |
-| `shadowBig` | 21 | 21 | 21 | ✓ |
+| `arbitraryPx` | 414 | 429 | 414 | ⬆ 병행 세션 변경(StartupWizard) — **내 작업 아님** |
+| `roundedBig` | 155 | 155 | 155 | ✓ (내 P2-1 −9지만 병행 세션 +9 상쇄) |
+| `shadowBig` | 21 | 11 | 21 | ✓ **↓10 (P2-2 그림자 tint화)** |
 | `shadcnVocab` | 0 | 0 | 0 | ✓ |
 
 > ⚠️ **병행 세션 주의**: 작업 트리에 `refactor/ui-system` 위를 진행하는 **다른 세션의 미커밋 변경**이 상시 존재한다
@@ -110,30 +110,30 @@ accent 색상이 사용자 지정(`--accent-bg` 변환)될 때 하드코딩 흰 
 
 ---
 
-## P2 — 토큰 수렴
+## P2 — 토큰 수렴 ✅ 완료 (2026-09-01)
 
-### P2-1 `rounded-3xl`(=24px) → `rounded-editor-shell`(=1.5rem/24px, 동일값 무료 교체)
+### P2-1 `rounded-3xl`(=24px) → `rounded-editor-shell`(1.5rem/24px, 동일값 교체) ✅
 
-- [ ] `features/settings/components/SettingsModal.tsx:122`
-- [ ] `features/research/components/AnalysisSection.tsx:177`
-- [ ] `features/canvas/components/shell/CanvasPane.tsx:39`
-- [ ] `rounded-2xl`(16px) 5건 → `--radius-2xl` 토큰 신설 또는 `radius-panel`(14px)로 수렴 여부 결정
+- [x] `features/settings/components/SettingsModal.tsx:122,151` — `rounded-3xl` → `rounded-editor-shell`
+- [x] `features/research/components/AnalysisSection.tsx:177` — `rounded-3xl` → `rounded-editor-shell`
+- [x] `features/canvas/components/shell/CanvasPane.tsx:39` — `rounded-3xl` → `rounded-editor-shell`
+- [x] `rounded-2xl`(16px) 5건(AnalysisSection 437·450·459·468·477) → **`rounded-panel`(14px)로 수렴 결정** (2px 차이, 카드 일관성 우선). `--radius-2xl` 토큰 대신 기존 래더로 통일.
+- [ ] (병행 세션 소유) `StartupWizard.tsx:456` `rounded-2xl` — 병행 세션 변경이라 보류
 
-### P2-2 검정 그림자 유틸 → 테마 tint 그림자
+### P2-2 검정 그림자 유틸 → 테마 tint 그림자 ✅
 
-`shadow-lg`(~19)·`shadow-md`(~14)·`shadow-xl`(~2)·`shadow-xs`(~26)는 Tailwind 기본 검정 그림자로
-light/sepia의 종이 위에서 회색 얼룩이 된다 (`global.tokens.css:114-119` 근거). `shadow-control`/`shadow-panel`로 수렴.
+`shadow-lg`·`shadow-md` 등 Tailwind 기본 검정 그림자는 light/sepia 종이 위 회색 얼룩이 된다. **정적(static)** 그림자만 `shadow-panel`/`shadow-control`로 교체하고, 의도적인 `hover/group-hover/active` 승격·캔버스 노드 선택·시뮬레이션 종이는 **유지**했다(과도한 무차별 수렴은 시각 회귀 우려).
 
-- [ ] `features/canvas/components/graph/PensiveNode.tsx` (shadow-md 4곳)
-- [ ] `features/research/components/world/MindMapBoard.tsx` (shadow-lg 3곳)
-- [ ] `features/research/components/analysisSection/review/summary/NarrativeSummaryStatusPanel.tsx` (shadow-lg/xl)
-- [ ] `features/export/components/ExportPreviewPanel.tsx`·`ExportSidebar.tsx`
-- [ ] 나머지 shadow-md/lg/xl/2xl 전건 (`shadowBig` baseline 21 → ~8 목표)
+- [x] `shadow-lg`→`shadow-panel`: BootstrapGate:21 · QuitOverlay:23 · NarrativeSummaryStatusPanel:30 · DrawingCanvas:56 · ProjectContextMenu:44 · SidebarHoverStrip:44 · SidebarCompactHover:354 · MindMapBoard:157,197
+- [x] `shadow-md`→`shadow-control`: PromptComposer:341 · RuntimeStatusPanel:17 · SettingsModal:138 · ProjectCategorySidebar:42 · CanvasMarkdownEditor:177
+- [x] accent 배경 버튼: ExportSidebar:331 `shadow-lg shadow-accent/20`→`shadow-control shadow-accent/20` · EntityGallery:311 `shadow-xs`→`shadow-control`
+- [x] **유지(의도)**: hover:shadow-lg/md/xl(TermCard·PlotBoard·RecentProjectsSection·PensiveNode·MindMapBoard:45·TemplateGrid) · PensiveNode 선택 shadow-lg · canvas 컨트롤/카드 미세 shadow-xs·2xs · ExportPreviewPanel 종이(→P3) 
+- [x] 결과 `shadowBig` baseline 21 → **11 (↓10)**
 
-### P2-3 accent/entity 색상 선택 팔레트 → 토큰 연동
+### P2-3 accent/entity 색상 선택 팔레트 → 토큰 연동 ✅
 
-- [ ] `features/settings/components/tabs/AppearanceTab.tsx:45-49` — accent 사전설정 hex → accent swatch token 정의부로 이동 (값은 data 계약이라 hex 유지)
-- [ ] `features/research/components/wiki/types.ts:27-38` — character 색 9색 팔레트 → canvas entity 색 토큰과 단일 소스 통합 검토
+- [x] `features/settings/components/tabs/AppearanceTab.tsx:45-49` — **accent 스와치 색이 실제 token과 불일치던 버그 수정.** 스와치 hex를 `global.tokens.css [data-accent]`의 `--accent-bg`(light)와 일치시킴(blue `#3b82f6`→`#2563eb`, emerald→`#059669`, violet→`#7c3aed`, rose→`#e11d48`, amber→`#d97706`). 값은 data 계약이라 hex 유지 + NOTE로 정합 근거 기록
+- [x] `features/research/components/wiki/types.ts:27-38` — `CHARACTER_COLOR_PRESETS`는 **사용자 데이터(hex)로 저장**되고, canvas entity 종류색(chapter/character/…)과 성격이 달라 **단일 소스 통합하지 않음** 판정. anchor로 분류(예외 유지)
 
 ---
 

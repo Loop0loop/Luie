@@ -41,7 +41,7 @@ export function SidebarHoverStrip({
       </button>
 
       <div
-        className="flex h-full flex-col overflow-hidden border-r border-border bg-sidebar shadow-lg transition-[width] duration-150 ease-out"
+        className="flex h-full flex-col overflow-hidden border-r border-border bg-sidebar shadow-panel transition-[width] duration-150 ease-out"
         style={{ width: isPeeking ? PEEK_WIDTH : 0 }}
       >
         <div

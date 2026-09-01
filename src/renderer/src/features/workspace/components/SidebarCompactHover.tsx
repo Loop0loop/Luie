@@ -351,7 +351,7 @@ export function SidebarCompactHover(props: SidebarCompactHoverProps) {
       className="bg-transparent shadow-none"
     >
       <div
-        className="h-full border-r border-border bg-sidebar/75 shadow-lg backdrop-blur-xs"
+        className="h-full border-r border-border bg-sidebar/75 shadow-panel backdrop-blur-xs"
         style={{ width: COMPACT_WIDTH_PX }}
       >
         <CompactContent {...props} />

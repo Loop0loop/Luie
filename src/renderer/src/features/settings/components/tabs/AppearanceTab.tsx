@@ -42,11 +42,13 @@ export const AppearanceTab = memo(function AppearanceTab({
     );
 
     const ACCENT_PRESETS = [
-        { id: "blue", labelKey: "settings.appearance.accent.blue", color: "#3b82f6", name: "블루" },
-        { id: "emerald", labelKey: "settings.appearance.accent.emerald", color: "#10b981", name: "에메랄드" },
-        { id: "violet", labelKey: "settings.appearance.accent.violet", color: "#8b5cf6", name: "바이올렛" },
-        { id: "rose", labelKey: "settings.appearance.accent.rose", color: "#f43f5e", name: "로즈" },
-        { id: "amber", labelKey: "settings.appearance.accent.amber", color: "#f59e0b", name: "앰버" },
+        // NOTE: color는 스와치 표시용 hex로, global.tokens.css `[data-accent]`의 `--accent-bg`(light 기준)와
+        // 값을 맞춘다. 어긋나면 스와치에서 본 색과 실제 적용 색이 달라진다. (dark는 밝은 값으로 대체됨)
+        { id: "blue", labelKey: "settings.appearance.accent.blue", color: "#2563eb", name: "블루" },
+        { id: "emerald", labelKey: "settings.appearance.accent.emerald", color: "#059669", name: "에메랄드" },
+        { id: "violet", labelKey: "settings.appearance.accent.violet", color: "#7c3aed", name: "바이올렛" },
+        { id: "rose", labelKey: "settings.appearance.accent.rose", color: "#e11d48", name: "로즈" },
+        { id: "amber", labelKey: "settings.appearance.accent.amber", color: "#d97706", name: "앰버" },
     ] as const;
 
     return (

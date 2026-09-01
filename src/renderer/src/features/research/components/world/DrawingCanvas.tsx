@@ -53,7 +53,7 @@ export function DrawingCanvas() {
         style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.1'/%3E%3C/svg%3E")` }}
       />
 
-      <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 p-2 bg-panel/90 backdrop-blur-md border border-border rounded-panel shadow-lg">
+      <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 p-2 bg-panel/90 backdrop-blur-md border border-border rounded-panel shadow-panel">
         <div
           className="flex flex-col gap-2 border-b border-border pb-2"
           role="group"

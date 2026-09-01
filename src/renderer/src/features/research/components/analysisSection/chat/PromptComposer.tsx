@@ -338,7 +338,7 @@ export function PromptComposer({
         type="button"
         onClick={isStreaming ? onStop : onSend}
         disabled={sendDisabled}
-        className="w-7.5 h-7.5 rounded-full bg-accent text-on-accent hover:bg-accent-bg-hover disabled:bg-element/30 disabled:text-muted/50 flex items-center justify-center shadow-md disabled:shadow-none transition-[colors,transform,box-shadow] duration-150 hover:scale-105 active:scale-95 shrink-0"
+        className="w-7.5 h-7.5 rounded-full bg-accent text-on-accent hover:bg-accent-bg-hover disabled:bg-element/30 disabled:text-muted/50 flex items-center justify-center shadow-control disabled:shadow-none transition-[colors,transform,box-shadow] duration-150 hover:scale-105 active:scale-95 shrink-0"
       >
         {isStreaming ? (
           <Square className="w-3 h-3 fill-current" />

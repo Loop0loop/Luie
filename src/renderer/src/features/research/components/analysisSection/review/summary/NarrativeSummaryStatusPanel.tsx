@@ -27,7 +27,7 @@ export function NarrativeSummaryStatusPanel({
   const byTypeEntries = Object.entries(status?.byType ?? {});
 
   return (
-    <div className="rounded-panel border border-border bg-surface/40 dark:bg-surface/20 backdrop-blur-xl px-3.5 py-2.5 text-xs shadow-lg transition-[box-shadow,colors] duration-300 hover:shadow-xl">
+    <div className="rounded-panel border border-border bg-surface/40 dark:bg-surface/20 backdrop-blur-xl px-3.5 py-2.5 text-xs shadow-panel transition-[box-shadow,colors] duration-300 hover:shadow-xl">
       <button
         type="button"
         onClick={onToggle}

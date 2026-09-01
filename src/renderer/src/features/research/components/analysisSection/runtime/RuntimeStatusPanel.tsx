@@ -14,7 +14,7 @@ export function RuntimeStatusPanel({
   const skipped = runtimeInfo.skipped ?? [];
 
   return (
-    <div className="mb-1 rounded-panel border border-border bg-surface/30 dark:bg-surface/20 backdrop-blur-xl px-2.5 py-1.5 text-[10px] text-muted/80 shadow-md select-none transition-colors duration-200">
+    <div className="mb-1 rounded-panel border border-border bg-surface/30 dark:bg-surface/20 backdrop-blur-xl px-2.5 py-1.5 text-[10px] text-muted/80 shadow-control select-none transition-colors duration-200">
       <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
         <div className="min-w-0">
           <span className="text-muted/60 font-medium">Req:</span>{" "}

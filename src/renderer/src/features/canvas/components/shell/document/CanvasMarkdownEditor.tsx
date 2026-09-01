@@ -174,7 +174,7 @@ export function CanvasMarkdownEditor({
         <BubbleMenu
           editor={editor}
           options={{ placement: "top" }}
-          className="flex items-center gap-0.5 rounded-control border border-border bg-panel p-0.5 shadow-md z-dropdown animate-in fade-in zoom-in-95 duration-100"
+          className="flex items-center gap-0.5 rounded-control border border-border bg-panel p-0.5 shadow-control z-dropdown animate-in fade-in zoom-in-95 duration-100"
         >
           <button
             type="button"

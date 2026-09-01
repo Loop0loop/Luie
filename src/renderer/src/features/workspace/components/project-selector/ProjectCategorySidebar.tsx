@@ -39,7 +39,7 @@ export function ProjectCategorySidebar({
                         className={`
             px-4 py-3 rounded-panel text-sm transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] flex items-center gap-2.5
             ${activeCategory === cat.id
-                            ? "bg-accent text-accent-fg font-semibold shadow-md"
+                            ? "bg-accent text-accent-fg font-semibold shadow-control"
                             : "text-muted hover:bg-active hover:text-fg cursor-pointer"}
           `}
                         onClick={() => onSelectCategory(cat.id)}

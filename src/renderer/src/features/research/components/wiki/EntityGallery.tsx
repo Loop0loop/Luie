@@ -308,7 +308,7 @@ export function EntityGallery<T extends GalleryEntity>({
             {onAdd ? (
               <button
                 type="button"
-                className="inline-flex h-7 items-center gap-1 rounded-control bg-accent px-2.5 text-xs font-medium text-accent-fg transition-colors hover:bg-accent-bg-hover focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring shadow-xs"
+                className="inline-flex h-7 items-center gap-1 rounded-control bg-accent px-2.5 text-xs font-medium text-accent-fg transition-colors hover:bg-accent-bg-hover focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring shadow-control"
                 onClick={onAdd}
               >
                 <Plus className="icon-xs" aria-hidden="true" />

@@ -328,7 +328,7 @@ export function ExportSidebar({
                 <button
                     onClick={handleExport}
                     disabled={isExporting || !hasChapter}
-                    className="w-full h-11 bg-accent hover:bg-accent-hover text-on-accent font-bold rounded-panel transition-colors flex items-center justify-center gap-2 shadow-lg shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full h-11 bg-accent hover:bg-accent-hover text-on-accent font-bold rounded-panel transition-colors flex items-center justify-center gap-2 shadow-control shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <Download className="w-5 h-5" />
                     {isExporting ? t("exportWindow.button.exporting") : t("exportWindow.button.export", { format: format.toUpperCase() })}

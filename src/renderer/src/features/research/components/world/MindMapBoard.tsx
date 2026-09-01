@@ -154,7 +154,7 @@ export function MindMapBoard() {
       style={{ outline: "none" }}
     >
       <div
-        className="absolute top-4 left-1/2 -translate-x-1/2 bg-panel/90 px-6 py-2 rounded-full text-xs font-medium text-fg shadow-lg pointer-events-none z-10 backdrop-blur-md border border-border flex items-center gap-4"
+        className="absolute top-4 left-1/2 -translate-x-1/2 bg-panel/90 px-6 py-2 rounded-full text-xs font-medium text-fg shadow-panel pointer-events-none z-10 backdrop-blur-md border border-border flex items-center gap-4"
       >
         <div className="flex items-center gap-1.5">
           <span className="p-1 bg-border rounded">{t("world.mindmap.shortcut.clickKey")}</span>
@@ -194,7 +194,7 @@ export function MindMapBoard() {
       >
         <Background color="var(--grid-line)" gap={24} size={1} />
 
-        <div className="absolute bottom-4 left-4 z-10 flex flex-col gap-2 bg-panel/90 backdrop-blur border border-border p-1.5 rounded-panel shadow-lg">
+        <div className="absolute bottom-4 left-4 z-10 flex flex-col gap-2 bg-panel/90 backdrop-blur border border-border p-1.5 rounded-panel shadow-panel">
           <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.zoomIn()} title={t("world.mindmap.controls.zoomIn")}>+</button>
           <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.zoomOut()} title={t("world.mindmap.controls.zoomOut")}>-</button>
           <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-hover text-fg" onClick={() => flowRef.current?.fitView()} title={t("world.mindmap.controls.fitView")}>⛶</button>

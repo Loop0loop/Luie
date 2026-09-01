@@ -18,7 +18,7 @@ export function BootstrapGate({
 
   return (
     <div className="min-h-screen bg-app text-fg flex items-center justify-center px-6">
-      <div className="w-full max-w-3xl rounded-panel border border-border bg-panel p-8 shadow-lg">
+      <div className="w-full max-w-3xl rounded-panel border border-border bg-panel p-8 shadow-panel">
         <div className="space-y-4">
           <div className="h-6 w-52 rounded-control bg-surface animate-pulse" />
           <div className="h-4 w-full rounded-control bg-surface animate-pulse" />
