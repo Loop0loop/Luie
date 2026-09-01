@@ -211,8 +211,8 @@ export default function ResearchPanel({
             "flex min-h-0 flex-1 flex-col",
             enableAnimations &&
               (slideDirection === "right"
-                ? "animate-in slide-in-from-right-4 fade-in duration-200"
-                : "animate-in slide-in-from-left-4 fade-in duration-200"),
+                ? "animate-in slide-in-from-right-4 fade-in duration-700"
+                : "animate-in slide-in-from-left-4 fade-in duration-700"),
           )}
         >
         {visibleTab === "character" && (
